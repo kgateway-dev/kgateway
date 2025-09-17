@@ -110,13 +110,13 @@ func applyFloatingUserId(dstKube *v1alpha1.KubernetesProxyConfig) {
 }
 
 // GetInMemoryGatewayParameters returns an in-memory GatewayParameters based on the name of the gateway class.
-func GetInMemoryGatewayParameters(name string, imageInfo *ImageInfo, gatewayClassName, waypointClassName, agentGatewayClassName string) *v1alpha1.GatewayParameters {
+func GetInMemoryGatewayParameters(name string, imageInfo *ImageInfo, gatewayClassName, waypointClassName, agentgatewayClassName string) *v1alpha1.GatewayParameters {
 	switch name {
 	case waypointClassName:
 		return defaultWaypointGatewayParameters(imageInfo)
 	case gatewayClassName:
 		return defaultGatewayParameters(imageInfo)
-	case agentGatewayClassName:
+	case agentgatewayClassName:
 		return defaultAgentgatewayParameters(imageInfo)
 	default:
 		return defaultGatewayParameters(imageInfo)

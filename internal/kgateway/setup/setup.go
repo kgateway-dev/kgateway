@@ -62,7 +62,7 @@ func WithWaypointClassName(name string) func(*setup) {
 
 func WithAgentgatewayClassName(name string) func(*setup) {
 	return func(s *setup) {
-		s.agentGatewayClassName = name
+		s.agentgatewayClassName = name
 	}
 }
 
@@ -150,7 +150,7 @@ type setup struct {
 	gatewayControllerName    string
 	gatewayClassName         string
 	waypointClassName        string
-	agentGatewayClassName    string
+	agentgatewayClassName    string
 	additionalGatewayClasses map[string]*deployer.GatewayClassInfo
 	extraPlugins             func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []sdk.Plugin
 	extraAgentgatewayPlugins func(ctx context.Context, agw *agentgatewayplugins.AgwCollections) []agentgatewayplugins.AgentgatewayPlugin
@@ -174,7 +174,7 @@ func New(opts ...func(*setup)) (*setup, error) {
 		gatewayControllerName: wellknown.DefaultGatewayControllerName,
 		gatewayClassName:      wellknown.DefaultGatewayClassName,
 		waypointClassName:     wellknown.DefaultWaypointClassName,
-		agentGatewayClassName: wellknown.DefaultAgentgatewayClassName,
+		agentgatewayClassName: wellknown.DefaultAgentgatewayClassName,
 		leaderElectionID:      wellknown.LeaderElectionID,
 	}
 	for _, opt := range opts {
@@ -307,7 +307,7 @@ func (s *setup) Start(ctx context.Context) error {
 
 	BuildKgatewayWithConfig(
 		ctx, mgr, s.gatewayControllerName, s.gatewayClassName, s.waypointClassName,
-		s.agentGatewayClassName, s.additionalGatewayClasses, setupOpts, s.restConfig,
+		s.agentgatewayClassName, s.additionalGatewayClasses, setupOpts, s.restConfig,
 		istioClient, commoncol, agwCollections, uccBuilder, s.extraPlugins, s.extraAgentgatewayPlugins,
 		s.extraGatewayParameters,
 		s.validator,
@@ -331,7 +331,7 @@ func BuildKgatewayWithConfig(
 	gatewayControllerName string,
 	gatewayClassName string,
 	waypointClassName string,
-	agentGatewayClassName string,
+	agentgatewayClassName string,
 	additionalGatewayClasses map[string]*deployer.GatewayClassInfo,
 	setupOpts *controller.SetupOpts,
 	restConfig *rest.Config,
@@ -361,7 +361,7 @@ func BuildKgatewayWithConfig(
 		ControllerName:           gatewayControllerName,
 		GatewayClassName:         gatewayClassName,
 		WaypointGatewayClassName: waypointClassName,
-		AgentgatewayClassName:    agentGatewayClassName,
+		AgentgatewayClassName:    agentgatewayClassName,
 		AdditionalGatewayClasses: additionalGatewayClasses,
 		ExtraPlugins:             extraPlugins,
 		ExtraAgentgatewayPlugins: extraAgentgatewayPlugins,

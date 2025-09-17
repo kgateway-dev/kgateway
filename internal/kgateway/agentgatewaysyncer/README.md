@@ -168,7 +168,7 @@ flowchart TD
 
     subgraph "agentgateway Syncer Initialization"
         A4 --> B1["agentgatewaysyncer.NewAgentGwSyncer()"]
-        B1 --> B2["Set Configuration<br/>• controllerName<br/>• agentGatewayClassName<br/>• domainSuffix<br/>• clusterID"]
+        B1 --> B2["Set Configuration<br/>• controllerName<br/>• agentgatewayClassName<br/>• domainSuffix<br/>• clusterID"]
         B2 --> B3["syncer.Init()<br/>Build KRT Collections"]
     end
 

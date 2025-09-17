@@ -296,7 +296,7 @@ var _ = Describe("Deployer", func() {
 			}
 		}
 
-		agentGatewayParam = func(name string) *gw2_v1alpha1.GatewayParameters {
+		agentgatewayParam = func(name string) *gw2_v1alpha1.GatewayParameters {
 			return &gw2_v1alpha1.GatewayParameters{
 				TypeMeta: metav1.TypeMeta{
 					Kind: wellknown.GatewayParametersGVK.Kind,
@@ -531,7 +531,7 @@ var _ = Describe("Deployer", func() {
 			gwc *api.GatewayClass
 		)
 		BeforeEach(func() {
-			gwp = agentGatewayParam("agent-gateway-params")
+			gwp = agentgatewayParam("agent-gateway-params")
 			gwc = &api.GatewayClass{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "agentgateway",

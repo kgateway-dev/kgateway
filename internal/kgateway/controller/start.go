@@ -91,7 +91,7 @@ type StartConfig struct {
 // context is cancelled
 type ControllerBuilder struct {
 	proxySyncer *proxy_syncer.ProxySyncer
-	agwSyncer   *agentgatewaysyncer.AgentGwSyncer
+	agwSyncer   *agentgatewaysyncer.Syncer
 	cfg         StartConfig
 	mgr         ctrl.Manager
 	commoncol   *common.CommonCollections
@@ -181,11 +181,11 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		return nil, err
 	}
 
-	var agentGatewaySyncer *agentgatewaysyncer.AgentGwSyncer
+	var agentgatewaySyncer *agentgatewaysyncer.Syncer
 	if cfg.SetupOpts.GlobalSettings.EnableAgentgateway {
-		agentgatewayMergedPlugins := agentGatewayPluginFactory(cfg)(ctx, cfg.AgwCollections)
+		agentgatewayMergedPlugins := agentgatewayPluginFactory(cfg)(ctx, cfg.AgwCollections)
 
-		agentGatewaySyncer = agentgatewaysyncer.NewAgentGwSyncer(
+		agentgatewaySyncer = agentgatewaysyncer.NewAgentGwSyncer(
 			cfg.ControllerName,
 			cfg.AgentgatewayClassName,
 			cfg.Client,
@@ -195,26 +195,26 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			cfg.SetupOpts.Cache,
 			cfg.SetupOpts.GlobalSettings.EnableInferExt,
 		)
-		agentGatewaySyncer.Init(cfg.KrtOptions)
+		agentgatewaySyncer.Init(cfg.KrtOptions)
 
-		if err := cfg.Manager.Add(agentGatewaySyncer); err != nil {
-			setupLog.Error(err, "unable to add agentGatewaySyncer runnable")
+		if err := cfg.Manager.Add(agentgatewaySyncer); err != nil {
+			setupLog.Error(err, "unable to add agentgatewaySyncer runnable")
 			return nil, err
 		}
 
-		agentGatewayStatusSyncer := agentgatewaysyncer.NewAgentGwStatusSyncer(
+		agentgatewayStatusSyncer := agentgatewaysyncer.NewAgentGwStatusSyncer(
 			cfg.ControllerName,
 			cfg.AgentgatewayClassName,
 			cfg.Client,
 			cfg.Manager,
-			agentGatewaySyncer.GatewayReportQueue(),
-			agentGatewaySyncer.ListenerSetReportQueue(),
-			agentGatewaySyncer.RouteReportQueue(),
-			agentGatewaySyncer.PolicyStatusQueue(),
-			agentGatewaySyncer.CacheSyncs(),
+			agentgatewaySyncer.GatewayReportQueue(),
+			agentgatewaySyncer.ListenerSetReportQueue(),
+			agentgatewaySyncer.RouteReportQueue(),
+			agentgatewaySyncer.PolicyStatusQueue(),
+			agentgatewaySyncer.CacheSyncs(),
 		)
-		if err := cfg.Manager.Add(agentGatewayStatusSyncer); err != nil {
-			setupLog.Error(err, "unable to add agentGatewayStatusSyncer runnable")
+		if err := cfg.Manager.Add(agentgatewayStatusSyncer); err != nil {
+			setupLog.Error(err, "unable to add agentgatewayStatusSyncer runnable")
 			return nil, err
 		}
 	}
@@ -222,7 +222,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	setupLog.Info("starting controller builder")
 	cb := &ControllerBuilder{
 		proxySyncer: proxySyncer,
-		agwSyncer:   agentGatewaySyncer,
+		agwSyncer:   agentgatewaySyncer,
 		cfg:         cfg,
 		mgr:         cfg.Manager,
 		commoncol:   cfg.CommonCollections,
@@ -259,7 +259,7 @@ func pluginFactoryWithBuiltin(cfg StartConfig) extensions2.K8sGatewayExtensionsF
 	}
 }
 
-func agentGatewayPluginFactory(cfg StartConfig) func(ctx context.Context, agw *agentgatewayplugins.AgwCollections) agentgatewayplugins.AgentgatewayPlugin {
+func agentgatewayPluginFactory(cfg StartConfig) func(ctx context.Context, agw *agentgatewayplugins.AgwCollections) agentgatewayplugins.AgentgatewayPlugin {
 	return func(ctx context.Context, agw *agentgatewayplugins.AgwCollections) agentgatewayplugins.AgentgatewayPlugin {
 		plugins := agentgatewayplugins.Plugins(agw)
 		if cfg.ExtraAgentgatewayPlugins != nil {
@@ -359,7 +359,7 @@ func (c *ControllerBuilder) HasSynced() bool {
 // GetDefaultClassInfo returns the default GatewayClass for the kgateway controller.
 // Exported for testing.
 func GetDefaultClassInfo(globalSettings *settings.Settings,
-	gatewayClassName, waypointGatewayClassName, agentGatewayClassName string,
+	gatewayClassName, waypointGatewayClassName, agentgatewayClassName string,
 	additionalClassInfos map[string]*deployer.GatewayClassInfo) map[string]*deployer.GatewayClassInfo {
 	classInfos := map[string]*deployer.GatewayClassInfo{
 		gatewayClassName: {
@@ -377,7 +377,7 @@ func GetDefaultClassInfo(globalSettings *settings.Settings,
 	}
 	// Only enable agentgateway gateway class if it's enabled in the settings
 	if globalSettings.EnableAgentgateway {
-		classInfos[agentGatewayClassName] = &deployer.GatewayClassInfo{
+		classInfos[agentgatewayClassName] = &deployer.GatewayClassInfo{
 			Description: "Specialized class for agentgateway.",
 			Labels:      map[string]string{},
 			Annotations: map[string]string{},

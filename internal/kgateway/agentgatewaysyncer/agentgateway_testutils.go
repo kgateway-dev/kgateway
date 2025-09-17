@@ -322,9 +322,9 @@ func TestTranslationWithExtraPlugins(
 	var policies []*api.Policy
 	var addresses []*api.Address
 
-	// Extract agentgateway API types from ADPResources
-	for _, adpRes := range result.Resources {
-		for _, item := range adpRes.ResourceConfig.Items {
+	// Extract agentgateway API types from AgwResources
+	for _, agwRes := range result.Resources {
+		for _, item := range agwRes.ResourceConfig.Items {
 			resourceWrapper := item.Resource.(*envoyResourceWithCustomName)
 			res := resourceWrapper.Message.(*api.Resource)
 			switch r := res.Kind.(type) {
@@ -342,7 +342,7 @@ func TestTranslationWithExtraPlugins(
 				policies = append(policies, r.Policy)
 			}
 		}
-		for _, item := range adpRes.AddressConfig.Items {
+		for _, item := range agwRes.AddressConfig.Items {
 			resourceWrapper := item.Resource.(*envoyResourceWithCustomName)
 			res := resourceWrapper.Message.(*api.Address)
 			addresses = append(addresses, res)
@@ -667,7 +667,7 @@ func (tc TestCase) Run(
 	if err != nil {
 		return nil, err
 	}
-	agwMergedPlugins := agentGatewayPluginFactory(ctx, agwCollections)
+	agwMergedPlugins := agentgatewayPluginFactory(ctx, agwCollections)
 	kubeclient.WaitForCacheSync("tlsroutes", ctx.Done(), agwCollections.TLSRoutes.HasSynced)
 	kubeclient.WaitForCacheSync("tcproutes", ctx.Done(), agwCollections.TCPRoutes.HasSynced)
 	kubeclient.WaitForCacheSync("httproutes", ctx.Done(), agwCollections.HTTPRoutes.HasSynced)
@@ -695,17 +695,17 @@ func (tc TestCase) Run(
 	refGrants := BuildReferenceGrants(ReferenceGrantsCollection(agwCollections.ReferenceGrants, krtOpts))
 	gateways := agentGwSyncer.buildGatewayCollection(gatewayClasses, refGrants, krtOpts)
 
-	// Build ADP resources and addresses collections
-	adpResourcesCollection, _ := agentGwSyncer.buildADPResources(gateways, refGrants, krtOpts)
-	_, adpBackendsCollection := agentGwSyncer.newADPBackendCollection(agwCollections.Backends, krtOpts)
+	// Build Agw resources and addresses collections
+	agwResourcesCollection, _ := agentGwSyncer.buildAgwResources(gateways, refGrants, krtOpts)
+	_, agwBackendsCollection := agentGwSyncer.newAgwBackendCollection(agwCollections.Backends, krtOpts)
 	addressesCollection := agentGwSyncer.buildAddressCollections(krtOpts)
 
 	// Wait for collections to sync
-	kubeclient.WaitForCacheSync("adp-resources", ctx.Done(), adpResourcesCollection.HasSynced)
+	kubeclient.WaitForCacheSync("agw-resources", ctx.Done(), agwResourcesCollection.HasSynced)
 	kubeclient.WaitForCacheSync("addresses", ctx.Done(), addressesCollection.HasSynced)
 
 	// build final proxy xds result
-	agentGwSyncer.buildXDSCollection(adpResourcesCollection, adpBackendsCollection, addressesCollection, krtOpts)
+	agentGwSyncer.buildXDSCollection(agwResourcesCollection, agwBackendsCollection, addressesCollection, krtOpts)
 	kubeclient.WaitForCacheSync("xds", ctx.Done(), agentGwSyncer.xDS.HasSynced)
 
 	time.Sleep(500 * time.Millisecond) // Allow collections to populate
@@ -780,9 +780,9 @@ func proxySyncerPluginFactory(ctx context.Context, commoncol *collections.Common
 	return mergedPlugins
 }
 
-// agentGatewayPluginFactory is a factory function that returns the agent gateway plugins
-// It is based on agentGatewayPluginFactory(cfg)(ctx, cfg.AgwCollections) in start.go
-func agentGatewayPluginFactory(ctx context.Context, agwCollections *agentgatewayplugins.AgwCollections) agentgatewayplugins.AgentgatewayPlugin {
+// agentgatewayPluginFactory is a factory function that returns the agent gateway plugins
+// It is based on agentgatewayPluginFactory(cfg)(ctx, cfg.AgwCollections) in start.go
+func agentgatewayPluginFactory(ctx context.Context, agwCollections *agentgatewayplugins.AgwCollections) agentgatewayplugins.AgentgatewayPlugin {
 	agwPlugins := agentgatewayplugins.Plugins(agwCollections)
 	mergedPlugins := agentgatewayplugins.MergePlugins(agwPlugins...)
 	for i, plug := range agwPlugins {

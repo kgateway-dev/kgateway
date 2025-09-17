@@ -161,7 +161,7 @@ func testAgentgatewayScenario(
 			switch resource.GetKind().(type) {
 			case *api.Resource_Bind:
 				bindCount++
-				t.Logf("ADPBind resource: %+v", resource.GetBind())
+				t.Logf("AgwBind resource: %+v", resource.GetBind())
 			case *api.Resource_Listener:
 				listenerCount++
 				t.Logf("Listener resource: %+v", resource.GetListener())
