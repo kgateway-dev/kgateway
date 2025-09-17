@@ -43,13 +43,12 @@ Statuses:
         status: Unknown
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: 'No Listeners generated. Listeners could not be generated for data
-          plane: tls-no-routes'
+        message: 'Listeners not accepted: tls-no-routes'
         reason: ListenersNotValid
         status: "True"
         type: Accepted
       - lastTransitionTime: null
-        message: 'Listeners could not be generated for data plane: tls-no-routes'
+        message: 'Listeners not programmed: tls-no-routes'
         reason: Programmed
         status: "True"
         type: Programmed
@@ -57,7 +56,7 @@ Statuses:
       - attachedRoutes: 0
         conditions:
         - lastTransitionTime: null
-          message: Listener could not be generated for data plane
+          message: TCP/TLS listener has no valid backends or routes
           reason: Invalid
           status: "False"
           type: Programmed

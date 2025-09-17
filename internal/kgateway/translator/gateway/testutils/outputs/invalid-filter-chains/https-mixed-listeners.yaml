@@ -80,13 +80,12 @@ Statuses:
         status: Unknown
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: 'No Listeners generated. Listeners could not be generated for data
-          plane: https-invalid-secret'
+        message: 'Listeners not accepted: https-invalid-secret'
         reason: ListenersNotValid
         status: "True"
         type: Accepted
       - lastTransitionTime: null
-        message: 'Listeners could not be generated for data plane: https-invalid-secret'
+        message: 'Listeners not programmed: https-invalid-secret'
         reason: Programmed
         status: "True"
         type: Programmed

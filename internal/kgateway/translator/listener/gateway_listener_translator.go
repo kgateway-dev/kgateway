@@ -29,6 +29,10 @@ import (
 
 var logger = logging.New("translator/listener")
 
+const (
+	TcpTlsListenerNoBackendsMessage = "TCP/TLS listener has no valid backends or routes"
+)
+
 type ListenerTranslatorConfig struct {
 	ListenerBindIpv6 bool
 }
@@ -337,6 +341,16 @@ func (ml *MergedListener) TranslateListener(
 	for _, tfc := range ml.TcpFilterChains {
 		if tcpListener := tfc.translateTcpFilterChain(ml.name, reporter); tcpListener != nil {
 			matchedTcpListeners = append(matchedTcpListeners, *tcpListener)
+		} else {
+			// TCP/TLS filter chain was omitted due to no routes/backends
+			// Report the status here where we know the specific reason
+			listenerCondition := reports.ListenerCondition{
+				Type:    gwv1.ListenerConditionProgrammed,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.ListenerReasonInvalid,
+				Message: TcpTlsListenerNoBackendsMessage,
+			}
+			ml.listenerReporter.SetCondition(listenerCondition)
 		}
 	}
 

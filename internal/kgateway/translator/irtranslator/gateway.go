@@ -6,14 +6,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
-
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"golang.org/x/net/context"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/slices"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
@@ -25,16 +24,16 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
-
-	"k8s.io/apimachinery/pkg/api/meta"
 )
 
 const (
-	ListenerOmittedMessage            = "Listener could not be generated for data plane"
-	GatewayListenersOmittedMessage    = "Listeners could not be generated for data plane: %s"
-	GatewayListenersAllOmittedMessage = "No Listeners generated. " + GatewayListenersOmittedMessage
+	ListenerOmittedMessage                      = "Listener could not be generated for data plane"
+	GatewayAcceptedListenersOmittedMessage      = "Listeners not accepted: %s"
+	GatewayProgrammedListenersOmittedMessage    = "Listeners not programmed: %s"
+	GatewayProgrammedAllListenersOmittedMessage = "No Listeners programmed. " + GatewayProgrammedListenersOmittedMessage
 )
 
 var logger = logging.New("translator/ir")
@@ -101,41 +100,27 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 			Type:    gwv1.GatewayConditionAccepted,
 			Status:  metav1.ConditionTrue,
 			Reason:  gwv1.GatewayReasonListenersNotValid,
-			Message: fmt.Sprintf(GatewayListenersAllOmittedMessage, strings.Join(omittedListeners, ", ")),
+			Message: fmt.Sprintf(GatewayAcceptedListenersOmittedMessage, strings.Join(omittedListeners, ", ")),
 		}
+		gwreporter.SetCondition(acceptedCondition)
 
-		var programmedCondition sdkreporter.GatewayCondition
-
-		// If all listeners were omitted, set the programmed conditions to false
+		// Only set the programmed condition to false if ALL listeners were omitted
 		if len(omittedListeners) == len(gw.Listeners) {
-			programmedCondition = sdkreporter.GatewayCondition{
+			programmedCondition := sdkreporter.GatewayCondition{
 				Type:    gwv1.GatewayConditionProgrammed,
 				Status:  metav1.ConditionFalse,
-				Reason:  gwv1.GatewayReasonInvalid,
-				Message: fmt.Sprintf(GatewayListenersAllOmittedMessage, strings.Join(omittedListeners, ", ")),
+				Reason:  gwv1.GatewayReasonListenersNotValid,
+				Message: fmt.Sprintf(GatewayProgrammedListenersOmittedMessage, strings.Join(omittedListeners, ", ")),
 			}
+			gwreporter.SetCondition(programmedCondition)
 		} else {
-			// If not all listeners were omitted, set the programmed condition to true
-			programmedCondition = sdkreporter.GatewayCondition{
+			programmedCondition := sdkreporter.GatewayCondition{
 				Type:    gwv1.GatewayConditionProgrammed,
 				Status:  metav1.ConditionTrue,
 				Reason:  gwv1.GatewayReasonProgrammed,
-				Message: fmt.Sprintf(GatewayListenersOmittedMessage, strings.Join(omittedListeners, ", ")),
+				Message: fmt.Sprintf(GatewayProgrammedListenersOmittedMessage, strings.Join(omittedListeners, ", ")),
 			}
-		}
-
-		// Check if there's already a condition of the same type before setting it. This avoids overwriting a more specific status if it already exists.
-		if gr, ok := gwreporter.(*reports.GatewayReport); ok {
-			existingAcceptedCondition := meta.FindStatusCondition(gr.GetConditions(), string(gwv1.GatewayConditionAccepted))
-			if existingAcceptedCondition == nil {
-				gwreporter.SetCondition(acceptedCondition)
-			}
-			existingProgrammedCondition := meta.FindStatusCondition(gr.GetConditions(), string(gwv1.GatewayConditionProgrammed))
-			if existingProgrammedCondition == nil {
-				gwreporter.SetCondition(programmedCondition)
-			}
-		} else {
-			logger.Error("gateway reporter type not supported", "reporter", fmt.Sprintf("%T", gwreporter))
+			gwreporter.SetCondition(programmedCondition)
 		}
 	}
 
@@ -189,6 +174,7 @@ func (t *Translator) ComputeListener(
 	var routes []*envoyroutev3.RouteConfiguration
 	hasTls := false
 	domains := map[string]struct{}{}
+
 	for _, hfc := range lis.HttpFilterChain {
 		fct := filterChainTranslator{
 			listener:        lis,

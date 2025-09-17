@@ -19,6 +19,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	irtranslator "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
@@ -1522,8 +1523,11 @@ func TestBasic(t *testing.T) {
 		a.NotNil(programmedCondition)
 		a.Equal(expected.programmedStatus, programmedCondition.Status)
 		if expected.programmedStatus == metav1.ConditionFalse {
-			a.Equal(string(gwv1.GatewayReasonInvalid), programmedCondition.Reason)
-			a.Equal(expected.message, programmedCondition.Message)
+			a.Equal(string(gwv1.GatewayReasonListenersNotValid), programmedCondition.Reason)
+			// Extract listener name from the expected message and format for programmed message
+			listenerName := strings.Split(expected.message, ": ")[1]
+			expectedProgrammedMessage := fmt.Sprintf(irtranslator.GatewayProgrammedListenersOmittedMessage, listenerName)
+			a.Equal(expectedProgrammedMessage, programmedCondition.Message)
 		} else {
 			a.Equal(string(gwv1.GatewayReasonProgrammed), programmedCondition.Reason)
 		}
@@ -1555,7 +1559,7 @@ func TestBasic(t *testing.T) {
 					conditionType: gwv1.ListenerConditionProgrammed,
 					status:        metav1.ConditionFalse,
 					reason:        string(gwv1.ListenerReasonInvalid),
-					message:       irtranslator.ListenerOmittedMessage,
+					message:       listener.TcpTlsListenerNoBackendsMessage,
 				},
 			},
 		}
@@ -1567,7 +1571,7 @@ func TestBasic(t *testing.T) {
 			acceptedStatus:   metav1.ConditionTrue,
 			programmedStatus: metav1.ConditionFalse,
 			reason:           string(gwv1.GatewayReasonListenersNotValid),
-			message:          fmt.Sprintf(irtranslator.GatewayListenersAllOmittedMessage, listenerName),
+			message:          fmt.Sprintf(irtranslator.GatewayAcceptedListenersOmittedMessage, listenerName),
 		}
 	}
 
