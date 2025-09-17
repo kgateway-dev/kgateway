@@ -18,6 +18,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
@@ -165,7 +166,7 @@ func TestBasic(t *testing.T) {
 				a.NotNil(programmed)
 				a.Equal(metav1.ConditionFalse, programmed.Status)
 				a.Equal(string(gwv1.ListenerReasonInvalid), programmed.Reason)
-				a.Equal("Secret default/missing-cert not found.", programmed.Message)
+				a.Equal(fmt.Sprintf(listener.SecretNotFoundMessageTemplate, "default", "missing-cert"), programmed.Message)
 
 				https2Listener := gatewayStatus.Listeners[1]
 				resolvedRefs = meta.FindStatusCondition(https2Listener.Conditions, string(gwv1.ListenerConditionResolvedRefs))
@@ -1452,14 +1453,6 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	// Test helper types and functions for invalid filter chain configuration tests
-
-	const (
-		// Template for secret not found messages that matches the pattern in
-		// internal/kgateway/translator/listener/gateway_listener_translator.go:697
-		secretNotFoundMessageTemplate = "Secret %s/%s not found."
-	)
-
 	t.Run("TLS listener with no routes", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "invalid-filter-chains/tls-listener-no-routes.yaml",
@@ -1489,6 +1482,20 @@ func TestBasic(t *testing.T) {
 	})
 
 	t.Run("HTTPS listener with invalid secret ref", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/https-listener-invalid-secret-ref.yaml",
+			outputFile: "invalid-filter-chains/https-listener-invalid-secret-ref.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				// No-op: Expected statuses are validated via the output file comparison
+			},
+		})
+	})
+
+	t.Run("HTTPS listener with invalid secret (missing private key)", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "invalid-filter-chains/https-listener-invalid-secret.yaml",
 			outputFile: "invalid-filter-chains/https-listener-invalid-secret.yaml",

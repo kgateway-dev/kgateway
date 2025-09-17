@@ -31,6 +31,7 @@ var logger = logging.New("translator/listener")
 
 const (
 	TcpTlsListenerNoBackendsMessage = "TCP/TLS listener has no valid backends or routes"
+	SecretNotFoundMessageTemplate   = "Secret %s/%s not found."
 )
 
 type ListenerTranslatorConfig struct {
@@ -708,7 +709,7 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 		}
 		var notFoundErr *krtcollections.NotFoundError
 		if errors.As(err, &notFoundErr) {
-			message = fmt.Sprintf("Secret %s/%s not found.", notFoundErr.NotFoundObj.Namespace, notFoundErr.NotFoundObj.Name)
+			message = fmt.Sprintf(SecretNotFoundMessageTemplate, notFoundErr.NotFoundObj.Namespace, notFoundErr.NotFoundObj.Name)
 		}
 		listenerReporter.SetCondition(reports.ListenerCondition{
 			Type:    gwv1.ListenerConditionResolvedRefs,
