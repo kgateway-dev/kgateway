@@ -173,7 +173,7 @@ func (g GatewayListener) Equals(other GatewayListener) bool {
 }
 
 func GatewayCollection(
-	agentgatewayClassName string,
+	agwClassName string,
 	gateways krt.Collection[*gwv1.Gateway],
 	gatewayClasses krt.Collection[GatewayClass],
 	namespaces krt.Collection[*corev1.Namespace],
@@ -187,7 +187,7 @@ func GatewayCollection(
 		gwReporter := statusReporter.Gateway(obj)
 		logger.Debug("translating Gateway", "gw_name", obj.GetName(), "resource_version", obj.GetResourceVersion())
 
-		if string(obj.Spec.GatewayClassName) != agentgatewayClassName {
+		if string(obj.Spec.GatewayClassName) != agwClassName {
 			return nil // ignore non agentgateway gws
 		}
 

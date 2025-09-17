@@ -57,7 +57,7 @@ func convertStatusCollection(col krt.Collection[krt.ObjectWithStatus[*v1alpha1.T
 }
 
 // NewTrafficPlugin creates a new TrafficPolicy plugin
-func NewTrafficPlugin(agw *AgwCollections) AgentgatewayPlugin {
+func NewTrafficPlugin(agw *AgwCollections) AgwPlugin {
 	col := krt.WrapClient(kclient.NewFiltered[*v1alpha1.TrafficPolicy](
 		agw.Client,
 		kclient.Filter{ObjectFilter: agw.Client.ObjectFilter()},
@@ -69,7 +69,7 @@ func NewTrafficPlugin(agw *AgwCollections) AgentgatewayPlugin {
 		return TranslateTrafficPolicy(krtctx, agw.GatewayExtensions, agw.Backends, agw.Secrets, policyCR, agw.ControllerName)
 	})
 
-	return AgentgatewayPlugin{
+	return AgwPlugin{
 		ContributesPolicies: map[schema.GroupKind]PolicyPlugin{
 			wellknown.TrafficPolicyGVK.GroupKind(): {
 				Policies:       policyCol,

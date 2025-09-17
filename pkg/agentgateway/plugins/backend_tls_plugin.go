@@ -24,12 +24,12 @@ import (
 )
 
 // NewBackendTLSPlugin creates a new BackendTLSPolicy plugin
-func NewBackendTLSPlugin(agw *AgwCollections) AgentgatewayPlugin {
+func NewBackendTLSPlugin(agw *AgwCollections) AgwPlugin {
 	clusterDomain := kubeutils.GetClusterDomainName()
 	policyCol := krt.NewManyCollection(agw.BackendTLSPolicies, func(krtctx krt.HandlerContext, btls *gwv1alpha3.BackendTLSPolicy) []AgwPolicy {
 		return translatePoliciesForBackendTLS(krtctx, agw.ConfigMaps, btls, clusterDomain)
 	})
-	return AgentgatewayPlugin{
+	return AgwPlugin{
 		ContributesPolicies: map[schema.GroupKind]PolicyPlugin{
 			wellknown.BackendTLSPolicyGVK.GroupKind(): {
 				Policies: policyCol,

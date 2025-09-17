@@ -15,12 +15,12 @@ import (
 )
 
 // NewInferencePlugin creates a new InferencePool policy plugin
-func NewInferencePlugin(agw *AgwCollections) AgentgatewayPlugin {
+func NewInferencePlugin(agw *AgwCollections) AgwPlugin {
 	domainSuffix := kubeutils.GetClusterDomainName()
 	policyCol := krt.NewManyCollection(agw.InferencePools, func(krtctx krt.HandlerContext, infPool *inf.InferencePool) []AgwPolicy {
 		return translatePoliciesForInferencePool(infPool, domainSuffix)
 	})
-	return AgentgatewayPlugin{
+	return AgwPlugin{
 		ContributesPolicies: map[schema.GroupKind]PolicyPlugin{
 			wellknown.InferencePoolGVK.GroupKind(): {
 				Policies: policyCol,

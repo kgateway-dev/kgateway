@@ -353,7 +353,7 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 	statsConfig := kubeProxyConfig.GetStats()
 	istioContainerConfig := istioConfig.GetIstioProxyContainer()
 	aiExtensionConfig := kubeProxyConfig.GetAiExtension()
-	agentgatewayConfig := kubeProxyConfig.GetAgentgateway()
+	agwConfig := kubeProxyConfig.GetAgentgateway()
 
 	gateway := vals.Gateway
 	// deployment values
@@ -394,13 +394,13 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 	}
 	gateway.ComponentLogLevel = &compLogLevelStr
 
-	agentgatewayEnabled := agentgatewayConfig.GetEnabled()
+	agentgatewayEnabled := agwConfig.GetEnabled()
 	if agentgatewayEnabled != nil && *agentgatewayEnabled {
-		gateway.Resources = agentgatewayConfig.GetResources()
-		gateway.SecurityContext = agentgatewayConfig.GetSecurityContext()
-		gateway.Image = deployer.GetImageValues(agentgatewayConfig.GetImage())
-		gateway.Env = agentgatewayConfig.GetEnv()
-		gateway.ExtraVolumeMounts = agentgatewayConfig.ExtraVolumeMounts
+		gateway.Resources = agwConfig.GetResources()
+		gateway.SecurityContext = agwConfig.GetSecurityContext()
+		gateway.Image = deployer.GetImageValues(agwConfig.GetImage())
+		gateway.Env = agwConfig.GetEnv()
+		gateway.ExtraVolumeMounts = agwConfig.ExtraVolumeMounts
 	} else {
 		gateway.Resources = envoyContainerConfig.GetResources()
 		gateway.SecurityContext = envoyContainerConfig.GetSecurityContext()
@@ -422,7 +422,7 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 
 	// TODO(npolshak): Currently we are using the same chart for both data planes. Should revisit having a separate chart for agentgateway: https://github.com/kgateway-dev/kgateway/issues/11240
 	// agentgateway integration values
-	gateway.Agentgateway, err = deployer.GetAgentgatewayValues(agentgatewayConfig)
+	gateway.Agentgateway, err = deployer.GetAgentgatewayValues(agwConfig)
 	if err != nil {
 		return nil, err
 	}

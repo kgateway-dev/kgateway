@@ -6,31 +6,31 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
-// AgentgatewayTranslationPass defines the interface for agent gateway translation passes
-type AgentgatewayTranslationPass interface {
+// AgwTranslationPass defines the interface for agent gateway translation passes
+type AgwTranslationPass interface {
 	// ApplyForRoute processes route-level configuration
-	ApplyForRoute(pCtx *AgentgatewayRouteContext, out *api.Route) error
+	ApplyForRoute(pCtx *AgwRouteContext, out *api.Route) error
 
 	// ApplyForBackend processes backend-level configuration for each backend referenced in routes
-	ApplyForBackend(pCtx *AgentgatewayTranslationBackendContext, out *api.Backend) error
+	ApplyForBackend(pCtx *AgwTranslationBackendContext, out *api.Backend) error
 
 	// ApplyForRouteBackend processes route-specific backend configuration
-	ApplyForRouteBackend(policy ir.PolicyIR, pCtx *AgentgatewayTranslationBackendContext) error
+	ApplyForRouteBackend(policy ir.PolicyIR, pCtx *AgwTranslationBackendContext) error
 }
 
-// UnimplementedAgentgatewayTranslationPass provides default implementations for AgentgatewayTranslationPass
-type UnimplementedAgentgatewayTranslationPass struct{}
+// UnimplementedAgwTranslationPass provides default implementations for AgwTranslationPass
+type UnimplementedAgwTranslationPass struct{}
 
-var _ AgentgatewayTranslationPass = UnimplementedAgentgatewayTranslationPass{}
+var _ AgwTranslationPass = UnimplementedAgwTranslationPass{}
 
-func (s UnimplementedAgentgatewayTranslationPass) ApplyForRoute(pCtx *AgentgatewayRouteContext, out *api.Route) error {
+func (s UnimplementedAgwTranslationPass) ApplyForRoute(pCtx *AgwRouteContext, out *api.Route) error {
 	return nil
 }
 
-func (s UnimplementedAgentgatewayTranslationPass) ApplyForBackend(pCtx *AgentgatewayTranslationBackendContext, out *api.Backend) error {
+func (s UnimplementedAgwTranslationPass) ApplyForBackend(pCtx *AgwTranslationBackendContext, out *api.Backend) error {
 	return nil
 }
 
-func (s UnimplementedAgentgatewayTranslationPass) ApplyForRouteBackend(policy ir.PolicyIR, pCtx *AgentgatewayTranslationBackendContext) error {
+func (s UnimplementedAgwTranslationPass) ApplyForRouteBackend(policy ir.PolicyIR, pCtx *AgwTranslationBackendContext) error {
 	return nil
 }

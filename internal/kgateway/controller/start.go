@@ -27,7 +27,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
 	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
-	agentgatewayplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
+	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	common "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -72,13 +72,13 @@ type StartConfig struct {
 	RestConfig *rest.Config
 	// ExtensionsFactory is the factory function which will return an extensions.K8sGatewayExtensions
 	// This is responsible for producing the extension points that this controller requires
-	ExtraPlugins             func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []sdk.Plugin
-	ExtraAgentgatewayPlugins func(ctx context.Context, agw *agentgatewayplugins.AgwCollections) []agentgatewayplugins.AgentgatewayPlugin
-	ExtraGatewayParameters   func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
-	Client                   istiokube.Client
-	Validator                validator.Validator
+	ExtraPlugins           func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []sdk.Plugin
+	ExtraAgwPlugins        func(ctx context.Context, agw *agwplugins.AgwCollections) []agwplugins.AgwPlugin
+	ExtraGatewayParameters func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
+	Client                 istiokube.Client
+	Validator              validator.Validator
 
-	AgwCollections    *agentgatewayplugins.AgwCollections
+	AgwCollections    *agwplugins.AgwCollections
 	CommonCollections *common.CommonCollections
 	AugmentedPods     krt.Collection[krtcollections.LocalityPod]
 	UniqueClients     krt.Collection[ir.UniqlyConnectedClient]
@@ -181,11 +181,11 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		return nil, err
 	}
 
-	var agentgatewaySyncer *agentgatewaysyncer.Syncer
+	var agwSyncer *agentgatewaysyncer.Syncer
 	if cfg.SetupOpts.GlobalSettings.EnableAgentgateway {
-		agentgatewayMergedPlugins := agentgatewayPluginFactory(cfg)(ctx, cfg.AgwCollections)
+		agentgatewayMergedPlugins := agwPluginFactory(cfg)(ctx, cfg.AgwCollections)
 
-		agentgatewaySyncer = agentgatewaysyncer.NewAgentGwSyncer(
+		agwSyncer = agentgatewaysyncer.NewAgwSyncer(
 			cfg.ControllerName,
 			cfg.AgentgatewayClassName,
 			cfg.Client,
@@ -195,26 +195,26 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			cfg.SetupOpts.Cache,
 			cfg.SetupOpts.GlobalSettings.EnableInferExt,
 		)
-		agentgatewaySyncer.Init(cfg.KrtOptions)
+		agwSyncer.Init(cfg.KrtOptions)
 
-		if err := cfg.Manager.Add(agentgatewaySyncer); err != nil {
-			setupLog.Error(err, "unable to add agentgatewaySyncer runnable")
+		if err := cfg.Manager.Add(agwSyncer); err != nil {
+			setupLog.Error(err, "unable to add agentgateway Syncer runnable")
 			return nil, err
 		}
 
-		agentgatewayStatusSyncer := agentgatewaysyncer.NewAgentGwStatusSyncer(
+		agwStatusSyncer := agentgatewaysyncer.NewAgwStatusSyncer(
 			cfg.ControllerName,
 			cfg.AgentgatewayClassName,
 			cfg.Client,
 			cfg.Manager,
-			agentgatewaySyncer.GatewayReportQueue(),
-			agentgatewaySyncer.ListenerSetReportQueue(),
-			agentgatewaySyncer.RouteReportQueue(),
-			agentgatewaySyncer.PolicyStatusQueue(),
-			agentgatewaySyncer.CacheSyncs(),
+			agwSyncer.GatewayReportQueue(),
+			agwSyncer.ListenerSetReportQueue(),
+			agwSyncer.RouteReportQueue(),
+			agwSyncer.PolicyStatusQueue(),
+			agwSyncer.CacheSyncs(),
 		)
-		if err := cfg.Manager.Add(agentgatewayStatusSyncer); err != nil {
-			setupLog.Error(err, "unable to add agentgatewayStatusSyncer runnable")
+		if err := cfg.Manager.Add(agwStatusSyncer); err != nil {
+			setupLog.Error(err, "unable to add agentgateway StatusSyncer runnable")
 			return nil, err
 		}
 	}
@@ -222,7 +222,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	setupLog.Info("starting controller builder")
 	cb := &ControllerBuilder{
 		proxySyncer: proxySyncer,
-		agwSyncer:   agentgatewaySyncer,
+		agwSyncer:   agwSyncer,
 		cfg:         cfg,
 		mgr:         cfg.Manager,
 		commoncol:   cfg.CommonCollections,
@@ -259,13 +259,13 @@ func pluginFactoryWithBuiltin(cfg StartConfig) extensions2.K8sGatewayExtensionsF
 	}
 }
 
-func agentgatewayPluginFactory(cfg StartConfig) func(ctx context.Context, agw *agentgatewayplugins.AgwCollections) agentgatewayplugins.AgentgatewayPlugin {
-	return func(ctx context.Context, agw *agentgatewayplugins.AgwCollections) agentgatewayplugins.AgentgatewayPlugin {
-		plugins := agentgatewayplugins.Plugins(agw)
-		if cfg.ExtraAgentgatewayPlugins != nil {
-			plugins = append(plugins, cfg.ExtraAgentgatewayPlugins(ctx, agw)...)
+func agwPluginFactory(cfg StartConfig) func(ctx context.Context, agw *agwplugins.AgwCollections) agwplugins.AgwPlugin {
+	return func(ctx context.Context, agw *agwplugins.AgwCollections) agwplugins.AgwPlugin {
+		plugins := agwplugins.Plugins(agw)
+		if cfg.ExtraAgwPlugins != nil {
+			plugins = append(plugins, cfg.ExtraAgwPlugins(ctx, agw)...)
 		}
-		return agentgatewayplugins.MergePlugins(plugins...)
+		return agwplugins.MergePlugins(plugins...)
 	}
 }
 
@@ -359,7 +359,7 @@ func (c *ControllerBuilder) HasSynced() bool {
 // GetDefaultClassInfo returns the default GatewayClass for the kgateway controller.
 // Exported for testing.
 func GetDefaultClassInfo(globalSettings *settings.Settings,
-	gatewayClassName, waypointGatewayClassName, agentgatewayClassName string,
+	gatewayClassName, waypointGatewayClassName, agwClassName string,
 	additionalClassInfos map[string]*deployer.GatewayClassInfo) map[string]*deployer.GatewayClassInfo {
 	classInfos := map[string]*deployer.GatewayClassInfo{
 		gatewayClassName: {
@@ -377,7 +377,7 @@ func GetDefaultClassInfo(globalSettings *settings.Settings,
 	}
 	// Only enable agentgateway gateway class if it's enabled in the settings
 	if globalSettings.EnableAgentgateway {
-		classInfos[agentgatewayClassName] = &deployer.GatewayClassInfo{
+		classInfos[agwClassName] = &deployer.GatewayClassInfo{
 			Description: "Specialized class for agentgateway.",
 			Labels:      map[string]string{},
 			Annotations: map[string]string{},

@@ -16,11 +16,11 @@ const (
 )
 
 // NewA2APlugin creates a new A2A policy plugin
-func NewA2APlugin(agw *AgwCollections) AgentgatewayPlugin {
+func NewA2APlugin(agw *AgwCollections) AgwPlugin {
 	policyCol := krt.NewManyCollection(agw.Services, func(krtctx krt.HandlerContext, svc *corev1.Service) []AgwPolicy {
 		return translatePoliciesForService(svc)
 	})
-	return AgentgatewayPlugin{
+	return AgwPlugin{
 		ContributesPolicies: map[schema.GroupKind]PolicyPlugin{
 			wellknown.ServiceGVK.GroupKind(): {
 				Policies: policyCol,

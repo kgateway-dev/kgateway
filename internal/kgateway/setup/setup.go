@@ -25,7 +25,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	agentgatewayplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
+	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
@@ -78,7 +78,7 @@ func WithExtraPlugins(extraPlugins func(ctx context.Context, commoncol *common.C
 	}
 }
 
-func WithExtraAgentgatewayPlugins(extraAgentgatewayPlugins func(ctx context.Context, agw *agentgatewayplugins.AgwCollections) []agentgatewayplugins.AgentgatewayPlugin) func(*setup) {
+func WithExtraAgentgatewayPlugins(extraAgentgatewayPlugins func(ctx context.Context, agw *agwplugins.AgwCollections) []agwplugins.AgwPlugin) func(*setup) {
 	return func(s *setup) {
 		s.extraAgentgatewayPlugins = extraAgentgatewayPlugins
 	}
@@ -153,7 +153,7 @@ type setup struct {
 	agentgatewayClassName    string
 	additionalGatewayClasses map[string]*deployer.GatewayClassInfo
 	extraPlugins             func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []sdk.Plugin
-	extraAgentgatewayPlugins func(ctx context.Context, agw *agentgatewayplugins.AgwCollections) []agentgatewayplugins.AgentgatewayPlugin
+	extraAgentgatewayPlugins func(ctx context.Context, agw *agwplugins.AgwCollections) []agwplugins.AgwPlugin
 	extraGatewayParameters   func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
 	extraXDSCallbacks        xdsserver.Callbacks
 	xdsListener              net.Listener
@@ -174,7 +174,7 @@ func New(opts ...func(*setup)) (*setup, error) {
 		gatewayControllerName: wellknown.DefaultGatewayControllerName,
 		gatewayClassName:      wellknown.DefaultGatewayClassName,
 		waypointClassName:     wellknown.DefaultWaypointClassName,
-		agentgatewayClassName: wellknown.DefaultAgentgatewayClassName,
+		agentgatewayClassName: wellknown.DefaultAgwClassName,
 		leaderElectionID:      wellknown.LeaderElectionID,
 	}
 	for _, opt := range opts {
@@ -287,7 +287,7 @@ func (s *setup) Start(ctx context.Context) error {
 		return err
 	}
 
-	agwCollections, err := agentgatewayplugins.NewAgwCollections(
+	agwCollections, err := agwplugins.NewAgwCollections(
 		commoncol,
 		// control plane system namespace (default is kgateway-system)
 		namespaces.GetPodNamespace(),
@@ -337,10 +337,10 @@ func BuildKgatewayWithConfig(
 	restConfig *rest.Config,
 	kubeClient istiokube.Client,
 	commonCollections *collections.CommonCollections,
-	agwCollections *agentgatewayplugins.AgwCollections,
+	agwCollections *agwplugins.AgwCollections,
 	uccBuilder krtcollections.UniquelyConnectedClientsBulider,
 	extraPlugins func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []sdk.Plugin,
-	extraAgentgatewayPlugins func(ctx context.Context, agw *agentgatewayplugins.AgwCollections) []agentgatewayplugins.AgentgatewayPlugin,
+	extraAgentgatewayPlugins func(ctx context.Context, agw *agwplugins.AgwCollections) []agwplugins.AgwPlugin,
 	extraGatewayParameters func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters,
 	validator validator.Validator,
 ) error {
@@ -364,7 +364,7 @@ func BuildKgatewayWithConfig(
 		AgentgatewayClassName:    agentgatewayClassName,
 		AdditionalGatewayClasses: additionalGatewayClasses,
 		ExtraPlugins:             extraPlugins,
-		ExtraAgentgatewayPlugins: extraAgentgatewayPlugins,
+		ExtraAgwPlugins:          extraAgentgatewayPlugins,
 		ExtraGatewayParameters:   extraGatewayParameters,
 		RestConfig:               restConfig,
 		SetupOpts:                setupOpts,

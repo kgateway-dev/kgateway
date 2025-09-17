@@ -37,7 +37,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
 	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	agentgatewayplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
+	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -611,7 +611,7 @@ func (tc TestCase) Run(
 	gwClasses := []string{
 		wellknown.DefaultGatewayClassName,
 		wellknown.DefaultWaypointClassName,
-		wellknown.DefaultAgentgatewayClassName,
+		wellknown.DefaultAgwClassName,
 	}
 	for _, className := range gwClasses {
 		cli.GatewayAPI().GatewayV1().GatewayClasses().Create(ctx, &gwv1.GatewayClass{
@@ -652,14 +652,14 @@ func (tc TestCase) Run(
 	if err != nil {
 		return nil, err
 	}
-	proxySyncerPlugins := proxySyncerPluginFactory(ctx, commoncol, wellknown.DefaultAgentgatewayClassName, extraPluginsFn, *settings)
+	proxySyncerPlugins := proxySyncerPluginFactory(ctx, commoncol, wellknown.DefaultAgwClassName, extraPluginsFn, *settings)
 	commoncol.InitPlugins(ctx, proxySyncerPlugins, *settings)
 
 	cli.RunAndWait(ctx.Done())
 	results := make(map[types.NamespacedName]ActualTestResult)
 
 	// Create AgwCollections with the necessary input collections
-	agwCollections, err := agentgatewayplugins.NewAgwCollections(
+	agwCollections, err := agwplugins.NewAgwCollections(
 		commoncol,
 		"istio-system",
 		"Kubernetes",
@@ -667,7 +667,7 @@ func (tc TestCase) Run(
 	if err != nil {
 		return nil, err
 	}
-	agwMergedPlugins := agentgatewayPluginFactory(ctx, agwCollections)
+	agwMergedPlugins := agwPluginFactory(ctx, agwCollections)
 	kubeclient.WaitForCacheSync("tlsroutes", ctx.Done(), agwCollections.TLSRoutes.HasSynced)
 	kubeclient.WaitForCacheSync("tcproutes", ctx.Done(), agwCollections.TCPRoutes.HasSynced)
 	kubeclient.WaitForCacheSync("httproutes", ctx.Done(), agwCollections.HTTPRoutes.HasSynced)
@@ -679,9 +679,9 @@ func (tc TestCase) Run(
 
 	// Instead of calling full Init(), manually initialize just what we need for testing
 	// to avoid race conditions with XDS collection building
-	agentGwSyncer := NewAgentGwSyncer(
+	agentGwSyncer := NewAgwSyncer(
 		wellknown.DefaultGatewayControllerName,
-		wellknown.DefaultAgentgatewayClassName,
+		wellknown.DefaultAgwClassName,
 		cli,
 		nil, // mgr not needed for test
 		agwCollections,
@@ -765,7 +765,7 @@ func (tc TestCase) Run(
 }
 
 func proxySyncerPluginFactory(ctx context.Context, commoncol *collections.CommonCollections, name string, extraPluginsFn ExtraPluginsFn, globalSettings settings.Settings) pluginsdk.Plugin {
-	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultAgentgatewayClassName, globalSettings, nil)
+	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultAgwClassName, globalSettings, nil)
 
 	var extraPlugs []pluginsdk.Plugin
 	if extraPluginsFn != nil {
@@ -780,11 +780,11 @@ func proxySyncerPluginFactory(ctx context.Context, commoncol *collections.Common
 	return mergedPlugins
 }
 
-// agentgatewayPluginFactory is a factory function that returns the agent gateway plugins
-// It is based on agentgatewayPluginFactory(cfg)(ctx, cfg.AgwCollections) in start.go
-func agentgatewayPluginFactory(ctx context.Context, agwCollections *agentgatewayplugins.AgwCollections) agentgatewayplugins.AgentgatewayPlugin {
-	agwPlugins := agentgatewayplugins.Plugins(agwCollections)
-	mergedPlugins := agentgatewayplugins.MergePlugins(agwPlugins...)
+// agwPluginFactory is a factory function that returns the agent gateway plugins
+// It is based on agwPluginFactory(cfg)(ctx, cfg.AgwCollections) in start.go
+func agwPluginFactory(ctx context.Context, agwCollections *agwplugins.AgwCollections) agwplugins.AgwPlugin {
+	agwPlugins := agwplugins.Plugins(agwCollections)
+	mergedPlugins := agwplugins.MergePlugins(agwPlugins...)
 	for i, plug := range agwPlugins {
 		kubeclient.WaitForCacheSync(fmt.Sprintf("plugin-%d", i), ctx.Done(), plug.HasSynced)
 	}

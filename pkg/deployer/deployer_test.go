@@ -431,7 +431,7 @@ var _ = Describe("Deployer", func() {
 				},
 				GatewayClassName:         wellknown.DefaultGatewayClassName,
 				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:    wellknown.DefaultAgentgatewayClassName,
+				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
 			})
 			chart, err := internaldeployer.LoadGatewayChart()
 			Expect(err).NotTo(HaveOccurred())
@@ -510,7 +510,7 @@ var _ = Describe("Deployer", func() {
 				},
 				GatewayClassName:         wellknown.DefaultGatewayClassName,
 				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:    wellknown.DefaultAgentgatewayClassName,
+				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
 			})
 			chart, err := internaldeployer.LoadGatewayChart()
 			Expect(err).NotTo(HaveOccurred())
@@ -582,7 +582,7 @@ var _ = Describe("Deployer", func() {
 				},
 				GatewayClassName:         wellknown.DefaultGatewayClassName,
 				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:    wellknown.DefaultAgentgatewayClassName,
+				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
 			})
 			chart, err := internaldeployer.LoadGatewayChart()
 			Expect(err).NotTo(HaveOccurred())
@@ -676,7 +676,7 @@ var _ = Describe("Deployer", func() {
 				},
 				GatewayClassName:         wellknown.DefaultGatewayClassName,
 				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:    wellknown.DefaultAgentgatewayClassName,
+				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
 			})
 			chart, err := internaldeployer.LoadGatewayChart()
 			Expect(err).NotTo(HaveOccurred())
@@ -756,7 +756,7 @@ var _ = Describe("Deployer", func() {
 				},
 				GatewayClassName:         wellknown.DefaultGatewayClassName,
 				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:    wellknown.DefaultAgentgatewayClassName,
+				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
 			})
 			chart, err := internaldeployer.LoadGatewayChart()
 			Expect(err).NotTo(HaveOccurred())
@@ -778,7 +778,7 @@ var _ = Describe("Deployer", func() {
 				},
 				GatewayClassName:         wellknown.DefaultGatewayClassName,
 				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:    wellknown.DefaultAgentgatewayClassName,
+				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
 			})
 			d2 := deployer.NewDeployer(wellknown.DefaultGatewayControllerName, newFakeClientWithObjs(gwc, defaultGatewayParams()), chart,
 				gwParams2,
@@ -1513,7 +1513,7 @@ var _ = Describe("Deployer", func() {
 					},
 					GatewayClassName:         wellknown.DefaultGatewayClassName,
 					WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-					AgentgatewayClassName:    wellknown.DefaultAgentgatewayClassName,
+					AgentgatewayClassName:    wellknown.DefaultAgwClassName,
 				}
 			}
 			istioEnabledDeployerInputs = func() *deployer.Inputs {

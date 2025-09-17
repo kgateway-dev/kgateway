@@ -59,8 +59,8 @@ type Syncer struct {
 	agwCollections *plugins.AgwCollections
 	mgr            manager.Manager
 	client         kube.Client
-	agwPlugins     plugins.AgentgatewayPlugin
-	translator     *translator.AgentgatewayTranslator
+	agwPlugins     plugins.AgwPlugin
+	translator     *translator.AgwTranslator
 
 	// Configuration
 	controllerName        string
@@ -91,13 +91,13 @@ type Syncer struct {
 	EnableInferExt bool
 }
 
-func NewAgentGwSyncer(
+func NewAgwSyncer(
 	controllerName string,
 	agentgatewayClassName string,
 	client kube.Client,
 	mgr manager.Manager,
 	agwCollections *plugins.AgwCollections,
-	agwPlugins plugins.AgentgatewayPlugin,
+	agwPlugins plugins.AgwPlugin,
 	xdsCache envoycache.SnapshotCache,
 	enableInferExt bool,
 ) *Syncer {
@@ -106,7 +106,7 @@ func NewAgentGwSyncer(
 		controllerName:         controllerName,
 		agentgatewayClassName:  agentgatewayClassName,
 		agwPlugins:             agwPlugins,
-		translator:             translator.NewAgentgatewayTranslator(agwCollections),
+		translator:             translator.NewAgwTranslator(agwCollections),
 		xdsCache:               xdsCache,
 		client:                 client,
 		mgr:                    mgr,

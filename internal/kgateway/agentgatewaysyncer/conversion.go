@@ -157,12 +157,12 @@ func processRouteMatches(r *gwv1.HTTPRouteRule, res *api.Route) error {
 
 // Helper function to apply plugin passes
 func applyPluginPasses(ctx RouteContext, r *gwv1.HTTPRouteRule, res *api.Route) *reporter.RouteCondition {
-	agentgatewayRouteContext := agwir.AgentgatewayRouteContext{
+	agwRouteContext := agwir.AgwRouteContext{
 		Rule: r,
 	}
 
 	for _, pass := range ctx.pluginPasses {
-		if err := pass.ApplyForRoute(&agentgatewayRouteContext, res); err != nil {
+		if err := pass.ApplyForRoute(&agwRouteContext, res); err != nil {
 			return &reporter.RouteCondition{
 				Type:    gwv1.RouteConditionAccepted,
 				Status:  metav1.ConditionFalse,
@@ -1129,7 +1129,7 @@ func buildListener(
 	}
 
 	hostnames := buildHostnameMatch(ctx, obj.Namespace, namespaces, l)
-	protocol, perr := listenerProtocolToAgentgateway(controllerName, l.Protocol)
+	protocol, perr := listenerProtocolToAgw(controllerName, l.Protocol)
 	if perr != nil {
 		listenerConditions[string(gwv1.ListenerConditionAccepted)].error = &ConfigError{
 			Reason:  string(gwv1.ListenerReasonUnsupportedProtocol),
@@ -1159,7 +1159,7 @@ var supportedProtocols = sets.New(
 	gwv1.TCPProtocolType,
 	gwv1.ProtocolType(protocol.HBONE))
 
-func listenerProtocolToAgentgateway(name gwv1.GatewayController, p gwv1.ProtocolType) (string, error) {
+func listenerProtocolToAgw(name gwv1.GatewayController, p gwv1.ProtocolType) (string, error) {
 	switch p {
 	// Standard protocol types
 	case gwv1.HTTPProtocolType:
