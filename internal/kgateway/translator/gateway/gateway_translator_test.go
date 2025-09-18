@@ -1461,9 +1461,6 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
-			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				// No-op: Expected statuses are validated via the output file comparison
-			},
 		})
 	})
 
@@ -1474,9 +1471,6 @@ func TestBasic(t *testing.T) {
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
-			},
-			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				// No-op: Expected statuses are validated via the output file comparison
 			},
 		})
 	})
@@ -1489,9 +1483,6 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
-			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				// No-op: Expected statuses are validated via the output file comparison
-			},
 		})
 	})
 
@@ -1502,9 +1493,6 @@ func TestBasic(t *testing.T) {
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
-			},
-			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				// No-op: Expected statuses are validated via the output file comparison
 			},
 		})
 	})
@@ -1561,6 +1549,9 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				// No-op: Expected statuses are validated via the output file comparison
+			},
 		})
 	})
 
@@ -1583,9 +1574,6 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
-			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				// No-op: Expected statuses are validated via the output file comparison
-			},
 		})
 	})
 
@@ -1596,9 +1584,6 @@ func TestBasic(t *testing.T) {
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
-			},
-			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				// No-op: Expected statuses are validated via the output file comparison
 			},
 		})
 	})
@@ -1611,9 +1596,6 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
-			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				// No-op: Expected statuses are validated via the output file comparison
-			},
 		})
 	})
 
@@ -1625,9 +1607,6 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
-			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				// No-op: Expected statuses are validated via the output file comparison
-			},
 		})
 	})
 
@@ -1638,9 +1617,6 @@ func TestBasic(t *testing.T) {
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
-			},
-			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				// No-op: Expected statuses are validated via the output file comparison
 			},
 		})
 	})

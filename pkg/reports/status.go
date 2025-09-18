@@ -70,18 +70,16 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attached
 				}
 			}
 			meta.SetStatusCondition(&finalConditions, lisCondition)
-		}
-		lisReport.Status.Conditions = finalConditions
 
-		// Check if this listener has Programmed=False
-		if programmedCond := meta.FindStatusCondition(lisReport.Status.Conditions, string(gwv1.ListenerConditionProgrammed)); programmedCond != nil {
-			if programmedCond.Status == metav1.ConditionFalse {
+			// Check if this is the Programmed condition and it's False
+			if lisCondition.Type == string(gwv1.ListenerConditionProgrammed) && lisCondition.Status == metav1.ConditionFalse {
 				invalidListeners = append(invalidListeners, string(lis.Name))
-				if programmedCond.Message != "" {
-					invalidMessages = append(invalidMessages, fmt.Sprintf("%s: %s", lis.Name, programmedCond.Message))
+				if lisCondition.Message != "" {
+					invalidMessages = append(invalidMessages, fmt.Sprintf("%s: %s", lis.Name, lisCondition.Message))
 				}
 			}
 		}
+		lisReport.Status.Conditions = finalConditions
 
 		finalListeners = append(finalListeners, lisReport.Status)
 	}
