@@ -342,17 +342,17 @@ func (ml *MergedListener) TranslateListener(
 	for _, tfc := range ml.TcpFilterChains {
 		if tcpListener := tfc.translateTcpFilterChain(ml.name, reporter); tcpListener != nil {
 			matchedTcpListeners = append(matchedTcpListeners, *tcpListener)
-		} else {
-			// TCP/TLS filter chain was omitted due to no routes/backends
-			// Report the status here where we know the specific reason
-			listenerCondition := reports.ListenerCondition{
-				Type:    gwv1.ListenerConditionProgrammed,
-				Status:  metav1.ConditionFalse,
-				Reason:  gwv1.ListenerReasonInvalid,
-				Message: TcpTlsListenerNoBackendsMessage,
-			}
-			ml.listenerReporter.SetCondition(listenerCondition)
 		}
+	}
+
+	if len(ml.TcpFilterChains) > 0 && len(matchedTcpListeners) == 0 {
+		listenerCondition := reports.ListenerCondition{
+			Type:    gwv1.ListenerConditionProgrammed,
+			Status:  metav1.ConditionFalse,
+			Reason:  gwv1.ListenerReasonInvalid,
+			Message: TcpTlsListenerNoBackendsMessage,
+		}
+		ml.listenerReporter.SetCondition(listenerCondition)
 	}
 
 	// Get bind address based on ListenerBindIpv6 setting

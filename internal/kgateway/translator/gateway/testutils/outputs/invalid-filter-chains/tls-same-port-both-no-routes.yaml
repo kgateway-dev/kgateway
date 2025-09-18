@@ -1,31 +1,7 @@
 Clusters:
 - connectTimeout: 5s
-  edsClusterConfig:
-    edsConfig:
-      ads: {}
-      resourceApiVersion: V3
-  ignoreHealthOnHostRemoval: true
-  metadata: {}
-  name: kube_default_example-tcp-svc_8080
-  type: EDS
-- connectTimeout: 5s
   metadata: {}
   name: test-backend-plugin_default_example-svc_80
-Listeners:
-- address:
-    socketAddress:
-      address: '::'
-      ipv4Compat: true
-      portValue: 8081
-  filterChains:
-  - filters:
-    - name: envoy.filters.network.tcp_proxy
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-        cluster: kube_default_example-tcp-svc_8080
-        statPrefix: listener~8081-default.example-tcp-route-rule-0
-    name: listener~8081-default.example-tcp-route-rule-0
-  name: listener~8081
 Statuses:
   gateways:
     default/example-gateway:
@@ -36,7 +12,7 @@ Statuses:
         status: Unknown
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: 'Some listeners are not programmed: tcp-no-routes: TCP/TLS listener
+        message: 'Some listeners are not programmed: tls-app1-no-routes: TCP/TLS listener
           has no valid backends or routes'
         reason: ListenersNotValid
         status: "True"
@@ -69,11 +45,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
-        name: tcp-no-routes
+        name: tls-app1-no-routes
         supportedKinds:
         - group: gateway.networking.k8s.io
-          kind: TCPRoute
-      - attachedRoutes: 1
+          kind: TLSRoute
+      - attachedRoutes: 0
         conditions:
         - lastTransitionTime: null
           message: Listener is accepted
@@ -95,26 +71,7 @@ Statuses:
           reason: Programmed
           status: "True"
           type: Programmed
-        name: tcp-with-routes
+        name: tls-app2-no-routes
         supportedKinds:
         - group: gateway.networking.k8s.io
-          kind: TCPRoute
-  tcpRoutes:
-    default/example-tcp-route:
-      parents:
-      - conditions:
-        - lastTransitionTime: null
-          message: ""
-          reason: Accepted
-          status: "True"
-          type: Accepted
-        - lastTransitionTime: null
-          message: Route has valid refs
-          reason: ResolvedRefs
-          status: "True"
-          type: ResolvedRefs
-        controllerName: kgateway
-        parentRef:
-          group: ""
-          kind: ""
-          name: example-gateway
+          kind: TLSRoute

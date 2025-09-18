@@ -1531,6 +1531,39 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TLS same port listeners - both with no routes", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/tls-same-port-both-no-routes.yaml",
+			outputFile: "invalid-filter-chains/tls-same-port-both-no-routes.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TLS same port listeners - mixed routes", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/tls-same-port-mixed-routes.yaml",
+			outputFile: "invalid-filter-chains/tls-same-port-mixed-routes.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TLS route with invalid backend", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/tls-route-invalid-backend.yaml",
+			outputFile: "invalid-filter-chains/tls-route-invalid-backend.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("HTTPS mixed listeners - invalid and valid secret refs", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "invalid-filter-chains/https-mixed-listeners.yaml",

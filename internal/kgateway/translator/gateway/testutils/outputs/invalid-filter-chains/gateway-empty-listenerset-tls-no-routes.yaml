@@ -12,14 +12,14 @@ Statuses:
         status: "True"
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: 'Listeners not accepted: tls'
-        reason: ListenersNotValid
+        message: Gateway is accepted
+        reason: Accepted
         status: "True"
         type: Accepted
       - lastTransitionTime: null
-        message: 'No Listeners programmed. Listeners not programmed: tls'
-        reason: ListenersNotValid
-        status: "False"
+        message: Gateway is programmed
+        reason: Programmed
+        status: "True"
         type: Programmed
   listenerSets:
     default/example-listenerset:

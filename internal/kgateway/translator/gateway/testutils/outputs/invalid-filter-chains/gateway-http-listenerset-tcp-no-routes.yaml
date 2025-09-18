@@ -61,12 +61,12 @@ Statuses:
         status: "True"
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: 'Listeners not accepted: tcp'
-        reason: ListenersNotValid
+        message: Gateway is accepted
+        reason: Accepted
         status: "True"
         type: Accepted
       - lastTransitionTime: null
-        message: 'Listeners not programmed: tcp'
+        message: Gateway is programmed
         reason: Programmed
         status: "True"
         type: Programmed

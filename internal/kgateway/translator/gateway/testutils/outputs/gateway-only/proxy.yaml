@@ -41,12 +41,14 @@ Statuses:
         status: Unknown
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: 'Listeners not accepted: tcp, tls'
+        message: 'Some listeners are not programmed: tcp: TCP/TLS listener has no
+          valid backends or routes; tls: TCP/TLS listener has no valid backends or
+          routes'
         reason: ListenersNotValid
         status: "True"
         type: Accepted
       - lastTransitionTime: null
-        message: 'Listeners not programmed: tcp, tls'
+        message: Gateway is programmed
         reason: Programmed
         status: "True"
         type: Programmed

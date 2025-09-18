@@ -43,6 +43,9 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attached
 	}
 
 	finalListeners := make([]gwv1.ListenerStatus, 0, len(gw.Spec.Listeners))
+	var invalidListeners []string
+	var invalidMessages []string
+
 	for _, lis := range gw.Spec.Listeners {
 		lisReport := gwReport.listener(string(lis.Name))
 		addMissingListenerConditions(lisReport)
@@ -69,7 +72,33 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attached
 			meta.SetStatusCondition(&finalConditions, lisCondition)
 		}
 		lisReport.Status.Conditions = finalConditions
+
+		// Check if this listener has Programmed=False
+		if programmedCond := meta.FindStatusCondition(lisReport.Status.Conditions, string(gwv1.ListenerConditionProgrammed)); programmedCond != nil {
+			if programmedCond.Status == metav1.ConditionFalse {
+				invalidListeners = append(invalidListeners, string(lis.Name))
+				if programmedCond.Message != "" {
+					invalidMessages = append(invalidMessages, fmt.Sprintf("%s: %s", lis.Name, programmedCond.Message))
+				}
+			}
+		}
+
 		finalListeners = append(finalListeners, lisReport.Status)
+	}
+
+	// If any listeners have Programmed=False, set Gateway Accepted=True with ListenersNotValid reason
+	if len(invalidListeners) > 0 {
+		message := fmt.Sprintf("Some listeners are not programmed: %s", strings.Join(invalidMessages, "; "))
+		if len(invalidMessages) == 0 {
+			message = fmt.Sprintf("Some listeners are not programmed: %s", strings.Join(invalidListeners, ", "))
+		}
+
+		gwReport.SetCondition(pluginsdkreporter.GatewayCondition{
+			Type:    gwv1.GatewayConditionAccepted,
+			Status:  metav1.ConditionTrue,
+			Reason:  gwv1.GatewayReasonListenersNotValid,
+			Message: message,
+		})
 	}
 
 	addMissingGatewayConditions(r.Gateway(&gw), &gw)

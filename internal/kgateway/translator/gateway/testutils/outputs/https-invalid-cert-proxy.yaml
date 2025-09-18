@@ -61,12 +61,14 @@ Statuses:
         status: Unknown
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: 'Listeners not accepted: https, https2'
+        message: 'Some listeners are not programmed: https: Secret default/missing-cert
+          not found.; https2: invalid TLS secret default/invalid-cert: tls: failed
+          to find any PEM data in key input'
         reason: ListenersNotValid
         status: "True"
         type: Accepted
       - lastTransitionTime: null
-        message: 'Listeners not programmed: https, https2'
+        message: Gateway is programmed
         reason: Programmed
         status: "True"
         type: Programmed

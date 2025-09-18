@@ -6,7 +6,7 @@ Clusters:
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
   metadata: {}
-  name: kube_default_example-tcp-svc_8080
+  name: kube_default_app2-tls-svc_443
   type: EDS
 - connectTimeout: 5s
   metadata: {}
@@ -16,16 +16,23 @@ Listeners:
     socketAddress:
       address: '::'
       ipv4Compat: true
-      portValue: 8081
+      portValue: 8443
   filterChains:
-  - filters:
+  - filterChainMatch:
+      serverNames:
+      - app2.example.com
+    filters:
     - name: envoy.filters.network.tcp_proxy
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-        cluster: kube_default_example-tcp-svc_8080
-        statPrefix: listener~8081-default.example-tcp-route-rule-0
-    name: listener~8081-default.example-tcp-route-rule-0
-  name: listener~8081
+        cluster: kube_default_app2-tls-svc_443
+        statPrefix: listener~8443-default.app2-tls-route-rule-0
+    name: listener~8443-default.app2-tls-route-rule-0
+  listenerFilters:
+  - name: envoy.filters.listener.tls_inspector
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+  name: listener~8443
 Statuses:
   gateways:
     default/example-gateway:
@@ -36,9 +43,8 @@ Statuses:
         status: Unknown
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: 'Some listeners are not programmed: tcp-no-routes: TCP/TLS listener
-          has no valid backends or routes'
-        reason: ListenersNotValid
+        message: Gateway is accepted
+        reason: Accepted
         status: "True"
         type: Accepted
       - lastTransitionTime: null
@@ -49,11 +55,6 @@ Statuses:
       listeners:
       - attachedRoutes: 0
         conditions:
-        - lastTransitionTime: null
-          message: TCP/TLS listener has no valid backends or routes
-          reason: Invalid
-          status: "False"
-          type: Programmed
         - lastTransitionTime: null
           message: Listener is accepted
           reason: Accepted
@@ -69,10 +70,15 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
-        name: tcp-no-routes
+        - lastTransitionTime: null
+          message: Listener is programmed
+          reason: Programmed
+          status: "True"
+          type: Programmed
+        name: tls-app1-no-routes
         supportedKinds:
         - group: gateway.networking.k8s.io
-          kind: TCPRoute
+          kind: TLSRoute
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
@@ -95,12 +101,12 @@ Statuses:
           reason: Programmed
           status: "True"
           type: Programmed
-        name: tcp-with-routes
+        name: tls-app2-with-routes
         supportedKinds:
         - group: gateway.networking.k8s.io
-          kind: TCPRoute
-  tcpRoutes:
-    default/example-tcp-route:
+          kind: TLSRoute
+  tlsRoutes:
+    default/app2-tls-route:
       parents:
       - conditions:
         - lastTransitionTime: null

@@ -7,7 +7,6 @@ import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	reportsutils "github.com/kgateway-dev/kgateway/v2/pkg/reports/utils"
 	"golang.org/x/net/context"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/slices"
@@ -46,41 +45,16 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 	pass := t.newPass(reporter)
 	var res TranslationResult
 
-	var notAcceptedListeners []string
-	var notProgrammedListeners []string
-
 	for _, l := range gw.Listeners {
 		outListener, routes := t.ComputeListener(ctx, pass, gw, l, reporter)
 		// Envoy rejects listeners with no filter chains; skip adding such listeners.
 		if outListener == nil || len(outListener.GetFilterChains()) == 0 {
 			originalListenerName := findOriginalListenerName(gw, l)
-			listenerReporter := getReporterForFilterChain(gw, reporter, originalListenerName)
-
-			// Check if the programmed condition was already set with a specific reason
-			hasProgrammedCondition := reportsutils.CheckInvalidListenerProgrammedCondition(listenerReporter)
-			if !hasProgrammedCondition {
-				logger.Warn("Listener was invalid but no programmed condition was set",
-					"listener", originalListenerName)
-			}
-
-			// Check if listener was accepted (no accepted condition exists)
-			wasAccepted := reportsutils.ListenerAccepted(listenerReporter)
-			if !wasAccepted {
-				notAcceptedListeners = append(notAcceptedListeners, originalListenerName)
-			}
-
-			// All omitted listeners are not programmed by definition
-			notProgrammedListeners = append(notProgrammedListeners, originalListenerName)
-
+			logger.Info("Invalid listener", "listener", originalListenerName)
 			continue
 		}
 		res.Listeners = append(res.Listeners, outListener)
 		res.Routes = append(res.Routes, routes...)
-	}
-
-	// Gateway status when listeners were omitted
-	if len(notProgrammedListeners) > 0 {
-		reportsutils.ReportGatewayStatusForInvalidListeners(gw, reporter, notAcceptedListeners, notProgrammedListeners)
 	}
 
 	for _, c := range pass {
