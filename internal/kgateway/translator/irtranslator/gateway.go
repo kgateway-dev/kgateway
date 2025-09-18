@@ -318,12 +318,18 @@ func checkListenerStatusForOmittedListener(
 }
 
 // reportGatewayStatusForOmittedListeners sets gateway conditions when listeners were omitted
+// notAcceptedListeners should be a subset of notProgrammedListeners, but that is not validated
 func reportGatewayStatusForOmittedListeners(
 	gw ir.GatewayIR,
 	reporter sdkreporter.Reporter,
 	notAcceptedListeners []string,
 	notProgrammedListeners []string,
 ) {
+	// If there are no listeners that were not programmed, there is nothing to report
+	if len(notProgrammedListeners) == 0 {
+		return
+	}
+
 	gwreporter := reporter.Gateway(gw.SourceObject.Obj)
 
 	// Sort for idempotency
@@ -333,16 +339,21 @@ func reportGatewayStatusForOmittedListeners(
 	// Set Accepted condition - if there are listeners that were explicitly not accepted,
 	// mark gateway as not accepted. Otherwise, mark as accepted but mention omitted listeners.
 	if len(notAcceptedListeners) > 0 {
-		var acceptedMessage string
+		var (
+			acceptedMessage string
+			status          metav1.ConditionStatus
+		)
 		if len(notAcceptedListeners) == len(gw.Listeners) {
 			acceptedMessage = fmt.Sprintf(GatewayAcceptedAllListenersOmittedMessage, strings.Join(notAcceptedListeners, ", "))
+			status = metav1.ConditionFalse
 		} else {
 			acceptedMessage = fmt.Sprintf(GatewayAcceptedListenersOmittedMessage, strings.Join(notAcceptedListeners, ", "))
+			status = metav1.ConditionTrue
 		}
 
 		acceptedCondition := sdkreporter.GatewayCondition{
 			Type:    gwv1.GatewayConditionAccepted,
-			Status:  metav1.ConditionFalse,
+			Status:  status,
 			Reason:  gwv1.GatewayReasonListenersNotValid,
 			Message: acceptedMessage,
 		}
