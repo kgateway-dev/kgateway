@@ -12,7 +12,7 @@ spec:
     protocol: TCP
     port: {{ .Values.controller.service.ports.grpc }}
     targetPort: {{ .Values.controller.service.ports.grpc }}
-  - name: agw-grpc-xds
+  - name: grpc-xds-agw
     protocol: TCP
     port: {{ .Values.controller.service.ports.agwGrpc }}
     targetPort: {{ .Values.controller.service.ports.agwGrpc }}

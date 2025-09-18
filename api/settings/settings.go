@@ -106,7 +106,7 @@ type Settings struct {
 	XdsServicePort uint32 `split_words:"true" default:"9977"`
 
 	// AgentgatewayXdsServicePort is the port of the Kubernetes Service that serves xDS config for agentgateway.
-	// This corresponds to the value of the `agw-grpc-xds` port in the service.
+	// This corresponds to the value of the `grpc-xds-agw` port in the service.
 	AgentgatewayXdsServicePort uint32 `split_words:"true" default:"9978"`
 
 	UseRustFormations bool `split_words:"true" default:"false"`

@@ -45,7 +45,7 @@ spec:
               name: grpc-xds
               protocol: TCP
             - containerPort: {{ .Values.controller.service.ports.agwGrpc }}
-              name: agw-grpc-xds
+              name: grpc-xds-agw
               protocol: TCP
             - containerPort: {{ .Values.controller.service.ports.health }}
               name: health
