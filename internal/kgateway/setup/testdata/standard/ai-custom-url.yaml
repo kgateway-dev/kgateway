@@ -32,12 +32,11 @@ spec:
       authHeaderOverride:
         prefix: "custom-prefix"
         headerName: "custom-header"
-      provider:
-        openai:
-          authToken:
-            kind: "SecretRef"
-            secretRef:
-              name: openai-override-secret
+      openai:
+        authToken:
+          kind: "SecretRef"
+          secretRef:
+            name: openai-override-secret
 ---
 apiVersion: v1
 kind: Secret

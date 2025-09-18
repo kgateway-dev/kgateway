@@ -67,7 +67,6 @@ spec:
   type: AI
   ai:
     llm:
-      provider:
-        anthropic:
-          authToken:
-            kind: "Passthrough"
+      anthropic:
+        authToken:
+          kind: "Passthrough"

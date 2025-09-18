@@ -231,8 +231,6 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.MetadataPathSegmentApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Moderation"):
 		return &apiv1alpha1.ModerationApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("MultiPoolConfig"):
-		return &apiv1alpha1.MultiPoolConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("NamespacedObjectReference"):
 		return &apiv1alpha1.NamespacedObjectReferenceApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("OpenAIConfig"):
@@ -253,8 +251,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.PodApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Port"):
 		return &apiv1alpha1.PortApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("Priority"):
-		return &apiv1alpha1.PriorityApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("PriorityGroup"):
+		return &apiv1alpha1.PriorityGroupApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ProcessingMode"):
 		return &apiv1alpha1.ProcessingModeApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("PromptguardRequest"):
@@ -313,8 +311,6 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.StatusCodeFilterApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("StringMatcher"):
 		return &apiv1alpha1.StringMatcherApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("SupportedLLMProvider"):
-		return &apiv1alpha1.SupportedLLMProviderApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("TCPKeepalive"):
 		return &apiv1alpha1.TCPKeepaliveApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Timeouts"):

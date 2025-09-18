@@ -17,12 +17,11 @@ spec:
       authHeaderOverride:
         prefix: "custom-prefix"
         headerName: "custom-header"
-      provider:
-        openai:
-          authToken:
-            kind: "SecretRef"
-            secretRef:
-              name: openai-secret
+      openai:
+        authToken:
+          kind: "SecretRef"
+          secretRef:
+            name: openai-secret
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend
@@ -38,12 +37,11 @@ spec:
       hostOverride:
         host: test-ai-provider.ai-test.svc.cluster.local
         port: 443
-      provider:
-        openai:
-          authToken:
-            kind: "SecretRef"
-            secretRef:
-              name: openai-secret
+      openai:
+        authToken:
+          kind: "SecretRef"
+          secretRef:
+            name: openai-secret
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend
@@ -59,15 +57,14 @@ spec:
       hostOverride:
         host: test-ai-provider.ai-test.svc.cluster.local
         port: 443
-      provider:
-        azureopenai:
-          endpoint: ai-gateway.openai.azure.com
-          deploymentName: gpt-4o-mini
-          apiVersion: 2024-02-15-preview
-          authToken:
-            kind: "SecretRef"
-            secretRef:
-              name: azure-secret
+      azureopenai:
+        endpoint: ai-gateway.openai.azure.com
+        deploymentName: gpt-4o-mini
+        apiVersion: 2024-02-15-preview
+        authToken:
+          kind: "SecretRef"
+          secretRef:
+            name: azure-secret
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend
@@ -83,14 +80,13 @@ spec:
       hostOverride:
         host: test-ai-provider.ai-test.svc.cluster.local
         port: 443
-      provider:
-        gemini:
-          model: gemini-1.5-flash-001
-          apiVersion: v1beta
-          authToken:
-            kind: "SecretRef"
-            secretRef:
-              name: gemini-secret
+      gemini:
+        model: gemini-1.5-flash-001
+        apiVersion: v1beta
+        authToken:
+          kind: "SecretRef"
+          secretRef:
+            name: gemini-secret
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend
@@ -106,15 +102,14 @@ spec:
       hostOverride:
         host: test-ai-provider.ai-test.svc.cluster.local
         port: 443
-      provider:
-        vertexai:
-          model: gemini-1.5-flash-001
-          apiVersion: v1
-          location: us-central1
-          projectId: kgateway-project
-          publisher: GOOGLE
-          authToken:
-            kind: "SecretRef"
-            secretRef:
-              name: vertex-ai-secret
+      vertexai:
+        model: gemini-1.5-flash-001
+        apiVersion: v1
+        location: us-central1
+        projectId: kgateway-project
+        publisher: GOOGLE
+        authToken:
+          kind: "SecretRef"
+          secretRef:
+            name: vertex-ai-secret
 ---

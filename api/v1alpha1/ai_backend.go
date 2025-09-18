@@ -4,21 +4,71 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// +kubebuilder:validation:XValidation:message="There must one and only one LLM or MultiPool can be set",rule="(has(self.llm) && !has(self.multipool)) || (!has(self.llm) && has(self.multipool))"
-// +kubebuilder:validation:MaxProperties=1
-// +kubebuilder:validation:MinProperties=1
+// AIBackend specifies the AI backend configuration
+// +kubebuilder:validation:ExactlyOneOf=llm;priorityGroups
 type AIBackend struct {
 	// The LLM configures the AI gateway to use a single LLM provider backend.
+	// +optional
 	LLM *LLMProvider `json:"llm,omitempty"`
-	// The MultiPool configures the backends for multiple hosts or models from the same provider in one Backend resource.
-	MultiPool *MultiPoolConfig `json:"multipool,omitempty"`
+
+	// PriorityGroups specifies a list of groups in priority order where each group defines
+	// a set of LLM providers. The priority determines the priority of the backend endpoints chosen.
+	//
+	// Example configuration with two priority groups:
+	// ```yaml
+	// priorityGroups:
+	//	- providers:
+	//	  - azureOpenai:
+	//	      deploymentName: gpt-4o-mini
+	//	      apiVersion: 2024-02-15-preview
+	//	      endpoint: ai-gateway.openai.azure.com
+	//	      authToken:
+	//	        secretRef:
+	//	          name: azure-secret
+	//	          namespace: kgateway-system
+	//	- providers:
+	//	  - azureOpenai:
+	//	      deploymentName: gpt-4o-mini-2
+	//	      apiVersion: 2024-02-15-preview
+	//	      endpoint: ai-gateway-2.openai.azure.com
+	//	      authToken:
+	//	        secretRef:
+	//	          name: azure-secret-2
+	//	          namespace: kgateway-system
+	// ```
+	// +optional
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=32
+	PriorityGroups []PriorityGroup `json:"priorityGroups,omitempty"`
 }
 
 // LLMProvider specifies the target large language model provider that the backend should route requests to.
+// +kubebuilder:validation:ExactlyOneOf=openai;azureopenai;anthropic;gemini;vertexai;bedrock
 // TODO: Move auth options off of SupportedLLMProvider to BackendConfigPolicy: https://github.com/kgateway-dev/kgateway/issues/11930
 type LLMProvider struct {
-	// The LLM provider type to configure.
-	Provider SupportedLLMProvider `json:"provider"`
+	// OpenAI provider
+	// +optional
+	OpenAI *OpenAIConfig `json:"openai,omitempty"`
+
+	// Azure OpenAI provider
+	// +optional
+	AzureOpenAI *AzureOpenAIConfig `json:"azureopenai,omitempty"`
+
+	// Anthropic provider
+	// +optional
+	Anthropic *AnthropicConfig `json:"anthropic,omitempty"`
+
+	// Gemini provider
+	// +optional
+	Gemini *GeminiConfig `json:"gemini,omitempty"`
+
+	// Vertex AI provider
+	// +optional
+	VertexAI *VertexAIConfig `json:"vertexai,omitempty"`
+
+	// Bedrock provider
+	// +optional
+	Bedrock *BedrockConfig `json:"bedrock,omitempty"`
 
 	// Send requests to a custom host and port, such as to proxy the request,
 	// or to use a different backend that is API-compliant with the Backend version.
@@ -54,18 +104,6 @@ type PathOverride struct {
 type AuthHeaderOverride struct {
 	Prefix     *string `json:"prefix,omitempty"`
 	HeaderName *string `json:"headerName,omitempty"`
-}
-
-// SupportedLLMProvider configures the AI gateway to use a single LLM provider backend.
-// +kubebuilder:validation:MaxProperties=1
-// +kubebuilder:validation:MinProperties=1
-type SupportedLLMProvider struct {
-	OpenAI      *OpenAIConfig      `json:"openai,omitempty"`
-	AzureOpenAI *AzureOpenAIConfig `json:"azureopenai,omitempty"`
-	Anthropic   *AnthropicConfig   `json:"anthropic,omitempty"`
-	Gemini      *GeminiConfig      `json:"gemini,omitempty"`
-	VertexAI    *VertexAIConfig    `json:"vertexai,omitempty"`
-	Bedrock     *BedrockConfig     `json:"bedrock,omitempty"`
 }
 
 type SingleAuthTokenKind string
@@ -268,14 +306,6 @@ type AWSGuardrailConfig struct {
 	GuardrailVersion string `json:"version"`
 }
 
-// Priority configures the priority of the backend endpoints.
-type Priority struct {
-	// A list of LLM provider backends within a single endpoint pool entry.
-	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:MaxItems=20
-	Pool []LLMProvider `json:"pool,omitempty"`
-}
-
 // MultiPoolConfig configures the backends for multiple hosts or models from the same provider in one Backend resource.
 // This method can be useful for creating one logical endpoint that is backed
 // by multiple hosts or models.
@@ -283,36 +313,9 @@ type Priority struct {
 // In the `priorities` section, the order of `pool` entries defines the priority of the backend endpoints.
 // The `pool` entries can either define a list of backends or a single backend.
 // Note: Only two levels of nesting are permitted. Any nested entries after the second level are ignored.
-//
-// ```yaml
-// multi:
-//
-//	priorities:
-//	- pool:
-//	  - azureOpenai:
-//	      deploymentName: gpt-4o-mini
-//	      apiVersion: 2024-02-15-preview
-//	      endpoint: ai-gateway.openai.azure.com
-//	      authToken:
-//	        secretRef:
-//	          name: azure-secret
-//	          namespace: kgateway-system
-//	- pool:
-//	  - azureOpenai:
-//	      deploymentName: gpt-4o-mini-2
-//	      apiVersion: 2024-02-15-preview
-//	      endpoint: ai-gateway-2.openai.azure.com
-//	      authToken:
-//	        secretRef:
-//	          name: azure-secret-2
-//	          namespace: kgateway-system
-//
-// ```
-type MultiPoolConfig struct {
-	// The priority list of backend pools. Each entry represents a set of LLM provider backends.
-	// The order defines the priority of the backend endpoints.
-	// +required
+type PriorityGroup struct {
+	// A list of LLM provider backends within a single endpoint pool entry.
 	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:MaxItems=20
-	Priorities []Priority `json:"priorities,omitempty"`
+	// +kubebuilder:validation:MaxItems=32
+	Providers []LLMProvider `json:"providers,omitempty"`
 }

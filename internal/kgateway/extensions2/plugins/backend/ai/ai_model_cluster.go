@@ -64,52 +64,56 @@ func buildModelCluster(aiUs *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecre
 
 	var prioritized []*envoyendpointv3.LocalityLbEndpoints
 	var err error
-
-	if aiUs.MultiPool != nil {
+	if aiUs.LLM != nil {
+		prioritized, err = buildLLMEndpoint(aiUs, aiSecret)
+		if err != nil {
+			return err
+		}
+	} else {
 		epByType := map[string]struct{}{}
-		prioritized = make([]*envoyendpointv3.LocalityLbEndpoints, 0, len(aiUs.MultiPool.Priorities))
-		for idx, pool := range aiUs.MultiPool.Priorities {
-			eps := make([]*envoyendpointv3.LbEndpoint, 0, len(pool.Pool))
-			for jdx, ep := range pool.Pool {
+		prioritized = make([]*envoyendpointv3.LocalityLbEndpoints, 0, len(aiUs.PriorityGroups))
+		for idx, group := range aiUs.PriorityGroups {
+			eps := make([]*envoyendpointv3.LbEndpoint, 0, len(group.Providers))
+			for jdx, ep := range group.Providers {
 				var result *envoyendpointv3.LbEndpoint
 				var err error
 				epByType[fmt.Sprintf("%T", ep)] = struct{}{}
-				if ep.Provider.OpenAI != nil {
+				if ep.OpenAI != nil {
 					var secretForMultiPool *ir.Secret
-					if ep.Provider.OpenAI.AuthToken.Kind == v1alpha1.SecretRef {
-						secretRef := ep.Provider.OpenAI.AuthToken.SecretRef
+					if ep.OpenAI.AuthToken.Kind == v1alpha1.SecretRef {
+						secretRef := ep.OpenAI.AuthToken.SecretRef
 						secretForMultiPool = multiSecrets[GetMultiPoolSecretKey(idx, jdx, secretRef.Name)]
 					}
-					result, err = buildOpenAIEndpoint(ep.Provider.OpenAI, ep.HostOverride, secretForMultiPool)
-				} else if ep.Provider.Anthropic != nil {
+					result, err = buildOpenAIEndpoint(ep.OpenAI, ep.HostOverride, secretForMultiPool)
+				} else if ep.Anthropic != nil {
 					var secretForMultiPool *ir.Secret
-					if ep.Provider.Anthropic.AuthToken.Kind == v1alpha1.SecretRef {
-						secretRef := ep.Provider.Anthropic.AuthToken.SecretRef
+					if ep.Anthropic.AuthToken.Kind == v1alpha1.SecretRef {
+						secretRef := ep.Anthropic.AuthToken.SecretRef
 						secretForMultiPool = multiSecrets[GetMultiPoolSecretKey(idx, jdx, secretRef.Name)]
 					}
-					result, err = buildAnthropicEndpoint(ep.Provider.Anthropic, ep.HostOverride, secretForMultiPool)
-				} else if ep.Provider.AzureOpenAI != nil {
+					result, err = buildAnthropicEndpoint(ep.Anthropic, ep.HostOverride, secretForMultiPool)
+				} else if ep.AzureOpenAI != nil {
 					var secretForMultiPool *ir.Secret
-					if ep.Provider.AzureOpenAI.AuthToken.Kind == v1alpha1.SecretRef {
-						secretRef := ep.Provider.AzureOpenAI.AuthToken.SecretRef
+					if ep.AzureOpenAI.AuthToken.Kind == v1alpha1.SecretRef {
+						secretRef := ep.AzureOpenAI.AuthToken.SecretRef
 						secretForMultiPool = multiSecrets[GetMultiPoolSecretKey(idx, jdx, secretRef.Name)]
 					}
-					result, err = buildAzureOpenAIEndpoint(ep.Provider.AzureOpenAI, ep.HostOverride, secretForMultiPool)
-				} else if ep.Provider.Gemini != nil {
+					result, err = buildAzureOpenAIEndpoint(ep.AzureOpenAI, ep.HostOverride, secretForMultiPool)
+				} else if ep.Gemini != nil {
 					var secretForMultiPool *ir.Secret
-					if ep.Provider.Gemini.AuthToken.Kind == v1alpha1.SecretRef {
-						secretRef := ep.Provider.Gemini.AuthToken.SecretRef
+					if ep.Gemini.AuthToken.Kind == v1alpha1.SecretRef {
+						secretRef := ep.Gemini.AuthToken.SecretRef
 						secretForMultiPool = multiSecrets[GetMultiPoolSecretKey(idx, jdx, secretRef.Name)]
 					}
-					result, err = buildGeminiEndpoint(ep.Provider.Gemini, ep.HostOverride, secretForMultiPool)
-				} else if ep.Provider.VertexAI != nil {
+					result, err = buildGeminiEndpoint(ep.Gemini, ep.HostOverride, secretForMultiPool)
+				} else if ep.VertexAI != nil {
 					var secretForMultiPool *ir.Secret
-					if ep.Provider.VertexAI.AuthToken.Kind == v1alpha1.SecretRef {
-						secretRef := ep.Provider.VertexAI.AuthToken.SecretRef
+					if ep.VertexAI.AuthToken.Kind == v1alpha1.SecretRef {
+						secretRef := ep.VertexAI.AuthToken.SecretRef
 						secretForMultiPool = multiSecrets[GetMultiPoolSecretKey(idx, jdx, secretRef.Name)]
 					}
-					result, err = buildVertexAIEndpoint(ep.Provider.VertexAI, ep.HostOverride, secretForMultiPool)
-				} else if ep.Provider.Bedrock != nil {
+					result, err = buildVertexAIEndpoint(ep.VertexAI, ep.HostOverride, secretForMultiPool)
+				} else if ep.Bedrock != nil {
 					// currently only supported in agentgateway
 					slog.Error("bedrock on the AI backend are not supported yet, switch to agentgateway class")
 				}
@@ -126,11 +130,6 @@ func buildModelCluster(aiUs *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecre
 		}
 		if len(epByType) > 1 {
 			return fmt.Errorf("multi backend pools must all be of the same type, got %v", epByType)
-		}
-	} else if aiUs.LLM != nil {
-		prioritized, err = buildLLMEndpoint(aiUs, aiSecret)
-		if err != nil {
-			return err
 		}
 	}
 
@@ -178,7 +177,7 @@ func buildModelCluster(aiUs *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecre
 
 func buildLLMEndpoint(aiUs *v1alpha1.AIBackend, aiSecrets *ir.Secret) ([]*envoyendpointv3.LocalityLbEndpoints, error) {
 	var prioritized []*envoyendpointv3.LocalityLbEndpoints
-	provider := aiUs.LLM.Provider
+	provider := aiUs.LLM
 	if provider.OpenAI != nil {
 		host, err := buildOpenAIEndpoint(provider.OpenAI, aiUs.LLM.HostOverride, aiSecrets)
 		if err != nil {
@@ -377,10 +376,10 @@ func createTransformationTemplate(aiBackend *v1alpha1.AIBackend) *envoytransform
 	var bodyTransformation *envoytransformation.TransformationTemplate_MergeJsonKeys
 	if aiBackend.LLM != nil {
 		headerName, prefix, path, bodyTransformation = getTransformation(aiBackend.LLM)
-	} else if aiBackend.MultiPool != nil {
+	} else if len(aiBackend.PriorityGroups) > 0 {
 		// We already know that all the backends are the same type so we can just take the first one
-		llmMultiPool := aiBackend.MultiPool.Priorities[0].Pool[0]
-		headerName, prefix, path, bodyTransformation = getTransformation(&llmMultiPool)
+		provider := aiBackend.PriorityGroups[0].Providers[0]
+		headerName, prefix, path, bodyTransformation = getTransformation(&provider)
 	}
 	transformationTemplate.GetHeaders()[headerName] = &envoytransformation.InjaTemplate{
 		Text: prefix + `{% if host_metadata("auth_token") != "" %}{{host_metadata("auth_token")}}{% else %}{{dynamic_metadata("auth_token","ai.kgateway.io")}}{% endif %}`,
@@ -392,11 +391,10 @@ func createTransformationTemplate(aiBackend *v1alpha1.AIBackend) *envoytransform
 	return transformationTemplate
 }
 
-func getTransformation(llm *v1alpha1.LLMProvider) (string, string, string, *envoytransformation.TransformationTemplate_MergeJsonKeys) {
+func getTransformation(provider *v1alpha1.LLMProvider) (string, string, string, *envoytransformation.TransformationTemplate_MergeJsonKeys) {
 	headerName := "Authorization"
 	var prefix, path string
 	var bodyTransformation *envoytransformation.TransformationTemplate_MergeJsonKeys
-	provider := llm.Provider
 	if provider.OpenAI != nil {
 		prefix = "Bearer "
 		path = "/v1/chat/completions"
@@ -431,15 +429,15 @@ func getTransformation(llm *v1alpha1.LLMProvider) (string, string, string, *envo
 		// https://${LOCATION}-aiplatform.googleapis.com/${VERSION}/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/${PUBLISHER}/models/${MODEL}:{generateContent|streamGenerateContent}
 		path = fmt.Sprintf(`/{{host_metadata("api_version")}}/projects/{{host_metadata("project")}}/locations/{{host_metadata("location")}}/publishers/{{host_metadata("publisher")}}/%s`, modelPath)
 	}
-	if llm.PathOverride != nil {
-		path = *llm.PathOverride.FullPath
+	if provider.PathOverride != nil {
+		path = *provider.PathOverride.FullPath
 	}
-	if llm.AuthHeaderOverride != nil {
-		if llm.AuthHeaderOverride.HeaderName != nil {
-			headerName = *llm.AuthHeaderOverride.HeaderName
+	if provider.AuthHeaderOverride != nil {
+		if provider.AuthHeaderOverride.HeaderName != nil {
+			headerName = *provider.AuthHeaderOverride.HeaderName
 		}
-		if llm.AuthHeaderOverride.Prefix != nil {
-			prefix = *llm.AuthHeaderOverride.Prefix
+		if provider.AuthHeaderOverride.Prefix != nil {
+			prefix = *provider.AuthHeaderOverride.Prefix
 		}
 	}
 

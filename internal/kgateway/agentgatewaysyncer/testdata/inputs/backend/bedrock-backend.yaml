@@ -34,17 +34,16 @@ spec:
   type: AI
   ai:
     llm:
-      provider:
-        bedrock:
-          model: anthropic.claude-3-5-haiku-20241022-v1:0
-          region: us-west-2
-          guardrail:
-            identifier: guardrail-policy-id
-            version: guardrail-policy-version
-          auth:
-            type: Secret
-            secretRef:
-              name: bedrock-secret
+      bedrock:
+        model: anthropic.claude-3-5-haiku-20241022-v1:0
+        region: us-west-2
+        guardrail:
+          identifier: guardrail-policy-id
+          version: guardrail-policy-version
+        auth:
+          type: Secret
+          secretRef:
+            name: bedrock-secret
 ---
 apiVersion: v1
 kind: Secret

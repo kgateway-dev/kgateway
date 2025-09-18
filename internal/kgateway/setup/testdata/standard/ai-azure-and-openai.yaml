@@ -70,12 +70,11 @@ spec:
   type: AI
   ai:
     llm:
-      provider:
-        openai:
-          authToken:
-            kind: "SecretRef"
-            secretRef:
-              name: openai-secret
+      openai:
+        authToken:
+          kind: "SecretRef"
+          secretRef:
+            name: openai-secret
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend
@@ -88,12 +87,11 @@ spec:
   type: AI
   ai:
     llm:
-      provider:
-        azureopenai:
-          endpoint: ai-gateway.openai.azure.com
-          deploymentName: gpt-4o-mini
-          apiVersion: 2024-02-15-preview
-          authToken:
-            kind: "SecretRef"
-            secretRef:
-              name: azure-secret
+      azureopenai:
+        endpoint: ai-gateway.openai.azure.com
+        deploymentName: gpt-4o-mini
+        apiVersion: 2024-02-15-preview
+        authToken:
+          kind: "SecretRef"
+          secretRef:
+            name: azure-secret
