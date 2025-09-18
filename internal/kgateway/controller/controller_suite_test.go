@@ -54,6 +54,7 @@ const (
 	altGatewayClassName         = "clsname-alt"
 	selfManagedGatewayClassName = "clsname-selfmanaged"
 	gatewayControllerName       = "kgateway.dev/kgateway"
+	agwControllerName           = "kgateway.dev/agentgateway"
 	defaultNamespace            = "default"
 )
 
@@ -253,7 +254,7 @@ func createManager(
 		}
 	}
 
-	if err := controller.NewGatewayClassProvisioner(mgr, gatewayControllerName, classConfigs); err != nil {
+	if err := controller.NewGatewayClassProvisioner(mgr, gatewayControllerName, agwControllerName, classConfigs); err != nil {
 		cancel()
 		return nil, err
 	}

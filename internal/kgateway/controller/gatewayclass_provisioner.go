@@ -23,6 +23,11 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 )
 
+const (
+	// agentGatewayClassName is the gateway class name for agentgateway
+	agentGatewayClassName = "agentgateway"
+)
+
 // gatewayClassProvisioner reconciles the provisioned GatewayClass objects
 // to ensure they exist.
 type gatewayClassProvisioner struct {
@@ -41,6 +46,14 @@ type gatewayClassProvisioner struct {
 
 var _ reconcile.TypedReconciler[reconcile.Request] = &gatewayClassProvisioner{}
 var _ manager.LeaderElectionRunnable = &gatewayClassProvisioner{}
+
+// getControllerNameForClass returns the appropriate controller name based on the gateway class name
+func (r *gatewayClassProvisioner) getControllerNameForClass(className string) string {
+	if className == agentGatewayClassName {
+		return r.agwControllerName
+	}
+	return r.controllerName
+}
 
 // NewGatewayClassProvisioner creates a new GatewayClassProvisioner. It will
 // watch for kick events on the channel for initial reconciliation and delete
@@ -73,7 +86,11 @@ func (r *gatewayClassProvisioner) SetupWithManager(mgr ctrl.Manager) error {
 		Named("gatewayclass-provisioner").
 		WithEventFilter(predicate.NewPredicateFuncs(func(obj client.Object) bool {
 			gc, ok := obj.(*apiv1.GatewayClass)
-			return ok && gc.Spec.ControllerName == apiv1.GatewayController(r.controllerName)
+			if !ok {
+				return false
+			}
+			expectedControllerName := r.getControllerNameForClass(gc.Name)
+			return gc.Spec.ControllerName == apiv1.GatewayController(expectedControllerName)
 		})).
 		WatchesRawSource(source.Channel(r.initialReconcileCh, handler.TypedEnqueueRequestsFromMapFunc(
 			func(ctx context.Context, o client.Object) []reconcile.Request {
@@ -118,7 +135,7 @@ func (r *gatewayClassProvisioner) createGatewayClass(ctx context.Context, name s
 			Labels:      config.Labels,
 		},
 		Spec: apiv1.GatewayClassSpec{
-			ControllerName: apiv1.GatewayController(r.controllerName),
+			ControllerName: apiv1.GatewayController(r.getControllerNameForClass(name)),
 		},
 	}
 	if config.Description != "" {

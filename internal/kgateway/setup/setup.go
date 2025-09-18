@@ -48,6 +48,12 @@ func WithGatewayControllerName(name string) func(*setup) {
 	}
 }
 
+func WithAgwControllerName(name string) func(*setup) {
+	return func(s *setup) {
+		s.agwControllerName = name
+	}
+}
+
 func WithGatewayClassName(name string) func(*setup) {
 	return func(s *setup) {
 		s.gatewayClassName = name
@@ -155,6 +161,7 @@ func WithValidator(v validator.Validator) func(*setup) {
 
 type setup struct {
 	gatewayControllerName    string
+	agwControllerName        string
 	gatewayClassName         string
 	waypointClassName        string
 	agentgatewayClassName    string
@@ -180,6 +187,7 @@ var _ Server = &setup{}
 func New(opts ...func(*setup)) (*setup, error) {
 	s := &setup{
 		gatewayControllerName: wellknown.DefaultGatewayControllerName,
+		agwControllerName:     wellknown.DefaultAgwControllerName,
 		gatewayClassName:      wellknown.DefaultGatewayClassName,
 		waypointClassName:     wellknown.DefaultWaypointClassName,
 		agentgatewayClassName: wellknown.DefaultAgwClassName,
@@ -323,7 +331,7 @@ func (s *setup) Start(ctx context.Context) error {
 	}
 
 	BuildKgatewayWithConfig(
-		ctx, mgr, s.gatewayControllerName, s.gatewayClassName, s.waypointClassName,
+		ctx, mgr, s.gatewayControllerName, s.agwControllerName,  s.gatewayClassName, s.waypointClassName,
 		s.agentgatewayClassName, s.additionalGatewayClasses, setupOpts, s.restConfig,
 		istioClient, commoncol, agwCollections, uccBuilder, s.extraPlugins, s.extraAgwPlugins,
 		s.extraGatewayParameters,
@@ -346,6 +354,7 @@ func BuildKgatewayWithConfig(
 	ctx context.Context,
 	mgr manager.Manager,
 	gatewayControllerName string,
+	agwControllerName string,
 	gatewayClassName string,
 	waypointClassName string,
 	agentgatewayClassName string,
@@ -376,6 +385,7 @@ func BuildKgatewayWithConfig(
 	c, err := controller.NewControllerBuilder(ctx, controller.StartConfig{
 		Manager:                  mgr,
 		ControllerName:           gatewayControllerName,
+		AgwControllerName:        agwControllerName,
 		GatewayClassName:         gatewayClassName,
 		WaypointGatewayClassName: waypointClassName,
 		AgentgatewayClassName:    agentgatewayClassName,
