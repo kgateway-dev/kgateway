@@ -11,26 +11,26 @@ import (
 )
 
 type PolicyPlugin struct {
-	Policies       krt.Collection[ADPPolicy]
+	Policies       krt.Collection[AgwPolicy]
 	PolicyStatuses krt.StatusCollection[controllers.Object, v1alpha2.PolicyStatus]
 }
 
 // ApplyPolicies extracts all policies from the collection
-func (p *PolicyPlugin) ApplyPolicies() (krt.Collection[ADPPolicy], krt.StatusCollection[controllers.Object, v1alpha2.PolicyStatus]) {
+func (p *PolicyPlugin) ApplyPolicies() (krt.Collection[AgwPolicy], krt.StatusCollection[controllers.Object, v1alpha2.PolicyStatus]) {
 	return p.Policies, p.PolicyStatuses
 }
 
-// ADPPolicy wraps an ADP policy for collection handling
-type ADPPolicy struct {
+// AgwPolicy wraps an Agw policy for collection handling
+type AgwPolicy struct {
 	Policy *api.Policy
 	// TODO: track errors per policy
 }
 
-func (p ADPPolicy) Equals(in ADPPolicy) bool {
+func (p AgwPolicy) Equals(in AgwPolicy) bool {
 	return protoconv.Equals(p.Policy, in.Policy)
 }
 
-func (p ADPPolicy) ResourceName() string {
+func (p AgwPolicy) ResourceName() string {
 	return p.Policy.Name + attachmentName(p.Policy.Target)
 }
 
@@ -55,22 +55,22 @@ func attachmentName(target *api.PolicyTarget) string {
 }
 
 type AddResourcesPlugin struct {
-	Binds     krt.Collection[ir.ADPResourcesForGateway]
-	Listeners krt.Collection[ir.ADPResourcesForGateway]
-	Routes    krt.Collection[ir.ADPResourcesForGateway]
+	Binds     krt.Collection[ir.AgwResourcesForGateway]
+	Listeners krt.Collection[ir.AgwResourcesForGateway]
+	Routes    krt.Collection[ir.AgwResourcesForGateway]
 }
 
 // AddBinds extracts all bind resources from the collection
-func (p *AddResourcesPlugin) AddBinds() krt.Collection[ir.ADPResourcesForGateway] {
+func (p *AddResourcesPlugin) AddBinds() krt.Collection[ir.AgwResourcesForGateway] {
 	return p.Binds
 }
 
 // AddListeners extracts all routes resources from the collection
-func (p *AddResourcesPlugin) AddListeners() krt.Collection[ir.ADPResourcesForGateway] {
+func (p *AddResourcesPlugin) AddListeners() krt.Collection[ir.AgwResourcesForGateway] {
 	return p.Listeners
 }
 
 // AddRoutes extracts all routes resources from the collection
-func (p *AddResourcesPlugin) AddRoutes() krt.Collection[ir.ADPResourcesForGateway] {
+func (p *AddResourcesPlugin) AddRoutes() krt.Collection[ir.AgwResourcesForGateway] {
 	return p.Routes
 }

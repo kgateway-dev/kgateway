@@ -296,7 +296,7 @@ var _ = Describe("Deployer", func() {
 			}
 		}
 
-		agentGatewayParam = func(name string) *gw2_v1alpha1.GatewayParameters {
+		agentgatewayParam = func(name string) *gw2_v1alpha1.GatewayParameters {
 			return &gw2_v1alpha1.GatewayParameters{
 				TypeMeta: metav1.TypeMeta{
 					Kind: wellknown.GatewayParametersGVK.Kind,
@@ -310,7 +310,7 @@ var _ = Describe("Deployer", func() {
 				},
 				Spec: gw2_v1alpha1.GatewayParametersSpec{
 					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-						AgentGateway: &gw2_v1alpha1.AgentGateway{
+						Agentgateway: &gw2_v1alpha1.Agentgateway{
 							Enabled: ptr.To(true),
 							Image: &gw2_v1alpha1.Image{
 								Tag: ptr.To("0.4.0"),
@@ -431,7 +431,7 @@ var _ = Describe("Deployer", func() {
 				},
 				GatewayClassName:         wellknown.DefaultGatewayClassName,
 				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-				AgentGatewayClassName:    wellknown.DefaultAgentGatewayClassName,
+				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
 			})
 			chart, err := internaldeployer.LoadGatewayChart()
 			Expect(err).NotTo(HaveOccurred())
@@ -510,7 +510,7 @@ var _ = Describe("Deployer", func() {
 				},
 				GatewayClassName:         wellknown.DefaultGatewayClassName,
 				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-				AgentGatewayClassName:    wellknown.DefaultAgentGatewayClassName,
+				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
 			})
 			chart, err := internaldeployer.LoadGatewayChart()
 			Expect(err).NotTo(HaveOccurred())
@@ -531,7 +531,7 @@ var _ = Describe("Deployer", func() {
 			gwc *api.GatewayClass
 		)
 		BeforeEach(func() {
-			gwp = agentGatewayParam("agent-gateway-params")
+			gwp = agentgatewayParam("agent-gateway-params")
 			gwc = &api.GatewayClass{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "agentgateway",
@@ -582,7 +582,7 @@ var _ = Describe("Deployer", func() {
 				},
 				GatewayClassName:         wellknown.DefaultGatewayClassName,
 				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-				AgentGatewayClassName:    wellknown.DefaultAgentGatewayClassName,
+				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
 			})
 			chart, err := internaldeployer.LoadGatewayChart()
 			Expect(err).NotTo(HaveOccurred())
@@ -676,7 +676,7 @@ var _ = Describe("Deployer", func() {
 				},
 				GatewayClassName:         wellknown.DefaultGatewayClassName,
 				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-				AgentGatewayClassName:    wellknown.DefaultAgentGatewayClassName,
+				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
 			})
 			chart, err := internaldeployer.LoadGatewayChart()
 			Expect(err).NotTo(HaveOccurred())
@@ -756,7 +756,7 @@ var _ = Describe("Deployer", func() {
 				},
 				GatewayClassName:         wellknown.DefaultGatewayClassName,
 				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-				AgentGatewayClassName:    wellknown.DefaultAgentGatewayClassName,
+				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
 			})
 			chart, err := internaldeployer.LoadGatewayChart()
 			Expect(err).NotTo(HaveOccurred())
@@ -778,7 +778,7 @@ var _ = Describe("Deployer", func() {
 				},
 				GatewayClassName:         wellknown.DefaultGatewayClassName,
 				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-				AgentGatewayClassName:    wellknown.DefaultAgentGatewayClassName,
+				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
 			})
 			d2 := deployer.NewDeployer(wellknown.DefaultGatewayControllerName, newFakeClientWithObjs(gwc, defaultGatewayParams()), chart,
 				gwParams2,
@@ -1513,7 +1513,7 @@ var _ = Describe("Deployer", func() {
 					},
 					GatewayClassName:         wellknown.DefaultGatewayClassName,
 					WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-					AgentGatewayClassName:    wellknown.DefaultAgentGatewayClassName,
+					AgentgatewayClassName:    wellknown.DefaultAgwClassName,
 				}
 			}
 			istioEnabledDeployerInputs = func() *deployer.Inputs {

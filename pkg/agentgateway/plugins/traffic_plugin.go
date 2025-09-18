@@ -57,19 +57,19 @@ func convertStatusCollection(col krt.Collection[krt.ObjectWithStatus[*v1alpha1.T
 }
 
 // NewTrafficPlugin creates a new TrafficPolicy plugin
-func NewTrafficPlugin(agw *AgwCollections) AgentgatewayPlugin {
+func NewTrafficPlugin(agw *AgwCollections) AgwPlugin {
 	col := krt.WrapClient(kclient.NewFiltered[*v1alpha1.TrafficPolicy](
 		agw.Client,
 		kclient.Filter{ObjectFilter: agw.Client.ObjectFilter()},
 	), agw.KrtOpts.ToOptions("TrafficPolicy")...)
 	policyStatusCol, policyCol := krt.NewStatusManyCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.TrafficPolicy) (
 		*v1alpha2.PolicyStatus,
-		[]ADPPolicy,
+		[]AgwPolicy,
 	) {
 		return TranslateTrafficPolicy(krtctx, agw.GatewayExtensions, agw.Backends, agw.Secrets, policyCR, agw.ControllerName)
 	})
 
-	return AgentgatewayPlugin{
+	return AgwPlugin{
 		ContributesPolicies: map[schema.GroupKind]PolicyPlugin{
 			wellknown.TrafficPolicyGVK.GroupKind(): {
 				Policies:       policyCol,
@@ -90,8 +90,8 @@ func TranslateTrafficPolicy(
 	secrets krt.Collection[*corev1.Secret],
 	trafficPolicy *v1alpha1.TrafficPolicy,
 	controllerName string,
-) (*v1alpha2.PolicyStatus, []ADPPolicy) {
-	var adpPolicies []ADPPolicy
+) (*v1alpha2.PolicyStatus, []AgwPolicy) {
+	var agwPolicies []AgwPolicy
 
 	isMcpTarget := false
 	var ancestors []v1alpha2.PolicyAncestorStatus
@@ -197,8 +197,8 @@ func TranslateTrafficPolicy(
 		}
 
 		if policyTarget != nil {
-			translatedPolicies, err := translateTrafficPolicyToADP(ctx, gatewayExtensions, secrets, trafficPolicy, string(target.Name), policyTarget, isMcpTarget)
-			adpPolicies = append(adpPolicies, translatedPolicies...)
+			translatedPolicies, err := translateTrafficPolicyToAgw(ctx, gatewayExtensions, secrets, trafficPolicy, string(target.Name), policyTarget, isMcpTarget)
+			agwPolicies = append(agwPolicies, translatedPolicies...)
 			var conds []metav1.Condition
 			if err != nil {
 				// Build success conditions per ancestor
@@ -271,11 +271,11 @@ func TranslateTrafficPolicy(
 		return strings.Compare(reports.ParentString(a.AncestorRef), reports.ParentString(b.AncestorRef))
 	})
 
-	return &status, adpPolicies
+	return &status, agwPolicies
 }
 
-// translateTrafficPolicyToADP converts a TrafficPolicy to agentgateway Policy resources
-func translateTrafficPolicyToADP(
+// translateTrafficPolicyToAgw converts a TrafficPolicy to agentgateway Policy resources
+func translateTrafficPolicyToAgw(
 	ctx krt.HandlerContext,
 	gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension],
 	secrets krt.Collection[*corev1.Secret],
@@ -283,8 +283,8 @@ func translateTrafficPolicyToADP(
 	policyTargetName string,
 	policyTarget *api.PolicyTarget,
 	isMcpTarget bool,
-) ([]ADPPolicy, error) {
-	adpPolicies := make([]ADPPolicy, 0)
+) ([]AgwPolicy, error) {
+	agwPolicies := make([]AgwPolicy, 0)
 	var errs []error
 
 	// Generate a base policy name from the TrafficPolicy reference
@@ -297,7 +297,7 @@ func translateTrafficPolicyToADP(
 			logger.Error("error processing ExtAuth policy", "error", err)
 			errs = append(errs, err)
 		}
-		adpPolicies = append(adpPolicies, extAuthPolicies...)
+		agwPolicies = append(agwPolicies, extAuthPolicies...)
 	}
 
 	// Convert RBAC policy if present
@@ -307,7 +307,7 @@ func translateTrafficPolicyToADP(
 			logger.Error("error processing RBAC policy", "error", err)
 			errs = append(errs, err)
 		}
-		adpPolicies = append(adpPolicies, rbacPolicies...)
+		agwPolicies = append(agwPolicies, rbacPolicies...)
 	}
 
 	// Process AI policies if present
@@ -317,7 +317,7 @@ func translateTrafficPolicyToADP(
 			logger.Error("error processing AI policy", "error", err)
 			errs = append(errs, err)
 		}
-		adpPolicies = append(adpPolicies, aiPolicies...)
+		agwPolicies = append(agwPolicies, aiPolicies...)
 	}
 	// Process RateLimit policies if present
 	if trafficPolicy.Spec.RateLimit != nil {
@@ -326,7 +326,7 @@ func translateTrafficPolicyToADP(
 			logger.Error("error processing rate limit policy", "error", err)
 			errs = append(errs, err)
 		}
-		adpPolicies = append(adpPolicies, rateLimitPolicies...)
+		agwPolicies = append(agwPolicies, rateLimitPolicies...)
 	}
 
 	// Process transformation policies if present
@@ -336,14 +336,14 @@ func translateTrafficPolicyToADP(
 			logger.Error("error processing transformation policy", "error", err)
 			errs = append(errs, err)
 		}
-		adpPolicies = append(adpPolicies, transformationPolicies...)
+		agwPolicies = append(agwPolicies, transformationPolicies...)
 	}
 
-	return adpPolicies, errors.Join(errs...)
+	return agwPolicies, errors.Join(errs...)
 }
 
 // processExtAuthPolicy processes ExtAuth configuration and creates corresponding agentgateway policies
-func processExtAuthPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension], trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) ([]ADPPolicy, error) {
+func processExtAuthPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension], trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) ([]AgwPolicy, error) {
 	// Look up the GatewayExtension referenced by the ExtAuth policy
 	extensionName := trafficPolicy.Spec.ExtAuth.ExtensionRef.Name
 	extensionNamespace := string(ptr.Deref(trafficPolicy.Spec.ExtAuth.ExtensionRef.Namespace, ""))
@@ -401,11 +401,11 @@ func processExtAuthPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collecti
 		"agentgateway_policy", extauthPolicy.Name,
 		"target", extauthSvcTarget)
 
-	return []ADPPolicy{{Policy: extauthPolicy}}, nil
+	return []AgwPolicy{{Policy: extauthPolicy}}, nil
 }
 
-// processAIPolicy processes AI configuration and creates corresponding ADP policies
-func processAIPolicy(krtctx krt.HandlerContext, secrets krt.Collection[*corev1.Secret], trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) ([]ADPPolicy, error) {
+// processAIPolicy processes AI configuration and creates corresponding Agw policies
+func processAIPolicy(krtctx krt.HandlerContext, secrets krt.Collection[*corev1.Secret], trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) ([]AgwPolicy, error) {
 	var errs []error
 	aiSpec := trafficPolicy.Spec.AI
 
@@ -460,7 +460,7 @@ func processAIPolicy(krtctx krt.HandlerContext, secrets krt.Collection[*corev1.S
 		"policy", trafficPolicy.Name,
 		"agentgateway_policy", aiPolicy.Name)
 
-	return []ADPPolicy{{Policy: aiPolicy}}, errors.Join(errs...)
+	return []AgwPolicy{{Policy: aiPolicy}}, errors.Join(errs...)
 }
 
 func processRequestGuard(krtctx krt.HandlerContext, secrets krt.Collection[*corev1.Secret], namespace string, req *v1alpha1.PromptguardRequest) *api.PolicySpec_Ai_RequestGuard {
@@ -683,13 +683,13 @@ func processModeration(krtctx krt.HandlerContext, secrets krt.Collection[*corev1
 	return pgModeration
 }
 
-// processRBACPolicy processes RBAC configuration and creates corresponding ADP policies
+// processRBACPolicy processes RBAC configuration and creates corresponding Agw policies
 func processRBACPolicy(
 	trafficPolicy *v1alpha1.TrafficPolicy,
 	policyName string,
 	policyTarget *api.PolicyTarget,
 	isMCP bool,
-) ([]ADPPolicy, error) {
+) ([]AgwPolicy, error) {
 	var allowPolicies, denyPolicies []string
 	if trafficPolicy.Spec.RBAC.Action == v1alpha1.AuthorizationPolicyActionDeny {
 		denyPolicies = append(denyPolicies, trafficPolicy.Spec.RBAC.Policy.MatchExpressions...)
@@ -731,7 +731,7 @@ func processRBACPolicy(
 		"agentgateway_policy", rbacPolicy.Name,
 		"target", policyTarget)
 
-	return []ADPPolicy{{Policy: rbacPolicy}}, nil
+	return []AgwPolicy{{Policy: rbacPolicy}}, nil
 }
 
 func getTrafficPolicyName(trafficPolicyNs, trafficPolicyName, policyTargetName string) string {
@@ -747,14 +747,14 @@ func getGatewayExtensionKey(extensionNamespace, extensionName string) string {
 }
 
 // processRateLimitPolicy processes RateLimit configuration and creates corresponding agentgateway policies
-func processRateLimitPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension], trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) ([]ADPPolicy, error) {
-	var adpPolicies []ADPPolicy
+func processRateLimitPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension], trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) ([]AgwPolicy, error) {
+	var agwPolicies []AgwPolicy
 
 	// Process local rate limiting if present
 	if trafficPolicy.Spec.RateLimit.Local != nil {
 		localPolicy, err := processLocalRateLimitPolicy(trafficPolicy, policyName, policyTarget)
 		if localPolicy != nil && err == nil {
-			adpPolicies = append(adpPolicies, *localPolicy)
+			agwPolicies = append(agwPolicies, *localPolicy)
 		} else {
 			return nil, err
 		}
@@ -764,17 +764,17 @@ func processRateLimitPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collec
 	if trafficPolicy.Spec.RateLimit.Global != nil {
 		globalPolicy, err := processGlobalRateLimitPolicy(ctx, gatewayExtensions, trafficPolicy, policyName, policyTarget)
 		if globalPolicy != nil && err == nil {
-			adpPolicies = append(adpPolicies, *globalPolicy)
+			agwPolicies = append(agwPolicies, *globalPolicy)
 		} else {
 			return nil, err
 		}
 	}
 
-	return adpPolicies, nil
+	return agwPolicies, nil
 }
 
 // processLocalRateLimitPolicy processes local rate limiting configuration
-func processLocalRateLimitPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) (*ADPPolicy, error) {
+func processLocalRateLimitPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) (*AgwPolicy, error) {
 	if trafficPolicy.Spec.RateLimit.Local.TokenBucket == nil {
 		logger.Error("token bucket configuration is nil")
 		return nil, errors.New("token bucket configuration is nil")
@@ -813,7 +813,7 @@ func processLocalRateLimitPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyNa
 		},
 	}
 
-	return &ADPPolicy{Policy: localRateLimitPolicy}, nil
+	return &AgwPolicy{Policy: localRateLimitPolicy}, nil
 }
 
 func processGlobalRateLimitPolicy(
@@ -822,7 +822,7 @@ func processGlobalRateLimitPolicy(
 	trafficPolicy *v1alpha1.TrafficPolicy,
 	policyName string,
 	policyTarget *api.PolicyTarget,
-) (*ADPPolicy, error) {
+) (*AgwPolicy, error) {
 	grl := trafficPolicy.Spec.RateLimit.Global
 	if grl == nil {
 		return nil, nil
@@ -849,8 +849,8 @@ func processGlobalRateLimitPolicy(
 	// Translate descriptors
 	descriptors := make([]*api.PolicySpec_RemoteRateLimit_Descriptor, 0, len(grl.Descriptors))
 	for _, d := range grl.Descriptors {
-		if adp := processRateLimitDescriptor(d); adp != nil {
-			descriptors = append(descriptors, adp)
+		if agw := processRateLimitDescriptor(d); agw != nil {
+			descriptors = append(descriptors, agw)
 		}
 	}
 
@@ -869,7 +869,7 @@ func processGlobalRateLimitPolicy(
 		},
 	}
 
-	return &ADPPolicy{Policy: p}, nil
+	return &AgwPolicy{Policy: p}, nil
 }
 
 // getDescriptorEntryKey extracts the key from a rate limit descriptor entry
@@ -1027,12 +1027,12 @@ func toJSONValue(value string) (string, error) {
 	return string(marshaled), nil
 }
 
-// processTransformationPolicy processes transformation configuration and creates corresponding ADP policies
+// processTransformationPolicy processes transformation configuration and creates corresponding Agw policies
 func processTransformationPolicy(
 	trafficPolicy *v1alpha1.TrafficPolicy,
 	policyName string,
 	policyTarget *api.PolicyTarget,
-) ([]ADPPolicy, error) {
+) ([]AgwPolicy, error) {
 	transformation := trafficPolicy.Spec.Transformation
 
 	transformationPolicy := &api.Policy{
@@ -1053,7 +1053,7 @@ func processTransformationPolicy(
 		"agentgateway_policy", transformationPolicy.Name,
 		"target", policyTarget)
 
-	return []ADPPolicy{{Policy: transformationPolicy}}, nil
+	return []AgwPolicy{{Policy: transformationPolicy}}, nil
 }
 
 // convertTransformSpec converts transformation specs to agentgateway format

@@ -79,7 +79,7 @@ type KubernetesProxyConfig struct {
 	Deployment *ProxyDeployment `json:"deployment,omitempty"`
 
 	// Configuration for the container running Envoy.
-	// If AgentGateway is enabled, the EnvoyContainer values will be ignored.
+	// If agentgateway is enabled, the EnvoyContainer values will be ignored.
 	//
 	// +optional
 	EnvoyContainer *EnvoyContainer `json:"envoyContainer,omitempty"`
@@ -120,11 +120,11 @@ type KubernetesProxyConfig struct {
 	// +optional
 	AiExtension *AiExtension `json:"aiExtension,omitempty"`
 
-	// Configure the AgentGateway integration. If AgentGateway is disabled, the EnvoyContainer values will be used by
+	// Configure the agentgateway integration. If agentgateway is disabled, the EnvoyContainer values will be used by
 	// default to configure the data plane proxy.
 	//
 	// +optional
-	AgentGateway *AgentGateway `json:"agentGateway,omitempty"`
+	Agentgateway *Agentgateway `json:"agentgateway,omitempty"`
 
 	// Used to unset the `runAsUser` values in security contexts.
 	FloatingUserId *bool `json:"floatingUserId,omitempty"`
@@ -193,11 +193,11 @@ func (in *KubernetesProxyConfig) GetAiExtension() *AiExtension {
 	return in.AiExtension
 }
 
-func (in *KubernetesProxyConfig) GetAgentGateway() *AgentGateway {
+func (in *KubernetesProxyConfig) GetAgentgateway() *Agentgateway {
 	if in == nil {
 		return nil
 	}
-	return in.AgentGateway
+	return in.Agentgateway
 }
 
 func (in *KubernetesProxyConfig) GetFloatingUserId() *bool {
@@ -996,8 +996,8 @@ func (otelTransportSecurityMode OTLPTransportSecurityMode) String() string {
 	}
 }
 
-// AgentGateway configures the AgentGateway integration. If AgentGateway is enabled, Envoy
-type AgentGateway struct {
+// Agentgateway configures the agentgateway dataplane integration to be enabled if the `agentgateway` GatewayClass is used.
+type Agentgateway struct {
 	// Whether to enable the extension.
 	//
 	// +optional
@@ -1059,49 +1059,49 @@ type AgentGateway struct {
 	ExtraVolumeMounts []corev1.VolumeMount `json:"extraVolumeMounts,omitempty"`
 }
 
-func (in *AgentGateway) GetEnabled() *bool {
+func (in *Agentgateway) GetEnabled() *bool {
 	if in == nil {
 		return nil
 	}
 	return in.Enabled
 }
 
-func (in *AgentGateway) GetLogLevel() *string {
+func (in *Agentgateway) GetLogLevel() *string {
 	if in == nil {
 		return nil
 	}
 	return in.LogLevel
 }
 
-func (in *AgentGateway) GetImage() *Image {
+func (in *Agentgateway) GetImage() *Image {
 	if in == nil {
 		return nil
 	}
 	return in.Image
 }
 
-func (in *AgentGateway) GetSecurityContext() *corev1.SecurityContext {
+func (in *Agentgateway) GetSecurityContext() *corev1.SecurityContext {
 	if in == nil {
 		return nil
 	}
 	return in.SecurityContext
 }
 
-func (in *AgentGateway) GetResources() *corev1.ResourceRequirements {
+func (in *Agentgateway) GetResources() *corev1.ResourceRequirements {
 	if in == nil {
 		return nil
 	}
 	return in.Resources
 }
 
-func (in *AgentGateway) GetEnv() []corev1.EnvVar {
+func (in *Agentgateway) GetEnv() []corev1.EnvVar {
 	if in == nil {
 		return nil
 	}
 	return in.Env
 }
 
-func (in *AgentGateway) GetCustomConfigMapName() *string {
+func (in *Agentgateway) GetCustomConfigMapName() *string {
 	if in == nil {
 		return nil
 	}

@@ -23,5 +23,5 @@ metadata:
   name: gw-params
 spec:
   kube:
-    agentGateway:
+    agentgateway:
       enabled: true

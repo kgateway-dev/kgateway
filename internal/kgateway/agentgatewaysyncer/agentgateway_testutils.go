@@ -37,7 +37,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
 	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	agentgatewayplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
+	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -322,9 +322,9 @@ func TestTranslationWithExtraPlugins(
 	var policies []*api.Policy
 	var addresses []*api.Address
 
-	// Extract agentgateway API types from ADPResources
-	for _, adpRes := range result.Resources {
-		for _, item := range adpRes.ResourceConfig.Items {
+	// Extract agentgateway API types from AgwResources
+	for _, agwRes := range result.Resources {
+		for _, item := range agwRes.ResourceConfig.Items {
 			resourceWrapper := item.Resource.(*envoyResourceWithCustomName)
 			res := resourceWrapper.Message.(*api.Resource)
 			switch r := res.Kind.(type) {
@@ -342,7 +342,7 @@ func TestTranslationWithExtraPlugins(
 				policies = append(policies, r.Policy)
 			}
 		}
-		for _, item := range adpRes.AddressConfig.Items {
+		for _, item := range agwRes.AddressConfig.Items {
 			resourceWrapper := item.Resource.(*envoyResourceWithCustomName)
 			res := resourceWrapper.Message.(*api.Address)
 			addresses = append(addresses, res)
@@ -611,7 +611,7 @@ func (tc TestCase) Run(
 	gwClasses := []string{
 		wellknown.DefaultGatewayClassName,
 		wellknown.DefaultWaypointClassName,
-		wellknown.DefaultAgentGatewayClassName,
+		wellknown.DefaultAgwClassName,
 	}
 	for _, className := range gwClasses {
 		cli.GatewayAPI().GatewayV1().GatewayClasses().Create(ctx, &gwv1.GatewayClass{
@@ -630,7 +630,7 @@ func (tc TestCase) Run(
 
 	settings, err := settings.BuildSettings()
 	// enable agent gateway translation
-	settings.EnableAgentGateway = true
+	settings.EnableAgentgateway = true
 	settings.EnableInferExt = true
 	if err != nil {
 		return nil, err
@@ -652,14 +652,14 @@ func (tc TestCase) Run(
 	if err != nil {
 		return nil, err
 	}
-	proxySyncerPlugins := proxySyncerPluginFactory(ctx, commoncol, wellknown.DefaultAgentGatewayClassName, extraPluginsFn, *settings)
+	proxySyncerPlugins := proxySyncerPluginFactory(ctx, commoncol, wellknown.DefaultAgwClassName, extraPluginsFn, *settings)
 	commoncol.InitPlugins(ctx, proxySyncerPlugins, *settings)
 
 	cli.RunAndWait(ctx.Done())
 	results := make(map[types.NamespacedName]ActualTestResult)
 
 	// Create AgwCollections with the necessary input collections
-	agwCollections, err := agentgatewayplugins.NewAgwCollections(
+	agwCollections, err := agwplugins.NewAgwCollections(
 		commoncol,
 		"istio-system",
 		"Kubernetes",
@@ -667,7 +667,7 @@ func (tc TestCase) Run(
 	if err != nil {
 		return nil, err
 	}
-	agwMergedPlugins := agentGatewayPluginFactory(ctx, agwCollections)
+	agwMergedPlugins := agwPluginFactory(ctx, agwCollections)
 	kubeclient.WaitForCacheSync("tlsroutes", ctx.Done(), agwCollections.TLSRoutes.HasSynced)
 	kubeclient.WaitForCacheSync("tcproutes", ctx.Done(), agwCollections.TCPRoutes.HasSynced)
 	kubeclient.WaitForCacheSync("httproutes", ctx.Done(), agwCollections.HTTPRoutes.HasSynced)
@@ -679,9 +679,9 @@ func (tc TestCase) Run(
 
 	// Instead of calling full Init(), manually initialize just what we need for testing
 	// to avoid race conditions with XDS collection building
-	agentGwSyncer := NewAgentGwSyncer(
+	agentGwSyncer := NewAgwSyncer(
 		wellknown.DefaultGatewayControllerName,
-		wellknown.DefaultAgentGatewayClassName,
+		wellknown.DefaultAgwClassName,
 		cli,
 		nil, // mgr not needed for test
 		agwCollections,
@@ -695,17 +695,17 @@ func (tc TestCase) Run(
 	refGrants := BuildReferenceGrants(ReferenceGrantsCollection(agwCollections.ReferenceGrants, krtOpts))
 	gateways := agentGwSyncer.buildGatewayCollection(gatewayClasses, refGrants, krtOpts)
 
-	// Build ADP resources and addresses collections
-	adpResourcesCollection, _ := agentGwSyncer.buildADPResources(gateways, refGrants, krtOpts)
-	_, adpBackendsCollection := agentGwSyncer.newADPBackendCollection(agwCollections.Backends, krtOpts)
+	// Build Agw resources and addresses collections
+	agwResourcesCollection, _ := agentGwSyncer.buildAgwResources(gateways, refGrants, krtOpts)
+	_, agwBackendsCollection := agentGwSyncer.newAgwBackendCollection(agwCollections.Backends, krtOpts)
 	addressesCollection := agentGwSyncer.buildAddressCollections(krtOpts)
 
 	// Wait for collections to sync
-	kubeclient.WaitForCacheSync("adp-resources", ctx.Done(), adpResourcesCollection.HasSynced)
+	kubeclient.WaitForCacheSync("agw-resources", ctx.Done(), agwResourcesCollection.HasSynced)
 	kubeclient.WaitForCacheSync("addresses", ctx.Done(), addressesCollection.HasSynced)
 
 	// build final proxy xds result
-	agentGwSyncer.buildXDSCollection(adpResourcesCollection, adpBackendsCollection, addressesCollection, krtOpts)
+	agentGwSyncer.buildXDSCollection(agwResourcesCollection, agwBackendsCollection, addressesCollection, krtOpts)
 	kubeclient.WaitForCacheSync("xds", ctx.Done(), agentGwSyncer.xDS.HasSynced)
 
 	time.Sleep(500 * time.Millisecond) // Allow collections to populate
@@ -765,7 +765,7 @@ func (tc TestCase) Run(
 }
 
 func proxySyncerPluginFactory(ctx context.Context, commoncol *collections.CommonCollections, name string, extraPluginsFn ExtraPluginsFn, globalSettings settings.Settings) pluginsdk.Plugin {
-	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultAgentGatewayClassName, globalSettings, nil)
+	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultAgwClassName, globalSettings, nil)
 
 	var extraPlugs []pluginsdk.Plugin
 	if extraPluginsFn != nil {
@@ -780,11 +780,11 @@ func proxySyncerPluginFactory(ctx context.Context, commoncol *collections.Common
 	return mergedPlugins
 }
 
-// agentGatewayPluginFactory is a factory function that returns the agent gateway plugins
-// It is based on agentGatewayPluginFactory(cfg)(ctx, cfg.AgwCollections) in start.go
-func agentGatewayPluginFactory(ctx context.Context, agwCollections *agentgatewayplugins.AgwCollections) agentgatewayplugins.AgentgatewayPlugin {
-	agwPlugins := agentgatewayplugins.Plugins(agwCollections)
-	mergedPlugins := agentgatewayplugins.MergePlugins(agwPlugins...)
+// agwPluginFactory is a factory function that returns the agent gateway plugins
+// It is based on agwPluginFactory(cfg)(ctx, cfg.AgwCollections) in start.go
+func agwPluginFactory(ctx context.Context, agwCollections *agwplugins.AgwCollections) agwplugins.AgwPlugin {
+	agwPlugins := agwplugins.Plugins(agwCollections)
+	mergedPlugins := agwplugins.MergePlugins(agwPlugins...)
 	for i, plug := range agwPlugins {
 		kubeclient.WaitForCacheSync(fmt.Sprintf("plugin-%d", i), ctx.Done(), plug.HasSynced)
 	}

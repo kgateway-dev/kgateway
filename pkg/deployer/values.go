@@ -76,7 +76,7 @@ type HelmGateway struct {
 	AIExtension *HelmAIExtension `json:"aiExtension,omitempty"`
 
 	// agentgateway integration values
-	AgentGateway *HelmAgentGateway `json:"agentGateway,omitempty"`
+	Agentgateway *HelmAgentgateway `json:"agentgateway,omitempty"`
 }
 
 // helmPort represents a Gateway Listener port
@@ -182,7 +182,7 @@ type HelmEndpointPickerExtension struct {
 	PoolNamespace string `json:"poolNamespace"`
 }
 
-type HelmAgentGateway struct {
+type HelmAgentgateway struct {
 	Enabled             bool   `json:"enabled,omitempty"`
 	LogLevel            string `json:"logLevel,omitempty"`
 	CustomConfigMapName string `json:"customConfigMapName,omitempty"`
