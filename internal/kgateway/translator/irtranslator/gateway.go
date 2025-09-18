@@ -67,6 +67,8 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 	return res
 }
 
+// findOriginalListenerName finds the original listener name for a given listener.
+// This may give inaccurate results when multiple listeners have the same port, but is used for logging only.
 func findOriginalListenerName(gw ir.GatewayIR, listener ir.ListenerIR) string {
 	for _, origListener := range gw.SourceObject.Listeners {
 		if uint32(origListener.Port) == listener.BindPort {
