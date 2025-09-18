@@ -97,6 +97,7 @@ func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 	log.Info("reconciling gateway")
 	objs, err := r.deployer.GetObjsToDeploy(ctx, &gw)
 	if err != nil {
+		log.Error(err, "failed to get objects to deploy")
 		// if we fail to either reference a valid GatewayParameters or
 		// the GatewayParameters configuration leads to issues building the
 		// objects, we want to set the status to InvalidParameters.
@@ -116,6 +117,7 @@ func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 		existing.Status == metav1.ConditionFalse &&
 		existing.Reason == string(api.GatewayReasonInvalidParameters) {
 		// set the status Accepted=true if it had been set to false due to InvalidParameters
+		log.Info("setting status Accepted=true if it had been set to false due to InvalidParameters")
 		condition := metav1.Condition{
 			Type:               string(api.GatewayConditionAccepted),
 			Status:             metav1.ConditionTrue,

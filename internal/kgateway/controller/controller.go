@@ -229,6 +229,7 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 			func(ctx context.Context, obj client.Object) []reconcile.Request {
 				gwpName := obj.GetName()
 				gwpNamespace := obj.GetNamespace()
+				log.Info("enqueuing GatewayParameters", "gwpNamespace", gwpNamespace, "gwpName", gwpName)
 				// look up the Gateways that are using this GatewayParameters object
 				var gwList apiv1.GatewayList
 				err := cli.List(ctx, &gwList, client.InNamespace(gwpNamespace), client.MatchingFieldsSelector{Selector: fields.OneTermEqualSelector(GatewayParamsField, gwpName)})
@@ -298,6 +299,7 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 			c.reconciler.customEvents,
 			handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, obj ir.Gateway) []reconcile.Request {
 				// Convert the generic event to a reconcile request
+				log.Info("enqueuing Gateway IR", "gwNamespace", obj.Namespace, "gwName", obj.Name)
 				return []reconcile.Request{
 					{
 						NamespacedName: types.NamespacedName{Namespace: obj.Namespace, Name: obj.Name},
@@ -384,6 +386,7 @@ func (c *controllerBuilder) watchInferencePool(ctx context.Context) error {
 		)).
 		// Watch HTTPRoute objects so that changes there trigger a reconcile for referenced InferencePools.
 		Watches(&apiv1.HTTPRoute{}, handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
+			log.Info("enqueuing HTTPRoute", "routeNamespace", obj.GetNamespace(), "routeName", obj.GetName())
 			route, ok := obj.(*apiv1.HTTPRoute)
 			if !ok {
 				return nil
