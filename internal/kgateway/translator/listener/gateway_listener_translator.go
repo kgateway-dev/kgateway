@@ -214,7 +214,8 @@ func (ml *MergedListeners) AppendTcpListener(
 		routesWithHosts:     routeInfos,
 	}
 	fc := tcpFilterChain{
-		parents: parent,
+		parents:          parent,
+		listenerReporter: reporter,
 	}
 
 	finalPort := getListenerPortNumber(listener)
@@ -248,9 +249,10 @@ func (ml *MergedListeners) AppendTlsListener(
 		routesWithHosts:     routeInfos,
 	}
 	fc := tcpFilterChain{
-		parents:   parent,
-		tls:       listener.TLS,
-		sniDomain: listener.Hostname,
+		parents:          parent,
+		tls:              listener.TLS,
+		sniDomain:        listener.Hostname,
+		listenerReporter: reporter,
 	}
 
 	finalPort := getListenerPortNumber(listener)
@@ -345,14 +347,19 @@ func (ml *MergedListener) TranslateListener(
 		}
 	}
 
+	// Only report errors if ALL TCP filter chains failed (port is not programmed)
 	if len(ml.TcpFilterChains) > 0 && len(matchedTcpListeners) == 0 {
+		// All TCP filter chains failed - the port is not programmed
 		listenerCondition := reports.ListenerCondition{
 			Type:    gwv1.ListenerConditionProgrammed,
 			Status:  metav1.ConditionFalse,
 			Reason:  gwv1.ListenerReasonInvalid,
 			Message: TcpTlsListenerNoBackendsMessage,
 		}
-		ml.listenerReporter.SetCondition(listenerCondition)
+		// Report to all TCP filter chains since the entire port failed
+		for _, tfc := range ml.TcpFilterChains {
+			tfc.listenerReporter.SetCondition(listenerCondition)
+		}
 	}
 
 	// Get bind address based on ListenerBindIpv6 setting
@@ -377,9 +384,10 @@ func (ml *MergedListener) TranslateListener(
 // (with distinct filter chains). In the case where no Gateway listener merging takes place, every listener
 // will use a Gloo AggregatedListener with one TCP filter chain.
 type tcpFilterChain struct {
-	parents   tcpFilterChainParent
-	tls       *gwv1.GatewayTLSConfig
-	sniDomain *gwv1.Hostname
+	parents          tcpFilterChainParent
+	tls              *gwv1.GatewayTLSConfig
+	sniDomain        *gwv1.Hostname
+	listenerReporter reports.ListenerReporter
 }
 
 type tcpFilterChainParent struct {

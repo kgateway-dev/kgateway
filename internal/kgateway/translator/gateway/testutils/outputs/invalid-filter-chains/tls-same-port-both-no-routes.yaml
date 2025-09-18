@@ -13,7 +13,8 @@ Statuses:
         type: AttachedListenerSets
       - lastTransitionTime: null
         message: 'Some listeners are not programmed: tls-app1-no-routes: TCP/TLS listener
-          has no valid backends or routes'
+          has no valid backends or routes; tls-app2-no-routes: TCP/TLS listener has
+          no valid backends or routes'
         reason: ListenersNotValid
         status: "True"
         type: Accepted
@@ -52,6 +53,11 @@ Statuses:
       - attachedRoutes: 0
         conditions:
         - lastTransitionTime: null
+          message: TCP/TLS listener has no valid backends or routes
+          reason: Invalid
+          status: "False"
+          type: Programmed
+        - lastTransitionTime: null
           message: Listener is accepted
           reason: Accepted
           status: "True"
@@ -66,11 +72,6 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
-        - lastTransitionTime: null
-          message: Listener is programmed
-          reason: Programmed
-          status: "True"
-          type: Programmed
         name: tls-app2-no-routes
         supportedKinds:
         - group: gateway.networking.k8s.io
