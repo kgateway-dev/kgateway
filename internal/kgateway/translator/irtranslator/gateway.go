@@ -1,19 +1,16 @@
 package irtranslator
 
 import (
-	"fmt"
 	"sort"
 	"strconv"
-	"strings"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	reportsutils "github.com/kgateway-dev/kgateway/v2/pkg/reports/utils"
 	"golang.org/x/net/context"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/slices"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -24,18 +21,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
-)
-
-const (
-	// ListenerOmittedMessage is a fallback message for when no specific reason was provided in translation
-	ListenerOmittedMessage                      = "Listener could not be generated for data plane for unknown reason"
-	GatewayAcceptedListenersOmittedMessage      = "Listeners not accepted: %s"
-	GatewayProgrammedListenersOmittedMessage    = "Listeners not programmed: %s"
-	GatewayProgrammedAllListenersOmittedMessage = "No Listeners programmed. " + GatewayProgrammedListenersOmittedMessage
-	GatewayAcceptedAllListenersOmittedMessage   = "All Listeners not accepted: %s"
 )
 
 var logger = logging.New("translator/ir")
@@ -66,13 +53,24 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 		outListener, routes := t.ComputeListener(ctx, pass, gw, l, reporter)
 		// Envoy rejects listeners with no filter chains; skip adding such listeners.
 		if outListener == nil || len(outListener.GetFilterChains()) == 0 {
-			listenerName, wasNotAccepted := checkListenerStatusForOmittedListener(gw, l, reporter)
+			originalListenerName := findOriginalListenerName(gw, l)
+			listenerReporter := getReporterForFilterChain(gw, reporter, originalListenerName)
 
-			if wasNotAccepted {
-				notAcceptedListeners = append(notAcceptedListeners, listenerName)
+			// Check if the programmed condition was already set with a specific reason
+			hasProgrammedCondition := reportsutils.CheckInvalidListenerProgrammedCondition(listenerReporter)
+			if !hasProgrammedCondition {
+				logger.Warn("Listener was invalid but no programmed condition was set",
+					"listener", originalListenerName)
 			}
+
+			// Check if listener was accepted (no accepted condition exists)
+			wasAccepted := reportsutils.ListenerAccepted(listenerReporter)
+			if !wasAccepted {
+				notAcceptedListeners = append(notAcceptedListeners, originalListenerName)
+			}
+
 			// All omitted listeners are not programmed by definition
-			notProgrammedListeners = append(notProgrammedListeners, listenerName)
+			notProgrammedListeners = append(notProgrammedListeners, originalListenerName)
 
 			continue
 		}
@@ -82,7 +80,7 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 
 	// Gateway status when listeners were omitted
 	if len(notProgrammedListeners) > 0 {
-		reportGatewayStatusForOmittedListeners(gw, reporter, notAcceptedListeners, notProgrammedListeners)
+		reportsutils.ReportGatewayStatusForInvalidListeners(gw, reporter, notAcceptedListeners, notProgrammedListeners)
 	}
 
 	for _, c := range pass {
@@ -280,118 +278,4 @@ type TranslationPass struct {
 	// such that policies ordered from high to low priority, both hierarchically
 	// and within the same hierarchy, are Merged into a single Policy
 	MergePolicies func(policies []ir.PolicyAtt) ir.PolicyAtt
-}
-
-// checkListenerStatusForOmittedListener will create a condition with "Type: Programmed" and "Status: False" if a Programmed condition does not exist
-func checkListenerStatusForOmittedListener(
-	gw ir.GatewayIR,
-	listener ir.ListenerIR,
-	reporter sdkreporter.Reporter,
-) (listenerName string, wasNotAccepted bool) {
-	originalListenerName := findOriginalListenerName(gw, listener)
-	listenerReporter := getReporterForFilterChain(gw, reporter, originalListenerName)
-
-	// This is fallback behavior. If the listener is returned nil or the filter chains are empty,there should already be a programmed condition set with a specific reason.
-	if lr, ok := listenerReporter.(*reports.ListenerReport); ok {
-		// Check existing conditions to determine why the listener was omitted
-		acceptedCondition := meta.FindStatusCondition(lr.Status.Conditions, string(gwv1.ListenerConditionAccepted))
-		programmedCondition := meta.FindStatusCondition(lr.Status.Conditions, string(gwv1.ListenerConditionProgrammed))
-
-		// Determine if listener was not accepted
-		wasNotAccepted = acceptedCondition != nil && acceptedCondition.Status == metav1.ConditionFalse
-
-		// Set default programmed condition if it doesn't exist (fallback behavior)
-		if programmedCondition == nil {
-			listenerCondition := sdkreporter.ListenerCondition{
-				Type:    gwv1.ListenerConditionProgrammed,
-				Status:  metav1.ConditionFalse,
-				Reason:  gwv1.ListenerReasonInvalid,
-				Message: ListenerOmittedMessage,
-			}
-			listenerReporter.SetCondition(listenerCondition)
-		}
-	} else {
-		logger.Error("listener reporter type not supported", "reporter", fmt.Sprintf("%T", listenerReporter))
-	}
-
-	return originalListenerName, wasNotAccepted
-}
-
-// reportGatewayStatusForOmittedListeners sets gateway conditions when listeners were omitted
-// notAcceptedListeners should be a subset of notProgrammedListeners, but that is not validated
-func reportGatewayStatusForOmittedListeners(
-	gw ir.GatewayIR,
-	reporter sdkreporter.Reporter,
-	notAcceptedListeners []string,
-	notProgrammedListeners []string,
-) {
-	// If there are no listeners that were not programmed, there is nothing to report
-	if len(notProgrammedListeners) == 0 {
-		return
-	}
-
-	gwreporter := reporter.Gateway(gw.SourceObject.Obj)
-
-	// Sort for idempotency
-	sort.Strings(notAcceptedListeners)
-	sort.Strings(notProgrammedListeners)
-
-	// Set Accepted condition - if there are listeners that were explicitly not accepted,
-	// mark gateway as not accepted. Otherwise, mark as accepted but mention omitted listeners.
-	if len(notAcceptedListeners) > 0 {
-		var (
-			acceptedMessage string
-			status          metav1.ConditionStatus
-		)
-		if len(notAcceptedListeners) == len(gw.Listeners) {
-			acceptedMessage = fmt.Sprintf(GatewayAcceptedAllListenersOmittedMessage, strings.Join(notAcceptedListeners, ", "))
-			status = metav1.ConditionFalse
-		} else {
-			acceptedMessage = fmt.Sprintf(GatewayAcceptedListenersOmittedMessage, strings.Join(notAcceptedListeners, ", "))
-			status = metav1.ConditionTrue
-		}
-
-		acceptedCondition := sdkreporter.GatewayCondition{
-			Type:    gwv1.GatewayConditionAccepted,
-			Status:  status,
-			Reason:  gwv1.GatewayReasonListenersNotValid,
-			Message: acceptedMessage,
-		}
-		gwreporter.SetCondition(acceptedCondition)
-	} else {
-		// Gateway is accepted, but some listeners were omitted (just not programmed)
-		acceptedCondition := sdkreporter.GatewayCondition{
-			Type:    gwv1.GatewayConditionAccepted,
-			Status:  metav1.ConditionTrue,
-			Reason:  gwv1.GatewayReasonListenersNotValid,
-			Message: fmt.Sprintf(GatewayAcceptedListenersOmittedMessage, strings.Join(notProgrammedListeners, ", ")),
-		}
-		gwreporter.SetCondition(acceptedCondition)
-	}
-
-	// Set Programmed condition based on whether any listeners were programmed
-	var programmedMessage string
-	if len(notProgrammedListeners) == len(gw.Listeners) {
-		programmedMessage = fmt.Sprintf(GatewayProgrammedAllListenersOmittedMessage, strings.Join(notProgrammedListeners, ", "))
-	} else {
-		programmedMessage = fmt.Sprintf(GatewayProgrammedListenersOmittedMessage, strings.Join(notProgrammedListeners, ", "))
-	}
-
-	if len(notProgrammedListeners) == len(gw.Listeners) {
-		programmedCondition := sdkreporter.GatewayCondition{
-			Type:    gwv1.GatewayConditionProgrammed,
-			Status:  metav1.ConditionFalse,
-			Reason:  gwv1.GatewayReasonListenersNotValid,
-			Message: programmedMessage,
-		}
-		gwreporter.SetCondition(programmedCondition)
-	} else {
-		programmedCondition := sdkreporter.GatewayCondition{
-			Type:    gwv1.GatewayConditionProgrammed,
-			Status:  metav1.ConditionTrue,
-			Reason:  gwv1.GatewayReasonProgrammed,
-			Message: programmedMessage,
-		}
-		gwreporter.SetCondition(programmedCondition)
-	}
 }
