@@ -32,6 +32,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	plug "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
 var _ manager.LeaderElectionRunnable = &ProxySyncer{}
@@ -44,7 +45,7 @@ var _ manager.LeaderElectionRunnable = &ProxySyncer{}
 // to be handled by the statusSyncer.
 type ProxySyncer struct {
 	controllerName        string
-	agentGatewayClassName string
+	agentgatewayClassName string
 
 	mgr        manager.Manager
 	commonCols *common.CommonCollections
@@ -139,17 +140,18 @@ func NewProxySyncer(
 	mergedPlugins plug.Plugin,
 	commonCols *common.CommonCollections,
 	xdsCache envoycache.SnapshotCache,
-	agentGatewayClassName string,
+	agentgatewayClassName string,
+	validator validator.Validator,
 ) *ProxySyncer {
 	return &ProxySyncer{
 		controllerName:           controllerName,
-		agentGatewayClassName:    agentGatewayClassName,
+		agentgatewayClassName:    agentgatewayClassName,
 		commonCols:               commonCols,
 		mgr:                      mgr,
 		istioClient:              client,
 		proxyTranslator:          NewProxyTranslator(xdsCache),
 		uniqueClients:            uniqueClients,
-		translator:               translator.NewCombinedTranslator(ctx, mergedPlugins, commonCols),
+		translator:               translator.NewCombinedTranslator(ctx, mergedPlugins, commonCols, validator),
 		plugins:                  mergedPlugins,
 		reportQueue:              utils.NewAsyncQueue[reports.ReportMap](),
 		backendPolicyReportQueue: utils.NewAsyncQueue[reports.ReportMap](),
@@ -211,7 +213,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtinternal.KrtOptions) 
 
 	s.mostXdsSnapshots = krt.NewCollection(s.commonCols.GatewayIndex.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *GatewayXdsResources {
 		// skip agentgateway proxies as they are not envoy-based gateways
-		if string(gw.Obj.Spec.GatewayClassName) == s.agentGatewayClassName {
+		if string(gw.Obj.Spec.GatewayClassName) == s.agentgatewayClassName {
 			logger.Debug("skipping envoy proxy sync for agentgateway %s.%s", gw.Obj.Name, gw.Obj.Namespace)
 			return nil
 		}

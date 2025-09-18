@@ -299,7 +299,7 @@ func defaultInputs(t *testing.T, objs ...client.Object) *deployer.Inputs {
 		},
 		GatewayClassName:         wellknown.DefaultGatewayClassName,
 		WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-		AgentGatewayClassName:    wellknown.DefaultAgentGatewayClassName,
+		AgentgatewayClassName:    wellknown.DefaultAgwClassName,
 	}
 }
 

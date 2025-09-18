@@ -139,8 +139,8 @@ type Settings struct {
 	// E.g., [{"matchExpressions":[{"key":"kubernetes.io/metadata.name","operator":"In","values":["infra"]}]},{"matchLabels":{"app":"a"}}]
 	DiscoveryNamespaceSelectors string `split_words:"true" default:"[]"`
 
-	// EnableAgentGateway enables kgateway to send config to the agentgateway
-	EnableAgentGateway bool `split_words:"true" default:"false"`
+	// EnableAgentgateway enables kgateway to send config to the agentgateway
+	EnableAgentgateway bool `split_words:"true" default:"false"`
 
 	// WeightedRoutePrecedence enables routes with a larger weight to take precedence over routes with a smaller weight.
 	// If two routes have the same weight, Gateway API route precedence rules apply.

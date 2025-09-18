@@ -16,7 +16,7 @@ var (
 	// manifests
 	simpleServiceManifest = getTestFile("service.yaml")
 	commonManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "common.yaml")
-	agwCommonManifest     = getTestFileAgentGateway("common.yaml")
+	agwCommonManifest     = getTestFileAgentgateway("common.yaml")
 	// local rate limit traffic policies
 	routeLocalRateLimitManifest         = getTestFile("route-local-rate-limit.yaml")
 	gwLocalRateLimitManifest            = getTestFile("gw-local-rate-limit.yaml")
@@ -85,6 +85,6 @@ func getTestFile(filename string) string {
 	return filepath.Join(fsutils.MustGetThisDir(), "testdata", filename)
 }
 
-func getTestFileAgentGateway(filename string) string {
+func getTestFileAgentgateway(filename string) string {
 	return filepath.Join(fsutils.MustGetThisDir(), "../../agentgateway/rate_limit/testdata", filename)
 }

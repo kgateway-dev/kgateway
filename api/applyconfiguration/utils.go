@@ -23,8 +23,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.AccessLogFilterApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AccessLogGrpcService"):
 		return &apiv1alpha1.AccessLogGrpcServiceApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("AgentGateway"):
-		return &apiv1alpha1.AgentGatewayApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Agentgateway"):
+		return &apiv1alpha1.AgentgatewayApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AIBackend"):
 		return &apiv1alpha1.AIBackendApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AiExtension"):

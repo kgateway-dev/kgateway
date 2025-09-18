@@ -138,6 +138,6 @@ func getTestFile(filename string) string {
 	return filepath.Join(fsutils.MustGetThisDir(), "testdata", filename)
 }
 
-func getTestFileAgentGateway(filename string) string {
+func getTestFileAgentgateway(filename string) string {
 	return filepath.Join(fsutils.MustGetThisDir(), "../agentgateway/global-rate-limit/testdata", filename)
 }

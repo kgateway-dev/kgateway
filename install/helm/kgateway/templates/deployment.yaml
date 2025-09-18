@@ -93,8 +93,8 @@ spec:
               value: {{ $value | quote }}
             {{- end }}
             {{- end }}
-            {{- if .Values.agentGateway.enabled }}
-            - name: KGW_ENABLE_AGENT_GATEWAY
+            {{- if .Values.agentgateway.enabled }}
+            - name: KGW_ENABLE_AGENTGATEWAY
               value: "true"
             {{- end }}
             # TODO: Remove this once the cleanup is done. Required as the gloo-system
