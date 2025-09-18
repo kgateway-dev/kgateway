@@ -50,6 +50,7 @@ type ImageInfo struct {
 type Deployer struct {
 	controllerName                       string
 	agwControllerName                    string
+	agwGatewayClassName                  string
 	chart                                *chart.Chart
 	cli                                  client.Client
 	helmValues                           HelmValuesGenerator
@@ -59,7 +60,7 @@ type Deployer struct {
 // NewDeployer creates a new gateway/inference pool/etc
 // TODO [danehans]: Reloading the chart for every reconciliation is inefficient.
 // See https://github.com/kgateway-dev/kgateway/issues/10672 for details.
-func NewDeployer(controllerName, agwControllerName string,
+func NewDeployer(controllerName, agwControllerName, agwGatewayClassName string,
 	cli client.Client,
 	chart *chart.Chart,
 	hvg HelmValuesGenerator,
@@ -67,6 +68,7 @@ func NewDeployer(controllerName, agwControllerName string,
 	return &Deployer{
 		controllerName:                       controllerName,
 		agwControllerName:                    agwControllerName,
+		agwGatewayClassName:                  agwGatewayClassName,
 		cli:                                  cli,
 		chart:                                chart,
 		helmValues:                           hvg,
@@ -194,7 +196,7 @@ func (d *Deployer) SetNamespaceAndOwner(owner client.Object, objs []client.Objec
 
 // getControllerNameForGatewayClass returns the appropriate controller name based on the gateway class name
 func (d *Deployer) getControllerNameForGatewayClass(gatewayClassName string) string {
-	if gatewayClassName == wellknown.DefaultAgwClassName {
+	if gatewayClassName == d.agwGatewayClassName {
 		return d.agwControllerName
 	}
 	return d.controllerName

@@ -200,7 +200,8 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	if c.extraGatewayParameters != nil {
 		gwParams.WithExtraGatewayParameters(c.extraGatewayParameters(c.cfg.Mgr.GetClient(), inputs)...)
 	}
-	d, err := internaldeployer.NewGatewayDeployer(c.cfg.ControllerName, c.cfg.AgwControllerName, c.cfg.Mgr.GetClient(), gwParams)
+	d, err := internaldeployer.NewGatewayDeployer(c.cfg.ControllerName, c.cfg.AgwControllerName,
+		c.cfg.AgentgatewayClassName, c.cfg.Mgr.GetClient(), gwParams)
 	if err != nil {
 		return err
 	}
