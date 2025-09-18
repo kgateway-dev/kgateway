@@ -41,7 +41,6 @@ import (
 	// "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/listener_options"
 	// "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/metrics"
 	// "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/port_routing"
-	// "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/route_options"
 	// "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/virtualhost_options"
 )
 
@@ -84,7 +83,6 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("RBAC", rbac.NewTestingSuite)
 
 	// kubeGatewaySuiteRunner.Register("ListenerOptions", listener_options.NewTestingSuite)
-	// kubeGatewaySuiteRunner.Register("RouteOptions", route_options.NewTestingSuite)
 	// kubeGatewaySuiteRunner.Register("VirtualHostOptions", virtualhost_options.NewTestingSuite)
 	// kubeGatewaySuiteRunner.Register("HeadlessSvc", headless_svc.NewK8sGatewayHeadlessSvcSuite)
 	// kubeGatewaySuiteRunner.Register("PortRouting", port_routing.NewK8sGatewayTestingSuite)
