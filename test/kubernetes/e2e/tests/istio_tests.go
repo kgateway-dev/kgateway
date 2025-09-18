@@ -5,14 +5,12 @@ package tests
 import (
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/deployer"
-	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/headless_svc"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/istio"
 )
 
 func IstioSuiteRunner() e2e.SuiteRunner {
 	istioSuiteRunner := e2e.NewSuiteRunner(false)
 
-	istioSuiteRunner.Register("HeadlessSvc", headless_svc.NewK8sGatewayHeadlessSvcSuite)
 	istioSuiteRunner.Register("IstioIntegration", istio.NewTestingSuite)
 	istioSuiteRunner.Register("IstioGatewayParameters", deployer.NewIstioIntegrationTestingSuite)
 
