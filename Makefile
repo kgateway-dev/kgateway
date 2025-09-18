@@ -520,6 +520,17 @@ setup: kind-create kind-build-and-load gw-api-crds gie-crds metallb package-kgat
 .PHONY: run
 run: setup deploy-kgateway  ## Set up complete development environment
 
+.PHONY: undeploy
+undeploy: undeploy-kgateway undeploy-kgateway-crds ## Undeploy the application from the cluster
+
+.PHONY: undeploy-kgateway
+undeploy-kgateway: ## Undeploy the core chart from the cluster
+	$(HELM) uninstall kgateway --namespace $(INSTALL_NAMESPACE) || true
+
+.PHONY: undeploy-kgateway-crds
+undeploy-kgateway-crds: ## Undeploy the CRD chart from the cluster
+	$(HELM) uninstall kgateway-crds --namespace $(INSTALL_NAMESPACE) || true
+
 #----------------------------------------------------------------------------------
 # Build assets for kubernetes e2e tests
 #----------------------------------------------------------------------------------
