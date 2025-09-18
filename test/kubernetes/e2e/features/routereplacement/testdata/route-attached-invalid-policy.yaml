@@ -1,6 +1,6 @@
 ---
 # HTTPRoute with valid configuration but invalid TrafficPolicy attached to it.
-# In STRICT mode, this should result in the route being replaced with a 500 direct response.
+# This should result in the route being replaced with a 500 direct response.
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:

@@ -1,6 +1,6 @@
 ---
 # HTTPRoute with invalid regex matcher that will cause RDS validation to fail
-# In STRICT mode, this should result in the route being dropped entirely
+# This should result in the route being dropped entirely
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
