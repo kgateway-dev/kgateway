@@ -128,6 +128,7 @@ func RunController(
 		setup.WithExtraPlugins(extraPlugins),
 		setup.WithKrtDebugger(krtDbg),
 		setup.WithXDSListener(l),
+		setup.WithAgwXDSListener(l),
 		setup.WithControllerManagerOptions(
 			func(ctx context.Context) *ctrl.Options {
 				return &ctrl.Options{

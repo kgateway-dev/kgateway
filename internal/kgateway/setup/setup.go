@@ -122,6 +122,13 @@ func WithXDSListener(l net.Listener) func(*setup) {
 	}
 }
 
+// used for tests only to get access to dynamically assigned port number
+func WithAgwXDSListener(l net.Listener) func(*setup) {
+	return func(s *setup) {
+		s.agwXdsListener = l
+	}
+}
+
 func WithExtraManagerConfig(mgrConfigFuncs ...func(ctx context.Context, mgr manager.Manager, objectFilter kubetypes.DynamicObjectFilter) error) func(*setup) {
 	return func(s *setup) {
 		s.extraManagerConfig = mgrConfigFuncs
@@ -157,6 +164,7 @@ type setup struct {
 	extraGatewayParameters   func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
 	extraXDSCallbacks        xdsserver.Callbacks
 	xdsListener              net.Listener
+	agwXdsListener           net.Listener
 	restConfig               *rest.Config
 	ctrlMgrOptionsInitFunc   func(context.Context) *ctrl.Options
 	// extra controller manager config, like adding registering additional controllers
@@ -224,6 +232,15 @@ func New(opts ...func(*setup)) (*setup, error) {
 		}
 	}
 
+	if s.agwXdsListener == nil {
+		var err error
+		s.agwXdsListener, err = newXDSListener("0.0.0.0", s.globalSettings.AgentgatewayXdsServicePort)
+		if err != nil {
+			slog.Error("error creating agw xds listener", "error", err)
+			return nil, err
+		}
+	}
+
 	if s.validator == nil {
 		s.validator = validator.NewBinary()
 	}
@@ -252,7 +269,7 @@ func (s *setup) Start(ctx context.Context) error {
 	}
 
 	uniqueClientCallbacks, uccBuilder := krtcollections.NewUniquelyConnectedClients(s.extraXDSCallbacks)
-	cache := NewControlPlane(ctx, s.xdsListener, uniqueClientCallbacks)
+	cache := NewControlPlane(ctx, s.xdsListener, s.agwXdsListener, uniqueClientCallbacks)
 
 	setupOpts := &controller.SetupOpts{
 		Cache:          cache,

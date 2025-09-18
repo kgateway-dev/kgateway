@@ -619,7 +619,7 @@ func (tc TestCase) Run(
 				Name: className,
 			},
 			Spec: gwv1.GatewayClassSpec{
-				ControllerName: wellknown.DefaultGatewayControllerName,
+				ControllerName: wellknown.DefaultAgwControllerName,
 			},
 		}, metav1.CreateOptions{})
 	}
@@ -646,7 +646,7 @@ func (tc TestCase) Run(
 		cli,
 		ourCli,
 		nil,
-		wellknown.DefaultGatewayControllerName,
+		wellknown.DefaultAgwControllerName,
 		*settings,
 	)
 	if err != nil {
@@ -680,7 +680,7 @@ func (tc TestCase) Run(
 	// Instead of calling full Init(), manually initialize just what we need for testing
 	// to avoid race conditions with XDS collection building
 	agentGwSyncer := NewAgwSyncer(
-		wellknown.DefaultGatewayControllerName,
+		wellknown.DefaultAgwControllerName,
 		wellknown.DefaultAgwClassName,
 		cli,
 		nil, // mgr not needed for test

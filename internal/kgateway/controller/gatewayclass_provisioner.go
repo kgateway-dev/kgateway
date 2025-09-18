@@ -32,6 +32,8 @@ type gatewayClassProvisioner struct {
 	classConfigs map[string]*deployer.GatewayClassInfo
 	// controllerName is the name of the controller that is managing the GatewayClass objects.
 	controllerName string
+	// agwControllerName is the name of the agentgateway controller that is managing the GatewayClass objects.
+	agwControllerName string
 	// initialReconcileCh is a channel that is used to trigger initial reconciliation when
 	// no GatewayClass objects exist in the cluster.
 	initialReconcileCh chan event.TypedGenericEvent[client.Object]
@@ -45,12 +47,13 @@ var _ manager.LeaderElectionRunnable = &gatewayClassProvisioner{}
 // events to trigger the re-creation of the GatewayClass. Additionally, it ignores
 // update events to allow users to modify the GatewayClasses without this controller
 // overwriting them.
-func NewGatewayClassProvisioner(mgr ctrl.Manager, controllerName string, classConfigs map[string]*deployer.GatewayClassInfo) error {
+func NewGatewayClassProvisioner(mgr ctrl.Manager, controllerName, agwControllerName string, classConfigs map[string]*deployer.GatewayClassInfo) error {
 	initialReconcileCh := make(chan event.TypedGenericEvent[client.Object], 1)
 	provisioner := &gatewayClassProvisioner{
 		Client:             mgr.GetClient(),
 		Informers:          mgr.GetCache(),
 		controllerName:     controllerName,
+		agwControllerName:  agwControllerName,
 		classConfigs:       classConfigs,
 		initialReconcileCh: initialReconcileCh,
 	}

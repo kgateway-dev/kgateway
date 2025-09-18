@@ -105,6 +105,10 @@ type Settings struct {
 	// This corresponds to the value of the `grpc-xds` port in the service.
 	XdsServicePort uint32 `split_words:"true" default:"9977"`
 
+	// AgentgatewayXdsServicePort is the port of the Kubernetes Service that serves xDS config for agentgateway.
+	// This corresponds to the value of the `agw-grpc-xds` port in the service.
+	AgentgatewayXdsServicePort uint32 `split_words:"true" default:"9978"`
+
 	UseRustFormations bool `split_words:"true" default:"false"`
 
 	// EnableInferExt defines whether to enable/disable support for Gateway API inference extension.

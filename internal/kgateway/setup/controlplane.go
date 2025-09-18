@@ -56,7 +56,7 @@ func (s *slogAdapterForEnvoy) Errorf(format string, args ...interface{}) {
 	}
 }
 
-func NewControlPlane(ctx context.Context, lis net.Listener, callbacks xdsserver.Callbacks) envoycache.SnapshotCache {
+func NewControlPlane(ctx context.Context, lis net.Listener, agwLis net.Listener, callbacks xdsserver.Callbacks) envoycache.SnapshotCache {
 	baseLogger := slog.Default().With("component", "envoy-controlplane")
 	envoyLoggerAdapter := &slogAdapterForEnvoy{logger: baseLogger}
 
@@ -86,6 +86,7 @@ func NewControlPlane(ctx context.Context, lis net.Listener, callbacks xdsserver.
 	envoy_service_discovery_v3.RegisterAggregatedDiscoveryServiceServer(grpcServer, xdsServer)
 
 	go grpcServer.Serve(lis)
+	go grpcServer.Serve(agwLis)
 
 	go func() {
 		<-ctx.Done()

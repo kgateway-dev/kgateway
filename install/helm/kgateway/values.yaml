@@ -64,6 +64,7 @@ controller:
     # -- Set the service ports for gRPC and health endpoints.
     ports:
       grpc: 9977
+      agwGrpc: 9978
       health: 9093
       metrics: 9092
   # -- Add extra environment variables to the controller container.

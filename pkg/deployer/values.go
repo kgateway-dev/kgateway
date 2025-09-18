@@ -70,6 +70,8 @@ type HelmGateway struct {
 
 	// xds values
 	Xds *HelmXds `json:"xds,omitempty"`
+	// agentgateway xds values
+	AgwXds *HelmXds `json:"agwXds,omitempty"`
 
 	// stats values
 	Stats *HelmStatsConfig `json:"stats,omitempty"`

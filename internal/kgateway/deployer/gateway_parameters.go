@@ -323,6 +323,12 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 				Host: &k.inputs.ControlPlane.XdsHost,
 				Port: &k.inputs.ControlPlane.XdsPort,
 			},
+			AgwXds: &deployer.HelmXds{
+				// The agentgateway xds host/port MUST map to the Service definition for the Control Plane
+				// This is the socket address that the Proxy will connect to on startup, to receive xds updates
+				Host: &k.inputs.ControlPlane.XdsHost,
+				Port: &k.inputs.ControlPlane.AgwXdsPort,
+			},
 		},
 	}
 

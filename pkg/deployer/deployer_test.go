@@ -422,8 +422,9 @@ var _ = Describe("Deployer", func() {
 				CommonCollections: newCommonCols(GinkgoT(), gwc, gw),
 				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
-					XdsHost: "something.cluster.local",
-					XdsPort: 1234,
+					XdsHost:    "something.cluster.local",
+					XdsPort:    1234,
+					AgwXdsPort: 5678,
 				},
 				ImageInfo: &deployer.ImageInfo{
 					Registry: "foo",
@@ -501,8 +502,9 @@ var _ = Describe("Deployer", func() {
 				CommonCollections: newCommonCols(GinkgoT(), gwc, gw),
 				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
-					XdsHost: "something.cluster.local",
-					XdsPort: 1234,
+					XdsHost:    "something.cluster.local",
+					XdsPort:    1234,
+					AgwXdsPort: 5678,
 				},
 				ImageInfo: &deployer.ImageInfo{
 					Registry: "foo",
@@ -537,7 +539,7 @@ var _ = Describe("Deployer", func() {
 					Name: "agentgateway",
 				},
 				Spec: api.GatewayClassSpec{
-					ControllerName: wellknown.DefaultGatewayControllerName,
+					ControllerName: wellknown.DefaultAgwControllerName,
 					ParametersRef: &api.ParametersReference{
 						Group:     gw2_v1alpha1.GroupName,
 						Kind:      api.Kind(wellknown.GatewayParametersGVK.Kind),
@@ -573,8 +575,9 @@ var _ = Describe("Deployer", func() {
 				CommonCollections: newCommonCols(GinkgoT(), gwc, gw),
 				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
-					XdsHost: "something.cluster.local",
-					XdsPort: 1234,
+					XdsHost:    "something.cluster.local",
+					XdsPort:    1234,
+					AgwXdsPort: 5678,
 				},
 				ImageInfo: &deployer.ImageInfo{
 					Registry: "foo",
@@ -586,7 +589,7 @@ var _ = Describe("Deployer", func() {
 			})
 			chart, err := internaldeployer.LoadGatewayChart()
 			Expect(err).NotTo(HaveOccurred())
-			d := deployer.NewDeployer(wellknown.DefaultGatewayControllerName, newFakeClientWithObjs(gwc, gwp), chart,
+			d := deployer.NewDeployer(wellknown.DefaultAgwControllerName, newFakeClientWithObjs(gwc, gwp), chart,
 				gwParams,
 				internaldeployer.GatewayReleaseNameAndNamespace)
 
@@ -667,8 +670,9 @@ var _ = Describe("Deployer", func() {
 				CommonCollections: newCommonCols(GinkgoT(), gwc, gw),
 				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
-					XdsHost: "something.cluster.local",
-					XdsPort: 1234,
+					XdsHost:    "something.cluster.local",
+					XdsPort:    1234,
+					AgwXdsPort: 5678,
 				},
 				ImageInfo: &deployer.ImageInfo{
 					Registry: "foo",
@@ -680,7 +684,7 @@ var _ = Describe("Deployer", func() {
 			})
 			chart, err := internaldeployer.LoadGatewayChart()
 			Expect(err).NotTo(HaveOccurred())
-			d := deployer.NewDeployer(wellknown.DefaultGatewayControllerName, newFakeClientWithObjs(gwc, gwp), chart,
+			d := deployer.NewDeployer(wellknown.DefaultAgwControllerName, newFakeClientWithObjs(gwc, gwp), chart,
 				gwParams,
 				internaldeployer.GatewayReleaseNameAndNamespace)
 
@@ -747,8 +751,9 @@ var _ = Describe("Deployer", func() {
 				CommonCollections: newCommonCols(GinkgoT(), gwc, gw1, gw2),
 				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
-					XdsHost: "something.cluster.local",
-					XdsPort: 1234,
+					XdsHost:    "something.cluster.local",
+					XdsPort:    1234,
+					AgwXdsPort: 5678,
 				},
 				ImageInfo: &deployer.ImageInfo{
 					Registry: "foo",
@@ -769,8 +774,9 @@ var _ = Describe("Deployer", func() {
 				CommonCollections: newCommonCols(GinkgoT(), gwc, gw1, gw2),
 				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
-					XdsHost: "something.cluster.local",
-					XdsPort: 1234,
+					XdsHost:    "something.cluster.local",
+					XdsPort:    1234,
+					AgwXdsPort: 5678,
 				},
 				ImageInfo: &deployer.ImageInfo{
 					Registry: "foo",
@@ -836,8 +842,9 @@ var _ = Describe("Deployer", func() {
 				CommonCollections: newCommonCols(GinkgoT(), defaultGatewayClass(), gw),
 				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
-					XdsHost: "something.cluster.local",
-					XdsPort: 1234,
+					XdsHost:    "something.cluster.local",
+					XdsPort:    1234,
+					AgwXdsPort: 5678,
 				},
 				ImageInfo: &deployer.ImageInfo{
 					Registry: "foo",
@@ -878,8 +885,9 @@ var _ = Describe("Deployer", func() {
 				CommonCollections: newCommonCols(GinkgoT(), defaultGatewayClass(), gw),
 				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
-					XdsHost: "something.cluster.local",
-					XdsPort: 1234,
+					XdsHost:    "something.cluster.local",
+					XdsPort:    1234,
+					AgwXdsPort: 5678,
 				},
 				ImageInfo: &deployer.ImageInfo{
 					Registry: "foo",
@@ -938,8 +946,9 @@ var _ = Describe("Deployer", func() {
 					CommonCollections: newCommonCols(GinkgoT(), gwc, gw),
 					Dev:               false,
 					ControlPlane: deployer.ControlPlaneInfo{
-						XdsHost: "something.cluster.local",
-						XdsPort: 1234,
+						XdsHost:    "something.cluster.local",
+						XdsPort:    1234,
+						AgwXdsPort: 5678,
 					},
 					ImageInfo: &deployer.ImageInfo{
 						Registry: registry,
@@ -1028,8 +1037,9 @@ var _ = Describe("Deployer", func() {
 					CommonCollections: newCommonCols(GinkgoT(), gwc, gw),
 					Dev:               false,
 					ControlPlane: deployer.ControlPlaneInfo{
-						XdsHost: "something.cluster.local",
-						XdsPort: 1234,
+						XdsHost:    "something.cluster.local",
+						XdsPort:    1234,
+						AgwXdsPort: 5678,
 					},
 					ImageInfo: &deployer.ImageInfo{
 						Registry: registry,
@@ -1126,8 +1136,9 @@ var _ = Describe("Deployer", func() {
 					CommonCollections: newCommonCols(GinkgoT(), gwc, gw),
 					Dev:               false,
 					ControlPlane: deployer.ControlPlaneInfo{
-						XdsHost: "something.cluster.local",
-						XdsPort: 1234,
+						XdsHost:    "something.cluster.local",
+						XdsPort:    1234,
+						AgwXdsPort: 5678,
 					},
 					ImageInfo: &deployer.ImageInfo{
 						Registry: registry,
@@ -1505,7 +1516,7 @@ var _ = Describe("Deployer", func() {
 				return &deployer.Inputs{
 					Dev: false,
 					ControlPlane: deployer.ControlPlaneInfo{
-						XdsHost: "something.cluster.local", XdsPort: 1234,
+						XdsHost: "something.cluster.local", XdsPort: 1234, AgwXdsPort: 5678,
 					},
 					ImageInfo: &deployer.ImageInfo{
 						Registry: "foo",
@@ -2566,7 +2577,7 @@ var _ = Describe("Deployer", func() {
 					CommonCollections: newCommonCols(GinkgoT(), defaultGatewayClass(), gw, ls),
 					Dev:               false,
 					ControlPlane: deployer.ControlPlaneInfo{
-						XdsHost: "something.cluster.local", XdsPort: 1234,
+						XdsHost: "something.cluster.local", XdsPort: 1234, AgwXdsPort: 5678,
 					},
 					ImageInfo: &deployer.ImageInfo{
 						Registry: "foo",

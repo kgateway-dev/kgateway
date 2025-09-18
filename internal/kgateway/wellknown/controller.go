@@ -14,6 +14,10 @@ const (
 	// It is configured to manage GatewayClasses with the name DefaultGatewayClassName
 	DefaultGatewayControllerName = "kgateway.dev/kgateway"
 
+	// DefaultAgwControllerName is the name of the agentgateway controller that has implemented the Gateway API
+	// It is configured to manage GatewayClasses with the name DefaultGatewayClassName
+	DefaultAgwControllerName = "kgateway.dev/agentgateway"
+
 	// DefaultGatewayParametersName is the name of the GatewayParameters which is attached by
 	// parametersRef to the GatewayClass.
 	DefaultGatewayParametersName = "kgateway"

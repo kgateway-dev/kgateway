@@ -13,6 +13,9 @@ gateway:
   xds:
     host: ""
     port: 8080
+  agwXds:
+    host: ""
+    port: 8080
 
   # actual default set in default GatewayParam service.type
   service:

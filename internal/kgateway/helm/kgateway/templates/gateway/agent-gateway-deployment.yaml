@@ -76,7 +76,7 @@ spec:
             - name: RUST_LOG
               value: {{ $gateway.agentgateway.logLevel }}
             - name: XDS_ADDRESS
-              value: "http://{{ $gateway.xds.host }}:{{ $gateway.xds.port }}"
+              value: "http://{{ $gateway.xds.host }}:{{ $gateway.agwXds.port }}"
             - name: NAMESPACE
               valueFrom:
                 fieldRef:

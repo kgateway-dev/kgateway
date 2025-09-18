@@ -290,8 +290,9 @@ func defaultInputs(t *testing.T, objs ...client.Object) *deployer.Inputs {
 		CommonCollections: newCommonCols(t, objs...),
 		Dev:               false,
 		ControlPlane: deployer.ControlPlaneInfo{
-			XdsHost: "something.cluster.local",
-			XdsPort: 1234,
+			XdsHost:    "something.cluster.local",
+			XdsPort:    1234,
+			AgwXdsPort: 5678,
 		},
 		ImageInfo: &deployer.ImageInfo{
 			Registry: "foo",

@@ -30,8 +30,9 @@ import (
 var logger = logging.New("deployer")
 
 type ControlPlaneInfo struct {
-	XdsHost string
-	XdsPort uint32
+	XdsHost    string
+	XdsPort    uint32
+	AgwXdsPort uint32
 }
 
 // InferenceExtInfo defines the runtime state of Gateway API inference extensions.
