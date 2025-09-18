@@ -9,6 +9,7 @@ type OpenTelemetryAccessLogServiceApplyConfiguration struct {
 	Body                 *string                                       `json:"body,omitempty"`
 	DisableBuiltinLabels *bool                                         `json:"disableBuiltinLabels,omitempty"`
 	Attributes           *KeyAnyValueListApplyConfiguration            `json:"attributes,omitempty"`
+	ResourceAttributes   *KeyAnyValueListApplyConfiguration            `json:"resourceAttributes,omitempty"`
 }
 
 // OpenTelemetryAccessLogServiceApplyConfiguration constructs a declarative configuration of the OpenTelemetryAccessLogService type for use with
@@ -46,5 +47,13 @@ func (b *OpenTelemetryAccessLogServiceApplyConfiguration) WithDisableBuiltinLabe
 // If called multiple times, the Attributes field is set to the value of the last call.
 func (b *OpenTelemetryAccessLogServiceApplyConfiguration) WithAttributes(value *KeyAnyValueListApplyConfiguration) *OpenTelemetryAccessLogServiceApplyConfiguration {
 	b.Attributes = value
+	return b
+}
+
+// WithResourceAttributes sets the ResourceAttributes field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ResourceAttributes field is set to the value of the last call.
+func (b *OpenTelemetryAccessLogServiceApplyConfiguration) WithResourceAttributes(value *KeyAnyValueListApplyConfiguration) *OpenTelemetryAccessLogServiceApplyConfiguration {
+	b.ResourceAttributes = value
 	return b
 }

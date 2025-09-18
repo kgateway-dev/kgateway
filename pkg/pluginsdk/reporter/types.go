@@ -19,8 +19,20 @@ const (
 
 	PolicyOverriddenMsg = "Overridden due to conflict with higher priority policy in target(s)"
 
-	// RouteRuleDroppedReason is used with the Accepted=False condition when the route rule is dropped
+	// RouteRuleDroppedReason is used with the Accepted=False condition when the route rule is dropped.
 	RouteRuleDroppedReason = "RouteRuleDropped"
+
+	// RouteRuleReplacedReason is used with the Accepted=False condition when the route rule is replaced
+	// with a direct response.
+	RouteRuleReplacedReason = "RouteRuleReplaced"
+
+	// ListenerReplacedReason is used with the Accepted=False condition when an individual listener
+	// on a Gateway or XListenerSet is replaced due to an error in a policy targeting that listener.
+	ListenerReplacedReason = "ListenerReplaced"
+
+	// GatewayReplacedReason is used with the Accepted=False condition when the entire Gateway is replaced
+	// due to an error in a policy targeting the Gateway.
+	GatewayReplacedReason = "GatewayReplaced"
 )
 
 // PolicyAttachmentState represents the state of a policy attachment

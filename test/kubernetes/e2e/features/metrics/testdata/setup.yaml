@@ -26,10 +26,7 @@ spec:
         from: Same
   allowedListeners:
     namespaces:
-      from: Selector
-      selector:
-        matchLabels:
-          allowed: ns
+      from: All
 ---
 apiVersion: v1
 kind: Pod
@@ -167,3 +164,20 @@ spec:
     - backendRefs:
         - name: example-svc
           port: 8080
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: HTTPListenerPolicy
+metadata:
+  name: http-listener-policy-all-fields
+  namespace: default
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: gw2
+  useRemoteAddress: true
+  xffNumTrustedHops: 2
+  serverHeaderTransformation: AppendIfAbsent
+  streamIdleTimeout: 30s
+  healthCheck:
+    path: "/health_check"

@@ -8,16 +8,9 @@ type (
 	BackendPlugin       = pluginsdk.BackendPlugin
 	KGwTranslator       = pluginsdk.KGwTranslator
 	EndpointPlugin      = pluginsdk.EndpointPlugin
-	AttachmentPoints    = pluginsdk.AttachmentPoints
 	ContributesPolicies = pluginsdk.ContributesPolicies
 	PolicyPlugin        = pluginsdk.PolicyPlugin
 	PolicyReport        = pluginsdk.PolicyReport
 	GetPolicyStatusFn   = pluginsdk.GetPolicyStatusFn
 	PatchPolicyStatusFn = pluginsdk.PatchPolicyStatusFn
-)
-
-const (
-	BackendAttachmentPoint = pluginsdk.BackendAttachmentPoint
-	GatewayAttachmentPoint = pluginsdk.GatewayAttachmentPoint
-	RouteAttachmentPoint   = pluginsdk.RouteAttachmentPoint
 )

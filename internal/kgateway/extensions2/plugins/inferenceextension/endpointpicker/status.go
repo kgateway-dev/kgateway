@@ -15,8 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
-	"k8s.io/utils/ptr"
-	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
@@ -193,7 +192,7 @@ func reconcilePoolsForService(
 		}
 		if irPool.configRef.Namespace == svcNN.Namespace && irPool.configRef.Name == svcNN.Name {
 			// Compute new errors, then atomically swap them in
-			irPool.setErrors(validatePool(beIR.Obj.(*infextv1a2.InferencePool), commonCol.Services))
+			irPool.setErrors(validatePool(beIR.Obj.(*inf.InferencePool), commonCol.Services))
 			updatePoolStatus(ctx, commonCol, beIR, "", nil)
 		}
 	}
@@ -202,7 +201,7 @@ func reconcilePoolsForService(
 // isPoolBackend returns true if the given backendRef references the given InferencePool.
 func isPoolBackend(be gwv1.HTTPBackendRef, poolNN types.NamespacedName) bool {
 	// Group defaulting
-	group := infextv1a2.GroupVersion.Group
+	group := inf.GroupVersion.Group
 	if be.Group != nil {
 		group = string(*be.Group)
 	}
@@ -218,7 +217,7 @@ func isPoolBackend(be gwv1.HTTPBackendRef, poolNN types.NamespacedName) bool {
 		return false
 	}
 
-	return group == infextv1a2.GroupVersion.Group &&
+	return group == inf.GroupVersion.Group &&
 		kind == wellknown.InferencePoolKind &&
 		be.Name == gwv1.ObjectName(poolNN.Name)
 }
@@ -315,7 +314,7 @@ func updatePoolStatus(
 	// Snapshot the errors under a lock
 	errs := irPool.snapshotErrors()
 
-	var pool infextv1a2.InferencePool
+	var pool inf.InferencePool
 	if err := commonCol.CrudClient.Get(ctx, poolNN, &pool); err != nil {
 		logger.Error("failed to get InferencePool", "pool", poolNN, "err", err)
 		return
@@ -344,27 +343,27 @@ func updatePoolStatus(
 	}
 
 	// Rewrite status parents based on the active Gateways
-	before := append([]infextv1a2.PoolStatus(nil), pool.Status.Parents...)
+	before := append([]inf.ParentStatus(nil), pool.Status.Parents...)
 	pool.Status.Parents = nil
 
-	updateParent := func(ref infextv1a2.ParentGatewayReference) *infextv1a2.PoolStatus {
+	updateParent := func(ref inf.ParentReference) *inf.ParentStatus {
 		for i := range pool.Status.Parents {
-			if pool.Status.Parents[i].GatewayRef.Name == ref.Name &&
-				pool.Status.Parents[i].GatewayRef.Namespace == ref.Namespace &&
-				pool.Status.Parents[i].GatewayRef.Kind == ref.Kind {
+			if pool.Status.Parents[i].ParentRef.Name == ref.Name &&
+				pool.Status.Parents[i].ParentRef.Namespace == ref.Namespace &&
+				pool.Status.Parents[i].ParentRef.Kind == ref.Kind {
 				return &pool.Status.Parents[i]
 			}
 		}
-		pool.Status.Parents = append(pool.Status.Parents, infextv1a2.PoolStatus{GatewayRef: ref})
+		pool.Status.Parents = append(pool.Status.Parents, inf.ParentStatus{ParentRef: ref})
 		return &pool.Status.Parents[len(pool.Status.Parents)-1]
 	}
 
 	// Add back each active Gateway
 	for g := range activeGws {
-		p := updateParent(infextv1a2.ParentGatewayReference{
-			Kind:      ptr.To(infextv1a2.Kind(wellknown.GatewayKind)),
-			Namespace: ptr.To(infextv1a2.Namespace(g.Namespace)),
-			Name:      infextv1a2.ObjectName(g.Name),
+		p := updateParent(inf.ParentReference{
+			Kind:      inf.Kind(wellknown.GatewayKind),
+			Namespace: inf.Namespace(g.Namespace),
+			Name:      inf.ObjectName(g.Name),
 		})
 		upsert(&p.Conditions, buildAcceptedCondition(pool.Generation, commonCol.ControllerName))
 		upsert(&p.Conditions, buildResolvedRefsCondition(pool.Generation, errs))
@@ -372,9 +371,9 @@ func updatePoolStatus(
 
 	if irPool.hasErrors() {
 		// Ensure it exists and carries only the ResolvedRefs condition
-		p := updateParent(infextv1a2.ParentGatewayReference{
-			Kind: ptr.To(infextv1a2.Kind(defaultInfPoolStatusKind)),
-			Name: infextv1a2.ObjectName(defaultInfPoolStatusName),
+		p := updateParent(inf.ParentReference{
+			Kind: inf.Kind(defaultInfPoolStatusKind),
+			Name: inf.ObjectName(defaultInfPoolStatusName),
 		})
 		upsert(&p.Conditions, buildResolvedRefsCondition(pool.Generation, errs))
 		// Per InferencePool spec, do not set Accepted on this parent
@@ -384,8 +383,8 @@ func updatePoolStatus(
 	if !irPool.hasErrors() && len(activeGws) == 0 {
 		cleaned := pool.Status.Parents[:0]
 		for _, p := range pool.Status.Parents {
-			if !(p.GatewayRef.Kind == ptr.To(infextv1a2.Kind(defaultInfPoolStatusKind)) &&
-				p.GatewayRef.Name == infextv1a2.ObjectName(defaultInfPoolStatusName)) {
+			if !(p.ParentRef.Kind == inf.Kind(defaultInfPoolStatusKind) &&
+				p.ParentRef.Name == inf.ObjectName(defaultInfPoolStatusName)) {
 				cleaned = append(cleaned, p)
 			}
 		}
@@ -398,13 +397,13 @@ func updatePoolStatus(
 	}
 
 	// Capture the final state of pool status to persist
-	finalParents := append([]infextv1a2.PoolStatus(nil), pool.Status.Parents...)
+	finalParents := append([]inf.ParentStatus(nil), pool.Status.Parents...)
 
 	retryErr := retry.OnError(
 		wait.Backoff{Steps: 3, Duration: 50 * time.Millisecond, Factor: 2},
 		apierrors.IsConflict,
 		func() error {
-			var latest infextv1a2.InferencePool
+			var latest inf.InferencePool
 			if err := commonCol.CrudClient.Get(ctx, poolNN, &latest); err != nil {
 				return err
 			}
@@ -419,18 +418,18 @@ func updatePoolStatus(
 }
 
 // key returns a stable identity string for a Gateway-like ParentReference.
-func key(ref infextv1a2.ParentGatewayReference) string {
+func key(ref inf.ParentReference) string {
 	group := inferencePoolGVK.Group
 	if ref.Group != nil {
 		group = string(*ref.Group)
 	}
 	kind := wellknown.GatewayKind
-	if ref.Kind != nil {
-		kind = string(*ref.Kind)
+	if ref.Kind != inf.Kind(kind) {
+		kind = string(ref.Kind)
 	}
 	ns := ""
-	if ref.Namespace != nil {
-		ns = string(*ref.Namespace)
+	if ref.Namespace != inf.Namespace("") {
+		ns = string(ref.Namespace)
 	}
 	return fmt.Sprintf("%s/%s/%s/%s", group, kind, ns, ref.Name)
 }
@@ -455,20 +454,20 @@ func conditionsEqual(a, b []metav1.Condition) bool {
 
 // parentsEqual returns true only when both the *set of parents* and every
 // parent’s *Conditions* are identical.
-func parentsEqual(a, b []infextv1a2.PoolStatus) bool {
+func parentsEqual(a, b []inf.ParentStatus) bool {
 	if len(a) != len(b) {
 		return false
 	}
 
 	// Index A by identity key
-	idx := make(map[string]infextv1a2.PoolStatus, len(a))
+	idx := make(map[string]inf.ParentStatus, len(a))
 	for _, pa := range a {
-		idx[key(pa.GatewayRef)] = pa
+		idx[key(pa.ParentRef)] = pa
 	}
 
 	// Walk B and compare
 	for _, pb := range b {
-		pa, ok := idx[key(pb.GatewayRef)]
+		pa, ok := idx[key(pb.ParentRef)]
 		if !ok {
 			return false // parent missing
 		}
@@ -481,9 +480,9 @@ func parentsEqual(a, b []infextv1a2.PoolStatus) bool {
 
 func buildAcceptedCondition(gen int64, controllerName string) metav1.Condition {
 	return metav1.Condition{
-		Type:               string(infextv1a2.InferencePoolConditionAccepted),
+		Type:               string(inf.InferencePoolConditionAccepted),
 		Status:             metav1.ConditionTrue,
-		Reason:             string(infextv1a2.InferencePoolReasonAccepted),
+		Reason:             string(inf.InferencePoolReasonAccepted),
 		Message:            fmt.Sprintf("InferencePool has been accepted by controller %s", controllerName),
 		ObservedGeneration: gen,
 		LastTransitionTime: metav1.Now(),
@@ -492,14 +491,14 @@ func buildAcceptedCondition(gen int64, controllerName string) metav1.Condition {
 
 func buildResolvedRefsCondition(gen int64, errs []error) metav1.Condition {
 	cond := metav1.Condition{
-		Type:               string(infextv1a2.InferencePoolConditionResolvedRefs),
+		Type:               string(inf.InferencePoolConditionResolvedRefs),
 		ObservedGeneration: gen,
 		LastTransitionTime: metav1.Now(),
 	}
 
 	if len(errs) == 0 {
 		cond.Status = metav1.ConditionTrue
-		cond.Reason = string(infextv1a2.InferencePoolReasonResolvedRefs)
+		cond.Reason = string(inf.InferencePoolReasonResolvedRefs)
 		cond.Message = "All InferencePool references have been resolved"
 		return cond
 	}
@@ -520,7 +519,7 @@ func buildResolvedRefsCondition(gen int64, errs []error) metav1.Condition {
 	joined := strings.Join(msgs, "; ")
 
 	cond.Status = metav1.ConditionFalse
-	cond.Reason = string(infextv1a2.InferencePoolReasonInvalidExtensionRef)
+	cond.Reason = string(inf.InferencePoolReasonInvalidExtensionRef)
 	cond.Message = fmt.Sprintf("%s %s", prefix, joined)
 	return cond
 }

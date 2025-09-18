@@ -49,7 +49,6 @@ func runAgentGatewayScenario(t *testing.T, scenarioDir string, globalSettings *s
 		}
 		for _, f := range files {
 			// run tests with the yaml files (agentgateway dumps json output)
-			parentT := t
 			if strings.HasSuffix(f.Name(), ".yaml") {
 				if os.Getenv("TEST_PREFIX") != "" && !strings.HasPrefix(f.Name(), os.Getenv("TEST_PREFIX")) {
 					continue
@@ -58,7 +57,7 @@ func runAgentGatewayScenario(t *testing.T, scenarioDir string, globalSettings *s
 				t.Run(strings.TrimSuffix(f.Name(), ".yaml"), func(t *testing.T) {
 					writer.set(t)
 					t.Cleanup(func() {
-						writer.set(parentT)
+						writer.set(nil)
 					})
 					testAgentGatewayScenario(t, ctx, kdbg, client, xdsPort, fullpath)
 				})

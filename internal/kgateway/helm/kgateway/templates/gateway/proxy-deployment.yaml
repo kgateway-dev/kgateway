@@ -9,7 +9,7 @@ metadata:
     {{- include "kgateway.gateway.constLabels" . | nindent 4 }}
     {{- include "kgateway.gateway.labels" . | nindent 4 }}
 spec:
-  {{- if not $gateway.autoscaling.enabled }}
+  {{- if $gateway.replicaCount }}
   replicas: {{ $gateway.replicaCount }}
   {{- end }}
   selector:
@@ -70,6 +70,9 @@ spec:
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
+        {{- with $gateway.extraVolumeMounts }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
         env:
         - name: POD_NAME
           valueFrom:
@@ -316,6 +319,10 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with $gateway.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- if $gateway.terminationGracePeriodSeconds }}
       terminationGracePeriodSeconds: {{ $gateway.terminationGracePeriodSeconds }}
       {{- end }}
@@ -356,6 +363,9 @@ spec:
       - name: workload-certs
         emptyDir: {}
 {{- end }} {{/* if $gateway.istio.enabled */}}
+      {{- with $gateway.extraVolumes }}
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -389,6 +399,9 @@ metadata:
     {{- end }}
 spec:
   type: {{ $gateway.service.type }}
+  {{- if $gateway.service.externalTrafficPolicy }}
+  externalTrafficPolicy: {{ $gateway.service.externalTrafficPolicy }}
+  {{- end }}
   {{- with $gateway.service.clusterIP }}
   clusterIP: {{ . }}
   {{- end }}

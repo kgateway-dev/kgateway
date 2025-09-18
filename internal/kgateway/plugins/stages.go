@@ -52,15 +52,18 @@ func FilterStageComparison[WellKnown ~int](a, b sdkfilters.FilterStage[WellKnown
 func BeforeStage[WellKnown ~int](wellKnown WellKnown) sdkfilters.FilterStage[WellKnown] {
 	return RelativeToStage(wellKnown, -1)
 }
+
 func DuringStage[WellKnown ~int](wellKnown WellKnown) sdkfilters.FilterStage[WellKnown] {
 	return RelativeToStage(wellKnown, 0)
 }
+
 func AfterStage[WellKnown ~int](wellKnown WellKnown) sdkfilters.FilterStage[WellKnown] {
 	return RelativeToStage(wellKnown, 1)
 }
-func RelativeToStage[WellKnown ~int](wellKnown WellKnown, weight int) sdkfilters.FilterStage[WellKnown] {
+
+func RelativeToStage[WellKnown ~int](wellKnown WellKnown, relativeWeight int) sdkfilters.FilterStage[WellKnown] {
 	return sdkfilters.FilterStage[WellKnown]{
-		RelativeTo: wellKnown,
-		Weight:     weight,
+		RelativeTo:     wellKnown,
+		RelativeWeight: relativeWeight,
 	}
 }

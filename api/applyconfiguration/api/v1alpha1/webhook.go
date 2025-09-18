@@ -9,8 +9,8 @@ import (
 // WebhookApplyConfiguration represents a declarative configuration of the Webhook type for use
 // with apply.
 type WebhookApplyConfiguration struct {
-	Host           *HostApplyConfiguration `json:"host,omitempty"`
-	ForwardHeaders []v1.HTTPHeaderMatch    `json:"forwardHeaders,omitempty"`
+	Host                 *HostApplyConfiguration `json:"host,omitempty"`
+	ForwardHeaderMatches []v1.HTTPHeaderMatch    `json:"forwardHeaderMatches,omitempty"`
 }
 
 // WebhookApplyConfiguration constructs a declarative configuration of the Webhook type for use with
@@ -27,12 +27,12 @@ func (b *WebhookApplyConfiguration) WithHost(value *HostApplyConfiguration) *Web
 	return b
 }
 
-// WithForwardHeaders adds the given value to the ForwardHeaders field in the declarative configuration
+// WithForwardHeaderMatches adds the given value to the ForwardHeaderMatches field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the ForwardHeaders field.
-func (b *WebhookApplyConfiguration) WithForwardHeaders(values ...v1.HTTPHeaderMatch) *WebhookApplyConfiguration {
+// If called multiple times, values provided by each call will be appended to the ForwardHeaderMatches field.
+func (b *WebhookApplyConfiguration) WithForwardHeaderMatches(values ...v1.HTTPHeaderMatch) *WebhookApplyConfiguration {
 	for i := range values {
-		b.ForwardHeaders = append(b.ForwardHeaders, values[i])
+		b.ForwardHeaderMatches = append(b.ForwardHeaderMatches, values[i])
 	}
 	return b
 }

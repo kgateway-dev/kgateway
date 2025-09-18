@@ -205,6 +205,10 @@ func getBackendModel(llm *v1alpha1.LLMProvider, byType map[string]struct{}) stri
 	} else if provider.VertexAI != nil {
 		byType["vertex-ai"] = struct{}{}
 		llmModel = provider.VertexAI.Model
+	} else if provider.Bedrock != nil {
+		// currently only supported in agentgateway
+		byType["bedrock"] = struct{}{}
+		llmModel = provider.Bedrock.Model
 	}
 	return llmModel
 }

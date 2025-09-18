@@ -15,6 +15,7 @@ from .provider import (
     ANTHROPIC_LLM_STR,
     GEMINI_LLM_STR,
     VERTEX_AI_LLM_STR,
+    OPENAI_LLM_STR,
 )
 
 from google.protobuf import struct_pb2 as struct_pb2
@@ -28,6 +29,8 @@ from openai.resources import AsyncModerations
 from ext_proc.streamchunks import StreamChunks
 from util.http import parse_content_type
 from guardrails.regex import regex_transform
+from opentelemetry.semconv._incubating.attributes import gen_ai_attributes
+from opentelemetry.util.types import Attributes
 
 logger = logging.getLogger().getChild("kgateway-ai-ext.external_processor.handler")
 
@@ -56,6 +59,12 @@ class Info:
     For resp, this is set after we handled response_headers.
     """
 
+    path: str = ""
+    """
+    path is the request path from the :path pseudo header
+    This is set while we are looping through the header in set_header()
+    """
+
     def append(self, data: bytes):
         """
         Append data to the body of the Info object.
@@ -80,6 +89,11 @@ class Info:
                 self.content_type, self.encoding = parse_content_type(
                     header.raw_value.decode("utf-8")
                 )
+            # Never pass through pseudo headers
+            # Capture the path from pseudo header but don't add it to headers
+            if header.key == ":path":
+                self.path = header.raw_value.decode("utf-8")
+                continue
             # Never pass through pseudo headers
             if header.key.startswith(":"):
                 continue
@@ -255,3 +269,65 @@ class Handler:
             self.resp_regex,
             self.anon,
         )
+
+    def get_operation_name(self) -> str:
+        """
+        Infers and returns the corresponding operation name based on the request path.
+
+        This function maps a complex API path to a short, normalized operation name,
+        which is required by the specification to be a "single word."
+
+        Returns:
+            A string representing the operation name, such as "chat" or "text_completion".
+            Returns "generate_content" if no known operation keyword is found in the path.
+        """
+        path = self.req.path
+        if "chat/completion" in path:
+            return "chat"
+        if "completions" in path:
+            return "text_completion"
+        return "generate_content"
+
+    def get_ai_system(self) -> str:
+        """
+        Returns the corresponding AI system name based on the LLM provider's string name.
+
+        This function determines the name of the AI system by checking the value of
+        `self.llm_provider`. It's primarily used to map internal provider constants
+        to more user-friendly, readable names.
+
+        Returns:
+            A string representing the matched AI system name, such as "anthropic" or "gcp.gemini".
+            If the value of `self.llm_provider` does not match any known providers,
+            it returns an empty string.
+        """
+        if self.llm_provider == ANTHROPIC_LLM_STR:
+            return "anthropic"
+        elif self.llm_provider == GEMINI_LLM_STR:
+            return "gcp.gemini"
+        elif self.llm_provider == VERTEX_AI_LLM_STR:
+            return "gcp.vertex_ai"
+        elif self.llm_provider == OPENAI_LLM_STR:
+            return "openai"
+        return ""
+
+    def get_attributes_for_request_body(self, body: dict) -> Attributes:
+        return {
+            gen_ai_attributes.GEN_AI_OUTPUT_TYPE: body.get("response_format", {}).get(
+                "type", ""
+            ),
+            gen_ai_attributes.GEN_AI_REQUEST_CHOICE_COUNT: body.get("n", 0),
+            gen_ai_attributes.GEN_AI_REQUEST_MODEL: body.get("model", None),
+            gen_ai_attributes.GEN_AI_REQUEST_SEED: body.get("seed", 0),
+            gen_ai_attributes.GEN_AI_REQUEST_FREQUENCY_PENALTY: body.get(
+                "frequency_penalty", 0
+            ),
+            gen_ai_attributes.GEN_AI_REQUEST_MAX_TOKENS: body.get("max_tokens", 0),
+            gen_ai_attributes.GEN_AI_REQUEST_PRESENCE_PENALTY: body.get(
+                "presence_penalty", 0
+            ),
+            gen_ai_attributes.GEN_AI_REQUEST_STOP_SEQUENCES: body.get("stop", []),
+            gen_ai_attributes.GEN_AI_REQUEST_TEMPERATURE: body.get("temperature", 0),
+            gen_ai_attributes.GEN_AI_REQUEST_TOP_K: body.get("top_k", 0),
+            gen_ai_attributes.GEN_AI_REQUEST_TOP_P: body.get("top_p", 0),
+        }

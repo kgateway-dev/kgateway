@@ -15,11 +15,17 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
+const (
+	ExtAuthGlobalDisableFilterName              = trafficpolicy.ExtAuthGlobalDisableFilterName
+	ExtAuthGlobalDisableFilterMetadataNamespace = trafficpolicy.ExtAuthGlobalDisableFilterMetadataNamespace
+)
+
 type (
 	TrafficPolicy                   = trafficpolicy.TrafficPolicy
 	TrafficPolicyConstructor        = trafficpolicy.TrafficPolicyConstructor
 	ProviderNeededMap               = trafficpolicy.ProviderNeededMap
 	TrafficPolicyGatewayExtensionIR = trafficpolicy.TrafficPolicyGatewayExtensionIR
+	TrafficPolicyMergeOpts          = trafficpolicy.TrafficPolicyMergeOpts
 )
 
 var (
@@ -29,7 +35,7 @@ var (
 	AddDisableFilterIfNeeded       = trafficpolicy.AddDisableFilterIfNeeded
 )
 
-// Create a traffic policy constructor. This converts a traffic policy into its IR form.
+// NewTrafficPolicyConstructor creates a traffic policy constructor. This converts a traffic policy into its IR form.
 func NewTrafficPolicyConstructor(
 	ctx context.Context,
 	commoncol *common.CommonCollections,

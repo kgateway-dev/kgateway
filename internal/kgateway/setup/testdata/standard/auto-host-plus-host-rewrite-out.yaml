@@ -93,7 +93,6 @@ routes:
         hostRewriteLiteral: foo.override
         regexRewrite:
           pattern:
-            googleRe2: {}
             regex: .*
           substitution: /headers
       typedPerFilterConfig:

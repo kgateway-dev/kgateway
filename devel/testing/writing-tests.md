@@ -106,7 +106,7 @@ Expect(response).To(HaveHttpResponse(&HttpResponse{
     StatusCode: http.StatusOK, 
     Body: gomega.ContainSubstring("body substring"), 
     Headers: map[string]interface{}{
-        "x-solo-resp-hdr1": Equal("test"),
+        "x-kgateway-resp-hdr1": Equal("test"),
     }, 
     Custom: // your custom match logic,
 }))

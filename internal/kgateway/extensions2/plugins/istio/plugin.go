@@ -24,12 +24,10 @@ import (
 	ourwellknown "github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
-var (
-	VirtualIstioGK = schema.GroupKind{
-		Group: "istioplugin",
-		Kind:  "istioplugin",
-	}
-)
+var VirtualIstioGK = schema.GroupKind{
+	Group: "istioplugin",
+	Kind:  "istioplugin",
+}
 
 type IstioSettings struct {
 	EnableAutoMtls bool
@@ -70,7 +68,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			VirtualIstioGK: {
 				Name:           "istio",
 				ProcessBackend: p.processBackend,
-				GlobalPolicies: func(_ krt.HandlerContext, _ extensionsplug.AttachmentPoints) ir.PolicyIR {
+				GlobalPolicies: func(_ krt.HandlerContext) ir.PolicyIR {
 					// return static settings which do not change post istioPlugin creation
 					return istioSettings
 				},
@@ -81,11 +79,8 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 
 type istioPlugin struct{}
 
-func isDisabledForUpstream(_ ir.BackendObjectIR) bool {
-	// return in.GetDisableIstioAutoMtls().GetValue()
-
-	// TODO: implement this; we can do it by checking annotations?
-	return false
+func isDisabledForUpstream(in ir.BackendObjectIR) bool {
+	return in.DisableIstioAutoMTLS
 }
 
 // we don't have a good way of know if we have ssl on the upstream, so check cluster instead
@@ -106,7 +101,8 @@ func (p istioPlugin) processBackend(ctx context.Context, ir ir.PolicyIR, in ir.B
 	// Istio automtls will only be applied when:
 	// 1) automtls is enabled on the settings
 	// 2) the upstream has not disabled auto mtls
-	// 3) the upstream has no sslConfig
+	// 3) the upstream has no sslConfig (not implemented yet)
+	// 4) no explicit annotation to disable auto mtls
 	if st.EnableAutoMtls && !isDisabledForUpstream(in) && !doesClusterHaveSslConfigPresent(out) {
 		sni := buildSni(in)
 

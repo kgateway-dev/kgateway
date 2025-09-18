@@ -110,7 +110,8 @@ type RouteContext struct {
 }
 
 type HcmContext struct {
-	Policy PolicyIR
+	Policy  PolicyIR
+	Gateway GatewayIR
 }
 
 // ProxyTranslationPass represents a single translation pass for a gateway using envoy. It can hold state
@@ -191,13 +192,41 @@ type AgentGatewayRouteContext struct {
 	Rule *gwv1.HTTPRouteRule
 }
 
+type AgentGatewayTranslationBackendContext struct {
+	Backend        *BackendObjectIR
+	GatewayContext GatewayContext
+}
+
 type AgentGatewayTranslationPass interface {
+	// ApplyForRoute processes route-level configuration
 	ApplyForRoute(pCtx *AgentGatewayRouteContext, out *api.Route) error
+
+	// ApplyForBackend processes backend-level configuration for each backend referenced in routes
+	ApplyForBackend(pCtx *AgentGatewayTranslationBackendContext, out *api.Backend) error
+
+	// ApplyForRouteBackend processes route-specific backend configuration
+	ApplyForRouteBackend(policy PolicyIR, pCtx *AgentGatewayTranslationBackendContext) error
 }
 
 type UnimplementedProxyTranslationPass struct{}
 
 var _ ProxyTranslationPass = UnimplementedProxyTranslationPass{}
+
+type UnimplementedAgentGatewayTranslationPass struct{}
+
+var _ AgentGatewayTranslationPass = UnimplementedAgentGatewayTranslationPass{}
+
+func (s UnimplementedAgentGatewayTranslationPass) ApplyForRoute(pCtx *AgentGatewayRouteContext, out *api.Route) error {
+	return nil
+}
+
+func (s UnimplementedAgentGatewayTranslationPass) ApplyForBackend(pCtx *AgentGatewayTranslationBackendContext, out *api.Backend) error {
+	return nil
+}
+
+func (s UnimplementedAgentGatewayTranslationPass) ApplyForRouteBackend(policy PolicyIR, pCtx *AgentGatewayTranslationBackendContext) error {
+	return nil
+}
 
 func (s UnimplementedProxyTranslationPass) ApplyListenerPlugin(ctx context.Context, pCtx *ListenerContext, out *envoylistenerv3.Listener) {
 }
@@ -266,6 +295,11 @@ type PolicyWrapper struct {
 
 	// Where to attach the policy. This usually comes from the policy CRD.
 	TargetRefs []PolicyRef
+
+	// PrecedenceWeight specifies the weight of the policy as an integer value (negative values are allowed).
+	// Policies with higher weight implies higher priority, and are evaluated before policies with lower weight.
+	// By default, policies have a weight of 0.
+	PrecedenceWeight int32
 }
 
 func (c PolicyWrapper) ResourceName() string {
@@ -303,7 +337,7 @@ func (c PolicyWrapper) Equals(in PolicyWrapper) bool {
 		return false
 	}
 
-	return versionEquals(c.Policy, in.Policy) && c.PolicyIR.Equals(in.PolicyIR)
+	return versionEquals(c.Policy, in.Policy) && c.PolicyIR.Equals(in.PolicyIR) && c.PrecedenceWeight == in.PrecedenceWeight
 }
 
 var ErrNotAttachable = fmt.Errorf("policy is not attachable to this object")

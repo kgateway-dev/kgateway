@@ -7,15 +7,11 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/agentgateway/agentgateway/go/api"
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	"istio.io/istio/pkg/kube/krt"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
 var VirtualBuiltInGK = schema.GroupKind{
@@ -30,11 +26,6 @@ type BackendInit struct {
 	// This will never override a ClusterLoadAssignment that is set inside of an InitEnvoyBackend implementation.
 	// The CLA is only added if the Cluster has a compatible type (EDS, LOGICAL_DNS, STRICT_DNS).
 	InitEnvoyBackend func(ctx context.Context, in BackendObjectIR, out *envoyclusterv3.Cluster) *EndpointsForBackend
-
-	// AgentBackendInit defines the translation hook for agentgateway backends. Implementations
-	// should translate the provided backend object into one or more api.Backend objects
-	// understood by the agentgateway data-plane.
-	InitAgentBackend func(ctx krt.HandlerContext, nsCol krt.Collection[*corev1.Namespace], svcCol krt.Collection[*corev1.Service], secrets krt.Collection[*corev1.Secret], be *v1alpha1.Backend) ([]*api.Backend, []*api.Policy, error)
 }
 
 type PolicyRef struct {
@@ -86,6 +77,13 @@ type PolicyAtt struct {
 	// A higher value means higher priority. It is used to accurately merge policies
 	// that are at different levels in the config tree hierarchy.
 	HierarchicalPriority int
+
+	// PrecedenceWeight specifies the weight of the policy as an integer value (negative values are allowed).
+	// Policies with higher weight implies higher priority, and are evaluated before policies with lower weight.
+	// By default, policies have a weight of 0.
+	// The policy's weight is relevant to policy prioritization during policy merging, such that higher priority
+	// policies are preferred during a merge conflict or when ordering policies during a merge.
+	PrecedenceWeight int32
 
 	// MergeOrigins maps field names in the PolicyIr to their original source in the merged PolicyAtt.
 	// It can be used to determine which PolicyAtt a merged field came from.
@@ -145,7 +143,8 @@ func (c PolicyAtt) Equals(in PolicyAtt) bool {
 		c.PolicyIr.Equals(in.PolicyIr) &&
 		ptrEquals(c.PolicyRef, in.PolicyRef) &&
 		c.InheritedPolicyPriority == in.InheritedPolicyPriority &&
-		c.HierarchicalPriority == in.HierarchicalPriority
+		c.HierarchicalPriority == in.HierarchicalPriority &&
+		c.PrecedenceWeight == in.PrecedenceWeight
 }
 
 func ptrEquals[T comparable](a, b *T) bool {
@@ -278,4 +277,8 @@ type HttpRouteRuleIR struct {
 	Backends         []HttpBackendOrDelegate
 	Matches          []gwv1.HTTPRouteMatch
 	Name             string
+
+	// Err contains any error encountered during the construction of this HttpRouteRuleIR
+	// that should be propagated through to translation to any derived ir.HttpRouteRuleMatchIRs
+	Err error
 }

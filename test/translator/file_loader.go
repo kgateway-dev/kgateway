@@ -2,7 +2,6 @@ package translator
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,6 +17,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/protoutils"
 
 	"github.com/ghodss/yaml"
+	apiserverschema "k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -25,9 +25,13 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-var NoFilesFound = errors.New("no k8s files found")
+var ErrNoFilesFound = errors.New("no k8s files found")
 
-func LoadFromFiles(ctx context.Context, filename string, scheme *runtime.Scheme) ([]client.Object, error) {
+func LoadFromFiles(
+	filename string,
+	scheme *runtime.Scheme,
+	gvkToStructuralSchema map[schema.GroupVersionKind]*apiserverschema.Structural,
+) ([]client.Object, error) {
 	fileOrDir, err := os.Stat(filename)
 	if err != nil {
 		return nil, err
@@ -35,7 +39,7 @@ func LoadFromFiles(ctx context.Context, filename string, scheme *runtime.Scheme)
 
 	var yamlFiles []string
 	if fileOrDir.IsDir() {
-		slog.Info("looking for YAML files", "path", fileOrDir.Name())
+		slog.Debug("looking for YAML files", "path", fileOrDir.Name())
 		err := filepath.WalkDir(filename, func(path string, d fs.DirEntry, _ error) error {
 			if strings.HasSuffix(path, ".yml") || strings.HasSuffix(path, ".yaml") {
 				yamlFiles = append(yamlFiles, path)
@@ -50,18 +54,17 @@ func LoadFromFiles(ctx context.Context, filename string, scheme *runtime.Scheme)
 	}
 
 	if len(yamlFiles) == 0 {
-		return nil, NoFilesFound
+		return nil, ErrNoFilesFound
 	}
 
-	slog.Info("user configuration YAML files found", "files", yamlFiles)
+	slog.Debug("user configuration YAML files found", "files", yamlFiles)
 
 	var resources []client.Object
 	for _, file := range yamlFiles {
-		objs, err := parseFile(file, scheme)
+		objs, err := parseFile(file, scheme, gvkToStructuralSchema)
 		if err != nil {
 			return nil, err
 		}
-
 		for _, obj := range objs {
 			clientObj, ok := obj.(client.Object)
 			if !ok {
@@ -80,7 +83,11 @@ func LoadFromFiles(ctx context.Context, filename string, scheme *runtime.Scheme)
 	return resources, nil
 }
 
-func parseFile(filename string, scheme *runtime.Scheme) ([]runtime.Object, error) {
+func parseFile(
+	filename string,
+	scheme *runtime.Scheme,
+	gvkToStructuralSchema map[schema.GroupVersionKind]*apiserverschema.Structural,
+) ([]runtime.Object, error) {
 	file, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
@@ -121,6 +128,7 @@ func parseFile(filename string, scheme *runtime.Scheme) ([]runtime.Object, error
 			)
 			continue
 		}
+
 		if err := yaml.Unmarshal(objYaml, obj); err != nil {
 			slog.Warn("failed to parse resource YAML",
 				"error", err,
@@ -130,6 +138,17 @@ func parseFile(filename string, scheme *runtime.Scheme) ([]runtime.Object, error
 				"data", truncateString(string(objYaml), 100),
 			)
 			continue
+		}
+
+		if structuralSchema, ok := gvkToStructuralSchema[gvk]; ok {
+			objYamlWithDefaults, err := applyDefaults(objYaml, structuralSchema)
+			if err != nil {
+				return nil, fmt.Errorf("failed to apply defaults for %s: %w", gvk, err)
+			}
+			err = yaml.Unmarshal(objYamlWithDefaults, obj)
+			if err != nil {
+				return nil, fmt.Errorf("failed to unmarshal object with defaults for %s: %w", gvk, err)
+			}
 		}
 
 		genericResources = append(genericResources, obj)

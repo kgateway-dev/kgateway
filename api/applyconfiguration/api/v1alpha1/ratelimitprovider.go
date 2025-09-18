@@ -4,15 +4,18 @@ package v1alpha1
 
 import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
 // RateLimitProviderApplyConfiguration represents a declarative configuration of the RateLimitProvider type for use
 // with apply.
 type RateLimitProviderApplyConfiguration struct {
-	GrpcService *ExtGrpcServiceApplyConfiguration `json:"grpcService,omitempty"`
-	Domain      *string                           `json:"domain,omitempty"`
-	FailOpen    *bool                             `json:"failOpen,omitempty"`
-	Timeout     *v1.Duration                      `json:"timeout,omitempty"`
+	GrpcService       *ExtGrpcServiceApplyConfiguration      `json:"grpcService,omitempty"`
+	Domain            *string                                `json:"domain,omitempty"`
+	FailOpen          *bool                                  `json:"failOpen,omitempty"`
+	Timeout           *v1.Duration                           `json:"timeout,omitempty"`
+	XRateLimitHeaders *apiv1alpha1.XRateLimitHeadersStandard `json:"xRateLimitHeaders,omitempty"`
 }
 
 // RateLimitProviderApplyConfiguration constructs a declarative configuration of the RateLimitProvider type for use with
@@ -50,5 +53,13 @@ func (b *RateLimitProviderApplyConfiguration) WithFailOpen(value bool) *RateLimi
 // If called multiple times, the Timeout field is set to the value of the last call.
 func (b *RateLimitProviderApplyConfiguration) WithTimeout(value v1.Duration) *RateLimitProviderApplyConfiguration {
 	b.Timeout = &value
+	return b
+}
+
+// WithXRateLimitHeaders sets the XRateLimitHeaders field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the XRateLimitHeaders field is set to the value of the last call.
+func (b *RateLimitProviderApplyConfiguration) WithXRateLimitHeaders(value apiv1alpha1.XRateLimitHeadersStandard) *RateLimitProviderApplyConfiguration {
+	b.XRateLimitHeaders = &value
 	return b
 }

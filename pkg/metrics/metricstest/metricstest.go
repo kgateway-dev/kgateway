@@ -9,6 +9,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/prometheus/client_golang/prometheus/testutil/promlint"
 	dto "github.com/prometheus/client_model/go"
+	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -121,6 +122,8 @@ func (g *prometheusGatheredMetrics) MetricLength(name string) int {
 // an attempt to gather metrics results in an error, or the metrics are gathered.
 // If the context completes before metrics are gathered, it will fail the test.
 // If no names are provided, it will return upon gathering any metrics.
+// If a histogram metric is included amongst the names it will attempt to gather
+// until the histogram contains at least one sample.
 func MustGatherMetricsContext(ctx context.Context, t require.TestingT, names ...string) GatheredMetrics {
 Loop:
 	for {
@@ -141,6 +144,17 @@ Loop:
 		for _, name := range names {
 			if gathered.MetricLength(name) == 0 {
 				continue Loop
+			}
+
+			if g, ok := gathered.(*prometheusGatheredMetrics); ok {
+				metric := g.getFirstMetric(name)
+				if metric == nil {
+					continue Loop
+				}
+
+				if h := metric.GetHistogram(); h != nil && h.GetSampleCount() == 0 {
+					continue Loop
+				}
 			}
 		}
 
@@ -166,16 +180,46 @@ func MustGatherPrometheusMetrics(t require.TestingT) GatheredMetrics {
 	return &gathered
 }
 
-// MustGetMetric retrieves a single metric by name, ensuring it exists and has exactly one instance.
-func (g *prometheusGatheredMetrics) MustGetMetric(name string) *dto.Metric {
+// MustParseGatheredMetrics parses gathered metrics from the provided data reader.
+func MustParseGatheredMetrics(t require.TestingT, data io.Reader) GatheredMetrics {
+	gathered := prometheusGatheredMetrics{
+		metrics: make(map[string][]*dto.Metric),
+		t:       t,
+	}
+
+	parser := expfmt.TextParser{}
+
+	metricFamilies, err := parser.TextToMetricFamilies(data)
+	require.NoError(t, err)
+
+	for _, mf := range metricFamilies {
+		metrics := make([]*dto.Metric, len(mf.GetMetric()))
+		copy(metrics, mf.GetMetric())
+		gathered.metrics[mf.GetName()] = metrics
+	}
+
+	return &gathered
+}
+
+// mustGetMetric retrieves a single metric by name, ensuring it exists and has exactly one instance.
+func (g *prometheusGatheredMetrics) mustGetMetric(name string) *dto.Metric {
 	m, ok := g.metrics[name]
 	require.True(g.t, ok, "Metric %s not found", name)
 	require.Equal(g.t, 1, len(m), "Expected 1 metric for %s", name)
 	return m[0]
 }
 
-// MustGetMetrics retrieves multiple metrics by name, ensuring they exist and have at least the expected count.
-func (g *prometheusGatheredMetrics) MustGetMetrics(name string, expectedCount int) []*dto.Metric {
+// getFirstMetric retrieves the first instance of a single metric by name, if it exists.
+func (g *prometheusGatheredMetrics) getFirstMetric(name string) *dto.Metric {
+	if m, ok := g.metrics[name]; ok && len(m) > 0 {
+		return m[0]
+	}
+
+	return nil
+}
+
+// mustGetMetrics retrieves multiple metrics by name, ensuring they exist and have at least the expected count.
+func (g *prometheusGatheredMetrics) mustGetMetrics(name string, expectedCount int) []*dto.Metric {
 	m, ok := g.metrics[name]
 	require.True(g.t, ok, "Metric %s not found", name)
 	require.LessOrEqual(g.t, expectedCount, len(m), "Expected %d metrics for %s", expectedCount, name)
@@ -226,14 +270,14 @@ func (g *prometheusGatheredMetrics) findMetricObj(metric *dto.Metric, metricsToS
 
 // AssertMetricLabels asserts that a metric has the expected labels.
 func (g *prometheusGatheredMetrics) AssertMetricLabels(name string, expectedLabels []metrics.Label) {
-	metric := g.MustGetMetric(name)
+	metric := g.mustGetMetric(name)
 
 	g.assertMetricObjLabels(metric, expectedLabels)
 }
 
 // AssertMetricsLabels asserts that multiple metrics of the same name exactly match the expected labels.
 func (g *prometheusGatheredMetrics) AssertMetricsLabels(name string, expectedLabels [][]metrics.Label) {
-	metrics := g.MustGetMetrics(name, len(expectedLabels))
+	metrics := g.mustGetMetrics(name, len(expectedLabels))
 	for i, m := range metrics {
 		g.assertMetricObjLabels(m, expectedLabels[i])
 	}
@@ -241,7 +285,7 @@ func (g *prometheusGatheredMetrics) AssertMetricsLabels(name string, expectedLab
 
 // AssertMetricsLabelsInclude asserts that multiple metrics of the same name include at least the expected labels.
 func (g *prometheusGatheredMetrics) AssertMetricsLabelsInclude(name string, expectedLabels [][]metrics.Label) {
-	metrics := g.MustGetMetrics(name, len(expectedLabels))
+	metrics := g.mustGetMetrics(name, len(expectedLabels))
 
 	matched := make([]bool, len(expectedLabels))
 
@@ -279,7 +323,7 @@ func (g *prometheusGatheredMetrics) AssertMetricsLabelsInclude(name string, expe
 
 // AssertMetricHistogramValue asserts that a histogram metric has the expected sample count and sum.
 func (g *prometheusGatheredMetrics) AssertMetricHistogramValue(name string, expectedValue HistogramMetricOutput) {
-	metric := g.MustGetMetric(name)
+	metric := g.mustGetMetric(name)
 	assert.Equal(g.t, expectedValue, HistogramMetricOutput{
 		SampleCount: metric.GetHistogram().GetSampleCount(),
 		SampleSum:   metric.GetHistogram().GetSampleSum(),
@@ -289,16 +333,18 @@ func (g *prometheusGatheredMetrics) AssertMetricHistogramValue(name string, expe
 	})
 }
 
-// AssertHistogramPopulated asserts that a histogram metric is populated (has non-zero sample count and sum).
+// AssertHistogramPopulated asserts that a histogram metric is populated
+// (any histogram metric that has a non-zero sample count).
 func (g *prometheusGatheredMetrics) AssertHistogramPopulated(name string) {
-	metric := g.MustGetMetric(name)
+	metric := g.getFirstMetric(name)
+	assert.NotNil(g.t, metric, "Metric %s not found", name)
+	assert.NotNil(g.t, metric.GetHistogram(), "Metric %s is not a histogram", name)
 	assert.True(g.t, metric.GetHistogram().GetSampleCount() > 0, "Histogram %s is not populated", name)
-	assert.True(g.t, metric.GetHistogram().GetSampleSum() > 0, "Histogram %s is not populated", name)
 }
 
 // AssertHistogramBuckets asserts that a histogram metric has the expected bucket values.
 func (g *prometheusGatheredMetrics) AssertHistogramBuckets(name string, expectedBuckets []float64) {
-	metric := g.MustGetMetric(name)
+	metric := g.mustGetMetric(name)
 
 	histogram := metric.GetHistogram()
 	require.NotNil(g.t, histogram, "Metric %s is not a histogram", name)
@@ -372,7 +418,7 @@ func GatherAndLint(metricNames ...string) ([]promlint.Problem, error) {
 	return testutil.GatherAndLint(metrics.Registry(), metricNames...)
 }
 
-// GatherAndCompare gathers metrics and runs a linter on them.
+// GatherAndCompare gathers metrics and compares them against expected values.
 func GatherAndCompare(expected io.Reader, metricNames ...string) error {
 	return testutil.GatherAndCompare(metrics.Registry(), expected, metricNames...)
 }

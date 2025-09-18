@@ -14,7 +14,17 @@ clusters:
   loadAssignment:
     clusterName: endpoint-picker_gwtest_gateway-pool_8080
     endpoints:
-    - {}
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 10.0.0.5
+              portValue: 8080
+        loadBalancingWeight: 1
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              x-gateway-destination-endpoint: 10.0.0.5:8080
   metadata: {}
   name: endpoint-picker_gwtest_gateway-pool_8080
   type: STATIC
@@ -149,4 +159,18 @@ routes:
       name: listener~8080~www_example_com-route-0-httproute-gateway-route-gwtest-0-0-matcher-0
       route:
         cluster: endpoint-picker_gwtest_gateway-pool_8080
-        metadataMatch: {}
+        metadataMatch:
+          filterMetadata:
+            envoy.lb.subset_hint:
+              x-gateway-destination-endpoint-subset:
+              - 10.0.0.5:8080
+      typedPerFilterConfig:
+        inferencepool.backend.transformation.kgateway.io:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
+          overrides:
+            failureModeAllow: true
+            grpcService:
+              envoyGrpc:
+                authority: gateway-pool-endpoint-picker.gwtest.svc:9002
+                clusterName: endpointpicker_gateway-pool_gwtest_ext_proc
+              timeout: 10s

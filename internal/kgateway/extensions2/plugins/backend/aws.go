@@ -24,17 +24,12 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	translatorutils "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/arnutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
 
 const (
-	// accessKey is the key name for in the secret data for the access key id.
-	accessKey = "accessKey"
-	// sessionToken is the key name for in the secret data for the session token.
-	sessionToken = "sessionToken"
-	// secretKey is the key name for in the secret data for the secret access key.
-	secretKey = "secretKey"
 	// lambdaServiceName is the service name for the lambda filter.
 	lambdaServiceName = "lambda"
 	// lambdaFilterName is the name of the lambda filter.
@@ -43,8 +38,6 @@ const (
 	awsRequestSigningFilterName = "envoy.filters.http.aws_request_signing"
 	// upstreamCodecFilterName is the name of the upstream codec filter.
 	upstreamCodecFilterName = "envoy.filters.http.upstream_codec"
-	// defaultAWSRegion is the default AWS region.
-	defaultAWSRegion = "us-east-1"
 )
 
 // AwsIr is the internal representation of an AWS backend.
@@ -230,7 +223,7 @@ func getRegion(in *v1alpha1.AwsBackend) string {
 	if in.Region != nil {
 		return *in.Region
 	}
-	return defaultAWSRegion
+	return wellknown.DefaultAWSRegion
 }
 
 // getLambdaHostname returns the hostname for the lambda function. When using a custom endpoint
@@ -322,20 +315,20 @@ type staticSecretDerivation struct {
 func deriveStaticSecret(awsSecrets *ir.Secret) (*staticSecretDerivation, error) {
 	var errs []error
 	// validate that the secret has field in string format and has an access_key and secret_key
-	if awsSecrets.Data[accessKey] == nil || !utf8.Valid(awsSecrets.Data[accessKey]) {
+	if awsSecrets.Data[wellknown.AccessKey] == nil || !utf8.Valid(awsSecrets.Data[wellknown.AccessKey]) {
 		// err is nil here but this is still safe
 		errs = append(errs, errors.New("access_key is not a valid string"))
 	}
-	if awsSecrets.Data[secretKey] == nil || !utf8.Valid(awsSecrets.Data[secretKey]) {
+	if awsSecrets.Data[wellknown.SecretKey] == nil || !utf8.Valid(awsSecrets.Data[wellknown.SecretKey]) {
 		errs = append(errs, errors.New("secret_key is not a valid string"))
 	}
 	// Session key is optional, but if it is present, it must be a valid string.
-	if awsSecrets.Data[sessionToken] != nil && !utf8.Valid(awsSecrets.Data[sessionToken]) {
+	if awsSecrets.Data[wellknown.SessionToken] != nil && !utf8.Valid(awsSecrets.Data[wellknown.SessionToken]) {
 		errs = append(errs, errors.New("session_key is not a valid string"))
 	}
 	return &staticSecretDerivation{
-		access:  string(awsSecrets.Data[accessKey]),
-		session: string(awsSecrets.Data[sessionToken]),
-		secret:  string(awsSecrets.Data[secretKey]),
+		access:  string(awsSecrets.Data[wellknown.AccessKey]),
+		session: string(awsSecrets.Data[wellknown.SessionToken]),
+		secret:  string(awsSecrets.Data[wellknown.SecretKey]),
 	}, errors.Join(errs...)
 }

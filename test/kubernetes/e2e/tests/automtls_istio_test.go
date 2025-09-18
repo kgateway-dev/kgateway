@@ -1,12 +1,9 @@
-//go:build ignore
-
 package tests_test
 
 import (
 	"context"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
@@ -18,6 +15,12 @@ import (
 // TestKgatewayIstioAutoMtls is the function which executes a series of tests against a given installation
 func TestKgatewayIstioAutoMtls(t *testing.T) {
 	ctx := context.Background()
+
+	// Set Istio version if not already set
+	if os.Getenv("ISTIO_VERSION") == "" {
+		os.Setenv("ISTIO_VERSION", "1.25.1") // Using default istio version
+	}
+
 	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "automtls-istio-test")
 	testInstallation := e2e.CreateTestInstallation(
 		t,
@@ -28,7 +31,6 @@ func TestKgatewayIstioAutoMtls(t *testing.T) {
 		},
 	)
 
-	testHelper := e2e.MustTestHelper(ctx, testInstallation)
 	err := testInstallation.AddIstioctl(ctx)
 	if err != nil {
 		t.Errorf("failed to add istioctl: %v\n", err)
@@ -40,7 +42,7 @@ func TestKgatewayIstioAutoMtls(t *testing.T) {
 	}
 
 	// We register the cleanup function _before_ we actually perform the installation.
-	// This allows us to uninstall Gloo Gateway, in case the original installation only completed partially
+	// This allows us to uninstall kgateway, in case the original installation only completed partially
 	t.Cleanup(func() {
 		if !nsEnvPredefined {
 			os.Unsetenv(testutils.InstallNamespace)
@@ -52,7 +54,8 @@ func TestKgatewayIstioAutoMtls(t *testing.T) {
 			testInstallation.CreateIstioBugReport(ctx)
 		}
 
-		testInstallation.UninstallGlooGatewayWithTestHelper(ctx, testHelper)
+		// Uninstall kgateway
+		testInstallation.UninstallKgateway(ctx)
 
 		// Uninstall Istio
 		err = testInstallation.UninstallIstio()
@@ -61,15 +64,14 @@ func TestKgatewayIstioAutoMtls(t *testing.T) {
 		}
 	})
 
-	// Install Istio before Gloo Gateway to make sure istiod is present before istio-proxy
+	// Install Istio before kgateway to make sure istiod is present before kgateway for sds
 	err = testInstallation.InstallMinimalIstio(ctx)
 	if err != nil {
 		t.Errorf("failed to add istioctl: %v\n", err)
 	}
 
-	// Install Gloo Gateway
-	// istio proxy and sds are added to gateway and take a little longer to start up
-	testInstallation.InstallGlooGatewayWithTestHelper(ctx, testHelper, 10*time.Minute)
+	// Install kgateway
+	testInstallation.InstallKgatewayFromLocalChart(ctx)
 
 	AutomtlsIstioSuiteRunner().Run(ctx, t, testInstallation)
 }

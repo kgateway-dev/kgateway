@@ -10,12 +10,19 @@ import (
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=httplistenerpolicies,verbs=get;list;watch
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=httplistenerpolicies/status,verbs=get;update;patch
 
+// +kubebuilder:printcolumn:name="Accepted",type=string,JSONPath=".status.ancestors[*].conditions[?(@.type=='Accepted')].status",description="HTTP listener policy acceptance status"
+// +kubebuilder:printcolumn:name="Attached",type=string,JSONPath=".status.ancestors[*].conditions[?(@.type=='Attached')].status",description="HTTP listener policy attachment status"
+
 // +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:metadata:labels={app=kgateway,app.kubernetes.io/name=kgateway}
 // +kubebuilder:resource:categories=kgateway
 // +kubebuilder:subresource:status
 // +kubebuilder:metadata:labels="gateway.networking.k8s.io/policy=Direct"
+// HTTPListenerPolicy is intended to be used for configuring the Envoy `HttpConnectionManager` and any other config or policy
+// that should map 1-to-1 with a given HTTP listener, such as the Envoy health check HTTP filter.
+// Currently these policies can only be applied per `Gateway` but support for `Listener` attachment may be added in the future.
+// See https://github.com/kgateway-dev/kgateway/issues/11786 for more details.
 type HTTPListenerPolicy struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -66,6 +73,8 @@ type HTTPListenerPolicySpec struct {
 	UpgradeConfig *UpgradeConfig `json:"upgradeConfig,omitempty"`
 
 	// UseRemoteAddress determines whether to use the remote address for the original client.
+	// Note: If this field is omitted, it will fallback to the default value of 'true', which we set for all Envoy HCMs.
+	// Thus, setting this explicitly to true is unnecessary (but will not cause any harm).
 	// When true, Envoy will use the remote address of the connection as the client address.
 	// When false, Envoy will use the X-Forwarded-For header to determine the client address.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-use-remote-address
@@ -90,6 +99,12 @@ type HTTPListenerPolicySpec struct {
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	StreamIdleTimeout *metav1.Duration `json:"streamIdleTimeout,omitempty"`
 
+	// IdleTimeout is the idle timeout for connnections.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-httpprotocoloptions
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	IdleTimeout *metav1.Duration `json:"idleTimeout,omitempty"`
+
 	// HealthCheck configures [Envoy health checks](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/health_check/v3/health_check.proto)
 	// +optional
 	HealthCheck *EnvoyHealthCheck `json:"healthCheck,omitempty"`
@@ -98,6 +113,17 @@ type HTTPListenerPolicySpec struct {
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/header_casing
 	// +optional
 	PreserveHttp1HeaderCase *bool `json:"preserveHttp1HeaderCase,omitempty"`
+
+	// AcceptHTTP10 determines whether to accept incoming HTTP/1.0 and HTTP 0.9 requests.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-http1protocoloptions
+	// +optional
+	AcceptHttp10 *bool `json:"acceptHttp10,omitempty"`
+
+	// DefaultHostForHttp10 specifies a default host for HTTP/1.0 requests. This is highly suggested if acceptHttp10 is true and a no-op if acceptHttp10 is false.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-http1protocoloptions
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	DefaultHostForHttp10 *string `json:"defaultHostForHttp10,omitempty"`
 }
 
 // AccessLog represents the top-level access log configuration.
@@ -249,6 +275,12 @@ type OpenTelemetryAccessLogService struct {
 	// Additional attributes that describe the specific event occurrence.
 	// +optional
 	Attributes *KeyAnyValueList `json:"attributes,omitempty"`
+
+	// Additional resource attributes that describe the resource.
+	// If the `service.name` resource attribute is not specified, it adds it with the default value
+	// of the envoy cluster name, ie: `<gateway-name>.<gateway-namespace>`
+	// +optional
+	ResourceAttributes *KeyAnyValueList `json:"resourceAttributes,omitempty"`
 }
 
 // A list of key-value pair that is used to store Span attributes, Link attributes, etc.
@@ -567,8 +599,9 @@ type OpenTelemetryTracingConfig struct {
 	GrpcService CommonGrpcService `json:"grpcService"`
 
 	// The name for the service. This will be populated in the ResourceSpan Resource attributes
-	// +required
-	ServiceName string `json:"serviceName"`
+	// Defaults to the envoy cluster name. Ie: `<gateway-name>.<gateway-namespace>`
+	// +optional
+	ServiceName *string `json:"serviceName"`
 
 	// An ordered list of resource detectors. Currently supported values are `EnvironmentResourceDetector`
 	// +optional

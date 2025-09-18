@@ -23,3 +23,4 @@ spec:
             value: "premium-api"
       extensionRef:
         name: global-ratelimit
+        namespace: kgateway-test-extensions

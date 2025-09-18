@@ -47,12 +47,20 @@ func init() {
 
 // New returns a new slog.Logger instance for the given component with default Options.
 // If the component is empty, it returns the default logger.
+// NOTE: the logger's leveler is tracked in memory, so this should be used to create long lived loggers
+// whose log levels are required to be configurable at runtime.
+// Short lived loggers should be instantiated using logger.With() or call DeleteLeveler if instantiated
+// with New, to avoid leaking memory.
 func New(component string) *slog.Logger {
 	return NewWithOptions(component, Options{})
 }
 
 // NewWithOptions returns a new slog.Logger instance for the given component with the provided Options
 // If the component is empty, it returns the default logger.
+// NOTE: the logger's leveler is tracked in memory, so this should be used to create long lived loggers
+// whose log levels are required to be configurable at runtime.
+// Short lived loggers should be instantiated using logger.With() or call DeleteLeveler if instantiated
+// with NewWithOptions, to avoid leaking memory.
 func NewWithOptions(component string, opts Options) *slog.Logger {
 	if component == "" {
 		return slog.Default()

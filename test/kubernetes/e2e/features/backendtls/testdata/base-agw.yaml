@@ -1,0 +1,100 @@
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: gw
+spec:
+  gatewayClassName: agentgateway
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: nginx-route
+spec:
+  parentRefs:
+  - name: gw
+  hostnames:
+  - "example.com"
+  rules:
+  - backendRefs:
+    - name: nginx
+      port: 8443
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: nginx2-route
+spec:
+  parentRefs:
+  - name: gw
+  hostnames:
+  - "example2.com"
+  rules:
+  - backendRefs:
+    - name: nginx2
+      port: 8443
+---
+apiVersion: gateway.networking.k8s.io/v1alpha3
+kind: BackendTLSPolicy
+metadata:
+  name: tls-policy
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: nginx
+  - group: ""
+    kind: Service
+    name: nginx2
+    sectionName: "8443"
+  validation:
+    hostname: "example.com"
+    caCertificateRefs:
+    - group: ""
+      kind: ConfigMap
+      name: ca
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: google-route
+spec:
+  parentRefs:
+  - name: gw
+  hostnames:
+  - "foo.com"
+  rules:
+  - backendRefs:
+    - name: google
+      kind: Backend
+      group: gateway.kgateway.dev
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: google
+spec:
+  type: Static
+  static:
+    hosts:
+      - host: google.com
+        port: 443
+---
+apiVersion: gateway.networking.k8s.io/v1alpha3
+kind: BackendTLSPolicy
+metadata:
+  name: wellknown-tls-policy
+spec:
+  targetRefs:
+  - group: gateway.kgateway.dev
+    kind: Backend
+    name: google
+  validation:
+    hostname: "google.com"
+    wellKnownCACertificates: System

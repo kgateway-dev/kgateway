@@ -14,9 +14,6 @@ gateway:
     host: ""
     port: 8080
 
-  # actual default set in default GatewayParam proxyDeployment.replicas
-  replicaCount: 1
-
   # actual default set in default GatewayParam service.type
   service:
     type: LoadBalancer
@@ -34,15 +31,10 @@ gateway:
     protocol: TCP
     name: http
 
-  # leftover autoscaling config; not actually wired up for public use yet
-  # see: https://github.com/kgateway-dev/kgateway/issues/10697
-  autoscaling:
-    enabled: false
-    minReplicas: 1
-    maxReplicas: 100
-    targetCPUUtilizationPercentage: 80
-    # targetMemoryUtilizationPercentage: 80
-
   agentGateway:
     enabled: false
     logLevel: info
+    # Name of the custom configmap to use instead of the default generated one
+    # When set, the agent gateway will use this configmap instead of creating the default one
+    # The configmap must contain a 'config.yaml' key with the agent gateway configuration
+    customConfigMapName: ""

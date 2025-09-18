@@ -244,7 +244,7 @@ func (g *ListenerSetReport) SetCondition(gc pluginsdkreporter.GatewayCondition) 
 		Reason:  string(gc.Reason),
 		Message: gc.Message,
 	}
-	g.conditions = append(g.conditions, condition)
+	meta.SetStatusCondition(&g.conditions, condition)
 }
 
 func NewListenerReport(name string) *ListenerReport {

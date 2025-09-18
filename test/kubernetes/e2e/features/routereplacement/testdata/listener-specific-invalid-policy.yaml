@@ -1,0 +1,84 @@
+---
+# Gateway with multiple listeners to test listener-specific invalid policy isolation
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: gw-listener-specific
+  namespace: default
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - name: http-affected
+    port: 8080
+    protocol: HTTP
+    allowedRoutes:
+      namespaces:
+        from: All
+  - name: http-unaffected
+    port: 8081
+    protocol: HTTP
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+# HTTPRoute on affected listener
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-affected
+  namespace: default
+spec:
+  parentRefs:
+  - name: gw-listener-specific
+    namespace: default
+    sectionName: http-affected
+  hostnames:
+  - "listener-affected.example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: httpbin
+      port: 8000
+---
+# HTTPRoute on unaffected listener
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-unaffected
+  namespace: default
+spec:
+  parentRefs:
+  - name: gw-listener-specific
+    namespace: default
+    sectionName: http-unaffected
+  hostnames:
+  - "listener-unaffected.example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: httpbin
+      port: 8000
+---
+# Invalid TrafficPolicy attached to specific listener only
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: listener-specific-invalid-policy
+  namespace: default
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: gw-listener-specific
+    sectionName: http-affected
+  transformation:
+    request:
+      body:
+        parseAs: AsJson
+        value: "{{ invalid_template }"  # Invalid template syntax that envoy will reject

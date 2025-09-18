@@ -4,7 +4,7 @@ import (
 	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 	apiv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	apiv1alpha3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
@@ -86,8 +86,8 @@ var (
 		Kind:    BackendTLSPolicyKind,
 	}
 	InferencePoolGVK = schema.GroupVersionKind{
-		Group:   infextv1a2.GroupVersion.Group,
-		Version: infextv1a2.GroupVersion.Version,
+		Group:   inf.GroupVersion.Group,
+		Version: inf.GroupVersion.Version,
 		Kind:    InferencePoolKind,
 	}
 

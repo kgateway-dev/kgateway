@@ -88,7 +88,11 @@ fi
 # alternatives like running a series of `kubectl apply -f <url>` commands. This
 # approach is largely necessary since upstream hasn't adopted a helm chart for
 # the CRDs yet, or won't be for the foreseeable future.
-kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd/$CONFORMANCE_CHANNEL?ref=$CONFORMANCE_VERSION"
+if [[ $CONFORMANCE_CHANNEL == "standard" ]]; then
+  kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd?ref=$CONFORMANCE_VERSION"
+else
+  kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd/$CONFORMANCE_CHANNEL?ref=$CONFORMANCE_VERSION"
+fi
 
 # 7. Apply the Kubernetes Gateway API Inference Extension CRDs
 kubectl apply -f https://github.com/kubernetes-sigs/gateway-api-inference-extension/releases/download/$GIE_CRD_VERSION/manifests.yaml

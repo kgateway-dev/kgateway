@@ -5,19 +5,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
 	"sort"
 	"strings"
+	"testing"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -25,32 +26,36 @@ import (
 	kubeclient "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/kclient/clienttest"
 	"istio.io/istio/pkg/kube/krt"
-	"istio.io/istio/pkg/test"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	common "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 type AssertReports func(gwNN types.NamespacedName, reportsMap reports.ReportMap)
@@ -60,6 +65,7 @@ type translationResult struct {
 	Listeners     []*envoylistenerv3.Listener
 	ExtraClusters []*envoyclusterv3.Cluster
 	Clusters      []*envoyclusterv3.Cluster
+	Statuses      *Statuses
 }
 
 func (tr *translationResult) MarshalJSON() ([]byte, error) {
@@ -68,7 +74,7 @@ func (tr *translationResult) MarshalJSON() ([]byte, error) {
 	}
 
 	// Create a map to hold the marshaled fields
-	result := make(map[string]interface{})
+	result := make(map[string]any)
 
 	// Marshal each field using protojson
 	if len(tr.Routes) > 0 {
@@ -101,6 +107,11 @@ func (tr *translationResult) MarshalJSON() ([]byte, error) {
 			return nil, err
 		}
 		result["Clusters"] = clusters
+	}
+
+	// Add statuses if they exist
+	if tr.Statuses != nil {
+		result["Statuses"] = tr.Statuses
 	}
 
 	// Marshal the result map to JSON
@@ -179,17 +190,25 @@ func (tr *translationResult) UnmarshalJSON(data []byte) error {
 		}
 	}
 
+	// Unmarshal statuses if they exist
+	if statusesData, ok := result["Statuses"]; ok {
+		tr.Statuses = &Statuses{}
+		if err := json.Unmarshal(statusesData, tr.Statuses); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
-func marshalProtoMessages[T proto.Message](messages []T, m protojson.MarshalOptions) ([]interface{}, error) {
-	var result []interface{}
+func marshalProtoMessages[T proto.Message](messages []T, m protojson.MarshalOptions) ([]any, error) {
+	var result []any
 	for _, msg := range messages {
 		data, err := m.Marshal(msg)
 		if err != nil {
 			return nil, err
 		}
-		var jsonObj interface{}
+		var jsonObj any
 		if err := json.Unmarshal(data, &jsonObj); err != nil {
 			return nil, err
 		}
@@ -198,7 +217,7 @@ func marshalProtoMessages[T proto.Message](messages []T, m protojson.MarshalOpti
 	return result, nil
 }
 
-type ExtraPluginsFn func(ctx context.Context, commoncol *common.CommonCollections) []pluginsdk.Plugin
+type ExtraPluginsFn func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []pluginsdk.Plugin
 
 func NewScheme(extraSchemes runtime.SchemeBuilder) *runtime.Scheme {
 	scheme := schemes.GatewayScheme()
@@ -210,7 +229,7 @@ func NewScheme(extraSchemes runtime.SchemeBuilder) *runtime.Scheme {
 }
 
 func TestTranslation(
-	t test.Failer,
+	t *testing.T,
 	ctx context.Context,
 	inputFiles []string,
 	outputFile string,
@@ -218,11 +237,11 @@ func TestTranslation(
 	assertReports AssertReports,
 	settingsOpts ...SettingsOpts,
 ) {
-	TestTranslationWithExtraPlugins(t, ctx, inputFiles, outputFile, gwNN, assertReports, nil, nil, nil, settingsOpts...)
+	TestTranslationWithExtraPlugins(t, ctx, inputFiles, outputFile, gwNN, assertReports, nil, nil, nil, "", settingsOpts...)
 }
 
 func TestTranslationWithExtraPlugins(
-	t test.Failer,
+	t *testing.T,
 	ctx context.Context,
 	inputFiles []string,
 	outputFile string,
@@ -231,17 +250,19 @@ func TestTranslationWithExtraPlugins(
 	extraPluginsFn ExtraPluginsFn,
 	extraSchemes runtime.SchemeBuilder,
 	extraGroups []string,
+	crdDir string,
 	settingsOpts ...SettingsOpts,
 ) {
 	scheme := NewScheme(extraSchemes)
+	r := require.New(t)
 
-	results, err := TestCase{
+	tc := TestCase{
 		InputFiles: inputFiles,
-	}.Run(t, ctx, scheme, extraPluginsFn, extraGroups, settingsOpts...)
-	Expect(err).NotTo(HaveOccurred())
-	// TODO allow expecting multiple gateways in the output (map nns -> outputFile?)
-	Expect(results).To(HaveLen(1))
-	Expect(results).To(HaveKey(gwNN))
+	}
+	results, err := tc.Run(t, ctx, scheme, extraPluginsFn, extraGroups, crdDir, settingsOpts...)
+	r.NoError(err, "error running test case")
+	r.Len(results, 1, "expected exactly one gateway in the results")
+	r.Contains(results, gwNN)
 	result := results[gwNN]
 
 	//// do a json round trip to normalize the output (i.e. things like omit empty)
@@ -257,27 +278,37 @@ func TestTranslationWithExtraPlugins(
 		Listeners:     result.Proxy.Listeners,
 		ExtraClusters: result.Proxy.ExtraClusters,
 		Clusters:      result.Clusters,
+		Statuses:      buildStatusesFromReports(result.ReportsMap, result.Gateways, result.ListenerSets),
 	}
 	outputYaml, err := MarshalAnyYaml(output)
-	fmt.Fprintf(ginkgo.GinkgoWriter, "actual result:\n %s \nerror: %v", outputYaml, err)
-	Expect(err).NotTo(HaveOccurred())
+	r.NoErrorf(err, "error marshaling output to YAML; actual result: %s", outputYaml)
 
 	if envutils.IsEnvTruthy("REFRESH_GOLDEN") {
 		// create parent directory if it doesn't exist
 		dir := filepath.Dir(outputFile)
 		if err := os.MkdirAll(dir, 0o755); err != nil {
-			Expect(err).NotTo(HaveOccurred())
+			r.NoErrorf(err, "error creating directory %s", dir)
 		}
+		t.Log("REFRESH_GOLDEN is set, writing output file", outputFile)
 		os.WriteFile(outputFile, outputYaml, 0o644)
 	}
 
-	Expect(compareProxy(outputFile, result.Proxy)).To(BeEmpty())
-	Expect(compareClusters(outputFile, result.Clusters)).To(BeEmpty())
+	gotProxy, err := compareProxy(outputFile, result.Proxy)
+	r.Emptyf(gotProxy, "unexpected diff in proxy output; actual result: %s", outputYaml)
+	r.NoError(err, "error comparing proxy output")
+
+	gotClusters, err := compareClusters(outputFile, result.Clusters)
+	r.Emptyf(gotClusters, "unexpected diff in clusters output; actual result: %s", outputYaml)
+	r.NoError(err, "error comparing clusters output")
+
+	gotStatuses, err := compareStatuses(outputFile, output.Statuses)
+	r.Emptyf(gotStatuses, "unexpected diff in statuses output; actual result: %s", outputYaml)
+	r.NoError(err, "error comparing statuses output")
 
 	if assertReports != nil {
 		assertReports(gwNN, result.ReportsMap)
 	} else {
-		Expect(AreReportsSuccess(gwNN, result.ReportsMap)).NotTo(HaveOccurred())
+		r.NoError(AreReportsSuccess(gwNN, result.ReportsMap), "expected status reports to not have errors")
 	}
 }
 
@@ -286,9 +317,11 @@ type TestCase struct {
 }
 
 type ActualTestResult struct {
-	Proxy      *irtranslator.TranslationResult
-	Clusters   []*envoyclusterv3.Cluster
-	ReportsMap reports.ReportMap
+	Proxy        *irtranslator.TranslationResult
+	ReportsMap   reports.ReportMap
+	Gateways     map[types.NamespacedName]*gwv1.Gateway
+	ListenerSets map[types.NamespacedName]*gwxv1a1.XListenerSet
+	Clusters     []*envoyclusterv3.Cluster
 }
 
 func compareProxy(expectedFile string, actualProxy *irtranslator.TranslationResult) (string, error) {
@@ -332,11 +365,9 @@ func sortClusters(clusters []*envoyclusterv3.Cluster) []*envoyclusterv3.Cluster 
 	if len(clusters) == 0 {
 		return clusters
 	}
-
 	sort.Slice(clusters, func(i, j int) bool {
 		return clusters[i].GetName() < clusters[j].GetName()
 	})
-
 	return clusters
 }
 
@@ -474,14 +505,29 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 				Namespace: nns.Namespace,
 			},
 		}
-		status := reportsMap.BuildGWStatus(context.Background(), g)
+		status := reportsMap.BuildGWStatus(context.Background(), g, nil)
 		for _, c := range status.Conditions {
-			if c.Type == listener.AttachedListenerSetsConditionType {
+			if c.Type == listener.GatewayConditionAttachedListenerSets {
 				// A gateway might or might not have AttachedListenerSets so skip this condition
 				continue
 			}
 			if c.Status != metav1.ConditionTrue {
 				return fmt.Errorf("condition not accepted for gw %v condition: %v", nns, c)
+			}
+		}
+	}
+
+	for ls := range reportsMap.ListenerSets {
+		l := gwxv1a1.XListenerSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      ls.Name,
+				Namespace: ls.Namespace,
+			},
+		}
+		status := reportsMap.BuildListenerSetStatus(context.Background(), l)
+		for _, c := range status.Conditions {
+			if c.Status != metav1.ConditionTrue {
+				return fmt.Errorf("condition not accepted for listenerSet %s condition: %v", ls, c)
 			}
 		}
 	}
@@ -497,19 +543,28 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 type SettingsOpts func(*settings.Settings)
 
 func (tc TestCase) Run(
-	t test.Failer,
+	t *testing.T,
 	ctx context.Context,
 	scheme *runtime.Scheme,
 	extraPluginsFn ExtraPluginsFn,
 	extraGroups []string,
+	crdDir string,
 	settingsOpts ...SettingsOpts,
 ) (map[types.NamespacedName]ActualTestResult, error) {
 	var (
 		anyObjs []runtime.Object
 		ourObjs []runtime.Object
 	)
+	r := require.New(t)
+	if crdDir == "" {
+		crdDir = filepath.Join(testutils.GitRootDirectory(), CRDPath)
+	}
+
+	gvkToStructuralSchema, err := GetStructuralSchemas(crdDir)
+	r.NoError(err, "error getting structural schemas")
+
 	for _, file := range tc.InputFiles {
-		objs, err := LoadFromFiles(ctx, file, scheme)
+		objs, err := LoadFromFiles(file, scheme, gvkToStructuralSchema)
 		if err != nil {
 			return nil, err
 		}
@@ -604,13 +659,14 @@ func (tc TestCase) Run(
 		return nil, err
 	}
 
-	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultWaypointClassName)
+	v := validator.NewDocker()
+	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultWaypointClassName, *settings, v)
 	// TODO: consider moving the common code to a util that both proxy syncer and this test call
 	plugins = append(plugins, krtcollections.NewBuiltinPlugin(ctx))
 
 	var extraPlugs []pluginsdk.Plugin
 	if extraPluginsFn != nil {
-		extraPlugins := extraPluginsFn(ctx, commoncol)
+		extraPlugins := extraPluginsFn(ctx, commoncol, settings.PolicyMerge)
 		extraPlugs = append(extraPlugs, extraPlugins...)
 	}
 	plugins = append(plugins, extraPlugs...)
@@ -642,7 +698,7 @@ func (tc TestCase) Run(
 
 	commoncol.InitPlugins(ctx, extensions, *settings)
 
-	translator := translator.NewCombinedTranslator(ctx, extensions, commoncol)
+	translator := translator.NewCombinedTranslator(ctx, extensions, commoncol, v)
 	translator.Init(ctx)
 
 	cli.RunAndWait(ctx.Done())
@@ -660,17 +716,53 @@ func (tc TestCase) Run(
 
 	results := make(map[types.NamespacedName]ActualTestResult)
 
+	// Build a map of all gateways by NamespacedName for status building
+	gatewayMap := make(map[types.NamespacedName]*gwv1.Gateway)
 	for _, gw := range commoncol.GatewayIndex.Gateways.List() {
 		gwNN := types.NamespacedName{
 			Namespace: gw.Namespace,
 			Name:      gw.Name,
 		}
+		gatewayMap[gwNN] = gw.Obj
+	}
 
+	// Build a map of all XListenerSets by nn for status building. We extract these
+	// from the loaded input objects since they're not directly available via InitCollections()
+	// (i.e. no dedicated KRT collection).
+	listenerSetMap := make(map[types.NamespacedName]*gwxv1a1.XListenerSet)
+	for _, obj := range anyObjs {
+		if ls, ok := obj.(*gwxv1a1.XListenerSet); ok {
+			listenerSetMap[client.ObjectKeyFromObject(ls)] = ls
+		}
+	}
+
+	for _, gw := range commoncol.GatewayIndex.Gateways.List() {
 		xdsSnap, reportsMap := translator.TranslateGateway(krt.TestingDummyContext{}, ctx, gw)
 
+		// Backend policies (e.g. BackendConfigPolicy) use a different reporting pipeline than gateway policies.
+		// Gateway policies (HTTPListenerPolicy, TrafficPolicy) are reported during gateway translation via the
+		// standard reporter mechanism. Backend policies are processed differently - they don't use the reporter
+		// during translation, instead their reports are generated separately by GenerateBackendPolicyReport().
+		// We need to merge both report types to capture all policy statuses for golden file testing.
+		var backendIRs []*ir.BackendObjectIR
+		for _, col := range commoncol.BackendIndex.BackendsWithPolicy() {
+			backendIRs = append(backendIRs, col.List()...)
+		}
+		backendPolicyReports := proxy_syncer.GenerateBackendPolicyReport(backendIRs)
+
+		// Merge gateway reports with backend policy reports
+		mergedReports := reportsMap
+		maps.Copy(mergedReports.Policies, backendPolicyReports.Policies)
+
+		gwNN := types.NamespacedName{
+			Namespace: gw.Namespace,
+			Name:      gw.Name,
+		}
 		actual := ActualTestResult{
-			Proxy:      xdsSnap,
-			ReportsMap: reportsMap,
+			Proxy:        xdsSnap,
+			ReportsMap:   mergedReports,
+			Gateways:     gatewayMap,
+			ListenerSets: listenerSetMap,
 		}
 		results[gwNN] = actual
 
@@ -679,7 +771,7 @@ func (tc TestCase) Run(
 		for _, col := range commoncol.BackendIndex.BackendsWithPolicy() {
 			for _, backend := range col.List() {
 				cluster, err := translator.GetUpstreamTranslator().TranslateBackend(krt.TestingDummyContext{}, ucc, backend)
-				Expect(err).NotTo(HaveOccurred())
+				r.NoErrorf(err, "error translating backend %s", backend.GetName())
 				clusters = append(clusters, cluster)
 			}
 		}

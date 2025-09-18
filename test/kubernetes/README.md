@@ -18,7 +18,7 @@ _We document the historical challenges we have experienced with writing and mana
 
 #### Tightly Coupled Code Structure
 - There was a 1:1:1 relationship between: GitHub actions (infrastructure), test suites, installation values of kgateway. This meant that as you scaled the number of different Helm values you wanted to run tests against, you had to set up new infrastructure. This was time-consuming and expensive, and caused toil in adding new tests cases, so they would not be added.
-- Test cases were defined in the test file, which meant that if you wanted to run that same test under a different set of circumstances (different install values, open source v enterprise) you had to re-define the test.
+- Test cases were defined in the test file, which meant that if you wanted to run that same test under a different set of circumstances (e.g. different install values) you had to re-define the test.
 - There was not a clear separation of concerns between infrastructure setup, installation of kgateway, application of resources, assertions of behaviors. The impact was that if a developer wanted to perform partial actions in a test, they had to use lots of environment variables to control behavior. These variables were documented, but still challenging to use.
 
 #### Challenging Developer Maintenance

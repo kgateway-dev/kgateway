@@ -1,8 +1,6 @@
 package agentgatewaysyncer
 
 import (
-	"fmt"
-
 	"github.com/agentgateway/agentgateway/go/api"
 	istio "istio.io/api/networking/v1alpha3"
 	"istio.io/istio/pilot/pkg/util/protoconv"
@@ -15,14 +13,15 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
-
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
-func toResourcep(gw types.NamespacedName, resources []*api.Resource, rm reports.ReportMap) *ADPResourcesForGateway {
+func toResourcep(gw types.NamespacedName, resources []*api.Resource, rm reports.ReportMap) *ir.ADPResourcesForGateway {
 	res := toResource(gw, resources, rm)
 	return &res
 }
@@ -43,20 +42,20 @@ func toADPResource(t any) *api.Resource {
 	panic("unknown resource kind")
 }
 
-func toResourceWithRoutes(gw types.NamespacedName, resources []*api.Resource, attachedRoutes map[string]uint, rm reports.ReportMap) ADPResourcesForGateway {
-	return ADPResourcesForGateway{
+func toResourceWithRoutes(gw types.NamespacedName, resources []*api.Resource, attachedRoutes map[string]uint, rm reports.ReportMap) ir.ADPResourcesForGateway {
+	return ir.ADPResourcesForGateway{
 		Resources:      resources,
 		Gateway:        gw,
-		report:         rm,
-		attachedRoutes: attachedRoutes,
+		Report:         rm,
+		AttachedRoutes: attachedRoutes,
 	}
 }
 
-func toResource(gw types.NamespacedName, resources []*api.Resource, rm reports.ReportMap) ADPResourcesForGateway {
-	return ADPResourcesForGateway{
+func toResource(gw types.NamespacedName, resources []*api.Resource, rm reports.ReportMap) ir.ADPResourcesForGateway {
+	return ir.ADPResourcesForGateway{
 		Resources: resources,
 		Gateway:   gw,
-		report:    rm,
+		Report:    rm,
 	}
 }
 
@@ -180,7 +179,7 @@ func GatewayCollection(
 	namespaces krt.Collection[*corev1.Namespace],
 	grants ReferenceGrants,
 	secrets krt.Collection[*corev1.Secret],
-	krtopts krtutil.KrtOptions,
+	krtopts krtinternal.KrtOptions,
 ) krt.Collection[GatewayListener] {
 	gw := krt.NewManyCollection(gateways, func(ctx krt.HandlerContext, obj *gwv1.Gateway) []GatewayListener {
 		rm := reports.NewReportMap()
@@ -217,7 +216,12 @@ func GatewayCollection(
 		}
 
 		for i, l := range kgw.Listeners {
-			server, tlsInfo, programmed := buildListener(ctx, secrets, grants, namespaces, obj, status, l, i, controllerName)
+			// Attached routes count starts at 0 and gets updated later in the status syncer
+			// when the real count is available after route processing
+			attachedCount := int32(0) // Default to 0 if not found
+
+			server, tlsInfo, programmed := buildListener(ctx, secrets, grants, namespaces, obj, status, l, i, controllerName, attachedCount)
+
 			lstatus := status.Listeners[i]
 
 			// Generate supported kinds for the listener
@@ -243,7 +247,7 @@ func GatewayCollection(
 				Meta: Meta{
 					CreationTimestamp: obj.CreationTimestamp.Time,
 					GroupVersionKind:  schema.GroupVersionKind{Group: wellknown.GatewayGroup, Kind: wellknown.GatewayKind},
-					Name:              InternalGatewayName(obj.Name, string(l.Name)),
+					Name:              utils.InternalGatewayName(obj.Namespace, obj.Name, string(l.Name)),
 					Annotations:       meta,
 					Namespace:         obj.Namespace,
 				},
@@ -258,7 +262,7 @@ func GatewayCollection(
 				Namespace: obj.Namespace,
 			}
 			pri := parentInfo{
-				InternalName:     obj.Namespace + "/" + gatewayConfig.Name,
+				InternalName:     utils.InternalGatewayName(obj.Namespace, gatewayConfig.Name, ""),
 				AllowedKinds:     allowed,
 				Hostnames:        server.GetHosts(),
 				OriginalHostname: string(ptr.OrEmpty(l.Hostname)),
@@ -310,10 +314,4 @@ func BuildRouteParents(
 		gateways:     gateways,
 		gatewayIndex: idx,
 	}
-}
-
-// InternalGatewayName returns the name of the internal Istio Gateway corresponding to the
-// specified gwv1-api gwv1 and listener.
-func InternalGatewayName(gwName, lName string) string {
-	return fmt.Sprintf("%s-%s-%s", gwName, AgentgatewayName, lName)
 }

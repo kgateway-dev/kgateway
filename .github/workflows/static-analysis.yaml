@@ -25,10 +25,10 @@ jobs:
   static-analysis:
     name: Lint Checks
     runs-on: ubuntu-22.04
-    # The linter is intended to run quickly.
+    # The linter is intended to run quickly, although prep-go-runner can take minutes.
     # We define a 10-minute timeout on the linter config (.golangci.yaml) as well.
     # If we exceed this timeout, we should consider only running the linter on changed files.
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v4

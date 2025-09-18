@@ -7,7 +7,8 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
 type UccWithEndpoints struct {
@@ -35,7 +36,7 @@ func (ie *PerClientEnvoyEndpoints) FetchEndpointsForClient(kctx krt.HandlerConte
 }
 
 func NewPerClientEnvoyEndpoints(
-	krtopts krtutil.KrtOptions,
+	krtopts krtinternal.KrtOptions,
 	uccs krt.Collection[ir.UniqlyConnectedClient],
 	glooEndpoints krt.Collection[ir.EndpointsForBackend],
 	translateEndpoints func(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient, ep ir.EndpointsForBackend) (*envoyendpointv3.ClusterLoadAssignment, uint64),
@@ -55,7 +56,7 @@ func NewPerClientEnvoyEndpoints(
 		}
 		return uccWithEndpointsRet
 	}, krtopts.ToOptions("PerClientEnvoyEndpoints")...)
-	idx := krtutil.UnnamedIndex(eps, func(ucc UccWithEndpoints) []string {
+	idx := krtpkg.UnnamedIndex(eps, func(ucc UccWithEndpoints) []string {
 		return []string{ucc.Client.ResourceName()}
 	})
 

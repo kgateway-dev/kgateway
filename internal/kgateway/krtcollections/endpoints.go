@@ -14,11 +14,12 @@ import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
+	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
 type EndpointsSettings struct {
@@ -47,12 +48,12 @@ type EndpointsInputs struct {
 	Pods                    krt.Collection[LocalityPod]
 	EndpointsSettings       EndpointsSettings
 
-	KrtOpts krtutil.KrtOptions
+	KrtOpts krtinternal.KrtOptions
 }
 
 func NewGlooK8sEndpointInputs(
 	stngs settings.Settings,
-	krtopts krtutil.KrtOptions,
+	krtopts krtinternal.KrtOptions,
 	endpointSlices krt.Collection[*discoveryv1.EndpointSlice],
 	pods krt.Collection[LocalityPod],
 	k8sBackends krt.Collection[ir.BackendObjectIR],
@@ -62,7 +63,7 @@ func NewGlooK8sEndpointInputs(
 	}
 
 	// Create index on EndpointSlices by service name and endpointslice namespace
-	endpointSlicesByService := krtutil.UnnamedIndex(endpointSlices, func(es *discoveryv1.EndpointSlice) []types.NamespacedName {
+	endpointSlicesByService := krtpkg.UnnamedIndex(endpointSlices, func(es *discoveryv1.EndpointSlice) []types.NamespacedName {
 		svcName, ok := es.Labels[discoveryv1.LabelServiceName]
 		if !ok {
 			return nil

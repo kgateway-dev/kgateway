@@ -33,6 +33,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 func TestConvertJsonFormat_EdgeCases(t *testing.T) {
@@ -791,6 +792,18 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 									},
 									TransportApiVersion: envoycorev3.ApiVersion_V3,
 								},
+								ResourceAttributes: &otelv1.KeyValueList{
+									Values: []*otelv1.KeyValue{
+										{
+											Key: "service.name",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "gw.default",
+												},
+											},
+										},
+									},
+								},
 							}),
 						},
 					},
@@ -813,6 +826,84 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 							},
 							Body:                 pointer.String(`"%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %RESPONSE_CODE% "%REQ(:AUTHORITY)%" "%UPSTREAM_CLUSTER%"\n'`),
 							DisableBuiltinLabels: pointer.Bool(true),
+							ResourceAttributes: &v1alpha1.KeyAnyValueList{
+								Values: []v1alpha1.KeyAnyValue{
+									{
+										Key: "ra-string-key-1",
+										Value: v1alpha1.AnyValue{
+											StringValue: pointer.String("ra-string-value-1"),
+										},
+									},
+									{
+										Key: "service.name",
+										Value: v1alpha1.AnyValue{
+											StringValue: pointer.String("my:service"),
+										},
+									},
+									{
+										Key: "ra-array-key",
+										Value: v1alpha1.AnyValue{
+											ArrayValue: []v1alpha1.AnyValue{
+												{
+													StringValue: pointer.String("ra-1-string-value"),
+												},
+												{
+													StringValue: pointer.String("ra-2-string-value"),
+												},
+											},
+										},
+									},
+									{
+										Key: "ra-kvlist-key",
+										Value: v1alpha1.AnyValue{
+											KvListValue: &v1alpha1.KeyAnyValueList{
+												Values: []v1alpha1.KeyAnyValue{
+													{
+														Key: "ra-string-key-2",
+														Value: v1alpha1.AnyValue{
+															StringValue: pointer.String("ra-string-value-2"),
+														},
+													},
+													{
+														Key: "ra-array-key",
+														Value: v1alpha1.AnyValue{
+															ArrayValue: []v1alpha1.AnyValue{
+																{
+																	StringValue: pointer.String("ra-3-string-value"),
+																},
+																{
+																	StringValue: pointer.String("ra-4-string-value"),
+																},
+															},
+														},
+													},
+													{
+														Key: "ra-kvlist-key",
+														Value: v1alpha1.AnyValue{
+															KvListValue: &v1alpha1.KeyAnyValueList{
+																Values: []v1alpha1.KeyAnyValue{
+																	{
+																		Key: "ra-string-key-3",
+																		Value: v1alpha1.AnyValue{
+																			StringValue: pointer.String("ra-string-value-3"),
+																		},
+																	},
+																	{
+																		Key: "ra-string-key-4",
+																		Value: v1alpha1.AnyValue{
+																			StringValue: pointer.String("ra-string-value-4"),
+																		},
+																	},
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
 							Attributes: &v1alpha1.KeyAnyValueList{
 								Values: []v1alpha1.KeyAnyValue{
 									{
@@ -910,6 +1001,114 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 									},
 								},
 								DisableBuiltinLabels: true,
+								ResourceAttributes: &otelv1.KeyValueList{
+									Values: []*otelv1.KeyValue{
+										{
+											Key: "ra-string-key-1",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "ra-string-value-1",
+												},
+											},
+										},
+										{
+											Key: "service.name",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "my:service",
+												},
+											},
+										},
+										{
+											Key: "ra-array-key",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_ArrayValue{
+													ArrayValue: &otelv1.ArrayValue{
+														Values: []*otelv1.AnyValue{
+															{
+																Value: &otelv1.AnyValue_StringValue{
+																	StringValue: "ra-1-string-value",
+																},
+															},
+															{
+																Value: &otelv1.AnyValue_StringValue{
+																	StringValue: "ra-2-string-value",
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+										{
+											Key: "ra-kvlist-key",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_KvlistValue{
+													KvlistValue: &otelv1.KeyValueList{
+														Values: []*otelv1.KeyValue{
+															{
+																Key: "ra-string-key-2",
+																Value: &otelv1.AnyValue{
+																	Value: &otelv1.AnyValue_StringValue{
+																		StringValue: "ra-string-value-2",
+																	},
+																},
+															},
+															{
+																Key: "ra-array-key",
+																Value: &otelv1.AnyValue{
+																	Value: &otelv1.AnyValue_ArrayValue{
+																		ArrayValue: &otelv1.ArrayValue{
+																			Values: []*otelv1.AnyValue{
+																				{
+																					Value: &otelv1.AnyValue_StringValue{
+																						StringValue: "ra-3-string-value",
+																					},
+																				},
+																				{
+																					Value: &otelv1.AnyValue_StringValue{
+																						StringValue: "ra-4-string-value",
+																					},
+																				},
+																			},
+																		},
+																	},
+																},
+															},
+															{
+																Key: "ra-kvlist-key",
+																Value: &otelv1.AnyValue{
+																	Value: &otelv1.AnyValue_KvlistValue{
+																		KvlistValue: &otelv1.KeyValueList{
+																			Values: []*otelv1.KeyValue{
+																				{
+																					Key: "ra-string-key-3",
+																					Value: &otelv1.AnyValue{
+																						Value: &otelv1.AnyValue_StringValue{
+																							StringValue: "ra-string-value-3",
+																						},
+																					},
+																				},
+																				{
+																					Key: "ra-string-key-4",
+																					Value: &otelv1.AnyValue{
+																						Value: &otelv1.AnyValue_StringValue{
+																							StringValue: "ra-string-value-4",
+																						},
+																					},
+																				},
+																			},
+																		},
+																	},
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
 								Attributes: &otelv1.KeyValueList{
 									Values: []*otelv1.KeyValue{
 										{
@@ -1021,7 +1220,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 			t.Cleanup(cancel)
 
 			t.Run(tc.name, func(t *testing.T) {
-				result, err := translateAccessLogs(
+				configs, err := translateAccessLogs(
 					tc.config,
 					// Example grpcBackends map for upstreams
 					map[string]*ir.BackendObjectIR{
@@ -1041,6 +1240,17 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 						},
 					},
 				)
+				require.NoError(t, err, "failed to convert access log config")
+				result, err := generateAccessLogConfig(&ir.HcmContext{
+					Gateway: pluginsdkir.GatewayIR{
+						SourceObject: &pluginsdkir.Gateway{
+							ObjectSource: pluginsdkir.ObjectSource{
+								Namespace: "default",
+								Name:      "gw",
+							},
+						},
+					},
+				}, tc.config, configs)
 				require.NoError(t, err, "failed to convert access log config")
 				// Perform deep equality check
 				assert.Equal(t, len(tc.expected), len(result), "expected length mismatch")

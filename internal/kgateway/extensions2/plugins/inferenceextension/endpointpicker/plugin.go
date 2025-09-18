@@ -21,7 +21,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	infv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
@@ -81,7 +81,7 @@ func NewPlugin(ctx context.Context, commonCols *common.CommonCollections) *extpl
 				},
 			},
 		},
-		ContributesRegistration: map[schema.GroupKind]func(){
+		ContributesLeaderAction: map[schema.GroupKind]func(){
 			wellknown.InferencePoolGVK.GroupKind(): buildRegisterCallback(
 				ctx,
 				commonCols,
@@ -109,7 +109,7 @@ func buildPolicyWrapperCollection(
 
 			return &ir.PolicyWrapper{
 				ObjectSource: be.ObjectSource,
-				Policy:       be.Obj.(*infv1a2.InferencePool),
+				Policy:       be.Obj.(*inf.InferencePool),
 				PolicyIR:     irPool,
 			}
 		},
@@ -125,12 +125,18 @@ func buildBackendObjIrFromPool(pool *inferencePool) *ir.BackendObjectIR {
 		Namespace: pool.obj.GetNamespace(),
 		Name:      pool.obj.GetName(),
 	}
-	backend := ir.NewBackendObjectIR(objSrc, pool.targetPort, "")
+	// The backend's port is the first target port of the pool.
+	// InferencePool v1 only supports single port.
+	backend := ir.NewBackendObjectIR(objSrc, pool.targetPorts[0].number, "")
 	backend.GvPrefix = poolGroupKindName
 	backend.Obj = pool.obj
 	backend.ObjIr = pool
 	// TODO [danehans]: Look into using backend.AppProtocol to set H1/H2 for the static cluster.
 	backend.CanonicalHostname = kubeutils.GetServiceHostname(objSrc.Name, objSrc.Namespace)
+
+	// Parse common annotations
+	ir.ParseObjectAnnotations(&backend, pool.obj)
+
 	return &backend
 }
 
@@ -215,11 +221,11 @@ func (p *endpointPickerPass) ApplyForBackend(
 			irPool.obj.GetNamespace(),
 			irPool.obj.GetName())
 	}
-	irPool.endpoints = eps
+	irPool.setEndpoints(eps)
 
 	// Tell the EPP the subset of endpoints to choose from.
 	vs := make([]*structpb.Value, 0, len(eps))
-	for _, ep := range eps {
+	for _, ep := range irPool.getEndpoints() {
 		vs = append(vs, structpb.NewStringValue(ep.string()))
 	}
 	hintStruct := &structpb.Struct{
@@ -273,7 +279,7 @@ func (p *endpointPickerPass) HttpFilters(ctx context.Context, fc ir.FilterChainC
 
 	// Create a pool as placeholder for the static config
 	tmpPool := &inferencePool{
-		obj: &infv1a2.InferencePool{
+		obj: &inf.InferencePool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "placeholder-pool",
 				Namespace: "placeholder-namespace",
@@ -281,7 +287,7 @@ func (p *endpointPickerPass) HttpFilters(ctx context.Context, fc ir.FilterChainC
 		},
 		configRef: &service{
 			ObjectSource: ir.ObjectSource{Name: "placeholder-service"},
-			ports:        []servicePort{{name: "grpc", portNum: 9002}},
+			ports:        []servicePort{{name: "grpc", number: 9002}},
 		},
 	}
 
@@ -388,7 +394,7 @@ func buildExtProcCluster(pool *inferencePool) *envoyclusterv3.Cluster {
 										Address:  fmt.Sprintf("%s.%s.svc", pool.configRef.Name, pool.obj.GetNamespace()),
 										Protocol: envoycorev3.SocketAddress_TCP,
 										PortSpecifier: &envoycorev3.SocketAddress_PortValue{
-											PortValue: uint32(pool.configRef.ports[0].portNum),
+											PortValue: uint32(pool.configRef.ports[0].number),
 										},
 									},
 								},
@@ -441,6 +447,6 @@ func clusterNameExtProc(name, ns string) string {
 func authorityForPool(pool *inferencePool) string {
 	ns := pool.obj.GetNamespace()
 	svc := pool.configRef.Name
-	port := pool.configRef.ports[0].portNum
+	port := pool.configRef.ports[0].number
 	return fmt.Sprintf("%s.%s.svc:%d", svc, ns, port)
 }

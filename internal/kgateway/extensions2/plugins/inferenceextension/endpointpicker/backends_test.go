@@ -13,22 +13,22 @@ import (
 	"istio.io/istio/pkg/kube/krt/krttest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	infv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
-func makeBackendIR(pool *infv1a2.InferencePool) *ir.BackendObjectIR {
+func makeBackendIR(pool *inf.InferencePool) *ir.BackendObjectIR {
 	src := ir.ObjectSource{
-		Group:     infv1a2.GroupVersion.Group,
+		Group:     inf.GroupVersion.Group,
 		Kind:      wellknown.InferencePoolKind,
 		Namespace: pool.Namespace,
 		Name:      pool.Name,
 	}
-	be := ir.NewBackendObjectIR(src, pool.Spec.TargetPortNumber, "")
+	be := ir.NewBackendObjectIR(src, int32(pool.Spec.TargetPorts[0].Number), "")
 	be.Obj = pool
 
 	// Wrap the same pool in our internal IR so we can inject errors
@@ -39,15 +39,16 @@ func makeBackendIR(pool *infv1a2.InferencePool) *ir.BackendObjectIR {
 }
 
 func TestProcessPoolBackendObjIR_BuildsLoadAssignment(t *testing.T) {
-	pool := &infv1a2.InferencePool{
+	pool := &inf.InferencePool{
 		ObjectMeta: metav1.ObjectMeta{Name: "p", Namespace: "ns"},
-		Spec: infv1a2.InferencePoolSpec{
-			Selector:         map[infv1a2.LabelKey]infv1a2.LabelValue{"app": "test"},
-			TargetPortNumber: 9000,
-			EndpointPickerConfig: infv1a2.EndpointPickerConfig{
-				ExtensionRef: &infv1a2.Extension{
-					ExtensionReference: infv1a2.ExtensionReference{Name: "svc"},
-				},
+		Spec: inf.InferencePoolSpec{
+			Selector: inf.LabelSelector{
+				MatchLabels: map[inf.LabelKey]inf.LabelValue{"app": "test"},
+			},
+			TargetPorts: []inf.Port{inf.Port{Number: 9000}},
+			EndpointPickerRef: inf.EndpointPickerRef{
+				Name: "svc",
+				Port: &inf.Port{Number: inf.PortNumber(9002)},
 			},
 		},
 	}
@@ -73,7 +74,7 @@ func TestProcessPoolBackendObjIR_BuildsLoadAssignment(t *testing.T) {
 
 	// Index the pods
 	poolKey := fmt.Sprintf("%s/%s", pool.Namespace, pool.Name)
-	podIdx := krtutil.UnnamedIndex(podCol, func(p krtcollections.LocalityPod) []string {
+	podIdx := krtpkg.UnnamedIndex(podCol, func(p krtcollections.LocalityPod) []string {
 		return []string{poolKey}
 	})
 
@@ -103,14 +104,13 @@ func TestProcessPoolBackendObjIR_BuildsLoadAssignment(t *testing.T) {
 }
 
 func TestProcessPoolBackendObjIR_SkipsOnErrors(t *testing.T) {
-	pool := &infv1a2.InferencePool{
+	pool := &inf.InferencePool{
 		ObjectMeta: metav1.ObjectMeta{Name: "p", Namespace: "ns"},
-		Spec: infv1a2.InferencePoolSpec{
-			TargetPortNumber: 9000,
-			EndpointPickerConfig: infv1a2.EndpointPickerConfig{
-				ExtensionRef: &infv1a2.Extension{
-					ExtensionReference: infv1a2.ExtensionReference{Name: "svc"},
-				},
+		Spec: inf.InferencePoolSpec{
+			TargetPorts: []inf.Port{inf.Port{Number: 9000}},
+			EndpointPickerRef: inf.EndpointPickerRef{
+				Name: "svc",
+				Port: &inf.Port{Number: inf.PortNumber(9002)},
 			},
 		},
 	}
@@ -122,7 +122,7 @@ func TestProcessPoolBackendObjIR_SkipsOnErrors(t *testing.T) {
 	// Empty pod index
 	mock := krttest.NewMock(t, []any{})
 	podCol := krttest.GetMockCollection[krtcollections.LocalityPod](mock)
-	podIdx := krtutil.UnnamedIndex(podCol, func(krtcollections.LocalityPod) []string { return nil })
+	podIdx := krtpkg.UnnamedIndex(podCol, func(krtcollections.LocalityPod) []string { return nil })
 
 	cluster := &envoyclusterv3.Cluster{}
 	ret := processPoolBackendObjIR(context.Background(), *beIR, cluster, podIdx)
