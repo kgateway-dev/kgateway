@@ -92,7 +92,6 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	// kubeGatewaySuiteRunner.Register("PortRouting", port_routing.NewK8sGatewayTestingSuite)
 	// kubeGatewaySuiteRunner.Register("GlooAdminServer", admin_server.NewTestingSuite)
 	// kubeGatewaySuiteRunner.Register("DirectResponse", directresponse.NewTestingSuite)
-	// kubeGatewaySuiteRunner.Register("CRDCategories", crd_categories.NewTestingSuite)
 	// kubeGatewaySuiteRunner.Register("ProxyMetrics", proxy_metrics.NewTestingSuite)
 
 	return kubeGatewaySuiteRunner
