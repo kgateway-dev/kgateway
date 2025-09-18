@@ -184,7 +184,8 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	// setup a deployer
 	log := log.FromContext(ctx)
 
-	log.Info("creating gateway deployer", "ctrlname", c.cfg.ControllerName, "server", c.cfg.ControlPlane.XdsHost, "port", c.cfg.ControlPlane.XdsPort)
+	log.Info("creating gateway deployer", "ctrlname", c.cfg.ControllerName, "agwctrlname",
+		c.cfg.AgwControllerName, "server", c.cfg.ControlPlane.XdsHost, "port", c.cfg.ControlPlane.XdsPort, "agwport", c.cfg.ControlPlane.AgwXdsPort)
 	inputs := &deployer.Inputs{
 		Dev:                      c.cfg.Dev,
 		IstioAutoMtlsEnabled:     c.cfg.IstioAutoMtlsEnabled,
@@ -199,7 +200,7 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	if c.extraGatewayParameters != nil {
 		gwParams.WithExtraGatewayParameters(c.extraGatewayParameters(c.cfg.Mgr.GetClient(), inputs)...)
 	}
-	d, err := internaldeployer.NewGatewayDeployer(c.cfg.ControllerName, c.cfg.Mgr.GetClient(), gwParams)
+	d, err := internaldeployer.NewGatewayDeployer(c.cfg.ControllerName, c.cfg.AgwControllerName, c.cfg.Mgr.GetClient(), gwParams)
 	if err != nil {
 		return err
 	}
@@ -282,7 +283,9 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		builder.WithPredicates(
 			predicate.NewPredicateFuncs(func(o client.Object) bool {
 				gc, ok := o.(*apiv1.GatewayClass)
-				return ok && gc.Spec.ControllerName == apiv1.GatewayController(c.cfg.ControllerName)
+				// filter for both kgateway and agentgateway controller names
+				return ok && (gc.Spec.ControllerName == apiv1.GatewayController(c.cfg.ControllerName) ||
+					gc.Spec.ControllerName == apiv1.GatewayController(c.cfg.AgwControllerName))
 			}),
 			predicate.GenerationChangedPredicate{},
 		),
@@ -428,7 +431,7 @@ func (c *controllerBuilder) watchInferencePool(ctx context.Context) error {
 
 	// If enabled, create a deployer using the controllerBuilder as inputs.
 	if c.poolCfg.InferenceExt != nil {
-		d, err := internaldeployer.NewInferencePoolDeployer(c.cfg.ControllerName, c.cfg.Mgr.GetClient())
+		d, err := internaldeployer.NewInferencePoolDeployer(c.cfg.ControllerName, c.cfg.AgwControllerName, c.cfg.Mgr.GetClient())
 		if err != nil {
 			return err
 		}
@@ -493,7 +496,8 @@ func (c *controllerBuilder) watchGwClass(_ context.Context) error {
 		WithEventFilter(predicate.NewPredicateFuncs(func(object client.Object) bool {
 			// we only care about GatewayClasses that use our controller name
 			gwClass, ok := object.(*apiv1.GatewayClass)
-			return ok && gwClass.Spec.ControllerName == apiv1.GatewayController(c.cfg.ControllerName)
+			return ok && (gwClass.Spec.ControllerName == apiv1.GatewayController(c.cfg.ControllerName) ||
+				gwClass.Spec.ControllerName == apiv1.GatewayController(c.cfg.AgwControllerName))
 		})).
 		Complete(c.reconciler)
 }

@@ -287,7 +287,7 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 	slog.Info("got xds address for deployer", "xds_host", xdsHost, "xds_port", xdsPort)
 
 	agwXdsPort := globalSettings.AgentgatewayXdsServicePort
-	slog.Info("got agentgateway xds address for deployer", "agw_xds_host", xdsHost, "agw_xds_port", xdsPort)
+	slog.Info("got agentgateway xds address for deployer", "agw_xds_host", xdsHost, "agw_xds_port", agwXdsPort)
 
 	istioAutoMtlsEnabled := globalSettings.EnableIstioAutoMtls
 

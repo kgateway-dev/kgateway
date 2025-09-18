@@ -213,6 +213,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtinternal.KrtOptions) 
 
 	s.mostXdsSnapshots = krt.NewCollection(s.commonCols.GatewayIndex.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *GatewayXdsResources {
 		// skip agentgateway proxies as they are not envoy-based gateways
+		// TODO(npolshak): use the agentgateway controller name here
 		if string(gw.Obj.Spec.GatewayClassName) == s.agentgatewayClassName {
 			logger.Debug("skipping envoy proxy sync for agentgateway %s.%s", gw.Obj.Name, gw.Obj.Namespace)
 			return nil
