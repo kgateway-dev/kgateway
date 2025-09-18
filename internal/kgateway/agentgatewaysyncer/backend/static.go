@@ -7,7 +7,7 @@ import (
 	"github.com/agentgateway/agentgateway/go/api"
 )
 
-func ProcessStaticBackendForAgentGateway(be *AgentGatewayBackendIr) ([]*api.Backend, []*api.Policy, error) {
+func ProcessStaticBackendForAgw(be *AgwBackendIr) ([]*api.Backend, []*api.Policy, error) {
 	if len(be.Errors) > 0 {
 		return nil, nil, fmt.Errorf("errors occurred while processing static backend for agent gateway: %w", errors.Join(be.Errors...))
 	}

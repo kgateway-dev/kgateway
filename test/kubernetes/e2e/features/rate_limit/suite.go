@@ -49,7 +49,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
-func NewAgentGatewayTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+func NewAgentgatewayTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &testingSuite{
 		ctx:              ctx,
 		testInstallation: testInst,
@@ -61,7 +61,7 @@ func (s *testingSuite) SetupSuite() {
 	if s.agentgateway {
 		s.commonManifests = []string{
 			testdefaults.CurlPodManifest,
-			getTestFileAgentGateway("common.yaml"),
+			getTestFileAgentgateway("common.yaml"),
 			simpleServiceManifest,
 			rateLimitServerManifest,
 		}

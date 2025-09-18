@@ -61,8 +61,8 @@ type AgentGwStatusSyncer struct {
 	client kube.Client
 
 	// Configuration
-	controllerName        string
-	agentGatewayClassName string
+	controllerName string
+	agwClassName   string
 
 	// Report queues
 	gatewayReportQueue      utils.AsyncQueue[GatewayReports]
@@ -75,9 +75,9 @@ type AgentGwStatusSyncer struct {
 	cacheSyncs []cache.InformerSynced
 }
 
-func NewAgentGwStatusSyncer(
+func NewAgwStatusSyncer(
 	controllerName string,
-	agentGatewayClassName string,
+	agwClassName string,
 	client kube.Client,
 	mgr manager.Manager,
 	gatewayReportQueue utils.AsyncQueue[GatewayReports],
@@ -88,7 +88,7 @@ func NewAgentGwStatusSyncer(
 ) *AgentGwStatusSyncer {
 	return &AgentGwStatusSyncer{
 		controllerName:          controllerName,
-		agentGatewayClassName:   agentGatewayClassName,
+		agwClassName:            agwClassName,
 		client:                  client,
 		mgr:                     mgr,
 		gatewayReportQueue:      gatewayReportQueue,
@@ -472,7 +472,7 @@ func (s *AgentGwStatusSyncer) syncGatewayStatus(ctx context.Context, logger *slo
 			}
 
 			// Only process agentgateway classes - others are handled by ProxySyncer
-			if string(gw.Spec.GatewayClassName) != s.agentGatewayClassName {
+			if string(gw.Spec.GatewayClassName) != s.agwClassName {
 				logger.Debug("skipping status sync for non-agentgateway", logKeyGateway, gwnn.String())
 				continue
 			}
