@@ -56,12 +56,6 @@ func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Se
 		}
 		globalSettings = st
 	}
-	// Always set once instead of each time to avoid races
-	logLevel := globalSettings.LogLevel
-	globalSettings.LogLevel = ""
-	setupLogging.Do(func() {
-		setup.SetupLogging(logLevel)
-	})
 
 	// Enable this if you want api server logs and audit logs.
 	if os.Getenv("DEBUG_APISERVER") == "true" {
