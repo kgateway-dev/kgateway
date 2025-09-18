@@ -210,18 +210,6 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("http gateway with azure destination", func(t *testing.T) {
-		t.Skip("TODO: enable this test when ready")
-		test(t, translatorTestCase{
-			inputFile:  "http-with-azure-destination",
-			outputFile: "http-with-azure-destination-proxy.yaml",
-			gwNN: types.NamespacedName{
-				Namespace: "default",
-				Name:      "gw",
-			},
-		})
-	})
-
 	t.Run("Gateway API route sorting", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "route-sort.yaml",
