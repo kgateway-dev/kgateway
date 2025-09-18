@@ -50,7 +50,7 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 		// Envoy rejects listeners with no filter chains; skip adding such listeners.
 		if outListener == nil || len(outListener.GetFilterChains()) == 0 {
 			originalListenerName := findOriginalListenerName(gw, l)
-			logger.Warn("Invalid listener due to no filter chains generated", "listener", originalListenerName)
+			logger.Warn("invalid listener due to no filter chains generated", "listener", originalListenerName)
 			continue
 		}
 		res.Listeners = append(res.Listeners, outListener)
