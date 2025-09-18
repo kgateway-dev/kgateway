@@ -23,11 +23,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 )
 
-const (
-	// agentGatewayClassName is the gateway class name for agentgateway
-	agentGatewayClassName = "agentgateway"
-)
-
 // gatewayClassProvisioner reconciles the provisioned GatewayClass objects
 // to ensure they exist.
 type gatewayClassProvisioner struct {
@@ -42,6 +37,8 @@ type gatewayClassProvisioner struct {
 	// initialReconcileCh is a channel that is used to trigger initial reconciliation when
 	// no GatewayClass objects exist in the cluster.
 	initialReconcileCh chan event.TypedGenericEvent[client.Object]
+	// agwGatewayClassName is the agentgateway gateway class name.
+	agwGatewayClassName string
 }
 
 var _ reconcile.TypedReconciler[reconcile.Request] = &gatewayClassProvisioner{}
@@ -49,7 +46,7 @@ var _ manager.LeaderElectionRunnable = &gatewayClassProvisioner{}
 
 // getControllerNameForClass returns the appropriate controller name based on the gateway class name
 func (r *gatewayClassProvisioner) getControllerNameForClass(className string) string {
-	if className == agentGatewayClassName {
+	if className == r.agwGatewayClassName {
 		return r.agwControllerName
 	}
 	return r.controllerName
@@ -60,15 +57,16 @@ func (r *gatewayClassProvisioner) getControllerNameForClass(className string) st
 // events to trigger the re-creation of the GatewayClass. Additionally, it ignores
 // update events to allow users to modify the GatewayClasses without this controller
 // overwriting them.
-func NewGatewayClassProvisioner(mgr ctrl.Manager, controllerName, agwControllerName string, classConfigs map[string]*deployer.GatewayClassInfo) error {
+func NewGatewayClassProvisioner(mgr ctrl.Manager, controllerName, agwControllerName, agwGatewayClassName string, classConfigs map[string]*deployer.GatewayClassInfo) error {
 	initialReconcileCh := make(chan event.TypedGenericEvent[client.Object], 1)
 	provisioner := &gatewayClassProvisioner{
-		Client:             mgr.GetClient(),
-		Informers:          mgr.GetCache(),
-		controllerName:     controllerName,
-		agwControllerName:  agwControllerName,
-		classConfigs:       classConfigs,
-		initialReconcileCh: initialReconcileCh,
+		Client:              mgr.GetClient(),
+		Informers:           mgr.GetCache(),
+		controllerName:      controllerName,
+		agwControllerName:   agwControllerName,
+		agwGatewayClassName: agwGatewayClassName,
+		classConfigs:        classConfigs,
+		initialReconcileCh:  initialReconcileCh,
 	}
 	if err := provisioner.SetupWithManager(mgr); err != nil {
 		return err
@@ -89,8 +87,8 @@ func (r *gatewayClassProvisioner) SetupWithManager(mgr ctrl.Manager) error {
 			if !ok {
 				return false
 			}
-			expectedControllerName := r.getControllerNameForClass(gc.Name)
-			return gc.Spec.ControllerName == apiv1.GatewayController(expectedControllerName)
+			// only reconcile GatewayClass objects that are managed by this controller
+			return gc.Spec.ControllerName == apiv1.GatewayController(r.controllerName) || gc.Spec.ControllerName == apiv1.GatewayController(r.agwControllerName)
 		})).
 		WatchesRawSource(source.Channel(r.initialReconcileCh, handler.TypedEnqueueRequestsFromMapFunc(
 			func(ctx context.Context, o client.Object) []reconcile.Request {

@@ -254,7 +254,7 @@ func createManager(
 		}
 	}
 
-	if err := controller.NewGatewayClassProvisioner(mgr, gatewayControllerName, agwControllerName, classConfigs); err != nil {
+	if err := controller.NewGatewayClassProvisioner(mgr, gatewayControllerName, agwControllerName, wellknown.DefaultAgwClassName, classConfigs); err != nil {
 		cancel()
 		return nil, err
 	}
