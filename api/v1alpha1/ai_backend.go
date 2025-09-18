@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 // AIBackend specifies the AI backend configuration
@@ -44,6 +45,7 @@ type AIBackend struct {
 
 // LLMProvider specifies the target large language model provider that the backend should route requests to.
 // +kubebuilder:validation:ExactlyOneOf=openai;azureopenai;anthropic;gemini;vertexai;bedrock
+// +kubebuilder:validation:XValidation:rule="has(self.host) || has(self.port) ? has(self.host) && has(self.port) : true",message="both host and port must be set together"
 // TODO: Move auth options off of SupportedLLMProvider to BackendConfigPolicy: https://github.com/kgateway-dev/kgateway/issues/11930
 type LLMProvider struct {
 	// OpenAI provider
@@ -70,39 +72,45 @@ type LLMProvider struct {
 	// +optional
 	Bedrock *BedrockConfig `json:"bedrock,omitempty"`
 
-	// Send requests to a custom host and port, such as to proxy the request,
-	// or to use a different backend that is API-compliant with the Backend version.
-	HostOverride *Host `json:"hostOverride,omitempty"`
+	// Host specifies the hostname to send the requests to.
+	// If not specified, the default hostname for the provider is used.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	Host *string `json:"host,omitempty"`
 
-	// TODO: Consolidate all Override options into ProviderOverride.
-	// Overrides the default API path for the LLM provider.
-	// Allows routing requests to a custom API endpoint path.
-	PathOverride *PathOverride `json:"pathOverride,omitempty"`
+	// Port specifies the port to send the requests to.
+	// +optional
+	Port *gwv1.PortNumber `json:"port,omitempty"`
 
-	// Customizes the Authorization header sent to the LLM provider.
+	// Path specifies the URL path to use for the LLM provider API requests.
+	// This is useful when you need to route requests to a different API endpoint while maintaining
+	// compatibility with the original provider's API structure.
+	// If not specified, the default path for the provider is used.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	Path *string `json:"path,omitempty"`
+
+	// AuthHeader specifies how the Authorization header is set in the request sent to the LLM provider.
 	// Allows changing the header name and/or the prefix (e.g., "Bearer").
 	// Note: Not all LLM providers use the Authorization header and prefix.
 	// For example, OpenAI uses header: "Authorization" and prefix: "Bearer" But Azure OpenAI uses header: "api-key"
 	// and no Bearer.
-	AuthHeaderOverride *AuthHeaderOverride `json:"authHeaderOverride,omitempty"`
+	AuthHeader *AuthHeader `json:"authHeader,omitempty"`
 }
 
-// PathOverride configures the AI gateway to use a custom path for LLM provider chat-completion API requests.
-// It allows overriding the default API path with a custom one.
-// This is useful when you need to route requests to a different API endpoint while maintaining
-// compatibility with the original provider's API structure.
-// +kubebuilder:validation:MinProperties=1
-type PathOverride struct {
-	// FullPath specifies the custom API path to use for the LLM provider requests.
-	// This path will replace the default API path for the provider.
-	FullPath *string `json:"fullPath"`
-}
-
-// AuthHeaderOverride allows customization of the default Authorization header sent to the LLM Provider.
+// AuthHeader allows customization of the default Authorization header sent to the LLM Provider.
 // The default header is `Authorization: Bearer <token>`. HeaderName can change the Authorization
 // header name and Prefix can change the Bearer prefix
-type AuthHeaderOverride struct {
-	Prefix     *string `json:"prefix,omitempty"`
+// +kubebuilder:validation:XValidation:rule="has(self.prefix) || has(self.headerName)",message="at least one of prefix or headerName must be set"
+type AuthHeader struct {
+	// Prefix specifies the prefix to use in the Authorization header.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	Prefix *string `json:"prefix,omitempty"`
+
+	// HeaderName specifies the name of the header to use for authorization.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
 	HeaderName *string `json:"headerName,omitempty"`
 }
 

@@ -43,8 +43,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.AnthropicConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AnyValue"):
 		return &apiv1alpha1.AnyValueApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("AuthHeaderOverride"):
-		return &apiv1alpha1.AuthHeaderOverrideApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("AuthHeader"):
+		return &apiv1alpha1.AuthHeaderApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AwsAuth"):
 		return &apiv1alpha1.AwsAuthApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AwsBackend"):
@@ -245,8 +245,6 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.OutlierDetectionApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Parameters"):
 		return &apiv1alpha1.ParametersApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("PathOverride"):
-		return &apiv1alpha1.PathOverrideApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Pod"):
 		return &apiv1alpha1.PodApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Port"):

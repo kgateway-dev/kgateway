@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/utils/ptr"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -300,12 +301,10 @@ func TestProcessAIBackend_CustomURL(t *testing.T) {
 	header := "Authorization"
 	aiBackend := &v1alpha1.AIBackend{
 		LLM: &v1alpha1.LLMProvider{
-			HostOverride: &v1alpha1.Host{
-				Host: "custom-openai-host.example.com",
-				Port: 8443,
-			},
-			PathOverride: &v1alpha1.PathOverride{FullPath: &path},
-			AuthHeaderOverride: &v1alpha1.AuthHeaderOverride{
+			Host: ptr.To("custom-openai-host.example.com"),
+			Port: ptr.To(gwv1.PortNumber(8443)),
+			Path: &path,
+			AuthHeader: &v1alpha1.AuthHeader{
 				Prefix:     &prefix,
 				HeaderName: &header,
 			},

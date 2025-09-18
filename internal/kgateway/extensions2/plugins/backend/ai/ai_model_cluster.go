@@ -12,6 +12,8 @@ import (
 	envoytransformation "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/structpb"
+	"k8s.io/utils/ptr"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	aiutils "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
@@ -84,35 +86,35 @@ func buildModelCluster(aiUs *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecre
 						secretRef := ep.OpenAI.AuthToken.SecretRef
 						secretForMultiPool = multiSecrets[GetMultiPoolSecretKey(idx, jdx, secretRef.Name)]
 					}
-					result, err = buildOpenAIEndpoint(ep.OpenAI, ep.HostOverride, secretForMultiPool)
+					result, err = buildOpenAIEndpoint(ep.OpenAI, ep.Host, ep.Port, secretForMultiPool)
 				} else if ep.Anthropic != nil {
 					var secretForMultiPool *ir.Secret
 					if ep.Anthropic.AuthToken.Kind == v1alpha1.SecretRef {
 						secretRef := ep.Anthropic.AuthToken.SecretRef
 						secretForMultiPool = multiSecrets[GetMultiPoolSecretKey(idx, jdx, secretRef.Name)]
 					}
-					result, err = buildAnthropicEndpoint(ep.Anthropic, ep.HostOverride, secretForMultiPool)
+					result, err = buildAnthropicEndpoint(ep.Anthropic, ep.Host, ep.Port, secretForMultiPool)
 				} else if ep.AzureOpenAI != nil {
 					var secretForMultiPool *ir.Secret
 					if ep.AzureOpenAI.AuthToken.Kind == v1alpha1.SecretRef {
 						secretRef := ep.AzureOpenAI.AuthToken.SecretRef
 						secretForMultiPool = multiSecrets[GetMultiPoolSecretKey(idx, jdx, secretRef.Name)]
 					}
-					result, err = buildAzureOpenAIEndpoint(ep.AzureOpenAI, ep.HostOverride, secretForMultiPool)
+					result, err = buildAzureOpenAIEndpoint(ep.AzureOpenAI, ep.Host, ep.Port, secretForMultiPool)
 				} else if ep.Gemini != nil {
 					var secretForMultiPool *ir.Secret
 					if ep.Gemini.AuthToken.Kind == v1alpha1.SecretRef {
 						secretRef := ep.Gemini.AuthToken.SecretRef
 						secretForMultiPool = multiSecrets[GetMultiPoolSecretKey(idx, jdx, secretRef.Name)]
 					}
-					result, err = buildGeminiEndpoint(ep.Gemini, ep.HostOverride, secretForMultiPool)
+					result, err = buildGeminiEndpoint(ep.Gemini, ep.Host, ep.Port, secretForMultiPool)
 				} else if ep.VertexAI != nil {
 					var secretForMultiPool *ir.Secret
 					if ep.VertexAI.AuthToken.Kind == v1alpha1.SecretRef {
 						secretRef := ep.VertexAI.AuthToken.SecretRef
 						secretForMultiPool = multiSecrets[GetMultiPoolSecretKey(idx, jdx, secretRef.Name)]
 					}
-					result, err = buildVertexAIEndpoint(ep.VertexAI, ep.HostOverride, secretForMultiPool)
+					result, err = buildVertexAIEndpoint(ep.VertexAI, ep.Host, ep.Port, secretForMultiPool)
 				} else if ep.Bedrock != nil {
 					// currently only supported in agentgateway
 					slog.Error("bedrock on the AI backend are not supported yet, switch to agentgateway class")
@@ -179,7 +181,7 @@ func buildLLMEndpoint(aiUs *v1alpha1.AIBackend, aiSecrets *ir.Secret) ([]*envoye
 	var prioritized []*envoyendpointv3.LocalityLbEndpoints
 	provider := aiUs.LLM
 	if provider.OpenAI != nil {
-		host, err := buildOpenAIEndpoint(provider.OpenAI, aiUs.LLM.HostOverride, aiSecrets)
+		host, err := buildOpenAIEndpoint(provider.OpenAI, aiUs.LLM.Host, aiUs.LLM.Port, aiSecrets)
 		if err != nil {
 			return nil, err
 		}
@@ -187,7 +189,7 @@ func buildLLMEndpoint(aiUs *v1alpha1.AIBackend, aiSecrets *ir.Secret) ([]*envoye
 			{LbEndpoints: []*envoyendpointv3.LbEndpoint{host}},
 		}
 	} else if provider.Anthropic != nil {
-		host, err := buildAnthropicEndpoint(provider.Anthropic, aiUs.LLM.HostOverride, aiSecrets)
+		host, err := buildAnthropicEndpoint(provider.Anthropic, aiUs.LLM.Host, aiUs.LLM.Port, aiSecrets)
 		if err != nil {
 			return nil, err
 		}
@@ -195,7 +197,7 @@ func buildLLMEndpoint(aiUs *v1alpha1.AIBackend, aiSecrets *ir.Secret) ([]*envoye
 			{LbEndpoints: []*envoyendpointv3.LbEndpoint{host}},
 		}
 	} else if provider.AzureOpenAI != nil {
-		host, err := buildAzureOpenAIEndpoint(provider.AzureOpenAI, aiUs.LLM.HostOverride, aiSecrets)
+		host, err := buildAzureOpenAIEndpoint(provider.AzureOpenAI, aiUs.LLM.Host, aiUs.LLM.Port, aiSecrets)
 		if err != nil {
 			return nil, err
 		}
@@ -203,7 +205,7 @@ func buildLLMEndpoint(aiUs *v1alpha1.AIBackend, aiSecrets *ir.Secret) ([]*envoye
 			{LbEndpoints: []*envoyendpointv3.LbEndpoint{host}},
 		}
 	} else if provider.Gemini != nil {
-		host, err := buildGeminiEndpoint(provider.Gemini, aiUs.LLM.HostOverride, aiSecrets)
+		host, err := buildGeminiEndpoint(provider.Gemini, aiUs.LLM.Host, aiUs.LLM.Port, aiSecrets)
 		if err != nil {
 			return nil, err
 		}
@@ -211,7 +213,7 @@ func buildLLMEndpoint(aiUs *v1alpha1.AIBackend, aiSecrets *ir.Secret) ([]*envoye
 			{LbEndpoints: []*envoyendpointv3.LbEndpoint{host}},
 		}
 	} else if provider.VertexAI != nil {
-		host, err := buildVertexAIEndpoint(provider.VertexAI, aiUs.LLM.HostOverride, aiSecrets)
+		host, err := buildVertexAIEndpoint(provider.VertexAI, aiUs.LLM.Host, aiUs.LLM.Port, aiSecrets)
 		if err != nil {
 			return nil, err
 		}
@@ -222,7 +224,7 @@ func buildLLMEndpoint(aiUs *v1alpha1.AIBackend, aiSecrets *ir.Secret) ([]*envoye
 	return prioritized, nil
 }
 
-func buildOpenAIEndpoint(data *v1alpha1.OpenAIConfig, hostOverride *v1alpha1.Host, aiSecrets *ir.Secret) (*envoyendpointv3.LbEndpoint, error) {
+func buildOpenAIEndpoint(data *v1alpha1.OpenAIConfig, host *string, port *gwv1.PortNumber, aiSecrets *ir.Secret) (*envoyendpointv3.LbEndpoint, error) {
 	token, err := aiutils.GetAuthToken(data.AuthToken, aiSecrets)
 	if err != nil {
 		return nil, err
@@ -232,14 +234,13 @@ func buildOpenAIEndpoint(data *v1alpha1.OpenAIConfig, hostOverride *v1alpha1.Hos
 		model = *data.Model
 	}
 	return buildLocalityLbEndpoint(
-		OpenAIHost,
-		tlsPort,
-		hostOverride,
+		ptr.Deref(host, OpenAIHost),
+		int32(ptr.Deref(port, gwv1.PortNumber(tlsPort))),
 		buildEndpointMeta(token, model, nil),
 	), nil
 }
 
-func buildAnthropicEndpoint(data *v1alpha1.AnthropicConfig, hostOverride *v1alpha1.Host, aiSecrets *ir.Secret) (*envoyendpointv3.LbEndpoint, error) {
+func buildAnthropicEndpoint(data *v1alpha1.AnthropicConfig, host *string, port *gwv1.PortNumber, aiSecrets *ir.Secret) (*envoyendpointv3.LbEndpoint, error) {
 	token, err := aiutils.GetAuthToken(data.AuthToken, aiSecrets)
 	if err != nil {
 		return nil, err
@@ -249,40 +250,37 @@ func buildAnthropicEndpoint(data *v1alpha1.AnthropicConfig, hostOverride *v1alph
 		model = *data.Model
 	}
 	return buildLocalityLbEndpoint(
-		AnthropicHost,
-		tlsPort,
-		hostOverride,
+		ptr.Deref(host, AnthropicHost),
+		int32(ptr.Deref(port, gwv1.PortNumber(tlsPort))),
 		buildEndpointMeta(token, model, nil),
 	), nil
 }
 
-func buildAzureOpenAIEndpoint(data *v1alpha1.AzureOpenAIConfig, hostOverride *v1alpha1.Host, aiSecrets *ir.Secret) (*envoyendpointv3.LbEndpoint, error) {
+func buildAzureOpenAIEndpoint(data *v1alpha1.AzureOpenAIConfig, host *string, port *gwv1.PortNumber, aiSecrets *ir.Secret) (*envoyendpointv3.LbEndpoint, error) {
 	token, err := aiutils.GetAuthToken(data.AuthToken, aiSecrets)
 	if err != nil {
 		return nil, err
 	}
 	return buildLocalityLbEndpoint(
-		data.Endpoint,
-		tlsPort,
-		hostOverride,
+		ptr.Deref(host, data.Endpoint),
+		int32(ptr.Deref(port, gwv1.PortNumber(tlsPort))),
 		buildEndpointMeta(token, data.DeploymentName, map[string]string{"api_version": data.ApiVersion}),
 	), nil
 }
 
-func buildGeminiEndpoint(data *v1alpha1.GeminiConfig, hostOverride *v1alpha1.Host, aiSecrets *ir.Secret) (*envoyendpointv3.LbEndpoint, error) {
+func buildGeminiEndpoint(data *v1alpha1.GeminiConfig, host *string, port *gwv1.PortNumber, aiSecrets *ir.Secret) (*envoyendpointv3.LbEndpoint, error) {
 	token, err := aiutils.GetAuthToken(data.AuthToken, aiSecrets)
 	if err != nil {
 		return nil, err
 	}
 	return buildLocalityLbEndpoint(
-		GeminiHost,
-		tlsPort,
-		hostOverride,
+		ptr.Deref(host, GeminiHost),
+		int32(ptr.Deref(port, gwv1.PortNumber(tlsPort))),
 		buildEndpointMeta(token, data.Model, map[string]string{"api_version": data.ApiVersion}),
 	), nil
 }
 
-func buildVertexAIEndpoint(data *v1alpha1.VertexAIConfig, hostOverride *v1alpha1.Host, aiSecrets *ir.Secret) (*envoyendpointv3.LbEndpoint, error) {
+func buildVertexAIEndpoint(data *v1alpha1.VertexAIConfig, host *string, port *gwv1.PortNumber, aiSecrets *ir.Secret) (*envoyendpointv3.LbEndpoint, error) {
 	token, err := aiutils.GetAuthToken(data.AuthToken, aiSecrets)
 	if err != nil {
 		return nil, err
@@ -297,9 +295,8 @@ func buildVertexAIEndpoint(data *v1alpha1.VertexAIConfig, hostOverride *v1alpha1
 		publisher = "google"
 	}
 	return buildLocalityLbEndpoint(
-		fmt.Sprintf("%s-aiplatform.googleapis.com", data.Location),
-		tlsPort,
-		hostOverride,
+		ptr.Deref(host, fmt.Sprintf("%s-aiplatform.googleapis.com", data.Location)),
+		int32(ptr.Deref(port, gwv1.PortNumber(tlsPort))),
 		buildEndpointMeta(token, data.Model, map[string]string{"api_version": data.ApiVersion, "location": data.Location, "project": data.ProjectId, "publisher": publisher}),
 	), nil
 }
@@ -307,17 +304,8 @@ func buildVertexAIEndpoint(data *v1alpha1.VertexAIConfig, hostOverride *v1alpha1
 func buildLocalityLbEndpoint(
 	host string,
 	port int32,
-	hostOverride *v1alpha1.Host,
 	metadata *envoycorev3.Metadata,
 ) *envoyendpointv3.LbEndpoint {
-	if hostOverride != nil {
-		if hostOverride.Host != "" {
-			host = hostOverride.Host
-		}
-		if hostOverride.Port != 0 {
-			port = int32(hostOverride.Port)
-		}
-	}
 	if port == tlsPort {
 		// Used for transport socket matching
 		metadata.GetFilterMetadata()["envoy.transport_socket_match"] = tlsMatch()
@@ -429,15 +417,15 @@ func getTransformation(provider *v1alpha1.LLMProvider) (string, string, string, 
 		// https://${LOCATION}-aiplatform.googleapis.com/${VERSION}/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/${PUBLISHER}/models/${MODEL}:{generateContent|streamGenerateContent}
 		path = fmt.Sprintf(`/{{host_metadata("api_version")}}/projects/{{host_metadata("project")}}/locations/{{host_metadata("location")}}/publishers/{{host_metadata("publisher")}}/%s`, modelPath)
 	}
-	if provider.PathOverride != nil {
-		path = *provider.PathOverride.FullPath
+	if provider.Path != nil {
+		path = *provider.Path
 	}
-	if provider.AuthHeaderOverride != nil {
-		if provider.AuthHeaderOverride.HeaderName != nil {
-			headerName = *provider.AuthHeaderOverride.HeaderName
+	if provider.AuthHeader != nil {
+		if provider.AuthHeader.HeaderName != nil {
+			headerName = *provider.AuthHeader.HeaderName
 		}
-		if provider.AuthHeaderOverride.Prefix != nil {
-			prefix = *provider.AuthHeaderOverride.Prefix
+		if provider.AuthHeader.Prefix != nil {
+			prefix = *provider.AuthHeader.Prefix
 		}
 	}
 

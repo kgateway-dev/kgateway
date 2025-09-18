@@ -322,7 +322,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: stringValue
       type:
         scalar: string
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AuthHeaderOverride
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AuthHeader
   map:
     fields:
     - name: headerName
@@ -1543,9 +1543,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: anthropic
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AnthropicConfig
-    - name: authHeaderOverride
+    - name: authHeader
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AuthHeaderOverride
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AuthHeader
     - name: azureopenai
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AzureOpenAIConfig
@@ -1555,15 +1555,18 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: gemini
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GeminiConfig
-    - name: hostOverride
+    - name: host
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Host
+        scalar: string
     - name: openai
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.OpenAIConfig
-    - name: pathOverride
+    - name: path
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PathOverride
+        scalar: string
+    - name: port
+      type:
+        scalar: numeric
     - name: vertexai
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.VertexAIConfig
@@ -1938,12 +1941,6 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
     - name: tlsMinVersion
-      type:
-        scalar: string
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PathOverride
-  map:
-    fields:
-    - name: fullPath
       type:
         scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Pod

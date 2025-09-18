@@ -82,13 +82,18 @@ spec:
                         required:
                         - authToken
                         type: object
-                      authHeaderOverride:
+                      authHeader:
                         properties:
                           headerName:
+                            minLength: 1
                             type: string
                           prefix:
+                            minLength: 1
                             type: string
                         type: object
+                        x-kubernetes-validations:
+                        - message: at least one of prefix or headerName must be set
+                          rule: has(self.prefix) || has(self.headerName)
                       azureopenai:
                         properties:
                           apiVersion:
@@ -214,20 +219,9 @@ spec:
                         - authToken
                         - model
                         type: object
-                      hostOverride:
-                        properties:
-                          host:
-                            minLength: 1
-                            type: string
-                          port:
-                            format: int32
-                            maximum: 65535
-                            minimum: 1
-                            type: integer
-                        required:
-                        - host
-                        - port
-                        type: object
+                      host:
+                        minLength: 1
+                        type: string
                       openai:
                         properties:
                           authToken:
@@ -260,14 +254,14 @@ spec:
                         required:
                         - authToken
                         type: object
-                      pathOverride:
-                        minProperties: 1
-                        properties:
-                          fullPath:
-                            type: string
-                        required:
-                        - fullPath
-                        type: object
+                      path:
+                        minLength: 1
+                        type: string
+                      port:
+                        format: int32
+                        maximum: 65535
+                        minimum: 1
+                        type: integer
                       vertexai:
                         properties:
                           apiVersion:
@@ -323,6 +317,9 @@ spec:
                         type: object
                     type: object
                     x-kubernetes-validations:
+                    - message: both host and port must be set together
+                      rule: 'has(self.host) || has(self.port) ? has(self.host) &&
+                        has(self.port) : true'
                     - message: exactly one of the fields in [openai azureopenai anthropic
                         gemini vertexai bedrock] must be set
                       rule: '[has(self.openai),has(self.azureopenai),has(self.anthropic),has(self.gemini),has(self.vertexai),has(self.bedrock)].filter(x,x==true).size()
@@ -367,13 +364,19 @@ spec:
                                 required:
                                 - authToken
                                 type: object
-                              authHeaderOverride:
+                              authHeader:
                                 properties:
                                   headerName:
+                                    minLength: 1
                                     type: string
                                   prefix:
+                                    minLength: 1
                                     type: string
                                 type: object
+                                x-kubernetes-validations:
+                                - message: at least one of prefix or headerName must
+                                    be set
+                                  rule: has(self.prefix) || has(self.headerName)
                               azureopenai:
                                 properties:
                                   apiVersion:
@@ -503,20 +506,9 @@ spec:
                                 - authToken
                                 - model
                                 type: object
-                              hostOverride:
-                                properties:
-                                  host:
-                                    minLength: 1
-                                    type: string
-                                  port:
-                                    format: int32
-                                    maximum: 65535
-                                    minimum: 1
-                                    type: integer
-                                required:
-                                - host
-                                - port
-                                type: object
+                              host:
+                                minLength: 1
+                                type: string
                               openai:
                                 properties:
                                   authToken:
@@ -549,14 +541,14 @@ spec:
                                 required:
                                 - authToken
                                 type: object
-                              pathOverride:
-                                minProperties: 1
-                                properties:
-                                  fullPath:
-                                    type: string
-                                required:
-                                - fullPath
-                                type: object
+                              path:
+                                minLength: 1
+                                type: string
+                              port:
+                                format: int32
+                                maximum: 65535
+                                minimum: 1
+                                type: integer
                               vertexai:
                                 properties:
                                   apiVersion:
@@ -612,6 +604,9 @@ spec:
                                 type: object
                             type: object
                             x-kubernetes-validations:
+                            - message: both host and port must be set together
+                              rule: 'has(self.host) || has(self.port) ? has(self.host)
+                                && has(self.port) : true'
                             - message: exactly one of the fields in [openai azureopenai
                                 anthropic gemini vertexai bedrock] must be set
                               rule: '[has(self.openai),has(self.azureopenai),has(self.anthropic),has(self.gemini),has(self.vertexai),has(self.bedrock)].filter(x,x==true).size()

@@ -99,18 +99,18 @@ func translateLLMProviderToProvider(krtctx krt.HandlerContext, llm *v1alpha1.LLM
 
 	var auth *api.BackendAuthPolicy
 
-	if llm.HostOverride != nil {
+	if llm.Host != nil {
 		provider.HostOverride = &api.AIBackend_HostOverride{
-			Host: llm.HostOverride.Host,
-			Port: int32(llm.HostOverride.Port),
+			Host: *llm.Host,
+			Port: int32(ptr.Deref(llm.Port, 443)), // Port is required when Host is set (CEL validated)
 		}
 	}
 
-	if llm.PathOverride != nil && llm.PathOverride.FullPath != nil {
-		provider.PathOverride = &wrappers.StringValue{Value: *llm.PathOverride.FullPath}
+	if llm.Path != nil {
+		provider.PathOverride = &wrappers.StringValue{Value: *llm.Path}
 	}
 
-	if llm.AuthHeaderOverride != nil {
+	if llm.AuthHeader != nil {
 		logger.Warn("auth header override is not supported for agentgateway")
 	}
 

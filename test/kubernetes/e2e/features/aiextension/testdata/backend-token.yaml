@@ -9,12 +9,10 @@ spec:
   type: AI
   ai:
     llm:
-      hostOverride:
-        host: test-ai-provider.ai-test.svc.cluster.local
-        port: 443
-      pathOverride:
-        fullPath: "/api/v1/chat/completions"
-      authHeaderOverride:
+      host: test-ai-provider.ai-test.svc.cluster.local
+      port: 443
+      path: "/api/v1/chat/completions"
+      authHeader:
         prefix: "custom-prefix"
         headerName: "custom-header"
       openai:
@@ -34,9 +32,8 @@ spec:
   type: AI
   ai:
     llm:
-      hostOverride:
-        host: test-ai-provider.ai-test.svc.cluster.local
-        port: 443
+      host: test-ai-provider.ai-test.svc.cluster.local
+      port: 443
       openai:
         authToken:
           kind: "SecretRef"
@@ -54,9 +51,8 @@ spec:
   type: AI
   ai:
     llm:
-      hostOverride:
-        host: test-ai-provider.ai-test.svc.cluster.local
-        port: 443
+      host: test-ai-provider.ai-test.svc.cluster.local
+      port: 443
       azureopenai:
         endpoint: ai-gateway.openai.azure.com
         deploymentName: gpt-4o-mini
@@ -77,9 +73,8 @@ spec:
   type: AI
   ai:
     llm:
-      hostOverride:
-        host: test-ai-provider.ai-test.svc.cluster.local
-        port: 443
+      host: test-ai-provider.ai-test.svc.cluster.local
+      port: 443
       gemini:
         model: gemini-1.5-flash-001
         apiVersion: v1beta
@@ -99,9 +94,8 @@ spec:
   type: AI
   ai:
     llm:
-      hostOverride:
-        host: test-ai-provider.ai-test.svc.cluster.local
-        port: 443
+      host: test-ai-provider.ai-test.svc.cluster.local
+      port: 443
       vertexai:
         model: gemini-1.5-flash-001
         apiVersion: v1

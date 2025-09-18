@@ -2,23 +2,23 @@
 
 package v1alpha1
 
-// AuthHeaderOverrideApplyConfiguration represents a declarative configuration of the AuthHeaderOverride type for use
+// AuthHeaderApplyConfiguration represents a declarative configuration of the AuthHeader type for use
 // with apply.
-type AuthHeaderOverrideApplyConfiguration struct {
+type AuthHeaderApplyConfiguration struct {
 	Prefix     *string `json:"prefix,omitempty"`
 	HeaderName *string `json:"headerName,omitempty"`
 }
 
-// AuthHeaderOverrideApplyConfiguration constructs a declarative configuration of the AuthHeaderOverride type for use with
+// AuthHeaderApplyConfiguration constructs a declarative configuration of the AuthHeader type for use with
 // apply.
-func AuthHeaderOverride() *AuthHeaderOverrideApplyConfiguration {
-	return &AuthHeaderOverrideApplyConfiguration{}
+func AuthHeader() *AuthHeaderApplyConfiguration {
+	return &AuthHeaderApplyConfiguration{}
 }
 
 // WithPrefix sets the Prefix field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Prefix field is set to the value of the last call.
-func (b *AuthHeaderOverrideApplyConfiguration) WithPrefix(value string) *AuthHeaderOverrideApplyConfiguration {
+func (b *AuthHeaderApplyConfiguration) WithPrefix(value string) *AuthHeaderApplyConfiguration {
 	b.Prefix = &value
 	return b
 }
@@ -26,7 +26,7 @@ func (b *AuthHeaderOverrideApplyConfiguration) WithPrefix(value string) *AuthHea
 // WithHeaderName sets the HeaderName field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the HeaderName field is set to the value of the last call.
-func (b *AuthHeaderOverrideApplyConfiguration) WithHeaderName(value string) *AuthHeaderOverrideApplyConfiguration {
+func (b *AuthHeaderApplyConfiguration) WithHeaderName(value string) *AuthHeaderApplyConfiguration {
 	b.HeaderName = &value
 	return b
 }

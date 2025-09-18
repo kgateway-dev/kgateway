@@ -112,10 +112,8 @@ func TestApplyAIBackend(t *testing.T) {
 			name: "Single LLM provider with custom path",
 			aiBackend: &v1alpha1.AIBackend{
 				LLM: &v1alpha1.LLMProvider{
-					PathOverride: &v1alpha1.PathOverride{
-						FullPath: &customPath,
-					},
-					AuthHeaderOverride: &v1alpha1.AuthHeaderOverride{
+					Path: &customPath,
+					AuthHeader: &v1alpha1.AuthHeader{
 						Prefix:     &customPrefix,
 						HeaderName: &customHeader,
 					},

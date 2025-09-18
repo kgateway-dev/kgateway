@@ -25,9 +25,8 @@ spec:
   ai:
     priorityGroups:
     - providers:
-      - hostOverride:
-          host: model-failover.default.svc.cluster.local
-          port: 80
+      - host: model-failover.default.svc.cluster.local
+        port: 80
         openai:
           authToken:
             kind: SecretRef
