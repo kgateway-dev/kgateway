@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net"
+	"sync"
 
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"github.com/go-logr/logr"
@@ -161,6 +162,9 @@ type setup struct {
 
 var _ Server = &setup{}
 
+// ensure global logger wiring happens once to avoid data races
+var setLoggerOnce sync.Once
+
 func New(opts ...func(*setup)) (*setup, error) {
 	s := &setup{
 		gatewayControllerName: wellknown.DefaultGatewayControllerName,
@@ -181,6 +185,8 @@ func New(opts ...func(*setup)) (*setup, error) {
 			return nil, err
 		}
 	}
+
+	SetupLogging(s.globalSettings.LogLevel)
 
 	if s.restConfig == nil {
 		s.restConfig = ctrl.GetConfigOrDie()
@@ -221,8 +227,6 @@ func New(opts ...func(*setup)) (*setup, error) {
 
 func (s *setup) Start(ctx context.Context) error {
 	slog.Info("starting kgateway")
-
-	SetupLogging(s.globalSettings.LogLevel)
 
 	mgrOpts := s.ctrlMgrOptionsInitFunc(ctx)
 
@@ -379,12 +383,13 @@ func SetupLogging(levelStr string) {
 	}
 	// set all loggers to the specified level
 	logging.Reset(level)
-	// set controller-runtime logger
-	controllerLogger := logr.FromSlogHandler(logging.New("controller-runtime").Handler())
-	ctrl.SetLogger(controllerLogger)
-	// set klog logger
-	klogLogger := logr.FromSlogHandler(logging.New("klog").Handler())
-	klog.SetLogger(klogLogger)
+	// set controller-runtime and klog loggers only once to avoid data races with concurrent readers
+	setLoggerOnce.Do(func() {
+		controllerLogger := logr.FromSlogHandler(logging.New("controller-runtime").Handler())
+		ctrl.SetLogger(controllerLogger)
+		klogLogger := logr.FromSlogHandler(logging.New("klog").Handler())
+		klog.SetLogger(klogLogger)
+	})
 }
 
 func CreateKubeClient(restConfig *rest.Config) (istiokube.Client, error) {

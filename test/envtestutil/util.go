@@ -37,8 +37,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 )
 
-var setupLogging = sync.Once{}
-
 func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Settings, testEnv *envtest.Environment,
 	postStart func(t *testing.T, ctx context.Context, client istiokube.CLIClient) func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []pluginsdk.Plugin,
 	yamlFilesToApply [][]string,
