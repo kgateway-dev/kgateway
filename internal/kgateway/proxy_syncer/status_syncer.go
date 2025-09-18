@@ -40,7 +40,7 @@ type StatusSyncer struct {
 	mgr                   manager.Manager
 	plugins               plug.Plugin
 	controllerName        string
-	agentGatewayClassName string
+	agentgatewayClassName string
 	istioClient           kube.Client
 
 	latestReportQueue              utils.AsyncQueue[reports.ReportMap]
@@ -52,7 +52,7 @@ func NewStatusSyncer(
 	mgr manager.Manager,
 	plugins plug.Plugin,
 	controllerName string,
-	agentGatewayClassName string,
+	agentgatewayClassName string,
 	client kube.Client,
 	commonCols *common.CommonCollections,
 	reportQueue utils.AsyncQueue[reports.ReportMap],
@@ -64,7 +64,7 @@ func NewStatusSyncer(
 		plugins:                        plugins,
 		istioClient:                    client,
 		controllerName:                 controllerName,
-		agentGatewayClassName:          agentGatewayClassName,
+		agentgatewayClassName:          agentgatewayClassName,
 		latestReportQueue:              reportQueue,
 		latestBackendPolicyReportQueue: backendPolicyReportQueue,
 		cacheSyncs:                     cacheSyncs,
@@ -366,7 +366,7 @@ func (s *StatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logge
 			}
 
 			// Skip agentgateway classes, they are handled by agentgateway syncer
-			if string(gw.Spec.GatewayClassName) == s.agentGatewayClassName {
+			if string(gw.Spec.GatewayClassName) == s.agentgatewayClassName {
 				logger.Debug("skipping status sync for agentgateway", "gateway", gwnn.String())
 				return nil
 			}

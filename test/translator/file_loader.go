@@ -141,7 +141,7 @@ func parseFile(
 		}
 
 		if structuralSchema, ok := gvkToStructuralSchema[gvk]; ok {
-			objYamlWithDefaults, err := applyDefaults(obj, structuralSchema)
+			objYamlWithDefaults, err := applyDefaults(objYaml, structuralSchema)
 			if err != nil {
 				return nil, fmt.Errorf("failed to apply defaults for %s: %w", gvk, err)
 			}

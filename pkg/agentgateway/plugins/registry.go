@@ -4,15 +4,15 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-type AgentgatewayPlugin struct {
+type AgwPlugin struct {
 	AddResourceExtension *AddResourcesPlugin
 	ContributesPolicies  map[schema.GroupKind]PolicyPlugin
 	// extra has sync beyond primary resources in the collections above
 	ExtraHasSynced func() bool
 }
 
-func MergePlugins(plug ...AgentgatewayPlugin) AgentgatewayPlugin {
-	ret := AgentgatewayPlugin{
+func MergePlugins(plug ...AgwPlugin) AgwPlugin {
+	ret := AgwPlugin{
 		ContributesPolicies: make(map[schema.GroupKind]PolicyPlugin),
 	}
 	var hasSynced []func() bool
@@ -55,8 +55,8 @@ func mergeSynced(funcs []func() bool) func() bool {
 }
 
 // Plugins registers all built-in policy plugins
-func Plugins(agw *AgwCollections) []AgentgatewayPlugin {
-	return []AgentgatewayPlugin{
+func Plugins(agw *AgwCollections) []AgwPlugin {
+	return []AgwPlugin{
 		NewTrafficPlugin(agw),
 		NewInferencePlugin(agw),
 		NewA2APlugin(agw),
@@ -64,7 +64,7 @@ func Plugins(agw *AgwCollections) []AgentgatewayPlugin {
 	}
 }
 
-func (p AgentgatewayPlugin) HasSynced() bool {
+func (p AgwPlugin) HasSynced() bool {
 	for _, pol := range p.ContributesPolicies {
 		if pol.Policies != nil && !pol.Policies.HasSynced() {
 			return false

@@ -188,7 +188,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: timeout
       type:
         namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AgentGateway
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Agentgateway
   map:
     fields:
     - name: customConfigMapName
@@ -1501,9 +1501,9 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.KubernetesProxyConfig
   map:
     fields:
-    - name: agentGateway
+    - name: agentgateway
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AgentGateway
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Agentgateway
     - name: aiExtension
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AiExtension

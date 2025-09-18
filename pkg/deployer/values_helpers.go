@@ -285,7 +285,7 @@ func GetAIExtensionValues(config *v1alpha1.AiExtension) (*HelmAIExtension, error
 	}, nil
 }
 
-func GetAgentGatewayValues(config *v1alpha1.AgentGateway) (*HelmAgentGateway, error) {
+func GetAgentgatewayValues(config *v1alpha1.Agentgateway) (*HelmAgentgateway, error) {
 	if config == nil {
 		return nil, nil
 	}
@@ -300,7 +300,7 @@ func GetAgentGatewayValues(config *v1alpha1.AgentGateway) (*HelmAgentGateway, er
 		customConfigMapName = *config.GetCustomConfigMapName()
 	}
 
-	return &HelmAgentGateway{
+	return &HelmAgentgateway{
 		Enabled:             *config.GetEnabled(),
 		LogLevel:            logLevel,
 		CustomConfigMapName: customConfigMapName,

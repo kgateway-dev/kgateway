@@ -21,7 +21,7 @@ We try to define a single `TestInstallation` per file in a `TestCluster`. This w
 We define all tests in the [features](./features) package. This is done for a variety of reasons:
 
 1. We group the tests by feature, so it's easy to identify which behaviors we assert for a given feature.
-2. We can invoke that same test against different `TestInstallation`s. This means we can test a feature against a variety of installation values, or even against OSS and Enterprise installations.
+2. We can invoke that same test against different `TestInstallation`s. This means we can test a feature against a variety of installation values.
 
 Many examples of testing features may be found in the [features](./features) package. The general pattern for adding a new feature should be to create a directory for the feature under `features/`, write manifest files for the resources the tests will need into `features/my_feature/testdata/`, define Go objects for them in a file called `features/my_feature/types.go`, and finally define the test suite in `features/my_feature/suite.go`. There are occasions where multiple suites will need to be created under a single feature. See [Suites](#test-suites) for more info on this case.
 

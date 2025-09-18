@@ -7,8 +7,8 @@ const (
 	// DefaultWaypointClassName is the GatewayClass name for the waypoint.
 	DefaultWaypointClassName = "kgateway-waypoint"
 
-	// DefaultAgentGatewayClassName is the GatewayClass name for the agentgateway proxy.
-	DefaultAgentGatewayClassName = "agentgateway"
+	// DefaultAgwClassName is the GatewayClass name for the agentgateway proxy.
+	DefaultAgwClassName = "agentgateway"
 
 	// DefaultGatewayControllerName is the name of the controller that has implemented the Gateway API
 	// It is configured to manage GatewayClasses with the name DefaultGatewayClassName
