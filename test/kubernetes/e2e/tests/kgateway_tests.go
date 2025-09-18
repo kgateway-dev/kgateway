@@ -37,7 +37,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/transformation"
 	// "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/admin_server"
 	// "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/headless_svc"
-	// "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/listener_options"
 	// "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/metrics"
 	// "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/port_routing"
 )
@@ -80,7 +79,6 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("HeaderModifiers", header_modifiers.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("RBAC", rbac.NewTestingSuite)
 
-	// kubeGatewaySuiteRunner.Register("ListenerOptions", listener_options.NewTestingSuite)
 	// kubeGatewaySuiteRunner.Register("HeadlessSvc", headless_svc.NewK8sGatewayHeadlessSvcSuite)
 	// kubeGatewaySuiteRunner.Register("PortRouting", port_routing.NewK8sGatewayTestingSuite)
 	// kubeGatewaySuiteRunner.Register("GlooAdminServer", admin_server.NewTestingSuite)
