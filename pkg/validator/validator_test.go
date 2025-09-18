@@ -2,7 +2,6 @@ package validator
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -10,109 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func TestNew(t *testing.T) {
-	tests := []struct {
-		name         string
-		options      []Option
-		setupEnvoy   bool
-		expectedType string
-		expectedPath string
-		expectedImg  string
-	}{
-		{
-			name:         "default - returns binary validator when envoy executable exists",
-			options:      nil,
-			setupEnvoy:   true,
-			expectedType: "*validator.binaryValidator",
-		},
-		{
-			name:         "default - returns docker validator when envoy not in path",
-			options:      nil,
-			setupEnvoy:   false,
-			expectedType: "*validator.dockerValidator",
-		},
-		{
-			name:         "custom binary path - overrides binary validator when exists",
-			options:      nil,
-			setupEnvoy:   true,
-			expectedType: "*validator.binaryValidator",
-		},
-		{
-			name: "custom docker image - override default envoy image",
-			options: []Option{
-				WithDockerImage("envoyproxy/envoy:v1.28.0"),
-			},
-			setupEnvoy:   false,
-			expectedType: "*validator.dockerValidator",
-			expectedImg:  "envoyproxy/envoy:v1.28.0",
-		},
-		{
-			name: "custom both - binary takes precedence when exists",
-			options: []Option{
-				WithBinaryPath("/path/to/envoy"),
-				WithDockerImage("custom/envoy:latest"),
-			},
-			setupEnvoy:   true,
-			expectedType: "*validator.binaryValidator",
-		},
-		{
-			name: "custom both - docker fallback when binary not found and docker image is set",
-			options: []Option{
-				WithBinaryPath("/nonexistent/envoy"),
-				WithDockerImage("custom/envoy:latest"),
-			},
-			setupEnvoy:   false,
-			expectedType: "*validator.dockerValidator",
-			expectedImg:  "custom/envoy:latest",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var tmpFile *os.File
-			if tt.setupEnvoy {
-				var err error
-				tmpFile, err = os.CreateTemp("", "envoy")
-				require.NoError(t, err)
-				defer os.Remove(tmpFile.Name())
-				require.NoError(t, os.Chmod(tmpFile.Name(), 0755))
-
-				// Set up custom binary path options for relevant tests
-				if tt.name == "custom binary path - binary validator" {
-					tt.options = []Option{WithBinaryPath(tmpFile.Name())}
-					tt.expectedPath = tmpFile.Name()
-				} else if tt.name == "custom both - binary takes precedence when exists" {
-					tt.options = []Option{
-						WithBinaryPath(tmpFile.Name()),
-						WithDockerImage("custom/envoy:latest"),
-					}
-					tt.expectedPath = tmpFile.Name()
-				} else if tt.options == nil {
-					// For default tests, modify global defaultEnvoyPath temporarily
-					origEnvoyPath := defaultEnvoyPath
-					defaultEnvoyPath = tmpFile.Name()
-					defer func() { defaultEnvoyPath = origEnvoyPath }()
-				}
-			}
-
-			validator := New(tt.options...)
-			assert.Equal(t, tt.expectedType, fmt.Sprintf("%T", validator))
-
-			// Verify the internal configuration
-			switch v := validator.(type) {
-			case *binaryValidator:
-				if tt.expectedPath != "" {
-					assert.Equal(t, tt.expectedPath, v.path)
-				}
-			case *dockerValidator:
-				if tt.expectedImg != "" {
-					assert.Equal(t, tt.expectedImg, v.img)
-				}
-			}
-		})
-	}
-}
 
 func TestBinaryValidator_Validate(t *testing.T) {
 	// note: actual config content doesn't matter for these tests. we cannot easily
@@ -179,9 +75,8 @@ exit 2
 			mockPath := tt.mockBinary(t)
 			defer os.Remove(mockPath)
 
-			validator := &binaryValidator{path: mockPath}
+			validator := NewBinary(mockPath)
 			err := validator.Validate(context.Background(), tt.yaml)
-
 			if tt.expectError {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tt.errorMsg)
@@ -305,7 +200,7 @@ static_resources:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			validator := &dockerValidator{img: defaultEnvoyImage}
+			validator := NewDocker()
 			err := validator.Validate(context.Background(), tt.yaml)
 
 			if tt.expectError {

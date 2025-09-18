@@ -47,13 +47,14 @@ Listeners:
                 envoyGrpc:
                   clusterName: kube_default_ratelimit_8081
               transportApiVersion: V3
-            timeout: 0s
+            timeout: 0.100s
         - disabled: true
           name: ratelimit/default/full-ratelimit
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ratelimit.v3.RateLimit
             domain: api-gateway
             enableXRatelimitHeaders: DRAFT_VERSION_03
+            failureModeDeny: true
             rateLimitService:
               grpcService:
                 envoyGrpc:

@@ -504,7 +504,7 @@ endif
 GIE_CRD_VERSION ?= $(shell go list -m sigs.k8s.io/gateway-api-inference-extension | awk '{print $$2}')
 
 .PHONY: gie-crds
-gie-crds: gw-api-crds ## Install the Gateway API Inference Extension CRDs
+gie-crds: ## Install the Gateway API Inference Extension CRDs
 	kubectl apply -f "https://github.com/kubernetes-sigs/gateway-api-inference-extension/releases/download/$(GIE_CRD_VERSION)/manifests.yaml"
 
 .PHONY: kind-metallb
