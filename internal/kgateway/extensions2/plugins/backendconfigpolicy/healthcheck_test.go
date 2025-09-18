@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -19,7 +19,7 @@ func TestTranslateHealthCheck(t *testing.T) {
 	tests := []struct {
 		name     string
 		config   *v1alpha1.HealthCheck
-		expected *corev3.HealthCheck
+		expected *envoycorev3.HealthCheck
 	}{
 		{
 			name:     "nil health check",
@@ -37,13 +37,13 @@ func TestTranslateHealthCheck(t *testing.T) {
 					Path: "/health",
 				},
 			},
-			expected: &corev3.HealthCheck{
+			expected: &envoycorev3.HealthCheck{
 				Timeout:            durationpb.New(5 * time.Second),
 				Interval:           durationpb.New(10 * time.Second),
 				UnhealthyThreshold: &wrapperspb.UInt32Value{Value: 3},
 				HealthyThreshold:   &wrapperspb.UInt32Value{Value: 2},
-				HealthChecker: &corev3.HealthCheck_HttpHealthCheck_{
-					HttpHealthCheck: &corev3.HealthCheck_HttpHealthCheck{
+				HealthChecker: &envoycorev3.HealthCheck_HttpHealthCheck_{
+					HttpHealthCheck: &envoycorev3.HealthCheck_HttpHealthCheck{
 						Path: "/health",
 					},
 				},
@@ -60,14 +60,14 @@ func TestTranslateHealthCheck(t *testing.T) {
 					Method: ptr.To("GET"),
 				},
 			},
-			expected: &corev3.HealthCheck{
+			expected: &envoycorev3.HealthCheck{
 				Timeout:  durationpb.New(5 * time.Second),
 				Interval: durationpb.New(10 * time.Second),
-				HealthChecker: &corev3.HealthCheck_HttpHealthCheck_{
-					HttpHealthCheck: &corev3.HealthCheck_HttpHealthCheck{
+				HealthChecker: &envoycorev3.HealthCheck_HttpHealthCheck_{
+					HttpHealthCheck: &envoycorev3.HealthCheck_HttpHealthCheck{
 						Host:   "example.com",
 						Path:   "/health",
-						Method: corev3.RequestMethod_GET,
+						Method: envoycorev3.RequestMethod_GET,
 					},
 				},
 			},
@@ -82,11 +82,11 @@ func TestTranslateHealthCheck(t *testing.T) {
 					Authority:   ptr.To("example.com"),
 				},
 			},
-			expected: &corev3.HealthCheck{
+			expected: &envoycorev3.HealthCheck{
 				Timeout:  durationpb.New(5 * time.Second),
 				Interval: durationpb.New(10 * time.Second),
-				HealthChecker: &corev3.HealthCheck_GrpcHealthCheck_{
-					GrpcHealthCheck: &corev3.HealthCheck_GrpcHealthCheck{
+				HealthChecker: &envoycorev3.HealthCheck_GrpcHealthCheck_{
+					GrpcHealthCheck: &envoycorev3.HealthCheck_GrpcHealthCheck{
 						ServiceName: "grpc.health.v1.Health",
 						Authority:   "example.com",
 					},
@@ -103,11 +103,11 @@ func TestTranslateHealthCheck(t *testing.T) {
 					Path: "/health",
 				},
 			},
-			expected: &corev3.HealthCheck{
+			expected: &envoycorev3.HealthCheck{
 				Timeout:  durationpb.New(5 * time.Second),
 				Interval: durationpb.New(10 * time.Second),
-				HealthChecker: &corev3.HealthCheck_HttpHealthCheck_{
-					HttpHealthCheck: &corev3.HealthCheck_HttpHealthCheck{
+				HealthChecker: &envoycorev3.HealthCheck_HttpHealthCheck_{
+					HttpHealthCheck: &envoycorev3.HealthCheck_HttpHealthCheck{
 						Host: "example.com",
 						Path: "/health",
 					},

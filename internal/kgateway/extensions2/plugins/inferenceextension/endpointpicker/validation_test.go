@@ -5,84 +5,78 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/krt/krttest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
-	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
+
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
-func makeBasePool(ns, svcName string) *infextv1a2.InferencePool {
-	return &infextv1a2.InferencePool{
-		ObjectMeta: metav1.ObjectMeta{Namespace: ns},
-		Spec: infextv1a2.InferencePoolSpec{
-			EndpointPickerConfig: infextv1a2.EndpointPickerConfig{
-				ExtensionRef: &infextv1a2.Extension{
-					ExtensionReference: infextv1a2.ExtensionReference{
-						Name:       infextv1a2.ObjectName(svcName),
-						Kind:       ptr.To(infextv1a2.Kind("Service")),
-						Group:      ptr.To(infextv1a2.Group("")),
-						PortNumber: ptr.To(infextv1a2.PortNumber(80)),
-					},
-				},
-			},
-		},
-	}
-}
-
 func TestValidatePool(t *testing.T) {
-	const ns = "default"
-	const svcName = "test-svc"
+	const (
+		ns      = "default"
+		svcName = "test-svc"
+	)
 
 	tests := []struct {
 		name       string
-		modify     func(pool *infextv1a2.InferencePool)
-		includeSvc bool
+		modifyPool func(p *inf.InferencePool)
+		svc        *corev1.Service
 		wantErrs   int
 	}{
 		{
-			name:       "missing ExtensionRef",
-			modify:     func(p *infextv1a2.InferencePool) { p.Spec.EndpointPickerConfig.ExtensionRef = nil },
-			includeSvc: true, // service presence doesn’t matter here
-			wantErrs:   1,
-		},
-		{
 			name: "unsupported Group",
-			modify: func(p *infextv1a2.InferencePool) {
-				p.Spec.EndpointPickerConfig.ExtensionRef.ExtensionReference.Group = ptr.To(infextv1a2.Group("foo.example.com"))
+			modifyPool: func(p *inf.InferencePool) {
+				p.Spec.EndpointPickerRef.Group = ptr.To(inf.Group("foo.example.com"))
 			},
-			includeSvc: true,
-			wantErrs:   1,
+			svc:      makeSvc(ns, svcName, 80, corev1.ProtocolTCP, corev1.ServiceTypeClusterIP),
+			wantErrs: 1,
 		},
 		{
 			name: "unsupported Kind",
-			modify: func(p *infextv1a2.InferencePool) {
-				p.Spec.EndpointPickerConfig.ExtensionRef.ExtensionReference.Kind = ptr.To(infextv1a2.Kind("ConfigMap"))
+			modifyPool: func(p *inf.InferencePool) {
+				p.Spec.EndpointPickerRef.Kind = inf.Kind(wellknown.ConfigMapGVK.Kind)
 			},
-			includeSvc: true,
-			wantErrs:   1,
+			svc:      makeSvc(ns, svcName, 80, corev1.ProtocolTCP, corev1.ServiceTypeClusterIP),
+			wantErrs: 1,
 		},
 		{
-			name: "port number too small",
-			modify: func(p *infextv1a2.InferencePool) {
-				p.Spec.EndpointPickerConfig.ExtensionRef.ExtensionReference.PortNumber = ptr.To(infextv1a2.PortNumber(0))
+			name: "port unspecified",
+			modifyPool: func(p *inf.InferencePool) {
+				p.Spec.EndpointPickerRef.Port = nil
 			},
-			includeSvc: true,
-			wantErrs:   1,
+			svc:      nil,
+			wantErrs: 1,
 		},
 		{
 			name: "service not found",
-			modify: func(p *infextv1a2.InferencePool) {
-				p.Spec.EndpointPickerConfig.ExtensionRef.ExtensionReference.Name = infextv1a2.ObjectName("missing-svc")
+			modifyPool: func(p *inf.InferencePool) {
+				p.Spec.EndpointPickerRef.Name = inf.ObjectName("missing-svc")
 			},
-			includeSvc: false,
-			wantErrs:   1,
+			svc:      nil,
+			wantErrs: 1,
 		},
 		{
 			name:       "happy path",
-			modify:     func(_ *infextv1a2.InferencePool) {},
-			includeSvc: true,
+			modifyPool: func(_ *inf.InferencePool) {},
+			svc:        makeSvc(ns, svcName, 80, corev1.ProtocolTCP, corev1.ServiceTypeClusterIP),
 			wantErrs:   0,
+		},
+		{
+			name:       "ExternalName service rejected",
+			modifyPool: func(_ *inf.InferencePool) {},
+			svc:        makeSvc(ns, svcName, 80, corev1.ProtocolTCP, corev1.ServiceTypeExternalName),
+			wantErrs:   1,
+		},
+		{
+			name:       "UDP port not accepted",
+			modifyPool: func(_ *inf.InferencePool) {},
+			svc:        makeSvc(ns, svcName, 80, corev1.ProtocolUDP, corev1.ServiceTypeClusterIP),
+			wantErrs:   1,
 		},
 	}
 
@@ -90,32 +84,82 @@ func TestValidatePool(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Build the pool
 			pool := makeBasePool(ns, svcName)
-			tc.modify(pool)
+			tc.modifyPool(pool)
 
 			// Collect only the Service input(s), since validatePool() only consumes the Service collection.
 			var inputs []any
-			if tc.includeSvc {
-				inputs = []any{
-					&corev1.Service{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      svcName,
-							Namespace: ns,
-						},
-					},
-				}
+			if tc.svc != nil {
+				inputs = append(inputs, tc.svc)
 			}
+			// Create a dummy LocalityPod
+			corePod := &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: ns,
+					Name:      "fake-pod",
+					Labels:    map[string]string{"foo": "bar"},
+				},
+				Status: corev1.PodStatus{
+					PodIP: "10.1.1.1",
+				},
+			}
+			fakeLP := krtcollections.LocalityPod{
+				Named:           krt.NewNamed(corePod),
+				AugmentedLabels: corePod.Labels,
+				Addresses:       []string{corePod.Status.PodIP},
+			}
+			inputs = append(inputs, fakeLP)
 
-			// Create the mock and grab the real krt.Collection[*corev1.Service].
+			// Create the mock and grab the Pod and Service collections.
 			mock := krttest.NewMock(t, inputs)
-			services := krttest.GetMockCollection[*corev1.Service](mock)
+			svcCol := krttest.GetMockCollection[*corev1.Service](mock)
+			podCol := krttest.GetMockCollection[krtcollections.LocalityPod](mock)
 
-			// Wait until the Service collection has synced.
-			services.WaitUntilSynced(context.Background().Done())
-
-			errs := validatePool(pool, services)
+			// Wait until the Pod and Service collections have synced.
+			svcCol.WaitUntilSynced(context.Background().Done())
+			podCol.WaitUntilSynced(context.Background().Done())
 
 			// Assert on the number of errors
-			assert.Len(t, errs, tc.wantErrs, "validatePool() errors = %v", errs)
+			errs := validatePool(pool, svcCol)
+			assert.Lenf(t, errs, tc.wantErrs,
+				"validatePool() returned %d errors: %v", len(errs), errs)
 		})
+	}
+}
+
+func makeBasePool(ns, svcName string) *inf.InferencePool {
+	return &inf.InferencePool{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      svcName,
+			Namespace: ns,
+		},
+		Spec: inf.InferencePoolSpec{
+			Selector: inf.LabelSelector{
+				MatchLabels: map[inf.LabelKey]inf.LabelValue{"foo": "bar"},
+			},
+			TargetPorts: []inf.Port{{Number: 9002}},
+			EndpointPickerRef: inf.EndpointPickerRef{
+				Group: ptr.To(inf.Group("")),
+				Kind:  inf.Kind(wellknown.ServiceKind),
+				Name:  inf.ObjectName(svcName),
+				Port:  &inf.Port{Number: inf.PortNumber(80)},
+			},
+		},
+	}
+}
+
+func makeSvc(ns, name string, port int32, proto corev1.Protocol, typ corev1.ServiceType) *corev1.Service {
+	return &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: ns,
+		},
+		Spec: corev1.ServiceSpec{
+			Type: typ,
+			Ports: []corev1.ServicePort{{
+				Name:     "test-port",
+				Port:     port,
+				Protocol: proto,
+			}},
+		},
 	}
 }

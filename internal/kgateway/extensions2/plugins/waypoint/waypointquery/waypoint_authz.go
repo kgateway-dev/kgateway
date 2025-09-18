@@ -11,6 +11,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
 // getRootNamespace sets the RootNamespace from settings.
@@ -35,7 +36,7 @@ func getRootNamespace(settingRootNamespace string) string {
 // kind: ServiceEntry with group: networking.istio.io in the same namespace.
 
 func buildAuthzTargetIndex(policies krt.Collection[*authcr.AuthorizationPolicy], rootNamespace string) krt.Index[ir.ObjectSource, *authcr.AuthorizationPolicy] {
-	return krt.NewIndex(policies, func(p *authcr.AuthorizationPolicy) []ir.ObjectSource {
+	return krtpkg.UnnamedIndex(policies, func(p *authcr.AuthorizationPolicy) []ir.ObjectSource {
 		var keys []ir.ObjectSource
 		for _, targetRef := range p.Spec.GetTargetRefs() {
 			if (targetRef.GetKind() == "Service" && (targetRef.GetGroup() == "" || targetRef.GetGroup() == "core")) ||
@@ -75,7 +76,8 @@ func (w *waypointQueries) GetAuthorizationPoliciesForGateway(
 	kctx krt.HandlerContext,
 	ctx context.Context,
 	gateway *gwapi.Gateway,
-	settingRootNamespace string) []*authcr.AuthorizationPolicy {
+	settingRootNamespace string,
+) []*authcr.AuthorizationPolicy {
 	rootNamespace := getRootNamespace(settingRootNamespace)
 	// Get policies targeting this gateway directly using the index
 	gwKey := ir.ObjectSource{

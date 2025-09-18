@@ -14,6 +14,7 @@ type BackendSpecApplyConfiguration struct {
 	Aws                 *AwsBackendApplyConfiguration                 `json:"aws,omitempty"`
 	Static              *StaticBackendApplyConfiguration              `json:"static,omitempty"`
 	DynamicForwardProxy *DynamicForwardProxyBackendApplyConfiguration `json:"dynamicForwardProxy,omitempty"`
+	MCP                 *MCPApplyConfiguration                        `json:"mcp,omitempty"`
 }
 
 // BackendSpecApplyConfiguration constructs a declarative configuration of the BackendSpec type for use with
@@ -59,5 +60,13 @@ func (b *BackendSpecApplyConfiguration) WithStatic(value *StaticBackendApplyConf
 // If called multiple times, the DynamicForwardProxy field is set to the value of the last call.
 func (b *BackendSpecApplyConfiguration) WithDynamicForwardProxy(value *DynamicForwardProxyBackendApplyConfiguration) *BackendSpecApplyConfiguration {
 	b.DynamicForwardProxy = value
+	return b
+}
+
+// WithMCP sets the MCP field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the MCP field is set to the value of the last call.
+func (b *BackendSpecApplyConfiguration) WithMCP(value *MCPApplyConfiguration) *BackendSpecApplyConfiguration {
+	b.MCP = value
 	return b
 }

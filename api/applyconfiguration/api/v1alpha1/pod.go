@@ -20,6 +20,8 @@ type PodApplyConfiguration struct {
 	TerminationGracePeriodSeconds *int                                    `json:"terminationGracePeriodSeconds,omitempty"`
 	ReadinessProbe                *v1.Probe                               `json:"readinessProbe,omitempty"`
 	LivenessProbe                 *v1.Probe                               `json:"livenessProbe,omitempty"`
+	TopologySpreadConstraints     []v1.TopologySpreadConstraint           `json:"topologySpreadConstraints,omitempty"`
+	ExtraVolumes                  []v1.Volume                             `json:"extraVolumes,omitempty"`
 }
 
 // PodApplyConfiguration constructs a declarative configuration of the Pod type for use with
@@ -135,5 +137,25 @@ func (b *PodApplyConfiguration) WithReadinessProbe(value v1.Probe) *PodApplyConf
 // If called multiple times, the LivenessProbe field is set to the value of the last call.
 func (b *PodApplyConfiguration) WithLivenessProbe(value v1.Probe) *PodApplyConfiguration {
 	b.LivenessProbe = &value
+	return b
+}
+
+// WithTopologySpreadConstraints adds the given value to the TopologySpreadConstraints field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the TopologySpreadConstraints field.
+func (b *PodApplyConfiguration) WithTopologySpreadConstraints(values ...v1.TopologySpreadConstraint) *PodApplyConfiguration {
+	for i := range values {
+		b.TopologySpreadConstraints = append(b.TopologySpreadConstraints, values[i])
+	}
+	return b
+}
+
+// WithExtraVolumes adds the given value to the ExtraVolumes field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the ExtraVolumes field.
+func (b *PodApplyConfiguration) WithExtraVolumes(values ...v1.Volume) *PodApplyConfiguration {
+	for i := range values {
+		b.ExtraVolumes = append(b.ExtraVolumes, values[i])
+	}
 	return b
 }

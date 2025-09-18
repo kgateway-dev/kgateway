@@ -5,11 +5,11 @@ tiktoken
 langchain_core
 langchain
 langchain_community
-opentelemetry-instrumentation-fastapi
+opentelemetry-instrumentation-fastapi==0.56b0
 pyright
 ruff==0.9.0 # This should match the version in .github/workflows/lint-python.yaml
-opentelemetry.sdk
-opentelemetry-exporter-otlp
+opentelemetry-sdk~=1.35.0
+opentelemetry-exporter-otlp~=1.35.0
 presidio_analyzer
 presidio_anonymizer
 prometheus_client

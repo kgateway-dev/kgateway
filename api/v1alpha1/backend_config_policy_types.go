@@ -5,14 +5,18 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwv1alpha3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 )
 
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=backendconfigpolicies,verbs=get;list;watch
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=backendconfigpolicies/status,verbs=get;update;patch
 
+// +kubebuilder:printcolumn:name="Accepted",type=string,JSONPath=".status.ancestors[*].conditions[?(@.type=='Accepted')].status",description="Backend config policy acceptance status"
+// +kubebuilder:printcolumn:name="Attached",type=string,JSONPath=".status.ancestors[*].conditions[?(@.type=='Attached')].status",description="Backend config policy attachment status"
+
 // +genclient
 // +kubebuilder:object:root=true
-// +kubebuilder:metadata:labels={app=kgateway,app.kubernetes.io/name=kgateway}
+// +kubebuilder:metadata:labels={app=kgateway,app.kubernetes.io/name=kgateway,gateway.networking.k8s.io/policy=Direct}
 // +kubebuilder:resource:categories=kgateway
 // +kubebuilder:subresource:status
 type BackendConfigPolicy struct {
@@ -47,7 +51,7 @@ type BackendConfigPolicySpec struct {
 
 	// The timeout for new network connections to hosts in the cluster.
 	// +optional
-	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="connectTimeout must be a valid duration string"
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	ConnectTimeout *metav1.Duration `json:"connectTimeout,omitempty"`
 
 	// Soft limit on size of the cluster's connections read and write buffers.
@@ -86,6 +90,10 @@ type BackendConfigPolicySpec struct {
 	// HealthCheck contains the options necessary to configure the health check.
 	// +optional
 	HealthCheck *HealthCheck `json:"healthCheck,omitempty"`
+
+	// OutlierDetection contains the options necessary to configure passive health checking.
+	// +optional
+	OutlierDetection *OutlierDetection `json:"outlierDetection,omitempty"`
 }
 
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-http1protocoloptions) for more details.
@@ -95,10 +103,10 @@ type Http1ProtocolOptions struct {
 	// +optional
 	EnableTrailers *bool `json:"enableTrailers,omitempty"`
 
-	// The format of the header key.
+	// PreserveHttp1HeaderCase determines whether to preserve the case of HTTP1 response headers.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/header_casing
 	// +optional
-	// +kubebuilder:validation:Enum=ProperCaseHeaderKeyFormat;PreserveCaseHeaderKeyFormat
-	HeaderFormat *HeaderFormat `json:"headerFormat,omitempty"`
+	PreserveHttp1HeaderCase *bool `json:"preserveHttp1HeaderCase,omitempty"`
 
 	// Allows invalid HTTP messaging. When this option is false, then Envoy will terminate
 	// HTTP/1.1 connections upon receiving an invalid HTTP message. However,
@@ -108,17 +116,8 @@ type Http1ProtocolOptions struct {
 	OverrideStreamErrorOnInvalidHttpMessage *bool `json:"overrideStreamErrorOnInvalidHttpMessage,omitempty"`
 }
 
-const (
-	ProperCaseHeaderKeyFormat   HeaderFormat = "ProperCaseHeaderKeyFormat"
-	PreserveCaseHeaderKeyFormat HeaderFormat = "PreserveCaseHeaderKeyFormat"
-)
-
-type HeaderFormat string
-
 // CommonHttpProtocolOptions are options that are applicable to both HTTP1 and HTTP2 requests.
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-httpprotocoloptions) for more details.
-// +kubebuilder:validation:XValidation:message="idleTimeout must be a valid duration string (e.g. \"1s\", \"500ms\")",rule="(!has(self.idleTimeout) || (has(self.idleTimeout) && self.idleTimeout.matches('^([0-9]{1,5}(h|m|s|ms)){1,4}$')))"
-// +kubebuilder:validation:XValidation:message="maxStreamDuration must be a valid duration string (e.g. \"1s\", \"500ms\")",rule="(!has(self.maxStreamDuration) || (has(self.maxStreamDuration) && self.maxStreamDuration.matches('^([0-9]{1,5}(h|m|s|ms)){1,4}$')))"
 type CommonHttpProtocolOptions struct {
 	// The idle timeout for connections. The idle timeout is defined as the
 	// period in which there are no active requests. When the
@@ -129,7 +128,7 @@ type CommonHttpProtocolOptions struct {
 	//	Disabling this timeout has a highly likelihood of yielding connection leaks due to lost TCP
 	//	FIN packets, etc.
 	// +optional
-	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="idleTimeout must be a valid duration string"
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	IdleTimeout *metav1.Duration `json:"idleTimeout,omitempty"`
 
 	// Specifies the maximum number of headers that the connection will accept.
@@ -141,7 +140,7 @@ type CommonHttpProtocolOptions struct {
 	// Total duration to keep alive an HTTP request/response stream. If the time limit is reached the stream will be
 	// reset independent of any other timeouts. If not specified, this value is not set.
 	// +optional
-	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="maxStreamDuration must be a valid duration string"
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	MaxStreamDuration *metav1.Duration `json:"maxStreamDuration,omitempty"`
 
 	// Maximum requests for a single upstream connection.
@@ -155,14 +154,14 @@ type Http2ProtocolOptions struct {
 	// Defaults to 268435456 (256 * 1024 * 1024).
 	// Values can be specified with units like "64Ki".
 	// +optional
-	// +kubebuilder:validation:XValidation:message="InitialStreamWindowSize must be between 65535 and 2147483647 bytes (inclusive)",rule="quantity(self).isGreaterThan(quantity('65534')) && quantity(self).isLessThan(quantity('2147483648'))"
+	// +kubebuilder:validation:XValidation:message="InitialStreamWindowSize must be between 65535 and 2147483647 bytes (inclusive)",rule="(type(self) == int && int(self) >= 65535 && int(self) <= 2147483647) || (type(self) == string && quantity(self).isGreaterThan(quantity('65534')) && quantity(self).isLessThan(quantity('2147483648')))"
 	InitialStreamWindowSize *resource.Quantity `json:"initialStreamWindowSize,omitempty"`
 
 	// InitialConnectionWindowSize is similar to InitialStreamWindowSize, but for the connection level.
 	// Same range and default value as InitialStreamWindowSize.
 	// Values can be specified with units like "64Ki".
 	// +optional
-	// +kubebuilder:validation:XValidation:message="InitialConnectionWindowSize must be between 65535 and 2147483647 bytes (inclusive)",rule="quantity(self).isGreaterThan(quantity('65534')) && quantity(self).isLessThan(quantity('2147483648'))"
+	// +kubebuilder:validation:XValidation:message="InitialConnectionWindowSize must be between 65535 and 2147483647 bytes (inclusive)",rule="(type(self) == int && int(self) >= 65535 && int(self) <= 2147483647) || (type(self) == string && quantity(self).isGreaterThan(quantity('65534')) && quantity(self).isLessThan(quantity('2147483648')))"
 	InitialConnectionWindowSize *resource.Quantity `json:"initialConnectionWindowSize,omitempty"`
 
 	// The maximum number of concurrent streams that the connection can have.
@@ -184,18 +183,18 @@ type TCPKeepalive struct {
 
 	// The number of seconds a connection needs to be idle before keep-alive probes start being sent.
 	// +optional
-	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="keepAliveTime must be a valid duration string"
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1s')",message="keepAliveTime must be at least 1 second"
 	KeepAliveTime *metav1.Duration `json:"keepAliveTime,omitempty"`
 
 	// The number of seconds between keep-alive probes.
 	// +optional
-	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="keepAliveInterval must be a valid duration string"
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1s')",message="keepAliveInterval must be at least 1 second"
 	KeepAliveInterval *metav1.Duration `json:"keepAliveInterval,omitempty"`
 }
 
-// +kubebuilder:validation:ExactlyOneOf=secretRef;tlsFiles
+// +kubebuilder:validation:ExactlyOneOf=secretRef;tlsFiles;insecureSkipVerify;wellKnownCACertificates
 type TLS struct {
 	// Reference to the TLS secret containing the certificate, key, and optionally the root CA.
 	// +optional
@@ -205,9 +204,21 @@ type TLS struct {
 	// +optional
 	TLSFiles *TLSFiles `json:"tlsFiles,omitempty"`
 
+	// WellKnownCACertificates specifies whether to use a well-known set of CA
+	// certificates for validating the backend's certificate chain. Currently,
+	// only the system certificate pool is supported via SDS.
+	// +optional
+	WellKnownCACertificates *gwv1alpha3.WellKnownCACertificatesType `json:"wellKnownCACertificates,omitempty"`
+
+	// InsecureSkipVerify originates TLS but skips verification of the backend's certificate.
+	// WARNING: This is an insecure option that should only be used if the risks are understood.
+	// +optional
+	InsecureSkipVerify *bool `json:"insecureSkipVerify,omitempty"`
+
 	// The SNI domains that should be considered for TLS connection
 	// +optional
-	Sni string `json:"sni,omitempty"`
+	// +kubebuilder:validation:MinLength=1
+	Sni *string `json:"sni,omitempty"`
 
 	// Verify that the Subject Alternative Name in the peer certificate is one of the specified values.
 	// note that a root_ca must be provided if this option is used.
@@ -229,11 +240,11 @@ type TLS struct {
 	// +optional
 	AllowRenegotiation *bool `json:"allowRenegotiation,omitempty"`
 
-	// If the TLS config has the ca.crt (root CA) provided, kgateway uses it to perform mTLS by default.
-	// Set oneWayTls to true to disable mTLS in favor of server-only TLS (one-way TLS), even if kgateway has the root CA.
+	// If the TLS config has the tls cert and key provided, kgateway uses it to perform mTLS by default.
+	// Set simpleTLS to true to disable mTLS in favor of server-only TLS (one-way TLS), even if kgateway has the client cert.
 	// If unset, defaults to false.
 	// +optional
-	OneWayTLS *bool `json:"oneWayTLS,omitempty"`
+	SimpleTLS *bool `json:"simpleTLS,omitempty"`
 }
 
 // TLSVersion defines the TLS version.
@@ -267,16 +278,19 @@ type Parameters struct {
 // +kubebuilder:validation:XValidation:rule="has(self.tlsCertificate) || has(self.tlsKey) || has(self.rootCA)",message="At least one of tlsCertificate, tlsKey, or rootCA must be set in TLSFiles"
 type TLSFiles struct {
 	// +optional
-	TLSCertificate string `json:"tlsCertificate,omitempty"`
+	// +kubebuilder:validation:MinLength=1
+	TLSCertificate *string `json:"tlsCertificate,omitempty"`
 
 	// +optional
-	TLSKey string `json:"tlsKey,omitempty"`
+	// +kubebuilder:validation:MinLength=1
+	TLSKey *string `json:"tlsKey,omitempty"`
 
 	// +optional
-	RootCA string `json:"rootCA,omitempty"`
+	// +kubebuilder:validation:MinLength=1
+	RootCA *string `json:"rootCA,omitempty"`
 }
 
-// +kubebuilder:validation:AtMostOneOf=leastRequest;roundRobin;ringHash;maglev;random
+// +kubebuilder:validation:ExactlyOneOf=leastRequest;roundRobin;ringHash;maglev;random
 type LoadBalancer struct {
 	// HealthyPanicThreshold configures envoy's panic threshold percentage between 0-100. Once the number of non-healthy hosts
 	// reaches this percentage, envoy disregards health information.
@@ -290,7 +304,7 @@ type LoadBalancer struct {
 	// this help lower cpu usage when endpoint change rate is high. defaults to 1 second.
 	// Set to 0 to disable and have changes applied immediately.
 	// +optional
-	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="updateMergeWindow must be a valid duration string"
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	UpdateMergeWindow *metav1.Duration `json:"updateMergeWindow,omitempty"`
 
 	// LeastRequest configures the least request load balancer type.
@@ -318,12 +332,6 @@ type LoadBalancer struct {
 	// +optional
 	// +kubebuilder:validation:Enum=WeightedLb
 	LocalityType *LocalityType `json:"localityType,omitempty"`
-
-	// UseHostnameForHashing specifies whether to use the hostname instead of the resolved IP address for hashing.
-	// Defaults to false.
-	// +optional
-	// +default=false
-	UseHostnameForHashing bool `json:"useHostnameForHashing,omitempty"`
 
 	// If set to true, the load balancer will drain connections when the host set changes.
 	//
@@ -369,41 +377,63 @@ type LoadBalancerRingHashConfig struct {
 	// MaximumRingSize is the maximum size of the ring.
 	// +optional
 	MaximumRingSize *uint64 `json:"maximumRingSize,omitempty"`
+
+	// UseHostnameForHashing specifies whether to use the hostname instead of the resolved IP address for hashing.
+	// Defaults to false.
+	// +optional
+	UseHostnameForHashing *bool `json:"useHostnameForHashing,omitempty"`
+
+	// HashPolicies specifies the hash policies for hashing load balancers (RingHash, Maglev).
+	// +optional
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=16
+	HashPolicies []*HashPolicy `json:"hashPolicies,omitempty"`
+}
+
+type LoadBalancerMaglevConfig struct {
+	// UseHostnameForHashing specifies whether to use the hostname instead of the resolved IP address for hashing.
+	// Defaults to false.
+	// +optional
+	UseHostnameForHashing *bool `json:"useHostnameForHashing,omitempty"`
+
+	// HashPolicies specifies the hash policies for hashing load balancers (RingHash, Maglev).
+	// +optional
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=16
+	HashPolicies []*HashPolicy `json:"hashPolicies,omitempty"`
 }
 
 type (
-	LoadBalancerMaglevConfig struct{}
 	LoadBalancerRandomConfig struct{}
+	SlowStart                struct {
+		// Represents the size of slow start window.
+		// If set, the newly created host remains in slow start mode starting from its creation time
+		// for the duration of slow start window.
+		// +optional
+		// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+		Window *metav1.Duration `json:"window,omitempty"`
+
+		// This parameter controls the speed of traffic increase over the slow start window. Defaults to 1.0,
+		// so that endpoint would get linearly increasing amount of traffic.
+		// When increasing the value for this parameter, the speed of traffic ramp-up increases non-linearly.
+		// The value of aggression parameter should be greater than 0.0.
+		// By tuning the parameter, is possible to achieve polynomial or exponential shape of ramp-up curve.
+		//
+		// During slow start window, effective weight of an endpoint would be scaled with time factor and aggression:
+		// `new_weight = weight * max(min_weight_percent, time_factor ^ (1 / aggression))`,
+		// where `time_factor=(time_since_start_seconds / slow_start_time_seconds)`.
+		//
+		// As time progresses, more and more traffic would be sent to endpoint, which is in slow start window.
+		// Once host exits slow start, time_factor and aggression no longer affect its weight.
+		// +optional
+		// +kubebuilder:validation:XValidation:rule="(self.matches('^-?(?:[0-9]+(?:\\\\.[0-9]*)?|\\\\.[0-9]+)$') && double(self) > 0.0)",message="Aggression, if specified, must be a string representing a number greater than 0.0"
+		Aggression *string `json:"aggression,omitempty"`
+
+		// Minimum weight percentage of an endpoint during slow start.
+		// +optional
+		MinWeightPercent *uint32 `json:"minWeightPercent,omitempty"`
+	}
 )
-
-type SlowStart struct {
-	// Represents the size of slow start window.
-	// If set, the newly created host remains in slow start mode starting from its creation time
-	// for the duration of slow start window.
-	// +optional
-	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="window must be a valid duration string"
-	Window *metav1.Duration `json:"window,omitempty"`
-
-	// This parameter controls the speed of traffic increase over the slow start window. Defaults to 1.0,
-	// so that endpoint would get linearly increasing amount of traffic.
-	// When increasing the value for this parameter, the speed of traffic ramp-up increases non-linearly.
-	// The value of aggression parameter should be greater than 0.0.
-	// By tuning the parameter, is possible to achieve polynomial or exponential shape of ramp-up curve.
-	//
-	// During slow start window, effective weight of an endpoint would be scaled with time factor and aggression:
-	// `new_weight = weight * max(min_weight_percent, time_factor ^ (1 / aggression))`,
-	// where `time_factor=(time_since_start_seconds / slow_start_time_seconds)`.
-	//
-	// As time progresses, more and more traffic would be sent to endpoint, which is in slow start window.
-	// Once host exits slow start, time_factor and aggression no longer affect its weight.
-	// +optional
-	// +kubebuilder:validation:XValidation:rule="self == \"\" || (self.matches('^-?(?:[0-9]+(?:\\\\.[0-9]*)?|\\\\.[0-9]+)$') && double(self) > 0.0)",message="Aggression, if specified, must be a string representing a number greater than 0.0"
-	Aggression string `json:"aggression,omitempty"`
-
-	// Minimum weight percentage of an endpoint during slow start.
-	// +optional
-	MinWeightPercent *uint32 `json:"minWeightPercent,omitempty"`
-}
 
 type LocalityType string
 
@@ -422,12 +452,12 @@ type HealthCheck struct {
 	// Timeout is time to wait for a health check response. If the timeout is reached the
 	// health check attempt will be considered a failure.
 	// +required
-	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="timeout must be a valid duration string"
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	Timeout *metav1.Duration `json:"timeout"`
 
 	// Interval is the time between health checks.
 	// +required
-	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('0s')",message="interval must be a valid duration string"
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	Interval *metav1.Duration `json:"interval"`
 
 	// UnhealthyThreshold is the number of consecutive failed health checks that will be considered
@@ -480,3 +510,102 @@ type HealthCheckGrpc struct {
 	// +optional
 	Authority *string `json:"authority,omitempty"`
 }
+
+// OutlierDetection contains the options to configure passive health checks.
+// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/outlier#outlier-detection) for more details.
+// +optional
+type OutlierDetection struct {
+	// The number of consecutive server-side error responses (for HTTP traffic,
+	// 5xx responses; for TCP traffic, connection failures; etc.) before an
+	// ejection occurs. Defaults to 5. If this is zero, consecutive 5xx passive
+	// health checks will be disabled. In the future, other types of passive
+	// health checking might be added, but none will be enabled by default.
+	// +optional
+	// +kubebuilder:default=5
+	Consecutive5xx *uint32 `json:"consecutive5xx,omitempty"`
+
+	// The time interval between ejection analysis sweeps. This can result in
+	// both new ejections as well as hosts being returned to service. Defaults
+	// to 10s.
+	// +optional
+	// +kubebuilder:default="10s"
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	Interval *metav1.Duration `json:"interval,omitempty"`
+
+	// The base time that a host is ejected for. The real time is equal to the
+	// base time multiplied by the number of times the host has been ejected.
+	// Defaults to 30s.
+	// +optional
+	// +kubebuilder:default="30s"
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	BaseEjectionTime *metav1.Duration `json:"baseEjectionTime,omitempty"`
+
+	// The maximum % of an upstream cluster that can be ejected due to outlier
+	// detection. Defaults to 10%.
+	// +optional
+	// +kubebuilder:default=10
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	MaxEjectionPercent *uint32 `json:"maxEjectionPercent,omitempty"`
+}
+
+// +kubebuilder:validation:ExactlyOneOf=header;cookie;sourceIP
+type HashPolicy struct {
+	// Header specifies a header's value as a component of the hash key.
+	// +optional
+	Header *Header `json:"header,omitempty"`
+
+	// Cookie specifies a given cookie as a component of the hash key.
+	// +optional
+	Cookie *Cookie `json:"cookie,omitempty"`
+
+	// SourceIP specifies whether to use the request's source IP address as a component of the hash key.
+	// +optional
+	SourceIP *SourceIP `json:"sourceIP,omitempty"`
+
+	// Terminal, if set, and a hash key is available after evaluating this policy, will cause Envoy to skip the subsequent policies and
+	// use the key as it is.
+	// This is useful for defining "fallback" policies and limiting the time Envoy spends generating hash keys.
+	// +optional
+	Terminal *bool `json:"terminal,omitempty"`
+}
+
+type Header struct {
+	// Name is the name of the header to use as a component of the hash key.
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name"`
+}
+
+type Cookie struct {
+	// Name of the cookie.
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name"`
+
+	// Path is the name of the path for the cookie.
+	// +optional
+	Path *string `json:"path,omitempty"`
+
+	// TTL specifies the time to live of the cookie.
+	// If specified, a cookie with the TTL will be generated if the cookie is not present.
+	// If the TTL is present and zero, the generated cookie will be a session cookie.
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	TTL *metav1.Duration `json:"ttl,omitempty"`
+
+	// Secure specifies whether the cookie is secure.
+	// If true, the cookie will only be sent over HTTPS.
+	// +optional
+	Secure *bool `json:"secure,omitempty"`
+
+	// HttpOnly specifies whether the cookie is HTTP only, i.e. not accessible to JavaScript.
+	// +optional
+	HttpOnly *bool `json:"httpOnly,omitempty"`
+
+	// SameSite controls cross-site sending of cookies.
+	// Supported values are Strict, Lax, and None.
+	// +optional
+	// +kubebuilder:validation:Enum=Strict;Lax;None
+	SameSite *string `json:"sameSite,omitempty"`
+}
+
+type SourceIP struct{}

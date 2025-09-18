@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"istio.io/istio/pkg/kube/krt"
@@ -14,7 +15,9 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwxv1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
+	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	pluginsdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
@@ -128,6 +131,13 @@ type BackendObjectIR struct {
 
 	// Name is the pre-calculated resource name. used as the krt resource name.
 	resourceName string
+
+	// TrafficDistribution is the desired traffic distribution for the backend.
+	// Default is any (no priority).
+	TrafficDistribution wellknown.TrafficDistribution
+
+	// DisableIstioAutoMTLS indicates if Istio auto-mTLS should be disabled for this backend
+	DisableIstioAutoMTLS bool
 }
 
 // NewBackendObjectIR creates a new BackendObjectIR with pre-calculated resource name
@@ -161,6 +171,7 @@ func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
 	objVersionEq := versionEquals(c.Obj, in.Obj)
 	polEq := c.AttachedPolicies.Equals(in.AttachedPolicies)
 	nameEq := c.resourceName == in.resourceName
+	disableIstioAutoMTLSEq := c.DisableIstioAutoMTLS == in.DisableIstioAutoMTLS
 
 	// objIr may currently be nil in the case of k8s Services
 	// TODO: add an IR for Services to avoid the need for this
@@ -170,7 +181,7 @@ func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
 		objIrEq = c.ObjIr.Equals(in.ObjIr)
 	}
 
-	return objEq && objVersionEq && objIrEq && polEq && nameEq
+	return objEq && objVersionEq && objIrEq && polEq && nameEq && disableIstioAutoMTLSEq
 }
 
 func (c BackendObjectIR) ClusterName() string {
@@ -241,6 +252,7 @@ func (l Secret) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// TODO: why is this in backend.go?
 type Listener struct {
 	gwv1.Listener
 	Parent            client.Object
@@ -258,6 +270,7 @@ func (listener Listener) GetParentReporter(reporter pluginsdkreporter.Reporter) 
 	panic("Unknown parent type")
 }
 
+// TODO: need to reevaluate DeepEqual usage
 func (c Listener) Equals(in Listener) bool {
 	return reflect.DeepEqual(c, in)
 }
@@ -321,12 +334,16 @@ func errorsEqual(a, b error) bool {
 	return a.Error() == b.Error()
 }
 
+// TODO: why is this in backend.go?
 type ListenerSet struct {
 	ObjectSource `json:",inline"`
 	Listeners    Listeners
 	Obj          *gwxv1.XListenerSet
 	// ListenerSet polices are attached to the individual listeners in addition
 	// to their specific policies
+
+	// Err contains any error encountered during ListenerSet construction to be used for status reporting
+	Err error
 }
 
 func (c ListenerSet) ResourceName() string {
@@ -334,7 +351,10 @@ func (c ListenerSet) ResourceName() string {
 }
 
 func (c ListenerSet) Equals(in ListenerSet) bool {
-	return c.ObjectSource.Equals(in.ObjectSource) && versionEquals(c.Obj, in.Obj) && c.Listeners.Equals(in.Listeners)
+	return c.ObjectSource.Equals(in.ObjectSource) &&
+		versionEquals(c.Obj, in.Obj) &&
+		c.Listeners.Equals(in.Listeners) &&
+		errorsEqual(c.Err, in.Err)
 }
 
 type ListenerSets []ListenerSet
@@ -363,4 +383,26 @@ func (c Listeners) Equals(in Listeners) bool {
 		}
 	}
 	return true
+}
+
+// ParseObjectAnnotations parses common annotations from a Kubernetes object
+// and sets the corresponding fields on the BackendObjectIR. If parsing fails, an error is added
+// to the backend's Errors slice.
+func ParseObjectAnnotations(backend *BackendObjectIR, obj metav1.Object) {
+	if obj == nil {
+		return
+	}
+
+	annotations := obj.GetAnnotations()
+
+	// Parse Istio auto-mTLS annotation
+	if val, exists := annotations[apiannotations.DisableIstioAutoMTLS]; exists {
+		if disabled, err := strconv.ParseBool(val); err != nil {
+			// Add error to backend.Errors instead of just logging
+			backend.Errors = append(backend.Errors, fmt.Errorf("invalid annotation %s value %q: %w", apiannotations.DisableIstioAutoMTLS, val, err))
+		} else {
+			// Store the parsed value
+			backend.DisableIstioAutoMTLS = disabled
+		}
+	}
 }

@@ -4,12 +4,15 @@ package v1alpha1
 
 import (
 	resource "k8s.io/apimachinery/pkg/api/resource"
+
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
 // BufferApplyConfiguration represents a declarative configuration of the Buffer type for use
 // with apply.
 type BufferApplyConfiguration struct {
-	MaxRequestSize *resource.Quantity `json:"maxRequestSize,omitempty"`
+	MaxRequestSize *resource.Quantity         `json:"maxRequestSize,omitempty"`
+	Disable        *apiv1alpha1.PolicyDisable `json:"disable,omitempty"`
 }
 
 // BufferApplyConfiguration constructs a declarative configuration of the Buffer type for use with
@@ -23,5 +26,13 @@ func Buffer() *BufferApplyConfiguration {
 // If called multiple times, the MaxRequestSize field is set to the value of the last call.
 func (b *BufferApplyConfiguration) WithMaxRequestSize(value resource.Quantity) *BufferApplyConfiguration {
 	b.MaxRequestSize = &value
+	return b
+}
+
+// WithDisable sets the Disable field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Disable field is set to the value of the last call.
+func (b *BufferApplyConfiguration) WithDisable(value apiv1alpha1.PolicyDisable) *BufferApplyConfiguration {
+	b.Disable = &value
 	return b
 }

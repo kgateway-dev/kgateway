@@ -19,12 +19,13 @@ import (
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	kmetrics "github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections/metrics"
+	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
+	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 )
 
 // registertypes for common collections
@@ -101,7 +102,7 @@ func InitCollections(
 	istioClient kube.Client,
 	ourClient versioned.Interface,
 	refgrants *RefGrantIndex,
-	krtopts krtutil.KrtOptions,
+	krtopts krtinternal.KrtOptions,
 	globalSettings settings.Settings,
 ) (*GatewayIndex, *RoutesIndex, *BackendIndex, krt.Collection[ir.EndpointsForBackend]) {
 	registerTypes(ourClient)
@@ -111,40 +112,35 @@ func InitCollections(
 
 	// create the KRT clients, remember to also register any needed types in the type registration setup.
 	httpRoutes := krt.WrapClient(kclient.NewFiltered[*gwv1.HTTPRoute](istioClient, filter), krtopts.ToOptions("HTTPRoute")...)
-	metrics.RegisterEvents(httpRoutes, func(o krt.Event[*gwv1.HTTPRoute]) {
-		gwResourceMetricEventHandler(o, "HTTPRoute")
-	})
+	metrics.RegisterEvents(httpRoutes, kmetrics.GetResourceMetricEventHandler[*gwv1.HTTPRoute]())
 
 	tcproutes := krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TCPRoute](istioClient, gvr.TCPRoute, kubetypes.StandardInformer, filter), krtopts.ToOptions("TCPRoute")...)
-	metrics.RegisterEvents(tcproutes, func(o krt.Event[*gwv1a2.TCPRoute]) {
-		gwResourceMetricEventHandler(o, "TCPRoute")
-	})
+	metrics.RegisterEvents(tcproutes, kmetrics.GetResourceMetricEventHandler[*gwv1a2.TCPRoute]())
 
 	tlsRoutes := krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TLSRoute](istioClient, gvr.TLSRoute, kubetypes.StandardInformer, filter), krtopts.ToOptions("TLSRoute")...)
-	metrics.RegisterEvents(tlsRoutes, func(o krt.Event[*gwv1a2.TLSRoute]) {
-		gwResourceMetricEventHandler(o, "TLSRoute")
-	})
+	metrics.RegisterEvents(tlsRoutes, kmetrics.GetResourceMetricEventHandler[*gwv1a2.TLSRoute]())
 
 	grpcRoutes := krt.WrapClient(kclient.NewFiltered[*gwv1.GRPCRoute](istioClient, filter), krtopts.ToOptions("GRPCRoute")...)
-	metrics.RegisterEvents(grpcRoutes, func(o krt.Event[*gwv1.GRPCRoute]) {
-		gwResourceMetricEventHandler(o, "GRPCRoute")
-	})
+	metrics.RegisterEvents(grpcRoutes, kmetrics.GetResourceMetricEventHandler[*gwv1.GRPCRoute]())
 
 	kubeRawGateways := krt.WrapClient(kclient.NewFiltered[*gwv1.Gateway](istioClient, filter), krtopts.ToOptions("KubeGateways")...)
-	metrics.RegisterEvents(kubeRawGateways, func(o krt.Event[*gwv1.Gateway]) {
-		gwResourceMetricEventHandler(o, "Gateway")
-	})
+	metrics.RegisterEvents(kubeRawGateways, kmetrics.GetResourceMetricEventHandler[*gwv1.Gateway]())
 
 	kubeRawListenerSets := krt.WrapClient(kclient.NewDelayedInformer[*gwxv1a1.XListenerSet](istioClient, wellknown.XListenerSetGVR, kubetypes.StandardInformer, filter), krtopts.ToOptions("KubeListenerSets")...)
-	metrics.RegisterEvents(kubeRawListenerSets, func(o krt.Event[*gwxv1a1.XListenerSet]) {
-		gwResourceMetricEventHandler(o, "XListenerSet")
-	})
+	metrics.RegisterEvents(kubeRawListenerSets, kmetrics.GetResourceMetricEventHandler[*gwxv1a1.XListenerSet]())
 
 	//nolint:forbidigo // ObjectFilter is not needed for this client as it is cluster scoped
 	gatewayClasses := krt.WrapClient(kclient.New[*gwv1.GatewayClass](istioClient), krtopts.ToOptions("KubeGatewayClasses")...)
+
 	namespaces, _ := NewNamespaceCollection(ctx, istioClient, krtopts)
 
 	policies := NewPolicyIndex(krtopts, plugins.ContributesPolicies, globalSettings)
+	for _, plugin := range plugins.ContributesPolicies {
+		if plugin.Policies != nil {
+			metrics.RegisterEvents(plugin.Policies, kmetrics.GetResourceMetricEventHandler[ir.PolicyWrapper]())
+		}
+	}
+
 	backendIndex := NewBackendIndex(krtopts, policies, refgrants)
 	initBackends(plugins, backendIndex)
 	endpointIRs := initEndpoints(plugins, krtopts)
@@ -162,7 +158,7 @@ func initBackends(plugins extensionsplug.Plugin, backendIndex *BackendIndex) {
 	}
 }
 
-func initEndpoints(plugins extensionsplug.Plugin, krtopts krtutil.KrtOptions) krt.Collection[ir.EndpointsForBackend] {
+func initEndpoints(plugins extensionsplug.Plugin, krtopts krtinternal.KrtOptions) krt.Collection[ir.EndpointsForBackend] {
 	allEndpoints := []krt.Collection[ir.EndpointsForBackend]{}
 	for _, plugin := range plugins.ContributesBackends {
 		if plugin.Endpoints != nil {

@@ -56,27 +56,7 @@ func (s *slogAdapterForEnvoy) Errorf(format string, args ...interface{}) {
 	}
 }
 
-func NewControlPlane(
-	ctx context.Context,
-	bindAddr net.Addr,
-	callbacks xdsserver.Callbacks,
-) (envoycache.SnapshotCache, error) {
-	lis, err := net.Listen(bindAddr.Network(), bindAddr.String())
-	if err != nil {
-		return nil, err
-	}
-	snapshotCache, grpcServer := NewControlPlaneWithListener(ctx, lis, callbacks)
-	go func() {
-		<-ctx.Done()
-		grpcServer.GracefulStop()
-	}()
-	return snapshotCache, err
-}
-
-func NewControlPlaneWithListener(ctx context.Context,
-	lis net.Listener,
-	callbacks xdsserver.Callbacks,
-) (envoycache.SnapshotCache, *grpc.Server) {
+func NewControlPlane(ctx context.Context, lis net.Listener, callbacks xdsserver.Callbacks) envoycache.SnapshotCache {
 	baseLogger := slog.Default().With("component", "envoy-controlplane")
 	envoyLoggerAdapter := &slogAdapterForEnvoy{logger: baseLogger}
 
@@ -107,5 +87,10 @@ func NewControlPlaneWithListener(ctx context.Context,
 
 	go grpcServer.Serve(lis)
 
-	return snapshotCache, grpcServer
+	go func() {
+		<-ctx.Done()
+		grpcServer.GracefulStop()
+	}()
+
+	return snapshotCache
 }

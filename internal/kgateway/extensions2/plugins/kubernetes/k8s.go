@@ -2,26 +2,25 @@ package kubernetes
 
 import (
 	"context"
-	"fmt"
 
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"knative.dev/pkg/network"
-
-	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	"istio.io/api/annotation"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
 const BackendClusterPrefix = "kube"
@@ -32,12 +31,12 @@ func NewPlugin(ctx context.Context, commonCol *common.CommonCollections) extensi
 		kclient.Filter{ObjectFilter: commonCol.Client.ObjectFilter()},
 	)
 	endpointSlices := krt.WrapClient(epSliceClient, commonCol.KrtOpts.ToOptions("EndpointSlices")...)
-	return NewPluginFromCollections(ctx, commonCol.KrtOpts, commonCol.Pods, commonCol.Services, endpointSlices, commonCol.Settings)
+	return NewPluginFromCollections(ctx, commonCol.KrtOpts, commonCol.LocalityPods, commonCol.Services, endpointSlices, commonCol.Settings)
 }
 
 func NewPluginFromCollections(
 	ctx context.Context,
-	krtOpts krtutil.KrtOptions,
+	krtOpts krtinternal.KrtOptions,
 	pods krt.Collection[krtcollections.LocalityPod],
 	services krt.Collection[*corev1.Service],
 	endpointSlices krt.Collection[*discoveryv1.EndpointSlice],
@@ -58,7 +57,7 @@ func NewPluginFromCollections(
 		ContributesBackends: map[schema.GroupKind]extensionsplug.BackendPlugin{
 			wellknown.ServiceGVK.GroupKind(): {
 				BackendInit: ir.BackendInit{
-					InitBackend: processBackend,
+					InitEnvoyBackend: processBackend,
 				},
 				Endpoints: k8sServiceEndpoints,
 				Backends:  k8sServiceBackends,
@@ -82,20 +81,33 @@ func BuildServiceBackendObjectIR(svc *corev1.Service, svcPort int32, svcProtocol
 	backend.Obj = svc
 	backend.AppProtocol = ir.ParseAppProtocol(&svcProtocol)
 	backend.GvPrefix = BackendClusterPrefix
-	// TODO: reevaluate knative dep, dedupe with pkg/utils/kubeutils/dns.go
-	backend.CanonicalHostname = fmt.Sprintf("%s.%s.svc.%s", svc.Name, svc.Namespace, network.GetClusterDomainName())
+	backend.CanonicalHostname = kubeutils.GetServiceHostname(svc.Name, svc.Namespace)
+
+	// If the trafficDistribution is specified in the spec, use that.
+	// If both annotations and spec are specified, the spec takes precedence.
+	// The field was added as beta in Kubernetes 1.31
+	if svc.Spec.TrafficDistribution != nil {
+		backend.TrafficDistribution = wellknown.ParseTrafficDistribution(*svc.Spec.TrafficDistribution)
+	} else if val, ok := svc.Annotations[annotation.NetworkingTrafficDistribution.Name]; ok {
+		// We support specifying the Istio traffic distribution annotation in older k8s versions
+		backend.TrafficDistribution = wellknown.ParseTrafficDistribution(val)
+	}
+
+	// Parse common annotations
+	ir.ParseObjectAnnotations(&backend, svc)
+
 	return backend
 }
 
-func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster) *ir.EndpointsForBackend {
-	out.ClusterDiscoveryType = &envoy_config_cluster_v3.Cluster_Type{
-		Type: envoy_config_cluster_v3.Cluster_EDS,
+func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
+	out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{
+		Type: envoyclusterv3.Cluster_EDS,
 	}
-	out.EdsClusterConfig = &envoy_config_cluster_v3.Cluster_EdsClusterConfig{
-		EdsConfig: &envoy_config_core_v3.ConfigSource{
-			ResourceApiVersion: envoy_config_core_v3.ApiVersion_V3,
-			ConfigSourceSpecifier: &envoy_config_core_v3.ConfigSource_Ads{
-				Ads: &envoy_config_core_v3.AggregatedConfigSource{},
+	out.EdsClusterConfig = &envoyclusterv3.Cluster_EdsClusterConfig{
+		EdsConfig: &envoycorev3.ConfigSource{
+			ResourceApiVersion: envoycorev3.ApiVersion_V3,
+			ConfigSourceSpecifier: &envoycorev3.ConfigSource_Ads{
+				Ads: &envoycorev3.AggregatedConfigSource{},
 			},
 		},
 	}

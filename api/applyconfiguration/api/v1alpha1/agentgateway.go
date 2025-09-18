@@ -9,12 +9,14 @@ import (
 // AgentGatewayApplyConfiguration represents a declarative configuration of the AgentGateway type for use
 // with apply.
 type AgentGatewayApplyConfiguration struct {
-	Enabled         *bool                    `json:"enabled,omitempty"`
-	LogLevel        *string                  `json:"logLevel,omitempty"`
-	Image           *ImageApplyConfiguration `json:"image,omitempty"`
-	SecurityContext *v1.SecurityContext      `json:"securityContext,omitempty"`
-	Resources       *v1.ResourceRequirements `json:"resources,omitempty"`
-	Env             []v1.EnvVar              `json:"env,omitempty"`
+	Enabled             *bool                    `json:"enabled,omitempty"`
+	LogLevel            *string                  `json:"logLevel,omitempty"`
+	Image               *ImageApplyConfiguration `json:"image,omitempty"`
+	SecurityContext     *v1.SecurityContext      `json:"securityContext,omitempty"`
+	Resources           *v1.ResourceRequirements `json:"resources,omitempty"`
+	Env                 []v1.EnvVar              `json:"env,omitempty"`
+	CustomConfigMapName *string                  `json:"customConfigMapName,omitempty"`
+	ExtraVolumeMounts   []v1.VolumeMount         `json:"extraVolumeMounts,omitempty"`
 }
 
 // AgentGatewayApplyConfiguration constructs a declarative configuration of the AgentGateway type for use with
@@ -69,6 +71,24 @@ func (b *AgentGatewayApplyConfiguration) WithResources(value v1.ResourceRequirem
 func (b *AgentGatewayApplyConfiguration) WithEnv(values ...v1.EnvVar) *AgentGatewayApplyConfiguration {
 	for i := range values {
 		b.Env = append(b.Env, values[i])
+	}
+	return b
+}
+
+// WithCustomConfigMapName sets the CustomConfigMapName field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the CustomConfigMapName field is set to the value of the last call.
+func (b *AgentGatewayApplyConfiguration) WithCustomConfigMapName(value string) *AgentGatewayApplyConfiguration {
+	b.CustomConfigMapName = &value
+	return b
+}
+
+// WithExtraVolumeMounts adds the given value to the ExtraVolumeMounts field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the ExtraVolumeMounts field.
+func (b *AgentGatewayApplyConfiguration) WithExtraVolumeMounts(values ...v1.VolumeMount) *AgentGatewayApplyConfiguration {
+	for i := range values {
+		b.ExtraVolumeMounts = append(b.ExtraVolumeMounts, values[i])
 	}
 	return b
 }

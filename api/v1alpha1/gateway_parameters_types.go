@@ -208,11 +208,16 @@ func (in *KubernetesProxyConfig) GetFloatingUserId() *bool {
 }
 
 // ProxyDeployment configures the Proxy deployment in Kubernetes.
+// +kubebuilder:validation:AtMostOneOf=replicas;omitReplicas
 type ProxyDeployment struct {
 	// The number of desired pods. Defaults to 1.
 	//
 	// +optional
 	Replicas *uint32 `json:"replicas,omitempty"`
+
+	// If true, replicas will not be set in the deployment (allowing HPA to control scaling)
+	// +optional
+	OmitReplicas *bool `json:"omitReplicas,omitempty"`
 }
 
 func (in *ProxyDeployment) GetReplicas() *uint32 {
@@ -220,6 +225,13 @@ func (in *ProxyDeployment) GetReplicas() *uint32 {
 		return nil
 	}
 	return in.Replicas
+}
+
+func (in *ProxyDeployment) GetOmitReplicas() *bool {
+	if in == nil {
+		return nil
+	}
+	return in.OmitReplicas
 }
 
 // EnvoyContainer configures the container running Envoy.
@@ -263,6 +275,13 @@ type EnvoyContainer struct {
 	//
 	// +optional
 	Env []corev1.EnvVar `json:"env,omitempty"`
+
+	// Additional volume mounts to add to the container. See
+	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#volumemount-v1-core
+	// for details.
+	//
+	// +optional
+	ExtraVolumeMounts []corev1.VolumeMount `json:"extraVolumeMounts,omitempty"`
 }
 
 func (in *EnvoyContainer) GetBootstrap() *EnvoyBootstrap {
@@ -717,10 +736,10 @@ type AiExtensionStats struct {
 	// Set of custom labels to be added to the request metrics.
 	// These will be added on each request which goes through the AI Extension.
 	// +optional
-	CustomLabels []*CustomLabel `json:"customLabels,omitempty"`
+	CustomLabels []CustomLabel `json:"customLabels,omitempty"`
 }
 
-func (in *AiExtensionStats) GetCustomLabels() []*CustomLabel {
+func (in *AiExtensionStats) GetCustomLabels() []CustomLabel {
 	if in == nil {
 		return nil
 	}
@@ -806,7 +825,8 @@ type AiExtensionTrace struct {
 	// https://opentelemetry.io/docs/languages/sdk-configuration/otlp-exporter/#otel_exporter_otlp_traces_timeout
 	//
 	// +optional
-	Timeout *gwv1.Duration `json:"timeout,omitempty"`
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	Timeout *metav1.Duration `json:"timeout,omitempty"`
 
 	// OTLPProtocol specifies the protocol to be used for OTLP exports.
 	// This determines how tracing data is serialized and transported (e.g., gRPC, HTTP/Protobuf).
@@ -815,16 +835,9 @@ type AiExtensionTrace struct {
 	// +optional
 	// +kubebuilder:validation:Enum=grpc;http/protobuf;http/json
 	Protocol *OTLPTracesProtocolType `json:"protocol,omitempty"`
-
-	// TransportSecurity controls the TLS (Transport Layer Security) settings when connecting
-	// to the tracing server. It determines whether certificate verification should be skipped.
-	//
-	// +optional
-	// +kubebuilder:validation:Enum=secure;insecure
-	TransportSecurity *OTLPTransportSecurityMode `json:"transportSecurity,omitempty"`
 }
 
-func (in *AiExtensionTrace) GetTimeout() *gwv1.Duration {
+func (in *AiExtensionTrace) GetTimeout() *metav1.Duration {
 	if in == nil {
 		return nil
 	}
@@ -983,14 +996,6 @@ func (otelTransportSecurityMode OTLPTransportSecurityMode) String() string {
 	}
 }
 
-func (in *AiExtensionTrace) GetTransportSecurityMode() *string {
-	if in == nil || in.TransportSecurity == nil {
-		return nil
-	}
-	value := in.TransportSecurity.String()
-	return &value
-}
-
 // AgentGateway configures the AgentGateway integration. If AgentGateway is enabled, Envoy
 type AgentGateway struct {
 	// Whether to enable the extension.
@@ -1038,6 +1043,20 @@ type AgentGateway struct {
 	//
 	// +optional
 	Env []corev1.EnvVar `json:"env,omitempty"`
+
+	// Name of the custom configmap to use instead of the default generated one.
+	// When set, the agent gateway will use this configmap instead of creating the default one.
+	// The configmap must contain a 'config.yaml' key with the agent gateway configuration.
+	//
+	// +optional
+	CustomConfigMapName *string `json:"customConfigMapName,omitempty"`
+
+	// Additional volume mounts to add to the container. See
+	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#volumemount-v1-core
+	// for details.
+	//
+	// +optional
+	ExtraVolumeMounts []corev1.VolumeMount `json:"extraVolumeMounts,omitempty"`
 }
 
 func (in *AgentGateway) GetEnabled() *bool {
@@ -1080,4 +1099,11 @@ func (in *AgentGateway) GetEnv() []corev1.EnvVar {
 		return nil
 	}
 	return in.Env
+}
+
+func (in *AgentGateway) GetCustomConfigMapName() *string {
+	if in == nil {
+		return nil
+	}
+	return in.CustomConfigMapName
 }

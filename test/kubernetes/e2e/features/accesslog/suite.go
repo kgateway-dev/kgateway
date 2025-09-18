@@ -50,7 +50,7 @@ func (s *testingSuite) TestAccessLogWithFileSink() {
 	s.sendTestRequest()
 
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
-		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, gatewayService.ObjectMeta.GetNamespace(), pods[0])
+		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, gatewayObjectMeta.GetNamespace(), pods[0])
 		s.Require().NoError(err)
 
 		// Verify the log contains the expected JSON pattern
@@ -65,11 +65,11 @@ func (s *testingSuite) TestAccessLogWithFileSink() {
 
 // TestAccessLogWithGrpcSink tests access log with grpc sink
 func (s *testingSuite) TestAccessLogWithGrpcSink() {
-	pods := s.getPods("kgateway=gateway-proxy-access-logger")
+	pods := s.getPods("app.kubernetes.io/name=gateway-proxy-access-logger")
 	s.sendTestRequest()
 
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
-		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, accessLoggerDeployment.ObjectMeta.GetNamespace(), pods[0])
+		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, accessLoggerObjectMeta.GetNamespace(), pods[0])
 		s.Require().NoError(err)
 
 		// Verify the log contains the expected JSON pattern
@@ -84,12 +84,12 @@ func (s *testingSuite) TestAccessLogWithOTelSink() {
 	s.sendTestRequest()
 
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
-		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, accessLoggerDeployment.ObjectMeta.GetNamespace(), pods[0])
+		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, accessLoggerObjectMeta.GetNamespace(), pods[0])
 		s.Require().NoError(err)
 
 		// Example log line for the access log
-		// {"level":"info","ts":"2025-06-20T18:22:57.716Z","msg":"ResourceLog #0\nResource SchemaURL: \nResource attributes:\n     -> log_name: Str(test-otel-accesslog-service)\n     -> zone_name: Str()\n     -> cluster_name: Str(gw.default)\n     -> node_name: Str(gw-69c5b8cd88-ln44n.default)\nScopeLogs #0\nScopeLogs SchemaURL: \nInstrumentationScope  \nLogRecord #0\nObservedTimestamp: 1970-01-01 00:00:00 +0000 UTC\nTimestamp: 2025-06-20 18:22:56.807883 +0000 UTC\nSeverityText: \nSeverityNumber: Unspecified(0)\nBody: Str(\"GET /get 200 \"www.example.com\" \"kube_httpbin_httpbin_8000\"\\n')\nAttributes:\n     -> custom: Str(string)\n     -> kvlist: Map({\"key-1\":\"value-1\",\"key-2\":\"value-2\"})\nTrace ID: \nSpan ID: \nFlags: 0\n","kind":"exporter","data_type":"logs","name":"debug"}
-		assert.Contains(c, logs, `-> log_name: Str(test-otel-accesslog-service)`)
+		// {"level":"info","ts":"2025-06-20T18:22:57.716Z","msg":"ResourceLog #0\nResource SchemaURL: \nResource attributes:\n     -> log_name: Str(test-otel-accesslog-service)\n     -> zone_name: Str()\n     -> cluster_name: Str(gw.default)\n     -> node_name: Str(gw-69c5b8cd88-ln44n.default)\n     -> service.name: Str(gw.default)\nScopeLogs #0\nScopeLogs SchemaURL: \nInstrumentationScope  \nLogRecord #0\nObservedTimestamp: 1970-01-01 00:00:00 +0000 UTC\nTimestamp: 2025-06-20 18:22:56.807883 +0000 UTC\nSeverityText: \nSeverityNumber: Unspecified(0)\nBody: Str(\"GET /get 200 \"www.example.com\" \"kube_httpbin_httpbin_8000\"\\n')\nAttributes:\n     -> custom: Str(string)\n     -> kvlist: Map({\"key-1\":\"value-1\",\"key-2\":\"value-2\"})\nTrace ID: \nSpan ID: \nFlags: 0\n","kind":"exporter","data_type":"logs","name":"debug"}		assert.Contains(c, logs, `-> log_name: Str(test-otel-accesslog-service)`)
+		assert.Contains(c, logs, `-> service.name: Str(gw.default)`)
 		assert.Contains(c, logs, `GET /status/200 200`)
 		assert.Contains(c, logs, `www.example.com`)
 		assert.Contains(c, logs, `kube_httpbin_httpbin_8000`)
@@ -109,7 +109,7 @@ func (s *testingSuite) sendTestRequest() {
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
+			curl.WithHost(kubeutils.ServiceFQDN(gatewayObjectMeta)),
 			curl.VerboseOutput(),
 			curl.WithHostHeader("www.example.com"),
 			curl.WithPath("/status/200"),
@@ -124,7 +124,7 @@ func (s *testingSuite) sendTestRequest() {
 func (s *testingSuite) getPods(label string) []string {
 	s.TestInstallation.Assertions.EventuallyPodsRunning(
 		s.Ctx,
-		accessLoggerDeployment.ObjectMeta.GetNamespace(),
+		accessLoggerObjectMeta.GetNamespace(),
 		metav1.ListOptions{
 			LabelSelector: label,
 		},
@@ -132,7 +132,7 @@ func (s *testingSuite) getPods(label string) []string {
 
 	pods, err := s.TestInstallation.Actions.Kubectl().GetPodsInNsWithLabel(
 		s.Ctx,
-		accessLoggerDeployment.ObjectMeta.GetNamespace(),
+		accessLoggerObjectMeta.GetNamespace(),
 		label,
 	)
 	s.Require().NoError(err)

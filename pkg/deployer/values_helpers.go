@@ -1,6 +1,7 @@
 package deployer
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -10,6 +11,7 @@ import (
 	"golang.org/x/exp/slices"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -28,11 +30,31 @@ var ComponentLogLevelEmptyError = func(key string, value string) error {
 // 2. the ports exposed on the proxy service
 func GetPortsValues(gw *ir.Gateway, gwp *v1alpha1.GatewayParameters) []HelmPort {
 	gwPorts := []HelmPort{}
+
+	// Add ports from Gateway listeners
 	for _, l := range gw.Listeners {
 		listenerPort := uint16(l.Port)
 		portName := listener.GenerateListenerName(l)
 		gwPorts = AppendPortValue(gwPorts, listenerPort, portName, gwp)
 	}
+
+	// Add ports from GatewayParameters.Service.Ports
+	// Merge user-defined service ports with auto-generated listener ports
+	// Without this, user-specified ports would be ignored, causing service connectivity issues
+	if gwp != nil && gwp.Spec.GetKube() != nil && gwp.Spec.GetKube().GetService() != nil {
+		servicePorts := gwp.Spec.GetKube().GetService().GetPorts()
+		for _, servicePort := range servicePorts {
+			portValue := servicePort.GetPort()
+			l := ir.Listener{
+				Listener: gwv1.Listener{
+					Port: gwv1.PortNumber(portValue),
+				},
+			}
+			portName := listener.GenerateListenerName(l)
+			gwPorts = AppendPortValue(gwPorts, portValue, portName, gwp)
+		}
+	}
+
 	return gwPorts
 }
 
@@ -62,7 +84,7 @@ func AppendPortValue(gwPorts []HelmPort, port uint16, name string, gwp *v1alpha1
 	// If not found the default value of `nil` will not render anything.
 	var nodePort *uint16 = nil
 	if gwp.Spec.GetKube().GetService().GetType() != nil && *(gwp.Spec.GetKube().GetService().GetType()) == corev1.ServiceTypeNodePort {
-		if idx := slices.IndexFunc(gwp.Spec.GetKube().GetService().GetPorts(), func(p *v1alpha1.Port) bool {
+		if idx := slices.IndexFunc(gwp.Spec.GetKube().GetService().GetPorts(), func(p v1alpha1.Port) bool {
 			return p.GetPort() == uint16(port)
 		}); idx != -1 {
 			nodePort = ptr.To(uint16(*gwp.Spec.GetKube().GetService().GetPorts()[idx].GetNodePort()))
@@ -77,27 +99,6 @@ func AppendPortValue(gwPorts []HelmPort, port uint16, name string, gwp *v1alpha1
 	})
 }
 
-// TODO: Removing until autoscaling is re-added.
-// See: https://github.com/solo-io/solo-projects/issues/5948
-// Convert autoscaling values from GatewayParameters into helm values to be used by the deployer.
-// func getAutoscalingValues(autoscaling *v1.Autoscaling) *helmAutoscaling {
-// 	hpaConfig := autoscaling.HorizontalPodAutoscaler
-// 	if hpaConfig == nil {
-// 		return nil
-// 	}
-
-// 	trueVal := true
-// 	autoscalingVals := &helmAutoscaling{
-// 		Enabled: &trueVal,
-// 	}
-// 	autoscalingVals.MinReplicas = hpaConfig.MinReplicas
-// 	autoscalingVals.MaxReplicas = hpaConfig.MaxReplicas
-// 	autoscalingVals.TargetCPUUtilizationPercentage = hpaConfig.TargetCpuUtilizationPercentage
-// 	autoscalingVals.TargetMemoryUtilizationPercentage = hpaConfig.TargetMemoryUtilizationPercentage
-
-// 	return autoscalingVals
-// }
-
 // Convert service values from GatewayParameters into helm values to be used by the deployer.
 func GetServiceValues(svcConfig *v1alpha1.Service) *HelmService {
 	// convert the service type enum to its string representation;
@@ -107,10 +108,11 @@ func GetServiceValues(svcConfig *v1alpha1.Service) *HelmService {
 		svcType = ptr.To(string(*svcConfig.GetType()))
 	}
 	return &HelmService{
-		Type:             svcType,
-		ClusterIP:        svcConfig.GetClusterIP(),
-		ExtraAnnotations: svcConfig.GetExtraAnnotations(),
-		ExtraLabels:      svcConfig.GetExtraLabels(),
+		Type:                  svcType,
+		ClusterIP:             svcConfig.GetClusterIP(),
+		ExtraAnnotations:      svcConfig.GetExtraAnnotations(),
+		ExtraLabels:           svcConfig.GetExtraLabels(),
+		ExternalTrafficPolicy: svcConfig.GetExternalTrafficPolicy(),
 	}
 }
 
@@ -216,9 +218,8 @@ func getTracingValues(tracingConfig *v1alpha1.AiExtensionTrace) *helmAITracing {
 			SamplerType: tracingConfig.GetSamplerType(),
 			SamplerArg:  tracingConfig.GetSamplerArg(),
 		},
-		Timeout:           tracingConfig.GetTimeout(),
-		Protocol:          tracingConfig.GetOTLPProtocolType(),
-		TransportSecurity: tracingConfig.GetTransportSecurityMode(),
+		Timeout:  tracingConfig.GetTimeout(),
+		Protocol: tracingConfig.GetOTLPProtocolType(),
 	}
 }
 
@@ -259,6 +260,19 @@ func GetAIExtensionValues(config *v1alpha1.AiExtension) (*HelmAIExtension, error
 		}
 	}
 
+	// Handle Tracing with base64 encoding
+	var tracingBase64 string
+	if config.Tracing != nil {
+		// Convert tracing config to JSON
+		tracingJSON, err := json.Marshal(getTracingValues(config.Tracing))
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal tracing config: %w", err)
+		}
+
+		// Encode JSON to base64
+		tracingBase64 = base64.StdEncoding.EncodeToString(tracingJSON)
+	}
+
 	return &HelmAIExtension{
 		Enabled:         *config.GetEnabled(),
 		Image:           GetImageValues(config.GetImage()),
@@ -267,7 +281,7 @@ func GetAIExtensionValues(config *v1alpha1.AiExtension) (*HelmAIExtension, error
 		Env:             config.GetEnv(),
 		Ports:           config.GetPorts(),
 		Stats:           byt,
-		Tracing:         getTracingValues(config.Tracing),
+		Tracing:         tracingBase64,
 	}, nil
 }
 
@@ -281,8 +295,14 @@ func GetAgentGatewayValues(config *v1alpha1.AgentGateway) (*HelmAgentGateway, er
 		logLevel = *config.GetLogLevel()
 	}
 
+	var customConfigMapName string
+	if config.GetCustomConfigMapName() != nil {
+		customConfigMapName = *config.GetCustomConfigMapName()
+	}
+
 	return &HelmAgentGateway{
-		Enabled:  *config.GetEnabled(),
-		LogLevel: logLevel,
+		Enabled:             *config.GetEnabled(),
+		LogLevel:            logLevel,
+		CustomConfigMapName: customConfigMapName,
 	}, nil
 }

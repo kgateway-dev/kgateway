@@ -179,15 +179,17 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
         // use the sub route version if appropriate as we dont have valid perroute config today
         if !self.route_specific.is_empty() {
             // check filter state for info
-            let route_name_data_option =
-                envoy_filter.get_dynamic_metadata_string("kgateway", "route");
-            if route_name_data_option.is_some() {
-                let route_name_data = route_name_data_option.unwrap();
+            let route_name_data_option = envoy_filter.get_metadata_string(
+                abi::envoy_dynamic_module_type_metadata_source::Dynamic,
+                "kgateway",
+                "route",
+            );
+            if let Some(route_name_data) = route_name_data_option {
                 // if its there then we should be able to pull the data name
                 let route_name = std::str::from_utf8(route_name_data.as_slice()).unwrap();
                 let route_config = self.route_specific.get(route_name);
-                if route_config.is_some() {
-                    setters = route_config.unwrap().request_headers_setter.clone();
+                if let Some(route_config_val) = route_config {
+                    setters = route_config_val.request_headers_setter.clone();
                 }
             }
         }
@@ -209,8 +211,8 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
             let tmpl = env.get_template("temp").unwrap();
             let rendered = tmpl.render(context!(headers => headers));
             let mut rendered_str = "".to_string();
-            if rendered.is_ok() {
-                rendered_str = rendered.unwrap();
+            if let Ok(rendered_val) = rendered {
+                rendered_str = rendered_val;
             } else {
                 eprintln!("Error rendering template: {}", rendered.err().unwrap());
             }
@@ -249,15 +251,17 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
         // use the sub route version if appropriate as we dont have valid perroute config today
         if !self.route_specific.is_empty() {
             // check filter state for info
-            let route_name_data_option =
-                envoy_filter.get_dynamic_metadata_string("kgateway", "route");
-            if route_name_data_option.is_some() {
-                let route_name_data = route_name_data_option.unwrap();
+            let route_name_data_option = envoy_filter.get_metadata_string(
+                abi::envoy_dynamic_module_type_metadata_source::Dynamic,
+                "kgateway",
+                "route",
+            );
+            if let Some(route_name_data) = route_name_data_option {
                 // if its there then we should be able to pull the data name
                 let route_name = std::str::from_utf8(route_name_data.as_slice()).unwrap();
                 let route_config = self.route_specific.get(route_name);
-                if route_config.is_some() {
-                    setters = route_config.unwrap().response_headers_setter.clone();
+                if let Some(route_config_val) = route_config {
+                    setters = route_config_val.response_headers_setter.clone();
                 }
             }
         }
@@ -269,8 +273,8 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
             let rendered =
                 tmpl.render(context!(headers => headers, request_headers => request_headers));
             let mut rendered_str = "".to_string();
-            if rendered.is_ok() {
-                rendered_str = rendered.unwrap();
+            if let Ok(rendered_val) = rendered {
+                rendered_str = rendered_val;
             } else {
                 eprintln!("Error rendering template: {}", rendered.err().unwrap());
             }

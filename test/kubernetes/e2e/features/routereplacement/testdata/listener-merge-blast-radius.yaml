@@ -1,0 +1,118 @@
+---
+# Gateway with listeners that will be merged (same port) and isolated listeners
+# to test blast radius when one merged listener has invalid policy
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: gw-listener-isolation
+  namespace: default
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  # These two listeners share port 8080 and will be merged into the same FC/RC.
+  - name: http-merged-affected
+    port: 8080
+    protocol: HTTP
+    hostname: "affected.example.com"
+    allowedRoutes:
+      namespaces:
+        from: All
+  - name: http-merged-unaffected
+    port: 8080
+    protocol: HTTP
+    hostname: "unaffected.example.com"
+    allowedRoutes:
+      namespaces:
+        from: All
+  # This listener is on a different port and should be isolated
+  - name: http-isolated
+    port: 8081
+    protocol: HTTP
+    hostname: "isolated.example.com"
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+# HTTPRoute on affected listener
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-affected
+  namespace: default
+spec:
+  parentRefs:
+  - name: gw-listener-isolation
+    namespace: default
+    sectionName: http-merged-affected
+  hostnames:
+  - "affected.example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: httpbin
+      port: 8000
+---
+# HTTPRoute on merged listener that should remain unaffected
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-collateral
+  namespace: default
+spec:
+  parentRefs:
+  - name: gw-listener-isolation
+    namespace: default
+    sectionName: http-merged-unaffected
+  hostnames:
+  - "unaffected.example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: httpbin
+      port: 8000
+---
+# HTTPRoute on isolated listener
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-isolated
+  namespace: default
+spec:
+  parentRefs:
+  - name: gw-listener-isolation
+    namespace: default
+    sectionName: http-isolated
+  hostnames:
+  - "isolated.example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: httpbin
+      port: 8000
+---
+# Invalid TrafficPolicy attached to one of the merged listeners
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: listener-merge-invalid-policy
+  namespace: default
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: gw-listener-isolation
+    sectionName: http-merged-affected
+  transformation:
+    request:
+      body:
+        parseAs: AsJson
+        value: "{{ invalid_template }"  # Invalid template syntax that envoy will reject

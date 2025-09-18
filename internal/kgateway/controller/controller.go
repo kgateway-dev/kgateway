@@ -12,9 +12,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -22,7 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	internaldeployer "github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
@@ -39,18 +41,6 @@ const (
 	// InferencePoolField is the field name used for indexing HTTPRoute objects.
 	InferencePoolField = "inferencepool-index"
 )
-
-// ClassInfo describes the desired configuration for a GatewayClass.
-type ClassInfo struct {
-	// Description is a human-readable description of the GatewayClass.
-	Description string
-	// Labels are the labels to be added to the GatewayClass.
-	Labels map[string]string
-	// Annotations are the annotations to be added to the GatewayClass.
-	Annotations map[string]string
-	// ParametersRef is the reference to the GatewayParameters object.
-	ParametersRef *apiv1.ParametersReference
-}
 
 // TODO [danehans]: Refactor so controller config is organized into shared and Gateway/InferencePool-specific controllers.
 type GatewayConfig struct {
@@ -69,8 +59,6 @@ type GatewayConfig struct {
 	IstioAutoMtlsEnabled bool
 	// ImageInfo sets the default image information the deployer will use.
 	ImageInfo *deployer.ImageInfo
-	// ClassInfo sets the default configuration for GatewayClasses managed by this controller.
-	ClassInfo map[string]*ClassInfo
 	// DiscoveryNamespaceFilter filters namespaced objects based on the discovery namespace filter.
 	DiscoveryNamespaceFilter kubetypes.DynamicObjectFilter
 	// CommonCollections used to fetch ir.Gateways for the deployer to generate the ports for the proxy service
@@ -81,6 +69,8 @@ type GatewayConfig struct {
 	WaypointGatewayClassName string
 	// AgentGatewayClassName is the configured agent gateway class name.
 	AgentGatewayClassName string
+	// Additional GatewayClass definitions to support extending to other well-known gateway classes
+	AdditionalGatewayClasses map[string]*deployer.GatewayClassInfo
 }
 
 type ExtraGatewayParametersFunc func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
@@ -95,7 +85,7 @@ func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig, extraGatew
 			cli:          cfg.Mgr.GetClient(),
 			scheme:       cfg.Mgr.GetScheme(),
 			customEvents: make(chan event.TypedGenericEvent[ir.Gateway], 1024),
-			metrics:      newControllerMetricsRecorder("gatewayclass"),
+			metricsName:  "gatewayclass",
 		},
 		extraGatewayParameters: extraGatewayParameters,
 	}
@@ -129,7 +119,7 @@ func NewBaseInferencePoolController(ctx context.Context,
 			cli:          poolCfg.Mgr.GetClient(),
 			scheme:       poolCfg.Mgr.GetScheme(),
 			customEvents: make(chan event.TypedGenericEvent[ir.Gateway], 1024),
-			metrics:      newControllerMetricsRecorder("gatewayclass-inferencepool"),
+			metricsName:  "gatewayclass-inferencepool",
 		},
 		extraGatewayParameters: extraGatewayParameters,
 	}
@@ -335,14 +325,16 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		buildr.Owns(clientObj, opts...)
 	}
 
-	return buildr.Complete(&gatewayReconciler{
-		cli:            c.cfg.Mgr.GetClient(),
-		scheme:         c.cfg.Mgr.GetScheme(),
-		controllerName: c.cfg.ControllerName,
-		autoProvision:  c.cfg.AutoProvision,
-		deployer:       d,
-		metrics:        newControllerMetricsRecorder("gateway"),
+	// The controller should only run on the leader as the gatewayReconciler manages reconciliation.
+	// It deploys and manages the relevant resources (deployment, service, etc.) and should run only on the leader.
+	// This is the default behaviour. Ref: https://github.com/kubernetes-sigs/controller-runtime/blob/682465344b9b74efad4657016668e62438000541/pkg/internal/controller/controller.go#L223
+	// but calling it out explicitly here as the gatewayReconciler is not directly added
+	// as a runnable to the manager and can not be static typed as a manager.LeaderElectionRunnable
+	// Translation is managed by the proxySyncer and runs on all pods (leader and follower)
+	buildr.WithOptions(controller.TypedOptions[reconcile.Request]{
+		NeedLeaderElection: ptr.To(true),
 	})
+	return buildr.Complete(NewGatewayReconciler(ctx, c.cfg, d))
 }
 
 func (c *controllerBuilder) addHTTPRouteIndexes(ctx context.Context) error {
@@ -384,7 +376,7 @@ func (c *controllerBuilder) watchInferencePool(ctx context.Context) error {
 
 	buildr := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(discoveryNamespaceFilterPredicate).
-		For(&infextv1a2.InferencePool{}, builder.WithPredicates(
+		For(&inf.InferencePool{}, builder.WithPredicates(
 			predicate.Or(
 				predicate.AnnotationChangedPredicate{},
 				predicate.GenerationChangedPredicate{},
@@ -462,8 +454,17 @@ func (c *controllerBuilder) watchInferencePool(ctx context.Context) error {
 			cli:      c.cfg.Mgr.GetClient(),
 			scheme:   c.cfg.Mgr.GetScheme(),
 			deployer: d,
-			metrics:  newControllerMetricsRecorder("gateway-inferencepool"),
 		}
+
+		// The controller should only run on the leader as the inferencePoolReconciler manages reconciliation.
+		// It deploys and manages the relevant resources (deployment, service, etc.) and should run only on the leader.
+		// This is the default behaviour. Ref: https://github.com/kubernetes-sigs/controller-runtime/blob/682465344b9b74efad4657016668e62438000541/pkg/internal/controller/controller.go#L223
+		// but calling it out explicitly here as the inferencePoolReconciler is not directly added
+		// as a runnable to the manager and can not be static typed as a manager.LeaderElectionRunnable
+		// Translation is managed by the proxySyncer and runs on all pods (leader and follower)
+		buildr.WithOptions(controller.TypedOptions[reconcile.Request]{
+			NeedLeaderElection: ptr.To(true),
+		})
 		if err := buildr.Complete(r); err != nil {
 			return err
 		}
@@ -498,15 +499,16 @@ type controllerReconciler struct {
 	cli          client.Client
 	scheme       *runtime.Scheme
 	customEvents chan event.TypedGenericEvent[ir.Gateway]
-	metrics      controllerMetricsRecorder
+	metricsName  string
 }
 
 func (r *controllerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, rErr error) {
 	log := log.FromContext(ctx).WithValues("gwclass", req.NamespacedName)
 
-	if r.metrics != nil {
-		defer r.metrics.reconcileStart()(rErr)
-	}
+	finishMetrics := collectReconciliationMetrics(r.metricsName, req)
+	defer func() {
+		finishMetrics(rErr)
+	}()
 
 	gwclass := &apiv1.GatewayClass{}
 	if err := r.cli.Get(ctx, req.NamespacedName, gwclass); err != nil {

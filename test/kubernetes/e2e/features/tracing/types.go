@@ -3,12 +3,9 @@ package tracing
 import (
 	"path/filepath"
 
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	e2edefaults "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/tests/base"
@@ -26,55 +23,19 @@ var (
 		Name:      "gw",
 		Namespace: "default",
 	}
-	proxyDeployment = &appsv1.Deployment{ObjectMeta: proxyObjectMeta}
-	proxyService    = &corev1.Service{ObjectMeta: proxyObjectMeta}
+	proxyService = &corev1.Service{ObjectMeta: proxyObjectMeta}
 
-	httpbinSvc = &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "httpbin",
-			Namespace: "httpbin",
-		},
-	}
-	httpbinDeployment = &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "httpbin",
-			Namespace: "httpbin",
-		},
-	}
-
-	// otelCollector objects
-	otelCollectorPod = &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "otel-collector",
-			Namespace: "default",
-		},
-	}
-
-	tracingPolicy = &v1alpha1.HTTPListenerPolicy{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "tracing-policy",
-			Namespace: "default",
-		},
-	}
-
-	setup = base.SimpleTestCase{
+	setup = base.TestCase{
 		Manifests: []string{e2edefaults.CurlPodManifest, setupManifest},
-		Resources: []client.Object{e2edefaults.CurlPod, proxyDeployment, proxyService, httpbinSvc, httpbinDeployment},
 	}
 
 	// test cases
 	testCases = map[string]*base.TestCase{
 		"TestOTelTracing": {
-			SimpleTestCase: base.SimpleTestCase{
-				Manifests: []string{otelCollectorManifest, policyManifest},
-				Resources: []client.Object{otelCollectorPod, tracingPolicy},
-			},
+			Manifests: []string{otelCollectorManifest, policyManifest},
 		},
 		"TestOTelTracingSecure": {
-			SimpleTestCase: base.SimpleTestCase{
-				Manifests: []string{otelCollectorSecureManifest, policyManifest},
-				Resources: []client.Object{otelCollectorPod, tracingPolicy},
-			},
+			Manifests: []string{otelCollectorSecureManifest, policyManifest},
 		},
 	}
 )

@@ -1,0 +1,91 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+  namespace: gwtest
+spec:
+  gatewayClassName: kgateway
+  listeners:
+    - name: http
+      port: 80
+      protocol: HTTP
+      allowedRoutes:
+        namespaces:
+          from: All
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: conflict-route
+  namespace: gwtest
+spec:
+  parentRefs:
+    - name: example-gateway
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: example-svc
+          port: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+  namespace: gwtest
+spec:
+  selector:
+    test: test
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: test
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: invalid-transformation-policy
+  namespace: gwtest
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: conflict-route
+  transformation:
+    request:
+      headerTransformations:
+        add:
+          x-invalid-header: "{{ invalid_template_var"
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: invalid-ai-policy
+  namespace: gwtest
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: conflict-route
+  ai:
+    defaults:
+      - field: "config"
+        value: "{\"incomplete\": true"
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: invalid-header-template-policy
+  namespace: gwtest
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: conflict-route
+  transformation:
+    request:
+      headerTransformations:
+        add:
+          x-template-header: "{{ REQUEST(invalid-variable) }}"

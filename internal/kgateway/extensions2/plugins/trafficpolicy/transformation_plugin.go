@@ -3,7 +3,7 @@ package trafficpolicy
 import (
 	"encoding/json"
 
-	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	exteniondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
 	transformationpb "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
@@ -15,26 +15,45 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
 
-// transformationForSpec translates the transformation spec into and onto the IR policy
-func transformationForSpec(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) error {
-	if spec.Transformation == nil {
-		return nil
-	}
-	var err error
-	if !useRustformations {
-		out.transform, err = toTransformFilterConfig(spec.Transformation)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
+type transformationIR struct {
+	config *transformationpb.RouteTransformations
+}
 
-	rustformation, toStash, err := toRustformFilterConfig(spec.Transformation)
+var _ PolicySubIR = &transformationIR{}
+
+func (t *transformationIR) Equals(other PolicySubIR) bool {
+	otherTransformation, ok := other.(*transformationIR)
+	if !ok {
+		return false
+	}
+	if t == nil && otherTransformation == nil {
+		return true
+	}
+	if t == nil || otherTransformation == nil {
+		return false
+	}
+	return proto.Equal(t.config, otherTransformation.config)
+}
+
+func (t *transformationIR) Validate() error {
+	if t == nil || t.config == nil {
+		return nil
+	}
+	return t.config.ValidateAll()
+}
+
+// constructTransformation constructs the transformation policy IR from the policy specification.
+func constructTransformation(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) error {
+	if in.Spec.Transformation == nil && !useRustformations {
+		return nil
+	}
+	transformation, err := toTransformFilterConfig(in.Spec.Transformation)
 	if err != nil {
 		return err
 	}
-	out.rustformation = rustformation
-	out.rustformationStringToStash = toStash
+	out.transformation = &transformationIR{
+		config: transformation,
+	}
 	return nil
 }
 
@@ -148,6 +167,50 @@ func toTransformFilterConfig(t *v1alpha1.TransformationPolicy) (*transformationp
 	return envoyT, nil
 }
 
+type rustformationIR struct {
+	config  *dynamicmodulesv3.DynamicModuleFilter
+	toStash string
+}
+
+var _ PolicySubIR = &rustformationIR{}
+
+func (r *rustformationIR) Equals(other PolicySubIR) bool {
+	otherRustformation, ok := other.(*rustformationIR)
+	if !ok {
+		return false
+	}
+	if r == nil && otherRustformation == nil {
+		return true
+	}
+	if r == nil || otherRustformation == nil {
+		return false
+	}
+	return proto.Equal(r.config, otherRustformation.config) && r.toStash == otherRustformation.toStash
+}
+
+func (r *rustformationIR) Validate() error {
+	if r == nil || r.config == nil {
+		return nil
+	}
+	return r.config.ValidateAll()
+}
+
+// constructRustformation constructs the rustformation policy IR from the policy specification.
+func constructRustformation(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) error {
+	if in.Spec.Transformation == nil || !useRustformations {
+		return nil
+	}
+	rustformation, toStash, err := toRustformFilterConfig(in.Spec.Transformation)
+	if err != nil {
+		return err
+	}
+	out.rustformation = &rustformationIR{
+		config:  rustformation,
+		toStash: toStash,
+	}
+	return nil
+}
+
 func toRustFormationPerRouteConfig(t *v1alpha1.Transform) (map[string]interface{}, bool) {
 	// if there is no transformations present then return a
 	hasTransform := false
@@ -192,7 +255,7 @@ func toRustFormationPerRouteConfig(t *v1alpha1.Transform) (map[string]interface{
 // The shape of this function currently resembles that of the traditional API
 // Feel free to change the shape and flow of this function as needed provided there are sufficient unit tests on the configuration output.
 // The most dangerous updates here will be any switch over env variables that we are working on.s
-func toRustformFilterConfig(t *v1alpha1.TransformationPolicy) (proto.Message, string, error) {
+func toRustformFilterConfig(t *v1alpha1.TransformationPolicy) (*dynamicmodulesv3.DynamicModuleFilter, string, error) {
 	if t == nil || *t == (v1alpha1.TransformationPolicy{}) {
 		return nil, "", nil
 	}
@@ -246,8 +309,8 @@ func convertClassicRouteToListener(
 	routeTransform := routeCfg.GetTransformations()[0].GetMatch().(*transformationpb.RouteTransformations_RouteTransformation_RequestMatch_)
 
 	transform := transformationpb.TransformationRule{
-		Match: &envoy_config_route_v3.RouteMatch{
-			PathSpecifier: &envoy_config_route_v3.RouteMatch_Prefix{
+		Match: &envoyroutev3.RouteMatch{
+			PathSpecifier: &envoyroutev3.RouteMatch_Prefix{
 				// match all as we arent doing submatches at this point
 				// consider attaching to a route or wiating until merging logic is done
 				Prefix: "/",
@@ -262,11 +325,12 @@ func convertClassicRouteToListener(
 	listenerFilter.Transformations = append(listenerFilter.GetTransformations(), &transform)
 }
 
-func (p *trafficPolicyPluginGwPass) handleTransformation(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, transform *transformationpb.RouteTransformations) {
+func (p *trafficPolicyPluginGwPass) handleTransformation(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, transform *transformationIR) {
 	if transform == nil {
 		return
 	}
-
-	typedFilterConfig.AddTypedConfig(transformationFilterNamePrefix, transform)
-	p.setTransformationInChain[fcn] = true
+	if transform.config != nil {
+		typedFilterConfig.AddTypedConfig(transformationFilterNamePrefix, transform.config)
+		p.setTransformationInChain[fcn] = true
+	}
 }

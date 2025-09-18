@@ -1,6 +1,6 @@
 {{- $gateway := .Values.gateway }}
 {{- if $gateway.agentGateway.enabled }}
-
+# TODO(npolshak): look into having agentgateway as a separate helm chart https://github.com/kgateway-dev/kgateway/issues/11240
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -9,7 +9,7 @@ metadata:
     {{- include "kgateway.gateway.constLabels" . | nindent 4 }}
     {{- include "kgateway.gateway.labels" . | nindent 4 }}
 spec:
-  {{- if not $gateway.autoscaling.enabled }}
+  {{- if $gateway.replicaCount }}
   replicas: {{ $gateway.replicaCount }}
   {{- end }}
   selector:
@@ -27,6 +27,20 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
+      {{- with $gateway.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "kgateway.gateway.fullname" . }}
+      {{- if $gateway.podSecurityContext }}
+      securityContext:
+        {{- toYaml $gateway.podSecurityContext | nindent 8 }}
+      {{- else }}
+      securityContext:
+        sysctls:
+          - name: net.ipv4.ip_unprivileged_port_start
+            value: "0"
+      {{- end }}
       containers:
         - name: agent-gateway
           image: "{{ template "kgateway.gateway.image" $gateway.image }}"
@@ -40,7 +54,8 @@ spec:
             {{- toYaml $gateway.resources | nindent 12 }}
           {{- end }} {{/* if $gateway.resources */}}
           args:
-            - --file=/config/config.json
+            - -f
+            - /config/config.yaml
           env:
             - name: NODE_NAME
               valueFrom:
@@ -60,16 +75,76 @@ spec:
               value: "1"
             - name: RUST_LOG
               value: {{ $gateway.agentGateway.logLevel }}
+            - name: XDS_ADDRESS
+              value: "http://{{ $gateway.xds.host }}:{{ $gateway.xds.port }}"
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: GATEWAY
+              value: {{ include "kgateway.gateway.fullname" . }}
+{{/*            - name: LOCAL_XDS_PATH*/}}
+{{/*              value: /config/config.yaml*/}}
             {{- if $gateway.env }}
             {{- toYaml $gateway.env | nindent 12 }}
             {{- end }} {{/* if $gateway.env */}}
           volumeMounts:
             - name: config-volume
               mountPath: /config
+            # Make /tmp writeable, needed for pprof
+            - name: tmp
+              mountPath: /tmp
+            {{- with $gateway.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
       volumes:
         - name: config-volume
           configMap:
+            {{- if $gateway.agentGateway.customConfigMapName }}
+            name: {{ $gateway.agentGateway.customConfigMapName }}
+            {{- else }}
             name: {{ include "kgateway.gateway.fullname" . }}
+            {{- end }}
+        - name: tmp
+          emptyDir: {}
+        {{- with $gateway.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with $gateway.affinity }}
+      affinity:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $gateway.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if $gateway.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ $gateway.terminationGracePeriodSeconds }}
+      {{- end }}
+      {{- with $gateway.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if $gateway.tolerations }}
+      tolerations:
+        {{- toYaml $gateway.tolerations | nindent 8 }}
+      {{- end }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "kgateway.gateway.fullname" . }}
+  {{- with (($gateway.serviceAccount).extraAnnotations) }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  labels:
+    {{- include "kgateway.gateway.constLabels" . | nindent 4 }}
+    {{- include "kgateway.gateway.labels" . | nindent 4 }}
+    {{- with (($gateway.serviceAccount).extraLabels) }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+automountServiceAccountToken: false
 ---
 apiVersion: v1
 kind: Service
@@ -87,6 +162,9 @@ metadata:
     {{- end }}
 spec:
   type: {{ $gateway.service.type }}
+  {{- if $gateway.service.externalTrafficPolicy }}
+  externalTrafficPolicy: {{ $gateway.service.externalTrafficPolicy }}
+  {{- end }}
   {{- with $gateway.service.clusterIP }}
   clusterIP: {{ . }}
   {{- end }}
@@ -94,7 +172,7 @@ spec:
   {{- range $p := $gateway.ports }}
     - name: {{ $p.name }}
       protocol: {{ $p.protocol }}
-      targetPort: {{ $p.targetPort }}
+      targetPort: {{ $p.port }}
       port: {{ $p.port }}
     {{- if $p.nodePort }}
       nodePort: {{ $p.nodePort }}
@@ -103,6 +181,7 @@ spec:
   selector:
     {{- include "kgateway.gateway.selectorLabels" . | nindent 4 }}
 
+{{- if not $gateway.agentGateway.customConfigMapName }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -112,13 +191,8 @@ metadata:
     {{- include "kgateway.gateway.constLabels" . | nindent 4 }}
     {{- include "kgateway.gateway.labels" . | nindent 4 }}
 data:
-  config.json: |
-    {
-      "type": "xds",
-      "xds_address": "http://{{ $gateway.xds.host }}:{{ $gateway.xds.port }}",
-      "metadata": {},
-      "alt_xds_hostname": "{{ $gateway.gatewayName | default (include "kgateway.gateway.fullname" .) }}.{{ $gateway.gatewayNamespace }}.svc.cluster.local",
-      "listeners": []
-    }
+  config.yaml: |
+    config: {}
+{{- end }}
 
 {{- end }} {{/* if $gateway.agentGateway.enabled */}}

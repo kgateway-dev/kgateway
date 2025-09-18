@@ -2,6 +2,7 @@ package deployer
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -22,27 +23,28 @@ type HelmGateway struct {
 	FullnameOverride *string `json:"fullnameOverride,omitempty"`
 
 	// deployment/service values
-	ReplicaCount   *uint32          `json:"replicaCount,omitempty"`
-	Autoscaling    *HelmAutoscaling `json:"autoscaling,omitempty"`
-	Ports          []HelmPort       `json:"ports,omitempty"`
-	Service        *HelmService     `json:"service,omitempty"`
-	FloatingUserId *bool            `json:"floatingUserId,omitempty"`
+	ReplicaCount   *uint32      `json:"replicaCount,omitempty"`
+	Ports          []HelmPort   `json:"ports,omitempty"`
+	Service        *HelmService `json:"service,omitempty"`
+	FloatingUserId *bool        `json:"floatingUserId,omitempty"`
 
 	// serviceaccount values
 	ServiceAccount *HelmServiceAccount `json:"serviceAccount,omitempty"`
 
 	// pod template values
-	ExtraPodAnnotations           map[string]string              `json:"extraPodAnnotations,omitempty"`
-	ExtraPodLabels                map[string]string              `json:"extraPodLabels,omitempty"`
-	ImagePullSecrets              []corev1.LocalObjectReference  `json:"imagePullSecrets,omitempty"`
-	PodSecurityContext            *corev1.PodSecurityContext     `json:"podSecurityContext,omitempty"`
-	NodeSelector                  map[string]string              `json:"nodeSelector,omitempty"`
-	Affinity                      *corev1.Affinity               `json:"affinity,omitempty"`
-	Tolerations                   []corev1.Toleration            `json:"tolerations,omitempty"`
-	ReadinessProbe                *corev1.Probe                  `json:"readinessProbe,omitempty"`
-	LivenessProbe                 *corev1.Probe                  `json:"livenessProbe,omitempty"`
-	GracefulShutdown              *v1alpha1.GracefulShutdownSpec `json:"gracefulShutdown,omitempty"`
-	TerminationGracePeriodSeconds *int                           `json:"terminationGracePeriodSeconds,omitempty"`
+	ExtraPodAnnotations           map[string]string                 `json:"extraPodAnnotations,omitempty"`
+	ExtraPodLabels                map[string]string                 `json:"extraPodLabels,omitempty"`
+	ImagePullSecrets              []corev1.LocalObjectReference     `json:"imagePullSecrets,omitempty"`
+	PodSecurityContext            *corev1.PodSecurityContext        `json:"podSecurityContext,omitempty"`
+	NodeSelector                  map[string]string                 `json:"nodeSelector,omitempty"`
+	Affinity                      *corev1.Affinity                  `json:"affinity,omitempty"`
+	Tolerations                   []corev1.Toleration               `json:"tolerations,omitempty"`
+	ReadinessProbe                *corev1.Probe                     `json:"readinessProbe,omitempty"`
+	LivenessProbe                 *corev1.Probe                     `json:"livenessProbe,omitempty"`
+	ExtraVolumes                  []corev1.Volume                   `json:"extraVolumes,omitempty"`
+	GracefulShutdown              *v1alpha1.GracefulShutdownSpec    `json:"gracefulShutdown,omitempty"`
+	TerminationGracePeriodSeconds *int                              `json:"terminationGracePeriodSeconds,omitempty"`
+	TopologySpreadConstraints     []corev1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
 
 	// sds container values
 	SdsContainer *HelmSdsContainer `json:"sdsContainer,omitempty"`
@@ -56,10 +58,13 @@ type HelmGateway struct {
 	ComponentLogLevel *string `json:"componentLogLevel,omitempty"`
 
 	// envoy or agentgateway container values
-	Image           *HelmImage                   `json:"image,omitempty"`
-	Resources       *corev1.ResourceRequirements `json:"resources,omitempty"`
-	SecurityContext *corev1.SecurityContext      `json:"securityContext,omitempty"`
-	Env             []corev1.EnvVar              `json:"env,omitempty"`
+	// Note: ideally, these should be mapped to container specific values, but right now they
+	// map the the proxy container
+	Image             *HelmImage                   `json:"image,omitempty"`
+	Resources         *corev1.ResourceRequirements `json:"resources,omitempty"`
+	SecurityContext   *corev1.SecurityContext      `json:"securityContext,omitempty"`
+	Env               []corev1.EnvVar              `json:"env,omitempty"`
+	ExtraVolumeMounts []corev1.VolumeMount         `json:"extraVolumeMounts,omitempty"`
 
 	// xds values
 	Xds *HelmXds `json:"xds,omitempty"`
@@ -92,10 +97,11 @@ type HelmImage struct {
 }
 
 type HelmService struct {
-	Type             *string           `json:"type,omitempty"`
-	ClusterIP        *string           `json:"clusterIP,omitempty"`
-	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
-	ExtraLabels      map[string]string `json:"extraLabels,omitempty"`
+	Type                  *string           `json:"type,omitempty"`
+	ClusterIP             *string           `json:"clusterIP,omitempty"`
+	ExtraAnnotations      map[string]string `json:"extraAnnotations,omitempty"`
+	ExtraLabels           map[string]string `json:"extraLabels,omitempty"`
+	ExternalTrafficPolicy *string           `json:"externalTrafficPolicy,omitempty"`
 }
 
 type HelmServiceAccount struct {
@@ -108,14 +114,6 @@ type HelmServiceAccount struct {
 type HelmXds struct {
 	Host *string `json:"host,omitempty"`
 	Port *uint32 `json:"port,omitempty"`
-}
-
-type HelmAutoscaling struct {
-	Enabled                           *bool   `json:"enabled,omitempty"`
-	MinReplicas                       *uint32 `json:"minReplicas,omitempty"`
-	MaxReplicas                       *uint32 `json:"maxReplicas,omitempty"`
-	TargetCPUUtilizationPercentage    *uint32 `json:"targetCPUUtilizationPercentage,omitempty"`
-	TargetMemoryUtilizationPercentage *uint32 `json:"targetMemoryUtilizationPercentage,omitempty"`
 }
 
 type HelmIstio struct {
@@ -160,15 +158,14 @@ type HelmAIExtension struct {
 	Env             []corev1.EnvVar              `json:"env,omitempty"`
 	Ports           []corev1.ContainerPort       `json:"ports,omitempty"`
 	Stats           []byte                       `json:"stats,omitempty"`
-	Tracing         *helmAITracing               `json:"tracing,omitempty"`
+	Tracing         string                       `json:"tracing,omitempty"`
 }
 
 type helmAITracing struct {
-	EndPoint          gwv1.AbsoluteURI      `json:"endpoint"`
-	Sampler           *helmAITracingSampler `json:"sampler,omitempty"`
-	Timeout           *gwv1.Duration        `json:"timeout,omitempty"`
-	Protocol          *string               `json:"protocol,omitempty"`
-	TransportSecurity *string               `json:"transportSecurity,omitempty"`
+	EndPoint gwv1.AbsoluteURI      `json:"endpoint"`
+	Sampler  *helmAITracingSampler `json:"sampler,omitempty"`
+	Timeout  *metav1.Duration      `json:"timeout,omitempty"`
+	Protocol *string               `json:"protocol,omitempty"`
 }
 
 type helmAITracingSampler struct {
@@ -186,6 +183,7 @@ type HelmEndpointPickerExtension struct {
 }
 
 type HelmAgentGateway struct {
-	Enabled  bool   `json:"enabled,omitempty"`
-	LogLevel string `json:"logLevel,omitempty"`
+	Enabled             bool   `json:"enabled,omitempty"`
+	LogLevel            string `json:"logLevel,omitempty"`
+	CustomConfigMapName string `json:"customConfigMapName,omitempty"`
 }

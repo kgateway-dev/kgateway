@@ -1,7 +1,9 @@
 package utils
 
 import (
+	"fmt"
 	"maps"
+	"strconv"
 
 	"k8s.io/utils/ptr"
 	v1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
@@ -21,12 +23,19 @@ func TargetRefsToPolicyRefs(
 			SectionName:                nil,
 		})
 	}
-	return TargetRefsToPolicyRefsWithSectionName(targetRefsWithSectionName, targetSelectors)
+	targetSelectorsWithSectionName := make([]v1alpha1.LocalPolicyTargetSelectorWithSectionName, 0, len(targetSelectors))
+	for _, targetSelector := range targetSelectors {
+		targetSelectorsWithSectionName = append(targetSelectorsWithSectionName, v1alpha1.LocalPolicyTargetSelectorWithSectionName{
+			LocalPolicyTargetSelector: targetSelector,
+			SectionName:               nil,
+		})
+	}
+	return TargetRefsToPolicyRefsWithSectionName(targetRefsWithSectionName, targetSelectorsWithSectionName)
 }
 
 func TargetRefsToPolicyRefsWithSectionName(
 	targetRefs []v1alpha1.LocalPolicyTargetReferenceWithSectionName,
-	targetSelectors []v1alpha1.LocalPolicyTargetSelector,
+	targetSelectors []v1alpha1.LocalPolicyTargetSelectorWithSectionName,
 ) []ir.PolicyRef {
 	refs := make([]ir.PolicyRef, 0, len(targetRefs)+len(targetSelectors))
 	for _, targetRef := range targetRefs {
@@ -43,6 +52,7 @@ func TargetRefsToPolicyRefsWithSectionName(
 			Kind:  string(targetSelector.Kind),
 			// Clone to avoid mutating the original map
 			MatchLabels: maps.Clone(targetSelector.MatchLabels),
+			SectionName: string(ptr.Deref(targetSelector.SectionName, "")),
 		})
 	}
 	return refs
@@ -60,4 +70,20 @@ func TargetRefsToPolicyRefsWithSectionNameV1Alpha2(targetRefs []v1alpha2.LocalPo
 	}
 
 	return refs
+}
+
+// ParsePrecedenceWeightAnnotation parses the given route/policy weight value from the given annotations and key
+func ParsePrecedenceWeightAnnotation(
+	annotations map[string]string,
+	key string,
+) (int32, error) {
+	val, ok := annotations[key]
+	if !ok {
+		return 0, nil
+	}
+	weight, err := strconv.ParseInt(val, 10, 32)
+	if err != nil {
+		return 0, fmt.Errorf("invalid value for annotation %s: %s; must be a valid integer", key, val)
+	}
+	return int32(weight), nil
 }

@@ -4,21 +4,23 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 
+	"istio.io/api/annotation"
 	networking "istio.io/api/networking/v1alpha3"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/config/schema/gvk"
 	"istio.io/istio/pkg/kube/krt"
 
-	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 
 	"k8s.io/utils/ptr"
 )
 
-func (s *serviceEntryPlugin) initServiceEntryBackend(ctx context.Context, in ir.BackendObjectIR, out *clusterv3.Cluster) *ir.EndpointsForBackend {
+func (s *serviceEntryPlugin) initServiceEntryBackend(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
 	se, ok := in.Obj.(*networkingclient.ServiceEntry)
 	if !ok {
 		return nil
@@ -30,30 +32,30 @@ func (s *serviceEntryPlugin) initServiceEntryBackend(ctx context.Context, in ir.
 	switch se.Spec.GetResolution() {
 	case networking.ServiceEntry_STATIC:
 		if !isEDSServiceEntry(se) {
-			out.ClusterDiscoveryType = &clusterv3.Cluster_Type{
-				Type: clusterv3.Cluster_STATIC,
+			out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{
+				Type: envoyclusterv3.Cluster_STATIC,
 			}
 		}
 	case networking.ServiceEntry_DNS:
-		out.ClusterDiscoveryType = &clusterv3.Cluster_Type{
-			Type: clusterv3.Cluster_STRICT_DNS,
+		out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{
+			Type: envoyclusterv3.Cluster_STRICT_DNS,
 		}
 	case networking.ServiceEntry_DNS_ROUND_ROBIN:
-		out.ClusterDiscoveryType = &clusterv3.Cluster_Type{
-			Type: clusterv3.Cluster_LOGICAL_DNS,
+		out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{
+			Type: envoyclusterv3.Cluster_LOGICAL_DNS,
 		}
 	}
 
 	var staticEps *ir.EndpointsForBackend
 	if isEDSServiceEntry(se) {
-		out.ClusterDiscoveryType = &clusterv3.Cluster_Type{
-			Type: clusterv3.Cluster_EDS,
+		out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{
+			Type: envoyclusterv3.Cluster_EDS,
 		}
-		out.EdsClusterConfig = &clusterv3.Cluster_EdsClusterConfig{
-			EdsConfig: &corev3.ConfigSource{
-				ResourceApiVersion: corev3.ApiVersion_V3,
-				ConfigSourceSpecifier: &corev3.ConfigSource_Ads{
-					Ads: &corev3.AggregatedConfigSource{},
+		out.EdsClusterConfig = &envoyclusterv3.Cluster_EdsClusterConfig{
+			EdsConfig: &envoycorev3.ConfigSource{
+				ResourceApiVersion: envoycorev3.ApiVersion_V3,
+				ConfigSourceSpecifier: &envoycorev3.ConfigSource_Ads{
+					Ads: &envoycorev3.AggregatedConfigSource{},
 				},
 			},
 		}
@@ -71,7 +73,7 @@ func (s *serviceEntryPlugin) initServiceEntryBackend(ctx context.Context, in ir.
 func backendsCollections(
 	logger *slog.Logger,
 	ServiceEntries krt.Collection[*networkingclient.ServiceEntry],
-	krtOpts krtutil.KrtOptions,
+	krtOpts krtinternal.KrtOptions,
 	aliaser Aliaser,
 ) krt.Collection[ir.BackendObjectIR] {
 	return krt.NewManyCollection(ServiceEntries, func(ctx krt.HandlerContext, se *networkingclient.ServiceEntry) []ir.BackendObjectIR {
@@ -128,6 +130,14 @@ func BuildServiceEntryBackendObjectIR(
 	if aliaser != nil {
 		backend.Aliases = append(backend.Aliases, aliaser(se)...)
 	}
+
+	// We support specifying the Istio traffic distribution in the annotations of the ServicEntry.
+	if val, ok := se.Annotations[annotation.NetworkingTrafficDistribution.Name]; ok {
+		backend.TrafficDistribution = wellknown.ParseTrafficDistribution(val)
+	}
+
+	// Parse common annotations
+	ir.ParseObjectAnnotations(&backend, se)
 
 	backend.AttachedPolicies = ir.AttachedPolicies{}
 	return backend

@@ -1,0 +1,40 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: GRPCRoute
+metadata:
+  name: example-grpc-route
+spec:
+  parentRefs:
+  - name: example-gateway
+  rules:
+  - matches:
+    - method:
+        service: "example.grpc.Service"
+        method: "ExampleMethod"
+    backendRefs:
+    - name: example-grpc-svc
+      port: 9000
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: agentgateway
+  listeners:
+  - name: grpc
+    port: 8090
+    protocol: HTTP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-grpc-svc
+spec:
+  ports:
+  - port: 9000
+    name: grpc
+    protocol: TCP
+    targetPort: 9000
+    appProtocol: kubernetes.io/h2c
+  selector:
+    app: example-grpc-app

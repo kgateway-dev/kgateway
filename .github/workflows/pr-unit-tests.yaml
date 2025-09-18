@@ -28,8 +28,6 @@ jobs:
         go-version-file: go.mod
     - name: Install dependencies
       run: make mod-download
-    - name: Build kgateway
-      run: go build -v ./internal/kgateway/...
     - name: Run Tests
       shell: bash
       env:

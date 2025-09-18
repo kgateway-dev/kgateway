@@ -85,6 +85,10 @@ func (r *ReportMap) Gateway(gateway *gwv1.Gateway) *GatewayReport {
 	return r.Gateways[key]
 }
 
+func (r *ReportMap) GatewayNamespaceName(key types.NamespacedName) *GatewayReport {
+	return r.Gateways[key]
+}
+
 func (r *ReportMap) newGatewayReport(gateway *gwv1.Gateway) *GatewayReport {
 	gr := &GatewayReport{}
 	gr.observedGeneration = gateway.Generation
@@ -240,7 +244,7 @@ func (g *ListenerSetReport) SetCondition(gc pluginsdkreporter.GatewayCondition) 
 		Reason:  string(gc.Reason),
 		Message: gc.Message,
 	}
-	g.conditions = append(g.conditions, condition)
+	meta.SetStatusCondition(&g.conditions, condition)
 }
 
 func NewListenerReport(name string) *ListenerReport {
@@ -249,6 +253,7 @@ func NewListenerReport(name string) *ListenerReport {
 	// without it, it will fail to set status
 	lr.Status.SupportedKinds = []gwv1.RouteGroupKind{}
 	lr.Status.Name = gwv1.SectionName(name)
+	lr.Status.SupportedKinds = []gwv1.RouteGroupKind{} // Initialize with empty slice
 	return &lr
 }
 
@@ -270,31 +275,34 @@ func (l *ListenerReport) SetAttachedRoutes(n uint) {
 	l.Status.AttachedRoutes = int32(n)
 }
 
-type reporter struct {
+type statusReporter struct {
 	report *ReportMap
 }
 
-func (r *reporter) Gateway(gateway *gwv1.Gateway) pluginsdkreporter.GatewayReporter {
+func (r *statusReporter) Gateway(gateway *gwv1.Gateway) pluginsdkreporter.GatewayReporter {
 	gr := r.report.Gateway(gateway)
 	if gr == nil {
 		gr = r.report.newGatewayReport(gateway)
 	}
+	gr.observedGeneration = gateway.Generation
 	return gr
 }
 
-func (r *reporter) ListenerSet(listenerSet *gwxv1alpha1.XListenerSet) pluginsdkreporter.ListenerSetReporter {
+func (r *statusReporter) ListenerSet(listenerSet *gwxv1alpha1.XListenerSet) pluginsdkreporter.ListenerSetReporter {
 	lsr := r.report.ListenerSet(listenerSet)
 	if lsr == nil {
 		lsr = r.report.newListenerSetReport(listenerSet)
 	}
+	lsr.observedGeneration = listenerSet.Generation
 	return lsr
 }
 
-func (r *reporter) Route(obj metav1.Object) pluginsdkreporter.RouteReporter {
+func (r *statusReporter) Route(obj metav1.Object) pluginsdkreporter.RouteReporter {
 	rr := r.report.route(obj)
 	if rr == nil {
 		rr = r.report.newRouteReport(obj)
 	}
+	rr.observedGeneration = obj.GetGeneration()
 	return rr
 }
 
@@ -383,7 +391,7 @@ func (prr *ParentRefReport) SetCondition(rc pluginsdkreporter.RouteCondition) {
 }
 
 func NewReporter(reportMap *ReportMap) pluginsdkreporter.Reporter {
-	return &reporter{
+	return &statusReporter{
 		report: reportMap,
 	}
 }

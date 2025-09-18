@@ -5,29 +5,37 @@ import (
 	"log/slog"
 	"net"
 
-	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"github.com/go-logr/logr"
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/kube/kubetypes"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/namespaces"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/admin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	agentgatewayplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
+	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
 type Server interface {
@@ -58,9 +66,28 @@ func WithAgentGatewayClassName(name string) func(*setup) {
 	}
 }
 
-func WithExtraPlugins(extraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []sdk.Plugin) func(*setup) {
+func WithAdditionalGatewayClasses(classes map[string]*deployer.GatewayClassInfo) func(*setup) {
+	return func(s *setup) {
+		s.additionalGatewayClasses = classes
+	}
+}
+
+func WithExtraPlugins(extraPlugins func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []sdk.Plugin) func(*setup) {
 	return func(s *setup) {
 		s.extraPlugins = extraPlugins
+	}
+}
+
+func WithExtraAgentgatewayPlugins(extraAgentgatewayPlugins func(ctx context.Context, agw *agentgatewayplugins.AgwCollections) []agentgatewayplugins.AgentgatewayPlugin) func(*setup) {
+	return func(s *setup) {
+		s.extraAgentgatewayPlugins = extraAgentgatewayPlugins
+	}
+}
+
+// WithLeaderElectionID sets the LeaderElectionID for the leader lease.
+func WithLeaderElectionID(id string) func(*setup) {
+	return func(s *setup) {
+		s.leaderElectionID = id
 	}
 }
 
@@ -70,9 +97,15 @@ func ExtraGatewayParameters(extraGatewayParameters func(cli client.Client, input
 	}
 }
 
-func AddToScheme(addToScheme func(s *runtime.Scheme) error) func(s *setup) {
+func WithRestConfig(rc *rest.Config) func(*setup) {
 	return func(s *setup) {
-		s.addToScheme = addToScheme
+		s.restConfig = rc
+	}
+}
+
+func WithControllerManagerOptions(f func(context.Context) *ctrl.Options) func(*setup) {
+	return func(s *setup) {
+		s.ctrlMgrOptionsInitFunc = f
 	}
 }
 
@@ -82,138 +115,239 @@ func WithExtraXDSCallbacks(extraXDSCallbacks xdsserver.Callbacks) func(*setup) {
 	}
 }
 
+// used for tests only to get access to dynamically assigned port number
+func WithXDSListener(l net.Listener) func(*setup) {
+	return func(s *setup) {
+		s.xdsListener = l
+	}
+}
+
+func WithExtraManagerConfig(mgrConfigFuncs ...func(ctx context.Context, mgr manager.Manager, objectFilter kubetypes.DynamicObjectFilter) error) func(*setup) {
+	return func(s *setup) {
+		s.extraManagerConfig = mgrConfigFuncs
+	}
+}
+
+func WithKrtDebugger(dbg *krt.DebugHandler) func(*setup) {
+	return func(s *setup) {
+		s.krtDebugger = dbg
+	}
+}
+
+func WithGlobalSettings(settings *settings.Settings) func(*setup) {
+	return func(s *setup) {
+		s.globalSettings = settings
+	}
+}
+
+func WithValidator(v validator.Validator) func(*setup) {
+	return func(s *setup) {
+		s.validator = v
+	}
+}
+
 type setup struct {
-	gatewayControllerName  string
-	gatewayClassName       string
-	waypointClassName      string
-	agentGatewayClassName  string
-	extraPlugins           func(ctx context.Context, commoncol *common.CommonCollections) []sdk.Plugin
-	extraGatewayParameters func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
-	addToScheme            func(s *runtime.Scheme) error
-	extraXDSCallbacks      xdsserver.Callbacks
+	gatewayControllerName    string
+	gatewayClassName         string
+	waypointClassName        string
+	agentGatewayClassName    string
+	additionalGatewayClasses map[string]*deployer.GatewayClassInfo
+	extraPlugins             func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []sdk.Plugin
+	extraAgentgatewayPlugins func(ctx context.Context, agw *agentgatewayplugins.AgwCollections) []agentgatewayplugins.AgentgatewayPlugin
+	extraGatewayParameters   func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
+	extraXDSCallbacks        xdsserver.Callbacks
+	xdsListener              net.Listener
+	restConfig               *rest.Config
+	ctrlMgrOptionsInitFunc   func(context.Context) *ctrl.Options
+	// extra controller manager config, like adding registering additional controllers
+	extraManagerConfig []func(ctx context.Context, mgr manager.Manager, objectFilter kubetypes.DynamicObjectFilter) error
+	krtDebugger        *krt.DebugHandler
+	globalSettings     *settings.Settings
+	leaderElectionID   string
+	validator          validator.Validator
 }
 
 var _ Server = &setup{}
 
-func New(opts ...func(*setup)) *setup {
+func New(opts ...func(*setup)) (*setup, error) {
 	s := &setup{
 		gatewayControllerName: wellknown.DefaultGatewayControllerName,
 		gatewayClassName:      wellknown.DefaultGatewayClassName,
 		waypointClassName:     wellknown.DefaultWaypointClassName,
 		agentGatewayClassName: wellknown.DefaultAgentGatewayClassName,
+		leaderElectionID:      wellknown.LeaderElectionID,
 	}
 	for _, opt := range opts {
 		opt(s)
 	}
-	return s
+
+	if s.globalSettings == nil {
+		var err error
+		s.globalSettings, err = settings.BuildSettings()
+		if err != nil {
+			slog.Error("error loading settings from env", "error", err)
+			return nil, err
+		}
+	}
+
+	if s.restConfig == nil {
+		s.restConfig = ctrl.GetConfigOrDie()
+	}
+
+	if s.ctrlMgrOptionsInitFunc == nil {
+		s.ctrlMgrOptionsInitFunc = func(ctx context.Context) *ctrl.Options {
+			return &ctrl.Options{
+				BaseContext:      func() context.Context { return ctx },
+				Scheme:           runtime.NewScheme(),
+				PprofBindAddress: "127.0.0.1:9099",
+				// if you change the port here, also change the port "health" in the helmchart.
+				HealthProbeBindAddress: ":9093",
+				Metrics: metricsserver.Options{
+					BindAddress: ":9092",
+				},
+				LeaderElection:   !s.globalSettings.DisableLeaderElection,
+				LeaderElectionID: s.leaderElectionID,
+			}
+		}
+	}
+
+	if s.krtDebugger == nil {
+		s.krtDebugger = new(krt.DebugHandler)
+	}
+
+	if s.xdsListener == nil {
+		var err error
+		s.xdsListener, err = newXDSListener("0.0.0.0", s.globalSettings.XdsServicePort)
+		if err != nil {
+			slog.Error("error creating xds listener", "error", err)
+			return nil, err
+		}
+	}
+
+	if s.validator == nil {
+		s.validator = validator.NewBinary()
+	}
+
+	return s, nil
 }
 
 func (s *setup) Start(ctx context.Context) error {
-	if s.extraXDSCallbacks != nil {
-		return StartKgatewayWithXDSCallbacks(ctx, s.gatewayControllerName, s.gatewayClassName, s.waypointClassName, s.agentGatewayClassName, s.extraPlugins, s.extraGatewayParameters, s.addToScheme, s.extraXDSCallbacks)
-	}
-
-	return StartKgateway(ctx, s.gatewayControllerName, s.gatewayClassName, s.waypointClassName, s.agentGatewayClassName, s.extraPlugins, s.extraGatewayParameters, s.addToScheme)
-}
-
-func StartKgateway(
-	ctx context.Context,
-	gatewayControllerName string,
-	gatewayClassName string,
-	waypointClassName string,
-	agentGatewayClassName string,
-	extraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []sdk.Plugin,
-	extraGatewayParameters func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters,
-	addToScheme func(s *runtime.Scheme) error,
-) error {
-	return StartKgatewayWithXDSCallbacks(ctx, gatewayControllerName, gatewayClassName, waypointClassName, agentGatewayClassName, extraPlugins, extraGatewayParameters, addToScheme, nil)
-}
-
-func StartKgatewayWithXDSCallbacks(ctx context.Context,
-	gatewayControllerName string,
-	gatewayClassName string,
-	waypointClassName string,
-	agentGatewayClassName string,
-	extraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []sdk.Plugin,
-	extraGatewayParameters func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters,
-	addToScheme func(s *runtime.Scheme) error,
-	extraXDSCallbacks xdsserver.Callbacks,
-) error {
-	// load global settings
-	st, err := settings.BuildSettings()
-	if err != nil {
-		slog.Error("error loading settings from env", "error", err)
-	}
-
-	setupLogging(st.LogLevel)
-	slog.Info("global settings loaded", "settings", *st)
-
-	uniqueClientCallbacks, uccBuilder := krtcollections.NewUniquelyConnectedClients(extraXDSCallbacks)
-	cache, err := startControlPlane(ctx, st.XdsServicePort, uniqueClientCallbacks)
-	if err != nil {
-		return err
-	}
-
-	setupOpts := &controller.SetupOpts{
-		Cache:                  cache,
-		KrtDebugger:            new(krt.DebugHandler),
-		GlobalSettings:         st,
-		PprofBindAddress:       "127.0.0.1:9099",
-		HealthProbeBindAddress: ":9093",
-		MetricsBindAddress:     ":9092",
-	}
-
-	restConfig := ctrl.GetConfigOrDie()
-	return StartKgatewayWithConfig(
-		ctx,
-		gatewayControllerName,
-		gatewayClassName,
-		waypointClassName,
-		agentGatewayClassName,
-		setupOpts,
-		restConfig,
-		uccBuilder,
-		extraPlugins,
-		extraGatewayParameters,
-		addToScheme,
-	)
-}
-
-func startControlPlane(
-	ctx context.Context,
-	port uint32,
-	callbacks xdsserver.Callbacks,
-) (envoycache.SnapshotCache, error) {
-	return NewControlPlane(ctx, &net.TCPAddr{IP: net.IPv4zero, Port: int(port)}, callbacks)
-}
-
-func StartKgatewayWithConfig(
-	ctx context.Context,
-	gatewayControllerName string,
-	gatewayClassName string,
-	waypointClassName string,
-	agentGatewayClassName string,
-	setupOpts *controller.SetupOpts,
-	restConfig *rest.Config,
-	uccBuilder krtcollections.UniquelyConnectedClientsBulider,
-	extraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []sdk.Plugin,
-	extraGatewayParameters func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters,
-	addToScheme func(s *runtime.Scheme) error,
-) error {
 	slog.Info("starting kgateway")
 
-	kubeClient, err := CreateKubeClient(restConfig)
+	SetupLogging(s.globalSettings.LogLevel)
+
+	mgrOpts := s.ctrlMgrOptionsInitFunc(ctx)
+
+	metrics.SetRegistry(s.globalSettings.EnableBuiltinDefaultMetrics, nil)
+	metrics.SetActive(!(mgrOpts.Metrics.BindAddress == "" || mgrOpts.Metrics.BindAddress == "0"))
+
+	mgr, err := ctrl.NewManager(s.restConfig, *mgrOpts)
 	if err != nil {
 		return err
 	}
 
-	metrics.SetRegistry(setupOpts.GlobalSettings.EnableBuiltinDefaultMetrics, nil)
-	metrics.SetActive(!(setupOpts.MetricsBindAddress == "" || setupOpts.MetricsBindAddress == "0"))
+	if err := controller.AddToScheme(mgr.GetScheme()); err != nil {
+		slog.Error("unable to extend scheme", "error", err)
+		return err
+	}
+
+	uniqueClientCallbacks, uccBuilder := krtcollections.NewUniquelyConnectedClients(s.extraXDSCallbacks)
+	cache := NewControlPlane(ctx, s.xdsListener, uniqueClientCallbacks)
+
+	setupOpts := &controller.SetupOpts{
+		Cache:          cache,
+		KrtDebugger:    s.krtDebugger,
+		GlobalSettings: s.globalSettings,
+	}
+
+	istioClient, err := CreateKubeClient(s.restConfig)
+	if err != nil {
+		return err
+	}
+
+	cli, err := versioned.NewForConfig(s.restConfig)
+	if err != nil {
+		return err
+	}
 
 	slog.Info("creating krt collections")
 	krtOpts := krtutil.NewKrtOptions(ctx.Done(), setupOpts.KrtDebugger)
 
-	augmentedPods := krtcollections.NewPodsCollection(kubeClient, krtOpts)
+	commoncol, err := collections.NewCommonCollections(
+		ctx,
+		krtOpts,
+		istioClient,
+		cli,
+		mgr.GetClient(),
+		s.gatewayControllerName,
+		*s.globalSettings,
+	)
+	if err != nil {
+		slog.Error("error creating common collections", "error", err)
+		return err
+	}
+
+	agwCollections, err := agentgatewayplugins.NewAgwCollections(
+		commoncol,
+		// control plane system namespace (default is kgateway-system)
+		namespaces.GetPodNamespace(),
+		istioClient.ClusterID().String(),
+	)
+	if err != nil {
+		slog.Error("error creating agw common collections", "error", err)
+		return err
+	}
+
+	for _, mgrCfgFunc := range s.extraManagerConfig {
+		err := mgrCfgFunc(ctx, mgr, commoncol.DiscoveryNamespacesFilter)
+		if err != nil {
+			return err
+		}
+	}
+
+	BuildKgatewayWithConfig(
+		ctx, mgr, s.gatewayControllerName, s.gatewayClassName, s.waypointClassName,
+		s.agentGatewayClassName, s.additionalGatewayClasses, setupOpts, s.restConfig,
+		istioClient, commoncol, agwCollections, uccBuilder, s.extraPlugins, s.extraAgentgatewayPlugins,
+		s.extraGatewayParameters,
+		s.validator,
+	)
+
+	slog.Info("starting admin server")
+	go admin.RunAdminServer(ctx, setupOpts)
+
+	slog.Info("starting manager")
+	return mgr.Start(ctx)
+}
+
+func newXDSListener(ip string, port uint32) (net.Listener, error) {
+	bindAddr := net.TCPAddr{IP: net.ParseIP(ip), Port: int(port)}
+	return net.Listen(bindAddr.Network(), bindAddr.String())
+}
+
+func BuildKgatewayWithConfig(
+	ctx context.Context,
+	mgr manager.Manager,
+	gatewayControllerName string,
+	gatewayClassName string,
+	waypointClassName string,
+	agentGatewayClassName string,
+	additionalGatewayClasses map[string]*deployer.GatewayClassInfo,
+	setupOpts *controller.SetupOpts,
+	restConfig *rest.Config,
+	kubeClient istiokube.Client,
+	commonCollections *collections.CommonCollections,
+	agwCollections *agentgatewayplugins.AgwCollections,
+	uccBuilder krtcollections.UniquelyConnectedClientsBulider,
+	extraPlugins func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []sdk.Plugin,
+	extraAgentgatewayPlugins func(ctx context.Context, agw *agentgatewayplugins.AgwCollections) []agentgatewayplugins.AgentgatewayPlugin,
+	extraGatewayParameters func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters,
+	validator validator.Validator,
+) error {
+	slog.Info("creating krt collections")
+	krtOpts := krtutil.NewKrtOptions(ctx.Done(), setupOpts.KrtDebugger)
+
+	augmentedPods, _ := krtcollections.NewPodsCollection(kubeClient, krtOpts)
 	augmentedPodsForUcc := augmentedPods
 	if envutils.IsEnvTruthy("DISABLE_POD_LOCALITY_XDS") {
 		augmentedPodsForUcc = nil
@@ -223,13 +357,15 @@ func StartKgatewayWithConfig(
 
 	slog.Info("initializing controller")
 	c, err := controller.NewControllerBuilder(ctx, controller.StartConfig{
+		Manager:                  mgr,
 		ControllerName:           gatewayControllerName,
 		GatewayClassName:         gatewayClassName,
 		WaypointGatewayClassName: waypointClassName,
 		AgentGatewayClassName:    agentGatewayClassName,
+		AdditionalGatewayClasses: additionalGatewayClasses,
 		ExtraPlugins:             extraPlugins,
+		ExtraAgentgatewayPlugins: extraAgentgatewayPlugins,
 		ExtraGatewayParameters:   extraGatewayParameters,
-		AddToScheme:              addToScheme,
 		RestConfig:               restConfig,
 		SetupOpts:                setupOpts,
 		Client:                   kubeClient,
@@ -237,6 +373,9 @@ func StartKgatewayWithConfig(
 		UniqueClients:            ucc,
 		Dev:                      logging.MustGetLevel(logging.DefaultComponent) <= logging.LevelTrace,
 		KrtOptions:               krtOpts,
+		CommonCollections:        commonCollections,
+		AgwCollections:           agwCollections,
+		Validator:                validator,
 	})
 	if err != nil {
 		slog.Error("failed initializing controller: ", "error", err)
@@ -246,15 +385,11 @@ func StartKgatewayWithConfig(
 	slog.Info("waiting for cache sync")
 	kubeClient.RunAndWait(ctx.Done())
 
-	slog.Info("starting admin server")
-	go admin.RunAdminServer(ctx, setupOpts)
-
-	slog.Info("starting controller")
-	return c.Start(ctx)
+	return c.Build(ctx)
 }
 
-// setupLogging configures the global slog logger
-func setupLogging(levelStr string) {
+// SetupLogging configures the global slog logger
+func SetupLogging(levelStr string) {
 	if levelStr == "" {
 		return
 	}

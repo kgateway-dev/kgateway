@@ -15,7 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 
-	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -23,13 +23,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 )
 
 var (
@@ -38,8 +37,12 @@ var (
 		Kind:  "Service",
 	}
 	infPoolGk = schema.GroupKind{
-		Group: infextv1a2.GroupVersion.Group,
+		Group: inf.GroupVersion.Group,
 		Kind:  wellknown.InferencePoolKind,
+	}
+	backendGk = schema.GroupKind{
+		Group: wellknown.BackendGVK.Group,
+		Kind:  wellknown.BackendGVK.Kind,
 	}
 )
 
@@ -257,7 +260,7 @@ func TestInferencePoolBackendSameNamespace(t *testing.T) {
 	if backends[0].BackendObject.Namespace != "default" {
 		t.Fatalf("backend incorrect ns")
 	}
-	if backends[0].BackendObject.Group != infextv1a2.GroupVersion.Group {
+	if backends[0].BackendObject.Group != inf.GroupVersion.Group {
 		t.Fatalf("backend incorrect group")
 	}
 	if backends[0].BackendObject.Kind != wellknown.InferencePoolKind {
@@ -290,7 +293,7 @@ func TestInferencePoolDiffNsBackend(t *testing.T) {
 	if backends[0].BackendObject.Namespace != "default2" {
 		t.Fatalf("backend incorrect ns")
 	}
-	if backends[0].BackendObject.Group != infextv1a2.GroupVersion.Group {
+	if backends[0].BackendObject.Group != inf.GroupVersion.Group {
 		t.Fatalf("backend incorrect group")
 	}
 	if backends[0].BackendObject.Kind != wellknown.InferencePoolKind {
@@ -397,7 +400,7 @@ func TestInferencePoolPortOverride(t *testing.T) {
 						BackendRefs: []gwv1.HTTPBackendRef{{
 							BackendRef: gwv1.BackendRef{
 								BackendObjectReference: gwv1.BackendObjectReference{
-									Group:     ptr.To(gwv1.Group(infextv1a2.GroupVersion.Group)),
+									Group:     ptr.To(gwv1.Group(inf.GroupVersion.Group)),
 									Kind:      ptr.To(gwv1.Kind(wellknown.InferencePoolKind)),
 									Name:      gwv1.ObjectName("foo"),
 									Namespace: ptrToNamespace(ns),
@@ -422,6 +425,57 @@ func TestInferencePoolPortOverride(t *testing.T) {
 			// Assert the BackendObject IR port number
 			assert.Equal(t, tc.wantPort, b.BackendObject.Port,
 				"expected the pool's TargetPortNumber to override the provided port")
+		})
+	}
+}
+
+func TestBackendPortNotAllowed(t *testing.T) {
+	cases := []struct {
+		name        string
+		backendNs   string
+		refGrant    *gwv1beta1.ReferenceGrant
+		expectError bool
+	}{
+		{
+			name:        "same namespace with port",
+			backendNs:   "",
+			refGrant:    nil,
+			expectError: true,
+		},
+		{
+			name:        "cross namespace with port and ref grant",
+			backendNs:   "default2",
+			refGrant:    refGrantWithBackend(),
+			expectError: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Determine the actual namespace for the backend
+			backendNs := tc.backendNs
+			if backendNs == "" {
+				backendNs = "default"
+			}
+
+			inputs := []any{
+				backend(backendNs),
+			}
+			if tc.refGrant != nil {
+				inputs = append(inputs, tc.refGrant)
+			}
+
+			// Create HTTPRoute with Backend reference with port (this should always fail)
+			portVal := gwv1.PortNumber(8080)
+			route := httpRouteWithBackendRef("test-backend", tc.backendNs, &portVal)
+			inputs = append(inputs, route)
+
+			ir := translateRoute(t, inputs)
+			require.NotNil(t, ir)
+			b := getBackends(ir)[0]
+
+			require.Error(t, b.Err)
+			assert.Contains(t, b.Err.Error(), (&BackendPortNotAllowedError{BackendName: "test-backend"}).Error())
 		})
 	}
 }
@@ -454,27 +508,25 @@ func svc(ns string) *corev1.Service {
 	}
 }
 
-func infPool(ns string) *infextv1a2.InferencePool {
+func infPool(ns string) *inf.InferencePool {
 	if ns == "" {
 		ns = "default"
 	}
-	return &infextv1a2.InferencePool{
+	return &inf.InferencePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "foo",
 			Namespace: ns,
 		},
-		Spec: infextv1a2.InferencePoolSpec{
-			Selector:         map[infextv1a2.LabelKey]infextv1a2.LabelValue{},
-			TargetPortNumber: int32(8080),
-			EndpointPickerConfig: infextv1a2.EndpointPickerConfig{
-				ExtensionRef: &infextv1a2.Extension{
-					ExtensionReference: infextv1a2.ExtensionReference{
-						Group:      ptr.To(infextv1a2.Group("")),
-						Kind:       ptr.To(infextv1a2.Kind(wellknown.ServiceKind)),
-						Name:       "fake",
-						PortNumber: ptr.To(infextv1a2.PortNumber(9002)),
-					},
-				},
+		Spec: inf.InferencePoolSpec{
+			Selector: inf.LabelSelector{
+				MatchLabels: map[inf.LabelKey]inf.LabelValue{},
+			},
+			TargetPorts: []inf.Port{{Number: 8080}},
+			EndpointPickerRef: inf.EndpointPickerRef{
+				Group: ptr.To(inf.Group("")),
+				Kind:  inf.Kind(wellknown.ServiceKind),
+				Name:  "fake",
+				// Port defaults to 9002 unless overridden
 			},
 		},
 	}
@@ -505,7 +557,7 @@ func refGrant() *gwv1beta1.ReferenceGrant {
 					Kind:  gwv1.Kind("Service"),
 				},
 				{
-					Group: gwv1.Group(infextv1a2.GroupVersion.Group),
+					Group: gwv1.Group(inf.GroupVersion.Group),
 					Kind:  gwv1.Kind(wellknown.InferencePoolKind),
 				},
 			},
@@ -521,6 +573,89 @@ func refGrantWithNs(ns string) *gwv1beta1.ReferenceGrant {
 		rg.Spec.From[i].Namespace = gwv1.Namespace("default")
 	}
 	return rg
+}
+
+// Helper that creates a ReferenceGrant for Backend resources
+func refGrantWithBackend() *gwv1beta1.ReferenceGrant {
+	return &gwv1beta1.ReferenceGrant{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default2",
+			Name:      "backend-ref-grant",
+		},
+		Spec: gwv1beta1.ReferenceGrantSpec{
+			From: []gwv1beta1.ReferenceGrantFrom{
+				{
+					Group:     gwv1.Group("gateway.networking.k8s.io"),
+					Kind:      gwv1.Kind("HTTPRoute"),
+					Namespace: gwv1.Namespace("default"),
+				},
+			},
+			To: []gwv1beta1.ReferenceGrantTo{
+				{
+					Group: gwv1.Group(wellknown.BackendGVK.Group),
+					Kind:  gwv1.Kind(wellknown.BackendGVK.Kind),
+				},
+			},
+		},
+	}
+}
+
+// Helper that creates a Backend resource
+func backend(ns string) *v1alpha1.Backend {
+	if ns == "" {
+		ns = "default"
+	}
+	return &v1alpha1.Backend{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-backend",
+			Namespace: ns,
+		},
+		Spec: v1alpha1.BackendSpec{
+			Type: v1alpha1.BackendTypeStatic,
+			Static: &v1alpha1.StaticBackend{
+				Hosts: []v1alpha1.Host{
+					{
+						Host: "1.2.3.4",
+						Port: gwv1.PortNumber(8080),
+					},
+				},
+			},
+		},
+	}
+}
+
+// Helper that creates an HTTPRoute with a Backend reference
+func httpRouteWithBackendRef(refN, refNs string, port *gwv1.PortNumber) *gwv1.HTTPRoute {
+	var ns *gwv1.Namespace
+	if refNs != "" {
+		n := gwv1.Namespace(refNs)
+		ns = &n
+	}
+	return &gwv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "httproute",
+			Namespace: "default",
+		},
+		Spec: gwv1.HTTPRouteSpec{
+			Rules: []gwv1.HTTPRouteRule{
+				{
+					BackendRefs: []gwv1.HTTPBackendRef{
+						{
+							BackendRef: gwv1.BackendRef{
+								BackendObjectReference: gwv1.BackendObjectReference{
+									Group:     ptr.To(gwv1.Group(wellknown.BackendGVK.Group)),
+									Kind:      ptr.To(gwv1.Kind(wellknown.BackendGVK.Kind)),
+									Name:      gwv1.ObjectName(refN),
+									Namespace: ns,
+									Port:      port,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 }
 
 func k8sSvcUpstreams(services krt.Collection[*corev1.Service]) krt.Collection[ir.BackendObjectIR] {
@@ -541,19 +676,39 @@ func k8sSvcUpstreams(services krt.Collection[*corev1.Service]) krt.Collection[ir
 	})
 }
 
-func infPoolUpstreams(poolCol krt.Collection[*infextv1a2.InferencePool]) krt.Collection[ir.BackendObjectIR] {
-	return krt.NewCollection(poolCol, func(kctx krt.HandlerContext, pool *infextv1a2.InferencePool) *ir.BackendObjectIR {
+func infPoolUpstreams(poolCol krt.Collection[*inf.InferencePool]) krt.Collection[ir.BackendObjectIR] {
+	return krt.NewCollection(poolCol, func(kctx krt.HandlerContext, pool *inf.InferencePool) *ir.BackendObjectIR {
 		// Create a BackendObjectIR IR representation from the given InferencePool.
 		backend := ir.NewBackendObjectIR(ir.ObjectSource{
 			Kind:      infPoolGk.Kind,
 			Group:     infPoolGk.Group,
 			Namespace: pool.Namespace,
 			Name:      pool.Name,
-		}, pool.Spec.TargetPortNumber, "")
+		}, int32(pool.Spec.TargetPorts[0].Number), "")
 		backend.Obj = pool
 		backend.GvPrefix = "endpoint-picker"
 		backend.CanonicalHostname = ""
 		return &backend
+	})
+}
+
+func backendUpstreams(backendCol krt.Collection[*v1alpha1.Backend]) krt.Collection[ir.BackendObjectIR] {
+	return krt.NewCollection(backendCol, func(kctx krt.HandlerContext, backend *v1alpha1.Backend) *ir.BackendObjectIR {
+		// Create a BackendObjectIR IR representation from the given Backend.
+		// For static backends, use the port from the first host
+		var port int32 = 8080 // default port
+		if backend.Spec.Static != nil && len(backend.Spec.Static.Hosts) > 0 {
+			port = int32(backend.Spec.Static.Hosts[0].Port)
+		}
+
+		backendIR := ir.NewBackendObjectIR(ir.ObjectSource{
+			Kind:      backendGk.Kind,
+			Group:     backendGk.Group,
+			Namespace: backend.Namespace,
+			Name:      backend.Name,
+		}, port, "")
+		backendIR.Obj = backend
+		return &backendIR
 	})
 }
 
@@ -608,7 +763,7 @@ func httpRouteWithInfPoolBackendRef(refN, refNs string) *gwv1.HTTPRoute {
 						{
 							BackendRef: gwv1.BackendRef{
 								BackendObjectReference: gwv1.BackendObjectReference{
-									Group:     ptr.To(gwv1.Group(infextv1a2.GroupVersion.Group)),
+									Group:     ptr.To(gwv1.Group(inf.GroupVersion.Group)),
 									Kind:      ptr.To(gwv1.Kind(wellknown.InferencePoolKind)),
 									Name:      gwv1.ObjectName(refN),
 									Namespace: ns,
@@ -670,7 +825,7 @@ func httpRouteWithInfPoolBackendRefWithPort(refN, refNs string, port gwv1.PortNu
 				BackendRefs: []gwv1.HTTPBackendRef{{
 					BackendRef: gwv1.BackendRef{
 						BackendObjectReference: gwv1.BackendObjectReference{
-							Group:     ptr.To(gwv1.Group(infextv1a2.GroupVersion.Group)),
+							Group:     ptr.To(gwv1.Group(inf.GroupVersion.Group)),
 							Kind:      ptr.To(gwv1.Kind(wellknown.InferencePoolKind)),
 							Name:      gwv1.ObjectName(refN),
 							Namespace: ns,
@@ -689,7 +844,7 @@ func preRouteIndex(t test.Failer, inputs []any) *RoutesIndex {
 	policyCol := krttest.GetMockCollection[ir.PolicyWrapper](mock)
 
 	policies := NewPolicyIndex(
-		krtutil.KrtOptions{},
+		krtinternal.KrtOptions{},
 		extensionsplug.ContributesPolicies{
 			wellknown.TrafficPolicyGVK.GroupKind(): {
 				Policies: policyCol,
@@ -698,16 +853,18 @@ func preRouteIndex(t test.Failer, inputs []any) *RoutesIndex {
 		settings.Settings{},
 	)
 	refgrants := NewRefGrantIndex(krttest.GetMockCollection[*gwv1beta1.ReferenceGrant](mock))
-	upstreams := NewBackendIndex(krtutil.KrtOptions{}, policies, refgrants)
+	upstreams := NewBackendIndex(krtinternal.KrtOptions{}, policies, refgrants)
 	upstreams.AddBackends(svcGk, k8sSvcUpstreams(services))
-	pools := krttest.GetMockCollection[*infextv1a2.InferencePool](mock)
+	pools := krttest.GetMockCollection[*inf.InferencePool](mock)
 	upstreams.AddBackends(infPoolGk, infPoolUpstreams(pools))
+	backends := krttest.GetMockCollection[*v1alpha1.Backend](mock)
+	upstreams.AddBackends(backendGk, backendUpstreams(backends))
 
 	httproutes := krttest.GetMockCollection[*gwv1.HTTPRoute](mock)
 	tcpproutes := krttest.GetMockCollection[*gwv1a2.TCPRoute](mock)
 	tlsroutes := krttest.GetMockCollection[*gwv1a2.TLSRoute](mock)
 	grpcroutes := krttest.GetMockCollection[*gwv1.GRPCRoute](mock)
-	rtidx := NewRoutesIndex(krtutil.KrtOptions{}, httproutes, grpcroutes, tcpproutes, tlsroutes, policies, upstreams, refgrants, settings.Settings{})
+	rtidx := NewRoutesIndex(krtinternal.KrtOptions{}, httproutes, grpcroutes, tcpproutes, tlsroutes, policies, upstreams, refgrants, settings.Settings{})
 	services.WaitUntilSynced(nil)
 	policyCol.WaitUntilSynced(nil)
 	for !rtidx.HasSynced() || !refgrants.HasSynced() || !policyCol.HasSynced() {
@@ -744,7 +901,7 @@ func translateRoute(t *testing.T, inputs []any) ir.Route {
 	}
 
 	/*poolGk := schema.GroupKind{
-		Group: infextv1a1.GroupVersion.Group,
+		Group: inf.GroupVersion.Group,
 		Kind:  wellknown.InferencePoolKind,
 	}
 	if t := rtidx.Fetch(krt.TestingDummyContext{}, poolGk, "default", "inferencepool"); t != nil {
@@ -907,102 +1064,6 @@ func BenchmarkPolicyAttachment(b *testing.B) {
 					a.Len(h.AttachedPolicies.Policies[wellknown.TrafficPolicyGVK.GroupKind()], tc.expectedPoliciesPerRoute)
 				}
 			}
-		})
-	}
-}
-
-func TestParseRoutePrecedenceWeight(t *testing.T) {
-	tests := []struct {
-		name        string
-		annotations map[string]string
-		expected    int32
-		expectError bool
-	}{
-		{
-			name:        "No annotation",
-			annotations: map[string]string{},
-			expected:    0,
-			expectError: false,
-		},
-		{
-			name: "Valid positive weight",
-			annotations: map[string]string{
-				apiannotations.RoutePrecedenceWeight: "100",
-			},
-			expected:    100,
-			expectError: false,
-		},
-		{
-			name: "Valid negative weight",
-			annotations: map[string]string{
-				apiannotations.RoutePrecedenceWeight: "-50",
-			},
-			expected:    -50,
-			expectError: false,
-		},
-		{
-			name: "Valid zero weight",
-			annotations: map[string]string{
-				apiannotations.RoutePrecedenceWeight: "0",
-			},
-			expected:    0,
-			expectError: false,
-		},
-		{
-			name: "Invalid non-numeric value",
-			annotations: map[string]string{
-				apiannotations.RoutePrecedenceWeight: "invalid",
-			},
-			expected:    0,
-			expectError: true,
-		},
-		{
-			name: "Invalid decimal value",
-			annotations: map[string]string{
-				apiannotations.RoutePrecedenceWeight: "100.5",
-			},
-			expected:    0,
-			expectError: true,
-		},
-		{
-			name: "Empty string value",
-			annotations: map[string]string{
-				apiannotations.RoutePrecedenceWeight: "",
-			},
-			expected:    0,
-			expectError: true,
-		},
-		{
-			name: "Value too large for int32",
-			annotations: map[string]string{
-				apiannotations.RoutePrecedenceWeight: "2147483648", // int32 max + 1
-			},
-			expected:    0,
-			expectError: true,
-		},
-		{
-			name: "Value too small for int32",
-			annotations: map[string]string{
-				apiannotations.RoutePrecedenceWeight: "-2147483649", // int32 min - 1
-			},
-			expected:    0,
-			expectError: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			a := assert.New(t)
-
-			weight, err := parseRoutePrecedenceWeight(tt.annotations)
-
-			if tt.expectError {
-				a.Error(err)
-				a.Equal(int32(0), weight)
-				return
-			}
-			a.NoError(err)
-			a.Equal(tt.expected, weight)
 		})
 	}
 }

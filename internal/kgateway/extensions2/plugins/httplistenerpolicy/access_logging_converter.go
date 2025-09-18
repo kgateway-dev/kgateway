@@ -6,9 +6,9 @@ import (
 	"errors"
 	"fmt"
 
-	envoyaccesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyaccesslogv3 "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyalfile "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
 	cel "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/filters/cel/v3"
 	envoygrpc "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
@@ -33,14 +33,21 @@ import (
 
 var ErrUnresolvedBackendRef = errors.New("unresolved backend reference")
 
+const serviceNameKey = "service.name"
+
 // convertAccessLogConfig transforms a list of AccessLog configurations into Envoy AccessLog configurations
+// These access log configs can be either FileAccessLog, HttpGrpcAccessLogConfig or OpenTelemetryAccessLogConfig.
+// The default service name needs to be set to the cluster name in the OpenTelemetryAccessLogConfig.
+// Since the cluster name can only be determined during translation (when the specific gateway is passed),
+// we return partially translated configs. As these configs are of different types, we return an list of interfaces
+// that is stored in the IR to be fully translated during translation.
 func convertAccessLogConfig(
 	ctx context.Context,
 	policy *v1alpha1.HTTPListenerPolicy,
 	commoncol *common.CommonCollections,
 	krtctx krt.HandlerContext,
 	parentSrc ir.ObjectSource,
-) ([]*envoyaccesslog.AccessLog, error) {
+) ([]proto.Message, error) {
 	configs := policy.Spec.AccessLog
 
 	if configs != nil && len(configs) == 0 {
@@ -75,8 +82,8 @@ func getLogId(logName string, idx int) string {
 	return fmt.Sprintf("%s-%d", logName, idx)
 }
 
-func translateAccessLogs(configs []v1alpha1.AccessLog, grpcBackends map[string]*ir.BackendObjectIR) ([]*envoyaccesslog.AccessLog, error) {
-	var results []*envoyaccesslog.AccessLog
+func translateAccessLogs(configs []v1alpha1.AccessLog, grpcBackends map[string]*ir.BackendObjectIR) ([]proto.Message, error) {
+	var results []proto.Message
 
 	for idx, logConfig := range configs {
 		accessLogCfg, err := translateAccessLog(logConfig, grpcBackends, idx)
@@ -90,14 +97,14 @@ func translateAccessLogs(configs []v1alpha1.AccessLog, grpcBackends map[string]*
 }
 
 // translateAccessLog creates an Envoy AccessLog configuration for a single log config
-func translateAccessLog(logConfig v1alpha1.AccessLog, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (*envoyaccesslog.AccessLog, error) {
+func translateAccessLog(logConfig v1alpha1.AccessLog, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (proto.Message, error) {
 	// Validate mutual exclusivity of sink types
 	if logConfig.FileSink != nil && logConfig.GrpcService != nil {
 		return nil, errors.New("access log config cannot have both file sink and grpc service")
 	}
 
 	var (
-		accessLogCfg *envoyaccesslog.AccessLog
+		accessLogCfg proto.Message
 		err          error
 	)
 
@@ -116,18 +123,11 @@ func translateAccessLog(logConfig v1alpha1.AccessLog, grpcBackends map[string]*i
 		return nil, err
 	}
 
-	// Add filter if specified
-	if logConfig.Filter != nil {
-		if err := addAccessLogFilter(accessLogCfg, logConfig.Filter); err != nil {
-			return nil, err
-		}
-	}
-
 	return accessLogCfg, nil
 }
 
 // createFileAccessLog generates a file-based access log configuration
-func createFileAccessLog(fileSink *v1alpha1.FileSink) (*envoyaccesslog.AccessLog, error) {
+func createFileAccessLog(fileSink *v1alpha1.FileSink) (proto.Message, error) {
 	fileCfg := &envoyalfile.FileAccessLog{Path: fileSink.Path}
 
 	// Validate format configuration
@@ -143,10 +143,10 @@ func createFileAccessLog(fileSink *v1alpha1.FileSink) (*envoyaccesslog.AccessLog
 	switch {
 	case fileSink.StringFormat != "":
 		fileCfg.AccessLogFormat = &envoyalfile.FileAccessLog_LogFormat{
-			LogFormat: &envoycore.SubstitutionFormatString{
-				Format: &envoycore.SubstitutionFormatString_TextFormatSource{
-					TextFormatSource: &envoycore.DataSource{
-						Specifier: &envoycore.DataSource_InlineString{
+			LogFormat: &envoycorev3.SubstitutionFormatString{
+				Format: &envoycorev3.SubstitutionFormatString_TextFormatSource{
+					TextFormatSource: &envoycorev3.DataSource{
+						Specifier: &envoycorev3.DataSource_InlineString{
 							InlineString: fileSink.StringFormat,
 						},
 					},
@@ -156,42 +156,39 @@ func createFileAccessLog(fileSink *v1alpha1.FileSink) (*envoyaccesslog.AccessLog
 		}
 	case fileSink.JsonFormat != nil:
 		fileCfg.AccessLogFormat = &envoyalfile.FileAccessLog_LogFormat{
-			LogFormat: &envoycore.SubstitutionFormatString{
-				Format: &envoycore.SubstitutionFormatString_JsonFormat{
+			LogFormat: &envoycorev3.SubstitutionFormatString{
+				Format: &envoycorev3.SubstitutionFormatString_JsonFormat{
 					JsonFormat: convertJsonFormat(fileSink.JsonFormat),
 				},
 				Formatters: formatterExtensions,
 			},
 		}
 	}
-
-	return newAccessLogWithConfig(wellknown.FileAccessLog, fileCfg)
+	return fileCfg, nil
 }
 
 // createGrpcAccessLog generates a gRPC-based access log configuration
-func createGrpcAccessLog(grpcService *v1alpha1.AccessLogGrpcService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (*envoyaccesslog.AccessLog, error) {
+func createGrpcAccessLog(grpcService *v1alpha1.AccessLogGrpcService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (proto.Message, error) {
 	var cfg envoygrpc.HttpGrpcAccessLogConfig
 	if err := copyGrpcSettings(&cfg, grpcService, grpcBackends, accessLogId); err != nil {
 		return nil, fmt.Errorf("error converting grpc access log config: %w", err)
 	}
-
-	return newAccessLogWithConfig(wellknown.HTTPGRPCAccessLog, &cfg)
+	return &cfg, nil
 }
 
 // createOTelAccessLog generates an OTel access log configuration
-func createOTelAccessLog(grpcService *v1alpha1.OpenTelemetryAccessLogService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (*envoyaccesslog.AccessLog, error) {
+func createOTelAccessLog(grpcService *v1alpha1.OpenTelemetryAccessLogService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (proto.Message, error) {
 	var cfg envoy_open_telemetry.OpenTelemetryAccessLogConfig
 	if err := copyOTelSettings(&cfg, grpcService, grpcBackends, accessLogId); err != nil {
 		return nil, fmt.Errorf("error converting otel access log config: %w", err)
 	}
-
-	return newAccessLogWithConfig("envoy.access_loggers.open_telemetry", &cfg)
+	return &cfg, nil
 }
 
 // addAccessLogFilter adds filtering logic to an access log configuration
-func addAccessLogFilter(accessLogCfg *envoyaccesslog.AccessLog, filter *v1alpha1.AccessLogFilter) error {
+func addAccessLogFilter(accessLogCfg *envoyaccesslogv3.AccessLog, filter *v1alpha1.AccessLogFilter) error {
 	var (
-		filters []*envoyaccesslog.AccessLogFilter
+		filters []*envoyaccesslogv3.AccessLogFilter
 		err     error
 	)
 
@@ -201,16 +198,16 @@ func addAccessLogFilter(accessLogCfg *envoyaccesslog.AccessLog, filter *v1alpha1
 		if err != nil {
 			return err
 		}
-		accessLogCfg.GetFilter().FilterSpecifier = &envoyaccesslog.AccessLogFilter_OrFilter{
-			OrFilter: &envoyaccesslog.OrFilter{Filters: filters},
+		accessLogCfg.GetFilter().FilterSpecifier = &envoyaccesslogv3.AccessLogFilter_OrFilter{
+			OrFilter: &envoyaccesslogv3.OrFilter{Filters: filters},
 		}
 	case filter.AndFilter != nil:
 		filters, err = translateOrFilters(filter.AndFilter)
 		if err != nil {
 			return err
 		}
-		accessLogCfg.GetFilter().FilterSpecifier = &envoyaccesslog.AccessLogFilter_AndFilter{
-			AndFilter: &envoyaccesslog.AndFilter{Filters: filters},
+		accessLogCfg.GetFilter().FilterSpecifier = &envoyaccesslogv3.AccessLogFilter_AndFilter{
+			AndFilter: &envoyaccesslogv3.AndFilter{Filters: filters},
 		}
 	case filter.FilterType != nil:
 		accessLogCfg.Filter, err = translateFilter(filter.FilterType)
@@ -223,8 +220,8 @@ func addAccessLogFilter(accessLogCfg *envoyaccesslog.AccessLog, filter *v1alpha1
 }
 
 // translateOrFilters translates a slice of filter types
-func translateOrFilters(filters []v1alpha1.FilterType) ([]*envoyaccesslog.AccessLogFilter, error) {
-	result := make([]*envoyaccesslog.AccessLogFilter, 0, len(filters))
+func translateOrFilters(filters []v1alpha1.FilterType) ([]*envoyaccesslogv3.AccessLogFilter, error) {
+	result := make([]*envoyaccesslogv3.AccessLogFilter, 0, len(filters))
 	for _, filter := range filters {
 		cfg, err := translateFilter(&filter)
 		if err != nil {
@@ -235,8 +232,8 @@ func translateOrFilters(filters []v1alpha1.FilterType) ([]*envoyaccesslog.Access
 	return result, nil
 }
 
-func translateFilter(filter *v1alpha1.FilterType) (*envoyaccesslog.AccessLogFilter, error) {
-	var alCfg *envoyaccesslog.AccessLogFilter
+func translateFilter(filter *v1alpha1.FilterType) (*envoyaccesslogv3.AccessLogFilter, error) {
+	var alCfg *envoyaccesslogv3.AccessLogFilter
 	switch {
 	case filter.StatusCodeFilter != nil:
 		op, err := toEnvoyComparisonOpType(filter.StatusCodeFilter.Op)
@@ -244,12 +241,12 @@ func translateFilter(filter *v1alpha1.FilterType) (*envoyaccesslog.AccessLogFilt
 			return nil, err
 		}
 
-		alCfg = &envoyaccesslog.AccessLogFilter{
-			FilterSpecifier: &envoyaccesslog.AccessLogFilter_StatusCodeFilter{
-				StatusCodeFilter: &envoyaccesslog.StatusCodeFilter{
-					Comparison: &envoyaccesslog.ComparisonFilter{
+		alCfg = &envoyaccesslogv3.AccessLogFilter{
+			FilterSpecifier: &envoyaccesslogv3.AccessLogFilter_StatusCodeFilter{
+				StatusCodeFilter: &envoyaccesslogv3.StatusCodeFilter{
+					Comparison: &envoyaccesslogv3.ComparisonFilter{
 						Op: op,
-						Value: &envoycore.RuntimeUInt32{
+						Value: &envoycorev3.RuntimeUInt32{
 							DefaultValue: filter.StatusCodeFilter.Value,
 						},
 					},
@@ -263,12 +260,12 @@ func translateFilter(filter *v1alpha1.FilterType) (*envoyaccesslog.AccessLogFilt
 			return nil, err
 		}
 
-		alCfg = &envoyaccesslog.AccessLogFilter{
-			FilterSpecifier: &envoyaccesslog.AccessLogFilter_DurationFilter{
-				DurationFilter: &envoyaccesslog.DurationFilter{
-					Comparison: &envoyaccesslog.ComparisonFilter{
+		alCfg = &envoyaccesslogv3.AccessLogFilter{
+			FilterSpecifier: &envoyaccesslogv3.AccessLogFilter_DurationFilter{
+				DurationFilter: &envoyaccesslogv3.DurationFilter{
+					Comparison: &envoyaccesslogv3.ComparisonFilter{
 						Op: op,
-						Value: &envoycore.RuntimeUInt32{
+						Value: &envoycorev3.RuntimeUInt32{
 							DefaultValue: filter.DurationFilter.Value,
 						},
 					},
@@ -277,24 +274,24 @@ func translateFilter(filter *v1alpha1.FilterType) (*envoyaccesslog.AccessLogFilt
 		}
 
 	case filter.NotHealthCheckFilter:
-		alCfg = &envoyaccesslog.AccessLogFilter{
-			FilterSpecifier: &envoyaccesslog.AccessLogFilter_NotHealthCheckFilter{
-				NotHealthCheckFilter: &envoyaccesslog.NotHealthCheckFilter{},
+		alCfg = &envoyaccesslogv3.AccessLogFilter{
+			FilterSpecifier: &envoyaccesslogv3.AccessLogFilter_NotHealthCheckFilter{
+				NotHealthCheckFilter: &envoyaccesslogv3.NotHealthCheckFilter{},
 			},
 		}
 
 	case filter.TraceableFilter:
-		alCfg = &envoyaccesslog.AccessLogFilter{
-			FilterSpecifier: &envoyaccesslog.AccessLogFilter_TraceableFilter{
-				TraceableFilter: &envoyaccesslog.TraceableFilter{},
+		alCfg = &envoyaccesslogv3.AccessLogFilter{
+			FilterSpecifier: &envoyaccesslogv3.AccessLogFilter_TraceableFilter{
+				TraceableFilter: &envoyaccesslogv3.TraceableFilter{},
 			},
 		}
 
 	case filter.HeaderFilter != nil:
-		alCfg = &envoyaccesslog.AccessLogFilter{
-			FilterSpecifier: &envoyaccesslog.AccessLogFilter_HeaderFilter{
-				HeaderFilter: &envoyaccesslog.HeaderFilter{
-					Header: &envoyroute.HeaderMatcher{
+		alCfg = &envoyaccesslogv3.AccessLogFilter{
+			FilterSpecifier: &envoyaccesslogv3.AccessLogFilter_HeaderFilter{
+				HeaderFilter: &envoyaccesslogv3.HeaderFilter{
+					Header: &envoyroutev3.HeaderMatcher{
 						Name:                 string(filter.HeaderFilter.Header.Name),
 						HeaderMatchSpecifier: createHeaderMatchSpecifier(filter.HeaderFilter.Header),
 					},
@@ -303,16 +300,16 @@ func translateFilter(filter *v1alpha1.FilterType) (*envoyaccesslog.AccessLogFilt
 		}
 
 	case filter.ResponseFlagFilter != nil:
-		alCfg = &envoyaccesslog.AccessLogFilter{
-			FilterSpecifier: &envoyaccesslog.AccessLogFilter_ResponseFlagFilter{
-				ResponseFlagFilter: &envoyaccesslog.ResponseFlagFilter{
+		alCfg = &envoyaccesslogv3.AccessLogFilter{
+			FilterSpecifier: &envoyaccesslogv3.AccessLogFilter_ResponseFlagFilter{
+				ResponseFlagFilter: &envoyaccesslogv3.ResponseFlagFilter{
 					Flags: filter.ResponseFlagFilter.Flags,
 				},
 			},
 		}
 
 	case filter.GrpcStatusFilter != nil:
-		statuses := make([]envoyaccesslog.GrpcStatusFilter_Status, len(filter.GrpcStatusFilter.Statuses))
+		statuses := make([]envoyaccesslogv3.GrpcStatusFilter_Status, len(filter.GrpcStatusFilter.Statuses))
 		for i, status := range filter.GrpcStatusFilter.Statuses {
 			envoyGrpcStatusType, err := toEnvoyGRPCStatusType(status)
 			if err != nil {
@@ -321,9 +318,9 @@ func translateFilter(filter *v1alpha1.FilterType) (*envoyaccesslog.AccessLogFilt
 			statuses[i] = envoyGrpcStatusType
 		}
 
-		alCfg = &envoyaccesslog.AccessLogFilter{
-			FilterSpecifier: &envoyaccesslog.AccessLogFilter_GrpcStatusFilter{
-				GrpcStatusFilter: &envoyaccesslog.GrpcStatusFilter{
+		alCfg = &envoyaccesslogv3.AccessLogFilter{
+			FilterSpecifier: &envoyaccesslogv3.AccessLogFilter_GrpcStatusFilter{
+				GrpcStatusFilter: &envoyaccesslogv3.GrpcStatusFilter{
 					Statuses: statuses,
 					Exclude:  filter.GrpcStatusFilter.Exclude,
 				},
@@ -340,11 +337,11 @@ func translateFilter(filter *v1alpha1.FilterType) (*envoyaccesslog.AccessLogFilt
 			return nil, err
 		}
 
-		alCfg = &envoyaccesslog.AccessLogFilter{
-			FilterSpecifier: &envoyaccesslog.AccessLogFilter_ExtensionFilter{
-				ExtensionFilter: &envoyaccesslog.ExtensionFilter{
+		alCfg = &envoyaccesslogv3.AccessLogFilter{
+			FilterSpecifier: &envoyaccesslogv3.AccessLogFilter_ExtensionFilter{
+				ExtensionFilter: &envoyaccesslogv3.ExtensionFilter{
 					Name: kwellknown.CELExtensionFilter,
-					ConfigType: &envoyaccesslog.ExtensionFilter_TypedConfig{
+					ConfigType: &envoyaccesslogv3.ExtensionFilter_TypedConfig{
 						TypedConfig: celCfg,
 					},
 				},
@@ -359,10 +356,10 @@ func translateFilter(filter *v1alpha1.FilterType) (*envoyaccesslog.AccessLogFilt
 }
 
 // Helper function to create header match specifier
-func createHeaderMatchSpecifier(header gwv1.HTTPHeaderMatch) *envoyroute.HeaderMatcher_StringMatch {
+func createHeaderMatchSpecifier(header gwv1.HTTPHeaderMatch) *envoyroutev3.HeaderMatcher_StringMatch {
 	switch *header.Type {
 	case gwv1.HeaderMatchExact:
-		return &envoyroute.HeaderMatcher_StringMatch{
+		return &envoyroutev3.HeaderMatcher_StringMatch{
 			StringMatch: &envoymatcher.StringMatcher{
 				IgnoreCase: false,
 				MatchPattern: &envoymatcher.StringMatcher_Exact{
@@ -371,7 +368,7 @@ func createHeaderMatchSpecifier(header gwv1.HTTPHeaderMatch) *envoyroute.HeaderM
 			},
 		}
 	case gwv1.HeaderMatchRegularExpression:
-		return &envoyroute.HeaderMatcher_StringMatch{
+		return &envoyroutev3.HeaderMatcher_StringMatch{
 			StringMatch: &envoymatcher.StringMatcher{
 				IgnoreCase: false,
 				MatchPattern: &envoymatcher.StringMatcher_SafeRegex{
@@ -423,7 +420,7 @@ func generateCommonAccessLogGrpcConfig(grpcService v1alpha1.CommonAccessLogGrpcS
 	return &envoygrpc.CommonGrpcAccessLogConfig{
 		LogName:             grpcService.LogName,
 		GrpcService:         commonConfig,
-		TransportApiVersion: envoycore.ApiVersion_V3,
+		TransportApiVersion: envoycorev3.ApiVersion_V3,
 	}, nil
 }
 
@@ -453,6 +450,9 @@ func copyOTelSettings(cfg *envoy_open_telemetry.OpenTelemetryAccessLogConfig, ot
 				StringValue: *otelService.Body,
 			},
 		}
+	}
+	if otelService.ResourceAttributes != nil {
+		cfg.ResourceAttributes = ToOTelKeyValueList(otelService.ResourceAttributes)
 	}
 	if otelService.DisableBuiltinLabels != nil {
 		cfg.DisableBuiltinLabels = *otelService.DisableBuiltinLabels
@@ -512,7 +512,7 @@ func ToOTelAnyValue(in *v1alpha1.AnyValue) *otelv1.AnyValue {
 	return nil
 }
 
-func getFormatterExtensions() ([]*envoycore.TypedExtensionConfig, error) {
+func getFormatterExtensions() ([]*envoycorev3.TypedExtensionConfig, error) {
 	reqWithoutQueryFormatter := &envoy_req_without_query.ReqWithoutQuery{}
 	reqWithoutQueryFormatterTc, err := utils.MessageToAny(reqWithoutQueryFormatter)
 	if err != nil {
@@ -525,7 +525,7 @@ func getFormatterExtensions() ([]*envoycore.TypedExtensionConfig, error) {
 		return nil, err
 	}
 
-	return []*envoycore.TypedExtensionConfig{
+	return []*envoycorev3.TypedExtensionConfig{
 		{
 			Name:        "envoy.formatter.req_without_query",
 			TypedConfig: reqWithoutQueryFormatterTc,
@@ -537,77 +537,129 @@ func getFormatterExtensions() ([]*envoycore.TypedExtensionConfig, error) {
 	}, nil
 }
 
-func newAccessLogWithConfig(name string, config proto.Message) (*envoyaccesslog.AccessLog, error) {
-	s := &envoyaccesslog.AccessLog{
+func newAccessLogWithConfig(name string, config proto.Message) *envoyaccesslogv3.AccessLog {
+	s := &envoyaccesslogv3.AccessLog{
 		Name: name,
 	}
 
 	if config != nil {
-		marshalledConf, err := utils.MessageToAny(config)
-		if err != nil {
-			// this should NEVER HAPPEN!
-			return nil, err
-		}
-
-		s.ConfigType = &envoyaccesslog.AccessLog_TypedConfig{
-			TypedConfig: marshalledConf,
+		s.ConfigType = &envoyaccesslogv3.AccessLog_TypedConfig{
+			TypedConfig: utils.MustMessageToAny(config),
 		}
 	}
 
-	return s, nil
+	return s
 }
 
 // String provides a string representation for the Op enum.
-func toEnvoyComparisonOpType(op v1alpha1.Op) (envoyaccesslog.ComparisonFilter_Op, error) {
+func toEnvoyComparisonOpType(op v1alpha1.Op) (envoyaccesslogv3.ComparisonFilter_Op, error) {
 	switch op {
 	case v1alpha1.EQ:
-		return envoyaccesslog.ComparisonFilter_EQ, nil
+		return envoyaccesslogv3.ComparisonFilter_EQ, nil
 	case v1alpha1.GE:
-		return envoyaccesslog.ComparisonFilter_EQ, nil
+		return envoyaccesslogv3.ComparisonFilter_EQ, nil
 	case v1alpha1.LE:
-		return envoyaccesslog.ComparisonFilter_EQ, nil
+		return envoyaccesslogv3.ComparisonFilter_EQ, nil
 	default:
 		return 0, fmt.Errorf("unknown OP (%s)", op)
 	}
 }
 
-func toEnvoyGRPCStatusType(grpcStatus v1alpha1.GrpcStatus) (envoyaccesslog.GrpcStatusFilter_Status, error) {
+func toEnvoyGRPCStatusType(grpcStatus v1alpha1.GrpcStatus) (envoyaccesslogv3.GrpcStatusFilter_Status, error) {
 	switch grpcStatus {
 	case v1alpha1.OK:
-		return envoyaccesslog.GrpcStatusFilter_OK, nil
+		return envoyaccesslogv3.GrpcStatusFilter_OK, nil
 	case v1alpha1.CANCELED:
-		return envoyaccesslog.GrpcStatusFilter_CANCELED, nil
+		return envoyaccesslogv3.GrpcStatusFilter_CANCELED, nil
 	case v1alpha1.UNKNOWN:
-		return envoyaccesslog.GrpcStatusFilter_UNKNOWN, nil
+		return envoyaccesslogv3.GrpcStatusFilter_UNKNOWN, nil
 	case v1alpha1.INVALID_ARGUMENT:
-		return envoyaccesslog.GrpcStatusFilter_INVALID_ARGUMENT, nil
+		return envoyaccesslogv3.GrpcStatusFilter_INVALID_ARGUMENT, nil
 	case v1alpha1.DEADLINE_EXCEEDED:
-		return envoyaccesslog.GrpcStatusFilter_DEADLINE_EXCEEDED, nil
+		return envoyaccesslogv3.GrpcStatusFilter_DEADLINE_EXCEEDED, nil
 	case v1alpha1.NOT_FOUND:
-		return envoyaccesslog.GrpcStatusFilter_NOT_FOUND, nil
+		return envoyaccesslogv3.GrpcStatusFilter_NOT_FOUND, nil
 	case v1alpha1.ALREADY_EXISTS:
-		return envoyaccesslog.GrpcStatusFilter_ALREADY_EXISTS, nil
+		return envoyaccesslogv3.GrpcStatusFilter_ALREADY_EXISTS, nil
 	case v1alpha1.PERMISSION_DENIED:
-		return envoyaccesslog.GrpcStatusFilter_PERMISSION_DENIED, nil
+		return envoyaccesslogv3.GrpcStatusFilter_PERMISSION_DENIED, nil
 	case v1alpha1.RESOURCE_EXHAUSTED:
-		return envoyaccesslog.GrpcStatusFilter_RESOURCE_EXHAUSTED, nil
+		return envoyaccesslogv3.GrpcStatusFilter_RESOURCE_EXHAUSTED, nil
 	case v1alpha1.FAILED_PRECONDITION:
-		return envoyaccesslog.GrpcStatusFilter_FAILED_PRECONDITION, nil
+		return envoyaccesslogv3.GrpcStatusFilter_FAILED_PRECONDITION, nil
 	case v1alpha1.ABORTED:
-		return envoyaccesslog.GrpcStatusFilter_ABORTED, nil
+		return envoyaccesslogv3.GrpcStatusFilter_ABORTED, nil
 	case v1alpha1.OUT_OF_RANGE:
-		return envoyaccesslog.GrpcStatusFilter_OUT_OF_RANGE, nil
+		return envoyaccesslogv3.GrpcStatusFilter_OUT_OF_RANGE, nil
 	case v1alpha1.UNIMPLEMENTED:
-		return envoyaccesslog.GrpcStatusFilter_UNIMPLEMENTED, nil
+		return envoyaccesslogv3.GrpcStatusFilter_UNIMPLEMENTED, nil
 	case v1alpha1.INTERNAL:
-		return envoyaccesslog.GrpcStatusFilter_INTERNAL, nil
+		return envoyaccesslogv3.GrpcStatusFilter_INTERNAL, nil
 	case v1alpha1.UNAVAILABLE:
-		return envoyaccesslog.GrpcStatusFilter_UNAVAILABLE, nil
+		return envoyaccesslogv3.GrpcStatusFilter_UNAVAILABLE, nil
 	case v1alpha1.DATA_LOSS:
-		return envoyaccesslog.GrpcStatusFilter_DATA_LOSS, nil
+		return envoyaccesslogv3.GrpcStatusFilter_DATA_LOSS, nil
 	case v1alpha1.UNAUTHENTICATED:
-		return envoyaccesslog.GrpcStatusFilter_UNAUTHENTICATED, nil
+		return envoyaccesslogv3.GrpcStatusFilter_UNAUTHENTICATED, nil
 	default:
 		return 0, fmt.Errorf("unknown GRPCStatus (%s)", grpcStatus)
 	}
+}
+
+func generateAccessLogConfig(pCtx *ir.HcmContext, policies []v1alpha1.AccessLog, configs []proto.Message) ([]*envoyaccesslogv3.AccessLog, error) {
+	accessLogs := make([]*envoyaccesslogv3.AccessLog, len(configs))
+	if len(configs) == 0 {
+		return accessLogs, nil
+	}
+
+	for i, config := range configs {
+		var cfg *envoyaccesslogv3.AccessLog
+		switch t := config.(type) {
+		case *envoyalfile.FileAccessLog:
+			cfg = newAccessLogWithConfig(wellknown.FileAccessLog, t)
+		case *envoygrpc.HttpGrpcAccessLogConfig:
+			cfg = newAccessLogWithConfig(wellknown.HTTPGRPCAccessLog, t)
+		case *envoy_open_telemetry.OpenTelemetryAccessLogConfig:
+			addDefaultResourceAttributes(pCtx, t)
+			cfg = newAccessLogWithConfig("envoy.access_loggers.open_telemetry", t)
+		}
+		// Add filter if specified
+		if policies[i].Filter != nil {
+			if err := addAccessLogFilter(cfg, policies[i].Filter); err != nil {
+				return nil, err
+			}
+		}
+		accessLogs[i] = cfg
+	}
+	return accessLogs, nil
+}
+
+func addDefaultResourceAttributes(pCtx *ir.HcmContext, config *envoy_open_telemetry.OpenTelemetryAccessLogConfig) {
+	if config.GetResourceAttributes() == nil {
+		config.ResourceAttributes = &otelv1.KeyValueList{
+			Values: []*otelv1.KeyValue{{
+				Key: serviceNameKey,
+				Value: &otelv1.AnyValue{
+					Value: &otelv1.AnyValue_StringValue{
+						StringValue: GenerateDefaultServiceName(pCtx.Gateway.SourceObject.GetName(), pCtx.Gateway.SourceObject.GetNamespace()),
+					},
+				}},
+			},
+		}
+		return
+	}
+
+	for _, ra := range config.GetResourceAttributes().Values {
+		if ra.Key == serviceNameKey {
+			return
+		}
+	}
+	config.GetResourceAttributes().Values = append(config.GetResourceAttributes().Values, &otelv1.KeyValue{
+		Key: serviceNameKey,
+		Value: &otelv1.AnyValue{
+			Value: &otelv1.AnyValue_StringValue{
+				StringValue: GenerateDefaultServiceName(pCtx.Gateway.SourceObject.GetName(), pCtx.Gateway.SourceObject.GetNamespace()),
+			},
+		},
+	})
 }

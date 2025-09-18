@@ -3,13 +3,20 @@ package trafficpolicy
 import (
 	"errors"
 	"fmt"
-	"time"
 
-	envoy_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	ratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/config/ratelimit/v3"
+	xdscorev3 "github.com/cncf/xds/go/xds/core/v3"
+	xdsmatcherv3 "github.com/cncf/xds/go/xds/type/matcher/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/config/ratelimit/v3"
+	envoymatchingv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/common/matching/v3"
+	envoycompositev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/composite/v3"
 	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
-	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
+	envoyextprocv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	ratev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ratelimit/v3"
+	envoynetworkv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/matching/common_inputs/network/v3"
+	envoymetadatav3 "github.com/envoyproxy/go-control-plane/envoy/extensions/matching/input_matchers/metadata/v3"
+	envoymatcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	envoytypev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"istio.io/istio/pkg/kube/krt"
@@ -18,15 +25,17 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
 
 type TrafficPolicyGatewayExtensionIR struct {
-	Name      string
-	ExtType   v1alpha1.GatewayExtensionType
-	ExtAuth   *envoy_ext_authz_v3.ExtAuthz
-	ExtProc   *envoy_ext_proc_v3.ExternalProcessor
-	RateLimit *ratev3.RateLimit
-	Err       error
+	Name             string
+	ExtType          v1alpha1.GatewayExtensionType
+	ExtAuth          *envoy_ext_authz_v3.ExtAuthz
+	ExtProc          *envoymatchingv3.ExtensionWithMatcher
+	RateLimit        *ratev3.RateLimit
+	PrecedenceWeight int32
+	Err              error
 }
 
 // ResourceName returns the unique name for this extension.
@@ -48,23 +57,53 @@ func (e TrafficPolicyGatewayExtensionIR) Equals(other TrafficPolicyGatewayExtens
 	if !proto.Equal(e.RateLimit, other.RateLimit) {
 		return false
 	}
-
-	// Compare providers
-	if e.Err == nil && other.Err == nil {
-		return true
-	}
-	if e.Err == nil || other.Err == nil {
+	if e.PrecedenceWeight != other.PrecedenceWeight {
 		return false
 	}
 
-	return e.Err.Error() == other.Err.Error()
+	if e.Err == nil && other.Err != nil {
+		return false
+	}
+	if e.Err != nil && other.Err == nil {
+		return false
+	}
+	if (e.Err != nil && other.Err != nil) && e.Err.Error() != other.Err.Error() {
+		return false
+	}
+
+	return true
+}
+
+// Validate performs PGV-based validation on the gateway extension components
+func (e TrafficPolicyGatewayExtensionIR) Validate() error {
+	if e.Err != nil {
+		// If there's an error in the IR, validation doesn't make sense.
+		return nil
+	}
+	if e.ExtAuth != nil {
+		if err := e.ExtAuth.ValidateAll(); err != nil {
+			return err
+		}
+	}
+	if e.ExtProc != nil {
+		if err := e.ExtProc.ValidateAll(); err != nil {
+			return err
+		}
+	}
+	if e.RateLimit != nil {
+		if err := e.RateLimit.ValidateAll(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
 	return func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
 		p := &TrafficPolicyGatewayExtensionIR{
-			Name:    krt.Named{Name: gExt.Name, Namespace: gExt.Namespace}.ResourceName(),
-			ExtType: gExt.Type,
+			Name:             krt.Named{Name: gExt.Name, Namespace: gExt.Namespace}.ResourceName(),
+			ExtType:          gExt.Type,
+			PrecedenceWeight: gExt.PrecedenceWeight,
 		}
 
 		switch gExt.Type {
@@ -81,6 +120,20 @@ func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(
 					GrpcService: envoyGrpcService,
 				},
 				FilterEnabledMetadata: ExtAuthzEnabledMetadataMatcher,
+				FailureModeAllow:      gExt.ExtAuth.FailOpen,
+				ClearRouteCache:       gExt.ExtAuth.ClearRouteCache,
+				StatusOnError:         &envoytypev3.HttpStatus{Code: envoytypev3.StatusCode(gExt.ExtAuth.StatusOnError)},
+			}
+
+			if gExt.ExtAuth.WithRequestBody != nil {
+				p.ExtAuth.WithRequestBody = &envoy_ext_authz_v3.BufferSettings{
+					MaxRequestBytes:     gExt.ExtAuth.WithRequestBody.MaxRequestBytes,
+					AllowPartialMessage: gExt.ExtAuth.WithRequestBody.AllowPartialMessage,
+					PackAsBytes:         gExt.ExtAuth.WithRequestBody.PackAsBytes,
+				}
+			}
+			if gExt.ExtAuth.StatPrefix != nil {
+				p.ExtAuth.StatPrefix = *gExt.ExtAuth.StatPrefix
 			}
 
 		case v1alpha1.GatewayExtensionTypeExtProc:
@@ -89,10 +142,7 @@ func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(
 				p.Err = fmt.Errorf("failed to resolve ExtProc backend: %w", err)
 				return p
 			}
-
-			p.ExtProc = &envoy_ext_proc_v3.ExternalProcessor{
-				GrpcService: envoyGrpcService,
-			}
+			p.ExtProc = buildCompositeExtProcFilter(*gExt.ExtProc, envoyGrpcService)
 
 		case v1alpha1.GatewayExtensionTypeRateLimit:
 			if gExt.RateLimit == nil {
@@ -107,7 +157,7 @@ func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(
 			}
 
 			// Use the specialized function for rate limit service resolution
-			rateLimitConfig := resolveRateLimitService(grpcService, gExt.RateLimit)
+			rateLimitConfig := buildRateLimitFilter(grpcService, gExt.RateLimit)
 
 			p.RateLimit = rateLimitConfig
 		}
@@ -115,70 +165,191 @@ func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(
 	}
 }
 
-func ResolveExtGrpcService(krtctx krt.HandlerContext, backends *krtcollections.BackendIndex, disableExtensionRefValidation bool, objectSource ir.ObjectSource, grpcService *v1alpha1.ExtGrpcService) (*envoy_core_v3.GrpcService, error) {
-	var clusterName string
-	var authority string
-	if grpcService != nil {
-		if grpcService.BackendRef == nil {
-			return nil, errors.New("backend not provided")
-		}
-		backendRef := grpcService.BackendRef.BackendObjectReference
+func ResolveExtGrpcService(
+	krtctx krt.HandlerContext,
+	backends *krtcollections.BackendIndex,
+	disableExtensionRefValidation bool,
+	objectSource ir.ObjectSource,
+	grpcService *v1alpha1.ExtGrpcService,
+) (*envoycorev3.GrpcService, error) {
+	// defensive checks, both of these fields are required
+	if grpcService == nil {
+		return nil, errors.New("grpcService not provided")
+	}
+	if grpcService.BackendRef == nil {
+		return nil, errors.New("backend not provided")
+	}
 
-		var backend *ir.BackendObjectIR
-		var err error
-		if disableExtensionRefValidation {
-			backend, err = backends.GetBackendFromRefWithoutRefGrantValidation(krtctx, objectSource, backendRef)
-		} else {
-			backend, err = backends.GetBackendFromRef(krtctx, objectSource, backendRef)
-		}
-		if err != nil {
-			return nil, err
-		}
-		if backend != nil {
-			clusterName = backend.ClusterName()
-		}
-		if grpcService.Authority != nil {
-			authority = *grpcService.Authority
-		}
+	var backend *ir.BackendObjectIR
+	var err error
+	backendRef := grpcService.BackendRef.BackendObjectReference
+	if disableExtensionRefValidation {
+		backend, err = backends.GetBackendFromRefWithoutRefGrantValidation(krtctx, objectSource, backendRef)
+	} else {
+		backend, err = backends.GetBackendFromRef(krtctx, objectSource, backendRef)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	var clusterName string
+	if backend != nil {
+		clusterName = backend.ClusterName()
 	}
 	if clusterName == "" {
 		return nil, errors.New("backend not found")
 	}
-	envoyGrpcService := &envoy_core_v3.GrpcService{
-		TargetSpecifier: &envoy_core_v3.GrpcService_EnvoyGrpc_{
-			EnvoyGrpc: &envoy_core_v3.GrpcService_EnvoyGrpc{
+	var authority string
+	if grpcService.Authority != nil {
+		authority = *grpcService.Authority
+	}
+
+	envoyGrpcService := &envoycorev3.GrpcService{
+		TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+			EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
 				ClusterName: clusterName,
 				Authority:   authority,
 			},
 		},
 	}
+	if grpcService.RequestTimeout != nil {
+		envoyGrpcService.Timeout = durationpb.New(grpcService.RequestTimeout.Duration)
+	}
 	return envoyGrpcService, nil
 }
 
 // FIXME: Should this live here instead of the global rate limit plugin?
-func resolveRateLimitService(grpcService *envoy_core_v3.GrpcService, rateLimit *v1alpha1.RateLimitProvider) *ratev3.RateLimit {
+func buildRateLimitFilter(grpcService *envoycorev3.GrpcService, rateLimit *v1alpha1.RateLimitProvider) *ratev3.RateLimit {
 	envoyRateLimit := &ratev3.RateLimit{
 		Domain:          rateLimit.Domain,
 		FailureModeDeny: !rateLimit.FailOpen,
-		RateLimitService: &ratelimitv3.RateLimitServiceConfig{
+		RateLimitService: &envoyratelimitv3.RateLimitServiceConfig{
 			GrpcService:         grpcService,
-			TransportApiVersion: envoy_core_v3.ApiVersion_V3,
+			TransportApiVersion: envoycorev3.ApiVersion_V3,
 		},
+		EnableXRatelimitHeaders: convertXRL(rateLimit.XRateLimitHeaders),
 	}
 
-	// Set timeout if specified
-	if rateLimit.Timeout != "" {
-		if duration, err := time.ParseDuration(string(rateLimit.Timeout)); err == nil {
-			envoyRateLimit.Timeout = durationpb.New(duration)
-		} else {
-			// CEL validation should catch this, so this should never happen. log it here just in case and don't error.
-			logger.Error("invalid timeout in rate limit provider", "error", err)
-		}
-	}
-	// Set defaults for other required fields
-	envoyRateLimit.StatPrefix = rateLimitStatPrefix
-	envoyRateLimit.EnableXRatelimitHeaders = ratev3.RateLimit_DRAFT_VERSION_03
-	envoyRateLimit.RequestType = "both"
+	// Set timeout (we expect it always to have a valid value or default due to CRD validation)
+	envoyRateLimit.Timeout = durationpb.New(rateLimit.Timeout.Duration)
 
 	return envoyRateLimit
+}
+
+func convertXRL(in v1alpha1.XRateLimitHeadersStandard) ratev3.RateLimit_XRateLimitHeadersRFCVersion {
+	switch in {
+	case v1alpha1.XRateLimitHeaderDraftV03:
+		return ratev3.RateLimit_DRAFT_VERSION_03
+	case v1alpha1.XRateLimitHeaderOff:
+		return ratev3.RateLimit_OFF
+	default:
+		return ratev3.RateLimit_OFF
+	}
+}
+
+func convertRCA(in v1alpha1.ExtProcRouteCacheAction) envoyextprocv3.ExternalProcessor_RouteCacheAction {
+	switch in {
+	case v1alpha1.RouteCacheActionClear:
+		return envoyextprocv3.ExternalProcessor_CLEAR
+	case v1alpha1.RouteCacheActionRetain:
+		return envoyextprocv3.ExternalProcessor_RETAIN
+	case v1alpha1.RouteCacheActionFromResponse:
+		return envoyextprocv3.ExternalProcessor_DEFAULT
+	default:
+		return envoyextprocv3.ExternalProcessor_DEFAULT
+	}
+}
+
+// buildCompositeExtProcFilter builds a composite filter for external processing so that
+// the filter can be conditionally disabled with the global_disable/ext_proc filter is enabled
+func buildCompositeExtProcFilter(in v1alpha1.ExtProcProvider, envoyGrpcService *envoycorev3.GrpcService) *envoymatchingv3.ExtensionWithMatcher {
+	filter := &envoyextprocv3.ExternalProcessor{
+		GrpcService:      envoyGrpcService,
+		FailureModeAllow: in.FailOpen,
+		RouteCacheAction: convertRCA(in.RouteCacheAction),
+	}
+	if mode := toEnvoyProcessingMode(in.ProcessingMode); mode != nil {
+		filter.ProcessingMode = mode
+	}
+	if in.MessageTimeout != nil {
+		filter.MessageTimeout = durationpb.New(in.MessageTimeout.Duration)
+	}
+	if in.MaxMessageTimeout != nil {
+		filter.MaxMessageTimeout = durationpb.New(in.MaxMessageTimeout.Duration)
+	}
+	if in.StatPrefix != nil {
+		filter.StatPrefix = *in.StatPrefix
+	}
+	if in.MetadataOptions != nil {
+		filter.MetadataOptions = &envoyextprocv3.MetadataOptions{}
+		if in.MetadataOptions.Forwarding != nil {
+			filter.MetadataOptions.ForwardingNamespaces = &envoyextprocv3.MetadataOptions_MetadataNamespaces{
+				Typed:   in.MetadataOptions.Forwarding.Typed,
+				Untyped: in.MetadataOptions.Forwarding.Untyped,
+			}
+		}
+	}
+	return &envoymatchingv3.ExtensionWithMatcher{
+		ExtensionConfig: &envoycorev3.TypedExtensionConfig{
+			Name:        "composite_ext_proc",
+			TypedConfig: utils.MustMessageToAny(&envoycompositev3.Composite{}),
+		},
+		XdsMatcher: &xdsmatcherv3.Matcher{
+			MatcherType: &xdsmatcherv3.Matcher_MatcherList_{
+				MatcherList: &xdsmatcherv3.Matcher_MatcherList{
+					Matchers: []*xdsmatcherv3.Matcher_MatcherList_FieldMatcher{
+						{
+							Predicate: &xdsmatcherv3.Matcher_MatcherList_Predicate{
+								MatchType: &xdsmatcherv3.Matcher_MatcherList_Predicate_SinglePredicate_{
+									SinglePredicate: &xdsmatcherv3.Matcher_MatcherList_Predicate_SinglePredicate{
+										Input: &xdscorev3.TypedExtensionConfig{
+											Name: globalFilterDisableMetadataKey,
+											TypedConfig: utils.MustMessageToAny(&envoynetworkv3.DynamicMetadataInput{
+												Filter: extProcGlobalDisableFilterMetadataNamespace,
+												Path: []*envoynetworkv3.DynamicMetadataInput_PathSegment{
+													{
+														Segment: &envoynetworkv3.DynamicMetadataInput_PathSegment_Key{
+															Key: globalFilterDisableMetadataKey,
+														},
+													},
+												},
+											}),
+										},
+										// This matcher succeeds when disable=true is not found in the dynamic metadata
+										// for the extProcGlobalDisableFilterMetadataNamespace
+										Matcher: &xdsmatcherv3.Matcher_MatcherList_Predicate_SinglePredicate_CustomMatch{
+											CustomMatch: &xdscorev3.TypedExtensionConfig{
+												Name: "envoy.matching.matchers.metadata_matcher",
+												TypedConfig: utils.MustMessageToAny(&envoymetadatav3.Metadata{
+													Value: &envoymatcherv3.ValueMatcher{
+														MatchPattern: &envoymatcherv3.ValueMatcher_BoolMatch{
+															BoolMatch: true,
+														},
+													},
+													Invert: true,
+												}),
+											},
+										},
+									},
+								},
+							},
+							OnMatch: &xdsmatcherv3.Matcher_OnMatch{
+								OnMatch: &xdsmatcherv3.Matcher_OnMatch_Action{
+									Action: &xdscorev3.TypedExtensionConfig{
+										Name: "composite-action",
+										TypedConfig: utils.MustMessageToAny(&envoycompositev3.ExecuteFilterAction{
+											TypedConfig: &envoycorev3.TypedExtensionConfig{
+												Name:        "envoy.filters.http.ext_proc",
+												TypedConfig: utils.MustMessageToAny(filter),
+											},
+										}),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 }

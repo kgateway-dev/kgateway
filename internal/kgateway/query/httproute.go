@@ -2,7 +2,6 @@ package query
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -304,7 +303,7 @@ func (r *gatewayQueries) fetchRoutesByRef(
 			// Lookup a specific child route by its name
 			route := r.collections.Routes.FetchHttp(kctx, delegatedNs, string(backendRef.Name))
 			if route == nil {
-				return nil, errors.New("not found")
+				return nil, ErrUnresolvedReference
 			}
 			refChildren = append(refChildren, *route)
 		}
@@ -328,12 +327,9 @@ func (r *gatewayQueries) GetRoutesForResource(kctx krt.HandlerContext, ctx conte
 	ret := NewRoutesForGwResult()
 
 	var routes []ir.Route
-	switch t := resource.(type) {
+	switch resource.(type) {
 	case *gwxv1a1.XListenerSet:
-		// If a listenerset, initially populate it with the list of routes attached to the parent gateway
-		parentRef := getParentGatewayRef(t)
-		routes = r.collections.Routes.RoutesForGateway(kctx, *parentRef)
-		routes = append(routes, r.collections.Routes.RoutesForListenerSet(kctx, nns)...)
+		routes = r.collections.Routes.RoutesForListenerSet(kctx, nns)
 	default:
 		routes = r.collections.Routes.RoutesForGateway(kctx, nns)
 	}

@@ -9,7 +9,7 @@ import (
 
 	"istio.io/istio/pkg/kube/krt"
 
-	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/endpoints"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
@@ -21,6 +21,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
 var logger = logging.New("translator")
@@ -29,6 +30,7 @@ var logger = logging.New("translator")
 type CombinedTranslator struct {
 	extensions extensionsplug.Plugin
 	commonCols *common.CommonCollections
+	validator  validator.Validator
 
 	waitForSync []cache.InformerSynced
 
@@ -44,6 +46,7 @@ func NewCombinedTranslator(
 	ctx context.Context,
 	extensions extensionsplug.Plugin,
 	commonCols *common.CommonCollections,
+	validator validator.Validator,
 ) *CombinedTranslator {
 	var endpointPlugins []extensionsplug.EndpointPlugin
 	for _, ext := range extensions.ContributesPolicies {
@@ -56,6 +59,7 @@ func NewCombinedTranslator(
 		extensions:      extensions,
 		endpointPlugins: endpointPlugins,
 		logger:          logger,
+		validator:       validator,
 		waitForSync:     []cache.InformerSynced{extensions.HasSynced},
 	}
 }
@@ -70,6 +74,7 @@ func (s *CombinedTranslator) Init(ctx context.Context) {
 	s.irtranslator = &irtranslator.Translator{
 		ContributedPolicies:  s.extensions.ContributesPolicies,
 		RouteReplacementMode: s.commonCols.Settings.RouteReplacementMode,
+		Validator:            s.validator,
 	}
 	s.backendTranslator = &irtranslator.BackendTranslator{
 		ContributedBackends: make(map[schema.GroupKind]ir.BackendInit),
@@ -95,7 +100,7 @@ func (s *CombinedTranslator) HasSynced() bool {
 	return true
 }
 
-// buildProxy performs translation of a kube Gateway -> gloov1.Proxy (really a wrapper type)
+// buildProxy performs translation of a kube Gateway -> GatewayIR
 func (s *CombinedTranslator) buildProxy(kctx krt.HandlerContext, ctx context.Context, gw ir.Gateway, r reports.Reporter) *ir.GatewayIR {
 	stopwatch := utils.NewTranslatorStopWatch("CombinedTranslator")
 	stopwatch.Start()
@@ -115,11 +120,6 @@ func (s *CombinedTranslator) buildProxy(kctx krt.HandlerContext, ctx context.Con
 	duration := stopwatch.Stop(ctx)
 	logger.Debug("translated proxy", "namespace", gw.Namespace, "name", gw.Name, "duration", duration.String())
 
-	// TODO: these are likely unnecessary and should be removed!
-	//	applyPostTranslationPlugins(ctx, pluginRegistry, &gwplugins.PostTranslationContext{
-	//		TranslatedGateways: translatedGateways,
-	//	})
-
 	return proxy
 }
 
@@ -132,19 +132,19 @@ func (s *CombinedTranslator) TranslateGateway(kctx krt.HandlerContext, ctx conte
 	rm := reports.NewReportMap()
 	r := reports.NewReporter(&rm)
 	logger.Debug("translating Gateway", "resource_ref", gw.ResourceName(), "resource_version", gw.Obj.GetResourceVersion())
-	gwir := s.buildProxy(kctx, ctx, gw, r)
 
+	gwir := s.buildProxy(kctx, ctx, gw, r)
 	if gwir == nil {
 		return nil, reports.ReportMap{}
 	}
 
 	// we are recomputing xds snapshots as proxies have changed, signal that we need to sync xds with these new snapshots
-	xdsSnap := s.irtranslator.Translate(*gwir, r)
+	xdsSnap := s.irtranslator.Translate(ctx, *gwir, r)
 
 	return &xdsSnap, rm
 }
 
-func (s *CombinedTranslator) TranslateEndpoints(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient, ep ir.EndpointsForBackend) (*envoy_config_endpoint_v3.ClusterLoadAssignment, uint64) {
+func (s *CombinedTranslator) TranslateEndpoints(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient, ep ir.EndpointsForBackend) (*envoyendpointv3.ClusterLoadAssignment, uint64) {
 	epInputs := endpoints.EndpointsInputs{
 		EndpointsForBackend: ep,
 	}

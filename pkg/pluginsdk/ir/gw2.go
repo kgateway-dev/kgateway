@@ -4,7 +4,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -44,8 +44,12 @@ type HttpRouteRuleMatchIR struct {
 	// Higher weight means higher priority, and are evaluated before routes with lower weight
 	PrecedenceWeight int32
 
-	// Error encountered during translation
-	Error error
+	// RouteReplacementError is an error that results in the route being replaced
+	RouteReplacementError error
+
+	// RouteAcceptanceError is an error that results in the route being replaced and a status
+	// condition with Accepted=false,Reason=RouteRuleDropped
+	RouteAcceptanceError error
 }
 
 type ListenerIR struct {
@@ -68,11 +72,14 @@ type VirtualHost struct {
 	Hostname         string
 	Rules            []HttpRouteRuleMatchIR
 	AttachedPolicies AttachedPolicies
+	// ParentRef is the parent reference of the virtual host. Used to report status
+	// to the correct parent. This is either a listener from a gateway or a listener set.
+	ParentRef Listener
 }
 
 type FilterChainMatch struct {
 	SniDomains      []string
-	PrefixRanges    []*v3.CidrRange
+	PrefixRanges    []*envoycorev3.CidrRange
 	DestinationPort *wrapperspb.UInt32Value
 }
 
@@ -125,4 +132,10 @@ type GatewayIR struct {
 	// PerConnectionBufferLimitBytes is the listener-level per connection buffer limit.
 	// Applied to all listeners in the gateway.
 	PerConnectionBufferLimitBytes *uint32
+}
+
+// this assumes that GatewayIR was constructed correctly and SourceObject !nil and Obj contained within it is also !nil
+// might be good to assert this invariant (near the instantiation site?)
+func (g GatewayIR) GatewayClassName() string {
+	return string(g.SourceObject.Obj.Spec.GatewayClassName)
 }

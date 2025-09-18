@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	tracev3 "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoytracev3 "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	resource_detectorsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/tracers/opentelemetry/resource_detectors/v3"
 	samplersv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/tracers/opentelemetry/samplers/v3"
@@ -27,19 +27,19 @@ func convertTracingConfig(
 	commoncol *common.CommonCollections,
 	krtctx krt.HandlerContext,
 	parentSrc ir.ObjectSource,
-) (*envoy_hcm.HttpConnectionManager_Tracing, error) {
+) (*envoytracev3.OpenTelemetryConfig, *envoy_hcm.HttpConnectionManager_Tracing, error) {
 	config := policy.Spec.Tracing
 	if config == nil {
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	if config.Provider.OpenTelemetry.GrpcService.BackendRef == nil {
-		return nil, fmt.Errorf("Tracing.OpenTelemetryConfig.GrpcService.BackendRef must be specified")
+		return nil, nil, fmt.Errorf("Tracing.OpenTelemetryConfig.GrpcService.BackendRef must be specified")
 	}
 
 	backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, parentSrc, config.Provider.OpenTelemetry.GrpcService.BackendRef.BackendObjectReference)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrUnresolvedBackendRef, err)
+		return nil, nil, fmt.Errorf("%w: %v", ErrUnresolvedBackendRef, err)
 	}
 
 	return translateTracing(config, backend)
@@ -48,23 +48,21 @@ func convertTracingConfig(
 func translateTracing(
 	config *v1alpha1.Tracing,
 	backend *ir.BackendObjectIR,
-) (*envoy_hcm.HttpConnectionManager_Tracing, error) {
+) (*envoytracev3.OpenTelemetryConfig, *envoy_hcm.HttpConnectionManager_Tracing, error) {
 	if config == nil {
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	if config.Provider.OpenTelemetry == nil || config.Provider.OpenTelemetry.GrpcService.BackendRef == nil {
-		return nil, fmt.Errorf("Tracing.OpenTelemetryConfig.GrpcService.BackendRef must be specified")
+		return nil, nil, fmt.Errorf("Tracing.OpenTelemetryConfig.GrpcService.BackendRef must be specified")
 	}
 
 	provider, err := convertOTelTracingConfig(config.Provider.OpenTelemetry, backend)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	tracingConfig := &envoy_hcm.HttpConnectionManager_Tracing{
-		Provider: provider,
-	}
+	tracingConfig := &envoy_hcm.HttpConnectionManager_Tracing{}
 	if config.ClientSampling != nil {
 		tracingConfig.ClientSampling = &typev3.Percent{
 			Value: float64(*config.ClientSampling),
@@ -203,13 +201,13 @@ func translateTracing(
 		}
 	}
 
-	return tracingConfig, nil
+	return provider, tracingConfig, nil
 }
 
 func convertOTelTracingConfig(
 	config *v1alpha1.OpenTelemetryTracingConfig,
 	backend *ir.BackendObjectIR,
-) (*tracev3.Tracing_Http, error) {
+) (*envoytracev3.OpenTelemetryConfig, error) {
 	if config == nil {
 		return nil, nil
 	}
@@ -219,17 +217,18 @@ func convertOTelTracingConfig(
 		return nil, err
 	}
 
-	tracingCfg := &tracev3.OpenTelemetryConfig{
+	tracingCfg := &envoytracev3.OpenTelemetryConfig{
 		GrpcService: envoyGrpcService,
-		ServiceName: config.ServiceName,
 	}
-
+	if config.ServiceName != nil {
+		tracingCfg.ServiceName = *config.ServiceName
+	}
 	if len(config.ResourceDetectors) != 0 {
-		translatedResourceDetectors := make([]*corev3.TypedExtensionConfig, len(config.ResourceDetectors))
+		translatedResourceDetectors := make([]*envoycorev3.TypedExtensionConfig, len(config.ResourceDetectors))
 		for i, rd := range config.ResourceDetectors {
 			if rd.EnvironmentResourceDetector != nil {
 				detector, _ := utils.MessageToAny(&resource_detectorsv3.EnvironmentResourceDetectorConfig{})
-				translatedResourceDetectors[i] = &corev3.TypedExtensionConfig{
+				translatedResourceDetectors[i] = &envoycorev3.TypedExtensionConfig{
 					Name:        "envoy.tracers.opentelemetry.resource_detectors.environment",
 					TypedConfig: detector,
 				}
@@ -241,22 +240,36 @@ func convertOTelTracingConfig(
 	if config.Sampler != nil {
 		if config.Sampler.AlwaysOn != nil {
 			alwaysOnSampler, _ := utils.MessageToAny(&samplersv3.AlwaysOnSamplerConfig{})
-			tracingCfg.Sampler = &corev3.TypedExtensionConfig{
+			tracingCfg.Sampler = &envoycorev3.TypedExtensionConfig{
 				Name:        "envoy.tracers.opentelemetry.samplers.always_on",
 				TypedConfig: alwaysOnSampler,
 			}
 		}
 	}
 
-	otelCfg, err := utils.MessageToAny(tracingCfg)
-	if err != nil {
-		return nil, err
-	}
+	return tracingCfg, nil
+}
 
-	return &tracev3.Tracing_Http{
+func updateTracingConfig(pCtx *ir.HcmContext, tracingProvider *envoytracev3.OpenTelemetryConfig, tracingConfig *envoy_hcm.HttpConnectionManager_Tracing) {
+	if tracingProvider == nil || tracingConfig == nil {
+		return
+	}
+	if tracingProvider.ServiceName == "" {
+		tracingProvider.ServiceName = GenerateDefaultServiceName(pCtx.Gateway.SourceObject.GetName(), pCtx.Gateway.SourceObject.GetNamespace())
+	}
+	otelCfg := utils.MustMessageToAny(tracingProvider)
+
+	tracingConfig.Provider = &envoytracev3.Tracing_Http{
 		Name: "envoy.tracers.opentelemetry",
-		ConfigType: &tracev3.Tracing_Http_TypedConfig{
+		ConfigType: &envoytracev3.Tracing_Http_TypedConfig{
 			TypedConfig: otelCfg,
 		},
-	}, nil
+	}
+}
+
+// GenerateDefaultServiceName returns the default service name that matches the cluster name
+// specified in the envoy bootstrap config
+// Ie: `<gateway-name>.<gateway-namespace>`
+func GenerateDefaultServiceName(name, namespace string) string {
+	return fmt.Sprintf("%s.%s", name, namespace)
 }

@@ -2,13 +2,14 @@ package deployer_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
 	"time"
 
-	envoy_config_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo/v2"
@@ -27,7 +28,7 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	api "sigs.k8s.io/gateway-api/apis/v1"
 	apixv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
@@ -36,6 +37,7 @@ import (
 	internaldeployer "github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/httplistenerpolicy"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
@@ -60,6 +62,8 @@ import (
 	// is currently broken. see: https://github.com/kgateway-dev/kgateway/issues/10491
 	_ "github.com/kgateway-dev/kgateway/v2/pkg/utils/filter_types"
 )
+
+const envoyDataKey = "envoy.yaml"
 
 func unmarshalYaml(data []byte, into proto.Message) error {
 	jsn, err := yaml.YAMLToJSON(data)
@@ -118,10 +122,10 @@ func (objs *clientObjects) findConfigMap(namespace, name string) *corev1.ConfigM
 	return nil
 }
 
-func (objs *clientObjects) getEnvoyConfig(namespace, name string) *envoy_config_bootstrap.Bootstrap {
+func (objs *clientObjects) getEnvoyConfig(namespace, name string) *envoybootstrapv3.Bootstrap {
 	cm := objs.findConfigMap(namespace, name).Data
-	var bootstrapCfg envoy_config_bootstrap.Bootstrap
-	err := unmarshalYaml([]byte(cm["envoy.yaml"]), &bootstrapCfg)
+	var bootstrapCfg envoybootstrapv3.Bootstrap
+	err := unmarshalYaml([]byte(cm[envoyDataKey]), &bootstrapCfg)
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 	return &bootstrapCfg
 }
@@ -248,6 +252,7 @@ var _ = Describe("Deployer", func() {
 							ExtraAnnotations: map[string]string{
 								"foo": "bar",
 							},
+							ExternalTrafficPolicy: ptr.To(string(corev1.ServiceExternalTrafficPolicyTypeLocal)),
 						},
 						ServiceAccount: &gw2_v1alpha1.ServiceAccount{
 							ExtraLabels: map[string]string{
@@ -321,6 +326,46 @@ var _ = Describe("Deployer", func() {
 									Name:  "test",
 									Value: "value",
 								},
+							},
+						},
+						PodTemplate: &gw2_v1alpha1.Pod{
+							TopologySpreadConstraints: []corev1.TopologySpreadConstraint{
+								{
+									MaxSkew:           1,
+									TopologyKey:       "kubernetes.io/hostname",
+									WhenUnsatisfiable: corev1.DoNotSchedule,
+									LabelSelector: &metav1.LabelSelector{
+										MatchLabels: map[string]string{"app": "test"},
+									},
+								},
+							},
+							Tolerations: []corev1.Toleration{
+								{
+									Key:      "test-key",
+									Operator: corev1.TolerationOpEqual,
+									Value:    "test-value",
+									Effect:   corev1.TaintEffectNoSchedule,
+								},
+							},
+							Affinity: &corev1.Affinity{
+								NodeAffinity: &corev1.NodeAffinity{
+									RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+										NodeSelectorTerms: []corev1.NodeSelectorTerm{
+											{
+												MatchExpressions: []corev1.NodeSelectorRequirement{
+													{
+														Key:      "kubernetes.io/os",
+														Operator: corev1.NodeSelectorOpIn,
+														Values:   []string{"linux"},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							NodeSelector: map[string]string{
+								"kubernetes.io/arch": "amd64",
 							},
 						},
 					},
@@ -560,10 +605,21 @@ var _ = Describe("Deployer", func() {
 			Expect(expectedSecurityContext).ToNot(BeNil())
 			Expect(expectedSecurityContext.RunAsUser).ToNot(BeNil())
 			Expect(*expectedSecurityContext.RunAsUser).To(Equal(int64(333)))
+			// check the deployment fields are correctly set
 			Expect(deployment.Spec.Template.Spec.Containers[0].Resources.Limits.Cpu().Equal(resource.MustParse("101m"))).To(BeTrue())
+			Expect(deployment.Spec.Template.Spec.TopologySpreadConstraints[0]).To(Equal(gwp.Spec.Kube.PodTemplate.TopologySpreadConstraints[0]))
+			Expect(deployment.Spec.Template.Spec.Tolerations[0]).To(Equal(gwp.Spec.Kube.PodTemplate.Tolerations[0]))
+			Expect(deployment.Spec.Template.Spec.NodeSelector).To(Equal(gwp.Spec.Kube.PodTemplate.NodeSelector))
 			// check env values are appended to the end of the list
-			Expect(deployment.Spec.Template.Spec.Containers[0].Env[6].Name).To(Equal("test"))
-			Expect(deployment.Spec.Template.Spec.Containers[0].Env[6].Value).To(Equal("value"))
+			var testEnvVar corev1.EnvVar
+			for _, envVar := range deployment.Spec.Template.Spec.Containers[0].Env {
+				if envVar.Name == "test" {
+					testEnvVar = envVar
+					break
+				}
+			}
+			Expect(testEnvVar.Name).To(Equal("test"))
+			Expect(testEnvVar.Value).To(Equal("value"))
 			// check the service is using the agentgateway port
 			svc := objs.findService(defaultNamespace, "agent-gateway")
 			Expect(svc).ToNot(BeNil())
@@ -571,9 +627,83 @@ var _ = Describe("Deployer", func() {
 			// check the config map is using the xds address and port
 			cm := objs.findConfigMap(defaultNamespace, "agent-gateway")
 			Expect(cm).ToNot(BeNil())
-			Expect(cm.Data["config.json"]).To(ContainSubstring(`"xds_address": "http://something.cluster.local:1234"`))
-			Expect(cm.Data["config.json"]).To(ContainSubstring(`"alt_xds_hostname": "agent-gateway.default.svc.cluster.local"`))
 		})
+
+		It("clears RunAsUser for agentgateway when FloatingUserId=true", func() {
+			// enable floating user on kube config
+			gwp.Spec.Kube.FloatingUserId = ptr.To(true)
+			// also set a PodSecurityContext and ensure it flows to the pod
+			uid := int64(12345)
+			gid := int64(23456)
+			fsGroup := int64(34567)
+			gwp.Spec.Kube.PodTemplate = &gw2_v1alpha1.Pod{
+				SecurityContext: &corev1.PodSecurityContext{
+					RunAsUser:  &uid,
+					RunAsGroup: &gid,
+					FSGroup:    &fsGroup,
+				},
+			}
+			gw := &api.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "agent-gateway",
+					Namespace: defaultNamespace,
+				},
+				Spec: api.GatewaySpec{
+					GatewayClassName: "agentgateway",
+					Infrastructure: &api.GatewayInfrastructure{
+						ParametersRef: &api.LocalParametersReference{
+							Group: gw2_v1alpha1.GroupName,
+							Kind:  api.Kind(wellknown.GatewayParametersGVK.Kind),
+							Name:  gwp.GetName(),
+						},
+					},
+					Listeners: []api.Listener{{
+						Name: "listener-1",
+						Port: 80,
+					}},
+				},
+			}
+			gwParams := internaldeployer.NewGatewayParameters(newFakeClientWithObjs(gwc, gwp), &deployer.Inputs{
+				CommonCollections: newCommonCols(GinkgoT(), gwc, gw),
+				Dev:               false,
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost: "something.cluster.local",
+					XdsPort: 1234,
+				},
+				ImageInfo: &deployer.ImageInfo{
+					Registry: "foo",
+					Tag:      "bar",
+				},
+				GatewayClassName:         wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
+				AgentGatewayClassName:    wellknown.DefaultAgentGatewayClassName,
+			})
+			chart, err := internaldeployer.LoadGatewayChart()
+			Expect(err).NotTo(HaveOccurred())
+			d := deployer.NewDeployer(wellknown.DefaultGatewayControllerName, newFakeClientWithObjs(gwc, gwp), chart,
+				gwParams,
+				internaldeployer.GatewayReleaseNameAndNamespace)
+
+			objsSlice, err := d.GetObjsToDeploy(context.Background(), gw)
+			Expect(err).NotTo(HaveOccurred())
+			objsSlice = d.SetNamespaceAndOwner(gw, objsSlice)
+
+			objs := clientObjects(objsSlice)
+			dep := objs.findDeployment(defaultNamespace, "agent-gateway")
+			Expect(dep).ToNot(BeNil())
+			expectedSecurityContext := dep.Spec.Template.Spec.Containers[0].SecurityContext
+			Expect(expectedSecurityContext).To(Not(BeNil()))
+			Expect(expectedSecurityContext.RunAsUser).To(BeNil())
+			// assert pod-level security context is rendered and RunAsUser cleared while other fields preserved
+			psc := dep.Spec.Template.Spec.SecurityContext
+			Expect(psc).ToNot(BeNil())
+			Expect(psc.RunAsUser).To(BeNil())
+			Expect(psc.RunAsGroup).ToNot(BeNil())
+			Expect(psc.FSGroup).ToNot(BeNil())
+			Expect(*psc.RunAsGroup).To(Equal(gid))
+			Expect(*psc.FSGroup).To(Equal(fsGroup))
+		})
+
 	})
 
 	Context("special cases", func() {
@@ -1045,7 +1175,7 @@ var _ = Describe("Deployer", func() {
 				bootstrapCfg := objs.getEnvoyConfig(defaultNamespace, defaultConfigMapName)
 				Expect(bootstrapCfg.StaticResources.Listeners).To(HaveLen(2))
 				prometheusListener := bootstrapCfg.StaticResources.Listeners[1]
-				port := prometheusListener.Address.GetSocketAddress().PortSpecifier.(*envoy_config_core_v3.SocketAddress_PortValue)
+				port := prometheusListener.Address.GetSocketAddress().PortSpecifier.(*envoycorev3.SocketAddress_PortValue)
 				Expect(port.PortValue).To(Equal(uint32(9091)))
 
 				By("verifying image registry and tag were inherited")
@@ -1122,6 +1252,7 @@ var _ = Describe("Deployer", func() {
 								ExtraAnnotations: map[string]string{
 									"override-foo": "override-bar",
 								},
+								ExternalTrafficPolicy: ptr.To(string(corev1.ServiceExternalTrafficPolicyTypeLocal)),
 							},
 							ServiceAccount: &gw2_v1alpha1.ServiceAccount{
 								ExtraLabels: map[string]string{
@@ -1189,6 +1320,7 @@ var _ = Describe("Deployer", func() {
 									"foo":          "bar",
 									"override-foo": "override-bar",
 								},
+								ExternalTrafficPolicy: ptr.To(string(corev1.ServiceExternalTrafficPolicyTypeLocal)),
 							},
 							ServiceAccount: &gw2_v1alpha1.ServiceAccount{
 								ExtraLabels: map[string]string{
@@ -1264,9 +1396,8 @@ var _ = Describe("Deployer", func() {
 										SamplerType: ptr.To(gw2_v1alpha1.OTelTracesSamplerTraceidratio),
 										SamplerArg:  ptr.To("0.5"),
 									},
-									Timeout:           ptr.To(api.Duration("100s")),
-									Protocol:          ptr.To(gw2_v1alpha1.OTLPTracesProtocolTypeGrpc),
-									TransportSecurity: ptr.To(gw2_v1alpha1.OTLPTransportSecurityInsecure),
+									Timeout:  &metav1.Duration{Duration: 100 * time.Second},
+									Protocol: ptr.To(gw2_v1alpha1.OTLPTracesProtocolTypeGrpc),
 								},
 							},
 						},
@@ -1437,6 +1568,7 @@ var _ = Describe("Deployer", func() {
 				Expect(svc.GetLabels()).To(containMapElements(expectedGwp.Service.ExtraLabels))
 				Expect(svc.Spec.Type).To(Equal(*expectedGwp.Service.Type))
 				Expect(svc.Spec.ClusterIP).To(Equal(*expectedGwp.Service.ClusterIP))
+				Expect(svc.Spec.ExternalTrafficPolicy).To(Equal(corev1.ServiceExternalTrafficPolicyTypeLocal))
 
 				sa := objs.findServiceAccount(defaultNamespace, defaultServiceAccountName)
 				Expect(sa).ToNot(BeNil())
@@ -1447,6 +1579,8 @@ var _ = Describe("Deployer", func() {
 
 				cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
 				Expect(cm).ToNot(BeNil())
+				// This verifies that the cluster name provided to envoy matches the service name used when generating OTel stats
+				Expect(cm.Data[envoyDataKey]).To(ContainSubstring(fmt.Sprintf("cluster: %s", httplistenerpolicy.GenerateDefaultServiceName(dep.Name, dep.Namespace))))
 
 				logLevelsMap := expectedGwp.EnvoyContainer.Bootstrap.ComponentLogLevels
 				levels := []types.GomegaMatcher{}
@@ -1582,6 +1716,7 @@ var _ = Describe("Deployer", func() {
 			Expect(svc.GetLabels()).To(containMapElements(expectedGwp.Service.ExtraLabels))
 			Expect(svc.Spec.Type).To(Equal(*expectedGwp.Service.Type))
 			Expect(svc.Spec.ClusterIP).To(Equal(*expectedGwp.Service.ClusterIP))
+			Expect(svc.Spec.ExternalTrafficPolicy).To(Equal(corev1.ServiceExternalTrafficPolicyTypeLocal))
 
 			sa := objs.findServiceAccount(defaultNamespace, defaultServiceAccountName)
 			Expect(sa).ToNot(BeNil())
@@ -1612,6 +1747,14 @@ var _ = Describe("Deployer", func() {
 			Expect(objs.findDeployment(defaultNamespace, defaultDeploymentName).Spec.Template.Spec.Containers[0].Args).To(ContainElements(
 				argsMatchers...,
 			))
+
+			deployment := objs.findDeployment(defaultNamespace, defaultDeploymentName)
+
+			Expect(deployment.Spec.Template.Spec.TopologySpreadConstraints).To(Equal(expectedGwp.PodTemplate.TopologySpreadConstraints))
+			Expect(deployment.Spec.Template.Spec.Tolerations).To(Equal(expectedGwp.PodTemplate.Tolerations))
+			Expect(deployment.Spec.Template.Spec.Affinity).To(Equal(expectedGwp.PodTemplate.Affinity))
+			Expect(deployment.Spec.Template.Spec.NodeSelector).To(Equal(expectedGwp.PodTemplate.NodeSelector))
+
 			return nil
 		}
 
@@ -1784,7 +1927,7 @@ var _ = Describe("Deployer", func() {
 		}
 
 		aiSdsAndFloatingUserIdValidationFunc := func(objs clientObjects, inp *input) error {
-			return generalAiAndSdsValidationFunc(objs, inp, true) // true: don't expect null runAsUser
+			return generalAiAndSdsValidationFunc(objs, inp, true) // true: expect null runAsUser
 		}
 
 		DescribeTable("create and validate objs", func(inp *input, expected *expectedOutput) {
@@ -1980,7 +2123,7 @@ var _ = Describe("Deployer", func() {
 						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 							Service: &gw2_v1alpha1.Service{
 								Type: ptr.To(corev1.ServiceTypeNodePort),
-								Ports: []*gw2_v1alpha1.Port{
+								Ports: []gw2_v1alpha1.Port{
 									{
 										Port:     80,
 										NodePort: ptr.To(uint16(30000)),
@@ -2067,7 +2210,7 @@ var _ = Describe("Deployer", func() {
 					cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
 					Expect(cm).NotTo(BeNil())
 
-					envoyYaml := cm.Data["envoy.yaml"]
+					envoyYaml := cm.Data[envoyDataKey]
 					Expect(envoyYaml).NotTo(BeEmpty())
 
 					// make sure it's valid yaml
@@ -2112,7 +2255,7 @@ var _ = Describe("Deployer", func() {
 					cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
 					Expect(cm).NotTo(BeNil())
 
-					envoyYaml := cm.Data["envoy.yaml"]
+					envoyYaml := cm.Data[envoyDataKey]
 					Expect(envoyYaml).NotTo(BeEmpty())
 
 					// make sure it's valid yaml
@@ -2171,6 +2314,94 @@ var _ = Describe("Deployer", func() {
 					return nil
 				},
 			}),
+			Entry("OmitReplicas is true", &input{
+				dInputs: defaultDeployerInputs(),
+				gw:      defaultGateway(),
+				defaultGwp: &gw2_v1alpha1.GatewayParameters{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       wellknown.GatewayParametersGVK.Kind,
+						APIVersion: gw2_v1alpha1.GroupVersion.String(),
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      wellknown.DefaultGatewayParametersName,
+						Namespace: defaultNamespace,
+						UID:       "1237",
+					},
+					Spec: gw2_v1alpha1.GatewayParametersSpec{
+						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
+							Deployment: &gw2_v1alpha1.ProxyDeployment{
+								OmitReplicas: ptr.To(true),
+							},
+						},
+					},
+				},
+				overrideGwp: &gw2_v1alpha1.GatewayParameters{},
+			}, &expectedOutput{
+				validationFunc: func(objs clientObjects, inp *input) error {
+					deployment := objs.findDeployment(defaultNamespace, defaultServiceName)
+					Expect(deployment).NotTo(BeNil())
+					Expect(deployment.Spec.Replicas).To(BeNil())
+					return nil
+				},
+			}),
+			Entry("have replicas set", &input{
+				dInputs: defaultDeployerInputs(),
+				gw:      defaultGateway(),
+				defaultGwp: &gw2_v1alpha1.GatewayParameters{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       wellknown.GatewayParametersGVK.Kind,
+						APIVersion: gw2_v1alpha1.GroupVersion.String(),
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      wellknown.DefaultGatewayParametersName,
+						Namespace: defaultNamespace,
+						UID:       "1237",
+					},
+					Spec: gw2_v1alpha1.GatewayParametersSpec{
+						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
+							Deployment: &gw2_v1alpha1.ProxyDeployment{
+								Replicas: ptr.To(uint32(3)),
+							},
+						},
+					},
+				},
+				overrideGwp: &gw2_v1alpha1.GatewayParameters{},
+			}, &expectedOutput{
+				validationFunc: func(objs clientObjects, inp *input) error {
+					deployment := objs.findDeployment(defaultNamespace, defaultServiceName)
+					Expect(deployment).NotTo(BeNil())
+					Expect(*deployment.Spec.Replicas).To(Equal(int32(3)))
+					return nil
+				},
+			}),
+			Entry("replicas and omitReplicas aren't set (default)", &input{
+				dInputs: defaultDeployerInputs(),
+				gw:      defaultGateway(),
+				defaultGwp: &gw2_v1alpha1.GatewayParameters{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       wellknown.GatewayParametersGVK.Kind,
+						APIVersion: gw2_v1alpha1.GroupVersion.String(),
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      wellknown.DefaultGatewayParametersName,
+						Namespace: defaultNamespace,
+						UID:       "1237",
+					},
+					Spec: gw2_v1alpha1.GatewayParametersSpec{
+						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
+							Deployment: &gw2_v1alpha1.ProxyDeployment{},
+						},
+					},
+				},
+				overrideGwp: &gw2_v1alpha1.GatewayParameters{},
+			}, &expectedOutput{
+				validationFunc: func(objs clientObjects, inp *input) error {
+					deployment := objs.findDeployment(defaultNamespace, defaultServiceName)
+					Expect(deployment).NotTo(BeNil())
+					Expect(*deployment.Spec.Replicas).To(Equal(int32(1))) // default replicas is 1
+					return nil
+				},
+			}),
 		)
 	})
 
@@ -2179,10 +2410,10 @@ var _ = Describe("Deployer", func() {
 
 		It("should deploy endpoint picker resources for an InferencePool when autoProvision is enabled", func() {
 			// Create a fake InferencePool resource.
-			pool := &infextv1a2.InferencePool{
+			pool := &inf.InferencePool{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       wellknown.InferencePoolKind,
-					APIVersion: fmt.Sprintf("%s/%s", infextv1a2.GroupVersion.Group, infextv1a2.GroupVersion.Version),
+					APIVersion: fmt.Sprintf("%s/%s", inf.GroupVersion.Group, inf.GroupVersion.Version),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pool1",
@@ -2386,7 +2617,7 @@ func newFakeClientWithObjs(objs ...client.Object) client.Client {
 	for _, obj := range objs {
 		gvk := obj.GetObjectKind().GroupVersionKind()
 		if gvk.Kind == wellknown.InferencePoolKind {
-			if err := infextv1a2.AddToScheme(scheme); err != nil {
+			if err := inf.Install(scheme); err != nil {
 				panic(fmt.Sprintf("failed to add InferenceExtension scheme: %v", err))
 			}
 			break
@@ -2498,6 +2729,12 @@ func fullyDefinedGatewayParameters(name, namespace string) *gw2_v1alpha1.Gateway
 						Effect:            "pod-toleration-effect",
 						TolerationSeconds: ptr.To(int64(1)),
 					}},
+					TopologySpreadConstraints: []corev1.TopologySpreadConstraint{{
+						MaxSkew:           1,
+						TopologyKey:       "pod-topology-spread-constraint-topology-key",
+						WhenUnsatisfiable: "pod-topology-spread-constraint-when-unsatisfiable",
+						LabelSelector:     &metav1.LabelSelector{MatchLabels: map[string]string{"pod-topology-spread-constraint-label-selector": "foo"}},
+					}},
 				},
 				Service: &gw2_v1alpha1.Service{
 					Type:      ptr.To(corev1.ServiceTypeClusterIP),
@@ -2508,6 +2745,7 @@ func fullyDefinedGatewayParameters(name, namespace string) *gw2_v1alpha1.Gateway
 					ExtraLabels: map[string]string{
 						"service-label": "foo",
 					},
+					ExternalTrafficPolicy: ptr.To(string(corev1.ServiceExternalTrafficPolicyTypeLocal)),
 				},
 				ServiceAccount: &gw2_v1alpha1.ServiceAccount{
 					ExtraLabels: map[string]string{
@@ -2560,9 +2798,8 @@ func fullyDefinedGatewayParameters(name, namespace string) *gw2_v1alpha1.Gateway
 							SamplerType: ptr.To(gw2_v1alpha1.OTelTracesSamplerTraceidratio),
 							SamplerArg:  ptr.To("0.5"),
 						},
-						Timeout:           ptr.To(api.Duration("100s")),
-						Protocol:          ptr.To(gw2_v1alpha1.OTLPTracesProtocolTypeGrpc),
-						TransportSecurity: ptr.To(gw2_v1alpha1.OTLPTransportSecurityInsecure),
+						Timeout:  &metav1.Duration{Duration: 100 * time.Second},
+						Protocol: ptr.To(gw2_v1alpha1.OTLPTracesProtocolTypeGrpc),
 					},
 				},
 			},
@@ -2632,4 +2869,129 @@ func newCommonCols(t test.Failer, initObjs ...client.Object) *common.CommonColle
 
 	gateways.Gateways.WaitUntilSynced(ctx.Done())
 	return commonCols
+}
+
+var _ = Describe("DeployObjs", func() {
+	var (
+		ns   = "test-ns"
+		name = "test-obj"
+		ctx  = context.Background()
+	)
+
+	var getDeployer = func(fc *fakeClient) *deployer.Deployer {
+		chart, err := internaldeployer.LoadGatewayChart()
+		Expect(err).ToNot(HaveOccurred())
+		return deployer.NewDeployer(wellknown.DefaultGatewayControllerName, fc, chart,
+			nil,
+			internaldeployer.GatewayReleaseNameAndNamespace)
+	}
+
+	It("skips patch if object is unchanged", func() {
+		patched := false
+		cm := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns}, Data: map[string]string{"foo": "bar"}}
+		fc := &fakeClient{
+			Client: newFakeClientWithObjs(cm.DeepCopy()),
+			patchFunc: func(_ context.Context, _ client.Object, _ client.Patch, _ ...client.PatchOption) error {
+				Fail("should not be called")
+				return errors.New("should not be called")
+			},
+		}
+		d := getDeployer(fc)
+
+		err := d.DeployObjs(ctx, []client.Object{cm})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(patched).To(BeFalse())
+	})
+
+	It("skips patch only changed is object status", func() {
+		patched := false
+		pod1 := &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns}, Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "test", Image: "test:latest"}}}, Status: corev1.PodStatus{Phase: corev1.PodPending}}
+		pod2 := pod1.DeepCopy()
+
+		// obj to deploy won't have a status set.
+		pod2.Status = corev1.PodStatus{}
+		fc := &fakeClient{
+			Client: newFakeClientWithObjs(pod1.DeepCopy()),
+			patchFunc: func(_ context.Context, _ client.Object, _ client.Patch, _ ...client.PatchOption) error {
+				Fail("should not be called")
+				return errors.New("should not be called")
+			},
+		}
+		d := getDeployer(fc)
+
+		err := d.DeployObjs(ctx, []client.Object{pod2})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(patched).To(BeFalse())
+	})
+
+	It("patches if object is different", func() {
+		patched := false
+		cm := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns}, Data: map[string]string{"foo": "bar"}}
+		fc := &fakeClient{
+			Client: newFakeClientWithObjs(cm.DeepCopy()),
+			patchFunc: func(_ context.Context, _ client.Object, _ client.Patch, _ ...client.PatchOption) error {
+				patched = true
+				return nil
+			},
+		}
+		cm.Data = map[string]string{"foo": "bar", "bar": "baz"}
+		d := getDeployer(fc)
+		err := d.DeployObjs(ctx, []client.Object{cm})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(patched).To(BeTrue())
+	})
+
+	It("patches if object does not exist (IsNotFound)", func() {
+		patched := false
+		cm := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns}}
+		fc := &fakeClient{
+			Client: newFakeClientWithObjs(),
+			patchFunc: func(_ context.Context, _ client.Object, _ client.Patch, _ ...client.PatchOption) error {
+				patched = true
+				return nil
+			},
+		}
+		d := getDeployer(fc)
+		err := d.DeployObjs(ctx, []client.Object{cm})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(patched).To(BeTrue())
+	})
+
+	It("patches if Get returns a non-IsNotFound error", func() {
+		patched := false
+		cm := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns}}
+		fc := &fakeClient{
+			Client: newFakeClientWithObjs(cm.DeepCopy()),
+			getFunc: func(_ context.Context, _ client.ObjectKey, _ client.Object) error {
+				return fmt.Errorf("some random error")
+			},
+			patchFunc: func(_ context.Context, _ client.Object, _ client.Patch, _ ...client.PatchOption) error {
+				patched = true
+				return nil
+			},
+		}
+		d := getDeployer(fc)
+		err := d.DeployObjs(ctx, []client.Object{cm})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(patched).To(BeTrue())
+	})
+})
+
+type fakeClient struct {
+	client.Client
+	getFunc   func(ctx context.Context, key client.ObjectKey, obj client.Object) error
+	patchFunc func(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error
+}
+
+func (f *fakeClient) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+	if f.getFunc != nil {
+		return f.getFunc(ctx, key, obj)
+	}
+	return f.Client.Get(ctx, key, obj)
+}
+func (f *fakeClient) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
+	if f.patchFunc != nil {
+		return f.patchFunc(ctx, obj, patch, opts...)
+	}
+	return f.Client.Patch(ctx, obj, patch, opts...)
 }

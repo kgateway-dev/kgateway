@@ -1,7 +1,7 @@
 package trafficpolicy
 
 import (
-	envoy_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_csrf_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/csrf/v3"
 	envoy_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
@@ -17,27 +17,39 @@ const (
 	csrfShadowEnabledKey    = "envoy.csrf.shadow_enabled"
 )
 
-type CsrfIR struct {
-	csrfPolicy *envoy_csrf_v3.CsrfPolicy
+type csrfIR struct {
+	policy *envoy_csrf_v3.CsrfPolicy
 }
 
-func (c *CsrfIR) Equals(other *CsrfIR) bool {
-	if c == nil && other == nil {
-		return true
-	}
-	if c == nil || other == nil {
+var _ PolicySubIR = &csrfIR{}
+
+func (c *csrfIR) Equals(other PolicySubIR) bool {
+	otherCsrf, ok := other.(*csrfIR)
+	if !ok {
 		return false
 	}
+	if c == nil && otherCsrf == nil {
+		return true
+	}
+	if c == nil || otherCsrf == nil {
+		return false
+	}
+	return proto.Equal(c.policy, otherCsrf.policy)
+}
 
-	return proto.Equal(c.csrfPolicy, other.csrfPolicy)
+func (c *csrfIR) Validate() error {
+	if c == nil || c.policy == nil {
+		return nil
+	}
+	return c.policy.Validate()
 }
 
 // handleCsrf adds CSRF configuration to routes
-func (p *trafficPolicyPluginGwPass) handleCsrf(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, ir *CsrfIR) {
+func (p *trafficPolicyPluginGwPass) handleCsrf(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, ir *csrfIR) {
 	if typedFilterConfig == nil || ir == nil {
 		return
 	}
-	typedFilterConfig.AddTypedConfig(csrfExtensionFilterName, ir.csrfPolicy)
+	typedFilterConfig.AddTypedConfig(csrfExtensionFilterName, ir.policy)
 
 	// Add a filter to the chain. When having a csrf for a route we need to also have a
 	// globally disabled csrf filter in the chain otherwise it will be ignored.
@@ -46,12 +58,20 @@ func (p *trafficPolicyPluginGwPass) handleCsrf(fcn string, typedFilterConfig *ir
 		p.csrfInChain = make(map[string]*envoy_csrf_v3.CsrfPolicy)
 	}
 	if _, ok := p.csrfInChain[fcn]; !ok {
-		p.csrfInChain[fcn] = csrfFilter()
+		p.csrfInChain[fcn] = &envoy_csrf_v3.CsrfPolicy{
+			// FilterEnabled is a required value
+			FilterEnabled: &envoycorev3.RuntimeFractionalPercent{
+				DefaultValue: &envoy_type_v3.FractionalPercent{
+					Numerator:   0,
+					Denominator: envoy_type_v3.FractionalPercent_HUNDRED,
+				},
+			},
+		}
 	}
 }
 
-// csrfForSpec translates the CSRF spec into and onto the IR policy
-func csrfForSpec(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) error {
+// constructCSRF constructs the CSRF policy IR from the policy specification.
+func constructCSRF(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) error {
 	if spec.Csrf == nil {
 		return nil
 	}
@@ -65,7 +85,7 @@ func csrfForSpec(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) erro
 	}
 
 	// FilterEnabled is required by the envoy filter and is set to 0 (off) by default
-	csrfPolicy.FilterEnabled = &envoy_core_v3.RuntimeFractionalPercent{
+	csrfPolicy.FilterEnabled = &envoycorev3.RuntimeFractionalPercent{
 		DefaultValue: &envoy_type_v3.FractionalPercent{
 			Numerator:   numerator,
 			Denominator: envoy_type_v3.FractionalPercent_HUNDRED,
@@ -75,7 +95,7 @@ func csrfForSpec(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) erro
 
 	// Set shadow enabled percentage if specified
 	if spec.Csrf.PercentageShadowed != nil {
-		csrfPolicy.ShadowEnabled = &envoy_core_v3.RuntimeFractionalPercent{
+		csrfPolicy.ShadowEnabled = &envoycorev3.RuntimeFractionalPercent{
 			DefaultValue: &envoy_type_v3.FractionalPercent{
 				Numerator:   *spec.Csrf.PercentageShadowed,
 				Denominator: envoy_type_v3.FractionalPercent_HUNDRED,
@@ -95,30 +115,13 @@ func csrfForSpec(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) erro
 		}
 	}
 
-	out.csrf = &CsrfIR{
-		csrfPolicy: csrfPolicy,
+	out.csrf = &csrfIR{
+		policy: csrfPolicy,
 	}
 	return nil
 }
 
-// csrfFilter returns a default csrf filter with the filter enabled percentage set to 0 to be added to the filter
-// chain.
-func csrfFilter() *envoy_csrf_v3.CsrfPolicy {
-	return &envoy_csrf_v3.CsrfPolicy{
-		FilterEnabled: &envoy_core_v3.RuntimeFractionalPercent{
-			DefaultValue: &envoy_type_v3.FractionalPercent{
-				Numerator:   0,
-				Denominator: envoy_type_v3.FractionalPercent_HUNDRED,
-			},
-		},
-	}
-}
-
-func toEnvoyStringMatcher(origin *v1alpha1.StringMatcher) *envoy_matcher_v3.StringMatcher {
-	if origin == nil {
-		return nil
-	}
-
+func toEnvoyStringMatcher(origin v1alpha1.StringMatcher) *envoy_matcher_v3.StringMatcher {
 	matcher := &envoy_matcher_v3.StringMatcher{
 		IgnoreCase: origin.IgnoreCase,
 	}
@@ -143,9 +146,6 @@ func toEnvoyStringMatcher(origin *v1alpha1.StringMatcher) *envoy_matcher_v3.Stri
 	case origin.SafeRegex != nil:
 		matcher.MatchPattern = &envoy_matcher_v3.StringMatcher_SafeRegex{
 			SafeRegex: &envoy_matcher_v3.RegexMatcher{
-				EngineType: &envoy_matcher_v3.RegexMatcher_GoogleRe2{
-					GoogleRe2: &envoy_matcher_v3.RegexMatcher_GoogleRE2{},
-				},
 				Regex: *origin.SafeRegex,
 			},
 		}

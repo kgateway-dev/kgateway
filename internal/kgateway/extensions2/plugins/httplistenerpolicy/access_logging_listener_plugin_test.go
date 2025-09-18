@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	v33 "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyaccesslogv3 "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyalfile "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
 	cel "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/filters/cel/v3"
 	envoygrpc "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
@@ -33,6 +33,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 func TestConvertJsonFormat_EdgeCases(t *testing.T) {
@@ -40,7 +41,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 		testCases := []struct {
 			name     string
 			config   []v1alpha1.AccessLog
-			expected []*v33.AccessLog
+			expected []*envoyaccesslogv3.AccessLog
 		}{
 			{
 				name:     "NilConfig",
@@ -63,15 +64,15 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 					},
 				},
 				},
-				expected: []*v33.AccessLog{
+				expected: []*envoyaccesslogv3.AccessLog{
 					{
 						Name: "envoy.access_loggers.file",
-						ConfigType: &v33.AccessLog_TypedConfig{
+						ConfigType: &envoyaccesslogv3.AccessLog_TypedConfig{
 							TypedConfig: mustMessageToAny(t, &envoyalfile.FileAccessLog{
 								Path: "/var/log/access.json",
 								AccessLogFormat: &envoyalfile.FileAccessLog_LogFormat{
-									LogFormat: &envoycore.SubstitutionFormatString{
-										Formatters: []*envoycore.TypedExtensionConfig{
+									LogFormat: &envoycorev3.SubstitutionFormatString{
+										Formatters: []*envoycorev3.TypedExtensionConfig{
 											{
 												Name:        "envoy.formatter.req_without_query",
 												TypedConfig: mustMessageToAny(t, &envoy_req_without_query.ReqWithoutQuery{}),
@@ -81,7 +82,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 												TypedConfig: mustMessageToAny(t, &envoy_metadata_formatter.Metadata{}),
 											},
 										},
-										Format: &envoycore.SubstitutionFormatString_JsonFormat{
+										Format: &envoycorev3.SubstitutionFormatString_JsonFormat{
 											JsonFormat: &structpb.Struct{
 												Fields: map[string]*structpb.Value{
 													"request_method": {
@@ -131,20 +132,20 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 						},
 					},
 				},
-				expected: []*v33.AccessLog{
+				expected: []*envoyaccesslogv3.AccessLog{
 					{
 						Name: "envoy.access_loggers.http_grpc",
-						ConfigType: &v33.AccessLog_TypedConfig{
+						ConfigType: &envoyaccesslogv3.AccessLog_TypedConfig{
 							TypedConfig: mustMessageToAny(t, &envoygrpc.HttpGrpcAccessLogConfig{
 								AdditionalRequestHeadersToLog:   []string{"x-request-id"},
 								AdditionalResponseHeadersToLog:  []string{"x-response-id"},
 								AdditionalResponseTrailersToLog: []string{"x-trailer"},
 								CommonConfig: &envoygrpc.CommonGrpcAccessLogConfig{
-									TransportApiVersion: envoycore.ApiVersion_V3,
+									TransportApiVersion: envoycorev3.ApiVersion_V3,
 									LogName:             "grpc-log",
-									GrpcService: &envoycore.GrpcService{
-										TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
-											EnvoyGrpc: &envoycore.GrpcService_EnvoyGrpc{
+									GrpcService: &envoycorev3.GrpcService{
+										TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+											EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
 												ClusterName: "backend_default_test-service_0",
 											},
 										},
@@ -155,12 +156,12 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 					},
 					{
 						Name: "envoy.access_loggers.file",
-						ConfigType: &v33.AccessLog_TypedConfig{
+						ConfigType: &envoyaccesslogv3.AccessLog_TypedConfig{
 							TypedConfig: mustMessageToAny(t, &envoyalfile.FileAccessLog{
 								Path: "/var/log/file-access.log",
 								AccessLogFormat: &envoyalfile.FileAccessLog_LogFormat{
-									LogFormat: &envoycore.SubstitutionFormatString{
-										Formatters: []*envoycore.TypedExtensionConfig{
+									LogFormat: &envoycorev3.SubstitutionFormatString{
+										Formatters: []*envoycorev3.TypedExtensionConfig{
 											{
 												Name:        "envoy.formatter.req_without_query",
 												TypedConfig: mustMessageToAny(t, &envoy_req_without_query.ReqWithoutQuery{}),
@@ -170,9 +171,9 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 												TypedConfig: mustMessageToAny(t, &envoy_metadata_formatter.Metadata{}),
 											},
 										},
-										Format: &envoycore.SubstitutionFormatString_TextFormatSource{
-											TextFormatSource: &envoycore.DataSource{
-												Specifier: &envoycore.DataSource_InlineString{
+										Format: &envoycorev3.SubstitutionFormatString_TextFormatSource{
+											TextFormatSource: &envoycorev3.DataSource{
+												Specifier: &envoycorev3.DataSource_InlineString{
 													InlineString: "[%START_TIME%] %RESPONSE_CODE%",
 												},
 											},
@@ -194,15 +195,15 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 						},
 					},
 				},
-				expected: []*v33.AccessLog{
+				expected: []*envoyaccesslogv3.AccessLog{
 					{
 						Name: "envoy.access_loggers.file",
-						ConfigType: &v33.AccessLog_TypedConfig{
+						ConfigType: &envoyaccesslogv3.AccessLog_TypedConfig{
 							TypedConfig: mustMessageToAny(t, &envoyalfile.FileAccessLog{
 								Path: "/var/log/access.log",
 								AccessLogFormat: &envoyalfile.FileAccessLog_LogFormat{
-									LogFormat: &envoycore.SubstitutionFormatString{
-										Formatters: []*envoycore.TypedExtensionConfig{
+									LogFormat: &envoycorev3.SubstitutionFormatString{
+										Formatters: []*envoycorev3.TypedExtensionConfig{
 											{
 												Name:        "envoy.formatter.req_without_query",
 												TypedConfig: mustMessageToAny(t, &envoy_req_without_query.ReqWithoutQuery{}),
@@ -212,9 +213,9 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 												TypedConfig: mustMessageToAny(t, &envoy_metadata_formatter.Metadata{}),
 											},
 										},
-										Format: &envoycore.SubstitutionFormatString_TextFormatSource{
-											TextFormatSource: &envoycore.DataSource{
-												Specifier: &envoycore.DataSource_InlineString{
+										Format: &envoycorev3.SubstitutionFormatString_TextFormatSource{
+											TextFormatSource: &envoycorev3.DataSource{
+												Specifier: &envoycorev3.DataSource_InlineString{
 													InlineString: "test log format",
 												},
 											},
@@ -238,15 +239,15 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 						},
 					},
 				},
-				expected: []*v33.AccessLog{
+				expected: []*envoyaccesslogv3.AccessLog{
 					{
 						Name: "envoy.access_loggers.file",
-						ConfigType: &v33.AccessLog_TypedConfig{
+						ConfigType: &envoyaccesslogv3.AccessLog_TypedConfig{
 							TypedConfig: mustMessageToAny(t, &envoyalfile.FileAccessLog{
 								Path: "/var/log/access.log",
 								AccessLogFormat: &envoyalfile.FileAccessLog_LogFormat{
-									LogFormat: &envoycore.SubstitutionFormatString{
-										Formatters: []*envoycore.TypedExtensionConfig{
+									LogFormat: &envoycorev3.SubstitutionFormatString{
+										Formatters: []*envoycorev3.TypedExtensionConfig{
 											{
 												Name:        "envoy.formatter.req_without_query",
 												TypedConfig: mustMessageToAny(t, &envoy_req_without_query.ReqWithoutQuery{}),
@@ -256,7 +257,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 												TypedConfig: mustMessageToAny(t, &envoy_metadata_formatter.Metadata{}),
 											},
 										},
-										Format: &envoycore.SubstitutionFormatString_JsonFormat{
+										Format: &envoycorev3.SubstitutionFormatString_JsonFormat{
 											JsonFormat: &structpb.Struct{
 												Fields: map[string]*structpb.Value{
 													"request_method": {
@@ -297,21 +298,21 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 						},
 					},
 				},
-				expected: []*v33.AccessLog{
+				expected: []*envoyaccesslogv3.AccessLog{
 					{
 						Name: "envoy.access_loggers.http_grpc",
-						ConfigType: &v33.AccessLog_TypedConfig{
+						ConfigType: &envoyaccesslogv3.AccessLog_TypedConfig{
 							TypedConfig: mustMessageToAny(t, &envoygrpc.HttpGrpcAccessLogConfig{
 								CommonConfig: &envoygrpc.CommonGrpcAccessLogConfig{
 									LogName: "grpc-log",
-									GrpcService: &envoycore.GrpcService{
-										TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
-											EnvoyGrpc: &envoycore.GrpcService_EnvoyGrpc{
+									GrpcService: &envoycorev3.GrpcService{
+										TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+											EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
 												ClusterName: "backend_default_test-service_0",
 											},
 										},
 									},
-									TransportApiVersion: envoycore.ApiVersion_V3,
+									TransportApiVersion: envoycorev3.ApiVersion_V3,
 								},
 							}),
 						},
@@ -342,26 +343,26 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 						},
 					},
 				},
-				expected: []*v33.AccessLog{
+				expected: []*envoyaccesslogv3.AccessLog{
 					{
 						Name: "envoy.access_loggers.http_grpc",
-						ConfigType: &v33.AccessLog_TypedConfig{
+						ConfigType: &envoyaccesslogv3.AccessLog_TypedConfig{
 							TypedConfig: mustMessageToAny(t, &envoygrpc.HttpGrpcAccessLogConfig{
 								CommonConfig: &envoygrpc.CommonGrpcAccessLogConfig{
 									LogName: "grpc-log",
-									GrpcService: &envoycore.GrpcService{
-										TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
-											EnvoyGrpc: &envoycore.GrpcService_EnvoyGrpc{
+									GrpcService: &envoycorev3.GrpcService{
+										TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+											EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
 												ClusterName: "backend_default_test-service_0",
 											},
 										},
-										RetryPolicy: &envoycore.RetryPolicy{
-											RetryBackOff: &envoycore.BackoffStrategy{
+										RetryPolicy: &envoycorev3.RetryPolicy{
+											RetryBackOff: &envoycorev3.BackoffStrategy{
 												BaseInterval: &durationpb.Duration{Seconds: 5},
 											},
 										},
 									},
-									TransportApiVersion: envoycore.ApiVersion_V3,
+									TransportApiVersion: envoycorev3.ApiVersion_V3,
 								},
 							}),
 						},
@@ -386,7 +387,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 									Timeout:                 &metav1.Duration{Duration: 10 * time.Second},
 									InitialMetadata: []v1alpha1.HeaderValue{{
 										Key:   "key",
-										Value: "value",
+										Value: ptr.To("value"),
 									}},
 									RetryPolicy: &v1alpha1.RetryPolicy{
 										RetryBackOff: &v1alpha1.BackoffStrategy{
@@ -401,16 +402,16 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 						},
 					},
 				},
-				expected: []*v33.AccessLog{
+				expected: []*envoyaccesslogv3.AccessLog{
 					{
 						Name: "envoy.access_loggers.http_grpc",
-						ConfigType: &v33.AccessLog_TypedConfig{
+						ConfigType: &envoyaccesslogv3.AccessLog_TypedConfig{
 							TypedConfig: mustMessageToAny(t, &envoygrpc.HttpGrpcAccessLogConfig{
 								CommonConfig: &envoygrpc.CommonGrpcAccessLogConfig{
 									LogName: "grpc-log",
-									GrpcService: &envoycore.GrpcService{
-										TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
-											EnvoyGrpc: &envoycore.GrpcService_EnvoyGrpc{
+									GrpcService: &envoycorev3.GrpcService{
+										TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+											EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
 												ClusterName:             "backend_default_test-service_0",
 												Authority:               "www.example.com",
 												MaxReceiveMessageLength: &wrapperspb.UInt32Value{Value: 127},
@@ -418,19 +419,19 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 											},
 										},
 										Timeout: &durationpb.Duration{Seconds: 10},
-										InitialMetadata: []*envoycore.HeaderValue{{
+										InitialMetadata: []*envoycorev3.HeaderValue{{
 											Key:   "key",
 											Value: "value",
 										}},
-										RetryPolicy: &envoycore.RetryPolicy{
-											RetryBackOff: &envoycore.BackoffStrategy{
+										RetryPolicy: &envoycorev3.RetryPolicy{
+											RetryBackOff: &envoycorev3.BackoffStrategy{
 												BaseInterval: &durationpb.Duration{Seconds: 5},
 												MaxInterval:  &durationpb.Duration{Seconds: 10},
 											},
 											NumRetries: &wrapperspb.UInt32Value{Value: 3},
 										},
 									},
-									TransportApiVersion: envoycore.ApiVersion_V3,
+									TransportApiVersion: envoycorev3.ApiVersion_V3,
 								},
 							}),
 						},
@@ -455,15 +456,15 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 						},
 					},
 				},
-				expected: []*v33.AccessLog{
+				expected: []*envoyaccesslogv3.AccessLog{
 					{
 						Name: "envoy.access_loggers.file",
-						ConfigType: &v33.AccessLog_TypedConfig{
+						ConfigType: &envoyaccesslogv3.AccessLog_TypedConfig{
 							TypedConfig: mustMessageToAny(t, &envoyalfile.FileAccessLog{
 								Path: "/var/log/access.log",
 								AccessLogFormat: &envoyalfile.FileAccessLog_LogFormat{
-									LogFormat: &envoycore.SubstitutionFormatString{
-										Formatters: []*envoycore.TypedExtensionConfig{
+									LogFormat: &envoycorev3.SubstitutionFormatString{
+										Formatters: []*envoycorev3.TypedExtensionConfig{
 											{
 												Name:        "envoy.formatter.req_without_query",
 												TypedConfig: mustMessageToAny(t, &envoy_req_without_query.ReqWithoutQuery{}),
@@ -473,9 +474,9 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 												TypedConfig: mustMessageToAny(t, &envoy_metadata_formatter.Metadata{}),
 											},
 										},
-										Format: &envoycore.SubstitutionFormatString_TextFormatSource{
-											TextFormatSource: &envoycore.DataSource{
-												Specifier: &envoycore.DataSource_InlineString{
+										Format: &envoycorev3.SubstitutionFormatString_TextFormatSource{
+											TextFormatSource: &envoycorev3.DataSource{
+												Specifier: &envoycorev3.DataSource_InlineString{
 													InlineString: "hello kgateway",
 												},
 											},
@@ -484,12 +485,12 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 								},
 							}),
 						},
-						Filter: &v33.AccessLogFilter{
-							FilterSpecifier: &v33.AccessLogFilter_StatusCodeFilter{
-								StatusCodeFilter: &v33.StatusCodeFilter{
-									Comparison: &v33.ComparisonFilter{
-										Op: v33.ComparisonFilter_EQ,
-										Value: &envoycore.RuntimeUInt32{
+						Filter: &envoyaccesslogv3.AccessLogFilter{
+							FilterSpecifier: &envoyaccesslogv3.AccessLogFilter_StatusCodeFilter{
+								StatusCodeFilter: &envoyaccesslogv3.StatusCodeFilter{
+									Comparison: &envoyaccesslogv3.ComparisonFilter{
+										Op: envoyaccesslogv3.ComparisonFilter_EQ,
+										Value: &envoycorev3.RuntimeUInt32{
 											DefaultValue: 5,
 										},
 									},
@@ -519,20 +520,20 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 						},
 					},
 				},
-				expected: []*v33.AccessLog{
+				expected: []*envoyaccesslogv3.AccessLog{
 					{
 						Name: "envoy.access_loggers.file",
-						ConfigType: &v33.AccessLog_TypedConfig{
+						ConfigType: &envoyaccesslogv3.AccessLog_TypedConfig{
 							TypedConfig: mustMessageToAny(t, &envoyalfile.FileAccessLog{
 								Path: "/var/log/access.log",
 							}),
 						},
-						Filter: &v33.AccessLogFilter{
-							FilterSpecifier: &v33.AccessLogFilter_HeaderFilter{
-								HeaderFilter: &v33.HeaderFilter{
-									Header: &envoyroute.HeaderMatcher{
+						Filter: &envoyaccesslogv3.AccessLogFilter{
+							FilterSpecifier: &envoyaccesslogv3.AccessLogFilter_HeaderFilter{
+								HeaderFilter: &envoyaccesslogv3.HeaderFilter{
+									Header: &envoyroutev3.HeaderMatcher{
 										Name: "x-test-header",
-										HeaderMatchSpecifier: &envoyroute.HeaderMatcher_StringMatch{
+										HeaderMatchSpecifier: &envoyroutev3.HeaderMatcher_StringMatch{
 											StringMatch: &envoymatcher.StringMatcher{
 												MatchPattern: &envoymatcher.StringMatcher_Exact{
 													Exact: "test-value",
@@ -563,20 +564,20 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 						},
 					},
 				},
-				expected: []*v33.AccessLog{
+				expected: []*envoyaccesslogv3.AccessLog{
 					{
 						Name: "envoy.access_loggers.file",
-						ConfigType: &v33.AccessLog_TypedConfig{
+						ConfigType: &envoyaccesslogv3.AccessLog_TypedConfig{
 							TypedConfig: mustMessageToAny(t, &envoyalfile.FileAccessLog{
 								Path: "/var/log/access.log",
 							}),
 						},
-						Filter: &v33.AccessLogFilter{
-							FilterSpecifier: &v33.AccessLogFilter_DurationFilter{
-								DurationFilter: &v33.DurationFilter{
-									Comparison: &v33.ComparisonFilter{
-										Op: v33.ComparisonFilter_EQ,
-										Value: &envoycore.RuntimeUInt32{
+						Filter: &envoyaccesslogv3.AccessLogFilter{
+							FilterSpecifier: &envoyaccesslogv3.AccessLogFilter_DurationFilter{
+								DurationFilter: &envoyaccesslogv3.DurationFilter{
+									Comparison: &envoyaccesslogv3.ComparisonFilter{
+										Op: envoyaccesslogv3.ComparisonFilter_EQ,
+										Value: &envoycorev3.RuntimeUInt32{
 											DefaultValue: 5,
 										},
 									},
@@ -600,17 +601,17 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 						},
 					},
 				},
-				expected: []*v33.AccessLog{
+				expected: []*envoyaccesslogv3.AccessLog{
 					{
 						Name: "envoy.access_loggers.file",
-						ConfigType: &v33.AccessLog_TypedConfig{
+						ConfigType: &envoyaccesslogv3.AccessLog_TypedConfig{
 							TypedConfig: mustMessageToAny(t, &envoyalfile.FileAccessLog{
 								Path: "/var/log/access.log",
 							}),
 						},
-						Filter: &v33.AccessLogFilter{
-							FilterSpecifier: &v33.AccessLogFilter_NotHealthCheckFilter{
-								NotHealthCheckFilter: &v33.NotHealthCheckFilter{},
+						Filter: &envoyaccesslogv3.AccessLogFilter{
+							FilterSpecifier: &envoyaccesslogv3.AccessLogFilter_NotHealthCheckFilter{
+								NotHealthCheckFilter: &envoyaccesslogv3.NotHealthCheckFilter{},
 							},
 						},
 					},
@@ -630,17 +631,17 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 						},
 					},
 				},
-				expected: []*v33.AccessLog{
+				expected: []*envoyaccesslogv3.AccessLog{
 					{
 						Name: "envoy.access_loggers.file",
-						ConfigType: &v33.AccessLog_TypedConfig{
+						ConfigType: &envoyaccesslogv3.AccessLog_TypedConfig{
 							TypedConfig: mustMessageToAny(t, &envoyalfile.FileAccessLog{
 								Path: "/var/log/access.log",
 							}),
 						},
-						Filter: &v33.AccessLogFilter{
-							FilterSpecifier: &v33.AccessLogFilter_TraceableFilter{
-								TraceableFilter: &v33.TraceableFilter{},
+						Filter: &envoyaccesslogv3.AccessLogFilter{
+							FilterSpecifier: &envoyaccesslogv3.AccessLogFilter_TraceableFilter{
+								TraceableFilter: &envoyaccesslogv3.TraceableFilter{},
 							},
 						},
 					},
@@ -664,17 +665,17 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 						},
 					},
 				},
-				expected: []*v33.AccessLog{
+				expected: []*envoyaccesslogv3.AccessLog{
 					{
 						Name: "envoy.access_loggers.file",
-						ConfigType: &v33.AccessLog_TypedConfig{
+						ConfigType: &envoyaccesslogv3.AccessLog_TypedConfig{
 							TypedConfig: mustMessageToAny(t, &envoyalfile.FileAccessLog{
 								Path: "/var/log/access.log",
 							}),
 						},
-						Filter: &v33.AccessLogFilter{
-							FilterSpecifier: &v33.AccessLogFilter_ResponseFlagFilter{
-								ResponseFlagFilter: &v33.ResponseFlagFilter{
+						Filter: &envoyaccesslogv3.AccessLogFilter{
+							FilterSpecifier: &envoyaccesslogv3.AccessLogFilter_ResponseFlagFilter{
+								ResponseFlagFilter: &envoyaccesslogv3.ResponseFlagFilter{
 									Flags: []string{
 										"test-flag",
 									},
@@ -700,18 +701,18 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 						},
 					},
 				},
-				expected: []*v33.AccessLog{
+				expected: []*envoyaccesslogv3.AccessLog{
 					{
 						Name: "envoy.access_loggers.file",
-						ConfigType: &v33.AccessLog_TypedConfig{
+						ConfigType: &envoyaccesslogv3.AccessLog_TypedConfig{
 							TypedConfig: mustMessageToAny(t, &envoyalfile.FileAccessLog{
 								Path: "/var/log/access.log",
 							}),
 						},
-						Filter: &v33.AccessLogFilter{
-							FilterSpecifier: &v33.AccessLogFilter_GrpcStatusFilter{
-								GrpcStatusFilter: &v33.GrpcStatusFilter{
-									Statuses: []v33.GrpcStatusFilter_Status{v33.GrpcStatusFilter_NOT_FOUND},
+						Filter: &envoyaccesslogv3.AccessLogFilter{
+							FilterSpecifier: &envoyaccesslogv3.AccessLogFilter_GrpcStatusFilter{
+								GrpcStatusFilter: &envoyaccesslogv3.GrpcStatusFilter{
+									Statuses: []envoyaccesslogv3.GrpcStatusFilter_Status{envoyaccesslogv3.GrpcStatusFilter_NOT_FOUND},
 								},
 							},
 						},
@@ -734,19 +735,19 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 						},
 					},
 				},
-				expected: []*v33.AccessLog{
+				expected: []*envoyaccesslogv3.AccessLog{
 					{
 						Name: "envoy.access_loggers.file",
-						ConfigType: &v33.AccessLog_TypedConfig{
+						ConfigType: &envoyaccesslogv3.AccessLog_TypedConfig{
 							TypedConfig: mustMessageToAny(t, &envoyalfile.FileAccessLog{
 								Path: "/var/log/access.log",
 							}),
 						},
-						Filter: &v33.AccessLogFilter{
-							FilterSpecifier: &v33.AccessLogFilter_ExtensionFilter{
-								ExtensionFilter: &v33.ExtensionFilter{
+						Filter: &envoyaccesslogv3.AccessLogFilter{
+							FilterSpecifier: &envoyaccesslogv3.AccessLogFilter_ExtensionFilter{
+								ExtensionFilter: &envoyaccesslogv3.ExtensionFilter{
 									Name: wellknown.CELExtensionFilter,
-									ConfigType: &v33.ExtensionFilter_TypedConfig{
+									ConfigType: &envoyaccesslogv3.ExtensionFilter_TypedConfig{
 										TypedConfig: mustMessageToAny(t, &cel.ExpressionFilter{
 											Expression: "connection.mtls",
 										}),
@@ -775,21 +776,33 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 						},
 					},
 				},
-				expected: []*v33.AccessLog{
+				expected: []*envoyaccesslogv3.AccessLog{
 					{
 						Name: "envoy.access_loggers.open_telemetry",
-						ConfigType: &v33.AccessLog_TypedConfig{
+						ConfigType: &envoyaccesslogv3.AccessLog_TypedConfig{
 							TypedConfig: mustMessageToAny(t, &envoy_open_telemetry.OpenTelemetryAccessLogConfig{
 								CommonConfig: &envoygrpc.CommonGrpcAccessLogConfig{
 									LogName: "otel-log",
-									GrpcService: &envoycore.GrpcService{
-										TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
-											EnvoyGrpc: &envoycore.GrpcService_EnvoyGrpc{
+									GrpcService: &envoycorev3.GrpcService{
+										TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+											EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
 												ClusterName: "backend_default_test-service_0",
 											},
 										},
 									},
-									TransportApiVersion: envoycore.ApiVersion_V3,
+									TransportApiVersion: envoycorev3.ApiVersion_V3,
+								},
+								ResourceAttributes: &otelv1.KeyValueList{
+									Values: []*otelv1.KeyValue{
+										{
+											Key: "service.name",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "gw.default",
+												},
+											},
+										},
+									},
 								},
 							}),
 						},
@@ -813,6 +826,84 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 							},
 							Body:                 pointer.String(`"%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %RESPONSE_CODE% "%REQ(:AUTHORITY)%" "%UPSTREAM_CLUSTER%"\n'`),
 							DisableBuiltinLabels: pointer.Bool(true),
+							ResourceAttributes: &v1alpha1.KeyAnyValueList{
+								Values: []v1alpha1.KeyAnyValue{
+									{
+										Key: "ra-string-key-1",
+										Value: v1alpha1.AnyValue{
+											StringValue: pointer.String("ra-string-value-1"),
+										},
+									},
+									{
+										Key: "service.name",
+										Value: v1alpha1.AnyValue{
+											StringValue: pointer.String("my:service"),
+										},
+									},
+									{
+										Key: "ra-array-key",
+										Value: v1alpha1.AnyValue{
+											ArrayValue: []v1alpha1.AnyValue{
+												{
+													StringValue: pointer.String("ra-1-string-value"),
+												},
+												{
+													StringValue: pointer.String("ra-2-string-value"),
+												},
+											},
+										},
+									},
+									{
+										Key: "ra-kvlist-key",
+										Value: v1alpha1.AnyValue{
+											KvListValue: &v1alpha1.KeyAnyValueList{
+												Values: []v1alpha1.KeyAnyValue{
+													{
+														Key: "ra-string-key-2",
+														Value: v1alpha1.AnyValue{
+															StringValue: pointer.String("ra-string-value-2"),
+														},
+													},
+													{
+														Key: "ra-array-key",
+														Value: v1alpha1.AnyValue{
+															ArrayValue: []v1alpha1.AnyValue{
+																{
+																	StringValue: pointer.String("ra-3-string-value"),
+																},
+																{
+																	StringValue: pointer.String("ra-4-string-value"),
+																},
+															},
+														},
+													},
+													{
+														Key: "ra-kvlist-key",
+														Value: v1alpha1.AnyValue{
+															KvListValue: &v1alpha1.KeyAnyValueList{
+																Values: []v1alpha1.KeyAnyValue{
+																	{
+																		Key: "ra-string-key-3",
+																		Value: v1alpha1.AnyValue{
+																			StringValue: pointer.String("ra-string-value-3"),
+																		},
+																	},
+																	{
+																		Key: "ra-string-key-4",
+																		Value: v1alpha1.AnyValue{
+																			StringValue: pointer.String("ra-string-value-4"),
+																		},
+																	},
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
 							Attributes: &v1alpha1.KeyAnyValueList{
 								Values: []v1alpha1.KeyAnyValue{
 									{
@@ -888,21 +979,21 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 						},
 					},
 				},
-				expected: []*v33.AccessLog{
+				expected: []*envoyaccesslogv3.AccessLog{
 					{
 						Name: "envoy.access_loggers.open_telemetry",
-						ConfigType: &v33.AccessLog_TypedConfig{
+						ConfigType: &envoyaccesslogv3.AccessLog_TypedConfig{
 							TypedConfig: mustMessageToAny(t, &envoy_open_telemetry.OpenTelemetryAccessLogConfig{
 								CommonConfig: &envoygrpc.CommonGrpcAccessLogConfig{
 									LogName: "otel-log",
-									GrpcService: &envoycore.GrpcService{
-										TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
-											EnvoyGrpc: &envoycore.GrpcService_EnvoyGrpc{
+									GrpcService: &envoycorev3.GrpcService{
+										TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+											EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
 												ClusterName: "backend_default_test-service_0",
 											},
 										},
 									},
-									TransportApiVersion: envoycore.ApiVersion_V3,
+									TransportApiVersion: envoycorev3.ApiVersion_V3,
 								},
 								Body: &otelv1.AnyValue{
 									Value: &otelv1.AnyValue_StringValue{
@@ -910,6 +1001,114 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 									},
 								},
 								DisableBuiltinLabels: true,
+								ResourceAttributes: &otelv1.KeyValueList{
+									Values: []*otelv1.KeyValue{
+										{
+											Key: "ra-string-key-1",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "ra-string-value-1",
+												},
+											},
+										},
+										{
+											Key: "service.name",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "my:service",
+												},
+											},
+										},
+										{
+											Key: "ra-array-key",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_ArrayValue{
+													ArrayValue: &otelv1.ArrayValue{
+														Values: []*otelv1.AnyValue{
+															{
+																Value: &otelv1.AnyValue_StringValue{
+																	StringValue: "ra-1-string-value",
+																},
+															},
+															{
+																Value: &otelv1.AnyValue_StringValue{
+																	StringValue: "ra-2-string-value",
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+										{
+											Key: "ra-kvlist-key",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_KvlistValue{
+													KvlistValue: &otelv1.KeyValueList{
+														Values: []*otelv1.KeyValue{
+															{
+																Key: "ra-string-key-2",
+																Value: &otelv1.AnyValue{
+																	Value: &otelv1.AnyValue_StringValue{
+																		StringValue: "ra-string-value-2",
+																	},
+																},
+															},
+															{
+																Key: "ra-array-key",
+																Value: &otelv1.AnyValue{
+																	Value: &otelv1.AnyValue_ArrayValue{
+																		ArrayValue: &otelv1.ArrayValue{
+																			Values: []*otelv1.AnyValue{
+																				{
+																					Value: &otelv1.AnyValue_StringValue{
+																						StringValue: "ra-3-string-value",
+																					},
+																				},
+																				{
+																					Value: &otelv1.AnyValue_StringValue{
+																						StringValue: "ra-4-string-value",
+																					},
+																				},
+																			},
+																		},
+																	},
+																},
+															},
+															{
+																Key: "ra-kvlist-key",
+																Value: &otelv1.AnyValue{
+																	Value: &otelv1.AnyValue_KvlistValue{
+																		KvlistValue: &otelv1.KeyValueList{
+																			Values: []*otelv1.KeyValue{
+																				{
+																					Key: "ra-string-key-3",
+																					Value: &otelv1.AnyValue{
+																						Value: &otelv1.AnyValue_StringValue{
+																							StringValue: "ra-string-value-3",
+																						},
+																					},
+																				},
+																				{
+																					Key: "ra-string-key-4",
+																					Value: &otelv1.AnyValue{
+																						Value: &otelv1.AnyValue_StringValue{
+																							StringValue: "ra-string-value-4",
+																						},
+																					},
+																				},
+																			},
+																		},
+																	},
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
 								Attributes: &otelv1.KeyValueList{
 									Values: []*otelv1.KeyValue{
 										{
@@ -1021,7 +1220,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 			t.Cleanup(cancel)
 
 			t.Run(tc.name, func(t *testing.T) {
-				result, err := translateAccessLogs(
+				configs, err := translateAccessLogs(
 					tc.config,
 					// Example grpcBackends map for upstreams
 					map[string]*ir.BackendObjectIR{
@@ -1041,6 +1240,17 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 						},
 					},
 				)
+				require.NoError(t, err, "failed to convert access log config")
+				result, err := generateAccessLogConfig(&ir.HcmContext{
+					Gateway: pluginsdkir.GatewayIR{
+						SourceObject: &pluginsdkir.Gateway{
+							ObjectSource: pluginsdkir.ObjectSource{
+								Namespace: "default",
+								Name:      "gw",
+							},
+						},
+					},
+				}, tc.config, configs)
 				require.NoError(t, err, "failed to convert access log config")
 				// Perform deep equality check
 				assert.Equal(t, len(tc.expected), len(result), "expected length mismatch")

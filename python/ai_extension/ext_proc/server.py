@@ -19,12 +19,17 @@ import grpc
 import gzip
 
 from telemetry.stats import Config as StatsConfig
-from telemetry.tracing import Config as TracingConfig, OtelTracer
+import telemetry.attributes as ai_attributes
+from telemetry.tracing import (
+    Config as TracingConfig,
+    OtelTracer,
+    WebhookResult,
+    RejectResult,
+)
 from .stream import Handler as StreamHandler
 from guardrails.regex import RegexRejection
 
 from openai import AsyncOpenAI as OpenAIClient
-from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 from google.protobuf import struct_pb2 as struct_pb2
 from prometheus_client import Counter, Histogram, start_http_server
 
@@ -60,10 +65,10 @@ from presidio_analyzer import EntityRecognizer
 
 # OpenTelemetry imports
 from opentelemetry import trace
-
+from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
+from opentelemetry.semconv._incubating.attributes import gen_ai_attributes
 from opentelemetry.context import attach, detach
 from opentelemetry.propagate import extract
-
 
 # Listen address can be a Unix Domain Socket path or an address like [::]:18080
 server_listen_addr = os.getenv("LISTEN_ADDR", "unix-abstract:kgateway-ai-sock")
@@ -149,8 +154,9 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
             async for request in request_iterator:
                 one_of = request.WhichOneof("request")
                 handler.logger.info("one_of: %s", one_of)
+                tracer = OtelTracer().get()
                 if one_of == "request_headers":
-                    with OtelTracer.get().start_as_current_span(
+                    with tracer.start_as_current_span(
                         "handle_request_headers",
                         context=ctx,
                     ) as header_span:
@@ -160,7 +166,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                         handler.build_extra_labels(
                             self._stats_config, request.metadata_context
                         )
-                        with OtelTracer.get().start_as_current_span(
+                        with tracer.start_as_current_span(
                             "parse_config",
                             context=trace.set_span_in_context(header_span),
                         ):
@@ -181,7 +187,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                                 request_headers=external_processor_pb2.HeadersResponse()
                             )
                 elif one_of == "request_body":
-                    with OtelTracer.get().start_as_current_span(
+                    with tracer.start_as_current_span(
                         "handle_request_body",
                         context=ctx,
                     ) as parent_span:
@@ -209,7 +215,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                         request_trailers=external_processor_pb2.TrailersResponse()
                     )
                 elif one_of == "response_headers":
-                    with OtelTracer.get().start_as_current_span(
+                    with tracer.start_as_current_span(
                         "handle_response_headers",
                         context=ctx,
                     ) as parent_span:
@@ -239,7 +245,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                             response_headers=external_processor_pb2.HeadersResponse()
                         )
                 elif one_of == "response_body":
-                    with OtelTracer.get().start_as_current_span(
+                    with tracer.start_as_current_span(
                         "handle_response_body",
                         context=ctx,
                     ) as parent_span:
@@ -338,6 +344,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
             handler.req_webhook.forwardHeaders if handler.req_webhook else [],
             headers,
         )
+        handler.req.path = get_http_header(headers.headers, ":path")
         auth_header = get_http_header(headers.headers, "authorization").removeprefix(
             "Bearer "
         )
@@ -367,17 +374,21 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
         parent_span: trace.Span,
     ) -> external_processor_pb2.ProcessingResponse | None:
         with OtelTracer.get().start_as_current_span(
-            "webhook",
+            "handle_request_body_req_webhook",
             context=trace.set_span_in_context(parent_span),
-        ):
+            kind=trace.SpanKind.CLIENT,
+            attributes={
+                ai_attributes.AI_WEBHOOK_ENDPOINT: str(webhook_cfg.endpoint),
+            },
+        ) as webhook_span:
             try:
                 headers = deepcopy(handler.req.headers)
                 TraceContextTextMapPropagator().inject(headers)
                 response: (
                     PromptMessages | RejectAction | None
                 ) = await make_request_webhook_request(
-                    webhook_host=webhook_cfg.host,
-                    webhook_port=webhook_cfg.port,
+                    webhook_host=webhook_cfg.endpoint.host,
+                    webhook_port=webhook_cfg.endpoint.port,
                     headers=headers,
                     promptMessages=handler.provider.construct_request_webhook_request_body(
                         body
@@ -385,9 +396,19 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                 )
 
                 if isinstance(response, PromptMessages):
+                    webhook_span.set_attributes(
+                        {
+                            ai_attributes.AI_WEBHOOK_RESULT: WebhookResult.MODIFIED,
+                        }
+                    )
                     handler.provider.update_request_body_from_webhook(body, response)
-
-                if isinstance(response, RejectAction):
+                elif isinstance(response, RejectAction):
+                    webhook_span.set_attributes(
+                        {
+                            ai_attributes.AI_WEBHOOK_RESULT: WebhookResult.REJECTED,
+                            ai_attributes.AI_WEBHOOK_REJECT_REASON: response.reason,
+                        }
+                    )
                     return external_processor_pb2.ProcessingResponse(
                         immediate_response=external_processor_pb2.ImmediateResponse(
                             status=dict(
@@ -401,10 +422,20 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                             details=response.reason,
                         ),
                     )
+                else:
+                    # response is None - webhook did not modify anything
+                    webhook_span.set_attribute(
+                        ai_attributes.AI_WEBHOOK_RESULT, WebhookResult.PASSED
+                    )
 
-                # When response is None, that means webhook did not modified anything,
-                # so just proceed (return None)
+                # No need to explicitly set OK status - it's the default
             except Exception as e:
+                webhook_span.record_exception(e)
+                webhook_span.set_status(
+                    trace.StatusCode.ERROR,
+                    f"Error with guardrails webhook: {str(e)}",
+                )
+                logger.error("Error with guardrails webhook, %s", e)
                 return error_response(
                     handler.req_custom_response, "Error with guardrails webhook", e
                 )
@@ -412,16 +443,32 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
     def handle_request_body_req_regex(
         self, body: dict, handler: StreamHandler, parent_span: trace.Span
     ) -> external_processor_pb2.ProcessingResponse | None:
-        with OtelTracer.get().start_as_current_span(
-            "regex",
-            context=trace.set_span_in_context(parent_span),
+        with (
+            OtelTracer.get().start_as_current_span(
+                "handle_request_body_req_regex",
+                context=trace.set_span_in_context(parent_span),
+                attributes={
+                    ai_attributes.AI_REGEX_ACTION: handler.req_regex_action.value,  # mask or reject
+                },
+            ) as regex_span
         ):
             # If this raises an exception it means that the action was reject, not mask
             try:
                 handler.provider.iterate_str_req_messages(
                     body=body, cb=handler.req_regex_transform
                 )
+                regex_span.set_attribute(
+                    ai_attributes.AI_REGEX_RESULT, RejectResult.PASSED
+                )
             except RegexRejection as e:
+                regex_span.set_attribute(
+                    ai_attributes.AI_REGEX_RESULT, RejectResult.REJECTED
+                )
+                regex_span.record_exception(e)
+                regex_span.set_status(
+                    trace.StatusCode.ERROR,
+                    f"Rejected by guardrails regex: {str(e)}",
+                )
                 return error_response(
                     handler.req_custom_response, "Rejected by guardrails regex", e
                 )
@@ -446,47 +493,67 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
             )
 
             body = body_jsn
-            with OtelTracer.get().start_as_current_span(
-                "count_tokens",
+            operation_name = handler.get_operation_name()
+
+            tracer = OtelTracer.get()
+            with tracer.start_as_current_span(
+                f"gen_ai.request {operation_name} {handler.request_model}",
                 context=trace.set_span_in_context(parent_span),
-            ):
+                attributes=handler.get_attributes_for_request_body(body),
+            ) as gen_ai_client_span:
+                # follow two attributes don't contain in request body directly.
+                gen_ai_client_span.set_attributes(
+                    {
+                        gen_ai_attributes.GEN_AI_OPERATION_NAME: operation_name,
+                        gen_ai_attributes.GEN_AI_SYSTEM: handler.get_ai_system(),
+                    }
+                )
+                gen_ai_client_span.set_status(trace.StatusCode.OK)
                 tokens = handler.provider.get_num_tokens_from_body(body)
 
-            if handler.req_webhook and (
-                req_webhook := await self.handle_request_body_req_webhook(
-                    body, handler, handler.req_webhook, parent_span
-                )
-            ):
-                return req_webhook
-
-            if handler.req_regex and (
-                req_regex_resp := self.handle_request_body_req_regex(
-                    body, handler, parent_span=parent_span
-                )
-            ):
-                return req_regex_resp
-
-            if handler.req_moderation:
-                with OtelTracer.get().start_as_current_span(
-                    "moderation",
-                    context=trace.set_span_in_context(parent_span),
-                ):
-                    (client, model) = handler.req_moderation
-                    results = await client.create(
-                        input=handler.provider.all_req_content(body),
-                        model=(model if model != "" else "omni-moderation-latest"),
+                if handler.req_webhook and (
+                    req_webhook := await self.handle_request_body_req_webhook(
+                        body, handler, handler.req_webhook, gen_ai_client_span
                     )
-                    for result in results.results:
-                        if result.flagged:
-                            return error_response(
-                                handler.req_custom_response,
-                                "Rejected by guardrails moderation",
-                            )
+                ):
+                    return req_webhook
 
-            # currently we only count the prompt token for ratelimiting. So,
-            # this is only set here. If we change to count completion token as well
-            # will need to add those into rate_limited_tokens for stats purpose.
-            handler.rate_limited_tokens = tokens
+                if handler.req_regex and (
+                    req_regex_resp := self.handle_request_body_req_regex(
+                        body, handler, parent_span=gen_ai_client_span
+                    )
+                ):
+                    return req_regex_resp
+
+                if handler.req_moderation:
+                    with tracer.start_as_current_span(
+                        "handle_request_body_req_moderation",
+                        context=trace.set_span_in_context(gen_ai_client_span),
+                    ) as moderation_span:
+                        (client, model) = handler.req_moderation
+                        moderation_span.set_attribute(
+                            ai_attributes.AI_MODERATION_MODEL, model
+                        )
+                        results = await client.create(
+                            input=handler.provider.all_req_content(body),
+                            model=(model if model != "" else "omni-moderation-latest"),
+                        )
+                        for result in results.results:
+                            if result.flagged:
+                                moderation_span.set_attribute(
+                                    ai_attributes.AI_MODERATION_FLAGGED, True
+                                )
+                                return error_response(
+                                    handler.req_custom_response,
+                                    "Rejected by guardrails moderation",
+                                )
+                        moderation_span.set_attribute(
+                            ai_attributes.AI_MODERATION_FLAGGED, False
+                        )
+                # currently we only count the prompt token for ratelimiting. So,
+                # this is only set here. If we change to count completion token as well
+                # will need to add those into rate_limited_tokens for stats purpose.
+                handler.rate_limited_tokens = tokens
             return external_processor_pb2.ProcessingResponse(
                 dynamic_metadata=struct_pb2.Struct(
                     # increment tokens for rate limiting
@@ -513,6 +580,65 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
 
         # If it's not end of stream, clear the body so envoy doesn't forward to upstream.
         return extproc_clear_request_body()
+
+    async def handle_response_body_resp_webhook(
+        self,
+        body: dict,
+        handler: StreamHandler,
+        parent_span: trace.Span,
+    ) -> external_processor_pb2.ProcessingResponse | None:
+        with OtelTracer.get().start_as_current_span(
+            "handle_response_body_resp_webhook",
+            context=trace.set_span_in_context(parent_span),
+        ) as webhook_span:
+            webhook = handler.resp_webhook
+            webhook_span.set_attributes(
+                {
+                    ai_attributes.AI_WEBHOOK_ENDPOINT: str(webhook.endpoint),
+                }
+            )
+            try:
+                response: ResponseChoices | None = await make_response_webhook_request(
+                    webhook_host=handler.resp_webhook.endpoint.host,
+                    webhook_port=handler.resp_webhook.endpoint.port,
+                    headers=handler.resp.headers,
+                    rc=handler.provider.construct_response_webhook_request_body(
+                        body=body
+                    ),
+                )
+
+                if response is not None:
+                    handler.provider.update_response_body_from_webhook(body, response)
+                    webhook_span.set_attribute(
+                        ai_attributes.AI_WEBHOOK_RESULT, WebhookResult.MODIFIED
+                    )
+                else:
+                    webhook_span.set_attribute(
+                        ai_attributes.AI_WEBHOOK_RESULT, WebhookResult.PASSED
+                    )
+            except Exception as e:
+                webhook_span.record_exception(e)
+                webhook_span.set_status(trace.StatusCode.ERROR)
+                # This indicate the response webhook call failed (not from RejectAction)
+                # and we might have already sent out the response status code already to
+                # the end user. Returning an error here will cause Envoy to close the client
+                # connection immediately.
+                return error_response(
+                    prompt_guard.CustomResponse(status_code=500),
+                    "Error with guardrails webhook",
+                    e,
+                )
+
+    async def handle_response_body_resp_regex(
+        self, body: dict, handler: StreamHandler, parent_span: trace.Span
+    ) -> None:
+        with OtelTracer.get().start_as_current_span(
+            "handle_response_body_resp_regex",
+            context=trace.set_span_in_context(parent_span),
+        ):
+            handler.provider.iterate_str_resp_messages(
+                body=body, cb=handler.resp_regex_transform
+            )
 
     async def handle_response_body(
         self,
@@ -572,97 +698,98 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                 #             we still store them for caching
                 return extproc_clear_response_body()
             else:
-                full_body = b""
-                try:
-                    full_body = (
-                        gzip.decompress(handler.resp.body)
-                        if handler.content_encoding == "gzip"
-                        else bytes(handler.resp.body)
-                    )
-                    if handler.content_encoding == "gzip":
-                        handler.logger.debug(f"unzipped body: {full_body}")
-
-                    body_str = full_body.decode("utf-8")
-                    jsn = json.loads(body_str)
-                except json.decoder.JSONDecodeError as exc:
-                    # This could be we are getting an error response that's not json in the body
-                    handler.logger.debug("Error decoding json: %s", exc)
-                    if full_body == resp_body.body:
-                        # This means that there is only 1 chunk and it's also the end of stream,
-                        # so, just ask envoy to send the response through
-                        return external_processor_pb2.ProcessingResponse(
-                            response_body=external_processor_pb2.BodyResponse()
+                tracer = OtelTracer.get()
+                with tracer.start_as_current_span(
+                    "gen_ai.response",
+                    context=trace.set_span_in_context(parent_span),
+                ) as non_streaming_span:
+                    full_body = b""
+                    try:
+                        full_body = (
+                            gzip.decompress(handler.resp.body)
+                            if handler.content_encoding == "gzip"
+                            else bytes(handler.resp.body)
                         )
+                        if handler.content_encoding == "gzip":
+                            handler.logger.debug(f"unzipped body: {full_body}")
+
+                        body_str = full_body.decode("utf-8")
+                        jsn = json.loads(body_str)
+                    except json.decoder.JSONDecodeError as exc:
+                        non_streaming_span.record_exception(exc)
+                        non_streaming_span.set_status(
+                            trace.StatusCode.ERROR,
+                            "Error decoding no streaming response body",
+                        )
+                        # This could be we are getting an error response that's not json in the body
+                        handler.logger.debug("Error decoding json: %s", exc)
+                        if full_body == resp_body.body:
+                            # This means that there is only 1 chunk and it's also the end of stream,
+                            # so, just ask envoy to send the response through
+                            return external_processor_pb2.ProcessingResponse(
+                                response_body=external_processor_pb2.BodyResponse()
+                            )
+                        else:
+                            # This means we have already buffered some of the body, we should
+                            # send them all back to envoy
+                            return extproc_new_response_body(
+                                content_encoding=handler.content_encoding,
+                                body=full_body,
+                            )
                     else:
-                        # This means we have already buffered some of the body, we should
-                        # send them all back to envoy
-                        return extproc_new_response_body(
-                            content_encoding=handler.content_encoding, body=full_body
+                        # Set all response attributes directly on the no_streaming_span
+                        non_streaming_span.set_attributes(
+                            handler.provider.get_attributes_for_response_body(jsn)
                         )
-                else:
-                    handler.increment_tokens(jsn)
-                    has_function_call_resp = (
-                        handler.provider.has_function_call_finish_reason(jsn)
-                    )
-                    handler.set_is_function_calling_response(has_function_call_resp)
-                    handler.set_response_model(handler.provider.get_model_resp(jsn))
 
-                    if handler.resp_webhook and not has_function_call_resp:
-                        with OtelTracer.get().start_as_current_span(
-                            "webhook",
-                            context=trace.set_span_in_context(parent_span),
-                        ):
-                            try:
-                                response: (
-                                    ResponseChoices | None
-                                ) = await make_response_webhook_request(
-                                    webhook_host=handler.resp_webhook.host,
-                                    webhook_port=handler.resp_webhook.port,
-                                    headers=handler.resp.headers,
-                                    rc=handler.provider.construct_response_webhook_request_body(
-                                        body=jsn
-                                    ),
+                        # follow two attributes don't contain in response body directly.
+                        non_streaming_span.set_attributes(
+                            {
+                                gen_ai_attributes.GEN_AI_OPERATION_NAME: handler.get_operation_name(),
+                                gen_ai_attributes.GEN_AI_SYSTEM: handler.get_ai_system(),
+                            }
+                        )
+
+                        handler.increment_tokens(jsn)
+                        handler.set_response_model(handler.provider.get_model_resp(jsn))
+
+                        has_function_call_resp = (
+                            handler.provider.has_function_call_finish_reason(jsn)
+                        )
+                        handler.set_is_function_calling_response(has_function_call_resp)
+                        handler.set_response_model(handler.provider.get_model_resp(jsn))
+
+                        if handler.resp_webhook and not has_function_call_resp:
+                            if (
+                                error_response
+                                := await self.handle_response_body_resp_webhook(
+                                    jsn, handler, non_streaming_span
                                 )
+                            ):
+                                return error_response
 
-                                if response is not None:
-                                    handler.provider.update_response_body_from_webhook(
-                                        jsn, response
-                                    )
-                            except Exception as e:
-                                # This indicate the response webhook call failed (not from RejectAction)
-                                # and we might have already sent out the response status code already to
-                                # the end user. Returning an error here will cause Envoy to close the client
-                                # connection immediately.
-                                return error_response(
-                                    prompt_guard.CustomResponse(status_code=500),
-                                    "Error with guardrails webhook",
-                                    e,
-                                )
-
-                    # Only run regex if the response has no tools
-                    if handler.resp_regex and not has_function_call_resp:
-                        with OtelTracer.get().start_as_current_span(
-                            "regex",
-                            context=trace.set_span_in_context(parent_span),
-                        ):
-                            handler.provider.iterate_str_resp_messages(
-                                body=jsn, cb=handler.resp_regex_transform
+                        # Only run regex if the response has no tools
+                        if handler.resp_regex and not has_function_call_resp:
+                            await self.handle_response_body_resp_regex(
+                                jsn, handler, non_streaming_span
                             )
 
-                    return external_processor_pb2.ProcessingResponse(
-                        response_body=external_processor_pb2.BodyResponse(
-                            response=external_processor_pb2.CommonResponse(
-                                body_mutation=external_processor_pb2.BodyMutation(
-                                    body=(
-                                        gzip.compress(json.dumps(jsn).encode("utf-8"))
-                                        if handler.content_encoding == "gzip"
-                                        else json.dumps(jsn).encode("utf-8")
+                        return external_processor_pb2.ProcessingResponse(
+                            response_body=external_processor_pb2.BodyResponse(
+                                response=external_processor_pb2.CommonResponse(
+                                    body_mutation=external_processor_pb2.BodyMutation(
+                                        body=(
+                                            gzip.compress(
+                                                json.dumps(jsn).encode("utf-8")
+                                            )
+                                            if handler.content_encoding == "gzip"
+                                            else json.dumps(jsn).encode("utf-8")
+                                        ),
                                     ),
-                                ),
-                            )
-                        ),
-                        dynamic_metadata=self.build_dynamic_meta(handler),
-                    )
+                                )
+                            ),
+                            dynamic_metadata=self.build_dynamic_meta(handler),
+                        )
 
     def build_dynamic_meta(self, handler: StreamHandler) -> struct_pb2.Struct:
         labels = handler.extra_labels.copy()
@@ -730,8 +857,10 @@ async def serve() -> None:
         if os.path.exists(sock_path):
             os.unlink(sock_path)
 
-    stats_config = StatsConfig.from_file(file_path="/var/run/stats/stats.json")
-    tracing_config = TracingConfig.from_file(file_path="/var/run/stats/tracing.json")
+    stats_config = StatsConfig.from_file(file_path="/var/run/ai-otel-config/stats.json")
+    tracing_config = TracingConfig.from_file(
+        file_path="/var/run/ai-otel-config/tracing.json"
+    )
 
     address = server_listen_addr
 

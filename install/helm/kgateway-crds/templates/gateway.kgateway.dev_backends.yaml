@@ -24,6 +24,10 @@ spec:
       jsonPath: .spec.type
       name: Type
       type: string
+    - description: Backend configuration acceptance status
+      jsonPath: .status.conditions[?(@.type=='Accepted')].status
+      name: Accepted
+      type: string
     - description: The age of the backend.
       jsonPath: .metadata.creationTimestamp
       name: Age
@@ -58,8 +62,6 @@ spec:
                           host:
                             minLength: 1
                             type: string
-                          insecureSkipVerify:
-                            type: boolean
                           port:
                             format: int32
                             maximum: 65535
@@ -156,6 +158,55 @@ spec:
                             - authToken
                             - deploymentName
                             - endpoint
+                            type: object
+                          bedrock:
+                            properties:
+                              auth:
+                                properties:
+                                  secretRef:
+                                    properties:
+                                      name:
+                                        default: ""
+                                        type: string
+                                    type: object
+                                    x-kubernetes-map-type: atomic
+                                  type:
+                                    enum:
+                                    - Secret
+                                    type: string
+                                required:
+                                - type
+                                type: object
+                                x-kubernetes-validations:
+                                - message: secretRef must be nil if the type is not
+                                    'Secret'
+                                  rule: '!(has(self.secretRef) && self.type != ''Secret'')'
+                                - message: secretRef must be specified when type is
+                                    'Secret'
+                                  rule: '!(!has(self.secretRef) && self.type == ''Secret'')'
+                              guardrail:
+                                properties:
+                                  identifier:
+                                    minLength: 1
+                                    type: string
+                                  version:
+                                    minLength: 1
+                                    type: string
+                                required:
+                                - identifier
+                                - version
+                                type: object
+                              model:
+                                minLength: 1
+                                type: string
+                              region:
+                                default: us-east-1
+                                maxLength: 63
+                                minLength: 1
+                                pattern: ^[a-z0-9-]+$
+                                type: string
+                            required:
+                            - model
                             type: object
                           gemini:
                             properties:
@@ -302,8 +353,6 @@ spec:
                                       host:
                                         minLength: 1
                                         type: string
-                                      insecureSkipVerify:
-                                        type: boolean
                                       port:
                                         format: int32
                                         maximum: 65535
@@ -400,6 +449,57 @@ spec:
                                         - authToken
                                         - deploymentName
                                         - endpoint
+                                        type: object
+                                      bedrock:
+                                        properties:
+                                          auth:
+                                            properties:
+                                              secretRef:
+                                                properties:
+                                                  name:
+                                                    default: ""
+                                                    type: string
+                                                type: object
+                                                x-kubernetes-map-type: atomic
+                                              type:
+                                                enum:
+                                                - Secret
+                                                type: string
+                                            required:
+                                            - type
+                                            type: object
+                                            x-kubernetes-validations:
+                                            - message: secretRef must be nil if the
+                                                type is not 'Secret'
+                                              rule: '!(has(self.secretRef) && self.type
+                                                != ''Secret'')'
+                                            - message: secretRef must be specified
+                                                when type is 'Secret'
+                                              rule: '!(!has(self.secretRef) && self.type
+                                                == ''Secret'')'
+                                          guardrail:
+                                            properties:
+                                              identifier:
+                                                minLength: 1
+                                                type: string
+                                              version:
+                                                minLength: 1
+                                                type: string
+                                            required:
+                                            - identifier
+                                            - version
+                                            type: object
+                                          model:
+                                            minLength: 1
+                                            type: string
+                                          region:
+                                            default: us-east-1
+                                            maxLength: 63
+                                            minLength: 1
+                                            pattern: ^[a-z0-9-]+$
+                                            type: string
+                                        required:
+                                        - model
                                         type: object
                                       gemini:
                                         properties:
@@ -591,6 +691,7 @@ spec:
                         - Envoy
                         type: string
                       qualifier:
+                        default: $LATEST
                         pattern: ^(\$LATEST|[0-9]+|[A-Za-z0-9-_]{1,128})$
                         type: string
                     required:
@@ -611,6 +712,110 @@ spec:
                   enableTls:
                     type: boolean
                 type: object
+              mcp:
+                properties:
+                  targets:
+                    items:
+                      properties:
+                        name:
+                          type: string
+                        selector:
+                          properties:
+                            namespace:
+                              properties:
+                                matchExpressions:
+                                  items:
+                                    properties:
+                                      key:
+                                        type: string
+                                      operator:
+                                        type: string
+                                      values:
+                                        items:
+                                          type: string
+                                        type: array
+                                        x-kubernetes-list-type: atomic
+                                    required:
+                                    - key
+                                    - operator
+                                    type: object
+                                  type: array
+                                  x-kubernetes-list-type: atomic
+                                matchLabels:
+                                  additionalProperties:
+                                    type: string
+                                  type: object
+                              type: object
+                              x-kubernetes-map-type: atomic
+                            service:
+                              properties:
+                                matchExpressions:
+                                  items:
+                                    properties:
+                                      key:
+                                        type: string
+                                      operator:
+                                        type: string
+                                      values:
+                                        items:
+                                          type: string
+                                        type: array
+                                        x-kubernetes-list-type: atomic
+                                    required:
+                                    - key
+                                    - operator
+                                    type: object
+                                  type: array
+                                  x-kubernetes-list-type: atomic
+                                matchLabels:
+                                  additionalProperties:
+                                    type: string
+                                  type: object
+                              type: object
+                              x-kubernetes-map-type: atomic
+                          type: object
+                          x-kubernetes-validations:
+                          - message: at least one of namespace or service must be
+                              set
+                            rule: has(self.__namespace__) || has(self.service)
+                        static:
+                          properties:
+                            host:
+                              minLength: 1
+                              type: string
+                            path:
+                              type: string
+                            port:
+                              format: int32
+                              maximum: 65535
+                              minimum: 1
+                              type: integer
+                            protocol:
+                              enum:
+                              - StreamableHTTP
+                              - SSE
+                              type: string
+                          required:
+                          - host
+                          - port
+                          type: object
+                      required:
+                      - name
+                      type: object
+                      x-kubernetes-validations:
+                      - message: exactly one of the fields in [selector static] must
+                          be set
+                        rule: '[has(self.selector),has(self.static)].filter(x,x==true).size()
+                          == 1'
+                    maxItems: 32
+                    minItems: 1
+                    type: array
+                    x-kubernetes-list-map-keys:
+                    - name
+                    x-kubernetes-list-type: map
+                required:
+                - targets
+                type: object
               static:
                 properties:
                   appProtocol:
@@ -627,8 +832,6 @@ spec:
                         host:
                           minLength: 1
                           type: string
-                        insecureSkipVerify:
-                          type: boolean
                         port:
                           format: int32
                           maximum: 65535
@@ -649,6 +852,7 @@ spec:
                 - AWS
                 - Static
                 - DynamicForwardProxy
+                - MCP
                 type: string
             required:
             - type
@@ -664,9 +868,11 @@ spec:
                 'DynamicForwardProxy'
               rule: 'self.type == ''DynamicForwardProxy'' ? has(self.dynamicForwardProxy)
                 : true'
-            - message: exactly one of the fields in [ai aws static dynamicForwardProxy]
-                must be set
-              rule: '[has(self.ai),has(self.aws),has(self.static),has(self.dynamicForwardProxy)].filter(x,x==true).size()
+            - message: mcp backend must be specified when type is 'MCP'
+              rule: 'self.type == ''MCP'' ? has(self.mcp) : true'
+            - message: exactly one of the fields in [ai aws static dynamicForwardProxy
+                mcp] must be set
+              rule: '[has(self.ai),has(self.aws),has(self.static),has(self.dynamicForwardProxy),has(self.mcp)].filter(x,x==true).size()
                 == 1'
           status:
             properties:

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/utils/ptr"
@@ -14,7 +14,7 @@ import (
 )
 
 func TestProcessAIBackend_Empty(t *testing.T) {
-	cluster := &envoy_config_cluster_v3.Cluster{
+	cluster := &envoyclusterv3.Cluster{
 		Name: "test-cluster",
 	}
 
@@ -26,7 +26,7 @@ func TestProcessAIBackend_Empty(t *testing.T) {
 }
 
 func TestProcessAIBackend_OpenAI(t *testing.T) {
-	cluster := &envoy_config_cluster_v3.Cluster{
+	cluster := &envoyclusterv3.Cluster{
 		Name: "openai-cluster",
 	}
 
@@ -53,7 +53,7 @@ func TestProcessAIBackend_OpenAI(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify cluster type
-	assert.Equal(t, envoy_config_cluster_v3.Cluster_STRICT_DNS, cluster.GetType())
+	assert.Equal(t, envoyclusterv3.Cluster_STRICT_DNS, cluster.GetType())
 
 	// Verify load assignment
 	require.NotNil(t, cluster.LoadAssignment)
@@ -94,7 +94,7 @@ func TestProcessAIBackend_OpenAI(t *testing.T) {
 }
 
 func TestProcessAIBackend_Anthropic(t *testing.T) {
-	cluster := &envoy_config_cluster_v3.Cluster{
+	cluster := &envoyclusterv3.Cluster{
 		Name: "anthropic-cluster",
 	}
 
@@ -143,7 +143,7 @@ func TestProcessAIBackend_Anthropic(t *testing.T) {
 }
 
 func TestProcessAIBackend_AzureOpenAI(t *testing.T) {
-	cluster := &envoy_config_cluster_v3.Cluster{
+	cluster := &envoyclusterv3.Cluster{
 		Name: "azure-openai-cluster",
 	}
 
@@ -194,7 +194,7 @@ func TestProcessAIBackend_AzureOpenAI(t *testing.T) {
 }
 
 func TestProcessAIBackend_Gemini(t *testing.T) {
-	cluster := &envoy_config_cluster_v3.Cluster{
+	cluster := &envoyclusterv3.Cluster{
 		Name: "gemini-cluster",
 	}
 
@@ -244,7 +244,7 @@ func TestProcessAIBackend_Gemini(t *testing.T) {
 }
 
 func TestProcessAIBackend_VertexAI(t *testing.T) {
-	cluster := &envoy_config_cluster_v3.Cluster{
+	cluster := &envoyclusterv3.Cluster{
 		Name: "vertex-ai-cluster",
 	}
 
@@ -300,7 +300,7 @@ func TestProcessAIBackend_VertexAI(t *testing.T) {
 }
 
 func TestProcessAIBackend_CustomURL(t *testing.T) {
-	cluster := &envoy_config_cluster_v3.Cluster{
+	cluster := &envoyclusterv3.Cluster{
 		Name: "custom-host-cluster",
 	}
 
@@ -354,7 +354,7 @@ func TestProcessAIBackend_CustomURL(t *testing.T) {
 }
 
 func TestProcessAIBackend_MultiPool(t *testing.T) {
-	cluster := &envoy_config_cluster_v3.Cluster{
+	cluster := &envoyclusterv3.Cluster{
 		Name: "multi-pool-cluster",
 	}
 
@@ -441,7 +441,7 @@ func TestProcessAIBackend_MultiPool(t *testing.T) {
 }
 
 // findTransportSocketMatchByPrefix finds a transport socket match with a name starting with prefix
-func findTransportSocketMatchByPrefix(matches []*envoy_config_cluster_v3.Cluster_TransportSocketMatch, prefix string) *envoy_config_cluster_v3.Cluster_TransportSocketMatch {
+func findTransportSocketMatchByPrefix(matches []*envoyclusterv3.Cluster_TransportSocketMatch, prefix string) *envoyclusterv3.Cluster_TransportSocketMatch {
 	for _, match := range matches {
 		if strings.HasPrefix(match.Name, prefix) {
 			return match
@@ -451,7 +451,7 @@ func findTransportSocketMatchByPrefix(matches []*envoy_config_cluster_v3.Cluster
 }
 
 // findTransportSocketMatchByName finds a transport socket match with exact name
-func findTransportSocketMatchByName(matches []*envoy_config_cluster_v3.Cluster_TransportSocketMatch, name string) *envoy_config_cluster_v3.Cluster_TransportSocketMatch {
+func findTransportSocketMatchByName(matches []*envoyclusterv3.Cluster_TransportSocketMatch, name string) *envoyclusterv3.Cluster_TransportSocketMatch {
 	for _, match := range matches {
 		if match.Name == name {
 			return match

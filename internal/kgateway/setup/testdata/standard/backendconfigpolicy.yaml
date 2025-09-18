@@ -78,4 +78,3 @@ spec:
   http1ProtocolOptions:
     enableTrailers: true
     overrideStreamErrorOnInvalidHttpMessage: true
-    headerFormat: PreserveCaseHeaderKeyFormat

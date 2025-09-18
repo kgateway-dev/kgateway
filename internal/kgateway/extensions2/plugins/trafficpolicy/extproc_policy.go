@@ -2,62 +2,133 @@ package trafficpolicy
 
 import (
 	"fmt"
+	"slices"
 
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/krt"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
 
-type ExtprocIR struct {
-	provider        *TrafficPolicyGatewayExtensionIR
-	ExtProcPerRoute *envoy_ext_proc_v3.ExtProcPerRoute
+const (
+	// extProcFilterPrefix is the prefix for the ExtProc filter name
+	extProcFilterPrefix = "ext_proc/"
+
+	// extProcGlobalDisableFilterName is the name of the filter for ExtProc that disables all ExtProc providers
+	extProcGlobalDisableFilterName = "global_disable/ext_proc"
+
+	// extProcGlobalDisableFilterMetadataNamespace is the metadata namespace for the global disable ExtProc filter
+	extProcGlobalDisableFilterMetadataNamespace = "dev.kgateway.disable_ext_proc"
+)
+
+type extprocIR struct {
+	perProviderConfig   []*perProviderExtProcConfig
+	disableAllProviders bool
+	// providerNames is used to track duplicates during policy merging,
+	// and has no relevance to the policy config, so it can be excluded from Equals
+	// +noKrtEquals
+	providerNames sets.Set[string]
 }
 
-func (e *ExtprocIR) Equals(other *ExtprocIR) bool {
-	if e == nil && other == nil {
-		return true
+type perProviderExtProcConfig struct {
+	provider       *TrafficPolicyGatewayExtensionIR
+	perRouteConfig *envoy_ext_proc_v3.ExtProcPerRoute
+}
+
+var _ PolicySubIR = &extprocIR{}
+
+func (e *extprocIR) Equals(other PolicySubIR) bool {
+	otherExtProc, ok := other.(*extprocIR)
+	if !ok {
+		return false
 	}
-	if e == nil || other == nil {
+	if e == nil || otherExtProc == nil {
+		return e == nil && otherExtProc == nil
+	}
+	if e.disableAllProviders != otherExtProc.disableAllProviders {
+		return false
+	}
+	if !slices.EqualFunc(e.perProviderConfig, otherExtProc.perProviderConfig, func(a, b *perProviderExtProcConfig) bool {
+		// compare perRouteConfig
+		return proto.Equal(a.perRouteConfig, b.perRouteConfig) &&
+			// compare provider config
+			cmputils.CompareWithNils(a.provider, b.provider, func(a, b *TrafficPolicyGatewayExtensionIR) bool {
+				return a.Equals(*b)
+			})
+	}) {
 		return false
 	}
 
-	if !proto.Equal(e.ExtProcPerRoute, other.ExtProcPerRoute) {
-		return false
-	}
-	if (e.provider == nil) != (other.provider == nil) {
-		return false
-	}
-	if e.provider != nil && !e.provider.Equals(*other.provider) {
-		return false
-	}
 	return true
 }
 
-// toEnvoyExtProc converts an ExtProcPolicy to an ExternalProcessor
-func (b *TrafficPolicyBuilder) toEnvoyExtProc(
-	krtctx krt.HandlerContext,
-	trafficPolicy *v1alpha1.TrafficPolicy,
-) (*ExtprocIR, error) {
-	spec := trafficPolicy.Spec.ExtProc
-	gatewayExtension, err := b.FetchGatewayExtension(krtctx, spec.ExtensionRef, trafficPolicy.GetNamespace())
-	if err != nil {
-		return nil, fmt.Errorf("extproc: %w", err)
-	}
-	if gatewayExtension.ExtType != v1alpha1.GatewayExtensionTypeExtProc || gatewayExtension.ExtProc == nil {
-		return nil, pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, gatewayExtension.ExtType)
+func (e *extprocIR) Validate() error {
+	if e == nil {
+		return nil
 	}
 
-	return &ExtprocIR{
-		provider:        gatewayExtension,
-		ExtProcPerRoute: translateExtProcPerFilterConfig(spec),
-	}, nil
+	for _, p := range e.perProviderConfig {
+		if p.perRouteConfig != nil {
+			if err := p.perRouteConfig.ValidateAll(); err != nil {
+				return err
+			}
+		}
+		if p.provider != nil {
+			if err := p.provider.Validate(); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
-func translateExtProcPerFilterConfig(extProc *v1alpha1.ExtProcPolicy) *envoy_ext_proc_v3.ExtProcPerRoute {
+// constructExtProc constructs the external processing policy IR from the policy specification.
+func constructExtProc(
+	krtctx krt.HandlerContext,
+	in *v1alpha1.TrafficPolicy,
+	fetchGatewayExtension FetchGatewayExtensionFunc,
+	out *trafficPolicySpecIr,
+) error {
+	spec := in.Spec.ExtProc
+	if spec == nil {
+		return nil
+	}
+
+	if spec.Disable != nil {
+		out.extProc = &extprocIR{
+			disableAllProviders: true,
+		}
+		return nil
+	}
+
+	// kubebuilder validation ensures the extensionRef is not nil, since disable is nil
+	gatewayExtension, err := fetchGatewayExtension(krtctx, *spec.ExtensionRef, in.GetNamespace())
+	if err != nil {
+		return fmt.Errorf("extproc: %w", err)
+	}
+	if gatewayExtension.ExtType != v1alpha1.GatewayExtensionTypeExtProc || gatewayExtension.ExtProc == nil {
+		return pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, gatewayExtension.ExtType)
+	}
+	out.extProc = &extprocIR{
+		perProviderConfig: []*perProviderExtProcConfig{
+			{
+				provider:       gatewayExtension,
+				perRouteConfig: translateExtProcPerFilterConfig(spec),
+			},
+		},
+		providerNames: sets.New(providerName(gatewayExtension)),
+	}
+	return nil
+}
+
+func translateExtProcPerFilterConfig(
+	extProc *v1alpha1.ExtProcPolicy,
+) *envoy_ext_proc_v3.ExtProcPerRoute {
 	overrides := &envoy_ext_proc_v3.ExtProcOverrides{}
 	if extProc.ProcessingMode != nil {
 		overrides.ProcessingMode = toEnvoyProcessingMode(extProc.ProcessingMode)
@@ -120,31 +191,34 @@ func toEnvoyProcessingMode(p *v1alpha1.ProcessingMode) *envoy_ext_proc_v3.Proces
 	}
 }
 
-// FIXME: Using the wrong filter name prefix when the name is empty?
 func extProcFilterName(name string) string {
 	if name == "" {
-		return extauthFilterNamePrefix
+		return extProcFilterPrefix
 	}
-	return fmt.Sprintf("%s/%s", "ext_proc", name)
+	return extProcFilterPrefix + name
 }
 
-func (p *trafficPolicyPluginGwPass) handleExtProc(fcn string, pCtxTypedFilterConfig *ir.TypedFilterConfigMap, extProc *ExtprocIR) {
-	if extProc == nil || extProc.provider == nil {
+func (p *trafficPolicyPluginGwPass) handleExtProc(filterChain string, pCtxTypedFilterConfig *ir.TypedFilterConfigMap, in *extprocIR) {
+	if in == nil {
 		return
 	}
-	providerName := extProc.provider.ResourceName()
-	// Handle the enablement state
 
-	if extProc.ExtProcPerRoute != nil {
-		pCtxTypedFilterConfig.AddTypedConfig(extProcFilterName(providerName),
-			extProc.ExtProcPerRoute,
-		)
-	} else {
-		// if you are on a route and not trying to disable it then we need to override the top level disable on the filter chain
-		pCtxTypedFilterConfig.AddTypedConfig(extProcFilterName(providerName),
-			&envoy_ext_proc_v3.ExtProcPerRoute{Override: &envoy_ext_proc_v3.ExtProcPerRoute_Overrides{Overrides: &envoy_ext_proc_v3.ExtProcOverrides{}}},
-		)
+	// Add the global disable all filter if all providers are disabled
+	if in.disableAllProviders {
+		pCtxTypedFilterConfig.AddTypedConfig(extProcGlobalDisableFilterName, EnableFilterPerRoute)
+		return
 	}
 
-	p.extProcPerProvider.Add(fcn, providerName, extProc.provider)
+	for _, cfg := range in.perProviderConfig {
+		providerName := providerName(cfg.provider)
+		p.extProcPerProvider.Add(filterChain, providerName, cfg.provider)
+		pCtxTypedFilterConfig.AddTypedConfig(extProcFilterName(providerName), cfg.perRouteConfig)
+	}
+}
+
+func providerName(provider *TrafficPolicyGatewayExtensionIR) string {
+	if provider == nil {
+		return ""
+	}
+	return provider.ResourceName()
 }

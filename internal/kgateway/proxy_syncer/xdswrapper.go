@@ -95,7 +95,7 @@ func (p XdsSnapWrapper) MarshalJSON() (out []byte, err error) {
 
 func addToSnap(snapJson map[string]map[string]any, k string, resources map[string]envoycachetypes.ResourceWithTTL) {
 	for rname, r := range resources {
-		rJson, _ := protojson.Marshal(r.Resource)
+		rJson, _ := protojson.MarshalOptions{UseProtoNames: true}.Marshal(r.Resource)
 		var rAny any
 		json.Unmarshal(rJson, &rAny)
 		if snapJson[k] == nil {
@@ -139,7 +139,7 @@ func visitFields(msg protoreflect.Message, ancestor_sensitive bool) {
 			for i := 0; i < list.Len(); i++ {
 				elem := list.Get(i)
 				if fd.Message() != nil {
-					visitMessage(msg, fd, elem, sensitive)
+					visitMessage(fd, elem, sensitive)
 				} else {
 					// Redact scalar fields if needed
 					if sensitive {
@@ -151,7 +151,7 @@ func visitFields(msg protoreflect.Message, ancestor_sensitive bool) {
 			m := v.Map()
 			m.Range(func(k protoreflect.MapKey, v protoreflect.Value) bool {
 				if fd.MapValue().Message() != nil {
-					visitMessage(msg, fd.MapValue(), v, sensitive)
+					visitMessage(fd.MapValue(), v, sensitive)
 				} else {
 					// Redact scalar fields if needed
 					if sensitive {
@@ -162,7 +162,7 @@ func visitFields(msg protoreflect.Message, ancestor_sensitive bool) {
 			})
 		} else {
 			if fd.Message() != nil {
-				visitMessage(msg, fd, v, sensitive)
+				visitMessage(fd, v, sensitive)
 			} else {
 				// Redact scalar fields if needed
 				if sensitive {
@@ -174,19 +174,20 @@ func visitFields(msg protoreflect.Message, ancestor_sensitive bool) {
 	})
 }
 
-func visitMessage(msg protoreflect.Message, fd protoreflect.FieldDescriptor, v protoreflect.Value, sensitive bool) {
-	visitMsg := v.Message()
-	var anyMsg proto.Message
-	m := visitMsg.Interface()
-	if anymsg, ok := m.(*anypb.Any); ok {
-		anyMsg, _ = anypb.UnmarshalNew(anymsg, proto.UnmarshalOptions{})
-		visitMsg = anyMsg.ProtoReflect()
+func visitMessage(fd protoreflect.FieldDescriptor, v protoreflect.Value, sensitive bool) {
+	msg := v.Message()
+	m := msg.Interface()
+	anymsg, ok := m.(*anypb.Any)
+	if !ok {
+		visitFields(msg, sensitive)
+		return
 	}
-	visitFields(visitMsg, sensitive)
-	if anyMsg != nil {
-		anymsg, _ := utils.MessageToAny(anyMsg)
-		msg.Set(fd, protoreflect.ValueOf(anymsg.ProtoReflect()))
-	}
+
+	// special any handling - deserialize it, visit it and write it back.
+	newMsg, _ := anymsg.UnmarshalNew()
+	visitFields(newMsg.ProtoReflect(), sensitive)
+	a, _ := utils.MessageToAny(newMsg)
+	anymsg.Value = a.Value
 }
 
 func redactValue(fd protoreflect.FieldDescriptor, v protoreflect.Value) protoreflect.Value {

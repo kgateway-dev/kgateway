@@ -2,6 +2,7 @@ package policy
 
 import (
 	"errors"
+	"log/slog"
 	"maps"
 	"reflect"
 	"slices"
@@ -37,10 +38,22 @@ const (
 	OverridableDeepMerge MergeStrategy = "OverridableDeep"
 )
 
+// DeepMerge is used to opt-into policy deep merging for policies attached to the same resource
+const DeepMerge = "DeepMerge"
+
 type MergeOptions struct {
 	// Merge strategy to use
 	// Defaults to AugmentedMerge
 	Strategy MergeStrategy
+}
+
+func ToInternalMergeStrategy(s string) MergeStrategy {
+	if s == DeepMerge {
+		return AugmentedDeepMerge
+	} else {
+		slog.Error("unsupported value, defaulting to shallow merge; allowed: DeepMerge", "strategy", s)
+		return AugmentedShallowMerge
+	}
 }
 
 // IsMergeable returns a boolean indicating whether p2 can be merged into p1 for the given merge options
@@ -117,9 +130,10 @@ func groupPoliciesByHierarchicalPriority(policies []ir.PolicyAtt) map[int][]ir.P
 //
 // It first merges policies that belong to the same hierarchy in the config tree, and then
 // merges the result of the merged policy per hierarchy into a single policy.
-func MergePolicies[T comparable](
+func MergePolicies[T any](
 	policies []ir.PolicyAtt,
-	mergeFn func(*T, *T, *ir.AttachedPolicyRef, MergeOptions, ir.MergeOrigins),
+	mergeFn func(*T, *T, *ir.AttachedPolicyRef, ir.MergeOrigins, MergeOptions, ir.MergeOrigins, string),
+	mergeSettingsJSON string,
 ) ir.PolicyAtt {
 	var out ir.PolicyAtt
 	if len(policies) == 0 {
@@ -136,29 +150,32 @@ func MergePolicies[T comparable](
 		return out
 	}
 
-	out.MergeOrigins = make(ir.MergeOrigins)
 	mergedByHierarchy := make([]ir.PolicyAtt, 0, len(policiesByHierarchy))
+	// iterate policies in reverse order so that highest priority hierarchy is merged first.
+	// policiesByHierarchy maps policies by their hierarchical priority, where a higher value indicates a higher priority
 	for _, hierarchicalPriority := range slices.Backward(slices.Sorted(maps.Keys(policiesByHierarchy))) {
-		tmp := merge(policiesByHierarchy[hierarchicalPriority], true, out.MergeOrigins, mergeFn)
+		tmp := merge(policiesByHierarchy[hierarchicalPriority], true, mergeFn, mergeSettingsJSON)
 		mergedByHierarchy = append(mergedByHierarchy, tmp)
 	}
-	out = merge(mergedByHierarchy, false, out.MergeOrigins, mergeFn)
+	// mergeSettings does not apply when merging across hierarchies, so we pass an empty string
+	out = merge(mergedByHierarchy, false, mergeFn, "")
 
 	return out
 }
 
-func merge[T comparable](
+func merge[T any](
 	policies []ir.PolicyAtt,
 	sameHierarchy bool,
-	mergeOrigins ir.MergeOrigins,
-	mergeFn func(*T, *T, *ir.AttachedPolicyRef, MergeOptions, ir.MergeOrigins),
+	mergeFn func(*T, *T, *ir.AttachedPolicyRef, ir.MergeOrigins, MergeOptions, ir.MergeOrigins, string),
+	mergeSettingsJSON string,
 ) ir.PolicyAtt {
 	// base policy to merge into has an empty PolicyIr so it can always be merged into
 	var pol T
 	out := ir.PolicyAtt{
-		GroupKind: policies[0].GroupKind,
-		PolicyRef: policies[0].PolicyRef,
-		PolicyIr:  any(&pol).(ir.PolicyIR),
+		GroupKind:    policies[0].GroupKind,
+		PolicyIr:     any(&pol).(ir.PolicyIR),
+		MergeOrigins: ir.MergeOrigins{},
+		// Merged policy should not set PolicyRef
 	}
 	merged := any(out.PolicyIr).(*T)
 
@@ -166,17 +183,21 @@ func merge[T comparable](
 		p2 := any(policies[i].PolicyIr).(*T)
 		p2Ref := policies[i].PolicyRef
 
+		out.Errors = append(out.Errors, policies[i].Errors...)
+		if len(policies[i].Errors) > 0 {
+			slog.Warn("ignoring policy with errors", "resource_ref", p2Ref, "errors", policies[i].FormatErrors())
+			continue
+		}
+
 		mergeOpts := MergeOptions{
 			Strategy: GetMergeStrategy(policies[i].InheritedPolicyPriority, sameHierarchy),
 		}
 
-		mergeFn(merged, p2, p2Ref, mergeOpts, mergeOrigins)
-		out.Errors = append(out.Errors, policies[i].Errors...)
+		mergeFn(merged, p2, p2Ref, policies[i].MergeOrigins, mergeOpts, out.MergeOrigins, mergeSettingsJSON)
 		if sameHierarchy {
 			out.InheritedPolicyPriority = policies[i].InheritedPolicyPriority
 		}
 	}
-	out.MergeOrigins = mergeOrigins
 
 	return out
 }

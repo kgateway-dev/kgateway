@@ -20,7 +20,16 @@ spec:
     singular: httplistenerpolicy
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - description: HTTP listener policy acceptance status
+      jsonPath: .status.ancestors[*].conditions[?(@.type=='Accepted')].status
+      name: Accepted
+      type: string
+    - description: HTTP listener policy attachment status
+      jsonPath: .status.ancestors[*].conditions[?(@.type=='Attached')].status
+      name: Attached
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
@@ -32,6 +41,8 @@ spec:
             type: object
           spec:
             properties:
+              acceptHttp10:
+                type: boolean
               accessLog:
                 items:
                   properties:
@@ -478,8 +489,14 @@ spec:
                               properties:
                                 baseInterval:
                                   type: string
+                                  x-kubernetes-validations:
+                                  - message: invalid duration value
+                                    rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                                 maxInterval:
                                   type: string
+                                  x-kubernetes-validations:
+                                  - message: invalid duration value
+                                    rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                               required:
                               - baseInterval
                               type: object
@@ -488,6 +505,9 @@ spec:
                           type: boolean
                         timeout:
                           type: string
+                          x-kubernetes-validations:
+                          - message: invalid duration value
+                            rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                       required:
                       - backendRef
                       - logName
@@ -595,8 +615,14 @@ spec:
                                   properties:
                                     baseInterval:
                                       type: string
+                                      x-kubernetes-validations:
+                                      - message: invalid duration value
+                                        rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                                     maxInterval:
                                       type: string
+                                      x-kubernetes-validations:
+                                      - message: invalid duration value
+                                        rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                                   required:
                                   - baseInterval
                                   type: object
@@ -605,9 +631,40 @@ spec:
                               type: boolean
                             timeout:
                               type: string
+                              x-kubernetes-validations:
+                              - message: invalid duration value
+                                rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                           required:
                           - backendRef
                           - logName
+                          type: object
+                        resourceAttributes:
+                          properties:
+                            values:
+                              items:
+                                properties:
+                                  key:
+                                    type: string
+                                  value:
+                                    maxProperties: 1
+                                    minProperties: 1
+                                    properties:
+                                      arrayValue:
+                                        items:
+                                          type: object
+                                          x-kubernetes-preserve-unknown-fields: true
+                                        type: array
+                                      kvListValue:
+                                        type: object
+                                        x-kubernetes-preserve-unknown-fields: true
+                                      stringValue:
+                                        type: string
+                                    type: object
+                                required:
+                                - key
+                                - value
+                                type: object
+                              type: array
                           type: object
                       required:
                       - grpcService
@@ -615,6 +672,25 @@ spec:
                   type: object
                 maxItems: 16
                 type: array
+              defaultHostForHttp10:
+                minLength: 1
+                type: string
+              healthCheck:
+                properties:
+                  path:
+                    maxLength: 2048
+                    pattern: ^/[-a-zA-Z0-9@:%.+~#?&/=_]+$
+                    type: string
+                required:
+                - path
+                type: object
+              idleTimeout:
+                type: string
+                x-kubernetes-validations:
+                - message: invalid duration value
+                  rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+              preserveHttp1HeaderCase:
+                type: boolean
               serverHeaderTransformation:
                 enum:
                 - Overwrite
@@ -623,6 +699,9 @@ spec:
                 type: string
               streamIdleTimeout:
                 type: string
+                x-kubernetes-validations:
+                - message: invalid duration value
+                  rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
               targetRefs:
                 items:
                   properties:
@@ -833,8 +912,14 @@ spec:
                                     properties:
                                       baseInterval:
                                         type: string
+                                        x-kubernetes-validations:
+                                        - message: invalid duration value
+                                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                                       maxInterval:
                                         type: string
+                                        x-kubernetes-validations:
+                                        - message: invalid duration value
+                                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                                     required:
                                     - baseInterval
                                     type: object
@@ -843,6 +928,9 @@ spec:
                                 type: boolean
                               timeout:
                                 type: string
+                                x-kubernetes-validations:
+                                - message: invalid duration value
+                                  rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                             required:
                             - backendRef
                             type: object
@@ -866,7 +954,6 @@ spec:
                             type: string
                         required:
                         - grpcService
-                        - serviceName
                         type: object
                     type: object
                   randomSampling:

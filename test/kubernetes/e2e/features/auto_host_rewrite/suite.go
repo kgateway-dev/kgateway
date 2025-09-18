@@ -52,7 +52,7 @@ func (s *testingSuite) SetupSuite() {
 	s.ti.Assertions.EventuallyPodsRunning(s.ctx, defaults.CurlPod.GetNamespace(), metav1.ListOptions{
 		LabelSelector: defaults.CurlPodLabelSelector,
 	})
-	s.ti.Assertions.EventuallyPodsRunning(s.ctx, defaults.HttpbinPod.GetNamespace(), metav1.ListOptions{
+	s.ti.Assertions.EventuallyPodsRunning(s.ctx, defaults.HttpbinDeployment.GetNamespace(), metav1.ListOptions{
 		LabelSelector: defaults.HttpbinLabelSelector,
 	})
 	s.ti.Assertions.EventuallyPodsRunning(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{

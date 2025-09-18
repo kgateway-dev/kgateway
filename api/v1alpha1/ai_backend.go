@@ -14,6 +14,8 @@ type AIBackend struct {
 	MultiPool *MultiPoolConfig `json:"multipool,omitempty"`
 }
 
+// LLMProvider specifies the target large language model provider that the backend should route requests to.
+// TODO: Move auth options off of SupportedLLMProvider to BackendConfigPolicy: https://github.com/kgateway-dev/kgateway/issues/11930
 type LLMProvider struct {
 	// The LLM provider type to configure.
 	Provider SupportedLLMProvider `json:"provider"`
@@ -63,6 +65,7 @@ type SupportedLLMProvider struct {
 	Anthropic   *AnthropicConfig   `json:"anthropic,omitempty"`
 	Gemini      *GeminiConfig      `json:"gemini,omitempty"`
 	VertexAI    *VertexAIConfig    `json:"vertexai,omitempty"`
+	Bedrock     *BedrockConfig     `json:"bedrock,omitempty"`
 }
 
 type SingleAuthTokenKind string
@@ -220,6 +223,49 @@ type AnthropicConfig struct {
 	// If unset, the model name is taken from the request.
 	// This setting can be useful when testing model failover scenarios.
 	Model *string `json:"model,omitempty"`
+}
+
+type BedrockConfig struct {
+	// Auth specifies an explicit AWS authentication method for the backend.
+	// When omitted, the following credential providers are tried in order, stopping when one
+	// of them returns an access key ID and a secret access key (the session token is optional):
+	// 1. Environment variables: when the environment variables AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and AWS_SESSION_TOKEN are set.
+	// 2. AssumeRoleWithWebIdentity API call: when the environment variables AWS_WEB_IDENTITY_TOKEN_FILE and AWS_ROLE_ARN are set.
+	// 3. EKS Pod Identity: when the environment variable AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE is set.
+	//
+	// See the Envoy docs for more info:
+	// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_request_signing_filter#credentials
+	//
+	// +optional
+	Auth *AwsAuth `json:"auth,omitempty"`
+
+	// The model field is the supported model id published by AWS. See <https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html>
+	// +kubebuilder:validation:MinLength=1
+	Model string `json:"model"`
+
+	// Region is the AWS region to use for the backend.
+	// Defaults to us-east-1 if not specified.
+	// +optional
+	// +kubebuilder:default=us-east-1
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
+	// +kubebuilder:validation:Pattern="^[a-z0-9-]+$"
+	Region string `json:"region,omitempty"`
+
+	// Guardrail configures the Guardrail policy to use for the backend. See <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails.html>
+	// If not specified, the AWS Guardrail policy will not be used.
+	// +optional
+	Guardrail *AWSGuardrailConfig `json:"guardrail,omitempty"`
+}
+
+type AWSGuardrailConfig struct {
+	// GuardrailIdentifier is the identifier of the Guardrail policy to use for the backend.
+	// +kubebuilder:validation:MinLength=1
+	GuardrailIdentifier string `json:"identifier"`
+
+	// GuardrailVersion is the version of the Guardrail policy to use for the backend.
+	// +kubebuilder:validation:MinLength=1
+	GuardrailVersion string `json:"version"`
 }
 
 // Priority configures the priority of the backend endpoints.

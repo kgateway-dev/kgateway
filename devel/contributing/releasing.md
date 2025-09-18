@@ -88,10 +88,18 @@ If needed, clone the [Kgateway.dev repo](https://github.com/kgateway-dev/kgatewa
 git clone -o $REMOTE https://github.com/kgateway-dev/kgateway.dev.git && cd kgateway.dev
 ```
 
-Bump the Kgateway version used by the docs. The following is an example of bumping from v2.0.3 to 2.0.4:
+Bump the Kgateway version used by the docs. The following is an example of bumping from v2.0.3 to v2.0.4:
 
 ```bash
 sed -i '' '1s/^2\.0\.3$/2.0.4/' assets/docs/versions/n-patch.md
+```
+
+Optionally, update the Gateway API version if Kgateway bumps this dependency. The following is an example
+of bumping Gateway API from v1.2.1 to v1.3.0:
+
+```bash
+GW_API_VERSION=$(cd ../kgateway && go list -m sigs.k8s.io/gateway-api | awk '{print $2}' | sed 's/^v//' && cd ../kgateway.dev)
+sed -i '' "1s/.*/${GW_API_VERSION}/" assets/docs/versions/k8s-gw-version.md
 ```
 
 Sign, commit, and push the changes to the Gateway API Inference Extension repo.
@@ -114,6 +122,5 @@ the new release (not required for a patch release):
   **Note** The [getting started](https://gateway-api-inference-extension.sigs.k8s.io/guides/) guide should be tested with the new Kgateway
   version before submitting the PR.
 
-- Create an issue and submit a pull request to [llm-d-deployer](https://github.com/llm-d/llm-d-deployer) to bump the Kgateway version.
-  See [PR 352](https://github.com/llm-d/llm-d-deployer/issues/352) as an example. **Note** The [quickstart](https://github.com/llm-d/llm-d-deployer/tree/main/quickstart)
-  guide should be tested with the new Kgateway version before submitting the PR.
+- Create an issue and submit a pull request to [llm-d-infra](https://github.com/llm-d-incubation/llm-d-infra) to bump the Kgateway version.
+  See [PR 146](https://github.com/llm-d-incubation/llm-d-infra/pull/146) as an example. **Note** The [quickstart](https://github.com/llm-d-incubation/llm-d-infra/tree/main/quickstart) guide should be tested with the new Kgateway version before submitting the PR.

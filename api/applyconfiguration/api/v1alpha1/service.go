@@ -4,18 +4,17 @@ package v1alpha1
 
 import (
 	v1 "k8s.io/api/core/v1"
-
-	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
 // ServiceApplyConfiguration represents a declarative configuration of the Service type for use
 // with apply.
 type ServiceApplyConfiguration struct {
-	Type             *v1.ServiceType     `json:"type,omitempty"`
-	ClusterIP        *string             `json:"clusterIP,omitempty"`
-	ExtraLabels      map[string]string   `json:"extraLabels,omitempty"`
-	ExtraAnnotations map[string]string   `json:"extraAnnotations,omitempty"`
-	Ports            []*apiv1alpha1.Port `json:"ports,omitempty"`
+	Type                  *v1.ServiceType          `json:"type,omitempty"`
+	ClusterIP             *string                  `json:"clusterIP,omitempty"`
+	ExtraLabels           map[string]string        `json:"extraLabels,omitempty"`
+	ExtraAnnotations      map[string]string        `json:"extraAnnotations,omitempty"`
+	Ports                 []PortApplyConfiguration `json:"ports,omitempty"`
+	ExternalTrafficPolicy *string                  `json:"externalTrafficPolicy,omitempty"`
 }
 
 // ServiceApplyConfiguration constructs a declarative configuration of the Service type for use with
@@ -71,12 +70,20 @@ func (b *ServiceApplyConfiguration) WithExtraAnnotations(entries map[string]stri
 // WithPorts adds the given value to the Ports field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the Ports field.
-func (b *ServiceApplyConfiguration) WithPorts(values ...**apiv1alpha1.Port) *ServiceApplyConfiguration {
+func (b *ServiceApplyConfiguration) WithPorts(values ...*PortApplyConfiguration) *ServiceApplyConfiguration {
 	for i := range values {
 		if values[i] == nil {
 			panic("nil value passed to WithPorts")
 		}
 		b.Ports = append(b.Ports, *values[i])
 	}
+	return b
+}
+
+// WithExternalTrafficPolicy sets the ExternalTrafficPolicy field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ExternalTrafficPolicy field is set to the value of the last call.
+func (b *ServiceApplyConfiguration) WithExternalTrafficPolicy(value string) *ServiceApplyConfiguration {
+	b.ExternalTrafficPolicy = &value
 	return b
 }

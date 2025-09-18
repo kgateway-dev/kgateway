@@ -18,11 +18,8 @@ var (
 	testNS = "inf-ext-e2e"
 	// vllmDeployName is the name of the vLLM deployment name
 	vllmDeployName = "vllm-llama3-8b-instruct"
-	// baseModelName is the model name value defined in request bodies.
-	baseModelName = "food-review"
-	// targetModelName is the expected value in response bodies when requesting the baseModelName
-	// and the vLLM model server is configured for the `food-review-1` LoRA adapter.
-	targetModelName = baseModelName + "-1"
+	// targetModelName is the model name value defined in an LLM request body.
+	targetModelName = "food-review-1"
 	// testRouteName is the test data HTTPRoute name used in tests
 	testRouteName = "llm-route"
 	// podRunTimeout is time required for a pod to reach a "Running" status
@@ -32,9 +29,6 @@ var (
 	// vllmManifest is the manifest for the vLLM simulator model server
 	//go:embed testdata/vllm.yaml
 	vllmManifest []byte
-	// modelsManifest is the manifest for the InferenceModel resource
-	//go:embed testdata/models.yaml
-	modelsManifest []byte
 	// poolManifest is the manifest for the InferencePool resource
 	//go:embed testdata/pool.yaml
 	poolManifest []byte

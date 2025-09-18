@@ -2,16 +2,12 @@
 
 package v1alpha1
 
-import (
-	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-)
-
 // Http1ProtocolOptionsApplyConfiguration represents a declarative configuration of the Http1ProtocolOptions type for use
 // with apply.
 type Http1ProtocolOptionsApplyConfiguration struct {
-	EnableTrailers                          *bool                     `json:"enableTrailers,omitempty"`
-	HeaderFormat                            *apiv1alpha1.HeaderFormat `json:"headerFormat,omitempty"`
-	OverrideStreamErrorOnInvalidHttpMessage *bool                     `json:"overrideStreamErrorOnInvalidHttpMessage,omitempty"`
+	EnableTrailers                          *bool `json:"enableTrailers,omitempty"`
+	PreserveHttp1HeaderCase                 *bool `json:"preserveHttp1HeaderCase,omitempty"`
+	OverrideStreamErrorOnInvalidHttpMessage *bool `json:"overrideStreamErrorOnInvalidHttpMessage,omitempty"`
 }
 
 // Http1ProtocolOptionsApplyConfiguration constructs a declarative configuration of the Http1ProtocolOptions type for use with
@@ -28,11 +24,11 @@ func (b *Http1ProtocolOptionsApplyConfiguration) WithEnableTrailers(value bool) 
 	return b
 }
 
-// WithHeaderFormat sets the HeaderFormat field in the declarative configuration to the given value
+// WithPreserveHttp1HeaderCase sets the PreserveHttp1HeaderCase field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the HeaderFormat field is set to the value of the last call.
-func (b *Http1ProtocolOptionsApplyConfiguration) WithHeaderFormat(value apiv1alpha1.HeaderFormat) *Http1ProtocolOptionsApplyConfiguration {
-	b.HeaderFormat = &value
+// If called multiple times, the PreserveHttp1HeaderCase field is set to the value of the last call.
+func (b *Http1ProtocolOptionsApplyConfiguration) WithPreserveHttp1HeaderCase(value bool) *Http1ProtocolOptionsApplyConfiguration {
+	b.PreserveHttp1HeaderCase = &value
 	return b
 }
 

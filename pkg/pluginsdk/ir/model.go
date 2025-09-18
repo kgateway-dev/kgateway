@@ -7,10 +7,11 @@ import (
 	"hash/fnv"
 	"maps"
 
-	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
 const KeyDelimiter = "~"
@@ -70,7 +71,7 @@ type EndpointMetadata struct {
 	Labels map[string]string
 }
 type EndpointWithMd struct {
-	*envoy_config_endpoint_v3.LbEndpoint
+	*envoyendpointv3.LbEndpoint
 	EndpointMd EndpointMetadata
 }
 
@@ -99,6 +100,8 @@ type EndpointsForBackend struct {
 	UpstreamResourceName string
 	Port                 uint32
 	Hostname             string
+	// Inherited from the backend object
+	TrafficDistribution wellknown.TrafficDistribution
 
 	LbEpsEqualityHash uint64
 	upstreamHash      uint64
@@ -128,6 +131,8 @@ func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
 		h.Write([]byte{0})
 		h.Write([]byte(k + "=" + v))
 	}
+	h.Write([]byte{0})
+	h.Write([]byte{byte(us.TrafficDistribution)})
 	upstreamHash := h.Sum64()
 
 	return &EndpointsForBackend{
@@ -139,6 +144,7 @@ func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
 		Hostname:             us.CanonicalHostname,
 		LbEpsEqualityHash:    upstreamHash,
 		upstreamHash:         upstreamHash,
+		TrafficDistribution:  us.TrafficDistribution,
 	}
 }
 

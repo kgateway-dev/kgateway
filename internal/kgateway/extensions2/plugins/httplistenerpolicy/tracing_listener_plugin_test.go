@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	tracev3 "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoytracev3 "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	resource_detectorsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/tracers/opentelemetry/resource_detectors/v3"
 	samplersv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/tracers/opentelemetry/samplers/v3"
@@ -21,6 +21,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 func TestTracingConverter(t *testing.T) {
@@ -47,23 +48,22 @@ func TestTracingConverter(t *testing.T) {
 									},
 								},
 							},
-							ServiceName: "my:service",
 						},
 					},
 				},
 				expected: &envoy_hcm.HttpConnectionManager_Tracing{
-					Provider: &tracev3.Tracing_Http{
+					Provider: &envoytracev3.Tracing_Http{
 						Name: "envoy.tracers.opentelemetry",
-						ConfigType: &tracev3.Tracing_Http_TypedConfig{
-							TypedConfig: mustMessageToAny(t, &tracev3.OpenTelemetryConfig{
-								GrpcService: &corev3.GrpcService{
-									TargetSpecifier: &corev3.GrpcService_EnvoyGrpc_{
-										EnvoyGrpc: &corev3.GrpcService_EnvoyGrpc{
+						ConfigType: &envoytracev3.Tracing_Http_TypedConfig{
+							TypedConfig: mustMessageToAny(t, &envoytracev3.OpenTelemetryConfig{
+								GrpcService: &envoycorev3.GrpcService{
+									TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+										EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
 											ClusterName: "backend_default_test-service_0",
 										},
 									},
 								},
-								ServiceName: "my:service",
+								ServiceName: "gw.default",
 							}),
 						},
 					},
@@ -81,24 +81,23 @@ func TestTracingConverter(t *testing.T) {
 									},
 								},
 							},
-							ServiceName: "my:service",
 						},
 					},
 					Attributes: nil,
 				},
 				expected: &envoy_hcm.HttpConnectionManager_Tracing{
-					Provider: &tracev3.Tracing_Http{
+					Provider: &envoytracev3.Tracing_Http{
 						Name: "envoy.tracers.opentelemetry",
-						ConfigType: &tracev3.Tracing_Http_TypedConfig{
-							TypedConfig: mustMessageToAny(t, &tracev3.OpenTelemetryConfig{
-								GrpcService: &corev3.GrpcService{
-									TargetSpecifier: &corev3.GrpcService_EnvoyGrpc_{
-										EnvoyGrpc: &corev3.GrpcService_EnvoyGrpc{
+						ConfigType: &envoytracev3.Tracing_Http_TypedConfig{
+							TypedConfig: mustMessageToAny(t, &envoytracev3.OpenTelemetryConfig{
+								GrpcService: &envoycorev3.GrpcService{
+									TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+										EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
 											ClusterName: "backend_default_test-service_0",
 										},
 									},
 								},
-								ServiceName: "my:service",
+								ServiceName: "gw.default",
 							}),
 						},
 					},
@@ -116,24 +115,23 @@ func TestTracingConverter(t *testing.T) {
 									},
 								},
 							},
-							ServiceName: "my:service",
 						},
 					},
 					Attributes: []v1alpha1.CustomAttribute{},
 				},
 				expected: &envoy_hcm.HttpConnectionManager_Tracing{
-					Provider: &tracev3.Tracing_Http{
+					Provider: &envoytracev3.Tracing_Http{
 						Name: "envoy.tracers.opentelemetry",
-						ConfigType: &tracev3.Tracing_Http_TypedConfig{
-							TypedConfig: mustMessageToAny(t, &tracev3.OpenTelemetryConfig{
-								GrpcService: &corev3.GrpcService{
-									TargetSpecifier: &corev3.GrpcService_EnvoyGrpc_{
-										EnvoyGrpc: &corev3.GrpcService_EnvoyGrpc{
+						ConfigType: &envoytracev3.Tracing_Http_TypedConfig{
+							TypedConfig: mustMessageToAny(t, &envoytracev3.OpenTelemetryConfig{
+								GrpcService: &envoycorev3.GrpcService{
+									TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+										EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
 											ClusterName: "backend_default_test-service_0",
 										},
 									},
 								},
-								ServiceName: "my:service",
+								ServiceName: "gw.default",
 							}),
 						},
 					},
@@ -152,7 +150,7 @@ func TestTracingConverter(t *testing.T) {
 									},
 								},
 							},
-							ServiceName: "my:service",
+							ServiceName: pointer.String("my:service"),
 							ResourceDetectors: []v1alpha1.ResourceDetector{{
 								EnvironmentResourceDetector: &v1alpha1.EnvironmentResourceDetectorConfig{},
 							}},
@@ -241,23 +239,23 @@ func TestTracingConverter(t *testing.T) {
 					SpawnUpstreamSpan: pointer.Bool(true),
 				},
 				expected: &envoy_hcm.HttpConnectionManager_Tracing{
-					Provider: &tracev3.Tracing_Http{
+					Provider: &envoytracev3.Tracing_Http{
 						Name: "envoy.tracers.opentelemetry",
-						ConfigType: &tracev3.Tracing_Http_TypedConfig{
-							TypedConfig: mustMessageToAny(t, &tracev3.OpenTelemetryConfig{
-								GrpcService: &corev3.GrpcService{
-									TargetSpecifier: &corev3.GrpcService_EnvoyGrpc_{
-										EnvoyGrpc: &corev3.GrpcService_EnvoyGrpc{
+						ConfigType: &envoytracev3.Tracing_Http_TypedConfig{
+							TypedConfig: mustMessageToAny(t, &envoytracev3.OpenTelemetryConfig{
+								GrpcService: &envoycorev3.GrpcService{
+									TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+										EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
 											ClusterName: "backend_default_test-service_0",
 										},
 									},
 								},
 								ServiceName: "my:service",
-								ResourceDetectors: []*corev3.TypedExtensionConfig{{
+								ResourceDetectors: []*envoycorev3.TypedExtensionConfig{{
 									Name:        "envoy.tracers.opentelemetry.resource_detectors.environment",
 									TypedConfig: mustMessageToAny(t, &resource_detectorsv3.EnvironmentResourceDetectorConfig{}),
 								}},
-								Sampler: &corev3.TypedExtensionConfig{
+								Sampler: &envoycorev3.TypedExtensionConfig{
 									Name:        "envoy.tracers.opentelemetry.samplers.always_on",
 									TypedConfig: mustMessageToAny(t, &samplersv3.AlwaysOnSamplerConfig{}),
 								},
@@ -389,7 +387,7 @@ func TestTracingConverter(t *testing.T) {
 			t.Cleanup(cancel)
 
 			t.Run(tc.name, func(t *testing.T) {
-				result, err := translateTracing(
+				provider, config, err := translateTracing(
 					tc.config,
 					&ir.BackendObjectIR{
 						ObjectSource: ir.ObjectSource{
@@ -399,10 +397,20 @@ func TestTracingConverter(t *testing.T) {
 						},
 					},
 				)
+				updateTracingConfig(&ir.HcmContext{
+					Gateway: pluginsdkir.GatewayIR{
+						SourceObject: &pluginsdkir.Gateway{
+							ObjectSource: pluginsdkir.ObjectSource{
+								Namespace: "default",
+								Name:      "gw",
+							},
+						},
+					},
+				}, provider, config)
 				require.NoError(t, err, "failed to convert access log config")
 				if tc.expected != nil {
-					assert.True(t, proto.Equal(tc.expected, result),
-						"Tracing config mismatch\n %v\n %v\n", tc.expected, result)
+					assert.True(t, proto.Equal(tc.expected, config),
+						"Tracing config mismatch\n %v\n %v\n", tc.expected, config)
 				}
 			})
 		}

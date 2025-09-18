@@ -3,7 +3,7 @@ package xds
 import (
 	"strings"
 
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"google.golang.org/protobuf/proto"
@@ -49,7 +49,7 @@ type nodeRoleHasher struct{}
 // This value must match role metadata format: <owner>~<proxy_namespace>~<proxy_name>
 // which is equal to role defined on proxy-deployment ConfigMap:
 // kgateway-kube-gateway-api~{{ $gateway.gatewayNamespace }}-{{ $gateway.gatewayName | default (include "kgateway.gateway.fullname" .) }}
-func (h *nodeRoleHasher) ID(node *envoy_config_core_v3.Node) string {
+func (h *nodeRoleHasher) ID(node *envoycorev3.Node) string {
 	if node.GetMetadata() != nil {
 		roleValue := node.GetMetadata().GetFields()[RoleKey]
 		if roleValue != nil {

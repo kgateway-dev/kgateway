@@ -18,7 +18,7 @@
 help: NAME_COLUMN_WIDTH=35
 help: LINE_COLUMN_WIDTH=5
 help: ## Output the self-documenting make targets
-	@grep -hnE '^[%a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = "[:]|(## )"}; {printf "\033[36mL%-$(LINE_COLUMN_WIDTH)s%-$(NAME_COLUMN_WIDTH)s\033[0m %s\n", $$1, $$2, $$4}'
+	@grep -hnE '^[%a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = "[:]|(## )"}; {printf "\033[36mL%-$(LINE_COLUMN_WIDTH)s%-$(NAME_COLUMN_WIDTH)s\033[0m %s\n", $$1, $$2, $$4}'
 
 #----------------------------------------------------------------------------------
 # Base
@@ -39,7 +39,7 @@ export VERSION
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
 # Note: When bumping this version, update the version in pkg/validator/validator.go as well.
-export ENVOY_IMAGE ?= quay.io/solo-io/envoy-gloo:1.34.1-patch3
+export ENVOY_IMAGE ?= quay.io/solo-io/envoy-gloo:1.35.2-patch1
 export LDFLAGS := -X 'github.com/kgateway-dev/kgateway/v2/internal/version.Version=$(VERSION)'
 export GCFLAGS ?=
 
@@ -123,8 +123,13 @@ fmt-changed:  ## Format the code with goimports
 mod-download:  ## Download the dependencies
 	go mod download all
 
+.PHONY: mod-tidy-nested
+mod-tidy-nested:  ## Tidy go mod files in nested modules
+	@echo "Tidying hack/utils/applier..." && cd hack/utils/applier && go mod tidy
+	@echo "Tidying test/mocks/mock-ai-provider-server..." && cd test/mocks/mock-ai-provider-server && go mod tidy
+
 .PHONY: mod-tidy
-mod-tidy: mod-download  ## Tidy the go mod file
+mod-tidy: mod-download mod-tidy-nested ## Tidy the go mod file
 	go mod tidy
 
 #----------------------------------------------------------------------------
@@ -159,6 +164,7 @@ envoyversion:
 FLAKE_ATTEMPTS ?= 3
 GINKGO_VERSION ?= $(shell echo $(shell go list -m github.com/onsi/ginkgo/v2) | cut -d' ' -f2)
 GINKGO_ENV ?= ACK_GINKGO_RC=true ACK_GINKGO_DEPRECATIONS=$(GINKGO_VERSION)
+
 GINKGO_FLAGS ?= -tags=purego --trace -progress -race --fail-fast -fail-on-pending --randomize-all --compilers=5 --flake-attempts=$(FLAKE_ATTEMPTS)
 GINKGO_REPORT_FLAGS ?= --json-report=test-report.json --junit-report=junit.xml -output-dir=$(OUTPUT_DIR)
 GINKGO_COVERAGE_FLAGS ?= --cover --covermode=atomic --coverprofile=coverage.cov
@@ -215,7 +221,7 @@ envtest-path: ## Set the envtest path
 #----------------------------------------------------------------------------------
 
 GO_TEST_ENV ?=
-# Testings flags: https://pkg.go.dev/cmd/go#hdr-Testing_flags
+# Testing flags: https://pkg.go.dev/cmd/go#hdr-Testing_flags
 # The default timeout for a suite is 10 minutes, but this can be overridden by setting the -timeout flag. Currently set
 # to 25 minutes based on the time it takes to run the longest test setup (kgateway_test).
 GO_TEST_ARGS ?= -timeout=25m -cpu=4 -race -outputdir=$(OUTPUT_DIR)
@@ -335,12 +341,11 @@ kgateway-ai-extension-docker:
 # Controller
 #----------------------------------------------------------------------------------
 
-K8S_GATEWAY_DIR=internal/kgateway
-K8S_GATEWAY_SOURCES=$(call get_sources,$(K8S_GATEWAY_DIR))
-CONTROLLER_OUTPUT_DIR=$(OUTPUT_DIR)/$(K8S_GATEWAY_DIR)
+K8S_GATEWAY_SOURCES=$(call get_sources,cmd/kgateway internal/kgateway pkg/ api/)
+CONTROLLER_OUTPUT_DIR=$(OUTPUT_DIR)/internal/kgateway
 export CONTROLLER_IMAGE_REPO ?= kgateway
 
-# We include the files in K8S_GATEWAY_DIR as dependencies to the kgateway build
+# We include the files in K8S_GATEWAY_SOURCES as dependencies to the kgateway build
 # so changes in those directories cause the make target to rebuild
 $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH): $(K8S_GATEWAY_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ ./cmd/kgateway/...
@@ -387,23 +392,23 @@ sds-docker: $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH) $(SDS_OUTPUT_DIR)/Dockerfile.s
 # Envoy init (BASE/SIDECAR)
 #----------------------------------------------------------------------------------
 
-ENVOYINIT_DIR=internal/envoyinit
+ENVOYINIT_DIR=cmd/envoyinit
 ENVOYINIT_SOURCES=$(call get_sources,$(ENVOYINIT_DIR))
 ENVOYINIT_OUTPUT_DIR=$(OUTPUT_DIR)/$(ENVOYINIT_DIR)
 export ENVOYINIT_IMAGE_REPO ?= envoy-wrapper
 
 $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH): $(ENVOYINIT_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ ./internal/envoyinit/cmd/...
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ ./cmd/envoyinit/...
 
 .PHONY: envoyinit
 envoyinit: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH)
 
 # TODO(nfuden) cheat the process for now with -r but try to find a cleaner method
-$(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit: internal/envoyinit/Dockerfile.envoyinit
-	cp  -r  ${ENVOYINIT_DIR}/rustformations $(ENVOYINIT_OUTPUT_DIR)
+$(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit: cmd/envoyinit/Dockerfile
+	cp  -r  internal/envoyinit/rustformations $(ENVOYINIT_OUTPUT_DIR)
 	cp $< $@
 
-$(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh: internal/envoyinit/cmd/docker-entrypoint.sh
+$(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh: cmd/envoyinit/docker-entrypoint.sh
 	cp $< $@
 
 .PHONY: envoy-wrapper-docker
@@ -436,6 +441,11 @@ package-kgateway-crd-chart: ## Package the kgateway crd chart
 	mkdir -p $(TEST_ASSET_DIR); \
 	$(HELM) package $(HELM_PACKAGE_ARGS) --destination $(TEST_ASSET_DIR) $(HELM_CHART_DIR_CRD); \
 	$(HELM) repo index $(TEST_ASSET_DIR);
+
+.PHONY: release-charts
+release-charts: package-kgateway-charts ## Release the kgateway charts
+	$(HELM) push $(TEST_ASSET_DIR)/kgateway-$(VERSION).tgz oci://$(IMAGE_REGISTRY)/charts
+	$(HELM) push $(TEST_ASSET_DIR)/kgateway-crds-$(VERSION).tgz oci://$(IMAGE_REGISTRY)/charts
 
 .PHONY: deploy-kgateway-crd-chart
 deploy-kgateway-crd-chart: ## Deploy the kgateway crd chart
@@ -484,7 +494,18 @@ CONFORMANCE_CHANNEL ?= experimental
 CONFORMANCE_VERSION ?= v1.3.0
 .PHONY: gw-api-crds
 gw-api-crds: ## Install the Gateway API CRDs
+ifeq ($(CONFORMANCE_CHANNEL), standard)
+	kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd?ref=$(CONFORMANCE_VERSION)"
+else
 	kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd/$(CONFORMANCE_CHANNEL)?ref=$(CONFORMANCE_VERSION)"
+endif
+
+# The version of the k8s gateway api inference extension CRDs to install.
+GIE_CRD_VERSION ?= $(shell go list -m sigs.k8s.io/gateway-api-inference-extension | awk '{print $$2}')
+
+.PHONY: gie-crds
+gie-crds: ## Install the Gateway API Inference Extension CRDs
+	kubectl apply -f "https://github.com/kubernetes-sigs/gateway-api-inference-extension/releases/download/$(GIE_CRD_VERSION)/manifests.yaml"
 
 .PHONY: kind-metallb
 metallb: ## Install the MetalLB load balancer
@@ -494,7 +515,7 @@ metallb: ## Install the MetalLB load balancer
 deploy-kgateway: package-kgateway-charts deploy-kgateway-crd-chart deploy-kgateway-chart ## Deploy the kgateway chart and CRDs
 
 .PHONY: setup
-setup: kind-create kind-build-and-load gw-api-crds metallb package-kgateway-charts ## Set up basic infrastructure (kind cluster, images, CRDs, MetalLB)
+setup: kind-create kind-build-and-load gw-api-crds gie-crds metallb package-kgateway-charts ## Set up basic infrastructure (kind cluster, images, CRDs, MetalLB)
 
 .PHONY: run
 run: setup deploy-kgateway  ## Set up complete development environment
@@ -567,6 +588,29 @@ test-ai-provider-docker:
 		-t $(IMAGE_REGISTRY)/test-ai-provider:$(VERSION)
 
 #----------------------------------------------------------------------------------
+# Load Testing
+#----------------------------------------------------------------------------------
+
+# Default values that match setup-kind.sh defaults
+CLUSTER_NAME ?= kind
+INSTALL_NAMESPACE ?= kgateway-system
+
+.PHONY: run-load-tests
+run-load-tests: ## Run KGateway load testing suite (requires existing cluster and installation)
+	SKIP_INSTALL=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
+	go test -v ./test/kubernetes/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$"
+
+.PHONY: run-load-tests-baseline
+run-load-tests-baseline: ## Run baseline load tests (1000 routes)
+	SKIP_INSTALL=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
+	go test -v ./test/kubernetes/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$/^TestAttachedRoutesBaseline$$"
+
+.PHONY: run-load-tests-production
+run-load-tests-production: ## Run production load tests (5000 routes)
+	SKIP_INSTALL=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
+	go test -v ./test/kubernetes/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$/^TestAttachedRoutesProduction$$"
+
+#----------------------------------------------------------------------------------
 # Targets for running Kubernetes Gateway API conformance tests
 #----------------------------------------------------------------------------------
 
@@ -592,6 +636,99 @@ conformance: $(TEST_ASSET_DIR)/conformance/conformance_test.go
 conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go
 	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(CONFORMANCE_ARGS) \
 	-run-test=$*
+
+#----------------------------------------------------------------------------------
+# Targets for running Gateway API Inference Extension conformance tests
+#----------------------------------------------------------------------------------
+
+# Reporting flags, identical to CONFORMANCE_REPORT_ARGS but with "inference-"
+GIE_CONFORMANCE_REPORT_ARGS ?= \
+    -report-output=$(TEST_ASSET_DIR)/conformance/inference-$(VERSION)-report.yaml \
+    -organization=kgateway-dev \
+    -project=kgateway \
+    -version=$(VERSION) \
+    -url=github.com/kgateway-dev/kgateway \
+    -contact=github.com/kgateway-dev/kgateway/issues/new/choose
+
+# The args to pass into the Gateway API Inference Extension conformance test suite.
+GIE_CONFORMANCE_ARGS := \
+    -gateway-class=$(CONFORMANCE_GATEWAY_CLASS) \
+    $(GIE_CONFORMANCE_REPORT_ARGS)
+
+INFERENCE_CONFORMANCE_DIR := $(shell go list -m -f '{{.Dir}}' sigs.k8s.io/gateway-api-inference-extension)/conformance
+
+# TODO [danehans]: Remove `kubectl wait` when gateway-api-inference-extension/issues/1315 is fixed.
+.PHONY: gie-conformance
+gie-conformance: gie-crds ## Run the Gateway API Inference Extension conformance suite
+	@mkdir -p $(TEST_ASSET_DIR)/conformance
+	go test -mod=mod -ldflags='$(LDFLAGS)' \
+	    -tags conformance \
+	    -timeout=25m \
+	    -v $(INFERENCE_CONFORMANCE_DIR) \
+	    -args $(GIE_CONFORMANCE_ARGS)
+	@echo "Waiting for gateway-conformance-infra namespace to terminate..."
+	kubectl wait ns gateway-conformance-infra --for=delete --timeout=2m || true
+
+# TODO [danehans]: Remove `kubectl wait` when gateway-api-inference-extension/issues/1315 is fixed.
+.PHONY: gie-conformance-%
+gie-conformance-%: gie-crds ## Run only the specified Gateway API Inference Extension conformance test by ShortName
+	@mkdir -p $(TEST_ASSET_DIR)/conformance
+	go test -mod=mod -ldflags='$(LDFLAGS)' \
+	    -tags conformance \
+	    -timeout=25m \
+	    -v $(INFERENCE_CONFORMANCE_DIR) \
+	    -args $(GIE_CONFORMANCE_ARGS) -run-test=$*
+	@echo "Waiting for gateway-conformance-infra namespace to terminate..."
+	kubectl wait ns gateway-conformance-infra --for=delete --timeout=2m || true
+
+# An alias to run both Gateway API and Inference Extension conformance tests.
+.PHONY: all-conformance
+all-conformance: conformance gie-conformance agw-conformance ## Run all conformance test suites
+	@echo "All conformance suites have completed."
+
+#----------------------------------------------------------------------------------
+# Targets for running Agent Gateway conformance tests
+#----------------------------------------------------------------------------------
+
+# Agent Gateway conformance test configuration
+AGW_CONFORMANCE_UNSUPPORTED_FEATURES ?= -exempt-features=GatewayAddressEmpty,GatewayHTTPListenerIsolation,GatewayInfrastructurePropagation,GatewayPort8080,GatewayStaticAddresses,HTTPRouteBackendRequestHeaderModification,HTTPRouteDestinationPortMatching,HTTPRouteParentRefPort,HTTPRouteRequestMultipleMirrors,HTTPRouteRequestPercentageMirror
+AGW_CONFORMANCE_SUPPORTED_PROFILES ?= -conformance-profiles=GATEWAY-HTTP
+AGW_CONFORMANCE_GATEWAY_CLASS ?= agentgateway
+AGW_CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/agw-$(VERSION)-report.yaml -organization=kgateway-dev -project=kgateway -version=$(VERSION) -url=github.com/kgateway-dev/kgateway -contact=github.com/kgateway-dev/kgateway/issues/new/choose
+AGW_CONFORMANCE_ARGS := -gateway-class=$(AGW_CONFORMANCE_GATEWAY_CLASS) $(AGW_CONFORMANCE_UNSUPPORTED_FEATURES) $(AGW_CONFORMANCE_SUPPORTED_PROFILES) $(AGW_CONFORMANCE_REPORT_ARGS)
+
+.PHONY: agw-conformance ## Run the agent gateway conformance test suite
+agw-conformance: $(TEST_ASSET_DIR)/conformance/conformance_test.go
+	CONFORMANCE_GATEWAY_CLASS=$(AGW_CONFORMANCE_GATEWAY_CLASS) go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(AGW_CONFORMANCE_ARGS)
+
+# Run only the specified agent gateway conformance test
+agw-conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go
+	CONFORMANCE_GATEWAY_CLASS=$(AGW_CONFORMANCE_GATEWAY_CLASS) go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(AGW_CONFORMANCE_ARGS) \
+	-run-test=$*
+
+#----------------------------------------------------------------------------------
+# Dependency Bumping
+#----------------------------------------------------------------------------------
+
+.PHONY: bump-gtw
+bump-gtw: ## Bump Gateway API deps to $DEP_VERSION
+ifndef DEP_VERSION
+	$(error DEP_VERSION is not set, e.g. make bump-gtw DEP_VERSION=v1.3.0)
+endif
+	@echo "Bumping Gateway API to $(DEP_VERSION)"
+	@$(SHELL) hack/bump_deps.sh gtw $(DEP_VERSION)
+	@echo "Updating licensing..."
+	@$(MAKE) generate-licenses
+
+.PHONY: bump-gie
+bump-gie: ## Bump Gateway API Inference Extension to $DEP_VERSION
+ifndef DEP_VERSION
+	$(error DEP_VERSION is not set, e.g. make bump-gie DEP_VERSION=v0.5.0)
+endif
+	@echo ">>> Bumping Gateway API Inference Extension to $(DEP_VERSION)"
+	@$(SHELL) hack/bump_deps.sh gie $(DEP_VERSION)
+	@echo "Updating licensing..."
+	@$(MAKE) generate-licenses
 
 #----------------------------------------------------------------------------------
 # Printing makefile variables utility

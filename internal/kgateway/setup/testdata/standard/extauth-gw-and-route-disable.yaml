@@ -95,7 +95,7 @@ spec:
     kind: HTTPRoute
     name: happypath
   extAuth:
-    enablement: DisableAll
+    disable: {}
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayExtension

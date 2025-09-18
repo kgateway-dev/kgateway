@@ -11,12 +11,12 @@ import (
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	envoyresource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
-	envoy_config_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
-	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_extensions_filters_network_http_connection_manager_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -33,30 +33,30 @@ const (
 
 var _ = Describe("Static bootstrap generation", func() {
 	var (
-		listeners []*envoy_config_listener_v3.Listener
-		clusters  []*envoy_config_cluster_v3.Cluster
-		routes    []*envoy_config_route_v3.RouteConfiguration
-		endpoints []*envoy_config_endpoint_v3.ClusterLoadAssignment
+		listeners []*envoylistenerv3.Listener
+		clusters  []*envoyclusterv3.Cluster
+		routes    []*envoyroutev3.RouteConfiguration
+		endpoints []*envoyendpointv3.ClusterLoadAssignment
 	)
 	BeforeEach(func() {
-		listeners = []*envoy_config_listener_v3.Listener{}
-		clusters = []*envoy_config_cluster_v3.Cluster{{
+		listeners = []*envoylistenerv3.Listener{}
+		clusters = []*envoyclusterv3.Cluster{{
 			Name: "foo",
-			EdsClusterConfig: &envoy_config_cluster_v3.Cluster_EdsClusterConfig{
+			EdsClusterConfig: &envoyclusterv3.Cluster_EdsClusterConfig{
 				ServiceName: "foo-eds",
 			},
 		}}
-		routes = []*envoy_config_route_v3.RouteConfiguration{{
+		routes = []*envoyroutev3.RouteConfiguration{{
 			Name: "foo-routes",
-			VirtualHosts: []*envoy_config_route_v3.VirtualHost{
+			VirtualHosts: []*envoyroutev3.VirtualHost{
 				{
 					Name:    "placeholder_host",
 					Domains: []string{"*"},
-					Routes: []*envoy_config_route_v3.Route{
+					Routes: []*envoyroutev3.Route{
 						{
-							Action: &envoy_config_route_v3.Route_Route{
-								Route: &envoy_config_route_v3.RouteAction{
-									ClusterSpecifier: &envoy_config_route_v3.RouteAction_Cluster{
+							Action: &envoyroutev3.Route_Route{
+								Route: &envoyroutev3.RouteAction{
+									ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{
 										Cluster: "foo",
 									},
 								},
@@ -64,9 +64,9 @@ var _ = Describe("Static bootstrap generation", func() {
 							Name: "foo-route",
 						},
 						{
-							Action: &envoy_config_route_v3.Route_Route{
-								Route: &envoy_config_route_v3.RouteAction{
-									ClusterSpecifier: &envoy_config_route_v3.RouteAction_Cluster{
+							Action: &envoyroutev3.Route_Route{
+								Route: &envoyroutev3.RouteAction{
+									ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{
 										Cluster: "bar",
 									},
 								},
@@ -78,7 +78,7 @@ var _ = Describe("Static bootstrap generation", func() {
 			},
 		},
 		}
-		endpoints = []*envoy_config_endpoint_v3.ClusterLoadAssignment{{
+		endpoints = []*envoyendpointv3.ClusterLoadAssignment{{
 			ClusterName: "foo-eds",
 		}}
 	})
@@ -91,12 +91,12 @@ var _ = Describe("Static bootstrap generation", func() {
 		})
 		Context("extractRoutedClustersFromListeners", func() {
 			It("does not error if no hcm", func() {
-				l := &envoy_config_listener_v3.Listener{
+				l := &envoylistenerv3.Listener{
 					Name:    "fake-listener",
-					Address: &envoy_config_core_v3.Address{},
-					FilterChains: []*envoy_config_listener_v3.FilterChain{{
-						FilterChainMatch: &envoy_config_listener_v3.FilterChainMatch{},
-						Filters:          []*envoy_config_listener_v3.Filter{},
+					Address: &envoycorev3.Address{},
+					FilterChains: []*envoylistenerv3.FilterChain{{
+						FilterChainMatch: &envoylistenerv3.FilterChainMatch{},
+						Filters:          []*envoylistenerv3.Filter{},
 					}},
 				}
 				listeners = append(listeners, l)
@@ -113,14 +113,14 @@ var _ = Describe("Static bootstrap generation", func() {
 					},
 				})
 				Expect(err).NotTo(HaveOccurred())
-				l := &envoy_config_listener_v3.Listener{
+				l := &envoylistenerv3.Listener{
 					Name:    "fake-listener",
-					Address: &envoy_config_core_v3.Address{},
-					FilterChains: []*envoy_config_listener_v3.FilterChain{{
-						FilterChainMatch: &envoy_config_listener_v3.FilterChainMatch{},
-						Filters: []*envoy_config_listener_v3.Filter{{
+					Address: &envoycorev3.Address{},
+					FilterChains: []*envoylistenerv3.FilterChain{{
+						FilterChainMatch: &envoylistenerv3.FilterChainMatch{},
+						Filters: []*envoylistenerv3.Filter{{
 							Name: wellknown.HTTPConnectionManager,
-							ConfigType: &envoy_config_listener_v3.Filter_TypedConfig{
+							ConfigType: &envoylistenerv3.Filter_TypedConfig{
 								TypedConfig: hcmAny,
 							},
 						}},
@@ -134,13 +134,13 @@ var _ = Describe("Static bootstrap generation", func() {
 		Context("convertToStaticClusters", func() {
 			BeforeEach(func() {
 				routedCluster = map[string]struct{}{"foo": struct{}{}, "bar": struct{}{}}
-				clusters = []*envoy_config_cluster_v3.Cluster{{
+				clusters = []*envoyclusterv3.Cluster{{
 					Name: "foo",
-					EdsClusterConfig: &envoy_config_cluster_v3.Cluster_EdsClusterConfig{
+					EdsClusterConfig: &envoyclusterv3.Cluster_EdsClusterConfig{
 						ServiceName: "foo-eds",
 					},
 				}}
-				endpoints = []*envoy_config_endpoint_v3.ClusterLoadAssignment{{
+				endpoints = []*envoyendpointv3.ClusterLoadAssignment{{
 					ClusterName: "foo-eds",
 				}}
 			})
@@ -157,13 +157,13 @@ var _ = Describe("Static bootstrap generation", func() {
 		Context("addBlackholeClusters", func() {
 			BeforeEach(func() {
 				routedCluster = map[string]struct{}{"bar": struct{}{}}
-				clusters = []*envoy_config_cluster_v3.Cluster{{
+				clusters = []*envoyclusterv3.Cluster{{
 					Name: "foo",
-					EdsClusterConfig: &envoy_config_cluster_v3.Cluster_EdsClusterConfig{
+					EdsClusterConfig: &envoyclusterv3.Cluster_EdsClusterConfig{
 						ServiceName: "foo-eds",
 					},
 				}}
-				endpoints = []*envoy_config_endpoint_v3.ClusterLoadAssignment{{
+				endpoints = []*envoyendpointv3.ClusterLoadAssignment{{
 					ClusterName: "foo-eds",
 				}}
 			})
@@ -185,11 +185,11 @@ var _ = Describe("Static bootstrap generation", func() {
 					},
 				})
 				Expect(err).NotTo(HaveOccurred())
-				fc := &envoy_config_listener_v3.FilterChain{
-					FilterChainMatch: &envoy_config_listener_v3.FilterChainMatch{},
-					Filters: []*envoy_config_listener_v3.Filter{{
+				fc := &envoylistenerv3.FilterChain{
+					FilterChainMatch: &envoylistenerv3.FilterChainMatch{},
+					Filters: []*envoylistenerv3.Filter{{
 						Name: wellknown.HTTPConnectionManager,
-						ConfigType: &envoy_config_listener_v3.Filter_TypedConfig{
+						ConfigType: &envoylistenerv3.Filter_TypedConfig{
 							TypedConfig: hcmAny,
 						},
 					}},
@@ -210,7 +210,7 @@ var _ = Describe("Static bootstrap generation", func() {
 		})
 		Context("setStaticRouteConfig", func() {
 			It("sets the route config as static and mutates the filter", func() {
-				f := &envoy_config_listener_v3.Filter{}
+				f := &envoylistenerv3.Filter{}
 				hcm := &envoy_extensions_filters_network_http_connection_manager_v3.HttpConnectionManager{}
 				Expect(setStaticRouteConfig(f, hcm, routes[0])).NotTo(HaveOccurred())
 				Expect(hcm.GetRouteConfig().GetName()).To(Equal(routes[0].GetName()))
@@ -235,33 +235,33 @@ var _ = Describe("Static bootstrap generation", func() {
 			actual, err := FromFilter(filterName, inTransformation)
 			Expect(err).NotTo(HaveOccurred())
 
-			expectedBootstrap := &envoy_config_bootstrap_v3.Bootstrap{
-				Node: &envoy_config_core_v3.Node{
+			expectedBootstrap := &envoybootstrapv3.Bootstrap{
+				Node: &envoycorev3.Node{
 					Id:      "validation-node-id",
 					Cluster: "validation-cluster",
 				},
-				StaticResources: &envoy_config_bootstrap_v3.Bootstrap_StaticResources{
-					Listeners: []*envoy_config_listener_v3.Listener{{
+				StaticResources: &envoybootstrapv3.Bootstrap_StaticResources{
+					Listeners: []*envoylistenerv3.Listener{{
 						Name: "placeholder_listener",
-						Address: &envoy_config_core_v3.Address{
-							Address: &envoy_config_core_v3.Address_SocketAddress{SocketAddress: &envoy_config_core_v3.SocketAddress{
+						Address: &envoycorev3.Address{
+							Address: &envoycorev3.Address_SocketAddress{SocketAddress: &envoycorev3.SocketAddress{
 								Address:       "0.0.0.0",
-								PortSpecifier: &envoy_config_core_v3.SocketAddress_PortValue{PortValue: 8081},
+								PortSpecifier: &envoycorev3.SocketAddress_PortValue{PortValue: 8081},
 							}},
 						},
-						FilterChains: []*envoy_config_listener_v3.FilterChain{
+						FilterChains: []*envoylistenerv3.FilterChain{
 							{
 								Name: "placeholder_filter_chain",
-								Filters: []*envoy_config_listener_v3.Filter{
+								Filters: []*envoylistenerv3.Filter{
 									{
 										Name: wellknown.HTTPConnectionManager,
-										ConfigType: &envoy_config_listener_v3.Filter_TypedConfig{
+										ConfigType: &envoylistenerv3.Filter_TypedConfig{
 											TypedConfig: func() *anypb.Any {
 												hcmAny, err := utils.MessageToAny(&envoy_extensions_filters_network_http_connection_manager_v3.HttpConnectionManager{
 													StatPrefix: "placeholder",
 													RouteSpecifier: &envoy_extensions_filters_network_http_connection_manager_v3.HttpConnectionManager_RouteConfig{
-														RouteConfig: &envoy_config_route_v3.RouteConfiguration{
-															VirtualHosts: []*envoy_config_route_v3.VirtualHost{
+														RouteConfig: &envoyroutev3.RouteConfiguration{
+															VirtualHosts: []*envoyroutev3.VirtualHost{
 																{
 																	Name:    "placeholder_host",
 																	Domains: []string{"*"},
@@ -292,7 +292,7 @@ var _ = Describe("Static bootstrap generation", func() {
 				},
 			}
 
-			actualBootstrap := &envoy_config_bootstrap_v3.Bootstrap{}
+			actualBootstrap := &envoybootstrapv3.Bootstrap{}
 
 			err = protojson.Unmarshal([]byte(actual), actualBootstrap)
 			Expect(err).NotTo(HaveOccurred())
@@ -322,19 +322,19 @@ var _ = Describe("Static bootstrap generation", func() {
 				},
 			})
 			Expect(err).NotTo(HaveOccurred())
-			listeners = append(listeners, &envoy_config_listener_v3.Listener{
+			listeners = append(listeners, &envoylistenerv3.Listener{
 				Name: "placeholder_listener",
-				Address: &envoy_config_core_v3.Address{
-					Address: &envoy_config_core_v3.Address_SocketAddress{SocketAddress: &envoy_config_core_v3.SocketAddress{
+				Address: &envoycorev3.Address{
+					Address: &envoycorev3.Address_SocketAddress{SocketAddress: &envoycorev3.SocketAddress{
 						Address:       "0.0.0.0",
-						PortSpecifier: &envoy_config_core_v3.SocketAddress_PortValue{PortValue: 8081},
+						PortSpecifier: &envoycorev3.SocketAddress_PortValue{PortValue: 8081},
 					}},
 				},
-				FilterChains: []*envoy_config_listener_v3.FilterChain{{
+				FilterChains: []*envoylistenerv3.FilterChain{{
 					Name: "placeholder_filter_chain",
-					Filters: []*envoy_config_listener_v3.Filter{{
+					Filters: []*envoylistenerv3.Filter{{
 						Name: wellknown.HTTPConnectionManager,
-						ConfigType: &envoy_config_listener_v3.Filter_TypedConfig{
+						ConfigType: &envoylistenerv3.Filter_TypedConfig{
 							TypedConfig: hcmAny,
 						},
 					}},
@@ -362,63 +362,63 @@ var _ = Describe("Static bootstrap generation", func() {
 			actual, err := FromSnapshot(context.Background(), snap)
 			Expect(err).NotTo(HaveOccurred())
 
-			expectedBootstrap := &envoy_config_bootstrap_v3.Bootstrap{
-				Node: &envoy_config_core_v3.Node{
+			expectedBootstrap := &envoybootstrapv3.Bootstrap{
+				Node: &envoycorev3.Node{
 					Id:      "validation-node-id",
 					Cluster: "validation-cluster",
 				},
-				StaticResources: &envoy_config_bootstrap_v3.Bootstrap_StaticResources{
-					Clusters: []*envoy_config_cluster_v3.Cluster{
+				StaticResources: &envoybootstrapv3.Bootstrap_StaticResources{
+					Clusters: []*envoyclusterv3.Cluster{
 						{
 							Name: "foo",
-							ClusterDiscoveryType: &envoy_config_cluster_v3.Cluster_Type{
-								Type: envoy_config_cluster_v3.Cluster_STRICT_DNS,
+							ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{
+								Type: envoyclusterv3.Cluster_STRICT_DNS,
 							},
-							LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
+							LoadAssignment: &envoyendpointv3.ClusterLoadAssignment{
 								ClusterName: "foo-eds",
 							},
 						},
 						{
 							Name: "bar",
-							ClusterDiscoveryType: &envoy_config_cluster_v3.Cluster_Type{
-								Type: envoy_config_cluster_v3.Cluster_STATIC,
+							ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{
+								Type: envoyclusterv3.Cluster_STATIC,
 							},
-							LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
+							LoadAssignment: &envoyendpointv3.ClusterLoadAssignment{
 								ClusterName: "bar",
 							},
 						},
 					},
-					Listeners: []*envoy_config_listener_v3.Listener{{
+					Listeners: []*envoylistenerv3.Listener{{
 						Name: "placeholder_listener",
-						Address: &envoy_config_core_v3.Address{
-							Address: &envoy_config_core_v3.Address_SocketAddress{SocketAddress: &envoy_config_core_v3.SocketAddress{
+						Address: &envoycorev3.Address{
+							Address: &envoycorev3.Address_SocketAddress{SocketAddress: &envoycorev3.SocketAddress{
 								Address:       "0.0.0.0",
-								PortSpecifier: &envoy_config_core_v3.SocketAddress_PortValue{PortValue: 8081},
+								PortSpecifier: &envoycorev3.SocketAddress_PortValue{PortValue: 8081},
 							}},
 						},
-						FilterChains: []*envoy_config_listener_v3.FilterChain{
+						FilterChains: []*envoylistenerv3.FilterChain{
 							{
 								Name: "placeholder_filter_chain",
-								Filters: []*envoy_config_listener_v3.Filter{
+								Filters: []*envoylistenerv3.Filter{
 									{
 										Name: wellknown.HTTPConnectionManager,
-										ConfigType: &envoy_config_listener_v3.Filter_TypedConfig{
+										ConfigType: &envoylistenerv3.Filter_TypedConfig{
 											TypedConfig: func() *anypb.Any {
 												hcmAny, err := utils.MessageToAny(&envoy_extensions_filters_network_http_connection_manager_v3.HttpConnectionManager{
 													StatPrefix: "placeholder",
 													RouteSpecifier: &envoy_extensions_filters_network_http_connection_manager_v3.HttpConnectionManager_RouteConfig{
-														RouteConfig: &envoy_config_route_v3.RouteConfiguration{
+														RouteConfig: &envoyroutev3.RouteConfiguration{
 															Name: "foo-routes",
-															VirtualHosts: []*envoy_config_route_v3.VirtualHost{
+															VirtualHosts: []*envoyroutev3.VirtualHost{
 																{
 																	Name:    "placeholder_host",
 																	Domains: []string{"*"},
-																	Routes: []*envoy_config_route_v3.Route{
+																	Routes: []*envoyroutev3.Route{
 																		{
 																			Name: "foo-route",
-																			Action: &envoy_config_route_v3.Route_Route{
-																				Route: &envoy_config_route_v3.RouteAction{
-																					ClusterSpecifier: &envoy_config_route_v3.RouteAction_Cluster{
+																			Action: &envoyroutev3.Route_Route{
+																				Route: &envoyroutev3.RouteAction{
+																					ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{
 																						Cluster: "foo",
 																					},
 																				},
@@ -426,9 +426,9 @@ var _ = Describe("Static bootstrap generation", func() {
 																		},
 																		{
 																			Name: "bar-route",
-																			Action: &envoy_config_route_v3.Route_Route{
-																				Route: &envoy_config_route_v3.RouteAction{
-																					ClusterSpecifier: &envoy_config_route_v3.RouteAction_Cluster{
+																			Action: &envoyroutev3.Route_Route{
+																				Route: &envoyroutev3.RouteAction{
+																					ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{
 																						Cluster: "bar",
 																					},
 																				},
@@ -452,7 +452,7 @@ var _ = Describe("Static bootstrap generation", func() {
 				},
 			}
 
-			actualBootstrap := &envoy_config_bootstrap_v3.Bootstrap{}
+			actualBootstrap := &envoybootstrapv3.Bootstrap{}
 
 			err = protojson.Unmarshal([]byte(actual), actualBootstrap)
 			Expect(err).NotTo(HaveOccurred())

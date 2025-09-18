@@ -21,7 +21,7 @@ kind: Service
 metadata:
   labels:
     app: kgateway
-    kgateway: gateway-proxy-access-logger
+    app.kubernetes.io/name: gateway-proxy-access-logger
   name: gateway-proxy-access-logger
   namespace: default
 spec:
@@ -32,26 +32,26 @@ spec:
     protocol: TCP
     targetPort: 8083
   selector:
-    kgateway: gateway-proxy-access-logger
+    app.kubernetes.io/name: gateway-proxy-access-logger
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
     app: kgateway
-    kgateway: gateway-proxy-access-logger
+    app.kubernetes.io/name: gateway-proxy-access-logger
   name: gateway-proxy-access-logger
   namespace: default
 spec:
   replicas: 1
   selector:
     matchLabels:
-      kgateway: gateway-proxy-access-logger
+      app.kubernetes.io/name: gateway-proxy-access-logger
   template:
     metadata:
       labels:
         app: gateway-proxy-access-logger
-        kgateway: gateway-proxy-access-logger
+        app.kubernetes.io/name: gateway-proxy-access-logger
     spec:
       containers:
       - env:

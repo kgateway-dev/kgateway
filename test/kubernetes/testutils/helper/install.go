@@ -12,15 +12,19 @@ import (
 )
 
 const (
-	TestAssetDir          = "_test"
+	defaultTestAssetDir   = "_test"
 	HelmRepoIndexFileName = "index.yaml"
 )
 
 // Gets the absolute path to a locally-built helm chart. This assumes that the helm index has a reference
-// to exactly one version of the helm chart.
-func GetLocalChartPath(chartName string) (string, error) {
+// to exactly one version of the helm chart. If assetDir is an empty string, it will default to "_test".
+func GetLocalChartPath(chartName string, assetDir string) (string, error) {
+	dir := assetDir
+	if dir == "" {
+		dir = defaultTestAssetDir
+	}
 	rootDir := testutils.GitRootDirectory()
-	testAssetDir := filepath.Join(rootDir, TestAssetDir)
+	testAssetDir := filepath.Join(rootDir, dir)
 	if !fsutils.IsDirectory(testAssetDir) {
 		return "", fmt.Errorf("%s does not exist or is not a directory", testAssetDir)
 	}

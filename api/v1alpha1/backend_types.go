@@ -10,6 +10,7 @@ import (
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=backends/status,verbs=get;update;patch
 
 // +kubebuilder:printcolumn:name="Type",type=string,JSONPath=".spec.type",description="Which backend type?"
+// +kubebuilder:printcolumn:name="Accepted",type=string,JSONPath=".status.conditions[?(@.type=='Accepted')].status",description="Backend configuration acceptance status"
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=".metadata.creationTimestamp",description="The age of the backend."
 
 // +genclient
@@ -37,6 +38,8 @@ const (
 	BackendTypeStatic BackendType = "Static"
 	// BackendTypeDynamicForwardProxy is the type for dynamic forward proxy backends.
 	BackendTypeDynamicForwardProxy BackendType = "DynamicForwardProxy"
+	// BackendTypeMCP is the type for MCP backends.
+	BackendTypeMCP BackendType = "MCP"
 )
 
 // BackendSpec defines the desired state of Backend.
@@ -45,25 +48,31 @@ const (
 // +kubebuilder:validation:XValidation:message="aws backend must be specified when type is 'AWS'",rule="self.type == 'AWS' ? has(self.aws) : true"
 // +kubebuilder:validation:XValidation:message="static backend must be specified when type is 'Static'",rule="self.type == 'Static' ? has(self.static) : true"
 // +kubebuilder:validation:XValidation:message="dynamicForwardProxy backend must be specified when type is 'DynamicForwardProxy'",rule="self.type == 'DynamicForwardProxy' ? has(self.dynamicForwardProxy) : true"
-// +kubebuilder:validation:ExactlyOneOf=ai;aws;static;dynamicForwardProxy
+// +kubebuilder:validation:XValidation:message="mcp backend must be specified when type is 'MCP'",rule="self.type == 'MCP' ? has(self.mcp) : true"
+// +kubebuilder:validation:ExactlyOneOf=ai;aws;static;dynamicForwardProxy;mcp
 type BackendSpec struct {
 	// Type indicates the type of the backend to be used.
 	// +unionDiscriminator
-	// +kubebuilder:validation:Enum=AI;AWS;Static;DynamicForwardProxy
+	// +kubebuilder:validation:Enum=AI;AWS;Static;DynamicForwardProxy;MCP
 	// +required
 	Type BackendType `json:"type"`
 	// AI is the AI backend configuration.
 	// +optional
 	AI *AIBackend `json:"ai,omitempty"`
 	// Aws is the AWS backend configuration.
+	// The Aws backend type is only supported with envoy-based gateways, it is not supported in agentgateway.
 	// +optional
 	Aws *AwsBackend `json:"aws,omitempty"`
 	// Static is the static backend configuration.
 	// +optional
 	Static *StaticBackend `json:"static,omitempty"`
 	// DynamicForwardProxy is the dynamic forward proxy backend configuration.
+	// The DynamicForwardProxy backend type is only supported with envoy-based gateways, it is not supported in agentgateway.
 	// +optional
 	DynamicForwardProxy *DynamicForwardProxyBackend `json:"dynamicForwardProxy,omitempty"`
+	// MCP is the mcp backend configuration. The MCP backend type is only supported with agentgateway.
+	// +optional
+	MCP *MCP `json:"mcp,omitempty"`
 }
 
 // AppProtocol defines the application protocol to use when communicating with the backend.
@@ -88,7 +97,7 @@ type DynamicForwardProxyBackend struct {
 	// EnableTls enables TLS. When true, the backend will be configured to use TLS. System CA will be used for validation.
 	// The hostname will be used for SNI and auto SAN validation.
 	// +optional
-	EnableTls bool `json:"enableTls,omitempty"`
+	EnableTls *bool `json:"enableTls,omitempty"`
 }
 
 // AwsBackend is the AWS backend configuration.
@@ -165,7 +174,7 @@ type AwsLambda struct {
 	// +optional
 	// +kubebuilder:validation:Pattern="^https?://[-a-zA-Z0-9@:%.+~#?&/=]+$"
 	// +kubebuilder:validation:MaxLength=2048
-	EndpointURL string `json:"endpointURL,omitempty"`
+	EndpointURL *string `json:"endpointURL,omitempty"`
 	// FunctionName is the name of the Lambda function to invoke.
 	// +required
 	// +kubebuilder:validation:Pattern="^[A-Za-z0-9-_]{1,140}$"
@@ -181,6 +190,7 @@ type AwsLambda struct {
 	// (alphanumeric plus "-" or "_"), or the special literal "$LATEST".
 	// +optional
 	// +kubebuilder:validation:Pattern="^(\\$LATEST|[0-9]+|[A-Za-z0-9-_]{1,128})$"
+	// +kubebuilder:default=$LATEST
 	Qualifier string `json:"qualifier,omitempty"`
 	// PayloadTransformation specifies payload transformation mode before it is sent to the Lambda function.
 	// Defaults to Envoy.
@@ -217,7 +227,6 @@ type StaticBackend struct {
 
 	// AppProtocol is the application protocol to use when communicating with the backend.
 	// +optional
-	// +kubebuilder:validation:Optional
 	AppProtocol *AppProtocol `json:"appProtocol,omitempty"`
 }
 
@@ -229,9 +238,6 @@ type Host struct {
 	// Port is the port to use for the backend.
 	// +required
 	Port gwv1.PortNumber `json:"port"`
-	// InsecureSkipVerify allows skipping ssl validation for custom hosts
-	// +optional
-	InsecureSkipVerify *bool `json:"insecureSkipVerify,omitempty"`
 }
 
 // BackendStatus defines the observed state of Backend.

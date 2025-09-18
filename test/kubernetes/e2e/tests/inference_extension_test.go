@@ -6,15 +6,20 @@ import (
 	"testing"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/crds"
+	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	. "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/tests"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/cluster"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/install"
+	testruntime "github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/runtime"
 )
 
 var (
-	// Inference Extension CRDs.
-	poolCrdManifest  = filepath.Join(crds.AbsPathToCrd("inferencepools.yaml"))
-	modelCrdManifest = filepath.Join(crds.AbsPathToCrd("inferencemodels.yaml"))
+	// poolCrdManifest defines the manifest file containing Inference Extension CRDs.
+	// Created using command:
+	//   kubectl kustomize "https://github.com/kubernetes-sigs/gateway-api-inference-extension/config/crd/?ref=$COMMIT_SHA" \
+	//   > internal/kgateway/crds/inference-crds.yaml
+	poolCrdManifest = filepath.Join(crds.AbsPathToCrd("inference-crds.yaml"))
 	// infExtNs is the namespace to install kgateway
 	infExtNs = "inf-ext-e2e"
 )
@@ -22,13 +27,21 @@ var (
 // TestInferenceExtension tests Inference Extension functionality
 func TestInferenceExtension(t *testing.T) {
 	ctx := context.Background()
-	testInstallation := e2e.CreateTestInstallation(
+
+	runtimeContext := testruntime.NewContext()
+	clusterContext := cluster.MustKindContextWithScheme(runtimeContext.ClusterName, schemes.InferExtScheme())
+
+	installContext := &install.Context{
+		InstallNamespace:          infExtNs,
+		ProfileValuesManifestFile: e2e.ManifestPath("inference-extension-helm.yaml"),
+		ValuesManifestFile:        e2e.EmptyValuesManifestPath,
+	}
+
+	testInstallation := e2e.CreateTestInstallationForCluster(
 		t,
-		&install.Context{
-			InstallNamespace:          infExtNs,
-			ProfileValuesManifestFile: e2e.ManifestPath("inference-extension-helm.yaml"),
-			ValuesManifestFile:        e2e.EmptyValuesManifestPath,
-		},
+		runtimeContext,
+		clusterContext,
+		installContext,
 	)
 
 	// We register the cleanup function _before_ we actually perform the installation.
@@ -40,18 +53,14 @@ func TestInferenceExtension(t *testing.T) {
 
 		testInstallation.UninstallKgateway(ctx)
 
-		// Uninstall CRDs
-		for _, m := range []string{poolCrdManifest, modelCrdManifest} {
-			err := testInstallation.Actions.Kubectl().DeleteFile(ctx, m)
-			testInstallation.Assertions.Require.NoError(err, "can delete manifest %s", m)
-		}
+		// Uninstall InferencePool v1 CRD
+		err := testInstallation.Actions.Kubectl().DeleteFile(ctx, poolCrdManifest)
+		testInstallation.Assertions.Require.NoError(err, "can delete manifest %s", poolCrdManifest)
 	})
 
-	// Install CRDs
-	for _, m := range []string{poolCrdManifest, modelCrdManifest} {
-		err := testInstallation.Actions.Kubectl().ApplyFile(ctx, m)
-		testInstallation.Assertions.Require.NoError(err, "can apply manifest %s", m)
-	}
+	// Install InferencePool v1 CRD
+	err := testInstallation.Actions.Kubectl().ApplyFile(ctx, poolCrdManifest)
+	testInstallation.Assertions.Require.NoError(err, "can apply manifest %s", poolCrdManifest)
 
 	// Install kgateway
 	testInstallation.InstallKgatewayFromLocalChart(ctx)

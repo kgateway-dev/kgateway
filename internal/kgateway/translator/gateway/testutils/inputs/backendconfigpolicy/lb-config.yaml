@@ -50,12 +50,11 @@ spec:
   http1ProtocolOptions:
     enableTrailers: true
     overrideStreamErrorOnInvalidHttpMessage: true
-    headerFormat: PreserveCaseHeaderKeyFormat
+    preserveHttp1HeaderCase: true
   loadBalancer:
     ringHash:
       minimumRingSize: 1024
       maximumRingSize: 2048
-    useHostnameForHashing: true
     closeConnectionsOnHostSetChange: true
 ---
 apiVersion: v1

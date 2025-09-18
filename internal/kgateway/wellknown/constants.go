@@ -39,3 +39,15 @@ const (
 const (
 	EnvoyConfigNameMaxLen = 253
 )
+
+// AWS constants for lambda and bedrock configuration
+const (
+	// AccessKey is the key name for in the secret data for the access key id.
+	AccessKey = "accessKey"
+	// SessionToken is the key name for in the secret data for the session token.
+	SessionToken = "sessionToken"
+	// SecretKey is the key name for in the secret data for the secret access key.
+	SecretKey = "secretKey"
+	// DefaultAWSRegion is the default AWS region.
+	DefaultAWSRegion = "us-east-1"
+)

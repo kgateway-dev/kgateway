@@ -1,0 +1,78 @@
+---
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: http-gw-for-test
+  namespace: gwtest
+spec:
+  gatewayClassName: agentgateway
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: All
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grpc-echo-svc
+  namespace: gwtest
+  labels:
+    app: grpc-echo-svc
+    service: grpc-echo-svc
+spec:
+  ports:
+    - appProtocol: kubernetes.io/h2c
+      port: 3000
+      protocol: TCP
+      targetPort: 9000
+  selector:
+    app: grpc-echo-svc
+---
+kind: EndpointSlice
+metadata:
+  name: grpc-echo-svc
+  namespace: gwtest
+addressType: IPv4
+apiVersion: discovery.k8s.io/v1
+endpoints:
+  - addresses:
+      - 10.244.0.6
+    conditions:
+      ready: true
+      serving: true
+      terminating: false
+    nodeName: worker
+    targetRef:
+      kind: Pod
+      name: grpc-echo
+      namespace: default
+ports:
+  - appProtocol: kubernetes.io/h2c
+    name: ""
+    port: 9000
+    protocol: TCP
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: GRPCRoute
+metadata:
+  name: grpc-route
+  namespace: gwtest
+spec:
+  parentRefs:
+    - name: http-gw-for-test
+  hostnames:
+    - "example.com"
+  rules:
+    - matches:
+        - method:
+            method: ServerReflectionInfo
+            service: grpc.reflection.v1alpha.ServerReflection
+        - method:
+            method: Ping
+      backendRefs:
+        - name: grpc-echo-svc
+          port: 3000
+---

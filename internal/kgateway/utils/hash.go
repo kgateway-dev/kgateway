@@ -8,7 +8,7 @@ import (
 	"io"
 	"math"
 
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"google.golang.org/protobuf/proto"
 	structpb "google.golang.org/protobuf/types/known/structpb"
 )
@@ -43,7 +43,7 @@ func HashProtoWithHasher(hasher hash.Hash, resource proto.Message) {
 	}
 }
 
-func HashMetadata(newhash func() hash.Hash64, md *envoy_config_core_v3.Metadata) uint64 {
+func HashMetadata(newhash func() hash.Hash64, md *envoycorev3.Metadata) uint64 {
 	var finalHash uint64
 	if md == nil {
 		return finalHash

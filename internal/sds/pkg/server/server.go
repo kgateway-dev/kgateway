@@ -12,8 +12,8 @@ import (
 	"os"
 
 	"github.com/avast/retry-go"
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoy_extensions_transport_sockets_tls_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_service_secret_v3 "github.com/envoyproxy/go-control-plane/envoy/service/secret/v3"
 	cache_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
@@ -49,7 +49,7 @@ type Server struct {
 }
 
 // ID needed for snapshotCache
-func (s *Server) ID(_ *envoy_config_core_v3.Node) string {
+func (s *Server) ID(_ *envoycorev3.Node) string {
 	return s.sdsClient
 }
 
@@ -79,18 +79,32 @@ func (s *Server) Run(ctx context.Context) (<-chan struct{}, error) {
 		return nil, err
 	}
 	slog.Info("sds server listening", "address", s.address)
+
+	// Create channels for synchronization
+	serveStarted := make(chan struct{})
+	serverStopped := make(chan struct{})
+
+	// Start the server in a goroutine
 	go func() {
+		// Signal that Serve is about to be called
+		close(serveStarted)
 		if err = s.grpcServer.Serve(lis); err != nil {
 			log.Fatalf("fatal error in gRPC server: address=%s error=%v", s.address, err)
 		}
 	}()
-	serverStopped := make(chan struct{})
+
+	// Wait for Serve to start before setting up shutdown handler
 	go func() {
+		// Wait for Serve to be called
+		<-serveStarted
+
+		// Now wait for context cancellation
 		<-ctx.Done()
 		slog.Info("stopping sds server", "address", s.address)
 		s.grpcServer.GracefulStop()
 		serverStopped <- struct{}{}
 	}()
+
 	return serverStopped, nil
 }
 
@@ -200,7 +214,7 @@ func checkCert(certs []byte) bool {
 }
 
 func serverCertSecret(privateKey, certChain, ocspStaple []byte, serverCert string) cache_types.Resource {
-	tlsCert := &envoy_extensions_transport_sockets_tls_v3.TlsCertificate{
+	tlsCert := &envoytlsv3.TlsCertificate{
 		CertificateChain: inlineBytesDataSource(certChain),
 		PrivateKey:       inlineBytesDataSource(privateKey),
 	}
@@ -210,28 +224,28 @@ func serverCertSecret(privateKey, certChain, ocspStaple []byte, serverCert strin
 		tlsCert.OcspStaple = inlineBytesDataSource(ocspStaple)
 	}
 
-	return &envoy_extensions_transport_sockets_tls_v3.Secret{
+	return &envoytlsv3.Secret{
 		Name: serverCert,
-		Type: &envoy_extensions_transport_sockets_tls_v3.Secret_TlsCertificate{
+		Type: &envoytlsv3.Secret_TlsCertificate{
 			TlsCertificate: tlsCert,
 		},
 	}
 }
 
 func validationContextSecret(caCert []byte, validationContext string) cache_types.Resource {
-	return &envoy_extensions_transport_sockets_tls_v3.Secret{
+	return &envoytlsv3.Secret{
 		Name: validationContext,
-		Type: &envoy_extensions_transport_sockets_tls_v3.Secret_ValidationContext{
-			ValidationContext: &envoy_extensions_transport_sockets_tls_v3.CertificateValidationContext{
+		Type: &envoytlsv3.Secret_ValidationContext{
+			ValidationContext: &envoytlsv3.CertificateValidationContext{
 				TrustedCa: inlineBytesDataSource(caCert),
 			},
 		},
 	}
 }
 
-func inlineBytesDataSource(b []byte) *envoy_config_core_v3.DataSource {
-	return &envoy_config_core_v3.DataSource{
-		Specifier: &envoy_config_core_v3.DataSource_InlineBytes{
+func inlineBytesDataSource(b []byte) *envoycorev3.DataSource {
+	return &envoycorev3.DataSource{
+		Specifier: &envoycorev3.DataSource_InlineBytes{
 			InlineBytes: b,
 		},
 	}

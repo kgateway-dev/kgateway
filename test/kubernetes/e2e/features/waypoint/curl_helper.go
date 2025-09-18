@@ -1,11 +1,9 @@
 package waypoint
 
 import (
-	"fmt"
 	"time"
 
-	"knative.dev/pkg/network"
-
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
@@ -38,8 +36,7 @@ func (s *testingSuite) assertCurlServicePost(
 }
 
 func fqdn(name, ns string) string {
-	// TODO: reevaluate knative dep, dedupe with pkg/utils/kubeutils/dns.go
-	return fmt.Sprintf("%s.%s.svc.%s", name, ns, network.GetClusterDomainName())
+	return kubeutils.GetServiceHostname(name, ns)
 }
 
 func (s *testingSuite) assertCurlHost(

@@ -3,14 +3,16 @@
 package v1alpha1
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 // ExtGrpcServiceApplyConfiguration represents a declarative configuration of the ExtGrpcService type for use
 // with apply.
 type ExtGrpcServiceApplyConfiguration struct {
-	BackendRef *v1.BackendRef `json:"backendRef,omitempty"`
-	Authority  *string        `json:"authority,omitempty"`
+	BackendRef     *v1.BackendRef   `json:"backendRef,omitempty"`
+	Authority      *string          `json:"authority,omitempty"`
+	RequestTimeout *metav1.Duration `json:"requestTimeout,omitempty"`
 }
 
 // ExtGrpcServiceApplyConfiguration constructs a declarative configuration of the ExtGrpcService type for use with
@@ -32,5 +34,13 @@ func (b *ExtGrpcServiceApplyConfiguration) WithBackendRef(value v1.BackendRef) *
 // If called multiple times, the Authority field is set to the value of the last call.
 func (b *ExtGrpcServiceApplyConfiguration) WithAuthority(value string) *ExtGrpcServiceApplyConfiguration {
 	b.Authority = &value
+	return b
+}
+
+// WithRequestTimeout sets the RequestTimeout field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the RequestTimeout field is set to the value of the last call.
+func (b *ExtGrpcServiceApplyConfiguration) WithRequestTimeout(value metav1.Duration) *ExtGrpcServiceApplyConfiguration {
+	b.RequestTimeout = &value
 	return b
 }

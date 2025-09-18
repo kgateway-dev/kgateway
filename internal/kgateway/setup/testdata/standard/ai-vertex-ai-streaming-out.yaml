@@ -38,7 +38,7 @@ clusters:
         metadata:
           filterMetadata:
             envoy.transport_socket_match:
-              tls: default
+              tls: "true"
             io.solo.transformation:
               api_version: v1
               auth_token: mysecretkey
@@ -50,20 +50,7 @@ clusters:
   name: backend_gwtest_vertexai_0
   transportSocketMatches:
   - match:
-      tls: default
-    name: tls
-    transportSocket:
-      name: envoy.transport_sockets.tls
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-        autoHostSni: true
-        commonTlsContext:
-          combinedValidationContext:
-            defaultValidationContext: {}
-            validationContextSdsSecretConfig:
-              name: SYSTEM_CA_CERT
-  - match:
-      tls: skipverification
+      tls: "true"
     name: tls
     transportSocket:
       name: envoy.transport_sockets.tls
@@ -158,6 +145,11 @@ routes:
     routes:
     - match:
         path: /vertexai
+      metadata:
+        filterMetadata:
+          merge.TrafficPolicy.gateway.kgateway.dev:
+            ai:
+            - gateway.kgateway.dev/TrafficPolicy/gwtest/route-test
       name: listener~8080~test-route-0-httproute-route-to-backend-gwtest-0-0-matcher-0
       route:
         autoHostRewrite: true

@@ -4,19 +4,22 @@ package v1alpha1
 
 import (
 	v1 "k8s.io/api/core/v1"
+	v1alpha3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 )
 
 // TLSApplyConfiguration represents a declarative configuration of the TLS type for use
 // with apply.
 type TLSApplyConfiguration struct {
-	SecretRef            *v1.LocalObjectReference      `json:"secretRef,omitempty"`
-	TLSFiles             *TLSFilesApplyConfiguration   `json:"tlsFiles,omitempty"`
-	Sni                  *string                       `json:"sni,omitempty"`
-	VerifySubjectAltName []string                      `json:"verifySubjectAltName,omitempty"`
-	Parameters           *ParametersApplyConfiguration `json:"parameters,omitempty"`
-	AlpnProtocols        []string                      `json:"alpnProtocols,omitempty"`
-	AllowRenegotiation   *bool                         `json:"allowRenegotiation,omitempty"`
-	OneWayTLS            *bool                         `json:"oneWayTLS,omitempty"`
+	SecretRef               *v1.LocalObjectReference              `json:"secretRef,omitempty"`
+	TLSFiles                *TLSFilesApplyConfiguration           `json:"tlsFiles,omitempty"`
+	WellKnownCACertificates *v1alpha3.WellKnownCACertificatesType `json:"wellKnownCACertificates,omitempty"`
+	InsecureSkipVerify      *bool                                 `json:"insecureSkipVerify,omitempty"`
+	Sni                     *string                               `json:"sni,omitempty"`
+	VerifySubjectAltName    []string                              `json:"verifySubjectAltName,omitempty"`
+	Parameters              *ParametersApplyConfiguration         `json:"parameters,omitempty"`
+	AlpnProtocols           []string                              `json:"alpnProtocols,omitempty"`
+	AllowRenegotiation      *bool                                 `json:"allowRenegotiation,omitempty"`
+	SimpleTLS               *bool                                 `json:"simpleTLS,omitempty"`
 }
 
 // TLSApplyConfiguration constructs a declarative configuration of the TLS type for use with
@@ -38,6 +41,22 @@ func (b *TLSApplyConfiguration) WithSecretRef(value v1.LocalObjectReference) *TL
 // If called multiple times, the TLSFiles field is set to the value of the last call.
 func (b *TLSApplyConfiguration) WithTLSFiles(value *TLSFilesApplyConfiguration) *TLSApplyConfiguration {
 	b.TLSFiles = value
+	return b
+}
+
+// WithWellKnownCACertificates sets the WellKnownCACertificates field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the WellKnownCACertificates field is set to the value of the last call.
+func (b *TLSApplyConfiguration) WithWellKnownCACertificates(value v1alpha3.WellKnownCACertificatesType) *TLSApplyConfiguration {
+	b.WellKnownCACertificates = &value
+	return b
+}
+
+// WithInsecureSkipVerify sets the InsecureSkipVerify field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the InsecureSkipVerify field is set to the value of the last call.
+func (b *TLSApplyConfiguration) WithInsecureSkipVerify(value bool) *TLSApplyConfiguration {
+	b.InsecureSkipVerify = &value
 	return b
 }
 
@@ -85,10 +104,10 @@ func (b *TLSApplyConfiguration) WithAllowRenegotiation(value bool) *TLSApplyConf
 	return b
 }
 
-// WithOneWayTLS sets the OneWayTLS field in the declarative configuration to the given value
+// WithSimpleTLS sets the SimpleTLS field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the OneWayTLS field is set to the value of the last call.
-func (b *TLSApplyConfiguration) WithOneWayTLS(value bool) *TLSApplyConfiguration {
-	b.OneWayTLS = &value
+// If called multiple times, the SimpleTLS field is set to the value of the last call.
+func (b *TLSApplyConfiguration) WithSimpleTLS(value bool) *TLSApplyConfiguration {
+	b.SimpleTLS = &value
 	return b
 }

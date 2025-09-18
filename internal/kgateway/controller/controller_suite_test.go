@@ -9,9 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gleak"
+	"github.com/onsi/gomega/types"
 	"istio.io/istio/pkg/kube"
 	istiosets "istio.io/istio/pkg/util/sets"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -30,7 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
-	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -45,6 +46,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/assertions"
 )
 
 const (
@@ -87,7 +89,7 @@ var _ = BeforeSuite(func() {
 	By("bootstrapping test environment")
 	// Create a scheme and add both Gateway and InferencePool types.
 	scheme = schemes.GatewayScheme()
-	err := infextv1a2.AddToScheme(scheme)
+	err := inf.Install(scheme)
 	Expect(err).NotTo(HaveOccurred())
 	// Required to deploy endpoint picker RBAC resources.
 	err = rbacv1.AddToScheme(scheme)
@@ -177,7 +179,7 @@ func (f fakeDiscoveryNamespaceFilter) AddHandler(func(selected, deselected istio
 func createManager(
 	parentCtx context.Context,
 	inferenceExt *deployer.InferenceExtInfo,
-	classConfigs map[string]*controller.ClassInfo,
+	classConfigs map[string]*deployer.GatewayClassInfo,
 ) (context.CancelFunc, error) {
 	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
 		Scheme: scheme,
@@ -233,14 +235,14 @@ func createManager(
 
 	// Use the default & alt GCs when no class configs are provided.
 	if classConfigs == nil {
-		classConfigs = map[string]*controller.ClassInfo{}
-		classConfigs[altGatewayClassName] = &controller.ClassInfo{
+		classConfigs = map[string]*deployer.GatewayClassInfo{}
+		classConfigs[altGatewayClassName] = &deployer.GatewayClassInfo{
 			Description: "alt gateway class",
 		}
-		classConfigs[gatewayClassName] = &controller.ClassInfo{
+		classConfigs[gatewayClassName] = &deployer.GatewayClassInfo{
 			Description: "default gateway class",
 		}
-		classConfigs[selfManagedGatewayClassName] = &controller.ClassInfo{
+		classConfigs[selfManagedGatewayClassName] = &deployer.GatewayClassInfo{
 			Description: "self managed gw",
 			ParametersRef: &apiv1.ParametersReference{
 				Group:     apiv1.Group(wellknown.GatewayParametersGVK.Group),
@@ -290,16 +292,30 @@ func newCommonCols(ctx context.Context, kubeClient kube.Client) *collections.Com
 	if err != nil {
 		Expect(err).ToNot(HaveOccurred())
 	}
-	commoncol, err := collections.NewCommonCollections(ctx, krtopts, kubeClient, cli, nil, gatewayControllerName, logr.Discard(), *settings)
+	commoncol, err := collections.NewCommonCollections(ctx, krtopts, kubeClient, cli, nil, gatewayControllerName, *settings)
 	if err != nil {
 		Expect(err).ToNot(HaveOccurred())
 	}
 
-	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultWaypointClassName)
+	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultWaypointClassName, *settings, nil)
 	plugins = append(plugins, krtcollections.NewBuiltinPlugin(ctx))
 	extensions := registry.MergePlugins(plugins...)
 
 	commoncol.InitPlugins(ctx, extensions, *settings)
 	kubeClient.RunAndWait(ctx.Done())
 	return commoncol
+}
+
+// Controller routines all in waiting state
+var allowedRunningGoroutines = []types.GomegaMatcher{
+	gleak.IgnoringTopFunction("sync.runtime_notifyListWait [sync.Cond.Wait]"),
+	gleak.IgnoringTopFunction("istio.io/istio/pkg/kube/krt.(*processorListener[...]).run [select]"),
+	gleak.IgnoringTopFunction("istio.io/istio/pkg/kube/krt.(*processorListener[...]).pop [select]"),
+	gleak.IgnoringTopFunction(`istio.io/istio/pkg/queue.(*queueImpl).Run.func2 [chan receive]`),
+}
+
+func waitForGoroutinesToFinish(monitor *assertions.GoRoutineMonitor) {
+	monitor.AssertNoLeaks(&assertions.AssertNoLeaksArgs{
+		AllowedRoutines: allowedRunningGoroutines,
+	})
 }

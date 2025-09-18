@@ -3,7 +3,6 @@ package controller_test
 import (
 	"context"
 	"fmt"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -14,6 +13,7 @@ import (
 	. "github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/assertions"
 )
 
 type GinkgoTestReporter struct{}
@@ -28,9 +28,14 @@ func (g GinkgoTestReporter) Fatalf(format string, args ...interface{}) {
 
 var _ = Describe("GwControllerMetrics", func() {
 	var (
-		ctx    context.Context
-		cancel context.CancelFunc
+		ctx              context.Context
+		cancel           context.CancelFunc
+		goroutineMonitor *assertions.GoRoutineMonitor
 	)
+
+	BeforeEach(func() {
+		goroutineMonitor = assertions.NewGoRoutineMonitor()
+	})
 
 	JustBeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
@@ -45,63 +50,94 @@ var _ = Describe("GwControllerMetrics", func() {
 
 	AfterEach(func() {
 		cancel()
-
-		// ensure goroutines cleanup
-		Eventually(func() bool { return true }).WithTimeout(3 * time.Second).Should(BeTrue())
+		waitForGoroutinesToFinish(goroutineMonitor)
 	})
 
 	It("should generate gateway controller metrics", func() {
 		setupGateway(ctx)
 		defer deleteGateway(ctx)
 
-		gathered := metricstest.MustGatherMetrics(GinkgoT())
+		gathered := metricstest.MustGatherMetricsContext(ctx, GinkgoT(),
+			"kgateway_controller_reconciliations_total",
+			"kgateway_controller_reconciliations_running",
+			"kgateway_controller_reconcile_duration_seconds")
 
-		gathered.AssertMetrics("kgateway_controller_reconciliations_total", []metricstest.ExpectMetric{
+		gathered.AssertMetricsInclude("kgateway_controller_reconciliations_total", []metricstest.ExpectMetric{
 			&metricstest.ExpectedMetricValueTest{
-				Labels: []metrics.Label{{Name: "controller", Value: "gateway"}, {Name: "result", Value: "success"}},
-				Test:   metricstest.Between(1, 20),
+				Labels: []metrics.Label{
+					{Name: "controller", Value: "gateway"},
+					{Name: "namespace", Value: defaultNamespace},
+					{Name: "name", Value: "gw-" + gatewayClassName + "-metrics"},
+					{Name: "result", Value: "success"},
+				},
+				Test: metricstest.Between(1, 20),
 			},
 			&metricstest.ExpectedMetricValueTest{
-				Labels: []metrics.Label{{Name: "controller", Value: "gatewayclass"}, {Name: "result", Value: "success"}},
-				Test:   metricstest.Between(1, 20),
+				Labels: []metrics.Label{
+					{Name: "controller", Value: "gatewayclass"},
+					{Name: "namespace", Value: defaultNamespace},
+					{Name: "name", Value: "gw-" + gatewayClassName + "-metrics"},
+					{Name: "result", Value: "success"},
+				},
+				Test: metricstest.Between(1, 20),
 			},
 			&metricstest.ExpectedMetricValueTest{
-				Labels: []metrics.Label{{Name: "controller", Value: "gatewayclass-provisioner"}, {Name: "result", Value: "success"}},
-				Test:   metricstest.Between(1, 10),
+				Labels: []metrics.Label{
+					{Name: "controller", Value: "gatewayclass-provisioner"},
+					{Name: "namespace", Value: defaultNamespace},
+					{Name: "name", Value: "gw-" + gatewayClassName + "-metrics"},
+					{Name: "result", Value: "success"},
+				},
+				Test: metricstest.Between(1, 10),
 			},
 		})
 
-		gathered.AssertMetrics("kgateway_controller_reconciliations_running", []metricstest.ExpectMetric{
+		gathered.AssertMetricsInclude("kgateway_controller_reconciliations_running", []metricstest.ExpectMetric{
 			&metricstest.ExpectedMetricValueTest{
-				Labels: []metrics.Label{{Name: "controller", Value: "gateway"}},
-				Test:   metricstest.Between(0, 1),
+				Labels: []metrics.Label{
+					{Name: "controller", Value: "gateway"},
+					{Name: "name", Value: "gw-" + gatewayClassName + "-metrics"},
+					{Name: "namespace", Value: defaultNamespace},
+				},
+				Test: metricstest.Between(0, 1),
 			},
 			&metricstest.ExpectedMetricValueTest{
-				Labels: []metrics.Label{{Name: "controller", Value: "gatewayclass"}},
-				Test:   metricstest.Between(0, 1),
+				Labels: []metrics.Label{
+					{Name: "controller", Value: "gatewayclass"},
+					{Name: "name", Value: "gw-" + gatewayClassName + "-metrics"},
+					{Name: "namespace", Value: defaultNamespace},
+				},
+				Test: metricstest.Between(0, 1),
 			},
 			&metricstest.ExpectedMetricValueTest{
-				Labels: []metrics.Label{{Name: "controller", Value: "gatewayclass-provisioner"}},
-				Test:   metricstest.Between(0, 1),
+				Labels: []metrics.Label{
+					{Name: "controller", Value: "gatewayclass-provisioner"},
+					{Name: "name", Value: "gw-" + gatewayClassName + "-metrics"},
+					{Name: "namespace", Value: defaultNamespace},
+				},
+				Test: metricstest.Between(0, 1),
 			},
 		})
 
-		gathered.AssertMetricsLabels("kgateway_controller_reconcile_duration_seconds", [][]metrics.Label{{
+		gathered.AssertMetricsLabelsInclude("kgateway_controller_reconcile_duration_seconds", [][]metrics.Label{{
 			{Name: "controller", Value: "gateway"},
-		}, {
-			{Name: "controller", Value: "gatewayclass"},
-		}, {
-			{Name: "controller", Value: "gatewayclass-provisioner"},
+			{Name: "name", Value: "gw-" + gatewayClassName + "-metrics"},
+			{Name: "namespace", Value: defaultNamespace},
 		}})
 	})
 
 	Context("when metrics are not active", func() {
+		var oldRegistry metrics.RegistererGatherer
+
 		BeforeEach(func() {
 			metrics.SetActive(false)
+			oldRegistry = metrics.Registry()
+			metrics.SetRegistry(false, metrics.NewRegistry())
 		})
 
 		AfterEach(func() {
 			metrics.SetActive(true)
+			metrics.SetRegistry(false, oldRegistry)
 		})
 
 		It("should not record metrics if metrics are not active", func() {
