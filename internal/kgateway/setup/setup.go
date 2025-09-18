@@ -331,7 +331,7 @@ func (s *setup) Start(ctx context.Context) error {
 	}
 
 	BuildKgatewayWithConfig(
-		ctx, mgr, s.gatewayControllerName, s.agwControllerName,  s.gatewayClassName, s.waypointClassName,
+		ctx, mgr, s.gatewayControllerName, s.agwControllerName, s.gatewayClassName, s.waypointClassName,
 		s.agentgatewayClassName, s.additionalGatewayClasses, setupOpts, s.restConfig,
 		istioClient, commoncol, agwCollections, uccBuilder, s.extraPlugins, s.extraAgwPlugins,
 		s.extraGatewayParameters,

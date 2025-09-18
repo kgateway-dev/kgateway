@@ -194,7 +194,7 @@ func (d *Deployer) SetNamespaceAndOwner(owner client.Object, objs []client.Objec
 
 // getControllerNameForGatewayClass returns the appropriate controller name based on the gateway class name
 func (d *Deployer) getControllerNameForGatewayClass(gatewayClassName string) string {
-	if gatewayClassName == wellknown.DefaultAgentGatewayClassName {
+	if gatewayClassName == wellknown.DefaultAgwClassName {
 		return d.agwControllerName
 	}
 	return d.controllerName

@@ -76,6 +76,8 @@ spec:
               value: {{ include "kgateway.fullname" . }}
             - name: KGW_XDS_SERVICE_PORT
               value: {{ .Values.controller.service.ports.grpc | quote }}
+            - name: KGW_AGENTGATEWAY_XDS_SERVICE_PORT
+              value: {{ .Values.controller.service.ports.agwGrpc | quote }}
             {{- if .Values.inferenceExtension.enabled }}
             - name: KGW_ENABLE_INFER_EXT
               value: "true"
