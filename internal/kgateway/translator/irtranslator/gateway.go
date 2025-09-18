@@ -31,7 +31,7 @@ import (
 
 const (
 	// ListenerOmittedMessage is a fallback message for when no specific reason was provided in translation
-	ListenerOmittedMessage                      = "Listener could not be generated for data plane"
+	ListenerOmittedMessage                      = "Listener could not be generated for data plane for unknown reason"
 	GatewayAcceptedListenersOmittedMessage      = "Listeners not accepted: %s"
 	GatewayProgrammedListenersOmittedMessage    = "Listeners not programmed: %s"
 	GatewayProgrammedAllListenersOmittedMessage = "No Listeners programmed. " + GatewayProgrammedListenersOmittedMessage
@@ -66,7 +66,7 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 		outListener, routes := t.ComputeListener(ctx, pass, gw, l, reporter)
 		// Envoy rejects listeners with no filter chains; skip adding such listeners.
 		if outListener == nil || len(outListener.GetFilterChains()) == 0 {
-			listenerName, wasNotAccepted := reportListenerStatusForOmittedListener(gw, l, reporter)
+			listenerName, wasNotAccepted := checkListenerStatusForOmittedListener(gw, l, reporter)
 
 			if wasNotAccepted {
 				notAcceptedListeners = append(notAcceptedListeners, listenerName)
@@ -282,8 +282,8 @@ type TranslationPass struct {
 	MergePolicies func(policies []ir.PolicyAtt) ir.PolicyAtt
 }
 
-// reportListenerStatusForOmittedListener handles status reporting for a listener that was omitted
-func reportListenerStatusForOmittedListener(
+// checkListenerStatusForOmittedListener will create a condition with "Type: Programmed" and "Status: False" if a Programmed condition does not exist
+func checkListenerStatusForOmittedListener(
 	gw ir.GatewayIR,
 	listener ir.ListenerIR,
 	reporter sdkreporter.Reporter,
