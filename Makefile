@@ -449,13 +449,13 @@ release-charts: package-kgateway-charts ## Release the kgateway charts
 
 .PHONY: deploy-kgateway-crd-chart
 deploy-kgateway-crd-chart: ## Deploy the kgateway crd chart
-	$(HELM) upgrade --install kgateway-crds $(TEST_ASSET_DIR)/kgateway-crds-$(VERSION).tgz --namespace kgateway-system --create-namespace
+	$(HELM) upgrade --install kgateway-crds $(TEST_ASSET_DIR)/kgateway-crds-$(VERSION).tgz --namespace $(INSTALL_NAMESPACE) --create-namespace
 
 HELM_ADDITIONAL_VALUES ?= hack/helm/dev.yaml
 .PHONY: deploy-kgateway-chart
 deploy-kgateway-chart: ## Deploy the kgateway chart
 	$(HELM) upgrade --install kgateway $(TEST_ASSET_DIR)/kgateway-$(VERSION).tgz \
-	--namespace kgateway-system --create-namespace \
+	--namespace $(INSTALL_NAMESPACE) --create-namespace \
 	--set image.registry=$(IMAGE_REGISTRY) \
 	--set image.tag=$(VERSION) \
 	-f $(HELM_ADDITIONAL_VALUES)
@@ -601,10 +601,6 @@ test-ai-provider-docker:
 #----------------------------------------------------------------------------------
 # Load Testing
 #----------------------------------------------------------------------------------
-
-# Default values that match setup-kind.sh defaults
-CLUSTER_NAME ?= kind
-INSTALL_NAMESPACE ?= kgateway-system
 
 .PHONY: run-load-tests
 run-load-tests: ## Run KGateway load testing suite (requires existing cluster and installation)
