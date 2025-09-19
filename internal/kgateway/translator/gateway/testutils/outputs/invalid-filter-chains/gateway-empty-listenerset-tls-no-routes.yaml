@@ -25,8 +25,9 @@ Statuses:
     default/example-listenerset:
       conditions:
       - lastTransitionTime: null
-        message: ListenerSet is accepted
-        reason: Accepted
+        message: 'Some listeners are not programmed: tls: TCP/TLS listener has no
+          valid backends or routes'
+        reason: ListenersNotValid
         status: "True"
         type: Accepted
       - lastTransitionTime: null

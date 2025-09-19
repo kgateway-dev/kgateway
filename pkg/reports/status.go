@@ -133,6 +133,8 @@ func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwxv1a1.XList
 	}
 
 	finalListeners := make([]gwv1.ListenerStatus, 0, len(ls.Spec.Listeners))
+	var invalidListeners []string
+	var invalidMessages []string
 
 	// We check if the ls has been rejected since no status implies that it will be accepted later on
 	listenerSetRejected := func(lsReport *ListenerSetReport) bool {
@@ -162,10 +164,33 @@ func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwxv1a1.XList
 					}
 				}
 				meta.SetStatusCondition(&finalConditions, lisCondition)
+
+				// Check if this is the Programmed condition and it's False
+				if lisCondition.Type == string(gwv1.ListenerConditionProgrammed) && lisCondition.Status == metav1.ConditionFalse {
+					invalidListeners = append(invalidListeners, string(lis.Name))
+					if lisCondition.Message != "" {
+						invalidMessages = append(invalidMessages, fmt.Sprintf("%s: %s", lis.Name, lisCondition.Message))
+					}
+				}
 			}
 			lisReport.Status.Conditions = finalConditions
 			finalListeners = append(finalListeners, lisReport.Status)
 		}
+	}
+
+	// If any listeners have Programmed=False, set ListenerSet Accepted=True with ListenersNotValid reason
+	if len(invalidListeners) > 0 {
+		message := fmt.Sprintf("Some listeners are not programmed: %s", strings.Join(invalidMessages, "; "))
+		if len(invalidMessages) == 0 {
+			message = fmt.Sprintf("Some listeners are not programmed: %s", strings.Join(invalidListeners, ", "))
+		}
+
+		lsReport.SetCondition(pluginsdkreporter.GatewayCondition{
+			Type:    gwv1.GatewayConditionAccepted,
+			Status:  metav1.ConditionTrue,
+			Reason:  gwv1.GatewayReasonListenersNotValid,
+			Message: message,
+		})
 	}
 
 	addMissingListenerSetConditions(r.ListenerSet(&ls))
