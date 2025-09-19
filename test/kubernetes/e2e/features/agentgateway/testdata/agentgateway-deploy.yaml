@@ -4,7 +4,7 @@ metadata:
   name: kgateway
 spec:
   kube:
-    agentGateway:
+    agentgateway:
       enabled: true
       logLevel: trace
 #      image:

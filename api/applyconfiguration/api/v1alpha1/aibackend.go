@@ -5,8 +5,8 @@ package v1alpha1
 // AIBackendApplyConfiguration represents a declarative configuration of the AIBackend type for use
 // with apply.
 type AIBackendApplyConfiguration struct {
-	LLM       *LLMProviderApplyConfiguration     `json:"llm,omitempty"`
-	MultiPool *MultiPoolConfigApplyConfiguration `json:"multipool,omitempty"`
+	LLM            *LLMProviderApplyConfiguration    `json:"llm,omitempty"`
+	PriorityGroups []PriorityGroupApplyConfiguration `json:"priorityGroups,omitempty"`
 }
 
 // AIBackendApplyConfiguration constructs a declarative configuration of the AIBackend type for use with
@@ -23,10 +23,15 @@ func (b *AIBackendApplyConfiguration) WithLLM(value *LLMProviderApplyConfigurati
 	return b
 }
 
-// WithMultiPool sets the MultiPool field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the MultiPool field is set to the value of the last call.
-func (b *AIBackendApplyConfiguration) WithMultiPool(value *MultiPoolConfigApplyConfiguration) *AIBackendApplyConfiguration {
-	b.MultiPool = value
+// WithPriorityGroups adds the given value to the PriorityGroups field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the PriorityGroups field.
+func (b *AIBackendApplyConfiguration) WithPriorityGroups(values ...*PriorityGroupApplyConfiguration) *AIBackendApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithPriorityGroups")
+		}
+		b.PriorityGroups = append(b.PriorityGroups, *values[i])
+	}
 	return b
 }

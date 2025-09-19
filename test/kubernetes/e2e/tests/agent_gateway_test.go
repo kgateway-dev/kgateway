@@ -12,7 +12,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
-func TestAgentGatewayIntegration(t *testing.T) {
+func TestAgentgatewayIntegration(t *testing.T) {
 	ctx := context.Background()
 	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "agent-gateway-test")
 	testInstallation := e2e.CreateTestInstallation(
@@ -45,5 +45,5 @@ func TestAgentGatewayIntegration(t *testing.T) {
 	// Install kgateway
 	testInstallation.InstallKgatewayFromLocalChart(ctx)
 
-	AgentGatewaySuiteRunner().Run(ctx, t, testInstallation)
+	AgentgatewaySuiteRunner().Run(ctx, t, testInstallation)
 }

@@ -1,0 +1,10 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - name: tcp
+    protocol: TCP
+    port: 8080

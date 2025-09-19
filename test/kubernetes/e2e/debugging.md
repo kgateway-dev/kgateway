@@ -74,7 +74,7 @@ tilt up
 - Web UI for monitoring resource status and logs
 - Faster iteration cycles during debugging
 
-For more detailed instructions on using Tilt, see [devel/tilt/tilt.md](/devel/tilt/tilt.md).
+For more detailed instructions on using Tilt, see [devel/debugging/tilt.md](/devel/debugging/tilt.md).
 
 ## Step 2: Running Tests
 _To run the regression tests, your kubeconfig file must point to a running Kubernetes cluster:_
@@ -178,13 +178,13 @@ Alternatively, with VSCode you can use a custom debugger launch config that sets
 In Goland, you can run a single test feature by right-clicking on the test function and selecting `Run 'TestXyz'` or
 `Debug 'TestXyz'`.
 
-You will need to set the env variable `SKIP_INSTALL` to `true` in the run configuration to skip the installation of Gloo. This
+You will need to set the env variable `SKIP_INSTALL` to `true` in the run configuration to skip the installation of kgateway. This
 is also the case for other env variables that are required for the test to run (`CLUSTER_NAME`, etc.)
 
 If there are multiple tests in a feature suite, you can run a single test by adding the test name to the `-run` flag in the run configuration:
 
 ```bash
--test.run="^TestKgateway$/^RouteOptions$/^TestConfigureRouteOptionsWithTargetRef$"
+-test.run="^TestKgateway$/^Deployer$/^TestProvisionDeploymentAndService$"
 ```
 
 

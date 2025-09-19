@@ -45,8 +45,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/yaml"
 
+	"github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
-	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/test/envtestutil"
 )
@@ -368,13 +368,19 @@ func setupEnvTestAndRun(t *testing.T, globalSettings *settings.Settings, run fun
 		ControlPlaneStopTimeout: time.Millisecond,
 		// web hook to add cluster ips to services
 	}
-	envtestutil.RunController(t, logger, globalSettings, testEnv,
+	envtestutil.RunController(
+		t,
+		logger,
+		globalSettings,
+		testEnv,
 		nil,
 		[][]string{
 			{"default", "testdata/setup_yaml/setup.yaml"},
 			{"gwtest", "testdata/setup_yaml/pods.yaml"},
 		},
-		run)
+		nil, // no tests need a validator right now.
+		run,
+	)
 }
 
 func testScenario(

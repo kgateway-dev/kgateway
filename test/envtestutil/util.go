@@ -30,16 +30,24 @@ import (
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	"github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
-	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
+	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
-func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Settings, testEnv *envtest.Environment,
-	postStart func(t *testing.T, ctx context.Context, client istiokube.CLIClient) func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []pluginsdk.Plugin,
+type postStartFunc func(t *testing.T, ctx context.Context, client istiokube.CLIClient) func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []pluginsdk.Plugin
+
+func RunController(
+	t *testing.T,
+	logger *zap.Logger,
+	globalSettings *settings.Settings,
+	testEnv *envtest.Environment,
+	postStart postStartFunc,
 	yamlFilesToApply [][]string,
+	validator validator.Validator,
 	run func(t *testing.T,
 		ctx context.Context,
 		kdbg *krt.DebugHandler,
@@ -134,6 +142,7 @@ func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Se
 				return controller.AddToScheme(mgr.GetScheme())
 			},
 		}...),
+		setup.WithValidator(validator),
 	)
 	if err != nil {
 		t.Fatalf("error setting up kgateway %v", err)

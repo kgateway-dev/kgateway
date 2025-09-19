@@ -14,13 +14,13 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/settings"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
-	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
@@ -49,6 +49,8 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 		outListener, routes := t.ComputeListener(ctx, pass, gw, l, reporter)
 		// Envoy rejects listeners with no filter chains; skip adding such listeners.
 		if outListener == nil || len(outListener.GetFilterChains()) == 0 {
+			originalListenerName := findOriginalListenerName(gw, l)
+			logger.Warn("invalid listener due to no filter chains generated", "listener", originalListenerName)
 			continue
 		}
 		res.Listeners = append(res.Listeners, outListener)
@@ -63,6 +65,17 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 	}
 
 	return res
+}
+
+// findOriginalListenerName finds the original listener name for a given listener.
+// This may give inaccurate results when multiple listeners have the same port, but is used for logging only.
+func findOriginalListenerName(gw ir.GatewayIR, listener ir.ListenerIR) string {
+	for _, origListener := range gw.SourceObject.Listeners {
+		if uint32(origListener.Port) == listener.BindPort {
+			return string(origListener.Name)
+		}
+	}
+	return ""
 }
 
 func getReporterForFilterChain(gw ir.GatewayIR, reporter sdkreporter.Reporter, filterChainName string) sdkreporter.ListenerReporter {
@@ -96,6 +109,7 @@ func (t *Translator) ComputeListener(
 	var routes []*envoyroutev3.RouteConfiguration
 	hasTls := false
 	domains := map[string]struct{}{}
+
 	for _, hfc := range lis.HttpFilterChain {
 		fct := filterChainTranslator{
 			listener:        lis,

@@ -29,19 +29,19 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
-// ADPRouteCollection creates the collection of translated routes
-func ADPRouteCollection(
+// AgwRouteCollection creates the collection of translated routes
+func AgwRouteCollection(
 	httpRouteCol krt.Collection[*gwv1.HTTPRoute],
 	grpcRouteCol krt.Collection[*gwv1.GRPCRoute],
 	tcpRouteCol krt.Collection[*gwv1alpha2.TCPRoute],
 	tlsRouteCol krt.Collection[*gwv1alpha2.TLSRoute],
 	inputs RouteContextInputs,
 	krtopts krtinternal.KrtOptions,
-) krt.Collection[agwir.ADPResourcesForGateway] {
-	httpRoutes := createRouteCollection(httpRouteCol, inputs, krtopts, "ADPHTTPRoutes",
-		func(ctx RouteContext, obj *gwv1.HTTPRoute, rep reporter.Reporter) (RouteContext, iter.Seq2[ADPRoute, *reporter.RouteCondition]) {
+) krt.Collection[agwir.AgwResourcesForGateway] {
+	httpRoutes := createRouteCollection(httpRouteCol, inputs, krtopts, "AgwHTTPRoutes",
+		func(ctx RouteContext, obj *gwv1.HTTPRoute, rep reporter.Reporter) (RouteContext, iter.Seq2[AgwRoute, *reporter.RouteCondition]) {
 			route := obj.Spec
-			return ctx, func(yield func(ADPRoute, *reporter.RouteCondition) bool) {
+			return ctx, func(yield func(AgwRoute, *reporter.RouteCondition) bool) {
 				for n, r := range route.Rules {
 					// split the rule to make sure each rule has up to one match
 					matches := slices.Reference(r.Matches)
@@ -52,8 +52,8 @@ func ADPRouteCollection(
 						if m != nil {
 							r.Matches = []gwv1.HTTPRouteMatch{*m}
 						}
-						res, err := convertHTTPRouteToADP(ctx, r, obj, n, idx)
-						if !yield(ADPRoute{Route: res}, err) {
+						res, err := convertHTTPRouteToAgw(ctx, r, obj, n, idx)
+						if !yield(AgwRoute{Route: res}, err) {
 							return
 						}
 					}
@@ -61,49 +61,49 @@ func ADPRouteCollection(
 			}
 		})
 
-	grpcRoutes := createRouteCollection(grpcRouteCol, inputs, krtopts, "ADPGRPCRoutes",
-		func(ctx RouteContext, obj *gwv1.GRPCRoute, rep reporter.Reporter) (RouteContext, iter.Seq2[ADPRoute, *reporter.RouteCondition]) {
+	grpcRoutes := createRouteCollection(grpcRouteCol, inputs, krtopts, "AgwGRPCRoutes",
+		func(ctx RouteContext, obj *gwv1.GRPCRoute, rep reporter.Reporter) (RouteContext, iter.Seq2[AgwRoute, *reporter.RouteCondition]) {
 			route := obj.Spec
-			return ctx, func(yield func(ADPRoute, *reporter.RouteCondition) bool) {
+			return ctx, func(yield func(AgwRoute, *reporter.RouteCondition) bool) {
 				for n, r := range route.Rules {
 					// Convert the entire rule with all matches at once
-					res, err := convertGRPCRouteToADP(ctx, r, obj, n)
-					if !yield(ADPRoute{Route: res}, err) {
+					res, err := convertGRPCRouteToAgw(ctx, r, obj, n)
+					if !yield(AgwRoute{Route: res}, err) {
 						return
 					}
 				}
 			}
 		})
 
-	tcpRoutes := createTCPRouteCollection(tcpRouteCol, inputs, krtopts, "ADPTCPRoutes",
-		func(ctx RouteContext, obj *gwv1alpha2.TCPRoute, rep reporter.Reporter) (RouteContext, iter.Seq2[ADPTCPRoute, *reporter.RouteCondition]) {
+	tcpRoutes := createTCPRouteCollection(tcpRouteCol, inputs, krtopts, "AgwTCPRoutes",
+		func(ctx RouteContext, obj *gwv1alpha2.TCPRoute, rep reporter.Reporter) (RouteContext, iter.Seq2[AgwTCPRoute, *reporter.RouteCondition]) {
 			route := obj.Spec
-			return ctx, func(yield func(ADPTCPRoute, *reporter.RouteCondition) bool) {
+			return ctx, func(yield func(AgwTCPRoute, *reporter.RouteCondition) bool) {
 				for n, r := range route.Rules {
 					// Convert the entire rule with all matches at once
-					res, err := convertTCPRouteToADP(ctx, r, obj, n)
-					if !yield(ADPTCPRoute{TCPRoute: res}, err) {
+					res, err := convertTCPRouteToAgw(ctx, r, obj, n)
+					if !yield(AgwTCPRoute{TCPRoute: res}, err) {
 						return
 					}
 				}
 			}
 		})
 
-	tlsRoutes := createTCPRouteCollection(tlsRouteCol, inputs, krtopts, "ADPTLSRoutes",
-		func(ctx RouteContext, obj *gwv1alpha2.TLSRoute, rep reporter.Reporter) (RouteContext, iter.Seq2[ADPTCPRoute, *reporter.RouteCondition]) {
+	tlsRoutes := createTCPRouteCollection(tlsRouteCol, inputs, krtopts, "AgwTLSRoutes",
+		func(ctx RouteContext, obj *gwv1alpha2.TLSRoute, rep reporter.Reporter) (RouteContext, iter.Seq2[AgwTCPRoute, *reporter.RouteCondition]) {
 			route := obj.Spec
-			return ctx, func(yield func(ADPTCPRoute, *reporter.RouteCondition) bool) {
+			return ctx, func(yield func(AgwTCPRoute, *reporter.RouteCondition) bool) {
 				for n, r := range route.Rules {
 					// Convert the entire rule with all matches at once
-					res, err := convertTLSRouteToADP(ctx, r, obj, n)
-					if !yield(ADPTCPRoute{TCPRoute: res}, err) {
+					res, err := convertTLSRouteToAgw(ctx, r, obj, n)
+					if !yield(AgwTCPRoute{TCPRoute: res}, err) {
 						return
 					}
 				}
 			}
 		})
 
-	routes := krt.JoinCollection([]krt.Collection[agwir.ADPResourcesForGateway]{httpRoutes, grpcRoutes, tcpRoutes, tlsRoutes}, krtopts.ToOptions("ADPRoutes")...)
+	routes := krt.JoinCollection([]krt.Collection[agwir.AgwResourcesForGateway]{httpRoutes, grpcRoutes, tcpRoutes, tlsRoutes}, krtopts.ToOptions("AgwRoutes")...)
 
 	return routes
 }
@@ -304,8 +304,8 @@ func createRouteCollectionGeneric[T controllers.Object, R comparable](
 	collectionName string,
 	translator func(ctx RouteContext, obj T, rep reporter.Reporter) (RouteContext, iter.Seq2[R, *reporter.RouteCondition]),
 	resourceTransformer func(route R, parent routeParentReference) *api.Resource,
-) krt.Collection[agwir.ADPResourcesForGateway] {
-	return krt.NewManyCollection(routeCol, func(krtctx krt.HandlerContext, obj T) []agwir.ADPResourcesForGateway {
+) krt.Collection[agwir.AgwResourcesForGateway] {
+	return krt.NewManyCollection(routeCol, func(krtctx krt.HandlerContext, obj T) []agwir.AgwResourcesForGateway {
 		logger.Debug("translating route", "route_name", obj.GetName(), "resource_version", obj.GetResourceVersion())
 
 		ctx := inputs.WithCtx(krtctx)
@@ -335,7 +335,7 @@ func createRouteCollectionGeneric[T controllers.Object, R comparable](
 			resourceTransformer,
 		)
 
-		var results []agwir.ADPResourcesForGateway
+		var results []agwir.AgwResourcesForGateway
 		allRelevantGateways := make(map[types.NamespacedName]struct{})
 
 		// Collect all relevant gateways
@@ -369,15 +369,15 @@ func createRouteCollection[T controllers.Object](
 	inputs RouteContextInputs,
 	krtopts krtinternal.KrtOptions,
 	collectionName string,
-	translator func(ctx RouteContext, obj T, rep reporter.Reporter) (RouteContext, iter.Seq2[ADPRoute, *reporter.RouteCondition]),
-) krt.Collection[agwir.ADPResourcesForGateway] {
+	translator func(ctx RouteContext, obj T, rep reporter.Reporter) (RouteContext, iter.Seq2[AgwRoute, *reporter.RouteCondition]),
+) krt.Collection[agwir.AgwResourcesForGateway] {
 	return createRouteCollectionGeneric(
 		routeCol,
 		inputs,
 		krtopts,
 		collectionName,
 		translator,
-		func(e ADPRoute, parent routeParentReference) *api.Resource {
+		func(e AgwRoute, parent routeParentReference) *api.Resource {
 			inner := protomarshal.Clone(e.Route)
 			_, name, _ := strings.Cut(parent.InternalName, "/")
 			inner.ListenerKey = name
@@ -386,7 +386,7 @@ func createRouteCollection[T controllers.Object](
 			} else {
 				inner.Key = inner.GetKey()
 			}
-			return toADPResource(ADPRoute{Route: inner})
+			return toAgwResource(AgwRoute{Route: inner})
 		},
 	)
 }
@@ -397,18 +397,18 @@ func createTCPRouteCollection[T controllers.Object](
 	inputs RouteContextInputs,
 	krtopts krtinternal.KrtOptions,
 	collectionName string,
-	translator func(ctx RouteContext, obj T, rep reporter.Reporter) (RouteContext, iter.Seq2[ADPTCPRoute, *reporter.RouteCondition]),
-) krt.Collection[agwir.ADPResourcesForGateway] {
+	translator func(ctx RouteContext, obj T, rep reporter.Reporter) (RouteContext, iter.Seq2[AgwTCPRoute, *reporter.RouteCondition]),
+) krt.Collection[agwir.AgwResourcesForGateway] {
 	return createRouteCollectionGeneric(
 		routeCol,
 		inputs,
 		krtopts,
 		collectionName,
 		translator,
-		func(e ADPTCPRoute, parent routeParentReference) *api.Resource {
+		func(e AgwTCPRoute, parent routeParentReference) *api.Resource {
 			// TCP route wrapper doesn't expose a `Route` field like HTTP.
 			// For TCP we don't mutate ListenerKey/Key here; just pass through.
-			return toADPResource(e)
+			return toAgwResource(e)
 		},
 	)
 }
@@ -494,7 +494,7 @@ type RouteContext struct {
 	Krt krt.HandlerContext
 	RouteContextInputs
 	AttachedPolicies pluginsdkir.AttachedPolicies
-	pluginPasses     []agwir.AgentGatewayTranslationPass
+	pluginPasses     []agwir.AgwTranslationPass
 }
 
 type RouteContextInputs struct {

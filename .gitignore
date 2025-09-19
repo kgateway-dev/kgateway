@@ -4,6 +4,7 @@ _test
 .vscode
 *.code-workspace
 .venv
+.cursor
 
 # ignore local pollution from kind setup script
 docker-local

@@ -276,13 +276,11 @@ func TestBuildAIBackendIr(t *testing.T) {
 					Type: v1alpha1.BackendTypeAI,
 					AI: &v1alpha1.AIBackend{
 						LLM: &v1alpha1.LLMProvider{
-							Provider: v1alpha1.SupportedLLMProvider{
-								OpenAI: &v1alpha1.OpenAIConfig{
-									Model: stringPtr("gpt-4"),
-									AuthToken: v1alpha1.SingleAuthToken{
-										Kind:   v1alpha1.Inline,
-										Inline: stringPtr("sk-test-token"),
-									},
+							OpenAI: &v1alpha1.OpenAIConfig{
+								Model: stringPtr("gpt-4"),
+								AuthToken: v1alpha1.SingleAuthToken{
+									Kind:   v1alpha1.Inline,
+									Inline: stringPtr("sk-test-token"),
 								},
 							},
 						},
@@ -318,13 +316,11 @@ func TestBuildAIBackendIr(t *testing.T) {
 					Type: v1alpha1.BackendTypeAI,
 					AI: &v1alpha1.AIBackend{
 						LLM: &v1alpha1.LLMProvider{
-							Provider: v1alpha1.SupportedLLMProvider{
-								Anthropic: &v1alpha1.AnthropicConfig{
-									Model: stringPtr("claude-3-sonnet"),
-									AuthToken: v1alpha1.SingleAuthToken{
-										Kind:   v1alpha1.Inline,
-										Inline: stringPtr("test-api-key"),
-									},
+							Anthropic: &v1alpha1.AnthropicConfig{
+								Model: stringPtr("claude-3-sonnet"),
+								AuthToken: v1alpha1.SingleAuthToken{
+									Kind:   v1alpha1.Inline,
+									Inline: stringPtr("test-api-key"),
 								},
 							},
 						},
@@ -360,13 +356,11 @@ func TestBuildAIBackendIr(t *testing.T) {
 					Type: v1alpha1.BackendTypeAI,
 					AI: &v1alpha1.AIBackend{
 						LLM: &v1alpha1.LLMProvider{
-							Provider: v1alpha1.SupportedLLMProvider{
-								Gemini: &v1alpha1.GeminiConfig{
-									Model: "gemini-pro",
-									AuthToken: v1alpha1.SingleAuthToken{
-										Kind:   v1alpha1.Inline,
-										Inline: stringPtr("gemini-api-key"),
-									},
+							Gemini: &v1alpha1.GeminiConfig{
+								Model: "gemini-pro",
+								AuthToken: v1alpha1.SingleAuthToken{
+									Kind:   v1alpha1.Inline,
+									Inline: stringPtr("gemini-api-key"),
 								},
 							},
 						},
@@ -402,12 +396,10 @@ func TestBuildAIBackendIr(t *testing.T) {
 					Type: v1alpha1.BackendTypeAI,
 					AI: &v1alpha1.AIBackend{
 						LLM: &v1alpha1.LLMProvider{
-							Provider: v1alpha1.SupportedLLMProvider{
-								VertexAI: &v1alpha1.VertexAIConfig{
-									Model: "gemini-pro",
-									AuthToken: v1alpha1.SingleAuthToken{
-										Kind: v1alpha1.Passthrough,
-									},
+							VertexAI: &v1alpha1.VertexAIConfig{
+								Model: "gemini-pro",
+								AuthToken: v1alpha1.SingleAuthToken{
+									Kind: v1alpha1.Passthrough,
 								},
 							},
 						},
@@ -445,19 +437,17 @@ func TestBuildAIBackendIr(t *testing.T) {
 					Type: v1alpha1.BackendTypeAI,
 					AI: &v1alpha1.AIBackend{
 						LLM: &v1alpha1.LLMProvider{
-							Provider: v1alpha1.SupportedLLMProvider{
-								Bedrock: &v1alpha1.BedrockConfig{
-									Model:  "anthropic.claude-3-haiku-20240307-v1:0",
-									Region: "eu-west-1",
-									Guardrail: &v1alpha1.AWSGuardrailConfig{
-										GuardrailIdentifier: "test-guardrail",
-										GuardrailVersion:    "1.0",
-									},
-									Auth: &v1alpha1.AwsAuth{
-										Type: v1alpha1.AwsAuthTypeSecret,
-										SecretRef: &corev1.LocalObjectReference{
-											Name: "aws-secret-custom",
-										},
+							Bedrock: &v1alpha1.BedrockConfig{
+								Model:  "anthropic.claude-3-haiku-20240307-v1:0",
+								Region: "eu-west-1",
+								Guardrail: &v1alpha1.AWSGuardrailConfig{
+									GuardrailIdentifier: "test-guardrail",
+									GuardrailVersion:    "1.0",
+								},
+								Auth: &v1alpha1.AwsAuth{
+									Type: v1alpha1.AwsAuthTypeSecret,
+									SecretRef: &corev1.LocalObjectReference{
+										Name: "aws-secret-custom",
 									},
 								},
 							},
@@ -504,14 +494,12 @@ func TestBuildAIBackendIr(t *testing.T) {
 					Type: v1alpha1.BackendTypeAI,
 					AI: &v1alpha1.AIBackend{
 						LLM: &v1alpha1.LLMProvider{
-							Provider: v1alpha1.SupportedLLMProvider{
-								OpenAI: &v1alpha1.OpenAIConfig{
-									Model: stringPtr("gpt-3.5-turbo"),
-									AuthToken: v1alpha1.SingleAuthToken{
-										Kind: v1alpha1.SecretRef,
-										SecretRef: &corev1.LocalObjectReference{
-											Name: "openai-secret",
-										},
+							OpenAI: &v1alpha1.OpenAIConfig{
+								Model: stringPtr("gpt-3.5-turbo"),
+								AuthToken: v1alpha1.SingleAuthToken{
+									Kind: v1alpha1.SecretRef,
+									SecretRef: &corev1.LocalObjectReference{
+										Name: "openai-secret",
 									},
 								},
 							},
@@ -544,30 +532,24 @@ func TestBuildAIBackendIr(t *testing.T) {
 				Spec: v1alpha1.BackendSpec{
 					Type: v1alpha1.BackendTypeAI,
 					AI: &v1alpha1.AIBackend{
-						MultiPool: &v1alpha1.MultiPoolConfig{
-							Priorities: []v1alpha1.Priority{
-								{
-									Pool: []v1alpha1.LLMProvider{
-										{
-											Provider: v1alpha1.SupportedLLMProvider{
-												OpenAI: &v1alpha1.OpenAIConfig{
-													Model: stringPtr("gpt-4"),
-													AuthToken: v1alpha1.SingleAuthToken{
-														Kind:   v1alpha1.Inline,
-														Inline: stringPtr("first-token"),
-													},
-												},
+						PriorityGroups: []v1alpha1.PriorityGroup{
+							{
+								Providers: []v1alpha1.LLMProvider{
+									{
+										OpenAI: &v1alpha1.OpenAIConfig{
+											Model: stringPtr("gpt-4"),
+											AuthToken: v1alpha1.SingleAuthToken{
+												Kind:   v1alpha1.Inline,
+												Inline: stringPtr("first-token"),
 											},
 										},
-										{
-											Provider: v1alpha1.SupportedLLMProvider{
-												Anthropic: &v1alpha1.AnthropicConfig{
-													Model: stringPtr("claude-3"),
-													AuthToken: v1alpha1.SingleAuthToken{
-														Kind:   v1alpha1.Inline,
-														Inline: stringPtr("second-token"),
-													},
-												},
+									},
+									{
+										Anthropic: &v1alpha1.AnthropicConfig{
+											Model: stringPtr("claude-3"),
+											AuthToken: v1alpha1.SingleAuthToken{
+												Kind:   v1alpha1.Inline,
+												Inline: stringPtr("second-token"),
 											},
 										},
 									},
@@ -624,45 +606,37 @@ func TestBuildAIBackendIr(t *testing.T) {
 				Spec: v1alpha1.BackendSpec{
 					Type: v1alpha1.BackendTypeAI,
 					AI: &v1alpha1.AIBackend{
-						MultiPool: &v1alpha1.MultiPoolConfig{
-							Priorities: []v1alpha1.Priority{
-								{
-									Pool: []v1alpha1.LLMProvider{
-										{
-											Provider: v1alpha1.SupportedLLMProvider{
-												OpenAI: &v1alpha1.OpenAIConfig{
-													Model: stringPtr("gpt-4"),
-													AuthToken: v1alpha1.SingleAuthToken{
-														Kind:   v1alpha1.Inline,
-														Inline: stringPtr("openai-primary"),
-													},
-												},
+						PriorityGroups: []v1alpha1.PriorityGroup{
+							{
+								Providers: []v1alpha1.LLMProvider{
+									{
+										OpenAI: &v1alpha1.OpenAIConfig{
+											Model: stringPtr("gpt-4"),
+											AuthToken: v1alpha1.SingleAuthToken{
+												Kind:   v1alpha1.Inline,
+												Inline: stringPtr("openai-primary"),
 											},
 										},
-										{
-											Provider: v1alpha1.SupportedLLMProvider{
-												Anthropic: &v1alpha1.AnthropicConfig{
-													Model: stringPtr("claude-3-opus"),
-													AuthToken: v1alpha1.SingleAuthToken{
-														Kind:   v1alpha1.Inline,
-														Inline: stringPtr("anthropic-primary"),
-													},
-												},
+									},
+									{
+										Anthropic: &v1alpha1.AnthropicConfig{
+											Model: stringPtr("claude-3-opus"),
+											AuthToken: v1alpha1.SingleAuthToken{
+												Kind:   v1alpha1.Inline,
+												Inline: stringPtr("anthropic-primary"),
 											},
 										},
 									},
 								},
-								{
-									Pool: []v1alpha1.LLMProvider{
-										{
-											Provider: v1alpha1.SupportedLLMProvider{
-												Gemini: &v1alpha1.GeminiConfig{
-													Model: "gemini-pro",
-													AuthToken: v1alpha1.SingleAuthToken{
-														Kind:   v1alpha1.Inline,
-														Inline: stringPtr("gemini-fallback"),
-													},
-												},
+							},
+							{
+								Providers: []v1alpha1.LLMProvider{
+									{
+										Gemini: &v1alpha1.GeminiConfig{
+											Model: "gemini-pro",
+											AuthToken: v1alpha1.SingleAuthToken{
+												Kind:   v1alpha1.Inline,
+												Inline: stringPtr("gemini-fallback"),
 											},
 										},
 									},
@@ -729,10 +703,8 @@ func TestBuildAIBackendIr(t *testing.T) {
 				},
 				Spec: v1alpha1.BackendSpec{
 					Type: v1alpha1.BackendTypeAI,
-					AI: &v1alpha1.AIBackend{
-						LLM:       nil,
-						MultiPool: nil,
-					},
+					// no LLM backend specified
+					AI: &v1alpha1.AIBackend{},
 				},
 			},
 			secrets:     nil,
@@ -748,9 +720,7 @@ func TestBuildAIBackendIr(t *testing.T) {
 				Spec: v1alpha1.BackendSpec{
 					Type: v1alpha1.BackendTypeAI,
 					AI: &v1alpha1.AIBackend{
-						MultiPool: &v1alpha1.MultiPoolConfig{
-							Priorities: []v1alpha1.Priority{},
-						},
+						PriorityGroups: []v1alpha1.PriorityGroup{},
 					},
 				},
 			},
@@ -768,9 +738,7 @@ func TestBuildAIBackendIr(t *testing.T) {
 					Type: v1alpha1.BackendTypeAI,
 					AI: &v1alpha1.AIBackend{
 						LLM: &v1alpha1.LLMProvider{
-							Provider: v1alpha1.SupportedLLMProvider{
-								// No providers configured
-							},
+							// No provider configured
 						},
 					},
 				},

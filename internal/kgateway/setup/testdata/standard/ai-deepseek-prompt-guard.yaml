@@ -24,15 +24,13 @@ spec:
   type: AI
   ai:
     llm:
-      hostOverride:
-        host: ollama-deepseek-r1.ollama.svc.cluster.local
-        port: 11434
-      provider:
-        openai:
-          authToken:
-            kind: "SecretRef"
-            secretRef:
-              name: deepseek-secret
+      host: ollama-deepseek-r1.ollama.svc.cluster.local
+      port: 11434
+      openai:
+        authToken:
+          kind: "SecretRef"
+          secretRef:
+            name: deepseek-secret
 ---
 apiVersion: v1
 kind: Secret

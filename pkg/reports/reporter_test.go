@@ -47,7 +47,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 		It("should preserve conditions set externally", func() {
 			gw := gw()
 			gw.Status.Conditions = append(gw.Status.Conditions, metav1.Condition{
-				Type:   "gloo.solo.io/SomeCondition",
+				Type:   "gateway.kgateway.dev/SomeCondition",
 				Status: metav1.ConditionFalse,
 			})
 			rm := reports.NewReportMap()
@@ -545,7 +545,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 		It("should preserve conditions set externally", func() {
 			ls := ls()
 			meta.SetStatusCondition(&ls.Status.Conditions, metav1.Condition{
-				Type:   "gloo.solo.io/SomeCondition",
+				Type:   "gateway.kgateway.dev/SomeCondition",
 				Status: metav1.ConditionFalse,
 			})
 			rm := reports.NewReportMap()

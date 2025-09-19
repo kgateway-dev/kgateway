@@ -20,6 +20,7 @@ import (
 	api "sigs.k8s.io/gateway-api/apis/v1"
 	apixv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/settings"
 	gw2_v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
@@ -28,7 +29,6 @@ import (
 	common "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
-	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 )
 
 const (
@@ -299,7 +299,7 @@ func defaultInputs(t *testing.T, objs ...client.Object) *deployer.Inputs {
 		},
 		GatewayClassName:         wellknown.DefaultGatewayClassName,
 		WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-		AgentGatewayClassName:    wellknown.DefaultAgentGatewayClassName,
+		AgentgatewayClassName:    wellknown.DefaultAgwClassName,
 	}
 }
 
