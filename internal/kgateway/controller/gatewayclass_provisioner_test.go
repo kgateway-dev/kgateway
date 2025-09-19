@@ -229,6 +229,7 @@ var _ = Describe("GatewayClassProvisioner", func() {
 					Annotations: map[string]string{
 						"custom.annotation": "value",
 					},
+					ControllerName: gatewayControllerName,
 				},
 			}
 

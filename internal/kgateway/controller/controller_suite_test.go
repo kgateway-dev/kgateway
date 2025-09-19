@@ -251,10 +251,11 @@ func createManager(
 				Name:      selfManagedGatewayClassName,
 				Namespace: ptr.To(apiv1.Namespace("default")),
 			},
+			ControllerName: gatewayControllerName,
 		}
 	}
 
-	if err := controller.NewGatewayClassProvisioner(mgr, gatewayControllerName, agwControllerName, wellknown.DefaultAgwClassName, classConfigs); err != nil {
+	if err := controller.NewGatewayClassProvisioner(mgr, gatewayControllerName, classConfigs); err != nil {
 		cancel()
 		return nil, err
 	}

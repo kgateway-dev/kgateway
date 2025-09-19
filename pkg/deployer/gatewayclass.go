@@ -12,4 +12,6 @@ type GatewayClassInfo struct {
 	Annotations map[string]string
 	// ParametersRef is the reference to the GatewayParameters object.
 	ParametersRef *apiv1.ParametersReference
+	// ControllerName is the name of the controller that is managing the GatewayClass.
+	ControllerName string
 }
