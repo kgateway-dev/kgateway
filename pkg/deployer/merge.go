@@ -715,6 +715,8 @@ func deepMergeDeployment(dst, src *v1alpha1.ProxyDeployment) *v1alpha1.ProxyDepl
 		// (dst.Replicas and dst.OmitReplicas remain unchanged)
 	}
 
+	dst.Strategy = MergePointers(dst.Strategy, src.Strategy)
+
 	return dst
 }
 

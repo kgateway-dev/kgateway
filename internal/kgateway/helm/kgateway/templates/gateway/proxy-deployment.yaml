@@ -15,6 +15,10 @@ spec:
   selector:
     matchLabels:
       {{- include "kgateway.gateway.selectorLabels" . | nindent 6 }}
+  {{- with $gateway.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   template:
     metadata:
       annotations:

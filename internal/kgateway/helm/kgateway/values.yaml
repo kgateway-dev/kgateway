@@ -21,6 +21,9 @@ gateway:
   image:
     pullPolicy: IfNotPresent
 
+  # rollout strategy of the proxy's Deployment
+  strategy: {}
+
   istio:
     enabled: false
 

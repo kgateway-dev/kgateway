@@ -16,13 +16,13 @@ import (
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
-	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	translatortest "github.com/kgateway-dev/kgateway/v2/test/translator"
 )
@@ -204,18 +204,6 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "http-with-header-modifier",
 			outputFile: "http-with-header-modifier-proxy.yaml",
-			gwNN: types.NamespacedName{
-				Namespace: "default",
-				Name:      "gw",
-			},
-		})
-	})
-
-	t.Run("http gateway with azure destination", func(t *testing.T) {
-		t.Skip("TODO: enable this test when ready")
-		test(t, translatorTestCase{
-			inputFile:  "http-with-azure-destination",
-			outputFile: "http-with-azure-destination-proxy.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "gw",

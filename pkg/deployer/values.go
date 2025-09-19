@@ -1,6 +1,7 @@
 package deployer
 
 import (
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -23,10 +24,11 @@ type HelmGateway struct {
 	FullnameOverride *string `json:"fullnameOverride,omitempty"`
 
 	// deployment/service values
-	ReplicaCount   *uint32      `json:"replicaCount,omitempty"`
-	Ports          []HelmPort   `json:"ports,omitempty"`
-	Service        *HelmService `json:"service,omitempty"`
-	FloatingUserId *bool        `json:"floatingUserId,omitempty"`
+	ReplicaCount   *uint32                    `json:"replicaCount,omitempty"`
+	Ports          []HelmPort                 `json:"ports,omitempty"`
+	Service        *HelmService               `json:"service,omitempty"`
+	FloatingUserId *bool                      `json:"floatingUserId,omitempty"`
+	Strategy       *appsv1.DeploymentStrategy `json:"strategy,omitempty"`
 
 	// serviceaccount values
 	ServiceAccount *HelmServiceAccount `json:"serviceAccount,omitempty"`

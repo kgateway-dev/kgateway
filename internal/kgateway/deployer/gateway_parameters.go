@@ -364,6 +364,7 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 		// Use the specified replica count
 		gateway.ReplicaCount = deployConfig.GetReplicas()
 	}
+	gateway.Strategy = deployConfig.GetStrategy()
 
 	// service values
 	gateway.Service = deployer.GetServiceValues(svcConfig)

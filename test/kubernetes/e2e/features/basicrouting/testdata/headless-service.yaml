@@ -3,6 +3,7 @@ kind: Service
 metadata:
   name: example-svc
 spec:
+  clusterIP: None
   selector:
     app.kubernetes.io/name: nginx
   ports:

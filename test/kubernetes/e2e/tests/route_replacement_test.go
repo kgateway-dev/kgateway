@@ -1,12 +1,9 @@
-//go:build ignore
-
 package tests_test
 
 import (
 	"context"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
@@ -15,19 +12,20 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
-func TestWatchNamespaceSelector(t *testing.T) {
+func TestRouteReplacement(t *testing.T) {
 	ctx := context.Background()
-	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "namespace-selector")
+	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "route-replacement-test")
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&install.Context{
 			InstallNamespace:          installNs,
 			ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
-			ValuesManifestFile:        e2e.ManifestPath("watch-namespace-selector.yaml"),
+			ValuesManifestFile:        e2e.EmptyValuesManifestPath,
+			ExtraHelmArgs: []string{
+				"--set", "controller.extraEnv.KGW_ROUTE_REPLACEMENT_MODE=STRICT",
+			},
 		},
 	)
-
-	testHelper := e2e.MustTestHelper(ctx, testInstallation)
 
 	// Set the env to the install namespace if it is not already set
 	if !nsEnvPredefined {
@@ -35,7 +33,7 @@ func TestWatchNamespaceSelector(t *testing.T) {
 	}
 
 	// We register the cleanup function _before_ we actually perform the installation.
-	// This allows us to uninstall Gloo Gateway, in case the original installation only completed partially
+	// This allows us to uninstall kgateway, in case the original installation only completed partially
 	t.Cleanup(func() {
 		if !nsEnvPredefined {
 			os.Unsetenv(testutils.InstallNamespace)
@@ -44,11 +42,11 @@ func TestWatchNamespaceSelector(t *testing.T) {
 			testInstallation.PreFailHandler(ctx)
 		}
 
-		testInstallation.UninstallGlooGatewayWithTestHelper(ctx, testHelper)
+		testInstallation.UninstallKgateway(ctx)
 	})
 
-	// Install Gloo Gateway with correct validation settings
-	testInstallation.InstallGlooGatewayWithTestHelper(ctx, testHelper, 5*time.Minute)
+	// Install kgateway
+	testInstallation.InstallKgatewayFromLocalChart(ctx)
 
-	WatchNamespaceSelectorSuiteRunner().Run(ctx, t, testInstallation)
+	RouteReplacementSuiteRunner().Run(ctx, t, testInstallation)
 }
