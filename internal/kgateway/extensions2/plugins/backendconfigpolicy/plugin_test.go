@@ -25,7 +25,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
 
-func TestBackendConfigPolicyFlow(t *testing.T) {
+func TestBackendConfigPolicyTranslation(t *testing.T) {
 	tests := []struct {
 		name    string
 		policy  *v1alpha1.BackendConfigPolicy
@@ -241,12 +241,12 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// First translate the policy
-			policyIR, err := translate(nil, nil, tt.policy)
+			policyIR, errs := translate(nil, nil, tt.policy)
 			if tt.wantErr {
-				assert.Error(t, err)
+				assert.NotEmpty(t, errs)
 				return
 			}
-			require.NoError(t, err)
+			require.Empty(t, errs)
 
 			// Then process the backend with the translated policy
 			cluster := tt.cluster
@@ -263,7 +263,7 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 	}
 }
 
-// Helper function to handle MessageToAny error in test cases
+// mustMessageToAny is a helper function to handle MessageToAny error in test cases
 func mustMessageToAny(t *testing.T, msg proto.Message) *anypb.Any {
 	a, err := utils.MessageToAny(msg)
 	require.NoError(t, err, "failed to convert message to Any")

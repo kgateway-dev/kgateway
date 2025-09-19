@@ -92,6 +92,6 @@ func Plugins(
 		serviceentry.NewPlugin(ctx, commoncol),
 		waypoint.NewPlugin(ctx, commoncol, waypointGatewayClassName),
 		sandwich.NewPlugin(),
-		backendconfigpolicy.NewPlugin(ctx, commoncol),
+		backendconfigpolicy.NewPlugin(ctx, commoncol, validator),
 	}
 }

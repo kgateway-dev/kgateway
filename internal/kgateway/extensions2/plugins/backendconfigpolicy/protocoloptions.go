@@ -79,7 +79,7 @@ func translateHttp2ProtocolOptions(http2ProtocolOptions *v1alpha1.Http2ProtocolO
 	return out
 }
 
-func applyCommonHttpProtocolOptions(commonHttpProtocolOptions *envoycorev3.HttpProtocolOptions, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
+func applyCommonHttpProtocolOptions(commonHttpProtocolOptions *envoycorev3.HttpProtocolOptions, _ ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
 	if commonHttpProtocolOptions == nil {
 		return
 	}

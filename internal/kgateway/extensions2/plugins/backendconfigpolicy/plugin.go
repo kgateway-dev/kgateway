@@ -29,6 +29,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
 const PreserveCasePlugin = "envoy.http.stateful_header_formatters.preserve_case"
@@ -123,31 +124,29 @@ func registerTypes(ourCli versioned.Interface) {
 	)
 }
 
-func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
+func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v validator.Validator) sdk.Plugin {
 	registerTypes(commoncol.OurClient)
 	col := krt.WrapClient(kclient.NewFiltered[*v1alpha1.BackendConfigPolicy](
 		commoncol.Client,
 		kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()},
 	), commoncol.KrtOpts.ToOptions("BackendConfigPolicy")...)
 	backendConfigPolicyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, b *v1alpha1.BackendConfigPolicy) *ir.PolicyWrapper {
-		objSrc := ir.ObjectSource{
-			Group:     wellknown.BackendConfigPolicyGVK.Group,
-			Kind:      wellknown.BackendConfigPolicyGVK.Kind,
-			Namespace: b.Namespace,
-			Name:      b.Name,
-		}
-
-		policyIR, err := translate(commoncol, krtctx, b)
-		errs := []error{}
-		if err != nil {
+		policyIR, errs := translate(commoncol, krtctx, b)
+		if err := validateXDS(ctx, policyIR, v, commoncol.Settings.RouteReplacementMode); err != nil {
 			errs = append(errs, err)
 		}
+
 		return &ir.PolicyWrapper{
-			ObjectSource: objSrc,
-			Policy:       b,
-			PolicyIR:     policyIR,
-			TargetRefs:   pluginsdkutils.TargetRefsToPolicyRefs(b.Spec.TargetRefs, b.Spec.TargetSelectors),
-			Errors:       errs,
+			ObjectSource: ir.ObjectSource{
+				Group:     wellknown.BackendConfigPolicyGVK.Group,
+				Kind:      wellknown.BackendConfigPolicyGVK.Kind,
+				Namespace: b.Namespace,
+				Name:      b.Name,
+			},
+			Policy:     b,
+			PolicyIR:   policyIR,
+			TargetRefs: pluginsdkutils.TargetRefsToPolicyRefs(b.Spec.TargetRefs, b.Spec.TargetSelectors),
+			Errors:     errs,
 		}
 	}, commoncol.KrtOpts.ToOptions("BackendConfigPolicyIRs")...)
 	return sdk.Plugin{
@@ -208,7 +207,12 @@ func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObje
 	}
 }
 
-func translate(commoncol *collections.CommonCollections, krtctx krt.HandlerContext, pol *v1alpha1.BackendConfigPolicy) (*BackendConfigPolicyIR, error) {
+func translate(
+	commoncol *collections.CommonCollections,
+	krtctx krt.HandlerContext,
+	pol *v1alpha1.BackendConfigPolicy,
+) (*BackendConfigPolicyIR, []error) {
+	var errs []error
 	ir := BackendConfigPolicyIR{
 		ct: pol.CreationTimestamp.Time,
 	}
@@ -230,7 +234,7 @@ func translate(commoncol *collections.CommonCollections, krtctx krt.HandlerConte
 	if pol.Spec.Http1ProtocolOptions != nil {
 		http1ProtocolOptions, err := translateHttp1ProtocolOptions(pol.Spec.Http1ProtocolOptions)
 		if err != nil {
-			return &ir, err
+			errs = append(errs, err)
 		}
 		ir.http1ProtocolOptions = http1ProtocolOptions
 	}
@@ -242,7 +246,7 @@ func translate(commoncol *collections.CommonCollections, krtctx krt.HandlerConte
 	if pol.Spec.TLS != nil {
 		tlsConfig, err := translateTLSConfig(NewDefaultSecretGetter(commoncol.Secrets, krtctx), pol.Spec.TLS, pol.Namespace)
 		if err != nil {
-			return &ir, err
+			errs = append(errs, err)
 		}
 		ir.tlsConfig = tlsConfig
 	}
@@ -250,7 +254,7 @@ func translate(commoncol *collections.CommonCollections, krtctx krt.HandlerConte
 	if pol.Spec.LoadBalancer != nil {
 		loadBalancerConfig, err := translateLoadBalancerConfig(pol.Spec.LoadBalancer, pol.Name, pol.Namespace)
 		if err != nil {
-			return &ir, err
+			errs = append(errs, err)
 		}
 		ir.loadBalancerConfig = loadBalancerConfig
 	}
@@ -263,7 +267,7 @@ func translate(commoncol *collections.CommonCollections, krtctx krt.HandlerConte
 		ir.outlierDetection = translateOutlierDetection(pol.Spec.OutlierDetection)
 	}
 
-	return &ir, nil
+	return &ir, errs
 }
 
 func translateTCPKeepalive(tcpKeepalive *v1alpha1.TCPKeepalive) *envoycorev3.TcpKeepalive {

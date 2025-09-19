@@ -198,7 +198,8 @@ func applyLoadBalancerConfig(config *LoadBalancerConfigIR, out *envoyclusterv3.C
 	}
 
 	if config.useHostnameForHashing && out.GetType() != envoyclusterv3.Cluster_STRICT_DNS {
-		logger.Error("useHostnameForHashing is only supported for STRICT_DNS clusters. Ignoring useHostnameForHashing.", "cluster", out.GetName())
+		logger.Error("useHostnameForHashing is only supported for STRICT_DNS clusters. Ignoring useHostnameForHashing.",
+			"cluster", out.GetName())
 		if config.loadBalancingPolicy != nil && len(config.loadBalancingPolicy.Policies) > 0 {
 			typedCfg := config.loadBalancingPolicy.Policies[0].GetTypedExtensionConfig()
 			disableUseHostnameForHashingIfPresent(typedCfg)

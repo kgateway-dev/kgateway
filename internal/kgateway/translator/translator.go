@@ -81,6 +81,8 @@ func (s *CombinedTranslator) Init(ctx context.Context) {
 		ContributedBackends: make(map[schema.GroupKind]ir.BackendInit),
 		ContributedPolicies: s.extensions.ContributesPolicies,
 		CommonCols:          s.commonCols,
+		Validator:           s.validator,
+		Mode:                s.commonCols.Settings.RouteReplacementMode,
 	}
 	for k, up := range s.extensions.ContributesBackends {
 		s.backendTranslator.ContributedBackends[k] = up.BackendInit
@@ -124,7 +126,7 @@ func (s *CombinedTranslator) buildProxy(kctx krt.HandlerContext, ctx context.Con
 	return proxy
 }
 
-func (s *CombinedTranslator) GetUpstreamTranslator() *irtranslator.BackendTranslator {
+func (s *CombinedTranslator) GetBackendTranslator() *irtranslator.BackendTranslator {
 	return s.backendTranslator
 }
 
