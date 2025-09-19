@@ -107,7 +107,9 @@ func translateLLMProviderToProvider(krtctx krt.HandlerContext, llm *v1alpha1.LLM
 	}
 
 	if llm.Path != nil {
-		provider.PathOverride = &wrappers.StringValue{Value: *llm.Path}
+		if llm.Path.Full != nil {
+			provider.PathOverride = &wrappers.StringValue{Value: *llm.Path.Full}
+		}
 	}
 
 	if llm.AuthHeader != nil {

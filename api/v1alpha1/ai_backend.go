@@ -97,6 +97,7 @@ type LLMProvider struct {
 	AuthHeader *AuthHeader `json:"authHeader,omitempty"`
 }
 
+// PathOverride allows overriding the default URL path used for LLM provider API requests.
 type PathOverride struct {
 	// +kubebuilder:validation:MinLength=1
 	Full *string `json:"full,omitempty"`

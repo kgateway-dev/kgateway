@@ -5897,7 +5897,8 @@ func schema_kgateway_v2_api_v1alpha1_PathOverride(ref common.ReferenceCallback) 
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "PathOverride allows overriding the default URL path used for LLM provider API requests.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"full": {
 						SchemaProps: spec.SchemaProps{
