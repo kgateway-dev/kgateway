@@ -8,5 +8,5 @@ controller:
 inferenceExtension:
   enabled: true
 
-agentGateway:
+agentgateway:
   enabled: true

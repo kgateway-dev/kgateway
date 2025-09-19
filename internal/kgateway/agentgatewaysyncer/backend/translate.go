@@ -26,15 +26,15 @@ const (
 	authPolicyPrefix = "auth"
 )
 
-// BuildAgentGatewayBackendIr translates a Backend to an AgentGatewayBackendIr
-func BuildAgentGatewayBackendIr(
+// BuildAgwBackendIr translates a Backend to an AgwBackendIr
+func BuildAgwBackendIr(
 	krtctx krt.HandlerContext,
 	secrets krt.Collection[*corev1.Secret],
 	services krt.Collection[*corev1.Service],
 	namespaces krt.Collection[*corev1.Namespace],
 	backend *v1alpha1.Backend,
-) *AgentGatewayBackendIr {
-	backendIr := &AgentGatewayBackendIr{}
+) *AgwBackendIr {
+	backendIr := &AgwBackendIr{}
 
 	switch backend.Spec.Type {
 	case v1alpha1.BackendTypeStatic:

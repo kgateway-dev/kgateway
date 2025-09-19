@@ -4,7 +4,7 @@ This syncer configures xds updates for the [agentgateway](https://agentgateway.d
 
 To use the agentgateway control plane with kgateway, you need to enable the integration in the helm chart:
 ```yaml
-agentGateway:
+agentgateway:
   enabled: true # set this to true
 ```
 
@@ -17,7 +17,7 @@ metadata:
   name: kgateway
 spec:
   kube:
-    agentGateway:
+    agentgateway:
       enabled: true
       logLevel: debug
       image:
@@ -154,21 +154,21 @@ Policies are configurable rules that control traffic behavior, security, and tra
 
 ### Architecture
 
-The agentgateway syncer only runs if `cfg.SetupOpts.GlobalSettings.EnableAgentGateway` is set. Otherwise,
+The agentgateway syncer only runs if `cfg.SetupOpts.GlobalSettings.EnableAgentgateway` is set. Otherwise,
 only the Envoy proxy syncer will run by default.
 
 ```mermaid
 flowchart TD
     subgraph "kgateway startup"
         A1["start.go"] --> A2["NewControllerBuilder()"]
-        A2 --> A3{EnableAgentGateway?}
+        A2 --> A3{EnableAgentgateway?}
         A3 -->|true| A4["Create AgentGwSyncer"]
-        A3 -->|false| A5["Skip AgentGateway"]
+        A3 -->|false| A5["Skip Agentgateway"]
     end
 
     subgraph "agentgateway Syncer Initialization"
         A4 --> B1["agentgatewaysyncer.NewAgentGwSyncer()"]
-        B1 --> B2["Set Configuration<br/>• controllerName<br/>• agentGatewayClassName<br/>• domainSuffix<br/>• clusterID"]
+        B1 --> B2["Set Configuration<br/>• controllerName<br/>• agentgatewayClassName<br/>• domainSuffix<br/>• clusterID"]
         B2 --> B3["syncer.Init()<br/>Build KRT Collections"]
     end
 
@@ -207,7 +207,7 @@ flowchart TD
         E1 --> E2["xdsCache.SetSnapshot()<br/>with resource name"]
         E2 --> E3["XDS Server<br/>Serves via gRPC"]
 
-        E3 --> E4["AgentGateway Proxy<br/>Receives & applies config"]
+        E3 --> E4["Agentgateway Proxy<br/>Receives & applies config"]
     end
 
     subgraph "Status"
@@ -244,7 +244,7 @@ Set up a kind cluster and install kgateway with the kubernetes Gateway APIs:
 ```shell
 kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.3.0/standard-install.yaml
 helm upgrade -i --create-namespace --namespace kgateway-system --version v2.1.0-main kgateway-crds oci://cr.kgateway.dev/kgateway-dev/charts/kgateway-crds
-helm upgrade -i --namespace kgateway-system --version v2.1.0-main kgateway oci://cr.kgateway.dev/kgateway-dev/charts/kgateway --set agentGateway.enabled=true --set inferenceExtension.enabled=true
+helm upgrade -i --namespace kgateway-system --version v2.1.0-main kgateway oci://cr.kgateway.dev/kgateway-dev/charts/kgateway --set agentgateway.enabled=true --set inferenceExtension.enabled=true
 ```
 
 #### HTTPRoute

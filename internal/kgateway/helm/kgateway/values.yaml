@@ -21,6 +21,9 @@ gateway:
   image:
     pullPolicy: IfNotPresent
 
+  # rollout strategy of the proxy's Deployment
+  strategy: {}
+
   istio:
     enabled: false
 
@@ -31,7 +34,7 @@ gateway:
     protocol: TCP
     name: http
 
-  agentGateway:
+  agentgateway:
     enabled: false
     logLevel: info
     # Name of the custom configmap to use instead of the default generated one

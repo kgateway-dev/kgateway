@@ -29,20 +29,20 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
-func (s *testingSuite) TestAgentGatewayDeployment() {
+func (s *testingSuite) TestAgentgatewayDeployment() {
 	// modify the default agentgateway GatewayClass to point to the custom GatewayParameters
 	err := s.TestInstallation.Actions.Kubectl().RunCommand(s.Ctx, "patch", "--type", "json",
-		"gatewayclass", wellknown.DefaultAgentGatewayClassName, "-p",
+		"gatewayclass", wellknown.DefaultAgwClassName, "-p",
 		fmt.Sprintf(`[{"op": "add", "path": "/spec/parametersRef", "value": {"group":"%s", "kind":"%s", "name":"%s", "namespace":"%s"}}]`,
 			v1alpha1.GroupName, wellknown.GatewayParametersGVK.Kind, gatewayParamsObjectMeta.GetName(), gatewayParamsObjectMeta.GetNamespace()))
-	s.Require().NoError(err, "patching gatewayclass %s", wellknown.DefaultAgentGatewayClassName)
+	s.Require().NoError(err, "patching gatewayclass %s", wellknown.DefaultAgwClassName)
 
 	s.T().Cleanup(func() {
 		// revert to the original GatewayClass (by removing the parametersRef)
 		err := s.TestInstallation.Actions.Kubectl().RunCommand(s.Ctx, "patch", "--type", "json",
-			"gatewayclass", wellknown.DefaultAgentGatewayClassName, "-p",
+			"gatewayclass", wellknown.DefaultAgwClassName, "-p",
 			`[{"op": "remove", "path": "/spec/parametersRef"}]`)
-		s.Require().NoError(err, "patching gatewayclass %s", wellknown.DefaultAgentGatewayClassName)
+		s.Require().NoError(err, "patching gatewayclass %s", wellknown.DefaultAgwClassName)
 	})
 
 	s.TestInstallation.Assertions.EventuallyGatewayCondition(

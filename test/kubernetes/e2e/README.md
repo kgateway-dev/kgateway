@@ -55,16 +55,6 @@ Some tests may require environment variables to be set. Some required env vars a
 
 - Istio features: Require `ISTIO_VERSION` to be set. The tests running in CI use `ISTIO_VERSION="${ISTIO_VERSION:-1.19.9}"` to default to a specific version of Istio.
 
-## Resource example generation tool
-
-This tool generates the input resources defined in code as an output yaml file. You can find an example under `test/kubernetes/e2e/features/headless_svc/generate/generate_examples.go`.
-
-These examples are run as part of the codegen, but can also be manually run using the following command:
-
-```bash
-go generate <path to the generate.go file>
-```
-
 ## Debugging
 
 Refer to the [Debugging guide](./debugging.md) for more information on how to debug tests.

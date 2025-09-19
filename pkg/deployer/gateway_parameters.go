@@ -20,7 +20,7 @@ type Inputs struct {
 	CommonCollections        *common.CommonCollections
 	GatewayClassName         string
 	WaypointGatewayClassName string
-	AgentGatewayClassName    string
+	AgentgatewayClassName    string
 }
 
 type ExtraGatewayParameters struct {
@@ -99,7 +99,7 @@ func applyFloatingUserId(dstKube *v1alpha1.KubernetesProxyConfig) {
 		dstKube.GetSdsContainer().GetSecurityContext(),
 		dstKube.GetIstio().GetIstioProxyContainer().GetSecurityContext(),
 		dstKube.GetAiExtension().GetSecurityContext(),
-		dstKube.GetAgentGateway().GetSecurityContext(),
+		dstKube.GetAgentgateway().GetSecurityContext(),
 	}
 
 	for _, securityContext := range securityContexts {
@@ -110,24 +110,24 @@ func applyFloatingUserId(dstKube *v1alpha1.KubernetesProxyConfig) {
 }
 
 // GetInMemoryGatewayParameters returns an in-memory GatewayParameters based on the name of the gateway class.
-func GetInMemoryGatewayParameters(name string, imageInfo *ImageInfo, gatewayClassName, waypointClassName, agentGatewayClassName string) *v1alpha1.GatewayParameters {
+func GetInMemoryGatewayParameters(name string, imageInfo *ImageInfo, gatewayClassName, waypointClassName, agentgatewayClassName string) *v1alpha1.GatewayParameters {
 	switch name {
 	case waypointClassName:
 		return defaultWaypointGatewayParameters(imageInfo)
 	case gatewayClassName:
 		return defaultGatewayParameters(imageInfo)
-	case agentGatewayClassName:
-		return defaultAgentGatewayParameters(imageInfo)
+	case agentgatewayClassName:
+		return defaultAgentgatewayParameters(imageInfo)
 	default:
 		return defaultGatewayParameters(imageInfo)
 	}
 }
 
-// defaultAgentGatewayParameters returns an in-memory GatewayParameters with default values
+// defaultAgentgatewayParameters returns an in-memory GatewayParameters with default values
 // set for the agentgateway deployment.
-func defaultAgentGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayParameters {
+func defaultAgentgatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayParameters {
 	gwp := defaultGatewayParameters(imageInfo)
-	gwp.Spec.Kube.AgentGateway.Enabled = ptr.To(true)
+	gwp.Spec.Kube.Agentgateway.Enabled = ptr.To(true)
 	return gwp
 }
 
@@ -246,7 +246,7 @@ func defaultGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayParameters 
 						PullPolicy: (*corev1.PullPolicy)(ptr.To(imageInfo.PullPolicy)),
 					},
 				},
-				AgentGateway: &v1alpha1.AgentGateway{
+				Agentgateway: &v1alpha1.Agentgateway{
 					Enabled:  ptr.To(false),
 					LogLevel: ptr.To("info"),
 					Image: &v1alpha1.Image{

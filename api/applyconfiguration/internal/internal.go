@@ -188,7 +188,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: timeout
       type:
         namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AgentGateway
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Agentgateway
   map:
     fields:
     - name: customConfigMapName
@@ -1501,9 +1501,9 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.KubernetesProxyConfig
   map:
     fields:
-    - name: agentGateway
+    - name: agentgateway
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AgentGateway
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Agentgateway
     - name: aiExtension
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AiExtension
@@ -2083,6 +2083,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: replicas
       type:
         scalar: numeric
+    - name: strategy
+      type:
+        namedType: io.k8s.api.apps.v1.DeploymentStrategy
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RBAC
   map:
     fields:
@@ -2733,6 +2736,24 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Host
       default: {}
+- name: io.k8s.api.apps.v1.DeploymentStrategy
+  map:
+    fields:
+    - name: rollingUpdate
+      type:
+        namedType: io.k8s.api.apps.v1.RollingUpdateDeployment
+    - name: type
+      type:
+        scalar: string
+- name: io.k8s.api.apps.v1.RollingUpdateDeployment
+  map:
+    fields:
+    - name: maxSurge
+      type:
+        namedType: io.k8s.apimachinery.pkg.util.intstr.IntOrString
+    - name: maxUnavailable
+      type:
+        namedType: io.k8s.apimachinery.pkg.util.intstr.IntOrString
 - name: io.k8s.api.core.v1.AWSElasticBlockStoreVolumeSource
   map:
     fields:
