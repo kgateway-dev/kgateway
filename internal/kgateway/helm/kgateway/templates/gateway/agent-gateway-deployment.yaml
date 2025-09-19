@@ -51,6 +51,10 @@ spec:
           securityContext:
             {{- toYaml $gateway.securityContext | nindent 12 }}
           {{- end }} {{/* if $gateway.securityContext */}}
+          {{- if $gateway.startupProbe }}
+          startupProbe:
+            {{- toYaml $gateway.startupProbe | nindent 12 }}
+          {{- end }}{{/* if $gateway.startupProbe */}}
           {{- if $gateway.readinessProbe }}
           readinessProbe:
             {{- toYaml $gateway.readinessProbe | nindent 12 }}

@@ -2013,6 +2013,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: securityContext
       type:
         namedType: io.k8s.api.core.v1.PodSecurityContext
+    - name: startupProbe
+      type:
+        namedType: io.k8s.api.core.v1.Probe
     - name: terminationGracePeriodSeconds
       type:
         scalar: numeric
