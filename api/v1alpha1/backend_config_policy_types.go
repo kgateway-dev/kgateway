@@ -194,7 +194,7 @@ type TCPKeepalive struct {
 	KeepAliveInterval *metav1.Duration `json:"keepAliveInterval,omitempty"`
 }
 
-// +kubebuilder:validation:ExactlyOneOf=secretRef;tlsFiles;insecureSkipVerify;wellKnownCACertificates
+// +kubebuilder:validation:ExactlyOneOf=secretRef;files;insecureSkipVerify;wellKnownCACertificates
 type TLS struct {
 	// Reference to the TLS secret containing the certificate, key, and optionally the root CA.
 	// +optional

@@ -520,9 +520,9 @@ spec:
                     type: string
                 type: object
                 x-kubernetes-validations:
-                - message: exactly one of the fields in [secretRef tlsFiles insecureSkipVerify
+                - message: exactly one of the fields in [secretRef files insecureSkipVerify
                     wellKnownCACertificates] must be set
-                  rule: '[has(self.secretRef),has(self.tlsFiles),has(self.insecureSkipVerify),has(self.wellKnownCACertificates)].filter(x,x==true).size()
+                  rule: '[has(self.secretRef),has(self.files),has(self.insecureSkipVerify),has(self.wellKnownCACertificates)].filter(x,x==true).size()
                     == 1'
             type: object
             x-kubernetes-validations:
