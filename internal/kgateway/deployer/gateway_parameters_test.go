@@ -220,7 +220,7 @@ func TestGatewayGVKsToWatch(t *testing.T) {
 	cli := newFakeClientWithObjs(gwc, gwParams)
 	gwp := NewGatewayParameters(cli, defaultInputs(t, gwc))
 
-	d, err := NewGatewayDeployer(wellknown.DefaultGatewayControllerName, wellknown.DefaultAgwControllerName, cli, gwp)
+	d, err := NewGatewayDeployer(wellknown.DefaultGatewayControllerName, wellknown.DefaultAgwControllerName, wellknown.DefaultAgwClassName, cli, gwp)
 	assert.NoError(t, err)
 
 	gvks, err := GatewayGVKsToWatch(context.TODO(), d)
