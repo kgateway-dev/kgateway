@@ -1911,27 +1911,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: maxEjectionPercent
       type:
         scalar: numeric
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Parameters
-  map:
-    fields:
-    - name: cipherSuites
-      type:
-        list:
-          elementType:
-            scalar: string
-          elementRelationship: atomic
-    - name: ecdhCurves
-      type:
-        list:
-          elementType:
-            scalar: string
-          elementRelationship: atomic
-    - name: tlsMaxVersion
-      type:
-        scalar: string
-    - name: tlsMinVersion
-      type:
-        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PathOverride
   map:
     fields:
@@ -2474,12 +2453,15 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             scalar: string
           elementRelationship: atomic
+    - name: files
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TLSFiles
     - name: insecureSkipVerify
       type:
         scalar: boolean
     - name: parameters
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Parameters
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TLSParameters
     - name: secretRef
       type:
         namedType: io.k8s.api.core.v1.LocalObjectReference
@@ -2489,10 +2471,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: sni
       type:
         scalar: string
-    - name: tlsFiles
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TLSFiles
-    - name: verifySubjectAltName
+    - name: verifySubjectAltNames
       type:
         list:
           elementType:
@@ -2511,6 +2490,27 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
     - name: tlsKey
+      type:
+        scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TLSParameters
+  map:
+    fields:
+    - name: cipherSuites
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+    - name: ecdhCurves
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+    - name: maxVersion
+      type:
+        scalar: string
+    - name: minVersion
       type:
         scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Timeouts

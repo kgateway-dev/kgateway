@@ -52,7 +52,7 @@ spec:
       name: client-tls-secret
     sni: test.example.com
     simpleTLS: true
-    verifySubjectAltName:
+    verifySubjectAltNames:
       - test.example.com
       - api.example.com
 ---

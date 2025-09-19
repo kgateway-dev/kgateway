@@ -245,8 +245,6 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.OTelTracesSamplerApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("OutlierDetection"):
 		return &apiv1alpha1.OutlierDetectionApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("Parameters"):
-		return &apiv1alpha1.ParametersApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("PathOverride"):
 		return &apiv1alpha1.PathOverrideApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Pod"):
@@ -323,6 +321,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.TLSApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("TLSFiles"):
 		return &apiv1alpha1.TLSFilesApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("TLSParameters"):
+		return &apiv1alpha1.TLSParametersApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("TokenBucket"):
 		return &apiv1alpha1.TokenBucketApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Tracing"):
