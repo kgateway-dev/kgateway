@@ -2901,12 +2901,13 @@ var _ = Describe("DeployObjs", func() {
 			internaldeployer.GatewayReleaseNameAndNamespace)
 	}
 
-	It("skips patch if object is unchanged", func() {
-		patched := false
+	It("skips update if object is unchanged", func() {
+		updated := false
 		cm := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns}, Data: map[string]string{"foo": "bar"}}
 		fc := &fakeClient{
 			Client: newFakeClientWithObjs(cm.DeepCopy()),
-			patchFunc: func(_ context.Context, _ client.Object, _ client.Patch, _ ...client.PatchOption) error {
+			updateFunc: func(_ context.Context, _ client.Object, _ ...client.UpdateOption) error {
+				updated = true
 				Fail("should not be called")
 				return errors.New("should not be called")
 			},
@@ -2915,11 +2916,11 @@ var _ = Describe("DeployObjs", func() {
 
 		err := d.DeployObjs(ctx, []client.Object{cm})
 		Expect(err).ToNot(HaveOccurred())
-		Expect(patched).To(BeFalse())
+		Expect(updated).To(BeFalse())
 	})
 
-	It("skips patch only changed is object status", func() {
-		patched := false
+	It("skips update when only change is object status", func() {
+		updated := false
 		pod1 := &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns}, Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "test", Image: "test:latest"}}}, Status: corev1.PodStatus{Phase: corev1.PodPending}}
 		pod2 := pod1.DeepCopy()
 
@@ -2927,7 +2928,8 @@ var _ = Describe("DeployObjs", func() {
 		pod2.Status = corev1.PodStatus{}
 		fc := &fakeClient{
 			Client: newFakeClientWithObjs(pod1.DeepCopy()),
-			patchFunc: func(_ context.Context, _ client.Object, _ client.Patch, _ ...client.PatchOption) error {
+			updateFunc: func(_ context.Context, _ client.Object, _ ...client.UpdateOption) error {
+				updated = true
 				Fail("should not be called")
 				return errors.New("should not be called")
 			},
@@ -2936,16 +2938,16 @@ var _ = Describe("DeployObjs", func() {
 
 		err := d.DeployObjs(ctx, []client.Object{pod2})
 		Expect(err).ToNot(HaveOccurred())
-		Expect(patched).To(BeFalse())
+		Expect(updated).To(BeFalse())
 	})
 
-	It("patches if object is different", func() {
-		patched := false
+	It("updates if object is different", func() {
+		updated := false
 		cm := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns}, Data: map[string]string{"foo": "bar"}}
 		fc := &fakeClient{
 			Client: newFakeClientWithObjs(cm.DeepCopy()),
-			patchFunc: func(_ context.Context, _ client.Object, _ client.Patch, _ ...client.PatchOption) error {
-				patched = true
+			updateFunc: func(_ context.Context, _ client.Object, _ ...client.UpdateOption) error {
+				updated = true
 				return nil
 			},
 		}
@@ -2953,49 +2955,51 @@ var _ = Describe("DeployObjs", func() {
 		d := getDeployer(fc)
 		err := d.DeployObjs(ctx, []client.Object{cm})
 		Expect(err).ToNot(HaveOccurred())
-		Expect(patched).To(BeTrue())
+		Expect(updated).To(BeTrue())
 	})
 
-	It("patches if object does not exist (IsNotFound)", func() {
-		patched := false
+	It("creates if object does not exist (IsNotFound)", func() {
+		created := false
 		cm := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns}}
 		fc := &fakeClient{
 			Client: newFakeClientWithObjs(),
-			patchFunc: func(_ context.Context, _ client.Object, _ client.Patch, _ ...client.PatchOption) error {
-				patched = true
+			createFunc: func(_ context.Context, _ client.Object, _ ...client.CreateOption) error {
+				created = true
 				return nil
 			},
 		}
 		d := getDeployer(fc)
 		err := d.DeployObjs(ctx, []client.Object{cm})
 		Expect(err).ToNot(HaveOccurred())
-		Expect(patched).To(BeTrue())
+		Expect(created).To(BeTrue())
 	})
 
-	It("patches if Get returns a non-IsNotFound error", func() {
-		patched := false
+	It("updates if Get returns a non-IsNotFound error", func() {
+		updated := false
 		cm := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns}}
 		fc := &fakeClient{
 			Client: newFakeClientWithObjs(cm.DeepCopy()),
 			getFunc: func(_ context.Context, _ client.ObjectKey, _ client.Object) error {
 				return fmt.Errorf("some random error")
 			},
-			patchFunc: func(_ context.Context, _ client.Object, _ client.Patch, _ ...client.PatchOption) error {
-				patched = true
+			updateFunc: func(_ context.Context, _ client.Object, _ ...client.UpdateOption) error {
+				updated = true
 				return nil
 			},
 		}
 		d := getDeployer(fc)
 		err := d.DeployObjs(ctx, []client.Object{cm})
 		Expect(err).ToNot(HaveOccurred())
-		Expect(patched).To(BeTrue())
+		Expect(updated).To(BeTrue())
 	})
 })
 
 type fakeClient struct {
 	client.Client
-	getFunc   func(ctx context.Context, key client.ObjectKey, obj client.Object) error
-	patchFunc func(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error
+	getFunc    func(ctx context.Context, key client.ObjectKey, obj client.Object) error
+	patchFunc  func(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error
+	updateFunc func(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error
+	createFunc func(ctx context.Context, obj client.Object, opts ...client.CreateOption) error
 }
 
 func (f *fakeClient) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
@@ -3009,4 +3013,16 @@ func (f *fakeClient) Patch(ctx context.Context, obj client.Object, patch client.
 		return f.patchFunc(ctx, obj, patch, opts...)
 	}
 	return f.Client.Patch(ctx, obj, patch, opts...)
+}
+func (f *fakeClient) Update(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error {
+	if f.updateFunc != nil {
+		return f.updateFunc(ctx, obj, opts...)
+	}
+	return f.Client.Update(ctx, obj, opts...)
+}
+func (f *fakeClient) Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
+	if f.createFunc != nil {
+		return f.createFunc(ctx, obj, opts...)
+	}
+	return f.Client.Create(ctx, obj, opts...)
 }

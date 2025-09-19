@@ -263,8 +263,14 @@ func (d *Deployer) DeployObjsWithSource(ctx context.Context, objs []client.Objec
 
 		logger.Info("deploying object", "kind", obj.GetObjectKind(), "namespace", obj.GetNamespace(), "name", obj.GetName())
 
-		if err := d.cli.Patch(ctx, obj, client.Apply, client.ForceOwnership, client.FieldOwner(controllerName)); err != nil {
-			return fmt.Errorf("failed to apply object %s %s: %w", obj.GetObjectKind().GroupVersionKind().String(), obj.GetName(), err)
+		if apierrors.IsNotFound(err) {
+			if err := d.cli.Create(ctx, obj, client.FieldOwner(controllerName)); err != nil {
+				return fmt.Errorf("failed to create object %s %s: %w", obj.GetObjectKind().GroupVersionKind().String(), obj.GetName(), err)
+			}
+		} else {
+			if err := d.cli.Update(ctx, obj, client.FieldOwner(controllerName)); err != nil {
+				return fmt.Errorf("failed to update object %s %s: %w", obj.GetObjectKind().GroupVersionKind().String(), obj.GetName(), err)
+			}
 		}
 	}
 	return nil
