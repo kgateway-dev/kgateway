@@ -104,7 +104,7 @@ func newLatestPatchForMinorPredicate(versionPrefix string) *latestPatchForMinorP
 func getLatestReleasedPatchVersion(ctx context.Context, client *github.Client, repoName string, majorVersion, minorVersion int) (*versionutils.Version, error) {
 
 	versionPrefix := fmt.Sprintf("v%d.%d", majorVersion, minorVersion)
-	releases, err := githubutils.GetRepoReleasesWithPredicateAndMax(ctx, client, "solo-io", repoName, newLatestPatchForMinorPredicate(versionPrefix), 1)
+	releases, err := githubutils.GetRepoReleasesWithPredicateAndMax(ctx, client, "kgateway-dev", repoName, newLatestPatchForMinorPredicate(versionPrefix), 1)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get releases: %w", err)
 	}
