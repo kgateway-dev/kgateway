@@ -85,7 +85,7 @@ spec:
   transformation:
     response:
       set:
-      - name: x-solo-response
-        value: '{{ request_header("x-solo-request") }}' 
+      - name: x-kgateway-response
+        value: '{{ request_header("x-kgateway-request") }}'
       remove:
-      - x-solo-request
+      - x-kgateway-request

@@ -247,10 +247,10 @@ spec:
   transformation:
     response:
       set:
-      - name: x-solo-response
-        value: '{{ request_header("x-solo-request") }}'
+      - name: x-kgateway-response
+        value: '{{ request_header("x-kgateway-request") }}'
       remove:
-      - x-solo-request`, `apiVersion: gateway.networking.k8s.io/v1beta1
+      - x-kgateway-request`, `apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
 metadata:
   name: happypath
@@ -282,10 +282,10 @@ spec:
   transformation:
     response:
       set:
-      - name: x-solo-response
-        value: '{{ request_header("x-solo-request123") }}'
+      - name: x-kgateway-response
+        value: '{{ request_header("x-kgateway-request123") }}'
       remove:
-      - x-solo-request321`)
+      - x-kgateway-request321`)
 
 		time.Sleep(time.Second / 2)
 
@@ -307,8 +307,8 @@ spec:
 		if len(pfc) != 1 {
 			t.Fatalf("expected 1 filter config, got %d", len(pfc))
 		}
-		if !bytes.Contains(slices.Collect(maps.Values(pfc))[0].Value, []byte("x-solo-request321")) {
-			t.Fatalf("expected filter config to contain x-solo-request321")
+		if !bytes.Contains(slices.Collect(maps.Values(pfc))[0].Value, []byte("x-kgateway-request321")) {
+			t.Fatalf("expected filter config to contain x-kgateway-request321")
 		}
 
 		t.Logf("%s finished", t.Name())

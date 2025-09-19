@@ -375,7 +375,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	// when timer ticks, we will use the state of the mergedReports at that point in time to sync the status to k8s
 	s.statusReport.Register(func(o krt.Event[report]) {
 		if o.Event == controllers.EventDelete {
-			// TODO: handle garbage collection (see: https://github.com/solo-io/solo-projects/issues/7086)
+			// TODO: handle garbage collection
 			return
 		}
 		s.reportQueue.Enqueue(o.Latest().reportMap)
