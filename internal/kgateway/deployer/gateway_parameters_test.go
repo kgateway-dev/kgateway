@@ -239,7 +239,7 @@ func TestInferencePoolGVKsToWatch(t *testing.T) {
 	gwParams := emptyGatewayParameters()
 	cli := newFakeClientWithObjs(gwc, gwParams)
 
-	d, err := NewInferencePoolDeployer(wellknown.DefaultGatewayControllerName, wellknown.DefaultAgwControllerName, cli)
+	d, err := NewInferencePoolDeployer(wellknown.DefaultGatewayControllerName, wellknown.DefaultAgwControllerName, wellknown.DefaultAgwClassName, cli)
 	assert.NoError(t, err)
 
 	gvks, err := InferencePoolGVKsToWatch(context.TODO(), d)
