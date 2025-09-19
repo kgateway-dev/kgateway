@@ -19,17 +19,18 @@ import (
 )
 
 type Options struct {
-	GatewayControllerName    string
-	GatewayClassName         string
-	WaypointGatewayClassName string
-	AgentgatewayClassName    string
-	AdditionalGatewayClasses map[string]*deployer.GatewayClassInfo
-	ExtraPlugins             func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []sdk.Plugin
-	ExtraAgwPlugins          func(ctx context.Context, agw *agwplugins.AgwCollections) []agwplugins.AgwPlugin
-	ExtraGatewayParameters   func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
-	ExtraXDSCallbacks        xdsserver.Callbacks
-	RestConfig               *rest.Config
-	CtrlMgrOptions           func(context.Context) *ctrl.Options
+	GatewayControllerName      string
+	AgentgatewayControllerName string
+	GatewayClassName           string
+	WaypointGatewayClassName   string
+	AgentgatewayClassName      string
+	AdditionalGatewayClasses   map[string]*deployer.GatewayClassInfo
+	ExtraPlugins               func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []sdk.Plugin
+	ExtraAgwPlugins            func(ctx context.Context, agw *agwplugins.AgwCollections) []agwplugins.AgwPlugin
+	ExtraGatewayParameters     func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
+	ExtraXDSCallbacks          xdsserver.Callbacks
+	RestConfig                 *rest.Config
+	CtrlMgrOptions             func(context.Context) *ctrl.Options
 	// extra controller manager config, like registering additional controllers
 	ExtraManagerConfig []func(ctx context.Context, mgr manager.Manager, objectFilter kubetypes.DynamicObjectFilter) error
 	// Validator is the validator to use for the controller.
@@ -43,6 +44,7 @@ func New(opts Options) (core.Server, error) {
 		core.WithExtraAgwPlugins(opts.ExtraAgwPlugins),
 		core.ExtraGatewayParameters(opts.ExtraGatewayParameters),
 		core.WithGatewayControllerName(opts.GatewayControllerName),
+		core.WithAgwControllerName(opts.AgentgatewayControllerName),
 		core.WithGatewayClassName(opts.GatewayClassName),
 		core.WithWaypointClassName(opts.WaypointGatewayClassName),
 		core.WithAgentgatewayClassName(opts.AgentgatewayClassName),
