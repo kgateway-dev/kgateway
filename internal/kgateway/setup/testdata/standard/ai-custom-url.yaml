@@ -26,7 +26,8 @@ spec:
     llm:
       host: test-ai-provider.ai-test.svc.cluster.local
       port: 443
-      path: "/api/v1/chat/completions"
+      path:
+        full: "/api/v1/chat/completions"
       authHeader:
         prefix: "custom-prefix"
         headerName: "custom-header"

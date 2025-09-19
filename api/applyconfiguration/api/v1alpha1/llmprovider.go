@@ -17,7 +17,7 @@ type LLMProviderApplyConfiguration struct {
 	Bedrock     *BedrockConfigApplyConfiguration     `json:"bedrock,omitempty"`
 	Host        *string                              `json:"host,omitempty"`
 	Port        *v1.PortNumber                       `json:"port,omitempty"`
-	Path        *string                              `json:"path,omitempty"`
+	Path        *PathOverrideApplyConfiguration      `json:"path,omitempty"`
 	AuthHeader  *AuthHeaderApplyConfiguration        `json:"authHeader,omitempty"`
 }
 
@@ -94,8 +94,8 @@ func (b *LLMProviderApplyConfiguration) WithPort(value v1.PortNumber) *LLMProvid
 // WithPath sets the Path field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Path field is set to the value of the last call.
-func (b *LLMProviderApplyConfiguration) WithPath(value string) *LLMProviderApplyConfiguration {
-	b.Path = &value
+func (b *LLMProviderApplyConfiguration) WithPath(value *PathOverrideApplyConfiguration) *LLMProviderApplyConfiguration {
+	b.Path = value
 	return b
 }
 

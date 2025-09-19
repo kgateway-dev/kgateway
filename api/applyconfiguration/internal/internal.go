@@ -1563,7 +1563,7 @@ var schemaYAML = typed.YAMLObject(`types:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.OpenAIConfig
     - name: path
       type:
-        scalar: string
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PathOverride
     - name: port
       type:
         scalar: numeric
@@ -1941,6 +1941,12 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
     - name: tlsMinVersion
+      type:
+        scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PathOverride
+  map:
+    fields:
+    - name: full
       type:
         scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Pod

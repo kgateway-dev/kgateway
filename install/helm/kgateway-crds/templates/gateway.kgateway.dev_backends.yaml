@@ -255,8 +255,11 @@ spec:
                         - authToken
                         type: object
                       path:
-                        minLength: 1
-                        type: string
+                        properties:
+                          full:
+                            minLength: 1
+                            type: string
+                        type: object
                       port:
                         format: int32
                         maximum: 65535
@@ -542,8 +545,11 @@ spec:
                                 - authToken
                                 type: object
                               path:
-                                minLength: 1
-                                type: string
+                                properties:
+                                  full:
+                                    minLength: 1
+                                    type: string
+                                type: object
                               port:
                                 format: int32
                                 maximum: 65535

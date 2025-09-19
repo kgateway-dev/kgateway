@@ -303,7 +303,7 @@ func TestProcessAIBackend_CustomURL(t *testing.T) {
 		LLM: &v1alpha1.LLMProvider{
 			Host: ptr.To("custom-openai-host.example.com"),
 			Port: ptr.To(gwv1.PortNumber(8443)),
-			Path: &path,
+			Path: &v1alpha1.PathOverride{Full: &path},
 			AuthHeader: &v1alpha1.AuthHeader{
 				Prefix:     &prefix,
 				HeaderName: &header,

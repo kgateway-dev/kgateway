@@ -418,7 +418,10 @@ func getTransformation(provider *v1alpha1.LLMProvider) (string, string, string, 
 		path = fmt.Sprintf(`/{{host_metadata("api_version")}}/projects/{{host_metadata("project")}}/locations/{{host_metadata("location")}}/publishers/{{host_metadata("publisher")}}/%s`, modelPath)
 	}
 	if provider.Path != nil {
-		path = *provider.Path
+		// only full path override is currently supported
+		if provider.Path.Full != nil {
+			path = *provider.Path.Full
+		}
 	}
 	if provider.AuthHeader != nil {
 		if provider.AuthHeader.HeaderName != nil {

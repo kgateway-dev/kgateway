@@ -87,8 +87,7 @@ type LLMProvider struct {
 	// compatibility with the original provider's API structure.
 	// If not specified, the default path for the provider is used.
 	// +optional
-	// +kubebuilder:validation:MinLength=1
-	Path *string `json:"path,omitempty"`
+	Path *PathOverride `json:"path,omitempty"`
 
 	// AuthHeader specifies how the Authorization header is set in the request sent to the LLM provider.
 	// Allows changing the header name and/or the prefix (e.g., "Bearer").
@@ -96,6 +95,11 @@ type LLMProvider struct {
 	// For example, OpenAI uses header: "Authorization" and prefix: "Bearer" But Azure OpenAI uses header: "api-key"
 	// and no Bearer.
 	AuthHeader *AuthHeader `json:"authHeader,omitempty"`
+}
+
+type PathOverride struct {
+	// +kubebuilder:validation:MinLength=1
+	Full *string `json:"full,omitempty"`
 }
 
 // AuthHeader allows customization of the default Authorization header sent to the LLM Provider.
