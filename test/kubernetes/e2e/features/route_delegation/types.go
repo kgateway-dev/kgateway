@@ -24,7 +24,6 @@ var (
 		Name:      "http-gateway",
 		Namespace: "infra",
 	}
-	// proxyDeployment = &appsv1.Deployment{ObjectMeta: proxyMeta}
 	proxyService  = &corev1.Service{ObjectMeta: proxyMeta}
 	proxyHostPort = fmt.Sprintf("%s.%s.svc:%d", proxyService.Name, proxyService.Namespace, gatewayPort)
 )

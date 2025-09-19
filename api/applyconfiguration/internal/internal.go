@@ -29,9 +29,12 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: llm
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LLMProvider
-    - name: multipool
+    - name: priorityGroups
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.MultiPoolConfig
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PriorityGroup
+          elementRelationship: atomic
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AIPolicy
   map:
     fields:
@@ -319,7 +322,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: stringValue
       type:
         scalar: string
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AuthHeaderOverride
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AuthHeader
   map:
     fields:
     - name: headerName
@@ -1537,19 +1540,36 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LLMProvider
   map:
     fields:
-    - name: authHeaderOverride
+    - name: anthropic
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AuthHeaderOverride
-    - name: hostOverride
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AnthropicConfig
+    - name: authHeader
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Host
-    - name: pathOverride
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AuthHeader
+    - name: azureopenai
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PathOverride
-    - name: provider
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AzureOpenAIConfig
+    - name: bedrock
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SupportedLLMProvider
-      default: {}
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BedrockConfig
+    - name: gemini
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GeminiConfig
+    - name: host
+      type:
+        scalar: string
+    - name: openai
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.OpenAIConfig
+    - name: path
+      type:
+        scalar: string
+    - name: port
+      type:
+        scalar: numeric
+    - name: vertexai
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.VertexAIConfig
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancer
   map:
     fields:
@@ -1820,15 +1840,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: openAIModeration
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.OpenAIConfig
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.MultiPoolConfig
-  map:
-    fields:
-    - name: priorities
-      type:
-        list:
-          elementType:
-            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Priority
-          elementRelationship: atomic
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.NamespacedObjectReference
   map:
     fields:
@@ -1932,12 +1943,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: tlsMinVersion
       type:
         scalar: string
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PathOverride
-  map:
-    fields:
-    - name: fullPath
-      type:
-        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Pod
   map:
     fields:
@@ -2020,10 +2025,10 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: numeric
       default: 0
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Priority
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PriorityGroup
   map:
     fields:
-    - name: pool
+    - name: providers
       type:
         list:
           elementType:
@@ -2429,27 +2434,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: suffix
       type:
         scalar: string
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SupportedLLMProvider
-  map:
-    fields:
-    - name: anthropic
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AnthropicConfig
-    - name: azureopenai
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AzureOpenAIConfig
-    - name: bedrock
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BedrockConfig
-    - name: gemini
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GeminiConfig
-    - name: openai
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.OpenAIConfig
-    - name: vertexai
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.VertexAIConfig
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TCPKeepalive
   map:
     fields:

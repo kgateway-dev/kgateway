@@ -23,13 +23,12 @@ spec:
   type: AI
   ai:
     llm:
-      provider:
-        openai:
-          model: "gpt-4o-mini"
-          authToken:
-            kind: "SecretRef"
-            secretRef:
-              name: openai-secret
+      openai:
+        model: "gpt-4o-mini"
+        authToken:
+          kind: "SecretRef"
+          secretRef:
+            name: openai-secret
 ---
 apiVersion: v1
 kind: Secret

@@ -31,7 +31,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AlwaysOnConfig":                            schema_kgateway_v2_api_v1alpha1_AlwaysOnConfig(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AnthropicConfig":                           schema_kgateway_v2_api_v1alpha1_AnthropicConfig(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AnyValue":                                  schema_kgateway_v2_api_v1alpha1_AnyValue(ref),
-		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AuthHeaderOverride":                        schema_kgateway_v2_api_v1alpha1_AuthHeaderOverride(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AuthHeader":                                schema_kgateway_v2_api_v1alpha1_AuthHeader(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsAuth":                                   schema_kgateway_v2_api_v1alpha1_AwsAuth(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsBackend":                                schema_kgateway_v2_api_v1alpha1_AwsBackend(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsLambda":                                 schema_kgateway_v2_api_v1alpha1_AwsLambda(ref),
@@ -135,7 +135,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MetadataOptions":                           schema_kgateway_v2_api_v1alpha1_MetadataOptions(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MetadataPathSegment":                       schema_kgateway_v2_api_v1alpha1_MetadataPathSegment(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Moderation":                                schema_kgateway_v2_api_v1alpha1_Moderation(ref),
-		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MultiPoolConfig":                           schema_kgateway_v2_api_v1alpha1_MultiPoolConfig(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.NamespacedObjectReference":                 schema_kgateway_v2_api_v1alpha1_NamespacedObjectReference(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.OTelTracesSampler":                         schema_kgateway_v2_api_v1alpha1_OTelTracesSampler(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.OpenAIConfig":                              schema_kgateway_v2_api_v1alpha1_OpenAIConfig(ref),
@@ -143,13 +142,12 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.OpenTelemetryTracingConfig":                schema_kgateway_v2_api_v1alpha1_OpenTelemetryTracingConfig(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.OutlierDetection":                          schema_kgateway_v2_api_v1alpha1_OutlierDetection(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Parameters":                                schema_kgateway_v2_api_v1alpha1_Parameters(ref),
-		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PathOverride":                              schema_kgateway_v2_api_v1alpha1_PathOverride(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Pod":                                       schema_kgateway_v2_api_v1alpha1_Pod(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyAncestorStatus":                      schema_kgateway_v2_api_v1alpha1_PolicyAncestorStatus(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyDisable":                             schema_kgateway_v2_api_v1alpha1_PolicyDisable(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyStatus":                              schema_kgateway_v2_api_v1alpha1_PolicyStatus(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Port":                                      schema_kgateway_v2_api_v1alpha1_Port(ref),
-		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Priority":                                  schema_kgateway_v2_api_v1alpha1_Priority(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PriorityGroup":                             schema_kgateway_v2_api_v1alpha1_PriorityGroup(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ProcessingMode":                            schema_kgateway_v2_api_v1alpha1_ProcessingMode(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PromptguardRequest":                        schema_kgateway_v2_api_v1alpha1_PromptguardRequest(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PromptguardResponse":                       schema_kgateway_v2_api_v1alpha1_PromptguardResponse(ref),
@@ -181,7 +179,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StatsConfig":                               schema_kgateway_v2_api_v1alpha1_StatsConfig(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StatusCodeFilter":                          schema_kgateway_v2_api_v1alpha1_StatusCodeFilter(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StringMatcher":                             schema_kgateway_v2_api_v1alpha1_StringMatcher(ref),
-		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SupportedLLMProvider":                      schema_kgateway_v2_api_v1alpha1_SupportedLLMProvider(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TCPKeepalive":                              schema_kgateway_v2_api_v1alpha1_TCPKeepalive(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TLS":                                       schema_kgateway_v2_api_v1alpha1_TLS(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TLSFiles":                                  schema_kgateway_v2_api_v1alpha1_TLSFiles(ref),
@@ -611,7 +608,8 @@ func schema_kgateway_v2_api_v1alpha1_AIBackend(ref common.ReferenceCallback) com
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "AIBackend specifies the AI backend configuration",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"llm": {
 						SchemaProps: spec.SchemaProps{
@@ -619,17 +617,25 @@ func schema_kgateway_v2_api_v1alpha1_AIBackend(ref common.ReferenceCallback) com
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LLMProvider"),
 						},
 					},
-					"multipool": {
+					"priorityGroups": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The MultiPool configures the backends for multiple hosts or models from the same provider in one Backend resource.",
-							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MultiPoolConfig"),
+							Description: "PriorityGroups specifies a list of groups in priority order where each group defines a set of LLM providers. The priority determines the priority of the backend endpoints chosen.\n\nExample configuration with two priority groups: ```yaml priorityGroups:\n\t- providers:\n\t  - azureOpenai:\n\t      deploymentName: gpt-4o-mini\n\t      apiVersion: 2024-02-15-preview\n\t      endpoint: ai-gateway.openai.azure.com\n\t      authToken:\n\t        secretRef:\n\t          name: azure-secret\n\t          namespace: kgateway-system\n\t- providers:\n\t  - azureOpenai:\n\t      deploymentName: gpt-4o-mini-2\n\t      apiVersion: 2024-02-15-preview\n\t      endpoint: ai-gateway-2.openai.azure.com\n\t      authToken:\n\t        secretRef:\n\t          name: azure-secret-2\n\t          namespace: kgateway-system\n```",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PriorityGroup"),
+									},
+								},
+							},
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LLMProvider", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MultiPoolConfig"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LLMProvider", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PriorityGroup"},
 	}
 }
 
@@ -1348,23 +1354,25 @@ func schema_kgateway_v2_api_v1alpha1_AnyValue(ref common.ReferenceCallback) comm
 	}
 }
 
-func schema_kgateway_v2_api_v1alpha1_AuthHeaderOverride(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_v2_api_v1alpha1_AuthHeader(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "AuthHeaderOverride allows customization of the default Authorization header sent to the LLM Provider. The default header is `Authorization: Bearer <token>`. HeaderName can change the Authorization header name and Prefix can change the Bearer prefix",
+				Description: "AuthHeader allows customization of the default Authorization header sent to the LLM Provider. The default header is `Authorization: Bearer <token>`. HeaderName can change the Authorization header name and Prefix can change the Bearer prefix",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"prefix": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "Prefix specifies the prefix to use in the Authorization header.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"headerName": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "HeaderName specifies the name of the header to use for authorization.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},
@@ -4799,37 +4807,74 @@ func schema_kgateway_v2_api_v1alpha1_LLMProvider(ref common.ReferenceCallback) c
 				Description: "LLMProvider specifies the target large language model provider that the backend should route requests to.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"provider": {
+					"openai": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The LLM provider type to configure.",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SupportedLLMProvider"),
+							Description: "OpenAI provider",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.OpenAIConfig"),
 						},
 					},
-					"hostOverride": {
+					"azureopenai": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Send requests to a custom host and port, such as to proxy the request, or to use a different backend that is API-compliant with the Backend version.",
-							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Host"),
+							Description: "Azure OpenAI provider",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AzureOpenAIConfig"),
 						},
 					},
-					"pathOverride": {
+					"anthropic": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Overrides the default API path for the LLM provider. Allows routing requests to a custom API endpoint path.",
-							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PathOverride"),
+							Description: "Anthropic provider",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AnthropicConfig"),
 						},
 					},
-					"authHeaderOverride": {
+					"gemini": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Customizes the Authorization header sent to the LLM provider. Allows changing the header name and/or the prefix (e.g., \"Bearer\"). Note: Not all LLM providers use the Authorization header and prefix. For example, OpenAI uses header: \"Authorization\" and prefix: \"Bearer\" But Azure OpenAI uses header: \"api-key\" and no Bearer.",
-							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AuthHeaderOverride"),
+							Description: "Gemini provider",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GeminiConfig"),
+						},
+					},
+					"vertexai": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Vertex AI provider",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.VertexAIConfig"),
+						},
+					},
+					"bedrock": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Bedrock provider",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BedrockConfig"),
+						},
+					},
+					"host": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Host specifies the hostname to send the requests to. If not specified, the default hostname for the provider is used.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"port": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Port specifies the port to send the requests to.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"path": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Path specifies the URL path to use for the LLM provider API requests. This is useful when you need to route requests to a different API endpoint while maintaining compatibility with the original provider's API structure. If not specified, the default path for the provider is used.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"authHeader": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AuthHeader specifies how the Authorization header is set in the request sent to the LLM provider. Allows changing the header name and/or the prefix (e.g., \"Bearer\"). Note: Not all LLM providers use the Authorization header and prefix. For example, OpenAI uses header: \"Authorization\" and prefix: \"Bearer\" But Azure OpenAI uses header: \"api-key\" and no Bearer.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AuthHeader"),
 						},
 					},
 				},
-				Required: []string{"provider"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AuthHeaderOverride", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Host", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PathOverride", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SupportedLLMProvider"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AnthropicConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AuthHeader", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AzureOpenAIConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BedrockConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GeminiConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.OpenAIConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.VertexAIConfig"},
 	}
 }
 
@@ -5568,36 +5613,6 @@ func schema_kgateway_v2_api_v1alpha1_Moderation(ref common.ReferenceCallback) co
 	}
 }
 
-func schema_kgateway_v2_api_v1alpha1_MultiPoolConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "MultiPoolConfig configures the backends for multiple hosts or models from the same provider in one Backend resource. This method can be useful for creating one logical endpoint that is backed by multiple hosts or models.\n\nIn the `priorities` section, the order of `pool` entries defines the priority of the backend endpoints. The `pool` entries can either define a list of backends or a single backend. Note: Only two levels of nesting are permitted. Any nested entries after the second level are ignored.\n\n```yaml multi:\n\n\tpriorities:\n\t- pool:\n\t  - azureOpenai:\n\t      deploymentName: gpt-4o-mini\n\t      apiVersion: 2024-02-15-preview\n\t      endpoint: ai-gateway.openai.azure.com\n\t      authToken:\n\t        secretRef:\n\t          name: azure-secret\n\t          namespace: kgateway-system\n\t- pool:\n\t  - azureOpenai:\n\t      deploymentName: gpt-4o-mini-2\n\t      apiVersion: 2024-02-15-preview\n\t      endpoint: ai-gateway-2.openai.azure.com\n\t      authToken:\n\t        secretRef:\n\t          name: azure-secret-2\n\t          namespace: kgateway-system\n\n```",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"priorities": {
-						SchemaProps: spec.SchemaProps{
-							Description: "The priority list of backend pools. Each entry represents a set of LLM provider backends. The order defines the priority of the backend endpoints.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Priority"),
-									},
-								},
-							},
-						},
-					},
-				},
-				Required: []string{"priorities"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Priority"},
-	}
-}
-
 func schema_kgateway_v2_api_v1alpha1_NamespacedObjectReference(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -5873,27 +5888,6 @@ func schema_kgateway_v2_api_v1alpha1_Parameters(ref common.ReferenceCallback) co
 						},
 					},
 				},
-			},
-		},
-	}
-}
-
-func schema_kgateway_v2_api_v1alpha1_PathOverride(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "PathOverride configures the AI gateway to use a custom path for LLM provider chat-completion API requests. It allows overriding the default API path with a custom one. This is useful when you need to route requests to a different API endpoint while maintaining compatibility with the original provider's API structure.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"fullPath": {
-						SchemaProps: spec.SchemaProps{
-							Description: "FullPath specifies the custom API path to use for the LLM provider requests. This path will replace the default API path for the provider.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-				},
-				Required: []string{"fullPath"},
 			},
 		},
 	}
@@ -6195,14 +6189,14 @@ func schema_kgateway_v2_api_v1alpha1_Port(ref common.ReferenceCallback) common.O
 	}
 }
 
-func schema_kgateway_v2_api_v1alpha1_Priority(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_v2_api_v1alpha1_PriorityGroup(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Priority configures the priority of the backend endpoints.",
+				Description: "MultiPoolConfig configures the backends for multiple hosts or models from the same provider in one Backend resource. This method can be useful for creating one logical endpoint that is backed by multiple hosts or models.\n\nIn the `priorities` section, the order of `pool` entries defines the priority of the backend endpoints. The `pool` entries can either define a list of backends or a single backend. Note: Only two levels of nesting are permitted. Any nested entries after the second level are ignored.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"pool": {
+					"providers": {
 						SchemaProps: spec.SchemaProps{
 							Description: "A list of LLM provider backends within a single endpoint pool entry.",
 							Type:        []string{"array"},
@@ -7323,51 +7317,6 @@ func schema_kgateway_v2_api_v1alpha1_StringMatcher(ref common.ReferenceCallback)
 				Required: []string{"ignoreCase"},
 			},
 		},
-	}
-}
-
-func schema_kgateway_v2_api_v1alpha1_SupportedLLMProvider(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "SupportedLLMProvider configures the AI gateway to use a single LLM provider backend.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"openai": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.OpenAIConfig"),
-						},
-					},
-					"azureopenai": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AzureOpenAIConfig"),
-						},
-					},
-					"anthropic": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AnthropicConfig"),
-						},
-					},
-					"gemini": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GeminiConfig"),
-						},
-					},
-					"vertexai": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.VertexAIConfig"),
-						},
-					},
-					"bedrock": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BedrockConfig"),
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AnthropicConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AzureOpenAIConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BedrockConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GeminiConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.OpenAIConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.VertexAIConfig"},
 	}
 }
 
