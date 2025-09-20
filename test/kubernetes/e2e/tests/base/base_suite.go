@@ -265,7 +265,7 @@ func newGatewayHelper(testInst *e2e.TestInstallation) *defaultGatewayHelper {
 			ImageInfo:                &deployer.ImageInfo{},
 			GatewayClassName:         wellknown.DefaultGatewayClassName,
 			WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-			AgentGatewayClassName:    wellknown.DefaultAgentGatewayClassName,
+			AgentgatewayClassName:    wellknown.DefaultAgwClassName,
 		},
 	)
 	return &defaultGatewayHelper{gwpClient: gwpClient}

@@ -1,0 +1,109 @@
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: gw
+spec:
+  gatewayClassName: kgateway
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: All
+---
+# Route hostname example.com to the nginx.nginx:8080
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: nginx-route
+  namespace: nginx
+spec:
+  parentRefs:
+    - name: gw
+      namespace: default
+  hostnames:
+    - "example.com"
+  rules:
+    - backendRefs:
+        - name: nginx-backend
+          kind: Backend
+          group: gateway.kgateway.dev
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: nginx-backend
+  namespace: nginx
+  annotations:
+    kgateway.dev/disable-istio-auto-mtls: "true"
+spec:
+  type: Static
+  static:
+    hosts:
+      - host: nginx.nginx
+        port: 8080
+---
+# Route hostname example-simple.com to the nginx.nginx:8443
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: nginx-route-simple
+  namespace: nginx
+spec:
+  parentRefs:
+    - name: gw
+      namespace: default
+  hostnames:
+    - "example-simple.com"
+  rules:
+    - backendRefs:
+        - name: nginx-backend-simple
+          kind: Backend
+          group: gateway.kgateway.dev
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: nginx-backend-simple
+  namespace: nginx
+  annotations:
+    kgateway.dev/disable-istio-auto-mtls: "true"
+spec:
+  type: Static
+  static:
+    hosts:
+      - host: nginx.nginx
+        port: 8443
+---
+# Route hostname example-mtls.com to the nginx.nginx:8543
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: nginx-route-mtls
+  namespace: nginx
+spec:
+  parentRefs:
+    - name: gw
+      namespace: default
+  hostnames:
+    - "example-mtls.com"
+  rules:
+    - backendRefs:
+        - name: nginx-backend-mtls
+          kind: Backend
+          group: gateway.kgateway.dev
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: nginx-backend-mtls
+  namespace: nginx
+  annotations:
+    kgateway.dev/disable-istio-auto-mtls: "true"
+spec:
+  type: Static
+  static:
+    hosts:
+      - host: nginx.nginx
+        port: 8543

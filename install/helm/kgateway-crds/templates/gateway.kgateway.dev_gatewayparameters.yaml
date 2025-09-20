@@ -33,7 +33,7 @@ spec:
             properties:
               kube:
                 properties:
-                  agentGateway:
+                  agentgateway:
                     properties:
                       customConfigMapName:
                         type: string
@@ -102,6 +102,28 @@ spec:
                                   x-kubernetes-map-type: atomic
                               type: object
                           required:
+                          - name
+                          type: object
+                        type: array
+                      extraVolumeMounts:
+                        items:
+                          properties:
+                            mountPath:
+                              type: string
+                            mountPropagation:
+                              type: string
+                            name:
+                              type: string
+                            readOnly:
+                              type: boolean
+                            recursiveReadOnly:
+                              type: string
+                            subPath:
+                              type: string
+                            subPathExpr:
+                              type: string
+                          required:
+                          - mountPath
                           - name
                           type: object
                         type: array
@@ -502,6 +524,24 @@ spec:
                       replicas:
                         format: int32
                         type: integer
+                      strategy:
+                        properties:
+                          rollingUpdate:
+                            properties:
+                              maxSurge:
+                                anyOf:
+                                - type: integer
+                                - type: string
+                                x-kubernetes-int-or-string: true
+                              maxUnavailable:
+                                anyOf:
+                                - type: integer
+                                - type: string
+                                x-kubernetes-int-or-string: true
+                            type: object
+                          type:
+                            type: string
+                        type: object
                     type: object
                     x-kubernetes-validations:
                     - message: at most one of the fields in [replicas omitReplicas]
@@ -582,6 +622,28 @@ spec:
                                   x-kubernetes-map-type: atomic
                               type: object
                           required:
+                          - name
+                          type: object
+                        type: array
+                      extraVolumeMounts:
+                        items:
+                          properties:
+                            mountPath:
+                              type: string
+                            mountPropagation:
+                              type: string
+                            name:
+                              type: string
+                            readOnly:
+                              type: boolean
+                            recursiveReadOnly:
+                              type: string
+                            subPath:
+                              type: string
+                            subPathExpr:
+                              type: string
+                          required:
+                          - mountPath
                           - name
                           type: object
                         type: array
@@ -1969,28 +2031,6 @@ spec:
                         additionalProperties:
                           type: string
                         type: object
-                      extraVolumeMounts:
-                        items:
-                          properties:
-                            mountPath:
-                              type: string
-                            mountPropagation:
-                              type: string
-                            name:
-                              type: string
-                            readOnly:
-                              type: boolean
-                            recursiveReadOnly:
-                              type: string
-                            subPath:
-                              type: string
-                            subPathExpr:
-                              type: string
-                          required:
-                          - mountPath
-                          - name
-                          type: object
-                        type: array
                       extraVolumes:
                         items:
                           properties:

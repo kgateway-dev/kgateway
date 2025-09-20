@@ -94,7 +94,7 @@ func constructGlobalRateLimit(
 		return fmt.Errorf("ratelimit: %w", err)
 	}
 	if gwExtIR.ExtType != v1alpha1.GatewayExtensionTypeRateLimit || gwExtIR.RateLimit == nil {
-		return pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, gwExtIR.ExtType)
+		return pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeRateLimit, gwExtIR.ExtType)
 	}
 	// Create route rate limits and store in the RateLimitIR struct
 	out.globalRateLimit = &globalRateLimitIR{

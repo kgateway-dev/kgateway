@@ -15,7 +15,7 @@ import (
 
 var logger = logging.New("agentgateway")
 
-type ADPResourcesForGateway struct {
+type AgwResourcesForGateway struct {
 	// agent gateway dataplane resources
 	Resources []*api.Resource
 	// gateway name
@@ -26,7 +26,7 @@ type ADPResourcesForGateway struct {
 	AttachedRoutes map[string]uint
 }
 
-func (g ADPResourcesForGateway) ResourceName() string {
+func (g AgwResourcesForGateway) ResourceName() string {
 	// need a unique name per resource
 	return g.Gateway.String() + getResourceListName(g.Resources)
 }
@@ -34,12 +34,12 @@ func (g ADPResourcesForGateway) ResourceName() string {
 func getResourceListName(resources []*api.Resource) string {
 	names := make([]string, len(resources))
 	for i, res := range resources {
-		names[i] = GetADPResourceName(res)
+		names[i] = GetAgwResourceName(res)
 	}
 	return strings.Join(names, ",")
 }
 
-func GetADPResourceName(r *api.Resource) string {
+func GetAgwResourceName(r *api.Resource) string {
 	switch t := r.GetKind().(type) {
 	case *api.Resource_Bind:
 		return "bind/" + t.Bind.GetKey()
@@ -52,13 +52,13 @@ func GetADPResourceName(r *api.Resource) string {
 	case *api.Resource_Policy:
 		return "policy/" + t.Policy.GetName()
 	default:
-		logger.Error("unknown ADP resource", "type", fmt.Sprintf("%T", t))
+		logger.Error("unknown Agw resource", "type", fmt.Sprintf("%T", t))
 		return "unknown/" + r.String()
 	}
 }
 
-func (g ADPResourcesForGateway) Equals(other ADPResourcesForGateway) bool {
-	// Don't compare reports, as they are not part of the ADPResource equality and synced separately
+func (g AgwResourcesForGateway) Equals(other AgwResourcesForGateway) bool {
+	// Don't compare reports, as they are not part of the AgwResource equality and synced separately
 	for i := range g.Resources {
 		if !proto.Equal(g.Resources[i], other.Resources[i]) {
 			return false
@@ -70,7 +70,7 @@ func (g ADPResourcesForGateway) Equals(other ADPResourcesForGateway) bool {
 	return g.Gateway == other.Gateway
 }
 
-type ADPCacheAddress struct {
+type AgwCacheAddress struct {
 	NamespacedName types.NamespacedName
 	ResourceNames  string
 
@@ -81,11 +81,11 @@ type ADPCacheAddress struct {
 	VersionMap map[string]map[string]string
 }
 
-func (r ADPCacheAddress) ResourceName() string {
+func (r AgwCacheAddress) ResourceName() string {
 	return r.ResourceNames
 }
 
-func (r ADPCacheAddress) Equals(in ADPCacheAddress) bool {
+func (r AgwCacheAddress) Equals(in AgwCacheAddress) bool {
 	return r.NamespacedName.Name == in.NamespacedName.Name && r.NamespacedName.Namespace == in.NamespacedName.Namespace &&
 		proto.Equal(r.Address, in.Address) &&
 		r.AddressVersion == in.AddressVersion &&

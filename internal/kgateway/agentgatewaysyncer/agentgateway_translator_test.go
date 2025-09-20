@@ -242,7 +242,7 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("MultiPool Backend with inline auth", func(t *testing.T) {
+	t.Run("PriorityGroups Backend with inline auth", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "backend/multipool-inline-auth.yaml",
 			outputFile: "backend/multipool-inline-auth.yaml",
@@ -253,7 +253,7 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("MultiPool Backend with secret auth", func(t *testing.T) {
+	t.Run("PriorityGroups Backend with secret auth", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "backend/multipool-secret-auth.yaml",
 			outputFile: "backend/multipool-secret-auth.yaml",
@@ -264,7 +264,7 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("MultiPool Backend with multiple priority levels", func(t *testing.T) {
+	t.Run("PriorityGroups Backend with multiple priority levels", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "backend/multipool-priority-levels.yaml",
 			outputFile: "backend/multipool-priority-levels.yaml",
@@ -425,6 +425,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("AI TrafficPolicy on route level with Bearer secret and OpenAI Moderation", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "trafficpolicy/ai/route-level-bearer.yaml",
+			outputFile: "trafficpolicy/ai/route-level-bearer.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy with rbac on http route with Static backend", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "trafficpolicy/rbac/http-rbac.yaml",
@@ -440,6 +451,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "trafficpolicy/rbac/mcp-rbac.yaml",
 			outputFile: "trafficpolicy/rbac/mcp-rbac.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with transformation", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "trafficpolicy/transformation.yaml",
+			outputFile: "trafficpolicy/transformation.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",

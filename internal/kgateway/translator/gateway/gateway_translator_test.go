@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -15,11 +16,13 @@ import (
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/settings"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
-	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	translatortest "github.com/kgateway-dev/kgateway/v2/test/translator"
 )
@@ -49,6 +52,32 @@ func TestBasic(t *testing.T) {
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("gateway with no valid listeners should report correctly", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "gateway-only/gateway-invalid-listener.yaml",
+			outputFile: "gateway-only/gateway-invalid-listener-proxy.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				a := assert.New(t)
+				gateway := &gwv1.Gateway{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-gateway",
+						Namespace: "default",
+					},
+				}
+				gatewayStatus := reportsMap.BuildGWStatus(context.Background(), *gateway, nil)
+				a.NotNil(gatewayStatus)
+				condition := meta.FindStatusCondition(gatewayStatus.Conditions, string(gwv1.GatewayConditionAccepted))
+				a.NotNil(condition)
+				a.Equal(metav1.ConditionFalse, condition.Status)
+				a.Equal(string(gwv1.GatewayReasonListenersNotValid), condition.Reason)
 			},
 		})
 	})
@@ -137,7 +166,7 @@ func TestBasic(t *testing.T) {
 				a.NotNil(programmed)
 				a.Equal(metav1.ConditionFalse, programmed.Status)
 				a.Equal(string(gwv1.ListenerReasonInvalid), programmed.Reason)
-				a.Equal("Secret default/missing-cert not found.", programmed.Message)
+				a.Equal(fmt.Sprintf(listener.SecretNotFoundMessageTemplate, "default", "missing-cert"), programmed.Message)
 
 				https2Listener := gatewayStatus.Listeners[1]
 				resolvedRefs = meta.FindStatusCondition(https2Listener.Conditions, string(gwv1.ListenerConditionResolvedRefs))
@@ -175,18 +204,6 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "http-with-header-modifier",
 			outputFile: "http-with-header-modifier-proxy.yaml",
-			gwNN: types.NamespacedName{
-				Namespace: "default",
-				Name:      "gw",
-			},
-		})
-	})
-
-	t.Run("http gateway with azure destination", func(t *testing.T) {
-		t.Skip("TODO: enable this test when ready")
-		test(t, translatorTestCase{
-			inputFile:  "http-with-azure-destination",
-			outputFile: "http-with-azure-destination-proxy.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "gw",
@@ -383,10 +400,11 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("TrafficPolicy ExtAuth Simple", func(t *testing.T) {
+	// test the default and fully configured values for ExtAuth
+	t.Run("TrafficPolicy ExtAuth Full Config", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "traffic-policy/extauth-simple.yaml",
-			outputFile: "traffic-policy/extauth-simple.yaml",
+			inputFile:  "traffic-policy/extauth-full-config.yaml",
+			outputFile: "traffic-policy/extauth-full-config.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "infra",
 				Name:      "example-gateway",
@@ -405,10 +423,10 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("TrafficPolicy ExtProc Simple", func(t *testing.T) {
+	t.Run("TrafficPolicy ExtProc Full Config", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "traffic-policy/extproc-simple.yaml",
-			outputFile: "traffic-policy/extproc-simple.yaml",
+			inputFile:  "traffic-policy/extproc-full-config.yaml",
+			outputFile: "traffic-policy/extproc-full-config.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "infra",
 				Name:      "example-gateway",
@@ -1412,10 +1430,178 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("TrafficPolicy RateLimit Simple", func(t *testing.T) {
+	t.Run("TrafficPolicy RateLimit Full Config", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "traffic-policy/rate-limit.yaml",
-			outputFile: "traffic-policy/rate-limit.yaml",
+			inputFile:  "traffic-policy/rate-limit-full-config.yaml",
+			outputFile: "traffic-policy/rate-limit-full-config.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TLS listener with no routes", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/tls-listener-no-routes.yaml",
+			outputFile: "invalid-filter-chains/tls-listener-no-routes.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TCP listener with no routes", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/tcp-listener-no-routes.yaml",
+			outputFile: "invalid-filter-chains/tcp-listener-no-routes.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("HTTPS listener with invalid secret ref", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/https-listener-invalid-secret-ref.yaml",
+			outputFile: "invalid-filter-chains/https-listener-invalid-secret-ref.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("HTTPS listener with invalid secret (missing private key)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/https-listener-invalid-secret.yaml",
+			outputFile: "invalid-filter-chains/https-listener-invalid-secret.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TLS mixed listeners - no routes and with routes", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/tls-mixed-listeners.yaml",
+			outputFile: "invalid-filter-chains/tls-mixed-listeners.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TCP mixed listeners - no routes and with routes", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/tcp-mixed-listeners.yaml",
+			outputFile: "invalid-filter-chains/tcp-mixed-listeners.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TLS same port listeners - both with no routes", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/tls-same-port-both-no-routes.yaml",
+			outputFile: "invalid-filter-chains/tls-same-port-both-no-routes.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TLS same port listeners - mixed routes", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/tls-same-port-mixed-routes.yaml",
+			outputFile: "invalid-filter-chains/tls-same-port-mixed-routes.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TLS route with invalid backend", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/tls-route-invalid-backend.yaml",
+			outputFile: "invalid-filter-chains/tls-route-invalid-backend.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				// No-op: Expected statuses are validated via the output file comparison
+			},
+		})
+	})
+
+	t.Run("HTTPS mixed listeners - invalid and valid secret refs", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/https-mixed-listeners.yaml",
+			outputFile: "invalid-filter-chains/https-mixed-listeners.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("Gateway empty with ListenerSet TCP listener no routes", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/gateway-empty-listenerset-tcp-no-routes.yaml",
+			outputFile: "invalid-filter-chains/gateway-empty-listenerset-tcp-no-routes.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("Gateway empty with ListenerSet TLS listener no routes", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/gateway-empty-listenerset-tls-no-routes.yaml",
+			outputFile: "invalid-filter-chains/gateway-empty-listenerset-tls-no-routes.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("Gateway empty with ListenerSet TLS mixed listeners", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/gateway-empty-listenerset-tls-mixed.yaml",
+			outputFile: "invalid-filter-chains/gateway-empty-listenerset-tls-mixed.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("Gateway HTTP listener with ListenerSet TCP listener no routes", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/gateway-http-listenerset-tcp-no-routes.yaml",
+			outputFile: "invalid-filter-chains/gateway-http-listenerset-tcp-no-routes.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("Gateway TCP listener no routes with ListenerSet HTTP listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "invalid-filter-chains/gateway-tcp-no-routes-listenerset-http.yaml",
+			outputFile: "invalid-filter-chains/gateway-tcp-no-routes-listenerset-http.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -1460,11 +1646,10 @@ func TestRouteReplacement(t *testing.T) {
 			},
 		},
 		{
-			name:           "Regex RE2 Unsupported",
-			category:       "matcher",
-			inputFile:      "matcher-regex-re2-unsupported.yaml",
-			minMode:        settings.RouteReplacementStandard,
-			assertStandard: nil,
+			name:      "Regex RE2 Unsupported",
+			category:  "matcher",
+			inputFile: "matcher-regex-re2-unsupported.yaml",
+			minMode:   settings.RouteReplacementStandard,
 			assertStrict: func(t *testing.T) translatortest.AssertReports {
 				return translatortest.AssertRouteInvalid(
 					t,
@@ -1476,11 +1661,10 @@ func TestRouteReplacement(t *testing.T) {
 			},
 		},
 		{
-			name:           "Path Regex Invalid",
-			category:       "matcher",
-			inputFile:      "matcher-path-regex-invalid.yaml",
-			minMode:        settings.RouteReplacementStandard,
-			assertStandard: nil,
+			name:      "Path Regex Invalid",
+			category:  "matcher",
+			inputFile: "matcher-path-regex-invalid.yaml",
+			minMode:   settings.RouteReplacementStandard,
 			assertStrict: func(t *testing.T) translatortest.AssertReports {
 				return translatortest.AssertRouteInvalid(
 					t,
@@ -1492,11 +1676,10 @@ func TestRouteReplacement(t *testing.T) {
 			},
 		},
 		{
-			name:           "Header Regex Invalid",
-			category:       "matcher",
-			inputFile:      "matcher-header-regex-invalid.yaml",
-			minMode:        settings.RouteReplacementStandard,
-			assertStandard: nil,
+			name:      "Header Regex Invalid",
+			category:  "matcher",
+			inputFile: "matcher-header-regex-invalid.yaml",
+			minMode:   settings.RouteReplacementStandard,
 			assertStrict: func(t *testing.T) translatortest.AssertReports {
 				return translatortest.AssertRouteInvalid(
 					t,
@@ -1536,29 +1719,15 @@ func TestRouteReplacement(t *testing.T) {
 			category:  "attachment",
 			inputFile: "gateway-invalid.yaml",
 			minMode:   settings.RouteReplacementStandard,
-			assertStandard: func(t *testing.T) translatortest.AssertReports {
-				return func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-					translatortest.AssertAcceptedPolicyStatus(t, reportsMap, []reports.PolicyKey{
-						{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "gwtest", Name: "gateway-level-invalid-policy"},
-					})
-				}
-			},
 			assertStrict: func(t *testing.T) translatortest.AssertReports {
 				return translatortest.AssertPolicyNotAccepted(t, "gateway-level-invalid-policy", "test-route")
 			},
 		},
 		{
-			name:      "Listener",
+			name:      "Gateway/Listener",
 			category:  "attachment",
-			inputFile: "listener-invalid.yaml",
+			inputFile: "gateway-listener-invalid.yaml",
 			minMode:   settings.RouteReplacementStandard,
-			assertStandard: func(t *testing.T) translatortest.AssertReports {
-				return func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-					translatortest.AssertAcceptedPolicyStatus(t, reportsMap, []reports.PolicyKey{
-						{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "gwtest", Name: "listener-level-invalid-policy"},
-					})
-				}
-			},
 			assertStrict: func(t *testing.T) translatortest.AssertReports {
 				return translatortest.AssertPolicyNotAccepted(t, "listener-level-invalid-policy", "test-route")
 			},
@@ -1568,13 +1737,15 @@ func TestRouteReplacement(t *testing.T) {
 			category:  "attachment",
 			inputFile: "xlistenerset-invalid.yaml",
 			minMode:   settings.RouteReplacementStandard,
-			assertStandard: func(t *testing.T) translatortest.AssertReports {
-				return func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-					translatortest.AssertAcceptedPolicyStatus(t, reportsMap, []reports.PolicyKey{
-						{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "gwtest", Name: "invalid-traffic-policy"},
-					})
-				}
+			assertStrict: func(t *testing.T) translatortest.AssertReports {
+				return translatortest.AssertPolicyNotAccepted(t, "invalid-traffic-policy", "test-route")
 			},
+		},
+		{
+			name:      "XListenerSet/Listener",
+			category:  "attachment",
+			inputFile: "xlistenerset-listener-invalid.yaml",
+			minMode:   settings.RouteReplacementStandard,
 			assertStrict: func(t *testing.T) translatortest.AssertReports {
 				return translatortest.AssertPolicyNotAccepted(t, "invalid-traffic-policy", "test-route")
 			},
@@ -1584,16 +1755,43 @@ func TestRouteReplacement(t *testing.T) {
 			category:  "attachment",
 			inputFile: "httproute-invalid.yaml",
 			minMode:   settings.RouteReplacementStandard,
+			assertStrict: func(t *testing.T) translatortest.AssertReports {
+				return func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+					translatortest.AssertPolicyNotAccepted(t, "invalid-traffic-policy", "test-route")
+				}
+			},
+		},
+		{
+			name:      "Multi-Target",
+			category:  "attachment",
+			inputFile: "multi-target-invalid.yaml",
+			minMode:   settings.RouteReplacementStandard,
 			assertStandard: func(t *testing.T) translatortest.AssertReports {
 				return func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-					translatortest.AssertAcceptedPolicyStatus(t, reportsMap, []reports.PolicyKey{
-						{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "gwtest", Name: "invalid-traffic-policy"},
-					})
+					translatortest.AssertPolicyNotAccepted(t, "xlistenerset-wide-invalid-policy", "test-route")
 				}
 			},
 			assertStrict: func(t *testing.T) translatortest.AssertReports {
 				return func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-					translatortest.AssertPolicyNotAccepted(t, "invalid-traffic-policy", "test-route")
+					// just assert on the gateway-wide policy to appease translator test.go logic
+					// that verifies all status' are in Accepted=true state when assertReports is nil.
+					// we already have coverage for output status written to golden file.
+					r := require.New(t)
+					policy := reports.PolicyKey{
+						Group:     "gateway.kgateway.dev",
+						Kind:      "TrafficPolicy",
+						Namespace: "gwtest",
+						Name:      "gateway-wide-invalid-policy",
+					}
+					policyStatus := reportsMap.BuildPolicyStatus(context.Background(), policy, wellknown.DefaultGatewayControllerName, gwv1alpha2.PolicyStatus{})
+					r.NotNil(policyStatus, "Policy status should not be nil")
+					r.Len(policyStatus.Ancestors, 2, "Policy should have two ancestors")
+
+					acceptedCondition := meta.FindStatusCondition(policyStatus.Ancestors[0].Conditions, string(v1alpha1.PolicyConditionAccepted))
+					r.NotNil(acceptedCondition, "Accepted condition should not be nil")
+					r.Equal(metav1.ConditionFalse, acceptedCondition.Status, "Policy should have Accepted=false")
+					r.Equal(string(v1alpha1.PolicyReasonInvalid), acceptedCondition.Reason, "Policy should have Invalid reason")
+					r.Contains(acceptedCondition.Message, "invalid xds configuration", "Policy message should contain validation error")
 				}
 			},
 		},
@@ -1811,6 +2009,15 @@ func TestRouteReplacement(t *testing.T) {
 					reporter.RouteRuleReplacedReason,
 					"Incorrect configuration: %RESPONSE(Invalid-Variable",
 				)
+			},
+		},
+		{
+			name:      "Gateway/Listener/Merge",
+			category:  "attachment",
+			inputFile: "gateway-listener-merge-invalid.yaml",
+			minMode:   settings.RouteReplacementStandard,
+			assertStrict: func(t *testing.T) translatortest.AssertReports {
+				return translatortest.AssertPolicyNotAccepted(t, "listener-merge-invalid-policy", "")
 			},
 		},
 	}

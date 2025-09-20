@@ -5,5 +5,8 @@ image:
 controller:
   logLevel: debug
 
-agentGateway:
+inferenceExtension:
+  enabled: true
+
+agentgateway:
   enabled: true

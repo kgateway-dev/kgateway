@@ -10,6 +10,9 @@ import (
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=trafficpolicies,verbs=get;list;watch
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=trafficpolicies/status,verbs=get;update;patch
 
+// +kubebuilder:printcolumn:name="Accepted",type=string,JSONPath=".status.ancestors[*].conditions[?(@.type=='Accepted')].status",description="Traffic policy acceptance status"
+// +kubebuilder:printcolumn:name="Attached",type=string,JSONPath=".status.ancestors[*].conditions[?(@.type=='Attached')].status",description="Traffic policy attachment status"
+
 // +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:metadata:labels={app=kgateway,app.kubernetes.io/name=kgateway}
@@ -164,7 +167,7 @@ type Transform struct {
 	Body *BodyTransformation `json:"body,omitempty"`
 }
 
-type InjaTemplate string
+type Template string
 
 // EnvoyHeaderName is the name of a header or pseudo header
 // Based on gateway api v1.Headername but allows a singular : at the start
@@ -180,7 +183,10 @@ type (
 		// +required
 		Name HeaderName `json:"name,omitempty"`
 		// Value is the template to apply to generate the output value for the header.
-		Value InjaTemplate `json:"value,omitempty"`
+		// Inja templates are supported for Envoy-based data planes only.
+		// CEL expressions are supported for agentgateway data plane only.
+		// The system will auto-detect the appropriate template format based on the data plane.
+		Value Template `json:"value,omitempty"`
 	}
 )
 
@@ -200,61 +206,17 @@ const (
 type BodyTransformation struct {
 	// ParseAs defines what auto formatting should be applied to the body.
 	// This can make interacting with keys within a json body much easier if AsJson is selected.
+	// This field is only supported for kgateway (Envoy) data plane and is ignored by agentgateway.
+	// For agentgateway, use json(request.body) or json(response.body) directly in CEL expressions.
 	// +kubebuilder:default=AsString
 	ParseAs BodyParseBehavior `json:"parseAs"`
 
 	// Value is the template to apply to generate the output value for the body.
+	// Inja templates are supported for Envoy-based data planes only.
+	// CEL expressions are supported for agentgateway data plane only.
+	// The system will auto-detect the appropriate template format based on the data plane.
 	// +optional
-	Value *InjaTemplate `json:"value,omitempty"`
-}
-
-// ExtAuthPolicy configures external authentication for a route.
-// This policy will determine the ext auth server to use and how to  talk to it.
-// Note that most of these fields are passed along as is to Envoy.
-// For more details on particular fields please see the Envoy ExtAuth documentation.
-// https://raw.githubusercontent.com/envoyproxy/envoy/f910f4abea24904aff04ec33a00147184ea7cffa/api/envoy/extensions/filters/http/ext_authz/v3/ext_authz.proto
-//
-// +kubebuilder:validation:ExactlyOneOf=extensionRef;disable
-type ExtAuthPolicy struct {
-	// ExtensionRef references the GatewayExtension that should be used for authentication.
-	// +optional
-	ExtensionRef *NamespacedObjectReference `json:"extensionRef,omitempty"`
-
-	// WithRequestBody allows the request body to be buffered and sent to the authorization service.
-	// Warning buffering has implications for streaming and therefore performance.
-	// +optional
-	WithRequestBody *BufferSettings `json:"withRequestBody,omitempty"`
-
-	// Additional context for the authorization service.
-	// +optional
-	ContextExtensions map[string]string `json:"contextExtensions,omitempty"`
-
-	// Disable all external authorization filters.
-	// Can be used to disable external authorization policies applied at a higher level in the config hierarchy.
-	// +optional
-	Disable *PolicyDisable `json:"disable,omitempty"`
-}
-
-// BufferSettings configures how the request body should be buffered.
-type BufferSettings struct {
-	// MaxRequestBytes sets the maximum size of a message body to buffer.
-	// Requests exceeding this size will receive HTTP 413 and not be sent to the authorization service.
-	// +required
-	// +kubebuilder:validation:Minimum=1
-	MaxRequestBytes uint32 `json:"maxRequestBytes"`
-
-	// AllowPartialMessage determines if partial messages should be allowed.
-	// When true, requests will be sent to the authorization service even if they exceed maxRequestBytes.
-	// When unset, the default behavior is false.
-	// +optional
-	AllowPartialMessage *bool `json:"allowPartialMessage,omitempty"`
-
-	// PackAsBytes determines if the body should be sent as raw bytes.
-	// When true, the body is sent as raw bytes in the raw_body field.
-	// When false, the body is sent as UTF-8 string in the body field.
-	// When unset, the default behavior is false.
-	// +optional
-	PackAsBytes *bool `json:"packAsBytes,omitempty"`
+	Value *Template `json:"value,omitempty"`
 }
 
 // RateLimit defines a rate limiting policy.
@@ -300,6 +262,7 @@ type TokenBucket struct {
 	// It determines the frequency of token replenishment.
 	// +required
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('50ms')",message="must be at least 50ms"
 	FillInterval metav1.Duration `json:"fillInterval"`
 }
 

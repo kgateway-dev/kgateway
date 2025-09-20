@@ -106,6 +106,10 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		backend.Obj = i
 		backend.ObjIr = backendIR
 		backend.Errors = backendIR.Errors
+
+		// Parse common annotations
+		ir.ParseObjectAnnotations(&backend, i)
+
 		return &backend
 	})
 	endpoints := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *ir.EndpointsForBackend {
@@ -203,7 +207,7 @@ func buildTranslateFunc(
 			}
 			ns := i.GetNamespace()
 			if i.Spec.AI.LLM != nil {
-				secretRef := getAISecretRef(i.Spec.AI.LLM.Provider)
+				secretRef := getAISecretRef(i.Spec.AI.LLM)
 				// if secretRef is used, set the secret on the backend ir
 				if secretRef != nil {
 					secret, err := pluginutils.GetSecretIr(secrets, krtctx, secretRef.Name, ns)
@@ -214,11 +218,11 @@ func buildTranslateFunc(
 				}
 				return &backendIr
 			}
-			if i.Spec.AI.MultiPool != nil {
+			if len(i.Spec.AI.PriorityGroups) > 0 {
 				backendIr.AIIr.AIMultiSecret = map[string]*ir.Secret{}
-				for idx, priority := range i.Spec.AI.MultiPool.Priorities {
-					for jdx, pool := range priority.Pool {
-						secretRef := getAISecretRef(pool.Provider)
+				for idx, group := range i.Spec.AI.PriorityGroups {
+					for jdx, provider := range group.Providers {
+						secretRef := getAISecretRef(&provider)
 						if secretRef == nil {
 							continue
 						}
@@ -236,7 +240,11 @@ func buildTranslateFunc(
 	}
 }
 
-func getAISecretRef(llm v1alpha1.SupportedLLMProvider) *corev1.LocalObjectReference {
+func getAISecretRef(llm *v1alpha1.LLMProvider) *corev1.LocalObjectReference {
+	if llm == nil {
+		// should never happen
+		return nil
+	}
 	var secretRef *corev1.LocalObjectReference
 	if llm.OpenAI != nil {
 		secretRef = llm.OpenAI.AuthToken.SecretRef

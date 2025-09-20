@@ -112,7 +112,7 @@ func constructExtProc(
 		return fmt.Errorf("extproc: %w", err)
 	}
 	if gatewayExtension.ExtType != v1alpha1.GatewayExtensionTypeExtProc || gatewayExtension.ExtProc == nil {
-		return pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, gatewayExtension.ExtType)
+		return pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtProc, gatewayExtension.ExtType)
 	}
 	out.extProc = &extprocIR{
 		perProviderConfig: []*perProviderExtProcConfig{

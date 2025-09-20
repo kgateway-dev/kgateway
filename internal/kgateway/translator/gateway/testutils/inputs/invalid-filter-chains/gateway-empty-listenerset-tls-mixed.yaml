@@ -1,0 +1,62 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: kgateway
+  listeners: []
+  allowedListeners:
+    namespaces:
+      from: All
+---
+apiVersion: gateway.networking.x-k8s.io/v1alpha1
+kind: XListenerSet
+metadata:
+  name: example-listenerset
+spec:
+  parentRef:
+    name: example-gateway
+    kind: Gateway
+    group: gateway.networking.k8s.io
+  listeners:
+  - name: tls-no-routes
+    protocol: TLS
+    port: 8443
+    hostname: "no-routes.example.com"
+    tls:
+      mode: Passthrough
+  - name: tls-with-routes
+    protocol: TLS
+    port: 8444
+    hostname: "with-routes.example.com"
+    tls:
+      mode: Passthrough
+---
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: TLSRoute
+metadata:
+  name: example-tls-route
+spec:
+  parentRefs:
+  - name: example-listenerset
+    kind: XListenerSet
+    group: gateway.networking.x-k8s.io
+    sectionName: tls-with-routes
+  hostnames:
+  - "with-routes.example.com"
+  rules:
+  - backendRefs:
+    - name: example-tls-svc
+      port: 443
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-tls-svc
+spec:
+  selector:
+    app: example
+  ports:
+    - protocol: TCP
+      port: 443
+      targetPort: 8443

@@ -5,8 +5,12 @@ package v1alpha1
 // ExtAuthProviderApplyConfiguration represents a declarative configuration of the ExtAuthProvider type for use
 // with apply.
 type ExtAuthProviderApplyConfiguration struct {
-	GrpcService *ExtGrpcServiceApplyConfiguration `json:"grpcService,omitempty"`
-	FailOpen    *bool                             `json:"failOpen,omitempty"`
+	GrpcService     *ExtGrpcServiceApplyConfiguration        `json:"grpcService,omitempty"`
+	FailOpen        *bool                                    `json:"failOpen,omitempty"`
+	ClearRouteCache *bool                                    `json:"clearRouteCache,omitempty"`
+	WithRequestBody *ExtAuthBufferSettingsApplyConfiguration `json:"withRequestBody,omitempty"`
+	StatusOnError   *uint32                                  `json:"statusOnError,omitempty"`
+	StatPrefix      *string                                  `json:"statPrefix,omitempty"`
 }
 
 // ExtAuthProviderApplyConfiguration constructs a declarative configuration of the ExtAuthProvider type for use with
@@ -28,5 +32,37 @@ func (b *ExtAuthProviderApplyConfiguration) WithGrpcService(value *ExtGrpcServic
 // If called multiple times, the FailOpen field is set to the value of the last call.
 func (b *ExtAuthProviderApplyConfiguration) WithFailOpen(value bool) *ExtAuthProviderApplyConfiguration {
 	b.FailOpen = &value
+	return b
+}
+
+// WithClearRouteCache sets the ClearRouteCache field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ClearRouteCache field is set to the value of the last call.
+func (b *ExtAuthProviderApplyConfiguration) WithClearRouteCache(value bool) *ExtAuthProviderApplyConfiguration {
+	b.ClearRouteCache = &value
+	return b
+}
+
+// WithWithRequestBody sets the WithRequestBody field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the WithRequestBody field is set to the value of the last call.
+func (b *ExtAuthProviderApplyConfiguration) WithWithRequestBody(value *ExtAuthBufferSettingsApplyConfiguration) *ExtAuthProviderApplyConfiguration {
+	b.WithRequestBody = value
+	return b
+}
+
+// WithStatusOnError sets the StatusOnError field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the StatusOnError field is set to the value of the last call.
+func (b *ExtAuthProviderApplyConfiguration) WithStatusOnError(value uint32) *ExtAuthProviderApplyConfiguration {
+	b.StatusOnError = &value
+	return b
+}
+
+// WithStatPrefix sets the StatPrefix field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the StatPrefix field is set to the value of the last call.
+func (b *ExtAuthProviderApplyConfiguration) WithStatPrefix(value string) *ExtAuthProviderApplyConfiguration {
+	b.StatPrefix = &value
 	return b
 }

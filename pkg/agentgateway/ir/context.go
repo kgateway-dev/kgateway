@@ -6,14 +6,14 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
-// AgentGatewayRouteContext provides context for route-level translations
-type AgentGatewayRouteContext struct {
+// AgwRouteContext provides context for route-level translations
+type AgwRouteContext struct {
 	Rule             *gwv1.HTTPRouteRule
 	AttachedPolicies ir.AttachedPolicies
 }
 
-// AgentGatewayTranslationBackendContext provides context for backend translations
-type AgentGatewayTranslationBackendContext struct {
+// AgwTranslationBackendContext provides context for backend translations
+type AgwTranslationBackendContext struct {
 	Backend        *ir.BackendObjectIR
 	GatewayContext ir.GatewayContext
 }

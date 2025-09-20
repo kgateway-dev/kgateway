@@ -69,7 +69,7 @@ type tsuite struct {
 	ctx              context.Context
 	testInstallation *e2e.TestInstallation
 	baseManifests    []string
-	agentGateway     bool
+	agentgateway     bool
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
@@ -84,11 +84,11 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
-func NewAgentGatewayTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+func NewAgentgatewayTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &tsuite{
 		ctx:              ctx,
 		testInstallation: testInst,
-		agentGateway:     true,
+		agentgateway:     true,
 		baseManifests: []string{
 			filepath.Join(fsutils.MustGetThisDir(), "testdata/base-agw.yaml"),
 			filepath.Join(fsutils.MustGetThisDir(), "testdata/nginx.yaml"),
@@ -167,9 +167,9 @@ func (s *tsuite) TestBackendTLSPolicyAndStatus() {
 		},
 	)
 
-	if s.agentGateway {
-		// AgentGateway currently doesn't support Statuses for BackendTLSPolicy
-		s.T().Log("Skipping status assertions for AgentGateway as they are not currently supported")
+	if s.agentgateway {
+		// Agentgateway currently doesn't support Statuses for BackendTLSPolicy
+		s.T().Log("Skipping status assertions for Agentgateway as they are not currently supported")
 		return
 	}
 	s.assertPolicyStatus(metav1.Condition{

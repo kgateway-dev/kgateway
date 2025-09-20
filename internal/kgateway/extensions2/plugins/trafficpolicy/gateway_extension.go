@@ -16,6 +16,7 @@ import (
 	envoynetworkv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/matching/common_inputs/network/v3"
 	envoymetadatav3 "github.com/envoyproxy/go-control-plane/envoy/extensions/matching/input_matchers/metadata/v3"
 	envoymatcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	envoytypev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"istio.io/istio/pkg/kube/krt"
@@ -120,6 +121,19 @@ func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(
 				},
 				FilterEnabledMetadata: ExtAuthzEnabledMetadataMatcher,
 				FailureModeAllow:      gExt.ExtAuth.FailOpen,
+				ClearRouteCache:       gExt.ExtAuth.ClearRouteCache,
+				StatusOnError:         &envoytypev3.HttpStatus{Code: envoytypev3.StatusCode(gExt.ExtAuth.StatusOnError)},
+			}
+
+			if gExt.ExtAuth.WithRequestBody != nil {
+				p.ExtAuth.WithRequestBody = &envoy_ext_authz_v3.BufferSettings{
+					MaxRequestBytes:     gExt.ExtAuth.WithRequestBody.MaxRequestBytes,
+					AllowPartialMessage: gExt.ExtAuth.WithRequestBody.AllowPartialMessage,
+					PackAsBytes:         gExt.ExtAuth.WithRequestBody.PackAsBytes,
+				}
+			}
+			if gExt.ExtAuth.StatPrefix != nil {
+				p.ExtAuth.StatPrefix = *gExt.ExtAuth.StatPrefix
 			}
 
 		case v1alpha1.GatewayExtensionTypeExtProc:
@@ -143,7 +157,7 @@ func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(
 			}
 
 			// Use the specialized function for rate limit service resolution
-			rateLimitConfig := resolveRateLimitService(grpcService, gExt.RateLimit)
+			rateLimitConfig := buildRateLimitFilter(grpcService, gExt.RateLimit)
 
 			p.RateLimit = rateLimitConfig
 		}
@@ -205,7 +219,7 @@ func ResolveExtGrpcService(
 }
 
 // FIXME: Should this live here instead of the global rate limit plugin?
-func resolveRateLimitService(grpcService *envoycorev3.GrpcService, rateLimit *v1alpha1.RateLimitProvider) *ratev3.RateLimit {
+func buildRateLimitFilter(grpcService *envoycorev3.GrpcService, rateLimit *v1alpha1.RateLimitProvider) *ratev3.RateLimit {
 	envoyRateLimit := &ratev3.RateLimit{
 		Domain:          rateLimit.Domain,
 		FailureModeDeny: !rateLimit.FailOpen,
@@ -213,6 +227,7 @@ func resolveRateLimitService(grpcService *envoycorev3.GrpcService, rateLimit *v1
 			GrpcService:         grpcService,
 			TransportApiVersion: envoycorev3.ApiVersion_V3,
 		},
+		EnableXRatelimitHeaders: convertXRL(rateLimit.XRateLimitHeaders),
 	}
 
 	// Set timeout (we expect it always to have a valid value or default due to CRD validation)
@@ -221,9 +236,59 @@ func resolveRateLimitService(grpcService *envoycorev3.GrpcService, rateLimit *v1
 	return envoyRateLimit
 }
 
+func convertXRL(in v1alpha1.XRateLimitHeadersStandard) ratev3.RateLimit_XRateLimitHeadersRFCVersion {
+	switch in {
+	case v1alpha1.XRateLimitHeaderDraftV03:
+		return ratev3.RateLimit_DRAFT_VERSION_03
+	case v1alpha1.XRateLimitHeaderOff:
+		return ratev3.RateLimit_OFF
+	default:
+		return ratev3.RateLimit_OFF
+	}
+}
+
+func convertRCA(in v1alpha1.ExtProcRouteCacheAction) envoyextprocv3.ExternalProcessor_RouteCacheAction {
+	switch in {
+	case v1alpha1.RouteCacheActionClear:
+		return envoyextprocv3.ExternalProcessor_CLEAR
+	case v1alpha1.RouteCacheActionRetain:
+		return envoyextprocv3.ExternalProcessor_RETAIN
+	case v1alpha1.RouteCacheActionFromResponse:
+		return envoyextprocv3.ExternalProcessor_DEFAULT
+	default:
+		return envoyextprocv3.ExternalProcessor_DEFAULT
+	}
+}
+
 // buildCompositeExtProcFilter builds a composite filter for external processing so that
 // the filter can be conditionally disabled with the global_disable/ext_proc filter is enabled
-func buildCompositeExtProcFilter(provider v1alpha1.ExtProcProvider, envoyGrpcService *envoycorev3.GrpcService) *envoymatchingv3.ExtensionWithMatcher {
+func buildCompositeExtProcFilter(in v1alpha1.ExtProcProvider, envoyGrpcService *envoycorev3.GrpcService) *envoymatchingv3.ExtensionWithMatcher {
+	filter := &envoyextprocv3.ExternalProcessor{
+		GrpcService:      envoyGrpcService,
+		FailureModeAllow: in.FailOpen,
+		RouteCacheAction: convertRCA(in.RouteCacheAction),
+	}
+	if mode := toEnvoyProcessingMode(in.ProcessingMode); mode != nil {
+		filter.ProcessingMode = mode
+	}
+	if in.MessageTimeout != nil {
+		filter.MessageTimeout = durationpb.New(in.MessageTimeout.Duration)
+	}
+	if in.MaxMessageTimeout != nil {
+		filter.MaxMessageTimeout = durationpb.New(in.MaxMessageTimeout.Duration)
+	}
+	if in.StatPrefix != nil {
+		filter.StatPrefix = *in.StatPrefix
+	}
+	if in.MetadataOptions != nil {
+		filter.MetadataOptions = &envoyextprocv3.MetadataOptions{}
+		if in.MetadataOptions.Forwarding != nil {
+			filter.MetadataOptions.ForwardingNamespaces = &envoyextprocv3.MetadataOptions_MetadataNamespaces{
+				Typed:   in.MetadataOptions.Forwarding.Typed,
+				Untyped: in.MetadataOptions.Forwarding.Untyped,
+			}
+		}
+	}
 	return &envoymatchingv3.ExtensionWithMatcher{
 		ExtensionConfig: &envoycorev3.TypedExtensionConfig{
 			Name:        "composite_ext_proc",
@@ -274,11 +339,8 @@ func buildCompositeExtProcFilter(provider v1alpha1.ExtProcProvider, envoyGrpcSer
 										Name: "composite-action",
 										TypedConfig: utils.MustMessageToAny(&envoycompositev3.ExecuteFilterAction{
 											TypedConfig: &envoycorev3.TypedExtensionConfig{
-												Name: "envoy.filters.http.ext_proc",
-												TypedConfig: utils.MustMessageToAny(&envoyextprocv3.ExternalProcessor{
-													GrpcService:      envoyGrpcService,
-													FailureModeAllow: provider.FailOpen,
-												}),
+												Name:        "envoy.filters.http.ext_proc",
+												TypedConfig: utils.MustMessageToAny(filter),
 											},
 										}),
 									},

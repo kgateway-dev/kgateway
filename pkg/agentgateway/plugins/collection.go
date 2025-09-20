@@ -259,21 +259,21 @@ func NewAgwCollections(
 			ObjectFilter:    commoncol.Client.ObjectFilter(),
 		}, commoncol.KrtOpts.ToOptions("informer/Pods")...),
 
-		Secrets: krt.WrapClient[*corev1.Secret](
+		Secrets: krt.WrapClient(
 			kclient.NewFiltered[*corev1.Secret](commoncol.Client, kubetypes.Filter{
 				ObjectFilter: commoncol.Client.ObjectFilter(),
 			}),
 		),
-		ConfigMaps: krt.WrapClient[*corev1.ConfigMap](
+		ConfigMaps: krt.WrapClient(
 			kclient.NewFiltered[*corev1.ConfigMap](commoncol.Client, kubetypes.Filter{
 				ObjectFilter: commoncol.Client.ObjectFilter(),
 			}),
 			commoncol.KrtOpts.ToOptions("informer/ConfigMaps")...,
 		),
-		Services: krt.WrapClient[*corev1.Service](
+		Services: krt.WrapClient(
 			kclient.NewFiltered[*corev1.Service](commoncol.Client, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}),
 			commoncol.KrtOpts.ToOptions("informer/Services")...),
-		EndpointSlices: krt.WrapClient[*discovery.EndpointSlice](
+		EndpointSlices: krt.WrapClient(
 			kclient.NewFiltered[*discovery.EndpointSlice](commoncol.Client, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}),
 			commoncol.KrtOpts.ToOptions("informer/EndpointSlices")...),
 

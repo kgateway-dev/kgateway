@@ -2,28 +2,34 @@ package plugins
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/agentgateway/agentgateway/go/api"
 	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	"sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
@@ -33,28 +39,45 @@ const (
 	rbacPolicySuffix            = ":rbac"
 	localRateLimitPolicySuffix  = ":rl-local"
 	globalRateLimitPolicySuffix = ":rl-global"
+	transformationPolicySuffix  = ":transformation"
 )
 
 var logger = logging.New("agentgateway/plugins")
 
+// convertStatusCollection converts the specific TrafficPolicy status collection
+// to the generic controllers.Object status collection expected by the interface
+func convertStatusCollection(col krt.Collection[krt.ObjectWithStatus[*v1alpha1.TrafficPolicy, v1alpha2.PolicyStatus]]) krt.StatusCollection[controllers.Object, v1alpha2.PolicyStatus] {
+	// Use krt.NewCollection to transform the collection
+	return krt.NewCollection(col, func(ctx krt.HandlerContext, item krt.ObjectWithStatus[*v1alpha1.TrafficPolicy, v1alpha2.PolicyStatus]) *krt.ObjectWithStatus[controllers.Object, v1alpha2.PolicyStatus] {
+		return &krt.ObjectWithStatus[controllers.Object, v1alpha2.PolicyStatus]{
+			Obj:    controllers.Object(item.Obj),
+			Status: item.Status,
+		}
+	})
+}
+
 // NewTrafficPlugin creates a new TrafficPolicy plugin
-func NewTrafficPlugin(agw *AgwCollections) AgentgatewayPlugin {
+func NewTrafficPlugin(agw *AgwCollections) AgwPlugin {
 	col := krt.WrapClient(kclient.NewFiltered[*v1alpha1.TrafficPolicy](
 		agw.Client,
 		kclient.Filter{ObjectFilter: agw.Client.ObjectFilter()},
 	), agw.KrtOpts.ToOptions("TrafficPolicy")...)
-	policyCol := krt.NewManyCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.TrafficPolicy) []ADPPolicy {
-		return TranslateTrafficPolicy(krtctx, agw.GatewayExtensions, agw.Backends, policyCR)
+	policyStatusCol, policyCol := krt.NewStatusManyCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.TrafficPolicy) (
+		*v1alpha2.PolicyStatus,
+		[]AgwPolicy,
+	) {
+		return TranslateTrafficPolicy(krtctx, agw.GatewayExtensions, agw.Backends, agw.Secrets, policyCR, agw.ControllerName)
 	})
 
-	return AgentgatewayPlugin{
+	return AgwPlugin{
 		ContributesPolicies: map[schema.GroupKind]PolicyPlugin{
 			wellknown.TrafficPolicyGVK.GroupKind(): {
-				Policies: policyCol,
+				Policies:       policyCol,
+				PolicyStatuses: convertStatusCollection(policyStatusCol),
 			},
 		},
 		ExtraHasSynced: func() bool {
-			return policyCol.HasSynced()
+			return policyCol.HasSynced() && policyStatusCol.HasSynced()
 		},
 	}
 }
@@ -64,16 +87,31 @@ func TranslateTrafficPolicy(
 	ctx krt.HandlerContext,
 	gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension],
 	backends krt.Collection[*v1alpha1.Backend],
+	secrets krt.Collection[*corev1.Secret],
 	trafficPolicy *v1alpha1.TrafficPolicy,
-) []ADPPolicy {
-	var adpPolicies []ADPPolicy
+	controllerName string,
+) (*v1alpha2.PolicyStatus, []AgwPolicy) {
+	var agwPolicies []AgwPolicy
 
 	isMcpTarget := false
+	var ancestors []v1alpha2.PolicyAncestorStatus
 	for _, target := range trafficPolicy.Spec.TargetRefs {
 		var policyTarget *api.PolicyTarget
+		// Build a base ParentReference for status
+		parentRef := gwv1.ParentReference{
+			Name:      gwv1.ObjectName(target.Name),
+			Namespace: ptr.To(gwv1.Namespace(trafficPolicy.Namespace)),
+		}
+		if target.SectionName != nil {
+			parentRef.SectionName = (*gwv1.SectionName)(target.SectionName)
+		}
 
 		switch string(target.Kind) {
 		case wellknown.GatewayKind:
+			group := gwv1.Group(wellknown.GatewayGVK.Group)
+			kind := gwv1.Kind(wellknown.GatewayGVK.Kind)
+			parentRef.Group = &group
+			parentRef.Kind = &kind
 			policyTarget = &api.PolicyTarget{
 				Kind: &api.PolicyTarget_Gateway{
 					Gateway: utils.InternalGatewayName(trafficPolicy.Namespace, string(target.Name), ""),
@@ -88,6 +126,10 @@ func TranslateTrafficPolicy(
 			}
 
 		case wellknown.HTTPRouteKind:
+			group := gwv1.Group(wellknown.HTTPRouteGVK.Group)
+			kind := gwv1.Kind(wellknown.HTTPRouteGVK.Kind)
+			parentRef.Group = &group
+			parentRef.Kind = &kind
 			policyTarget = &api.PolicyTarget{
 				Kind: &api.PolicyTarget_Route{
 					Route: utils.InternalRouteRuleName(trafficPolicy.Namespace, string(target.Name), ""),
@@ -103,6 +145,10 @@ func TranslateTrafficPolicy(
 
 		case wellknown.BackendGVK.Kind:
 			// kgateway backend kind (MCP, AI, etc.)
+			group := gwv1.Group(wellknown.BackendGVK.Group)
+			kind := gwv1.Kind(wellknown.BackendGVK.Kind)
+			parentRef.Group = &group
+			parentRef.Kind = &kind
 
 			// Look up the Backend referenced by the policy
 			backendKey := getBackendKey(trafficPolicy.Namespace, string(target.Name))
@@ -111,7 +157,24 @@ func TranslateTrafficPolicy(
 				logger.Error("backend not found",
 					"target", target.Name,
 					"policy", client.ObjectKeyFromObject(trafficPolicy))
-				return nil
+				// Return an error status when backend is not found
+				conds := []metav1.Condition{}
+				meta.SetStatusCondition(&conds, metav1.Condition{
+					Type:    string(v1alpha1.PolicyConditionAccepted),
+					Status:  metav1.ConditionFalse,
+					Reason:  string(v1alpha1.PolicyReasonInvalid),
+					Message: fmt.Sprintf("Backend %s not found", target.Name),
+				})
+				status := v1alpha2.PolicyStatus{
+					Ancestors: []v1alpha2.PolicyAncestorStatus{
+						{
+							AncestorRef:    parentRef,
+							ControllerName: v1alpha2.GatewayController(controllerName),
+							Conditions:     conds,
+						},
+					},
+				}
+				return &status, nil
 			}
 			backendSpec := (*backend).Spec
 			if backendSpec.Type == v1alpha1.BackendTypeMCP {
@@ -134,56 +197,153 @@ func TranslateTrafficPolicy(
 		}
 
 		if policyTarget != nil {
-			translatedPolicies := translateTrafficPolicyToADP(ctx, gatewayExtensions, trafficPolicy, string(target.Name), policyTarget, isMcpTarget)
-			adpPolicies = append(adpPolicies, translatedPolicies...)
+			translatedPolicies, err := translateTrafficPolicyToAgw(ctx, gatewayExtensions, secrets, trafficPolicy, string(target.Name), policyTarget, isMcpTarget)
+			agwPolicies = append(agwPolicies, translatedPolicies...)
+			var conds []metav1.Condition
+			if err != nil {
+				// Build success conditions per ancestor
+				meta.SetStatusCondition(&conds, metav1.Condition{
+					Type:    string(v1alpha1.PolicyConditionAccepted),
+					Status:  metav1.ConditionFalse,
+					Reason:  string(v1alpha1.PolicyReasonInvalid),
+					Message: err.Error(),
+				})
+			} else {
+				// Build success conditions per ancestor
+				meta.SetStatusCondition(&conds, metav1.Condition{
+					Type:    string(v1alpha1.PolicyConditionAccepted),
+					Status:  metav1.ConditionTrue,
+					Reason:  string(v1alpha1.PolicyReasonValid),
+					Message: reporter.PolicyAcceptedMsg,
+				})
+			}
+			// TODO: validate the target exists with dataplane https://github.com/kgateway-dev/kgateway/issues/12275
+			meta.SetStatusCondition(&conds, metav1.Condition{
+				Type:    string(v1alpha1.PolicyConditionAttached),
+				Status:  metav1.ConditionTrue,
+				Reason:  string(v1alpha1.PolicyReasonAttached),
+				Message: reporter.PolicyAttachedMsg,
+			})
+			// Ensure LastTransitionTime is set for all conditions
+			for i := range conds {
+				if conds[i].LastTransitionTime.IsZero() {
+					conds[i].LastTransitionTime = metav1.Now()
+				}
+			}
+			// Only append valid ancestors: require non-empty controllerName and parentRef name
+			if controllerName != "" && string(parentRef.Name) != "" {
+				ancestors = append(ancestors, v1alpha2.PolicyAncestorStatus{
+					AncestorRef:    parentRef,
+					ControllerName: v1alpha2.GatewayController(controllerName),
+					Conditions:     conds,
+				})
+			}
 		}
 	}
 
-	return adpPolicies
+	// Build final status from accumulated ancestors
+	status := v1alpha2.PolicyStatus{Ancestors: ancestors}
+
+	if len(status.Ancestors) > 15 {
+		ignored := status.Ancestors[15:]
+		status.Ancestors = status.Ancestors[:15]
+		status.Ancestors = append(status.Ancestors, v1alpha2.PolicyAncestorStatus{
+			AncestorRef: gwv1.ParentReference{
+				Group: ptr.To(gwv1.Group("gateway.kgateway.dev")),
+				Name:  "StatusSummary",
+			},
+			ControllerName: gwv1.GatewayController(controllerName),
+			Conditions: []metav1.Condition{
+				{
+					Type:    "StatusSummarized",
+					Status:  metav1.ConditionTrue,
+					Reason:  "StatusSummary",
+					Message: fmt.Sprintf("%d AncestorRefs ignored due to max status size", len(ignored)),
+				},
+			},
+		})
+	}
+
+	// sort all parents for consistency with Equals and for Update
+	// match sorting semantics of istio/istio, see:
+	// https://github.com/istio/istio/blob/6dcaa0206bcaf20e3e3b4e45e9376f0f96365571/pilot/pkg/config/kube/gateway/conditions.go#L188-L193
+	slices.SortStableFunc(status.Ancestors, func(a, b v1alpha2.PolicyAncestorStatus) int {
+		return strings.Compare(reports.ParentString(a.AncestorRef), reports.ParentString(b.AncestorRef))
+	})
+
+	return &status, agwPolicies
 }
 
-// translateTrafficPolicyToADP converts a TrafficPolicy to agentgateway Policy resources
-func translateTrafficPolicyToADP(
+// translateTrafficPolicyToAgw converts a TrafficPolicy to agentgateway Policy resources
+func translateTrafficPolicyToAgw(
 	ctx krt.HandlerContext,
 	gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension],
+	secrets krt.Collection[*corev1.Secret],
 	trafficPolicy *v1alpha1.TrafficPolicy,
 	policyTargetName string,
 	policyTarget *api.PolicyTarget,
 	isMcpTarget bool,
-) []ADPPolicy {
-	adpPolicies := make([]ADPPolicy, 0)
+) ([]AgwPolicy, error) {
+	agwPolicies := make([]AgwPolicy, 0)
+	var errs []error
 
 	// Generate a base policy name from the TrafficPolicy reference
 	policyName := getTrafficPolicyName(trafficPolicy.Namespace, trafficPolicy.Name, policyTargetName)
 
 	// Convert ExtAuth policy if present
 	if trafficPolicy.Spec.ExtAuth != nil && trafficPolicy.Spec.ExtAuth.ExtensionRef != nil {
-		extAuthPolicies := processExtAuthPolicy(ctx, gatewayExtensions, trafficPolicy, policyName, policyTarget)
-		adpPolicies = append(adpPolicies, extAuthPolicies...)
+		extAuthPolicies, err := processExtAuthPolicy(ctx, gatewayExtensions, trafficPolicy, policyName, policyTarget)
+		if err != nil {
+			logger.Error("error processing ExtAuth policy", "error", err)
+			errs = append(errs, err)
+		}
+		agwPolicies = append(agwPolicies, extAuthPolicies...)
 	}
 
-	// Conver RBAC policy if present
+	// Convert RBAC policy if present
 	if trafficPolicy.Spec.RBAC != nil {
-		rbacPolicies := processRBACPolicy(trafficPolicy, policyName, policyTarget, isMcpTarget)
-		adpPolicies = append(adpPolicies, rbacPolicies...)
+		rbacPolicies, err := processRBACPolicy(trafficPolicy, policyName, policyTarget, isMcpTarget)
+		if err != nil {
+			logger.Error("error processing RBAC policy", "error", err)
+			errs = append(errs, err)
+		}
+		agwPolicies = append(agwPolicies, rbacPolicies...)
 	}
 
 	// Process AI policies if present
 	if trafficPolicy.Spec.AI != nil {
-		aiPolicies := processAIPolicy(trafficPolicy, policyName, policyTarget)
-		adpPolicies = append(adpPolicies, aiPolicies...)
+		aiPolicies, err := processAIPolicy(ctx, secrets, trafficPolicy, policyName, policyTarget)
+		if err != nil {
+			logger.Error("error processing AI policy", "error", err)
+			errs = append(errs, err)
+		}
+		agwPolicies = append(agwPolicies, aiPolicies...)
 	}
 	// Process RateLimit policies if present
 	if trafficPolicy.Spec.RateLimit != nil {
-		rateLimitPolicies := processRateLimitPolicy(ctx, gatewayExtensions, trafficPolicy, policyName, policyTarget)
-		adpPolicies = append(adpPolicies, rateLimitPolicies...)
+		rateLimitPolicies, err := processRateLimitPolicy(ctx, gatewayExtensions, trafficPolicy, policyName, policyTarget)
+		if err != nil {
+			logger.Error("error processing rate limit policy", "error", err)
+			errs = append(errs, err)
+		}
+		agwPolicies = append(agwPolicies, rateLimitPolicies...)
 	}
 
-	return adpPolicies
+	// Process transformation policies if present
+	if trafficPolicy.Spec.Transformation != nil {
+		transformationPolicies, err := processTransformationPolicy(trafficPolicy, policyName, policyTarget)
+		if err != nil {
+			logger.Error("error processing transformation policy", "error", err)
+			errs = append(errs, err)
+		}
+		agwPolicies = append(agwPolicies, transformationPolicies...)
+	}
+
+	return agwPolicies, errors.Join(errs...)
 }
 
 // processExtAuthPolicy processes ExtAuth configuration and creates corresponding agentgateway policies
-func processExtAuthPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension], trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) []ADPPolicy {
+func processExtAuthPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension], trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) ([]AgwPolicy, error) {
 	// Look up the GatewayExtension referenced by the ExtAuth policy
 	extensionName := trafficPolicy.Spec.ExtAuth.ExtensionRef.Name
 	extensionNamespace := string(ptr.Deref(trafficPolicy.Spec.ExtAuth.ExtensionRef.Namespace, ""))
@@ -194,8 +354,7 @@ func processExtAuthPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collecti
 	gwExt := krt.FetchOne(ctx, gatewayExtensions, krt.FilterKey(gwExtKey))
 
 	if gwExt == nil || (*gwExt).Spec.Type != v1alpha1.GatewayExtensionTypeExtAuth || (*gwExt).Spec.ExtAuth == nil {
-		logger.Error("gateway extension not found or not of type ExtAuth", "extension", gwExtKey)
-		return nil
+		return nil, fmt.Errorf("gateway extension not found or not of type ExtAuth: %s", gwExtKey)
 	}
 	extAuth := (*gwExt).Spec.ExtAuth
 
@@ -221,8 +380,7 @@ func processExtAuthPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collecti
 	}
 
 	if extauthSvcTarget == nil {
-		logger.Warn("failed to translate traffic policy", "policy", trafficPolicy.Name, "target", policyTarget, "error", "missing extauthservice target")
-		return nil
+		return nil, fmt.Errorf("failed to translate traffic policy: %s: missing extauthservice target", trafficPolicy.Name)
 	}
 
 	extauthPolicy := &api.Policy{
@@ -243,11 +401,12 @@ func processExtAuthPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collecti
 		"agentgateway_policy", extauthPolicy.Name,
 		"target", extauthSvcTarget)
 
-	return []ADPPolicy{{Policy: extauthPolicy}}
+	return []AgwPolicy{{Policy: extauthPolicy}}, nil
 }
 
-// processAIPolicy processes AI configuration and creates corresponding ADP policies
-func processAIPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) []ADPPolicy {
+// processAIPolicy processes AI configuration and creates corresponding Agw policies
+func processAIPolicy(krtctx krt.HandlerContext, secrets krt.Collection[*corev1.Secret], trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) ([]AgwPolicy, error) {
+	var errs []error
 	aiSpec := trafficPolicy.Spec.AI
 
 	aiPolicy := &api.Policy{
@@ -265,21 +424,22 @@ func processAIPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyName string, p
 	}
 
 	for _, def := range aiSpec.Defaults {
-		protoValue, err := toProtoValue(def.Value)
+		val, err := toJSONValue(def.Value)
 		if err != nil {
-			logger.Error("error parsing spec.defaults", "field", def.Field, "ref", trafficPolicy.Namespace+"/"+trafficPolicy.Name, "error", err)
+			logger.Error("error parsing field value", "field", def.Field, "error", err)
+			errs = append(errs, err)
 			continue
 		}
 		if def.Override {
 			if aiPolicy.GetSpec().GetAi().Overrides == nil {
-				aiPolicy.GetSpec().GetAi().Overrides = make(map[string]*structpb.Value)
+				aiPolicy.GetSpec().GetAi().Overrides = make(map[string]string)
 			}
-			aiPolicy.GetSpec().GetAi().Overrides[def.Field] = protoValue
+			aiPolicy.GetSpec().GetAi().Overrides[def.Field] = val
 		} else {
 			if aiPolicy.GetSpec().GetAi().Defaults == nil {
-				aiPolicy.GetSpec().GetAi().Defaults = make(map[string]*structpb.Value)
+				aiPolicy.GetSpec().GetAi().Defaults = make(map[string]string)
 			}
-			aiPolicy.GetSpec().GetAi().Defaults[def.Field] = protoValue
+			aiPolicy.GetSpec().GetAi().Defaults[def.Field] = val
 		}
 	}
 
@@ -288,7 +448,7 @@ func processAIPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyName string, p
 			aiPolicy.GetSpec().GetAi().PromptGuard = &api.PolicySpec_Ai_PromptGuard{}
 		}
 		if aiSpec.PromptGuard.Request != nil {
-			aiPolicy.GetSpec().GetAi().PromptGuard.Request = processRequestGuard(aiSpec.PromptGuard.Request)
+			aiPolicy.GetSpec().GetAi().PromptGuard.Request = processRequestGuard(krtctx, secrets, trafficPolicy.Namespace, aiSpec.PromptGuard.Request)
 		}
 
 		if aiSpec.PromptGuard.Response != nil {
@@ -300,10 +460,10 @@ func processAIPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyName string, p
 		"policy", trafficPolicy.Name,
 		"agentgateway_policy", aiPolicy.Name)
 
-	return []ADPPolicy{{Policy: aiPolicy}}
+	return []AgwPolicy{{Policy: aiPolicy}}, errors.Join(errs...)
 }
 
-func processRequestGuard(req *v1alpha1.PromptguardRequest) *api.PolicySpec_Ai_RequestGuard {
+func processRequestGuard(krtctx krt.HandlerContext, secrets krt.Collection[*corev1.Secret], namespace string, req *v1alpha1.PromptguardRequest) *api.PolicySpec_Ai_RequestGuard {
 	if req == nil {
 		return nil
 	}
@@ -311,7 +471,7 @@ func processRequestGuard(req *v1alpha1.PromptguardRequest) *api.PolicySpec_Ai_Re
 	pgReq := &api.PolicySpec_Ai_RequestGuard{
 		Webhook:          processWebhook(req.Webhook),
 		Regex:            processRegex(req.Regex, req.CustomResponse),
-		OpenaiModeration: processModeration(req.Moderation),
+		OpenaiModeration: processModeration(krtctx, secrets, namespace, req.Moderation),
 	}
 
 	if req.CustomResponse != nil {
@@ -464,7 +624,7 @@ func processRegex(regex *v1alpha1.Regex, customResponse *v1alpha1.CustomResponse
 	return rules
 }
 
-func processModeration(moderation *v1alpha1.Moderation) *api.PolicySpec_Ai_Moderation {
+func processModeration(krtctx krt.HandlerContext, secrets krt.Collection[*corev1.Secret], namespace string, moderation *v1alpha1.Moderation) *api.PolicySpec_Ai_Moderation {
 	// right now we only support OpenAI moderation, so we can return nil if the moderation is nil or the OpenAIModeration is nil
 	if moderation == nil || moderation.OpenAIModeration == nil {
 		return nil
@@ -491,10 +651,23 @@ func processModeration(moderation *v1alpha1.Moderation) *api.PolicySpec_Ai_Moder
 		}
 	case v1alpha1.SecretRef:
 		if moderation.OpenAIModeration.AuthToken.SecretRef != nil {
+			// Resolve the actual secret value from Kubernetes
+			secret, err := kubeutils.GetSecret(secrets, krtctx, moderation.OpenAIModeration.AuthToken.SecretRef.Name, namespace)
+			if err != nil {
+				logger.Error("failed to get secret for OpenAI moderation", "secret", moderation.OpenAIModeration.AuthToken.SecretRef.Name, "namespace", namespace, "error", err)
+				return nil
+			}
+
+			authKey, exists := kubeutils.GetSecretAuth(secret)
+			if !exists {
+				logger.Error("secret does not contain valid Authorization value", "secret", moderation.OpenAIModeration.AuthToken.SecretRef.Name, "namespace", namespace)
+				return nil
+			}
+
 			pgModeration.Auth = &api.BackendAuthPolicy{
 				Kind: &api.BackendAuthPolicy_Key{
 					Key: &api.Key{
-						Secret: moderation.OpenAIModeration.AuthToken.SecretRef.Name,
+						Secret: authKey,
 					},
 				},
 			}
@@ -510,13 +683,13 @@ func processModeration(moderation *v1alpha1.Moderation) *api.PolicySpec_Ai_Moder
 	return pgModeration
 }
 
-// processRBACPolicy processes RBAC configuration and creates corresponding ADP policies
+// processRBACPolicy processes RBAC configuration and creates corresponding Agw policies
 func processRBACPolicy(
 	trafficPolicy *v1alpha1.TrafficPolicy,
 	policyName string,
 	policyTarget *api.PolicyTarget,
 	isMCP bool,
-) []ADPPolicy {
+) ([]AgwPolicy, error) {
 	var allowPolicies, denyPolicies []string
 	if trafficPolicy.Spec.RBAC.Action == v1alpha1.AuthorizationPolicyActionDeny {
 		denyPolicies = append(denyPolicies, trafficPolicy.Spec.RBAC.Policy.MatchExpressions...)
@@ -558,7 +731,7 @@ func processRBACPolicy(
 		"agentgateway_policy", rbacPolicy.Name,
 		"target", policyTarget)
 
-	return []ADPPolicy{{Policy: rbacPolicy}}
+	return []AgwPolicy{{Policy: rbacPolicy}}, nil
 }
 
 func getTrafficPolicyName(trafficPolicyNs, trafficPolicyName, policyTargetName string) string {
@@ -574,45 +747,44 @@ func getGatewayExtensionKey(extensionNamespace, extensionName string) string {
 }
 
 // processRateLimitPolicy processes RateLimit configuration and creates corresponding agentgateway policies
-func processRateLimitPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension], trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) []ADPPolicy {
-	var adpPolicies []ADPPolicy
+func processRateLimitPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension], trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) ([]AgwPolicy, error) {
+	var agwPolicies []AgwPolicy
 
 	// Process local rate limiting if present
 	if trafficPolicy.Spec.RateLimit.Local != nil {
-		localPolicy := processLocalRateLimitPolicy(trafficPolicy, policyName, policyTarget)
-		if localPolicy != nil {
-			adpPolicies = append(adpPolicies, *localPolicy)
+		localPolicy, err := processLocalRateLimitPolicy(trafficPolicy, policyName, policyTarget)
+		if localPolicy != nil && err == nil {
+			agwPolicies = append(agwPolicies, *localPolicy)
 		} else {
-			logger.Warn("failed to create local rate limit policy")
+			return nil, err
 		}
 	}
 
 	// Process global rate limiting if present
 	if trafficPolicy.Spec.RateLimit.Global != nil {
-		globalPolicy := processGlobalRateLimitPolicy(ctx, gatewayExtensions, trafficPolicy, policyName, policyTarget)
-		if globalPolicy != nil {
-			adpPolicies = append(adpPolicies, *globalPolicy)
+		globalPolicy, err := processGlobalRateLimitPolicy(ctx, gatewayExtensions, trafficPolicy, policyName, policyTarget)
+		if globalPolicy != nil && err == nil {
+			agwPolicies = append(agwPolicies, *globalPolicy)
 		} else {
-			logger.Warn("failed to create global rate limit policy")
+			return nil, err
 		}
 	}
 
-	return adpPolicies
+	return agwPolicies, nil
 }
 
 // processLocalRateLimitPolicy processes local rate limiting configuration
-func processLocalRateLimitPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) *ADPPolicy {
+func processLocalRateLimitPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) (*AgwPolicy, error) {
 	if trafficPolicy.Spec.RateLimit.Local.TokenBucket == nil {
 		logger.Error("token bucket configuration is nil")
-		return nil
+		return nil, errors.New("token bucket configuration is nil")
 	}
 
 	tokenBucket := trafficPolicy.Spec.RateLimit.Local.TokenBucket
 
 	// Validate configuration
 	if tokenBucket.MaxTokens <= 0 {
-		logger.Error("invalid max tokens value", "max_tokens", tokenBucket.MaxTokens)
-		return nil
+		return nil, fmt.Errorf("invalid max tokens value: %d", tokenBucket.MaxTokens)
 	}
 	// Convert duration to seconds for agentgateway
 	fillIntervalSeconds := uint32(tokenBucket.FillInterval.Duration.Seconds())
@@ -641,7 +813,7 @@ func processLocalRateLimitPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyNa
 		},
 	}
 
-	return &ADPPolicy{Policy: localRateLimitPolicy}
+	return &AgwPolicy{Policy: localRateLimitPolicy}, nil
 }
 
 func processGlobalRateLimitPolicy(
@@ -650,38 +822,35 @@ func processGlobalRateLimitPolicy(
 	trafficPolicy *v1alpha1.TrafficPolicy,
 	policyName string,
 	policyTarget *api.PolicyTarget,
-) *ADPPolicy {
+) (*AgwPolicy, error) {
 	grl := trafficPolicy.Spec.RateLimit.Global
 	if grl == nil {
-		return nil
+		return nil, nil
 	}
 
 	gwExt, err := lookupGatewayExtension(
 		ctx, gatewayExtensions, grl.ExtensionRef, trafficPolicy.Namespace, v1alpha1.GatewayExtensionTypeRateLimit,
 	)
 	if err != nil {
-		logger.Error("failed to lookup rate limit extension", "error", err)
-		return nil
+		return nil, fmt.Errorf("failed to lookup rate limit extension: %w", err)
 	}
 	if gwExt.Spec.RateLimit == nil ||
 		gwExt.Spec.RateLimit.GrpcService == nil ||
 		gwExt.Spec.RateLimit.GrpcService.BackendRef == nil {
-		logger.Error("rate limit extension missing grpcService.backendRef", "extension", gwExt.Name)
-		return nil
+		return nil, fmt.Errorf("rate limit extension missing grpcService.backendRef: %s", gwExt.Name)
 	}
 
 	// Build BackendReference for agentgateway (service/ns + port)
 	agwRef, err := buildAGWServiceRef(gwExt.Spec.RateLimit.GrpcService.BackendRef, trafficPolicy.Namespace)
 	if err != nil {
-		logger.Error("failed to build AGW service reference", "error", err)
-		return nil
+		return nil, fmt.Errorf("failed to build AGW service reference: %w", err)
 	}
 
 	// Translate descriptors
 	descriptors := make([]*api.PolicySpec_RemoteRateLimit_Descriptor, 0, len(grl.Descriptors))
 	for _, d := range grl.Descriptors {
-		if adp := processRateLimitDescriptor(d); adp != nil {
-			descriptors = append(descriptors, adp)
+		if agw := processRateLimitDescriptor(d); agw != nil {
+			descriptors = append(descriptors, agw)
 		}
 	}
 
@@ -700,7 +869,7 @@ func processGlobalRateLimitPolicy(
 		},
 	}
 
-	return &ADPPolicy{Policy: p}
+	return &AgwPolicy{Policy: p}, nil
 }
 
 // getDescriptorEntryKey extracts the key from a rate limit descriptor entry
@@ -841,26 +1010,91 @@ func buildAGWServiceRef(br *gwv1.BackendRef, defaultNS string) (*api.BackendRefe
 	}, nil
 }
 
-// toProtoValue converts a raw string to a protobuf Value
-func toProtoValue(raw string) (*structpb.Value, error) {
-	rawBytes := []byte(raw)
-	v := &structpb.Value{}
-	if json.Valid(rawBytes) {
-		err := v.UnmarshalJSON(rawBytes)
-		if err != nil {
-			return nil, err
-		}
-		return v, nil
+func toJSONValue(value string) (string, error) {
+	if json.Valid([]byte(value)) {
+		return value, nil
 	}
 
-	// not an encoded JSON value, this could be a an unquoted string so try encoding to JSON and unmarshal again
-	js, err := json.Marshal(raw)
-	if err != nil {
-		return nil, err
+	if strings.HasPrefix(value, "{") || strings.HasPrefix(value, "[") {
+		return "", fmt.Errorf("invalid JSON value: %s", value)
 	}
-	err = v.UnmarshalJSON(js)
+
+	// Treat this as an unquoted string and marshal it to JSON
+	marshaled, err := json.Marshal(value)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	return v, nil
+	return string(marshaled), nil
+}
+
+// processTransformationPolicy processes transformation configuration and creates corresponding Agw policies
+func processTransformationPolicy(
+	trafficPolicy *v1alpha1.TrafficPolicy,
+	policyName string,
+	policyTarget *api.PolicyTarget,
+) ([]AgwPolicy, error) {
+	transformation := trafficPolicy.Spec.Transformation
+
+	transformationPolicy := &api.Policy{
+		Name:   policyName + transformationPolicySuffix,
+		Target: policyTarget,
+		Spec: &api.PolicySpec{
+			Kind: &api.PolicySpec_Transformation{
+				Transformation: &api.PolicySpec_TransformationPolicy{
+					Request:  convertTransformSpec(transformation.Request),
+					Response: convertTransformSpec(transformation.Response),
+				},
+			},
+		},
+	}
+
+	logger.Debug("generated transformation policy",
+		"policy", trafficPolicy.Name,
+		"agentgateway_policy", transformationPolicy.Name,
+		"target", policyTarget)
+
+	return []AgwPolicy{{Policy: transformationPolicy}}, nil
+}
+
+// convertTransformSpec converts transformation specs to agentgateway format
+func convertTransformSpec(spec *v1alpha1.Transform) *api.PolicySpec_TransformationPolicy_Transform {
+	if spec == nil {
+		return nil
+	}
+
+	transform := &api.PolicySpec_TransformationPolicy_Transform{}
+
+	for _, header := range spec.Set {
+		transform.Set = append(transform.Set, &api.PolicySpec_HeaderTransformation{
+			Name:       string(header.Name),
+			Expression: string(header.Value),
+		})
+	}
+
+	for _, header := range spec.Add {
+		transform.Add = append(transform.Add, &api.PolicySpec_HeaderTransformation{
+			Name:       string(header.Name),
+			Expression: string(header.Value),
+		})
+	}
+
+	transform.Remove = spec.Remove
+
+	if spec.Body != nil {
+		// Warn if ParseAs is set since it's not supported for agentgateway
+		// default is set to AsString
+		if spec.Body.ParseAs == v1alpha1.BodyParseBehaviorAsJSON {
+			logger.Warn("parseAs field is ignored for agentgateway, use json() function directly in CEL expressions",
+				"parse_as", spec.Body.ParseAs)
+		}
+
+		// Handle body transformation if present
+		if spec.Body.Value != nil {
+			transform.Body = &api.PolicySpec_BodyTransformation{
+				Expression: string(*spec.Body.Value),
+			}
+		}
+	}
+
+	return transform
 }

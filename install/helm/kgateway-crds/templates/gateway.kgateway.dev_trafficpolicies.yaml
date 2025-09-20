@@ -20,7 +20,16 @@ spec:
     singular: trafficpolicy
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - description: Traffic policy acceptance status
+      jsonPath: .status.ancestors[*].conditions[?(@.type=='Accepted')].status
+      name: Accepted
+      type: string
+    - description: Traffic policy attachment status
+      jsonPath: .status.ancestors[*].conditions[?(@.type=='Attached')].status
+      name: Attached
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
@@ -429,12 +438,14 @@ spec:
                   withRequestBody:
                     properties:
                       allowPartialMessage:
+                        default: false
                         type: boolean
                       maxRequestBytes:
                         format: int32
                         minimum: 1
                         type: integer
                       packAsBytes:
+                        default: false
                         type: boolean
                     required:
                     - maxRequestBytes
@@ -704,6 +715,8 @@ spec:
                             x-kubernetes-validations:
                             - message: invalid duration value
                               rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                            - message: must be at least 50ms
+                              rule: duration(self) >= duration('50ms')
                           maxTokens:
                             format: int32
                             minimum: 1

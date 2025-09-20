@@ -9,6 +9,8 @@ on:
 env:
   DAYS_BEFORE_ISSUE_STALE: 180
   DAYS_BEFORE_ISSUE_CLOSE: 180
+  DAYS_BEFORE_PR_STALE: 30
+  DAYS_BEFORE_PR_CLOSE: 5
 
 jobs:
   close-stale-issues:
@@ -32,4 +34,25 @@ jobs:
           enable-statistics: true
           operations-per-run: 1000
           ascending: true # asc means oldest first
-          # debug-only: true # dry-run for debugging
+
+  close-stale-prs:
+    name: Close Stale PRs
+    runs-on: ubuntu-22.04
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/stale@v9 # https://github.com/actions/stale
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          days-before-pr-stale: ${{ env.DAYS_BEFORE_PR_STALE }}
+          days-before-pr-close: ${{ env.DAYS_BEFORE_PR_CLOSE }}
+          stale-pr-message: >
+            This pull request has been marked as stale because of no activity in the last ${{ env.DAYS_BEFORE_PR_STALE }} days.
+            It will be closed in the next ${{ env.DAYS_BEFORE_PR_CLOSE }} days unless it is tagged "no stalebot" or other activity occurs.
+          close-pr-message: >
+            This pull request has been closed due to no activity in the last ${{ env.DAYS_BEFORE_PR_STALE }} days.
+          stale-pr-label: 'stale' # https://github.com/kgateway-dev/kgateway/labels/stale
+          exempt-pr-labels: 'no stalebot' # https://github.com/kgateway-dev/kgateway/labels/no%20stalebot
+          enable-statistics: true
+          operations-per-run: 1000
+          ascending: true # asc means oldest first

@@ -8,18 +8,18 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// AgentGatewayBackendIr is the internal representation of an agent gateway backend.
+// AgwBackendIr is the internal representation of an agent gateway backend.
 // This mirrors the envoy BackendIr pattern by pre-resolving all dependencies
 // during collection building rather than at translation time.
-type AgentGatewayBackendIr struct {
+type AgwBackendIr struct {
 	StaticIr *StaticIr
 	AIIr     *AIIr
 	MCPIr    *MCPIr
 	Errors   []error
 }
 
-func (u *AgentGatewayBackendIr) Equals(other any) bool {
-	otherBackend, ok := other.(*AgentGatewayBackendIr)
+func (u *AgwBackendIr) Equals(other any) bool {
+	otherBackend, ok := other.(*AgwBackendIr)
 	if !ok {
 		return false
 	}

@@ -1,0 +1,26 @@
+---
+# HTTPRoute with invalid regex matcher that will cause RDS validation to fail
+# This should result in the route being dropped entirely
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: invalid-matcher-route
+  namespace: default
+spec:
+  parentRefs:
+  - name: gw
+    namespace: default
+  hostnames:
+  - "invalid-matcher.example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+      headers:
+      - name: x-test-header
+        type: RegularExpression
+        value: ".*[a-z"  # Invalid regex - missing closing bracket
+    backendRefs:
+    - name: httpbin
+      port: 8000

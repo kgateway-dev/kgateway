@@ -148,7 +148,7 @@ func (r *ReportMap) BuildPolicyStatus(
 			meta.SetStatusCondition(&finalConditions, pCondition)
 		}
 		// If there are conditions on the route that are not owned by our reporter, include
-		// them in the final list of conditions to preseve conditions we do not own
+		// them in the final list of conditions to preserve conditions we do not own
 		for _, condition := range currentParentRefConditions {
 			if meta.FindStatusCondition(finalConditions, condition.Type) == nil {
 				finalConditions = append(finalConditions, condition)
@@ -175,7 +175,7 @@ func (r *ReportMap) BuildPolicyStatus(
 	// match sorting semantics of istio/istio, see:
 	// https://github.com/istio/istio/blob/6dcaa0206bcaf20e3e3b4e45e9376f0f96365571/pilot/pkg/config/kube/gateway/conditions.go#L188-L193
 	slices.SortStableFunc(status.Ancestors, func(a, b gwv1alpha2.PolicyAncestorStatus) int {
-		return strings.Compare(parentString(a.AncestorRef), parentString(b.AncestorRef))
+		return strings.Compare(ParentString(a.AncestorRef), ParentString(b.AncestorRef))
 	})
 
 	// TODO: ensure status.Ancestors is bounded by the max allowed limit, currently 16
