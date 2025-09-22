@@ -1911,7 +1911,7 @@ func TestRouteReplacement(t *testing.T) {
 					"invalid-traffic-policy-route",
 					"gwtest",
 					reporter.RouteRuleReplacedReason,
-					"extauthz: gateway extension gwtest/non-existent-auth-extension not found",
+					"extauth: gateway extension gwtest/non-existent-auth-extension not found",
 				)
 			},
 		},

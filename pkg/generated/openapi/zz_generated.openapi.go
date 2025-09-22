@@ -3102,7 +3102,7 @@ func schema_kgateway_v2_api_v1alpha1_ExtAuthBufferSettings(ref common.ReferenceC
 				Properties: map[string]spec.Schema{
 					"maxRequestBytes": {
 						SchemaProps: spec.SchemaProps{
-							Description: "MaxRequestBytes sets the maximum size of a message body to buffer. Requests exceeding this size will receive HTTP 413 and not be sent to the authorization service.",
+							Description: "MaxRequestBytes sets the maximum size of a message body to buffer. Requests exceeding this size will receive HTTP 413 and not be sent to the auth service.",
 							Default:     0,
 							Type:        []string{"integer"},
 							Format:      "int64",
@@ -3110,7 +3110,7 @@ func schema_kgateway_v2_api_v1alpha1_ExtAuthBufferSettings(ref common.ReferenceC
 					},
 					"allowPartialMessage": {
 						SchemaProps: spec.SchemaProps{
-							Description: "AllowPartialMessage determines if partial messages should be allowed. When true, requests will be sent to the authorization service even if they exceed maxRequestBytes. The default behavior is false.",
+							Description: "AllowPartialMessage determines if partial messages should be allowed. When true, requests will be sent to the auth service even if they exceed maxRequestBytes. The default behavior is false.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -3133,24 +3133,24 @@ func schema_kgateway_v2_api_v1alpha1_ExtAuthPolicy(ref common.ReferenceCallback)
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "ExtAuthPolicy configures external authentication for a route. This policy will determine the ext auth server to use and how to  talk to it. Note that most of these fields are passed along as is to Envoy. For more details on particular fields please see the Envoy ExtAuth documentation. https://raw.githubusercontent.com/envoyproxy/envoy/f910f4abea24904aff04ec33a00147184ea7cffa/api/envoy/extensions/filters/http/ext_authz/v3/ext_authz.proto",
+				Description: "ExtAuthPolicy configures external authentication/authorization for a route. This policy will determine the ext auth server to use and how to talk to it. Note that most of these fields are passed along as is to Envoy. For more details on particular fields please see the Envoy ExtAuth documentation. https://raw.githubusercontent.com/envoyproxy/envoy/f910f4abea24904aff04ec33a00147184ea7cffa/api/envoy/extensions/filters/http/ext_authz/v3/ext_authz.proto",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"extensionRef": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ExtensionRef references the GatewayExtension that should be used for authentication.",
+							Description: "ExtensionRef references the GatewayExtension that should be used for auth.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.NamespacedObjectReference"),
 						},
 					},
 					"withRequestBody": {
 						SchemaProps: spec.SchemaProps{
-							Description: "WithRequestBody allows the request body to be buffered and sent to the authorization service. Warning buffering has implications for streaming and therefore performance.",
+							Description: "WithRequestBody allows the request body to be buffered and sent to the auth service. Warning buffering has implications for streaming and therefore performance.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthBufferSettings"),
 						},
 					},
 					"contextExtensions": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Additional context for the authorization service.",
+							Description: "Additional context for the auth service.",
 							Type:        []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,
@@ -3166,7 +3166,7 @@ func schema_kgateway_v2_api_v1alpha1_ExtAuthPolicy(ref common.ReferenceCallback)
 					},
 					"disable": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Disable all external authorization filters. Can be used to disable external authorization policies applied at a higher level in the config hierarchy.",
+							Description: "Disable all external auth filters. Can be used to disable external auth policies applied at a higher level in the config hierarchy.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyDisable"),
 						},
 					},
@@ -3187,7 +3187,7 @@ func schema_kgateway_v2_api_v1alpha1_ExtAuthProvider(ref common.ReferenceCallbac
 				Properties: map[string]spec.Schema{
 					"grpcService": {
 						SchemaProps: spec.SchemaProps{
-							Description: "GrpcService is the GRPC service that will handle the authentication.",
+							Description: "GrpcService is the GRPC service that will handle the auth.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtGrpcService"),
 						},
 					},
@@ -3200,27 +3200,27 @@ func schema_kgateway_v2_api_v1alpha1_ExtAuthProvider(ref common.ReferenceCallbac
 					},
 					"clearRouteCache": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ClearRouteCache determines if the route cache should be cleared to allow the external authorization service to correctly affect routing decisions.",
+							Description: "ClearRouteCache determines if the route cache should be cleared to allow the external authentication service to correctly affect routing decisions.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
 					},
 					"withRequestBody": {
 						SchemaProps: spec.SchemaProps{
-							Description: "WithRequestBody allows the request body to be buffered and sent to the authorization service. Warning: buffering has implications for streaming and therefore performance.",
+							Description: "WithRequestBody allows the request body to be buffered and sent to the auth service. Warning: buffering has implications for streaming and therefore performance.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ExtAuthBufferSettings"),
 						},
 					},
 					"statusOnError": {
 						SchemaProps: spec.SchemaProps{
-							Description: "StatusOnError sets the HTTP status response code that is returned to the client when the authorization server returns an error or cannot be reached. Must be in the range of 100-511 inclusive. The default matches the deny response code of 403 Forbidden.",
+							Description: "StatusOnError sets the HTTP status response code that is returned to the client when the auth server returns an error or cannot be reached. Must be in the range of 100-511 inclusive. The default matches the deny response code of 403 Forbidden.",
 							Type:        []string{"integer"},
 							Format:      "int64",
 						},
 					},
 					"statPrefix": {
 						SchemaProps: spec.SchemaProps{
-							Description: "StatPrefix is an optional prefix to include when emitting stats from the extauth filter, enabling different instances of the filter to have unique stats.",
+							Description: "StatPrefix is an optional prefix to include when emitting stats from the extauthz filter, enabling different instances of the filter to have unique stats.",
 							Type:        []string{"string"},
 							Format:      "",
 						},

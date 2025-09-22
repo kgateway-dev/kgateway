@@ -539,10 +539,13 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 		}
 
 		// add the specific auth filter
+		// Note that although this configures the "envoy.filters.http.ext_authz" filter, we still want
+		// the ordering to be during the AuthNStage because we are using this filter for authentication
+		// purposes
 		extauthName := extAuthFilterName(provider.Name)
 		stagedExtAuthFilter := sdkfilters.MustNewStagedFilterWithWeight(extauthName,
 			extAuthFilter,
-			plugins.DuringStage(plugins.AuthZStage),
+			plugins.DuringStage(plugins.AuthNStage),
 			provider.Extension.PrecedenceWeight,
 		)
 
