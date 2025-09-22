@@ -124,7 +124,7 @@ func constructExtAuth(
 	// kubebuilder validation ensures the extensionRef is not nil, since disable is nil
 	provider, err := fetchGatewayExtension(krtctx, *spec.ExtensionRef, in.GetNamespace())
 	if err != nil {
-		return fmt.Errorf("extauthz: %w", err)
+		return fmt.Errorf("extauth: %w", err)
 	}
 	if provider.ExtType != v1alpha1.GatewayExtensionTypeExtAuth || provider.ExtAuth == nil {
 		return pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, provider.ExtType)

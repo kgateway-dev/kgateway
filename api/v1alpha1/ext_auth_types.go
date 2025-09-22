@@ -1,6 +1,6 @@
 package v1alpha1
 
-// ExtAuthPolicy configures external authentication for a route.
+// ExtAuthPolicy configures external authentication/authorization for a route.
 // This policy will determine the ext auth server to use and how to talk to it.
 // Note that most of these fields are passed along as is to Envoy.
 // For more details on particular fields please see the Envoy ExtAuth documentation.
@@ -8,21 +8,21 @@ package v1alpha1
 //
 // +kubebuilder:validation:ExactlyOneOf=extensionRef;disable
 type ExtAuthPolicy struct {
-	// ExtensionRef references the GatewayExtension that should be used for authentication.
+	// ExtensionRef references the GatewayExtension that should be used for auth.
 	// +optional
 	ExtensionRef *NamespacedObjectReference `json:"extensionRef,omitempty"`
 
-	// WithRequestBody allows the request body to be buffered and sent to the authentication service.
+	// WithRequestBody allows the request body to be buffered and sent to the auth service.
 	// Warning buffering has implications for streaming and therefore performance.
 	// +optional
 	WithRequestBody *ExtAuthBufferSettings `json:"withRequestBody,omitempty"`
 
-	// Additional context for the authentication service.
+	// Additional context for the auth service.
 	// +optional
 	ContextExtensions map[string]string `json:"contextExtensions,omitempty"`
 
 	// Disable all external auth filters.
-	// Can be used to disable external authentication policies applied at a higher level in the config hierarchy.
+	// Can be used to disable external auth policies applied at a higher level in the config hierarchy.
 	// +optional
 	Disable *PolicyDisable `json:"disable,omitempty"`
 }
