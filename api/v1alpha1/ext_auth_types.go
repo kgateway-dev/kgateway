@@ -30,13 +30,13 @@ type ExtAuthPolicy struct {
 // ExtAuthBufferSettings configures how the request body should be buffered.
 type ExtAuthBufferSettings struct {
 	// MaxRequestBytes sets the maximum size of a message body to buffer.
-	// Requests exceeding this size will receive HTTP 413 and not be sent to the authentication service.
+	// Requests exceeding this size will receive HTTP 413 and not be sent to the auth service.
 	// +required
 	// +kubebuilder:validation:Minimum=1
 	MaxRequestBytes uint32 `json:"maxRequestBytes"`
 
 	// AllowPartialMessage determines if partial messages should be allowed.
-	// When true, requests will be sent to the authentication service even if they exceed maxRequestBytes.
+	// When true, requests will be sent to the auth service even if they exceed maxRequestBytes.
 	// The default behavior is false.
 	// +optional
 	// +kubebuilder:default=false
@@ -53,7 +53,7 @@ type ExtAuthBufferSettings struct {
 
 // ExtAuthProvider defines the configuration for an ExtAuth provider.
 type ExtAuthProvider struct {
-	// GrpcService is the GRPC service that will handle the authentication.
+	// GrpcService is the GRPC service that will handle the auth.
 	// +required
 	GrpcService *ExtGrpcService `json:"grpcService"`
 
@@ -69,13 +69,13 @@ type ExtAuthProvider struct {
 	// +kubebuilder:default=false
 	ClearRouteCache bool `json:"clearRouteCache,omitempty"`
 
-	// WithRequestBody allows the request body to be buffered and sent to the authentication service.
+	// WithRequestBody allows the request body to be buffered and sent to the auth service.
 	// Warning: buffering has implications for streaming and therefore performance.
 	// +optional
 	WithRequestBody *ExtAuthBufferSettings `json:"withRequestBody,omitempty"`
 
 	// StatusOnError sets the HTTP status response code that is returned to the client when the
-	// authentication server returns an error or cannot be reached. Must be in the range of 100-511 inclusive.
+	// auth server returns an error or cannot be reached. Must be in the range of 100-511 inclusive.
 	// The default matches the deny response code of 403 Forbidden.
 	// +optional
 	// +kubebuilder:default=403
@@ -83,7 +83,7 @@ type ExtAuthProvider struct {
 	// +kubebuilder:validation:Maximum=511
 	StatusOnError uint32 `json:"statusOnError,omitempty"`
 
-	// StatPrefix is an optional prefix to include when emitting stats from the extauth filter,
+	// StatPrefix is an optional prefix to include when emitting stats from the extauthz filter,
 	// enabling different instances of the filter to have unique stats.
 	// +optional
 	// +kubebuilder:validation:MinLength=1
