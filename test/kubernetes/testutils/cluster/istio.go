@@ -39,7 +39,7 @@ func InstallMinimalIstio(
 	operatorFileContent := generateIstioOperatorFileContent("", minimalProfile)
 	operatorFile := filepath.Join(os.TempDir(), "istio-operator.yaml")
 
-	err := os.WriteFile(operatorFile, []byte(operatorFileContent), 0o644) //nolint:gosec // G306: temporary test file for Istio operator config
+	err := os.WriteFile(operatorFile, []byte(operatorFileContent), 0o600)
 	if err != nil {
 		return fmt.Errorf("failed to write operator file: %w", err)
 	}
@@ -55,7 +55,7 @@ func InstallRevisionedIstio(
 	operatorFileContent := generateIstioOperatorFileContent(revision, profile)
 	operatorFile := filepath.Join(os.TempDir(), "istio-operator.yaml")
 
-	err := os.WriteFile(operatorFile, []byte(operatorFileContent), 0o644) //nolint:gosec // G306: temporary test file for Istio operator config
+	err := os.WriteFile(operatorFile, []byte(operatorFileContent), 0o600)
 	if err != nil {
 		return fmt.Errorf("failed to write operator file: %w", err)
 	}
