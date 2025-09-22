@@ -52,7 +52,7 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attached
 		// Get attached routes for this listener
 		if attachedRoutes != nil {
 			if count, exists := attachedRoutes[string(lis.Name)]; exists {
-				lisReport.Status.AttachedRoutes = int32(count)
+				lisReport.Status.AttachedRoutes = int32(count) //nolint:gosec // G115: route count is always non-negative
 			}
 		}
 

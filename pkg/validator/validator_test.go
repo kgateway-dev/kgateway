@@ -306,7 +306,7 @@ func createMockBinary(t *testing.T, script string) string {
 	t.Cleanup(func() { os.RemoveAll(tmpDir) })
 
 	mockPath := filepath.Join(tmpDir, "mock-envoy")
-	err = os.WriteFile(mockPath, []byte(script), 0755)
+	err = os.WriteFile(mockPath, []byte(script), 0755) //nolint:gosec // G306: test file creating executable mock script
 	require.NoError(t, err)
 
 	return mockPath

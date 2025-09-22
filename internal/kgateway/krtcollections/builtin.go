@@ -262,7 +262,7 @@ func convertRetry(
 	}
 
 	if retry.Attempts != nil {
-		in.Attempts = int32(*retry.Attempts)
+		in.Attempts = int32(*retry.Attempts) //nolint:gosec // G115: retry attempts are small positive integers
 	}
 
 	if retry.Backoff != nil {
@@ -396,7 +396,7 @@ func translatePort(port *gwv1.PortNumber) uint32 {
 	if port == nil {
 		return 0
 	}
-	return uint32(*port)
+	return uint32(*port) //nolint:gosec // G115: Gateway API PortNumber is int32, always valid port range
 }
 
 func translateHostname(hostname *gwv1.PreciseHostname) string {
@@ -536,7 +536,7 @@ func getFractionPercent(f gwv1.HTTPRequestMirrorFilter) *envoycorev3.RuntimeFrac
 	if f.Percent != nil {
 		return &envoycorev3.RuntimeFractionalPercent{
 			DefaultValue: &envoytype.FractionalPercent{
-				Numerator:   uint32(*f.Percent),
+				Numerator:   uint32(*f.Percent), //nolint:gosec // G115: percentage values are always non-negative and bounded (0-100)
 				Denominator: envoytype.FractionalPercent_HUNDRED,
 			},
 		}

@@ -18,7 +18,7 @@ func BuildRetryPolicy(in *v1alpha1.Retry) *envoyroutev3.RetryPolicy {
 	}
 	policy := &envoyroutev3.RetryPolicy{
 		RetryOn:              retryOnToString(in.RetryOn, len(in.StatusCodes) > 0),
-		NumRetries:           wrapperspb.UInt32(uint32(in.Attempts)),
+		NumRetries:           wrapperspb.UInt32(uint32(in.Attempts)), //nolint:gosec // G115: retry attempts are small positive integers
 		RetriableStatusCodes: retryCodesToUint32(in.StatusCodes),
 	}
 	if in.PerTryTimeout != nil {
@@ -53,7 +53,7 @@ func retryCodesToUint32(codes []gwv1.HTTPRouteRetryStatusCode) []uint32 {
 	}
 	uint32Codes := make([]uint32, len(codes))
 	for i, code := range codes {
-		uint32Codes[i] = uint32(code)
+		uint32Codes[i] = uint32(code) //nolint:gosec // G115: HTTP status codes are always positive integers (100-599)
 	}
 	return uint32Codes
 }

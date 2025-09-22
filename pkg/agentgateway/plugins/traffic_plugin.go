@@ -365,7 +365,7 @@ func processExtAuthPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collecti
 		serviceName := string(backendRef.Name)
 		port := uint32(80) // default port
 		if backendRef.Port != nil {
-			port = uint32(*backendRef.Port)
+			port = uint32(*backendRef.Port) //nolint:gosec // G115: Gateway API PortNumber is always valid port range
 		}
 		// use trafficPolicy namespace as default
 		namespace := trafficPolicy.Namespace
@@ -520,7 +520,7 @@ func processWebhook(webhook *v1alpha1.Webhook) *api.PolicySpec_Ai_Webhook {
 
 	w := &api.PolicySpec_Ai_Webhook{
 		Host: webhook.Host.Host,
-		Port: uint32(webhook.Host.Port),
+		Port: uint32(webhook.Host.Port), //nolint:gosec // G115: webhook port is validated to be valid port range
 	}
 
 	if len(webhook.ForwardHeaderMatches) > 0 {
@@ -924,7 +924,7 @@ func buildServiceHost(backendRef *gwv1.BackendRef, defaultNamespace string) (ser
 
 	port = uint32(80) // default port
 	if backendRef.Port != nil {
-		port = uint32(*backendRef.Port)
+		port = uint32(*backendRef.Port) //nolint:gosec // G115: Gateway API PortNumber is always valid port range
 	}
 
 	namespace = defaultNamespace

@@ -336,7 +336,7 @@ func NewGatewayIndex(
 			if err != nil {
 				logger.Error("failed to parse per connection buffer limit", "error", err)
 			} else {
-				gwIR.PerConnectionBufferLimitBytes = k8sptr.To(uint32(limit.Value()))
+				gwIR.PerConnectionBufferLimitBytes = k8sptr.To(uint32(limit.Value())) //nolint:gosec // G115: Kubernetes resource quantities are always non-negative
 			}
 		}
 
@@ -1387,7 +1387,7 @@ func weight(w *int32) uint32 {
 	if w == nil {
 		return 1
 	}
-	return uint32(*w)
+	return uint32(*w) //nolint:gosec // G115: weight values are validated to be non-negative in Gateway API
 }
 
 func toAttachedPolicies(policies []ir.PolicyAtt, opts ...ir.PolicyAttachmentOpts) ir.AttachedPolicies {
