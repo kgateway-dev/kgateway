@@ -238,7 +238,6 @@ func (s *testingSuite) TestMissingGatewayParameters() {
 }
 
 func (s *testingSuite) TestProvisionResourcesNotUpdatedWithInvalidParameters() {
-	s.T().Skip("skipping test")
 	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(1))
 
 	proxyDeployment := &appsv1.Deployment{}
