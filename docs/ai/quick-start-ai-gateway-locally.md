@@ -7,7 +7,7 @@ Follow the [quickstart](https://kgateway.dev/docs/quickstart/) to quickly launch
 
 ## Setup AI Gateway
 
-If you are using a cloud provider's K8s resources, just follow the [official guide](https://kgateway.dev/docs/ai/setup/#gateway).  
+If you are using a cloud provider's K8s resources, just follow the [official guide](https://kgateway.dev/docs/ai/setup/#gateway).
 If you are using a local environment, please note: In the [Create An AI Gateway](https://kgateway.dev/docs/ai/setup/#gateway) step, use `NodePort` instead of `LoadBalancer`.
 
 ```yaml
@@ -44,10 +44,10 @@ EOF
    	...
    ```
 
-2. Start the Ollama service  
+2. Start the Ollama service
    Run the following command, replacing `192.168.181.210` with your actual IP address from the previous step:
    `OLLAMA_HOST=192.168.181.210 ollama serve`
-   
+
    Example output:
 
    ```text
@@ -85,15 +85,13 @@ EOF
       type: AI
       ai:
         llm:
-          hostOverride:
-            host: 192.168.181.210 # replace with your IP address
-            port: 11434
-          provider:
-            openai:
-              model: "llama3.2" # replace with your model
-              authToken:
-                kind: Inline
-                inline: "$TOKEN"
+          host: 192.168.181.210 # replace with your IP address
+          port: 11434
+          openai:
+            model: "llama3.2" # replace with your model
+            authToken:
+              kind: Inline
+              inline: "$TOKEN"
     EOF
     ```
 
@@ -150,7 +148,7 @@ EOF
             ]
         }' | jq
     ```
-   
+
     Example output:
 
     ```json

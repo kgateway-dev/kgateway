@@ -32,7 +32,7 @@ func newFakeClient(t *testing.T, objs ...client.Object) client.Client {
 	// Create a new scheme and register the necessary types
 	sch := schemes.DefaultScheme()
 	require.NoError(t, corev1.AddToScheme(sch))
-	require.NoError(t, inf.AddToScheme(sch))
+	require.NoError(t, inf.Install(sch))
 	require.NoError(t, gwv1.Install(sch))
 
 	// Create a fake client with the provided objects

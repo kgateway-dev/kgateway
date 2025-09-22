@@ -82,15 +82,6 @@ func (p *Provider) EventuallyNamespaceExists(ctx context.Context, ns string) {
 		Should(Succeed(), fmt.Sprintf("namespace %s should exist", ns))
 }
 
-// TODO clean up these functions, as the validation webhook has been removed
-// ExpectObjectAdmitted should be used when applying Policy objects that are subject to the Gloo Gateway Validation Webhook
-// If the testInstallation has validation enabled and the manifest contains a known substring (e.g. `webhook-reject`)
-// we expect the application to fail, with an expected error substring supplied as `expectedOutput`
-func (p *Provider) ExpectObjectAdmitted(manifest string, err error, actualOutput, expectedOutput string) {
-	p.Assert.NoError(err, "can apply "+manifest)
-}
-
-// TODO clean this up as the validation webhook has been removed
 func (p *Provider) ExpectObjectDeleted(manifest string, err error, actualOutput string) {
 	p.Assert.NoError(err, "can delete "+manifest)
 }

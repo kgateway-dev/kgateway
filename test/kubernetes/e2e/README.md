@@ -21,7 +21,7 @@ We try to define a single `TestInstallation` per file in a `TestCluster`. This w
 We define all tests in the [features](./features) package. This is done for a variety of reasons:
 
 1. We group the tests by feature, so it's easy to identify which behaviors we assert for a given feature.
-2. We can invoke that same test against different `TestInstallation`s. This means we can test a feature against a variety of installation values, or even against OSS and Enterprise installations.
+2. We can invoke that same test against different `TestInstallation`s. This means we can test a feature against a variety of installation values.
 
 Many examples of testing features may be found in the [features](./features) package. The general pattern for adding a new feature should be to create a directory for the feature under `features/`, write manifest files for the resources the tests will need into `features/my_feature/testdata/`, define Go objects for them in a file called `features/my_feature/types.go`, and finally define the test suite in `features/my_feature/suite.go`. There are occasions where multiple suites will need to be created under a single feature. See [Suites](#test-suites) for more info on this case.
 
@@ -54,16 +54,6 @@ The only exception to this is the Upgrade tests that are not run on the main bra
 Some tests may require environment variables to be set. Some required env vars are:
 
 - Istio features: Require `ISTIO_VERSION` to be set. The tests running in CI use `ISTIO_VERSION="${ISTIO_VERSION:-1.19.9}"` to default to a specific version of Istio.
-
-## Resource example generation tool
-
-This tool generates the input resources defined in code as an output yaml file. You can find an example under `test/kubernetes/e2e/features/headless_svc/generate/generate_examples.go`.
-
-These examples are run as part of the codegen, but can also be manually run using the following command:
-
-```bash
-go generate <path to the generate.go file>
-```
 
 ## Debugging
 

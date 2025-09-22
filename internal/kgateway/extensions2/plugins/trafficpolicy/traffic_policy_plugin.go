@@ -224,7 +224,7 @@ func registerTypes(ourCli versioned.Interface) {
 	)
 }
 
-func NewPlugin(ctx context.Context, commoncol *common.CommonCollections, mergeSettings string) extensionsplug.Plugin {
+func NewPlugin(ctx context.Context, commoncol *common.CommonCollections, mergeSettings string, v validator.Validator) extensionsplug.Plugin {
 	registerTypes(commoncol.OurClient)
 
 	useRustformations = commoncol.Settings.UseRustFormations // stash the state of the env setup for rustformation usage
@@ -236,7 +236,6 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections, mergeSe
 	gk := wellknown.TrafficPolicyGVK.GroupKind()
 
 	constructor := NewTrafficPolicyConstructor(ctx, commoncol)
-	v := validator.New()
 
 	// TrafficPolicy IR will have TypedConfig -> implement backendroute method to add prompt guard, etc.
 	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.TrafficPolicy) *ir.PolicyWrapper {

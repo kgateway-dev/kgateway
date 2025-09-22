@@ -242,7 +242,7 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("MultiPool Backend with inline auth", func(t *testing.T) {
+	t.Run("PriorityGroups Backend with inline auth", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "backend/multipool-inline-auth.yaml",
 			outputFile: "backend/multipool-inline-auth.yaml",
@@ -253,7 +253,7 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("MultiPool Backend with secret auth", func(t *testing.T) {
+	t.Run("PriorityGroups Backend with secret auth", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "backend/multipool-secret-auth.yaml",
 			outputFile: "backend/multipool-secret-auth.yaml",
@@ -264,7 +264,7 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("MultiPool Backend with multiple priority levels", func(t *testing.T) {
+	t.Run("PriorityGroups Backend with multiple priority levels", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "backend/multipool-priority-levels.yaml",
 			outputFile: "backend/multipool-priority-levels.yaml",

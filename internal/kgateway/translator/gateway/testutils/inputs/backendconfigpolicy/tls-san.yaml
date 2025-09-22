@@ -51,7 +51,7 @@ spec:
     secretRef:
       name: client-tls-secret
     sni: test.example.com
-    verifySubjectAltName:
+    verifySubjectAltNames:
       - test.example.com
       - api.example.com
     allowRenegotiation: true

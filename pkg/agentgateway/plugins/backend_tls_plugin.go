@@ -24,12 +24,12 @@ import (
 )
 
 // NewBackendTLSPlugin creates a new BackendTLSPolicy plugin
-func NewBackendTLSPlugin(agw *AgwCollections) AgentgatewayPlugin {
+func NewBackendTLSPlugin(agw *AgwCollections) AgwPlugin {
 	clusterDomain := kubeutils.GetClusterDomainName()
-	policyCol := krt.NewManyCollection(agw.BackendTLSPolicies, func(krtctx krt.HandlerContext, btls *gwv1alpha3.BackendTLSPolicy) []ADPPolicy {
+	policyCol := krt.NewManyCollection(agw.BackendTLSPolicies, func(krtctx krt.HandlerContext, btls *gwv1alpha3.BackendTLSPolicy) []AgwPolicy {
 		return translatePoliciesForBackendTLS(krtctx, agw.ConfigMaps, btls, clusterDomain)
 	})
-	return AgentgatewayPlugin{
+	return AgwPlugin{
 		ContributesPolicies: map[schema.GroupKind]PolicyPlugin{
 			wellknown.BackendTLSPolicyGVK.GroupKind(): {
 				Policies: policyCol,
@@ -47,9 +47,9 @@ func translatePoliciesForBackendTLS(
 	cfgmaps krt.Collection[*corev1.ConfigMap],
 	btls *gwv1alpha3.BackendTLSPolicy,
 	clusterDomain string,
-) []ADPPolicy {
+) []AgwPolicy {
 	logger := logger.With("plugin_kind", "backendtls")
-	var policies []ADPPolicy
+	var policies []AgwPolicy
 
 	for idx, target := range btls.Spec.TargetRefs {
 		var policyTarget *api.PolicyTarget
@@ -108,7 +108,7 @@ func translatePoliciesForBackendTLS(
 				},
 			}},
 		}
-		policies = append(policies, ADPPolicy{policy})
+		policies = append(policies, AgwPolicy{policy})
 	}
 
 	return policies

@@ -34,7 +34,7 @@ func fetchClass(ctx krt.HandlerContext, gatewayClasses krt.Collection[GatewayCla
 	if class == nil {
 		return &GatewayClass{
 			Name:       string(gc),
-			Controller: wellknown.DefaultGatewayControllerName, // TODO: make this configurable
+			Controller: wellknown.DefaultAgwControllerName,
 		}
 	}
 	return class

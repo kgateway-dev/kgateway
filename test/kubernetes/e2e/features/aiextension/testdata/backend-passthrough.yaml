@@ -9,15 +9,13 @@ spec:
   type: AI
   ai:
     llm:
-      hostOverride:
-        host: test-ai-provider.ai-test.svc.cluster.local
-        port: 443
-      pathOverride:
-        fullPath: "/api/v1/chat/completions"
-      provider:
-        openai:
-          authToken:
-            kind: "Passthrough"
+      host: test-ai-provider.ai-test.svc.cluster.local
+      port: 443
+      path:
+        full: "/api/v1/chat/completions"
+      openai:
+        authToken:
+          kind: "Passthrough"
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend
@@ -30,13 +28,11 @@ spec:
   type: AI
   ai:
     llm:
-      hostOverride:
-        host: test-ai-provider.ai-test.svc.cluster.local
-        port: 443
-      provider:
-        openai:
-          authToken:
-            kind: "Passthrough"
+      host: test-ai-provider.ai-test.svc.cluster.local
+      port: 443
+      openai:
+        authToken:
+          kind: "Passthrough"
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend
@@ -49,16 +45,14 @@ spec:
   type: AI
   ai:
     llm:
-      hostOverride:
-        host: test-ai-provider.ai-test.svc.cluster.local
-        port: 443
-      provider:
-        azureopenai:
-          endpoint: ai-gateway.openai.azure.com
-          deploymentName: gpt-4o-mini
-          apiVersion: 2024-02-15-preview
-          authToken:
-            kind: "Passthrough"
+      host: test-ai-provider.ai-test.svc.cluster.local
+      port: 443
+      azureopenai:
+        endpoint: ai-gateway.openai.azure.com
+        deploymentName: gpt-4o-mini
+        apiVersion: 2024-02-15-preview
+        authToken:
+          kind: "Passthrough"
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend
@@ -71,15 +65,13 @@ spec:
   type: AI
   ai:
     llm:
-      hostOverride:
-        host: test-ai-provider.ai-test.svc.cluster.local
-        port: 443
-      provider:
-        gemini:
-          model: "gemini-1.5-flash-001"
-          apiVersion: "v1beta"
-          authToken:
-            kind: "Passthrough"
+      host: test-ai-provider.ai-test.svc.cluster.local
+      port: 443
+      gemini:
+        model: "gemini-1.5-flash-001"
+        apiVersion: "v1beta"
+        authToken:
+          kind: "Passthrough"
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend
@@ -92,15 +84,13 @@ spec:
   type: AI
   ai:
     llm:
-      hostOverride:
-        host: test-ai-provider.ai-test.svc.cluster.local
-        port: 443
-      provider:
-        vertexai:
-          model: gemini-1.5-flash-001
-          apiVersion: v1
-          location: us-central1
-          projectId: kgateway-project
-          publisher: GOOGLE
-          authToken:
-            kind: "Passthrough"
+      host: test-ai-provider.ai-test.svc.cluster.local
+      port: 443
+      vertexai:
+        model: gemini-1.5-flash-001
+        apiVersion: v1
+        location: us-central1
+        projectId: kgateway-project
+        publisher: GOOGLE
+        authToken:
+          kind: "Passthrough"

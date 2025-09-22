@@ -69,7 +69,7 @@ spec:
   tls:
     sni: test.example.com
     wellKnownCACertificates: System
-    verifySubjectAltName:
+    verifySubjectAltNames:
       - test.example.com
       - api.example.com
 ---

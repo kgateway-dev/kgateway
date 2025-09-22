@@ -13,6 +13,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -124,6 +125,22 @@ func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
 		"gateway.networking.k8s.io/gateway-name": proxyObjectMeta.Name,
 		"kgateway":                               "kube-gateway",
 	})
+
+	// check that the rollout strategy is as expected
+	proxyDeployment := &appsv1.Deployment{}
+	err = s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
+		Namespace: proxyObjectMeta.Namespace,
+		Name:      proxyObjectMeta.Name,
+	}, proxyDeployment)
+	s.Require().NoError(err)
+	s.TestInstallation.Assertions.Gomega.Expect(proxyDeployment.Spec.Strategy).To(gomega.Equal(
+		appsv1.DeploymentStrategy{
+			Type: "RollingUpdate",
+			RollingUpdate: &appsv1.RollingUpdateDeployment{
+				MaxUnavailable: &intstr.IntOrString{Type: intstr.String, StrVal: "1%"},
+				MaxSurge:       &intstr.IntOrString{Type: intstr.Int, IntVal: 2},
+			},
+		}))
 
 	// Update the Gateway to use the custom GatewayParameters
 	gw := &gwv1.Gateway{}
