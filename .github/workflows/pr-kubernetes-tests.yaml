@@ -52,7 +52,7 @@ jobs:
         #   localstack: 'false'
         # August 29, 2025: ~10 minutes
         - cluster-name: 'cluster-five'
-          go-test-args: '-v -timeout=25m'
+          go-test-args: '-v -timeout=25m -count 100 -failfast'
           go-test-run-regex: '^TestKgateway$$/^Deployer$$'
           localstack: 'false'
         # August 29, 2025: ~9 minutes
