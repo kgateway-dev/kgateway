@@ -16,6 +16,7 @@ linters:
     - forbidigo
     - ginkgolinter
     - gomodguard
+    - gosec
     - importas
     - ineffassign
     - misspell
