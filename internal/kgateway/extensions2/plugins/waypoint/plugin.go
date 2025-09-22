@@ -137,7 +137,7 @@ func processIngressUseWaypoint(in ir.BackendObjectIR, out *envoyclusterv3.Cluste
 	}
 
 	for _, addr := range addresses {
-		out.GetLoadAssignment().Endpoints = append(out.GetLoadAssignment().GetEndpoints(), claEndpoint(addr, uint32(in.Port)))
+		out.GetLoadAssignment().Endpoints = append(out.GetLoadAssignment().GetEndpoints(), claEndpoint(addr, uint32(in.Port))) //nolint:gosec // G115: BackendObjectIR.Port is int32 representing a port number, always in valid range
 	}
 }
 

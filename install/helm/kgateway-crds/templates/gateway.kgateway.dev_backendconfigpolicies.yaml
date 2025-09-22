@@ -49,8 +49,12 @@ spec:
                     - message: invalid duration value
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                   maxHeadersCount:
+                    maximum: 4294967295
+                    minimum: 0
                     type: integer
                   maxRequestsPerConnection:
+                    maximum: 4294967295
+                    minimum: 0
                     type: integer
                   maxStreamDuration:
                     type: string
@@ -153,6 +157,8 @@ spec:
                         <= 2147483647) || (type(self) == string && quantity(self).isGreaterThan(quantity('65534'))
                         && quantity(self).isLessThan(quantity('2147483648')))
                   maxConcurrentStreams:
+                    maximum: 4294967295
+                    minimum: 0
                     type: integer
                   overrideStreamErrorOnInvalidHttpMessage:
                     type: boolean
@@ -369,6 +375,8 @@ spec:
                     type: integer
                 type: object
               perConnectionBufferLimitBytes:
+                maximum: 4294967295
+                minimum: 0
                 type: integer
               targetRefs:
                 items:
@@ -436,6 +444,8 @@ spec:
                     - message: keepAliveInterval must be at least 1 second
                       rule: duration(self) >= duration('1s')
                   keepAliveProbes:
+                    maximum: 4294967295
+                    minimum: 0
                     type: integer
                   keepAliveTime:
                     type: string

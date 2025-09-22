@@ -393,7 +393,7 @@ func buildExtProcCluster(pool *inferencePool) *envoyclusterv3.Cluster {
 										Address:  fmt.Sprintf("%s.%s.svc", pool.configRef.Name, pool.obj.GetNamespace()),
 										Protocol: envoycorev3.SocketAddress_TCP,
 										PortSpecifier: &envoycorev3.SocketAddress_PortValue{
-											PortValue: uint32(pool.configRef.ports[0].number),
+											PortValue: uint32(pool.configRef.ports[0].number), //nolint:gosec // G115: port number is int32 representing a port, always in valid range
 										},
 									},
 								},

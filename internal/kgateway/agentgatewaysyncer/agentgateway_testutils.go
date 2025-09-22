@@ -368,7 +368,7 @@ func TestTranslationWithExtraPlugins(
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			r.NoError(err)
 		}
-		os.WriteFile(outputFile, outputYaml, 0o644)
+		os.WriteFile(outputFile, outputYaml, 0o600)
 	}
 
 	diff, err := compareProxy(outputFile, output)

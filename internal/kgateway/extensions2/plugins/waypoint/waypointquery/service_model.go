@@ -95,7 +95,7 @@ func (s Service) DefaultVHostName(port ServicePort) string {
 }
 
 func (s Service) BackendRef(port ServicePort) ir.BackendRefIR {
-	backendObj := s.BackendObject(uint32(port.Port))
+	backendObj := s.BackendObject(uint32(port.Port)) //nolint:gosec // G115: service port is int32, always in valid range
 	return ir.BackendRefIR{
 		ClusterName:   backendObj.ClusterName(),
 		Weight:        0,
@@ -121,7 +121,7 @@ func (s Service) BackendObject(port uint32) ir.BackendObjectIR {
 
 	protocol := ""
 	for _, v := range s.Ports {
-		if v.Port == int32(port) {
+		if v.Port == int32(port) { //nolint:gosec // G115: port is uint32 representing a port number, safe to convert to int32
 			protocol = v.Protocol
 			break
 		}
@@ -132,12 +132,12 @@ func (s Service) BackendObject(port uint32) ir.BackendObjectIR {
 		return serviceentry.BuildServiceEntryBackendObjectIR(
 			obj,
 			hostname,
-			int32(port),
+			int32(port), //nolint:gosec // G115: port is uint32 representing a port number, safe to convert to int32
 			protocol,
 			nil, // we just need the cluster name, aliases not important here
 		)
 	case *corev1.Service:
-		return kubernetes.BuildServiceBackendObjectIR(obj, int32(port), protocol)
+		return kubernetes.BuildServiceBackendObjectIR(obj, int32(port), protocol) //nolint:gosec // G115: port is uint32 representing a port number, safe to convert to int32
 	}
 
 	// fallback: assume k8s
@@ -148,7 +148,7 @@ func (s Service) BackendObject(port uint32) ir.BackendObjectIR {
 			Namespace: s.GetNamespace(),
 			Name:      s.GetName(),
 		},
-		Port:              int32(port),
+		Port:              int32(port), //nolint:gosec // G115: port is uint32 representing a port number, safe to convert to int32
 		GvPrefix:          kubernetes.BackendClusterPrefix,
 		CanonicalHostname: hostname,
 		Obj:               s.Object,
@@ -255,7 +255,7 @@ func FromService(svc *corev1.Service) Service {
 				Port:       int32(p.Port),
 				Protocol:   protocol,
 				Name:       p.Name,
-				TargetPort: int32(p.TargetPort.IntValue()),
+				TargetPort: int32(p.TargetPort.IntValue()), //nolint:gosec // G115: Kubernetes target port is int, safe to convert to int32
 			}
 		}),
 	}
@@ -272,10 +272,10 @@ func FromServiceEntry(se *networkingclient.ServiceEntry, aliases []ir.ObjectSour
 		Hostnames: se.Spec.GetHosts(),
 		Ports: slices.Map(se.Spec.GetPorts(), func(p *networkingv1beta1.ServicePort) ServicePort {
 			return ServicePort{
-				Port:       int32(p.Number),
+				Port:       int32(p.Number), //nolint:gosec // G115: ServiceEntry port number is uint32, safe to convert to int32
 				Protocol:   string(p.Protocol),
 				Name:       p.Name,
-				TargetPort: int32(p.TargetPort),
+				TargetPort: int32(p.TargetPort), //nolint:gosec // G115: ServiceEntry target port is uint32, safe to convert to int32
 			}
 		}),
 	}
@@ -346,7 +346,7 @@ type Workload struct {
 func (w Workload) PortMapping(port ServicePort) int32 {
 	if w.ports != nil {
 		if p, ok := w.ports[port.Name]; ok {
-			return int32(p)
+			return int32(p) //nolint:gosec // G115: workload port is uint32, safe to convert to int32
 		}
 	}
 	if port.TargetPort != 0 {

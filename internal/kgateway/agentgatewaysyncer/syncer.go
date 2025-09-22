@@ -218,7 +218,7 @@ func (s *Syncer) buildAgwResources(
 			bind := AgwBind{
 				Bind: &api.Bind{
 					Key:  object.Key + "/" + nsName.String(),
-					Port: uint32(port),
+					Port: uint32(port), //nolint:gosec // G115: port is always in valid port range
 				},
 			}
 			if binds[nsName] == nil {

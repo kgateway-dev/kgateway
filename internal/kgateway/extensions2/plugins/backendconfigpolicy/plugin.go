@@ -36,7 +36,7 @@ const PreserveCasePlugin = "envoy.http.stateful_header_formatters.preserve_case"
 type BackendConfigPolicyIR struct {
 	ct                            time.Time
 	connectTimeout                *durationpb.Duration
-	perConnectionBufferLimitBytes *int
+	perConnectionBufferLimitBytes *uint32
 	tcpKeepalive                  *envoycorev3.TcpKeepalive
 	commonHttpProtocolOptions     *envoycorev3.HttpProtocolOptions
 	http1ProtocolOptions          *envoycorev3.Http1ProtocolOptions
@@ -170,7 +170,7 @@ func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObje
 	}
 
 	if pol.perConnectionBufferLimitBytes != nil {
-		out.PerConnectionBufferLimitBytes = &wrapperspb.UInt32Value{Value: uint32(*pol.perConnectionBufferLimitBytes)}
+		out.PerConnectionBufferLimitBytes = &wrapperspb.UInt32Value{Value: *pol.perConnectionBufferLimitBytes} //nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 4294967295, safe for uint32
 	}
 
 	if pol.tcpKeepalive != nil {
@@ -216,7 +216,8 @@ func translate(commoncol *collections.CommonCollections, krtctx krt.HandlerConte
 		ir.connectTimeout = durationpb.New(pol.Spec.ConnectTimeout.Duration)
 	}
 	if pol.Spec.PerConnectionBufferLimitBytes != nil {
-		ir.perConnectionBufferLimitBytes = pol.Spec.PerConnectionBufferLimitBytes
+		bufferSize := uint32(*pol.Spec.PerConnectionBufferLimitBytes) //nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 4294967295, safe for uint32
+		ir.perConnectionBufferLimitBytes = &bufferSize
 	}
 
 	if pol.Spec.TCPKeepalive != nil {
@@ -269,7 +270,7 @@ func translate(commoncol *collections.CommonCollections, krtctx krt.HandlerConte
 func translateTCPKeepalive(tcpKeepalive *v1alpha1.TCPKeepalive) *envoycorev3.TcpKeepalive {
 	out := &envoycorev3.TcpKeepalive{}
 	if tcpKeepalive.KeepAliveProbes != nil {
-		out.KeepaliveProbes = &wrapperspb.UInt32Value{Value: uint32(*tcpKeepalive.KeepAliveProbes)}
+		out.KeepaliveProbes = &wrapperspb.UInt32Value{Value: uint32(*tcpKeepalive.KeepAliveProbes)} //nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 4294967295, safe for uint32
 	}
 	if tcpKeepalive.KeepAliveTime != nil {
 		out.KeepaliveTime = &wrapperspb.UInt32Value{Value: uint32(tcpKeepalive.KeepAliveTime.Duration.Seconds())}

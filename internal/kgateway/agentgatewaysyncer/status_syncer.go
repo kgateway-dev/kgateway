@@ -540,12 +540,12 @@ func normalizeListenerAttachedRoutes(gw *gwv1.Gateway, st *gwv1.GatewayStatus, c
 
 		if j, ok := idx[name]; ok {
 			// Preserve any existing conditions, just set the count.
-			st.Listeners[j].AttachedRoutes = int32(c)
+			st.Listeners[j].AttachedRoutes = int32(c) //nolint:gosec // G115: route count is always non-negative, safe for int32
 		} else {
 			// Create a minimal status for the listener with the correct count.
 			st.Listeners = append(st.Listeners, gwv1.ListenerStatus{
 				Name:           lis.Name,
-				AttachedRoutes: int32(c),
+				AttachedRoutes: int32(c), //nolint:gosec // G115: route count is always non-negative, safe for int32
 			})
 			idx[name] = len(st.Listeners) - 1
 		}

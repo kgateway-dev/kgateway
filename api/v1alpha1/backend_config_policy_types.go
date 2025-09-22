@@ -57,6 +57,8 @@ type BackendConfigPolicySpec struct {
 	// Soft limit on size of the cluster's connections read and write buffers.
 	// If unspecified, an implementation defined default is applied (1MiB).
 	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=4294967295
 	PerConnectionBufferLimitBytes *int `json:"perConnectionBufferLimitBytes,omitempty"`
 
 	// Configure OS-level TCP keepalive checks.
@@ -135,6 +137,8 @@ type CommonHttpProtocolOptions struct {
 	// If not specified, the default of 100 is used. Requests that exceed this limit will receive
 	// a 431 response for HTTP/1.x and cause a stream reset for HTTP/2.
 	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=4294967295
 	MaxHeadersCount *int `json:"maxHeadersCount,omitempty"`
 
 	// Total duration to keep alive an HTTP request/response stream. If the time limit is reached the stream will be
@@ -146,6 +150,8 @@ type CommonHttpProtocolOptions struct {
 	// Maximum requests for a single upstream connection.
 	// If set to 0 or unspecified, defaults to unlimited.
 	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=4294967295
 	MaxRequestsPerConnection *int `json:"maxRequestsPerConnection,omitempty"`
 }
 type Http2ProtocolOptions struct {
@@ -166,6 +172,8 @@ type Http2ProtocolOptions struct {
 
 	// The maximum number of concurrent streams that the connection can have.
 	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=4294967295
 	MaxConcurrentStreams *int `json:"maxConcurrentStreams,omitempty"`
 
 	// Allows invalid HTTP messaging and headers. When disabled (default), then
@@ -179,6 +187,8 @@ type Http2ProtocolOptions struct {
 type TCPKeepalive struct {
 	// Maximum number of keep-alive probes to send before dropping the connection.
 	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=4294967295
 	KeepAliveProbes *int `json:"keepAliveProbes,omitempty"`
 
 	// The number of seconds a connection needs to be idle before keep-alive probes start being sent.

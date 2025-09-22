@@ -57,7 +57,7 @@ func processStaticBackendForEnvoy(in *v1alpha1.StaticBackend, out *envoyclusterv
 									Protocol: envoycorev3.SocketAddress_TCP,
 									Address:  host.Host,
 									PortSpecifier: &envoycorev3.SocketAddress_PortValue{
-										PortValue: uint32(host.Port),
+										PortValue: uint32(host.Port), //nolint:gosec // G115: Gateway API PortNumber is int32 with validation 1-65535, always safe
 									},
 								},
 							},

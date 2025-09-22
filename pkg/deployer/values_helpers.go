@@ -33,7 +33,7 @@ func GetPortsValues(gw *ir.Gateway, gwp *v1alpha1.GatewayParameters) []HelmPort 
 
 	// Add ports from Gateway listeners
 	for _, l := range gw.Listeners {
-		listenerPort := uint16(l.Port)
+		listenerPort := uint16(l.Port) //nolint:gosec // G115: Gateway listener port is int32 in valid port range, safe to convert to uint16
 		portName := listener.GenerateListenerName(l)
 		gwPorts = AppendPortValue(gwPorts, listenerPort, portName, gwp)
 	}

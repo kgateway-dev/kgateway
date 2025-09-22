@@ -289,7 +289,7 @@ func TestTranslationWithExtraPlugins(
 			r.NoErrorf(err, "error creating directory %s", dir)
 		}
 		t.Log("REFRESH_GOLDEN is set, writing output file", outputFile)
-		os.WriteFile(outputFile, outputYaml, 0o644)
+		os.WriteFile(outputFile, outputYaml, 0o644) //nolint:gosec // G306: Golden test file can be readable
 	}
 
 	gotProxy, err := compareProxy(outputFile, result.Proxy)

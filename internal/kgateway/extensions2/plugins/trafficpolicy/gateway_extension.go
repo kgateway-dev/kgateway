@@ -122,7 +122,7 @@ func TranslateGatewayExtensionBuilder(commoncol *collections.CommonCollections) 
 				FilterEnabledMetadata: ExtAuthzEnabledMetadataMatcher,
 				FailureModeAllow:      gExt.ExtAuth.FailOpen,
 				ClearRouteCache:       gExt.ExtAuth.ClearRouteCache,
-				StatusOnError:         &envoytypev3.HttpStatus{Code: envoytypev3.StatusCode(gExt.ExtAuth.StatusOnError)},
+				StatusOnError:         &envoytypev3.HttpStatus{Code: envoytypev3.StatusCode(gExt.ExtAuth.StatusOnError)}, //nolint:gosec // G115: StatusOnError is HTTP status code, valid range fits in int32
 			}
 
 			if gExt.ExtAuth.WithRequestBody != nil {

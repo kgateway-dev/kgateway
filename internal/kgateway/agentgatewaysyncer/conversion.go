@@ -632,7 +632,7 @@ func buildAgwDestination(
 					Service: namespace + "/" + hostname,
 				},
 				// InferencePool only supports single port
-				Port: uint32(svc.Spec.TargetPorts[0].Number),
+				Port: uint32(svc.Spec.TargetPorts[0].Number), //nolint:gosec // G115: InferencePool TargetPort is int32 with validation 1-65535, always safe
 			}
 		}
 	case wellknown.ServiceGVK.GroupKind():
@@ -668,7 +668,7 @@ func buildAgwDestination(
 			Kind: &api.BackendReference_Service{
 				Service: namespace + "/" + hostname,
 			},
-			Port: uint32(*port),
+			Port: uint32(*port), //nolint:gosec // G115: Gateway API PortNumber is int32 with validation 1-65535, always safe
 		}
 	case wellknown.BackendGVK.GroupKind():
 		backendRefKey := ns + "/" + string(to.Name)
@@ -1141,7 +1141,7 @@ func buildListener(
 		Port: &istio.Port{
 			// Name is required. We only have one server per GatewayListener, so we can just name them all the same
 			Name:     "default",
-			Number:   uint32(l.Port),
+			Number:   uint32(l.Port), //nolint:gosec // G115: Gateway API listener port is int32, always positive, safe to convert to uint32
 			Protocol: protocol,
 		},
 		Hosts: hostnames,
