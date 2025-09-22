@@ -21,7 +21,6 @@ import (
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 )
 
@@ -118,6 +117,10 @@ func (r *gatewayClassProvisioner) createGatewayClass(ctx context.Context, name s
 		return err
 	}
 
+	controllerName := r.defaultControllerName
+	if r.classConfigs[name] != nil && r.classConfigs[name].ControllerName != "" {
+		controllerName = r.classConfigs[name].ControllerName
+	}
 	gc = &apiv1.GatewayClass{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        name,
@@ -125,7 +128,7 @@ func (r *gatewayClassProvisioner) createGatewayClass(ctx context.Context, name s
 			Labels:      config.Labels,
 		},
 		Spec: apiv1.GatewayClassSpec{
-			ControllerName: apiv1.GatewayController(r.classConfigs[name].ControllerName),
+			ControllerName: apiv1.GatewayController(controllerName),
 		},
 	}
 	if config.Description != "" {
