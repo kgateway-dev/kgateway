@@ -1,5 +1,27 @@
 # End-to-End Testing Framework
 
+## How do I run a test?
+
+1. Make sure you have a kind cluster running with the images loaded. You can do this by running `./hack/kind/setup-kind.sh`
+2. The `make go-test` command will run all tests (e2e and unit tests). To run a specific e2e test, you can use `go test` directly.
+
+To run a specific test directly:
+```shell
+go test -v -timeout 600s ./test/kubernetes/e2e/tests -run ^TestKgateway
+```
+
+You can also filter out specific tests by passing in a regex to the `TEST_PKG` variable:
+```shell 
+ TEST_PKG=./test/kubernetes/e2e/... GO_TEST_USER_ARGS='-v -timeout=25m -run ^TestKgateway$$' make go-test
+```
+
+To run a specific e2e test, you can use regex to select a specific suite:
+
+You can also run the tests directly with custom config:
+```shell 
+go test -v -timeout 600s ./test/kubernetes/e2e/tests -run ^TestKgateway$$/^BasicRouting$$
+```
+
 ## Testify
 
 We rely on [testify](https://github.com/stretchr/testify) to provide the structure for our end-to-end testing. This allows us to decouple where tests are defined, from where they are run.
