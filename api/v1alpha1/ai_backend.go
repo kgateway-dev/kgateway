@@ -14,6 +14,8 @@ type AIBackend struct {
 
 	// PriorityGroups specifies a list of groups in priority order where each group defines
 	// a set of LLM providers. The priority determines the priority of the backend endpoints chosen.
+	// Note: provider names must be unique across all providers in all priority groups. Backend policies
+	// may target a specific provider by name using targetRefs[].sectionName.
 	//
 	// Example configuration with two priority groups:
 	// ```yaml
@@ -48,6 +50,11 @@ type AIBackend struct {
 // +kubebuilder:validation:XValidation:rule="has(self.host) || has(self.port) ? has(self.host) && has(self.port) : true",message="both host and port must be set together"
 // TODO: Move auth options off of SupportedLLMProvider to BackendConfigPolicy: https://github.com/kgateway-dev/kgateway/issues/11930
 type LLMProvider struct {
+	// Name of the provider.
+	// If specified, policies can target this provider by name.
+	// +optional
+	Name *gwv1.SectionName `json:"name,omitempty"`
+
 	// OpenAI provider
 	// +optional
 	OpenAI *OpenAIConfig `json:"openai,omitempty"`

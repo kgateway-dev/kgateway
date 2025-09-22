@@ -11,6 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/utils/ptr"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -227,7 +228,7 @@ func buildAIIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, secrets krt.Coll
 		}
 
 		// in a single provider case, the index is always 0
-		providerName := fmt.Sprintf("%s_%d", be.Name, 0)
+		providerName := providerNameOr(be.Spec.AI.LLM.Name, fmt.Sprintf("%s_%d", be.Name, 0))
 		provider, authPolicy, err := translateLLMProviderToProvider(krtctx, be.Spec.AI.LLM, providerName, secrets, be.Namespace)
 		if err != nil {
 			return nil, fmt.Errorf("failed to translate LLM provider: %w", err)
@@ -245,7 +246,7 @@ func buildAIIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, secrets krt.Coll
 
 			// Add all providers in this priority level to the same group
 			for _, llmProvider := range group.Providers {
-				providerName := fmt.Sprintf("%s_%d", be.Name, providerIndex)
+				providerName := providerNameOr(llmProvider.Name, fmt.Sprintf("%s_%d", be.Name, providerIndex))
 
 				provider, authPolicy, err := translateLLMProviderToProvider(krtctx, &llmProvider, providerName, secrets, be.Namespace)
 				if err != nil {
@@ -280,6 +281,13 @@ func buildAIIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, secrets krt.Coll
 		Backend:  backend,
 		Policies: policies,
 	}, nil
+}
+
+func providerNameOr(name *gwv1.SectionName, fallback string) string {
+	if name != nil {
+		return string(*name)
+	}
+	return fallback
 }
 
 // buildTranslatedAuthPolicy creates auth policy for the given auth token configuration
@@ -349,7 +357,7 @@ func buildMCPIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, services krt.Co
 			// Since policies can target specific targets within an MCP backend using SectionName,
 			// the key for the target must include the Backend Name to prevent collisions with
 			// policies targeting the entire Backend that have the same name as the target
-			staticBackendRef := utils.InternalMCPStaticBackendName(be.Namespace, be.Name, targetSelector.Name)
+			staticBackendRef := utils.InternalMCPStaticBackendName(be.Namespace, be.Name, string(targetSelector.Name))
 			staticBackend := &api.Backend{
 				Name: staticBackendRef,
 				Kind: &api.Backend_Static{
@@ -362,7 +370,7 @@ func buildMCPIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, services krt.Co
 			backends = append(backends, staticBackend)
 
 			mcpTarget := &api.MCPTarget{
-				Name: targetSelector.Name,
+				Name: string(targetSelector.Name),
 				Backend: &api.BackendReference{
 					Kind: &api.BackendReference_Backend{
 						Backend: staticBackendRef,

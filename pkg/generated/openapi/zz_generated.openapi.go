@@ -620,7 +620,7 @@ func schema_kgateway_v2_api_v1alpha1_AIBackend(ref common.ReferenceCallback) com
 					},
 					"priorityGroups": {
 						SchemaProps: spec.SchemaProps{
-							Description: "PriorityGroups specifies a list of groups in priority order where each group defines a set of LLM providers. The priority determines the priority of the backend endpoints chosen.\n\nExample configuration with two priority groups: ```yaml priorityGroups:\n\t- providers:\n\t  - azureOpenai:\n\t      deploymentName: gpt-4o-mini\n\t      apiVersion: 2024-02-15-preview\n\t      endpoint: ai-gateway.openai.azure.com\n\t      authToken:\n\t        secretRef:\n\t          name: azure-secret\n\t          namespace: kgateway-system\n\t- providers:\n\t  - azureOpenai:\n\t      deploymentName: gpt-4o-mini-2\n\t      apiVersion: 2024-02-15-preview\n\t      endpoint: ai-gateway-2.openai.azure.com\n\t      authToken:\n\t        secretRef:\n\t          name: azure-secret-2\n\t          namespace: kgateway-system\n```",
+							Description: "PriorityGroups specifies a list of groups in priority order where each group defines a set of LLM providers. The priority determines the priority of the backend endpoints chosen. Note: provider names must be unique across all providers in all priority groups. Backend policies may target a specific provider by name using targetRefs[].sectionName.\n\nExample configuration with two priority groups: ```yaml priorityGroups:\n\t- providers:\n\t  - azureOpenai:\n\t      deploymentName: gpt-4o-mini\n\t      apiVersion: 2024-02-15-preview\n\t      endpoint: ai-gateway.openai.azure.com\n\t      authToken:\n\t        secretRef:\n\t          name: azure-secret\n\t          namespace: kgateway-system\n\t- providers:\n\t  - azureOpenai:\n\t      deploymentName: gpt-4o-mini-2\n\t      apiVersion: 2024-02-15-preview\n\t      endpoint: ai-gateway-2.openai.azure.com\n\t      authToken:\n\t        secretRef:\n\t          name: azure-secret-2\n\t          namespace: kgateway-system\n```",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -4808,6 +4808,13 @@ func schema_kgateway_v2_api_v1alpha1_LLMProvider(ref common.ReferenceCallback) c
 				Description: "LLMProvider specifies the target large language model provider that the backend should route requests to.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Name of the provider. If specified, policies can target this provider by name.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"openai": {
 						SchemaProps: spec.SchemaProps{
 							Description: "OpenAI provider",

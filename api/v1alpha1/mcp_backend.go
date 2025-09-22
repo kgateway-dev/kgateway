@@ -1,6 +1,9 @@
 package v1alpha1
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+)
 
 // MCP configures mcp backends
 type MCP struct {
@@ -18,7 +21,7 @@ type MCP struct {
 // +kubebuilder:validation:ExactlyOneOf=selector;static
 type McpTargetSelector struct {
 	// Name of the MCP target.
-	Name string `json:"name"`
+	Name gwv1.SectionName `json:"name"`
 
 	// Selector is the selector to use to select the MCP targets.
 	// Note: Policies must target the resource selected by the target and

@@ -13,21 +13,20 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
-
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
 // NewBackendTLSPlugin creates a new BackendTLSPolicy plugin
 func NewBackendTLSPlugin(agw *AgwCollections) AgwPlugin {
 	clusterDomain := kubeutils.GetClusterDomainName()
 	policyCol := krt.NewManyCollection(agw.BackendTLSPolicies, func(krtctx krt.HandlerContext, btls *gwv1alpha3.BackendTLSPolicy) []AgwPolicy {
-		return translatePoliciesForBackendTLS(krtctx, agw.ConfigMaps, btls, clusterDomain)
+		return translatePoliciesForBackendTLS(krtctx, agw.ConfigMaps, agw.Backends, btls, clusterDomain)
 	})
 	return AgwPlugin{
 		ContributesPolicies: map[schema.GroupKind]PolicyPlugin{
@@ -45,6 +44,7 @@ func NewBackendTLSPlugin(agw *AgwCollections) AgwPlugin {
 func translatePoliciesForBackendTLS(
 	krtctx krt.HandlerContext,
 	cfgmaps krt.Collection[*corev1.ConfigMap],
+	backends krt.Collection[*v1alpha1.Backend],
 	btls *gwv1alpha3.BackendTLSPolicy,
 	clusterDomain string,
 ) []AgwPolicy {
@@ -56,13 +56,32 @@ func translatePoliciesForBackendTLS(
 
 		switch string(target.Kind) {
 		case wellknown.BackendGVK.Kind:
-			// The target defaults to <backend-namespace>/<backend-name>.
-			// If SectionName is specified to select a specific target in the Backend,
-			// the target becomes <backend-namespace>/<backend-name>/<section-name>
-			policyTarget = &api.PolicyTarget{
-				Kind: &api.PolicyTarget_Backend{
-					Backend: utils.InternalBackendName(btls.Namespace, string(target.Name), string(ptr.OrEmpty(target.SectionName))),
-				},
+			backendRef := types.NamespacedName{
+				Name:      string(target.Name),
+				Namespace: btls.Namespace,
+			}
+			backend := krt.FetchOne(krtctx, backends, krt.FilterObjectName(backendRef))
+			if backend == nil || *backend == nil {
+				logger.Error("backend not found; skipping policy", "backend", backendRef, "policy", kubeutils.NamespacedNameFrom(btls))
+				continue
+			}
+			spec := (*backend).Spec
+			if spec.AI != nil {
+				// AI backends always use api.ProviderGroups(ref: buildAIIr), so policies must be applied per-provider using PolicyTarget_SubBackend
+				policyTarget = &api.PolicyTarget{
+					Kind: &api.PolicyTarget_SubBackend{
+						SubBackend: utils.InternalBackendName(backendRef.Namespace, string(backendRef.Name), string(ptr.OrEmpty(target.SectionName))),
+					},
+				}
+			} else {
+				// The target defaults to <backend-namespace>/<backend-name>.
+				// If SectionName is specified to select a specific target in the Backend,
+				// the target becomes <backend-namespace>/<backend-name>/<section-name>
+				policyTarget = &api.PolicyTarget{
+					Kind: &api.PolicyTarget_Backend{
+						Backend: utils.InternalBackendName(btls.Namespace, string(target.Name), string(ptr.OrEmpty(target.SectionName))),
+					},
+				}
 			}
 		case wellknown.ServiceKind:
 			hostname := fmt.Sprintf("%s.%s.svc.%s", target.Name, btls.Namespace, clusterDomain)
@@ -88,7 +107,7 @@ func translatePoliciesForBackendTLS(
 		}
 		caCert, err := getBackendTLSCACert(krtctx, cfgmaps, btls)
 		if err != nil {
-			logger.Error("error getting backend TLS CA cert", "policy", client.ObjectKeyFromObject(btls), "error", err)
+			logger.Error("error getting backend TLS CA cert", "policy", kubeutils.NamespacedNameFrom(btls), "error", err)
 			return nil
 		}
 

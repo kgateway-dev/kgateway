@@ -1558,6 +1558,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: host
       type:
         scalar: string
+    - name: name
+      type:
+        scalar: string
     - name: openai
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.OpenAIConfig
