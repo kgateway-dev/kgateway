@@ -8,7 +8,7 @@ spec:
     parametersRef:
       group: gateway.kgateway.dev
       kind: GatewayParameters
-      name: gw-params-self-managed
+      name: gw-params
   listeners:
     - protocol: HTTP
       port: 8080
@@ -20,6 +20,6 @@ spec:
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayParameters
 metadata:
-  name: gw-params-self-managed
+  name: gw-params
 spec:
   selfManaged: {}
