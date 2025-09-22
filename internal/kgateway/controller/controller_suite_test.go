@@ -238,10 +238,12 @@ func createManager(
 	if classConfigs == nil {
 		classConfigs = map[string]*deployer.GatewayClassInfo{}
 		classConfigs[altGatewayClassName] = &deployer.GatewayClassInfo{
-			Description: "alt gateway class",
+			Description:    "alt gateway class",
+			ControllerName: gatewayControllerName,
 		}
 		classConfigs[gatewayClassName] = &deployer.GatewayClassInfo{
-			Description: "default gateway class",
+			Description:    "default gateway class",
+			ControllerName: gatewayControllerName,
 		}
 		classConfigs[selfManagedGatewayClassName] = &deployer.GatewayClassInfo{
 			Description: "self managed gw",
