@@ -1523,10 +1523,10 @@ var _ = Describe("Deployer", func() {
 				params := fullyDefinedGatewayParameters(wellknown.DefaultGatewayParametersName, defaultNamespace)
 				params.Spec.Kube.PodTemplate.LivenessProbe = generateLivenessProbe()
 				params.Spec.Kube.PodTemplate.ReadinessProbe = generateReadinessProbe()
-				params.Spec.Kube.PodTemplate.TerminationGracePeriodSeconds = ptr.To(5)
+				params.Spec.Kube.PodTemplate.TerminationGracePeriodSeconds = ptr.To(int64(5))
 				params.Spec.Kube.PodTemplate.GracefulShutdown = &gw2_v1alpha1.GracefulShutdownSpec{
 					Enabled:          ptr.To(true),
-					SleepTimeSeconds: ptr.To(7),
+					SleepTimeSeconds: ptr.To(int64(7)),
 				}
 				return params
 			}
