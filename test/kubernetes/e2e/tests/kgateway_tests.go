@@ -26,7 +26,6 @@ import (
 	local_rate_limit "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/rate_limit/local"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/rbac"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/route_delegation"
-	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/routereplacement"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/services/grpcroute"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/services/httproute"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/services/tcproute"
@@ -36,9 +35,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/tracing"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/transformation"
 	// "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/admin_server"
-	// "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/headless_svc"
-	// "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/metrics"
-	// "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/port_routing"
 )
 
 func KubeGatewaySuiteRunner() e2e.SuiteRunner {
@@ -54,7 +50,6 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("HttpListenerPolicy", http_listener_policy.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Lambda", lambda.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("RouteDelegation", route_delegation.NewTestingSuite)
-	kubeGatewaySuiteRunner.Register("RouteReplacement", routereplacement.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("SessionPersistence", session_persistence.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("TCPRouteServices", tcproute.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("TLSRouteServices", tlsroute.NewTestingSuite)
@@ -79,10 +74,7 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("HeaderModifiers", header_modifiers.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("RBAC", rbac.NewTestingSuite)
 
-	// kubeGatewaySuiteRunner.Register("HeadlessSvc", headless_svc.NewK8sGatewayHeadlessSvcSuite)
-	// kubeGatewaySuiteRunner.Register("PortRouting", port_routing.NewK8sGatewayTestingSuite)
 	// kubeGatewaySuiteRunner.Register("GlooAdminServer", admin_server.NewTestingSuite)
-	// kubeGatewaySuiteRunner.Register("ProxyMetrics", proxy_metrics.NewTestingSuite)
 
 	return kubeGatewaySuiteRunner
 }

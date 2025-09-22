@@ -104,8 +104,8 @@ spec:
       name: httpbin-tls
     sni: "test.example.com"
     parameters:
-      tlsMinVersion: "1.2"
-      tlsMaxVersion: "1.3"
+      minVersion: "1.2"
+      maxVersion: "1.3"
       cipherSuites:
         - "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256"
         - "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"

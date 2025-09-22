@@ -213,6 +213,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtinternal.KrtOptions) 
 
 	s.mostXdsSnapshots = krt.NewCollection(s.commonCols.GatewayIndex.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *GatewayXdsResources {
 		// skip agentgateway proxies as they are not envoy-based gateways
+		// TODO(npolshak): use the agentgateway controller name here
 		if string(gw.Obj.Spec.GatewayClassName) == s.agentgatewayClassName {
 			logger.Debug("skipping envoy proxy sync for agentgateway %s.%s", gw.Obj.Name, gw.Obj.Namespace)
 			return nil
@@ -374,7 +375,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	// when timer ticks, we will use the state of the mergedReports at that point in time to sync the status to k8s
 	s.statusReport.Register(func(o krt.Event[report]) {
 		if o.Event == controllers.EventDelete {
-			// TODO: handle garbage collection (see: https://github.com/solo-io/solo-projects/issues/7086)
+			// TODO: handle garbage collection
 			return
 		}
 		s.reportQueue.Enqueue(o.Latest().reportMap)

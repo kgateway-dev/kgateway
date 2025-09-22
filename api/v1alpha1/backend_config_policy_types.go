@@ -194,7 +194,7 @@ type TCPKeepalive struct {
 	KeepAliveInterval *metav1.Duration `json:"keepAliveInterval,omitempty"`
 }
 
-// +kubebuilder:validation:ExactlyOneOf=secretRef;tlsFiles;insecureSkipVerify;wellKnownCACertificates
+// +kubebuilder:validation:ExactlyOneOf=secretRef;files;insecureSkipVerify;wellKnownCACertificates
 type TLS struct {
 	// Reference to the TLS secret containing the certificate, key, and optionally the root CA.
 	// +optional
@@ -202,7 +202,7 @@ type TLS struct {
 
 	// File paths to certificates local to the proxy.
 	// +optional
-	TLSFiles *TLSFiles `json:"tlsFiles,omitempty"`
+	Files *TLSFiles `json:"files,omitempty"`
 
 	// WellKnownCACertificates specifies whether to use a well-known set of CA
 	// certificates for validating the backend's certificate chain. Currently,
@@ -223,12 +223,12 @@ type TLS struct {
 	// Verify that the Subject Alternative Name in the peer certificate is one of the specified values.
 	// note that a root_ca must be provided if this option is used.
 	// +optional
-	VerifySubjectAltName []string `json:"verifySubjectAltName,omitempty"`
+	VerifySubjectAltNames []string `json:"verifySubjectAltNames,omitempty"`
 
 	// General TLS parameters. See the [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/common.proto#extensions-transport-sockets-tls-v3-tlsparameters)
 	// for more information on the meaning of these values.
 	// +optional
-	Parameters *Parameters `json:"parameters,omitempty"`
+	Parameters *TLSParameters `json:"parameters,omitempty"`
 
 	// Set Application Level Protocol Negotiation
 	// If empty, defaults to ["h2", "http/1.1"].
@@ -259,14 +259,14 @@ const (
 	TLSVersion1_3  TLSVersion = "1.3"
 )
 
-type Parameters struct {
+type TLSParameters struct {
 	// Minimum TLS version.
 	// +optional
-	TLSMinVersion *TLSVersion `json:"tlsMinVersion,omitempty"`
+	MinVersion *TLSVersion `json:"minVersion,omitempty"`
 
 	// Maximum TLS version.
 	// +optional
-	TLSMaxVersion *TLSVersion `json:"tlsMaxVersion,omitempty"`
+	MaxVersion *TLSVersion `json:"maxVersion,omitempty"`
 
 	// +optional
 	CipherSuites []string `json:"cipherSuites,omitempty"`

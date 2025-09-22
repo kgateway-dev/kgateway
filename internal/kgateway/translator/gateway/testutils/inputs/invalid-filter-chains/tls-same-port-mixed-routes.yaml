@@ -1,0 +1,46 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - name: tls-app1-no-routes
+    protocol: TLS
+    port: 8443
+    hostname: "app1.example.com"
+    tls:
+      mode: Passthrough
+  - name: tls-app2-with-routes
+    protocol: TLS
+    port: 8443
+    hostname: "app2.example.com"
+    tls:
+      mode: Passthrough
+---
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: TLSRoute
+metadata:
+  name: app2-tls-route
+spec:
+  parentRefs:
+  - name: example-gateway
+    sectionName: tls-app2-with-routes
+  hostnames:
+  - "app2.example.com"
+  rules:
+  - backendRefs:
+    - name: app2-tls-svc
+      port: 443
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app2-tls-svc
+spec:
+  selector:
+    app: app2
+  ports:
+    - protocol: TCP
+      port: 443
+      targetPort: 8443

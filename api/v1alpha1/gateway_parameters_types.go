@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -218,6 +219,22 @@ type ProxyDeployment struct {
 	// If true, replicas will not be set in the deployment (allowing HPA to control scaling)
 	// +optional
 	OmitReplicas *bool `json:"omitReplicas,omitempty"`
+
+	// The deployment strategy to use to replace existing pods with new
+	// ones. The Kubernetes default is a RollingUpdate with 25% maxUnavailable,
+	// 25% maxSurge.
+	//
+	// E.g., to recreate pods, minimizing resources for the rollout but causing downtime:
+	// strategy:
+	//   type: Recreate
+	// E.g., to roll out as a RollingUpdate but with non-default parameters:
+	// strategy:
+	//   type: RollingUpdate
+	//   rollingUpdate:
+	//     maxSurge: 100%
+	//
+	// +optional
+	Strategy *appsv1.DeploymentStrategy `json:"strategy,omitempty"`
 }
 
 func (in *ProxyDeployment) GetReplicas() *uint32 {
@@ -232,6 +249,13 @@ func (in *ProxyDeployment) GetOmitReplicas() *bool {
 		return nil
 	}
 	return in.OmitReplicas
+}
+
+func (in *ProxyDeployment) GetStrategy() *appsv1.DeploymentStrategy {
+	if in == nil {
+		return nil
+	}
+	return in.Strategy
 }
 
 // EnvoyContainer configures the container running Envoy.

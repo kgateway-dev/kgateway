@@ -45,602 +45,591 @@ spec:
           spec:
             properties:
               ai:
-                maxProperties: 1
-                minProperties: 1
                 properties:
                   llm:
                     properties:
-                      authHeaderOverride:
+                      anthropic:
+                        properties:
+                          apiVersion:
+                            type: string
+                          authToken:
+                            properties:
+                              inline:
+                                type: string
+                              kind:
+                                enum:
+                                - Inline
+                                - SecretRef
+                                - Passthrough
+                                type: string
+                              secretRef:
+                                properties:
+                                  name:
+                                    default: ""
+                                    type: string
+                                type: object
+                                x-kubernetes-map-type: atomic
+                            required:
+                            - kind
+                            type: object
+                            x-kubernetes-validations:
+                            - message: at most one of the fields in [inline secretRef]
+                                may be set
+                              rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
+                                <= 1'
+                          model:
+                            type: string
+                        required:
+                        - authToken
+                        type: object
+                      authHeader:
                         properties:
                           headerName:
-                            type: string
-                          prefix:
-                            type: string
-                        type: object
-                      hostOverride:
-                        properties:
-                          host:
                             minLength: 1
                             type: string
-                          port:
-                            format: int32
-                            maximum: 65535
-                            minimum: 1
-                            type: integer
-                        required:
-                        - host
-                        - port
+                          prefix:
+                            minLength: 1
+                            type: string
                         type: object
-                      pathOverride:
-                        minProperties: 1
+                        x-kubernetes-validations:
+                        - message: at least one of prefix or headerName must be set
+                          rule: has(self.prefix) || has(self.headerName)
+                      azureopenai:
                         properties:
-                          fullPath:
+                          apiVersion:
+                            minLength: 1
+                            type: string
+                          authToken:
+                            properties:
+                              inline:
+                                type: string
+                              kind:
+                                enum:
+                                - Inline
+                                - SecretRef
+                                - Passthrough
+                                type: string
+                              secretRef:
+                                properties:
+                                  name:
+                                    default: ""
+                                    type: string
+                                type: object
+                                x-kubernetes-map-type: atomic
+                            required:
+                            - kind
+                            type: object
+                            x-kubernetes-validations:
+                            - message: at most one of the fields in [inline secretRef]
+                                may be set
+                              rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
+                                <= 1'
+                          deploymentName:
+                            minLength: 1
+                            type: string
+                          endpoint:
+                            minLength: 1
                             type: string
                         required:
-                        - fullPath
+                        - apiVersion
+                        - authToken
+                        - deploymentName
+                        - endpoint
                         type: object
-                      provider:
-                        maxProperties: 1
-                        minProperties: 1
+                      bedrock:
                         properties:
-                          anthropic:
+                          auth:
                             properties:
-                              apiVersion:
-                                type: string
-                              authToken:
+                              secretRef:
                                 properties:
-                                  inline:
+                                  name:
+                                    default: ""
                                     type: string
-                                  kind:
-                                    enum:
-                                    - Inline
-                                    - SecretRef
-                                    - Passthrough
-                                    type: string
-                                  secretRef:
-                                    properties:
-                                      name:
-                                        default: ""
-                                        type: string
-                                    type: object
-                                    x-kubernetes-map-type: atomic
-                                required:
-                                - kind
                                 type: object
-                                x-kubernetes-validations:
-                                - message: at most one of the fields in [inline secretRef]
-                                    may be set
-                                  rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
-                                    <= 1'
-                              model:
-                                type: string
-                            required:
-                            - authToken
-                            type: object
-                          azureopenai:
-                            properties:
-                              apiVersion:
-                                minLength: 1
-                                type: string
-                              authToken:
-                                properties:
-                                  inline:
-                                    type: string
-                                  kind:
-                                    enum:
-                                    - Inline
-                                    - SecretRef
-                                    - Passthrough
-                                    type: string
-                                  secretRef:
-                                    properties:
-                                      name:
-                                        default: ""
-                                        type: string
-                                    type: object
-                                    x-kubernetes-map-type: atomic
-                                required:
-                                - kind
-                                type: object
-                                x-kubernetes-validations:
-                                - message: at most one of the fields in [inline secretRef]
-                                    may be set
-                                  rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
-                                    <= 1'
-                              deploymentName:
-                                minLength: 1
-                                type: string
-                              endpoint:
-                                minLength: 1
-                                type: string
-                            required:
-                            - apiVersion
-                            - authToken
-                            - deploymentName
-                            - endpoint
-                            type: object
-                          bedrock:
-                            properties:
-                              auth:
-                                properties:
-                                  secretRef:
-                                    properties:
-                                      name:
-                                        default: ""
-                                        type: string
-                                    type: object
-                                    x-kubernetes-map-type: atomic
-                                  type:
-                                    enum:
-                                    - Secret
-                                    type: string
-                                required:
-                                - type
-                                type: object
-                                x-kubernetes-validations:
-                                - message: secretRef must be nil if the type is not
-                                    'Secret'
-                                  rule: '!(has(self.secretRef) && self.type != ''Secret'')'
-                                - message: secretRef must be specified when type is
-                                    'Secret'
-                                  rule: '!(!has(self.secretRef) && self.type == ''Secret'')'
-                              guardrail:
-                                properties:
-                                  identifier:
-                                    minLength: 1
-                                    type: string
-                                  version:
-                                    minLength: 1
-                                    type: string
-                                required:
-                                - identifier
-                                - version
-                                type: object
-                              model:
-                                minLength: 1
-                                type: string
-                              region:
-                                default: us-east-1
-                                maxLength: 63
-                                minLength: 1
-                                pattern: ^[a-z0-9-]+$
-                                type: string
-                            required:
-                            - model
-                            type: object
-                          gemini:
-                            properties:
-                              apiVersion:
-                                type: string
-                              authToken:
-                                properties:
-                                  inline:
-                                    type: string
-                                  kind:
-                                    enum:
-                                    - Inline
-                                    - SecretRef
-                                    - Passthrough
-                                    type: string
-                                  secretRef:
-                                    properties:
-                                      name:
-                                        default: ""
-                                        type: string
-                                    type: object
-                                    x-kubernetes-map-type: atomic
-                                required:
-                                - kind
-                                type: object
-                                x-kubernetes-validations:
-                                - message: at most one of the fields in [inline secretRef]
-                                    may be set
-                                  rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
-                                    <= 1'
-                              model:
-                                type: string
-                            required:
-                            - apiVersion
-                            - authToken
-                            - model
-                            type: object
-                          openai:
-                            properties:
-                              authToken:
-                                properties:
-                                  inline:
-                                    type: string
-                                  kind:
-                                    enum:
-                                    - Inline
-                                    - SecretRef
-                                    - Passthrough
-                                    type: string
-                                  secretRef:
-                                    properties:
-                                      name:
-                                        default: ""
-                                        type: string
-                                    type: object
-                                    x-kubernetes-map-type: atomic
-                                required:
-                                - kind
-                                type: object
-                                x-kubernetes-validations:
-                                - message: at most one of the fields in [inline secretRef]
-                                    may be set
-                                  rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
-                                    <= 1'
-                              model:
-                                type: string
-                            required:
-                            - authToken
-                            type: object
-                          vertexai:
-                            properties:
-                              apiVersion:
-                                minLength: 1
-                                type: string
-                              authToken:
-                                properties:
-                                  inline:
-                                    type: string
-                                  kind:
-                                    enum:
-                                    - Inline
-                                    - SecretRef
-                                    - Passthrough
-                                    type: string
-                                  secretRef:
-                                    properties:
-                                      name:
-                                        default: ""
-                                        type: string
-                                    type: object
-                                    x-kubernetes-map-type: atomic
-                                required:
-                                - kind
-                                type: object
-                                x-kubernetes-validations:
-                                - message: at most one of the fields in [inline secretRef]
-                                    may be set
-                                  rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
-                                    <= 1'
-                              location:
-                                minLength: 1
-                                type: string
-                              model:
-                                minLength: 1
-                                type: string
-                              modelPath:
-                                type: string
-                              projectId:
-                                minLength: 1
-                                type: string
-                              publisher:
+                                x-kubernetes-map-type: atomic
+                              type:
                                 enum:
-                                - GOOGLE
+                                - Secret
                                 type: string
                             required:
-                            - apiVersion
-                            - authToken
-                            - location
-                            - model
-                            - projectId
-                            - publisher
+                            - type
                             type: object
+                            x-kubernetes-validations:
+                            - message: secretRef must be nil if the type is not 'Secret'
+                              rule: '!(has(self.secretRef) && self.type != ''Secret'')'
+                            - message: secretRef must be specified when type is 'Secret'
+                              rule: '!(!has(self.secretRef) && self.type == ''Secret'')'
+                          guardrail:
+                            properties:
+                              identifier:
+                                minLength: 1
+                                type: string
+                              version:
+                                minLength: 1
+                                type: string
+                            required:
+                            - identifier
+                            - version
+                            type: object
+                          model:
+                            minLength: 1
+                            type: string
+                          region:
+                            default: us-east-1
+                            maxLength: 63
+                            minLength: 1
+                            pattern: ^[a-z0-9-]+$
+                            type: string
+                        required:
+                        - model
                         type: object
-                    required:
-                    - provider
-                    type: object
-                  multipool:
-                    properties:
-                      priorities:
-                        items:
-                          properties:
-                            pool:
-                              items:
+                      gemini:
+                        properties:
+                          apiVersion:
+                            type: string
+                          authToken:
+                            properties:
+                              inline:
+                                type: string
+                              kind:
+                                enum:
+                                - Inline
+                                - SecretRef
+                                - Passthrough
+                                type: string
+                              secretRef:
                                 properties:
-                                  authHeaderOverride:
+                                  name:
+                                    default: ""
+                                    type: string
+                                type: object
+                                x-kubernetes-map-type: atomic
+                            required:
+                            - kind
+                            type: object
+                            x-kubernetes-validations:
+                            - message: at most one of the fields in [inline secretRef]
+                                may be set
+                              rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
+                                <= 1'
+                          model:
+                            type: string
+                        required:
+                        - apiVersion
+                        - authToken
+                        - model
+                        type: object
+                      host:
+                        minLength: 1
+                        type: string
+                      openai:
+                        properties:
+                          authToken:
+                            properties:
+                              inline:
+                                type: string
+                              kind:
+                                enum:
+                                - Inline
+                                - SecretRef
+                                - Passthrough
+                                type: string
+                              secretRef:
+                                properties:
+                                  name:
+                                    default: ""
+                                    type: string
+                                type: object
+                                x-kubernetes-map-type: atomic
+                            required:
+                            - kind
+                            type: object
+                            x-kubernetes-validations:
+                            - message: at most one of the fields in [inline secretRef]
+                                may be set
+                              rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
+                                <= 1'
+                          model:
+                            type: string
+                        required:
+                        - authToken
+                        type: object
+                      path:
+                        properties:
+                          full:
+                            minLength: 1
+                            type: string
+                        type: object
+                      port:
+                        format: int32
+                        maximum: 65535
+                        minimum: 1
+                        type: integer
+                      vertexai:
+                        properties:
+                          apiVersion:
+                            minLength: 1
+                            type: string
+                          authToken:
+                            properties:
+                              inline:
+                                type: string
+                              kind:
+                                enum:
+                                - Inline
+                                - SecretRef
+                                - Passthrough
+                                type: string
+                              secretRef:
+                                properties:
+                                  name:
+                                    default: ""
+                                    type: string
+                                type: object
+                                x-kubernetes-map-type: atomic
+                            required:
+                            - kind
+                            type: object
+                            x-kubernetes-validations:
+                            - message: at most one of the fields in [inline secretRef]
+                                may be set
+                              rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
+                                <= 1'
+                          location:
+                            minLength: 1
+                            type: string
+                          model:
+                            minLength: 1
+                            type: string
+                          modelPath:
+                            type: string
+                          projectId:
+                            minLength: 1
+                            type: string
+                          publisher:
+                            enum:
+                            - GOOGLE
+                            type: string
+                        required:
+                        - apiVersion
+                        - authToken
+                        - location
+                        - model
+                        - projectId
+                        - publisher
+                        type: object
+                    type: object
+                    x-kubernetes-validations:
+                    - message: both host and port must be set together
+                      rule: 'has(self.host) || has(self.port) ? has(self.host) &&
+                        has(self.port) : true'
+                    - message: exactly one of the fields in [openai azureopenai anthropic
+                        gemini vertexai bedrock] must be set
+                      rule: '[has(self.openai),has(self.azureopenai),has(self.anthropic),has(self.gemini),has(self.vertexai),has(self.bedrock)].filter(x,x==true).size()
+                        == 1'
+                  priorityGroups:
+                    items:
+                      properties:
+                        providers:
+                          items:
+                            properties:
+                              anthropic:
+                                properties:
+                                  apiVersion:
+                                    type: string
+                                  authToken:
                                     properties:
-                                      headerName:
+                                      inline:
                                         type: string
-                                      prefix:
+                                      kind:
+                                        enum:
+                                        - Inline
+                                        - SecretRef
+                                        - Passthrough
                                         type: string
+                                      secretRef:
+                                        properties:
+                                          name:
+                                            default: ""
+                                            type: string
+                                        type: object
+                                        x-kubernetes-map-type: atomic
+                                    required:
+                                    - kind
                                     type: object
-                                  hostOverride:
+                                    x-kubernetes-validations:
+                                    - message: at most one of the fields in [inline
+                                        secretRef] may be set
+                                      rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
+                                        <= 1'
+                                  model:
+                                    type: string
+                                required:
+                                - authToken
+                                type: object
+                              authHeader:
+                                properties:
+                                  headerName:
+                                    minLength: 1
+                                    type: string
+                                  prefix:
+                                    minLength: 1
+                                    type: string
+                                type: object
+                                x-kubernetes-validations:
+                                - message: at least one of prefix or headerName must
+                                    be set
+                                  rule: has(self.prefix) || has(self.headerName)
+                              azureopenai:
+                                properties:
+                                  apiVersion:
+                                    minLength: 1
+                                    type: string
+                                  authToken:
                                     properties:
-                                      host:
+                                      inline:
+                                        type: string
+                                      kind:
+                                        enum:
+                                        - Inline
+                                        - SecretRef
+                                        - Passthrough
+                                        type: string
+                                      secretRef:
+                                        properties:
+                                          name:
+                                            default: ""
+                                            type: string
+                                        type: object
+                                        x-kubernetes-map-type: atomic
+                                    required:
+                                    - kind
+                                    type: object
+                                    x-kubernetes-validations:
+                                    - message: at most one of the fields in [inline
+                                        secretRef] may be set
+                                      rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
+                                        <= 1'
+                                  deploymentName:
+                                    minLength: 1
+                                    type: string
+                                  endpoint:
+                                    minLength: 1
+                                    type: string
+                                required:
+                                - apiVersion
+                                - authToken
+                                - deploymentName
+                                - endpoint
+                                type: object
+                              bedrock:
+                                properties:
+                                  auth:
+                                    properties:
+                                      secretRef:
+                                        properties:
+                                          name:
+                                            default: ""
+                                            type: string
+                                        type: object
+                                        x-kubernetes-map-type: atomic
+                                      type:
+                                        enum:
+                                        - Secret
+                                        type: string
+                                    required:
+                                    - type
+                                    type: object
+                                    x-kubernetes-validations:
+                                    - message: secretRef must be nil if the type is
+                                        not 'Secret'
+                                      rule: '!(has(self.secretRef) && self.type !=
+                                        ''Secret'')'
+                                    - message: secretRef must be specified when type
+                                        is 'Secret'
+                                      rule: '!(!has(self.secretRef) && self.type ==
+                                        ''Secret'')'
+                                  guardrail:
+                                    properties:
+                                      identifier:
                                         minLength: 1
                                         type: string
-                                      port:
-                                        format: int32
-                                        maximum: 65535
-                                        minimum: 1
-                                        type: integer
-                                    required:
-                                    - host
-                                    - port
-                                    type: object
-                                  pathOverride:
-                                    minProperties: 1
-                                    properties:
-                                      fullPath:
+                                      version:
+                                        minLength: 1
                                         type: string
                                     required:
-                                    - fullPath
+                                    - identifier
+                                    - version
                                     type: object
-                                  provider:
-                                    maxProperties: 1
-                                    minProperties: 1
-                                    properties:
-                                      anthropic:
-                                        properties:
-                                          apiVersion:
-                                            type: string
-                                          authToken:
-                                            properties:
-                                              inline:
-                                                type: string
-                                              kind:
-                                                enum:
-                                                - Inline
-                                                - SecretRef
-                                                - Passthrough
-                                                type: string
-                                              secretRef:
-                                                properties:
-                                                  name:
-                                                    default: ""
-                                                    type: string
-                                                type: object
-                                                x-kubernetes-map-type: atomic
-                                            required:
-                                            - kind
-                                            type: object
-                                            x-kubernetes-validations:
-                                            - message: at most one of the fields in
-                                                [inline secretRef] may be set
-                                              rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
-                                                <= 1'
-                                          model:
-                                            type: string
-                                        required:
-                                        - authToken
-                                        type: object
-                                      azureopenai:
-                                        properties:
-                                          apiVersion:
-                                            minLength: 1
-                                            type: string
-                                          authToken:
-                                            properties:
-                                              inline:
-                                                type: string
-                                              kind:
-                                                enum:
-                                                - Inline
-                                                - SecretRef
-                                                - Passthrough
-                                                type: string
-                                              secretRef:
-                                                properties:
-                                                  name:
-                                                    default: ""
-                                                    type: string
-                                                type: object
-                                                x-kubernetes-map-type: atomic
-                                            required:
-                                            - kind
-                                            type: object
-                                            x-kubernetes-validations:
-                                            - message: at most one of the fields in
-                                                [inline secretRef] may be set
-                                              rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
-                                                <= 1'
-                                          deploymentName:
-                                            minLength: 1
-                                            type: string
-                                          endpoint:
-                                            minLength: 1
-                                            type: string
-                                        required:
-                                        - apiVersion
-                                        - authToken
-                                        - deploymentName
-                                        - endpoint
-                                        type: object
-                                      bedrock:
-                                        properties:
-                                          auth:
-                                            properties:
-                                              secretRef:
-                                                properties:
-                                                  name:
-                                                    default: ""
-                                                    type: string
-                                                type: object
-                                                x-kubernetes-map-type: atomic
-                                              type:
-                                                enum:
-                                                - Secret
-                                                type: string
-                                            required:
-                                            - type
-                                            type: object
-                                            x-kubernetes-validations:
-                                            - message: secretRef must be nil if the
-                                                type is not 'Secret'
-                                              rule: '!(has(self.secretRef) && self.type
-                                                != ''Secret'')'
-                                            - message: secretRef must be specified
-                                                when type is 'Secret'
-                                              rule: '!(!has(self.secretRef) && self.type
-                                                == ''Secret'')'
-                                          guardrail:
-                                            properties:
-                                              identifier:
-                                                minLength: 1
-                                                type: string
-                                              version:
-                                                minLength: 1
-                                                type: string
-                                            required:
-                                            - identifier
-                                            - version
-                                            type: object
-                                          model:
-                                            minLength: 1
-                                            type: string
-                                          region:
-                                            default: us-east-1
-                                            maxLength: 63
-                                            minLength: 1
-                                            pattern: ^[a-z0-9-]+$
-                                            type: string
-                                        required:
-                                        - model
-                                        type: object
-                                      gemini:
-                                        properties:
-                                          apiVersion:
-                                            type: string
-                                          authToken:
-                                            properties:
-                                              inline:
-                                                type: string
-                                              kind:
-                                                enum:
-                                                - Inline
-                                                - SecretRef
-                                                - Passthrough
-                                                type: string
-                                              secretRef:
-                                                properties:
-                                                  name:
-                                                    default: ""
-                                                    type: string
-                                                type: object
-                                                x-kubernetes-map-type: atomic
-                                            required:
-                                            - kind
-                                            type: object
-                                            x-kubernetes-validations:
-                                            - message: at most one of the fields in
-                                                [inline secretRef] may be set
-                                              rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
-                                                <= 1'
-                                          model:
-                                            type: string
-                                        required:
-                                        - apiVersion
-                                        - authToken
-                                        - model
-                                        type: object
-                                      openai:
-                                        properties:
-                                          authToken:
-                                            properties:
-                                              inline:
-                                                type: string
-                                              kind:
-                                                enum:
-                                                - Inline
-                                                - SecretRef
-                                                - Passthrough
-                                                type: string
-                                              secretRef:
-                                                properties:
-                                                  name:
-                                                    default: ""
-                                                    type: string
-                                                type: object
-                                                x-kubernetes-map-type: atomic
-                                            required:
-                                            - kind
-                                            type: object
-                                            x-kubernetes-validations:
-                                            - message: at most one of the fields in
-                                                [inline secretRef] may be set
-                                              rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
-                                                <= 1'
-                                          model:
-                                            type: string
-                                        required:
-                                        - authToken
-                                        type: object
-                                      vertexai:
-                                        properties:
-                                          apiVersion:
-                                            minLength: 1
-                                            type: string
-                                          authToken:
-                                            properties:
-                                              inline:
-                                                type: string
-                                              kind:
-                                                enum:
-                                                - Inline
-                                                - SecretRef
-                                                - Passthrough
-                                                type: string
-                                              secretRef:
-                                                properties:
-                                                  name:
-                                                    default: ""
-                                                    type: string
-                                                type: object
-                                                x-kubernetes-map-type: atomic
-                                            required:
-                                            - kind
-                                            type: object
-                                            x-kubernetes-validations:
-                                            - message: at most one of the fields in
-                                                [inline secretRef] may be set
-                                              rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
-                                                <= 1'
-                                          location:
-                                            minLength: 1
-                                            type: string
-                                          model:
-                                            minLength: 1
-                                            type: string
-                                          modelPath:
-                                            type: string
-                                          projectId:
-                                            minLength: 1
-                                            type: string
-                                          publisher:
-                                            enum:
-                                            - GOOGLE
-                                            type: string
-                                        required:
-                                        - apiVersion
-                                        - authToken
-                                        - location
-                                        - model
-                                        - projectId
-                                        - publisher
-                                        type: object
-                                    type: object
+                                  model:
+                                    minLength: 1
+                                    type: string
+                                  region:
+                                    default: us-east-1
+                                    maxLength: 63
+                                    minLength: 1
+                                    pattern: ^[a-z0-9-]+$
+                                    type: string
                                 required:
-                                - provider
+                                - model
                                 type: object
-                              maxItems: 20
-                              minItems: 1
-                              type: array
-                          type: object
-                        maxItems: 20
-                        minItems: 1
-                        type: array
-                    required:
-                    - priorities
-                    type: object
+                              gemini:
+                                properties:
+                                  apiVersion:
+                                    type: string
+                                  authToken:
+                                    properties:
+                                      inline:
+                                        type: string
+                                      kind:
+                                        enum:
+                                        - Inline
+                                        - SecretRef
+                                        - Passthrough
+                                        type: string
+                                      secretRef:
+                                        properties:
+                                          name:
+                                            default: ""
+                                            type: string
+                                        type: object
+                                        x-kubernetes-map-type: atomic
+                                    required:
+                                    - kind
+                                    type: object
+                                    x-kubernetes-validations:
+                                    - message: at most one of the fields in [inline
+                                        secretRef] may be set
+                                      rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
+                                        <= 1'
+                                  model:
+                                    type: string
+                                required:
+                                - apiVersion
+                                - authToken
+                                - model
+                                type: object
+                              host:
+                                minLength: 1
+                                type: string
+                              openai:
+                                properties:
+                                  authToken:
+                                    properties:
+                                      inline:
+                                        type: string
+                                      kind:
+                                        enum:
+                                        - Inline
+                                        - SecretRef
+                                        - Passthrough
+                                        type: string
+                                      secretRef:
+                                        properties:
+                                          name:
+                                            default: ""
+                                            type: string
+                                        type: object
+                                        x-kubernetes-map-type: atomic
+                                    required:
+                                    - kind
+                                    type: object
+                                    x-kubernetes-validations:
+                                    - message: at most one of the fields in [inline
+                                        secretRef] may be set
+                                      rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
+                                        <= 1'
+                                  model:
+                                    type: string
+                                required:
+                                - authToken
+                                type: object
+                              path:
+                                properties:
+                                  full:
+                                    minLength: 1
+                                    type: string
+                                type: object
+                              port:
+                                format: int32
+                                maximum: 65535
+                                minimum: 1
+                                type: integer
+                              vertexai:
+                                properties:
+                                  apiVersion:
+                                    minLength: 1
+                                    type: string
+                                  authToken:
+                                    properties:
+                                      inline:
+                                        type: string
+                                      kind:
+                                        enum:
+                                        - Inline
+                                        - SecretRef
+                                        - Passthrough
+                                        type: string
+                                      secretRef:
+                                        properties:
+                                          name:
+                                            default: ""
+                                            type: string
+                                        type: object
+                                        x-kubernetes-map-type: atomic
+                                    required:
+                                    - kind
+                                    type: object
+                                    x-kubernetes-validations:
+                                    - message: at most one of the fields in [inline
+                                        secretRef] may be set
+                                      rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
+                                        <= 1'
+                                  location:
+                                    minLength: 1
+                                    type: string
+                                  model:
+                                    minLength: 1
+                                    type: string
+                                  modelPath:
+                                    type: string
+                                  projectId:
+                                    minLength: 1
+                                    type: string
+                                  publisher:
+                                    enum:
+                                    - GOOGLE
+                                    type: string
+                                required:
+                                - apiVersion
+                                - authToken
+                                - location
+                                - model
+                                - projectId
+                                - publisher
+                                type: object
+                            type: object
+                            x-kubernetes-validations:
+                            - message: both host and port must be set together
+                              rule: 'has(self.host) || has(self.port) ? has(self.host)
+                                && has(self.port) : true'
+                            - message: exactly one of the fields in [openai azureopenai
+                                anthropic gemini vertexai bedrock] must be set
+                              rule: '[has(self.openai),has(self.azureopenai),has(self.anthropic),has(self.gemini),has(self.vertexai),has(self.bedrock)].filter(x,x==true).size()
+                                == 1'
+                          maxItems: 32
+                          minItems: 1
+                          type: array
+                      type: object
+                    maxItems: 32
+                    minItems: 1
+                    type: array
                 type: object
                 x-kubernetes-validations:
-                - message: There must one and only one LLM or MultiPool can be set
-                  rule: (has(self.llm) && !has(self.multipool)) || (!has(self.llm)
-                    && has(self.multipool))
+                - message: exactly one of the fields in [llm priorityGroups] must
+                    be set
+                  rule: '[has(self.llm),has(self.priorityGroups)].filter(x,x==true).size()
+                    == 1'
               aws:
                 properties:
                   accountId:

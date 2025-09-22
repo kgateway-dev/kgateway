@@ -24,20 +24,18 @@ spec:
   type: AI
   ai:
     llm:
-      hostOverride:
-        host: test-ai-provider.ai-test.svc.cluster.local
-        port: 443
-      pathOverride:
-        fullPath: "/api/v1/chat/completions"
-      authHeaderOverride:
+      host: test-ai-provider.ai-test.svc.cluster.local
+      port: 443
+      path:
+        full: "/api/v1/chat/completions"
+      authHeader:
         prefix: "custom-prefix"
         headerName: "custom-header"
-      provider:
-        openai:
-          authToken:
-            kind: "SecretRef"
-            secretRef:
-              name: openai-override-secret
+      openai:
+        authToken:
+          kind: "SecretRef"
+          secretRef:
+            name: openai-override-secret
 ---
 apiVersion: v1
 kind: Secret

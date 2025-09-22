@@ -14,6 +14,10 @@ spec:
   selector:
     matchLabels:
       {{- include "kgateway.selectorLabels" . | nindent 6 }}
+  {{- with .Values.controller.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   template:
     metadata:
       annotations:
@@ -39,6 +43,9 @@ spec:
           ports:
             - containerPort: {{ .Values.controller.service.ports.grpc }}
               name: grpc-xds
+              protocol: TCP
+            - containerPort: {{ .Values.controller.service.ports.agwGrpc }}
+              name: grpc-xds-agw
               protocol: TCP
             - containerPort: {{ .Values.controller.service.ports.health }}
               name: health
@@ -69,6 +76,8 @@ spec:
               value: {{ include "kgateway.fullname" . }}
             - name: KGW_XDS_SERVICE_PORT
               value: {{ .Values.controller.service.ports.grpc | quote }}
+            - name: KGW_AGENTGATEWAY_XDS_SERVICE_PORT
+              value: {{ .Values.controller.service.ports.agwGrpc | quote }}
             {{- if .Values.inferenceExtension.enabled }}
             - name: KGW_ENABLE_INFER_EXT
               value: "true"

@@ -30,15 +30,13 @@ import (
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	"github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
-	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
-
-var setupLogging = sync.Once{}
 
 type postStartFunc func(t *testing.T, ctx context.Context, client istiokube.CLIClient) func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []pluginsdk.Plugin
 
@@ -64,12 +62,6 @@ func RunController(
 		}
 		globalSettings = st
 	}
-	// Always set once instead of each time to avoid races
-	logLevel := globalSettings.LogLevel
-	globalSettings.LogLevel = ""
-	setupLogging.Do(func() {
-		setup.SetupLogging(logLevel)
-	})
 
 	// Enable this if you want api server logs and audit logs.
 	if os.Getenv("DEBUG_APISERVER") == "true" {
@@ -128,6 +120,7 @@ func RunController(
 		setup.WithExtraPlugins(extraPlugins),
 		setup.WithKrtDebugger(krtDbg),
 		setup.WithXDSListener(l),
+		setup.WithAgwXDSListener(l),
 		setup.WithControllerManagerOptions(
 			func(ctx context.Context) *ctrl.Options {
 				return &ctrl.Options{

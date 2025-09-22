@@ -56,7 +56,7 @@ func (s *slogAdapterForEnvoy) Errorf(format string, args ...interface{}) {
 	}
 }
 
-func NewControlPlane(ctx context.Context, lis net.Listener, callbacks xdsserver.Callbacks) envoycache.SnapshotCache {
+func NewControlPlane(ctx context.Context, lis net.Listener, agwLis net.Listener, callbacks xdsserver.Callbacks) envoycache.SnapshotCache {
 	baseLogger := slog.Default().With("component", "envoy-controlplane")
 	envoyLoggerAdapter := &slogAdapterForEnvoy{logger: baseLogger}
 
@@ -72,24 +72,42 @@ func NewControlPlane(ctx context.Context, lis net.Listener, callbacks xdsserver.
 				},
 			)),
 	}
-	grpcServer := grpc.NewServer(serverOpts...)
+
+	// Create separate gRPC servers for each listener
+	grpcServer1 := grpc.NewServer(serverOpts...)
+	grpcServer2 := grpc.NewServer(serverOpts...)
 
 	snapshotCache := envoycache.NewSnapshotCache(true, xds.NewNodeRoleHasher(), envoyLoggerAdapter)
 
 	xdsServer := xdsserver.NewServer(ctx, snapshotCache, callbacks)
-	reflection.Register(grpcServer)
 
-	envoy_service_endpoint_v3.RegisterEndpointDiscoveryServiceServer(grpcServer, xdsServer)
-	envoy_service_cluster_v3.RegisterClusterDiscoveryServiceServer(grpcServer, xdsServer)
-	envoy_service_route_v3.RegisterRouteDiscoveryServiceServer(grpcServer, xdsServer)
-	envoy_service_listener_v3.RegisterListenerDiscoveryServiceServer(grpcServer, xdsServer)
-	envoy_service_discovery_v3.RegisterAggregatedDiscoveryServiceServer(grpcServer, xdsServer)
+	// Register reflection and services on both servers
+	reflection.Register(grpcServer1)
+	reflection.Register(grpcServer2)
 
-	go grpcServer.Serve(lis)
+	// Register xDS services on first server
+	envoy_service_endpoint_v3.RegisterEndpointDiscoveryServiceServer(grpcServer1, xdsServer)
+	envoy_service_cluster_v3.RegisterClusterDiscoveryServiceServer(grpcServer1, xdsServer)
+	envoy_service_route_v3.RegisterRouteDiscoveryServiceServer(grpcServer1, xdsServer)
+	envoy_service_listener_v3.RegisterListenerDiscoveryServiceServer(grpcServer1, xdsServer)
+	envoy_service_discovery_v3.RegisterAggregatedDiscoveryServiceServer(grpcServer1, xdsServer)
 
+	// Register xDS services on second server
+	envoy_service_endpoint_v3.RegisterEndpointDiscoveryServiceServer(grpcServer2, xdsServer)
+	envoy_service_cluster_v3.RegisterClusterDiscoveryServiceServer(grpcServer2, xdsServer)
+	envoy_service_route_v3.RegisterRouteDiscoveryServiceServer(grpcServer2, xdsServer)
+	envoy_service_listener_v3.RegisterListenerDiscoveryServiceServer(grpcServer2, xdsServer)
+	envoy_service_discovery_v3.RegisterAggregatedDiscoveryServiceServer(grpcServer2, xdsServer)
+
+	// Start both servers on their respective listeners
+	go grpcServer1.Serve(lis)
+	go grpcServer2.Serve(agwLis)
+
+	// Handle graceful shutdown for both servers
 	go func() {
 		<-ctx.Done()
-		grpcServer.GracefulStop()
+		grpcServer1.GracefulStop()
+		grpcServer2.GracefulStop()
 	}()
 
 	return snapshotCache

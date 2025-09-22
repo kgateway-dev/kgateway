@@ -15,6 +15,10 @@ spec:
   selector:
     matchLabels:
       {{- include "kgateway.gateway.selectorLabels" . | nindent 6 }}
+  {{- with $gateway.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   template:
     metadata:
       annotations:
@@ -28,7 +32,7 @@ spec:
       {{- end}}
       {{- if (($gateway.aiExtension).enabled) }}
       {{- if $gateway.aiExtension.stats }}
-        solo.io/ai-stats-config-hash: {{ sha256sum $gateway.aiExtension.stats | trunc 64 }}
+        kgateway.dev/ai-stats-config-hash: {{ sha256sum $gateway.aiExtension.stats | trunc 64 }}
       {{- end }}
       {{- end}}
       labels:

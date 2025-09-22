@@ -18,6 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/inferenceextension/endpointpicker"
@@ -32,7 +33,6 @@ import (
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	common "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	kgtwschemes "github.com/kgateway-dev/kgateway/v2/pkg/schemes"
-	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/namespaces"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
@@ -62,6 +62,7 @@ var setupLog = ctrl.Log.WithName("setup")
 type StartConfig struct {
 	Manager                  manager.Manager
 	ControllerName           string
+	AgwControllerName        string
 	GatewayClassName         string
 	WaypointGatewayClassName string
 	AgentgatewayClassName    string
@@ -186,7 +187,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		agwMergedPlugins := agwPluginFactory(cfg)(ctx, cfg.AgwCollections)
 
 		agwSyncer = agentgatewaysyncer.NewAgwSyncer(
-			cfg.ControllerName,
+			cfg.AgwControllerName,
 			cfg.AgentgatewayClassName,
 			cfg.Client,
 			cfg.Manager,
@@ -203,7 +204,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		}
 
 		agwStatusSyncer := agentgatewaysyncer.NewAgwStatusSyncer(
-			cfg.ControllerName,
+			cfg.AgwControllerName,
 			cfg.AgentgatewayClassName,
 			cfg.Client,
 			cfg.Manager,
@@ -285,15 +286,20 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 	xdsPort := globalSettings.XdsServicePort
 	slog.Info("got xds address for deployer", "xds_host", xdsHost, "xds_port", xdsPort)
 
+	agwXdsPort := globalSettings.AgentgatewayXdsServicePort
+	slog.Info("got agentgateway xds address for deployer", "agw_xds_host", xdsHost, "agw_xds_port", agwXdsPort)
+
 	istioAutoMtlsEnabled := globalSettings.EnableIstioAutoMtls
 
 	gwCfg := GatewayConfig{
-		Mgr:            c.mgr,
-		ControllerName: c.cfg.ControllerName,
-		AutoProvision:  AutoProvision,
+		Mgr:               c.mgr,
+		ControllerName:    c.cfg.ControllerName,
+		AgwControllerName: c.cfg.AgwControllerName,
+		AutoProvision:     AutoProvision,
 		ControlPlane: deployer.ControlPlaneInfo{
-			XdsHost: xdsHost,
-			XdsPort: xdsPort,
+			XdsHost:    xdsHost,
+			XdsPort:    xdsPort,
+			AgwXdsPort: agwXdsPort,
 		},
 		IstioAutoMtlsEnabled: istioAutoMtlsEnabled,
 		ImageInfo: &deployer.ImageInfo{
@@ -309,7 +315,7 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 	}
 
 	setupLog.Info("creating gateway class provisioner")
-	if err := NewGatewayClassProvisioner(c.mgr, c.cfg.ControllerName, GetDefaultClassInfo(globalSettings, c.cfg.GatewayClassName, c.cfg.WaypointGatewayClassName, c.cfg.AgentgatewayClassName, c.cfg.AdditionalGatewayClasses)); err != nil {
+	if err := NewGatewayClassProvisioner(c.mgr, c.cfg.ControllerName, c.cfg.AgwControllerName, c.cfg.AgentgatewayClassName, GetDefaultClassInfo(globalSettings, c.cfg.GatewayClassName, c.cfg.WaypointGatewayClassName, c.cfg.AgentgatewayClassName, c.cfg.AdditionalGatewayClasses)); err != nil {
 		setupLog.Error(err, "unable to create gateway class provisioner")
 		return err
 	}

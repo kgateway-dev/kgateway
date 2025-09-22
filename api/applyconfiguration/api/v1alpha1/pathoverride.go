@@ -5,7 +5,7 @@ package v1alpha1
 // PathOverrideApplyConfiguration represents a declarative configuration of the PathOverride type for use
 // with apply.
 type PathOverrideApplyConfiguration struct {
-	FullPath *string `json:"fullPath,omitempty"`
+	Full *string `json:"full,omitempty"`
 }
 
 // PathOverrideApplyConfiguration constructs a declarative configuration of the PathOverride type for use with
@@ -14,10 +14,10 @@ func PathOverride() *PathOverrideApplyConfiguration {
 	return &PathOverrideApplyConfiguration{}
 }
 
-// WithFullPath sets the FullPath field in the declarative configuration to the given value
+// WithFull sets the Full field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the FullPath field is set to the value of the last call.
-func (b *PathOverrideApplyConfiguration) WithFullPath(value string) *PathOverrideApplyConfiguration {
-	b.FullPath = &value
+// If called multiple times, the Full field is set to the value of the last call.
+func (b *PathOverrideApplyConfiguration) WithFull(value string) *PathOverrideApplyConfiguration {
+	b.Full = &value
 	return b
 }

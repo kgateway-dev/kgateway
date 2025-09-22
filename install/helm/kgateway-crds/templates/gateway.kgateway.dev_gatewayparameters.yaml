@@ -524,6 +524,24 @@ spec:
                       replicas:
                         format: int32
                         type: integer
+                      strategy:
+                        properties:
+                          rollingUpdate:
+                            properties:
+                              maxSurge:
+                                anyOf:
+                                - type: integer
+                                - type: string
+                                x-kubernetes-int-or-string: true
+                              maxUnavailable:
+                                anyOf:
+                                - type: integer
+                                - type: string
+                                x-kubernetes-int-or-string: true
+                            type: object
+                          type:
+                            type: string
+                        type: object
                     type: object
                     x-kubernetes-validations:
                     - message: at most one of the fields in [replicas omitReplicas]

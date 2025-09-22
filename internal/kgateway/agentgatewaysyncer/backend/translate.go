@@ -99,73 +99,75 @@ func translateLLMProviderToProvider(krtctx krt.HandlerContext, llm *v1alpha1.LLM
 
 	var auth *api.BackendAuthPolicy
 
-	if llm.HostOverride != nil {
+	if llm.Host != nil {
 		provider.HostOverride = &api.AIBackend_HostOverride{
-			Host: llm.HostOverride.Host,
-			Port: int32(llm.HostOverride.Port),
+			Host: *llm.Host,
+			Port: int32(ptr.Deref(llm.Port, 443)), // Port is required when Host is set (CEL validated)
 		}
 	}
 
-	if llm.PathOverride != nil && llm.PathOverride.FullPath != nil {
-		provider.PathOverride = &wrappers.StringValue{Value: *llm.PathOverride.FullPath}
+	if llm.Path != nil {
+		if llm.Path.Full != nil {
+			provider.PathOverride = &wrappers.StringValue{Value: *llm.Path.Full}
+		}
 	}
 
-	if llm.AuthHeaderOverride != nil {
+	if llm.AuthHeader != nil {
 		logger.Warn("auth header override is not supported for agentgateway")
 	}
 
 	// Extract auth token and model based on provider
-	if llm.Provider.OpenAI != nil {
+	if llm.OpenAI != nil {
 		openai := &api.AIBackend_OpenAI{}
-		if llm.Provider.OpenAI.Model != nil {
-			openai.Model = &wrappers.StringValue{Value: *llm.Provider.OpenAI.Model}
+		if llm.OpenAI.Model != nil {
+			openai.Model = &wrappers.StringValue{Value: *llm.OpenAI.Model}
 		}
 		provider.Provider = &api.AIBackend_Provider_Openai{
 			Openai: openai,
 		}
-		auth = buildTranslatedAuthPolicy(krtctx, &llm.Provider.OpenAI.AuthToken, secrets, namespace)
-	} else if llm.Provider.AzureOpenAI != nil {
+		auth = buildTranslatedAuthPolicy(krtctx, &llm.OpenAI.AuthToken, secrets, namespace)
+	} else if llm.AzureOpenAI != nil {
 		provider.Provider = &api.AIBackend_Provider_Openai{
 			Openai: &api.AIBackend_OpenAI{},
 		}
-		auth = buildTranslatedAuthPolicy(krtctx, &llm.Provider.AzureOpenAI.AuthToken, secrets, namespace)
-	} else if llm.Provider.Anthropic != nil {
+		auth = buildTranslatedAuthPolicy(krtctx, &llm.AzureOpenAI.AuthToken, secrets, namespace)
+	} else if llm.Anthropic != nil {
 		anthropic := &api.AIBackend_Anthropic{}
-		if llm.Provider.Anthropic.Model != nil {
-			anthropic.Model = &wrappers.StringValue{Value: *llm.Provider.Anthropic.Model}
+		if llm.Anthropic.Model != nil {
+			anthropic.Model = &wrappers.StringValue{Value: *llm.Anthropic.Model}
 		}
 		provider.Provider = &api.AIBackend_Provider_Anthropic{
 			Anthropic: anthropic,
 		}
-		auth = buildTranslatedAuthPolicy(krtctx, &llm.Provider.Anthropic.AuthToken, secrets, namespace)
-	} else if llm.Provider.Gemini != nil {
+		auth = buildTranslatedAuthPolicy(krtctx, &llm.Anthropic.AuthToken, secrets, namespace)
+	} else if llm.Gemini != nil {
 		provider.Provider = &api.AIBackend_Provider_Gemini{
 			Gemini: &api.AIBackend_Gemini{
-				Model: &wrappers.StringValue{Value: llm.Provider.Gemini.Model},
+				Model: &wrappers.StringValue{Value: llm.Gemini.Model},
 			},
 		}
-		auth = buildTranslatedAuthPolicy(krtctx, &llm.Provider.Gemini.AuthToken, secrets, namespace)
-	} else if llm.Provider.VertexAI != nil {
+		auth = buildTranslatedAuthPolicy(krtctx, &llm.Gemini.AuthToken, secrets, namespace)
+	} else if llm.VertexAI != nil {
 		provider.Provider = &api.AIBackend_Provider_Vertex{
 			Vertex: &api.AIBackend_Vertex{
-				Model:     &wrappers.StringValue{Value: llm.Provider.VertexAI.Model},
-				Region:    llm.Provider.VertexAI.Location,
-				ProjectId: llm.Provider.VertexAI.ProjectId,
+				Model:     &wrappers.StringValue{Value: llm.VertexAI.Model},
+				Region:    llm.VertexAI.Location,
+				ProjectId: llm.VertexAI.ProjectId,
 			},
 		}
-		auth = buildTranslatedAuthPolicy(krtctx, &llm.Provider.VertexAI.AuthToken, secrets, namespace)
-	} else if llm.Provider.Bedrock != nil {
+		auth = buildTranslatedAuthPolicy(krtctx, &llm.VertexAI.AuthToken, secrets, namespace)
+	} else if llm.Bedrock != nil {
 		model := &wrappers.StringValue{
-			Value: llm.Provider.Bedrock.Model,
+			Value: llm.Bedrock.Model,
 		}
-		region := llm.Provider.Bedrock.Region
+		region := llm.Bedrock.Region
 		var guardrailIdentifier, guardrailVersion *wrappers.StringValue
-		if llm.Provider.Bedrock.Guardrail != nil {
+		if llm.Bedrock.Guardrail != nil {
 			guardrailIdentifier = &wrappers.StringValue{
-				Value: llm.Provider.Bedrock.Guardrail.GuardrailIdentifier,
+				Value: llm.Bedrock.Guardrail.GuardrailIdentifier,
 			}
 			guardrailVersion = &wrappers.StringValue{
-				Value: llm.Provider.Bedrock.Guardrail.GuardrailVersion,
+				Value: llm.Bedrock.Guardrail.GuardrailVersion,
 			}
 		}
 
@@ -178,7 +180,7 @@ func translateLLMProviderToProvider(krtctx krt.HandlerContext, llm *v1alpha1.LLM
 			},
 		}
 		var err error
-		auth, err = buildBedrockAuthPolicy(krtctx, region, llm.Provider.Bedrock.Auth, secrets, namespace)
+		auth, err = buildBedrockAuthPolicy(krtctx, region, llm.Bedrock.Auth, secrets, namespace)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -219,33 +221,7 @@ func buildAIIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, secrets krt.Coll
 	var policies []*api.Policy
 	providerIndex := 0
 
-	if be.Spec.AI.MultiPool != nil {
-		for _, priority := range be.Spec.AI.MultiPool.Priorities {
-			providerGroup := &api.AIBackend_ProviderGroup{
-				Providers: []*api.AIBackend_Provider{},
-			}
-
-			// Add all providers in this priority level to the same group
-			for _, llmProvider := range priority.Pool {
-				providerName := fmt.Sprintf("%s_%d", be.Name, providerIndex)
-
-				provider, authPolicy, err := translateLLMProviderToProvider(krtctx, &llmProvider, providerName, secrets, be.Namespace)
-				if err != nil {
-					return nil, fmt.Errorf("failed to translate provider in multipool: %w", err)
-				}
-				providerGroup.Providers = append(providerGroup.Providers, provider)
-
-				if policy := createAuthPolicy(authPolicy, backendName, providerName); policy != nil {
-					policies = append(policies, policy)
-				}
-				providerIndex++
-			}
-
-			if len(providerGroup.Providers) > 0 {
-				aiBackend.ProviderGroups = append(aiBackend.ProviderGroups, providerGroup)
-			}
-		}
-	} else if be.Spec.AI.LLM != nil {
+	if be.Spec.AI.LLM != nil {
 		providerGroup := &api.AIBackend_ProviderGroup{
 			Providers: []*api.AIBackend_Provider{},
 		}
@@ -264,7 +240,29 @@ func buildAIIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, secrets krt.Coll
 
 		aiBackend.ProviderGroups = append(aiBackend.ProviderGroups, providerGroup)
 	} else {
-		return nil, fmt.Errorf("AI backend has no valid LLM or MultiPool configuration")
+		for _, group := range be.Spec.AI.PriorityGroups {
+			providerGroup := &api.AIBackend_ProviderGroup{}
+
+			// Add all providers in this priority level to the same group
+			for _, llmProvider := range group.Providers {
+				providerName := fmt.Sprintf("%s_%d", be.Name, providerIndex)
+
+				provider, authPolicy, err := translateLLMProviderToProvider(krtctx, &llmProvider, providerName, secrets, be.Namespace)
+				if err != nil {
+					return nil, fmt.Errorf("failed to translate provider in provider %s: %w", providerName, err)
+				}
+				providerGroup.Providers = append(providerGroup.Providers, provider)
+
+				if policy := createAuthPolicy(authPolicy, backendName, providerName); policy != nil {
+					policies = append(policies, policy)
+				}
+				providerIndex++
+			}
+
+			if len(providerGroup.Providers) > 0 {
+				aiBackend.ProviderGroups = append(aiBackend.ProviderGroups, providerGroup)
+			}
+		}
 	}
 
 	if len(aiBackend.ProviderGroups) == 0 {

@@ -64,10 +64,21 @@ controller:
     # -- Set the service ports for gRPC and health endpoints.
     ports:
       grpc: 9977
+      agwGrpc: 9978
       health: 9093
       metrics: 9092
   # -- Add extra environment variables to the controller container.
   extraEnv: {}
+  # -- Change the rollout strategy from the Kubernetes default of a RollingUpdate with 25% maxUnavailable, 25% maxSurge.
+  # E.g., to recreate pods, minimizing resources for the rollout but causing downtime:
+  # strategy:
+  #   type: Recreate
+  # E.g., to roll out as a RollingUpdate but with non-default parameters:
+  # strategy:
+  #   type: RollingUpdate
+  #   rollingUpdate:
+  #     maxSurge: 100%
+  strategy: {}
 
 # -- Configure the default container image for the components that Helm deploys. You can override these settings for each particular component in that component's section, such as 'controller.image' for the kgateway control plane. If you use your own private registry, make sure to include the imagePullSecrets.
 image:

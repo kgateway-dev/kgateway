@@ -453,6 +453,22 @@ spec:
                     items:
                       type: string
                     type: array
+                  files:
+                    properties:
+                      rootCA:
+                        minLength: 1
+                        type: string
+                      tlsCertificate:
+                        minLength: 1
+                        type: string
+                      tlsKey:
+                        minLength: 1
+                        type: string
+                    type: object
+                    x-kubernetes-validations:
+                    - message: At least one of tlsCertificate, tlsKey, or rootCA must
+                        be set in TLSFiles
+                      rule: has(self.tlsCertificate) || has(self.tlsKey) || has(self.rootCA)
                   insecureSkipVerify:
                     type: boolean
                   parameters:
@@ -465,7 +481,7 @@ spec:
                         items:
                           type: string
                         type: array
-                      tlsMaxVersion:
+                      maxVersion:
                         enum:
                         - AUTO
                         - "1.0"
@@ -473,7 +489,7 @@ spec:
                         - "1.2"
                         - "1.3"
                         type: string
-                      tlsMinVersion:
+                      minVersion:
                         enum:
                         - AUTO
                         - "1.0"
@@ -494,23 +510,7 @@ spec:
                   sni:
                     minLength: 1
                     type: string
-                  tlsFiles:
-                    properties:
-                      rootCA:
-                        minLength: 1
-                        type: string
-                      tlsCertificate:
-                        minLength: 1
-                        type: string
-                      tlsKey:
-                        minLength: 1
-                        type: string
-                    type: object
-                    x-kubernetes-validations:
-                    - message: At least one of tlsCertificate, tlsKey, or rootCA must
-                        be set in TLSFiles
-                      rule: has(self.tlsCertificate) || has(self.tlsKey) || has(self.rootCA)
-                  verifySubjectAltName:
+                  verifySubjectAltNames:
                     items:
                       type: string
                     type: array
@@ -520,9 +520,9 @@ spec:
                     type: string
                 type: object
                 x-kubernetes-validations:
-                - message: exactly one of the fields in [secretRef tlsFiles insecureSkipVerify
+                - message: exactly one of the fields in [secretRef files insecureSkipVerify
                     wellKnownCACertificates] must be set
-                  rule: '[has(self.secretRef),has(self.tlsFiles),has(self.insecureSkipVerify),has(self.wellKnownCACertificates)].filter(x,x==true).size()
+                  rule: '[has(self.secretRef),has(self.files),has(self.insecureSkipVerify),has(self.wellKnownCACertificates)].filter(x,x==true).size()
                     == 1'
             type: object
             x-kubernetes-validations:
