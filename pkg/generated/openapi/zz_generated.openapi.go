@@ -1749,7 +1749,7 @@ func schema_kgateway_v2_api_v1alpha1_BackendConfigPolicySpec(ref common.Referenc
 					},
 					"perConnectionBufferLimitBytes": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Soft limit on size of the cluster's connections read and write buffers. If unspecified, an implementation defined default is applied (1MiB).",
+							Description: "Soft limit on the size of the cluster's connections read and write buffers. If unspecified, an implementation-defined default is applied (1MiB).",
 							Type:        []string{"integer"},
 							Format:      "int32",
 						},
@@ -3865,7 +3865,7 @@ func schema_kgateway_v2_api_v1alpha1_GracefulShutdownSpec(ref common.ReferenceCa
 						SchemaProps: spec.SchemaProps{
 							Description: "Time (in seconds) for the preStop hook to wait before allowing Envoy to terminate",
 							Type:        []string{"integer"},
-							Format:      "int32",
+							Format:      "int64",
 						},
 					},
 				},
@@ -6050,7 +6050,7 @@ func schema_kgateway_v2_api_v1alpha1_Pod(ref common.ReferenceCallback) common.Op
 						SchemaProps: spec.SchemaProps{
 							Description: "If specified, the pod's termination grace period in seconds. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#pod-v1-core for details",
 							Type:        []string{"integer"},
-							Format:      "int32",
+							Format:      "int64",
 						},
 					},
 					"readinessProbe": {

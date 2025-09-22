@@ -2817,6 +2817,9 @@ spec:
                           enabled:
                             type: boolean
                           sleepTimeSeconds:
+                            format: int64
+                            maximum: 9223372036854776000
+                            minimum: 0
                             type: integer
                         type: object
                       imagePullSecrets:
@@ -3074,6 +3077,9 @@ spec:
                             type: object
                         type: object
                       terminationGracePeriodSeconds:
+                        format: int64
+                        maximum: 9223372036854776000
+                        minimum: 0
                         type: integer
                       tolerations:
                         items:

@@ -54,12 +54,12 @@ type BackendConfigPolicySpec struct {
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	ConnectTimeout *metav1.Duration `json:"connectTimeout,omitempty"`
 
-	// Soft limit on size of the cluster's connections read and write buffers.
-	// If unspecified, an implementation defined default is applied (1MiB).
+	// Soft limit on the size of the cluster's connections read and write buffers.
+	// If unspecified, an implementation-defined default is applied (1MiB).
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=4294967295
-	PerConnectionBufferLimitBytes *int `json:"perConnectionBufferLimitBytes,omitempty"`
+	PerConnectionBufferLimitBytes *int32 `json:"perConnectionBufferLimitBytes,omitempty"`
 
 	// Configure OS-level TCP keepalive checks.
 	// +optional
@@ -139,7 +139,7 @@ type CommonHttpProtocolOptions struct {
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=4294967295
-	MaxHeadersCount *int `json:"maxHeadersCount,omitempty"`
+	MaxHeadersCount *int32 `json:"maxHeadersCount,omitempty"`
 
 	// Total duration to keep alive an HTTP request/response stream. If the time limit is reached the stream will be
 	// reset independent of any other timeouts. If not specified, this value is not set.
@@ -152,7 +152,7 @@ type CommonHttpProtocolOptions struct {
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=4294967295
-	MaxRequestsPerConnection *int `json:"maxRequestsPerConnection,omitempty"`
+	MaxRequestsPerConnection *int32 `json:"maxRequestsPerConnection,omitempty"`
 }
 type Http2ProtocolOptions struct {
 	// InitialStreamWindowSize is the initial window size for the stream.
@@ -174,7 +174,7 @@ type Http2ProtocolOptions struct {
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=4294967295
-	MaxConcurrentStreams *int `json:"maxConcurrentStreams,omitempty"`
+	MaxConcurrentStreams *int32 `json:"maxConcurrentStreams,omitempty"`
 
 	// Allows invalid HTTP messaging and headers. When disabled (default), then
 	// the whole HTTP/2 connection is terminated upon receiving invalid HEADERS frame.
@@ -189,7 +189,7 @@ type TCPKeepalive struct {
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=4294967295
-	KeepAliveProbes *int `json:"keepAliveProbes,omitempty"`
+	KeepAliveProbes *int32 `json:"keepAliveProbes,omitempty"`
 
 	// The number of seconds a connection needs to be idle before keep-alive probes start being sent.
 	// +optional

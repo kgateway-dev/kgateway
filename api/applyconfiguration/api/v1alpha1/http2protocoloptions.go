@@ -11,7 +11,7 @@ import (
 type Http2ProtocolOptionsApplyConfiguration struct {
 	InitialStreamWindowSize                 *resource.Quantity `json:"initialStreamWindowSize,omitempty"`
 	InitialConnectionWindowSize             *resource.Quantity `json:"initialConnectionWindowSize,omitempty"`
-	MaxConcurrentStreams                    *int               `json:"maxConcurrentStreams,omitempty"`
+	MaxConcurrentStreams                    *int32             `json:"maxConcurrentStreams,omitempty"`
 	OverrideStreamErrorOnInvalidHttpMessage *bool              `json:"overrideStreamErrorOnInvalidHttpMessage,omitempty"`
 }
 
@@ -40,7 +40,7 @@ func (b *Http2ProtocolOptionsApplyConfiguration) WithInitialConnectionWindowSize
 // WithMaxConcurrentStreams sets the MaxConcurrentStreams field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the MaxConcurrentStreams field is set to the value of the last call.
-func (b *Http2ProtocolOptionsApplyConfiguration) WithMaxConcurrentStreams(value int) *Http2ProtocolOptionsApplyConfiguration {
+func (b *Http2ProtocolOptionsApplyConfiguration) WithMaxConcurrentStreams(value int32) *Http2ProtocolOptionsApplyConfiguration {
 	b.MaxConcurrentStreams = &value
 	return b
 }

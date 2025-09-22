@@ -691,7 +691,7 @@ func (in *BackendConfigPolicySpec) DeepCopyInto(out *BackendConfigPolicySpec) {
 	}
 	if in.PerConnectionBufferLimitBytes != nil {
 		in, out := &in.PerConnectionBufferLimitBytes, &out.PerConnectionBufferLimitBytes
-		*out = new(int)
+		*out = new(int32)
 		**out = **in
 	}
 	if in.TCPKeepalive != nil {
@@ -1056,7 +1056,7 @@ func (in *CommonHttpProtocolOptions) DeepCopyInto(out *CommonHttpProtocolOptions
 	}
 	if in.MaxHeadersCount != nil {
 		in, out := &in.MaxHeadersCount, &out.MaxHeadersCount
-		*out = new(int)
+		*out = new(int32)
 		**out = **in
 	}
 	if in.MaxStreamDuration != nil {
@@ -1066,7 +1066,7 @@ func (in *CommonHttpProtocolOptions) DeepCopyInto(out *CommonHttpProtocolOptions
 	}
 	if in.MaxRequestsPerConnection != nil {
 		in, out := &in.MaxRequestsPerConnection, &out.MaxRequestsPerConnection
-		*out = new(int)
+		*out = new(int32)
 		**out = **in
 	}
 }
@@ -2060,7 +2060,7 @@ func (in *GracefulShutdownSpec) DeepCopyInto(out *GracefulShutdownSpec) {
 	}
 	if in.SleepTimeSeconds != nil {
 		in, out := &in.SleepTimeSeconds, &out.SleepTimeSeconds
-		*out = new(int)
+		*out = new(int64)
 		**out = **in
 	}
 }
@@ -2524,7 +2524,7 @@ func (in *Http2ProtocolOptions) DeepCopyInto(out *Http2ProtocolOptions) {
 	}
 	if in.MaxConcurrentStreams != nil {
 		in, out := &in.MaxConcurrentStreams, &out.MaxConcurrentStreams
-		*out = new(int)
+		*out = new(int32)
 		**out = **in
 	}
 	if in.OverrideStreamErrorOnInvalidHttpMessage != nil {
@@ -3591,7 +3591,7 @@ func (in *Pod) DeepCopyInto(out *Pod) {
 	}
 	if in.TerminationGracePeriodSeconds != nil {
 		in, out := &in.TerminationGracePeriodSeconds, &out.TerminationGracePeriodSeconds
-		*out = new(int)
+		*out = new(int64)
 		**out = **in
 	}
 	if in.ReadinessProbe != nil {
@@ -4558,7 +4558,7 @@ func (in *TCPKeepalive) DeepCopyInto(out *TCPKeepalive) {
 	*out = *in
 	if in.KeepAliveProbes != nil {
 		in, out := &in.KeepAliveProbes, &out.KeepAliveProbes
-		*out = new(int)
+		*out = new(int32)
 		**out = **in
 	}
 	if in.KeepAliveTime != nil {

@@ -5,8 +5,8 @@ package v1alpha1
 // GracefulShutdownSpecApplyConfiguration represents a declarative configuration of the GracefulShutdownSpec type for use
 // with apply.
 type GracefulShutdownSpecApplyConfiguration struct {
-	Enabled          *bool `json:"enabled,omitempty"`
-	SleepTimeSeconds *int  `json:"sleepTimeSeconds,omitempty"`
+	Enabled          *bool  `json:"enabled,omitempty"`
+	SleepTimeSeconds *int64 `json:"sleepTimeSeconds,omitempty"`
 }
 
 // GracefulShutdownSpecApplyConfiguration constructs a declarative configuration of the GracefulShutdownSpec type for use with
@@ -26,7 +26,7 @@ func (b *GracefulShutdownSpecApplyConfiguration) WithEnabled(value bool) *Gracef
 // WithSleepTimeSeconds sets the SleepTimeSeconds field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the SleepTimeSeconds field is set to the value of the last call.
-func (b *GracefulShutdownSpecApplyConfiguration) WithSleepTimeSeconds(value int) *GracefulShutdownSpecApplyConfiguration {
+func (b *GracefulShutdownSpecApplyConfiguration) WithSleepTimeSeconds(value int64) *GracefulShutdownSpecApplyConfiguration {
 	b.SleepTimeSeconds = &value
 	return b
 }

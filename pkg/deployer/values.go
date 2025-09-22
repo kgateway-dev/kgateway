@@ -45,7 +45,7 @@ type HelmGateway struct {
 	LivenessProbe                 *corev1.Probe                     `json:"livenessProbe,omitempty"`
 	ExtraVolumes                  []corev1.Volume                   `json:"extraVolumes,omitempty"`
 	GracefulShutdown              *v1alpha1.GracefulShutdownSpec    `json:"gracefulShutdown,omitempty"`
-	TerminationGracePeriodSeconds *int                              `json:"terminationGracePeriodSeconds,omitempty"`
+	TerminationGracePeriodSeconds *int64                            `json:"terminationGracePeriodSeconds,omitempty"`
 	TopologySpreadConstraints     []corev1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
 
 	// sds container values

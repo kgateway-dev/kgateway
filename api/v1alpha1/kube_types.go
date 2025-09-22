@@ -265,7 +265,9 @@ type Pod struct {
 	// for details
 	//
 	// +optional
-	TerminationGracePeriodSeconds *int `json:"terminationGracePeriodSeconds,omitempty"`
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=9223372036854775807
+	TerminationGracePeriodSeconds *int64 `json:"terminationGracePeriodSeconds,omitempty"`
 
 	// If specified, the pod's readiness probe. Periodic probe of container service readiness.
 	// Container will be removed from service endpoints if the probe fails. See
@@ -361,7 +363,7 @@ func (in *Pod) GetGracefulShutdown() *GracefulShutdownSpec {
 	return in.GracefulShutdown
 }
 
-func (in *Pod) GetTerminationGracePeriodSeconds() *int {
+func (in *Pod) GetTerminationGracePeriodSeconds() *int64 {
 	if in == nil {
 		return nil
 	}
@@ -398,7 +400,9 @@ type GracefulShutdownSpec struct {
 	// Time (in seconds) for the preStop hook to wait before allowing Envoy to terminate
 	//
 	// +optional
-	SleepTimeSeconds *int `json:"sleepTimeSeconds,omitempty"`
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=9223372036854775807
+	SleepTimeSeconds *int64 `json:"sleepTimeSeconds,omitempty"`
 }
 
 func (in *GracefulShutdownSpec) GetEnabled() *bool {
@@ -408,7 +412,7 @@ func (in *GracefulShutdownSpec) GetEnabled() *bool {
 	return in.Enabled
 }
 
-func (in *GracefulShutdownSpec) GetSleepTimeSeconds() *int {
+func (in *GracefulShutdownSpec) GetSleepTimeSeconds() *int64 {
 	if in == nil {
 		return nil
 	}
