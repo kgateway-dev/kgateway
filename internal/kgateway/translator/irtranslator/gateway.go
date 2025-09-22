@@ -15,11 +15,11 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/settings"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	sdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
@@ -27,7 +27,7 @@ import (
 var logger = logging.New("translator/ir")
 
 type Translator struct {
-	ContributedPolicies  map[schema.GroupKind]extensionsplug.PolicyPlugin
+	ContributedPolicies  map[schema.GroupKind]sdk.PolicyPlugin
 	RouteReplacementMode settings.RouteReplacementMode
 	Validator            validator.Validator
 }

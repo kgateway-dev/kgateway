@@ -24,12 +24,12 @@ import (
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	extplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -56,7 +56,7 @@ var (
 	logger = logging.New("plugin/inference-epp")
 )
 
-func NewPlugin(ctx context.Context, commonCols *common.CommonCollections) *extplug.Plugin {
+func NewPlugin(ctx context.Context, commonCols *common.CommonCollections) *sdk.Plugin {
 	p := initInferencePoolCollections(ctx, commonCols)
 
 	// Wrap the init function so it can capture commonCols.Pods
@@ -64,15 +64,15 @@ func NewPlugin(ctx context.Context, commonCols *common.CommonCollections) *extpl
 		return processPoolBackendObjIR(ctx, in, out, p.podIndex)
 	}
 
-	return &extplug.Plugin{
-		ContributesBackends: map[schema.GroupKind]extplug.BackendPlugin{
+	return &sdk.Plugin{
+		ContributesBackends: map[schema.GroupKind]sdk.BackendPlugin{
 			wellknown.InferencePoolGVK.GroupKind(): {
 				BackendInit: ir.BackendInit{InitEnvoyBackend: initBackend},
 				Backends:    p.backendsDP,
 				Endpoints:   p.endpoints,
 			},
 		},
-		ContributesPolicies: map[schema.GroupKind]extplug.PolicyPlugin{
+		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			wellknown.InferencePoolGVK.GroupKind(): {
 				Name:     poolGroupKindName,
 				Policies: p.policies,

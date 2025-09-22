@@ -17,19 +17,19 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/endpoints"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 )
 
 const (
 	ExtensionName = "Destrule"
 )
 
-func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
+func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) sdk.Plugin {
 	if !commoncol.Settings.EnableIstioIntegration {
 		// TODO: should this be a standalone flag specific to DR?
 		// don't add support for destination rules if istio integration is not enabled
-		return extensionsplug.Plugin{}
+		return sdk.Plugin{}
 	}
 
 	gk := schema.GroupKind{
@@ -39,8 +39,8 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	d := &destrulePlugin{
 		destinationRulesIndex: NewDestRuleIndex(commoncol.Client, &commoncol.KrtOpts),
 	}
-	return extensionsplug.Plugin{
-		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
+	return sdk.Plugin{
+		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			gk: {
 				Name:                      "destrule",
 				PerClientProcessBackend:   d.processBackend,

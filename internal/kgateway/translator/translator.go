@@ -13,13 +13,13 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/endpoints"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	gwtranslator "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
@@ -28,27 +28,27 @@ var logger = logging.New("translator")
 
 // Combines all the translators needed for xDS translation.
 type CombinedTranslator struct {
-	extensions extensionsplug.Plugin
+	extensions sdk.Plugin
 	commonCols *common.CommonCollections
 	validator  validator.Validator
 
 	waitForSync []cache.InformerSynced
 
-	gwtranslator      extensionsplug.KGwTranslator
+	gwtranslator      sdk.KGwTranslator
 	irtranslator      *irtranslator.Translator
 	backendTranslator *irtranslator.BackendTranslator
-	endpointPlugins   []extensionsplug.EndpointPlugin
+	endpointPlugins   []sdk.EndpointPlugin
 
 	logger *slog.Logger
 }
 
 func NewCombinedTranslator(
 	ctx context.Context,
-	extensions extensionsplug.Plugin,
+	extensions sdk.Plugin,
 	commonCols *common.CommonCollections,
 	validator validator.Validator,
 ) *CombinedTranslator {
-	var endpointPlugins []extensionsplug.EndpointPlugin
+	var endpointPlugins []sdk.EndpointPlugin
 	for _, ext := range extensions.ContributesPolicies {
 		if ext.PerClientProcessEndpoints != nil {
 			endpointPlugins = append(endpointPlugins, ext.PerClientProcessEndpoints)
@@ -105,7 +105,7 @@ func (s *CombinedTranslator) buildProxy(kctx krt.HandlerContext, ctx context.Con
 	stopwatch := utils.NewTranslatorStopWatch("CombinedTranslator")
 	stopwatch.Start()
 
-	var gatewayTranslator extensionsplug.KGwTranslator = s.gwtranslator
+	var gatewayTranslator sdk.KGwTranslator = s.gwtranslator
 	if s.extensions.ContributesGwTranslator != nil {
 		maybeGatewayTranslator := s.extensions.ContributesGwTranslator(gw.Obj)
 		if maybeGatewayTranslator != nil {

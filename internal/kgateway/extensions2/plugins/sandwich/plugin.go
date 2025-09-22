@@ -40,18 +40,18 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 
 	"istio.io/istio/pilot/pkg/util/protoconv"
 )
 
-func NewPlugin() extensionsplug.Plugin {
-	return extensionsplug.Plugin{
-		ContributesPolicies: extensionsplug.ContributesPolicies{
-			SandwichedInboundGK: extensionsplug.PolicyPlugin{
+func NewPlugin() sdk.Plugin {
+	return sdk.Plugin{
+		ContributesPolicies: sdk.ContributesPolicies{
+			SandwichedInboundGK: sdk.PolicyPlugin{
 				Name: "sandwich",
 				NewGatewayTranslationPass: func(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {
 					// TODO we could read the waypoint-inbound-binding annotation here and set isSandwiched = true

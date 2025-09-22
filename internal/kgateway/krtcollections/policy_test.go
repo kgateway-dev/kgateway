@@ -25,9 +25,9 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -845,7 +845,7 @@ func preRouteIndex(t test.Failer, inputs []any) *RoutesIndex {
 
 	policies := NewPolicyIndex(
 		krtinternal.KrtOptions{},
-		extensionsplug.ContributesPolicies{
+		sdk.ContributesPolicies{
 			wellknown.TrafficPolicyGVK.GroupKind(): {
 				Policies: policyCol,
 			},

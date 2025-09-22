@@ -11,10 +11,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
@@ -48,7 +48,7 @@ func TestFilterChains(t *testing.T) {
 	translator := irtranslator.Translator{
 		// not used by the test today, but if we refactor to call newPass in the test
 		// it will be necessary; leaving it here to save time debugging after a refactor
-		ContributedPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
+		ContributedPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			addFiltersGK: {
 				NewGatewayTranslationPass: func(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {
 					return addFilters{}

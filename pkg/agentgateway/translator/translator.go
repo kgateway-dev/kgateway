@@ -1,14 +1,14 @@
 package translator
 
 import (
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 )
 
 // AgwTranslator coordinates translation of resources for agent gateway
 type AgwTranslator struct {
 	agwCollection     *agwplugins.AgwCollections
-	extensions        extensionsplug.Plugin
+	extensions        sdk.Plugin
 	backendTranslator *AgwBackendTranslator
 }
 
