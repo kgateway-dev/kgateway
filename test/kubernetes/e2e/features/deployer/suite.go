@@ -302,7 +302,7 @@ func (s *testingSuite) TestSelfManagedGateway() {
 			fmt.Printf("Gateway not accepted. Current conditions: %v\n", gw.Status.Conditions)
 		}
 		assert.True(c, accepted, "gateway status not accepted")
-	}, 60*time.Second, 1*time.Second)
+	}, 10*time.Second, 1*time.Second)
 
 	s.TestInstallation.Assertions.ConsistentlyObjectsNotExist(s.Ctx,
 		&appsv1.Deployment{ObjectMeta: proxyObjectMeta},
