@@ -107,8 +107,7 @@ func recordProcessState(f *os.File) {
 
 func recordKubeState(ctx context.Context, kubectlCli *kubectl.Cli, f *os.File) {
 	defer f.Close()
-	kubectlCli.WithReceiver(f)
-	err := kubectlCli.RunCommand(ctx, "get", "all", "-A", "-o", "wide")
+	err := kubectlCli.RunCommandToWriters(ctx, f, f, "get", "all", "-A", "-o", "wide")
 	if err != nil {
 		f.WriteString(fmt.Sprintf("*** Unable to get kube state ***\nReason: %v", err))
 	}
@@ -137,7 +136,7 @@ func recordKubeState(ctx context.Context, kubectlCli *kubectl.Cli, f *os.File) {
 	}
 
 	f.WriteString("*** Kube resources ***\n")
-	err = kubectlCli.RunCommand(ctx, "get", strings.Join(resourcesToGet, ","), "-A", "-owide")
+	err = kubectlCli.RunCommandToWriters(ctx, f, f, "get", strings.Join(resourcesToGet, ","), "-A", "-owide")
 	if err != nil {
 		f.WriteString("*** Unable to get kube resources ***. Reason: " + err.Error() + " \n")
 	}
@@ -146,13 +145,13 @@ func recordKubeState(ctx context.Context, kubectlCli *kubectl.Cli, f *os.File) {
 	// (insufficient resources, unable to acquire an IP), etc.
 	// Ie: More context around the output of the previous command `kubectl get all -A`
 	f.WriteString("*** Kube describe ***\n")
-	err = kubectlCli.RunCommand(ctx, "describe", "all", "-A")
+	err = kubectlCli.RunCommandToWriters(ctx, f, f, "describe", "all", "-A")
 	if err != nil {
 		f.WriteString("*** Unable to get kube describe ***. Reason: " + err.Error() + " \n")
 	}
 
 	f.WriteString("*** Kube endpoints ***\n")
-	err = kubectlCli.RunCommand(ctx, "get", "endpoints", "-A")
+	err = kubectlCli.RunCommandToWriters(ctx, f, f, "get", "endpoints", "-A")
 	if err != nil {
 		f.WriteString("*** Unable to get endpoint state ***. Reason: " + err.Error() + " \n")
 	}
