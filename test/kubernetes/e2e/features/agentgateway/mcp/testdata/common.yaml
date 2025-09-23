@@ -51,7 +51,6 @@ spec:
     spec:
       containers:
         - name: mcp-admin-server
-          # image: ghcr.io/modelcontextprotocol/server-everything:latest
           image: ghcr.io/kgateway-dev/mcp-admin-server:0.0.1
           command: ["npx"]
           args: ["-y","@modelcontextprotocol/server-everything","streamableHttp","--port","3001"]
