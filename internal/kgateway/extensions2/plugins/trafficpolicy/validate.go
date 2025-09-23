@@ -8,6 +8,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/xds/bootstrap"
 )
@@ -36,8 +37,8 @@ func validateXDS(ctx context.Context, p *TrafficPolicy, v validator.Validator) e
 	// use a fake translation pass to ensure we have the desired typed filter config
 	// on the placeholder vhost.
 	typedPerFilterConfig := ir.TypedFilterConfigMap(map[string]proto.Message{})
-	fakePass := NewGatewayTranslationPass(ctx, ir.GwTranslationCtx{}, nil)
-	if err := fakePass.ApplyForRoute(ctx, &ir.RouteContext{
+	fakePass := NewGatewayTranslationPass(ir.GwTranslationCtx{}, nil)
+	if err := fakePass.ApplyForRoute(&pluginsdkir.RouteContext{
 		Policy:            p,
 		TypedFilterConfig: typedPerFilterConfig,
 	}, nil); err != nil {

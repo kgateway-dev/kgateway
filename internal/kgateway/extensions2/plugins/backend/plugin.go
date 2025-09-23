@@ -348,7 +348,7 @@ type backendPlugin struct {
 
 var _ ir.ProxyTranslationPass = &backendPlugin{}
 
-func newPlug(ctx context.Context, tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
+func newPlug(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
 	return &backendPlugin{}
 }
 
@@ -356,7 +356,7 @@ func (p *backendPlugin) Name() string {
 	return ExtensionName
 }
 
-func (p *backendPlugin) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoyroutev3.Route) error {
+func (p *backendPlugin) ApplyForBackend(pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoyroutev3.Route) error {
 	backend := pCtx.Backend.Obj.(*v1alpha1.Backend)
 	backendIr := pCtx.Backend.ObjIr.(*BackendIr)
 	switch backend.Spec.Type {
@@ -393,7 +393,7 @@ func (p *backendPlugin) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBacke
 // called 1 time per listener
 // if a plugin emits new filters, they must be with a plugin unique name.
 // any filter returned from route config must be disabled, so it doesnt impact other routes.
-func (p *backendPlugin) HttpFilters(ctx context.Context, fc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
+func (p *backendPlugin) HttpFilters(fc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
 	result := []plugins.StagedHttpFilter{}
 
 	var errs []error
@@ -413,10 +413,10 @@ func (p *backendPlugin) HttpFilters(ctx context.Context, fc ir.FilterChainCommon
 }
 
 // called 1 time (per envoy proxy). replaces GeneratedResources
-func (p *backendPlugin) ResourcesToAdd(ctx context.Context) ir.Resources {
+func (p *backendPlugin) ResourcesToAdd() ir.Resources {
 	var additionalClusters []*envoyclusterv3.Cluster
 	if len(p.aiGatewayEnabled) > 0 {
-		aiClusters := ai.GetAIAdditionalResources(ctx)
+		aiClusters := ai.GetAIAdditionalResources()
 		additionalClusters = append(additionalClusters, aiClusters...)
 	}
 	return ir.Resources{

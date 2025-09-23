@@ -23,6 +23,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
@@ -99,14 +100,14 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 	}
 }
 
-func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
+func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
 	return &directResponsePluginGwPass{
 		reporter: reporter,
 	}
 }
 
 // called one or more times per route rule
-func (p *directResponsePluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext, outputRoute *envoyroutev3.Route) error {
+func (p *directResponsePluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, outputRoute *envoyroutev3.Route) error {
 	dr, ok := pCtx.Policy.(*directResponse)
 	if !ok {
 		return fmt.Errorf("internal error: expected *directResponse, got %T", pCtx.Policy)
@@ -142,9 +143,8 @@ func (p *directResponsePluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir
 }
 
 func (p *directResponsePluginGwPass) ApplyForRouteBackend(
-	ctx context.Context,
-	policy ir.PolicyIR,
-	pCtx *ir.RouteBackendContext,
+	policy pluginsdkir.PolicyIR,
+	pCtx *pluginsdkir.RouteBackendContext,
 ) error {
 	return ir.ErrNotAttachable
 }

@@ -41,6 +41,7 @@ import (
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	sdkfilters "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
+	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
@@ -283,7 +284,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 	}
 }
 
-func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
+func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
 	return &trafficPolicyPluginGwPass{
 		reporter:                 reporter,
 		setTransformationInChain: make(map[string]bool),
@@ -295,8 +296,7 @@ func (p *TrafficPolicy) Name() string {
 }
 
 func (p *trafficPolicyPluginGwPass) ApplyRouteConfigPlugin(
-	ctx context.Context,
-	pCtx *ir.RouteConfigContext,
+	pCtx *pluginsdkir.RouteConfigContext,
 	out *envoyroutev3.RouteConfiguration,
 ) {
 	policy, ok := pCtx.Policy.(*TrafficPolicy)
@@ -308,8 +308,7 @@ func (p *trafficPolicyPluginGwPass) ApplyRouteConfigPlugin(
 }
 
 func (p *trafficPolicyPluginGwPass) ApplyVhostPlugin(
-	ctx context.Context,
-	pCtx *ir.VirtualHostContext,
+	pCtx *pluginsdkir.VirtualHostContext,
 	out *envoyroutev3.VirtualHost,
 ) {
 	policy, ok := pCtx.Policy.(*TrafficPolicy)
@@ -322,7 +321,7 @@ func (p *trafficPolicyPluginGwPass) ApplyVhostPlugin(
 }
 
 // called 0 or more times
-func (p *trafficPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext, outputRoute *envoyroutev3.Route) error {
+func (p *trafficPolicyPluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, outputRoute *envoyroutev3.Route) error {
 	policy, ok := pCtx.Policy.(*TrafficPolicy)
 	if !ok {
 		return nil
@@ -414,9 +413,8 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.
 }
 
 func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(
-	ctx context.Context,
-	policy ir.PolicyIR,
-	pCtx *ir.RouteBackendContext,
+	policy pluginsdkir.PolicyIR,
+	pCtx *pluginsdkir.RouteBackendContext,
 ) error {
 	rtPolicy, ok := policy.(*TrafficPolicy)
 	if !ok {
@@ -435,7 +433,7 @@ func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(
 // called 1 time per listener
 // if a plugin emits new filters, they must be with a plugin unique name.
 // any filter returned from route config must be disabled, so it doesnt impact other routes.
-func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
+func (p *trafficPolicyPluginGwPass) HttpFilters(fcc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
 	filters := []plugins.StagedHttpFilter{}
 
 	// Add global ExtProc disable filter when there are providers

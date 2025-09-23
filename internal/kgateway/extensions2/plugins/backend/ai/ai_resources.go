@@ -1,8 +1,6 @@
 package ai
 
 import (
-	"context"
-
 	"log/slog"
 	"os"
 	"strconv"
@@ -24,7 +22,7 @@ const (
 	waitFilterName        = "io.kgateway.wait"
 )
 
-func GetAIAdditionalResources(ctx context.Context) []*envoyclusterv3.Cluster {
+func GetAIAdditionalResources() []*envoyclusterv3.Cluster {
 	// This env var can be used to test the ext-proc filter locally.
 	// On linux this should be set to `172.17.0.1` and on mac to `host.docker.internal`
 	// Note: Mac doesn't work yet because it needs to be a DNS cluster

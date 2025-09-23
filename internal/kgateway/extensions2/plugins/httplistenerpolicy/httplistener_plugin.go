@@ -30,12 +30,12 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
-	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
-
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
@@ -274,7 +274,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 	}
 }
 
-func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
+func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
 	return &httpListenerPolicyPluginGwPass{
 		reporter: reporter,
 	}
@@ -285,8 +285,7 @@ func (p *httpListenerPolicyPluginGwPass) Name() string {
 }
 
 func (p *httpListenerPolicyPluginGwPass) ApplyHCM(
-	ctx context.Context,
-	pCtx *ir.HcmContext,
+	pCtx *pluginsdkir.HcmContext,
 	out *envoy_hcm.HttpConnectionManager,
 ) error {
 	policy, ok := pCtx.Policy.(*httpListenerPolicy)
@@ -375,7 +374,7 @@ func (p *httpListenerPolicyPluginGwPass) ApplyHCM(
 	return nil
 }
 
-func (p *httpListenerPolicyPluginGwPass) HttpFilters(ctx context.Context, fc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
+func (p *httpListenerPolicyPluginGwPass) HttpFilters(fc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
 	if p.healthCheckPolicy == nil {
 		return nil, nil
 	}
@@ -395,8 +394,7 @@ func (p *httpListenerPolicyPluginGwPass) HttpFilters(ctx context.Context, fc ir.
 }
 
 func (p *httpListenerPolicyPluginGwPass) ApplyListenerPlugin(
-	ctx context.Context,
-	pCtx *ir.ListenerContext,
+	pCtx *pluginsdkir.ListenerContext,
 	out *envoylistenerv3.Listener,
 ) {
 	policy, ok := pCtx.Policy.(*httpListenerPolicy)

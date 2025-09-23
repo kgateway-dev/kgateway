@@ -76,7 +76,7 @@ func NewPlugin(ctx context.Context, commonCols *collections.CommonCollections) *
 			wellknown.InferencePoolGVK.GroupKind(): {
 				Name:     poolGroupKindName,
 				Policies: p.policies,
-				NewGatewayTranslationPass: func(ctx context.Context, t ir.GwTranslationCtx, r reporter.Reporter) ir.ProxyTranslationPass {
+				NewGatewayTranslationPass: func(t ir.GwTranslationCtx, r reporter.Reporter) ir.ProxyTranslationPass {
 					return newEndpointPickerPass(r, p.podIndex)
 				},
 			},
@@ -169,7 +169,6 @@ func (p *endpointPickerPass) Name() string {
 
 // ApplyForBackend updates the Envoy route for each InferencePool-backed HTTPRoute.
 func (p *endpointPickerPass) ApplyForBackend(
-	ctx context.Context,
 	pCtx *ir.RouteBackendContext,
 	in ir.HttpBackend,
 	out *envoyroutev3.Route,
@@ -272,7 +271,7 @@ func (p *endpointPickerPass) ApplyForBackend(
 }
 
 // HttpFilters returns one ext_proc filter, using the well-known filter name.
-func (p *endpointPickerPass) HttpFilters(ctx context.Context, fc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
+func (p *endpointPickerPass) HttpFilters(fc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
 	if p == nil || len(p.usedPools) == 0 {
 		return nil, nil
 	}
@@ -354,7 +353,7 @@ func (p *endpointPickerPass) HttpFilters(ctx context.Context, fc ir.FilterChainC
 }
 
 // ResourcesToAdd returns the ext_proc clusters for all used InferencePools.
-func (p *endpointPickerPass) ResourcesToAdd(ctx context.Context) ir.Resources {
+func (p *endpointPickerPass) ResourcesToAdd() ir.Resources {
 	if p == nil || len(p.usedPools) == 0 {
 		return ir.Resources{}
 	}
