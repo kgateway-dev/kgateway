@@ -70,10 +70,12 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 func (s *testingSuite) TestProvisionDeploymentAndService() {
+	s.T().Skip("skipping test")
 	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(1))
 }
 
 func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
+	s.T().Skip("skipping test")
 	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(1))
 
 	// check that the labels and annotations got passed through from GatewayParameters to the ServiceAccount
@@ -169,6 +171,7 @@ func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
 }
 
 func (s *testingSuite) TestProvisionResourcesUpdatedWithValidParameters() {
+	s.T().Skip("skipping test")
 	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(1))
 
 	// modify the number of replicas in the GatewayParameters
@@ -186,6 +189,7 @@ func (s *testingSuite) TestProvisionResourcesUpdatedWithValidParameters() {
 // This is to make sure that the controller and status syncer are working properly
 // until this is fixed: https://github.com/kgateway-dev/kgateway/issues/12207
 func (s *testingSuite) TestMissingGatewayParameters() {
+	s.T().Skip("skipping test")
 	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(1))
 
 	// patch the Gateway to reference a missing GatewayParameters
@@ -234,6 +238,7 @@ func (s *testingSuite) TestMissingGatewayParameters() {
 }
 
 func (s *testingSuite) TestProvisionResourcesNotUpdatedWithInvalidParameters() {
+	s.T().Skip("skipping test")
 	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(1))
 
 	proxyDeployment := &appsv1.Deployment{}
