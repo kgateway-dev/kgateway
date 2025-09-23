@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
-	istio_protocol "istio.io/istio/pkg/config/protocol"
+	istioprotocol "istio.io/istio/pkg/config/protocol"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/utils"
@@ -2221,7 +2221,7 @@ func hboneProtocolGw() *gwv1.Gateway {
 				{
 					Name:     "hbone",
 					Port:     8080,
-					Protocol: gwv1.ProtocolType(istio_protocol.HBONE),
+					Protocol: gwv1.ProtocolType(istioprotocol.HBONE),
 				},
 			},
 		},
