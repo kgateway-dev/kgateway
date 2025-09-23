@@ -264,7 +264,9 @@ func recordCRs(namespaceDir string, namespace string) error {
 				errF.Close()
 			}
 
-			return err
+			if err != nil {
+				fmt.Printf("error getting cr: %s\n", err)
+			}
 		}
 	}
 
