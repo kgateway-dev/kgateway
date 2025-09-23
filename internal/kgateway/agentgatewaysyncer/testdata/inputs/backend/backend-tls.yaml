@@ -214,3 +214,16 @@ spec:
   validation:
     hostname: foo
     wellKnownCACertificates: System
+---
+apiVersion: gateway.networking.k8s.io/v1alpha3
+kind: BackendTLSPolicy
+metadata:
+  name: ai-tls-all-groups
+spec:
+  targetRefs:
+  - name: ai-groups
+    kind: Backend
+    group: gateway.kgateway.dev
+  validation:
+    hostname: baz
+    wellKnownCACertificates: System    

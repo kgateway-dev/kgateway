@@ -72,6 +72,12 @@ Policies:
         secret: sk-anthropic-primary
   target:
     subBackend: default/anthropic-single/backend
+- name: default/ai-tls-all-groups:0:backendtls
+  spec:
+    backendTls:
+      hostname: baz
+  target:
+    backend: default/ai-groups
 - name: default/ai-tls:0:backendtls
   spec:
     backendTls:

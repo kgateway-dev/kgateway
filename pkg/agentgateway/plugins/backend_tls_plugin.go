@@ -82,14 +82,20 @@ func translatePoliciesForBackendTLS(
 					}
 				// Multi-provider backend
 				case len(spec.AI.PriorityGroups) > 0:
-					if target.SectionName == nil {
-						logger.Error("sectionName is required when targeting AI backend with multiple providers; skipping policy", "backend", backendRef, "policy", kubeutils.NamespacedNameFrom(btls))
-						continue
-					}
-					policyTarget = &api.PolicyTarget{
-						Kind: &api.PolicyTarget_SubBackend{
-							SubBackend: utils.InternalBackendName(backendRef.Namespace, string(backendRef.Name), string(*target.SectionName)),
-						},
+					if target.SectionName != nil {
+						// target SubBackend
+						policyTarget = &api.PolicyTarget{
+							Kind: &api.PolicyTarget_SubBackend{
+								SubBackend: utils.InternalBackendName(backendRef.Namespace, string(backendRef.Name), string(*target.SectionName)),
+							},
+						}
+					} else {
+						// target entire backend
+						policyTarget = &api.PolicyTarget{
+							Kind: &api.PolicyTarget_Backend{
+								Backend: utils.InternalBackendName(btls.Namespace, string(target.Name), ""),
+							},
+						}
 					}
 				default:
 					logger.Warn("unknown backend type", "backend", backendRef, "policy", kubeutils.NamespacedNameFrom(btls))
