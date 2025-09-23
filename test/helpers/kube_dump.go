@@ -107,10 +107,10 @@ func recordProcessState(f *os.File) {
 
 func recordKubeState(ctx context.Context, kubectlCli *kubectl.Cli, f *os.File) {
 	defer f.Close()
+	kubectlCli.WithReceiver(f)
 	kubeState, err := kubectlCli.RunCommandWithOutput(ctx, "get", "all", "-A", "-o", "wide")
 	if err != nil {
 		f.WriteString(fmt.Sprintf("*** Unable to get kube state ***\nStdout: %s\nReason: %v", err, kubeState))
-		return
 	}
 
 	resourcesToGet := []string{
