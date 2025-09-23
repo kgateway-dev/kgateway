@@ -18,7 +18,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query/mocks"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	pluginsdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
@@ -26,8 +26,8 @@ var (
 	ctx              context.Context
 	gwListener       gwv1.Listener
 	gateway          *gwv1.Gateway
-	listenerReporter pluginsdkreporter.ListenerReporter
-	reporter         reports.Reporter
+	listenerReporter reporter.ListenerReporter
+	statusReporter   reporter.Reporter
 	ml               *listener.MergedListeners
 	ctrl             *gomock.Controller
 	queries          *mocks.MockGatewayQueries
@@ -107,8 +107,8 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 			}
 
 			rm := reports.NewReportMap()
-			reporter = reports.NewReporter(&rm)
-			gatewayReporter := reporter.Gateway(gateway)
+			statusReporter = reports.NewReporter(&rm)
+			gatewayReporter := statusReporter.Gateway(gateway)
 			listenerReporter = gatewayReporter.Listener(&gwListener)
 			ml = &listener.MergedListeners{
 				Listeners:        []*listener.MergedListener{},
@@ -175,7 +175,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 				Expect(ml.Listeners[0].TcpFilterChains).To(HaveLen(1))
 
 				// Translate the listener to get the actual Gloo listener
-				translatedListener := ml.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, nil, reporter)
+				translatedListener := ml.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, nil, statusReporter)
 				Expect(translatedListener).NotTo(BeNil())
 				Expect(translatedListener.TcpFilterChain).To(HaveLen(1))
 
@@ -213,7 +213,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 				By("Validating that a TCP listener is created with no TCPHosts")
 				Expect(ml.Listeners).To(HaveLen(1))
 
-				translatedListener := ml.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, nil, reporter)
+				translatedListener := ml.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, nil, statusReporter)
 				Expect(translatedListener).NotTo(BeNil())
 				Expect(translatedListener.TcpFilterChain).To(BeEmpty(), "Expected no TCP listeners due to empty backend references")
 			})
@@ -287,7 +287,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 				By("Validating that one single destination TCP listener is created")
 				Expect(ml.Listeners).To(HaveLen(1)) // One valid listener
 
-				translatedListener := ml.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, nil, reporter)
+				translatedListener := ml.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, nil, statusReporter)
 				Expect(translatedListener).NotTo(BeNil())
 				Expect(translatedListener.TcpFilterChain).To(HaveLen(1))
 
@@ -339,7 +339,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 				By("Validating that one TCP listener is created with a single destination")
 				Expect(ml.Listeners).To(HaveLen(1))
 
-				translatedListener := ml.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, nil, reporter)
+				translatedListener := ml.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, nil, statusReporter)
 				Expect(translatedListener).NotTo(BeNil())
 				Expect(translatedListener.TcpFilterChain).To(HaveLen(1))
 
@@ -403,7 +403,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 				By("Validating that one TCP listener is created with multiple weighted destinations")
 				Expect(ml.Listeners).To(HaveLen(1))
 
-				translatedListener := ml.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, nil, reporter)
+				translatedListener := ml.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, nil, statusReporter)
 				Expect(translatedListener).NotTo(BeNil())
 				Expect(translatedListener.TcpFilterChain).To(HaveLen(1))
 
@@ -476,7 +476,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 			By("Validating that a TCP listener is created with no TCPHosts")
 			Expect(ml.Listeners).To(HaveLen(1))
 
-			translatedListener := ml.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, nil, reporter)
+			translatedListener := ml.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, nil, statusReporter)
 			Expect(translatedListener).NotTo(BeNil())
 			Expect(translatedListener.TcpFilterChain).To(HaveLen(1))
 
@@ -543,7 +543,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 			By("Validating that a TCP listener is created with TCPHosts")
 			Expect(ml.Listeners).To(HaveLen(1))
 
-			translatedListener := ml.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, nil, reporter)
+			translatedListener := ml.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, nil, statusReporter)
 			Expect(translatedListener).NotTo(BeNil())
 			aggregateListener := translatedListener.GetAggregateListener()
 			Expect(aggregateListener).NotTo(BeNil())
@@ -592,15 +592,15 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 			By("Validating that a TCP listener is created with no TCPHosts")
 			Expect(ml.Listeners).To(HaveLen(1))
 
-			translatedListener := ml.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, nil, reporter)
+			translatedListener := ml.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, nil, statusReporter)
 			Expect(translatedListener).NotTo(BeNil())
 			Expect(translatedListener.TcpFilterChain).To(BeEmpty(), "Expected no TCP listeners due to empty backend references")
 
 			By("Validating that the listener condition was set")
 			// Get the report map to check the status
 			rm := reports.NewReportMap()
-			testReporter := reports.NewReporter(&rm)
-			testGatewayReporter := testReporter.Gateway(gateway)
+			testStatusReporter := reports.NewReporter(&rm)
+			testGatewayReporter := testStatusReporter.Gateway(gateway)
 			testListenerReporter := testGatewayReporter.Listener(&gwListener)
 
 			// Re-create the MergedListeners with the test reporter to capture status
@@ -610,7 +610,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 				GatewayNamespace: "default",
 			}
 			testMl.AppendTcpListener(lisToIr(gwListener), routes, testListenerReporter)
-			testMl.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, nil, testReporter)
+			testMl.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, nil, testStatusReporter)
 
 			// Check that the listener has the expected condition
 			gatewayReport := rm.Gateway(gateway)
@@ -656,8 +656,8 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 			}
 
 			rm := reports.NewReportMap()
-			reporter = reports.NewReporter(&rm)
-			gatewayReporter := reporter.Gateway(gateway)
+			statusReporter = reports.NewReporter(&rm)
+			gatewayReporter := statusReporter.Gateway(gateway)
 			listenerReporter = gatewayReporter.Listener(&gwListener)
 			ml = &listener.MergedListeners{
 				Listeners:        []*listener.MergedListener{},
@@ -722,7 +722,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 				Expect(ml.Listeners).To(HaveLen(1))
 				Expect(ml.Listeners[0].TcpFilterChains).To(HaveLen(1))
 
-				translatedListener := ml.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, nil, reporter)
+				translatedListener := ml.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, nil, statusReporter)
 				Expect(translatedListener).NotTo(BeNil())
 				Expect(translatedListener.TcpFilterChain).To(HaveLen(1))
 
@@ -783,7 +783,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 				By("Validating that one single destination TLS listener is created")
 				Expect(ml.Listeners).To(HaveLen(1)) // One valid listener
 
-				translatedListener := ml.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, nil, reporter)
+				translatedListener := ml.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, nil, statusReporter)
 				Expect(translatedListener).NotTo(BeNil())
 				Expect(translatedListener.TcpFilterChain).To(HaveLen(1))
 
@@ -836,7 +836,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 				By("Validating that one TLS listener is created with a single destination")
 				Expect(ml.Listeners).To(HaveLen(1))
 
-				translatedListener := ml.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, nil, reporter)
+				translatedListener := ml.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, nil, statusReporter)
 				Expect(translatedListener).NotTo(BeNil())
 				Expect(translatedListener.TcpFilterChain).To(HaveLen(1))
 

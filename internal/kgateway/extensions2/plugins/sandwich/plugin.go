@@ -38,22 +38,21 @@ import (
 	proxy_protocol "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/listener/proxy_protocol/v3"
 	sfsnetwork "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/set_filter_state/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"istio.io/istio/pilot/pkg/util/protoconv"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
-
-	"istio.io/istio/pilot/pkg/util/protoconv"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
-func NewPlugin() extensionsplug.Plugin {
-	return extensionsplug.Plugin{
-		ContributesPolicies: extensionsplug.ContributesPolicies{
-			SandwichedInboundGK: extensionsplug.PolicyPlugin{
+func NewPlugin() sdk.Plugin {
+	return sdk.Plugin{
+		ContributesPolicies: sdk.ContributesPolicies{
+			SandwichedInboundGK: sdk.PolicyPlugin{
 				Name: "sandwich",
-				NewGatewayTranslationPass: func(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {
+				NewGatewayTranslationPass: func(ctx context.Context, tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
 					// TODO we could read the waypoint-inbound-binding annotation here and set isSandwiched = true
 					// instead of using a policy set by translator?
 					return &sandwichedTranslationPass{
@@ -91,7 +90,7 @@ func (w SandwichedInboundPolicy) Equals(in any) bool {
 
 type sandwichedTranslationPass struct {
 	ir.UnimplementedProxyTranslationPass
-	reporter reports.Reporter
+	reporter reporter.Reporter
 	// isSandwiched is marked true when we process the listener
 	// so that we add the FilterChain level network filters
 	isSandwiched bool

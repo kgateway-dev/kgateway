@@ -331,7 +331,7 @@ func TestBasic(t *testing.T) {
 				Name:      "example-gateway",
 			},
 			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				expectedPolicies := []reports.PolicyKey{
+				expectedPolicies := []reporter.PolicyKey{
 					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "infra", Name: "policy-with-section-name"},
 					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "infra", Name: "policy-without-section-name"},
 				}
@@ -349,7 +349,7 @@ func TestBasic(t *testing.T) {
 				Name:      "example-gateway",
 			},
 			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				expectedPolicies := []reports.PolicyKey{
+				expectedPolicies := []reporter.PolicyKey{
 					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "infra", Name: "transform"},
 					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "infra", Name: "rate-limit"},
 				}
@@ -367,7 +367,7 @@ func TestBasic(t *testing.T) {
 				Name:      "example-gateway",
 			},
 			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				expectedPolicies := []reports.PolicyKey{
+				expectedPolicies := []reporter.PolicyKey{
 					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "infra", Name: "transform"},
 					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "infra", Name: "rate-limit"},
 					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "kgateway-system", Name: "global-policy"},
@@ -388,7 +388,7 @@ func TestBasic(t *testing.T) {
 				Name:      "example-gateway",
 			},
 			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				expectedPolicies := []reports.PolicyKey{
+				expectedPolicies := []reporter.PolicyKey{
 					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "infra", Name: "extauth-for-gateway-section-name"},
 					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "infra", Name: "extauth-for-gateway"},
 					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "infra", Name: "extauth-for-http-route"},
@@ -1322,7 +1322,7 @@ func TestBasic(t *testing.T) {
 				Name:      "example-gateway",
 			},
 			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				expectedPolicies := []reports.PolicyKey{
+				expectedPolicies := []reporter.PolicyKey{
 					{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "infra", Name: "test-policy"},
 				}
 				translatortest.AssertPolicyStatusWithGeneration(t, reportsMap, expectedPolicies, 42)
@@ -1777,7 +1777,7 @@ func TestRouteReplacement(t *testing.T) {
 					// that verifies all status' are in Accepted=true state when assertReports is nil.
 					// we already have coverage for output status written to golden file.
 					r := require.New(t)
-					policy := reports.PolicyKey{
+					policy := reporter.PolicyKey{
 						Group:     "gateway.kgateway.dev",
 						Kind:      "TrafficPolicy",
 						Namespace: "gwtest",

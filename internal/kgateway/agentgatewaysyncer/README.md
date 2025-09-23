@@ -151,6 +151,133 @@ Policies are configurable rules that control traffic behavior, security, and tra
 - Backend Auth: Set up authentication for backend services (e.g., passthrough, key, GCP, AWS).
 - Timeout: Set request and backend timeouts.
 - Retry: Configure retry attempts, backoff, and which response codes should trigger retries.
+- Transformations: Add, set or remove HTTP request and response headers and apply body transformations
+
+### CEL Transformations
+
+The agentgateway data plane supports [CEL](https://cel.dev/) (Common Expression Language) transformations through TrafficPolicy resources. CEL transformations allow you to modify requests and responses using powerful expression language.
+
+Unlike the Envoy data plane transformations that support Inja, the agentgateway transformations use CEL expressions.
+
+#### Supported Transformation Types
+
+**Header Transformations:**
+- `set`: Replace or create headers with new values
+- `add`: Add headers (append if header already exists)
+- `remove`: Remove headers by name
+
+**Body Transformations:**
+- Modify request/response body content
+- Parse JSON using `json()` function
+- Transform strings and objects
+
+#### Example
+
+Apply this config to setup basic response and request header transformations for agentgateway data plane.
+
+```shell
+kubectl apply -f- <<EOF
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: agentgateway
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: Same
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: simple-svc
+  labels:
+    app: simple-svc
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 3000
+  selector:
+    app.kubernetes.io/name: backend-0
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-0
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: backend-0
+      version: v1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: backend-0
+        version: v1
+    spec:
+      containers:
+        - image: gcr.io/k8s-staging-gateway-api/echo-basic:v20231214-v1.0.0-140-gf544a46e
+          imagePullPolicy: IfNotPresent
+          name: backend-0
+          ports:
+            - containerPort: 3000
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: SERVICE_NAME
+              value: simple-svc
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+spec:
+  parentRefs:
+    - name: example-gateway
+  hostnames:
+    - "example-gateway-attached-transform.com"
+  rules:
+    - backendRefs:
+        - name: simple-svc
+          port: 8080
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: example-traffic-policy-for-gateway-attached-transform
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-gateway
+  transformation:
+    request:
+      set:
+        - name: request-gateway
+          value: "'hello'"
+    response:
+      set:
+        - name: response-gateway
+          value: "'goodbye'"
+EOF
+```
+
+#### Important Notes
+
+- **parseAs field**: The `parseAs` field is not supported for agentgateway. Use `json()` function directly in CEL expressions instead
+- **Data plane validation**: Invalid CEL expressions are handled by the agentgateway data plane
 
 ### Architecture
 

@@ -20,17 +20,17 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/endpoints"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 )
 
 var ClusterConnectionTimeout = time.Second * 5
 
 type BackendTranslator struct {
 	ContributedBackends map[schema.GroupKind]ir.BackendInit
-	ContributedPolicies map[schema.GroupKind]extensionsplug.PolicyPlugin
+	ContributedPolicies map[schema.GroupKind]sdk.PolicyPlugin
 	CommonCols          *common.CommonCollections
 }
 

@@ -47,7 +47,7 @@ func (prr *AncestorRefReport) SetAttachmentState(
 	prr.AttachmentState |= state
 }
 
-func (r *statusReporter) Policy(key PolicyKey, observedGeneration int64) reporter.PolicyReporter {
+func (r *statusReporter) Policy(key reporter.PolicyKey, observedGeneration int64) reporter.PolicyReporter {
 	pr := r.report.policy(key)
 	if pr == nil {
 		pr = r.report.newPolicyReport(key, observedGeneration)
@@ -55,11 +55,11 @@ func (r *statusReporter) Policy(key PolicyKey, observedGeneration int64) reporte
 	return pr
 }
 
-func (r *ReportMap) policy(key PolicyKey) *PolicyReport {
+func (r *ReportMap) policy(key reporter.PolicyKey) *PolicyReport {
 	return r.Policies[key]
 }
 
-func (r *ReportMap) newPolicyReport(key PolicyKey, observedGeneration int64) *PolicyReport {
+func (r *ReportMap) newPolicyReport(key reporter.PolicyKey, observedGeneration int64) *PolicyReport {
 	pr := &PolicyReport{
 		observedGeneration: observedGeneration,
 	}
@@ -102,7 +102,7 @@ func (r *PolicyReport) ancestorRefs() []gwv1.ParentReference {
 
 func (r *ReportMap) BuildPolicyStatus(
 	ctx context.Context,
-	key PolicyKey,
+	key reporter.PolicyKey,
 	controller string,
 	currentStatus gwv1alpha2.PolicyStatus,
 ) *gwv1alpha2.PolicyStatus {

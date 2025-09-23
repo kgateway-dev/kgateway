@@ -18,7 +18,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/httproute"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	pluginsdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
@@ -33,8 +33,8 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 		routeir           *ir.HttpRouteIR
 		routeInfo         *query.RouteInfo
 		parentRef         *gwv1.ParentReference
-		baseReporter      reports.Reporter
-		parentRefReporter pluginsdkreporter.ParentRefReporter
+		baseReporter      reporter.Reporter
+		parentRefReporter reporter.ParentRefReporter
 		reportsMap        reports.ReportMap
 
 		// Service backing for routes
@@ -452,7 +452,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 		//		var (
 		//			route             *gwv1.HTTPRoute
 		//			routeInfo         *query.RouteInfo
-		//			baseReporter      reports.Reporter
+		//			baseReporter      reporter.Reporter
 		//			parentRefReporter reports.ParentRefReporter
 		//			reportsMap        reports.ReportMap
 		//		)

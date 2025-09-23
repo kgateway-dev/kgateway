@@ -10,18 +10,18 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	agwbackend "github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/backend"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 // AgwBackendTranslator handles translation of backends to agent gateway resources
 type AgwBackendTranslator struct {
 	ContributedBackends map[schema.GroupKind]ir.BackendInit
-	ContributedPolicies map[schema.GroupKind]extensionsplug.PolicyPlugin
+	ContributedPolicies map[schema.GroupKind]sdk.PolicyPlugin
 }
 
 // NewAgwBackendTranslator creates a new AgwBackendTranslator
-func NewAgwBackendTranslator(extensions extensionsplug.Plugin) *AgwBackendTranslator {
+func NewAgwBackendTranslator(extensions sdk.Plugin) *AgwBackendTranslator {
 	translator := &AgwBackendTranslator{
 		ContributedBackends: make(map[schema.GroupKind]ir.BackendInit),
 		ContributedPolicies: extensions.ContributesPolicies,
