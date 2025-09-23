@@ -6,27 +6,29 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-// AgentGatewayApplyConfiguration represents a declarative configuration of the AgentGateway type for use
+// AgentgatewayApplyConfiguration represents a declarative configuration of the Agentgateway type for use
 // with apply.
-type AgentGatewayApplyConfiguration struct {
-	Enabled         *bool                    `json:"enabled,omitempty"`
-	LogLevel        *string                  `json:"logLevel,omitempty"`
-	Image           *ImageApplyConfiguration `json:"image,omitempty"`
-	SecurityContext *v1.SecurityContext      `json:"securityContext,omitempty"`
-	Resources       *v1.ResourceRequirements `json:"resources,omitempty"`
-	Env             []v1.EnvVar              `json:"env,omitempty"`
+type AgentgatewayApplyConfiguration struct {
+	Enabled             *bool                    `json:"enabled,omitempty"`
+	LogLevel            *string                  `json:"logLevel,omitempty"`
+	Image               *ImageApplyConfiguration `json:"image,omitempty"`
+	SecurityContext     *v1.SecurityContext      `json:"securityContext,omitempty"`
+	Resources           *v1.ResourceRequirements `json:"resources,omitempty"`
+	Env                 []v1.EnvVar              `json:"env,omitempty"`
+	CustomConfigMapName *string                  `json:"customConfigMapName,omitempty"`
+	ExtraVolumeMounts   []v1.VolumeMount         `json:"extraVolumeMounts,omitempty"`
 }
 
-// AgentGatewayApplyConfiguration constructs a declarative configuration of the AgentGateway type for use with
+// AgentgatewayApplyConfiguration constructs a declarative configuration of the Agentgateway type for use with
 // apply.
-func AgentGateway() *AgentGatewayApplyConfiguration {
-	return &AgentGatewayApplyConfiguration{}
+func Agentgateway() *AgentgatewayApplyConfiguration {
+	return &AgentgatewayApplyConfiguration{}
 }
 
 // WithEnabled sets the Enabled field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Enabled field is set to the value of the last call.
-func (b *AgentGatewayApplyConfiguration) WithEnabled(value bool) *AgentGatewayApplyConfiguration {
+func (b *AgentgatewayApplyConfiguration) WithEnabled(value bool) *AgentgatewayApplyConfiguration {
 	b.Enabled = &value
 	return b
 }
@@ -34,7 +36,7 @@ func (b *AgentGatewayApplyConfiguration) WithEnabled(value bool) *AgentGatewayAp
 // WithLogLevel sets the LogLevel field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the LogLevel field is set to the value of the last call.
-func (b *AgentGatewayApplyConfiguration) WithLogLevel(value string) *AgentGatewayApplyConfiguration {
+func (b *AgentgatewayApplyConfiguration) WithLogLevel(value string) *AgentgatewayApplyConfiguration {
 	b.LogLevel = &value
 	return b
 }
@@ -42,7 +44,7 @@ func (b *AgentGatewayApplyConfiguration) WithLogLevel(value string) *AgentGatewa
 // WithImage sets the Image field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Image field is set to the value of the last call.
-func (b *AgentGatewayApplyConfiguration) WithImage(value *ImageApplyConfiguration) *AgentGatewayApplyConfiguration {
+func (b *AgentgatewayApplyConfiguration) WithImage(value *ImageApplyConfiguration) *AgentgatewayApplyConfiguration {
 	b.Image = value
 	return b
 }
@@ -50,7 +52,7 @@ func (b *AgentGatewayApplyConfiguration) WithImage(value *ImageApplyConfiguratio
 // WithSecurityContext sets the SecurityContext field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the SecurityContext field is set to the value of the last call.
-func (b *AgentGatewayApplyConfiguration) WithSecurityContext(value v1.SecurityContext) *AgentGatewayApplyConfiguration {
+func (b *AgentgatewayApplyConfiguration) WithSecurityContext(value v1.SecurityContext) *AgentgatewayApplyConfiguration {
 	b.SecurityContext = &value
 	return b
 }
@@ -58,7 +60,7 @@ func (b *AgentGatewayApplyConfiguration) WithSecurityContext(value v1.SecurityCo
 // WithResources sets the Resources field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Resources field is set to the value of the last call.
-func (b *AgentGatewayApplyConfiguration) WithResources(value v1.ResourceRequirements) *AgentGatewayApplyConfiguration {
+func (b *AgentgatewayApplyConfiguration) WithResources(value v1.ResourceRequirements) *AgentgatewayApplyConfiguration {
 	b.Resources = &value
 	return b
 }
@@ -66,9 +68,27 @@ func (b *AgentGatewayApplyConfiguration) WithResources(value v1.ResourceRequirem
 // WithEnv adds the given value to the Env field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the Env field.
-func (b *AgentGatewayApplyConfiguration) WithEnv(values ...v1.EnvVar) *AgentGatewayApplyConfiguration {
+func (b *AgentgatewayApplyConfiguration) WithEnv(values ...v1.EnvVar) *AgentgatewayApplyConfiguration {
 	for i := range values {
 		b.Env = append(b.Env, values[i])
+	}
+	return b
+}
+
+// WithCustomConfigMapName sets the CustomConfigMapName field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the CustomConfigMapName field is set to the value of the last call.
+func (b *AgentgatewayApplyConfiguration) WithCustomConfigMapName(value string) *AgentgatewayApplyConfiguration {
+	b.CustomConfigMapName = &value
+	return b
+}
+
+// WithExtraVolumeMounts adds the given value to the ExtraVolumeMounts field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the ExtraVolumeMounts field.
+func (b *AgentgatewayApplyConfiguration) WithExtraVolumeMounts(values ...v1.VolumeMount) *AgentgatewayApplyConfiguration {
+	for i := range values {
+		b.ExtraVolumeMounts = append(b.ExtraVolumeMounts, values[i])
 	}
 	return b
 }

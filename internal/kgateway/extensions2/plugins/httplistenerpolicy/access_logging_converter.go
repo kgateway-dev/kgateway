@@ -33,14 +33,21 @@ import (
 
 var ErrUnresolvedBackendRef = errors.New("unresolved backend reference")
 
+const serviceNameKey = "service.name"
+
 // convertAccessLogConfig transforms a list of AccessLog configurations into Envoy AccessLog configurations
+// These access log configs can be either FileAccessLog, HttpGrpcAccessLogConfig or OpenTelemetryAccessLogConfig.
+// The default service name needs to be set to the cluster name in the OpenTelemetryAccessLogConfig.
+// Since the cluster name can only be determined during translation (when the specific gateway is passed),
+// we return partially translated configs. As these configs are of different types, we return an list of interfaces
+// that is stored in the IR to be fully translated during translation.
 func convertAccessLogConfig(
 	ctx context.Context,
 	policy *v1alpha1.HTTPListenerPolicy,
 	commoncol *common.CommonCollections,
 	krtctx krt.HandlerContext,
 	parentSrc ir.ObjectSource,
-) ([]*envoyaccesslogv3.AccessLog, error) {
+) ([]proto.Message, error) {
 	configs := policy.Spec.AccessLog
 
 	if configs != nil && len(configs) == 0 {
@@ -75,8 +82,8 @@ func getLogId(logName string, idx int) string {
 	return fmt.Sprintf("%s-%d", logName, idx)
 }
 
-func translateAccessLogs(configs []v1alpha1.AccessLog, grpcBackends map[string]*ir.BackendObjectIR) ([]*envoyaccesslogv3.AccessLog, error) {
-	var results []*envoyaccesslogv3.AccessLog
+func translateAccessLogs(configs []v1alpha1.AccessLog, grpcBackends map[string]*ir.BackendObjectIR) ([]proto.Message, error) {
+	var results []proto.Message
 
 	for idx, logConfig := range configs {
 		accessLogCfg, err := translateAccessLog(logConfig, grpcBackends, idx)
@@ -90,14 +97,14 @@ func translateAccessLogs(configs []v1alpha1.AccessLog, grpcBackends map[string]*
 }
 
 // translateAccessLog creates an Envoy AccessLog configuration for a single log config
-func translateAccessLog(logConfig v1alpha1.AccessLog, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (*envoyaccesslogv3.AccessLog, error) {
+func translateAccessLog(logConfig v1alpha1.AccessLog, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (proto.Message, error) {
 	// Validate mutual exclusivity of sink types
 	if logConfig.FileSink != nil && logConfig.GrpcService != nil {
 		return nil, errors.New("access log config cannot have both file sink and grpc service")
 	}
 
 	var (
-		accessLogCfg *envoyaccesslogv3.AccessLog
+		accessLogCfg proto.Message
 		err          error
 	)
 
@@ -116,18 +123,11 @@ func translateAccessLog(logConfig v1alpha1.AccessLog, grpcBackends map[string]*i
 		return nil, err
 	}
 
-	// Add filter if specified
-	if logConfig.Filter != nil {
-		if err := addAccessLogFilter(accessLogCfg, logConfig.Filter); err != nil {
-			return nil, err
-		}
-	}
-
 	return accessLogCfg, nil
 }
 
 // createFileAccessLog generates a file-based access log configuration
-func createFileAccessLog(fileSink *v1alpha1.FileSink) (*envoyaccesslogv3.AccessLog, error) {
+func createFileAccessLog(fileSink *v1alpha1.FileSink) (proto.Message, error) {
 	fileCfg := &envoyalfile.FileAccessLog{Path: fileSink.Path}
 
 	// Validate format configuration
@@ -164,28 +164,25 @@ func createFileAccessLog(fileSink *v1alpha1.FileSink) (*envoyaccesslogv3.AccessL
 			},
 		}
 	}
-
-	return newAccessLogWithConfig(wellknown.FileAccessLog, fileCfg)
+	return fileCfg, nil
 }
 
 // createGrpcAccessLog generates a gRPC-based access log configuration
-func createGrpcAccessLog(grpcService *v1alpha1.AccessLogGrpcService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (*envoyaccesslogv3.AccessLog, error) {
+func createGrpcAccessLog(grpcService *v1alpha1.AccessLogGrpcService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (proto.Message, error) {
 	var cfg envoygrpc.HttpGrpcAccessLogConfig
 	if err := copyGrpcSettings(&cfg, grpcService, grpcBackends, accessLogId); err != nil {
 		return nil, fmt.Errorf("error converting grpc access log config: %w", err)
 	}
-
-	return newAccessLogWithConfig(wellknown.HTTPGRPCAccessLog, &cfg)
+	return &cfg, nil
 }
 
 // createOTelAccessLog generates an OTel access log configuration
-func createOTelAccessLog(grpcService *v1alpha1.OpenTelemetryAccessLogService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (*envoyaccesslogv3.AccessLog, error) {
+func createOTelAccessLog(grpcService *v1alpha1.OpenTelemetryAccessLogService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (proto.Message, error) {
 	var cfg envoy_open_telemetry.OpenTelemetryAccessLogConfig
 	if err := copyOTelSettings(&cfg, grpcService, grpcBackends, accessLogId); err != nil {
 		return nil, fmt.Errorf("error converting otel access log config: %w", err)
 	}
-
-	return newAccessLogWithConfig("envoy.access_loggers.open_telemetry", &cfg)
+	return &cfg, nil
 }
 
 // addAccessLogFilter adds filtering logic to an access log configuration
@@ -454,6 +451,9 @@ func copyOTelSettings(cfg *envoy_open_telemetry.OpenTelemetryAccessLogConfig, ot
 			},
 		}
 	}
+	if otelService.ResourceAttributes != nil {
+		cfg.ResourceAttributes = ToOTelKeyValueList(otelService.ResourceAttributes)
+	}
 	if otelService.DisableBuiltinLabels != nil {
 		cfg.DisableBuiltinLabels = *otelService.DisableBuiltinLabels
 	}
@@ -537,24 +537,18 @@ func getFormatterExtensions() ([]*envoycorev3.TypedExtensionConfig, error) {
 	}, nil
 }
 
-func newAccessLogWithConfig(name string, config proto.Message) (*envoyaccesslogv3.AccessLog, error) {
+func newAccessLogWithConfig(name string, config proto.Message) *envoyaccesslogv3.AccessLog {
 	s := &envoyaccesslogv3.AccessLog{
 		Name: name,
 	}
 
 	if config != nil {
-		marshalledConf, err := utils.MessageToAny(config)
-		if err != nil {
-			// this should NEVER HAPPEN!
-			return nil, err
-		}
-
 		s.ConfigType = &envoyaccesslogv3.AccessLog_TypedConfig{
-			TypedConfig: marshalledConf,
+			TypedConfig: utils.MustMessageToAny(config),
 		}
 	}
 
-	return s, nil
+	return s
 }
 
 // String provides a string representation for the Op enum.
@@ -610,4 +604,62 @@ func toEnvoyGRPCStatusType(grpcStatus v1alpha1.GrpcStatus) (envoyaccesslogv3.Grp
 	default:
 		return 0, fmt.Errorf("unknown GRPCStatus (%s)", grpcStatus)
 	}
+}
+
+func generateAccessLogConfig(pCtx *ir.HcmContext, policies []v1alpha1.AccessLog, configs []proto.Message) ([]*envoyaccesslogv3.AccessLog, error) {
+	accessLogs := make([]*envoyaccesslogv3.AccessLog, len(configs))
+	if len(configs) == 0 {
+		return accessLogs, nil
+	}
+
+	for i, config := range configs {
+		var cfg *envoyaccesslogv3.AccessLog
+		switch t := config.(type) {
+		case *envoyalfile.FileAccessLog:
+			cfg = newAccessLogWithConfig(wellknown.FileAccessLog, t)
+		case *envoygrpc.HttpGrpcAccessLogConfig:
+			cfg = newAccessLogWithConfig(wellknown.HTTPGRPCAccessLog, t)
+		case *envoy_open_telemetry.OpenTelemetryAccessLogConfig:
+			addDefaultResourceAttributes(pCtx, t)
+			cfg = newAccessLogWithConfig("envoy.access_loggers.open_telemetry", t)
+		}
+		// Add filter if specified
+		if policies[i].Filter != nil {
+			if err := addAccessLogFilter(cfg, policies[i].Filter); err != nil {
+				return nil, err
+			}
+		}
+		accessLogs[i] = cfg
+	}
+	return accessLogs, nil
+}
+
+func addDefaultResourceAttributes(pCtx *ir.HcmContext, config *envoy_open_telemetry.OpenTelemetryAccessLogConfig) {
+	if config.GetResourceAttributes() == nil {
+		config.ResourceAttributes = &otelv1.KeyValueList{
+			Values: []*otelv1.KeyValue{{
+				Key: serviceNameKey,
+				Value: &otelv1.AnyValue{
+					Value: &otelv1.AnyValue_StringValue{
+						StringValue: GenerateDefaultServiceName(pCtx.Gateway.SourceObject.GetName(), pCtx.Gateway.SourceObject.GetNamespace()),
+					},
+				}},
+			},
+		}
+		return
+	}
+
+	for _, ra := range config.GetResourceAttributes().Values {
+		if ra.Key == serviceNameKey {
+			return
+		}
+	}
+	config.GetResourceAttributes().Values = append(config.GetResourceAttributes().Values, &otelv1.KeyValue{
+		Key: serviceNameKey,
+		Value: &otelv1.AnyValue{
+			Value: &otelv1.AnyValue_StringValue{
+				StringValue: GenerateDefaultServiceName(pCtx.Gateway.SourceObject.GetName(), pCtx.Gateway.SourceObject.GetNamespace()),
+			},
+		},
+	})
 }

@@ -13,7 +13,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
-func createADPMethodMatch(match gwv1.HTTPRouteMatch) (*api.MethodMatch, *reporter.RouteCondition) {
+func createAgwMethodMatch(match gwv1.HTTPRouteMatch) (*api.MethodMatch, *reporter.RouteCondition) {
 	if match.Method == nil {
 		return nil, nil
 	}
@@ -22,7 +22,7 @@ func createADPMethodMatch(match gwv1.HTTPRouteMatch) (*api.MethodMatch, *reporte
 	}, nil
 }
 
-func createADPQueryMatch(match gwv1.HTTPRouteMatch) ([]*api.QueryMatch, *reporter.RouteCondition) {
+func createAgwQueryMatch(match gwv1.HTTPRouteMatch) ([]*api.QueryMatch, *reporter.RouteCondition) {
 	res := []*api.QueryMatch{}
 	for _, header := range match.QueryParams {
 		tp := gwv1.QueryParamMatchExact
@@ -55,46 +55,63 @@ func createADPQueryMatch(match gwv1.HTTPRouteMatch) ([]*api.QueryMatch, *reporte
 	return res, nil
 }
 
-func createADPPathMatch(match gwv1.HTTPRouteMatch) (*api.PathMatch, *reporter.RouteCondition) {
-	tp := gwv1.PathMatchPathPrefix
+func createAgwPathMatch(match gwv1.HTTPRouteMatch) (*api.PathMatch, *reporter.RouteCondition) {
 	if match.Path == nil {
 		return nil, nil
 	}
+	tp := gwv1.PathMatchPathPrefix
 	if match.Path.Type != nil {
 		tp = *match.Path.Type
 	}
+	// Path value must start with "/". If empty/nil, coerce to "/".
 	dest := "/"
-	if match.Path.Value != nil {
+	if match.Path.Value != nil && *match.Path.Value != "" {
 		dest = *match.Path.Value
+	}
+	if !strings.HasPrefix(dest, "/") {
+		dest = "/" + dest
 	}
 	switch tp {
 	case gwv1.PathMatchPathPrefix:
-		// "When specified, a trailing `/` is ignored."
+		// Spec: trailing "/" is ignored in a prefix (except the root "/").
 		if dest != "/" {
-			dest = strings.TrimSuffix(dest, "/")
+			dest = strings.TrimRight(dest, "/")
+			if dest == "" {
+				dest = "/"
+			}
 		}
-		return &api.PathMatch{Kind: &api.PathMatch_PathPrefix{
-			PathPrefix: dest,
-		}}, nil
+		return &api.PathMatch{
+			Kind: &api.PathMatch_PathPrefix{
+				PathPrefix: dest,
+			},
+		}, nil
+
 	case gwv1.PathMatchExact:
-		return &api.PathMatch{Kind: &api.PathMatch_Exact{
-			Exact: dest,
-		}}, nil
+		// EXACT: do not normalize trailing slash; it must match byte-for-byte.
+		return &api.PathMatch{
+			Kind: &api.PathMatch_Exact{
+				Exact: dest,
+			},
+		}, nil
 	case gwv1.PathMatchRegularExpression:
-		return &api.PathMatch{Kind: &api.PathMatch_Regex{
-			Regex: dest,
-		}}, nil
+		// Pass regex through unchanged.
+		return &api.PathMatch{
+			Kind: &api.PathMatch_Regex{
+				Regex: dest,
+			},
+		}, nil
 	default:
-		// Should never happen, unless a new field is added
+		// Defensive: unknown type => UnsupportedValue.
 		return nil, &reporter.RouteCondition{
 			Type:    gwv1.RouteConditionAccepted,
 			Status:  metav1.ConditionFalse,
 			Reason:  gwv1.RouteReasonUnsupportedValue,
-			Message: fmt.Sprintf("unknown type: %q is not supported Path match type", tp)}
+			Message: fmt.Sprintf("unsupported Path match type %q", tp),
+		}
 	}
 }
 
-func createADPHeadersMatch(match gwv1.HTTPRouteMatch) ([]*api.HeaderMatch, *reporter.RouteCondition) {
+func createAgwHeadersMatch(match gwv1.HTTPRouteMatch) ([]*api.HeaderMatch, *reporter.RouteCondition) {
 	var res []*api.HeaderMatch
 	for _, header := range match.Headers {
 		tp := gwv1.HeaderMatchExact
@@ -128,37 +145,37 @@ func createADPHeadersMatch(match gwv1.HTTPRouteMatch) ([]*api.HeaderMatch, *repo
 	return res, nil
 }
 
-func createADPHeadersFilter(filter *gwv1.HTTPHeaderFilter) *api.RouteFilter {
+func createAgwHeadersFilter(filter *gwv1.HTTPHeaderFilter) *api.RouteFilter {
 	if filter == nil {
 		return nil
 	}
 	return &api.RouteFilter{
 		Kind: &api.RouteFilter_RequestHeaderModifier{
 			RequestHeaderModifier: &api.HeaderModifier{
-				Add:    headerListToADP(filter.Add),
-				Set:    headerListToADP(filter.Set),
+				Add:    headerListToAgw(filter.Add),
+				Set:    headerListToAgw(filter.Set),
 				Remove: filter.Remove,
 			},
 		},
 	}
 }
 
-func createADPResponseHeadersFilter(filter *gwv1.HTTPHeaderFilter) *api.RouteFilter {
+func createAgwResponseHeadersFilter(filter *gwv1.HTTPHeaderFilter) *api.RouteFilter {
 	if filter == nil {
 		return nil
 	}
 	return &api.RouteFilter{
 		Kind: &api.RouteFilter_ResponseHeaderModifier{
 			ResponseHeaderModifier: &api.HeaderModifier{
-				Add:    headerListToADP(filter.Add),
-				Set:    headerListToADP(filter.Set),
+				Add:    headerListToAgw(filter.Add),
+				Set:    headerListToAgw(filter.Set),
 				Remove: filter.Remove,
 			},
 		},
 	}
 }
 
-func createADPRewriteFilter(filter *gwv1.HTTPURLRewriteFilter) *api.RouteFilter {
+func createAgwRewriteFilter(filter *gwv1.HTTPURLRewriteFilter) *api.RouteFilter {
 	if filter == nil {
 		return nil
 	}
@@ -185,7 +202,7 @@ func createADPRewriteFilter(filter *gwv1.HTTPURLRewriteFilter) *api.RouteFilter 
 	}
 }
 
-func createADPMirrorFilter(
+func createAgwMirrorFilter(
 	ctx RouteContext,
 	filter *gwv1.HTTPRequestMirrorFilter,
 	ns string,
@@ -195,7 +212,7 @@ func createADPMirrorFilter(
 		return nil, nil
 	}
 	var weightOne int32 = 1
-	dst, err := buildADPDestination(ctx, gwv1.HTTPBackendRef{
+	dst, err := buildAgwDestination(ctx, gwv1.HTTPBackendRef{
 		BackendRef: gwv1.BackendRef{
 			BackendObjectReference: filter.BackendRef,
 			Weight:                 &weightOne,
@@ -226,7 +243,7 @@ func createADPMirrorFilter(
 	return &api.RouteFilter{Kind: &api.RouteFilter_RequestMirror{RequestMirror: rm}}, nil
 }
 
-func createADPRedirectFilter(filter *gwv1.HTTPRequestRedirectFilter) *api.RouteFilter {
+func createAgwRedirectFilter(filter *gwv1.HTTPRequestRedirectFilter) *api.RouteFilter {
 	if filter == nil {
 		return nil
 	}
@@ -266,7 +283,7 @@ func createADPRedirectFilter(filter *gwv1.HTTPRequestRedirectFilter) *api.RouteF
 	}
 }
 
-func headerListToADP(hl []gwv1.HTTPHeader) []*api.Header {
+func headerListToAgw(hl []gwv1.HTTPHeader) []*api.Header {
 	return slices.Map(hl, func(hl gwv1.HTTPHeader) *api.Header {
 		return &api.Header{
 			Name:  string(hl.Name),
@@ -275,9 +292,8 @@ func headerListToADP(hl []gwv1.HTTPHeader) []*api.Header {
 	})
 }
 
-// GRPC-specific ADP conversion functions
-
-func createADPGRPCHeadersMatch(match gwv1.GRPCRouteMatch) ([]*api.HeaderMatch, *reporter.RouteCondition) {
+// GRPC-specific Agw conversion functions
+func createAgwGRPCHeadersMatch(match gwv1.GRPCRouteMatch) ([]*api.HeaderMatch, *reporter.RouteCondition) {
 	var res []*api.HeaderMatch
 	for _, header := range match.Headers {
 		tp := gwv1.GRPCHeaderMatchExact
@@ -311,7 +327,7 @@ func createADPGRPCHeadersMatch(match gwv1.GRPCRouteMatch) ([]*api.HeaderMatch, *
 	return res, nil
 }
 
-func buildADPGRPCFilters(
+func buildAgwGRPCFilters(
 	ctx RouteContext,
 	ns string,
 	inputFilters []gwv1.GRPCRouteFilter,
@@ -321,19 +337,19 @@ func buildADPGRPCFilters(
 	for _, filter := range inputFilters {
 		switch filter.Type {
 		case gwv1.GRPCRouteFilterRequestHeaderModifier:
-			h := createADPHeadersFilter(filter.RequestHeaderModifier)
+			h := createAgwHeadersFilter(filter.RequestHeaderModifier)
 			if h == nil {
 				continue
 			}
 			filters = append(filters, h)
 		case gwv1.GRPCRouteFilterResponseHeaderModifier:
-			h := createADPResponseHeadersFilter(filter.ResponseHeaderModifier)
+			h := createAgwResponseHeadersFilter(filter.ResponseHeaderModifier)
 			if h == nil {
 				continue
 			}
 			filters = append(filters, h)
 		case gwv1.GRPCRouteFilterRequestMirror:
-			h, err := createADPMirrorFilter(ctx, filter.RequestMirror, ns, schema.GroupVersionKind{
+			h, err := createAgwMirrorFilter(ctx, filter.RequestMirror, ns, schema.GroupVersionKind{
 				Group:   "gateway.networking.k8s.io",
 				Version: "v1",
 				Kind:    "GRPCRoute",
@@ -343,6 +359,7 @@ func buildADPGRPCFilters(
 			} else {
 				filters = append(filters, h)
 			}
+		// TODO(npolshak): add ExtensionRef support for TrafficPolicy https://github.com/kgateway-dev/kgateway/issues/12037
 		default:
 			return nil, &reporter.RouteCondition{
 				Type:    gwv1.RouteConditionAccepted,
@@ -355,7 +372,7 @@ func buildADPGRPCFilters(
 	return filters, mirrorBackendErr
 }
 
-func buildADPGRPCDestination(
+func buildAgwGRPCDestination(
 	ctx RouteContext,
 	forwardTo []gwv1.GRPCBackendRef,
 	ns string,
@@ -367,7 +384,7 @@ func buildADPGRPCDestination(
 	var invalidBackendErr *reporter.RouteCondition
 	var res []*api.RouteBackend
 	for _, fwd := range forwardTo {
-		dst, err := buildADPDestination(ctx, gwv1.HTTPBackendRef{
+		dst, err := buildAgwDestination(ctx, gwv1.HTTPBackendRef{
 			BackendRef: fwd.BackendRef,
 			Filters:    nil, // GRPC filters are handled separately
 		}, ns, schema.GroupVersionKind{
@@ -385,7 +402,7 @@ func buildADPGRPCDestination(
 			}
 		}
 		if dst != nil {
-			filters, err := buildADPGRPCFilters(ctx, ns, fwd.Filters)
+			filters, err := buildAgwGRPCFilters(ctx, ns, fwd.Filters)
 			if err != nil {
 				return nil, nil, err
 			}

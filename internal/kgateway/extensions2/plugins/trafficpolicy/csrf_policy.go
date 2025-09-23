@@ -58,7 +58,15 @@ func (p *trafficPolicyPluginGwPass) handleCsrf(fcn string, typedFilterConfig *ir
 		p.csrfInChain = make(map[string]*envoy_csrf_v3.CsrfPolicy)
 	}
 	if _, ok := p.csrfInChain[fcn]; !ok {
-		p.csrfInChain[fcn] = csrfFilter()
+		p.csrfInChain[fcn] = &envoy_csrf_v3.CsrfPolicy{
+			// FilterEnabled is a required value
+			FilterEnabled: &envoycorev3.RuntimeFractionalPercent{
+				DefaultValue: &envoy_type_v3.FractionalPercent{
+					Numerator:   0,
+					Denominator: envoy_type_v3.FractionalPercent_HUNDRED,
+				},
+			},
+		}
 	}
 }
 
@@ -113,19 +121,6 @@ func constructCSRF(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) er
 	return nil
 }
 
-// csrfFilter returns a default csrf filter with the filter enabled percentage set to 0 to be added to the filter
-// chain.
-func csrfFilter() *envoy_csrf_v3.CsrfPolicy {
-	return &envoy_csrf_v3.CsrfPolicy{
-		FilterEnabled: &envoycorev3.RuntimeFractionalPercent{
-			DefaultValue: &envoy_type_v3.FractionalPercent{
-				Numerator:   0,
-				Denominator: envoy_type_v3.FractionalPercent_HUNDRED,
-			},
-		},
-	}
-}
-
 func toEnvoyStringMatcher(origin v1alpha1.StringMatcher) *envoy_matcher_v3.StringMatcher {
 	matcher := &envoy_matcher_v3.StringMatcher{
 		IgnoreCase: origin.IgnoreCase,
@@ -151,9 +146,6 @@ func toEnvoyStringMatcher(origin v1alpha1.StringMatcher) *envoy_matcher_v3.Strin
 	case origin.SafeRegex != nil:
 		matcher.MatchPattern = &envoy_matcher_v3.StringMatcher_SafeRegex{
 			SafeRegex: &envoy_matcher_v3.RegexMatcher{
-				EngineType: &envoy_matcher_v3.RegexMatcher_GoogleRe2{
-					GoogleRe2: &envoy_matcher_v3.RegexMatcher_GoogleRE2{},
-				},
 				Regex: *origin.SafeRegex,
 			},
 		}

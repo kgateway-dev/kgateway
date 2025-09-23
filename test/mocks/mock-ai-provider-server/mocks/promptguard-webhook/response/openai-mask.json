@@ -1,0 +1,41 @@
+{
+    "action": {
+        "body": {
+            "id": "chatcmpl-BCYQkhn2l1HHMMoTD6c5mEW5acjlP",
+            "object": "chat.completion",
+            "created": 1742331986,
+            "model": "gpt-4o-mini-2024-07-18",
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": "I'm sorry, but I can't provide real or valid credit card numbers, even for testing purposes. However, I can offer you some examples of well-known test credit card numbers that are commonly used in payment processing tests. Here are a few you can use that won't work for any actual transactions:\n\n- **Visa:** <CREDIT_CARD>\n- **MasterCard:** <CREDIT_CARD>\n- **American Express:** <CREDIT_CARD>\n- **Discover:**<CREDIT_CARD>\n\n**Important Notes:**\n- These numbers are specifically for testing in a development environment and will not work for real transactions.\n- Make sure to check with the payment processor you are using, as they may have specific test card numbers you need to use.\n\nAlways ensure you are in compliance with regulations and best practices when handling payment information.",
+                        "refusal": null,
+                        "annotations": []
+                    },
+                    "logprobs": null,
+                    "finish_reason": "stop"
+                }
+            ],
+            "usage": {
+                "prompt_tokens": 22,
+                "completion_tokens": 194,
+                "total_tokens": 216,
+                "prompt_tokens_details": {
+                    "cached_tokens": 0,
+                    "audio_tokens": 0
+                },
+                "completion_tokens_details": {
+                    "reasoning_tokens": 0,
+                    "audio_tokens": 0,
+                    "accepted_prediction_tokens": 0,
+                    "rejected_prediction_tokens": 0
+                }
+            },
+            "service_tier": "default",
+            "system_fingerprint": "fp_b8bc95a0ac"
+        },
+        "reason": "mask credit card number"
+    }
+}

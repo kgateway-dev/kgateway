@@ -1,0 +1,15 @@
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: example-gateway
+  namespace: default
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+    allowedRoutes:
+      kinds:
+      - group: gateway.networking.k8s.io
+        kind: TCPRoute

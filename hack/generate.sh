@@ -42,9 +42,15 @@ go tool controller-gen crd:maxDescLen=0 object rbac:roleName=kgateway paths="${A
     output:crd:artifacts:config=${ROOT_DIR}/${CRD_DIR} output:rbac:artifacts:config=${ROOT_DIR}/${MANIFESTS_DIR}
 # Template the ClusterRole name to include the namespace
 if [[ "$OSTYPE" == "darwin"* ]]; then
-  # macOS-compatible sed usage
-  sed -i '' 's/name: kgateway/name: kgateway-{{ .Release.Namespace }}/g' "${ROOT_DIR}/${MANIFESTS_DIR}/role.yaml"
+  # On macOS, prefer gsed (GNU sed) if available
+  if command -v gsed &> /dev/null; then
+    gsed -i 's/name: kgateway/name: kgateway-{{ .Release.Namespace }}/g' "${ROOT_DIR}/${MANIFESTS_DIR}/role.yaml"
+  else
+    # Fallback to macOS's native sed
+    sed -i '' 's/name: kgateway/name: kgateway-{{ .Release.Namespace }}/g' "${ROOT_DIR}/${MANIFESTS_DIR}/role.yaml"
+  fi
 else
+  # For other OSes like Linux
   sed -i 's/name: kgateway/name: kgateway-{{ .Release.Namespace }}/g' "${ROOT_DIR}/${MANIFESTS_DIR}/role.yaml"
 fi
 
@@ -61,6 +67,7 @@ go tool openapi-gen \
   sigs.k8s.io/gateway-api/apis/v1 \
   sigs.k8s.io/gateway-api/apis/v1alpha2 \
   k8s.io/apimachinery/pkg/apis/meta/v1 \
+  k8s.io/api/apps/v1 \
   k8s.io/api/core/v1 \
   k8s.io/apimachinery/pkg/runtime \
   k8s.io/apimachinery/pkg/util/intstr \

@@ -2,10 +2,15 @@
 
 package v1alpha1
 
+import (
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+)
+
 // LoadBalancerMaglevConfigApplyConfiguration represents a declarative configuration of the LoadBalancerMaglevConfig type for use
 // with apply.
 type LoadBalancerMaglevConfigApplyConfiguration struct {
-	UseHostnameForHashing *bool `json:"useHostnameForHashing,omitempty"`
+	UseHostnameForHashing *bool                     `json:"useHostnameForHashing,omitempty"`
+	HashPolicies          []*apiv1alpha1.HashPolicy `json:"hashPolicies,omitempty"`
 }
 
 // LoadBalancerMaglevConfigApplyConfiguration constructs a declarative configuration of the LoadBalancerMaglevConfig type for use with
@@ -19,5 +24,18 @@ func LoadBalancerMaglevConfig() *LoadBalancerMaglevConfigApplyConfiguration {
 // If called multiple times, the UseHostnameForHashing field is set to the value of the last call.
 func (b *LoadBalancerMaglevConfigApplyConfiguration) WithUseHostnameForHashing(value bool) *LoadBalancerMaglevConfigApplyConfiguration {
 	b.UseHostnameForHashing = &value
+	return b
+}
+
+// WithHashPolicies adds the given value to the HashPolicies field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the HashPolicies field.
+func (b *LoadBalancerMaglevConfigApplyConfiguration) WithHashPolicies(values ...**apiv1alpha1.HashPolicy) *LoadBalancerMaglevConfigApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithHashPolicies")
+		}
+		b.HashPolicies = append(b.HashPolicies, *values[i])
+	}
 	return b
 }

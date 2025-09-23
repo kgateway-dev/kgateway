@@ -7,6 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/backend"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/backendconfigpolicy"
@@ -21,6 +22,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/trafficpolicy"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/waypoint"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
 func mergedGw(funcs []sdk.GwTranslatorFactory) sdk.GwTranslatorFactory {
@@ -50,14 +52,14 @@ func MergePlugins(plug ...sdk.Plugin) sdk.Plugin {
 	ret := sdk.Plugin{
 		ContributesPolicies:     make(map[schema.GroupKind]sdk.PolicyPlugin),
 		ContributesBackends:     make(map[schema.GroupKind]sdk.BackendPlugin),
-		ContributesRegistration: make(map[schema.GroupKind]func()),
+		ContributesLeaderAction: make(map[schema.GroupKind]func()),
 	}
 	var funcs []sdk.GwTranslatorFactory
 	var hasSynced []func() bool
 	for _, p := range plug {
 		maps.Copy(ret.ContributesPolicies, p.ContributesPolicies)
 		maps.Copy(ret.ContributesBackends, p.ContributesBackends)
-		maps.Copy(ret.ContributesRegistration, p.ContributesRegistration)
+		maps.Copy(ret.ContributesLeaderAction, p.ContributesLeaderAction)
 		if p.ContributesGwTranslator != nil {
 			funcs = append(funcs, p.ContributesGwTranslator)
 		}
@@ -70,11 +72,17 @@ func MergePlugins(plug ...sdk.Plugin) sdk.Plugin {
 	return ret
 }
 
-func Plugins(ctx context.Context, commoncol *common.CommonCollections, waypointGatewayClassName string) []sdk.Plugin {
+func Plugins(
+	ctx context.Context,
+	commoncol *common.CommonCollections,
+	waypointGatewayClassName string,
+	globalSettings settings.Settings,
+	validator validator.Validator,
+) []sdk.Plugin {
 	return []sdk.Plugin{
 		// Add plugins here
 		backend.NewPlugin(ctx, commoncol),
-		trafficpolicy.NewPlugin(ctx, commoncol),
+		trafficpolicy.NewPlugin(ctx, commoncol, globalSettings.PolicyMerge, validator),
 		directresponse.NewPlugin(ctx, commoncol),
 		kubernetes.NewPlugin(ctx, commoncol),
 		istio.NewPlugin(ctx, commoncol),

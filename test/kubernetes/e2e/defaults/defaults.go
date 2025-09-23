@@ -1,6 +1,7 @@
 package defaults
 
 import (
+	"fmt"
 	"path/filepath"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -12,6 +13,8 @@ import (
 )
 
 var (
+	ControllerLabelSelector = fmt.Sprintf("%s=%s", WellKnownAppLabel, "kgateway")
+
 	CurlPodExecOpt = kubectl.PodExecOptions{
 		Name:      "curl",
 		Namespace: "curl",
@@ -27,7 +30,7 @@ var (
 
 	CurlPodManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "curl_pod.yaml")
 
-	CurlPodLabelSelector = "app.kubernetes.io/name=curl"
+	CurlPodLabelSelector = fmt.Sprintf("%s=%s", WellKnownAppLabel, "curl")
 
 	HttpEchoPod = &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -40,9 +43,16 @@ var (
 
 	HttpbinManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httpbin.yaml")
 
-	HttpbinLabelSelector = "app.kubernetes.io/name=httpbin"
+	HttpbinLabelSelector = fmt.Sprintf("%s=%s", WellKnownAppLabel, "httpbin")
 
 	HttpbinDeployment = &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "httpbin",
+			Namespace: "default",
+		},
+	}
+
+	HttpbinService = &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "httpbin",
 			Namespace: "default",
@@ -99,4 +109,7 @@ Commercial support is available at
 </html>`
 
 	WellKnownAppLabel = "app.kubernetes.io/name"
+
+	KGatewayDeployment = "deploy/kgateway"
+	KGatewayPodLabel   = "kgateway=kgateway"
 )

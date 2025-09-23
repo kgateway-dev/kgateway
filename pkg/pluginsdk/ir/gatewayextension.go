@@ -25,6 +25,11 @@ type GatewayExtension struct {
 	// RateLimit configuration for RateLimit extension type.
 	// This is specifically for global rate limiting that communicates with an external rate limit service.
 	RateLimit *v1alpha1.RateLimitProvider
+
+	// PrecedenceWeight specifies the precedence weight associated with the provider.
+	// A higher weight implies higher priority.
+	// It is used to order provider filters by their weight.
+	PrecedenceWeight int32
 }
 
 var (
@@ -48,6 +53,9 @@ func (e GatewayExtension) Equals(other GatewayExtension) bool {
 		return false
 	}
 	if !reflect.DeepEqual(e.RateLimit, other.RateLimit) {
+		return false
+	}
+	if e.PrecedenceWeight != other.PrecedenceWeight {
 		return false
 	}
 	return true

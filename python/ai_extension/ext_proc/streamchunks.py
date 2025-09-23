@@ -818,8 +818,8 @@ class StreamChunks:
                     webhook_modified,
                     webhook_modified_contents,
                 ) = await call_response_webhook(
-                    webhook_host=webhook.host,
-                    webhook_port=webhook.port,
+                    webhook_host=webhook.endpoint.host,
+                    webhook_port=webhook.endpoint.port,
                     headers=headers,
                     contents=(content_data.content for content_data in contents),
                 )

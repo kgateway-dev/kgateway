@@ -99,27 +99,6 @@ func AppendPortValue(gwPorts []HelmPort, port uint16, name string, gwp *v1alpha1
 	})
 }
 
-// TODO: Removing until autoscaling is re-added.
-// See: https://github.com/solo-io/solo-projects/issues/5948
-// Convert autoscaling values from GatewayParameters into helm values to be used by the deployer.
-// func getAutoscalingValues(autoscaling *v1.Autoscaling) *helmAutoscaling {
-// 	hpaConfig := autoscaling.HorizontalPodAutoscaler
-// 	if hpaConfig == nil {
-// 		return nil
-// 	}
-
-// 	trueVal := true
-// 	autoscalingVals := &helmAutoscaling{
-// 		Enabled: &trueVal,
-// 	}
-// 	autoscalingVals.MinReplicas = hpaConfig.MinReplicas
-// 	autoscalingVals.MaxReplicas = hpaConfig.MaxReplicas
-// 	autoscalingVals.TargetCPUUtilizationPercentage = hpaConfig.TargetCpuUtilizationPercentage
-// 	autoscalingVals.TargetMemoryUtilizationPercentage = hpaConfig.TargetMemoryUtilizationPercentage
-
-// 	return autoscalingVals
-// }
-
 // Convert service values from GatewayParameters into helm values to be used by the deployer.
 func GetServiceValues(svcConfig *v1alpha1.Service) *HelmService {
 	// convert the service type enum to its string representation;
@@ -129,10 +108,11 @@ func GetServiceValues(svcConfig *v1alpha1.Service) *HelmService {
 		svcType = ptr.To(string(*svcConfig.GetType()))
 	}
 	return &HelmService{
-		Type:             svcType,
-		ClusterIP:        svcConfig.GetClusterIP(),
-		ExtraAnnotations: svcConfig.GetExtraAnnotations(),
-		ExtraLabels:      svcConfig.GetExtraLabels(),
+		Type:                  svcType,
+		ClusterIP:             svcConfig.GetClusterIP(),
+		ExtraAnnotations:      svcConfig.GetExtraAnnotations(),
+		ExtraLabels:           svcConfig.GetExtraLabels(),
+		ExternalTrafficPolicy: svcConfig.GetExternalTrafficPolicy(),
 	}
 }
 
@@ -305,7 +285,7 @@ func GetAIExtensionValues(config *v1alpha1.AiExtension) (*HelmAIExtension, error
 	}, nil
 }
 
-func GetAgentGatewayValues(config *v1alpha1.AgentGateway) (*HelmAgentGateway, error) {
+func GetAgentgatewayValues(config *v1alpha1.Agentgateway) (*HelmAgentgateway, error) {
 	if config == nil {
 		return nil, nil
 	}
@@ -315,8 +295,14 @@ func GetAgentGatewayValues(config *v1alpha1.AgentGateway) (*HelmAgentGateway, er
 		logLevel = *config.GetLogLevel()
 	}
 
-	return &HelmAgentGateway{
-		Enabled:  *config.GetEnabled(),
-		LogLevel: logLevel,
+	var customConfigMapName string
+	if config.GetCustomConfigMapName() != nil {
+		customConfigMapName = *config.GetCustomConfigMapName()
+	}
+
+	return &HelmAgentgateway{
+		Enabled:             *config.GetEnabled(),
+		LogLevel:            logLevel,
+		CustomConfigMapName: customConfigMapName,
 	}, nil
 }

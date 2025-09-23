@@ -110,10 +110,10 @@ func PreprocessAIBackend(ctx context.Context, aiBackend *v1alpha1.AIBackend, ir 
 	byType := map[string]struct{}{}
 	if aiBackend.LLM != nil {
 		llmModel = getBackendModel(aiBackend.LLM, byType)
-	} else if aiBackend.MultiPool != nil {
-		for _, priority := range aiBackend.MultiPool.Priorities {
-			for _, pool := range priority.Pool {
-				llmModel = getBackendModel(&pool, byType)
+	} else {
+		for _, group := range aiBackend.PriorityGroups {
+			for _, provider := range group.Providers {
+				llmModel = getBackendModel(&provider, byType)
 			}
 		}
 	}
@@ -183,9 +183,8 @@ func PreprocessAIBackend(ctx context.Context, aiBackend *v1alpha1.AIBackend, ir 
 	return nil
 }
 
-func getBackendModel(llm *v1alpha1.LLMProvider, byType map[string]struct{}) string {
+func getBackendModel(provider *v1alpha1.LLMProvider, byType map[string]struct{}) string {
 	llmModel := ""
-	provider := llm.Provider
 	if provider.OpenAI != nil {
 		byType["openai"] = struct{}{}
 		if provider.OpenAI.Model != nil {

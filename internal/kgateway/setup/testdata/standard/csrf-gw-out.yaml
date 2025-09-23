@@ -40,7 +40,8 @@ listeners:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
-        - name: envoy.filters.http.csrf
+        - disabled: true
+          name: envoy.filters.http.csrf
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.csrf.v3.CsrfPolicy
             filterEnabled:
@@ -80,7 +81,6 @@ routes:
       - prefix: pref
       - suffix: suff
       - safeRegex:
-          googleRe2: {}
           regex: a.b
       filterEnabled:
         defaultValue:

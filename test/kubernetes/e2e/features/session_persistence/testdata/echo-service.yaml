@@ -6,7 +6,7 @@ metadata:
   namespace: default
 spec:
   selector:
-    app: echo
+    app.kubernetes.io/name: echo
   ports:
     - protocol: TCP
       port: 8080
@@ -21,11 +21,11 @@ spec:
   replicas: 3
   selector:
     matchLabels:
-      app: echo
+      app.kubernetes.io/name: echo
   template:
     metadata:
       labels:
-        app: echo
+        app.kubernetes.io/name: echo
     spec:
       containers:
       - name: echo

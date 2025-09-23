@@ -1,34 +1,32 @@
 package translator
 
 import (
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 )
 
-// AgentGatewayTranslator coordinates translation of resources for agent gateway
-type AgentGatewayTranslator struct {
-	commonCols        *common.CommonCollections
-	extensions        extensionsplug.Plugin
-	backendTranslator *AgentGatewayBackendTranslator
+// AgwTranslator coordinates translation of resources for agent gateway
+type AgwTranslator struct {
+	agwCollection     *agwplugins.AgwCollections
+	extensions        sdk.Plugin
+	backendTranslator *AgwBackendTranslator
 }
 
-// NewAgentGatewayTranslator creates a new AgentGatewayTranslator
-func NewAgentGatewayTranslator(
-	commonCols *common.CommonCollections,
-	extensions extensionsplug.Plugin,
-) *AgentGatewayTranslator {
-	return &AgentGatewayTranslator{
-		commonCols: commonCols,
-		extensions: extensions,
+// NewAgwTranslator creates a new AgwTranslator
+func NewAgwTranslator(
+	agwCollection *agwplugins.AgwCollections,
+) *AgwTranslator {
+	return &AgwTranslator{
+		agwCollection: agwCollection,
 	}
 }
 
 // Init initializes the translator components
-func (s *AgentGatewayTranslator) Init() {
-	s.backendTranslator = NewAgentGatewayBackendTranslator(s.extensions)
+func (s *AgwTranslator) Init() {
+	s.backendTranslator = NewAgwBackendTranslator(s.extensions)
 }
 
-// BackendTranslator returns the initialized backend translator on the AgentGatewayTranslator receiver
-func (s *AgentGatewayTranslator) BackendTranslator() *AgentGatewayBackendTranslator {
+// BackendTranslator returns the initialized backend translator on the AgwTranslator receiver
+func (s *AgwTranslator) BackendTranslator() *AgwBackendTranslator {
 	return s.backendTranslator
 }

@@ -30,24 +30,31 @@ import (
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	"github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
-	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
+	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
-var setupLogging = sync.Once{}
+type postStartFunc func(t *testing.T, ctx context.Context, client istiokube.CLIClient) func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []pluginsdk.Plugin
 
-func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Settings, testEnv *envtest.Environment,
-	postStart func(t *testing.T, ctx context.Context, client istiokube.CLIClient) func(ctx context.Context, commoncol *common.CommonCollections) []pluginsdk.Plugin,
+func RunController(
+	t *testing.T,
+	logger *zap.Logger,
+	globalSettings *settings.Settings,
+	testEnv *envtest.Environment,
+	postStart postStartFunc,
 	yamlFilesToApply [][]string,
+	validator validator.Validator,
 	run func(t *testing.T,
 		ctx context.Context,
 		kdbg *krt.DebugHandler,
 		client istiokube.CLIClient,
 		xdsPort int,
-	)) {
+	),
+) {
 	if globalSettings == nil {
 		st, err := settings.BuildSettings()
 		if err != nil {
@@ -55,12 +62,6 @@ func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Se
 		}
 		globalSettings = st
 	}
-	// Always set once instead of each time to avoid races
-	logLevel := globalSettings.LogLevel
-	globalSettings.LogLevel = ""
-	setupLogging.Do(func() {
-		setup.SetupLogging(logLevel)
-	})
 
 	// Enable this if you want api server logs and audit logs.
 	if os.Getenv("DEBUG_APISERVER") == "true" {
@@ -88,7 +89,7 @@ func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Se
 	}
 	istiokube.EnableCrdWatcher(client)
 
-	var extraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []pluginsdk.Plugin
+	var extraPlugins func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []pluginsdk.Plugin
 	if postStart != nil {
 		extraPlugins = postStart(t, ctx, client)
 	}
@@ -100,7 +101,7 @@ func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Se
 		if err != nil {
 			t.Fatalf("failed to apply yaml: %v", err)
 		}
-		err = applyPodStatusFromFile(ctx, client, ns, yamlFile)
+		err = ApplyPodStatusFromFile(ctx, client, ns, yamlFile)
 		if err != nil {
 			t.Fatalf("failed to apply pod status: %v", err)
 		}
@@ -119,6 +120,7 @@ func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Se
 		setup.WithExtraPlugins(extraPlugins),
 		setup.WithKrtDebugger(krtDbg),
 		setup.WithXDSListener(l),
+		setup.WithAgwXDSListener(l),
 		setup.WithControllerManagerOptions(
 			func(ctx context.Context) *ctrl.Options {
 				return &ctrl.Options{
@@ -141,6 +143,7 @@ func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Se
 				return controller.AddToScheme(mgr.GetScheme())
 			},
 		}...),
+		setup.WithValidator(validator),
 	)
 	if err != nil {
 		t.Fatalf("error setting up kgateway %v", err)
@@ -223,11 +226,11 @@ func addApiServerLogs(t *testing.T, testEnv *envtest.Environment) {
 	})
 }
 
-// applyPodStatusFromFile reads a YAML file, looks for Pod resources with a Status set,
+// ApplyPodStatusFromFile reads a YAML file, looks for Pod resources with a Status set,
 // and patches their status into the cluster. Skips any Pods not found or lacking a status.
 // This is needed because the other places that apply yaml will only apply spec.
 // We now have tests (ServiceEntry) that rely on IPs from Pod status instead of EndpointSlice.
-func applyPodStatusFromFile(ctx context.Context, c istiokube.CLIClient, defaultNs, filePath string) error {
+func ApplyPodStatusFromFile(ctx context.Context, c istiokube.CLIClient, defaultNs, filePath string) error {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("reading YAML file %q: %w", filePath, err)

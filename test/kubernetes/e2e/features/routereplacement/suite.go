@@ -2,178 +2,84 @@ package routereplacement
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
-	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/tests/base"
 )
-
-// testConfig maps a manifest to a route replacement mode
-type testConfig struct {
-	manifest string
-	mode     settings.RouteReplacementMode
-}
-
-// testingSuite is a suite of route replacement tests that verify the guardrail behavior
-// for invalid route configurations in both STANDARD and STRICT modes
-type testingSuite struct {
-	suite.Suite
-
-	ctx context.Context
-
-	// testInstallation contains all the metadata/utilities necessary to execute a series of tests
-	// against an installation of kgateway
-	testInstallation *e2e.TestInstallation
-
-	// setupManifests to apply once the suite is set up
-	setupManifests []string
-
-	// testManifests maps test name to its configuration including manifest and required mode
-	testManifests map[string]testConfig
-
-	// original deployment state for cleanup
-	originalDeployment *appsv1.Deployment
-}
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
 
-func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
-	return &testingSuite{
-		ctx:              ctx,
-		testInstallation: testInst,
-		setupManifests: []string{
+var (
+	setup = base.TestCase{
+		Manifests: []string{
 			testdefaults.CurlPodManifest,
 			testdefaults.HttpbinManifest,
 			setupManifest,
 		},
-		testManifests: map[string]testConfig{
-			"TestStrictModeInvalidPolicyReplacement": {
-				manifest: strictModeInvalidPolicyManifest,
-				mode:     settings.RouteReplacementStrict,
-			},
-			"TestStandardModeInvalidPolicyReplacement": {
-				manifest: standardModeInvalidPolicyManifest,
-				mode:     settings.RouteReplacementStandard,
-			},
-			"TestStrictModeInvalidMatcherDropsRoute": {
-				manifest: strictModeInvalidMatcherManifest,
-				mode:     settings.RouteReplacementStrict,
-			},
-			"TestStrictModeInvalidRouteReplacement": {
-				manifest: strictModeInvalidRouteManifest,
-				mode:     settings.RouteReplacementStrict,
-			},
+	}
+
+	testCases = map[string]*base.TestCase{
+		"TestRouteAttachedInvalidPolicy": {
+			Manifests: []string{routeAttachedInvalidPolicyManifest},
 		},
+		"TestInvalidMatcherDropsRoute": {
+			Manifests: []string{invalidMatcherManifest},
+		},
+		"TestInvalidRouteRuleFilter": {
+			Manifests: []string{invalidRouteRuleFilterManifest},
+		},
+		"TestGatewayWideInvalidPolicy": {
+			Manifests: []string{gatewayWideInvalidPolicyManifest},
+		},
+		"TestListenerSpecificInvalidPolicy": {
+			Manifests: []string{listenerSpecificInvalidPolicyManifest},
+		},
+		"TestListenerSpecificIsolation": {
+			Manifests: []string{listenerMergeBlastRadiusManifest},
+		},
+	}
+)
+
+// testingSuite is a suite of route replacement tests that verify the guardrail behavior
+// for invalid route configurations
+type testingSuite struct {
+	*base.BaseTestingSuite
+}
+
+func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+	return &testingSuite{
+		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setup, testCases),
 	}
 }
 
 func (s *testingSuite) SetupSuite() {
-	for _, manifest := range s.setupManifests {
-		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
-		s.Require().NoError(err, "can apply "+manifest)
-	}
-	s.testInstallation.Assertions.EventuallyObjectsExist(
-		s.ctx,
-		proxyDeployment,
-		proxyService,
-		proxyServiceAccount,
-		gateway,
-	)
-
-	// make sure pods are running
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
-		LabelSelector: testdefaults.CurlPodLabelSelector,
-	})
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.HttpbinDeployment.GetNamespace(), metav1.ListOptions{
-		LabelSelector: testdefaults.HttpbinLabelSelector,
-	})
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", proxyObjectMeta.GetName()),
-	})
-
-	// Store original deployment state for cleanup
-	controllerNamespace := s.testInstallation.Metadata.InstallNamespace
-
-	s.originalDeployment = &appsv1.Deployment{}
-	err := s.testInstallation.ClusterContext.Client.Get(s.ctx, client.ObjectKey{
-		Namespace: controllerNamespace,
-		Name:      helpers.DefaultKgatewayDeploymentName,
-	}, s.originalDeployment)
-	s.Require().NoError(err, "can get original controller deployment")
+	s.BaseTestingSuite.SetupSuite()
 }
 
 func (s *testingSuite) TearDownSuite() {
-	for _, manifest := range s.setupManifests {
-		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
-		s.Require().NoError(err, "can delete "+manifest)
-	}
-	s.testInstallation.Assertions.EventuallyObjectsNotExist(
-		s.ctx,
-		proxyDeployment,
-		proxyService,
-		proxyServiceAccount,
-		gateway,
-	)
-
-	s.testInstallation.Assertions.EventuallyPodsNotExist(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
-		LabelSelector: testdefaults.CurlPodLabelSelector,
-	})
-	s.testInstallation.Assertions.EventuallyPodsNotExist(s.ctx, testdefaults.HttpbinDeployment.GetNamespace(), metav1.ListOptions{
-		LabelSelector: testdefaults.HttpbinLabelSelector,
-	})
-	s.testInstallation.Assertions.EventuallyPodsNotExist(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", proxyObjectMeta.GetName()),
-	})
+	s.BaseTestingSuite.TearDownSuite()
 }
 
 func (s *testingSuite) BeforeTest(suiteName, testName string) {
-	config, exists := s.testManifests[testName]
-	if !exists {
-		s.FailNow(fmt.Sprintf("no configuration found for test %s", testName))
-	}
-
-	// Patch deployment with required route replacement mode
-	s.patchDeploymentWithMode(config.mode)
-
-	// Apply test-specific manifest
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, config.manifest)
-	s.Require().NoError(err)
+	s.BaseTestingSuite.BeforeTest(suiteName, testName)
 }
 
-func (s *testingSuite) AfterTest(suiteName, testName string) {
-	config, exists := s.testManifests[testName]
-	if !exists {
-		s.FailNow(fmt.Sprintf("no configuration found for test %s", testName))
-	}
-
-	// Clean up test-specific manifest
-	err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, config.manifest)
-	s.Require().NoError(err)
-
-	// Restore original deployment state
-	s.restoreOriginalDeployment()
-}
-
-// TestStrictModeInvalidPolicyReplacement tests that in STRICT mode,
-// routes with valid configuration but invalid custom policies are replaced with direct responses
-func (s *testingSuite) TestStrictModeInvalidPolicyReplacement() {
+// TestRouteAttachedInvalidPolicy tests that routes with valid configuration
+// but invalid route-attached policies are replaced with direct responses
+func (s *testingSuite) TestRouteAttachedInvalidPolicy() {
 	// Verify route status shows Accepted=False with RouteRuleDropped reason (for replacement)
-	s.testInstallation.Assertions.EventuallyHTTPRouteCondition(
-		s.ctx,
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.Ctx,
 		invalidPolicyRoute.Name,
 		invalidPolicyRoute.Namespace,
 		gwv1.RouteConditionAccepted,
@@ -181,8 +87,8 @@ func (s *testingSuite) TestStrictModeInvalidPolicyReplacement() {
 	)
 
 	// Verify that a route with an invalid policy is replaced with a 500 direct response
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
@@ -198,41 +104,11 @@ func (s *testingSuite) TestStrictModeInvalidPolicyReplacement() {
 	)
 }
 
-// TestStandardModeInvalidPolicyReplacement tests that in STANDARD mode,
-// routes with invalid policies are handled differently than in STRICT mode
-func (s *testingSuite) TestStandardModeInvalidPolicyReplacement() {
-	// Verify route status shows Accepted=True (STANDARD mode accepts despite invalid policy)
-	s.testInstallation.Assertions.EventuallyHTTPRouteCondition(
-		s.ctx,
-		invalidPolicyRoute.Name,
-		invalidPolicyRoute.Namespace,
-		gwv1.RouteConditionAccepted,
-		metav1.ConditionTrue,
-	)
-
-	// Verify that the route works normally (STANDARD mode doesn't replace with 500)
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-			curl.WithHostHeader("invalid-policy.example.com"),
-			curl.WithPort(gatewayPort),
-			curl.WithPath("/headers"),
-			curl.WithHeader("x-test-header", "some-value-with-policy"),
-		},
-		&testmatchers.HttpResponse{
-			StatusCode: http.StatusOK,
-		},
-	)
-}
-
-// TestStrictModeInvalidMatcherDropsRoute tests that in STRICT mode,
-// routes with invalid matchers are dropped entirely
-func (s *testingSuite) TestStrictModeInvalidMatcherDropsRoute() {
+// TestInvalidMatcherDropsRoute tests that routes with invalid matchers are dropped entirely
+func (s *testingSuite) TestInvalidMatcherDropsRoute() {
 	// Verify route status shows Accepted=False with RouteRuleDropped reason
-	s.testInstallation.Assertions.EventuallyHTTPRouteCondition(
-		s.ctx,
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.Ctx,
 		invalidMatcherRoute.Name,
 		invalidMatcherRoute.Namespace,
 		gwv1.RouteConditionAccepted,
@@ -240,8 +116,8 @@ func (s *testingSuite) TestStrictModeInvalidMatcherDropsRoute() {
 	)
 
 	// Verify that the route was dropped (no route should exist, so we should get 404)
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
@@ -256,12 +132,12 @@ func (s *testingSuite) TestStrictModeInvalidMatcherDropsRoute() {
 	)
 }
 
-// TestStrictModeInvalidRouteReplacement tests that in STRICT mode,
-// routes with invalid built-in policies are replaced with direct responses
-func (s *testingSuite) TestStrictModeInvalidRouteReplacement() {
+// TestInvalidRouteRuleFilter tests that routes with invalid built-in route rule filters
+// are replaced with direct responses
+func (s *testingSuite) TestInvalidRouteRuleFilter() {
 	// Verify route status shows Accepted=False with RouteRuleDropped reason (for replacement)
-	s.testInstallation.Assertions.EventuallyHTTPRouteCondition(
-		s.ctx,
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.Ctx,
 		invalidConfigRoute.Name,
 		invalidConfigRoute.Namespace,
 		gwv1.RouteConditionAccepted,
@@ -269,8 +145,8 @@ func (s *testingSuite) TestStrictModeInvalidRouteReplacement() {
 	)
 
 	// Verify that a route with an invalid built-in policy is replaced with a 500 direct response
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
@@ -285,84 +161,206 @@ func (s *testingSuite) TestStrictModeInvalidRouteReplacement() {
 	)
 }
 
-func (s *testingSuite) patchDeploymentWithMode(mode settings.RouteReplacementMode) {
-	controllerNamespace := s.testInstallation.Metadata.InstallNamespace
-
-	currentDeployment := &appsv1.Deployment{}
-	err := s.testInstallation.ClusterContext.Client.Get(s.ctx, client.ObjectKey{
-		Namespace: controllerNamespace,
-		Name:      helpers.DefaultKgatewayDeploymentName,
-	}, currentDeployment)
-	s.Require().NoError(err, "can get current controller deployment")
-
-	modifiedDeployment := currentDeployment.DeepCopy()
-	containerIndex := -1
-	for i, container := range modifiedDeployment.Spec.Template.Spec.Containers {
-		if container.Name == helpers.KgatewayContainerName {
-			containerIndex = i
-			break
-		}
-	}
-	if containerIndex == -1 {
-		s.FailNow("kgateway container not found in deployment")
-	}
-
-	envVar := corev1.EnvVar{
-		Name:  "KGW_ROUTE_REPLACEMENT_MODE",
-		Value: string(mode),
-	}
-
-	var found bool
-	for i, env := range modifiedDeployment.Spec.Template.Spec.Containers[containerIndex].Env {
-		if env.Name == "KGW_ROUTE_REPLACEMENT_MODE" {
-			modifiedDeployment.Spec.Template.Spec.Containers[containerIndex].Env[i] = envVar
-			found = true
-			break
-		}
-	}
-	if !found {
-		modifiedDeployment.Spec.Template.Spec.Containers[containerIndex].Env = append(
-			modifiedDeployment.Spec.Template.Spec.Containers[containerIndex].Env,
-			envVar,
-		)
-	}
-
-	modifiedDeployment.ResourceVersion = ""
-	err = s.testInstallation.ClusterContext.Client.Patch(s.ctx, modifiedDeployment, client.MergeFrom(currentDeployment))
-	s.Require().NoError(err, "can patch controller deployment")
-
-	s.testInstallation.Assertions.EventuallyPodContainerContainsEnvVar(
-		s.ctx,
-		controllerNamespace,
-		metav1.ListOptions{
-			LabelSelector: "app.kubernetes.io/name=kgateway",
-		},
-		helpers.KgatewayContainerName,
-		envVar,
+// TestGatewayWideInvalidPolicy tests that when an invalid policy is attached to the entire gateway,
+// all routes across all listeners are replaced with 500 responses
+func (s *testingSuite) TestGatewayWideInvalidPolicy() {
+	// Verify Gateway shows Accepted=False with GatewayReplaced reason
+	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+		s.Ctx,
+		gatewayWideProxyObjectMeta.Name,
+		gatewayWideProxyObjectMeta.Namespace,
+		gwv1.GatewayConditionAccepted,
+		metav1.ConditionFalse,
 	)
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, controllerNamespace, metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=kgateway",
-	})
+
+	// Verify both routes still show Accepted=True (routes themselves are valid, gateway policy is invalid)
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.Ctx,
+		gatewayWideRoute8080.Name,
+		gatewayWideRoute8080.Namespace,
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionTrue,
+	)
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.Ctx,
+		gatewayWideRoute8081.Name,
+		gatewayWideRoute8081.Namespace,
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionTrue,
+	)
+
+	// Verify that route on port 8080 is replaced with 500 response
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(gatewayWideProxyObjectMeta)),
+			curl.WithHostHeader("gateway-wide-8080.example.com"),
+			curl.WithPort(8080),
+			curl.WithPath("/headers"),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusInternalServerError,
+			Body:       gomega.ContainSubstring(`invalid route configuration detected and replaced with a direct response.`),
+		},
+	)
+
+	// Verify that route on port 8081 is also replaced with 500 response (gateway-wide effect)
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(gatewayWideProxyObjectMeta)),
+			curl.WithHostHeader("gateway-wide-8081.example.com"),
+			curl.WithPort(8081),
+			curl.WithPath("/headers"),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusInternalServerError,
+			Body:       gomega.ContainSubstring(`invalid route configuration detected and replaced with a direct response.`),
+		},
+	)
 }
 
-func (s *testingSuite) restoreOriginalDeployment() {
-	controllerNamespace := s.testInstallation.Metadata.InstallNamespace
+// TestListenerSpecificInvalidPolicy tests that when an invalid policy is attached to a specific listener,
+// only routes on that listener are affected
+func (s *testingSuite) TestListenerSpecificInvalidPolicy() {
+	// Verify Gateway itself remains Accepted=True (listener-specific policy doesn't affect gateway)
+	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+		s.Ctx,
+		listenerSpecificProxyObjectMeta.Name,
+		listenerSpecificProxyObjectMeta.Namespace,
+		gwv1.GatewayConditionAccepted,
+		metav1.ConditionTrue,
+	)
 
-	// Get current deployment state
-	currentDeployment := &appsv1.Deployment{}
-	err := s.testInstallation.ClusterContext.Client.Get(s.ctx, client.ObjectKey{
-		Namespace: controllerNamespace,
-		Name:      helpers.DefaultKgatewayDeploymentName,
-	}, currentDeployment)
-	s.Require().NoError(err, "can get current controller deployment")
+	// Verify both routes still show Accepted=True (routes themselves are valid, listener policy is invalid)
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.Ctx,
+		listenerAffectedRoute.Name,
+		listenerAffectedRoute.Namespace,
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionTrue,
+	)
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.Ctx,
+		listenerUnaffectedRoute.Name,
+		listenerUnaffectedRoute.Namespace,
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionTrue,
+	)
 
-	// Restore original deployment
-	s.originalDeployment.ResourceVersion = ""
-	err = s.testInstallation.ClusterContext.Client.Patch(s.ctx, s.originalDeployment, client.MergeFrom(currentDeployment))
-	s.Require().NoError(err, "can restore original controller deployment")
+	// Verify that route on affected listener is replaced with 500 response
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(listenerSpecificProxyObjectMeta)),
+			curl.WithHostHeader("listener-affected.example.com"),
+			curl.WithPort(8080),
+			curl.WithPath("/headers"),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusInternalServerError,
+			Body:       gomega.ContainSubstring(`invalid route configuration detected and replaced with a direct response.`),
+		},
+	)
 
-	// Wait for pods to be running again
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, controllerNamespace, metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=kgateway",
-	})
+	// Verify that route on unaffected listener continues to work normally
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(listenerSpecificProxyObjectMeta)),
+			curl.WithHostHeader("listener-unaffected.example.com"),
+			curl.WithPort(8081),
+			curl.WithPath("/headers"),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+		},
+	)
+}
+
+// TestListenerSpecificIsolation tests that when listeners share the same port and one has an invalid policy,
+// only the specific listener with the invalid policy is affected (i.e. no collateral damage to other listeners on same port)
+func (s *testingSuite) TestListenerSpecificIsolation() {
+	// Verify Gateway itself remains Accepted=True (listener-specific policy doesn't affect gateway)
+	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+		s.Ctx,
+		listenerIsolationProxyObjectMeta.Name,
+		listenerIsolationProxyObjectMeta.Namespace,
+		gwv1.GatewayConditionAccepted,
+		metav1.ConditionTrue,
+	)
+
+	// Verify all routes still show Accepted=True (routes themselves are valid, listener policy is invalid)
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.Ctx,
+		mergeAffectedRoute.Name,
+		mergeAffectedRoute.Namespace,
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionTrue,
+	)
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.Ctx,
+		mergeUnaffectedRoute.Name,
+		mergeUnaffectedRoute.Namespace,
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionTrue,
+	)
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.Ctx,
+		mergeIsolatedRoute.Name,
+		mergeIsolatedRoute.Namespace,
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionTrue,
+	)
+
+	// Verify that route on affected listener (port 8080) is replaced with 500 response
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(listenerIsolationProxyObjectMeta)),
+			curl.WithHostHeader("affected.example.com"),
+			curl.WithPort(8080),
+			curl.WithPath("/headers"),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusInternalServerError,
+			Body:       gomega.ContainSubstring(`invalid route configuration detected and replaced with a direct response.`),
+		},
+	)
+
+	// Verify that unaffected route on same port (port 8080) continues working normally
+	// (policy is attached specifically to listener, not port-wide)
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(listenerIsolationProxyObjectMeta)),
+			curl.WithHostHeader("unaffected.example.com"),
+			curl.WithPort(8080),
+			curl.WithPath("/headers"),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+		},
+	)
+
+	// Verify that isolated route on different port (port 8081) continues to work normally
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(listenerIsolationProxyObjectMeta)),
+			curl.WithHostHeader("isolated.example.com"),
+			curl.WithPort(8081),
+			curl.WithPath("/headers"),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+		},
+	)
 }

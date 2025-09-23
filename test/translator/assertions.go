@@ -2,14 +2,16 @@ package translator
 
 import (
 	"context"
+	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -18,38 +20,39 @@ import (
 )
 
 // AssertAcceptedPolicyStatus is a helper function to verify policy status conditions
-func AssertAcceptedPolicyStatus(t *testing.T, reportsMap reports.ReportMap, policies []reports.PolicyKey) {
+func AssertAcceptedPolicyStatus(t *testing.T, reportsMap reports.ReportMap, policies []reporter.PolicyKey) {
 	t.Helper()
 	AssertPolicyStatusWithGeneration(t, reportsMap, policies, 0)
 }
 
 // AssertPolicyStatusWithGeneration is a helper function to verify policy status conditions with a specific generation
-func AssertPolicyStatusWithGeneration(t *testing.T, reportsMap reports.ReportMap, policies []reports.PolicyKey, expectedGeneration int64) {
+func AssertPolicyStatusWithGeneration(t *testing.T, reportsMap reports.ReportMap, policies []reporter.PolicyKey, expectedGeneration int64) {
 	t.Helper()
-	var currentStatus gwv1alpha2.PolicyStatus
+	r := require.New(t)
 
-	a := assert.New(t)
+	var currentStatus gwv1alpha2.PolicyStatus
 	for _, policy := range policies {
 		// Validate each policy's status
 		status := reportsMap.BuildPolicyStatus(context.Background(), policy, wellknown.DefaultGatewayControllerName, currentStatus)
-		a.NotNilf(status, "status missing for policy %v", policy)
-		a.Len(status.Ancestors, 1, "ancestor missing for policy %v", policy) // 1 Gateway(ancestor)
+		r.NotNilf(status, "status missing for policy %v", policy)
+		r.Len(status.Ancestors, 1, "ancestor missing for policy %v", policy) // 1 Gateway(ancestor)
 
 		acceptedCondition := meta.FindStatusCondition(status.Ancestors[0].Conditions, string(v1alpha1.PolicyConditionAccepted))
-		a.NotNilf(acceptedCondition, "Accepted condition missing for policy %v", policy)
-		a.Equalf(metav1.ConditionTrue, acceptedCondition.Status, "Accepted condition Status mismatch for policy %v", policy)
-		a.Equalf(string(v1alpha1.PolicyReasonValid), acceptedCondition.Reason, "Accepted condition Reason mismatch for policy %v", policy)
-		a.Equalf(reporter.PolicyAcceptedMsg, acceptedCondition.Message, "Accepted condition Message mismatch for policy %v", policy)
-		a.Equalf(expectedGeneration, acceptedCondition.ObservedGeneration, "Accepted condition ObservedGeneration mismatch for policy %v", policy)
+		r.NotNilf(acceptedCondition, "Accepted condition missing for policy %v", policy)
+		r.Equalf(metav1.ConditionTrue, acceptedCondition.Status, "Accepted condition Status mismatch for policy %v", policy)
+		r.Equalf(string(v1alpha1.PolicyReasonValid), acceptedCondition.Reason, "Accepted condition Reason mismatch for policy %v", policy)
+		r.Equalf(reporter.PolicyAcceptedMsg, acceptedCondition.Message, "Accepted condition Message mismatch for policy %v", policy)
+		r.Equalf(expectedGeneration, acceptedCondition.ObservedGeneration, "Accepted condition ObservedGeneration mismatch for policy %v", policy)
 	}
 }
 
-// AssertRouteInvalidDropped is a helper for asserting that a route has the Accepted=false status condition
-// for dropped rules with variadic expected message substrings.
-func AssertRouteInvalidDropped(t *testing.T, routeName, namespace string, expectedMsgSubstrings ...string) AssertReports {
+// AssertRouteInvalid is a helper for asserting that a route has the Accepted=false status condition
+// with the specified reason and variadic expected message substrings.
+func AssertRouteInvalid(t *testing.T, routeName, namespace, expectedReason string, expectedMsgSubstrings ...string) AssertReports {
 	return func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
 		t.Helper()
-		a := assert.New(t)
+		r := require.New(t)
+
 		route := &gwv1.HTTPRoute{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      routeName,
@@ -57,23 +60,25 @@ func AssertRouteInvalidDropped(t *testing.T, routeName, namespace string, expect
 			},
 		}
 		routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
-		a.NotNil(routeStatus, "Route status should not be nil")
-		a.Len(routeStatus.Parents, 1, "Route should have one parent")
+		r.NotNil(routeStatus, "Route status should not be nil")
+		r.Len(routeStatus.Parents, 1, "Route should have one parent")
 
 		resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
-		a.NotNil(resolvedRefs, "ResolvedRefs condition should not be nil")
-		a.Equal(metav1.ConditionTrue, resolvedRefs.Status, "ResolvedRefs Status mismatch")
-		a.Equal(string(gwv1.RouteReasonResolvedRefs), resolvedRefs.Reason, "ResolvedRefs Reason mismatch")
-		a.NotEmpty(resolvedRefs.Message, "ResolvedRefs Message should not be empty")
+		r.NotNil(resolvedRefs, "ResolvedRefs condition should not be nil")
+		r.Equal(metav1.ConditionTrue, resolvedRefs.Status, "ResolvedRefs Status mismatch")
+		r.Equal(string(gwv1.RouteReasonResolvedRefs), resolvedRefs.Reason, "ResolvedRefs Reason mismatch")
+		r.NotEmpty(resolvedRefs.Message, "ResolvedRefs Message should not be empty")
 
 		accepted := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
-		a.NotNil(accepted, "Accepted condition should not be nil")
-		a.Equal(metav1.ConditionFalse, accepted.Status, "Accepted Status mismatch")
-		a.Equal(string(reporter.RouteRuleDroppedReason), accepted.Reason, "Accepted Reason mismatch")
+		r.NotNil(accepted, "Accepted condition should not be nil")
+		r.Equal(metav1.ConditionFalse, accepted.Status, "Accepted Status mismatch")
+		r.Equal(expectedReason, accepted.Reason, "Accepted Reason mismatch")
 		for _, msgSubstring := range expectedMsgSubstrings {
-			a.Contains(accepted.Message, msgSubstring, "Accepted Message mismatch")
+			r.Equal(1, strings.Count(accepted.Message, msgSubstring),
+				"Expected message substring %q to appear exactly once in Accepted Message: %q",
+				msgSubstring, accepted.Message)
 		}
-		a.Equal(int64(0), accepted.ObservedGeneration, "Accepted ObservedGeneration mismatch")
+		r.Equal(int64(0), accepted.ObservedGeneration, "Accepted ObservedGeneration mismatch")
 	}
 }
 
@@ -82,23 +87,27 @@ func AssertRouteInvalidDropped(t *testing.T, routeName, namespace string, expect
 func AssertPolicyNotAccepted(t *testing.T, policyName, routeName string) AssertReports {
 	return func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
 		t.Helper()
-		a := assert.New(t)
+		r := require.New(t)
 
-		policy := reports.PolicyKey{
+		policy := reporter.PolicyKey{
 			Group:     "gateway.kgateway.dev",
 			Kind:      "TrafficPolicy",
 			Namespace: "gwtest",
 			Name:      policyName,
 		}
 		policyStatus := reportsMap.BuildPolicyStatus(context.Background(), policy, wellknown.DefaultGatewayControllerName, gwv1alpha2.PolicyStatus{})
-		a.NotNil(policyStatus, "Policy status should not be nil")
-		a.Len(policyStatus.Ancestors, 1, "Policy should have one ancestor")
+		r.NotNil(policyStatus, "Policy status should not be nil")
+		r.Len(policyStatus.Ancestors, 1, "Policy should have one ancestor")
 
 		acceptedCondition := meta.FindStatusCondition(policyStatus.Ancestors[0].Conditions, string(v1alpha1.PolicyConditionAccepted))
-		a.NotNil(acceptedCondition, "Accepted condition should not be nil")
-		a.Equal(metav1.ConditionFalse, acceptedCondition.Status, "Policy should have Accepted=false")
-		a.Equal(string(v1alpha1.PolicyReasonInvalid), acceptedCondition.Reason, "Policy should have Invalid reason")
-		a.Contains(acceptedCondition.Message, "invalid xds configuration", "Policy message should contain validation error")
+		r.NotNil(acceptedCondition, "Accepted condition should not be nil")
+		r.Equal(metav1.ConditionFalse, acceptedCondition.Status, "Policy should have Accepted=false")
+		r.Equal(string(v1alpha1.PolicyReasonInvalid), acceptedCondition.Reason, "Policy should have Invalid reason")
+		r.Contains(acceptedCondition.Message, "invalid xds configuration", "Policy message should contain validation error")
+
+		if routeName == "" {
+			return
+		}
 
 		route := &gwv1.HTTPRoute{
 			ObjectMeta: metav1.ObjectMeta{
@@ -107,12 +116,32 @@ func AssertPolicyNotAccepted(t *testing.T, policyName, routeName string) AssertR
 			},
 		}
 		routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
-		a.NotNil(routeStatus, "Route status should not be nil")
-		a.Len(routeStatus.Parents, 1, "Route should have one parent")
+		r.NotNil(routeStatus, "Route status should not be nil")
+		r.Len(routeStatus.Parents, 1, "Route should have one parent")
 
 		accepted := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
-		a.NotNil(accepted, "Accepted condition should not be nil")
-		a.Equal(metav1.ConditionTrue, accepted.Status, "Route should have Accepted=true")
-		a.Equal(string(gwv1.RouteReasonAccepted), accepted.Reason, "Route should have Accepted reason")
+		r.NotNil(accepted, "Accepted condition should not be nil")
+		r.Equal(metav1.ConditionTrue, accepted.Status, "Route should have Accepted=true")
+		r.Equal(string(gwv1.RouteReasonAccepted), accepted.Reason, "Route should have Accepted reason")
 	}
+}
+
+// AssertListenerSetCondition is a helper function to verify ListenerSet status conditions
+func AssertListenerSetCondition(
+	t *testing.T,
+	reportsMap reports.ReportMap,
+	ls gwxv1a1.XListenerSet,
+	c metav1.Condition,
+) {
+	t.Helper()
+	r := require.New(t)
+
+	status := reportsMap.BuildListenerSetStatus(context.Background(), ls)
+	r.NotNilf(status, "status missing for ListenerSet %v", ls)
+
+	acceptedCondition := meta.FindStatusCondition(status.Conditions, string(gwxv1a1.ListenerSetConditionAccepted))
+	r.NotNilf(acceptedCondition, "Accepted condition missing for ListenerSet %v", ls)
+	r.Equalf(c.Status, acceptedCondition.Status, "Accepted condition Status mismatch for ListenerSet %v", ls)
+	r.Equalf(c.Reason, acceptedCondition.Reason, "Accepted condition Reason mismatch for ListenerSet %v", ls)
+	r.Equalf(c.Message, acceptedCondition.Message, "Accepted condition Message mismatch for ListenerSet %v", ls)
 }

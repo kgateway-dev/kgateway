@@ -18,16 +18,16 @@ import (
 func TestPolicyStatusReport(t *testing.T) {
 	tests := []struct {
 		name            string
-		fakeTranslation func(a *assert.Assertions, reporter Reporter)
-		key             PolicyKey
+		fakeTranslation func(a *assert.Assertions, reporter reporter.Reporter)
+		key             reporter.PolicyKey
 		currentStatus   gwv1alpha2.PolicyStatus
 		controller      string
 		wantStatus      *gwv1alpha2.PolicyStatus
 	}{
 		{
 			name: "empty status on current object and no status updates during translation",
-			fakeTranslation: func(a *assert.Assertions, statusReporter Reporter) {
-				policyReport := statusReporter.Policy(PolicyKey{
+			fakeTranslation: func(a *assert.Assertions, statusReporter reporter.Reporter) {
+				policyReport := statusReporter.Policy(reporter.PolicyKey{
 					Group:     "example.com",
 					Kind:      "Policy",
 					Namespace: "default",
@@ -49,7 +49,7 @@ func TestPolicyStatusReport(t *testing.T) {
 					Name:      gwv1.ObjectName("gw-2"),
 				})
 			},
-			key: PolicyKey{
+			key: reporter.PolicyKey{
 				Group:     "example.com",
 				Kind:      "Policy",
 				Namespace: "default",
@@ -109,8 +109,8 @@ func TestPolicyStatusReport(t *testing.T) {
 		},
 		{
 			name: "status on existing object and status updates during translation",
-			fakeTranslation: func(a *assert.Assertions, statusReporter Reporter) {
-				policyReport := statusReporter.Policy(PolicyKey{
+			fakeTranslation: func(a *assert.Assertions, statusReporter reporter.Reporter) {
+				policyReport := statusReporter.Policy(reporter.PolicyKey{
 					Group:     "example.com",
 					Kind:      "Policy",
 					Namespace: "default",
@@ -147,7 +147,7 @@ func TestPolicyStatusReport(t *testing.T) {
 					Reason: string(v1alpha1.PolicyReasonInvalid),
 				})
 			},
-			key: PolicyKey{
+			key: reporter.PolicyKey{
 				Group:     "example.com",
 				Kind:      "Policy",
 				Namespace: "default",
@@ -230,8 +230,8 @@ func TestPolicyStatusReport(t *testing.T) {
 		},
 		{
 			name: "preserve ancestor status belonging to external controllers",
-			fakeTranslation: func(a *assert.Assertions, statusReporter Reporter) {
-				policyReport := statusReporter.Policy(PolicyKey{
+			fakeTranslation: func(a *assert.Assertions, statusReporter reporter.Reporter) {
+				policyReport := statusReporter.Policy(reporter.PolicyKey{
 					Group:     "example.com",
 					Kind:      "Policy",
 					Namespace: "default",
@@ -261,7 +261,7 @@ func TestPolicyStatusReport(t *testing.T) {
 					Reason: string(v1alpha1.PolicyReasonInvalid),
 				})
 			},
-			key: PolicyKey{
+			key: reporter.PolicyKey{
 				Group:     "example.com",
 				Kind:      "Policy",
 				Namespace: "default",
@@ -404,7 +404,6 @@ func TestPolicyStatusReport(t *testing.T) {
 			}
 
 			gotStatus := rm.BuildPolicyStatus(t.Context(), tc.key, tc.controller, tc.currentStatus)
-
 			diff := cmp.Diff(tc.wantStatus, gotStatus, cmpopts.IgnoreFields(metav1.Condition{}, "LastTransitionTime"))
 			a.Empty(diff)
 		})

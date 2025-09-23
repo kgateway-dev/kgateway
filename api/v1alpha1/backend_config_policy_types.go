@@ -5,10 +5,14 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwv1alpha3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 )
 
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=backendconfigpolicies,verbs=get;list;watch
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=backendconfigpolicies/status,verbs=get;update;patch
+
+// +kubebuilder:printcolumn:name="Accepted",type=string,JSONPath=".status.ancestors[*].conditions[?(@.type=='Accepted')].status",description="Backend config policy acceptance status"
+// +kubebuilder:printcolumn:name="Attached",type=string,JSONPath=".status.ancestors[*].conditions[?(@.type=='Attached')].status",description="Backend config policy attachment status"
 
 // +genclient
 // +kubebuilder:object:root=true
@@ -86,6 +90,10 @@ type BackendConfigPolicySpec struct {
 	// HealthCheck contains the options necessary to configure the health check.
 	// +optional
 	HealthCheck *HealthCheck `json:"healthCheck,omitempty"`
+
+	// OutlierDetection contains the options necessary to configure passive health checking.
+	// +optional
+	OutlierDetection *OutlierDetection `json:"outlierDetection,omitempty"`
 }
 
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-http1protocoloptions) for more details.
@@ -186,7 +194,7 @@ type TCPKeepalive struct {
 	KeepAliveInterval *metav1.Duration `json:"keepAliveInterval,omitempty"`
 }
 
-// +kubebuilder:validation:ExactlyOneOf=secretRef;tlsFiles;insecureSkipVerify
+// +kubebuilder:validation:ExactlyOneOf=secretRef;files;insecureSkipVerify;wellKnownCACertificates
 type TLS struct {
 	// Reference to the TLS secret containing the certificate, key, and optionally the root CA.
 	// +optional
@@ -194,7 +202,13 @@ type TLS struct {
 
 	// File paths to certificates local to the proxy.
 	// +optional
-	TLSFiles *TLSFiles `json:"tlsFiles,omitempty"`
+	Files *TLSFiles `json:"files,omitempty"`
+
+	// WellKnownCACertificates specifies whether to use a well-known set of CA
+	// certificates for validating the backend's certificate chain. Currently,
+	// only the system certificate pool is supported via SDS.
+	// +optional
+	WellKnownCACertificates *gwv1alpha3.WellKnownCACertificatesType `json:"wellKnownCACertificates,omitempty"`
 
 	// InsecureSkipVerify originates TLS but skips verification of the backend's certificate.
 	// WARNING: This is an insecure option that should only be used if the risks are understood.
@@ -209,12 +223,12 @@ type TLS struct {
 	// Verify that the Subject Alternative Name in the peer certificate is one of the specified values.
 	// note that a root_ca must be provided if this option is used.
 	// +optional
-	VerifySubjectAltName []string `json:"verifySubjectAltName,omitempty"`
+	VerifySubjectAltNames []string `json:"verifySubjectAltNames,omitempty"`
 
 	// General TLS parameters. See the [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/common.proto#extensions-transport-sockets-tls-v3-tlsparameters)
 	// for more information on the meaning of these values.
 	// +optional
-	Parameters *Parameters `json:"parameters,omitempty"`
+	Parameters *TLSParameters `json:"parameters,omitempty"`
 
 	// Set Application Level Protocol Negotiation
 	// If empty, defaults to ["h2", "http/1.1"].
@@ -245,14 +259,14 @@ const (
 	TLSVersion1_3  TLSVersion = "1.3"
 )
 
-type Parameters struct {
+type TLSParameters struct {
 	// Minimum TLS version.
 	// +optional
-	TLSMinVersion *TLSVersion `json:"tlsMinVersion,omitempty"`
+	MinVersion *TLSVersion `json:"minVersion,omitempty"`
 
 	// Maximum TLS version.
 	// +optional
-	TLSMaxVersion *TLSVersion `json:"tlsMaxVersion,omitempty"`
+	MaxVersion *TLSVersion `json:"maxVersion,omitempty"`
 
 	// +optional
 	CipherSuites []string `json:"cipherSuites,omitempty"`
@@ -276,7 +290,7 @@ type TLSFiles struct {
 	RootCA *string `json:"rootCA,omitempty"`
 }
 
-// +kubebuilder:validation:AtMostOneOf=leastRequest;roundRobin;ringHash;maglev;random
+// +kubebuilder:validation:ExactlyOneOf=leastRequest;roundRobin;ringHash;maglev;random
 type LoadBalancer struct {
 	// HealthyPanicThreshold configures envoy's panic threshold percentage between 0-100. Once the number of non-healthy hosts
 	// reaches this percentage, envoy disregards health information.
@@ -368,6 +382,12 @@ type LoadBalancerRingHashConfig struct {
 	// Defaults to false.
 	// +optional
 	UseHostnameForHashing *bool `json:"useHostnameForHashing,omitempty"`
+
+	// HashPolicies specifies the hash policies for hashing load balancers (RingHash, Maglev).
+	// +optional
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=16
+	HashPolicies []*HashPolicy `json:"hashPolicies,omitempty"`
 }
 
 type LoadBalancerMaglevConfig struct {
@@ -375,37 +395,45 @@ type LoadBalancerMaglevConfig struct {
 	// Defaults to false.
 	// +optional
 	UseHostnameForHashing *bool `json:"useHostnameForHashing,omitempty"`
+
+	// HashPolicies specifies the hash policies for hashing load balancers (RingHash, Maglev).
+	// +optional
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=16
+	HashPolicies []*HashPolicy `json:"hashPolicies,omitempty"`
 }
 
-type LoadBalancerRandomConfig struct{}
-type SlowStart struct {
-	// Represents the size of slow start window.
-	// If set, the newly created host remains in slow start mode starting from its creation time
-	// for the duration of slow start window.
-	// +optional
-	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
-	Window *metav1.Duration `json:"window,omitempty"`
+type (
+	LoadBalancerRandomConfig struct{}
+	SlowStart                struct {
+		// Represents the size of slow start window.
+		// If set, the newly created host remains in slow start mode starting from its creation time
+		// for the duration of slow start window.
+		// +optional
+		// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+		Window *metav1.Duration `json:"window,omitempty"`
 
-	// This parameter controls the speed of traffic increase over the slow start window. Defaults to 1.0,
-	// so that endpoint would get linearly increasing amount of traffic.
-	// When increasing the value for this parameter, the speed of traffic ramp-up increases non-linearly.
-	// The value of aggression parameter should be greater than 0.0.
-	// By tuning the parameter, is possible to achieve polynomial or exponential shape of ramp-up curve.
-	//
-	// During slow start window, effective weight of an endpoint would be scaled with time factor and aggression:
-	// `new_weight = weight * max(min_weight_percent, time_factor ^ (1 / aggression))`,
-	// where `time_factor=(time_since_start_seconds / slow_start_time_seconds)`.
-	//
-	// As time progresses, more and more traffic would be sent to endpoint, which is in slow start window.
-	// Once host exits slow start, time_factor and aggression no longer affect its weight.
-	// +optional
-	// +kubebuilder:validation:XValidation:rule="(self.matches('^-?(?:[0-9]+(?:\\\\.[0-9]*)?|\\\\.[0-9]+)$') && double(self) > 0.0)",message="Aggression, if specified, must be a string representing a number greater than 0.0"
-	Aggression *string `json:"aggression,omitempty"`
+		// This parameter controls the speed of traffic increase over the slow start window. Defaults to 1.0,
+		// so that endpoint would get linearly increasing amount of traffic.
+		// When increasing the value for this parameter, the speed of traffic ramp-up increases non-linearly.
+		// The value of aggression parameter should be greater than 0.0.
+		// By tuning the parameter, is possible to achieve polynomial or exponential shape of ramp-up curve.
+		//
+		// During slow start window, effective weight of an endpoint would be scaled with time factor and aggression:
+		// `new_weight = weight * max(min_weight_percent, time_factor ^ (1 / aggression))`,
+		// where `time_factor=(time_since_start_seconds / slow_start_time_seconds)`.
+		//
+		// As time progresses, more and more traffic would be sent to endpoint, which is in slow start window.
+		// Once host exits slow start, time_factor and aggression no longer affect its weight.
+		// +optional
+		// +kubebuilder:validation:XValidation:rule="(self.matches('^-?(?:[0-9]+(?:\\\\.[0-9]*)?|\\\\.[0-9]+)$') && double(self) > 0.0)",message="Aggression, if specified, must be a string representing a number greater than 0.0"
+		Aggression *string `json:"aggression,omitempty"`
 
-	// Minimum weight percentage of an endpoint during slow start.
-	// +optional
-	MinWeightPercent *uint32 `json:"minWeightPercent,omitempty"`
-}
+		// Minimum weight percentage of an endpoint during slow start.
+		// +optional
+		MinWeightPercent *uint32 `json:"minWeightPercent,omitempty"`
+	}
+)
 
 type LocalityType string
 
@@ -482,3 +510,102 @@ type HealthCheckGrpc struct {
 	// +optional
 	Authority *string `json:"authority,omitempty"`
 }
+
+// OutlierDetection contains the options to configure passive health checks.
+// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/outlier#outlier-detection) for more details.
+// +optional
+type OutlierDetection struct {
+	// The number of consecutive server-side error responses (for HTTP traffic,
+	// 5xx responses; for TCP traffic, connection failures; etc.) before an
+	// ejection occurs. Defaults to 5. If this is zero, consecutive 5xx passive
+	// health checks will be disabled. In the future, other types of passive
+	// health checking might be added, but none will be enabled by default.
+	// +optional
+	// +kubebuilder:default=5
+	Consecutive5xx *uint32 `json:"consecutive5xx,omitempty"`
+
+	// The time interval between ejection analysis sweeps. This can result in
+	// both new ejections as well as hosts being returned to service. Defaults
+	// to 10s.
+	// +optional
+	// +kubebuilder:default="10s"
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	Interval *metav1.Duration `json:"interval,omitempty"`
+
+	// The base time that a host is ejected for. The real time is equal to the
+	// base time multiplied by the number of times the host has been ejected.
+	// Defaults to 30s.
+	// +optional
+	// +kubebuilder:default="30s"
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	BaseEjectionTime *metav1.Duration `json:"baseEjectionTime,omitempty"`
+
+	// The maximum % of an upstream cluster that can be ejected due to outlier
+	// detection. Defaults to 10%.
+	// +optional
+	// +kubebuilder:default=10
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	MaxEjectionPercent *uint32 `json:"maxEjectionPercent,omitempty"`
+}
+
+// +kubebuilder:validation:ExactlyOneOf=header;cookie;sourceIP
+type HashPolicy struct {
+	// Header specifies a header's value as a component of the hash key.
+	// +optional
+	Header *Header `json:"header,omitempty"`
+
+	// Cookie specifies a given cookie as a component of the hash key.
+	// +optional
+	Cookie *Cookie `json:"cookie,omitempty"`
+
+	// SourceIP specifies whether to use the request's source IP address as a component of the hash key.
+	// +optional
+	SourceIP *SourceIP `json:"sourceIP,omitempty"`
+
+	// Terminal, if set, and a hash key is available after evaluating this policy, will cause Envoy to skip the subsequent policies and
+	// use the key as it is.
+	// This is useful for defining "fallback" policies and limiting the time Envoy spends generating hash keys.
+	// +optional
+	Terminal *bool `json:"terminal,omitempty"`
+}
+
+type Header struct {
+	// Name is the name of the header to use as a component of the hash key.
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name"`
+}
+
+type Cookie struct {
+	// Name of the cookie.
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name"`
+
+	// Path is the name of the path for the cookie.
+	// +optional
+	Path *string `json:"path,omitempty"`
+
+	// TTL specifies the time to live of the cookie.
+	// If specified, a cookie with the TTL will be generated if the cookie is not present.
+	// If the TTL is present and zero, the generated cookie will be a session cookie.
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	TTL *metav1.Duration `json:"ttl,omitempty"`
+
+	// Secure specifies whether the cookie is secure.
+	// If true, the cookie will only be sent over HTTPS.
+	// +optional
+	Secure *bool `json:"secure,omitempty"`
+
+	// HttpOnly specifies whether the cookie is HTTP only, i.e. not accessible to JavaScript.
+	// +optional
+	HttpOnly *bool `json:"httpOnly,omitempty"`
+
+	// SameSite controls cross-site sending of cookies.
+	// Supported values are Strict, Lax, and None.
+	// +optional
+	// +kubebuilder:validation:Enum=Strict;Lax;None
+	SameSite *string `json:"sameSite,omitempty"`
+}
+
+type SourceIP struct{}

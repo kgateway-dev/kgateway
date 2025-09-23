@@ -13,11 +13,11 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/waypoint/waypointquery"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 )
 
 var VirtualWaypointGK = schema.GroupKind{
@@ -29,7 +29,7 @@ func NewPlugin(
 	ctx context.Context,
 	commonCols *common.CommonCollections,
 	waypointGatewayClassName string,
-) extensionsplug.Plugin {
+) sdk.Plugin {
 	queries := query.NewData(
 		commonCols,
 	)
@@ -37,8 +37,8 @@ func NewPlugin(
 		commonCols,
 		queries,
 	)
-	plugin := extensionsplug.Plugin{
-		ContributesGwTranslator: func(gw *gwv1.Gateway) extensionsplug.KGwTranslator {
+	plugin := sdk.Plugin{
+		ContributesGwTranslator: func(gw *gwv1.Gateway) sdk.KGwTranslator {
 			if string(gw.Spec.GatewayClassName) != waypointGatewayClassName {
 				return nil
 			}
@@ -61,7 +61,7 @@ func NewPlugin(
 		waypointGatewayClassName: waypointGatewayClassName,
 	}
 	if commonCols.Settings.IngressUseWaypoints {
-		plugin.ContributesPolicies = map[schema.GroupKind]extensionsplug.PolicyPlugin{
+		plugin.ContributesPolicies = map[schema.GroupKind]sdk.PolicyPlugin{
 			// TODO: Currently endpoints are still being added to an EDS CLA out of this plugin.
 			// Contributing a PerClientProcessEndpoints function can return an empty CLA but
 			// it is still redundant.

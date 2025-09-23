@@ -1,0 +1,37 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: super-gateway
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: HTTPListenerPolicy
+metadata:
+  name: accesslog
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: super-gateway
+  accessLog:
+    - fileSink:
+        path: /dev/stdout
+        jsonFormat:
+          start_time: "%START_TIME%"
+          method: "%REQ(X-ENVOY-ORIGINAL-METHOD?:METHOD)%"
+          path: "%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%"
+          protocol: "%PROTOCOL%"
+          response_code: "%RESPONSE_CODE%"
+          response_flags: "%RESPONSE_FLAGS%"
+          total_duration: "%DURATION%"
+          resp_upstream_service_time: "%RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)%"
+          request_id: "%REQ(X-REQUEST-ID)%"
+          metatransform: "%DYNAMIC_METADATA(io.solo.transformation)%"

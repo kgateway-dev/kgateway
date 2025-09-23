@@ -265,7 +265,7 @@ func applyDefaults(
 		// When field.Value is a primitive type, deserialization from byte array works normally, tmpl value is: tmpl = string(marshalled)
 		// When field.Value is an object/array, deserialization treats it as a plain string, tmpl value should use the original value: tmpl = field.Value
 		var tmpl string
-		if field.Override != nil && *field.Override {
+		if field.Override {
 			if hasJsonPrefix(value) {
 				tmpl = field.Value
 			} else {
@@ -375,7 +375,9 @@ func applyPromptGuard(pg *v1alpha1.AIPromptGuard, extProcRouteSettings *envoy_ex
 		return nil
 	}
 	if req := pg.Request; req != nil {
-		if mod := req.Moderation; mod != nil {
+		// Work on a deep copy to avoid mutating the CRD object in memory since agentgateway will need it as well
+		reqCopy := req.DeepCopy()
+		if mod := reqCopy.Moderation; mod != nil {
 			if mod.OpenAIModeration != nil {
 				token, err := pluginutils.GetAuthToken(mod.OpenAIModeration.AuthToken, secret)
 				if err != nil {
@@ -388,9 +390,9 @@ func applyPromptGuard(pg *v1alpha1.AIPromptGuard, extProcRouteSettings *envoy_ex
 			} else {
 				return fmt.Errorf("OpenAI moderation config must be set for moderation prompt guard")
 			}
-			pg.Request.Moderation = mod
+			reqCopy.Moderation = mod
 		}
-		bin, err := json.Marshal(req)
+		bin, err := json.Marshal(reqCopy)
 		if err != nil {
 			return err
 		}
@@ -402,7 +404,7 @@ func applyPromptGuard(pg *v1alpha1.AIPromptGuard, extProcRouteSettings *envoy_ex
 		)
 		// Use this in the server to key per-route-config
 		// Better to do it here because we have generated functions
-		reqHash, _ := hashUnique(req, nil)
+		reqHash, _ := hashUnique(reqCopy, nil)
 		extProcRouteSettings.GetOverrides().GrpcInitialMetadata = append(extProcRouteSettings.GetOverrides().GetGrpcInitialMetadata(),
 			&envoycorev3.HeaderValue{
 				Key:   "x-req-guardrails-config-hash",
@@ -491,7 +493,8 @@ func aiSecretForSpec(
 	if policyCR.Spec.AI == nil ||
 		policyCR.Spec.AI.PromptGuard == nil ||
 		policyCR.Spec.AI.PromptGuard.Request == nil ||
-		policyCR.Spec.AI.PromptGuard.Request.Moderation == nil {
+		policyCR.Spec.AI.PromptGuard.Request.Moderation == nil ||
+		policyCR.Spec.AI.PromptGuard.Request.Moderation.OpenAIModeration == nil {
 		return nil, nil
 	}
 

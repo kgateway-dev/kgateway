@@ -21,7 +21,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 var logger = logging.New("pluginsdk/ir")
@@ -110,7 +110,8 @@ type RouteContext struct {
 }
 
 type HcmContext struct {
-	Policy PolicyIR
+	Policy  PolicyIR
+	Gateway GatewayIR
 }
 
 // ProxyTranslationPass represents a single translation pass for a gateway using envoy. It can hold state
@@ -187,43 +188,43 @@ type ProxyTranslationPass interface {
 	ResourcesToAdd(ctx context.Context) Resources
 }
 
-type AgentGatewayRouteContext struct {
+type AgentgatewayRouteContext struct {
 	Rule *gwv1.HTTPRouteRule
 }
 
-type AgentGatewayTranslationBackendContext struct {
+type AgentgatewayTranslationBackendContext struct {
 	Backend        *BackendObjectIR
 	GatewayContext GatewayContext
 }
 
-type AgentGatewayTranslationPass interface {
+type AgentgatewayTranslationPass interface {
 	// ApplyForRoute processes route-level configuration
-	ApplyForRoute(pCtx *AgentGatewayRouteContext, out *api.Route) error
+	ApplyForRoute(pCtx *AgentgatewayRouteContext, out *api.Route) error
 
 	// ApplyForBackend processes backend-level configuration for each backend referenced in routes
-	ApplyForBackend(pCtx *AgentGatewayTranslationBackendContext, out *api.Backend) error
+	ApplyForBackend(pCtx *AgentgatewayTranslationBackendContext, out *api.Backend) error
 
 	// ApplyForRouteBackend processes route-specific backend configuration
-	ApplyForRouteBackend(policy PolicyIR, pCtx *AgentGatewayTranslationBackendContext) error
+	ApplyForRouteBackend(policy PolicyIR, pCtx *AgentgatewayTranslationBackendContext) error
 }
 
 type UnimplementedProxyTranslationPass struct{}
 
 var _ ProxyTranslationPass = UnimplementedProxyTranslationPass{}
 
-type UnimplementedAgentGatewayTranslationPass struct{}
+type UnimplementedAgentgatewayTranslationPass struct{}
 
-var _ AgentGatewayTranslationPass = UnimplementedAgentGatewayTranslationPass{}
+var _ AgentgatewayTranslationPass = UnimplementedAgentgatewayTranslationPass{}
 
-func (s UnimplementedAgentGatewayTranslationPass) ApplyForRoute(pCtx *AgentGatewayRouteContext, out *api.Route) error {
+func (s UnimplementedAgentgatewayTranslationPass) ApplyForRoute(pCtx *AgentgatewayRouteContext, out *api.Route) error {
 	return nil
 }
 
-func (s UnimplementedAgentGatewayTranslationPass) ApplyForBackend(pCtx *AgentGatewayTranslationBackendContext, out *api.Backend) error {
+func (s UnimplementedAgentgatewayTranslationPass) ApplyForBackend(pCtx *AgentgatewayTranslationBackendContext, out *api.Backend) error {
 	return nil
 }
 
-func (s UnimplementedAgentGatewayTranslationPass) ApplyForRouteBackend(policy PolicyIR, pCtx *AgentGatewayTranslationBackendContext) error {
+func (s UnimplementedAgentgatewayTranslationPass) ApplyForRouteBackend(policy PolicyIR, pCtx *AgentgatewayTranslationBackendContext) error {
 	return nil
 }
 
@@ -294,6 +295,11 @@ type PolicyWrapper struct {
 
 	// Where to attach the policy. This usually comes from the policy CRD.
 	TargetRefs []PolicyRef
+
+	// PrecedenceWeight specifies the weight of the policy as an integer value (negative values are allowed).
+	// Policies with higher weight implies higher priority, and are evaluated before policies with lower weight.
+	// By default, policies have a weight of 0.
+	PrecedenceWeight int32
 }
 
 func (c PolicyWrapper) ResourceName() string {
@@ -331,14 +337,14 @@ func (c PolicyWrapper) Equals(in PolicyWrapper) bool {
 		return false
 	}
 
-	return versionEquals(c.Policy, in.Policy) && c.PolicyIR.Equals(in.PolicyIR)
+	return versionEquals(c.Policy, in.Policy) && c.PolicyIR.Equals(in.PolicyIR) && c.PrecedenceWeight == in.PrecedenceWeight
 }
 
 var ErrNotAttachable = fmt.Errorf("policy is not attachable to this object")
 
 type PolicyRun interface {
 	// Allocate state for single listener+rotue translation pass.
-	NewGatewayTranslationPass(ctx context.Context, tctx GwTranslationCtx, reporter reports.Reporter) ProxyTranslationPass
+	NewGatewayTranslationPass(ctx context.Context, tctx GwTranslationCtx, reporter reporter.Reporter) ProxyTranslationPass
 	// Process cluster for a backend
 	ProcessBackend(ctx context.Context, in BackendObjectIR, out *envoyclusterv3.Cluster) error
 }

@@ -8,7 +8,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
@@ -25,13 +25,6 @@ func reportPolicyAcceptanceStatus(
 			// Not a policy associated with a CR, can't report status on it
 			continue
 		}
-
-		// Start the resource sync metrics for the policy.
-		metrics.StartResourceSync(policy.PolicyRef.Name, metrics.ResourceMetricLabels{
-			Gateway:   string(ancestorRef.Name),
-			Namespace: policy.PolicyRef.Namespace,
-			Resource:  policy.PolicyRef.Kind,
-		})
 
 		key := reporter.PolicyKey{
 			Group:     policy.PolicyRef.Group,
@@ -119,4 +112,44 @@ func addMergeOriginsToFilterMetadata(
 	}
 	metadata.FilterMetadata[mergeMetadataKeyPrefix+gk.String()] = pb
 	return metadata
+}
+
+// reportRouteConfigPolicyErrors reports policy errors to the appropriate reporter based on attachment level.
+// we can infer the attachment level of the policy based on a combination of PolicyRef.SectionName and the
+// listener's PolicyAncestorRef kind: empty sectionName indicates a gateway-wide policy attachment, non-empty
+// sectionName indicates a listener-level policy attachment. For XListenerSet reporting, we cannot rely on the
+// sectionName value alone, so we check the ancestor reference kind to make sure we report on that resource
+// instead of the Gateway.
+//
+// Note: this function has different reporting behavior for HTTP vs HTTPS listeners due to how policy attachment
+// is handled at higher levels. For HTTPS listeners, this function is called from ComputeRouteConfiguration for
+// each attached GK, which can result in condition message overwrites when both Gateway-wide and listener-level
+// policies fail. The last SetCondition call wins, which is typically Gateway-wide due to processing order. For HTTP
+// listeners, policy errors are handled in runVhostPlugins at the vhost scope and do not call this function,
+// avoiding the overwrite issue.
+func reportRouteConfigPolicyErrors(r reporter.Reporter, gw ir.GatewayIR, listener ir.ListenerIR, routeConfigName string, policies ...ir.PolicyAtt) {
+	for _, policy := range policies {
+		if policy.PolicyRef == nil {
+			continue
+		}
+		if len(policy.Errors) == 0 {
+			continue
+		}
+		if policy.PolicyRef.SectionName != "" || *listener.PolicyAncestorRef.Kind == wellknown.XListenerSetKind {
+			listenerReporter := getReporterForFilterChain(gw, r, routeConfigName)
+			listenerReporter.SetCondition(reporter.ListenerCondition{
+				Type:    gwv1.ListenerConditionAccepted,
+				Status:  metav1.ConditionFalse,
+				Reason:  reporter.ListenerReplacedReason,
+				Message: policy.FormatErrors(),
+			})
+			continue
+		}
+		r.Gateway(gw.SourceObject.Obj).SetCondition(reporter.GatewayCondition{
+			Type:    gwv1.GatewayConditionAccepted,
+			Status:  metav1.ConditionFalse,
+			Reason:  reporter.GatewayReplacedReason,
+			Message: policy.FormatErrors(),
+		})
+	}
 }

@@ -5,6 +5,18 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
+// Select the object by Name and Namespace.
+// You can target only one object at a time.
+type NamespacedObjectReference struct {
+	// The name of the target resource.
+	Name gwv1.ObjectName `json:"name"`
+
+	// The namespace of the target resource.
+	// If not set, defaults to the namespace of the parent object.
+	// +optional
+	Namespace *gwv1.Namespace `json:"namespace,omitempty"`
+}
+
 // Select the object to attach the policy by Group, Kind, and Name.
 // The object must be in the same namespace as the policy.
 // You can target only one object at a time.
@@ -32,9 +44,12 @@ type LocalPolicyTargetReferenceWithSectionName struct {
 	SectionName *gwv1.SectionName `json:"sectionName,omitempty"`
 }
 
-// Select the object to attach the policy by Group, Kind, and its labels.
+// LocalPolicyTargetSelector selects the object to attach the policy by Group, Kind, and MatchLabels.
 // The object must be in the same namespace as the policy and match the
 // specified labels.
+// Do not use targetSelectors when reconciliation times are critical, especially if you
+// have a large number of policies that target the same resource.
+// Instead, use targetRefs to attach the policy.
 type LocalPolicyTargetSelector struct {
 	// The API group of the target resource.
 	// For Kubernetes Gateway API resources, the group is `gateway.networking.k8s.io`.
@@ -46,6 +61,20 @@ type LocalPolicyTargetSelector struct {
 
 	// Label selector to select the target resource.
 	MatchLabels map[string]string `json:"matchLabels"`
+}
+
+// LocalPolicyTargetSelectorWithSectionName the object to attach the policy by Group, Kind, MatchLabels, and optionally SectionName.
+// The object must be in the same namespace as the policy and match the
+// specified labels.
+// Do not use targetSelectors when reconciliation times are critical, especially if you
+// have a large number of policies that target the same resource.
+// Instead, use targetRefs to attach the policy.
+type LocalPolicyTargetSelectorWithSectionName struct {
+	LocalPolicyTargetSelector `json:",inline"`
+
+	// The section name of the target resource.
+	// +optional
+	SectionName *gwv1.SectionName `json:"sectionName,omitempty"`
 }
 
 type PolicyStatus struct {

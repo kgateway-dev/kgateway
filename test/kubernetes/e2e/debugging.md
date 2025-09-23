@@ -12,7 +12,7 @@ Each feature suite is invoked as a subtest of the top level suite. The subtests 
 ### Using a previously released version
 It is possible to run these tests against a previously released version of kgateway. This is useful for testing a release candidate, or a nightly build.
 
-There is no setup required for this option, as the test suite will download the helm chart archive and `glooctl` binary from the specified release. You will use the `RELEASED_VERSION` environment variable when running the tests. See the [variable definition](/test/testutils/env.go) for more details.
+There is no setup required for this option, as the test suite will download the helm chart archive from the specified release. You will use the `RELEASED_VERSION` environment variable when running the tests. See the [variable definition](/test/testutils/env.go) for more details.
 
 ### Using a locally built version
 For these tests to run, we require the following conditions:
@@ -74,7 +74,7 @@ tilt up
 - Web UI for monitoring resource status and logs
 - Faster iteration cycles during debugging
 
-For more detailed instructions on using Tilt, see [devel/tilt/tilt.md](/devel/tilt/tilt.md).
+For more detailed instructions on using Tilt, see [devel/debugging/tilt.md](/devel/debugging/tilt.md).
 
 ## Step 2: Running Tests
 _To run the regression tests, your kubeconfig file must point to a running Kubernetes cluster:_
@@ -178,13 +178,13 @@ Alternatively, with VSCode you can use a custom debugger launch config that sets
 In Goland, you can run a single test feature by right-clicking on the test function and selecting `Run 'TestXyz'` or
 `Debug 'TestXyz'`.
 
-You will need to set the env variable `SKIP_INSTALL` to `true` in the run configuration to skip the installation of Gloo. This
+You will need to set the env variable `SKIP_INSTALL` to `true` in the run configuration to skip the installation of kgateway. This
 is also the case for other env variables that are required for the test to run (`CLUSTER_NAME`, etc.)
 
 If there are multiple tests in a feature suite, you can run a single test by adding the test name to the `-run` flag in the run configuration:
 
 ```bash
--test.run="^TestKgateway$/^RouteOptions$/^TestConfigureRouteOptionsWithTargetRef$"
+-test.run="^TestKgateway$/^Deployer$/^TestProvisionDeploymentAndService$"
 ```
 
 

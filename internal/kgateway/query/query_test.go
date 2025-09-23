@@ -19,14 +19,14 @@ import (
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 )
 
 //go:generate go tool mockgen -destination mocks/mock_queries.go -package mocks github.com/kgateway-dev/kgateway/v2/internal/kgateway/query GatewayQueries
@@ -1010,11 +1010,8 @@ var _ = Describe("Query", func() {
 		Expect(routes.GetListenerResult(gwWithListener, "foo").Error).NotTo(HaveOccurred())
 		Expect(routes.GetListenerResult(gwWithListener, "foo").Routes).To(HaveLen(1))
 		Expect(routes.GetListenerResult(lsWithListener, "bar").Error).NotTo(HaveOccurred())
-		Expect(routes.GetListenerResult(lsWithListener, "bar").Routes).To(HaveLen(2))
-		// The first route should be the route mapped to the parent gateway
-		Expect(routes.GetListenerResult(lsWithListener, string(lsWithListener.Spec.Listeners[0].Name)).Routes[0].GetName()).To(Equal("test"))
-		// The second should be the route mapped to the listener set
-		Expect(routes.GetListenerResult(lsWithListener, string(lsWithListener.Spec.Listeners[0].Name)).Routes[1].GetName()).To(Equal("ls-route"))
+		Expect(routes.GetListenerResult(lsWithListener, "bar").Routes).To(HaveLen(1))
+		Expect(routes.GetListenerResult(lsWithListener, string(lsWithListener.Spec.Listeners[0].Name)).Routes[0].GetName()).To(Equal("ls-route"))
 	})
 })
 
@@ -1131,7 +1128,7 @@ func newQueries(t test.Failer, initObjs ...client.Object) query.GatewayQueries {
 	services := krttest.GetMockCollection[*corev1.Service](mock)
 	refgrants := krtcollections.NewRefGrantIndex(krttest.GetMockCollection[*gwv1beta1.ReferenceGrant](mock))
 
-	policies := krtcollections.NewPolicyIndex(krtinternal.KrtOptions{}, extensionsplug.ContributesPolicies{}, settings.Settings{})
+	policies := krtcollections.NewPolicyIndex(krtinternal.KrtOptions{}, sdk.ContributesPolicies{}, settings.Settings{})
 	upstreams := krtcollections.NewBackendIndex(krtinternal.KrtOptions{}, policies, refgrants)
 	upstreams.AddBackends(SvcGk, k8sUpstreams(services))
 

@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -79,7 +80,7 @@ type KubernetesProxyConfig struct {
 	Deployment *ProxyDeployment `json:"deployment,omitempty"`
 
 	// Configuration for the container running Envoy.
-	// If AgentGateway is enabled, the EnvoyContainer values will be ignored.
+	// If agentgateway is enabled, the EnvoyContainer values will be ignored.
 	//
 	// +optional
 	EnvoyContainer *EnvoyContainer `json:"envoyContainer,omitempty"`
@@ -120,11 +121,11 @@ type KubernetesProxyConfig struct {
 	// +optional
 	AiExtension *AiExtension `json:"aiExtension,omitempty"`
 
-	// Configure the AgentGateway integration. If AgentGateway is disabled, the EnvoyContainer values will be used by
+	// Configure the agentgateway integration. If agentgateway is disabled, the EnvoyContainer values will be used by
 	// default to configure the data plane proxy.
 	//
 	// +optional
-	AgentGateway *AgentGateway `json:"agentGateway,omitempty"`
+	Agentgateway *Agentgateway `json:"agentgateway,omitempty"`
 
 	// Used to unset the `runAsUser` values in security contexts.
 	FloatingUserId *bool `json:"floatingUserId,omitempty"`
@@ -193,11 +194,11 @@ func (in *KubernetesProxyConfig) GetAiExtension() *AiExtension {
 	return in.AiExtension
 }
 
-func (in *KubernetesProxyConfig) GetAgentGateway() *AgentGateway {
+func (in *KubernetesProxyConfig) GetAgentgateway() *Agentgateway {
 	if in == nil {
 		return nil
 	}
-	return in.AgentGateway
+	return in.Agentgateway
 }
 
 func (in *KubernetesProxyConfig) GetFloatingUserId() *bool {
@@ -208,11 +209,32 @@ func (in *KubernetesProxyConfig) GetFloatingUserId() *bool {
 }
 
 // ProxyDeployment configures the Proxy deployment in Kubernetes.
+// +kubebuilder:validation:AtMostOneOf=replicas;omitReplicas
 type ProxyDeployment struct {
 	// The number of desired pods. Defaults to 1.
 	//
 	// +optional
 	Replicas *uint32 `json:"replicas,omitempty"`
+
+	// If true, replicas will not be set in the deployment (allowing HPA to control scaling)
+	// +optional
+	OmitReplicas *bool `json:"omitReplicas,omitempty"`
+
+	// The deployment strategy to use to replace existing pods with new
+	// ones. The Kubernetes default is a RollingUpdate with 25% maxUnavailable,
+	// 25% maxSurge.
+	//
+	// E.g., to recreate pods, minimizing resources for the rollout but causing downtime:
+	// strategy:
+	//   type: Recreate
+	// E.g., to roll out as a RollingUpdate but with non-default parameters:
+	// strategy:
+	//   type: RollingUpdate
+	//   rollingUpdate:
+	//     maxSurge: 100%
+	//
+	// +optional
+	Strategy *appsv1.DeploymentStrategy `json:"strategy,omitempty"`
 }
 
 func (in *ProxyDeployment) GetReplicas() *uint32 {
@@ -220,6 +242,20 @@ func (in *ProxyDeployment) GetReplicas() *uint32 {
 		return nil
 	}
 	return in.Replicas
+}
+
+func (in *ProxyDeployment) GetOmitReplicas() *bool {
+	if in == nil {
+		return nil
+	}
+	return in.OmitReplicas
+}
+
+func (in *ProxyDeployment) GetStrategy() *appsv1.DeploymentStrategy {
+	if in == nil {
+		return nil
+	}
+	return in.Strategy
 }
 
 // EnvoyContainer configures the container running Envoy.
@@ -263,6 +299,13 @@ type EnvoyContainer struct {
 	//
 	// +optional
 	Env []corev1.EnvVar `json:"env,omitempty"`
+
+	// Additional volume mounts to add to the container. See
+	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#volumemount-v1-core
+	// for details.
+	//
+	// +optional
+	ExtraVolumeMounts []corev1.VolumeMount `json:"extraVolumeMounts,omitempty"`
 }
 
 func (in *EnvoyContainer) GetBootstrap() *EnvoyBootstrap {
@@ -977,8 +1020,8 @@ func (otelTransportSecurityMode OTLPTransportSecurityMode) String() string {
 	}
 }
 
-// AgentGateway configures the AgentGateway integration. If AgentGateway is enabled, Envoy
-type AgentGateway struct {
+// Agentgateway configures the agentgateway dataplane integration to be enabled if the `agentgateway` GatewayClass is used.
+type Agentgateway struct {
 	// Whether to enable the extension.
 	//
 	// +optional
@@ -1024,46 +1067,67 @@ type AgentGateway struct {
 	//
 	// +optional
 	Env []corev1.EnvVar `json:"env,omitempty"`
+
+	// Name of the custom configmap to use instead of the default generated one.
+	// When set, the agent gateway will use this configmap instead of creating the default one.
+	// The configmap must contain a 'config.yaml' key with the agent gateway configuration.
+	//
+	// +optional
+	CustomConfigMapName *string `json:"customConfigMapName,omitempty"`
+
+	// Additional volume mounts to add to the container. See
+	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#volumemount-v1-core
+	// for details.
+	//
+	// +optional
+	ExtraVolumeMounts []corev1.VolumeMount `json:"extraVolumeMounts,omitempty"`
 }
 
-func (in *AgentGateway) GetEnabled() *bool {
+func (in *Agentgateway) GetEnabled() *bool {
 	if in == nil {
 		return nil
 	}
 	return in.Enabled
 }
 
-func (in *AgentGateway) GetLogLevel() *string {
+func (in *Agentgateway) GetLogLevel() *string {
 	if in == nil {
 		return nil
 	}
 	return in.LogLevel
 }
 
-func (in *AgentGateway) GetImage() *Image {
+func (in *Agentgateway) GetImage() *Image {
 	if in == nil {
 		return nil
 	}
 	return in.Image
 }
 
-func (in *AgentGateway) GetSecurityContext() *corev1.SecurityContext {
+func (in *Agentgateway) GetSecurityContext() *corev1.SecurityContext {
 	if in == nil {
 		return nil
 	}
 	return in.SecurityContext
 }
 
-func (in *AgentGateway) GetResources() *corev1.ResourceRequirements {
+func (in *Agentgateway) GetResources() *corev1.ResourceRequirements {
 	if in == nil {
 		return nil
 	}
 	return in.Resources
 }
 
-func (in *AgentGateway) GetEnv() []corev1.EnvVar {
+func (in *Agentgateway) GetEnv() []corev1.EnvVar {
 	if in == nil {
 		return nil
 	}
 	return in.Env
+}
+
+func (in *Agentgateway) GetCustomConfigMapName() *string {
+	if in == nil {
+		return nil
+	}
+	return in.CustomConfigMapName
 }

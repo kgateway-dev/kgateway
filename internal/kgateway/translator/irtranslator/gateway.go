@@ -14,20 +14,20 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	sdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
-	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
 var logger = logging.New("translator/ir")
 
 type Translator struct {
-	ContributedPolicies  map[schema.GroupKind]extensionsplug.PolicyPlugin
+	ContributedPolicies  map[schema.GroupKind]sdk.PolicyPlugin
 	RouteReplacementMode settings.RouteReplacementMode
 	Validator            validator.Validator
 }
@@ -41,25 +41,41 @@ type TranslationResult struct {
 }
 
 // Translate IR to gateway. IR is self contained, so no need for krt context
-func (t *Translator) Translate(gw ir.GatewayIR, reporter sdkreporter.Reporter) TranslationResult {
+func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sdkreporter.Reporter) TranslationResult {
 	pass := t.newPass(reporter)
 	var res TranslationResult
 
 	for _, l := range gw.Listeners {
-		// TODO: propagate errors so we can allow the retain last config mode
-		l, routes := t.ComputeListener(context.TODO(), pass, gw, l, reporter)
-		res.Listeners = append(res.Listeners, l)
+		outListener, routes := t.ComputeListener(ctx, pass, gw, l, reporter)
+		// Envoy rejects listeners with no filter chains; skip adding such listeners.
+		if outListener == nil || len(outListener.GetFilterChains()) == 0 {
+			originalListenerName := findOriginalListenerName(gw, l)
+			logger.Warn("invalid listener due to no filter chains generated", "listener", originalListenerName)
+			continue
+		}
+		res.Listeners = append(res.Listeners, outListener)
 		res.Routes = append(res.Routes, routes...)
 	}
 
 	for _, c := range pass {
 		if c != nil {
-			r := c.ResourcesToAdd(context.TODO())
+			r := c.ResourcesToAdd(ctx)
 			res.ExtraClusters = append(res.ExtraClusters, r.Clusters...)
 		}
 	}
 
 	return res
+}
+
+// findOriginalListenerName finds the original listener name for a given listener.
+// This may give inaccurate results when multiple listeners have the same port, but is used for logging only.
+func findOriginalListenerName(gw ir.GatewayIR, listener ir.ListenerIR) string {
+	for _, origListener := range gw.SourceObject.Listeners {
+		if uint32(origListener.Port) == listener.BindPort {
+			return string(origListener.Name)
+		}
+	}
+	return ""
 }
 
 func getReporterForFilterChain(gw ir.GatewayIR, reporter sdkreporter.Reporter, filterChainName string) sdkreporter.ListenerReporter {
@@ -80,9 +96,7 @@ func (t *Translator) ComputeListener(
 	lis ir.ListenerIR,
 	reporter sdkreporter.Reporter,
 ) (*envoylistenerv3.Listener, []*envoyroutev3.RouteConfiguration) {
-	hasTls := false
 	gwreporter := reporter.Gateway(gw.SourceObject.Obj)
-	var routes []*envoyroutev3.RouteConfiguration
 	ret := &envoylistenerv3.Listener{
 		Name:    lis.Name,
 		Address: computeListenerAddress(lis.BindAddress, lis.BindPort, gwreporter),
@@ -92,6 +106,8 @@ func (t *Translator) ComputeListener(
 	}
 	t.runListenerPlugins(ctx, pass, gw, lis, reporter, ret)
 
+	var routes []*envoyroutev3.RouteConfiguration
+	hasTls := false
 	domains := map[string]struct{}{}
 
 	for _, hfc := range lis.HttpFilterChain {
@@ -100,7 +116,7 @@ func (t *Translator) ComputeListener(
 			gateway:         gw,
 			routeConfigName: hfc.FilterChainName,
 			reporter:        reporter,
-			PluginPass:      pass,
+			pluginPass:      pass,
 		}
 
 		// compute routes
@@ -112,7 +128,7 @@ func (t *Translator) ComputeListener(
 			attachedPolicies:         hfc.AttachedPolicies,
 			reporter:                 reporter,
 			requireTlsOnVirtualHosts: hfc.FilterChainCommon.TLS != nil,
-			PluginPass:               pass,
+			pluginPass:               pass,
 			logger:                   logger.With("route_config_name", hfc.FilterChainName),
 			routeReplacementMode:     t.RouteReplacementMode,
 			validator:                t.Validator,
@@ -135,7 +151,7 @@ func (t *Translator) ComputeListener(
 
 		// TODO: make sure that all matchers are unique
 		rl := getReporterForFilterChain(gw, reporter, hfc.FilterChainName)
-		fc := fct.initFilterChain(ctx, hfc.FilterChainCommon, rl)
+		fc := fct.initFilterChain(hfc.FilterChainCommon)
 		fc.Filters = fct.computeHttpFilters(ctx, hfc, rl)
 		ret.FilterChains = append(ret.GetFilterChains(), fc)
 		if len(hfc.Matcher.SniDomains) > 0 {
@@ -153,12 +169,12 @@ func (t *Translator) ComputeListener(
 	fct := filterChainTranslator{
 		listener:   lis,
 		gateway:    gw,
-		PluginPass: pass,
+		pluginPass: pass,
 	}
 
 	for _, tfc := range lis.TcpFilterChain {
 		rl := getReporterForFilterChain(gw, reporter, tfc.FilterChainName)
-		fc := fct.initFilterChain(ctx, tfc.FilterChainCommon, rl)
+		fc := fct.initFilterChain(tfc.FilterChainCommon)
 		fc.Filters = fct.computeTcpFilters(ctx, tfc, rl)
 		ret.FilterChains = append(ret.GetFilterChains(), fc)
 		if len(tfc.Matcher.SniDomains) > 0 {

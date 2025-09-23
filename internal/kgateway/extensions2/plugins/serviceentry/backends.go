@@ -136,6 +136,9 @@ func BuildServiceEntryBackendObjectIR(
 		backend.TrafficDistribution = wellknown.ParseTrafficDistribution(val)
 	}
 
+	// Parse common annotations
+	ir.ParseObjectAnnotations(&backend, se)
+
 	backend.AttachedPolicies = ir.AttachedPolicies{}
 	return backend
 }

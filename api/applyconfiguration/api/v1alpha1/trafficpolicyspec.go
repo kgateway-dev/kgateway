@@ -2,15 +2,11 @@
 
 package v1alpha1
 
-import (
-	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-)
-
 // TrafficPolicySpecApplyConfiguration represents a declarative configuration of the TrafficPolicySpec type for use
 // with apply.
 type TrafficPolicySpecApplyConfiguration struct {
 	TargetRefs      []LocalPolicyTargetReferenceWithSectionNameApplyConfiguration `json:"targetRefs,omitempty"`
-	TargetSelectors []LocalPolicyTargetSelectorApplyConfiguration                 `json:"targetSelectors,omitempty"`
+	TargetSelectors []LocalPolicyTargetSelectorWithSectionNameApplyConfiguration  `json:"targetSelectors,omitempty"`
 	AI              *AIPolicyApplyConfiguration                                   `json:"ai,omitempty"`
 	Transformation  *TransformationPolicyApplyConfiguration                       `json:"transformation,omitempty"`
 	ExtProc         *ExtProcPolicyApplyConfiguration                              `json:"extProc,omitempty"`
@@ -18,9 +14,12 @@ type TrafficPolicySpecApplyConfiguration struct {
 	RateLimit       *RateLimitApplyConfiguration                                  `json:"rateLimit,omitempty"`
 	Cors            *CorsPolicyApplyConfiguration                                 `json:"cors,omitempty"`
 	Csrf            *CSRFPolicyApplyConfiguration                                 `json:"csrf,omitempty"`
-	HashPolicies    []*apiv1alpha1.HashPolicy                                     `json:"hashPolicies,omitempty"`
+	HeaderModifiers *HeaderModifiersApplyConfiguration                            `json:"headerModifiers,omitempty"`
 	AutoHostRewrite *bool                                                         `json:"autoHostRewrite,omitempty"`
 	Buffer          *BufferApplyConfiguration                                     `json:"buffer,omitempty"`
+	Timeouts        *TimeoutsApplyConfiguration                                   `json:"timeouts,omitempty"`
+	Retry           *RetryApplyConfiguration                                      `json:"retry,omitempty"`
+	RBAC            *RBACApplyConfiguration                                       `json:"rbac,omitempty"`
 }
 
 // TrafficPolicySpecApplyConfiguration constructs a declarative configuration of the TrafficPolicySpec type for use with
@@ -45,7 +44,7 @@ func (b *TrafficPolicySpecApplyConfiguration) WithTargetRefs(values ...*LocalPol
 // WithTargetSelectors adds the given value to the TargetSelectors field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the TargetSelectors field.
-func (b *TrafficPolicySpecApplyConfiguration) WithTargetSelectors(values ...*LocalPolicyTargetSelectorApplyConfiguration) *TrafficPolicySpecApplyConfiguration {
+func (b *TrafficPolicySpecApplyConfiguration) WithTargetSelectors(values ...*LocalPolicyTargetSelectorWithSectionNameApplyConfiguration) *TrafficPolicySpecApplyConfiguration {
 	for i := range values {
 		if values[i] == nil {
 			panic("nil value passed to WithTargetSelectors")
@@ -111,16 +110,11 @@ func (b *TrafficPolicySpecApplyConfiguration) WithCsrf(value *CSRFPolicyApplyCon
 	return b
 }
 
-// WithHashPolicies adds the given value to the HashPolicies field in the declarative configuration
-// and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the HashPolicies field.
-func (b *TrafficPolicySpecApplyConfiguration) WithHashPolicies(values ...**apiv1alpha1.HashPolicy) *TrafficPolicySpecApplyConfiguration {
-	for i := range values {
-		if values[i] == nil {
-			panic("nil value passed to WithHashPolicies")
-		}
-		b.HashPolicies = append(b.HashPolicies, *values[i])
-	}
+// WithHeaderModifiers sets the HeaderModifiers field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the HeaderModifiers field is set to the value of the last call.
+func (b *TrafficPolicySpecApplyConfiguration) WithHeaderModifiers(value *HeaderModifiersApplyConfiguration) *TrafficPolicySpecApplyConfiguration {
+	b.HeaderModifiers = value
 	return b
 }
 
@@ -137,5 +131,29 @@ func (b *TrafficPolicySpecApplyConfiguration) WithAutoHostRewrite(value bool) *T
 // If called multiple times, the Buffer field is set to the value of the last call.
 func (b *TrafficPolicySpecApplyConfiguration) WithBuffer(value *BufferApplyConfiguration) *TrafficPolicySpecApplyConfiguration {
 	b.Buffer = value
+	return b
+}
+
+// WithTimeouts sets the Timeouts field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Timeouts field is set to the value of the last call.
+func (b *TrafficPolicySpecApplyConfiguration) WithTimeouts(value *TimeoutsApplyConfiguration) *TrafficPolicySpecApplyConfiguration {
+	b.Timeouts = value
+	return b
+}
+
+// WithRetry sets the Retry field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Retry field is set to the value of the last call.
+func (b *TrafficPolicySpecApplyConfiguration) WithRetry(value *RetryApplyConfiguration) *TrafficPolicySpecApplyConfiguration {
+	b.Retry = value
+	return b
+}
+
+// WithRBAC sets the RBAC field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the RBAC field is set to the value of the last call.
+func (b *TrafficPolicySpecApplyConfiguration) WithRBAC(value *RBACApplyConfiguration) *TrafficPolicySpecApplyConfiguration {
+	b.RBAC = value
 	return b
 }

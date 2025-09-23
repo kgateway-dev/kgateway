@@ -2,7 +2,6 @@ package agentgatewaysyncer
 
 import (
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"log"
 	"sort"
@@ -35,47 +34,117 @@ import (
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
-
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
 const (
 	gatewayTLSTerminateModeKey = "gateway.agentgateway.io/tls-terminate-mode"
 )
 
-func convertHTTPRouteToADP(ctx RouteContext, r gwv1.HTTPRouteRule,
+func convertHTTPRouteToAgw(ctx RouteContext, r gwv1.HTTPRouteRule,
 	obj *gwv1.HTTPRoute, pos int, matchPos int,
 ) (*api.Route, *reporter.RouteCondition) {
+	routeRuleKey := strconv.Itoa(pos) + "." + strconv.Itoa(matchPos)
+	var ruleName string
+	if r.Name != nil {
+		// use the user provided name. this will be used to attach policies
+		routeRuleKey = string(*r.Name)
+		ruleName = utils.InternalRouteRuleName(obj.Namespace, obj.Name, string(*r.Name))
+	}
 	res := &api.Route{
-		Key:         obj.Namespace + "." + obj.Name + "." + strconv.Itoa(pos) + "." + strconv.Itoa(matchPos),
-		RouteName:   obj.Namespace + "/" + obj.Name,
+		// unique for route rule
+		Key: utils.InternalRouteRuleName(obj.Namespace, obj.Name, routeRuleKey),
+		// used for policy reference at route level
+		RouteName:   utils.InternalRouteRuleName(obj.Namespace, obj.Name, ""),
 		ListenerKey: "",
-		RuleName:    defaultString(r.Name, ""),
+		// used for policy reference at route rule (drops rule name if not specified)
+		RuleName: ruleName,
 	}
 
+	if err := processRouteMatches(&r, res); err != nil {
+		return nil, &reporter.RouteCondition{
+			Type:    gwv1.RouteConditionAccepted,
+			Status:  metav1.ConditionFalse,
+			Reason:  "InvalidMatch",
+			Message: fmt.Sprintf("failed to process route matches: %v", err),
+		}
+	}
+
+	filters, filterError := buildAgwFilters(ctx, obj.Namespace, r.Filters)
+	res.Filters = filters
+
+	if err := applyTimeouts(&r, res); err != nil {
+		return nil, &reporter.RouteCondition{
+			Type:    gwv1.RouteConditionAccepted,
+			Status:  metav1.ConditionFalse,
+			Reason:  "TranslationError",
+			Message: fmt.Sprintf("failed to apply builtin route timeout: %v", err),
+		}
+	}
+	if err := applyRetries(&r, res); err != nil {
+		return nil, &reporter.RouteCondition{
+			Type:    gwv1.RouteConditionAccepted,
+			Status:  metav1.ConditionFalse,
+			Reason:  "TranslationError",
+			Message: fmt.Sprintf("failed to apply builtin route retries: %v", err),
+		}
+	}
+
+	if pluginErr := applyPluginPasses(ctx, &r, res); pluginErr != nil {
+		return nil, pluginErr
+	}
+
+	backends, backendErr, err := buildAgwHTTPDestination(ctx, r.BackendRefs, obj.Namespace)
+	if err != nil {
+		return nil, &reporter.RouteCondition{
+			Type:    gwv1.RouteConditionAccepted,
+			Status:  metav1.ConditionFalse,
+			Reason:  "BackendError",
+			Message: fmt.Sprintf("failed to build backend destination: %v", err),
+		}
+	}
+	res.Backends = backends
+
+	res.Hostnames = convertHostnames(obj.Spec.Hostnames)
+
+	if shouldInjectErrorResponse(backendErr) {
+		injectDirectResponseFilter(res, obj.Namespace, obj.Name)
+	}
+
+	if filterError != nil && !isFilterErrorCritical(filterError) {
+		return nil, filterError
+	}
+	return res, backendErr
+}
+
+// Helper function to process route matches
+func processRouteMatches(r *gwv1.HTTPRouteRule, res *api.Route) error {
 	for _, match := range r.Matches {
-		path, err := createADPPathMatch(match)
+		path, err := createAgwPathMatch(match)
 		if err != nil {
-			return nil, err
+			return fmt.Errorf("path match error: %v", err)
 		}
-		headers, err := createADPHeadersMatch(match)
+
+		headers, err := createAgwHeadersMatch(match)
 		if err != nil {
-			return nil, err
+			return fmt.Errorf("headers match error: %v", err)
 		}
-		method, err := createADPMethodMatch(match)
+
+		method, err := createAgwMethodMatch(match)
 		if err != nil {
-			return nil, err
+			return fmt.Errorf("method match error: %v", err)
 		}
-		query, err := createADPQueryMatch(match)
+
+		query, err := createAgwQueryMatch(match)
 		if err != nil {
-			return nil, err
+			return fmt.Errorf("query match error: %v", err)
 		}
+
 		res.Matches = append(res.GetMatches(), &api.RouteMatch{
 			Path:        path,
 			Headers:     headers,
@@ -83,69 +152,99 @@ func convertHTTPRouteToADP(ctx RouteContext, r gwv1.HTTPRouteRule,
 			QueryParams: query,
 		})
 	}
-	filters, filterError := buildADPFilters(ctx, obj.Namespace, r.Filters)
-	res.Filters = filters
+	return nil
+}
 
-	agentGatewayRouteContext := agwir.AgentGatewayRouteContext{
-		Rule: &r,
+// Helper function to apply plugin passes
+func applyPluginPasses(ctx RouteContext, r *gwv1.HTTPRouteRule, res *api.Route) *reporter.RouteCondition {
+	agwRouteContext := agwir.AgwRouteContext{
+		Rule: r,
 	}
 
 	for _, pass := range ctx.pluginPasses {
-		if err := pass.ApplyForRoute(&agentGatewayRouteContext, res); err != nil {
-			return nil, &reporter.RouteCondition{
+		if err := pass.ApplyForRoute(&agwRouteContext, res); err != nil {
+			return &reporter.RouteCondition{
 				Type:    gwv1.RouteConditionAccepted,
 				Status:  metav1.ConditionFalse,
 				Reason:  "PluginError",
-				Message: fmt.Sprintf("failed to apply a plugin: %v", err),
+				Message: fmt.Sprintf("failed to apply plugin: %v", err),
 			}
 		}
 	}
-
-	// Retry: todo
-	route, backendErr, err := buildADPHTTPDestination(ctx, r.BackendRefs, obj.Namespace)
-	if err != nil {
-		return nil, err
-	}
-	res.Backends = route
-	res.Hostnames = slices.Map(obj.Spec.Hostnames, func(e gwv1.Hostname) string {
-		return string(e)
-	})
-	// Return filter error if present, otherwise return backend error
-	var errs []error
-	var errorReason gwv1.RouteConditionReason = gwv1.RouteReasonBackendNotFound
-	if filterError != nil {
-		errs = append(errs, fmt.Errorf("%s", filterError.Message))
-		errorReason = filterError.Reason
-	}
-	if backendErr != nil {
-		errs = append(errs, fmt.Errorf("backend error: %s", backendErr.Message))
-		if filterError == nil {
-			errorReason = backendErr.Reason
-		}
-	}
-	if len(errs) > 0 {
-		return res, &reporter.RouteCondition{
-			Type:    gwv1.RouteConditionAccepted,
-			Status:  metav1.ConditionFalse,
-			Reason:  errorReason,
-			Message: errors.Join(errs...).Error(),
-		}
-	}
-	return res, nil
+	return nil
 }
 
-func convertTCPRouteToADP(ctx RouteContext, r gwv1alpha2.TCPRouteRule,
+// Helper function to convert hostnames
+func convertHostnames(hostnames []gwv1.Hostname) []string {
+	return slices.Map(hostnames, func(h gwv1.Hostname) string {
+		return string(h)
+	})
+}
+
+// Helper function to determine if error response should be injected
+func shouldInjectErrorResponse(backendErr *reporter.RouteCondition) bool {
+	return backendErr != nil &&
+		(backendErr.Reason == gwv1.RouteReasonInvalidKind ||
+			backendErr.Reason == gwv1.RouteReasonRefNotPermitted ||
+			backendErr.Reason == gwv1.RouteReasonBackendNotFound)
+}
+
+// Helper function to inject direct response filter for errors
+func injectDirectResponseFilter(res *api.Route, namespace, name string) {
+	for _, f := range res.Filters {
+		if _, ok := f.GetKind().(*api.RouteFilter_DirectResponse); ok {
+			return
+		}
+	}
+	drf := &api.RouteFilter{
+		Kind: &api.RouteFilter_DirectResponse{
+			DirectResponse: &api.DirectResponse{
+				Status: 500,
+				Body:   []byte("Backend service unavailable"),
+			},
+		},
+	}
+
+	res.Filters = append([]*api.RouteFilter{drf}, res.Filters...)
+}
+
+// Helper function to determine if filter error is critical
+func isFilterErrorCritical(filterError *reporter.RouteCondition) bool {
+	criticalReasons := []gwv1.RouteConditionReason{
+		"FilterNotSupported",
+		"FilterConfigInvalid",
+		// Add other critical filter error reasons as needed
+	}
+
+	for _, reason := range criticalReasons {
+		if filterError.Reason == reason {
+			return true
+		}
+	}
+	return false
+}
+
+func convertTCPRouteToAgw(ctx RouteContext, r gwv1alpha2.TCPRouteRule,
 	obj *gwv1alpha2.TCPRoute, pos int,
 ) (*api.TCPRoute, *reporter.RouteCondition) {
+	routeRuleKey := strconv.Itoa(pos)
+	var ruleName string
+	if r.Name != nil {
+		// use the user provided name. this will be used to attach policies
+		routeRuleKey = getRouteKeySectionName(obj.ObjectMeta, string(*r.Name))
+		ruleName = utils.InternalRouteRuleName(obj.Namespace, obj.Name, string(*r.Name))
+	}
 	res := &api.TCPRoute{
-		Key:         obj.Namespace + "." + obj.Name + "." + strconv.Itoa(pos),
-		RouteName:   obj.Namespace + "/" + obj.Name,
+		// unique for route rule
+		Key: utils.InternalRouteRuleName(obj.Namespace, obj.Name, routeRuleKey),
+		// used for policy reference (drops rule name if not specified)
+		RouteName:   utils.InternalRouteRuleName(obj.Namespace, obj.Name, ""),
 		ListenerKey: "",
-		RuleName:    defaultString(r.Name, ""),
+		RuleName:    ruleName,
 	}
 
 	// Build TCP destinations
-	route, backendErr, err := buildADPTCPDestination(ctx, r.BackendRefs, obj.Namespace)
+	route, backendErr, err := buildAgwTCPDestination(ctx, r.BackendRefs, obj.Namespace)
 	if err != nil {
 		logger.Error("failed to translate tcp destination", "err", err)
 		return nil, err
@@ -155,19 +254,28 @@ func convertTCPRouteToADP(ctx RouteContext, r gwv1alpha2.TCPRouteRule,
 	return res, backendErr
 }
 
-func convertGRPCRouteToADP(ctx RouteContext, r gwv1.GRPCRouteRule,
+func convertGRPCRouteToAgw(ctx RouteContext, r gwv1.GRPCRouteRule,
 	obj *gwv1.GRPCRoute, pos int,
 ) (*api.Route, *reporter.RouteCondition) {
+	routeRuleKey := strconv.Itoa(pos)
+	var ruleName string
+	if r.Name != nil {
+		// use the user provided name. this will be used to attach policies
+		routeRuleKey = getRouteKeySectionName(obj.ObjectMeta, string(*r.Name))
+		ruleName = utils.InternalRouteRuleName(obj.Namespace, obj.Name, string(*r.Name))
+	}
 	res := &api.Route{
-		Key:         obj.Namespace + "." + obj.Name + "." + strconv.Itoa(pos),
-		RouteName:   obj.Namespace + "/" + obj.Name,
+		// unique for route rule
+		Key: utils.InternalRouteRuleName(obj.Namespace, obj.Name, routeRuleKey),
+		// used for policy reference (drops rule name if not specified)
+		RouteName:   utils.InternalRouteRuleName(obj.Namespace, obj.Name, ""),
 		ListenerKey: "",
-		RuleName:    defaultString(r.Name, ""),
+		RuleName:    ruleName,
 	}
 
-	// Convert GRPC matches to ADP format
+	// Convert GRPC matches to Agw format
 	for _, match := range r.Matches {
-		headers, err := createADPGRPCHeadersMatch(match)
+		headers, err := createAgwGRPCHeadersMatch(match)
 		if err != nil {
 			logger.Error("failed to translate grpc header match", "err", err, "route_name", obj.Name, "route_ns", obj.Namespace)
 			return nil, err
@@ -195,14 +303,14 @@ func convertGRPCRouteToADP(ctx RouteContext, r gwv1.GRPCRouteRule,
 		})
 	}
 
-	filters, err := buildADPGRPCFilters(ctx, obj.Namespace, r.Filters)
+	filters, err := buildAgwGRPCFilters(ctx, obj.Namespace, r.Filters)
 	if err != nil {
 		logger.Error("failed to translate grpc filter", "err", err, "route_name", obj.Name, "route_ns", obj.Namespace)
 		return nil, err
 	}
 	res.Filters = filters
 
-	route, backendErr, err := buildADPGRPCDestination(ctx, r.BackendRefs, obj.Namespace)
+	route, backendErr, err := buildAgwGRPCDestination(ctx, r.BackendRefs, obj.Namespace)
 	if err != nil {
 		logger.Error("failed to translate grpc destination", "err", err, "route_name", obj.Name, "route_ns", obj.Namespace)
 		return nil, err
@@ -214,18 +322,27 @@ func convertGRPCRouteToADP(ctx RouteContext, r gwv1.GRPCRouteRule,
 	return res, backendErr
 }
 
-func convertTLSRouteToADP(ctx RouteContext, r gwv1alpha2.TLSRouteRule,
+func convertTLSRouteToAgw(ctx RouteContext, r gwv1alpha2.TLSRouteRule,
 	obj *gwv1alpha2.TLSRoute, pos int,
 ) (*api.TCPRoute, *reporter.RouteCondition) {
+	routeRuleKey := strconv.Itoa(pos)
+	var ruleName string
+	if r.Name != nil {
+		// use the user provided name. this will be used to attach policies
+		routeRuleKey = getRouteKeySectionName(obj.ObjectMeta, string(*r.Name))
+		ruleName = utils.InternalRouteRuleName(obj.Namespace, obj.Name, string(*r.Name))
+	}
 	res := &api.TCPRoute{
-		Key:         obj.Namespace + "." + obj.Name + "." + strconv.Itoa(pos),
-		RouteName:   obj.Namespace + "/" + obj.Name,
+		// unique for route rule
+		Key: utils.InternalRouteRuleName(obj.Namespace, obj.Name, routeRuleKey),
+		// used for policy reference (drops rule name if not specified)
+		RouteName:   utils.InternalRouteRuleName(obj.Namespace, obj.Name, ""),
 		ListenerKey: "",
-		RuleName:    defaultString(r.Name, ""),
+		RuleName:    ruleName,
 	}
 
 	// Build TLS destinations
-	route, backendErr, err := buildADPTLSDestination(ctx, r.BackendRefs, obj.Namespace)
+	route, backendErr, err := buildAgwTLSDestination(ctx, r.BackendRefs, obj.Namespace)
 	if err != nil {
 		logger.Error("failed to translate tls destination", "err", err, "route_name", obj.Name, "route_ns", obj.Namespace)
 		return nil, err
@@ -240,7 +357,7 @@ func convertTLSRouteToADP(ctx RouteContext, r gwv1alpha2.TLSRouteRule,
 	return res, backendErr
 }
 
-func buildADPTCPDestination(
+func buildAgwTCPDestination(
 	ctx RouteContext,
 	forwardTo []gwv1.BackendRef,
 	ns string,
@@ -252,7 +369,7 @@ func buildADPTCPDestination(
 	var invalidBackendErr *reporter.RouteCondition
 	var res []*api.RouteBackend
 	for _, fwd := range forwardTo {
-		dst, err := buildADPDestination(ctx, gwv1.HTTPBackendRef{
+		dst, err := buildAgwDestination(ctx, gwv1.HTTPBackendRef{
 			BackendRef: fwd,
 			Filters:    nil, // TCP routes don't have per-backend filters?
 		}, ns, wellknown.TCPRouteGVK, ctx.Backends)
@@ -270,7 +387,7 @@ func buildADPTCPDestination(
 	return res, invalidBackendErr, nil
 }
 
-func buildADPTLSDestination(
+func buildAgwTLSDestination(
 	ctx RouteContext,
 	forwardTo []gwv1.BackendRef,
 	ns string,
@@ -282,7 +399,7 @@ func buildADPTLSDestination(
 	var invalidBackendErr *reporter.RouteCondition
 	var res []*api.RouteBackend
 	for _, fwd := range forwardTo {
-		dst, err := buildADPDestination(ctx, gwv1.HTTPBackendRef{
+		dst, err := buildAgwDestination(ctx, gwv1.HTTPBackendRef{
 			BackendRef: fwd,
 			Filters:    nil, // TLS routes don't have per-backend filters
 		}, ns, wellknown.TLSRouteGVK, ctx.Backends)
@@ -305,7 +422,7 @@ func terminalFilterCombinationError(existingFilter, newFilter string) string {
 	return fmt.Sprintf("Cannot combine multiple terminal filters: %s and %s are mutually exclusive. Only one terminal filter is allowed per route rule.", existingFilter, newFilter)
 }
 
-func buildADPFilters(
+func buildAgwFilters(
 	ctx RouteContext,
 	ns string,
 	inputFilters []gwv1.HTTPRouteFilter,
@@ -318,13 +435,13 @@ func buildADPFilters(
 	for _, filter := range inputFilters {
 		switch filter.Type {
 		case gwv1.HTTPRouteFilterRequestHeaderModifier:
-			h := createADPHeadersFilter(filter.RequestHeaderModifier)
+			h := createAgwHeadersFilter(filter.RequestHeaderModifier)
 			if h == nil {
 				continue
 			}
 			filters = append(filters, h)
 		case gwv1.HTTPRouteFilterResponseHeaderModifier:
-			h := createADPResponseHeadersFilter(filter.ResponseHeaderModifier)
+			h := createAgwResponseHeadersFilter(filter.ResponseHeaderModifier)
 			if h == nil {
 				continue
 			}
@@ -339,7 +456,7 @@ func buildADPFilters(
 				}
 				continue
 			}
-			h := createADPRedirectFilter(filter.RequestRedirect)
+			h := createAgwRedirectFilter(filter.RequestRedirect)
 			if h == nil {
 				continue
 			}
@@ -347,7 +464,7 @@ func buildADPFilters(
 			hasTerminalFilter = true
 			terminalFilterType = "RequestRedirect"
 		case gwv1.HTTPRouteFilterRequestMirror:
-			h, err := createADPMirrorFilter(ctx, filter.RequestMirror, ns, wellknown.HTTPRouteGVK)
+			h, err := createAgwMirrorFilter(ctx, filter.RequestMirror, ns, wellknown.HTTPRouteGVK)
 			if err != nil {
 				if filterError == nil {
 					filterError = err
@@ -356,19 +473,19 @@ func buildADPFilters(
 				filters = append(filters, h)
 			}
 		case gwv1.HTTPRouteFilterURLRewrite:
-			h := createADPRewriteFilter(filter.URLRewrite)
+			h := createAgwRewriteFilter(filter.URLRewrite)
 			if h == nil {
 				continue
 			}
 			filters = append(filters, h)
 		case gwv1.HTTPRouteFilterCORS:
-			h := createADPCorsFilter(filter.CORS)
+			h := createAgwCorsFilter(filter.CORS)
 			if h == nil {
 				continue
 			}
 			filters = append(filters, h)
 		case gwv1.HTTPRouteFilterExtensionRef:
-			h, err := createADPExtensionRefFilter(ctx, filter.ExtensionRef, ns)
+			h, err := createAgwExtensionRefFilter(ctx, filter.ExtensionRef, ns)
 			if err != nil {
 				if filterError == nil {
 					filterError = err
@@ -403,7 +520,7 @@ func buildADPFilters(
 	return filters, filterError
 }
 
-func createADPCorsFilter(cors *gwv1.HTTPCORSFilter) *api.RouteFilter {
+func createAgwCorsFilter(cors *gwv1.HTTPCORSFilter) *api.RouteFilter {
 	if cors == nil {
 		return nil
 	}
@@ -421,7 +538,7 @@ func createADPCorsFilter(cors *gwv1.HTTPCORSFilter) *api.RouteFilter {
 	}
 }
 
-func buildADPHTTPDestination(
+func buildAgwHTTPDestination(
 	ctx RouteContext,
 	forwardTo []gwv1.HTTPBackendRef,
 	ns string,
@@ -433,7 +550,7 @@ func buildADPHTTPDestination(
 	var invalidBackendErr *reporter.RouteCondition
 	var res []*api.RouteBackend
 	for _, fwd := range forwardTo {
-		dst, err := buildADPDestination(ctx, fwd, ns, wellknown.HTTPRouteGVK, ctx.Backends)
+		dst, err := buildAgwDestination(ctx, fwd, ns, wellknown.HTTPRouteGVK, ctx.Backends)
 		if err != nil {
 			logger.Error("erroring building agent gateway destination", "error", err)
 			if isInvalidBackend(err) {
@@ -444,7 +561,7 @@ func buildADPHTTPDestination(
 			}
 		}
 		if dst != nil {
-			filters, err := buildADPFilters(ctx, ns, fwd.Filters)
+			filters, err := buildAgwFilters(ctx, ns, fwd.Filters)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -455,12 +572,12 @@ func buildADPHTTPDestination(
 	return res, invalidBackendErr, nil
 }
 
-func buildADPDestination(
+func buildAgwDestination(
 	ctx RouteContext,
 	to gwv1.HTTPBackendRef,
 	ns string,
 	k schema.GroupVersionKind,
-	backendCol *krtcollections.BackendIndex,
+	backendCol krt.Collection[*v1alpha1.Backend],
 ) (*api.RouteBackend, *reporter.RouteCondition) {
 	ref := normalizeReference(to.Group, to.Kind, wellknown.ServiceGVK)
 	// check if the reference is allowed
@@ -514,7 +631,8 @@ func buildADPDestination(
 				Kind: &api.BackendReference_Service{
 					Service: namespace + "/" + hostname,
 				},
-				Port: uint32(svc.Spec.TargetPortNumber),
+				// InferencePool only supports single port
+				Port: uint32(svc.Spec.TargetPorts[0].Number),
 			}
 		}
 	case wellknown.ServiceGVK.GroupKind():
@@ -553,37 +671,22 @@ func buildADPDestination(
 			Port: uint32(*port),
 		}
 	case wellknown.BackendGVK.GroupKind():
-		// Create the source ObjectSource representing the route object making the reference
-		routeSrc := ir.ObjectSource{
-			Group:     k.Group,
-			Kind:      k.Kind,
-			Namespace: ns,
-		}
-
-		// Create the backend reference from the 'to' parameter
-		backendRef := gwv1.BackendObjectReference{
-			Group:     to.Group,
-			Kind:      to.Kind,
-			Name:      to.Name,
-			Namespace: to.Namespace,
-			Port:      to.Port,
-		}
-
-		kgwBackend, err := backendCol.GetBackendFromRef(ctx.Krt, routeSrc, backendRef)
-		if err != nil {
-			logger.Error("failed to get kgateway Backend", "error", err)
+		backendRefKey := ns + "/" + string(to.Name)
+		fetchedKgwBackend := krt.FetchOne(ctx.Krt, backendCol, krt.FilterKey(backendRefKey))
+		if fetchedKgwBackend == nil {
+			logger.Error("failed to get kgateway Backend", "backend", backendRefKey)
 			return nil, &reporter.RouteCondition{
 				Type:    gwv1.RouteConditionResolvedRefs,
 				Status:  metav1.ConditionFalse,
 				Reason:  gwv1.RouteReasonBackendNotFound,
-				Message: fmt.Sprintf("kgateway Backend not found: %v", err),
+				Message: fmt.Sprintf("kgateway Backend not found: %s", backendRefKey),
 			}
 		}
-
+		kgwBackend := *fetchedKgwBackend
 		logger.Debug("successfully resolved kgateway Backend", "backend", kgwBackend.Name)
 		rb.Backend = &api.BackendReference{
 			Kind: &api.BackendReference_Backend{
-				Backend: kgwBackend.Namespace + "/" + kgwBackend.Name,
+				Backend: backendRefKey,
 			},
 		}
 	default:
@@ -702,17 +805,12 @@ func referenceAllowed(
 			hostnames = []gwv1.Hostname{"*"}
 		}
 		if len(parent.Hostnames) > 0 {
-			// TODO: the spec actually has a label match, not a string match. That is, *.com does not match *.apple.com
-			// We are doing a string match here
 			matched := false
 			hostMatched := false
 		out:
 			for _, routeHostname := range hostnames {
 				for _, parentHostNamespace := range parent.Hostnames {
 					var parentNamespace, parentHostname string
-					// When parentHostNamespace lacks a '/', it was likely sanitized from '*/host' to 'host'
-					// by sanitizeServerHostNamespace. Set parentNamespace to '*' to reflect the wildcard namespace
-					// and parentHostname to the sanitized host to prevent an index out of range panic.
 					if strings.Contains(parentHostNamespace, "/") {
 						spl := strings.Split(parentHostNamespace, "/")
 						parentNamespace, parentHostname = spl[0], spl[1]
@@ -722,6 +820,7 @@ func referenceAllowed(
 
 					hostnameMatch := host.Name(parentHostname).Matches(host.Name(routeHostname))
 					namespaceMatch := parentNamespace == "*" || parentNamespace == localNamespace
+
 					hostMatched = hostMatched || hostnameMatch
 					if hostnameMatch && namespaceMatch {
 						matched = true
@@ -773,7 +872,6 @@ func extractParentReferenceInfo(ctx RouteContext, parents RouteParents, obj cont
 	for _, ref := range routeRefs {
 		ir, err := toInternalParentReference(ref, localNamespace)
 		if err != nil {
-			// Cannot handle the reference. Maybe it is for another controller, so we just ignore it
 			continue
 		}
 		pk := parentReference{
@@ -790,11 +888,9 @@ func extractParentReferenceInfo(ctx RouteContext, parents RouteParents, obj cont
 					continue // do not ban ourself
 				}
 				if gw.Port != pr.Port {
-					// We only care about listeners on the same port
 					continue
 				}
 				if gw.Protocol != pr.Protocol {
-					// We only care about listeners on the same protocol
 					continue
 				}
 				bannedHostnames.Insert(gw.OriginalHostname)
@@ -809,11 +905,11 @@ func extractParentReferenceInfo(ctx RouteContext, parents RouteParents, obj cont
 				BannedHostnames:   bannedHostnames.Copy().Delete(pr.OriginalHostname),
 				ParentKey:         ir,
 				ParentSection:     pr.SectionName,
+				Accepted:          deniedReason == nil,
 			}
 			parentRefs = append(parentRefs, rpi)
 		}
 		for _, gw := range currentParents {
-			// Append all matches. Note we may be adding mismatch section or ports; this is handled later
 			appendParent(gw, pk)
 		}
 	}
@@ -889,6 +985,7 @@ type routeParentReference struct {
 	BannedHostnames sets.Set[string]
 	ParentKey       parentKey
 	ParentSection   gwv1.SectionName
+	Accepted        bool
 }
 
 func filteredReferences(parents []routeParentReference) []routeParentReference {
@@ -998,6 +1095,7 @@ func buildListener(
 	l gwv1.Listener,
 	listenerIndex int,
 	controllerName gwv1.GatewayController,
+	attachedRoutes int32,
 ) (*istio.Server, *TLSInfo, bool) {
 	listenerConditions := map[string]*condition{
 		string(gwv1.ListenerConditionAccepted): {
@@ -1031,7 +1129,7 @@ func buildListener(
 	}
 
 	hostnames := buildHostnameMatch(ctx, obj.Namespace, namespaces, l)
-	protocol, perr := listenerProtocolToAgentgateway(controllerName, l.Protocol)
+	protocol, perr := listenerProtocolToAgw(controllerName, l.Protocol)
 	if perr != nil {
 		listenerConditions[string(gwv1.ListenerConditionAccepted)].error = &ConfigError{
 			Reason:  string(gwv1.ListenerReasonUnsupportedProtocol),
@@ -1050,7 +1148,7 @@ func buildListener(
 		Tls:   tls,
 	}
 
-	reportListenerCondition(listenerIndex, l, obj, status, listenerConditions)
+	reportListenerCondition(listenerIndex, l, obj, status, listenerConditions, attachedRoutes)
 	return server, tlsInfo, ok
 }
 
@@ -1061,7 +1159,7 @@ var supportedProtocols = sets.New(
 	gwv1.TCPProtocolType,
 	gwv1.ProtocolType(protocol.HBONE))
 
-func listenerProtocolToAgentgateway(name gwv1.GatewayController, p gwv1.ProtocolType) (string, error) {
+func listenerProtocolToAgw(name gwv1.GatewayController, p gwv1.ProtocolType) (string, error) {
 	switch p {
 	// Standard protocol types
 	case gwv1.HTTPProtocolType:
@@ -1311,8 +1409,8 @@ func toRouteKind(g schema.GroupVersionKind) gwv1.RouteGroupKind {
 	return gwv1.RouteGroupKind{Group: (*gwv1.Group)(&g.Group), Kind: gwv1.Kind(g.Kind)}
 }
 
-// createADPExtensionRefFilter creates ADP filter from Gateway API ExtensionRef filter
-func createADPExtensionRefFilter(
+// createAgwExtensionRefFilter creates Agw filter from Gateway API ExtensionRef filter
+func createAgwExtensionRefFilter(
 	ctx RouteContext,
 	extensionRef *gwv1.LocalObjectReference,
 	ns string,
@@ -1334,7 +1432,7 @@ func createADPExtensionRefFilter(
 			}
 		}
 
-		// Convert to ADP DirectResponse filter
+		// Convert to Agw DirectResponse filter
 		filter := &api.RouteFilter{
 			Kind: &api.RouteFilter_DirectResponse{
 				DirectResponse: &api.DirectResponse{
@@ -1380,4 +1478,8 @@ func routeGroupKindEqual(rgk1, rgk2 gwv1.RouteGroupKind) bool {
 
 func getGroup(rgk gwv1.RouteGroupKind) gwv1.Group {
 	return ptr.OrDefault(rgk.Group, wellknown.GatewayGroup)
+}
+
+func getRouteKeySectionName(obj metav1.ObjectMeta, sectionName string) string {
+	return obj.GetNamespace() + "/" + obj.GetName() + "/" + sectionName
 }

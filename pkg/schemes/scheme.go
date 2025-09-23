@@ -11,7 +11,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1a3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
@@ -38,27 +38,18 @@ var SchemeBuilder = runtime.SchemeBuilder{
 	apiextensionsv1.AddToScheme,
 
 	// kgateway API resources
-	kgwv1a1.AddToScheme,
+	kgwv1a1.Install,
 
 	// Istio resources
 	istionetworkingv1.AddToScheme,
 	istiosecurityv1.AddToScheme,
-
-	// Solo Edge Gloo API resources
-	// gloov1.AddToScheme,
-
-	// Enterprise Extensions
-	// These are packed in the OSS Helm Chart, and therefore we register the schemes here as well
-	// graphqlv1beta1.AddToScheme,
-	// extauthkubev1.AddToScheme,
-	// ratelimitv1alpha1.AddToScheme,
 }
 
 func AddToScheme(s *runtime.Scheme) error {
 	return SchemeBuilder.AddToScheme(s)
 }
 
-// DefaultScheme returns a scheme with all the types registered for Gloo Gateway
+// DefaultScheme returns a scheme with all the types registered for kgateway.
 // We intentionally do not perform this operation in an init!!
 // See https://github.com/kgateway-dev/kgateway/pull/9692 for context
 func DefaultScheme() *runtime.Scheme {
@@ -94,7 +85,7 @@ func InferExtScheme() *runtime.Scheme {
 	if err := rbacv1.AddToScheme(s); err != nil {
 		panic(fmt.Sprintf("Failed to add RBAC v1 scheme: %v", err))
 	}
-	if err := infextv1a2.AddToScheme(s); err != nil {
+	if err := inf.Install(s); err != nil {
 		panic(fmt.Sprintf("Failed to add Gateway API Inference Extension v1alpha2 scheme: %v", err))
 	}
 	return s

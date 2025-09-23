@@ -6,13 +6,14 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"slices"
 	"strings"
 )
 
 var (
 	defaultEnvoyPath = "/usr/local/bin/envoy"
 	// TODO(tim): avoid hardcoding the envoy image version in multiple places.
-	defaultEnvoyImage = "quay.io/solo-io/envoy-gloo:1.34.1-patch3"
+	defaultEnvoyImage = "quay.io/solo-io/envoy-gloo:1.35.2-patch1"
 )
 
 // ErrInvalidXDS is returned when Envoy rejects the supplied YAML.
@@ -25,50 +26,20 @@ type Validator interface {
 	Validate(context.Context, string) error
 }
 
-// Option is a functional option for New.
-type Option func(*config)
-
-// WithBinaryPath overrides the Envoy binary path.
-func WithBinaryPath(p string) Option { return func(c *config) { c.binaryPath = p } }
-
-// WithDockerImage overrides the Docker image used for validation.
-func WithDockerImage(img string) Option { return func(c *config) { c.dockerImage = img } }
-
-// config stores the validator configuration.
-type config struct {
-	binaryPath  string
-	dockerImage string
-}
-
-// New chooses the best validator available.
-func New(o ...Option) Validator {
-	c := &config{}
-	for _, opt := range o {
-		opt(c)
-	}
-	// use defaults if not set by options
-	binaryPath := c.binaryPath
-	if binaryPath == "" {
-		binaryPath = defaultEnvoyPath
-	}
-	dockerImage := c.dockerImage
-	if dockerImage == "" {
-		dockerImage = defaultEnvoyImage
-	}
-	// check if envoy is in the path
-	if _, err := exec.LookPath(binaryPath); err == nil {
-		return &binaryValidator{path: binaryPath}
-	}
-	// otherwise, fallback to docker
-	return &dockerValidator{img: dockerImage}
-}
-
 // binaryValidator validates envoy using the binary.
 type binaryValidator struct {
 	path string
 }
 
 var _ Validator = &binaryValidator{}
+
+// NewBinary creates a new binary validator. If path is empty, the default path is used.
+func NewBinary(path ...string) Validator {
+	if len(path) == 0 {
+		path = []string{defaultEnvoyPath}
+	}
+	return &binaryValidator{path: path[0]}
+}
 
 func (b *binaryValidator) Validate(ctx context.Context, yaml string) error {
 	cmd := exec.CommandContext(ctx, b.path, "--mode", "validate", "--config-yaml", yaml, "-l", "critical", "--log-format", "%v")
@@ -94,8 +65,17 @@ type dockerValidator struct {
 
 var _ Validator = &dockerValidator{}
 
+// NewDocker creates a new docker validator. If img is empty, the default image is used.
+func NewDocker(img ...string) Validator {
+	if len(img) == 0 {
+		img = []string{defaultEnvoyImage}
+	}
+	return &dockerValidator{img: img[0]}
+}
+
 func (d *dockerValidator) Validate(ctx context.Context, yaml string) error {
-	cmd := exec.CommandContext(ctx,
+	cmd := exec.CommandContext(
+		ctx,
 		"docker", "run",
 		"--rm",
 		"-i",
@@ -117,10 +97,12 @@ func (d *dockerValidator) Validate(ctx context.Context, yaml string) error {
 		return nil
 	}
 
-	// TODO(tim): Just return first match from "error initializing configuration"?
 	rawErr := strings.TrimSpace(stderr.String())
-	rawErr = stripDockerWarn(rawErr)
 	if _, ok := err.(*exec.ExitError); ok {
+		// Extract just the envoy error message, ignoring Docker pull output
+		if envoyErr := extractEnvoyError(rawErr); envoyErr != "" {
+			return fmt.Errorf("%w: %s", ErrInvalidXDS, envoyErr)
+		}
 		if rawErr == "" {
 			rawErr = err.Error()
 		}
@@ -129,14 +111,24 @@ func (d *dockerValidator) Validate(ctx context.Context, yaml string) error {
 	return fmt.Errorf("envoy validate invocation failed: %v", err)
 }
 
-// stripDockerWarn removes the platform-mismatch warning Docker prints on ARM hosts.
-func stripDockerWarn(s string) string {
-	lines := strings.Split(s, "\n")
-	cleaned := make([]string, 0, len(lines))
-	for _, line := range lines {
-		if !strings.HasPrefix(line, "WARNING: The requested image's platform") {
-			cleaned = append(cleaned, line)
+// extractEnvoyError extracts the actual Envoy validation error from stderr output,
+// ignoring Docker pull progress and other noise that comes before the error.
+func extractEnvoyError(stderr string) string {
+	lines := strings.Split(stderr, "\n")
+	// find the first line containing the Envoy error message. see:
+	// https://github.com/envoyproxy/envoy/blob/d552b66f5d70ddd9e13c68c40f70729a45fb24e0/source/server/config_validation/server.cc#L75
+	errorIndex := slices.IndexFunc(lines, func(line string) bool {
+		return strings.Contains(strings.TrimSpace(line), "error initializing configuration")
+	})
+	if errorIndex == -1 {
+		return ""
+	}
+	// extract all remaining lines that are relevant error context
+	remainingLines := make([]string, 0, len(lines)-errorIndex)
+	for i := errorIndex; i < len(lines); i++ {
+		if trimmed := strings.TrimSpace(lines[i]); trimmed != "" {
+			remainingLines = append(remainingLines, trimmed)
 		}
 	}
-	return strings.TrimSpace(strings.Join(cleaned, "\n"))
+	return strings.Join(remainingLines, " ")
 }

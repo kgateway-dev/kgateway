@@ -10,9 +10,11 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 )
 
-func TestBuildADPFilters(t *testing.T) {
+func TestBuildAgwFilters(t *testing.T) {
 	testCases := []struct {
 		name            string
 		inputFilters    []gwv1.HTTPRouteFilter
@@ -139,7 +141,7 @@ func TestBuildADPFilters(t *testing.T) {
 				},
 			}
 
-			result, err := buildADPFilters(ctx, "default", tc.inputFilters)
+			result, err := buildAgwFilters(ctx, "default", tc.inputFilters)
 
 			if tc.expectedError {
 				assert.NotNil(t, err)
@@ -252,7 +254,7 @@ func TestGetProtocolAndTLSConfig(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			syncer := &AgentGwSyncer{}
+			syncer := &Syncer{}
 
 			proto, tlsConfig, ok := syncer.getProtocolAndTLSConfig(tc.gateway)
 
@@ -271,16 +273,16 @@ func TestGetProtocolAndTLSConfig(t *testing.T) {
 	}
 }
 
-func TestADPResourcesForGatewayEquals(t *testing.T) {
+func TestAgwResourcesForGatewayEquals(t *testing.T) {
 	testCases := []struct {
 		name      string
-		resource1 ADPResourcesForGateway
-		resource2 ADPResourcesForGateway
+		resource1 agwir.AgwResourcesForGateway
+		resource2 agwir.AgwResourcesForGateway
 		expected  bool
 	}{
 		{
 			name: "Equal bind resources",
-			resource1: ADPResourcesForGateway{
+			resource1: agwir.AgwResourcesForGateway{
 				Resources: []*api.Resource{{
 					Kind: &api.Resource_Bind{
 						Bind: &api.Bind{
@@ -291,7 +293,7 @@ func TestADPResourcesForGatewayEquals(t *testing.T) {
 				}},
 				Gateway: types.NamespacedName{Name: "test", Namespace: "default"},
 			},
-			resource2: ADPResourcesForGateway{
+			resource2: agwir.AgwResourcesForGateway{
 				Resources: []*api.Resource{{
 					Kind: &api.Resource_Bind{
 						Bind: &api.Bind{
@@ -306,7 +308,7 @@ func TestADPResourcesForGatewayEquals(t *testing.T) {
 		},
 		{
 			name: "Different gateway",
-			resource1: ADPResourcesForGateway{
+			resource1: agwir.AgwResourcesForGateway{
 				Resources: []*api.Resource{{
 					Kind: &api.Resource_Bind{
 						Bind: &api.Bind{
@@ -317,7 +319,7 @@ func TestADPResourcesForGatewayEquals(t *testing.T) {
 				}},
 				Gateway: types.NamespacedName{Name: "test", Namespace: "default"},
 			},
-			resource2: ADPResourcesForGateway{
+			resource2: agwir.AgwResourcesForGateway{
 				Resources: []*api.Resource{{
 					Kind: &api.Resource_Bind{
 						Bind: &api.Bind{
@@ -332,7 +334,7 @@ func TestADPResourcesForGatewayEquals(t *testing.T) {
 		},
 		{
 			name: "Different resource port",
-			resource1: ADPResourcesForGateway{
+			resource1: agwir.AgwResourcesForGateway{
 				Resources: []*api.Resource{{
 					Kind: &api.Resource_Bind{
 						Bind: &api.Bind{
@@ -343,7 +345,7 @@ func TestADPResourcesForGatewayEquals(t *testing.T) {
 				}},
 				Gateway: types.NamespacedName{Name: "test", Namespace: "default"},
 			},
-			resource2: ADPResourcesForGateway{
+			resource2: agwir.AgwResourcesForGateway{
 				Resources: []*api.Resource{{
 					Kind: &api.Resource_Bind{
 						Bind: &api.Bind{

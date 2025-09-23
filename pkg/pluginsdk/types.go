@@ -12,22 +12,9 @@ import (
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/endpoints"
-	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
-
-type AttachmentPoints uint
-
-const (
-	BackendAttachmentPoint AttachmentPoints = 1 << iota
-	GatewayAttachmentPoint
-	RouteAttachmentPoint
-)
-
-func (a AttachmentPoints) Has(p AttachmentPoints) bool {
-	return a&p != 0
-}
 
 type (
 	EndpointsInputs = endpoints.EndpointsInputs
@@ -61,8 +48,7 @@ type (
 
 type PolicyPlugin struct {
 	Name                      string
-	NewGatewayTranslationPass func(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass
-	NewAgentGatewayPass       func(reporter reports.Reporter) agwir.AgentGatewayTranslationPass
+	NewGatewayTranslationPass func(ctx context.Context, tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass
 
 	// Backend processing for envoy proxy
 	ProcessBackend            ProcessBackend
@@ -73,7 +59,7 @@ type PolicyPlugin struct {
 	ProcessAgentBackend func(pol ir.PolicyIR, in ir.BackendObjectIR) error
 
 	Policies       krt.Collection[ir.PolicyWrapper]
-	GlobalPolicies func(krt.HandlerContext, AttachmentPoints) ir.PolicyIR
+	GlobalPolicies func(krt.HandlerContext) ir.PolicyIR
 	// PoliciesFetch can optionally be set if the plugin needs a custom mechanism for fetching the policy IR,
 	// rather than the default behavior of fetching by name from the aggregated policy KRT collection
 	PoliciesFetch func(n, ns string) ir.PolicyIR
@@ -97,7 +83,7 @@ type KGwTranslator interface {
 	Translate(kctx krt.HandlerContext,
 		ctx context.Context,
 		gateway *ir.Gateway,
-		reporter reports.Reporter) *ir.GatewayIR
+		reporter reporter.Reporter) *ir.GatewayIR
 }
 type (
 	GwTranslatorFactory func(gw *gwv1.Gateway) KGwTranslator
@@ -108,10 +94,11 @@ type Plugin struct {
 	ContributesPolicies     ContributesPolicies
 	ContributesBackends     map[schema.GroupKind]BackendPlugin
 	ContributesGwTranslator GwTranslatorFactory
-	// ContributesRegistration is a lifecycle hook called after all collections are synced
+	// ContributesLeaderAction is a lifecycle hook called after all collections are synced
 	// allowing Plugins to register handlers against collections, e.g. for status reporting
-	ContributesRegistration map[schema.GroupKind]func()
-	// extra has sync beyong primary resources in the collections above
+	// This is executed only on a leader pod.
+	ContributesLeaderAction map[schema.GroupKind]func()
+	// extra has sync beyond primary resources in the collections above
 	ExtraHasSynced func() bool
 }
 
@@ -131,17 +118,6 @@ func (p PolicyReport) MarshalJSON() ([]byte, error) {
 		m[key.ID()] = objErrMap
 	}
 	return json.Marshal(m)
-}
-
-func (p PolicyPlugin) AttachmentPoints() AttachmentPoints {
-	var ret AttachmentPoints
-	if p.ProcessBackend != nil || p.ProcessAgentBackend != nil {
-		ret = ret | BackendAttachmentPoint
-	}
-	if p.NewGatewayTranslationPass != nil || p.NewAgentGatewayPass != nil {
-		ret = ret | GatewayAttachmentPoint
-	}
-	return ret
 }
 
 func (p Plugin) HasSynced() bool {

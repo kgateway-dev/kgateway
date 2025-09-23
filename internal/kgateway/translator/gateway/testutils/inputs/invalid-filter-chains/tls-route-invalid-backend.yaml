@@ -1,0 +1,29 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - name: tls-invalid-backend
+    protocol: TLS
+    port: 8443
+    hostname: "invalid.example.com"
+    tls:
+      mode: Passthrough
+---
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: TLSRoute
+metadata:
+  name: invalid-backend-tls-route
+spec:
+  parentRefs:
+  - name: example-gateway
+    sectionName: tls-invalid-backend
+  hostnames:
+  - "invalid.example.com"
+  rules:
+  - backendRefs:
+    - name: non-existent-service
+      port: 443
+  

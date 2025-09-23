@@ -16,3 +16,4 @@ spec:
           header: "X-User-ID"
       extensionRef:
         name: global-ratelimit
+        namespace: kgateway-test-extensions

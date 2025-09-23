@@ -12,7 +12,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/trafficpolicy"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 const (
@@ -25,6 +25,7 @@ type (
 	TrafficPolicyConstructor        = trafficpolicy.TrafficPolicyConstructor
 	ProviderNeededMap               = trafficpolicy.ProviderNeededMap
 	TrafficPolicyGatewayExtensionIR = trafficpolicy.TrafficPolicyGatewayExtensionIR
+	TrafficPolicyMergeOpts          = trafficpolicy.TrafficPolicyMergeOpts
 )
 
 var (
@@ -34,7 +35,7 @@ var (
 	AddDisableFilterIfNeeded       = trafficpolicy.AddDisableFilterIfNeeded
 )
 
-// Create a traffic policy constructor. This converts a traffic policy into its IR form.
+// NewTrafficPolicyConstructor creates a traffic policy constructor. This converts a traffic policy into its IR form.
 func NewTrafficPolicyConstructor(
 	ctx context.Context,
 	commoncol *common.CommonCollections,
@@ -42,7 +43,7 @@ func NewTrafficPolicyConstructor(
 	return trafficpolicy.NewTrafficPolicyConstructor(ctx, commoncol)
 }
 
-func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {
+func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
 	return trafficpolicy.NewGatewayTranslationPass(ctx, tctx, reporter)
 }
 

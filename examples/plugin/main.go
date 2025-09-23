@@ -19,12 +19,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 /******
@@ -220,13 +220,13 @@ func (s *ourPolicyPass) HttpFilters(ctx context.Context, fc ir.FilterChainCommon
 }
 
 // A function that initializes our plugins.
-func pluginFactory(ctx context.Context, commoncol *common.CommonCollections) []extensionsplug.Plugin {
-	return []extensionsplug.Plugin{
+func pluginFactory(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []sdk.Plugin {
+	return []sdk.Plugin{
 		{
-			ContributesPolicies: extensionsplug.ContributesPolicies{
-				configMapGK: extensionsplug.PolicyPlugin{
+			ContributesPolicies: sdk.ContributesPolicies{
+				configMapGK: sdk.PolicyPlugin{
 					Name: "metadataPolicy",
-					NewGatewayTranslationPass: func(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {
+					NewGatewayTranslationPass: func(ctx context.Context, tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
 						// Return a fresh new translation pass
 						return &ourPolicyPass{}
 					},

@@ -1,0 +1,32 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: openai-opt
+  namespace: ai-test
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: openai
+  ai:
+      promptGuard:
+        request:
+          regex:
+            action: REJECT
+            matches:
+              - pattern: "phone"
+          webhook:
+            host:
+              host: test-ai-provider.ai-test
+              port: 443
+        response:
+          regex:
+            builtins:
+              - PHONE_NUMBER
+              - EMAIL
+              - SSN
+              - CREDIT_CARD
+          webhook:
+            host:
+              host: test-ai-provider.ai-test
+              port: 443

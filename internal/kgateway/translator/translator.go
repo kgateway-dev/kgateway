@@ -13,14 +13,14 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/endpoints"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	gwtranslator "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
@@ -29,25 +29,27 @@ var logger = logging.New("translator")
 
 // Combines all the translators needed for xDS translation.
 type CombinedTranslator struct {
-	extensions extensionsplug.Plugin
+	extensions sdk.Plugin
 	commonCols *common.CommonCollections
+	validator  validator.Validator
 
 	waitForSync []cache.InformerSynced
 
-	gwtranslator      extensionsplug.KGwTranslator
+	gwtranslator      sdk.KGwTranslator
 	irtranslator      *irtranslator.Translator
 	backendTranslator *irtranslator.BackendTranslator
-	endpointPlugins   []extensionsplug.EndpointPlugin
+	endpointPlugins   []sdk.EndpointPlugin
 
 	logger *slog.Logger
 }
 
 func NewCombinedTranslator(
 	ctx context.Context,
-	extensions extensionsplug.Plugin,
+	extensions sdk.Plugin,
 	commonCols *common.CommonCollections,
+	validator validator.Validator,
 ) *CombinedTranslator {
-	var endpointPlugins []extensionsplug.EndpointPlugin
+	var endpointPlugins []sdk.EndpointPlugin
 	for _, ext := range extensions.ContributesPolicies {
 		if ext.PerClientProcessEndpoints != nil {
 			endpointPlugins = append(endpointPlugins, ext.PerClientProcessEndpoints)
@@ -58,6 +60,7 @@ func NewCombinedTranslator(
 		extensions:      extensions,
 		endpointPlugins: endpointPlugins,
 		logger:          logger,
+		validator:       validator,
 		waitForSync:     []cache.InformerSynced{extensions.HasSynced},
 	}
 }
@@ -72,7 +75,7 @@ func (s *CombinedTranslator) Init(ctx context.Context) {
 	s.irtranslator = &irtranslator.Translator{
 		ContributedPolicies:  s.extensions.ContributesPolicies,
 		RouteReplacementMode: s.commonCols.Settings.RouteReplacementMode,
-		Validator:            validator.New(), // TODO: define this once for RDS and TP plugin.
+		Validator:            s.validator,
 	}
 	s.backendTranslator = &irtranslator.BackendTranslator{
 		ContributedBackends: make(map[schema.GroupKind]ir.BackendInit),
@@ -98,12 +101,12 @@ func (s *CombinedTranslator) HasSynced() bool {
 	return true
 }
 
-// buildProxy performs translation of a kube Gateway -> gloov1.Proxy (really a wrapper type)
-func (s *CombinedTranslator) buildProxy(kctx krt.HandlerContext, ctx context.Context, gw ir.Gateway, r reports.Reporter) *ir.GatewayIR {
+// buildProxy performs translation of a kube Gateway -> GatewayIR
+func (s *CombinedTranslator) buildProxy(kctx krt.HandlerContext, ctx context.Context, gw ir.Gateway, r reporter.Reporter) *ir.GatewayIR {
 	stopwatch := utils.NewTranslatorStopWatch("CombinedTranslator")
 	stopwatch.Start()
 
-	var gatewayTranslator extensionsplug.KGwTranslator = s.gwtranslator
+	var gatewayTranslator sdk.KGwTranslator = s.gwtranslator
 	if s.extensions.ContributesGwTranslator != nil {
 		maybeGatewayTranslator := s.extensions.ContributesGwTranslator(gw.Obj)
 		if maybeGatewayTranslator != nil {
@@ -118,11 +121,6 @@ func (s *CombinedTranslator) buildProxy(kctx krt.HandlerContext, ctx context.Con
 	duration := stopwatch.Stop(ctx)
 	logger.Debug("translated proxy", "namespace", gw.Namespace, "name", gw.Name, "duration", duration.String())
 
-	// TODO: these are likely unnecessary and should be removed!
-	//	applyPostTranslationPlugins(ctx, pluginRegistry, &gwplugins.PostTranslationContext{
-	//		TranslatedGateways: translatedGateways,
-	//	})
-
 	return proxy
 }
 
@@ -132,23 +130,17 @@ func (s *CombinedTranslator) GetUpstreamTranslator() *irtranslator.BackendTransl
 
 // ctx needed for logging; remove once we refactor logging.
 func (s *CombinedTranslator) TranslateGateway(kctx krt.HandlerContext, ctx context.Context, gw ir.Gateway) (*irtranslator.TranslationResult, reports.ReportMap) {
-	metrics.StartResourceSync(gw.Name, metrics.ResourceMetricLabels{
-		Gateway:   gw.Name,
-		Namespace: gw.Namespace,
-		Resource:  "Gateway",
-	})
-
 	rm := reports.NewReportMap()
 	r := reports.NewReporter(&rm)
 	logger.Debug("translating Gateway", "resource_ref", gw.ResourceName(), "resource_version", gw.Obj.GetResourceVersion())
-	gwir := s.buildProxy(kctx, ctx, gw, r)
 
+	gwir := s.buildProxy(kctx, ctx, gw, r)
 	if gwir == nil {
 		return nil, reports.ReportMap{}
 	}
 
 	// we are recomputing xds snapshots as proxies have changed, signal that we need to sync xds with these new snapshots
-	xdsSnap := s.irtranslator.Translate(*gwir, r)
+	xdsSnap := s.irtranslator.Translate(ctx, *gwir, r)
 
 	return &xdsSnap, rm
 }

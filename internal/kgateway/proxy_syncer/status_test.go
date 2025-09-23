@@ -98,13 +98,13 @@ func TestBackendPolicyStatus(t *testing.T) {
 	backends := []*ir.BackendObjectIR{&backend1, &backend2}
 
 	a := assert.New(t)
-	rm := generateBackendPolicyReport(backends)
+	rm := GenerateBackendPolicyReport(backends)
 
 	// assert 3 unique policies: conn-policy-1, conn-policy-2, tls-policy
 	a.Len(rm.Policies, 3)
 
 	// assert conn-policy-1 report
-	connpolicy1report := rm.Policies[reports.PolicyKey{
+	connpolicy1report := rm.Policies[reporter.PolicyKey{
 		Group:     connPolicy1Att.PolicyRef.Group,
 		Kind:      connPolicy1Att.PolicyRef.Kind,
 		Namespace: connPolicy1Att.PolicyRef.Namespace,
@@ -166,7 +166,7 @@ func TestBackendPolicyStatus(t *testing.T) {
 	a.Empty(diff)
 
 	// assert conn-policy-2 report
-	tlsPolicyreport := rm.Policies[reports.PolicyKey{
+	tlsPolicyreport := rm.Policies[reporter.PolicyKey{
 		Group:     tlsPolicyAtt.PolicyRef.Group,
 		Kind:      tlsPolicyAtt.PolicyRef.Kind,
 		Namespace: tlsPolicyAtt.PolicyRef.Namespace,

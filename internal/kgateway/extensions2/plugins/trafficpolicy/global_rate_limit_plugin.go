@@ -15,10 +15,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
 
-const (
-	rateLimitStatPrefix = "http_rate_limit"
-)
-
 // globalRateLimitIR represents the intermediate representation for a global rate limit policy.
 type globalRateLimitIR struct {
 	provider         *TrafficPolicyGatewayExtensionIR
@@ -98,7 +94,7 @@ func constructGlobalRateLimit(
 		return fmt.Errorf("ratelimit: %w", err)
 	}
 	if gwExtIR.ExtType != v1alpha1.GatewayExtensionTypeRateLimit || gwExtIR.RateLimit == nil {
-		return pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, gwExtIR.ExtType)
+		return pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeRateLimit, gwExtIR.ExtType)
 	}
 	// Create route rate limits and store in the RateLimitIR struct
 	out.globalRateLimit = &globalRateLimitIR{

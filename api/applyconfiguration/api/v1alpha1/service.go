@@ -9,11 +9,12 @@ import (
 // ServiceApplyConfiguration represents a declarative configuration of the Service type for use
 // with apply.
 type ServiceApplyConfiguration struct {
-	Type             *v1.ServiceType          `json:"type,omitempty"`
-	ClusterIP        *string                  `json:"clusterIP,omitempty"`
-	ExtraLabels      map[string]string        `json:"extraLabels,omitempty"`
-	ExtraAnnotations map[string]string        `json:"extraAnnotations,omitempty"`
-	Ports            []PortApplyConfiguration `json:"ports,omitempty"`
+	Type                  *v1.ServiceType          `json:"type,omitempty"`
+	ClusterIP             *string                  `json:"clusterIP,omitempty"`
+	ExtraLabels           map[string]string        `json:"extraLabels,omitempty"`
+	ExtraAnnotations      map[string]string        `json:"extraAnnotations,omitempty"`
+	Ports                 []PortApplyConfiguration `json:"ports,omitempty"`
+	ExternalTrafficPolicy *string                  `json:"externalTrafficPolicy,omitempty"`
 }
 
 // ServiceApplyConfiguration constructs a declarative configuration of the Service type for use with
@@ -76,5 +77,13 @@ func (b *ServiceApplyConfiguration) WithPorts(values ...*PortApplyConfiguration)
 		}
 		b.Ports = append(b.Ports, *values[i])
 	}
+	return b
+}
+
+// WithExternalTrafficPolicy sets the ExternalTrafficPolicy field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ExternalTrafficPolicy field is set to the value of the last call.
+func (b *ServiceApplyConfiguration) WithExternalTrafficPolicy(value string) *ServiceApplyConfiguration {
+	b.ExternalTrafficPolicy = &value
 	return b
 }

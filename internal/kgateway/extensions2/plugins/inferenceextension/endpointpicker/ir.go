@@ -9,16 +9,11 @@ import (
 
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-)
-
-const (
-	// grpcPort is the default port number for a gRPC service.
-	grpcPort = 9002
 )
 
 // inferencePool defines the internal representation of an inferencePool resource.
@@ -27,8 +22,8 @@ type inferencePool struct {
 	obj metav1.Object
 	// podSelector is a label selector to select Pods that are members of the InferencePool.
 	podSelector map[string]string
-	// targetPort is the port number that should be targeted for Pods selected by Selector.
-	targetPort int32
+	// targetPorts is a list of port numbers that should be targeted for Pods selected by Selector.
+	targetPorts []targetPort
 	// configRef is a reference to the extension configuration. A configRef is typically implemented
 	// as a Kubernetes Service resource.
 	configRef *service
@@ -49,19 +44,24 @@ type inferencePool struct {
 	failOpen bool
 }
 
+type targetPort struct {
+	// number defines a network port number of a target port.
+	number int32
+}
+
 // newInferencePool returns the internal representation of the given pool.
-func newInferencePool(pool *infextv1a2.InferencePool) *inferencePool {
-	port := servicePort{name: "grpc", portNum: (int32(grpcPort))}
-	if pool.Spec.ExtensionRef.PortNumber != nil {
-		port.portNum = int32(*pool.Spec.ExtensionRef.PortNumber)
+func newInferencePool(pool *inf.InferencePool) *inferencePool {
+	port := servicePort{
+		name:   "grpc",
+		number: int32(pool.Spec.EndpointPickerRef.Port.Number),
 	}
 
 	svcIR := &service{
 		ObjectSource: ir.ObjectSource{
-			Group:     infextv1a2.GroupVersion.Group,
+			Group:     inf.GroupVersion.Group,
 			Kind:      wellknown.InferencePoolKind,
 			Namespace: pool.Namespace,
-			Name:      string(pool.Spec.ExtensionRef.Name),
+			Name:      string(pool.Spec.EndpointPickerRef.Name),
 		},
 		obj:   pool,
 		ports: []servicePort{port},
@@ -69,8 +69,9 @@ func newInferencePool(pool *infextv1a2.InferencePool) *inferencePool {
 
 	return &inferencePool{
 		obj:         pool,
-		podSelector: convertSelector(pool.Spec.Selector),
-		targetPort:  int32(pool.Spec.TargetPortNumber),
+		podSelector: convertSelector(pool.Spec.Selector.MatchLabels),
+		// InferencePool v1 only supports single port
+		targetPorts: []targetPort{{number: int32(pool.Spec.TargetPorts[0].Number)}},
 		configRef:   svcIR,
 		endpoints:   []endpoint{},
 		failOpen:    isFailOpen(pool),
@@ -78,7 +79,15 @@ func newInferencePool(pool *infextv1a2.InferencePool) *inferencePool {
 }
 
 func (ir *inferencePool) setEndpoints(eps []endpoint) {
+	ir.mu.Lock()
+	defer ir.mu.Unlock()
 	ir.endpoints = eps
+}
+
+func (ir *inferencePool) getEndpoints() []endpoint {
+	ir.mu.Lock()
+	defer ir.mu.Unlock()
+	return ir.endpoints
 }
 
 // resolvePoolEndpoints returns the slice of <IP:Port> for the given pool
@@ -91,7 +100,8 @@ func (ir *inferencePool) resolvePoolEndpoints(
 	var eps []endpoint
 	for _, p := range idx.Lookup(key) {
 		if ip := p.Address(); ip != "" {
-			eps = append(eps, endpoint{address: ip, port: ir.targetPort})
+			// InferencePool v1 only supports single port
+			eps = append(eps, endpoint{address: ip, port: ir.targetPorts[0].number})
 		}
 	}
 
@@ -124,6 +134,10 @@ func (ir *inferencePool) Equals(other any) bool {
 		return false
 	}
 	// Compare endpoint set (order‑insensitive)
+	ir.mu.Lock()
+	otherPool.mu.Lock()
+	defer ir.mu.Unlock()
+	defer otherPool.mu.Unlock()
 	if len(ir.endpoints) != len(otherPool.endpoints) {
 		return false
 	}
@@ -137,7 +151,19 @@ func (ir *inferencePool) Equals(other any) bool {
 		}
 	}
 	// Compare target port
-	if ir.targetPort != otherPool.targetPort {
+	// InferencePool v1 only supports single port
+	if len(ir.targetPorts) != 1 || len(otherPool.targetPorts) != 1 {
+		return false
+	}
+	if ir.targetPorts[0].number != otherPool.targetPorts[0].number {
+		return false
+	}
+	// Compare object metadata
+	if ir.obj.GetName() != otherPool.obj.GetName() ||
+		ir.obj.GetNamespace() != otherPool.obj.GetNamespace() ||
+		ir.obj.GetUID() != otherPool.obj.GetUID() ||
+		ir.obj.GetResourceVersion() != otherPool.obj.GetResourceVersion() ||
+		ir.obj.GetGeneration() != otherPool.obj.GetGeneration() {
 		return false
 	}
 	// Compare configRef
@@ -189,7 +215,7 @@ func (ir *inferencePool) failOpenEqual(other *inferencePool) bool {
 	return ir.failOpen == other.failOpen
 }
 
-func convertSelector(selector map[infextv1a2.LabelKey]infextv1a2.LabelValue) map[string]string {
+func convertSelector(selector map[inf.LabelKey]inf.LabelValue) map[string]string {
 	result := make(map[string]string, len(selector))
 	for k, v := range selector {
 		result[string(k)] = string(v)
@@ -214,8 +240,8 @@ type service struct {
 type servicePort struct {
 	// name is the name of the port.
 	name string
-	// portNum is the port number used to expose the service port.
-	portNum int32
+	// number is the port number used to expose the service port.
+	number int32
 }
 
 func (s service) ResourceName() string {
@@ -268,16 +294,10 @@ func versionEquals(a, b metav1.Object) bool {
 	return versionEquals && a.GetUID() == b.GetUID()
 }
 
-func isFailOpen(pool *infextv1a2.InferencePool) bool {
-	if pool == nil ||
-		pool.Spec.EndpointPickerConfig.ExtensionRef == nil {
+func isFailOpen(pool *inf.InferencePool) bool {
+	if pool == nil {
 		return false
 	}
 
-	if pool.Spec.EndpointPickerConfig.ExtensionRef.ExtensionConnection.FailureMode == nil ||
-		*pool.Spec.EndpointPickerConfig.ExtensionRef.ExtensionConnection.FailureMode == infextv1a2.FailClose {
-		return false
-	}
-
-	return true
+	return pool.Spec.EndpointPickerRef.FailureMode == inf.EndpointPickerFailOpen
 }

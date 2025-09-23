@@ -2,15 +2,11 @@
 
 package v1alpha1
 
-import (
-	v1 "k8s.io/api/core/v1"
-)
-
 // RateLimitPolicyApplyConfiguration represents a declarative configuration of the RateLimitPolicy type for use
 // with apply.
 type RateLimitPolicyApplyConfiguration struct {
-	Descriptors  []RateLimitDescriptorApplyConfiguration `json:"descriptors,omitempty"`
-	ExtensionRef *v1.LocalObjectReference                `json:"extensionRef,omitempty"`
+	Descriptors  []RateLimitDescriptorApplyConfiguration      `json:"descriptors,omitempty"`
+	ExtensionRef *NamespacedObjectReferenceApplyConfiguration `json:"extensionRef,omitempty"`
 }
 
 // RateLimitPolicyApplyConfiguration constructs a declarative configuration of the RateLimitPolicy type for use with
@@ -35,7 +31,7 @@ func (b *RateLimitPolicyApplyConfiguration) WithDescriptors(values ...*RateLimit
 // WithExtensionRef sets the ExtensionRef field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the ExtensionRef field is set to the value of the last call.
-func (b *RateLimitPolicyApplyConfiguration) WithExtensionRef(value v1.LocalObjectReference) *RateLimitPolicyApplyConfiguration {
-	b.ExtensionRef = &value
+func (b *RateLimitPolicyApplyConfiguration) WithExtensionRef(value *NamespacedObjectReferenceApplyConfiguration) *RateLimitPolicyApplyConfiguration {
+	b.ExtensionRef = value
 	return b
 }

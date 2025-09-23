@@ -1,5 +1,5 @@
 {{- $gateway := .Values.gateway }}
-{{- if not $gateway.agentGateway.enabled }}
+{{- if not $gateway.agentgateway.enabled }}
 {{- $statsConfig := $gateway.stats }}
 apiVersion: apps/v1
 kind: Deployment
@@ -9,12 +9,16 @@ metadata:
     {{- include "kgateway.gateway.constLabels" . | nindent 4 }}
     {{- include "kgateway.gateway.labels" . | nindent 4 }}
 spec:
-  {{- if not $gateway.autoscaling.enabled }}
+  {{- if $gateway.replicaCount }}
   replicas: {{ $gateway.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
       {{- include "kgateway.gateway.selectorLabels" . | nindent 6 }}
+  {{- with $gateway.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   template:
     metadata:
       annotations:
@@ -28,7 +32,7 @@ spec:
       {{- end}}
       {{- if (($gateway.aiExtension).enabled) }}
       {{- if $gateway.aiExtension.stats }}
-        solo.io/ai-stats-config-hash: {{ sha256sum $gateway.aiExtension.stats | trunc 64 }}
+        kgateway.dev/ai-stats-config-hash: {{ sha256sum $gateway.aiExtension.stats | trunc 64 }}
       {{- end }}
       {{- end}}
       labels:
@@ -70,6 +74,9 @@ spec:
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
+        {{- with $gateway.extraVolumeMounts }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
         env:
         - name: POD_NAME
           valueFrom:
@@ -360,6 +367,9 @@ spec:
       - name: workload-certs
         emptyDir: {}
 {{- end }} {{/* if $gateway.istio.enabled */}}
+      {{- with $gateway.extraVolumes }}
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -393,6 +403,9 @@ metadata:
     {{- end }}
 spec:
   type: {{ $gateway.service.type }}
+  {{- if $gateway.service.externalTrafficPolicy }}
+  externalTrafficPolicy: {{ $gateway.service.externalTrafficPolicy }}
+  {{- end }}
   {{- with $gateway.service.clusterIP }}
   clusterIP: {{ . }}
   {{- end }}
@@ -608,5 +621,5 @@ data:
       lds_config:
         resource_api_version: V3
         ads: {}
-{{- end }} {{/* if not $gateway.agentGateway.enabled */}}
+{{- end }} {{/* if not $gateway.agentgateway.enabled */}}
 ---

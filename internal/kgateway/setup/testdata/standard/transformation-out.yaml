@@ -85,9 +85,9 @@ routes:
               responseTransformation:
                 transformationTemplate:
                   headers:
-                    x-solo-response:
-                      text: '{{ request_header("x-solo-request") }}'
+                    x-kgateway-response:
+                      text: '{{ request_header("x-kgateway-request") }}'
                   headersToRemove:
-                  - x-solo-request
+                  - x-kgateway-request
                   parseBodyBehavior: DontParse
                   passthrough: {}

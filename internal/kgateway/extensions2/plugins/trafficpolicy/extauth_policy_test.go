@@ -4,8 +4,6 @@ import (
 	"context"
 	"testing"
 
-	corev1 "k8s.io/api/core/v1"
-
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
@@ -58,37 +56,37 @@ func TestExtAuthIREquals(t *testing.T) {
 		{
 			name:     "nil vs non-nil are not equal",
 			extauth1: nil,
-			extauth2: &extAuthIR{perRoute: createSimpleExtAuth(false)},
+			extauth2: &extAuthIR{perProviderConfig: []*perProviderExtAuthConfig{{perRouteConfig: createSimpleExtAuth(false)}}},
 			expected: false,
 		},
 		{
 			name:     "non-nil vs nil are not equal",
-			extauth1: &extAuthIR{perRoute: createSimpleExtAuth(false)},
+			extauth1: &extAuthIR{perProviderConfig: []*perProviderExtAuthConfig{{perRouteConfig: createSimpleExtAuth(false)}}},
 			extauth2: nil,
 			expected: false,
 		},
 		{
 			name:     "same instance is equal",
-			extauth1: &extAuthIR{perRoute: createSimpleExtAuth(false)},
-			extauth2: &extAuthIR{perRoute: createSimpleExtAuth(false)},
+			extauth1: &extAuthIR{perProviderConfig: []*perProviderExtAuthConfig{{perRouteConfig: createSimpleExtAuth(false)}}},
+			extauth2: &extAuthIR{perProviderConfig: []*perProviderExtAuthConfig{{perRouteConfig: createSimpleExtAuth(false)}}},
 			expected: true,
 		},
 		{
 			name:     "different disabled settings are not equal",
-			extauth1: &extAuthIR{perRoute: createSimpleExtAuth(true)},
-			extauth2: &extAuthIR{perRoute: createSimpleExtAuth(false)},
+			extauth1: &extAuthIR{perProviderConfig: []*perProviderExtAuthConfig{{perRouteConfig: createSimpleExtAuth(true)}}},
+			extauth2: &extAuthIR{perProviderConfig: []*perProviderExtAuthConfig{{perRouteConfig: createSimpleExtAuth(false)}}},
 			expected: false,
 		},
 		{
 			name:     "different providers are not equal",
-			extauth1: &extAuthIR{provider: createProvider("service1")},
-			extauth2: &extAuthIR{provider: createProvider("service2")},
+			extauth1: &extAuthIR{perProviderConfig: []*perProviderExtAuthConfig{{provider: createProvider("service1")}}},
+			extauth2: &extAuthIR{perProviderConfig: []*perProviderExtAuthConfig{{provider: createProvider("service2")}}},
 			expected: false,
 		},
 		{
 			name:     "same providers are equal",
-			extauth1: &extAuthIR{provider: createProvider("service1")},
-			extauth2: &extAuthIR{provider: createProvider("service1")},
+			extauth1: &extAuthIR{perProviderConfig: []*perProviderExtAuthConfig{{provider: createProvider("service1")}}},
+			extauth2: &extAuthIR{perProviderConfig: []*perProviderExtAuthConfig{{provider: createProvider("service1")}}},
 			expected: true,
 		},
 		{
@@ -105,14 +103,14 @@ func TestExtAuthIREquals(t *testing.T) {
 		},
 		{
 			name:     "nil extauth fields are equal",
-			extauth1: &extAuthIR{perRoute: nil},
-			extauth2: &extAuthIR{perRoute: nil},
+			extauth1: &extAuthIR{},
+			extauth2: &extAuthIR{},
 			expected: true,
 		},
 		{
 			name:     "nil vs non-nil extauth fields are not equal",
-			extauth1: &extAuthIR{perRoute: nil},
-			extauth2: &extAuthIR{perRoute: createSimpleExtAuth(false)},
+			extauth1: &extAuthIR{},
+			extauth2: &extAuthIR{perProviderConfig: []*perProviderExtAuthConfig{{perRouteConfig: createSimpleExtAuth(false)}}},
 			expected: false,
 		},
 	}
@@ -127,42 +125,20 @@ func TestExtAuthIREquals(t *testing.T) {
 			assert.Equal(t, result, reverseResult, "Equals should be symmetric")
 		})
 	}
-
-	// Test reflexivity: x.Equals(x) should always be true for non-nil values
-	t.Run("reflexivity", func(t *testing.T) {
-		extauth := &extAuthIR{perRoute: createSimpleExtAuth(false)}
-		assert.True(t, extauth.Equals(extauth), "extauth should equal itself")
-	})
-
-	// Test transitivity: if a.Equals(b) && b.Equals(c), then a.Equals(c)
-	t.Run("transitivity", func(t *testing.T) {
-		createSameExtAuth := func() *extAuthIR {
-			return &extAuthIR{perRoute: createSimpleExtAuth(true)}
-		}
-
-		a := createSameExtAuth()
-		b := createSameExtAuth()
-		c := createSameExtAuth()
-
-		assert.True(t, a.Equals(b), "a should equal b")
-		assert.True(t, b.Equals(c), "b should equal c")
-		assert.True(t, a.Equals(c), "a should equal c (transitivity)")
-	})
 }
 
 func TestExtAuthForSpec(t *testing.T) {
 	t.Run("configures request body settings", func(t *testing.T) {
-		truthy := true
 		// Setup
 		spec := &v1alpha1.TrafficPolicy{Spec: v1alpha1.TrafficPolicySpec{
 			ExtAuth: &v1alpha1.ExtAuthPolicy{
-				ExtensionRef: &corev1.LocalObjectReference{
+				ExtensionRef: &v1alpha1.NamespacedObjectReference{
 					Name: "test-extension",
 				},
-				WithRequestBody: &v1alpha1.BufferSettings{
+				WithRequestBody: &v1alpha1.ExtAuthBufferSettings{
 					MaxRequestBytes:     1024,
-					AllowPartialMessage: &truthy,
-					PackAsBytes:         &truthy,
+					AllowPartialMessage: true,
+					PackAsBytes:         true,
 				},
 			},
 		}}
@@ -187,11 +163,15 @@ func TestApplyForRoute(t *testing.T) {
 		policy := &TrafficPolicy{
 			spec: trafficPolicySpecIr{
 				extAuth: &extAuthIR{
-					provider: &TrafficPolicyGatewayExtensionIR{
-						Name:    "test-extension",
-						ExtType: v1alpha1.GatewayExtensionTypeExtAuth,
-						ExtAuth: &envoy_ext_authz_v3.ExtAuthz{
-							FailureModeAllow: true,
+					perProviderConfig: []*perProviderExtAuthConfig{
+						{
+							provider: &TrafficPolicyGatewayExtensionIR{
+								Name:    "test-extension",
+								ExtType: v1alpha1.GatewayExtensionTypeExtAuth,
+								ExtAuth: &envoy_ext_authz_v3.ExtAuthz{
+									FailureModeAllow: true,
+								},
+							},
 						},
 					},
 				},
@@ -241,13 +221,16 @@ func TestHttpFilters(t *testing.T) {
 		// Setup
 		plugin := &trafficPolicyPluginGwPass{
 			extAuthPerProvider: ProviderNeededMap{
-				Providers: map[string]map[string]*TrafficPolicyGatewayExtensionIR{
+				Providers: map[string][]Provider{
 					"test-filter-chain": {
-						"test-extension": {
-							Name:    "test-extension",
-							ExtType: v1alpha1.GatewayExtensionTypeExtAuth,
-							ExtAuth: &envoy_ext_authz_v3.ExtAuthz{
-								FailureModeAllow: true,
+						{
+							Name: "test-extension",
+							Extension: &TrafficPolicyGatewayExtensionIR{
+								Name:    "test-extension",
+								ExtType: v1alpha1.GatewayExtensionTypeExtAuth,
+								ExtAuth: &envoy_ext_authz_v3.ExtAuthz{
+									FailureModeAllow: true,
+								},
 							},
 						},
 					},
@@ -266,7 +249,7 @@ func TestHttpFilters(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, filters)
 		assert.Equal(t, 2, len(filters)) // extauth and metadata filter
-		assert.Equal(t, plugins.DuringStage(plugins.AuthZStage), filters[1].Stage)
+		assert.Equal(t, plugins.DuringStage(plugins.AuthNStage), filters[1].Stage)
 	})
 }
 
@@ -278,13 +261,17 @@ func TestExtAuthPolicyPlugin(t *testing.T) {
 		policy := &TrafficPolicy{
 			spec: trafficPolicySpecIr{
 				extAuth: &extAuthIR{
-					provider: &TrafficPolicyGatewayExtensionIR{
-						Name:    "test-auth-extension",
-						ExtType: v1alpha1.GatewayExtensionTypeExtAuth,
-						ExtAuth: &envoy_ext_authz_v3.ExtAuthz{
-							FailureModeAllow: true,
-							WithRequestBody: &envoy_ext_authz_v3.BufferSettings{
-								MaxRequestBytes: 1024,
+					perProviderConfig: []*perProviderExtAuthConfig{
+						{
+							provider: &TrafficPolicyGatewayExtensionIR{
+								Name:    "test-auth-extension",
+								ExtType: v1alpha1.GatewayExtensionTypeExtAuth,
+								ExtAuth: &envoy_ext_authz_v3.ExtAuthz{
+									FailureModeAllow: true,
+									WithRequestBody: &envoy_ext_authz_v3.BufferSettings{
+										MaxRequestBytes: 1024,
+									},
+								},
 							},
 						},
 					},

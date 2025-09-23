@@ -8,6 +8,7 @@ kind: Pod
 metadata:
   labels:
     app: gateway
+    version: v1
     topology.istio.io/network: n1
   name: gateway
 spec:
@@ -83,6 +84,7 @@ kind: Pod
 metadata:
   labels:
     app: reviews
+    version: v1
     topology.istio.io/network: n1
   name: reviews-1
 spec:
@@ -103,6 +105,7 @@ kind: Pod
 metadata:
   labels:
     app: reviews
+    version: v2
     topology.istio.io/network: n1
   name: reviews-2
 spec:
@@ -162,6 +165,7 @@ kind: Pod
 metadata:
   labels:
     app: reviews
+    version: v1
     topology.istio.io/network: n2
   name: reviews-4
 spec:

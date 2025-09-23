@@ -16,6 +16,7 @@ func TestAPIValidation(t *testing.T) {
 	ti := e2e.CreateTestInstallation(t, &install.Context{
 		ValuesManifestFile:        e2e.EmptyValuesManifestPath,
 		ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
+		InstallNamespace:          "kgateway-system",
 	})
 
 	tests := []struct {
@@ -291,44 +292,7 @@ spec:
     kind: Deployment
     name: test-deployment
 `,
-			wantErrors: []string{"targetRefs may only reference Gateway, HTTPRoute, or XListenerSet resources"},
-		},
-		{
-			name: "TrafficPolicy: invalid target ref for hash policy",
-			input: `---
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: TrafficPolicy
-metadata:
-  name: traffic-policy-invalid-hash-policy
-spec:
-  targetRefs:
-  - group: gateway.networking.k8s.io
-    kind: Gateway
-    name: test-gateway
-  hashPolicies:
-  - header:
-      name: "x-user-id"
-    terminal: true
-`,
-			wantErrors: []string{"hash policies can only be used when targeting HTTPRoute resources"},
-		},
-		{
-			name: "TrafficPolicy: valid target ref for hash policy",
-			input: `---
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: TrafficPolicy
-metadata:
-  name: traffic-policy-valid-hash-policy
-spec:
-  targetRefs:
-  - group: gateway.networking.k8s.io
-    kind: HTTPRoute
-    name: test-route
-  hashPolicies:
-  - header:
-      name: "x-user-id"
-    terminal: true
-`,
+			wantErrors: []string{"targetRefs may only reference Gateway, HTTPRoute, XListenerSet, or Backend resources"},
 		},
 		{
 			name: "TrafficPolicy: policy with autoHostRewrite can only target HTTPRoute",
@@ -435,6 +399,369 @@ spec:
 				"spec.rateLimit.global.descriptors[0].entries[0].generic.key in body should be at least 1 chars long",
 				"spec.rateLimit.global.descriptors[0].entries[0].generic.value in body should be at least 1 chars long",
 			},
+		},
+		{
+			name: "TrafficPolicy: valid retry and timeouts",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  retry:
+    retryOn:
+    - gateway-error
+    - connect-failure
+    - reset
+    attempts: 2
+    perTryTimeout: 2s
+    backoffBaseInterval: 50ms
+  timeouts:
+    request: 5s
+    streamIdle: 60s
+`,
+		},
+		{
+			name: "TrafficPolicy: retry.retryOn unset",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  retry:
+    attempts: 2
+    perTryTimeout: 2s
+`,
+			wantErrors: []string{"retryOn or statusCodes must be set"},
+		},
+		{
+			name: "TrafficPolicy: retry.perTryTimeout must be lesser than timeouts.request",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  retry:
+    retryOn:
+    - gateway-error
+    - connect-failure
+    - reset
+    attempts: 2
+    perTryTimeout: 6s
+  timeouts:
+    request: 5s
+    streamIdle: 60s
+`,
+			wantErrors: []string{"retry.perTryTimeout must be lesser than timeouts.request"},
+		},
+		{
+			name: "TrafficPolicy: retry.perTryTimeout must be at least 1ms",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  retry:
+    retryOn:
+    - gateway-error
+    - connect-failure
+    - reset
+    attempts: 2
+    perTryTimeout: 0.1ms
+`,
+			wantErrors: []string{"perTryTimeout must be at least 1ms"},
+		},
+		{
+			name: "TrafficPolicy: retry.perTryTimeout must be a valid duration value",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  retry:
+    retryOn:
+    - gateway-error
+    - connect-failure
+    - reset
+    perTryTimeout: 1f
+`,
+			wantErrors: []string{
+				"spec.retry.perTryTimeout: Invalid value: \"string\": invalid duration value",
+				"spec.retry.perTryTimeout: Invalid value: \"string\": type conversion error from 'string' to 'google.protobuf.Duration' evaluating rule: retry.perTryTimeout must be at least 1ms",
+			},
+		},
+		{
+			name: "TrafficPolicy: targetRefs[].sectionName must be set when targeting Gateway resources with retry policy",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test
+  retry:
+    retryOn:
+    - gateway-error
+`,
+			wantErrors: []string{
+				"targetRefs[].sectionName must be set when targeting Gateway resources with retry policy",
+			},
+		},
+		{
+			name: "TrafficPolicy: targetSelectors[].sectionName must be set when targeting Gateway resources with retry policy",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  targetSelectors:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    matchLabels:
+      foo: bar
+  retry:
+    retryOn:
+    - gateway-error
+`,
+			wantErrors: []string{
+				"targetSelectors[].sectionName must be set when targeting Gateway resources with retry policy",
+			},
+		},
+		{
+			name: "TrafficPolicy: timeouts.request must be a valid duration value",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  timeouts:
+    request: foo
+`,
+			wantErrors: []string{
+				"spec.timeouts.request: Invalid value: \"string\": invalid duration value",
+			},
+		},
+		{
+			name: "TrafficPolicy: timeouts.streamIdle must be a valid duration value",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  timeouts:
+    streamIdle: -1s
+`,
+			wantErrors: []string{
+				"spec.timeouts.streamIdle: Invalid value: \"string\": invalid duration value",
+			},
+		},
+		{
+			name: "TrafficPolicy Buffer maxRequestSize with integer",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  buffer:
+    maxRequestSize: 65536
+`,
+		},
+		{
+			name: "TrafficPolicy Buffer maxRequestSize with string",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  buffer:
+    maxRequestSize: 64Ki
+`,
+		},
+		{
+			name: "TrafficPolicy Buffer maxRequestSize with invalid value",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  buffer:
+    maxRequestSize: 4Gi
+`,
+			wantErrors: []string{"maxRequestSize must be greater than 0 and less than 4Gi"},
+		},
+		{
+			name: "ProxyDeployment: enforce ExactlyOneOf for replicas and omitReplicas",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-proxy-deployment
+spec:
+  kube:
+    deployment:
+      replicas: 3
+      omitReplicas: true
+`,
+			wantErrors: []string{"at most one of the fields in [replicas omitReplicas] may be set"},
+		},
+		{
+			name: "ProxyDeployment: neither replicas nor omitReplicas set (should pass)",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-proxy-deployment-empty
+spec:
+  kube:
+    deployment: {}
+`,
+		},
+		{
+			name: "ProxyDeployment: only replicas set (should pass)",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-proxy-deployment-replicas-only
+spec:
+  kube:
+    deployment:
+      replicas: 3
+`,
+		},
+		{
+			name: "ProxyDeployment: Strategy is fully fleshed out",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-proxy-deployment-empty
+spec:
+  kube:
+    deployment:
+      strategy:
+        type: RollingUpdate
+        rollingUpdate:
+          maxSurge: 100%
+          maxUnavailable: 1
+`,
+		},
+		{
+			name: "ProxyDeployment: Strategy sets maxSurge and uses implicit type RollingUpdate",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-proxy-deployment-maxsurge
+spec:
+  kube:
+    deployment:
+      strategy:
+        rollingUpdate:
+          maxSurge: 100%
+`,
+		},
+		{
+			name: "ProxyDeployment: Strategy has an empty rollingUpdate override",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-proxy-deployment-rollingupdate-empty
+spec:
+  kube:
+    deployment:
+      strategy:
+        rollingUpdate: {}
+`,
+		},
+		{
+			name: "ProxyDeployment: Strategy Recreate",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-proxy-deployment-recreate
+spec:
+  kube:
+    deployment:
+      strategy:
+        type: Recreate
+`,
+		},
+		{
+			name: "ProxyDeployment: Strategy has an unknown rollout type and acts in a forwards-compatible fashion",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-proxy-deployment-unknownstrategem
+spec:
+  kube:
+    deployment:
+      strategy:
+        type: SomeStrategemIntroducedInTheFuture
+`,
+		},
+		{
+			name: "ProxyDeployment: only omitReplicas set (should pass)",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-proxy-deployment-omit-only
+spec:
+  kube:
+    deployment:
+      omitReplicas: true
+`,
+		},
+		{
+			name: "MCP backend selector requires namespace|service to be set",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: mcp-backend
+spec:
+  type: MCP
+  mcp:
+    targets:
+    - name: mcp-app
+      selector: {}
+`,
+			wantErrors: []string{`spec.mcp.targets[0].selector: Invalid value: "object": at least one of namespace or service must be set`},
+		},
+		{
+			name: "MCP backend namespace selector resolves to the reserved CEL keyword __namespace__",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: mcp-backend
+spec:
+  type: MCP
+  mcp:
+    targets:
+    - name: mcp-app
+      selector:
+        namespace:
+          matchLabels:
+            app: mcp-app
+`,
 		},
 	}
 

@@ -1,0 +1,9 @@
+Binds:
+- key: 8080/default/example-gateway
+  port: 8080
+Listeners:
+- bindKey: 8080/default/example-gateway
+  gatewayName: default/example-gateway
+  key: default/example-gateway.http
+  name: http
+  protocol: HTTP
