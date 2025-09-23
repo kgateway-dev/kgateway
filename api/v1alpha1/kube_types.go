@@ -282,7 +282,7 @@ type Pod struct {
 	StartupProbe *corev1.Probe `json:"startupProbe,omitempty"`
 
 	// If specified, the pod's readiness probe. Periodic probe of container service readiness.
-	// Container will be removed from service endpoints if the probe fails. See
+	// Container will be only be added to service endpoints if the probe succeeds. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#probe-v1-core
 	// for details.
 	//

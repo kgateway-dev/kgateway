@@ -75,54 +75,16 @@ func (s *testingSuite) TestZeroDowntimeRollout() {
 		s.T().Fatal("error waiting for command to finish", err)
 	}
 
-	// 	Summary:
-	// 		Total:	30.0113 secs
-	// 		Slowest:	0.0985 secs
-	// 		Fastest:	0.0025 secs
-	// 		Average:	0.0069 secs
-	// 		Requests/sec:	39.9849
-	//
-	// 	Total data:	738000 bytes
-	// 		Size/request:	615 bytes
-	//
-	//   Response time histogram:
-	// 		0.003 [1]		|
-	// 		0.012 [1165]	|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
-	// 		0.022 [24]		|■
-	// 		0.031 [4]		|
-	// 		0.041 [0]		|
-	// 		0.050 [0]		|
-	// 		0.060 [0]		|
-	// 		0.070 [0]		|
-	// 		0.079 [0]		|
-	// 		0.089 [1]		|
-	// 		0.098 [5]		|
-	//
-	//   Latency distribution:
-	// 		10% in 0.0036 secs
-	// 		25% in 0.0044 secs
-	// 		50% in 0.0060 secs
-	// 		75% in 0.0082 secs
-	// 		90% in 0.0099 secs
-	// 		95% in 0.0109 secs
-	// 		99% in 0.0187 secs
-	//
-	//   Details (average, fastest, slowest):
-	// 		DNS+dialup:	0.0028 secs, 0.0025 secs, 0.0985 secs
-	// 		DNS-lookup:	0.0016 secs, 0.0001 secs, 0.0116 secs
-	// 		req write:	0.0003 secs, 0.0001 secs, 0.0041 secs
-	// 		resp wait:	0.0034 secs, 0.0012 secs, 0.0782 secs
-	// 		resp read:	0.0003 secs, 0.0001 secs, 0.0039 secs
-	//
+	// Command output should contain this:
 	//   Status code distribution:
 	// 		[200]	800 responses
 	//
-	// ***** Should not contain something like this *****
+	// And, not contain something like this:
 	//   Status code distribution:
 	// 		[200]	779 responses
 	// 	Error distribution:
-	//   	[17]	Get http://gw.default.svc.cluster.local:8080: dial tcp 10.96.177.91:8080: connection refused
-	//   	[4]	Get http://gw.default.svc.cluster.local:8080: net/http: request canceled while waiting for connection
+	//   	[17]	Get http://agentgw.default.svc.cluster.local:8080: dial tcp 10.96.177.91:8080: connection refused
+	//   	[4]	Get http://agentgw.default.svc.cluster.local:8080: net/http: request canceled while waiting for connection
 
 	// Verify that there were no errors.
 	s.Contains(string(cmd.Output()), "[200]	800 responses")

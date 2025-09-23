@@ -3280,7 +3280,7 @@ func generateStartupProbe() *corev1.Probe {
 				Port: intstr.IntOrString{
 					IntVal: 8082,
 				},
-				Path: "/ready",
+				Path: "/envoy-hc",
 			},
 		},
 		InitialDelaySeconds: 5,

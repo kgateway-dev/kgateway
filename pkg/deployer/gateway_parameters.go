@@ -226,7 +226,7 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 					StartupProbe: &corev1.Probe{
 						ProbeHandler: corev1.ProbeHandler{
 							HTTPGet: &corev1.HTTPGetAction{
-								Path: "/ready",
+								Path: "/envoy-hc",
 								Port: intstr.FromInt(8082),
 							},
 						},
