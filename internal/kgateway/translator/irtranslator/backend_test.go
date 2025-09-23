@@ -9,7 +9,8 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
@@ -20,7 +21,6 @@ func testInitBackend(ctx context.Context, in ir.BackendObjectIR, out *envoyclust
 }
 
 func TestBackendTranslatorTranslatesAppProtocol(t *testing.T) {
-	g := NewWithT(t)
 	var bt irtranslator.BackendTranslator
 	var ucc ir.UniqlyConnectedClient
 	var kctx krt.TestingDummyContext
@@ -40,14 +40,14 @@ func TestBackendTranslatorTranslatesAppProtocol(t *testing.T) {
 	}
 
 	c, err := bt.TranslateBackend(kctx, ucc, backend)
-	g.Expect(err).NotTo(HaveOccurred())
+	require.NoError(t, err)
 	opts := c.GetTypedExtensionProtocolOptions()["envoy.extensions.upstreams.http.v3.HttpProtocolOptions"]
-	g.Expect(opts).NotTo(BeNil())
+	assert.NotNil(t, opts)
 
 	p, err := opts.UnmarshalNew()
-	g.Expect(err).NotTo(HaveOccurred())
+	require.NoError(t, err)
 
 	httpOpts, ok := p.(*envoy_upstreams_v3.HttpProtocolOptions)
-	g.Expect(ok).To(BeTrue())
-	g.Expect(httpOpts.GetExplicitHttpConfig().GetHttp2ProtocolOptions()).NotTo(BeNil())
+	assert.True(t, ok)
+	assert.NotNil(t, httpOpts.GetExplicitHttpConfig().GetHttp2ProtocolOptions())
 }

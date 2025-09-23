@@ -21,7 +21,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 var logger = logging.New("pluginsdk/ir")
@@ -188,43 +188,43 @@ type ProxyTranslationPass interface {
 	ResourcesToAdd(ctx context.Context) Resources
 }
 
-type AgentGatewayRouteContext struct {
+type AgentgatewayRouteContext struct {
 	Rule *gwv1.HTTPRouteRule
 }
 
-type AgentGatewayTranslationBackendContext struct {
+type AgentgatewayTranslationBackendContext struct {
 	Backend        *BackendObjectIR
 	GatewayContext GatewayContext
 }
 
-type AgentGatewayTranslationPass interface {
+type AgentgatewayTranslationPass interface {
 	// ApplyForRoute processes route-level configuration
-	ApplyForRoute(pCtx *AgentGatewayRouteContext, out *api.Route) error
+	ApplyForRoute(pCtx *AgentgatewayRouteContext, out *api.Route) error
 
 	// ApplyForBackend processes backend-level configuration for each backend referenced in routes
-	ApplyForBackend(pCtx *AgentGatewayTranslationBackendContext, out *api.Backend) error
+	ApplyForBackend(pCtx *AgentgatewayTranslationBackendContext, out *api.Backend) error
 
 	// ApplyForRouteBackend processes route-specific backend configuration
-	ApplyForRouteBackend(policy PolicyIR, pCtx *AgentGatewayTranslationBackendContext) error
+	ApplyForRouteBackend(policy PolicyIR, pCtx *AgentgatewayTranslationBackendContext) error
 }
 
 type UnimplementedProxyTranslationPass struct{}
 
 var _ ProxyTranslationPass = UnimplementedProxyTranslationPass{}
 
-type UnimplementedAgentGatewayTranslationPass struct{}
+type UnimplementedAgentgatewayTranslationPass struct{}
 
-var _ AgentGatewayTranslationPass = UnimplementedAgentGatewayTranslationPass{}
+var _ AgentgatewayTranslationPass = UnimplementedAgentgatewayTranslationPass{}
 
-func (s UnimplementedAgentGatewayTranslationPass) ApplyForRoute(pCtx *AgentGatewayRouteContext, out *api.Route) error {
+func (s UnimplementedAgentgatewayTranslationPass) ApplyForRoute(pCtx *AgentgatewayRouteContext, out *api.Route) error {
 	return nil
 }
 
-func (s UnimplementedAgentGatewayTranslationPass) ApplyForBackend(pCtx *AgentGatewayTranslationBackendContext, out *api.Backend) error {
+func (s UnimplementedAgentgatewayTranslationPass) ApplyForBackend(pCtx *AgentgatewayTranslationBackendContext, out *api.Backend) error {
 	return nil
 }
 
-func (s UnimplementedAgentGatewayTranslationPass) ApplyForRouteBackend(policy PolicyIR, pCtx *AgentGatewayTranslationBackendContext) error {
+func (s UnimplementedAgentgatewayTranslationPass) ApplyForRouteBackend(policy PolicyIR, pCtx *AgentgatewayTranslationBackendContext) error {
 	return nil
 }
 
@@ -344,7 +344,7 @@ var ErrNotAttachable = fmt.Errorf("policy is not attachable to this object")
 
 type PolicyRun interface {
 	// Allocate state for single listener+rotue translation pass.
-	NewGatewayTranslationPass(ctx context.Context, tctx GwTranslationCtx, reporter reports.Reporter) ProxyTranslationPass
+	NewGatewayTranslationPass(ctx context.Context, tctx GwTranslationCtx, reporter reporter.Reporter) ProxyTranslationPass
 	// Process cluster for a backend
 	ProcessBackend(ctx context.Context, in BackendObjectIR, out *envoyclusterv3.Cluster) error
 }

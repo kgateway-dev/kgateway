@@ -57,14 +57,13 @@ spec:
   type: AI
   ai:
     llm:
-      provider:
-        vertexai:
-          model: gemini-1.5-flash-001
-          apiVersion: v1
-          location: us-central1
-          projectId: kgateway-project
-          publisher: GOOGLE
-          authToken:
-            kind: "Inline"
-            inline: mysecretkey
+      vertexai:
+        model: gemini-1.5-flash-001
+        apiVersion: v1
+        location: us-central1
+        projectId: kgateway-project
+        publisher: GOOGLE
+        authToken:
+          kind: "Inline"
+          inline: mysecretkey
 ---

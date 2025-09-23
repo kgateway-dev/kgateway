@@ -9,20 +9,20 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	agentgatewaybackend "github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/backend"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	agwbackend "github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/backend"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
-// AgentGatewayBackendTranslator handles translation of backends to agent gateway resources
-type AgentGatewayBackendTranslator struct {
+// AgwBackendTranslator handles translation of backends to agent gateway resources
+type AgwBackendTranslator struct {
 	ContributedBackends map[schema.GroupKind]ir.BackendInit
-	ContributedPolicies map[schema.GroupKind]extensionsplug.PolicyPlugin
+	ContributedPolicies map[schema.GroupKind]sdk.PolicyPlugin
 }
 
-// NewAgentGatewayBackendTranslator creates a new AgentGatewayBackendTranslator
-func NewAgentGatewayBackendTranslator(extensions extensionsplug.Plugin) *AgentGatewayBackendTranslator {
-	translator := &AgentGatewayBackendTranslator{
+// NewAgwBackendTranslator creates a new AgwBackendTranslator
+func NewAgwBackendTranslator(extensions sdk.Plugin) *AgwBackendTranslator {
+	translator := &AgwBackendTranslator{
 		ContributedBackends: make(map[schema.GroupKind]ir.BackendInit),
 		ContributedPolicies: extensions.ContributesPolicies,
 	}
@@ -33,21 +33,21 @@ func NewAgentGatewayBackendTranslator(extensions extensionsplug.Plugin) *AgentGa
 }
 
 // TranslateBackend converts a BackendObjectIR to agent gateway Backend and Policy resources
-func (t *AgentGatewayBackendTranslator) TranslateBackend(
+func (t *AgwBackendTranslator) TranslateBackend(
 	ctx krt.HandlerContext,
 	backend *v1alpha1.Backend,
 	svcCol krt.Collection[*corev1.Service],
 	secretsCol krt.Collection[*corev1.Secret],
 	nsCol krt.Collection[*corev1.Namespace],
 ) ([]*api.Backend, []*api.Policy, error) {
-	backendIr := agentgatewaybackend.BuildAgentGatewayBackendIr(ctx, secretsCol, svcCol, nsCol, backend)
+	backendIr := agwbackend.BuildAgwBackendIr(ctx, secretsCol, svcCol, nsCol, backend)
 	switch backend.Spec.Type {
 	case v1alpha1.BackendTypeStatic:
-		return agentgatewaybackend.ProcessStaticBackendForAgentGateway(backendIr)
+		return agwbackend.ProcessStaticBackendForAgw(backendIr)
 	case v1alpha1.BackendTypeAI:
-		return agentgatewaybackend.ProcessAIBackendForAgentGateway(backendIr)
+		return agwbackend.ProcessAIBackendForAgw(backendIr)
 	case v1alpha1.BackendTypeMCP:
-		return agentgatewaybackend.ProcessMCPBackendForAgentGateway(backendIr)
+		return agwbackend.ProcessMCPBackendForAgw(backendIr)
 	default:
 		return nil, nil, fmt.Errorf("backend of type %s is not supported for agent gateway", backend.Spec.Type)
 	}

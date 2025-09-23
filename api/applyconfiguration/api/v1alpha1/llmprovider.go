@@ -2,13 +2,23 @@
 
 package v1alpha1
 
+import (
+	v1 "sigs.k8s.io/gateway-api/apis/v1"
+)
+
 // LLMProviderApplyConfiguration represents a declarative configuration of the LLMProvider type for use
 // with apply.
 type LLMProviderApplyConfiguration struct {
-	Provider           *SupportedLLMProviderApplyConfiguration `json:"provider,omitempty"`
-	HostOverride       *HostApplyConfiguration                 `json:"hostOverride,omitempty"`
-	PathOverride       *PathOverrideApplyConfiguration         `json:"pathOverride,omitempty"`
-	AuthHeaderOverride *AuthHeaderOverrideApplyConfiguration   `json:"authHeaderOverride,omitempty"`
+	OpenAI      *OpenAIConfigApplyConfiguration      `json:"openai,omitempty"`
+	AzureOpenAI *AzureOpenAIConfigApplyConfiguration `json:"azureopenai,omitempty"`
+	Anthropic   *AnthropicConfigApplyConfiguration   `json:"anthropic,omitempty"`
+	Gemini      *GeminiConfigApplyConfiguration      `json:"gemini,omitempty"`
+	VertexAI    *VertexAIConfigApplyConfiguration    `json:"vertexai,omitempty"`
+	Bedrock     *BedrockConfigApplyConfiguration     `json:"bedrock,omitempty"`
+	Host        *string                              `json:"host,omitempty"`
+	Port        *v1.PortNumber                       `json:"port,omitempty"`
+	Path        *PathOverrideApplyConfiguration      `json:"path,omitempty"`
+	AuthHeader  *AuthHeaderApplyConfiguration        `json:"authHeader,omitempty"`
 }
 
 // LLMProviderApplyConfiguration constructs a declarative configuration of the LLMProvider type for use with
@@ -17,34 +27,82 @@ func LLMProvider() *LLMProviderApplyConfiguration {
 	return &LLMProviderApplyConfiguration{}
 }
 
-// WithProvider sets the Provider field in the declarative configuration to the given value
+// WithOpenAI sets the OpenAI field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Provider field is set to the value of the last call.
-func (b *LLMProviderApplyConfiguration) WithProvider(value *SupportedLLMProviderApplyConfiguration) *LLMProviderApplyConfiguration {
-	b.Provider = value
+// If called multiple times, the OpenAI field is set to the value of the last call.
+func (b *LLMProviderApplyConfiguration) WithOpenAI(value *OpenAIConfigApplyConfiguration) *LLMProviderApplyConfiguration {
+	b.OpenAI = value
 	return b
 }
 
-// WithHostOverride sets the HostOverride field in the declarative configuration to the given value
+// WithAzureOpenAI sets the AzureOpenAI field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the HostOverride field is set to the value of the last call.
-func (b *LLMProviderApplyConfiguration) WithHostOverride(value *HostApplyConfiguration) *LLMProviderApplyConfiguration {
-	b.HostOverride = value
+// If called multiple times, the AzureOpenAI field is set to the value of the last call.
+func (b *LLMProviderApplyConfiguration) WithAzureOpenAI(value *AzureOpenAIConfigApplyConfiguration) *LLMProviderApplyConfiguration {
+	b.AzureOpenAI = value
 	return b
 }
 
-// WithPathOverride sets the PathOverride field in the declarative configuration to the given value
+// WithAnthropic sets the Anthropic field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the PathOverride field is set to the value of the last call.
-func (b *LLMProviderApplyConfiguration) WithPathOverride(value *PathOverrideApplyConfiguration) *LLMProviderApplyConfiguration {
-	b.PathOverride = value
+// If called multiple times, the Anthropic field is set to the value of the last call.
+func (b *LLMProviderApplyConfiguration) WithAnthropic(value *AnthropicConfigApplyConfiguration) *LLMProviderApplyConfiguration {
+	b.Anthropic = value
 	return b
 }
 
-// WithAuthHeaderOverride sets the AuthHeaderOverride field in the declarative configuration to the given value
+// WithGemini sets the Gemini field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the AuthHeaderOverride field is set to the value of the last call.
-func (b *LLMProviderApplyConfiguration) WithAuthHeaderOverride(value *AuthHeaderOverrideApplyConfiguration) *LLMProviderApplyConfiguration {
-	b.AuthHeaderOverride = value
+// If called multiple times, the Gemini field is set to the value of the last call.
+func (b *LLMProviderApplyConfiguration) WithGemini(value *GeminiConfigApplyConfiguration) *LLMProviderApplyConfiguration {
+	b.Gemini = value
+	return b
+}
+
+// WithVertexAI sets the VertexAI field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the VertexAI field is set to the value of the last call.
+func (b *LLMProviderApplyConfiguration) WithVertexAI(value *VertexAIConfigApplyConfiguration) *LLMProviderApplyConfiguration {
+	b.VertexAI = value
+	return b
+}
+
+// WithBedrock sets the Bedrock field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Bedrock field is set to the value of the last call.
+func (b *LLMProviderApplyConfiguration) WithBedrock(value *BedrockConfigApplyConfiguration) *LLMProviderApplyConfiguration {
+	b.Bedrock = value
+	return b
+}
+
+// WithHost sets the Host field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Host field is set to the value of the last call.
+func (b *LLMProviderApplyConfiguration) WithHost(value string) *LLMProviderApplyConfiguration {
+	b.Host = &value
+	return b
+}
+
+// WithPort sets the Port field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Port field is set to the value of the last call.
+func (b *LLMProviderApplyConfiguration) WithPort(value v1.PortNumber) *LLMProviderApplyConfiguration {
+	b.Port = &value
+	return b
+}
+
+// WithPath sets the Path field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Path field is set to the value of the last call.
+func (b *LLMProviderApplyConfiguration) WithPath(value *PathOverrideApplyConfiguration) *LLMProviderApplyConfiguration {
+	b.Path = value
+	return b
+}
+
+// WithAuthHeader sets the AuthHeader field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the AuthHeader field is set to the value of the last call.
+func (b *LLMProviderApplyConfiguration) WithAuthHeader(value *AuthHeaderApplyConfiguration) *LLMProviderApplyConfiguration {
+	b.AuthHeader = value
 	return b
 }

@@ -39,7 +39,7 @@ func DeepMergeGatewayParameters(dst, src *v1alpha1.GatewayParameters) *v1alpha1.
 	dstKube.Stats = deepMergeStatsConfig(dstKube.GetStats(), srcKube.GetStats())
 	dstKube.AiExtension = deepMergeAIExtension(dstKube.GetAiExtension(), srcKube.GetAiExtension())
 	dstKube.FloatingUserId = MergePointers(dstKube.GetFloatingUserId(), srcKube.GetFloatingUserId())
-	dstKube.AgentGateway = deepMergeAgentGateway(dstKube.GetAgentGateway(), srcKube.GetAgentGateway())
+	dstKube.Agentgateway = deepMergeAgentgateway(dstKube.GetAgentgateway(), srcKube.GetAgentgateway())
 
 	return dst
 }
@@ -715,6 +715,8 @@ func deepMergeDeployment(dst, src *v1alpha1.ProxyDeployment) *v1alpha1.ProxyDepl
 		// (dst.Replicas and dst.OmitReplicas remain unchanged)
 	}
 
+	dst.Strategy = MergePointers(dst.Strategy, src.Strategy)
+
 	return dst
 }
 
@@ -769,7 +771,7 @@ func deepMergeAIExtensionStats(dst, src *v1alpha1.AiExtensionStats) *v1alpha1.Ai
 	return dst
 }
 
-func deepMergeAgentGateway(dst, src *v1alpha1.AgentGateway) *v1alpha1.AgentGateway {
+func deepMergeAgentgateway(dst, src *v1alpha1.Agentgateway) *v1alpha1.Agentgateway {
 	// nil src override means just use dst
 	if src == nil {
 		return dst

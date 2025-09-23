@@ -28,7 +28,8 @@ type gatewayReconciler struct {
 	cli           client.Client
 	autoProvision bool
 
-	controllerName string
+	controllerName    string
+	agwControllerName string
 
 	scheme   *runtime.Scheme
 	deployer *deployer.Deployer
@@ -36,11 +37,12 @@ type gatewayReconciler struct {
 
 func NewGatewayReconciler(ctx context.Context, cfg GatewayConfig, deployer *deployer.Deployer) *gatewayReconciler {
 	return &gatewayReconciler{
-		cli:            cfg.Mgr.GetClient(),
-		scheme:         cfg.Mgr.GetScheme(),
-		controllerName: cfg.ControllerName,
-		autoProvision:  cfg.AutoProvision,
-		deployer:       deployer,
+		cli:               cfg.Mgr.GetClient(),
+		scheme:            cfg.Mgr.GetScheme(),
+		controllerName:    cfg.ControllerName,
+		agwControllerName: cfg.AgwControllerName,
+		autoProvision:     cfg.AutoProvision,
+		deployer:          deployer,
 	}
 }
 
@@ -89,7 +91,7 @@ func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 		log.Error(err, "failed to check controller for GatewayClass")
 		return ctrl.Result{}, err
 	}
-	if gwc.Spec.ControllerName != api.GatewayController(r.controllerName) {
+	if gwc.Spec.ControllerName != api.GatewayController(r.controllerName) && gwc.Spec.ControllerName != api.GatewayController(r.agwControllerName) {
 		// ignore, not our GatewayClass
 		return ctrl.Result{}, nil
 	}
@@ -148,7 +150,7 @@ func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 		result.Requeue = true
 	}
 
-	err = r.deployer.DeployObjs(ctx, objs)
+	err = r.deployer.DeployObjsWithSource(ctx, objs, &gw)
 	if err != nil {
 		return result, err
 	}

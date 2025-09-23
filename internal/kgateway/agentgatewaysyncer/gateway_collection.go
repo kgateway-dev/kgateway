@@ -21,29 +21,29 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
-func toResourcep(gw types.NamespacedName, resources []*api.Resource, rm reports.ReportMap) *ir.ADPResourcesForGateway {
+func toResourcep(gw types.NamespacedName, resources []*api.Resource, rm reports.ReportMap) *ir.AgwResourcesForGateway {
 	res := toResource(gw, resources, rm)
 	return &res
 }
 
-func toADPResource(t any) *api.Resource {
+func toAgwResource(t any) *api.Resource {
 	switch tt := t.(type) {
-	case ADPBind:
+	case AgwBind:
 		return &api.Resource{Kind: &api.Resource_Bind{Bind: tt.Bind}}
-	case ADPListener:
+	case AgwListener:
 		return &api.Resource{Kind: &api.Resource_Listener{Listener: tt.Listener}}
-	case ADPRoute:
+	case AgwRoute:
 		return &api.Resource{Kind: &api.Resource_Route{Route: tt.Route}}
-	case ADPTCPRoute:
+	case AgwTCPRoute:
 		return &api.Resource{Kind: &api.Resource_TcpRoute{TcpRoute: tt.TCPRoute}}
-	case ADPPolicy:
+	case AgwPolicy:
 		return &api.Resource{Kind: &api.Resource_Policy{Policy: tt.Policy}}
 	}
 	panic("unknown resource kind")
 }
 
-func toResourceWithRoutes(gw types.NamespacedName, resources []*api.Resource, attachedRoutes map[string]uint, rm reports.ReportMap) ir.ADPResourcesForGateway {
-	return ir.ADPResourcesForGateway{
+func toResourceWithRoutes(gw types.NamespacedName, resources []*api.Resource, attachedRoutes map[string]uint, rm reports.ReportMap) ir.AgwResourcesForGateway {
+	return ir.AgwResourcesForGateway{
 		Resources:      resources,
 		Gateway:        gw,
 		Report:         rm,
@@ -51,83 +51,83 @@ func toResourceWithRoutes(gw types.NamespacedName, resources []*api.Resource, at
 	}
 }
 
-func toResource(gw types.NamespacedName, resources []*api.Resource, rm reports.ReportMap) ir.ADPResourcesForGateway {
-	return ir.ADPResourcesForGateway{
+func toResource(gw types.NamespacedName, resources []*api.Resource, rm reports.ReportMap) ir.AgwResourcesForGateway {
+	return ir.AgwResourcesForGateway{
 		Resources: resources,
 		Gateway:   gw,
 		Report:    rm,
 	}
 }
 
-type ADPBind struct {
+type AgwBind struct {
 	*api.Bind
 }
 
-func (g ADPBind) ResourceName() string {
+func (g AgwBind) ResourceName() string {
 	return g.Key
 }
 
-func (g ADPBind) Equals(other ADPBind) bool {
+func (g AgwBind) Equals(other AgwBind) bool {
 	return protoconv.Equals(g, other)
 }
 
-type ADPListener struct {
+type AgwListener struct {
 	*api.Listener
 }
 
-func (g ADPListener) ResourceName() string {
+func (g AgwListener) ResourceName() string {
 	return g.Key
 }
 
-func (g ADPListener) Equals(other ADPListener) bool {
+func (g AgwListener) Equals(other AgwListener) bool {
 	return protoconv.Equals(g, other)
 }
 
-type ADPPolicy struct {
+type AgwPolicy struct {
 	*api.Policy
 }
 
-func (g ADPPolicy) ResourceName() string {
+func (g AgwPolicy) ResourceName() string {
 	return "policy/" + g.Name
 }
 
-func (g ADPPolicy) Equals(other ADPPolicy) bool {
+func (g AgwPolicy) Equals(other AgwPolicy) bool {
 	return protoconv.Equals(g, other)
 }
 
-type ADPBackend struct {
+type AgwBackend struct {
 	*api.Backend
 }
 
-func (g ADPBackend) ResourceName() string {
+func (g AgwBackend) ResourceName() string {
 	return g.Name
 }
 
-func (g ADPBackend) Equals(other ADPBackend) bool {
+func (g AgwBackend) Equals(other AgwBackend) bool {
 	return protoconv.Equals(g, other)
 }
 
-type ADPRoute struct {
+type AgwRoute struct {
 	*api.Route
 }
 
-func (g ADPRoute) ResourceName() string {
+func (g AgwRoute) ResourceName() string {
 	return g.Key
 }
 
-func (g ADPRoute) Equals(other ADPRoute) bool {
+func (g AgwRoute) Equals(other AgwRoute) bool {
 	return protoconv.Equals(g, other)
 }
 
-type ADPTCPRoute struct {
+type AgwTCPRoute struct {
 	*api.TCPRoute
 }
 
-func (g ADPTCPRoute) ResourceName() string {
+func (g AgwTCPRoute) ResourceName() string {
 	return g.Key
 }
 
-func (g ADPTCPRoute) Equals(other ADPTCPRoute) bool {
+func (g AgwTCPRoute) Equals(other AgwTCPRoute) bool {
 	return protoconv.Equals(g, other)
 }
 
@@ -173,7 +173,7 @@ func (g GatewayListener) Equals(other GatewayListener) bool {
 }
 
 func GatewayCollection(
-	agentGatewayClassName string,
+	agwClassName string,
 	gateways krt.Collection[*gwv1.Gateway],
 	gatewayClasses krt.Collection[GatewayClass],
 	namespaces krt.Collection[*corev1.Namespace],
@@ -187,7 +187,7 @@ func GatewayCollection(
 		gwReporter := statusReporter.Gateway(obj)
 		logger.Debug("translating Gateway", "gw_name", obj.GetName(), "resource_version", obj.GetResourceVersion())
 
-		if string(obj.Spec.GatewayClassName) != agentGatewayClassName {
+		if string(obj.Spec.GatewayClassName) != agwClassName {
 			return nil // ignore non agentgateway gws
 		}
 

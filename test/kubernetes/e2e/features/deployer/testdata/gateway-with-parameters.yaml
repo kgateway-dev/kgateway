@@ -39,6 +39,15 @@ spec:
   kube:
     deployment:
       replicas: 1
+      strategy:
+        rollingUpdate:
+          maxSurge: 2
+          maxUnavailable: 1%
+        # TODO(chandler): At admission time, reject a GatewayParameters object
+        # if it would later lead to 'failed to apply object ...  is invalid:
+        # spec.strategy.rollingUpdate: Forbidden: may not be specified when
+        # strategy `type` is 'Recreate'
+        type: RollingUpdate
     podTemplate:
       extraLabels:
         pod-label-key: pod-label-val

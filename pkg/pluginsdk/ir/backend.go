@@ -18,7 +18,7 @@ import (
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	pluginsdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 type ObjectSource struct {
@@ -260,7 +260,7 @@ type Listener struct {
 	PolicyAncestorRef gwv1.ParentReference
 }
 
-func (listener Listener) GetParentReporter(reporter pluginsdkreporter.Reporter) pluginsdkreporter.GatewayReporter {
+func (listener Listener) GetParentReporter(reporter reporter.Reporter) reporter.GatewayReporter {
 	switch t := listener.Parent.(type) {
 	case *gwv1.Gateway:
 		return reporter.Gateway(t)

@@ -21,7 +21,7 @@ import (
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	apilabels "github.com/kgateway-dev/kgateway/v2/api/labels"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/backendref"
@@ -29,9 +29,9 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/delegation"
 	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	pluginsdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
@@ -558,7 +558,7 @@ func (h *PolicyIndex) HasSynced() bool {
 
 func NewPolicyIndex(
 	krtopts krtinternal.KrtOptions,
-	contributesPolicies extensionsplug.ContributesPolicies,
+	contributesPolicies sdk.ContributesPolicies,
 	globalSettings settings.Settings,
 ) *PolicyIndex {
 	index := &PolicyIndex{

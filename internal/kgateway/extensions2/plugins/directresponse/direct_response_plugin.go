@@ -19,11 +19,11 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	extensionplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 type directResponse struct {
@@ -46,7 +46,7 @@ func (d *directResponse) Equals(in any) bool {
 
 type directResponsePluginGwPass struct {
 	ir.UnimplementedProxyTranslationPass
-	reporter reports.Reporter
+	reporter reporter.Reporter
 }
 
 var _ ir.ProxyTranslationPass = &directResponsePluginGwPass{}
@@ -64,7 +64,7 @@ func registerTypes(ourCli versioned.Interface) {
 	)
 }
 
-func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionplug.Plugin {
+func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) sdk.Plugin {
 	registerTypes(commoncol.OurClient)
 
 	col := krt.WrapClient(kclient.NewFiltered[*v1alpha1.DirectResponse](
@@ -88,8 +88,8 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		return pol
 	})
 
-	return extensionplug.Plugin{
-		ContributesPolicies: map[schema.GroupKind]extensionplug.PolicyPlugin{
+	return sdk.Plugin{
+		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			wellknown.DirectResponseGVK.GroupKind(): {
 				Name:                      "directresponse",
 				Policies:                  policyCol,
@@ -99,7 +99,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	}
 }
 
-func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {
+func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
 	return &directResponsePluginGwPass{
 		reporter: reporter,
 	}

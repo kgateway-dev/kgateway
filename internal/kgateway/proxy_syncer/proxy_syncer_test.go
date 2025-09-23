@@ -10,6 +10,7 @@ import (
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
@@ -267,7 +268,7 @@ func TestMergeProxyReports(t *testing.T) {
 			proxies: []GatewayXdsResources{
 				{
 					reports: reports.ReportMap{
-						Policies: map[reports.PolicyKey]*reports.PolicyReport{
+						Policies: map[reporter.PolicyKey]*reports.PolicyReport{
 							{Name: "policy1", Namespace: "default"}: {
 								Ancestors: map[reports.ParentRefKey]*reports.AncestorRefReport{
 									{NamespacedName: types.NamespacedName{Name: "gw-1", Namespace: "default"}}: {},
@@ -278,7 +279,7 @@ func TestMergeProxyReports(t *testing.T) {
 				},
 				{
 					reports: reports.ReportMap{
-						Policies: map[reports.PolicyKey]*reports.PolicyReport{
+						Policies: map[reporter.PolicyKey]*reports.PolicyReport{
 							{Name: "policy1", Namespace: "default"}: {
 								Ancestors: map[reports.ParentRefKey]*reports.AncestorRefReport{
 									{NamespacedName: types.NamespacedName{Name: "gw-2", Namespace: "default"}}: {},
@@ -289,7 +290,7 @@ func TestMergeProxyReports(t *testing.T) {
 				},
 			},
 			expected: reports.ReportMap{
-				Policies: map[reports.PolicyKey]*reports.PolicyReport{
+				Policies: map[reporter.PolicyKey]*reports.PolicyReport{
 					{Name: "policy1", Namespace: "default"}: {
 						Ancestors: map[reports.ParentRefKey]*reports.AncestorRefReport{
 							{NamespacedName: types.NamespacedName{Name: "gw-1", Namespace: "default"}}: {},

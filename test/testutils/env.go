@@ -9,7 +9,7 @@ const (
 	// and teardown of kgateway.
 	SkipInstall = "SKIP_INSTALL"
 
-	// InstallNamespace is the namespace in which Gloo is installed
+	// InstallNamespace is the namespace in which kgateway is installed
 	InstallNamespace = "INSTALL_NAMESPACE"
 
 	// SkipIstioInstall is a flag that indicates whether to skip the install of Istio.

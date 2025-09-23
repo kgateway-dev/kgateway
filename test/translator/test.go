@@ -35,8 +35,8 @@ import (
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
@@ -52,7 +52,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
-	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
@@ -677,7 +676,7 @@ func (tc TestCase) Run(
 		Group: "",
 		Kind:  "test-backend-plugin",
 	}
-	extensions.ContributesPolicies[gk] = extensionsplug.PolicyPlugin{
+	extensions.ContributesPolicies[gk] = pluginsdk.PolicyPlugin{
 		Name: "test-backend-plugin",
 	}
 	testBackend := ir.NewBackendObjectIR(ir.ObjectSource{
@@ -685,7 +684,7 @@ func (tc TestCase) Run(
 		Namespace: "default",
 		Name:      "example-svc",
 	}, 80, "")
-	extensions.ContributesBackends[gk] = extensionsplug.BackendPlugin{
+	extensions.ContributesBackends[gk] = pluginsdk.BackendPlugin{
 		Backends: krt.NewStaticCollection(nil, []ir.BackendObjectIR{
 			testBackend,
 		}),

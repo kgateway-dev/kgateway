@@ -11,12 +11,12 @@ import (
 // with apply.
 type TLSApplyConfiguration struct {
 	SecretRef               *v1.LocalObjectReference              `json:"secretRef,omitempty"`
-	TLSFiles                *TLSFilesApplyConfiguration           `json:"tlsFiles,omitempty"`
+	Files                   *TLSFilesApplyConfiguration           `json:"files,omitempty"`
 	WellKnownCACertificates *v1alpha3.WellKnownCACertificatesType `json:"wellKnownCACertificates,omitempty"`
 	InsecureSkipVerify      *bool                                 `json:"insecureSkipVerify,omitempty"`
 	Sni                     *string                               `json:"sni,omitempty"`
-	VerifySubjectAltName    []string                              `json:"verifySubjectAltName,omitempty"`
-	Parameters              *ParametersApplyConfiguration         `json:"parameters,omitempty"`
+	VerifySubjectAltNames   []string                              `json:"verifySubjectAltNames,omitempty"`
+	Parameters              *TLSParametersApplyConfiguration      `json:"parameters,omitempty"`
 	AlpnProtocols           []string                              `json:"alpnProtocols,omitempty"`
 	AllowRenegotiation      *bool                                 `json:"allowRenegotiation,omitempty"`
 	SimpleTLS               *bool                                 `json:"simpleTLS,omitempty"`
@@ -36,11 +36,11 @@ func (b *TLSApplyConfiguration) WithSecretRef(value v1.LocalObjectReference) *TL
 	return b
 }
 
-// WithTLSFiles sets the TLSFiles field in the declarative configuration to the given value
+// WithFiles sets the Files field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the TLSFiles field is set to the value of the last call.
-func (b *TLSApplyConfiguration) WithTLSFiles(value *TLSFilesApplyConfiguration) *TLSApplyConfiguration {
-	b.TLSFiles = value
+// If called multiple times, the Files field is set to the value of the last call.
+func (b *TLSApplyConfiguration) WithFiles(value *TLSFilesApplyConfiguration) *TLSApplyConfiguration {
+	b.Files = value
 	return b
 }
 
@@ -68,12 +68,12 @@ func (b *TLSApplyConfiguration) WithSni(value string) *TLSApplyConfiguration {
 	return b
 }
 
-// WithVerifySubjectAltName adds the given value to the VerifySubjectAltName field in the declarative configuration
+// WithVerifySubjectAltNames adds the given value to the VerifySubjectAltNames field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the VerifySubjectAltName field.
-func (b *TLSApplyConfiguration) WithVerifySubjectAltName(values ...string) *TLSApplyConfiguration {
+// If called multiple times, values provided by each call will be appended to the VerifySubjectAltNames field.
+func (b *TLSApplyConfiguration) WithVerifySubjectAltNames(values ...string) *TLSApplyConfiguration {
 	for i := range values {
-		b.VerifySubjectAltName = append(b.VerifySubjectAltName, values[i])
+		b.VerifySubjectAltNames = append(b.VerifySubjectAltNames, values[i])
 	}
 	return b
 }
@@ -81,7 +81,7 @@ func (b *TLSApplyConfiguration) WithVerifySubjectAltName(values ...string) *TLSA
 // WithParameters sets the Parameters field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Parameters field is set to the value of the last call.
-func (b *TLSApplyConfiguration) WithParameters(value *ParametersApplyConfiguration) *TLSApplyConfiguration {
+func (b *TLSApplyConfiguration) WithParameters(value *TLSParametersApplyConfiguration) *TLSApplyConfiguration {
 	b.Parameters = value
 	return b
 }

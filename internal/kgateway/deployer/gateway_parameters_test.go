@@ -20,15 +20,15 @@ import (
 	api "sigs.k8s.io/gateway-api/apis/v1"
 	apixv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/settings"
 	gw2_v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	common "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
-	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 )
 
 const (
@@ -220,7 +220,7 @@ func TestGatewayGVKsToWatch(t *testing.T) {
 	cli := newFakeClientWithObjs(gwc, gwParams)
 	gwp := NewGatewayParameters(cli, defaultInputs(t, gwc))
 
-	d, err := NewGatewayDeployer(wellknown.DefaultGatewayControllerName, cli, gwp)
+	d, err := NewGatewayDeployer(wellknown.DefaultGatewayControllerName, wellknown.DefaultAgwControllerName, wellknown.DefaultAgwClassName, cli, gwp)
 	assert.NoError(t, err)
 
 	gvks, err := GatewayGVKsToWatch(context.TODO(), d)
@@ -239,7 +239,7 @@ func TestInferencePoolGVKsToWatch(t *testing.T) {
 	gwParams := emptyGatewayParameters()
 	cli := newFakeClientWithObjs(gwc, gwParams)
 
-	d, err := NewInferencePoolDeployer(wellknown.DefaultGatewayControllerName, cli)
+	d, err := NewInferencePoolDeployer(wellknown.DefaultGatewayControllerName, wellknown.DefaultAgwControllerName, wellknown.DefaultAgwClassName, cli)
 	assert.NoError(t, err)
 
 	gvks, err := InferencePoolGVKsToWatch(context.TODO(), d)
@@ -290,8 +290,9 @@ func defaultInputs(t *testing.T, objs ...client.Object) *deployer.Inputs {
 		CommonCollections: newCommonCols(t, objs...),
 		Dev:               false,
 		ControlPlane: deployer.ControlPlaneInfo{
-			XdsHost: "something.cluster.local",
-			XdsPort: 1234,
+			XdsHost:    "something.cluster.local",
+			XdsPort:    1234,
+			AgwXdsPort: 5678,
 		},
 		ImageInfo: &deployer.ImageInfo{
 			Registry: "foo",
@@ -299,7 +300,7 @@ func defaultInputs(t *testing.T, objs ...client.Object) *deployer.Inputs {
 		},
 		GatewayClassName:         wellknown.DefaultGatewayClassName,
 		WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-		AgentGatewayClassName:    wellknown.DefaultAgentGatewayClassName,
+		AgentgatewayClassName:    wellknown.DefaultAgwClassName,
 	}
 }
 
@@ -337,7 +338,7 @@ func newCommonCols(t test.Failer, initObjs ...client.Object) *common.CommonColle
 	}
 	mock := krttest.NewMock(t, anys)
 
-	policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, extensionsplug.ContributesPolicies{}, settings.Settings{})
+	policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, sdk.ContributesPolicies{}, settings.Settings{})
 	kubeRawGateways := krttest.GetMockCollection[*api.Gateway](mock)
 	kubeRawListenerSets := krttest.GetMockCollection[*apixv1a1.XListenerSet](mock)
 	gatewayClasses := krttest.GetMockCollection[*api.GatewayClass](mock)

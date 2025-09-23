@@ -152,7 +152,7 @@ func (a *Applier) applyOne(ctx context.Context, i int, obj *TemplateInfo, dynami
 	if a.Delete {
 		err = dynamicClient.Resource(obj.Mapping.Resource).Namespace(objToCreate.GetNamespace()).Delete(ctx, objToCreate.GetName(), metav1.DeleteOptions{})
 	} else {
-		_, err = dynamicClient.Resource(obj.Mapping.Resource).Namespace(objToCreate.GetNamespace()).Apply(ctx, objToCreate.GetName(), objToCreate, metav1.ApplyOptions{FieldManager: "solo-io/applier", Force: a.Force})
+		_, err = dynamicClient.Resource(obj.Mapping.Resource).Namespace(objToCreate.GetNamespace()).Apply(ctx, objToCreate.GetName(), objToCreate, metav1.ApplyOptions{FieldManager: "kgateway-dev/applier", Force: a.Force})
 	}
 	return err
 }
