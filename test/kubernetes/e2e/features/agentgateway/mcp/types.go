@@ -11,8 +11,6 @@ import (
 
 type testingSuite struct {
 	*base.BaseTestingSuite
-	// mcpSessionID is the session ID for the MCP server
-	mcpSessionID string
 }
 
 type ToolsListResponse struct {
