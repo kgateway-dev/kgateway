@@ -25,7 +25,7 @@ make docker
 
 Then load it into the kind cluster where you are running the e2e tests:
 ```shell
- kind load --name kind docker-image ghcr.io/agentgateway/agentgateway:my-commit-sha
+kind load --name kind docker-image ghcr.io/agentgateway/agentgateway:my-commit-sha
 ```
 
 You can configure the agentgateway Gateway class to use a specific image by setting the image field on the
@@ -70,5 +70,5 @@ spec:
           from: All
 ```
 
-This is useful for testing, but the final e2e agentgateways tests should use a released agentgateway image and not a 
+This is useful for testing, but the final e2e agentgateway tests should use a released agentgateway image and not a 
 local build.
