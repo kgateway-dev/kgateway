@@ -315,7 +315,9 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 	}
 
 	setupLog.Info("creating gateway class provisioner")
-	if err := NewGatewayClassProvisioner(c.mgr, c.cfg.ControllerName, c.cfg.AgwControllerName, c.cfg.AgentgatewayClassName, GetDefaultClassInfo(globalSettings, c.cfg.GatewayClassName, c.cfg.WaypointGatewayClassName, c.cfg.AgentgatewayClassName, c.cfg.AdditionalGatewayClasses)); err != nil {
+	if err := NewGatewayClassProvisioner(c.mgr, c.cfg.ControllerName,
+		GetDefaultClassInfo(globalSettings, c.cfg.GatewayClassName, c.cfg.WaypointGatewayClassName,
+			c.cfg.AgentgatewayClassName, c.cfg.ControllerName, c.cfg.AgwControllerName, c.cfg.AdditionalGatewayClasses)); err != nil {
 		setupLog.Error(err, "unable to create gateway class provisioner")
 		return err
 	}
@@ -365,13 +367,14 @@ func (c *ControllerBuilder) HasSynced() bool {
 // GetDefaultClassInfo returns the default GatewayClass for the kgateway controller.
 // Exported for testing.
 func GetDefaultClassInfo(globalSettings *settings.Settings,
-	gatewayClassName, waypointGatewayClassName, agwClassName string,
+	gatewayClassName, waypointGatewayClassName, agwClassName, controllerName, agwControllerName string,
 	additionalClassInfos map[string]*deployer.GatewayClassInfo) map[string]*deployer.GatewayClassInfo {
 	classInfos := map[string]*deployer.GatewayClassInfo{
 		gatewayClassName: {
-			Description: "Standard class for managing Gateway API ingress traffic.",
-			Labels:      map[string]string{},
-			Annotations: map[string]string{},
+			Description:    "Standard class for managing Gateway API ingress traffic.",
+			Labels:         map[string]string{},
+			Annotations:    map[string]string{},
+			ControllerName: controllerName,
 		},
 		waypointGatewayClassName: {
 			Description: "Specialized class for Istio ambient mesh waypoint proxies.",
@@ -379,14 +382,16 @@ func GetDefaultClassInfo(globalSettings *settings.Settings,
 			Annotations: map[string]string{
 				"ambient.istio.io/waypoint-inbound-binding": "PROXY/15088",
 			},
+			ControllerName: controllerName,
 		},
 	}
 	// Only enable agentgateway gateway class if it's enabled in the settings
 	if globalSettings.EnableAgentgateway {
 		classInfos[agwClassName] = &deployer.GatewayClassInfo{
-			Description: "Specialized class for agentgateway.",
-			Labels:      map[string]string{},
-			Annotations: map[string]string{},
+			Description:    "Specialized class for agentgateway.",
+			Labels:         map[string]string{},
+			Annotations:    map[string]string{},
+			ControllerName: agwControllerName,
 		}
 	}
 	for class, classInfo := range additionalClassInfos {

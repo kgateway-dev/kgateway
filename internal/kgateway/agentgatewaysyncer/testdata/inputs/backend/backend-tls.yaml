@@ -34,6 +34,22 @@ spec:
     backendRefs:
     - name: mcp-svc
       port: 80
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /ai-groups
+    backendRefs:
+    - group: gateway.kgateway.dev
+      kind: Backend
+      name: ai-groups
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /openai-single
+    backendRefs:
+    - group: gateway.kgateway.dev
+      kind: Backend
+      name: openai-single
 ---
 apiVersion: v1
 kind: Service
@@ -124,3 +140,90 @@ data:
     MIIE...
     -----END CERTIFICATE-----
 ---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  labels:
+    app: kgateway
+  name: ai-groups
+spec:
+  type: AI
+  ai:
+    priorityGroups:
+    - providers:
+      - name: openai
+        openai:
+          model: "gpt-4o"
+          authToken:
+            kind: "SecretRef"
+            secretRef:
+              name: openai-primary-secret
+      - name: anthropic
+        anthropic:
+          model: "claude-3-opus-20240229"
+          authToken:
+            kind: "Inline"
+            inline: "sk-anthropic-primary"
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  labels:
+    app: kgateway
+  name: openai-single
+spec:
+  type: AI
+  ai:
+    llm:
+      openai:
+        model: "gpt-4o"
+        authToken:
+          kind: "SecretRef"
+          secretRef:
+            name: openai-primary-secret         
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  labels:
+    app: kgateway
+  name: anthropic-single
+spec:
+  type: AI
+  ai:
+    llm:
+      anthropic:
+        model: "claude-3-opus-20240229"
+        authToken:
+          kind: "Inline"
+          inline: "sk-anthropic-primary"          
+---
+apiVersion: gateway.networking.k8s.io/v1alpha3
+kind: BackendTLSPolicy
+metadata:
+  name: ai-tls
+spec:
+  targetRefs:
+  - name: ai-groups
+    kind: Backend
+    group: gateway.kgateway.dev
+    sectionName: anthropic
+  - name: openai-single
+    kind: Backend
+    group: gateway.kgateway.dev
+  validation:
+    hostname: foo
+    wellKnownCACertificates: System
+---
+apiVersion: gateway.networking.k8s.io/v1alpha3
+kind: BackendTLSPolicy
+metadata:
+  name: ai-tls-all-groups
+spec:
+  targetRefs:
+  - name: ai-groups
+    kind: Backend
+    group: gateway.kgateway.dev
+  validation:
+    hostname: baz
+    wellKnownCACertificates: System    

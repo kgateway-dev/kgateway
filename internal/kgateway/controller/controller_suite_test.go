@@ -59,13 +59,18 @@ const (
 )
 
 var (
-	cfg          *rest.Config
-	k8sClient    client.Client
-	testEnv      *envtest.Environment
-	ctx          context.Context
-	cancel       context.CancelFunc
-	kubeconfig   string
-	gwClasses    = sets.New(gatewayClassName, altGatewayClassName, selfManagedGatewayClassName)
+	cfg             *rest.Config
+	k8sClient       client.Client
+	testEnv         *envtest.Environment
+	ctx             context.Context
+	cancel          context.CancelFunc
+	kubeconfig      string
+	gwClasses       = sets.New(gatewayClassName, altGatewayClassName, selfManagedGatewayClassName)
+	gwControllerMap = map[string]string{
+		gatewayClassName:            gatewayControllerName,
+		altGatewayClassName:         agwControllerName,
+		selfManagedGatewayClassName: gatewayControllerName,
+	}
 	scheme       *runtime.Scheme
 	inferenceExt *deployer.InferenceExtInfo
 )
@@ -207,9 +212,10 @@ func createManager(
 	ctx, cancel := context.WithCancel(parentCtx)
 	kubeClient, _ := setup.CreateKubeClient(cfg)
 	gwCfg := controller.GatewayConfig{
-		Mgr:            mgr,
-		ControllerName: gatewayControllerName,
-		AutoProvision:  true,
+		Mgr:               mgr,
+		ControllerName:    gatewayControllerName,
+		AgwControllerName: agwControllerName,
+		AutoProvision:     true,
 		ImageInfo: &deployer.ImageInfo{
 			Registry: "ghcr.io/kgateway-dev",
 			Tag:      "latest",
@@ -238,10 +244,12 @@ func createManager(
 	if classConfigs == nil {
 		classConfigs = map[string]*deployer.GatewayClassInfo{}
 		classConfigs[altGatewayClassName] = &deployer.GatewayClassInfo{
-			Description: "alt gateway class",
+			Description:    "alt gateway class",
+			ControllerName: agwControllerName, // custom controller name (not default)
 		}
 		classConfigs[gatewayClassName] = &deployer.GatewayClassInfo{
-			Description: "default gateway class",
+			Description:    "default gateway class",
+			ControllerName: gatewayControllerName,
 		}
 		classConfigs[selfManagedGatewayClassName] = &deployer.GatewayClassInfo{
 			Description: "self managed gw",
@@ -251,10 +259,11 @@ func createManager(
 				Name:      selfManagedGatewayClassName,
 				Namespace: ptr.To(apiv1.Namespace("default")),
 			},
+			// no controller name set, uses default
 		}
 	}
 
-	if err := controller.NewGatewayClassProvisioner(mgr, gatewayControllerName, agwControllerName, wellknown.DefaultAgwClassName, classConfigs); err != nil {
+	if err := controller.NewGatewayClassProvisioner(mgr, gatewayControllerName, classConfigs); err != nil {
 		cancel()
 		return nil, err
 	}

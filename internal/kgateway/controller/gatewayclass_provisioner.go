@@ -20,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 )
 
@@ -30,43 +31,29 @@ type gatewayClassProvisioner struct {
 	cache.Informers
 	// classConfigs maps a GatewayClass name to its desired configuration.
 	classConfigs map[string]*deployer.GatewayClassInfo
-	// controllerName is the name of the controller that is managing the GatewayClass objects.
-	controllerName string
-	// agwControllerName is the name of the agentgateway controller that is managing the GatewayClass objects.
-	agwControllerName string
 	// initialReconcileCh is a channel that is used to trigger initial reconciliation when
 	// no GatewayClass objects exist in the cluster.
 	initialReconcileCh chan event.TypedGenericEvent[client.Object]
-	// agwGatewayClassName is the agentgateway gateway class name.
-	agwGatewayClassName string
+	// defaultControllerName is the name of the default controller that is managing the GatewayClass objects (kgateway).
+	defaultControllerName string
 }
 
 var _ reconcile.TypedReconciler[reconcile.Request] = &gatewayClassProvisioner{}
 var _ manager.LeaderElectionRunnable = &gatewayClassProvisioner{}
-
-// getControllerNameForClass returns the appropriate controller name based on the gateway class name
-func (r *gatewayClassProvisioner) getControllerNameForClass(className string) string {
-	if className == r.agwGatewayClassName {
-		return r.agwControllerName
-	}
-	return r.controllerName
-}
 
 // NewGatewayClassProvisioner creates a new GatewayClassProvisioner. It will
 // watch for kick events on the channel for initial reconciliation and delete
 // events to trigger the re-creation of the GatewayClass. Additionally, it ignores
 // update events to allow users to modify the GatewayClasses without this controller
 // overwriting them.
-func NewGatewayClassProvisioner(mgr ctrl.Manager, controllerName, agwControllerName, agwGatewayClassName string, classConfigs map[string]*deployer.GatewayClassInfo) error {
+func NewGatewayClassProvisioner(mgr ctrl.Manager, defaultControllerName string, classConfigs map[string]*deployer.GatewayClassInfo) error {
 	initialReconcileCh := make(chan event.TypedGenericEvent[client.Object], 1)
 	provisioner := &gatewayClassProvisioner{
-		Client:              mgr.GetClient(),
-		Informers:           mgr.GetCache(),
-		controllerName:      controllerName,
-		agwControllerName:   agwControllerName,
-		agwGatewayClassName: agwGatewayClassName,
-		classConfigs:        classConfigs,
-		initialReconcileCh:  initialReconcileCh,
+		Client:                mgr.GetClient(),
+		Informers:             mgr.GetCache(),
+		defaultControllerName: defaultControllerName,
+		classConfigs:          classConfigs,
+		initialReconcileCh:    initialReconcileCh,
 	}
 	if err := provisioner.SetupWithManager(mgr); err != nil {
 		return err
@@ -88,7 +75,12 @@ func (r *gatewayClassProvisioner) SetupWithManager(mgr ctrl.Manager) error {
 				return false
 			}
 			// only reconcile GatewayClass objects that are managed by this controller
-			return gc.Spec.ControllerName == apiv1.GatewayController(r.controllerName) || gc.Spec.ControllerName == apiv1.GatewayController(r.agwControllerName)
+			// the controller is determined by the GatewayClassInfo tied to the class name, or the default controller if none is set
+			classConfig, exists := r.classConfigs[gc.Name]
+			if !exists {
+				return gc.Spec.ControllerName == apiv1.GatewayController(r.defaultControllerName)
+			}
+			return gc.Spec.ControllerName == apiv1.GatewayController(classConfig.ControllerName)
 		})).
 		WatchesRawSource(source.Channel(r.initialReconcileCh, handler.TypedEnqueueRequestsFromMapFunc(
 			func(ctx context.Context, o client.Object) []reconcile.Request {
@@ -126,6 +118,10 @@ func (r *gatewayClassProvisioner) createGatewayClass(ctx context.Context, name s
 		return err
 	}
 
+	controllerName := r.defaultControllerName
+	if r.classConfigs[name] != nil && r.classConfigs[name].ControllerName != "" {
+		controllerName = r.classConfigs[name].ControllerName
+	}
 	gc = &apiv1.GatewayClass{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        name,
@@ -133,7 +129,7 @@ func (r *gatewayClassProvisioner) createGatewayClass(ctx context.Context, name s
 			Labels:      config.Labels,
 		},
 		Spec: apiv1.GatewayClassSpec{
-			ControllerName: apiv1.GatewayController(r.getControllerNameForClass(name)),
+			ControllerName: apiv1.GatewayController(controllerName),
 		},
 	}
 	if config.Description != "" {
@@ -183,7 +179,7 @@ func (r *gatewayClassProvisioner) Start(ctx context.Context) error {
 				Name: "manual",
 			},
 			Spec: apiv1.GatewayClassSpec{
-				ControllerName: apiv1.GatewayController(r.controllerName),
+				ControllerName: wellknown.DefaultGatewayControllerName,
 			},
 		},
 	}

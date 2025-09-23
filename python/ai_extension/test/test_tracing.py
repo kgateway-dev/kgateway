@@ -149,6 +149,8 @@ class TestTracing:
             ("30s", 30),
             ("5m", 300),  # 5 * 60
             ("2h", 7200),  # 2 * 60 * 60
+            ("1m30s", 90),  # 1 * 60 + 30
+            ("1ms", 1),  # < 1s, round up to 1 second
             ("120", 120),  # plain string number
             (60, 60),  # integer
         ],

@@ -534,22 +534,28 @@ func TestBuildAIBackendIr(t *testing.T) {
 					AI: &v1alpha1.AIBackend{
 						PriorityGroups: []v1alpha1.PriorityGroup{
 							{
-								Providers: []v1alpha1.LLMProvider{
+								Providers: []v1alpha1.NamedLLMProvider{
 									{
-										OpenAI: &v1alpha1.OpenAIConfig{
-											Model: stringPtr("gpt-4"),
-											AuthToken: v1alpha1.SingleAuthToken{
-												Kind:   v1alpha1.Inline,
-												Inline: stringPtr("first-token"),
+										Name: "openai",
+										LLMProvider: v1alpha1.LLMProvider{
+											OpenAI: &v1alpha1.OpenAIConfig{
+												Model: stringPtr("gpt-4"),
+												AuthToken: v1alpha1.SingleAuthToken{
+													Kind:   v1alpha1.Inline,
+													Inline: stringPtr("first-token"),
+												},
 											},
 										},
 									},
 									{
-										Anthropic: &v1alpha1.AnthropicConfig{
-											Model: stringPtr("claude-3"),
-											AuthToken: v1alpha1.SingleAuthToken{
-												Kind:   v1alpha1.Inline,
-												Inline: stringPtr("second-token"),
+										Name: "anthropic",
+										LLMProvider: v1alpha1.LLMProvider{
+											Anthropic: &v1alpha1.AnthropicConfig{
+												Model: stringPtr("claude-3"),
+												AuthToken: v1alpha1.SingleAuthToken{
+													Kind:   v1alpha1.Inline,
+													Inline: stringPtr("second-token"),
+												},
 											},
 										},
 									},
@@ -608,35 +614,44 @@ func TestBuildAIBackendIr(t *testing.T) {
 					AI: &v1alpha1.AIBackend{
 						PriorityGroups: []v1alpha1.PriorityGroup{
 							{
-								Providers: []v1alpha1.LLMProvider{
+								Providers: []v1alpha1.NamedLLMProvider{
 									{
-										OpenAI: &v1alpha1.OpenAIConfig{
-											Model: stringPtr("gpt-4"),
-											AuthToken: v1alpha1.SingleAuthToken{
-												Kind:   v1alpha1.Inline,
-												Inline: stringPtr("openai-primary"),
+										Name: "openai",
+										LLMProvider: v1alpha1.LLMProvider{
+											OpenAI: &v1alpha1.OpenAIConfig{
+												Model: stringPtr("gpt-4"),
+												AuthToken: v1alpha1.SingleAuthToken{
+													Kind:   v1alpha1.Inline,
+													Inline: stringPtr("openai-primary"),
+												},
 											},
 										},
 									},
 									{
-										Anthropic: &v1alpha1.AnthropicConfig{
-											Model: stringPtr("claude-3-opus"),
-											AuthToken: v1alpha1.SingleAuthToken{
-												Kind:   v1alpha1.Inline,
-												Inline: stringPtr("anthropic-primary"),
+										Name: "anthropic",
+										LLMProvider: v1alpha1.LLMProvider{
+											Anthropic: &v1alpha1.AnthropicConfig{
+												Model: stringPtr("claude-3-opus"),
+												AuthToken: v1alpha1.SingleAuthToken{
+													Kind:   v1alpha1.Inline,
+													Inline: stringPtr("anthropic-primary"),
+												},
 											},
 										},
 									},
 								},
 							},
 							{
-								Providers: []v1alpha1.LLMProvider{
+								Providers: []v1alpha1.NamedLLMProvider{
 									{
-										Gemini: &v1alpha1.GeminiConfig{
-											Model: "gemini-pro",
-											AuthToken: v1alpha1.SingleAuthToken{
-												Kind:   v1alpha1.Inline,
-												Inline: stringPtr("gemini-fallback"),
+										Name: "gemini",
+										LLMProvider: v1alpha1.LLMProvider{
+											Gemini: &v1alpha1.GeminiConfig{
+												Model: "gemini-pro",
+												AuthToken: v1alpha1.SingleAuthToken{
+													Kind:   v1alpha1.Inline,
+													Inline: stringPtr("gemini-fallback"),
+												},
 											},
 										},
 									},

@@ -38,9 +38,6 @@ func TestKgateway(t *testing.T) {
 		if !nsEnvPredefined {
 			os.Unsetenv(testutils.InstallNamespace)
 		}
-		if t.Failed() {
-			testInstallation.PreFailHandler(ctx)
-		}
 
 		testInstallation.UninstallKgateway(ctx)
 	})

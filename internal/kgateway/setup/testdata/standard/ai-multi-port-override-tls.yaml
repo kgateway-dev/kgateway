@@ -25,7 +25,8 @@ spec:
   ai:
     priorityGroups:
     - providers:
-      - host: model-failover.default.svc.cluster.local
+      - name: openai
+        host: model-failover.default.svc.cluster.local
         port: 443
         openai:
           authToken:

@@ -222,7 +222,7 @@ func buildTranslateFunc(
 				backendIr.AIIr.AIMultiSecret = map[string]*ir.Secret{}
 				for idx, group := range i.Spec.AI.PriorityGroups {
 					for jdx, provider := range group.Providers {
-						secretRef := getAISecretRef(&provider)
+						secretRef := getAISecretRef(&provider.LLMProvider)
 						if secretRef == nil {
 							continue
 						}

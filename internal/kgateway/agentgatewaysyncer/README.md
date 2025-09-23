@@ -351,6 +351,16 @@ flowchart TD
     style E4 fill:#f1f8e9
 ```
 
+### Translator tests 
+
+The translator tests are unit tests that test the translation of the CRD input YAML resources to the agentgateway xDS API.
+
+You can regenerate the golden output files by running the following command:
+
+```shell
+REFRESH_GOLDEN="true" go test -shuffle on -run "TestBasic" ./internal/kgateway/agentgatewaysyncer/...
+```
+
 ### Conformance tests
 
 Setup the cluster:
@@ -1179,7 +1189,7 @@ metadata:
   name: kgateway
 spec:
   kube:
-    agentGateway:
+    agentgateway:
       enabled: true
       logLevel: debug
       customConfigMapName: agent-gateway-config
@@ -1393,7 +1403,7 @@ metadata:
   name: kgateway
 spec:
   kube:
-    agentGateway:
+    agentgateway:
       enabled: true
       logLevel: debug
       customConfigMapName: ai-gateway-tracing
@@ -1488,7 +1498,7 @@ metadata:
   namespace: default
 spec:
   kube:
-    agentGateway:
+    agentgateway:
       enabled: true
       logLevel: debug
       customConfigMapName: agentgateway-tracing-config

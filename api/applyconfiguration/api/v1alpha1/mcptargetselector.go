@@ -2,10 +2,14 @@
 
 package v1alpha1
 
+import (
+	v1 "sigs.k8s.io/gateway-api/apis/v1"
+)
+
 // McpTargetSelectorApplyConfiguration represents a declarative configuration of the McpTargetSelector type for use
 // with apply.
 type McpTargetSelectorApplyConfiguration struct {
-	Name     *string                        `json:"name,omitempty"`
+	Name     *v1.SectionName                `json:"name,omitempty"`
 	Selector *McpSelectorApplyConfiguration `json:"selector,omitempty"`
 	Static   *McpTargetApplyConfiguration   `json:"static,omitempty"`
 }
@@ -19,7 +23,7 @@ func McpTargetSelector() *McpTargetSelectorApplyConfiguration {
 // WithName sets the Name field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Name field is set to the value of the last call.
-func (b *McpTargetSelectorApplyConfiguration) WithName(value string) *McpTargetSelectorApplyConfiguration {
+func (b *McpTargetSelectorApplyConfiguration) WithName(value v1.SectionName) *McpTargetSelectorApplyConfiguration {
 	b.Name = &value
 	return b
 }

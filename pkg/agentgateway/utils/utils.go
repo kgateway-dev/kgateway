@@ -2,6 +2,10 @@ package utils
 
 import "fmt"
 
+// SingularLLMProviderSubBackendName is the name of the sub-backend for singular LLM providers.
+// If the Backend is ns/foo, the sub-backend will be ns/foo/backend
+const SingularLLMProviderSubBackendName = "backend"
+
 // InternalGatewayName returns the name of the internal Gateway corresponding to the
 // specified gwv1-api gwv1 and listener. If the listener is not specified, returns internal name without listener.
 // Format: gwNs/gwName.listener
