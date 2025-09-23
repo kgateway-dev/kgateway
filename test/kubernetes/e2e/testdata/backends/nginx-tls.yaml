@@ -1,0 +1,208 @@
+---
+# Minimal nginx with TLS for backend TLS testing
+# Use this ONLY for TLS-specific tests that require SSL/TLS backends
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-tls
+  namespace: default
+  labels:
+    app.kubernetes.io/name: nginx-tls
+    app.kubernetes.io/component: tls-backend
+    app.kubernetes.io/part-of: kgateway-e2e-tests
+spec:
+  selector:
+    app.kubernetes.io/name: nginx-tls
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8080
+      targetPort: 80
+    - name: https
+      protocol: TCP
+      port: 8443
+      targetPort: 443
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-tls-config
+  namespace: default
+  labels:
+    app.kubernetes.io/name: nginx-tls
+    app.kubernetes.io/component: tls-backend
+    app.kubernetes.io/part-of: kgateway-e2e-tests
+data:
+  nginx.conf: |
+    user nginx;
+    worker_processes 1;
+    error_log /var/log/nginx/error.log warn;
+    pid /var/run/nginx.pid;
+    events {
+      worker_connections 1024;
+    }
+    http {
+      include /etc/nginx/mime.types;
+      default_type application/octet-stream;
+      sendfile on;
+      keepalive_timeout 65;
+      
+      # HTTP server
+      server {
+        listen 80;
+        server_name _;
+        location / {
+          return 200 'OK HTTP';
+          add_header Content-Type text/plain;
+        }
+        location /health {
+          return 200 'healthy';
+          add_header Content-Type text/plain;
+        }
+      }
+      
+      # HTTPS server  
+      server {
+        listen 443 ssl;
+        server_name example.com;
+        ssl_certificate /etc/nginx/ssl/tls.crt;
+        ssl_certificate_key /etc/nginx/ssl/tls.key;
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384;
+        ssl_prefer_server_ciphers off;
+        
+        location / {
+          return 200 'OK HTTPS';
+          add_header Content-Type text/plain;
+        }
+        location /health {
+          return 200 'healthy';
+          add_header Content-Type text/plain;
+        }
+      }
+    }
+  # Self-signed certificate for testing (valid for example.com)
+  tls.crt: |
+    -----BEGIN CERTIFICATE-----
+    MIIDDzCCAfegAwIBAgIUMrxrG4aI7TShlLeuu4tmIsTIO1gwDQYJKoZIhvcNAQEL
+    BQAwFDESMBAGA1UEAwwJZXhhbXBsZS5jb20wHhcNMjQwNzAyMjE0NjM1WhcNMjUw
+    ODAxMjE0NjM1WjAUMRIwEAYDVQQDDAlleGFtcGxlLmNvbTCCASIwDQYJKoZIhvcN
+    AQEBBQADggEPADCCAQoCggEBAMOpcY9yF+pATSlhdCxEIjjSTfNb2yjQxFaRPsOc
+    8GgNSswDEnyQICm+ujMLUMzwRFXablUCZiO9sFfZegkdLwvecmtnvNjVL5s8jk3H
+    jV8Jetu/tE17HMvP4cMdfs/rzdYRxoI2tWyYDWUW1XfD6eTxDykWwfLMdJ6UX0ks
+    ZSlQ098OheMMA6E+cxH0JMoe+PLyD4nuAYW8c6tOFTXJjqHUaJzSRlYFg3OG0WRW
+    KcjP9ufeLsPWjWza5M6WSGEjhiPP2bSxMCfkY3DFSO3K71MrYf5xsP4L70YmD2oU
+    owIDAQABo1kwVzAUBgNVHREEDTALgglleGFtcGxlLmNvbTALBgNVHQ8EBAMCB4Aw
+    EwYDVR0lBAwwCgYIKwYBBQUHAwEwHQYDVR0OBBYEFILfqLzIHF0RH2tTcom9H8O2
+    in1dMA0GCSqGSIb3DQEBCwUAA4IBAQBcbUtB8JUlndHatcemKtQeRKBcI8yCVS/1
+    03blcy8aI7BUZfyD1BS/5a4x6hJUr3ysueiN0Q4tkt78N6VcqoBPwbp4OpeVk418
+    UJOdLoFZzT7mjZ++eeK4mHPEarSqiV/arg/gk0mTtNGW6Vot0jFI4zIm6RGd7iRF
+    xuTPdJpUT54YCbojdAckdCwOV8BtoJm6kkEcGRjVQS5f6aeVMrCt4x4EQYrNjmDl
+    MULDxzB8jocGxCLDLLtNNlfuEPquy8J263LVIh+Totibxhg4l/MaeHQu7bsnjxU6
+    pWF3x/QsZYzQ==
+    -----END CERTIFICATE-----
+  tls.key: |
+    -----BEGIN PRIVATE KEY-----
+    MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDDqXGPchfqQE0p
+    YXQsRCI40k3zW9so0MRWkT7DnPBoDUrMAxJ8rGSF1Aw+0z4xLrgI+QNRkXF1htSA
+    rKCXbe5Zy4g9YecPtqogKb66MwtQzPBEVdpuVQJmI72wV9l6CR0vC95ya2e82NUv
+    mzyOTceNXwl627+0TXscy8/hwx1+z+vN1hHGgja1bJgNZRbVd8Pp5PEPKRbB8sx0
+    npRfSSxlKVDT3w6F4wwDoT5zEfQkyh748vIPie4Bhbxzq04VNcmOodRonNJGVgWD
+    c4bRZFYpyM/2594uw9aNbNrkzpZIYSOGI8/ZtLEwJ+RjcMVI7crvUyth/nGw/gvv
+    RiYPahSjAgMBAAECggEAPgk8WznWgUwv6t3eQqa7nv52/qDyJMfEaJoWp1jcFHGa
+    dILI2sSh/piT5Vt+zYM9kIK7XaJaseO0/rM9G6YcO1Y/9Q5Uf3PwDtCNi2XhwZWo
+    3FHINtE3OIE+hGnmJz46hY8i0W5ibsrlFPoIQipBCf7G97Ay4Qzr6t5oI/GEKY9e
+    9b3/CJ12cvpjrrEnvvgcQv9XJ83dYVpvBLL8Hm9WjwFsmV1erN3JXB+yHe8b3MHK
+    BGA5rM+bpn+LxV3b7ycnfLXjPVkKY9KXBQCyZDzsGaCfzmQ7dJqIJAdtjR320A3A
+    M3RU/YCfV7lVxuCuPK59N3xhJJFDnfrikkKLWuGYmQKBgQDX2/iMnvPKjgcgYyui
+    Gol7h8VqRpQycXHUS89zCeIhZPr6i5ZjzltblOFhsSE26UP6S9QXG8Hw7v6dEKDx
+    9zVgNK75e1vzr8Gm5Ld+eqo22PQR1RHeQkwJXgXL+3GfHxFes6TG2h9MR3TNBGJU
+    EOayfzeNT6l3JSUV/ae913ognQKBgQDoC/jiytQz8auV4p2c/aiMRziL+xgJkV8f
+    E7q0pw4BZirRf6N6YdNU/mOhgJd1LHkcgYdnPbxHXIhNUUE3uS9Uvc+exujh4R3a
+    FcmUcbEjBG/yRVFDtgmszQtA+U+1upu4JG5MhuzLizGZvYWD0VrpGrKIBOwxlvEW
+    zMFp0JvmPwKBgCBuBdtqjgniaKOvAoEqJ3mNnlUnIWCqtoVElngcBgMqXqKBkiiQ
+    eh06MtoweGL9jJ7wAX8vRmXiIhKKywNPNo+rmpYUuG3V++wM9Jxl5Wi0E4cSUcro
+    fu/xVkGdFybmzf9CUgEmCAm3uo6KmBM1LtOmVTw/uaASzo2NPERDOS/pAoGAWpwq
+    MK0RFcN9xAZ8k0v9n+FDtG11Im9QnHsAwgAlmOhDOhFETcqbUioPz4W+HrQiCr6N
+    mAPkXF1GoCJlfBPk5otD4nU7hNB57qnpT/zhNZJLAGiO5gjUWFSs208/D/BxVANt
+    ypY5KvYMhUMbOrDqdfHF2xVJAcg2FjgYInCiH9MCgYAYGrAdT7gDLjjNtSuoFur7
+    sMtACf59rw24my1UoWCjVOxE1MVWRtCYDV5Qi+7MQ4xNejugKKKNiRwrBa6Z6bCm
+    JnPicvcV8IaWwKQqHBjDQn47DVQ+xXNHara6Alv/kjpyJztXsh12S7Hn2EJY91//
+    hcbfh0ySbbsqheBkTXMrvQ==
+    -----END PRIVATE KEY-----
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-tls
+  namespace: default
+  labels:
+    app.kubernetes.io/name: nginx-tls
+    app.kubernetes.io/component: tls-backend
+    app.kubernetes.io/part-of: kgateway-e2e-tests
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nginx-tls
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nginx-tls
+        app.kubernetes.io/component: tls-backend
+        app.kubernetes.io/part-of: kgateway-e2e-tests
+    spec:
+      terminationGracePeriodSeconds: 5
+      containers:
+      - name: nginx
+        image: nginx:1.25-alpine
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 80
+          protocol: TCP
+        - name: https
+          containerPort: 443
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+          readOnly: true
+        - name: nginx-ssl
+          mountPath: /etc/nginx/ssl
+          readOnly: true
+        resources:
+          requests:
+            memory: "16Mi"
+            cpu: "10m"
+          limits:
+            memory: "64Mi"
+            cpu: "100m"
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: nginx-tls-config
+          items:
+          - key: nginx.conf
+            path: nginx.conf
+      - name: nginx-ssl
+        configMap:
+          name: nginx-tls-config
+          items:
+          - key: tls.crt
+            path: tls.crt
+          - key: tls.key
+            path: tls.key

@@ -1,0 +1,79 @@
+---
+# Namespaced httpbin backend for e2e tests
+# Use this when tests require namespace isolation
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: httpbin
+  labels:
+    app.kubernetes.io/part-of: kgateway-e2e-tests
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin
+  namespace: httpbin
+  labels:
+    app.kubernetes.io/name: httpbin
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: kgateway-e2e-tests
+spec:
+  selector:
+    app.kubernetes.io/name: httpbin
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8000
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httpbin
+  namespace: httpbin
+  labels:
+    app.kubernetes.io/name: httpbin
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: kgateway-e2e-tests
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: httpbin
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: httpbin
+        app.kubernetes.io/component: backend
+        app.kubernetes.io/part-of: kgateway-e2e-tests
+    spec:
+      terminationGracePeriodSeconds: 5
+      containers:
+      - name: httpbin
+        image: docker.io/mccutchen/go-httpbin:v2.6.0
+        imagePullPolicy: IfNotPresent
+        command: [go-httpbin]
+        args: ["-port", "8080", "-max-duration", "600s"]
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /status/200
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /status/200
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "10m"
+          limits:
+            memory: "64Mi"
+            cpu: "100m"
