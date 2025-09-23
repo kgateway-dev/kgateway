@@ -113,7 +113,7 @@ func PreprocessAIBackend(ctx context.Context, aiBackend *v1alpha1.AIBackend, ir 
 	} else {
 		for _, group := range aiBackend.PriorityGroups {
 			for _, provider := range group.Providers {
-				llmModel = getBackendModel(&provider, byType)
+				llmModel = getBackendModel(&provider.LLMProvider, byType)
 			}
 		}
 	}

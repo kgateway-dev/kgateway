@@ -5,7 +5,7 @@ package v1alpha1
 // PriorityGroupApplyConfiguration represents a declarative configuration of the PriorityGroup type for use
 // with apply.
 type PriorityGroupApplyConfiguration struct {
-	Providers []LLMProviderApplyConfiguration `json:"providers,omitempty"`
+	Providers []NamedLLMProviderApplyConfiguration `json:"providers,omitempty"`
 }
 
 // PriorityGroupApplyConfiguration constructs a declarative configuration of the PriorityGroup type for use with
@@ -17,7 +17,7 @@ func PriorityGroup() *PriorityGroupApplyConfiguration {
 // WithProviders adds the given value to the Providers field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the Providers field.
-func (b *PriorityGroupApplyConfiguration) WithProviders(values ...*LLMProviderApplyConfiguration) *PriorityGroupApplyConfiguration {
+func (b *PriorityGroupApplyConfiguration) WithProviders(values ...*NamedLLMProviderApplyConfiguration) *PriorityGroupApplyConfiguration {
 	for i := range values {
 		if values[i] == nil {
 			panic("nil value passed to WithProviders")

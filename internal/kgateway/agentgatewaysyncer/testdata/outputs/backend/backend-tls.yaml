@@ -9,7 +9,7 @@ Backends:
 - ai:
     providerGroups:
     - providers:
-      - name: ai-groups_0
+      - name: openai
         openai:
           model: gpt-4o
       - anthropic:
@@ -19,9 +19,9 @@ Backends:
 - ai:
     providerGroups:
     - providers:
-      - name: anthropic-single_0
-        openai:
+      - anthropic:
           model: claude-3-opus-20240229
+        name: backend
   name: default/anthropic-single
 - mcp:
     targets:
@@ -44,7 +44,7 @@ Backends:
 - ai:
     providerGroups:
     - providers:
-      - name: openai
+      - name: backend
         openai:
           model: gpt-4o
   name: default/openai-single
@@ -65,13 +65,13 @@ Policies:
         secret: sk-anthropic-primary
   target:
     subBackend: default/ai-groups/anthropic
-- name: auth-default/anthropic-single-anthropic-single_0
+- name: auth-default/anthropic-single-backend
   spec:
     auth:
       key:
         secret: sk-anthropic-primary
   target:
-    subBackend: default/anthropic-single/anthropic-single_0
+    subBackend: default/anthropic-single/backend
 - name: default/ai-tls:0:backendtls
   spec:
     backendTls:
@@ -83,7 +83,7 @@ Policies:
     backendTls:
       hostname: foo
   target:
-    subBackend: default/openai-single/openai
+    subBackend: default/openai-single/backend
 - name: default/mcp-tls-ca-cert:0:backendtls
   spec:
     backendTls:

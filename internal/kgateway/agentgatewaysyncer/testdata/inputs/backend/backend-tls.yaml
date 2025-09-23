@@ -151,9 +151,8 @@ spec:
   ai:
     priorityGroups:
     - providers:
-      # since name is not specified Backend policy attachment is not possible
-      # due to generated provider name
-      - openai:
+      - name: openai
+        openai:
           model: "gpt-4o"
           authToken:
             kind: "SecretRef"
@@ -176,7 +175,6 @@ spec:
   type: AI
   ai:
     llm:
-      name: openai
       openai:
         model: "gpt-4o"
         authToken:
@@ -194,7 +192,7 @@ spec:
   type: AI
   ai:
     llm:
-      openai:
+      anthropic:
         model: "claude-3-opus-20240229"
         authToken:
           kind: "Inline"
@@ -213,7 +211,6 @@ spec:
   - name: openai-single
     kind: Backend
     group: gateway.kgateway.dev
-    sectionName: openai    
   validation:
     hostname: foo
     wellKnownCACertificates: System

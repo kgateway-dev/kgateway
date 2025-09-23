@@ -42,6 +42,7 @@ type AIBackend struct {
 	// +optional
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=32
+	// +kubebuilder:validation:XValidation:message="provider names must be unique across groups",rule="self.map(pg, pg.providers.map(pp, pp.name)).map(p, self.map(pg, pg.providers.map(pp, pp.name)).filter(cp, cp != p).exists(cp, p.exists(pn, pn in cp))).exists(p, !p)"
 	PriorityGroups []PriorityGroup `json:"priorityGroups,omitempty"`
 }
 
@@ -50,11 +51,6 @@ type AIBackend struct {
 // +kubebuilder:validation:XValidation:rule="has(self.host) || has(self.port) ? has(self.host) && has(self.port) : true",message="both host and port must be set together"
 // TODO: Move auth options off of SupportedLLMProvider to BackendConfigPolicy: https://github.com/kgateway-dev/kgateway/issues/11930
 type LLMProvider struct {
-	// Name of the provider.
-	// If specified, policies can target this provider by name.
-	// +optional
-	Name *gwv1.SectionName `json:"name,omitempty"`
-
 	// OpenAI provider
 	// +optional
 	OpenAI *OpenAIConfig `json:"openai,omitempty"`
@@ -102,6 +98,14 @@ type LLMProvider struct {
 	// For example, OpenAI uses header: "Authorization" and prefix: "Bearer" But Azure OpenAI uses header: "api-key"
 	// and no Bearer.
 	AuthHeader *AuthHeader `json:"authHeader,omitempty"`
+}
+
+// NamedLLMProvider wraps an LLMProvider with a name.
+type NamedLLMProvider struct {
+	// Name of the provider. Policies can target this provider by name.
+	Name gwv1.SectionName `json:"name"`
+
+	LLMProvider `json:",inline"`
 }
 
 // PathOverride allows overriding the default URL path used for LLM provider API requests.
@@ -337,5 +341,6 @@ type PriorityGroup struct {
 	// A list of LLM provider backends within a single endpoint pool entry.
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=32
-	Providers []LLMProvider `json:"providers,omitempty"`
+	// +kubebuilder:validation:XValidation:message="provider names must be unique within a group",rule="self.all(p1, self.exists_one(p2, p1.name == p2.name))"
+	Providers []NamedLLMProvider `json:"providers,omitempty"`
 }

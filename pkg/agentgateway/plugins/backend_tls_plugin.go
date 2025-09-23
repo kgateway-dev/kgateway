@@ -67,11 +67,33 @@ func translatePoliciesForBackendTLS(
 			}
 			spec := (*backend).Spec
 			if spec.AI != nil {
-				// AI backends always use api.ProviderGroups(ref: buildAIIr), so policies must be applied per-provider using PolicyTarget_SubBackend
-				policyTarget = &api.PolicyTarget{
-					Kind: &api.PolicyTarget_SubBackend{
-						SubBackend: utils.InternalBackendName(backendRef.Namespace, string(backendRef.Name), string(ptr.OrEmpty(target.SectionName))),
-					},
+				switch {
+				// Single provider backend
+				case spec.AI.LLM != nil:
+					if target.SectionName != nil {
+						logger.Error("sectionName must be omitted when targeting AI backend with single provider; skipping policy", "backend", backendRef, "policy", kubeutils.NamespacedNameFrom(btls))
+						continue
+					}
+					// Single provider backends also use api.ProviderGroups(ref: buildAIIr), so policies must be applied per-provider using PolicyTarget_SubBackend
+					policyTarget = &api.PolicyTarget{
+						Kind: &api.PolicyTarget_SubBackend{
+							SubBackend: utils.InternalBackendName(backendRef.Namespace, string(backendRef.Name), utils.SingularLLMProviderSubBackendName),
+						},
+					}
+				// Multi-provider backend
+				case len(spec.AI.PriorityGroups) > 0:
+					if target.SectionName == nil {
+						logger.Error("sectionName is required when targeting AI backend with multiple providers; skipping policy", "backend", backendRef, "policy", kubeutils.NamespacedNameFrom(btls))
+						continue
+					}
+					policyTarget = &api.PolicyTarget{
+						Kind: &api.PolicyTarget_SubBackend{
+							SubBackend: utils.InternalBackendName(backendRef.Namespace, string(backendRef.Name), string(*target.SectionName)),
+						},
+					}
+				default:
+					logger.Warn("unknown backend type", "backend", backendRef, "policy", kubeutils.NamespacedNameFrom(btls))
+					continue
 				}
 			} else {
 				// The target defaults to <backend-namespace>/<backend-name>.

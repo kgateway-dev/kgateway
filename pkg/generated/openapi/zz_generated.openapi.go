@@ -135,6 +135,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MetadataOptions":                           schema_kgateway_v2_api_v1alpha1_MetadataOptions(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MetadataPathSegment":                       schema_kgateway_v2_api_v1alpha1_MetadataPathSegment(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Moderation":                                schema_kgateway_v2_api_v1alpha1_Moderation(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.NamedLLMProvider":                          schema_kgateway_v2_api_v1alpha1_NamedLLMProvider(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.NamespacedObjectReference":                 schema_kgateway_v2_api_v1alpha1_NamespacedObjectReference(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.OTelTracesSampler":                         schema_kgateway_v2_api_v1alpha1_OTelTracesSampler(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.OpenAIConfig":                              schema_kgateway_v2_api_v1alpha1_OpenAIConfig(ref),
@@ -4808,13 +4809,6 @@ func schema_kgateway_v2_api_v1alpha1_LLMProvider(ref common.ReferenceCallback) c
 				Description: "LLMProvider specifies the target large language model provider that the backend should route requests to.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"name": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Name of the provider. If specified, policies can target this provider by name.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
 					"openai": {
 						SchemaProps: spec.SchemaProps{
 							Description: "OpenAI provider",
@@ -5620,6 +5614,92 @@ func schema_kgateway_v2_api_v1alpha1_Moderation(ref common.ReferenceCallback) co
 	}
 }
 
+func schema_kgateway_v2_api_v1alpha1_NamedLLMProvider(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "NamedLLMProvider wraps an LLMProvider with a name.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Name of the provider. Policies can target this provider by name.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"openai": {
+						SchemaProps: spec.SchemaProps{
+							Description: "OpenAI provider",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.OpenAIConfig"),
+						},
+					},
+					"azureopenai": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Azure OpenAI provider",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AzureOpenAIConfig"),
+						},
+					},
+					"anthropic": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Anthropic provider",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AnthropicConfig"),
+						},
+					},
+					"gemini": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Gemini provider",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GeminiConfig"),
+						},
+					},
+					"vertexai": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Vertex AI provider",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.VertexAIConfig"),
+						},
+					},
+					"bedrock": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Bedrock provider",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BedrockConfig"),
+						},
+					},
+					"host": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Host specifies the hostname to send the requests to. If not specified, the default hostname for the provider is used.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"port": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Port specifies the port to send the requests to.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"path": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Path specifies the URL path to use for the LLM provider API requests. This is useful when you need to route requests to a different API endpoint while maintaining compatibility with the original provider's API structure. If not specified, the default path for the provider is used.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PathOverride"),
+						},
+					},
+					"authHeader": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AuthHeader specifies how the Authorization header is set in the request sent to the LLM provider. Allows changing the header name and/or the prefix (e.g., \"Bearer\"). Note: Not all LLM providers use the Authorization header and prefix. For example, OpenAI uses header: \"Authorization\" and prefix: \"Bearer\" But Azure OpenAI uses header: \"api-key\" and no Bearer.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AuthHeader"),
+						},
+					},
+				},
+				Required: []string{"name"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AnthropicConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AuthHeader", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AzureOpenAIConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BedrockConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GeminiConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.OpenAIConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PathOverride", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.VertexAIConfig"},
+	}
+}
+
 func schema_kgateway_v2_api_v1alpha1_NamespacedObjectReference(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -6176,7 +6256,7 @@ func schema_kgateway_v2_api_v1alpha1_PriorityGroup(ref common.ReferenceCallback)
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LLMProvider"),
+										Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.NamedLLMProvider"),
 									},
 								},
 							},
@@ -6186,7 +6266,7 @@ func schema_kgateway_v2_api_v1alpha1_PriorityGroup(ref common.ReferenceCallback)
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LLMProvider"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.NamedLLMProvider"},
 	}
 }
 

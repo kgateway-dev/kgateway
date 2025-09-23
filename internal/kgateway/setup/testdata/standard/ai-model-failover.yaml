@@ -25,21 +25,24 @@ spec:
   ai:
     priorityGroups:
     - providers:
-      - openai:
+      - name: openai-one
+        openai:
           authToken:
             kind: SecretRef
             secretRef:
               name: openai-secret-one
           model: gpt-4o
     - providers:
-      - openai:
+      - name: openai-two
+        openai:
           authToken:
             kind: SecretRef
             secretRef:
               name: openai-secret-two
           model: gpt-4.0-turbo
     - providers:
-      - openai:
+      - name: openai-three
+        openai:
           authToken:
             kind: SecretRef
             secretRef:

@@ -11,7 +11,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/utils/ptr"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -227,8 +226,8 @@ func buildAIIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, secrets krt.Coll
 			Providers: []*api.AIBackend_Provider{},
 		}
 
-		// in a single provider case, the index is always 0
-		providerName := providerNameOr(be.Spec.AI.LLM.Name, fmt.Sprintf("%s_%d", be.Name, 0))
+		// in a single provider case, use the fixed sub-backend name
+		providerName := utils.SingularLLMProviderSubBackendName
 		provider, authPolicy, err := translateLLMProviderToProvider(krtctx, be.Spec.AI.LLM, providerName, secrets, be.Namespace)
 		if err != nil {
 			return nil, fmt.Errorf("failed to translate LLM provider: %w", err)
@@ -245,10 +244,10 @@ func buildAIIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, secrets krt.Coll
 			providerGroup := &api.AIBackend_ProviderGroup{}
 
 			// Add all providers in this priority level to the same group
-			for _, llmProvider := range group.Providers {
-				providerName := providerNameOr(llmProvider.Name, fmt.Sprintf("%s_%d", be.Name, providerIndex))
+			for _, provider := range group.Providers {
+				providerName := string(provider.Name)
 
-				provider, authPolicy, err := translateLLMProviderToProvider(krtctx, &llmProvider, providerName, secrets, be.Namespace)
+				provider, authPolicy, err := translateLLMProviderToProvider(krtctx, &provider.LLMProvider, providerName, secrets, be.Namespace)
 				if err != nil {
 					return nil, fmt.Errorf("failed to translate provider in provider %s: %w", providerName, err)
 				}
@@ -281,13 +280,6 @@ func buildAIIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, secrets krt.Coll
 		Backend:  backend,
 		Policies: policies,
 	}, nil
-}
-
-func providerNameOr(name *gwv1.SectionName, fallback string) string {
-	if name != nil {
-		return string(*name)
-	}
-	return fallback
 }
 
 // buildTranslatedAuthPolicy creates auth policy for the given auth token configuration

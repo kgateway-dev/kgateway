@@ -2,24 +2,24 @@ Backends:
 - ai:
     providerGroups:
     - providers:
-      - name: multipool-priority_0
+      - name: openai
         openai:
           model: gpt-4o
       - anthropic:
           model: claude-3-opus-20240229
-        name: multipool-priority_1
+        name: anthropic
     - providers:
       - gemini:
           model: gemini-1.5-flash
-        name: multipool-priority_2
-      - name: multipool-priority_3
+        name: gemini
+      - name: vertexai
         vertex:
           model: gemini-pro
     - providers:
       - bedrock:
           model: anthropic.claude-3-haiku-20240307-v1:0
           region: us-east-1
-        name: multipool-priority_4
+        name: bedrock
   name: default/multipool-priority
 Binds:
 - key: 80/default/example-gateway
@@ -31,34 +31,14 @@ Listeners:
   name: http
   protocol: HTTP
 Policies:
-- name: auth-default/multipool-priority-multipool-priority_0
-  spec:
-    auth:
-      key:
-        secret: sk-openai-primary-key
-  target:
-    subBackend: default/multipool-priority/multipool-priority_0
-- name: auth-default/multipool-priority-multipool-priority_1
+- name: auth-default/multipool-priority-anthropic
   spec:
     auth:
       key:
         secret: sk-anthropic-primary
   target:
-    subBackend: default/multipool-priority/multipool-priority_1
-- name: auth-default/multipool-priority-multipool-priority_2
-  spec:
-    auth:
-      key:
-        secret: gemini-fallback-key
-  target:
-    subBackend: default/multipool-priority/multipool-priority_2
-- name: auth-default/multipool-priority-multipool-priority_3
-  spec:
-    auth:
-      passthrough: {}
-  target:
-    subBackend: default/multipool-priority/multipool-priority_3
-- name: auth-default/multipool-priority-multipool-priority_4
+    subBackend: default/multipool-priority/anthropic
+- name: auth-default/multipool-priority-bedrock
   spec:
     auth:
       aws:
@@ -67,7 +47,27 @@ Policies:
           region: us-east-1
           secretAccessKey: bedrock-secret-key
   target:
-    subBackend: default/multipool-priority/multipool-priority_4
+    subBackend: default/multipool-priority/bedrock
+- name: auth-default/multipool-priority-gemini
+  spec:
+    auth:
+      key:
+        secret: gemini-fallback-key
+  target:
+    subBackend: default/multipool-priority/gemini
+- name: auth-default/multipool-priority-openai
+  spec:
+    auth:
+      key:
+        secret: sk-openai-primary-key
+  target:
+    subBackend: default/multipool-priority/openai
+- name: auth-default/multipool-priority-vertexai
+  spec:
+    auth:
+      passthrough: {}
+  target:
+    subBackend: default/multipool-priority/vertexai
 Routes:
 - backends:
   - backend:
