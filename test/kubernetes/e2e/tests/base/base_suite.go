@@ -99,6 +99,12 @@ func (s *BaseTestingSuite) AfterTest(suiteName, testName string) {
 		return
 	}
 
+	if s.T().Failed() {
+		fmt.Println("AfterTest, Test failed, calling PreFailHandler")
+		s.TestInstallation.PreFailHandler(s.Ctx)
+	}
+
+	fmt.Println("AfterTest, Deleting manifests")
 	s.DeleteManifests(testCase)
 }
 

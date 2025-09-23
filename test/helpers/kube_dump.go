@@ -129,6 +129,7 @@ func recordKubeState(ctx context.Context, kubectlCli *kubectl.Cli, f *os.File) {
 		"udproutes.gateway.networking.k8s.io",
 		// kgateway resources
 		"backends.gateway.kgateway.dev",
+		"backendconfigpolicies.gateway.kgateway.dev",
 		"directresponses.gateway.kgateway.dev",
 		"gatewayextensions.gateway.kgateway.dev",
 		"gatewayparameters.gateway.kgateway.dev",
@@ -230,7 +231,7 @@ func recordCRs(namespaceDir string, namespace string) error {
 	// record all unique CRs floating about
 	for _, crd := range crds {
 		// consider all installed CRDs that are kgateway-managed
-		if !strings.Contains(crd, "kgateway.dev") {
+		if !strings.Contains(crd, "kgateway.dev") || !strings.Contains(crd, "gateway.networking.k8s.io") {
 			continue
 		}
 
