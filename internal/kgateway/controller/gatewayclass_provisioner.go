@@ -75,6 +75,7 @@ func (r *gatewayClassProvisioner) SetupWithManager(mgr ctrl.Manager) error {
 				return false
 			}
 			// only reconcile GatewayClass objects that are managed by this controller
+			// the controller is determined by the GatewayClassInfo tied to the class name, or the default controller if none is set
 			classConfig, exists := r.classConfigs[gc.Name]
 			if !exists {
 				return gc.Spec.ControllerName == apiv1.GatewayController(r.defaultControllerName)
