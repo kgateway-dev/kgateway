@@ -108,9 +108,9 @@ func recordProcessState(f *os.File) {
 func recordKubeState(ctx context.Context, kubectlCli *kubectl.Cli, f *os.File) {
 	defer f.Close()
 	kubectlCli.WithReceiver(f)
-	kubeState, err := kubectlCli.RunCommandWithOutput(ctx, "get", "all", "-A", "-o", "wide")
+	err := kubectlCli.RunCommand(ctx, "get", "all", "-A", "-o", "wide")
 	if err != nil {
-		f.WriteString(fmt.Sprintf("*** Unable to get kube state ***\nStdout: %s\nReason: %v", err, kubeState))
+		f.WriteString(fmt.Sprintf("*** Unable to get kube state ***\nReason: %v", err))
 	}
 
 	resourcesToGet := []string{
@@ -136,7 +136,8 @@ func recordKubeState(ctx context.Context, kubectlCli *kubectl.Cli, f *os.File) {
 		"trafficpolicies.gateway.kgateway.dev",
 	}
 
-	kubeResources, err := kubectlCli.RunCommandWithOutput(ctx, "get", strings.Join(resourcesToGet, ","), "-A", "-owide")
+	f.WriteString("*** Kube resources ***\n")
+	err = kubectlCli.RunCommand(ctx, "get", strings.Join(resourcesToGet, ","), "-A", "-owide")
 	if err != nil {
 		f.WriteString("*** Unable to get kube resources ***. Reason: " + err.Error() + " \n")
 	}
@@ -144,23 +145,17 @@ func recordKubeState(ctx context.Context, kubectlCli *kubectl.Cli, f *os.File) {
 	// Describe everything to identify the reason for issues such as Pods, LoadBalancers stuck in pending state
 	// (insufficient resources, unable to acquire an IP), etc.
 	// Ie: More context around the output of the previous command `kubectl get all -A`
-	kubeDescribe, err := kubectlCli.RunCommandWithOutput(ctx, "describe", "all", "-A")
+	f.WriteString("*** Kube describe ***\n")
+	err = kubectlCli.RunCommand(ctx, "describe", "all", "-A")
 	if err != nil {
 		f.WriteString("*** Unable to get kube describe ***. Reason: " + err.Error() + " \n")
 	}
 
-	kubeEndpointsState, err := kubectlCli.RunCommandWithOutput(ctx, "get", "endpoints", "-A")
+	f.WriteString("*** Kube endpoints ***\n")
+	err = kubectlCli.RunCommand(ctx, "get", "endpoints", "-A")
 	if err != nil {
 		f.WriteString("*** Unable to get endpoint state ***. Reason: " + err.Error() + " \n")
 	}
-
-	f.WriteString("*** Kube state ***\n")
-	f.WriteString(string(kubeState) + "\n")
-	f.WriteString(string(kubeResources) + "\n")
-	f.WriteString(string(kubeDescribe) + "\n")
-	f.WriteString(string(kubeEndpointsState) + "\n")
-
-	f.WriteString("*** End Kube state ***\n")
 }
 
 func recordKubeDump(outDir string, namespaces ...string) {
