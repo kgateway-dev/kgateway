@@ -117,7 +117,6 @@ func recordKubeState(ctx context.Context, kubectlCli *kubectl.Cli, f *os.File) {
 		// Kubernetes resources
 		"secrets",
 		// Kube GW API resources
-		"backendlbpolicies.gateway.networking.k8s.io",
 		"backendtlspolicies.gateway.networking.k8s.io",
 		"gatewayclasses.gateway.networking.k8s.io",
 		"gateways.gateway.networking.k8s.io",
@@ -140,7 +139,6 @@ func recordKubeState(ctx context.Context, kubectlCli *kubectl.Cli, f *os.File) {
 	kubeResources, err := kubectlCli.RunCommandWithOutput(ctx, "get", strings.Join(resourcesToGet, ","), "-A", "-owide")
 	if err != nil {
 		f.WriteString("*** Unable to get kube resources ***. Reason: " + err.Error() + " \n")
-		return
 	}
 
 	// Describe everything to identify the reason for issues such as Pods, LoadBalancers stuck in pending state
@@ -149,13 +147,11 @@ func recordKubeState(ctx context.Context, kubectlCli *kubectl.Cli, f *os.File) {
 	kubeDescribe, err := kubectlCli.RunCommandWithOutput(ctx, "describe", "all", "-A")
 	if err != nil {
 		f.WriteString("*** Unable to get kube describe ***. Reason: " + err.Error() + " \n")
-		return
 	}
 
 	kubeEndpointsState, err := kubectlCli.RunCommandWithOutput(ctx, "get", "endpoints", "-A")
 	if err != nil {
 		f.WriteString("*** Unable to get endpoint state ***. Reason: " + err.Error() + " \n")
-		return
 	}
 
 	f.WriteString("*** Kube state ***\n")
