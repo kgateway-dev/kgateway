@@ -25,11 +25,11 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
-	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
@@ -140,7 +140,7 @@ func NewPolicyStatusAsyncQueue() *PolicyStatusAsyncQueue {
 	}
 }
 
-func (s *Syncer) Init(krtopts krtinternal.KrtOptions) {
+func (s *Syncer) Init(krtopts krtutil.KrtOptions) {
 	logger.Debug("init agentgateway Syncer", "controllername", s.controllerName)
 
 	s.translator.Init()
@@ -151,7 +151,7 @@ func (s *Syncer) PolicyStatusQueue() *status.StatusCollections {
 	return s.policyStatusQueue
 }
 
-func (s *Syncer) buildResourceCollections(krtopts krtinternal.KrtOptions) {
+func (s *Syncer) buildResourceCollections(krtopts krtutil.KrtOptions) {
 	// Build core collections for irs
 	gatewayClasses := GatewayClassesCollection(s.agwCollections.GatewayClasses, krtopts)
 	refGrants := BuildReferenceGrants(ReferenceGrantsCollection(s.agwCollections.ReferenceGrants, krtopts))
@@ -179,7 +179,7 @@ func (s *Syncer) buildResourceCollections(krtopts krtinternal.KrtOptions) {
 func (s *Syncer) buildGatewayCollection(
 	gatewayClasses krt.Collection[GatewayClass],
 	refGrants ReferenceGrants,
-	krtopts krtinternal.KrtOptions,
+	krtopts krtutil.KrtOptions,
 ) krt.Collection[GatewayListener] {
 	return GatewayCollection(
 		s.agentgatewayClassName,
@@ -195,7 +195,7 @@ func (s *Syncer) buildGatewayCollection(
 func (s *Syncer) buildAgwResources(
 	gateways krt.Collection[GatewayListener],
 	refGrants ReferenceGrants,
-	krtopts krtinternal.KrtOptions,
+	krtopts krtutil.KrtOptions,
 ) (krt.Collection[agwir.AgwResourcesForGateway], map[schema.GroupKind]krt.StatusCollection[controllers.Object, gwv1alpha2.PolicyStatus]) {
 	// Build ports and binds
 	ports := krtpkg.UnnamedIndex(gateways, func(l GatewayListener) []string {
@@ -358,7 +358,7 @@ func (s *Syncer) buildBackendFromBackend(ctx krt.HandlerContext,
 }
 
 // newAgwBackendCollection creates the Agw backend collection for agent gateway resources
-func (s *Syncer) newAgwBackendCollection(finalBackends krt.Collection[*v1alpha1.Backend], krtopts krtinternal.KrtOptions) (krt.StatusCollection[*v1alpha1.Backend, v1alpha1.BackendStatus], krt.Collection[envoyResourceWithCustomName]) {
+func (s *Syncer) newAgwBackendCollection(finalBackends krt.Collection[*v1alpha1.Backend], krtopts krtutil.KrtOptions) (krt.StatusCollection[*v1alpha1.Backend, v1alpha1.BackendStatus], krt.Collection[envoyResourceWithCustomName]) {
 	return krt.NewStatusManyCollection(finalBackends, func(krtctx krt.HandlerContext, backend *v1alpha1.Backend) (
 		*v1alpha1.BackendStatus,
 		[]envoyResourceWithCustomName,
@@ -400,7 +400,7 @@ func (s *Syncer) getProtocolAndTLSConfig(obj GatewayListener) (api.Protocol, *ap
 	}
 }
 
-func (s *Syncer) buildAddressCollections(krtopts krtinternal.KrtOptions) krt.Collection[envoyResourceWithCustomName] {
+func (s *Syncer) buildAddressCollections(krtopts krtutil.KrtOptions) krt.Collection[envoyResourceWithCustomName] {
 	// Build workload index
 	workloadIndex := index{
 		namespaces:      s.agwCollections.Namespaces,
@@ -470,7 +470,7 @@ func (s *Syncer) buildXDSCollection(
 	agwResources krt.Collection[agwir.AgwResourcesForGateway],
 	agwBackends krt.Collection[envoyResourceWithCustomName],
 	xdsAddresses krt.Collection[envoyResourceWithCustomName],
-	krtopts krtinternal.KrtOptions,
+	krtopts krtutil.KrtOptions,
 ) {
 	// Create an index on agwResources by Gateway to avoid fetching all resources
 	agwResourcesByGateway := krt.NewIndex(agwResources, "gateway", func(resource agwir.AgwResourcesForGateway) []types.NamespacedName {

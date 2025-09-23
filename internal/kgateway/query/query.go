@@ -14,10 +14,10 @@ import (
 	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 	apixv1alpha1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 )
 
 var (
@@ -155,7 +155,7 @@ type RouteError struct {
 // the queries aren't ready until InitPlugins has been called on the
 // CommonCollections.
 func NewData(
-	collections *common.CommonCollections,
+	collections *collections.CommonCollections,
 ) GatewayQueries {
 	return &gatewayQueries{
 		collections: collections,
@@ -171,7 +171,7 @@ func NewRoutesForGwResult() *RoutesForGwResult {
 }
 
 type gatewayQueries struct {
-	collections *common.CommonCollections
+	collections *collections.CommonCollections
 }
 
 func parentRefMatchListener(ref *gwv1.ParentReference, l *gwv1.Listener) bool {

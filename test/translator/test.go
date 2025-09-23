@@ -46,7 +46,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
-	common "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
@@ -216,7 +216,7 @@ func marshalProtoMessages[T proto.Message](messages []T, m protojson.MarshalOpti
 	return result, nil
 }
 
-type ExtraPluginsFn func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []pluginsdk.Plugin
+type ExtraPluginsFn func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []pluginsdk.Plugin
 
 func NewScheme(extraSchemes runtime.SchemeBuilder) *runtime.Scheme {
 	scheme := schemes.GatewayScheme()
@@ -645,7 +645,7 @@ func (tc TestCase) Run(
 		opt(settings)
 	}
 
-	commoncol, err := common.NewCommonCollections(
+	commoncol, err := collections.NewCommonCollections(
 		ctx,
 		krtOpts,
 		cli,

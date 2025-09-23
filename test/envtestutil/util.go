@@ -32,13 +32,13 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
-type postStartFunc func(t *testing.T, ctx context.Context, client istiokube.CLIClient) func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []pluginsdk.Plugin
+type postStartFunc func(t *testing.T, ctx context.Context, client istiokube.CLIClient) func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []pluginsdk.Plugin
 
 func RunController(
 	t *testing.T,
@@ -89,7 +89,7 @@ func RunController(
 	}
 	istiokube.EnableCrdWatcher(client)
 
-	var extraPlugins func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []pluginsdk.Plugin
+	var extraPlugins func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []pluginsdk.Plugin
 	if postStart != nil {
 		extraPlugins = postStart(t, ctx, client)
 	}

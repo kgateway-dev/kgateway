@@ -11,8 +11,8 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
-	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
+	krtutil "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
 type clustersWithErrors struct {
@@ -49,7 +49,7 @@ func (c endpointsWithUccName) Equals(k endpointsWithUccName) bool {
 }
 
 func snapshotPerClient(
-	krtopts krtinternal.KrtOptions,
+	krtopts krtutil.KrtOptions,
 	uccCol krt.Collection[ir.UniqlyConnectedClient],
 	mostXdsSnapshots krt.Collection[GatewayXdsResources],
 	endpoints PerClientEnvoyEndpoints,

@@ -21,10 +21,10 @@ import (
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 )
 
@@ -77,7 +77,7 @@ func TestUpdatePoolStatus_NoReferences_NoErrors(t *testing.T) {
 	fakeClient := newFakeClient(t, pool)
 	mock := krttest.NewMock(t, []any{})
 	col := krttest.GetMockCollection[ir.HttpRouteIR](mock)
-	commonCol := &common.CommonCollections{
+	commonCol := &collections.CommonCollections{
 		CrudClient:     fakeClient,
 		ControllerName: controllerName,
 		Routes:         fakeRoutesIndex(col),
@@ -169,7 +169,7 @@ func TestUpdatePoolStatus_WithReference_NoErrors(t *testing.T) {
 
 	// Get the mock collection for HTTPRouteIR
 	col := krttest.GetMockCollection[ir.HttpRouteIR](mock)
-	commonCol := &common.CommonCollections{
+	commonCol := &collections.CommonCollections{
 		CrudClient:     fakeClient,
 		ControllerName: controllerName,
 		Routes:         fakeRoutesIndex(col),
@@ -284,7 +284,7 @@ func TestUpdatePoolStatus_WithReference_WithErrors(t *testing.T) {
 
 	// Get the mock collection for HTTPRouteIR
 	col := krttest.GetMockCollection[ir.HttpRouteIR](mock)
-	commonCol := &common.CommonCollections{
+	commonCol := &collections.CommonCollections{
 		CrudClient:     fakeClient,
 		ControllerName: controllerName,
 		Routes:         fakeRoutesIndex(col),
@@ -416,7 +416,7 @@ func TestUpdatePoolStatus_DeleteRoute(t *testing.T) {
 
 	// Get the mock collection for HTTPRouteIR
 	col := krttest.GetMockCollection[ir.HttpRouteIR](mock)
-	commonCol := &common.CommonCollections{
+	commonCol := &collections.CommonCollections{
 		CrudClient:     fakeClient,
 		ControllerName: controllerName,
 		Routes:         fakeRoutesIndex(col),
@@ -464,7 +464,7 @@ func TestUpdatePoolStatus_WithExtraGws(t *testing.T) {
 	col := krttest.GetMockCollection[ir.HttpRouteIR](mock)
 
 	// Create a CommonCollections instance with the fake client and routes index
-	commonCol := &common.CommonCollections{
+	commonCol := &collections.CommonCollections{
 		CrudClient:     fakeClient,
 		ControllerName: "test-controller",
 		Routes:         fakeRoutesIndex(col),

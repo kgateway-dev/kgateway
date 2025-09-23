@@ -16,16 +16,16 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/endpoints"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 )
 
 const (
 	ExtensionName = "Destrule"
 )
 
-func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) sdk.Plugin {
+func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
 	if !commoncol.Settings.EnableIstioIntegration {
 		// TODO: should this be a standalone flag specific to DR?
 		// don't add support for destination rules if istio integration is not enabled

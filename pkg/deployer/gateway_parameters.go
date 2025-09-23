@@ -8,7 +8,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	common "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 )
 
 // Inputs is the set of options used to configure gateway/ineference pool deployment.
@@ -17,7 +17,7 @@ type Inputs struct {
 	IstioAutoMtlsEnabled     bool
 	ControlPlane             ControlPlaneInfo
 	ImageInfo                *ImageInfo
-	CommonCollections        *common.CommonCollections
+	CommonCollections        *collections.CommonCollections
 	GatewayClassName         string
 	WaypointGatewayClassName string
 	AgentgatewayClassName    string

@@ -13,7 +13,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
 // buildInlineEndpoints creates a static EndpointsForBackend for non-EDS a ServiceEntry using
@@ -64,7 +64,7 @@ func endpointsCollection(
 	Backends krt.Collection[ir.BackendObjectIR],
 	SelectedWorkloads krt.Collection[selectedWorkload],
 	selectedWorkloadsIndex krt.Index[string, selectedWorkload],
-	krtOpts krtinternal.KrtOptions,
+	krtOpts krtutil.KrtOptions,
 ) krt.Collection[ir.EndpointsForBackend] {
 	return krt.NewCollection(
 		Backends,

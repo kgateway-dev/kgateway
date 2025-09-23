@@ -30,11 +30,11 @@ import (
 
 	gwv1a3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	kgwellknown "github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	pluginutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 )
 
@@ -85,7 +85,7 @@ func registerTypes() {
 	)
 }
 
-func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) sdk.Plugin {
+func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
 	registerTypes()
 	inf := kclient.NewDelayedInformer[*gwv1a3.BackendTLSPolicy](
 		commoncol.Client, backendTlsPolicyGvr, kubetypes.StandardInformer,

@@ -36,7 +36,6 @@ import (
 	gw2_v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	deployerinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/httplistenerpolicy"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -44,6 +43,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/version"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 
@@ -2926,7 +2926,7 @@ func generateReadinessProbe() *corev1.Probe {
 	}
 }
 
-func newCommonCols(t test.Failer, initObjs ...client.Object) *common.CommonCollections {
+func newCommonCols(t test.Failer, initObjs ...client.Object) *collections.CommonCollections {
 	ctx := context.Background()
 	var anys []any
 	for _, obj := range initObjs {
@@ -2943,7 +2943,7 @@ func newCommonCols(t test.Failer, initObjs ...client.Object) *common.CommonColle
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
 	gateways := krtcollections.NewGatewayIndex(krtopts, wellknown.DefaultGatewayControllerName, policies, kubeRawGateways, kubeRawListenerSets, gatewayClasses, nsCol)
 
-	commonCols := &common.CommonCollections{
+	commonCols := &collections.CommonCollections{
 		GatewayIndex: gateways,
 	}
 

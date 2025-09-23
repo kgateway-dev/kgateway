@@ -23,13 +23,13 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -56,7 +56,7 @@ var (
 	logger = logging.New("plugin/inference-epp")
 )
 
-func NewPlugin(ctx context.Context, commonCols *common.CommonCollections) *sdk.Plugin {
+func NewPlugin(ctx context.Context, commonCols *collections.CommonCollections) *sdk.Plugin {
 	p := initInferencePoolCollections(ctx, commonCols)
 
 	// Wrap the init function so it can capture commonCols.Pods
@@ -96,7 +96,7 @@ func NewPlugin(ctx context.Context, commonCols *common.CommonCollections) *sdk.P
 // buildPolicyWrapperCollection returns a krt.Collection[ir.PolicyWrapper]
 // whose source is the supplied backends collection.
 func buildPolicyWrapperCollection(
-	commonCol *common.CommonCollections,
+	commonCol *collections.CommonCollections,
 	backends krt.Collection[ir.BackendObjectIR],
 ) krt.Collection[ir.PolicyWrapper] {
 	return krt.NewCollection(

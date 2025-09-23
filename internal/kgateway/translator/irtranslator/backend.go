@@ -19,11 +19,11 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/endpoints"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 )
 
 var ClusterConnectionTimeout = time.Second * 5
@@ -31,7 +31,7 @@ var ClusterConnectionTimeout = time.Second * 5
 type BackendTranslator struct {
 	ContributedBackends map[schema.GroupKind]ir.BackendInit
 	ContributedPolicies map[schema.GroupKind]sdk.PolicyPlugin
-	CommonCols          *common.CommonCollections
+	CommonCols          *collections.CommonCollections
 }
 
 func (t *BackendTranslator) TranslateBackend(
@@ -154,7 +154,7 @@ var h2Options = func() *anypb.Any {
 // processDnsLookupFamily modifies clusters that use DNS-based discovery in the following way:
 // 1. explicitly default to 'V4_PREFERRED' (as opposed to the envoy default of effectively V6_PREFERRED)
 // 2. override to value defined in kgateway global setting if present
-func processDnsLookupFamily(out *envoyclusterv3.Cluster, cc *common.CommonCollections) {
+func processDnsLookupFamily(out *envoyclusterv3.Cluster, cc *collections.CommonCollections) {
 	cdt, ok := out.GetClusterDiscoveryType().(*envoyclusterv3.Cluster_Type)
 	if !ok {
 		return

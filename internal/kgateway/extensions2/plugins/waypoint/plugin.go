@@ -12,12 +12,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/waypoint/waypointquery"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 )
 
 var VirtualWaypointGK = schema.GroupKind{
@@ -27,7 +27,7 @@ var VirtualWaypointGK = schema.GroupKind{
 
 func NewPlugin(
 	ctx context.Context,
-	commonCols *common.CommonCollections,
+	commonCols *collections.CommonCollections,
 	waypointGatewayClassName string,
 ) sdk.Plugin {
 	queries := query.NewData(
@@ -76,7 +76,7 @@ func NewPlugin(
 
 type PerClientProcessor struct {
 	waypointQueries          waypointquery.WaypointQueries
-	commonCols               *common.CommonCollections
+	commonCols               *collections.CommonCollections
 	waypointGatewayClassName string
 }
 
@@ -165,7 +165,7 @@ func claEndpoint(address string, port uint32) *envoyendpointv3.LocalityLbEndpoin
 }
 
 // hasIngressUseWaypointLabel checks if the backend or any relevant namespace/alias has the ingress-use-waypoint label.
-func hasIngressUseWaypointLabel(kctx krt.HandlerContext, commonCols *common.CommonCollections, in ir.BackendObjectIR) bool {
+func hasIngressUseWaypointLabel(kctx krt.HandlerContext, commonCols *collections.CommonCollections, in ir.BackendObjectIR) bool {
 	// Check the backend's own label first
 	if val, ok := in.Obj.GetLabels()[wellknown.IngressUseWaypointLabel]; ok && val == "true" {
 		return true

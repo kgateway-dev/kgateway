@@ -27,10 +27,10 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/backendref"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/delegation"
-	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	pluginsdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
@@ -76,7 +76,7 @@ type BackendIndex struct {
 
 	policies  *PolicyIndex
 	refgrants *RefGrantIndex
-	krtopts   krtinternal.KrtOptions
+	krtopts   krtutil.KrtOptions
 }
 
 type backendKey struct {
@@ -85,7 +85,7 @@ type backendKey struct {
 }
 
 func NewBackendIndex(
-	krtopts krtinternal.KrtOptions,
+	krtopts krtutil.KrtOptions,
 	policies *PolicyIndex,
 	refgrants *RefGrantIndex,
 ) *BackendIndex {
@@ -287,7 +287,7 @@ type GatewayIndex struct {
 }
 
 func NewGatewayIndex(
-	krtopts krtinternal.KrtOptions,
+	krtopts krtutil.KrtOptions,
 	controllerName string,
 	policies *PolicyIndex,
 	gws krt.Collection[*gwv1.Gateway],
@@ -557,7 +557,7 @@ func (h *PolicyIndex) HasSynced() bool {
 }
 
 func NewPolicyIndex(
-	krtopts krtinternal.KrtOptions,
+	krtopts krtutil.KrtOptions,
 	contributesPolicies sdk.ContributesPolicies,
 	globalSettings settings.Settings,
 ) *PolicyIndex {
@@ -944,7 +944,7 @@ func (r *RoutesIndex) HTTPRoutes() krt.Collection[ir.HttpRouteIR] {
 }
 
 func NewRoutesIndex(
-	krtopts krtinternal.KrtOptions,
+	krtopts krtutil.KrtOptions,
 	httproutes krt.Collection[*gwv1.HTTPRoute],
 	grpcroutes krt.Collection[*gwv1.GRPCRoute],
 	tcproutes krt.Collection[*gwv1a2.TCPRoute],

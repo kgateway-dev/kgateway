@@ -10,22 +10,22 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 )
 
 // FetchGatewayExtensionFunc defines the signature for fetching gateway extensions
 type FetchGatewayExtensionFunc func(krtctx krt.HandlerContext, extensionRef v1alpha1.NamespacedObjectReference, ns string) (*TrafficPolicyGatewayExtensionIR, error)
 
 type TrafficPolicyConstructor struct {
-	commoncol         *common.CommonCollections
+	commoncol         *collections.CommonCollections
 	gatewayExtensions krt.Collection[TrafficPolicyGatewayExtensionIR]
 	extBuilder        func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR
 }
 
 func NewTrafficPolicyConstructor(
 	ctx context.Context,
-	commoncol *common.CommonCollections,
+	commoncol *collections.CommonCollections,
 ) *TrafficPolicyConstructor {
 	extBuilder := TranslateGatewayExtensionBuilder(commoncol)
 	defaultExtBuilder := func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
