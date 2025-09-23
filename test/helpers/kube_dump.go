@@ -231,7 +231,7 @@ func recordCRs(namespaceDir string, namespace string) error {
 	// record all unique CRs floating about
 	for _, crd := range crds {
 		// consider all installed CRDs that are kgateway-managed
-		if !strings.Contains(crd, "kgateway.dev") || !strings.Contains(crd, "gateway.networking.k8s.io") {
+		if !strings.Contains(crd, "kgateway.dev") && !strings.Contains(crd, "gateway.networking.k8s.io") {
 			continue
 		}
 
