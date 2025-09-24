@@ -37,6 +37,7 @@ type ReferenceGrants struct {
 	index      krt.Index[ReferencePair, ReferenceGrant]
 }
 
+// ReferenceGrantsCollection creates a collection of ReferenceGrant objects from a collection of ReferenceGrant objects.
 func ReferenceGrantsCollection(referenceGrants krt.Collection[*gwv1beta1.ReferenceGrant], krtopts krtutil.KrtOptions) krt.Collection[ReferenceGrant] {
 	return krt.NewManyCollection(referenceGrants, func(ctx krt.HandlerContext, obj *gwv1beta1.ReferenceGrant) []ReferenceGrant {
 		rp := obj.Spec
@@ -90,6 +91,7 @@ func ReferenceGrantsCollection(referenceGrants krt.Collection[*gwv1beta1.Referen
 	}, krtopts.ToOptions("ReferenceGrants")...)
 }
 
+// BuildReferenceGrants creates a ReferenceGrants object from a collection of ReferenceGrant objects.
 func BuildReferenceGrants(collection krt.Collection[ReferenceGrant]) ReferenceGrants {
 	idx := krt.NewIndex(collection, "refgrant", func(o ReferenceGrant) []ReferencePair {
 		return []ReferencePair{{
@@ -103,6 +105,7 @@ func BuildReferenceGrants(collection krt.Collection[ReferenceGrant]) ReferenceGr
 	}
 }
 
+// ReferenceGrant stores a reference grant between two references
 type ReferenceGrant struct {
 	Source      types.NamespacedName
 	From        Reference
@@ -115,6 +118,7 @@ func (g ReferenceGrant) ResourceName() string {
 	return g.Source.String() + "/" + g.From.String() + "/" + g.To.String()
 }
 
+// SecretAllowed checks if a secret is allowed to be used by a gateway
 func (refs ReferenceGrants) SecretAllowed(ctx krt.HandlerContext, resourceName string, namespace string) bool {
 	p, err := creds.ParseResourceName(resourceName, "", "", "")
 	if err != nil {
@@ -133,6 +137,7 @@ func (refs ReferenceGrants) SecretAllowed(ctx krt.HandlerContext, resourceName s
 	return false
 }
 
+// BackendAllowed checks if a backend is allowed to be used by a route
 func (refs ReferenceGrants) BackendAllowed(
 	ctx krt.HandlerContext,
 	k schema.GroupVersionKind,

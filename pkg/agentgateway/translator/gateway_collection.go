@@ -21,11 +21,13 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
+// ToResourcep converts a collection of resources to an agentgateway resource group for that gateway
 func ToResourcep(gw types.NamespacedName, resources []*api.Resource, rm reports.ReportMap) *ir.AgwResourcesForGateway {
 	res := toResource(gw, resources, rm)
 	return &res
 }
 
+// ToAgwResource converts an internal representation to a resource for agentgateway
 func ToAgwResource(t any) *api.Resource {
 	switch tt := t.(type) {
 	case AgwBind:
@@ -42,6 +44,7 @@ func ToAgwResource(t any) *api.Resource {
 	panic("unknown resource kind")
 }
 
+// ToResourceWithRoutes converts a collection of resources to an agentgateway resource group for that gateway, along with attached routes
 func ToResourceWithRoutes(gw types.NamespacedName, resources []*api.Resource, attachedRoutes map[string]uint, rm reports.ReportMap) ir.AgwResourcesForGateway {
 	return ir.AgwResourcesForGateway{
 		Resources:      resources,
@@ -59,6 +62,7 @@ func toResource(gw types.NamespacedName, resources []*api.Resource, rm reports.R
 	}
 }
 
+// AgwBind is a wrapper type that contains the bind on the gateway, as well as the status for the bind.
 type AgwBind struct {
 	*api.Bind
 }
@@ -71,6 +75,7 @@ func (g AgwBind) Equals(other AgwBind) bool {
 	return protoconv.Equals(g, other)
 }
 
+// AgwListener is a wrapper type that contains the listener on the gateway, as well as the status for the listener.
 type AgwListener struct {
 	*api.Listener
 }
@@ -83,6 +88,7 @@ func (g AgwListener) Equals(other AgwListener) bool {
 	return protoconv.Equals(g, other)
 }
 
+// AgwPolicy is a wrapper type that contains the policy on the gateway, as well as the status for the policy.
 type AgwPolicy struct {
 	*api.Policy
 }
@@ -95,6 +101,7 @@ func (g AgwPolicy) Equals(other AgwPolicy) bool {
 	return protoconv.Equals(g, other)
 }
 
+// AgwBackend is a wrapper type that contains the backend on the gateway, as well as the status for the backend.
 type AgwBackend struct {
 	*api.Backend
 }
@@ -107,6 +114,7 @@ func (g AgwBackend) Equals(other AgwBackend) bool {
 	return protoconv.Equals(g, other)
 }
 
+// AgwRoute is a wrapper type that contains the route on the gateway, as well as the status for the route.
 type AgwRoute struct {
 	*api.Route
 }
@@ -119,6 +127,7 @@ func (g AgwRoute) Equals(other AgwRoute) bool {
 	return protoconv.Equals(g, other)
 }
 
+// AgwTCPRoute is a wrapper type that contains the tcp route on the gateway, as well as the status for the tcp route.
 type AgwTCPRoute struct {
 	*api.TCPRoute
 }
@@ -131,11 +140,13 @@ func (g AgwTCPRoute) Equals(other AgwTCPRoute) bool {
 	return protoconv.Equals(g, other)
 }
 
+// TLSInfo contains the TLS certificate and key for a gateway listener.
 type TLSInfo struct {
 	Cert []byte
 	Key  []byte `json:"-"`
 }
 
+// PortBindings is a wrapper type that contains the listener on the gateway, as well as the status for the listener.
 type PortBindings struct {
 	GatewayListener
 	Port string
@@ -172,6 +183,7 @@ func (g GatewayListener) Equals(other GatewayListener) bool {
 		g.Valid == other.Valid
 }
 
+// GatewayCollection returns a collection of the internal representations GatewayListeners for the given gateway.
 func GatewayCollection(
 	agwClassName string,
 	gateways krt.Collection[*gwv1.Gateway],
@@ -298,12 +310,14 @@ type RouteParents struct {
 	GatewayIndex krt.Index[ParentKey, GatewayListener]
 }
 
+// Fetch returns the parents for a given parent key.
 func (p RouteParents) Fetch(ctx krt.HandlerContext, pk ParentKey) []*ParentInfo {
 	return slices.Map(krt.Fetch(ctx, p.Gateways, krt.FilterIndex(p.GatewayIndex, pk)), func(gw GatewayListener) *ParentInfo {
 		return &gw.ParentInfo
 	})
 }
 
+// BuildRouteParents builds a RouteParents from a collection of gateways.
 func BuildRouteParents(
 	gateways krt.Collection[GatewayListener],
 ) RouteParents {

@@ -111,7 +111,7 @@ func TestAgwRouteCollection(t *testing.T) {
 							Namespace: "default",
 						},
 					},
-					parent: ParentKey{
+					Parent: ParentKey{
 						Kind:      wellknown.GatewayGVK,
 						Name:      "test-gateway",
 						Namespace: "default",

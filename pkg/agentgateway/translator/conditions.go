@@ -10,6 +10,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
+// ParentErrorReason is the error string for a ParentError (reason parent could not be referenced)
 type ParentErrorReason string
 
 const (
@@ -20,6 +21,7 @@ const (
 	ParentNoError                = ParentErrorReason("")
 )
 
+// ConfigErrorReason is the error string for a ConfigError (reason configuration is invalid)
 type ConfigErrorReason = string
 
 const (
@@ -138,6 +140,7 @@ func reportListenerCondition(index int, l gwv1.Listener, obj *gwv1.Gateway,
 	}
 }
 
+// GenerateSupportedKinds returns the supported kinds for the listener.
 func GenerateSupportedKinds(l gwv1.Listener) ([]gwv1.RouteGroupKind, bool) {
 	var supported []gwv1.RouteGroupKind
 	switch l.Protocol {

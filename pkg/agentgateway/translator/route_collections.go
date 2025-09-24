@@ -497,6 +497,7 @@ type RouteContext struct {
 	pluginPasses     []agwir.AgwTranslationPass
 }
 
+// RouteContextInputs defines the collections needed to translate a route.
 type RouteContextInputs struct {
 	Grants          ReferenceGrants
 	RouteParents    RouteParents
@@ -516,9 +517,9 @@ func (i RouteContextInputs) WithCtx(krtctx krt.HandlerContext) RouteContext {
 	}
 }
 
+// RouteWithKey is a wrapper for a Route
 type RouteWithKey struct {
 	*Config
-	Key string
 }
 
 func (r RouteWithKey) ResourceName() string {

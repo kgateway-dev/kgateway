@@ -46,6 +46,7 @@ const (
 	gatewayTLSTerminateModeKey = "gateway.agentgateway.io/tls-terminate-mode"
 )
 
+// ConvertHTTPRouteToAgw converts a HTTPRouteRule to an agentgateway HTTPRoute
 func ConvertHTTPRouteToAgw(ctx RouteContext, r gwv1.HTTPRouteRule,
 	obj *gwv1.HTTPRoute, pos int, matchPos int,
 ) (*api.Route, *reporter.RouteCondition) {
@@ -224,6 +225,7 @@ func isFilterErrorCritical(filterError *reporter.RouteCondition) bool {
 	return false
 }
 
+// ConvertTCPRouteToAgw converts a TCPRouteRule to an agentgateway TCPRoute
 func ConvertTCPRouteToAgw(ctx RouteContext, r gwv1alpha2.TCPRouteRule,
 	obj *gwv1alpha2.TCPRoute, pos int,
 ) (*api.TCPRoute, *reporter.RouteCondition) {
@@ -254,6 +256,7 @@ func ConvertTCPRouteToAgw(ctx RouteContext, r gwv1alpha2.TCPRouteRule,
 	return res, backendErr
 }
 
+// ConvertGRPCRouteToAgw converts a GRPCRouteRule to an agentgateway HTTPRoute
 func ConvertGRPCRouteToAgw(ctx RouteContext, r gwv1.GRPCRouteRule,
 	obj *gwv1.GRPCRoute, pos int,
 ) (*api.Route, *reporter.RouteCondition) {
@@ -322,6 +325,7 @@ func ConvertGRPCRouteToAgw(ctx RouteContext, r gwv1.GRPCRouteRule,
 	return res, backendErr
 }
 
+// ConvertTLSRouteToAgw converts a TLSRouteRule to an agentgateway TCPRoute
 func ConvertTLSRouteToAgw(ctx RouteContext, r gwv1alpha2.TLSRouteRule,
 	obj *gwv1alpha2.TLSRoute, pos int,
 ) (*api.TCPRoute, *reporter.RouteCondition) {
@@ -422,6 +426,7 @@ func terminalFilterCombinationError(existingFilter, newFilter string) string {
 	return fmt.Sprintf("Cannot combine multiple terminal filters: %s and %s are mutually exclusive. Only one terminal filter is allowed per route rule.", existingFilter, newFilter)
 }
 
+// BuildAgwFilters builds a list of agentgateway filters from a list of k8s gateway api HTTPRoute filters
 func BuildAgwFilters(
 	ctx RouteContext,
 	ns string,
@@ -456,7 +461,7 @@ func BuildAgwFilters(
 				}
 				continue
 			}
-			h := createAgwRedirectFilter(filter.RequestRedirect)
+			h := CreateAgwRedirectFilter(filter.RequestRedirect)
 			if h == nil {
 				continue
 			}
@@ -464,7 +469,7 @@ func BuildAgwFilters(
 			hasTerminalFilter = true
 			terminalFilterType = "RequestRedirect"
 		case gwv1.HTTPRouteFilterRequestMirror:
-			h, err := createAgwMirrorFilter(ctx, filter.RequestMirror, ns, wellknown.HTTPRouteGVK)
+			h, err := CreateAgwMirrorFilter(ctx, filter.RequestMirror, ns, wellknown.HTTPRouteGVK)
 			if err != nil {
 				if filterError == nil {
 					filterError = err
@@ -473,7 +478,7 @@ func BuildAgwFilters(
 				filters = append(filters, h)
 			}
 		case gwv1.HTTPRouteFilterURLRewrite:
-			h := createAgwRewriteFilter(filter.URLRewrite)
+			h := CreateAgwRewriteFilter(filter.URLRewrite)
 			if h == nil {
 				continue
 			}
@@ -700,6 +705,7 @@ func buildAgwDestination(
 	return rb, invalidBackendErr
 }
 
+// ParentMeta generates a map of metadata for a parent resource, including its name and optional section-specific details.
 func ParentMeta(obj controllers.Object, sectionName *gwv1.SectionName) map[string]string {
 	kind := obj.GetObjectKind().GroupVersionKind().Kind
 	name := fmt.Sprintf("%s/%s.%s", kind, obj.GetName(), obj.GetNamespace())
@@ -740,6 +746,7 @@ func normalizeReference(group *gwv1.Group, kind *gwv1.Kind, defaultGVK schema.Gr
 	return result
 }
 
+// ToInternalParentReference converts a gwv1.ParentReference to a ParentKey.
 func ToInternalParentReference(p gwv1.ParentReference, localNamespace string) (ParentKey, error) {
 	ref := normalizeReference(p.Group, p.Kind, wellknown.GatewayGVK)
 	if !allowedParentReferences.Contains(wellknown.GatewayGVK) {
@@ -753,6 +760,9 @@ func ToInternalParentReference(p gwv1.ParentReference, localNamespace string) (P
 	}, nil
 }
 
+// ReferenceAllowed validates if a route can reference a specified Parent based on rules like section, port, and hostnames.
+// Returns a *ParentError if the reference violates any constraints or is disallowed.
+// Returns nil if the reference is valid and permitted for the given route and ParentInfo.
 func ReferenceAllowed(
 	ctx RouteContext,
 	parent *ParentInfo,
@@ -941,6 +951,7 @@ func (p ParentKey) String() string {
 	return p.Kind.String() + "/" + p.Namespace + "/" + p.Name
 }
 
+// ParentReference holds the parent key, section name and port for a parent reference.
 type ParentReference struct {
 	ParentKey
 
@@ -988,6 +999,7 @@ type RouteParentReference struct {
 	Accepted        bool
 }
 
+// FilteredReferences filters out references that are not accepted by the Parent.
 func FilteredReferences(parents []RouteParentReference) []RouteParentReference {
 	ret := make([]RouteParentReference, 0, len(parents))
 	for _, p := range parents {
@@ -1085,6 +1097,7 @@ func ExtractGatewayServices(kgw *gwv1.Gateway) ([]string, *reporter.RouteConditi
 	return gatewayServices, nil
 }
 
+// BuildListener translates a k8s Gateway to an internal listener representation.
 func BuildListener(
 	ctx krt.HandlerContext,
 	secrets krt.Collection[*corev1.Secret],
@@ -1294,6 +1307,7 @@ func objectReferenceString(ref gwv1.SecretObjectReference) string {
 		ptr.OrEmpty(ref.Namespace))
 }
 
+// ParentRefString returns a string representation of a ParentRef.
 func ParentRefString(ref gwv1.ParentReference) string {
 	return fmt.Sprintf("%s/%s/%s/%s/%d.%s",
 		ptr.OrEmpty(ref.Group),

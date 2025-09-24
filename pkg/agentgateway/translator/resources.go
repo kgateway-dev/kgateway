@@ -46,6 +46,7 @@ func (r AgentGwXdsResources) Equals(in AgentGwXdsResources) bool {
 		r.AddressConfig.Version == in.AddressConfig.Version
 }
 
+// AgwResourceWithCustomName is a wrapper type that contains the resource on the gateway, used for the snapshot cache.
 type AgwResourceWithCustomName struct {
 	proto.Message
 	Name    string

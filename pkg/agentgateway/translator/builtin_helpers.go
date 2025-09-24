@@ -9,6 +9,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
+// ApplyTimeouts applies timeouts to an agw route
 func ApplyTimeouts(rule *gwv1.HTTPRouteRule, route *api.Route) error {
 	if rule == nil || rule.Timeouts == nil {
 		return nil
@@ -33,6 +34,7 @@ func ApplyTimeouts(rule *gwv1.HTTPRouteRule, route *api.Route) error {
 	return nil
 }
 
+// ApplyRetries applies retries to an agw route
 func ApplyRetries(rule *gwv1.HTTPRouteRule, route *api.Route) error {
 	if rule == nil || rule.Retry == nil {
 		return nil
