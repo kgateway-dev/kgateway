@@ -85,11 +85,11 @@ type HelmGateway struct {
 
 // helmPort represents a Gateway Listener port
 type HelmPort struct {
-	Port       *uint16 `json:"port,omitempty"`
+	Port       *int32  `json:"port,omitempty"`
 	Protocol   *string `json:"protocol,omitempty"`
 	Name       *string `json:"name,omitempty"`
-	TargetPort *uint16 `json:"targetPort,omitempty"`
-	NodePort   *uint16 `json:"nodePort,omitempty"`
+	TargetPort *int32  `json:"targetPort,omitempty"`
+	NodePort   *int32  `json:"nodePort,omitempty"`
 }
 
 type HelmImage struct {

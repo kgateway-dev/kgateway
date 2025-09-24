@@ -3702,7 +3702,7 @@ func (in *Port) DeepCopyInto(out *Port) {
 	*out = *in
 	if in.NodePort != nil {
 		in, out := &in.NodePort, &out.NodePort
-		*out = new(int16)
+		*out = new(int32)
 		**out = **in
 	}
 }

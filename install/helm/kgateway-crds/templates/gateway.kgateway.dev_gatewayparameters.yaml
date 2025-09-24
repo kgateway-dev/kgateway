@@ -3298,10 +3298,12 @@ spec:
                         items:
                           properties:
                             nodePort:
+                              format: int32
                               maximum: 65535
                               minimum: 1
                               type: integer
                             port:
+                              format: int32
                               maximum: 65535
                               minimum: 1
                               type: integer

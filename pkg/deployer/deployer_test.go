@@ -2199,7 +2199,7 @@ var _ = Describe("Deployer", func() {
 								Ports: []gw2_v1alpha1.Port{
 									{
 										Port:     80,
-										NodePort: ptr.To[int16](30000),
+										NodePort: ptr.To[int32](30000),
 									},
 								},
 							},

@@ -124,7 +124,7 @@ type Port struct {
 	// +required
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=65535
-	Port int16 `json:"port"`
+	Port int32 `json:"port"`
 
 	// The NodePort to be used for the service. If not specified, a random port
 	// will be assigned by the Kubernetes API server.
@@ -132,17 +132,17 @@ type Port struct {
 	// +optional
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=65535
-	NodePort *int16 `json:"nodePort,omitempty"`
+	NodePort *int32 `json:"nodePort,omitempty"`
 }
 
-func (in *Port) GetPort() int16 {
+func (in *Port) GetPort() int32 {
 	if in == nil {
 		return 0
 	}
 	return in.Port
 }
 
-func (in *Port) GetNodePort() *int16 {
+func (in *Port) GetNodePort() *int32 {
 	if in == nil {
 		return nil
 	}
