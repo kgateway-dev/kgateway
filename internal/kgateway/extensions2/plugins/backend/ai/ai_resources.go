@@ -1,7 +1,7 @@
 package ai
 
 import (
-	"log/slog"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
