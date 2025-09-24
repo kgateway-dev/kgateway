@@ -369,7 +369,9 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 		gateway.ReplicaCount = nil
 	} else {
 		// Use the specified replica count
-		gateway.ReplicaCount = pointer.Uint32(uint32(*deployConfig.GetReplicas())) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+		if deployConfig.GetReplicas() != nil {
+			gateway.ReplicaCount = pointer.Uint32(uint32(*deployConfig.GetReplicas())) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+		}
 	}
 	gateway.Strategy = deployConfig.GetStrategy()
 

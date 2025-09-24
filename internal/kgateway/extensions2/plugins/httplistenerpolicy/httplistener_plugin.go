@@ -232,6 +232,10 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 		}
 
 		healthCheckPolicy := convertHealthCheckPolicy(i)
+		var xffNumTrustedHops *uint32
+		if i.Spec.XffNumTrustedHops != nil {
+			xffNumTrustedHops = pointer.Uint32(uint32(*i.Spec.XffNumTrustedHops)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+		}
 
 		pol := &ir.PolicyWrapper{
 			ObjectSource: objSrc,
@@ -244,7 +248,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 				tracingConfig:              tracingConfig,
 				upgradeConfigs:             upgradeConfigs,
 				useRemoteAddress:           i.Spec.UseRemoteAddress,
-				xffNumTrustedHops:          pointer.Uint32(uint32(*i.Spec.XffNumTrustedHops)), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+				xffNumTrustedHops:          xffNumTrustedHops,
 				serverHeaderTransformation: serverHeaderTransformation,
 				streamIdleTimeout:          streamIdleTimeout,
 				idleTimeout:                idleTimeout,
