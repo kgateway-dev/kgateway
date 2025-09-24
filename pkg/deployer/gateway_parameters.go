@@ -1,6 +1,9 @@
 package deployer
 
 import (
+	"context"
+	"log/slog"
+
 	"istio.io/api/annotation"
 	"istio.io/api/label"
 	corev1 "k8s.io/api/core/v1"
@@ -11,7 +14,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 )
 
-// Inputs is the set of options used to configure gateway/ineference pool deployment.
+// Inputs is the set of options used to configure gateway/inference pool deployment.
 type Inputs struct {
 	Dev                      bool
 	IstioAutoMtlsEnabled     bool
@@ -34,8 +37,12 @@ type ExtraGatewayParameters struct {
 // It applies the floating user ID if it is set and adds the sysctl to allow the privileged ports if the gateway uses them.
 func UpdateSecurityContexts(cfg *v1alpha1.KubernetesProxyConfig, ports []HelmPort) {
 	// If the floating user ID is set, unset the RunAsUser field from all security contexts
-	if cfg.GetFloatingUserId() != nil && *cfg.GetFloatingUserId() {
+	if ptr.Deref(cfg.GetFloatingUserId(), false) {
 		applyFloatingUserId(cfg)
+	}
+
+	if ptr.Deref(cfg.GetOmitDefaultSecurityContext(), false) {
+		return
 	}
 
 	if usesPrivilegedPorts(ports) {
@@ -80,20 +87,18 @@ func allowPrivilegedPorts(cfg *v1alpha1.KubernetesProxyConfig) {
 	})
 }
 
-// applyFloatingUserId will set the RunAsUser field from all security contexts to null if the floatingUserId field is set
+// applyFloatingUserId (deprecated in favor of omitDefaultSecurityContext) will
+// set the RunAsUser field from all security contexts to null assuming that the
+// floatingUserId field is set. Will not create a securityContext, even an
+// empty one -- only updates existing securityContexts.
 func applyFloatingUserId(dstKube *v1alpha1.KubernetesProxyConfig) {
-	floatingUserId := dstKube.GetFloatingUserId()
-	if floatingUserId == nil || !*floatingUserId {
-		return
-	}
+	logger.Log(context.Background(), slog.LevelWarn, "the field GatewayParameters.Spec.Kube.FloatingUserId is deprecated and will be removed in a future release; see if OmitDefaultSecurityContext fits your needs")
 
-	// Pod security context
 	podSecurityContext := dstKube.GetPodTemplate().GetSecurityContext()
 	if podSecurityContext != nil {
 		podSecurityContext.RunAsUser = nil
 	}
 
-	// Container security contexts
 	securityContexts := []*corev1.SecurityContext{
 		dstKube.GetEnvoyContainer().GetSecurityContext(),
 		dstKube.GetSdsContainer().GetSecurityContext(),
@@ -110,31 +115,31 @@ func applyFloatingUserId(dstKube *v1alpha1.KubernetesProxyConfig) {
 }
 
 // GetInMemoryGatewayParameters returns an in-memory GatewayParameters based on the name of the gateway class.
-func GetInMemoryGatewayParameters(name string, imageInfo *ImageInfo, gatewayClassName, waypointClassName, agentgatewayClassName string) *v1alpha1.GatewayParameters {
+func GetInMemoryGatewayParameters(name string, imageInfo *ImageInfo, gatewayClassName, waypointClassName, agentgatewayClassName string, omitDefaultSecurityContext bool) *v1alpha1.GatewayParameters {
 	switch name {
 	case waypointClassName:
-		return defaultWaypointGatewayParameters(imageInfo)
+		return defaultWaypointGatewayParameters(imageInfo, omitDefaultSecurityContext)
 	case gatewayClassName:
-		return defaultGatewayParameters(imageInfo)
+		return defaultGatewayParameters(imageInfo, omitDefaultSecurityContext)
 	case agentgatewayClassName:
-		return defaultAgentgatewayParameters(imageInfo)
+		return defaultAgentgatewayParameters(imageInfo, omitDefaultSecurityContext)
 	default:
-		return defaultGatewayParameters(imageInfo)
+		return defaultGatewayParameters(imageInfo, omitDefaultSecurityContext)
 	}
 }
 
 // defaultAgentgatewayParameters returns an in-memory GatewayParameters with default values
 // set for the agentgateway deployment.
-func defaultAgentgatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayParameters {
-	gwp := defaultGatewayParameters(imageInfo)
+func defaultAgentgatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext bool) *v1alpha1.GatewayParameters {
+	gwp := defaultGatewayParameters(imageInfo, omitDefaultSecurityContext)
 	gwp.Spec.Kube.Agentgateway.Enabled = ptr.To(true)
 	return gwp
 }
 
 // defaultWaypointGatewayParameters returns an in-memory GatewayParameters with default values
 // set for the waypoint deployment.
-func defaultWaypointGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayParameters {
-	gwp := defaultGatewayParameters(imageInfo)
+func defaultWaypointGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext bool) *v1alpha1.GatewayParameters {
+	gwp := defaultGatewayParameters(imageInfo, omitDefaultSecurityContext)
 
 	// Ensure Service is initialized before adding ports
 	if gwp.Spec.Kube.Service == nil {
@@ -173,7 +178,20 @@ func defaultWaypointGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayPar
 
 // defaultGatewayParameters returns an in-memory GatewayParameters with the default values
 // set for the gateway.
-func defaultGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayParameters {
+func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext bool) *v1alpha1.GatewayParameters {
+	dataPlaneSecurityContext := &corev1.SecurityContext{
+		AllowPrivilegeEscalation: ptr.To(false),
+		ReadOnlyRootFilesystem:   ptr.To(true),
+		RunAsNonRoot:             ptr.To(true),
+		RunAsUser:                ptr.To[int64](10101),
+		Capabilities: &corev1.Capabilities{
+			Drop: []corev1.Capability{"ALL"},
+			Add:  []corev1.Capability{"NET_BIND_SERVICE"},
+		},
+	}
+	if omitDefaultSecurityContext {
+		dataPlaneSecurityContext = nil
+	}
 	return &v1alpha1.GatewayParameters{
 		Spec: v1alpha1.GatewayParametersSpec{
 			SelfManaged: nil,
@@ -195,16 +213,7 @@ func defaultGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayParameters 
 						Repository: ptr.To(EnvoyWrapperImage),
 						PullPolicy: (*corev1.PullPolicy)(ptr.To(imageInfo.PullPolicy)),
 					},
-					SecurityContext: &corev1.SecurityContext{
-						AllowPrivilegeEscalation: ptr.To(false),
-						ReadOnlyRootFilesystem:   ptr.To(true),
-						RunAsNonRoot:             ptr.To(true),
-						RunAsUser:                ptr.To[int64](10101),
-						Capabilities: &corev1.Capabilities{
-							Drop: []corev1.Capability{"ALL"},
-							Add:  []corev1.Capability{"NET_BIND_SERVICE"},
-						},
-					},
+					SecurityContext: dataPlaneSecurityContext,
 				},
 				Stats: &v1alpha1.StatsConfig{
 					Enabled:                 ptr.To(true),
@@ -255,16 +264,7 @@ func defaultGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayParameters 
 						Repository: ptr.To(AgentgatewayImage),
 						PullPolicy: (*corev1.PullPolicy)(ptr.To(imageInfo.PullPolicy)),
 					},
-					SecurityContext: &corev1.SecurityContext{
-						AllowPrivilegeEscalation: ptr.To(false),
-						ReadOnlyRootFilesystem:   ptr.To(true),
-						RunAsNonRoot:             ptr.To(true),
-						RunAsUser:                ptr.To[int64](10101),
-						Capabilities: &corev1.Capabilities{
-							Drop: []corev1.Capability{"ALL"},
-							Add:  []corev1.Capability{"NET_BIND_SERVICE"},
-						},
-					},
+					SecurityContext: dataPlaneSecurityContext,
 				},
 			},
 		},

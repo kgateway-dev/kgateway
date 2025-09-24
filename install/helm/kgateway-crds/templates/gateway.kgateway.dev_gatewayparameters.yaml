@@ -1583,6 +1583,8 @@ spec:
                             type: object
                         type: object
                     type: object
+                  omitDefaultSecurityContext:
+                    type: boolean
                   podTemplate:
                     properties:
                       affinity:

@@ -24,11 +24,16 @@ type HelmGateway struct {
 	FullnameOverride *string `json:"fullnameOverride,omitempty"`
 
 	// deployment/service values
-	ReplicaCount   *uint32                    `json:"replicaCount,omitempty"`
-	Ports          []HelmPort                 `json:"ports,omitempty"`
-	Service        *HelmService               `json:"service,omitempty"`
-	FloatingUserId *bool                      `json:"floatingUserId,omitempty"`
-	Strategy       *appsv1.DeploymentStrategy `json:"strategy,omitempty"`
+	ReplicaCount   *uint32      `json:"replicaCount,omitempty"`
+	Ports          []HelmPort   `json:"ports,omitempty"`
+	Service        *HelmService `json:"service,omitempty"`
+	FloatingUserId *bool        `json:"floatingUserId,omitempty"`
+	// TODO(chandler): OmitDefaultSecurityContext is only for the agw internal
+	// helm chart, but that chart would be cleaner if we instead passed in
+	// entire SecurityContext and PodSecurityContext values. Then our
+	// opinionated securityContext defaults would only live in go.
+	OmitDefaultSecurityContext *bool                      `json:"omitDefaultSecurityContext,omitempty"`
+	Strategy                   *appsv1.DeploymentStrategy `json:"strategy,omitempty"`
 
 	// serviceaccount values
 	ServiceAccount *HelmServiceAccount `json:"serviceAccount,omitempty"`
