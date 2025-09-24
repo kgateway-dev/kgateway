@@ -1,4 +1,4 @@
-package agentgatewaysyncer
+package translator
 
 import (
 	"context"
@@ -111,12 +111,12 @@ func TestAgwRouteCollection(t *testing.T) {
 							Namespace: "default",
 						},
 					},
-					parent: parentKey{
+					parent: ParentKey{
 						Kind:      wellknown.GatewayGVK,
 						Name:      "test-gateway",
 						Namespace: "default",
 					},
-					parentInfo: parentInfo{
+					ParentInfo: ParentInfo{
 						InternalName: "default/test-gateway",
 						Protocol:     gwv1.HTTPProtocolType,
 						Port:         80,
@@ -270,12 +270,12 @@ func TestAgwRouteCollection(t *testing.T) {
 							Namespace: "default",
 						},
 					},
-					parent: parentKey{
+					Parent: ParentKey{
 						Kind:      wellknown.GatewayGVK,
 						Name:      "test-gateway",
 						Namespace: "default",
 					},
-					parentInfo: parentInfo{
+					ParentInfo: ParentInfo{
 						InternalName: "default/test-gateway",
 						Protocol:     gwv1.HTTPProtocolType,
 						Port:         80,
@@ -448,12 +448,12 @@ func TestAgwRouteCollection(t *testing.T) {
 							Namespace: "default",
 						},
 					},
-					parent: parentKey{
+					Parent: ParentKey{
 						Kind:      wellknown.GatewayGVK,
 						Name:      "test-gateway",
 						Namespace: "default",
 					},
-					parentInfo: parentInfo{
+					ParentInfo: ParentInfo{
 						InternalName: "default/test-gateway",
 						Protocol:     gwv1.HTTPProtocolType,
 						Port:         80,
@@ -593,12 +593,12 @@ func TestAgwRouteCollection(t *testing.T) {
 							Namespace: "default",
 						},
 					},
-					parent: parentKey{
+					Parent: ParentKey{
 						Kind:      wellknown.GatewayGVK,
 						Name:      "test-gateway",
 						Namespace: "default",
 					},
-					parentInfo: parentInfo{
+					ParentInfo: ParentInfo{
 						InternalName: "default/test-gateway",
 						Protocol:     gwv1.HTTPProtocolType,
 						Port:         80,
@@ -721,12 +721,12 @@ func TestAgwRouteCollection(t *testing.T) {
 							Namespace: "default",
 						},
 					},
-					parent: parentKey{
+					Parent: ParentKey{
 						Kind:      wellknown.GatewayGVK,
 						Name:      "test-gateway",
 						Namespace: "default",
 					},
-					parentInfo: parentInfo{
+					ParentInfo: ParentInfo{
 						InternalName: "default/test-gateway",
 						Protocol:     gwv1.HTTPProtocolType,
 						Port:         80,
@@ -1023,12 +1023,12 @@ func TestAgwRouteCollectionGRPC(t *testing.T) {
 							Namespace: "default",
 						},
 					},
-					parent: parentKey{
+					Parent: ParentKey{
 						Kind:      wellknown.GatewayGVK,
 						Name:      "test-gateway",
 						Namespace: "default",
 					},
-					parentInfo: parentInfo{
+					ParentInfo: ParentInfo{
 						InternalName: "default/test-gateway",
 						Protocol:     gwv1.HTTPProtocolType,
 						Port:         9090,
@@ -1177,12 +1177,12 @@ func TestAgwRouteCollectionGRPC(t *testing.T) {
 							Namespace: "default",
 						},
 					},
-					parent: parentKey{
+					Parent: ParentKey{
 						Kind:      wellknown.GatewayGVK,
 						Name:      "test-gateway",
 						Namespace: "default",
 					},
-					parentInfo: parentInfo{
+					ParentInfo: ParentInfo{
 						InternalName: "default/test-gateway",
 						Protocol:     gwv1.HTTPProtocolType,
 						Port:         9090,
@@ -1329,12 +1329,12 @@ func TestAgwRouteCollectionGRPC(t *testing.T) {
 							Namespace: "default",
 						},
 					},
-					parent: parentKey{
+					Parent: ParentKey{
 						Kind:      wellknown.GatewayGVK,
 						Name:      "test-gateway",
 						Namespace: "default",
 					},
-					parentInfo: parentInfo{
+					ParentInfo: ParentInfo{
 						InternalName: "default/test-gateway",
 						Protocol:     gwv1.HTTPProtocolType,
 						Port:         9090,
@@ -1822,12 +1822,12 @@ func TestAgwRouteCollectionWithFilters(t *testing.T) {
 						Namespace: "default",
 					},
 				},
-				parent: parentKey{
+				Parent: ParentKey{
 					Kind:      wellknown.GatewayGVK,
 					Name:      "test-gateway",
 					Namespace: "default",
 				},
-				parentInfo: parentInfo{
+				ParentInfo: ParentInfo{
 					InternalName: "default/test-gateway",
 					Protocol:     gwv1.HTTPProtocolType,
 					Port:         80,

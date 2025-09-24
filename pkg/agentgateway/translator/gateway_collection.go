@@ -1,4 +1,4 @@
-package agentgatewaysyncer
+package translator
 
 import (
 	"github.com/agentgateway/agentgateway/go/api"
@@ -21,12 +21,12 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
-func toResourcep(gw types.NamespacedName, resources []*api.Resource, rm reports.ReportMap) *ir.AgwResourcesForGateway {
+func ToResourcep(gw types.NamespacedName, resources []*api.Resource, rm reports.ReportMap) *ir.AgwResourcesForGateway {
 	res := toResource(gw, resources, rm)
 	return &res
 }
 
-func toAgwResource(t any) *api.Resource {
+func ToAgwResource(t any) *api.Resource {
 	switch tt := t.(type) {
 	case AgwBind:
 		return &api.Resource{Kind: &api.Resource_Bind{Bind: tt.Bind}}
@@ -42,7 +42,7 @@ func toAgwResource(t any) *api.Resource {
 	panic("unknown resource kind")
 }
 
-func toResourceWithRoutes(gw types.NamespacedName, resources []*api.Resource, attachedRoutes map[string]uint, rm reports.ReportMap) ir.AgwResourcesForGateway {
+func ToResourceWithRoutes(gw types.NamespacedName, resources []*api.Resource, attachedRoutes map[string]uint, rm reports.ReportMap) ir.AgwResourcesForGateway {
 	return ir.AgwResourcesForGateway{
 		Resources:      resources,
 		Gateway:        gw,
@@ -154,12 +154,12 @@ func (g PortBindings) Equals(other PortBindings) bool {
 // This allows binding to a specific listener.
 type GatewayListener struct {
 	*Config
-	parent     parentKey
-	parentInfo parentInfo
+	Parent     ParentKey
+	ParentInfo ParentInfo
 	TLSInfo    *TLSInfo
 	Valid      bool
 	// status for the gateway listener
-	report reports.ReportMap
+	Report reports.ReportMap
 }
 
 func (g GatewayListener) ResourceName() string {
@@ -167,7 +167,7 @@ func (g GatewayListener) ResourceName() string {
 }
 
 func (g GatewayListener) Equals(other GatewayListener) bool {
-	// TODO: ok to ignore parent/parentInfo?
+	// TODO: ok to ignore Parent/ParentInfo?
 	return g.Config.Equals(other.Config) &&
 		g.Valid == other.Valid
 }
@@ -256,12 +256,12 @@ func GatewayCollection(
 					Servers: []*istio.Server{server},
 				},
 			}
-			ref := parentKey{
+			ref := ParentKey{
 				Kind:      wellknown.GatewayGVK,
 				Name:      obj.Name,
 				Namespace: obj.Namespace,
 			}
-			pri := parentInfo{
+			pri := ParentInfo{
 				InternalName:     utils.InternalGatewayName(obj.Namespace, gatewayConfig.Name, ""),
 				AllowedKinds:     allowed,
 				Hostnames:        server.GetHosts(),
@@ -275,9 +275,9 @@ func GatewayCollection(
 				Config:     &gatewayConfig,
 				Valid:      programmed,
 				TLSInfo:    tlsInfo,
-				parent:     ref,
-				parentInfo: pri,
-				report:     rm,
+				Parent:     ref,
+				ParentInfo: pri,
+				Report:     rm,
 			}
 			gwReporter.SetCondition(reporter.GatewayCondition{
 				Type:   gwv1.GatewayConditionAccepted,
@@ -295,20 +295,20 @@ func GatewayCollection(
 // RouteParents holds information about things routes can reference as parents.
 type RouteParents struct {
 	gateways     krt.Collection[GatewayListener]
-	gatewayIndex krt.Index[parentKey, GatewayListener]
+	gatewayIndex krt.Index[ParentKey, GatewayListener]
 }
 
-func (p RouteParents) fetch(ctx krt.HandlerContext, pk parentKey) []*parentInfo {
-	return slices.Map(krt.Fetch(ctx, p.gateways, krt.FilterIndex(p.gatewayIndex, pk)), func(gw GatewayListener) *parentInfo {
-		return &gw.parentInfo
+func (p RouteParents) fetch(ctx krt.HandlerContext, pk ParentKey) []*ParentInfo {
+	return slices.Map(krt.Fetch(ctx, p.gateways, krt.FilterIndex(p.gatewayIndex, pk)), func(gw GatewayListener) *ParentInfo {
+		return &gw.ParentInfo
 	})
 }
 
 func BuildRouteParents(
 	gateways krt.Collection[GatewayListener],
 ) RouteParents {
-	idx := krt.NewIndex(gateways, "parent", func(o GatewayListener) []parentKey {
-		return []parentKey{o.parent}
+	idx := krt.NewIndex(gateways, "Parent", func(o GatewayListener) []ParentKey {
+		return []ParentKey{o.Parent}
 	})
 	return RouteParents{
 		gateways:     gateways,

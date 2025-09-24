@@ -1,4 +1,4 @@
-package agentgatewaysyncer
+package translator
 
 import (
 	"istio.io/istio/pilot/pkg/model/kstatus"
@@ -43,7 +43,7 @@ const (
 	DeprecateFieldUsage  ConfigErrorReason = "DeprecatedField"
 )
 
-// ParentError represents that a parent could not be referenced
+// ParentError represents that a Parent could not be referenced
 type ParentError struct {
 	Reason  ParentErrorReason
 	Message string

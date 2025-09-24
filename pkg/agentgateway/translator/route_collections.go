@@ -1,4 +1,4 @@
-package agentgatewaysyncer
+package translator
 
 import (
 	"fmt"
@@ -108,10 +108,10 @@ func AgwRouteCollection(
 	return routes
 }
 
-// processParentReferences processes filtered parent references and builds resources per gateway.
+// processParentReferences processes filtered Parent references and builds resources per gateway.
 // It emits exactly one ParentStatus per Gateway (aggregate across listeners).
 // If no listeners are allowed, the Accepted reason is:
-//   - NotAllowedByListeners  => when the parent Gateway is cross-namespace w.r.t. the route
+//   - NotAllowedByListeners  => when the Parent Gateway is cross-namespace w.r.t. the route
 //   - NoMatchingListenerHostname => otherwise
 func processParentReferences[T any](
 	parentRefs []routeParentReference,
@@ -132,7 +132,7 @@ func processParentReferences[T any](
 		allowed[k] = struct{}{}
 	}
 
-	// Aggregate per Gateway for status; also track whether any raw parent was cross-namespace.
+	// Aggregate per Gateway for status; also track whether any raw Parent was cross-namespace.
 	type gwAgg struct {
 		anyAllowed bool
 		rep        routeParentReference
@@ -209,7 +209,7 @@ func processParentReferences[T any](
 			// Nothing attached: choose reason based on *why* it wasn't allowed.
 			// Priority:
 			// 1) Cross-namespace and listeners don’t allow it -> NotAllowedByListeners
-			// 2) sectionName specified but no such listener on the parent -> NoMatchingParent
+			// 2) sectionName specified but no such listener on the Parent -> NoMatchingParent
 			// 3) Otherwise, no hostname intersection -> NoMatchingListenerHostname
 			reason := gwv1.RouteConditionReason("NoMatchingListenerHostname")
 			msg := "No route hostnames intersect any listener hostname"
@@ -219,7 +219,7 @@ func processParentReferences[T any](
 			} else if a.rep.OriginalReference.SectionName != nil {
 				// Use string literal to avoid compile issues if the constant name differs.
 				reason = gwv1.RouteConditionReason("NoMatchingParent")
-				msg = "No listener with the specified sectionName on the parent Gateway"
+				msg = "No listener with the specified sectionName on the Parent Gateway"
 			}
 			pr.SetCondition(reporter.RouteCondition{
 				Type:    gwv1.RouteConditionAccepted,
@@ -357,7 +357,7 @@ func createRouteCollectionGeneric[T controllers.Object, R comparable](
 				routeCounts = ar
 			}
 
-			results = append(results, toResourceWithRoutes(gw, resources, routeCounts, rm))
+			results = append(results, ToResourceWithRoutes(gw, resources, routeCounts, rm))
 		}
 		return results
 	}, krtopts.ToOptions(collectionName)...)
@@ -386,7 +386,7 @@ func createRouteCollection[T controllers.Object](
 			} else {
 				inner.Key = inner.GetKey()
 			}
-			return toAgwResource(AgwRoute{Route: inner})
+			return ToAgwResource(AgwRoute{Route: inner})
 		},
 	)
 }
@@ -408,12 +408,12 @@ func createTCPRouteCollection[T controllers.Object](
 		func(e AgwTCPRoute, parent routeParentReference) *api.Resource {
 			// TCP route wrapper doesn't expose a `Route` field like HTTP.
 			// For TCP we don't mutate ListenerKey/Key here; just pass through.
-			return toAgwResource(e)
+			return ToAgwResource(e)
 		},
 	)
 }
 
-// listenersPerGateway returns the set of listener sectionNames referenced for each parent Gateway,
+// listenersPerGateway returns the set of listener sectionNames referenced for each Parent Gateway,
 // regardless of whether they are allowed.
 func listenersPerGateway(parentRefs []routeParentReference) map[types.NamespacedName]map[string]struct{} {
 	l := make(map[types.NamespacedName]map[string]struct{})
@@ -430,7 +430,7 @@ func listenersPerGateway(parentRefs []routeParentReference) map[types.Namespaced
 	return l
 }
 
-// ensureZeroes pre-populates attachedRoutes with explicit 0 entries for every referenced listener,
+// ensureZeroes pre-populates AttachedRoutes with explicit 0 entries for every referenced listener,
 // so writers that "replace" rather than "merge" will correctly set zero.
 func ensureZeroes(
 	attached map[types.NamespacedName]map[string]uint,

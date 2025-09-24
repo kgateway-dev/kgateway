@@ -1,4 +1,4 @@
-package agentgatewaysyncer
+package translator
 
 import (
 	"fmt"
@@ -12,13 +12,20 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
-// agentGwXdsResources represents XDS resources for a single agent gateway
-type agentGwXdsResources struct {
+const (
+	// Resource name format strings
+	resourceNameFormat = "%s~%s"
+	bindKeyFormat      = "%s/%s"
+	gatewayNameFormat  = "%s/%s"
+)
+
+// AgentGwXdsResources represents XDS resources for a single agent gateway
+type AgentGwXdsResources struct {
 	types.NamespacedName
 
-	// Status reports for this gateway
-	reports        reports.ReportMap
-	attachedRoutes map[string]uint
+	// Status Reports for this gateway
+	Reports        reports.ReportMap
+	AttachedRoutes map[string]uint
 
 	// Resources config for gateway (Bind, Listener, Route)
 	ResourceConfig envoycache.Resources
@@ -28,36 +35,36 @@ type agentGwXdsResources struct {
 }
 
 // ResourceName needs to match agentgateway role configured in agentgateway
-func (r agentGwXdsResources) ResourceName() string {
+func (r AgentGwXdsResources) ResourceName() string {
 	return fmt.Sprintf(resourceNameFormat, r.Namespace, r.Name)
 }
 
-func (r agentGwXdsResources) Equals(in agentGwXdsResources) bool {
+func (r AgentGwXdsResources) Equals(in AgentGwXdsResources) bool {
 	return r.NamespacedName == in.NamespacedName &&
-		report{reportMap: r.reports, attachedRoutes: r.attachedRoutes}.Equals(report{reportMap: in.reports, attachedRoutes: in.attachedRoutes}) &&
+		report{reportMap: r.Reports, attachedRoutes: r.AttachedRoutes}.Equals(report{reportMap: in.Reports, attachedRoutes: in.AttachedRoutes}) &&
 		r.ResourceConfig.Version == in.ResourceConfig.Version &&
 		r.AddressConfig.Version == in.AddressConfig.Version
 }
 
-type envoyResourceWithCustomName struct {
+type AgwResourceWithCustomName struct {
 	proto.Message
 	Name    string
-	version uint64
+	Version uint64
 }
 
-func (r envoyResourceWithCustomName) ResourceName() string {
+func (r AgwResourceWithCustomName) ResourceName() string {
 	return r.Name
 }
 
-func (r envoyResourceWithCustomName) GetName() string {
+func (r AgwResourceWithCustomName) GetName() string {
 	return r.Name
 }
 
-func (r envoyResourceWithCustomName) Equals(in envoyResourceWithCustomName) bool {
-	return r.version == in.version
+func (r AgwResourceWithCustomName) Equals(in AgwResourceWithCustomName) bool {
+	return r.Version == in.Version
 }
 
-var _ envoytypes.ResourceWithName = envoyResourceWithCustomName{}
+var _ envoytypes.ResourceWithName = AgwResourceWithCustomName{}
 
 type report struct {
 	// lower case so krt doesn't error in debug handler
@@ -65,7 +72,7 @@ type report struct {
 	attachedRoutes map[string]uint
 }
 
-// RouteReports contains all route-related reports
+// RouteReports contains all route-related Reports
 type RouteReports struct {
 	HTTPRoutes map[types.NamespacedName]*reports.RouteReport
 	GRPCRoutes map[types.NamespacedName]*reports.RouteReport
@@ -74,7 +81,7 @@ type RouteReports struct {
 }
 
 func (r RouteReports) ResourceName() string {
-	return "route-reports"
+	return "route-Reports"
 }
 
 func (r RouteReports) Equals(in RouteReports) bool {
@@ -84,27 +91,27 @@ func (r RouteReports) Equals(in RouteReports) bool {
 		maps.Equal(r.TLSRoutes, in.TLSRoutes)
 }
 
-// ListenerSetReports contains all listener set reports
+// ListenerSetReports contains all listener set Reports
 type ListenerSetReports struct {
 	Reports map[types.NamespacedName]*reports.ListenerSetReport
 }
 
 func (l ListenerSetReports) ResourceName() string {
-	return "listenerset-reports"
+	return "listenerset-Reports"
 }
 
 func (l ListenerSetReports) Equals(in ListenerSetReports) bool {
 	return maps.Equal(l.Reports, in.Reports)
 }
 
-// GatewayReports contains gateway reports along with attached routes information
+// GatewayReports contains gateway Reports along with attached routes information
 type GatewayReports struct {
 	Reports        map[types.NamespacedName]*reports.GatewayReport
 	AttachedRoutes map[types.NamespacedName]map[string]uint
 }
 
 func (g GatewayReports) ResourceName() string {
-	return "gateway-reports"
+	return "gateway-Reports"
 }
 
 func (g GatewayReports) Equals(in GatewayReports) bool {
@@ -130,7 +137,7 @@ func (g GatewayReports) Equals(in GatewayReports) bool {
 }
 
 func (r report) ResourceName() string {
-	return "report"
+	return "Report"
 }
 
 func (r report) Equals(in report) bool {

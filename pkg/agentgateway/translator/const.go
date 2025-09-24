@@ -1,4 +1,4 @@
-package agentgatewaysyncer
+package translator
 
 const (
 	TargetTypeResourceUrl = "type.googleapis.com/agentgateway.dev.resource.Resource"

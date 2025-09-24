@@ -1,4 +1,4 @@
-package agentgatewaysyncer
+package translator
 
 import (
 	"crypto/tls"
@@ -75,7 +75,7 @@ func convertHTTPRouteToAgw(ctx RouteContext, r gwv1.HTTPRouteRule,
 		}
 	}
 
-	filters, filterError := buildAgwFilters(ctx, obj.Namespace, r.Filters)
+	filters, filterError := BuildAgwFilters(ctx, obj.Namespace, r.Filters)
 	res.Filters = filters
 
 	if err := applyTimeouts(&r, res); err != nil {
@@ -422,7 +422,7 @@ func terminalFilterCombinationError(existingFilter, newFilter string) string {
 	return fmt.Sprintf("Cannot combine multiple terminal filters: %s and %s are mutually exclusive. Only one terminal filter is allowed per route rule.", existingFilter, newFilter)
 }
 
-func buildAgwFilters(
+func BuildAgwFilters(
 	ctx RouteContext,
 	ns string,
 	inputFilters []gwv1.HTTPRouteFilter,
@@ -561,7 +561,7 @@ func buildAgwHTTPDestination(
 			}
 		}
 		if dst != nil {
-			filters, err := buildAgwFilters(ctx, ns, fwd.Filters)
+			filters, err := BuildAgwFilters(ctx, ns, fwd.Filters)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -740,12 +740,12 @@ func normalizeReference(group *gwv1.Group, kind *gwv1.Kind, defaultGVK schema.Gr
 	return result
 }
 
-func toInternalParentReference(p gwv1.ParentReference, localNamespace string) (parentKey, error) {
+func toInternalParentReference(p gwv1.ParentReference, localNamespace string) (ParentKey, error) {
 	ref := normalizeReference(p.Group, p.Kind, wellknown.GatewayGVK)
 	if !allowedParentReferences.Contains(wellknown.GatewayGVK) {
-		return parentKey{}, fmt.Errorf("unsupported parent: %v/%v", p.Group, p.Kind)
+		return ParentKey{}, fmt.Errorf("unsupported Parent: %v/%v", p.Group, p.Kind)
 	}
-	return parentKey{
+	return ParentKey{
 		Kind: ref,
 		Name: string(p.Name),
 		// Unset namespace means "same namespace"
@@ -755,7 +755,7 @@ func toInternalParentReference(p gwv1.ParentReference, localNamespace string) (p
 
 func referenceAllowed(
 	ctx RouteContext,
-	parent *parentInfo,
+	parent *ParentInfo,
 	routeKind schema.GroupVersionKind,
 	parentRef parentReference,
 	hostnames []gwv1.Hostname,
@@ -769,7 +769,7 @@ func referenceAllowed(
 		if svc == nil {
 			return &ParentError{
 				Reason:  ParentErrorNotAccepted,
-				Message: fmt.Sprintf("parent service: %q not found", parentRef.Name),
+				Message: fmt.Sprintf("Parent service: %q not found", parentRef.Name),
 			}
 		}
 	} else if parentRef.Kind == wellknown.ServiceEntryGVK {
@@ -779,7 +779,7 @@ func referenceAllowed(
 		if svcEntry == nil {
 			return &ParentError{
 				Reason:  ParentErrorNotAccepted,
-				Message: fmt.Sprintf("parent service entry: %q not found", parentRef.Name),
+				Message: fmt.Sprintf("Parent service entry: %q not found", parentRef.Name),
 			}
 		}
 	} else {
@@ -833,7 +833,7 @@ func referenceAllowed(
 					return &ParentError{
 						Reason: ParentErrorNotAllowed,
 						Message: fmt.Sprintf(
-							"hostnames matched parent hostname %q, but namespace %q is not allowed by the parent",
+							"hostnames matched Parent hostname %q, but namespace %q is not allowed by the Parent",
 							parent.OriginalHostname, localNamespace,
 						),
 					}
@@ -841,7 +841,7 @@ func referenceAllowed(
 				return &ParentError{
 					Reason: ParentErrorNoHostname,
 					Message: fmt.Sprintf(
-						"no hostnames matched parent hostname %q",
+						"no hostnames matched Parent hostname %q",
 						parent.OriginalHostname,
 					),
 				}
@@ -875,13 +875,13 @@ func extractParentReferenceInfo(ctx RouteContext, parents RouteParents, obj cont
 			continue
 		}
 		pk := parentReference{
-			parentKey:   ir,
+			ParentKey:   ir,
 			SectionName: ptr.OrEmpty(ref.SectionName),
 			Port:        ptr.OrEmpty(ref.Port),
 		}
 		gk := ir
 		currentParents := parents.fetch(ctx.Krt, gk)
-		appendParent := func(pr *parentInfo, pk parentReference) {
+		appendParent := func(pr *ParentInfo, pk parentReference) {
 			bannedHostnames := sets.New[string]()
 			for _, gw := range currentParents {
 				if gw == pr {
@@ -927,9 +927,9 @@ func isInvalidBackend(err *reporter.RouteCondition) bool {
 		err.Reason == gwv1.RouteReasonInvalidKind
 }
 
-// parentKey holds info about a parentRef (eg route binding to a Gateway). This is a mirror of
+// ParentKey holds info about a parentRef (eg route binding to a Gateway). This is a mirror of
 // gwv1.ParentReference in a form that can be stored in a map
-type parentKey struct {
+type ParentKey struct {
 	Kind schema.GroupVersionKind
 	// Name is the original name of the resource (eg Kubernetes Gateway name)
 	Name string
@@ -937,29 +937,29 @@ type parentKey struct {
 	Namespace string
 }
 
-func (p parentKey) String() string {
+func (p ParentKey) String() string {
 	return p.Kind.String() + "/" + p.Namespace + "/" + p.Name
 }
 
 type parentReference struct {
-	parentKey
+	ParentKey
 
 	SectionName gwv1.SectionName
 	Port        gwv1.PortNumber
 }
 
 func (p parentReference) String() string {
-	return p.parentKey.String() + "/" + string(p.SectionName) + "/" + fmt.Sprint(p.Port)
+	return p.ParentKey.String() + "/" + string(p.SectionName) + "/" + fmt.Sprint(p.Port)
 }
 
-// parentInfo holds info about a "parent" - something that can be referenced as a ParentRef in the API.
+// ParentInfo holds info about a "Parent" - something that can be referenced as a ParentRef in the API.
 // Today, this is just Gateway
-type parentInfo struct {
+type ParentInfo struct {
 	// InternalName refers to the internal name we can reference it by. For example "my-ns/my-gateway"
 	InternalName string
-	// AllowedKinds indicates which kinds can be admitted by this parent
+	// AllowedKinds indicates which kinds can be admitted by this Parent
 	AllowedKinds []gwv1.RouteGroupKind
-	// Hostnames is the hostnames that must be match to reference to the parent. For gateway this is listener hostname
+	// Hostnames is the hostnames that must be match to reference to the Parent. For gateway this is listener hostname
 	// Format is ns/hostname
 	Hostnames []string
 	// OriginalHostname is the unprocessed form of Hostnames; how it appeared in users' config
@@ -970,20 +970,20 @@ type parentInfo struct {
 	Protocol    gwv1.ProtocolType
 }
 
-// routeParentReference holds information about a route's parent reference
+// routeParentReference holds information about a route's Parent reference
 type routeParentReference struct {
-	// InternalName refers to the internal name of the parent we can reference it by. For example "my-ns/my-gateway"
+	// InternalName refers to the internal name of the Parent we can reference it by. For example "my-ns/my-gateway"
 	InternalName string
-	// InternalKind is the Group/Kind of the parent
+	// InternalKind is the Group/Kind of the Parent
 	InternalKind schema.GroupVersionKind
 	// DeniedReason, if present, indicates why the reference was not valid
 	DeniedReason *ParentError
 	// OriginalReference contains the original reference
 	OriginalReference gwv1.ParentReference
-	// Hostname is the hostname match of the parent, if any
+	// Hostname is the hostname match of the Parent, if any
 	Hostname        string
 	BannedHostnames sets.Set[string]
-	ParentKey       parentKey
+	ParentKey       ParentKey
 	ParentSection   gwv1.SectionName
 	Accepted        bool
 }
@@ -1049,7 +1049,7 @@ func extractGatewayServices(kgw *gwv1.Gateway) ([]string, *reporter.RouteConditi
 	skippedAddresses := []string{}
 	for _, addr := range kgw.Spec.Addresses {
 		if addr.Type != nil && *addr.Type != gwv1.HostnameAddressType {
-			// We only support HostnameAddressType. Keep track of invalid ones so we can report in status.
+			// We only support HostnameAddressType. Keep track of invalid ones so we can Report in status.
 			skippedAddresses = append(skippedAddresses, addr.Value)
 			continue
 		}
@@ -1192,7 +1192,7 @@ func buildTLS(
 		return nil, nil, nil
 	}
 	// Explicitly not supported: file mounted
-	// Not yet implemented: TLS mode, https redirect, max protocol version, SANs, CipherSuites, VerifyCertificate
+	// Not yet implemented: TLS mode, https redirect, max protocol Version, SANs, CipherSuites, VerifyCertificate
 	out := &istio.ServerTLSSettings{
 		HttpsRedirect: false,
 	}

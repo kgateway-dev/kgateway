@@ -8,6 +8,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/gateway-api/apis/v1alpha2"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
+
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 )
@@ -35,7 +37,7 @@ func AgwPolicyCollection(binds krt.Collection[ir.AgwResourcesForGateway], agwPlu
 		// Convert all plugins.AgwPolicy structs to api.Resource structs
 		fetchedPolicies := krt.Fetch(ctx, joinPolicies)
 		allResources := slices.Map(fetchedPolicies, func(policy plugins.AgwPolicy) *api.Resource {
-			return toAgwResource(AgwPolicy{policy.Policy})
+			return translator.ToAgwResource(translator.AgwPolicy{policy.Policy})
 		})
 
 		return &ir.AgwResourcesForGateway{

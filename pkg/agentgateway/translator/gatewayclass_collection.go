@@ -1,4 +1,4 @@
-package agentgatewaysyncer
+package translator
 
 import (
 	"istio.io/istio/pkg/kube/krt"

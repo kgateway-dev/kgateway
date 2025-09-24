@@ -23,8 +23,9 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/test/util/retry"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
+
 	"github.com/kgateway-dev/kgateway/v2/api/settings"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer"
 )
 
 func TestAgentgateway(t *testing.T) {
@@ -591,7 +592,7 @@ func (x xdsDumper) DumpAgentgateway(t *testing.T, ctx context.Context) agentGwDu
 
 func (x xdsDumper) GetResources(t *testing.T, ctx context.Context) []*api.Resource {
 	dr := proto.Clone(x.dr).(*envoy_service_discovery_v3.DiscoveryRequest)
-	dr.TypeUrl = agentgatewaysyncer.TargetTypeResourceUrl
+	dr.TypeUrl = translator.TargetTypeResourceUrl
 	x.adsClient.Send(dr)
 	var resources []*api.Resource
 	// run this in parallel with a 5s timeout
@@ -605,7 +606,7 @@ func (x xdsDumper) GetResources(t *testing.T, ctx context.Context) []*api.Resour
 				t.Errorf("failed to get response from xds server: %v", err)
 			}
 			t.Logf("got response: %s len: %d", dresp.GetTypeUrl(), len(dresp.GetResources()))
-			if dresp.GetTypeUrl() == agentgatewaysyncer.TargetTypeResourceUrl {
+			if dresp.GetTypeUrl() == translator.TargetTypeResourceUrl {
 				for _, anyResource := range dresp.GetResources() {
 					var resource api.Resource
 					if err := anyResource.UnmarshalTo(&resource); err != nil {
@@ -633,7 +634,7 @@ func (x xdsDumper) GetResources(t *testing.T, ctx context.Context) []*api.Resour
 
 func (x xdsDumper) GetAddress(t *testing.T, ctx context.Context) []*api.Address {
 	dr := proto.Clone(x.dr).(*envoy_service_discovery_v3.DiscoveryRequest)
-	dr.TypeUrl = agentgatewaysyncer.TargetTypeAddressUrl
+	dr.TypeUrl = translator.TargetTypeAddressUrl
 	x.adsClient.Send(dr)
 	var address []*api.Address
 	// run this in parallel with a 5s timeout
@@ -647,7 +648,7 @@ func (x xdsDumper) GetAddress(t *testing.T, ctx context.Context) []*api.Address 
 				t.Errorf("failed to get response from xds server: %v", err)
 			}
 			t.Logf("got address response: %s len: %d", dresp.GetTypeUrl(), len(dresp.GetResources()))
-			if dresp.GetTypeUrl() == agentgatewaysyncer.TargetTypeAddressUrl {
+			if dresp.GetTypeUrl() == translator.TargetTypeAddressUrl {
 				for _, anyResource := range dresp.GetResources() {
 					var resource api.Address
 					if err := anyResource.UnmarshalTo(&resource); err != nil {

@@ -25,6 +25,8 @@ import (
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
+
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -67,9 +69,9 @@ type AgentGwStatusSyncer struct {
 	agwClassName   string
 
 	// Report queues
-	gatewayReportQueue      utils.AsyncQueue[GatewayReports]
-	listenerSetReportQueue  utils.AsyncQueue[ListenerSetReports]
-	routeReportQueue        utils.AsyncQueue[RouteReports]
+	gatewayReportQueue      utils.AsyncQueue[translator.GatewayReports]
+	listenerSetReportQueue  utils.AsyncQueue[translator.ListenerSetReports]
+	routeReportQueue        utils.AsyncQueue[translator.RouteReports]
 	policyStatusQueue       utils.AsyncQueue[krt.ObjectWithStatus[controllers.Object, gwv1alpha2.PolicyStatus]]
 	policyStatusCollections *status.StatusCollections
 
@@ -85,9 +87,9 @@ func NewAgwStatusSyncer(
 	agwClassName string,
 	client kube.Client,
 	mgr manager.Manager,
-	gatewayReportQueue utils.AsyncQueue[GatewayReports],
-	listenerSetReportQueue utils.AsyncQueue[ListenerSetReports],
-	routeReportQueue utils.AsyncQueue[RouteReports],
+	gatewayReportQueue utils.AsyncQueue[translator.GatewayReports],
+	listenerSetReportQueue utils.AsyncQueue[translator.ListenerSetReports],
+	routeReportQueue utils.AsyncQueue[translator.RouteReports],
 	policyStatusCollections *status.StatusCollections,
 	cacheSyncs []cache.InformerSynced,
 	additionalPolicyStatusHandlers map[string]agwplugins.AgwPolicyStatusSyncHandler,
@@ -270,7 +272,7 @@ func (s *AgentGwStatusSyncer) syncPolicyStatus(ctx context.Context, logger *slog
 	}
 }
 
-func (s *AgentGwStatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, routeReports RouteReports) {
+func (s *AgentGwStatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, routeReports translator.RouteReports) {
 	stopwatch := utils.NewTranslatorStopWatch("RouteStatusSyncer")
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
@@ -483,7 +485,7 @@ func ensureBasicGatewayConditions(status *gwv1.GatewayStatus, generation int64) 
 }
 
 // syncGatewayStatus will build and update status for all Gateways in gateway reports
-func (s *AgentGwStatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger, gatewayReports GatewayReports) {
+func (s *AgentGwStatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger, gatewayReports translator.GatewayReports) {
 	stopwatch := utils.NewTranslatorStopWatch("GatewayStatusSyncer")
 	stopwatch.Start()
 	startTime := time.Now()
@@ -601,7 +603,7 @@ func normalizeListenerAttachedRoutes(gw *gwv1.Gateway, st *gwv1.GatewayStatus, c
 }
 
 // syncListenerSetStatus will build and update status for all Listener Sets in listener set reports
-func (s *AgentGwStatusSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.Logger, listenerSetReports ListenerSetReports) {
+func (s *AgentGwStatusSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.Logger, listenerSetReports translator.ListenerSetReports) {
 	stopwatch := utils.NewTranslatorStopWatch("ListenerSetStatusSyncer")
 	stopwatch.Start()
 	startTime := time.Now()
