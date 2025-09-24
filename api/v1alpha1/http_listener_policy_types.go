@@ -197,7 +197,6 @@ type CommonGrpcService struct {
 	// Defaults to 0, which means unlimited.
 	// +optional
 	// +kubebuilder:validation:Minimum=1
-	// +kubebuilder:validation:Maximum=2147483647
 	MaxReceiveMessageLength *int32 `json:"maxReceiveMessageLength,omitempty"`
 
 	// This provides gRPC client level control over envoy generated headers. If false, the header will be sent but it can be overridden by per stream option. If true, the header will be removed and can not be overridden by per stream option. Default to false.
@@ -243,7 +242,6 @@ type RetryPolicy struct {
 	// Specifies the allowed number of retries. Defaults to 1.
 	// +optional
 	// +kubebuilder:validation:Minimum=1
-	// +kubebuilder:validation:Maximum=2147483647
 	NumRetries *int32 `json:"numRetries,omitempty"`
 }
 
@@ -465,7 +463,6 @@ type Tracing struct {
 	// Maximum length of the request path to extract and include in the HttpUrl tag. Used to truncate lengthy request paths to meet the needs of a tracing backend. Default: 256
 	// +optional
 	// +kubebuilder:validation:Minimum=1
-	// +kubebuilder:validation:Maximum=2147483647
 	MaxPathTagLength *int32 `json:"maxPathTagLength,omitempty"`
 
 	// A list of attributes with a unique name to create attributes for the active span.

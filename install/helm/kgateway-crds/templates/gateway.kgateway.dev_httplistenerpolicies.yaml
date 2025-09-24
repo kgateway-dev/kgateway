@@ -479,14 +479,12 @@ spec:
                           type: string
                         maxReceiveMessageLength:
                           format: int32
-                          maximum: 2147483647
                           minimum: 1
                           type: integer
                         retryPolicy:
                           properties:
                             numRetries:
                               format: int32
-                              maximum: 2147483647
                               minimum: 1
                               type: integer
                             retryBackOff:
@@ -609,14 +607,12 @@ spec:
                               type: string
                             maxReceiveMessageLength:
                               format: int32
-                              maximum: 2147483647
                               minimum: 1
                               type: integer
                             retryPolicy:
                               properties:
                                 numRetries:
                                   format: int32
-                                  maximum: 2147483647
                                   minimum: 1
                                   type: integer
                                 retryBackOff:
@@ -841,7 +837,6 @@ spec:
                     type: integer
                   maxPathTagLength:
                     format: int32
-                    maximum: 2147483647
                     minimum: 1
                     type: integer
                   overallSampling:
@@ -912,14 +907,12 @@ spec:
                                 type: array
                               maxReceiveMessageLength:
                                 format: int32
-                                maximum: 2147483647
                                 minimum: 1
                                 type: integer
                               retryPolicy:
                                 properties:
                                   numRetries:
                                     format: int32
-                                    maximum: 2147483647
                                     minimum: 1
                                     type: integer
                                   retryBackOff:

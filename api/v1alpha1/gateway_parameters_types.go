@@ -215,7 +215,6 @@ type ProxyDeployment struct {
 	//
 	// +optional
 	// +kubebuilder:validation:Minimum=1
-	// +kubebuilder:validation:Maximum=2147483647
 	Replicas *int32 `json:"replicas,omitempty"`
 
 	// If true, replicas will not be set in the deployment (allowing HPA to control scaling)

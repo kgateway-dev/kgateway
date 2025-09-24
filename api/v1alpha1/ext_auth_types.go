@@ -33,7 +33,6 @@ type ExtAuthBufferSettings struct {
 	// Requests exceeding this size will receive HTTP 413 and not be sent to the auth service.
 	// +required
 	// +kubebuilder:validation:Minimum=1
-	// +kubebuilder:validation:Maximum=2147483647
 	MaxRequestBytes int32 `json:"maxRequestBytes"`
 
 	// AllowPartialMessage determines if partial messages should be allowed.

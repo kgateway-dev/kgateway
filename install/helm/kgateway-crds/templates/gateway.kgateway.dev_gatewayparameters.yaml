@@ -523,7 +523,6 @@ spec:
                         type: boolean
                       replicas:
                         format: int32
-                        maximum: 2147483647
                         minimum: 1
                         type: integer
                       strategy:
