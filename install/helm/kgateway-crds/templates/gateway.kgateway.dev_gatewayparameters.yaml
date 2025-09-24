@@ -523,6 +523,8 @@ spec:
                         type: boolean
                       replicas:
                         format: int32
+                        maximum: 2147483647
+                        minimum: 1
                         type: integer
                       strategy:
                         properties:
@@ -2818,7 +2820,7 @@ spec:
                             type: boolean
                           sleepTimeSeconds:
                             format: int64
-                            maximum: 9223372036854776000
+                            maximum: 31536000
                             minimum: 0
                             type: integer
                         type: object
@@ -3078,7 +3080,7 @@ spec:
                         type: object
                       terminationGracePeriodSeconds:
                         format: int64
-                        maximum: 9223372036854776000
+                        maximum: 31536000
                         minimum: 0
                         type: integer
                       tolerations:
@@ -3296,8 +3298,12 @@ spec:
                         items:
                           properties:
                             nodePort:
+                              maximum: 65535
+                              minimum: 1
                               type: integer
                             port:
+                              maximum: 65535
+                              minimum: 1
                               type: integer
                           required:
                           - port

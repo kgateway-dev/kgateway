@@ -247,7 +247,7 @@ func translateFilter(filter *v1alpha1.FilterType) (*envoyaccesslogv3.AccessLogFi
 					Comparison: &envoyaccesslogv3.ComparisonFilter{
 						Op: op,
 						Value: &envoycorev3.RuntimeUInt32{
-							DefaultValue: filter.StatusCodeFilter.Value,
+							DefaultValue: uint32(filter.StatusCodeFilter.Value), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 						},
 					},
 				},
@@ -266,7 +266,7 @@ func translateFilter(filter *v1alpha1.FilterType) (*envoyaccesslogv3.AccessLogFi
 					Comparison: &envoyaccesslogv3.ComparisonFilter{
 						Op: op,
 						Value: &envoycorev3.RuntimeUInt32{
-							DefaultValue: filter.DurationFilter.Value,
+							DefaultValue: uint32(filter.DurationFilter.Value), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 						},
 					},
 				},

@@ -214,7 +214,9 @@ type ProxyDeployment struct {
 	// The number of desired pods. Defaults to 1.
 	//
 	// +optional
-	Replicas *uint32 `json:"replicas,omitempty"`
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=2147483647
+	Replicas *int32 `json:"replicas,omitempty"`
 
 	// If true, replicas will not be set in the deployment (allowing HPA to control scaling)
 	// +optional
@@ -237,7 +239,7 @@ type ProxyDeployment struct {
 	Strategy *appsv1.DeploymentStrategy `json:"strategy,omitempty"`
 }
 
-func (in *ProxyDeployment) GetReplicas() *uint32 {
+func (in *ProxyDeployment) GetReplicas() *int32 {
 	if in == nil {
 		return nil
 	}

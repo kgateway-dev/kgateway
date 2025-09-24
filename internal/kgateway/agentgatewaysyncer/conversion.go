@@ -1436,7 +1436,7 @@ func createAgwExtensionRefFilter(
 		filter := &api.RouteFilter{
 			Kind: &api.RouteFilter_DirectResponse{
 				DirectResponse: &api.DirectResponse{
-					Status: directResponse.Spec.StatusCode,
+					Status: uint32(directResponse.Spec.StatusCode), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 				},
 			},
 		}

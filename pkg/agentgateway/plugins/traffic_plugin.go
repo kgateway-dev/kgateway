@@ -477,7 +477,7 @@ func processRequestGuard(krtctx krt.HandlerContext, secrets krt.Collection[*core
 	if req.CustomResponse != nil {
 		pgReq.Rejection = &api.PolicySpec_Ai_RequestRejection{
 			Body:   []byte(*req.CustomResponse.Message),
-			Status: *req.CustomResponse.StatusCode,
+			Status: uint32(*req.CustomResponse.StatusCode), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 		}
 	}
 
@@ -589,7 +589,7 @@ func processRegex(regex *v1alpha1.Regex, customResponse *v1alpha1.CustomResponse
 					rules.Action.RejectResponse.Body = []byte(*customResponse.Message)
 				}
 				if customResponse.StatusCode != nil {
-					rules.Action.RejectResponse.Status = *customResponse.StatusCode
+					rules.Action.RejectResponse.Status = uint32(*customResponse.StatusCode) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 				}
 			}
 		default:
@@ -793,7 +793,7 @@ func processLocalRateLimitPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyNa
 	}
 
 	// Create local rate limit policy using the proper agentgateway API
-	tokensPerFill := uint64(ptr.Deref(tokenBucket.TokensPerFill, 1))
+	tokensPerFill := uint64(ptr.Deref(tokenBucket.TokensPerFill, 1)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint64
 	if tokensPerFill == 0 {
 		tokensPerFill = 1
 	}

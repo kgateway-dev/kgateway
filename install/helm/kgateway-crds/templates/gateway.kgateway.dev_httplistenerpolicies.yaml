@@ -479,11 +479,15 @@ spec:
                           type: string
                         maxReceiveMessageLength:
                           format: int32
+                          maximum: 2147483647
+                          minimum: 1
                           type: integer
                         retryPolicy:
                           properties:
                             numRetries:
                               format: int32
+                              maximum: 2147483647
+                              minimum: 1
                               type: integer
                             retryBackOff:
                               properties:
@@ -605,11 +609,15 @@ spec:
                               type: string
                             maxReceiveMessageLength:
                               format: int32
+                              maximum: 2147483647
+                              minimum: 1
                               type: integer
                             retryPolicy:
                               properties:
                                 numRetries:
                                   format: int32
+                                  maximum: 2147483647
+                                  minimum: 1
                                   type: integer
                                 retryBackOff:
                                   properties:
@@ -833,6 +841,8 @@ spec:
                     type: integer
                   maxPathTagLength:
                     format: int32
+                    maximum: 2147483647
+                    minimum: 1
                     type: integer
                   overallSampling:
                     format: int32
@@ -902,11 +912,15 @@ spec:
                                 type: array
                               maxReceiveMessageLength:
                                 format: int32
+                                maximum: 2147483647
+                                minimum: 1
                                 type: integer
                               retryPolicy:
                                 properties:
                                   numRetries:
                                     format: int32
+                                    maximum: 2147483647
+                                    minimum: 1
                                     type: integer
                                   retryBackOff:
                                     properties:

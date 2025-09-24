@@ -31,8 +31,8 @@ func TestTranslateHealthCheck(t *testing.T) {
 			config: &v1alpha1.HealthCheck{
 				Timeout:            &metav1.Duration{Duration: 5 * time.Second},
 				Interval:           &metav1.Duration{Duration: 10 * time.Second},
-				UnhealthyThreshold: ptr.To(uint32(3)),
-				HealthyThreshold:   ptr.To(uint32(2)),
+				UnhealthyThreshold: ptr.To(int32(3)),
+				HealthyThreshold:   ptr.To(int32(2)),
 				Http: &v1alpha1.HealthCheckHttp{
 					Path: "/health",
 				},

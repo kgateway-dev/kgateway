@@ -5,7 +5,7 @@ package v1alpha1
 // LoadBalancerLeastRequestConfigApplyConfiguration represents a declarative configuration of the LoadBalancerLeastRequestConfig type for use
 // with apply.
 type LoadBalancerLeastRequestConfigApplyConfiguration struct {
-	ChoiceCount *uint32                      `json:"choiceCount,omitempty"`
+	ChoiceCount *int32                       `json:"choiceCount,omitempty"`
 	SlowStart   *SlowStartApplyConfiguration `json:"slowStart,omitempty"`
 }
 
@@ -18,7 +18,7 @@ func LoadBalancerLeastRequestConfig() *LoadBalancerLeastRequestConfigApplyConfig
 // WithChoiceCount sets the ChoiceCount field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the ChoiceCount field is set to the value of the last call.
-func (b *LoadBalancerLeastRequestConfigApplyConfiguration) WithChoiceCount(value uint32) *LoadBalancerLeastRequestConfigApplyConfiguration {
+func (b *LoadBalancerLeastRequestConfigApplyConfiguration) WithChoiceCount(value int32) *LoadBalancerLeastRequestConfigApplyConfiguration {
 	b.ChoiceCount = &value
 	return b
 }

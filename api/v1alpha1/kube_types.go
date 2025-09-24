@@ -122,23 +122,27 @@ type Port struct {
 	// The port number to match on the Gateway
 	//
 	// +required
-	Port uint16 `json:"port"`
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
+	Port int16 `json:"port"`
 
 	// The NodePort to be used for the service. If not specified, a random port
 	// will be assigned by the Kubernetes API server.
 	//
 	// +optional
-	NodePort *uint16 `json:"nodePort,omitempty"`
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
+	NodePort *int16 `json:"nodePort,omitempty"`
 }
 
-func (in *Port) GetPort() uint16 {
+func (in *Port) GetPort() int16 {
 	if in == nil {
 		return 0
 	}
 	return in.Port
 }
 
-func (in *Port) GetNodePort() *uint16 {
+func (in *Port) GetNodePort() *int16 {
 	if in == nil {
 		return nil
 	}
@@ -266,7 +270,7 @@ type Pod struct {
 	//
 	// +optional
 	// +kubebuilder:validation:Minimum=0
-	// +kubebuilder:validation:Maximum=9223372036854775807
+	// +kubebuilder:validation:Maximum=31536000
 	TerminationGracePeriodSeconds *int64 `json:"terminationGracePeriodSeconds,omitempty"`
 
 	// If specified, the pod's readiness probe. Periodic probe of container service readiness.
@@ -401,7 +405,7 @@ type GracefulShutdownSpec struct {
 	//
 	// +optional
 	// +kubebuilder:validation:Minimum=0
-	// +kubebuilder:validation:Maximum=9223372036854775807
+	// +kubebuilder:validation:Maximum=31536000
 	SleepTimeSeconds *int64 `json:"sleepTimeSeconds,omitempty"`
 }
 

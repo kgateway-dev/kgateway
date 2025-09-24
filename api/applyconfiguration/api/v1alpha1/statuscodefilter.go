@@ -10,7 +10,7 @@ import (
 // with apply.
 type StatusCodeFilterApplyConfiguration struct {
 	Op    *apiv1alpha1.Op `json:"op,omitempty"`
-	Value *uint32         `json:"value,omitempty"`
+	Value *int32          `json:"value,omitempty"`
 }
 
 // StatusCodeFilterApplyConfiguration constructs a declarative configuration of the StatusCodeFilter type for use with
@@ -30,7 +30,7 @@ func (b *StatusCodeFilterApplyConfiguration) WithOp(value apiv1alpha1.Op) *Statu
 // WithValue sets the Value field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Value field is set to the value of the last call.
-func (b *StatusCodeFilterApplyConfiguration) WithValue(value uint32) *StatusCodeFilterApplyConfiguration {
+func (b *StatusCodeFilterApplyConfiguration) WithValue(value int32) *StatusCodeFilterApplyConfiguration {
 	b.Value = &value
 	return b
 }

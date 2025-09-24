@@ -57,7 +57,7 @@ func translateLoadBalancerConfig(config *v1alpha1.LoadBalancer, policyName, poli
 	if config.LeastRequest != nil {
 		leastRequest := &envoyleastrequestv3.LeastRequest{
 			ChoiceCount: &wrapperspb.UInt32Value{
-				Value: config.LeastRequest.ChoiceCount,
+				Value: uint32(config.LeastRequest.ChoiceCount), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 			},
 			SlowStartConfig: toSlowStartConfig(config.LeastRequest.SlowStart, policyName, policyNamespace),
 		}
@@ -107,12 +107,12 @@ func translateLoadBalancerConfig(config *v1alpha1.LoadBalancer, policyName, poli
 		ringHash := &envoyringhashv3.RingHash{}
 		if config.RingHash.MinimumRingSize != nil {
 			ringHash.MinimumRingSize = &wrapperspb.UInt64Value{
-				Value: *config.RingHash.MinimumRingSize,
+				Value: uint64(*config.RingHash.MinimumRingSize), // nolint:gosec // G115: kubebuilder validation ensures safe for uint64
 			}
 		}
 		if config.RingHash.MaximumRingSize != nil {
 			ringHash.MaximumRingSize = &wrapperspb.UInt64Value{
-				Value: *config.RingHash.MaximumRingSize,
+				Value: uint64(*config.RingHash.MaximumRingSize), // nolint:gosec // G115: kubebuilder validation ensures safe for uint64
 			}
 		}
 		if config.RingHash.UseHostnameForHashing != nil || len(config.RingHash.HashPolicies) > 0 {

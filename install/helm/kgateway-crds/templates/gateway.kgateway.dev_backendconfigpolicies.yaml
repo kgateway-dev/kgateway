@@ -50,12 +50,12 @@ spec:
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                   maxHeadersCount:
                     format: int32
-                    maximum: 4294967295
+                    maximum: 2147483647
                     minimum: 0
                     type: integer
                   maxRequestsPerConnection:
                     format: int32
-                    maximum: 4294967295
+                    maximum: 2147483647
                     minimum: 0
                     type: integer
                   maxStreamDuration:
@@ -80,6 +80,8 @@ spec:
                     type: object
                   healthyThreshold:
                     format: int32
+                    maximum: 2147483647
+                    minimum: 0
                     type: integer
                   http:
                     properties:
@@ -113,6 +115,8 @@ spec:
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                   unhealthyThreshold:
                     format: int32
+                    maximum: 2147483647
+                    minimum: 0
                     type: integer
                 required:
                 - healthyThreshold
@@ -160,7 +164,7 @@ spec:
                         && quantity(self).isLessThan(quantity('2147483648')))
                   maxConcurrentStreams:
                     format: int32
-                    maximum: 4294967295
+                    maximum: 2147483647
                     minimum: 0
                     type: integer
                   overrideStreamErrorOnInvalidHttpMessage:
@@ -192,6 +196,8 @@ spec:
                                 && double(self) > 0.0)
                           minWeightPercent:
                             format: int32
+                            maximum: 100
+                            minimum: 0
                             type: integer
                           window:
                             type: string
@@ -313,9 +319,13 @@ spec:
                         type: array
                       maximumRingSize:
                         format: int64
+                        maximum: 9223372036854776000
+                        minimum: 0
                         type: integer
                       minimumRingSize:
                         format: int64
+                        maximum: 9223372036854776000
+                        minimum: 0
                         type: integer
                       useHostnameForHashing:
                         type: boolean
@@ -333,6 +343,8 @@ spec:
                                 && double(self) > 0.0)
                           minWeightPercent:
                             format: int32
+                            maximum: 100
+                            minimum: 0
                             type: integer
                           window:
                             type: string
@@ -363,6 +375,8 @@ spec:
                   consecutive5xx:
                     default: 5
                     format: int32
+                    maximum: 2147483647
+                    minimum: 0
                     type: integer
                   interval:
                     default: 10s
@@ -379,7 +393,7 @@ spec:
                 type: object
               perConnectionBufferLimitBytes:
                 format: int32
-                maximum: 4294967295
+                maximum: 2147483647
                 minimum: 0
                 type: integer
               targetRefs:
@@ -449,7 +463,7 @@ spec:
                       rule: duration(self) >= duration('1s')
                   keepAliveProbes:
                     format: int32
-                    maximum: 4294967295
+                    maximum: 2147483647
                     minimum: 0
                     type: integer
                   keepAliveTime:

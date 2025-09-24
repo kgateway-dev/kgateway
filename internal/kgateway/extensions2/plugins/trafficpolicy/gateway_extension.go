@@ -127,7 +127,7 @@ func TranslateGatewayExtensionBuilder(commoncol *collections.CommonCollections) 
 
 			if gExt.ExtAuth.WithRequestBody != nil {
 				p.ExtAuth.WithRequestBody = &envoy_ext_authz_v3.BufferSettings{
-					MaxRequestBytes:     gExt.ExtAuth.WithRequestBody.MaxRequestBytes,
+					MaxRequestBytes:     uint32(gExt.ExtAuth.WithRequestBody.MaxRequestBytes), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 					AllowPartialMessage: gExt.ExtAuth.WithRequestBody.AllowPartialMessage,
 					PackAsBytes:         gExt.ExtAuth.WithRequestBody.PackAsBytes,
 				}

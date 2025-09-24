@@ -51,7 +51,7 @@ func GetPortsValues(gw *ir.Gateway, gwp *v1alpha1.GatewayParameters) []HelmPort 
 				},
 			}
 			portName := listener.GenerateListenerName(l)
-			gwPorts = AppendPortValue(gwPorts, portValue, portName, gwp)
+			gwPorts = AppendPortValue(gwPorts, uint16(portValue), portName, gwp) // nolint:gosec // G115: kubebuilder validation ensures safe for uint16
 		}
 	}
 
@@ -85,9 +85,9 @@ func AppendPortValue(gwPorts []HelmPort, port uint16, name string, gwp *v1alpha1
 	var nodePort *uint16 = nil
 	if gwp.Spec.GetKube().GetService().GetType() != nil && *(gwp.Spec.GetKube().GetService().GetType()) == corev1.ServiceTypeNodePort {
 		if idx := slices.IndexFunc(gwp.Spec.GetKube().GetService().GetPorts(), func(p v1alpha1.Port) bool {
-			return p.GetPort() == uint16(port)
+			return p.GetPort() == int16(port) // nolint:gosec // G115: kubebuilder validation ensures safe for uint16
 		}); idx != -1 {
-			nodePort = ptr.To(uint16(*gwp.Spec.GetKube().GetService().GetPorts()[idx].GetNodePort()))
+			nodePort = ptr.To(uint16(*gwp.Spec.GetKube().GetService().GetPorts()[idx].GetNodePort())) // nolint:gosec // G115: kubebuilder validation ensures safe for uint16
 		}
 	}
 	return append(gwPorts, HelmPort{
