@@ -226,8 +226,12 @@ func (d *Deployer) DeployObjsWithSource(ctx context.Context, objs []client.Objec
 		existing := obj.DeepCopyObject().(client.Object)
 		err := d.cli.Get(ctx, client.ObjectKey{Namespace: obj.GetNamespace(), Name: obj.GetName()}, existing)
 
-		// If the object doesn't exist or there's an error other than "not found", proceed with patching
 		switch {
+		case apierrors.IsNotFound(err):
+			logger.Info("creating object", "kind", obj.GetObjectKind(), "namespace", obj.GetNamespace(), "name", obj.GetName())
+			if err := d.cli.Create(ctx, obj, client.FieldOwner(controllerName)); err != nil {
+				return fmt.Errorf("failed to create object %s %s: %w", obj.GetObjectKind().GroupVersionKind().String(), obj.GetName(), err)
+			}
 		case err == nil:
 			// zero out fields that api server changes
 			existing.SetResourceVersion("")
@@ -241,7 +245,7 @@ func (d *Deployer) DeployObjsWithSource(ctx context.Context, objs []client.Objec
 			if statusField := reflect.ValueOf(existing).Elem().FieldByName("Status"); statusField.IsValid() && statusField.CanSet() {
 				statusField.Set(reflect.Zero(statusField.Type()))
 			}
-			// Check if the objects are equal - if they are, skip the patch
+			// Check if the objects are equal - if they are, skip the update
 			if equality.Semantic.DeepEqual(obj, existing) {
 				logger.Debug("object unchanged, skipping apply",
 					"kind", obj.GetObjectKind().GroupVersionKind().String(),
@@ -249,28 +253,23 @@ func (d *Deployer) DeployObjsWithSource(ctx context.Context, objs []client.Objec
 					"name", obj.GetName())
 				continue
 			}
+			logger.Info("updating object", "kind", obj.GetObjectKind(), "namespace", obj.GetNamespace(), "name", obj.GetName())
+			if err := d.cli.Update(ctx, obj, client.FieldOwner(controllerName)); err != nil {
+				return fmt.Errorf("failed to update object %s %s: %w", obj.GetObjectKind().GroupVersionKind().String(), obj.GetName(), err)
+			}
 		case !apierrors.IsNotFound(err):
-			logger.Debug("error getting existing object, will apply anyway",
+			logger.Debug("error getting existing object, will attempt update anyway",
 				"kind", obj.GetObjectKind().GroupVersionKind().String(),
 				"namespace", obj.GetNamespace(),
 				"name", obj.GetName(),
 				"error", err)
+			if err := d.cli.Update(ctx, obj, client.FieldOwner(controllerName)); err != nil {
+				return fmt.Errorf("failed to update object %s %s: %w", obj.GetObjectKind().GroupVersionKind().String(), obj.GetName(), err)
+			}
 		default:
 			// do nothing - this is a non-existent object
 
 			// TODO: inc a metric when we add metrics.
-		}
-
-		logger.Info("deploying object", "kind", obj.GetObjectKind(), "namespace", obj.GetNamespace(), "name", obj.GetName())
-
-		if apierrors.IsNotFound(err) {
-			if err := d.cli.Create(ctx, obj, client.FieldOwner(controllerName)); err != nil {
-				return fmt.Errorf("failed to create object %s %s: %w", obj.GetObjectKind().GroupVersionKind().String(), obj.GetName(), err)
-			}
-		} else {
-			if err := d.cli.Update(ctx, obj, client.FieldOwner(controllerName)); err != nil {
-				return fmt.Errorf("failed to update object %s %s: %w", obj.GetObjectKind().GroupVersionKind().String(), obj.GetName(), err)
-			}
 		}
 	}
 	return nil
