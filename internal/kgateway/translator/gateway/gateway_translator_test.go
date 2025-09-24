@@ -1608,6 +1608,30 @@ func TestBasic(t *testing.T) {
 			},
 		})
 	})
+
+	t.Run("Gateway with reserved port should be rejected", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "validation/gateway-reserved-port.yaml",
+			outputFile: "validation/gateway-reserved-port.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
+			},
+			assertReports: translatortest.AssertReportsNoOp,
+		})
+	})
+
+	t.Run("XListenerSet with reserved port should be rejected", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "validation/xlistenerset-reserved-port.yaml",
+			outputFile: "validation/xlistenerset-reserved-port.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
+			},
+			assertReports: translatortest.AssertReportsNoOp,
+		})
+	})
 }
 
 func TestRouteReplacement(t *testing.T) {

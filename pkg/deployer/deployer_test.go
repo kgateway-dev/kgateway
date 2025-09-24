@@ -36,7 +36,6 @@ import (
 	gw2_v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	deployerinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/httplistenerpolicy"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -44,6 +43,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/version"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 
@@ -415,6 +415,13 @@ var _ = Describe("Deployer", func() {
 				},
 				Spec: api.GatewaySpec{
 					GatewayClassName: wellknown.DefaultGatewayClassName,
+					Listeners: []api.Listener{
+						{
+							Protocol: api.HTTPProtocolType,
+							Port:     80,
+							Name:     "http",
+						},
+					},
 				},
 			}
 
@@ -731,7 +738,6 @@ var _ = Describe("Deployer", func() {
 			Expect(*psc.RunAsGroup).To(Equal(gid))
 			Expect(*psc.FSGroup).To(Equal(fsGroup))
 		})
-
 	})
 
 	Context("special cases", func() {
@@ -753,6 +759,13 @@ var _ = Describe("Deployer", func() {
 				},
 				Spec: api.GatewaySpec{
 					GatewayClassName: wellknown.DefaultGatewayClassName,
+					Listeners: []api.Listener{
+						{
+							Protocol: api.HTTPProtocolType,
+							Port:     80,
+							Name:     "http",
+						},
+					},
 				},
 			}
 
@@ -768,6 +781,13 @@ var _ = Describe("Deployer", func() {
 				},
 				Spec: api.GatewaySpec{
 					GatewayClassName: wellknown.DefaultGatewayClassName,
+					Listeners: []api.Listener{
+						{
+							Protocol: api.HTTPProtocolType,
+							Port:     80,
+							Name:     "http",
+						},
+					},
 				},
 			}
 
@@ -2166,10 +2186,7 @@ var _ = Describe("Deployer", func() {
 				},
 				defaultGwp: defaultGatewayParams(),
 			}, &expectedOutput{
-				validationFunc: func(objs clientObjects, inp *input) error {
-					Expect(objs).NotTo(BeEmpty())
-					return nil
-				},
+				getObjsErr: deployerinternal.ErrNoValidPorts,
 			}),
 			Entry("no port offset", defaultInput(), &expectedOutput{
 				validationFunc: func(objs clientObjects, inp *input) error {
@@ -2926,7 +2943,7 @@ func generateReadinessProbe() *corev1.Probe {
 	}
 }
 
-func newCommonCols(t test.Failer, initObjs ...client.Object) *common.CommonCollections {
+func newCommonCols(t test.Failer, initObjs ...client.Object) *collections.CommonCollections {
 	ctx := context.Background()
 	var anys []any
 	for _, obj := range initObjs {
@@ -2943,7 +2960,7 @@ func newCommonCols(t test.Failer, initObjs ...client.Object) *common.CommonColle
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
 	gateways := krtcollections.NewGatewayIndex(krtopts, wellknown.DefaultGatewayControllerName, policies, kubeRawGateways, kubeRawListenerSets, gatewayClasses, nsCol)
 
-	commonCols := &common.CommonCollections{
+	commonCols := &collections.CommonCollections{
 		GatewayIndex: gateways,
 	}
 
@@ -2962,7 +2979,7 @@ var _ = Describe("DeployObjs", func() {
 		ctx  = context.Background()
 	)
 
-	var getDeployer = func(fc *fakeClient) *deployer.Deployer {
+	getDeployer := func(fc *fakeClient) *deployer.Deployer {
 		chart, err := deployerinternal.LoadGatewayChart()
 		Expect(err).ToNot(HaveOccurred())
 		return deployer.NewDeployer(
@@ -3079,6 +3096,7 @@ func (f *fakeClient) Get(ctx context.Context, key client.ObjectKey, obj client.O
 	}
 	return f.Client.Get(ctx, key, obj)
 }
+
 func (f *fakeClient) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
 	if f.patchFunc != nil {
 		return f.patchFunc(ctx, obj, patch, opts...)

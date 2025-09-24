@@ -18,6 +18,9 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 )
 
+// ErrNoValidPorts is returned when no valid ports are found for the Gateway
+var ErrNoValidPorts = errors.New("no valid ports")
+
 func NewGatewayParameters(cli client.Client, inputs *deployer.Inputs) *GatewayParameters {
 	return &GatewayParameters{
 		cli:               cli,
@@ -310,13 +313,18 @@ func (k *kGatewayParameters) getGatewayParametersForGatewayClass(ctx context.Con
 func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameters) (*deployer.HelmConfig, error) {
 	irGW := deployer.GetGatewayIR(gw, k.inputs.CommonCollections)
 
+	ports := deployer.GetPortsValues(irGW, gwParam)
+	if len(ports) == 0 {
+		return nil, ErrNoValidPorts
+	}
+
 	// construct the default values
 	vals := &deployer.HelmConfig{
 		Gateway: &deployer.HelmGateway{
 			Name:             &gw.Name,
 			GatewayName:      &gw.Name,
 			GatewayNamespace: &gw.Namespace,
-			Ports:            deployer.GetPortsValues(irGW, gwParam),
+			Ports:            ports,
 			Xds: &deployer.HelmXds{
 				// The xds host/port MUST map to the Service definition for the Control Plane
 				// This is the socket address that the Proxy will connect to on startup, to receive xds updates

@@ -21,10 +21,10 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
@@ -36,7 +36,7 @@ func AgwRouteCollection(
 	tcpRouteCol krt.Collection[*gwv1alpha2.TCPRoute],
 	tlsRouteCol krt.Collection[*gwv1alpha2.TLSRoute],
 	inputs RouteContextInputs,
-	krtopts krtinternal.KrtOptions,
+	krtopts krtutil.KrtOptions,
 ) krt.Collection[agwir.AgwResourcesForGateway] {
 	httpRoutes := createRouteCollection(httpRouteCol, inputs, krtopts, "AgwHTTPRoutes",
 		func(ctx RouteContext, obj *gwv1.HTTPRoute, rep reporter.Reporter) (RouteContext, iter.Seq2[AgwRoute, *reporter.RouteCondition]) {
@@ -300,7 +300,7 @@ func buildAttachedRoutesMapAllowed(
 func createRouteCollectionGeneric[T controllers.Object, R comparable](
 	routeCol krt.Collection[T],
 	inputs RouteContextInputs,
-	krtopts krtinternal.KrtOptions,
+	krtopts krtutil.KrtOptions,
 	collectionName string,
 	translator func(ctx RouteContext, obj T, rep reporter.Reporter) (RouteContext, iter.Seq2[R, *reporter.RouteCondition]),
 	resourceTransformer func(route R, parent routeParentReference) *api.Resource,
@@ -367,7 +367,7 @@ func createRouteCollectionGeneric[T controllers.Object, R comparable](
 func createRouteCollection[T controllers.Object](
 	routeCol krt.Collection[T],
 	inputs RouteContextInputs,
-	krtopts krtinternal.KrtOptions,
+	krtopts krtutil.KrtOptions,
 	collectionName string,
 	translator func(ctx RouteContext, obj T, rep reporter.Reporter) (RouteContext, iter.Seq2[AgwRoute, *reporter.RouteCondition]),
 ) krt.Collection[agwir.AgwResourcesForGateway] {
@@ -395,7 +395,7 @@ func createRouteCollection[T controllers.Object](
 func createTCPRouteCollection[T controllers.Object](
 	routeCol krt.Collection[T],
 	inputs RouteContextInputs,
-	krtopts krtinternal.KrtOptions,
+	krtopts krtutil.KrtOptions,
 	collectionName string,
 	translator func(ctx RouteContext, obj T, rep reporter.Reporter) (RouteContext, iter.Seq2[AgwTCPRoute, *reporter.RouteCondition]),
 ) krt.Collection[agwir.AgwResourcesForGateway] {

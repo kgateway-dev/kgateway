@@ -12,7 +12,6 @@ import (
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/endpoints"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	gwtranslator "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway"
@@ -20,6 +19,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
@@ -30,7 +30,7 @@ var logger = logging.New("translator")
 // Combines all the translators needed for xDS translation.
 type CombinedTranslator struct {
 	extensions sdk.Plugin
-	commonCols *common.CommonCollections
+	commonCols *collections.CommonCollections
 	validator  validator.Validator
 
 	waitForSync []cache.InformerSynced
@@ -46,7 +46,7 @@ type CombinedTranslator struct {
 func NewCombinedTranslator(
 	ctx context.Context,
 	extensions sdk.Plugin,
-	commonCols *common.CommonCollections,
+	commonCols *collections.CommonCollections,
 	validator validator.Validator,
 ) *CombinedTranslator {
 	var endpointPlugins []sdk.EndpointPlugin

@@ -1129,7 +1129,7 @@ func buildListener(
 	}
 
 	hostnames := buildHostnameMatch(ctx, obj.Namespace, namespaces, l)
-	protocol, perr := listenerProtocolToAgw(controllerName, l.Protocol)
+	protocol, perr := listenerProtocolToAgw(l.Protocol)
 	if perr != nil {
 		listenerConditions[string(gwv1.ListenerConditionAccepted)].error = &ConfigError{
 			Reason:  string(gwv1.ListenerReasonUnsupportedProtocol),
@@ -1159,7 +1159,7 @@ var supportedProtocols = sets.New(
 	gwv1.TCPProtocolType,
 	gwv1.ProtocolType(protocol.HBONE))
 
-func listenerProtocolToAgw(name gwv1.GatewayController, p gwv1.ProtocolType) (string, error) {
+func listenerProtocolToAgw(p gwv1.ProtocolType) (string, error) {
 	switch p {
 	// Standard protocol types
 	case gwv1.HTTPProtocolType:
@@ -1168,6 +1168,8 @@ func listenerProtocolToAgw(name gwv1.GatewayController, p gwv1.ProtocolType) (st
 		return string(p), nil
 	case gwv1.TLSProtocolType, gwv1.TCPProtocolType:
 		// TODO: check if TLS/TCP alpha features are supported
+		return string(p), nil
+	case gwv1.ProtocolType(protocol.HBONE):
 		return string(p), nil
 	}
 	up := gwv1.ProtocolType(strings.ToUpper(string(p)))

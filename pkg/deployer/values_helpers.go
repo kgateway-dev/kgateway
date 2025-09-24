@@ -16,6 +16,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/validate"
 )
 
 // This file contains helper functions that generate helm values in the format needed
@@ -35,6 +36,11 @@ func GetPortsValues(gw *ir.Gateway, gwp *v1alpha1.GatewayParameters) []HelmPort 
 	for _, l := range gw.Listeners {
 		listenerPort := uint16(l.Port)
 		portName := listener.GenerateListenerName(l)
+		if err := validate.ListenerPort(l, l.Port); err != nil {
+			// skip invalid ports; statuses are handled in the translator
+			logger.Error("skipping port", "gateway", gw.ResourceName(), "error", err)
+			continue
+		}
 		gwPorts = AppendPortValue(gwPorts, listenerPort, portName, gwp)
 	}
 

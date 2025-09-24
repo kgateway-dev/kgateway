@@ -31,7 +31,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
-	common "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 )
 
 const (
@@ -65,7 +65,7 @@ type GatewayConfig struct {
 	// DiscoveryNamespaceFilter filters namespaced objects based on the discovery namespace filter.
 	DiscoveryNamespaceFilter kubetypes.DynamicObjectFilter
 	// CommonCollections used to fetch ir.Gateways for the deployer to generate the ports for the proxy service
-	CommonCollections *common.CommonCollections
+	CommonCollections *collections.CommonCollections
 	// GatewayClassName is the configured gateway class name.
 	GatewayClassName string
 	// WaypointGatewayClassName is the configured waypoint gateway class name.

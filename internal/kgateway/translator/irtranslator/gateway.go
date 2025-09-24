@@ -59,7 +59,7 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 
 	for _, c := range pass {
 		if c != nil {
-			r := c.ResourcesToAdd(ctx)
+			r := c.ResourcesToAdd()
 			res.ExtraClusters = append(res.ExtraClusters, r.Clusters...)
 		}
 	}
@@ -222,7 +222,7 @@ func (t *Translator) runListenerPlugins(
 					Name:      gwv1.ObjectName(gw.SourceObject.GetName()),
 				},
 			}
-			pass.ApplyListenerPlugin(ctx, pctx, out)
+			pass.ApplyListenerPlugin(pctx, out)
 		}
 		out.Metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, out.GetMetadata())
 		reportPolicyAttachmentStatus(reporter, l.PolicyAncestorRef, mergeOrigins, pols...)
@@ -235,7 +235,7 @@ func (t *Translator) newPass(reporter sdkreporter.Reporter) TranslationPassPlugi
 		if v.NewGatewayTranslationPass == nil {
 			continue
 		}
-		tp := v.NewGatewayTranslationPass(context.TODO(), ir.GwTranslationCtx{}, reporter)
+		tp := v.NewGatewayTranslationPass(ir.GwTranslationCtx{}, reporter)
 		if tp != nil {
 			ret[k] = &TranslationPass{
 				ProxyTranslationPass: tp,

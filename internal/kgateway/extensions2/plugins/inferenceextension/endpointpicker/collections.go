@@ -15,10 +15,10 @@ import (
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	"sigs.k8s.io/gateway-api-inference-extension/client-go/clientset/versioned"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
@@ -52,7 +52,7 @@ func registerTypes(cli versioned.Interface) {
 
 func initInferencePoolCollections(
 	ctx context.Context,
-	commonCol *common.CommonCollections,
+	commonCol *collections.CommonCollections,
 ) *inferencePoolPlugin {
 	// Create the inference extension client
 	cli, err := versioned.NewForConfig(commonCol.Client.RESTConfig())

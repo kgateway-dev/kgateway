@@ -6,11 +6,11 @@ import (
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/slices"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -40,7 +40,7 @@ type Options struct {
 
 func NewPlugin(
 	ctx context.Context,
-	commonCols *common.CommonCollections,
+	commonCols *collections.CommonCollections,
 ) sdk.Plugin {
 	return NewPluginWithOpts(ctx, commonCols, Options{
 		Aliaser: HostnameAliaser,
@@ -49,7 +49,7 @@ func NewPlugin(
 
 func NewPluginWithOpts(
 	_ context.Context,
-	commonCols *common.CommonCollections,
+	commonCols *collections.CommonCollections,
 	opts Options,
 ) sdk.Plugin {
 	seCollections := initServiceEntryCollections(commonCols, opts)
