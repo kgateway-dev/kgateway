@@ -10,7 +10,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
-// ParentErrorReason is the Error string for a ParentError (reason parent could not be referenced)
+// ParentErrorReason is the error string for a ParentError (reason parent could not be referenced)
 type ParentErrorReason string
 
 const (
@@ -21,7 +21,7 @@ const (
 	ParentNoError                = ParentErrorReason("")
 )
 
-// ConfigErrorReason is the Error string for a ConfigError (reason configuration is invalid)
+// ConfigErrorReason is the error string for a ConfigError (reason configuration is invalid)
 type ConfigErrorReason = string
 
 const (
@@ -40,12 +40,12 @@ const (
 	InvalidTLS ConfigErrorReason = ConfigErrorReason(gwv1.ListenerReasonInvalidCertificateRef)
 	// InvalidListenerRefNotPermitted indicates a listener reference was not permitted
 	InvalidListenerRefNotPermitted ConfigErrorReason = ConfigErrorReason(gwv1.ListenerReasonRefNotPermitted)
-	// InvalidConfiguration indicates a generic Error for all other invalid configurations
+	// InvalidConfiguration indicates a generic error for all other invalid configurations
 	InvalidConfiguration ConfigErrorReason = "InvalidConfiguration"
 	DeprecateFieldUsage  ConfigErrorReason = "DeprecatedField"
 )
 
-// ParentError represents that a Parent could not be referenced
+// ParentError represents that a parent could not be referenced
 type ParentError struct {
 	Reason  ParentErrorReason
 	Message string
@@ -85,8 +85,8 @@ func setConditions(generation int64, existingConditions []metav1.Condition, cond
 		}
 		// A condition can be "negative polarity" (ex: ListenerInvalid) or "positive polarity" (ex:
 		// ListenerValid), so in order to determine the status we should set each `condition` defines its
-		// default positive status. When there is an Error, we will invert that. Example: If we have
-		// condition ListenerInvalid, the status will be set to StatusFalse. If an Error is reported, it
+		// default positive status. When there is an error, we will invert that. Example: If we have
+		// condition ListenerInvalid, the status will be set to StatusFalse. If an error is reported, it
 		// will be inverted to StatusTrue to indicate listeners are invalid. See
 		// https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
 		// for more information

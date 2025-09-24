@@ -57,7 +57,7 @@ func ReferenceGrantsCollection(referenceGrants krt.Collection[*gwv1beta1.Referen
 			} else if string(from.Group) == wellknown.TCPRouteGVK.Group && string(from.Kind) == wellknown.TCPRouteKind {
 				fromKey.Kind = wellknown.TCPRouteGVK
 			} else {
-				// Not supported type. Not an Error; may be for another controller
+				// Not supported type. Not an error; may be for another controller
 				continue
 			}
 			for _, to := range rp.To {
@@ -69,7 +69,7 @@ func ReferenceGrantsCollection(referenceGrants krt.Collection[*gwv1beta1.Referen
 				} else if to.Group == "" && string(to.Kind) == wellknown.ServiceKind {
 					toKey.Kind = wellknown.ServiceGVK
 				} else {
-					// Not supported type. Not an Error; may be for another controller
+					// Not supported type. Not an error; may be for another controller
 					continue
 				}
 				rg := ReferenceGrant{

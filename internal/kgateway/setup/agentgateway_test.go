@@ -23,9 +23,8 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/test/util/retry"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
-
 	"github.com/kgateway-dev/kgateway/v2/api/settings"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
 )
 
 func TestAgentgateway(t *testing.T) {

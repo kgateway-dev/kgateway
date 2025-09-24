@@ -68,7 +68,7 @@ func (r AgwResourceWithCustomName) Equals(in AgwResourceWithCustomName) bool {
 var _ envoytypes.ResourceWithName = AgwResourceWithCustomName{}
 
 type report struct {
-	// lower case so krt doesn't Error in debug handler
+	// lower case so krt doesn't error in debug handler
 	reportMap      reports.ReportMap
 	attachedRoutes map[string]uint
 }
@@ -82,7 +82,7 @@ type RouteReports struct {
 }
 
 func (r RouteReports) ResourceName() string {
-	return "route-Reports"
+	return "route-reports"
 }
 
 func (r RouteReports) Equals(in RouteReports) bool {
@@ -98,7 +98,7 @@ type ListenerSetReports struct {
 }
 
 func (l ListenerSetReports) ResourceName() string {
-	return "listenerset-Reports"
+	return "listenerset-reports"
 }
 
 func (l ListenerSetReports) Equals(in ListenerSetReports) bool {
@@ -112,7 +112,7 @@ type GatewayReports struct {
 }
 
 func (g GatewayReports) ResourceName() string {
-	return "gateway-Reports"
+	return "gateway-reports"
 }
 
 func (g GatewayReports) Equals(in GatewayReports) bool {
@@ -138,7 +138,7 @@ func (g GatewayReports) Equals(in GatewayReports) bool {
 }
 
 func (r report) ResourceName() string {
-	return "Report"
+	return "report"
 }
 
 func (r report) Equals(in report) bool {

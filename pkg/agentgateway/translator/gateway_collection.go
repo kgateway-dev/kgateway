@@ -178,7 +178,7 @@ func (g GatewayListener) ResourceName() string {
 }
 
 func (g GatewayListener) Equals(other GatewayListener) bool {
-	// TODO: ok to ignore Parent/ParentInfo?
+	// TODO: ok to ignore parent/ParentInfo?
 	return g.Config.Equals(other.Config) &&
 		g.Valid == other.Valid
 }

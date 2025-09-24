@@ -8,10 +8,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/gateway-api/apis/v1alpha2"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
-
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
 )
 
 func AgwPolicyCollection(binds krt.Collection[ir.AgwResourcesForGateway], agwPlugins plugins.AgwPlugin) (krt.Collection[ir.AgwResourcesForGateway], map[schema.GroupKind]krt.StatusCollection[controllers.Object, v1alpha2.PolicyStatus]) {

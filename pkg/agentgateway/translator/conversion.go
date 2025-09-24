@@ -182,7 +182,7 @@ func convertHostnames(hostnames []gwv1.Hostname) []string {
 	})
 }
 
-// Helper function to determine if Error response should be injected
+// Helper function to determine if error response should be injected
 func shouldInjectErrorResponse(backendErr *reporter.RouteCondition) bool {
 	return backendErr != nil &&
 		(backendErr.Reason == gwv1.RouteReasonInvalidKind ||
@@ -209,12 +209,12 @@ func injectDirectResponseFilter(res *api.Route, namespace, name string) {
 	res.Filters = append([]*api.RouteFilter{drf}, res.Filters...)
 }
 
-// Helper function to determine if filter Error is critical
+// Helper function to determine if filter error is critical
 func isFilterErrorCritical(filterError *reporter.RouteCondition) bool {
 	criticalReasons := []gwv1.RouteConditionReason{
 		"FilterNotSupported",
 		"FilterConfigInvalid",
-		// Add other critical filter Error reasons as needed
+		// Add other critical filter error reasons as needed
 	}
 
 	for _, reason := range criticalReasons {
@@ -421,7 +421,7 @@ func buildAgwTLSDestination(
 	return res, invalidBackendErr, nil
 }
 
-// terminalFilterCombinationError creates a standardized Error message for when multiple terminal filters are used together
+// terminalFilterCombinationError creates a standardized error message for when multiple terminal filters are used together
 func terminalFilterCombinationError(existingFilter, newFilter string) string {
 	return fmt.Sprintf("Cannot combine multiple terminal filters: %s and %s are mutually exclusive. Only one terminal filter is allowed per route rule.", existingFilter, newFilter)
 }
@@ -760,7 +760,7 @@ func ToInternalParentReference(p gwv1.ParentReference, localNamespace string) (P
 	}, nil
 }
 
-// ReferenceAllowed validates if a route can reference a specified Parent based on rules like section, port, and hostnames.
+// ReferenceAllowed validates if a route can reference a specified parent based on rules like section, port, and hostnames.
 // Returns a *ParentError if the reference violates any constraints or is disallowed.
 // Returns nil if the reference is valid and permitted for the given route and ParentInfo.
 func ReferenceAllowed(
@@ -779,7 +779,7 @@ func ReferenceAllowed(
 		if svc == nil {
 			return &ParentError{
 				Reason:  ParentErrorNotAccepted,
-				Message: fmt.Sprintf("Parent service: %q not found", parentRef.Name),
+				Message: fmt.Sprintf("parent service: %q not found", parentRef.Name),
 			}
 		}
 	} else if parentRef.Kind == wellknown.ServiceEntryGVK {
@@ -789,7 +789,7 @@ func ReferenceAllowed(
 		if svcEntry == nil {
 			return &ParentError{
 				Reason:  ParentErrorNotAccepted,
-				Message: fmt.Sprintf("Parent service entry: %q not found", parentRef.Name),
+				Message: fmt.Sprintf("parent service entry: %q not found", parentRef.Name),
 			}
 		}
 	} else {
@@ -843,7 +843,7 @@ func ReferenceAllowed(
 					return &ParentError{
 						Reason: ParentErrorNotAllowed,
 						Message: fmt.Sprintf(
-							"hostnames matched Parent hostname %q, but namespace %q is not allowed by the Parent",
+							"hostnames matched parent hostname %q, but namespace %q is not allowed by the parent",
 							parent.OriginalHostname, localNamespace,
 						),
 					}
@@ -851,7 +851,7 @@ func ReferenceAllowed(
 				return &ParentError{
 					Reason: ParentErrorNoHostname,
 					Message: fmt.Sprintf(
-						"no hostnames matched Parent hostname %q",
+						"no hostnames matched parent hostname %q",
 						parent.OriginalHostname,
 					),
 				}
@@ -981,9 +981,9 @@ type ParentInfo struct {
 	Protocol    gwv1.ProtocolType
 }
 
-// RouteParentReference holds information about a route's Parent reference
+// RouteParentReference holds information about a route's parent reference
 type RouteParentReference struct {
-	// InternalName refers to the internal name of the Parent we can reference it by. For example "my-ns/my-gateway"
+	// InternalName refers to the internal name of the parent we can reference it by. For example "my-ns/my-gateway"
 	InternalName string
 	// InternalKind is the Group/Kind of the Parent
 	InternalKind schema.GroupVersionKind
@@ -1076,7 +1076,7 @@ func ExtractGatewayServices(kgw *gwv1.Gateway) ([]string, *reporter.RouteConditi
 		gatewayServices = append(gatewayServices, fqdn)
 	}
 	if len(skippedAddresses) > 0 {
-		// Give Error but return services, this is a soft failure
+		// Give error but return services, this is a soft failure
 		return gatewayServices, &reporter.RouteCondition{
 			Type:    gwv1.RouteConditionAccepted,
 			Status:  metav1.ConditionFalse,
@@ -1085,7 +1085,7 @@ func ExtractGatewayServices(kgw *gwv1.Gateway) ([]string, *reporter.RouteConditi
 		}
 	}
 	if _, f := kgw.Annotations[annotation.NetworkingServiceType.Name]; f {
-		// Give Error but return services, this is a soft failure
+		// Give error but return services, this is a soft failure
 		// Remove entirely in 1.20
 		return gatewayServices, &reporter.RouteCondition{
 			Type:    gwv1.RouteConditionAccepted,
@@ -1205,7 +1205,7 @@ func buildTLS(
 		return nil, nil, nil
 	}
 	// Explicitly not supported: file mounted
-	// Not yet implemented: TLS mode, https redirect, max protocol Version, SANs, CipherSuites, VerifyCertificate
+	// Not yet implemented: TLS mode, https redirect, max protocol version, SANs, CipherSuites, VerifyCertificate
 	out := &istio.ServerTLSSettings{
 		HttpsRedirect: false,
 	}
