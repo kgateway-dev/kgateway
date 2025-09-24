@@ -13,14 +13,14 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/xds/bootstrap"
 )
 
-// validateWithRouteReplacementMode performs validation based on route replacement mode.
-// Callers who need route replacement mode behavior should use this method instead of calling
+// validateWithValidationLevel performs validation based on validation level.
+// Callers who need validation level behavior should use this method instead of calling
 // the Validate() method on the TrafficPolicy type directly.
-func validateWithRouteReplacementMode(ctx context.Context, p *TrafficPolicy, v validator.Validator, mode settings.RouteReplacementMode) error {
+func validateWithValidationLevel(ctx context.Context, p *TrafficPolicy, v validator.Validator, mode settings.ValidationMode) error {
 	switch mode {
-	case settings.RouteReplacementStandard:
+	case settings.ValidationStandard:
 		return p.Validate()
-	case settings.RouteReplacementStrict:
+	case settings.ValidationStrict:
 		if err := p.Validate(); err != nil {
 			return err
 		}

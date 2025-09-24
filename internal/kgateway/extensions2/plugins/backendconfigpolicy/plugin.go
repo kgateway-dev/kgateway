@@ -132,7 +132,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 	), commoncol.KrtOpts.ToOptions("BackendConfigPolicy")...)
 	backendConfigPolicyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, b *v1alpha1.BackendConfigPolicy) *ir.PolicyWrapper {
 		policyIR, errs := translate(commoncol, krtctx, b)
-		if err := validateXDS(ctx, policyIR, v, commoncol.Settings.RouteReplacementMode); err != nil {
+		if err := validateXDS(ctx, policyIR, v, commoncol.Settings.ValidationMode); err != nil {
 			errs = append(errs, err)
 		}
 

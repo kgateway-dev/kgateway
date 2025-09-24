@@ -37,7 +37,7 @@ func TestBackendConfigPolicyXDSValidation(t *testing.T) {
 		name      string
 		policyIR  *BackendConfigPolicyIR
 		validator *mockValidator
-		mode      settings.RouteReplacementMode
+		mode      settings.ValidationMode
 		wantErr   bool
 	}{
 		{
@@ -51,7 +51,7 @@ func TestBackendConfigPolicyXDSValidation(t *testing.T) {
 					return nil // Successful validation
 				},
 			},
-			mode:    settings.RouteReplacementStrict,
+			mode:    settings.ValidationStrict,
 			wantErr: false,
 		},
 		{
@@ -71,7 +71,7 @@ func TestBackendConfigPolicyXDSValidation(t *testing.T) {
 					return errors.New("Failed to initialize cipher suites BOGUS_CIPHER_SUITE_1:INVALID_AES_256_GCM_SHA384")
 				},
 			},
-			mode:    settings.RouteReplacementStrict,
+			mode:    settings.ValidationStrict,
 			wantErr: true,
 		},
 		{
@@ -91,7 +91,7 @@ func TestBackendConfigPolicyXDSValidation(t *testing.T) {
 					return errors.New("Failed to initialize ECDH curves")
 				},
 			},
-			mode:    settings.RouteReplacementStrict,
+			mode:    settings.ValidationStrict,
 			wantErr: true,
 		},
 		{
@@ -111,7 +111,7 @@ func TestBackendConfigPolicyXDSValidation(t *testing.T) {
 					return errors.New("should not be called in standard mode")
 				},
 			},
-			mode:    settings.RouteReplacementStandard,
+			mode:    settings.ValidationStandard,
 			wantErr: false, // No error because validation is skipped
 		},
 		{
@@ -139,7 +139,7 @@ func TestBackendConfigPolicyXDSValidation(t *testing.T) {
 					return nil // Validation passes
 				},
 			},
-			mode:    settings.RouteReplacementStrict,
+			mode:    settings.ValidationStrict,
 			wantErr: false,
 		},
 		{
@@ -165,7 +165,7 @@ func TestBackendConfigPolicyXDSValidation(t *testing.T) {
 					return nil // Validation passes
 				},
 			},
-			mode:    settings.RouteReplacementStrict,
+			mode:    settings.ValidationStrict,
 			wantErr: false,
 		},
 	}

@@ -27,9 +27,9 @@ import (
 var logger = logging.New("translator/ir")
 
 type Translator struct {
-	ContributedPolicies  map[schema.GroupKind]sdk.PolicyPlugin
-	RouteReplacementMode settings.RouteReplacementMode
-	Validator            validator.Validator
+	ContributedPolicies map[schema.GroupKind]sdk.PolicyPlugin
+	ValidationLevel     settings.ValidationMode
+	Validator           validator.Validator
 }
 
 type TranslationPassPlugins map[schema.GroupKind]*TranslationPass
@@ -130,7 +130,7 @@ func (t *Translator) ComputeListener(
 			requireTlsOnVirtualHosts: hfc.FilterChainCommon.TLS != nil,
 			pluginPass:               pass,
 			logger:                   logger.With("route_config_name", hfc.FilterChainName),
-			routeReplacementMode:     t.RouteReplacementMode,
+			validationLevel:          t.ValidationLevel,
 			validator:                t.Validator,
 		}
 		rc := hr.ComputeRouteConfiguration(ctx, hfc.Vhosts)

@@ -248,7 +248,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 		}
 
 		policyIR, errors := constructor.ConstructIR(krtctx, policyCR)
-		if err := validateWithRouteReplacementMode(ctx, policyIR, v, commoncol.Settings.RouteReplacementMode); err != nil {
+		if err := validateWithValidationLevel(ctx, policyIR, v, commoncol.Settings.ValidationMode); err != nil {
 			logger.Error("validation failed", "policy", policyCR.Name, "error", err)
 			errors = append(errors, err)
 		}
