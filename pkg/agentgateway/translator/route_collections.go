@@ -52,7 +52,7 @@ func AgwRouteCollection(
 						if m != nil {
 							r.Matches = []gwv1.HTTPRouteMatch{*m}
 						}
-						res, err := convertHTTPRouteToAgw(ctx, r, obj, n, idx)
+						res, err := ConvertHTTPRouteToAgw(ctx, r, obj, n, idx)
 						if !yield(AgwRoute{Route: res}, err) {
 							return
 						}
@@ -67,7 +67,7 @@ func AgwRouteCollection(
 			return ctx, func(yield func(AgwRoute, *reporter.RouteCondition) bool) {
 				for n, r := range route.Rules {
 					// Convert the entire rule with all matches at once
-					res, err := convertGRPCRouteToAgw(ctx, r, obj, n)
+					res, err := ConvertGRPCRouteToAgw(ctx, r, obj, n)
 					if !yield(AgwRoute{Route: res}, err) {
 						return
 					}
@@ -81,7 +81,7 @@ func AgwRouteCollection(
 			return ctx, func(yield func(AgwTCPRoute, *reporter.RouteCondition) bool) {
 				for n, r := range route.Rules {
 					// Convert the entire rule with all matches at once
-					res, err := convertTCPRouteToAgw(ctx, r, obj, n)
+					res, err := ConvertTCPRouteToAgw(ctx, r, obj, n)
 					if !yield(AgwTCPRoute{TCPRoute: res}, err) {
 						return
 					}
@@ -95,7 +95,7 @@ func AgwRouteCollection(
 			return ctx, func(yield func(AgwTCPRoute, *reporter.RouteCondition) bool) {
 				for n, r := range route.Rules {
 					// Convert the entire rule with all matches at once
-					res, err := convertTLSRouteToAgw(ctx, r, obj, n)
+					res, err := ConvertTLSRouteToAgw(ctx, r, obj, n)
 					if !yield(AgwTCPRoute{TCPRoute: res}, err) {
 						return
 					}
@@ -108,23 +108,23 @@ func AgwRouteCollection(
 	return routes
 }
 
-// processParentReferences processes filtered Parent references and builds resources per gateway.
+// ProcessParentReferences processes filtered Parent references and builds resources per gateway.
 // It emits exactly one ParentStatus per Gateway (aggregate across listeners).
 // If no listeners are allowed, the Accepted reason is:
 //   - NotAllowedByListeners  => when the Parent Gateway is cross-namespace w.r.t. the route
 //   - NoMatchingListenerHostname => otherwise
-func processParentReferences[T any](
-	parentRefs []routeParentReference,
+func ProcessParentReferences[T any](
+	parentRefs []RouteParentReference,
 	gwResult conversionResult[T],
 	routeNN types.NamespacedName, // <-- route namespace/name so we can detect cross-NS parents
 	routeReporter reporter.RouteReporter,
-	resourceMapper func(T, routeParentReference) *api.Resource,
+	resourceMapper func(T, RouteParentReference) *api.Resource,
 ) map[types.NamespacedName][]*api.Resource {
 	resourcesPerGateway := make(map[types.NamespacedName][]*api.Resource)
 
-	// Build the "allowed" set from filteredReferences (listener-scoped).
+	// Build the "allowed" set from FilteredReferences (listener-scoped).
 	allowed := make(map[string]struct{})
-	for _, p := range filteredReferences(parentRefs) {
+	for _, p := range FilteredReferences(parentRefs) {
 		if p.ParentKey.Kind != wellknown.GatewayGVK {
 			continue
 		}
@@ -135,7 +135,7 @@ func processParentReferences[T any](
 	// Aggregate per Gateway for status; also track whether any raw Parent was cross-namespace.
 	type gwAgg struct {
 		anyAllowed bool
-		rep        routeParentReference
+		rep        RouteParentReference
 	}
 	agg := make(map[types.NamespacedName]*gwAgg)
 	crossNS := make(map[types.NamespacedName]bool)
@@ -264,7 +264,7 @@ func reasonResolvedRefs(cond *reporter.RouteCondition, ok bool) gwv1.RouteCondit
 // buildAttachedRoutesMapAllowed is the same as buildAttachedRoutesMap,
 // but only for already-evaluated, allowed parentRefs.
 func buildAttachedRoutesMapAllowed(
-	allowedParents []routeParentReference,
+	allowedParents []RouteParentReference,
 	routeNN types.NamespacedName,
 ) map[types.NamespacedName]map[string]uint {
 	attached := make(map[types.NamespacedName]map[string]uint)
@@ -303,7 +303,7 @@ func createRouteCollectionGeneric[T controllers.Object, R comparable](
 	krtopts krtutil.KrtOptions,
 	collectionName string,
 	translator func(ctx RouteContext, obj T, rep reporter.Reporter) (RouteContext, iter.Seq2[R, *reporter.RouteCondition]),
-	resourceTransformer func(route R, parent routeParentReference) *api.Resource,
+	resourceTransformer func(route R, parent RouteParentReference) *api.Resource,
 ) krt.Collection[agwir.AgwResourcesForGateway] {
 	return krt.NewManyCollection(routeCol, func(krtctx krt.HandlerContext, obj T) []agwir.AgwResourcesForGateway {
 		logger.Debug("translating route", "route_name", obj.GetName(), "resource_version", obj.GetResourceVersion())
@@ -323,11 +323,11 @@ func createRouteCollectionGeneric[T controllers.Object, R comparable](
 		// gateway -> section name -> route count
 		routeNN := types.NamespacedName{Namespace: obj.GetNamespace(), Name: obj.GetName()}
 		ln := listenersPerGateway(parentRefs)
-		allowedParents := filteredReferences(parentRefs)
+		allowedParents := FilteredReferences(parentRefs)
 		attachedRoutes := buildAttachedRoutesMapAllowed(allowedParents, routeNN)
 		ensureZeroes(attachedRoutes, ln)
 
-		resourcesPerGateway := processParentReferences[R](
+		resourcesPerGateway := ProcessParentReferences[R](
 			parentRefs,
 			gwResult,
 			routeNN,
@@ -338,7 +338,7 @@ func createRouteCollectionGeneric[T controllers.Object, R comparable](
 		var results []agwir.AgwResourcesForGateway
 		allRelevantGateways := make(map[types.NamespacedName]struct{})
 
-		// Collect all relevant gateways
+		// Collect all relevant Gateways
 		for gw := range resourcesPerGateway {
 			allRelevantGateways[gw] = struct{}{}
 		}
@@ -377,7 +377,7 @@ func createRouteCollection[T controllers.Object](
 		krtopts,
 		collectionName,
 		translator,
-		func(e AgwRoute, parent routeParentReference) *api.Resource {
+		func(e AgwRoute, parent RouteParentReference) *api.Resource {
 			inner := protomarshal.Clone(e.Route)
 			_, name, _ := strings.Cut(parent.InternalName, "/")
 			inner.ListenerKey = name
@@ -405,7 +405,7 @@ func createTCPRouteCollection[T controllers.Object](
 		krtopts,
 		collectionName,
 		translator,
-		func(e AgwTCPRoute, parent routeParentReference) *api.Resource {
+		func(e AgwTCPRoute, parent RouteParentReference) *api.Resource {
 			// TCP route wrapper doesn't expose a `Route` field like HTTP.
 			// For TCP we don't mutate ListenerKey/Key here; just pass through.
 			return ToAgwResource(e)
@@ -415,7 +415,7 @@ func createTCPRouteCollection[T controllers.Object](
 
 // listenersPerGateway returns the set of listener sectionNames referenced for each Parent Gateway,
 // regardless of whether they are allowed.
-func listenersPerGateway(parentRefs []routeParentReference) map[types.NamespacedName]map[string]struct{} {
+func listenersPerGateway(parentRefs []RouteParentReference) map[types.NamespacedName]map[string]struct{} {
 	l := make(map[types.NamespacedName]map[string]struct{})
 	for _, p := range parentRefs {
 		if p.ParentKey.Kind != wellknown.GatewayGVK {
@@ -463,7 +463,7 @@ func IsNil[O comparable](o O) bool {
 func computeRoute[T controllers.Object, O comparable](ctx RouteContext, obj T, translator func(
 	obj T,
 ) iter.Seq2[O, *reporter.RouteCondition],
-) ([]routeParentReference, conversionResult[O]) {
+) ([]RouteParentReference, conversionResult[O]) {
 	parentRefs := extractParentReferenceInfo(ctx, ctx.RouteParents, obj)
 
 	convertRules := func() conversionResult[O] {

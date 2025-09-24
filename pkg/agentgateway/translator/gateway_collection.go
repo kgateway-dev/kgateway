@@ -202,7 +202,7 @@ func GatewayCollection(
 		var servers []*istio.Server
 
 		// Extract the addresses. A gwv1 will bind to a specific Service
-		gatewayServices, err := extractGatewayServices(obj)
+		gatewayServices, err := ExtractGatewayServices(obj)
 		if len(gatewayServices) == 0 && err != nil {
 			// Short circuit if it's a hard failure
 			logger.Error("failed to translate gwv1", "name", obj.GetName(), "namespace", obj.GetNamespace(), "err", err.Message)
@@ -220,12 +220,12 @@ func GatewayCollection(
 			// when the real count is available after route processing
 			attachedCount := int32(0) // Default to 0 if not found
 
-			server, tlsInfo, programmed := buildListener(ctx, secrets, grants, namespaces, obj, status, l, i, controllerName, attachedCount)
+			server, tlsInfo, programmed := BuildListener(ctx, secrets, grants, namespaces, obj, status, l, i, controllerName, attachedCount)
 
 			lstatus := status.Listeners[i]
 
 			// Generate supported kinds for the listener
-			allowed, _ := generateSupportedKinds(l)
+			allowed, _ := GenerateSupportedKinds(l)
 
 			// Set all listener conditions from the actual status
 			for _, lcond := range lstatus.Conditions {
@@ -241,7 +241,7 @@ func GatewayCollection(
 			gwReporter.Listener(&l).SetSupportedKinds(allowed)
 
 			servers = append(servers, server)
-			meta := parentMeta(obj, &l.Name)
+			meta := ParentMeta(obj, &l.Name)
 			// Each listener generates a GatewayListener with a single Server. This allows binding to a specific listener.
 			gatewayConfig := Config{
 				Meta: Meta{
@@ -294,12 +294,12 @@ func GatewayCollection(
 
 // RouteParents holds information about things routes can reference as parents.
 type RouteParents struct {
-	gateways     krt.Collection[GatewayListener]
-	gatewayIndex krt.Index[ParentKey, GatewayListener]
+	Gateways     krt.Collection[GatewayListener]
+	GatewayIndex krt.Index[ParentKey, GatewayListener]
 }
 
-func (p RouteParents) fetch(ctx krt.HandlerContext, pk ParentKey) []*ParentInfo {
-	return slices.Map(krt.Fetch(ctx, p.gateways, krt.FilterIndex(p.gatewayIndex, pk)), func(gw GatewayListener) *ParentInfo {
+func (p RouteParents) Fetch(ctx krt.HandlerContext, pk ParentKey) []*ParentInfo {
+	return slices.Map(krt.Fetch(ctx, p.Gateways, krt.FilterIndex(p.GatewayIndex, pk)), func(gw GatewayListener) *ParentInfo {
 		return &gw.ParentInfo
 	})
 }
@@ -311,7 +311,7 @@ func BuildRouteParents(
 		return []ParentKey{o.Parent}
 	})
 	return RouteParents{
-		gateways:     gateways,
-		gatewayIndex: idx,
+		Gateways:     gateways,
+		GatewayIndex: idx,
 	}
 }

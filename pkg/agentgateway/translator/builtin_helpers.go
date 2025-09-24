@@ -9,7 +9,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-func applyTimeouts(rule *gwv1.HTTPRouteRule, route *api.Route) error {
+func ApplyTimeouts(rule *gwv1.HTTPRouteRule, route *api.Route) error {
 	if rule == nil || rule.Timeouts == nil {
 		return nil
 	}
@@ -33,7 +33,7 @@ func applyTimeouts(rule *gwv1.HTTPRouteRule, route *api.Route) error {
 	return nil
 }
 
-func applyRetries(rule *gwv1.HTTPRouteRule, route *api.Route) error {
+func ApplyRetries(rule *gwv1.HTTPRouteRule, route *api.Route) error {
 	if rule == nil || rule.Retry == nil {
 		return nil
 	}

@@ -122,7 +122,7 @@ func reportListenerCondition(index int, l gwv1.Listener, obj *gwv1.Gateway,
 		gs.Listeners = append(gs.Listeners, gwv1.ListenerStatus{})
 	}
 	cond := gs.Listeners[index].Conditions
-	supported, valid := generateSupportedKinds(l)
+	supported, valid := GenerateSupportedKinds(l)
 	if !valid {
 		conditions[string(gwv1.ListenerConditionResolvedRefs)] = &condition{
 			reason:  string(gwv1.ListenerReasonInvalidRouteKinds),
@@ -138,7 +138,7 @@ func reportListenerCondition(index int, l gwv1.Listener, obj *gwv1.Gateway,
 	}
 }
 
-func generateSupportedKinds(l gwv1.Listener) ([]gwv1.RouteGroupKind, bool) {
+func GenerateSupportedKinds(l gwv1.Listener) ([]gwv1.RouteGroupKind, bool) {
 	var supported []gwv1.RouteGroupKind
 	switch l.Protocol {
 	case gwv1.HTTPProtocolType, gwv1.HTTPSProtocolType:
