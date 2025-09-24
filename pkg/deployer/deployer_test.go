@@ -415,6 +415,13 @@ var _ = Describe("Deployer", func() {
 				},
 				Spec: api.GatewaySpec{
 					GatewayClassName: wellknown.DefaultGatewayClassName,
+					Listeners: []api.Listener{
+						{
+							Protocol: api.HTTPProtocolType,
+							Port:     80,
+							Name:     "http",
+						},
+					},
 				},
 			}
 
@@ -731,7 +738,6 @@ var _ = Describe("Deployer", func() {
 			Expect(*psc.RunAsGroup).To(Equal(gid))
 			Expect(*psc.FSGroup).To(Equal(fsGroup))
 		})
-
 	})
 
 	Context("special cases", func() {
@@ -753,6 +759,13 @@ var _ = Describe("Deployer", func() {
 				},
 				Spec: api.GatewaySpec{
 					GatewayClassName: wellknown.DefaultGatewayClassName,
+					Listeners: []api.Listener{
+						{
+							Protocol: api.HTTPProtocolType,
+							Port:     80,
+							Name:     "http",
+						},
+					},
 				},
 			}
 
@@ -768,6 +781,13 @@ var _ = Describe("Deployer", func() {
 				},
 				Spec: api.GatewaySpec{
 					GatewayClassName: wellknown.DefaultGatewayClassName,
+					Listeners: []api.Listener{
+						{
+							Protocol: api.HTTPProtocolType,
+							Port:     80,
+							Name:     "http",
+						},
+					},
 				},
 			}
 
@@ -2166,10 +2186,7 @@ var _ = Describe("Deployer", func() {
 				},
 				defaultGwp: defaultGatewayParams(),
 			}, &expectedOutput{
-				validationFunc: func(objs clientObjects, inp *input) error {
-					Expect(objs).NotTo(BeEmpty())
-					return nil
-				},
+				getObjsErr: deployerinternal.ErrNoValidPorts,
 			}),
 			Entry("no port offset", defaultInput(), &expectedOutput{
 				validationFunc: func(objs clientObjects, inp *input) error {
@@ -2962,7 +2979,7 @@ var _ = Describe("DeployObjs", func() {
 		ctx  = context.Background()
 	)
 
-	var getDeployer = func(fc *fakeClient) *deployer.Deployer {
+	getDeployer := func(fc *fakeClient) *deployer.Deployer {
 		chart, err := deployerinternal.LoadGatewayChart()
 		Expect(err).ToNot(HaveOccurred())
 		return deployer.NewDeployer(
@@ -3079,6 +3096,7 @@ func (f *fakeClient) Get(ctx context.Context, key client.ObjectKey, obj client.O
 	}
 	return f.Client.Get(ctx, key, obj)
 }
+
 func (f *fakeClient) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
 	if f.patchFunc != nil {
 		return f.patchFunc(ctx, obj, patch, opts...)

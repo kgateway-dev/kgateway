@@ -163,6 +163,13 @@ func TestShouldUseDefaultGatewayParameters(t *testing.T) {
 		},
 		Spec: api.GatewaySpec{
 			GatewayClassName: wellknown.DefaultGatewayClassName,
+			Listeners: []api.Listener{
+				{
+					Protocol: api.HTTPProtocolType,
+					Port:     80,
+					Name:     "http",
+				},
+			},
 		},
 	}
 

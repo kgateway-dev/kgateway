@@ -539,6 +539,11 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 	return nil
 }
 
+// AssertReportsNoOp is a no-op assertion function. It should be used when the test does not
+// need to perform the default or custom assertions on the reports, and instead relies on the
+// statuses written to the output file
+func AssertReportsNoOp(gwNN types.NamespacedName, reportsMap reports.ReportMap) {}
+
 type SettingsOpts func(*settings.Settings)
 
 func (tc TestCase) Run(

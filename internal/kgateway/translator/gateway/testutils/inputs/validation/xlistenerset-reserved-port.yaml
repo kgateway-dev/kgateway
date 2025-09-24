@@ -1,0 +1,23 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: test
+spec:
+  gatewayClassName: kgateway
+  allowedListeners:
+    namespaces:
+      from: All
+---
+apiVersion: gateway.networking.x-k8s.io/v1alpha1
+kind: XListenerSet
+metadata:
+  name: test
+spec:
+  parentRef:
+    name: test
+    kind: Gateway
+    group: gateway.networking.k8s.io
+  listeners:
+  - name: http
+    protocol: TCP
+    port: 9091 # reserved port should be rejected
