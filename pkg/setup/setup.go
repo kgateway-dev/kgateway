@@ -10,11 +10,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	core "github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
 	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
-	common "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
@@ -25,7 +25,7 @@ type Options struct {
 	WaypointGatewayClassName   string
 	AgentgatewayClassName      string
 	AdditionalGatewayClasses   map[string]*deployer.GatewayClassInfo
-	ExtraPlugins               func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []sdk.Plugin
+	ExtraPlugins               func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []sdk.Plugin
 	ExtraAgwPlugins            func(ctx context.Context, agw *agwplugins.AgwCollections) []agwplugins.AgwPlugin
 	ExtraGatewayParameters     func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
 	ExtraXDSCallbacks          xdsserver.Callbacks
@@ -37,22 +37,22 @@ type Options struct {
 	Validator validator.Validator
 }
 
-func New(opts Options) (core.Server, error) {
+func New(opts Options) (setup.Server, error) {
 	// internal setup already accepted functional-options; we wrap only extras.
-	return core.New(
-		core.WithExtraPlugins(opts.ExtraPlugins),
-		core.WithExtraAgwPlugins(opts.ExtraAgwPlugins),
-		core.ExtraGatewayParameters(opts.ExtraGatewayParameters),
-		core.WithGatewayControllerName(opts.GatewayControllerName),
-		core.WithAgwControllerName(opts.AgentgatewayControllerName),
-		core.WithGatewayClassName(opts.GatewayClassName),
-		core.WithWaypointClassName(opts.WaypointGatewayClassName),
-		core.WithAgentgatewayClassName(opts.AgentgatewayClassName),
-		core.WithAdditionalGatewayClasses(opts.AdditionalGatewayClasses),
-		core.WithExtraXDSCallbacks(opts.ExtraXDSCallbacks),
-		core.WithRestConfig(opts.RestConfig),
-		core.WithControllerManagerOptions(opts.CtrlMgrOptions),
-		core.WithExtraManagerConfig(opts.ExtraManagerConfig...),
-		core.WithValidator(opts.Validator),
+	return setup.New(
+		setup.WithExtraPlugins(opts.ExtraPlugins),
+		setup.WithExtraAgwPlugins(opts.ExtraAgwPlugins),
+		setup.ExtraGatewayParameters(opts.ExtraGatewayParameters),
+		setup.WithGatewayControllerName(opts.GatewayControllerName),
+		setup.WithAgwControllerName(opts.AgentgatewayControllerName),
+		setup.WithGatewayClassName(opts.GatewayClassName),
+		setup.WithWaypointClassName(opts.WaypointGatewayClassName),
+		setup.WithAgentgatewayClassName(opts.AgentgatewayClassName),
+		setup.WithAdditionalGatewayClasses(opts.AdditionalGatewayClasses),
+		setup.WithExtraXDSCallbacks(opts.ExtraXDSCallbacks),
+		setup.WithRestConfig(opts.RestConfig),
+		setup.WithControllerManagerOptions(opts.CtrlMgrOptions),
+		setup.WithExtraManagerConfig(opts.ExtraManagerConfig...),
+		setup.WithValidator(opts.Validator),
 	)
 }

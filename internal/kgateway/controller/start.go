@@ -27,11 +27,11 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
-	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
-	common "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	kgtwschemes "github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/namespaces"
@@ -73,18 +73,18 @@ type StartConfig struct {
 	RestConfig *rest.Config
 	// ExtensionsFactory is the factory function which will return an extensions.K8sGatewayExtensions
 	// This is responsible for producing the extension points that this controller requires
-	ExtraPlugins           func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []sdk.Plugin
+	ExtraPlugins           func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []sdk.Plugin
 	ExtraAgwPlugins        func(ctx context.Context, agw *agwplugins.AgwCollections) []agwplugins.AgwPlugin
 	ExtraGatewayParameters func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
 	Client                 istiokube.Client
 	Validator              validator.Validator
 
 	AgwCollections    *agwplugins.AgwCollections
-	CommonCollections *common.CommonCollections
+	CommonCollections *collections.CommonCollections
 	AugmentedPods     krt.Collection[krtcollections.LocalityPod]
 	UniqueClients     krt.Collection[ir.UniqlyConnectedClient]
 
-	KrtOptions krtinternal.KrtOptions
+	KrtOptions krtutil.KrtOptions
 }
 
 // Start runs the controllers responsible for processing the K8s Gateway API objects
@@ -95,7 +95,7 @@ type ControllerBuilder struct {
 	agwSyncer   *agentgatewaysyncer.Syncer
 	cfg         StartConfig
 	mgr         ctrl.Manager
-	commoncol   *common.CommonCollections
+	commoncol   *collections.CommonCollections
 
 	ready atomic.Bool
 }
@@ -120,7 +120,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			setupLog.Info("adding endpoint-picker inference extension")
 
 			existingExtraPlugins := cfg.ExtraPlugins
-			cfg.ExtraPlugins = func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []sdk.Plugin {
+			cfg.ExtraPlugins = func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []sdk.Plugin {
 				var plugins []sdk.Plugin
 
 				// Add the inference extension plugin.
@@ -244,7 +244,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 }
 
 func pluginFactoryWithBuiltin(cfg StartConfig) extensions2.K8sGatewayExtensionsFactory {
-	return func(ctx context.Context, commoncol *common.CommonCollections) sdk.Plugin {
+	return func(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
 		plugins := registry.Plugins(
 			ctx,
 			commoncol,
@@ -315,7 +315,9 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 	}
 
 	setupLog.Info("creating gateway class provisioner")
-	if err := NewGatewayClassProvisioner(c.mgr, c.cfg.ControllerName, c.cfg.AgwControllerName, c.cfg.AgentgatewayClassName, GetDefaultClassInfo(globalSettings, c.cfg.GatewayClassName, c.cfg.WaypointGatewayClassName, c.cfg.AgentgatewayClassName, c.cfg.AdditionalGatewayClasses)); err != nil {
+	if err := NewGatewayClassProvisioner(c.mgr, c.cfg.ControllerName,
+		GetDefaultClassInfo(globalSettings, c.cfg.GatewayClassName, c.cfg.WaypointGatewayClassName,
+			c.cfg.AgentgatewayClassName, c.cfg.ControllerName, c.cfg.AgwControllerName, c.cfg.AdditionalGatewayClasses)); err != nil {
 		setupLog.Error(err, "unable to create gateway class provisioner")
 		return err
 	}
@@ -365,13 +367,14 @@ func (c *ControllerBuilder) HasSynced() bool {
 // GetDefaultClassInfo returns the default GatewayClass for the kgateway controller.
 // Exported for testing.
 func GetDefaultClassInfo(globalSettings *settings.Settings,
-	gatewayClassName, waypointGatewayClassName, agwClassName string,
+	gatewayClassName, waypointGatewayClassName, agwClassName, controllerName, agwControllerName string,
 	additionalClassInfos map[string]*deployer.GatewayClassInfo) map[string]*deployer.GatewayClassInfo {
 	classInfos := map[string]*deployer.GatewayClassInfo{
 		gatewayClassName: {
-			Description: "Standard class for managing Gateway API ingress traffic.",
-			Labels:      map[string]string{},
-			Annotations: map[string]string{},
+			Description:    "Standard class for managing Gateway API ingress traffic.",
+			Labels:         map[string]string{},
+			Annotations:    map[string]string{},
+			ControllerName: controllerName,
 		},
 		waypointGatewayClassName: {
 			Description: "Specialized class for Istio ambient mesh waypoint proxies.",
@@ -379,14 +382,16 @@ func GetDefaultClassInfo(globalSettings *settings.Settings,
 			Annotations: map[string]string{
 				"ambient.istio.io/waypoint-inbound-binding": "PROXY/15088",
 			},
+			ControllerName: controllerName,
 		},
 	}
 	// Only enable agentgateway gateway class if it's enabled in the settings
 	if globalSettings.EnableAgentgateway {
 		classInfos[agwClassName] = &deployer.GatewayClassInfo{
-			Description: "Specialized class for agentgateway.",
-			Labels:      map[string]string{},
-			Annotations: map[string]string{},
+			Description:    "Specialized class for agentgateway.",
+			Labels:         map[string]string{},
+			Annotations:    map[string]string{},
+			ControllerName: agwControllerName,
 		}
 	}
 	for class, classInfo := range additionalClassInfos {

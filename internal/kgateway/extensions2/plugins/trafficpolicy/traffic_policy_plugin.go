@@ -32,18 +32,18 @@ import (
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	sdkfilters "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
@@ -189,7 +189,7 @@ func (p *TrafficPolicy) Validate() error {
 }
 
 type trafficPolicyPluginGwPass struct {
-	reporter reports.Reporter
+	reporter reporter.Reporter
 	ir.UnimplementedProxyTranslationPass
 
 	setTransformationInChain map[string]bool // TODO(nfuden): make this multi stage
@@ -224,7 +224,7 @@ func registerTypes(ourCli versioned.Interface) {
 	)
 }
 
-func NewPlugin(ctx context.Context, commoncol *common.CommonCollections, mergeSettings string, v validator.Validator) extensionsplug.Plugin {
+func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, mergeSettings string, v validator.Validator) sdk.Plugin {
 	registerTypes(commoncol.OurClient)
 
 	useRustformations = commoncol.Settings.UseRustFormations // stash the state of the env setup for rustformation usage
@@ -267,8 +267,8 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections, mergeSe
 		return pol
 	})
 
-	return extensionsplug.Plugin{
-		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
+	return sdk.Plugin{
+		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			wellknown.TrafficPolicyGVK.GroupKind(): {
 				NewGatewayTranslationPass: NewGatewayTranslationPass,
 				Policies:                  policyCol,
@@ -283,7 +283,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections, mergeSe
 	}
 }
 
-func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {
+func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
 	return &trafficPolicyPluginGwPass{
 		reporter:                 reporter,
 		setTransformationInChain: make(map[string]bool),
@@ -539,10 +539,13 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 		}
 
 		// add the specific auth filter
+		// Note that although this configures the "envoy.filters.http.ext_authz" filter, we still want
+		// the ordering to be during the AuthNStage because we are using this filter for authentication
+		// purposes
 		extauthName := extAuthFilterName(provider.Name)
 		stagedExtAuthFilter := sdkfilters.MustNewStagedFilterWithWeight(extauthName,
 			extAuthFilter,
-			plugins.DuringStage(plugins.AuthZStage),
+			plugins.DuringStage(plugins.AuthNStage),
 			provider.Extension.PrecedenceWeight,
 		)
 

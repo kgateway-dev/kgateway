@@ -106,7 +106,7 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: 'Replaced Rule (0): extauthz: gateway extension gwtest/non-existent-auth-extension
+          message: 'Replaced Rule (0): extauth: gateway extension gwtest/non-existent-auth-extension
             not found'
           reason: RouteRuleReplaced
           status: "False"
@@ -131,7 +131,7 @@ Statuses:
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: 'extauthz: gateway extension gwtest/non-existent-auth-extension
+          message: 'extauth: gateway extension gwtest/non-existent-auth-extension
             not found'
           reason: Invalid
           status: "False"

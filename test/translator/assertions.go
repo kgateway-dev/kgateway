@@ -20,13 +20,13 @@ import (
 )
 
 // AssertAcceptedPolicyStatus is a helper function to verify policy status conditions
-func AssertAcceptedPolicyStatus(t *testing.T, reportsMap reports.ReportMap, policies []reports.PolicyKey) {
+func AssertAcceptedPolicyStatus(t *testing.T, reportsMap reports.ReportMap, policies []reporter.PolicyKey) {
 	t.Helper()
 	AssertPolicyStatusWithGeneration(t, reportsMap, policies, 0)
 }
 
 // AssertPolicyStatusWithGeneration is a helper function to verify policy status conditions with a specific generation
-func AssertPolicyStatusWithGeneration(t *testing.T, reportsMap reports.ReportMap, policies []reports.PolicyKey, expectedGeneration int64) {
+func AssertPolicyStatusWithGeneration(t *testing.T, reportsMap reports.ReportMap, policies []reporter.PolicyKey, expectedGeneration int64) {
 	t.Helper()
 	r := require.New(t)
 
@@ -89,7 +89,7 @@ func AssertPolicyNotAccepted(t *testing.T, policyName, routeName string) AssertR
 		t.Helper()
 		r := require.New(t)
 
-		policy := reports.PolicyKey{
+		policy := reporter.PolicyKey{
 			Group:     "gateway.kgateway.dev",
 			Kind:      "TrafficPolicy",
 			Namespace: "gwtest",

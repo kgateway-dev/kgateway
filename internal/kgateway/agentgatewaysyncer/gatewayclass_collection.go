@@ -4,8 +4,8 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
 type GatewayClass struct {
@@ -19,7 +19,7 @@ func (g GatewayClass) ResourceName() string {
 
 func GatewayClassesCollection(
 	gatewayClasses krt.Collection[*gwv1.GatewayClass],
-	krtopts krtinternal.KrtOptions,
+	krtopts krtutil.KrtOptions,
 ) krt.Collection[GatewayClass] {
 	return krt.NewCollection(gatewayClasses, func(ctx krt.HandlerContext, obj *gwv1.GatewayClass) *GatewayClass {
 		return &GatewayClass{

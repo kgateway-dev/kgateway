@@ -19,10 +19,10 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
@@ -59,7 +59,7 @@ type WaypointQueries interface {
 }
 
 func NewQueries(
-	commonCols *common.CommonCollections,
+	commonCols *collections.CommonCollections,
 	gwQueries query.GatewayQueries,
 ) WaypointQueries {
 	waypointedServices, servicesByWaypoint, waypointByService := waypointAttachmentIndex(commonCols)
@@ -100,7 +100,7 @@ func getEffectiveNamespace(targetNs, policyNs string) string {
 
 type waypointQueries struct {
 	queries    query.GatewayQueries
-	commonCols *common.CommonCollections
+	commonCols *collections.CommonCollections
 
 	waypointedServices krt.Collection[WaypointedService]
 	servicesByWaypoint krt.Index[types.NamespacedName, WaypointedService]
@@ -257,7 +257,7 @@ func (wa WaypointedService) ResourceName() string {
 
 func doWaypointAttachment(
 	ctx krt.HandlerContext,
-	commonCols *common.CommonCollections,
+	commonCols *collections.CommonCollections,
 	svc Service,
 ) *WaypointedService {
 	// look at aliases and the actual object ns
@@ -299,7 +299,7 @@ func doWaypointAttachment(
 }
 
 func waypointAttachmentIndex(
-	commonCols *common.CommonCollections,
+	commonCols *collections.CommonCollections,
 ) (
 	krt.Collection[WaypointedService],
 	krt.Index[types.NamespacedName, WaypointedService],
@@ -333,7 +333,7 @@ func waypointAttachmentIndex(
 
 func getAliases(
 	ctx krt.HandlerContext,
-	commonCols *common.CommonCollections,
+	commonCols *collections.CommonCollections,
 	se *networkingclient.ServiceEntry,
 ) []ir.ObjectSource {
 	if len(se.Spec.GetPorts()) == 0 {

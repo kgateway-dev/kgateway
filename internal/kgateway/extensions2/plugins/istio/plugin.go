@@ -17,11 +17,11 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	ourwellknown "github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 )
 
 var VirtualIstioGK = schema.GroupKind{
@@ -53,7 +53,7 @@ func (i IstioSettings) Equals(in any) bool {
 
 var _ ir.PolicyIR = &IstioSettings{}
 
-func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
+func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
 	p := istioPlugin{}
 
 	// TODO: if plumb settings from gw class; then they should be in the new translation pass
@@ -63,8 +63,8 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		EnableAutoMtls: commoncol.Settings.EnableIstioAutoMtls,
 	}
 
-	return extensionsplug.Plugin{
-		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
+	return sdk.Plugin{
+		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			VirtualIstioGK: {
 				Name:           "istio",
 				ProcessBackend: p.processBackend,

@@ -111,7 +111,7 @@ var _ = Describe("GatewayClassProvisioner", func() {
 					if err := k8sClient.Get(ctx, types.NamespacedName{Name: className}, gc); err != nil {
 						return false
 					}
-					if gc.Spec.ControllerName != apiv1.GatewayController(gatewayControllerName) {
+					if gc.Spec.ControllerName != apiv1.GatewayController(gwControllerMap[className]) {
 						return false
 					}
 				}
@@ -229,6 +229,7 @@ var _ = Describe("GatewayClassProvisioner", func() {
 					Annotations: map[string]string{
 						"custom.annotation": "value",
 					},
+					ControllerName: gatewayControllerName,
 				},
 			}
 

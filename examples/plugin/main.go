@@ -18,13 +18,13 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	collections "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 /******
@@ -124,7 +124,7 @@ func extractTargetRefs(cm *corev1.ConfigMap) []ir.PolicyRef {
 
 // Create a collection of our policies. This will be done by converting a configmap collection
 // to our policy IR.
-func ourPolicies(commoncol *common.CommonCollections) krt.Collection[ir.PolicyWrapper] {
+func ourPolicies(commoncol *collections.CommonCollections) krt.Collection[ir.PolicyWrapper] {
 	// We create 2 collections here - one for the source config maps, and one for the policy IR.
 	// Whenever creating a new krtCollection use commoncol.KrtOpts.ToOptions("<Name>") to provide the
 	// collection with common options and a name. It's important so that the collection appears in
@@ -220,13 +220,13 @@ func (s *ourPolicyPass) HttpFilters(ctx context.Context, fc ir.FilterChainCommon
 }
 
 // A function that initializes our plugins.
-func pluginFactory(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []extensionsplug.Plugin {
-	return []extensionsplug.Plugin{
+func pluginFactory(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []sdk.Plugin {
+	return []sdk.Plugin{
 		{
-			ContributesPolicies: extensionsplug.ContributesPolicies{
-				configMapGK: extensionsplug.PolicyPlugin{
+			ContributesPolicies: sdk.ContributesPolicies{
+				configMapGK: sdk.PolicyPlugin{
 					Name: "metadataPolicy",
-					NewGatewayTranslationPass: func(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {
+					NewGatewayTranslationPass: func(ctx context.Context, tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
 						// Return a fresh new translation pass
 						return &ourPolicyPass{}
 					},

@@ -10,7 +10,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
-	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	krtutil "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
@@ -41,7 +41,7 @@ func (iu *PerClientEnvoyClusters) FetchClustersForClient(kctx krt.HandlerContext
 
 func NewPerClientEnvoyClusters(
 	ctx context.Context,
-	krtopts krtinternal.KrtOptions,
+	krtopts krtutil.KrtOptions,
 	translator *irtranslator.BackendTranslator,
 	finalBackends krt.Collection[*ir.BackendObjectIR],
 	uccs krt.Collection[ir.UniqlyConnectedClient],

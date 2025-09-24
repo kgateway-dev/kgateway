@@ -99,6 +99,10 @@ func (s *BaseTestingSuite) AfterTest(suiteName, testName string) {
 		return
 	}
 
+	if s.T().Failed() {
+		s.TestInstallation.PreFailHandler(s.Ctx)
+	}
+
 	s.DeleteManifests(testCase)
 }
 

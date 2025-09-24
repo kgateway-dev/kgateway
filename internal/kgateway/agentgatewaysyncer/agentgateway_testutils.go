@@ -33,15 +33,14 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
-	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
@@ -264,7 +263,7 @@ func marshalProtoMessages[T proto.Message](messages []T, m protojson.MarshalOpti
 	return result, nil
 }
 
-type ExtraPluginsFn func(ctx context.Context, commoncol *common.CommonCollections) []pluginsdk.Plugin
+type ExtraPluginsFn func(ctx context.Context, commoncol *collections.CommonCollections) []pluginsdk.Plugin
 
 func NewScheme(extraSchemes runtime.SchemeBuilder) *runtime.Scheme {
 	scheme := schemes.GatewayScheme()
@@ -609,8 +608,6 @@ func (tc TestCase) Run(
 
 	// ensure classes used in tests exist and point at our controller
 	gwClasses := []string{
-		wellknown.DefaultGatewayClassName,
-		wellknown.DefaultWaypointClassName,
 		wellknown.DefaultAgwClassName,
 	}
 	for _, className := range gwClasses {
@@ -624,7 +621,7 @@ func (tc TestCase) Run(
 		}, metav1.CreateOptions{})
 	}
 
-	krtOpts := krtinternal.KrtOptions{
+	krtOpts := krtutil.KrtOptions{
 		Stop: ctx.Done(),
 	}
 
@@ -661,6 +658,7 @@ func (tc TestCase) Run(
 	// Create AgwCollections with the necessary input collections
 	agwCollections, err := agwplugins.NewAgwCollections(
 		commoncol,
+		wellknown.DefaultAgwControllerName,
 		"istio-system",
 		"Kubernetes",
 	)

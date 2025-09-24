@@ -192,22 +192,28 @@ func TestApplyAIBackend(t *testing.T) {
 			aiBackend: &v1alpha1.AIBackend{
 				PriorityGroups: []v1alpha1.PriorityGroup{
 					{
-						Providers: []v1alpha1.LLMProvider{
+						Providers: []v1alpha1.NamedLLMProvider{
 							{
-								OpenAI: &v1alpha1.OpenAIConfig{
-									Model: ptr.To("gpt-3"),
-									AuthToken: v1alpha1.SingleAuthToken{
-										Kind:   v1alpha1.SingleAuthTokenKind("Inline"),
-										Inline: ptr.To("test1"),
+								Name: "openai",
+								LLMProvider: v1alpha1.LLMProvider{
+									OpenAI: &v1alpha1.OpenAIConfig{
+										Model: ptr.To("gpt-3"),
+										AuthToken: v1alpha1.SingleAuthToken{
+											Kind:   v1alpha1.SingleAuthTokenKind("Inline"),
+											Inline: ptr.To("test1"),
+										},
 									},
 								},
 							},
 							{
-								Anthropic: &v1alpha1.AnthropicConfig{
-									Model: ptr.To("claude"),
-									AuthToken: v1alpha1.SingleAuthToken{
-										Kind:   v1alpha1.SingleAuthTokenKind("Inline"),
-										Inline: ptr.To("test2"),
+								Name: "anthropic",
+								LLMProvider: v1alpha1.LLMProvider{
+									Anthropic: &v1alpha1.AnthropicConfig{
+										Model: ptr.To("claude"),
+										AuthToken: v1alpha1.SingleAuthToken{
+											Kind:   v1alpha1.SingleAuthTokenKind("Inline"),
+											Inline: ptr.To("test2"),
+										},
 									},
 								},
 							},

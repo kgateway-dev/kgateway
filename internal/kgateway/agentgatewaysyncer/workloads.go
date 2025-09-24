@@ -8,7 +8,7 @@ import (
 	discovery "k8s.io/api/discovery/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 
 	"istio.io/api/annotation"
@@ -45,7 +45,7 @@ func (a *index) WorkloadsCollection(
 	nodes krt.Collection[Node],
 	workloadServices krt.Collection[ServiceInfo],
 	endpointSlices krt.Collection[*discovery.EndpointSlice],
-	krtopts krtinternal.KrtOptions,
+	krtopts krtutil.KrtOptions,
 ) krt.Collection[WorkloadInfo] {
 	WorkloadServicesNamespaceIndex := krt.NewNamespaceIndex(workloadServices)
 	EndpointSlicesByIPIndex := endpointSliceAddressIndex(endpointSlices)

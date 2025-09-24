@@ -6,6 +6,23 @@ Addresses:
     ports:
     - servicePort: 80
 Backends:
+- ai:
+    providerGroups:
+    - providers:
+      - name: openai
+        openai:
+          model: gpt-4o
+      - anthropic:
+          model: claude-3-opus-20240229
+        name: anthropic
+  name: default/ai-groups
+- ai:
+    providerGroups:
+    - providers:
+      - anthropic:
+          model: claude-3-opus-20240229
+        name: backend
+  name: default/anthropic-single
 - mcp:
     targets:
     - backend:
@@ -24,6 +41,13 @@ Backends:
   static:
     host: mcp-app.foo
     port: 8000
+- ai:
+    providerGroups:
+    - providers:
+      - name: backend
+        openai:
+          model: gpt-4o
+  name: default/openai-single
 Binds:
 - key: 80/default/example-gateway
   port: 80
@@ -34,6 +58,38 @@ Listeners:
   name: http
   protocol: HTTP
 Policies:
+- name: auth-default/ai-groups-anthropic
+  spec:
+    auth:
+      key:
+        secret: sk-anthropic-primary
+  target:
+    subBackend: default/ai-groups/anthropic
+- name: auth-default/anthropic-single-backend
+  spec:
+    auth:
+      key:
+        secret: sk-anthropic-primary
+  target:
+    subBackend: default/anthropic-single/backend
+- name: default/ai-tls-all-groups:0:backendtls
+  spec:
+    backendTls:
+      hostname: baz
+  target:
+    backend: default/ai-groups
+- name: default/ai-tls:0:backendtls
+  spec:
+    backendTls:
+      hostname: foo
+  target:
+    subBackend: default/ai-groups/anthropic
+- name: default/ai-tls:1:backendtls
+  spec:
+    backendTls:
+      hostname: foo
+  target:
+    subBackend: default/openai-single/backend
 - name: default/mcp-tls-ca-cert:0:backendtls
   spec:
     backendTls:
@@ -78,4 +134,28 @@ Routes:
   matches:
   - path:
       pathPrefix: /mcp-svc
+  routeName: default/example-route
+- backends:
+  - backend:
+      backend: default/ai-groups
+    weight: 1
+  hostnames:
+  - example.com
+  key: default/example-route.2.0.http
+  listenerKey: default/example-gateway.http
+  matches:
+  - path:
+      pathPrefix: /ai-groups
+  routeName: default/example-route
+- backends:
+  - backend:
+      backend: default/openai-single
+    weight: 1
+  hostnames:
+  - example.com
+  key: default/example-route.3.0.http
+  listenerKey: default/example-gateway.http
+  matches:
+  - path:
+      pathPrefix: /openai-single
   routeName: default/example-route

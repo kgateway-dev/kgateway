@@ -352,26 +352,32 @@ func TestProcessAIBackend_MultiPool(t *testing.T) {
 	aiBackend := &v1alpha1.AIBackend{
 		PriorityGroups: []v1alpha1.PriorityGroup{
 			{
-				Providers: []v1alpha1.LLMProvider{
+				Providers: []v1alpha1.NamedLLMProvider{
 					{
-						OpenAI: &v1alpha1.OpenAIConfig{
-							Model: &model1,
-							AuthToken: v1alpha1.SingleAuthToken{
-								Kind:   v1alpha1.Inline,
-								Inline: ptr.To("primary-token"),
+						Name: "openai-primary",
+						LLMProvider: v1alpha1.LLMProvider{
+							OpenAI: &v1alpha1.OpenAIConfig{
+								Model: &model1,
+								AuthToken: v1alpha1.SingleAuthToken{
+									Kind:   v1alpha1.Inline,
+									Inline: ptr.To("primary-token"),
+								},
 							},
 						},
 					},
 				},
 			},
 			{
-				Providers: []v1alpha1.LLMProvider{
+				Providers: []v1alpha1.NamedLLMProvider{
 					{
-						OpenAI: &v1alpha1.OpenAIConfig{
-							Model: &model2,
-							AuthToken: v1alpha1.SingleAuthToken{
-								Kind:   v1alpha1.Inline,
-								Inline: ptr.To("fallback-token"),
+						Name: "openai-fallback",
+						LLMProvider: v1alpha1.LLMProvider{
+							OpenAI: &v1alpha1.OpenAIConfig{
+								Model: &model2,
+								AuthToken: v1alpha1.SingleAuthToken{
+									Kind:   v1alpha1.Inline,
+									Inline: ptr.To("fallback-token"),
+								},
 							},
 						},
 					},

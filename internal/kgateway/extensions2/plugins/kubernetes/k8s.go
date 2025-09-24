@@ -14,18 +14,18 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/api/settings"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
 const BackendClusterPrefix = "kube"
 
-func NewPlugin(ctx context.Context, commonCol *common.CommonCollections) extensionsplug.Plugin {
+func NewPlugin(ctx context.Context, commonCol *collections.CommonCollections) sdk.Plugin {
 	epSliceClient := kclient.NewFiltered[*discoveryv1.EndpointSlice](
 		commonCol.Client,
 		kclient.Filter{ObjectFilter: commonCol.Client.ObjectFilter()},
@@ -36,12 +36,12 @@ func NewPlugin(ctx context.Context, commonCol *common.CommonCollections) extensi
 
 func NewPluginFromCollections(
 	ctx context.Context,
-	krtOpts krtinternal.KrtOptions,
+	krtOpts krtutil.KrtOptions,
 	pods krt.Collection[krtcollections.LocalityPod],
 	services krt.Collection[*corev1.Service],
 	endpointSlices krt.Collection[*discoveryv1.EndpointSlice],
 	stngs settings.Settings,
-) extensionsplug.Plugin {
+) sdk.Plugin {
 	k8sServiceBackends := krt.NewManyCollection(services, func(kctx krt.HandlerContext, svc *corev1.Service) []ir.BackendObjectIR {
 		uss := []ir.BackendObjectIR{}
 		for _, port := range svc.Spec.Ports {
@@ -53,8 +53,8 @@ func NewPluginFromCollections(
 	inputs := krtcollections.NewGlooK8sEndpointInputs(stngs, krtOpts, endpointSlices, pods, k8sServiceBackends)
 	k8sServiceEndpoints := krtcollections.NewK8sEndpoints(ctx, inputs)
 
-	return extensionsplug.Plugin{
-		ContributesBackends: map[schema.GroupKind]extensionsplug.BackendPlugin{
+	return sdk.Plugin{
+		ContributesBackends: map[schema.GroupKind]sdk.BackendPlugin{
 			wellknown.ServiceGVK.GroupKind(): {
 				BackendInit: ir.BackendInit{
 					InitEnvoyBackend: processBackend,
@@ -64,7 +64,7 @@ func NewPluginFromCollections(
 			},
 		},
 		// TODO consider ContibutesPolicies allowing backendRef by networking.istio.io/Hostname
-		// wellknown.ServiceGCK.GroupKind(): extensionsplug.PolicyPlugin{
+		// wellknown.ServiceGCK.GroupKind(): sdk.PolicyPlugin{
 		// 	GetBackendForRef: getBackendForHostnameRef,
 		// },
 	}

@@ -4,13 +4,13 @@ import (
 	api "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	common "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 var GetGatewayIR = DefaultGatewayIRGetter
 
-func DefaultGatewayIRGetter(gw *api.Gateway, commonCollections *common.CommonCollections) *ir.Gateway {
+func DefaultGatewayIRGetter(gw *api.Gateway, commonCollections *collections.CommonCollections) *ir.Gateway {
 	gwKey := ir.ObjectSource{
 		Group:     wellknown.GatewayGVK.GroupKind().Group,
 		Kind:      wellknown.GatewayGVK.GroupKind().Kind,

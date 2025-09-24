@@ -235,6 +235,7 @@ func (c *AgwCollections) HasSynced() bool {
 // and InitPlugins must be called.
 func NewAgwCollections(
 	commoncol *collections.CommonCollections,
+	agwControllerName string,
 	systemNamespace string,
 	clusterID string,
 ) (*AgwCollections, error) {
@@ -245,7 +246,7 @@ func NewAgwCollections(
 
 	agwCollections := &AgwCollections{
 		Client:          commoncol.Client,
-		ControllerName:  commoncol.ControllerName,
+		ControllerName:  agwControllerName,
 		SystemNamespace: systemNamespace,
 		ClusterID:       clusterID,
 

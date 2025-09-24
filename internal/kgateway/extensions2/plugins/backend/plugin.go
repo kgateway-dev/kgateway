@@ -21,8 +21,6 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/backend/ai"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
@@ -31,8 +29,10 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 var logger = logging.New("plugin/backend")
@@ -78,7 +78,7 @@ func registerTypes(ourCli versioned.Interface) {
 	)
 }
 
-func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
+func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
 	registerTypes(commoncol.OurClient)
 
 	col := krt.WrapClient(kclient.NewFiltered[*v1alpha1.Backend](
@@ -115,8 +115,8 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	endpoints := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *ir.EndpointsForBackend {
 		return processEndpoints(i)
 	})
-	return extensionsplug.Plugin{
-		ContributesBackends: map[schema.GroupKind]extensionsplug.BackendPlugin{
+	return sdk.Plugin{
+		ContributesBackends: map[schema.GroupKind]sdk.BackendPlugin{
 			gk: {
 				BackendInit: ir.BackendInit{
 					InitEnvoyBackend: processBackendForEnvoy,
@@ -125,7 +125,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				Backends:  bcol,
 			},
 		},
-		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
+		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			wellknown.BackendGVK.GroupKind(): {
 				Name:                      "backend",
 				NewGatewayTranslationPass: newPlug,
@@ -222,7 +222,7 @@ func buildTranslateFunc(
 				backendIr.AIIr.AIMultiSecret = map[string]*ir.Secret{}
 				for idx, group := range i.Spec.AI.PriorityGroups {
 					for jdx, provider := range group.Providers {
-						secretRef := getAISecretRef(&provider)
+						secretRef := getAISecretRef(&provider.LLMProvider)
 						if secretRef == nil {
 							continue
 						}
@@ -348,7 +348,7 @@ type backendPlugin struct {
 
 var _ ir.ProxyTranslationPass = &backendPlugin{}
 
-func newPlug(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {
+func newPlug(ctx context.Context, tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
 	return &backendPlugin{}
 }
 

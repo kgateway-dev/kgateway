@@ -35,12 +35,14 @@ spec:
   ai:
     priorityGroups:
     - providers:
-      - openai:
+      - name: openai
+        openai:
           model: "gpt-4"
           authToken:
             kind: "Inline"
             inline: "sk-openai-primary-key"
-      - anthropic:
+      - name: anthropic
+        anthropic:
           model: "claude-3-opus-20240229"
           authToken:
             kind: "Inline"

@@ -367,7 +367,7 @@ func createTransformationTemplate(aiBackend *v1alpha1.AIBackend) *envoytransform
 	} else if len(aiBackend.PriorityGroups) > 0 {
 		// We already know that all the backends are the same type so we can just take the first one
 		provider := aiBackend.PriorityGroups[0].Providers[0]
-		headerName, prefix, path, bodyTransformation = getTransformation(&provider)
+		headerName, prefix, path, bodyTransformation = getTransformation(&provider.LLMProvider)
 	}
 	transformationTemplate.GetHeaders()[headerName] = &envoytransformation.InjaTemplate{
 		Text: prefix + `{% if host_metadata("auth_token") != "" %}{{host_metadata("auth_token")}}{% else %}{{dynamic_metadata("auth_token","ai.kgateway.io")}}{% endif %}`,

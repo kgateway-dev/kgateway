@@ -25,11 +25,11 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	plug "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
@@ -54,7 +54,7 @@ func NewStatusSyncer(
 	controllerName string,
 	agentgatewayClassName string,
 	client kube.Client,
-	commonCols *common.CommonCollections,
+	commonCols *collections.CommonCollections,
 	reportQueue utils.AsyncQueue[reports.ReportMap],
 	backendPolicyReportQueue utils.AsyncQueue[reports.ReportMap],
 	cacheSyncs []cache.InformerSynced,
