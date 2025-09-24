@@ -29,7 +29,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
-// AgwRouteCollection creates the collection of translated routes
+// AgwRouteCollection creates the collection of translated Routes
 func AgwRouteCollection(
 	httpRouteCol krt.Collection[*gwv1.HTTPRoute],
 	grpcRouteCol krt.Collection[*gwv1.GRPCRoute],
@@ -115,7 +115,7 @@ func AgwRouteCollection(
 //   - NoMatchingListenerHostname => otherwise
 func ProcessParentReferences[T any](
 	parentRefs []RouteParentReference,
-	gwResult conversionResult[T],
+	gwResult ConversionResult[T],
 	routeNN types.NamespacedName, // <-- route namespace/name so we can detect cross-NS parents
 	routeReporter reporter.RouteReporter,
 	resourceMapper func(T, RouteParentReference) *api.Resource,
@@ -154,7 +154,7 @@ func ProcessParentReferences[T any](
 	}
 
 	// If conversion (backend/filter resolution) failed, ResolvedRefs=False for all parents.
-	resolvedOK := (gwResult.error == nil)
+	resolvedOK := (gwResult.Error == nil)
 
 	// Consider each raw parentRef (listener-scoped) for mapping.
 	for _, parent := range parentRefs {
@@ -174,7 +174,7 @@ func ProcessParentReferences[T any](
 			continue
 		}
 		var mapped []*api.Resource
-		routes := gwResult.routes
+		routes := gwResult.Routes
 		mapped = make([]*api.Resource, 0, len(routes))
 		for i := range routes {
 			if r := resourceMapper(routes[i], parent); r != nil {
@@ -197,7 +197,7 @@ func ProcessParentReferences[T any](
 			prStatusRef.SectionName = nil
 		}
 		pr := routeReporter.ParentRef(&prStatusRef)
-		resolvedReason := reasonResolvedRefs(gwResult.error, resolvedOK)
+		resolvedReason := reasonResolvedRefs(gwResult.Error, resolvedOK)
 
 		if a.anyAllowed {
 			pr.SetCondition(reporter.RouteCondition{
@@ -239,8 +239,8 @@ func ProcessParentReferences[T any](
 			}(),
 			Reason: resolvedReason,
 			Message: func() string {
-				if gwResult.error != nil {
-					return gwResult.error.Message
+				if gwResult.Error != nil {
+					return gwResult.Error.Message
 				}
 				return ""
 			}(),
@@ -322,10 +322,10 @@ func createRouteCollectionGeneric[T controllers.Object, R comparable](
 
 		// gateway -> section name -> route count
 		routeNN := types.NamespacedName{Namespace: obj.GetNamespace(), Name: obj.GetName()}
-		ln := listenersPerGateway(parentRefs)
+		ln := ListenersPerGateway(parentRefs)
 		allowedParents := FilteredReferences(parentRefs)
 		attachedRoutes := buildAttachedRoutesMapAllowed(allowedParents, routeNN)
-		ensureZeroes(attachedRoutes, ln)
+		EnsureZeroes(attachedRoutes, ln)
 
 		resourcesPerGateway := ProcessParentReferences[R](
 			parentRefs,
@@ -413,9 +413,9 @@ func createTCPRouteCollection[T controllers.Object](
 	)
 }
 
-// listenersPerGateway returns the set of listener sectionNames referenced for each Parent Gateway,
+// ListenersPerGateway returns the set of listener sectionNames referenced for each Parent Gateway,
 // regardless of whether they are allowed.
-func listenersPerGateway(parentRefs []RouteParentReference) map[types.NamespacedName]map[string]struct{} {
+func ListenersPerGateway(parentRefs []RouteParentReference) map[types.NamespacedName]map[string]struct{} {
 	l := make(map[types.NamespacedName]map[string]struct{})
 	for _, p := range parentRefs {
 		if p.ParentKey.Kind != wellknown.GatewayGVK {
@@ -430,9 +430,9 @@ func listenersPerGateway(parentRefs []RouteParentReference) map[types.Namespaced
 	return l
 }
 
-// ensureZeroes pre-populates AttachedRoutes with explicit 0 entries for every referenced listener,
+// EnsureZeroes pre-populates AttachedRoutes with explicit 0 entries for every referenced listener,
 // so writers that "replace" rather than "merge" will correctly set zero.
-func ensureZeroes(
+func EnsureZeroes(
 	attached map[types.NamespacedName]map[string]uint,
 	ln map[types.NamespacedName]map[string]struct{},
 ) {
@@ -448,9 +448,9 @@ func ensureZeroes(
 	}
 }
 
-type conversionResult[O any] struct {
-	error  *reporter.RouteCondition
-	routes []O
+type ConversionResult[O any] struct {
+	Error  *reporter.RouteCondition
+	Routes []O
 }
 
 // IsNil works around comparing generic types
@@ -463,22 +463,22 @@ func IsNil[O comparable](o O) bool {
 func computeRoute[T controllers.Object, O comparable](ctx RouteContext, obj T, translator func(
 	obj T,
 ) iter.Seq2[O, *reporter.RouteCondition],
-) ([]RouteParentReference, conversionResult[O]) {
+) ([]RouteParentReference, ConversionResult[O]) {
 	parentRefs := extractParentReferenceInfo(ctx, ctx.RouteParents, obj)
 
-	convertRules := func() conversionResult[O] {
-		res := conversionResult[O]{}
+	convertRules := func() ConversionResult[O] {
+		res := ConversionResult[O]{}
 		for vs, err := range translator(obj) {
-			// This was a hard error
+			// This was a hard Error
 			if err != nil && IsNil(vs) {
-				res.error = err
-				return conversionResult[O]{error: err}
+				res.Error = err
+				return ConversionResult[O]{Error: err}
 			}
-			// Got an error but also routes
+			// Got an Error but also Routes
 			if err != nil {
-				res.error = err
+				res.Error = err
 			}
-			res.routes = append(res.routes, vs)
+			res.Routes = append(res.Routes, vs)
 		}
 		return res
 	}
@@ -530,7 +530,7 @@ func (r RouteWithKey) Equals(o RouteWithKey) bool {
 	return r.Config.Equals(o.Config)
 }
 
-// buildGatewayRoutes contains common logic to build a set of routes with v1/alpha2 semantics
+// buildGatewayRoutes contains common logic to build a set of Routes with v1/alpha2 semantics
 func buildGatewayRoutes[T any](convertRules func() T) T {
 	return convertRules()
 }

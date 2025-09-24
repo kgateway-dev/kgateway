@@ -128,22 +128,22 @@ func processRouteMatches(r *gwv1.HTTPRouteRule, res *api.Route) error {
 	for _, match := range r.Matches {
 		path, err := CreateAgwPathMatch(match)
 		if err != nil {
-			return fmt.Errorf("path match error: %v", err)
+			return fmt.Errorf("path match Error: %v", err)
 		}
 
 		headers, err := CreateAgwHeadersMatch(match)
 		if err != nil {
-			return fmt.Errorf("headers match error: %v", err)
+			return fmt.Errorf("headers match Error: %v", err)
 		}
 
 		method, err := CreateAgwMethodMatch(match)
 		if err != nil {
-			return fmt.Errorf("method match error: %v", err)
+			return fmt.Errorf("method match Error: %v", err)
 		}
 
 		query, err := CreateAgwQueryMatch(match)
 		if err != nil {
-			return fmt.Errorf("query match error: %v", err)
+			return fmt.Errorf("query match Error: %v", err)
 		}
 
 		res.Matches = append(res.GetMatches(), &api.RouteMatch{
@@ -182,7 +182,7 @@ func convertHostnames(hostnames []gwv1.Hostname) []string {
 	})
 }
 
-// Helper function to determine if error response should be injected
+// Helper function to determine if Error response should be injected
 func shouldInjectErrorResponse(backendErr *reporter.RouteCondition) bool {
 	return backendErr != nil &&
 		(backendErr.Reason == gwv1.RouteReasonInvalidKind ||
@@ -209,12 +209,12 @@ func injectDirectResponseFilter(res *api.Route, namespace, name string) {
 	res.Filters = append([]*api.RouteFilter{drf}, res.Filters...)
 }
 
-// Helper function to determine if filter error is critical
+// Helper function to determine if filter Error is critical
 func isFilterErrorCritical(filterError *reporter.RouteCondition) bool {
 	criticalReasons := []gwv1.RouteConditionReason{
 		"FilterNotSupported",
 		"FilterConfigInvalid",
-		// Add other critical filter error reasons as needed
+		// Add other critical filter Error reasons as needed
 	}
 
 	for _, reason := range criticalReasons {
@@ -353,7 +353,7 @@ func ConvertTLSRouteToAgw(ctx RouteContext, r gwv1alpha2.TLSRouteRule,
 	}
 	res.Backends = route
 
-	// TLS routes have hostnames in the spec (unlike TCP routes)
+	// TLS Routes have hostnames in the spec (unlike TCP Routes)
 	res.Hostnames = slices.Map(obj.Spec.Hostnames, func(e gwv1.Hostname) string {
 		return string(e)
 	})
@@ -375,10 +375,10 @@ func buildAgwTCPDestination(
 	for _, fwd := range forwardTo {
 		dst, err := buildAgwDestination(ctx, gwv1.HTTPBackendRef{
 			BackendRef: fwd,
-			Filters:    nil, // TCP routes don't have per-backend filters?
+			Filters:    nil, // TCP Routes don't have per-backend filters?
 		}, ns, wellknown.TCPRouteGVK, ctx.Backends)
 		if err != nil {
-			logger.Error("error building agent gateway destination", "error", err)
+			logger.Error("Error building agent gateway destination", "Error", err)
 			if isInvalidBackend(err) {
 				invalidBackendErr = err
 				// keep going, we will gracefully drop invalid backends
@@ -405,10 +405,10 @@ func buildAgwTLSDestination(
 	for _, fwd := range forwardTo {
 		dst, err := buildAgwDestination(ctx, gwv1.HTTPBackendRef{
 			BackendRef: fwd,
-			Filters:    nil, // TLS routes don't have per-backend filters
+			Filters:    nil, // TLS Routes don't have per-backend filters
 		}, ns, wellknown.TLSRouteGVK, ctx.Backends)
 		if err != nil {
-			logger.Error("error building agent gateway destination", "error", err)
+			logger.Error("Error building agent gateway destination", "Error", err)
 			if isInvalidBackend(err) {
 				invalidBackendErr = err
 				// keep going, we will gracefully drop invalid backends
@@ -421,7 +421,7 @@ func buildAgwTLSDestination(
 	return res, invalidBackendErr, nil
 }
 
-// terminalFilterCombinationError creates a standardized error message for when multiple terminal filters are used together
+// terminalFilterCombinationError creates a standardized Error message for when multiple terminal filters are used together
 func terminalFilterCombinationError(existingFilter, newFilter string) string {
 	return fmt.Sprintf("Cannot combine multiple terminal filters: %s and %s are mutually exclusive. Only one terminal filter is allowed per route rule.", existingFilter, newFilter)
 }
@@ -557,7 +557,7 @@ func buildAgwHTTPDestination(
 	for _, fwd := range forwardTo {
 		dst, err := buildAgwDestination(ctx, fwd, ns, wellknown.HTTPRouteGVK, ctx.Backends)
 		if err != nil {
-			logger.Error("erroring building agent gateway destination", "error", err)
+			logger.Error("erroring building agent gateway destination", "Error", err)
 			if isInvalidBackend(err) {
 				invalidBackendErr = err
 				// keep going, we will gracefully drop invalid backends
@@ -1076,7 +1076,7 @@ func ExtractGatewayServices(kgw *gwv1.Gateway) ([]string, *reporter.RouteConditi
 		gatewayServices = append(gatewayServices, fqdn)
 	}
 	if len(skippedAddresses) > 0 {
-		// Give error but return services, this is a soft failure
+		// Give Error but return services, this is a soft failure
 		return gatewayServices, &reporter.RouteCondition{
 			Type:    gwv1.RouteConditionAccepted,
 			Status:  metav1.ConditionFalse,
@@ -1085,7 +1085,7 @@ func ExtractGatewayServices(kgw *gwv1.Gateway) ([]string, *reporter.RouteConditi
 		}
 	}
 	if _, f := kgw.Annotations[annotation.NetworkingServiceType.Name]; f {
-		// Give error but return services, this is a soft failure
+		// Give Error but return services, this is a soft failure
 		// Remove entirely in 1.20
 		return gatewayServices, &reporter.RouteCondition{
 			Type:    gwv1.RouteConditionAccepted,

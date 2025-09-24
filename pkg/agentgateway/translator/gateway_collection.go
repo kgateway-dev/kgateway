@@ -44,7 +44,7 @@ func ToAgwResource(t any) *api.Resource {
 	panic("unknown resource kind")
 }
 
-// ToResourceWithRoutes converts a collection of resources to an agentgateway resource group for that gateway, along with attached routes
+// ToResourceWithRoutes converts a collection of resources to an agentgateway resource group for that gateway, along with attached Routes
 func ToResourceWithRoutes(gw types.NamespacedName, resources []*api.Resource, attachedRoutes map[string]uint, rm reports.ReportMap) ir.AgwResourcesForGateway {
 	return ir.AgwResourcesForGateway{
 		Resources:      resources,
@@ -228,7 +228,7 @@ func GatewayCollection(
 		}
 
 		for i, l := range kgw.Listeners {
-			// Attached routes count starts at 0 and gets updated later in the status syncer
+			// Attached Routes count starts at 0 and gets updated later in the status syncer
 			// when the real count is available after route processing
 			attachedCount := int32(0) // Default to 0 if not found
 
@@ -304,7 +304,7 @@ func GatewayCollection(
 	return gw
 }
 
-// RouteParents holds information about things routes can reference as parents.
+// RouteParents holds information about things Routes can reference as parents.
 type RouteParents struct {
 	Gateways     krt.Collection[GatewayListener]
 	GatewayIndex krt.Index[ParentKey, GatewayListener]
