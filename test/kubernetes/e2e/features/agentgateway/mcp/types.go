@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"path/filepath"
+	"time"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
@@ -61,7 +62,11 @@ type InitializeResponse struct {
 }
 
 // mcpProto is the protocol version for the MCP server
-const mcpProto = "2025-03-26"
+const (
+	mcpProto   = "2025-03-26"
+	httpOKCode = 200
+	warmupTime = 75 * time.Millisecond
+)
 
 var (
 	_ e2e.NewSuiteFunc = NewTestingSuite

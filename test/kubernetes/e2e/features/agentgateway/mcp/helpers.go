@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os/exec"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -104,7 +105,7 @@ func (s *testingSuite) testToolsListWithSession(sessionID string) {
 		s.notifyInitialized(sessionID)
 		out, err = s.execCurlMCP(8080, headers, mcpRequest, "-N", "--max-time", "10")
 		s.Require().NoError(err, "tools/list retry curl failed")
-		s.requireHTTPStatus(out, 200)
+		s.requireHTTPStatus(out, httpOKCode)
 		payload, ok = FirstSSEDataPayload(out)
 	}
 	s.Require().True(ok, "expected SSE data payload in tools/list (after retry)")
@@ -121,7 +122,7 @@ func (s *testingSuite) testToolsListWithSession(sessionID string) {
 		return
 	}
 
-	s.requireHTTPStatus(out, 200)
+	s.requireHTTPStatus(out, httpOKCode)
 	s.Require().NotNil(resp.Result, "tools/list missing result")
 	s.T().Logf("tools: %d", len(resp.Result.Tools))
 	// If you expect at least one tool:
@@ -138,7 +139,7 @@ func (s *testingSuite) notifyInitialized(sessionID string) {
 		s.T().Log("notifyInitialized hit 401; session likely already GC’d")
 	}
 	// Allow the gateway to register the session before the first RPC.
-	time.Sleep(75 * time.Millisecond)
+	time.Sleep(warmupTime)
 }
 
 // helper to run a request via curl pod to a given path and return combined output
@@ -275,7 +276,7 @@ func (s *testingSuite) mustListTools(sessionID, label string, routeHeaders map[s
 	headers := withRouteHeaders(withSessionID(mcpHeaders(), sessionID), routeHeaders)
 	out, err := s.execCurlMCP(8080, headers, mcpRequest, "-N", "--max-time", "10")
 	s.Require().NoError(err, "%s curl failed", label)
-	s.requireHTTPStatus(out, 200)
+	s.requireHTTPStatus(out, httpOKCode)
 
 	payload, ok := FirstSSEDataPayload(out)
 	s.Require().True(ok, "%s expected SSE data payload", label)
@@ -292,7 +293,7 @@ func (s *testingSuite) mustListTools(sessionID, label string, routeHeaders map[s
 			s.notifyInitializedWithHeaders(sessionID, routeHeaders)
 			out, err = s.execCurlMCP(8080, headers, mcpRequest, "-N", "--max-time", "10")
 			s.Require().NoError(err, "%s retry curl failed", label)
-			s.requireHTTPStatus(out, 200)
+			s.requireHTTPStatus(out, httpOKCode)
 			payload, ok = FirstSSEDataPayload(out)
 			s.Require().True(ok, "%s expected SSE data payload (retry)", label)
 			s.Require().NoError(json.Unmarshal([]byte(payload), &resp), "%s unmarshal failed (retry)", label)
@@ -314,7 +315,7 @@ func (s *testingSuite) notifyInitializedWithHeaders(sessionID string, routeHeade
 	headers := withRouteHeaders(withSessionID(mcpHeaders(), sessionID), routeHeaders)
 	_, _ = s.execCurlMCP(8080, headers, mcpRequest, "-N", "--max-time", "5")
 	// Allow the gateway to register the session before the first RPC.
-	time.Sleep(75 * time.Millisecond)
+	time.Sleep(warmupTime)
 }
 
 func (s *testingSuite) initializeSession(initBody string, hdr map[string]string, label string) string {
@@ -356,38 +357,38 @@ func (s *testingSuite) initializeSession(initBody string, hdr map[string]string,
 }
 
 func (s *testingSuite) waitForMCP200(
-    port int,
-    headers map[string]string,
-    body string,
-    label string,
-    backoffs ...time.Duration,
+	port int,
+	headers map[string]string,
+	body string,
+	label string,
+	backoffs ...time.Duration,
 ) {
-    if len(backoffs) == 0 {
-        backoffs = []time.Duration{
-            100 * time.Millisecond, 250 * time.Millisecond,
-            500 * time.Millisecond, 1 * time.Second,
-        }
-    }
+	if len(backoffs) == 0 {
+		backoffs = []time.Duration{
+			100 * time.Millisecond, 250 * time.Millisecond,
+			500 * time.Millisecond, 1 * time.Second,
+		}
+	}
 
-    var (
-        status string
-        err    error
-    )
-    for attempt := 0; attempt <= len(backoffs); attempt++ {
-        status, err = s.execCurlMCPStatus(port, headers, body, "--max-time", "10")
-        if err == nil && strings.TrimSpace(status) == "200" {
-            s.T().Logf("%s init ready (status=%s)", label, status)
-            return
-        }
-        if attempt < len(backoffs) {
-            if err != nil {
-                s.T().Logf("%s init status probe err: %v", label, err)
-            }
-            s.T().Logf("%s init status=%q; retrying in %s", label, status, backoffs[attempt])
-            time.Sleep(backoffs[attempt])
-            continue
-        }
-        s.Require().NoError(err, "%s initialize status probe failed", label)
-        s.Require().Equal("200", strings.TrimSpace(status), "expected HTTP 200")
-    }
+	var (
+		status string
+		err    error
+	)
+	for attempt := 0; attempt <= len(backoffs); attempt++ {
+		status, err = s.execCurlMCPStatus(port, headers, body, "--max-time", "10")
+		if err == nil && strings.TrimSpace(status) == strconv.Itoa(httpOKCode) {
+			s.T().Logf("%s init ready (status=%s)", label, status)
+			return
+		}
+		if attempt < len(backoffs) {
+			if err != nil {
+				s.T().Logf("%s init status probe err: %v", label, err)
+			}
+			s.T().Logf("%s init status=%q; retrying in %s", label, status, backoffs[attempt])
+			time.Sleep(backoffs[attempt])
+			continue
+		}
+		s.Require().NoError(err, "%s initialize status probe failed", label)
+		s.Require().Equal(httpOKCode, strings.TrimSpace(status), "expected HTTP "+strconv.Itoa(httpOKCode))
+	}
 }

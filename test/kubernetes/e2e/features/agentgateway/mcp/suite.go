@@ -56,7 +56,7 @@ func (s *testingSuite) TestSSEEndpoint() {
 	out, err := s.execCurlMCP(8080, headers, initBody, "-N", "--max-time", "8")
 	s.Require().NoError(err, "SSE initialize curl failed")
 
-	s.requireHTTPStatus(out, 200)
+	s.requireHTTPStatus(out, httpOKCode)
 	ctRe := regexp.MustCompile(`(?mi)^<\s*content-type:\s*text/event-stream\b`)
 	if ctRe.FindStringIndex(out) == nil {
 		s.T().Logf("missing text/event-stream content-type: %s", out)
@@ -72,7 +72,7 @@ func (s *testingSuite) TestDynamicMCPAdminRouting() {
 	s.T().Log("Testing dynamic MCP routing for admin user")
 	adminTools := s.runDynamicRoutingCase("admin-client", map[string]string{"user-type": "admin"}, "admin")
 	// Admin will have more than two tools
-	s.Require().GreaterOrEqual(len(adminTools), 2, "admin should expose at least one tool")
+	s.Require().GreaterOrEqual(len(adminTools), 2, "admin should expose than two tools")
 	s.T().Logf("admin tools: %s", strings.Join(adminTools, ", "))
 	s.T().Log("Admin routing working correctly")
 }
@@ -82,7 +82,7 @@ func (s *testingSuite) TestDynamicMCPUserRouting() {
 	s.T().Log("Testing dynamic MCP routing for regular user")
 	userTools := s.runDynamicRoutingCase("user-client", map[string]string{"user-type": "user"}, "user")
 	// user should expose only one tool
-	s.Require().Equal(len(userTools), 1, "user should expose at least one tool")
+	s.Require().Equal(len(userTools), 1, "user should expose exactly one tool")
 	s.T().Logf("user tools: %s", strings.Join(userTools, ", "))
 	s.T().Log("User routing working correctly")
 }
@@ -92,7 +92,7 @@ func (s *testingSuite) TestDynamicMCPDefaultRouting() {
 	s.T().Log("Testing dynamic MCP routing with no header (default to user)")
 	defTools := s.runDynamicRoutingCase("default-client", map[string]string{}, "default")
 	// default uses user backend and should expose only one tool available
-	s.Require().Equal(len(defTools), 1, "default/user should expose at least one tool")
+	s.Require().Equal(len(defTools), 1, "default/user should expose exactly one tool")
 	s.T().Logf("default tools: %s", strings.Join(defTools, ", "))
 	s.T().Log("Default routing working correctly")
 }
