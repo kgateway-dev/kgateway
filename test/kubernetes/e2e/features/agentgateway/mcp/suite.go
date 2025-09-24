@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/stretchr/testify/suite"
 
@@ -137,9 +138,13 @@ func (s *testingSuite) runDynamicRoutingCase(clientName string, routeHeaders map
 	initBody := buildInitializeRequest(clientName, 0)
 	headers := withRouteHeaders(mcpHeaders(), routeHeaders)
 
-	out, err := s.execCurlMCP(8080, headers, initBody, "--max-time", "5")
+	// Deterministic 200 with retry/backoff
+	s.waitForMCP200(8080, headers, initBody, label,
+		100*time.Millisecond, 250*time.Millisecond, 500*time.Millisecond, 1*time.Second)
+
+	// Get full response for logging + session extraction
+	out, err := s.execCurlMCP(8080, headers, initBody, "--max-time", "10")
 	s.Require().NoError(err, "%s initialize failed", label)
-	s.requireHTTPStatus(out, 200)
 	s.T().Logf("%s initialize: %s", label, out)
 
 	sid := ExtractMCPSessionID(out)

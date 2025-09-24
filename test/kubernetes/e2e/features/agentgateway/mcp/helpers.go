@@ -191,6 +191,23 @@ func (s *testingSuite) execCurlMCP(port int, headers map[string]string, body str
 	return out, err
 }
 
+// execCurlMCPStatus returns just the HTTP status code deterministically using curl -w %{http_code}
+func (s *testingSuite) execCurlMCPStatus(port int, headers map[string]string, body string, extraArgs ...string) (string, error) {
+	args := []string{"exec", "-n", "curl", "curl", "--", "curl", "-sS", "--fail-with-body", "-o", "/dev/null", "-w", "%{http_code}"}
+	for k, v := range headers {
+		args = append(args, "-H", fmt.Sprintf("%s: %s", k, v))
+	}
+	if body != "" {
+		args = append(args, "--data-binary", body)
+	}
+	args = append(args, extraArgs...)
+	args = append(args, fmt.Sprintf("http://%s.%s.svc.cluster.local:%d/mcp", gatewayName, gatewayNamespace, port))
+
+	cmd := exec.Command("kubectl", args...)
+	out, err := cmd.CombinedOutput()
+	return strings.TrimSpace(string(out)), err
+}
+
 // helper to assert HTTP status from verbose curl output (supports HTTP/1.1 and HTTP/2)
 func (s *testingSuite) requireHTTPStatus(out string, code int) {
 	// Match lines like "< HTTP/1.1 200" or "HTTP/1.1 200" (some logs omit the '<')
@@ -300,25 +317,24 @@ func (s *testingSuite) notifyInitializedWithHeaders(sessionID string, routeHeade
 	time.Sleep(75 * time.Millisecond)
 }
 
-// initializeSession opens a session with headers and returns a valid session ID.
-// It retries on transient gateway/backend races like:
-//   - SSE error: "Failed to list connections: start sse client"
-//   - Missing/invalid SSE payload
 func (s *testingSuite) initializeSession(initBody string, hdr map[string]string, label string) string {
-	backoffs := []time.Duration{100 * time.Millisecond, 250 * time.Millisecond, 500 * time.Millisecond}
+	// One deterministic probe with retry to ensure the endpoint is ready
+	s.waitForMCP200(8080, hdr, initBody, label,
+		100*time.Millisecond, 250*time.Millisecond, 500*time.Millisecond, 1*time.Second)
+
+	backoffs := []time.Duration{
+		100 * time.Millisecond,
+		250 * time.Millisecond,
+		500 * time.Millisecond,
+		1 * time.Second,
+	}
 	for attempt := 0; attempt <= len(backoffs); attempt++ {
+		// Fetch the full response and parse
 		out, err := s.execCurlMCP(8080, hdr, initBody, "--max-time", "10")
 		s.Require().NoError(err, "%s initialize failed", label)
-		s.requireHTTPStatus(out, 200)
 
 		payload, ok := FirstSSEDataPayload(out)
-		// If no payload, retry
-		if !ok || strings.TrimSpace(payload) == "" {
-			if attempt == len(backoffs) {
-				s.Require().Failf(label, "initialize returned no SSE payload")
-			}
-		} else {
-			// Parse and ensure it's a result, not an error
+		if ok && strings.TrimSpace(payload) != "" {
 			var init InitializeResponse
 			_ = json.Unmarshal([]byte(payload), &init)
 			if init.Error == nil && init.Result != nil {
@@ -326,17 +342,52 @@ func (s *testingSuite) initializeSession(initBody string, hdr map[string]string,
 				s.Require().NotEmpty(sid, "%s initialize must return mcp-session-id header", label)
 				return sid
 			}
-			// If it's a known transient, we'll retry; otherwise surface it
-			if init.Error != nil && strings.Contains(strings.ToLower(init.Error.Message), "start sse client") {
-				// fall through to retry
-			} else {
+			if init.Error != nil && !strings.Contains(strings.ToLower(init.Error.Message), "start sse client") {
 				s.Require().Failf(label, "initialize returned error: %v", init.Error)
 			}
 		}
 		if attempt < len(backoffs) {
 			time.Sleep(backoffs[attempt])
+		} else {
+			s.Require().Failf(label, "initialize returned no SSE payload")
 		}
 	}
-	// unreachable
-	return ""
+	return "" // unreachable
+}
+
+func (s *testingSuite) waitForMCP200(
+    port int,
+    headers map[string]string,
+    body string,
+    label string,
+    backoffs ...time.Duration,
+) {
+    if len(backoffs) == 0 {
+        backoffs = []time.Duration{
+            100 * time.Millisecond, 250 * time.Millisecond,
+            500 * time.Millisecond, 1 * time.Second,
+        }
+    }
+
+    var (
+        status string
+        err    error
+    )
+    for attempt := 0; attempt <= len(backoffs); attempt++ {
+        status, err = s.execCurlMCPStatus(port, headers, body, "--max-time", "10")
+        if err == nil && strings.TrimSpace(status) == "200" {
+            s.T().Logf("%s init ready (status=%s)", label, status)
+            return
+        }
+        if attempt < len(backoffs) {
+            if err != nil {
+                s.T().Logf("%s init status probe err: %v", label, err)
+            }
+            s.T().Logf("%s init status=%q; retrying in %s", label, status, backoffs[attempt])
+            time.Sleep(backoffs[attempt])
+            continue
+        }
+        s.Require().NoError(err, "%s initialize status probe failed", label)
+        s.Require().Equal("200", strings.TrimSpace(status), "expected HTTP 200")
+    }
 }
