@@ -122,7 +122,9 @@ func (s *testingSuite) TestDynamicMCPAdminVsUserTools() {
 		}
 	}
 	if same {
-		s.T().Log("WARNING: admin and user tool sets are identical; verify backend config if you expect variance")
+		s.T().Logf("admin tools (%d found): %s", len(adminTools), strings.Join(adminTools, ", "))
+		s.T().Logf("user tools (%d found): %s", len(userTools), strings.Join(userTools, ", "))
+		s.Require().Fail("admin and user tool sets are identical; backend config should provide different tool sets")
 	} else {
 		s.T().Logf("admin tools (%d found): %s", len(adminTools), strings.Join(adminTools, ", "))
 		s.T().Logf("user tools (%d found): %s", len(userTools), strings.Join(userTools, ", "))
