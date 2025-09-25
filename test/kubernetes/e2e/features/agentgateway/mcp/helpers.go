@@ -268,6 +268,16 @@ func IsJSONValid(s string) bool {
 	return json.Unmarshal([]byte(s), &js) == nil
 }
 
+// updateProtocolVersion extracts and updates the global mcpProto from an initialize response
+func updateProtocolVersion(payload string) {
+	var initResp InitializeResponse
+	if err := json.Unmarshal([]byte(payload), &initResp); err == nil {
+		if initResp.Result != nil && initResp.Result.ProtocolVersion != "" {
+			mcpProto = initResp.Result.ProtocolVersion
+		}
+	}
+}
+
 // mustListTools issues tools/list with an existing session and returns tool names.
 // Pass routeHeaders (e.g., map[string]string{"user-type":"admin"}) so the gateway
 // picks the same backend as the initialize call.
@@ -339,6 +349,8 @@ func (s *testingSuite) initializeSession(initBody string, hdr map[string]string,
 			var init InitializeResponse
 			_ = json.Unmarshal([]byte(payload), &init)
 			if init.Error == nil && init.Result != nil {
+				// Update the global protocol version from the server response
+				updateProtocolVersion(payload)
 				sid := ExtractMCPSessionID(out)
 				s.Require().NotEmpty(sid, "%s initialize must return mcp-session-id header", label)
 				return sid

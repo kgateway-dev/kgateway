@@ -62,9 +62,10 @@ type InitializeResponse struct {
 }
 
 // mcpProto is the protocol version for the MCP server
+// This will be set dynamically from the initialize response
 
-const (
-	mcpProto   = "2025-03-26"
+var (
+	mcpProto   = "2025-03-26" // Default fallback, will be updated dynamically
 	httpOKCode = 200
 	warmupTime = 75 * time.Millisecond
 )

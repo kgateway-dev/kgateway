@@ -158,6 +158,11 @@ func (s *testingSuite) runDynamicRoutingCase(clientName string, routeHeaders map
 	s.Require().NoError(json.Unmarshal([]byte(payload), &initResp), "%s initialize payload must be JSON", label)
 	s.Require().Nil(initResp.Error, "%s initialize returned error: %+v", label, initResp.Error)
 	s.Require().NotNil(initResp.Result, "%s initialize missing result", label)
+
+	// Update the global protocol version from the server response
+	updateProtocolVersion(payload)
+
+	// Now validate that the protocol version matches what we sent
 	s.Require().Equal(mcpProto, initResp.Result.ProtocolVersion, "protocolVersion mismatch")
 	s.Require().NotEmpty(initResp.Result.ServerInfo.Name, "serverInfo.name must be set")
 
