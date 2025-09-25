@@ -262,7 +262,42 @@ func TestProcessTransformationPolicy(t *testing.T) {
 			validate: func(t *testing.T, policies []AgwPolicy, err error) {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), "invalid header value: invalid.cel.expression.(")
-				// Should still return a policy but with errors
+				// only one invalid transformation, no policy should be translated
+				require.Nil(t, policies)
+			},
+		},
+		{
+			name: "partially valid CEL expression in header",
+			policy: &v1alpha1.TrafficPolicy{
+				Spec: v1alpha1.TrafficPolicySpec{
+					Transformation: &v1alpha1.TransformationPolicy{
+						Request: &v1alpha1.Transform{
+							Set: []v1alpha1.HeaderTransformation{
+								{
+									Name:  "x-custom-header",
+									Value: "foolen_{{header(\"content-length\")}}",
+								},
+								{
+									Name:  "x-valid-header",
+									Value: "'foolen_' + request.headers['content-length']",
+								},
+							},
+						},
+					},
+				},
+			},
+			policyName: "test-policy",
+			policyTarget: &api.PolicyTarget{
+				Kind: &api.PolicyTarget_Route{
+					Route: "test-route",
+				},
+			},
+			wantErr:     true,
+			errContains: "invalid header value",
+			validate: func(t *testing.T, policies []AgwPolicy, err error) {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "invalid header value: foolen_{{header(\"content-length\")}}")
+				// partially valid transformation, one policy should still be translated
 				require.Len(t, policies, 1)
 			},
 		},
@@ -290,7 +325,8 @@ func TestProcessTransformationPolicy(t *testing.T) {
 			validate: func(t *testing.T, policies []AgwPolicy, err error) {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), "invalid body value: invalid body expression }")
-				require.Len(t, policies, 1)
+				// only one invalid transformation, no policy should be translated
+				require.Nil(t, policies)
 			},
 		},
 		{
@@ -311,19 +347,9 @@ func TestProcessTransformationPolicy(t *testing.T) {
 			},
 			validate: func(t *testing.T, policies []AgwPolicy, err error) {
 				require.NoError(t, err)
-				require.Len(t, policies, 1)
 
-				policy := policies[0].Policy
-				transformation := policy.Spec.GetTransformation()
-				require.NotNil(t, transformation)
-				require.NotNil(t, transformation.Request)
-				require.NotNil(t, transformation.Response)
-
-				// Empty transforms should still be created but with no operations
-				assert.Len(t, transformation.Request.Set, 0)
-				assert.Len(t, transformation.Request.Add, 0)
-				assert.Len(t, transformation.Request.Remove, 0)
-				assert.Nil(t, transformation.Request.Body)
+				// Empty transforms should not create policies
+				require.Nil(t, policies)
 			},
 		},
 		{
@@ -344,15 +370,7 @@ func TestProcessTransformationPolicy(t *testing.T) {
 			},
 			validate: func(t *testing.T, policies []AgwPolicy, err error) {
 				require.NoError(t, err)
-				require.Len(t, policies, 1)
-
-				policy := policies[0].Policy
-				transformation := policy.Spec.GetTransformation()
-				require.NotNil(t, transformation)
-
-				// Nil specs should result in nil transforms
-				assert.Nil(t, transformation.Request)
-				assert.Nil(t, transformation.Response)
+				assert.Nil(t, policies)
 			},
 		},
 	}

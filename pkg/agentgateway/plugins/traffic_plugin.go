@@ -45,6 +45,19 @@ const (
 
 var logger = logging.New("agentgateway/plugins")
 
+// Shared CEL environment for expression validation
+var celEnv *cel.Env
+
+func init() {
+	var err error
+	celEnv, err = cel.NewEnv()
+	if err != nil {
+		logger.Error("failed to create CEL environment", "error", err)
+		// Optionally, set celEnv to a default or nil value
+		celEnv = nil // or some default configuration
+	}
+}
+
 // convertStatusCollection converts the specific TrafficPolicy status collection
 // to the generic controllers.Object status collection expected by the interface
 func convertStatusCollection(col krt.Collection[krt.ObjectWithStatus[*v1alpha1.TrafficPolicy, v1alpha2.PolicyStatus]]) krt.StatusCollection[controllers.Object, v1alpha2.PolicyStatus] {
@@ -201,6 +214,7 @@ func TranslateTrafficPolicy(
 			translatedPolicies, err := translateTrafficPolicyToAgw(ctx, gatewayExtensions, secrets, trafficPolicy, string(target.Name), policyTarget, isMcpTarget)
 			agwPolicies = append(agwPolicies, translatedPolicies...)
 			var conds []metav1.Condition
+			// TODO: support partial translation statuses https://github.com/kgateway-dev/kgateway/issues/12413
 			if err != nil {
 				// Build success conditions per ancestor
 				meta.SetStatusCondition(&conds, metav1.Condition{
@@ -1046,25 +1060,27 @@ func processTransformationPolicy(
 		errs = append(errs, err)
 	}
 
-	transformationPolicy := &api.Policy{
-		Name:   policyName + transformationPolicySuffix,
-		Target: policyTarget,
-		Spec: &api.PolicySpec{
-			Kind: &api.PolicySpec_Transformation{
-				Transformation: &api.PolicySpec_TransformationPolicy{
-					Request:  convertedReq,
-					Response: convertedResp,
+	if convertedResp != nil || convertedReq != nil {
+		transformationPolicy := &api.Policy{
+			Name:   policyName + transformationPolicySuffix,
+			Target: policyTarget,
+			Spec: &api.PolicySpec{
+				Kind: &api.PolicySpec_Transformation{
+					Transformation: &api.PolicySpec_TransformationPolicy{
+						Request:  convertedReq,
+						Response: convertedResp,
+					},
 				},
 			},
-		},
+		}
+
+		logger.Debug("generated transformation policy",
+			"policy", trafficPolicy.Name,
+			"agentgateway_policy", transformationPolicy.Name,
+			"target", policyTarget)
+		return []AgwPolicy{{Policy: transformationPolicy}}, errors.Join(errs...)
 	}
-
-	logger.Debug("generated transformation policy",
-		"policy", trafficPolicy.Name,
-		"agentgateway_policy", transformationPolicy.Name,
-		"target", policyTarget)
-
-	return []AgwPolicy{{Policy: transformationPolicy}}, errors.Join(errs...)
+	return nil, errors.Join(errs...)
 }
 
 // convertTransformSpec converts transformation specs to agentgateway format
@@ -1074,11 +1090,14 @@ func convertTransformSpec(spec *v1alpha1.Transform) (*api.PolicySpec_Transformat
 	}
 
 	var errs []error
-	transform := &api.PolicySpec_TransformationPolicy_Transform{}
+	var transform *api.PolicySpec_TransformationPolicy_Transform
 
 	for _, header := range spec.Set {
 		headerValue := header.Value
 		if isCEL(headerValue) {
+			if transform == nil {
+				transform = &api.PolicySpec_TransformationPolicy_Transform{}
+			}
 			transform.Set = append(transform.Set, &api.PolicySpec_HeaderTransformation{
 				Name:       string(header.Name),
 				Expression: string(header.Value),
@@ -1091,6 +1110,9 @@ func convertTransformSpec(spec *v1alpha1.Transform) (*api.PolicySpec_Transformat
 	for _, header := range spec.Add {
 		headerValue := header.Value
 		if isCEL(headerValue) {
+			if transform == nil {
+				transform = &api.PolicySpec_TransformationPolicy_Transform{}
+			}
 			transform.Add = append(transform.Add, &api.PolicySpec_HeaderTransformation{
 				Name:       string(header.Name),
 				Expression: string(header.Value),
@@ -1100,7 +1122,12 @@ func convertTransformSpec(spec *v1alpha1.Transform) (*api.PolicySpec_Transformat
 		}
 	}
 
-	transform.Remove = spec.Remove
+	if spec.Remove != nil {
+		if transform == nil {
+			transform = &api.PolicySpec_TransformationPolicy_Transform{}
+		}
+		transform.Remove = spec.Remove
+	}
 
 	if spec.Body != nil {
 		// Warn if ParseAs is set since it's not supported for agentgateway
@@ -1114,6 +1141,9 @@ func convertTransformSpec(spec *v1alpha1.Transform) (*api.PolicySpec_Transformat
 		if spec.Body.Value != nil {
 			bodyValue := *spec.Body.Value
 			if isCEL(bodyValue) {
+				if transform == nil {
+					transform = &api.PolicySpec_TransformationPolicy_Transform{}
+				}
 				transform.Body = &api.PolicySpec_BodyTransformation{
 					Expression: string(bodyValue),
 				}
@@ -1128,7 +1158,6 @@ func convertTransformSpec(spec *v1alpha1.Transform) (*api.PolicySpec_Transformat
 
 // Checks if the expression is a valid CEL expression
 func isCEL(expr v1alpha1.Template) bool {
-	env, _ := cel.NewEnv()
-	_, iss := env.Parse(string(expr))
+	_, iss := celEnv.Parse(string(expr))
 	return iss.Err() == nil
 }
