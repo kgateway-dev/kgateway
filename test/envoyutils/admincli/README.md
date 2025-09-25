@@ -1,10 +1,7 @@
 # Admincli
 
-> **Warning**
-> This code is not intended to be used within the Control Plane.
-
 ## Client
-This is the Go client that should be used whenever communicating with the Envoy Admin API. Within the Gloo project, it is used inside of tests and our CLI.
+This is the Go client that should be used whenever communicating with the Envoy Admin API in e2e tests.
 
 ### Philosophy
 We expose methods that return a [Command](/pkg/utils/cmdutils/cmd.go) which can be run by the calling code. Any methods that fit this structure, should end in `Cmd`:
