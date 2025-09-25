@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/cert"
@@ -88,5 +89,7 @@ func GetCACertFromConfigMap(cm *corev1.ConfigMap) (string, error) {
 		return "", ErrInvalidCACertificate(cm.Name, cm.Namespace, err)
 	}
 
-	return string(cleanedChainBytes), nil
+	// Remove trailing newline that cert.EncodeCertificates adds
+	cleanedChain := strings.TrimRight(string(cleanedChainBytes), "\n")
+	return cleanedChain, nil
 }
