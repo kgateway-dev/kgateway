@@ -77,6 +77,20 @@ func TestUpstreamTlsConfig(t *testing.T) {
 			sni:           "example.com",
 			expectedError: noKeyFoundMsg,
 		},
+		{
+			name: "Invalid ca.crt in configmap",
+			cm: &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-ca",
+					Namespace: "default",
+				},
+				Data: map[string]string{
+					"ca.crt": "invalid-certificate-data",
+				},
+			},
+			sni:           "example.com",
+			expectedError: "data does not contain any valid RSA or ECDSA certificates",
+		},
 	}
 
 	for _, tt := range tests {

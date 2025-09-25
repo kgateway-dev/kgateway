@@ -6,6 +6,7 @@ import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/util/cert"
 )
 
 // handles conversion into envoy auth types
@@ -31,7 +32,12 @@ func ResolveCommonSslConfig(cm *corev1.ConfigMap, validation *envoytlsv3.Certifi
 		return nil, err
 	}
 
-	// TODO: should we do some validation on the CA?
+	// Validate CA certificate by trying to parse it
+	_, err = cert.ParseCertsPEM([]byte(caCrt))
+	if err != nil {
+		return nil, err
+	}
+
 	caCrtData := envoycorev3.DataSource{
 		Specifier: &envoycorev3.DataSource_InlineString{
 			InlineString: caCrt,
