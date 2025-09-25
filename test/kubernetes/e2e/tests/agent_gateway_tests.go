@@ -7,7 +7,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/agentgateway/mcp"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/agentgateway/rbac"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/agentgateway/transformation"
-	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/agentgateway/zero_downtime_rollout"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/backendtls"
 	global_rate_limit "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/rate_limit/global"
 	local_rate_limit "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/rate_limit/local"
@@ -24,7 +23,6 @@ func AgentgatewaySuiteRunner() e2e.SuiteRunner {
 	agentgatewaySuiteRunner.Register("RBAC", rbac.NewTestingSuite)
 	agentgatewaySuiteRunner.Register("Transformation", transformation.NewTestingSuite)
 	agentgatewaySuiteRunner.Register("BackendTLSPolicy", backendtls.NewAgentgatewayTestingSuite)
-	agentgatewaySuiteRunner.Register("ZeroDowntimeRollout", zero_downtime_rollout.NewTestingSuite)
 
 	return agentgatewaySuiteRunner
 }

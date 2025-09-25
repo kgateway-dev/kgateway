@@ -273,8 +273,8 @@ type Pod struct {
 	// +kubebuilder:validation:Maximum=31536000
 	TerminationGracePeriodSeconds *int64 `json:"terminationGracePeriodSeconds,omitempty"`
 
-	// If specified, the pod's startup probe. Periodic probe of container startup readiness.
-	// Container will be removed from service endpoints if the probe fails. See
+	// If specified, the pod's startup probe. A probe of container startup readiness.
+	// Container will be only be added to service endpoints if the probe succeeds. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#probe-v1-core
 	// for details.
 	//
@@ -282,7 +282,7 @@ type Pod struct {
 	StartupProbe *corev1.Probe `json:"startupProbe,omitempty"`
 
 	// If specified, the pod's readiness probe. Periodic probe of container service readiness.
-	// Container will be only be added to service endpoints if the probe succeeds. See
+	// Container will be removed from service endpoints if the probe fails. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#probe-v1-core
 	// for details.
 	//

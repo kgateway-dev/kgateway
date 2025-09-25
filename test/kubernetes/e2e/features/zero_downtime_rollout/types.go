@@ -11,12 +11,17 @@ import (
 )
 
 var (
-	serviceManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "service.yaml")
-	gatewayManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway.yaml")
-	heyManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "hey.yaml")
+	serviceManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "service.yaml")
+	gatewayManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway.yaml")
+	agentgatewayManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "agentgateway.yaml")
 
 	proxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gw",
+		Namespace: "default",
+	}
+
+	agentgatewayObjectMeta = metav1.ObjectMeta{
+		Name:      "agentgw",
 		Namespace: "default",
 	}
 
@@ -26,7 +31,10 @@ var (
 
 	testCases = map[string]*base.TestCase{
 		"TestZeroDowntimeRollout": {
-			Manifests: []string{gatewayManifest, heyManifest, defaults.CurlPodManifest},
+			Manifests: []string{gatewayManifest, defaults.CurlPodManifest},
+		},
+		"TestZeroDowntimeRolloutAgentGateway": {
+			Manifests: []string{agentgatewayManifest, defaults.CurlPodManifest},
 		},
 	}
 )

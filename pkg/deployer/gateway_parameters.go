@@ -209,10 +209,10 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 					Type: (*corev1.ServiceType)(ptr.To(string(corev1.ServiceTypeLoadBalancer))),
 				},
 				PodTemplate: &v1alpha1.Pod{
-					TerminationGracePeriodSeconds: ptr.To(60),
+					TerminationGracePeriodSeconds: ptr.To(int64(60)),
 					GracefulShutdown: &v1alpha1.GracefulShutdownSpec{
 						Enabled:          ptr.To(true),
-						SleepTimeSeconds: ptr.To(10),
+						SleepTimeSeconds: ptr.To(int64(10)),
 					},
 					ReadinessProbe: &corev1.Probe{
 						ProbeHandler: corev1.ProbeHandler{

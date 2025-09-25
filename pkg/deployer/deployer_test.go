@@ -3299,7 +3299,8 @@ func generateReadinessProbe() *corev1.Probe {
 			},
 		},
 		InitialDelaySeconds: 5,
-		PeriodSeconds:       10,
+		PeriodSeconds:       5,
+		FailureThreshold:    2,
 	}
 }
 
