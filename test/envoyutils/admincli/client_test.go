@@ -7,8 +7,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/go-utils/threadsafe"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envoyutils/admincli"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
+	"github.com/kgateway-dev/kgateway/v2/test/envoyutils/admincli"
 )
 
 var _ = Describe("Client", func() {
