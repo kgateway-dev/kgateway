@@ -1,18 +1,15 @@
 package backendtlspolicy
 
 import (
-	"errors"
-
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/util/cert"
+
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/sslutils"
 )
 
 // handles conversion into envoy auth types
 // based on https://github.com/solo-io/gloo/blob/main/projects/gloo/pkg/utils/ssl.go#L76
-
-var noKeyFoundMsg = "no key ca.crt found"
 
 func ResolveUpstreamSslConfig(cm *corev1.ConfigMap, validation *envoytlsv3.CertificateValidationContext, sni string) (*envoytlsv3.UpstreamTlsContext, error) {
 	common, err := ResolveCommonSslConfig(cm, validation, false)
@@ -27,15 +24,9 @@ func ResolveUpstreamSslConfig(cm *corev1.ConfigMap, validation *envoytlsv3.Certi
 }
 
 func ResolveCommonSslConfig(cm *corev1.ConfigMap, validation *envoytlsv3.CertificateValidationContext, mustHaveCert bool) (*envoytlsv3.CommonTlsContext, error) {
-	caCrt, err := getSslSecrets(cm)
+	caCrt, err := sslutils.GetCACertFromConfigMap(cm)
 	if err != nil {
 		return nil, err
-	}
-
-	// Validate CA certificate by trying to parse it
-	_, err = cert.ParseCertsPEM([]byte(caCrt))
-	if err != nil {
-		return nil, errors.New("Invalid ca.crt in ConfigMap " + cm.Namespace + "/" + cm.Name + ": " + err.Error())
 	}
 
 	caCrtData := envoycorev3.DataSource{
@@ -55,13 +46,4 @@ func ResolveCommonSslConfig(cm *corev1.ConfigMap, validation *envoytlsv3.Certifi
 
 	tlsContext.ValidationContextType = validationCtx
 	return tlsContext, nil
-}
-
-func getSslSecrets(cm *corev1.ConfigMap) (string, error) {
-	caCrt, ok := cm.Data["ca.crt"]
-	if !ok {
-		return "", errors.New(noKeyFoundMsg)
-	}
-
-	return caCrt, nil
 }

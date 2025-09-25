@@ -17,6 +17,7 @@ import (
 	gwv1alpha3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/sslutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -195,7 +196,7 @@ func getBackendTLSCACert(
 		if cfgmap == nil {
 			return nil, fmt.Errorf("ConfigMap %s not found", nn)
 		}
-		caCert, err := extractCARoot(ptr.Flatten(cfgmap))
+		caCert, err := sslutils.GetCACertFromConfigMap(ptr.Flatten(cfgmap))
 		if err != nil {
 			return nil, fmt.Errorf("error extracting CA cert from ConfigMap %s: %w", nn, err)
 		}
@@ -205,13 +206,4 @@ func getBackendTLSCACert(
 		sb.WriteString(caCert)
 	}
 	return wrapperspb.Bytes([]byte(sb.String())), nil
-}
-
-func extractCARoot(cm *corev1.ConfigMap) (string, error) {
-	caCrt, ok := cm.Data["ca.crt"]
-	if !ok {
-		return "", errors.New("ca.crt key missing")
-	}
-
-	return caCrt, nil
 }
