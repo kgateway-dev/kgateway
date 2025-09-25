@@ -238,7 +238,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	clustersPerClient := NewPerClientEnvoyClusters(
 		ctx,
 		krtopts,
-		s.translator.GetUpstreamTranslator(),
+		s.translator.GetBackendTranslator(),
 		finalBackends,
 		s.uniqueClients,
 	)

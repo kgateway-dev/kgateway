@@ -9,10 +9,10 @@ import (
 // OutlierDetectionApplyConfiguration represents a declarative configuration of the OutlierDetection type for use
 // with apply.
 type OutlierDetectionApplyConfiguration struct {
-	Consecutive5xx     *uint32      `json:"consecutive5xx,omitempty"`
+	Consecutive5xx     *int32       `json:"consecutive5xx,omitempty"`
 	Interval           *v1.Duration `json:"interval,omitempty"`
 	BaseEjectionTime   *v1.Duration `json:"baseEjectionTime,omitempty"`
-	MaxEjectionPercent *uint32      `json:"maxEjectionPercent,omitempty"`
+	MaxEjectionPercent *int32       `json:"maxEjectionPercent,omitempty"`
 }
 
 // OutlierDetectionApplyConfiguration constructs a declarative configuration of the OutlierDetection type for use with
@@ -24,7 +24,7 @@ func OutlierDetection() *OutlierDetectionApplyConfiguration {
 // WithConsecutive5xx sets the Consecutive5xx field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Consecutive5xx field is set to the value of the last call.
-func (b *OutlierDetectionApplyConfiguration) WithConsecutive5xx(value uint32) *OutlierDetectionApplyConfiguration {
+func (b *OutlierDetectionApplyConfiguration) WithConsecutive5xx(value int32) *OutlierDetectionApplyConfiguration {
 	b.Consecutive5xx = &value
 	return b
 }
@@ -48,7 +48,7 @@ func (b *OutlierDetectionApplyConfiguration) WithBaseEjectionTime(value v1.Durat
 // WithMaxEjectionPercent sets the MaxEjectionPercent field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the MaxEjectionPercent field is set to the value of the last call.
-func (b *OutlierDetectionApplyConfiguration) WithMaxEjectionPercent(value uint32) *OutlierDetectionApplyConfiguration {
+func (b *OutlierDetectionApplyConfiguration) WithMaxEjectionPercent(value int32) *OutlierDetectionApplyConfiguration {
 	b.MaxEjectionPercent = &value
 	return b
 }

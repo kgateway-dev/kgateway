@@ -197,7 +197,7 @@ func (w *waypointTranslator) buildInboundListener(gw *ir.Gateway, reporter repor
 	return &ir.ListenerIR{
 		Name:              "proxy_protocol_inbound",
 		BindAddress:       bindAddr,
-		BindPort:          uint32(gatewayListener.Port),
+		BindPort:          uint32(gatewayListener.Port), //nolint:gosec // G115: Gateway API listener port is int32, always in valid range
 		PolicyAncestorRef: gatewayListener.PolicyAncestorRef,
 
 		AttachedPolicies: ir.AttachedPolicies{
@@ -379,7 +379,7 @@ func initServiceChain(
 	}
 	match := ir.FilterChainMatch{
 		PrefixRanges:    prefixRanges,
-		DestinationPort: &wrapperspb.UInt32Value{Value: uint32(port.Port)},
+		DestinationPort: &wrapperspb.UInt32Value{Value: uint32(port.Port)}, //nolint:gosec // G115: service port is int32, always in valid range
 	}
 
 	fcCommon := ir.FilterChainCommon{

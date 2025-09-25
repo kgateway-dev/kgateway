@@ -691,7 +691,7 @@ func (in *BackendConfigPolicySpec) DeepCopyInto(out *BackendConfigPolicySpec) {
 	}
 	if in.PerConnectionBufferLimitBytes != nil {
 		in, out := &in.PerConnectionBufferLimitBytes, &out.PerConnectionBufferLimitBytes
-		*out = new(int)
+		*out = new(int32)
 		**out = **in
 	}
 	if in.TCPKeepalive != nil {
@@ -951,12 +951,12 @@ func (in *CSRFPolicy) DeepCopyInto(out *CSRFPolicy) {
 	*out = *in
 	if in.PercentageEnabled != nil {
 		in, out := &in.PercentageEnabled, &out.PercentageEnabled
-		*out = new(uint32)
+		*out = new(int32)
 		**out = **in
 	}
 	if in.PercentageShadowed != nil {
 		in, out := &in.PercentageShadowed, &out.PercentageShadowed
-		*out = new(uint32)
+		*out = new(int32)
 		**out = **in
 	}
 	if in.AdditionalOrigins != nil {
@@ -1009,7 +1009,7 @@ func (in *CommonGrpcService) DeepCopyInto(out *CommonGrpcService) {
 	}
 	if in.MaxReceiveMessageLength != nil {
 		in, out := &in.MaxReceiveMessageLength, &out.MaxReceiveMessageLength
-		*out = new(uint32)
+		*out = new(int32)
 		**out = **in
 	}
 	if in.SkipEnvoyHeaders != nil {
@@ -1056,7 +1056,7 @@ func (in *CommonHttpProtocolOptions) DeepCopyInto(out *CommonHttpProtocolOptions
 	}
 	if in.MaxHeadersCount != nil {
 		in, out := &in.MaxHeadersCount, &out.MaxHeadersCount
-		*out = new(int)
+		*out = new(int32)
 		**out = **in
 	}
 	if in.MaxStreamDuration != nil {
@@ -1066,7 +1066,7 @@ func (in *CommonHttpProtocolOptions) DeepCopyInto(out *CommonHttpProtocolOptions
 	}
 	if in.MaxRequestsPerConnection != nil {
 		in, out := &in.MaxRequestsPerConnection, &out.MaxRequestsPerConnection
-		*out = new(int)
+		*out = new(int32)
 		**out = **in
 	}
 }
@@ -1307,7 +1307,7 @@ func (in *CustomResponse) DeepCopyInto(out *CustomResponse) {
 	}
 	if in.StatusCode != nil {
 		in, out := &in.StatusCode, &out.StatusCode
-		*out = new(uint32)
+		*out = new(int32)
 		**out = **in
 	}
 }
@@ -2060,7 +2060,7 @@ func (in *GracefulShutdownSpec) DeepCopyInto(out *GracefulShutdownSpec) {
 	}
 	if in.SleepTimeSeconds != nil {
 		in, out := &in.SleepTimeSeconds, &out.SleepTimeSeconds
-		*out = new(int)
+		*out = new(int64)
 		**out = **in
 	}
 }
@@ -2193,7 +2193,7 @@ func (in *HTTPListenerPolicySpec) DeepCopyInto(out *HTTPListenerPolicySpec) {
 	}
 	if in.XffNumTrustedHops != nil {
 		in, out := &in.XffNumTrustedHops, &out.XffNumTrustedHops
-		*out = new(uint32)
+		*out = new(int32)
 		**out = **in
 	}
 	if in.ServerHeaderTransformation != nil {
@@ -2384,12 +2384,12 @@ func (in *HealthCheck) DeepCopyInto(out *HealthCheck) {
 	}
 	if in.UnhealthyThreshold != nil {
 		in, out := &in.UnhealthyThreshold, &out.UnhealthyThreshold
-		*out = new(uint32)
+		*out = new(int32)
 		**out = **in
 	}
 	if in.HealthyThreshold != nil {
 		in, out := &in.HealthyThreshold, &out.HealthyThreshold
-		*out = new(uint32)
+		*out = new(int32)
 		**out = **in
 	}
 	if in.Http != nil {
@@ -2524,7 +2524,7 @@ func (in *Http2ProtocolOptions) DeepCopyInto(out *Http2ProtocolOptions) {
 	}
 	if in.MaxConcurrentStreams != nil {
 		in, out := &in.MaxConcurrentStreams, &out.MaxConcurrentStreams
-		*out = new(int)
+		*out = new(int32)
 		**out = **in
 	}
 	if in.OverrideStreamErrorOnInvalidHttpMessage != nil {
@@ -2839,7 +2839,7 @@ func (in *LoadBalancer) DeepCopyInto(out *LoadBalancer) {
 	*out = *in
 	if in.HealthyPanicThreshold != nil {
 		in, out := &in.HealthyPanicThreshold, &out.HealthyPanicThreshold
-		*out = new(uint32)
+		*out = new(int32)
 		**out = **in
 	}
 	if in.UpdateMergeWindow != nil {
@@ -2965,12 +2965,12 @@ func (in *LoadBalancerRingHashConfig) DeepCopyInto(out *LoadBalancerRingHashConf
 	*out = *in
 	if in.MinimumRingSize != nil {
 		in, out := &in.MinimumRingSize, &out.MinimumRingSize
-		*out = new(uint64)
+		*out = new(int64)
 		**out = **in
 	}
 	if in.MaximumRingSize != nil {
 		in, out := &in.MaximumRingSize, &out.MaximumRingSize
-		*out = new(uint64)
+		*out = new(int64)
 		**out = **in
 	}
 	if in.UseHostnameForHashing != nil {
@@ -3488,7 +3488,7 @@ func (in *OutlierDetection) DeepCopyInto(out *OutlierDetection) {
 	*out = *in
 	if in.Consecutive5xx != nil {
 		in, out := &in.Consecutive5xx, &out.Consecutive5xx
-		*out = new(uint32)
+		*out = new(int32)
 		**out = **in
 	}
 	if in.Interval != nil {
@@ -3503,7 +3503,7 @@ func (in *OutlierDetection) DeepCopyInto(out *OutlierDetection) {
 	}
 	if in.MaxEjectionPercent != nil {
 		in, out := &in.MaxEjectionPercent, &out.MaxEjectionPercent
-		*out = new(uint32)
+		*out = new(int32)
 		**out = **in
 	}
 }
@@ -3591,7 +3591,7 @@ func (in *Pod) DeepCopyInto(out *Pod) {
 	}
 	if in.TerminationGracePeriodSeconds != nil {
 		in, out := &in.TerminationGracePeriodSeconds, &out.TerminationGracePeriodSeconds
-		*out = new(int)
+		*out = new(int64)
 		**out = **in
 	}
 	if in.ReadinessProbe != nil {
@@ -3702,7 +3702,7 @@ func (in *Port) DeepCopyInto(out *Port) {
 	*out = *in
 	if in.NodePort != nil {
 		in, out := &in.NodePort, &out.NodePort
-		*out = new(uint16)
+		*out = new(int32)
 		**out = **in
 	}
 }
@@ -3849,7 +3849,7 @@ func (in *ProxyDeployment) DeepCopyInto(out *ProxyDeployment) {
 	*out = *in
 	if in.Replicas != nil {
 		in, out := &in.Replicas, &out.Replicas
-		*out = new(uint32)
+		*out = new(int32)
 		**out = **in
 	}
 	if in.OmitReplicas != nil {
@@ -4183,7 +4183,7 @@ func (in *RetryPolicy) DeepCopyInto(out *RetryPolicy) {
 	}
 	if in.NumRetries != nil {
 		in, out := &in.NumRetries, &out.NumRetries
-		*out = new(uint32)
+		*out = new(int32)
 		**out = **in
 	}
 }
@@ -4408,7 +4408,7 @@ func (in *SlowStart) DeepCopyInto(out *SlowStart) {
 	}
 	if in.MinWeightPercent != nil {
 		in, out := &in.MinWeightPercent, &out.MinWeightPercent
-		*out = new(uint32)
+		*out = new(int32)
 		**out = **in
 	}
 }
@@ -4558,7 +4558,7 @@ func (in *TCPKeepalive) DeepCopyInto(out *TCPKeepalive) {
 	*out = *in
 	if in.KeepAliveProbes != nil {
 		in, out := &in.KeepAliveProbes, &out.KeepAliveProbes
-		*out = new(int)
+		*out = new(int32)
 		**out = **in
 	}
 	if in.KeepAliveTime != nil {
@@ -4743,7 +4743,7 @@ func (in *TokenBucket) DeepCopyInto(out *TokenBucket) {
 	*out = *in
 	if in.TokensPerFill != nil {
 		in, out := &in.TokensPerFill, &out.TokensPerFill
-		*out = new(uint32)
+		*out = new(int32)
 		**out = **in
 	}
 	out.FillInterval = in.FillInterval
@@ -4765,17 +4765,17 @@ func (in *Tracing) DeepCopyInto(out *Tracing) {
 	in.Provider.DeepCopyInto(&out.Provider)
 	if in.ClientSampling != nil {
 		in, out := &in.ClientSampling, &out.ClientSampling
-		*out = new(uint32)
+		*out = new(int32)
 		**out = **in
 	}
 	if in.RandomSampling != nil {
 		in, out := &in.RandomSampling, &out.RandomSampling
-		*out = new(uint32)
+		*out = new(int32)
 		**out = **in
 	}
 	if in.OverallSampling != nil {
 		in, out := &in.OverallSampling, &out.OverallSampling
-		*out = new(uint32)
+		*out = new(int32)
 		**out = **in
 	}
 	if in.Verbose != nil {
@@ -4785,7 +4785,7 @@ func (in *Tracing) DeepCopyInto(out *Tracing) {
 	}
 	if in.MaxPathTagLength != nil {
 		in, out := &in.MaxPathTagLength, &out.MaxPathTagLength
-		*out = new(uint32)
+		*out = new(int32)
 		**out = **in
 	}
 	if in.Attributes != nil {

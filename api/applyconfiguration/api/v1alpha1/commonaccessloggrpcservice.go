@@ -39,7 +39,7 @@ func (b *CommonAccessLogGrpcServiceApplyConfiguration) WithAuthority(value strin
 // WithMaxReceiveMessageLength sets the MaxReceiveMessageLength field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the MaxReceiveMessageLength field is set to the value of the last call.
-func (b *CommonAccessLogGrpcServiceApplyConfiguration) WithMaxReceiveMessageLength(value uint32) *CommonAccessLogGrpcServiceApplyConfiguration {
+func (b *CommonAccessLogGrpcServiceApplyConfiguration) WithMaxReceiveMessageLength(value int32) *CommonAccessLogGrpcServiceApplyConfiguration {
 	b.CommonGrpcServiceApplyConfiguration.MaxReceiveMessageLength = &value
 	return b
 }

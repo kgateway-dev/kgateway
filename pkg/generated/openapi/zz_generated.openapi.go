@@ -938,7 +938,7 @@ func schema_kgateway_v2_api_v1alpha1_AccessLogGrpcService(ref common.ReferenceCa
 						SchemaProps: spec.SchemaProps{
 							Description: "Maximum gRPC message size that is allowed to be received. If a message over this limit is received, the gRPC stream is terminated with the RESOURCE_EXHAUSTED error. Defaults to 0, which means unlimited.",
 							Type:        []string{"integer"},
-							Format:      "int64",
+							Format:      "int32",
 						},
 					},
 					"skipEnvoyHeaders": {
@@ -1749,7 +1749,7 @@ func schema_kgateway_v2_api_v1alpha1_BackendConfigPolicySpec(ref common.Referenc
 					},
 					"perConnectionBufferLimitBytes": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Soft limit on size of the cluster's connections read and write buffers. If unspecified, an implementation defined default is applied (1MiB).",
+							Description: "Soft limit on the size of the cluster's connections read and write buffers. If unspecified, an implementation-defined default is applied (1MiB).",
 							Type:        []string{"integer"},
 							Format:      "int32",
 						},
@@ -2123,14 +2123,14 @@ func schema_kgateway_v2_api_v1alpha1_CSRFPolicy(ref common.ReferenceCallback) co
 						SchemaProps: spec.SchemaProps{
 							Description: "Specifies the percentage of requests for which the CSRF filter is enabled.",
 							Type:        []string{"integer"},
-							Format:      "int64",
+							Format:      "int32",
 						},
 					},
 					"percentageShadowed": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Specifies that CSRF policies will be evaluated and tracked, but not enforced.",
 							Type:        []string{"integer"},
-							Format:      "int64",
+							Format:      "int32",
 						},
 					},
 					"additionalOrigins": {
@@ -2179,7 +2179,7 @@ func schema_kgateway_v2_api_v1alpha1_CommonAccessLogGrpcService(ref common.Refer
 						SchemaProps: spec.SchemaProps{
 							Description: "Maximum gRPC message size that is allowed to be received. If a message over this limit is received, the gRPC stream is terminated with the RESOURCE_EXHAUSTED error. Defaults to 0, which means unlimited.",
 							Type:        []string{"integer"},
-							Format:      "int64",
+							Format:      "int32",
 						},
 					},
 					"skipEnvoyHeaders": {
@@ -2256,7 +2256,7 @@ func schema_kgateway_v2_api_v1alpha1_CommonGrpcService(ref common.ReferenceCallb
 						SchemaProps: spec.SchemaProps{
 							Description: "Maximum gRPC message size that is allowed to be received. If a message over this limit is received, the gRPC stream is terminated with the RESOURCE_EXHAUSTED error. Defaults to 0, which means unlimited.",
 							Type:        []string{"integer"},
-							Format:      "int64",
+							Format:      "int32",
 						},
 					},
 					"skipEnvoyHeaders": {
@@ -2359,7 +2359,7 @@ func schema_kgateway_v2_api_v1alpha1_ComparisonFilter(ref common.ReferenceCallba
 						SchemaProps: spec.SchemaProps{
 							Description: "Value to compare against.",
 							Type:        []string{"integer"},
-							Format:      "int64",
+							Format:      "int32",
 						},
 					},
 				},
@@ -2767,7 +2767,7 @@ func schema_kgateway_v2_api_v1alpha1_CustomResponse(ref common.ReferenceCallback
 						SchemaProps: spec.SchemaProps{
 							Description: "The status code to return to the client. Defaults to 403.",
 							Type:        []string{"integer"},
-							Format:      "int64",
+							Format:      "int32",
 						},
 					},
 				},
@@ -2883,7 +2883,7 @@ func schema_kgateway_v2_api_v1alpha1_DirectResponseSpec(ref common.ReferenceCall
 							Description: "StatusCode defines the HTTP status code to return for this route.",
 							Default:     0,
 							Type:        []string{"integer"},
-							Format:      "int64",
+							Format:      "int32",
 						},
 					},
 					"body": {
@@ -2928,7 +2928,7 @@ func schema_kgateway_v2_api_v1alpha1_DurationFilter(ref common.ReferenceCallback
 						SchemaProps: spec.SchemaProps{
 							Description: "Value to compare against.",
 							Type:        []string{"integer"},
-							Format:      "int64",
+							Format:      "int32",
 						},
 					},
 				},
@@ -3106,7 +3106,7 @@ func schema_kgateway_v2_api_v1alpha1_ExtAuthBufferSettings(ref common.ReferenceC
 							Description: "MaxRequestBytes sets the maximum size of a message body to buffer. Requests exceeding this size will receive HTTP 413 and not be sent to the auth service.",
 							Default:     0,
 							Type:        []string{"integer"},
-							Format:      "int64",
+							Format:      "int32",
 						},
 					},
 					"allowPartialMessage": {
@@ -3216,7 +3216,7 @@ func schema_kgateway_v2_api_v1alpha1_ExtAuthProvider(ref common.ReferenceCallbac
 						SchemaProps: spec.SchemaProps{
 							Description: "StatusOnError sets the HTTP status response code that is returned to the client when the auth server returns an error or cannot be reached. Must be in the range of 100-511 inclusive. The default matches the deny response code of 403 Forbidden.",
 							Type:        []string{"integer"},
-							Format:      "int64",
+							Format:      "int32",
 						},
 					},
 					"statPrefix": {
@@ -3865,7 +3865,7 @@ func schema_kgateway_v2_api_v1alpha1_GracefulShutdownSpec(ref common.ReferenceCa
 						SchemaProps: spec.SchemaProps{
 							Description: "Time (in seconds) for the preStop hook to wait before allowing Envoy to terminate",
 							Type:        []string{"integer"},
-							Format:      "int32",
+							Format:      "int64",
 						},
 					},
 				},
@@ -4074,7 +4074,7 @@ func schema_kgateway_v2_api_v1alpha1_HTTPListenerPolicySpec(ref common.Reference
 						SchemaProps: spec.SchemaProps{
 							Description: "XffNumTrustedHops is the number of additional ingress proxy hops from the right side of the X-Forwarded-For HTTP header to trust when determining the origin client's IP address. See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-xff-num-trusted-hops",
 							Type:        []string{"integer"},
-							Format:      "int64",
+							Format:      "int32",
 						},
 					},
 					"serverHeaderTransformation": {
@@ -4319,14 +4319,14 @@ func schema_kgateway_v2_api_v1alpha1_HealthCheck(ref common.ReferenceCallback) c
 						SchemaProps: spec.SchemaProps{
 							Description: "UnhealthyThreshold is the number of consecutive failed health checks that will be considered unhealthy. Note that for HTTP health checks, if a host responds with a code not in ExpectedStatuses or RetriableStatuses, this threshold is ignored and the host is considered immediately unhealthy.",
 							Type:        []string{"integer"},
-							Format:      "int64",
+							Format:      "int32",
 						},
 					},
 					"healthyThreshold": {
 						SchemaProps: spec.SchemaProps{
 							Description: "HealthyThreshold is the number of healthy health checks required before a host is marked healthy. Note that during startup, only a single successful health check is required to mark a host healthy.",
 							Type:        []string{"integer"},
-							Format:      "int64",
+							Format:      "int32",
 						},
 					},
 					"http": {
@@ -4889,7 +4889,7 @@ func schema_kgateway_v2_api_v1alpha1_LoadBalancer(ref common.ReferenceCallback) 
 						SchemaProps: spec.SchemaProps{
 							Description: "HealthyPanicThreshold configures envoy's panic threshold percentage between 0-100. Once the number of non-healthy hosts reaches this percentage, envoy disregards health information. See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/panic_threshold.html).",
 							Type:        []string{"integer"},
-							Format:      "int64",
+							Format:      "int32",
 						},
 					},
 					"updateMergeWindow": {
@@ -4962,7 +4962,7 @@ func schema_kgateway_v2_api_v1alpha1_LoadBalancerLeastRequestConfig(ref common.R
 							Description: "How many choices to take into account. Defaults to 2.",
 							Default:     2,
 							Type:        []string{"integer"},
-							Format:      "int64",
+							Format:      "int32",
 						},
 					},
 					"slowStart": {
@@ -5896,7 +5896,7 @@ func schema_kgateway_v2_api_v1alpha1_OutlierDetection(ref common.ReferenceCallba
 						SchemaProps: spec.SchemaProps{
 							Description: "The number of consecutive server-side error responses (for HTTP traffic, 5xx responses; for TCP traffic, connection failures; etc.) before an ejection occurs. Defaults to 5. If this is zero, consecutive 5xx passive health checks will be disabled. In the future, other types of passive health checking might be added, but none will be enabled by default.",
 							Type:        []string{"integer"},
-							Format:      "int64",
+							Format:      "int32",
 						},
 					},
 					"interval": {
@@ -5915,7 +5915,7 @@ func schema_kgateway_v2_api_v1alpha1_OutlierDetection(ref common.ReferenceCallba
 						SchemaProps: spec.SchemaProps{
 							Description: "The maximum % of an upstream cluster that can be ejected due to outlier detection. Defaults to 10%.",
 							Type:        []string{"integer"},
-							Format:      "int64",
+							Format:      "int32",
 						},
 					},
 				},
@@ -6050,7 +6050,7 @@ func schema_kgateway_v2_api_v1alpha1_Pod(ref common.ReferenceCallback) common.Op
 						SchemaProps: spec.SchemaProps{
 							Description: "If specified, the pod's termination grace period in seconds. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#pod-v1-core for details",
 							Type:        []string{"integer"},
-							Format:      "int32",
+							Format:      "int64",
 						},
 					},
 					"readinessProbe": {
@@ -6402,7 +6402,7 @@ func schema_kgateway_v2_api_v1alpha1_ProxyDeployment(ref common.ReferenceCallbac
 						SchemaProps: spec.SchemaProps{
 							Description: "The number of desired pods. Defaults to 1.",
 							Type:        []string{"integer"},
-							Format:      "int64",
+							Format:      "int32",
 						},
 					},
 					"omitReplicas": {
@@ -6902,7 +6902,7 @@ func schema_kgateway_v2_api_v1alpha1_RetryPolicy(ref common.ReferenceCallback) c
 						SchemaProps: spec.SchemaProps{
 							Description: "Specifies the allowed number of retries. Defaults to 1.",
 							Type:        []string{"integer"},
-							Format:      "int64",
+							Format:      "int32",
 						},
 					},
 				},
@@ -7189,7 +7189,7 @@ func schema_kgateway_v2_api_v1alpha1_SlowStart(ref common.ReferenceCallback) com
 						SchemaProps: spec.SchemaProps{
 							Description: "Minimum weight percentage of an endpoint during slow start.",
 							Type:        []string{"integer"},
-							Format:      "int64",
+							Format:      "int32",
 						},
 					},
 				},
@@ -7305,7 +7305,7 @@ func schema_kgateway_v2_api_v1alpha1_StatusCodeFilter(ref common.ReferenceCallba
 						SchemaProps: spec.SchemaProps{
 							Description: "Value to compare against.",
 							Type:        []string{"integer"},
-							Format:      "int64",
+							Format:      "int32",
 						},
 					},
 				},
@@ -7625,14 +7625,14 @@ func schema_kgateway_v2_api_v1alpha1_TokenBucket(ref common.ReferenceCallback) c
 							Description: "MaxTokens specifies the maximum number of tokens that the bucket can hold. This value must be greater than or equal to 1. It determines the burst capacity of the rate limiter.",
 							Default:     0,
 							Type:        []string{"integer"},
-							Format:      "int64",
+							Format:      "int32",
 						},
 					},
 					"tokensPerFill": {
 						SchemaProps: spec.SchemaProps{
 							Description: "TokensPerFill specifies the number of tokens added to the bucket during each fill interval. If not specified, it defaults to 1. This controls the steady-state rate of token generation.",
 							Type:        []string{"integer"},
-							Format:      "int64",
+							Format:      "int32",
 						},
 					},
 					"fillInterval": {
@@ -7668,21 +7668,21 @@ func schema_kgateway_v2_api_v1alpha1_Tracing(ref common.ReferenceCallback) commo
 						SchemaProps: spec.SchemaProps{
 							Description: "Target percentage of requests managed by this HTTP connection manager that will be force traced if the x-client-trace-id header is set. Defaults to 100%",
 							Type:        []string{"integer"},
-							Format:      "int64",
+							Format:      "int32",
 						},
 					},
 					"randomSampling": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Target percentage of requests managed by this HTTP connection manager that will be randomly selected for trace generation, if not requested by the client or not forced. Defaults to 100%",
 							Type:        []string{"integer"},
-							Format:      "int64",
+							Format:      "int32",
 						},
 					},
 					"overallSampling": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Target percentage of requests managed by this HTTP connection manager that will be traced after all other sampling checks have been applied (client-directed, force tracing, random sampling). Defaults to 100%",
 							Type:        []string{"integer"},
-							Format:      "int64",
+							Format:      "int32",
 						},
 					},
 					"verbose": {
@@ -7696,7 +7696,7 @@ func schema_kgateway_v2_api_v1alpha1_Tracing(ref common.ReferenceCallback) commo
 						SchemaProps: spec.SchemaProps{
 							Description: "Maximum length of the request path to extract and include in the HttpUrl tag. Used to truncate lengthy request paths to meet the needs of a tracing backend. Default: 256",
 							Type:        []string{"integer"},
-							Format:      "int64",
+							Format:      "int32",
 						},
 					},
 					"attributes": {

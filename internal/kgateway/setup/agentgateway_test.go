@@ -105,7 +105,7 @@ func testAgentgatewayScenario(
 	testyaml := strings.ReplaceAll(string(testyamlbytes), gwname, testgwname)
 
 	yamlfile := filepath.Join(t.TempDir(), "test.yaml")
-	os.WriteFile(yamlfile, []byte(testyaml), 0o644)
+	os.WriteFile(yamlfile, []byte(testyaml), 0o600)
 
 	err = client.ApplyYAMLFiles("", yamlfile)
 
@@ -238,7 +238,7 @@ func dumpProtoToJSON(t *testing.T, dump agentGwDump, fpre string) {
 		return
 	}
 
-	err = os.WriteFile(jsonFile, jsonData, 0o644)
+	err = os.WriteFile(jsonFile, jsonData, 0o600)
 	if err != nil {
 		t.Logf("failed to write JSON file: %v", err)
 		return

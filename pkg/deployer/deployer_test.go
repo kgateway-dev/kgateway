@@ -217,7 +217,7 @@ var _ = Describe("Deployer", func() {
 				Spec: gw2_v1alpha1.GatewayParametersSpec{
 					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 						Deployment: &gw2_v1alpha1.ProxyDeployment{
-							Replicas: ptr.To(uint32(2)),
+							Replicas: ptr.To[int32](2),
 						},
 						EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
 							Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
@@ -415,6 +415,13 @@ var _ = Describe("Deployer", func() {
 				},
 				Spec: api.GatewaySpec{
 					GatewayClassName: wellknown.DefaultGatewayClassName,
+					Listeners: []api.Listener{
+						{
+							Protocol: api.HTTPProtocolType,
+							Port:     80,
+							Name:     "http",
+						},
+					},
 				},
 			}
 
@@ -731,7 +738,6 @@ var _ = Describe("Deployer", func() {
 			Expect(*psc.RunAsGroup).To(Equal(gid))
 			Expect(*psc.FSGroup).To(Equal(fsGroup))
 		})
-
 	})
 
 	Context("special cases", func() {
@@ -753,6 +759,13 @@ var _ = Describe("Deployer", func() {
 				},
 				Spec: api.GatewaySpec{
 					GatewayClassName: wellknown.DefaultGatewayClassName,
+					Listeners: []api.Listener{
+						{
+							Protocol: api.HTTPProtocolType,
+							Port:     80,
+							Name:     "http",
+						},
+					},
 				},
 			}
 
@@ -768,6 +781,13 @@ var _ = Describe("Deployer", func() {
 				},
 				Spec: api.GatewaySpec{
 					GatewayClassName: wellknown.DefaultGatewayClassName,
+					Listeners: []api.Listener{
+						{
+							Protocol: api.HTTPProtocolType,
+							Port:     80,
+							Name:     "http",
+						},
+					},
 				},
 			}
 
@@ -1284,7 +1304,7 @@ var _ = Describe("Deployer", func() {
 					Spec: gw2_v1alpha1.GatewayParametersSpec{
 						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 							Deployment: &gw2_v1alpha1.ProxyDeployment{
-								Replicas: ptr.To(uint32(3)),
+								Replicas: ptr.To[int32](3),
 							},
 							EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
 								Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
@@ -1349,7 +1369,7 @@ var _ = Describe("Deployer", func() {
 					Spec: gw2_v1alpha1.GatewayParametersSpec{
 						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 							Deployment: &gw2_v1alpha1.ProxyDeployment{
-								Replicas: ptr.To(uint32(3)),
+								Replicas: ptr.To[int32](3),
 							},
 							EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
 								Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
@@ -1523,10 +1543,10 @@ var _ = Describe("Deployer", func() {
 				params := fullyDefinedGatewayParameters(wellknown.DefaultGatewayParametersName, defaultNamespace)
 				params.Spec.Kube.PodTemplate.LivenessProbe = generateLivenessProbe()
 				params.Spec.Kube.PodTemplate.ReadinessProbe = generateReadinessProbe()
-				params.Spec.Kube.PodTemplate.TerminationGracePeriodSeconds = ptr.To(5)
+				params.Spec.Kube.PodTemplate.TerminationGracePeriodSeconds = ptr.To(int64(5))
 				params.Spec.Kube.PodTemplate.GracefulShutdown = &gw2_v1alpha1.GracefulShutdownSpec{
 					Enabled:          ptr.To(true),
-					SleepTimeSeconds: ptr.To(7),
+					SleepTimeSeconds: ptr.To(int64(7)),
 				}
 				return params
 			}
@@ -2166,10 +2186,7 @@ var _ = Describe("Deployer", func() {
 				},
 				defaultGwp: defaultGatewayParams(),
 			}, &expectedOutput{
-				validationFunc: func(objs clientObjects, inp *input) error {
-					Expect(objs).NotTo(BeEmpty())
-					return nil
-				},
+				getObjsErr: deployerinternal.ErrNoValidPorts,
 			}),
 			Entry("no port offset", defaultInput(), &expectedOutput{
 				validationFunc: func(objs clientObjects, inp *input) error {
@@ -2199,7 +2216,7 @@ var _ = Describe("Deployer", func() {
 								Ports: []gw2_v1alpha1.Port{
 									{
 										Port:     80,
-										NodePort: ptr.To(uint16(30000)),
+										NodePort: ptr.To[int32](30000),
 									},
 								},
 							},
@@ -2433,7 +2450,7 @@ var _ = Describe("Deployer", func() {
 					Spec: gw2_v1alpha1.GatewayParametersSpec{
 						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 							Deployment: &gw2_v1alpha1.ProxyDeployment{
-								Replicas: ptr.To(uint32(3)),
+								Replicas: ptr.To[int32](3),
 							},
 						},
 					},
@@ -2729,7 +2746,7 @@ func fullyDefinedGatewayParameters(name, namespace string) *gw2_v1alpha1.Gateway
 		Spec: gw2_v1alpha1.GatewayParametersSpec{
 			Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 				Deployment: &gw2_v1alpha1.ProxyDeployment{
-					Replicas: ptr.To[uint32](3),
+					Replicas: ptr.To[int32](3),
 				},
 				EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
 					Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
@@ -2962,7 +2979,7 @@ var _ = Describe("DeployObjs", func() {
 		ctx  = context.Background()
 	)
 
-	var getDeployer = func(fc *fakeClient) *deployer.Deployer {
+	getDeployer := func(fc *fakeClient) *deployer.Deployer {
 		chart, err := deployerinternal.LoadGatewayChart()
 		Expect(err).ToNot(HaveOccurred())
 		return deployer.NewDeployer(
@@ -3079,6 +3096,7 @@ func (f *fakeClient) Get(ctx context.Context, key client.ObjectKey, obj client.O
 	}
 	return f.Client.Get(ctx, key, obj)
 }
+
 func (f *fakeClient) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
 	if f.patchFunc != nil {
 		return f.patchFunc(ctx, obj, patch, opts...)

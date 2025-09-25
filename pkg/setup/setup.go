@@ -35,6 +35,8 @@ type Options struct {
 	ExtraManagerConfig []func(ctx context.Context, mgr manager.Manager, objectFilter kubetypes.DynamicObjectFilter) error
 	// Validator is the validator to use for the controller.
 	Validator validator.Validator
+	// ExtraAgwPolicyStatusHandlers maps policy kinds to their status sync handlers for AgentGateway
+	ExtraAgwPolicyStatusHandlers map[string]agwplugins.AgwPolicyStatusSyncHandler
 }
 
 func New(opts Options) (setup.Server, error) {
@@ -54,5 +56,6 @@ func New(opts Options) (setup.Server, error) {
 		setup.WithControllerManagerOptions(opts.CtrlMgrOptions),
 		setup.WithExtraManagerConfig(opts.ExtraManagerConfig...),
 		setup.WithValidator(opts.Validator),
+		setup.WithExtraAgwPolicyStatusHandlers(opts.ExtraAgwPolicyStatusHandlers),
 	)
 }

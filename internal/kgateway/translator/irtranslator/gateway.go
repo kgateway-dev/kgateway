@@ -59,7 +59,7 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 
 	for _, c := range pass {
 		if c != nil {
-			r := c.ResourcesToAdd(ctx)
+			r := c.ResourcesToAdd()
 			res.ExtraClusters = append(res.ExtraClusters, r.Clusters...)
 		}
 	}
@@ -71,7 +71,7 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 // This may give inaccurate results when multiple listeners have the same port, but is used for logging only.
 func findOriginalListenerName(gw ir.GatewayIR, listener ir.ListenerIR) string {
 	for _, origListener := range gw.SourceObject.Listeners {
-		if uint32(origListener.Port) == listener.BindPort {
+		if uint32(origListener.Port) == listener.BindPort { //nolint:gosec // G115: Gateway listener port is int32, always positive, safe to convert to uint32
 			return string(origListener.Name)
 		}
 	}
@@ -222,7 +222,7 @@ func (t *Translator) runListenerPlugins(
 					Name:      gwv1.ObjectName(gw.SourceObject.GetName()),
 				},
 			}
-			pass.ApplyListenerPlugin(ctx, pctx, out)
+			pass.ApplyListenerPlugin(pctx, out)
 		}
 		out.Metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, out.GetMetadata())
 		reportPolicyAttachmentStatus(reporter, l.PolicyAncestorRef, mergeOrigins, pols...)
@@ -235,7 +235,7 @@ func (t *Translator) newPass(reporter sdkreporter.Reporter) TranslationPassPlugi
 		if v.NewGatewayTranslationPass == nil {
 			continue
 		}
-		tp := v.NewGatewayTranslationPass(context.TODO(), ir.GwTranslationCtx{}, reporter)
+		tp := v.NewGatewayTranslationPass(ir.GwTranslationCtx{}, reporter)
 		if tp != nil {
 			ret[k] = &TranslationPass{
 				ProxyTranslationPass: tp,

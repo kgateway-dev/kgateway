@@ -367,7 +367,7 @@ func buildMCPIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, services krt.Co
 					Kind: &api.BackendReference_Backend{
 						Backend: staticBackendRef,
 					},
-					Port: uint32(targetSelector.Static.Port),
+					Port: uint32(targetSelector.Static.Port), //nolint:gosec // G115: Port is validated by kubebuilder to be 1-65535
 				},
 				Path: ptr.Deref(targetSelector.Static.Path, ""),
 			}
@@ -473,7 +473,7 @@ func buildMCPIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, services krt.Co
 							Kind: &api.BackendReference_Service{
 								Service: service.Namespace + "/" + svcHostname,
 							},
-							Port: uint32(port.Port),
+							Port: uint32(port.Port), //nolint:gosec // G115: Kubernetes service ports are always positive
 						},
 						Protocol: toMCPProtocol(appProtocol),
 						Path:     service.Annotations[apiannotations.MCPServiceHTTPPath],

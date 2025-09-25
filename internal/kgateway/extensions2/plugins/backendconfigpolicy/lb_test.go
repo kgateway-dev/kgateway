@@ -36,7 +36,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		{
 			name: "HealthyPanicThreshold",
 			config: &v1alpha1.LoadBalancer{
-				HealthyPanicThreshold: ptr.To(uint32(100)),
+				HealthyPanicThreshold: ptr.To(int32(100)),
 			},
 			expected: &envoyclusterv3.Cluster{
 				Name: "test",
@@ -112,7 +112,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 							Duration: 10 * time.Second,
 						},
 						Aggression:       ptr.To("1.1"),
-						MinWeightPercent: ptr.To(uint32(10)),
+						MinWeightPercent: ptr.To(int32(10)),
 					},
 				},
 			},
@@ -178,7 +178,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 							Duration: 10 * time.Second,
 						},
 						Aggression:       ptr.To("1.1"),
-						MinWeightPercent: ptr.To(uint32(10)),
+						MinWeightPercent: ptr.To(int32(10)),
 					},
 				},
 			},
@@ -231,8 +231,8 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			name: "RingHash full config",
 			config: &v1alpha1.LoadBalancer{
 				RingHash: &v1alpha1.LoadBalancerRingHashConfig{
-					MinimumRingSize: ptr.To(uint64(10)),
-					MaximumRingSize: ptr.To(uint64(100)),
+					MinimumRingSize: ptr.To(int64(10)),
+					MaximumRingSize: ptr.To(int64(100)),
 				},
 			},
 			expected: func() *envoyclusterv3.Cluster {

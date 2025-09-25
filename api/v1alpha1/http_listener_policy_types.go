@@ -85,7 +85,7 @@ type HTTPListenerPolicySpec struct {
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-xff-num-trusted-hops
 	// +kubebuilder:validation:Minimum=0
 	// +optional
-	XffNumTrustedHops *uint32 `json:"xffNumTrustedHops,omitempty"`
+	XffNumTrustedHops *int32 `json:"xffNumTrustedHops,omitempty"`
 
 	// ServerHeaderTransformation determines how the server header is transformed.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-server-header-transformation
@@ -196,7 +196,8 @@ type CommonGrpcService struct {
 	// Maximum gRPC message size that is allowed to be received. If a message over this limit is received, the gRPC stream is terminated with the RESOURCE_EXHAUSTED error.
 	// Defaults to 0, which means unlimited.
 	// +optional
-	MaxReceiveMessageLength *uint32 `json:"maxReceiveMessageLength,omitempty"`
+	// +kubebuilder:validation:Minimum=1
+	MaxReceiveMessageLength *int32 `json:"maxReceiveMessageLength,omitempty"`
 
 	// This provides gRPC client level control over envoy generated headers. If false, the header will be sent but it can be overridden by per stream option. If true, the header will be removed and can not be overridden by per stream option. Default to false.
 	// +optional
@@ -240,7 +241,8 @@ type RetryPolicy struct {
 
 	// Specifies the allowed number of retries. Defaults to 1.
 	// +optional
-	NumRetries *uint32 `json:"numRetries,omitempty"`
+	// +kubebuilder:validation:Minimum=1
+	NumRetries *int32 `json:"numRetries,omitempty"`
 }
 
 // Configuration defining a jittered exponential back off strategy.
@@ -359,7 +361,7 @@ type ComparisonFilter struct {
 	// Value to compare against.
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=4294967295
-	Value uint32 `json:"value,omitempty"`
+	Value int32 `json:"value,omitempty"`
 }
 
 // Op represents comparison operators.
@@ -440,19 +442,19 @@ type Tracing struct {
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
-	ClientSampling *uint32 `json:"clientSampling,omitempty"`
+	ClientSampling *int32 `json:"clientSampling,omitempty"`
 
 	// Target percentage of requests managed by this HTTP connection manager that will be randomly selected for trace generation, if not requested by the client or not forced. Defaults to 100%
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
-	RandomSampling *uint32 `json:"randomSampling,omitempty"`
+	RandomSampling *int32 `json:"randomSampling,omitempty"`
 
 	// Target percentage of requests managed by this HTTP connection manager that will be traced after all other sampling checks have been applied (client-directed, force tracing, random sampling). Defaults to 100%
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
-	OverallSampling *uint32 `json:"overallSampling,omitempty"`
+	OverallSampling *int32 `json:"overallSampling,omitempty"`
 
 	// Whether to annotate spans with additional data. If true, spans will include logs for stream events. Defaults to false
 	// +optional
@@ -460,7 +462,8 @@ type Tracing struct {
 
 	// Maximum length of the request path to extract and include in the HttpUrl tag. Used to truncate lengthy request paths to meet the needs of a tracing backend. Default: 256
 	// +optional
-	MaxPathTagLength *uint32 `json:"maxPathTagLength,omitempty"`
+	// +kubebuilder:validation:Minimum=1
+	MaxPathTagLength *int32 `json:"maxPathTagLength,omitempty"`
 
 	// A list of attributes with a unique name to create attributes for the active span.
 	// +optional

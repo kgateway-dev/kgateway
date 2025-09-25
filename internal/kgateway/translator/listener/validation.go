@@ -5,17 +5,21 @@ import (
 	"slices"
 	"strings"
 
+	istioprotocol "istio.io/istio/pkg/config/protocol"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/validate"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
-const NormalizedHTTPSTLSType = "HTTPS/TLS"
-const DefaultHostname = "*"
+const (
+	NormalizedHTTPSTLSType = "HTTPS/TLS"
+	DefaultHostname        = "*"
+)
 
 type portProtocol struct {
 	// When this struct is created, the listeners will be sorted based on Listener Precedence
@@ -27,9 +31,11 @@ type portProtocol struct {
 	listeners []ir.Listener
 }
 
-type protocol = string
-type groupName = string
-type routeKind = string
+type (
+	protocol  = string
+	groupName = string
+	routeKind = string
+)
 
 // getSupportedProtocolsRoutes returns a map of listener protocols to the supported route kinds for that protocol
 func getSupportedProtocolsRoutes() map[protocol]map[groupName][]routeKind {
@@ -52,6 +58,14 @@ func getSupportedProtocolsRoutes() map[protocol]map[groupName][]routeKind {
 		},
 		string(gwv1.TLSProtocolType): {
 			gwv1.GroupName: []string{
+				wellknown.TLSRouteKind,
+			},
+		},
+		string(gwv1.ProtocolType(istioprotocol.HBONE)): {
+			gwv1.GroupName: []string{
+				wellknown.HTTPRouteKind,
+				wellknown.GRPCRouteKind,
+				wellknown.TCPRouteKind,
 				wellknown.TLSRouteKind,
 			},
 		},
@@ -197,7 +211,7 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 			existingListener.protocol[protocol] = true
 			existingListener.listeners = append(existingListener.listeners, listener)
 
-			//TODO(Law): handle validation that hostname empty for udp/tcp
+			// TODO(Law): handle validation that hostname empty for udp/tcp
 			hostname := getOrDefaultHostname(listener.Hostname)
 			if _, ok := existingListener.hostnames[hostname]; !ok {
 				existingListener.hostnames[hostname] = generateUniqueListenerName(listener)
@@ -246,19 +260,19 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 	// 		- name: listenerset-protocol-conflict-listener		<----- protocol conflicts with gateway-protocol-conflict-listener
 	// 		  port: 80
 	// 		  protocol: UDP
-	for _, pp := range portListeners {
+	for port, pp := range portListeners {
 		for _, listener := range pp.listeners {
 			parentReporter := listener.GetParentReporter(reporter)
 			if protocolConflict(*pp, listener) {
 				rejectConflictedListener(parentReporter, listener, gwv1.ListenerReasonProtocolConflict, ListenerMessageProtocolConflict)
-			} else {
+			} else if hostNameConflict(*pp, listener) {
 				// If a listener does not have a protocol conflict with one listener,
 				// it could still have a hostname conflict with another listener
-				if hostNameConflict(*pp, listener) {
-					rejectConflictedListener(parentReporter, listener, gwv1.ListenerReasonHostnameConflict, ListenerMessageHostnameConflict)
-				} else {
-					validListeners = append(validListeners, listener)
-				}
+				rejectConflictedListener(parentReporter, listener, gwv1.ListenerReasonHostnameConflict, ListenerMessageHostnameConflict)
+			} else if err := validate.ListenerPort(listener, port); err != nil {
+				rejectConflictedListener(parentReporter, listener, gwv1.ListenerReasonInvalid, err.Error())
+			} else {
+				validListeners = append(validListeners, listener)
 			}
 		}
 	}

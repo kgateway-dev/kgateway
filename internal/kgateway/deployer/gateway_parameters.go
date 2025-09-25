@@ -9,6 +9,7 @@ import (
 
 	"helm.sh/helm/v3/pkg/chart"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	api "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -17,6 +18,9 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 )
+
+// ErrNoValidPorts is returned when no valid ports are found for the Gateway
+var ErrNoValidPorts = errors.New("no valid ports")
 
 func NewGatewayParameters(cli client.Client, inputs *deployer.Inputs) *GatewayParameters {
 	return &GatewayParameters{
@@ -310,13 +314,18 @@ func (k *kGatewayParameters) getGatewayParametersForGatewayClass(ctx context.Con
 func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameters) (*deployer.HelmConfig, error) {
 	irGW := deployer.GetGatewayIR(gw, k.inputs.CommonCollections)
 
+	ports := deployer.GetPortsValues(irGW, gwParam)
+	if len(ports) == 0 {
+		return nil, ErrNoValidPorts
+	}
+
 	// construct the default values
 	vals := &deployer.HelmConfig{
 		Gateway: &deployer.HelmGateway{
 			Name:             &gw.Name,
 			GatewayName:      &gw.Name,
 			GatewayNamespace: &gw.Namespace,
-			Ports:            deployer.GetPortsValues(irGW, gwParam),
+			Ports:            ports,
 			Xds: &deployer.HelmXds{
 				// The xds host/port MUST map to the Service definition for the Control Plane
 				// This is the socket address that the Proxy will connect to on startup, to receive xds updates
@@ -368,7 +377,9 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 		gateway.ReplicaCount = nil
 	} else {
 		// Use the specified replica count
-		gateway.ReplicaCount = deployConfig.GetReplicas()
+		if deployConfig.GetReplicas() != nil {
+			gateway.ReplicaCount = pointer.Uint32(uint32(*deployConfig.GetReplicas())) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+		}
 	}
 	gateway.Strategy = deployConfig.GetStrategy()
 

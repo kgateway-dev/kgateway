@@ -122,12 +122,12 @@ func TranslateGatewayExtensionBuilder(commoncol *collections.CommonCollections) 
 				FilterEnabledMetadata: ExtAuthzEnabledMetadataMatcher,
 				FailureModeAllow:      gExt.ExtAuth.FailOpen,
 				ClearRouteCache:       gExt.ExtAuth.ClearRouteCache,
-				StatusOnError:         &envoytypev3.HttpStatus{Code: envoytypev3.StatusCode(gExt.ExtAuth.StatusOnError)},
+				StatusOnError:         &envoytypev3.HttpStatus{Code: envoytypev3.StatusCode(gExt.ExtAuth.StatusOnError)}, //nolint:gosec // G115: StatusOnError is HTTP status code, valid range fits in int32
 			}
 
 			if gExt.ExtAuth.WithRequestBody != nil {
 				p.ExtAuth.WithRequestBody = &envoy_ext_authz_v3.BufferSettings{
-					MaxRequestBytes:     gExt.ExtAuth.WithRequestBody.MaxRequestBytes,
+					MaxRequestBytes:     uint32(gExt.ExtAuth.WithRequestBody.MaxRequestBytes), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 					AllowPartialMessage: gExt.ExtAuth.WithRequestBody.AllowPartialMessage,
 					PackAsBytes:         gExt.ExtAuth.WithRequestBody.PackAsBytes,
 				}

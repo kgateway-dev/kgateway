@@ -34,7 +34,7 @@ type addFilters struct {
 	ir.UnimplementedProxyTranslationPass
 }
 
-func (a addFilters) NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error) {
+func (a addFilters) NetworkFilters() ([]plugins.StagedNetworkFilter, error) {
 	return []plugins.StagedNetworkFilter{
 		{
 			Filter: &envoylistenerv3.Filter{Name: testPluginFilterName},
@@ -51,7 +51,7 @@ func TestFilterChains(t *testing.T) {
 		// it will be necessary; leaving it here to save time debugging after a refactor
 		ContributedPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			addFiltersGK: {
-				NewGatewayTranslationPass: func(ctx context.Context, tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
+				NewGatewayTranslationPass: func(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
 					return addFilters{}
 				},
 			},

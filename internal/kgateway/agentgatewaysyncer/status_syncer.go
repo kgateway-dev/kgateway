@@ -19,6 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
@@ -27,6 +28,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
@@ -71,6 +73,9 @@ type AgentGwStatusSyncer struct {
 	policyStatusQueue       utils.AsyncQueue[krt.ObjectWithStatus[controllers.Object, gwv1alpha2.PolicyStatus]]
 	policyStatusCollections *status.StatusCollections
 
+	// Policy status handlers
+	policyStatusHandlers map[string]agwplugins.AgwPolicyStatusSyncHandler
+
 	// Synchronization
 	cacheSyncs []cache.InformerSynced
 }
@@ -85,8 +90,9 @@ func NewAgwStatusSyncer(
 	routeReportQueue utils.AsyncQueue[RouteReports],
 	policyStatusCollections *status.StatusCollections,
 	cacheSyncs []cache.InformerSynced,
+	additionalPolicyStatusHandlers map[string]agwplugins.AgwPolicyStatusSyncHandler,
 ) *AgentGwStatusSyncer {
-	return &AgentGwStatusSyncer{
+	syncer := &AgentGwStatusSyncer{
 		controllerName:          controllerName,
 		agwClassName:            agwClassName,
 		client:                  client,
@@ -95,8 +101,27 @@ func NewAgwStatusSyncer(
 		listenerSetReportQueue:  listenerSetReportQueue,
 		routeReportQueue:        routeReportQueue,
 		policyStatusCollections: policyStatusCollections,
+		policyStatusHandlers:    make(map[string]agwplugins.AgwPolicyStatusSyncHandler),
 		cacheSyncs:              cacheSyncs,
 	}
+
+	// Register the built-in TrafficPolicy handler
+	syncer.RegisterPolicyStatusHandler(wellknown.TrafficPolicyGVK.String(), syncer.syncTrafficPolicyStatusHandler)
+
+	// Register any additional handlers provided
+	for gvk, handler := range additionalPolicyStatusHandlers {
+		syncer.RegisterPolicyStatusHandler(gvk, handler)
+	}
+
+	return syncer
+}
+
+// RegisterPolicyStatusHandler registers a policy status handler for a specific policy GVK
+func (s *AgentGwStatusSyncer) RegisterPolicyStatusHandler(gvk string, handler agwplugins.AgwPolicyStatusSyncHandler) {
+	if s.policyStatusHandlers == nil {
+		s.policyStatusHandlers = make(map[string]agwplugins.AgwPolicyStatusSyncHandler)
+	}
+	s.policyStatusHandlers[gvk] = handler
 }
 
 func (s *AgentGwStatusSyncer) Start(ctx context.Context) error {
@@ -167,15 +192,15 @@ func (s *AgentGwStatusSyncer) Start(ctx context.Context) error {
 		}
 	}()
 
-	// TrafficPolicy status syncer
+	// Policy status syncer
 	go func() {
 		for {
 			policyStatusUpdate, err := s.policyStatusQueue.Dequeue(ctx)
 			if err != nil {
-				logger.Error("failed to dequeue trafficpolicy status", "error", err)
+				logger.Error("failed to dequeue policy status", "error", err)
 				return
 			}
-			s.syncTrafficPolicyStatus(ctx, policyStatusLogger, policyStatusUpdate)
+			s.syncPolicyStatus(ctx, policyStatusLogger, policyStatusUpdate)
 		}
 	}()
 
@@ -183,7 +208,36 @@ func (s *AgentGwStatusSyncer) Start(ctx context.Context) error {
 	return nil
 }
 
-func (s *AgentGwStatusSyncer) syncTrafficPolicyStatus(ctx context.Context, logger *slog.Logger, policyStatusUpdate krt.ObjectWithStatus[controllers.Object, gwv1alpha2.PolicyStatus]) {
+// syncTrafficPolicyStatusHandler handles status syncing for TrafficPolicy resources
+func (s *AgentGwStatusSyncer) syncTrafficPolicyStatusHandler(ctx context.Context, client client.Client, namespacedName types.NamespacedName, status gwv1alpha2.PolicyStatus) error {
+	trafficpolicy := v1alpha1.TrafficPolicy{}
+	err := client.Get(ctx, namespacedName, &trafficpolicy)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			logger.Debug("skipping status sync for trafficpolicy, resource not found", "namespaced_name", namespacedName.String())
+			return nil
+		}
+		return err
+	}
+
+	// Update the trafficpolicy status directly
+	var ancestors []gwv1alpha2.PolicyAncestorStatus
+	for _, ancestor := range status.Ancestors {
+		ancestors = append(ancestors, gwv1alpha2.PolicyAncestorStatus{
+			AncestorRef:    ancestor.AncestorRef,
+			ControllerName: gwv1.GatewayController(ancestor.ControllerName),
+			Conditions:     ancestor.Conditions,
+		})
+	}
+	trafficpolicy.Status = gwv1alpha2.PolicyStatus{
+		Ancestors: ancestors,
+	}
+
+	return client.Status().Update(ctx, &trafficpolicy)
+}
+
+// syncPolicyStatus handles status syncing for all policy types with a registered policy status handler
+func (s *AgentGwStatusSyncer) syncPolicyStatus(ctx context.Context, logger *slog.Logger, policyStatusUpdate krt.ObjectWithStatus[controllers.Object, gwv1alpha2.PolicyStatus]) {
 	stopwatch := utils.NewTranslatorStopWatch("PolicyStatusSyncer")
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
@@ -193,41 +247,26 @@ func (s *AgentGwStatusSyncer) syncTrafficPolicyStatus(ctx context.Context, logge
 		Name:      policyStatusUpdate.Obj.GetName(),
 	}
 
-	err := retry.Do(func() error {
-		trafficpolicy := v1alpha1.TrafficPolicy{}
-		err := s.mgr.GetClient().Get(ctx, policyNameNs, &trafficpolicy)
-		if err != nil {
-			if apierrors.IsNotFound(err) {
-				logger.Debug("policy not found, skipping status update", "trafficpolicy", policyNameNs.String())
-				return nil
-			}
-			logger.Error("error getting trafficpolicy", logKeyError, err, "trafficpolicy", policyNameNs.String())
-			return err
-		}
+	gvk, err := apiutil.GVKForObject(policyStatusUpdate.Obj, s.mgr.GetScheme())
+	if err != nil {
+		logger.Error("failed to determine policy GVK", logKeyError, err, "policy", policyNameNs.String())
+		return
+	}
+	handler, exists := s.policyStatusHandlers[gvk.String()]
+	if !exists {
+		logger.Error("unsupported policy type for status sync", "gvk", gvk.String(), "policy", policyNameNs.String())
+		return
+	}
 
-		// Update the trafficpolicy status directly
-		var ancestors []gwv1alpha2.PolicyAncestorStatus
-		for _, ancestor := range policyStatusUpdate.Status.Ancestors {
-			ancestors = append(ancestors, gwv1alpha2.PolicyAncestorStatus{
-				AncestorRef:    ancestor.AncestorRef,
-				ControllerName: gwv1.GatewayController(ancestor.ControllerName),
-				Conditions:     ancestor.Conditions,
-			})
-		}
-		trafficpolicy.Status = gwv1alpha2.PolicyStatus{
-			Ancestors: ancestors,
-		}
-		err = s.mgr.GetClient().Status().Update(ctx, &trafficpolicy)
-		if err != nil {
-			logger.Error("error updating trafficpolicy status", logKeyError, err, "trafficpolicy", policyNameNs.String())
-			return err
-		}
-		logger.Debug("updated trafficpolicy status", "trafficpolicy", policyNameNs.String(), "status", trafficpolicy.Status)
-		return nil
+	// Use the handler with retry logic
+	err = retry.Do(func() error {
+		return handler(ctx, s.mgr.GetClient(), policyNameNs, policyStatusUpdate.Status)
 	}, retry.Attempts(maxRetryAttempts), retry.Delay(retryDelay))
 
 	if err != nil {
-		logger.Error("failed to sync trafficpolicy status after retries", logKeyError, err, "trafficpolicy", policyNameNs.String())
+		logger.Error("failed to sync policy status after retries", logKeyError, err, "policy", policyNameNs.String(), "gvk", gvk.String())
+	} else {
+		logger.Debug("updated policy status", "policy", policyNameNs.String(), "kind", gvk.String(), "status", policyStatusUpdate.Status)
 	}
 }
 
@@ -540,12 +579,12 @@ func normalizeListenerAttachedRoutes(gw *gwv1.Gateway, st *gwv1.GatewayStatus, c
 
 		if j, ok := idx[name]; ok {
 			// Preserve any existing conditions, just set the count.
-			st.Listeners[j].AttachedRoutes = int32(c)
+			st.Listeners[j].AttachedRoutes = int32(c) //nolint:gosec // G115: route count is always non-negative, safe for int32
 		} else {
 			// Create a minimal status for the listener with the correct count.
 			st.Listeners = append(st.Listeners, gwv1.ListenerStatus{
 				Name:           lis.Name,
-				AttachedRoutes: int32(c),
+				AttachedRoutes: int32(c), //nolint:gosec // G115: route count is always non-negative, safe for int32
 			})
 			idx[name] = len(st.Listeners) - 1
 		}

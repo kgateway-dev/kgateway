@@ -256,10 +256,10 @@ func createAgwRedirectFilter(filter *gwv1.HTTPRequestRedirectFilter) *api.RouteF
 		host = string(*filter.Hostname)
 	}
 	if filter.Port != nil {
-		port = uint32(*filter.Port)
+		port = uint32(*filter.Port) //nolint:gosec // G115: Gateway API PortNumber is int32 with validation 1-65535, always safe
 	}
 	if filter.StatusCode != nil {
-		statusCode = uint32(*filter.StatusCode)
+		statusCode = uint32(*filter.StatusCode) //nolint:gosec // G115: HTTP status codes are always positive integers (100-599)
 	}
 
 	ff := &api.RequestRedirect{

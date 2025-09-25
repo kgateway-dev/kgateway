@@ -632,7 +632,7 @@ func buildAgwDestination(
 					Service: namespace + "/" + hostname,
 				},
 				// InferencePool only supports single port
-				Port: uint32(svc.Spec.TargetPorts[0].Number),
+				Port: uint32(svc.Spec.TargetPorts[0].Number), //nolint:gosec // G115: InferencePool TargetPort is int32 with validation 1-65535, always safe
 			}
 		}
 	case wellknown.ServiceGVK.GroupKind():
@@ -668,7 +668,7 @@ func buildAgwDestination(
 			Kind: &api.BackendReference_Service{
 				Service: namespace + "/" + hostname,
 			},
-			Port: uint32(*port),
+			Port: uint32(*port), //nolint:gosec // G115: Gateway API PortNumber is int32 with validation 1-65535, always safe
 		}
 	case wellknown.BackendGVK.GroupKind():
 		backendRefKey := ns + "/" + string(to.Name)
@@ -1129,7 +1129,7 @@ func buildListener(
 	}
 
 	hostnames := buildHostnameMatch(ctx, obj.Namespace, namespaces, l)
-	protocol, perr := listenerProtocolToAgw(controllerName, l.Protocol)
+	protocol, perr := listenerProtocolToAgw(l.Protocol)
 	if perr != nil {
 		listenerConditions[string(gwv1.ListenerConditionAccepted)].error = &ConfigError{
 			Reason:  string(gwv1.ListenerReasonUnsupportedProtocol),
@@ -1141,7 +1141,7 @@ func buildListener(
 		Port: &istio.Port{
 			// Name is required. We only have one server per GatewayListener, so we can just name them all the same
 			Name:     "default",
-			Number:   uint32(l.Port),
+			Number:   uint32(l.Port), //nolint:gosec // G115: Gateway API listener port is int32, always positive, safe to convert to uint32
 			Protocol: protocol,
 		},
 		Hosts: hostnames,
@@ -1159,7 +1159,7 @@ var supportedProtocols = sets.New(
 	gwv1.TCPProtocolType,
 	gwv1.ProtocolType(protocol.HBONE))
 
-func listenerProtocolToAgw(name gwv1.GatewayController, p gwv1.ProtocolType) (string, error) {
+func listenerProtocolToAgw(p gwv1.ProtocolType) (string, error) {
 	switch p {
 	// Standard protocol types
 	case gwv1.HTTPProtocolType:
@@ -1168,6 +1168,8 @@ func listenerProtocolToAgw(name gwv1.GatewayController, p gwv1.ProtocolType) (st
 		return string(p), nil
 	case gwv1.TLSProtocolType, gwv1.TCPProtocolType:
 		// TODO: check if TLS/TCP alpha features are supported
+		return string(p), nil
+	case gwv1.ProtocolType(protocol.HBONE):
 		return string(p), nil
 	}
 	up := gwv1.ProtocolType(strings.ToUpper(string(p)))
@@ -1436,7 +1438,7 @@ func createAgwExtensionRefFilter(
 		filter := &api.RouteFilter{
 			Kind: &api.RouteFilter_DirectResponse{
 				DirectResponse: &api.DirectResponse{
-					Status: directResponse.Spec.StatusCode,
+					Status: uint32(directResponse.Spec.StatusCode), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 				},
 			},
 		}

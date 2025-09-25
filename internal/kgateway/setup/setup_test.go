@@ -427,7 +427,7 @@ func testScenario(
 	testyaml := strings.ReplaceAll(string(testyamlbytes), gwname, testgwname)
 
 	yamlfile := filepath.Join(t.TempDir(), "test.yaml")
-	os.WriteFile(yamlfile, []byte(testyaml), 0o644)
+	os.WriteFile(yamlfile, []byte(testyaml), 0o600)
 
 	err = client.ApplyYAMLFiles("", yamlfile)
 
@@ -476,7 +476,7 @@ func testScenario(
 			if err != nil {
 				return fmt.Errorf("failed to serialize xdsDump: %v", err)
 			}
-			os.WriteFile(fout, d, 0o644)
+			os.WriteFile(fout, d, 0o600)
 			return fmt.Errorf("wrote out file - nothing to test")
 		}
 		return dump.Compare(expectedXdsDump)

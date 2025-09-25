@@ -84,7 +84,8 @@ type StartConfig struct {
 	AugmentedPods     krt.Collection[krtcollections.LocalityPod]
 	UniqueClients     krt.Collection[ir.UniqlyConnectedClient]
 
-	KrtOptions krtutil.KrtOptions
+	KrtOptions                   krtutil.KrtOptions
+	ExtraAgwPolicyStatusHandlers map[string]agwplugins.AgwPolicyStatusSyncHandler
 }
 
 // Start runs the controllers responsible for processing the K8s Gateway API objects
@@ -213,6 +214,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			agwSyncer.RouteReportQueue(),
 			agwSyncer.PolicyStatusQueue(),
 			agwSyncer.CacheSyncs(),
+			cfg.ExtraAgwPolicyStatusHandlers,
 		)
 		if err := cfg.Manager.Add(agwStatusSyncer); err != nil {
 			setupLog.Error(err, "unable to add agentgateway StatusSyncer runnable")

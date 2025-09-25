@@ -5,8 +5,8 @@ package v1alpha1
 // CSRFPolicyApplyConfiguration represents a declarative configuration of the CSRFPolicy type for use
 // with apply.
 type CSRFPolicyApplyConfiguration struct {
-	PercentageEnabled  *uint32                           `json:"percentageEnabled,omitempty"`
-	PercentageShadowed *uint32                           `json:"percentageShadowed,omitempty"`
+	PercentageEnabled  *int32                            `json:"percentageEnabled,omitempty"`
+	PercentageShadowed *int32                            `json:"percentageShadowed,omitempty"`
 	AdditionalOrigins  []StringMatcherApplyConfiguration `json:"additionalOrigins,omitempty"`
 }
 
@@ -19,7 +19,7 @@ func CSRFPolicy() *CSRFPolicyApplyConfiguration {
 // WithPercentageEnabled sets the PercentageEnabled field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the PercentageEnabled field is set to the value of the last call.
-func (b *CSRFPolicyApplyConfiguration) WithPercentageEnabled(value uint32) *CSRFPolicyApplyConfiguration {
+func (b *CSRFPolicyApplyConfiguration) WithPercentageEnabled(value int32) *CSRFPolicyApplyConfiguration {
 	b.PercentageEnabled = &value
 	return b
 }
@@ -27,7 +27,7 @@ func (b *CSRFPolicyApplyConfiguration) WithPercentageEnabled(value uint32) *CSRF
 // WithPercentageShadowed sets the PercentageShadowed field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the PercentageShadowed field is set to the value of the last call.
-func (b *CSRFPolicyApplyConfiguration) WithPercentageShadowed(value uint32) *CSRFPolicyApplyConfiguration {
+func (b *CSRFPolicyApplyConfiguration) WithPercentageShadowed(value int32) *CSRFPolicyApplyConfiguration {
 	b.PercentageShadowed = &value
 	return b
 }

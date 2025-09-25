@@ -89,7 +89,7 @@ func (sw selectedWorkload) mapPort(name string, defalutValue int32) int32 {
 		return defalutValue
 	}
 	if override := sw.portMapping[name]; override > 0 {
-		return int32(override)
+		return int32(override) //nolint:gosec // G115: port numbers are always in valid range (1-65535)
 	}
 	return defalutValue
 }

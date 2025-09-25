@@ -352,7 +352,7 @@ func getAliases(
 		Kind:      ptr.To(gwv1.Kind(objSrc.Kind)),
 		Name:      gwv1.ObjectName(objSrc.Name),
 		Namespace: ptr.To(gwv1.Namespace(objSrc.Namespace)),
-		Port:      ptr.To(gwv1.PortNumber(se.Spec.GetPorts()[0].GetNumber())),
+		Port:      ptr.To(gwv1.PortNumber(se.Spec.GetPorts()[0].GetNumber())), //nolint:gosec // G115: ServiceEntry port number is uint32, safe to convert to PortNumber (int32)
 	})
 	if be == nil {
 		return nil

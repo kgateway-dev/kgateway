@@ -43,7 +43,7 @@ func applyRetries(rule *gwv1.HTTPRouteRule, route *api.Route) error {
 	tpRetry := &api.Retry{}
 	if rule.Retry.Codes != nil {
 		for _, c := range rule.Retry.Codes {
-			tpRetry.RetryStatusCodes = append(tpRetry.RetryStatusCodes, int32(c))
+			tpRetry.RetryStatusCodes = append(tpRetry.RetryStatusCodes, int32(c)) //nolint:gosec // G115: HTTP status codes are always positive integers (100-599)
 		}
 	}
 	if rule.Retry.Backoff != nil {
@@ -52,7 +52,7 @@ func applyRetries(rule *gwv1.HTTPRouteRule, route *api.Route) error {
 		}
 	}
 	if rule.Retry.Attempts != nil {
-		tpRetry.Attempts = int32(*rule.Retry.Attempts)
+		tpRetry.Attempts = int32(*rule.Retry.Attempts) //nolint:gosec // G115: kubebuilder validation ensures 0 <= value, safe for int32
 	}
 	route.TrafficPolicy.Retry = tpRetry
 	return nil
