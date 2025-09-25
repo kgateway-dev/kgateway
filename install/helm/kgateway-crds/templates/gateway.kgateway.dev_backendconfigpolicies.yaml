@@ -365,6 +365,8 @@ spec:
                     x-kubernetes-validations:
                     - message: invalid duration value
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                    - message: baseEjectionTime must be at least 1ms
+                      rule: duration(self) >= duration('1ms')
                   consecutive5xx:
                     default: 5
                     format: int32
@@ -376,6 +378,8 @@ spec:
                     x-kubernetes-validations:
                     - message: invalid duration value
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                    - message: interval must be at least 1ms
+                      rule: duration(self) >= duration('1ms')
                   maxEjectionPercent:
                     default: 10
                     format: int32

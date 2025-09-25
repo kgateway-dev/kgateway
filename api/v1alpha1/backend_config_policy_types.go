@@ -542,6 +542,7 @@ type OutlierDetection struct {
 	// +optional
 	// +kubebuilder:default="10s"
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="interval must be at least 1ms"
 	Interval *metav1.Duration `json:"interval,omitempty"`
 
 	// The base time that a host is ejected for. The real time is equal to the
@@ -550,6 +551,7 @@ type OutlierDetection struct {
 	// +optional
 	// +kubebuilder:default="30s"
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="baseEjectionTime must be at least 1ms"
 	BaseEjectionTime *metav1.Duration `json:"baseEjectionTime,omitempty"`
 
 	// The maximum % of an upstream cluster that can be ejected due to outlier

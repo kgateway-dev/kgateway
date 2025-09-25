@@ -61,7 +61,7 @@ type InitializeResponse struct {
 }
 
 // mcpProto is the protocol version for the MCP server
-const mcpProto = "2025-03-26"
+const mcpProto = "2025-06-18"
 
 var (
 	_ e2e.NewSuiteFunc = NewTestingSuite

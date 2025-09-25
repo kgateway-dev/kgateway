@@ -193,7 +193,7 @@ func (x *callbacks) OnStreamRequest(sid int64, r *envoy_service_discovery_v3.Dis
 	}
 
 	role := roleFromRequest(r)
-	// as gloo-edge and kgateway share a control plane, check that this collection only handles kgateway clients
+	// check that this collection only handles kgateway clients
 	// TODO remove this check if it's no longer needed
 	if !xds.IsKubeGatewayCacheKey(role) {
 		return nil
@@ -253,7 +253,7 @@ func (x *callbacks) OnFetchRequest(ctx context.Context, r *envoy_service_discove
 	}
 
 	role := r.GetNode().GetMetadata().GetFields()[xds.RoleKey].GetStringValue()
-	// as gloo-edge and kgateway share a control plane, check that this collection only handles kgateway clients
+	// check that this collection only handles kgateway clients
 	// TODO remove this check if it's no longer needed
 	if !xds.IsKubeGatewayCacheKey(role) {
 		return nil
