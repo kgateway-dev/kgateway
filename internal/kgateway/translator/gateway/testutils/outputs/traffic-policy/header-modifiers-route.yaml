@@ -187,7 +187,7 @@ Statuses:
           status: "True"
           type: Accepted
         - lastTransitionTime: null
-          message: Listener does not have conflicts
+          message: No errors found
           reason: NoConflicts
           status: "False"
           type: Conflicted
@@ -268,7 +268,7 @@ Statuses:
           status: "True"
           type: Accepted
         - lastTransitionTime: null
-          message: Listener does not have conflicts
+          message: No errors found
           reason: NoConflicts
           status: "False"
           type: Conflicted

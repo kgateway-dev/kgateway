@@ -26,7 +26,6 @@ const (
 	ValidRefsMessage             = "No errors found"
 	GatewayProgrammedMessage     = "Gateway is programmed"
 	ListenerSetProgrammedMessage = "ListenerSet is programmed"
-	ListenerNoConflictsMessage   = "Listener does not have conflicts"
 	ListenerProgrammedMessage    = "Listener is programmed"
 )
 
@@ -434,7 +433,7 @@ func addMissingListenerConditions(lisReport *ListenerReport) {
 			Type:    gwv1.ListenerConditionConflicted,
 			Status:  metav1.ConditionFalse,
 			Reason:  gwv1.ListenerReasonNoConflicts,
-			Message: ListenerNoConflictsMessage,
+			Message: AcceptedMessage,
 		})
 	}
 	if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(gwv1.ListenerConditionResolvedRefs)); cond == nil {
