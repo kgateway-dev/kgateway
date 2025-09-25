@@ -1,6 +1,0 @@
-kubeGateway:
-  gatewayParameters:
-    # We are testing the behavior of the deployer when users null out fields on this object
-    # We expect the deployment to be created but to fail to deploy a running proxy due to the missing 
-    # envoy image name.
-    glooGateway: null
