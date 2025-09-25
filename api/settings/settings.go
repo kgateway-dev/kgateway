@@ -169,6 +169,9 @@ type Settings struct {
 	DisableLeaderElection bool `split_words:"true" default:"false"`
 
 	PolicyMerge string `split_words:"true" default:"{}"`
+
+	// EnableWaypoint enables kgateway to translate istio waypoints
+	EnableWaypoint bool `split_words:"true" default:"false"`
 }
 
 // BuildSettings returns a zero-valued Settings obj if error is encountered when parsing env

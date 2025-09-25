@@ -106,6 +106,10 @@ spec:
             - name: KGW_ENABLE_AGENTGATEWAY
               value: "true"
             {{- end }}
+            {{- if .Values.waypoint.enabled }}
+            - name: KGW_ENABLE_WAYPOINT
+              value: "true"
+            {{- end }}
             # TODO: Remove this once the cleanup is done. Required as the gloo-system
             # namespace is the default namespace and conformance will fail as a result.
             - name: POD_NAMESPACE

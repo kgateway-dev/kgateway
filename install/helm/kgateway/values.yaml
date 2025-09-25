@@ -109,3 +109,7 @@ agentgateway:
 #   trafficPolicy:
 #     extProc: DeepMerge
 policyMerge: {}
+
+# -- Enable the kgateway to translate istio waypoints.
+waypoint:
+  enabled: false

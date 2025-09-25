@@ -56,7 +56,7 @@ var (
 	logger = logging.New("plugin/inference-epp")
 )
 
-func NewPlugin(ctx context.Context, commonCols *collections.CommonCollections) *sdk.Plugin {
+func NewPlugin(ctx context.Context, commonCols *collections.CommonCollections) sdk.Plugin {
 	p := initInferencePoolCollections(ctx, commonCols)
 
 	// Wrap the init function so it can capture commonCols.Pods
@@ -64,7 +64,7 @@ func NewPlugin(ctx context.Context, commonCols *collections.CommonCollections) *
 		return processPoolBackendObjIR(ctx, in, out, p.podIndex)
 	}
 
-	return &sdk.Plugin{
+	return sdk.Plugin{
 		ContributesBackends: map[schema.GroupKind]sdk.BackendPlugin{
 			wellknown.InferencePoolGVK.GroupKind(): {
 				BackendInit: ir.BackendInit{InitEnvoyBackend: initBackend},
