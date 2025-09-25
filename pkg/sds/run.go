@@ -9,7 +9,6 @@ import (
 
 	"github.com/avast/retry-go"
 	"github.com/kelseyhightower/envconfig"
-	corev1 "k8s.io/api/core/v1"
 
 	"github.com/solo-io/go-utils/stats"
 
@@ -32,11 +31,6 @@ type Config struct {
 	PodName      string `split_words:"true"`
 	PodNamespace string `split_words:"true"`
 
-	GlooMtlsSdsEnabled    bool   `split_words:"true"`
-	GlooMtlsSecretDir     string `split_words:"true" default:"/etc/envoy/ssl/"`
-	GlooServerCert        string `split_words:"true" default:"server_cert"`
-	GlooValidationContext string `split_words:"true" default:"validation_context"`
-
 	IstioMtlsSdsEnabled    bool   `split_words:"true"`
 	IstioCertDir           string `split_words:"true" default:"/etc/istio-certs/"`
 	IstioServerCert        string `split_words:"true" default:"istio_server_cert"`
@@ -53,7 +47,6 @@ func RunMain() {
 	//nolint:sloglint // ignore key case
 	logger.Info(
 		"config loaded",
-		slog.Bool("glooMtlsSdsEnabled", c.GlooMtlsSdsEnabled),
 		slog.Bool("istioMtlsSdsEnabled", c.IstioMtlsSdsEnabled),
 	)
 
@@ -67,17 +60,6 @@ func RunMain() {
 			SslKeyFile:        c.IstioCertDir + "key.pem",
 		}
 		secrets = append(secrets, istioCertsSecret)
-	}
-
-	if c.GlooMtlsSdsEnabled {
-		glooMtlsSecret := server.Secret{
-			ServerCert:        c.GlooServerCert,
-			ValidationContext: c.GlooValidationContext,
-			SslCaFile:         c.GlooMtlsSecretDir + corev1.ServiceAccountRootCAKey,
-			SslCertFile:       c.GlooMtlsSecretDir + corev1.TLSCertKey,
-			SslKeyFile:        c.GlooMtlsSecretDir + corev1.TLSPrivateKeyKey,
-		}
-		secrets = append(secrets, glooMtlsSecret)
 	}
 
 	logger.Info("checking for existence of secrets")
@@ -108,9 +90,8 @@ func setup() Config {
 		c.SdsClient = determineSdsClient(c)
 	}
 
-	// At least one must be enabled, otherwise we have nothing to do.
-	if !c.GlooMtlsSdsEnabled && !c.IstioMtlsSdsEnabled {
-		err := fmt.Errorf("at least one of Istio Cert rotation or Gloo Cert rotation must be enabled, using env vars GLOO_MTLS_SDS_ENABLED or ISTIO_MTLS_SDS_ENABLED")
+	if !c.IstioMtlsSdsEnabled {
+		err := fmt.Errorf("Istio Cert rotation must be enabled, using env var ISTIO_MTLS_SDS_ENABLED")
 		log.Fatalf("invalid config: %v", err)
 	}
 	return c
