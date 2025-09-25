@@ -403,7 +403,7 @@ func buildAgwGRPCDestination(
 			Kind:    "GRPCRoute",
 		}, ctx.Backends)
 		if err != nil {
-			logger.Error("Error building agent gateway destination", "Error", err)
+			logger.Error("error building agent gateway destination", "error", err)
 			if isInvalidBackend(err) {
 				invalidBackendErr = err
 				// keep going, we will gracefully drop invalid backends

@@ -378,7 +378,7 @@ func buildAgwTCPDestination(
 			Filters:    nil, // TCP Routes don't have per-backend filters?
 		}, ns, wellknown.TCPRouteGVK, ctx.Backends)
 		if err != nil {
-			logger.Error("Error building agent gateway destination", "Error", err)
+			logger.Error("error building agent gateway destination", "error", err)
 			if isInvalidBackend(err) {
 				invalidBackendErr = err
 				// keep going, we will gracefully drop invalid backends
@@ -408,7 +408,7 @@ func buildAgwTLSDestination(
 			Filters:    nil, // TLS Routes don't have per-backend filters
 		}, ns, wellknown.TLSRouteGVK, ctx.Backends)
 		if err != nil {
-			logger.Error("Error building agent gateway destination", "Error", err)
+			logger.Error("error building agent gateway destination", "error", err)
 			if isInvalidBackend(err) {
 				invalidBackendErr = err
 				// keep going, we will gracefully drop invalid backends
@@ -557,7 +557,7 @@ func buildAgwHTTPDestination(
 	for _, fwd := range forwardTo {
 		dst, err := buildAgwDestination(ctx, fwd, ns, wellknown.HTTPRouteGVK, ctx.Backends)
 		if err != nil {
-			logger.Error("erroring building agent gateway destination", "Error", err)
+			logger.Error("erroring building agent gateway destination", "error", err)
 			if isInvalidBackend(err) {
 				invalidBackendErr = err
 				// keep going, we will gracefully drop invalid backends
