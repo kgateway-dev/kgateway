@@ -57,8 +57,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
-type AssertReports func(gwNN types.NamespacedName, reportsMap reports.ReportMap)
-
 type translationResult struct {
 	Routes        []*envoyroutev3.RouteConfiguration
 	Listeners     []*envoylistenerv3.Listener
@@ -233,10 +231,9 @@ func TestTranslation(
 	inputFiles []string,
 	outputFile string,
 	gwNN types.NamespacedName,
-	assertReports AssertReports,
 	settingsOpts ...SettingsOpts,
 ) {
-	TestTranslationWithExtraPlugins(t, ctx, inputFiles, outputFile, gwNN, assertReports, nil, nil, nil, "", settingsOpts...)
+	TestTranslationWithExtraPlugins(t, ctx, inputFiles, outputFile, gwNN, nil, nil, nil, "", settingsOpts...)
 }
 
 func TestTranslationWithExtraPlugins(
@@ -245,7 +242,6 @@ func TestTranslationWithExtraPlugins(
 	inputFiles []string,
 	outputFile string,
 	gwNN types.NamespacedName,
-	assertReports AssertReports,
 	extraPluginsFn ExtraPluginsFn,
 	extraSchemes runtime.SchemeBuilder,
 	extraGroups []string,
@@ -303,12 +299,6 @@ func TestTranslationWithExtraPlugins(
 	gotStatuses, err := compareStatuses(outputFile, output.Statuses)
 	r.Emptyf(gotStatuses, "unexpected diff in statuses output; actual result: %s", outputYaml)
 	r.NoError(err, "error comparing statuses output")
-
-	if assertReports != nil {
-		assertReports(gwNN, result.ReportsMap)
-	} else {
-		r.NoError(AreReportsSuccess(gwNN, result.ReportsMap), "expected status reports to not have errors")
-	}
 }
 
 type TestCase struct {
@@ -538,11 +528,6 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 
 	return nil
 }
-
-// AssertReportsNoOp is a no-op assertion function. It should be used when the test does not
-// need to perform the default or custom assertions on the reports, and instead relies on the
-// statuses written to the output file
-func AssertReportsNoOp(gwNN types.NamespacedName, reportsMap reports.ReportMap) {}
 
 type SettingsOpts func(*settings.Settings)
 
