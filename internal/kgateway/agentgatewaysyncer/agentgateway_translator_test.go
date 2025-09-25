@@ -1,26 +1,19 @@
 package agentgatewaysyncer
 
 import (
-	"context"
 	"path/filepath"
+	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 )
 
 type translatorTestCase struct {
-	inputFile     string
-	outputFile    string
-	assertReports AssertReports
-	gwNN          types.NamespacedName
+	inputFile  string
+	outputFile string
+	gwNN       types.NamespacedName
 }
 
 func TestBasic(t *testing.T) {
@@ -29,7 +22,8 @@ func TestBasic(t *testing.T) {
 
 		inputFiles := []string{filepath.Join(dir, "testdata/inputs/", in.inputFile)}
 		expectedProxyFile := filepath.Join(dir, "testdata/outputs/", in.outputFile)
-		TestTranslation(t, t.Context(), inputFiles, expectedProxyFile, in.gwNN, in.assertReports, settingOpts...)
+		expectedstatusFile := filepath.Join(dir, "testdata/outputs/", strings.Replace(in.outputFile, ".yaml", ".status.yaml", -1))
+		TestTranslation(t, t.Context(), inputFiles, expectedProxyFile, expectedstatusFile, in.gwNN, settingOpts...)
 	}
 
 	t.Run("http gateway with basic http routing", func(t *testing.T) {
@@ -51,21 +45,6 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
-			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				route := &gwv1.GRPCRoute{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "example-grpc-route",
-						Namespace: "default",
-					},
-				}
-				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
-				assert.NotNil(t, routeStatus)
-				assert.Len(t, routeStatus.Parents, 1)
-				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
-				assert.NotNil(t, resolvedRefs)
-				assert.Equal(t, metav1.ConditionTrue, resolvedRefs.Status)
-				assert.Equal(t, string(gwv1.RouteReasonResolvedRefs), resolvedRefs.Reason)
-			},
 		})
 	})
 
@@ -76,21 +55,6 @@ func TestBasic(t *testing.T) {
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
-			},
-			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				route := &gwv1.GRPCRoute{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "example-grpc-route",
-						Namespace: "default",
-					},
-				}
-				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
-				assert.NotNil(t, routeStatus)
-				assert.Len(t, routeStatus.Parents, 1)
-				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
-				assert.NotNil(t, resolvedRefs)
-				assert.Equal(t, metav1.ConditionFalse, resolvedRefs.Status)
-				assert.Equal(t, `backend(example-grpc-svc.default.svc.cluster.local) not found`, resolvedRefs.Message)
 			},
 		})
 	})
@@ -103,21 +67,6 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
-			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				route := &gwv1.GRPCRoute{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "example-grpc-route",
-						Namespace: "default",
-					},
-				}
-				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
-				assert.NotNil(t, routeStatus)
-				assert.Len(t, routeStatus.Parents, 1)
-				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
-				assert.NotNil(t, resolvedRefs)
-				assert.Equal(t, metav1.ConditionFalse, resolvedRefs.Status)
-				assert.Equal(t, "referencing unsupported backendRef: group \"\" kind \"ConfigMap\"", resolvedRefs.Message)
-			},
 		})
 	})
 
@@ -128,6 +77,17 @@ func TestBasic(t *testing.T) {
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-grpc-gateway",
+			},
+		})
+	})
+
+	t.Run("tlsroute", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "tls-routing/gateway.yaml",
+			outputFile: "tls-routing/gateway.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
 			},
 		})
 	})
@@ -294,30 +254,6 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
-			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				route := &gwv1.HTTPRoute{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "example-route",
-						Namespace: "default",
-					},
-				}
-				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
-				assert.NotNil(t, routeStatus)
-				assert.Len(t, routeStatus.Parents, 1)
-
-				// Your implementation sets ResolvedRefs=False with BackendNotFound reason
-				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
-				assert.NotNil(t, resolvedRefs)
-				assert.Equal(t, metav1.ConditionFalse, resolvedRefs.Status)                   // Changed from True to False
-				assert.Equal(t, string(gwv1.RouteReasonBackendNotFound), resolvedRefs.Reason) // Changed from ResolvedRefs to BackendNotFound
-
-				// Your implementation sets Accepted=True
-				acceptedCond := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
-				assert.NotNil(t, acceptedCond)
-				assert.Equal(t, metav1.ConditionTrue, acceptedCond.Status)             // Changed from False to True
-				assert.Equal(t, string(gwv1.RouteReasonAccepted), acceptedCond.Reason) // Changed from BackendNotFound to Accepted
-				// Remove the message assertion since your implementation doesn't set a message
-			},
 		})
 	})
 
@@ -329,25 +265,6 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
-			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				route := &gwv1.HTTPRoute{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "example-route",
-						Namespace: "default",
-					},
-				}
-				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
-				assert.NotNil(t, routeStatus)
-				assert.Len(t, routeStatus.Parents, 1)
-
-				// Adjust expectations based on what your implementation actually does
-				// You'll need to check what status conditions your implementation sets for overlapping filters
-				acceptedCond := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
-				assert.NotNil(t, acceptedCond)
-				// Update these based on your actual implementation behavior:
-				assert.Equal(t, metav1.ConditionTrue, acceptedCond.Status) // Assuming your impl accepts the route
-				assert.Equal(t, string(gwv1.RouteReasonAccepted), acceptedCond.Reason)
-			},
 		})
 	})
 
@@ -358,27 +275,6 @@ func TestBasic(t *testing.T) {
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
-			},
-			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				route := &gwv1.HTTPRoute{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "example-route",
-						Namespace: "default",
-					},
-				}
-				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
-				assert.NotNil(t, routeStatus)
-				assert.Len(t, routeStatus.Parents, 1)
-
-				// DirectResponse attached to backendRef should be ignored, route should resolve normally
-				acceptedCond := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
-				assert.NotNil(t, acceptedCond)
-				assert.Equal(t, metav1.ConditionTrue, acceptedCond.Status)
-				assert.Equal(t, string(gwv1.RouteReasonAccepted), acceptedCond.Reason)
-
-				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
-				assert.NotNil(t, resolvedRefs)
-				assert.Equal(t, metav1.ConditionTrue, resolvedRefs.Status)
 			},
 		})
 	})

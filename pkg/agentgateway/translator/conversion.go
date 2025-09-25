@@ -3,7 +3,6 @@ package translator
 import (
 	"crypto/tls"
 	"fmt"
-	"log"
 	"sort"
 	"strconv"
 	"strings"
@@ -23,6 +22,7 @@ import (
 	"istio.io/istio/pkg/config/schema/kind"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/log"
 	"istio.io/istio/pkg/ptr"
 	"istio.io/istio/pkg/slices"
 	"istio.io/istio/pkg/util/sets"
@@ -30,6 +30,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	klabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -304,6 +305,13 @@ func ConvertGRPCRouteToAgw(ctx RouteContext, r gwv1.GRPCRouteRule,
 			Headers: headers,
 			// note: the RouteMatch method field only applies for http methods
 		})
+	}
+	if len(res.Matches) == 0 {
+		// HTTPRoute defaults in the CRD itself, but GRPCRoute does not.
+		// Agentgateway expects there to always be a match set.
+		res.Matches = []*api.RouteMatch{{
+			Path: &api.PathMatch{Kind: &api.PathMatch_PathPrefix{PathPrefix: "/"}},
+		}}
 	}
 
 	filters, err := BuildAgwGRPCFilters(ctx, obj.Namespace, r.Filters)
@@ -719,6 +727,7 @@ func ParentMeta(obj controllers.Object, sectionName *gwv1.SectionName) map[strin
 
 var allowedParentReferences = sets.New(
 	wellknown.GatewayGVK,
+	wellknown.XListenerSetGVK,
 	wellknown.ServiceGVK,
 	wellknown.ServiceEntryGVK,
 )
@@ -740,6 +749,11 @@ func normalizeReference(group *gwv1.Group, kind *gwv1.Kind, defaultGVK schema.Gr
 			result.Group = ""
 		} else {
 			result.Group = groupStr
+		}
+	}
+	for wk := range allowedParentReferences {
+		if wk.Group == result.Group && wk.Kind == result.Kind {
+			return wk
 		}
 	}
 
@@ -906,7 +920,9 @@ func extractParentReferenceInfo(ctx RouteContext, parents RouteParents, obj cont
 				bannedHostnames.Insert(gw.OriginalHostname)
 			}
 			deniedReason := ReferenceAllowed(ctx, pr, kind, pk, hostnames, localNamespace)
+
 			rpi := RouteParentReference{
+				ParentGateway:     pr.ParentGateway,
 				InternalName:      pr.InternalName,
 				InternalKind:      ir.Kind,
 				Hostname:          pr.OriginalHostname,
@@ -966,6 +982,7 @@ func (p ParentReference) String() string {
 // ParentInfo holds info about a "Parent" - something that can be referenced as a ParentRef in the API.
 // Today, this is just Gateway
 type ParentInfo struct {
+	ParentGateway types.NamespacedName
 	// InternalName refers to the internal name we can reference it by. For example "my-ns/my-gateway"
 	InternalName string
 	// AllowedKinds indicates which kinds can be admitted by this Parent
@@ -976,9 +993,10 @@ type ParentInfo struct {
 	// OriginalHostname is the unprocessed form of Hostnames; how it appeared in users' config
 	OriginalHostname string
 
-	SectionName gwv1.SectionName
-	Port        gwv1.PortNumber
-	Protocol    gwv1.ProtocolType
+	SectionName    gwv1.SectionName
+	Port           gwv1.PortNumber
+	Protocol       gwv1.ProtocolType
+	TLSPassthrough bool
 }
 
 // RouteParentReference holds information about a route's parent reference
@@ -997,6 +1015,7 @@ type RouteParentReference struct {
 	ParentKey       ParentKey
 	ParentSection   gwv1.SectionName
 	Accepted        bool
+	ParentGateway   types.NamespacedName
 }
 
 // FilteredReferences filters out references that are not accepted by the Parent.
@@ -1103,13 +1122,12 @@ func BuildListener(
 	secrets krt.Collection[*corev1.Secret],
 	grants ReferenceGrants,
 	namespaces krt.Collection[*corev1.Namespace],
-	obj *gwv1.Gateway,
-	status *gwv1.GatewayStatus,
+	obj controllers.Object,
+	status []gwv1.ListenerStatus,
 	l gwv1.Listener,
 	listenerIndex int,
-	controllerName gwv1.GatewayController,
-	attachedRoutes int32,
-) (*istio.Server, *TLSInfo, bool) {
+	portErr error,
+) (*istio.Server, *TLSInfo, []gwv1.ListenerStatus, bool) {
 	listenerConditions := map[string]*condition{
 		string(gwv1.ListenerConditionAccepted): {
 			reason:  string(gwv1.ListenerReasonAccepted),
@@ -1131,7 +1149,7 @@ func BuildListener(
 	}
 
 	ok := true
-	tls, tlsInfo, err := buildTLS(ctx, secrets, grants, l.TLS, obj, kube.IsAutoPassthrough(obj.Labels, l))
+	tls, tlsInfo, err := buildTLS(ctx, secrets, grants, l.TLS, obj, kube.IsAutoPassthrough(obj.GetLabels(), l))
 	if err != nil {
 		listenerConditions[string(gwv1.ListenerConditionResolvedRefs)].error = err
 		listenerConditions[string(gwv1.GatewayConditionProgrammed)].error = &ConfigError{
@@ -1140,8 +1158,15 @@ func BuildListener(
 		}
 		ok = false
 	}
+	if portErr != nil {
+		listenerConditions[string(gwv1.ListenerConditionAccepted)].error = &ConfigError{
+			Reason:  string(gwv1.ListenerReasonUnsupportedProtocol),
+			Message: portErr.Error(),
+		}
+		ok = false
+	}
 
-	hostnames := buildHostnameMatch(ctx, obj.Namespace, namespaces, l)
+	hostnames := buildHostnameMatch(ctx, obj.GetNamespace(), namespaces, l)
 	protocol, perr := listenerProtocolToAgw(l.Protocol)
 	if perr != nil {
 		listenerConditions[string(gwv1.ListenerConditionAccepted)].error = &ConfigError{
@@ -1161,8 +1186,8 @@ func BuildListener(
 		Tls:   tls,
 	}
 
-	reportListenerCondition(listenerIndex, l, obj, status, listenerConditions, attachedRoutes)
-	return server, tlsInfo, ok
+	updatedStatus := reportListenerCondition(listenerIndex, l, obj, status, listenerConditions)
+	return server, tlsInfo, updatedStatus, ok
 }
 
 var supportedProtocols = sets.New(
@@ -1198,7 +1223,7 @@ func buildTLS(
 	secrets krt.Collection[*corev1.Secret],
 	grants ReferenceGrants,
 	tls *gwv1.ListenerTLSConfig,
-	gw *gwv1.Gateway,
+	gw controllers.Object,
 	isAutoPassthrough bool,
 ) (*istio.ServerTLSSettings, *TLSInfo, *ConfigError) {
 	if tls == nil {
@@ -1213,7 +1238,7 @@ func buildTLS(
 	if tls.Mode != nil {
 		mode = *tls.Mode
 	}
-	namespace := gw.Namespace
+	namespace := gw.GetNamespace()
 	switch mode {
 	case gwv1.TLSModeTerminate:
 		out.Mode = istio.ServerTLSSettings_SIMPLE
@@ -1259,7 +1284,7 @@ func buildTLS(
 func buildSecretReference(
 	ctx krt.HandlerContext,
 	ref gwv1.SecretObjectReference,
-	gw *gwv1.Gateway,
+	gw controllers.Object,
 	secrets krt.Collection[*corev1.Secret],
 ) (string, TLSInfo, *ConfigError) {
 	if normalizeReference(ref.Group, ref.Kind, wellknown.SecretGVK) != wellknown.SecretGVK {
@@ -1269,7 +1294,7 @@ func buildSecretReference(
 	secret := ConfigKey{
 		Kind:      kind.Secret,
 		Name:      string(ref.Name),
-		Namespace: ptr.OrDefault((*string)(ref.Namespace), gw.Namespace),
+		Namespace: ptr.OrDefault((*string)(ref.Namespace), gw.GetNamespace()),
 	}
 
 	key := secret.Namespace + "/" + secret.Name

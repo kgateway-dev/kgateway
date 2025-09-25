@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"fmt"
 
-	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/kubetypes"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -92,7 +91,7 @@ func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig, helmValues
 		reconciler: &controllerReconciler{
 			cli:          cfg.Mgr.GetClient(),
 			scheme:       cfg.Mgr.GetScheme(),
-			customEvents: make(chan event.TypedGenericEvent[ir.Gateway], 1024),
+			customEvents: make(chan event.TypedGenericEvent[ir.GatewayForDeployer], 1024),
 			metricsName:  "gatewayclass",
 		},
 		helmValuesGeneratorOverride: helmValuesGeneratorOverride,
@@ -130,7 +129,7 @@ func NewBaseInferencePoolController(
 		reconciler: &controllerReconciler{
 			cli:          poolCfg.Mgr.GetClient(),
 			scheme:       poolCfg.Mgr.GetScheme(),
-			customEvents: make(chan event.TypedGenericEvent[ir.Gateway], 1024),
+			customEvents: make(chan event.TypedGenericEvent[ir.GatewayForDeployer], 1024),
 			metricsName:  "gatewayclass-inferencepool",
 		},
 		helmValuesGeneratorOverride: helmValuesGeneratorOverride,
@@ -200,14 +199,15 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	)
 
 	inputs := &deployer.Inputs{
-		Dev:                      c.cfg.Dev,
-		IstioAutoMtlsEnabled:     c.cfg.IstioAutoMtlsEnabled,
-		ControlPlane:             c.cfg.ControlPlane,
-		ImageInfo:                c.cfg.ImageInfo,
-		CommonCollections:        c.cfg.CommonCollections,
-		GatewayClassName:         c.cfg.GatewayClassName,
-		WaypointGatewayClassName: c.cfg.WaypointGatewayClassName,
-		AgentgatewayClassName:    c.cfg.AgentgatewayClassName,
+		Dev:                        c.cfg.Dev,
+		IstioAutoMtlsEnabled:       c.cfg.IstioAutoMtlsEnabled,
+		ControlPlane:               c.cfg.ControlPlane,
+		ImageInfo:                  c.cfg.ImageInfo,
+		CommonCollections:          c.cfg.CommonCollections,
+		GatewayClassName:           c.cfg.GatewayClassName,
+		WaypointGatewayClassName:   c.cfg.WaypointGatewayClassName,
+		AgentgatewayClassName:      c.cfg.AgentgatewayClassName,
+		AgentgatewayControllerName: c.cfg.AgwControllerName,
 	}
 
 	gwParams := internaldeployer.NewGatewayParameters(c.cfg.Mgr.GetClient(), inputs)
@@ -338,21 +338,17 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	)
 
 	// Trigger an event when the gateway changes. This can even be a change in listener sets attached to the gateway
-	c.cfg.CommonCollections.GatewayIndex.Gateways.Register(func(o krt.Event[ir.Gateway]) {
-		if gw := meaningfulChange(o); gw != nil {
-			log.V(6).Info("triggered change from IR")
-			c.reconciler.customEvents <- event.TypedGenericEvent[ir.Gateway]{
-				Object: *gw,
-			}
-		} else {
-			log.V(6).Info("skipped change from IR")
+	c.cfg.CommonCollections.GatewayIndex.GatewaysForDeployer.Register(func(o krt.Event[ir.GatewayForDeployer]) {
+		gw := o.Latest()
+		c.reconciler.customEvents <- event.TypedGenericEvent[ir.GatewayForDeployer]{
+			Object: gw,
 		}
 	})
 	buildr.WatchesRawSource(
 		// Add channel source for custom events
 		source.Channel(
 			c.reconciler.customEvents,
-			handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, obj ir.Gateway) []reconcile.Request {
+			handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, obj ir.GatewayForDeployer) []reconcile.Request {
 				// Convert the generic event to a reconcile request
 				return []reconcile.Request{
 					{
@@ -410,26 +406,6 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		NeedLeaderElection: ptr.To(true),
 	})
 	return buildr.Complete(NewGatewayReconciler(ctx, c.cfg, d))
-}
-
-// meaningfulChange filters out changes to an ir.Gateway that are not relevant to the deployer.
-// This avoids expensive re-reconciling of the Gateway on each status update, which is a frequent operation due to the
-// attachedRoutes status.
-func meaningfulChange(ev krt.Event[ir.Gateway]) *ir.Gateway {
-	switch ev.Event {
-	case controllers.EventAdd:
-		return ev.New
-	case controllers.EventDelete:
-		return ev.Old
-	}
-	o, n := ev.Old, ev.New
-	meaningfulFieldsEqual := o.ObjectSource.Equals(n.ObjectSource) &&
-		o.Obj.GetGeneration() == n.Obj.GetGeneration() &&
-		deployer.NewGatewayIRForDeployer(o).Equals(deployer.NewGatewayIRForDeployer(n))
-	if !meaningfulFieldsEqual {
-		return n
-	}
-	return nil
 }
 
 func (c *controllerBuilder) addHTTPRouteIndexes(ctx context.Context) error {
@@ -641,7 +617,7 @@ func (c *controllerBuilder) setupTLSCertificateWatch(ctx context.Context, buildr
 type controllerReconciler struct {
 	cli          client.Client
 	scheme       *runtime.Scheme
-	customEvents chan event.TypedGenericEvent[ir.Gateway]
+	customEvents chan event.TypedGenericEvent[ir.GatewayForDeployer]
 	metricsName  string
 }
 

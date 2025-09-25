@@ -7,6 +7,7 @@ import (
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"google.golang.org/protobuf/proto"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
@@ -75,6 +76,24 @@ func (h *nodeRoleHasher) ID(node *envoycorev3.Node) string {
 	}
 
 	return FallbackNodeCacheKey
+}
+
+func AgentgatewayID(node *envoycorev3.Node) types.NamespacedName {
+	if node.GetMetadata() != nil {
+		roleValue := node.GetMetadata().GetFields()[RoleKey]
+		if roleValue != nil {
+			s := roleValue.GetStringValue()
+			ns, name, ok := strings.Cut(s, KeyDelimiter)
+			if ok {
+				return types.NamespacedName{
+					Namespace: ns,
+					Name:      name,
+				}
+			}
+		}
+	}
+
+	return types.NamespacedName{}
 }
 
 func CloneSnap(snap *cache.Snapshot) *cache.Snapshot {

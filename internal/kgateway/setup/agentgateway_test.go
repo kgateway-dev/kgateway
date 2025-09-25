@@ -42,7 +42,7 @@ func TestAgentgateway(t *testing.T) {
 }
 
 func runAgentgatewayScenario(t *testing.T, scenarioDir string, globalSettings *apisettings.Settings) {
-	setupEnvTestAndRun(t, globalSettings, func(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler, client istiokube.CLIClient, xdsPort int) {
+	setupEnvTestAndRun(t, globalSettings, func(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler, client istiokube.CLIClient, _, xdsPort int) {
 		// list all yamls in test data
 		files, err := os.ReadDir(scenarioDir)
 		if err != nil {
@@ -123,10 +123,6 @@ func testAgentgatewayScenario(
 		t.Fatalf("failed to apply yaml: %v", err)
 	}
 	t.Log("applied yamls", t.Name())
-
-	// wait at least a second before the first check
-	// to give the CP time to process
-	time.Sleep(time.Second)
 
 	t.Cleanup(func() {
 		if t.Failed() {
@@ -539,18 +535,20 @@ func compareDumps(actual, expected agentGwDump) error {
 	return nil
 }
 
-func newAgentgatewayXdsDumper(t *testing.T, ctx context.Context, xdsPort int, gwname, gwnamespace string) xdsDumper {
+func newAgentgatewayXdsDumper(t *testing.T, ctx context.Context, xdsPort int, gwname, gwnamespace string) deltaXdsDumper {
 	conn, err := grpc.NewClient(fmt.Sprintf("localhost:%d", xdsPort),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithIdleTimeout(time.Second*10),
+		//nolint:staticcheck // for testing
+		grpc.WithBlock(),
 	)
 	if err != nil {
 		t.Fatalf("failed to connect to xds server: %v", err)
 	}
 
-	d := xdsDumper{
+	d := deltaXdsDumper{
 		conn: conn,
-		dr: &envoy_service_discovery_v3.DiscoveryRequest{
+		dr: &envoy_service_discovery_v3.DeltaDiscoveryRequest{
 			Node: &envoycorev3.Node{
 				Id: "gateway.gwtest",
 				Metadata: &structpb.Struct{
@@ -563,13 +561,7 @@ func newAgentgatewayXdsDumper(t *testing.T, ctx context.Context, xdsPort int, gw
 	}
 
 	ads := envoy_service_discovery_v3.NewAggregatedDiscoveryServiceClient(d.conn)
-	ctx, cancel := context.WithTimeout(ctx, time.Second*30) // long timeout - just in case. we should never reach it.
-	adsClient, err := ads.StreamAggregatedResources(ctx)
-	if err != nil {
-		t.Fatalf("failed to get ads client: %v", err)
-	}
-	d.adsClient = adsClient
-	d.cancel = cancel
+	d.ads = ads
 
 	return d
 }
@@ -579,7 +571,7 @@ type agentGwDump struct {
 	Addresses []*api.Address
 }
 
-func (x xdsDumper) DumpAgentgateway(t *testing.T, ctx context.Context) agentGwDump {
+func (x deltaXdsDumper) DumpAgentgateway(t *testing.T, ctx context.Context) agentGwDump {
 	// get resources
 	resources := x.GetResources(t, ctx)
 	addresses := x.GetAddress(t, ctx)
@@ -590,30 +582,47 @@ func (x xdsDumper) DumpAgentgateway(t *testing.T, ctx context.Context) agentGwDu
 	}
 }
 
-func (x xdsDumper) GetResources(t *testing.T, ctx context.Context) []*api.Resource {
-	dr := proto.Clone(x.dr).(*envoy_service_discovery_v3.DiscoveryRequest)
+func (x deltaXdsDumper) GetConn(t *testing.T) (envoy_service_discovery_v3.AggregatedDiscoveryService_DeltaAggregatedResourcesClient, context.CancelFunc) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30) // long timeout - just in case. we should never reach it.
+	adsClient, err := x.ads.DeltaAggregatedResources(ctx)
+	if err != nil {
+		t.Fatalf("failed to get ads client: %v", err)
+	}
+	return adsClient, cancel
+}
+
+func (x deltaXdsDumper) GetResources(t *testing.T, ctx context.Context) []*api.Resource {
+	dr := proto.Clone(x.dr).(*envoy_service_discovery_v3.DeltaDiscoveryRequest)
 	dr.TypeUrl = translator.TargetTypeResourceUrl
-	x.adsClient.Send(dr)
-	var resources []*api.Resource
 	// run this in parallel with a 5s timeout
+	var resources []*api.Resource
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		sent := 1
-		for i := 0; i < sent; i++ {
-			dresp, err := x.adsClient.Recv()
+		for iter := range 100 {
+			resources = nil
+			con, cancel := x.GetConn(t)
+			defer cancel()
+			con.Send(dr)
+			dresp, err := con.Recv()
 			if err != nil {
-				t.Errorf("failed to get response from xds server: %v", err)
+				time.Sleep(time.Millisecond * 100 * time.Duration(iter))
+				t.Logf("failed to get response from xds server: %v", err)
+				continue
 			}
 			t.Logf("got response: %s len: %d", dresp.GetTypeUrl(), len(dresp.GetResources()))
 			if dresp.GetTypeUrl() == translator.TargetTypeResourceUrl {
 				for _, anyResource := range dresp.GetResources() {
 					var resource api.Resource
-					if err := anyResource.UnmarshalTo(&resource); err != nil {
-						t.Errorf("failed to unmarshal resource: %v", err)
+					if err := anyResource.Resource.UnmarshalTo(&resource); err != nil {
+						t.Fatalf("failed to unmarshal resource: %v", err)
 					}
 					resources = append(resources, &resource)
 				}
+				if len(resources) > 0 {
+					break
+				}
+				time.Sleep(time.Millisecond * 100 * time.Duration(iter))
 			}
 		}
 	}()
@@ -621,41 +630,49 @@ func (x xdsDumper) GetResources(t *testing.T, ctx context.Context) []*api.Resour
 	case <-done:
 	case <-time.After(5 * time.Second):
 		// don't fatal yet as we want to dump the state while still connected
-		t.Error("timed out waiting for resources for agent gateway xds dump")
+		t.Fatalf("timed out waiting for resources for agent gateway xds dump")
 		return nil
 	}
 	if len(resources) == 0 {
-		t.Error("no resources found")
+		t.Fatalf("no resources found")
 		return nil
 	}
 	t.Logf("xds: found %d resources", len(resources))
 	return resources
 }
 
-func (x xdsDumper) GetAddress(t *testing.T, ctx context.Context) []*api.Address {
-	dr := proto.Clone(x.dr).(*envoy_service_discovery_v3.DiscoveryRequest)
+func (x deltaXdsDumper) GetAddress(t *testing.T, ctx context.Context) []*api.Address {
+	dr := proto.Clone(x.dr).(*envoy_service_discovery_v3.DeltaDiscoveryRequest)
 	dr.TypeUrl = translator.TargetTypeAddressUrl
-	x.adsClient.Send(dr)
 	var address []*api.Address
 	// run this in parallel with a 5s timeout
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		sent := 1
-		for i := 0; i < sent; i++ {
-			dresp, err := x.adsClient.Recv()
+		for iter := range 100 {
+			address = nil
+			con, cancel := x.GetConn(t)
+			defer cancel()
+			con.Send(dr)
+			dresp, err := con.Recv()
 			if err != nil {
-				t.Errorf("failed to get response from xds server: %v", err)
+				time.Sleep(time.Millisecond * 100 * time.Duration(iter))
+				t.Logf("failed to get response from xds server: %v", err)
+				continue
 			}
 			t.Logf("got address response: %s len: %d", dresp.GetTypeUrl(), len(dresp.GetResources()))
 			if dresp.GetTypeUrl() == translator.TargetTypeAddressUrl {
 				for _, anyResource := range dresp.GetResources() {
 					var resource api.Address
-					if err := anyResource.UnmarshalTo(&resource); err != nil {
-						t.Errorf("failed to unmarshal resource: %v", err)
+					if err := anyResource.Resource.UnmarshalTo(&resource); err != nil {
+						t.Fatalf("failed to unmarshal resource: %v", err)
 					}
 					address = append(address, &resource)
 				}
+				if len(address) > 0 {
+					break
+				}
+				time.Sleep(time.Millisecond * 100 * time.Duration(iter))
 			}
 		}
 	}()
@@ -663,11 +680,11 @@ func (x xdsDumper) GetAddress(t *testing.T, ctx context.Context) []*api.Address 
 	case <-done:
 	case <-time.After(5 * time.Second):
 		// don't fatal yet as we want to dump the state while still connected
-		t.Error("timed out waiting for address resources for agent gateway xds dump")
+		t.Fatalf("timed out waiting for address resources for agent gateway xds dump")
 		return nil
 	}
 	if len(address) == 0 {
-		t.Error("no address resources found")
+		t.Fatalf("no address resources found")
 		return nil
 	}
 	t.Logf("xds: found %d address resources", len(address))

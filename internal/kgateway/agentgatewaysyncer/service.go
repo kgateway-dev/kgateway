@@ -786,6 +786,34 @@ func serviceResourceName(s *api.Service) string {
 	return s.GetNamespace() + "/" + s.GetHostname()
 }
 
+type Address struct {
+	Workload *WorkloadInfo
+	Service  *ServiceInfo
+}
+
+func (i Address) ResourceName() string {
+	if i.Workload != nil {
+		return i.Workload.ResourceName()
+	}
+	return i.Service.ResourceName()
+}
+func (i Address) Equals(other Address) bool {
+	if (i.Workload != nil) != (other.Workload != nil) {
+		return false
+	}
+	if i.Workload != nil {
+		return i.Workload.Equals(*other.Workload)
+	}
+	return i.Service.Equals(*other.Service)
+}
+
+func (i Address) IntoProto() *api.Address {
+	if i.Workload != nil {
+		return i.Workload.AsAddress.Address
+	}
+	return i.Service.AsAddress.Address
+}
+
 type WorkloadInfo struct {
 	Workload *api.Workload
 	// Labels for the workload. Note these are only used internally, not sent over XDS

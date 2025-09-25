@@ -7,6 +7,7 @@ import (
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/kubetypes"
+	"istio.io/istio/pkg/util/smallset"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 
@@ -97,7 +98,8 @@ func registerTypes(_ versioned.Interface) {
 
 func InitCollections(
 	ctx context.Context,
-	controllerName string,
+	controllerNames smallset.Set[string],
+	envoyControllerName string,
 	plugins sdk.Plugin,
 	istioClient kube.Client,
 	ourClient versioned.Interface,
@@ -145,7 +147,7 @@ func InitCollections(
 	initBackends(plugins, backendIndex)
 	endpointIRs := initEndpoints(plugins, krtopts)
 
-	gateways := NewGatewayIndex(krtopts, controllerName, policies, kubeRawGateways, kubeRawListenerSets, gatewayClasses, namespaces)
+	gateways := NewGatewayIndex(krtopts, controllerNames, envoyControllerName, policies, kubeRawGateways, kubeRawListenerSets, gatewayClasses, namespaces)
 	routes := NewRoutesIndex(krtopts, httpRoutes, grpcRoutes, tcproutes, tlsRoutes, policies, backendIndex, refgrants, globalSettings)
 	return gateways, routes, backendIndex, endpointIRs
 }
