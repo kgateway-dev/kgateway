@@ -58,7 +58,7 @@ func TestUpstreamTlsConfig(t *testing.T) {
 						ValidationContext: &envoytlsv3.CertificateValidationContext{
 							TrustedCa: &envoycorev3.DataSource{
 								Specifier: &envoycorev3.DataSource_InlineString{
-									InlineString: CA_CERT,
+									InlineString: CA_CERT + "\n",
 								},
 							},
 						},
