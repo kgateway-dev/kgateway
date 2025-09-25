@@ -123,7 +123,7 @@ Statuses:
           status: "False"
           type: Conflicted
         - lastTransitionTime: null
-          message: Listener has valid refs
+          message: No errors found
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
@@ -148,7 +148,7 @@ Statuses:
           status: "True"
           type: Accepted
         - lastTransitionTime: null
-          message: Route has valid refs
+          message: No errors found
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
@@ -167,7 +167,7 @@ Statuses:
           status: "True"
           type: Accepted
         - lastTransitionTime: null
-          message: Route has valid refs
+          message: No errors found
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
@@ -186,7 +186,7 @@ Statuses:
           status: "True"
           type: Accepted
         - lastTransitionTime: null
-          message: Route has valid refs
+          message: No errors found
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs

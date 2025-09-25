@@ -454,7 +454,7 @@ func ensureBasicGatewayConditions(status *gwv1.GatewayStatus, generation int64) 
 			Type:               string(gwv1.GatewayConditionAccepted),
 			Status:             metav1.ConditionTrue,
 			Reason:             string(gwv1.GatewayReasonAccepted),
-			Message:            reports.GatewayAcceptedMessage,
+			Message:            reports.AcceptedMessage,
 			ObservedGeneration: generation,
 		})
 	}

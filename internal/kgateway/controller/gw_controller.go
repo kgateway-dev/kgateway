@@ -130,7 +130,7 @@ func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 			Status:             metav1.ConditionTrue,
 			ObservedGeneration: gw.Generation,
 			Reason:             string(api.GatewayReasonAccepted),
-			Message:            reports.GatewayAcceptedMessage,
+			Message:            reports.AcceptedMessage,
 		}
 		if statusErr := r.updateGatewayStatusWithRetry(ctx, &gw, condition); statusErr != nil {
 			log.Error(statusErr, "failed to update Gateway status after retries")
