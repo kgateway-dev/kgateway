@@ -270,7 +270,7 @@ func (l *ListenerReport) SetSupportedKinds(rgks []gwv1.RouteGroupKind) {
 }
 
 func (l *ListenerReport) SetAttachedRoutes(n uint) {
-	l.Status.AttachedRoutes = int32(n)
+	l.Status.AttachedRoutes = int32(n) //nolint:gosec // G115: route count is always non-negative
 }
 
 type statusReporter struct {

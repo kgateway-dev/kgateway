@@ -33,7 +33,7 @@ type ExtAuthBufferSettings struct {
 	// Requests exceeding this size will receive HTTP 413 and not be sent to the auth service.
 	// +required
 	// +kubebuilder:validation:Minimum=1
-	MaxRequestBytes uint32 `json:"maxRequestBytes"`
+	MaxRequestBytes int32 `json:"maxRequestBytes"`
 
 	// AllowPartialMessage determines if partial messages should be allowed.
 	// When true, requests will be sent to the auth service even if they exceed maxRequestBytes.
@@ -81,7 +81,7 @@ type ExtAuthProvider struct {
 	// +kubebuilder:default=403
 	// +kubebuilder:validation:Minimum=100
 	// +kubebuilder:validation:Maximum=511
-	StatusOnError uint32 `json:"statusOnError,omitempty"`
+	StatusOnError int32 `json:"statusOnError,omitempty"`
 
 	// StatPrefix is an optional prefix to include when emitting stats from the extauthz filter,
 	// enabling different instances of the filter to have unique stats.

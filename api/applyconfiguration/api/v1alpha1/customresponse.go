@@ -6,7 +6,7 @@ package v1alpha1
 // with apply.
 type CustomResponseApplyConfiguration struct {
 	Message    *string `json:"message,omitempty"`
-	StatusCode *uint32 `json:"statusCode,omitempty"`
+	StatusCode *int32  `json:"statusCode,omitempty"`
 }
 
 // CustomResponseApplyConfiguration constructs a declarative configuration of the CustomResponse type for use with
@@ -26,7 +26,7 @@ func (b *CustomResponseApplyConfiguration) WithMessage(value string) *CustomResp
 // WithStatusCode sets the StatusCode field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the StatusCode field is set to the value of the last call.
-func (b *CustomResponseApplyConfiguration) WithStatusCode(value uint32) *CustomResponseApplyConfiguration {
+func (b *CustomResponseApplyConfiguration) WithStatusCode(value int32) *CustomResponseApplyConfiguration {
 	b.StatusCode = &value
 	return b
 }

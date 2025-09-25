@@ -20,8 +20,8 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envoyutils/admincli"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/v2/test/envoyutils/admincli"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/tests/base"
@@ -173,7 +173,7 @@ func (s *testingSuite) TestProvisionResourcesUpdatedWithValidParameters() {
 
 	// modify the number of replicas in the GatewayParameters
 	s.patchGatewayParameters(gwParamsDefaultObjectMeta, func(parameters *v1alpha1.GatewayParameters) {
-		parameters.Spec.Kube.Deployment.Replicas = ptr.To(uint32(2))
+		parameters.Spec.Kube.Deployment.Replicas = ptr.To[int32](2)
 	})
 
 	// the GatewayParameters modification should cause the deployer to re-run and update the
@@ -262,7 +262,7 @@ func (s *testingSuite) TestProvisionResourcesNotUpdatedWithInvalidParameters() {
 		}
 
 		// This is valid, but should be ignored, because another part of this patch is invalid
-		parameters.Spec.Kube.Deployment.Replicas = ptr.To(uint32(2))
+		parameters.Spec.Kube.Deployment.Replicas = ptr.To[int32](2)
 	})
 
 	// We keep checking for some amount of time (30s) to account for the time it might take for

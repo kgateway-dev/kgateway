@@ -6,7 +6,7 @@ package v1alpha1
 // with apply.
 type RetryPolicyApplyConfiguration struct {
 	RetryBackOff *BackoffStrategyApplyConfiguration `json:"retryBackOff,omitempty"`
-	NumRetries   *uint32                            `json:"numRetries,omitempty"`
+	NumRetries   *int32                             `json:"numRetries,omitempty"`
 }
 
 // RetryPolicyApplyConfiguration constructs a declarative configuration of the RetryPolicy type for use with
@@ -26,7 +26,7 @@ func (b *RetryPolicyApplyConfiguration) WithRetryBackOff(value *BackoffStrategyA
 // WithNumRetries sets the NumRetries field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the NumRetries field is set to the value of the last call.
-func (b *RetryPolicyApplyConfiguration) WithNumRetries(value uint32) *RetryPolicyApplyConfiguration {
+func (b *RetryPolicyApplyConfiguration) WithNumRetries(value int32) *RetryPolicyApplyConfiguration {
 	b.NumRetries = &value
 	return b
 }

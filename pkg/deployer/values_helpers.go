@@ -34,7 +34,7 @@ func GetPortsValues(gw *ir.Gateway, gwp *v1alpha1.GatewayParameters) []HelmPort 
 
 	// Add ports from Gateway listeners
 	for _, l := range gw.Listeners {
-		listenerPort := uint16(l.Port)
+		listenerPort := int32(l.Port)
 		portName := listener.GenerateListenerName(l)
 		if err := validate.ListenerPort(l, l.Port); err != nil {
 			// skip invalid ports; statuses are handled in the translator
@@ -78,7 +78,7 @@ func SanitizePortName(name string) string {
 	return str
 }
 
-func AppendPortValue(gwPorts []HelmPort, port uint16, name string, gwp *v1alpha1.GatewayParameters) []HelmPort {
+func AppendPortValue(gwPorts []HelmPort, port int32, name string, gwp *v1alpha1.GatewayParameters) []HelmPort {
 	if slices.IndexFunc(gwPorts, func(p HelmPort) bool { return *p.Port == port }) != -1 {
 		return gwPorts
 	}
@@ -88,12 +88,12 @@ func AppendPortValue(gwPorts []HelmPort, port uint16, name string, gwp *v1alpha1
 
 	// Search for static NodePort set from the GatewayParameters spec
 	// If not found the default value of `nil` will not render anything.
-	var nodePort *uint16 = nil
+	var nodePort *int32 = nil
 	if gwp.Spec.GetKube().GetService().GetType() != nil && *(gwp.Spec.GetKube().GetService().GetType()) == corev1.ServiceTypeNodePort {
 		if idx := slices.IndexFunc(gwp.Spec.GetKube().GetService().GetPorts(), func(p v1alpha1.Port) bool {
-			return p.GetPort() == uint16(port)
+			return p.GetPort() == port
 		}); idx != -1 {
-			nodePort = ptr.To(uint16(*gwp.Spec.GetKube().GetService().GetPorts()[idx].GetNodePort()))
+			nodePort = gwp.Spec.GetKube().GetService().GetPorts()[idx].GetNodePort()
 		}
 	}
 	return append(gwPorts, HelmPort{

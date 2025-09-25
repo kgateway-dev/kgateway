@@ -11,8 +11,8 @@ import (
 type HealthCheckApplyConfiguration struct {
 	Timeout            *v1.Duration                       `json:"timeout,omitempty"`
 	Interval           *v1.Duration                       `json:"interval,omitempty"`
-	UnhealthyThreshold *uint32                            `json:"unhealthyThreshold,omitempty"`
-	HealthyThreshold   *uint32                            `json:"healthyThreshold,omitempty"`
+	UnhealthyThreshold *int32                             `json:"unhealthyThreshold,omitempty"`
+	HealthyThreshold   *int32                             `json:"healthyThreshold,omitempty"`
 	Http               *HealthCheckHttpApplyConfiguration `json:"http,omitempty"`
 	Grpc               *HealthCheckGrpcApplyConfiguration `json:"grpc,omitempty"`
 }
@@ -42,7 +42,7 @@ func (b *HealthCheckApplyConfiguration) WithInterval(value v1.Duration) *HealthC
 // WithUnhealthyThreshold sets the UnhealthyThreshold field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the UnhealthyThreshold field is set to the value of the last call.
-func (b *HealthCheckApplyConfiguration) WithUnhealthyThreshold(value uint32) *HealthCheckApplyConfiguration {
+func (b *HealthCheckApplyConfiguration) WithUnhealthyThreshold(value int32) *HealthCheckApplyConfiguration {
 	b.UnhealthyThreshold = &value
 	return b
 }
@@ -50,7 +50,7 @@ func (b *HealthCheckApplyConfiguration) WithUnhealthyThreshold(value uint32) *He
 // WithHealthyThreshold sets the HealthyThreshold field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the HealthyThreshold field is set to the value of the last call.
-func (b *HealthCheckApplyConfiguration) WithHealthyThreshold(value uint32) *HealthCheckApplyConfiguration {
+func (b *HealthCheckApplyConfiguration) WithHealthyThreshold(value int32) *HealthCheckApplyConfiguration {
 	b.HealthyThreshold = &value
 	return b
 }

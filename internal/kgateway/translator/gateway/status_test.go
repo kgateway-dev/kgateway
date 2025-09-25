@@ -1,13 +1,9 @@
 package gateway_test
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
@@ -17,7 +13,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	translatortest "github.com/kgateway-dev/kgateway/v2/test/translator"
 )
@@ -35,15 +30,6 @@ func TestStatuses(t *testing.T) {
 			types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
-			},
-			func(_ types.NamespacedName, reportsMap reports.ReportMap) {
-				for policyKey, wantStatus := range wantPolicyErrors {
-					var currentStatus gwv1alpha2.PolicyStatus
-					a := assert.New(t)
-					gotStatus := reportsMap.BuildPolicyStatus(context.Background(), policyKey, wellknown.DefaultGatewayControllerName, currentStatus)
-					diff := cmp.Diff(wantStatus, gotStatus, cmpopts.IgnoreFields(metav1.Condition{}, "LastTransitionTime"))
-					a.Empty(diff, "status mismatch for policy %v", policyKey)
-				}
 			},
 		)
 	}

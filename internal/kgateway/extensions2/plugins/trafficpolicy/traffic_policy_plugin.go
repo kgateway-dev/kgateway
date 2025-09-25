@@ -333,7 +333,7 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, outputR
 
 		// Hack around not having route level.
 		// Note this is really really bad and rather fragile due to listener draining behaviors
-		routeHash := strconv.Itoa(int(utils.HashProto(outputRoute)))
+		routeHash := strconv.Itoa(int(utils.HashProto(outputRoute))) //nolint:gosec // G115: hash value used as string key, truncation is acceptable
 		if p.rustformationStash == nil {
 			p.rustformationStash = make(map[string]string)
 		}

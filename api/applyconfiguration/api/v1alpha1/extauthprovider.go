@@ -9,7 +9,7 @@ type ExtAuthProviderApplyConfiguration struct {
 	FailOpen        *bool                                    `json:"failOpen,omitempty"`
 	ClearRouteCache *bool                                    `json:"clearRouteCache,omitempty"`
 	WithRequestBody *ExtAuthBufferSettingsApplyConfiguration `json:"withRequestBody,omitempty"`
-	StatusOnError   *uint32                                  `json:"statusOnError,omitempty"`
+	StatusOnError   *int32                                   `json:"statusOnError,omitempty"`
 	StatPrefix      *string                                  `json:"statPrefix,omitempty"`
 }
 
@@ -54,7 +54,7 @@ func (b *ExtAuthProviderApplyConfiguration) WithWithRequestBody(value *ExtAuthBu
 // WithStatusOnError sets the StatusOnError field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the StatusOnError field is set to the value of the last call.
-func (b *ExtAuthProviderApplyConfiguration) WithStatusOnError(value uint32) *ExtAuthProviderApplyConfiguration {
+func (b *ExtAuthProviderApplyConfiguration) WithStatusOnError(value int32) *ExtAuthProviderApplyConfiguration {
 	b.StatusOnError = &value
 	return b
 }

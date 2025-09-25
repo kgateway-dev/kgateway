@@ -159,6 +159,12 @@ func WithValidator(v validator.Validator) func(*setup) {
 	}
 }
 
+func WithExtraAgwPolicyStatusHandlers(handlers map[string]agwplugins.AgwPolicyStatusSyncHandler) func(*setup) {
+	return func(s *setup) {
+		s.extraAgwPolicyStatusHandlers = handlers
+	}
+}
+
 type setup struct {
 	gatewayControllerName    string
 	agwControllerName        string
@@ -175,11 +181,12 @@ type setup struct {
 	restConfig               *rest.Config
 	ctrlMgrOptionsInitFunc   func(context.Context) *ctrl.Options
 	// extra controller manager config, like adding registering additional controllers
-	extraManagerConfig []func(ctx context.Context, mgr manager.Manager, objectFilter kubetypes.DynamicObjectFilter) error
-	krtDebugger        *krt.DebugHandler
-	globalSettings     *settings.Settings
-	leaderElectionID   string
-	validator          validator.Validator
+	extraManagerConfig           []func(ctx context.Context, mgr manager.Manager, objectFilter kubetypes.DynamicObjectFilter) error
+	krtDebugger                  *krt.DebugHandler
+	globalSettings               *settings.Settings
+	leaderElectionID             string
+	validator                    validator.Validator
+	extraAgwPolicyStatusHandlers map[string]agwplugins.AgwPolicyStatusSyncHandler
 }
 
 var _ Server = &setup{}
@@ -340,6 +347,7 @@ func (s *setup) Start(ctx context.Context) error {
 		istioClient, commoncol, agwCollections, uccBuilder, s.extraPlugins, s.extraAgwPlugins,
 		s.extraGatewayParameters,
 		s.validator,
+		s.extraAgwPolicyStatusHandlers,
 	)
 
 	slog.Info("starting admin server")
@@ -373,6 +381,7 @@ func BuildKgatewayWithConfig(
 	extraAgwPlugins func(ctx context.Context, agw *agwplugins.AgwCollections) []agwplugins.AgwPlugin,
 	extraGatewayParameters func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters,
 	validator validator.Validator,
+	extraAgwPolicyStatusHandlers map[string]agwplugins.AgwPolicyStatusSyncHandler,
 ) error {
 	slog.Info("creating krt collections")
 	krtOpts := krtutil.NewKrtOptions(ctx.Done(), setupOpts.KrtDebugger)
@@ -387,26 +396,27 @@ func BuildKgatewayWithConfig(
 
 	slog.Info("initializing controller")
 	c, err := controller.NewControllerBuilder(ctx, controller.StartConfig{
-		Manager:                  mgr,
-		ControllerName:           gatewayControllerName,
-		AgwControllerName:        agwControllerName,
-		GatewayClassName:         gatewayClassName,
-		WaypointGatewayClassName: waypointClassName,
-		AgentgatewayClassName:    agentgatewayClassName,
-		AdditionalGatewayClasses: additionalGatewayClasses,
-		ExtraPlugins:             extraPlugins,
-		ExtraAgwPlugins:          extraAgwPlugins,
-		ExtraGatewayParameters:   extraGatewayParameters,
-		RestConfig:               restConfig,
-		SetupOpts:                setupOpts,
-		Client:                   kubeClient,
-		AugmentedPods:            augmentedPods,
-		UniqueClients:            ucc,
-		Dev:                      logging.MustGetLevel(logging.DefaultComponent) <= logging.LevelTrace,
-		KrtOptions:               krtOpts,
-		CommonCollections:        commonCollections,
-		AgwCollections:           agwCollections,
-		Validator:                validator,
+		Manager:                      mgr,
+		ControllerName:               gatewayControllerName,
+		AgwControllerName:            agwControllerName,
+		GatewayClassName:             gatewayClassName,
+		WaypointGatewayClassName:     waypointClassName,
+		AgentgatewayClassName:        agentgatewayClassName,
+		AdditionalGatewayClasses:     additionalGatewayClasses,
+		ExtraPlugins:                 extraPlugins,
+		ExtraAgwPlugins:              extraAgwPlugins,
+		ExtraGatewayParameters:       extraGatewayParameters,
+		RestConfig:                   restConfig,
+		SetupOpts:                    setupOpts,
+		Client:                       kubeClient,
+		AugmentedPods:                augmentedPods,
+		UniqueClients:                ucc,
+		Dev:                          logging.MustGetLevel(logging.DefaultComponent) <= logging.LevelTrace,
+		KrtOptions:                   krtOpts,
+		CommonCollections:            commonCollections,
+		AgwCollections:               agwCollections,
+		Validator:                    validator,
+		ExtraAgwPolicyStatusHandlers: extraAgwPolicyStatusHandlers,
 	})
 	if err != nil {
 		slog.Error("failed initializing controller: ", "error", err)

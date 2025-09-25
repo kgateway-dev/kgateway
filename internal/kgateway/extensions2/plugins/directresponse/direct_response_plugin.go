@@ -126,7 +126,7 @@ func (p *directResponsePluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, output
 	}
 
 	drAction := &envoyroutev3.DirectResponseAction{
-		Status: dr.spec.StatusCode,
+		Status: uint32(dr.spec.StatusCode), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 	}
 	if dr.spec.Body != nil {
 		drAction.Body = &envoycorev3.DataSource{

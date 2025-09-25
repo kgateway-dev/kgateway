@@ -83,7 +83,7 @@ func (d *destrulePlugin) processEndpoints(
 func (d *destrulePlugin) processBackend(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.BackendObjectIR, outCluster *envoyclusterv3.Cluster) {
 	destrule := d.destinationRulesIndex.FetchDestRulesFor(kctx, ucc.Namespace, in.CanonicalHostname, ucc.Labels)
 	if destrule != nil {
-		trafficPolicy := getTrafficPolicy(destrule, uint32(in.Port))
+		trafficPolicy := getTrafficPolicy(destrule, uint32(in.Port)) //nolint:gosec // G115: BackendObjectIR.Port is int32 representing a port number, always in valid range
 		if outlier := trafficPolicy.GetOutlierDetection(); outlier != nil {
 			if getLocalityLbSetting(trafficPolicy) != nil {
 				if outCluster.GetCommonLbConfig() == nil {
@@ -108,7 +108,7 @@ func (d *destrulePlugin) processBackend(kctx krt.HandlerContext, ctx context.Con
 				out.EnforcingConsecutiveGatewayFailure = &wrapperspb.UInt32Value{Value: v}
 			}
 			if outlier.GetMaxEjectionPercent() > 0 {
-				out.MaxEjectionPercent = &wrapperspb.UInt32Value{Value: uint32(outlier.GetMaxEjectionPercent())}
+				out.MaxEjectionPercent = &wrapperspb.UInt32Value{Value: uint32(outlier.GetMaxEjectionPercent())} //nolint:gosec // G115: MaxEjectionPercent is a percentage value (0-100), safe for uint32
 			}
 			if outlier.GetSplitExternalLocalOriginErrors() {
 				out.SplitExternalLocalOriginErrors = true
@@ -139,13 +139,13 @@ func (d *destrulePlugin) processBackend(kctx krt.HandlerContext, ctx context.Con
 						outCluster.GetUpstreamConnectionOptions().TcpKeepalive = &envoycorev3.TcpKeepalive{}
 					}
 					if tcpKeepalive.GetTime() != nil {
-						outCluster.GetUpstreamConnectionOptions().GetTcpKeepalive().KeepaliveTime = &wrapperspb.UInt32Value{Value: uint32(tcpKeepalive.GetTime().GetSeconds())}
+						outCluster.GetUpstreamConnectionOptions().GetTcpKeepalive().KeepaliveTime = &wrapperspb.UInt32Value{Value: uint32(tcpKeepalive.GetTime().GetSeconds())} //nolint:gosec // G115: TCP keepalive time in seconds, reasonable range for uint32
 					}
 					if tcpKeepalive.GetInterval() != nil {
-						outCluster.GetUpstreamConnectionOptions().GetTcpKeepalive().KeepaliveInterval = &wrapperspb.UInt32Value{Value: uint32(tcpKeepalive.GetInterval().GetSeconds())}
+						outCluster.GetUpstreamConnectionOptions().GetTcpKeepalive().KeepaliveInterval = &wrapperspb.UInt32Value{Value: uint32(tcpKeepalive.GetInterval().GetSeconds())} //nolint:gosec // G115: TCP keepalive interval in seconds, reasonable range for uint32
 					}
 					if tcpKeepalive.GetProbes() > 0 {
-						outCluster.GetUpstreamConnectionOptions().GetTcpKeepalive().KeepaliveProbes = &wrapperspb.UInt32Value{Value: uint32(tcpKeepalive.GetProbes())}
+						outCluster.GetUpstreamConnectionOptions().GetTcpKeepalive().KeepaliveProbes = &wrapperspb.UInt32Value{Value: uint32(tcpKeepalive.GetProbes())} //nolint:gosec // G115: TCP keepalive probe count, reasonable range for uint32
 					}
 				}
 			}

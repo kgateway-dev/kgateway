@@ -78,7 +78,7 @@ func translatePoliciesForInferencePool(pool *inf.InferencePool, domainSuffix str
 				InferenceRouting: &api.PolicySpec_InferenceRouting{
 					EndpointPicker: &api.BackendReference{
 						Kind: &api.BackendReference_Service{Service: eppSvc},
-						Port: uint32(eppPort),
+						Port: uint32(eppPort), //nolint:gosec // G115: eppPort is derived from validated port numbers
 					},
 					FailureMode: failureMode,
 				},

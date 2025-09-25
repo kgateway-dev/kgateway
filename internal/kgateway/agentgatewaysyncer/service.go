@@ -120,8 +120,8 @@ func (a *index) inferencePoolBuilder(
 	return func(ctx krt.HandlerContext, s *inf.InferencePool) *ServiceInfo {
 		portNames := map[int32]ServicePortName{}
 		ports := []*api.Port{{
-			ServicePort: uint32(s.Spec.TargetPorts[0].Number), // InferencePool v1 only supports single port
-			TargetPort:  uint32(s.Spec.TargetPorts[0].Number), // InferencePool v1 only supports single port
+			ServicePort: uint32(s.Spec.TargetPorts[0].Number), //nolint:gosec // G115: InferencePool TargetPort is int32 with validation 1-65535, always safe
+			TargetPort:  uint32(s.Spec.TargetPorts[0].Number), //nolint:gosec // G115: InferencePool TargetPort is int32 with validation 1-65535, always safe
 			AppProtocol: api.AppProtocol_HTTP11,
 		}}
 
@@ -180,8 +180,8 @@ func (a *index) constructService(ctx krt.HandlerContext, svc *corev1.Service, w 
 	ports := make([]*api.Port, 0, len(svc.Spec.Ports))
 	for _, p := range svc.Spec.Ports {
 		ports = append(ports, &api.Port{
-			ServicePort: uint32(p.Port),
-			TargetPort:  uint32(p.TargetPort.IntVal),
+			ServicePort: uint32(p.Port),              //nolint:gosec // G115: Kubernetes service port is int32, always in valid range
+			TargetPort:  uint32(p.TargetPort.IntVal), //nolint:gosec // G115: Kubernetes target port is int32, always in valid range
 			AppProtocol: toAppProtocolFromKube(p),
 		})
 	}

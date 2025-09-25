@@ -91,7 +91,7 @@ func backendsCollections(
 				out = append(out, BuildServiceEntryBackendObjectIR(
 					se,
 					hostname,
-					int32(svcPort.GetNumber()),
+					int32(svcPort.GetNumber()), //nolint:gosec // G115: ServiceEntry port numbers are always valid port range (1-65535)
 					svcPort.GetProtocol(),
 					aliaser,
 				))

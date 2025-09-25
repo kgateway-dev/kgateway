@@ -31,7 +31,7 @@ var logger = logging.New("translator/listener")
 
 const (
 	TcpTlsListenerNoBackendsMessage = "TCP/TLS listener has no valid backends or routes"
-	SecretNotFoundMessageTemplate   = "Secret %s/%s not found."
+	SecretNotFoundMessageTemplate   = "Secret %s/%s not found." //nolint:gosec // G101: This is a template string, not hardcoded credentials
 )
 
 type ListenerTranslatorConfig struct {
@@ -372,7 +372,7 @@ func (ml *MergedListener) TranslateListener(
 	return ir.ListenerIR{
 		Name:              ml.name,
 		BindAddress:       bindAddress,
-		BindPort:          uint32(ml.port),
+		BindPort:          uint32(ml.port),       //nolint:gosec // G115: Gateway listener port is int32, always positive, safe to convert to uint32
 		AttachedPolicies:  ir.AttachedPolicies{}, // TODO: find policies attached to listener and attach them <- this might not be possible due to listener merging. also a gw listener ~= envoy filter chain; and i don't believe we need policies there
 		HttpFilterChain:   httpFilterChains,
 		TcpFilterChain:    matchedTcpListeners,

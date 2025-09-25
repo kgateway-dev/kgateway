@@ -11,7 +11,7 @@ import (
 // LoadBalancerApplyConfiguration represents a declarative configuration of the LoadBalancer type for use
 // with apply.
 type LoadBalancerApplyConfiguration struct {
-	HealthyPanicThreshold           *uint32                                           `json:"healthyPanicThreshold,omitempty"`
+	HealthyPanicThreshold           *int32                                            `json:"healthyPanicThreshold,omitempty"`
 	UpdateMergeWindow               *v1.Duration                                      `json:"updateMergeWindow,omitempty"`
 	LeastRequest                    *LoadBalancerLeastRequestConfigApplyConfiguration `json:"leastRequest,omitempty"`
 	RoundRobin                      *LoadBalancerRoundRobinConfigApplyConfiguration   `json:"roundRobin,omitempty"`
@@ -31,7 +31,7 @@ func LoadBalancer() *LoadBalancerApplyConfiguration {
 // WithHealthyPanicThreshold sets the HealthyPanicThreshold field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the HealthyPanicThreshold field is set to the value of the last call.
-func (b *LoadBalancerApplyConfiguration) WithHealthyPanicThreshold(value uint32) *LoadBalancerApplyConfiguration {
+func (b *LoadBalancerApplyConfiguration) WithHealthyPanicThreshold(value int32) *LoadBalancerApplyConfiguration {
 	b.HealthyPanicThreshold = &value
 	return b
 }

@@ -9,6 +9,7 @@ import (
 
 	"helm.sh/helm/v3/pkg/chart"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	api "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -376,7 +377,9 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 		gateway.ReplicaCount = nil
 	} else {
 		// Use the specified replica count
-		gateway.ReplicaCount = deployConfig.GetReplicas()
+		if deployConfig.GetReplicas() != nil {
+			gateway.ReplicaCount = pointer.Uint32(uint32(*deployConfig.GetReplicas())) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+		}
 	}
 	gateway.Strategy = deployConfig.GetStrategy()
 

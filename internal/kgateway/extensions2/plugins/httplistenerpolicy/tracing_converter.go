@@ -83,7 +83,7 @@ func translateTracing(
 	}
 	if config.MaxPathTagLength != nil {
 		tracingConfig.MaxPathTagLength = &wrapperspb.UInt32Value{
-			Value: *config.MaxPathTagLength,
+			Value: uint32(*config.MaxPathTagLength), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 		}
 	}
 	if len(config.Attributes) != 0 {

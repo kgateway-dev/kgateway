@@ -37,6 +37,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
+	agwtranslator "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -324,7 +325,7 @@ func TestTranslationWithExtraPlugins(
 	// Extract agentgateway API types from AgwResources
 	for _, agwRes := range result.Resources {
 		for _, item := range agwRes.ResourceConfig.Items {
-			resourceWrapper := item.Resource.(*envoyResourceWithCustomName)
+			resourceWrapper := item.Resource.(*agwtranslator.AgwResourceWithCustomName)
 			res := resourceWrapper.Message.(*api.Resource)
 			switch r := res.Kind.(type) {
 			case *api.Resource_Route:
@@ -342,7 +343,7 @@ func TestTranslationWithExtraPlugins(
 			}
 		}
 		for _, item := range agwRes.AddressConfig.Items {
-			resourceWrapper := item.Resource.(*envoyResourceWithCustomName)
+			resourceWrapper := item.Resource.(*agwtranslator.AgwResourceWithCustomName)
 			res := resourceWrapper.Message.(*api.Address)
 			addresses = append(addresses, res)
 		}
@@ -368,7 +369,7 @@ func TestTranslationWithExtraPlugins(
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			r.NoError(err)
 		}
-		os.WriteFile(outputFile, outputYaml, 0o644)
+		os.WriteFile(outputFile, outputYaml, 0o600)
 	}
 
 	diff, err := compareProxy(outputFile, output)
@@ -387,7 +388,7 @@ type TestCase struct {
 }
 
 type ActualTestResult struct {
-	Resources  []agentGwXdsResources
+	Resources  []agwtranslator.AgentGwXdsResources
 	ReportsMap reports.ReportMap
 }
 
@@ -689,8 +690,8 @@ func (tc TestCase) Run(
 	)
 	agentGwSyncer.translator.Init()
 
-	gatewayClasses := GatewayClassesCollection(agwCollections.GatewayClasses, krtOpts)
-	refGrants := BuildReferenceGrants(ReferenceGrantsCollection(agwCollections.ReferenceGrants, krtOpts))
+	gatewayClasses := agwtranslator.GatewayClassesCollection(agwCollections.GatewayClasses, krtOpts)
+	refGrants := agwtranslator.BuildReferenceGrants(agwtranslator.ReferenceGrantsCollection(agwCollections.ReferenceGrants, krtOpts))
 	gateways := agentGwSyncer.buildGatewayCollection(gatewayClasses, refGrants, krtOpts)
 
 	// Build Agw resources and addresses collections
@@ -715,7 +716,7 @@ func (tc TestCase) Run(
 		}
 
 		// Collect results for this gateway
-		var xdsResult []agentGwXdsResources
+		var xdsResult []agwtranslator.AgentGwXdsResources
 
 		// Create a test context for fetching from collections
 		testCtx := krt.TestingDummyContext{}
@@ -732,22 +733,22 @@ func (tc TestCase) Run(
 		reportsMap := reports.NewReportMap()
 		for _, resource := range allResources {
 			// Merge reports from all resources for this gateway
-			for gwKey, gwReport := range resource.reports.Gateways {
+			for gwKey, gwReport := range resource.Reports.Gateways {
 				reportsMap.Gateways[gwKey] = gwReport
 			}
-			for lsKey, lsReport := range resource.reports.ListenerSets {
+			for lsKey, lsReport := range resource.Reports.ListenerSets {
 				reportsMap.ListenerSets[lsKey] = lsReport
 			}
-			for routeKey, routeReport := range resource.reports.HTTPRoutes {
+			for routeKey, routeReport := range resource.Reports.HTTPRoutes {
 				reportsMap.HTTPRoutes[routeKey] = routeReport
 			}
-			for routeKey, routeReport := range resource.reports.GRPCRoutes {
+			for routeKey, routeReport := range resource.Reports.GRPCRoutes {
 				reportsMap.GRPCRoutes[routeKey] = routeReport
 			}
-			for routeKey, routeReport := range resource.reports.TCPRoutes {
+			for routeKey, routeReport := range resource.Reports.TCPRoutes {
 				reportsMap.TCPRoutes[routeKey] = routeReport
 			}
-			for routeKey, routeReport := range resource.reports.TLSRoutes {
+			for routeKey, routeReport := range resource.Reports.TLSRoutes {
 				reportsMap.TLSRoutes[routeKey] = routeReport
 			}
 		}

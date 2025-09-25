@@ -4,8 +4,8 @@ import "os"
 
 const (
 	AccessKeyEnv       = "AWS_ACCESS_KEY_ID"
-	SecretAccessKeyEnv = "AWS_SECRET_ACCESS_KEY"
-	SessionTokenEnv    = "AWS_SESSION_TOKEN"
+	SecretAccessKeyEnv = "AWS_SECRET_ACCESS_KEY" //nolint:gosec // G101: Standard AWS SDK environment variable name, not a credential
+	SessionTokenEnv    = "AWS_SESSION_TOKEN"     //nolint:gosec // G101: Standard AWS SDK environment variable name, not a credential
 )
 
 // SetAccessKeyEnv set the environment variable referred to by AccessKeyEnv to the passed string

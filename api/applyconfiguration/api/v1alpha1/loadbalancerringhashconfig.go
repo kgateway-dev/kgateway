@@ -9,8 +9,8 @@ import (
 // LoadBalancerRingHashConfigApplyConfiguration represents a declarative configuration of the LoadBalancerRingHashConfig type for use
 // with apply.
 type LoadBalancerRingHashConfigApplyConfiguration struct {
-	MinimumRingSize       *uint64                   `json:"minimumRingSize,omitempty"`
-	MaximumRingSize       *uint64                   `json:"maximumRingSize,omitempty"`
+	MinimumRingSize       *int64                    `json:"minimumRingSize,omitempty"`
+	MaximumRingSize       *int64                    `json:"maximumRingSize,omitempty"`
 	UseHostnameForHashing *bool                     `json:"useHostnameForHashing,omitempty"`
 	HashPolicies          []*apiv1alpha1.HashPolicy `json:"hashPolicies,omitempty"`
 }
@@ -24,7 +24,7 @@ func LoadBalancerRingHashConfig() *LoadBalancerRingHashConfigApplyConfiguration 
 // WithMinimumRingSize sets the MinimumRingSize field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the MinimumRingSize field is set to the value of the last call.
-func (b *LoadBalancerRingHashConfigApplyConfiguration) WithMinimumRingSize(value uint64) *LoadBalancerRingHashConfigApplyConfiguration {
+func (b *LoadBalancerRingHashConfigApplyConfiguration) WithMinimumRingSize(value int64) *LoadBalancerRingHashConfigApplyConfiguration {
 	b.MinimumRingSize = &value
 	return b
 }
@@ -32,7 +32,7 @@ func (b *LoadBalancerRingHashConfigApplyConfiguration) WithMinimumRingSize(value
 // WithMaximumRingSize sets the MaximumRingSize field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the MaximumRingSize field is set to the value of the last call.
-func (b *LoadBalancerRingHashConfigApplyConfiguration) WithMaximumRingSize(value uint64) *LoadBalancerRingHashConfigApplyConfiguration {
+func (b *LoadBalancerRingHashConfigApplyConfiguration) WithMaximumRingSize(value int64) *LoadBalancerRingHashConfigApplyConfiguration {
 	b.MaximumRingSize = &value
 	return b
 }

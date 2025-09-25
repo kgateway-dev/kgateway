@@ -416,7 +416,10 @@ func (p *backendPlugin) HttpFilters(fc ir.FilterChainCommon) ([]plugins.StagedHt
 func (p *backendPlugin) ResourcesToAdd() ir.Resources {
 	var additionalClusters []*envoyclusterv3.Cluster
 	if len(p.aiGatewayEnabled) > 0 {
-		aiClusters := ai.GetAIAdditionalResources()
+		aiClusters, err := ai.GetAIAdditionalResources()
+		if err != nil {
+			logger.Error("failed to get ai additional resources", "error", err)
+		}
 		additionalClusters = append(additionalClusters, aiClusters...)
 	}
 	return ir.Resources{

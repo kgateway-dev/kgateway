@@ -16,7 +16,9 @@ import (
 var ErrListenerPortReserved = fmt.Errorf("port is reserved")
 
 var reservedPorts = sets.New[int32](
-	9091, // Metrics port
+	9091,  // Metrics port
+	8082,  // Readiness port
+	19000, // Envoy admin port
 )
 
 // Gateway validates the given Gateway IR. Currently, it validates the listener ports for

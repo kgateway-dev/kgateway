@@ -10,6 +10,6 @@ import (
 func DurationToProto(d time.Duration) *durationpb.Duration {
 	return &durationpb.Duration{
 		Seconds: int64(d) / int64(time.Second),
-		Nanos:   int32(int64(d) % int64(time.Second)),
+		Nanos:   int32(int64(d) % int64(time.Second)), //nolint:gosec // G115: nanoseconds modulo 1 second always fits in int32
 	}
 }

@@ -523,6 +523,7 @@ spec:
                         type: boolean
                       replicas:
                         format: int32
+                        minimum: 1
                         type: integer
                       strategy:
                         properties:
@@ -2817,6 +2818,9 @@ spec:
                           enabled:
                             type: boolean
                           sleepTimeSeconds:
+                            format: int64
+                            maximum: 31536000
+                            minimum: 0
                             type: integer
                         type: object
                       imagePullSecrets:
@@ -3074,6 +3078,9 @@ spec:
                             type: object
                         type: object
                       terminationGracePeriodSeconds:
+                        format: int64
+                        maximum: 31536000
+                        minimum: 0
                         type: integer
                       tolerations:
                         items:
@@ -3290,8 +3297,14 @@ spec:
                         items:
                           properties:
                             nodePort:
+                              format: int32
+                              maximum: 65535
+                              minimum: 1
                               type: integer
                             port:
+                              format: int32
+                              maximum: 65535
+                              minimum: 1
                               type: integer
                           required:
                           - port

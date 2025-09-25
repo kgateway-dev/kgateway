@@ -126,7 +126,7 @@ func buildModelCluster(aiUs *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecre
 			}
 			priority := idx
 			prioritized = append(prioritized, &envoyendpointv3.LocalityLbEndpoints{
-				Priority:    uint32(priority),
+				Priority:    uint32(priority), //nolint:gosec // G115: idx from range is always a small non-negative integer
 				LbEndpoints: eps,
 			})
 		}
@@ -322,7 +322,7 @@ func buildLocalityLbEndpoint(
 							Protocol: envoycorev3.SocketAddress_TCP,
 							Address:  host,
 							PortSpecifier: &envoycorev3.SocketAddress_PortValue{
-								PortValue: uint32(port),
+								PortValue: uint32(port), //nolint:gosec // G115: Gateway API PortNumber is int32 with validation 1-65535, always safe
 							},
 						},
 					},

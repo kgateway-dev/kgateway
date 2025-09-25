@@ -54,14 +54,14 @@ func NewPerClientEnvoyClusters(
 		for _, ucc := range uccs {
 			backendLogger.Debug("applying destination rules for backend", "ucc", ucc.ResourceName())
 
-			c, err := translator.TranslateBackend(kctx, ucc, backendObj)
+			c, err := translator.TranslateBackend(ctx, kctx, ucc, backendObj)
 			if c == nil {
 				continue
 			}
 			uccWithClusterRet = append(uccWithClusterRet, uccWithCluster{
+				Name:    c.GetName(),
 				Client:  ucc,
 				Cluster: c,
-				Name:    c.GetName(),
 				// pass along the error(s) indicating to consumers that this cluster is not usable
 				Error:          err,
 				ClusterVersion: utils.HashProto(c),

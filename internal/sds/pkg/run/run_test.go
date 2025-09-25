@@ -150,7 +150,7 @@ func TestCertRotation(t *testing.T) {
 			// Cert rotation #1
 			err = os.Remove(data.keyName)
 			r.NoError(err, "error removing key file")
-			err = os.WriteFile(data.keyName, []byte("tls.key-1"), 0o644)
+			err = os.WriteFile(data.keyName, []byte("tls.key-1"), 0o600)
 			r.NoError(err, "error writing new key file")
 
 			// Re-read certs
@@ -176,7 +176,7 @@ func TestCertRotation(t *testing.T) {
 			// Cert rotation #2
 			err = os.Remove(data.keyName)
 			r.NoError(err, "error removing key file")
-			err = os.WriteFile(data.keyName, []byte("tls.key-2"), 0o644)
+			err = os.WriteFile(data.keyName, []byte("tls.key-2"), 0o600)
 			r.NoError(err, "error writing new key file")
 
 			// Re-read certs again
@@ -225,19 +225,19 @@ func setup(t *testing.T) setupData {
 	certName := filepath.Join(dir, "tls.crt-0")
 	caName := filepath.Join(dir, "ca.crt-0")
 	ocspName := filepath.Join(dir, "tls.ocsp-staple-0")
-	err = os.WriteFile(keyName, fileString, 0o644)
+	err = os.WriteFile(keyName, fileString, 0o600)
 
 	r.NoError(err)
-	err = os.WriteFile(certName, fileString, 0o644)
+	err = os.WriteFile(certName, fileString, 0o600)
 	r.NoError(err)
-	err = os.WriteFile(caName, fileString, 0o644)
+	err = os.WriteFile(caName, fileString, 0o600)
 	r.NoError(err)
 
 	// This is a pre-generated DER-encoded OCSP response using `openssl` to better match actual ocsp staple/response data.
 	// This response isn't for the test certs as they are just random data, but it is a syntactically-valid OCSP response.
 	ocspResponse, err := os.ReadFile(filepath.Join("testdata", "ocsp_response.der"))
 	r.NoError(err)
-	err = os.WriteFile(ocspName, ocspResponse, 0o644)
+	err = os.WriteFile(ocspName, ocspResponse, 0o600)
 	r.NoError(err)
 
 	keyNameSymlink := filepath.Join(dir, "tls.key")

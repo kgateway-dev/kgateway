@@ -62,6 +62,7 @@ type InitializeResponse struct {
 }
 
 // mcpProto is the protocol version for the MCP server
+
 const (
 	mcpProto   = "2025-03-26"
 	httpOKCode = 200

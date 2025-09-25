@@ -86,7 +86,7 @@ func processPoolBackendObjIR(
 						Address: &envoycorev3.Address_SocketAddress{
 							SocketAddress: &envoycorev3.SocketAddress{
 								Address:       ep.address,
-								PortSpecifier: &envoycorev3.SocketAddress_PortValue{PortValue: uint32(ep.port)},
+								PortSpecifier: &envoycorev3.SocketAddress_PortValue{PortValue: uint32(ep.port)}, //nolint:gosec // G115: ep.port is int32 representing a port number, always in valid range
 							},
 						},
 					},

@@ -76,7 +76,7 @@ func bootstrapEnv(
 	openaiKey := "fake-openai-key"
 	azureOpenAiKey := "fake-azure-openai-key"
 	geminiKey := "fake-gemini-key"
-	vertexAITokenStr := "fake-vertex-ai-token"
+	vertexAITokenStr := "fake-vertex-ai-token" //nolint:gosec // G101: fake token for testing, not a real credential
 
 	secretsMap := map[string]map[string]string{
 		"openai-secret":    {"Authorization": openaiKey},

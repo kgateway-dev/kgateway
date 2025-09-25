@@ -217,7 +217,7 @@ var _ = Describe("Deployer", func() {
 				Spec: gw2_v1alpha1.GatewayParametersSpec{
 					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 						Deployment: &gw2_v1alpha1.ProxyDeployment{
-							Replicas: ptr.To(uint32(2)),
+							Replicas: ptr.To[int32](2),
 						},
 						EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
 							Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
@@ -1304,7 +1304,7 @@ var _ = Describe("Deployer", func() {
 					Spec: gw2_v1alpha1.GatewayParametersSpec{
 						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 							Deployment: &gw2_v1alpha1.ProxyDeployment{
-								Replicas: ptr.To(uint32(3)),
+								Replicas: ptr.To[int32](3),
 							},
 							EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
 								Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
@@ -1369,7 +1369,7 @@ var _ = Describe("Deployer", func() {
 					Spec: gw2_v1alpha1.GatewayParametersSpec{
 						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 							Deployment: &gw2_v1alpha1.ProxyDeployment{
-								Replicas: ptr.To(uint32(3)),
+								Replicas: ptr.To[int32](3),
 							},
 							EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
 								Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
@@ -1543,10 +1543,10 @@ var _ = Describe("Deployer", func() {
 				params := fullyDefinedGatewayParameters(wellknown.DefaultGatewayParametersName, defaultNamespace)
 				params.Spec.Kube.PodTemplate.LivenessProbe = generateLivenessProbe()
 				params.Spec.Kube.PodTemplate.ReadinessProbe = generateReadinessProbe()
-				params.Spec.Kube.PodTemplate.TerminationGracePeriodSeconds = ptr.To(5)
+				params.Spec.Kube.PodTemplate.TerminationGracePeriodSeconds = ptr.To(int64(5))
 				params.Spec.Kube.PodTemplate.GracefulShutdown = &gw2_v1alpha1.GracefulShutdownSpec{
 					Enabled:          ptr.To(true),
-					SleepTimeSeconds: ptr.To(7),
+					SleepTimeSeconds: ptr.To(int64(7)),
 				}
 				return params
 			}
@@ -2216,7 +2216,7 @@ var _ = Describe("Deployer", func() {
 								Ports: []gw2_v1alpha1.Port{
 									{
 										Port:     80,
-										NodePort: ptr.To(uint16(30000)),
+										NodePort: ptr.To[int32](30000),
 									},
 								},
 							},
@@ -2450,7 +2450,7 @@ var _ = Describe("Deployer", func() {
 					Spec: gw2_v1alpha1.GatewayParametersSpec{
 						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 							Deployment: &gw2_v1alpha1.ProxyDeployment{
-								Replicas: ptr.To(uint32(3)),
+								Replicas: ptr.To[int32](3),
 							},
 						},
 					},
@@ -2746,7 +2746,7 @@ func fullyDefinedGatewayParameters(name, namespace string) *gw2_v1alpha1.Gateway
 		Spec: gw2_v1alpha1.GatewayParametersSpec{
 			Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 				Deployment: &gw2_v1alpha1.ProxyDeployment{
-					Replicas: ptr.To[uint32](3),
+					Replicas: ptr.To[int32](3),
 				},
 				EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
 					Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
