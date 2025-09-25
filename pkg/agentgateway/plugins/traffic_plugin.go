@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/agentgateway/agentgateway/go/api"
+	"github.com/google/cel-go/cel"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/controllers"
@@ -1033,7 +1034,17 @@ func processTransformationPolicy(
 	policyName string,
 	policyTarget *api.PolicyTarget,
 ) ([]AgwPolicy, error) {
+	var errs []error
 	transformation := trafficPolicy.Spec.Transformation
+
+	convertedReq, err := convertTransformSpec(transformation.Request)
+	if err != nil {
+		errs = append(errs, err)
+	}
+	convertedResp, err := convertTransformSpec(transformation.Response)
+	if err != nil {
+		errs = append(errs, err)
+	}
 
 	transformationPolicy := &api.Policy{
 		Name:   policyName + transformationPolicySuffix,
@@ -1041,8 +1052,8 @@ func processTransformationPolicy(
 		Spec: &api.PolicySpec{
 			Kind: &api.PolicySpec_Transformation{
 				Transformation: &api.PolicySpec_TransformationPolicy{
-					Request:  convertTransformSpec(transformation.Request),
-					Response: convertTransformSpec(transformation.Response),
+					Request:  convertedReq,
+					Response: convertedResp,
 				},
 			},
 		},
@@ -1053,29 +1064,40 @@ func processTransformationPolicy(
 		"agentgateway_policy", transformationPolicy.Name,
 		"target", policyTarget)
 
-	return []AgwPolicy{{Policy: transformationPolicy}}, nil
+	return []AgwPolicy{{Policy: transformationPolicy}}, errors.Join(errs...)
 }
 
 // convertTransformSpec converts transformation specs to agentgateway format
-func convertTransformSpec(spec *v1alpha1.Transform) *api.PolicySpec_TransformationPolicy_Transform {
+func convertTransformSpec(spec *v1alpha1.Transform) (*api.PolicySpec_TransformationPolicy_Transform, error) {
 	if spec == nil {
-		return nil
+		return nil, nil
 	}
 
+	var errs []error
 	transform := &api.PolicySpec_TransformationPolicy_Transform{}
 
 	for _, header := range spec.Set {
-		transform.Set = append(transform.Set, &api.PolicySpec_HeaderTransformation{
-			Name:       string(header.Name),
-			Expression: string(header.Value),
-		})
+		headerValue := header.Value
+		if isCEL(headerValue) {
+			transform.Set = append(transform.Set, &api.PolicySpec_HeaderTransformation{
+				Name:       string(header.Name),
+				Expression: string(header.Value),
+			})
+		} else {
+			errs = append(errs, fmt.Errorf("invalid header value: %s", headerValue))
+		}
 	}
 
 	for _, header := range spec.Add {
-		transform.Add = append(transform.Add, &api.PolicySpec_HeaderTransformation{
-			Name:       string(header.Name),
-			Expression: string(header.Value),
-		})
+		headerValue := header.Value
+		if isCEL(headerValue) {
+			transform.Add = append(transform.Add, &api.PolicySpec_HeaderTransformation{
+				Name:       string(header.Name),
+				Expression: string(header.Value),
+			})
+		} else {
+			errs = append(errs, fmt.Errorf("invalid header value: %s", headerValue))
+		}
 	}
 
 	transform.Remove = spec.Remove
@@ -1090,11 +1112,23 @@ func convertTransformSpec(spec *v1alpha1.Transform) *api.PolicySpec_Transformati
 
 		// Handle body transformation if present
 		if spec.Body.Value != nil {
-			transform.Body = &api.PolicySpec_BodyTransformation{
-				Expression: string(*spec.Body.Value),
+			bodyValue := *spec.Body.Value
+			if isCEL(bodyValue) {
+				transform.Body = &api.PolicySpec_BodyTransformation{
+					Expression: string(bodyValue),
+				}
+			} else {
+				errs = append(errs, fmt.Errorf("invalid body value: %s", bodyValue))
 			}
 		}
 	}
 
-	return transform
+	return transform, errors.Join(errs...)
+}
+
+// Checks if the expression is a valid CEL expression
+func isCEL(expr v1alpha1.Template) bool {
+	env, _ := cel.NewEnv()
+	_, iss := env.Parse(string(expr))
+	return iss.Err() == nil
 }
