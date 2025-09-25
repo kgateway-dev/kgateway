@@ -89,7 +89,7 @@ func TestUpstreamTlsConfig(t *testing.T) {
 				},
 			},
 			sni:           "example.com",
-			expectedError: "data does not contain any valid RSA or ECDSA certificates",
+			expectedError: "Invalid ca.crt in ConfigMap default/my-ca: data does not contain any valid RSA or ECDSA certificates",
 		},
 	}
 

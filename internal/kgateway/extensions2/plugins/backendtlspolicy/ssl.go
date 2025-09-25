@@ -35,7 +35,7 @@ func ResolveCommonSslConfig(cm *corev1.ConfigMap, validation *envoytlsv3.Certifi
 	// Validate CA certificate by trying to parse it
 	_, err = cert.ParseCertsPEM([]byte(caCrt))
 	if err != nil {
-		return nil, err
+		return nil, errors.New("Invalid ca.crt in ConfigMap " + cm.Namespace + "/" + cm.Name + ": " + err.Error())
 	}
 
 	caCrtData := envoycorev3.DataSource{
