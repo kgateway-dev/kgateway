@@ -12,7 +12,7 @@ Statuses:
         status: "True"
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: Gateway is accepted
+        message: No errors found
         reason: Accepted
         status: "True"
         type: Accepted
@@ -44,7 +44,7 @@ Statuses:
           status: "False"
           type: Programmed
         - lastTransitionTime: null
-          message: Listener is accepted
+          message: No errors found
           reason: Accepted
           status: "True"
           type: Accepted

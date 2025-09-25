@@ -31,7 +31,7 @@ Statuses:
           status: "False"
           type: Programmed
         - lastTransitionTime: null
-          message: Listener is accepted
+          message: No errors found
           reason: Accepted
           status: "True"
           type: Accepted

@@ -93,7 +93,7 @@ Statuses:
         status: Unknown
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: Gateway is accepted
+        message: No errors found
         reason: Accepted
         status: "True"
         type: Accepted
@@ -106,7 +106,7 @@ Statuses:
       - attachedRoutes: 0
         conditions:
         - lastTransitionTime: null
-          message: Listener is accepted
+          message: No errors found
           reason: Accepted
           status: "True"
           type: Accepted
@@ -132,7 +132,7 @@ Statuses:
       - attachedRoutes: 0
         conditions:
         - lastTransitionTime: null
-          message: Listener is accepted
+          message: No errors found
           reason: Accepted
           status: "True"
           type: Accepted

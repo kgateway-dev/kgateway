@@ -94,7 +94,6 @@ apiVersion: gateway.networking.k8s.io/v1alpha2
 kind: TCPRoute
 metadata:
   name: tcp-app-1
-  namespace: gwtest
 spec:
   parentRefs:
     - name: http-gw-for-test

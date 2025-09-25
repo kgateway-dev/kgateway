@@ -22,15 +22,15 @@ import (
 
 // Status message constants
 const (
-	GatewayAcceptedMessage       = "Gateway is accepted"
+	GatewayAcceptedMessage       = "No errors found"
 	GatewayProgrammedMessage     = "Gateway is programmed"
-	ListenerSetAcceptedMessage   = "ListenerSet is accepted"
+	ListenerSetAcceptedMessage   = "No errors found"
 	ListenerSetProgrammedMessage = "ListenerSet is programmed"
-	ListenerAcceptedMessage      = "Listener is accepted"
+	ListenerAcceptedMessage      = "No errors found"
 	ListenerNoConflictsMessage   = "Listener does not have conflicts"
 	ListenerValidRefsMessage     = "Listener has valid refs"
 	ListenerProgrammedMessage    = "Listener is programmed"
-	RouteAcceptedMessage         = "Route is accepted"
+	RouteAcceptedMessage         = "No errors found"
 	RouteValidRefsMessage        = "Route has valid refs"
 )
 

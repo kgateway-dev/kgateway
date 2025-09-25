@@ -128,7 +128,7 @@ Statuses:
         status: "True"
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: Gateway is accepted
+        message: No errors found
         reason: Accepted
         status: "True"
         type: Accepted
@@ -141,7 +141,7 @@ Statuses:
       - attachedRoutes: 0
         conditions:
         - lastTransitionTime: null
-          message: Listener is accepted
+          message: No errors found
           reason: Accepted
           status: "True"
           type: Accepted
@@ -171,7 +171,7 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: Route is accepted
+          message: No errors found
           reason: Accepted
           status: "True"
           type: Accepted
@@ -189,7 +189,7 @@ Statuses:
     gwtest/test-listenerset:
       conditions:
       - lastTransitionTime: null
-        message: ListenerSet is accepted
+        message: No errors found
         reason: Accepted
         status: "True"
         type: Accepted
