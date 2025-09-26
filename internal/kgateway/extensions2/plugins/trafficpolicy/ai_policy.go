@@ -114,7 +114,7 @@ func constructAI(
 	if policyCR.Spec.AI == nil {
 		return nil
 	}
-	logger.Warn("Envoy-based AI Gateway is deprecated in v2.1 and will be removed in v2.2. Use agentgateway instead.")
+	logger.Warn("envoy-based AI Gateway is deprecated in v2.1 and will be removed in v2.2. Use agentgateway instead.")
 
 	ir := &aiPolicyIR{}
 	// Augment with AI secrets as needed

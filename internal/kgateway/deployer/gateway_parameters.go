@@ -377,7 +377,7 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 	istioContainerConfig := istioConfig.GetIstioProxyContainer()
 	aiExtensionConfig := kubeProxyConfig.GetAiExtension()
 	if aiExtensionConfig != nil {
-		slog.Warn("GatewayParameters spec.kube.aiExtension is deprecated in v2.1 and will be removed in v2.2. Use spec.kube.agentgateway instead.")
+		slog.Warn("gatewayparameters spec.kube.aiExtension is deprecated in v2.1 and will be removed in v2.2. Use spec.kube.agentgateway instead.")
 	}
 	agwConfig := kubeProxyConfig.GetAgentgateway()
 
