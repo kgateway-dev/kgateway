@@ -18,6 +18,7 @@ Name|Version|License
 [google/go-cmp](https://github.com/google/go-cmp)|v0.7.0|BSD 3-clause "New" or "Revised" License
 [google/uuid](https://github.com/google/uuid)|v1.6.0|BSD 3-clause "New" or "Revised" License
 [grpc-ecosystem/go-grpc-middleware](https://github.com/grpc-ecosystem/go-grpc-middleware)|v1.4.0|Apache License 2.0
+[kagent-dev/mockllm](https://github.com/kagent-dev/mockllm)|v0.0.2-0.20251007112505-dc5dfd6d0b25|Apache License 2.0
 [kelseyhightower/envconfig](https://github.com/kelseyhightower/envconfig)|v1.4.0|MIT License
 [mitchellh/hashstructure](https://github.com/mitchellh/hashstructure)|v1.0.0|MIT License
 [ginkgo/v2](https://github.com/onsi/ginkgo)|v2.24.0|MIT License
@@ -28,7 +29,7 @@ Name|Version|License
 [sergi/go-diff](https://github.com/sergi/go-diff)|v1.3.2-0.20230802210424-5b0b94c5c0d3|MIT License
 [spf13/afero](https://github.com/spf13/afero)|v1.14.0|Apache License 2.0
 [spf13/cobra](https://github.com/spf13/cobra)|v1.9.1|Apache License 2.0
-[stretchr/testify](https://github.com/stretchr/testify)|v1.10.0|MIT License
+[stretchr/testify](https://github.com/stretchr/testify)|v1.11.1|MIT License
 [go.opencensus.io](https://go.opencensus.io)|v0.24.0|Apache License 2.0
 [proto/otlp](https://go.opentelemetry.io/proto/otlp)|v1.7.1|Apache License 2.0
 [go.uber.org/zap](https://go.uber.org/zap)|v1.27.0|MIT License

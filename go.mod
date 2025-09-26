@@ -1,6 +1,6 @@
 module github.com/kgateway-dev/kgateway/v2
 
-go 1.24.6
+go 1.25.1
 
 require (
 	// Also update AgentgatewayDefaultTag in pkg/deployer/wellknown.go
@@ -31,7 +31,7 @@ require (
 	github.com/solo-io/go-utils v0.27.3
 	github.com/spf13/afero v1.14.0
 	github.com/spf13/cobra v1.9.1
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.opencensus.io v0.24.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/exp v0.0.0-20250506013437-ce4c2cf36ca6
@@ -57,6 +57,12 @@ require (
 )
 
 require (
+	github.com/anthropics/anthropic-sdk-go v1.13.0
+	github.com/kagent-dev/mockllm v0.0.2-0.20251008144831-c6105837f767
+	github.com/openai/openai-go v1.12.0
+)
+
+require (
 	github.com/42wim/httpsig v1.2.2 // indirect
 	github.com/Masterminds/vcs v1.13.3 // indirect
 	github.com/a8m/envsubst v1.4.3 // indirect
@@ -75,6 +81,7 @@ require (
 	github.com/goccy/go-yaml v1.18.0 // indirect
 	github.com/google/certificate-transparency-go v1.3.1 // indirect
 	github.com/google/go-github/v74 v74.0.0 // indirect
+	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/grafana/regexp v0.0.0-20240518133315-a468a5bfb3bc // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.2 // indirect
 	github.com/in-toto/attestation v1.1.1 // indirect
@@ -91,6 +98,10 @@ require (
 	github.com/sigstore/sigstore-go v0.7.1 // indirect
 	github.com/sigstore/timestamp-authority v1.2.5 // indirect
 	github.com/theupdateframework/go-tuf/v2 v2.0.2 // indirect
+	github.com/tidwall/gjson v1.18.0 // indirect
+	github.com/tidwall/match v1.2.0 // indirect
+	github.com/tidwall/pretty v1.2.1 // indirect
+	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/transparency-dev/merkle v0.0.2 // indirect
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	github.com/yuin/gopher-lua v1.1.1 // indirect
