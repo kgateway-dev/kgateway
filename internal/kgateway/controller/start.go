@@ -380,14 +380,15 @@ func GetDefaultClassInfo(globalSettings *settings.Settings,
 			Annotations:    map[string]string{},
 			ControllerName: controllerName,
 		},
-		waypointGatewayClassName: {
-			Description: "Specialized class for Istio ambient mesh waypoint proxies.",
-			Labels:      map[string]string{},
-			Annotations: map[string]string{
-				"ambient.istio.io/waypoint-inbound-binding": "PROXY/15088",
-			},
-			ControllerName: controllerName,
+	}
+	// Only enable waypoint gateway class if it's enabled in the settings
+	classInfos[waypointGatewayClassName] = &deployer.GatewayClassInfo{
+		Description: "Specialized class for Istio ambient mesh waypoint proxies.",
+		Labels:      map[string]string{},
+		Annotations: map[string]string{
+			"ambient.istio.io/waypoint-inbound-binding": "PROXY/15088",
 		},
+		ControllerName: controllerName,
 	}
 	// Only enable agentgateway gateway class if it's enabled in the settings
 	if globalSettings.EnableAgentgateway {
