@@ -17,7 +17,7 @@ Listeners:
   name: http
   protocol: HTTP
 Policies:
-- name: trafficpolicy/default/example-traffic-policy-for-gateway-attached-transform/example-gateway:transformation
+- name: trafficpolicy/default/example-traffic-policy-for-gateway-attached-transform/example-gateway:transformation:default/example-gateway
   spec:
     transformation:
       request:

@@ -399,7 +399,7 @@ func processExtAuthPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collecti
 	}
 
 	extauthPolicy := &api.Policy{
-		Name:   policyName + extauthPolicySuffix,
+		Name:   policyName + extauthPolicySuffix + attachmentName(policyTarget),
 		Target: policyTarget,
 		Spec: &api.PolicySpec{
 			Kind: &api.PolicySpec_ExtAuthz{
@@ -425,7 +425,7 @@ func processAIPolicy(krtctx krt.HandlerContext, secrets krt.Collection[*corev1.S
 	aiSpec := trafficPolicy.Spec.AI
 
 	aiPolicy := &api.Policy{
-		Name:   policyName + aiPolicySuffix,
+		Name:   policyName + aiPolicySuffix + attachmentName(policyTarget),
 		Target: policyTarget,
 		Spec: &api.PolicySpec{
 			Kind: &api.PolicySpec_Ai_{
@@ -715,7 +715,7 @@ func processRBACPolicy(
 	var rbacPolicy *api.Policy
 	if isMCP {
 		rbacPolicy = &api.Policy{
-			Name:   policyName + rbacPolicySuffix,
+			Name:   policyName + rbacPolicySuffix + attachmentName(policyTarget),
 			Target: policyTarget,
 			Spec: &api.PolicySpec{
 				Kind: &api.PolicySpec_McpAuthorization{
@@ -728,7 +728,7 @@ func processRBACPolicy(
 		}
 	} else {
 		rbacPolicy = &api.Policy{
-			Name:   policyName + rbacPolicySuffix,
+			Name:   policyName + rbacPolicySuffix + attachmentName(policyTarget),
 			Target: policyTarget,
 			Spec: &api.PolicySpec{
 				Kind: &api.PolicySpec_Authorization{
@@ -814,7 +814,7 @@ func processLocalRateLimitPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyNa
 	}
 
 	localRateLimitPolicy := &api.Policy{
-		Name:   policyName + localRateLimitPolicySuffix,
+		Name:   policyName + localRateLimitPolicySuffix + attachmentName(policyTarget),
 		Target: policyTarget,
 		Spec: &api.PolicySpec{
 			Kind: &api.PolicySpec_LocalRateLimit_{
@@ -871,7 +871,7 @@ func processGlobalRateLimitPolicy(
 
 	// Build the RemoteRateLimit policy that agentgateway expects
 	p := &api.Policy{
-		Name:   policyName + globalRateLimitPolicySuffix,
+		Name:   policyName + globalRateLimitPolicySuffix + attachmentName(policyTarget),
 		Target: policyTarget,
 		Spec: &api.PolicySpec{
 			Kind: &api.PolicySpec_RemoteRateLimit_{
@@ -1062,7 +1062,7 @@ func processTransformationPolicy(
 
 	if convertedResp != nil || convertedReq != nil {
 		transformationPolicy := &api.Policy{
-			Name:   policyName + transformationPolicySuffix,
+			Name:   policyName + transformationPolicySuffix + attachmentName(policyTarget),
 			Target: policyTarget,
 			Spec: &api.PolicySpec{
 				Kind: &api.PolicySpec_Transformation{
@@ -1160,4 +1160,27 @@ func convertTransformSpec(spec *v1alpha1.Transform) (*api.PolicySpec_Transformat
 func isCEL(expr v1alpha1.Template) bool {
 	_, iss := celEnv.Parse(string(expr))
 	return iss.Err() == nil
+}
+func attachmentName(target *api.PolicyTarget) string {
+	if target == nil {
+		return ""
+	}
+	switch v := target.Kind.(type) {
+	case *api.PolicyTarget_Gateway:
+		return ":" + v.Gateway
+	case *api.PolicyTarget_Listener:
+		return ":" + v.Listener
+	case *api.PolicyTarget_Route:
+		return ":" + v.Route
+	case *api.PolicyTarget_RouteRule:
+		return ":" + v.RouteRule
+	case *api.PolicyTarget_Backend:
+		return ":" + v.Backend
+	case *api.PolicyTarget_Service:
+		return ":" + v.Service
+	case *api.PolicyTarget_SubBackend:
+		return ":" + v.SubBackend
+	default:
+		panic(fmt.Sprintf("unknown target kind %T", target))
+	}
 }

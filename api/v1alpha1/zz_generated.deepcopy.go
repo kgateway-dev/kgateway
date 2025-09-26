@@ -3599,6 +3599,11 @@ func (in *Pod) DeepCopyInto(out *Pod) {
 		*out = new(int64)
 		**out = **in
 	}
+	if in.StartupProbe != nil {
+		in, out := &in.StartupProbe, &out.StartupProbe
+		*out = new(corev1.Probe)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.ReadinessProbe != nil {
 		in, out := &in.ReadinessProbe, &out.ReadinessProbe
 		*out = new(corev1.Probe)

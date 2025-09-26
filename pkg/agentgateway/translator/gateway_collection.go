@@ -13,6 +13,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
+
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
@@ -89,17 +91,7 @@ func (g AgwListener) Equals(other AgwListener) bool {
 }
 
 // AgwPolicy is a wrapper type that contains the policy on the gateway, as well as the status for the policy.
-type AgwPolicy struct {
-	*api.Policy
-}
-
-func (g AgwPolicy) ResourceName() string {
-	return "policy/" + g.Name
-}
-
-func (g AgwPolicy) Equals(other AgwPolicy) bool {
-	return protoconv.Equals(g, other)
-}
+type AgwPolicy = plugins.AgwPolicy
 
 // AgwBackend is a wrapper type that contains the backend on the gateway, as well as the status for the backend.
 type AgwBackend struct {

@@ -404,6 +404,7 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 	gateway.NodeSelector = podConfig.GetNodeSelector()
 	gateway.Affinity = podConfig.GetAffinity()
 	gateway.Tolerations = podConfig.GetTolerations()
+	gateway.StartupProbe = podConfig.GetStartupProbe()
 	gateway.ReadinessProbe = podConfig.GetReadinessProbe()
 	gateway.LivenessProbe = podConfig.GetLivenessProbe()
 	gateway.GracefulShutdown = podConfig.GetGracefulShutdown()

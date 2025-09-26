@@ -273,6 +273,14 @@ type Pod struct {
 	// +kubebuilder:validation:Maximum=31536000
 	TerminationGracePeriodSeconds *int64 `json:"terminationGracePeriodSeconds,omitempty"`
 
+	// If specified, the pod's startup probe. A probe of container startup readiness.
+	// Container will be only be added to service endpoints if the probe succeeds. See
+	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#probe-v1-core
+	// for details.
+	//
+	// +optional
+	StartupProbe *corev1.Probe `json:"startupProbe,omitempty"`
+
 	// If specified, the pod's readiness probe. Periodic probe of container service readiness.
 	// Container will be removed from service endpoints if the probe fails. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#probe-v1-core
@@ -351,6 +359,13 @@ func (in *Pod) GetTolerations() []corev1.Toleration {
 		return nil
 	}
 	return in.Tolerations
+}
+
+func (in *Pod) GetStartupProbe() *corev1.Probe {
+	if in == nil {
+		return nil
+	}
+	return in.StartupProbe
 }
 
 func (in *Pod) GetReadinessProbe() *corev1.Probe {
