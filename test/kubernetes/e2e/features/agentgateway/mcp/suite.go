@@ -56,7 +56,7 @@ func (s *testingSuite) TestSSEEndpoint() {
 	s.Require().NoError(err, "SSE initialize curl failed")
 
 	s.requireHTTPStatus(out, 200)
-	ctRe := regexp.MustCompile(`(?mi)^<\s*content-type:\s*text/event-stream\b`)
+	ctRe := regexp.MustCompile(`(?mi)^Content-Type:\s*text/event-stream\b`)
 	if ctRe.FindStringIndex(out) == nil {
 		s.T().Logf("missing text/event-stream content-type: %s", out)
 		s.Require().Fail("expected Content-Type: text/event-stream in response headers")
