@@ -141,9 +141,14 @@ func (s *testingSuite) notifyInitialized(sessionID string) {
 	time.Sleep(75 * time.Millisecond)
 }
 
-// helper to run a request via curl pod to a given path and return combined output
+// helper to run a request via curl pod to a given path and return combined
+// output.
 func (s *testingSuite) execCurl(port int, path string, headers map[string]string, body string, extraArgs ...string) (string, error) {
-	args := []string{"exec", "-n", "curl", "curl", "--", "curl", "-v", "-N", "--http1.1"}
+	// Use -swi to silence progress, write-out HTTP status, and include headers.
+	// The custom format includes a sentinel "HTTP_STATUS:" line after the body.
+	args := []string{"exec", "-n", "curl", "curl", "--", "curl", "-N", "--http1.1", "-si",
+		"-w", "\nHTTP_STATUS:%{http_code}\nContent-Type:%{content_type}\n",
+	}
 	for k, v := range headers {
 		args = append(args, "-H", fmt.Sprintf("%s: %s", k, v))
 	}
@@ -191,10 +196,10 @@ func (s *testingSuite) execCurlMCP(port int, headers map[string]string, body str
 	return out, err
 }
 
-// helper to assert HTTP status from verbose curl output (supports HTTP/1.1 and HTTP/2)
+// helper to assert HTTP status from curl -w 'HTTP_STATUS:%{http_code}'
 func (s *testingSuite) requireHTTPStatus(out string, code int) {
-	// Match lines like "< HTTP/1.1 200" or "HTTP/1.1 200" (some logs omit the '<')
-	re := regexp.MustCompile(fmt.Sprintf(`(?m)^(?:<\s*)?HTTP/\S+\s+%d\b`, code))
+	// Match "HTTP_STATUS:200"
+	re := regexp.MustCompile(fmt.Sprintf(`(?m)^HTTP_STATUS:%d$`, code))
 	if re.FindStringIndex(out) == nil {
 		// Always log the body on mismatch to make failures actionable.
 		s.T().Logf("HTTP status mismatch (wanted %d): %s", code, out)

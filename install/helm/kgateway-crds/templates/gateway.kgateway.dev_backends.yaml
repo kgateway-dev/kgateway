@@ -634,11 +634,6 @@ spec:
                     maxItems: 32
                     minItems: 1
                     type: array
-                    x-kubernetes-validations:
-                    - message: provider names must be unique across groups
-                      rule: self.map(pg, pg.providers.map(pp, pp.name)).map(p, self.map(pg,
-                        pg.providers.map(pp, pp.name)).filter(cp, cp != p).exists(cp,
-                        p.exists(pn, pn in cp))).exists(p, !p)
                 type: object
                 x-kubernetes-validations:
                 - message: exactly one of the fields in [llm priorityGroups] must

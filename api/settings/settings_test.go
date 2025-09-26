@@ -44,6 +44,7 @@ func allEnvVarsSet() map[string]string {
 		"KGW_GLOBAL_POLICY_NAMESPACE":        "foo",
 		"KGW_DISABLE_LEADER_ELECTION":        "true",
 		"KGW_POLICY_MERGE":                   `{"TrafficPolicy":{"extProc":"DeepMerge"}}`,
+		"KGW_ENABLE_WAYPOINT":                "true",
 	}
 }
 
@@ -93,6 +94,7 @@ func TestSettings(t *testing.T) {
 				GlobalPolicyNamespace:       "",
 				DisableLeaderElection:       false,
 				PolicyMerge:                 "{}",
+				EnableWaypoint:              false,
 			},
 		},
 		{
@@ -127,6 +129,7 @@ func TestSettings(t *testing.T) {
 				GlobalPolicyNamespace:       "foo",
 				DisableLeaderElection:       true,
 				PolicyMerge:                 `{"TrafficPolicy":{"extProc":"DeepMerge"}}`,
+				EnableWaypoint:              true,
 			},
 		},
 		{

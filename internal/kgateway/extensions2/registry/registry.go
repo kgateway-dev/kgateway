@@ -19,7 +19,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/sandwich"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/serviceentry"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/trafficpolicy"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/waypoint"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	pluginsdkcol "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
@@ -90,7 +89,6 @@ func Plugins(
 		httplistenerpolicy.NewPlugin(ctx, commoncol),
 		backendtlspolicy.NewPlugin(ctx, commoncol),
 		serviceentry.NewPlugin(ctx, commoncol),
-		waypoint.NewPlugin(ctx, commoncol, waypointGatewayClassName),
 		sandwich.NewPlugin(),
 		backendconfigpolicy.NewPlugin(ctx, commoncol, validator),
 	}

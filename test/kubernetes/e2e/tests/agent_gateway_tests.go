@@ -22,6 +22,7 @@ func AgentgatewaySuiteRunner() e2e.SuiteRunner {
 	agentgatewaySuiteRunner.Register("MCP", mcp.NewTestingSuite)
 	agentgatewaySuiteRunner.Register("RBAC", rbac.NewTestingSuite)
 	agentgatewaySuiteRunner.Register("Transformation", transformation.NewTestingSuite)
+	agentgatewaySuiteRunner.Register("BackendTLSPolicy", backendtls.NewAgentgatewayTestingSuite)
 
 	return agentgatewaySuiteRunner
 }

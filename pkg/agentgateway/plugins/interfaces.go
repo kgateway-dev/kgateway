@@ -38,27 +38,7 @@ func (p AgwPolicy) Equals(in AgwPolicy) bool {
 }
 
 func (p AgwPolicy) ResourceName() string {
-	return p.Policy.Name + attachmentName(p.Policy.Target)
-}
-
-func attachmentName(target *api.PolicyTarget) string {
-	if target == nil {
-		return ""
-	}
-	switch v := target.Kind.(type) {
-	case *api.PolicyTarget_Gateway:
-		return ":" + v.Gateway
-	case *api.PolicyTarget_Listener:
-		return ":" + v.Listener
-	case *api.PolicyTarget_Route:
-		return ":" + v.Route
-	case *api.PolicyTarget_RouteRule:
-		return ":" + v.RouteRule
-	case *api.PolicyTarget_Backend:
-		return ":" + v.Backend
-	default:
-		return ""
-	}
+	return p.Policy.Name
 }
 
 type AddResourcesPlugin struct {

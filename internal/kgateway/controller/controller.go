@@ -537,15 +537,6 @@ func (r *controllerReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		Message:            "GatewayClass accepted by kgateway controller",
 	})
 
-	// TODO: This should actually check the version of the CRDs in the cluster to be 100% sure
-	meta.SetStatusCondition(&gwclass.Status.Conditions, metav1.Condition{
-		Type:               string(apiv1.GatewayClassConditionStatusSupportedVersion),
-		Status:             metav1.ConditionTrue,
-		ObservedGeneration: gwclass.Generation,
-		Reason:             string(apiv1.GatewayClassReasonSupportedVersion),
-		Message:            "Gateway API version supported by kgateway controller",
-	})
-
 	if err := r.cli.Status().Update(ctx, gwclass); err != nil {
 		return ctrl.Result{}, err
 	}

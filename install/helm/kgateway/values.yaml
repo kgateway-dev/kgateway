@@ -109,3 +109,7 @@ agentgateway:
 #   trafficPolicy:
 #     extProc: DeepMerge
 policyMerge: {}
+
+# -- Enable the waypoint integration. This enables kgateway to translate istio waypoints and use kgateway as a waypoint in an Istio Ambient service mesh setup..
+waypoint:
+  enabled: false

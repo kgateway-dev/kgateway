@@ -3,7 +3,6 @@ package plugins
 import (
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/agentgateway/agentgateway/go/api"
@@ -52,7 +51,7 @@ func translatePoliciesForBackendTLS(
 	logger := logger.With("plugin_kind", "backendtls")
 	var policies []AgwPolicy
 
-	for idx, target := range btls.Spec.TargetRefs {
+	for _, target := range btls.Spec.TargetRefs {
 		var policyTarget *api.PolicyTarget
 
 		switch string(target.Kind) {
@@ -141,7 +140,7 @@ func translatePoliciesForBackendTLS(
 		}
 
 		policy := &api.Policy{
-			Name:   btls.Namespace + "/" + btls.Name + ":" + strconv.Itoa(idx) + ":backendtls",
+			Name:   btls.Namespace + "/" + btls.Name + ":backendtls" + attachmentName(policyTarget),
 			Target: policyTarget,
 			Spec: &api.PolicySpec{Kind: &api.PolicySpec_BackendTls{
 				BackendTls: &api.PolicySpec_BackendTLS{
