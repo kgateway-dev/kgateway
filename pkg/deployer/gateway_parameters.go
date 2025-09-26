@@ -185,20 +185,7 @@ func defaultWaypointGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityC
 // defaultGatewayParameters returns an in-memory GatewayParameters with the default values
 // set for the gateway.
 func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext bool) *v1alpha1.GatewayParameters {
-	dataPlaneSecurityContext := &corev1.SecurityContext{
-		AllowPrivilegeEscalation: ptr.To(false),
-		ReadOnlyRootFilesystem:   ptr.To(true),
-		RunAsNonRoot:             ptr.To(true),
-		RunAsUser:                ptr.To[int64](10101),
-		Capabilities: &corev1.Capabilities{
-			Drop: []corev1.Capability{"ALL"},
-			Add:  []corev1.Capability{"NET_BIND_SERVICE"},
-		},
-	}
-	if omitDefaultSecurityContext {
-		dataPlaneSecurityContext = nil
-	}
-	return &v1alpha1.GatewayParameters{
+	gwp := &v1alpha1.GatewayParameters{
 		Spec: v1alpha1.GatewayParametersSpec{
 			SelfManaged: nil,
 			Kube: &v1alpha1.KubernetesProxyConfig{
@@ -249,7 +236,16 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 						Repository: ptr.To(EnvoyWrapperImage),
 						PullPolicy: (*corev1.PullPolicy)(ptr.To(imageInfo.PullPolicy)),
 					},
-					SecurityContext: dataPlaneSecurityContext,
+					SecurityContext: &corev1.SecurityContext{
+						AllowPrivilegeEscalation: ptr.To(false),
+						ReadOnlyRootFilesystem:   ptr.To(true),
+						RunAsNonRoot:             ptr.To(true),
+						RunAsUser:                ptr.To[int64](10101),
+						Capabilities: &corev1.Capabilities{
+							Drop: []corev1.Capability{"ALL"},
+							Add:  []corev1.Capability{"NET_BIND_SERVICE"},
+						},
+					},
 				},
 				Stats: &v1alpha1.StatsConfig{
 					Enabled:                 ptr.To(true),
@@ -300,9 +296,23 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 						Repository: ptr.To(AgentgatewayImage),
 						PullPolicy: (*corev1.PullPolicy)(ptr.To(imageInfo.PullPolicy)),
 					},
-					SecurityContext: dataPlaneSecurityContext,
+					SecurityContext: &corev1.SecurityContext{
+						AllowPrivilegeEscalation: ptr.To(false),
+						ReadOnlyRootFilesystem:   ptr.To(true),
+						RunAsNonRoot:             ptr.To(true),
+						RunAsUser:                ptr.To[int64](10101),
+						Capabilities: &corev1.Capabilities{
+							Drop: []corev1.Capability{"ALL"},
+							Add:  []corev1.Capability{"NET_BIND_SERVICE"},
+						},
+					},
 				},
 			},
 		},
 	}
+	if omitDefaultSecurityContext {
+		gwp.Spec.Kube.EnvoyContainer.SecurityContext = nil
+		gwp.Spec.Kube.Agentgateway.SecurityContext = nil
+	}
+	return gwp.DeepCopy()
 }
