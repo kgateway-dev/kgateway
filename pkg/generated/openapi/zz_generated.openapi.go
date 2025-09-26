@@ -4777,7 +4777,7 @@ func schema_kgateway_v2_api_v1alpha1_KubernetesProxyConfig(ref common.ReferenceC
 					},
 					"aiExtension": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Configuration for the AI extension.",
+							Description: "Deprecated: `aiExtension` is deprecated in v2.1 and will be removed in v2.2. Prefer to use `agentgateway` instead.\n\nConfiguration for the AI extension.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtension"),
 						},
 					},

@@ -112,8 +112,11 @@ type Settings struct {
 	UseRustFormations bool `split_words:"true" default:"false"`
 
 	// EnableInferExt defines whether to enable/disable support for Gateway API inference extension.
+	// If enabled, EnableAgentgateway should also be set to true. Enabling inference extension without agentgateway
+	// is deprecated in v2.1 and will not be supported in v2.2.
 	EnableInferExt bool `split_words:"true"`
 	// InferExtAutoProvision defines whether to enable/disable the Gateway API inference extension deployer.
+	// Deprecated: inference extension auto-provisioning is deprecated in v2.1 and will be removed in v2.2.
 	InferExtAutoProvision bool `split_words:"true"`
 
 	// DefaultImageRegistry is the default image registry to use for the kgateway image.

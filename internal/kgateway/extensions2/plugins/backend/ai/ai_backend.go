@@ -20,6 +20,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
+// TODO: envoy-based AI gateway is deprecated in v2.1 and will be removed in v2.2. The files in this folder (and any associated tests) can be removed in v2.2.
+
 // IR is the internal representation of an AI backend.
 type IR struct {
 	AISecret       *ir.Secret

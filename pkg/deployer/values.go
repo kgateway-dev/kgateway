@@ -83,6 +83,7 @@ type HelmGateway struct {
 	Stats *HelmStatsConfig `json:"stats,omitempty"`
 
 	// AI extension values
+	// TODO: envoy-based AI gateway is deprecated in v2.1. We can remove this in v2.2.
 	AIExtension *HelmAIExtension `json:"aiExtension,omitempty"`
 
 	// agentgateway integration values

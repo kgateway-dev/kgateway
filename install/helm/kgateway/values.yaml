@@ -91,9 +91,9 @@ image:
 
 # -- Configure the integration with the Gateway API Inference Extension project, which lets you use kgateway to route to AI inference workloads like LLMs that run locally in your Kubernetes cluster. Documentation for Inference Extension can be found here: https://kgateway.dev/docs/integrations/inference-extension/
 inferenceExtension:
-  # -- Enable Inference Extension.
+  # -- Enable Inference Extension. If enabled, agentgateway.enabled should also be set to true. Enabling inference extension without agentgateway is deprecated in v2.1 and will not be supported in v2.2.
   enabled: false
-  # -- Enable automatic provisioning for Inference Extension.
+  # -- Enable automatic provisioning for Inference Extension. Deprecated: this is deprecated in v2.1 and will be removed in v2.2.
   autoProvision: false
 
 # -- List of namespace selectors (OR'ed): each entry can use 'matchLabels' or 'matchExpressions' (AND'ed within each entry if used together). Kgateway includes the selected namespaces in config discovery. For more information, see the docs https://kgateway.dev/docs/operations/install/#namespace-discovery.
