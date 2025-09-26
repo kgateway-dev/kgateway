@@ -261,7 +261,7 @@ func TestInferencePoolGVKsToWatch(t *testing.T) {
 	})
 }
 
-func TestAgentGatewayAndEnvoyContainerDistinctValues(t *testing.T) {
+func TestAgentgatewayAndEnvoyContainerDistinctValues(t *testing.T) {
 	// Create GatewayParameters with agentgateway disabled and distinct values
 	gwParams := &gw2_v1alpha1.GatewayParameters{
 		TypeMeta: metav1.TypeMeta{
