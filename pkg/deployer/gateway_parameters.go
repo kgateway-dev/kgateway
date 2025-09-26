@@ -134,7 +134,8 @@ func GetInMemoryGatewayParameters(name string, imageInfo *ImageInfo, gatewayClas
 func defaultAgentgatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext bool) *v1alpha1.GatewayParameters {
 	gwp := defaultGatewayParameters(imageInfo, omitDefaultSecurityContext)
 	gwp.Spec.Kube.Agentgateway.Enabled = ptr.To(true)
-	gwp.Spec.Kube.PodTemplate.ReadinessProbe.TCPSocket.Port = intstr.FromInt(15021)
+	gwp.Spec.Kube.PodTemplate.ReadinessProbe.HTTPGet.Path = "/healthz/ready"
+	gwp.Spec.Kube.PodTemplate.ReadinessProbe.HTTPGet.Port = intstr.FromInt(15021)
 	gwp.Spec.Kube.PodTemplate.StartupProbe.HTTPGet.Path = "/healthz/ready"
 	gwp.Spec.Kube.PodTemplate.StartupProbe.HTTPGet.Port = intstr.FromInt(15021)
 	gwp.Spec.Kube.PodTemplate.GracefulShutdown.Enabled = ptr.To(true)
@@ -216,7 +217,8 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 					},
 					ReadinessProbe: &corev1.Probe{
 						ProbeHandler: corev1.ProbeHandler{
-							TCPSocket: &corev1.TCPSocketAction{
+							HTTPGet: &corev1.HTTPGetAction{
+								Path: "/ready",
 								Port: intstr.FromInt(8082),
 							},
 						},
@@ -226,14 +228,14 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 					StartupProbe: &corev1.Probe{
 						ProbeHandler: corev1.ProbeHandler{
 							HTTPGet: &corev1.HTTPGetAction{
-								Path: "/envoy-hc",
+								Path: "/ready",
 								Port: intstr.FromInt(8082),
 							},
 						},
-						InitialDelaySeconds: 5,
-						PeriodSeconds:       10,
+						InitialDelaySeconds: 0,
+						PeriodSeconds:       1,
 						TimeoutSeconds:      2,
-						FailureThreshold:    3,
+						FailureThreshold:    60,
 						SuccessThreshold:    1,
 					},
 				},

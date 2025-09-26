@@ -3276,17 +3276,14 @@ func generateStartupProbe() *corev1.Probe {
 	return &corev1.Probe{
 		ProbeHandler: corev1.ProbeHandler{
 			HTTPGet: &corev1.HTTPGetAction{
-				Scheme: "HTTP",
-				Port: intstr.IntOrString{
-					IntVal: 8082,
-				},
-				Path: "/envoy-hc",
+				Path: "/ready",
+				Port: intstr.FromInt(8082),
 			},
 		},
-		InitialDelaySeconds: 5,
-		PeriodSeconds:       5,
+		InitialDelaySeconds: 0,
+		PeriodSeconds:       1,
 		TimeoutSeconds:      2,
-		FailureThreshold:    2,
+		FailureThreshold:    60,
 		SuccessThreshold:    1,
 	}
 }
@@ -3294,13 +3291,13 @@ func generateStartupProbe() *corev1.Probe {
 func generateReadinessProbe() *corev1.Probe {
 	return &corev1.Probe{
 		ProbeHandler: corev1.ProbeHandler{
-			TCPSocket: &corev1.TCPSocketAction{
+			HTTPGet: &corev1.HTTPGetAction{
+				Path: "/ready",
 				Port: intstr.FromInt(8082),
 			},
 		},
 		InitialDelaySeconds: 5,
-		PeriodSeconds:       5,
-		FailureThreshold:    2,
+		PeriodSeconds:       10,
 	}
 }
 
