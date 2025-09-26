@@ -132,7 +132,7 @@ Statuses:
         status: "True"
         type: Accepted
       - lastTransitionTime: null
-        message: Gateway is programmed
+        message: No errors found
         reason: Programmed
         status: "True"
         type: Programmed
@@ -155,7 +155,7 @@ Statuses:
           status: "True"
           type: ResolvedRefs
         - lastTransitionTime: null
-          message: Listener is programmed
+          message: No errors found
           reason: Programmed
           status: "True"
           type: Programmed
@@ -193,7 +193,7 @@ Statuses:
         status: "True"
         type: Accepted
       - lastTransitionTime: null
-        message: ListenerSet is programmed
+        message: No errors found
         reason: Programmed
         status: "True"
         type: Programmed
@@ -218,7 +218,7 @@ Statuses:
           status: "True"
           type: ResolvedRefs
         - lastTransitionTime: null
-          message: Listener is programmed
+          message: No errors found
           reason: Programmed
           status: "True"
           type: Programmed
@@ -247,7 +247,7 @@ Statuses:
           status: "True"
           type: ResolvedRefs
         - lastTransitionTime: null
-          message: Listener is programmed
+          message: No errors found
           reason: Programmed
           status: "True"
           type: Programmed

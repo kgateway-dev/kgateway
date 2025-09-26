@@ -22,11 +22,7 @@ import (
 
 // Status message constants
 const (
-	AcceptedMessage              = "No errors found"
-	ValidRefsMessage             = "No errors found"
-	GatewayProgrammedMessage     = "Gateway is programmed"
-	ListenerSetProgrammedMessage = "ListenerSet is programmed"
-	ListenerProgrammedMessage    = "Listener is programmed"
+	AcceptedMessage = "No errors found"
 )
 
 // TODO: refactor this struct + methods to better reflect the usage now in proxy_syncer
@@ -388,7 +384,7 @@ func addMissingGatewayConditions(gwReport *GatewayReport, gw *gwv1.Gateway) {
 			Type:    gwv1.GatewayConditionProgrammed,
 			Status:  metav1.ConditionTrue,
 			Reason:  gwv1.GatewayReasonProgrammed,
-			Message: GatewayProgrammedMessage,
+			Message: AcceptedMessage,
 		})
 	}
 }
@@ -410,7 +406,7 @@ func addMissingListenerSetConditions(lsReport *ListenerSetReport) {
 			Type:    gwv1.GatewayConditionProgrammed,
 			Status:  metav1.ConditionTrue,
 			Reason:  gwv1.GatewayReasonProgrammed,
-			Message: ListenerSetProgrammedMessage,
+			Message: AcceptedMessage,
 		})
 	}
 }
@@ -441,7 +437,7 @@ func addMissingListenerConditions(lisReport *ListenerReport) {
 			Type:    gwv1.ListenerConditionResolvedRefs,
 			Status:  metav1.ConditionTrue,
 			Reason:  gwv1.ListenerReasonResolvedRefs,
-			Message: ValidRefsMessage,
+			Message: AcceptedMessage,
 		})
 	}
 	if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(gwv1.ListenerConditionProgrammed)); cond == nil {
@@ -449,7 +445,7 @@ func addMissingListenerConditions(lisReport *ListenerReport) {
 			Type:    gwv1.ListenerConditionProgrammed,
 			Status:  metav1.ConditionTrue,
 			Reason:  gwv1.ListenerReasonProgrammed,
-			Message: ListenerProgrammedMessage,
+			Message: AcceptedMessage,
 		})
 	}
 }
@@ -471,7 +467,7 @@ func addMissingParentRefConditions(report *ParentRefReport) {
 			Type:    gwv1.RouteConditionResolvedRefs,
 			Status:  metav1.ConditionTrue,
 			Reason:  gwv1.RouteReasonResolvedRefs,
-			Message: ValidRefsMessage,
+			Message: AcceptedMessage,
 		})
 	}
 }

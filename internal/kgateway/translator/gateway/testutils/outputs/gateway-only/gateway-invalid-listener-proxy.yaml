@@ -40,7 +40,7 @@ Statuses:
           status: "False"
           type: Conflicted
         - lastTransitionTime: null
-          message: Listener is programmed
+          message: No errors found
           reason: Programmed
           status: "True"
           type: Programmed
