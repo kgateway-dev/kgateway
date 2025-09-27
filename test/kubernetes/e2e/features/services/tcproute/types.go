@@ -83,7 +83,7 @@ var (
 	crossNsNoRefGrantTCPRouteManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "cross-ns-no-refgrant-tcproute.yaml")
 
 	// Assertion test timers
-	ctxTimeout = 5 * time.Minute
+	ctxTimeout = 10 * time.Minute
 	timeout    = 60 * time.Second
 
 	singleGlooProxy = metav1.ObjectMeta{

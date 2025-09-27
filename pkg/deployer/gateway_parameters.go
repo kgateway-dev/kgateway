@@ -1,9 +1,13 @@
 package deployer
 
 import (
+	"context"
+	"log/slog"
+
 	"istio.io/api/annotation"
 	"istio.io/api/label"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -11,7 +15,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 )
 
-// Inputs is the set of options used to configure gateway/ineference pool deployment.
+// Inputs is the set of options used to configure gateway/inference pool deployment.
 type Inputs struct {
 	Dev                      bool
 	IstioAutoMtlsEnabled     bool
@@ -34,8 +38,12 @@ type ExtraGatewayParameters struct {
 // It applies the floating user ID if it is set and adds the sysctl to allow the privileged ports if the gateway uses them.
 func UpdateSecurityContexts(cfg *v1alpha1.KubernetesProxyConfig, ports []HelmPort) {
 	// If the floating user ID is set, unset the RunAsUser field from all security contexts
-	if cfg.GetFloatingUserId() != nil && *cfg.GetFloatingUserId() {
+	if ptr.Deref(cfg.GetFloatingUserId(), false) {
 		applyFloatingUserId(cfg)
+	}
+
+	if ptr.Deref(cfg.GetOmitDefaultSecurityContext(), false) {
+		return
 	}
 
 	if usesPrivilegedPorts(ports) {
@@ -80,20 +88,18 @@ func allowPrivilegedPorts(cfg *v1alpha1.KubernetesProxyConfig) {
 	})
 }
 
-// applyFloatingUserId will set the RunAsUser field from all security contexts to null if the floatingUserId field is set
+// applyFloatingUserId (deprecated in favor of omitDefaultSecurityContext) will
+// set the RunAsUser field from all security contexts to null assuming that the
+// floatingUserId field is set. Will not create a securityContext, even an
+// empty one -- only updates existing securityContexts.
 func applyFloatingUserId(dstKube *v1alpha1.KubernetesProxyConfig) {
-	floatingUserId := dstKube.GetFloatingUserId()
-	if floatingUserId == nil || !*floatingUserId {
-		return
-	}
+	logger.Log(context.Background(), slog.LevelWarn, "the field GatewayParameters.Spec.Kube.FloatingUserId is deprecated and will be removed in a future release; see if OmitDefaultSecurityContext fits your needs")
 
-	// Pod security context
 	podSecurityContext := dstKube.GetPodTemplate().GetSecurityContext()
 	if podSecurityContext != nil {
 		podSecurityContext.RunAsUser = nil
 	}
 
-	// Container security contexts
 	securityContexts := []*corev1.SecurityContext{
 		dstKube.GetEnvoyContainer().GetSecurityContext(),
 		dstKube.GetSdsContainer().GetSecurityContext(),
@@ -110,31 +116,36 @@ func applyFloatingUserId(dstKube *v1alpha1.KubernetesProxyConfig) {
 }
 
 // GetInMemoryGatewayParameters returns an in-memory GatewayParameters based on the name of the gateway class.
-func GetInMemoryGatewayParameters(name string, imageInfo *ImageInfo, gatewayClassName, waypointClassName, agentgatewayClassName string) *v1alpha1.GatewayParameters {
+func GetInMemoryGatewayParameters(name string, imageInfo *ImageInfo, gatewayClassName, waypointClassName, agentgatewayClassName string, omitDefaultSecurityContext bool) *v1alpha1.GatewayParameters {
 	switch name {
 	case waypointClassName:
-		return defaultWaypointGatewayParameters(imageInfo)
+		return defaultWaypointGatewayParameters(imageInfo, omitDefaultSecurityContext)
 	case gatewayClassName:
-		return defaultGatewayParameters(imageInfo)
+		return defaultGatewayParameters(imageInfo, omitDefaultSecurityContext)
 	case agentgatewayClassName:
-		return defaultAgentgatewayParameters(imageInfo)
+		return defaultAgentgatewayParameters(imageInfo, omitDefaultSecurityContext)
 	default:
-		return defaultGatewayParameters(imageInfo)
+		return defaultGatewayParameters(imageInfo, omitDefaultSecurityContext)
 	}
 }
 
 // defaultAgentgatewayParameters returns an in-memory GatewayParameters with default values
 // set for the agentgateway deployment.
-func defaultAgentgatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayParameters {
-	gwp := defaultGatewayParameters(imageInfo)
+func defaultAgentgatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext bool) *v1alpha1.GatewayParameters {
+	gwp := defaultGatewayParameters(imageInfo, omitDefaultSecurityContext)
 	gwp.Spec.Kube.Agentgateway.Enabled = ptr.To(true)
+	gwp.Spec.Kube.PodTemplate.ReadinessProbe.HTTPGet.Path = "/healthz/ready"
+	gwp.Spec.Kube.PodTemplate.ReadinessProbe.HTTPGet.Port = intstr.FromInt(15021)
+	gwp.Spec.Kube.PodTemplate.StartupProbe.HTTPGet.Path = "/healthz/ready"
+	gwp.Spec.Kube.PodTemplate.StartupProbe.HTTPGet.Port = intstr.FromInt(15021)
+	gwp.Spec.Kube.PodTemplate.GracefulShutdown.Enabled = ptr.To(true)
 	return gwp
 }
 
 // defaultWaypointGatewayParameters returns an in-memory GatewayParameters with default values
 // set for the waypoint deployment.
-func defaultWaypointGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayParameters {
-	gwp := defaultGatewayParameters(imageInfo)
+func defaultWaypointGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext bool) *v1alpha1.GatewayParameters {
+	gwp := defaultGatewayParameters(imageInfo, omitDefaultSecurityContext)
 
 	// Ensure Service is initialized before adding ports
 	if gwp.Spec.Kube.Service == nil {
@@ -173,8 +184,8 @@ func defaultWaypointGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayPar
 
 // defaultGatewayParameters returns an in-memory GatewayParameters with the default values
 // set for the gateway.
-func defaultGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayParameters {
-	return &v1alpha1.GatewayParameters{
+func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext bool) *v1alpha1.GatewayParameters {
+	gwp := &v1alpha1.GatewayParameters{
 		Spec: v1alpha1.GatewayParametersSpec{
 			SelfManaged: nil,
 			Kube: &v1alpha1.KubernetesProxyConfig{
@@ -184,6 +195,36 @@ func defaultGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayParameters 
 				},
 				Service: &v1alpha1.Service{
 					Type: (*corev1.ServiceType)(ptr.To(string(corev1.ServiceTypeLoadBalancer))),
+				},
+				PodTemplate: &v1alpha1.Pod{
+					TerminationGracePeriodSeconds: ptr.To(int64(60)),
+					GracefulShutdown: &v1alpha1.GracefulShutdownSpec{
+						Enabled:          ptr.To(true),
+						SleepTimeSeconds: ptr.To(int64(10)),
+					},
+					ReadinessProbe: &corev1.Probe{
+						ProbeHandler: corev1.ProbeHandler{
+							HTTPGet: &corev1.HTTPGetAction{
+								Path: "/ready",
+								Port: intstr.FromInt(8082),
+							},
+						},
+						InitialDelaySeconds: 5,
+						PeriodSeconds:       10,
+					},
+					StartupProbe: &corev1.Probe{
+						ProbeHandler: corev1.ProbeHandler{
+							HTTPGet: &corev1.HTTPGetAction{
+								Path: "/ready",
+								Port: intstr.FromInt(8082),
+							},
+						},
+						InitialDelaySeconds: 0,
+						PeriodSeconds:       1,
+						TimeoutSeconds:      2,
+						FailureThreshold:    60,
+						SuccessThreshold:    1,
+					},
 				},
 				EnvoyContainer: &v1alpha1.EnvoyContainer{
 					Bootstrap: &v1alpha1.EnvoyBootstrap{
@@ -269,4 +310,9 @@ func defaultGatewayParameters(imageInfo *ImageInfo) *v1alpha1.GatewayParameters 
 			},
 		},
 	}
+	if omitDefaultSecurityContext {
+		gwp.Spec.Kube.EnvoyContainer.SecurityContext = nil
+		gwp.Spec.Kube.Agentgateway.SecurityContext = nil
+	}
+	return gwp.DeepCopy()
 }

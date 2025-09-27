@@ -32,12 +32,16 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "kgateway.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
+          {{- with .Values.securityContext }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
+          {{- end }}
           image: "{{ .Values.controller.image.registry | default .Values.image.registry }}/{{ .Values.controller.image.repository }}:{{ .Values.controller.image.tag | default .Values.image.tag | default .Chart.Version }}"
           imagePullPolicy: {{ .Values.controller.image.pullPolicy | default .Values.image.pullPolicy }}
           ports:
@@ -104,6 +108,10 @@ spec:
             {{- end }}
             {{- if .Values.agentgateway.enabled }}
             - name: KGW_ENABLE_AGENTGATEWAY
+              value: "true"
+            {{- end }}
+            {{- if .Values.waypoint.enabled }}
+            - name: KGW_ENABLE_WAYPOINT
               value: "true"
             {{- end }}
             # TODO: Remove this once the cleanup is done. Required as the gloo-system

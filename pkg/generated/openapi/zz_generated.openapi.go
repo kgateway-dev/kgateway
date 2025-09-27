@@ -4777,7 +4777,7 @@ func schema_kgateway_v2_api_v1alpha1_KubernetesProxyConfig(ref common.ReferenceC
 					},
 					"aiExtension": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Configuration for the AI extension.",
+							Description: "Deprecated: `aiExtension` is deprecated in v2.1 and will be removed in v2.2. Prefer to use `agentgateway` instead.\n\nConfiguration for the AI extension.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtension"),
 						},
 					},
@@ -4789,7 +4789,14 @@ func schema_kgateway_v2_api_v1alpha1_KubernetesProxyConfig(ref common.ReferenceC
 					},
 					"floatingUserId": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Used to unset the `runAsUser` values in security contexts.",
+							Description: "Deprecated: Prefer to use omitDefaultSecurityContext instead. Will be removed in the next release.\n\nUsed to unset the `runAsUser` values in security contexts.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"omitDefaultSecurityContext": {
+						SchemaProps: spec.SchemaProps{
+							Description: "OmitDefaultSecurityContext is used to control whether or not `securityContext` fields should be rendered for the various generated Deployments/Containers that are dynamically provisioned by the deployer.\n\nWhen set to true, no `securityContexts` will be provided and will left to the user/platform to be provided.\n\nThis should be enabled on platforms such as Red Hat OpenShift where the `securityContext` will be dynamically added to enforce the appropriate level of security.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -6051,6 +6058,12 @@ func schema_kgateway_v2_api_v1alpha1_Pod(ref common.ReferenceCallback) common.Op
 							Description: "If specified, the pod's termination grace period in seconds. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#pod-v1-core for details",
 							Type:        []string{"integer"},
 							Format:      "int64",
+						},
+					},
+					"startupProbe": {
+						SchemaProps: spec.SchemaProps{
+							Description: "If specified, the pod's startup probe. A probe of container startup readiness. Container will be only be added to service endpoints if the probe succeeds. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#probe-v1-core for details.",
+							Ref:         ref("k8s.io/api/core/v1.Probe"),
 						},
 					},
 					"readinessProbe": {

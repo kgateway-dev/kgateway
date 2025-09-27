@@ -1522,6 +1522,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: istio
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.IstioIntegration
+    - name: omitDefaultSecurityContext
+      type:
+        scalar: boolean
     - name: podTemplate
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Pod
@@ -2010,6 +2013,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: securityContext
       type:
         namedType: io.k8s.api.core.v1.PodSecurityContext
+    - name: startupProbe
+      type:
+        namedType: io.k8s.api.core.v1.Probe
     - name: terminationGracePeriodSeconds
       type:
         scalar: numeric

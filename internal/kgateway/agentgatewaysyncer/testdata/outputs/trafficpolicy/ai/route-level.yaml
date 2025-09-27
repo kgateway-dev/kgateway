@@ -23,7 +23,7 @@ Policies:
         secret: mysecretkey
   target:
     subBackend: default/openai/backend
-- name: trafficpolicy/default/ai-policy/openai-test:ai
+- name: trafficpolicy/default/ai-policy/openai-test:ai:default/openai-test
   spec:
     ai:
       defaults:

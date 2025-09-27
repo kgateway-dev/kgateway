@@ -22,6 +22,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/inferenceextension/endpointpicker"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/waypoint"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
@@ -111,6 +112,8 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	istiolog.Configure(loggingOptions)
 
 	setupLog.Info("initializing kgateway extensions")
+
+	var gatedPlugins []sdk.Plugin
 	// Extend the scheme and add the EPP plugin if the inference extension is enabled and the InferencePool CRD exists.
 	if cfg.SetupOpts.GlobalSettings.EnableInferExt {
 		exists, err := kgtwschemes.AddInferExtV1Scheme(cfg.RestConfig, cfg.Manager.GetScheme())
@@ -118,24 +121,23 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		case err != nil:
 			return nil, err
 		case exists:
-			setupLog.Info("adding endpoint-picker inference extension")
-
-			existingExtraPlugins := cfg.ExtraPlugins
-			cfg.ExtraPlugins = func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []sdk.Plugin {
-				var plugins []sdk.Plugin
-
-				// Add the inference extension plugin.
-				if plug := endpointpicker.NewPlugin(ctx, commoncol); plug != nil {
-					plugins = append(plugins, *plug)
-				}
-
-				// If there was an existing ExtraPlugins function, append its plugins too.
-				if existingExtraPlugins != nil {
-					plugins = append(plugins, existingExtraPlugins(ctx, commoncol, cfg.SetupOpts.GlobalSettings.PolicyMerge)...)
-				}
-
-				return plugins
+			setupLog.Info("adding the endpoint-picker inference extension")
+			gatedPlugins = append(gatedPlugins, endpointpicker.NewPlugin(ctx, cfg.CommonCollections))
+		}
+	}
+	// Add the waypoint plugin if enabled
+	if cfg.SetupOpts.GlobalSettings.EnableWaypoint {
+		setupLog.Info("adding the waypoint plugin")
+		gatedPlugins = append(gatedPlugins, waypoint.NewPlugin(ctx, cfg.CommonCollections, cfg.WaypointGatewayClassName))
+	}
+	// Append the gatedPlugins to the ExtraPlugins
+	if len(gatedPlugins) != 0 {
+		existingExtraPlugins := cfg.ExtraPlugins
+		cfg.ExtraPlugins = func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []sdk.Plugin {
+			if existingExtraPlugins != nil {
+				return append(gatedPlugins, existingExtraPlugins(ctx, commoncol, cfg.SetupOpts.GlobalSettings.PolicyMerge)...)
 			}
+			return gatedPlugins
 		}
 	}
 
@@ -341,7 +343,11 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 		}
 		// Enable the inference extension deployer if set.
 		if globalSettings.InferExtAutoProvision {
+			setupLog.Info("inference extension auto-provisioning is deprecated in v2.1 and will be removed in v2.2.")
 			poolCfg.InferenceExt = new(deployer.InferenceExtInfo)
+		}
+		if !globalSettings.EnableAgentgateway {
+			setupLog.Info("using inference extension without agentgateway is deprecated in v2.1 and will not be supported in v2.2.")
 		}
 		if err := NewBaseInferencePoolController(ctx, poolCfg, &gwCfg, c.cfg.ExtraGatewayParameters); err != nil {
 			setupLog.Error(err, "unable to create inferencepool controller")
@@ -378,14 +384,15 @@ func GetDefaultClassInfo(globalSettings *settings.Settings,
 			Annotations:    map[string]string{},
 			ControllerName: controllerName,
 		},
-		waypointGatewayClassName: {
-			Description: "Specialized class for Istio ambient mesh waypoint proxies.",
-			Labels:      map[string]string{},
-			Annotations: map[string]string{
-				"ambient.istio.io/waypoint-inbound-binding": "PROXY/15088",
-			},
-			ControllerName: controllerName,
+	}
+	// Only enable waypoint gateway class if it's enabled in the settings
+	classInfos[waypointGatewayClassName] = &deployer.GatewayClassInfo{
+		Description: "Specialized class for Istio ambient mesh waypoint proxies.",
+		Labels:      map[string]string{},
+		Annotations: map[string]string{
+			"ambient.istio.io/waypoint-inbound-binding": "PROXY/15088",
 		},
+		ControllerName: controllerName,
 	}
 	// Only enable agentgateway gateway class if it's enabled in the settings
 	if globalSettings.EnableAgentgateway {

@@ -116,19 +116,40 @@ type KubernetesProxyConfig struct {
 	// +optional
 	Stats *StatsConfig `json:"stats,omitempty"`
 
+	// Deprecated: `aiExtension` is deprecated in v2.1 and will be removed in v2.2.
+	// Prefer to use `agentgateway` instead.
+	//
 	// Configuration for the AI extension.
 	//
 	// +optional
 	AiExtension *AiExtension `json:"aiExtension,omitempty"`
 
-	// Configure the agentgateway integration. If agentgateway is disabled, the EnvoyContainer values will be used by
-	// default to configure the data plane proxy.
+	// Configure the agentgateway integration. If agentgateway is disabled, the
+	// EnvoyContainer values will be used by default to configure the data
+	// plane proxy.
 	//
 	// +optional
 	Agentgateway *Agentgateway `json:"agentgateway,omitempty"`
 
+	// Deprecated: Prefer to use omitDefaultSecurityContext instead. Will be
+	// removed in the next release.
+	//
 	// Used to unset the `runAsUser` values in security contexts.
 	FloatingUserId *bool `json:"floatingUserId,omitempty"`
+
+	// OmitDefaultSecurityContext is used to control whether or not
+	// `securityContext` fields should be rendered for the various generated
+	// Deployments/Containers that are dynamically provisioned by the deployer.
+	//
+	// When set to true, no `securityContexts` will be provided and will left
+	// to the user/platform to be provided.
+	//
+	// This should be enabled on platforms such as Red Hat OpenShift where the
+	// `securityContext` will be dynamically added to enforce the appropriate
+	// level of security.
+	//
+	// +optional
+	OmitDefaultSecurityContext *bool `json:"omitDefaultSecurityContext,omitempty"`
 }
 
 func (in *KubernetesProxyConfig) GetDeployment() *ProxyDeployment {
@@ -206,6 +227,13 @@ func (in *KubernetesProxyConfig) GetFloatingUserId() *bool {
 		return nil
 	}
 	return in.FloatingUserId
+}
+
+func (in *KubernetesProxyConfig) GetOmitDefaultSecurityContext() *bool {
+	if in == nil {
+		return nil
+	}
+	return in.OmitDefaultSecurityContext
 }
 
 // ProxyDeployment configures the Proxy deployment in Kubernetes.

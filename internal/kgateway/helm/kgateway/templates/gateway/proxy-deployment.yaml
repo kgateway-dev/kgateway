@@ -101,6 +101,10 @@ spec:
         - name: http-monitoring
           containerPort: 9091
         {{- end }}
+{{- if $gateway.startupProbe }}
+        startupProbe:
+{{ toYaml $gateway.startupProbe | indent 10}}
+{{- end }}{{/*if $gateway.startupProbe*/}}
 {{- if $gateway.readinessProbe }}
         readinessProbe:
 {{ toYaml $gateway.readinessProbe | indent 10}}

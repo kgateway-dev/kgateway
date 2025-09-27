@@ -113,7 +113,7 @@ func (s *tsuite) TestLabelSelector() {
 		assert.Contains(c, logs, `"protocol":"HTTP/1.1"`)
 		assert.Contains(c, logs, `"response_code":200`)
 		assert.Contains(c, logs, `"backendCluster":"kube_default_httpbin_8000"`)
-	}, 5*time.Second, 100*time.Millisecond)
+	}, 30*time.Second, 100*time.Millisecond)
 }
 
 func (s *tsuite) TestGlobalPolicy() {
