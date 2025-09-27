@@ -6,7 +6,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/kgateway-dev/kgateway/v2/api/settings"
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
@@ -16,11 +16,11 @@ import (
 // validateWithValidationLevel performs validation based on validation level.
 // Callers who need validation level behavior should use this method instead of calling
 // the Validate() method on the TrafficPolicy type directly.
-func validateWithValidationLevel(ctx context.Context, p *TrafficPolicy, v validator.Validator, mode settings.ValidationMode) error {
+func validateWithValidationLevel(ctx context.Context, p *TrafficPolicy, v validator.Validator, mode apisettings.ValidationMode) error {
 	switch mode {
-	case settings.ValidationStandard:
+	case apisettings.ValidationStandard:
 		return p.Validate()
-	case settings.ValidationStrict:
+	case apisettings.ValidationStrict:
 		if err := p.Validate(); err != nil {
 			return err
 		}

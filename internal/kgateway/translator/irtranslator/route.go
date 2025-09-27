@@ -17,7 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/settings"
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/routeutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -38,7 +38,7 @@ type httpRouteConfigurationTranslator struct {
 	requireTlsOnVirtualHosts bool
 	pluginPass               TranslationPassPlugins
 	logger                   *slog.Logger
-	validationLevel          settings.ValidationMode
+	validationLevel          apisettings.ValidationMode
 	validator                validator.Validator
 }
 
@@ -310,7 +310,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 			})
 		}
 
-		if h.validationLevel == settings.ValidationStandard || h.validationLevel == settings.ValidationStrict {
+		if h.validationLevel == apisettings.ValidationStandard || h.validationLevel == apisettings.ValidationStrict {
 			// Clear all headers and filter configs when the route is replaced with a direct response
 			out.TypedPerFilterConfig = nil
 			out.RequestHeadersToAdd = nil

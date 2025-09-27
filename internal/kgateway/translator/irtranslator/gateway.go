@@ -14,7 +14,7 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/settings"
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -28,7 +28,7 @@ var logger = logging.New("translator/ir")
 
 type Translator struct {
 	ContributedPolicies map[schema.GroupKind]sdk.PolicyPlugin
-	ValidationLevel     settings.ValidationMode
+	ValidationLevel     apisettings.ValidationMode
 	Validator           validator.Validator
 }
 

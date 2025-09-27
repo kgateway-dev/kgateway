@@ -7,7 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/settings"
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/backend"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/backendconfigpolicy"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/backendtlspolicy"
@@ -75,7 +75,7 @@ func Plugins(
 	ctx context.Context,
 	commoncol *pluginsdkcol.CommonCollections,
 	waypointGatewayClassName string,
-	globalSettings settings.Settings,
+	globalSettings apisettings.Settings,
 	validator validator.Validator,
 ) []sdk.Plugin {
 	return []sdk.Plugin{

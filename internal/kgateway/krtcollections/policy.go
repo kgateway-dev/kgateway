@@ -21,7 +21,7 @@ import (
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	apilabels "github.com/kgateway-dev/kgateway/v2/api/labels"
-	"github.com/kgateway-dev/kgateway/v2/api/settings"
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/backendref"
@@ -593,7 +593,7 @@ func (h *PolicyIndex) HasSynced() bool {
 func NewPolicyIndex(
 	krtopts krtutil.KrtOptions,
 	contributesPolicies sdk.ContributesPolicies,
-	globalSettings settings.Settings,
+	globalSettings apisettings.Settings,
 ) *PolicyIndex {
 	index := &PolicyIndex{
 		globalPolicyNamespace: globalSettings.GlobalPolicyNamespace,
@@ -986,7 +986,7 @@ func NewRoutesIndex(
 	policies *PolicyIndex,
 	backends *BackendIndex,
 	refgrants *RefGrantIndex,
-	globalSettings settings.Settings,
+	globalSettings apisettings.Settings,
 ) *RoutesIndex {
 	h := &RoutesIndex{
 		policies:                policies,

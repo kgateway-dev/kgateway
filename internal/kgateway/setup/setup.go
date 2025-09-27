@@ -22,7 +22,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/namespaces"
 
-	"github.com/kgateway-dev/kgateway/v2/api/settings"
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/admin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
@@ -148,7 +148,7 @@ func WithKrtDebugger(dbg *krt.DebugHandler) func(*setup) {
 	}
 }
 
-func WithGlobalSettings(settings *settings.Settings) func(*setup) {
+func WithGlobalSettings(settings *apisettings.Settings) func(*setup) {
 	return func(s *setup) {
 		s.globalSettings = settings
 	}
@@ -184,7 +184,7 @@ type setup struct {
 	// extra controller manager config, like adding registering additional controllers
 	extraManagerConfig           []func(ctx context.Context, mgr manager.Manager, objectFilter kubetypes.DynamicObjectFilter) error
 	krtDebugger                  *krt.DebugHandler
-	globalSettings               *settings.Settings
+	globalSettings               *apisettings.Settings
 	leaderElectionID             string
 	validator                    validator.Validator
 	extraAgwPolicyStatusHandlers map[string]agwplugins.AgwPolicyStatusSyncHandler
@@ -210,7 +210,7 @@ func New(opts ...func(*setup)) (*setup, error) {
 
 	if s.globalSettings == nil {
 		var err error
-		s.globalSettings, err = settings.BuildSettings()
+		s.globalSettings, err = apisettings.BuildSettings()
 		if err != nil {
 			slog.Error("error loading settings from env", "error", err)
 			return nil, err

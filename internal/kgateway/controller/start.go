@@ -18,7 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/settings"
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/inferenceextension/endpointpicker"
@@ -51,7 +51,7 @@ type SetupOpts struct {
 	KrtDebugger *krt.DebugHandler
 
 	// static set of global Settings
-	GlobalSettings *settings.Settings
+	GlobalSettings *apisettings.Settings
 
 	PprofBindAddress       string
 	HealthProbeBindAddress string
@@ -374,7 +374,7 @@ func (c *ControllerBuilder) HasSynced() bool {
 
 // GetDefaultClassInfo returns the default GatewayClass for the kgateway controller.
 // Exported for testing.
-func GetDefaultClassInfo(globalSettings *settings.Settings,
+func GetDefaultClassInfo(globalSettings *apisettings.Settings,
 	gatewayClassName, waypointGatewayClassName, agwClassName, controllerName, agwControllerName string,
 	additionalClassInfos map[string]*deployer.GatewayClassInfo) map[string]*deployer.GatewayClassInfo {
 	classInfos := map[string]*deployer.GatewayClassInfo{

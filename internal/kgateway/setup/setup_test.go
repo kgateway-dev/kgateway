@@ -45,7 +45,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kgateway-dev/kgateway/v2/api/settings"
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/test/envtestutil"
@@ -201,7 +201,7 @@ func TestWithAutoDns(t *testing.T) {
 	if err != nil {
 		t.Fatalf("can't get settings %v", err)
 	}
-	st.DnsLookupFamily = settings.DnsLookupFamilyAuto
+	st.DnsLookupFamily = apisettings.DnsLookupFamilyAuto
 
 	runScenario(t, "testdata/autodns", st)
 }
@@ -315,7 +315,7 @@ spec:
 	})
 }
 
-func runScenario(t *testing.T, scenarioDir string, globalSettings *settings.Settings) {
+func runScenario(t *testing.T, scenarioDir string, globalSettings *apisettings.Settings) {
 	setupEnvTestAndRun(t, globalSettings, func(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler, client istiokube.CLIClient, xdsPort int) {
 		// list all yamls in test data
 		files, err := os.ReadDir(scenarioDir)
@@ -345,7 +345,7 @@ func runScenario(t *testing.T, scenarioDir string, globalSettings *settings.Sett
 	})
 }
 
-func setupEnvTestAndRun(t *testing.T, globalSettings *settings.Settings, run func(t *testing.T,
+func setupEnvTestAndRun(t *testing.T, globalSettings *apisettings.Settings, run func(t *testing.T,
 	ctx context.Context,
 	kdbg *krt.DebugHandler,
 	client istiokube.CLIClient,
