@@ -53,17 +53,20 @@ func (s *testingSuite) TestSSEEndpoint() {
 	initBody := buildInitializeRequest("sse-client", 0)
 
 	headers := mcpHeaders()
-	out, err := s.execCurlMCP(8080, headers, initBody, "-N", "--max-time", "8")
+
+	out, err := s.execCurlMCP(8080, headers, initBody, "--max-time", "8")
 	s.Require().NoError(err, "SSE initialize curl failed")
-
 	s.requireHTTPStatus(out, httpOKCode)
-	ctRe := regexp.MustCompile(`(?mi)^<\s*content-type:\s*text/event-stream\b`)
-	if ctRe.FindStringIndex(out) == nil {
-		s.T().Logf("missing text/event-stream content-type: %s", out)
-		s.Require().Fail("expected Content-Type: text/event-stream in response headers")
+	// Match header w/ or w/o '-v' prefix, any casing, and optional params.
+	headerCT := regexp.MustCompile(`(?mi)^\s*(?:<\s*)?content-type\s*:\s*text/event-stream(?:\s*;.*)?\s*$`)
+	if headerCT.FindStringIndex(out) == nil {
+		// Fallback to curl -w line (we print: "Content-Type:%{content_type}")
+		wCT := regexp.MustCompile(`(?i)^Content-Type:\s*text/event-stream\b`)
+		if !wCT.MatchString(out) {
+			s.T().Logf("missing text/event-stream content-type: %s", out)
+			s.Require().Fail("expected Content-Type: text/event-stream in response headers (or curl -w output)")
+		}
 	}
-
-	// Reuse existing helper to validate initialize payload and obtain session id
 	_ = s.initializeSession(initBody, headers, "sse")
 }
 
