@@ -275,7 +275,7 @@ func TestTranslationWithExtraPlugins(
 		Clusters:      result.Clusters,
 		Statuses:      buildStatusesFromReports(result.ReportsMap, result.Gateways, result.ListenerSets),
 	}
-	outputYaml, err := MarshalAnyYaml(output)
+	outputYaml, err := testutils.MarshalAnyYaml(output)
 	r.NoErrorf(err, "error marshaling output to YAML; actual result: %s", outputYaml)
 
 	if envutils.IsEnvTruthy("REFRESH_GOLDEN") {
@@ -365,7 +365,7 @@ func ReadYamlFile(file string, out interface{}) error {
 	if err != nil {
 		return err
 	}
-	return UnmarshalAnyYaml(data, out)
+	return testutils.UnmarshalAnyYaml(data, out)
 }
 
 func GetHTTPRouteStatusError(
@@ -546,14 +546,14 @@ func (tc TestCase) Run(
 	)
 	r := require.New(t)
 	if crdDir == "" {
-		crdDir = filepath.Join(testutils.GitRootDirectory(), CRDPath)
+		crdDir = filepath.Join(testutils.GitRootDirectory(), testutils.CRDPath)
 	}
 
-	gvkToStructuralSchema, err := GetStructuralSchemas(crdDir)
+	gvkToStructuralSchema, err := testutils.GetStructuralSchemas(crdDir)
 	r.NoError(err, "error getting structural schemas")
 
 	for _, file := range tc.InputFiles {
-		objs, err := LoadFromFiles(file, scheme, gvkToStructuralSchema)
+		objs, err := testutils.LoadFromFiles(file, scheme, gvkToStructuralSchema)
 		if err != nil {
 			return nil, err
 		}
@@ -778,4 +778,17 @@ func (tc TestCase) Run(
 	}
 
 	return results, nil
+}
+
+func ReadProxyFromFile(filename string) (*irtranslator.TranslationResult, error) {
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, fmt.Errorf("reading proxy file: %w", err)
+	}
+	var proxy irtranslator.TranslationResult
+
+	if err := testutils.UnmarshalAnyYaml(data, &proxy); err != nil {
+		return nil, fmt.Errorf("parsing proxy from file: %w", err)
+	}
+	return &proxy, nil
 }

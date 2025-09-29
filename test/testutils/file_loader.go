@@ -1,4 +1,4 @@
-package translator
+package testutils
 
 import (
 	"bytes"
@@ -10,11 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"google.golang.org/protobuf/proto"
-
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/protoutils"
 
 	"github.com/ghodss/yaml"
 	apiserverschema "k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
@@ -141,7 +136,7 @@ func parseFile(
 		}
 
 		if structuralSchema, ok := gvkToStructuralSchema[gvk]; ok {
-			objYamlWithDefaults, err := applyDefaults(objYaml, structuralSchema)
+			objYamlWithDefaults, err := ApplyDefaults(objYaml, structuralSchema)
 			if err != nil {
 				return nil, fmt.Errorf("failed to apply defaults for %s: %w", gvk, err)
 			}
@@ -163,27 +158,6 @@ func truncateString(str string, num int) string {
 		result = str[0:num] + "..."
 	}
 	return result
-}
-
-func ReadProxyFromFile(filename string) (*irtranslator.TranslationResult, error) {
-	data, err := os.ReadFile(filename)
-	if err != nil {
-		return nil, fmt.Errorf("reading proxy file: %w", err)
-	}
-	var proxy irtranslator.TranslationResult
-
-	if err := UnmarshalAnyYaml(data, &proxy); err != nil {
-		return nil, fmt.Errorf("parsing proxy from file: %w", err)
-	}
-	return &proxy, nil
-}
-
-func MarshalYaml(m proto.Message) ([]byte, error) {
-	jsn, err := protoutils.MarshalBytes(m)
-	if err != nil {
-		return nil, err
-	}
-	return yaml.JSONToYAML(jsn)
 }
 
 func MarshalAnyYaml(m any) ([]byte, error) {

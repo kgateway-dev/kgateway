@@ -181,11 +181,10 @@ func gatewayToClass(obj client.Object) []string {
 }
 
 func (c *controllerBuilder) watchGw(ctx context.Context) error {
-	// setup a deployer
 	log := log.FromContext(ctx)
-
 	log.Info("creating gateway deployer", "ctrlname", c.cfg.ControllerName, "agwctrlname",
 		c.cfg.AgwControllerName, "server", c.cfg.ControlPlane.XdsHost, "port", c.cfg.ControlPlane.XdsPort, "agwport", c.cfg.ControlPlane.AgwXdsPort)
+
 	inputs := &deployer.Inputs{
 		Dev:                      c.cfg.Dev,
 		IstioAutoMtlsEnabled:     c.cfg.IstioAutoMtlsEnabled,
@@ -196,25 +195,16 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		WaypointGatewayClassName: c.cfg.WaypointGatewayClassName,
 		AgentgatewayClassName:    c.cfg.AgentgatewayClassName,
 	}
+
 	gwParams := internaldeployer.NewGatewayParameters(c.cfg.Mgr.GetClient(), inputs)
 	if c.extraGatewayParameters != nil {
 		gwParams.WithExtraGatewayParameters(c.extraGatewayParameters(c.cfg.Mgr.GetClient(), inputs)...)
-	}
-	d, err := internaldeployer.NewGatewayDeployer(c.cfg.ControllerName, c.cfg.AgwControllerName,
-		c.cfg.AgentgatewayClassName, c.cfg.Mgr.GetClient(), gwParams)
-	if err != nil {
-		return err
-	}
-	gvks, err := internaldeployer.GatewayGVKsToWatch(ctx, d)
-	if err != nil {
-		return err
 	}
 
 	discoveryNamespaceFilterPredicate := predicate.NewPredicateFuncs(func(o client.Object) bool {
 		filter := c.cfg.DiscoveryNamespaceFilter.Filter(o)
 		return filter
 	})
-
 	buildr := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(discoveryNamespaceFilterPredicate).
 		// Don't use WithEventFilter here as it also filters events for Owned objects.
@@ -225,7 +215,8 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 				predicate.AnnotationChangedPredicate{},
 				predicate.GenerationChangedPredicate{},
 			),
-		))
+		),
+		)
 
 	// watch for changes in GatewayParameters and enqueue Gateways that use them
 	cli := c.cfg.Mgr.GetClient()
@@ -314,6 +305,15 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		),
 	)
 
+	d, err := internaldeployer.NewGatewayDeployer(c.cfg.ControllerName, c.cfg.AgwControllerName,
+		c.cfg.AgentgatewayClassName, c.cfg.Mgr.GetClient(), gwParams)
+	if err != nil {
+		return err
+	}
+	gvks, err := internaldeployer.GatewayGVKsToWatch(ctx, d)
+	if err != nil {
+		return err
+	}
 	for _, gvk := range gvks {
 		obj, err := c.cfg.Mgr.GetScheme().New(gvk)
 		if err != nil {

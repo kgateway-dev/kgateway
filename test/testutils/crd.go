@@ -1,4 +1,4 @@
-package translator
+package testutils
 
 import (
 	"errors"
@@ -62,9 +62,9 @@ func GetStructuralSchemas(
 	return gvkToStructuralSchema, nil
 }
 
-// applyDefaults applies default values to the given object using the provided structural schema.
+// ApplyDefaults applies default values to the given object using the provided structural schema.
 // The API defaults are a part of the structural schema.
-func applyDefaults(
+func ApplyDefaults(
 	objYAML []byte,
 	structuralSchema *apiserverschema.Structural,
 ) ([]byte, error) {
