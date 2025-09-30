@@ -33,4 +33,4 @@ spec:
       - notHealthCheckFilter: true
       - statusCodeFilter:
           op: GE
-          value: 200
+          value: 400
