@@ -22,10 +22,10 @@ func translateHealthCheck(hc *v1alpha1.HealthCheck) *envoycorev3.HealthCheck {
 		healthCheck.Interval = durationpb.New(hc.Interval.Duration)
 	}
 	if hc.UnhealthyThreshold != nil {
-		healthCheck.UnhealthyThreshold = &wrapperspb.UInt32Value{Value: *hc.UnhealthyThreshold}
+		healthCheck.UnhealthyThreshold = &wrapperspb.UInt32Value{Value: uint32(*hc.UnhealthyThreshold)} // nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 4294967295, safe for uint32
 	}
 	if hc.HealthyThreshold != nil {
-		healthCheck.HealthyThreshold = &wrapperspb.UInt32Value{Value: *hc.HealthyThreshold}
+		healthCheck.HealthyThreshold = &wrapperspb.UInt32Value{Value: uint32(*hc.HealthyThreshold)} // nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 4294967295, safe for uint32
 	}
 
 	if hc.Http != nil {

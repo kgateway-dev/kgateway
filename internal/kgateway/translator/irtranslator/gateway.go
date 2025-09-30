@@ -27,9 +27,9 @@ import (
 var logger = logging.New("translator/ir")
 
 type Translator struct {
-	ContributedPolicies  map[schema.GroupKind]sdk.PolicyPlugin
-	RouteReplacementMode settings.RouteReplacementMode
-	Validator            validator.Validator
+	ContributedPolicies map[schema.GroupKind]sdk.PolicyPlugin
+	ValidationLevel     settings.ValidationMode
+	Validator           validator.Validator
 }
 
 type TranslationPassPlugins map[schema.GroupKind]*TranslationPass
@@ -71,7 +71,7 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 // This may give inaccurate results when multiple listeners have the same port, but is used for logging only.
 func findOriginalListenerName(gw ir.GatewayIR, listener ir.ListenerIR) string {
 	for _, origListener := range gw.SourceObject.Listeners {
-		if uint32(origListener.Port) == listener.BindPort {
+		if uint32(origListener.Port) == listener.BindPort { //nolint:gosec // G115: Gateway listener port is int32, always positive, safe to convert to uint32
 			return string(origListener.Name)
 		}
 	}
@@ -130,7 +130,7 @@ func (t *Translator) ComputeListener(
 			requireTlsOnVirtualHosts: hfc.FilterChainCommon.TLS != nil,
 			pluginPass:               pass,
 			logger:                   logger.With("route_config_name", hfc.FilterChainName),
-			routeReplacementMode:     t.RouteReplacementMode,
+			validationLevel:          t.ValidationLevel,
 			validator:                t.Validator,
 		}
 		rc := hr.ComputeRouteConfiguration(ctx, hfc.Vhosts)

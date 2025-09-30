@@ -19,7 +19,7 @@ func ToEnvoyGrpc(in v1alpha1.CommonGrpcService, backend *ir.BackendObjectIR) (*e
 	}
 	if in.MaxReceiveMessageLength != nil {
 		envoyGrpcService.MaxReceiveMessageLength = &wrapperspb.UInt32Value{
-			Value: *in.MaxReceiveMessageLength,
+			Value: uint32(*in.MaxReceiveMessageLength), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 		}
 	}
 	if in.SkipEnvoyHeaders != nil {
@@ -47,7 +47,7 @@ func ToEnvoyGrpc(in v1alpha1.CommonGrpcService, backend *ir.BackendObjectIR) (*e
 		retryPolicy := &envoycorev3.RetryPolicy{}
 		if in.RetryPolicy.NumRetries != nil {
 			retryPolicy.NumRetries = &wrapperspb.UInt32Value{
-				Value: *in.RetryPolicy.NumRetries,
+				Value: uint32(*in.RetryPolicy.NumRetries), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 			}
 		}
 		if in.RetryPolicy.RetryBackOff != nil {

@@ -23,7 +23,7 @@ Listeners:
   name: http
   protocol: HTTP
 Policies:
-- name: trafficpolicy/default/secure-route-policy/example-gateway:extauth
+- name: trafficpolicy/default/secure-route-policy/example-gateway:extauth:default/example-gateway
   spec:
     extAuthz:
       target:

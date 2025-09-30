@@ -140,7 +140,7 @@ func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
 		LbEps:                make(map[PodLocality][]EndpointWithMd),
 		ClusterName:          us.ClusterName(),
 		UpstreamResourceName: us.ResourceName(),
-		Port:                 uint32(us.Port),
+		Port:                 uint32(us.Port), //nolint:gosec // G115: upstream port is always valid port range
 		Hostname:             us.CanonicalHostname,
 		LbEpsEqualityHash:    upstreamHash,
 		upstreamHash:         upstreamHash,

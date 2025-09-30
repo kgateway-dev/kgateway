@@ -17,7 +17,8 @@ type PodApplyConfiguration struct {
 	Affinity                      *v1.Affinity                            `json:"affinity,omitempty"`
 	Tolerations                   []v1.Toleration                         `json:"tolerations,omitempty"`
 	GracefulShutdown              *GracefulShutdownSpecApplyConfiguration `json:"gracefulShutdown,omitempty"`
-	TerminationGracePeriodSeconds *int                                    `json:"terminationGracePeriodSeconds,omitempty"`
+	TerminationGracePeriodSeconds *int64                                  `json:"terminationGracePeriodSeconds,omitempty"`
+	StartupProbe                  *v1.Probe                               `json:"startupProbe,omitempty"`
 	ReadinessProbe                *v1.Probe                               `json:"readinessProbe,omitempty"`
 	LivenessProbe                 *v1.Probe                               `json:"livenessProbe,omitempty"`
 	TopologySpreadConstraints     []v1.TopologySpreadConstraint           `json:"topologySpreadConstraints,omitempty"`
@@ -119,8 +120,16 @@ func (b *PodApplyConfiguration) WithGracefulShutdown(value *GracefulShutdownSpec
 // WithTerminationGracePeriodSeconds sets the TerminationGracePeriodSeconds field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the TerminationGracePeriodSeconds field is set to the value of the last call.
-func (b *PodApplyConfiguration) WithTerminationGracePeriodSeconds(value int) *PodApplyConfiguration {
+func (b *PodApplyConfiguration) WithTerminationGracePeriodSeconds(value int64) *PodApplyConfiguration {
 	b.TerminationGracePeriodSeconds = &value
+	return b
+}
+
+// WithStartupProbe sets the StartupProbe field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the StartupProbe field is set to the value of the last call.
+func (b *PodApplyConfiguration) WithStartupProbe(value v1.Probe) *PodApplyConfiguration {
+	b.StartupProbe = &value
 	return b
 }
 

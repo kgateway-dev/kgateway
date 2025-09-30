@@ -1,7 +1,7 @@
 package ai
 
 import (
-	"log/slog"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -22,7 +22,7 @@ const (
 	waitFilterName        = "io.kgateway.wait"
 )
 
-func GetAIAdditionalResources() []*envoyclusterv3.Cluster {
+func GetAIAdditionalResources() ([]*envoyclusterv3.Cluster, error) {
 	// This env var can be used to test the ext-proc filter locally.
 	// On linux this should be set to `172.17.0.1` and on mac to `host.docker.internal`
 	// Note: Mac doesn't work yet because it needs to be a DNS cluster
@@ -42,7 +42,7 @@ func GetAIAdditionalResources() []*envoyclusterv3.Cluster {
 							SocketAddress: &envoycorev3.SocketAddress{
 								Address: listenAddr[0],
 								PortSpecifier: &envoycorev3.SocketAddress_PortValue{
-									PortValue: uint32(port),
+									PortValue: uint32(port), //nolint:gosec // G115: port validated to be in range 1-65535 by kubebuilder
 								},
 							},
 						},
@@ -77,8 +77,7 @@ func GetAIAdditionalResources() []*envoyclusterv3.Cluster {
 	}
 	http2ProtocolOptionsAny, err := utils.MessageToAny(http2ProtocolOptions)
 	if err != nil {
-		slog.Error("error converting http2 protocol options to any", "error", err)
-		return nil
+		return nil, fmt.Errorf("failed to convert http2 protocol options to any: %w", err)
 	}
 	udsCluster := &envoyclusterv3.Cluster{
 		Name: extProcUDSClusterName,
@@ -100,5 +99,5 @@ func GetAIAdditionalResources() []*envoyclusterv3.Cluster {
 		},
 	}
 	// Add UDS cluster for the ext-proc filter
-	return []*envoyclusterv3.Cluster{udsCluster}
+	return []*envoyclusterv3.Cluster{udsCluster}, nil
 }

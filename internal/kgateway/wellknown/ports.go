@@ -20,4 +20,4 @@ var DefaultAgwXdsPort uint32 = 9978
 var EnvoyAdminPort uint32 = 19000
 
 // KgatewayAdminPort is the kgateway admin server port
-var KgatewayAdminPort uint32 = 9097
+var KgatewayAdminPort uint32 = 9095

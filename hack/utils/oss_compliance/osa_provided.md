@@ -1,7 +1,7 @@
 Name|Version|License
 ---|---|---
 [cel.dev/expr](https://cel.dev/expr)|v0.24.0|Apache License 2.0
-[agentgateway/agentgateway](https://github.com/agentgateway/agentgateway)|v0.8.3|Apache License 2.0
+[agentgateway/agentgateway](https://github.com/agentgateway/agentgateway)|v0.9.0|Apache License 2.0
 [avast/retry-go](https://github.com/avast/retry-go)|v2.4.3+incompatible|MIT License
 [retry-go/v4](https://github.com/avast/retry-go)|v4.3.3|MIT License
 [xds/go](https://github.com/cncf/xds)|v0.0.0-20250501225837-2ac532fd4443|Apache License 2.0
@@ -25,6 +25,7 @@ Name|Version|License
 [prometheus/client_golang](https://github.com/prometheus/client_golang)|v1.23.0|Apache License 2.0
 [prometheus/client_model](https://github.com/prometheus/client_model)|v0.6.2|Apache License 2.0
 [prometheus/common](https://github.com/prometheus/common)|v0.65.0|Apache License 2.0
+[sergi/go-diff](https://github.com/sergi/go-diff)|v1.3.2-0.20230802210424-5b0b94c5c0d3|MIT License
 [spf13/afero](https://github.com/spf13/afero)|v1.14.0|Apache License 2.0
 [spf13/cobra](https://github.com/spf13/cobra)|v1.9.1|Apache License 2.0
 [stretchr/testify](https://github.com/stretchr/testify)|v1.10.0|MIT License

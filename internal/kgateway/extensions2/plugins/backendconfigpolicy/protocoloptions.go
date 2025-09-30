@@ -17,14 +17,14 @@ import (
 func translateCommonHttpProtocolOptions(commonHttpProtocolOptions *v1alpha1.CommonHttpProtocolOptions) *envoycorev3.HttpProtocolOptions {
 	out := &envoycorev3.HttpProtocolOptions{}
 	if commonHttpProtocolOptions.MaxRequestsPerConnection != nil {
-		out.MaxRequestsPerConnection = &wrapperspb.UInt32Value{Value: uint32(*commonHttpProtocolOptions.MaxRequestsPerConnection)}
+		out.MaxRequestsPerConnection = &wrapperspb.UInt32Value{Value: uint32(*commonHttpProtocolOptions.MaxRequestsPerConnection)} //nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 4294967295, safe for uint32
 	}
 	if commonHttpProtocolOptions.IdleTimeout != nil {
 		out.IdleTimeout = durationpb.New(commonHttpProtocolOptions.IdleTimeout.Duration)
 	}
 
 	if commonHttpProtocolOptions.MaxHeadersCount != nil {
-		out.MaxHeadersCount = &wrapperspb.UInt32Value{Value: uint32(*commonHttpProtocolOptions.MaxHeadersCount)}
+		out.MaxHeadersCount = &wrapperspb.UInt32Value{Value: uint32(*commonHttpProtocolOptions.MaxHeadersCount)} //nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 4294967295, safe for uint32
 	}
 
 	if commonHttpProtocolOptions.MaxStreamDuration != nil {
@@ -65,13 +65,13 @@ func translateHttp1ProtocolOptions(http1ProtocolOptions *v1alpha1.Http1ProtocolO
 func translateHttp2ProtocolOptions(http2ProtocolOptions *v1alpha1.Http2ProtocolOptions) *envoycorev3.Http2ProtocolOptions {
 	out := &envoycorev3.Http2ProtocolOptions{}
 	if http2ProtocolOptions.MaxConcurrentStreams != nil {
-		out.MaxConcurrentStreams = &wrapperspb.UInt32Value{Value: uint32(*http2ProtocolOptions.MaxConcurrentStreams)}
+		out.MaxConcurrentStreams = &wrapperspb.UInt32Value{Value: uint32(*http2ProtocolOptions.MaxConcurrentStreams)} //nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 4294967295, safe for uint32
 	}
 	if http2ProtocolOptions.InitialStreamWindowSize != nil {
-		out.InitialStreamWindowSize = &wrapperspb.UInt32Value{Value: uint32(http2ProtocolOptions.InitialStreamWindowSize.Value())}
+		out.InitialStreamWindowSize = &wrapperspb.UInt32Value{Value: uint32(http2ProtocolOptions.InitialStreamWindowSize.Value())} //nolint:gosec // G115: kubebuilder validation ensures 65535-2147483647 range, safe for uint32
 	}
 	if http2ProtocolOptions.InitialConnectionWindowSize != nil {
-		out.InitialConnectionWindowSize = &wrapperspb.UInt32Value{Value: uint32(http2ProtocolOptions.InitialConnectionWindowSize.Value())}
+		out.InitialConnectionWindowSize = &wrapperspb.UInt32Value{Value: uint32(http2ProtocolOptions.InitialConnectionWindowSize.Value())} //nolint:gosec // G115: kubebuilder validation ensures 65535-2147483647 range, safe for uint32
 	}
 	if http2ProtocolOptions.OverrideStreamErrorOnInvalidHttpMessage != nil {
 		out.OverrideStreamErrorOnInvalidHttpMessage = &wrapperspb.BoolValue{Value: *http2ProtocolOptions.OverrideStreamErrorOnInvalidHttpMessage}
@@ -79,7 +79,7 @@ func translateHttp2ProtocolOptions(http2ProtocolOptions *v1alpha1.Http2ProtocolO
 	return out
 }
 
-func applyCommonHttpProtocolOptions(commonHttpProtocolOptions *envoycorev3.HttpProtocolOptions, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
+func applyCommonHttpProtocolOptions(commonHttpProtocolOptions *envoycorev3.HttpProtocolOptions, _ ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
 	if commonHttpProtocolOptions == nil {
 		return
 	}

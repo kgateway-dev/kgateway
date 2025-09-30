@@ -2,7 +2,12 @@ package translator
 
 import (
 	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+)
+
+var (
+	logger = logging.New("agentgateway/translator")
 )
 
 // AgwTranslator coordinates translation of resources for agent gateway

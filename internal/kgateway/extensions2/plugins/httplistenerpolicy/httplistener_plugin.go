@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/utils/pointer"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -231,6 +232,10 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 		}
 
 		healthCheckPolicy := convertHealthCheckPolicy(i)
+		var xffNumTrustedHops *uint32
+		if i.Spec.XffNumTrustedHops != nil {
+			xffNumTrustedHops = pointer.Uint32(uint32(*i.Spec.XffNumTrustedHops)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+		}
 
 		pol := &ir.PolicyWrapper{
 			ObjectSource: objSrc,
@@ -243,7 +248,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 				tracingConfig:              tracingConfig,
 				upgradeConfigs:             upgradeConfigs,
 				useRemoteAddress:           i.Spec.UseRemoteAddress,
-				xffNumTrustedHops:          i.Spec.XffNumTrustedHops,
+				xffNumTrustedHops:          xffNumTrustedHops,
 				serverHeaderTransformation: serverHeaderTransformation,
 				streamIdleTimeout:          streamIdleTimeout,
 				idleTimeout:                idleTimeout,

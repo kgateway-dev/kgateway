@@ -54,10 +54,11 @@ type BackendConfigPolicySpec struct {
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	ConnectTimeout *metav1.Duration `json:"connectTimeout,omitempty"`
 
-	// Soft limit on size of the cluster's connections read and write buffers.
-	// If unspecified, an implementation defined default is applied (1MiB).
+	// Soft limit on the size of the cluster's connections read and write buffers.
+	// If unspecified, an implementation-defined default is applied (1MiB).
 	// +optional
-	PerConnectionBufferLimitBytes *int `json:"perConnectionBufferLimitBytes,omitempty"`
+	// +kubebuilder:validation:Minimum=0
+	PerConnectionBufferLimitBytes *int32 `json:"perConnectionBufferLimitBytes,omitempty"`
 
 	// Configure OS-level TCP keepalive checks.
 	// +optional
@@ -135,7 +136,8 @@ type CommonHttpProtocolOptions struct {
 	// If not specified, the default of 100 is used. Requests that exceed this limit will receive
 	// a 431 response for HTTP/1.x and cause a stream reset for HTTP/2.
 	// +optional
-	MaxHeadersCount *int `json:"maxHeadersCount,omitempty"`
+	// +kubebuilder:validation:Minimum=0
+	MaxHeadersCount *int32 `json:"maxHeadersCount,omitempty"`
 
 	// Total duration to keep alive an HTTP request/response stream. If the time limit is reached the stream will be
 	// reset independent of any other timeouts. If not specified, this value is not set.
@@ -146,7 +148,8 @@ type CommonHttpProtocolOptions struct {
 	// Maximum requests for a single upstream connection.
 	// If set to 0 or unspecified, defaults to unlimited.
 	// +optional
-	MaxRequestsPerConnection *int `json:"maxRequestsPerConnection,omitempty"`
+	// +kubebuilder:validation:Minimum=0
+	MaxRequestsPerConnection *int32 `json:"maxRequestsPerConnection,omitempty"`
 }
 type Http2ProtocolOptions struct {
 	// InitialStreamWindowSize is the initial window size for the stream.
@@ -166,7 +169,8 @@ type Http2ProtocolOptions struct {
 
 	// The maximum number of concurrent streams that the connection can have.
 	// +optional
-	MaxConcurrentStreams *int `json:"maxConcurrentStreams,omitempty"`
+	// +kubebuilder:validation:Minimum=0
+	MaxConcurrentStreams *int32 `json:"maxConcurrentStreams,omitempty"`
 
 	// Allows invalid HTTP messaging and headers. When disabled (default), then
 	// the whole HTTP/2 connection is terminated upon receiving invalid HEADERS frame.
@@ -179,7 +183,8 @@ type Http2ProtocolOptions struct {
 type TCPKeepalive struct {
 	// Maximum number of keep-alive probes to send before dropping the connection.
 	// +optional
-	KeepAliveProbes *int `json:"keepAliveProbes,omitempty"`
+	// +kubebuilder:validation:Minimum=0
+	KeepAliveProbes *int32 `json:"keepAliveProbes,omitempty"`
 
 	// The number of seconds a connection needs to be idle before keep-alive probes start being sent.
 	// +optional
@@ -298,7 +303,7 @@ type LoadBalancer struct {
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
-	HealthyPanicThreshold *uint32 `json:"healthyPanicThreshold,omitempty"`
+	HealthyPanicThreshold *int32 `json:"healthyPanicThreshold,omitempty"`
 
 	// This allows batch updates of endpoints health/weight/metadata that happen during a time window.
 	// this help lower cpu usage when endpoint change rate is high. defaults to 1 second.
@@ -354,7 +359,7 @@ type LoadBalancerLeastRequestConfig struct {
 	// Defaults to 2.
 	// +optional
 	// +default=2
-	ChoiceCount uint32 `json:"choiceCount,omitempty"`
+	ChoiceCount int32 `json:"choiceCount,omitempty"`
 
 	// SlowStart configures the slow start configuration for the load balancer.
 	// +optional
@@ -372,11 +377,13 @@ type LoadBalancerRoundRobinConfig struct {
 type LoadBalancerRingHashConfig struct {
 	// MinimumRingSize is the minimum size of the ring.
 	// +optional
-	MinimumRingSize *uint64 `json:"minimumRingSize,omitempty"`
+	// +kubebuilder:validation:Minimum=0
+	MinimumRingSize *int64 `json:"minimumRingSize,omitempty"`
 
 	// MaximumRingSize is the maximum size of the ring.
 	// +optional
-	MaximumRingSize *uint64 `json:"maximumRingSize,omitempty"`
+	// +kubebuilder:validation:Minimum=0
+	MaximumRingSize *int64 `json:"maximumRingSize,omitempty"`
 
 	// UseHostnameForHashing specifies whether to use the hostname instead of the resolved IP address for hashing.
 	// Defaults to false.
@@ -431,7 +438,9 @@ type (
 
 		// Minimum weight percentage of an endpoint during slow start.
 		// +optional
-		MinWeightPercent *uint32 `json:"minWeightPercent,omitempty"`
+		// +kubebuilder:validation:Minimum=0
+		// +kubebuilder:validation:Maximum=100
+		MinWeightPercent *int32 `json:"minWeightPercent,omitempty"`
 	}
 )
 
@@ -465,13 +474,15 @@ type HealthCheck struct {
 	// Note that for HTTP health checks, if a host responds with a code not in ExpectedStatuses or RetriableStatuses,
 	// this threshold is ignored and the host is considered immediately unhealthy.
 	// +required
-	UnhealthyThreshold *uint32 `json:"unhealthyThreshold"`
+	// +kubebuilder:validation:Minimum=0
+	UnhealthyThreshold *int32 `json:"unhealthyThreshold"`
 
 	// HealthyThreshold is the number of healthy health checks required before a host is marked
 	// healthy. Note that during startup, only a single successful health check is
 	// required to mark a host healthy.
 	// +required
-	HealthyThreshold *uint32 `json:"healthyThreshold"`
+	// +kubebuilder:validation:Minimum=0
+	HealthyThreshold *int32 `json:"healthyThreshold"`
 
 	// Http contains the options to configure the HTTP health check.
 	// +optional
@@ -522,7 +533,8 @@ type OutlierDetection struct {
 	// health checking might be added, but none will be enabled by default.
 	// +optional
 	// +kubebuilder:default=5
-	Consecutive5xx *uint32 `json:"consecutive5xx,omitempty"`
+	// +kubebuilder:validation:Minimum=0
+	Consecutive5xx *int32 `json:"consecutive5xx,omitempty"`
 
 	// The time interval between ejection analysis sweeps. This can result in
 	// both new ejections as well as hosts being returned to service. Defaults
@@ -530,6 +542,7 @@ type OutlierDetection struct {
 	// +optional
 	// +kubebuilder:default="10s"
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="interval must be at least 1ms"
 	Interval *metav1.Duration `json:"interval,omitempty"`
 
 	// The base time that a host is ejected for. The real time is equal to the
@@ -538,6 +551,7 @@ type OutlierDetection struct {
 	// +optional
 	// +kubebuilder:default="30s"
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="baseEjectionTime must be at least 1ms"
 	BaseEjectionTime *metav1.Duration `json:"baseEjectionTime,omitempty"`
 
 	// The maximum % of an upstream cluster that can be ejected due to outlier
@@ -546,7 +560,7 @@ type OutlierDetection struct {
 	// +kubebuilder:default=10
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
-	MaxEjectionPercent *uint32 `json:"maxEjectionPercent,omitempty"`
+	MaxEjectionPercent *int32 `json:"maxEjectionPercent,omitempty"`
 }
 
 // +kubebuilder:validation:ExactlyOneOf=header;cookie;sourceIP

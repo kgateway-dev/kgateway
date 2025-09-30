@@ -12,6 +12,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
 )
 
 func TestBuildAgwFilters(t *testing.T) {
@@ -134,14 +135,14 @@ func TestBuildAgwFilters(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := RouteContext{
-				RouteContextInputs: RouteContextInputs{
-					Grants:       ReferenceGrants{},
-					RouteParents: RouteParents{},
+			ctx := translator.RouteContext{
+				RouteContextInputs: translator.RouteContextInputs{
+					Grants:       translator.ReferenceGrants{},
+					RouteParents: translator.RouteParents{},
 				},
 			}
 
-			result, err := buildAgwFilters(ctx, "default", tc.inputFilters)
+			result, err := translator.BuildAgwFilters(ctx, "default", tc.inputFilters)
 
 			if tc.expectedError {
 				assert.NotNil(t, err)
@@ -173,15 +174,15 @@ func TestBuildAgwFilters(t *testing.T) {
 func TestGetProtocolAndTLSConfig(t *testing.T) {
 	testCases := []struct {
 		name          string
-		gateway       GatewayListener
+		gateway       translator.GatewayListener
 		expectedProto api.Protocol
 		expectedTLS   *api.TLSConfig
 		expectedOk    bool
 	}{
 		{
 			name: "HTTP protocol",
-			gateway: GatewayListener{
-				parentInfo: parentInfo{
+			gateway: translator.GatewayListener{
+				ParentInfo: translator.ParentInfo{
 					Protocol: gwv1.HTTPProtocolType,
 				},
 				TLSInfo: nil,
@@ -192,11 +193,11 @@ func TestGetProtocolAndTLSConfig(t *testing.T) {
 		},
 		{
 			name: "HTTPS protocol with TLS",
-			gateway: GatewayListener{
-				parentInfo: parentInfo{
+			gateway: translator.GatewayListener{
+				ParentInfo: translator.ParentInfo{
 					Protocol: gwv1.HTTPSProtocolType,
 				},
-				TLSInfo: &TLSInfo{
+				TLSInfo: &translator.TLSInfo{
 					Cert: []byte("cert-data"),
 					Key:  []byte("key-data"),
 				},
@@ -210,8 +211,8 @@ func TestGetProtocolAndTLSConfig(t *testing.T) {
 		},
 		{
 			name: "HTTPS protocol without TLS (should fail)",
-			gateway: GatewayListener{
-				parentInfo: parentInfo{
+			gateway: translator.GatewayListener{
+				ParentInfo: translator.ParentInfo{
 					Protocol: gwv1.HTTPSProtocolType,
 				},
 				TLSInfo: nil,
@@ -222,8 +223,8 @@ func TestGetProtocolAndTLSConfig(t *testing.T) {
 		},
 		{
 			name: "TCP protocol",
-			gateway: GatewayListener{
-				parentInfo: parentInfo{
+			gateway: translator.GatewayListener{
+				ParentInfo: translator.ParentInfo{
 					Protocol: gwv1.TCPProtocolType,
 				},
 				TLSInfo: nil,
@@ -234,11 +235,11 @@ func TestGetProtocolAndTLSConfig(t *testing.T) {
 		},
 		{
 			name: "TLS protocol with TLS",
-			gateway: GatewayListener{
-				parentInfo: parentInfo{
+			gateway: translator.GatewayListener{
+				ParentInfo: translator.ParentInfo{
 					Protocol: gwv1.TLSProtocolType,
 				},
-				TLSInfo: &TLSInfo{
+				TLSInfo: &translator.TLSInfo{
 					Cert: []byte("tls-cert"),
 					Key:  []byte("tls-key"),
 				},

@@ -200,6 +200,7 @@ func buildTranslateFunc(
 				lambdaFilters:         lambdaFilters,
 			}
 		case v1alpha1.BackendTypeAI:
+			logger.Warn("envoy-based AI Gateway is deprecated in v2.1 and will be removed in v2.2. Use agentgateway instead.")
 			backendIr.AIIr = &ai.IR{}
 			err := ai.PreprocessAIBackend(ctx, i.Spec.AI, backendIr.AIIr)
 			if err != nil {
@@ -361,6 +362,7 @@ func (p *backendPlugin) ApplyForBackend(pCtx *ir.RouteBackendContext, in ir.Http
 	backendIr := pCtx.Backend.ObjIr.(*BackendIr)
 	switch backend.Spec.Type {
 	case v1alpha1.BackendTypeAI:
+
 		err := ai.ApplyAIBackend(backendIr.AIIr, pCtx, out)
 		if err != nil {
 			return err
@@ -416,7 +418,10 @@ func (p *backendPlugin) HttpFilters(fc ir.FilterChainCommon) ([]plugins.StagedHt
 func (p *backendPlugin) ResourcesToAdd() ir.Resources {
 	var additionalClusters []*envoyclusterv3.Cluster
 	if len(p.aiGatewayEnabled) > 0 {
-		aiClusters := ai.GetAIAdditionalResources()
+		aiClusters, err := ai.GetAIAdditionalResources()
+		if err != nil {
+			logger.Error("failed to get ai additional resources", "error", err)
+		}
 		additionalClusters = append(additionalClusters, aiClusters...)
 	}
 	return ir.Resources{

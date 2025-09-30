@@ -50,7 +50,7 @@ var (
 // These include basic Envoy route property validation such as paths, prefixes, and weighted clusters,
 // along with quick checks for common issues that could cause problems.
 //
-// In STRICT mode, additional validation is performed. First, matcher-only validation determines
+// In strict mode, additional validation is performed. First, matcher-only validation determines
 // if the route should be dropped entirely due to invalid matcher configuration. Then, full route
 // validation determines if the route should be replaced with a direct response due to other
 // configuration issues.
@@ -66,7 +66,7 @@ func validateRoute(
 	ctx context.Context,
 	route *envoyroutev3.Route,
 	v validator.Validator,
-	mode settings.RouteReplacementMode,
+	mode settings.ValidationMode,
 ) error {
 	if route == nil {
 		return fmt.Errorf("route cannot be nil for RDS validation")
@@ -74,7 +74,7 @@ func validateRoute(
 	if err := validateEnvoyRoute(route); err != nil {
 		return fmt.Errorf("%w: %w", ErrInvalidRoute, err)
 	}
-	if mode == settings.RouteReplacementStrict {
+	if mode == settings.ValidationStrict {
 		if err := validateMatcherOnly(ctx, route, v); err != nil {
 			return fmt.Errorf("%w: %w", ErrInvalidMatcher, err)
 		}

@@ -5,7 +5,7 @@ package v1alpha1
 // DirectResponseSpecApplyConfiguration represents a declarative configuration of the DirectResponseSpec type for use
 // with apply.
 type DirectResponseSpecApplyConfiguration struct {
-	StatusCode *uint32 `json:"status,omitempty"`
+	StatusCode *int32  `json:"status,omitempty"`
 	Body       *string `json:"body,omitempty"`
 }
 
@@ -18,7 +18,7 @@ func DirectResponseSpec() *DirectResponseSpecApplyConfiguration {
 // WithStatusCode sets the StatusCode field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the StatusCode field is set to the value of the last call.
-func (b *DirectResponseSpecApplyConfiguration) WithStatusCode(value uint32) *DirectResponseSpecApplyConfiguration {
+func (b *DirectResponseSpecApplyConfiguration) WithStatusCode(value int32) *DirectResponseSpecApplyConfiguration {
 	b.StatusCode = &value
 	return b
 }

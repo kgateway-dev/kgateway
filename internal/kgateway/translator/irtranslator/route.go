@@ -38,7 +38,7 @@ type httpRouteConfigurationTranslator struct {
 	requireTlsOnVirtualHosts bool
 	pluginPass               TranslationPassPlugins
 	logger                   *slog.Logger
-	routeReplacementMode     settings.RouteReplacementMode
+	validationLevel          settings.ValidationMode
 	validator                validator.Validator
 }
 
@@ -269,7 +269,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 
 	// If there are no errors, validate the route will not be rejected by the xDS server.
 	if routeProcessingErr == nil {
-		routeProcessingErr = validateRoute(ctx, out, h.validator, h.routeReplacementMode)
+		routeProcessingErr = validateRoute(ctx, out, h.validator, h.validationLevel)
 	}
 
 	// routeAcceptanceErr is used to set the Accepted=false,Reason=RouteRuleDropped condition on the route
@@ -310,7 +310,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 			})
 		}
 
-		if h.routeReplacementMode == settings.RouteReplacementStandard || h.routeReplacementMode == settings.RouteReplacementStrict {
+		if h.validationLevel == settings.ValidationStandard || h.validationLevel == settings.ValidationStrict {
 			// Clear all headers and filter configs when the route is replaced with a direct response
 			out.TypedPerFilterConfig = nil
 			out.RequestHeadersToAdd = nil

@@ -248,7 +248,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 		}
 
 		policyIR, errors := constructor.ConstructIR(krtctx, policyCR)
-		if err := validateWithRouteReplacementMode(ctx, policyIR, v, commoncol.Settings.RouteReplacementMode); err != nil {
+		if err := validateWithValidationLevel(ctx, policyIR, v, commoncol.Settings.ValidationMode); err != nil {
 			logger.Error("validation failed", "policy", policyCR.Name, "error", err)
 			errors = append(errors, err)
 		}
@@ -333,7 +333,7 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, outputR
 
 		// Hack around not having route level.
 		// Note this is really really bad and rather fragile due to listener draining behaviors
-		routeHash := strconv.Itoa(int(utils.HashProto(outputRoute)))
+		routeHash := strconv.Itoa(int(utils.HashProto(outputRoute))) //nolint:gosec // G115: hash value used as string key, truncation is acceptable
 		if p.rustformationStash == nil {
 			p.rustformationStash = make(map[string]string)
 		}

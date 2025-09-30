@@ -26,6 +26,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
+// TODO: envoy-based AI gateway is deprecated in v2.1 and will be removed in v2.2. This file (and any associated tests) can be removed in v2.2.
+
 const (
 	contextString = `{"content":"%s","role":"%s"}`
 
@@ -112,6 +114,7 @@ func constructAI(
 	if policyCR.Spec.AI == nil {
 		return nil
 	}
+	logger.Warn("envoy-based AI Gateway is deprecated in v2.1 and will be removed in v2.2. Use agentgateway instead.")
 
 	ir := &aiPolicyIR{}
 	// Augment with AI secrets as needed

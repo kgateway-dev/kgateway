@@ -17,6 +17,12 @@ var (
 	}
 
 	NoCertificateFoundError = errors.New("no certificate information found")
+
+	ErrMissingCACertKey = errors.New("ca.crt key missing")
+
+	ErrInvalidCACertificate = func(n, ns string, err error) error {
+		return fmt.Errorf("invalid ca.crt in ConfigMap %s/%s: %v", ns, n, err)
+	}
 )
 
 // ValidateTlsSecret and return a cleaned cert
@@ -61,4 +67,27 @@ func cleanedSslKeyPair(certChain, privateKey, rootCa string) (cleanedChain strin
 	cleanedChain = string(cleanedChainBytes)
 
 	return cleanedChain, err
+}
+
+// GetCACertFromConfigMap validates and extracts the ca.crt string from a ConfigMap
+func GetCACertFromConfigMap(cm *corev1.ConfigMap) (string, error) {
+	caCrt, ok := cm.Data["ca.crt"]
+	if !ok {
+		return "", ErrMissingCACertKey
+	}
+
+	// Validate CA certificate by trying to parse it
+	candidateCert, err := cert.ParseCertsPEM([]byte(caCrt))
+	if err != nil {
+		return "", ErrInvalidCACertificate(cm.Name, cm.Namespace, err)
+	}
+
+	// Clean and encode the certificate to ensure proper formatting
+	cleanedChainBytes, err := cert.EncodeCertificates(candidateCert...)
+	if err != nil {
+		return "", ErrInvalidCACertificate(cm.Name, cm.Namespace, err)
+	}
+
+	cleanedChain := string(cleanedChainBytes)
+	return cleanedChain, nil
 }

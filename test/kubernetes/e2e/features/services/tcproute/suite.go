@@ -236,7 +236,8 @@ func (s *testingSuite) TestConfigureTCPRouteBackingDestinations() {
 							curl.WithPort(port),
 							curl.VerboseOutput(),
 						},
-						tc.expectedErrorCode)
+						tc.expectedErrorCode,
+						timeout)
 				} else {
 					s.testInstallation.Assertions.AssertEventualCurlResponse(
 						s.ctx,
@@ -246,7 +247,8 @@ func (s *testingSuite) TestConfigureTCPRouteBackingDestinations() {
 							curl.WithPort(port),
 							curl.VerboseOutput(),
 						},
-						tc.expectedResponses[i])
+						tc.expectedResponses[i],
+						timeout)
 				}
 			}
 		})

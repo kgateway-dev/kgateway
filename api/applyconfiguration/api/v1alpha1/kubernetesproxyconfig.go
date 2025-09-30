@@ -5,17 +5,18 @@ package v1alpha1
 // KubernetesProxyConfigApplyConfiguration represents a declarative configuration of the KubernetesProxyConfig type for use
 // with apply.
 type KubernetesProxyConfigApplyConfiguration struct {
-	Deployment     *ProxyDeploymentApplyConfiguration  `json:"deployment,omitempty"`
-	EnvoyContainer *EnvoyContainerApplyConfiguration   `json:"envoyContainer,omitempty"`
-	SdsContainer   *SdsContainerApplyConfiguration     `json:"sdsContainer,omitempty"`
-	PodTemplate    *PodApplyConfiguration              `json:"podTemplate,omitempty"`
-	Service        *ServiceApplyConfiguration          `json:"service,omitempty"`
-	ServiceAccount *ServiceAccountApplyConfiguration   `json:"serviceAccount,omitempty"`
-	Istio          *IstioIntegrationApplyConfiguration `json:"istio,omitempty"`
-	Stats          *StatsConfigApplyConfiguration      `json:"stats,omitempty"`
-	AiExtension    *AiExtensionApplyConfiguration      `json:"aiExtension,omitempty"`
-	Agentgateway   *AgentgatewayApplyConfiguration     `json:"agentgateway,omitempty"`
-	FloatingUserId *bool                               `json:"floatingUserId,omitempty"`
+	Deployment                 *ProxyDeploymentApplyConfiguration  `json:"deployment,omitempty"`
+	EnvoyContainer             *EnvoyContainerApplyConfiguration   `json:"envoyContainer,omitempty"`
+	SdsContainer               *SdsContainerApplyConfiguration     `json:"sdsContainer,omitempty"`
+	PodTemplate                *PodApplyConfiguration              `json:"podTemplate,omitempty"`
+	Service                    *ServiceApplyConfiguration          `json:"service,omitempty"`
+	ServiceAccount             *ServiceAccountApplyConfiguration   `json:"serviceAccount,omitempty"`
+	Istio                      *IstioIntegrationApplyConfiguration `json:"istio,omitempty"`
+	Stats                      *StatsConfigApplyConfiguration      `json:"stats,omitempty"`
+	AiExtension                *AiExtensionApplyConfiguration      `json:"aiExtension,omitempty"`
+	Agentgateway               *AgentgatewayApplyConfiguration     `json:"agentgateway,omitempty"`
+	FloatingUserId             *bool                               `json:"floatingUserId,omitempty"`
+	OmitDefaultSecurityContext *bool                               `json:"omitDefaultSecurityContext,omitempty"`
 }
 
 // KubernetesProxyConfigApplyConfiguration constructs a declarative configuration of the KubernetesProxyConfig type for use with
@@ -109,5 +110,13 @@ func (b *KubernetesProxyConfigApplyConfiguration) WithAgentgateway(value *Agentg
 // If called multiple times, the FloatingUserId field is set to the value of the last call.
 func (b *KubernetesProxyConfigApplyConfiguration) WithFloatingUserId(value bool) *KubernetesProxyConfigApplyConfiguration {
 	b.FloatingUserId = &value
+	return b
+}
+
+// WithOmitDefaultSecurityContext sets the OmitDefaultSecurityContext field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the OmitDefaultSecurityContext field is set to the value of the last call.
+func (b *KubernetesProxyConfigApplyConfiguration) WithOmitDefaultSecurityContext(value bool) *KubernetesProxyConfigApplyConfiguration {
+	b.OmitDefaultSecurityContext = &value
 	return b
 }

@@ -231,11 +231,14 @@ func parseTLSParameters(tlsParameters *v1alpha1.TLSParameters) (*envoytlsv3.TlsP
 		return nil, nil
 	}
 
-	tlsMaxVersion, err := parseTLSVersion(tlsParameters.MaxVersion)
+	maxVersion := ptr.Deref(tlsParameters.MaxVersion, v1alpha1.TLSVersionAUTO)
+	minVersion := ptr.Deref(tlsParameters.MinVersion, v1alpha1.TLSVersionAUTO)
+
+	tlsMaxVersion, err := parseTLSVersion(&maxVersion)
 	if err != nil {
 		return nil, err
 	}
-	tlsMinVersion, err := parseTLSVersion(tlsParameters.MinVersion)
+	tlsMinVersion, err := parseTLSVersion(&minVersion)
 	if err != nil {
 		return nil, err
 	}

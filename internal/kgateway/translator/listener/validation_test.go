@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+	istioprotocol "istio.io/istio/pkg/config/protocol"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/utils"
@@ -247,6 +248,41 @@ func TestSimpleListenerWithInvalidRouteKind(t *testing.T) {
 	}
 	assertExpectedListenerStatuses(t, g, report.Gateway(gateway), gateway.Spec.Listeners, expectedStatuses)
 	assertExpectedListenerStatuses(t, g, report.ListenerSet(listenerSet), utils.ToListenerSlice(listenerSet.Spec.Listeners), expectedStatuses)
+}
+
+func TestHBONEProtocol(t *testing.T) {
+	gateway := hboneProtocolGw()
+	report := reports.NewReportMap()
+	reporter := reports.NewReporter(&report)
+
+	validListeners := validateGateway(gwToIr(gateway, nil, nil), reporter)
+	g := NewWithT(t)
+	g.Expect(validListeners).To(HaveLen(1))
+
+	expectedGwStatuses := map[string]gwv1.ListenerStatus{
+		"hbone": {
+			Name: "hbone",
+			SupportedKinds: []gwv1.RouteGroupKind{
+				{
+					Group: GroupNameHelper(),
+					Kind:  "HTTPRoute",
+				},
+				{
+					Group: GroupNameHelper(),
+					Kind:  "GRPCRoute",
+				},
+				{
+					Group: GroupNameHelper(),
+					Kind:  "TCPRoute",
+				},
+				{
+					Group: GroupNameHelper(),
+					Kind:  "TLSRoute",
+				},
+			},
+		},
+	}
+	assertExpectedListenerStatuses(t, g, report.Gateway(gateway), gateway.Spec.Listeners, expectedGwStatuses)
 }
 
 func TestUnsupportedProtocol(t *testing.T) {
@@ -2167,6 +2203,25 @@ func unsupportedProtocolGw() *gwv1.Gateway {
 					Name:     "udp",
 					Port:     8080,
 					Protocol: gwv1.UDPProtocolType,
+				},
+			},
+		},
+	}
+}
+
+func hboneProtocolGw() *gwv1.Gateway {
+	return &gwv1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "hbone-protocol-gateway",
+		},
+		Spec: gwv1.GatewaySpec{
+			GatewayClassName: "kgateway",
+			Listeners: []gwv1.Listener{
+				{
+					Name:     "hbone",
+					Port:     8080,
+					Protocol: gwv1.ProtocolType(istioprotocol.HBONE),
 				},
 			},
 		},
