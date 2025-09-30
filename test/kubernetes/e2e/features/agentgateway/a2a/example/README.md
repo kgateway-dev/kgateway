@@ -9,8 +9,8 @@ This is a simple example of a server that can be used to test A2A gateways. It's
 2. UV setup
 
 ```shell
-uv init --package test/kubernetes/e2e/features/agentgateway/a2a-example
-cd  test/kubernetes/e2e/features/agentgateway/a2a-example
+uv init --package test/kubernetes/e2e/features/agentgateway/a2a/example
+cd  test/kubernetes/e2e/features/agentgateway/a2a/example
 ```
 
 3. Create virtual environment
@@ -39,7 +39,7 @@ uv run python -c "import a2a; print('A2A SDK imported successfully')"
 
 6. Get `helloworld` sample server.
 
-you can use instructions from here - https://github.com/a2aproject/a2a-samples/tree/main/samples/python/agents/helloworld (and build / run the container with something like that `docker build . -f Containerfile -t test-a2a-serverinerfile -t test-a2a-server`) 
+you can use instructions from here - https://github.com/a2aproject/a2a-samples/tree/main/samples/python/agents/helloworld (and build / run the container with something like that `docker build . -f Containerfile -t test-a2a-server`) 
 
 or you can use pre-build container `mcallisterpetr/test-a2a-server:0.1.0
 
@@ -161,7 +161,7 @@ INFO:__main__:{
 }
 INFO:__main__:
 Using AUTHENTICATED EXTENDED agent card for client initialization.
-/home/ubuntu/kgateway/test/kubernetes/e2e/features/agentgateway/a2a-example/test_client.py:105: DeprecationWarning: A2AClient is deprecated and will be removed in a future version. Use ClientFactory to create a client with a JSON-RPC transport.
+/home/ubuntu/kgateway/test/kubernetes/e2e/features/agentgateway/a2a/example/test_client.py:105: DeprecationWarning: A2AClient is deprecated and will be removed in a future version. Use ClientFactory to create a client with a JSON-RPC transport.
   client = A2AClient(
 INFO:__main__:A2AClient initialized.
 INFO:httpx:HTTP Request: POST http://localhost:9999/ "HTTP/1.1 200 OK"

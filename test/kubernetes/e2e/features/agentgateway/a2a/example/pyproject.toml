@@ -10,3 +10,8 @@ dependencies = [
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
+
+[tool.uv.workspace]
+members = [
+    "test/kubernetes/e2e/features/agentgateway/a2a/example",
+]
