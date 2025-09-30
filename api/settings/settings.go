@@ -106,6 +106,10 @@ type Settings struct {
 	// This corresponds to the value of the `grpc-xds` port in the service.
 	XdsServicePort uint32 `split_words:"true" default:"9977"`
 
+	// XdsAuth enables or disables xDS authentication between the data-plane and control-plane.
+	// By default, this is enabled.
+	XdsAuth bool `split_words:"true" default:"true"`
+
 	// AgentgatewayXdsServicePort is the port of the Kubernetes Service that serves xDS config for agentgateway.
 	// This corresponds to the value of the `grpc-xds-agw` port in the service.
 	AgentgatewayXdsServicePort uint32 `split_words:"true" default:"9978"`

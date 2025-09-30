@@ -45,6 +45,7 @@ func allEnvVarsSet() map[string]string {
 		"KGW_DISABLE_LEADER_ELECTION":        "true",
 		"KGW_POLICY_MERGE":                   `{"TrafficPolicy":{"extProc":"DeepMerge"}}`,
 		"KGW_ENABLE_WAYPOINT":                "true",
+		"KGW_XDS_AUTH":                       "false",
 	}
 }
 
@@ -95,6 +96,7 @@ func TestSettings(t *testing.T) {
 				DisableLeaderElection:       false,
 				PolicyMerge:                 "{}",
 				EnableWaypoint:              false,
+				XdsAuth:                     true,
 			},
 		},
 		{
@@ -130,6 +132,7 @@ func TestSettings(t *testing.T) {
 				DisableLeaderElection:       true,
 				PolicyMerge:                 `{"TrafficPolicy":{"extProc":"DeepMerge"}}`,
 				EnableWaypoint:              true,
+				XdsAuth:                     false,
 			},
 		},
 		{
@@ -193,6 +196,7 @@ func TestSettings(t *testing.T) {
 				WeightedRoutePrecedence:     false,
 				ValidationMode:              ValidationStandard,
 				PolicyMerge:                 "{}",
+				XdsAuth:                     true,
 			},
 		},
 	}

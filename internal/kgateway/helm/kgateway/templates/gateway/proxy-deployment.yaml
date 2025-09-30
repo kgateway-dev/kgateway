@@ -74,6 +74,9 @@ spec:
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
+        - name: xds-token
+          mountPath: /var/run/secrets/tokens
+          readOnly: true
         {{- with $gateway.extraVolumeMounts }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -335,6 +338,13 @@ spec:
       terminationGracePeriodSeconds: {{ $gateway.terminationGracePeriodSeconds }}
       {{- end }}
       volumes:
+      - name: xds-token
+        projected:
+          sources:
+          - serviceAccountToken:
+              audience: kgateway
+              expirationSeconds: 43200
+              path: xds-token
       - configMap:
           name: {{ include "kgateway.gateway.fullname" . }}
         name: envoy-config
@@ -579,6 +589,27 @@ data:
               "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
               explicit_http_config:
                 http2_protocol_options: {}
+              http_filters:
+              - name: transform
+                typed_config:
+                  "@type": type.googleapis.com/envoy.api.v2.filter.http.FilterTransformations
+                  transformations:
+                  - match:
+                      prefix: "/"
+                    route_transformations:
+                      request_transformation:
+                        transformation_template:
+                          headers:
+                            authorization: {"text": 'Bearer {{ "{{ \"{{ trim(data_source(\\\"token\\\")) -}}\" }}" }}'}
+                          passthrough: {}
+                          data_sources:
+                            token:
+                              filename: "/var/run/secrets/tokens/xds-token"
+                              watched_directory:
+                                path: "/var/run/secrets/tokens"
+              - name: envoy.filters.http.upstream_codec
+                typed_config:
+                  "@type": type.googleapis.com/envoy.extensions.filters.http.upstream_codec.v3.UpstreamCodec
           upstream_connection_options:
             tcp_keepalive:
               keepalive_time: 10

@@ -11,6 +11,7 @@ import (
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/kubetypes"
+	"istio.io/istio/pkg/security"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
@@ -286,14 +287,7 @@ func (s *setup) Start(ctx context.Context) error {
 		return err
 	}
 
-	uniqueClientCallbacks, uccBuilder := krtcollections.NewUniquelyConnectedClients(s.extraXDSCallbacks)
-	cache := NewControlPlane(ctx, s.xdsListener, s.agwXdsListener, uniqueClientCallbacks)
-
-	setupOpts := &controller.SetupOpts{
-		Cache:          cache,
-		KrtDebugger:    s.krtDebugger,
-		GlobalSettings: s.globalSettings,
-	}
+	uniqueClientCallbacks, uccBuilder := krtcollections.NewUniquelyConnectedClients(s.extraXDSCallbacks, s.globalSettings.XdsAuth)
 
 	istioClient, err := CreateKubeClient(s.restConfig)
 	if err != nil {
@@ -303,6 +297,18 @@ func (s *setup) Start(ctx context.Context) error {
 	cli, err := versioned.NewForConfig(s.restConfig)
 	if err != nil {
 		return err
+	}
+
+	authenticators := []security.Authenticator{
+		NewKubeJWTAuthenticator(istioClient.Kube()),
+	}
+
+	cache := NewControlPlane(ctx, s.xdsListener, s.agwXdsListener, uniqueClientCallbacks, authenticators, s.globalSettings.XdsAuth)
+
+	setupOpts := &controller.SetupOpts{
+		Cache:          cache,
+		KrtDebugger:    s.krtDebugger,
+		GlobalSettings: s.globalSettings,
 	}
 
 	slog.Info("creating krt collections")
