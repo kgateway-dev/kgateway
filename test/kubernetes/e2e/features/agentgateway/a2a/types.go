@@ -56,9 +56,9 @@ type A2AAgentCard struct {
 }
 
 const (
-// a2aProto is the protocol version for A2A
-	a2aProto = "0.3.0"
-	curlPodName = "curl"
+	// a2aProto is the protocol version for A2A
+	a2aProto         = "0.3.0"
+	curlPodName      = "curl"
 	curlPodNamespace = "curl"
 )
 

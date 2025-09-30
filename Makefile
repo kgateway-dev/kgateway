@@ -579,16 +579,6 @@ kind-load: kind-load-sds
 kind-load: kind-load-kgateway-ai-extension
 
 #----------------------------------------------------------------------------------
-# A2A Test Server (for agentgateway a2a integration in e2e tests)
-#----------------------------------------------------------------------------------
-
-TEST_A2A_AGENT_SERVER_DIR := $(ROOTDIR)/test/kubernetes/e2e/features/agentgateway/a2a-example
-.PHONY: test-a2a-agent-docker
-test-a2a-agent-docker:
-	docker buildx build $(LOAD_OR_PUSH) $(PLATFORM_MULTIARCH) -f $(TEST_A2A_AGENT_SERVER_DIR)/Dockerfile $(TEST_A2A_AGENT_SERVER_DIR) \
-		-t $(IMAGE_REGISTRY)/test-a2a-agent:$(VERSION)
-
-#----------------------------------------------------------------------------------
 # AI Extensions Test Server (for mocking AI Providers in e2e tests)
 #----------------------------------------------------------------------------------
 
