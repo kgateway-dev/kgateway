@@ -55,8 +55,12 @@ type A2AAgentCard struct {
 	} `json:"skills"`
 }
 
+const (
 // a2aProto is the protocol version for A2A
-const a2aProto = "0.3.0"
+	a2aProto = "0.3.0"
+	curlPodName = "curl"
+	curlPodNamespace = "curl"
+)
 
 var (
 	_ e2e.NewSuiteFunc = NewTestingSuite

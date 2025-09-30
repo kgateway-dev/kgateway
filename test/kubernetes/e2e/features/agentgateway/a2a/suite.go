@@ -86,7 +86,7 @@ func (s *testingSuite) waitA2AEnvironmentReady() {
 		metav1.ListOptions{LabelSelector: "app=a2a-helloworld"},
 	)
 	s.TestInstallation.Assertions.EventuallyPodsRunning(
-		s.Ctx, "curl",
+		s.Ctx, curlPodNamespace,
 		metav1.ListOptions{LabelSelector: "app.kubernetes.io/name=curl"},
 	)
 	s.TestInstallation.Assertions.EventuallyGatewayCondition(

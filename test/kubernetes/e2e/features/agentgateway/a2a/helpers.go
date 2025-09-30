@@ -42,7 +42,7 @@ func a2aHeaders() map[string]string {
 }
 
 func (s *testingSuite) execCurlA2A(port int, path string, headers map[string]string, body string, extraArgs ...string) (string, error) {
-	args := []string{"exec", "-n", "curl", "curl", "--", "curl", "-sS", "--http1.1"}
+	args := []string{"exec", "-n", curlPodNamespace, curlPodName, "--", "curl", "-sS", "--http1.1"}
 	for k, v := range headers {
 		args = append(args, "-H", fmt.Sprintf("%s: %s", k, v))
 	}
