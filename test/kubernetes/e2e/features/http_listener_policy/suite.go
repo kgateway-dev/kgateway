@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/onsi/gomega"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -53,6 +55,7 @@ func (s *testingSuite) SetupSuite() {
 		"TestHttpListenerPolicyAllFields":    {gatewayManifest, httpRouteManifest, allFieldsManifest},
 		"TestHttpListenerPolicyServerHeader": {gatewayManifest, httpRouteManifest, serverHeaderManifest},
 		"TestPreserveHttp1HeaderCase":        {gatewayManifest, preserveHttp1HeaderCaseManifest},
+		"TestAccessLogEmittedToStdout":       {gatewayManifest, httpRouteManifest, accessLogManifest},
 	}
 }
 
@@ -168,4 +171,38 @@ func (s *testingSuite) TestPreserveHttp1HeaderCase() {
 			},
 		},
 	)
+}
+
+func (s *testingSuite) TestAccessLogEmittedToStdout() {
+	// Trigger traffic to generate an access log line
+	s.testInstallation.Assertions.AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithHostHeader("example.com"),
+			curl.WithPath("/"),
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+		},
+	)
+
+	// Fetch gateway pod logs and verify the access log JSON fields are present
+	pods, err := s.testInstallation.Actions.Kubectl().GetPodsInNsWithLabel(
+		s.ctx, proxyDeployment.ObjectMeta.GetNamespace(),
+		"app.kubernetes.io/name="+proxyDeployment.ObjectMeta.GetName(),
+	)
+	s.Require().NoError(err)
+	s.Require().Len(pods, 1)
+
+	s.Require().EventuallyWithT(func(c *assert.CollectT) {
+		logs, err := s.testInstallation.Actions.Kubectl().GetContainerLogs(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(), pods[0])
+		s.Require().NoError(err)
+		// Check a few key fields configured in http-listener-policy-access-log.yaml jsonFormat
+		assert.Contains(c, logs, "\"method\":\"GET\"")
+		assert.Contains(c, logs, "\"protocol\":\"HTTP/1.1\"")
+		assert.Contains(c, logs, "\"response_code\":200")
+		assert.Contains(c, logs, "\"path\":\"/")
+	}, 30*time.Second, 200*time.Millisecond)
 }

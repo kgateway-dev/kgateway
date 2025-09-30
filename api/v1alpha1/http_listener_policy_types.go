@@ -370,7 +370,7 @@ type Op string
 
 const (
 	EQ Op = "EQ" // Equal
-	GE Op = "GQ" // Greater or equal
+	GE Op = "GE" // Greater or equal
 	LE Op = "LE" // Less or equal
 )
 
