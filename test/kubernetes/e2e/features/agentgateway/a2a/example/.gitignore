@@ -20,6 +20,7 @@ wheels/
 .installed.cfg
 *.egg
 MANIFEST
+.python-version
 
 # Virtual environments
 .env
@@ -27,11 +28,15 @@ MANIFEST
 env/
 venv/
 ENV/
+src/
 env.bak/
 venv.bak/
 
 # UV
 uv.lock
+
+# local config
+pyproject.toml
 
 # Test directories created by uv init
 test/

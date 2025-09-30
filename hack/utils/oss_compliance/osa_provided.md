@@ -16,6 +16,7 @@ Name|Version|License
 [golang/protobuf](https://github.com/golang/protobuf)|v1.5.4|BSD 3-clause "New" or "Revised" License
 [google/cel-go](https://github.com/google/cel-go)|v0.26.0|Apache License 2.0
 [google/go-cmp](https://github.com/google/go-cmp)|v0.7.0|BSD 3-clause "New" or "Revised" License
+[google/uuid](https://github.com/google/uuid)|v1.6.0|BSD 3-clause "New" or "Revised" License
 [grpc-ecosystem/go-grpc-middleware](https://github.com/grpc-ecosystem/go-grpc-middleware)|v1.4.0|Apache License 2.0
 [kelseyhightower/envconfig](https://github.com/kelseyhightower/envconfig)|v1.4.0|MIT License
 [mitchellh/hashstructure](https://github.com/mitchellh/hashstructure)|v1.0.0|MIT License

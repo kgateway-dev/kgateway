@@ -39,7 +39,13 @@ uv run python -c "import a2a; print('A2A SDK imported successfully')"
 
 6. Get `helloworld` sample server.
 
-you can use instructions from here - https://github.com/a2aproject/a2a-samples/tree/main/samples/python/agents/helloworld (and build / run the container with something like that `docker build . -f Containerfile -t test-a2a-server`) 
+you can use instructions from here - https://github.com/a2aproject/a2a-samples/tree/main/samples/python/agents/helloworld and build / run the container with something like that: 
+
+```bash
+docker build . -f Containerfile -t test-a2a-server
+docker run -p 9999:9999 helloworld-a2a-server
+```
+
 
 or you can use pre-build container `mcallisterpetr/test-a2a-server:0.1.0
 
