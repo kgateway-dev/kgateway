@@ -86,7 +86,7 @@ func JsonConvert(in *HelmConfig, out interface{}) error {
 }
 
 func (d *Deployer) RenderChartToObjects(ns, name string, vals map[string]any) ([]client.Object, error) {
-	objs, err := d.RenderToObjects(name, ns, vals)
+	objs, err := d.RenderToObjects(ns, name, vals)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +101,7 @@ func (d *Deployer) RenderChartToObjects(ns, name string, vals map[string]any) ([
 // RenderToObjects relies on a `helm install` to render the Chart with the injected values
 // It returns the list of Objects that are rendered, and an optional error if rendering failed,
 // or converting the rendered manifests to objects failed.
-func (d *Deployer) RenderToObjects(name, ns string, vals map[string]any) ([]client.Object, error) {
+func (d *Deployer) RenderToObjects(ns, name string, vals map[string]any) ([]client.Object, error) {
 	manifest, err := d.RenderManifest(ns, name, vals)
 	if err != nil {
 		return nil, err
@@ -114,7 +114,7 @@ func (d *Deployer) RenderToObjects(name, ns string, vals map[string]any) ([]clie
 	return objs, nil
 }
 
-func (d *Deployer) RenderManifest(ns string, name string, vals map[string]any) ([]byte, error) {
+func (d *Deployer) RenderManifest(ns, name string, vals map[string]any) ([]byte, error) {
 	mem := driver.NewMemory()
 	mem.SetNamespace(ns)
 	cfg := &action.Configuration{
@@ -166,7 +166,7 @@ func (d *Deployer) GetObjsToDeploy(ctx context.Context, obj client.Object) ([]cl
 	)
 
 	rname, rns := d.helmReleaseNameAndNamespaceGenerator(obj)
-	objs, err := d.RenderToObjects(rname, rns, vals)
+	objs, err := d.RenderToObjects(rns, rname, vals)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get objects to deploy %s.%s: %w", obj.GetNamespace(), obj.GetName(), err)
 	}

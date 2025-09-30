@@ -51,6 +51,7 @@ func TestRenderHelmChart(t *testing.T) {
 
 			scheme := schemes.GatewayScheme()
 			objs, err := testutils.LoadFromFiles(inputFile, scheme, nil)
+			assert.NoError(t, err, "error loading files from input file")
 
 			// contains objects necessary for commonCollections, don't add extra stuff here
 			// to avoid logging from krttest package re: objects not consumed
@@ -107,26 +108,22 @@ func TestRenderHelmChart(t *testing.T) {
 
 			if envutils.IsEnvTruthy("REFRESH_GOLDEN") {
 				t.Log("REFRESH_GOLDEN is set, writing output file", outputFile)
-				os.WriteFile(outputFile, got, 0o644)
+				err = os.WriteFile(outputFile, got, 0o644) //nolint:gosec // G306: Golden test file can be readable
+				assert.NoError(t, err, "error writing output file")
 				t.FailNow()
 			}
 			data, err := os.ReadFile(outputFile)
 			if err != nil {
 				if errors.Is(err, os.ErrNotExist) {
 					t.Log("outputFile does not exist, writing output file", outputFile)
-					os.WriteFile(outputFile, got, 0o644)
+					err = os.WriteFile(outputFile, got, 0o644) //nolint:gosec // G306: Golden test file can be readable
+					assert.NoError(t, err, "error writing output file")
 					t.FailNow()
 				} else {
 					t.Log("could not read outputFile", outputFile, err)
 					t.FailNow()
 				}
 			}
-
-			// TODO: add wantErr if necessary
-			// if tt.wantErr != nil {
-			// 	assert.Error(t, err)
-			// 	assert.Equal(t, tt.wantErr.Error(), err.Error())
-			// }
 
 			diff := cmp.Diff(data, got)
 			assert.Empty(t, diff, diff)
