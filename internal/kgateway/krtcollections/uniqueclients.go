@@ -260,9 +260,8 @@ func (x *callbacks) OnStreamRequest(sid int64, r *envoy_service_discovery_v3.Dis
 		return err
 	}
 	// check that this collection only handles kgateway clients
-	// TODO remove this check if it's no longer needed
 	if !xds.IsKubeGatewayCacheKey(peerInfo.role) {
-		return fmt.Errorf("invalid cache key for peer stream %d: %s", sid, peerInfo.role)
+		return nil
 	}
 
 	return c.newStream(sid, r, peerInfo)
