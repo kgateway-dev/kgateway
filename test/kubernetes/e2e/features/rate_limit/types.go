@@ -135,7 +135,7 @@ var (
 )
 
 func getTestFile(filename string) string {
-	return filepath.Join(fsutils.MustGetThisDir(), "testdata", filename)
+	return filepath.Join(fsutils.MustGetThisDir(), "global", "testdata", filename)
 }
 
 func getTestFileAgentgateway(filename string) string {
