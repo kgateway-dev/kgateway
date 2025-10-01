@@ -3,10 +3,10 @@ package a2a
 import (
 	"encoding/json"
 	"fmt"
-	"os/exec"
-	"strings"
 
 	"github.com/google/uuid"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 )
 
 func buildMessageSendRequest(text string, id string) string {
@@ -42,23 +42,44 @@ func a2aHeaders() map[string]string {
 }
 
 func (s *testingSuite) execCurlA2A(port int, path string, headers map[string]string, body string, extraArgs ...string) (string, error) {
-	args := []string{"exec", "-n", curlPodNamespace, curlPodName, "--", "curl", "-sS", "--http1.1"}
+	// Build curl options using the existing curl utilities
+	curlOpts := []curl.Option{
+		curl.WithHost(fmt.Sprintf("%s.%s.svc.cluster.local", gatewayName, gatewayNamespace)),
+		curl.WithPort(port),
+		curl.WithPath(path),
+		curl.Silent(),
+		curl.WithConnectionTimeout(10), // equivalent to --max-time
+	}
+
+	// Add headers
 	for k, v := range headers {
-		args = append(args, "-H", fmt.Sprintf("%s: %s", k, v))
+		curlOpts = append(curlOpts, curl.WithHeader(k, v))
 	}
+
+	// Add body
 	if body != "" {
-		args = append(args, "-d", body)
+		curlOpts = append(curlOpts, curl.WithBody(body))
 	}
-	args = append(args, extraArgs...)
-	args = append(args, fmt.Sprintf("http://%s.%s.svc.cluster.local:%d%s", gatewayName, gatewayNamespace, port, path))
 
-	cmd := exec.Command("kubectl", args...)
-	out, err := cmd.CombinedOutput()
+	// Add extra args if any (like --max-time)
+	if len(extraArgs) > 0 {
+		curlOpts = append(curlOpts, curl.WithArgs(extraArgs))
+	}
 
-	s.T().Logf("kubectl %s", strings.Join(args, " "))
-	s.T().Logf("curl response: %s", string(out))
+	// Execute curl using the existing utilities
+	curlResponse, err := s.TestInstallation.ClusterContext.Cli.CurlFromPod(
+		s.Ctx,
+		kubectl.PodExecOptions{Name: curlPodName, Namespace: curlPodNamespace},
+		curlOpts...,
+	)
 
-	return string(out), err
+	if err != nil {
+		s.T().Logf("curl error: %v", err)
+		return "", err
+	}
+
+	s.T().Logf("curl response: %s", curlResponse.StdOut)
+	return curlResponse.StdOut, nil
 }
 
 func IsJSONValid(s string) bool {
