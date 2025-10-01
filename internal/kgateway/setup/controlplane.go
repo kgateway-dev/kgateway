@@ -41,14 +41,14 @@ var (
 	xdsAuthSuccessTotal = metrics.NewCounter(
 		metrics.CounterOpts{
 			Subsystem: xdsSubsystem,
-			Name:      "auth_rq_success",
+			Name:      "auth_rq_success_total",
 			Help:      "Total number of successful xDS auth requests",
 		}, nil)
 
 	xdsAuthFailureTotal = metrics.NewCounter(
 		metrics.CounterOpts{
 			Subsystem: xdsSubsystem,
-			Name:      "auth_rq_failure",
+			Name:      "auth_rq_failure_total",
 			Help:      "Total number of failed xDS auth requests",
 		}, nil)
 )

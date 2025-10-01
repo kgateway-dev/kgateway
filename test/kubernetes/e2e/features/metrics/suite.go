@@ -84,7 +84,7 @@ func (s *testingSuite) TestMetrics() {
 		gathered.AssertMetric("kgateway_xds_auth_rq_total", &metricstest.ExpectedMetricValueTest{
 			Test: metricstest.GreaterOrEqual(expectedGateways),
 		})
-		gathered.AssertMetric("kgateway_xds_auth_rq_success", &metricstest.ExpectedMetricValueTest{
+		gathered.AssertMetric("kgateway_xds_auth_rq_success_total", &metricstest.ExpectedMetricValueTest{
 			Test: metricstest.GreaterOrEqual(expectedGateways),
 		})
 

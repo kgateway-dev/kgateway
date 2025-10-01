@@ -84,6 +84,7 @@ func (x *callbacks) getPeerInfo(sid int64, r *envoy_service_discovery_v3.Discove
 	if !ok {
 		return p, fmt.Errorf("xDS peer %d got unexpected type", sid)
 	}
+	// Since the pod's ServiceAccount name is the same as the Gateway name, we can use the ServiceAccount to build the role
 	p.role = xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, caller.KubernetesInfo.PodNamespace, caller.KubernetesInfo.PodServiceAccount)
 	if usePod {
 		p.podRef = &types.NamespacedName{
@@ -144,7 +145,11 @@ func buildCollection(callbacks *callbacks) UniquelyConnectedClientsBulider {
 
 func (x *callbacks) OnStreamOpen(ctx context.Context, sid int64, _ string) error {
 	if x.xdsAuth {
-		x.streamIDToPeerInfo.Store(sid, ctx.Value(xds.PeerCtxKey).(*security.Caller))
+		peer, ok := ctx.Value(xds.PeerCtxKey).(*security.Caller)
+		if !ok {
+			return fmt.Errorf("got invalid type for xDS peer ctx: %T", ctx.Value(xds.PeerCtxKey))
+		}
+		x.streamIDToPeerInfo.Store(sid, peer)
 	}
 	return nil
 }
@@ -287,6 +292,8 @@ func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3
 		if isNew {
 			x.trigger.TriggerRecomputation()
 		}
+	} else {
+		x.logger.Warn("got empty unique client name", "sid", sid)
 	}
 	return nil
 }
