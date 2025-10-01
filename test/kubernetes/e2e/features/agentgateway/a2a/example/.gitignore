@@ -64,3 +64,6 @@ logs/
 # Temporary files
 *.tmp
 *.temp
+
+# A2A Samples Repository (can becloned locally followint the readme)
+a2a-samples/
