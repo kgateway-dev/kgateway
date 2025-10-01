@@ -257,6 +257,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy with rate limiting", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/global-ratelimit",
+			outputFile: "traffic-policy/global-ratelimit.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy ExtProc different attachment points", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/extproc.yaml",

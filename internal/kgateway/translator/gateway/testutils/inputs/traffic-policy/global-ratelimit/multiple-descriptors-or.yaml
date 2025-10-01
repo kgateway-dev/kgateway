@@ -1,0 +1,27 @@
+# Multiple descriptors with OR logic
+# Tests rate limiting with multiple descriptor options - any match triggers rate limiting
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: ratelimit-combined-or
+  namespace: infra
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: example-tls-sibling-route
+  rateLimit:
+    global:
+      descriptors:
+      - entries:
+        - type: Header
+          header: "X-User-Type"
+      - entries:
+        - type: Path
+      - entries:
+        - type: Generic
+          generic:
+            key: "rate_limit_bypass"
+            value: "false"
+      extensionRef: 
+        name: basic-ratelimit

@@ -1,0 +1,25 @@
+# Combined local and global rate limiting
+# Tests rate limiting with both local token bucket and global rate limiting
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: ratelimit-local-and-global
+  namespace: infra
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: example-tls-route-no-ratelimit
+  rateLimit:
+    local:
+      tokenBucket:
+        maxTokens: 5
+        tokensPerFill: 1
+        fillInterval: "1s"
+    global:
+      descriptors:
+      - entries:
+        - type: Header
+          header: "X-User-Type"
+      extensionRef:
+        name: basic-ratelimit

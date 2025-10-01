@@ -1,0 +1,20 @@
+# Fail open behavior rate limiting
+# Tests rate limiting that allows requests when rate limit service is unavailable
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: ratelimit-fail-open
+  namespace: infra
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-gateway
+    sectionName: tls2
+  rateLimit:
+    global:
+      descriptors:
+      - entries:
+        - type: RemoteAddress
+      extensionRef:
+        name: fail-open-ratelimit

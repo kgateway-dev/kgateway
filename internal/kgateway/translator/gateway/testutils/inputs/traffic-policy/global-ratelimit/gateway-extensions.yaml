@@ -1,0 +1,71 @@
+# Gateway Extensions for rate limiting tests
+# This file contains all the GatewayExtension configurations used across
+# different rate limiting test scenarios.
+
+# Basic gateway extension for gateway-level rate limiting
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: basic-gw-ratelimit
+  namespace: infra
+spec:
+  type: RateLimit
+  rateLimit:
+    grpcService:
+      backendRef:
+        name: ratelimit
+        port: 8081
+    domain: "api-gateway"
+    timeout: "100ms"
+---
+# Gateway extension for section-specific rate limiting
+# Used when targeting specific gateway listeners/sections
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: section-name-gw-ratelimit
+  namespace: infra
+spec:
+  type: RateLimit
+  rateLimit:
+    grpcService:
+      backendRef:
+        name: ratelimit
+        port: 8081
+    domain: "api-gateway-section"
+    timeout: "200ms"
+---
+# Gateway extension for route-level rate limiting
+# Used when rate limiting is applied to HTTPRoutes
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: basic-ratelimit
+  namespace: infra
+spec:
+  type: RateLimit
+  rateLimit:
+    grpcService:
+      backendRef:
+        name: ratelimit
+        port: 8081
+    domain: "api-gateway-routes"
+    timeout: "150ms"
+---
+# Gateway extension with fail-open behavior
+# Allows requests through when rate limit service is unavailable
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: fail-open-ratelimit
+  namespace: infra
+spec:
+  type: RateLimit
+  rateLimit:
+    grpcService:
+      backendRef:
+        name: ratelimit
+        port: 8081
+    domain: "api-gateway-fail-open"
+    timeout: "150ms"
+    failOpen: true

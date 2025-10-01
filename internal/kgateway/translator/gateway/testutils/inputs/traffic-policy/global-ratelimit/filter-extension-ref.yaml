@@ -1,0 +1,16 @@
+# Filter-level rate limiting via ExtensionRef
+# Tests rate limiting attached via HTTPRoute filter ExtensionRef (no targetRef needed)
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: ratelimit-for-extension-ref
+  namespace: infra
+spec:
+  rateLimit:
+    global:
+      descriptors:
+      - entries:
+        - type: Header
+          header: "X-Filter-ID"
+      extensionRef: 
+        name: basic-ratelimit
