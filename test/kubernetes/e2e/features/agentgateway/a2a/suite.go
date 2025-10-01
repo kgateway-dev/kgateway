@@ -93,6 +93,10 @@ func (s *testingSuite) waitA2AEnvironmentReady() {
 		s.Ctx, gatewayName, gatewayNamespace,
 		gwv1.GatewayConditionProgrammed, metav1.ConditionTrue,
 	)
+	s.TestInstallation.Assertions.EventuallyPodsRunning(
+		s.Ctx, gatewayNamespace,
+		metav1.ListOptions{LabelSelector: "app.kubernetes.io/name=" + gatewayName},
+	)
 	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
 		s.Ctx, "a2a-route", "default",
 		gwv1.RouteConditionAccepted, metav1.ConditionTrue,
