@@ -6,10 +6,11 @@ metadata:
   name: gw
   labels:
     kgateway: kube-gateway
-    helm.sh/chart: kgateway-proxy
+    helm.sh/chart: kgateway-proxy-1.0.0-ci1
     app.kubernetes.io/name: gw
     app.kubernetes.io/instance: gw
     gateway.networking.k8s.io/gateway-name: gw
+    app.kubernetes.io/version: "1.0.0-ci1"
     app.kubernetes.io/managed-by: Helm
 automountServiceAccountToken: false
 ---
@@ -21,10 +22,11 @@ metadata:
   name: gw
   labels:
     kgateway: kube-gateway
-    helm.sh/chart: kgateway-proxy
+    helm.sh/chart: kgateway-proxy-1.0.0-ci1
     app.kubernetes.io/name: gw
     app.kubernetes.io/instance: gw
     gateway.networking.k8s.io/gateway-name: gw
+    app.kubernetes.io/version: "1.0.0-ci1"
     app.kubernetes.io/managed-by: Helm
 data:
   envoy.yaml: |
@@ -69,6 +71,14 @@ data:
                           route:
                             cluster: admin_port_cluster
                 http_filters:
+                  - name: envoy.filters.http.health_check
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.health_check.v3.HealthCheck
+                      pass_through_mode: false
+                      headers:
+                      - name: ":path"
+                        string_match:
+                          exact: "/envoy-hc"
                   - name: envoy.filters.http.router
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -179,10 +189,11 @@ metadata:
   name: gw
   labels:
     kgateway: kube-gateway
-    helm.sh/chart: kgateway-proxy
+    helm.sh/chart: kgateway-proxy-1.0.0-ci1
     app.kubernetes.io/name: gw
     app.kubernetes.io/instance: gw
     gateway.networking.k8s.io/gateway-name: gw
+    app.kubernetes.io/version: "1.0.0-ci1"
     app.kubernetes.io/managed-by: Helm
 spec:
   type: LoadBalancer
@@ -203,10 +214,11 @@ metadata:
   name: gw
   labels:
     kgateway: kube-gateway
-    helm.sh/chart: kgateway-proxy
+    helm.sh/chart: kgateway-proxy-1.0.0-ci1
     app.kubernetes.io/name: gw
     app.kubernetes.io/instance: gw
     gateway.networking.k8s.io/gateway-name: gw
+    app.kubernetes.io/version: "1.0.0-ci1"
     app.kubernetes.io/managed-by: Helm
 spec:
   replicas: 1
@@ -267,7 +279,29 @@ spec:
           protocol: TCP
           containerPort: 8080
         - name: http-monitoring
-          containerPort: 9091    
+          containerPort: 9091
+        startupProbe:
+          failureThreshold: 60
+          httpGet:
+            path: /ready
+            port: 8082
+          periodSeconds: 1
+          successThreshold: 1
+          timeoutSeconds: 2
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8082
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - wget --post-data "" -O /dev/null 127.0.0.1:19000/healthcheck/fail; sleep 10    
+      terminationGracePeriodSeconds: 60
       volumes:
       - configMap:
           name: gw
