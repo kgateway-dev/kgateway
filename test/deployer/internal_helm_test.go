@@ -18,6 +18,10 @@ func TestRenderHelmChart(t *testing.T) {
 			Name:      "gwparams with omitDefaultSecurityContext",
 			InputFile: "omit-default-security-context",
 		},
+		{
+			Name:      "agentgateway",
+			InputFile: "agentgateway",
+		},
 	}
 
 	tester := DeployerTester{
