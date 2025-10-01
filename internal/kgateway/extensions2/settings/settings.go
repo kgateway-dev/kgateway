@@ -41,6 +41,10 @@ type Settings struct {
 	DefaultImageTag string `split_words:"true" default:""`
 	// DefaultImagePullPolicy is the default image pull policy to use for the kgateway image.
 	DefaultImagePullPolicy string `split_words:"true" default:"IfNotPresent"`
+
+	// XdsAuth enables or disables xDS authentication between the data-plane and control-plane.
+	// By default, this is enabled.
+	XdsAuth bool `split_words:"true" default:"true"`
 }
 
 // BuildSettings returns a zero-valued Settings obj if error is encountered when parsing env

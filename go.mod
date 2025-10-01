@@ -1,6 +1,6 @@
 module github.com/kgateway-dev/kgateway/v2
 
-go 1.24.1
+go 1.24.6
 
 require (
 	github.com/avast/retry-go v2.4.3+incompatible
@@ -24,7 +24,7 @@ require (
 	github.com/onsi/gomega v1.37.0
 	github.com/pkg/errors v0.9.1
 	github.com/rotisserie/eris v0.5.4
-	github.com/solo-io/envoy-gloo/go v0.0.0-20250102165327-33a74fcf9966
+	github.com/solo-io/envoy-gloo/go v0.0.0-20251006222822-c8b69090de33
 	github.com/solo-io/go-list-licenses v0.1.4
 	github.com/solo-io/go-utils v0.27.3
 	github.com/spf13/afero v1.12.0

@@ -61,6 +61,12 @@ rules:
   - update
   - watch
 - apiGroups:
+  - authentication.k8s.io
+  resources:
+  - tokenreviews
+  verbs:
+  - create
+- apiGroups:
   - discovery.k8s.io
   resources:
   - endpointslices

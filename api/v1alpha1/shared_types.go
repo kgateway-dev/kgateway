@@ -5,6 +5,9 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
+// Control-plane RBAC rules not specific to policies:
+// +kubebuilder:rbac:groups=authentication.k8s.io,resources=tokenreviews,verbs=create
+
 // Select the object to attach the policy to.
 // The object must be in the same namespace as the policy.
 // You can target only one object at a time.

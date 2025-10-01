@@ -20,6 +20,9 @@ const (
 	// RoleKey is the name of the ket in the node.metadata used to store the role
 	RoleKey = "role"
 
+	// PeerCtxKey is the key used to store the peer information in the context
+	PeerCtxKey = "peer"
+
 	// FallbackNodeCacheKey is used to let nodes know they have a bad config
 	// we assign a "fix me" snapshot for bad nodes
 	FallbackNodeCacheKey = "misconfigured-node"
