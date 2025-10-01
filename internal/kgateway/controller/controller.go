@@ -305,11 +305,17 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		),
 	)
 
-	d, err := internaldeployer.NewGatewayDeployer(c.cfg.ControllerName, c.cfg.AgwControllerName,
-		c.cfg.AgentgatewayClassName, c.cfg.Mgr.GetClient(), gwParams)
+	d, err := internaldeployer.NewGatewayDeployer(
+		c.cfg.ControllerName,
+		c.cfg.AgwControllerName,
+		c.cfg.AgentgatewayClassName,
+		c.cfg.Mgr.GetClient(),
+		gwParams,
+	)
 	if err != nil {
 		return err
 	}
+
 	gvks, err := internaldeployer.GatewayGVKsToWatch(ctx, d)
 	if err != nil {
 		return err
