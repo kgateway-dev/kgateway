@@ -21,7 +21,6 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/backend/ai"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
@@ -31,6 +30,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
@@ -78,7 +78,7 @@ func registerTypes(ourCli versioned.Interface) {
 	)
 }
 
-func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) sdk.Plugin {
+func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
 	registerTypes(commoncol.OurClient)
 
 	col := krt.WrapClient(kclient.NewFiltered[*v1alpha1.Backend](
@@ -200,6 +200,7 @@ func buildTranslateFunc(
 				lambdaFilters:         lambdaFilters,
 			}
 		case v1alpha1.BackendTypeAI:
+			logger.Warn("envoy-based AI Gateway is deprecated in v2.1 and will be removed in v2.2. Use agentgateway instead.")
 			backendIr.AIIr = &ai.IR{}
 			err := ai.PreprocessAIBackend(ctx, i.Spec.AI, backendIr.AIIr)
 			if err != nil {
@@ -222,7 +223,7 @@ func buildTranslateFunc(
 				backendIr.AIIr.AIMultiSecret = map[string]*ir.Secret{}
 				for idx, group := range i.Spec.AI.PriorityGroups {
 					for jdx, provider := range group.Providers {
-						secretRef := getAISecretRef(&provider)
+						secretRef := getAISecretRef(&provider.LLMProvider)
 						if secretRef == nil {
 							continue
 						}
@@ -348,7 +349,7 @@ type backendPlugin struct {
 
 var _ ir.ProxyTranslationPass = &backendPlugin{}
 
-func newPlug(ctx context.Context, tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
+func newPlug(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
 	return &backendPlugin{}
 }
 
@@ -356,11 +357,12 @@ func (p *backendPlugin) Name() string {
 	return ExtensionName
 }
 
-func (p *backendPlugin) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoyroutev3.Route) error {
+func (p *backendPlugin) ApplyForBackend(pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoyroutev3.Route) error {
 	backend := pCtx.Backend.Obj.(*v1alpha1.Backend)
 	backendIr := pCtx.Backend.ObjIr.(*BackendIr)
 	switch backend.Spec.Type {
 	case v1alpha1.BackendTypeAI:
+
 		err := ai.ApplyAIBackend(backendIr.AIIr, pCtx, out)
 		if err != nil {
 			return err
@@ -393,7 +395,7 @@ func (p *backendPlugin) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBacke
 // called 1 time per listener
 // if a plugin emits new filters, they must be with a plugin unique name.
 // any filter returned from route config must be disabled, so it doesnt impact other routes.
-func (p *backendPlugin) HttpFilters(ctx context.Context, fc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
+func (p *backendPlugin) HttpFilters(fc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
 	result := []plugins.StagedHttpFilter{}
 
 	var errs []error
@@ -413,10 +415,13 @@ func (p *backendPlugin) HttpFilters(ctx context.Context, fc ir.FilterChainCommon
 }
 
 // called 1 time (per envoy proxy). replaces GeneratedResources
-func (p *backendPlugin) ResourcesToAdd(ctx context.Context) ir.Resources {
+func (p *backendPlugin) ResourcesToAdd() ir.Resources {
 	var additionalClusters []*envoyclusterv3.Cluster
 	if len(p.aiGatewayEnabled) > 0 {
-		aiClusters := ai.GetAIAdditionalResources(ctx)
+		aiClusters, err := ai.GetAIAdditionalResources()
+		if err != nil {
+			logger.Error("failed to get ai additional resources", "error", err)
+		}
 		additionalClusters = append(additionalClusters, aiClusters...)
 	}
 	return ir.Resources{

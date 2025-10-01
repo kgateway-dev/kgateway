@@ -18,9 +18,9 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
 func TestTransformGRPCRoute(t *testing.T) {
@@ -475,15 +475,15 @@ func TestTransformGRPCRoute(t *testing.T) {
 			grpcRoutes := krttest.GetMockCollection[*gwv1.GRPCRoute](mock)
 			services := krttest.GetMockCollection[*corev1.Service](mock)
 			refgrants := krtcollections.NewRefGrantIndex(krttest.GetMockCollection[*gwv1beta1.ReferenceGrant](mock))
-			policies := krtcollections.NewPolicyIndex(krtinternal.KrtOptions{}, sdk.ContributesPolicies{}, settings.Settings{})
+			policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, sdk.ContributesPolicies{}, settings.Settings{})
 
 			// Set up backend index
-			backends := krtcollections.NewBackendIndex(krtinternal.KrtOptions{}, policies, refgrants)
+			backends := krtcollections.NewBackendIndex(krtutil.KrtOptions{}, policies, refgrants)
 			backends.AddBackends(svcGk, k8sSvcUpstreams(services))
 
 			// Create RouteIndex with minimal collections needed for GRPC route transformation
 			routesIndex := krtcollections.NewRoutesIndex(
-				krtinternal.KrtOptions{},
+				krtutil.KrtOptions{},
 				krttest.GetMockCollection[*gwv1.HTTPRoute](mock),
 				grpcRoutes,
 				krttest.GetMockCollection[*gwv1a2.TCPRoute](mock),

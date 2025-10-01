@@ -58,7 +58,7 @@ func tcpToIr(tcpRoute *gwv1a2.TCPRoute) *ir.TcpRouteIR {
 		routeir.Backends = append(routeir.Backends, ir.BackendRefIR{
 			ClusterName:   string(b.Name),
 			BackendObject: &ir.BackendObjectIR{},
-			Weight:        uint32(ptr.Deref(b.Weight, 1)),
+			Weight:        uint32(ptr.Deref(b.Weight, 1)), //nolint:gosec // G115: Gateway API backend weight is int32, always non-negative, safe to convert to uint32
 		})
 	}
 
@@ -83,7 +83,7 @@ func tlsToIr(tlsRoute *gwv1a2.TLSRoute) *ir.TlsRouteIR {
 		routeir.Backends = append(routeir.Backends, ir.BackendRefIR{
 			ClusterName:   string(b.Name),
 			BackendObject: &ir.BackendObjectIR{},
-			Weight:        uint32(ptr.Deref(b.Weight, 1)),
+			Weight:        uint32(ptr.Deref(b.Weight, 1)), //nolint:gosec // G115: Gateway API backend weight is int32, always non-negative, safe to convert to uint32
 		})
 	}
 	return routeir

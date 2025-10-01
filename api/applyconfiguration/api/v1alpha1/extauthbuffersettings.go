@@ -5,9 +5,9 @@ package v1alpha1
 // ExtAuthBufferSettingsApplyConfiguration represents a declarative configuration of the ExtAuthBufferSettings type for use
 // with apply.
 type ExtAuthBufferSettingsApplyConfiguration struct {
-	MaxRequestBytes     *uint32 `json:"maxRequestBytes,omitempty"`
-	AllowPartialMessage *bool   `json:"allowPartialMessage,omitempty"`
-	PackAsBytes         *bool   `json:"packAsBytes,omitempty"`
+	MaxRequestBytes     *int32 `json:"maxRequestBytes,omitempty"`
+	AllowPartialMessage *bool  `json:"allowPartialMessage,omitempty"`
+	PackAsBytes         *bool  `json:"packAsBytes,omitempty"`
 }
 
 // ExtAuthBufferSettingsApplyConfiguration constructs a declarative configuration of the ExtAuthBufferSettings type for use with
@@ -19,7 +19,7 @@ func ExtAuthBufferSettings() *ExtAuthBufferSettingsApplyConfiguration {
 // WithMaxRequestBytes sets the MaxRequestBytes field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the MaxRequestBytes field is set to the value of the last call.
-func (b *ExtAuthBufferSettingsApplyConfiguration) WithMaxRequestBytes(value uint32) *ExtAuthBufferSettingsApplyConfiguration {
+func (b *ExtAuthBufferSettingsApplyConfiguration) WithMaxRequestBytes(value int32) *ExtAuthBufferSettingsApplyConfiguration {
 	b.MaxRequestBytes = &value
 	return b
 }

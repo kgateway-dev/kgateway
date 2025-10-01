@@ -17,9 +17,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 
-	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
@@ -1209,7 +1209,7 @@ func TestEndpoints(t *testing.T) {
 			g := NewWithT(t)
 			mock := krttest.NewMock(t, tc.inputs)
 			nodes := NewNodeMetadataCollection(krttest.GetMockCollection[*corev1.Node](mock))
-			pods := NewLocalityPodsCollection(nodes, krttest.GetMockCollection[*corev1.Pod](mock), krtinternal.KrtOptions{})
+			pods := NewLocalityPodsCollection(nodes, krttest.GetMockCollection[*corev1.Pod](mock), krtutil.KrtOptions{})
 			pods.WaitUntilSynced(context.Background().Done())
 			endpointSettings := EndpointsSettings{
 				EnableAutoMtls: false,

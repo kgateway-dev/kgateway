@@ -12,7 +12,7 @@ type BackendConfigPolicySpecApplyConfiguration struct {
 	TargetRefs                    []LocalPolicyTargetReferenceApplyConfiguration `json:"targetRefs,omitempty"`
 	TargetSelectors               []LocalPolicyTargetSelectorApplyConfiguration  `json:"targetSelectors,omitempty"`
 	ConnectTimeout                *v1.Duration                                   `json:"connectTimeout,omitempty"`
-	PerConnectionBufferLimitBytes *int                                           `json:"perConnectionBufferLimitBytes,omitempty"`
+	PerConnectionBufferLimitBytes *int32                                         `json:"perConnectionBufferLimitBytes,omitempty"`
 	TCPKeepalive                  *TCPKeepaliveApplyConfiguration                `json:"tcpKeepalive,omitempty"`
 	CommonHttpProtocolOptions     *CommonHttpProtocolOptionsApplyConfiguration   `json:"commonHttpProtocolOptions,omitempty"`
 	Http1ProtocolOptions          *Http1ProtocolOptionsApplyConfiguration        `json:"http1ProtocolOptions,omitempty"`
@@ -66,7 +66,7 @@ func (b *BackendConfigPolicySpecApplyConfiguration) WithConnectTimeout(value v1.
 // WithPerConnectionBufferLimitBytes sets the PerConnectionBufferLimitBytes field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the PerConnectionBufferLimitBytes field is set to the value of the last call.
-func (b *BackendConfigPolicySpecApplyConfiguration) WithPerConnectionBufferLimitBytes(value int) *BackendConfigPolicySpecApplyConfiguration {
+func (b *BackendConfigPolicySpecApplyConfiguration) WithPerConnectionBufferLimitBytes(value int32) *BackendConfigPolicySpecApplyConfiguration {
 	b.PerConnectionBufferLimitBytes = &value
 	return b
 }

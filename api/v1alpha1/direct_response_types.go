@@ -36,7 +36,7 @@ type DirectResponseSpec struct {
 	// +required
 	// +kubebuilder:validation:Minimum=200
 	// +kubebuilder:validation:Maximum=599
-	StatusCode uint32 `json:"status"`
+	StatusCode int32 `json:"status"`
 	// Body defines the content to be returned in the HTTP response body.
 	// The maximum length of the body is restricted to prevent excessively large responses.
 	// If this field is omitted, no body is included in the response.
@@ -51,7 +51,7 @@ type DirectResponseSpec struct {
 type DirectResponseStatus struct{}
 
 // GetStatus returns the HTTP status code to return for this route.
-func (in *DirectResponse) GetStatusCode() uint32 {
+func (in *DirectResponse) GetStatusCode() int32 {
 	if in == nil {
 		return 0
 	}

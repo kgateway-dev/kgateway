@@ -10,7 +10,7 @@ import (
 // with apply.
 type DurationFilterApplyConfiguration struct {
 	Op    *apiv1alpha1.Op `json:"op,omitempty"`
-	Value *uint32         `json:"value,omitempty"`
+	Value *int32          `json:"value,omitempty"`
 }
 
 // DurationFilterApplyConfiguration constructs a declarative configuration of the DurationFilter type for use with
@@ -30,7 +30,7 @@ func (b *DurationFilterApplyConfiguration) WithOp(value apiv1alpha1.Op) *Duratio
 // WithValue sets the Value field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Value field is set to the value of the last call.
-func (b *DurationFilterApplyConfiguration) WithValue(value uint32) *DurationFilterApplyConfiguration {
+func (b *DurationFilterApplyConfiguration) WithValue(value int32) *DurationFilterApplyConfiguration {
 	b.Value = &value
 	return b
 }

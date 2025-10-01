@@ -16,15 +16,15 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 )
 
 func convertTracingConfig(
 	ctx context.Context,
 	policy *v1alpha1.HTTPListenerPolicy,
-	commoncol *common.CommonCollections,
+	commoncol *collections.CommonCollections,
 	krtctx krt.HandlerContext,
 	parentSrc ir.ObjectSource,
 ) (*envoytracev3.OpenTelemetryConfig, *envoy_hcm.HttpConnectionManager_Tracing, error) {
@@ -83,7 +83,7 @@ func translateTracing(
 	}
 	if config.MaxPathTagLength != nil {
 		tracingConfig.MaxPathTagLength = &wrapperspb.UInt32Value{
-			Value: *config.MaxPathTagLength,
+			Value: uint32(*config.MaxPathTagLength), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 		}
 	}
 	if len(config.Attributes) != 0 {

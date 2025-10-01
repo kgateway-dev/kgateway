@@ -30,9 +30,13 @@ Listeners:
   name: foo
   protocol: HTTP
 Policies:
-- name: trafficpolicy/default/secure-route-policy/example-gateway:extauth
+- name: trafficpolicy/default/secure-route-policy/example-gateway:extauth:default/example-gateway.foo
   spec:
     extAuthz:
+      failureMode: DENY_WITH_STATUS
+      includeRequestBody:
+        maxRequestBytes: 1024
+      statusOnError: 403
       target:
         port: 4444
         service: default/ext-authz.default.svc.cluster.local

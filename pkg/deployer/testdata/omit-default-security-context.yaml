@@ -1,0 +1,36 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: gw-params
+  namespace: default
+spec:
+  kube:
+    omitDefaultSecurityContext: true
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: kgateway
+spec:
+  controllerName: kgateway.dev/kgateway
+  description: Standard class for managing Gateway API ingress traffic.
+  parametersRef:
+    group: gateway.kgateway.dev
+    kind: GatewayParameters
+    name: gw-params
+    namespace: default
+---
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: gw
+  namespace: default
+spec:
+  gatewayClassName: kgateway
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: Same

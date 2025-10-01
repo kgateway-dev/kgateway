@@ -29,7 +29,6 @@
 package sandwich
 
 import (
-	"context"
 	"time"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -52,7 +51,7 @@ func NewPlugin() sdk.Plugin {
 		ContributesPolicies: sdk.ContributesPolicies{
 			SandwichedInboundGK: sdk.PolicyPlugin{
 				Name: "sandwich",
-				NewGatewayTranslationPass: func(ctx context.Context, tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
+				NewGatewayTranslationPass: func(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
 					// TODO we could read the waypoint-inbound-binding annotation here and set isSandwiched = true
 					// instead of using a policy set by translator?
 					return &sandwichedTranslationPass{
@@ -101,7 +100,7 @@ var _ ir.ProxyTranslationPass = &sandwichedTranslationPass{}
 // ApplyListenerPlugin adds a ProxyProtocol ListenerFilter that
 // 1. Overrides source and destination addresses to be what the zTunnel saw.
 // 2. Grabs the ProxyProtocolPeerTLV (0xD0) used to propagate the client identity validated by zTunnel.
-func (s *sandwichedTranslationPass) ApplyListenerPlugin(ctx context.Context, pCtx *ir.ListenerContext, out *envoylistenerv3.Listener) {
+func (s *sandwichedTranslationPass) ApplyListenerPlugin(pCtx *ir.ListenerContext, out *envoylistenerv3.Listener) {
 	_, ok := pCtx.Policy.(SandwichedInboundPolicy)
 	if !ok {
 		return
@@ -117,7 +116,7 @@ func (s *sandwichedTranslationPass) ApplyListenerPlugin(ctx context.Context, pCt
 // the identity validated by zTunnel readable from Istio RBAC filters.
 // It does this by passing the TLV from PROXY Protocol into filter_state that
 // Istio's RBAC will read from.
-func (s *sandwichedTranslationPass) NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error) {
+func (s *sandwichedTranslationPass) NetworkFilters() ([]plugins.StagedNetworkFilter, error) {
 	if !s.isSandwiched {
 		return nil, nil
 	}

@@ -3,22 +3,20 @@ package krtcollections
 import (
 	"context"
 
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
-
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-
 	"github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
@@ -48,12 +46,12 @@ type EndpointsInputs struct {
 	Pods                    krt.Collection[LocalityPod]
 	EndpointsSettings       EndpointsSettings
 
-	KrtOpts krtinternal.KrtOptions
+	KrtOpts krtutil.KrtOptions
 }
 
 func NewGlooK8sEndpointInputs(
 	stngs settings.Settings,
-	krtopts krtinternal.KrtOptions,
+	krtopts krtutil.KrtOptions,
 	endpointSlices krt.Collection[*discoveryv1.EndpointSlice],
 	pods krt.Collection[LocalityPod],
 	k8sBackends krt.Collection[ir.BackendObjectIR],
@@ -116,7 +114,7 @@ func transformK8sEndpoints(inputs EndpointsInputs,
 
 		kubeSvcLogger.Debug("building endpoints")
 
-		kubeSvcPort, singlePortSvc := findPortForService(kubeBackend, uint32(backend.Port))
+		kubeSvcPort, singlePortSvc := findPortForService(kubeBackend, uint32(backend.Port)) //nolint:gosec // G115: backend.Port is validated to be valid port range
 		if kubeSvcPort == nil {
 			kubeSvcLogger.Debug("port not found for service", "port", backend.Port)
 			return nil
@@ -270,7 +268,7 @@ func addIstioAutomtlsMetadata(metadata *envoycorev3.Metadata, labels map[string]
 
 func findPortForService(svc *corev1.Service, svcPort uint32) (*corev1.ServicePort, bool) {
 	for _, port := range svc.Spec.Ports {
-		if svcPort == uint32(port.Port) {
+		if svcPort == uint32(port.Port) { //nolint:gosec // G115: Kubernetes service port is always valid port range
 			return &port, len(svc.Spec.Ports) == 1
 		}
 	}
@@ -292,7 +290,7 @@ func findPortInEndpointSlice(endpointSlice *discoveryv1.EndpointSlice, singlePor
 		// If the endpoint port is not named, it implies that
 		// the kube service only has a single unnamed port as well.
 		if singlePortService || (p.Name != nil && *p.Name == kubeServicePort.Name) {
-			return uint32(*p.Port)
+			return uint32(*p.Port) //nolint:gosec // G115: endpoint port is always valid port range
 		}
 	}
 

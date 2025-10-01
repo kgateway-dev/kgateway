@@ -159,11 +159,11 @@ func TestTracingConverter(t *testing.T) {
 							},
 						},
 					},
-					ClientSampling:   pointer.Uint32(45),
-					RandomSampling:   pointer.Uint32(55),
-					OverallSampling:  pointer.Uint32(65),
+					ClientSampling:   pointer.Int32(45),
+					RandomSampling:   pointer.Int32(55),
+					OverallSampling:  pointer.Int32(65),
 					Verbose:          pointer.Bool(true),
-					MaxPathTagLength: pointer.Uint32(127),
+					MaxPathTagLength: pointer.Int32(127),
 					Attributes: []v1alpha1.CustomAttribute{
 						{
 							Name: "Literal",

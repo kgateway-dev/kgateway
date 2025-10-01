@@ -5,30 +5,7 @@ metadata:
   name: test-waypoint
 spec:
   gatewayClassName: kgateway-waypoint
-  infrastructure:
-    parametersRef:
-      name: test-waypoint-params
-      group: gateway.kgateway.dev
-      kind: GatewayParameters
   listeners:
   - name: proxy
     port: 15088
-    protocol: istio.io/PROXY
----
-# to provide a waypoint gateway with a readiness probe
-kind: GatewayParameters
-apiVersion: gateway.kgateway.dev/v1alpha1
-metadata:
-  name: test-waypoint-params
-spec:
-  kube:
-    podTemplate:
-      readinessProbe:
-        httpGet:
-          path: /ready
-          port: 8082
-        initialDelaySeconds: 15
-        periodSeconds: 10
-        timeoutSeconds: 2
-        failureThreshold: 3
-        successThreshold: 1      
+    protocol: istio.io/PROXY  

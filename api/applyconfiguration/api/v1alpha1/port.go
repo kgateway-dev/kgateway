@@ -5,8 +5,8 @@ package v1alpha1
 // PortApplyConfiguration represents a declarative configuration of the Port type for use
 // with apply.
 type PortApplyConfiguration struct {
-	Port     *uint16 `json:"port,omitempty"`
-	NodePort *uint16 `json:"nodePort,omitempty"`
+	Port     *int32 `json:"port,omitempty"`
+	NodePort *int32 `json:"nodePort,omitempty"`
 }
 
 // PortApplyConfiguration constructs a declarative configuration of the Port type for use with
@@ -18,7 +18,7 @@ func Port() *PortApplyConfiguration {
 // WithPort sets the Port field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Port field is set to the value of the last call.
-func (b *PortApplyConfiguration) WithPort(value uint16) *PortApplyConfiguration {
+func (b *PortApplyConfiguration) WithPort(value int32) *PortApplyConfiguration {
 	b.Port = &value
 	return b
 }
@@ -26,7 +26,7 @@ func (b *PortApplyConfiguration) WithPort(value uint16) *PortApplyConfiguration 
 // WithNodePort sets the NodePort field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the NodePort field is set to the value of the last call.
-func (b *PortApplyConfiguration) WithNodePort(value uint16) *PortApplyConfiguration {
+func (b *PortApplyConfiguration) WithNodePort(value int32) *PortApplyConfiguration {
 	b.NodePort = &value
 	return b
 }

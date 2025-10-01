@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 
@@ -17,6 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	api "sigs.k8s.io/gateway-api/apis/v1"
 
+	intdeployer "github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 )
 
@@ -99,6 +101,10 @@ func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 	log.Info("reconciling gateway")
 	objs, err := r.deployer.GetObjsToDeploy(ctx, &gw)
 	if err != nil {
+		if errors.Is(err, intdeployer.ErrNoValidPorts) {
+			// status is reported from translator, so return normally
+			return ctrl.Result{}, err
+		}
 		// if we fail to either reference a valid GatewayParameters or
 		// the GatewayParameters configuration leads to issues building the
 		// objects, we want to set the status to InvalidParameters.
@@ -254,7 +260,6 @@ func updateGatewayStatusWithRetryFunc(
 		}
 		return cli.Status().Patch(ctx, &gw, client.MergeFrom(original))
 	})
-
 	if err != nil {
 		return fmt.Errorf("failed to update gateway status: %w", err)
 	}

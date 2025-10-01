@@ -12,7 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 
 	"github.com/agentgateway/agentgateway/go/api"
 	"istio.io/api/annotation"
@@ -364,7 +364,7 @@ func findBoundListener(gateway *gatewayv1.Gateway, binding *InboundBinding) (gat
 	var match func(l gatewayv1.Listener) bool
 	if binding.Port != 0 {
 		match = func(l gatewayv1.Listener) bool {
-			return l.Port == gatewayv1.PortNumber(binding.Port)
+			return l.Port == gatewayv1.PortNumber(binding.Port) //nolint:gosec // G115: binding.Port is uint32 representing a port number, safe to convert to PortNumber (int32)
 		}
 	} else if binding.Protocol == api.ApplicationTunnel_PROXY {
 		match = func(l gatewayv1.Listener) bool {

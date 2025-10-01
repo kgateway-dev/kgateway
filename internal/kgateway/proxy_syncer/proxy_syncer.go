@@ -20,17 +20,17 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	kmetrics "github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
-	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	plug "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	krtutil "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
@@ -48,7 +48,7 @@ type ProxySyncer struct {
 	agentgatewayClassName string
 
 	mgr        manager.Manager
-	commonCols *common.CommonCollections
+	commonCols *collections.CommonCollections
 	translator *translator.CombinedTranslator
 	plugins    plug.Plugin
 
@@ -138,7 +138,7 @@ func NewProxySyncer(
 	client kube.Client,
 	uniqueClients krt.Collection[ir.UniqlyConnectedClient],
 	mergedPlugins plug.Plugin,
-	commonCols *common.CommonCollections,
+	commonCols *collections.CommonCollections,
 	xdsCache envoycache.SnapshotCache,
 	agentgatewayClassName string,
 	validator validator.Validator,
@@ -202,12 +202,16 @@ func (r report) Equals(in report) bool {
 
 var logger = logging.New("proxy_syncer")
 
-func (s *ProxySyncer) Init(ctx context.Context, krtopts krtinternal.KrtOptions) {
+func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	// all backends with policies attached in a single collection
 	finalBackends := krt.JoinCollection(s.commonCols.BackendIndex.BackendsWithPolicy(),
 		// WithJoinUnchecked enables a more optimized lookup on the hotpath by assuming we do not have any overlapping ResourceName
 		// in the backend collection.
 		append(krtopts.ToOptions("FinalBackends"), krt.WithJoinUnchecked())...)
+	finalBackendsWithPolicyStatus := krt.JoinCollection(s.commonCols.BackendIndex.BackendsWithPolicyRequiringStatus(),
+		// WithJoinUnchecked enables a more optimized lookup on the hotpath by assuming we do not have any overlapping ResourceName
+		// in the backend collection.
+		append(krtopts.ToOptions("FinalBackendsWithPolicyStatus"), krt.WithJoinUnchecked())...)
 
 	s.translator.Init(ctx)
 
@@ -238,7 +242,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtinternal.KrtOptions) 
 	clustersPerClient := NewPerClientEnvoyClusters(
 		ctx,
 		krtopts,
-		s.translator.GetUpstreamTranslator(),
+		s.translator.GetBackendTranslator(),
 		finalBackends,
 		s.uniqueClients,
 	)
@@ -252,7 +256,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtinternal.KrtOptions) 
 	)
 
 	s.backendPolicyReport = krt.NewSingleton(func(kctx krt.HandlerContext) *report {
-		backends := krt.Fetch(kctx, finalBackends)
+		backends := krt.Fetch(kctx, finalBackendsWithPolicyStatus)
 		merged := GenerateBackendPolicyReport(backends)
 		return &report{merged}
 	}, krtopts.ToOptions("BackendsPolicyReport")...)

@@ -11,8 +11,8 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
-	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
+	krtutil "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
 type clustersWithErrors struct {
@@ -49,7 +49,7 @@ func (c endpointsWithUccName) Equals(k endpointsWithUccName) bool {
 }
 
 func snapshotPerClient(
-	krtopts krtinternal.KrtOptions,
+	krtopts krtutil.KrtOptions,
 	uccCol krt.Collection[ir.UniqlyConnectedClient],
 	mostXdsSnapshots krt.Collection[GatewayXdsResources],
 	endpoints PerClientEnvoyEndpoints,
@@ -57,30 +57,30 @@ func snapshotPerClient(
 ) krt.Collection[XdsSnapWrapper] {
 	clusterSnapshot := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient) *clustersWithErrors {
 		clustersForUcc := clusters.FetchClustersForClient(kctx, ucc)
-
-		logger.Debug("found perclient clusters", "client", ucc.ResourceName(), "clusters", len(clustersForUcc))
-
 		if len(clustersForUcc) == 0 {
 			logger.Info("no perclient clusters; defer building snapshot", "client", ucc.ResourceName())
 			return nil
 		}
+		logger.Debug("found perclient clusters", "client", ucc.ResourceName(), "clusters", len(clustersForUcc))
 
 		clustersProto := make([]envoycachetypes.ResourceWithTTL, 0, len(clustersForUcc))
-		var clustersHash uint64
-		var erroredClustersHash uint64
-		var erroredClusters []string
+		var (
+			clustersHash        uint64
+			erroredClustersHash uint64
+			erroredClusters     []string
+		)
 		for _, c := range clustersForUcc {
-			if c.Error == nil {
-				clustersProto = append(clustersProto, envoycachetypes.ResourceWithTTL{Resource: c.Cluster})
-				clustersHash ^= c.ClusterVersion
-			} else {
+			if c.Error != nil {
 				erroredClusters = append(erroredClusters, c.Name)
 				// For errored clusters, we don't want to include the cluster version
 				// in the hash. The cluster version is the hash of the proto. because this cluster
 				// won't be sent to envoy anyway, there's no point trigger updates if it changes from
 				// one error state to a different error state.
 				erroredClustersHash ^= utils.HashString(c.Name)
+				continue
 			}
+			clustersProto = append(clustersProto, envoycachetypes.ResourceWithTTL{Resource: c.Cluster})
+			clustersHash ^= c.ClusterVersion
 		}
 		clustersVersion := fmt.Sprintf("%d", clustersHash)
 

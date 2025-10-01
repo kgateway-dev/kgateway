@@ -208,6 +208,40 @@ func TestTranslateTLSConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "TLS config with only minVersion parameter",
+			tlsConfig: &v1alpha1.TLS{
+				Parameters: &v1alpha1.TLSParameters{
+					MinVersion: ptr.To(v1alpha1.TLSVersion1_2),
+				},
+			},
+			wantErr: false,
+			expected: &envoytlsv3.UpstreamTlsContext{
+				CommonTlsContext: &envoytlsv3.CommonTlsContext{
+					TlsParams: &envoytlsv3.TlsParameters{
+						TlsMinimumProtocolVersion: envoytlsv3.TlsParameters_TLSv1_2,
+						TlsMaximumProtocolVersion: envoytlsv3.TlsParameters_TLS_AUTO,
+					},
+				},
+			},
+		},
+		{
+			name: "TLS config with only maxVersion parameter",
+			tlsConfig: &v1alpha1.TLS{
+				Parameters: &v1alpha1.TLSParameters{
+					MaxVersion: ptr.To(v1alpha1.TLSVersion1_3),
+				},
+			},
+			wantErr: false,
+			expected: &envoytlsv3.UpstreamTlsContext{
+				CommonTlsContext: &envoytlsv3.CommonTlsContext{
+					TlsParams: &envoytlsv3.TlsParameters{
+						TlsMinimumProtocolVersion: envoytlsv3.TlsParameters_TLS_AUTO,
+						TlsMaximumProtocolVersion: envoytlsv3.TlsParameters_TLSv1_3,
+					},
+				},
+			},
+		},
+		{
 			name: "invalid TLS config - missing secret",
 			tlsConfig: &v1alpha1.TLS{
 				SecretRef: &corev1.LocalObjectReference{

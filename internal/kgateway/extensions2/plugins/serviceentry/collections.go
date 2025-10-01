@@ -17,9 +17,9 @@ import (
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/maps"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 
 	corev1 "k8s.io/api/core/v1"
@@ -89,7 +89,7 @@ func (sw selectedWorkload) mapPort(name string, defalutValue int32) int32 {
 		return defalutValue
 	}
 	if override := sw.portMapping[name]; override > 0 {
-		return int32(override)
+		return int32(override) //nolint:gosec // G115: port numbers are always in valid range (1-65535)
 	}
 	return defalutValue
 }
@@ -119,7 +119,7 @@ type serviceEntryPlugin struct {
 }
 
 func initServiceEntryCollections(
-	commonCols *common.CommonCollections,
+	commonCols *collections.CommonCollections,
 	opts Options,
 ) serviceEntryPlugin {
 	// setup input collections

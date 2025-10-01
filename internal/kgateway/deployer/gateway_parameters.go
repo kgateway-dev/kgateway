@@ -9,6 +9,8 @@ import (
 
 	"helm.sh/helm/v3/pkg/chart"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	api "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -17,6 +19,9 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 )
+
+// ErrNoValidPorts is returned when no valid ports are found for the Gateway
+var ErrNoValidPorts = errors.New("no valid ports")
 
 func NewGatewayParameters(cli client.Client, inputs *deployer.Inputs) *GatewayParameters {
 	return &GatewayParameters{
@@ -265,7 +270,9 @@ func (k *kGatewayParameters) getDefaultGatewayParameters(ctx context.Context, gw
 
 // Gets the GatewayParameters object associated with a given GatewayClass.
 func (k *kGatewayParameters) getGatewayParametersForGatewayClass(ctx context.Context, gwc *api.GatewayClass) (*v1alpha1.GatewayParameters, error) {
-	defaultGwp := deployer.GetInMemoryGatewayParameters(gwc.GetName(), k.inputs.ImageInfo, k.inputs.GatewayClassName, k.inputs.WaypointGatewayClassName, k.inputs.AgentgatewayClassName)
+	// Our defaults depend on OmitDefaultSecurityContext, but these are the defaults
+	// when not OmitDefaultSecurityContext:
+	defaultGwp := deployer.GetInMemoryGatewayParameters(gwc.GetName(), k.inputs.ImageInfo, k.inputs.GatewayClassName, k.inputs.WaypointGatewayClassName, k.inputs.AgentgatewayClassName, false)
 
 	paramRef := gwc.Spec.ParametersRef
 	if paramRef == nil {
@@ -303,6 +310,9 @@ func (k *kGatewayParameters) getGatewayParametersForGatewayClass(ctx context.Con
 	// primarily done to ensure that the image registry and tag are
 	// correctly set when they aren't overridden by the GatewayParameters.
 	mergedGwp := defaultGwp
+	if ptr.Deref(gwp.Spec.Kube.GetOmitDefaultSecurityContext(), false) {
+		mergedGwp = deployer.GetInMemoryGatewayParameters(gwc.GetName(), k.inputs.ImageInfo, k.inputs.GatewayClassName, k.inputs.WaypointGatewayClassName, k.inputs.AgentgatewayClassName, true)
+	}
 	deployer.DeepMergeGatewayParameters(mergedGwp, gwp)
 	return mergedGwp, nil
 }
@@ -310,13 +320,18 @@ func (k *kGatewayParameters) getGatewayParametersForGatewayClass(ctx context.Con
 func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameters) (*deployer.HelmConfig, error) {
 	irGW := deployer.GetGatewayIR(gw, k.inputs.CommonCollections)
 
+	ports := deployer.GetPortsValues(irGW, gwParam)
+	if len(ports) == 0 {
+		return nil, ErrNoValidPorts
+	}
+
 	// construct the default values
 	vals := &deployer.HelmConfig{
 		Gateway: &deployer.HelmGateway{
 			Name:             &gw.Name,
 			GatewayName:      &gw.Name,
 			GatewayNamespace: &gw.Namespace,
-			Ports:            deployer.GetPortsValues(irGW, gwParam),
+			Ports:            ports,
 			Xds: &deployer.HelmXds{
 				// The xds host/port MUST map to the Service definition for the Control Plane
 				// This is the socket address that the Proxy will connect to on startup, to receive xds updates
@@ -359,6 +374,9 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 	statsConfig := kubeProxyConfig.GetStats()
 	istioContainerConfig := istioConfig.GetIstioProxyContainer()
 	aiExtensionConfig := kubeProxyConfig.GetAiExtension()
+	if aiExtensionConfig != nil && aiExtensionConfig.GetEnabled() != nil && *aiExtensionConfig.GetEnabled() {
+		slog.Warn("gatewayparameters spec.kube.aiExtension is deprecated in v2.1 and will be removed in v2.2. Use spec.kube.agentgateway instead.")
+	}
 	agwConfig := kubeProxyConfig.GetAgentgateway()
 
 	gateway := vals.Gateway
@@ -368,7 +386,9 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 		gateway.ReplicaCount = nil
 	} else {
 		// Use the specified replica count
-		gateway.ReplicaCount = deployConfig.GetReplicas()
+		if deployConfig.GetReplicas() != nil {
+			gateway.ReplicaCount = pointer.Uint32(uint32(*deployConfig.GetReplicas())) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+		}
 	}
 	gateway.Strategy = deployConfig.GetStrategy()
 
@@ -377,6 +397,7 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 	// serviceaccount values
 	gateway.ServiceAccount = deployer.GetServiceAccountValues(svcAccountConfig)
 	// pod template values
+	gateway.OmitDefaultSecurityContext = gwParam.Spec.Kube.GetOmitDefaultSecurityContext()
 	gateway.ExtraPodAnnotations = podConfig.GetExtraAnnotations()
 	gateway.ExtraPodLabels = podConfig.GetExtraLabels()
 	gateway.ImagePullSecrets = podConfig.GetImagePullSecrets()
@@ -384,6 +405,7 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 	gateway.NodeSelector = podConfig.GetNodeSelector()
 	gateway.Affinity = podConfig.GetAffinity()
 	gateway.Tolerations = podConfig.GetTolerations()
+	gateway.StartupProbe = podConfig.GetStartupProbe()
 	gateway.ReadinessProbe = podConfig.GetReadinessProbe()
 	gateway.LivenessProbe = podConfig.GetLivenessProbe()
 	gateway.GracefulShutdown = podConfig.GetGracefulShutdown()

@@ -2,7 +2,7 @@ Backends:
 - ai:
     providerGroups:
     - providers:
-      - name: openai_0
+      - name: backend
         openai:
           model: gpt-4o-mini
   name: default/openai
@@ -16,14 +16,14 @@ Listeners:
   name: http
   protocol: HTTP
 Policies:
-- name: auth-default/openai-openai_0
+- name: auth-default/openai-backend
   spec:
     auth:
       key:
         secret: mysecretkey
   target:
-    subBackend: default/openai/openai_0
-- name: trafficpolicy/default/ai-policy/openai-test:ai
+    subBackend: default/openai/backend
+- name: trafficpolicy/default/ai-policy/openai-test:ai:default/openai-test
   spec:
     ai:
       promptGuard:

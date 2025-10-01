@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+import math
 from typing import Union
 
 from .utils import read_mounted_config_map
@@ -69,18 +70,26 @@ class Config(BaseModel):
         if v is None:
             return v
         if isinstance(v, str):
-            # Parse timeout strings like "100s", "5m", "1h"
-            match = re.match(r"^(\d+)([smh]?)$", v)
-            if match:
-                value, unit = match.groups()
-                value = int(value)
-                if unit == "s" or unit == "":
-                    return value
-                elif unit == "m":
-                    return value * 60
-                elif unit == "h":
-                    return value * 3600
-            raise ValueError(f"Invalid timeout format: {v}")
+            if re.fullmatch(r"\d+|(\d+(ms|h|m|s))+", v) is None:
+                raise ValueError(f"Invalid timeout format: {v}")
+
+            unit_to_seconds = {
+                "": 1,
+                "ms": 0.001,
+                "s": 1,
+                "m": 60,
+                "h": 60 * 60,
+            }
+
+            # Parse timeout strings like "100s", "5m", "1h", "1s1ms" "1h30m"
+            pairs = re.findall(r"(\d+)(ms|h|m|s)?", v)
+            duration = sum(int(val) * unit_to_seconds[unit] for val, unit in pairs)
+
+            # timeout should be in milliseconds as per spec, but opentelemetry-python is not aligned with spec.
+            # return timeout in seconds here
+            #
+            # ref: https://github.com/open-telemetry/opentelemetry-python/issues/4044
+            return math.ceil(duration)
         return int(v)
 
     def tracer(self) -> Tracer:

@@ -17,8 +17,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
 type ConnectedClient struct {
@@ -56,7 +56,7 @@ type callbacks struct {
 }
 
 // If augmentedPods is nil, we won't use the pod locality info, and all pods for the same gateway will receive the same config.
-type UniquelyConnectedClientsBulider func(ctx context.Context, krtOpts krtinternal.KrtOptions, augmentedPods krt.Collection[LocalityPod]) krt.Collection[ir.UniqlyConnectedClient]
+type UniquelyConnectedClientsBulider func(ctx context.Context, krtOpts krtutil.KrtOptions, augmentedPods krt.Collection[LocalityPod]) krt.Collection[ir.UniqlyConnectedClient]
 
 // THIS IS THE SET OF THINGS WE RUN TRANSLATION FOR
 // add returned callbacks to the xds server.
@@ -73,7 +73,7 @@ func NewUniquelyConnectedClients(extraXDSCallbacks xdsserver.Callbacks) (xdsserv
 }
 
 func buildCollection(callbacks *callbacks) UniquelyConnectedClientsBulider {
-	return func(ctx context.Context, krtOpts krtinternal.KrtOptions, augmentedPods krt.Collection[LocalityPod]) krt.Collection[ir.UniqlyConnectedClient] {
+	return func(ctx context.Context, krtOpts krtutil.KrtOptions, augmentedPods krt.Collection[LocalityPod]) krt.Collection[ir.UniqlyConnectedClient] {
 		trigger := krt.NewRecomputeTrigger(true)
 		col := &callbacksCollection{
 			logger:           logger,
@@ -193,7 +193,7 @@ func (x *callbacks) OnStreamRequest(sid int64, r *envoy_service_discovery_v3.Dis
 	}
 
 	role := roleFromRequest(r)
-	// as gloo-edge and kgateway share a control plane, check that this collection only handles kgateway clients
+	// check that this collection only handles kgateway clients
 	// TODO remove this check if it's no longer needed
 	if !xds.IsKubeGatewayCacheKey(role) {
 		return nil
@@ -253,7 +253,7 @@ func (x *callbacks) OnFetchRequest(ctx context.Context, r *envoy_service_discove
 	}
 
 	role := r.GetNode().GetMetadata().GetFields()[xds.RoleKey].GetStringValue()
-	// as gloo-edge and kgateway share a control plane, check that this collection only handles kgateway clients
+	// check that this collection only handles kgateway clients
 	// TODO remove this check if it's no longer needed
 	if !xds.IsKubeGatewayCacheKey(role) {
 		return nil

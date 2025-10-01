@@ -8,6 +8,10 @@ import (
 	"github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/waypoint"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	translatortest "github.com/kgateway-dev/kgateway/v2/test/translator"
 )
@@ -51,13 +55,18 @@ func TestWaypointTranslator(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			dir := fsutils.MustGetThisDir()
-			translatortest.TestTranslation(
+
+			extraPluginsFn := func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []pluginsdk.Plugin {
+				return []pluginsdk.Plugin{waypoint.NewPlugin(ctx, commoncol, wellknown.DefaultWaypointClassName)}
+			}
+			translatortest.TestTranslationWithExtraPlugins(
 				t,
 				ctx,
 				[]string{filepath.Join(dir, "testdata/input", tt.file+".yaml")},
 				filepath.Join(dir, "testdata/output", tt.file+".yaml"),
 				tt.gw,
-				nil,
+				extraPluginsFn,
+				nil, nil, "",
 			)
 		})
 	}

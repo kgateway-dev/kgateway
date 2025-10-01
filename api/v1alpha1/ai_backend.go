@@ -14,6 +14,8 @@ type AIBackend struct {
 
 	// PriorityGroups specifies a list of groups in priority order where each group defines
 	// a set of LLM providers. The priority determines the priority of the backend endpoints chosen.
+	// Note: provider names must be unique across all providers in all priority groups. Backend policies
+	// may target a specific provider by name using targetRefs[].sectionName.
 	//
 	// Example configuration with two priority groups:
 	// ```yaml
@@ -40,6 +42,7 @@ type AIBackend struct {
 	// +optional
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=32
+	// TODO: enable this rule when we don't need to support older k8s versions where this rule breaks // +kubebuilder:validation:XValidation:message="provider names must be unique across groups",rule="self.map(pg, pg.providers.map(pp, pp.name)).map(p, self.map(pg, pg.providers.map(pp, pp.name)).filter(cp, cp != p).exists(cp, p.exists(pn, pn in cp))).exists(p, !p)"
 	PriorityGroups []PriorityGroup `json:"priorityGroups,omitempty"`
 }
 
@@ -95,6 +98,14 @@ type LLMProvider struct {
 	// For example, OpenAI uses header: "Authorization" and prefix: "Bearer" But Azure OpenAI uses header: "api-key"
 	// and no Bearer.
 	AuthHeader *AuthHeader `json:"authHeader,omitempty"`
+}
+
+// NamedLLMProvider wraps an LLMProvider with a name.
+type NamedLLMProvider struct {
+	// Name of the provider. Policies can target this provider by name.
+	Name gwv1.SectionName `json:"name"`
+
+	LLMProvider `json:",inline"`
 }
 
 // PathOverride allows overriding the default URL path used for LLM provider API requests.
@@ -330,5 +341,6 @@ type PriorityGroup struct {
 	// A list of LLM provider backends within a single endpoint pool entry.
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=32
-	Providers []LLMProvider `json:"providers,omitempty"`
+	// +kubebuilder:validation:XValidation:message="provider names must be unique within a group",rule="self.all(p1, self.exists_one(p2, p1.name == p2.name))"
+	Providers []NamedLLMProvider `json:"providers,omitempty"`
 }

@@ -17,10 +17,10 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	kgatewayAdminCli "github.com/kgateway-dev/kgateway/v2/pkg/utils/controllerutils/admincli"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envoyutils/admincli"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/portforward"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
+	"github.com/kgateway-dev/kgateway/v2/test/envoyutils/admincli"
 )
 
 // StandardKgatewayDumpOnFail creates a dump of the kubernetes state and certain envoy data from
@@ -107,17 +107,15 @@ func recordProcessState(f *os.File) {
 
 func recordKubeState(ctx context.Context, kubectlCli *kubectl.Cli, f *os.File) {
 	defer f.Close()
-	kubeState, err := kubectlCli.RunCommandWithOutput(ctx, "get", "all", "-A", "-o", "wide")
+	err := kubectlCli.RunCommandToWriters(ctx, f, f, "get", "all", "-A", "-o", "wide")
 	if err != nil {
-		f.WriteString(fmt.Sprintf("*** Unable to get kube state ***\nStdout: %s\nReason: %v", err, kubeState))
-		return
+		f.WriteString(fmt.Sprintf("*** Unable to get kube state ***\nReason: %v", err))
 	}
 
 	resourcesToGet := []string{
 		// Kubernetes resources
 		"secrets",
 		// Kube GW API resources
-		"backendlbpolicies.gateway.networking.k8s.io",
 		"backendtlspolicies.gateway.networking.k8s.io",
 		"gatewayclasses.gateway.networking.k8s.io",
 		"gateways.gateway.networking.k8s.io",
@@ -129,6 +127,7 @@ func recordKubeState(ctx context.Context, kubectlCli *kubectl.Cli, f *os.File) {
 		"udproutes.gateway.networking.k8s.io",
 		// kgateway resources
 		"backends.gateway.kgateway.dev",
+		"backendconfigpolicies.gateway.kgateway.dev",
 		"directresponses.gateway.kgateway.dev",
 		"gatewayextensions.gateway.kgateway.dev",
 		"gatewayparameters.gateway.kgateway.dev",
@@ -136,34 +135,26 @@ func recordKubeState(ctx context.Context, kubectlCli *kubectl.Cli, f *os.File) {
 		"trafficpolicies.gateway.kgateway.dev",
 	}
 
-	kubeResources, err := kubectlCli.RunCommandWithOutput(ctx, "get", strings.Join(resourcesToGet, ","), "-A", "-owide")
+	f.WriteString("*** Kube resources ***\n")
+	err = kubectlCli.RunCommandToWriters(ctx, f, f, "get", strings.Join(resourcesToGet, ","), "-A", "-owide")
 	if err != nil {
 		f.WriteString("*** Unable to get kube resources ***. Reason: " + err.Error() + " \n")
-		return
 	}
 
 	// Describe everything to identify the reason for issues such as Pods, LoadBalancers stuck in pending state
 	// (insufficient resources, unable to acquire an IP), etc.
 	// Ie: More context around the output of the previous command `kubectl get all -A`
-	kubeDescribe, err := kubectlCli.RunCommandWithOutput(ctx, "describe", "all", "-A")
+	f.WriteString("*** Kube describe ***\n")
+	err = kubectlCli.RunCommandToWriters(ctx, f, f, "describe", "all", "-A")
 	if err != nil {
 		f.WriteString("*** Unable to get kube describe ***. Reason: " + err.Error() + " \n")
-		return
 	}
 
-	kubeEndpointsState, err := kubectlCli.RunCommandWithOutput(ctx, "get", "endpoints", "-A")
+	f.WriteString("*** Kube endpoints ***\n")
+	err = kubectlCli.RunCommandToWriters(ctx, f, f, "get", "endpoints", "-A")
 	if err != nil {
 		f.WriteString("*** Unable to get endpoint state ***. Reason: " + err.Error() + " \n")
-		return
 	}
-
-	f.WriteString("*** Kube state ***\n")
-	f.WriteString(string(kubeState) + "\n")
-	f.WriteString(string(kubeResources) + "\n")
-	f.WriteString(string(kubeDescribe) + "\n")
-	f.WriteString(string(kubeEndpointsState) + "\n")
-
-	f.WriteString("*** End Kube state ***\n")
 }
 
 func recordKubeDump(outDir string, namespaces ...string) {
@@ -230,7 +221,7 @@ func recordCRs(namespaceDir string, namespace string) error {
 	// record all unique CRs floating about
 	for _, crd := range crds {
 		// consider all installed CRDs that are kgateway-managed
-		if !strings.Contains(crd, "kgateway.dev") {
+		if !strings.Contains(crd, "kgateway.dev") && !strings.Contains(crd, "networking.k8s.io") {
 			continue
 		}
 
@@ -263,7 +254,9 @@ func recordCRs(namespaceDir string, namespace string) error {
 				errF.Close()
 			}
 
-			return err
+			if err != nil {
+				fmt.Printf("error getting cr: %s\n", err)
+			}
 		}
 	}
 

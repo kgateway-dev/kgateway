@@ -60,7 +60,8 @@ type Deployer struct {
 // NewDeployer creates a new gateway/inference pool/etc
 // TODO [danehans]: Reloading the chart for every reconciliation is inefficient.
 // See https://github.com/kgateway-dev/kgateway/issues/10672 for details.
-func NewDeployer(controllerName, agwControllerName, agwGatewayClassName string,
+func NewDeployer(
+	controllerName, agwControllerName, agwGatewayClassName string,
 	cli client.Client,
 	chart *chart.Chart,
 	hvg HelmValuesGenerator,
@@ -85,7 +86,7 @@ func JsonConvert(in *HelmConfig, out interface{}) error {
 }
 
 func (d *Deployer) RenderChartToObjects(ns, name string, vals map[string]any) ([]client.Object, error) {
-	objs, err := d.Render(name, ns, vals)
+	objs, err := d.RenderToObjects(ns, name, vals)
 	if err != nil {
 		return nil, err
 	}
@@ -97,10 +98,23 @@ func (d *Deployer) RenderChartToObjects(ns, name string, vals map[string]any) ([
 	return objs, nil
 }
 
-// Render relies on a `helm install` to render the Chart with the injected values
+// RenderToObjects relies on a `helm install` to render the Chart with the injected values
 // It returns the list of Objects that are rendered, and an optional error if rendering failed,
 // or converting the rendered manifests to objects failed.
-func (d *Deployer) Render(name, ns string, vals map[string]any) ([]client.Object, error) {
+func (d *Deployer) RenderToObjects(ns, name string, vals map[string]any) ([]client.Object, error) {
+	manifest, err := d.RenderManifest(ns, name, vals)
+	if err != nil {
+		return nil, err
+	}
+
+	objs, err := ConvertYAMLToObjects(d.cli.Scheme(), manifest)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert helm manifest yaml to objects for %s.%s: %w", ns, name, err)
+	}
+	return objs, nil
+}
+
+func (d *Deployer) RenderManifest(ns, name string, vals map[string]any) ([]byte, error) {
 	mem := driver.NewMemory()
 	mem.SetNamespace(ns)
 	cfg := &action.Configuration{
@@ -120,12 +134,7 @@ func (d *Deployer) Render(name, ns string, vals map[string]any) ([]client.Object
 	if err != nil {
 		return nil, fmt.Errorf("failed to render helm chart for %s.%s: %w", ns, name, err)
 	}
-
-	objs, err := ConvertYAMLToObjects(d.cli.Scheme(), []byte(release.Manifest))
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert helm manifest yaml to objects for %s.%s: %w", ns, name, err)
-	}
-	return objs, nil
+	return []byte(release.Manifest), nil
 }
 
 // GetObjsToDeploy does the following:
@@ -157,7 +166,7 @@ func (d *Deployer) GetObjsToDeploy(ctx context.Context, obj client.Object) ([]cl
 	)
 
 	rname, rns := d.helmReleaseNameAndNamespaceGenerator(obj)
-	objs, err := d.Render(rname, rns, vals)
+	objs, err := d.RenderToObjects(rns, rname, vals)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get objects to deploy %s.%s: %w", obj.GetNamespace(), obj.GetName(), err)
 	}

@@ -1,14 +1,21 @@
 package plugins
 
 import (
+	"context"
+
 	"github.com/agentgateway/agentgateway/go/api"
 	"istio.io/istio/pilot/pkg/util/protoconv"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 )
+
+// AgwPolicyStatusSyncHandler defines a function that handles status syncing for a specific policy type in AgentGateway
+type AgwPolicyStatusSyncHandler func(ctx context.Context, client client.Client, namespacedName types.NamespacedName, status v1alpha2.PolicyStatus) error
 
 type PolicyPlugin struct {
 	Policies       krt.Collection[AgwPolicy]
@@ -31,27 +38,7 @@ func (p AgwPolicy) Equals(in AgwPolicy) bool {
 }
 
 func (p AgwPolicy) ResourceName() string {
-	return p.Policy.Name + attachmentName(p.Policy.Target)
-}
-
-func attachmentName(target *api.PolicyTarget) string {
-	if target == nil {
-		return ""
-	}
-	switch v := target.Kind.(type) {
-	case *api.PolicyTarget_Gateway:
-		return ":" + v.Gateway
-	case *api.PolicyTarget_Listener:
-		return ":" + v.Listener
-	case *api.PolicyTarget_Route:
-		return ":" + v.Route
-	case *api.PolicyTarget_RouteRule:
-		return ":" + v.RouteRule
-	case *api.PolicyTarget_Backend:
-		return ":" + v.Backend
-	default:
-		return ""
-	}
+	return p.Policy.Name
 }
 
 type AddResourcesPlugin struct {

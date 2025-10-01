@@ -14,18 +14,18 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/api/settings"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
 const BackendClusterPrefix = "kube"
 
-func NewPlugin(ctx context.Context, commonCol *common.CommonCollections) sdk.Plugin {
+func NewPlugin(ctx context.Context, commonCol *collections.CommonCollections) sdk.Plugin {
 	epSliceClient := kclient.NewFiltered[*discoveryv1.EndpointSlice](
 		commonCol.Client,
 		kclient.Filter{ObjectFilter: commonCol.Client.ObjectFilter()},
@@ -36,7 +36,7 @@ func NewPlugin(ctx context.Context, commonCol *common.CommonCollections) sdk.Plu
 
 func NewPluginFromCollections(
 	ctx context.Context,
-	krtOpts krtinternal.KrtOptions,
+	krtOpts krtutil.KrtOptions,
 	pods krt.Collection[krtcollections.LocalityPod],
 	services krt.Collection[*corev1.Service],
 	endpointSlices krt.Collection[*discoveryv1.EndpointSlice],

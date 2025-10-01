@@ -138,7 +138,7 @@ func (n *filterChainTranslator) computeCustomFilters(
 	var networkFilters []plugins.StagedNetworkFilter
 	// Process the network filters.
 	for _, plug := range n.pluginPass {
-		stagedFilters, err := plug.NetworkFilters(ctx)
+		stagedFilters, err := plug.NetworkFilters()
 		if err != nil {
 			listenerReporter.SetCondition(sdkreporter.ListenerCondition{
 				Type:    gwv1.ListenerConditionProgrammed,
@@ -221,7 +221,7 @@ func (h *hcmNetworkFilterTranslator) computeNetworkFilters(ctx context.Context, 
 				Policy:  pol.PolicyIr,
 				Gateway: h.gateway,
 			}
-			if err := pass.ApplyHCM(ctx, pctx, httpConnectionManager); err != nil {
+			if err := pass.ApplyHCM(pctx, httpConnectionManager); err != nil {
 				h.listenerReporter.SetCondition(sdkreporter.ListenerCondition{
 					Type:    gwv1.ListenerConditionProgrammed,
 					Reason:  gwv1.ListenerReasonInvalid,
@@ -276,7 +276,7 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(ctx context.Context, l i
 
 	// run the HttpFilter Plugins
 	for _, plug := range h.pluginPass {
-		stagedFilters, err := plug.HttpFilters(ctx, l.FilterChainCommon)
+		stagedFilters, err := plug.HttpFilters(l.FilterChainCommon)
 		if err != nil {
 			// what to do with errors here? ignore the listener??
 			h.listenerReporter.SetCondition(sdkreporter.ListenerCondition{

@@ -54,7 +54,7 @@ func (c *cliPortForwarder) startOnce(ctx context.Context) error {
 	}
 
 	cmdCtx, cmdCancel := context.WithCancel(ctx)
-	c.cmd = exec.CommandContext(
+	c.cmd = exec.CommandContext( //nolint:gosec // G204: kubectl port-forward with controlled parameters from port forwarder config
 		cmdCtx,
 		"kubectl",
 		"port-forward",
@@ -124,7 +124,7 @@ func (c *cliPortForwarder) WaitForStop() {
 }
 
 func getFreePort() (int, error) {
-	l, err := net.Listen("tcp", ":0")
+	l, err := net.Listen("tcp", ":0") //nolint:gosec // G102: Binding to all interfaces is intentional for finding free port
 	if err != nil {
 		return 0, err
 	}

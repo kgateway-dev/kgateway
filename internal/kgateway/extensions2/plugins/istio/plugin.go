@@ -17,11 +17,11 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	ourwellknown "github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 )
 
 var VirtualIstioGK = schema.GroupKind{
@@ -53,7 +53,7 @@ func (i IstioSettings) Equals(in any) bool {
 
 var _ ir.PolicyIR = &IstioSettings{}
 
-func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) sdk.Plugin {
+func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
 	p := istioPlugin{}
 
 	// TODO: if plumb settings from gw class; then they should be in the new translation pass

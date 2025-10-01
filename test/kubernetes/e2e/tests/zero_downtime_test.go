@@ -1,12 +1,9 @@
-//go:build ignore
-
 package tests_test
 
 import (
 	"context"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
@@ -23,19 +20,17 @@ func TestZeroDowntimeRollout(t *testing.T) {
 		&install.Context{
 			InstallNamespace:          installNs,
 			ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
-			ValuesManifestFile:        e2e.ManifestPath("zero-downtime-rollout.yaml"),
+			ValuesManifestFile:        e2e.ManifestPath("agent-gateway-integration.yaml"),
 		},
 	)
 
-	testHelper := e2e.MustTestHelper(ctx, testInstallation)
-
-	// Set the env to the install namespace if it is not already set
+	// Set the env to the install namespace if it is not already set.
 	if !nsEnvPredefined {
 		os.Setenv(testutils.InstallNamespace, installNs)
 	}
 
 	// We register the cleanup function _before_ we actually perform the installation.
-	// This allows us to uninstall Gloo Gateway, in case the original installation only completed partially
+	// This allows us to uninstall, in case the original installation only completed partially.
 	t.Cleanup(func() {
 		if !nsEnvPredefined {
 			os.Unsetenv(testutils.InstallNamespace)
@@ -44,11 +39,10 @@ func TestZeroDowntimeRollout(t *testing.T) {
 			testInstallation.PreFailHandler(ctx)
 		}
 
-		testInstallation.UninstallGlooGatewayWithTestHelper(ctx, testHelper)
+		testInstallation.UninstallKgateway(ctx)
 	})
 
-	// Install Gloo Gateway with correct validation settings
-	testInstallation.InstallGlooGatewayWithTestHelper(ctx, testHelper, 5*time.Minute)
+	testInstallation.InstallKgatewayFromLocalChart(ctx)
 
 	ZeroDowntimeRolloutSuiteRunner().Run(ctx, t, testInstallation)
 }

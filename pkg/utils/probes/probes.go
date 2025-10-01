@@ -50,8 +50,11 @@ func StartServer(ctx context.Context, params ServerParams) {
 			w.Write([]byte(params.ResponseBody))
 		})
 		server = &http.Server{
-			Addr:    fmt.Sprintf(":%d", params.Port),
-			Handler: mux,
+			Addr:              fmt.Sprintf(":%d", params.Port),
+			Handler:           mux,
+			ReadHeaderTimeout: time.Second * 10,
+			ReadTimeout:       time.Second * 15,
+			WriteTimeout:      time.Second * 15,
 		}
 		slog.Info("probe server starting", "addr", server.Addr, "path", params.Path)
 		err := server.ListenAndServe()

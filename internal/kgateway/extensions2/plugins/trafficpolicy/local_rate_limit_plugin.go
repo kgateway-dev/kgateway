@@ -74,9 +74,9 @@ func toLocalRateLimitFilterConfig(t *v1alpha1.LocalRateLimitPolicy) (*localratel
 	tokenBucket := &typev3.TokenBucket{}
 	if t.TokenBucket != nil {
 		tokenBucket.FillInterval = durationpb.New(t.TokenBucket.FillInterval.Duration)
-		tokenBucket.MaxTokens = t.TokenBucket.MaxTokens
+		tokenBucket.MaxTokens = uint32(t.TokenBucket.MaxTokens) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 		if t.TokenBucket.TokensPerFill != nil {
-			tokenBucket.TokensPerFill = wrapperspb.UInt32(*t.TokenBucket.TokensPerFill)
+			tokenBucket.TokensPerFill = wrapperspb.UInt32(uint32(*t.TokenBucket.TokensPerFill)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 		}
 	}
 

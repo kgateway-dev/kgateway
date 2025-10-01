@@ -231,6 +231,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.MetadataPathSegmentApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Moderation"):
 		return &apiv1alpha1.ModerationApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("NamedLLMProvider"):
+		return &apiv1alpha1.NamedLLMProviderApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("NamespacedObjectReference"):
 		return &apiv1alpha1.NamespacedObjectReferenceApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("OpenAIConfig"):

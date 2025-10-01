@@ -226,8 +226,8 @@ func buildAIIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, secrets krt.Coll
 			Providers: []*api.AIBackend_Provider{},
 		}
 
-		// in a single provider case, the index is always 0
-		providerName := fmt.Sprintf("%s_%d", be.Name, 0)
+		// in a single provider case, use the fixed sub-backend name
+		providerName := utils.SingularLLMProviderSubBackendName
 		provider, authPolicy, err := translateLLMProviderToProvider(krtctx, be.Spec.AI.LLM, providerName, secrets, be.Namespace)
 		if err != nil {
 			return nil, fmt.Errorf("failed to translate LLM provider: %w", err)
@@ -244,10 +244,10 @@ func buildAIIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, secrets krt.Coll
 			providerGroup := &api.AIBackend_ProviderGroup{}
 
 			// Add all providers in this priority level to the same group
-			for _, llmProvider := range group.Providers {
-				providerName := fmt.Sprintf("%s_%d", be.Name, providerIndex)
+			for _, provider := range group.Providers {
+				providerName := string(provider.Name)
 
-				provider, authPolicy, err := translateLLMProviderToProvider(krtctx, &llmProvider, providerName, secrets, be.Namespace)
+				provider, authPolicy, err := translateLLMProviderToProvider(krtctx, &provider.LLMProvider, providerName, secrets, be.Namespace)
 				if err != nil {
 					return nil, fmt.Errorf("failed to translate provider in provider %s: %w", providerName, err)
 				}
@@ -349,7 +349,7 @@ func buildMCPIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, services krt.Co
 			// Since policies can target specific targets within an MCP backend using SectionName,
 			// the key for the target must include the Backend Name to prevent collisions with
 			// policies targeting the entire Backend that have the same name as the target
-			staticBackendRef := utils.InternalMCPStaticBackendName(be.Namespace, be.Name, targetSelector.Name)
+			staticBackendRef := utils.InternalMCPStaticBackendName(be.Namespace, be.Name, string(targetSelector.Name))
 			staticBackend := &api.Backend{
 				Name: staticBackendRef,
 				Kind: &api.Backend_Static{
@@ -362,12 +362,12 @@ func buildMCPIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, services krt.Co
 			backends = append(backends, staticBackend)
 
 			mcpTarget := &api.MCPTarget{
-				Name: targetSelector.Name,
+				Name: string(targetSelector.Name),
 				Backend: &api.BackendReference{
 					Kind: &api.BackendReference_Backend{
 						Backend: staticBackendRef,
 					},
-					Port: uint32(targetSelector.Static.Port),
+					Port: uint32(targetSelector.Static.Port), //nolint:gosec // G115: Port is validated by kubebuilder to be 1-65535
 				},
 				Path: ptr.Deref(targetSelector.Static.Path, ""),
 			}
@@ -473,7 +473,7 @@ func buildMCPIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, services krt.Co
 							Kind: &api.BackendReference_Service{
 								Service: service.Namespace + "/" + svcHostname,
 							},
-							Port: uint32(port.Port),
+							Port: uint32(port.Port), //nolint:gosec // G115: Kubernetes service ports are always positive
 						},
 						Protocol: toMCPProtocol(appProtocol),
 						Path:     service.Annotations[apiannotations.MCPServiceHTTPPath],

@@ -512,6 +512,11 @@ spec:
                               host:
                                 minLength: 1
                                 type: string
+                              name:
+                                maxLength: 253
+                                minLength: 1
+                                pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                type: string
                               openai:
                                 properties:
                                   authToken:
@@ -608,6 +613,8 @@ spec:
                                 - projectId
                                 - publisher
                                 type: object
+                            required:
+                            - name
                             type: object
                             x-kubernetes-validations:
                             - message: both host and port must be set together
@@ -620,6 +627,9 @@ spec:
                           maxItems: 32
                           minItems: 1
                           type: array
+                          x-kubernetes-validations:
+                          - message: provider names must be unique within a group
+                            rule: self.all(p1, self.exists_one(p2, p1.name == p2.name))
                       type: object
                     maxItems: 32
                     minItems: 1
@@ -707,6 +717,9 @@ spec:
                     items:
                       properties:
                         name:
+                          maxLength: 253
+                          minLength: 1
+                          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                           type: string
                         selector:
                           properties:
@@ -802,6 +815,9 @@ spec:
                     x-kubernetes-list-map-keys:
                     - name
                     x-kubernetes-list-type: map
+                    x-kubernetes-validations:
+                    - message: target names must be unique
+                      rule: self.all(t1, self.exists_one(t2, t1.name == t2.name))
                 required:
                 - targets
                 type: object

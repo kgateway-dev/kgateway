@@ -1522,6 +1522,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: istio
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.IstioIntegration
+    - name: omitDefaultSecurityContext
+      type:
+        scalar: boolean
     - name: podTemplate
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Pod
@@ -1840,6 +1843,43 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: openAIModeration
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.OpenAIConfig
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.NamedLLMProvider
+  map:
+    fields:
+    - name: anthropic
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AnthropicConfig
+    - name: authHeader
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AuthHeader
+    - name: azureopenai
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AzureOpenAIConfig
+    - name: bedrock
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BedrockConfig
+    - name: gemini
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GeminiConfig
+    - name: host
+      type:
+        scalar: string
+    - name: name
+      type:
+        scalar: string
+      default: ""
+    - name: openai
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.OpenAIConfig
+    - name: path
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PathOverride
+    - name: port
+      type:
+        scalar: numeric
+    - name: vertexai
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.VertexAIConfig
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.NamespacedObjectReference
   map:
     fields:
@@ -1973,6 +2013,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: securityContext
       type:
         namedType: io.k8s.api.core.v1.PodSecurityContext
+    - name: startupProbe
+      type:
+        namedType: io.k8s.api.core.v1.Probe
     - name: terminationGracePeriodSeconds
       type:
         scalar: numeric
@@ -2017,7 +2060,7 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         list:
           elementType:
-            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LLMProvider
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.NamedLLMProvider
           elementRelationship: atomic
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ProcessingMode
   map:

@@ -33,20 +33,19 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
-	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
+	agwtranslator "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
-	"github.com/kgateway-dev/kgateway/v2/test/translator"
 )
 
 type AssertReports func(gwNN types.NamespacedName, reportsMap reports.ReportMap)
@@ -264,7 +263,7 @@ func marshalProtoMessages[T proto.Message](messages []T, m protojson.MarshalOpti
 	return result, nil
 }
 
-type ExtraPluginsFn func(ctx context.Context, commoncol *common.CommonCollections) []pluginsdk.Plugin
+type ExtraPluginsFn func(ctx context.Context, commoncol *collections.CommonCollections) []pluginsdk.Plugin
 
 func NewScheme(extraSchemes runtime.SchemeBuilder) *runtime.Scheme {
 	scheme := schemes.GatewayScheme()
@@ -325,7 +324,7 @@ func TestTranslationWithExtraPlugins(
 	// Extract agentgateway API types from AgwResources
 	for _, agwRes := range result.Resources {
 		for _, item := range agwRes.ResourceConfig.Items {
-			resourceWrapper := item.Resource.(*envoyResourceWithCustomName)
+			resourceWrapper := item.Resource.(*agwtranslator.AgwResourceWithCustomName)
 			res := resourceWrapper.Message.(*api.Resource)
 			switch r := res.Kind.(type) {
 			case *api.Resource_Route:
@@ -343,7 +342,7 @@ func TestTranslationWithExtraPlugins(
 			}
 		}
 		for _, item := range agwRes.AddressConfig.Items {
-			resourceWrapper := item.Resource.(*envoyResourceWithCustomName)
+			resourceWrapper := item.Resource.(*agwtranslator.AgwResourceWithCustomName)
 			res := resourceWrapper.Message.(*api.Address)
 			addresses = append(addresses, res)
 		}
@@ -359,7 +358,7 @@ func TestTranslationWithExtraPlugins(
 		Addresses: addresses,
 	}
 	output = sortTranslationResult(output)
-	outputYaml, err := translator.MarshalAnyYaml(output)
+	outputYaml, err := testutils.MarshalAnyYaml(output)
 	fmt.Fprintf(ginkgo.GinkgoWriter, "actual result:\n %s \nerror: %v", outputYaml, err)
 	r.NoError(err)
 
@@ -369,7 +368,7 @@ func TestTranslationWithExtraPlugins(
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			r.NoError(err)
 		}
-		os.WriteFile(outputFile, outputYaml, 0o644)
+		os.WriteFile(outputFile, outputYaml, 0o600)
 	}
 
 	diff, err := compareProxy(outputFile, output)
@@ -388,7 +387,7 @@ type TestCase struct {
 }
 
 type ActualTestResult struct {
-	Resources  []agentGwXdsResources
+	Resources  []agwtranslator.AgentGwXdsResources
 	ReportsMap reports.ReportMap
 }
 
@@ -448,7 +447,7 @@ func ReadYamlFile(file string, out interface{}) error {
 	if err != nil {
 		return err
 	}
-	return translator.UnmarshalAnyYaml(data, out)
+	return testutils.UnmarshalAnyYaml(data, out)
 }
 
 func GetHTTPRouteStatusError(
@@ -547,14 +546,14 @@ func (tc TestCase) Run(
 		anyObjs []runtime.Object
 		ourObjs []runtime.Object
 	)
-	gvkToStructuralSchema, err := translator.GetStructuralSchemas(
-		filepath.Join(testutils.GitRootDirectory(), translator.CRDPath))
+	gvkToStructuralSchema, err := testutils.GetStructuralSchemas(
+		filepath.Join(testutils.GitRootDirectory(), testutils.CRDPath))
 	if err != nil {
 		return nil, fmt.Errorf("error getting structural schemas: %w", err)
 	}
 
 	for _, file := range tc.InputFiles {
-		objs, err := translator.LoadFromFiles(file, scheme, gvkToStructuralSchema)
+		objs, err := testutils.LoadFromFiles(file, scheme, gvkToStructuralSchema)
 		if err != nil {
 			return nil, err
 		}
@@ -622,7 +621,7 @@ func (tc TestCase) Run(
 		}, metav1.CreateOptions{})
 	}
 
-	krtOpts := krtinternal.KrtOptions{
+	krtOpts := krtutil.KrtOptions{
 		Stop: ctx.Done(),
 	}
 
@@ -690,8 +689,8 @@ func (tc TestCase) Run(
 	)
 	agentGwSyncer.translator.Init()
 
-	gatewayClasses := GatewayClassesCollection(agwCollections.GatewayClasses, krtOpts)
-	refGrants := BuildReferenceGrants(ReferenceGrantsCollection(agwCollections.ReferenceGrants, krtOpts))
+	gatewayClasses := agwtranslator.GatewayClassesCollection(agwCollections.GatewayClasses, krtOpts)
+	refGrants := agwtranslator.BuildReferenceGrants(agwtranslator.ReferenceGrantsCollection(agwCollections.ReferenceGrants, krtOpts))
 	gateways := agentGwSyncer.buildGatewayCollection(gatewayClasses, refGrants, krtOpts)
 
 	// Build Agw resources and addresses collections
@@ -716,7 +715,7 @@ func (tc TestCase) Run(
 		}
 
 		// Collect results for this gateway
-		var xdsResult []agentGwXdsResources
+		var xdsResult []agwtranslator.AgentGwXdsResources
 
 		// Create a test context for fetching from collections
 		testCtx := krt.TestingDummyContext{}
@@ -733,22 +732,22 @@ func (tc TestCase) Run(
 		reportsMap := reports.NewReportMap()
 		for _, resource := range allResources {
 			// Merge reports from all resources for this gateway
-			for gwKey, gwReport := range resource.reports.Gateways {
+			for gwKey, gwReport := range resource.Reports.Gateways {
 				reportsMap.Gateways[gwKey] = gwReport
 			}
-			for lsKey, lsReport := range resource.reports.ListenerSets {
+			for lsKey, lsReport := range resource.Reports.ListenerSets {
 				reportsMap.ListenerSets[lsKey] = lsReport
 			}
-			for routeKey, routeReport := range resource.reports.HTTPRoutes {
+			for routeKey, routeReport := range resource.Reports.HTTPRoutes {
 				reportsMap.HTTPRoutes[routeKey] = routeReport
 			}
-			for routeKey, routeReport := range resource.reports.GRPCRoutes {
+			for routeKey, routeReport := range resource.Reports.GRPCRoutes {
 				reportsMap.GRPCRoutes[routeKey] = routeReport
 			}
-			for routeKey, routeReport := range resource.reports.TCPRoutes {
+			for routeKey, routeReport := range resource.Reports.TCPRoutes {
 				reportsMap.TCPRoutes[routeKey] = routeReport
 			}
-			for routeKey, routeReport := range resource.reports.TLSRoutes {
+			for routeKey, routeReport := range resource.Reports.TLSRoutes {
 				reportsMap.TLSRoutes[routeKey] = routeReport
 			}
 		}

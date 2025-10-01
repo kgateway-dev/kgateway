@@ -21,11 +21,11 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	kmetrics "github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections/metrics"
-	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
 // registertypes for common collections
@@ -102,7 +102,7 @@ func InitCollections(
 	istioClient kube.Client,
 	ourClient versioned.Interface,
 	refgrants *RefGrantIndex,
-	krtopts krtinternal.KrtOptions,
+	krtopts krtutil.KrtOptions,
 	globalSettings settings.Settings,
 ) (*GatewayIndex, *RoutesIndex, *BackendIndex, krt.Collection[ir.EndpointsForBackend]) {
 	registerTypes(ourClient)
@@ -158,7 +158,7 @@ func initBackends(plugins sdk.Plugin, backendIndex *BackendIndex) {
 	}
 }
 
-func initEndpoints(plugins sdk.Plugin, krtopts krtinternal.KrtOptions) krt.Collection[ir.EndpointsForBackend] {
+func initEndpoints(plugins sdk.Plugin, krtopts krtutil.KrtOptions) krt.Collection[ir.EndpointsForBackend] {
 	allEndpoints := []krt.Collection[ir.EndpointsForBackend]{}
 	for _, plugin := range plugins.ContributesBackends {
 		if plugin.Endpoints != nil {
