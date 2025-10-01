@@ -273,26 +273,26 @@ func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3
 		x.logger.Debug("error processing xds client", "error", err)
 		return err
 	}
-	if ucc != "" {
-		nodeMd := r.GetNode().GetMetadata()
-		if nodeMd == nil {
-			nodeMd = &structpb.Struct{}
-		}
-		if nodeMd.GetFields() == nil {
-			nodeMd.Fields = map[string]*structpb.Value{}
-		}
+	if ucc == "" {
+		return fmt.Errorf("got empty unique client name for sid %d", sid)
+	}
 
-		x.logger.Debug("augmenting role in node metadata", "resource_name", ucc)
-		// NOTE: this changes the role to include the unique client. This is coupled
-		// with how the snapshot is inserted to the cache for the proxy - it needs to be done with
-		// the unique client resource name as well.
-		nodeMd.GetFields()[xds.RoleKey] = structpb.NewStringValue(ucc)
-		r.GetNode().Metadata = nodeMd
-		if isNew {
-			x.trigger.TriggerRecomputation()
-		}
-	} else {
-		x.logger.Warn("got empty unique client name", "sid", sid)
+	nodeMd := r.GetNode().GetMetadata()
+	if nodeMd == nil {
+		nodeMd = &structpb.Struct{}
+	}
+	if nodeMd.GetFields() == nil {
+		nodeMd.Fields = map[string]*structpb.Value{}
+	}
+
+	x.logger.Debug("augmenting role in node metadata", "resource_name", ucc)
+	// NOTE: this changes the role to include the unique client. This is coupled
+	// with how the snapshot is inserted to the cache for the proxy - it needs to be done with
+	// the unique client resource name as well.
+	nodeMd.GetFields()[xds.RoleKey] = structpb.NewStringValue(ucc)
+	r.GetNode().Metadata = nodeMd
+	if isNew {
+		x.trigger.TriggerRecomputation()
 	}
 	return nil
 }
