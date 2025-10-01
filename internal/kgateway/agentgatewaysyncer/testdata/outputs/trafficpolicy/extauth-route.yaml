@@ -26,6 +26,8 @@ Policies:
 - name: trafficpolicy/default/secure-route-policy/example-route:extauth:default/example-route
   spec:
     extAuthz:
+      failureMode: DENY_WITH_STATUS
+      statusOnError: 403
       target:
         port: 4444
         service: default/ext-authz.default.svc.cluster.local

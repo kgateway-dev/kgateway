@@ -117,6 +117,9 @@ spec:
             # Make /tmp writeable, needed for pprof
             - name: tmp
               mountPath: /tmp
+            - name: xds-token
+              mountPath: /var/run/secrets/xds-tokens
+              readOnly: true
             {{- with $gateway.extraVolumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
@@ -128,6 +131,13 @@ spec:
             {{- else }}
             name: {{ include "kgateway.gateway.fullname" . }}
             {{- end }}
+        - name: xds-token
+          projected:
+            sources:
+            - serviceAccountToken:
+                audience: kgateway
+                expirationSeconds: 43200
+                path: xds-token
         - name: tmp
           emptyDir: {}
         {{- with $gateway.extraVolumes }}

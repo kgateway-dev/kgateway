@@ -68,6 +68,12 @@ rules:
   - update
   - watch
 - apiGroups:
+  - authentication.k8s.io
+  resources:
+  - tokenreviews
+  verbs:
+  - create
+- apiGroups:
   - coordination.k8s.io
   resources:
   - leases

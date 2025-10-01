@@ -71,6 +71,13 @@ func Equal(val float64) func(value float64) bool {
 	}
 }
 
+// GreaterOrEqual returns a function that checks if a value is greater than or equal to another value
+func GreaterOrEqual(val float64) func(value float64) bool {
+	return func(value float64) bool {
+		return value >= val
+	}
+}
+
 var _ ExpectMetric = &ExpectedMetricValueTest{}
 
 // Gathered metrics interface.
