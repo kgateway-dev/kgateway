@@ -92,7 +92,7 @@ spec:
             value: "0"
       containers:
         - name: agent-gateway
-          image: "ghcr.io/agentgateway/agentgateway:0.9.0"
+          image: "ghcr.io/agentgateway/agentgateway:0.9.1-alpha.852c313eda0a85f9666799e86912a43313455641"
           imagePullPolicy: 
           securityContext:
             allowPrivilegeEscalation: false
@@ -163,10 +163,20 @@ spec:
             # Make /tmp writeable, needed for pprof
             - name: tmp
               mountPath: /tmp
+            - name: xds-token
+              mountPath: /var/run/secrets/xds-tokens
+              readOnly: true
       volumes:
         - name: config-volume
           configMap:
             name: gw
+        - name: xds-token
+          projected:
+            sources:
+            - serviceAccountToken:
+                audience: kgateway
+                expirationSeconds: 43200
+                path: xds-token
         - name: tmp
           emptyDir: {}
       terminationGracePeriodSeconds: 60
