@@ -128,7 +128,6 @@ func (dt DeployerTester) RunHelmChartTest(
 
 	diff := cmp.Diff(data, got)
 	assert.Empty(t, diff, diff)
-
 }
 
 func (dt DeployerTester) defaultDeployerInputs(commonCols *collections.CommonCollections) *pkgdeployer.Inputs {
