@@ -11,6 +11,7 @@ import (
 	"istio.io/istio/pkg/test"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
@@ -258,6 +259,143 @@ func TestInferencePoolGVKsToWatch(t *testing.T) {
 		wellknown.ServiceAccountGVK,
 		wellknown.ClusterRoleBindingGVK,
 	})
+}
+
+func TestAgentgatewayAndEnvoyContainerDistinctValues(t *testing.T) {
+	// Create GatewayParameters with agentgateway disabled and distinct values
+	gwParams := &gw2_v1alpha1.GatewayParameters{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       wellknown.GatewayParametersGVK.Kind,
+			APIVersion: gw2_v1alpha1.GroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "agent-disabled-params",
+			Namespace: "default",
+		},
+		Spec: gw2_v1alpha1.GatewayParametersSpec{
+			Kube: &gw2_v1alpha1.KubernetesProxyConfig{
+				Agentgateway: &gw2_v1alpha1.Agentgateway{
+					Enabled: ptr.To(false), // Explicitly disabled
+					Image: &gw2_v1alpha1.Image{
+						Registry:   ptr.To("agent-registry"),
+						Repository: ptr.To("agent-repo"),
+						Tag:        ptr.To("agent-tag"),
+					},
+					Resources: &corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceCPU:    resource.MustParse("500m"),
+							corev1.ResourceMemory: resource.MustParse("512Mi"),
+						},
+					},
+					SecurityContext: &corev1.SecurityContext{
+						RunAsUser: ptr.To(int64(12345)),
+					},
+					Env: []corev1.EnvVar{
+						{
+							Name:  "AGENT_ENV",
+							Value: "agent-value",
+						},
+					},
+				},
+				EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
+					Image: &gw2_v1alpha1.Image{
+						Registry:   ptr.To("envoy-registry"),
+						Repository: ptr.To("envoy-repo"),
+						Tag:        ptr.To("envoy-tag"),
+						PullPolicy: ptr.To(corev1.PullNever),
+					},
+					Resources: &corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceCPU:    resource.MustParse("100m"),
+							corev1.ResourceMemory: resource.MustParse("128Mi"),
+						},
+					},
+					SecurityContext: &corev1.SecurityContext{
+						RunAsUser: ptr.To(int64(54321)),
+					},
+					Env: []corev1.EnvVar{
+						{
+							Name:  "ENVOY_ENV",
+							Value: "envoy-value",
+						},
+					},
+					Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
+						LogLevel: ptr.To("info"),
+					},
+				},
+			},
+		},
+	}
+
+	gwc := &api.GatewayClass{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "agent-disabled-gwc",
+		},
+		Spec: api.GatewayClassSpec{
+			ControllerName: wellknown.DefaultGatewayControllerName,
+			ParametersRef: &api.ParametersReference{
+				Group:     gw2_v1alpha1.GroupName,
+				Kind:      api.Kind(wellknown.GatewayParametersGVK.Kind),
+				Name:      "agent-disabled-params",
+				Namespace: ptr.To(api.Namespace("default")),
+			},
+		},
+	}
+
+	gw := &api.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-gateway-disabled",
+			Namespace: "default",
+			UID:       "test-disabled",
+		},
+		Spec: api.GatewaySpec{
+			GatewayClassName: "agent-disabled-gwc",
+			Listeners: []api.Listener{{
+				Name: "listener-1",
+				Port: 80,
+			}},
+		},
+	}
+
+	gwp := NewGatewayParameters(newFakeClientWithObjs(gwc, gwParams), defaultInputs(t, gwc, gw))
+	vals, err := gwp.GetValues(context.Background(), gw)
+	assert.NoError(t, err)
+
+	gateway, ok := vals["gateway"].(map[string]any)
+	assert.True(t, ok, "gateway should be present in helm values")
+
+	// Verify that envoyContainerConfig values are used (not agentgateway values)
+	// Check image values
+	image, ok := gateway["image"].(map[string]any)
+	assert.True(t, ok, "image should be present")
+	assert.Equal(t, "envoy-registry", image["registry"])
+	assert.Equal(t, "envoy-repo", image["repository"])
+	assert.Equal(t, "envoy-tag", image["tag"])
+	assert.Equal(t, "Never", image["pullPolicy"])
+
+	// Check resources
+	resources, ok := gateway["resources"].(map[string]any)
+	assert.True(t, ok, "resources should be present")
+	requests, ok := resources["requests"].(map[string]any)
+	assert.True(t, ok, "requests should be present")
+	assert.Equal(t, "100m", requests["cpu"])
+	assert.Equal(t, "128Mi", requests["memory"])
+
+	// Check security context
+	securityContext, ok := gateway["securityContext"].(map[string]any)
+	assert.True(t, ok, "securityContext should be present")
+	runAsUser, ok := securityContext["runAsUser"]
+	assert.True(t, ok, "runAsUser should be present")
+	assert.Equal(t, float64(54321), runAsUser)
+
+	// Check environment variables
+	env, ok := gateway["env"].([]any)
+	assert.True(t, ok, "env should be present")
+	assert.Len(t, env, 1)
+	envVar, ok := env[0].(map[string]any)
+	assert.True(t, ok, "env var should be a map")
+	assert.Equal(t, "ENVOY_ENV", envVar["name"])
+	assert.Equal(t, "envoy-value", envVar["value"])
 }
 
 func defaultGatewayClass() *api.GatewayClass {

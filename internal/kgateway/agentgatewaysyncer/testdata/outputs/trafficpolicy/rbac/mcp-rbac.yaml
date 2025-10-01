@@ -24,7 +24,7 @@ Listeners:
   name: http
   protocol: HTTP
 Policies:
-- name: trafficpolicy/default/cel-rbac-policy/mcp-backend:rbac
+- name: trafficpolicy/default/cel-rbac-policy/mcp-backend:rbac:default/mcp-backend
   spec:
     mcpAuthorization:
       allow:

@@ -336,7 +336,7 @@ func (s *Syncer) buildBackendFromBackend(ctx krt.HandlerContext,
 		}
 		results = append(results, translator.AgwResourceWithCustomName{
 			Message: resourceWrapper,
-			Name:    policy.Name,
+			Name:    agwir.GetAgwResourceName(resourceWrapper),
 			Version: utils.HashProto(resourceWrapper),
 		})
 	}

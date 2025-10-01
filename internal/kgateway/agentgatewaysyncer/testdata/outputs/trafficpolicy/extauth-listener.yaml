@@ -30,7 +30,7 @@ Listeners:
   name: foo
   protocol: HTTP
 Policies:
-- name: trafficpolicy/default/secure-route-policy/example-gateway:extauth
+- name: trafficpolicy/default/secure-route-policy/example-gateway:extauth:default/example-gateway.foo
   spec:
     extAuthz:
       target:

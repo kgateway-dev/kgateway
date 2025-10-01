@@ -7,6 +7,7 @@ import (
 	"istio.io/api/annotation"
 	"istio.io/api/label"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -133,6 +134,11 @@ func GetInMemoryGatewayParameters(name string, imageInfo *ImageInfo, gatewayClas
 func defaultAgentgatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext bool) *v1alpha1.GatewayParameters {
 	gwp := defaultGatewayParameters(imageInfo, omitDefaultSecurityContext)
 	gwp.Spec.Kube.Agentgateway.Enabled = ptr.To(true)
+	gwp.Spec.Kube.PodTemplate.ReadinessProbe.HTTPGet.Path = "/healthz/ready"
+	gwp.Spec.Kube.PodTemplate.ReadinessProbe.HTTPGet.Port = intstr.FromInt(15021)
+	gwp.Spec.Kube.PodTemplate.StartupProbe.HTTPGet.Path = "/healthz/ready"
+	gwp.Spec.Kube.PodTemplate.StartupProbe.HTTPGet.Port = intstr.FromInt(15021)
+	gwp.Spec.Kube.PodTemplate.GracefulShutdown.Enabled = ptr.To(true)
 	return gwp
 }
 
@@ -179,20 +185,7 @@ func defaultWaypointGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityC
 // defaultGatewayParameters returns an in-memory GatewayParameters with the default values
 // set for the gateway.
 func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext bool) *v1alpha1.GatewayParameters {
-	dataPlaneSecurityContext := &corev1.SecurityContext{
-		AllowPrivilegeEscalation: ptr.To(false),
-		ReadOnlyRootFilesystem:   ptr.To(true),
-		RunAsNonRoot:             ptr.To(true),
-		RunAsUser:                ptr.To[int64](10101),
-		Capabilities: &corev1.Capabilities{
-			Drop: []corev1.Capability{"ALL"},
-			Add:  []corev1.Capability{"NET_BIND_SERVICE"},
-		},
-	}
-	if omitDefaultSecurityContext {
-		dataPlaneSecurityContext = nil
-	}
-	return &v1alpha1.GatewayParameters{
+	gwp := &v1alpha1.GatewayParameters{
 		Spec: v1alpha1.GatewayParametersSpec{
 			SelfManaged: nil,
 			Kube: &v1alpha1.KubernetesProxyConfig{
@@ -202,6 +195,36 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 				},
 				Service: &v1alpha1.Service{
 					Type: (*corev1.ServiceType)(ptr.To(string(corev1.ServiceTypeLoadBalancer))),
+				},
+				PodTemplate: &v1alpha1.Pod{
+					TerminationGracePeriodSeconds: ptr.To(int64(60)),
+					GracefulShutdown: &v1alpha1.GracefulShutdownSpec{
+						Enabled:          ptr.To(true),
+						SleepTimeSeconds: ptr.To(int64(10)),
+					},
+					ReadinessProbe: &corev1.Probe{
+						ProbeHandler: corev1.ProbeHandler{
+							HTTPGet: &corev1.HTTPGetAction{
+								Path: "/ready",
+								Port: intstr.FromInt(8082),
+							},
+						},
+						InitialDelaySeconds: 5,
+						PeriodSeconds:       10,
+					},
+					StartupProbe: &corev1.Probe{
+						ProbeHandler: corev1.ProbeHandler{
+							HTTPGet: &corev1.HTTPGetAction{
+								Path: "/ready",
+								Port: intstr.FromInt(8082),
+							},
+						},
+						InitialDelaySeconds: 0,
+						PeriodSeconds:       1,
+						TimeoutSeconds:      2,
+						FailureThreshold:    60,
+						SuccessThreshold:    1,
+					},
 				},
 				EnvoyContainer: &v1alpha1.EnvoyContainer{
 					Bootstrap: &v1alpha1.EnvoyBootstrap{
@@ -213,7 +236,16 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 						Repository: ptr.To(EnvoyWrapperImage),
 						PullPolicy: (*corev1.PullPolicy)(ptr.To(imageInfo.PullPolicy)),
 					},
-					SecurityContext: dataPlaneSecurityContext,
+					SecurityContext: &corev1.SecurityContext{
+						AllowPrivilegeEscalation: ptr.To(false),
+						ReadOnlyRootFilesystem:   ptr.To(true),
+						RunAsNonRoot:             ptr.To(true),
+						RunAsUser:                ptr.To[int64](10101),
+						Capabilities: &corev1.Capabilities{
+							Drop: []corev1.Capability{"ALL"},
+							Add:  []corev1.Capability{"NET_BIND_SERVICE"},
+						},
+					},
 				},
 				Stats: &v1alpha1.StatsConfig{
 					Enabled:                 ptr.To(true),
@@ -264,9 +296,23 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 						Repository: ptr.To(AgentgatewayImage),
 						PullPolicy: (*corev1.PullPolicy)(ptr.To(imageInfo.PullPolicy)),
 					},
-					SecurityContext: dataPlaneSecurityContext,
+					SecurityContext: &corev1.SecurityContext{
+						AllowPrivilegeEscalation: ptr.To(false),
+						ReadOnlyRootFilesystem:   ptr.To(true),
+						RunAsNonRoot:             ptr.To(true),
+						RunAsUser:                ptr.To[int64](10101),
+						Capabilities: &corev1.Capabilities{
+							Drop: []corev1.Capability{"ALL"},
+							Add:  []corev1.Capability{"NET_BIND_SERVICE"},
+						},
+					},
 				},
 			},
 		},
 	}
+	if omitDefaultSecurityContext {
+		gwp.Spec.Kube.EnvoyContainer.SecurityContext = nil
+		gwp.Spec.Kube.Agentgateway.SecurityContext = nil
+	}
+	return gwp.DeepCopy()
 }

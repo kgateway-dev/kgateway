@@ -46,6 +46,7 @@ type HelmGateway struct {
 	NodeSelector                  map[string]string                 `json:"nodeSelector,omitempty"`
 	Affinity                      *corev1.Affinity                  `json:"affinity,omitempty"`
 	Tolerations                   []corev1.Toleration               `json:"tolerations,omitempty"`
+	StartupProbe                  *corev1.Probe                     `json:"startupProbe,omitempty"`
 	ReadinessProbe                *corev1.Probe                     `json:"readinessProbe,omitempty"`
 	LivenessProbe                 *corev1.Probe                     `json:"livenessProbe,omitempty"`
 	ExtraVolumes                  []corev1.Volume                   `json:"extraVolumes,omitempty"`
@@ -82,6 +83,7 @@ type HelmGateway struct {
 	Stats *HelmStatsConfig `json:"stats,omitempty"`
 
 	// AI extension values
+	// Deprecated: Envoy-based AI gateway is deprecated in v2.1 and will be removed in v2.2.
 	AIExtension *HelmAIExtension `json:"aiExtension,omitempty"`
 
 	// agentgateway integration values

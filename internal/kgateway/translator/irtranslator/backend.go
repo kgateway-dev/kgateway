@@ -36,7 +36,7 @@ type BackendTranslator struct {
 	ContributedPolicies map[schema.GroupKind]sdk.PolicyPlugin
 	CommonCols          *collections.CommonCollections
 	Validator           validator.Validator
-	Mode                settings.RouteReplacementMode
+	Mode                settings.ValidationMode
 }
 
 // TranslateBackend translates a BackendObjectIR to an Envoy Cluster. If we encounter any
@@ -82,7 +82,7 @@ func (t *BackendTranslator) TranslateBackend(
 	}
 
 	// In strict mode, validate the final cluster configuration using Envoy
-	if t.Mode == settings.RouteReplacementStrict && t.Validator != nil {
+	if t.Mode == settings.ValidationStrict && t.Validator != nil {
 		if err := t.validateClusterConfig(ctx, out); err != nil {
 			logger.Error("cluster failed xDS validation in strict mode", "cluster", out.GetName(), "error", err)
 			return buildBlackholeCluster(backend), err

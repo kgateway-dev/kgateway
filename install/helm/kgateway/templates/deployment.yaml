@@ -100,6 +100,8 @@ spec:
               value: {{ .Values.discoveryNamespaceSelectors | toJson | quote }}
             - name: KGW_POLICY_MERGE
               value: {{ .Values.policyMerge | toJson | quote }}
+            - name: KGW_VALIDATION_MODE
+              value: {{ include "kgateway.validationLevel" . | quote }}
             {{- if .Values.controller.extraEnv }}
             {{- range $key, $value := .Values.controller.extraEnv }}
             - name: {{ $key }}

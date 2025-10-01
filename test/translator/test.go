@@ -734,7 +734,7 @@ func (tc TestCase) Run(
 		// during translation, instead their reports are generated separately by GenerateBackendPolicyReport().
 		// We need to merge both report types to capture all policy statuses for golden file testing.
 		var backendIRs []*ir.BackendObjectIR
-		for _, col := range commoncol.BackendIndex.BackendsWithPolicy() {
+		for _, col := range commoncol.BackendIndex.BackendsWithPolicyRequiringStatus() {
 			backendIRs = append(backendIRs, col.List()...)
 		}
 		backendPolicyReports := proxy_syncer.GenerateBackendPolicyReport(backendIRs)

@@ -208,6 +208,10 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		// WithJoinUnchecked enables a more optimized lookup on the hotpath by assuming we do not have any overlapping ResourceName
 		// in the backend collection.
 		append(krtopts.ToOptions("FinalBackends"), krt.WithJoinUnchecked())...)
+	finalBackendsWithPolicyStatus := krt.JoinCollection(s.commonCols.BackendIndex.BackendsWithPolicyRequiringStatus(),
+		// WithJoinUnchecked enables a more optimized lookup on the hotpath by assuming we do not have any overlapping ResourceName
+		// in the backend collection.
+		append(krtopts.ToOptions("FinalBackendsWithPolicyStatus"), krt.WithJoinUnchecked())...)
 
 	s.translator.Init(ctx)
 
@@ -252,7 +256,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	)
 
 	s.backendPolicyReport = krt.NewSingleton(func(kctx krt.HandlerContext) *report {
-		backends := krt.Fetch(kctx, finalBackends)
+		backends := krt.Fetch(kctx, finalBackendsWithPolicyStatus)
 		merged := GenerateBackendPolicyReport(backends)
 		return &report{merged}
 	}, krtopts.ToOptions("BackendsPolicyReport")...)

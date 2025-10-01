@@ -7,27 +7,27 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
-func DeepMergeGatewayParameters(dst, src *v1alpha1.GatewayParameters) *v1alpha1.GatewayParameters {
+func DeepMergeGatewayParameters(dst, src *v1alpha1.GatewayParameters) {
 	if src != nil && src.Spec.SelfManaged != nil {
 		// The src override specifies a self-managed gateway, set this on the dst
 		// and skip merging of kube fields that are irrelevant because of using
 		// a self-managed gateway
 		dst.Spec.SelfManaged = src.Spec.SelfManaged
 		dst.Spec.Kube = nil
-		return dst
+		return
 	}
 
 	// nil src override means just use dst
 	if src == nil || src.Spec.Kube == nil {
-		return dst
+		return
 	}
 
 	if dst == nil || dst.Spec.Kube == nil {
-		return src
+		return
 	}
 
 	dstKube := dst.Spec.Kube
-	srcKube := src.Spec.Kube
+	srcKube := src.Spec.Kube.DeepCopy()
 
 	dstKube.Deployment = deepMergeDeployment(dstKube.GetDeployment(), srcKube.GetDeployment())
 	dstKube.EnvoyContainer = deepMergeEnvoyContainer(dstKube.GetEnvoyContainer(), srcKube.GetEnvoyContainer())
@@ -41,8 +41,6 @@ func DeepMergeGatewayParameters(dst, src *v1alpha1.GatewayParameters) *v1alpha1.
 	dstKube.FloatingUserId = MergePointers(dstKube.GetFloatingUserId(), srcKube.GetFloatingUserId())
 	dstKube.OmitDefaultSecurityContext = MergePointers(dstKube.GetOmitDefaultSecurityContext(), srcKube.GetOmitDefaultSecurityContext())
 	dstKube.Agentgateway = deepMergeAgentgateway(dstKube.GetAgentgateway(), srcKube.GetAgentgateway())
-
-	return dst
 }
 
 // MergePointers will decide whether to use dst or src without dereferencing or recursing
@@ -145,6 +143,7 @@ func deepMergePodTemplate(dst, src *v1alpha1.Pod) *v1alpha1.Pod {
 	dst.Tolerations = DeepMergeSlices(dst.GetTolerations(), src.GetTolerations())
 	dst.GracefulShutdown = deepMergeGracefulShutdown(dst.GetGracefulShutdown(), src.GetGracefulShutdown())
 	dst.TerminationGracePeriodSeconds = MergePointers(dst.TerminationGracePeriodSeconds, src.TerminationGracePeriodSeconds)
+	dst.StartupProbe = deepMergeProbe(dst.GetStartupProbe(), src.GetStartupProbe())
 	dst.ReadinessProbe = deepMergeProbe(dst.GetReadinessProbe(), src.GetReadinessProbe())
 	dst.LivenessProbe = deepMergeProbe(dst.GetLivenessProbe(), src.GetLivenessProbe())
 	dst.TopologySpreadConstraints = DeepMergeSlices(dst.GetTopologySpreadConstraints(), src.GetTopologySpreadConstraints())

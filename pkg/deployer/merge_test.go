@@ -231,12 +231,12 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := DeepMergeGatewayParameters(tt.dst, tt.src)
-			assert.Equal(t, tt.want, got)
+			DeepMergeGatewayParameters(tt.dst, tt.src)
+			assert.Equal(t, tt.want, tt.dst)
 
 			// Run additional validation if provided
 			if tt.validate != nil {
-				tt.validate(t, got)
+				tt.validate(t, tt.dst)
 			}
 		})
 	}

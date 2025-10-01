@@ -21,9 +21,9 @@ func validateXDS(
 	ctx context.Context,
 	policyIR *BackendConfigPolicyIR,
 	v validator.Validator,
-	mode settings.RouteReplacementMode,
+	mode settings.ValidationMode,
 ) error {
-	if mode != settings.RouteReplacementStrict || v == nil {
+	if mode != settings.ValidationStrict || v == nil {
 		return nil
 	}
 

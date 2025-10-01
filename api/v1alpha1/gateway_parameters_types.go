@@ -116,6 +116,9 @@ type KubernetesProxyConfig struct {
 	// +optional
 	Stats *StatsConfig `json:"stats,omitempty"`
 
+	// Deprecated: `aiExtension` is deprecated in v2.1 and will be removed in v2.2.
+	// Prefer to use `agentgateway` instead.
+	//
 	// Configuration for the AI extension.
 	//
 	// +optional

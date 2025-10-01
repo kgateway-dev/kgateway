@@ -4777,7 +4777,7 @@ func schema_kgateway_v2_api_v1alpha1_KubernetesProxyConfig(ref common.ReferenceC
 					},
 					"aiExtension": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Configuration for the AI extension.",
+							Description: "Deprecated: `aiExtension` is deprecated in v2.1 and will be removed in v2.2. Prefer to use `agentgateway` instead.\n\nConfiguration for the AI extension.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtension"),
 						},
 					},
@@ -6058,6 +6058,12 @@ func schema_kgateway_v2_api_v1alpha1_Pod(ref common.ReferenceCallback) common.Op
 							Description: "If specified, the pod's termination grace period in seconds. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#pod-v1-core for details",
 							Type:        []string{"integer"},
 							Format:      "int64",
+						},
+					},
+					"startupProbe": {
+						SchemaProps: spec.SchemaProps{
+							Description: "If specified, the pod's startup probe. A probe of container startup readiness. Container will be only be added to service endpoints if the probe succeeds. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#probe-v1-core for details.",
+							Ref:         ref("k8s.io/api/core/v1.Probe"),
 						},
 					},
 					"readinessProbe": {

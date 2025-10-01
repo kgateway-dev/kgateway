@@ -274,8 +274,6 @@ func (k *kGatewayParameters) getGatewayParametersForGatewayClass(ctx context.Con
 	// when not OmitDefaultSecurityContext:
 	defaultGwp := deployer.GetInMemoryGatewayParameters(gwc.GetName(), k.inputs.ImageInfo, k.inputs.GatewayClassName, k.inputs.WaypointGatewayClassName, k.inputs.AgentgatewayClassName, false)
 
-	/* TODO(chandler): DLC deprecation warnings */
-
 	paramRef := gwc.Spec.ParametersRef
 	if paramRef == nil {
 		// when there is no parametersRef, just return the defaults
@@ -376,6 +374,9 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 	statsConfig := kubeProxyConfig.GetStats()
 	istioContainerConfig := istioConfig.GetIstioProxyContainer()
 	aiExtensionConfig := kubeProxyConfig.GetAiExtension()
+	if aiExtensionConfig != nil && aiExtensionConfig.GetEnabled() != nil && *aiExtensionConfig.GetEnabled() {
+		slog.Warn("gatewayparameters spec.kube.aiExtension is deprecated in v2.1 and will be removed in v2.2. Use spec.kube.agentgateway instead.")
+	}
 	agwConfig := kubeProxyConfig.GetAgentgateway()
 
 	gateway := vals.Gateway
@@ -404,6 +405,7 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 	gateway.NodeSelector = podConfig.GetNodeSelector()
 	gateway.Affinity = podConfig.GetAffinity()
 	gateway.Tolerations = podConfig.GetTolerations()
+	gateway.StartupProbe = podConfig.GetStartupProbe()
 	gateway.ReadinessProbe = podConfig.GetReadinessProbe()
 	gateway.LivenessProbe = podConfig.GetLivenessProbe()
 	gateway.GracefulShutdown = podConfig.GetGracefulShutdown()

@@ -32,8 +32,6 @@ import (
 	api "sigs.k8s.io/gateway-api/apis/v1"
 	apixv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
-	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
-
 	"github.com/kgateway-dev/kgateway/v2/api/settings"
 	gw2_v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
@@ -48,6 +46,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 
 	// TODO BML tests in this suite fail if this no-op import is not imported first.
 	//
@@ -1888,6 +1887,7 @@ var _ = Describe("Deployer", func() {
 				params := fullyDefinedGatewayParameters(wellknown.DefaultGatewayParametersName, defaultNamespace)
 				params.Spec.Kube.PodTemplate.LivenessProbe = generateLivenessProbe()
 				params.Spec.Kube.PodTemplate.ReadinessProbe = generateReadinessProbe()
+				params.Spec.Kube.PodTemplate.StartupProbe = generateStartupProbe()
 				params.Spec.Kube.PodTemplate.TerminationGracePeriodSeconds = ptr.To(int64(5))
 				params.Spec.Kube.PodTemplate.GracefulShutdown = &gw2_v1alpha1.GracefulShutdownSpec{
 					Enabled:          ptr.To(true),
@@ -2225,6 +2225,7 @@ var _ = Describe("Deployer", func() {
 			envoyContainer := dep.Spec.Template.Spec.Containers[0]
 			Expect(envoyContainer.LivenessProbe).To(BeEquivalentTo(generateLivenessProbe()))
 			Expect(envoyContainer.ReadinessProbe).To(BeEquivalentTo(generateReadinessProbe()))
+			Expect(envoyContainer.StartupProbe).To(BeEquivalentTo(generateStartupProbe()))
 			Expect(envoyContainer.Lifecycle.PreStop.Exec.Command).To(BeEquivalentTo([]string{
 				"/bin/sh",
 				"-c",
@@ -3271,20 +3272,32 @@ func generateLivenessProbe() *corev1.Probe {
 	}
 }
 
+func generateStartupProbe() *corev1.Probe {
+	return &corev1.Probe{
+		ProbeHandler: corev1.ProbeHandler{
+			HTTPGet: &corev1.HTTPGetAction{
+				Path: "/ready",
+				Port: intstr.FromInt(8082),
+			},
+		},
+		InitialDelaySeconds: 0,
+		PeriodSeconds:       1,
+		TimeoutSeconds:      2,
+		FailureThreshold:    60,
+		SuccessThreshold:    1,
+	}
+}
+
 func generateReadinessProbe() *corev1.Probe {
 	return &corev1.Probe{
 		ProbeHandler: corev1.ProbeHandler{
 			HTTPGet: &corev1.HTTPGetAction{
-				Scheme: "HTTP",
-				Port: intstr.IntOrString{
-					IntVal: 8082,
-				},
-				Path: "/envoy-hc",
+				Path: "/ready",
+				Port: intstr.FromInt(8082),
 			},
 		},
 		InitialDelaySeconds: 5,
-		PeriodSeconds:       5,
-		FailureThreshold:    2,
+		PeriodSeconds:       10,
 	}
 }
 

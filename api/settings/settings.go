@@ -2,36 +2,37 @@ package settings
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/kelseyhightower/envconfig"
 )
 
-// RouteReplacementMode determines how invalid routes are handled during translation.
-// Higher modes increase safety guarantees, but may have performance implications.
-type RouteReplacementMode string
+// ValidationMode determines how invalid routes and policies are handled during translation.
+// Higher levels increase safety guarantees, but may have performance implications.
+type ValidationMode string
 
 const (
-	// RouteReplacementStandard rewrites invalid routes to direct responses
+	// ValidationStandard rewrites invalid routes to direct responses
 	// (typically HTTP 500), preserving a valid config while isolating failures.
 	// This limits the blast radius of misconfigured routes or policies without
 	// affecting unrelated tenants.
-	RouteReplacementStandard RouteReplacementMode = "STANDARD"
-	// RouteReplacementStrict builds on STANDARD by running targeted validation
+	ValidationStandard ValidationMode = "STANDARD"
+	// ValidationStrict builds on standard by running targeted validation
 	// (e.g. RDS, CDS, and security-related policies). Routes that fail these
 	// checks are also replaced with direct responses, and helps prevent unsafe
 	// config from reaching Envoy.
-	RouteReplacementStrict RouteReplacementMode = "STRICT"
+	ValidationStrict ValidationMode = "STRICT"
 )
 
 // Decode implements envconfig.Decoder.
-func (m *RouteReplacementMode) Decode(value string) error {
-	mode := RouteReplacementMode(value)
-	switch mode {
-	case RouteReplacementStandard, RouteReplacementStrict:
-		*m = mode
+func (v *ValidationMode) Decode(value string) error {
+	level := ValidationMode(strings.ToUpper(value))
+	switch level {
+	case ValidationStandard, ValidationStrict:
+		*v = level
 		return nil
 	default:
-		return fmt.Errorf("invalid route replacement mode: %q", value)
+		return fmt.Errorf("invalid validation mode: %q", value)
 	}
 }
 
@@ -112,8 +113,11 @@ type Settings struct {
 	UseRustFormations bool `split_words:"true" default:"false"`
 
 	// EnableInferExt defines whether to enable/disable support for Gateway API inference extension.
+	// If enabled, EnableAgentgateway should also be set to true. Enabling inference extension without agentgateway
+	// is deprecated in v2.1 and will not be supported in v2.2.
 	EnableInferExt bool `split_words:"true"`
 	// InferExtAutoProvision defines whether to enable/disable the Gateway API inference extension deployer.
+	// Deprecated: inference extension auto-provisioning is deprecated in v2.1 and will be removed in v2.2.
 	InferExtAutoProvision bool `split_words:"true"`
 
 	// DefaultImageRegistry is the default image registry to use for the kgateway image.
@@ -151,11 +155,11 @@ type Settings struct {
 	// When enabled, the default weight for a route is 0.
 	WeightedRoutePrecedence bool `split_words:"true" default:"false"`
 
-	// RouteReplacementMode determines how invalid routes are handled during translation.
+	// ValidationMode determines how invalid routes and policies are handled during translation.
 	// If not set, kgateway will default to "STANDARD". Supported values are:
 	// - "STANDARD": Rewrites invalid routes to direct responses (typically HTTP 500)
 	// - "STRICT": Builds on STANDARD by running targeted validation
-	RouteReplacementMode RouteReplacementMode `split_words:"true" default:"STANDARD"`
+	ValidationMode ValidationMode `split_words:"true" default:"STANDARD"`
 
 	// EnableBuiltinDefaultMetrics enables the default builtin controller-runtime metrics and go runtime metrics.
 	// Since these metrics can be numerous, it is disabled by default.

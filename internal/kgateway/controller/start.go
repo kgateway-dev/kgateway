@@ -343,7 +343,11 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 		}
 		// Enable the inference extension deployer if set.
 		if globalSettings.InferExtAutoProvision {
+			setupLog.Info("inference extension auto-provisioning is deprecated in v2.1 and will be removed in v2.2.")
 			poolCfg.InferenceExt = new(deployer.InferenceExtInfo)
+		}
+		if !globalSettings.EnableAgentgateway {
+			setupLog.Info("using inference extension without agentgateway is deprecated in v2.1 and will not be supported in v2.2.")
 		}
 		if err := NewBaseInferencePoolController(ctx, poolCfg, &gwCfg, c.cfg.ExtraGatewayParameters); err != nil {
 			setupLog.Error(err, "unable to create inferencepool controller")
