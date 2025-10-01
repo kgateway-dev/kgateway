@@ -1285,8 +1285,15 @@ func TestAccessLogFilters(t *testing.T) {
 		verify   verifyFn
 	}{
 		{
-			name:     "StatusCode GE 400",
-			alFilter: &v1alpha1.AccessLogFilter{FilterType: &v1alpha1.FilterType{StatusCodeFilter: (*v1alpha1.StatusCodeFilter)(&v1alpha1.ComparisonFilter{Op: v1alpha1.GE, Value: 400})}},
+			name: "StatusCode GE 400",
+			alFilter: &v1alpha1.AccessLogFilter{
+				FilterType: &v1alpha1.FilterType{
+					StatusCodeFilter: &v1alpha1.StatusCodeFilter{
+						Op:    v1alpha1.GE,
+						Value: 400,
+					},
+				},
+			},
 			verify: func(t *testing.T, got *envoyaccesslogv3.AccessLog) {
 				sc := got.GetFilter().GetStatusCodeFilter()
 				require.NotNil(t, sc)
@@ -1296,8 +1303,15 @@ func TestAccessLogFilters(t *testing.T) {
 			},
 		},
 		{
-			name:     "Duration LE 10",
-			alFilter: &v1alpha1.AccessLogFilter{FilterType: &v1alpha1.FilterType{DurationFilter: (*v1alpha1.DurationFilter)(&v1alpha1.ComparisonFilter{Op: v1alpha1.LE, Value: 10})}},
+			name: "Duration LE 10",
+			alFilter: &v1alpha1.AccessLogFilter{
+				FilterType: &v1alpha1.FilterType{
+					DurationFilter: &v1alpha1.DurationFilter{
+						Op:    v1alpha1.LE,
+						Value: 10,
+					},
+				},
+			},
 			verify: func(t *testing.T, got *envoyaccesslogv3.AccessLog) {
 				df := got.GetFilter().GetDurationFilter()
 				require.NotNil(t, df)
@@ -1307,22 +1321,30 @@ func TestAccessLogFilters(t *testing.T) {
 			},
 		},
 		{
-			name:     "NotHealthCheck",
-			alFilter: &v1alpha1.AccessLogFilter{FilterType: &v1alpha1.FilterType{NotHealthCheckFilter: true}},
+			name: "NotHealthCheck",
+			alFilter: &v1alpha1.AccessLogFilter{
+				FilterType: &v1alpha1.FilterType{NotHealthCheckFilter: true},
+			},
 			verify: func(t *testing.T, got *envoyaccesslogv3.AccessLog) {
 				require.NotNil(t, got.GetFilter().GetNotHealthCheckFilter())
 			},
 		},
 		{
-			name:     "Traceable",
-			alFilter: &v1alpha1.AccessLogFilter{FilterType: &v1alpha1.FilterType{TraceableFilter: true}},
+			name: "Traceable",
+			alFilter: &v1alpha1.AccessLogFilter{
+				FilterType: &v1alpha1.FilterType{TraceableFilter: true},
+			},
 			verify: func(t *testing.T, got *envoyaccesslogv3.AccessLog) {
 				require.NotNil(t, got.GetFilter().GetTraceableFilter())
 			},
 		},
 		{
-			name:     "Header Exact",
-			alFilter: &v1alpha1.AccessLogFilter{FilterType: &v1alpha1.FilterType{HeaderFilter: &v1alpha1.HeaderFilter{Header: gwv1.HTTPHeaderMatch{Type: &headerExact, Name: gwv1.HTTPHeaderName("x-test"), Value: "val"}}}},
+			name: "Header Exact",
+			alFilter: &v1alpha1.AccessLogFilter{FilterType: &v1alpha1.FilterType{
+				HeaderFilter: &v1alpha1.HeaderFilter{
+					Header: gwv1.HTTPHeaderMatch{Type: &headerExact, Name: gwv1.HTTPHeaderName("x-test"), Value: "val"},
+				},
+			}},
 			verify: func(t *testing.T, got *envoyaccesslogv3.AccessLog) {
 				hf := got.GetFilter().GetHeaderFilter()
 				require.NotNil(t, hf)
@@ -1334,8 +1356,14 @@ func TestAccessLogFilters(t *testing.T) {
 			},
 		},
 		{
-			name:     "ResponseFlag UH",
-			alFilter: &v1alpha1.AccessLogFilter{FilterType: &v1alpha1.FilterType{ResponseFlagFilter: &v1alpha1.ResponseFlagFilter{Flags: []string{"UH"}}}},
+			name: "ResponseFlag UH",
+			alFilter: &v1alpha1.AccessLogFilter{
+				FilterType: &v1alpha1.FilterType{
+					ResponseFlagFilter: &v1alpha1.ResponseFlagFilter{
+						Flags: []string{"UH"},
+					},
+				},
+			},
 			verify: func(t *testing.T, got *envoyaccesslogv3.AccessLog) {
 				rf := got.GetFilter().GetResponseFlagFilter()
 				require.NotNil(t, rf)
@@ -1343,8 +1371,14 @@ func TestAccessLogFilters(t *testing.T) {
 			},
 		},
 		{
-			name:     "GrpcStatus NOT_FOUND",
-			alFilter: &v1alpha1.AccessLogFilter{FilterType: &v1alpha1.FilterType{GrpcStatusFilter: &v1alpha1.GrpcStatusFilter{Statuses: []v1alpha1.GrpcStatus{v1alpha1.NOT_FOUND}}}},
+			name: "GrpcStatus NOT_FOUND",
+			alFilter: &v1alpha1.AccessLogFilter{
+				FilterType: &v1alpha1.FilterType{
+					GrpcStatusFilter: &v1alpha1.GrpcStatusFilter{
+						Statuses: []v1alpha1.GrpcStatus{v1alpha1.NOT_FOUND},
+					},
+				},
+			},
 			verify: func(t *testing.T, got *envoyaccesslogv3.AccessLog) {
 				gs := got.GetFilter().GetGrpcStatusFilter()
 				require.NotNil(t, gs)
@@ -1353,8 +1387,12 @@ func TestAccessLogFilters(t *testing.T) {
 			},
 		},
 		{
-			name:     "CEL",
-			alFilter: &v1alpha1.AccessLogFilter{FilterType: &v1alpha1.FilterType{CELFilter: &v1alpha1.CELFilter{Match: "response.code >= 400"}}},
+			name: "CEL",
+			alFilter: &v1alpha1.AccessLogFilter{
+				FilterType: &v1alpha1.FilterType{
+					CELFilter: &v1alpha1.CELFilter{Match: "response.code >= 400"},
+				},
+			},
 			verify: func(t *testing.T, got *envoyaccesslogv3.AccessLog) {
 				ext := got.GetFilter().GetExtensionFilter()
 				require.NotNil(t, ext)
@@ -1362,8 +1400,10 @@ func TestAccessLogFilters(t *testing.T) {
 			},
 		},
 		{
-			name:     "And NotHealthCheck && Traceable",
-			alFilter: &v1alpha1.AccessLogFilter{AndFilter: []v1alpha1.FilterType{{NotHealthCheckFilter: true}, {TraceableFilter: true}}},
+			name: "And NotHealthCheck && Traceable",
+			alFilter: &v1alpha1.AccessLogFilter{
+				AndFilter: []v1alpha1.FilterType{{NotHealthCheckFilter: true}, {TraceableFilter: true}},
+			},
 			verify: func(t *testing.T, got *envoyaccesslogv3.AccessLog) {
 				and := got.GetFilter().GetAndFilter()
 				require.NotNil(t, and)
@@ -1373,8 +1413,19 @@ func TestAccessLogFilters(t *testing.T) {
 			},
 		},
 		{
-			name:     "Or Header || ResponseFlag",
-			alFilter: &v1alpha1.AccessLogFilter{OrFilter: []v1alpha1.FilterType{{HeaderFilter: &v1alpha1.HeaderFilter{Header: gwv1.HTTPHeaderMatch{Type: &headerExact, Name: gwv1.HTTPHeaderName("x-test"), Value: "val"}}}, {ResponseFlagFilter: &v1alpha1.ResponseFlagFilter{Flags: []string{"UH"}}}}},
+			name: "Or Header || ResponseFlag",
+			alFilter: &v1alpha1.AccessLogFilter{
+				OrFilter: []v1alpha1.FilterType{
+					{
+						HeaderFilter: &v1alpha1.HeaderFilter{
+							Header: gwv1.HTTPHeaderMatch{Type: &headerExact, Name: gwv1.HTTPHeaderName("x-test"), Value: "val"},
+						},
+					},
+					{
+						ResponseFlagFilter: &v1alpha1.ResponseFlagFilter{Flags: []string{"UH"}},
+					},
+				},
+			},
 			verify: func(t *testing.T, got *envoyaccesslogv3.AccessLog) {
 				orf := got.GetFilter().GetOrFilter()
 				require.NotNil(t, orf)
@@ -1392,7 +1443,24 @@ func TestAccessLogFilters(t *testing.T) {
 				Filter:   tc.alFilter,
 			}}, nil)
 			require.NoError(t, err)
-			got, err := generateAccessLogConfig(&ir.HcmContext{Gateway: pluginsdkir.GatewayIR{SourceObject: &pluginsdkir.Gateway{ObjectSource: pluginsdkir.ObjectSource{Name: "gw", Namespace: "default"}}}}, []v1alpha1.AccessLog{{Filter: tc.alFilter, FileSink: &v1alpha1.FileSink{Path: "/dev/stdout"}}}, cfgs)
+
+			hcmCtx := &ir.HcmContext{
+				Gateway: pluginsdkir.GatewayIR{
+					SourceObject: &pluginsdkir.Gateway{
+						ObjectSource: pluginsdkir.ObjectSource{
+							Name:      "gw",
+							Namespace: "default",
+						},
+					},
+				},
+			}
+
+			accessLogs := []v1alpha1.AccessLog{{
+				Filter:   tc.alFilter,
+				FileSink: &v1alpha1.FileSink{Path: "/dev/stdout"},
+			}}
+
+			got, err := generateAccessLogConfig(hcmCtx, accessLogs, cfgs)
 			require.NoError(t, err)
 			require.Len(t, got, 1)
 			require.NotNil(t, got[0].GetFilter())
