@@ -128,7 +128,7 @@ Statuses:
           status: "True"
           type: Accepted
         - lastTransitionTime: null
-          message: Successfully verified that listener has no conflicts
+          message: Successfully verified that Listener has no conflicts
           reason: NoConflicts
           status: "False"
           type: Conflicted
@@ -156,7 +156,7 @@ Statuses:
           status: "True"
           type: Accepted
         - lastTransitionTime: null
-          message: Successfully verified that listener has no conflicts
+          message: Successfully verified that Listener has no conflicts
           reason: NoConflicts
           status: "False"
           type: Conflicted
