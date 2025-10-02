@@ -365,9 +365,22 @@ func (s *StatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logge
 				return err
 			}
 
-			// Skip agentgateway classes, they are handled by agentgateway syncer
-			if string(gw.Spec.GatewayClassName) == s.agentgatewayClassName {
-				logger.Debug("skipping status sync for agentgateway", "gateway", gwnn.String())
+			// Check the controller name of the gateway class to avoid syncing status for non-envoy controllers
+			gwClass := gwv1.GatewayClass{}
+			err := s.mgr.GetClient().Get(ctx, types.NamespacedName{
+				Name: string(gw.Spec.GatewayClassName),
+			}, &gwClass)
+			if err != nil {
+				if apierrors.IsNotFound(err) {
+					logger.Debug("gateway class not found, skipping", "gateway", gwnn.String(), "gatewayClassName", gw.Spec.GatewayClassName)
+					return nil
+				}
+				logger.Error("error getting gateway class", "error", err, "gateway", gwnn.String(), "gatewayClassName", gw.Spec.GatewayClassName)
+				return err
+			}
+
+			if string(gwClass.Spec.ControllerName) != s.controllerName {
+				logger.Debug("skipping status sync for non-kgateway controller", "gateway", gwnn.String(), "controllerName", gwClass.Spec.ControllerName, "gatewayClassName", gw.Spec.GatewayClassName)
 				return nil
 			}
 

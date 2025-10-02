@@ -454,7 +454,7 @@ func ensureBasicGatewayConditions(status *gwv1.GatewayStatus, generation int64) 
 			Type:               string(gwv1.GatewayConditionAccepted),
 			Status:             metav1.ConditionTrue,
 			Reason:             string(gwv1.GatewayReasonAccepted),
-			Message:            "Gateway is accepted by agent-gateway controller",
+			Message:            reports.GatewayAcceptedMessage,
 			ObservedGeneration: generation,
 		})
 	}
@@ -465,7 +465,7 @@ func ensureBasicGatewayConditions(status *gwv1.GatewayStatus, generation int64) 
 			Type:               string(gwv1.GatewayConditionProgrammed),
 			Status:             metav1.ConditionTrue,
 			Reason:             string(gwv1.GatewayReasonProgrammed),
-			Message:            "Gateway is programmed by agent-gateway controller",
+			Message:            reports.GatewayProgrammedMessage,
 			ObservedGeneration: generation,
 		})
 	}
@@ -511,9 +511,22 @@ func (s *AgentGwStatusSyncer) syncGatewayStatus(ctx context.Context, logger *slo
 				return err
 			}
 
-			// Only process agentgateway classes - others are handled by ProxySyncer
-			if string(gw.Spec.GatewayClassName) != s.agwClassName {
-				logger.Debug("skipping status sync for non-agentgateway", logKeyGateway, gwnn.String())
+			// Check the controller name of the gateway class to avoid syncing status for non-agentgateway controllers
+			gwClass := gwv1.GatewayClass{}
+			err = s.mgr.GetClient().Get(ctx, types.NamespacedName{
+				Name: string(gw.Spec.GatewayClassName),
+			}, &gwClass)
+			if err != nil {
+				if apierrors.IsNotFound(err) {
+					logger.Debug("gateway class not found, skipping", logKeyGateway, gwnn.String(), "gatewayClassName", gw.Spec.GatewayClassName)
+					continue
+				}
+				logger.Error("error getting gateway class", logKeyError, err, logKeyGateway, gwnn.String(), "gatewayClassName", gw.Spec.GatewayClassName)
+				return err
+			}
+
+			if string(gwClass.Spec.ControllerName) != s.controllerName {
+				logger.Debug("skipping status sync for non-agentgateway controller", logKeyGateway, gwnn.String(), "controllerName", gwClass.Spec.ControllerName, "gatewayClassName", gw.Spec.GatewayClassName)
 				continue
 			}
 

@@ -20,6 +20,7 @@ import (
 
 	intdeployer "github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 const (
@@ -129,7 +130,7 @@ func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 			Status:             metav1.ConditionTrue,
 			ObservedGeneration: gw.Generation,
 			Reason:             string(api.GatewayReasonAccepted),
-			Message:            "Gateway is accepted",
+			Message:            reports.GatewayAcceptedMessage,
 		}
 		if statusErr := r.updateGatewayStatusWithRetry(ctx, &gw, condition); statusErr != nil {
 			log.Error(statusErr, "failed to update Gateway status after retries")

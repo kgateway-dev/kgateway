@@ -178,7 +178,7 @@ func (s *Syncer) buildGatewayCollection(
 	krtopts krtutil.KrtOptions,
 ) krt.Collection[translator.GatewayListener] {
 	return translator.GatewayCollection(
-		s.agentgatewayClassName,
+		s.controllerName,
 		s.agwCollections.Gateways,
 		gatewayClasses,
 		s.agwCollections.Namespaces,

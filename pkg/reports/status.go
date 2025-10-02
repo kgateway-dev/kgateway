@@ -22,16 +22,15 @@ import (
 
 // Status message constants
 const (
-	GatewayAcceptedMessage       = "Gateway is accepted"
-	GatewayProgrammedMessage     = "Gateway is programmed"
-	ListenerSetAcceptedMessage   = "ListenerSet is accepted"
-	ListenerSetProgrammedMessage = "ListenerSet is programmed"
-	ListenerAcceptedMessage      = "Listener is accepted"
-	ListenerNoConflictsMessage   = "Listener does not have conflicts"
-	ListenerValidRefsMessage     = "Listener has valid refs"
-	ListenerProgrammedMessage    = "Listener is programmed"
-	RouteAcceptedMessage         = "Route is accepted"
-	RouteValidRefsMessage        = "Route has valid refs"
+	GatewayAcceptedMessage       = "Successfully accepted Gateway"
+	GatewayProgrammedMessage     = "Successfully programmed Gateway"
+	ListenerSetAcceptedMessage   = "Successfully accepted ListenerSet"
+	ListenerSetProgrammedMessage = "Successfully programmed ListenerSet"
+	ListenerAcceptedMessage      = "Successfully accepted Listener"
+	ListenerNoConflictsMessage   = "Successfully verified that Listener has no conflicts"
+	ValidRefsMessage             = "Successfully resolved all references"
+	ListenerProgrammedMessage    = "Successfully programmed Listener"
+	RouteAcceptedMessage         = "Successfully accepted Route"
 )
 
 // TODO: refactor this struct + methods to better reflect the usage now in proxy_syncer
@@ -446,7 +445,7 @@ func addMissingListenerConditions(lisReport *ListenerReport) {
 			Type:    gwv1.ListenerConditionResolvedRefs,
 			Status:  metav1.ConditionTrue,
 			Reason:  gwv1.ListenerReasonResolvedRefs,
-			Message: ListenerValidRefsMessage,
+			Message: ValidRefsMessage,
 		})
 	}
 	if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(gwv1.ListenerConditionProgrammed)); cond == nil {
@@ -476,7 +475,7 @@ func addMissingParentRefConditions(report *ParentRefReport) {
 			Type:    gwv1.RouteConditionResolvedRefs,
 			Status:  metav1.ConditionTrue,
 			Reason:  gwv1.RouteReasonResolvedRefs,
-			Message: RouteValidRefsMessage,
+			Message: ValidRefsMessage,
 		})
 	}
 }

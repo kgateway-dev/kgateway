@@ -39,6 +39,11 @@ func TestParseAppProtocol(t *testing.T) {
 			expected: WebSocketAppProtocol,
 		},
 		{
+			name:     "HTTP2",
+			input:    ptr.To("HTTP2"),
+			expected: HTTP2AppProtocol,
+		},
+		{
 			name:     "(empty)",
 			input:    nil,
 			expected: DefaultAppProtocol,

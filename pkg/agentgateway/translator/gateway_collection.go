@@ -177,7 +177,7 @@ func (g GatewayListener) Equals(other GatewayListener) bool {
 
 // GatewayCollection returns a collection of the internal representations GatewayListeners for the given gateway.
 func GatewayCollection(
-	agwClassName string,
+	controllerName string,
 	gateways krt.Collection[*gwv1.Gateway],
 	gatewayClasses krt.Collection[GatewayClass],
 	namespaces krt.Collection[*corev1.Namespace],
@@ -191,18 +191,18 @@ func GatewayCollection(
 		gwReporter := statusReporter.Gateway(obj)
 		logger.Debug("translating Gateway", "gw_name", obj.GetName(), "resource_version", obj.GetResourceVersion())
 
-		if string(obj.Spec.GatewayClassName) != agwClassName {
-			return nil // ignore non agentgateway gws
+		class := fetchClass(ctx, gatewayClasses, obj.Spec.GatewayClassName, controllerName)
+		if class == nil {
+			return nil
+		}
+		if string(class.Controller) != controllerName {
+			return nil // ignore gateways not managed by our controller
 		}
 
 		var result []GatewayListener
 		kgw := obj.Spec
 		status := obj.Status.DeepCopy()
-		class := fetchClass(ctx, gatewayClasses, kgw.GatewayClassName)
-		if class == nil {
-			return nil
-		}
-		controllerName := class.Controller
+		classControllerName := class.Controller
 		var servers []*istio.Server
 
 		// Extract the addresses. A gwv1 will bind to a specific Service
@@ -224,7 +224,7 @@ func GatewayCollection(
 			// when the real count is available after route processing
 			attachedCount := int32(0) // Default to 0 if not found
 
-			server, tlsInfo, programmed := BuildListener(ctx, secrets, grants, namespaces, obj, status, l, i, controllerName, attachedCount)
+			server, tlsInfo, programmed := BuildListener(ctx, secrets, grants, namespaces, obj, status, l, i, classControllerName, attachedCount)
 
 			lstatus := status.Listeners[i]
 
