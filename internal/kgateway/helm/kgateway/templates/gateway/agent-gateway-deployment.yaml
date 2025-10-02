@@ -97,15 +97,21 @@ spec:
             - name: RUST_LOG
               value: {{ $gateway.agentgateway.logLevel }}
             - name: XDS_ADDRESS
+              {{- if and $gateway.agwXds.tls $gateway.agwXds.tls.enabled }}
+              value: "https://{{ $gateway.xds.host }}:{{ $gateway.agwXds.port }}"
+              {{- else }}
               value: "http://{{ $gateway.xds.host }}:{{ $gateway.agwXds.port }}"
+              {{- end }}
+            {{- if and $gateway.agwXds.tls $gateway.agwXds.tls.enabled }}
+            - name: XDS_ROOT_CA
+              value: "/etc/xds-tls/ca.crt"
+            {{- end }}
             - name: NAMESPACE
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: GATEWAY
               value: {{ include "kgateway.gateway.fullname" . }}
-{{/*            - name: LOCAL_XDS_PATH*/}}
-{{/*              value: /config/config.yaml*/}}
             {{- if $gateway.env }}
             {{- toYaml $gateway.env | nindent 12 }}
             {{- end }}
@@ -118,6 +124,11 @@ spec:
             - name: xds-token
               mountPath: /var/run/secrets/xds-tokens
               readOnly: true
+            {{- if and $gateway.agwXds.tls $gateway.agwXds.tls.enabled }}
+            - name: xds-ca
+              mountPath: /etc/xds-tls
+              readOnly: true
+            {{- end }}
             {{- with $gateway.extraVolumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
@@ -138,6 +149,14 @@ spec:
                 path: xds-token
         - name: tmp
           emptyDir: {}
+        {{- if and $gateway.agwXds.tls $gateway.agwXds.tls.enabled }}
+        - name: xds-ca
+          configMap:
+            name: {{ include "kgateway.gateway.fullname" . }}-xds-ca
+            items:
+            - key: ca.crt
+              path: ca.crt
+        {{- end }}
         {{- with $gateway.extraVolumes }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -224,6 +243,20 @@ metadata:
 data:
   config.yaml: |
     config: {}
+{{- end }}
+
+{{- if and $gateway.agwXds.tls $gateway.agwXds.tls.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kgateway.gateway.fullname" . }}-xds-ca
+  labels:
+    {{- include "kgateway.gateway.constLabels" . | nindent 4 }}
+    {{- include "kgateway.gateway.labels" . | nindent 4 }}
+data:
+  ca.crt: |
+{{ $gateway.agwXds.tls.caCert | indent 4 }}
 {{- end }}
 
 {{- end }} {{/* if $gateway.agentgateway.enabled */}}

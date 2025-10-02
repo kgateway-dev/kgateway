@@ -13,6 +13,9 @@ var (
 	// We prefer to have our tests be explicit and require defining a values file. However, some tests
 	// rely entirely on the values provided by the "profile". In those cases, the test supplies this reference
 	EmptyValuesManifestPath = ManifestPath("empty-values.yaml")
+
+	// ControlPlaneTLSManifestPath returns the path to a manifest with TLS enabled for xDS communication
+	ControlPlaneTLSManifestPath = ManifestPath("controlplane-tls-helm.yaml")
 )
 
 // ManifestPath returns the absolute path to a manifest file.

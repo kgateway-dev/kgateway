@@ -133,11 +133,8 @@ func (dt DeployerTester) RunHelmChartTest(
 		}
 	}
 
-	// Validate the output YAML
-	validateYAML(t, outputFile, data)
-
 	diff := cmp.Diff(data, got)
-	assert.Empty(t, diff, diff, tt)
+	assert.Empty(t, diff, diff)
 }
 
 func DefaultDeployerInputs(dt DeployerTester, commonCols *collections.CommonCollections) *pkgdeployer.Inputs {

@@ -26,6 +26,15 @@ const (
 	// FallbackNodeCacheKey is used to let nodes know they have a bad config
 	// we assign a "fix me" snapshot for bad nodes
 	FallbackNodeCacheKey = "misconfigured-node"
+
+	// TLSCertPath is the path to the TLS certificate
+	TLSCertPath = "/etc/xds-tls/tls.crt"
+
+	// TLSKeyPath is the path to the TLS key
+	TLSKeyPath = "/etc/xds-tls/tls.key"
+
+	// TLSRootCAPath is the path to the TLS root CA
+	TLSRootCAPath = "/etc/xds-tls/ca.crt"
 )
 
 func IsKubeGatewayCacheKey(key string) bool {
