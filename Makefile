@@ -720,24 +720,28 @@ agw-conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go
 #----------------------------------------------------------------------------------
 
 .PHONY: bump-gtw
-bump-gtw: ## Bump Gateway API deps to $DEP_VERSION
-ifndef DEP_VERSION
-	$(error DEP_VERSION is not set, e.g. make bump-gtw DEP_VERSION=v1.3.0)
-endif
-	@echo "Bumping Gateway API to $(DEP_VERSION)"
-	@$(SHELL) hack/bump_deps.sh gtw $(DEP_VERSION)
-	@echo "Updating licensing..."
-	@$(MAKE) generate-licenses
+bump-gtw: ## Bump Gateway API deps to $DEP_REF (or $DEP_VERSION). Example: make bump-gtw DEP_REF=198e6cab...
+	@if [ -z "$${DEP_REF:-}" ] && [ -n "$${DEP_VERSION:-}" ]; then DEP_REF="$$DEP_VERSION"; fi; \
+	if [ -z "$${DEP_REF:-}" ]; then \
+	  echo "DEP_REF is not set (or DEP_VERSION). e.g. make bump-gtw DEP_REF=v1.3.0 or DEP_REF=198e6cab6774..."; \
+	  exit 2; \
+	fi; \
+	echo "Bumping Gateway API to $${DEP_REF}"; \
+	$(SHELL) hack/bump_deps.sh gtw "$$DEP_REF"; \
+	echo "Updating licensing..."; \
+	$(MAKE) generate-licenses
 
 .PHONY: bump-gie
-bump-gie: ## Bump Gateway API Inference Extension to $DEP_VERSION
-ifndef DEP_VERSION
-	$(error DEP_VERSION is not set, e.g. make bump-gie DEP_VERSION=v0.5.0)
-endif
-	@echo ">>> Bumping Gateway API Inference Extension to $(DEP_VERSION)"
-	@$(SHELL) hack/bump_deps.sh gie $(DEP_VERSION)
-	@echo "Updating licensing..."
-	@$(MAKE) generate-licenses
+bump-gie: ## Bump Gateway API Inference Extension to $DEP_REF (or $DEP_VERSION). Example: make bump-gie DEP_REF=198e6cab...
+	@if [ -z "$${DEP_REF:-}" ] && [ -n "$${DEP_VERSION:-}" ]; then DEP_REF="$$DEP_VERSION"; fi; \
+	if [ -z "$${DEP_REF:-}" ]; then \
+	  echo "DEP_REF is not set (or DEP_VERSION). e.g. make bump-gie DEP_REF=v0.5.1 or DEP_REF=198e6cab6774..."; \
+	  exit 2; \
+	fi; \
+	echo ">>> Bumping Gateway API Inference Extension to $${DEP_REF}"; \
+	$(SHELL) hack/bump_deps.sh gie "$$DEP_REF"; \
+	echo "Updating licensing..."; \
+	$(MAKE) generate-licenses
 
 #----------------------------------------------------------------------------------
 # Printing makefile variables utility
