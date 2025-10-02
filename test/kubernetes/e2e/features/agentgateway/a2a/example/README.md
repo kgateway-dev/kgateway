@@ -78,7 +78,7 @@ Note: if you want to update test container:
 1. Tag the container:
 
 ```bash
-docker tage test-a2a-server-local ghcr.io/kgateway-dev/test-a2a-server:0.0.<version>
+docker tag test-a2a-server-local ghcr.io/kgateway-dev/test-a2a-server:0.0.<version>
 ```
 
 2. Push to Github repo:
