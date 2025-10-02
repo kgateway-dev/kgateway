@@ -223,7 +223,7 @@ Statuses:
           status: "True"
           type: Accepted
         - lastTransitionTime: null
-          message: Listener does not have conflicts
+          message: Successfully verified that listener has no conflicts
           reason: NoConflicts
           status: "False"
           type: Conflicted
@@ -251,7 +251,7 @@ Statuses:
           status: "True"
           type: Accepted
         - lastTransitionTime: null
-          message: Listener does not have conflicts
+          message: Successfully verified that listener has no conflicts
           reason: NoConflicts
           status: "False"
           type: Conflicted
@@ -279,7 +279,7 @@ Statuses:
           status: "True"
           type: Accepted
         - lastTransitionTime: null
-          message: Listener does not have conflicts
+          message: Successfully verified that listener has no conflicts
           reason: NoConflicts
           status: "False"
           type: Conflicted

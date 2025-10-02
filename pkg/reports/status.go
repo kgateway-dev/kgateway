@@ -27,7 +27,7 @@ const (
 	ListenerSetAcceptedMessage   = "Successfully accepted ListenerSet"
 	ListenerSetProgrammedMessage = "Successfully programmed ListenerSet"
 	ListenerAcceptedMessage      = "Successfully accepted Listener"
-	ListenerNoConflictsMessage   = "Listener does not have conflicts"
+	ListenerNoConflictsMessage   = "Successfully verified that listener has no conflicts"
 	ValidRefsMessage             = "Successfully resolved all references"
 	ListenerProgrammedMessage    = "Successfully programmed Listener"
 	RouteAcceptedMessage         = "Successfully accepted Route"
