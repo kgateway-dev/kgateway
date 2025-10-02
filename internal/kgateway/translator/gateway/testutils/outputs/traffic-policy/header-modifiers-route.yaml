@@ -169,12 +169,12 @@ Statuses:
         status: "True"
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: Gateway is accepted
+        message: Successfully accepted Gateway
         reason: Accepted
         status: "True"
         type: Accepted
       - lastTransitionTime: null
-        message: Gateway is programmed
+        message: Successfully programmed Gateway
         reason: Programmed
         status: "True"
         type: Programmed
@@ -182,22 +182,22 @@ Statuses:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: Listener is accepted
+          message: Successfully accepted Listener
           reason: Accepted
           status: "True"
           type: Accepted
         - lastTransitionTime: null
-          message: Listener does not have conflicts
+          message: Successfully verified that Listener has no conflicts
           reason: NoConflicts
           status: "False"
           type: Conflicted
         - lastTransitionTime: null
-          message: Listener has valid refs
+          message: Successfully resolved all references
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
         - lastTransitionTime: null
-          message: Listener is programmed
+          message: Successfully programmed Listener
           reason: Programmed
           status: "True"
           type: Programmed
@@ -212,12 +212,12 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: Route is accepted
+          message: Successfully accepted Route
           reason: Accepted
           status: "True"
           type: Accepted
         - lastTransitionTime: null
-          message: Route has valid refs
+          message: Successfully resolved all references
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
@@ -231,12 +231,12 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: Route is accepted
+          message: Successfully accepted Route
           reason: Accepted
           status: "True"
           type: Accepted
         - lastTransitionTime: null
-          message: Route has valid refs
+          message: Successfully resolved all references
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
@@ -250,12 +250,12 @@ Statuses:
     default/ls:
       conditions:
       - lastTransitionTime: null
-        message: ListenerSet is accepted
+        message: Successfully accepted ListenerSet
         reason: Accepted
         status: "True"
         type: Accepted
       - lastTransitionTime: null
-        message: ListenerSet is programmed
+        message: Successfully programmed ListenerSet
         reason: Programmed
         status: "True"
         type: Programmed
@@ -263,22 +263,22 @@ Statuses:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: Listener is accepted
+          message: Successfully accepted Listener
           reason: Accepted
           status: "True"
           type: Accepted
         - lastTransitionTime: null
-          message: Listener does not have conflicts
+          message: Successfully verified that Listener has no conflicts
           reason: NoConflicts
           status: "False"
           type: Conflicted
         - lastTransitionTime: null
-          message: Listener has valid refs
+          message: Successfully resolved all references
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
         - lastTransitionTime: null
-          message: Listener is programmed
+          message: Successfully programmed Listener
           reason: Programmed
           status: "True"
           type: Programmed
