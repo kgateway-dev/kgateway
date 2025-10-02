@@ -753,7 +753,8 @@ func (u *urlRewriteIr) apply(
 	if u.HostRewrite != nil && policy.IsSettable(outputRoute.GetRoute().GetHostRewriteSpecifier(), mergeOpts) {
 		outputRoute.GetRoute().HostRewriteSpecifier = u.HostRewrite
 	}
-	if u.FullReplace != "" && policy.IsSettable(outputRoute.GetRoute().GetRegexRewrite(), mergeOpts) {
+	if u.FullReplace != "" && policy.IsSettable(outputRoute.GetRoute().GetRegexRewrite(), mergeOpts) &&
+		policy.IsSettable(outputRoute.GetRoute().GetPrefixRewrite(), mergeOpts) {
 		outputRoute.GetRoute().RegexRewrite = &envoy_type_matcher_v3.RegexMatchAndSubstitute{
 			Pattern: &envoy_type_matcher_v3.RegexMatcher{
 				Regex: ".*",
@@ -761,7 +762,8 @@ func (u *urlRewriteIr) apply(
 			Substitution: u.FullReplace,
 		}
 	}
-	if u.PrefixReplace != "" {
+	if u.PrefixReplace != "" && policy.IsSettable(outputRoute.GetRoute().GetRegexRewrite(), mergeOpts) &&
+		policy.IsSettable(outputRoute.GetRoute().GetPrefixRewrite(), mergeOpts) {
 		path := outputRoute.GetMatch().GetPrefix()
 		if path == "" {
 			path = outputRoute.GetMatch().GetPath()
@@ -769,14 +771,14 @@ func (u *urlRewriteIr) apply(
 		if path == "" {
 			path = outputRoute.GetMatch().GetPathSeparatedPrefix()
 		}
-		if path != "" && u.PrefixReplace == "/" && policy.IsSettable(outputRoute.GetRoute().GetRegexRewrite(), mergeOpts) {
+		if path != "" && u.PrefixReplace == "/" {
 			outputRoute.GetRoute().RegexRewrite = &envoy_type_matcher_v3.RegexMatchAndSubstitute{
 				Pattern: &envoy_type_matcher_v3.RegexMatcher{
 					Regex: "^" + path + "\\/*",
 				},
 				Substitution: "/",
 			}
-		} else if policy.IsSettable(outputRoute.GetRoute().GetPrefixRewrite(), mergeOpts) {
+		} else {
 			outputRoute.GetRoute().PrefixRewrite = u.PrefixReplace
 		}
 	}
