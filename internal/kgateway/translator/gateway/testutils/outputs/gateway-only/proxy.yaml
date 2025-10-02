@@ -48,7 +48,7 @@ Statuses:
         status: "True"
         type: Accepted
       - lastTransitionTime: null
-        message: Gateway is programmed
+        message: Successfully programmed Gateway
         reason: Programmed
         status: "True"
         type: Programmed
@@ -56,7 +56,7 @@ Statuses:
       - attachedRoutes: 0
         conditions:
         - lastTransitionTime: null
-          message: Listener is accepted
+          message: Successfully accepted Listener
           reason: Accepted
           status: "True"
           type: Accepted
@@ -66,12 +66,12 @@ Statuses:
           status: "False"
           type: Conflicted
         - lastTransitionTime: null
-          message: Listener has valid refs
+          message: Successfully resolved all references
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
         - lastTransitionTime: null
-          message: Listener is programmed
+          message: Successfully programmed Listener
           reason: Programmed
           status: "True"
           type: Programmed
@@ -89,7 +89,7 @@ Statuses:
           status: "False"
           type: Programmed
         - lastTransitionTime: null
-          message: Listener is accepted
+          message: Successfully accepted Listener
           reason: Accepted
           status: "True"
           type: Accepted
@@ -99,7 +99,7 @@ Statuses:
           status: "False"
           type: Conflicted
         - lastTransitionTime: null
-          message: Listener has valid refs
+          message: Successfully resolved all references
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
@@ -115,7 +115,7 @@ Statuses:
           status: "False"
           type: Programmed
         - lastTransitionTime: null
-          message: Listener is accepted
+          message: Successfully accepted Listener
           reason: Accepted
           status: "True"
           type: Accepted
@@ -125,7 +125,7 @@ Statuses:
           status: "False"
           type: Conflicted
         - lastTransitionTime: null
-          message: Listener has valid refs
+          message: Successfully resolved all references
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
