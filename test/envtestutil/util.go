@@ -301,3 +301,13 @@ rules:
 	}
 	return f.Name()
 }
+
+func BuildSettings() (*settings.Settings, error) {
+	s, err := settings.BuildSettings()
+	if err != nil {
+		return nil, err
+	}
+	// xDS auth requires projected Service Account token which does not work in envtest
+	s.XdsAuth = false
+	return s, nil
+}

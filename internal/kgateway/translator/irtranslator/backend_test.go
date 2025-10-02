@@ -212,7 +212,7 @@ func TestBackendTranslatorHandlesXDSValidationErrors(t *testing.T) {
 	bt.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{}
 
 	// Set up strict mode and inject the mock validator
-	bt.Mode = settings.RouteReplacementStrict
+	bt.Mode = settings.ValidationStrict
 	bt.Validator = mockValidator
 
 	var ucc ir.UniqlyConnectedClient

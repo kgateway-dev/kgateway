@@ -22,7 +22,7 @@ func TestRouteReplacement(t *testing.T) {
 			ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
 			ValuesManifestFile:        e2e.EmptyValuesManifestPath,
 			ExtraHelmArgs: []string{
-				"--set", "controller.extraEnv.KGW_ROUTE_REPLACEMENT_MODE=STRICT",
+				"--set", "validation.level=strict",
 			},
 		},
 	)

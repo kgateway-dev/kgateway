@@ -113,3 +113,13 @@ policyMerge: {}
 # -- Enable the waypoint integration. This enables kgateway to translate istio waypoints and use kgateway as a waypoint in an Istio Ambient service mesh setup..
 waypoint:
   enabled: false
+
+# -- Configure validation behavior for route and policy safety checks in the control plane.
+#    This setting determines how invalid configuration is handled to prevent security bypasses
+#    and to maintain multi-tenant isolation.
+validation:
+  # -- Validation level. Accepted values: "standard" or "strict" (case-insensitive).
+  #    Standard replaces invalid routes with a direct 500 response and continues applying valid configuration.
+  #    Strict adds xDS preflight validation and blocks snapshots that would NACK in Envoy.
+  #    Default is "standard".
+  level: standard

@@ -123,6 +123,10 @@ type BackendObjectIR struct {
 	// CanonicalHostnames.
 	ExtraKey string
 
+	// RequiresPolicyStatus indicates if this Backend may require updating status of an attached policy
+	// This is essentially a precomputation of whether there are any 'AttachedPolicies' that are objects
+	RequiresPolicyStatus bool
+
 	AttachedPolicies AttachedPolicies
 
 	// Errors is a list of errors, if any, encountered while constructing this BackendObject

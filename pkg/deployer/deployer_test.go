@@ -17,8 +17,6 @@ import (
 	"github.com/onsi/gomega/types"
 	jsonpb "google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
-	"istio.io/istio/pkg/kube/krt/krttest"
-	"istio.io/istio/pkg/test"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -27,25 +25,19 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	api "sigs.k8s.io/gateway-api/apis/v1"
 	apixv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/settings"
 	gw2_v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	deployerinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/httplistenerpolicy"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/internal/version"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
-	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
-	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
+	deployertest "github.com/kgateway-dev/kgateway/v2/test/deployer"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 
 	// TODO BML tests in this suite fail if this no-op import is not imported first.
@@ -452,7 +444,7 @@ var _ = Describe("Deployer", func() {
 			}
 
 			gwp := deployerinternal.NewGatewayParameters(newFakeClientWithObjs(gwc, gwParams), &deployer.Inputs{
-				CommonCollections: newCommonCols(GinkgoT(), gwc, gw),
+				CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw),
 				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
 					XdsHost:    "something.cluster.local",
@@ -538,7 +530,7 @@ var _ = Describe("Deployer", func() {
 			}
 			var err error
 			gwParams := deployerinternal.NewGatewayParameters(newFakeClientWithObjs(gwc, gwp), &deployer.Inputs{
-				CommonCollections: newCommonCols(GinkgoT(), gwc, gw),
+				CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw),
 				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
 					XdsHost:    "something.cluster.local",
@@ -617,7 +609,7 @@ var _ = Describe("Deployer", func() {
 				},
 			}
 			gwParams := deployerinternal.NewGatewayParameters(newFakeClientWithObjs(gwc, gwp), &deployer.Inputs{
-				CommonCollections: newCommonCols(GinkgoT(), gwc, gw),
+				CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw),
 				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
 					XdsHost:    "something.cluster.local",
@@ -718,7 +710,7 @@ var _ = Describe("Deployer", func() {
 				},
 			}
 			gwParams := deployerinternal.NewGatewayParameters(newFakeClientWithObjs(gwc, gwp), &deployer.Inputs{
-				CommonCollections: newCommonCols(GinkgoT(), gwc, gw),
+				CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw),
 				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
 					XdsHost:    "something.cluster.local",
@@ -805,7 +797,7 @@ var _ = Describe("Deployer", func() {
 				},
 			}
 			gwParams := deployerinternal.NewGatewayParameters(newFakeClientWithObjs(gwc, gwp), &deployer.Inputs{
-				CommonCollections: newCommonCols(GinkgoT(), gwc, gw),
+				CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw),
 				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
 					XdsHost:    "something.cluster.local",
@@ -872,7 +864,7 @@ var _ = Describe("Deployer", func() {
 				},
 			}
 			gwParams := deployerinternal.NewGatewayParameters(newFakeClientWithObjs(gwc, gwp), &deployer.Inputs{
-				CommonCollections: newCommonCols(GinkgoT(), gwc, gw),
+				CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw),
 				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
 					XdsHost:    "something.cluster.local",
@@ -972,7 +964,7 @@ var _ = Describe("Deployer", func() {
 				},
 			}
 			gwParams := deployerinternal.NewGatewayParameters(newFakeClientWithObjs(gwc, gwp), &deployer.Inputs{
-				CommonCollections: newCommonCols(GinkgoT(), gwc, gw),
+				CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw),
 				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
 					XdsHost:    "something.cluster.local",
@@ -1044,7 +1036,7 @@ var _ = Describe("Deployer", func() {
 				},
 			}
 			gwParams := deployerinternal.NewGatewayParameters(newFakeClientWithObjs(gwc, gwp), &deployer.Inputs{
-				CommonCollections: newCommonCols(GinkgoT(), gwc, gw),
+				CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw),
 				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
 					XdsHost:    "something.cluster.local",
@@ -1136,7 +1128,7 @@ var _ = Describe("Deployer", func() {
 			}
 
 			gwParams1 := deployerinternal.NewGatewayParameters(newFakeClientWithObjs(gwc, defaultGatewayParams()), &deployer.Inputs{
-				CommonCollections: newCommonCols(GinkgoT(), gwc, gw1, gw2),
+				CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw1, gw2),
 				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
 					XdsHost:    "something.cluster.local",
@@ -1164,7 +1156,7 @@ var _ = Describe("Deployer", func() {
 			)
 
 			gwParams2 := deployerinternal.NewGatewayParameters(newFakeClientWithObjs(gwc, defaultGatewayParams()), &deployer.Inputs{
-				CommonCollections: newCommonCols(GinkgoT(), gwc, gw1, gw2),
+				CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw1, gw2),
 				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
 					XdsHost:    "something.cluster.local",
@@ -1238,7 +1230,7 @@ var _ = Describe("Deployer", func() {
 			}
 
 			gwParams := deployerinternal.NewGatewayParameters(newFakeClientWithObjs(defaultGatewayClass()), &deployer.Inputs{
-				CommonCollections: newCommonCols(GinkgoT(), defaultGatewayClass(), gw),
+				CommonCollections: deployertest.NewCommonCols(GinkgoT(), defaultGatewayClass(), gw),
 				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
 					XdsHost:    "something.cluster.local",
@@ -1286,7 +1278,7 @@ var _ = Describe("Deployer", func() {
 			}
 
 			gwParams := deployerinternal.NewGatewayParameters(newFakeClientWithObjs(defaultGatewayClass()), &deployer.Inputs{
-				CommonCollections: newCommonCols(GinkgoT(), defaultGatewayClass(), gw),
+				CommonCollections: deployertest.NewCommonCols(GinkgoT(), defaultGatewayClass(), gw),
 				Dev:               false,
 				ControlPlane: deployer.ControlPlaneInfo{
 					XdsHost:    "something.cluster.local",
@@ -1351,7 +1343,7 @@ var _ = Describe("Deployer", func() {
 				}
 
 				gwParams := deployerinternal.NewGatewayParameters(newFakeClientWithObjs(gwc), &deployer.Inputs{
-					CommonCollections: newCommonCols(GinkgoT(), gwc, gw),
+					CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw),
 					Dev:               false,
 					ControlPlane: deployer.ControlPlaneInfo{
 						XdsHost:    "something.cluster.local",
@@ -1446,7 +1438,7 @@ var _ = Describe("Deployer", func() {
 				}
 				gwc := defaultGatewayClass()
 				gwParams := deployerinternal.NewGatewayParameters(newFakeClientWithObjs(gwc, gwp), &deployer.Inputs{
-					CommonCollections: newCommonCols(GinkgoT(), gwc, gw),
+					CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw),
 					Dev:               false,
 					ControlPlane: deployer.ControlPlaneInfo{
 						XdsHost:    "something.cluster.local",
@@ -1549,7 +1541,7 @@ var _ = Describe("Deployer", func() {
 					},
 				}
 				gwParams := deployerinternal.NewGatewayParameters(newFakeClientWithObjs(gwc, gwp), &deployer.Inputs{
-					CommonCollections: newCommonCols(GinkgoT(), gwc, gw),
+					CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw),
 					Dev:               false,
 					ControlPlane: deployer.ControlPlaneInfo{
 						XdsHost:    "something.cluster.local",
@@ -2382,7 +2374,7 @@ var _ = Describe("Deployer", func() {
 				inputObjs = append(inputObjs, inp.gwc)
 			}
 			if inp.dInputs != nil {
-				inp.dInputs.CommonCollections = newCommonCols(GinkgoT(), inputObjs...)
+				inp.dInputs.CommonCollections = deployertest.NewCommonCols(GinkgoT(), inputObjs...)
 			}
 
 			// run break-glass setup
@@ -3005,7 +2997,7 @@ var _ = Describe("Deployer", func() {
 
 			gwParams := deployerinternal.NewGatewayParameters(
 				newFakeClientWithObjs(defaultGatewayClass(), defaultGatewayParams()), &deployer.Inputs{
-					CommonCollections: newCommonCols(GinkgoT(), defaultGatewayClass(), gw, ls),
+					CommonCollections: deployertest.NewCommonCols(GinkgoT(), defaultGatewayClass(), gw, ls),
 					Dev:               false,
 					ControlPlane: deployer.ControlPlaneInfo{
 						XdsHost: "something.cluster.local", XdsPort: 1234, AgwXdsPort: 5678,
@@ -3050,32 +3042,6 @@ var _ = Describe("Deployer", func() {
 		})
 	})
 })
-
-// initialize a fake controller-runtime client with the given list of objects
-func newFakeClientWithObjs(objs ...client.Object) client.Client {
-	scheme := schemes.GatewayScheme()
-
-	// Ensure the rbac types are registered.
-	if err := rbacv1.AddToScheme(scheme); err != nil {
-		panic(fmt.Sprintf("failed to add rbacv1 scheme: %v", err))
-	}
-
-	// Check if any object is an InferencePool, and add its scheme if needed.
-	for _, obj := range objs {
-		gvk := obj.GetObjectKind().GroupVersionKind()
-		if gvk.Kind == wellknown.InferencePoolKind {
-			if err := inf.Install(scheme); err != nil {
-				panic(fmt.Sprintf("failed to add InferenceExtension scheme: %v", err))
-			}
-			break
-		}
-	}
-
-	return fake.NewClientBuilder().
-		WithScheme(scheme).
-		WithObjects(objs...).
-		Build()
-}
 
 func fullyDefinedGatewayParameters(name, namespace string) *gw2_v1alpha1.GatewayParameters {
 	return &gw2_v1alpha1.GatewayParameters{
@@ -3253,6 +3219,9 @@ func fullyDefinedGatewayParameters(name, namespace string) *gw2_v1alpha1.Gateway
 		},
 	}
 }
+func newFakeClientWithObjs(objs ...client.Object) client.Client {
+	return deployertest.NewFakeClientWithObjs(objs...)
+}
 
 func generateLivenessProbe() *corev1.Probe {
 	return &corev1.Probe{
@@ -3299,35 +3268,6 @@ func generateReadinessProbe() *corev1.Probe {
 		InitialDelaySeconds: 5,
 		PeriodSeconds:       10,
 	}
-}
-
-func newCommonCols(t test.Failer, initObjs ...client.Object) *collections.CommonCollections {
-	ctx := context.Background()
-	var anys []any
-	for _, obj := range initObjs {
-		anys = append(anys, obj)
-	}
-	mock := krttest.NewMock(t, anys)
-
-	policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, sdk.ContributesPolicies{}, settings.Settings{})
-	kubeRawGateways := krttest.GetMockCollection[*api.Gateway](mock)
-	kubeRawListenerSets := krttest.GetMockCollection[*apixv1a1.XListenerSet](mock)
-	gatewayClasses := krttest.GetMockCollection[*api.GatewayClass](mock)
-	nsCol := krtcollections.NewNamespaceCollectionFromCol(ctx, krttest.GetMockCollection[*corev1.Namespace](mock), krtutil.KrtOptions{})
-
-	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
-	gateways := krtcollections.NewGatewayIndex(krtopts, wellknown.DefaultGatewayControllerName, policies, kubeRawGateways, kubeRawListenerSets, gatewayClasses, nsCol)
-
-	commonCols := &collections.CommonCollections{
-		GatewayIndex: gateways,
-	}
-
-	for !kubeRawGateways.HasSynced() || !kubeRawListenerSets.HasSynced() || !gatewayClasses.HasSynced() {
-		time.Sleep(time.Second / 10)
-	}
-
-	gateways.Gateways.WaitUntilSynced(ctx.Done())
-	return commonCols
 }
 
 var _ = Describe("DeployObjs", func() {

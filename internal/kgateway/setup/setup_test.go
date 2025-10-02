@@ -130,7 +130,7 @@ func init() {
 }
 
 func TestServiceEntry(t *testing.T) {
-	st, err := settings.BuildSettings()
+	st, err := envtestutil.BuildSettings()
 	if err != nil {
 		t.Fatalf("can't get settings %v", err)
 	}
@@ -141,7 +141,7 @@ func TestServiceEntry(t *testing.T) {
 }
 
 func TestDestinationRule(t *testing.T) {
-	st, err := settings.BuildSettings()
+	st, err := envtestutil.BuildSettings()
 	st.EnableIstioIntegration = true
 	if err != nil {
 		t.Fatalf("can't get settings %v", err)
@@ -150,7 +150,7 @@ func TestDestinationRule(t *testing.T) {
 }
 
 func TestTrafficDistribution(t *testing.T) {
-	st, err := settings.BuildSettings()
+	st, err := envtestutil.BuildSettings()
 	if err != nil {
 		t.Fatalf("can't get settings %v", err)
 	}
@@ -161,7 +161,7 @@ func TestTrafficDistribution(t *testing.T) {
 }
 
 func TestWithStandardSettings(t *testing.T) {
-	st, err := settings.BuildSettings()
+	st, err := envtestutil.BuildSettings()
 	if err != nil {
 		t.Fatalf("can't get settings %v", err)
 	}
@@ -169,7 +169,7 @@ func TestWithStandardSettings(t *testing.T) {
 }
 
 func TestWithIstioAutomtlsSettings(t *testing.T) {
-	st, err := settings.BuildSettings()
+	st, err := envtestutil.BuildSettings()
 	st.EnableIstioIntegration = true
 	st.EnableIstioAutoMtls = true
 	if err != nil {
@@ -179,7 +179,7 @@ func TestWithIstioAutomtlsSettings(t *testing.T) {
 }
 
 func TestWithBindIpv6(t *testing.T) {
-	st, err := settings.BuildSettings()
+	st, err := envtestutil.BuildSettings()
 	st.ListenerBindIpv6 = true
 	if err != nil {
 		t.Fatalf("can't get settings %v", err)
@@ -188,7 +188,7 @@ func TestWithBindIpv6(t *testing.T) {
 }
 
 func TestWithBindIpv4(t *testing.T) {
-	st, err := settings.BuildSettings()
+	st, err := envtestutil.BuildSettings()
 	st.ListenerBindIpv6 = false
 	if err != nil {
 		t.Fatalf("can't get settings %v", err)
@@ -197,7 +197,7 @@ func TestWithBindIpv4(t *testing.T) {
 }
 
 func TestWithAutoDns(t *testing.T) {
-	st, err := settings.BuildSettings()
+	st, err := envtestutil.BuildSettings()
 	if err != nil {
 		t.Fatalf("can't get settings %v", err)
 	}
@@ -207,7 +207,7 @@ func TestWithAutoDns(t *testing.T) {
 }
 
 func TestWithInferenceAPI(t *testing.T) {
-	st, err := settings.BuildSettings()
+	st, err := envtestutil.BuildSettings()
 	if err != nil {
 		t.Fatalf("can't get settings %v", err)
 	}
@@ -218,7 +218,7 @@ func TestWithInferenceAPI(t *testing.T) {
 }
 
 func TestPolicyUpdate(t *testing.T) {
-	st, err := settings.BuildSettings()
+	st, err := envtestutil.BuildSettings()
 	if err != nil {
 		t.Fatalf("can't get settings %v", err)
 	}

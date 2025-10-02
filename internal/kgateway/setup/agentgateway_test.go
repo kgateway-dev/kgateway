@@ -25,10 +25,11 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
+	"github.com/kgateway-dev/kgateway/v2/test/envtestutil"
 )
 
 func TestAgentgateway(t *testing.T) {
-	st, err := settings.BuildSettings()
+	st, err := envtestutil.BuildSettings()
 	st.EnableAgentgateway = true
 	st.EnableInferExt = true
 

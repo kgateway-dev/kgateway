@@ -46,7 +46,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
-	"github.com/kgateway-dev/kgateway/v2/test/translator"
 )
 
 type AssertReports func(gwNN types.NamespacedName, reportsMap reports.ReportMap)
@@ -359,7 +358,7 @@ func TestTranslationWithExtraPlugins(
 		Addresses: addresses,
 	}
 	output = sortTranslationResult(output)
-	outputYaml, err := translator.MarshalAnyYaml(output)
+	outputYaml, err := testutils.MarshalAnyYaml(output)
 	fmt.Fprintf(ginkgo.GinkgoWriter, "actual result:\n %s \nerror: %v", outputYaml, err)
 	r.NoError(err)
 
@@ -448,7 +447,7 @@ func ReadYamlFile(file string, out interface{}) error {
 	if err != nil {
 		return err
 	}
-	return translator.UnmarshalAnyYaml(data, out)
+	return testutils.UnmarshalAnyYaml(data, out)
 }
 
 func GetHTTPRouteStatusError(
@@ -547,14 +546,14 @@ func (tc TestCase) Run(
 		anyObjs []runtime.Object
 		ourObjs []runtime.Object
 	)
-	gvkToStructuralSchema, err := translator.GetStructuralSchemas(
-		filepath.Join(testutils.GitRootDirectory(), translator.CRDPath))
+	gvkToStructuralSchema, err := testutils.GetStructuralSchemas(
+		filepath.Join(testutils.GitRootDirectory(), testutils.CRDPath))
 	if err != nil {
 		return nil, fmt.Errorf("error getting structural schemas: %w", err)
 	}
 
 	for _, file := range tc.InputFiles {
-		objs, err := translator.LoadFromFiles(file, scheme, gvkToStructuralSchema)
+		objs, err := testutils.LoadFromFiles(file, scheme, gvkToStructuralSchema)
 		if err != nil {
 			return nil, err
 		}

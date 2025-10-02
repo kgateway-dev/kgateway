@@ -1,0 +1,36 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: HTTPListenerPolicy
+metadata:
+  name: http-listener-policy-access-log
+  namespace: default
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: gw
+  accessLog:
+  - fileSink:
+      path: /dev/stdout
+      jsonFormat:
+          start_time: "%START_TIME%"
+          method: "%REQ(X-ENVOY-ORIGINAL-METHOD?:METHOD)%"
+          path: "%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%"
+          protocol: "%PROTOCOL%"
+          response_code: "%RESPONSE_CODE%"
+          response_flags: "%RESPONSE_FLAGS%"
+          bytes_received: "%BYTES_RECEIVED%"
+          bytes_sent: "%BYTES_SENT%"
+          total_duration: "%DURATION%"
+          resp_backend_service_time: "%RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)%"
+          req_x_forwarded_for: "%REQ(X-FORWARDED-FOR)%"
+          user_agent: "%REQ(USER-AGENT)%"
+          request_id: "%REQ(X-REQUEST-ID)%"
+          authority: "%REQ(:AUTHORITY)%"
+          backendHost: "%UPSTREAM_HOST%"
+          backendCluster: "%UPSTREAM_CLUSTER%"
+    filter:
+      andFilter:
+      - notHealthCheckFilter: true
+      - statusCodeFilter:
+          op: GE
+          value: 400
