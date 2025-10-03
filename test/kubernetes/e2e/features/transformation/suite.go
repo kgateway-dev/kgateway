@@ -84,8 +84,8 @@ type transformationTestCase struct {
 // testingSuite is a suite of basic routing / "happy path" tests
 type testingSuite struct {
 	*base.BaseTestingSuite
-	// testcases that are common between the traditional transformation (c++) and rustformation
-	// once the rustformation is in feature parity with the trandiation transformation,
+	// testcases that are common between the classic transformation (c++) and rustformation
+	// once the rustformation is in feature parity with the classic transformation,
 	// they should both just use this.
 	commonTestCases []transformationTestCase
 }
@@ -186,9 +186,6 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 					Headers: map[string]interface{}{
 						"x-foo-response":  "path matched",
 						"x-path-response": "matched",
-						//						"x-method-response": "matched",
-						//						"x-header-response": "matched",
-						//						"x-query-response":  "matched",
 					},
 					NotHeaders: []string{
 						"response-gateway",
@@ -201,9 +198,6 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 					Headers: map[string]interface{}{
 						"x-foo-request":  "path matched",
 						"x-path-request": "matched",
-						//						"x-method-request": "matched",
-						//						"x-header-request": "matched",
-						//						"x-query-request":  "matched",
 					},
 					NotHeaders: []string{
 						"request-gateway",
@@ -330,6 +324,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 				resp: &testmatchers.HttpResponse{
 					StatusCode: http.StatusNotFound,
 					Headers:    map[string]interface{}{
+						// The Gateway attached transformation never apply when no route match
 						//						"response-gateway": "goodbyte",
 					},
 					NotHeaders: []string{
@@ -343,6 +338,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 				},
 				req: &testmatchers.HttpRequest{
 					Headers: map[string]interface{}{
+						// The Gateway attached transformation never apply when no route match
 						//						"request-gateway": "hello",
 					},
 					NotHeaders: []string{
