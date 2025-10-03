@@ -82,7 +82,6 @@ func CreateRequestFromEchoResponse(r io.ReadCloser) (*http.Request, error) {
 		for k, v := range m {
 			response.Headers[k] = v
 		}
-
 	}
 	return response.ToHttpRequest()
 }

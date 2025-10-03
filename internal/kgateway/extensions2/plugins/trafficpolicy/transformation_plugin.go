@@ -7,7 +7,6 @@ import (
 	exteniondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
 	transformationpb "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -339,21 +338,7 @@ func (p *trafficPolicyPluginGwPass) handleRustTransformation(fcn string, typedFi
 		return
 	}
 	if rustTransform.config != nil {
-		/*
-			anyMsg, err := utils.MessageToAny(rustTransform.config)
-			if err != nil {
-				logger.Error("failed to serialize rustformation config", "error", err)
-				return
-			}
-			typedFilterConfig.AddTypedConfig(rustformationFilterNamePrefix, anyMsg)
-		*/
 		typedFilterConfig.AddTypedConfig(rustformationFilterNamePrefix, rustTransform.config)
-		json, err := protojson.Marshal(typedFilterConfig.GetTypedConfig(rustformationFilterNamePrefix))
-		if err == nil {
-			logger.Info("rustTransform", "typed config", string(json))
-		} else {
-			logger.Error("failed to get json from rustTransform config", "error", err)
-		}
 		p.setTransformationInChain[fcn] = true
 	}
 }

@@ -224,7 +224,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 
 	useRustformations = commoncol.Settings.UseRustFormations // stash the state of the env setup for rustformation usage
 	if useRustformations {
-		logger.Info("Transformation is using Rust Dynamic Module.")
+		logger.Info("transformation is using Rust Dynamic Module.")
 	}
 
 	col := krt.WrapClient(kclient.NewFiltered[*v1alpha1.TrafficPolicy](
@@ -427,7 +427,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(fcc ir.FilterChainCommon) ([]plu
 		// | END CLASSIC |
 		// ---------------
 		// TODO: on the rust module side, the deserialization would fail and envoy would reject the config if
-		//       any fields are missing in the json EVEN the filter is disabled, so need this for now untill
+		//       any fields are missing in the json EVEN the filter is disabled, so need this for now until
 		//       we change the rust module to have default value
 		cfg, _ := utils.MessageToAny(&wrapperspb.StringValue{
 			Value: "{\"request_headers_setter\": [], \"response_headers_setter\": []}",
