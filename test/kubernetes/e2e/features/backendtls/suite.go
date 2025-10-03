@@ -192,9 +192,9 @@ func (s *tsuite) TestBackendTLSPolicyAndStatus() {
 	s.Require().NoError(err)
 
 	s.assertPolicyStatus(metav1.Condition{
-		Type:               string(gwv1a2.PolicyConditionAccepted),
+		Type:               string(gwv1.PolicyConditionAccepted),
 		Status:             metav1.ConditionFalse,
-		Reason:             string(gwv1a2.PolicyReasonInvalid),
+		Reason:             string(gwv1.PolicyReasonInvalid),
 		Message:            fmt.Sprintf("%s: default/ca", backendtlspolicy.ErrConfigMapNotFound),
 		ObservedGeneration: backendTlsPolicy.Generation,
 	})

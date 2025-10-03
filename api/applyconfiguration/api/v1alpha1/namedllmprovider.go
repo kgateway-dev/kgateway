@@ -86,7 +86,7 @@ func (b *NamedLLMProviderApplyConfiguration) WithHost(value string) *NamedLLMPro
 // WithPort sets the Port field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Port field is set to the value of the last call.
-func (b *NamedLLMProviderApplyConfiguration) WithPort(value v1.PortNumber) *NamedLLMProviderApplyConfiguration {
+func (b *NamedLLMProviderApplyConfiguration) WithPort(value int32) *NamedLLMProviderApplyConfiguration {
 	b.LLMProviderApplyConfiguration.Port = &value
 	return b
 }

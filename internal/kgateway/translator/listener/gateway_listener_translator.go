@@ -385,7 +385,7 @@ func (ml *MergedListener) TranslateListener(
 // will use a kgateway AggregatedListener with one TCP filter chain.
 type tcpFilterChain struct {
 	parents          tcpFilterChainParent
-	tls              *gwv1.GatewayTLSConfig
+	tls              *gwv1.ListenerTLSConfig
 	sniDomain        *gwv1.Hostname
 	listenerReporter reports.ListenerReporter
 }
@@ -652,7 +652,7 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 type httpsFilterChain struct {
 	gatewayListenerName string
 	sniDomain           *gwv1.Hostname
-	tls                 *gwv1.GatewayTLSConfig
+	tls                 *gwv1.ListenerTLSConfig
 	routesWithHosts     []*query.RouteInfo
 	attachedPolicies    ir.AttachedPolicies
 }
@@ -782,7 +782,7 @@ func translateSslConfig(
 	kctx krt.HandlerContext,
 	ctx context.Context,
 	parentNamespace string,
-	tls *gwv1.GatewayTLSConfig,
+	tls *gwv1.ListenerTLSConfig,
 	queries query.GatewayQueries,
 ) (*ir.TlsBundle, error) {
 	if tls == nil {

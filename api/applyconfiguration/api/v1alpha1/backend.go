@@ -67,6 +67,7 @@ func extractBackend(backend *apiv1alpha1.Backend, fieldManager string, subresour
 	b.WithAPIVersion("gateway.kgateway.dev/v1alpha1")
 	return b, nil
 }
+func (b BackendApplyConfiguration) IsApplyConfiguration() {}
 
 // WithKind sets the Kind field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
@@ -242,8 +243,24 @@ func (b *BackendApplyConfiguration) WithStatus(value *BackendStatusApplyConfigur
 	return b
 }
 
+// GetKind retrieves the value of the Kind field in the declarative configuration.
+func (b *BackendApplyConfiguration) GetKind() *string {
+	return b.TypeMetaApplyConfiguration.Kind
+}
+
+// GetAPIVersion retrieves the value of the APIVersion field in the declarative configuration.
+func (b *BackendApplyConfiguration) GetAPIVersion() *string {
+	return b.TypeMetaApplyConfiguration.APIVersion
+}
+
 // GetName retrieves the value of the Name field in the declarative configuration.
 func (b *BackendApplyConfiguration) GetName() *string {
 	b.ensureObjectMetaApplyConfigurationExists()
 	return b.ObjectMetaApplyConfiguration.Name
+}
+
+// GetNamespace retrieves the value of the Namespace field in the declarative configuration.
+func (b *BackendApplyConfiguration) GetNamespace() *string {
+	b.ensureObjectMetaApplyConfigurationExists()
+	return b.ObjectMetaApplyConfiguration.Namespace
 }

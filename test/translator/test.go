@@ -406,7 +406,7 @@ func GetPolicyStatusError(
 		if policy != nil && *policy != key {
 			continue
 		}
-		status := reportsMap.BuildPolicyStatus(context.Background(), key, wellknown.DefaultGatewayControllerName, gwv1a2.PolicyStatus{})
+		status := reportsMap.BuildPolicyStatus(context.Background(), key, wellknown.DefaultGatewayControllerName, gwv1.PolicyStatus{})
 		for ancestor, report := range status.Ancestors {
 			for _, c := range report.Conditions {
 				if c.Status != metav1.ConditionTrue {

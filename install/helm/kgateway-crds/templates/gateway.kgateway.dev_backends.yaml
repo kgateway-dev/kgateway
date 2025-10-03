@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.1-0.20250625175829-8d11ce77f347
+    controller-gen.kubebuilder.io/version: v0.19.0
   labels:
     app: kgateway
     app.kubernetes.io/name: kgateway
@@ -260,8 +260,6 @@ spec:
                         type: object
                       port:
                         format: int32
-                        maximum: 65535
-                        minimum: 1
                         type: integer
                       vertexai:
                         properties:
@@ -553,8 +551,6 @@ spec:
                                 type: object
                               port:
                                 format: int32
-                                maximum: 65535
-                                minimum: 1
                                 type: integer
                               vertexai:
                                 properties:
@@ -835,8 +831,6 @@ spec:
                           type: string
                         port:
                           format: int32
-                          maximum: 65535
-                          minimum: 1
                           type: integer
                       required:
                       - host

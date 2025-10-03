@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.1-0.20250625175829-8d11ce77f347
+    controller-gen.kubebuilder.io/version: v0.19.0
   labels:
     app: kgateway
     app.kubernetes.io/name: kgateway
@@ -195,8 +195,6 @@ spec:
                                     type: string
                                   port:
                                     format: int32
-                                    maximum: 65535
-                                    minimum: 1
                                     type: integer
                                 required:
                                 - host
@@ -264,8 +262,6 @@ spec:
                                     type: string
                                   port:
                                     format: int32
-                                    maximum: 65535
-                                    minimum: 1
                                     type: integer
                                 required:
                                 - host
@@ -310,8 +306,6 @@ spec:
               cors:
                 properties:
                   allowCredentials:
-                    enum:
-                    - true
                     type: boolean
                   allowHeaders:
                     items:
@@ -346,11 +340,14 @@ spec:
                     items:
                       maxLength: 253
                       minLength: 1
-                      pattern: ^(([^:/?#]+):)(//([^/?#]*))([^?#]*)(\?([^#]*))?(#(.*))?
+                      pattern: (^\*$)|(^([a-zA-Z][a-zA-Z0-9+\-.]+):\/\/([^:/?#]+)(:([0-9]{1,5}))?$)
                       type: string
                     maxItems: 64
                     type: array
                     x-kubernetes-list-type: set
+                    x-kubernetes-validations:
+                    - message: AllowOrigins cannot contain '*' alongside other origins
+                      rule: '!(''*'' in self && self.size() > 1)'
                   disable:
                     type: object
                   exposeHeaders:
@@ -1102,10 +1099,12 @@ spec:
                       type: string
                   required:
                   - ancestorRef
+                  - conditions
                   - controllerName
                   type: object
                 maxItems: 16
                 type: array
+                x-kubernetes-list-type: atomic
             required:
             - ancestors
             type: object

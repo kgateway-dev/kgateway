@@ -11,7 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
@@ -50,7 +50,7 @@ func buildRegisterCallback(
 
 					newCondition := pluginutils.BuildCondition("Backend", ir.Errors)
 
-					found := meta.FindStatusCondition(res.Status.Conditions, string(gwv1a2.PolicyConditionAccepted))
+					found := meta.FindStatusCondition(res.Status.Conditions, string(gwv1.PolicyConditionAccepted))
 					if found != nil {
 						typeEq := found.Type == newCondition.Type
 						statusEq := found.Status == newCondition.Status

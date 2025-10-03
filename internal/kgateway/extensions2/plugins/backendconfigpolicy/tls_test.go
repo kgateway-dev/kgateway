@@ -13,7 +13,7 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
-	gwv1alpha3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
@@ -409,7 +409,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 		{
 			name: "TLS config with system ca",
 			tlsConfig: &v1alpha1.TLS{
-				WellKnownCACertificates: ptr.To(gwv1alpha3.WellKnownCACertificatesSystem),
+				WellKnownCACertificates: ptr.To(gwv1.WellKnownCACertificatesSystem),
 			},
 			expected: &envoytlsv3.UpstreamTlsContext{
 				CommonTlsContext: &envoytlsv3.CommonTlsContext{
@@ -425,7 +425,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 		{
 			name: "TLS config with system ca and san",
 			tlsConfig: &v1alpha1.TLS{
-				WellKnownCACertificates: ptr.To(gwv1alpha3.WellKnownCACertificatesSystem),
+				WellKnownCACertificates: ptr.To(gwv1.WellKnownCACertificatesSystem),
 				VerifySubjectAltNames:   []string{"test.example.com", "api.example.com"},
 			},
 			expected: &envoytlsv3.UpstreamTlsContext{

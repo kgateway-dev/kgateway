@@ -9,7 +9,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
@@ -20,9 +19,9 @@ func TestPolicyStatusReport(t *testing.T) {
 		name            string
 		fakeTranslation func(a *assert.Assertions, reporter reporter.Reporter)
 		key             reporter.PolicyKey
-		currentStatus   gwv1alpha2.PolicyStatus
+		currentStatus   gwv1.PolicyStatus
 		controller      string
-		wantStatus      *gwv1alpha2.PolicyStatus
+		wantStatus      *gwv1.PolicyStatus
 	}{
 		{
 			name: "empty status on current object and no status updates during translation",
@@ -56,8 +55,8 @@ func TestPolicyStatusReport(t *testing.T) {
 				Name:      "example",
 			},
 			controller: "example-controller",
-			wantStatus: &gwv1alpha2.PolicyStatus{
-				Ancestors: []gwv1alpha2.PolicyAncestorStatus{
+			wantStatus: &gwv1.PolicyStatus{
+				Ancestors: []gwv1.PolicyAncestorStatus{
 					{
 						AncestorRef: gwv1.ParentReference{
 							Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
@@ -154,8 +153,8 @@ func TestPolicyStatusReport(t *testing.T) {
 				Name:      "example",
 			},
 			controller: "example-controller",
-			currentStatus: gwv1alpha2.PolicyStatus{
-				Ancestors: []gwv1alpha2.PolicyAncestorStatus{
+			currentStatus: gwv1.PolicyStatus{
+				Ancestors: []gwv1.PolicyAncestorStatus{
 					// No existing status for gw-1 but test with an existing status for gw-2
 					{
 						AncestorRef: gwv1.ParentReference{
@@ -176,8 +175,8 @@ func TestPolicyStatusReport(t *testing.T) {
 					},
 				},
 			},
-			wantStatus: &gwv1alpha2.PolicyStatus{
-				Ancestors: []gwv1alpha2.PolicyAncestorStatus{
+			wantStatus: &gwv1.PolicyStatus{
+				Ancestors: []gwv1.PolicyAncestorStatus{
 					{
 						AncestorRef: gwv1.ParentReference{
 							Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
@@ -268,8 +267,8 @@ func TestPolicyStatusReport(t *testing.T) {
 				Name:      "example",
 			},
 			controller: "example-controller",
-			currentStatus: gwv1alpha2.PolicyStatus{
-				Ancestors: []gwv1alpha2.PolicyAncestorStatus{
+			currentStatus: gwv1.PolicyStatus{
+				Ancestors: []gwv1.PolicyAncestorStatus{
 					{
 						AncestorRef: gwv1.ParentReference{
 							Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
@@ -323,8 +322,8 @@ func TestPolicyStatusReport(t *testing.T) {
 					},
 				},
 			},
-			wantStatus: &gwv1alpha2.PolicyStatus{
-				Ancestors: []gwv1alpha2.PolicyAncestorStatus{
+			wantStatus: &gwv1.PolicyStatus{
+				Ancestors: []gwv1.PolicyAncestorStatus{
 					{
 						AncestorRef: gwv1.ParentReference{
 							Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),

@@ -529,18 +529,23 @@ func createAgwCorsFilter(cors *gwv1.HTTPCORSFilter) *api.RouteFilter {
 	if cors == nil {
 		return nil
 	}
-	return &api.RouteFilter{
+	ret := &api.RouteFilter{
 		Kind: &api.RouteFilter_Cors{Cors: &api.CORS{
-			AllowCredentials: bool(cors.AllowCredentials),
-			AllowHeaders:     slices.Map(cors.AllowHeaders, func(h gwv1.HTTPHeaderName) string { return string(h) }),
-			AllowMethods:     slices.Map(cors.AllowMethods, func(m gwv1.HTTPMethodWithWildcard) string { return string(m) }),
-			AllowOrigins:     slices.Map(cors.AllowOrigins, func(o gwv1.AbsoluteURI) string { return string(o) }),
-			ExposeHeaders:    slices.Map(cors.ExposeHeaders, func(h gwv1.HTTPHeaderName) string { return string(h) }),
+			AllowHeaders:  slices.Map(cors.AllowHeaders, func(h gwv1.HTTPHeaderName) string { return string(h) }),
+			AllowMethods:  slices.Map(cors.AllowMethods, func(m gwv1.HTTPMethodWithWildcard) string { return string(m) }),
+			AllowOrigins:  slices.Map(cors.AllowOrigins, func(o gwv1.CORSOrigin) string { return string(o) }),
+			ExposeHeaders: slices.Map(cors.ExposeHeaders, func(h gwv1.HTTPHeaderName) string { return string(h) }),
 			MaxAge: &duration.Duration{
 				Seconds: int64(cors.MaxAge),
 			},
 		}},
 	}
+
+	if cors.AllowCredentials != nil && *cors.AllowCredentials {
+		ret.GetCors().AllowCredentials = *cors.AllowCredentials
+	}
+
+	return ret
 }
 
 func buildAgwHTTPDestination(
@@ -1197,7 +1202,7 @@ func buildTLS(
 	ctx krt.HandlerContext,
 	secrets krt.Collection[*corev1.Secret],
 	grants ReferenceGrants,
-	tls *gwv1.GatewayTLSConfig,
+	tls *gwv1.ListenerTLSConfig,
 	gw *gwv1.Gateway,
 	isAutoPassthrough bool,
 ) (*istio.ServerTLSSettings, *TLSInfo, *ConfigError) {

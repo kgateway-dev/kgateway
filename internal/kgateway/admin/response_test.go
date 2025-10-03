@@ -49,6 +49,6 @@ var _ = Describe("SnapshotResponseData", func() {
 				},
 				Error: nil,
 			},
-			"{\"data\":[{\"kind\":\"kind\",\"apiVersion\":\"version\",\"metadata\":{\"name\":\"name\",\"namespace\":\"namespace\",\"creationTimestamp\":null,\"managedFields\":[{\"manager\":\"manager\"}]},\"status\":{},\"spec\":{}}],\"error\":\"\"}"),
+			"{\"data\":[{\"kind\":\"kind\",\"apiVersion\":\"version\",\"metadata\":{\"name\":\"name\",\"namespace\":\"namespace\",\"managedFields\":[{\"manager\":\"manager\"}]},\"status\":{},\"spec\":{}}],\"error\":\"\"}"),
 	)
 })

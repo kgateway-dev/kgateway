@@ -169,7 +169,7 @@ func getBackendTLSCACert(
 	validation := btls.Spec.Validation
 	if wk := validation.WellKnownCACertificates; wk != nil {
 		switch kind := *wk; kind {
-		case gwv1alpha3.WellKnownCACertificatesSystem:
+		case gwv1.WellKnownCACertificatesSystem:
 			return nil, nil
 
 		default:

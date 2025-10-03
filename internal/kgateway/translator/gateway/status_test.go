@@ -37,7 +37,7 @@ func TestStatuses(t *testing.T) {
 	t.Run("Basic", func(t *testing.T) {
 		testFn(t, "basic.yaml", map[reporter.PolicyKey]*gwv1alpha2.PolicyStatus{
 			{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "default", Name: "extensionref-policy"}: {
-				Ancestors: []gwv1alpha2.PolicyAncestorStatus{
+				Ancestors: []gwv1.PolicyAncestorStatus{
 					{
 						AncestorRef: gwv1.ParentReference{
 							Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
@@ -66,7 +66,7 @@ func TestStatuses(t *testing.T) {
 				},
 			},
 			{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "default", Name: "policy-with-section-name"}: {
-				Ancestors: []gwv1alpha2.PolicyAncestorStatus{
+				Ancestors: []gwv1.PolicyAncestorStatus{
 					{
 						AncestorRef: gwv1.ParentReference{
 							Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
@@ -95,7 +95,7 @@ func TestStatuses(t *testing.T) {
 				},
 			},
 			{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "default", Name: "policy-without-section-name"}: {
-				Ancestors: []gwv1alpha2.PolicyAncestorStatus{
+				Ancestors: []gwv1.PolicyAncestorStatus{
 					{
 						AncestorRef: gwv1.ParentReference{
 							Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
@@ -124,7 +124,7 @@ func TestStatuses(t *testing.T) {
 				},
 			},
 			{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "default", Name: "fully-ignored"}: {
-				Ancestors: []gwv1alpha2.PolicyAncestorStatus{
+				Ancestors: []gwv1.PolicyAncestorStatus{
 					{
 						AncestorRef: gwv1.ParentReference{
 							Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
@@ -153,7 +153,7 @@ func TestStatuses(t *testing.T) {
 				},
 			},
 			{Group: "gateway.kgateway.dev", Kind: "TrafficPolicy", Namespace: "default", Name: "policy-no-merge"}: {
-				Ancestors: []gwv1alpha2.PolicyAncestorStatus{
+				Ancestors: []gwv1.PolicyAncestorStatus{
 					{
 						AncestorRef: gwv1.ParentReference{
 							Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
@@ -182,7 +182,7 @@ func TestStatuses(t *testing.T) {
 				},
 			},
 			{Group: "gateway.kgateway.dev", Kind: "HTTPListenerPolicy", Namespace: "default", Name: "policy-1"}: {
-				Ancestors: []gwv1alpha2.PolicyAncestorStatus{
+				Ancestors: []gwv1.PolicyAncestorStatus{
 					{
 						AncestorRef: gwv1.ParentReference{
 							Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
@@ -211,7 +211,7 @@ func TestStatuses(t *testing.T) {
 				},
 			},
 			{Group: "gateway.kgateway.dev", Kind: "HTTPListenerPolicy", Namespace: "default", Name: "policy-2"}: {
-				Ancestors: []gwv1alpha2.PolicyAncestorStatus{
+				Ancestors: []gwv1.PolicyAncestorStatus{
 					{
 						AncestorRef: gwv1.ParentReference{
 							Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),

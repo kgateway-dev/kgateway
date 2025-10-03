@@ -1,11 +1,10 @@
-# Source: https://raw.githubusercontent.com/kubernetes-sigs/gateway-api-inference-extension/v1.0.1/config/crd/bases/inference.networking.k8s.io_inferencepools.yaml
+# Source: https://raw.githubusercontent.com/kubernetes-sigs/gateway-api-inference-extension/bfd979d7576acf3f121efeae01920cb09d09cbe8/config/crd/bases/inference.networking.k8s.io_inferencepools.yaml
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
     api-approved.kubernetes.io: https://github.com/kubernetes-sigs/gateway-api-inference-extension/pull/1173
-    inference.networking.k8s.io/bundle-version: v1.0.1
-  creationTimestamp: null
+    inference.networking.k8s.io/bundle-version: main-dev
   name: inferencepools.inference.networking.k8s.io
 spec:
   group: inference.networking.k8s.io
@@ -156,7 +155,8 @@ spec:
               targetPorts:
                 description: |-
                   TargetPorts defines a list of ports that are exposed by this InferencePool.
-                  Currently, the list may only include a single port definition.
+                  Every port will be treated as a distinctive endpoint by EPP,
+                  addressable as a 'podIP:portNumber' combination.
                 items:
                   description: Port defines the network port that will be exposed
                     by this InferencePool.
@@ -172,10 +172,13 @@ spec:
                   required:
                   - number
                   type: object
-                maxItems: 1
+                maxItems: 8
                 minItems: 1
                 type: array
                 x-kubernetes-list-type: atomic
+                x-kubernetes-validations:
+                - message: port number must be unique
+                  rule: self.all(p1, self.exists_one(p2, p1.number==p2.number))
             required:
             - endpointPickerRef
             - selector
@@ -335,13 +338,12 @@ status:
   conditions: null
   storedVersions: null
 ---
-# Source: https://raw.githubusercontent.com/kubernetes-sigs/gateway-api-inference-extension/v1.0.1/config/crd/bases/inference.networking.x-k8s.io_inferenceobjectives.yaml
+# Source: https://raw.githubusercontent.com/kubernetes-sigs/gateway-api-inference-extension/bfd979d7576acf3f121efeae01920cb09d09cbe8/config/crd/bases/inference.networking.x-k8s.io_inferenceobjectives.yaml
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    inference.networking.k8s.io/bundle-version: v1.0.1
-  creationTimestamp: null
+    inference.networking.k8s.io/bundle-version: main-dev
   name: inferenceobjectives.inference.networking.x-k8s.io
 spec:
   group: inference.networking.x-k8s.io

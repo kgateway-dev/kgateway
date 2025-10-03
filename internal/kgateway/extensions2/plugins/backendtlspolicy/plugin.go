@@ -28,6 +28,7 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/kubetypes"
 
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -105,7 +106,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 			},
 			Policy:     i,
 			PolicyIR:   tlsPolicyIR,
-			TargetRefs: pluginutils.TargetRefsToPolicyRefsWithSectionNameV1Alpha2(i.Spec.TargetRefs),
+			TargetRefs: pluginutils.TargetRefsToPolicyRefsWithSectionNameV1(i.Spec.TargetRefs),
 		}
 		if err != nil {
 			pol.Errors = []error{err}
@@ -150,7 +151,7 @@ func buildTranslateFunc(
 		validationContext.MatchTypedSubjectAltNames = convertSubjectAltNames(spec.Validation)
 		var tlsContextDefault *envoytlsv3.UpstreamTlsContext
 		switch {
-		case ptr.Deref(spec.Validation.WellKnownCACertificates, "") == gwv1a3.WellKnownCACertificatesSystem:
+		case ptr.Deref(spec.Validation.WellKnownCACertificates, "") == gwv1.WellKnownCACertificatesSystem:
 			sdsValidationCtx := &envoytlsv3.SdsSecretConfig{
 				Name: eiutils.SystemCaSecretName,
 			}
@@ -208,7 +209,7 @@ func buildTranslateFunc(
 	}
 }
 
-func convertSubjectAltNames(validation gwv1a3.BackendTLSPolicyValidation) []*envoytlsv3.SubjectAltNameMatcher {
+func convertSubjectAltNames(validation gwv1.BackendTLSPolicyValidation) []*envoytlsv3.SubjectAltNameMatcher {
 	if len(validation.SubjectAltNames) == 0 {
 		hostname := string(validation.Hostname)
 		if hostname != "" {
@@ -224,14 +225,14 @@ func convertSubjectAltNames(validation gwv1a3.BackendTLSPolicyValidation) []*env
 	matchers := make([]*envoytlsv3.SubjectAltNameMatcher, 0, len(validation.SubjectAltNames))
 	for _, san := range validation.SubjectAltNames {
 		switch san.Type {
-		case gwv1a3.HostnameSubjectAltNameType:
+		case gwv1.HostnameSubjectAltNameType:
 			matchers = append(matchers, &envoytlsv3.SubjectAltNameMatcher{
 				SanType: envoytlsv3.SubjectAltNameMatcher_DNS,
 				Matcher: &envoymatcher.StringMatcher{
 					MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: string(san.Hostname)},
 				},
 			})
-		case gwv1a3.URISubjectAltNameType:
+		case gwv1.URISubjectAltNameType:
 			matchers = append(matchers, &envoytlsv3.SubjectAltNameMatcher{
 				SanType: envoytlsv3.SubjectAltNameMatcher_URI,
 				Matcher: &envoymatcher.StringMatcher{
