@@ -36,23 +36,9 @@ type DeployerTester struct {
 	WaypointClassName string
 }
 
-func (dt DeployerTester) RunHelmChartTest(
-	t *testing.T,
-	tt HelmTestCase,
-	scheme *runtime.Scheme,
-	dir string,
-	extraParamsFunc func(cli client.Client, inputs *pkgdeployer.Inputs) []pkgdeployer.ExtraGatewayParameters,
-) {
-	filePath := filepath.Join(dir, "testdata/", tt.InputFile)
-	inputFile := filePath + ".yaml"
-	outputFile := filePath + "-out.yaml"
-
-	objs, err := testutils.LoadFromFiles(inputFile, scheme, nil)
-	assert.NoError(t, err, "error loading files from input file")
-
-	ctx := context.TODO()
-	// contains objects necessary for commonCollections, don't add extra stuff here
-	// to avoid logging from krttest package re: objects not consumed
+// ExtractCommonObjs will return a collection containing only objects necessary for collections.CommonCollections,
+// so we don't add unknown objects to avoid logging from krttest package re: objects not consumed
+func ExtractCommonObjs(t *testing.T, objs []client.Object) ([]client.Object, *gwv1.Gateway) {
 	var commonObjs []client.Object
 	var gtw *gwv1.Gateway
 	for i := range objs {
@@ -70,12 +56,30 @@ func (dt DeployerTester) RunHelmChartTest(
 			commonObjs = append(commonObjs, obj)
 		}
 	}
+	return commonObjs, gtw
+}
+
+func (dt DeployerTester) RunHelmChartTest(
+	t *testing.T,
+	tt HelmTestCase,
+	scheme *runtime.Scheme,
+	dir string,
+	extraParamsFunc func(cli client.Client, inputs *pkgdeployer.Inputs) []pkgdeployer.ExtraGatewayParameters,
+) {
+	filePath := filepath.Join(dir, "testdata/", tt.InputFile)
+	inputFile := filePath + ".yaml"
+	outputFile := filePath + "-out.yaml"
+
+	objs, err := testutils.LoadFromFiles(inputFile, scheme, nil)
+	assert.NoError(t, err, "error loading files from input file")
+
+	commonObjs, gtw := ExtractCommonObjs(t, objs)
 	if gtw == nil {
 		t.Log("No Gateway found in test files, failing...")
 		t.FailNow()
 	}
 	commonCols := NewCommonCols(t, commonObjs...)
-	inputs := dt.defaultDeployerInputs(commonCols)
+	inputs := DefaultDeployerInputs(dt, commonCols)
 	if tt.Inputs != nil {
 		inputs = tt.Inputs
 	}
@@ -101,6 +105,7 @@ func (dt DeployerTester) RunHelmChartTest(
 		internaldeployer.GatewayReleaseNameAndNamespace,
 	)
 
+	ctx := context.TODO()
 	vals, err := gwParams.GetValues(ctx, gtw)
 	assert.NoError(t, err, "error getting values for GwParams")
 
@@ -130,7 +135,7 @@ func (dt DeployerTester) RunHelmChartTest(
 	assert.Empty(t, diff, diff)
 }
 
-func (dt DeployerTester) defaultDeployerInputs(commonCols *collections.CommonCollections) *pkgdeployer.Inputs {
+func DefaultDeployerInputs(dt DeployerTester, commonCols *collections.CommonCollections) *pkgdeployer.Inputs {
 	return &pkgdeployer.Inputs{
 		Dev:               false,
 		CommonCollections: commonCols,

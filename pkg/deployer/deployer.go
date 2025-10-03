@@ -65,7 +65,8 @@ func NewDeployer(
 	cli client.Client,
 	chart *chart.Chart,
 	hvg HelmValuesGenerator,
-	helmReleaseNameAndNamespaceGenerator func(obj client.Object) (string, string)) *Deployer {
+	helmReleaseNameAndNamespaceGenerator func(obj client.Object) (string, string),
+) *Deployer {
 	return &Deployer{
 		controllerName:                       controllerName,
 		agwControllerName:                    agwControllerName,
