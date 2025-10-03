@@ -4,7 +4,11 @@ use std::any::Any;
 // ALL FILTERS HERE
 mod http_simple_mutations;
 
-declare_init_functions!(init, new_http_filter_config_fn, new_http_filter_per_route_config_fn);
+declare_init_functions!(
+    init,
+    new_http_filter_config_fn,
+    new_http_filter_per_route_config_fn
+);
 
 /// This implements the [`envoy_proxy_dynamic_modules_rust_sdk::ProgramInitFunction`].
 ///

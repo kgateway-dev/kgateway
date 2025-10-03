@@ -163,16 +163,16 @@ pub struct Filter {
 }
 
 impl Filter {
-    fn set_per_route_config<EHF: EnvoyHttpFilter>(
-        &mut self,
-        envoy_filter: &mut EHF,
-    ) {
+    fn set_per_route_config<EHF: EnvoyHttpFilter>(&mut self, envoy_filter: &mut EHF) {
         if !self.per_route_config.is_some() {
             if let Some(per_route_config) = envoy_filter.get_most_specific_route_config().as_ref() {
                 let per_route_config = match per_route_config.downcast_ref::<PerRouteConfig>() {
                     Some(cfg) => cfg,
                     None => {
-                        eprintln!("set_per_route_config: wrong per route config type: {:?}", per_route_config);
+                        eprintln!(
+                            "set_per_route_config: wrong per route config type: {:?}",
+                            per_route_config
+                        );
                         return;
                     }
                 };
@@ -181,16 +181,11 @@ impl Filter {
         }
     }
 
-    fn get_per_route_config(
-        &self,
-    ) -> Option<&PerRouteConfig> {
+    fn get_per_route_config(&self) -> Option<&PerRouteConfig> {
         self.per_route_config.as_ref().map(|config| &**config)
     }
 
-    fn transform_request_headers<EHF: EnvoyHttpFilter>(
-        &self,
-        envoy_filter: &mut EHF,
-    ) {
+    fn transform_request_headers<EHF: EnvoyHttpFilter>(&self, envoy_filter: &mut EHF) {
         let setters = match self.get_per_route_config() {
             Some(config) => &config.request_headers_setter,
             None => &self.request_headers_setter,
@@ -252,10 +247,10 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
         //       if yes, we need to short circuit here and return Continue
         if !end_of_stream {
             // TODO: Technically, we don't need to buffer the body yet as we don't support parsing the body now
-            //       but it will be coming next. This is mimicking the C++ transformation filter behavior to 
+            //       but it will be coming next. This is mimicking the C++ transformation filter behavior to
             //       always buffer the request body by default unless passthrough is set. Will revisit and consider
             //       if this is the desired behavior when we implement parsing the body
-            return abi::envoy_dynamic_module_type_on_http_filter_request_body_status::StopIterationAndBuffer
+            return abi::envoy_dynamic_module_type_on_http_filter_request_body_status::StopIterationAndBuffer;
         }
 
         self.set_per_route_config(envoy_filter);
@@ -352,9 +347,9 @@ mod tests {
         };
         let mut filter = filter_conf.new_http_filter(&mut envoy_config);
 
-        envoy_filter.expect_get_most_specific_route_config().returning(|| {
-            None
-        });
+        envoy_filter
+            .expect_get_most_specific_route_config()
+            .returning(|| None);
 
         envoy_filter.expect_get_request_headers().returning(|| {
             vec![
@@ -456,9 +451,9 @@ mod tests {
         };
         let mut filter = filter_conf.new_http_filter(&mut envoy_config);
 
-        envoy_filter.expect_get_most_specific_route_config().returning(|| {
-            None
-        });
+        envoy_filter
+            .expect_get_most_specific_route_config()
+            .returning(|| None);
 
         envoy_filter.expect_get_request_headers().returning(|| {
             vec![

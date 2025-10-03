@@ -44,7 +44,7 @@ export LDFLAGS := -X 'github.com/kgateway-dev/kgateway/v2/internal/version.Versi
 export GCFLAGS ?=
 
 UNAME_M := $(shell uname -m)
-# if `GO_ARCH` is set, then it will keep its value. Else, it will be changed based off the machine's host architecture.
+# if `GOARCH` is set, then it will keep its value. Else, it will be changed based off the machine's host architecture.
 # if the machines architecture is set to arm64 then we want to set the appropriate values, else we only support amd64
 IS_ARM_MACHINE := $(or	$(filter $(UNAME_M), arm64), $(filter $(UNAME_M), aarch64))
 ifneq ($(IS_ARM_MACHINE), )
