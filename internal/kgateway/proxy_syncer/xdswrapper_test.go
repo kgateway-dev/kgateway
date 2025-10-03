@@ -70,7 +70,7 @@ func TestMapOfAny(t *testing.T) {
 	UseDetailedUnmarshalling = true
 	g := gomega.NewWithT(t)
 	testCase := `{
-      "name": "kube_gloo-gateway-system_rate-limiter-gloo-gateway-v2_8083",
+      "name": "kube_kgateway-system_rate-limiter-kgateway_8083",
       "type": "EDS",
       "eds_cluster_config": {
        "eds_config": {
@@ -101,7 +101,7 @@ func TestRedactMapOfAny(t *testing.T) {
 	g := gomega.NewWithT(t)
 	// this is not valid envoy config - just for testing
 	testCase := `{
-      "name": "kube_gloo-gateway-system_rate-limiter-gloo-gateway-v2_8083",
+      "name": "kube_kgateway-system_rate-limiter-kgateway_8083",
       "type": "EDS",
       "eds_cluster_config": {
        "eds_config": {

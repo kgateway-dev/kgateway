@@ -1,9 +1,0 @@
-gateway:
-  validation:
-    failurePolicy: Fail # For "strict" validation mode, fail the validation if webhook server is not available
-    allowWarnings: false
-    # transformation validation is disabled because full envoy validation is enabled.
-    disableTransformationValidation: true
-    webhook:
-      timeoutSeconds: 30 # We are seeing Envoy take 10s of seconds to validate some of the larger configurations
-    fullEnvoyValidation: true

@@ -48,8 +48,8 @@ func RunEnvoyValidate(ctx context.Context, envoyExecutable, bootstrapConfig stri
 
 	if err != nil {
 		if os.IsNotExist(err) {
-			// log a warning and return nil; will allow users to continue to run Gloo locally without
-			// relying on the Gloo container with Envoy already published to the expected directory
+			// log a warning and return nil; will allow users to continue to run kgateway locally without
+			// relying on the kgateway container with Envoy already published to the expected directory
 			slog.Warn("unable to validate envoy configuration", "executable", envoyExecutable)
 			return nil
 		}

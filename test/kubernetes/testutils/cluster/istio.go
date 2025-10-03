@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	glooruntime "github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/runtime"
+	testruntime "github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/runtime"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
@@ -107,11 +107,11 @@ func installIstioOperator(
 }
 
 func getIstioVersion() string {
-	if version := os.Getenv(glooruntime.IstioVersionEnv); version != "" {
+	if version := os.Getenv(testruntime.IstioVersionEnv); version != "" {
 		return version
 	} else {
 		// Fail loudly if ISTIO_VERSION is not set
-		panic(fmt.Sprintf("%s environment variable must be specified to run", glooruntime.IstioVersionEnv))
+		panic(fmt.Sprintf("%s environment variable must be specified to run", testruntime.IstioVersionEnv))
 	}
 }
 
@@ -180,7 +180,7 @@ func downloadIstio(ctx context.Context, version string) (string, error) {
 
 	cmd := exec.Command("sh", "-")
 
-	cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", glooruntime.IstioVersionEnv, version))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", testruntime.IstioVersionEnv, version))
 	cmd.Dir = installLocation
 
 	cmd.Stdin = res.Body

@@ -380,9 +380,9 @@ func (ml *MergedListener) TranslateListener(
 	}
 }
 
-// tcpFilterChain each one represents a Gateway listener that has been merged into a single Gloo Listener
+// tcpFilterChain each one represents a Gateway listener that has been merged into a single kgateway Listener
 // (with distinct filter chains). In the case where no Gateway listener merging takes place, every listener
-// will use a Gloo AggregatedListener with one TCP filter chain.
+// will use a kgateway AggregatedListener with one TCP filter chain.
 type tcpFilterChain struct {
 	parents          tcpFilterChainParent
 	tls              *gwv1.GatewayTLSConfig

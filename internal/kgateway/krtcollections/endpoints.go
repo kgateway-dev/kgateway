@@ -49,7 +49,7 @@ type EndpointsInputs struct {
 	KrtOpts krtutil.KrtOptions
 }
 
-func NewGlooK8sEndpointInputs(
+func NewKgatewayK8sEndpointInputs(
 	stngs apisettings.Settings,
 	krtopts krtutil.KrtOptions,
 	endpointSlices krt.Collection[*discoveryv1.EndpointSlice],

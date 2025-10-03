@@ -232,8 +232,6 @@ func buildSni(upstream ir.BackendObjectIR) string {
 
 // buildDNSSrvSubsetKey mirrors a similarly named function in Istio.
 // Istio auto-passthrough gateways expect this value for the SNI.
-// We also expect gloo mesh to tell Istio to match the virtual destination SNI
-// but route to the backing Service's cluster via EnvoyFilter.
 func buildDNSSrvSubsetKey(hostname string, port uint32) string {
 	return "outbound" + "_." + strconv.Itoa(int(port)) + "_._." + string(hostname)
 }

@@ -33,7 +33,7 @@ func IsKubeGatewayCacheKey(key string) bool {
 }
 
 // OwnerNamespaceNameID returns the string identifier for an Envoy node in a provided namespace.
-// Envoy proxies are assigned their configuration by Gloo based on their Node ID.
+// Envoy proxies are assigned their configuration by kgateway based on their Node ID.
 // Therefore, proxies must identify themselves using the same naming
 // convention that we use to persist the Proxy resource in the snapshot cache.
 // The naming convention that we follow is "OWNER~NAMESPACE~NAME"
