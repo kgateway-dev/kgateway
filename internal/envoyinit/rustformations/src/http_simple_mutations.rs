@@ -137,8 +137,7 @@ fn header(state: &State, key: &str) -> String {
     let Some(header_map) = <HashMap<String, String>>::deserialize(headers.clone()).ok() else {
         return "".to_string();
     };
-    let value = header_map.get(key).cloned().unwrap_or_default();
-    return value;
+    header_map.get(key).cloned().unwrap_or_default()
 }
 
 fn request_header(state: &State, key: &str) -> String {
@@ -164,7 +163,7 @@ pub struct Filter {
 
 impl Filter {
     fn set_per_route_config<EHF: EnvoyHttpFilter>(&mut self, envoy_filter: &mut EHF) {
-        if !self.per_route_config.is_some() {
+        if self.per_route_config.is_none() {
             if let Some(per_route_config) = envoy_filter.get_most_specific_route_config().as_ref() {
                 let per_route_config = match per_route_config.downcast_ref::<PerRouteConfig>() {
                     Some(cfg) => cfg,
@@ -182,7 +181,7 @@ impl Filter {
     }
 
     fn get_per_route_config(&self) -> Option<&PerRouteConfig> {
-        self.per_route_config.as_ref().map(|config| &**config)
+        self.per_route_config.as_deref()
     }
 
     fn transform_request_headers<EHF: EnvoyHttpFilter>(&self, envoy_filter: &mut EHF) {
@@ -255,7 +254,7 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
 
         self.set_per_route_config(envoy_filter);
         self.transform_request_headers(envoy_filter);
-        return abi::envoy_dynamic_module_type_on_http_filter_request_body_status::Continue;
+        abi::envoy_dynamic_module_type_on_http_filter_request_body_status::Continue
     }
 
     fn on_response_headers(
