@@ -95,6 +95,7 @@ linters:
       max-func-lines: 0
     staticcheck:
       checks:
+        - SA1019 # deprecated usage
         - ST1019 # duplicate imports
     sloglint:
       static-msg: true
