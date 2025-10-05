@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,6 +41,32 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
+// TearDownTest runs after each test to clean up CRDs
+func (s *testingSuite) TearDownTest() {
+	// Clean up CRDs that may have been left behind with old namespace annotations
+	crds := []string{
+		"gatewayparameters.gateway.kgateway.dev",
+		"xlistenersets.gateway.kgateway.dev",
+		"listenersets.gateway.kgateway.dev",
+		"inferencepools.gateway.kgateway.dev",
+		// Add any other CRDs used by your tests
+	}
+	
+	for _, crd := range crds {
+		// Delete CRD - ignore errors as it may not exist
+		crdManifest := []byte(fmt.Sprintf(`
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: %s
+`, crd))
+		_ = s.testInstallation.Actions.Kubectl().Delete(s.ctx, crdManifest)
+	}
+	
+	// Wait for cleanup to complete
+	time.Sleep(2 * time.Second)
+}
+
 // injectNamespace injects namespace into manifests that need it
 func injectNamespace(manifest []byte, namespace string) []byte {
 	// Only inject namespace for XListenerSet manifests
@@ -72,22 +99,21 @@ func (s *testingSuite) TestHTTPRouteWithInferencePool() {
 			s.FailNow("no manifests found for %s", testName)
 		}
 
-		for _, m := range manifests {
-			err := s.testInstallation.Actions.Kubectl().Delete(s.ctx, m)
-			s.NoError(err, "can delete manifest %s", m)
+		// Delete manifests in reverse order
+		for i := len(manifests) - 1; i >= 0; i-- {
+			err := s.testInstallation.Actions.Kubectl().Delete(s.ctx, manifests[i])
+			s.NoError(err, "can delete manifest %s", manifests[i])
 		}
 	})
 
 	// Add the testdata manifests to the manifests map
-	s.manifests = map[string][][]byte{
-		testName: {
-			clientManifest,
-			vllmManifest,
-			gtwManifest,
-			poolManifest,
-			eppManifest,
-			routeManifest,
-		},
+	s.manifests[testName] = [][]byte{
+		clientManifest,
+		vllmManifest,
+		gtwManifest,
+		poolManifest,
+		eppManifest,
+		routeManifest,
 	}
 
 	// Apply the testdata manifests
@@ -217,23 +243,22 @@ func (s *testingSuite) TestHTTPRouteWithListenerSetParentRef() {
 			s.FailNow("no manifests found for %s", testName)
 		}
 
-		for _, m := range manifests {
-			err := s.testInstallation.Actions.Kubectl().Delete(s.ctx, m)
-			s.NoError(err, "can delete manifest %s", m)
+		// Delete manifests in reverse order
+		for i := len(manifests) - 1; i >= 0; i-- {
+			err := s.testInstallation.Actions.Kubectl().Delete(s.ctx, manifests[i])
+			s.NoError(err, "can delete manifest %s", manifests[i])
 		}
 	})
 
 	// Add the testdata manifests to the manifests map
-	s.manifests = map[string][][]byte{
-		testName: {
-			clientManifest,
-			vllmManifest,
-			gtwManifest,
-			injectNamespace(listenersetManifest, testNS),
-			poolManifest,
-			eppManifest,
-			routeListenerSetManifest,
-		},
+	s.manifests[testName] = [][]byte{
+		clientManifest,
+		vllmManifest,
+		gtwManifest,
+		injectNamespace(listenersetManifest, testNS),
+		poolManifest,
+		eppManifest,
+		routeListenerSetManifest,
 	}
 
 	// Apply the testdata manifests
@@ -358,23 +383,22 @@ func (s *testingSuite) TestHTTPRouteWithXListenerSetParentRef() {
 			s.FailNow("no manifests found for %s", testName)
 		}
 
-		for _, m := range manifests {
-			err := s.testInstallation.Actions.Kubectl().Delete(s.ctx, m)
-			s.NoError(err, "can delete manifest %s", m)
+		// Delete manifests in reverse order
+		for i := len(manifests) - 1; i >= 0; i-- {
+			err := s.testInstallation.Actions.Kubectl().Delete(s.ctx, manifests[i])
+			s.NoError(err, "can delete manifest %s", manifests[i])
 		}
 	})
 
 	// Add the testdata manifests to the manifests map
-	s.manifests = map[string][][]byte{
-		testName: {
-			clientManifest,
-			vllmManifest,
-			gtwManifest,
-			injectNamespace(xlistenersetManifest, testNS),
-			poolManifest,
-			eppManifest,
-			routeXListenerSetManifest,
-		},
+	s.manifests[testName] = [][]byte{
+		clientManifest,
+		vllmManifest,
+		gtwManifest,
+		injectNamespace(xlistenersetManifest, testNS),
+		poolManifest,
+		eppManifest,
+		routeXListenerSetManifest,
 	}
 
 	// Apply the testdata manifests
@@ -499,24 +523,23 @@ func (s *testingSuite) TestHTTPRouteWithMixedParentRefs() {
 			s.FailNow("no manifests found for %s", testName)
 		}
 
-		for _, m := range manifests {
-			err := s.testInstallation.Actions.Kubectl().Delete(s.ctx, m)
-			s.NoError(err, "can delete manifest %s", m)
+		// Delete manifests in reverse order
+		for i := len(manifests) - 1; i >= 0; i-- {
+			err := s.testInstallation.Actions.Kubectl().Delete(s.ctx, manifests[i])
+			s.NoError(err, "can delete manifest %s", manifests[i])
 		}
 	})
 
 	// Add the testdata manifests to the manifests map
-	s.manifests = map[string][][]byte{
-		testName: {
-			clientManifest,
-			vllmManifest,
-			gtwManifest,
-			injectNamespace(listenersetManifest, testNS),
-			injectNamespace(xlistenersetManifest, testNS),
-			poolManifest,
-			eppManifest,
-			routeMixedParentsManifest,
-		},
+	s.manifests[testName] = [][]byte{
+		clientManifest,
+		vllmManifest,
+		gtwManifest,
+		injectNamespace(listenersetManifest, testNS),
+		injectNamespace(xlistenersetManifest, testNS),
+		poolManifest,
+		eppManifest,
+		routeMixedParentsManifest,
 	}
 
 	// Apply the testdata manifests
