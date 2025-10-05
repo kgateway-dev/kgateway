@@ -51,7 +51,7 @@ func (s *testingSuite) TearDownTest() {
 		"inferencepools.gateway.kgateway.dev",
 		// Add any other CRDs used by your tests
 	}
-	
+
 	for _, crd := range crds {
 		// Delete CRD - ignore errors as it may not exist
 		crdManifest := []byte(fmt.Sprintf(`
@@ -62,7 +62,7 @@ metadata:
 `, crd))
 		_ = s.testInstallation.Actions.Kubectl().Delete(s.ctx, crdManifest)
 	}
-	
+
 	// Wait for cleanup to complete
 	time.Sleep(2 * time.Second)
 }
