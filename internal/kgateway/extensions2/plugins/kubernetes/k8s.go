@@ -50,7 +50,7 @@ func NewPluginFromCollections(
 		return uss
 	}, krtOpts.ToOptions("KubernetesServiceBackends")...)
 
-	inputs := krtcollections.NewGlooK8sEndpointInputs(stngs, krtOpts, endpointSlices, pods, k8sServiceBackends)
+	inputs := krtcollections.NewKgatewayK8sEndpointInputs(stngs, krtOpts, endpointSlices, pods, k8sServiceBackends)
 	k8sServiceEndpoints := krtcollections.NewK8sEndpoints(ctx, inputs)
 
 	return sdk.Plugin{

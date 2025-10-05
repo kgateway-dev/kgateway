@@ -35,14 +35,13 @@ const (
 	multiSvcTCPRouteName2    = "tcp-route-2"
 
 	// Constants for CrossNamespaceTCPRouteWithReferenceGrant
-	crossNsTestName           = "CrossNamespaceTCPRouteWithReferenceGrant"
-	crossNsClientName         = "cross-namespace-allowed-client-ns"
-	crossNsBackendNsName      = "cross-namespace-allowed-backend-ns"
-	crossNsGatewayName        = "gateway"
-	crossNsListenerName       = "listener-8080"
-	crossNsBackendSvcName     = "backend-svc"
-	crossNsTCPRouteName       = "tcp-route"
-	crossNsReferenceGrantName = "reference-grant"
+	crossNsTestName       = "CrossNamespaceTCPRouteWithReferenceGrant"
+	crossNsClientName     = "cross-namespace-allowed-client-ns"
+	crossNsBackendNsName  = "cross-namespace-allowed-backend-ns"
+	crossNsGatewayName    = "gateway"
+	crossNsListenerName   = "listener-8080"
+	crossNsBackendSvcName = "backend-svc"
+	crossNsTCPRouteName   = "tcp-route"
 
 	// Constants for CrossNamespaceTCPRouteWithoutReferenceGrant
 	crossNsNoRefGrantTestName       = "CrossNamespaceTCPRouteWithoutReferenceGrant"
@@ -86,19 +85,19 @@ var (
 	ctxTimeout = 10 * time.Minute
 	timeout    = 60 * time.Second
 
-	singleGlooProxy = metav1.ObjectMeta{
+	singleProxyObjectMeta = metav1.ObjectMeta{
 		Name:      "single-tcp-gateway",
 		Namespace: singleSvcNsName,
 	}
-	singleSvcProxyDeployment = &appsv1.Deployment{ObjectMeta: singleGlooProxy}
-	singleSvcProxyService    = &corev1.Service{ObjectMeta: singleGlooProxy}
+	singleSvcProxyDeployment = &appsv1.Deployment{ObjectMeta: singleProxyObjectMeta}
+	singleSvcProxyService    = &corev1.Service{ObjectMeta: singleProxyObjectMeta}
 
-	multiGlooProxy = metav1.ObjectMeta{
+	multiProxyObjectMeta = metav1.ObjectMeta{
 		Name:      "multi-tcp-gateway",
 		Namespace: multiSvcNsName,
 	}
-	multiProxyDeployment = &appsv1.Deployment{ObjectMeta: multiGlooProxy}
-	multiProxyService    = &corev1.Service{ObjectMeta: multiGlooProxy}
+	multiProxyDeployment = &appsv1.Deployment{ObjectMeta: multiProxyObjectMeta}
+	multiProxyService    = &corev1.Service{ObjectMeta: multiProxyObjectMeta}
 
 	// Expected curl responses from tests
 	expectedSingleSvcResp = &testmatchers.HttpResponse{
@@ -109,19 +108,19 @@ var (
 		),
 	}
 
-	crossNsGlooProxy = metav1.ObjectMeta{
+	crossNsProxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gateway",
 		Namespace: crossNsClientName,
 	}
-	crossNsProxyDeployment = &appsv1.Deployment{ObjectMeta: crossNsGlooProxy}
-	crossNsProxyService    = &corev1.Service{ObjectMeta: crossNsGlooProxy}
+	crossNsProxyDeployment = &appsv1.Deployment{ObjectMeta: crossNsProxyObjectMeta}
+	crossNsProxyService    = &corev1.Service{ObjectMeta: crossNsProxyObjectMeta}
 
-	crossNsNoRefGrantGlooProxy = metav1.ObjectMeta{
+	crossNsNoRefGrantProxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gateway",
 		Namespace: crossNsNoRefGrantClientNsName,
 	}
-	crossNsNoRefGrantProxyDeployment = &appsv1.Deployment{ObjectMeta: crossNsNoRefGrantGlooProxy}
-	crossNsNoRefGrantProxyService    = &corev1.Service{ObjectMeta: crossNsNoRefGrantGlooProxy}
+	crossNsNoRefGrantProxyDeployment = &appsv1.Deployment{ObjectMeta: crossNsNoRefGrantProxyObjectMeta}
+	crossNsNoRefGrantProxyService    = &corev1.Service{ObjectMeta: crossNsNoRefGrantProxyObjectMeta}
 
 	expectedMultiSvc1Resp = &testmatchers.HttpResponse{
 		StatusCode: http.StatusOK,

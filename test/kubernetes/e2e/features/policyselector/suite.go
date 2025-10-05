@@ -27,7 +27,7 @@ type tsuite struct {
 
 	ctx context.Context
 	// ti contains all the metadata/utilities necessary to execute a series of tests
-	// against an installation of Gloo Gateway
+	// against an installation of kgateway
 	ti *e2e.TestInstallation
 
 	// maps test name to a list of manifests to apply before the test

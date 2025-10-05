@@ -24,7 +24,7 @@ controller:
   # deployment:
   #   livenessProbeEnabled: true
   #   customEnv:
-  #     # We scale the Gloo component frequently in tests, and need leadership to be established quickly
+  #     # We scale the kgateway component frequently in tests, and need leadership to be established quickly
   #     # Therefore, we set values to lower thresholds than the defaults
   #     - name: LEADER_ELECTION_LEASE_DURATION
   #       value: 4s
@@ -44,7 +44,7 @@ controller:
   #       cpu: 1000m
   #       memory: 10Gi
   #   stats:
-  #     enabled: true # enable stats server for gloo so we can collect the metrics in CI
+  #     enabled: true # enable stats server for kgateway so we can collect the metrics in CI
 
 # TODO Configuration for the dynaimcally deployed proxies
     # Panic mode allows Envoy load balancing to disregard host's health status.
