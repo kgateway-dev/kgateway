@@ -52,7 +52,6 @@ apiVersion: gateway.kgateway.dev/v1alpha1
 kind: BackendConfigPolicy
 metadata:
   name: example-svc-policy
-  namespace: default
 spec:
   targetRefs:
     - name: example-svc
