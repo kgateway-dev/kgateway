@@ -753,8 +753,7 @@ func (u *urlRewriteIr) apply(
 	if u.HostRewrite != nil && policy.IsSettable(outputRoute.GetRoute().GetHostRewriteSpecifier(), mergeOpts) {
 		outputRoute.GetRoute().HostRewriteSpecifier = u.HostRewrite
 	}
-	if u.FullReplace != "" && policy.IsSettable(outputRoute.GetRoute().GetRegexRewrite(), mergeOpts) &&
-		policy.IsSettable(outputRoute.GetRoute().GetPrefixRewrite(), mergeOpts) {
+	if u.FullReplace != "" && isPathRewriteSettable(outputRoute, mergeOpts) {
 		outputRoute.GetRoute().RegexRewrite = &envoy_type_matcher_v3.RegexMatchAndSubstitute{
 			Pattern: &envoy_type_matcher_v3.RegexMatcher{
 				Regex: ".*",
@@ -765,9 +764,7 @@ func (u *urlRewriteIr) apply(
 
 	// need to check that both RegexRewrite and PrefixRewrite are settable
 	// cannot set both RegexRewrite and PrefixRewrite; Envoy will reject it
-	if u.PrefixReplace != "" &&
-		policy.IsSettable(outputRoute.GetRoute().GetRegexRewrite(), mergeOpts) &&
-		policy.IsSettable(outputRoute.GetRoute().GetPrefixRewrite(), mergeOpts) {
+	if u.PrefixReplace != "" && isPathRewriteSettable(outputRoute, mergeOpts) {
 		path := outputRoute.GetMatch().GetPrefix()
 		if path == "" {
 			path = outputRoute.GetMatch().GetPath()
@@ -797,6 +794,12 @@ func (u *urlRewriteIr) apply(
 			outputRoute.GetRoute().PrefixRewrite = u.PrefixReplace
 		}
 	}
+}
+
+// isPathRewriteSettable returns true if both RegexRewrite and PrefixRewrite are settable
+func isPathRewriteSettable(route *envoyroutev3.Route, mergeOpts policy.MergeOptions) bool {
+	return policy.IsSettable(route.GetRoute().GetRegexRewrite(), mergeOpts) &&
+		policy.IsSettable(route.GetRoute().GetPrefixRewrite(), mergeOpts)
 }
 
 func convertURLRewriteIR(_ krt.HandlerContext, config *gwv1.HTTPURLRewriteFilter) *urlRewriteIr {
