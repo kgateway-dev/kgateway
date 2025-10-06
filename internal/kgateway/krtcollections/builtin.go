@@ -762,8 +762,7 @@ func (u *urlRewriteIr) apply(
 			Substitution: u.FullReplace,
 		}
 	}
-	if u.PrefixReplace != "" && policy.IsSettable(outputRoute.GetRoute().GetRegexRewrite(), mergeOpts) &&
-		policy.IsSettable(outputRoute.GetRoute().GetPrefixRewrite(), mergeOpts) {
+	if u.PrefixReplace != "" {
 		path := outputRoute.GetMatch().GetPrefix()
 		if path == "" {
 			path = outputRoute.GetMatch().GetPath()
@@ -771,15 +770,32 @@ func (u *urlRewriteIr) apply(
 		if path == "" {
 			path = outputRoute.GetMatch().GetPathSeparatedPrefix()
 		}
+
+		// need to check that both RegexRewrite and PrefixRewrite are settable
+		// cannot set both RegexRewrite and PrefixRewrite; Envoy will reject it
 		if path != "" && u.PrefixReplace == "/" {
-			outputRoute.GetRoute().RegexRewrite = &envoy_type_matcher_v3.RegexMatchAndSubstitute{
-				Pattern: &envoy_type_matcher_v3.RegexMatcher{
-					Regex: "^" + path + "\\/*",
-				},
-				Substitution: "/",
+			if policy.IsSettable(outputRoute.GetRoute().GetRegexRewrite(), mergeOpts) &&
+				policy.IsSettable(outputRoute.GetRoute().GetPrefixRewrite(), mergeOpts) {
+				if outputRoute.GetRoute().GetPrefixRewrite() != "" {
+					outputRoute.GetRoute().PrefixRewrite = ""
+					logger.Debug("overriding PrefixRewrite with RegexRewrite", "path", path, "prefixReplace", u.PrefixReplace)
+				}
+				outputRoute.GetRoute().RegexRewrite = &envoy_type_matcher_v3.RegexMatchAndSubstitute{
+					Pattern: &envoy_type_matcher_v3.RegexMatcher{
+						Regex: "^" + path + "\\/*",
+					},
+					Substitution: "/",
+				}
 			}
 		} else {
-			outputRoute.GetRoute().PrefixRewrite = u.PrefixReplace
+			if policy.IsSettable(outputRoute.GetRoute().GetRegexRewrite(), mergeOpts) &&
+				policy.IsSettable(outputRoute.GetRoute().GetPrefixRewrite(), mergeOpts) {
+				if outputRoute.GetRoute().GetRegexRewrite() != nil {
+					outputRoute.GetRoute().RegexRewrite = nil
+					logger.Debug("overriding RegexRewrite with PrefixRewrite", "path", path, "prefixReplace", u.PrefixReplace)
+				}
+				outputRoute.GetRoute().PrefixRewrite = u.PrefixReplace
+			}
 		}
 	}
 }
