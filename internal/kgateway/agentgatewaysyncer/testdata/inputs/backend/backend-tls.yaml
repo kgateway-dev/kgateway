@@ -257,4 +257,12 @@ spec:
     group: gateway.kgateway.dev
   validation:
     hostname: baz
-    wellKnownCACertificates: System    
+    wellKnownCACertificates: System
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: openai-primary-secret
+type: Opaque
+data:
+  Authorization: QmVhcmVyIHNrLW9wZW5haS1wcmltYXJ5LWtleQ== # Bearer sk-openai-primary-key

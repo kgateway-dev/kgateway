@@ -13,6 +13,9 @@ import (
 )
 
 const (
+	// GatewayBundleVersion is the version of the Gateway API that kgateway is built against.
+	// This should be updated whenever the Gateway API version is updated.
+	GatewayBundleVersion = "v1.4.0"
 	// Group string for Gateway API resources
 	GatewayGroup      = apiv1.GroupName
 	XListenerSetGroup = apixv1alpha1.GroupName

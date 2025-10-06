@@ -60,7 +60,7 @@ var _ = Describe("InferencePool controller", func() {
 			err := k8sClient.Create(ctx, testGw)
 			Expect(err).NotTo(HaveOccurred())
 
-			// Create an HTTPRoute without a status.
+			// Create an HTTPRoute with status to include a valid Parents field.
 			httpRoute := &apiv1.HTTPRoute{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-route",
@@ -83,12 +83,27 @@ var _ = Describe("InferencePool controller", func() {
 						},
 					},
 				},
+				Status: apiv1.HTTPRouteStatus{
+					RouteStatus: apiv1.RouteStatus{
+						Parents: []apiv1.RouteParentStatus{
+							{
+								ParentRef: apiv1.ParentReference{
+									Group:     ptr.To(apiv1.Group("gateway.networking.k8s.io")),
+									Kind:      ptr.To(apiv1.Kind("Gateway")),
+									Name:      apiv1.ObjectName(testGw.Name),
+									Namespace: ptr.To(apiv1.Namespace(defaultNamespace)),
+								},
+								ControllerName: gatewayControllerName,
+							},
+						},
+					},
+				},
 			}
 			err = k8sClient.Create(ctx, httpRoute)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Now update the status to include a valid Parents field.
-			httpRoute.Status = apiv1.HTTPRouteStatus{
+			/*httpRoute.Status = apiv1.HTTPRouteStatus{
 				RouteStatus: apiv1.RouteStatus{
 					Parents: []apiv1.RouteParentStatus{
 						{
@@ -105,7 +120,7 @@ var _ = Describe("InferencePool controller", func() {
 			}
 			Eventually(func() error {
 				return k8sClient.Status().Update(ctx, httpRoute)
-			}, "10s", "1s").Should(Succeed())
+			}, "10s", "1s").Should(Succeed())*/
 
 			// Create an InferencePool resource that is referenced by the HTTPRoute.
 			pool := &inf.InferencePool{

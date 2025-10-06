@@ -494,10 +494,13 @@ CONFORMANCE_CHANNEL ?= experimental
 CONFORMANCE_VERSION ?= v1.3.0
 .PHONY: gw-api-crds
 gw-api-crds: ## Install the Gateway API CRDs
+# Note: `--server-side` was added due to:
+#  The CustomResourceDefinition "httproutes.gateway.networking.k8s.io" is invalid: metadata.annotations: Too long: must have at most 262144 bytes
+#  Required until https://github.com/kubernetes-sigs/gateway-api/issues/4012 is resolved. Update in hack/kind/setup-kind.sh also.
 ifeq ($(CONFORMANCE_CHANNEL), standard)
-	kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd?ref=$(CONFORMANCE_VERSION)"
+	kubectl apply --server-side --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd?ref=$(CONFORMANCE_VERSION)"
 else
-	kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd/$(CONFORMANCE_CHANNEL)?ref=$(CONFORMANCE_VERSION)"
+	kubectl apply --server-side --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd/$(CONFORMANCE_CHANNEL)?ref=$(CONFORMANCE_VERSION)"
 endif
 
 # The version of the k8s gateway api inference extension CRDs to install.

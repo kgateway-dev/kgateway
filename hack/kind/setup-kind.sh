@@ -82,10 +82,13 @@ fi
 # alternatives like running a series of `kubectl apply -f <url>` commands. This
 # approach is largely necessary since upstream hasn't adopted a helm chart for
 # the CRDs yet, or won't be for the foreseeable future.
+# Note: `--server-side` was added due to:
+#  The CustomResourceDefinition "httproutes.gateway.networking.k8s.io" is invalid: metadata.annotations: Too long: must have at most 262144 bytes
+#  Required until https://github.com/kubernetes-sigs/gateway-api/issues/4012 is resolved.
 if [[ $CONFORMANCE_CHANNEL == "standard" ]]; then
-  kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd?ref=$CONFORMANCE_VERSION"
+  kubectl apply --server-side --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd?ref=$CONFORMANCE_VERSION"
 else
-  kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd/$CONFORMANCE_CHANNEL?ref=$CONFORMANCE_VERSION"
+  kubectl apply --server-side --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd/$CONFORMANCE_CHANNEL?ref=$CONFORMANCE_VERSION"
 fi
 
 # 6. Apply the Kubernetes Gateway API Inference Extension CRDs

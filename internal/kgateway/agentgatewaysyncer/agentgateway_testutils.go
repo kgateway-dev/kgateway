@@ -30,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	"sigs.k8s.io/gateway-api/pkg/consts"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -599,7 +600,13 @@ func (tc TestCase) Run(
 		wellknown.XListenerSetGVR,
 		wellknown.BackendTLSPolicyGVR,
 	} {
-		clienttest.MakeCRD(t, cli, crd)
+		if crd.Group == gwv1.GroupVersion.Group {
+			clienttest.MakeCRDWithAnnotations(
+				t, cli, crd, map[string]string{consts.BundleVersionAnnotation: wellknown.GatewayBundleVersion},
+			)
+		} else {
+			clienttest.MakeCRD(t, cli, crd)
+		}
 	}
 	defer cli.Shutdown()
 

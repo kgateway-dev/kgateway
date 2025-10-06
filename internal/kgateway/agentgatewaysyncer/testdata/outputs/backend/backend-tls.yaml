@@ -58,6 +58,20 @@ Listeners:
   name: http
   protocol: HTTP
 Policies:
+- name: auth-default/ai-groups-openai
+  spec:
+    auth:
+      key:
+        secret: sk-openai-primary-key
+  target:
+    subBackend: default/ai-groups/openai
+- name: auth-default/openai-single-backend
+  spec:
+    auth:
+      key:
+        secret: sk-openai-primary-key
+  target:
+    subBackend: default/openai-single/backend
 - name: auth-default/ai-groups-anthropic
   spec:
     auth:
