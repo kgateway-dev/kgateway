@@ -778,6 +778,7 @@ func (u *urlRewriteIr) apply(
 
 		if path != "" && u.PrefixReplace == "/" {
 			if outputRoute.GetRoute().GetPrefixRewrite() != "" {
+				// clear the PrefixRewrite in order to override it with the RegexRewrite
 				outputRoute.GetRoute().PrefixRewrite = ""
 				logger.Debug("overriding PrefixRewrite with RegexRewrite", "path", path, "prefixReplace", u.PrefixReplace)
 			}
@@ -789,6 +790,7 @@ func (u *urlRewriteIr) apply(
 			}
 		} else {
 			if outputRoute.GetRoute().GetRegexRewrite() != nil {
+				// clear the RegexRewrite in order to override it with the PrefixRewrite
 				outputRoute.GetRoute().RegexRewrite = nil
 				logger.Debug("overriding RegexRewrite with PrefixRewrite", "path", path, "prefixReplace", u.PrefixReplace)
 			}
