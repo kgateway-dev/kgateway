@@ -48,8 +48,8 @@ func RunEnvoyValidate(ctx context.Context, envoyExecutable, bootstrapConfig stri
 
 	if err != nil {
 		if os.IsNotExist(err) {
-			// log a warning and return nil; will allow users to continue to run Gloo locally without
-			// relying on the Gloo container with Envoy already published to the expected directory
+			// log a warning and return nil; will allow users to continue to run kgateway locally without
+			// relying on the kgateway container with Envoy already published to the expected directory
 			slog.Warn("unable to validate envoy configuration", "executable", envoyExecutable)
 			return nil
 		}
@@ -102,14 +102,14 @@ func RunEnvoy(envoyExecutable, inputPath, outputPath string) {
 	// 2. Write to a file for debug purposes
 	// since this operation is meant only for debug purposes, we ignore the error
 	// this might fail if root fs is read only
-	_ = os.WriteFile(outputPath, []byte(bootstrapConfig), 0444)
+	_ = os.WriteFile(outputPath, []byte(bootstrapConfig), 0444) //nolint:gosec // G306: Debug file with read-only permissions is intentional
 
 	// 3. Execute Envoy with the provided configuration
 	args := []string{envoyExecutable, "--config-yaml", bootstrapConfig}
 	if len(os.Args) > 1 {
 		args = append(args, os.Args[1:]...)
 	}
-	if err = syscall.Exec(args[0], args, os.Environ()); err != nil {
+	if err = syscall.Exec(args[0], args, os.Environ()); err != nil { //nolint:gosec // G204: Executing Envoy with validated arguments is intentional
 		panic(err)
 	}
 }

@@ -1,5 +1,5 @@
 {{- $gateway := .Values.gateway }}
-{{- if not $gateway.agentGateway.enabled }}
+{{- if not $gateway.agentgateway.enabled }}
 {{- $statsConfig := $gateway.stats }}
 apiVersion: apps/v1
 kind: Deployment
@@ -15,6 +15,10 @@ spec:
   selector:
     matchLabels:
       {{- include "kgateway.gateway.selectorLabels" . | nindent 6 }}
+  {{- with $gateway.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   template:
     metadata:
       annotations:
@@ -28,12 +32,12 @@ spec:
       {{- end}}
       {{- if (($gateway.aiExtension).enabled) }}
       {{- if $gateway.aiExtension.stats }}
-        solo.io/ai-stats-config-hash: {{ sha256sum $gateway.aiExtension.stats | trunc 64 }}
+        kgateway.dev/ai-stats-config-hash: {{ sha256sum $gateway.aiExtension.stats | trunc 64 }}
       {{- end }}
       {{- end}}
       labels:
         {{- include "kgateway.gateway.constLabels" . | nindent 8 }}
-        {{- include "kgateway.gateway.selectorLabels" . | nindent 8 }}
+        {{- include "kgateway.gateway.podLabels" . | nindent 8 }}
         {{- with $gateway.extraPodLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -43,15 +47,15 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "kgateway.gateway.fullname" . }}
-      {{- if $gateway.podSecurityContext }}
+      {{- with $gateway.podSecurityContext }}
       securityContext:
-        {{- toYaml $gateway.podSecurityContext | nindent 8 }}
+        {{- toYaml . | nindent 8 }}
       {{- end }}
       containers:
       - name: {{ .Chart.Name }}
-        {{- if $gateway.securityContext }}
+        {{- with $gateway.securityContext }}
         securityContext:
-          {{- toYaml $gateway.securityContext | nindent 10 }}
+          {{- toYaml . | nindent 10 }}
         {{- end }}
         args:
         - "--disable-hot-restart"
@@ -66,10 +70,15 @@ spec:
         - "{{ . }}"
         {{- end }}{{/* with $gateway.componentLogLevel */}}
         image: "{{ template "kgateway.gateway.image" $gateway.image }}"
+        {{- if $gateway.image.pullPolicy }}
         imagePullPolicy: {{ $gateway.image.pullPolicy }}
+        {{- end }}
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
+        - name: xds-token
+          mountPath: /var/run/secrets/tokens
+          readOnly: true
         {{- with $gateway.extraVolumeMounts }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -97,14 +106,18 @@ spec:
         - name: http-monitoring
           containerPort: 9091
         {{- end }}
-{{- if $gateway.readinessProbe }}
+{{- with $gateway.startupProbe }}
+        startupProbe:
+{{ toYaml . | indent 10}}
+{{- end }}
+{{- with $gateway.readinessProbe }}
         readinessProbe:
-{{ toYaml $gateway.readinessProbe | indent 10}}
-{{- end }}{{/*if $gateway.readinessProbe*/}}
-{{- if $gateway.livenessProbe }}
+{{ toYaml . | indent 10}}
+{{- end }}
+{{- with $gateway.livenessProbe }}
         livenessProbe:
-{{ toYaml $gateway.livenessProbe | indent 10}}
-{{- end }}{{/*if $gateway.livenessProbe*/}}
+{{ toYaml . | indent 10}}
+{{- end }}
 {{- if ($gateway.gracefulShutdown).enabled }}
         lifecycle:
           preStop:
@@ -114,10 +127,10 @@ spec:
               - -c
               - wget --post-data "" -O /dev/null 127.0.0.1:19000/healthcheck/fail; sleep {{ $gateway.gracefulShutdown.sleepTimeSeconds | default "10" }}
 {{- end}}{{/*if ($gateway.gracefulShutdown).enabled */}}
-{{- if $gateway.resources }}
+{{- with $gateway.resources }}
         resources:
-          {{- toYaml $gateway.resources | nindent 10 }}
-{{- end }} {{/* if $gateway.resources */}}
+          {{- toYaml . | nindent 10 }}
+{{- end }}
 {{- if and $gateway.istio.enabled ($gateway.sdsContainer).image }}
       - name: sds
         image: "{{ template "kgateway.gateway.image" $gateway.sdsContainer.image }}"
@@ -151,13 +164,13 @@ spec:
           tcpSocket:
             port: 8234
           timeoutSeconds: 1
-        {{- if $gateway.sdsContainer.resources }}
+        {{- with $gateway.sdsContainer.resources }}
         resources:
-          {{- toYaml $gateway.sdsContainer.resources | nindent 10 }}
+          {{- toYaml . | nindent 10 }}
         {{- end }}
-        {{- if $gateway.sdsContainer.securityContext }}
+        {{- with $gateway.sdsContainer.securityContext }}
         securityContext:
-          {{- toYaml $gateway.sdsContainer.securityContext | nindent 10 }}
+          {{- toYaml . | nindent 10 }}
         {{- end }}
         terminationMessagePath: /dev/termination-log
         terminationMessagePolicy: File
@@ -243,13 +256,13 @@ spec:
                 fieldPath: metadata.namespace
           - name: DISABLE_ENVOY
             value: "true"
-        {{- if $gateway.istioContainer.resources }}
+        {{- with $gateway.istioContainer.resources }}
         resources:
-          {{- toYaml $gateway.istioContainer.resources | nindent 10 }}
+          {{- toYaml . | nindent 10 }}
         {{- end }}
-        {{- if $gateway.istioContainer.securityContext }}
+        {{- with $gateway.istioContainer.securityContext }}
         securityContext:
-          {{- toYaml $gateway.istioContainer.securityContext | nindent 10 }}
+          {{- toYaml . | nindent 10 }}
         {{- end }}
         volumeMounts:
           - mountPath: /var/run/secrets/istio
@@ -286,18 +299,18 @@ spec:
                 fieldPath: metadata.namespace
 {{- if $gateway.aiExtension.env }}
 {{ toYaml $gateway.aiExtension.env | indent 10 }}
-{{- end }} {{/* if $gateway.aiExtension.env */}}
-{{- if $gateway.aiExtension.ports }}
+{{- end }}
+{{- with $gateway.aiExtension.ports }}
         ports:
-{{ toYaml $gateway.aiExtension.ports | indent 10 }}
-{{- end }} {{/* if $gateway.aiExtension.ports */}}
-        {{- if $gateway.aiExtension.resources }}
+{{ toYaml . | indent 10 }}
+{{- end }}
+        {{- with $gateway.aiExtension.resources }}
         resources:
-          {{- toYaml $gateway.aiExtension.resources | nindent 10 }}
+          {{- toYaml . | nindent 10 }}
         {{- end }}
-        {{- if $gateway.aiExtension.securityContext }}
+        {{- with $gateway.aiExtension.securityContext }}
         securityContext:
-          {{- toYaml $gateway.aiExtension.securityContext | nindent 10 }}
+          {{- toYaml . | nindent 10 }}
         {{- end }}
         terminationMessagePath: /dev/termination-log
         terminationMessagePolicy: File
@@ -327,6 +340,13 @@ spec:
       terminationGracePeriodSeconds: {{ $gateway.terminationGracePeriodSeconds }}
       {{- end }}
       volumes:
+      - name: xds-token
+        projected:
+          sources:
+          - serviceAccountToken:
+              audience: kgateway
+              expirationSeconds: 43200
+              path: xds-token
       - configMap:
           name: {{ include "kgateway.gateway.fullname" . }}
         name: envoy-config
@@ -571,6 +591,27 @@ data:
               "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
               explicit_http_config:
                 http2_protocol_options: {}
+              http_filters:
+              - name: transform
+                typed_config:
+                  "@type": type.googleapis.com/envoy.api.v2.filter.http.FilterTransformations
+                  transformations:
+                  - match:
+                      prefix: "/"
+                    route_transformations:
+                      request_transformation:
+                        transformation_template:
+                          headers:
+                            authorization: {"text": 'Bearer {{ "{{ \"{{ trim(data_source(\\\"token\\\")) -}}\" }}" }}'}
+                          passthrough: {}
+                          data_sources:
+                            token:
+                              filename: "/var/run/secrets/tokens/xds-token"
+                              watched_directory:
+                                path: "/var/run/secrets/tokens"
+              - name: envoy.filters.http.upstream_codec
+                typed_config:
+                  "@type": type.googleapis.com/envoy.extensions.filters.http.upstream_codec.v3.UpstreamCodec
           upstream_connection_options:
             tcp_keepalive:
               keepalive_time: 10
@@ -617,5 +658,5 @@ data:
       lds_config:
         resource_api_version: V3
         ads: {}
-{{- end }} {{/* if not $gateway.agentGateway.enabled */}}
+{{- end }} {{/* if not $gateway.agentgateway.enabled */}}
 ---

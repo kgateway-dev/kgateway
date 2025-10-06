@@ -90,10 +90,7 @@ spec:
         name: extproc
         port: 9000
       requestTimeout: 300ms
-    # this should be tested, but due to a bug in how the translator tests process
-    # resources, types of `bool` with a value of false don't work correctly.
-    # ref: https://github.com/kgateway-dev/kgateway/issues/12264
-    # failOpen: false
+    failOpen: false
     processingMode:
       requestHeaderMode: SKIP
       responseHeaderMode: SKIP

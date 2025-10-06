@@ -13,7 +13,7 @@ Listeners:
   name: http
   protocol: HTTP
 Policies:
-- name: trafficpolicy/default/cel-rbac-policy/example-route:rbac
+- name: trafficpolicy/default/cel-rbac-policy/example-route:rbac:default/example-route
   spec:
     authorization:
       allow:

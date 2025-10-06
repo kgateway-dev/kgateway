@@ -20,7 +20,16 @@ spec:
     singular: backendconfigpolicy
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - description: Backend config policy acceptance status
+      jsonPath: .status.ancestors[*].conditions[?(@.type=='Accepted')].status
+      name: Accepted
+      type: string
+    - description: Backend config policy attachment status
+      jsonPath: .status.ancestors[*].conditions[?(@.type=='Attached')].status
+      name: Attached
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
@@ -40,8 +49,12 @@ spec:
                     - message: invalid duration value
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                   maxHeadersCount:
+                    format: int32
+                    minimum: 0
                     type: integer
                   maxRequestsPerConnection:
+                    format: int32
+                    minimum: 0
                     type: integer
                   maxStreamDuration:
                     type: string
@@ -65,6 +78,7 @@ spec:
                     type: object
                   healthyThreshold:
                     format: int32
+                    minimum: 0
                     type: integer
                   http:
                     properties:
@@ -98,6 +112,7 @@ spec:
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                   unhealthyThreshold:
                     format: int32
+                    minimum: 0
                     type: integer
                 required:
                 - healthyThreshold
@@ -144,6 +159,8 @@ spec:
                         <= 2147483647) || (type(self) == string && quantity(self).isGreaterThan(quantity('65534'))
                         && quantity(self).isLessThan(quantity('2147483648')))
                   maxConcurrentStreams:
+                    format: int32
+                    minimum: 0
                     type: integer
                   overrideStreamErrorOnInvalidHttpMessage:
                     type: boolean
@@ -174,6 +191,8 @@ spec:
                                 && double(self) > 0.0)
                           minWeightPercent:
                             format: int32
+                            maximum: 100
+                            minimum: 0
                             type: integer
                           window:
                             type: string
@@ -295,9 +314,11 @@ spec:
                         type: array
                       maximumRingSize:
                         format: int64
+                        minimum: 0
                         type: integer
                       minimumRingSize:
                         format: int64
+                        minimum: 0
                         type: integer
                       useHostnameForHashing:
                         type: boolean
@@ -315,6 +336,8 @@ spec:
                                 && double(self) > 0.0)
                           minWeightPercent:
                             format: int32
+                            maximum: 100
+                            minimum: 0
                             type: integer
                           window:
                             type: string
@@ -342,9 +365,12 @@ spec:
                     x-kubernetes-validations:
                     - message: invalid duration value
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                    - message: baseEjectionTime must be at least 1ms
+                      rule: duration(self) >= duration('1ms')
                   consecutive5xx:
                     default: 5
                     format: int32
+                    minimum: 0
                     type: integer
                   interval:
                     default: 10s
@@ -352,6 +378,8 @@ spec:
                     x-kubernetes-validations:
                     - message: invalid duration value
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                    - message: interval must be at least 1ms
+                      rule: duration(self) >= duration('1ms')
                   maxEjectionPercent:
                     default: 10
                     format: int32
@@ -360,6 +388,8 @@ spec:
                     type: integer
                 type: object
               perConnectionBufferLimitBytes:
+                format: int32
+                minimum: 0
                 type: integer
               targetRefs:
                 items:
@@ -427,6 +457,8 @@ spec:
                     - message: keepAliveInterval must be at least 1 second
                       rule: duration(self) >= duration('1s')
                   keepAliveProbes:
+                    format: int32
+                    minimum: 0
                     type: integer
                   keepAliveTime:
                     type: string
@@ -444,6 +476,22 @@ spec:
                     items:
                       type: string
                     type: array
+                  files:
+                    properties:
+                      rootCA:
+                        minLength: 1
+                        type: string
+                      tlsCertificate:
+                        minLength: 1
+                        type: string
+                      tlsKey:
+                        minLength: 1
+                        type: string
+                    type: object
+                    x-kubernetes-validations:
+                    - message: At least one of tlsCertificate, tlsKey, or rootCA must
+                        be set in TLSFiles
+                      rule: has(self.tlsCertificate) || has(self.tlsKey) || has(self.rootCA)
                   insecureSkipVerify:
                     type: boolean
                   parameters:
@@ -456,7 +504,7 @@ spec:
                         items:
                           type: string
                         type: array
-                      tlsMaxVersion:
+                      maxVersion:
                         enum:
                         - AUTO
                         - "1.0"
@@ -464,7 +512,7 @@ spec:
                         - "1.2"
                         - "1.3"
                         type: string
-                      tlsMinVersion:
+                      minVersion:
                         enum:
                         - AUTO
                         - "1.0"
@@ -485,23 +533,7 @@ spec:
                   sni:
                     minLength: 1
                     type: string
-                  tlsFiles:
-                    properties:
-                      rootCA:
-                        minLength: 1
-                        type: string
-                      tlsCertificate:
-                        minLength: 1
-                        type: string
-                      tlsKey:
-                        minLength: 1
-                        type: string
-                    type: object
-                    x-kubernetes-validations:
-                    - message: At least one of tlsCertificate, tlsKey, or rootCA must
-                        be set in TLSFiles
-                      rule: has(self.tlsCertificate) || has(self.tlsKey) || has(self.rootCA)
-                  verifySubjectAltName:
+                  verifySubjectAltNames:
                     items:
                       type: string
                     type: array
@@ -511,9 +543,9 @@ spec:
                     type: string
                 type: object
                 x-kubernetes-validations:
-                - message: exactly one of the fields in [secretRef tlsFiles insecureSkipVerify
+                - message: exactly one of the fields in [secretRef files insecureSkipVerify
                     wellKnownCACertificates] must be set
-                  rule: '[has(self.secretRef),has(self.tlsFiles),has(self.insecureSkipVerify),has(self.wellKnownCACertificates)].filter(x,x==true).size()
+                  rule: '[has(self.secretRef),has(self.files),has(self.insecureSkipVerify),has(self.wellKnownCACertificates)].filter(x,x==true).size()
                     == 1'
             type: object
             x-kubernetes-validations:

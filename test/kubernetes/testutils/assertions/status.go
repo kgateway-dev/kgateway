@@ -44,7 +44,7 @@ func (p *Provider) EventuallyHTTPRouteStatusContainsMessage(
 		route := &gwv1.HTTPRoute{}
 		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: routeName, Namespace: routeNamespace}, route)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), "can get httproute")
-		g.Expect(route.Status.RouteStatus).To(gomega.HaveValue(matcher))
+		g.Expect(route.Status.RouteStatus).To(gomega.HaveValue(matcher), fmt.Sprintf("Full status: %+v", route.Status))
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
@@ -77,7 +77,7 @@ func (p *Provider) EventuallyHTTPRouteStatusContainsReason(
 		}
 		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: routeName, Namespace: routeNamespace}, route)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), "can get httproute")
-		g.Expect(route.Status.RouteStatus).To(gomega.HaveValue(matcher))
+		g.Expect(route.Status.RouteStatus).To(gomega.HaveValue(matcher), fmt.Sprintf("Full status: %+v", route.Status))
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
@@ -98,9 +98,9 @@ func (p *Provider) EventuallyGatewayCondition(
 		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get Gateway %s/%s", gatewayNamespace, gatewayName))
 
 		condition := getConditionByType(gateway.Status.Conditions, string(cond))
-		g.Expect(condition).NotTo(gomega.BeNil(), fmt.Sprintf("%v condition not found for Gateway %s/%s", cond, gatewayNamespace, gatewayName))
-		g.Expect(condition.Status).To(gomega.Equal(expect), fmt.Sprintf("%v condition is not %v for Gateway %s/%s",
-			cond, expect, gatewayNamespace, gatewayName))
+		g.Expect(condition).NotTo(gomega.BeNil(), fmt.Sprintf("%v condition not found for Gateway %s/%s. Full status: %+v", cond, gatewayNamespace, gatewayName, gateway.Status))
+		g.Expect(condition.Status).To(gomega.Equal(expect), fmt.Sprintf("%v condition is not %v for Gateway %s/%s. Full status: %+v",
+			cond, expect, gatewayNamespace, gatewayName, gateway.Status))
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
@@ -124,11 +124,11 @@ func (p *Provider) EventuallyGatewayListenerAttachedRoutes(
 		for _, l := range gateway.Status.Listeners {
 			if l.Name == listener {
 				found = true
-				g.Expect(l.AttachedRoutes).To(gomega.Equal(routes), fmt.Sprintf("%v listener does not contain %d attached routes for Gateway %s/%s",
-					l, routes, gatewayNamespace, gatewayName))
+				g.Expect(l.AttachedRoutes).To(gomega.Equal(routes), fmt.Sprintf("%v listener does not contain %d attached routes for Gateway %s/%s. Full status: %+v",
+					l, routes, gatewayNamespace, gatewayName, gateway.Status))
 			}
 		}
-		g.Expect(found).To(gomega.BeTrue(), fmt.Sprintf("%v listener not found for Gateway %s/%s", listener, gatewayNamespace, gatewayName))
+		g.Expect(found).To(gomega.BeTrue(), fmt.Sprintf("%v listener not found for Gateway %s/%s. Full status: %+v", listener, gatewayNamespace, gatewayName, gateway.Status))
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
@@ -148,29 +148,29 @@ func (p *Provider) EventuallyGatewayStatus(
 
 		for _, expected := range status.Conditions {
 			condition := getConditionByType(gw.Status.Conditions, expected.Type)
-			g.Expect(condition).NotTo(gomega.BeNil(), fmt.Sprintf("%v condition not found for gateway %s/%s", expected.Type, namespace, name))
-			g.Expect(condition.Status).To(gomega.Equal(expected.Status), fmt.Sprintf("%v status is not %v for gateway %s/%s", expected, expected.Status, namespace, name))
+			g.Expect(condition).NotTo(gomega.BeNil(), fmt.Sprintf("%v condition not found for gateway %s/%s. Full status: %+v", expected.Type, namespace, name, gw.Status))
+			g.Expect(condition.Status).To(gomega.Equal(expected.Status), fmt.Sprintf("%v status is not %v for gateway %s/%s. Full status: %+v", expected, expected.Status, namespace, name, gw.Status))
 			if expected.Reason != "" {
-				g.Expect(condition.Reason).To(gomega.Equal(expected.Reason), fmt.Sprintf("%v reason is not %v for gateway %s/%s", expected, expected.Reason, namespace, name))
+				g.Expect(condition.Reason).To(gomega.Equal(expected.Reason), fmt.Sprintf("%v reason is not %v for gateway %s/%s. Full status: %+v", expected, expected.Reason, namespace, name, gw.Status))
 			}
 		}
 
 		for _, expectedListener := range status.Listeners {
 			listenerStatus := getListenerStatus(gw.Status.Listeners, string(expectedListener.Name))
-			g.Expect(listenerStatus).NotTo(gomega.BeNil(), fmt.Sprintf("%v listener status not found for listener %s", expectedListener.Name, expectedListener.Name))
+			g.Expect(listenerStatus).NotTo(gomega.BeNil(), fmt.Sprintf("%v listener status not found for listener %s. Full status: %+v", expectedListener.Name, expectedListener.Name, gw.Status))
 			if expectedListener.AttachedRoutes != 0 {
-				g.Expect(listenerStatus.AttachedRoutes).To(gomega.Equal(expectedListener.AttachedRoutes), fmt.Sprintf("%v condition is not %v for listener %s", expectedListener, expectedListener.AttachedRoutes, expectedListener.Name))
+				g.Expect(listenerStatus.AttachedRoutes).To(gomega.Equal(expectedListener.AttachedRoutes), fmt.Sprintf("%v condition is not %v for listener %s. Full status: %+v", expectedListener, expectedListener.AttachedRoutes, expectedListener.Name, gw.Status))
 			}
 			if expectedListener.SupportedKinds != nil {
-				g.Expect(listenerStatus.SupportedKinds).To(gomega.ContainElements(expectedListener.SupportedKinds), fmt.Sprintf("%v condition is not %v for listener %s", expectedListener, expectedListener.SupportedKinds, expectedListener.Name))
+				g.Expect(listenerStatus.SupportedKinds).To(gomega.ContainElements(expectedListener.SupportedKinds), fmt.Sprintf("%v condition is not %v for listener %s. Full status: %+v", expectedListener, expectedListener.SupportedKinds, expectedListener.Name, gw.Status))
 			}
 
 			for _, expected := range expectedListener.Conditions {
 				condition := getConditionByType(listenerStatus.Conditions, expected.Type)
-				g.Expect(condition).NotTo(gomega.BeNil(), fmt.Sprintf("%v condition not found for listener %s", expected, expectedListener.Name))
-				g.Expect(condition.Status).To(gomega.Equal(expected.Status), fmt.Sprintf("%v condition is not %v for listener %s", expected, expected.Status, expectedListener.Name))
+				g.Expect(condition).NotTo(gomega.BeNil(), fmt.Sprintf("%v condition not found for listener %s. Full status: %+v", expected, expectedListener.Name, gw.Status))
+				g.Expect(condition.Status).To(gomega.Equal(expected.Status), fmt.Sprintf("%v condition is not %v for listener %s. Full status: %+v", expected, expected.Status, expectedListener.Name, gw.Status))
 				if expected.Reason != "" {
-					g.Expect(condition.Reason).To(gomega.Equal(expected.Reason), fmt.Sprintf("%v condition is not %v for listener %s", expected, expected.Reason, expectedListener.Name))
+					g.Expect(condition.Reason).To(gomega.Equal(expected.Reason), fmt.Sprintf("%v condition is not %v for listener %s. Full status: %+v", expected, expected.Reason, expectedListener.Name, gw.Status))
 				}
 			}
 		}
@@ -201,8 +201,8 @@ func (p *Provider) EventuallyHTTPRouteCondition(
 				break
 			}
 		}
-		g.Expect(conditionFound).To(gomega.BeTrue(), fmt.Sprintf("%v condition is not %v for any parent of HTTPRoute %s/%s",
-			cond, expect, routeNamespace, routeName))
+		g.Expect(conditionFound).To(gomega.BeTrue(), fmt.Sprintf("%v condition is not %v for any parent of HTTPRoute %s/%s. Full status: %+v",
+			cond, expect, routeNamespace, routeName, route.Status))
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
@@ -230,8 +230,8 @@ func (p *Provider) EventuallyTCPRouteCondition(
 				break
 			}
 		}
-		g.Expect(conditionFound).To(gomega.BeTrue(), fmt.Sprintf("%v condition is not %v for any parent of TCPRoute %s/%s",
-			cond, expect, routeNamespace, routeName))
+		g.Expect(conditionFound).To(gomega.BeTrue(), fmt.Sprintf("%v condition is not %v for any parent of TCPRoute %s/%s. Full status: %+v",
+			cond, expect, routeNamespace, routeName, route.Status))
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
@@ -259,8 +259,8 @@ func (p *Provider) EventuallyTLSRouteCondition(
 				break
 			}
 		}
-		g.Expect(conditionFound).To(gomega.BeTrue(), fmt.Sprintf("%v condition is not %v for any parent of TLSRoute %s/%s",
-			cond, expect, routeNamespace, routeName))
+		g.Expect(conditionFound).To(gomega.BeTrue(), fmt.Sprintf("%v condition is not %v for any parent of TLSRoute %s/%s. Full status: %+v",
+			cond, expect, routeNamespace, routeName, route.Status))
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
@@ -288,8 +288,8 @@ func (p *Provider) EventuallyGRPCRouteCondition(
 				break
 			}
 		}
-		g.Expect(conditionFound).To(gomega.BeTrue(), fmt.Sprintf("%v condition is not %v for any parent of GRPCRoute %s/%s",
-			cond, expect, routeNamespace, routeName))
+		g.Expect(conditionFound).To(gomega.BeTrue(), fmt.Sprintf("%v condition is not %v for any parent of GRPCRoute %s/%s. Full status: %+v",
+			cond, expect, routeNamespace, routeName, route.Status))
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
@@ -356,32 +356,32 @@ func (p *Provider) EventuallyListenerSetStatus(
 
 		for _, expected := range status.Conditions {
 			condition := getConditionByType(ls.Status.Conditions, expected.Type)
-			g.Expect(condition).NotTo(gomega.BeNil(), fmt.Sprintf("%v condition not found for listenerset %s/%s", expected.Type, namespace, name))
-			g.Expect(condition.Status).To(gomega.Equal(expected.Status), fmt.Sprintf("%v status is not %v for listenerset %s/%s", expected, expected.Status, namespace, name))
+			g.Expect(condition).NotTo(gomega.BeNil(), fmt.Sprintf("%v condition not found for listenerset %s/%s. Full status: %+v", expected.Type, namespace, name, ls.Status))
+			g.Expect(condition.Status).To(gomega.Equal(expected.Status), fmt.Sprintf("%v status is not %v for listenerset %s/%s. Full status: %+v", expected, expected.Status, namespace, name, ls.Status))
 			if expected.Reason != "" {
-				g.Expect(condition.Reason).To(gomega.Equal(expected.Reason), fmt.Sprintf("%v reason is not %v for listenerset %s/%s", expected, expected.Reason, namespace, name))
+				g.Expect(condition.Reason).To(gomega.Equal(expected.Reason), fmt.Sprintf("%v reason is not %v for listenerset %s/%s. Full status: %+v", expected, expected.Reason, namespace, name, ls.Status))
 			}
 		}
 
 		for _, expectedListener := range status.Listeners {
 			listenerStatus := getListenerEntryStatus(ls.Status.Listeners, string(expectedListener.Name))
-			g.Expect(listenerStatus).NotTo(gomega.BeNil(), fmt.Sprintf("%v listener status not found for listener %s", expectedListener.Name, expectedListener.Name))
+			g.Expect(listenerStatus).NotTo(gomega.BeNil(), fmt.Sprintf("%v listener status not found for listener %s. Full status: %+v", expectedListener.Name, expectedListener.Name, ls.Status))
 			if expectedListener.Port != 0 {
-				g.Expect(listenerStatus.Port).To(gomega.Equal(expectedListener.Port), fmt.Sprintf("%v listener condition is not %v for listener %s", expectedListener, expectedListener.Port, expectedListener.Name))
+				g.Expect(listenerStatus.Port).To(gomega.Equal(expectedListener.Port), fmt.Sprintf("%v listener condition is not %v for listener %s. Full status: %+v", expectedListener, expectedListener.Port, expectedListener.Name, ls.Status))
 			}
 			if expectedListener.AttachedRoutes != 0 {
-				g.Expect(listenerStatus.AttachedRoutes).To(gomega.Equal(expectedListener.AttachedRoutes), fmt.Sprintf("%v condition is not %v for listener %s", expectedListener, expectedListener.AttachedRoutes, expectedListener.Name))
+				g.Expect(listenerStatus.AttachedRoutes).To(gomega.Equal(expectedListener.AttachedRoutes), fmt.Sprintf("%v condition is not %v for listener %s. Full status: %+v", expectedListener, expectedListener.AttachedRoutes, expectedListener.Name, ls.Status))
 			}
 			if expectedListener.SupportedKinds != nil {
-				g.Expect(listenerStatus.SupportedKinds).To(gomega.ContainElements(expectedListener.SupportedKinds), fmt.Sprintf("%v condition is not %v for listener %s", expectedListener, expectedListener.SupportedKinds, expectedListener.Name))
+				g.Expect(listenerStatus.SupportedKinds).To(gomega.ContainElements(expectedListener.SupportedKinds), fmt.Sprintf("%v condition is not %v for listener %s. Full status: %+v", expectedListener, expectedListener.SupportedKinds, expectedListener.Name, ls.Status))
 			}
 
 			for _, expected := range expectedListener.Conditions {
 				condition := getConditionByType(listenerStatus.Conditions, expected.Type)
-				g.Expect(condition).NotTo(gomega.BeNil(), fmt.Sprintf("%v condition not found for listener %s", expected, expectedListener.Name))
-				g.Expect(condition.Status).To(gomega.Equal(expected.Status), fmt.Sprintf("%v condition is not %v for listener %s", expected, expected.Status, expectedListener.Name))
+				g.Expect(condition).NotTo(gomega.BeNil(), fmt.Sprintf("%v condition not found for listener %s. Full status: %+v", expected, expectedListener.Name, ls.Status))
+				g.Expect(condition.Status).To(gomega.Equal(expected.Status), fmt.Sprintf("%v condition is not %v for listener %s. Full status: %+v", expected, expected.Status, expectedListener.Name, ls.Status))
 				if expected.Reason != "" {
-					g.Expect(condition.Reason).To(gomega.Equal(expected.Reason), fmt.Sprintf("%v condition is not %v for listener %s", expected, expected.Reason, expectedListener.Name))
+					g.Expect(condition.Reason).To(gomega.Equal(expected.Reason), fmt.Sprintf("%v condition is not %v for listener %s. Full status: %+v", expected, expected.Reason, expectedListener.Name, ls.Status))
 				}
 			}
 		}
@@ -405,8 +405,8 @@ func (p *Provider) EventuallyListenerSetAttachedRoutes(
 
 		for _, expectedListener := range ls.Status.Listeners {
 			listenerStatus := getListenerEntryStatus(ls.Status.Listeners, string(expectedListener.Name))
-			g.Expect(listenerStatus).NotTo(gomega.BeNil(), fmt.Sprintf("%v listener status not found for listener %s", expectedListener.Name, expectedListener.Name))
-			g.Expect(listenerStatus.AttachedRoutes).To(gomega.Equal(expectedListener.AttachedRoutes), fmt.Sprintf("%v AttachedRoutes is not %v for listener %s", expectedListener, expectedListener.AttachedRoutes, expectedListener.Name))
+			g.Expect(listenerStatus).NotTo(gomega.BeNil(), fmt.Sprintf("%v listener status not found for listener %s. Full status: %+v", expectedListener.Name, expectedListener.Name, ls.Status))
+			g.Expect(listenerStatus.AttachedRoutes).To(gomega.Equal(expectedListener.AttachedRoutes), fmt.Sprintf("%v AttachedRoutes is not %v for listener %s. Full status: %+v", expectedListener, expectedListener.AttachedRoutes, expectedListener.Name, ls.Status))
 		}
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
@@ -453,8 +453,8 @@ func (p *Provider) EventuallyHTTPListenerPolicyCondition(
 				break
 			}
 		}
-		g.Expect(conditionFound).To(gomega.BeTrue(), fmt.Sprintf("%v condition is not %v for any parent of HTTPListenerPolicy %s/%s",
-			cond, expect, namespace, name))
+		g.Expect(conditionFound).To(gomega.BeTrue(), fmt.Sprintf("%v condition is not %v for any parent of HTTPListenerPolicy %s/%s. Full status: %+v",
+			cond, expect, namespace, name, hlp.Status))
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
@@ -481,7 +481,7 @@ func (p *Provider) EventuallyBackendCondition(
 				break
 			}
 		}
-		g.Expect(conditionFound).To(gomega.BeTrue(), fmt.Sprintf("%v condition is not %v for Backend %s/%s",
-			condition, expect, namespace, name))
+		g.Expect(conditionFound).To(gomega.BeTrue(), fmt.Sprintf("%v condition is not %v for Backend %s/%s. Full status: %+v",
+			condition, expect, namespace, name, backend.Status))
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }

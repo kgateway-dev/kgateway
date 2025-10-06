@@ -20,6 +20,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
+// TODO: envoy-based AI gateway is deprecated in v2.1 and will be removed in v2.2. The files in this folder (and any associated tests) can be removed in v2.2.
+
 // IR is the internal representation of an AI backend.
 type IR struct {
 	AISecret       *ir.Secret
@@ -110,10 +112,10 @@ func PreprocessAIBackend(ctx context.Context, aiBackend *v1alpha1.AIBackend, ir 
 	byType := map[string]struct{}{}
 	if aiBackend.LLM != nil {
 		llmModel = getBackendModel(aiBackend.LLM, byType)
-	} else if aiBackend.MultiPool != nil {
-		for _, priority := range aiBackend.MultiPool.Priorities {
-			for _, pool := range priority.Pool {
-				llmModel = getBackendModel(&pool, byType)
+	} else {
+		for _, group := range aiBackend.PriorityGroups {
+			for _, provider := range group.Providers {
+				llmModel = getBackendModel(&provider.LLMProvider, byType)
 			}
 		}
 	}
@@ -183,9 +185,8 @@ func PreprocessAIBackend(ctx context.Context, aiBackend *v1alpha1.AIBackend, ir 
 	return nil
 }
 
-func getBackendModel(llm *v1alpha1.LLMProvider, byType map[string]struct{}) string {
+func getBackendModel(provider *v1alpha1.LLMProvider, byType map[string]struct{}) string {
 	llmModel := ""
-	provider := llm.Provider
 	if provider.OpenAI != nil {
 		byType["openai"] = struct{}{}
 		if provider.OpenAI.Model != nil {
@@ -208,7 +209,9 @@ func getBackendModel(llm *v1alpha1.LLMProvider, byType map[string]struct{}) stri
 	} else if provider.Bedrock != nil {
 		// currently only supported in agentgateway
 		byType["bedrock"] = struct{}{}
-		llmModel = provider.Bedrock.Model
+		if provider.Bedrock.Model != nil {
+			llmModel = *provider.Bedrock.Model
+		}
 	}
 	return llmModel
 }

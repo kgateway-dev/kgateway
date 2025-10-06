@@ -4,7 +4,7 @@ go 1.24.6
 
 require (
 	// Also update AgentgatewayDefaultTag in pkg/deployer/wellknown.go
-	github.com/agentgateway/agentgateway v0.8.3
+	github.com/agentgateway/agentgateway v0.9.1-0.20251001141719-852c313eda0a
 	github.com/avast/retry-go v2.4.3+incompatible
 	github.com/avast/retry-go/v4 v4.3.3
 	github.com/cncf/xds/go v0.0.0-20250501225837-2ac532fd4443
@@ -26,7 +26,7 @@ require (
 	github.com/prometheus/client_golang v1.23.0
 	github.com/prometheus/client_model v0.6.2
 	github.com/prometheus/common v0.65.0
-	github.com/solo-io/envoy-gloo/go v0.0.0-20250102165327-33a74fcf9966
+	github.com/solo-io/envoy-gloo/go v0.0.0-20250924144543-9d47b99b2130
 	github.com/solo-io/go-list-licenses v0.1.4
 	github.com/solo-io/go-utils v0.27.3
 	github.com/spf13/afero v1.14.0
@@ -51,7 +51,7 @@ require (
 	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397
 	sigs.k8s.io/controller-runtime v0.21.0
 	sigs.k8s.io/gateway-api v1.3.0
-	sigs.k8s.io/gateway-api-inference-extension v1.0.0
+	sigs.k8s.io/gateway-api-inference-extension v1.0.1
 	sigs.k8s.io/structured-merge-diff/v4 v4.7.0
 	sigs.k8s.io/yaml v1.6.0
 )
@@ -509,7 +509,7 @@ require (
 	github.com/scylladb/go-set v1.0.3-0.20200225121959-cc7b2070d91e // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.9.0 // indirect
 	github.com/securego/gosec/v2 v2.22.3 // indirect
-	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
+	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/sigstore/cosign/v2 v2.5.0 // indirect
 	github.com/sigstore/protobuf-specs v0.4.1 // indirect
@@ -626,8 +626,6 @@ require (
 
 // Remove once https://github.com/kubernetes-sigs/controller-tools/pull/1224 merges
 replace sigs.k8s.io/controller-tools => github.com/shashankram/controller-tools v0.0.0-20250626172831-f7be064a9132
-
-replace github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
 
 tool (
 	github.com/golang/mock/mockgen

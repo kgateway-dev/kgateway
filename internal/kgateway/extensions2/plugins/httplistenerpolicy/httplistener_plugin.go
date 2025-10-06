@@ -25,20 +25,21 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/utils/pointer"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
-
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
 
@@ -165,7 +166,7 @@ func (d *httpListenerPolicy) Equals(in any) bool {
 
 type httpListenerPolicyPluginGwPass struct {
 	ir.UnimplementedProxyTranslationPass
-	reporter reports.Reporter
+	reporter reporter.Reporter
 
 	healthCheckPolicy *healthcheckv3.HealthCheck
 }
@@ -185,7 +186,7 @@ func registerTypes(ourCli versioned.Interface) {
 	)
 }
 
-func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
+func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
 	registerTypes(commoncol.OurClient)
 
 	col := krt.WrapClient(kclient.NewFiltered[*v1alpha1.HTTPListenerPolicy](
@@ -231,6 +232,10 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		}
 
 		healthCheckPolicy := convertHealthCheckPolicy(i)
+		var xffNumTrustedHops *uint32
+		if i.Spec.XffNumTrustedHops != nil {
+			xffNumTrustedHops = pointer.Uint32(uint32(*i.Spec.XffNumTrustedHops)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+		}
 
 		pol := &ir.PolicyWrapper{
 			ObjectSource: objSrc,
@@ -243,7 +248,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				tracingConfig:              tracingConfig,
 				upgradeConfigs:             upgradeConfigs,
 				useRemoteAddress:           i.Spec.UseRemoteAddress,
-				xffNumTrustedHops:          i.Spec.XffNumTrustedHops,
+				xffNumTrustedHops:          xffNumTrustedHops,
 				serverHeaderTransformation: serverHeaderTransformation,
 				streamIdleTimeout:          streamIdleTimeout,
 				idleTimeout:                idleTimeout,
@@ -259,8 +264,8 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		return pol
 	})
 
-	return extensionsplug.Plugin{
-		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
+	return sdk.Plugin{
+		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			wellknown.HTTPListenerPolicyGVK.GroupKind(): {
 				NewGatewayTranslationPass: NewGatewayTranslationPass,
 				Policies:                  policyCol,
@@ -274,7 +279,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	}
 }
 
-func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {
+func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
 	return &httpListenerPolicyPluginGwPass{
 		reporter: reporter,
 	}
@@ -285,8 +290,7 @@ func (p *httpListenerPolicyPluginGwPass) Name() string {
 }
 
 func (p *httpListenerPolicyPluginGwPass) ApplyHCM(
-	ctx context.Context,
-	pCtx *ir.HcmContext,
+	pCtx *pluginsdkir.HcmContext,
 	out *envoy_hcm.HttpConnectionManager,
 ) error {
 	policy, ok := pCtx.Policy.(*httpListenerPolicy)
@@ -375,7 +379,7 @@ func (p *httpListenerPolicyPluginGwPass) ApplyHCM(
 	return nil
 }
 
-func (p *httpListenerPolicyPluginGwPass) HttpFilters(ctx context.Context, fc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
+func (p *httpListenerPolicyPluginGwPass) HttpFilters(fc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
 	if p.healthCheckPolicy == nil {
 		return nil, nil
 	}
@@ -395,8 +399,7 @@ func (p *httpListenerPolicyPluginGwPass) HttpFilters(ctx context.Context, fc ir.
 }
 
 func (p *httpListenerPolicyPluginGwPass) ApplyListenerPlugin(
-	ctx context.Context,
-	pCtx *ir.ListenerContext,
+	pCtx *pluginsdkir.ListenerContext,
 	out *envoylistenerv3.Listener,
 ) {
 	policy, ok := pCtx.Policy.(*httpListenerPolicy)

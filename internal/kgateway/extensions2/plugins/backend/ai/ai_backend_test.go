@@ -38,13 +38,11 @@ func TestApplyAIBackend(t *testing.T) {
 			name: "Single LLM provider",
 			aiBackend: &v1alpha1.AIBackend{
 				LLM: &v1alpha1.LLMProvider{
-					Provider: v1alpha1.SupportedLLMProvider{
-						OpenAI: &v1alpha1.OpenAIConfig{
-							Model: ptr.To("gpt-3"),
-							AuthToken: v1alpha1.SingleAuthToken{
-								Kind:   v1alpha1.SingleAuthTokenKind("Inline"),
-								Inline: ptr.To("test1"),
-							},
+					OpenAI: &v1alpha1.OpenAIConfig{
+						Model: ptr.To("gpt-3"),
+						AuthToken: v1alpha1.SingleAuthToken{
+							Kind:   v1alpha1.SingleAuthTokenKind("Inline"),
+							Inline: ptr.To("test1"),
 						},
 					},
 				},
@@ -114,20 +112,16 @@ func TestApplyAIBackend(t *testing.T) {
 			name: "Single LLM provider with custom path",
 			aiBackend: &v1alpha1.AIBackend{
 				LLM: &v1alpha1.LLMProvider{
-					PathOverride: &v1alpha1.PathOverride{
-						FullPath: &customPath,
-					},
-					AuthHeaderOverride: &v1alpha1.AuthHeaderOverride{
+					Path: &v1alpha1.PathOverride{Full: &customPath},
+					AuthHeader: &v1alpha1.AuthHeader{
 						Prefix:     &customPrefix,
 						HeaderName: &customHeader,
 					},
-					Provider: v1alpha1.SupportedLLMProvider{
-						OpenAI: &v1alpha1.OpenAIConfig{
-							Model: ptr.To("gpt-3"),
-							AuthToken: v1alpha1.SingleAuthToken{
-								Kind:   v1alpha1.SingleAuthTokenKind("Inline"),
-								Inline: ptr.To("test1"),
-							},
+					OpenAI: &v1alpha1.OpenAIConfig{
+						Model: ptr.To("gpt-3"),
+						AuthToken: v1alpha1.SingleAuthToken{
+							Kind:   v1alpha1.SingleAuthTokenKind("Inline"),
+							Inline: ptr.To("test1"),
 						},
 					},
 				},
@@ -196,29 +190,29 @@ func TestApplyAIBackend(t *testing.T) {
 		{
 			name: "Multiple LLM providers with different types",
 			aiBackend: &v1alpha1.AIBackend{
-				MultiPool: &v1alpha1.MultiPoolConfig{
-					Priorities: []v1alpha1.Priority{
-						{
-							Pool: []v1alpha1.LLMProvider{
-								{
-									Provider: v1alpha1.SupportedLLMProvider{
-										OpenAI: &v1alpha1.OpenAIConfig{
-											Model: ptr.To("gpt-3"),
-											AuthToken: v1alpha1.SingleAuthToken{
-												Kind:   v1alpha1.SingleAuthTokenKind("Inline"),
-												Inline: ptr.To("test1"),
-											},
+				PriorityGroups: []v1alpha1.PriorityGroup{
+					{
+						Providers: []v1alpha1.NamedLLMProvider{
+							{
+								Name: "openai",
+								LLMProvider: v1alpha1.LLMProvider{
+									OpenAI: &v1alpha1.OpenAIConfig{
+										Model: ptr.To("gpt-3"),
+										AuthToken: v1alpha1.SingleAuthToken{
+											Kind:   v1alpha1.SingleAuthTokenKind("Inline"),
+											Inline: ptr.To("test1"),
 										},
 									},
 								},
-								{
-									Provider: v1alpha1.SupportedLLMProvider{
-										Anthropic: &v1alpha1.AnthropicConfig{
-											Model: ptr.To("claude"),
-											AuthToken: v1alpha1.SingleAuthToken{
-												Kind:   v1alpha1.SingleAuthTokenKind("Inline"),
-												Inline: ptr.To("test2"),
-											},
+							},
+							{
+								Name: "anthropic",
+								LLMProvider: v1alpha1.LLMProvider{
+									Anthropic: &v1alpha1.AnthropicConfig{
+										Model: ptr.To("claude"),
+										AuthToken: v1alpha1.SingleAuthToken{
+											Kind:   v1alpha1.SingleAuthTokenKind("Inline"),
+											Inline: ptr.To("test2"),
 										},
 									},
 								},

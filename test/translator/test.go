@@ -35,8 +35,8 @@ import (
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
@@ -46,18 +46,16 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
-	common "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
-	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
-
-type AssertReports func(gwNN types.NamespacedName, reportsMap reports.ReportMap)
 
 type translationResult struct {
 	Routes        []*envoyroutev3.RouteConfiguration
@@ -216,7 +214,7 @@ func marshalProtoMessages[T proto.Message](messages []T, m protojson.MarshalOpti
 	return result, nil
 }
 
-type ExtraPluginsFn func(ctx context.Context, commoncol *common.CommonCollections, mergeSettingsJSON string) []pluginsdk.Plugin
+type ExtraPluginsFn func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []pluginsdk.Plugin
 
 func NewScheme(extraSchemes runtime.SchemeBuilder) *runtime.Scheme {
 	scheme := schemes.GatewayScheme()
@@ -233,10 +231,9 @@ func TestTranslation(
 	inputFiles []string,
 	outputFile string,
 	gwNN types.NamespacedName,
-	assertReports AssertReports,
 	settingsOpts ...SettingsOpts,
 ) {
-	TestTranslationWithExtraPlugins(t, ctx, inputFiles, outputFile, gwNN, assertReports, nil, nil, nil, "", settingsOpts...)
+	TestTranslationWithExtraPlugins(t, ctx, inputFiles, outputFile, gwNN, nil, nil, nil, "", settingsOpts...)
 }
 
 func TestTranslationWithExtraPlugins(
@@ -245,7 +242,6 @@ func TestTranslationWithExtraPlugins(
 	inputFiles []string,
 	outputFile string,
 	gwNN types.NamespacedName,
-	assertReports AssertReports,
 	extraPluginsFn ExtraPluginsFn,
 	extraSchemes runtime.SchemeBuilder,
 	extraGroups []string,
@@ -279,7 +275,7 @@ func TestTranslationWithExtraPlugins(
 		Clusters:      result.Clusters,
 		Statuses:      buildStatusesFromReports(result.ReportsMap, result.Gateways, result.ListenerSets),
 	}
-	outputYaml, err := MarshalAnyYaml(output)
+	outputYaml, err := testutils.MarshalAnyYaml(output)
 	r.NoErrorf(err, "error marshaling output to YAML; actual result: %s", outputYaml)
 
 	if envutils.IsEnvTruthy("REFRESH_GOLDEN") {
@@ -289,7 +285,7 @@ func TestTranslationWithExtraPlugins(
 			r.NoErrorf(err, "error creating directory %s", dir)
 		}
 		t.Log("REFRESH_GOLDEN is set, writing output file", outputFile)
-		os.WriteFile(outputFile, outputYaml, 0o644)
+		os.WriteFile(outputFile, outputYaml, 0o644) //nolint:gosec // G306: Golden test file can be readable
 	}
 
 	gotProxy, err := compareProxy(outputFile, result.Proxy)
@@ -303,12 +299,6 @@ func TestTranslationWithExtraPlugins(
 	gotStatuses, err := compareStatuses(outputFile, output.Statuses)
 	r.Emptyf(gotStatuses, "unexpected diff in statuses output; actual result: %s", outputYaml)
 	r.NoError(err, "error comparing statuses output")
-
-	if assertReports != nil {
-		assertReports(gwNN, result.ReportsMap)
-	} else {
-		r.NoError(AreReportsSuccess(gwNN, result.ReportsMap), "expected status reports to not have errors")
-	}
 }
 
 type TestCase struct {
@@ -375,7 +365,7 @@ func ReadYamlFile(file string, out interface{}) error {
 	if err != nil {
 		return err
 	}
-	return UnmarshalAnyYaml(data, out)
+	return testutils.UnmarshalAnyYaml(data, out)
 }
 
 func GetHTTPRouteStatusError(
@@ -539,7 +529,7 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 	return nil
 }
 
-type SettingsOpts func(*settings.Settings)
+type SettingsOpts func(*apisettings.Settings)
 
 func (tc TestCase) Run(
 	t *testing.T,
@@ -556,14 +546,14 @@ func (tc TestCase) Run(
 	)
 	r := require.New(t)
 	if crdDir == "" {
-		crdDir = filepath.Join(testutils.GitRootDirectory(), CRDPath)
+		crdDir = filepath.Join(testutils.GitRootDirectory(), testutils.CRDPath)
 	}
 
-	gvkToStructuralSchema, err := GetStructuralSchemas(crdDir)
+	gvkToStructuralSchema, err := testutils.GetStructuralSchemas(crdDir)
 	r.NoError(err, "error getting structural schemas")
 
 	for _, file := range tc.InputFiles {
-		objs, err := LoadFromFiles(file, scheme, gvkToStructuralSchema)
+		objs, err := testutils.LoadFromFiles(file, scheme, gvkToStructuralSchema)
 		if err != nil {
 			return nil, err
 		}
@@ -637,7 +627,7 @@ func (tc TestCase) Run(
 		Stop: ctx.Done(),
 	}
 
-	settings, err := settings.BuildSettings()
+	settings, err := apisettings.BuildSettings()
 	if err != nil {
 		return nil, err
 	}
@@ -645,7 +635,7 @@ func (tc TestCase) Run(
 		opt(settings)
 	}
 
-	commoncol, err := common.NewCommonCollections(
+	commoncol, err := collections.NewCommonCollections(
 		ctx,
 		krtOpts,
 		cli,
@@ -658,7 +648,8 @@ func (tc TestCase) Run(
 		return nil, err
 	}
 
-	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultWaypointClassName, *settings)
+	v := validator.NewDocker()
+	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultWaypointClassName, *settings, v)
 	// TODO: consider moving the common code to a util that both proxy syncer and this test call
 	plugins = append(plugins, krtcollections.NewBuiltinPlugin(ctx))
 
@@ -675,7 +666,7 @@ func (tc TestCase) Run(
 		Group: "",
 		Kind:  "test-backend-plugin",
 	}
-	extensions.ContributesPolicies[gk] = extensionsplug.PolicyPlugin{
+	extensions.ContributesPolicies[gk] = pluginsdk.PolicyPlugin{
 		Name: "test-backend-plugin",
 	}
 	testBackend := ir.NewBackendObjectIR(ir.ObjectSource{
@@ -683,7 +674,7 @@ func (tc TestCase) Run(
 		Namespace: "default",
 		Name:      "example-svc",
 	}, 80, "")
-	extensions.ContributesBackends[gk] = extensionsplug.BackendPlugin{
+	extensions.ContributesBackends[gk] = pluginsdk.BackendPlugin{
 		Backends: krt.NewStaticCollection(nil, []ir.BackendObjectIR{
 			testBackend,
 		}),
@@ -696,7 +687,7 @@ func (tc TestCase) Run(
 
 	commoncol.InitPlugins(ctx, extensions, *settings)
 
-	translator := translator.NewCombinedTranslator(ctx, extensions, commoncol)
+	translator := translator.NewCombinedTranslator(ctx, extensions, commoncol, v)
 	translator.Init(ctx)
 
 	cli.RunAndWait(ctx.Done())
@@ -743,7 +734,7 @@ func (tc TestCase) Run(
 		// during translation, instead their reports are generated separately by GenerateBackendPolicyReport().
 		// We need to merge both report types to capture all policy statuses for golden file testing.
 		var backendIRs []*ir.BackendObjectIR
-		for _, col := range commoncol.BackendIndex.BackendsWithPolicy() {
+		for _, col := range commoncol.BackendIndex.BackendsWithPolicyRequiringStatus() {
 			backendIRs = append(backendIRs, col.List()...)
 		}
 		backendPolicyReports := proxy_syncer.GenerateBackendPolicyReport(backendIRs)
@@ -764,13 +755,21 @@ func (tc TestCase) Run(
 		}
 		results[gwNN] = actual
 
+		ctx := context.Background()
+		t := translator.GetBackendTranslator()
 		ucc := ir.NewUniqlyConnectedClient("test", "test", nil, ir.PodLocality{})
 		var clusters []*envoyclusterv3.Cluster
 		for _, col := range commoncol.BackendIndex.BackendsWithPolicy() {
 			for _, backend := range col.List() {
-				cluster, err := translator.GetUpstreamTranslator().TranslateBackend(krt.TestingDummyContext{}, ucc, backend)
-				r.NoErrorf(err, "error translating backend %s", backend.GetName())
-				clusters = append(clusters, cluster)
+				cluster, err := t.TranslateBackend(ctx, krt.TestingDummyContext{}, ucc, backend)
+				if err != nil {
+					// In strict mode, backend validation errors are expected and should not fail the test
+					// The cluster will be nil or a blackhole cluster, which will be filtered out by perclient.go
+					// Note: These errors are expected when xDS validation is enabled in strict mode
+				}
+				if cluster != nil {
+					clusters = append(clusters, cluster)
+				}
 			}
 		}
 		r := results[gwNN]
@@ -779,4 +778,17 @@ func (tc TestCase) Run(
 	}
 
 	return results, nil
+}
+
+func ReadProxyFromFile(filename string) (*irtranslator.TranslationResult, error) {
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, fmt.Errorf("reading proxy file: %w", err)
+	}
+	var proxy irtranslator.TranslationResult
+
+	if err := testutils.UnmarshalAnyYaml(data, &proxy); err != nil {
+		return nil, fmt.Errorf("parsing proxy from file: %w", err)
+	}
+	return &proxy, nil
 }

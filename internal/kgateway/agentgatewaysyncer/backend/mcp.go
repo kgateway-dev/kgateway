@@ -15,8 +15,8 @@ const (
 	mcpProtocolSSE = "kgateway.dev/mcp-sse"
 )
 
-// ProcessMCPBackendForAgentGateway processes MCP backend using pre-resolved IR data
-func ProcessMCPBackendForAgentGateway(be *AgentGatewayBackendIr) ([]*api.Backend, []*api.Policy, error) {
+// ProcessMCPBackendForAgw processes MCP backend using pre-resolved IR data
+func ProcessMCPBackendForAgw(be *AgwBackendIr) ([]*api.Backend, []*api.Policy, error) {
 	if len(be.Errors) > 0 {
 		return nil, nil, fmt.Errorf("errors occurred while processing mcp backend for agent gateway: %w", errors.Join(be.Errors...))
 	}

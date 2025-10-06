@@ -12,7 +12,7 @@ import (
 type CommonGrpcServiceApplyConfiguration struct {
 	BackendRef              *v1.BackendRef                  `json:"backendRef,omitempty"`
 	Authority               *string                         `json:"authority,omitempty"`
-	MaxReceiveMessageLength *uint32                         `json:"maxReceiveMessageLength,omitempty"`
+	MaxReceiveMessageLength *int32                          `json:"maxReceiveMessageLength,omitempty"`
 	SkipEnvoyHeaders        *bool                           `json:"skipEnvoyHeaders,omitempty"`
 	Timeout                 *metav1.Duration                `json:"timeout,omitempty"`
 	InitialMetadata         []HeaderValueApplyConfiguration `json:"initialMetadata,omitempty"`
@@ -44,7 +44,7 @@ func (b *CommonGrpcServiceApplyConfiguration) WithAuthority(value string) *Commo
 // WithMaxReceiveMessageLength sets the MaxReceiveMessageLength field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the MaxReceiveMessageLength field is set to the value of the last call.
-func (b *CommonGrpcServiceApplyConfiguration) WithMaxReceiveMessageLength(value uint32) *CommonGrpcServiceApplyConfiguration {
+func (b *CommonGrpcServiceApplyConfiguration) WithMaxReceiveMessageLength(value int32) *CommonGrpcServiceApplyConfiguration {
 	b.MaxReceiveMessageLength = &value
 	return b
 }

@@ -23,32 +23,31 @@ metadata:
 spec:
   type: AI
   ai:
-    multipool:
-      priorities:
-        - pool:
-            - provider:
-                openai:
-                  authToken:
-                    kind: SecretRef
-                    secretRef:
-                      name: openai-secret-one
-                  model: gpt-4o
-        - pool:
-            - provider:
-                openai:
-                  authToken:
-                    kind: SecretRef
-                    secretRef:
-                      name: openai-secret-two
-                  model: gpt-4.0-turbo
-        - pool:
-            - provider:
-                openai:
-                  authToken:
-                    kind: SecretRef
-                    secretRef:
-                      name: openai-secret-three
-                  model: gpt-3.5-turbo
+    priorityGroups:
+    - providers:
+      - name: openai-one
+        openai:
+          authToken:
+            kind: SecretRef
+            secretRef:
+              name: openai-secret-one
+          model: gpt-4o
+    - providers:
+      - name: openai-two
+        openai:
+          authToken:
+            kind: SecretRef
+            secretRef:
+              name: openai-secret-two
+          model: gpt-4.0-turbo
+    - providers:
+      - name: openai-three
+        openai:
+          authToken:
+            kind: SecretRef
+            secretRef:
+              name: openai-secret-three
+          model: gpt-3.5-turbo
 ---
 apiVersion: v1
 kind: Secret

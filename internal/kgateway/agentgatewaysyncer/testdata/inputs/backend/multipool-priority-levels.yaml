@@ -33,47 +33,46 @@ metadata:
 spec:
   type: AI
   ai:
-    multiPool:
-      priorities:
-        # Priority 0 - Primary providers
-        - pool:
-            - provider:
-                openai:
-                  model: "gpt-4o"
-                  authToken:
-                    kind: "SecretRef"
-                    secretRef:
-                      name: openai-primary-secret
-            - provider:
-                anthropic:
-                  model: "claude-3-opus-20240229"
-                  authToken:
-                    kind: "Inline"
-                    inline: "sk-anthropic-primary"
-        # Priority 1 - Secondary fallback providers
-        - pool:
-            - provider:
-                gemini:
-                  model: "gemini-1.5-flash"
-                  authToken:
-                    kind: "SecretRef"
-                    secretRef:
-                      name: gemini-fallback-secret
-            - provider:
-                vertexai:
-                  model: "gemini-pro"
-                  authToken:
-                    kind: "Passthrough"
-        # Priority 2 - Tertiary fallback provider
-        - pool:
-            - provider:
-                bedrock:
-                  model: "anthropic.claude-3-haiku-20240307-v1:0"
-                  region: "us-east-1"
-                  auth:
-                    type: "Secret"
-                    secretRef:
-                      name: aws-bedrock-secret
+    priorityGroups:
+    # Priority 0 - Primary providers
+    - providers:
+      - name: openai
+        openai:
+          model: "gpt-4o"
+          authToken:
+            kind: "SecretRef"
+            secretRef:
+              name: openai-primary-secret
+      - name: anthropic
+        anthropic:
+          model: "claude-3-opus-20240229"
+          authToken:
+            kind: "Inline"
+            inline: "sk-anthropic-primary"
+    # Priority 1 - Secondary fallback providers
+    - providers:
+      - name: gemini
+        gemini:
+          model: "gemini-1.5-flash"
+          authToken:
+            kind: "SecretRef"
+            secretRef:
+              name: gemini-fallback-secret
+      - name: vertexai
+        vertexai:
+          model: "gemini-pro"
+          authToken:
+            kind: "Passthrough"
+    # Priority 2 - Tertiary fallback provider
+    - providers:
+      - name: bedrock
+        bedrock:
+          model: "anthropic.claude-3-haiku-20240307-v1:0"
+          region: "us-east-1"
+          auth:
+            type: "Secret"
+            secretRef:
+              name: aws-bedrock-secret
 ---
 apiVersion: v1
 kind: Secret

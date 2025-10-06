@@ -382,7 +382,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 										},
 									},
 									Authority:               pointer.String("www.example.com"),
-									MaxReceiveMessageLength: pointer.Uint32(127),
+									MaxReceiveMessageLength: pointer.Int32(127),
 									SkipEnvoyHeaders:        pointer.Bool(true),
 									Timeout:                 &metav1.Duration{Duration: 10 * time.Second},
 									InitialMetadata: []v1alpha1.HeaderValue{{
@@ -394,7 +394,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 											BaseInterval: metav1.Duration{Duration: 5 * time.Second},
 											MaxInterval:  &metav1.Duration{Duration: 10 * time.Second},
 										},
-										NumRetries: pointer.Uint32(3),
+										NumRetries: pointer.Int32(3),
 									},
 								},
 								LogName: "grpc-log",

@@ -20,18 +20,19 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	kmetrics "github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
-	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	plug "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	krtutil "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
 var _ manager.LeaderElectionRunnable = &ProxySyncer{}
@@ -44,10 +45,10 @@ var _ manager.LeaderElectionRunnable = &ProxySyncer{}
 // to be handled by the statusSyncer.
 type ProxySyncer struct {
 	controllerName        string
-	agentGatewayClassName string
+	agentgatewayClassName string
 
 	mgr        manager.Manager
-	commonCols *common.CommonCollections
+	commonCols *collections.CommonCollections
 	translator *translator.CombinedTranslator
 	plugins    plug.Plugin
 
@@ -137,19 +138,20 @@ func NewProxySyncer(
 	client kube.Client,
 	uniqueClients krt.Collection[ir.UniqlyConnectedClient],
 	mergedPlugins plug.Plugin,
-	commonCols *common.CommonCollections,
+	commonCols *collections.CommonCollections,
 	xdsCache envoycache.SnapshotCache,
-	agentGatewayClassName string,
+	agentgatewayClassName string,
+	validator validator.Validator,
 ) *ProxySyncer {
 	return &ProxySyncer{
 		controllerName:           controllerName,
-		agentGatewayClassName:    agentGatewayClassName,
+		agentgatewayClassName:    agentgatewayClassName,
 		commonCols:               commonCols,
 		mgr:                      mgr,
 		istioClient:              client,
 		proxyTranslator:          NewProxyTranslator(xdsCache),
 		uniqueClients:            uniqueClients,
-		translator:               translator.NewCombinedTranslator(ctx, mergedPlugins, commonCols),
+		translator:               translator.NewCombinedTranslator(ctx, mergedPlugins, commonCols, validator),
 		plugins:                  mergedPlugins,
 		reportQueue:              utils.NewAsyncQueue[reports.ReportMap](),
 		backendPolicyReportQueue: utils.NewAsyncQueue[reports.ReportMap](),
@@ -200,18 +202,23 @@ func (r report) Equals(in report) bool {
 
 var logger = logging.New("proxy_syncer")
 
-func (s *ProxySyncer) Init(ctx context.Context, krtopts krtinternal.KrtOptions) {
+func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	// all backends with policies attached in a single collection
 	finalBackends := krt.JoinCollection(s.commonCols.BackendIndex.BackendsWithPolicy(),
 		// WithJoinUnchecked enables a more optimized lookup on the hotpath by assuming we do not have any overlapping ResourceName
 		// in the backend collection.
 		append(krtopts.ToOptions("FinalBackends"), krt.WithJoinUnchecked())...)
+	finalBackendsWithPolicyStatus := krt.JoinCollection(s.commonCols.BackendIndex.BackendsWithPolicyRequiringStatus(),
+		// WithJoinUnchecked enables a more optimized lookup on the hotpath by assuming we do not have any overlapping ResourceName
+		// in the backend collection.
+		append(krtopts.ToOptions("FinalBackendsWithPolicyStatus"), krt.WithJoinUnchecked())...)
 
 	s.translator.Init(ctx)
 
 	s.mostXdsSnapshots = krt.NewCollection(s.commonCols.GatewayIndex.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *GatewayXdsResources {
 		// skip agentgateway proxies as they are not envoy-based gateways
-		if string(gw.Obj.Spec.GatewayClassName) == s.agentGatewayClassName {
+		// TODO(npolshak): use the agentgateway controller name here
+		if string(gw.Obj.Spec.GatewayClassName) == s.agentgatewayClassName {
 			logger.Debug("skipping envoy proxy sync for agentgateway %s.%s", gw.Obj.Name, gw.Obj.Namespace)
 			return nil
 		}
@@ -235,7 +242,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtinternal.KrtOptions) 
 	clustersPerClient := NewPerClientEnvoyClusters(
 		ctx,
 		krtopts,
-		s.translator.GetUpstreamTranslator(),
+		s.translator.GetBackendTranslator(),
 		finalBackends,
 		s.uniqueClients,
 	)
@@ -249,7 +256,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtinternal.KrtOptions) 
 	)
 
 	s.backendPolicyReport = krt.NewSingleton(func(kctx krt.HandlerContext) *report {
-		backends := krt.Fetch(kctx, finalBackends)
+		backends := krt.Fetch(kctx, finalBackendsWithPolicyStatus)
 		merged := GenerateBackendPolicyReport(backends)
 		return &report{merged}
 	}, krtopts.ToOptions("BackendsPolicyReport")...)
@@ -372,7 +379,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	// when timer ticks, we will use the state of the mergedReports at that point in time to sync the status to k8s
 	s.statusReport.Register(func(o krt.Event[report]) {
 		if o.Event == controllers.EventDelete {
-			// TODO: handle garbage collection (see: https://github.com/solo-io/solo-projects/issues/7086)
+			// TODO: handle garbage collection
 			return
 		}
 		s.reportQueue.Enqueue(o.Latest().reportMap)

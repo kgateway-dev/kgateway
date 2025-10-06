@@ -10,6 +10,9 @@ import (
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=trafficpolicies,verbs=get;list;watch
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=trafficpolicies/status,verbs=get;update;patch
 
+// +kubebuilder:printcolumn:name="Accepted",type=string,JSONPath=".status.ancestors[*].conditions[?(@.type=='Accepted')].status",description="Traffic policy acceptance status"
+// +kubebuilder:printcolumn:name="Attached",type=string,JSONPath=".status.ancestors[*].conditions[?(@.type=='Attached')].status",description="Traffic policy attachment status"
+
 // +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:metadata:labels={app=kgateway,app.kubernetes.io/name=kgateway}
@@ -244,7 +247,7 @@ type TokenBucket struct {
 	// It determines the burst capacity of the rate limiter.
 	// +required
 	// +kubebuilder:validation:Minimum=1
-	MaxTokens uint32 `json:"maxTokens"`
+	MaxTokens int32 `json:"maxTokens"`
 
 	// TokensPerFill specifies the number of tokens added to the bucket during each fill interval.
 	// If not specified, it defaults to 1.
@@ -252,7 +255,7 @@ type TokenBucket struct {
 	// +optional
 	// +kubebuilder:default=1
 	// +kubebuilder:validation:Minimum=1
-	TokensPerFill *uint32 `json:"tokensPerFill,omitempty"`
+	TokensPerFill *int32 `json:"tokensPerFill,omitempty"`
 
 	// FillInterval defines the time duration between consecutive token fills.
 	// This value must be a valid duration string (e.g., "1s", "500ms").
@@ -358,13 +361,13 @@ type CSRFPolicy struct {
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
-	PercentageEnabled *uint32 `json:"percentageEnabled,omitempty"`
+	PercentageEnabled *int32 `json:"percentageEnabled,omitempty"`
 
 	// Specifies that CSRF policies will be evaluated and tracked, but not enforced.
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
-	PercentageShadowed *uint32 `json:"percentageShadowed,omitempty"`
+	PercentageShadowed *int32 `json:"percentageShadowed,omitempty"`
 
 	// Specifies additional source origins that will be allowed in addition to the destination origin.
 	// +optional

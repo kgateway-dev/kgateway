@@ -31,22 +31,21 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
-	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	agentgatewayplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
+	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
+	agwtranslator "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
-	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
-	"github.com/kgateway-dev/kgateway/v2/test/translator"
 )
 
 type AssertReports func(gwNN types.NamespacedName, reportsMap reports.ReportMap)
@@ -264,7 +263,7 @@ func marshalProtoMessages[T proto.Message](messages []T, m protojson.MarshalOpti
 	return result, nil
 }
 
-type ExtraPluginsFn func(ctx context.Context, commoncol *common.CommonCollections) []pluginsdk.Plugin
+type ExtraPluginsFn func(ctx context.Context, commoncol *collections.CommonCollections) []pluginsdk.Plugin
 
 func NewScheme(extraSchemes runtime.SchemeBuilder) *runtime.Scheme {
 	scheme := schemes.GatewayScheme()
@@ -322,10 +321,10 @@ func TestTranslationWithExtraPlugins(
 	var policies []*api.Policy
 	var addresses []*api.Address
 
-	// Extract agentgateway API types from ADPResources
-	for _, adpRes := range result.Resources {
-		for _, item := range adpRes.ResourceConfig.Items {
-			resourceWrapper := item.Resource.(*envoyResourceWithCustomName)
+	// Extract agentgateway API types from AgwResources
+	for _, agwRes := range result.Resources {
+		for _, item := range agwRes.ResourceConfig.Items {
+			resourceWrapper := item.Resource.(*agwtranslator.AgwResourceWithCustomName)
 			res := resourceWrapper.Message.(*api.Resource)
 			switch r := res.Kind.(type) {
 			case *api.Resource_Route:
@@ -342,8 +341,8 @@ func TestTranslationWithExtraPlugins(
 				policies = append(policies, r.Policy)
 			}
 		}
-		for _, item := range adpRes.AddressConfig.Items {
-			resourceWrapper := item.Resource.(*envoyResourceWithCustomName)
+		for _, item := range agwRes.AddressConfig.Items {
+			resourceWrapper := item.Resource.(*agwtranslator.AgwResourceWithCustomName)
 			res := resourceWrapper.Message.(*api.Address)
 			addresses = append(addresses, res)
 		}
@@ -359,7 +358,7 @@ func TestTranslationWithExtraPlugins(
 		Addresses: addresses,
 	}
 	output = sortTranslationResult(output)
-	outputYaml, err := translator.MarshalAnyYaml(output)
+	outputYaml, err := testutils.MarshalAnyYaml(output)
 	fmt.Fprintf(ginkgo.GinkgoWriter, "actual result:\n %s \nerror: %v", outputYaml, err)
 	r.NoError(err)
 
@@ -369,7 +368,7 @@ func TestTranslationWithExtraPlugins(
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			r.NoError(err)
 		}
-		os.WriteFile(outputFile, outputYaml, 0o644)
+		os.WriteFile(outputFile, outputYaml, 0o600)
 	}
 
 	diff, err := compareProxy(outputFile, output)
@@ -388,7 +387,7 @@ type TestCase struct {
 }
 
 type ActualTestResult struct {
-	Resources  []agentGwXdsResources
+	Resources  []agwtranslator.AgentGwXdsResources
 	ReportsMap reports.ReportMap
 }
 
@@ -448,7 +447,7 @@ func ReadYamlFile(file string, out interface{}) error {
 	if err != nil {
 		return err
 	}
-	return translator.UnmarshalAnyYaml(data, out)
+	return testutils.UnmarshalAnyYaml(data, out)
 }
 
 func GetHTTPRouteStatusError(
@@ -533,7 +532,7 @@ func AreReportsSuccess(reportsMap reports.ReportMap) error {
 	return nil
 }
 
-type SettingsOpts func(*settings.Settings)
+type SettingsOpts func(*apisettings.Settings)
 
 func (tc TestCase) Run(
 	t *testing.T,
@@ -547,14 +546,14 @@ func (tc TestCase) Run(
 		anyObjs []runtime.Object
 		ourObjs []runtime.Object
 	)
-	gvkToStructuralSchema, err := translator.GetStructuralSchemas(
-		filepath.Join(testutils.GitRootDirectory(), translator.CRDPath))
+	gvkToStructuralSchema, err := testutils.GetStructuralSchemas(
+		filepath.Join(testutils.GitRootDirectory(), testutils.CRDPath))
 	if err != nil {
 		return nil, fmt.Errorf("error getting structural schemas: %w", err)
 	}
 
 	for _, file := range tc.InputFiles {
-		objs, err := translator.LoadFromFiles(file, scheme, gvkToStructuralSchema)
+		objs, err := testutils.LoadFromFiles(file, scheme, gvkToStructuralSchema)
 		if err != nil {
 			return nil, err
 		}
@@ -609,9 +608,7 @@ func (tc TestCase) Run(
 
 	// ensure classes used in tests exist and point at our controller
 	gwClasses := []string{
-		wellknown.DefaultGatewayClassName,
-		wellknown.DefaultWaypointClassName,
-		wellknown.DefaultAgentGatewayClassName,
+		wellknown.DefaultAgwClassName,
 	}
 	for _, className := range gwClasses {
 		cli.GatewayAPI().GatewayV1().GatewayClasses().Create(ctx, &gwv1.GatewayClass{
@@ -619,18 +616,18 @@ func (tc TestCase) Run(
 				Name: className,
 			},
 			Spec: gwv1.GatewayClassSpec{
-				ControllerName: wellknown.DefaultGatewayControllerName,
+				ControllerName: wellknown.DefaultAgwControllerName,
 			},
 		}, metav1.CreateOptions{})
 	}
 
-	krtOpts := krtinternal.KrtOptions{
+	krtOpts := krtutil.KrtOptions{
 		Stop: ctx.Done(),
 	}
 
-	settings, err := settings.BuildSettings()
+	settings, err := apisettings.BuildSettings()
 	// enable agent gateway translation
-	settings.EnableAgentGateway = true
+	settings.EnableAgentgateway = true
 	settings.EnableInferExt = true
 	if err != nil {
 		return nil, err
@@ -646,28 +643,29 @@ func (tc TestCase) Run(
 		cli,
 		ourCli,
 		nil,
-		wellknown.DefaultGatewayControllerName,
+		wellknown.DefaultAgwControllerName,
 		*settings,
 	)
 	if err != nil {
 		return nil, err
 	}
-	proxySyncerPlugins := proxySyncerPluginFactory(ctx, commoncol, wellknown.DefaultAgentGatewayClassName, extraPluginsFn, *settings)
+	proxySyncerPlugins := proxySyncerPluginFactory(ctx, commoncol, wellknown.DefaultAgwClassName, extraPluginsFn, *settings)
 	commoncol.InitPlugins(ctx, proxySyncerPlugins, *settings)
 
 	cli.RunAndWait(ctx.Done())
 	results := make(map[types.NamespacedName]ActualTestResult)
 
 	// Create AgwCollections with the necessary input collections
-	agwCollections, err := agentgatewayplugins.NewAgwCollections(
+	agwCollections, err := agwplugins.NewAgwCollections(
 		commoncol,
+		wellknown.DefaultAgwControllerName,
 		"istio-system",
 		"Kubernetes",
 	)
 	if err != nil {
 		return nil, err
 	}
-	agwMergedPlugins := agentGatewayPluginFactory(ctx, agwCollections)
+	agwMergedPlugins := agwPluginFactory(ctx, agwCollections)
 	kubeclient.WaitForCacheSync("tlsroutes", ctx.Done(), agwCollections.TLSRoutes.HasSynced)
 	kubeclient.WaitForCacheSync("tcproutes", ctx.Done(), agwCollections.TCPRoutes.HasSynced)
 	kubeclient.WaitForCacheSync("httproutes", ctx.Done(), agwCollections.HTTPRoutes.HasSynced)
@@ -679,9 +677,9 @@ func (tc TestCase) Run(
 
 	// Instead of calling full Init(), manually initialize just what we need for testing
 	// to avoid race conditions with XDS collection building
-	agentGwSyncer := NewAgentGwSyncer(
-		wellknown.DefaultGatewayControllerName,
-		wellknown.DefaultAgentGatewayClassName,
+	agentGwSyncer := NewAgwSyncer(
+		wellknown.DefaultAgwControllerName,
+		wellknown.DefaultAgwClassName,
 		cli,
 		nil, // mgr not needed for test
 		agwCollections,
@@ -691,21 +689,21 @@ func (tc TestCase) Run(
 	)
 	agentGwSyncer.translator.Init()
 
-	gatewayClasses := GatewayClassesCollection(agwCollections.GatewayClasses, krtOpts)
-	refGrants := BuildReferenceGrants(ReferenceGrantsCollection(agwCollections.ReferenceGrants, krtOpts))
+	gatewayClasses := agwtranslator.GatewayClassesCollection(agwCollections.GatewayClasses, krtOpts)
+	refGrants := agwtranslator.BuildReferenceGrants(agwtranslator.ReferenceGrantsCollection(agwCollections.ReferenceGrants, krtOpts))
 	gateways := agentGwSyncer.buildGatewayCollection(gatewayClasses, refGrants, krtOpts)
 
-	// Build ADP resources and addresses collections
-	adpResourcesCollection, _ := agentGwSyncer.buildADPResources(gateways, refGrants, krtOpts)
-	_, adpBackendsCollection := agentGwSyncer.newADPBackendCollection(agwCollections.Backends, krtOpts)
+	// Build Agw resources and addresses collections
+	agwResourcesCollection, _ := agentGwSyncer.buildAgwResources(gateways, refGrants, krtOpts)
+	_, agwBackendsCollection := agentGwSyncer.newAgwBackendCollection(agwCollections.Backends, krtOpts)
 	addressesCollection := agentGwSyncer.buildAddressCollections(krtOpts)
 
 	// Wait for collections to sync
-	kubeclient.WaitForCacheSync("adp-resources", ctx.Done(), adpResourcesCollection.HasSynced)
+	kubeclient.WaitForCacheSync("agw-resources", ctx.Done(), agwResourcesCollection.HasSynced)
 	kubeclient.WaitForCacheSync("addresses", ctx.Done(), addressesCollection.HasSynced)
 
 	// build final proxy xds result
-	agentGwSyncer.buildXDSCollection(adpResourcesCollection, adpBackendsCollection, addressesCollection, krtOpts)
+	agentGwSyncer.buildXDSCollection(agwResourcesCollection, agwBackendsCollection, addressesCollection, krtOpts)
 	kubeclient.WaitForCacheSync("xds", ctx.Done(), agentGwSyncer.xDS.HasSynced)
 
 	time.Sleep(500 * time.Millisecond) // Allow collections to populate
@@ -717,7 +715,7 @@ func (tc TestCase) Run(
 		}
 
 		// Collect results for this gateway
-		var xdsResult []agentGwXdsResources
+		var xdsResult []agwtranslator.AgentGwXdsResources
 
 		// Create a test context for fetching from collections
 		testCtx := krt.TestingDummyContext{}
@@ -734,22 +732,22 @@ func (tc TestCase) Run(
 		reportsMap := reports.NewReportMap()
 		for _, resource := range allResources {
 			// Merge reports from all resources for this gateway
-			for gwKey, gwReport := range resource.reports.Gateways {
+			for gwKey, gwReport := range resource.Reports.Gateways {
 				reportsMap.Gateways[gwKey] = gwReport
 			}
-			for lsKey, lsReport := range resource.reports.ListenerSets {
+			for lsKey, lsReport := range resource.Reports.ListenerSets {
 				reportsMap.ListenerSets[lsKey] = lsReport
 			}
-			for routeKey, routeReport := range resource.reports.HTTPRoutes {
+			for routeKey, routeReport := range resource.Reports.HTTPRoutes {
 				reportsMap.HTTPRoutes[routeKey] = routeReport
 			}
-			for routeKey, routeReport := range resource.reports.GRPCRoutes {
+			for routeKey, routeReport := range resource.Reports.GRPCRoutes {
 				reportsMap.GRPCRoutes[routeKey] = routeReport
 			}
-			for routeKey, routeReport := range resource.reports.TCPRoutes {
+			for routeKey, routeReport := range resource.Reports.TCPRoutes {
 				reportsMap.TCPRoutes[routeKey] = routeReport
 			}
-			for routeKey, routeReport := range resource.reports.TLSRoutes {
+			for routeKey, routeReport := range resource.Reports.TLSRoutes {
 				reportsMap.TLSRoutes[routeKey] = routeReport
 			}
 		}
@@ -764,8 +762,8 @@ func (tc TestCase) Run(
 	return results, nil
 }
 
-func proxySyncerPluginFactory(ctx context.Context, commoncol *collections.CommonCollections, name string, extraPluginsFn ExtraPluginsFn, globalSettings settings.Settings) pluginsdk.Plugin {
-	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultAgentGatewayClassName, globalSettings)
+func proxySyncerPluginFactory(ctx context.Context, commoncol *collections.CommonCollections, name string, extraPluginsFn ExtraPluginsFn, globalSettings apisettings.Settings) pluginsdk.Plugin {
+	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultAgwClassName, globalSettings, nil)
 
 	var extraPlugs []pluginsdk.Plugin
 	if extraPluginsFn != nil {
@@ -780,11 +778,11 @@ func proxySyncerPluginFactory(ctx context.Context, commoncol *collections.Common
 	return mergedPlugins
 }
 
-// agentGatewayPluginFactory is a factory function that returns the agent gateway plugins
-// It is based on agentGatewayPluginFactory(cfg)(ctx, cfg.AgwCollections) in start.go
-func agentGatewayPluginFactory(ctx context.Context, agwCollections *agentgatewayplugins.AgwCollections) agentgatewayplugins.AgentgatewayPlugin {
-	agwPlugins := agentgatewayplugins.Plugins(agwCollections)
-	mergedPlugins := agentgatewayplugins.MergePlugins(agwPlugins...)
+// agwPluginFactory is a factory function that returns the agent gateway plugins
+// It is based on agwPluginFactory(cfg)(ctx, cfg.AgwCollections) in start.go
+func agwPluginFactory(ctx context.Context, agwCollections *agwplugins.AgwCollections) agwplugins.AgwPlugin {
+	agwPlugins := agwplugins.Plugins(agwCollections)
+	mergedPlugins := agwplugins.MergePlugins(agwPlugins...)
 	for i, plug := range agwPlugins {
 		kubeclient.WaitForCacheSync(fmt.Sprintf("plugin-%d", i), ctx.Done(), plug.HasSynced)
 	}

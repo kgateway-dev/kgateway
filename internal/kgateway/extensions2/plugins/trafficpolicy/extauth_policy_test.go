@@ -1,7 +1,6 @@
 package trafficpolicy
 
 import (
-	"context"
 	"testing"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -159,7 +158,6 @@ func TestApplyForRoute(t *testing.T) {
 	t.Run("applies ext auth configuration to route", func(t *testing.T) {
 		// Setup
 		plugin := &trafficPolicyPluginGwPass{}
-		ctx := context.Background()
 		policy := &TrafficPolicy{
 			spec: trafficPolicySpecIr{
 				extAuth: &extAuthIR{
@@ -183,7 +181,7 @@ func TestApplyForRoute(t *testing.T) {
 		outputRoute := &envoyroutev3.Route{}
 
 		// Execute
-		err := plugin.ApplyForRoute(ctx, pCtx, outputRoute)
+		err := plugin.ApplyForRoute(pCtx, outputRoute)
 
 		// Verify
 		require.NoError(t, err)
@@ -196,7 +194,6 @@ func TestApplyForRoute(t *testing.T) {
 	t.Run("handles nil ext auth configuration", func(t *testing.T) {
 		// Setup
 		plugin := &trafficPolicyPluginGwPass{}
-		ctx := context.Background()
 		policy := &TrafficPolicy{
 			spec: trafficPolicySpecIr{
 				extAuth: nil,
@@ -208,7 +205,7 @@ func TestApplyForRoute(t *testing.T) {
 		outputRoute := &envoyroutev3.Route{}
 
 		// Execute
-		err := plugin.ApplyForRoute(ctx, pCtx, outputRoute)
+		err := plugin.ApplyForRoute(pCtx, outputRoute)
 
 		// Verify
 		require.NoError(t, err)
@@ -237,19 +234,18 @@ func TestHttpFilters(t *testing.T) {
 				},
 			},
 		}
-		ctx := context.Background()
 		fcc := ir.FilterChainCommon{
 			FilterChainName: "test-filter-chain",
 		}
 
 		// Execute
-		filters, err := plugin.HttpFilters(ctx, fcc)
+		filters, err := plugin.HttpFilters(fcc)
 
 		// Verify
 		require.NoError(t, err)
 		require.NotNil(t, filters)
 		assert.Equal(t, 2, len(filters)) // extauth and metadata filter
-		assert.Equal(t, plugins.DuringStage(plugins.AuthZStage), filters[1].Stage)
+		assert.Equal(t, plugins.DuringStage(plugins.AuthNStage), filters[1].Stage)
 	})
 }
 
@@ -257,7 +253,6 @@ func TestExtAuthPolicyPlugin(t *testing.T) {
 	t.Run("applies ext auth configuration to route", func(t *testing.T) {
 		// Setup
 		plugin := &trafficPolicyPluginGwPass{}
-		ctx := context.Background()
 		policy := &TrafficPolicy{
 			spec: trafficPolicySpecIr{
 				extAuth: &extAuthIR{
@@ -284,7 +279,7 @@ func TestExtAuthPolicyPlugin(t *testing.T) {
 		outputRoute := &envoyroutev3.Route{}
 
 		// Execute
-		err := plugin.ApplyForRoute(ctx, pCtx, outputRoute)
+		err := plugin.ApplyForRoute(pCtx, outputRoute)
 
 		// Verify
 		require.NoError(t, err)
@@ -298,7 +293,6 @@ func TestExtAuthPolicyPlugin(t *testing.T) {
 	t.Run("handles disabled ext auth configuration", func(t *testing.T) {
 		// Setup
 		plugin := &trafficPolicyPluginGwPass{}
-		ctx := context.Background()
 		policy := &TrafficPolicy{
 			spec: trafficPolicySpecIr{
 				extAuth: &extAuthIR{
@@ -312,7 +306,7 @@ func TestExtAuthPolicyPlugin(t *testing.T) {
 		outputRoute := &envoyroutev3.Route{}
 
 		// Execute
-		err := plugin.ApplyForRoute(ctx, pCtx, outputRoute)
+		err := plugin.ApplyForRoute(pCtx, outputRoute)
 
 		// Verify
 		require.NoError(t, err)

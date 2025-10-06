@@ -26,7 +26,7 @@ type testingSuite struct {
 	ctx context.Context
 
 	// testInstallation contains all the metadata/utilities necessary to execute a series of tests
-	// against an installation of Gloo Gateway
+	// against an installation of kgateway
 	testInstallation *e2e.TestInstallation
 }
 
@@ -236,7 +236,8 @@ func (s *testingSuite) TestConfigureTCPRouteBackingDestinations() {
 							curl.WithPort(port),
 							curl.VerboseOutput(),
 						},
-						tc.expectedErrorCode)
+						tc.expectedErrorCode,
+						timeout)
 				} else {
 					s.testInstallation.Assertions.AssertEventualCurlResponse(
 						s.ctx,
@@ -246,7 +247,8 @@ func (s *testingSuite) TestConfigureTCPRouteBackingDestinations() {
 							curl.WithPort(port),
 							curl.VerboseOutput(),
 						},
-						tc.expectedResponses[i])
+						tc.expectedResponses[i],
+						timeout)
 				}
 			}
 		})

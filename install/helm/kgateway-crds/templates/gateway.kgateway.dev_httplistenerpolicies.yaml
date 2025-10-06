@@ -20,7 +20,16 @@ spec:
     singular: httplistenerpolicy
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - description: HTTP listener policy acceptance status
+      jsonPath: .status.ancestors[*].conditions[?(@.type=='Accepted')].status
+      name: Accepted
+      type: string
+    - description: HTTP listener policy attachment status
+      jsonPath: .status.ancestors[*].conditions[?(@.type=='Attached')].status
+      name: Attached
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
@@ -470,11 +479,13 @@ spec:
                           type: string
                         maxReceiveMessageLength:
                           format: int32
+                          minimum: 1
                           type: integer
                         retryPolicy:
                           properties:
                             numRetries:
                               format: int32
+                              minimum: 1
                               type: integer
                             retryBackOff:
                               properties:
@@ -596,11 +607,13 @@ spec:
                               type: string
                             maxReceiveMessageLength:
                               format: int32
+                              minimum: 1
                               type: integer
                             retryPolicy:
                               properties:
                                 numRetries:
                                   format: int32
+                                  minimum: 1
                                   type: integer
                                 retryBackOff:
                                   properties:
@@ -824,6 +837,7 @@ spec:
                     type: integer
                   maxPathTagLength:
                     format: int32
+                    minimum: 1
                     type: integer
                   overallSampling:
                     format: int32
@@ -893,11 +907,13 @@ spec:
                                 type: array
                               maxReceiveMessageLength:
                                 format: int32
+                                minimum: 1
                                 type: integer
                               retryPolicy:
                                 properties:
                                   numRetries:
                                     format: int32
+                                    minimum: 1
                                     type: integer
                                   retryBackOff:
                                     properties:

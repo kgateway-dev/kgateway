@@ -23,7 +23,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
-	"github.com/kgateway-dev/kgateway/v2/test/translator"
 )
 
 // TestCase defines the manifests and resources used by a test or test suite.
@@ -97,6 +96,10 @@ func (s *BaseTestingSuite) AfterTest(suiteName, testName string) {
 	testCase, ok := s.TestCases[testName]
 	if !ok {
 		return
+	}
+
+	if s.T().Failed() {
+		s.TestInstallation.PreFailHandler(s.Ctx)
 	}
 
 	s.DeleteManifests(testCase)
@@ -185,10 +188,10 @@ func (s *BaseTestingSuite) setupHelpers() {
 		s.GatewayHelper = newGatewayHelper(s.TestInstallation)
 	}
 	if s.CrdPath == "" {
-		s.CrdPath = translator.CRDPath
+		s.CrdPath = testutils.CRDPath
 	}
 	var err error
-	s.gvkToStructuralSchema, err = translator.GetStructuralSchemas(filepath.Join(testutils.GitRootDirectory(), s.CrdPath))
+	s.gvkToStructuralSchema, err = testutils.GetStructuralSchemas(filepath.Join(testutils.GitRootDirectory(), s.CrdPath))
 	s.Require().NoError(err)
 }
 
@@ -202,7 +205,7 @@ func (s *BaseTestingSuite) loadManifestResources(testCase *TestCase) {
 
 	var resources []client.Object
 	for _, manifest := range testCase.Manifests {
-		objs, err := translator.LoadFromFiles(manifest, s.TestInstallation.ClusterContext.Client.Scheme(), s.gvkToStructuralSchema)
+		objs, err := testutils.LoadFromFiles(manifest, s.TestInstallation.ClusterContext.Client.Scheme(), s.gvkToStructuralSchema)
 		s.Require().NoError(err)
 		resources = append(resources, objs...)
 	}
@@ -265,7 +268,7 @@ func newGatewayHelper(testInst *e2e.TestInstallation) *defaultGatewayHelper {
 			ImageInfo:                &deployer.ImageInfo{},
 			GatewayClassName:         wellknown.DefaultGatewayClassName,
 			WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-			AgentGatewayClassName:    wellknown.DefaultAgentGatewayClassName,
+			AgentgatewayClassName:    wellknown.DefaultAgwClassName,
 		},
 	)
 	return &defaultGatewayHelper{gwpClient: gwpClient}

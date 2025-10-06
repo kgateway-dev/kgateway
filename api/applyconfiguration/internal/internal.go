@@ -29,9 +29,12 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: llm
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LLMProvider
-    - name: multipool
+    - name: priorityGroups
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.MultiPoolConfig
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PriorityGroup
+          elementRelationship: atomic
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AIPolicy
   map:
     fields:
@@ -188,7 +191,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: timeout
       type:
         namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AgentGateway
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Agentgateway
   map:
     fields:
     - name: customConfigMapName
@@ -319,7 +322,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: stringValue
       type:
         scalar: string
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AuthHeaderOverride
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AuthHeader
   map:
     fields:
     - name: headerName
@@ -552,7 +555,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: model
       type:
         scalar: string
-      default: ""
     - name: region
       type:
         scalar: string
@@ -1501,9 +1503,9 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.KubernetesProxyConfig
   map:
     fields:
-    - name: agentGateway
+    - name: agentgateway
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AgentGateway
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Agentgateway
     - name: aiExtension
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AiExtension
@@ -1519,6 +1521,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: istio
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.IstioIntegration
+    - name: omitDefaultSecurityContext
+      type:
+        scalar: boolean
     - name: podTemplate
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Pod
@@ -1537,19 +1542,36 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LLMProvider
   map:
     fields:
-    - name: authHeaderOverride
+    - name: anthropic
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AuthHeaderOverride
-    - name: hostOverride
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AnthropicConfig
+    - name: authHeader
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Host
-    - name: pathOverride
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AuthHeader
+    - name: azureopenai
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AzureOpenAIConfig
+    - name: bedrock
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BedrockConfig
+    - name: gemini
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GeminiConfig
+    - name: host
+      type:
+        scalar: string
+    - name: openai
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.OpenAIConfig
+    - name: path
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PathOverride
-    - name: provider
+    - name: port
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SupportedLLMProvider
-      default: {}
+        scalar: numeric
+    - name: vertexai
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.VertexAIConfig
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LoadBalancer
   map:
     fields:
@@ -1820,15 +1842,43 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: openAIModeration
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.OpenAIConfig
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.MultiPoolConfig
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.NamedLLMProvider
   map:
     fields:
-    - name: priorities
+    - name: anthropic
       type:
-        list:
-          elementType:
-            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Priority
-          elementRelationship: atomic
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AnthropicConfig
+    - name: authHeader
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AuthHeader
+    - name: azureopenai
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AzureOpenAIConfig
+    - name: bedrock
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BedrockConfig
+    - name: gemini
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GeminiConfig
+    - name: host
+      type:
+        scalar: string
+    - name: name
+      type:
+        scalar: string
+      default: ""
+    - name: openai
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.OpenAIConfig
+    - name: path
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PathOverride
+    - name: port
+      type:
+        scalar: numeric
+    - name: vertexai
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.VertexAIConfig
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.NamespacedObjectReference
   map:
     fields:
@@ -1911,31 +1961,10 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: maxEjectionPercent
       type:
         scalar: numeric
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Parameters
-  map:
-    fields:
-    - name: cipherSuites
-      type:
-        list:
-          elementType:
-            scalar: string
-          elementRelationship: atomic
-    - name: ecdhCurves
-      type:
-        list:
-          elementType:
-            scalar: string
-          elementRelationship: atomic
-    - name: tlsMaxVersion
-      type:
-        scalar: string
-    - name: tlsMinVersion
-      type:
-        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PathOverride
   map:
     fields:
-    - name: fullPath
+    - name: full
       type:
         scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Pod
@@ -1983,6 +2012,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: securityContext
       type:
         namedType: io.k8s.api.core.v1.PodSecurityContext
+    - name: startupProbe
+      type:
+        namedType: io.k8s.api.core.v1.Probe
     - name: terminationGracePeriodSeconds
       type:
         scalar: numeric
@@ -2020,14 +2052,14 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: numeric
       default: 0
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Priority
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PriorityGroup
   map:
     fields:
-    - name: pool
+    - name: providers
       type:
         list:
           elementType:
-            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LLMProvider
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.NamedLLMProvider
           elementRelationship: atomic
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ProcessingMode
   map:
@@ -2083,6 +2115,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: replicas
       type:
         scalar: numeric
+    - name: strategy
+      type:
+        namedType: io.k8s.api.apps.v1.DeploymentStrategy
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RBAC
   map:
     fields:
@@ -2426,27 +2461,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: suffix
       type:
         scalar: string
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SupportedLLMProvider
-  map:
-    fields:
-    - name: anthropic
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AnthropicConfig
-    - name: azureopenai
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AzureOpenAIConfig
-    - name: bedrock
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BedrockConfig
-    - name: gemini
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GeminiConfig
-    - name: openai
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.OpenAIConfig
-    - name: vertexai
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.VertexAIConfig
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TCPKeepalive
   map:
     fields:
@@ -2471,12 +2485,15 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             scalar: string
           elementRelationship: atomic
+    - name: files
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TLSFiles
     - name: insecureSkipVerify
       type:
         scalar: boolean
     - name: parameters
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Parameters
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TLSParameters
     - name: secretRef
       type:
         namedType: io.k8s.api.core.v1.LocalObjectReference
@@ -2486,10 +2503,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: sni
       type:
         scalar: string
-    - name: tlsFiles
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TLSFiles
-    - name: verifySubjectAltName
+    - name: verifySubjectAltNames
       type:
         list:
           elementType:
@@ -2508,6 +2522,27 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
     - name: tlsKey
+      type:
+        scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TLSParameters
+  map:
+    fields:
+    - name: cipherSuites
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+    - name: ecdhCurves
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+    - name: maxVersion
+      type:
+        scalar: string
+    - name: minVersion
       type:
         scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Timeouts
@@ -2733,6 +2768,24 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Host
       default: {}
+- name: io.k8s.api.apps.v1.DeploymentStrategy
+  map:
+    fields:
+    - name: rollingUpdate
+      type:
+        namedType: io.k8s.api.apps.v1.RollingUpdateDeployment
+    - name: type
+      type:
+        scalar: string
+- name: io.k8s.api.apps.v1.RollingUpdateDeployment
+  map:
+    fields:
+    - name: maxSurge
+      type:
+        namedType: io.k8s.apimachinery.pkg.util.intstr.IntOrString
+    - name: maxUnavailable
+      type:
+        namedType: io.k8s.apimachinery.pkg.util.intstr.IntOrString
 - name: io.k8s.api.core.v1.AWSElasticBlockStoreVolumeSource
   map:
     fields:

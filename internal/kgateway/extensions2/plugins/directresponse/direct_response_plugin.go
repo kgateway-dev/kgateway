@@ -18,12 +18,13 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	extensionplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 type directResponse struct {
@@ -46,7 +47,7 @@ func (d *directResponse) Equals(in any) bool {
 
 type directResponsePluginGwPass struct {
 	ir.UnimplementedProxyTranslationPass
-	reporter reports.Reporter
+	reporter reporter.Reporter
 }
 
 var _ ir.ProxyTranslationPass = &directResponsePluginGwPass{}
@@ -64,7 +65,7 @@ func registerTypes(ourCli versioned.Interface) {
 	)
 }
 
-func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionplug.Plugin {
+func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
 	registerTypes(commoncol.OurClient)
 
 	col := krt.WrapClient(kclient.NewFiltered[*v1alpha1.DirectResponse](
@@ -88,8 +89,8 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		return pol
 	})
 
-	return extensionplug.Plugin{
-		ContributesPolicies: map[schema.GroupKind]extensionplug.PolicyPlugin{
+	return sdk.Plugin{
+		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			wellknown.DirectResponseGVK.GroupKind(): {
 				Name:                      "directresponse",
 				Policies:                  policyCol,
@@ -99,14 +100,14 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	}
 }
 
-func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {
+func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
 	return &directResponsePluginGwPass{
 		reporter: reporter,
 	}
 }
 
 // called one or more times per route rule
-func (p *directResponsePluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext, outputRoute *envoyroutev3.Route) error {
+func (p *directResponsePluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, outputRoute *envoyroutev3.Route) error {
 	dr, ok := pCtx.Policy.(*directResponse)
 	if !ok {
 		return fmt.Errorf("internal error: expected *directResponse, got %T", pCtx.Policy)
@@ -125,7 +126,7 @@ func (p *directResponsePluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir
 	}
 
 	drAction := &envoyroutev3.DirectResponseAction{
-		Status: dr.spec.StatusCode,
+		Status: uint32(dr.spec.StatusCode), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 	}
 	if dr.spec.Body != nil {
 		drAction.Body = &envoycorev3.DataSource{
@@ -142,9 +143,8 @@ func (p *directResponsePluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir
 }
 
 func (p *directResponsePluginGwPass) ApplyForRouteBackend(
-	ctx context.Context,
-	policy ir.PolicyIR,
-	pCtx *ir.RouteBackendContext,
+	policy pluginsdkir.PolicyIR,
+	pCtx *pluginsdkir.RouteBackendContext,
 ) error {
 	return ir.ErrNotAttachable
 }

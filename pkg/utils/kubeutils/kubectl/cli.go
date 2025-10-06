@@ -83,11 +83,17 @@ func (c *Cli) RunCommand(ctx context.Context, args ...string) error {
 	return c.Command(ctx, args...).Run().Cause()
 }
 
-// RunCommandWithOutput creates a Cmd and then runs it.
-// If an error occurred, it will be returned along with the output of the command
-func (c *Cli) RunCommandWithOutput(ctx context.Context, args ...string) (string, error) {
-	runErr := c.Command(ctx, args...).Run()
-	return runErr.OutputString(), runErr.Cause()
+// RunCommandToWriters runs a kubectl command directing stdout/stderr to the provided writers.
+// It does not mutate the Cli's default receiver.
+func (c *Cli) RunCommandToWriters(ctx context.Context, stdout io.Writer, stderr io.Writer, args ...string) error {
+	cmd := c.Command(ctx, args...)
+	if stdout != nil {
+		cmd = cmd.WithStdout(stdout)
+	}
+	if stderr != nil {
+		cmd = cmd.WithStderr(stderr)
+	}
+	return cmd.Run().Cause()
 }
 
 // Namespaces returns a sorted list of namespaces or an error if one occurred
@@ -406,24 +412,24 @@ func (c *Cli) GetPodsInNsWithLabel(ctx context.Context, namespace string, label 
 	podStdOut := bytes.NewBuffer(nil)
 	podStdErr := bytes.NewBuffer(nil)
 
-	// Fetch the name of the Gloo Gateway controller pod
-	getGlooPodNamesCmd := c.Command(ctx, "get", "pod", "-n", namespace,
+	// Fetch the names of the pods with the given label
+	getPodNamesCmd := c.Command(ctx, "get", "pod", "-n", namespace,
 		"--selector", label, "--output", "jsonpath='{.items[*].metadata.name}'")
-	err := getGlooPodNamesCmd.WithStdout(podStdOut).WithStderr(podStdErr).Run().Cause()
+	err := getPodNamesCmd.WithStdout(podStdOut).WithStderr(podStdErr).Run().Cause()
 	if err != nil {
-		fmt.Printf("error running get gloo pod name command: %v\n", err)
+		fmt.Printf("error running get pod names command: %v\n", err)
 	}
 
 	// Clean up and check the output
-	glooPodNamesString := strings.Trim(podStdOut.String(), "'")
-	if glooPodNamesString == "" {
+	podNamesString := strings.Trim(podStdOut.String(), "'")
+	if podNamesString == "" {
 		fmt.Printf("no %s pods found in namespace %s\n", label, namespace)
 		return []string{}, nil
 	}
 
 	// Split the string on whitespace to get the pod names
-	glooPodNames := strings.Fields(glooPodNamesString)
-	return glooPodNames, nil
+	podNames := strings.Fields(podNamesString)
+	return podNames, nil
 }
 
 func (c *Cli) GetLeaseHolder(ctx context.Context, namespace string, leaderElectionID string) (string, error) {

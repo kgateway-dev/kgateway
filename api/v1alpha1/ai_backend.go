@@ -2,70 +2,132 @@ package v1alpha1
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-// +kubebuilder:validation:XValidation:message="There must one and only one LLM or MultiPool can be set",rule="(has(self.llm) && !has(self.multipool)) || (!has(self.llm) && has(self.multipool))"
-// +kubebuilder:validation:MaxProperties=1
-// +kubebuilder:validation:MinProperties=1
+// AIBackend specifies the AI backend configuration
+// +kubebuilder:validation:ExactlyOneOf=llm;priorityGroups
 type AIBackend struct {
 	// The LLM configures the AI gateway to use a single LLM provider backend.
+	// +optional
 	LLM *LLMProvider `json:"llm,omitempty"`
-	// The MultiPool configures the backends for multiple hosts or models from the same provider in one Backend resource.
-	MultiPool *MultiPoolConfig `json:"multipool,omitempty"`
+
+	// PriorityGroups specifies a list of groups in priority order where each group defines
+	// a set of LLM providers. The priority determines the priority of the backend endpoints chosen.
+	// Note: provider names must be unique across all providers in all priority groups. Backend policies
+	// may target a specific provider by name using targetRefs[].sectionName.
+	//
+	// Example configuration with two priority groups:
+	// ```yaml
+	// priorityGroups:
+	//	- providers:
+	//	  - azureOpenai:
+	//	      deploymentName: gpt-4o-mini
+	//	      apiVersion: 2024-02-15-preview
+	//	      endpoint: ai-gateway.openai.azure.com
+	//	      authToken:
+	//	        secretRef:
+	//	          name: azure-secret
+	//	          namespace: kgateway-system
+	//	- providers:
+	//	  - azureOpenai:
+	//	      deploymentName: gpt-4o-mini-2
+	//	      apiVersion: 2024-02-15-preview
+	//	      endpoint: ai-gateway-2.openai.azure.com
+	//	      authToken:
+	//	        secretRef:
+	//	          name: azure-secret-2
+	//	          namespace: kgateway-system
+	// ```
+	// +optional
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=32
+	// TODO: enable this rule when we don't need to support older k8s versions where this rule breaks // +kubebuilder:validation:XValidation:message="provider names must be unique across groups",rule="self.map(pg, pg.providers.map(pp, pp.name)).map(p, self.map(pg, pg.providers.map(pp, pp.name)).filter(cp, cp != p).exists(cp, p.exists(pn, pn in cp))).exists(p, !p)"
+	PriorityGroups []PriorityGroup `json:"priorityGroups,omitempty"`
 }
 
 // LLMProvider specifies the target large language model provider that the backend should route requests to.
+// +kubebuilder:validation:ExactlyOneOf=openai;azureopenai;anthropic;gemini;vertexai;bedrock
+// +kubebuilder:validation:XValidation:rule="has(self.host) || has(self.port) ? has(self.host) && has(self.port) : true",message="both host and port must be set together"
 // TODO: Move auth options off of SupportedLLMProvider to BackendConfigPolicy: https://github.com/kgateway-dev/kgateway/issues/11930
 type LLMProvider struct {
-	// The LLM provider type to configure.
-	Provider SupportedLLMProvider `json:"provider"`
+	// OpenAI provider
+	// +optional
+	OpenAI *OpenAIConfig `json:"openai,omitempty"`
 
-	// Send requests to a custom host and port, such as to proxy the request,
-	// or to use a different backend that is API-compliant with the Backend version.
-	HostOverride *Host `json:"hostOverride,omitempty"`
+	// Azure OpenAI provider
+	// +optional
+	AzureOpenAI *AzureOpenAIConfig `json:"azureopenai,omitempty"`
 
-	// TODO: Consolidate all Override options into ProviderOverride.
-	// Overrides the default API path for the LLM provider.
-	// Allows routing requests to a custom API endpoint path.
-	PathOverride *PathOverride `json:"pathOverride,omitempty"`
+	// Anthropic provider
+	// +optional
+	Anthropic *AnthropicConfig `json:"anthropic,omitempty"`
 
-	// Customizes the Authorization header sent to the LLM provider.
+	// Gemini provider
+	// +optional
+	Gemini *GeminiConfig `json:"gemini,omitempty"`
+
+	// Vertex AI provider
+	// +optional
+	VertexAI *VertexAIConfig `json:"vertexai,omitempty"`
+
+	// Bedrock provider
+	// +optional
+	Bedrock *BedrockConfig `json:"bedrock,omitempty"`
+
+	// Host specifies the hostname to send the requests to.
+	// If not specified, the default hostname for the provider is used.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	Host *string `json:"host,omitempty"`
+
+	// Port specifies the port to send the requests to.
+	// +optional
+	Port *gwv1.PortNumber `json:"port,omitempty"`
+
+	// Path specifies the URL path to use for the LLM provider API requests.
+	// This is useful when you need to route requests to a different API endpoint while maintaining
+	// compatibility with the original provider's API structure.
+	// If not specified, the default path for the provider is used.
+	// +optional
+	Path *PathOverride `json:"path,omitempty"`
+
+	// AuthHeader specifies how the Authorization header is set in the request sent to the LLM provider.
 	// Allows changing the header name and/or the prefix (e.g., "Bearer").
 	// Note: Not all LLM providers use the Authorization header and prefix.
 	// For example, OpenAI uses header: "Authorization" and prefix: "Bearer" But Azure OpenAI uses header: "api-key"
 	// and no Bearer.
-	AuthHeaderOverride *AuthHeaderOverride `json:"authHeaderOverride,omitempty"`
+	AuthHeader *AuthHeader `json:"authHeader,omitempty"`
 }
 
-// PathOverride configures the AI gateway to use a custom path for LLM provider chat-completion API requests.
-// It allows overriding the default API path with a custom one.
-// This is useful when you need to route requests to a different API endpoint while maintaining
-// compatibility with the original provider's API structure.
-// +kubebuilder:validation:MinProperties=1
+// NamedLLMProvider wraps an LLMProvider with a name.
+type NamedLLMProvider struct {
+	// Name of the provider. Policies can target this provider by name.
+	Name gwv1.SectionName `json:"name"`
+
+	LLMProvider `json:",inline"`
+}
+
+// PathOverride allows overriding the default URL path used for LLM provider API requests.
 type PathOverride struct {
-	// FullPath specifies the custom API path to use for the LLM provider requests.
-	// This path will replace the default API path for the provider.
-	FullPath *string `json:"fullPath"`
+	// +kubebuilder:validation:MinLength=1
+	Full *string `json:"full,omitempty"`
 }
 
-// AuthHeaderOverride allows customization of the default Authorization header sent to the LLM Provider.
+// AuthHeader allows customization of the default Authorization header sent to the LLM Provider.
 // The default header is `Authorization: Bearer <token>`. HeaderName can change the Authorization
 // header name and Prefix can change the Bearer prefix
-type AuthHeaderOverride struct {
-	Prefix     *string `json:"prefix,omitempty"`
-	HeaderName *string `json:"headerName,omitempty"`
-}
+// +kubebuilder:validation:XValidation:rule="has(self.prefix) || has(self.headerName)",message="at least one of prefix or headerName must be set"
+type AuthHeader struct {
+	// Prefix specifies the prefix to use in the Authorization header.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	Prefix *string `json:"prefix,omitempty"`
 
-// SupportedLLMProvider configures the AI gateway to use a single LLM provider backend.
-// +kubebuilder:validation:MaxProperties=1
-// +kubebuilder:validation:MinProperties=1
-type SupportedLLMProvider struct {
-	OpenAI      *OpenAIConfig      `json:"openai,omitempty"`
-	AzureOpenAI *AzureOpenAIConfig `json:"azureopenai,omitempty"`
-	Anthropic   *AnthropicConfig   `json:"anthropic,omitempty"`
-	Gemini      *GeminiConfig      `json:"gemini,omitempty"`
-	VertexAI    *VertexAIConfig    `json:"vertexai,omitempty"`
-	Bedrock     *BedrockConfig     `json:"bedrock,omitempty"`
+	// HeaderName specifies the name of the header to use for authorization.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	HeaderName *string `json:"headerName,omitempty"`
 }
 
 type SingleAuthTokenKind string
@@ -239,9 +301,12 @@ type BedrockConfig struct {
 	// +optional
 	Auth *AwsAuth `json:"auth,omitempty"`
 
-	// The model field is the supported model id published by AWS. See <https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html>
+	// Optional: Override the model ID.
+	// If unset, the model is taken from the request.
+	// See <https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html>
+	// +optional
 	// +kubebuilder:validation:MinLength=1
-	Model string `json:"model"`
+	Model *string `json:"model,omitempty"`
 
 	// Region is the AWS region to use for the backend.
 	// Defaults to us-east-1 if not specified.
@@ -268,14 +333,6 @@ type AWSGuardrailConfig struct {
 	GuardrailVersion string `json:"version"`
 }
 
-// Priority configures the priority of the backend endpoints.
-type Priority struct {
-	// A list of LLM provider backends within a single endpoint pool entry.
-	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:MaxItems=20
-	Pool []LLMProvider `json:"pool,omitempty"`
-}
-
 // MultiPoolConfig configures the backends for multiple hosts or models from the same provider in one Backend resource.
 // This method can be useful for creating one logical endpoint that is backed
 // by multiple hosts or models.
@@ -283,36 +340,10 @@ type Priority struct {
 // In the `priorities` section, the order of `pool` entries defines the priority of the backend endpoints.
 // The `pool` entries can either define a list of backends or a single backend.
 // Note: Only two levels of nesting are permitted. Any nested entries after the second level are ignored.
-//
-// ```yaml
-// multi:
-//
-//	priorities:
-//	- pool:
-//	  - azureOpenai:
-//	      deploymentName: gpt-4o-mini
-//	      apiVersion: 2024-02-15-preview
-//	      endpoint: ai-gateway.openai.azure.com
-//	      authToken:
-//	        secretRef:
-//	          name: azure-secret
-//	          namespace: kgateway-system
-//	- pool:
-//	  - azureOpenai:
-//	      deploymentName: gpt-4o-mini-2
-//	      apiVersion: 2024-02-15-preview
-//	      endpoint: ai-gateway-2.openai.azure.com
-//	      authToken:
-//	        secretRef:
-//	          name: azure-secret-2
-//	          namespace: kgateway-system
-//
-// ```
-type MultiPoolConfig struct {
-	// The priority list of backend pools. Each entry represents a set of LLM provider backends.
-	// The order defines the priority of the backend endpoints.
-	// +required
+type PriorityGroup struct {
+	// A list of LLM provider backends within a single endpoint pool entry.
 	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:MaxItems=20
-	Priorities []Priority `json:"priorities,omitempty"`
+	// +kubebuilder:validation:MaxItems=32
+	// +kubebuilder:validation:XValidation:message="provider names must be unique within a group",rule="self.all(p1, self.exists_one(p2, p1.name == p2.name))"
+	Providers []NamedLLMProvider `json:"providers,omitempty"`
 }

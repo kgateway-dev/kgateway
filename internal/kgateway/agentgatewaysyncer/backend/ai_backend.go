@@ -7,7 +7,7 @@ import (
 	"github.com/agentgateway/agentgateway/go/api"
 )
 
-func ProcessAIBackendForAgentGateway(be *AgentGatewayBackendIr) ([]*api.Backend, []*api.Policy, error) {
+func ProcessAIBackendForAgw(be *AgwBackendIr) ([]*api.Backend, []*api.Policy, error) {
 	if len(be.Errors) > 0 {
 		return nil, nil, fmt.Errorf("errors occurred while processing ai backend for agent gateway: %w", errors.Join(be.Errors...))
 	}

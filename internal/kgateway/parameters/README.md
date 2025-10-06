@@ -1,5 +1,0 @@
-# Parameters API
-
-The K8s GW API [has precedent](https://github.com/kubernetes-sigs/gateway-api//blob/c1d306ba1572727a1febd0c8210cb08a53e12ebd/geps/gep-713/index.md#targeting-virtual-types) for using typed references to "Virtual" Resources (i.e. non-existent) as a way of providing parameters (e.g. to a filter on a route) without needing to define additional CRD types. This is done [in Istio](https://github.com/istio/istio/blob/9c69544e8b7f0ea0768c10f5356b8e3802ca4014/pilot/pkg/config/kube/gateway/conversion.go#L1544) as a way of enabling users to specify backend refs to hostnames rather than directly to a ServiceEntry object.
-
-Because these reference types are effectivey a part of the application API without being easy to document, this package is separated and commented for easier integration into documentation.

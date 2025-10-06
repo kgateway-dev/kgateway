@@ -628,7 +628,6 @@ spec:
   kube:
     deployment: {}
 `,
-			wantErrors: []string{},
 		},
 		{
 			name: "ProxyDeployment: only replicas set (should pass)",
@@ -642,7 +641,80 @@ spec:
     deployment:
       replicas: 3
 `,
-			wantErrors: []string{},
+		},
+		{
+			name: "ProxyDeployment: Strategy is fully fleshed out",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-proxy-deployment-empty
+spec:
+  kube:
+    deployment:
+      strategy:
+        type: RollingUpdate
+        rollingUpdate:
+          maxSurge: 100%
+          maxUnavailable: 1
+`,
+		},
+		{
+			name: "ProxyDeployment: Strategy sets maxSurge and uses implicit type RollingUpdate",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-proxy-deployment-maxsurge
+spec:
+  kube:
+    deployment:
+      strategy:
+        rollingUpdate:
+          maxSurge: 100%
+`,
+		},
+		{
+			name: "ProxyDeployment: Strategy has an empty rollingUpdate override",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-proxy-deployment-rollingupdate-empty
+spec:
+  kube:
+    deployment:
+      strategy:
+        rollingUpdate: {}
+`,
+		},
+		{
+			name: "ProxyDeployment: Strategy Recreate",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-proxy-deployment-recreate
+spec:
+  kube:
+    deployment:
+      strategy:
+        type: Recreate
+`,
+		},
+		{
+			name: "ProxyDeployment: Strategy has an unknown rollout type and acts in a forwards-compatible fashion",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-proxy-deployment-unknownstrategem
+spec:
+  kube:
+    deployment:
+      strategy:
+        type: SomeStrategemIntroducedInTheFuture
+`,
 		},
 		{
 			name: "ProxyDeployment: only omitReplicas set (should pass)",
@@ -656,7 +728,6 @@ spec:
     deployment:
       omitReplicas: true
 `,
-			wantErrors: []string{},
 		},
 		{
 			name: "MCP backend selector requires namespace|service to be set",
@@ -692,6 +763,115 @@ spec:
             app: mcp-app
 `,
 		},
+		{
+			name: "AI priorityGroups with no overlapping provider names",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: no-overlapping-names
+spec:
+  type: AI
+  ai:
+    priorityGroups:
+    - providers:
+      - name: first
+        openai:
+          model: "gpt-4o"
+          authToken:
+            kind: "SecretRef"
+            secretRef:
+              name: openai-primary-secret
+      - name: second
+        anthropic:
+          model: "claude-3-opus-20240229"
+          authToken:
+            kind: "Inline"
+            inline: "sk-anthropic-primary"
+    - providers:
+      - name: third
+        openai:
+          model: "gpt-4o"
+          authToken:
+            kind: "SecretRef"
+            secretRef:
+              name: openai-primary-secret
+`,
+		},
+		{
+			name: "AI priorityGroups with overlapping provider names within a group",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: same-group-overlap
+spec:
+  type: AI
+  ai:
+    priorityGroups:
+    - providers:
+      - name: first
+        openai:
+          model: "gpt-4o"
+          authToken:
+            kind: "SecretRef"
+            secretRef:
+              name: openai-primary-secret
+      - name: first
+        anthropic:
+          model: "claude-3-opus-20240229"
+          authToken:
+            kind: "Inline"
+            inline: "sk-anthropic-primary"
+    - providers:
+      - name: third
+        openai:
+          model: "gpt-4o"
+          authToken:
+            kind: "SecretRef"
+            secretRef:
+              name: openai-primary-secret
+`,
+			wantErrors: []string{`spec.ai.priorityGroups[0].providers: Invalid value: "array": provider names must be unique within a group`},
+		},
+		/* Test is disabled since the CEL rule is disabled to support older k8s versions
+				{
+					name: "AI priorityGroups with overlapping provider names across groups",
+					input: `---
+		apiVersion: gateway.kgateway.dev/v1alpha1
+		kind: Backend
+		metadata:
+		  name: different-group-overlap
+		spec:
+		  type: AI
+		  ai:
+		    priorityGroups:
+		    - providers:
+		      - name: first
+		        openai:
+		          model: "gpt-4o"
+		          authToken:
+		            kind: "SecretRef"
+		            secretRef:
+		              name: openai-primary-secret
+		      - name: second
+		        anthropic:
+		          model: "claude-3-opus-20240229"
+		          authToken:
+		            kind: "Inline"
+		            inline: "sk-anthropic-primary"
+		    - providers:
+		      - name: first
+		        openai:
+		          model: "gpt-4o"
+		          authToken:
+		            kind: "SecretRef"
+		            secretRef:
+		              name: openai-primary-secret
+		`,
+					wantErrors: []string{`spec.ai.priorityGroups: Invalid value: "array": provider names must be unique across groups`},
+				},
+		*/
 	}
 
 	t.Cleanup(func() {

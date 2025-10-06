@@ -41,12 +41,14 @@ Statuses:
         status: Unknown
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: Gateway is accepted
-        reason: Accepted
+        message: 'Some listeners are not programmed: tcp: TCP/TLS listener has no
+          valid backends or routes; tls: TCP/TLS listener has no valid backends or
+          routes'
+        reason: ListenersNotValid
         status: "True"
         type: Accepted
       - lastTransitionTime: null
-        message: Gateway is programmed
+        message: Successfully programmed Gateway
         reason: Programmed
         status: "True"
         type: Programmed
@@ -54,22 +56,22 @@ Statuses:
       - attachedRoutes: 0
         conditions:
         - lastTransitionTime: null
-          message: Listener is accepted
+          message: Successfully accepted Listener
           reason: Accepted
           status: "True"
           type: Accepted
         - lastTransitionTime: null
-          message: Listener does not have conflicts
+          message: Successfully verified that Listener has no conflicts
           reason: NoConflicts
           status: "False"
           type: Conflicted
         - lastTransitionTime: null
-          message: Listener has valid refs
+          message: Successfully resolved all references
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
         - lastTransitionTime: null
-          message: Listener is programmed
+          message: Successfully programmed Listener
           reason: Programmed
           status: "True"
           type: Programmed
@@ -82,25 +84,25 @@ Statuses:
       - attachedRoutes: 0
         conditions:
         - lastTransitionTime: null
-          message: Listener is accepted
+          message: TCP/TLS listener has no valid backends or routes
+          reason: Invalid
+          status: "False"
+          type: Programmed
+        - lastTransitionTime: null
+          message: Successfully accepted Listener
           reason: Accepted
           status: "True"
           type: Accepted
         - lastTransitionTime: null
-          message: Listener does not have conflicts
+          message: Successfully verified that Listener has no conflicts
           reason: NoConflicts
           status: "False"
           type: Conflicted
         - lastTransitionTime: null
-          message: Listener has valid refs
+          message: Successfully resolved all references
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
-        - lastTransitionTime: null
-          message: Listener is programmed
-          reason: Programmed
-          status: "True"
-          type: Programmed
         name: tcp
         supportedKinds:
         - group: gateway.networking.k8s.io
@@ -108,25 +110,25 @@ Statuses:
       - attachedRoutes: 0
         conditions:
         - lastTransitionTime: null
-          message: Listener is accepted
+          message: TCP/TLS listener has no valid backends or routes
+          reason: Invalid
+          status: "False"
+          type: Programmed
+        - lastTransitionTime: null
+          message: Successfully accepted Listener
           reason: Accepted
           status: "True"
           type: Accepted
         - lastTransitionTime: null
-          message: Listener does not have conflicts
+          message: Successfully verified that Listener has no conflicts
           reason: NoConflicts
           status: "False"
           type: Conflicted
         - lastTransitionTime: null
-          message: Listener has valid refs
+          message: Successfully resolved all references
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
-        - lastTransitionTime: null
-          message: Listener is programmed
-          reason: Programmed
-          status: "True"
-          type: Programmed
         name: tls
         supportedKinds:
         - group: gateway.networking.k8s.io

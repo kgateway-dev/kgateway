@@ -67,6 +67,7 @@ go tool openapi-gen \
   sigs.k8s.io/gateway-api/apis/v1 \
   sigs.k8s.io/gateway-api/apis/v1alpha2 \
   k8s.io/apimachinery/pkg/apis/meta/v1 \
+  k8s.io/api/apps/v1 \
   k8s.io/api/core/v1 \
   k8s.io/apimachinery/pkg/runtime \
   k8s.io/apimachinery/pkg/util/intstr \

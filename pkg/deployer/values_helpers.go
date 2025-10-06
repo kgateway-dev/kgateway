@@ -16,6 +16,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/validate"
 )
 
 // This file contains helper functions that generate helm values in the format needed
@@ -33,8 +34,13 @@ func GetPortsValues(gw *ir.Gateway, gwp *v1alpha1.GatewayParameters) []HelmPort 
 
 	// Add ports from Gateway listeners
 	for _, l := range gw.Listeners {
-		listenerPort := uint16(l.Port)
+		listenerPort := int32(l.Port)
 		portName := listener.GenerateListenerName(l)
+		if err := validate.ListenerPort(l, l.Port); err != nil {
+			// skip invalid ports; statuses are handled in the translator
+			logger.Error("skipping port", "gateway", gw.ResourceName(), "error", err)
+			continue
+		}
 		gwPorts = AppendPortValue(gwPorts, listenerPort, portName, gwp)
 	}
 
@@ -72,7 +78,7 @@ func SanitizePortName(name string) string {
 	return str
 }
 
-func AppendPortValue(gwPorts []HelmPort, port uint16, name string, gwp *v1alpha1.GatewayParameters) []HelmPort {
+func AppendPortValue(gwPorts []HelmPort, port int32, name string, gwp *v1alpha1.GatewayParameters) []HelmPort {
 	if slices.IndexFunc(gwPorts, func(p HelmPort) bool { return *p.Port == port }) != -1 {
 		return gwPorts
 	}
@@ -82,12 +88,12 @@ func AppendPortValue(gwPorts []HelmPort, port uint16, name string, gwp *v1alpha1
 
 	// Search for static NodePort set from the GatewayParameters spec
 	// If not found the default value of `nil` will not render anything.
-	var nodePort *uint16 = nil
+	var nodePort *int32 = nil
 	if gwp.Spec.GetKube().GetService().GetType() != nil && *(gwp.Spec.GetKube().GetService().GetType()) == corev1.ServiceTypeNodePort {
 		if idx := slices.IndexFunc(gwp.Spec.GetKube().GetService().GetPorts(), func(p v1alpha1.Port) bool {
-			return p.GetPort() == uint16(port)
+			return p.GetPort() == port
 		}); idx != -1 {
-			nodePort = ptr.To(uint16(*gwp.Spec.GetKube().GetService().GetPorts()[idx].GetNodePort()))
+			nodePort = gwp.Spec.GetKube().GetService().GetPorts()[idx].GetNodePort()
 		}
 	}
 	return append(gwPorts, HelmPort{
@@ -285,7 +291,7 @@ func GetAIExtensionValues(config *v1alpha1.AiExtension) (*HelmAIExtension, error
 	}, nil
 }
 
-func GetAgentGatewayValues(config *v1alpha1.AgentGateway) (*HelmAgentGateway, error) {
+func GetAgentgatewayValues(config *v1alpha1.Agentgateway) (*HelmAgentgateway, error) {
 	if config == nil {
 		return nil, nil
 	}
@@ -300,7 +306,7 @@ func GetAgentGatewayValues(config *v1alpha1.AgentGateway) (*HelmAgentGateway, er
 		customConfigMapName = *config.GetCustomConfigMapName()
 	}
 
-	return &HelmAgentGateway{
+	return &HelmAgentgateway{
 		Enabled:             *config.GetEnabled(),
 		LogLevel:            logLevel,
 		CustomConfigMapName: customConfigMapName,

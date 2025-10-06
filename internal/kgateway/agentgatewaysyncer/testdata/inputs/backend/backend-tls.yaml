@@ -34,6 +34,22 @@ spec:
     backendRefs:
     - name: mcp-svc
       port: 80
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /ai-groups
+    backendRefs:
+    - group: gateway.kgateway.dev
+      kind: Backend
+      name: ai-groups
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /openai-single
+    backendRefs:
+    - group: gateway.kgateway.dev
+      kind: Backend
+      name: openai-single
 ---
 apiVersion: v1
 kind: Service
@@ -111,7 +127,22 @@ metadata:
 data:
   ca.crt: |-
     -----BEGIN CERTIFICATE-----
-    MIID...
+    MIIC1jCCAb4CCQCJczLyBBZ1GTANBgkqhkiG9w0BAQsFADAtMRUwEwYDVQQKDAxl
+    eGFtcGxlIEluYy4xFDASBgNVBAMMC2V4YW1wbGUuY29tMB4XDTI1MDMwNzE0Mjkx
+    NloXDTI2MDMwNzE0MjkxNlowLTEVMBMGA1UECgwMZXhhbXBsZSBJbmMuMRQwEgYD
+    VQQDDAtleGFtcGxlLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEB
+    AN0U6TVYECkwqnxh1Kt3dS+LialrXBOXKagj9tE582T6dwmqThD75VZPrNKkRoYO
+    aUzCctfDkUBXRemOTMut7ES5xoAtSAhr2GAnqgM3+yBCLOxooSjEFdlpFT7dhi1w
+    jOPa5iMh6ve/pHuRHvEuaF/J6P8tr83wGutx/xFZVuGA9V1AmBmYhePM+JhdcwaB
+    1+IbJp30gGyPfY4vdRQ9VQWbThE8psEzah+3SgTKJSIT7NAdwiIu3O3rXORbaYYU
+    oycgXUHdOKRbJnbvy3pTnFZJ50sg1HIA4yBdX7c0diy8Zz3Suoondg3DforWr0pB
+    Hs6tySAQoz2RiAqDqcE2rbMCAwEAATANBgkqhkiG9w0BAQsFAAOCAQEAWPkz3dJW
+    b+LFtnv7MlOVM79Y4PqeiHnazP1G9FwnWBHARkjISsax3b0zX8/RHnU83c3tLP5D
+    VwenYb9B9mzXbLiWI8aaX0UXP//D593ti15y0Od7yC2hQszlqIbxYnkFVwXoT9fQ
+    bdQ9OtpCt8EZnKEyCxck+hlKEyYTcH2PqZ7Ndp0M8I2znz3Kut/uYHLUddfoPF/m
+    O0V6fbyB/Mx/G1uLiv/BVpx3AdP+3ygJyKtelXkD+IdlY3y110fzmVr6NgxAbz/h
+    n9KpuK4SEloIycZUaKVXAaX7T42SFYw7msmB+Uu7z5oLOijsjX6TjeofdFBZ/Byl
+    SxODgqhtaPnOxQ==
     -----END CERTIFICATE-----
 ---
 apiVersion: v1
@@ -121,6 +152,109 @@ metadata:
 data:
   ca.crt: |-
     -----BEGIN CERTIFICATE-----
-    MIIE...
+    MIIDFTCCAf2gAwIBAgIUG9Mdv3nOQ2i7v68OgjArU4lhBikwDQYJKoZIhvcNAQEL
+    BQAwFjEUMBIGA1UEAwwLZXhhbXBsZS5jb20wHhcNMjUwNzA3MTA0MDQwWhcNMjYw
+    NzA3MTA0MDQwWjAWMRQwEgYDVQQDDAtleGFtcGxlLmNvbTCCASIwDQYJKoZIhvcN
+    AQEBBQADggEPADCCAQoCggEBANueqwfAApjTfg+nxIoKVK4sK/YlNICvdoEq1UEL
+    StE9wfTv0J27uNIsfpMqCx0Ni9Rjt1hzjunc8HUJDeobMNxGaZmryQofrdJWJ7Uu
+    t5jeLW/w0MelPOfFLsDiM5REy4WuPm2X6v1Z1N3N5GR3UNDOtDtsbjS1momvooLO
+    9WxPIr2cfmPqr81fyyD2ReZsMC/8lVs0PkA9XBplMzpSU53DWl5/Nyh2d1W5ENK0
+    Zw1l5Ze4UGUeohQMa5cD5hmZcBjOeJF8MuSTi3167KSopoqfgHTvC5IsBeWXAyZF
+    81ihFYAq+SbhUZeUlsxc1wveuAdBRzafcYkK47gYmbq1K60CAwEAAaNbMFkwFgYD
+    VR0RBA8wDYILZXhhbXBsZS5jb20wCwYDVR0PBAQDAgeAMBMGA1UdJQQMMAoGCCsG
+    AQUFBwMBMB0GA1UdDgQWBBSoa1Zu2o+pQ6sq2HcOjAglZkp01zANBgkqhkiG9w0B
+    AQsFAAOCAQEADZq1EMw/jMl0z2LpPh8cXbP09BnfXhoFbpL4cFrcBNEyig0oPO0j
+    YN1e4bfURNduFVnC/FDnZhR3FlAt8a6ozJAwmJp+nQCYFoDQwotSx12y5Bc9IXwd
+    BRZaLgHYy2NjGp2UgAya2z23BkUnwOJwJNMCzuGw3pOsmDQY0diR8ZWmEYYEPheW
+    6BVkrikzUNXv3tB8LmWzxV9V3eN71fnP5u39IM/UQsOZGRUow/8tvN2/d0W4dHky
+    t/kdgLKhf4gU2wXq/WbeqxlDSpjo7q/emNl59v1FHeR3eITSSjESU+dQgRsYaGEn
+    SWP+58ApfCcURLpMxUmxkO1ayfecNJbmSQ==
     -----END CERTIFICATE-----
 ---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  labels:
+    app: kgateway
+  name: ai-groups
+spec:
+  type: AI
+  ai:
+    priorityGroups:
+    - providers:
+      - name: openai
+        openai:
+          model: "gpt-4o"
+          authToken:
+            kind: "SecretRef"
+            secretRef:
+              name: openai-primary-secret
+      - name: anthropic
+        anthropic:
+          model: "claude-3-opus-20240229"
+          authToken:
+            kind: "Inline"
+            inline: "sk-anthropic-primary"
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  labels:
+    app: kgateway
+  name: openai-single
+spec:
+  type: AI
+  ai:
+    llm:
+      openai:
+        model: "gpt-4o"
+        authToken:
+          kind: "SecretRef"
+          secretRef:
+            name: openai-primary-secret         
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  labels:
+    app: kgateway
+  name: anthropic-single
+spec:
+  type: AI
+  ai:
+    llm:
+      anthropic:
+        model: "claude-3-opus-20240229"
+        authToken:
+          kind: "Inline"
+          inline: "sk-anthropic-primary"          
+---
+apiVersion: gateway.networking.k8s.io/v1alpha3
+kind: BackendTLSPolicy
+metadata:
+  name: ai-tls
+spec:
+  targetRefs:
+  - name: ai-groups
+    kind: Backend
+    group: gateway.kgateway.dev
+    sectionName: anthropic
+  - name: openai-single
+    kind: Backend
+    group: gateway.kgateway.dev
+  validation:
+    hostname: foo
+    wellKnownCACertificates: System
+---
+apiVersion: gateway.networking.k8s.io/v1alpha3
+kind: BackendTLSPolicy
+metadata:
+  name: ai-tls-all-groups
+spec:
+  targetRefs:
+  - name: ai-groups
+    kind: Backend
+    group: gateway.kgateway.dev
+  validation:
+    hostname: baz
+    wellKnownCACertificates: System    

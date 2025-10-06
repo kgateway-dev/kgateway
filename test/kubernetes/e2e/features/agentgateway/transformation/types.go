@@ -2,6 +2,7 @@ package transformation
 
 import (
 	"path/filepath"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -30,4 +31,7 @@ var (
 		Name:      "gw",
 		Namespace: "default",
 	}
+
+	// timeouts
+	timeout = 1 * time.Minute
 )

@@ -182,7 +182,7 @@ type CustomResponse struct {
 	// +kubebuilder:default=403
 	// +kubebuilder:validation:Minimum=200
 	// +kubebuilder:validation:Maximum=599
-	StatusCode *uint32 `json:"statusCode,omitempty"`
+	StatusCode *int32 `json:"statusCode,omitempty"`
 }
 
 // Moderation configures an external moderation model endpoint. This endpoint evaluates

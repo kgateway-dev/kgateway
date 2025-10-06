@@ -11,10 +11,9 @@ import (
 
 var (
 	setupManifest                         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
-	strictModeInvalidPolicyManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "strict-mode-invalid-policy.yaml")
-	standardModeInvalidPolicyManifest     = strictModeInvalidPolicyManifest
-	strictModeInvalidMatcherManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "strict-mode-invalid-matcher.yaml")
-	strictModeInvalidRouteManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "strict-mode-invalid-route.yaml")
+	routeAttachedInvalidPolicyManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "route-attached-invalid-policy.yaml")
+	invalidMatcherManifest                = filepath.Join(fsutils.MustGetThisDir(), "testdata", "invalid-matcher.yaml")
+	invalidRouteRuleFilterManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "invalid-route-rule-filter.yaml")
 	gatewayWideInvalidPolicyManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway-wide-invalid-policy.yaml")
 	listenerSpecificInvalidPolicyManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-specific-invalid-policy.yaml")
 	listenerMergeBlastRadiusManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-merge-blast-radius.yaml")

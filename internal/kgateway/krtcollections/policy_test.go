@@ -23,12 +23,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
-	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
-	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
 var (
@@ -844,16 +844,16 @@ func preRouteIndex(t test.Failer, inputs []any) *RoutesIndex {
 	policyCol := krttest.GetMockCollection[ir.PolicyWrapper](mock)
 
 	policies := NewPolicyIndex(
-		krtinternal.KrtOptions{},
-		extensionsplug.ContributesPolicies{
+		krtutil.KrtOptions{},
+		sdk.ContributesPolicies{
 			wellknown.TrafficPolicyGVK.GroupKind(): {
 				Policies: policyCol,
 			},
 		},
-		settings.Settings{},
+		apisettings.Settings{},
 	)
 	refgrants := NewRefGrantIndex(krttest.GetMockCollection[*gwv1beta1.ReferenceGrant](mock))
-	upstreams := NewBackendIndex(krtinternal.KrtOptions{}, policies, refgrants)
+	upstreams := NewBackendIndex(krtutil.KrtOptions{}, policies, refgrants)
 	upstreams.AddBackends(svcGk, k8sSvcUpstreams(services))
 	pools := krttest.GetMockCollection[*inf.InferencePool](mock)
 	upstreams.AddBackends(infPoolGk, infPoolUpstreams(pools))
@@ -864,7 +864,7 @@ func preRouteIndex(t test.Failer, inputs []any) *RoutesIndex {
 	tcpproutes := krttest.GetMockCollection[*gwv1a2.TCPRoute](mock)
 	tlsroutes := krttest.GetMockCollection[*gwv1a2.TLSRoute](mock)
 	grpcroutes := krttest.GetMockCollection[*gwv1.GRPCRoute](mock)
-	rtidx := NewRoutesIndex(krtinternal.KrtOptions{}, httproutes, grpcroutes, tcpproutes, tlsroutes, policies, upstreams, refgrants, settings.Settings{})
+	rtidx := NewRoutesIndex(krtutil.KrtOptions{}, httproutes, grpcroutes, tcpproutes, tlsroutes, policies, upstreams, refgrants, apisettings.Settings{})
 	services.WaitUntilSynced(nil)
 	policyCol.WaitUntilSynced(nil)
 	for !rtidx.HasSynced() || !refgrants.HasSynced() || !policyCol.HasSynced() {

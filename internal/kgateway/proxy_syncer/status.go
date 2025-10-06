@@ -36,7 +36,7 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR) reports.ReportMap {
 					continue
 				}
 
-				key := reports.PolicyKey{
+				key := reportssdk.PolicyKey{
 					Group:     polAtt.PolicyRef.Group,
 					Kind:      polAtt.PolicyRef.Kind,
 					Namespace: polAtt.PolicyRef.Namespace,

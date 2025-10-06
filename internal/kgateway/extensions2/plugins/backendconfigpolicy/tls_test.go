@@ -150,7 +150,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 		{
 			name: "file-based TLS config",
 			tlsConfig: &v1alpha1.TLS{
-				TLSFiles: &v1alpha1.TLSFiles{
+				Files: &v1alpha1.TLSFiles{
 					TLSCertificate: ptr.To(CACert),
 					TLSKey:         ptr.To(TLSKey),
 					RootCA:         ptr.To(CACert),
@@ -178,15 +178,15 @@ func TestTranslateTLSConfig(t *testing.T) {
 		{
 			name: "TLS config with parameters",
 			tlsConfig: &v1alpha1.TLS{
-				TLSFiles: &v1alpha1.TLSFiles{
+				Files: &v1alpha1.TLSFiles{
 					TLSCertificate: ptr.To(CACert),
 					TLSKey:         ptr.To(TLSKey),
 				},
-				Parameters: &v1alpha1.Parameters{
-					TLSMinVersion: ptr.To(v1alpha1.TLSVersion1_2),
-					TLSMaxVersion: ptr.To(v1alpha1.TLSVersion1_3),
-					CipherSuites:  []string{"TLS_AES_128_GCM_SHA256"},
-					EcdhCurves:    []string{"X25519"},
+				Parameters: &v1alpha1.TLSParameters{
+					MinVersion:   ptr.To(v1alpha1.TLSVersion1_2),
+					MaxVersion:   ptr.To(v1alpha1.TLSVersion1_3),
+					CipherSuites: []string{"TLS_AES_128_GCM_SHA256"},
+					EcdhCurves:   []string{"X25519"},
 				},
 				AllowRenegotiation: ptr.To(true),
 			},
@@ -208,6 +208,40 @@ func TestTranslateTLSConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "TLS config with only minVersion parameter",
+			tlsConfig: &v1alpha1.TLS{
+				Parameters: &v1alpha1.TLSParameters{
+					MinVersion: ptr.To(v1alpha1.TLSVersion1_2),
+				},
+			},
+			wantErr: false,
+			expected: &envoytlsv3.UpstreamTlsContext{
+				CommonTlsContext: &envoytlsv3.CommonTlsContext{
+					TlsParams: &envoytlsv3.TlsParameters{
+						TlsMinimumProtocolVersion: envoytlsv3.TlsParameters_TLSv1_2,
+						TlsMaximumProtocolVersion: envoytlsv3.TlsParameters_TLS_AUTO,
+					},
+				},
+			},
+		},
+		{
+			name: "TLS config with only maxVersion parameter",
+			tlsConfig: &v1alpha1.TLS{
+				Parameters: &v1alpha1.TLSParameters{
+					MaxVersion: ptr.To(v1alpha1.TLSVersion1_3),
+				},
+			},
+			wantErr: false,
+			expected: &envoytlsv3.UpstreamTlsContext{
+				CommonTlsContext: &envoytlsv3.CommonTlsContext{
+					TlsParams: &envoytlsv3.TlsParameters{
+						TlsMinimumProtocolVersion: envoytlsv3.TlsParameters_TLS_AUTO,
+						TlsMaximumProtocolVersion: envoytlsv3.TlsParameters_TLSv1_3,
+					},
+				},
+			},
+		},
+		{
 			name: "invalid TLS config - missing secret",
 			tlsConfig: &v1alpha1.TLS{
 				SecretRef: &corev1.LocalObjectReference{
@@ -220,7 +254,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 		{
 			name: "should not error with only rootca",
 			tlsConfig: &v1alpha1.TLS{
-				TLSFiles: &v1alpha1.TLSFiles{
+				Files: &v1alpha1.TLSFiles{
 					RootCA: ptr.To(CACert),
 				},
 			},
@@ -238,18 +272,18 @@ func TestTranslateTLSConfig(t *testing.T) {
 		{
 			name: "should error with san and no rootca",
 			tlsConfig: &v1alpha1.TLS{
-				TLSFiles: &v1alpha1.TLSFiles{
+				Files: &v1alpha1.TLSFiles{
 					TLSCertificate: ptr.To(CACert),
 					TLSKey:         ptr.To(TLSKey),
 				},
-				VerifySubjectAltName: []string{"test.example.com"},
+				VerifySubjectAltNames: []string{"test.example.com"},
 			},
 			wantErr: true,
 		},
 		{
 			name: "should error with only cert and no key",
 			tlsConfig: &v1alpha1.TLS{
-				TLSFiles: &v1alpha1.TLSFiles{
+				Files: &v1alpha1.TLSFiles{
 					TLSCertificate: ptr.To(CACert),
 				},
 			},
@@ -258,7 +292,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 		{
 			name: "TLS config with only private key provided",
 			tlsConfig: &v1alpha1.TLS{
-				TLSFiles: &v1alpha1.TLSFiles{
+				Files: &v1alpha1.TLSFiles{
 					TLSKey: ptr.To(TLSKey),
 				},
 			},
@@ -267,13 +301,13 @@ func TestTranslateTLSConfig(t *testing.T) {
 		{
 			name: "SimpleTLS with SAN verification and root CA",
 			tlsConfig: &v1alpha1.TLS{
-				TLSFiles: &v1alpha1.TLSFiles{
+				Files: &v1alpha1.TLSFiles{
 					TLSCertificate: ptr.To(CACert),
 					TLSKey:         ptr.To(TLSKey),
 					RootCA:         ptr.To(CACert),
 				},
-				SimpleTLS:            ptr.To(true),
-				VerifySubjectAltName: []string{"test.example.com"},
+				SimpleTLS:             ptr.To(true),
+				VerifySubjectAltNames: []string{"test.example.com"},
 			},
 			wantErr: false,
 			expected: &envoytlsv3.UpstreamTlsContext{
@@ -293,7 +327,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 		{
 			name: "should only have validation context if simple tls",
 			tlsConfig: &v1alpha1.TLS{
-				TLSFiles: &v1alpha1.TLSFiles{
+				Files: &v1alpha1.TLSFiles{
 					TLSCertificate: ptr.To(CACert),
 					TLSKey:         ptr.To(TLSKey),
 					RootCA:         ptr.To(CACert),
@@ -344,13 +378,13 @@ func TestTranslateTLSConfig(t *testing.T) {
 		{
 			name: "TLS config with SAN verification",
 			tlsConfig: &v1alpha1.TLS{
-				TLSFiles: &v1alpha1.TLSFiles{
+				Files: &v1alpha1.TLSFiles{
 					TLSCertificate: ptr.To(CACert),
 					TLSKey:         ptr.To(TLSKey),
 					RootCA:         ptr.To(CACert),
 				},
-				VerifySubjectAltName: []string{"test.example.com", "api.example.com"},
-				Sni:                  ptr.To("test.example.com"),
+				VerifySubjectAltNames: []string{"test.example.com", "api.example.com"},
+				Sni:                   ptr.To("test.example.com"),
 			},
 			wantErr: false,
 			expected: &envoytlsv3.UpstreamTlsContext{
@@ -392,7 +426,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "TLS config with system ca and san",
 			tlsConfig: &v1alpha1.TLS{
 				WellKnownCACertificates: ptr.To(gwv1alpha3.WellKnownCACertificatesSystem),
-				VerifySubjectAltName:    []string{"test.example.com", "api.example.com"},
+				VerifySubjectAltNames:   []string{"test.example.com", "api.example.com"},
 			},
 			expected: &envoytlsv3.UpstreamTlsContext{
 				CommonTlsContext: &envoytlsv3.CommonTlsContext{

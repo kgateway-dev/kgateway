@@ -36,5 +36,5 @@ providers:
     # Custom port forwarding. This can include non debug ports such as the envoy admin port
     port_forwards:
       - 9092
-      - 9097
+      - 9095
       #- 50100

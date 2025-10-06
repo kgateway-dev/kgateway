@@ -1,0 +1,56 @@
+Clusters:
+- connectTimeout: 5s
+  metadata: {}
+  name: test-backend-plugin_default_example-svc_80
+Statuses:
+  gateways:
+    default/test:
+      conditions:
+      - lastTransitionTime: null
+        message: 'Some listeners are not programmed: http: invalid port 9091 in listener
+          Gateway/default/test/http: port is reserved'
+        reason: ListenersNotValid
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: null
+        message: ""
+        reason: Invalid
+        status: "False"
+        type: Programmed
+      - lastTransitionTime: null
+        message: ""
+        reason: ListenerSetsNotAllowed
+        status: Unknown
+        type: AttachedListenerSets
+      listeners:
+      - attachedRoutes: 0
+        conditions:
+        - lastTransitionTime: null
+          message: 'invalid port 9091 in listener Gateway/default/test/http: port
+            is reserved'
+          reason: Invalid
+          status: "True"
+          type: Conflicted
+        - lastTransitionTime: null
+          message: 'invalid port 9091 in listener Gateway/default/test/http: port
+            is reserved'
+          reason: Invalid
+          status: "False"
+          type: Accepted
+        - lastTransitionTime: null
+          message: 'invalid port 9091 in listener Gateway/default/test/http: port
+            is reserved'
+          reason: Invalid
+          status: "False"
+          type: Programmed
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        name: http
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+        - group: gateway.networking.k8s.io
+          kind: GRPCRoute

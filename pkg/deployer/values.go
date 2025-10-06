@@ -1,6 +1,7 @@
 package deployer
 
 import (
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -19,14 +20,15 @@ type HelmGateway struct {
 	Name             *string `json:"name,omitempty"`
 	GatewayName      *string `json:"gatewayName,omitempty"`
 	GatewayNamespace *string `json:"gatewayNamespace,omitempty"`
+	GatewayClassName *string `json:"gatewayClassName,omitempty"`
 	NameOverride     *string `json:"nameOverride,omitempty"`
 	FullnameOverride *string `json:"fullnameOverride,omitempty"`
 
 	// deployment/service values
-	ReplicaCount   *uint32      `json:"replicaCount,omitempty"`
-	Ports          []HelmPort   `json:"ports,omitempty"`
-	Service        *HelmService `json:"service,omitempty"`
-	FloatingUserId *bool        `json:"floatingUserId,omitempty"`
+	ReplicaCount *uint32                    `json:"replicaCount,omitempty"`
+	Ports        []HelmPort                 `json:"ports,omitempty"`
+	Service      *HelmService               `json:"service,omitempty"`
+	Strategy     *appsv1.DeploymentStrategy `json:"strategy,omitempty"`
 
 	// serviceaccount values
 	ServiceAccount *HelmServiceAccount `json:"serviceAccount,omitempty"`
@@ -39,11 +41,12 @@ type HelmGateway struct {
 	NodeSelector                  map[string]string                 `json:"nodeSelector,omitempty"`
 	Affinity                      *corev1.Affinity                  `json:"affinity,omitempty"`
 	Tolerations                   []corev1.Toleration               `json:"tolerations,omitempty"`
+	StartupProbe                  *corev1.Probe                     `json:"startupProbe,omitempty"`
 	ReadinessProbe                *corev1.Probe                     `json:"readinessProbe,omitempty"`
 	LivenessProbe                 *corev1.Probe                     `json:"livenessProbe,omitempty"`
 	ExtraVolumes                  []corev1.Volume                   `json:"extraVolumes,omitempty"`
 	GracefulShutdown              *v1alpha1.GracefulShutdownSpec    `json:"gracefulShutdown,omitempty"`
-	TerminationGracePeriodSeconds *int                              `json:"terminationGracePeriodSeconds,omitempty"`
+	TerminationGracePeriodSeconds *int64                            `json:"terminationGracePeriodSeconds,omitempty"`
 	TopologySpreadConstraints     []corev1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
 
 	// sds container values
@@ -68,24 +71,27 @@ type HelmGateway struct {
 
 	// xds values
 	Xds *HelmXds `json:"xds,omitempty"`
+	// agentgateway xds values
+	AgwXds *HelmXds `json:"agwXds,omitempty"`
 
 	// stats values
 	Stats *HelmStatsConfig `json:"stats,omitempty"`
 
 	// AI extension values
+	// Deprecated: Envoy-based AI gateway is deprecated in v2.1 and will be removed in v2.2.
 	AIExtension *HelmAIExtension `json:"aiExtension,omitempty"`
 
 	// agentgateway integration values
-	AgentGateway *HelmAgentGateway `json:"agentGateway,omitempty"`
+	Agentgateway *HelmAgentgateway `json:"agentgateway,omitempty"`
 }
 
 // helmPort represents a Gateway Listener port
 type HelmPort struct {
-	Port       *uint16 `json:"port,omitempty"`
+	Port       *int32  `json:"port,omitempty"`
 	Protocol   *string `json:"protocol,omitempty"`
 	Name       *string `json:"name,omitempty"`
-	TargetPort *uint16 `json:"targetPort,omitempty"`
-	NodePort   *uint16 `json:"nodePort,omitempty"`
+	TargetPort *int32  `json:"targetPort,omitempty"`
+	NodePort   *int32  `json:"nodePort,omitempty"`
 }
 
 type HelmImage struct {
@@ -182,7 +188,7 @@ type HelmEndpointPickerExtension struct {
 	PoolNamespace string `json:"poolNamespace"`
 }
 
-type HelmAgentGateway struct {
+type HelmAgentgateway struct {
 	Enabled             bool   `json:"enabled,omitempty"`
 	LogLevel            string `json:"logLevel,omitempty"`
 	CustomConfigMapName string `json:"customConfigMapName,omitempty"`

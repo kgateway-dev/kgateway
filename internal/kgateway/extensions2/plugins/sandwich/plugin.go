@@ -29,7 +29,6 @@
 package sandwich
 
 import (
-	"context"
 	"time"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -38,22 +37,21 @@ import (
 	proxy_protocol "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/listener/proxy_protocol/v3"
 	sfsnetwork "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/set_filter_state/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"istio.io/istio/pilot/pkg/util/protoconv"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
-
-	"istio.io/istio/pilot/pkg/util/protoconv"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
-func NewPlugin() extensionsplug.Plugin {
-	return extensionsplug.Plugin{
-		ContributesPolicies: extensionsplug.ContributesPolicies{
-			SandwichedInboundGK: extensionsplug.PolicyPlugin{
+func NewPlugin() sdk.Plugin {
+	return sdk.Plugin{
+		ContributesPolicies: sdk.ContributesPolicies{
+			SandwichedInboundGK: sdk.PolicyPlugin{
 				Name: "sandwich",
-				NewGatewayTranslationPass: func(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {
+				NewGatewayTranslationPass: func(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
 					// TODO we could read the waypoint-inbound-binding annotation here and set isSandwiched = true
 					// instead of using a policy set by translator?
 					return &sandwichedTranslationPass{
@@ -91,7 +89,7 @@ func (w SandwichedInboundPolicy) Equals(in any) bool {
 
 type sandwichedTranslationPass struct {
 	ir.UnimplementedProxyTranslationPass
-	reporter reports.Reporter
+	reporter reporter.Reporter
 	// isSandwiched is marked true when we process the listener
 	// so that we add the FilterChain level network filters
 	isSandwiched bool
@@ -102,7 +100,7 @@ var _ ir.ProxyTranslationPass = &sandwichedTranslationPass{}
 // ApplyListenerPlugin adds a ProxyProtocol ListenerFilter that
 // 1. Overrides source and destination addresses to be what the zTunnel saw.
 // 2. Grabs the ProxyProtocolPeerTLV (0xD0) used to propagate the client identity validated by zTunnel.
-func (s *sandwichedTranslationPass) ApplyListenerPlugin(ctx context.Context, pCtx *ir.ListenerContext, out *envoylistenerv3.Listener) {
+func (s *sandwichedTranslationPass) ApplyListenerPlugin(pCtx *ir.ListenerContext, out *envoylistenerv3.Listener) {
 	_, ok := pCtx.Policy.(SandwichedInboundPolicy)
 	if !ok {
 		return
@@ -118,7 +116,7 @@ func (s *sandwichedTranslationPass) ApplyListenerPlugin(ctx context.Context, pCt
 // the identity validated by zTunnel readable from Istio RBAC filters.
 // It does this by passing the TLV from PROXY Protocol into filter_state that
 // Istio's RBAC will read from.
-func (s *sandwichedTranslationPass) NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error) {
+func (s *sandwichedTranslationPass) NetworkFilters() ([]plugins.StagedNetworkFilter, error) {
 	if !s.isSandwiched {
 		return nil, nil
 	}

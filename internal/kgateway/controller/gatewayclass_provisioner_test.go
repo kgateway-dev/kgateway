@@ -12,7 +12,6 @@ import (
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
-
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/assertions"
 )
 
@@ -112,7 +111,7 @@ var _ = Describe("GatewayClassProvisioner", func() {
 					if err := k8sClient.Get(ctx, types.NamespacedName{Name: className}, gc); err != nil {
 						return false
 					}
-					if gc.Spec.ControllerName != apiv1.GatewayController(gatewayControllerName) {
+					if gc.Spec.ControllerName != apiv1.GatewayController(gwControllerMap[className]) {
 						return false
 					}
 				}
@@ -230,6 +229,7 @@ var _ = Describe("GatewayClassProvisioner", func() {
 					Annotations: map[string]string{
 						"custom.annotation": "value",
 					},
+					ControllerName: gatewayControllerName,
 				},
 			}
 

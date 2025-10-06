@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	glooruntime "github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/runtime"
+	testruntime "github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/runtime"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
@@ -39,7 +39,7 @@ func InstallMinimalIstio(
 	operatorFileContent := generateIstioOperatorFileContent("", minimalProfile)
 	operatorFile := filepath.Join(os.TempDir(), "istio-operator.yaml")
 
-	err := os.WriteFile(operatorFile, []byte(operatorFileContent), 0o644)
+	err := os.WriteFile(operatorFile, []byte(operatorFileContent), 0o600)
 	if err != nil {
 		return fmt.Errorf("failed to write operator file: %w", err)
 	}
@@ -55,7 +55,7 @@ func InstallRevisionedIstio(
 	operatorFileContent := generateIstioOperatorFileContent(revision, profile)
 	operatorFile := filepath.Join(os.TempDir(), "istio-operator.yaml")
 
-	err := os.WriteFile(operatorFile, []byte(operatorFileContent), 0o644)
+	err := os.WriteFile(operatorFile, []byte(operatorFileContent), 0o600)
 	if err != nil {
 		return fmt.Errorf("failed to write operator file: %w", err)
 	}
@@ -107,11 +107,11 @@ func installIstioOperator(
 }
 
 func getIstioVersion() string {
-	if version := os.Getenv(glooruntime.IstioVersionEnv); version != "" {
+	if version := os.Getenv(testruntime.IstioVersionEnv); version != "" {
 		return version
 	} else {
 		// Fail loudly if ISTIO_VERSION is not set
-		panic(fmt.Sprintf("%s environment variable must be specified to run", glooruntime.IstioVersionEnv))
+		panic(fmt.Sprintf("%s environment variable must be specified to run", testruntime.IstioVersionEnv))
 	}
 }
 
@@ -156,7 +156,7 @@ func downloadIstio(ctx context.Context, version string) (string, error) {
 		url := fmt.Sprintf("%s/%s/istioctl-%s-%s%s.tar.gz", istioctlDownloadFrom, version, version, osName, archModifier)
 
 		// Use curl and tar to download and extract the file
-		cmd := exec.Command("sh", "-c", fmt.Sprintf("curl -sSL %s | tar -xz -C %s", url, binaryDir))
+		cmd := exec.Command("sh", "-c", fmt.Sprintf("curl -sSL %s | tar -xz -C %s", url, binaryDir)) //nolint:gosec // G204: controlled download command for istioctl binary in tests
 		if err := cmd.Run(); err != nil {
 			return "", fmt.Errorf("download and extract istioctl, cmd: %s: %w", cmd.Args, err)
 		}
@@ -180,7 +180,7 @@ func downloadIstio(ctx context.Context, version string) (string, error) {
 
 	cmd := exec.Command("sh", "-")
 
-	cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", glooruntime.IstioVersionEnv, version))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", testruntime.IstioVersionEnv, version))
 	cmd.Dir = installLocation
 
 	cmd.Stdin = res.Body
@@ -196,7 +196,7 @@ func downloadIstio(ctx context.Context, version string) (string, error) {
 
 func UninstallIstio(istioctlBinary, kubeContext string) error {
 	// sh -c yes | istioctl uninstall —purge —context <kube-context>
-	cmd := exec.Command("sh", "-c", fmt.Sprintf("yes | %s uninstall --purge --context %s", istioctlBinary, kubeContext))
+	cmd := exec.Command("sh", "-c", fmt.Sprintf("yes | %s uninstall --purge --context %s", istioctlBinary, kubeContext)) //nolint:gosec // G204: controlled istioctl uninstall command in tests
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {

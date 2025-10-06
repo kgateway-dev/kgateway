@@ -11,7 +11,7 @@ import (
 type SlowStartApplyConfiguration struct {
 	Window           *v1.Duration `json:"window,omitempty"`
 	Aggression       *string      `json:"aggression,omitempty"`
-	MinWeightPercent *uint32      `json:"minWeightPercent,omitempty"`
+	MinWeightPercent *int32       `json:"minWeightPercent,omitempty"`
 }
 
 // SlowStartApplyConfiguration constructs a declarative configuration of the SlowStart type for use with
@@ -39,7 +39,7 @@ func (b *SlowStartApplyConfiguration) WithAggression(value string) *SlowStartApp
 // WithMinWeightPercent sets the MinWeightPercent field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the MinWeightPercent field is set to the value of the last call.
-func (b *SlowStartApplyConfiguration) WithMinWeightPercent(value uint32) *SlowStartApplyConfiguration {
+func (b *SlowStartApplyConfiguration) WithMinWeightPercent(value int32) *SlowStartApplyConfiguration {
 	b.MinWeightPercent = &value
 	return b
 }

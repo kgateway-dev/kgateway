@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"sort"
+	"time"
 
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"istio.io/istio/pkg/kube/krt"
@@ -80,8 +81,9 @@ func startHandlers(ctx context.Context, addHandlers ...func(mux *http.ServeMux, 
 	mux.HandleFunc("/", idx)
 	mux.HandleFunc("/snapshots/", idx)
 	server := &http.Server{
-		Addr:    fmt.Sprintf("localhost:%d", wellknown.KgatewayAdminPort),
-		Handler: mux,
+		Addr:              fmt.Sprintf("localhost:%d", wellknown.KgatewayAdminPort),
+		Handler:           mux,
+		ReadHeaderTimeout: 10 * time.Second,
 	}
 	slog.Info("admin server starting", "address", server.Addr)
 	go func() {

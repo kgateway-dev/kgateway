@@ -23,13 +23,14 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/test/util/retry"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer"
-	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
+	"github.com/kgateway-dev/kgateway/v2/test/envtestutil"
 )
 
 func TestAgentgateway(t *testing.T) {
-	st, err := settings.BuildSettings()
-	st.EnableAgentGateway = true
+	st, err := envtestutil.BuildSettings()
+	st.EnableAgentgateway = true
 	st.EnableInferExt = true
 
 	if err != nil {
@@ -37,10 +38,10 @@ func TestAgentgateway(t *testing.T) {
 	}
 
 	// Use the runScenario approach to test agent gateway scenarios
-	runAgentGatewayScenario(t, "testdata/agentgateway", st)
+	runAgentgatewayScenario(t, "testdata/agentgateway", st)
 }
 
-func runAgentGatewayScenario(t *testing.T, scenarioDir string, globalSettings *settings.Settings) {
+func runAgentgatewayScenario(t *testing.T, scenarioDir string, globalSettings *apisettings.Settings) {
 	setupEnvTestAndRun(t, globalSettings, func(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler, client istiokube.CLIClient, xdsPort int) {
 		// list all yamls in test data
 		files, err := os.ReadDir(scenarioDir)
@@ -59,14 +60,14 @@ func runAgentGatewayScenario(t *testing.T, scenarioDir string, globalSettings *s
 					t.Cleanup(func() {
 						writer.set(nil)
 					})
-					testAgentGatewayScenario(t, ctx, kdbg, client, xdsPort, fullpath)
+					testAgentgatewayScenario(t, ctx, kdbg, client, xdsPort, fullpath)
 				})
 			}
 		}
 	})
 }
 
-func testAgentGatewayScenario(
+func testAgentgatewayScenario(
 	t *testing.T,
 	ctx context.Context,
 	kdbg *krt.DebugHandler,
@@ -105,7 +106,7 @@ func testAgentGatewayScenario(
 	testyaml := strings.ReplaceAll(string(testyamlbytes), gwname, testgwname)
 
 	yamlfile := filepath.Join(t.TempDir(), "test.yaml")
-	os.WriteFile(yamlfile, []byte(testyaml), 0o644)
+	os.WriteFile(yamlfile, []byte(testyaml), 0o600)
 
 	err = client.ApplyYAMLFiles("", yamlfile)
 
@@ -137,9 +138,9 @@ func testAgentGatewayScenario(
 
 	// Use retry to wait for the agent gateway to be ready
 	retry.UntilSuccessOrFail(t, func() error {
-		dumper := newAgentGatewayXdsDumper(t, ctx, xdsPort, testgwname, "gwtest")
+		dumper := newAgentgatewayXdsDumper(t, ctx, xdsPort, testgwname, "gwtest")
 		defer dumper.Close()
-		dump := dumper.DumpAgentGateway(t, ctx)
+		dump := dumper.DumpAgentgateway(t, ctx)
 		if len(dump.Resources) == 0 {
 			return fmt.Errorf("timed out waiting for agent gateway resources")
 		}
@@ -161,7 +162,7 @@ func testAgentGatewayScenario(
 			switch resource.GetKind().(type) {
 			case *api.Resource_Bind:
 				bindCount++
-				t.Logf("ADPBind resource: %+v", resource.GetBind())
+				t.Logf("AgwBind resource: %+v", resource.GetBind())
 			case *api.Resource_Listener:
 				listenerCount++
 				t.Logf("Listener resource: %+v", resource.GetListener())
@@ -238,7 +239,7 @@ func dumpProtoToJSON(t *testing.T, dump agentGwDump, fpre string) {
 		return
 	}
 
-	err = os.WriteFile(jsonFile, jsonData, 0o644)
+	err = os.WriteFile(jsonFile, jsonData, 0o600)
 	if err != nil {
 		t.Logf("failed to write JSON file: %v", err)
 		return
@@ -538,7 +539,7 @@ func compareDumps(actual, expected agentGwDump) error {
 	return nil
 }
 
-func newAgentGatewayXdsDumper(t *testing.T, ctx context.Context, xdsPort int, gwname, gwnamespace string) xdsDumper {
+func newAgentgatewayXdsDumper(t *testing.T, ctx context.Context, xdsPort int, gwname, gwnamespace string) xdsDumper {
 	conn, err := grpc.NewClient(fmt.Sprintf("localhost:%d", xdsPort),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithIdleTimeout(time.Second*10),
@@ -578,7 +579,7 @@ type agentGwDump struct {
 	Addresses []*api.Address
 }
 
-func (x xdsDumper) DumpAgentGateway(t *testing.T, ctx context.Context) agentGwDump {
+func (x xdsDumper) DumpAgentgateway(t *testing.T, ctx context.Context) agentGwDump {
 	// get resources
 	resources := x.GetResources(t, ctx)
 	addresses := x.GetAddress(t, ctx)
@@ -591,7 +592,7 @@ func (x xdsDumper) DumpAgentGateway(t *testing.T, ctx context.Context) agentGwDu
 
 func (x xdsDumper) GetResources(t *testing.T, ctx context.Context) []*api.Resource {
 	dr := proto.Clone(x.dr).(*envoy_service_discovery_v3.DiscoveryRequest)
-	dr.TypeUrl = agentgatewaysyncer.TargetTypeResourceUrl
+	dr.TypeUrl = translator.TargetTypeResourceUrl
 	x.adsClient.Send(dr)
 	var resources []*api.Resource
 	// run this in parallel with a 5s timeout
@@ -605,7 +606,7 @@ func (x xdsDumper) GetResources(t *testing.T, ctx context.Context) []*api.Resour
 				t.Errorf("failed to get response from xds server: %v", err)
 			}
 			t.Logf("got response: %s len: %d", dresp.GetTypeUrl(), len(dresp.GetResources()))
-			if dresp.GetTypeUrl() == agentgatewaysyncer.TargetTypeResourceUrl {
+			if dresp.GetTypeUrl() == translator.TargetTypeResourceUrl {
 				for _, anyResource := range dresp.GetResources() {
 					var resource api.Resource
 					if err := anyResource.UnmarshalTo(&resource); err != nil {
@@ -633,7 +634,7 @@ func (x xdsDumper) GetResources(t *testing.T, ctx context.Context) []*api.Resour
 
 func (x xdsDumper) GetAddress(t *testing.T, ctx context.Context) []*api.Address {
 	dr := proto.Clone(x.dr).(*envoy_service_discovery_v3.DiscoveryRequest)
-	dr.TypeUrl = agentgatewaysyncer.TargetTypeAddressUrl
+	dr.TypeUrl = translator.TargetTypeAddressUrl
 	x.adsClient.Send(dr)
 	var address []*api.Address
 	// run this in parallel with a 5s timeout
@@ -647,7 +648,7 @@ func (x xdsDumper) GetAddress(t *testing.T, ctx context.Context) []*api.Address 
 				t.Errorf("failed to get response from xds server: %v", err)
 			}
 			t.Logf("got address response: %s len: %d", dresp.GetTypeUrl(), len(dresp.GetResources()))
-			if dresp.GetTypeUrl() == agentgatewaysyncer.TargetTypeAddressUrl {
+			if dresp.GetTypeUrl() == translator.TargetTypeAddressUrl {
 				for _, anyResource := range dresp.GetResources() {
 					var resource api.Address
 					if err := anyResource.UnmarshalTo(&resource); err != nil {

@@ -18,14 +18,14 @@ import (
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	kmetrics "github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections/metrics"
-	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
-	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
 // registertypes for common collections
@@ -98,12 +98,12 @@ func registerTypes(_ versioned.Interface) {
 func InitCollections(
 	ctx context.Context,
 	controllerName string,
-	plugins extensionsplug.Plugin,
+	plugins sdk.Plugin,
 	istioClient kube.Client,
 	ourClient versioned.Interface,
 	refgrants *RefGrantIndex,
-	krtopts krtinternal.KrtOptions,
-	globalSettings settings.Settings,
+	krtopts krtutil.KrtOptions,
+	globalSettings apisettings.Settings,
 ) (*GatewayIndex, *RoutesIndex, *BackendIndex, krt.Collection[ir.EndpointsForBackend]) {
 	registerTypes(ourClient)
 
@@ -150,7 +150,7 @@ func InitCollections(
 	return gateways, routes, backendIndex, endpointIRs
 }
 
-func initBackends(plugins extensionsplug.Plugin, backendIndex *BackendIndex) {
+func initBackends(plugins sdk.Plugin, backendIndex *BackendIndex) {
 	for gk, plugin := range plugins.ContributesBackends {
 		if plugin.Backends != nil {
 			backendIndex.AddBackends(gk, plugin.Backends, plugin.AliasKinds...)
@@ -158,7 +158,7 @@ func initBackends(plugins extensionsplug.Plugin, backendIndex *BackendIndex) {
 	}
 }
 
-func initEndpoints(plugins extensionsplug.Plugin, krtopts krtinternal.KrtOptions) krt.Collection[ir.EndpointsForBackend] {
+func initEndpoints(plugins sdk.Plugin, krtopts krtutil.KrtOptions) krt.Collection[ir.EndpointsForBackend] {
 	allEndpoints := []krt.Collection[ir.EndpointsForBackend]{}
 	for _, plugin := range plugins.ContributesBackends {
 		if plugin.Endpoints != nil {

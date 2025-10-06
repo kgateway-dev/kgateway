@@ -1,0 +1,171 @@
+---
+# Source: kgateway-proxy/templates/gateway/agent-gateway-deployment.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: gw
+  labels:
+    kgateway: kube-gateway
+    helm.sh/chart: kgateway-proxy-1.0.0-ci1
+    app.kubernetes.io/name: gw
+    app.kubernetes.io/instance: gw
+    gateway.networking.k8s.io/gateway-name: gw
+    app.kubernetes.io/version: "1.0.0-ci1"
+    gateway.networking.k8s.io/gateway-class-name: agentgateway
+    app.kubernetes.io/managed-by: Helm
+automountServiceAccountToken: false
+---
+# Source: kgateway-proxy/templates/gateway/agent-gateway-deployment.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gw
+  labels:
+    kgateway: kube-gateway
+    helm.sh/chart: kgateway-proxy-1.0.0-ci1
+    app.kubernetes.io/name: gw
+    app.kubernetes.io/instance: gw
+    gateway.networking.k8s.io/gateway-name: gw
+    app.kubernetes.io/version: "1.0.0-ci1"
+    gateway.networking.k8s.io/gateway-class-name: agentgateway
+    app.kubernetes.io/managed-by: Helm
+data:
+  config.yaml: |
+    config: {}
+---
+# Source: kgateway-proxy/templates/gateway/agent-gateway-deployment.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: gw
+  labels:
+    kgateway: kube-gateway
+    helm.sh/chart: kgateway-proxy-1.0.0-ci1
+    app.kubernetes.io/name: gw
+    app.kubernetes.io/instance: gw
+    gateway.networking.k8s.io/gateway-name: gw
+    app.kubernetes.io/version: "1.0.0-ci1"
+    gateway.networking.k8s.io/gateway-class-name: agentgateway
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: LoadBalancer
+  ports:
+    - name: listener-8080
+      protocol: TCP
+      targetPort: 8080
+      port: 8080
+  selector:
+    app.kubernetes.io/name: gw
+    app.kubernetes.io/instance: gw
+    gateway.networking.k8s.io/gateway-name: gw
+---
+# Source: kgateway-proxy/templates/gateway/agent-gateway-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gw
+  labels:
+    kgateway: kube-gateway
+    helm.sh/chart: kgateway-proxy-1.0.0-ci1
+    app.kubernetes.io/name: gw
+    app.kubernetes.io/instance: gw
+    gateway.networking.k8s.io/gateway-name: gw
+    app.kubernetes.io/version: "1.0.0-ci1"
+    gateway.networking.k8s.io/gateway-class-name: agentgateway
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: gw
+      app.kubernetes.io/instance: gw
+      gateway.networking.k8s.io/gateway-name: gw
+  template:
+    metadata:
+      annotations:
+      labels:
+        app.kubernetes.io/name: gw
+        app.kubernetes.io/instance: gw
+        gateway.networking.k8s.io/gateway-name: gw
+        gateway.networking.k8s.io/gateway-class-name: agentgateway
+    spec:
+      serviceAccountName: gw
+      containers:
+        - name: agent-gateway
+          image: "ghcr.io/agentgateway/agentgateway:0.9.1-alpha.852c313eda0a85f9666799e86912a43313455641"
+          startupProbe:
+            failureThreshold: 60
+            httpGet:
+              path: /healthz/ready
+              port: 15021
+            periodSeconds: 1
+            successThreshold: 1
+            timeoutSeconds: 2
+          readinessProbe:
+            httpGet:
+              path: /healthz/ready
+              port: 15021
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - wget --post-data "" -O /dev/null 127.0.0.1:15000/quitquitquit; sleep 10
+          args:
+            - -f
+            - /config/config.yaml
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: GW_NAME
+              value: gw
+            - name: RUST_BACKTRACE
+              value: "1"
+            - name: RUST_LOG
+              value: info
+            - name: XDS_ADDRESS
+              value: "http://xds.cluster.local:9978"
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: GATEWAY
+              value: gw
+
+
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+            # Make /tmp writeable, needed for pprof
+            - name: tmp
+              mountPath: /tmp
+            - name: xds-token
+              mountPath: /var/run/secrets/xds-tokens
+              readOnly: true
+      volumes:
+        - name: config-volume
+          configMap:
+            name: gw
+        - name: xds-token
+          projected:
+            sources:
+            - serviceAccountToken:
+                audience: kgateway
+                expirationSeconds: 43200
+                path: xds-token
+        - name: tmp
+          emptyDir: {}
+      terminationGracePeriodSeconds: 60

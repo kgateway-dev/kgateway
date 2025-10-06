@@ -48,9 +48,15 @@ func constructBuffer(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) 
 			Disabled: true,
 		}
 	} else {
+		// Validate buffer size is within uint32 range
+		bufferSize := spec.Buffer.MaxRequestSize.Value()
+		if bufferSize < 0 || bufferSize > math.MaxUint32 {
+			// Log error and use max uint32 value as fallback
+			bufferSize = math.MaxUint32
+		}
 		perRoute.Override = &bufferv3.BufferPerRoute_Buffer{
 			Buffer: &bufferv3.Buffer{
-				MaxRequestBytes: &wrapperspb.UInt32Value{Value: uint32(spec.Buffer.MaxRequestSize.Value())},
+				MaxRequestBytes: &wrapperspb.UInt32Value{Value: uint32(bufferSize)}, //nolint:gosec // G115: validated above
 			},
 		}
 	}

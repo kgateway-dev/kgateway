@@ -32,18 +32,19 @@ import (
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	sdkfilters "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
+	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
@@ -189,7 +190,7 @@ func (p *TrafficPolicy) Validate() error {
 }
 
 type trafficPolicyPluginGwPass struct {
-	reporter reports.Reporter
+	reporter reporter.Reporter
 	ir.UnimplementedProxyTranslationPass
 
 	setTransformationInChain map[string]bool // TODO(nfuden): make this multi stage
@@ -224,7 +225,7 @@ func registerTypes(ourCli versioned.Interface) {
 	)
 }
 
-func NewPlugin(ctx context.Context, commoncol *common.CommonCollections, mergeSettings string) extensionsplug.Plugin {
+func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, mergeSettings string, v validator.Validator) sdk.Plugin {
 	registerTypes(commoncol.OurClient)
 
 	useRustformations = commoncol.Settings.UseRustFormations // stash the state of the env setup for rustformation usage
@@ -236,7 +237,6 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections, mergeSe
 	gk := wellknown.TrafficPolicyGVK.GroupKind()
 
 	constructor := NewTrafficPolicyConstructor(ctx, commoncol)
-	v := validator.New()
 
 	// TrafficPolicy IR will have TypedConfig -> implement backendroute method to add prompt guard, etc.
 	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.TrafficPolicy) *ir.PolicyWrapper {
@@ -248,7 +248,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections, mergeSe
 		}
 
 		policyIR, errors := constructor.ConstructIR(krtctx, policyCR)
-		if err := validateWithRouteReplacementMode(ctx, policyIR, v, commoncol.Settings.RouteReplacementMode); err != nil {
+		if err := validateWithValidationLevel(ctx, policyIR, v, commoncol.Settings.ValidationMode); err != nil {
 			logger.Error("validation failed", "policy", policyCR.Name, "error", err)
 			errors = append(errors, err)
 		}
@@ -268,8 +268,8 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections, mergeSe
 		return pol
 	})
 
-	return extensionsplug.Plugin{
-		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
+	return sdk.Plugin{
+		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			wellknown.TrafficPolicyGVK.GroupKind(): {
 				NewGatewayTranslationPass: NewGatewayTranslationPass,
 				Policies:                  policyCol,
@@ -284,7 +284,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections, mergeSe
 	}
 }
 
-func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {
+func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
 	return &trafficPolicyPluginGwPass{
 		reporter:                 reporter,
 		setTransformationInChain: make(map[string]bool),
@@ -296,8 +296,7 @@ func (p *TrafficPolicy) Name() string {
 }
 
 func (p *trafficPolicyPluginGwPass) ApplyRouteConfigPlugin(
-	ctx context.Context,
-	pCtx *ir.RouteConfigContext,
+	pCtx *pluginsdkir.RouteConfigContext,
 	out *envoyroutev3.RouteConfiguration,
 ) {
 	policy, ok := pCtx.Policy.(*TrafficPolicy)
@@ -309,8 +308,7 @@ func (p *trafficPolicyPluginGwPass) ApplyRouteConfigPlugin(
 }
 
 func (p *trafficPolicyPluginGwPass) ApplyVhostPlugin(
-	ctx context.Context,
-	pCtx *ir.VirtualHostContext,
+	pCtx *pluginsdkir.VirtualHostContext,
 	out *envoyroutev3.VirtualHost,
 ) {
 	policy, ok := pCtx.Policy.(*TrafficPolicy)
@@ -323,7 +321,7 @@ func (p *trafficPolicyPluginGwPass) ApplyVhostPlugin(
 }
 
 // called 0 or more times
-func (p *trafficPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext, outputRoute *envoyroutev3.Route) error {
+func (p *trafficPolicyPluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, outputRoute *envoyroutev3.Route) error {
 	policy, ok := pCtx.Policy.(*TrafficPolicy)
 	if !ok {
 		return nil
@@ -335,7 +333,7 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.
 
 		// Hack around not having route level.
 		// Note this is really really bad and rather fragile due to listener draining behaviors
-		routeHash := strconv.Itoa(int(utils.HashProto(outputRoute)))
+		routeHash := strconv.Itoa(int(utils.HashProto(outputRoute))) //nolint:gosec // G115: hash value used as string key, truncation is acceptable
 		if p.rustformationStash == nil {
 			p.rustformationStash = make(map[string]string)
 		}
@@ -415,9 +413,8 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.
 }
 
 func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(
-	ctx context.Context,
-	policy ir.PolicyIR,
-	pCtx *ir.RouteBackendContext,
+	policy pluginsdkir.PolicyIR,
+	pCtx *pluginsdkir.RouteBackendContext,
 ) error {
 	rtPolicy, ok := policy.(*TrafficPolicy)
 	if !ok {
@@ -436,7 +433,7 @@ func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(
 // called 1 time per listener
 // if a plugin emits new filters, they must be with a plugin unique name.
 // any filter returned from route config must be disabled, so it doesnt impact other routes.
-func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
+func (p *trafficPolicyPluginGwPass) HttpFilters(fcc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
 	filters := []plugins.StagedHttpFilter{}
 
 	// Add global ExtProc disable filter when there are providers
@@ -540,10 +537,13 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filt
 		}
 
 		// add the specific auth filter
+		// Note that although this configures the "envoy.filters.http.ext_authz" filter, we still want
+		// the ordering to be during the AuthNStage because we are using this filter for authentication
+		// purposes
 		extauthName := extAuthFilterName(provider.Name)
 		stagedExtAuthFilter := sdkfilters.MustNewStagedFilterWithWeight(extauthName,
 			extAuthFilter,
-			plugins.DuringStage(plugins.AuthZStage),
+			plugins.DuringStage(plugins.AuthNStage),
 			provider.Extension.PrecedenceWeight,
 		)
 

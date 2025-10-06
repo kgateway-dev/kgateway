@@ -27,13 +27,13 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 const statefulSessionFilterName = "envoy.filters.http.stateful_session"
@@ -99,17 +99,17 @@ func (d *builtinPlugin) Equals(in any) bool {
 
 type builtinPluginGwPass struct {
 	ir.UnimplementedProxyTranslationPass
-	reporter            reports.Reporter
+	reporter            reporter.Reporter
 	hasCorsPolicy       map[string]bool
 	needStatefulSession map[string]bool
 }
 
-func (p *builtinPluginGwPass) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoyroutev3.Route) error {
+func (p *builtinPluginGwPass) ApplyForBackend(pCtx *pluginsdkir.RouteBackendContext, in pluginsdkir.HttpBackend, out *envoyroutev3.Route) error {
 	// no op
 	return nil
 }
 
-func (p *builtinPluginGwPass) ApplyHCM(ctx context.Context, pCtx *ir.HcmContext, out *envoyhttp.HttpConnectionManager) error {
+func (p *builtinPluginGwPass) ApplyHCM(pCtx *pluginsdkir.HcmContext, out *envoyhttp.HttpConnectionManager) error {
 	// no-op
 	return nil
 }
@@ -136,9 +136,9 @@ func NewBuiltInRuleIr(rule gwv1.HTTPRouteRule) ir.PolicyIR {
 	}
 }
 
-func NewBuiltinPlugin(ctx context.Context) extensionsplug.Plugin {
-	return extensionsplug.Plugin{
-		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
+func NewBuiltinPlugin(ctx context.Context) sdk.Plugin {
+	return sdk.Plugin{
+		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			pluginsdkir.VirtualBuiltInGK: {
 				NewGatewayTranslationPass: NewGatewayTranslationPass,
 			},
@@ -262,7 +262,7 @@ func convertRetry(
 	}
 
 	if retry.Attempts != nil {
-		in.Attempts = int32(*retry.Attempts)
+		in.Attempts = int32(*retry.Attempts) //nolint:gosec // G115: retry attempts are small positive integers
 	}
 
 	if retry.Backoff != nil {
@@ -396,7 +396,7 @@ func translatePort(port *gwv1.PortNumber) uint32 {
 	if port == nil {
 		return 0
 	}
-	return uint32(*port)
+	return uint32(*port) //nolint:gosec // G115: Gateway API PortNumber is int32, always valid port range
 }
 
 func translateHostname(hostname *gwv1.PreciseHostname) string {
@@ -536,7 +536,7 @@ func getFractionPercent(f gwv1.HTTPRequestMirrorFilter) *envoycorev3.RuntimeFrac
 	if f.Percent != nil {
 		return &envoycorev3.RuntimeFractionalPercent{
 			DefaultValue: &envoytype.FractionalPercent{
-				Numerator:   uint32(*f.Percent),
+				Numerator:   uint32(*f.Percent), //nolint:gosec // G115: percentage values are always non-negative and bounded (0-100)
 				Denominator: envoytype.FractionalPercent_HUNDRED,
 			},
 		}
@@ -563,7 +563,7 @@ func toEnvoyPercentage(percentage float64) *envoytype.FractionalPercent {
 	}
 }
 
-func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {
+func NewGatewayTranslationPass(tctx pluginsdkir.GwTranslationCtx, reporter reporter.Reporter) pluginsdkir.ProxyTranslationPass {
 	return &builtinPluginGwPass{
 		reporter:            reporter,
 		hasCorsPolicy:       make(map[string]bool),
@@ -581,7 +581,7 @@ func (p *builtinPlugin) Name() string {
 // and may override the current policy on the output route if pCtx.InheritedPolicyPriority allows it
 // Currently, ApplyForRoute is invoked per policy in order of priority from highest(child route policies)
 // to lowest(parent route policies).
-func (p *builtinPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext, outputRoute *envoyroutev3.Route) error {
+func (p *builtinPluginGwPass) ApplyForRoute(pCtx *pluginsdkir.RouteContext, outputRoute *envoyroutev3.Route) error {
 	pol, ok := pCtx.Policy.(*builtinPlugin)
 	if !ok {
 		return nil
@@ -605,9 +605,8 @@ func (p *builtinPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteC
 }
 
 func (p *builtinPluginGwPass) ApplyForRouteBackend(
-	ctx context.Context,
-	policy ir.PolicyIR,
-	pCtx *ir.RouteBackendContext,
+	policy pluginsdkir.PolicyIR,
+	pCtx *pluginsdkir.RouteBackendContext,
 ) error {
 	inPolicy, ok := policy.(*builtinPlugin)
 	if !ok {
@@ -634,7 +633,7 @@ func (p *builtinPluginGwPass) ApplyForRouteBackend(
 	return nil
 }
 
-func (p *builtinPluginGwPass) HttpFilters(ctx context.Context, fcc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
+func (p *builtinPluginGwPass) HttpFilters(fcc pluginsdkir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
 	builtinStaged := []plugins.StagedHttpFilter{}
 
 	// If there is a cors policy for route rule or backendRef, add the cors http filter to the chain

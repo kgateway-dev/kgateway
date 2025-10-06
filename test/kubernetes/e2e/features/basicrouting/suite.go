@@ -22,7 +22,8 @@ var _ e2e.NewSuiteFunc = NewTestingSuite
 
 var (
 	// manifests
-	exampleServiceManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "service.yaml")
+	serviceManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "service.yaml")
+	headlessServiceManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "headless-service.yaml")
 	gatewayWithRouteManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway-with-route.yaml")
 
 	// objects
@@ -35,12 +36,15 @@ var (
 	setup = base.TestCase{
 		Manifests: []string{
 			testdefaults.CurlPodManifest,
-			exampleServiceManifest,
+			gatewayWithRouteManifest,
 		},
 	}
 	testCases = map[string]*base.TestCase{
 		"TestGatewayWithRoute": {
-			Manifests: []string{gatewayWithRouteManifest},
+			Manifests: []string{serviceManifest},
+		},
+		"TestHeadlessService": {
+			Manifests: []string{headlessServiceManifest},
 		},
 	}
 
@@ -60,7 +64,14 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 func (s *testingSuite) TestGatewayWithRoute() {
-	// Should have a successful response
+	s.assertSuccessfulResponse()
+}
+
+func (s *testingSuite) TestHeadlessService() {
+	s.assertSuccessfulResponse()
+}
+
+func (s *testingSuite) assertSuccessfulResponse() {
 	for _, port := range []int{listenerHighPort, listenerLowPort} {
 		s.TestInstallation.Assertions.AssertEventualCurlResponse(
 			s.Ctx,

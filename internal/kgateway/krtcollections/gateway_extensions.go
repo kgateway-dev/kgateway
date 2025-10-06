@@ -15,9 +15,9 @@ import (
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 )
 
@@ -25,7 +25,7 @@ func NewGatewayExtensionsCollection(
 	ctx context.Context,
 	client kube.Client,
 	ourClient versioned.Interface,
-	krtOpts krtinternal.KrtOptions,
+	krtOpts krtutil.KrtOptions,
 ) krt.Collection[ir.GatewayExtension] {
 	kubeclient.Register[*v1alpha1.GatewayExtension](
 		wellknown.GatewayExtensionGVR,

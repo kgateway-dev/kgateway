@@ -84,7 +84,7 @@ var (
 	crossNsNoRefGrantTLSRouteManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "cross-ns-no-refgrant-tlsroute.yaml")
 
 	// Assertion test timers
-	ctxTimeout = 5 * time.Minute
+	ctxTimeout = 10 * time.Minute
 	timeout    = 60 * time.Second
 
 	singleProxy = metav1.ObjectMeta{

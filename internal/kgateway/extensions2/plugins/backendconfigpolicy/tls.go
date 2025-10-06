@@ -80,8 +80,8 @@ func extractTLSData(tlsConfig *v1alpha1.TLS, secretGetter SecretGetter, namespac
 		if err := extractFromSecret(tlsConfig.SecretRef, secretGetter, namespace, data); err != nil {
 			return nil, err
 		}
-	} else if tlsConfig.TLSFiles != nil {
-		extractFromFiles(tlsConfig.TLSFiles, data)
+	} else if tlsConfig.Files != nil {
+		extractFromFiles(tlsConfig.Files, data)
 	}
 
 	return data, nil
@@ -142,7 +142,7 @@ func buildCertificateContext(tlsData *tlsData, tlsContext *envoytlsv3.CommonTlsC
 }
 
 func buildValidationContext(tlsData *tlsData, tlsConfig *v1alpha1.TLS, tlsContext *envoytlsv3.CommonTlsContext) error {
-	sanMatchers := verifySanListToTypedMatchSanList(tlsConfig.VerifySubjectAltName)
+	sanMatchers := verifySanListToTypedMatchSanList(tlsConfig.VerifySubjectAltNames)
 
 	// If the user opted to use the system CA bundle, configure a CombinedValidationContext
 	// that references the SDS secret for the system CA set, and attach SAN matchers if any.
@@ -226,16 +226,19 @@ func translateTLSConfig(
 	}, nil
 }
 
-func parseTLSParameters(tlsParameters *v1alpha1.Parameters) (*envoytlsv3.TlsParameters, error) {
+func parseTLSParameters(tlsParameters *v1alpha1.TLSParameters) (*envoytlsv3.TlsParameters, error) {
 	if tlsParameters == nil {
 		return nil, nil
 	}
 
-	tlsMaxVersion, err := parseTLSVersion(tlsParameters.TLSMaxVersion)
+	maxVersion := ptr.Deref(tlsParameters.MaxVersion, v1alpha1.TLSVersionAUTO)
+	minVersion := ptr.Deref(tlsParameters.MinVersion, v1alpha1.TLSVersionAUTO)
+
+	tlsMaxVersion, err := parseTLSVersion(&maxVersion)
 	if err != nil {
 		return nil, err
 	}
-	tlsMinVersion, err := parseTLSVersion(tlsParameters.TLSMinVersion)
+	tlsMinVersion, err := parseTLSVersion(&minVersion)
 	if err != nil {
 		return nil, err
 	}

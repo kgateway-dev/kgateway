@@ -23,19 +23,17 @@ metadata:
 spec:
   type: AI
   ai:
-    multipool:
-      priorities:
-        - pool:
-            - hostOverride:
-                host: model-failover.default.svc.cluster.local
-                port: 443
-              provider:
-                openai:
-                  authToken:
-                    kind: SecretRef
-                    secretRef:
-                      name: openai-secret-one
-                  model: gpt-4o
+    priorityGroups:
+    - providers:
+      - name: openai
+        host: model-failover.default.svc.cluster.local
+        port: 443
+        openai:
+          authToken:
+            kind: SecretRef
+            secretRef:
+              name: openai-secret-one
+          model: gpt-4o
 ---
 apiVersion: v1
 kind: Secret

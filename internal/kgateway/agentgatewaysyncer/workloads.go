@@ -8,7 +8,7 @@ import (
 	discovery "k8s.io/api/discovery/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 
 	"istio.io/api/annotation"
@@ -45,7 +45,7 @@ func (a *index) WorkloadsCollection(
 	nodes krt.Collection[Node],
 	workloadServices krt.Collection[ServiceInfo],
 	endpointSlices krt.Collection[*discovery.EndpointSlice],
-	krtopts krtinternal.KrtOptions,
+	krtopts krtutil.KrtOptions,
 ) krt.Collection[WorkloadInfo] {
 	WorkloadServicesNamespaceIndex := krt.NewNamespaceIndex(workloadServices)
 	EndpointSlicesByIPIndex := endpointSliceAddressIndex(endpointSlices)
@@ -296,13 +296,13 @@ func endpointSlicesBuilder(
 			// Endpoint slice port has name (service port name, not containerPort) and port (targetPort)
 			// We need to join with the Service port list to translate the port name to
 			for _, svcPort := range svc.Service.Ports {
-				portName := svc.PortNames[int32(svcPort.ServicePort)]
+				portName := svc.PortNames[int32(svcPort.ServicePort)] //nolint:gosec // G115: svcPort.ServicePort is uint32 representing a port number, safe to convert to int32
 				if portName.PortName != *p.Name {
 					continue
 				}
 				pl.Ports = append(pl.Ports, &api.Port{
 					ServicePort: svcPort.ServicePort,
-					TargetPort:  uint32(*p.Port),
+					TargetPort:  uint32(*p.Port), //nolint:gosec // G115: p.Port is int32 representing a port number, safe to convert to uint32
 				})
 				break
 			}
@@ -420,14 +420,14 @@ func constructServices(p *corev1.Pod, services []ServiceInfo) map[string]*api.Po
 			targetPort := port.TargetPort
 			// The svc.Ports represents the api.Service, which drops the port name info and just has numeric target Port.
 			// TargetPort can be 0 which indicates its a named port. Check if its a named port and replace with the real targetPort if so.
-			if named, f := svc.PortNames[int32(port.ServicePort)]; f && named.TargetPortName != "" {
+			if named, f := svc.PortNames[int32(port.ServicePort)]; f && named.TargetPortName != "" { //nolint:gosec // G115: port.ServicePort is uint32 representing a port number, safe to convert to int32
 				// Pods only match on TargetPort names
 				tp, ok := FindPortName(p, named.TargetPortName)
 				if !ok {
 					// Port not present for this workload. Exclude the port entirely
 					continue
 				}
-				targetPort = uint32(tp)
+				targetPort = uint32(tp) //nolint:gosec // G115: tp is int32 representing a port number, safe to convert to uint32
 			}
 
 			pl.Ports = append(pl.Ports, &api.Port{

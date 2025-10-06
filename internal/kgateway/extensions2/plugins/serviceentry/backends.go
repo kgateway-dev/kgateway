@@ -4,9 +4,9 @@ import (
 	"context"
 	"log/slog"
 
-	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 
 	"istio.io/api/annotation"
 	networking "istio.io/api/networking/v1alpha3"
@@ -73,7 +73,7 @@ func (s *serviceEntryPlugin) initServiceEntryBackend(ctx context.Context, in ir.
 func backendsCollections(
 	logger *slog.Logger,
 	ServiceEntries krt.Collection[*networkingclient.ServiceEntry],
-	krtOpts krtinternal.KrtOptions,
+	krtOpts krtutil.KrtOptions,
 	aliaser Aliaser,
 ) krt.Collection[ir.BackendObjectIR] {
 	return krt.NewManyCollection(ServiceEntries, func(ctx krt.HandlerContext, se *networkingclient.ServiceEntry) []ir.BackendObjectIR {
@@ -91,7 +91,7 @@ func backendsCollections(
 				out = append(out, BuildServiceEntryBackendObjectIR(
 					se,
 					hostname,
-					int32(svcPort.GetNumber()),
+					int32(svcPort.GetNumber()), //nolint:gosec // G115: ServiceEntry port numbers are always valid port range (1-65535)
 					svcPort.GetProtocol(),
 					aliaser,
 				))

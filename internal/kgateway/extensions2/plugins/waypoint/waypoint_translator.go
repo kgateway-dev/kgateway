@@ -16,7 +16,7 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/sandwich"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/waypoint/waypointquery"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -24,8 +24,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/httproute"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
-	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/stringutils"
 )
@@ -51,13 +51,13 @@ type waypointTranslator struct {
 	bindIpv6      bool
 }
 
-var _ extensionsplug.KGwTranslator = &waypointTranslator{}
+var _ sdk.KGwTranslator = &waypointTranslator{}
 
 func NewTranslator(
 	queries query.GatewayQueries,
 	waypointQueries waypointquery.WaypointQueries,
-	settings settings.Settings,
-) extensionsplug.KGwTranslator {
+	settings apisettings.Settings,
+) sdk.KGwTranslator {
 	return &waypointTranslator{
 		queries:         queries,
 		waypointQueries: waypointQueries,
@@ -67,7 +67,7 @@ func NewTranslator(
 	}
 }
 
-// Translate implements extensionsplug.KGwTranslator.
+// Translate implements sdk.KGwTranslator.
 func (w *waypointTranslator) Translate(
 	kctx krt.HandlerContext,
 	ctx context.Context,
@@ -197,7 +197,7 @@ func (w *waypointTranslator) buildInboundListener(gw *ir.Gateway, reporter repor
 	return &ir.ListenerIR{
 		Name:              "proxy_protocol_inbound",
 		BindAddress:       bindAddr,
-		BindPort:          uint32(gatewayListener.Port),
+		BindPort:          uint32(gatewayListener.Port), //nolint:gosec // G115: Gateway API listener port is int32, always in valid range
 		PolicyAncestorRef: gatewayListener.PolicyAncestorRef,
 
 		AttachedPolicies: ir.AttachedPolicies{
@@ -379,7 +379,7 @@ func initServiceChain(
 	}
 	match := ir.FilterChainMatch{
 		PrefixRanges:    prefixRanges,
-		DestinationPort: &wrapperspb.UInt32Value{Value: uint32(port.Port)},
+		DestinationPort: &wrapperspb.UInt32Value{Value: uint32(port.Port)}, //nolint:gosec // G115: service port is int32, always in valid range
 	}
 
 	fcCommon := ir.FilterChainCommon{

@@ -25,10 +25,10 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	kwellknown "github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 )
 
 var ErrUnresolvedBackendRef = errors.New("unresolved backend reference")
@@ -44,7 +44,7 @@ const serviceNameKey = "service.name"
 func convertAccessLogConfig(
 	ctx context.Context,
 	policy *v1alpha1.HTTPListenerPolicy,
-	commoncol *common.CommonCollections,
+	commoncol *collections.CommonCollections,
 	krtctx krt.HandlerContext,
 	parentSrc ir.ObjectSource,
 ) ([]proto.Message, error) {
@@ -155,10 +155,14 @@ func createFileAccessLog(fileSink *v1alpha1.FileSink) (proto.Message, error) {
 			},
 		}
 	case fileSink.JsonFormat != nil:
+		jsonStruct, err := convertJsonFormat(fileSink.JsonFormat)
+		if err != nil {
+			return nil, err
+		}
 		fileCfg.AccessLogFormat = &envoyalfile.FileAccessLog_LogFormat{
 			LogFormat: &envoycorev3.SubstitutionFormatString{
 				Format: &envoycorev3.SubstitutionFormatString_JsonFormat{
-					JsonFormat: convertJsonFormat(fileSink.JsonFormat),
+					JsonFormat: jsonStruct,
 				},
 				Formatters: formatterExtensions,
 			},
@@ -194,19 +198,25 @@ func addAccessLogFilter(accessLogCfg *envoyaccesslogv3.AccessLog, filter *v1alph
 
 	switch {
 	case filter.OrFilter != nil:
-		filters, err = translateOrFilters(filter.OrFilter)
+		filters, err = translateFilters(filter.OrFilter)
 		if err != nil {
 			return err
 		}
-		accessLogCfg.GetFilter().FilterSpecifier = &envoyaccesslogv3.AccessLogFilter_OrFilter{
+		if accessLogCfg.Filter == nil {
+			accessLogCfg.Filter = &envoyaccesslogv3.AccessLogFilter{}
+		}
+		accessLogCfg.Filter.FilterSpecifier = &envoyaccesslogv3.AccessLogFilter_OrFilter{
 			OrFilter: &envoyaccesslogv3.OrFilter{Filters: filters},
 		}
 	case filter.AndFilter != nil:
-		filters, err = translateOrFilters(filter.AndFilter)
+		filters, err = translateFilters(filter.AndFilter)
 		if err != nil {
 			return err
 		}
-		accessLogCfg.GetFilter().FilterSpecifier = &envoyaccesslogv3.AccessLogFilter_AndFilter{
+		if accessLogCfg.Filter == nil {
+			accessLogCfg.Filter = &envoyaccesslogv3.AccessLogFilter{}
+		}
+		accessLogCfg.Filter.FilterSpecifier = &envoyaccesslogv3.AccessLogFilter_AndFilter{
 			AndFilter: &envoyaccesslogv3.AndFilter{Filters: filters},
 		}
 	case filter.FilterType != nil:
@@ -219,8 +229,8 @@ func addAccessLogFilter(accessLogCfg *envoyaccesslogv3.AccessLog, filter *v1alph
 	return nil
 }
 
-// translateOrFilters translates a slice of filter types
-func translateOrFilters(filters []v1alpha1.FilterType) ([]*envoyaccesslogv3.AccessLogFilter, error) {
+// translateFilters translates a slice of filter types
+func translateFilters(filters []v1alpha1.FilterType) ([]*envoyaccesslogv3.AccessLogFilter, error) {
 	result := make([]*envoyaccesslogv3.AccessLogFilter, 0, len(filters))
 	for _, filter := range filters {
 		cfg, err := translateFilter(&filter)
@@ -247,7 +257,7 @@ func translateFilter(filter *v1alpha1.FilterType) (*envoyaccesslogv3.AccessLogFi
 					Comparison: &envoyaccesslogv3.ComparisonFilter{
 						Op: op,
 						Value: &envoycorev3.RuntimeUInt32{
-							DefaultValue: filter.StatusCodeFilter.Value,
+							DefaultValue: uint32(filter.StatusCodeFilter.Value), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 						},
 					},
 				},
@@ -266,7 +276,7 @@ func translateFilter(filter *v1alpha1.FilterType) (*envoyaccesslogv3.AccessLogFi
 					Comparison: &envoyaccesslogv3.ComparisonFilter{
 						Op: op,
 						Value: &envoycorev3.RuntimeUInt32{
-							DefaultValue: filter.DurationFilter.Value,
+							DefaultValue: uint32(filter.DurationFilter.Value), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 						},
 					},
 				},
@@ -384,22 +394,22 @@ func createHeaderMatchSpecifier(header gwv1.HTTPHeaderMatch) *envoyroutev3.Heade
 	}
 }
 
-func convertJsonFormat(jsonFormat *runtime.RawExtension) *structpb.Struct {
+func convertJsonFormat(jsonFormat *runtime.RawExtension) (*structpb.Struct, error) {
 	if jsonFormat == nil {
-		return nil
+		return nil, nil
 	}
 
-	var formatMap map[string]interface{}
+	var formatMap map[string]any
 	if err := json.Unmarshal(jsonFormat.Raw, &formatMap); err != nil {
-		return nil
+		return nil, fmt.Errorf("invalid access log jsonFormat: %w", err)
 	}
 
 	structVal, err := structpb.NewStruct(formatMap)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("invalid access log jsonFormat: %w", err)
 	}
 
-	return structVal
+	return structVal, nil
 }
 
 func generateCommonAccessLogGrpcConfig(grpcService v1alpha1.CommonAccessLogGrpcService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (*envoygrpc.CommonGrpcAccessLogConfig, error) {
@@ -557,9 +567,9 @@ func toEnvoyComparisonOpType(op v1alpha1.Op) (envoyaccesslogv3.ComparisonFilter_
 	case v1alpha1.EQ:
 		return envoyaccesslogv3.ComparisonFilter_EQ, nil
 	case v1alpha1.GE:
-		return envoyaccesslogv3.ComparisonFilter_EQ, nil
+		return envoyaccesslogv3.ComparisonFilter_GE, nil
 	case v1alpha1.LE:
-		return envoyaccesslogv3.ComparisonFilter_EQ, nil
+		return envoyaccesslogv3.ComparisonFilter_LE, nil
 	default:
 		return 0, fmt.Errorf("unknown OP (%s)", op)
 	}

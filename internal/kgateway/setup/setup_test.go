@@ -45,8 +45,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/yaml"
 
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
-	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/test/envtestutil"
 )
@@ -130,7 +130,7 @@ func init() {
 }
 
 func TestServiceEntry(t *testing.T) {
-	st, err := settings.BuildSettings()
+	st, err := envtestutil.BuildSettings()
 	if err != nil {
 		t.Fatalf("can't get settings %v", err)
 	}
@@ -141,7 +141,7 @@ func TestServiceEntry(t *testing.T) {
 }
 
 func TestDestinationRule(t *testing.T) {
-	st, err := settings.BuildSettings()
+	st, err := envtestutil.BuildSettings()
 	st.EnableIstioIntegration = true
 	if err != nil {
 		t.Fatalf("can't get settings %v", err)
@@ -150,7 +150,7 @@ func TestDestinationRule(t *testing.T) {
 }
 
 func TestTrafficDistribution(t *testing.T) {
-	st, err := settings.BuildSettings()
+	st, err := envtestutil.BuildSettings()
 	if err != nil {
 		t.Fatalf("can't get settings %v", err)
 	}
@@ -161,7 +161,7 @@ func TestTrafficDistribution(t *testing.T) {
 }
 
 func TestWithStandardSettings(t *testing.T) {
-	st, err := settings.BuildSettings()
+	st, err := envtestutil.BuildSettings()
 	if err != nil {
 		t.Fatalf("can't get settings %v", err)
 	}
@@ -169,7 +169,7 @@ func TestWithStandardSettings(t *testing.T) {
 }
 
 func TestWithIstioAutomtlsSettings(t *testing.T) {
-	st, err := settings.BuildSettings()
+	st, err := envtestutil.BuildSettings()
 	st.EnableIstioIntegration = true
 	st.EnableIstioAutoMtls = true
 	if err != nil {
@@ -179,7 +179,7 @@ func TestWithIstioAutomtlsSettings(t *testing.T) {
 }
 
 func TestWithBindIpv6(t *testing.T) {
-	st, err := settings.BuildSettings()
+	st, err := envtestutil.BuildSettings()
 	st.ListenerBindIpv6 = true
 	if err != nil {
 		t.Fatalf("can't get settings %v", err)
@@ -188,7 +188,7 @@ func TestWithBindIpv6(t *testing.T) {
 }
 
 func TestWithBindIpv4(t *testing.T) {
-	st, err := settings.BuildSettings()
+	st, err := envtestutil.BuildSettings()
 	st.ListenerBindIpv6 = false
 	if err != nil {
 		t.Fatalf("can't get settings %v", err)
@@ -197,17 +197,17 @@ func TestWithBindIpv4(t *testing.T) {
 }
 
 func TestWithAutoDns(t *testing.T) {
-	st, err := settings.BuildSettings()
+	st, err := envtestutil.BuildSettings()
 	if err != nil {
 		t.Fatalf("can't get settings %v", err)
 	}
-	st.DnsLookupFamily = settings.DnsLookupFamilyAuto
+	st.DnsLookupFamily = apisettings.DnsLookupFamilyAuto
 
 	runScenario(t, "testdata/autodns", st)
 }
 
 func TestWithInferenceAPI(t *testing.T) {
-	st, err := settings.BuildSettings()
+	st, err := envtestutil.BuildSettings()
 	if err != nil {
 		t.Fatalf("can't get settings %v", err)
 	}
@@ -218,7 +218,7 @@ func TestWithInferenceAPI(t *testing.T) {
 }
 
 func TestPolicyUpdate(t *testing.T) {
-	st, err := settings.BuildSettings()
+	st, err := envtestutil.BuildSettings()
 	if err != nil {
 		t.Fatalf("can't get settings %v", err)
 	}
@@ -247,10 +247,10 @@ spec:
   transformation:
     response:
       set:
-      - name: x-solo-response
-        value: '{{ request_header("x-solo-request") }}'
+      - name: x-kgateway-response
+        value: '{{ request_header("x-kgateway-request") }}'
       remove:
-      - x-solo-request`, `apiVersion: gateway.networking.k8s.io/v1beta1
+      - x-kgateway-request`, `apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
 metadata:
   name: happypath
@@ -282,10 +282,10 @@ spec:
   transformation:
     response:
       set:
-      - name: x-solo-response
-        value: '{{ request_header("x-solo-request123") }}'
+      - name: x-kgateway-response
+        value: '{{ request_header("x-kgateway-request123") }}'
       remove:
-      - x-solo-request321`)
+      - x-kgateway-request321`)
 
 		time.Sleep(time.Second / 2)
 
@@ -307,15 +307,15 @@ spec:
 		if len(pfc) != 1 {
 			t.Fatalf("expected 1 filter config, got %d", len(pfc))
 		}
-		if !bytes.Contains(slices.Collect(maps.Values(pfc))[0].Value, []byte("x-solo-request321")) {
-			t.Fatalf("expected filter config to contain x-solo-request321")
+		if !bytes.Contains(slices.Collect(maps.Values(pfc))[0].Value, []byte("x-kgateway-request321")) {
+			t.Fatalf("expected filter config to contain x-kgateway-request321")
 		}
 
 		t.Logf("%s finished", t.Name())
 	})
 }
 
-func runScenario(t *testing.T, scenarioDir string, globalSettings *settings.Settings) {
+func runScenario(t *testing.T, scenarioDir string, globalSettings *apisettings.Settings) {
 	setupEnvTestAndRun(t, globalSettings, func(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler, client istiokube.CLIClient, xdsPort int) {
 		// list all yamls in test data
 		files, err := os.ReadDir(scenarioDir)
@@ -345,7 +345,7 @@ func runScenario(t *testing.T, scenarioDir string, globalSettings *settings.Sett
 	})
 }
 
-func setupEnvTestAndRun(t *testing.T, globalSettings *settings.Settings, run func(t *testing.T,
+func setupEnvTestAndRun(t *testing.T, globalSettings *apisettings.Settings, run func(t *testing.T,
 	ctx context.Context,
 	kdbg *krt.DebugHandler,
 	client istiokube.CLIClient,
@@ -368,13 +368,19 @@ func setupEnvTestAndRun(t *testing.T, globalSettings *settings.Settings, run fun
 		ControlPlaneStopTimeout: time.Millisecond,
 		// web hook to add cluster ips to services
 	}
-	envtestutil.RunController(t, logger, globalSettings, testEnv,
+	envtestutil.RunController(
+		t,
+		logger,
+		globalSettings,
+		testEnv,
 		nil,
 		[][]string{
 			{"default", "testdata/setup_yaml/setup.yaml"},
 			{"gwtest", "testdata/setup_yaml/pods.yaml"},
 		},
-		run)
+		nil, // no tests need a validator right now.
+		run,
+	)
 }
 
 func testScenario(
@@ -421,7 +427,7 @@ func testScenario(
 	testyaml := strings.ReplaceAll(string(testyamlbytes), gwname, testgwname)
 
 	yamlfile := filepath.Join(t.TempDir(), "test.yaml")
-	os.WriteFile(yamlfile, []byte(testyaml), 0o644)
+	os.WriteFile(yamlfile, []byte(testyaml), 0o600)
 
 	err = client.ApplyYAMLFiles("", yamlfile)
 
@@ -470,7 +476,7 @@ func testScenario(
 			if err != nil {
 				return fmt.Errorf("failed to serialize xdsDump: %v", err)
 			}
-			os.WriteFile(fout, d, 0o644)
+			os.WriteFile(fout, d, 0o600)
 			return fmt.Errorf("wrote out file - nothing to test")
 		}
 		return dump.Compare(expectedXdsDump)

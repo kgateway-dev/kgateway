@@ -12,14 +12,15 @@ import (
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/endpoints"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	gwtranslator "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
@@ -28,25 +29,27 @@ var logger = logging.New("translator")
 
 // Combines all the translators needed for xDS translation.
 type CombinedTranslator struct {
-	extensions extensionsplug.Plugin
-	commonCols *common.CommonCollections
+	extensions sdk.Plugin
+	commonCols *collections.CommonCollections
+	validator  validator.Validator
 
 	waitForSync []cache.InformerSynced
 
-	gwtranslator      extensionsplug.KGwTranslator
+	gwtranslator      sdk.KGwTranslator
 	irtranslator      *irtranslator.Translator
 	backendTranslator *irtranslator.BackendTranslator
-	endpointPlugins   []extensionsplug.EndpointPlugin
+	endpointPlugins   []sdk.EndpointPlugin
 
 	logger *slog.Logger
 }
 
 func NewCombinedTranslator(
 	ctx context.Context,
-	extensions extensionsplug.Plugin,
-	commonCols *common.CommonCollections,
+	extensions sdk.Plugin,
+	commonCols *collections.CommonCollections,
+	validator validator.Validator,
 ) *CombinedTranslator {
-	var endpointPlugins []extensionsplug.EndpointPlugin
+	var endpointPlugins []sdk.EndpointPlugin
 	for _, ext := range extensions.ContributesPolicies {
 		if ext.PerClientProcessEndpoints != nil {
 			endpointPlugins = append(endpointPlugins, ext.PerClientProcessEndpoints)
@@ -57,6 +60,7 @@ func NewCombinedTranslator(
 		extensions:      extensions,
 		endpointPlugins: endpointPlugins,
 		logger:          logger,
+		validator:       validator,
 		waitForSync:     []cache.InformerSynced{extensions.HasSynced},
 	}
 }
@@ -69,14 +73,16 @@ func (s *CombinedTranslator) Init(ctx context.Context) {
 
 	s.gwtranslator = gwtranslator.NewTranslator(queries, listenerTranslatorConfig)
 	s.irtranslator = &irtranslator.Translator{
-		ContributedPolicies:  s.extensions.ContributesPolicies,
-		RouteReplacementMode: s.commonCols.Settings.RouteReplacementMode,
-		Validator:            validator.New(), // TODO: define this once for RDS and TP plugin.
+		ContributedPolicies: s.extensions.ContributesPolicies,
+		ValidationLevel:     s.commonCols.Settings.ValidationMode,
+		Validator:           s.validator,
 	}
 	s.backendTranslator = &irtranslator.BackendTranslator{
 		ContributedBackends: make(map[schema.GroupKind]ir.BackendInit),
 		ContributedPolicies: s.extensions.ContributesPolicies,
 		CommonCols:          s.commonCols,
+		Validator:           s.validator,
+		Mode:                s.commonCols.Settings.ValidationMode,
 	}
 	for k, up := range s.extensions.ContributesBackends {
 		s.backendTranslator.ContributedBackends[k] = up.BackendInit
@@ -98,11 +104,11 @@ func (s *CombinedTranslator) HasSynced() bool {
 }
 
 // buildProxy performs translation of a kube Gateway -> GatewayIR
-func (s *CombinedTranslator) buildProxy(kctx krt.HandlerContext, ctx context.Context, gw ir.Gateway, r reports.Reporter) *ir.GatewayIR {
+func (s *CombinedTranslator) buildProxy(kctx krt.HandlerContext, ctx context.Context, gw ir.Gateway, r reporter.Reporter) *ir.GatewayIR {
 	stopwatch := utils.NewTranslatorStopWatch("CombinedTranslator")
 	stopwatch.Start()
 
-	var gatewayTranslator extensionsplug.KGwTranslator = s.gwtranslator
+	var gatewayTranslator sdk.KGwTranslator = s.gwtranslator
 	if s.extensions.ContributesGwTranslator != nil {
 		maybeGatewayTranslator := s.extensions.ContributesGwTranslator(gw.Obj)
 		if maybeGatewayTranslator != nil {
@@ -120,7 +126,7 @@ func (s *CombinedTranslator) buildProxy(kctx krt.HandlerContext, ctx context.Con
 	return proxy
 }
 
-func (s *CombinedTranslator) GetUpstreamTranslator() *irtranslator.BackendTranslator {
+func (s *CombinedTranslator) GetBackendTranslator() *irtranslator.BackendTranslator {
 	return s.backendTranslator
 }
 

@@ -21,7 +21,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 var logger = logging.New("pluginsdk/ir")
@@ -121,7 +121,6 @@ type ProxyTranslationPass interface {
 	//	Name() string
 	// called 1 time for each listener
 	ApplyListenerPlugin(
-		ctx context.Context,
 		pCtx *ListenerContext,
 		out *envoylistenerv3.Listener,
 	)
@@ -129,7 +128,6 @@ type ProxyTranslationPass interface {
 	// called 1 time for all the routes in a filter chain. Use this to set default PerFilterConfig
 	// No policy is provided here.
 	ApplyRouteConfigPlugin(
-		ctx context.Context,
 		pCtx *RouteConfigContext,
 		out *envoyroutev3.RouteConfiguration,
 	)
@@ -139,7 +137,6 @@ type ProxyTranslationPass interface {
 	// Note: TypedFilterConfig should be applied in the pCtx and is shared between ApplyForRoute, ApplyForBackend
 	// and ApplyForRouteBacken (do not apply on the output route directly)
 	ApplyForBackend(
-		ctx context.Context,
 		pCtx *RouteBackendContext,
 		in HttpBackend,
 		out *envoyroutev3.Route,
@@ -149,7 +146,6 @@ type ProxyTranslationPass interface {
 	// Note: TypedFilterConfig should be applied in the pCtx and is shared between ApplyForRoute, ApplyForBackend
 	// and ApplyForRouteBackend
 	ApplyForRouteBackend(
-		ctx context.Context,
 		policy PolicyIR,
 		pCtx *RouteBackendContext,
 	) error
@@ -161,107 +157,105 @@ type ProxyTranslationPass interface {
 	// Note: TypedFilterConfig should be applied in the pCtx and is shared between ApplyForRoute, ApplyForBackend
 	// and ApplyForRouteBacken (do not apply on the output route directly)
 	ApplyForRoute(
-		ctx context.Context,
 		pCtx *RouteContext,
 		out *envoyroutev3.Route,
 	) error
 
 	ApplyVhostPlugin(
-		ctx context.Context,
 		pCtx *VirtualHostContext,
 		out *envoyroutev3.VirtualHost,
 	)
 
-	NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error)
+	NetworkFilters() ([]plugins.StagedNetworkFilter, error)
 
 	// called 1 time per filter-chain.
 	// If a plugin emits new filters, they must be with a plugin unique name.
 	// filters added to impact specific routes should be disabled on the listener level, so they don't impact other routes.
-	HttpFilters(ctx context.Context, fc FilterChainCommon) ([]plugins.StagedHttpFilter, error)
+	HttpFilters(fc FilterChainCommon) ([]plugins.StagedHttpFilter, error)
 
 	// called 1 time per filter chain after listeners and allows tweaking HCM settings.
-	ApplyHCM(ctx context.Context,
+	ApplyHCM(
 		pCtx *HcmContext,
 		out *envoy_hcm.HttpConnectionManager) error
 
 	// called 1 time (per envoy proxy). replaces GeneratedResources and allows adding clusters to the envoy.
-	ResourcesToAdd(ctx context.Context) Resources
+	ResourcesToAdd() Resources
 }
 
-type AgentGatewayRouteContext struct {
+type AgentgatewayRouteContext struct {
 	Rule *gwv1.HTTPRouteRule
 }
 
-type AgentGatewayTranslationBackendContext struct {
+type AgentgatewayTranslationBackendContext struct {
 	Backend        *BackendObjectIR
 	GatewayContext GatewayContext
 }
 
-type AgentGatewayTranslationPass interface {
+type AgentgatewayTranslationPass interface {
 	// ApplyForRoute processes route-level configuration
-	ApplyForRoute(pCtx *AgentGatewayRouteContext, out *api.Route) error
+	ApplyForRoute(pCtx *AgentgatewayRouteContext, out *api.Route) error
 
 	// ApplyForBackend processes backend-level configuration for each backend referenced in routes
-	ApplyForBackend(pCtx *AgentGatewayTranslationBackendContext, out *api.Backend) error
+	ApplyForBackend(pCtx *AgentgatewayTranslationBackendContext, out *api.Backend) error
 
 	// ApplyForRouteBackend processes route-specific backend configuration
-	ApplyForRouteBackend(policy PolicyIR, pCtx *AgentGatewayTranslationBackendContext) error
+	ApplyForRouteBackend(policy PolicyIR, pCtx *AgentgatewayTranslationBackendContext) error
 }
 
 type UnimplementedProxyTranslationPass struct{}
 
 var _ ProxyTranslationPass = UnimplementedProxyTranslationPass{}
 
-type UnimplementedAgentGatewayTranslationPass struct{}
+type UnimplementedAgentgatewayTranslationPass struct{}
 
-var _ AgentGatewayTranslationPass = UnimplementedAgentGatewayTranslationPass{}
+var _ AgentgatewayTranslationPass = UnimplementedAgentgatewayTranslationPass{}
 
-func (s UnimplementedAgentGatewayTranslationPass) ApplyForRoute(pCtx *AgentGatewayRouteContext, out *api.Route) error {
+func (s UnimplementedAgentgatewayTranslationPass) ApplyForRoute(pCtx *AgentgatewayRouteContext, out *api.Route) error {
 	return nil
 }
 
-func (s UnimplementedAgentGatewayTranslationPass) ApplyForBackend(pCtx *AgentGatewayTranslationBackendContext, out *api.Backend) error {
+func (s UnimplementedAgentgatewayTranslationPass) ApplyForBackend(pCtx *AgentgatewayTranslationBackendContext, out *api.Backend) error {
 	return nil
 }
 
-func (s UnimplementedAgentGatewayTranslationPass) ApplyForRouteBackend(policy PolicyIR, pCtx *AgentGatewayTranslationBackendContext) error {
+func (s UnimplementedAgentgatewayTranslationPass) ApplyForRouteBackend(policy PolicyIR, pCtx *AgentgatewayTranslationBackendContext) error {
 	return nil
 }
 
-func (s UnimplementedProxyTranslationPass) ApplyListenerPlugin(ctx context.Context, pCtx *ListenerContext, out *envoylistenerv3.Listener) {
+func (s UnimplementedProxyTranslationPass) ApplyListenerPlugin(pCtx *ListenerContext, out *envoylistenerv3.Listener) {
 }
 
-func (s UnimplementedProxyTranslationPass) ApplyHCM(ctx context.Context, pCtx *HcmContext, out *envoy_hcm.HttpConnectionManager) error {
+func (s UnimplementedProxyTranslationPass) ApplyHCM(pCtx *HcmContext, out *envoy_hcm.HttpConnectionManager) error {
 	return nil
 }
 
-func (s UnimplementedProxyTranslationPass) ApplyForBackend(ctx context.Context, pCtx *RouteBackendContext, in HttpBackend, out *envoyroutev3.Route) error {
+func (s UnimplementedProxyTranslationPass) ApplyForBackend(pCtx *RouteBackendContext, in HttpBackend, out *envoyroutev3.Route) error {
 	return nil
 }
 
-func (s UnimplementedProxyTranslationPass) ApplyRouteConfigPlugin(ctx context.Context, pCtx *RouteConfigContext, out *envoyroutev3.RouteConfiguration) {
+func (s UnimplementedProxyTranslationPass) ApplyRouteConfigPlugin(pCtx *RouteConfigContext, out *envoyroutev3.RouteConfiguration) {
 }
 
-func (s UnimplementedProxyTranslationPass) ApplyVhostPlugin(ctx context.Context, pCtx *VirtualHostContext, out *envoyroutev3.VirtualHost) {
+func (s UnimplementedProxyTranslationPass) ApplyVhostPlugin(pCtx *VirtualHostContext, out *envoyroutev3.VirtualHost) {
 }
 
-func (s UnimplementedProxyTranslationPass) ApplyForRoute(ctx context.Context, pCtx *RouteContext, out *envoyroutev3.Route) error {
+func (s UnimplementedProxyTranslationPass) ApplyForRoute(pCtx *RouteContext, out *envoyroutev3.Route) error {
 	return nil
 }
 
-func (s UnimplementedProxyTranslationPass) ApplyForRouteBackend(ctx context.Context, policy PolicyIR, pCtx *RouteBackendContext) error {
+func (s UnimplementedProxyTranslationPass) ApplyForRouteBackend(policy PolicyIR, pCtx *RouteBackendContext) error {
 	return nil
 }
 
-func (s UnimplementedProxyTranslationPass) HttpFilters(ctx context.Context, fc FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
+func (s UnimplementedProxyTranslationPass) HttpFilters(fc FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
 	return nil, nil
 }
 
-func (s UnimplementedProxyTranslationPass) NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error) {
+func (s UnimplementedProxyTranslationPass) NetworkFilters() ([]plugins.StagedNetworkFilter, error) {
 	return nil, nil
 }
 
-func (s UnimplementedProxyTranslationPass) ResourcesToAdd(ctx context.Context) Resources {
+func (s UnimplementedProxyTranslationPass) ResourcesToAdd() Resources {
 	return Resources{}
 }
 
@@ -344,7 +338,7 @@ var ErrNotAttachable = fmt.Errorf("policy is not attachable to this object")
 
 type PolicyRun interface {
 	// Allocate state for single listener+rotue translation pass.
-	NewGatewayTranslationPass(ctx context.Context, tctx GwTranslationCtx, reporter reports.Reporter) ProxyTranslationPass
+	NewGatewayTranslationPass(tctx GwTranslationCtx, reporter reporter.Reporter) ProxyTranslationPass
 	// Process cluster for a backend
 	ProcessBackend(ctx context.Context, in BackendObjectIR, out *envoyclusterv3.Cluster) error
 }

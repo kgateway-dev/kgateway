@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/utils/ptr"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -33,13 +34,11 @@ func TestProcessAIBackend_OpenAI(t *testing.T) {
 	model := "gpt-4"
 	aiBackend := &v1alpha1.AIBackend{
 		LLM: &v1alpha1.LLMProvider{
-			Provider: v1alpha1.SupportedLLMProvider{
-				OpenAI: &v1alpha1.OpenAIConfig{
-					Model: &model,
-					AuthToken: v1alpha1.SingleAuthToken{
-						Kind:   v1alpha1.Inline,
-						Inline: ptr.To("test-token"),
-					},
+			OpenAI: &v1alpha1.OpenAIConfig{
+				Model: &model,
+				AuthToken: v1alpha1.SingleAuthToken{
+					Kind:   v1alpha1.Inline,
+					Inline: ptr.To("test-token"),
 				},
 			},
 		},
@@ -101,13 +100,11 @@ func TestProcessAIBackend_Anthropic(t *testing.T) {
 	model := "claude-3-opus-20240229"
 	aiBackend := &v1alpha1.AIBackend{
 		LLM: &v1alpha1.LLMProvider{
-			Provider: v1alpha1.SupportedLLMProvider{
-				Anthropic: &v1alpha1.AnthropicConfig{
-					Model: &model,
-					AuthToken: v1alpha1.SingleAuthToken{
-						Kind:   v1alpha1.Inline,
-						Inline: ptr.To("anthropic-token"),
-					},
+			Anthropic: &v1alpha1.AnthropicConfig{
+				Model: &model,
+				AuthToken: v1alpha1.SingleAuthToken{
+					Kind:   v1alpha1.Inline,
+					Inline: ptr.To("anthropic-token"),
 				},
 			},
 		},
@@ -149,15 +146,13 @@ func TestProcessAIBackend_AzureOpenAI(t *testing.T) {
 
 	aiBackend := &v1alpha1.AIBackend{
 		LLM: &v1alpha1.LLMProvider{
-			Provider: v1alpha1.SupportedLLMProvider{
-				AzureOpenAI: &v1alpha1.AzureOpenAIConfig{
-					Endpoint:       "myendpoint.openai.azure.com",
-					DeploymentName: "gpt-4-deployment",
-					ApiVersion:     "2023-05-15",
-					AuthToken: v1alpha1.SingleAuthToken{
-						Kind:   v1alpha1.Inline,
-						Inline: ptr.To("azure-token"),
-					},
+			AzureOpenAI: &v1alpha1.AzureOpenAIConfig{
+				Endpoint:       "myendpoint.openai.azure.com",
+				DeploymentName: "gpt-4-deployment",
+				ApiVersion:     "2023-05-15",
+				AuthToken: v1alpha1.SingleAuthToken{
+					Kind:   v1alpha1.Inline,
+					Inline: ptr.To("azure-token"),
 				},
 			},
 		},
@@ -200,14 +195,12 @@ func TestProcessAIBackend_Gemini(t *testing.T) {
 
 	aiBackend := &v1alpha1.AIBackend{
 		LLM: &v1alpha1.LLMProvider{
-			Provider: v1alpha1.SupportedLLMProvider{
-				Gemini: &v1alpha1.GeminiConfig{
-					Model:      "gemini-pro",
-					ApiVersion: "v1",
-					AuthToken: v1alpha1.SingleAuthToken{
-						Kind:   v1alpha1.Inline,
-						Inline: ptr.To("gemini-token"),
-					},
+			Gemini: &v1alpha1.GeminiConfig{
+				Model:      "gemini-pro",
+				ApiVersion: "v1",
+				AuthToken: v1alpha1.SingleAuthToken{
+					Kind:   v1alpha1.Inline,
+					Inline: ptr.To("gemini-token"),
 				},
 			},
 		},
@@ -250,17 +243,15 @@ func TestProcessAIBackend_VertexAI(t *testing.T) {
 
 	aiBackend := &v1alpha1.AIBackend{
 		LLM: &v1alpha1.LLMProvider{
-			Provider: v1alpha1.SupportedLLMProvider{
-				VertexAI: &v1alpha1.VertexAIConfig{
-					Model:      "gemini-1.5-pro",
-					ApiVersion: "v1",
-					Location:   "us-central1",
-					ProjectId:  "my-project",
-					Publisher:  v1alpha1.GOOGLE,
-					AuthToken: v1alpha1.SingleAuthToken{
-						Kind:   v1alpha1.Inline,
-						Inline: ptr.To("vertex-token"),
-					},
+			VertexAI: &v1alpha1.VertexAIConfig{
+				Model:      "gemini-1.5-pro",
+				ApiVersion: "v1",
+				Location:   "us-central1",
+				ProjectId:  "my-project",
+				Publisher:  v1alpha1.GOOGLE,
+				AuthToken: v1alpha1.SingleAuthToken{
+					Kind:   v1alpha1.Inline,
+					Inline: ptr.To("vertex-token"),
 				},
 			},
 		},
@@ -310,22 +301,18 @@ func TestProcessAIBackend_CustomURL(t *testing.T) {
 	header := "Authorization"
 	aiBackend := &v1alpha1.AIBackend{
 		LLM: &v1alpha1.LLMProvider{
-			HostOverride: &v1alpha1.Host{
-				Host: "custom-openai-host.example.com",
-				Port: 8443,
-			},
-			PathOverride: &v1alpha1.PathOverride{FullPath: &path},
-			AuthHeaderOverride: &v1alpha1.AuthHeaderOverride{
+			Host: ptr.To("custom-openai-host.example.com"),
+			Port: ptr.To(gwv1.PortNumber(8443)),
+			Path: &v1alpha1.PathOverride{Full: &path},
+			AuthHeader: &v1alpha1.AuthHeader{
 				Prefix:     &prefix,
 				HeaderName: &header,
 			},
-			Provider: v1alpha1.SupportedLLMProvider{
-				OpenAI: &v1alpha1.OpenAIConfig{
-					Model: &model,
-					AuthToken: v1alpha1.SingleAuthToken{
-						Kind:   v1alpha1.Inline,
-						Inline: ptr.To("test-token"),
-					},
+			OpenAI: &v1alpha1.OpenAIConfig{
+				Model: &model,
+				AuthToken: v1alpha1.SingleAuthToken{
+					Kind:   v1alpha1.Inline,
+					Inline: ptr.To("test-token"),
 				},
 			},
 		},
@@ -363,33 +350,33 @@ func TestProcessAIBackend_MultiPool(t *testing.T) {
 	model2 := "gpt-3.5-turbo"
 
 	aiBackend := &v1alpha1.AIBackend{
-		MultiPool: &v1alpha1.MultiPoolConfig{
-			Priorities: []v1alpha1.Priority{
-				{
-					Pool: []v1alpha1.LLMProvider{
-						{
-							Provider: v1alpha1.SupportedLLMProvider{
-								OpenAI: &v1alpha1.OpenAIConfig{
-									Model: &model1,
-									AuthToken: v1alpha1.SingleAuthToken{
-										Kind:   v1alpha1.Inline,
-										Inline: ptr.To("primary-token"),
-									},
+		PriorityGroups: []v1alpha1.PriorityGroup{
+			{
+				Providers: []v1alpha1.NamedLLMProvider{
+					{
+						Name: "openai-primary",
+						LLMProvider: v1alpha1.LLMProvider{
+							OpenAI: &v1alpha1.OpenAIConfig{
+								Model: &model1,
+								AuthToken: v1alpha1.SingleAuthToken{
+									Kind:   v1alpha1.Inline,
+									Inline: ptr.To("primary-token"),
 								},
 							},
 						},
 					},
 				},
-				{
-					Pool: []v1alpha1.LLMProvider{
-						{
-							Provider: v1alpha1.SupportedLLMProvider{
-								OpenAI: &v1alpha1.OpenAIConfig{
-									Model: &model2,
-									AuthToken: v1alpha1.SingleAuthToken{
-										Kind:   v1alpha1.Inline,
-										Inline: ptr.To("fallback-token"),
-									},
+			},
+			{
+				Providers: []v1alpha1.NamedLLMProvider{
+					{
+						Name: "openai-fallback",
+						LLMProvider: v1alpha1.LLMProvider{
+							OpenAI: &v1alpha1.OpenAIConfig{
+								Model: &model2,
+								AuthToken: v1alpha1.SingleAuthToken{
+									Kind:   v1alpha1.Inline,
+									Inline: ptr.To("fallback-token"),
 								},
 							},
 						},

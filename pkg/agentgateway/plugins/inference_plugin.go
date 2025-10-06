@@ -15,12 +15,12 @@ import (
 )
 
 // NewInferencePlugin creates a new InferencePool policy plugin
-func NewInferencePlugin(agw *AgwCollections) AgentgatewayPlugin {
+func NewInferencePlugin(agw *AgwCollections) AgwPlugin {
 	domainSuffix := kubeutils.GetClusterDomainName()
-	policyCol := krt.NewManyCollection(agw.InferencePools, func(krtctx krt.HandlerContext, infPool *inf.InferencePool) []ADPPolicy {
+	policyCol := krt.NewManyCollection(agw.InferencePools, func(krtctx krt.HandlerContext, infPool *inf.InferencePool) []AgwPolicy {
 		return translatePoliciesForInferencePool(infPool, domainSuffix)
 	})
-	return AgentgatewayPlugin{
+	return AgwPlugin{
 		ContributesPolicies: map[schema.GroupKind]PolicyPlugin{
 			wellknown.InferencePoolGVK.GroupKind(): {
 				Policies: policyCol,
@@ -33,8 +33,8 @@ func NewInferencePlugin(agw *AgwCollections) AgentgatewayPlugin {
 }
 
 // translatePoliciesForInferencePool generates policies for a single inference pool
-func translatePoliciesForInferencePool(pool *inf.InferencePool, domainSuffix string) []ADPPolicy {
-	var infPolicies []ADPPolicy
+func translatePoliciesForInferencePool(pool *inf.InferencePool, domainSuffix string) []AgwPolicy {
+	var infPolicies []AgwPolicy
 
 	// 'service/{namespace}/{hostname}:{port}'
 	svc := fmt.Sprintf("service/%v/%v.%v.inference.%v:%v",
@@ -78,14 +78,14 @@ func translatePoliciesForInferencePool(pool *inf.InferencePool, domainSuffix str
 				InferenceRouting: &api.PolicySpec_InferenceRouting{
 					EndpointPicker: &api.BackendReference{
 						Kind: &api.BackendReference_Service{Service: eppSvc},
-						Port: uint32(eppPort),
+						Port: uint32(eppPort), //nolint:gosec // G115: eppPort is derived from validated port numbers
 					},
 					FailureMode: failureMode,
 				},
 			},
 		},
 	}
-	infPolicies = append(infPolicies, ADPPolicy{Policy: inferencePolicy})
+	infPolicies = append(infPolicies, AgwPolicy{Policy: inferencePolicy})
 
 	// Create the TLS policy for the endpoint picker
 	// TODO: we would want some way if they explicitly set a BackendTLSPolicy for the EPP to respect that
@@ -101,7 +101,7 @@ func translatePoliciesForInferencePool(pool *inf.InferencePool, domainSuffix str
 			},
 		},
 	}
-	infPolicies = append(infPolicies, ADPPolicy{Policy: inferencePolicyTLS})
+	infPolicies = append(infPolicies, AgwPolicy{Policy: inferencePolicyTLS})
 
 	logger.Debug("generated inference pool policies",
 		"pool", pool.Name,

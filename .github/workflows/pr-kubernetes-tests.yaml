@@ -53,12 +53,12 @@ jobs:
         # August 29, 2025: ~10 minutes
         - cluster-name: 'cluster-five'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^TimeoutRetry$$|^TestKgateway$$/^HeaderModifiers$$|^TestKgateway$$/^RBAC$$|^TestKgateway$$/^Deployer$$|^TestKgateway$$/^Transforms$$|^TestKgateway$$/^RouteReplacement$$|^TestKgateway$$/^RouteDelegation$$'
+          go-test-run-regex: '^TestKgateway$$/^TimeoutRetry$$|^TestKgateway$$/^HeaderModifiers$$|^TestKgateway$$/^RBAC$$|^TestKgateway$$/^Deployer$$|^TestKgateway$$/^Transforms$$|^TestRouteReplacement$$|^TestKgateway$$/^RouteDelegation$$'
           localstack: 'false'
         # August 29, 2025: ~9 minutes
         - cluster-name: 'cluster-six'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestInferenceExtension$$|^TestListenerSet$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgatewayIstioAutoMtls$$'
+          go-test-run-regex: '^TestInferenceExtension$$|^TestListenerSet$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgatewayIstioAutoMtls$$|^TestZeroDowntimeRollout$$'
           localstack: 'false'
         # August 29, 2025: ~7 minutes
         - cluster-name: 'cluster-ai'
@@ -78,42 +78,12 @@ jobs:
         # August 29, 2025: ~4 minutes
         - cluster-name: 'agent-gateway-cluster'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestAgentGatewayIntegration'
+          go-test-run-regex: '^TestAgentgatewayIntegration'
           agentgateway: 'true'
         # August 29, 2025: ~3 minutes
         - cluster-name: 'api-validation'
           go-test-args: '-v -timeout=10m'
           go-test-run-regex: '^TestAPIValidation'
-
-#         # Dec 4, 2024: 23 minutes
-#         - cluster-name: 'cluster-two'
-#           go-test-args: '-v -timeout=25m'
-#           go-test-run-regex: '^TestKgatewayIstioRevision$$|^TestRevisionIstioRegression$$|^TestKgateway$$/^RouteOptions$$|^TestKgateway$$/^VirtualHostOptions$$|^TestKgateway$$/^HeadlessSvc$$|^TestKgateway$$/^PortRouting$$|^TestKgatewayMinimalDefaultGatewayParameters$$|^TestKgateway$$/^DirectResponse$$|^TestKgateway$$/^HttpListenerOptions$$|^TestKgateway$$/^ListenerOptions$$|^TestKgateway$$/^GlooAdminServer$$'
-
-#         # Dec 4, 2024: 24 minutes
-#         - cluster-name: 'cluster-three'
-#           go-test-args: '-v -timeout=30m'
-#           go-test-run-regex: '(^TestKgatewayIstioAutoMtls$$|^TestIstioRegression$$)'
-
-#         # Dec 4, 2024: 21 minutes
-#         - cluster-name: 'cluster-four'
-#           go-test-args: '-v -timeout=30m'
-#           go-test-run-regex: '(^TestKgatewayIstio$$)'
-
-#         # Dec 4, 2024: 24 minutes
-#         - cluster-name: 'cluster-five'
-#           go-test-args: '-v -timeout=30m'
-#           go-test-run-regex: '^TestFullEnvoyValidation$$|^TestValidationStrict$$|^TestValidationAlwaysAccept$$|^TestTransformationValidationDisabled$$'
-
-#         # Dec 4, 2024: 26 minutes
-#         - cluster-name: 'cluster-six'
-#           go-test-args: '-v -timeout=30m'
-#           go-test-run-regex: '^TestDiscoveryWatchlabels$$|^TestKgatewayNoValidation$$|^TestHelm$$|^TestHelmSettings$$|^TestKgatewayAws$$|^TestZeroDowntimeRollout$$'
-
-#         # Dec 4, 2024: 13 minutes
-#         - cluster-name: 'cluster-seven'
-#           go-test-args: '-v -timeout=25m'
-#           go-test-run-regex: '^TestKgateway$$/^CRDCategories$$|^TestKgateway$$/^Metrics$$|^TestWatchNamespaceSelector$$'
 
         # In our PR tests, we run the suite of tests using the upper ends of versions that we claim to support
         # The versions should mirror: https://kgateway.dev/docs/reference/versions/

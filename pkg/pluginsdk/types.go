@@ -13,7 +13,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/endpoints"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 type (
@@ -48,7 +48,7 @@ type (
 
 type PolicyPlugin struct {
 	Name                      string
-	NewGatewayTranslationPass func(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass
+	NewGatewayTranslationPass func(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass
 
 	// Backend processing for envoy proxy
 	ProcessBackend            ProcessBackend
@@ -83,7 +83,7 @@ type KGwTranslator interface {
 	Translate(kctx krt.HandlerContext,
 		ctx context.Context,
 		gateway *ir.Gateway,
-		reporter reports.Reporter) *ir.GatewayIR
+		reporter reporter.Reporter) *ir.GatewayIR
 }
 type (
 	GwTranslatorFactory func(gw *gwv1.Gateway) KGwTranslator

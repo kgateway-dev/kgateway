@@ -10,10 +10,11 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
 )
 
-func ADPPolicyCollection(binds krt.Collection[ir.ADPResourcesForGateway], agwPlugins plugins.AgentgatewayPlugin) (krt.Collection[ir.ADPResourcesForGateway], map[schema.GroupKind]krt.StatusCollection[controllers.Object, v1alpha2.PolicyStatus]) {
-	var allPolicies []krt.Collection[plugins.ADPPolicy]
+func AgwPolicyCollection(binds krt.Collection[ir.AgwResourcesForGateway], agwPlugins plugins.AgwPlugin) (krt.Collection[ir.AgwResourcesForGateway], map[schema.GroupKind]krt.StatusCollection[controllers.Object, v1alpha2.PolicyStatus]) {
+	var allPolicies []krt.Collection[plugins.AgwPolicy]
 	policyStatusMap := map[schema.GroupKind]krt.StatusCollection[controllers.Object, v1alpha2.PolicyStatus]{}
 	// Collect all policies from registered plugins.
 	// Note: Only one plugin should be used per source GVK.
@@ -29,16 +30,16 @@ func ADPPolicyCollection(binds krt.Collection[ir.ADPResourcesForGateway], agwPlu
 	joinPolicies := krt.JoinCollection(allPolicies, krt.WithName("AllPolicies"))
 
 	// Generate all policies using the plugin system
-	allPoliciesCol := krt.NewCollection(binds, func(ctx krt.HandlerContext, i ir.ADPResourcesForGateway) *ir.ADPResourcesForGateway {
+	allPoliciesCol := krt.NewCollection(binds, func(ctx krt.HandlerContext, i ir.AgwResourcesForGateway) *ir.AgwResourcesForGateway {
 		logger.Debug("generating policies for gateway", "gateway", i.Gateway)
 
-		// Convert all plugins.ADPPolicy structs to api.Resource structs
+		// Convert all plugins.AgwPolicy structs to api.Resource structs
 		fetchedPolicies := krt.Fetch(ctx, joinPolicies)
-		allResources := slices.Map(fetchedPolicies, func(policy plugins.ADPPolicy) *api.Resource {
-			return toADPResource(ADPPolicy{policy.Policy})
+		allResources := slices.Map(fetchedPolicies, func(policy plugins.AgwPolicy) *api.Resource {
+			return translator.ToAgwResource(translator.AgwPolicy{policy.Policy})
 		})
 
-		return &ir.ADPResourcesForGateway{
+		return &ir.AgwResourcesForGateway{
 			Resources: allResources,
 			Gateway:   i.Gateway,
 		}

@@ -9,7 +9,7 @@ import (
 // TCPKeepaliveApplyConfiguration represents a declarative configuration of the TCPKeepalive type for use
 // with apply.
 type TCPKeepaliveApplyConfiguration struct {
-	KeepAliveProbes   *int         `json:"keepAliveProbes,omitempty"`
+	KeepAliveProbes   *int32       `json:"keepAliveProbes,omitempty"`
 	KeepAliveTime     *v1.Duration `json:"keepAliveTime,omitempty"`
 	KeepAliveInterval *v1.Duration `json:"keepAliveInterval,omitempty"`
 }
@@ -23,7 +23,7 @@ func TCPKeepalive() *TCPKeepaliveApplyConfiguration {
 // WithKeepAliveProbes sets the KeepAliveProbes field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the KeepAliveProbes field is set to the value of the last call.
-func (b *TCPKeepaliveApplyConfiguration) WithKeepAliveProbes(value int) *TCPKeepaliveApplyConfiguration {
+func (b *TCPKeepaliveApplyConfiguration) WithKeepAliveProbes(value int32) *TCPKeepaliveApplyConfiguration {
 	b.KeepAliveProbes = &value
 	return b
 }

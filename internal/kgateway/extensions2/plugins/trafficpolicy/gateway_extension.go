@@ -22,10 +22,10 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 )
 
 type TrafficPolicyGatewayExtensionIR struct {
@@ -98,7 +98,7 @@ func (e TrafficPolicyGatewayExtensionIR) Validate() error {
 	return nil
 }
 
-func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
+func TranslateGatewayExtensionBuilder(commoncol *collections.CommonCollections) func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
 	return func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
 		p := &TrafficPolicyGatewayExtensionIR{
 			Name:             krt.Named{Name: gExt.Name, Namespace: gExt.Namespace}.ResourceName(),
@@ -122,12 +122,12 @@ func TranslateGatewayExtensionBuilder(commoncol *common.CommonCollections) func(
 				FilterEnabledMetadata: ExtAuthzEnabledMetadataMatcher,
 				FailureModeAllow:      gExt.ExtAuth.FailOpen,
 				ClearRouteCache:       gExt.ExtAuth.ClearRouteCache,
-				StatusOnError:         &envoytypev3.HttpStatus{Code: envoytypev3.StatusCode(gExt.ExtAuth.StatusOnError)},
+				StatusOnError:         &envoytypev3.HttpStatus{Code: envoytypev3.StatusCode(gExt.ExtAuth.StatusOnError)}, //nolint:gosec // G115: StatusOnError is HTTP status code, valid range fits in int32
 			}
 
 			if gExt.ExtAuth.WithRequestBody != nil {
 				p.ExtAuth.WithRequestBody = &envoy_ext_authz_v3.BufferSettings{
-					MaxRequestBytes:     gExt.ExtAuth.WithRequestBody.MaxRequestBytes,
+					MaxRequestBytes:     uint32(gExt.ExtAuth.WithRequestBody.MaxRequestBytes), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 					AllowPartialMessage: gExt.ExtAuth.WithRequestBody.AllowPartialMessage,
 					PackAsBytes:         gExt.ExtAuth.WithRequestBody.PackAsBytes,
 				}

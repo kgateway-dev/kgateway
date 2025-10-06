@@ -17,12 +17,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/routeutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	reportssdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
-	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/regexutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
@@ -38,7 +38,7 @@ type httpRouteConfigurationTranslator struct {
 	requireTlsOnVirtualHosts bool
 	pluginPass               TranslationPassPlugins
 	logger                   *slog.Logger
-	routeReplacementMode     settings.RouteReplacementMode
+	validationLevel          apisettings.ValidationMode
 	validator                validator.Validator
 }
 
@@ -91,7 +91,7 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(
 				errs = append(errs, pol.Errors...)
 				continue
 			}
-			pass.ApplyRouteConfigPlugin(ctx, &ir.RouteConfigContext{
+			pass.ApplyRouteConfigPlugin(&ir.RouteConfigContext{
 				FilterChainName:   h.fc.FilterChainName,
 				TypedFilterConfig: typedPerFilterConfigRoute,
 				Policy:            pol.PolicyIr,
@@ -269,7 +269,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 
 	// If there are no errors, validate the route will not be rejected by the xDS server.
 	if routeProcessingErr == nil {
-		routeProcessingErr = validateRoute(ctx, out, h.validator, h.routeReplacementMode)
+		routeProcessingErr = validateRoute(ctx, out, h.validator, h.validationLevel)
 	}
 
 	// routeAcceptanceErr is used to set the Accepted=false,Reason=RouteRuleDropped condition on the route
@@ -310,7 +310,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 			})
 		}
 
-		if h.routeReplacementMode == settings.RouteReplacementStandard || h.routeReplacementMode == settings.RouteReplacementStrict {
+		if h.validationLevel == apisettings.ValidationStandard || h.validationLevel == apisettings.ValidationStrict {
 			// Clear all headers and filter configs when the route is replaced with a direct response
 			out.TypedPerFilterConfig = nil
 			out.RequestHeadersToAdd = nil
@@ -365,7 +365,7 @@ func (h *httpRouteConfigurationTranslator) runVhostPlugins(
 				FilterChainName:   h.fc.FilterChainName,
 				GatewayContext:    ir.GatewayContext{GatewayClassName: h.gw.GatewayClassName()},
 			}
-			pass.ApplyVhostPlugin(ctx, pctx, out)
+			pass.ApplyVhostPlugin(pctx, out)
 		}
 		out.Metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, out.GetMetadata())
 		reportPolicyAttachmentStatus(h.reporter, h.listener.PolicyAncestorRef, mergeOrigins, pols...)
@@ -433,7 +433,7 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			}
 
 			pctx.Policy = pol.PolicyIr
-			err := pass.ApplyForRoute(ctx, pctx, out)
+			err := pass.ApplyForRoute(pctx, out)
 			if err != nil {
 				errs = append(errs, err)
 			}
@@ -468,7 +468,7 @@ func (h *httpRouteConfigurationTranslator) runBackendPolicies(ctx context.Contex
 		policies, _ := mergePolicies(pass, pols)
 		for _, pol := range policies {
 			// Policy on extension ref
-			err := pass.ApplyForRouteBackend(ctx, pol.PolicyIr, pCtx)
+			err := pass.ApplyForRouteBackend(pol.PolicyIr, pCtx)
 			if err != nil {
 				errs = append(errs, err)
 			}
@@ -482,7 +482,7 @@ func (h *httpRouteConfigurationTranslator) runBackend(ctx context.Context, in ir
 	if in.Backend.BackendObject != nil {
 		backendPass := h.pluginPass[in.Backend.BackendObject.GetGroupKind()]
 		if backendPass != nil {
-			err := backendPass.ApplyForBackend(ctx, pCtx, in, outRoute)
+			err := backendPass.ApplyForBackend(pCtx, in, outRoute)
 			if err != nil {
 				errs = append(errs, err)
 			}

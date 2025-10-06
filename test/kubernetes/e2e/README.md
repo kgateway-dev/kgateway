@@ -1,5 +1,31 @@
 # End-to-End Testing Framework
 
+## How do I run a test?
+
+1. Make sure you have a kind cluster running with the images loaded. You can do this by running `./hack/kind/setup-kind.sh`
+2. The `make go-test` command will run all tests (e2e and unit tests). To run a specific e2e test, you can use `go test` directly.
+
+To run a specific test suite directly (everything that starts with `TestKgateway`):
+```shell
+go test -v -timeout 600s ./test/kubernetes/e2e/tests -run ^TestKgateway
+```
+Here the regex matches any test whose name starts with `TestKgateway` (e.g. `TestKgatewayBasicRouting` would also run).
+
+You can also run a specific match (only run the suite that starts with `TestKgateway`):
+```shell
+
+go test -v -timeout 600s ./test/kubernetes/e2e/tests -run ^TestKgateway$
+```
+
+Here the `$` anchors the regex to the end of the string, so it would only match exactly `TestKgateway`.
+
+To run a specific e2e test, you can use regex to select a specific sub-suite or test:
+```shell 
+go test -v -timeout 600s ./test/kubernetes/e2e/tests -run ^TestKgateway$$/^BasicRouting$$
+```
+
+You can find more information on running tests in the [e2e test debugging guide](debugging.md#step-2-running-tests).
+
 ## Testify
 
 We rely on [testify](https://github.com/stretchr/testify) to provide the structure for our end-to-end testing. This allows us to decouple where tests are defined, from where they are run.
@@ -21,9 +47,16 @@ We try to define a single `TestInstallation` per file in a `TestCluster`. This w
 We define all tests in the [features](./features) package. This is done for a variety of reasons:
 
 1. We group the tests by feature, so it's easy to identify which behaviors we assert for a given feature.
-2. We can invoke that same test against different `TestInstallation`s. This means we can test a feature against a variety of installation values, or even against OSS and Enterprise installations.
+2. We can invoke that same test against different `TestInstallation`s. This means we can test a feature against a variety of installation values.
 
 Many examples of testing features may be found in the [features](./features) package. The general pattern for adding a new feature should be to create a directory for the feature under `features/`, write manifest files for the resources the tests will need into `features/my_feature/testdata/`, define Go objects for them in a file called `features/my_feature/types.go`, and finally define the test suite in `features/my_feature/suite.go`. There are occasions where multiple suites will need to be created under a single feature. See [Suites](#test-suites) for more info on this case.
+
+### Agentgateway 
+
+One feature tested as part of the e2e suite is the [agentgateway](https://github.com/agentgateway/agentgateway) dataplane integration.
+
+Most feature tests can be reused for agentgateway, but some features (a2a, mcp, etc.) require special agentgateway-specific setup. You can 
+find more details in the agentgateway e2e suite [README](features/agentgateway/README.md).
 
 ## Test Suites
 
@@ -54,16 +87,6 @@ The only exception to this is the Upgrade tests that are not run on the main bra
 Some tests may require environment variables to be set. Some required env vars are:
 
 - Istio features: Require `ISTIO_VERSION` to be set. The tests running in CI use `ISTIO_VERSION="${ISTIO_VERSION:-1.19.9}"` to default to a specific version of Istio.
-
-## Resource example generation tool
-
-This tool generates the input resources defined in code as an output yaml file. You can find an example under `test/kubernetes/e2e/features/headless_svc/generate/generate_examples.go`.
-
-These examples are run as part of the codegen, but can also be manually run using the following command:
-
-```bash
-go generate <path to the generate.go file>
-```
 
 ## Debugging
 

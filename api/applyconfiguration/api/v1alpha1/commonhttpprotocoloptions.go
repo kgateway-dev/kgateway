@@ -10,9 +10,9 @@ import (
 // with apply.
 type CommonHttpProtocolOptionsApplyConfiguration struct {
 	IdleTimeout              *v1.Duration `json:"idleTimeout,omitempty"`
-	MaxHeadersCount          *int         `json:"maxHeadersCount,omitempty"`
+	MaxHeadersCount          *int32       `json:"maxHeadersCount,omitempty"`
 	MaxStreamDuration        *v1.Duration `json:"maxStreamDuration,omitempty"`
-	MaxRequestsPerConnection *int         `json:"maxRequestsPerConnection,omitempty"`
+	MaxRequestsPerConnection *int32       `json:"maxRequestsPerConnection,omitempty"`
 }
 
 // CommonHttpProtocolOptionsApplyConfiguration constructs a declarative configuration of the CommonHttpProtocolOptions type for use with
@@ -32,7 +32,7 @@ func (b *CommonHttpProtocolOptionsApplyConfiguration) WithIdleTimeout(value v1.D
 // WithMaxHeadersCount sets the MaxHeadersCount field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the MaxHeadersCount field is set to the value of the last call.
-func (b *CommonHttpProtocolOptionsApplyConfiguration) WithMaxHeadersCount(value int) *CommonHttpProtocolOptionsApplyConfiguration {
+func (b *CommonHttpProtocolOptionsApplyConfiguration) WithMaxHeadersCount(value int32) *CommonHttpProtocolOptionsApplyConfiguration {
 	b.MaxHeadersCount = &value
 	return b
 }
@@ -48,7 +48,7 @@ func (b *CommonHttpProtocolOptionsApplyConfiguration) WithMaxStreamDuration(valu
 // WithMaxRequestsPerConnection sets the MaxRequestsPerConnection field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the MaxRequestsPerConnection field is set to the value of the last call.
-func (b *CommonHttpProtocolOptionsApplyConfiguration) WithMaxRequestsPerConnection(value int) *CommonHttpProtocolOptionsApplyConfiguration {
+func (b *CommonHttpProtocolOptionsApplyConfiguration) WithMaxRequestsPerConnection(value int32) *CommonHttpProtocolOptionsApplyConfiguration {
 	b.MaxRequestsPerConnection = &value
 	return b
 }

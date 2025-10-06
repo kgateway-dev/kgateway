@@ -20,8 +20,37 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+	"istio.io/istio/pkg/security"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
+	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
+)
+
+const (
+	xdsSubsystem = "xds"
+)
+
+var (
+	xdsAuthRequestTotal = metrics.NewCounter(
+		metrics.CounterOpts{
+			Subsystem: xdsSubsystem,
+			Name:      "auth_rq_total",
+			Help:      "Total number of xDS auth requests",
+		}, nil)
+
+	xdsAuthSuccessTotal = metrics.NewCounter(
+		metrics.CounterOpts{
+			Subsystem: xdsSubsystem,
+			Name:      "auth_rq_success_total",
+			Help:      "Total number of successful xDS auth requests",
+		}, nil)
+
+	xdsAuthFailureTotal = metrics.NewCounter(
+		metrics.CounterOpts{
+			Subsystem: xdsSubsystem,
+			Name:      "auth_rq_failure_total",
+			Help:      "Total number of failed xDS auth requests",
+		}, nil)
 )
 
 // slogAdapterForEnvoy adapts *slog.Logger to envoylog.Logger interface
@@ -56,41 +85,86 @@ func (s *slogAdapterForEnvoy) Errorf(format string, args ...interface{}) {
 	}
 }
 
-func NewControlPlane(ctx context.Context, lis net.Listener, callbacks xdsserver.Callbacks) envoycache.SnapshotCache {
+func NewControlPlane(
+	ctx context.Context,
+	lis net.Listener,
+	agwLis net.Listener,
+	callbacks xdsserver.Callbacks,
+	authenticators []security.Authenticator,
+	xdsAuth bool,
+) envoycache.SnapshotCache {
 	baseLogger := slog.Default().With("component", "envoy-controlplane")
 	envoyLoggerAdapter := &slogAdapterForEnvoy{logger: baseLogger}
 
-	serverOpts := []grpc.ServerOption{
-		grpc.MaxRecvMsgSize(math.MaxInt32),
-		grpc.StreamInterceptor(
-			grpc_middleware.ChainStreamServer(
-				//				grpc_ctxtags.StreamServerInterceptor(),
-				grpc_zap.StreamServerInterceptor(zap.NewNop()),
-				func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-					baseLogger.Debug("gRPC call", "method", info.FullMethod)
-					return handler(srv, ss)
-				},
-			)),
-	}
-	grpcServer := grpc.NewServer(serverOpts...)
+	// Create separate gRPC servers for each listener
+	serverOpts := getGRPCServerOpts(authenticators, xdsAuth)
+	kgwGRPCServer := grpc.NewServer(serverOpts...)
+	agwGRPCServer := grpc.NewServer(serverOpts...)
 
 	snapshotCache := envoycache.NewSnapshotCache(true, xds.NewNodeRoleHasher(), envoyLoggerAdapter)
 
 	xdsServer := xdsserver.NewServer(ctx, snapshotCache, callbacks)
-	reflection.Register(grpcServer)
 
-	envoy_service_endpoint_v3.RegisterEndpointDiscoveryServiceServer(grpcServer, xdsServer)
-	envoy_service_cluster_v3.RegisterClusterDiscoveryServiceServer(grpcServer, xdsServer)
-	envoy_service_route_v3.RegisterRouteDiscoveryServiceServer(grpcServer, xdsServer)
-	envoy_service_listener_v3.RegisterListenerDiscoveryServiceServer(grpcServer, xdsServer)
-	envoy_service_discovery_v3.RegisterAggregatedDiscoveryServiceServer(grpcServer, xdsServer)
+	// Register reflection and services on both servers
+	reflection.Register(kgwGRPCServer)
+	reflection.Register(agwGRPCServer)
 
-	go grpcServer.Serve(lis)
+	// Register xDS services on first server
+	envoy_service_endpoint_v3.RegisterEndpointDiscoveryServiceServer(kgwGRPCServer, xdsServer)
+	envoy_service_cluster_v3.RegisterClusterDiscoveryServiceServer(kgwGRPCServer, xdsServer)
+	envoy_service_route_v3.RegisterRouteDiscoveryServiceServer(kgwGRPCServer, xdsServer)
+	envoy_service_listener_v3.RegisterListenerDiscoveryServiceServer(kgwGRPCServer, xdsServer)
+	envoy_service_discovery_v3.RegisterAggregatedDiscoveryServiceServer(kgwGRPCServer, xdsServer)
 
+	// Register xDS services on second server
+	envoy_service_endpoint_v3.RegisterEndpointDiscoveryServiceServer(agwGRPCServer, xdsServer)
+	envoy_service_cluster_v3.RegisterClusterDiscoveryServiceServer(agwGRPCServer, xdsServer)
+	envoy_service_route_v3.RegisterRouteDiscoveryServiceServer(agwGRPCServer, xdsServer)
+	envoy_service_listener_v3.RegisterListenerDiscoveryServiceServer(agwGRPCServer, xdsServer)
+	envoy_service_discovery_v3.RegisterAggregatedDiscoveryServiceServer(agwGRPCServer, xdsServer)
+
+	// Start both servers on their respective listeners
+	go kgwGRPCServer.Serve(lis)
+	go agwGRPCServer.Serve(agwLis)
+
+	// Handle graceful shutdown for both servers
 	go func() {
 		<-ctx.Done()
-		grpcServer.GracefulStop()
+		kgwGRPCServer.GracefulStop()
+		agwGRPCServer.GracefulStop()
 	}()
 
 	return snapshotCache
+}
+
+func getGRPCServerOpts(authenticators []security.Authenticator, xdsAuth bool) []grpc.ServerOption {
+	return []grpc.ServerOption{
+		grpc.MaxRecvMsgSize(math.MaxInt32),
+		grpc.StreamInterceptor(
+			grpc_middleware.ChainStreamServer(
+				grpc_zap.StreamServerInterceptor(zap.NewNop()),
+				func(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+					slog.Debug("gRPC call", "method", info.FullMethod)
+					if xdsAuth {
+						xdsAuthRequestTotal.Inc()
+						am := authenticationManager{
+							Authenticators: authenticators,
+						}
+						if u := am.authenticate(ss.Context()); u != nil {
+							xdsAuthSuccessTotal.Inc()
+							return handler(srv, &grpc_middleware.WrappedServerStream{
+								ServerStream:   ss,
+								WrappedContext: context.WithValue(ss.Context(), xds.PeerCtxKey, u),
+							})
+						}
+						xdsAuthFailureTotal.Inc()
+						slog.Error("authentication failed", "reasons", am.authFailMsgs)
+						return fmt.Errorf("authentication failed: %v", am.authFailMsgs)
+					} else {
+						slog.Warn("xDS authentication is disabled")
+						return handler(srv, ss)
+					}
+				},
+			)),
+	}
 }

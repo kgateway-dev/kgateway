@@ -25,7 +25,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
 
-func TestBackendConfigPolicyFlow(t *testing.T) {
+func TestBackendConfigPolicyTranslation(t *testing.T) {
 	tests := []struct {
 		name    string
 		policy  *v1alpha1.BackendConfigPolicy
@@ -39,17 +39,17 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 			policy: &v1alpha1.BackendConfigPolicy{
 				Spec: v1alpha1.BackendConfigPolicySpec{
 					ConnectTimeout:                ptr.To(metav1.Duration{Duration: 5 * time.Second}),
-					PerConnectionBufferLimitBytes: ptr.To(1024),
+					PerConnectionBufferLimitBytes: ptr.To(int32(1024)),
 					TCPKeepalive: &v1alpha1.TCPKeepalive{
-						KeepAliveProbes:   ptr.To(3),
+						KeepAliveProbes:   ptr.To(int32(3)),
 						KeepAliveTime:     ptr.To(metav1.Duration{Duration: 30 * time.Second}),
 						KeepAliveInterval: ptr.To(metav1.Duration{Duration: 5 * time.Second}),
 					},
 					CommonHttpProtocolOptions: &v1alpha1.CommonHttpProtocolOptions{
 						IdleTimeout:              ptr.To(metav1.Duration{Duration: 60 * time.Second}),
-						MaxHeadersCount:          ptr.To(100),
+						MaxHeadersCount:          ptr.To(int32(100)),
 						MaxStreamDuration:        ptr.To(metav1.Duration{Duration: 30 * time.Second}),
-						MaxRequestsPerConnection: ptr.To(100),
+						MaxRequestsPerConnection: ptr.To(int32(100)),
 					},
 					Http1ProtocolOptions: &v1alpha1.Http1ProtocolOptions{
 						EnableTrailers:                          ptr.To(true),
@@ -105,7 +105,7 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 				Spec: v1alpha1.BackendConfigPolicySpec{
 					ConnectTimeout: ptr.To(metav1.Duration{Duration: 2 * time.Second}),
 					CommonHttpProtocolOptions: &v1alpha1.CommonHttpProtocolOptions{
-						MaxRequestsPerConnection: ptr.To(50),
+						MaxRequestsPerConnection: ptr.To(int32(50)),
 					},
 				},
 			},
@@ -181,7 +181,7 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 					Http2ProtocolOptions: &v1alpha1.Http2ProtocolOptions{
 						InitialStreamWindowSize:                 ptr.To(resource.MustParse("64Ki")),
 						InitialConnectionWindowSize:             ptr.To(resource.MustParse("64Ki")),
-						MaxConcurrentStreams:                    ptr.To(100),
+						MaxConcurrentStreams:                    ptr.To(int32(100)),
 						OverrideStreamErrorOnInvalidHttpMessage: ptr.To(true),
 					},
 				},
@@ -227,7 +227,7 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 			policy: &v1alpha1.BackendConfigPolicy{
 				Spec: v1alpha1.BackendConfigPolicySpec{
 					Http2ProtocolOptions: &v1alpha1.Http2ProtocolOptions{
-						MaxConcurrentStreams: ptr.To(100),
+						MaxConcurrentStreams: ptr.To(int32(100)),
 					},
 				},
 			},
@@ -241,12 +241,12 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// First translate the policy
-			policyIR, err := translate(nil, nil, tt.policy)
+			policyIR, errs := translate(nil, nil, tt.policy)
 			if tt.wantErr {
-				assert.Error(t, err)
+				assert.NotEmpty(t, errs)
 				return
 			}
-			require.NoError(t, err)
+			require.Empty(t, errs)
 
 			// Then process the backend with the translated policy
 			cluster := tt.cluster
@@ -263,7 +263,7 @@ func TestBackendConfigPolicyFlow(t *testing.T) {
 	}
 }
 
-// Helper function to handle MessageToAny error in test cases
+// mustMessageToAny is a helper function to handle MessageToAny error in test cases
 func mustMessageToAny(t *testing.T, msg proto.Message) *anypb.Any {
 	a, err := utils.MessageToAny(msg)
 	require.NoError(t, err, "failed to convert message to Any")

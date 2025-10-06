@@ -34,6 +34,7 @@ import (
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
@@ -45,7 +46,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
-	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/assertions"
 )
 
@@ -54,17 +54,23 @@ const (
 	altGatewayClassName         = "clsname-alt"
 	selfManagedGatewayClassName = "clsname-selfmanaged"
 	gatewayControllerName       = "kgateway.dev/kgateway"
+	agwControllerName           = "kgateway.dev/agentgateway"
 	defaultNamespace            = "default"
 )
 
 var (
-	cfg          *rest.Config
-	k8sClient    client.Client
-	testEnv      *envtest.Environment
-	ctx          context.Context
-	cancel       context.CancelFunc
-	kubeconfig   string
-	gwClasses    = sets.New(gatewayClassName, altGatewayClassName, selfManagedGatewayClassName)
+	cfg             *rest.Config
+	k8sClient       client.Client
+	testEnv         *envtest.Environment
+	ctx             context.Context
+	cancel          context.CancelFunc
+	kubeconfig      string
+	gwClasses       = sets.New(gatewayClassName, altGatewayClassName, selfManagedGatewayClassName)
+	gwControllerMap = map[string]string{
+		gatewayClassName:            gatewayControllerName,
+		altGatewayClassName:         agwControllerName,
+		selfManagedGatewayClassName: gatewayControllerName,
+	}
 	scheme       *runtime.Scheme
 	inferenceExt *deployer.InferenceExtInfo
 )
@@ -206,9 +212,10 @@ func createManager(
 	ctx, cancel := context.WithCancel(parentCtx)
 	kubeClient, _ := setup.CreateKubeClient(cfg)
 	gwCfg := controller.GatewayConfig{
-		Mgr:            mgr,
-		ControllerName: gatewayControllerName,
-		AutoProvision:  true,
+		Mgr:               mgr,
+		ControllerName:    gatewayControllerName,
+		AgwControllerName: agwControllerName,
+		AutoProvision:     true,
 		ImageInfo: &deployer.ImageInfo{
 			Registry: "ghcr.io/kgateway-dev",
 			Tag:      "latest",
@@ -237,10 +244,12 @@ func createManager(
 	if classConfigs == nil {
 		classConfigs = map[string]*deployer.GatewayClassInfo{}
 		classConfigs[altGatewayClassName] = &deployer.GatewayClassInfo{
-			Description: "alt gateway class",
+			Description:    "alt gateway class",
+			ControllerName: agwControllerName, // custom controller name (not default)
 		}
 		classConfigs[gatewayClassName] = &deployer.GatewayClassInfo{
-			Description: "default gateway class",
+			Description:    "default gateway class",
+			ControllerName: gatewayControllerName,
 		}
 		classConfigs[selfManagedGatewayClassName] = &deployer.GatewayClassInfo{
 			Description: "self managed gw",
@@ -250,6 +259,7 @@ func createManager(
 				Name:      selfManagedGatewayClassName,
 				Namespace: ptr.To(apiv1.Namespace("default")),
 			},
+			// no controller name set, uses default
 		}
 	}
 
@@ -288,7 +298,7 @@ func newCommonCols(ctx context.Context, kubeClient kube.Client) *collections.Com
 		Expect(err).ToNot(HaveOccurred())
 	}
 
-	settings, err := settings.BuildSettings()
+	settings, err := apisettings.BuildSettings()
 	if err != nil {
 		Expect(err).ToNot(HaveOccurred())
 	}
@@ -297,7 +307,7 @@ func newCommonCols(ctx context.Context, kubeClient kube.Client) *collections.Com
 		Expect(err).ToNot(HaveOccurred())
 	}
 
-	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultWaypointClassName, *settings)
+	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultWaypointClassName, *settings, nil)
 	plugins = append(plugins, krtcollections.NewBuiltinPlugin(ctx))
 	extensions := registry.MergePlugins(plugins...)
 

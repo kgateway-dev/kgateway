@@ -43,10 +43,10 @@ func TestTranslateOutlierDetection(t *testing.T) {
 		{
 			name: "full outlier detection config",
 			config: &v1alpha1.OutlierDetection{
-				Consecutive5xx:     ptr.To(uint32(2)),
+				Consecutive5xx:     ptr.To(int32(2)),
 				Interval:           &metav1.Duration{Duration: 5 * time.Second},
 				BaseEjectionTime:   &metav1.Duration{Duration: 7 * time.Minute},
-				MaxEjectionPercent: ptr.To(uint32(99)),
+				MaxEjectionPercent: ptr.To(int32(99)),
 			},
 			expected: &envoyclusterv3.OutlierDetection{
 				Consecutive_5Xx:    &wrapperspb.UInt32Value{Value: 2},

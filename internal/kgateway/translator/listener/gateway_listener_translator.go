@@ -29,6 +29,11 @@ import (
 
 var logger = logging.New("translator/listener")
 
+const (
+	TcpTlsListenerNoBackendsMessage = "TCP/TLS listener has no valid backends or routes"
+	SecretNotFoundMessageTemplate   = "Secret %s/%s not found." //nolint:gosec // G101: This is a template string, not hardcoded credentials
+)
+
 type ListenerTranslatorConfig struct {
 	ListenerBindIpv6 bool
 }
@@ -209,7 +214,8 @@ func (ml *MergedListeners) AppendTcpListener(
 		routesWithHosts:     routeInfos,
 	}
 	fc := tcpFilterChain{
-		parents: parent,
+		parents:          parent,
+		listenerReporter: reporter,
 	}
 
 	finalPort := getListenerPortNumber(listener)
@@ -243,9 +249,10 @@ func (ml *MergedListeners) AppendTlsListener(
 		routesWithHosts:     routeInfos,
 	}
 	fc := tcpFilterChain{
-		parents:   parent,
-		tls:       listener.TLS,
-		sniDomain: listener.Hostname,
+		parents:          parent,
+		tls:              listener.TLS,
+		sniDomain:        listener.Hostname,
+		listenerReporter: reporter,
 	}
 
 	finalPort := getListenerPortNumber(listener)
@@ -340,6 +347,21 @@ func (ml *MergedListener) TranslateListener(
 		}
 	}
 
+	// Only report errors if ALL TCP filter chains failed (port is not programmed)
+	if len(ml.TcpFilterChains) > 0 && len(matchedTcpListeners) == 0 {
+		// All TCP filter chains failed - the port is not programmed
+		listenerCondition := reports.ListenerCondition{
+			Type:    gwv1.ListenerConditionProgrammed,
+			Status:  metav1.ConditionFalse,
+			Reason:  gwv1.ListenerReasonInvalid,
+			Message: TcpTlsListenerNoBackendsMessage,
+		}
+		// Report to all TCP filter chains since the entire port failed
+		for _, tfc := range ml.TcpFilterChains {
+			tfc.listenerReporter.SetCondition(listenerCondition)
+		}
+	}
+
 	// Get bind address based on ListenerBindIpv6 setting
 	bindAddress := "0.0.0.0"
 	if ml.settings.ListenerBindIpv6 {
@@ -350,7 +372,7 @@ func (ml *MergedListener) TranslateListener(
 	return ir.ListenerIR{
 		Name:              ml.name,
 		BindAddress:       bindAddress,
-		BindPort:          uint32(ml.port),
+		BindPort:          uint32(ml.port),       //nolint:gosec // G115: Gateway listener port is int32, always positive, safe to convert to uint32
 		AttachedPolicies:  ir.AttachedPolicies{}, // TODO: find policies attached to listener and attach them <- this might not be possible due to listener merging. also a gw listener ~= envoy filter chain; and i don't believe we need policies there
 		HttpFilterChain:   httpFilterChains,
 		TcpFilterChain:    matchedTcpListeners,
@@ -358,13 +380,14 @@ func (ml *MergedListener) TranslateListener(
 	}
 }
 
-// tcpFilterChain each one represents a Gateway listener that has been merged into a single Gloo Listener
+// tcpFilterChain each one represents a Gateway listener that has been merged into a single kgateway Listener
 // (with distinct filter chains). In the case where no Gateway listener merging takes place, every listener
-// will use a Gloo AggregatedListener with one TCP filter chain.
+// will use a kgateway AggregatedListener with one TCP filter chain.
 type tcpFilterChain struct {
-	parents   tcpFilterChainParent
-	tls       *gwv1.GatewayTLSConfig
-	sniDomain *gwv1.Hostname
+	parents          tcpFilterChainParent
+	tls              *gwv1.GatewayTLSConfig
+	sniDomain        *gwv1.Hostname
+	listenerReporter reports.ListenerReporter
 }
 
 type tcpFilterChainParent struct {
@@ -694,7 +717,7 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 		}
 		var notFoundErr *krtcollections.NotFoundError
 		if errors.As(err, &notFoundErr) {
-			message = fmt.Sprintf("Secret %s/%s not found.", notFoundErr.NotFoundObj.Namespace, notFoundErr.NotFoundObj.Name)
+			message = fmt.Sprintf(SecretNotFoundMessageTemplate, notFoundErr.NotFoundObj.Namespace, notFoundErr.NotFoundObj.Name)
 		}
 		listenerReporter.SetCondition(reports.ListenerCondition{
 			Type:    gwv1.ListenerConditionResolvedRefs,

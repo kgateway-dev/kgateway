@@ -6,11 +6,11 @@ package v1alpha1
 // with apply.
 type TracingApplyConfiguration struct {
 	Provider          *TracingProviderApplyConfiguration  `json:"provider,omitempty"`
-	ClientSampling    *uint32                             `json:"clientSampling,omitempty"`
-	RandomSampling    *uint32                             `json:"randomSampling,omitempty"`
-	OverallSampling   *uint32                             `json:"overallSampling,omitempty"`
+	ClientSampling    *int32                              `json:"clientSampling,omitempty"`
+	RandomSampling    *int32                              `json:"randomSampling,omitempty"`
+	OverallSampling   *int32                              `json:"overallSampling,omitempty"`
 	Verbose           *bool                               `json:"verbose,omitempty"`
-	MaxPathTagLength  *uint32                             `json:"maxPathTagLength,omitempty"`
+	MaxPathTagLength  *int32                              `json:"maxPathTagLength,omitempty"`
 	Attributes        []CustomAttributeApplyConfiguration `json:"attributes,omitempty"`
 	SpawnUpstreamSpan *bool                               `json:"spawnUpstreamSpan,omitempty"`
 }
@@ -32,7 +32,7 @@ func (b *TracingApplyConfiguration) WithProvider(value *TracingProviderApplyConf
 // WithClientSampling sets the ClientSampling field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the ClientSampling field is set to the value of the last call.
-func (b *TracingApplyConfiguration) WithClientSampling(value uint32) *TracingApplyConfiguration {
+func (b *TracingApplyConfiguration) WithClientSampling(value int32) *TracingApplyConfiguration {
 	b.ClientSampling = &value
 	return b
 }
@@ -40,7 +40,7 @@ func (b *TracingApplyConfiguration) WithClientSampling(value uint32) *TracingApp
 // WithRandomSampling sets the RandomSampling field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the RandomSampling field is set to the value of the last call.
-func (b *TracingApplyConfiguration) WithRandomSampling(value uint32) *TracingApplyConfiguration {
+func (b *TracingApplyConfiguration) WithRandomSampling(value int32) *TracingApplyConfiguration {
 	b.RandomSampling = &value
 	return b
 }
@@ -48,7 +48,7 @@ func (b *TracingApplyConfiguration) WithRandomSampling(value uint32) *TracingApp
 // WithOverallSampling sets the OverallSampling field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the OverallSampling field is set to the value of the last call.
-func (b *TracingApplyConfiguration) WithOverallSampling(value uint32) *TracingApplyConfiguration {
+func (b *TracingApplyConfiguration) WithOverallSampling(value int32) *TracingApplyConfiguration {
 	b.OverallSampling = &value
 	return b
 }
@@ -64,7 +64,7 @@ func (b *TracingApplyConfiguration) WithVerbose(value bool) *TracingApplyConfigu
 // WithMaxPathTagLength sets the MaxPathTagLength field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the MaxPathTagLength field is set to the value of the last call.
-func (b *TracingApplyConfiguration) WithMaxPathTagLength(value uint32) *TracingApplyConfiguration {
+func (b *TracingApplyConfiguration) WithMaxPathTagLength(value int32) *TracingApplyConfiguration {
 	b.MaxPathTagLength = &value
 	return b
 }

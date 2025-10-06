@@ -33,7 +33,7 @@ spec:
             properties:
               kube:
                 properties:
-                  agentGateway:
+                  agentgateway:
                     properties:
                       customConfigMapName:
                         type: string
@@ -523,7 +523,26 @@ spec:
                         type: boolean
                       replicas:
                         format: int32
+                        minimum: 1
                         type: integer
+                      strategy:
+                        properties:
+                          rollingUpdate:
+                            properties:
+                              maxSurge:
+                                anyOf:
+                                - type: integer
+                                - type: string
+                                x-kubernetes-int-or-string: true
+                              maxUnavailable:
+                                anyOf:
+                                - type: integer
+                                - type: string
+                                x-kubernetes-int-or-string: true
+                            type: object
+                          type:
+                            type: string
+                        type: object
                     type: object
                     x-kubernetes-validations:
                     - message: at most one of the fields in [replicas omitReplicas]
@@ -1564,6 +1583,8 @@ spec:
                             type: object
                         type: object
                     type: object
+                  omitDefaultSecurityContext:
+                    type: boolean
                   podTemplate:
                     properties:
                       affinity:
@@ -2799,6 +2820,9 @@ spec:
                           enabled:
                             type: boolean
                           sleepTimeSeconds:
+                            format: int64
+                            maximum: 31536000
+                            minimum: 0
                             type: integer
                         type: object
                       imagePullSecrets:
@@ -3055,7 +3079,91 @@ spec:
                                 type: string
                             type: object
                         type: object
+                      startupProbe:
+                        properties:
+                          exec:
+                            properties:
+                              command:
+                                items:
+                                  type: string
+                                type: array
+                                x-kubernetes-list-type: atomic
+                            type: object
+                          failureThreshold:
+                            format: int32
+                            type: integer
+                          grpc:
+                            properties:
+                              port:
+                                format: int32
+                                type: integer
+                              service:
+                                default: ""
+                                type: string
+                            required:
+                            - port
+                            type: object
+                          httpGet:
+                            properties:
+                              host:
+                                type: string
+                              httpHeaders:
+                                items:
+                                  properties:
+                                    name:
+                                      type: string
+                                    value:
+                                      type: string
+                                  required:
+                                  - name
+                                  - value
+                                  type: object
+                                type: array
+                                x-kubernetes-list-type: atomic
+                              path:
+                                type: string
+                              port:
+                                anyOf:
+                                - type: integer
+                                - type: string
+                                x-kubernetes-int-or-string: true
+                              scheme:
+                                type: string
+                            required:
+                            - port
+                            type: object
+                          initialDelaySeconds:
+                            format: int32
+                            type: integer
+                          periodSeconds:
+                            format: int32
+                            type: integer
+                          successThreshold:
+                            format: int32
+                            type: integer
+                          tcpSocket:
+                            properties:
+                              host:
+                                type: string
+                              port:
+                                anyOf:
+                                - type: integer
+                                - type: string
+                                x-kubernetes-int-or-string: true
+                            required:
+                            - port
+                            type: object
+                          terminationGracePeriodSeconds:
+                            format: int64
+                            type: integer
+                          timeoutSeconds:
+                            format: int32
+                            type: integer
+                        type: object
                       terminationGracePeriodSeconds:
+                        format: int64
+                        maximum: 31536000
+                        minimum: 0
                         type: integer
                       tolerations:
                         items:
@@ -3272,8 +3380,14 @@ spec:
                         items:
                           properties:
                             nodePort:
+                              format: int32
+                              maximum: 65535
+                              minimum: 1
                               type: integer
                             port:
+                              format: int32
+                              maximum: 65535
+                              minimum: 1
                               type: integer
                           required:
                           - port
