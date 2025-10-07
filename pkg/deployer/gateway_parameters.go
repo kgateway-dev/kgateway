@@ -1,9 +1,6 @@
 package deployer
 
 import (
-	"context"
-	"log/slog"
-
 	"istio.io/api/annotation"
 	"istio.io/api/label"
 	corev1 "k8s.io/api/core/v1"
@@ -81,33 +78,6 @@ func allowPrivilegedPorts(cfg *v1alpha1.KubernetesProxyConfig) {
 		Name:  "net.ipv4.ip_unprivileged_port_start",
 		Value: "0",
 	})
-}
-
-// applyFloatingUserId (deprecated in favor of omitDefaultSecurityContext) will
-// set the RunAsUser field from all security contexts to null assuming that the
-// floatingUserId field is set. Will not create a securityContext, even an
-// empty one -- only updates existing securityContexts.
-func applyFloatingUserId(dstKube *v1alpha1.KubernetesProxyConfig) {
-	logger.Log(context.Background(), slog.LevelWarn, "the field GatewayParameters.Spec.Kube.FloatingUserId is deprecated and will be removed in a future release; see if OmitDefaultSecurityContext fits your needs")
-
-	podSecurityContext := dstKube.GetPodTemplate().GetSecurityContext()
-	if podSecurityContext != nil {
-		podSecurityContext.RunAsUser = nil
-	}
-
-	securityContexts := []*corev1.SecurityContext{
-		dstKube.GetEnvoyContainer().GetSecurityContext(),
-		dstKube.GetSdsContainer().GetSecurityContext(),
-		dstKube.GetIstio().GetIstioProxyContainer().GetSecurityContext(),
-		dstKube.GetAiExtension().GetSecurityContext(),
-		dstKube.GetAgentgateway().GetSecurityContext(),
-	}
-
-	for _, securityContext := range securityContexts {
-		if securityContext != nil {
-			securityContext.RunAsUser = nil
-		}
-	}
 }
 
 // GetInMemoryGatewayParameters returns an in-memory GatewayParameters based on the name of the gateway class.
