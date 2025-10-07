@@ -31,15 +31,6 @@ metadata:
     gateway.networking.k8s.io/gateway-class-name: kgateway
     app.kubernetes.io/managed-by: Helm
 data:
-  validation_context_sds_secret.yaml: |
-    resources:
-      - "@type": "type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret"
-        name: validation_context_sds
-        validation_context:
-          trusted_ca:
-            filename: /etc/envoy/ca.crt
-          watched_directory:
-            path: /etc/envoy
   ca.crt: |
     -----BEGIN CERTIFICATE-----
     MIICljCCAX4CCQCKSGhvPtMNGzANBgkqhkiG9w0BAQsFADANMQswCQYDVQQGEwJV
@@ -71,6 +62,13 @@ data:
       metadata:
         role: kgateway-kube-gateway-api~default~gw
     static_resources:
+      secrets:
+        - name: validation_context_sds
+          validation_context:
+            trusted_ca:
+              filename: /etc/envoy/ca.crt
+            watched_directory:
+              path: /etc/envoy
       listeners:
       - name: readiness_listener
         address:
@@ -177,9 +175,6 @@ data:
               common_tls_context:
                 validation_context_sds_secret_config:
                   name: validation_context_sds
-                  sds_config:
-                    path_config_source:
-                      path: /etc/envoy/validation_context_sds_secret.yaml
           typed_extension_protocol_options:
             envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
               "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
