@@ -491,7 +491,7 @@ kind-create: ## Create a KinD cluster
 	$(KIND) get clusters | grep $(CLUSTER_NAME) || $(KIND) create cluster --name $(CLUSTER_NAME)
 
 CONFORMANCE_CHANNEL ?= experimental
-CONFORMANCE_VERSION ?= v1.3.0
+CONFORMANCE_VERSION ?= v1.4.0
 .PHONY: gw-api-crds
 gw-api-crds: ## Install the Gateway API CRDs
 # Note: `--server-side` was added due to:
@@ -504,11 +504,12 @@ else
 endif
 
 # The version of the k8s gateway api inference extension CRDs to install.
-GIE_CRD_VERSION ?= $(shell go list -m sigs.k8s.io/gateway-api-inference-extension | awk '{print $$2}')
+# Keep in sync with go.mod and hack/kind/setup-kind.sh.
+GIE_CRD_VERSION ?= bfd979d7576acf3f121efeae01920cb09d09cbe8
 
 .PHONY: gie-crds
 gie-crds: ## Install the Gateway API Inference Extension CRDs
-	kubectl apply -f "https://github.com/kubernetes-sigs/gateway-api-inference-extension/releases/download/$(GIE_CRD_VERSION)/manifests.yaml"
+	kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api-inference-extension/config/crd?ref=$(GIE_CRD_VERSION)"
 
 .PHONY: kind-metallb
 metallb: ## Install the MetalLB load balancer

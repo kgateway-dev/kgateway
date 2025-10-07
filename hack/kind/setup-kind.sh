@@ -20,7 +20,8 @@ CONFORMANCE_VERSION="${CONFORMANCE_VERSION:-$(go list -m sigs.k8s.io/gateway-api
 # The channel of the k8s gateway api conformance tests to run. Requires CONFORMANCE=true
 CONFORMANCE_CHANNEL="${CONFORMANCE_CHANNEL:-"experimental"}"
 # The version of the k8s gateway api inference extension CRDs to install. Requires CONFORMANCE=true
-GIE_CRD_VERSION="${GIE_CRD_VERSION:-$(go list -m sigs.k8s.io/gateway-api-inference-extension | awk '{print $2}')}"
+# Keep in sync with go.mod and Makefile.
+GIE_CRD_VERSION="${GIE_CRD_VERSION:-"bfd979d7576acf3f121efeae01920cb09d09cbe8"}"
 # The kind CLI to use. Defaults to the latest version from the kind repo.
 KIND="${KIND:-go tool kind}"
 # The helm CLI to use. Defaults to the latest version from the helm repo.
@@ -92,7 +93,7 @@ else
 fi
 
 # 6. Apply the Kubernetes Gateway API Inference Extension CRDs
-kubectl apply -f https://github.com/kubernetes-sigs/gateway-api-inference-extension/releases/download/$GIE_CRD_VERSION/manifests.yaml
+kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api-inference-extension/config/crd?ref=$GIE_CRD_VERSION"
 
 # 7. Conformance test setup
 if [[ $CONFORMANCE == "true" ]]; then
