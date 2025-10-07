@@ -1,3 +1,5 @@
+//go:build e2e
+
 package zero_downtime_rollout
 
 import (

@@ -1,3 +1,5 @@
+//go:build e2e
+
 package global_rate_limit
 
 import (

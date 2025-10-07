@@ -93,5 +93,5 @@ go generate ${ROOT_DIR}/internal/...
 go generate ${ROOT_DIR}/pkg/...
 
 # fix imports of gen code
-go tool goimports -w ${ROOT_DIR}/${CLIENT_GEN_DIR}
-go tool goimports -w ${ROOT_DIR}/api
+go tool goimports -local "github.com/kgateway-dev/kgateway/v2/" -w ${ROOT_DIR}/${CLIENT_GEN_DIR}
+go tool goimports -local "github.com/kgateway-dev/kgateway/v2/" -w ${ROOT_DIR}/api

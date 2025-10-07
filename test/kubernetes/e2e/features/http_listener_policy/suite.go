@@ -1,3 +1,5 @@
+//go:build e2e
+
 package http_listener_policy
 
 import (

@@ -30,9 +30,7 @@ jobs:
       run: make mod-download
     - name: Run Tests
       shell: bash
-      env:
-        TEST_PKG: "./test/deployer/... ./api/settings/... ./test/controllerutils/... ./test/envoyutils/... ./test/gomega/... ./internal/... ./pkg/..."
-      run: make go-test-with-coverage
+      run: make unit-with-coverage
     - name: Validate Test Coverage
       shell: bash
       # The make will error if test coverage drops below a certain threshold

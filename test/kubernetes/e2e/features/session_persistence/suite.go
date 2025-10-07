@@ -1,3 +1,5 @@
+//go:build e2e
+
 package session_persistence
 
 import (

@@ -55,12 +55,21 @@ func getAssetsDir(t *testing.T) string {
 	var assets string
 	if os.Getenv("KUBEBUILDER_ASSETS") == "" {
 		// set default if not user provided
-		out, err := exec.Command("sh", "-c", "make -sC $(dirname $(go env GOMOD)) envtest-path").CombinedOutput()
+		out, err := exec.Command("sh", "-c", "make -s --no-print-directory -C $(dirname $(go env GOMOD)) envtest-path").CombinedOutput()
 		t.Log("out:", string(out))
 		if err != nil {
 			t.Fatalf("failed to get assets dir: %v", err)
 		}
 		assets = strings.TrimSpace(string(out))
+	}
+	if assets != "" {
+		info, err := os.Stat(assets)
+		if err != nil {
+			t.Fatalf("assets directory does not exist: %s: %v", assets, err)
+		}
+		if !info.IsDir() {
+			t.Fatalf("assets path is not a directory: %s", assets)
+		}
 	}
 	return assets
 }
