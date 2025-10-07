@@ -53,6 +53,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
 )
@@ -415,12 +416,14 @@ func setupEnvTestAndRun(t *testing.T, globalSettings *settings.Settings, run fun
 		t.Fatalf("failed to apply pod status: %v", err)
 	}
 
+	uniqueClientCallbacks, builder := krtcollections.NewUniquelyConnectedClients(nil, false)
+
 	lis, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatalf("can't listen %v", err)
 	}
 	xdsPort := lis.Addr().(*net.TCPAddr).Port
-	snapCache, grpcServer := setup.NewControlPlaneWithListener(ctx, lis, nil, nil, false)
+	snapCache, grpcServer := setup.NewControlPlaneWithListener(ctx, lis, uniqueClientCallbacks, nil, false)
 	t.Cleanup(func() { grpcServer.Stop() })
 
 	setupOpts := &controller.SetupOpts{
@@ -429,11 +432,16 @@ func setupEnvTestAndRun(t *testing.T, globalSettings *settings.Settings, run fun
 		GlobalSettings: globalSettings,
 	}
 
+	kubeClient, err := setup.CreateKubeClient(cfg)
+	if err != nil {
+		t.Fatalf("failed to create kube client: %v", err)
+	}
+
 	// start kgateway
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		setup.StartKgatewayWithConfig(ctx, setupOpts, cfg, nil)
+		setup.StartKgatewayWithConfig(ctx, setupOpts, cfg, kubeClient, builder, nil)
 	}()
 	// give kgateway time to initialize so we don't get
 	// "kgateway not initialized" error

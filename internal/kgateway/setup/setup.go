@@ -46,7 +46,7 @@ func startSetupLoop(ctx context.Context) error {
 	return StartKgateway(ctx, nil)
 }
 
-func createKubeClient(restConfig *rest.Config) (istiokube.Client, error) {
+func CreateKubeClient(restConfig *rest.Config) (istiokube.Client, error) {
 	restCfg := istiokube.NewClientConfigForRestConfig(restConfig)
 	client, err := istiokube.NewClient(restCfg, "")
 	if err != nil {
@@ -72,7 +72,25 @@ func StartKgateway(
 	// Set the Istio namespace from settings
 	waypoint.SetRootNamespace(st)
 
+	restConfig := ctrl.GetConfigOrDie()
+
+	kubeClient, err := CreateKubeClient(restConfig)
+	if err != nil {
+		return err
+	}
+
+	authenticators := []security.Authenticator{
+		NewKubeJWTAuthenticator(kubeClient.Kube()),
+	}
+
+	uniqueClientCallbacks, uccBuilder := krtcollections.NewUniquelyConnectedClients(nil, st.XdsAuth)
+	cache, err := startControlPlane(ctx, st.XdsServicePort, uniqueClientCallbacks, authenticators, st.XdsAuth)
+	if err != nil {
+		return err
+	}
+
 	setupOpts := &controller.SetupOpts{
+		Cache:                  cache,
 		KrtDebugger:            new(krt.DebugHandler),
 		GlobalSettings:         st,
 		PprofBindAddress:       "127.0.0.1:9099",
@@ -80,8 +98,7 @@ func StartKgateway(
 		MetricsBindAddress:     ":9092",
 	}
 
-	restConfig := ctrl.GetConfigOrDie()
-	return StartKgatewayWithConfig(ctx, setupOpts, restConfig, extraPlugins)
+	return StartKgatewayWithConfig(ctx, setupOpts, restConfig, kubeClient, uccBuilder, extraPlugins)
 }
 
 func startControlPlane(
@@ -98,28 +115,13 @@ func StartKgatewayWithConfig(
 	ctx context.Context,
 	setupOpts *controller.SetupOpts,
 	restConfig *rest.Config,
+	kubeClient istiokube.Client,
+	uccBuilder krtcollections.UniquelyConnectedClientsBulider,
 	extraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []extensionsplug.Plugin,
 ) error {
 	ctx = contextutils.WithLogger(ctx, "k8s")
 	logger := contextutils.LoggerFrom(ctx)
 	logger.Infof("starting %s", componentName)
-
-	kubeClient, err := createKubeClient(restConfig)
-	if err != nil {
-		return err
-	}
-
-	authenticators := []security.Authenticator{
-		NewKubeJWTAuthenticator(kubeClient.Kube()),
-	}
-
-	uniqueClientCallbacks, uccBuilder := krtcollections.NewUniquelyConnectedClients(nil, setupOpts.GlobalSettings.XdsAuth)
-
-	cache, err := startControlPlane(ctx, setupOpts.GlobalSettings.XdsServicePort, uniqueClientCallbacks, authenticators, setupOpts.GlobalSettings.XdsAuth)
-	if err != nil {
-		return err
-	}
-	setupOpts.Cache = cache
 
 	logger.Info("creating krt collections")
 	krtOpts := krtutil.NewKrtOptions(ctx.Done(), setupOpts.KrtDebugger)
