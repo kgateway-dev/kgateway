@@ -18,3 +18,21 @@ spec:
         - type: RemoteAddress
       extensionRef:
         name: fail-open-ratelimit
+---
+# Gateway extension with fail-open behavior
+# Allows requests through when rate limit service is unavailable
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: fail-open-ratelimit
+  namespace: infra
+spec:
+  type: RateLimit
+  rateLimit:
+    grpcService:
+      backendRef:
+        name: ratelimit
+        port: 8081
+    domain: "api-gateway-fail-open"
+    timeout: "150ms"
+    failOpen: true

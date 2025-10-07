@@ -24,3 +24,20 @@ spec:
         - type: RemoteAddress
       extensionRef: 
         name: basic-ratelimit
+---
+# Gateway extension for route-level rate limiting
+# Used when rate limiting is applied to HTTPRoutes
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: basic-ratelimit
+  namespace: infra
+spec:
+  type: RateLimit
+  rateLimit:
+    grpcService:
+      backendRef:
+        name: ratelimit
+        port: 8081
+    domain: "api-gateway-routes"
+    timeout: "150ms"

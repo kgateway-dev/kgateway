@@ -23,3 +23,19 @@ spec:
           header: "X-Client-Type"
       extensionRef:
         name: basic-gw-ratelimit
+---
+# Basic gateway extension for gateway-level rate limiting
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: basic-gw-ratelimit
+  namespace: infra
+spec:
+  type: RateLimit
+  rateLimit:
+    grpcService:
+      backendRef:
+        name: ratelimit
+        port: 8081
+    domain: "api-gateway"
+    timeout: "100ms"
