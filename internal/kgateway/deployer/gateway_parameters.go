@@ -46,8 +46,12 @@ type kGatewayParameters struct {
 
 func (gp *GatewayParameters) WithExtraGatewayParameters(params ...deployer.ExtraGatewayParameters) *GatewayParameters {
 	for _, p := range params {
+		key := schema.GroupKind{Group: p.Group, Kind: p.Kind}
+		if _, ok := gp.extraHVGenerators[key]; ok {
+			panic(fmt.Sprintf("key already exists in the map: %v", key))
+		}
 		gp.knownGWParameters = append(gp.knownGWParameters, p.Object)
-		gp.extraHVGenerators[schema.GroupKind{Group: p.Group, Kind: p.Kind}] = p.Generator
+		gp.extraHVGenerators[key] = p.Generator
 	}
 	return gp
 }
@@ -255,6 +259,14 @@ func (k *kGatewayParameters) getGatewayParametersForGateway(ctx context.Context,
 	}
 
 	mergedGwp := defaultGwp
+	if ptr.Deref(gwp.Spec.Kube.GetOmitDefaultSecurityContext(), false) {
+		// Need to regenerate defaults with OmitDefaultSecurityContext=true
+		gwc, err := getGatewayClassFromGateway(ctx, k.cli, gw)
+		if err != nil {
+			return nil, err
+		}
+		mergedGwp = deployer.GetInMemoryGatewayParameters(gwc.GetName(), k.inputs.ImageInfo, k.inputs.GatewayClassName, k.inputs.WaypointGatewayClassName, k.inputs.AgentgatewayClassName, true)
+	}
 	deployer.DeepMergeGatewayParameters(mergedGwp, gwp)
 	return mergedGwp, nil
 }
@@ -331,6 +343,7 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 			Name:             &gw.Name,
 			GatewayName:      &gw.Name,
 			GatewayNamespace: &gw.Namespace,
+			GatewayClassName: ptr.To(string(gw.Spec.GatewayClassName)),
 			Ports:            ports,
 			Xds: &deployer.HelmXds{
 				// The xds host/port MUST map to the Service definition for the Control Plane
@@ -397,7 +410,6 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 	// serviceaccount values
 	gateway.ServiceAccount = deployer.GetServiceAccountValues(svcAccountConfig)
 	// pod template values
-	gateway.OmitDefaultSecurityContext = gwParam.Spec.Kube.GetOmitDefaultSecurityContext()
 	gateway.ExtraPodAnnotations = podConfig.GetExtraAnnotations()
 	gateway.ExtraPodLabels = podConfig.GetExtraLabels()
 	gateway.ImagePullSecrets = podConfig.GetImagePullSecrets()

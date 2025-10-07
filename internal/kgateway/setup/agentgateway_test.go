@@ -23,12 +23,13 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/test/util/retry"
 
-	"github.com/kgateway-dev/kgateway/v2/api/settings"
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
+	"github.com/kgateway-dev/kgateway/v2/test/envtestutil"
 )
 
 func TestAgentgateway(t *testing.T) {
-	st, err := settings.BuildSettings()
+	st, err := envtestutil.BuildSettings()
 	st.EnableAgentgateway = true
 	st.EnableInferExt = true
 
@@ -40,7 +41,7 @@ func TestAgentgateway(t *testing.T) {
 	runAgentgatewayScenario(t, "testdata/agentgateway", st)
 }
 
-func runAgentgatewayScenario(t *testing.T, scenarioDir string, globalSettings *settings.Settings) {
+func runAgentgatewayScenario(t *testing.T, scenarioDir string, globalSettings *apisettings.Settings) {
 	setupEnvTestAndRun(t, globalSettings, func(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler, client istiokube.CLIClient, xdsPort int) {
 		// list all yamls in test data
 		files, err := os.ReadDir(scenarioDir)

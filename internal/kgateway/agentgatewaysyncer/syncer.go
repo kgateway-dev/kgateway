@@ -178,7 +178,7 @@ func (s *Syncer) buildGatewayCollection(
 	krtopts krtutil.KrtOptions,
 ) krt.Collection[translator.GatewayListener] {
 	return translator.GatewayCollection(
-		s.agentgatewayClassName,
+		s.controllerName,
 		s.agwCollections.Gateways,
 		gatewayClasses,
 		s.agwCollections.Namespaces,
@@ -542,12 +542,18 @@ func (s *Syncer) buildXDSCollection(
 			addrVersion ^= res.Version
 		}
 
+		var gwObservedGen int64
+		if gen, ok := (&gwReports).GatewayObservedGenerationFor(gwNamespacedName); ok {
+			gwObservedGen = gen
+		}
+
 		result := &translator.AgentGwXdsResources{
-			NamespacedName: gwNamespacedName,
-			Reports:        gwReports,
-			AttachedRoutes: attachedRoutes,
-			ResourceConfig: envoycache.NewResources(fmt.Sprintf("%d", resourceVersion), cacheResources),
-			AddressConfig:  envoycache.NewResources(fmt.Sprintf("%d", addrVersion), envoytypesAddresses),
+			NamespacedName:    gwNamespacedName,
+			Reports:           gwReports,
+			AttachedRoutes:    attachedRoutes,
+			GatewayGeneration: gwObservedGen,
+			ResourceConfig:    envoycache.NewResources(fmt.Sprintf("%d", resourceVersion), cacheResources),
+			AddressConfig:     envoycache.NewResources(fmt.Sprintf("%d", addrVersion), envoytypesAddresses),
 		}
 		logger.Debug("created XDS resources for gateway with ID", "gwname", fmt.Sprintf("%s,%s", gwNamespacedName.Name, gwNamespacedName.Namespace), "resourceid", result.ResourceName())
 		return result
@@ -563,11 +569,14 @@ func (s *Syncer) buildStatusReporting(policyStatuses map[schema.GroupKind]krt.St
 		merged := make(map[types.NamespacedName]*reports.GatewayReport)
 
 		attached := make(map[types.NamespacedName]map[string]uint)
+		generations := make(map[types.NamespacedName]int64)
 		for _, p := range proxies {
 			// merge GW status reports
 			if gwRep, ok := p.Reports.Gateways[p.NamespacedName]; ok {
 				merged[p.NamespacedName] = gwRep
 			}
+			// record observed generation for this gateway to update report
+			generations[p.NamespacedName] = p.GatewayGeneration
 			// take max per listener across proxies
 			if attached[p.NamespacedName] == nil {
 				attached[p.NamespacedName] = make(map[string]uint)
@@ -581,6 +590,7 @@ func (s *Syncer) buildStatusReporting(policyStatuses map[schema.GroupKind]krt.St
 		return &translator.GatewayReports{
 			Reports:        merged,
 			AttachedRoutes: attached,
+			Generations:    generations,
 		}
 	})
 

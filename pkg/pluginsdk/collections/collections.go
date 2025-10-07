@@ -14,7 +14,7 @@ import (
 
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/settings"
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -50,7 +50,7 @@ type CommonCollections struct {
 	// static set of global Settings, non-krt based for dev speed
 	// TODO: this should be refactored to a more correct location,
 	// or even better, be removed entirely and done per Gateway (maybe in GwParams)
-	Settings       settings.Settings
+	Settings       apisettings.Settings
 	ControllerName string
 }
 
@@ -80,7 +80,7 @@ func NewCommonCollections(
 	ourClient versioned.Interface,
 	cl client.Client,
 	controllerName string,
-	settings settings.Settings,
+	settings apisettings.Settings,
 ) (*CommonCollections, error) {
 	// Namespace collection must be initialized first to enable discovery namespace
 	// selectors to be applies as filters to other collections
@@ -171,7 +171,7 @@ func NewCommonCollections(
 func (c *CommonCollections) InitPlugins(
 	ctx context.Context,
 	mergedPlugins pluginsdk.Plugin,
-	globalSettings settings.Settings,
+	globalSettings apisettings.Settings,
 ) {
 	gateways, routeIndex, backendIndex, endpointIRs := krtcollections.InitCollections(
 		ctx,

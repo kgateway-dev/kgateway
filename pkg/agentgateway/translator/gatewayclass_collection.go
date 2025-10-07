@@ -4,7 +4,6 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
@@ -31,12 +30,12 @@ func GatewayClassesCollection(
 	}, krtopts.ToOptions("GatewayClasses")...)
 }
 
-func fetchClass(ctx krt.HandlerContext, gatewayClasses krt.Collection[GatewayClass], gc gwv1.ObjectName) *GatewayClass {
+func fetchClass(ctx krt.HandlerContext, gatewayClasses krt.Collection[GatewayClass], gc gwv1.ObjectName, controllerName string) *GatewayClass {
 	class := krt.FetchOne(ctx, gatewayClasses, krt.FilterKey(string(gc)))
 	if class == nil {
 		return &GatewayClass{
 			Name:       string(gc),
-			Controller: wellknown.DefaultAgwControllerName,
+			Controller: gwv1.GatewayController(controllerName),
 		}
 	}
 	return class

@@ -38,10 +38,10 @@ func (ie *PerClientEnvoyEndpoints) FetchEndpointsForClient(kctx krt.HandlerConte
 func NewPerClientEnvoyEndpoints(
 	krtopts krtutil.KrtOptions,
 	uccs krt.Collection[ir.UniqlyConnectedClient],
-	glooEndpoints krt.Collection[ir.EndpointsForBackend],
+	kgatewayEndpoints krt.Collection[ir.EndpointsForBackend],
 	translateEndpoints func(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient, ep ir.EndpointsForBackend) (*envoyendpointv3.ClusterLoadAssignment, uint64),
 ) PerClientEnvoyEndpoints {
-	eps := krt.NewManyCollection(glooEndpoints, func(kctx krt.HandlerContext, ep ir.EndpointsForBackend) []UccWithEndpoints {
+	eps := krt.NewManyCollection(kgatewayEndpoints, func(kctx krt.HandlerContext, ep ir.EndpointsForBackend) []UccWithEndpoints {
 		uccs := krt.Fetch(kctx, uccs)
 		uccWithEndpointsRet := make([]UccWithEndpoints, 0, len(uccs))
 		for _, ucc := range uccs {

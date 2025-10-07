@@ -12,7 +12,7 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/kgateway-dev/kgateway/v2/api/settings"
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -212,7 +212,7 @@ func TestBackendTranslatorHandlesXDSValidationErrors(t *testing.T) {
 	bt.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{}
 
 	// Set up strict mode and inject the mock validator
-	bt.Mode = settings.ValidationStrict
+	bt.Mode = apisettings.ValidationStrict
 	bt.Validator = mockValidator
 
 	var ucc ir.UniqlyConnectedClient

@@ -8,7 +8,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	"github.com/kgateway-dev/kgateway/v2/api/settings"
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/xds/bootstrap"
@@ -21,9 +21,9 @@ func validateXDS(
 	ctx context.Context,
 	policyIR *BackendConfigPolicyIR,
 	v validator.Validator,
-	mode settings.ValidationMode,
+	mode apisettings.ValidationMode,
 ) error {
-	if mode != settings.ValidationStrict || v == nil {
+	if mode != apisettings.ValidationStrict || v == nil {
 		return nil
 	}
 

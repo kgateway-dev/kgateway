@@ -1,6 +1,6 @@
 {{- $gateway := .Values.gateway }}
 {{- if $gateway.agentgateway.enabled }}
-# TODO(npolshak): look into having agentgateway as a separate helm chart https://github.com/kgateway-dev/kgateway/issues/11240
+{{/* TODO(npolshak): look into having agentgateway as a separate helm chart https://github.com/kgateway-dev/kgateway/issues/11240 */}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -18,51 +18,49 @@ spec:
   template:
     metadata:
       annotations:
+        prometheus.io/path: /metrics
+        prometheus.io/port: "15020"
+        prometheus.io/scrape: "true"
       {{- with $gateway.extraPodAnnotations }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "kgateway.gateway.selectorLabels" . | nindent 8 }}
+        {{- include "kgateway.gateway.podLabels" . | nindent 8 }}
         {{- with $gateway.extraPodLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
+      serviceAccountName: {{ include "kgateway.gateway.fullname" . }}
       {{- with $gateway.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "kgateway.gateway.fullname" . }}
-      {{- if $gateway.podSecurityContext }}
+      {{- with $gateway.podSecurityContext }}
       securityContext:
-        {{- toYaml $gateway.podSecurityContext | nindent 8 }}
-      {{- else }}
-      {{- if not $gateway.omitDefaultSecurityContext }}
-      securityContext:
-        sysctls:
-          - name: net.ipv4.ip_unprivileged_port_start
-            value: "0"
-      {{- end }}
+        {{- toYaml . | nindent 8 }}
       {{- end }}
       containers:
         - name: agent-gateway
           image: "{{ template "kgateway.gateway.image" $gateway.image }}"
+          {{- if $gateway.image.pullPolicy }}
           imagePullPolicy: {{ $gateway.image.pullPolicy }}
-          {{- if $gateway.securityContext }}
+          {{- end }}
+          {{- with $gateway.securityContext }}
           securityContext:
-            {{- toYaml $gateway.securityContext | nindent 12 }}
-          {{- end }} {{/* if $gateway.securityContext */}}
-          {{- if $gateway.startupProbe }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $gateway.startupProbe }}
           startupProbe:
-            {{- toYaml $gateway.startupProbe | nindent 12 }}
-          {{- end }}{{/* if $gateway.startupProbe */}}
-          {{- if $gateway.readinessProbe }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $gateway.readinessProbe }}
           readinessProbe:
-            {{- toYaml $gateway.readinessProbe | nindent 12 }}
-          {{- end }}{{/* if $gateway.readinessProbe */}}
-          {{- if $gateway.livenessProbe }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $gateway.livenessProbe }}
           livenessProbe:
-            {{- toYaml $gateway.livenessProbe | nindent 12 }}
-          {{- end }}{{/* if $gateway.livenessProbe */}}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           {{- if ($gateway.gracefulShutdown).enabled }}
           lifecycle:
             preStop:
@@ -72,10 +70,10 @@ spec:
                   - -c
                   - wget --post-data "" -O /dev/null 127.0.0.1:15000/quitquitquit; sleep {{ $gateway.gracefulShutdown.sleepTimeSeconds | default "10" }}
           {{- end}}{{/* if ($gateway.gracefulShutdown).enabled */}}
-          {{- if $gateway.resources }}
+          {{- with $gateway.resources }}
           resources:
-            {{- toYaml $gateway.resources | nindent 12 }}
-          {{- end }} {{/* if $gateway.resources */}}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           args:
             - -f
             - /config/config.yaml
@@ -110,13 +108,16 @@ spec:
 {{/*              value: /config/config.yaml*/}}
             {{- if $gateway.env }}
             {{- toYaml $gateway.env | nindent 12 }}
-            {{- end }} {{/* if $gateway.env */}}
+            {{- end }}
           volumeMounts:
             - name: config-volume
               mountPath: /config
             # Make /tmp writeable, needed for pprof
             - name: tmp
               mountPath: /tmp
+            - name: xds-token
+              mountPath: /var/run/secrets/xds-tokens
+              readOnly: true
             {{- with $gateway.extraVolumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
@@ -128,6 +129,13 @@ spec:
             {{- else }}
             name: {{ include "kgateway.gateway.fullname" . }}
             {{- end }}
+        - name: xds-token
+          projected:
+            sources:
+            - serviceAccountToken:
+                audience: kgateway
+                expirationSeconds: 43200
+                path: xds-token
         - name: tmp
           emptyDir: {}
         {{- with $gateway.extraVolumes }}
@@ -148,9 +156,9 @@ spec:
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- if $gateway.tolerations }}
+      {{- with $gateway.tolerations }}
       tolerations:
-        {{- toYaml $gateway.tolerations | nindent 8 }}
+        {{- toYaml . | nindent 8 }}
       {{- end }}
 ---
 apiVersion: v1

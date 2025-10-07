@@ -39,7 +39,7 @@ export VERSION
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
 # Note: When bumping this version, update the version in pkg/validator/validator.go as well.
-export ENVOY_IMAGE ?= quay.io/solo-io/envoy-gloo:1.35.2-patch1
+export ENVOY_IMAGE ?= quay.io/solo-io/envoy-gloo:1.35.2-patch4
 export LDFLAGS := -X 'github.com/kgateway-dev/kgateway/v2/internal/version.Version=$(VERSION)'
 export GCFLAGS ?=
 
@@ -514,8 +514,11 @@ metallb: ## Install the MetalLB load balancer
 .PHONY: deploy-kgateway
 deploy-kgateway: package-kgateway-charts deploy-kgateway-crd-chart deploy-kgateway-chart ## Deploy the kgateway chart and CRDs
 
+.PHONY: setup-base
+setup-base: kind-create gw-api-crds gie-crds metallb ## Setup the base infrastructure (kind cluster, CRDs, and MetalLB)
+
 .PHONY: setup
-setup: kind-create kind-build-and-load gw-api-crds gie-crds metallb package-kgateway-charts ## Set up basic infrastructure (kind cluster, images, CRDs, MetalLB)
+setup: setup-base kind-build-and-load package-kgateway-charts ## Setup the complete infrastructure (base setup plus images and charts)
 
 .PHONY: run
 run: setup deploy-kgateway  ## Set up complete development environment
@@ -577,16 +580,6 @@ kind-load: kind-load-kgateway
 kind-load: kind-load-envoy-wrapper
 kind-load: kind-load-sds
 kind-load: kind-load-kgateway-ai-extension
-
-#----------------------------------------------------------------------------------
-# A2A Test Server (for agentgateway a2a integration in e2e tests)
-#----------------------------------------------------------------------------------
-
-TEST_A2A_AGENT_SERVER_DIR := $(ROOTDIR)/test/kubernetes/e2e/features/agentgateway/a2a-example
-.PHONY: test-a2a-agent-docker
-test-a2a-agent-docker:
-	docker buildx build $(LOAD_OR_PUSH) $(PLATFORM_MULTIARCH) -f $(TEST_A2A_AGENT_SERVER_DIR)/Dockerfile $(TEST_A2A_AGENT_SERVER_DIR) \
-		-t $(IMAGE_REGISTRY)/test-a2a-agent:$(VERSION)
 
 #----------------------------------------------------------------------------------
 # AI Extensions Test Server (for mocking AI Providers in e2e tests)
@@ -720,24 +713,28 @@ agw-conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go
 #----------------------------------------------------------------------------------
 
 .PHONY: bump-gtw
-bump-gtw: ## Bump Gateway API deps to $DEP_VERSION
-ifndef DEP_VERSION
-	$(error DEP_VERSION is not set, e.g. make bump-gtw DEP_VERSION=v1.3.0)
-endif
-	@echo "Bumping Gateway API to $(DEP_VERSION)"
-	@$(SHELL) hack/bump_deps.sh gtw $(DEP_VERSION)
-	@echo "Updating licensing..."
-	@$(MAKE) generate-licenses
+bump-gtw: ## Bump Gateway API deps to $DEP_REF (or $DEP_VERSION). Example: make bump-gtw DEP_REF=198e6cab...
+	@if [ -z "$${DEP_REF:-}" ] && [ -n "$${DEP_VERSION:-}" ]; then DEP_REF="$$DEP_VERSION"; fi; \
+	if [ -z "$${DEP_REF:-}" ]; then \
+	  echo "DEP_REF is not set (or DEP_VERSION). e.g. make bump-gtw DEP_REF=v1.3.0 or DEP_REF=198e6cab6774..."; \
+	  exit 2; \
+	fi; \
+	echo "Bumping Gateway API to $${DEP_REF}"; \
+	$(SHELL) hack/bump_deps.sh gtw "$$DEP_REF"; \
+	echo "Updating licensing..."; \
+	$(MAKE) generate-licenses
 
 .PHONY: bump-gie
-bump-gie: ## Bump Gateway API Inference Extension to $DEP_VERSION
-ifndef DEP_VERSION
-	$(error DEP_VERSION is not set, e.g. make bump-gie DEP_VERSION=v0.5.0)
-endif
-	@echo ">>> Bumping Gateway API Inference Extension to $(DEP_VERSION)"
-	@$(SHELL) hack/bump_deps.sh gie $(DEP_VERSION)
-	@echo "Updating licensing..."
-	@$(MAKE) generate-licenses
+bump-gie: ## Bump Gateway API Inference Extension to $DEP_REF (or $DEP_VERSION). Example: make bump-gie DEP_REF=198e6cab...
+	@if [ -z "$${DEP_REF:-}" ] && [ -n "$${DEP_VERSION:-}" ]; then DEP_REF="$$DEP_VERSION"; fi; \
+	if [ -z "$${DEP_REF:-}" ]; then \
+	  echo "DEP_REF is not set (or DEP_VERSION). e.g. make bump-gie DEP_REF=v0.5.1 or DEP_REF=198e6cab6774..."; \
+	  exit 2; \
+	fi; \
+	echo ">>> Bumping Gateway API Inference Extension to $${DEP_REF}"; \
+	$(SHELL) hack/bump_deps.sh gie "$$DEP_REF"; \
+	echo "Updating licensing..."; \
+	$(MAKE) generate-licenses
 
 #----------------------------------------------------------------------------------
 # Printing makefile variables utility

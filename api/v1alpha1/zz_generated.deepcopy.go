@@ -869,6 +869,11 @@ func (in *BedrockConfig) DeepCopyInto(out *BedrockConfig) {
 		*out = new(AwsAuth)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.Model != nil {
+		in, out := &in.Model, &out.Model
+		*out = new(string)
+		**out = **in
+	}
 	if in.Guardrail != nil {
 		in, out := &in.Guardrail, &out.Guardrail
 		*out = new(AWSGuardrailConfig)

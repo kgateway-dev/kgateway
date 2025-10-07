@@ -180,8 +180,6 @@ spec:
                             minLength: 1
                             pattern: ^[a-z0-9-]+$
                             type: string
-                        required:
-                        - model
                         type: object
                       gemini:
                         properties:
@@ -470,8 +468,6 @@ spec:
                                     minLength: 1
                                     pattern: ^[a-z0-9-]+$
                                     type: string
-                                required:
-                                - model
                                 type: object
                               gemini:
                                 properties:

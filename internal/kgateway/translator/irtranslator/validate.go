@@ -12,7 +12,7 @@ import (
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	"github.com/kgateway-dev/kgateway/v2/api/settings"
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/xds/bootstrap"
 )
@@ -66,7 +66,7 @@ func validateRoute(
 	ctx context.Context,
 	route *envoyroutev3.Route,
 	v validator.Validator,
-	mode settings.ValidationMode,
+	mode apisettings.ValidationMode,
 ) error {
 	if route == nil {
 		return fmt.Errorf("route cannot be nil for RDS validation")
@@ -74,7 +74,7 @@ func validateRoute(
 	if err := validateEnvoyRoute(route); err != nil {
 		return fmt.Errorf("%w: %w", ErrInvalidRoute, err)
 	}
-	if mode == settings.ValidationStrict {
+	if mode == apisettings.ValidationStrict {
 		if err := validateMatcherOnly(ctx, route, v); err != nil {
 			return fmt.Errorf("%w: %w", ErrInvalidMatcher, err)
 		}

@@ -122,7 +122,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 			ctrl.Finish()
 		})
 
-		Describe("translates gateway API resources to Gloo proxy listeners", func() {
+		Describe("translates gateway API resources to kgateway proxy listeners", func() {
 			It("should create a TCP listener with multiple backend references", func() {
 				By("Creating a TCPRoute with multiple backend references")
 				tcpRoute := tcpRoute("test-tcp-route", "default")
@@ -174,7 +174,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 				Expect(ml.Listeners).To(HaveLen(1))
 				Expect(ml.Listeners[0].TcpFilterChains).To(HaveLen(1))
 
-				// Translate the listener to get the actual Gloo listener
+				// Translate the listener to get the actual kgateway listener
 				translatedListener := ml.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, nil, statusReporter)
 				Expect(translatedListener).NotTo(BeNil())
 				Expect(translatedListener.TcpFilterChain).To(HaveLen(1))
@@ -670,7 +670,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 			ctrl.Finish()
 		})
 
-		Describe("translates gateway API resources to Gloo proxy listeners", func() {
+		Describe("translates gateway API resources to kgateway proxy listeners", func() {
 			It("should create a TLS listener with multiple backend references", func() {
 				tlsRoute := tlsRoute("test-tls-route", "default")
 				tlsRoute.Spec = gwv1a2.TLSRouteSpec{

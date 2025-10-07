@@ -31,7 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/settings"
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
@@ -46,7 +46,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
-	"github.com/kgateway-dev/kgateway/v2/test/translator"
 )
 
 type AssertReports func(gwNN types.NamespacedName, reportsMap reports.ReportMap)
@@ -359,7 +358,7 @@ func TestTranslationWithExtraPlugins(
 		Addresses: addresses,
 	}
 	output = sortTranslationResult(output)
-	outputYaml, err := translator.MarshalAnyYaml(output)
+	outputYaml, err := testutils.MarshalAnyYaml(output)
 	fmt.Fprintf(ginkgo.GinkgoWriter, "actual result:\n %s \nerror: %v", outputYaml, err)
 	r.NoError(err)
 
@@ -448,7 +447,7 @@ func ReadYamlFile(file string, out interface{}) error {
 	if err != nil {
 		return err
 	}
-	return translator.UnmarshalAnyYaml(data, out)
+	return testutils.UnmarshalAnyYaml(data, out)
 }
 
 func GetHTTPRouteStatusError(
@@ -533,7 +532,7 @@ func AreReportsSuccess(reportsMap reports.ReportMap) error {
 	return nil
 }
 
-type SettingsOpts func(*settings.Settings)
+type SettingsOpts func(*apisettings.Settings)
 
 func (tc TestCase) Run(
 	t *testing.T,
@@ -547,14 +546,14 @@ func (tc TestCase) Run(
 		anyObjs []runtime.Object
 		ourObjs []runtime.Object
 	)
-	gvkToStructuralSchema, err := translator.GetStructuralSchemas(
-		filepath.Join(testutils.GitRootDirectory(), translator.CRDPath))
+	gvkToStructuralSchema, err := testutils.GetStructuralSchemas(
+		filepath.Join(testutils.GitRootDirectory(), testutils.CRDPath))
 	if err != nil {
 		return nil, fmt.Errorf("error getting structural schemas: %w", err)
 	}
 
 	for _, file := range tc.InputFiles {
-		objs, err := translator.LoadFromFiles(file, scheme, gvkToStructuralSchema)
+		objs, err := testutils.LoadFromFiles(file, scheme, gvkToStructuralSchema)
 		if err != nil {
 			return nil, err
 		}
@@ -626,7 +625,7 @@ func (tc TestCase) Run(
 		Stop: ctx.Done(),
 	}
 
-	settings, err := settings.BuildSettings()
+	settings, err := apisettings.BuildSettings()
 	// enable agent gateway translation
 	settings.EnableAgentgateway = true
 	settings.EnableInferExt = true
@@ -763,7 +762,7 @@ func (tc TestCase) Run(
 	return results, nil
 }
 
-func proxySyncerPluginFactory(ctx context.Context, commoncol *collections.CommonCollections, name string, extraPluginsFn ExtraPluginsFn, globalSettings settings.Settings) pluginsdk.Plugin {
+func proxySyncerPluginFactory(ctx context.Context, commoncol *collections.CommonCollections, name string, extraPluginsFn ExtraPluginsFn, globalSettings apisettings.Settings) pluginsdk.Plugin {
 	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultAgwClassName, globalSettings, nil)
 
 	var extraPlugs []pluginsdk.Plugin

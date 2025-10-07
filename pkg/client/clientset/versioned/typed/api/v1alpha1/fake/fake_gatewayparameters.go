@@ -10,18 +10,18 @@ import (
 	typedapiv1alpha1 "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/typed/api/v1alpha1"
 )
 
-// fakeGatewayParameterses implements GatewayParametersInterface
-type fakeGatewayParameterses struct {
+// fakeGatewayParameters implements GatewayParametersInterface
+type fakeGatewayParameters struct {
 	*gentype.FakeClientWithListAndApply[*v1alpha1.GatewayParameters, *v1alpha1.GatewayParametersList, *apiv1alpha1.GatewayParametersApplyConfiguration]
 	Fake *FakeGatewayV1alpha1
 }
 
-func newFakeGatewayParameterses(fake *FakeGatewayV1alpha1, namespace string) typedapiv1alpha1.GatewayParametersInterface {
-	return &fakeGatewayParameterses{
+func newFakeGatewayParameters(fake *FakeGatewayV1alpha1, namespace string) typedapiv1alpha1.GatewayParametersInterface {
+	return &fakeGatewayParameters{
 		gentype.NewFakeClientWithListAndApply[*v1alpha1.GatewayParameters, *v1alpha1.GatewayParametersList, *apiv1alpha1.GatewayParametersApplyConfiguration](
 			fake.Fake,
 			namespace,
-			v1alpha1.SchemeGroupVersion.WithResource("gatewayparameterses"),
+			v1alpha1.SchemeGroupVersion.WithResource("gatewayparameters"),
 			v1alpha1.SchemeGroupVersion.WithKind("GatewayParameters"),
 			func() *v1alpha1.GatewayParameters { return &v1alpha1.GatewayParameters{} },
 			func() *v1alpha1.GatewayParametersList { return &v1alpha1.GatewayParametersList{} },

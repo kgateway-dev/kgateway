@@ -30,7 +30,7 @@ import (
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	"github.com/kgateway-dev/kgateway/v2/api/settings"
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -43,7 +43,7 @@ type postStartFunc func(t *testing.T, ctx context.Context, client istiokube.CLIC
 func RunController(
 	t *testing.T,
 	logger *zap.Logger,
-	globalSettings *settings.Settings,
+	globalSettings *apisettings.Settings,
 	testEnv *envtest.Environment,
 	postStart postStartFunc,
 	yamlFilesToApply [][]string,
@@ -56,7 +56,7 @@ func RunController(
 	),
 ) {
 	if globalSettings == nil {
-		st, err := settings.BuildSettings()
+		st, err := apisettings.BuildSettings()
 		if err != nil {
 			t.Fatalf("failed to get settings %v", err)
 		}
@@ -300,4 +300,14 @@ rules:
 		panic(err)
 	}
 	return f.Name()
+}
+
+func BuildSettings() (*apisettings.Settings, error) {
+	s, err := apisettings.BuildSettings()
+	if err != nil {
+		return nil, err
+	}
+	// xDS auth requires projected Service Account token which does not work in envtest
+	s.XdsAuth = false
+	return s, nil
 }

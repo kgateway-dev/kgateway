@@ -17,7 +17,7 @@ import (
 // +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:metadata:labels={app=kgateway,app.kubernetes.io/name=kgateway}
-// +kubebuilder:resource:categories=kgateway
+// +kubebuilder:resource:categories=kgateway,path=gatewayparameters
 // +kubebuilder:subresource:status
 type GatewayParameters struct {
 	metav1.TypeMeta   `json:",inline"`

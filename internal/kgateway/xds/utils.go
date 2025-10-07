@@ -20,6 +20,9 @@ const (
 	// RoleKey is the name of the ket in the node.metadata used to store the role
 	RoleKey = "role"
 
+	// PeerCtxKey is the key used to store the peer information in the context
+	PeerCtxKey = "peer"
+
 	// FallbackNodeCacheKey is used to let nodes know they have a bad config
 	// we assign a "fix me" snapshot for bad nodes
 	FallbackNodeCacheKey = "misconfigured-node"
@@ -30,7 +33,7 @@ func IsKubeGatewayCacheKey(key string) bool {
 }
 
 // OwnerNamespaceNameID returns the string identifier for an Envoy node in a provided namespace.
-// Envoy proxies are assigned their configuration by Gloo based on their Node ID.
+// Envoy proxies are assigned their configuration by kgateway based on their Node ID.
 // Therefore, proxies must identify themselves using the same naming
 // convention that we use to persist the Proxy resource in the snapshot cache.
 // The naming convention that we follow is "OWNER~NAMESPACE~NAME"

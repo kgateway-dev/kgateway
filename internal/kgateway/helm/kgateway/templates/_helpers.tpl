@@ -52,8 +52,15 @@ helm.sh/chart: {{ include "kgateway.chart" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
+gateway.networking.k8s.io/gateway-class-name: {{ .Values.gateway.gatewayClassName }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
+
+{{- define "kgateway.gateway.podLabels" -}}
+{{ include "kgateway.gateway.selectorLabels" . }}
+gateway.networking.k8s.io/gateway-class-name: {{ .Values.gateway.gatewayClassName }}
+{{- end }}
+
 
 {{/*
 Selector labels

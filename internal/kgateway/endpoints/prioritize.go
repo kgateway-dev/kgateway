@@ -154,7 +154,7 @@ func prioritizeWithLbInfo(logger *slog.Logger, ep ir.EndpointsForBackend, lbInfo
 
 	// in theory we want to run endpoint plugins here.
 	// we only have one endpoint plugin, and it's not clear if it is in use. so
-	// consider deprecating the functionality. it's not easy to do as with krt we no longer have gloo 'Endpoint' objects
+	// consider deprecating the functionality. it's not easy to do as with krt we no longer have kgateway 'Endpoint' objects
 	return cla
 }
 

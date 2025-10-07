@@ -18,7 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	"github.com/kgateway-dev/kgateway/v2/api/settings"
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/endpoints"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
@@ -36,7 +36,7 @@ type BackendTranslator struct {
 	ContributedPolicies map[schema.GroupKind]sdk.PolicyPlugin
 	CommonCols          *collections.CommonCollections
 	Validator           validator.Validator
-	Mode                settings.ValidationMode
+	Mode                apisettings.ValidationMode
 }
 
 // TranslateBackend translates a BackendObjectIR to an Envoy Cluster. If we encounter any
@@ -82,7 +82,7 @@ func (t *BackendTranslator) TranslateBackend(
 	}
 
 	// In strict mode, validate the final cluster configuration using Envoy
-	if t.Mode == settings.ValidationStrict && t.Validator != nil {
+	if t.Mode == apisettings.ValidationStrict && t.Validator != nil {
 		if err := t.validateClusterConfig(ctx, out); err != nil {
 			logger.Error("cluster failed xDS validation in strict mode", "cluster", out.GetName(), "error", err)
 			return buildBlackholeCluster(backend), err
@@ -226,15 +226,15 @@ func processDnsLookupFamily(out *envoyclusterv3.Cluster, cc *collections.CommonC
 	}
 	// if we have settings, use value from it
 	switch cc.Settings.DnsLookupFamily {
-	case settings.DnsLookupFamilyV4Preferred:
+	case apisettings.DnsLookupFamilyV4Preferred:
 		out.DnsLookupFamily = envoyclusterv3.Cluster_V4_PREFERRED
-	case settings.DnsLookupFamilyV4Only:
+	case apisettings.DnsLookupFamilyV4Only:
 		out.DnsLookupFamily = envoyclusterv3.Cluster_V4_ONLY
-	case settings.DnsLookupFamilyV6Only:
+	case apisettings.DnsLookupFamilyV6Only:
 		out.DnsLookupFamily = envoyclusterv3.Cluster_V6_ONLY
-	case settings.DnsLookupFamilyAuto:
+	case apisettings.DnsLookupFamilyAuto:
 		out.DnsLookupFamily = envoyclusterv3.Cluster_AUTO
-	case settings.DnsLookupFamilyAll:
+	case apisettings.DnsLookupFamilyAll:
 		out.DnsLookupFamily = envoyclusterv3.Cluster_ALL
 	}
 }

@@ -12,7 +12,7 @@ import (
 	discoveryv1 "k8s.io/api/discovery/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/kgateway-dev/kgateway/v2/api/settings"
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
@@ -49,8 +49,8 @@ type EndpointsInputs struct {
 	KrtOpts krtutil.KrtOptions
 }
 
-func NewGlooK8sEndpointInputs(
-	stngs settings.Settings,
+func NewKgatewayK8sEndpointInputs(
+	stngs apisettings.Settings,
 	krtopts krtutil.KrtOptions,
 	endpointSlices krt.Collection[*discoveryv1.EndpointSlice],
 	pods krt.Collection[LocalityPod],

@@ -2007,8 +2007,7 @@ func schema_kgateway_v2_api_v1alpha1_BedrockConfig(ref common.ReferenceCallback)
 					},
 					"model": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The model field is the supported model id published by AWS. See <https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html>",
-							Default:     "",
+							Description: "Optional: Override the model ID. If unset, the model is taken from the request. See <https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html>",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2027,7 +2026,6 @@ func schema_kgateway_v2_api_v1alpha1_BedrockConfig(ref common.ReferenceCallback)
 						},
 					},
 				},
-				Required: []string{"model"},
 			},
 		},
 		Dependencies: []string{

@@ -74,15 +74,9 @@ else
     VERSION=$VERSION make kind-build-and-load-test-ai-provider
   fi
 
-  if [[ $AGENTGATEWAY == "true" ]]; then
-    VERSION=$VERSION make kind-build-and-load-test-a2a-agent
-  fi
 fi
 
-# 5. Build the gloo command line tool, ensuring we have one in the `_output` folder
-# make -s build-cli-local
-
-# 6. Apply the Kubernetes Gateway API CRDs
+# 5. Apply the Kubernetes Gateway API CRDs
 # Note, we're using kustomize to apply the CRDs from the k8s gateway api repo as
 # kustomize supports remote GH URLs and provides more flexibility compared to
 # alternatives like running a series of `kubectl apply -f <url>` commands. This
@@ -94,10 +88,10 @@ else
   kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd/$CONFORMANCE_CHANNEL?ref=$CONFORMANCE_VERSION"
 fi
 
-# 7. Apply the Kubernetes Gateway API Inference Extension CRDs
+# 6. Apply the Kubernetes Gateway API Inference Extension CRDs
 kubectl apply -f https://github.com/kubernetes-sigs/gateway-api-inference-extension/releases/download/$GIE_CRD_VERSION/manifests.yaml
 
-# 8. Conformance test setup
+# 7. Conformance test setup
 if [[ $CONFORMANCE == "true" ]]; then
   echo "Running conformance test setup"
 

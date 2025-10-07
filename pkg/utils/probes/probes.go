@@ -16,7 +16,7 @@ type ServerParams struct {
 	ResponseBody string
 }
 
-// NewServerParams creates gloo's default probe server parameters
+// NewServerParams creates kgateway's default probe server parameters
 func NewServerParams() ServerParams {
 	return ServerParams{
 		Port:         8765,

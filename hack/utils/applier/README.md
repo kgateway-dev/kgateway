@@ -14,7 +14,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: app-{{.Index}}
-  namespace: gloo-system
+  namespace: kgateway-system
   labels:
     app: app-{{.Index}}
     test: test1

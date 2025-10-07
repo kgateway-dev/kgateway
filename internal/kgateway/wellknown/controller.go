@@ -29,6 +29,9 @@ const (
 	// GatewayNameLabel is a label on GW pods to indicate the name of the gateway
 	// they are associated with.
 	GatewayNameLabel = "gateway.networking.k8s.io/gateway-name"
+	// GatewayClassNameLabel is a label on GW pods to indicate the name of the GatewayClass
+	// they are associated with.
+	GatewayClassNameLabel = "gateway.networking.k8s.io/gateway-class-name"
 
 	// LeaderElectionID is the name of the lease that leader election will use for holding the leader lock.
 	LeaderElectionID = "kgateway"

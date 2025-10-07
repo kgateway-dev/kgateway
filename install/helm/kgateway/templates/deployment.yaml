@@ -34,13 +34,13 @@ spec:
       serviceAccountName: {{ include "kgateway.serviceAccountName" . }}
       {{- with .Values.podSecurityContext }}
       securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+        {{- toYaml . | nindent 8 }}
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           {{- with .Values.securityContext }}
           securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
+            {{- toYaml . | nindent 12 }}
           {{- end }}
           image: "{{ .Values.controller.image.registry | default .Values.image.registry }}/{{ .Values.controller.image.repository }}:{{ .Values.controller.image.tag | default .Values.image.tag | default .Chart.Version }}"
           imagePullPolicy: {{ .Values.controller.image.pullPolicy | default .Values.image.pullPolicy }}
@@ -116,7 +116,7 @@ spec:
             - name: KGW_ENABLE_WAYPOINT
               value: "true"
             {{- end }}
-            # TODO: Remove this once the cleanup is done. Required as the gloo-system
+            # TODO: Remove this once the cleanup is done. Required as the kgateway-system
             # namespace is the default namespace and conformance will fail as a result.
             - name: POD_NAMESPACE
               valueFrom:

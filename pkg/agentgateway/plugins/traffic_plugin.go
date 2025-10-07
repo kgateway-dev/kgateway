@@ -397,16 +397,33 @@ func processExtAuthPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collecti
 	if extauthSvcTarget == nil {
 		return nil, fmt.Errorf("failed to translate traffic policy: %s: missing extauthservice target", trafficPolicy.Name)
 	}
+	spec := &api.PolicySpec_ExternalAuth{
+		Target:  extauthSvcTarget,
+		Context: trafficPolicy.Spec.ExtAuth.ContextExtensions,
+	}
+	if extAuth.FailOpen {
+		spec.FailureMode = api.PolicySpec_ExternalAuth_ALLOW
+	} else if extAuth.StatusOnError != 0 {
+		spec.FailureMode = api.PolicySpec_ExternalAuth_DENY_WITH_STATUS
+		// nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+		spec.StatusOnError = wrapperspb.UInt32(uint32(extAuth.StatusOnError))
+	}
+
+	if b := extAuth.WithRequestBody; b != nil {
+		spec.IncludeRequestBody = &api.PolicySpec_ExternalAuth_BodyOptions{
+			// nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+			MaxRequestBytes:     uint32(b.MaxRequestBytes),
+			AllowPartialMessage: b.AllowPartialMessage,
+			PackAsBytes:         b.PackAsBytes,
+		}
+	}
 
 	extauthPolicy := &api.Policy{
 		Name:   policyName + extauthPolicySuffix + attachmentName(policyTarget),
 		Target: policyTarget,
 		Spec: &api.PolicySpec{
 			Kind: &api.PolicySpec_ExtAuthz{
-				ExtAuthz: &api.PolicySpec_ExternalAuth{
-					Target:  extauthSvcTarget,
-					Context: trafficPolicy.Spec.ExtAuth.ContextExtensions,
-				},
+				ExtAuthz: spec,
 			},
 		},
 	}

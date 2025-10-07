@@ -79,6 +79,15 @@ func (s *testingSuite) TestMetrics() {
 
 		gathered := metricstest.MustParseGatheredMetrics(c, resp.Body)
 
+		// Assert xDS auth metrics
+		var expectedGateways float64 = 2
+		gathered.AssertMetric("kgateway_xds_auth_rq_total", &metricstest.ExpectedMetricValueTest{
+			Test: metricstest.GreaterOrEqual(expectedGateways),
+		})
+		gathered.AssertMetric("kgateway_xds_auth_rq_success_total", &metricstest.ExpectedMetricValueTest{
+			Test: metricstest.GreaterOrEqual(expectedGateways),
+		})
+
 		gathered.AssertMetricsLabelsInclude("kgateway_controller_reconcile_duration_seconds", [][]metrics.Label{{
 			{Name: "controller", Value: "gateway"},
 			{Name: "name", Value: "gw1"},

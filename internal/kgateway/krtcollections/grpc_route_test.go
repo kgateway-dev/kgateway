@@ -16,7 +16,7 @@ import (
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/settings"
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -475,7 +475,7 @@ func TestTransformGRPCRoute(t *testing.T) {
 			grpcRoutes := krttest.GetMockCollection[*gwv1.GRPCRoute](mock)
 			services := krttest.GetMockCollection[*corev1.Service](mock)
 			refgrants := krtcollections.NewRefGrantIndex(krttest.GetMockCollection[*gwv1beta1.ReferenceGrant](mock))
-			policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, sdk.ContributesPolicies{}, settings.Settings{})
+			policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, sdk.ContributesPolicies{}, apisettings.Settings{})
 
 			// Set up backend index
 			backends := krtcollections.NewBackendIndex(krtutil.KrtOptions{}, policies, refgrants)
@@ -491,7 +491,7 @@ func TestTransformGRPCRoute(t *testing.T) {
 				policies,
 				backends,
 				refgrants,
-				settings.Settings{},
+				apisettings.Settings{},
 			)
 
 			// Wait until collections are synced
