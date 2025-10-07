@@ -157,8 +157,11 @@ func translateLLMProviderToProvider(krtctx krt.HandlerContext, llm *v1alpha1.LLM
 		}
 		auth = buildTranslatedAuthPolicy(krtctx, &llm.VertexAI.AuthToken, secrets, namespace)
 	} else if llm.Bedrock != nil {
-		model := &wrappers.StringValue{
-			Value: llm.Bedrock.Model,
+		var model *wrappers.StringValue
+		if llm.Bedrock.Model != nil {
+			model = &wrappers.StringValue{
+				Value: *llm.Bedrock.Model,
+			}
 		}
 		region := llm.Bedrock.Region
 		var guardrailIdentifier, guardrailVersion *wrappers.StringValue

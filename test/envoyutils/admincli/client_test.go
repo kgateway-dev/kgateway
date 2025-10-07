@@ -42,13 +42,6 @@ var _ = Describe("Client", func() {
 
 	Context("Integration tests", func() {
 
-		When("Admin API is reachable", func() {
-			// We do not YET write additional integration tests for when the Admin API is reachable
-			// This utility is used in our test/services/envoy.Instance, which is the core service
-			// for our in-memory e2e (test/e2e) tests.
-			// todo: we should introduce integration tests to validate this behavior
-		})
-
 		When("Admin API is not reachable", func() {
 
 			It("emits an error to configured locations", func() {

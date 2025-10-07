@@ -209,7 +209,9 @@ func getBackendModel(provider *v1alpha1.LLMProvider, byType map[string]struct{})
 	} else if provider.Bedrock != nil {
 		// currently only supported in agentgateway
 		byType["bedrock"] = struct{}{}
-		llmModel = provider.Bedrock.Model
+		if provider.Bedrock.Model != nil {
+			llmModel = *provider.Bedrock.Model
+		}
 	}
 	return llmModel
 }
