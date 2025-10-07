@@ -175,7 +175,7 @@ func TranslateTrafficPolicy(
 				conds := []metav1.Condition{}
 				meta.SetStatusCondition(&conds, metav1.Condition{
 					Type:    string(v1alpha1.PolicyConditionAccepted),
-					Status:  metav1.ConditionFalse,
+					Status:  metav1.ConditionTrue,
 					Reason:  string(v1alpha1.PolicyReasonInvalid),
 					Message: fmt.Sprintf("Backend %s not found", target.Name),
 				})
@@ -227,7 +227,7 @@ func TranslateTrafficPolicy(
 					// No policies produced and error present -> invalid
 					meta.SetStatusCondition(&conds, metav1.Condition{
 						Type:    string(v1alpha1.PolicyConditionAccepted),
-						Status:  metav1.ConditionFalse,
+						Status:  metav1.ConditionTrue,
 						Reason:  string(v1alpha1.PolicyReasonInvalid),
 						Message: err.Error(),
 					})
