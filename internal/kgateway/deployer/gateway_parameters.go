@@ -108,6 +108,7 @@ func (gp *GatewayParameters) getHelmValuesGenerator(ctx context.Context, obj cli
 	}
 
 	if g, ok := gp.extraHVGenerators[ref]; ok {
+		// TODO: log the generator used...
 		slog.Debug("using custom HelmValuesGenerator for Gateway",
 			"gateway_name", gw.GetName(),
 			"gateway_namespace", gw.GetNamespace(),
@@ -393,15 +394,11 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 	agwConfig := kubeProxyConfig.GetAgentgateway()
 
 	gateway := vals.Gateway
+
 	// deployment values
-	if deployConfig.GetOmitReplicas() != nil && *deployConfig.GetOmitReplicas() {
-		// Don't set replica count - let HPA (if applied) handle it
-		gateway.ReplicaCount = nil
-	} else {
-		// Use the specified replica count
-		if deployConfig.GetReplicas() != nil {
-			gateway.ReplicaCount = pointer.Uint32(uint32(*deployConfig.GetReplicas())) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
-		}
+	// Use the specified replica count only if it's explicitly set
+	if deployConfig.GetReplicas() != nil {
+		gateway.ReplicaCount = pointer.Uint32(uint32(*deployConfig.GetReplicas())) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 	}
 	gateway.Strategy = deployConfig.GetStrategy()
 

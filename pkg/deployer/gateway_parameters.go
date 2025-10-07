@@ -203,10 +203,6 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 		Spec: v1alpha1.GatewayParametersSpec{
 			SelfManaged: nil,
 			Kube: &v1alpha1.KubernetesProxyConfig{
-				Deployment: &v1alpha1.ProxyDeployment{
-					Replicas:     ptr.To[int32](1),
-					OmitReplicas: ptr.To(false),
-				},
 				Service: &v1alpha1.Service{
 					Type: (*corev1.ServiceType)(ptr.To(string(corev1.ServiceTypeLoadBalancer))),
 				},

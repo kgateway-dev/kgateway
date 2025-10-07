@@ -6411,16 +6411,9 @@ func schema_kgateway_v2_api_v1alpha1_ProxyDeployment(ref common.ReferenceCallbac
 				Properties: map[string]spec.Schema{
 					"replicas": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The number of desired pods. Defaults to 1.",
+							Description: "The number of desired pods. If omitted, behavior will be managed by the K8s control plane, and will default to 1. If you are using an HPA, make sure to not explicitly define this. K8s reference: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#replicas",
 							Type:        []string{"integer"},
 							Format:      "int32",
-						},
-					},
-					"omitReplicas": {
-						SchemaProps: spec.SchemaProps{
-							Description: "If true, replicas will not be set in the deployment (allowing HPA to control scaling)",
-							Type:        []string{"boolean"},
-							Format:      "",
 						},
 					},
 					"strategy": {

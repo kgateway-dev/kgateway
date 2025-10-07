@@ -3867,11 +3867,6 @@ func (in *ProxyDeployment) DeepCopyInto(out *ProxyDeployment) {
 		*out = new(int32)
 		**out = **in
 	}
-	if in.OmitReplicas != nil {
-		in, out := &in.OmitReplicas, &out.OmitReplicas
-		*out = new(bool)
-		**out = **in
-	}
 	if in.Strategy != nil {
 		in, out := &in.Strategy, &out.Strategy
 		*out = new(appsv1.DeploymentStrategy)
