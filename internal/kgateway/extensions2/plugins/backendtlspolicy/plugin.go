@@ -29,7 +29,6 @@ import (
 	"istio.io/istio/pkg/kube/kubetypes"
 
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1a3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
@@ -50,7 +49,7 @@ var (
 )
 
 var (
-	backendTlsPolicyGvr       = gwv1a3.SchemeGroupVersion.WithResource("backendtlspolicies")
+	backendTlsPolicyGvr       = gwv1.SchemeGroupVersion.WithResource("backendtlspolicies")
 	backendTlsPolicyGroupKind = kgwellknown.BackendTLSPolicyGVK
 )
 
@@ -74,28 +73,28 @@ func (d *backendTlsPolicy) Equals(in any) bool {
 }
 
 func registerTypes() {
-	kubeclient.Register[*gwv1a3.BackendTLSPolicy](
+	kubeclient.Register[*gwv1.BackendTLSPolicy](
 		backendTlsPolicyGvr,
 		backendTlsPolicyGroupKind,
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
-			return c.GatewayAPI().GatewayV1alpha3().BackendTLSPolicies(namespace).List(context.Background(), o)
+			return c.GatewayAPI().GatewayV1().BackendTLSPolicies(namespace).List(context.Background(), o)
 		},
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
-			return c.GatewayAPI().GatewayV1alpha3().BackendTLSPolicies(namespace).Watch(context.Background(), o)
+			return c.GatewayAPI().GatewayV1().BackendTLSPolicies(namespace).Watch(context.Background(), o)
 		},
 	)
 }
 
 func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
 	registerTypes()
-	inf := kclient.NewDelayedInformer[*gwv1a3.BackendTLSPolicy](
+	inf := kclient.NewDelayedInformer[*gwv1.BackendTLSPolicy](
 		commoncol.Client, backendTlsPolicyGvr, kubetypes.StandardInformer,
 		kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()},
 	)
 	col := krt.WrapClient(inf, commoncol.KrtOpts.ToOptions("BackendTLSPolicy")...)
 
 	translate := buildTranslateFunc(ctx, commoncol.ConfigMaps)
-	tlsPolicyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *gwv1a3.BackendTLSPolicy) *ir.PolicyWrapper {
+	tlsPolicyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *gwv1.BackendTLSPolicy) *ir.PolicyWrapper {
 		tlsPolicyIR, err := translate(krtctx, i)
 		pol := &ir.PolicyWrapper{
 			ObjectSource: ir.ObjectSource{
@@ -141,8 +140,8 @@ func processBackend(ctx context.Context, polir ir.PolicyIR, in ir.BackendObjectI
 func buildTranslateFunc(
 	ctx context.Context,
 	cfgmaps krt.Collection[*corev1.ConfigMap],
-) func(krtctx krt.HandlerContext, i *gwv1a3.BackendTLSPolicy) (*backendTlsPolicy, error) {
-	return func(krtctx krt.HandlerContext, policyCR *gwv1a3.BackendTLSPolicy) (*backendTlsPolicy, error) {
+) func(krtctx krt.HandlerContext, i *gwv1.BackendTLSPolicy) (*backendTlsPolicy, error) {
+	return func(krtctx krt.HandlerContext, policyCR *gwv1.BackendTLSPolicy) (*backendTlsPolicy, error) {
 		spec := policyCR.Spec
 		policyIr := backendTlsPolicy{
 			ct: policyCR.CreationTimestamp.Time,

@@ -16,7 +16,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gwv1a3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/backendtlspolicy"
 	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
@@ -40,7 +39,7 @@ var (
 	}
 	proxyDeployment  = &appsv1.Deployment{ObjectMeta: proxyObjMeta}
 	proxyService     = &corev1.Service{ObjectMeta: proxyObjMeta}
-	backendTlsPolicy = &gwv1a3.BackendTLSPolicy{
+	backendTlsPolicy = &gwv1.BackendTLSPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "tls-policy",
 			Namespace: "default",
@@ -204,7 +203,7 @@ func (s *tsuite) assertPolicyStatus(inCondition metav1.Condition) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
 	p := s.testInstallation.Assertions
 	p.Gomega.Eventually(func(g gomega.Gomega) {
-		tlsPol := &gwv1a3.BackendTLSPolicy{}
+		tlsPol := &gwv1.BackendTLSPolicy{}
 		objKey := client.ObjectKeyFromObject(backendTlsPolicy)
 		err := s.testInstallation.ClusterContext.Client.Get(s.ctx, objKey, tlsPol)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get BackendTLSPolicy %s", objKey)

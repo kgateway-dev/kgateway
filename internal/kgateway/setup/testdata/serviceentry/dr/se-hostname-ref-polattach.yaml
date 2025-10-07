@@ -47,7 +47,7 @@ spec:
   endpoints:
   - address: 1.1.1.1
 ---
-apiVersion: gateway.networking.k8s.io/v1alpha3
+apiVersion: gateway.networking.k8s.io/v1
 kind: BackendTLSPolicy
 metadata:
   name: tls-policy

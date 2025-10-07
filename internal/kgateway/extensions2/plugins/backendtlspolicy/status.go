@@ -7,7 +7,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1alpha3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 )
@@ -16,7 +15,7 @@ func getPolicyStatusFn(
 	cl client.Client,
 ) sdk.GetPolicyStatusFn {
 	return func(ctx context.Context, nn types.NamespacedName) (gwv1.PolicyStatus, error) {
-		res := gwv1alpha3.BackendTLSPolicy{}
+		res := gwv1.BackendTLSPolicy{}
 		err := cl.Get(ctx, nn, &res)
 		if err != nil {
 			return gwv1.PolicyStatus{}, err
@@ -29,7 +28,7 @@ func patchPolicyStatusFn(
 	cl client.Client,
 ) sdk.PatchPolicyStatusFn {
 	return func(ctx context.Context, nn types.NamespacedName, policyStatus gwv1.PolicyStatus) error {
-		res := gwv1alpha3.BackendTLSPolicy{}
+		res := gwv1.BackendTLSPolicy{}
 		err := cl.Get(ctx, nn, &res)
 		if err != nil {
 			return err
