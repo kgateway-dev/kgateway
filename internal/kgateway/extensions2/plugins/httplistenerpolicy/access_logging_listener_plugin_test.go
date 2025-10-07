@@ -25,7 +25,6 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/pointer"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -381,9 +380,9 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 											Name: "test-service",
 										},
 									},
-									Authority:               pointer.String("www.example.com"),
-									MaxReceiveMessageLength: pointer.Int32(127),
-									SkipEnvoyHeaders:        pointer.Bool(true),
+									Authority:               ptr.To("www.example.com"),
+									MaxReceiveMessageLength: ptr.To(int32(127)),
+									SkipEnvoyHeaders:        ptr.To(true),
 									Timeout:                 &metav1.Duration{Duration: 10 * time.Second},
 									InitialMetadata: []v1alpha1.HeaderValue{{
 										Key:   "key",
@@ -394,7 +393,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 											BaseInterval: metav1.Duration{Duration: 5 * time.Second},
 											MaxInterval:  &metav1.Duration{Duration: 10 * time.Second},
 										},
-										NumRetries: pointer.Int32(3),
+										NumRetries: ptr.To(int32(3)),
 									},
 								},
 								LogName: "grpc-log",
@@ -824,20 +823,20 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 								},
 								LogName: "otel-log",
 							},
-							Body:                 pointer.String(`"%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %RESPONSE_CODE% "%REQ(:AUTHORITY)%" "%UPSTREAM_CLUSTER%"\n'`),
-							DisableBuiltinLabels: pointer.Bool(true),
+							Body:                 ptr.To(`"%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %RESPONSE_CODE% "%REQ(:AUTHORITY)%" "%UPSTREAM_CLUSTER%"\n'`),
+							DisableBuiltinLabels: ptr.To(true),
 							ResourceAttributes: &v1alpha1.KeyAnyValueList{
 								Values: []v1alpha1.KeyAnyValue{
 									{
 										Key: "ra-string-key-1",
 										Value: v1alpha1.AnyValue{
-											StringValue: pointer.String("ra-string-value-1"),
+											StringValue: ptr.To("ra-string-value-1"),
 										},
 									},
 									{
 										Key: "service.name",
 										Value: v1alpha1.AnyValue{
-											StringValue: pointer.String("my:service"),
+											StringValue: ptr.To("my:service"),
 										},
 									},
 									{
@@ -845,10 +844,10 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 										Value: v1alpha1.AnyValue{
 											ArrayValue: []v1alpha1.AnyValue{
 												{
-													StringValue: pointer.String("ra-1-string-value"),
+													StringValue: ptr.To("ra-1-string-value"),
 												},
 												{
-													StringValue: pointer.String("ra-2-string-value"),
+													StringValue: ptr.To("ra-2-string-value"),
 												},
 											},
 										},
@@ -861,7 +860,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 													{
 														Key: "ra-string-key-2",
 														Value: v1alpha1.AnyValue{
-															StringValue: pointer.String("ra-string-value-2"),
+															StringValue: ptr.To("ra-string-value-2"),
 														},
 													},
 													{
@@ -869,10 +868,10 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 														Value: v1alpha1.AnyValue{
 															ArrayValue: []v1alpha1.AnyValue{
 																{
-																	StringValue: pointer.String("ra-3-string-value"),
+																	StringValue: ptr.To("ra-3-string-value"),
 																},
 																{
-																	StringValue: pointer.String("ra-4-string-value"),
+																	StringValue: ptr.To("ra-4-string-value"),
 																},
 															},
 														},
@@ -885,13 +884,13 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 																	{
 																		Key: "ra-string-key-3",
 																		Value: v1alpha1.AnyValue{
-																			StringValue: pointer.String("ra-string-value-3"),
+																			StringValue: ptr.To("ra-string-value-3"),
 																		},
 																	},
 																	{
 																		Key: "ra-string-key-4",
 																		Value: v1alpha1.AnyValue{
-																			StringValue: pointer.String("ra-string-value-4"),
+																			StringValue: ptr.To("ra-string-value-4"),
 																		},
 																	},
 																},
@@ -909,7 +908,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 									{
 										Key: "string-key-1",
 										Value: v1alpha1.AnyValue{
-											StringValue: pointer.String("string-value-1"),
+											StringValue: ptr.To("string-value-1"),
 										},
 									},
 									{
@@ -917,10 +916,10 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 										Value: v1alpha1.AnyValue{
 											ArrayValue: []v1alpha1.AnyValue{
 												{
-													StringValue: pointer.String("1-string-value"),
+													StringValue: ptr.To("1-string-value"),
 												},
 												{
-													StringValue: pointer.String("2-string-value"),
+													StringValue: ptr.To("2-string-value"),
 												},
 											},
 										},
@@ -933,7 +932,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 													{
 														Key: "string-key-2",
 														Value: v1alpha1.AnyValue{
-															StringValue: pointer.String("string-value-2"),
+															StringValue: ptr.To("string-value-2"),
 														},
 													},
 													{
@@ -941,10 +940,10 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 														Value: v1alpha1.AnyValue{
 															ArrayValue: []v1alpha1.AnyValue{
 																{
-																	StringValue: pointer.String("3-string-value"),
+																	StringValue: ptr.To("3-string-value"),
 																},
 																{
-																	StringValue: pointer.String("4-string-value"),
+																	StringValue: ptr.To("4-string-value"),
 																},
 															},
 														},
@@ -957,13 +956,13 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 																	{
 																		Key: "string-key-3",
 																		Value: v1alpha1.AnyValue{
-																			StringValue: pointer.String("string-value-3"),
+																			StringValue: ptr.To("string-value-3"),
 																		},
 																	},
 																	{
 																		Key: "string-key-4",
 																		Value: v1alpha1.AnyValue{
-																			StringValue: pointer.String("string-value-4"),
+																			StringValue: ptr.To("string-value-4"),
 																		},
 																	},
 																},
