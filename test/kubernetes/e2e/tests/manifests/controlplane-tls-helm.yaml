@@ -2,4 +2,3 @@ controller:
   xds:
     tls:
       enabled: true
-      secretName: xds-tls-secret

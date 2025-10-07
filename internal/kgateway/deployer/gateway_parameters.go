@@ -298,9 +298,8 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 				Host: &k.inputs.ControlPlane.XdsHost,
 				Port: &k.inputs.ControlPlane.XdsPort,
 				Tls: &deployer.HelmXdsTls{
-					Enabled:    &k.inputs.ControlPlane.XdsTLS,
-					SecretName: &k.inputs.ControlPlane.XdsTLSSecretName,
-					CaCert:     &k.inputs.ControlPlane.XdsTlsCaPath,
+					Enabled: ptr.To(k.inputs.ControlPlane.XdsTLS),
+					CaCert:  ptr.To(k.inputs.ControlPlane.XdsTlsCaPath),
 				},
 			},
 			AgwXds: &deployer.HelmXds{
@@ -309,9 +308,8 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 				Host: &k.inputs.ControlPlane.XdsHost,
 				Port: &k.inputs.ControlPlane.AgwXdsPort,
 				Tls: &deployer.HelmXdsTls{
-					Enabled:    &k.inputs.ControlPlane.XdsTLS,
-					SecretName: &k.inputs.ControlPlane.XdsTLSSecretName,
-					CaCert:     &k.inputs.ControlPlane.XdsTlsCaPath,
+					Enabled: ptr.To(k.inputs.ControlPlane.XdsTLS),
+					CaCert:  ptr.To(k.inputs.ControlPlane.XdsTlsCaPath),
 				},
 			},
 		},

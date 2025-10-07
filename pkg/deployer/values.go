@@ -124,9 +124,8 @@ type HelmXds struct {
 }
 
 type HelmXdsTls struct {
-	Enabled    *bool   `json:"enabled,omitempty"`
-	SecretName *string `json:"secretName,omitempty"`
-	CaCert     *string `json:"caCert,omitempty"`
+	Enabled *bool   `json:"enabled,omitempty"`
+	CaCert  *string `json:"caCert,omitempty"`
 }
 
 type HelmIstio struct {

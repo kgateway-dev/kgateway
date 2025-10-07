@@ -1,4 +1,3 @@
-{{- include "kgateway.validateXdsTls" . }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -120,8 +119,6 @@ spec:
             {{- if .Values.controller.xds.tls.enabled }}
             - name: KGW_XDS_TLS_ENABLED
               value: "true"
-            - name: KGW_XDS_TLS_SECRET_NAME
-              value: {{ .Values.controller.xds.tls.secretName | quote }}
             {{- end }}
             # TODO: Remove this once the cleanup is done. Required as the kgateway-system
             # namespace is the default namespace and conformance will fail as a result.
@@ -141,7 +138,7 @@ spec:
       volumes:
         - name: xds-tls
           secret:
-            secretName: {{ .Values.controller.xds.tls.secretName }}
+            secretName: kgateway-xds-cert
       {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:

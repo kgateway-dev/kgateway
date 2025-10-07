@@ -47,7 +47,6 @@ func allEnvVarsSet() map[string]string {
 		"KGW_ENABLE_WAYPOINT":                "true",
 		"KGW_XDS_AUTH":                       "false",
 		"KGW_XDS_TLS":                        "true",
-		"KGW_XDS_TLS_SECRET_NAME":            "custom-tls-secret",
 	}
 }
 
@@ -100,7 +99,6 @@ func TestSettings(t *testing.T) {
 				EnableWaypoint:              false,
 				XdsAuth:                     true,
 				XdsTLS:                      false,
-				XdsTLSSecretName:            "kgateway-xds-tls",
 			},
 		},
 		{
@@ -138,7 +136,6 @@ func TestSettings(t *testing.T) {
 				EnableWaypoint:              true,
 				XdsAuth:                     false,
 				XdsTLS:                      true,
-				XdsTLSSecretName:            "custom-tls-secret",
 			},
 		},
 		{
@@ -204,7 +201,6 @@ func TestSettings(t *testing.T) {
 				PolicyMerge:                 "{}",
 				XdsAuth:                     true,
 				XdsTLS:                      false,
-				XdsTLSSecretName:            "kgateway-xds-tls",
 			},
 		},
 	}

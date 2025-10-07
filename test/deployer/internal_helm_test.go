@@ -78,7 +78,7 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 	// Create temporary directory and CA certificate file
 	tmpDir := t.TempDir()
 	caCertPath := tmpDir + "/ca.crt"
-	err := os.WriteFile(caCertPath, []byte(caCertContent), 0644)
+	err := os.WriteFile(caCertPath, []byte(caCertContent), 0o600)
 	require.NoError(t, err)
 
 	tests := []HelmTestCase{
@@ -104,7 +104,6 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 	// is injected by the control plane and not via the GWP API.
 	tlsExtraParams := func(cli client.Client, inputs *pkgdeployer.Inputs) pkgdeployer.HelmValuesGenerator {
 		inputs.ControlPlane.XdsTLS = true
-		inputs.ControlPlane.XdsTLSSecretName = "xds-tls-secret"
 		inputs.ControlPlane.XdsTlsCaPath = caCertPath
 		return nil
 	}

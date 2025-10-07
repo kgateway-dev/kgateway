@@ -74,15 +74,3 @@ Supported values: "standard" or "strict" (case-insensitive).
 {{- printf "ERROR: Invalid validation.level '%s'. Must be 'standard' or 'strict' (case-insensitive). Current value: '%s'" $level .Values.validation.level | fail -}}
 {{- end -}}
 {{- end }}
-
-{{/*
-Validate xDS TLS configuration.
-Ensures secretName is set when TLS is enabled.
-*/}}
-{{- define "kgateway.validateXdsTls" -}}
-{{- if .Values.controller.xds.tls.enabled -}}
-{{- if not .Values.controller.xds.tls.secretName -}}
-{{- fail "controller.xds.tls.secretName must be set when controller.xds.tls.enabled is true" -}}
-{{- end -}}
-{{- end -}}
-{{- end }}

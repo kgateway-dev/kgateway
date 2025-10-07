@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"math/big"
 	"time"
+
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 )
 
 const (
@@ -29,7 +31,7 @@ func SecretManifest(ns string, expiration time.Duration) (string, error) {
 	secretYAML := fmt.Sprintf(`apiVersion: v1
 kind: Secret
 metadata:
-  name: xds-tls-secret
+  name: %s
   namespace: %s
 type: kubernetes.io/tls
 data:
@@ -37,6 +39,7 @@ data:
   tls.crt: %s
   tls.key: %s
 `,
+		xds.TLSSecretName,
 		ns,
 		base64.StdEncoding.EncodeToString(certPEM),
 		base64.StdEncoding.EncodeToString(certPEM),

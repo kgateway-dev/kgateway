@@ -315,12 +315,11 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 		AgwControllerName: c.cfg.AgwControllerName,
 		AutoProvision:     AutoProvision,
 		ControlPlane: deployer.ControlPlaneInfo{
-			XdsHost:          xdsHost,
-			XdsPort:          xdsPort,
-			AgwXdsPort:       agwXdsPort,
-			XdsTLS:           globalSettings.XdsTLS,
-			XdsTLSSecretName: globalSettings.XdsTLSSecretName,
-			XdsTlsCaPath:     xds.TLSRootCAPath,
+			XdsHost:      xdsHost,
+			XdsPort:      xdsPort,
+			AgwXdsPort:   agwXdsPort,
+			XdsTLS:       globalSettings.XdsTLS,
+			XdsTlsCaPath: xds.TLSRootCAPath,
 		},
 		IstioAutoMtlsEnabled: istioAutoMtlsEnabled,
 		ImageInfo: &deployer.ImageInfo{
