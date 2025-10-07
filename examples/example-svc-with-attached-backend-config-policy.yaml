@@ -59,7 +59,3 @@ spec:
       kind: Service
   connectTimeout: 5s
   perConnectionBufferLimitBytes: 1024
-  commonHttpProtocolOptions:
-    maxHeadersCount: 15
-    maxRequestsPerConnection: 100
-    headersWithUnderscoresAction: DropHeader
