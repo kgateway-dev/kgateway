@@ -15,7 +15,6 @@ type KubernetesProxyConfigApplyConfiguration struct {
 	Stats                      *StatsConfigApplyConfiguration      `json:"stats,omitempty"`
 	AiExtension                *AiExtensionApplyConfiguration      `json:"aiExtension,omitempty"`
 	Agentgateway               *AgentgatewayApplyConfiguration     `json:"agentgateway,omitempty"`
-	FloatingUserId             *bool                               `json:"floatingUserId,omitempty"`
 	OmitDefaultSecurityContext *bool                               `json:"omitDefaultSecurityContext,omitempty"`
 }
 
@@ -102,14 +101,6 @@ func (b *KubernetesProxyConfigApplyConfiguration) WithAiExtension(value *AiExten
 // If called multiple times, the Agentgateway field is set to the value of the last call.
 func (b *KubernetesProxyConfigApplyConfiguration) WithAgentgateway(value *AgentgatewayApplyConfiguration) *KubernetesProxyConfigApplyConfiguration {
 	b.Agentgateway = value
-	return b
-}
-
-// WithFloatingUserId sets the FloatingUserId field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the FloatingUserId field is set to the value of the last call.
-func (b *KubernetesProxyConfigApplyConfiguration) WithFloatingUserId(value bool) *KubernetesProxyConfigApplyConfiguration {
-	b.FloatingUserId = &value
 	return b
 }
 

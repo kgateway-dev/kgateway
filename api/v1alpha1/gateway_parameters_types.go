@@ -131,12 +131,6 @@ type KubernetesProxyConfig struct {
 	// +optional
 	Agentgateway *Agentgateway `json:"agentgateway,omitempty"`
 
-	// Deprecated: Prefer to use omitDefaultSecurityContext instead. Will be
-	// removed in the next release.
-	//
-	// Used to unset the `runAsUser` values in security contexts.
-	FloatingUserId *bool `json:"floatingUserId,omitempty"`
-
 	// OmitDefaultSecurityContext is used to control whether or not
 	// `securityContext` fields should be rendered for the various generated
 	// Deployments/Containers that are dynamically provisioned by the deployer.
@@ -220,13 +214,6 @@ func (in *KubernetesProxyConfig) GetAgentgateway() *Agentgateway {
 		return nil
 	}
 	return in.Agentgateway
-}
-
-func (in *KubernetesProxyConfig) GetFloatingUserId() *bool {
-	if in == nil {
-		return nil
-	}
-	return in.FloatingUserId
 }
 
 func (in *KubernetesProxyConfig) GetOmitDefaultSecurityContext() *bool {

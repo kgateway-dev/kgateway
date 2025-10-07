@@ -1516,9 +1516,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: envoyContainer
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.EnvoyContainer
-    - name: floatingUserId
-      type:
-        scalar: boolean
     - name: istio
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.IstioIntegration
