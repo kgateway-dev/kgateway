@@ -191,7 +191,7 @@ func GatewayCollection(
 		gwReporter := statusReporter.Gateway(obj)
 		logger.Debug("translating Gateway", "gw_name", obj.GetName(), "resource_version", obj.GetResourceVersion())
 
-		class := fetchClass(ctx, gatewayClasses, obj.Spec.GatewayClassName, controllerName)
+		class := krt.FetchOne(ctx, gatewayClasses, krt.FilterKey(string(obj.Spec.GatewayClassName)))
 		if class == nil {
 			return nil
 		}
