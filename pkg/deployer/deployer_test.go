@@ -2766,7 +2766,7 @@ var _ = Describe("Deployer", func() {
 				validationFunc: func(objs clientObjects, inp *input) error {
 					deployment := objs.findDeployment(defaultNamespace, defaultServiceName)
 					Expect(deployment).NotTo(BeNil())
-					Expect(*deployment.Spec.Replicas).To(BeNil())
+					Expect(deployment.Spec.Replicas).To(BeNil())
 					return nil
 				},
 			}),
