@@ -244,6 +244,7 @@ type ProxyDeployment struct {
 	// K8s reference: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#replicas
 	//
 	// +optional
+	// +kubebuilder:validation:Minimum=0
 	Replicas *int32 `json:"replicas,omitempty"`
 
 	// The deployment strategy to use to replace existing pods with new

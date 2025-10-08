@@ -521,6 +521,7 @@ spec:
                     properties:
                       replicas:
                         format: int32
+                        minimum: 0
                         type: integer
                       strategy:
                         properties:
