@@ -632,6 +632,9 @@ require (
 // Remove once https://github.com/kubernetes-sigs/controller-tools/pull/1224 merges
 replace sigs.k8s.io/controller-tools => github.com/shashankram/controller-tools v0.0.0-20250626172831-f7be064a9132
 
+// Remove once https://github.com/kubernetes-sigs/gateway-api-inference-extension/pull/1691 merges
+replace sigs.k8s.io/gateway-api-inference-extension => github.com/danehans/gateway-api-inference-extension v0.0.0-20251008053524-0501f46811ea
+
 tool (
 	github.com/golang/mock/mockgen
 	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
