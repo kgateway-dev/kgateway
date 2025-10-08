@@ -1581,7 +1581,7 @@ var _ = Describe("Deployer", func() {
 				By("verifying deployment inherited default replicas")
 				dep := objs.findDeployment(defaultNamespace, defaultDeploymentName)
 				Expect(dep).ToNot(BeNil())
-				Expect(*dep.Spec.Replicas).To(Equal(int32(1)))
+				Expect(dep.Spec.Replicas).To(BeNil())
 
 				By("verifying envoy container log level was overridden")
 				envoyContainer := dep.Spec.Template.Spec.Containers[0]
