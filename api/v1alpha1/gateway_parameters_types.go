@@ -245,7 +245,7 @@ type ProxyDeployment struct {
 	//
 	// +optional
 	// +kubebuilder:validation:Minimum=1
-	Replicas *int32 `json:"replicas,omitempty"`
+	Replicas *uint32 `json:"replicas,omitempty"`
 
 	// The deployment strategy to use to replace existing pods with new
 	// ones. The Kubernetes default is a RollingUpdate with 25% maxUnavailable,
@@ -264,7 +264,7 @@ type ProxyDeployment struct {
 	Strategy *appsv1.DeploymentStrategy `json:"strategy,omitempty"`
 }
 
-func (in *ProxyDeployment) GetReplicas() *int32 {
+func (in *ProxyDeployment) GetReplicas() *uint32 {
 	if in == nil {
 		return nil
 	}
