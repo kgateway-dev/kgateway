@@ -555,7 +555,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: model
       type:
         scalar: string
-      default: ""
     - name: region
       type:
         scalar: string

@@ -301,9 +301,12 @@ type BedrockConfig struct {
 	// +optional
 	Auth *AwsAuth `json:"auth,omitempty"`
 
-	// The model field is the supported model id published by AWS. See <https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html>
+	// Optional: Override the model ID.
+	// If unset, the model is taken from the request.
+	// See <https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html>
+	// +optional
 	// +kubebuilder:validation:MinLength=1
-	Model string `json:"model"`
+	Model *string `json:"model,omitempty"`
 
 	// Region is the AWS region to use for the backend.
 	// Defaults to us-east-1 if not specified.

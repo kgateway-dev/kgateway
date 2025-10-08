@@ -133,6 +133,8 @@ func GetInMemoryGatewayParameters(name string, imageInfo *ImageInfo, gatewayClas
 // set for the agentgateway deployment.
 func defaultAgentgatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext bool) *v1alpha1.GatewayParameters {
 	gwp := defaultGatewayParameters(imageInfo, omitDefaultSecurityContext)
+	// Leave unset to allow HPA, etc
+	gwp.Spec.Kube.Deployment.Replicas = nil
 	gwp.Spec.Kube.Agentgateway.Enabled = ptr.To(true)
 	gwp.Spec.Kube.PodTemplate.ReadinessProbe.HTTPGet.Path = "/healthz/ready"
 	gwp.Spec.Kube.PodTemplate.ReadinessProbe.HTTPGet.Port = intstr.FromInt(15021)

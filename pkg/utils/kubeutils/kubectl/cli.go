@@ -402,8 +402,10 @@ func (c *Cli) Describe(ctx context.Context, namespace string, name string) (stri
 }
 
 // GetContainerLogs retrieves the logs for the specified container
-func (c *Cli) GetContainerLogs(ctx context.Context, namespace string, name string) (string, error) {
-	stdout, stderr, err := c.Execute(ctx, "-n", namespace, "logs", name)
+func (c *Cli) GetContainerLogs(ctx context.Context, namespace string, name string, options ...LogOption) (string, error) {
+	args := []string{"-n", namespace, "logs", name}
+	args = append(args, BuildLogArgs(options...)...)
+	stdout, stderr, err := c.Execute(ctx, args...)
 	return stdout + stderr, err
 }
 

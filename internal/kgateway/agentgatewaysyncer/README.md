@@ -1037,8 +1037,6 @@ EOF
 
 #### A2A Backend
 
-Build the sample kgateway a2a application and load it into the kind cluster with `VERSION=$VERSION make kind-build-and-load-test-a2a-agent`.
-
 Apply the sample app:
 ```shell
 kubectl apply -f- <<EOF
@@ -1059,7 +1057,7 @@ spec:
     spec:
       containers:
         - name: a2a-agent
-          image: ghcr.io/kgateway-dev/test-a2a-agent:1.0.0-ci1
+          image: ghcr.io/kgateway-dev/test-a2a-server:0.0.3
           ports:
             - containerPort: 9090
 ---

@@ -14,6 +14,8 @@ import (
 
 func AgentgatewaySuiteRunner() e2e.SuiteRunner {
 	agentgatewaySuiteRunner := e2e.NewSuiteRunner(false)
+	// TODO: re-enable A2A tests once the image is smaller
+	// agentgatewaySuiteRunner.Register("A2A", a2a.NewTestingSuite)
 	agentgatewaySuiteRunner.Register("BackendTLSPolicy", backendtls.NewAgentgatewayTestingSuite)
 	agentgatewaySuiteRunner.Register("BasicRouting", agentgateway.NewTestingSuite)
 	agentgatewaySuiteRunner.Register("Extauth", extauth.NewTestingSuite)

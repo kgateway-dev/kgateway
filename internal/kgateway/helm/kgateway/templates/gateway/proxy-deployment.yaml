@@ -314,8 +314,8 @@ spec:
         {{- end }}
         terminationMessagePath: /dev/termination-log
         terminationMessagePolicy: File
-        volumeMounts:
 {{- if or $gateway.aiExtension.stats $gateway.aiExtension.tracing }}
+        volumeMounts:
           - mountPath: /var/run/ai-otel-config
             name: ai-otel-config
 {{- end }}

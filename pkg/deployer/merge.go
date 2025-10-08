@@ -330,6 +330,19 @@ func deepMergeProbe(dst, src *corev1.Probe) *corev1.Probe {
 }
 
 func deepMergeProbeHandler(dst, src corev1.ProbeHandler) corev1.ProbeHandler {
+	srcHasExecAction := src.Exec != nil
+	srcHasHTTPGetAction := src.HTTPGet != nil
+	srcHasTCPSocketAction := src.TCPSocket != nil
+	srcHasGRPCAction := src.GRPC != nil
+	srcHasAction := srcHasExecAction || srcHasHTTPGetAction || srcHasTCPSocketAction || srcHasGRPCAction
+	if srcHasAction {
+		// Reset the dest so it does not conflict with the src Action as there should only be one Action defined per probe
+		dst.Exec = nil
+		dst.HTTPGet = nil
+		dst.TCPSocket = nil
+		dst.GRPC = nil
+	}
+	// kube-builder validation ensures that the src has only one action
 	dst.Exec = deepMergeExecAction(dst.Exec, src.Exec)
 	dst.HTTPGet = deepMergeHTTPGetAction(dst.HTTPGet, src.HTTPGet)
 	dst.TCPSocket = deepMergeTCPSocketAction(dst.TCPSocket, src.TCPSocket)

@@ -438,7 +438,7 @@ func TestBuildAIBackendIr(t *testing.T) {
 					AI: &v1alpha1.AIBackend{
 						LLM: &v1alpha1.LLMProvider{
 							Bedrock: &v1alpha1.BedrockConfig{
-								Model:  "anthropic.claude-3-haiku-20240307-v1:0",
+								Model:  ptr.To("anthropic.claude-3-haiku-20240307-v1:0"),
 								Region: "eu-west-1",
 								Guardrail: &v1alpha1.AWSGuardrailConfig{
 									GuardrailIdentifier: "test-guardrail",

@@ -18,6 +18,9 @@ spec:
   template:
     metadata:
       annotations:
+        prometheus.io/path: /metrics
+        prometheus.io/port: "15020"
+        prometheus.io/scrape: "true"
       {{- with $gateway.extraPodAnnotations }}
         {{- toYaml . | nindent 8 }}
       {{- end }}

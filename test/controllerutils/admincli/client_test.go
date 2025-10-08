@@ -7,8 +7,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/go-utils/threadsafe"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/controllerutils/admincli"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
+	"github.com/kgateway-dev/kgateway/v2/test/controllerutils/admincli"
 )
 
 var _ = Describe("Client", func() {
@@ -42,10 +42,6 @@ var _ = Describe("Client", func() {
 
 	Context("Integration tests", func() {
 
-		When("Admin API is reachable", func() {
-			// We rely on e2e tests defined in /test/kubernetes/e2e/features/admin_server to verify this behavior
-		})
-
 		When("Admin API is not reachable", func() {
 
 			It("emits an error to configured locations", func() {
@@ -64,11 +60,11 @@ var _ = Describe("Client", func() {
 						curl.WithoutRetries(),
 					)
 
-				inputSnapshotCmd := client.InputSnapshotCmd(ctx).
+				xdsSnapshotCmd := client.XdsSnapshotCmd(ctx).
 					WithStdout(&outLocation).
 					WithStderr(&errLocation)
 
-				err := inputSnapshotCmd.Run().Cause()
+				err := xdsSnapshotCmd.Run().Cause()
 				Expect(err).To(HaveOccurred(), "running the command should return an error")
 				Expect(defaultOutputLocation.Bytes()).To(BeEmpty(), "defaultOutputLocation should not be used")
 				Expect(outLocation.Bytes()).To(BeEmpty(), "failed request should not output to Stdout")
