@@ -328,7 +328,9 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 	gateway := vals.Gateway
 
 	// deployment values
-	gateway.ReplicaCount = pointer.Uint32(uint32(*deployConfig.GetReplicas()))
+	if deployConfig.GetReplicas() != nil {
+		gateway.ReplicaCount = pointer.Uint32(uint32(*deployConfig.GetReplicas()))
+	}
 	gateway.Strategy = deployConfig.GetStrategy()
 
 	// service values
