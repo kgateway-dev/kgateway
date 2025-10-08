@@ -775,10 +775,9 @@ func (x *xdsDump) Compare(other xdsDump) error {
 			continue
 		}
 
-		// Ignore VirtualHost ordering and route ordering within each VirtualHost
-		vhostFn := func(x, y *envoyroutev3.VirtualHost) bool { return x.GetName() < y.GetName() }
-		routeFn := func(x, y *envoyroutev3.Route) bool { return x.GetName() < y.GetName() }
-		if diff := cmp.Diff(c, otherc, protocmp.Transform(), protocmp.SortRepeated(vhostFn), protocmp.SortRepeated(routeFn)); diff != "" {
+		// Ignore VirtualHost ordering
+		vhostFn := func(x, y *envoyroutev3.VirtualHost) bool { return x.Name < y.Name }
+		if diff := cmp.Diff(c, otherc, protocmp.Transform(), protocmp.SortRepeated(vhostFn)); diff != "" {
 			errs = errors.Join(errs, fmt.Errorf("route %v not equal!\ndiff:\b%s\n", c.Name, diff))
 		}
 	}

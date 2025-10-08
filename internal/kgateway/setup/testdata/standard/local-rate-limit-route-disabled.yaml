@@ -130,7 +130,7 @@ spec:
           port: 8080
       matches:
       - path:
-          type: PathPrefix
+          type: Exact
           value: /ratings
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
