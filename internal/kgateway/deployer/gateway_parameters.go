@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
 	"slices"
 
 	"helm.sh/helm/v3/pkg/chart"
@@ -65,7 +66,7 @@ func GatewayGVKsToWatch(ctx context.Context, d *deployer.Deployer) ([]schema.Gro
 			"istio": map[string]any{
 				"enabled": false,
 			},
-			"image": map[string]any{},
+			"image": map[string]any{"repository": "placeholderGatewayGVKsToWatch"},
 		},
 	})
 }
@@ -217,7 +218,14 @@ func (k *kGatewayParameters) getDefaultGatewayParameters(ctx context.Context, gw
 func (k *kGatewayParameters) getGatewayParametersForGatewayClass(ctx context.Context, gwc *api.GatewayClass) (*v1alpha1.GatewayParameters, error) {
 	// Our defaults depend on OmitDefaultSecurityContext, but these are the defaults
 	// when not OmitDefaultSecurityContext:
-	defaultGwp := deployer.GetInMemoryGatewayParameters(gwc.GetName(), k.inputs.ImageInfo, k.inputs.GatewayClassName, k.inputs.WaypointGatewayClassName, k.inputs.AgentgatewayClassName, false)
+	defaultGwp := deployer.GetInMemoryGatewayParameters(
+		gwc.GetName(),
+		k.inputs.ImageInfo,
+		k.inputs.GatewayClassName,
+		k.inputs.WaypointGatewayClassName,
+		k.inputs.AgentgatewayClassName,
+		false,
+	)
 
 	paramRef := gwc.Spec.ParametersRef
 	if paramRef == nil {
@@ -256,7 +264,14 @@ func (k *kGatewayParameters) getGatewayParametersForGatewayClass(ctx context.Con
 	// correctly set when they aren't overridden by the GatewayParameters.
 	mergedGwp := defaultGwp
 	if ptr.Deref(gwp.Spec.Kube.GetOmitDefaultSecurityContext(), false) {
-		mergedGwp = deployer.GetInMemoryGatewayParameters(gwc.GetName(), k.inputs.ImageInfo, k.inputs.GatewayClassName, k.inputs.WaypointGatewayClassName, k.inputs.AgentgatewayClassName, true)
+		mergedGwp = deployer.GetInMemoryGatewayParameters(
+			gwc.GetName(),
+			k.inputs.ImageInfo,
+			k.inputs.GatewayClassName,
+			k.inputs.WaypointGatewayClassName,
+			k.inputs.AgentgatewayClassName,
+			true,
+		)
 	}
 	deployer.DeepMergeGatewayParameters(mergedGwp, gwp)
 	return mergedGwp, nil
@@ -264,7 +279,6 @@ func (k *kGatewayParameters) getGatewayParametersForGatewayClass(ctx context.Con
 
 func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameters) (*deployer.HelmConfig, error) {
 	irGW := deployer.GetGatewayIR(gw, k.inputs.CommonCollections)
-
 	ports := deployer.GetPortsValues(irGW, gwParam)
 	if len(ports) == 0 {
 		return nil, ErrNoValidPorts
@@ -283,14 +297,29 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 				// This is the socket address that the Proxy will connect to on startup, to receive xds updates
 				Host: &k.inputs.ControlPlane.XdsHost,
 				Port: &k.inputs.ControlPlane.XdsPort,
+				Tls: &deployer.HelmXdsTls{
+					Enabled: ptr.To(k.inputs.ControlPlane.XdsTLS),
+					CaCert:  ptr.To(k.inputs.ControlPlane.XdsTlsCaPath),
+				},
 			},
 			AgwXds: &deployer.HelmXds{
 				// The agentgateway xds host/port MUST map to the Service definition for the Control Plane
 				// This is the socket address that the Proxy will connect to on startup, to receive xds updates
 				Host: &k.inputs.ControlPlane.XdsHost,
 				Port: &k.inputs.ControlPlane.AgwXdsPort,
+				Tls: &deployer.HelmXdsTls{
+					Enabled: ptr.To(k.inputs.ControlPlane.XdsTLS),
+					CaCert:  ptr.To(k.inputs.ControlPlane.XdsTlsCaPath),
+				},
 			},
 		},
+	}
+
+	// Inject xDS CA certificate into Helm values if TLS is enabled
+	if k.inputs.ControlPlane.XdsTLS {
+		if err := k.injectXdsCACertificate(vals); err != nil {
+			return nil, fmt.Errorf("failed to inject xDS CA certificate: %w", err)
+		}
 	}
 
 	// if there is no GatewayParameters, return the values as is
@@ -399,6 +428,35 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 	gateway.Stats = deployer.GetStatsValues(statsConfig)
 
 	return vals, nil
+}
+
+// injectXdsCACertificate reads the CA certificate from the control plane's mounted TLS Secret
+// and injects it into the Helm values so it can be used by the proxy templates.
+func (k *kGatewayParameters) injectXdsCACertificate(vals *deployer.HelmConfig) error {
+	caCertPath := k.inputs.ControlPlane.XdsTlsCaPath
+	if _, err := os.Stat(caCertPath); os.IsNotExist(err) {
+		return fmt.Errorf("xDS TLS is enabled but CA certificate file not found at %s. "+
+			"Ensure the xDS TLS secret is properly mounted and contains ca.crt", caCertPath,
+		)
+	}
+
+	caCert, err := os.ReadFile(caCertPath)
+	if err != nil {
+		return fmt.Errorf("failed to read CA certificate from %s: %w", caCertPath, err)
+	}
+	if len(caCert) == 0 {
+		return fmt.Errorf("CA certificate at %s is empty", caCertPath)
+	}
+
+	caCertStr := string(caCert)
+	if vals.Gateway.Xds != nil && vals.Gateway.Xds.Tls != nil {
+		vals.Gateway.Xds.Tls.CaCert = &caCertStr
+	}
+	if vals.Gateway.AgwXds != nil && vals.Gateway.AgwXds.Tls != nil {
+		vals.Gateway.AgwXds.Tls.CaCert = &caCertStr
+	}
+
+	return nil
 }
 
 func getGatewayClassFromGateway(ctx context.Context, cli client.Client, gw *api.Gateway) (*api.GatewayClass, error) {

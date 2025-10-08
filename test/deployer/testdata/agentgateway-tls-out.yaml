@@ -35,6 +35,37 @@ data:
 ---
 # Source: kgateway-proxy/templates/gateway/agent-gateway-deployment.yaml
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gw-xds-ca
+  labels:
+    kgateway: kube-gateway
+    helm.sh/chart: kgateway-proxy-1.0.0-ci1
+    app.kubernetes.io/name: gw
+    app.kubernetes.io/instance: gw
+    gateway.networking.k8s.io/gateway-name: gw
+    app.kubernetes.io/version: "1.0.0-ci1"
+    gateway.networking.k8s.io/gateway-class-name: agentgateway
+    app.kubernetes.io/managed-by: Helm
+data:
+  ca.crt: |
+    -----BEGIN CERTIFICATE-----
+    MIICljCCAX4CCQCKSGhvPtMNGzANBgkqhkiG9w0BAQsFADANMQswCQYDVQQGEwJV
+    UzAeFw0yNDA3MDEwMDAwMDBaFw0yNTA3MDEwMDAwMDBaMA0xCzAJBgNVBAYTAlVT
+    MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1234567890ABCDEFGHIj
+    klmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ab
+    cdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ123456
+    7890abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ
+    1234567890abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTU
+    VWXYZ1234567890abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNO
+    PQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHI
+    JKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyz1234567890ABC
+    DEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyz123456
+    wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
+    -----END CERTIFICATE-----
+---
+# Source: kgateway-proxy/templates/gateway/agent-gateway-deployment.yaml
+apiVersion: v1
 kind: Service
 metadata:
   name: gw
@@ -153,7 +184,9 @@ spec:
             - name: RUST_LOG
               value: info
             - name: XDS_ADDRESS
-              value: "http://xds.cluster.local:9978"
+              value: "https://xds.cluster.local:9978"
+            - name: XDS_ROOT_CA
+              value: "/etc/xds-tls/ca.crt"
             - name: NAMESPACE
               valueFrom:
                 fieldRef:
@@ -169,6 +202,9 @@ spec:
             - name: xds-token
               mountPath: /var/run/secrets/xds-tokens
               readOnly: true
+            - name: xds-ca
+              mountPath: /etc/xds-tls
+              readOnly: true
       volumes:
         - name: config-volume
           configMap:
@@ -182,4 +218,10 @@ spec:
                 path: xds-token
         - name: tmp
           emptyDir: {}
+        - name: xds-ca
+          configMap:
+            name: gw-xds-ca
+            items:
+            - key: ca.crt
+              path: ca.crt
       terminationGracePeriodSeconds: 60

@@ -32,9 +32,11 @@ import (
 var logger = logging.New("deployer")
 
 type ControlPlaneInfo struct {
-	XdsHost    string
-	XdsPort    uint32
-	AgwXdsPort uint32
+	XdsHost      string
+	XdsPort      uint32
+	AgwXdsPort   uint32
+	XdsTLS       bool
+	XdsTlsCaPath string
 }
 
 // InferenceExtInfo defines the runtime state of Gateway API inference extensions.
@@ -78,7 +80,7 @@ func NewDeployer(
 	}
 }
 
-func JsonConvert(in *HelmConfig, out interface{}) error {
+func JsonConvert(in *HelmConfig, out any) error {
 	b, err := json.Marshal(in)
 	if err != nil {
 		return err

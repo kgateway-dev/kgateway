@@ -75,9 +75,20 @@ gateway.networking.k8s.io/gateway-name: {{ .Release.Name }}
 Return a container image value as a string
 */}}
 {{- define "kgateway.gateway.image" -}}
-{{- $image := printf "%s/%s:%s" .registry .repository .tag -}}
+{{- if not .repository -}}
+{{- fail "an Image's repository must be present" -}}
+{{- end -}}
+{{- $image := "" -}}
+{{- if .registry -}}
+{{- $image = printf "%s/%s" .registry .repository -}}
+{{- else -}}
+{{- $image = printf "%s" .repository -}}
+{{- end -}}
+{{- if .tag -}}
+{{- $image = printf "%s:%s" $image .tag -}}
+{{- end -}}
 {{- if .digest -}}
 {{- $image = printf "%s@%s" $image .digest -}}
-{{- end -}}{{- /* if .digest */ -}}
+{{- end -}}
 {{ $image }}
-{{- end -}}{{- /* define "kgateway.gateway.image" */ -}}
+{{- end -}}

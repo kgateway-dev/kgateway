@@ -465,6 +465,10 @@ metadata:
     {{- include "kgateway.gateway.constLabels" . | nindent 4 }}
     {{- include "kgateway.gateway.labels" . | nindent 4 }}
 data:
+{{- if and $gateway.xds.tls $gateway.xds.tls.enabled }}
+  ca.crt: |
+{{ $gateway.xds.tls.caCert | indent 4 }}
+{{- end }}
   envoy.yaml: |
     admin:
       address:
@@ -481,6 +485,15 @@ data:
       metadata:
         role: kgateway-kube-gateway-api~{{ $gateway.gatewayNamespace }}~{{ $gateway.gatewayName | default (include "kgateway.gateway.fullname" .) }}
     static_resources:
+      {{- if and $gateway.xds.tls $gateway.xds.tls.enabled }}
+      secrets:
+        - name: validation_context_sds
+          validation_context:
+            trusted_ca:
+              filename: /etc/envoy/ca.crt
+            watched_directory:
+              path: /etc/envoy
+      {{- end }}
       listeners:
       - name: readiness_listener
         address:
@@ -586,6 +599,15 @@ data:
                     socket_address:
                       address: {{ $gateway.xds.host }}
                       port_value: {{ $gateway.xds.port }}
+          {{- if and $gateway.xds.tls $gateway.xds.tls.enabled }}
+          transport_socket:
+            name: envoy.transport_sockets.tls
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+              common_tls_context:
+                validation_context_sds_secret_config:
+                  name: validation_context_sds
+          {{- end }}
           typed_extension_protocol_options:
             envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
               "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions

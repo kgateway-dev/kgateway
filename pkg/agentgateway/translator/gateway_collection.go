@@ -186,18 +186,20 @@ func GatewayCollection(
 	krtopts krtutil.KrtOptions,
 ) krt.Collection[GatewayListener] {
 	gw := krt.NewManyCollection(gateways, func(ctx krt.HandlerContext, obj *gwv1.Gateway) []GatewayListener {
+		class := krt.FetchOne(ctx, gatewayClasses, krt.FilterKey(string(obj.Spec.GatewayClassName)))
+		if class == nil {
+			logger.Debug("gateway class not found, skipping", "gw_name", obj.GetName(), "gatewayClassName", obj.Spec.GatewayClassName)
+			return nil
+		}
+		if string(class.Controller) != controllerName {
+			logger.Debug("skipping gateway not managed by our controller", "gw_name", obj.GetName(), "gatewayClassName", obj.Spec.GatewayClassName, "controllerName", class.Controller)
+			return nil // ignore gateways not managed by our controller
+		}
+
 		rm := reports.NewReportMap()
 		statusReporter := reports.NewReporter(&rm)
 		gwReporter := statusReporter.Gateway(obj)
 		logger.Debug("translating Gateway", "gw_name", obj.GetName(), "resource_version", obj.GetResourceVersion())
-
-		class := fetchClass(ctx, gatewayClasses, obj.Spec.GatewayClassName, controllerName)
-		if class == nil {
-			return nil
-		}
-		if string(class.Controller) != controllerName {
-			return nil // ignore gateways not managed by our controller
-		}
 
 		var result []GatewayListener
 		kgw := obj.Spec

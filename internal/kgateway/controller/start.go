@@ -14,6 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
@@ -28,6 +29,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -52,6 +54,10 @@ type SetupOpts struct {
 
 	// static set of global Settings
 	GlobalSettings *apisettings.Settings
+
+	// CertWatcher is the shared certificate watcher for xDS TLS
+	// Used by the Gateway controller to trigger reconciliation on cert changes
+	CertWatcher *certwatcher.CertWatcher
 
 	PprofBindAddress       string
 	HealthProbeBindAddress string
@@ -309,9 +315,11 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 		AgwControllerName: c.cfg.AgwControllerName,
 		AutoProvision:     AutoProvision,
 		ControlPlane: deployer.ControlPlaneInfo{
-			XdsHost:    xdsHost,
-			XdsPort:    xdsPort,
-			AgwXdsPort: agwXdsPort,
+			XdsHost:      xdsHost,
+			XdsPort:      xdsPort,
+			AgwXdsPort:   agwXdsPort,
+			XdsTLS:       globalSettings.XdsTLS,
+			XdsTlsCaPath: xds.TLSRootCAPath,
 		},
 		IstioAutoMtlsEnabled: istioAutoMtlsEnabled,
 		ImageInfo: &deployer.ImageInfo{
@@ -324,12 +332,25 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 		GatewayClassName:         c.cfg.GatewayClassName,
 		WaypointGatewayClassName: c.cfg.WaypointGatewayClassName,
 		AgentgatewayClassName:    c.cfg.AgentgatewayClassName,
+		CertWatcher:              c.cfg.SetupOpts.CertWatcher,
 	}
 
+	classInfos := GetDefaultClassInfo(
+		globalSettings,
+		c.cfg.GatewayClassName,
+		c.cfg.WaypointGatewayClassName,
+		c.cfg.AgentgatewayClassName,
+		c.cfg.ControllerName,
+		c.cfg.AgwControllerName,
+		c.cfg.AdditionalGatewayClasses,
+	)
+
 	setupLog.Info("creating gateway class provisioner")
-	if err := NewGatewayClassProvisioner(c.mgr, c.cfg.ControllerName,
-		GetDefaultClassInfo(globalSettings, c.cfg.GatewayClassName, c.cfg.WaypointGatewayClassName,
-			c.cfg.AgentgatewayClassName, c.cfg.ControllerName, c.cfg.AgwControllerName, c.cfg.AdditionalGatewayClasses)); err != nil {
+	if err := NewGatewayClassProvisioner(
+		c.mgr,
+		c.cfg.ControllerName,
+		classInfos,
+	); err != nil {
 		setupLog.Error(err, "unable to create gateway class provisioner")
 		return err
 	}
@@ -342,11 +363,10 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 
 	setupLog.Info("creating inferencepool controller")
 	// Create the InferencePool controller if the inference extension feature is enabled and the API group is registered.
-	if globalSettings.EnableInferExt &&
-		c.mgr.GetScheme().IsGroupRegistered(inf.GroupVersion.Group) {
+	if globalSettings.EnableInferExt && c.mgr.GetScheme().IsGroupRegistered(inf.GroupVersion.Group) {
 		poolCfg := &InferencePoolConfig{
 			Mgr: c.mgr,
-			// TODO read this from globalSettings
+			// TODO(danehans): read this from globalSettings
 			ControllerName: c.cfg.ControllerName,
 		}
 		// Enable the inference extension deployer if set.
@@ -382,9 +402,15 @@ func (c *ControllerBuilder) HasSynced() bool {
 
 // GetDefaultClassInfo returns the default GatewayClass for the kgateway controller.
 // Exported for testing.
-func GetDefaultClassInfo(globalSettings *apisettings.Settings,
-	gatewayClassName, waypointGatewayClassName, agwClassName, controllerName, agwControllerName string,
-	additionalClassInfos map[string]*deployer.GatewayClassInfo) map[string]*deployer.GatewayClassInfo {
+func GetDefaultClassInfo(
+	globalSettings *apisettings.Settings,
+	gatewayClassName,
+	waypointGatewayClassName,
+	agwClassName,
+	controllerName,
+	agwControllerName string,
+	additionalClassInfos map[string]*deployer.GatewayClassInfo,
+) map[string]*deployer.GatewayClassInfo {
 	classInfos := map[string]*deployer.GatewayClassInfo{
 		gatewayClassName: {
 			Description:    "Standard class for managing Gateway API ingress traffic.",

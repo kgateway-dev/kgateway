@@ -16,17 +16,17 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
-
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/namespaces"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/admin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
@@ -36,6 +36,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/namespaces"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
@@ -310,12 +311,30 @@ func (s *setup) Start(ctx context.Context) error {
 		NewKubeJWTAuthenticator(istioClient.Kube()),
 	}
 
-	cache := NewControlPlane(ctx, s.xdsListener, s.agwXdsListener, uniqueClientCallbacks, authenticators, s.globalSettings.XdsAuth)
+	// Create shared certificate watcher if TLS is enabled. This watcher is used by both the xDS server
+	// and the Gateway controller to kick reconciliation on cert changes.
+	var certWatcher *certwatcher.CertWatcher
+	if s.globalSettings.XdsTLS {
+		var err error
+		certWatcher, err = certwatcher.New(xds.TLSCertPath, xds.TLSKeyPath)
+		if err != nil {
+			return err
+		}
+		go func() {
+			if err := certWatcher.Start(ctx); err != nil {
+				slog.Error("failed to start TLS certificate watcher", "error", err)
+			}
+			slog.Info("started TLS certificate watcher")
+		}()
+	}
+
+	cache := NewControlPlane(ctx, s.xdsListener, s.agwXdsListener, uniqueClientCallbacks, authenticators, s.globalSettings.XdsAuth, certWatcher)
 
 	setupOpts := &controller.SetupOpts{
 		Cache:          cache,
 		KrtDebugger:    s.krtDebugger,
 		GlobalSettings: s.globalSettings,
+		CertWatcher:    certWatcher,
 	}
 
 	slog.Info("creating krt collections")

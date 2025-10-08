@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 
 	"istio.io/istio/pkg/kube/krt"
@@ -15,6 +16,7 @@ import (
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
+	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -74,6 +76,8 @@ type GatewayConfig struct {
 	AgentgatewayClassName string
 	// Additional GatewayClass definitions to support extending to other well-known gateway classes
 	AdditionalGatewayClasses map[string]*deployer.GatewayClassInfo
+	// CertWatcher is the shared certificate watcher for xDS TLS
+	CertWatcher *certwatcher.CertWatcher
 }
 
 type HelmValuesGeneratorOverrideFunc func(cli client.Client, inputs *deployer.Inputs) deployer.HelmValuesGenerator
@@ -108,11 +112,13 @@ type InferencePoolConfig struct {
 	InferenceExt   *deployer.InferenceExtInfo
 }
 
-func NewBaseInferencePoolController(ctx context.Context,
+func NewBaseInferencePoolController(
+	ctx context.Context,
 	poolCfg *InferencePoolConfig,
 	gwCfg *GatewayConfig,
 	helmValuesGeneratorOverride func(cli client.Client, inputs *deployer.Inputs) deployer.HelmValuesGenerator,
-	extraGatewayParameters []client.Object) error {
+	extraGatewayParameters []client.Object,
+) error {
 	log := log.FromContext(ctx)
 	log.V(5).Info("starting inferencepool controller", "controllerName", poolCfg.ControllerName)
 
@@ -186,8 +192,11 @@ func gatewayToClass(obj client.Object) []string {
 
 func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	log := log.FromContext(ctx)
-	log.Info("creating gateway deployer", "ctrlname", c.cfg.ControllerName, "agwctrlname",
-		c.cfg.AgwControllerName, "server", c.cfg.ControlPlane.XdsHost, "port", c.cfg.ControlPlane.XdsPort, "agwport", c.cfg.ControlPlane.AgwXdsPort)
+	log.Info("creating gateway deployer",
+		"ctrlname", c.cfg.ControllerName, "agwctrlname", c.cfg.AgwControllerName,
+		"server", c.cfg.ControlPlane.XdsHost, "port", c.cfg.ControlPlane.XdsPort,
+		"agwport", c.cfg.ControlPlane.AgwXdsPort, "tls", c.cfg.ControlPlane.XdsTLS,
+	)
 
 	inputs := &deployer.Inputs{
 		Dev:                      c.cfg.Dev,
@@ -382,6 +391,10 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		buildr.Owns(clientObj, opts...)
 	}
 
+	// Watch for xDS TLS certificate changes to update proxy CA certificates. Kick reconciliation for
+	// all Gateways managed by our controllers when the xDS TLS certificate changes.
+	c.setupTLSCertificateWatch(ctx, buildr)
+
 	// The controller should only run on the leader as the gatewayReconciler manages reconciliation.
 	// It deploys and manages the relevant resources (deployment, service, etc.) and should run only on the leader.
 	// This is the default behaviour. Ref: https://github.com/kubernetes-sigs/controller-runtime/blob/682465344b9b74efad4657016668e62438000541/pkg/internal/controller/controller.go#L223
@@ -551,6 +564,53 @@ func (c *controllerBuilder) watchGwClass(_ context.Context) error {
 				gwClass.Spec.ControllerName == apiv1.GatewayController(c.cfg.AgwControllerName))
 		})).
 		Complete(c.reconciler)
+}
+
+// setupTLSCertificateWatch configures a watch for xDS TLS certificate changes.
+// When certificates are rotated, all Gateways managed by this controller will be reconciled
+// to update the proxy CA certificates.
+func (c *controllerBuilder) setupTLSCertificateWatch(ctx context.Context, buildr *builder.Builder) {
+	if c.cfg.CertWatcher == nil {
+		return
+	}
+
+	log := log.FromContext(ctx)
+	certChangeCh := make(chan event.GenericEvent, 1)
+	// Register callback to send events when certificate changes
+	c.cfg.CertWatcher.RegisterCallback(func(_ tls.Certificate) {
+		log.Info("xDS TLS certificate changed, triggering Gateway reconciliation")
+		select {
+		case certChangeCh <- event.GenericEvent{}:
+			log.V(1).Info("Sent certificate change event to Gateway controller")
+		default:
+			log.Info("Gateway controller channel full, skipping certificate change notification")
+		}
+	})
+	// Watch the certificate change channel and reconcile affected Gateways
+	buildr.WatchesRawSource(source.Channel(certChangeCh, handler.EnqueueRequestsFromMapFunc(
+		func(ctx context.Context, obj client.Object) []reconcile.Request {
+			var gwList apiv1.GatewayList
+			if err := c.cfg.Mgr.GetClient().List(ctx, &gwList); err != nil {
+				log.Error(err, "failed to list Gateways for certificate change")
+				return nil
+			}
+			reqs := make([]reconcile.Request, 0, len(gwList.Items))
+			for _, gw := range gwList.Items {
+				var gwc apiv1.GatewayClass
+				if err := c.cfg.Mgr.GetClient().Get(ctx, client.ObjectKey{Name: string(gw.Spec.GatewayClassName)}, &gwc); err != nil {
+					log.Error(err, "failed to get GatewayClass for Gateway", "gateway", gw.Name)
+					continue
+				}
+				if gwc.Spec.ControllerName == apiv1.GatewayController(c.cfg.ControllerName) ||
+					gwc.Spec.ControllerName == apiv1.GatewayController(c.cfg.AgwControllerName) {
+					reqs = append(reqs, reconcile.Request{
+						NamespacedName: client.ObjectKeyFromObject(&gw),
+					})
+				}
+			}
+			return reqs
+		}),
+	))
 }
 
 type controllerReconciler struct {

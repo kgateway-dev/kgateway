@@ -116,6 +116,10 @@ spec:
             - name: KGW_ENABLE_WAYPOINT
               value: "true"
             {{- end }}
+            {{- if .Values.controller.xds.tls.enabled }}
+            - name: KGW_XDS_TLS_ENABLED
+              value: "true"
+            {{- end }}
             # TODO: Remove this once the cleanup is done. Required as the kgateway-system
             # namespace is the default namespace and conformance will fail as a result.
             - name: POD_NAMESPACE
@@ -124,6 +128,18 @@ spec:
                   fieldPath: metadata.namespace
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          {{- if .Values.controller.xds.tls.enabled }}
+          volumeMounts:
+            - name: xds-tls
+              mountPath: /etc/xds-tls
+              readOnly: true
+          {{- end }}
+      {{- if .Values.controller.xds.tls.enabled }}
+      volumes:
+        - name: xds-tls
+          secret:
+            secretName: kgateway-xds-cert
+      {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

@@ -146,8 +146,6 @@ spec:
                   fieldPath: metadata.namespace
             - name: GATEWAY
               value: gw
-
-
           volumeMounts:
             - name: config-volume
               mountPath: /config
