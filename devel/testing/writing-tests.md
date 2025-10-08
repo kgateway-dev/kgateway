@@ -73,7 +73,7 @@ A common pattern to assert than an error occurred
 Expect(err).To(HaveOccurred())
 ```
 
-A more explict way to perfrom this assertion is:
+A more explicit way to perform this assertion is:
 ```go
 Expect(err).To(MatchError("expected error"))
 ```
