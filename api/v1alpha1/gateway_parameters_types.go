@@ -244,7 +244,7 @@ type ProxyDeployment struct {
 	// K8s reference: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#replicas
 	//
 	// +optional
-	Replicas *uint32 `json:"replicas,omitempty"`
+	Replicas *int32 `json:"replicas,omitempty"`
 
 	// The deployment strategy to use to replace existing pods with new
 	// ones. The Kubernetes default is a RollingUpdate with 25% maxUnavailable,
@@ -263,7 +263,7 @@ type ProxyDeployment struct {
 	Strategy *appsv1.DeploymentStrategy `json:"strategy,omitempty"`
 }
 
-func (in *ProxyDeployment) GetReplicas() *uint32 {
+func (in *ProxyDeployment) GetReplicas() *int32 {
 	if in == nil {
 		return nil
 	}

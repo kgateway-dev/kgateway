@@ -210,7 +210,7 @@ var _ = Describe("Deployer", func() {
 				Spec: gw2_v1alpha1.GatewayParametersSpec{
 					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 						Deployment: &gw2_v1alpha1.ProxyDeployment{
-							Replicas: ptr.To[uint32](2),
+							Replicas: ptr.To[int32](2),
 						},
 						EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
 							Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
@@ -1640,7 +1640,7 @@ var _ = Describe("Deployer", func() {
 					Spec: gw2_v1alpha1.GatewayParametersSpec{
 						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 							Deployment: &gw2_v1alpha1.ProxyDeployment{
-								Replicas: ptr.To[uint32](3),
+								Replicas: ptr.To[int32](3),
 							},
 							EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
 								Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
@@ -1705,7 +1705,7 @@ var _ = Describe("Deployer", func() {
 					Spec: gw2_v1alpha1.GatewayParametersSpec{
 						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 							Deployment: &gw2_v1alpha1.ProxyDeployment{
-								Replicas: ptr.To[uint32](3),
+								Replicas: ptr.To[int32](3),
 							},
 							EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
 								Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
@@ -2766,7 +2766,7 @@ var _ = Describe("Deployer", func() {
 				validationFunc: func(objs clientObjects, inp *input) error {
 					deployment := objs.findDeployment(defaultNamespace, defaultServiceName)
 					Expect(deployment).NotTo(BeNil())
-					Expect(deployment.Spec.Replicas).To(BeNil())
+					Expect(*deployment.Spec.Replicas).To(BeNil())
 					return nil
 				},
 			}),
@@ -2786,7 +2786,7 @@ var _ = Describe("Deployer", func() {
 					Spec: gw2_v1alpha1.GatewayParametersSpec{
 						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 							Deployment: &gw2_v1alpha1.ProxyDeployment{
-								Replicas: ptr.To[uint32](3),
+								Replicas: ptr.To[int32](3),
 							},
 						},
 					},
@@ -2796,7 +2796,7 @@ var _ = Describe("Deployer", func() {
 				validationFunc: func(objs clientObjects, inp *input) error {
 					deployment := objs.findDeployment(defaultNamespace, defaultServiceName)
 					Expect(deployment).NotTo(BeNil())
-					Expect(deployment.Spec.Replicas).To(Equal(int32(3)))
+					Expect(*deployment.Spec.Replicas).To(Equal(int32(3)))
 					return nil
 				},
 			}),
@@ -3028,7 +3028,7 @@ func fullyDefinedGatewayParameters(name, namespace string) *gw2_v1alpha1.Gateway
 		Spec: gw2_v1alpha1.GatewayParametersSpec{
 			Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 				Deployment: &gw2_v1alpha1.ProxyDeployment{
-					Replicas: ptr.To[uint32](3),
+					Replicas: ptr.To[int32](3),
 				},
 				EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
 					Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{

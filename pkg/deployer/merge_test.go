@@ -50,7 +50,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 				Spec: gw2_v1alpha1.GatewayParametersSpec{
 					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 						Deployment: &gw2_v1alpha1.ProxyDeployment{
-							Replicas: ptr.To[uint32](5),
+							Replicas: ptr.To[int32](5),
 						},
 					},
 				},
@@ -59,7 +59,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 				Spec: gw2_v1alpha1.GatewayParametersSpec{
 					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 						Deployment: &gw2_v1alpha1.ProxyDeployment{
-							Replicas: ptr.To[uint32](5),
+							Replicas: ptr.To[int32](5),
 						},
 					},
 				},
@@ -71,7 +71,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 				Spec: gw2_v1alpha1.GatewayParametersSpec{
 					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 						Deployment: &gw2_v1alpha1.ProxyDeployment{
-							Replicas: ptr.To[uint32](2),
+							Replicas: ptr.To[int32](2),
 						},
 					},
 				},
@@ -80,7 +80,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 				Spec: gw2_v1alpha1.GatewayParametersSpec{
 					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 						Deployment: &gw2_v1alpha1.ProxyDeployment{
-							Replicas: ptr.To[uint32](3),
+							Replicas: ptr.To[int32](3),
 						},
 					},
 				},
@@ -89,7 +89,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 				Spec: gw2_v1alpha1.GatewayParametersSpec{
 					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 						Deployment: &gw2_v1alpha1.ProxyDeployment{
-							Replicas: ptr.To[uint32](3),
+							Replicas: ptr.To[int32](3),
 						},
 					},
 				},
@@ -101,7 +101,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 				Spec: gw2_v1alpha1.GatewayParametersSpec{
 					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 						Deployment: &gw2_v1alpha1.ProxyDeployment{
-							Replicas: ptr.To[uint32](2),
+							Replicas: ptr.To[int32](2),
 						},
 					},
 				},
@@ -115,7 +115,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 				Spec: gw2_v1alpha1.GatewayParametersSpec{
 					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 						Deployment: &gw2_v1alpha1.ProxyDeployment{
-							Replicas: ptr.To[uint32](2),
+							Replicas: ptr.To[int32](2),
 						},
 					},
 				},

@@ -9,6 +9,7 @@ import (
 
 	"helm.sh/helm/v3/pkg/chart"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/utils/pointer"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	api "sigs.k8s.io/gateway-api/apis/v1"
@@ -327,7 +328,7 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 	gateway := vals.Gateway
 
 	// deployment values
-	gateway.ReplicaCount = deployConfig.GetReplicas()
+	gateway.ReplicaCount = pointer.Uint32(uint32(*deployConfig.GetReplicas()))
 	gateway.Strategy = deployConfig.GetStrategy()
 
 	// service values

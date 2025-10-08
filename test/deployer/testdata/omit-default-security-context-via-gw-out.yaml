@@ -246,7 +246,6 @@ metadata:
     gateway.networking.k8s.io/gateway-class-name: kgateway
     app.kubernetes.io/managed-by: Helm
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: gw
