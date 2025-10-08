@@ -98,7 +98,13 @@ func WithLeaderElectionID(id string) func(*setup) {
 	}
 }
 
-func ExtraGatewayParameters(extraGatewayParameters func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters) func(*setup) {
+func WithHelmValuesGeneratorOverride(helmValuesGeneratorOverride func(cli client.Client, inputs *deployer.Inputs) deployer.HelmValuesGenerator) func(*setup) {
+	return func(s *setup) {
+		s.helmValuesGeneratorOverride = helmValuesGeneratorOverride
+	}
+}
+
+func WithExtraGatewayParameters(extraGatewayParameters []client.Object) func(*setup) {
 	return func(s *setup) {
 		s.extraGatewayParameters = extraGatewayParameters
 	}
@@ -167,20 +173,21 @@ func WithExtraAgwPolicyStatusHandlers(handlers map[string]agwplugins.AgwPolicySt
 }
 
 type setup struct {
-	gatewayControllerName    string
-	agwControllerName        string
-	gatewayClassName         string
-	waypointClassName        string
-	agentgatewayClassName    string
-	additionalGatewayClasses map[string]*deployer.GatewayClassInfo
-	extraPlugins             func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []sdk.Plugin
-	extraAgwPlugins          func(ctx context.Context, agw *agwplugins.AgwCollections) []agwplugins.AgwPlugin
-	extraGatewayParameters   func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
-	extraXDSCallbacks        xdsserver.Callbacks
-	xdsListener              net.Listener
-	agwXdsListener           net.Listener
-	restConfig               *rest.Config
-	ctrlMgrOptionsInitFunc   func(context.Context) *ctrl.Options
+	gatewayControllerName       string
+	agwControllerName           string
+	gatewayClassName            string
+	waypointClassName           string
+	agentgatewayClassName       string
+	additionalGatewayClasses    map[string]*deployer.GatewayClassInfo
+	extraPlugins                func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []sdk.Plugin
+	extraAgwPlugins             func(ctx context.Context, agw *agwplugins.AgwCollections) []agwplugins.AgwPlugin
+	helmValuesGeneratorOverride func(cli client.Client, inputs *deployer.Inputs) deployer.HelmValuesGenerator
+	extraGatewayParameters      []client.Object
+	extraXDSCallbacks           xdsserver.Callbacks
+	xdsListener                 net.Listener
+	agwXdsListener              net.Listener
+	restConfig                  *rest.Config
+	ctrlMgrOptionsInitFunc      func(context.Context) *ctrl.Options
 	// extra controller manager config, like adding registering additional controllers
 	extraManagerConfig           []func(ctx context.Context, mgr manager.Manager, objectFilter kubetypes.DynamicObjectFilter) error
 	krtDebugger                  *krt.DebugHandler
@@ -351,6 +358,7 @@ func (s *setup) Start(ctx context.Context) error {
 		ctx, mgr, s.gatewayControllerName, s.agwControllerName, s.gatewayClassName, s.waypointClassName,
 		s.agentgatewayClassName, s.additionalGatewayClasses, setupOpts, s.restConfig,
 		istioClient, commoncol, agwCollections, uccBuilder, s.extraPlugins, s.extraAgwPlugins,
+		s.helmValuesGeneratorOverride,
 		s.extraGatewayParameters,
 		s.validator,
 		s.extraAgwPolicyStatusHandlers,
@@ -385,7 +393,8 @@ func BuildKgatewayWithConfig(
 	uccBuilder krtcollections.UniquelyConnectedClientsBulider,
 	extraPlugins func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []sdk.Plugin,
 	extraAgwPlugins func(ctx context.Context, agw *agwplugins.AgwCollections) []agwplugins.AgwPlugin,
-	extraGatewayParameters func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters,
+	helmValuesGeneratorOverride func(cli client.Client, inputs *deployer.Inputs) deployer.HelmValuesGenerator,
+	extraGatewayParameters []client.Object,
 	validator validator.Validator,
 	extraAgwPolicyStatusHandlers map[string]agwplugins.AgwPolicyStatusSyncHandler,
 ) error {
@@ -411,6 +420,7 @@ func BuildKgatewayWithConfig(
 		AdditionalGatewayClasses:     additionalGatewayClasses,
 		ExtraPlugins:                 extraPlugins,
 		ExtraAgwPlugins:              extraAgwPlugins,
+		HelmValuesGeneratorOverride:  helmValuesGeneratorOverride,
 		ExtraGatewayParameters:       extraGatewayParameters,
 		RestConfig:                   restConfig,
 		SetupOpts:                    setupOpts,

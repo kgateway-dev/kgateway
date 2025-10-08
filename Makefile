@@ -39,7 +39,7 @@ export VERSION
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
 # Note: When bumping this version, update the version in pkg/validator/validator.go as well.
-export ENVOY_IMAGE ?= quay.io/solo-io/envoy-gloo:1.35.2-patch1
+export ENVOY_IMAGE ?= quay.io/solo-io/envoy-gloo:1.35.2-patch4
 export LDFLAGS := -X 'github.com/kgateway-dev/kgateway/v2/internal/version.Version=$(VERSION)'
 export GCFLAGS ?=
 
@@ -580,16 +580,6 @@ kind-load: kind-load-kgateway
 kind-load: kind-load-envoy-wrapper
 kind-load: kind-load-sds
 kind-load: kind-load-kgateway-ai-extension
-
-#----------------------------------------------------------------------------------
-# A2A Test Server (for agentgateway a2a integration in e2e tests)
-#----------------------------------------------------------------------------------
-
-TEST_A2A_AGENT_SERVER_DIR := $(ROOTDIR)/test/kubernetes/e2e/features/agentgateway/a2a-example
-.PHONY: test-a2a-agent-docker
-test-a2a-agent-docker:
-	docker buildx build $(LOAD_OR_PUSH) $(PLATFORM_MULTIARCH) -f $(TEST_A2A_AGENT_SERVER_DIR)/Dockerfile $(TEST_A2A_AGENT_SERVER_DIR) \
-		-t $(IMAGE_REGISTRY)/test-a2a-agent:$(VERSION)
 
 #----------------------------------------------------------------------------------
 # AI Extensions Test Server (for mocking AI Providers in e2e tests)

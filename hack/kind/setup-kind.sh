@@ -74,9 +74,6 @@ else
     VERSION=$VERSION make kind-build-and-load-test-ai-provider
   fi
 
-  if [[ $AGENTGATEWAY == "true" ]]; then
-    VERSION=$VERSION make kind-build-and-load-test-a2a-agent
-  fi
 fi
 
 # 5. Apply the Kubernetes Gateway API CRDs

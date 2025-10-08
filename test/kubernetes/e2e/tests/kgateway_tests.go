@@ -3,6 +3,7 @@ package tests
 import (
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/accesslog"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/admin_server"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/auto_host_rewrite"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/backendconfigpolicy"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/backends"
@@ -34,7 +35,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/timeoutretry"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/tracing"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/transformation"
-	// "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/admin_server"
 )
 
 func KubeGatewaySuiteRunner() e2e.SuiteRunner {
@@ -73,8 +73,7 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("TimeoutRetry", timeoutretry.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("HeaderModifiers", header_modifiers.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("RBAC", rbac.NewTestingSuite)
-
-	// kubeGatewaySuiteRunner.Register("GlooAdminServer", admin_server.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("AdminServer", admin_server.NewTestingSuite)
 
 	return kubeGatewaySuiteRunner
 }

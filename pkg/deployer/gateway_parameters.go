@@ -9,7 +9,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -25,13 +24,6 @@ type Inputs struct {
 	GatewayClassName         string
 	WaypointGatewayClassName string
 	AgentgatewayClassName    string
-}
-
-type ExtraGatewayParameters struct {
-	Group     string
-	Kind      string
-	Object    client.Object
-	Generator HelmValuesGenerator
 }
 
 // UpdateSecurityContexts updates the security contexts in the gateway parameters.
@@ -133,6 +125,8 @@ func GetInMemoryGatewayParameters(name string, imageInfo *ImageInfo, gatewayClas
 // set for the agentgateway deployment.
 func defaultAgentgatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext bool) *v1alpha1.GatewayParameters {
 	gwp := defaultGatewayParameters(imageInfo, omitDefaultSecurityContext)
+	// Leave unset to allow HPA, etc
+	gwp.Spec.Kube.Deployment.Replicas = nil
 	gwp.Spec.Kube.Agentgateway.Enabled = ptr.To(true)
 	gwp.Spec.Kube.PodTemplate.ReadinessProbe.HTTPGet.Path = "/healthz/ready"
 	gwp.Spec.Kube.PodTemplate.ReadinessProbe.HTTPGet.Port = intstr.FromInt(15021)

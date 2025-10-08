@@ -27,15 +27,21 @@ func NewGatewayParameters(cli client.Client, inputs *deployer.Inputs) *GatewayPa
 		cli:               cli,
 		inputs:            inputs,
 		knownGWParameters: []client.Object{&v1alpha1.GatewayParameters{}}, // always include default GatewayParameters
-		extraHVGenerators: make(map[schema.GroupKind]deployer.HelmValuesGenerator),
 	}
 }
 
 type GatewayParameters struct {
-	cli               client.Client
-	inputs            *deployer.Inputs
-	extraHVGenerators map[schema.GroupKind]deployer.HelmValuesGenerator
-	knownGWParameters []client.Object
+	cli                         client.Client
+	inputs                      *deployer.Inputs
+	helmValuesGeneratorOverride deployer.HelmValuesGenerator
+	knownGWParameters           []client.Object
+}
+
+// WithExtraGatewayParameters registers additional parameter object types that should be watched by the controller.
+// This is separate from the generator override - it's purely for setting up watches.
+func (gp *GatewayParameters) WithExtraGatewayParameters(objects ...client.Object) *GatewayParameters {
+	gp.knownGWParameters = append(gp.knownGWParameters, objects...)
+	return gp
 }
 
 type kGatewayParameters struct {
@@ -43,15 +49,8 @@ type kGatewayParameters struct {
 	inputs *deployer.Inputs
 }
 
-func (gp *GatewayParameters) WithExtraGatewayParameters(params ...deployer.ExtraGatewayParameters) *GatewayParameters {
-	for _, p := range params {
-		key := schema.GroupKind{Group: p.Group, Kind: p.Kind}
-		if _, ok := gp.extraHVGenerators[key]; ok {
-			panic(fmt.Sprintf("key already exists in the map: %v", key))
-		}
-		gp.knownGWParameters = append(gp.knownGWParameters, p.Object)
-		gp.extraHVGenerators[key] = p.Generator
-	}
+func (gp *GatewayParameters) WithHelmValuesGeneratorOverride(generator deployer.HelmValuesGenerator) *GatewayParameters {
+	gp.helmValuesGeneratorOverride = generator
 	return gp
 }
 
@@ -101,39 +100,12 @@ func (gp *GatewayParameters) getHelmValuesGenerator(ctx context.Context, obj cli
 		return nil, fmt.Errorf("expected a Gateway resource, got %s", obj.GetObjectKind().GroupVersionKind().String())
 	}
 
-	ref, err := gp.getGatewayParametersGK(ctx, gw)
-	if err != nil {
-		return nil, err
-	}
-
-	if g, ok := gp.extraHVGenerators[ref]; ok {
-		// TODO: log the generator used...
-		slog.Debug("using custom HelmValuesGenerator for Gateway",
+	if gp.helmValuesGeneratorOverride != nil {
+		slog.Debug("using override HelmValuesGenerator for Gateway",
 			"gateway_name", gw.GetName(),
 			"gateway_namespace", gw.GetNamespace(),
 		)
-		return g, nil
-	}
-
-	// Before falling back to built-in defaults, check if ExtraGatewayParameters
-	// can handle this gateway class specifically
-	gwc, err := getGatewayClassFromGateway(ctx, gp.cli, gw)
-	if err == nil {
-		gatewayClassName := string(gwc.GetName())
-
-		// Try to find ExtraGatewayParameters for this specific gateway class
-		// This allows overriding built-in defaults for specific gateway classes
-		fallbackRef := schema.GroupKind{
-			Group: "gateway.class.kgateway.dev",
-			Kind:  gatewayClassName,
-		}
-		if g, ok := gp.extraHVGenerators[fallbackRef]; ok {
-			slog.Debug("using ExtraGatewayParameters fallback for gateway class",
-				"gateway_name", gw.GetName(),
-				"gateway_class_name", gatewayClassName,
-			)
-			return g, nil
-		}
+		return gp.helmValuesGeneratorOverride, nil
 	}
 
 	slog.Debug("using default HelmValuesGenerator for Gateway",
@@ -141,46 +113,6 @@ func (gp *GatewayParameters) getHelmValuesGenerator(ctx context.Context, obj cli
 		"gateway_namespace", gw.GetNamespace(),
 	)
 	return newKGatewayParameters(gp.cli, gp.inputs), nil
-}
-
-func (gp *GatewayParameters) getGatewayParametersGK(ctx context.Context, gw *api.Gateway) (schema.GroupKind, error) {
-	// attempt to get the GatewayParameters name from the Gateway. If we can't find it,
-	// we'll check for the default GWP for the GatewayClass.
-	if gw.Spec.Infrastructure == nil || gw.Spec.Infrastructure.ParametersRef == nil {
-		slog.Debug("no GatewayParameters found for Gateway, using default",
-			"gateway_name", gw.GetName(),
-			"gateway_namespace", gw.GetNamespace(),
-		)
-		return gp.getDefaultGatewayParametersGK(ctx, gw)
-	}
-
-	return schema.GroupKind{
-			Group: string(gw.Spec.Infrastructure.ParametersRef.Group),
-			Kind:  string(gw.Spec.Infrastructure.ParametersRef.Kind),
-		},
-		nil
-}
-
-func (gp *GatewayParameters) getDefaultGatewayParametersGK(ctx context.Context, gw *api.Gateway) (schema.GroupKind, error) {
-	gwc, err := getGatewayClassFromGateway(ctx, gp.cli, gw)
-	if err != nil {
-		return schema.GroupKind{}, err
-	}
-
-	if gwc.Spec.ParametersRef != nil {
-		return schema.GroupKind{
-				Group: string(gwc.Spec.ParametersRef.Group),
-				Kind:  string(gwc.Spec.ParametersRef.Kind),
-			},
-			nil
-	}
-
-	// For gateways without explicit parametersRef, use a default GroupKind
-	// that ExtraGatewayParameters can register for based on gateway class name
-	return schema.GroupKind{
-		Group: "default.gateway.kgateway.dev",
-		Kind:  string(gwc.GetName()), // Use gateway class name as Kind
-	}, nil
 }
 
 func newKGatewayParameters(cli client.Client, inputs *deployer.Inputs) *kGatewayParameters {

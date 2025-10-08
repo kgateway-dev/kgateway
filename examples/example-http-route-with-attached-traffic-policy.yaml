@@ -14,26 +14,27 @@ spec:
   - matches:
     - path:
         type: PathPrefix
-        value: /timeout
+        value: /ratelimit
     backendRefs:
     - name: example-svc
       port: 8080
 ---
-apiVersion: gateway.solo.io/v1
-kind: RouteOption
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
 metadata:
-  name: policy-attached
+  name: local-ratelimit
+  namespace: kgateway-system
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
-    kind: HTTPRoute
-    name: example-route
-  options:
-    faults:
-      abort:
-        percentage: 100
-        httpStatus: 500
-    timeout: 11s
+    kind: Gateway
+    name: gw
+  rateLimit:
+    local:
+      tokenBucket:
+        maxTokens: 10
+        tokensPerFill: 5
+        fillInterval: 60s
 ---
 apiVersion: v1
 kind: Service
@@ -47,23 +48,16 @@ spec:
       port: 8080
       targetPort: http-web-svc
 ---
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: v1
+kind: Pod
 metadata:
   name: nginx
+  labels:
+    app.kubernetes.io/name: nginx
 spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: nginx
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: nginx
-    spec:
-      containers:
-      - name: nginx
-        image: nginx:stable
-        ports:
-        - containerPort: 80
-          name: http-web-svc
+  containers:
+  - name: nginx
+    image: nginx:stable
+    ports:
+    - containerPort: 80
+      name: http-web-svc

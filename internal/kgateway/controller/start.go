@@ -74,9 +74,17 @@ type StartConfig struct {
 	RestConfig *rest.Config
 	// ExtensionsFactory is the factory function which will return an extensions.K8sGatewayExtensions
 	// This is responsible for producing the extension points that this controller requires
-	ExtraPlugins           func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []sdk.Plugin
-	ExtraAgwPlugins        func(ctx context.Context, agw *agwplugins.AgwCollections) []agwplugins.AgwPlugin
-	ExtraGatewayParameters func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
+	ExtraPlugins    func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []sdk.Plugin
+	ExtraAgwPlugins func(ctx context.Context, agw *agwplugins.AgwCollections) []agwplugins.AgwPlugin
+	// HelmValuesGeneratorOverride allows replacing the default helm values generation logic.
+	// When set, this generator will be used instead of the built-in GatewayParameters-based generator
+	// for all Gateways. This is a 1:1 replacement - you provide one generator that handles everything.
+	HelmValuesGeneratorOverride func(cli client.Client, inputs *deployer.Inputs) deployer.HelmValuesGenerator
+	// ExtraGatewayParameters is a list of additional parameter object types that the controller should watch.
+	// These are used to set up watches so that changes to custom parameter objects trigger Gateway reconciliation.
+	// The objects should be empty instances of the types you want to watch (e.g., &corev1.ConfigMap{}, &MyCustomCRD{}).
+	// This is separate from HelmValuesGeneratorOverride - these are just for watch registration.
+	ExtraGatewayParameters []client.Object
 	Client                 istiokube.Client
 	Validator              validator.Validator
 
@@ -327,7 +335,7 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 	}
 
 	setupLog.Info("creating base gateway controller")
-	if err := NewBaseGatewayController(ctx, gwCfg, c.cfg.ExtraGatewayParameters); err != nil {
+	if err := NewBaseGatewayController(ctx, gwCfg, c.cfg.HelmValuesGeneratorOverride, c.cfg.ExtraGatewayParameters); err != nil {
 		setupLog.Error(err, "unable to create gateway controller")
 		return err
 	}
@@ -349,7 +357,7 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 		if !globalSettings.EnableAgentgateway {
 			setupLog.Info("using inference extension without agentgateway is deprecated in v2.1 and will not be supported in v2.2.")
 		}
-		if err := NewBaseInferencePoolController(ctx, poolCfg, &gwCfg, c.cfg.ExtraGatewayParameters); err != nil {
+		if err := NewBaseInferencePoolController(ctx, poolCfg, &gwCfg, c.cfg.HelmValuesGeneratorOverride, c.cfg.ExtraGatewayParameters); err != nil {
 			setupLog.Error(err, "unable to create inferencepool controller")
 			return err
 		}

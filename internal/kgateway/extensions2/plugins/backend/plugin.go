@@ -362,7 +362,6 @@ func (p *backendPlugin) ApplyForBackend(pCtx *ir.RouteBackendContext, in ir.Http
 	backendIr := pCtx.Backend.ObjIr.(*BackendIr)
 	switch backend.Spec.Type {
 	case v1alpha1.BackendTypeAI:
-
 		err := ai.ApplyAIBackend(backendIr.AIIr, pCtx, out)
 		if err != nil {
 			return err

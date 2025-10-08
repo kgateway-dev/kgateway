@@ -35,7 +35,7 @@ Internal developers should not be shy about posting questions on the issue rathe
 ### Identify Nits
 Use the prefix “nit” when making a comment about something nitpicky, such as code style/formatting, variable names, etc. Nits express your opinion that something could be better, but that it’s not critical or necessary for correctness or system health. The author can choose to ignore such feedback, but it’s still useful to provide it.
 
-When you identify a comment as a nit, you are delegating "ownernship" of that conversation to the PR author. That means that they have the ability to respond to the proposal, implement a change, or just resolve the conversation without taking any action.
+When you identify a comment as a nit, you are delegating "ownership" of that conversation to the PR author. That means that they have the ability to respond to the proposal, implement a change, or just resolve the conversation without taking any action.
 
 ### Requesting Changes
 Be mindful of the manner (especially the language) in which you deliver critical feedback, especially feedback that may require the author to make significant changes. You might also consider reaching out to the author directly to discuss things offline after submitting the review. 

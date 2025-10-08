@@ -66,7 +66,7 @@ func (dt DeployerTester) RunHelmChartTest(
 	tt HelmTestCase,
 	scheme *runtime.Scheme,
 	dir string,
-	extraParamsFunc func(cli client.Client, inputs *pkgdeployer.Inputs) []pkgdeployer.ExtraGatewayParameters,
+	helmValuesGeneratorOverride func(cli client.Client, inputs *pkgdeployer.Inputs) pkgdeployer.HelmValuesGenerator,
 ) {
 	filePath := filepath.Join(dir, "testdata/", tt.InputFile)
 	inputFile := filePath + ".yaml"
@@ -94,8 +94,8 @@ func (dt DeployerTester) RunHelmChartTest(
 		fakeClient,
 		inputs,
 	)
-	if extraParamsFunc != nil {
-		gwParams.WithExtraGatewayParameters(extraParamsFunc(fakeClient, inputs)...)
+	if helmValuesGeneratorOverride != nil {
+		gwParams.WithHelmValuesGeneratorOverride(helmValuesGeneratorOverride(fakeClient, inputs))
 	}
 	deployer := pkgdeployer.NewDeployer(
 		dt.ControllerName,

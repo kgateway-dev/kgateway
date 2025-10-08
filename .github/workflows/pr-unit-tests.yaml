@@ -31,7 +31,7 @@ jobs:
     - name: Run Tests
       shell: bash
       env:
-        TEST_PKG: "./internal/... ./pkg/..."
+        TEST_PKG: "./test/deployer/... ./internal/... ./pkg/..."
       run: make go-test-with-coverage
     - name: Validate Test Coverage
       shell: bash

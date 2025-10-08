@@ -14,31 +14,18 @@ spec:
   - matches:
     - path:
         type: PathPrefix
-        value: /timeout
+        value: /backend-config
     backendRefs:
     - name: example-svc
       port: 8080
----
-apiVersion: gateway.solo.io/v1
-kind: ListenerOption
-metadata:
-  name: access-logs
-spec:
-  targetRefs:
-  - group: gateway.networking.k8s.io
-    kind: Gateway
-    name: gw
-  options:
-    accessLoggingService:
-      accessLog:
-      - fileSink:
-          path: /dev/stdout
-          stringFormat: ""
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: example-svc
+  labels:
+    app: nginx
+    service: example-svc
 spec:
   selector:
     app.kubernetes.io/name: nginx
@@ -60,3 +47,15 @@ spec:
     ports:
     - containerPort: 80
       name: http-web-svc
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: example-svc-policy
+spec:
+  targetRefs:
+    - name: example-svc
+      group: ""
+      kind: Service
+  connectTimeout: 5s
+  perConnectionBufferLimitBytes: 1024
