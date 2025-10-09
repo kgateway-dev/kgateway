@@ -211,6 +211,7 @@ func (i *TestInstallation) UninstallKgatewayCore(ctx context.Context) {
 		helmutils.UninstallOpts{
 			Namespace:   i.Metadata.InstallNamespace,
 			ReleaseName: helmutils.ChartName,
+			ExtraArgs:   []string{"--wait"}, // Default timeout is 5m
 		},
 	)
 	i.Assertions.Require.NoError(err, "failed to uninstall main chart")
@@ -228,6 +229,7 @@ func (i *TestInstallation) UninstallKgatewayCRDs(ctx context.Context) {
 		helmutils.UninstallOpts{
 			Namespace:   i.Metadata.InstallNamespace,
 			ReleaseName: helmutils.CRDChartName,
+			ExtraArgs:   []string{"--wait"}, // Default timeout is 5m
 		},
 	)
 	i.Assertions.Require.NoError(err, "failed to uninstall CRD chart")
