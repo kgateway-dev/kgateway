@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spf13/afero"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/sds/pkg/server"
 	"github.com/kgateway-dev/kgateway/v2/internal/sds/pkg/testutils"
@@ -128,7 +129,7 @@ var _ = Describe("SDS Server", func() {
 			var conn *grpc.ClientConn
 
 			// Initiate a connection with the server
-			conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
+			conn, err := grpc.NewClient(serverAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 			Expect(err).NotTo(HaveOccurred())
 			defer conn.Close()
 
