@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -156,7 +157,7 @@ func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 	err = updateStatus(ctx, r.cli, &gw, generatedSvc)
 	if err != nil {
 		log.Error(err, "failed to update status")
-		result.Requeue = true
+		result.RequeueAfter = time.Second
 	}
 
 	err = r.deployer.DeployObjsWithSource(ctx, objs, &gw)
