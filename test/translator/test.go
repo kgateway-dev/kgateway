@@ -34,6 +34,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
+	"sigs.k8s.io/gateway-api/pkg/consts"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -599,7 +600,9 @@ func (tc TestCase) Run(
 		wellknown.XListenerSetGVR,
 		wellknown.BackendTLSPolicyGVR,
 	} {
-		clienttest.MakeCRD(t, cli, crd)
+		clienttest.MakeCRDWithAnnotations(t, cli, crd, map[string]string{
+			consts.BundleVersionAnnotation: consts.BundleVersion,
+		})
 	}
 	defer cli.Shutdown()
 
