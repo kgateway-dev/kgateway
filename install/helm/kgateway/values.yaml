@@ -134,3 +134,11 @@ validation:
   #    Strict adds xDS preflight validation and blocks snapshots that would NACK in Envoy.
   #    Default is "standard".
   level: standard
+
+# -- Set pod disruption budget for the controller. Note that this does not
+#    affect the data plane.
+# E.g.:
+#
+# podDisruptionBudget:
+#   minAvailable: 100%
+podDisruptionBudget: {}

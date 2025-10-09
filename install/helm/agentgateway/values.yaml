@@ -112,3 +112,11 @@ discoveryNamespaceSelectors: []
 #        name: shared-gwp
 #        namespace: kgateway-system
 gatewayClassParametersRefs: {}
+
+# -- Set pod disruption budget for the controller. Note that this does not
+#    affect the data plane.
+# E.g.:
+#
+# podDisruptionBudget:
+#   minAvailable: 100%
+podDisruptionBudget: {}

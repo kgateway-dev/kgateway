@@ -99,6 +99,18 @@ func TestHelmChartTemplate(t *testing.T) {
       enabled: true
 `,
 		},
+		{
+			name: "pdb-min-available",
+			valuesYAML: `podDisruptionBudget:
+  minAvailable: 1
+`,
+		},
+		{
+			name: "pdb-max-unavailable",
+			valuesYAML: `podDisruptionBudget:
+  maxUnavailable: 25%
+`,
+		},
 	}
 
 	for _, chart := range charts {
