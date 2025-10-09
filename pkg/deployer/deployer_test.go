@@ -677,7 +677,7 @@ var _ = Describe("Deployer", func() {
 
 		It("clears RunAsUser for agentgateway when FloatingUserId=true", func() {
 			// enable floating user on kube config
-			gwp.Spec.Kube.FloatingUserId = ptr.To(true)
+			gwp.Spec.Kube.FloatingUserId = ptr.To(true) //nolint:staticcheck
 			// also set a PodSecurityContext and ensure it flows to the pod
 			uid := int64(12345)
 			gid := int64(23456)
@@ -1833,7 +1833,7 @@ var _ = Describe("Deployer", func() {
 
 			gatewayParamsOverrideWithSdsAndFloatingUserId = func() *gw2_v1alpha1.GatewayParameters {
 				params := gatewayParamsOverrideWithSds()
-				params.Spec.Kube.FloatingUserId = ptr.To(true)
+				params.Spec.Kube.FloatingUserId = ptr.To(true) //nolint:staticcheck
 				return params
 			}
 
@@ -1906,7 +1906,7 @@ var _ = Describe("Deployer", func() {
 
 			fullyDefinedGatewayParamsWithFloatingUserId = func() *gw2_v1alpha1.GatewayParameters {
 				params := fullyDefinedGatewayParameters(wellknown.DefaultGatewayParametersName, defaultNamespace)
-				params.Spec.Kube.FloatingUserId = ptr.To(true)
+				params.Spec.Kube.FloatingUserId = ptr.To(true) //nolint:staticcheck
 				params.Spec.Kube.PodTemplate.SecurityContext.RunAsUser = nil
 				return params
 			}
@@ -2124,12 +2124,12 @@ var _ = Describe("Deployer", func() {
 
 			// assert AI extension container
 			expectedAIExtension := fmt.Sprintf("%s/%s",
-				*expectedGwp.AiExtension.Image.Registry,
-				*expectedGwp.AiExtension.Image.Repository,
+				*expectedGwp.AiExtension.Image.Registry,   //nolint:staticcheck
+				*expectedGwp.AiExtension.Image.Repository, //nolint:staticcheck
 			)
 			aiExt := dep.Spec.Template.Spec.Containers[3]
 			Expect(aiExt.Image).To(ContainSubstring(expectedAIExtension))
-			Expect(aiExt.Ports).To(HaveLen(len(expectedGwp.AiExtension.Ports)))
+			Expect(aiExt.Ports).To(HaveLen(len(expectedGwp.AiExtension.Ports))) //nolint:staticcheck
 
 			// assert Service
 			svc := objs.findService(defaultNamespace, defaultServiceName)
