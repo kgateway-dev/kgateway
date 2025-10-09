@@ -76,7 +76,7 @@ type Syncer struct {
 
 	// Collection status reporting
 	// TODO(npolshak): report these separately from proxy_syncer backends https://github.com/kgateway-dev/kgateway/issues/11966
-	//backendStatuses krt.StatusCollection[*v1alpha1.Backend, v1alpha1.BackendStatus]
+	// backendStatuses krt.StatusCollection[*v1alpha1.Backend, v1alpha1.BackendStatus]
 
 	// Synchronization
 	waitForSync []cache.InformerSynced
@@ -293,7 +293,8 @@ func (s *Syncer) buildListenerFromGateway(obj translator.GatewayListener) *agwir
 func (s *Syncer) buildBackendFromBackend(ctx krt.HandlerContext,
 	backend *v1alpha1.Backend, svcCol krt.Collection[*corev1.Service],
 	secretsCol krt.Collection[*corev1.Secret],
-	nsCol krt.Collection[*corev1.Namespace]) ([]translator.AgwResourceWithCustomName, *v1alpha1.BackendStatus) {
+	nsCol krt.Collection[*corev1.Namespace],
+) ([]translator.AgwResourceWithCustomName, *v1alpha1.BackendStatus) {
 	var results []translator.AgwResourceWithCustomName
 	var backendStatus *v1alpha1.BackendStatus
 	backends, backendPolicies, err := s.translator.BackendTranslator().TranslateBackend(ctx, backend, svcCol, secretsCol, nsCol)
@@ -749,7 +750,7 @@ func (s *Syncer) Start(ctx context.Context) error {
 				Addresses: snap.AddressConfig,
 			}
 			logger.Debug("setting xds snapshot", "resource_name", snap.ResourceName())
-			logger.Debug("snapshot config", "resource_snapshot", snapshot.Resources, "workload_snapshot", snapshot.Addresses)
+			logger.Log(ctx, logging.LevelTrace, "snapshot config", "resource_snapshot", snapshot.Resources, "workload_snapshot", snapshot.Addresses)
 			err := s.xdsCache.SetSnapshot(ctx, snap.ResourceName(), snapshot)
 			if err != nil {
 				logger.Error("failed to set xds snapshot", "resource_name", snap.ResourceName(), "error", err.Error())
