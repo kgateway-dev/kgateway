@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"time"
 
 	"github.com/anthropics/anthropic-sdk-go"
@@ -32,6 +34,10 @@ const (
 
 	// Ref: https://github.com/solo-io/gloo-gateway-use-cases/blob/76e6cec2f0b41eda7a93ac87a1b0f41ddb17503c/ai-guardrail-webhook-server/main.py#L112
 	maskedPatternResponse = "****ing"
+
+	dockerBridgeIfaceIP = "172.17.0.1"
+
+	macOSDockerBridgeHost = "host.docker.internal"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -51,7 +57,14 @@ var (
 		Manifests: []string{
 			testdefaults.CurlPodManifest,
 			testdefaults.AIGuardrailsWebhookManifest,
-			setupManifest,
+		},
+		ManifestsWithTransform: map[string]func(string) string{
+			setupManifest: func(original string) string {
+				if runtime.GOOS == "darwin" {
+					return strings.ReplaceAll(original, dockerBridgeIfaceIP, macOSDockerBridgeHost)
+				}
+				return original
+			},
 		},
 	}
 	testCases = map[string]*base.TestCase{}
