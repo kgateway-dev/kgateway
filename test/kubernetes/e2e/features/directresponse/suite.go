@@ -54,13 +54,13 @@ func (s *testingSuite) SetupSuite() {
 		LabelSelector: "app=httpbin",
 	})
 	s.ti.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=curl",
+		LabelSelector: testdefaults.WellKnownAppLabel + "=curl",
 	})
 
 	// Wait for the gateway and proxy to be ready
 	s.ti.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 	s.ti.Assertions.EventuallyPodsRunning(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=gw",
+		LabelSelector: testdefaults.WellKnownAppLabel + "=gw",
 	})
 
 	// Only include functional test manifests - negative test cases moved to gateway translator suite

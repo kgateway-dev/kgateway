@@ -52,7 +52,7 @@ func (s *testingSuite) SetupSuite() {
 		LabelSelector: testdefaults.HttpbinLabelSelector,
 	})
 	s.ti.Assertions.EventuallyPodsRunning(s.ctx, gatewayObjectMeta.Namespace, metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=" + gatewayObjectMeta.Name,
+		LabelSelector: testdefaults.WellKnownAppLabel + "=" + gatewayObjectMeta.Name,
 	})
 }
 

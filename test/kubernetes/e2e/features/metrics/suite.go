@@ -36,7 +36,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 
 func (s *testingSuite) checkPodsRunning() {
 	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, kgatewayMetricsObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=kgateway",
+		LabelSelector: e2edefaults.WellKnownAppLabel + "=kgateway",
 	})
 }
 
