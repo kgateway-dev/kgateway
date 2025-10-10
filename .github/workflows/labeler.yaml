@@ -1,7 +1,7 @@
 name: labeler
 on:
   pull_request_target:
-    types: [opened, edited, reopened]
+    types: [opened, edited, reopened, synchronize, labeled, unlabeled]
 
 permissions:
   issues: write
@@ -9,6 +9,15 @@ permissions:
   contents: read
 
 jobs:
+  check-labels:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for 'work in progress' label
+        if: contains(github.event.pull_request.labels.*.name, 'work in progress')
+        run: |
+          echo "Pull request has 'work in progress' label. Blocking merge."
+          exit 1
+
   labeler:
     runs-on: ubuntu-latest
 

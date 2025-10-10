@@ -200,7 +200,6 @@ func buildTranslateFunc(
 				lambdaFilters:         lambdaFilters,
 			}
 		case v1alpha1.BackendTypeAI:
-			logger.Warn("envoy-based AI Gateway is deprecated in v2.1 and will be removed in v2.2. Use agentgateway instead.")
 			backendIr.AIIr = &ai.IR{}
 			err := ai.PreprocessAIBackend(ctx, i.Spec.AI, backendIr.AIIr)
 			if err != nil {
