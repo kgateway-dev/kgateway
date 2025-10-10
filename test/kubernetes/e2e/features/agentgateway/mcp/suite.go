@@ -12,6 +12,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/tests/base"
 )
 
@@ -183,7 +184,7 @@ func (s *testingSuite) waitDynamicReady() {
 	)
 	s.TestInstallation.Assertions.EventuallyPodsRunning(
 		s.Ctx, "curl",
-		metav1.ListOptions{LabelSelector: "app.kubernetes.io/name=curl"},
+		metav1.ListOptions{LabelSelector: defaults.WellKnownAppLabel + "=curl"},
 	)
 	s.TestInstallation.Assertions.EventuallyGatewayCondition(s.Ctx, gatewayName, gatewayNamespace, gwv1.GatewayConditionProgrammed, metav1.ConditionTrue)
 	s.TestInstallation.Assertions.EventuallyBackendCondition(s.Ctx, "admin-mcp-backend", "default", "Accepted", metav1.ConditionTrue)
@@ -201,7 +202,7 @@ func (s *testingSuite) waitStaticReady() {
 	)
 	s.TestInstallation.Assertions.EventuallyPodsRunning(
 		s.Ctx, "curl",
-		metav1.ListOptions{LabelSelector: "app.kubernetes.io/name=curl"},
+		metav1.ListOptions{LabelSelector: defaults.WellKnownAppLabel + "=curl"},
 	)
 	s.TestInstallation.Assertions.EventuallyGatewayCondition(s.Ctx, gatewayName, gatewayNamespace, gwv1.GatewayConditionProgrammed, metav1.ConditionTrue)
 	s.TestInstallation.Assertions.EventuallyBackendCondition(s.Ctx, "mcp-backend", "default", "Accepted", metav1.ConditionTrue)

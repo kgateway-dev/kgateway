@@ -289,7 +289,7 @@ func (s *testingSuite) setupTestEnvironment(nsManifest, gtwName, gtwNs, gtwManif
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxySvc, proxyDeploy)
 
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyDeploy.GetNamespace(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", proxyDeploy.GetName()),
+		LabelSelector: fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, proxyDeploy.GetName()),
 	})
 }
 

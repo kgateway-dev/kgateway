@@ -10,6 +10,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 )
 
 var (
@@ -48,7 +49,7 @@ var (
 				},
 			},
 			Selector: map[string]string{
-				"app.kubernetes.io/name": "extauth",
+				defaults.WellKnownAppLabel: "extauth",
 			},
 		},
 	}

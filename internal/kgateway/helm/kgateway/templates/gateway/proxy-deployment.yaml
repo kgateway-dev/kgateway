@@ -95,7 +95,7 @@ spec:
           value: "0"
 {{- if $gateway.env }}
 {{ toYaml $gateway.env | indent 8 }}
-{{- end }} {{/* if $gateway.env */}}
+{{- end }}{{/* if $gateway.env */}}
         ports:
         {{- range $p := $gateway.ports }}
         - name: {{ $p.name }}
@@ -177,7 +177,7 @@ spec:
         volumeMounts:
           - mountPath: /etc/envoy
             name: envoy-config
-{{- end }} {{/* if $gateway.istio.enabled */}}
+{{- end }}{{/* if $gateway.istio.enabled */}}
 {{- if and $gateway.istio.enabled ($gateway.istioContainer).image }}
           - mountPath: /etc/istio-certs/
             name: istio-certs
@@ -279,7 +279,7 @@ spec:
             name: workload-socket
           - mountPath: /var/run/secrets/workload-spiffe-credentials
             name: workload-certs
-{{- end }} {{/* if $gateway.istio.enabled */}}
+{{- end }}{{/* if $gateway.istio.enabled */}}
 {{- if and ($gateway.aiExtension).enabled ($gateway.aiExtension).image }}
       - name: kgateway-ai-extension
         image: "{{ template "kgateway.gateway.image" $gateway.aiExtension.image }}"
@@ -319,7 +319,7 @@ spec:
           - mountPath: /var/run/ai-otel-config
             name: ai-otel-config
 {{- end }}
-{{- end }} {{/* if (($gateway.aiExtension).enabled) */}}
+{{- end }}{{/* if (($gateway.aiExtension).enabled) */}}
       {{- with $gateway.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -356,7 +356,7 @@ spec:
           name: {{ include "kgateway.gateway.fullname" . }}-ai-otel-config
         name: ai-otel-config
 {{- end }}
-{{- end }} {{/* if (($gateway.aiExtension).enabled) */}}
+{{- end }}{{/* if (($gateway.aiExtension).enabled) */}}
 {{- if $gateway.istio.enabled }}
       - emptyDir:
           medium: Memory
@@ -382,7 +382,7 @@ spec:
         emptyDir: {}
       - name: workload-certs
         emptyDir: {}
-{{- end }} {{/* if $gateway.istio.enabled */}}
+{{- end }}{{/* if $gateway.istio.enabled */}}
       {{- with $gateway.extraVolumes }}
       {{- toYaml . | nindent 6 }}
       {{- end }}
@@ -454,8 +454,8 @@ data:
 {{- if $gateway.aiExtension.tracing }}
   tracing.json: {{ $gateway.aiExtension.tracing | toJson | quote }}
 {{- end }}
-{{- end }} {{/* if or $gateway.aiExtension.stats $gateway.aiExtension.tracing */}}
-{{- end }} {{/* if (($gateway.aiExtension).enabled) */}}
+{{- end }}{{/* if or $gateway.aiExtension.stats $gateway.aiExtension.tracing */}}
+{{- end }}{{/* if (($gateway.aiExtension).enabled) */}}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -585,7 +585,7 @@ data:
                     - name: envoy.filters.http.router
                       typed_config:
                         "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-{{- end }} {{/* if $gateway.stats.enabled */}}
+{{- end }}{{/* if $gateway.stats.enabled */}}
       clusters:
         - name: xds_cluster
           alt_stat_name: xds_cluster
@@ -665,7 +665,7 @@ data:
                       socket_address:
                         address: 127.0.0.1
                         port_value: 8234
-        {{- end }} {{/* if $gateway.istio.enabled */}}
+        {{- end }}{{/* if $gateway.istio.enabled */}}
     dynamic_resources:
       ads_config:
         transport_api_version: V3
@@ -680,5 +680,5 @@ data:
       lds_config:
         resource_api_version: V3
         ads: {}
-{{- end }} {{/* if not $gateway.agentgateway.enabled */}}
+{{- end }}{{/* if not $gateway.agentgateway.enabled */}}
 ---

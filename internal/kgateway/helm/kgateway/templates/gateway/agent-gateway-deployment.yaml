@@ -264,4 +264,4 @@ data:
 {{ $gateway.agwXds.tls.caCert | indent 4 }}
 {{- end }}
 
-{{- end }} {{/* if $gateway.agentgateway.enabled */}}
+{{- end }}{{/* if $gateway.agentgateway.enabled */}}

@@ -8,12 +8,26 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/internal/version"
 	pkgdeployer "github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 )
 
+func mockVersion(t *testing.T) {
+	// Save the original version and restore it after the test
+	// This ensures the test uses a fixed version (1.0.0-ci1) regardless of
+	// what VERSION was set when compiling the test binary
+	originalVersion := version.Version
+	version.Version = "1.0.0-ci1"
+	t.Cleanup(func() {
+		version.Version = originalVersion
+	})
+}
+
 func TestRenderHelmChart(t *testing.T) {
+	mockVersion(t)
+
 	tests := []HelmTestCase{
 		{
 			Name:      "basic gateway with default gatewayclass and no gwparams",
@@ -63,6 +77,8 @@ func TestRenderHelmChart(t *testing.T) {
 }
 
 func TestRenderHelmChartWithTLS(t *testing.T) {
+	mockVersion(t)
+
 	// Create temporary CA certificate file for testing
 	caCertContent := `-----BEGIN CERTIFICATE-----
 MIICljCCAX4CCQCKSGhvPtMNGzANBgkqhkiG9w0BAQsFADANMQswCQYDVQQGEwJV
