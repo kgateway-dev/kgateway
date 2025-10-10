@@ -2,8 +2,9 @@ package trafficpolicy
 
 import (
 	set_metadata "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/set_metadata/v3"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"google.golang.org/protobuf/types/known/structpb"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 )
 
 type ProviderNeededMap struct {
