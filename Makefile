@@ -160,7 +160,7 @@ GINKGO_ENV ?= ACK_GINKGO_RC=true ACK_GINKGO_DEPRECATIONS=$(GINKGO_VERSION)
 GINKGO_FLAGS ?= -tags=purego --trace -progress -race --fail-fast -fail-on-pending --randomize-all --compilers=5 --flake-attempts=$(FLAKE_ATTEMPTS)
 GINKGO_REPORT_FLAGS ?= --json-report=test-report.json --junit-report=junit.xml -output-dir=$(OUTPUT_DIR)
 GINKGO_COVERAGE_FLAGS ?= --cover --covermode=atomic --coverprofile=coverage.cov
-TEST_PKG ?= ./... # Default to run all tests
+TEST_PKG ?= ./... # Default to run all tests except e2e tests
 
 # This is a way for a user executing `make test` to be able to provide flags which we do not include by default
 # For example, you may want to run tests multiple times, or with various timeouts
@@ -186,8 +186,9 @@ test: ## Run all tests, or only run the test package at {TEST_PKG} if it is spec
 # will still have e2e tests run by Github Actions once they publish a pull
 # request.
 .PHONY: e2e-test
+e2e-test: TEST_PKG = ./test/kubernetes/e2e/tests
 e2e-test: ## Run only e2e tests, and only run the test package at {TEST_PKG} if it is specified
-	$(MAKE) go-test TEST_TAG=e2e TEST_PKG=./test/kubernetes/e2e/tests
+	$(MAKE) go-test TEST_TAG=e2e TEST_PKG=$(TEST_PKG)
 
 
 # https://go.dev/blog/cover#heat-maps
@@ -221,7 +222,9 @@ envtest-path: ## Set the envtest path
 # Go Tests
 #----------------------------------------------------------------------------------
 
-# Fix for macOS linker warning with race detector on arm64
+# Fix for macOS linker warning with race detector on arm64 (which still warns
+# you that -ld_classic is deprecated, but that's better than broken race
+# condition detection)
 # See: https://github.com/golang/go/issues/61229
 GO_TEST_ENV ?=
 ifeq ($(GOOS), darwin)
@@ -244,9 +247,7 @@ GO_TEST_USER_ARGS ?=
 .PHONY: go-test
 go-test: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
 go-test: clean-bug-report $(BUG_REPORT_DIR) # Ensure the bug_report dir is reset before each invocation
-	@set -o pipefail && $(GO_TEST_ENV) go test -ldflags='$(LDFLAGS)' \
-    $(GO_TEST_ARGS) $(GO_TEST_USER_ARGS) \
-    -tags=$(TEST_TAG) $(TEST_PKG)
+	@$(GO_TEST_ENV) go test -ldflags='$(LDFLAGS)' $(GO_TEST_ARGS) $(GO_TEST_USER_ARGS) -tags=$(TEST_TAG) $(TEST_PKG)
 
 # https://go.dev/blog/cover#heat-maps
 .PHONY: go-test-with-coverage
