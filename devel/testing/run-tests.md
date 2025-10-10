@@ -5,7 +5,6 @@
   - [test-with-coverage](#test-with-coverage)
   - [run-tests](#run-tests)
   - [run-kube-e2e-tests](#run-kube-e2e-tests)
-  - [run-benchmark-tests](#run-benchmark-tests)
 - [Environment Variables](#environment-variables)
   - [GINKGO_USER_FLAGS](#ginkgo_user_flags)
   - [TEST_PKG](#test_pkg)
@@ -27,10 +26,6 @@ Run unit tests (ie non e2e)
 
 ### run-kube-e2e-tests
 Run [kubernetes end-to-end tests](/test/kubernetes/e2e/README.md)
-
-### run-benchmark-tests
-Run [performance tests](performance-tests.md)
-
 
 ## Environment Variables
 Shared environment variables that can be used to control the behavior of the tests are defined in [env.go](/test/testutils/env.go). Below are a few that are commonly used:

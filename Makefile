@@ -192,14 +192,6 @@ run-tests: GINKGO_FLAGS += -skip-package=e2e,kgateway,test/kubernetes/testutils/
 run-tests: GINKGO_FLAGS += --label-filter="!end-to-end && !performance"
 run-tests: test
 
-.PHONY: run-performance-tests
-# Performance tests are filtered using a Ginkgo label
-# This means that any tests which do not rely on Ginkgo, will by default be compiled and run
-# Since this is not the desired behavior, we explicitly skip these packages
-run-performance-tests: GINKGO_FLAGS += -skip-package=kgateway,kubernetes/e2e
-run-performance-tests: GINKGO_FLAGS += --label-filter="performance" ## Run only tests with the Performance label
-run-performance-tests: test
-
 .PHONY: run-e2e-tests
 run-e2e-tests: TEST_PKG = ./test/e2e/ ## Run all in-memory E2E tests
 run-e2e-tests: GINKGO_FLAGS += --label-filter="end-to-end && !performance"
