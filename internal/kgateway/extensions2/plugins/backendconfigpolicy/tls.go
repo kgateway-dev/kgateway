@@ -163,13 +163,9 @@ func buildValidationContext(tlsData *tlsData, tlsConfig *v1alpha1.TLS, tlsContex
 		}
 	}
 
-	if tlsData.rootCA == "" {
-		// If no root CA and no SAN verification, no validation context needed
-		if len(sanMatchers) == 0 {
-			return nil
-		}
-		// Root CA is required if SAN verification is specified
-		return errors.New("a root_ca must be provided if verify_subject_alt_name is not empty")
+	// No validation context needed without root CA or SAN verification
+	if tlsData.rootCA == "" && len(sanMatchers) == 0 {
+		return nil
 	}
 
 	// If root CA is provided, build a validation context

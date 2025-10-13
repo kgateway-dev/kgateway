@@ -199,6 +199,7 @@ type TCPKeepalive struct {
 }
 
 // +kubebuilder:validation:ExactlyOneOf=secretRef;files;insecureSkipVerify;wellKnownCACertificates
+// +kubebuilder:validation:XValidation:rule="size(self.verifySubjectAltNames) == 0 || has(self.secretRef) || has(self.files) || has(self.wellKnownCACertificates)",message="a root_ca must be provided if verifySubjectAltNames is not empty"
 type TLS struct {
 	// Reference to the TLS secret containing the certificate, key, and optionally the root CA.
 	// +optional

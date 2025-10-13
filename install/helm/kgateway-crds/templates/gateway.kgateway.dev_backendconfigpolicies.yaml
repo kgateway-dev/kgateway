@@ -543,6 +543,10 @@ spec:
                     type: string
                 type: object
                 x-kubernetes-validations:
+                - message: a root_ca must be provided if verifySubjectAltNames is
+                    not empty
+                  rule: size(self.verifySubjectAltNames) == 0 || has(self.secretRef)
+                    || has(self.files) || has(self.wellKnownCACertificates)
                 - message: exactly one of the fields in [secretRef files insecureSkipVerify
                     wellKnownCACertificates] must be set
                   rule: '[has(self.secretRef),has(self.files),has(self.insecureSkipVerify),has(self.wellKnownCACertificates)].filter(x,x==true).size()
