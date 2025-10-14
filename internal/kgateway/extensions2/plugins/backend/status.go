@@ -30,7 +30,7 @@ func buildRegisterCallback(
 			}
 
 			in := o.Latest()
-			ir, ok := in.ObjIr.(*BackendIr)
+			ir, ok := in.ObjIr.(*backendIr)
 			if !ok {
 				return
 			}
