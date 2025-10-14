@@ -66,7 +66,7 @@ func TestBasic(t *testing.T) {
 
 	t.Run("http gateway with basic routing", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "http-routing",
+			inputFile:  "http-routing/basic.yaml",
 			outputFile: "http-routing-proxy.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
@@ -1260,6 +1260,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "validation/xlistenerset-reserved-port.yaml",
 			outputFile: "validation/xlistenerset-reserved-port.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
+			},
+		})
+	})
+
+	t.Run("HTTP RequestRedirect filter", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "http-routing/request-redirect.yaml",
+			outputFile: "http-routing/request-redirect.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "test",
