@@ -41,6 +41,7 @@ func deduplicateErrors(errs []error) []error {
 func updateBackendStatus(ctx context.Context, cl client.Client, namespace, name string, errs []error) {
 	if cl == nil {
 		logger.Error("error updating backend status: client not initialized")
+		return
 	}
 
 	// dedup needed to avoid multiple update error called same time
