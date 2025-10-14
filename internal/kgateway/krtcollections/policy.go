@@ -1191,7 +1191,7 @@ func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRo
 		ParentRefs:   i.Spec.ParentRefs,
 		Hostnames:    tostr(i.Spec.Hostnames),
 		Rules: h.transformRules(
-			kctx, src, i.Spec.Rules, i.GetLabels(), ir.WithInheritedPolicyPriority(inheritedPolicyPriority)),
+			kctx, src, i.Spec.Rules, i.GetLabels(), i.GetAnnotations(), ir.WithInheritedPolicyPriority(inheritedPolicyPriority)),
 		AttachedPolicies: toAttachedPolicies(
 			h.policies.getTargetingPolicies(kctx, src, "", i.GetLabels()),
 			ir.WithInheritedPolicyPriority(inheritedPolicyPriority),
@@ -1206,11 +1206,12 @@ func (h *RoutesIndex) transformRules(
 	src ir.ObjectSource,
 	i []gwv1.HTTPRouteRule,
 	srcLabels map[string]string,
+	srcAnnotations map[string]string,
 	opts ...ir.PolicyAttachmentOpts,
 ) []ir.HttpRouteRuleIR {
 	rules := make([]ir.HttpRouteRuleIR, 0, len(i))
 	for _, r := range i {
-		extensionRefs, err := h.getExtensionRefs(kctx, src.Namespace, r.Filters, opts...)
+		extensionRefs, err := h.getExtensionRefs(kctx, src.Namespace, r.Filters, r.Name, srcAnnotations, opts...)
 
 		var policies ir.AttachedPolicies
 		if r.Name != nil {
@@ -1239,6 +1240,8 @@ func (h *RoutesIndex) getExtensionRefs(
 	kctx krt.HandlerContext,
 	ns string,
 	r []gwv1.HTTPRouteFilter,
+	ruleName *gwv1.SectionName,
+	annotations map[string]string,
 	opts ...ir.PolicyAttachmentOpts,
 ) (ir.AttachedPolicies, error) {
 	ret := ir.AttachedPolicies{
@@ -1246,7 +1249,7 @@ func (h *RoutesIndex) getExtensionRefs(
 	}
 	var errs []error
 	for _, ext := range r {
-		policyAtt, err := h.resolveExtension(kctx, ns, ext)
+		policyAtt, err := h.resolveExtension(kctx, ns, ext, ruleName, annotations)
 		if policyAtt != nil {
 			for _, o := range opts {
 				o(policyAtt)
@@ -1278,7 +1281,13 @@ func (h *RoutesIndex) getBuiltInRulePolicies(
 	return ret
 }
 
-func (h *RoutesIndex) resolveExtension(kctx krt.HandlerContext, ns string, ext gwv1.HTTPRouteFilter) (*ir.PolicyAtt, error) {
+func (h *RoutesIndex) resolveExtension(
+	kctx krt.HandlerContext,
+	ns string,
+	ext gwv1.HTTPRouteFilter,
+	ruleName *gwv1.SectionName,
+	annotations map[string]string,
+) (*ir.PolicyAtt, error) {
 	if ext.Type == gwv1.HTTPRouteFilterExtensionRef {
 		if ext.ExtensionRef == nil {
 			// TODO: report error!!
@@ -1322,7 +1331,10 @@ func (h *RoutesIndex) resolveExtension(kctx krt.HandlerContext, ns string, ext g
 		Kind:  "HTTPRoute",
 	}
 
-	builtinIR := NewBuiltInIr(kctx, ext, fromGK, ns, h.refgrants, h.backends)
+	builtinIR, err := NewBuiltInIr(kctx, ext, fromGK, ns, h.refgrants, h.backends, ruleName, annotations)
+	if err != nil {
+		return nil, err
+	}
 	policyAtt := &ir.PolicyAtt{
 		GroupKind: ir.VirtualBuiltInGK,
 		PolicyIr:  builtinIR,
@@ -1352,7 +1364,7 @@ func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, 
 	for _, ref := range backendRefs {
 		// ignore errs as invalid/missing policy for backendRef filters is undefined currently
 		// see: https://github.com/kgateway-dev/kgateway/issues/11897
-		extensionRefs, _ := h.getExtensionRefs(kctx, src.Namespace, ref.Filters)
+		extensionRefs, _ := h.getExtensionRefs(kctx, src.Namespace, ref.Filters, nil, nil)
 		fromns := src.Namespace
 
 		to := toFromBackendRef(fromns, ref.BackendObjectReference)
