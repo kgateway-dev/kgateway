@@ -19,6 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/backend/ai"
@@ -35,6 +36,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
+// backendStatusClient is used to update Backend CRD status when runtime translation errors occur
+var backendStatusClient client.Client
 var logger = logging.New("plugin/backend")
 
 const (
@@ -80,6 +83,8 @@ func registerTypes(ourCli versioned.Interface) {
 
 func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
 	registerTypes(commoncol.OurClient)
+
+	backendStatusClient = commoncol.CrudClient
 
 	col := krt.WrapClient(kclient.NewFiltered[*v1alpha1.Backend](
 		commoncol.Client,
@@ -273,8 +278,8 @@ func processBackendForEnvoy(ctx context.Context, in ir.BackendObjectIR, out *env
 		return nil
 	}
 
-	// TODO(tim): Bubble up error to Backend status once https://github.com/kgateway-dev/kgateway/issues/10555
-	// is resolved and add test cases for invalid endpoint URLs.
+	errCount := len(backendIr.Errors)
+
 	spec := be.Spec
 	switch spec.Type {
 	case v1alpha1.BackendTypeStatic:
@@ -304,6 +309,12 @@ func processBackendForEnvoy(ctx context.Context, in ir.BackendObjectIR, out *env
 			backendIr.Errors = append(backendIr.Errors, err)
 		}
 	}
+
+	// Update Backend status if new error
+	if len(backendIr.Errors) > errCount {
+		go updateBackendStatus(ctx, backendStatusClient, be.Namespace, be.Name, backendIr.Errors)
+	}
+
 	return nil
 }
 

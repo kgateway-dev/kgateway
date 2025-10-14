@@ -43,11 +43,7 @@ func ProcessAIBackend(in *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecrets 
 		return nil
 	}
 
-	if err := buildModelCluster(in, aiSecret, multiSecrets, out); err != nil {
-		return err
-	}
-
-	return nil
+	return buildModelCluster(in, aiSecret, multiSecrets, out)
 }
 
 // buildModelCluster builds a cluster for the given AI backend.

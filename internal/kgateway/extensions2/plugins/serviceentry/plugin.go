@@ -64,7 +64,7 @@ func NewPluginWithOpts(
 				AliasKinds: []schema.GroupKind{
 					// allow backendRef with networking.istio.io/Hostname
 					wellknown.HostnameGVK.GroupKind(),
-					// alias to ourself because one SE -> multiple Backends
+					// alias to ourselves because one SE -> multiple Backends
 					wellknown.ServiceEntryGVK.GroupKind(),
 				},
 
