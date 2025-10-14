@@ -1,6 +1,6 @@
 module github.com/kgateway-dev/kgateway/v2
 
-go 1.25.1
+go 1.25.3
 
 require (
 	// Also update AgentgatewayDefaultTag in pkg/deployer/wellknown.go
