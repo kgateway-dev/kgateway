@@ -62,7 +62,11 @@ func (e *RunError) Cause() error {
 // It returns a pretty printed command that could be pasted into a shell.
 func PrettyCommand(quote bool, name string, args ...string) string {
 	var out strings.Builder
-	out.WriteString(strconv.Quote(name))
+	if quote {
+		out.WriteString(strconv.Quote(name))
+	} else {
+		out.WriteString(name)
+	}
 	for _, arg := range args {
 		out.WriteByte(' ')
 		if quote {
