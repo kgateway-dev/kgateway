@@ -81,7 +81,7 @@ func registerTypes(ourCli versioned.Interface) {
 func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
 	registerTypes(commoncol.OurClient)
 
-	backendStatusClient = commoncol.CrudClient
+	setBackendStatusClient(commoncol.CrudClient)
 
 	col := krt.WrapClient(kclient.NewFiltered[*v1alpha1.Backend](
 		commoncol.Client,

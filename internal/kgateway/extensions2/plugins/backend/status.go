@@ -2,6 +2,7 @@ package backend
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/avast/retry-go"
@@ -19,7 +20,24 @@ import (
 )
 
 // backendStatusClient is used to update Backend CRD status when runtime translation errors occur
-var backendStatusClient client.Client
+var (
+	backendStatusClient   client.Client
+	backendStatusClientMu sync.RWMutex
+)
+
+// setBackendStatusClient sets the backend status client in a thread-safe manner
+func setBackendStatusClient(c client.Client) {
+	backendStatusClientMu.Lock()
+	defer backendStatusClientMu.Unlock()
+	backendStatusClient = c
+}
+
+// getBackendStatusClient gets the backend status client in a thread-safe manner
+func getBackendStatusClient() client.Client {
+	backendStatusClientMu.RLock()
+	defer backendStatusClientMu.RUnlock()
+	return backendStatusClient
+}
 
 // deduplicateErrors removes duplicate errors based on their error message strings.
 func deduplicateErrors(errs []error) []error {
@@ -42,7 +60,8 @@ func deduplicateErrors(errs []error) []error {
 
 // updateBackendStatus updates the Backend CRD status with the given errors.
 func updateBackendStatus(ctx context.Context, namespace, name string, errs []error) {
-	if backendStatusClient == nil {
+	cl := getBackendStatusClient()
+	if cl == nil {
 		logger.Error("error updating backend status: client not initialized")
 		return
 	}
@@ -57,7 +76,7 @@ func updateBackendStatus(ctx context.Context, namespace, name string, errs []err
 	res := v1alpha1.Backend{}
 	err := retry.Do(
 		func() error {
-			err := backendStatusClient.Get(ctx, resNN, &res)
+			err := cl.Get(ctx, resNN, &res)
 			if err != nil {
 				logger.Error("error getting backend", "error", err)
 				return err
@@ -80,7 +99,7 @@ func updateBackendStatus(ctx context.Context, namespace, name string, errs []err
 			conditions := make([]metav1.Condition, 0, 1)
 			meta.SetStatusCondition(&conditions, newCondition)
 			res.Status.Conditions = conditions
-			if err := backendStatusClient.Status().Patch(ctx, &res, client.Merge); err != nil {
+			if err = cl.Status().Patch(ctx, &res, client.Merge); err != nil {
 				logger.Error("error updating backend status", "error", err)
 				return err
 			}
