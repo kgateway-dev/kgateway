@@ -575,13 +575,11 @@ kind-reload-%: kind-build-and-load-% kind-set-image-% ; ## Use to build specifie
 kind-build-and-load: kind-build-and-load-kgateway
 kind-build-and-load: kind-build-and-load-envoy-wrapper
 kind-build-and-load: kind-build-and-load-sds
-kind-build-and-load: kind-build-and-load-kgateway-ai-extension
 
 .PHONY: kind-load ## Use to load all images into kind
 kind-load: kind-load-kgateway
 kind-load: kind-load-envoy-wrapper
 kind-load: kind-load-sds
-kind-load: kind-load-kgateway-ai-extension
 
 #----------------------------------------------------------------------------------
 # Load Testing
