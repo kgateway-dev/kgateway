@@ -5,6 +5,9 @@ import (
 
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	"github.com/stretchr/testify/assert"
+	"k8s.io/utils/ptr"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 )
@@ -158,3 +161,120 @@ func TestURLRewriteApply(t *testing.T) {
 		})
 	}
 }
+
+func TestParseRedirectStatusCodeAnnotation(t *testing.T) {
+	sectionName := func(s string) *gwv1.SectionName {
+		return ptr.To(gwv1.SectionName(s))
+	}
+
+	tests := []struct {
+		name     string
+		value    string
+		rule     *gwv1.SectionName
+		wantCode *int
+		wantErr  string
+	}{
+		{
+			name:     "valid status code 301",
+			value:    "301",
+			rule:     sectionName("rule1"),
+			wantCode: ptr.To(301),
+		},
+		{
+			name:     "valid status code 302",
+			value:    "302",
+			rule:     sectionName("rule1"),
+			wantCode: ptr.To(302),
+		},
+		{
+			name:     "valid status code 303",
+			value:    "303",
+			rule:     sectionName("rule1"),
+			wantCode: ptr.To(303),
+		},
+		{
+			name:     "valid status code 307",
+			value:    "307",
+			rule:     sectionName("rule1"),
+			wantCode: ptr.To(307),
+		},
+		{
+			name:     "valid status code 308",
+			value:    "308",
+			rule:     sectionName("rule1"),
+			wantCode: ptr.To(308),
+		},
+		{
+			name:     "valid status code with rule-specific format",
+			value:    "rule1=301,rule2=302",
+			rule:     sectionName("rule1"),
+			wantCode: ptr.To(301),
+		},
+		{
+			name:     "valid status code with rule-specific format with spaces",
+			value:    "rule1=301, rule2=302",
+			rule:     sectionName("rule2"),
+			wantCode: ptr.To(302),
+		},
+		{
+			name:     "rule-specific format but rule doesn't match",
+			value:    "rule2=301",
+			rule:     sectionName("rule1"),
+			wantCode: nil,
+		},
+		{
+			name:     "invalid status code - non-numeric",
+			value:    "abc",
+			rule:     sectionName("rule1"),
+			wantCode: nil,
+			wantErr:  "invalid redirect status code: abc",
+		},
+		{
+			name:     "invalid rule-specific format",
+			value:    "rule1:301",
+			rule:     sectionName("rule1"),
+			wantCode: nil,
+			wantErr:  "invalid redirect status code: rule1:301",
+		},
+		{
+			name:     "empty value",
+			value:    "",
+			rule:     sectionName("rule1"),
+			wantCode: nil,
+			wantErr:  "missing value",
+		},
+		{
+			name:     "nil rule with simple value",
+			value:    "301",
+			rule:     nil,
+			wantCode: ptr.To(301),
+		},
+		{
+			name:     "nil rule with rule-specific format",
+			value:    "rule1=301",
+			rule:     nil,
+			wantCode: nil,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			a := assert.New(t)
+			code, err := parseRedirectStatusCodeAnnotation(tc.value, tc.rule)
+
+			// Check error
+			if tc.wantErr != "" {
+				a.ErrorContains(err, tc.wantErr)
+			} else if err != nil {
+				a.NoError(err)
+			}
+
+			// Check code
+			if tc.wantCode != nil {
+				a.Equal(tc.wantCode, code)
+			}
+		})
+	}
+}
+
+// Helper function is already defined elsewhere

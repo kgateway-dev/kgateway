@@ -37,35 +37,75 @@ spec:
       openAPIV3Schema:
         properties:
           apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
           spec:
+            description: BackendSpec defines the desired state of Backend.
             properties:
               ai:
+                description: AI is the AI backend configuration.
                 properties:
                   llm:
+                    description: The LLM configures the AI gateway to use a single
+                      LLM provider backend.
                     properties:
                       anthropic:
+                        description: Anthropic provider
                         properties:
                           apiVersion:
+                            description: |-
+                              Optional: A version header to pass to the Anthropic API.
+                              For more information, see the [Anthropic API versioning docs](https://docs.anthropic.com/en/api/versioning).
                             type: string
                           authToken:
+                            description: |-
+                              The authorization token that the AI gateway uses to access the Anthropic API.
+                              This token is automatically sent in the `x-api-key` header of the request.
                             properties:
                               inline:
+                                description: |-
+                                  Provide the token directly in the configuration for the Backend.
+                                  This option is the least secure. Only use this option for quick tests such as trying out AI Gateway.
                                 type: string
                               kind:
+                                description: |-
+                                  Kind specifies which type of authorization token is being used.
+                                  Must be one of: "Inline", "SecretRef", "Passthrough".
                                 enum:
                                 - Inline
                                 - SecretRef
                                 - Passthrough
                                 type: string
                               secretRef:
+                                description: |-
+                                  Store the API key in a Kubernetes secret in the same namespace as the Backend.
+                                  Then, refer to the secret in the Backend configuration. This option is more secure than an inline token,
+                                  because the API key is encoded and you can restrict access to secrets through RBAC rules.
+                                  You might use this option in proofs of concept, controlled development and staging environments,
+                                  or well-controlled prod environments that use secrets.
                                 properties:
                                   name:
                                     default: ""
+                                    description: |-
+                                      Name of the referent.
+                                      This field is effectively required, but due to backwards compatibility is
+                                      allowed to be empty. Instances of this type with an empty value here are
+                                      almost certainly wrong.
+                                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                     type: string
                                 type: object
                                 x-kubernetes-map-type: atomic
@@ -78,16 +118,30 @@ spec:
                               rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
                                 <= 1'
                           model:
+                            description: |-
+                              Optional: Override the model name.
+                              If unset, the model name is taken from the request.
+                              This setting can be useful when testing model failover scenarios.
                             type: string
                         required:
                         - authToken
                         type: object
                       authHeader:
+                        description: |-
+                          AuthHeader specifies how the Authorization header is set in the request sent to the LLM provider.
+                          Allows changing the header name and/or the prefix (e.g., "Bearer").
+                          Note: Not all LLM providers use the Authorization header and prefix.
+                          For example, OpenAI uses header: "Authorization" and prefix: "Bearer" But Azure OpenAI uses header: "api-key"
+                          and no Bearer.
                         properties:
                           headerName:
+                            description: HeaderName specifies the name of the header
+                              to use for authorization.
                             minLength: 1
                             type: string
                           prefix:
+                            description: Prefix specifies the prefix to use in the
+                              Authorization header.
                             minLength: 1
                             type: string
                         type: object
@@ -95,24 +149,49 @@ spec:
                         - message: at least one of prefix or headerName must be set
                           rule: has(self.prefix) || has(self.headerName)
                       azureopenai:
+                        description: Azure OpenAI provider
                         properties:
                           apiVersion:
+                            description: |-
+                              The version of the Azure OpenAI API to use.
+                              For more information, see the [Azure OpenAI API version reference](https://learn.microsoft.com/en-us/azure/ai-services/openai/reference#api-specs).
                             minLength: 1
                             type: string
                           authToken:
+                            description: |-
+                              The authorization token that the AI gateway uses to access the Azure OpenAI API.
+                              This token is automatically sent in the `api-key` header of the request.
                             properties:
                               inline:
+                                description: |-
+                                  Provide the token directly in the configuration for the Backend.
+                                  This option is the least secure. Only use this option for quick tests such as trying out AI Gateway.
                                 type: string
                               kind:
+                                description: |-
+                                  Kind specifies which type of authorization token is being used.
+                                  Must be one of: "Inline", "SecretRef", "Passthrough".
                                 enum:
                                 - Inline
                                 - SecretRef
                                 - Passthrough
                                 type: string
                               secretRef:
+                                description: |-
+                                  Store the API key in a Kubernetes secret in the same namespace as the Backend.
+                                  Then, refer to the secret in the Backend configuration. This option is more secure than an inline token,
+                                  because the API key is encoded and you can restrict access to secrets through RBAC rules.
+                                  You might use this option in proofs of concept, controlled development and staging environments,
+                                  or well-controlled prod environments that use secrets.
                                 properties:
                                   name:
                                     default: ""
+                                    description: |-
+                                      Name of the referent.
+                                      This field is effectively required, but due to backwards compatibility is
+                                      allowed to be empty. Instances of this type with an empty value here are
+                                      almost certainly wrong.
+                                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                     type: string
                                 type: object
                                 x-kubernetes-map-type: atomic
@@ -125,9 +204,15 @@ spec:
                               rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
                                 <= 1'
                           deploymentName:
+                            description: |-
+                              The name of the Azure OpenAI model deployment to use.
+                              For more information, see the [Azure OpenAI model docs](https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models).
                             minLength: 1
                             type: string
                           endpoint:
+                            description: |-
+                              The endpoint for the Azure OpenAI API to use, such as `my-endpoint.openai.azure.com`.
+                              If the scheme is included, it is stripped.
                             minLength: 1
                             type: string
                         required:
@@ -137,17 +222,39 @@ spec:
                         - endpoint
                         type: object
                       bedrock:
+                        description: Bedrock provider
                         properties:
                           auth:
+                            description: |-
+                              Auth specifies an explicit AWS authentication method for the backend.
+                              When omitted, the following credential providers are tried in order, stopping when one
+                              of them returns an access key ID and a secret access key (the session token is optional):
+                              1. Environment variables: when the environment variables AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and AWS_SESSION_TOKEN are set.
+                              2. AssumeRoleWithWebIdentity API call: when the environment variables AWS_WEB_IDENTITY_TOKEN_FILE and AWS_ROLE_ARN are set.
+                              3. EKS Pod Identity: when the environment variable AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE is set.
+
+                              See the Envoy docs for more info:
+                              https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_request_signing_filter#credentials
                             properties:
                               secretRef:
+                                description: |-
+                                  SecretRef references a Kubernetes Secret containing the AWS credentials.
+                                  The Secret must have keys "accessKey", "secretKey", and optionally "sessionToken".
                                 properties:
                                   name:
                                     default: ""
+                                    description: |-
+                                      Name of the referent.
+                                      This field is effectively required, but due to backwards compatibility is
+                                      allowed to be empty. Instances of this type with an empty value here are
+                                      almost certainly wrong.
+                                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                     type: string
                                 type: object
                                 x-kubernetes-map-type: atomic
                               type:
+                                description: Type specifies the authentication method
+                                  to use for the backend.
                                 enum:
                                 - Secret
                                 type: string
@@ -160,11 +267,18 @@ spec:
                             - message: secretRef must be specified when type is 'Secret'
                               rule: '!(!has(self.secretRef) && self.type == ''Secret'')'
                           guardrail:
+                            description: |-
+                              Guardrail configures the Guardrail policy to use for the backend. See <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails.html>
+                              If not specified, the AWS Guardrail policy will not be used.
                             properties:
                               identifier:
+                                description: GuardrailIdentifier is the identifier
+                                  of the Guardrail policy to use for the backend.
                                 minLength: 1
                                 type: string
                               version:
+                                description: GuardrailVersion is the version of the
+                                  Guardrail policy to use for the backend.
                                 minLength: 1
                                 type: string
                             required:
@@ -172,33 +286,65 @@ spec:
                             - version
                             type: object
                           model:
+                            description: |-
+                              Optional: Override the model ID.
+                              If unset, the model is taken from the request.
+                              See <https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html>
                             minLength: 1
                             type: string
                           region:
                             default: us-east-1
+                            description: |-
+                              Region is the AWS region to use for the backend.
+                              Defaults to us-east-1 if not specified.
                             maxLength: 63
                             minLength: 1
                             pattern: ^[a-z0-9-]+$
                             type: string
                         type: object
                       gemini:
+                        description: Gemini provider
                         properties:
                           apiVersion:
+                            description: |-
+                              The version of the Gemini API to use.
+                              For more information, see the [Gemini API version docs](https://ai.google.dev/gemini-api/docs/api-versions).
                             type: string
                           authToken:
+                            description: |-
+                              The authorization token that the AI gateway uses to access the Gemini API.
+                              This token is automatically sent in the `key` query parameter of the request.
                             properties:
                               inline:
+                                description: |-
+                                  Provide the token directly in the configuration for the Backend.
+                                  This option is the least secure. Only use this option for quick tests such as trying out AI Gateway.
                                 type: string
                               kind:
+                                description: |-
+                                  Kind specifies which type of authorization token is being used.
+                                  Must be one of: "Inline", "SecretRef", "Passthrough".
                                 enum:
                                 - Inline
                                 - SecretRef
                                 - Passthrough
                                 type: string
                               secretRef:
+                                description: |-
+                                  Store the API key in a Kubernetes secret in the same namespace as the Backend.
+                                  Then, refer to the secret in the Backend configuration. This option is more secure than an inline token,
+                                  because the API key is encoded and you can restrict access to secrets through RBAC rules.
+                                  You might use this option in proofs of concept, controlled development and staging environments,
+                                  or well-controlled prod environments that use secrets.
                                 properties:
                                   name:
                                     default: ""
+                                    description: |-
+                                      Name of the referent.
+                                      This field is effectively required, but due to backwards compatibility is
+                                      allowed to be empty. Instances of this type with an empty value here are
+                                      almost certainly wrong.
+                                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                     type: string
                                 type: object
                                 x-kubernetes-map-type: atomic
@@ -211,6 +357,9 @@ spec:
                               rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
                                 <= 1'
                           model:
+                            description: |-
+                              The Gemini model to use.
+                              For more information, see the [Gemini models docs](https://ai.google.dev/gemini-api/docs/models/gemini).
                             type: string
                         required:
                         - apiVersion
@@ -218,24 +367,50 @@ spec:
                         - model
                         type: object
                       host:
+                        description: |-
+                          Host specifies the hostname to send the requests to.
+                          If not specified, the default hostname for the provider is used.
                         minLength: 1
                         type: string
                       openai:
+                        description: OpenAI provider
                         properties:
                           authToken:
+                            description: |-
+                              The authorization token that the AI gateway uses to access the OpenAI API.
+                              This token is automatically sent in the `Authorization` header of the
+                              request and prefixed with `Bearer`.
                             properties:
                               inline:
+                                description: |-
+                                  Provide the token directly in the configuration for the Backend.
+                                  This option is the least secure. Only use this option for quick tests such as trying out AI Gateway.
                                 type: string
                               kind:
+                                description: |-
+                                  Kind specifies which type of authorization token is being used.
+                                  Must be one of: "Inline", "SecretRef", "Passthrough".
                                 enum:
                                 - Inline
                                 - SecretRef
                                 - Passthrough
                                 type: string
                               secretRef:
+                                description: |-
+                                  Store the API key in a Kubernetes secret in the same namespace as the Backend.
+                                  Then, refer to the secret in the Backend configuration. This option is more secure than an inline token,
+                                  because the API key is encoded and you can restrict access to secrets through RBAC rules.
+                                  You might use this option in proofs of concept, controlled development and staging environments,
+                                  or well-controlled prod environments that use secrets.
                                 properties:
                                   name:
                                     default: ""
+                                    description: |-
+                                      Name of the referent.
+                                      This field is effectively required, but due to backwards compatibility is
+                                      allowed to be empty. Instances of this type with an empty value here are
+                                      almost certainly wrong.
+                                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                     type: string
                                 type: object
                                 x-kubernetes-map-type: atomic
@@ -248,38 +423,74 @@ spec:
                               rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
                                 <= 1'
                           model:
+                            description: |-
+                              Optional: Override the model name, such as `gpt-4o-mini`.
+                              If unset, the model name is taken from the request.
+                              This setting can be useful when setting up model failover within the same LLM provider.
                             type: string
                         required:
                         - authToken
                         type: object
                       path:
+                        description: |-
+                          Path specifies the URL path to use for the LLM provider API requests.
+                          This is useful when you need to route requests to a different API endpoint while maintaining
+                          compatibility with the original provider's API structure.
+                          If not specified, the default path for the provider is used.
                         properties:
                           full:
                             minLength: 1
                             type: string
                         type: object
                       port:
+                        description: Port specifies the port to send the requests
+                          to.
                         format: int32
                         type: integer
                       vertexai:
+                        description: Vertex AI provider
                         properties:
                           apiVersion:
+                            description: |-
+                              The version of the Vertex AI API to use.
+                              For more information, see the [Vertex AI API reference](https://cloud.google.com/vertex-ai/docs/reference#versions).
                             minLength: 1
                             type: string
                           authToken:
+                            description: |-
+                              The authorization token that the AI gateway uses to access the Vertex AI API.
+                              This token is automatically sent in the `key` header of the request.
                             properties:
                               inline:
+                                description: |-
+                                  Provide the token directly in the configuration for the Backend.
+                                  This option is the least secure. Only use this option for quick tests such as trying out AI Gateway.
                                 type: string
                               kind:
+                                description: |-
+                                  Kind specifies which type of authorization token is being used.
+                                  Must be one of: "Inline", "SecretRef", "Passthrough".
                                 enum:
                                 - Inline
                                 - SecretRef
                                 - Passthrough
                                 type: string
                               secretRef:
+                                description: |-
+                                  Store the API key in a Kubernetes secret in the same namespace as the Backend.
+                                  Then, refer to the secret in the Backend configuration. This option is more secure than an inline token,
+                                  because the API key is encoded and you can restrict access to secrets through RBAC rules.
+                                  You might use this option in proofs of concept, controlled development and staging environments,
+                                  or well-controlled prod environments that use secrets.
                                 properties:
                                   name:
                                     default: ""
+                                    description: |-
+                                      Name of the referent.
+                                      This field is effectively required, but due to backwards compatibility is
+                                      allowed to be empty. Instances of this type with an empty value here are
+                                      almost certainly wrong.
+                                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                     type: string
                                 type: object
                                 x-kubernetes-map-type: atomic
@@ -292,17 +503,28 @@ spec:
                               rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
                                 <= 1'
                           location:
+                            description: The location of the Google Cloud Project
+                              that you use for the Vertex AI.
                             minLength: 1
                             type: string
                           model:
+                            description: |-
+                              The Vertex AI model to use.
+                              For more information, see the [Vertex AI model docs](https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models).
                             minLength: 1
                             type: string
                           modelPath:
+                            description: 'Optional: The model path to route to. Defaults
+                              to the Gemini model path, `generateContent`.'
                             type: string
                           projectId:
+                            description: The ID of the Google Cloud Project that you
+                              use for the Vertex AI.
                             minLength: 1
                             type: string
                           publisher:
+                            description: The type of publisher model to use. Currently,
+                              only Google is supported.
                             enum:
                             - GOOGLE
                             type: string
@@ -324,29 +546,81 @@ spec:
                       rule: '[has(self.openai),has(self.azureopenai),has(self.anthropic),has(self.gemini),has(self.vertexai),has(self.bedrock)].filter(x,x==true).size()
                         == 1'
                   priorityGroups:
+                    description: "PriorityGroups specifies a list of groups in priority
+                      order where each group defines\na set of LLM providers. The
+                      priority determines the priority of the backend endpoints chosen.\nNote:
+                      provider names must be unique across all providers in all priority
+                      groups. Backend policies\nmay target a specific provider by
+                      name using targetRefs[].sectionName.\n\nExample configuration
+                      with two priority groups:\n```yaml\npriorityGroups:\n\t- providers:\n\t
+                      \ - azureOpenai:\n\t      deploymentName: gpt-4o-mini\n\t      apiVersion:
+                      2024-02-15-preview\n\t      endpoint: ai-gateway.openai.azure.com\n\t
+                      \     authToken:\n\t        secretRef:\n\t          name: azure-secret\n\t
+                      \         namespace: kgateway-system\n\t- providers:\n\t  -
+                      azureOpenai:\n\t      deploymentName: gpt-4o-mini-2\n\t      apiVersion:
+                      2024-02-15-preview\n\t      endpoint: ai-gateway-2.openai.azure.com\n\t
+                      \     authToken:\n\t        secretRef:\n\t          name: azure-secret-2\n\t
+                      \         namespace: kgateway-system\n```"
                     items:
+                      description: |-
+                        MultiPoolConfig configures the backends for multiple hosts or models from the same provider in one Backend resource.
+                        This method can be useful for creating one logical endpoint that is backed
+                        by multiple hosts or models.
+
+                        In the `priorities` section, the order of `pool` entries defines the priority of the backend endpoints.
+                        The `pool` entries can either define a list of backends or a single backend.
+                        Note: Only two levels of nesting are permitted. Any nested entries after the second level are ignored.
                       properties:
                         providers:
+                          description: A list of LLM provider backends within a single
+                            endpoint pool entry.
                           items:
+                            description: NamedLLMProvider wraps an LLMProvider with
+                              a name.
                             properties:
                               anthropic:
+                                description: Anthropic provider
                                 properties:
                                   apiVersion:
+                                    description: |-
+                                      Optional: A version header to pass to the Anthropic API.
+                                      For more information, see the [Anthropic API versioning docs](https://docs.anthropic.com/en/api/versioning).
                                     type: string
                                   authToken:
+                                    description: |-
+                                      The authorization token that the AI gateway uses to access the Anthropic API.
+                                      This token is automatically sent in the `x-api-key` header of the request.
                                     properties:
                                       inline:
+                                        description: |-
+                                          Provide the token directly in the configuration for the Backend.
+                                          This option is the least secure. Only use this option for quick tests such as trying out AI Gateway.
                                         type: string
                                       kind:
+                                        description: |-
+                                          Kind specifies which type of authorization token is being used.
+                                          Must be one of: "Inline", "SecretRef", "Passthrough".
                                         enum:
                                         - Inline
                                         - SecretRef
                                         - Passthrough
                                         type: string
                                       secretRef:
+                                        description: |-
+                                          Store the API key in a Kubernetes secret in the same namespace as the Backend.
+                                          Then, refer to the secret in the Backend configuration. This option is more secure than an inline token,
+                                          because the API key is encoded and you can restrict access to secrets through RBAC rules.
+                                          You might use this option in proofs of concept, controlled development and staging environments,
+                                          or well-controlled prod environments that use secrets.
                                         properties:
                                           name:
                                             default: ""
+                                            description: |-
+                                              Name of the referent.
+                                              This field is effectively required, but due to backwards compatibility is
+                                              allowed to be empty. Instances of this type with an empty value here are
+                                              almost certainly wrong.
+                                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                             type: string
                                         type: object
                                         x-kubernetes-map-type: atomic
@@ -359,16 +633,30 @@ spec:
                                       rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
                                         <= 1'
                                   model:
+                                    description: |-
+                                      Optional: Override the model name.
+                                      If unset, the model name is taken from the request.
+                                      This setting can be useful when testing model failover scenarios.
                                     type: string
                                 required:
                                 - authToken
                                 type: object
                               authHeader:
+                                description: |-
+                                  AuthHeader specifies how the Authorization header is set in the request sent to the LLM provider.
+                                  Allows changing the header name and/or the prefix (e.g., "Bearer").
+                                  Note: Not all LLM providers use the Authorization header and prefix.
+                                  For example, OpenAI uses header: "Authorization" and prefix: "Bearer" But Azure OpenAI uses header: "api-key"
+                                  and no Bearer.
                                 properties:
                                   headerName:
+                                    description: HeaderName specifies the name of
+                                      the header to use for authorization.
                                     minLength: 1
                                     type: string
                                   prefix:
+                                    description: Prefix specifies the prefix to use
+                                      in the Authorization header.
                                     minLength: 1
                                     type: string
                                 type: object
@@ -377,24 +665,49 @@ spec:
                                     be set
                                   rule: has(self.prefix) || has(self.headerName)
                               azureopenai:
+                                description: Azure OpenAI provider
                                 properties:
                                   apiVersion:
+                                    description: |-
+                                      The version of the Azure OpenAI API to use.
+                                      For more information, see the [Azure OpenAI API version reference](https://learn.microsoft.com/en-us/azure/ai-services/openai/reference#api-specs).
                                     minLength: 1
                                     type: string
                                   authToken:
+                                    description: |-
+                                      The authorization token that the AI gateway uses to access the Azure OpenAI API.
+                                      This token is automatically sent in the `api-key` header of the request.
                                     properties:
                                       inline:
+                                        description: |-
+                                          Provide the token directly in the configuration for the Backend.
+                                          This option is the least secure. Only use this option for quick tests such as trying out AI Gateway.
                                         type: string
                                       kind:
+                                        description: |-
+                                          Kind specifies which type of authorization token is being used.
+                                          Must be one of: "Inline", "SecretRef", "Passthrough".
                                         enum:
                                         - Inline
                                         - SecretRef
                                         - Passthrough
                                         type: string
                                       secretRef:
+                                        description: |-
+                                          Store the API key in a Kubernetes secret in the same namespace as the Backend.
+                                          Then, refer to the secret in the Backend configuration. This option is more secure than an inline token,
+                                          because the API key is encoded and you can restrict access to secrets through RBAC rules.
+                                          You might use this option in proofs of concept, controlled development and staging environments,
+                                          or well-controlled prod environments that use secrets.
                                         properties:
                                           name:
                                             default: ""
+                                            description: |-
+                                              Name of the referent.
+                                              This field is effectively required, but due to backwards compatibility is
+                                              allowed to be empty. Instances of this type with an empty value here are
+                                              almost certainly wrong.
+                                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                             type: string
                                         type: object
                                         x-kubernetes-map-type: atomic
@@ -407,9 +720,15 @@ spec:
                                       rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
                                         <= 1'
                                   deploymentName:
+                                    description: |-
+                                      The name of the Azure OpenAI model deployment to use.
+                                      For more information, see the [Azure OpenAI model docs](https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models).
                                     minLength: 1
                                     type: string
                                   endpoint:
+                                    description: |-
+                                      The endpoint for the Azure OpenAI API to use, such as `my-endpoint.openai.azure.com`.
+                                      If the scheme is included, it is stripped.
                                     minLength: 1
                                     type: string
                                 required:
@@ -419,17 +738,39 @@ spec:
                                 - endpoint
                                 type: object
                               bedrock:
+                                description: Bedrock provider
                                 properties:
                                   auth:
+                                    description: |-
+                                      Auth specifies an explicit AWS authentication method for the backend.
+                                      When omitted, the following credential providers are tried in order, stopping when one
+                                      of them returns an access key ID and a secret access key (the session token is optional):
+                                      1. Environment variables: when the environment variables AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and AWS_SESSION_TOKEN are set.
+                                      2. AssumeRoleWithWebIdentity API call: when the environment variables AWS_WEB_IDENTITY_TOKEN_FILE and AWS_ROLE_ARN are set.
+                                      3. EKS Pod Identity: when the environment variable AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE is set.
+
+                                      See the Envoy docs for more info:
+                                      https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_request_signing_filter#credentials
                                     properties:
                                       secretRef:
+                                        description: |-
+                                          SecretRef references a Kubernetes Secret containing the AWS credentials.
+                                          The Secret must have keys "accessKey", "secretKey", and optionally "sessionToken".
                                         properties:
                                           name:
                                             default: ""
+                                            description: |-
+                                              Name of the referent.
+                                              This field is effectively required, but due to backwards compatibility is
+                                              allowed to be empty. Instances of this type with an empty value here are
+                                              almost certainly wrong.
+                                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                             type: string
                                         type: object
                                         x-kubernetes-map-type: atomic
                                       type:
+                                        description: Type specifies the authentication
+                                          method to use for the backend.
                                         enum:
                                         - Secret
                                         type: string
@@ -446,11 +787,18 @@ spec:
                                       rule: '!(!has(self.secretRef) && self.type ==
                                         ''Secret'')'
                                   guardrail:
+                                    description: |-
+                                      Guardrail configures the Guardrail policy to use for the backend. See <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails.html>
+                                      If not specified, the AWS Guardrail policy will not be used.
                                     properties:
                                       identifier:
+                                        description: GuardrailIdentifier is the identifier
+                                          of the Guardrail policy to use for the backend.
                                         minLength: 1
                                         type: string
                                       version:
+                                        description: GuardrailVersion is the version
+                                          of the Guardrail policy to use for the backend.
                                         minLength: 1
                                         type: string
                                     required:
@@ -458,33 +806,65 @@ spec:
                                     - version
                                     type: object
                                   model:
+                                    description: |-
+                                      Optional: Override the model ID.
+                                      If unset, the model is taken from the request.
+                                      See <https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html>
                                     minLength: 1
                                     type: string
                                   region:
                                     default: us-east-1
+                                    description: |-
+                                      Region is the AWS region to use for the backend.
+                                      Defaults to us-east-1 if not specified.
                                     maxLength: 63
                                     minLength: 1
                                     pattern: ^[a-z0-9-]+$
                                     type: string
                                 type: object
                               gemini:
+                                description: Gemini provider
                                 properties:
                                   apiVersion:
+                                    description: |-
+                                      The version of the Gemini API to use.
+                                      For more information, see the [Gemini API version docs](https://ai.google.dev/gemini-api/docs/api-versions).
                                     type: string
                                   authToken:
+                                    description: |-
+                                      The authorization token that the AI gateway uses to access the Gemini API.
+                                      This token is automatically sent in the `key` query parameter of the request.
                                     properties:
                                       inline:
+                                        description: |-
+                                          Provide the token directly in the configuration for the Backend.
+                                          This option is the least secure. Only use this option for quick tests such as trying out AI Gateway.
                                         type: string
                                       kind:
+                                        description: |-
+                                          Kind specifies which type of authorization token is being used.
+                                          Must be one of: "Inline", "SecretRef", "Passthrough".
                                         enum:
                                         - Inline
                                         - SecretRef
                                         - Passthrough
                                         type: string
                                       secretRef:
+                                        description: |-
+                                          Store the API key in a Kubernetes secret in the same namespace as the Backend.
+                                          Then, refer to the secret in the Backend configuration. This option is more secure than an inline token,
+                                          because the API key is encoded and you can restrict access to secrets through RBAC rules.
+                                          You might use this option in proofs of concept, controlled development and staging environments,
+                                          or well-controlled prod environments that use secrets.
                                         properties:
                                           name:
                                             default: ""
+                                            description: |-
+                                              Name of the referent.
+                                              This field is effectively required, but due to backwards compatibility is
+                                              allowed to be empty. Instances of this type with an empty value here are
+                                              almost certainly wrong.
+                                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                             type: string
                                         type: object
                                         x-kubernetes-map-type: atomic
@@ -497,6 +877,9 @@ spec:
                                       rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
                                         <= 1'
                                   model:
+                                    description: |-
+                                      The Gemini model to use.
+                                      For more information, see the [Gemini models docs](https://ai.google.dev/gemini-api/docs/models/gemini).
                                     type: string
                                 required:
                                 - apiVersion
@@ -504,29 +887,57 @@ spec:
                                 - model
                                 type: object
                               host:
+                                description: |-
+                                  Host specifies the hostname to send the requests to.
+                                  If not specified, the default hostname for the provider is used.
                                 minLength: 1
                                 type: string
                               name:
+                                description: Name of the provider. Policies can target
+                                  this provider by name.
                                 maxLength: 253
                                 minLength: 1
                                 pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                                 type: string
                               openai:
+                                description: OpenAI provider
                                 properties:
                                   authToken:
+                                    description: |-
+                                      The authorization token that the AI gateway uses to access the OpenAI API.
+                                      This token is automatically sent in the `Authorization` header of the
+                                      request and prefixed with `Bearer`.
                                     properties:
                                       inline:
+                                        description: |-
+                                          Provide the token directly in the configuration for the Backend.
+                                          This option is the least secure. Only use this option for quick tests such as trying out AI Gateway.
                                         type: string
                                       kind:
+                                        description: |-
+                                          Kind specifies which type of authorization token is being used.
+                                          Must be one of: "Inline", "SecretRef", "Passthrough".
                                         enum:
                                         - Inline
                                         - SecretRef
                                         - Passthrough
                                         type: string
                                       secretRef:
+                                        description: |-
+                                          Store the API key in a Kubernetes secret in the same namespace as the Backend.
+                                          Then, refer to the secret in the Backend configuration. This option is more secure than an inline token,
+                                          because the API key is encoded and you can restrict access to secrets through RBAC rules.
+                                          You might use this option in proofs of concept, controlled development and staging environments,
+                                          or well-controlled prod environments that use secrets.
                                         properties:
                                           name:
                                             default: ""
+                                            description: |-
+                                              Name of the referent.
+                                              This field is effectively required, but due to backwards compatibility is
+                                              allowed to be empty. Instances of this type with an empty value here are
+                                              almost certainly wrong.
+                                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                             type: string
                                         type: object
                                         x-kubernetes-map-type: atomic
@@ -539,38 +950,74 @@ spec:
                                       rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
                                         <= 1'
                                   model:
+                                    description: |-
+                                      Optional: Override the model name, such as `gpt-4o-mini`.
+                                      If unset, the model name is taken from the request.
+                                      This setting can be useful when setting up model failover within the same LLM provider.
                                     type: string
                                 required:
                                 - authToken
                                 type: object
                               path:
+                                description: |-
+                                  Path specifies the URL path to use for the LLM provider API requests.
+                                  This is useful when you need to route requests to a different API endpoint while maintaining
+                                  compatibility with the original provider's API structure.
+                                  If not specified, the default path for the provider is used.
                                 properties:
                                   full:
                                     minLength: 1
                                     type: string
                                 type: object
                               port:
+                                description: Port specifies the port to send the requests
+                                  to.
                                 format: int32
                                 type: integer
                               vertexai:
+                                description: Vertex AI provider
                                 properties:
                                   apiVersion:
+                                    description: |-
+                                      The version of the Vertex AI API to use.
+                                      For more information, see the [Vertex AI API reference](https://cloud.google.com/vertex-ai/docs/reference#versions).
                                     minLength: 1
                                     type: string
                                   authToken:
+                                    description: |-
+                                      The authorization token that the AI gateway uses to access the Vertex AI API.
+                                      This token is automatically sent in the `key` header of the request.
                                     properties:
                                       inline:
+                                        description: |-
+                                          Provide the token directly in the configuration for the Backend.
+                                          This option is the least secure. Only use this option for quick tests such as trying out AI Gateway.
                                         type: string
                                       kind:
+                                        description: |-
+                                          Kind specifies which type of authorization token is being used.
+                                          Must be one of: "Inline", "SecretRef", "Passthrough".
                                         enum:
                                         - Inline
                                         - SecretRef
                                         - Passthrough
                                         type: string
                                       secretRef:
+                                        description: |-
+                                          Store the API key in a Kubernetes secret in the same namespace as the Backend.
+                                          Then, refer to the secret in the Backend configuration. This option is more secure than an inline token,
+                                          because the API key is encoded and you can restrict access to secrets through RBAC rules.
+                                          You might use this option in proofs of concept, controlled development and staging environments,
+                                          or well-controlled prod environments that use secrets.
                                         properties:
                                           name:
                                             default: ""
+                                            description: |-
+                                              Name of the referent.
+                                              This field is effectively required, but due to backwards compatibility is
+                                              allowed to be empty. Instances of this type with an empty value here are
+                                              almost certainly wrong.
+                                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                             type: string
                                         type: object
                                         x-kubernetes-map-type: atomic
@@ -583,17 +1030,28 @@ spec:
                                       rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
                                         <= 1'
                                   location:
+                                    description: The location of the Google Cloud
+                                      Project that you use for the Vertex AI.
                                     minLength: 1
                                     type: string
                                   model:
+                                    description: |-
+                                      The Vertex AI model to use.
+                                      For more information, see the [Vertex AI model docs](https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models).
                                     minLength: 1
                                     type: string
                                   modelPath:
+                                    description: 'Optional: The model path to route
+                                      to. Defaults to the Gemini model path, `generateContent`.'
                                     type: string
                                   projectId:
+                                    description: The ID of the Google Cloud Project
+                                      that you use for the Vertex AI.
                                     minLength: 1
                                     type: string
                                   publisher:
+                                    description: The type of publisher model to use.
+                                      Currently, only Google is supported.
                                     enum:
                                     - GOOGLE
                                     type: string
@@ -633,22 +1091,47 @@ spec:
                   rule: '[has(self.llm),has(self.priorityGroups)].filter(x,x==true).size()
                     == 1'
               aws:
+                description: |-
+                  Aws is the AWS backend configuration.
+                  The Aws backend type is only supported with envoy-based gateways, it is not supported in agentgateway.
                 properties:
                   accountId:
+                    description: AccountId is the AWS account ID to use for the backend.
                     maxLength: 12
                     minLength: 1
                     pattern: ^[0-9]{12}$
                     type: string
                   auth:
+                    description: |-
+                      Auth specifies an explicit AWS authentication method for the backend.
+                      When omitted, the following credential providers are tried in order, stopping when one
+                      of them returns an access key ID and a secret access key (the session token is optional):
+                      1. Environment variables: when the environment variables AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and AWS_SESSION_TOKEN are set.
+                      2. AssumeRoleWithWebIdentity API call: when the environment variables AWS_WEB_IDENTITY_TOKEN_FILE and AWS_ROLE_ARN are set.
+                      3. EKS Pod Identity: when the environment variable AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE is set.
+
+                      See the Envoy docs for more info:
+                      https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_request_signing_filter#credentials
                     properties:
                       secretRef:
+                        description: |-
+                          SecretRef references a Kubernetes Secret containing the AWS credentials.
+                          The Secret must have keys "accessKey", "secretKey", and optionally "sessionToken".
                         properties:
                           name:
                             default: ""
+                            description: |-
+                              Name of the referent.
+                              This field is effectively required, but due to backwards compatibility is
+                              allowed to be empty. Instances of this type with an empty value here are
+                              almost certainly wrong.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                             type: string
                         type: object
                         x-kubernetes-map-type: atomic
                       type:
+                        description: Type specifies the authentication method to use
+                          for the backend.
                         enum:
                         - Secret
                         type: string
@@ -661,28 +1144,45 @@ spec:
                     - message: secretRef must be specified when type is 'Secret'
                       rule: '!(!has(self.secretRef) && self.type == ''Secret'')'
                   lambda:
+                    description: Lambda configures the AWS lambda service.
                     properties:
                       endpointURL:
+                        description: |-
+                          EndpointURL is the URL or domain for the Lambda service. This is primarily
+                          useful for testing and development purposes. When omitted, the default
+                          lambda hostname will be used.
                         maxLength: 2048
                         pattern: ^https?://[-a-zA-Z0-9@:%.+~#?&/=]+$
                         type: string
                       functionName:
+                        description: FunctionName is the name of the Lambda function
+                          to invoke.
                         pattern: ^[A-Za-z0-9-_]{1,140}$
                         type: string
                       invocationMode:
                         default: Sync
+                        description: |-
+                          InvocationMode defines how to invoke the Lambda function.
+                          Defaults to Sync.
                         enum:
                         - Sync
                         - Async
                         type: string
                       payloadTransformMode:
                         default: Envoy
+                        description: |-
+                          PayloadTransformation specifies payload transformation mode before it is sent to the Lambda function.
+                          Defaults to Envoy.
                         enum:
                         - None
                         - Envoy
                         type: string
                       qualifier:
                         default: $LATEST
+                        description: |-
+                          Qualifier is the alias or version for the Lambda function.
+                          Valid values include a numeric version (e.g. "1"), an alias name
+                          (alphanumeric plus "-" or "_"), or the special literal "$LATEST".
                         pattern: ^(\$LATEST|[0-9]+|[A-Za-z0-9-_]{1,128})$
                         type: string
                     required:
@@ -690,6 +1190,9 @@ spec:
                     type: object
                   region:
                     default: us-east-1
+                    description: |-
+                      Region is the AWS region to use for the backend.
+                      Defaults to us-east-1 if not specified.
                     maxLength: 63
                     minLength: 1
                     pattern: ^[a-z0-9-]+$
@@ -699,32 +1202,69 @@ spec:
                 - lambda
                 type: object
               dynamicForwardProxy:
+                description: |-
+                  DynamicForwardProxy is the dynamic forward proxy backend configuration.
+                  The DynamicForwardProxy backend type is only supported with envoy-based gateways, it is not supported in agentgateway.
                 properties:
                   enableTls:
+                    description: |-
+                      EnableTls enables TLS. When true, the backend will be configured to use TLS. System CA will be used for validation.
+                      The hostname will be used for SNI and auto SAN validation.
                     type: boolean
                 type: object
               mcp:
+                description: MCP is the mcp backend configuration. The MCP backend
+                  type is only supported with agentgateway.
                 properties:
                   targets:
+                    description: |-
+                      Targets is a list of MCP targets to use for this backend.
+                      Policies targeting MCP targets must use targetRefs[].sectionName
+                      to select the target by name.
                     items:
+                      description: McpTargetSelector defines the MCP target to use
+                        for this backend.
                       properties:
                         name:
+                          description: Name of the MCP target.
                           maxLength: 253
                           minLength: 1
                           pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                           type: string
                         selector:
+                          description: |-
+                            Selector is the selector to use to select the MCP targets.
+                            Note: Policies must target the resource selected by the target and
+                            not the name of the selector-based target on the Backend resource.
                           properties:
                             namespace:
+                              description: |-
+                                Namespace is the label selector in which namespace the MCP targets
+                                are searched for.
                               properties:
                                 matchExpressions:
+                                  description: matchExpressions is a list of label
+                                    selector requirements. The requirements are ANDed.
                                   items:
+                                    description: |-
+                                      A label selector requirement is a selector that contains values, a key, and an operator that
+                                      relates the key and values.
                                     properties:
                                       key:
+                                        description: key is the label key that the
+                                          selector applies to.
                                         type: string
                                       operator:
+                                        description: |-
+                                          operator represents a key's relationship to a set of values.
+                                          Valid operators are In, NotIn, Exists and DoesNotExist.
                                         type: string
                                       values:
+                                        description: |-
+                                          values is an array of string values. If the operator is In or NotIn,
+                                          the values array must be non-empty. If the operator is Exists or DoesNotExist,
+                                          the values array must be empty. This array is replaced during a strategic
+                                          merge patch.
                                         items:
                                           type: string
                                         type: array
@@ -738,19 +1278,41 @@ spec:
                                 matchLabels:
                                   additionalProperties:
                                     type: string
+                                  description: |-
+                                    matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+                                    map is equivalent to an element of matchExpressions, whose key field is "key", the
+                                    operator is "In", and the values array contains only "value". The requirements are ANDed.
                                   type: object
                               type: object
                               x-kubernetes-map-type: atomic
                             service:
+                              description: |-
+                                Service is the label selector in which services the MCP targets
+                                are searched for.
                               properties:
                                 matchExpressions:
+                                  description: matchExpressions is a list of label
+                                    selector requirements. The requirements are ANDed.
                                   items:
+                                    description: |-
+                                      A label selector requirement is a selector that contains values, a key, and an operator that
+                                      relates the key and values.
                                     properties:
                                       key:
+                                        description: key is the label key that the
+                                          selector applies to.
                                         type: string
                                       operator:
+                                        description: |-
+                                          operator represents a key's relationship to a set of values.
+                                          Valid operators are In, NotIn, Exists and DoesNotExist.
                                         type: string
                                       values:
+                                        description: |-
+                                          values is an array of string values. If the operator is In or NotIn,
+                                          the values array must be non-empty. If the operator is Exists or DoesNotExist,
+                                          the values array must be empty. This array is replaced during a strategic
+                                          merge patch.
                                         items:
                                           type: string
                                         type: array
@@ -764,6 +1326,10 @@ spec:
                                 matchLabels:
                                   additionalProperties:
                                     type: string
+                                  description: |-
+                                    matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+                                    map is equivalent to an element of matchExpressions, whose key field is "key", the
+                                    operator is "In", and the values array contains only "value". The requirements are ANDed.
                                   type: object
                               type: object
                               x-kubernetes-map-type: atomic
@@ -773,18 +1339,30 @@ spec:
                               set
                             rule: has(self.__namespace__) || has(self.service)
                         static:
+                          description: |-
+                            Static is the static MCP target to use.
+                            Policies can target static backends by targeting the Backend resource
+                            and using sectionName to target the specific static target by name.
                           properties:
                             host:
+                              description: Host is the hostname or IP address of the
+                                MCP target.
                               minLength: 1
                               type: string
                             path:
+                              description: |-
+                                Path is the URL path of the MCP target endpoint.
+                                Defaults to "/sse" for SSE protocol or "/mcp" for StreamableHTTP protocol if not specified.
                               type: string
                             port:
+                              description: Port is the port number of the MCP target.
                               format: int32
                               maximum: 65535
                               minimum: 1
                               type: integer
                             protocol:
+                              description: Protocol is the protocol to use for the
+                                connection to the MCP target.
                               enum:
                               - StreamableHTTP
                               - SSE
@@ -814,8 +1392,11 @@ spec:
                 - targets
                 type: object
               static:
+                description: Static is the static backend configuration.
                 properties:
                   appProtocol:
+                    description: AppProtocol is the application protocol to use when
+                      communicating with the backend.
                     enum:
                     - http2
                     - grpc
@@ -824,12 +1405,16 @@ spec:
                     - kubernetes.io/ws
                     type: string
                   hosts:
+                    description: Hosts is a list of hosts to use for the backend.
                     items:
+                      description: Host defines a static backend host.
                       properties:
                         host:
+                          description: Host is the host name to use for the backend.
                           minLength: 1
                           type: string
                         port:
+                          description: Port is the port to use for the backend.
                           format: int32
                           type: integer
                       required:
@@ -842,6 +1427,7 @@ spec:
                 - hosts
                 type: object
               type:
+                description: Type indicates the type of the backend to be used.
                 enum:
                 - AI
                 - AWS
@@ -870,32 +1456,54 @@ spec:
               rule: '[has(self.ai),has(self.aws),has(self.static),has(self.dynamicForwardProxy),has(self.mcp)].filter(x,x==true).size()
                 == 1'
           status:
+            description: BackendStatus defines the observed state of Backend.
             properties:
               conditions:
+                description: Conditions is the list of conditions for the backend.
                 items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
                   properties:
                     lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
                       format: date-time
                       type: string
                     message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
                       maxLength: 32768
                       type: string
                     observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
                       format: int64
                       minimum: 0
                       type: integer
                     reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
                       maxLength: 1024
                       minLength: 1
                       pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
                       type: string
                     status:
+                      description: status of the condition, one of True, False, Unknown.
                       enum:
                       - "True"
                       - "False"
                       - Unknown
                       type: string
                     type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
                       maxLength: 316
                       pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
                       type: string

@@ -33,54 +33,127 @@ spec:
       openAPIV3Schema:
         properties:
           apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
           spec:
+            description: GatewayExtensionSpec defines the desired state of GatewayExtension.
             properties:
               extAuth:
+                description: ExtAuth configuration for ExtAuth extension type.
                 properties:
                   clearRouteCache:
                     default: false
+                    description: |-
+                      ClearRouteCache determines if the route cache should be cleared to allow the
+                      external authentication service to correctly affect routing decisions.
                     type: boolean
                   failOpen:
                     default: false
+                    description: |-
+                      FailOpen determines if requests are allowed when the ext auth service is unavailable.
+                      Defaults to false, meaning requests will be denied if the ext auth service is unavailable.
                     type: boolean
                   grpcService:
+                    description: GrpcService is the GRPC service that will handle
+                      the auth.
                     properties:
                       authority:
+                        description: Authority is the authority header to use for
+                          the GRPC service.
                         type: string
                       backendRef:
+                        description: BackendRef references the backend GRPC service.
                         properties:
                           group:
                             default: ""
+                            description: |-
+                              Group is the group of the referent. For example, "gateway.networking.k8s.io".
+                              When unspecified or empty string, core API group is inferred.
                             maxLength: 253
                             pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                             type: string
                           kind:
                             default: Service
+                            description: |-
+                              Kind is the Kubernetes resource kind of the referent. For example
+                              "Service".
+
+                              Defaults to "Service" when not specified.
+
+                              ExternalName services can refer to CNAME DNS records that may live
+                              outside of the cluster and as such are difficult to reason about in
+                              terms of conformance. They also may not be safe to forward to (see
+                              CVE-2021-25740 for more information). Implementations SHOULD NOT
+                              support ExternalName Services.
+
+                              Support: Core (Services with a type other than ExternalName)
+
+                              Support: Implementation-specific (Services with type ExternalName)
                             maxLength: 63
                             minLength: 1
                             pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
                             type: string
                           name:
+                            description: Name is the name of the referent.
                             maxLength: 253
                             minLength: 1
                             type: string
                           namespace:
+                            description: |-
+                              Namespace is the namespace of the backend. When unspecified, the local
+                              namespace is inferred.
+
+                              Note that when a namespace different than the local namespace is specified,
+                              a ReferenceGrant object is required in the referent namespace to allow that
+                              namespace's owner to accept the reference. See the ReferenceGrant
+                              documentation for details.
+
+                              Support: Core
                             maxLength: 63
                             minLength: 1
                             pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
                             type: string
                           port:
+                            description: |-
+                              Port specifies the destination port number to use for this resource.
+                              Port is required when the referent is a Kubernetes Service. In this
+                              case, the port number is the service port number, not the target port.
+                              For other resources, destination port might be derived from the referent
+                              resource or this field.
                             format: int32
                             maximum: 65535
                             minimum: 1
                             type: integer
                           weight:
                             default: 1
+                            description: |-
+                              Weight specifies the proportion of requests forwarded to the referenced
+                              backend. This is computed as weight/(sum of all weights in this
+                              BackendRefs list). For non-zero values, there may be some epsilon from
+                              the exact proportion defined here depending on the precision an
+                              implementation supports. Weight is not a percentage and the sum of
+                              weights does not need to equal 100.
+
+                              If only one backend is specified and it has a weight greater than 0, 100%
+                              of the traffic is forwarded to that backend. If weight is set to 0, no
+                              traffic should be forwarded for this entry. If unspecified, weight
+                              defaults to 1.
+
+                              Support for this field varies based on the context where used.
                             format: int32
                             maximum: 1000000
                             minimum: 0
@@ -93,6 +166,8 @@ spec:
                           rule: '(size(self.group) == 0 && self.kind == ''Service'')
                             ? has(self.port) : true'
                       requestTimeout:
+                        description: RequestTimeout is the timeout for the gRPC request.
+                          This is the timeout for a specific request.
                         type: string
                         x-kubernetes-validations:
                         - message: invalid timeout value
@@ -103,25 +178,47 @@ spec:
                     - backendRef
                     type: object
                   statPrefix:
+                    description: |-
+                      StatPrefix is an optional prefix to include when emitting stats from the extauthz filter,
+                      enabling different instances of the filter to have unique stats.
                     minLength: 1
                     type: string
                   statusOnError:
                     default: 403
+                    description: |-
+                      StatusOnError sets the HTTP status response code that is returned to the client when the
+                      auth server returns an error or cannot be reached. Must be in the range of 100-511 inclusive.
+                      The default matches the deny response code of 403 Forbidden.
                     format: int32
                     maximum: 511
                     minimum: 100
                     type: integer
                   withRequestBody:
+                    description: |-
+                      WithRequestBody allows the request body to be buffered and sent to the auth service.
+                      Warning: buffering has implications for streaming and therefore performance.
                     properties:
                       allowPartialMessage:
                         default: false
+                        description: |-
+                          AllowPartialMessage determines if partial messages should be allowed.
+                          When true, requests will be sent to the auth service even if they exceed maxRequestBytes.
+                          The default behavior is false.
                         type: boolean
                       maxRequestBytes:
+                        description: |-
+                          MaxRequestBytes sets the maximum size of a message body to buffer.
+                          Requests exceeding this size will receive HTTP 413 and not be sent to the auth service.
                         format: int32
                         minimum: 1
                         type: integer
                       packAsBytes:
                         default: false
+                        description: |-
+                          PackAsBytes determines if the body should be sent as raw bytes.
+                          When true, the body is sent as raw bytes in the raw_body field.
+                          When false, the body is sent as UTF-8 string in the body field.
+                          The default behavior is false.
                         type: boolean
                     required:
                     - maxRequestBytes
@@ -130,43 +227,101 @@ spec:
                 - grpcService
                 type: object
               extProc:
+                description: ExtProc configuration for ExtProc extension type.
                 properties:
                   failOpen:
                     default: true
+                    description: |-
+                      FailOpen determines if requests are allowed when the ext proc service is unavailable.
+                      Defaults to true, meaning requests are allowed upstream even if the ext proc service is unavailable.
                     type: boolean
                   grpcService:
+                    description: GrpcService is the GRPC service that will handle
+                      the processing.
                     properties:
                       authority:
+                        description: Authority is the authority header to use for
+                          the GRPC service.
                         type: string
                       backendRef:
+                        description: BackendRef references the backend GRPC service.
                         properties:
                           group:
                             default: ""
+                            description: |-
+                              Group is the group of the referent. For example, "gateway.networking.k8s.io".
+                              When unspecified or empty string, core API group is inferred.
                             maxLength: 253
                             pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                             type: string
                           kind:
                             default: Service
+                            description: |-
+                              Kind is the Kubernetes resource kind of the referent. For example
+                              "Service".
+
+                              Defaults to "Service" when not specified.
+
+                              ExternalName services can refer to CNAME DNS records that may live
+                              outside of the cluster and as such are difficult to reason about in
+                              terms of conformance. They also may not be safe to forward to (see
+                              CVE-2021-25740 for more information). Implementations SHOULD NOT
+                              support ExternalName Services.
+
+                              Support: Core (Services with a type other than ExternalName)
+
+                              Support: Implementation-specific (Services with type ExternalName)
                             maxLength: 63
                             minLength: 1
                             pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
                             type: string
                           name:
+                            description: Name is the name of the referent.
                             maxLength: 253
                             minLength: 1
                             type: string
                           namespace:
+                            description: |-
+                              Namespace is the namespace of the backend. When unspecified, the local
+                              namespace is inferred.
+
+                              Note that when a namespace different than the local namespace is specified,
+                              a ReferenceGrant object is required in the referent namespace to allow that
+                              namespace's owner to accept the reference. See the ReferenceGrant
+                              documentation for details.
+
+                              Support: Core
                             maxLength: 63
                             minLength: 1
                             pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
                             type: string
                           port:
+                            description: |-
+                              Port specifies the destination port number to use for this resource.
+                              Port is required when the referent is a Kubernetes Service. In this
+                              case, the port number is the service port number, not the target port.
+                              For other resources, destination port might be derived from the referent
+                              resource or this field.
                             format: int32
                             maximum: 65535
                             minimum: 1
                             type: integer
                           weight:
                             default: 1
+                            description: |-
+                              Weight specifies the proportion of requests forwarded to the referenced
+                              backend. This is computed as weight/(sum of all weights in this
+                              BackendRefs list). For non-zero values, there may be some epsilon from
+                              the exact proportion defined here depending on the precision an
+                              implementation supports. Weight is not a percentage and the sum of
+                              weights does not need to equal 100.
+
+                              If only one backend is specified and it has a weight greater than 0, 100%
+                              of the traffic is forwarded to that backend. If weight is set to 0, no
+                              traffic should be forwarded for this entry. If unspecified, weight
+                              defaults to 1.
+
+                              Support for this field varies based on the context where used.
                             format: int32
                             maximum: 1000000
                             minimum: 0
@@ -179,6 +334,8 @@ spec:
                           rule: '(size(self.group) == 0 && self.kind == ''Service'')
                             ? has(self.port) : true'
                       requestTimeout:
+                        description: RequestTimeout is the timeout for the gRPC request.
+                          This is the timeout for a specific request.
                         type: string
                         x-kubernetes-validations:
                         - message: invalid timeout value
@@ -189,6 +346,9 @@ spec:
                     - backendRef
                     type: object
                   maxMessageTimeout:
+                    description: |-
+                      MaxMessageTimeout specifies the upper bound of override_message_timeout that may be sent from the external processing server.
+                      The default value 0, which effectively disables the override_message_timeout API.
                     type: string
                     x-kubernetes-validations:
                     - message: invalid timeout value
@@ -196,6 +356,8 @@ spec:
                     - message: timeout must be at least 1ms.
                       rule: duration(self) >= duration('1ms')
                   messageTimeout:
+                    description: MessageTimeout is the timeout for each message sent
+                      to the external processing server.
                     type: string
                     x-kubernetes-validations:
                     - message: invalid timeout value
@@ -203,8 +365,14 @@ spec:
                     - message: timeout must be at least 1ms.
                       rule: duration(self) >= duration('1ms')
                   metadataOptions:
+                    description: |-
+                      MetadataOptions allows configuring metadata namespaces to forwarded or received from the external
+                      processing server.
                     properties:
                       forwarding:
+                        description: Forwarding defines the typed or untyped dynamic
+                          metadata namespaces to forward to the external processing
+                          server.
                         properties:
                           typed:
                             items:
@@ -219,9 +387,13 @@ spec:
                         type: object
                     type: object
                   processingMode:
+                    description: ProcessingMode defines how the filter should interact
+                      with the request/response streams.
                     properties:
                       requestBodyMode:
                         default: NONE
+                        description: RequestBodyMode determines how to handle the
+                          request body
                         enum:
                         - NONE
                         - STREAMED
@@ -231,6 +403,8 @@ spec:
                         type: string
                       requestHeaderMode:
                         default: SEND
+                        description: RequestHeaderMode determines how to handle the
+                          request headers
                         enum:
                         - DEFAULT
                         - SEND
@@ -238,6 +412,8 @@ spec:
                         type: string
                       requestTrailerMode:
                         default: SKIP
+                        description: RequestTrailerMode determines how to handle the
+                          request trailers
                         enum:
                         - DEFAULT
                         - SEND
@@ -245,6 +421,8 @@ spec:
                         type: string
                       responseBodyMode:
                         default: NONE
+                        description: ResponseBodyMode determines how to handle the
+                          response body
                         enum:
                         - NONE
                         - STREAMED
@@ -254,6 +432,8 @@ spec:
                         type: string
                       responseHeaderMode:
                         default: SEND
+                        description: ResponseHeaderMode determines how to handle the
+                          response headers
                         enum:
                         - DEFAULT
                         - SEND
@@ -261,6 +441,8 @@ spec:
                         type: string
                       responseTrailerMode:
                         default: SKIP
+                        description: ResponseTrailerMode determines how to handle
+                          the response trailers
                         enum:
                         - DEFAULT
                         - SEND
@@ -269,57 +451,127 @@ spec:
                     type: object
                   routeCacheAction:
                     default: FromResponse
+                    description: |-
+                      RouteCacheAction describes the route cache action to be taken when an
+                      external processor response is received in response to request headers.
+                      The default behavior is "FromResponse" which will only clear the route cache when
+                      an external processing response has the clear_route_cache field set.
                     enum:
                     - FromResponse
                     - Clear
                     - Retain
                     type: string
                   statPrefix:
+                    description: |-
+                      StatPrefix is an optional prefix to include when emitting stats from the extproc filter,
+                      enabling different instances of the filter to have unique stats.
                     minLength: 1
                     type: string
                 required:
                 - grpcService
                 type: object
               rateLimit:
+                description: RateLimit configuration for RateLimit extension type.
                 properties:
                   domain:
+                    description: |-
+                      Domain identifies a rate limiting configuration for the rate limit service.
+                      All rate limit requests must specify a domain, which enables the configuration
+                      to be per application without fear of overlap (e.g., "api", "web", "admin").
                     type: string
                   failOpen:
                     default: true
+                    description: |-
+                      FailOpen determines if requests are limited when the rate limit service is unavailable.
+                      Defaults to true, meaning requests are allowed upstream and not limited if the rate limit service is unavailable.
                     type: boolean
                   grpcService:
+                    description: GrpcService is the GRPC service that will handle
+                      the rate limiting.
                     properties:
                       authority:
+                        description: Authority is the authority header to use for
+                          the GRPC service.
                         type: string
                       backendRef:
+                        description: BackendRef references the backend GRPC service.
                         properties:
                           group:
                             default: ""
+                            description: |-
+                              Group is the group of the referent. For example, "gateway.networking.k8s.io".
+                              When unspecified or empty string, core API group is inferred.
                             maxLength: 253
                             pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                             type: string
                           kind:
                             default: Service
+                            description: |-
+                              Kind is the Kubernetes resource kind of the referent. For example
+                              "Service".
+
+                              Defaults to "Service" when not specified.
+
+                              ExternalName services can refer to CNAME DNS records that may live
+                              outside of the cluster and as such are difficult to reason about in
+                              terms of conformance. They also may not be safe to forward to (see
+                              CVE-2021-25740 for more information). Implementations SHOULD NOT
+                              support ExternalName Services.
+
+                              Support: Core (Services with a type other than ExternalName)
+
+                              Support: Implementation-specific (Services with type ExternalName)
                             maxLength: 63
                             minLength: 1
                             pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
                             type: string
                           name:
+                            description: Name is the name of the referent.
                             maxLength: 253
                             minLength: 1
                             type: string
                           namespace:
+                            description: |-
+                              Namespace is the namespace of the backend. When unspecified, the local
+                              namespace is inferred.
+
+                              Note that when a namespace different than the local namespace is specified,
+                              a ReferenceGrant object is required in the referent namespace to allow that
+                              namespace's owner to accept the reference. See the ReferenceGrant
+                              documentation for details.
+
+                              Support: Core
                             maxLength: 63
                             minLength: 1
                             pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
                             type: string
                           port:
+                            description: |-
+                              Port specifies the destination port number to use for this resource.
+                              Port is required when the referent is a Kubernetes Service. In this
+                              case, the port number is the service port number, not the target port.
+                              For other resources, destination port might be derived from the referent
+                              resource or this field.
                             format: int32
                             maximum: 65535
                             minimum: 1
                             type: integer
                           weight:
                             default: 1
+                            description: |-
+                              Weight specifies the proportion of requests forwarded to the referenced
+                              backend. This is computed as weight/(sum of all weights in this
+                              BackendRefs list). For non-zero values, there may be some epsilon from
+                              the exact proportion defined here depending on the precision an
+                              implementation supports. Weight is not a percentage and the sum of
+                              weights does not need to equal 100.
+
+                              If only one backend is specified and it has a weight greater than 0, 100%
+                              of the traffic is forwarded to that backend. If weight is set to 0, no
+                              traffic should be forwarded for this entry. If unspecified, weight
+                              defaults to 1.
+
+                              Support for this field varies based on the context where used.
                             format: int32
                             maximum: 1000000
                             minimum: 0
@@ -332,6 +584,8 @@ spec:
                           rule: '(size(self.group) == 0 && self.kind == ''Service'')
                             ? has(self.port) : true'
                       requestTimeout:
+                        description: RequestTimeout is the timeout for the gRPC request.
+                          This is the timeout for a specific request.
                         type: string
                         x-kubernetes-validations:
                         - message: invalid timeout value
@@ -343,12 +597,20 @@ spec:
                     type: object
                   timeout:
                     default: 100ms
+                    description: |-
+                      Timeout provides an optional timeout value for requests to the rate limit service.
+                      For rate limiting, prefer using this timeout rather than setting the generic `timeout` on the `GrpcService`.
+                      See [envoy issue](https://github.com/envoyproxy/envoy/issues/20070) for more info.
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                   xRateLimitHeaders:
                     default: "Off"
+                    description: |-
+                      XRateLimitHeaders configures the standard version to use for X-RateLimit headers emitted.
+                      See [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ratelimit/v3/rate_limit.proto#envoy-v3-api-field-extensions-filters-http-ratelimit-v3-ratelimit-enable-x-ratelimit-headers) for more info.
+                      Disabled by default.
                     enum:
                     - "Off"
                     - DraftVersion03
@@ -358,6 +620,8 @@ spec:
                 - grpcService
                 type: object
               type:
+                description: Type indicates the type of the GatewayExtension to be
+                  used.
                 enum:
                 - ExtAuth
                 - ExtProc
@@ -380,32 +644,54 @@ spec:
             - message: RateLimit must not be set when type is not RateLimit
               rule: self.type == 'RateLimit' || !has(self.rateLimit)
           status:
+            description: GatewayExtensionStatus defines the observed state of GatewayExtension.
             properties:
               conditions:
+                description: Conditions is the list of conditions for the GatewayExtension.
                 items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
                   properties:
                     lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
                       format: date-time
                       type: string
                     message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
                       maxLength: 32768
                       type: string
                     observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
                       format: int64
                       minimum: 0
                       type: integer
                     reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
                       maxLength: 1024
                       minLength: 1
                       pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
                       type: string
                     status:
+                      description: status of the condition, one of True, False, Unknown.
                       enum:
                       - "True"
                       - "False"
                       - Unknown
                       type: string
                     type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
                       maxLength: 316
                       pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
                       type: string

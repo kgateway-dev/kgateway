@@ -1,34 +1,61 @@
 {{- $gateway := .Values.gateway }}
+{{- $selectorLabels := dict
+  "app.kubernetes.io/name" (include "kgateway.gateway.name" .)
+  "app.kubernetes.io/instance" .Release.Name
+  "gateway.networking.k8s.io/gateway-name" .Release.Name
+}}
+{{/* gateway-class-name is the odd-man-out since we cannot make it a selector label, as selector is immutable; but we want it on the pod */}}
+{{- $labels := merge (dict
+  "kgateway" "kube-gateway"
+  "helm.sh/chart" (include "kgateway.chart" .)
+  "app.kubernetes.io/managed-by" .Release.Service
+  "gateway.networking.k8s.io/gateway-class-name" .Values.gateway.gatewayClassName
+  )
+  $selectorLabels
+  ($gateway.gatewayLabels | default dict)
+}}
+{{- $promAnnotations := (dict
+  "prometheus.io/path" "/metrics"
+  "prometheus.io/port" "15020"
+  "prometheus.io/scrape" "true")
+}}
+{{- if .Chart.AppVersion }}
+{{$_ := set $labels "app.kubernetes.io/version" .Chart.AppVersion }}
+{{- end }}
 {{- if $gateway.agentgateway.enabled }}
 {{/* TODO(npolshak): look into having agentgateway as a separate helm chart https://github.com/kgateway-dev/kgateway/issues/11240 */}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "kgateway.gateway.fullname" . }}
+  annotations:
+    {{- with $gateway.gatewayAnnotations }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
   labels:
-    {{- include "kgateway.gateway.constLabels" . | nindent 4 }}
-    {{- include "kgateway.gateway.labels" . | nindent 4 }}
+    {{- $labels | toYaml | nindent 4 }}
 spec:
   {{- if $gateway.replicaCount }}
   replicas: {{ $gateway.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-          {{- include "kgateway.gateway.selectorLabels" . | nindent 6 }}
+      {{- $selectorLabels | toYaml | nindent 6 }}
   template:
     metadata:
       annotations:
-        prometheus.io/path: /metrics
-        prometheus.io/port: "15020"
-        prometheus.io/scrape: "true"
-      {{- with $gateway.extraPodAnnotations }}
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+      {{- toYaml (merge
+          (deepCopy ($gateway.gatewayAnnotations | default dict))
+          ($gateway.extraPodAnnotations | default dict)
+          $promAnnotations
+       ) | nindent 8 }}
       labels:
-        {{- include "kgateway.gateway.podLabels" . | nindent 8 }}
-        {{- with $gateway.extraPodLabels }}
-        {{- toYaml . | nindent 8 }}
-        {{- end }}
+        {{- toYaml (merge
+          (dict "gateway.networking.k8s.io/gateway-class-name" .Values.gateway.gatewayClassName)
+          $selectorLabels
+          ($gateway.gatewayLabels | default dict)
+          ($gateway.extraPodLabels | default dict)
+        ) | nindent 8 }}
     spec:
       serviceAccountName: {{ include "kgateway.gateway.fullname" . }}
       {{- with $gateway.imagePullSecrets }}
@@ -189,32 +216,32 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: {{ include "kgateway.gateway.fullname" . }}
-  {{- with (($gateway.serviceAccount).extraAnnotations) }}
   annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
+    {{- toYaml (merge
+      ($gateway.gatewayAnnotations| default dict)
+      ((($gateway.serviceAccount).extraAnnotations) | default dict)
+    ) | nindent 4 }}
   labels:
-    {{- include "kgateway.gateway.constLabels" . | nindent 4 }}
-    {{- include "kgateway.gateway.labels" . | nindent 4 }}
-    {{- with (($gateway.serviceAccount).extraLabels) }}
-    {{- toYaml . | nindent 4 }}
-    {{- end }}
+    {{- toYaml (merge
+      $labels
+      ((($gateway.serviceAccount).extraLabels) | default dict)
+    ) | nindent 4 }}
 automountServiceAccountToken: false
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: {{ include "kgateway.gateway.fullname" . }}
-  {{- with $gateway.service.extraAnnotations }}
   annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
+    {{- toYaml (merge
+      ($gateway.gatewayAnnotations| default dict)
+      ((($gateway.service).extraAnnotations) | default dict)
+    ) | nindent 4 }}
   labels:
-    {{- include "kgateway.gateway.constLabels" . | nindent 4 }}
-    {{- include "kgateway.gateway.labels" . | nindent 4 }}
-    {{- with $gateway.service.extraLabels }}
-    {{- toYaml . | nindent 4 }}
-    {{- end }}
+    {{- toYaml (merge
+      $labels
+      ((($gateway.service).extraLabels) | default dict)
+    ) | nindent 4 }}
 spec:
   type: {{ $gateway.service.type }}
   {{- if $gateway.service.externalTrafficPolicy }}
@@ -242,9 +269,10 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ include "kgateway.gateway.fullname" . }}
+  annotations:
+    {{- toYaml ($gateway.gatewayAnnotations| default dict) | nindent 4 }}
   labels:
-    {{- include "kgateway.gateway.constLabels" . | nindent 4 }}
-    {{- include "kgateway.gateway.labels" . | nindent 4 }}
+    {{- toYaml $labels | nindent 4 }}
 data:
   config.yaml: |
     config: {}

@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"slices"
+	"strings"
 
 	"helm.sh/helm/v3/pkg/chart"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -283,35 +284,40 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 		return nil, ErrNoValidPorts
 	}
 
-	// construct the default values
-	vals := &deployer.HelmConfig{
-		Gateway: &deployer.HelmGateway{
-			Name:             &gw.Name,
-			GatewayName:      &gw.Name,
-			GatewayNamespace: &gw.Namespace,
-			GatewayClassName: ptr.To(string(gw.Spec.GatewayClassName)),
-			Ports:            ports,
-			Xds: &deployer.HelmXds{
-				// The xds host/port MUST map to the Service definition for the Control Plane
-				// This is the socket address that the Proxy will connect to on startup, to receive xds updates
-				Host: &k.inputs.ControlPlane.XdsHost,
-				Port: &k.inputs.ControlPlane.XdsPort,
-				Tls: &deployer.HelmXdsTls{
-					Enabled: ptr.To(k.inputs.ControlPlane.XdsTLS),
-					CaCert:  ptr.To(k.inputs.ControlPlane.XdsTlsCaPath),
-				},
-			},
-			AgwXds: &deployer.HelmXds{
-				// The agentgateway xds host/port MUST map to the Service definition for the Control Plane
-				// This is the socket address that the Proxy will connect to on startup, to receive xds updates
-				Host: &k.inputs.ControlPlane.XdsHost,
-				Port: &k.inputs.ControlPlane.AgwXdsPort,
-				Tls: &deployer.HelmXdsTls{
-					Enabled: ptr.To(k.inputs.ControlPlane.XdsTLS),
-					CaCert:  ptr.To(k.inputs.ControlPlane.XdsTlsCaPath),
-				},
+	gtw := &deployer.HelmGateway{
+		Name:             &gw.Name,
+		GatewayName:      &gw.Name,
+		GatewayNamespace: &gw.Namespace,
+		GatewayClassName: ptr.To(string(gw.Spec.GatewayClassName)),
+		Ports:            ports,
+		Xds: &deployer.HelmXds{
+			// The xds host/port MUST map to the Service definition for the Control Plane
+			// This is the socket address that the Proxy will connect to on startup, to receive xds updates
+			Host: &k.inputs.ControlPlane.XdsHost,
+			Port: &k.inputs.ControlPlane.XdsPort,
+			Tls: &deployer.HelmXdsTls{
+				Enabled: ptr.To(k.inputs.ControlPlane.XdsTLS),
+				CaCert:  ptr.To(k.inputs.ControlPlane.XdsTlsCaPath),
 			},
 		},
+		AgwXds: &deployer.HelmXds{
+			// The agentgateway xds host/port MUST map to the Service definition for the Control Plane
+			// This is the socket address that the Proxy will connect to on startup, to receive xds updates
+			Host: &k.inputs.ControlPlane.XdsHost,
+			Port: &k.inputs.ControlPlane.AgwXdsPort,
+			Tls: &deployer.HelmXdsTls{
+				Enabled: ptr.To(k.inputs.ControlPlane.XdsTLS),
+				CaCert:  ptr.To(k.inputs.ControlPlane.XdsTlsCaPath),
+			},
+		},
+	}
+	if i := gw.Spec.Infrastructure; i != nil {
+		gtw.GatewayAnnotations = translateInfraMeta(i.Annotations)
+		gtw.GatewayLabels = translateInfraMeta(i.Labels)
+	}
+	// construct the default values
+	vals := &deployer.HelmConfig{
+		Gateway: gtw,
 	}
 
 	// Inject xDS CA certificate into Helm values if TLS is enabled
@@ -473,4 +479,15 @@ func getGatewayClassFromGateway(ctx context.Context, cli client.Client, gw *api.
 	}
 
 	return gwc, nil
+}
+
+func translateInfraMeta[K ~string, V ~string](meta map[K]V) map[string]string {
+	infra := make(map[string]string, len(meta))
+	for k, v := range meta {
+		if strings.HasPrefix(string(k), "gateway.networking.k8s.io/") {
+			continue // ignore this prefix to avoid conflicts
+		}
+		infra[string(k)] = string(v)
+	}
+	return infra
 }

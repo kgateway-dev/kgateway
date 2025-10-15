@@ -5999,7 +5999,7 @@ func schema_kgateway_v2_api_v1alpha1_Pod(ref common.ReferenceCallback) common.Op
 				Properties: map[string]spec.Schema{
 					"extraLabels": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Additional labels to add to the Pod object metadata.",
+							Description: "Additional labels to add to the Pod object metadata. If the same label is present on `Gateway.spec.infrastructure.labels`, the `Gateway` takes precedence.",
 							Type:        []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,
@@ -6015,7 +6015,7 @@ func schema_kgateway_v2_api_v1alpha1_Pod(ref common.ReferenceCallback) common.Op
 					},
 					"extraAnnotations": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Additional annotations to add to the Pod object metadata.",
+							Description: "Additional annotations to add to the Pod object metadata. If the same annotation is present on `Gateway.spec.infrastructure.annotations`, the `Gateway` takes precedence.",
 							Type:        []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,
@@ -7070,7 +7070,7 @@ func schema_kgateway_v2_api_v1alpha1_Service(ref common.ReferenceCallback) commo
 					},
 					"extraLabels": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Additional labels to add to the Service object metadata.",
+							Description: "Additional labels to add to the Service object metadata. If the same label is present on `Gateway.spec.infrastructure.labels`, the `Gateway` takes precedence.",
 							Type:        []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,
@@ -7086,7 +7086,7 @@ func schema_kgateway_v2_api_v1alpha1_Service(ref common.ReferenceCallback) commo
 					},
 					"extraAnnotations": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Additional annotations to add to the Service object metadata.",
+							Description: "Additional annotations to add to the Service object metadata. If the same annotation is present on `Gateway.spec.infrastructure.annotations`, the `Gateway` takes precedence.",
 							Type:        []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,
@@ -7153,7 +7153,7 @@ func schema_kgateway_v2_api_v1alpha1_ServiceAccount(ref common.ReferenceCallback
 					},
 					"extraAnnotations": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Additional annotations to add to the ServiceAccount object metadata.",
+							Description: "Additional annotations to add to the ServiceAccount object metadata. If the same annotation is present on `Gateway.spec.infrastructure.annotations`, the `Gateway` takes precedence.",
 							Type:        []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,

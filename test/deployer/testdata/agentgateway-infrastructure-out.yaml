@@ -5,7 +5,9 @@ kind: ServiceAccount
 metadata:
   name: gw
   annotations:
-    {}
+    infra-and-params: infra
+    my-annotation: my-value
+    prometheus.io/path: /something/else
   labels:
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: Helm
@@ -14,7 +16,9 @@ metadata:
     gateway.networking.k8s.io/gateway-class-name: agentgateway
     gateway.networking.k8s.io/gateway-name: gw
     helm.sh/chart: kgateway-proxy-1.0.0-ci1
+    infra-and-params: infra
     kgateway: kube-gateway
+    my-label: my-value
 automountServiceAccountToken: false
 ---
 # Source: kgateway-proxy/templates/gateway/agent-gateway-deployment.yaml
@@ -23,7 +27,9 @@ kind: ConfigMap
 metadata:
   name: gw
   annotations:
-    {}
+    infra-and-params: infra
+    my-annotation: my-value
+    prometheus.io/path: /something/else
   labels:
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: Helm
@@ -32,7 +38,9 @@ metadata:
     gateway.networking.k8s.io/gateway-class-name: agentgateway
     gateway.networking.k8s.io/gateway-name: gw
     helm.sh/chart: kgateway-proxy-1.0.0-ci1
+    infra-and-params: infra
     kgateway: kube-gateway
+    my-label: my-value
 data:
   config.yaml: |
     config: {}
@@ -43,7 +51,9 @@ kind: Service
 metadata:
   name: gw
   annotations:
-    {}
+    infra-and-params: infra
+    my-annotation: my-value
+    prometheus.io/path: /something/else
   labels:
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: Helm
@@ -52,7 +62,9 @@ metadata:
     gateway.networking.k8s.io/gateway-class-name: agentgateway
     gateway.networking.k8s.io/gateway-name: gw
     helm.sh/chart: kgateway-proxy-1.0.0-ci1
+    infra-and-params: infra
     kgateway: kube-gateway
+    my-label: my-value
 spec:
   type: LoadBalancer
   ports:
@@ -71,6 +83,9 @@ kind: Deployment
 metadata:
   name: gw
   annotations:
+    infra-and-params: infra
+    my-annotation: my-value
+    prometheus.io/path: /something/else
   labels:
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: Helm
@@ -79,7 +94,9 @@ metadata:
     gateway.networking.k8s.io/gateway-class-name: agentgateway
     gateway.networking.k8s.io/gateway-name: gw
     helm.sh/chart: kgateway-proxy-1.0.0-ci1
+    infra-and-params: infra
     kgateway: kube-gateway
+    my-label: my-value
 spec:
   selector:
     matchLabels:
@@ -89,14 +106,20 @@ spec:
   template:
     metadata:
       annotations:
-        prometheus.io/path: /metrics
+        extra-annotation: v1
+        infra-and-params: infra
+        my-annotation: my-value
+        prometheus.io/path: /something/else
         prometheus.io/port: "15020"
         prometheus.io/scrape: "true"
       labels:
         app.kubernetes.io/instance: gw
         app.kubernetes.io/name: gw
+        extra-label: v1
         gateway.networking.k8s.io/gateway-class-name: agentgateway
         gateway.networking.k8s.io/gateway-name: gw
+        infra-and-params: infra
+        my-label: my-value
     spec:
       serviceAccountName: gw
       securityContext:

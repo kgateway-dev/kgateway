@@ -32,28 +32,62 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: |-
+          HTTPListenerPolicy is intended to be used for configuring the Envoy `HttpConnectionManager` and any other config or policy
+          that should map 1-to-1 with a given HTTP listener, such as the Envoy health check HTTP filter.
+          Currently these policies can only be applied per `Gateway` but support for `Listener` attachment may be added in the future.
+          See https://github.com/kgateway-dev/kgateway/issues/11786 for more details.
         properties:
           apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
           spec:
+            description: HTTPListenerPolicySpec defines the desired state of a HTTP
+              listener policy.
             properties:
               acceptHttp10:
+                description: |-
+                  AcceptHTTP10 determines whether to accept incoming HTTP/1.0 and HTTP 0.9 requests.
+                  See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-http1protocoloptions
                 type: boolean
               accessLog:
+                description: |-
+                  AccessLoggingConfig contains various settings for Envoy's access logging service.
+                  See here for more information: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto
                 items:
+                  description: AccessLog represents the top-level access log configuration.
                   properties:
                     fileSink:
+                      description: Output access logs to local file
                       properties:
                         jsonFormat:
+                          description: |-
+                            the format object by which to envoy will emit the logs in a structured way.
+                            https://www.envoyproxy.io/docs/envoy/v1.33.0/configuration/observability/access_log/usage#format-dictionaries
                           type: object
                           x-kubernetes-preserve-unknown-fields: true
                         path:
+                          description: the file path to which the file access logging
+                            service will sink
                           type: string
                         stringFormat:
+                          description: |-
+                            the format string by which envoy will format the log lines
+                            https://www.envoyproxy.io/docs/envoy/v1.33.0/configuration/observability/access_log/usage#format-strings
                           type: string
                       required:
                       - path
@@ -69,28 +103,45 @@ spec:
                         minProperties: 1
                       - maxProperties: 1
                         minProperties: 1
+                      description: Filter access logs configuration
                       properties:
                         andFilter:
+                          description: |-
+                            Performs a logical "and" operation on the result of each individual filter.
+                            Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-andfilter
                           items:
+                            description: |-
+                              FilterType represents the type of filter to apply (only one of these should be set).
+                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-accesslogfilter
                             maxProperties: 1
                             minProperties: 1
                             properties:
                               celFilter:
+                                description: CELFilter filters requests based on Common
+                                  Expression Language (CEL).
                                 properties:
                                   match:
+                                    description: |-
+                                      The CEL expressions to evaluate. AccessLogs are only emitted when the CEL expressions evaluates to true.
+                                      see: https://www.envoyproxy.io/docs/envoy/v1.33.0/xds/type/v3/cel.proto.html#common-expression-language-cel-proto
                                     type: string
                                 required:
                                 - match
                                 type: object
                               durationFilter:
+                                description: |-
+                                  DurationFilter filters based on request duration.
+                                  Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
                                 properties:
                                   op:
+                                    description: Op represents comparison operators.
                                     enum:
                                     - EQ
                                     - GE
                                     - LE
                                     type: string
                                   value:
+                                    description: Value to compare against.
                                     format: int32
                                     maximum: 4294967295
                                     minimum: 0
@@ -99,11 +150,16 @@ spec:
                                 - op
                                 type: object
                               grpcStatusFilter:
+                                description: |-
+                                  GrpcStatusFilter filters gRPC requests based on their response status.
+                                  Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
                                 properties:
                                   exclude:
                                     type: boolean
                                   statuses:
                                     items:
+                                      description: GrpcStatus represents possible
+                                        gRPC statuses.
                                       enum:
                                       - OK
                                       - CANCELED
@@ -127,21 +183,55 @@ spec:
                                     type: array
                                 type: object
                               headerFilter:
+                                description: |-
+                                  HeaderFilter filters requests based on headers.
+                                  Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
                                 properties:
                                   header:
+                                    description: |-
+                                      HTTPHeaderMatch describes how to select a HTTP route by matching HTTP request
+                                      headers.
                                     properties:
                                       name:
+                                        description: |-
+                                          Name is the name of the HTTP Header to be matched. Name matching MUST be
+                                          case-insensitive. (See https://tools.ietf.org/html/rfc7230#section-3.2).
+
+                                          If multiple entries specify equivalent header names, only the first
+                                          entry with an equivalent name MUST be considered for a match. Subsequent
+                                          entries with an equivalent header name MUST be ignored. Due to the
+                                          case-insensitivity of header names, "foo" and "Foo" are considered
+                                          equivalent.
+
+                                          When a header is repeated in an HTTP request, it is
+                                          implementation-specific behavior as to how this is represented.
+                                          Generally, proxies should follow the guidance from the RFC:
+                                          https://www.rfc-editor.org/rfc/rfc7230.html#section-3.2.2 regarding
+                                          processing a repeated header, with special handling for "Set-Cookie".
                                         maxLength: 256
                                         minLength: 1
                                         pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
                                         type: string
                                       type:
                                         default: Exact
+                                        description: |-
+                                          Type specifies how to match against the value of the header.
+
+                                          Support: Core (Exact)
+
+                                          Support: Implementation-specific (RegularExpression)
+
+                                          Since RegularExpression HeaderMatchType has implementation-specific
+                                          conformance, implementations can support POSIX, PCRE or any other dialects
+                                          of regular expressions. Please read the implementation's documentation to
+                                          determine the supported dialect.
                                         enum:
                                         - Exact
                                         - RegularExpression
                                         type: string
                                       value:
+                                        description: Value is the value of HTTP Header
+                                          to be matched.
                                         maxLength: 4096
                                         minLength: 1
                                         type: string
@@ -153,8 +243,14 @@ spec:
                                 - header
                                 type: object
                               notHealthCheckFilter:
+                                description: |-
+                                  Filters for requests that are not health check requests.
+                                  Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
                                 type: boolean
                               responseFlagFilter:
+                                description: |-
+                                  ResponseFlagFilter filters based on response flags.
+                                  Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
                                 properties:
                                   flags:
                                     items:
@@ -165,14 +261,19 @@ spec:
                                 - flags
                                 type: object
                               statusCodeFilter:
+                                description: |-
+                                  StatusCodeFilter filters based on HTTP status code.
+                                  Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
                                 properties:
                                   op:
+                                    description: Op represents comparison operators.
                                     enum:
                                     - EQ
                                     - GE
                                     - LE
                                     type: string
                                   value:
+                                    description: Value to compare against.
                                     format: int32
                                     maximum: 4294967295
                                     minimum: 0
@@ -181,26 +282,39 @@ spec:
                                 - op
                                 type: object
                               traceableFilter:
+                                description: |-
+                                  Filters for requests that are traceable.
+                                  Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
                                 type: boolean
                             type: object
                           minItems: 2
                           type: array
                         celFilter:
+                          description: CELFilter filters requests based on Common
+                            Expression Language (CEL).
                           properties:
                             match:
+                              description: |-
+                                The CEL expressions to evaluate. AccessLogs are only emitted when the CEL expressions evaluates to true.
+                                see: https://www.envoyproxy.io/docs/envoy/v1.33.0/xds/type/v3/cel.proto.html#common-expression-language-cel-proto
                               type: string
                           required:
                           - match
                           type: object
                         durationFilter:
+                          description: |-
+                            DurationFilter filters based on request duration.
+                            Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
                           properties:
                             op:
+                              description: Op represents comparison operators.
                               enum:
                               - EQ
                               - GE
                               - LE
                               type: string
                             value:
+                              description: Value to compare against.
                               format: int32
                               maximum: 4294967295
                               minimum: 0
@@ -209,11 +323,15 @@ spec:
                           - op
                           type: object
                         grpcStatusFilter:
+                          description: |-
+                            GrpcStatusFilter filters gRPC requests based on their response status.
+                            Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
                           properties:
                             exclude:
                               type: boolean
                             statuses:
                               items:
+                                description: GrpcStatus represents possible gRPC statuses.
                                 enum:
                                 - OK
                                 - CANCELED
@@ -237,21 +355,55 @@ spec:
                               type: array
                           type: object
                         headerFilter:
+                          description: |-
+                            HeaderFilter filters requests based on headers.
+                            Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
                           properties:
                             header:
+                              description: |-
+                                HTTPHeaderMatch describes how to select a HTTP route by matching HTTP request
+                                headers.
                               properties:
                                 name:
+                                  description: |-
+                                    Name is the name of the HTTP Header to be matched. Name matching MUST be
+                                    case-insensitive. (See https://tools.ietf.org/html/rfc7230#section-3.2).
+
+                                    If multiple entries specify equivalent header names, only the first
+                                    entry with an equivalent name MUST be considered for a match. Subsequent
+                                    entries with an equivalent header name MUST be ignored. Due to the
+                                    case-insensitivity of header names, "foo" and "Foo" are considered
+                                    equivalent.
+
+                                    When a header is repeated in an HTTP request, it is
+                                    implementation-specific behavior as to how this is represented.
+                                    Generally, proxies should follow the guidance from the RFC:
+                                    https://www.rfc-editor.org/rfc/rfc7230.html#section-3.2.2 regarding
+                                    processing a repeated header, with special handling for "Set-Cookie".
                                   maxLength: 256
                                   minLength: 1
                                   pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
                                   type: string
                                 type:
                                   default: Exact
+                                  description: |-
+                                    Type specifies how to match against the value of the header.
+
+                                    Support: Core (Exact)
+
+                                    Support: Implementation-specific (RegularExpression)
+
+                                    Since RegularExpression HeaderMatchType has implementation-specific
+                                    conformance, implementations can support POSIX, PCRE or any other dialects
+                                    of regular expressions. Please read the implementation's documentation to
+                                    determine the supported dialect.
                                   enum:
                                   - Exact
                                   - RegularExpression
                                   type: string
                                 value:
+                                  description: Value is the value of HTTP Header to
+                                    be matched.
                                   maxLength: 4096
                                   minLength: 1
                                   type: string
@@ -263,28 +415,47 @@ spec:
                           - header
                           type: object
                         notHealthCheckFilter:
+                          description: |-
+                            Filters for requests that are not health check requests.
+                            Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
                           type: boolean
                         orFilter:
+                          description: |-
+                            Performs a logical "or" operation on the result of each individual filter.
+                            Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-orfilter
                           items:
+                            description: |-
+                              FilterType represents the type of filter to apply (only one of these should be set).
+                              Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-accesslogfilter
                             maxProperties: 1
                             minProperties: 1
                             properties:
                               celFilter:
+                                description: CELFilter filters requests based on Common
+                                  Expression Language (CEL).
                                 properties:
                                   match:
+                                    description: |-
+                                      The CEL expressions to evaluate. AccessLogs are only emitted when the CEL expressions evaluates to true.
+                                      see: https://www.envoyproxy.io/docs/envoy/v1.33.0/xds/type/v3/cel.proto.html#common-expression-language-cel-proto
                                     type: string
                                 required:
                                 - match
                                 type: object
                               durationFilter:
+                                description: |-
+                                  DurationFilter filters based on request duration.
+                                  Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
                                 properties:
                                   op:
+                                    description: Op represents comparison operators.
                                     enum:
                                     - EQ
                                     - GE
                                     - LE
                                     type: string
                                   value:
+                                    description: Value to compare against.
                                     format: int32
                                     maximum: 4294967295
                                     minimum: 0
@@ -293,11 +464,16 @@ spec:
                                 - op
                                 type: object
                               grpcStatusFilter:
+                                description: |-
+                                  GrpcStatusFilter filters gRPC requests based on their response status.
+                                  Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
                                 properties:
                                   exclude:
                                     type: boolean
                                   statuses:
                                     items:
+                                      description: GrpcStatus represents possible
+                                        gRPC statuses.
                                       enum:
                                       - OK
                                       - CANCELED
@@ -321,21 +497,55 @@ spec:
                                     type: array
                                 type: object
                               headerFilter:
+                                description: |-
+                                  HeaderFilter filters requests based on headers.
+                                  Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
                                 properties:
                                   header:
+                                    description: |-
+                                      HTTPHeaderMatch describes how to select a HTTP route by matching HTTP request
+                                      headers.
                                     properties:
                                       name:
+                                        description: |-
+                                          Name is the name of the HTTP Header to be matched. Name matching MUST be
+                                          case-insensitive. (See https://tools.ietf.org/html/rfc7230#section-3.2).
+
+                                          If multiple entries specify equivalent header names, only the first
+                                          entry with an equivalent name MUST be considered for a match. Subsequent
+                                          entries with an equivalent header name MUST be ignored. Due to the
+                                          case-insensitivity of header names, "foo" and "Foo" are considered
+                                          equivalent.
+
+                                          When a header is repeated in an HTTP request, it is
+                                          implementation-specific behavior as to how this is represented.
+                                          Generally, proxies should follow the guidance from the RFC:
+                                          https://www.rfc-editor.org/rfc/rfc7230.html#section-3.2.2 regarding
+                                          processing a repeated header, with special handling for "Set-Cookie".
                                         maxLength: 256
                                         minLength: 1
                                         pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
                                         type: string
                                       type:
                                         default: Exact
+                                        description: |-
+                                          Type specifies how to match against the value of the header.
+
+                                          Support: Core (Exact)
+
+                                          Support: Implementation-specific (RegularExpression)
+
+                                          Since RegularExpression HeaderMatchType has implementation-specific
+                                          conformance, implementations can support POSIX, PCRE or any other dialects
+                                          of regular expressions. Please read the implementation's documentation to
+                                          determine the supported dialect.
                                         enum:
                                         - Exact
                                         - RegularExpression
                                         type: string
                                       value:
+                                        description: Value is the value of HTTP Header
+                                          to be matched.
                                         maxLength: 4096
                                         minLength: 1
                                         type: string
@@ -347,8 +557,14 @@ spec:
                                 - header
                                 type: object
                               notHealthCheckFilter:
+                                description: |-
+                                  Filters for requests that are not health check requests.
+                                  Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
                                 type: boolean
                               responseFlagFilter:
+                                description: |-
+                                  ResponseFlagFilter filters based on response flags.
+                                  Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
                                 properties:
                                   flags:
                                     items:
@@ -359,14 +575,19 @@ spec:
                                 - flags
                                 type: object
                               statusCodeFilter:
+                                description: |-
+                                  StatusCodeFilter filters based on HTTP status code.
+                                  Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
                                 properties:
                                   op:
+                                    description: Op represents comparison operators.
                                     enum:
                                     - EQ
                                     - GE
                                     - LE
                                     type: string
                                   value:
+                                    description: Value to compare against.
                                     format: int32
                                     maximum: 4294967295
                                     minimum: 0
@@ -375,11 +596,17 @@ spec:
                                 - op
                                 type: object
                               traceableFilter:
+                                description: |-
+                                  Filters for requests that are traceable.
+                                  Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
                                 type: boolean
                             type: object
                           minItems: 2
                           type: array
                         responseFlagFilter:
+                          description: |-
+                            ResponseFlagFilter filters based on response flags.
+                            Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
                           properties:
                             flags:
                               items:
@@ -390,14 +617,19 @@ spec:
                           - flags
                           type: object
                         statusCodeFilter:
+                          description: |-
+                            StatusCodeFilter filters based on HTTP status code.
+                            Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
                           properties:
                             op:
+                              description: Op represents comparison operators.
                               enum:
                               - EQ
                               - GE
                               - LE
                               type: string
                             value:
+                              description: Value to compare against.
                               format: int32
                               maximum: 4294967295
                               minimum: 0
@@ -406,53 +638,118 @@ spec:
                           - op
                           type: object
                         traceableFilter:
+                          description: |-
+                            Filters for requests that are traceable.
+                            Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
                           type: boolean
                       type: object
                     grpcService:
+                      description: Send access logs to gRPC service
                       properties:
                         additionalRequestHeadersToLog:
+                          description: Additional request headers to log in the access
+                            log
                           items:
                             type: string
                           type: array
                         additionalResponseHeadersToLog:
+                          description: Additional response headers to log in the access
+                            log
                           items:
                             type: string
                           type: array
                         additionalResponseTrailersToLog:
+                          description: Additional response trailers to log in the
+                            access log
                           items:
                             type: string
                           type: array
                         authority:
+                          description: |-
+                            The :authority header in the grpc request. If this field is not set, the authority header value will be cluster_name.
+                            Note that this authority does not override the SNI. The SNI is provided by the transport socket of the cluster.
                           type: string
                         backendRef:
+                          description: The backend gRPC service. Can be any type of
+                            supported backend (Kubernetes Service, kgateway Backend,
+                            etc..)
                           properties:
                             group:
                               default: ""
+                              description: |-
+                                Group is the group of the referent. For example, "gateway.networking.k8s.io".
+                                When unspecified or empty string, core API group is inferred.
                               maxLength: 253
                               pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                               type: string
                             kind:
                               default: Service
+                              description: |-
+                                Kind is the Kubernetes resource kind of the referent. For example
+                                "Service".
+
+                                Defaults to "Service" when not specified.
+
+                                ExternalName services can refer to CNAME DNS records that may live
+                                outside of the cluster and as such are difficult to reason about in
+                                terms of conformance. They also may not be safe to forward to (see
+                                CVE-2021-25740 for more information). Implementations SHOULD NOT
+                                support ExternalName Services.
+
+                                Support: Core (Services with a type other than ExternalName)
+
+                                Support: Implementation-specific (Services with type ExternalName)
                               maxLength: 63
                               minLength: 1
                               pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
                               type: string
                             name:
+                              description: Name is the name of the referent.
                               maxLength: 253
                               minLength: 1
                               type: string
                             namespace:
+                              description: |-
+                                Namespace is the namespace of the backend. When unspecified, the local
+                                namespace is inferred.
+
+                                Note that when a namespace different than the local namespace is specified,
+                                a ReferenceGrant object is required in the referent namespace to allow that
+                                namespace's owner to accept the reference. See the ReferenceGrant
+                                documentation for details.
+
+                                Support: Core
                               maxLength: 63
                               minLength: 1
                               pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
                               type: string
                             port:
+                              description: |-
+                                Port specifies the destination port number to use for this resource.
+                                Port is required when the referent is a Kubernetes Service. In this
+                                case, the port number is the service port number, not the target port.
+                                For other resources, destination port might be derived from the referent
+                                resource or this field.
                               format: int32
                               maximum: 65535
                               minimum: 1
                               type: integer
                             weight:
                               default: 1
+                              description: |-
+                                Weight specifies the proportion of requests forwarded to the referenced
+                                backend. This is computed as weight/(sum of all weights in this
+                                BackendRefs list). For non-zero values, there may be some epsilon from
+                                the exact proportion defined here depending on the precision an
+                                implementation supports. Weight is not a percentage and the sum of
+                                weights does not need to equal 100.
+
+                                If only one backend is specified and it has a weight greater than 0, 100%
+                                of the traffic is forwarded to that backend. If weight is set to 0, no
+                                traffic should be forwarded for this entry. If unspecified, weight
+                                defaults to 1.
+
+                                Support for this field varies based on the context where used.
                               format: int32
                               maximum: 1000000
                               minimum: 0
@@ -465,36 +762,63 @@ spec:
                             rule: '(size(self.group) == 0 && self.kind == ''Service'')
                               ? has(self.port) : true'
                         initialMetadata:
+                          description: |-
+                            Additional metadata to include in streams initiated to the GrpcService.
+                            This can be used for scenarios in which additional ad hoc authorization headers (e.g. x-foo-bar: baz-key) are to be injected
                           items:
+                            description: |-
+                              Header name/value pair.
+                              Ref: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/base.proto#envoy-v3-api-msg-config-core-v3-headervalue
                             properties:
                               key:
+                                description: Header name.
                                 type: string
                               value:
+                                description: Header value.
                                 type: string
                             required:
                             - key
                             type: object
                           type: array
                         logName:
+                          description: name of log stream
                           type: string
                         maxReceiveMessageLength:
+                          description: |-
+                            Maximum gRPC message size that is allowed to be received. If a message over this limit is received, the gRPC stream is terminated with the RESOURCE_EXHAUSTED error.
+                            Defaults to 0, which means unlimited.
                           format: int32
                           minimum: 1
                           type: integer
                         retryPolicy:
+                          description: |-
+                            Indicates the retry policy for re-establishing the gRPC stream.
+                            If max interval is not provided, it will be set to ten times the provided base interval
                           properties:
                             numRetries:
+                              description: Specifies the allowed number of retries.
+                                Defaults to 1.
                               format: int32
                               minimum: 1
                               type: integer
                             retryBackOff:
+                              description: |-
+                                Specifies parameters that control retry backoff strategy.
+                                the default base interval is 1000 milliseconds and the default maximum interval is 10 times the base interval.
                               properties:
                                 baseInterval:
+                                  description: The base interval to be used for the
+                                    next back off computation. It should be greater
+                                    than zero and less than or equal to max_interval.
                                   type: string
                                   x-kubernetes-validations:
                                   - message: invalid duration value
                                     rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                                 maxInterval:
+                                  description: Specifies the maximum interval between
+                                    retries. This parameter is optional, but must
+                                    be greater than or equal to the base_interval
+                                    if set. The default is 10 times the base_interval.
                                   type: string
                                   x-kubernetes-validations:
                                   - message: invalid duration value
@@ -504,8 +828,15 @@ spec:
                               type: object
                           type: object
                         skipEnvoyHeaders:
+                          description: This provides gRPC client level control over
+                            envoy generated headers. If false, the header will be
+                            sent but it can be overridden by per stream option. If
+                            true, the header will be removed and can not be overridden
+                            by per stream option. Default to false.
                           type: boolean
                         timeout:
+                          description: The timeout for the gRPC request. This is the
+                            timeout for a specific request
                           type: string
                           x-kubernetes-validations:
                           - message: invalid duration value
@@ -515,15 +846,28 @@ spec:
                       - logName
                       type: object
                     openTelemetry:
+                      description: Send access logs to an OTel collector
                       properties:
                         attributes:
+                          description: Additional attributes that describe the specific
+                            event occurrence.
                           properties:
                             values:
+                              description: A collection of key/value pairs of key-value
+                                pairs.
                               items:
+                                description: KeyValue is a key-value pair that is
+                                  used to store Span attributes, Link attributes,
+                                  etc.
                                 properties:
                                   key:
+                                    description: Attribute keys must be unique
                                     type: string
                                   value:
+                                    description: Value may contain a primitive value
+                                      such as a string or integer or it may contain
+                                      an arbitrary nested object containing arrays,
+                                      key-value lists and primitives.
                                     maxProperties: 1
                                     minProperties: 1
                                     properties:
@@ -545,42 +889,103 @@ spec:
                               type: array
                           type: object
                         body:
+                          description: OpenTelemetry LogResource fields, following
+                            Envoy access logging formatting.
                           type: string
                         disableBuiltinLabels:
+                          description: If specified, Envoy will not generate built-in
+                            resource labels like log_name, zone_name, cluster_name,
+                            node_name.
                           type: boolean
                         grpcService:
+                          description: Send access logs to gRPC service
                           properties:
                             authority:
+                              description: |-
+                                The :authority header in the grpc request. If this field is not set, the authority header value will be cluster_name.
+                                Note that this authority does not override the SNI. The SNI is provided by the transport socket of the cluster.
                               type: string
                             backendRef:
+                              description: The backend gRPC service. Can be any type
+                                of supported backend (Kubernetes Service, kgateway
+                                Backend, etc..)
                               properties:
                                 group:
                                   default: ""
+                                  description: |-
+                                    Group is the group of the referent. For example, "gateway.networking.k8s.io".
+                                    When unspecified or empty string, core API group is inferred.
                                   maxLength: 253
                                   pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                                   type: string
                                 kind:
                                   default: Service
+                                  description: |-
+                                    Kind is the Kubernetes resource kind of the referent. For example
+                                    "Service".
+
+                                    Defaults to "Service" when not specified.
+
+                                    ExternalName services can refer to CNAME DNS records that may live
+                                    outside of the cluster and as such are difficult to reason about in
+                                    terms of conformance. They also may not be safe to forward to (see
+                                    CVE-2021-25740 for more information). Implementations SHOULD NOT
+                                    support ExternalName Services.
+
+                                    Support: Core (Services with a type other than ExternalName)
+
+                                    Support: Implementation-specific (Services with type ExternalName)
                                   maxLength: 63
                                   minLength: 1
                                   pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
                                   type: string
                                 name:
+                                  description: Name is the name of the referent.
                                   maxLength: 253
                                   minLength: 1
                                   type: string
                                 namespace:
+                                  description: |-
+                                    Namespace is the namespace of the backend. When unspecified, the local
+                                    namespace is inferred.
+
+                                    Note that when a namespace different than the local namespace is specified,
+                                    a ReferenceGrant object is required in the referent namespace to allow that
+                                    namespace's owner to accept the reference. See the ReferenceGrant
+                                    documentation for details.
+
+                                    Support: Core
                                   maxLength: 63
                                   minLength: 1
                                   pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
                                   type: string
                                 port:
+                                  description: |-
+                                    Port specifies the destination port number to use for this resource.
+                                    Port is required when the referent is a Kubernetes Service. In this
+                                    case, the port number is the service port number, not the target port.
+                                    For other resources, destination port might be derived from the referent
+                                    resource or this field.
                                   format: int32
                                   maximum: 65535
                                   minimum: 1
                                   type: integer
                                 weight:
                                   default: 1
+                                  description: |-
+                                    Weight specifies the proportion of requests forwarded to the referenced
+                                    backend. This is computed as weight/(sum of all weights in this
+                                    BackendRefs list). For non-zero values, there may be some epsilon from
+                                    the exact proportion defined here depending on the precision an
+                                    implementation supports. Weight is not a percentage and the sum of
+                                    weights does not need to equal 100.
+
+                                    If only one backend is specified and it has a weight greater than 0, 100%
+                                    of the traffic is forwarded to that backend. If weight is set to 0, no
+                                    traffic should be forwarded for this entry. If unspecified, weight
+                                    defaults to 1.
+
+                                    Support for this field varies based on the context where used.
                                   format: int32
                                   maximum: 1000000
                                   minimum: 0
@@ -593,36 +998,64 @@ spec:
                                 rule: '(size(self.group) == 0 && self.kind == ''Service'')
                                   ? has(self.port) : true'
                             initialMetadata:
+                              description: |-
+                                Additional metadata to include in streams initiated to the GrpcService.
+                                This can be used for scenarios in which additional ad hoc authorization headers (e.g. x-foo-bar: baz-key) are to be injected
                               items:
+                                description: |-
+                                  Header name/value pair.
+                                  Ref: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/base.proto#envoy-v3-api-msg-config-core-v3-headervalue
                                 properties:
                                   key:
+                                    description: Header name.
                                     type: string
                                   value:
+                                    description: Header value.
                                     type: string
                                 required:
                                 - key
                                 type: object
                               type: array
                             logName:
+                              description: name of log stream
                               type: string
                             maxReceiveMessageLength:
+                              description: |-
+                                Maximum gRPC message size that is allowed to be received. If a message over this limit is received, the gRPC stream is terminated with the RESOURCE_EXHAUSTED error.
+                                Defaults to 0, which means unlimited.
                               format: int32
                               minimum: 1
                               type: integer
                             retryPolicy:
+                              description: |-
+                                Indicates the retry policy for re-establishing the gRPC stream.
+                                If max interval is not provided, it will be set to ten times the provided base interval
                               properties:
                                 numRetries:
+                                  description: Specifies the allowed number of retries.
+                                    Defaults to 1.
                                   format: int32
                                   minimum: 1
                                   type: integer
                                 retryBackOff:
+                                  description: |-
+                                    Specifies parameters that control retry backoff strategy.
+                                    the default base interval is 1000 milliseconds and the default maximum interval is 10 times the base interval.
                                   properties:
                                     baseInterval:
+                                      description: The base interval to be used for
+                                        the next back off computation. It should be
+                                        greater than zero and less than or equal to
+                                        max_interval.
                                       type: string
                                       x-kubernetes-validations:
                                       - message: invalid duration value
                                         rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                                     maxInterval:
+                                      description: Specifies the maximum interval
+                                        between retries. This parameter is optional,
+                                        but must be greater than or equal to the base_interval
+                                        if set. The default is 10 times the base_interval.
                                       type: string
                                       x-kubernetes-validations:
                                       - message: invalid duration value
@@ -632,8 +1065,16 @@ spec:
                                   type: object
                               type: object
                             skipEnvoyHeaders:
+                              description: This provides gRPC client level control
+                                over envoy generated headers. If false, the header
+                                will be sent but it can be overridden by per stream
+                                option. If true, the header will be removed and can
+                                not be overridden by per stream option. Default to
+                                false.
                               type: boolean
                             timeout:
+                              description: The timeout for the gRPC request. This
+                                is the timeout for a specific request
                               type: string
                               x-kubernetes-validations:
                               - message: invalid duration value
@@ -643,13 +1084,27 @@ spec:
                           - logName
                           type: object
                         resourceAttributes:
+                          description: |-
+                            Additional resource attributes that describe the resource.
+                            If the `service.name` resource attribute is not specified, it adds it with the default value
+                            of the envoy cluster name, ie: `<gateway-name>.<gateway-namespace>`
                           properties:
                             values:
+                              description: A collection of key/value pairs of key-value
+                                pairs.
                               items:
+                                description: KeyValue is a key-value pair that is
+                                  used to store Span attributes, Link attributes,
+                                  etc.
                                 properties:
                                   key:
+                                    description: Attribute keys must be unique
                                     type: string
                                   value:
+                                    description: Value may contain a primitive value
+                                      such as a string or integer or it may contain
+                                      an arbitrary nested object containing arrays,
+                                      key-value lists and primitives.
                                     maxProperties: 1
                                     minProperties: 1
                                     properties:
@@ -677,11 +1132,17 @@ spec:
                 maxItems: 16
                 type: array
               defaultHostForHttp10:
+                description: |-
+                  DefaultHostForHttp10 specifies a default host for HTTP/1.0 requests. This is highly suggested if acceptHttp10 is true and a no-op if acceptHttp10 is false.
+                  See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-http1protocoloptions
                 minLength: 1
                 type: string
               healthCheck:
+                description: HealthCheck configures [Envoy health checks](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/health_check/v3/health_check.proto)
                 properties:
                   path:
+                    description: Path defines the exact path that will be matched
+                      for health check requests.
                     maxLength: 2048
                     pattern: ^/[-a-zA-Z0-9@:%.+~#?&/=_]+$
                     type: string
@@ -689,36 +1150,61 @@ spec:
                 - path
                 type: object
               idleTimeout:
+                description: |-
+                  IdleTimeout is the idle timeout for connnections.
+                  See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-httpprotocoloptions
                 type: string
                 x-kubernetes-validations:
                 - message: invalid duration value
                   rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
               preserveHttp1HeaderCase:
+                description: |-
+                  PreserveHttp1HeaderCase determines whether to preserve the case of HTTP1 request headers.
+                  See here for more information: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/header_casing
                 type: boolean
               serverHeaderTransformation:
+                description: |-
+                  ServerHeaderTransformation determines how the server header is transformed.
+                  See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-server-header-transformation
                 enum:
                 - Overwrite
                 - AppendIfAbsent
                 - PassThrough
                 type: string
               streamIdleTimeout:
+                description: |-
+                  StreamIdleTimeout is the idle timeout for HTTP streams.
+                  See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-stream-idle-timeout
                 type: string
                 x-kubernetes-validations:
                 - message: invalid duration value
                   rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
               targetRefs:
+                description: TargetRefs specifies the target resources by reference
+                  to attach the policy to.
                 items:
+                  description: |-
+                    Select the object to attach the policy by Group, Kind, and Name.
+                    The object must be in the same namespace as the policy.
+                    You can target only one object at a time.
                   properties:
                     group:
+                      description: |-
+                        The API group of the target resource.
+                        For Kubernetes Gateway API resources, the group is `gateway.networking.k8s.io`.
                       maxLength: 253
                       pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                       type: string
                     kind:
+                      description: |-
+                        The API kind of the target resource,
+                        such as Gateway or HTTPRoute.
                       maxLength: 63
                       minLength: 1
                       pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
                       type: string
                     name:
+                      description: The name of the target resource.
                       maxLength: 253
                       minLength: 1
                       type: string
@@ -735,13 +1221,28 @@ spec:
                   rule: self.all(r, r.kind == 'Gateway' && (!has(r.group) || r.group
                     == 'gateway.networking.k8s.io'))
               targetSelectors:
+                description: TargetSelectors specifies the target selectors to select
+                  resources to attach the policy to.
                 items:
+                  description: |-
+                    LocalPolicyTargetSelector selects the object to attach the policy by Group, Kind, and MatchLabels.
+                    The object must be in the same namespace as the policy and match the
+                    specified labels.
+                    Do not use targetSelectors when reconciliation times are critical, especially if you
+                    have a large number of policies that target the same resource.
+                    Instead, use targetRefs to attach the policy.
                   properties:
                     group:
+                      description: |-
+                        The API group of the target resource.
+                        For Kubernetes Gateway API resources, the group is `gateway.networking.k8s.io`.
                       maxLength: 253
                       pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                       type: string
                     kind:
+                      description: |-
+                        The API kind of the target resource,
+                        such as Gateway or HTTPRoute.
                       maxLength: 63
                       minLength: 1
                       pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
@@ -749,6 +1250,7 @@ spec:
                     matchLabels:
                       additionalProperties:
                         type: string
+                      description: Label selector to select the target resource.
                       type: object
                   required:
                   - group
@@ -761,33 +1263,56 @@ spec:
                   rule: self.all(r, r.kind == 'Gateway' && (!has(r.group) || r.group
                     == 'gateway.networking.k8s.io'))
               tracing:
+                description: |-
+                  Tracing contains various settings for Envoy's OpenTelemetry tracer.
+                  See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/opentelemetry.proto.html
                 properties:
                   attributes:
+                    description: A list of attributes with a unique name to create
+                      attributes for the active span.
                     items:
+                      description: |-
+                        Describes attributes for the active span.
+                        Ref: https://www.envoyproxy.io/docs/envoy/latest/api-v3/type/tracing/v3/custom_tag.proto#envoy-v3-api-msg-type-tracing-v3-customtag
                       maxProperties: 2
                       minProperties: 1
                       properties:
                         environment:
+                          description: An environment attribute value.
                           properties:
                             defaultValue:
+                              description: |-
+                                When the environment variable is not found, the attribute value will be populated with this default value if specified,
+                                otherwise no attribute will be populated.
                               type: string
                             name:
+                              description: Environment variable name to obtain the
+                                value to populate the attribute value.
                               type: string
                           required:
                           - name
                           type: object
                         literal:
+                          description: A literal attribute value.
                           properties:
                             value:
+                              description: Static literal value to populate the attribute
+                                value.
                               type: string
                           required:
                           - value
                           type: object
                         metadata:
+                          description: An attribute to obtain the value from the metadata.
                           properties:
                             defaultValue:
+                              description: When no valid metadata is found, the attribute
+                                value would be populated with this default value if
+                                specified, otherwise no attribute would be populated.
                               type: string
                             kind:
+                              description: Specify what kind of metadata to obtain
+                                attribute value from
                               enum:
                               - Request
                               - Route
@@ -795,13 +1320,24 @@ spec:
                               - Host
                               type: string
                             metadataKey:
+                              description: Metadata key to define the path to retrieve
+                                the attribute value.
                               properties:
                                 key:
+                                  description: The key name of the Metadata from which
+                                    to retrieve the Struct
                                   type: string
                                 path:
+                                  description: |-
+                                    The path used to retrieve a specific Value from the Struct. This can be either a prefix or a full path,
+                                    depending on the use case
                                   items:
+                                    description: Specifies a segment in a path for
+                                      retrieving values from Metadata.
                                     properties:
                                       key:
+                                        description: The key used to retrieve the
+                                          value in the struct
                                         type: string
                                     required:
                                     - key
@@ -816,12 +1352,19 @@ spec:
                           - metadataKey
                           type: object
                         name:
+                          description: The name of the attribute
                           type: string
                         requestHeader:
+                          description: A request header attribute value.
                           properties:
                             defaultValue:
+                              description: |-
+                                When the header does not exist, the attribute value will be populated with this default value if specified,
+                                otherwise no attribute will be populated.
                               type: string
                             name:
+                              description: Header name to obtain the value to populate
+                                the attribute value.
                               type: string
                           required:
                           - name
@@ -831,58 +1374,128 @@ spec:
                       type: object
                     type: array
                   clientSampling:
+                    description: Target percentage of requests managed by this HTTP
+                      connection manager that will be force traced if the x-client-trace-id
+                      header is set. Defaults to 100%
                     format: int32
                     maximum: 100
                     minimum: 0
                     type: integer
                   maxPathTagLength:
+                    description: 'Maximum length of the request path to extract and
+                      include in the HttpUrl tag. Used to truncate lengthy request
+                      paths to meet the needs of a tracing backend. Default: 256'
                     format: int32
                     minimum: 1
                     type: integer
                   overallSampling:
+                    description: Target percentage of requests managed by this HTTP
+                      connection manager that will be traced after all other sampling
+                      checks have been applied (client-directed, force tracing, random
+                      sampling). Defaults to 100%
                     format: int32
                     maximum: 100
                     minimum: 0
                     type: integer
                   provider:
+                    description: Provider defines the upstream to which envoy sends
+                      traces
                     maxProperties: 1
                     minProperties: 1
                     properties:
                       openTelemetry:
+                        description: Tracing contains various settings for Envoy's
+                          OTel tracer.
                         properties:
                           grpcService:
+                            description: Send traces to the gRPC service
                             properties:
                               authority:
+                                description: |-
+                                  The :authority header in the grpc request. If this field is not set, the authority header value will be cluster_name.
+                                  Note that this authority does not override the SNI. The SNI is provided by the transport socket of the cluster.
                                 type: string
                               backendRef:
+                                description: The backend gRPC service. Can be any
+                                  type of supported backend (Kubernetes Service, kgateway
+                                  Backend, etc..)
                                 properties:
                                   group:
                                     default: ""
+                                    description: |-
+                                      Group is the group of the referent. For example, "gateway.networking.k8s.io".
+                                      When unspecified or empty string, core API group is inferred.
                                     maxLength: 253
                                     pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                                     type: string
                                   kind:
                                     default: Service
+                                    description: |-
+                                      Kind is the Kubernetes resource kind of the referent. For example
+                                      "Service".
+
+                                      Defaults to "Service" when not specified.
+
+                                      ExternalName services can refer to CNAME DNS records that may live
+                                      outside of the cluster and as such are difficult to reason about in
+                                      terms of conformance. They also may not be safe to forward to (see
+                                      CVE-2021-25740 for more information). Implementations SHOULD NOT
+                                      support ExternalName Services.
+
+                                      Support: Core (Services with a type other than ExternalName)
+
+                                      Support: Implementation-specific (Services with type ExternalName)
                                     maxLength: 63
                                     minLength: 1
                                     pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
                                     type: string
                                   name:
+                                    description: Name is the name of the referent.
                                     maxLength: 253
                                     minLength: 1
                                     type: string
                                   namespace:
+                                    description: |-
+                                      Namespace is the namespace of the backend. When unspecified, the local
+                                      namespace is inferred.
+
+                                      Note that when a namespace different than the local namespace is specified,
+                                      a ReferenceGrant object is required in the referent namespace to allow that
+                                      namespace's owner to accept the reference. See the ReferenceGrant
+                                      documentation for details.
+
+                                      Support: Core
                                     maxLength: 63
                                     minLength: 1
                                     pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
                                     type: string
                                   port:
+                                    description: |-
+                                      Port specifies the destination port number to use for this resource.
+                                      Port is required when the referent is a Kubernetes Service. In this
+                                      case, the port number is the service port number, not the target port.
+                                      For other resources, destination port might be derived from the referent
+                                      resource or this field.
                                     format: int32
                                     maximum: 65535
                                     minimum: 1
                                     type: integer
                                   weight:
                                     default: 1
+                                    description: |-
+                                      Weight specifies the proportion of requests forwarded to the referenced
+                                      backend. This is computed as weight/(sum of all weights in this
+                                      BackendRefs list). For non-zero values, there may be some epsilon from
+                                      the exact proportion defined here depending on the precision an
+                                      implementation supports. Weight is not a percentage and the sum of
+                                      weights does not need to equal 100.
+
+                                      If only one backend is specified and it has a weight greater than 0, 100%
+                                      of the traffic is forwarded to that backend. If weight is set to 0, no
+                                      traffic should be forwarded for this entry. If unspecified, weight
+                                      defaults to 1.
+
+                                      Support for this field varies based on the context where used.
                                     format: int32
                                     maximum: 1000000
                                     minimum: 0
@@ -895,34 +1508,62 @@ spec:
                                   rule: '(size(self.group) == 0 && self.kind == ''Service'')
                                     ? has(self.port) : true'
                               initialMetadata:
+                                description: |-
+                                  Additional metadata to include in streams initiated to the GrpcService.
+                                  This can be used for scenarios in which additional ad hoc authorization headers (e.g. x-foo-bar: baz-key) are to be injected
                                 items:
+                                  description: |-
+                                    Header name/value pair.
+                                    Ref: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/base.proto#envoy-v3-api-msg-config-core-v3-headervalue
                                   properties:
                                     key:
+                                      description: Header name.
                                       type: string
                                     value:
+                                      description: Header value.
                                       type: string
                                   required:
                                   - key
                                   type: object
                                 type: array
                               maxReceiveMessageLength:
+                                description: |-
+                                  Maximum gRPC message size that is allowed to be received. If a message over this limit is received, the gRPC stream is terminated with the RESOURCE_EXHAUSTED error.
+                                  Defaults to 0, which means unlimited.
                                 format: int32
                                 minimum: 1
                                 type: integer
                               retryPolicy:
+                                description: |-
+                                  Indicates the retry policy for re-establishing the gRPC stream.
+                                  If max interval is not provided, it will be set to ten times the provided base interval
                                 properties:
                                   numRetries:
+                                    description: Specifies the allowed number of retries.
+                                      Defaults to 1.
                                     format: int32
                                     minimum: 1
                                     type: integer
                                   retryBackOff:
+                                    description: |-
+                                      Specifies parameters that control retry backoff strategy.
+                                      the default base interval is 1000 milliseconds and the default maximum interval is 10 times the base interval.
                                     properties:
                                       baseInterval:
+                                        description: The base interval to be used
+                                          for the next back off computation. It should
+                                          be greater than zero and less than or equal
+                                          to max_interval.
                                         type: string
                                         x-kubernetes-validations:
                                         - message: invalid duration value
                                           rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                                       maxInterval:
+                                        description: Specifies the maximum interval
+                                          between retries. This parameter is optional,
+                                          but must be greater than or equal to the
+                                          base_interval if set. The default is 10
+                                          times the base_interval.
                                         type: string
                                         x-kubernetes-validations:
                                         - message: invalid duration value
@@ -932,8 +1573,16 @@ spec:
                                     type: object
                                 type: object
                               skipEnvoyHeaders:
+                                description: This provides gRPC client level control
+                                  over envoy generated headers. If false, the header
+                                  will be sent but it can be overridden by per stream
+                                  option. If true, the header will be removed and
+                                  can not be overridden by per stream option. Default
+                                  to false.
                                 type: boolean
                               timeout:
+                                description: The timeout for the gRPC request. This
+                                  is the timeout for a specific request
                                 type: string
                                 x-kubernetes-validations:
                                 - message: invalid duration value
@@ -942,87 +1591,292 @@ spec:
                             - backendRef
                             type: object
                           resourceDetectors:
+                            description: An ordered list of resource detectors. Currently
+                              supported values are `EnvironmentResourceDetector`
                             items:
+                              description: ResourceDetector defines the list of supported
+                                ResourceDetectors
                               maxProperties: 1
                               minProperties: 1
                               properties:
                                 environmentResourceDetector:
+                                  description: EnvironmentResourceDetectorConfig specified
+                                    the EnvironmentResourceDetector
                                   type: object
                               type: object
                             type: array
                           sampler:
+                            description: |-
+                              Specifies the sampler to be used by the OpenTelemetry tracer. This field can be left empty. In this case, the default Envoy sampling decision is used.
+                              Currently supported values are `AlwaysOn`
                             maxProperties: 1
                             minProperties: 1
                             properties:
                               alwaysOnConfig:
+                                description: AlwaysOnConfig specified the AlwaysOn
+                                  samplerc
                                 type: object
                             type: object
                           serviceName:
+                            description: |-
+                              The name for the service. This will be populated in the ResourceSpan Resource attributes
+                              Defaults to the envoy cluster name. Ie: `<gateway-name>.<gateway-namespace>`
                             type: string
                         required:
                         - grpcService
                         type: object
                     type: object
                   randomSampling:
+                    description: Target percentage of requests managed by this HTTP
+                      connection manager that will be randomly selected for trace
+                      generation, if not requested by the client or not forced. Defaults
+                      to 100%
                     format: int32
                     maximum: 100
                     minimum: 0
                     type: integer
                   spawnUpstreamSpan:
+                    description: |-
+                      Create separate tracing span for each upstream request if true. Defaults to false
+                      Link to envoy docs for more info
                     type: boolean
                   verbose:
+                    description: Whether to annotate spans with additional data. If
+                      true, spans will include logs for stream events. Defaults to
+                      false
                     type: boolean
                 required:
                 - provider
                 type: object
               upgradeConfig:
+                description: |-
+                  UpgradeConfig contains configuration for HTTP upgrades like WebSocket.
+                  See here for more information: https://www.envoyproxy.io/docs/envoy/v1.34.1/intro/arch_overview/http/upgrades.html
                 properties:
                   enabledUpgrades:
+                    description: List of upgrade types to enable (e.g. "websocket",
+                      "CONNECT", etc.)
                     items:
                       type: string
                     minItems: 1
                     type: array
                 type: object
               useRemoteAddress:
+                description: |-
+                  UseRemoteAddress determines whether to use the remote address for the original client.
+                  Note: If this field is omitted, it will fallback to the default value of 'true', which we set for all Envoy HCMs.
+                  Thus, setting this explicitly to true is unnecessary (but will not cause any harm).
+                  When true, Envoy will use the remote address of the connection as the client address.
+                  When false, Envoy will use the X-Forwarded-For header to determine the client address.
+                  See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-use-remote-address
                 type: boolean
               xffNumTrustedHops:
+                description: |-
+                  XffNumTrustedHops is the number of additional ingress proxy hops from the right side of the X-Forwarded-For HTTP header to trust when determining the origin client's IP address.
+                  See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-xff-num-trusted-hops
                 format: int32
                 minimum: 0
                 type: integer
             type: object
           status:
+            description: |-
+              PolicyStatus defines the common attributes that all Policies should include within
+              their status.
             properties:
               ancestors:
+                description: |-
+                  Ancestors is a list of ancestor resources (usually Gateways) that are
+                  associated with the policy, and the status of the policy with respect to
+                  each ancestor. When this policy attaches to a parent, the controller that
+                  manages the parent and the ancestors MUST add an entry to this list when
+                  the controller first sees the policy and SHOULD update the entry as
+                  appropriate when the relevant ancestor is modified.
+
+                  Note that choosing the relevant ancestor is left to the Policy designers;
+                  an important part of Policy design is designing the right object level at
+                  which to namespace this status.
+
+                  Note also that implementations MUST ONLY populate ancestor status for
+                  the Ancestor resources they are responsible for. Implementations MUST
+                  use the ControllerName field to uniquely identify the entries in this list
+                  that they are responsible for.
+
+                  Note that to achieve this, the list of PolicyAncestorStatus structs
+                  MUST be treated as a map with a composite key, made up of the AncestorRef
+                  and ControllerName fields combined.
+
+                  A maximum of 16 ancestors will be represented in this list. An empty list
+                  means the Policy is not relevant for any ancestors.
+
+                  If this slice is full, implementations MUST NOT add further entries.
+                  Instead they MUST consider the policy unimplementable and signal that
+                  on any related resources such as the ancestor that would be referenced
+                  here. For example, if this list was full on BackendTLSPolicy, no
+                  additional Gateways would be able to reference the Service targeted by
+                  the BackendTLSPolicy.
                 items:
+                  description: |-
+                    PolicyAncestorStatus describes the status of a route with respect to an
+                    associated Ancestor.
+
+                    Ancestors refer to objects that are either the Target of a policy or above it
+                    in terms of object hierarchy. For example, if a policy targets a Service, the
+                    Policy's Ancestors are, in order, the Service, the HTTPRoute, the Gateway, and
+                    the GatewayClass. Almost always, in this hierarchy, the Gateway will be the most
+                    useful object to place Policy status on, so we recommend that implementations
+                    SHOULD use Gateway as the PolicyAncestorStatus object unless the designers
+                    have a _very_ good reason otherwise.
+
+                    In the context of policy attachment, the Ancestor is used to distinguish which
+                    resource results in a distinct application of this policy. For example, if a policy
+                    targets a Service, it may have a distinct result per attached Gateway.
+
+                    Policies targeting the same resource may have different effects depending on the
+                    ancestors of those resources. For example, different Gateways targeting the same
+                    Service may have different capabilities, especially if they have different underlying
+                    implementations.
+
+                    For example, in BackendTLSPolicy, the Policy attaches to a Service that is
+                    used as a backend in a HTTPRoute that is itself attached to a Gateway.
+                    In this case, the relevant object for status is the Gateway, and that is the
+                    ancestor object referred to in this status.
+
+                    Note that a parent is also an ancestor, so for objects where the parent is the
+                    relevant object for status, this struct SHOULD still be used.
+
+                    This struct is intended to be used in a slice that's effectively a map,
+                    with a composite key made up of the AncestorRef and the ControllerName.
                   properties:
                     ancestorRef:
+                      description: |-
+                        AncestorRef corresponds with a ParentRef in the spec that this
+                        PolicyAncestorStatus struct describes the status of.
                       properties:
                         group:
                           default: gateway.networking.k8s.io
+                          description: |-
+                            Group is the group of the referent.
+                            When unspecified, "gateway.networking.k8s.io" is inferred.
+                            To set the core API group (such as for a "Service" kind referent),
+                            Group must be explicitly set to "" (empty string).
+
+                            Support: Core
                           maxLength: 253
                           pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                           type: string
                         kind:
                           default: Gateway
+                          description: |-
+                            Kind is kind of the referent.
+
+                            There are two kinds of parent resources with "Core" support:
+
+                            * Gateway (Gateway conformance profile)
+                            * Service (Mesh conformance profile, ClusterIP Services only)
+
+                            Support for other resources is Implementation-Specific.
                           maxLength: 63
                           minLength: 1
                           pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
                           type: string
                         name:
+                          description: |-
+                            Name is the name of the referent.
+
+                            Support: Core
                           maxLength: 253
                           minLength: 1
                           type: string
                         namespace:
+                          description: |-
+                            Namespace is the namespace of the referent. When unspecified, this refers
+                            to the local namespace of the Route.
+
+                            Note that there are specific rules for ParentRefs which cross namespace
+                            boundaries. Cross-namespace references are only valid if they are explicitly
+                            allowed by something in the namespace they are referring to. For example:
+                            Gateway has the AllowedRoutes field, and ReferenceGrant provides a
+                            generic way to enable any other kind of cross-namespace reference.
+
+                            <gateway:experimental:description>
+                            ParentRefs from a Route to a Service in the same namespace are "producer"
+                            routes, which apply default routing rules to inbound connections from
+                            any namespace to the Service.
+
+                            ParentRefs from a Route to a Service in a different namespace are
+                            "consumer" routes, and these routing rules are only applied to outbound
+                            connections originating from the same namespace as the Route, for which
+                            the intended destination of the connections are a Service targeted as a
+                            ParentRef of the Route.
+                            </gateway:experimental:description>
+
+                            Support: Core
                           maxLength: 63
                           minLength: 1
                           pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
                           type: string
                         port:
+                          description: |-
+                            Port is the network port this Route targets. It can be interpreted
+                            differently based on the type of parent resource.
+
+                            When the parent resource is a Gateway, this targets all listeners
+                            listening on the specified port that also support this kind of Route(and
+                            select this Route). It's not recommended to set `Port` unless the
+                            networking behaviors specified in a Route must apply to a specific port
+                            as opposed to a listener(s) whose port(s) may be changed. When both Port
+                            and SectionName are specified, the name and port of the selected listener
+                            must match both specified values.
+
+                            <gateway:experimental:description>
+                            When the parent resource is a Service, this targets a specific port in the
+                            Service spec. When both Port (experimental) and SectionName are specified,
+                            the name and port of the selected port must match both specified values.
+                            </gateway:experimental:description>
+
+                            Implementations MAY choose to support other parent resources.
+                            Implementations supporting other types of parent resources MUST clearly
+                            document how/if Port is interpreted.
+
+                            For the purpose of status, an attachment is considered successful as
+                            long as the parent resource accepts it partially. For example, Gateway
+                            listeners can restrict which Routes can attach to them by Route kind,
+                            namespace, or hostname. If 1 of 2 Gateway listeners accept attachment
+                            from the referencing Route, the Route MUST be considered successfully
+                            attached. If no Gateway listeners accept attachment from this Route,
+                            the Route MUST be considered detached from the Gateway.
+
+                            Support: Extended
                           format: int32
                           maximum: 65535
                           minimum: 1
                           type: integer
                         sectionName:
+                          description: |-
+                            SectionName is the name of a section within the target resource. In the
+                            following resources, SectionName is interpreted as the following:
+
+                            * Gateway: Listener name. When both Port (experimental) and SectionName
+                            are specified, the name and port of the selected listener must match
+                            both specified values.
+                            * Service: Port name. When both Port (experimental) and SectionName
+                            are specified, the name and port of the selected listener must match
+                            both specified values.
+
+                            Implementations MAY choose to support attaching Routes to other resources.
+                            If that is the case, they MUST clearly document how SectionName is
+                            interpreted.
+
+                            When unspecified (empty string), this will reference the entire resource.
+                            For the purpose of status, an attachment is considered successful if at
+                            least one section in the parent resource accepts it. For example, Gateway
+                            listeners can restrict which Routes can attach to them by Route kind,
+                            namespace, or hostname. If 1 of 2 Gateway listeners accept attachment from
+                            the referencing Route, the Route MUST be considered successfully
+                            attached. If no Gateway listeners accept attachment from this Route, the
+                            Route MUST be considered detached from the Gateway.
+
+                            Support: Core
                           maxLength: 253
                           minLength: 1
                           pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
@@ -1031,30 +1885,83 @@ spec:
                       - name
                       type: object
                     conditions:
+                      description: |-
+                        Conditions describes the status of the Policy with respect to the given Ancestor.
+
+                        <gateway:util:excludeFromCRD>
+
+                        Notes for implementors:
+
+                        Conditions are a listType `map`, which means that they function like a
+                        map with a key of the `type` field _in the k8s apiserver_.
+
+                        This means that implementations must obey some rules when updating this
+                        section.
+
+                        * Implementations MUST perform a read-modify-write cycle on this field
+                          before modifying it. That is, when modifying this field, implementations
+                          must be confident they have fetched the most recent version of this field,
+                          and ensure that changes they make are on that recent version.
+                        * Implementations MUST NOT remove or reorder Conditions that they are not
+                          directly responsible for. For example, if an implementation sees a Condition
+                          with type `special.io/SomeField`, it MUST NOT remove, change or update that
+                          Condition.
+                        * Implementations MUST always _merge_ changes into Conditions of the same Type,
+                          rather than creating more than one Condition of the same Type.
+                        * Implementations MUST always update the `observedGeneration` field of the
+                          Condition to the `metadata.generation` of the Gateway at the time of update creation.
+                        * If the `observedGeneration` of a Condition is _greater than_ the value the
+                          implementation knows about, then it MUST NOT perform the update on that Condition,
+                          but must wait for a future reconciliation and status update. (The assumption is that
+                          the implementation's copy of the object is stale and an update will be re-triggered
+                          if relevant.)
+
+                        </gateway:util:excludeFromCRD>
                       items:
+                        description: Condition contains details for one aspect of
+                          the current state of this API Resource.
                         properties:
                           lastTransitionTime:
+                            description: |-
+                              lastTransitionTime is the last time the condition transitioned from one status to another.
+                              This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
                             format: date-time
                             type: string
                           message:
+                            description: |-
+                              message is a human readable message indicating details about the transition.
+                              This may be an empty string.
                             maxLength: 32768
                             type: string
                           observedGeneration:
+                            description: |-
+                              observedGeneration represents the .metadata.generation that the condition was set based upon.
+                              For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                              with respect to the current state of the instance.
                             format: int64
                             minimum: 0
                             type: integer
                           reason:
+                            description: |-
+                              reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                              Producers of specific condition types may define expected values and meanings for this field,
+                              and whether the values are considered a guaranteed API.
+                              The value should be a CamelCase string.
+                              This field may not be empty.
                             maxLength: 1024
                             minLength: 1
                             pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
                             type: string
                           status:
+                            description: status of the condition, one of True, False,
+                              Unknown.
                             enum:
                             - "True"
                             - "False"
                             - Unknown
                             type: string
                           type:
+                            description: type of condition in CamelCase or in foo.example.com/CamelCase.
                             maxLength: 316
                             pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
                             type: string
@@ -1072,6 +1979,20 @@ spec:
                       - type
                       x-kubernetes-list-type: map
                     controllerName:
+                      description: |-
+                        ControllerName is a domain/path string that indicates the name of the
+                        controller that wrote this status. This corresponds with the
+                        controllerName field on GatewayClass.
+
+                        Example: "example.net/gateway-controller".
+
+                        The format of this field is DOMAIN "/" PATH, where DOMAIN and PATH are
+                        valid Kubernetes names
+                        (https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names).
+
+                        Controllers MUST populate this field when writing status. Controllers should ensure that
+                        entries to status populated with their ControllerName are cleaned up when they are no
+                        longer necessary.
                       maxLength: 253
                       minLength: 1
                       pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*\/[A-Za-z0-9\/\-._~%!$&'()*+,;=:]+$

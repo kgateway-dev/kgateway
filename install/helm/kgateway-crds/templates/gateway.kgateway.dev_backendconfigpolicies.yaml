@@ -34,57 +34,117 @@ spec:
       openAPIV3Schema:
         properties:
           apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
           spec:
+            description: BackendConfigPolicySpec defines the desired state of BackendConfigPolicy.
             properties:
               commonHttpProtocolOptions:
+                description: |-
+                  Additional options when handling HTTP requests upstream, applicable to
+                  both HTTP1 and HTTP2 requests.
                 properties:
                   idleTimeout:
+                    description: "The idle timeout for connections. The idle timeout
+                      is defined as the\nperiod in which there are no active requests.
+                      When the\nidle timeout is reached the connection will be closed.
+                      If the connection is an HTTP/2\ndownstream connection a drain
+                      sequence will occur prior to closing the connection.\nNote that
+                      request based timeouts mean that HTTP/2 PINGs will not keep
+                      the connection alive.\nIf not specified, this defaults to 1
+                      hour. To disable idle timeouts explicitly set this to 0.\n\tDisabling
+                      this timeout has a highly likelihood of yielding connection
+                      leaks due to lost TCP\n\tFIN packets, etc."
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                   maxHeadersCount:
+                    description: |-
+                      Specifies the maximum number of headers that the connection will accept.
+                      If not specified, the default of 100 is used. Requests that exceed this limit will receive
+                      a 431 response for HTTP/1.x and cause a stream reset for HTTP/2.
                     format: int32
                     minimum: 0
                     type: integer
                   maxRequestsPerConnection:
+                    description: |-
+                      Maximum requests for a single upstream connection.
+                      If set to 0 or unspecified, defaults to unlimited.
                     format: int32
                     minimum: 0
                     type: integer
                   maxStreamDuration:
+                    description: |-
+                      Total duration to keep alive an HTTP request/response stream. If the time limit is reached the stream will be
+                      reset independent of any other timeouts. If not specified, this value is not set.
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                 type: object
               connectTimeout:
+                description: The timeout for new network connections to hosts in the
+                  cluster.
                 type: string
                 x-kubernetes-validations:
                 - message: invalid duration value
                   rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
               healthCheck:
+                description: HealthCheck contains the options necessary to configure
+                  the health check.
                 properties:
                   grpc:
+                    description: Grpc contains the options to configure the gRPC health
+                      check.
                     properties:
                       authority:
+                        description: |-
+                          Authority is the authority header used to make the gRPC health check request.
+                          If unset, the name of the cluster this health check is associated
+                          with will be used.
                         type: string
                       serviceName:
+                        description: ServiceName is the optional name of the service
+                          to check.
                         type: string
                     type: object
                   healthyThreshold:
+                    description: |-
+                      HealthyThreshold is the number of healthy health checks required before a host is marked
+                      healthy. Note that during startup, only a single successful health check is
+                      required to mark a host healthy.
                     format: int32
                     minimum: 0
                     type: integer
                   http:
+                    description: Http contains the options to configure the HTTP health
+                      check.
                     properties:
                       host:
+                        description: |-
+                          Host is the value of the host header in the HTTP health check request. If
+                          unset, the name of the cluster this health check is associated
+                          with will be used.
                         type: string
                       method:
+                        description: |-
+                          Method is the HTTP method to use.
+                          If unset, GET is used.
                         enum:
                         - GET
                         - HEAD
@@ -96,21 +156,31 @@ spec:
                         - PATCH
                         type: string
                       path:
+                        description: Path is the HTTP path requested.
                         type: string
                     required:
                     - path
                     type: object
                   interval:
+                    description: Interval is the time between health checks.
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                   timeout:
+                    description: |-
+                      Timeout is time to wait for a health check response. If the timeout is reached the
+                      health check attempt will be considered a failure.
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                   unhealthyThreshold:
+                    description: |-
+                      UnhealthyThreshold is the number of consecutive failed health checks that will be considered
+                      unhealthy.
+                      Note that for HTTP health checks, if a host responds with a code not in ExpectedStatuses or RetriableStatuses,
+                      this threshold is ignored and the host is considered immediately unhealthy.
                     format: int32
                     minimum: 0
                     type: integer
@@ -124,20 +194,40 @@ spec:
                 - message: exactly one of http or grpc must be set
                   rule: has(self.http) != has(self.grpc)
               http1ProtocolOptions:
+                description: Additional options when handling HTTP1 requests upstream.
                 properties:
                   enableTrailers:
+                    description: |-
+                      Enables trailers for HTTP/1. By default the HTTP/1 codec drops proxied trailers.
+                      Note: Trailers must also be enabled at the gateway level in order for this option to take effect
                     type: boolean
                   overrideStreamErrorOnInvalidHttpMessage:
+                    description: |-
+                      Allows invalid HTTP messaging. When this option is false, then Envoy will terminate
+                      HTTP/1.1 connections upon receiving an invalid HTTP message. However,
+                      when this option is true, then Envoy will leave the HTTP/1.1 connection
+                      open where possible.
                     type: boolean
                   preserveHttp1HeaderCase:
+                    description: |-
+                      PreserveHttp1HeaderCase determines whether to preserve the case of HTTP1 response headers.
+                      See here for more information: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/header_casing
                     type: boolean
                 type: object
               http2ProtocolOptions:
+                description: |-
+                  Http2ProtocolOptions contains the options necessary to configure HTTP/2 backends.
+                  Note: Http2ProtocolOptions can only be applied to HTTP/2 backends.
+                  See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-sslconfig) for more details.
                 properties:
                   initialConnectionWindowSize:
                     anyOf:
                     - type: integer
                     - type: string
+                    description: |-
+                      InitialConnectionWindowSize is similar to InitialStreamWindowSize, but for the connection level.
+                      Same range and default value as InitialStreamWindowSize.
+                      Values can be specified with units like "64Ki".
                     pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                     x-kubernetes-int-or-string: true
                     x-kubernetes-validations:
@@ -150,6 +240,11 @@ spec:
                     anyOf:
                     - type: integer
                     - type: string
+                    description: |-
+                      InitialStreamWindowSize is the initial window size for the stream.
+                      Valid values range from 65535 (2^16 - 1, HTTP/2 default) to 2147483647 (2^31 - 1, HTTP/2 maximum).
+                      Defaults to 268435456 (256 * 1024 * 1024).
+                      Values can be specified with units like "64Ki".
                     pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                     x-kubernetes-int-or-string: true
                     x-kubernetes-validations:
@@ -159,30 +254,74 @@ spec:
                         <= 2147483647) || (type(self) == string && quantity(self).isGreaterThan(quantity('65534'))
                         && quantity(self).isLessThan(quantity('2147483648')))
                   maxConcurrentStreams:
+                    description: The maximum number of concurrent streams that the
+                      connection can have.
                     format: int32
                     minimum: 0
                     type: integer
                   overrideStreamErrorOnInvalidHttpMessage:
+                    description: |-
+                      Allows invalid HTTP messaging and headers. When disabled (default), then
+                      the whole HTTP/2 connection is terminated upon receiving invalid HEADERS frame.
+                      When enabled, only the offending stream is terminated.
                     type: boolean
                 type: object
               loadBalancer:
+                description: LoadBalancer contains the options necessary to configure
+                  the load balancer.
                 properties:
                   closeConnectionsOnHostSetChange:
+                    description: |-
+                      If set to true, the load balancer will drain connections when the host set changes.
+
+                      Ring Hash or Maglev can be used to ensure that clients with the same key
+                      are routed to the same upstream host.
+                      Distruptions can cause new connections with the same key as existing connections
+                      to be routed to different hosts.
+                      Enabling this feature will cause the load balancer to drain existing connections
+                      when the host set changes, ensuring that new connections with the same key are
+                      consistently routed to the same host.
+                      Connections are not immediately closed, but are allowed to drain
+                      before being closed.
                     type: boolean
                   healthyPanicThreshold:
+                    description: |-
+                      HealthyPanicThreshold configures envoy's panic threshold percentage between 0-100. Once the number of non-healthy hosts
+                      reaches this percentage, envoy disregards health information.
+                      See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/panic_threshold.html).
                     format: int32
                     maximum: 100
                     minimum: 0
                     type: integer
                   leastRequest:
+                    description: LeastRequest configures the least request load balancer
+                      type.
                     properties:
                       choiceCount:
                         default: 2
+                        description: |-
+                          How many choices to take into account.
+                          Defaults to 2.
                         format: int32
                         type: integer
                       slowStart:
+                        description: SlowStart configures the slow start configuration
+                          for the load balancer.
                         properties:
                           aggression:
+                            description: |-
+                              This parameter controls the speed of traffic increase over the slow start window. Defaults to 1.0,
+                              so that endpoint would get linearly increasing amount of traffic.
+                              When increasing the value for this parameter, the speed of traffic ramp-up increases non-linearly.
+                              The value of aggression parameter should be greater than 0.0.
+                              By tuning the parameter, is possible to achieve polynomial or exponential shape of ramp-up curve.
+
+                              During slow start window, effective weight of an endpoint would be scaled with time factor and aggression:
+                              `new_weight = weight * max(min_weight_percent, time_factor ^ (1 / aggression))`,
+                              where `time_factor=(time_since_start_seconds / slow_start_time_seconds)`.
+
+                              As time progresses, more and more traffic would be sent to endpoint, which is in slow start window.
+                              Once host exits slow start, time_factor and aggression no longer affect its weight.
                             type: string
                             x-kubernetes-validations:
                             - message: Aggression, if specified, must be a string
@@ -190,11 +329,17 @@ spec:
                               rule: (self.matches('^-?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)$')
                                 && double(self) > 0.0)
                           minWeightPercent:
+                            description: Minimum weight percentage of an endpoint
+                              during slow start.
                             format: int32
                             maximum: 100
                             minimum: 0
                             type: integer
                           window:
+                            description: |-
+                              Represents the size of slow start window.
+                              If set, the newly created host remains in slow start mode starting from its creation time
+                              for the duration of slow start window.
                             type: string
                             x-kubernetes-validations:
                             - message: invalid duration value
@@ -202,32 +347,55 @@ spec:
                         type: object
                     type: object
                   localityType:
+                    description: |-
+                      LocalityType specifies the locality config type to use.
+                      See https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/load_balancing_policies/common/v3/common.proto#envoy-v3-api-msg-extensions-load-balancing-policies-common-v3-localitylbconfig
                     enum:
                     - WeightedLb
                     type: string
                   maglev:
+                    description: Maglev configures the maglev load balancer type.
                     properties:
                       hashPolicies:
+                        description: HashPolicies specifies the hash policies for
+                          hashing load balancers (RingHash, Maglev).
                         items:
                           properties:
                             cookie:
+                              description: Cookie specifies a given cookie as a component
+                                of the hash key.
                               properties:
                                 httpOnly:
+                                  description: HttpOnly specifies whether the cookie
+                                    is HTTP only, i.e. not accessible to JavaScript.
                                   type: boolean
                                 name:
+                                  description: Name of the cookie.
                                   minLength: 1
                                   type: string
                                 path:
+                                  description: Path is the name of the path for the
+                                    cookie.
                                   type: string
                                 sameSite:
+                                  description: |-
+                                    SameSite controls cross-site sending of cookies.
+                                    Supported values are Strict, Lax, and None.
                                   enum:
                                   - Strict
                                   - Lax
                                   - None
                                   type: string
                                 secure:
+                                  description: |-
+                                    Secure specifies whether the cookie is secure.
+                                    If true, the cookie will only be sent over HTTPS.
                                   type: boolean
                                 ttl:
+                                  description: |-
+                                    TTL specifies the time to live of the cookie.
+                                    If specified, a cookie with the TTL will be generated if the cookie is not present.
+                                    If the TTL is present and zero, the generated cookie will be a session cookie.
                                   type: string
                                   x-kubernetes-validations:
                                   - message: invalid duration value
@@ -236,16 +404,26 @@ spec:
                               - name
                               type: object
                             header:
+                              description: Header specifies a header's value as a
+                                component of the hash key.
                               properties:
                                 name:
+                                  description: Name is the name of the header to use
+                                    as a component of the hash key.
                                   minLength: 1
                                   type: string
                               required:
                               - name
                               type: object
                             sourceIP:
+                              description: SourceIP specifies whether to use the request's
+                                source IP address as a component of the hash key.
                               type: object
                             terminal:
+                              description: |-
+                                Terminal, if set, and a hash key is available after evaluating this policy, will cause Envoy to skip the subsequent policies and
+                                use the key as it is.
+                                This is useful for defining "fallback" policies and limiting the time Envoy spends generating hash keys.
                               type: boolean
                           type: object
                           x-kubernetes-validations:
@@ -257,33 +435,57 @@ spec:
                         minItems: 1
                         type: array
                       useHostnameForHashing:
+                        description: |-
+                          UseHostnameForHashing specifies whether to use the hostname instead of the resolved IP address for hashing.
+                          Defaults to false.
                         type: boolean
                     type: object
                   random:
+                    description: Random configures the random load balancer type.
                     type: object
                   ringHash:
+                    description: RingHash configures the ring hash load balancer type.
                     properties:
                       hashPolicies:
+                        description: HashPolicies specifies the hash policies for
+                          hashing load balancers (RingHash, Maglev).
                         items:
                           properties:
                             cookie:
+                              description: Cookie specifies a given cookie as a component
+                                of the hash key.
                               properties:
                                 httpOnly:
+                                  description: HttpOnly specifies whether the cookie
+                                    is HTTP only, i.e. not accessible to JavaScript.
                                   type: boolean
                                 name:
+                                  description: Name of the cookie.
                                   minLength: 1
                                   type: string
                                 path:
+                                  description: Path is the name of the path for the
+                                    cookie.
                                   type: string
                                 sameSite:
+                                  description: |-
+                                    SameSite controls cross-site sending of cookies.
+                                    Supported values are Strict, Lax, and None.
                                   enum:
                                   - Strict
                                   - Lax
                                   - None
                                   type: string
                                 secure:
+                                  description: |-
+                                    Secure specifies whether the cookie is secure.
+                                    If true, the cookie will only be sent over HTTPS.
                                   type: boolean
                                 ttl:
+                                  description: |-
+                                    TTL specifies the time to live of the cookie.
+                                    If specified, a cookie with the TTL will be generated if the cookie is not present.
+                                    If the TTL is present and zero, the generated cookie will be a session cookie.
                                   type: string
                                   x-kubernetes-validations:
                                   - message: invalid duration value
@@ -292,16 +494,26 @@ spec:
                               - name
                               type: object
                             header:
+                              description: Header specifies a header's value as a
+                                component of the hash key.
                               properties:
                                 name:
+                                  description: Name is the name of the header to use
+                                    as a component of the hash key.
                                   minLength: 1
                                   type: string
                               required:
                               - name
                               type: object
                             sourceIP:
+                              description: SourceIP specifies whether to use the request's
+                                source IP address as a component of the hash key.
                               type: object
                             terminal:
+                              description: |-
+                                Terminal, if set, and a hash key is available after evaluating this policy, will cause Envoy to skip the subsequent policies and
+                                use the key as it is.
+                                This is useful for defining "fallback" policies and limiting the time Envoy spends generating hash keys.
                               type: boolean
                           type: object
                           x-kubernetes-validations:
@@ -313,21 +525,43 @@ spec:
                         minItems: 1
                         type: array
                       maximumRingSize:
+                        description: MaximumRingSize is the maximum size of the ring.
                         format: int64
                         minimum: 0
                         type: integer
                       minimumRingSize:
+                        description: MinimumRingSize is the minimum size of the ring.
                         format: int64
                         minimum: 0
                         type: integer
                       useHostnameForHashing:
+                        description: |-
+                          UseHostnameForHashing specifies whether to use the hostname instead of the resolved IP address for hashing.
+                          Defaults to false.
                         type: boolean
                     type: object
                   roundRobin:
+                    description: RoundRobin configures the round robin load balancer
+                      type.
                     properties:
                       slowStart:
+                        description: SlowStart configures the slow start configuration
+                          for the load balancer.
                         properties:
                           aggression:
+                            description: |-
+                              This parameter controls the speed of traffic increase over the slow start window. Defaults to 1.0,
+                              so that endpoint would get linearly increasing amount of traffic.
+                              When increasing the value for this parameter, the speed of traffic ramp-up increases non-linearly.
+                              The value of aggression parameter should be greater than 0.0.
+                              By tuning the parameter, is possible to achieve polynomial or exponential shape of ramp-up curve.
+
+                              During slow start window, effective weight of an endpoint would be scaled with time factor and aggression:
+                              `new_weight = weight * max(min_weight_percent, time_factor ^ (1 / aggression))`,
+                              where `time_factor=(time_since_start_seconds / slow_start_time_seconds)`.
+
+                              As time progresses, more and more traffic would be sent to endpoint, which is in slow start window.
+                              Once host exits slow start, time_factor and aggression no longer affect its weight.
                             type: string
                             x-kubernetes-validations:
                             - message: Aggression, if specified, must be a string
@@ -335,11 +569,17 @@ spec:
                               rule: (self.matches('^-?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)$')
                                 && double(self) > 0.0)
                           minWeightPercent:
+                            description: Minimum weight percentage of an endpoint
+                              during slow start.
                             format: int32
                             maximum: 100
                             minimum: 0
                             type: integer
                           window:
+                            description: |-
+                              Represents the size of slow start window.
+                              If set, the newly created host remains in slow start mode starting from its creation time
+                              for the duration of slow start window.
                             type: string
                             x-kubernetes-validations:
                             - message: invalid duration value
@@ -347,6 +587,10 @@ spec:
                         type: object
                     type: object
                   updateMergeWindow:
+                    description: |-
+                      This allows batch updates of endpoints health/weight/metadata that happen during a time window.
+                      this help lower cpu usage when endpoint change rate is high. defaults to 1 second.
+                      Set to 0 to disable and have changes applied immediately.
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
@@ -358,9 +602,15 @@ spec:
                   rule: '[has(self.leastRequest),has(self.roundRobin),has(self.ringHash),has(self.maglev),has(self.random)].filter(x,x==true).size()
                     == 1'
               outlierDetection:
+                description: OutlierDetection contains the options necessary to configure
+                  passive health checking.
                 properties:
                   baseEjectionTime:
                     default: 30s
+                    description: |-
+                      The base time that a host is ejected for. The real time is equal to the
+                      base time multiplied by the number of times the host has been ejected.
+                      Defaults to 30s.
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
@@ -369,11 +619,21 @@ spec:
                       rule: duration(self) >= duration('1ms')
                   consecutive5xx:
                     default: 5
+                    description: |-
+                      The number of consecutive server-side error responses (for HTTP traffic,
+                      5xx responses; for TCP traffic, connection failures; etc.) before an
+                      ejection occurs. Defaults to 5. If this is zero, consecutive 5xx passive
+                      health checks will be disabled. In the future, other types of passive
+                      health checking might be added, but none will be enabled by default.
                     format: int32
                     minimum: 0
                     type: integer
                   interval:
                     default: 10s
+                    description: |-
+                      The time interval between ejection analysis sweeps. This can result in
+                      both new ejections as well as hosts being returned to service. Defaults
+                      to 10s.
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
@@ -382,28 +642,47 @@ spec:
                       rule: duration(self) >= duration('1ms')
                   maxEjectionPercent:
                     default: 10
+                    description: |-
+                      The maximum % of an upstream cluster that can be ejected due to outlier
+                      detection. Defaults to 10%.
                     format: int32
                     maximum: 100
                     minimum: 0
                     type: integer
                 type: object
               perConnectionBufferLimitBytes:
+                description: |-
+                  Soft limit on the size of the cluster's connections read and write buffers.
+                  If unspecified, an implementation-defined default is applied (1MiB).
                 format: int32
                 minimum: 0
                 type: integer
               targetRefs:
+                description: TargetRefs specifies the target references to attach
+                  the policy to.
                 items:
+                  description: |-
+                    Select the object to attach the policy by Group, Kind, and Name.
+                    The object must be in the same namespace as the policy.
+                    You can target only one object at a time.
                   properties:
                     group:
+                      description: |-
+                        The API group of the target resource.
+                        For Kubernetes Gateway API resources, the group is `gateway.networking.k8s.io`.
                       maxLength: 253
                       pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                       type: string
                     kind:
+                      description: |-
+                        The API kind of the target resource,
+                        such as Gateway or HTTPRoute.
                       maxLength: 63
                       minLength: 1
                       pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
                       type: string
                     name:
+                      description: The name of the target resource.
                       maxLength: 253
                       minLength: 1
                       type: string
@@ -421,13 +700,28 @@ spec:
                   rule: self.all(r, (r.group == '' && r.kind == 'Service') || (r.group
                     == 'gateway.kgateway.dev' && r.kind == 'Backend'))
               targetSelectors:
+                description: TargetSelectors specifies the target selectors to select
+                  resources to attach the policy to.
                 items:
+                  description: |-
+                    LocalPolicyTargetSelector selects the object to attach the policy by Group, Kind, and MatchLabels.
+                    The object must be in the same namespace as the policy and match the
+                    specified labels.
+                    Do not use targetSelectors when reconciliation times are critical, especially if you
+                    have a large number of policies that target the same resource.
+                    Instead, use targetRefs to attach the policy.
                   properties:
                     group:
+                      description: |-
+                        The API group of the target resource.
+                        For Kubernetes Gateway API resources, the group is `gateway.networking.k8s.io`.
                       maxLength: 253
                       pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                       type: string
                     kind:
+                      description: |-
+                        The API kind of the target resource,
+                        such as Gateway or HTTPRoute.
                       maxLength: 63
                       minLength: 1
                       pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
@@ -435,6 +729,7 @@ spec:
                     matchLabels:
                       additionalProperties:
                         type: string
+                      description: Label selector to select the target resource.
                       type: object
                   required:
                   - group
@@ -448,8 +743,10 @@ spec:
                   rule: self.all(r, (r.group == '' && r.kind == 'Service') || (r.group
                     == 'gateway.kgateway.dev' && r.kind == 'Backend'))
               tcpKeepalive:
+                description: Configure OS-level TCP keepalive checks.
                 properties:
                   keepAliveInterval:
+                    description: The number of seconds between keep-alive probes.
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
@@ -457,10 +754,14 @@ spec:
                     - message: keepAliveInterval must be at least 1 second
                       rule: duration(self) >= duration('1s')
                   keepAliveProbes:
+                    description: Maximum number of keep-alive probes to send before
+                      dropping the connection.
                     format: int32
                     minimum: 0
                     type: integer
                   keepAliveTime:
+                    description: The number of seconds a connection needs to be idle
+                      before keep-alive probes start being sent.
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
@@ -469,14 +770,24 @@ spec:
                       rule: duration(self) >= duration('1s')
                 type: object
               tls:
+                description: |-
+                  TLS contains the options necessary to configure a backend to use TLS origination.
+                  See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-sslconfig) for more details.
                 properties:
                   allowRenegotiation:
+                    description: |-
+                      Allow Tls renegotiation, the default value is false.
+                      TLS renegotiation is considered insecure and shouldn't be used unless absolutely necessary.
                     type: boolean
                   alpnProtocols:
+                    description: |-
+                      Set Application Level Protocol Negotiation
+                      If empty, defaults to ["h2", "http/1.1"].
                     items:
                       type: string
                     type: array
                   files:
+                    description: File paths to certificates local to the proxy.
                     properties:
                       rootCA:
                         minLength: 1
@@ -493,8 +804,14 @@ spec:
                         be set in TLSFiles
                       rule: has(self.tlsCertificate) || has(self.tlsKey) || has(self.rootCA)
                   insecureSkipVerify:
+                    description: |-
+                      InsecureSkipVerify originates TLS but skips verification of the backend's certificate.
+                      WARNING: This is an insecure option that should only be used if the risks are understood.
                     type: boolean
                   parameters:
+                    description: |-
+                      General TLS parameters. See the [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/common.proto#extensions-transport-sockets-tls-v3-tlsparameters)
+                      for more information on the meaning of these values.
                     properties:
                       cipherSuites:
                         items:
@@ -505,6 +822,7 @@ spec:
                           type: string
                         type: array
                       maxVersion:
+                        description: Maximum TLS version.
                         enum:
                         - AUTO
                         - "1.0"
@@ -513,6 +831,7 @@ spec:
                         - "1.3"
                         type: string
                       minVersion:
+                        description: Minimum TLS version.
                         enum:
                         - AUTO
                         - "1.0"
@@ -522,22 +841,43 @@ spec:
                         type: string
                     type: object
                   secretRef:
+                    description: Reference to the TLS secret containing the certificate,
+                      key, and optionally the root CA.
                     properties:
                       name:
                         default: ""
+                        description: |-
+                          Name of the referent.
+                          This field is effectively required, but due to backwards compatibility is
+                          allowed to be empty. Instances of this type with an empty value here are
+                          almost certainly wrong.
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                         type: string
                     type: object
                     x-kubernetes-map-type: atomic
                   simpleTLS:
+                    description: |-
+                      If the TLS config has the tls cert and key provided, kgateway uses it to perform mTLS by default.
+                      Set simpleTLS to true to disable mTLS in favor of server-only TLS (one-way TLS), even if kgateway has the client cert.
+                      If unset, defaults to false.
                     type: boolean
                   sni:
+                    description: The SNI domains that should be considered for TLS
+                      connection
                     minLength: 1
                     type: string
                   verifySubjectAltNames:
+                    description: |-
+                      Verify that the Subject Alternative Name in the peer certificate is one of the specified values.
+                      note that a root_ca must be provided if this option is used.
                     items:
                       type: string
                     type: array
                   wellKnownCACertificates:
+                    description: |-
+                      WellKnownCACertificates specifies whether to use a well-known set of CA
+                      certificates for validating the backend's certificate chain. Currently,
+                      only the system certificate pool is supported via SDS.
                     enum:
                     - System
                     type: string
@@ -554,38 +894,204 @@ spec:
               rule: '[has(self.http1ProtocolOptions),has(self.http2ProtocolOptions)].filter(x,x==true).size()
                 <= 1'
           status:
+            description: |-
+              PolicyStatus defines the common attributes that all Policies should include within
+              their status.
             properties:
               ancestors:
+                description: |-
+                  Ancestors is a list of ancestor resources (usually Gateways) that are
+                  associated with the policy, and the status of the policy with respect to
+                  each ancestor. When this policy attaches to a parent, the controller that
+                  manages the parent and the ancestors MUST add an entry to this list when
+                  the controller first sees the policy and SHOULD update the entry as
+                  appropriate when the relevant ancestor is modified.
+
+                  Note that choosing the relevant ancestor is left to the Policy designers;
+                  an important part of Policy design is designing the right object level at
+                  which to namespace this status.
+
+                  Note also that implementations MUST ONLY populate ancestor status for
+                  the Ancestor resources they are responsible for. Implementations MUST
+                  use the ControllerName field to uniquely identify the entries in this list
+                  that they are responsible for.
+
+                  Note that to achieve this, the list of PolicyAncestorStatus structs
+                  MUST be treated as a map with a composite key, made up of the AncestorRef
+                  and ControllerName fields combined.
+
+                  A maximum of 16 ancestors will be represented in this list. An empty list
+                  means the Policy is not relevant for any ancestors.
+
+                  If this slice is full, implementations MUST NOT add further entries.
+                  Instead they MUST consider the policy unimplementable and signal that
+                  on any related resources such as the ancestor that would be referenced
+                  here. For example, if this list was full on BackendTLSPolicy, no
+                  additional Gateways would be able to reference the Service targeted by
+                  the BackendTLSPolicy.
                 items:
+                  description: |-
+                    PolicyAncestorStatus describes the status of a route with respect to an
+                    associated Ancestor.
+
+                    Ancestors refer to objects that are either the Target of a policy or above it
+                    in terms of object hierarchy. For example, if a policy targets a Service, the
+                    Policy's Ancestors are, in order, the Service, the HTTPRoute, the Gateway, and
+                    the GatewayClass. Almost always, in this hierarchy, the Gateway will be the most
+                    useful object to place Policy status on, so we recommend that implementations
+                    SHOULD use Gateway as the PolicyAncestorStatus object unless the designers
+                    have a _very_ good reason otherwise.
+
+                    In the context of policy attachment, the Ancestor is used to distinguish which
+                    resource results in a distinct application of this policy. For example, if a policy
+                    targets a Service, it may have a distinct result per attached Gateway.
+
+                    Policies targeting the same resource may have different effects depending on the
+                    ancestors of those resources. For example, different Gateways targeting the same
+                    Service may have different capabilities, especially if they have different underlying
+                    implementations.
+
+                    For example, in BackendTLSPolicy, the Policy attaches to a Service that is
+                    used as a backend in a HTTPRoute that is itself attached to a Gateway.
+                    In this case, the relevant object for status is the Gateway, and that is the
+                    ancestor object referred to in this status.
+
+                    Note that a parent is also an ancestor, so for objects where the parent is the
+                    relevant object for status, this struct SHOULD still be used.
+
+                    This struct is intended to be used in a slice that's effectively a map,
+                    with a composite key made up of the AncestorRef and the ControllerName.
                   properties:
                     ancestorRef:
+                      description: |-
+                        AncestorRef corresponds with a ParentRef in the spec that this
+                        PolicyAncestorStatus struct describes the status of.
                       properties:
                         group:
                           default: gateway.networking.k8s.io
+                          description: |-
+                            Group is the group of the referent.
+                            When unspecified, "gateway.networking.k8s.io" is inferred.
+                            To set the core API group (such as for a "Service" kind referent),
+                            Group must be explicitly set to "" (empty string).
+
+                            Support: Core
                           maxLength: 253
                           pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                           type: string
                         kind:
                           default: Gateway
+                          description: |-
+                            Kind is kind of the referent.
+
+                            There are two kinds of parent resources with "Core" support:
+
+                            * Gateway (Gateway conformance profile)
+                            * Service (Mesh conformance profile, ClusterIP Services only)
+
+                            Support for other resources is Implementation-Specific.
                           maxLength: 63
                           minLength: 1
                           pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
                           type: string
                         name:
+                          description: |-
+                            Name is the name of the referent.
+
+                            Support: Core
                           maxLength: 253
                           minLength: 1
                           type: string
                         namespace:
+                          description: |-
+                            Namespace is the namespace of the referent. When unspecified, this refers
+                            to the local namespace of the Route.
+
+                            Note that there are specific rules for ParentRefs which cross namespace
+                            boundaries. Cross-namespace references are only valid if they are explicitly
+                            allowed by something in the namespace they are referring to. For example:
+                            Gateway has the AllowedRoutes field, and ReferenceGrant provides a
+                            generic way to enable any other kind of cross-namespace reference.
+
+                            <gateway:experimental:description>
+                            ParentRefs from a Route to a Service in the same namespace are "producer"
+                            routes, which apply default routing rules to inbound connections from
+                            any namespace to the Service.
+
+                            ParentRefs from a Route to a Service in a different namespace are
+                            "consumer" routes, and these routing rules are only applied to outbound
+                            connections originating from the same namespace as the Route, for which
+                            the intended destination of the connections are a Service targeted as a
+                            ParentRef of the Route.
+                            </gateway:experimental:description>
+
+                            Support: Core
                           maxLength: 63
                           minLength: 1
                           pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
                           type: string
                         port:
+                          description: |-
+                            Port is the network port this Route targets. It can be interpreted
+                            differently based on the type of parent resource.
+
+                            When the parent resource is a Gateway, this targets all listeners
+                            listening on the specified port that also support this kind of Route(and
+                            select this Route). It's not recommended to set `Port` unless the
+                            networking behaviors specified in a Route must apply to a specific port
+                            as opposed to a listener(s) whose port(s) may be changed. When both Port
+                            and SectionName are specified, the name and port of the selected listener
+                            must match both specified values.
+
+                            <gateway:experimental:description>
+                            When the parent resource is a Service, this targets a specific port in the
+                            Service spec. When both Port (experimental) and SectionName are specified,
+                            the name and port of the selected port must match both specified values.
+                            </gateway:experimental:description>
+
+                            Implementations MAY choose to support other parent resources.
+                            Implementations supporting other types of parent resources MUST clearly
+                            document how/if Port is interpreted.
+
+                            For the purpose of status, an attachment is considered successful as
+                            long as the parent resource accepts it partially. For example, Gateway
+                            listeners can restrict which Routes can attach to them by Route kind,
+                            namespace, or hostname. If 1 of 2 Gateway listeners accept attachment
+                            from the referencing Route, the Route MUST be considered successfully
+                            attached. If no Gateway listeners accept attachment from this Route,
+                            the Route MUST be considered detached from the Gateway.
+
+                            Support: Extended
                           format: int32
                           maximum: 65535
                           minimum: 1
                           type: integer
                         sectionName:
+                          description: |-
+                            SectionName is the name of a section within the target resource. In the
+                            following resources, SectionName is interpreted as the following:
+
+                            * Gateway: Listener name. When both Port (experimental) and SectionName
+                            are specified, the name and port of the selected listener must match
+                            both specified values.
+                            * Service: Port name. When both Port (experimental) and SectionName
+                            are specified, the name and port of the selected listener must match
+                            both specified values.
+
+                            Implementations MAY choose to support attaching Routes to other resources.
+                            If that is the case, they MUST clearly document how SectionName is
+                            interpreted.
+
+                            When unspecified (empty string), this will reference the entire resource.
+                            For the purpose of status, an attachment is considered successful if at
+                            least one section in the parent resource accepts it. For example, Gateway
+                            listeners can restrict which Routes can attach to them by Route kind,
+                            namespace, or hostname. If 1 of 2 Gateway listeners accept attachment from
+                            the referencing Route, the Route MUST be considered successfully
+                            attached. If no Gateway listeners accept attachment from this Route, the
+                            Route MUST be considered detached from the Gateway.
+
+                            Support: Core
                           maxLength: 253
                           minLength: 1
                           pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
@@ -594,30 +1100,83 @@ spec:
                       - name
                       type: object
                     conditions:
+                      description: |-
+                        Conditions describes the status of the Policy with respect to the given Ancestor.
+
+                        <gateway:util:excludeFromCRD>
+
+                        Notes for implementors:
+
+                        Conditions are a listType `map`, which means that they function like a
+                        map with a key of the `type` field _in the k8s apiserver_.
+
+                        This means that implementations must obey some rules when updating this
+                        section.
+
+                        * Implementations MUST perform a read-modify-write cycle on this field
+                          before modifying it. That is, when modifying this field, implementations
+                          must be confident they have fetched the most recent version of this field,
+                          and ensure that changes they make are on that recent version.
+                        * Implementations MUST NOT remove or reorder Conditions that they are not
+                          directly responsible for. For example, if an implementation sees a Condition
+                          with type `special.io/SomeField`, it MUST NOT remove, change or update that
+                          Condition.
+                        * Implementations MUST always _merge_ changes into Conditions of the same Type,
+                          rather than creating more than one Condition of the same Type.
+                        * Implementations MUST always update the `observedGeneration` field of the
+                          Condition to the `metadata.generation` of the Gateway at the time of update creation.
+                        * If the `observedGeneration` of a Condition is _greater than_ the value the
+                          implementation knows about, then it MUST NOT perform the update on that Condition,
+                          but must wait for a future reconciliation and status update. (The assumption is that
+                          the implementation's copy of the object is stale and an update will be re-triggered
+                          if relevant.)
+
+                        </gateway:util:excludeFromCRD>
                       items:
+                        description: Condition contains details for one aspect of
+                          the current state of this API Resource.
                         properties:
                           lastTransitionTime:
+                            description: |-
+                              lastTransitionTime is the last time the condition transitioned from one status to another.
+                              This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
                             format: date-time
                             type: string
                           message:
+                            description: |-
+                              message is a human readable message indicating details about the transition.
+                              This may be an empty string.
                             maxLength: 32768
                             type: string
                           observedGeneration:
+                            description: |-
+                              observedGeneration represents the .metadata.generation that the condition was set based upon.
+                              For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                              with respect to the current state of the instance.
                             format: int64
                             minimum: 0
                             type: integer
                           reason:
+                            description: |-
+                              reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                              Producers of specific condition types may define expected values and meanings for this field,
+                              and whether the values are considered a guaranteed API.
+                              The value should be a CamelCase string.
+                              This field may not be empty.
                             maxLength: 1024
                             minLength: 1
                             pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
                             type: string
                           status:
+                            description: status of the condition, one of True, False,
+                              Unknown.
                             enum:
                             - "True"
                             - "False"
                             - Unknown
                             type: string
                           type:
+                            description: type of condition in CamelCase or in foo.example.com/CamelCase.
                             maxLength: 316
                             pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
                             type: string
@@ -635,6 +1194,20 @@ spec:
                       - type
                       x-kubernetes-list-type: map
                     controllerName:
+                      description: |-
+                        ControllerName is a domain/path string that indicates the name of the
+                        controller that wrote this status. This corresponds with the
+                        controllerName field on GatewayClass.
+
+                        Example: "example.net/gateway-controller".
+
+                        The format of this field is DOMAIN "/" PATH, where DOMAIN and PATH are
+                        valid Kubernetes names
+                        (https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names).
+
+                        Controllers MUST populate this field when writing status. Controllers should ensure that
+                        entries to status populated with their ControllerName are cleaned up when they are no
+                        longer necessary.
                       maxLength: 253
                       minLength: 1
                       pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*\/[A-Za-z0-9\/\-._~%!$&'()*+,;=:]+$

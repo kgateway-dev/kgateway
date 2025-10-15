@@ -85,13 +85,6 @@ BUG_REPORT_DIR := $(TEST_ASSET_DIR)/bug_report
 $(BUG_REPORT_DIR):
 	mkdir -p $(BUG_REPORT_DIR)
 
-# This is the location where logs are stored for future processing.
-# This is used to generate summaries of test outcomes and may be used in the future to automate
-# processing of data based on test outcomes.
-TEST_LOG_DIR := $(TEST_ASSET_DIR)/test_log
-$(TEST_LOG_DIR):
-	mkdir -p $(TEST_LOG_DIR)
-
 # Base Alpine image used for all containers. Exported for use in goreleaser.yaml.
 export ALPINE_BASE_IMAGE ?= alpine:3.17.6
 
@@ -188,7 +181,7 @@ test: ## Run all tests, or only run the test package at {TEST_PKG} if it is spec
 .PHONY: e2e-test
 e2e-test: TEST_PKG = ./test/kubernetes/e2e/tests
 e2e-test: ## Run only e2e tests, and only run the test package at {TEST_PKG} if it is specified
-	$(MAKE) go-test TEST_TAG=e2e TEST_PKG=$(TEST_PKG)
+	@$(MAKE) --no-print-directory go-test TEST_TAG=e2e TEST_PKG=$(TEST_PKG)
 
 
 # https://go.dev/blog/cover#heat-maps
@@ -236,8 +229,8 @@ GO_TEST_USER_ARGS ?=
 
 .PHONY: go-test
 go-test: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
-go-test: clean-bug-report $(BUG_REPORT_DIR) # Ensure the bug_report dir is reset before each invocation
-	@$(GO_TEST_ENV) go test -ldflags='$(LDFLAGS)' $(GO_TEST_ARGS) $(GO_TEST_USER_ARGS) -tags=$(TEST_TAG) $(TEST_PKG)
+go-test: reset-bug-report
+	$(GO_TEST_ENV) go test -ldflags='$(LDFLAGS)' $(if $(TEST_TAG),-tags=$(TEST_TAG)) $(GO_TEST_ARGS) $(GO_TEST_USER_ARGS) $(TEST_PKG)
 
 # https://go.dev/blog/cover#heat-maps
 .PHONY: go-test-with-coverage
@@ -247,12 +240,12 @@ go-test-with-coverage: go-test
 # https://go.dev/blog/cover#heat-maps
 .PHONY: unit-with-coverage
 unit-with-coverage:
-	$(MAKE) unit GO_TEST_ARGS="$(GO_TEST_ARGS) $(GO_TEST_COVERAGE_ARGS)"
+	@$(MAKE) --no-print-directory unit GO_TEST_ARGS="$(GO_TEST_ARGS) $(GO_TEST_COVERAGE_ARGS)"
 
 .PHONY: unit
 unit: ## Run all unit tests (excludes e2e tests)
 	@echo "Running unit tests (excluding e2e)..."
-	@$(MAKE) go-test TEST_TAG=""
+	@$(MAKE) --no-print-directory go-test TEST_TAG=""
 
 .PHONY: validate-test-coverage
 validate-test-coverage: ## Validate the test coverage
@@ -289,13 +282,15 @@ clean-tests:
 	find * -type f -name '*.cov' -exec rm {} \;
 	find * -type f -name 'junit*.xml' -exec rm {} \;
 
+# NB: 'reset-bug-report: clean-bug-report $(BUG_REPORT_DIR)' would be a subtle
+# bug since we would never run 'mkdir' if the directory already existed.
+.PHONY: reset-bug-report
+reset-bug-report: clean-bug-report
+	@$(MAKE) --no-print-directory $(BUG_REPORT_DIR)
+
 .PHONY: clean-bug-report
 clean-bug-report:
 	rm -rf $(BUG_REPORT_DIR)
-
-.PHONY: clean-test-logs
-clean-test-logs:
-	rm -rf $(TEST_LOG_DIR)
 
 #----------------------------------------------------------------------------------
 # Generated Code
@@ -526,11 +521,12 @@ else
 endif
 
 # The version of the k8s gateway api inference extension CRDs to install.
-GIE_CRD_VERSION ?= $(shell go list -m sigs.k8s.io/gateway-api-inference-extension | awk '{print $$2}')
+# Managed by `make bump-gie`.
+GIE_CRD_VERSION ?= 51485db93d63bfa2f9264460798671b72bdf9f5d
 
 .PHONY: gie-crds
 gie-crds: ## Install the Gateway API Inference Extension CRDs
-	kubectl apply -f "https://github.com/kubernetes-sigs/gateway-api-inference-extension/releases/download/$(GIE_CRD_VERSION)/manifests.yaml"
+	kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api-inference-extension/config/crd?ref=$(GIE_CRD_VERSION)"
 
 .PHONY: kind-metallb
 metallb: ## Install the MetalLB load balancer
@@ -659,12 +655,12 @@ CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/$(VERSIO
 CONFORMANCE_ARGS := -gateway-class=$(CONFORMANCE_GATEWAY_CLASS) $(CONFORMANCE_SUPPORTED_FEATURES) $(CONFORMANCE_UNSUPPORTED_FEATURES) $(CONFORMANCE_SUPPORTED_PROFILES) $(CONFORMANCE_REPORT_ARGS)
 
 .PHONY: conformance ## Run the conformance test suite
-conformance: $(TEST_ASSET_DIR)/conformance/conformance_test.go
+conformance: $(TEST_ASSET_DIR)/conformance/conformance_test.go ## Run the Gateway API conformance suite
 	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(CONFORMANCE_ARGS)
 
 # Run only the specified conformance test. The name must correspond to the ShortName of one of the k8s gateway api
 # conformance tests.
-conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go
+conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go ## Run only the specified Gateway API conformance test by ShortName
 	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(CONFORMANCE_ARGS) \
 	-run-test=$*
 
@@ -722,8 +718,8 @@ all-conformance: conformance gie-conformance agw-conformance ## Run all conforma
 #----------------------------------------------------------------------------------
 
 # Agent Gateway conformance test configuration
-AGW_CONFORMANCE_SUPPORTED_FEATURES ?= -supported-features=HTTPRouteBackendProtocolH2C,HTTPRouteBackendProtocolWebSocket,HTTPRouteHostRewrite,HTTPRouteMethodMatching,HTTPRoutePathRedirect,HTTPRoutePathRewrite,HTTPRoutePortRedirect,HTTPRouteQueryParamMatching,HTTPRouteResponseHeaderModification,HTTPRouteSchemeRedirect,HTTPRouteCORS
-AGW_CONFORMANCE_UNSUPPORTED_FEATURES ?= $(CONFORMANCE_UNSUPPORTED_FEATURES)
+AGW_CONFORMANCE_SUPPORTED_FEATURES ?= -supported-features=GatewayInfrastructurePropagation,HTTPRouteBackendProtocolH2C,HTTPRouteBackendProtocolWebSocket,HTTPRouteHostRewrite,HTTPRouteMethodMatching,HTTPRoutePathRedirect,HTTPRoutePathRewrite,HTTPRoutePortRedirect,HTTPRouteQueryParamMatching,HTTPRouteResponseHeaderModification,HTTPRouteSchemeRedirect,HTTPRouteCORS
+AGW_CONFORMANCE_UNSUPPORTED_FEATURES ?= -exempt-features=GatewayPort8080,GatewayStaticAddresses,GatewayHTTPListenerIsolation,HTTPRouteRequestMultipleMirrors,HTTPRouteRequestPercentageMirror
 AGW_CONFORMANCE_SUPPORTED_PROFILES ?= -conformance-profiles=GATEWAY-HTTP
 AGW_CONFORMANCE_GATEWAY_CLASS ?= agentgateway
 AGW_CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/agw-$(VERSION)-report.yaml -organization=kgateway-dev -project=kgateway -version=$(VERSION) -url=github.com/kgateway-dev/kgateway -contact=github.com/kgateway-dev/kgateway/issues/new/choose

@@ -126,7 +126,7 @@ func buildRegisterCallback(ctx context.Context, bcol krt.Collection[ir.BackendOb
 			}
 
 			in := o.Latest()
-			ir, ok := in.ObjIr.(*BackendIr)
+			ir, ok := in.ObjIr.(*backendIr)
 			if !ok {
 				return
 			}
