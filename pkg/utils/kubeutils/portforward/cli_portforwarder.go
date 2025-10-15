@@ -76,7 +76,7 @@ func (c *cliPortForwarder) startOnce(ctx context.Context) error {
 			fmt.Sprintf("%s/%s", c.properties.resourceType, c.properties.resourceName),
 			fmt.Sprintf("%d:%d", c.properties.localPort, c.properties.remotePort),
 		}
-		fmt.Fprintf(os.Stderr, "+ %s\n", cmdutils.PrettyCommand("kubectl", args...))
+		fmt.Fprintf(os.Stderr, "+ %s\n", cmdutils.PrettyCommand(false, "kubectl", args...))
 	}
 
 	// Errors should not happen here unless some other thing has futzed

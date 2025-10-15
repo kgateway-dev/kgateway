@@ -39,7 +39,7 @@ func (e *RunError) PrettyCommand() string {
 	}
 
 	// The above cases should not happen, but we defend against it
-	return PrettyCommand(e.command[0], e.command[1:]...)
+	return PrettyCommand(true, e.command[0], e.command[1:]...)
 }
 
 func (e *RunError) OutputString() string {
@@ -57,14 +57,19 @@ func (e *RunError) Cause() error {
 	return e.stackTrace
 }
 
-// PrettyCommand takes arguments identical to Cmder.Command,
-// it returns a pretty printed command that could be pasted into a shell
-func PrettyCommand(name string, args ...string) string {
+// PrettyCommand takes arguments identical to Cmder.Command, with a leading quote flag.
+// When quote is true, each token is shell-quoted; when false, tokens are joined with spaces.
+// It returns a pretty printed command that could be pasted into a shell.
+func PrettyCommand(quote bool, name string, args ...string) string {
 	var out strings.Builder
 	out.WriteString(strconv.Quote(name))
 	for _, arg := range args {
 		out.WriteByte(' ')
-		out.WriteString(strconv.Quote(arg))
+		if quote {
+			out.WriteString(strconv.Quote(arg))
+		} else {
+			out.WriteString(arg)
+		}
 	}
 	return out.String()
 }

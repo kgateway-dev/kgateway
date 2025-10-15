@@ -85,7 +85,7 @@ func (cmd *LocalCmd) Run() *RunError {
 
 	if printCommands {
 		// Print to stderr to avoid interfering with stdout intended for parsing
-		fmt.Fprintf(os.Stderr, "+ %s\n", PrettyCommand(cmd.Args[0], cmd.Args[1:]...))
+		fmt.Fprintf(os.Stderr, "+ %s\n", PrettyCommand(false, cmd.Args[0], cmd.Args[1:]...))
 	}
 
 	cmd.Stdout = io.MultiWriter(cmd.Stdout, &combinedOutput)
@@ -107,7 +107,7 @@ func (cmd *LocalCmd) Run() *RunError {
 func (cmd *LocalCmd) Start() *RunError {
 	if printCommands {
 		// Print to stderr to avoid interfering with stdout intended for parsing
-		fmt.Fprintf(os.Stderr, "+ %s\n", PrettyCommand(cmd.Args[0], cmd.Args[1:]...))
+		fmt.Fprintf(os.Stderr, "+ %s\n", PrettyCommand(false, cmd.Args[0], cmd.Args[1:]...))
 	}
 
 	cmd.Stdout = io.MultiWriter(cmd.Stdout, cmd.combinedOutput)
@@ -145,5 +145,5 @@ func (cmd *LocalCmd) Output() []byte {
 }
 
 func (cmd *LocalCmd) PrettyCommand() string {
-	return PrettyCommand(cmd.Args[0], cmd.Args[1:]...)
+	return PrettyCommand(true, cmd.Args[0], cmd.Args[1:]...)
 }
