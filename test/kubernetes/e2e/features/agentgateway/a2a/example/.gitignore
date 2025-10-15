@@ -65,5 +65,6 @@ logs/
 *.tmp
 *.temp
 
-# A2A Samples Repository (can becloned locally followint the readme)
-a2a-samples/
+# A2A external cloned repositories (can be cloned locally following the readme)
+a2a-go/
+a2a-rs/

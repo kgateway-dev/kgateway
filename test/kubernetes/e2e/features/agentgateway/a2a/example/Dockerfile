@@ -1,53 +1,47 @@
-# Ultra-minimal A2A test server
-FROM python:3.12-alpine AS builder
+# Ultra-minimal A2A Rust test server
+FROM rust:1.82-alpine AS builder
 
-# Install build dependencies
-RUN apk add --no-cache gcc musl-dev
+# Install build dependencies including OpenSSL
+RUN apk add --no-cache musl-dev openssl-dev pkgconfig
 
 # Set work directory
 WORKDIR /opt/app-root/
 
-# Copy only essential files first
-COPY pyproject.toml uv.lock ./
-
-# Install uv
-RUN pip install --no-cache-dir uv
-
-# Install dependencies
-RUN uv sync --frozen --no-install-project --no-dev
-
 # Copy source code
 COPY . .
 
-# Install the project
-RUN uv sync --frozen --no-dev
+# Copy the server-only example file
+COPY ../http_server_only.rs a2a-rs/examples/http_server_only.rs
+
+# Add the modified example to Cargo.toml
+RUN echo '[[example]]' >> a2a-rs/Cargo.toml && \
+    echo 'name = "http_server_only"' >> a2a-rs/Cargo.toml && \
+    echo 'path = "examples/http_server_only.rs"' >> a2a-rs/Cargo.toml && \
+    echo 'required-features = ["http-server"]' >> a2a-rs/Cargo.toml
+
+# Build the modified example from workspace root
+RUN cargo build --release --package a2a-rs --example http_server_only --features "http-server" --target x86_64-unknown-linux-musl
 
 # Final stage - minimal runtime
-FROM python:3.12-alpine
+FROM alpine:3.19
 
 # Install only runtime dependencies
-RUN apk add --no-cache && pip install --no-cache-dir uv
-
-# Copy the built application from builder stage
-COPY --from=builder /opt/app-root /opt/app-root
-
-WORKDIR /opt/app-root
+RUN apk add --no-cache ca-certificates
 
 # Create non-root user
 RUN adduser -D -s /bin/sh appuser
 
-# Fix permissions for the virtual environment
-RUN chown -R appuser:appuser /opt/app-root && \
-    chmod -R 755 /opt/app-root
+# Copy the binary from builder stage
+COPY --from=builder /opt/app-root/target/x86_64-unknown-linux-musl/release/examples/http_server_only /usr/local/bin/a2a-server
 
-# Expose default port
+# Fix permissions
+RUN chown appuser:appuser /usr/local/bin/a2a-server && \
+    chmod +x /usr/local/bin/a2a-server
+
+# Expose port
 EXPOSE 9999
 
 USER appuser
 
-# Set environment variables for uv
-ENV UV_COMPILE_BYTECODE=1 \
-    UV_LINK_MODE=copy
-
-# Run the agent using uv
-CMD ["uv", "run", "__main__.py", "--host", "0.0.0.0"]
+# Run the server (it will run client tests then keep server running)
+CMD ["/usr/local/bin/a2a-server"]

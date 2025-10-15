@@ -17,13 +17,16 @@ func buildMessageSendRequest(text string, id string) string {
 		id = uuid.New().String()
 	}
 	messageID := uuid.New().String()
+	taskID := fmt.Sprintf("task-%s", uuid.New().String())
 
 	return fmt.Sprintf(`{
 		"jsonrpc": "2.0",
 		"id": "%s",
-		"method": "message/send",
+		"method": "tasks/send",
 		"params": {
+			"id": "%s",
 			"message": {
+				"kind": "message",
 				"messageId": "%s",
 				"role": "user",
 				"parts": [
@@ -34,13 +37,14 @@ func buildMessageSendRequest(text string, id string) string {
 				]
 			}
 		}
-	}`, id, messageID, text)
+	}`, id, taskID, messageID, text)
 }
 
 func a2aHeaders() map[string]string {
 	return map[string]string{
-		"Content-Type": "application/json",
-		"Accept":       "application/json",
+		"Content-Type":  "application/json",
+		"Accept":        "application/json",
+		"Authorization": "Bearer secret-token",
 	}
 }
 
