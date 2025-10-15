@@ -326,24 +326,6 @@ generate-licenses: ## Generate the licenses for the project
 	GO111MODULE=on go run hack/utils/oss_compliance/oss_compliance.go osagen -i "Mozilla Public License 2.0"> hack/utils/oss_compliance/osa_included.md
 
 #----------------------------------------------------------------------------------
-# AI Extensions ExtProc Server
-#----------------------------------------------------------------------------------
-
-PYTHON_DIR := $(ROOTDIR)/python
-PYTHON_SOURCES := $(shell find $(PYTHON_DIR) -type f \( -name "*.py" -o -name "Dockerfile" -o -name "requirements*.txt" -o -name "pyproject.toml" \) 2>/dev/null)
-
-export AI_EXTENSION_IMAGE_REPO ?= kgateway-ai-extension
-
-$(OUTPUT_DIR)/.docker-stamp-ai-extension-$(VERSION): $(PYTHON_SOURCES)
-	$(BUILDX_BUILD) $(LOAD_OR_PUSH) $(PLATFORM_MULTIARCH) -f $(PYTHON_DIR)/Dockerfile $(ROOTDIR) \
-		--build-arg PYTHON_DIR=python \
-		-t  $(IMAGE_REGISTRY)/kgateway-ai-extension:$(VERSION)
-	@touch $@
-
-.PHONY: kgateway-ai-extension-docker
-kgateway-ai-extension-docker: $(OUTPUT_DIR)/.docker-stamp-ai-extension-$(VERSION)
-
-#----------------------------------------------------------------------------------
 # Controller
 #----------------------------------------------------------------------------------
 

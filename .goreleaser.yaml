@@ -127,32 +127,6 @@ dockers:
     extra_files:
       - cmd/envoyinit/docker-entrypoint.sh
       - internal/envoyinit/rustformations
-  - image_templates:
-      - &ai_extensions_arm_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.AI_EXTENSION_IMAGE_REPO }}:{{ .Env.VERSION }}-arm64"
-    use: buildx
-    dockerfile: python/Dockerfile
-    goos: linux
-    goarch: arm64
-    build_flag_templates:
-      - "--pull"
-      - "--platform=linux/arm64"
-      - "--build-arg=PYTHON_DIR=/python"
-    extra_files:
-      - python/requirements.txt
-      - python/ai_extension
-  - image_templates:
-      - &ai_extensions_amd_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.AI_EXTENSION_IMAGE_REPO }}:{{ .Env.VERSION }}-amd64"
-    use: buildx
-    dockerfile: python/Dockerfile
-    goos: linux
-    goarch: amd64
-    build_flag_templates:
-      - "--pull"
-      - "--platform=linux/amd64"
-      - "--build-arg=PYTHON_DIR=/python"
-    extra_files:
-      - python/requirements.txt
-      - python/ai_extension
 docker_manifests:
   - name_template: "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.CONTROLLER_IMAGE_REPO }}:{{ .Env.VERSION }}"
     image_templates:
@@ -166,10 +140,6 @@ docker_manifests:
     image_templates:
       - *envoyinit_arm_image
       - *envoyinit_amd_image
-  - name_template: "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.AI_EXTENSION_IMAGE_REPO }}:{{ .Env.VERSION }}"
-    image_templates:
-      - *ai_extensions_arm_image
-      - *ai_extensions_amd_image
 changelog:
   disable: true
 release:
