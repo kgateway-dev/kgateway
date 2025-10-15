@@ -14,7 +14,7 @@ git clone https://github.com/EmilLindfors/a2a-rs.git
 ### 2. Copy the Dockerfile:
 
 ```bash
-cp Dockerfile a2a-rs/
+cp Dockerfile http_server_only.rs a2a-rs/
 cd a2a-rs
 ```
 
@@ -30,9 +30,8 @@ docker build -t $REPO/$IMAGE:$IMAGE_VERSION .
 ### 4. Start the container
 
 ```shell
-docker run -d --name test-local -p 9999:8080 $REPO/$IMAGE:$IMAGE_VERSION
+docker run -d --name test-local -p 9999:9999 $REPO/$IMAGE:$IMAGE_VERSION
 ```
-
 
 ## Test:
 
