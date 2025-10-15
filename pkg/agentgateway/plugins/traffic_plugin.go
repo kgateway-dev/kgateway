@@ -1078,16 +1078,14 @@ func toJSONValue(value string) (string, error) {
 func processCSRFPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) ([]AgwPolicy, error) {
 	csrf := trafficPolicy.Spec.Csrf
 
-	// Warn if PercentageEnabled is set since it's not supported for agentgateway
+	// Return error if PercentageEnabled is set since it's not supported for agentgateway
 	if csrf.PercentageEnabled != nil {
-		logger.Warn("percentageEnabled field is ignored for agentgateway, CSRF is enabled for all requests",
-			"percentage_enabled", *csrf.PercentageEnabled)
+		return nil, fmt.Errorf("percentageEnabled field is not supported for agentgateway, CSRF is enabled for all requests (percentage_enabled: %v)", *csrf.PercentageEnabled)
 	}
 
-	// Warn if PercentageShadowed is set since it's not supported for agentgateway
+	// Return error if PercentageShadowed is set since it's not supported for agentgateway
 	if csrf.PercentageShadowed != nil {
-		logger.Warn("percentageShadowed field is ignored for agentgateway, CSRF is always enforced when enabled",
-			"percentage_shadowed", *csrf.PercentageShadowed)
+		return nil, fmt.Errorf("percentageShadowed field is not supported for agentgateway, CSRF is always enforced when enabled (percentage_shadowed: %v)", *csrf.PercentageShadowed)
 	}
 
 	var additionalOrigins []string
@@ -1095,6 +1093,8 @@ func processCSRFPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyName string,
 	for _, origin := range csrf.AdditionalOrigins {
 		if origin.Exact != nil {
 			additionalOrigins = append(additionalOrigins, *origin.Exact)
+		} else {
+			return nil, fmt.Errorf("CSRF additional origins must specify exact matches only, non-exact origin matchers are not supported")
 		}
 	}
 
