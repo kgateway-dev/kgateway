@@ -274,7 +274,7 @@ func processBackendForEnvoy(ctx context.Context, in ir.BackendObjectIR, out *env
 		return nil
 	}
 
-	errCount := len(backendIr.Errors)
+	errCount := len(beIr.errors)
 
 	spec := be.Spec
 	switch spec.Type {
@@ -307,8 +307,8 @@ func processBackendForEnvoy(ctx context.Context, in ir.BackendObjectIR, out *env
 	}
 
 	// Update Backend status if new error
-	if len(backendIr.Errors) > errCount {
-		go updateBackendStatus(ctx, be.Namespace, be.Name, backendIr.Errors)
+	if len(beIr.errors) > errCount {
+		go updateBackendStatus(ctx, be.Namespace, be.Name, beIr.errors)
 	}
 
 	return nil

@@ -131,7 +131,7 @@ func buildRegisterCallback(ctx context.Context, bcol krt.Collection[ir.BackendOb
 				return
 			}
 
-			updateBackendStatus(ctx, in.ObjectSource.Namespace, in.ObjectSource.Name, ir.Errors)
+			updateBackendStatus(ctx, in.ObjectSource.Namespace, in.ObjectSource.Name, ir.errors)
 		})
 	}
 }
