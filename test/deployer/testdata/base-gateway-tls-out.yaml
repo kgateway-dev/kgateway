@@ -154,7 +154,7 @@ data:
                   http_filters:
                     - name: envoy.filters.http.router
                       typed_config:
-                        "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router 
+                        "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
       clusters:
         - name: xds_cluster
           alt_stat_name: xds_cluster
@@ -218,7 +218,7 @@ data:
                   address:
                     socket_address:
                       address: 127.0.0.1
-                      port_value: 19000 
+                      port_value: 19000
     dynamic_resources:
       ads_config:
         transport_api_version: V3
@@ -329,7 +329,7 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         - name: ENVOY_UID
-          value: "0" 
+          value: "0"
         ports:
         - name: listener-8080
           protocol: TCP
@@ -356,7 +356,7 @@ spec:
               command:
               - /bin/sh
               - -c
-              - wget --post-data "" -O /dev/null 127.0.0.1:19000/healthcheck/fail; sleep 10   
+              - wget --post-data "" -O /dev/null 127.0.0.1:19000/healthcheck/fail; sleep 10
       terminationGracePeriodSeconds: 60
       volumes:
       - name: xds-token

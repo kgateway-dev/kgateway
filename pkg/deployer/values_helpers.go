@@ -14,9 +14,9 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/validate"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 // This file contains helper functions that generate helm values in the format needed

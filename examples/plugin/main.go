@@ -16,11 +16,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	collections "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
@@ -189,13 +189,13 @@ func (s *ourPolicyPass) ApplyForRoute(pCtx *ir.RouteContext, out *envoyroutev3.R
 	return nil
 }
 
-func (s *ourPolicyPass) HttpFilters(fc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
+func (s *ourPolicyPass) HttpFilters(fc ir.FilterChainCommon) ([]filters.StagedHttpFilter, error) {
 	if !s.filterNeeded[fc.FilterChainName] {
 		return nil, nil
 	}
 	// Add an http filter to the chain that adds a header indicating metadata was added.
-	return []plugins.StagedHttpFilter{
-		plugins.MustNewStagedFilter("example_plugin",
+	return []filters.StagedHttpFilter{
+		filters.MustNewStagedFilter("example_plugin",
 			&header_mutationv3.HeaderMutation{
 				Mutations: &header_mutationv3.Mutations{
 					ResponseMutations: []*mutation_v3.HeaderMutation{
@@ -212,7 +212,7 @@ func (s *ourPolicyPass) HttpFilters(fc ir.FilterChainCommon) ([]plugins.StagedHt
 					},
 				},
 			},
-			plugins.BeforeStage(plugins.AcceptedStage)),
+			filters.BeforeStage(filters.AcceptedStage)),
 	}, nil
 }
 

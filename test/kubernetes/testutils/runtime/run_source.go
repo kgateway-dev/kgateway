@@ -1,3 +1,5 @@
+//go:build e2e
+
 package runtime
 
 // RunSource identifies who/what triggered the test

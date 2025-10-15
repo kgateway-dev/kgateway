@@ -4,7 +4,7 @@ import (
 	set_metadata "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/set_metadata/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 )
 
 type ProviderNeededMap struct {
@@ -28,21 +28,24 @@ func (p *ProviderNeededMap) Add(filterChain, providerName string, provider *Traf
 }
 
 func AddDisableFilterIfNeeded(
-	filters []plugins.StagedHttpFilter,
+	stagedFilters []filters.StagedHttpFilter,
 	disableFilterName string,
 	disableFilterMetadataNamespace string,
-) []plugins.StagedHttpFilter {
-	for _, f := range filters {
+) []filters.StagedHttpFilter {
+	for _, f := range stagedFilters {
 		if f.Filter.GetName() == disableFilterName {
-			return filters
+			return stagedFilters
 		}
 	}
 
-	f := plugins.MustNewStagedFilter(
-		disableFilterName, newSetMetadataConfig(disableFilterMetadataNamespace), plugins.BeforeStage(plugins.FaultStage))
+	f := filters.MustNewStagedFilter(
+		disableFilterName,
+		newSetMetadataConfig(disableFilterMetadataNamespace),
+		filters.BeforeStage(filters.FaultStage),
+	)
 	f.Filter.Disabled = true
-	filters = append(filters, f)
-	return filters
+	stagedFilters = append(stagedFilters, f)
+	return stagedFilters
 }
 
 func newSetMetadataConfig(metadataNamespace string) *set_metadata.Config {

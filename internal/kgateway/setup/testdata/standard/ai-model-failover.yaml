@@ -76,7 +76,7 @@ type: Opaque
 data:
   Authorization: bXlzZWNyZXRrZXl0aHJlZQ==
 ---
-apiVersion: gateway.networking.k8s.io/v1beta1
+apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: route-to-backend

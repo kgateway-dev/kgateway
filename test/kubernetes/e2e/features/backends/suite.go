@@ -1,3 +1,5 @@
+//go:build e2e
+
 package backends
 
 import (
@@ -86,13 +88,13 @@ func (s *testingSuite) TestConfigureBackingDestinationsWithUpstream() {
 	// TODO: make this a specific assertion to remove the need for c/p the label selector
 	// e.g. EventuallyCurlPodRunning(...) etc.
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, defaults.CurlPod.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=curl",
+		LabelSelector: defaults.WellKnownAppLabel + "=curl",
 	})
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, nginxMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=nginx",
+		LabelSelector: defaults.WellKnownAppLabel + "=nginx",
 	})
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=gw",
+		LabelSelector: defaults.WellKnownAppLabel + "=gw",
 	})
 
 	s.testInstallation.Assertions.AssertEventualCurlResponse(

@@ -5,8 +5,7 @@ import (
 	hcmv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/filters"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -64,8 +63,8 @@ func customFiltersHelper(
 	config *anypb.Any,
 ) *ir.CustomEnvoyFilter {
 	return &ir.CustomEnvoyFilter{
-		FilterStage: plugins.HTTPOrNetworkFilterStage{
-			RelativeTo:     plugins.WellKnownFilterStage(int(stage)),
+		FilterStage: filters.HTTPOrNetworkFilterStage{
+			RelativeTo:     filters.WellKnownFilterStage(int(stage)),
 			RelativeWeight: int(predicate),
 		},
 		Name:   name,

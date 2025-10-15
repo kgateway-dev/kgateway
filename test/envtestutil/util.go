@@ -26,6 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/yaml"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -126,9 +127,10 @@ func RunController(
 				return &ctrl.Options{
 					BaseContext:      func() context.Context { return ctx },
 					Scheme:           runtime.NewScheme(),
-					PprofBindAddress: "127.0.0.1:9099",
+					PprofBindAddress: "127.0.0.1:0",
 					// if you change the port here, also change the port "health" in the helmchart.
-					HealthProbeBindAddress: ":9093",
+					HealthProbeBindAddress: "127.0.0.1:0",
+					Metrics:                metricsserver.Options{BindAddress: "127.0.0.1:0"},
 					Controller: config.Controller{
 						// 	// see https://github.com/kubernetes-sigs/controller-runtime/issues/2937
 						// 	// in short, our tests reuse the same name (reasonably so) and the controller-runtime

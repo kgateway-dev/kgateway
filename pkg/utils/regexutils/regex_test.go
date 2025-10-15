@@ -11,7 +11,7 @@ var _ = Describe("Regex", func() {
 	It("should create regex with default program size", func() {
 		regex := NewRegexWithProgramSize("foo", nil)
 		Expect(regex.GetRegex()).To(Equal("foo"))
-		Expect(regex.GetGoogleRe2().GetMaxProgramSize()).To(BeNil())
+		Expect(regex.GetGoogleRe2().GetMaxProgramSize()).To(BeNil()) //nolint:staticcheck // GetGoogleRe2 and GetMaxProgramSize are deprecated
 
 		// regex = NewRegex(nil, "foo")
 		// Expect(regex.GetRegex()).To(Equal("foo"))
@@ -22,6 +22,6 @@ var _ = Describe("Regex", func() {
 		number = 123
 		regex := NewRegexWithProgramSize("foo", &number)
 		Expect(regex.GetRegex()).To(Equal("foo"))
-		Expect(regex.GetGoogleRe2().GetMaxProgramSize().GetValue()).To(Equal(number))
+		Expect(regex.GetGoogleRe2().GetMaxProgramSize().GetValue()).To(Equal(number)) //nolint:staticcheck // GetGoogleRe2 and GetMaxProgramSize are deprecated
 	})
 })

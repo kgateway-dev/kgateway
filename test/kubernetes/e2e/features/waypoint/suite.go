@@ -1,3 +1,5 @@
+//go:build e2e
+
 package waypoint
 
 import (
@@ -17,6 +19,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
@@ -163,7 +166,7 @@ func (s *testingSuite) setDeploymentEnvVariable(name, value string) {
 		s.ctx,
 		controllerNamespace,
 		metav1.ListOptions{
-			LabelSelector: "app.kubernetes.io/name=kgateway",
+			LabelSelector: defaults.WellKnownAppLabel + "=kgateway",
 		},
 		helpers.KgatewayContainerName,
 		envVarToAdd,
@@ -180,7 +183,7 @@ func (s *testingSuite) setDeploymentEnvVariable(name, value string) {
 			s.ctx,
 			controllerNamespace,
 			metav1.ListOptions{
-				LabelSelector: "app.kubernetes.io/name=kgateway",
+				LabelSelector: defaults.WellKnownAppLabel + "=kgateway",
 			},
 			helpers.KgatewayContainerName,
 			envVarToAdd.Name,
@@ -189,7 +192,7 @@ func (s *testingSuite) setDeploymentEnvVariable(name, value string) {
 
 	// wait for pods to be running again, since controller deployment was patched
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, controllerNamespace, metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=kgateway",
+		LabelSelector: defaults.WellKnownAppLabel + "=kgateway",
 	})
 }
 

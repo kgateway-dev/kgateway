@@ -13,10 +13,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
-	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
@@ -70,8 +69,8 @@ func TestBackendTranslatorHandlesBackendIRErrors(t *testing.T) {
 		},
 		Port:   80,
 		Errors: []error{backendError1, backendError2},
-		AttachedPolicies: pluginsdkir.AttachedPolicies{
-			Policies: map[schema.GroupKind][]pluginsdkir.PolicyAtt{},
+		AttachedPolicies: ir.AttachedPolicies{
+			Policies: map[schema.GroupKind][]ir.PolicyAtt{},
 		},
 	}
 
@@ -117,8 +116,8 @@ func TestBackendTranslatorPropagatesPolicyErrors(t *testing.T) {
 			Name:      "name",
 			Namespace: "namespace",
 		},
-		AttachedPolicies: pluginsdkir.AttachedPolicies{
-			Policies: map[schema.GroupKind][]pluginsdkir.PolicyAtt{
+		AttachedPolicies: ir.AttachedPolicies{
+			Policies: map[schema.GroupKind][]ir.PolicyAtt{
 				{Group: "gateway.kgateway.dev", Kind: "BackendConfigPolicy"}: {
 					{
 						GroupKind: schema.GroupKind{Group: "gateway.kgateway.dev", Kind: "BackendConfigPolicy"},
@@ -196,8 +195,8 @@ func TestBackendTranslatorHandlesXDSValidationErrors(t *testing.T) {
 		// No pre-existing errors
 		Errors: nil,
 		// No attached policies that would cause errors
-		AttachedPolicies: pluginsdkir.AttachedPolicies{
-			Policies: map[schema.GroupKind][]pluginsdkir.PolicyAtt{},
+		AttachedPolicies: ir.AttachedPolicies{
+			Policies: map[schema.GroupKind][]ir.PolicyAtt{},
 		},
 	}
 

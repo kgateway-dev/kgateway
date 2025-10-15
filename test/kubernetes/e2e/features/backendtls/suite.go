@@ -1,3 +1,5 @@
+//go:build e2e
+
 package backendtls
 
 import (
@@ -112,16 +114,16 @@ func (s *tsuite) TestBackendTLSPolicyAndStatus() {
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment, backendTlsPolicy, configMap)
 	// TODO: make this a specific assertion to remove the need for c/p the label selector
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, defaults.CurlPod.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=curl",
+		LabelSelector: defaults.WellKnownAppLabel + "=curl",
 	})
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, nginxMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=nginx",
+		LabelSelector: defaults.WellKnownAppLabel + "=nginx",
 	})
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, nginx2Meta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=nginx2",
+		LabelSelector: defaults.WellKnownAppLabel + "=nginx2",
 	})
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=gw",
+		LabelSelector: defaults.WellKnownAppLabel + "=gw",
 	})
 
 	tt := []struct {

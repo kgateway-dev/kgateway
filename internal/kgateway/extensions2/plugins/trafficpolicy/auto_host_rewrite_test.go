@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 func TestAutoHostRewriteIREquals(t *testing.T) {

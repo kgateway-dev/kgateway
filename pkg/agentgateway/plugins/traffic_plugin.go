@@ -499,6 +499,11 @@ func processAIPolicy(krtctx krt.HandlerContext, secrets krt.Collection[*corev1.S
 		}
 	}
 
+	// Process model aliases
+	if aiSpec.ModelAliases != nil {
+		aiPolicy.GetSpec().GetAi().ModelAliases = aiSpec.ModelAliases
+	}
+
 	logger.Debug("generated AI policy",
 		"policy", trafficPolicy.Name,
 		"agentgateway_policy", aiPolicy.Name)

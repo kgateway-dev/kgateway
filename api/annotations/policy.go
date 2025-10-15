@@ -20,6 +20,14 @@ const (
 	// This is useful for cases where you want to disable Istio auto-mTLS for a specific backend, but still use other TLS mechanisms
 	// (by applying a BackendConfigPolicy or BackendTLSPolicy).
 	DisableIstioAutoMTLS = "kgateway.dev/disable-istio-auto-mtls"
+
+	// HTTPRedirectStatusCode is an annotation that can be set on an HTTPRoute to specify the HTTP status code for the RequestRedirect
+	// filter. The value must be one of 301, 302, 303, 307, 308.
+	// By default, this annotation will override the statusCode field on the RequestRedirect filter for all route rules using the RequestRedirect filter.
+	// E.g., kgateway.dev/http-redirect-status-code: "307" will set the status code to 307 for all RequestRedirect filters on the HTTPRoute.
+	// To set a different status code for individual route rules, the value must be a comma-separated list of rule-name=status-code pairs.
+	// E.g., kgateway.dev/http-redirect-status-code: "rule1=307,rule2=308" will set the status code to 307 for filter on rule1 and 308 for filter on rule2.
+	HTTPRedirectStatusCode = "kgateway.dev/http-redirect-status-code"
 )
 
 // InheritedPolicyPriorityValue is the value for the InheritedPolicyPriority annotation

@@ -60,6 +60,10 @@ spec:
                       - value
                       type: object
                     type: array
+                  modelAliases:
+                    additionalProperties:
+                      type: string
+                    type: object
                   promptEnrichment:
                     properties:
                       append:

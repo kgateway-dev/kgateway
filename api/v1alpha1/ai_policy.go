@@ -27,6 +27,12 @@ type AIPolicy struct {
 	// +kubebuilder:validation:Enum=CHAT;CHAT_STREAMING
 	// +kubebuilder:default=CHAT
 	RouteType *RouteType `json:"routeType,omitempty"`
+
+	// ModelAliases maps friendly model names to actual provider model names.
+	// Example: {"fast": "gpt-3.5-turbo", "smart": "gpt-4-turbo"}
+	// Note: This field is only applicable when using the agentgateway data plane.
+	// +optional
+	ModelAliases map[string]string `json:"modelAliases,omitempty"`
 }
 
 // AIPromptEnrichment defines the config to enrich requests sent to the LLM provider by appending and prepending system prompts.

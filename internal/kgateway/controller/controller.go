@@ -30,10 +30,10 @@ import (
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	internaldeployer "github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 const (

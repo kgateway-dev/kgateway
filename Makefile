@@ -2,6 +2,7 @@
 
 # https://www.gnu.org/software/make/manual/html_node/Special-Variables.html#Special-Variables
 .DEFAULT_GOAL := help
+SHELL := /bin/bash
 
 #----------------------------------------------------------------------------------
 # Help
@@ -31,6 +32,8 @@ export IMAGE_REGISTRY ?= ghcr.io/kgateway-dev
 
 # Kind of a hack to make sure _output exists
 z := $(shell mkdir -p $(OUTPUT_DIR))
+
+BUILDX_BUILD := docker buildx build -q
 
 # A semver resembling 1.0.1-dev. Most calling GHA jobs customize this. Exported for use in goreleaser.yaml.
 VERSION ?= 1.0.1-dev
@@ -81,13 +84,6 @@ TEST_ASSET_DIR ?= $(ROOTDIR)/_test
 BUG_REPORT_DIR := $(TEST_ASSET_DIR)/bug_report
 $(BUG_REPORT_DIR):
 	mkdir -p $(BUG_REPORT_DIR)
-
-# This is the location where logs are stored for future processing.
-# This is used to generate summaries of test outcomes and may be used in the future to automate
-# processing of data based on test outcomes.
-TEST_LOG_DIR := $(TEST_ASSET_DIR)/test_log
-$(TEST_LOG_DIR):
-	mkdir -p $(TEST_LOG_DIR)
 
 # Base Alpine image used for all containers. Exported for use in goreleaser.yaml.
 export ALPINE_BASE_IMAGE ?= alpine:3.17.6
@@ -146,17 +142,6 @@ ANALYZE_ARGS ?= --fix --verbose
 analyze:  ## Run golangci-lint. Override options with ANALYZE_ARGS.
 	GOTOOLCHAIN=$(GOTOOLCHAIN) $(GOLANGCI_LINT) run $(ANALYZE_ARGS) ./...
 
-#----------------------------------------------------------------------------
-# Info
-#----------------------------------------------------------------------------
-
-.PHONY: envoyversion
-envoyversion: ENVOY_VERSION_TAG ?= $(shell echo $(ENVOY_IMAGE) | cut -d':' -f2)
-envoyversion:
-	echo "Version is $(ENVOY_VERSION_TAG)"
-	echo "Commit for envoyproxy is $(shell curl -s https://raw.githubusercontent.com/solo-io/envoy-gloo/refs/tags/v$(ENVOY_VERSION_TAG)/bazel/repository_locations.bzl | grep "envoy =" -A 4 | grep commit | cut -d'"' -f2)"
-	echo "Current ABI in envoyinit can be found in the cargo.toml's envoy-proxy-dynamic-modules-rust-sdk"
-
 #----------------------------------------------------------------------------------
 # Ginkgo Tests
 #----------------------------------------------------------------------------------
@@ -168,7 +153,7 @@ GINKGO_ENV ?= ACK_GINKGO_RC=true ACK_GINKGO_DEPRECATIONS=$(GINKGO_VERSION)
 GINKGO_FLAGS ?= -tags=purego --trace -progress -race --fail-fast -fail-on-pending --randomize-all --compilers=5 --flake-attempts=$(FLAKE_ATTEMPTS)
 GINKGO_REPORT_FLAGS ?= --json-report=test-report.json --junit-report=junit.xml -output-dir=$(OUTPUT_DIR)
 GINKGO_COVERAGE_FLAGS ?= --cover --covermode=atomic --coverprofile=coverage.cov
-TEST_PKG ?= ./... # Default to run all tests
+TEST_PKG ?= ./... # Default to run all tests except e2e tests
 
 # This is a way for a user executing `make test` to be able to provide flags which we do not include by default
 # For example, you may want to run tests multiple times, or with various timeouts
@@ -181,29 +166,29 @@ test: ## Run all tests, or only run the test package at {TEST_PKG} if it is spec
 		$(GINKGO_FLAGS) $(GINKGO_REPORT_FLAGS) $(GINKGO_USER_FLAGS) \
 		$(TEST_PKG)
 
+# To run only e2e tests, we restrict to ./test/kubernetes/e2e/tests. We say
+# '-tags=e2e' because untagged files contain unit tests cases, not e2e test
+# cases, so we have to allow `go` to see our e2e tests. Someone might forget to
+# label a new e2e test case with `//go:build e2e`, in which case `make unit`
+# will error because there is no kind cluster.
+#
+# This build-tag approach makes unit tests run faster since e2e tests are not
+# compiled, but it might be better to set an environment variable `E2E=true`
+# and have end-to-end test cases report that they were skipped if it's not
+# truthy. As it stands, a developer who runs `make unit` or `go test ./...`
+# will still have e2e tests run by Github Actions once they publish a pull
+# request.
+.PHONY: e2e-test
+e2e-test: TEST_PKG = ./test/kubernetes/e2e/tests
+e2e-test: ## Run only e2e tests, and only run the test package at {TEST_PKG} if it is specified
+	@$(MAKE) --no-print-directory go-test TEST_TAG=e2e TEST_PKG=$(TEST_PKG)
+
+
 # https://go.dev/blog/cover#heat-maps
 .PHONY: test-with-coverage
 test-with-coverage: GINKGO_FLAGS += $(GINKGO_COVERAGE_FLAGS)
 test-with-coverage: test
 	go tool cover -html $(OUTPUT_DIR)/coverage.cov
-
-.PHONY: run-tests
-run-tests: GINKGO_FLAGS += -skip-package=e2e,kgateway,test/kubernetes/testutils/helper ## Run all non E2E tests, or only run the test package at {TEST_PKG} if it is specified
-run-tests: GINKGO_FLAGS += --label-filter="!end-to-end && !performance"
-run-tests: test
-
-.PHONY: run-performance-tests
-# Performance tests are filtered using a Ginkgo label
-# This means that any tests which do not rely on Ginkgo, will by default be compiled and run
-# Since this is not the desired behavior, we explicitly skip these packages
-run-performance-tests: GINKGO_FLAGS += -skip-package=kgateway,kubernetes/e2e
-run-performance-tests: GINKGO_FLAGS += --label-filter="performance" ## Run only tests with the Performance label
-run-performance-tests: test
-
-.PHONY: run-e2e-tests
-run-e2e-tests: TEST_PKG = ./test/e2e/ ## Run all in-memory E2E tests
-run-e2e-tests: GINKGO_FLAGS += --label-filter="end-to-end && !performance"
-run-e2e-tests: test
 
 #----------------------------------------------------------------------------------
 # Env test
@@ -220,7 +205,17 @@ envtest-path: ## Set the envtest path
 # Go Tests
 #----------------------------------------------------------------------------------
 
+# Fix for macOS linker warning with race detector on arm64 (which still warns
+# you that -ld_classic is deprecated, but that's better than broken race
+# condition detection)
+# See: https://github.com/golang/go/issues/61229
 GO_TEST_ENV ?=
+ifeq ($(GOOS), darwin)
+ifeq ($(GOARCH), arm64)
+	override GO_TEST_ENV := CGO_LDFLAGS="-Wl,-ld_classic"
+endif
+endif
+
 # Testing flags: https://pkg.go.dev/cmd/go#hdr-Testing_flags
 # The default timeout for a suite is 10 minutes, but this can be overridden by setting the -timeout flag. Currently set
 # to 25 minutes based on the time it takes to run the longest test setup (kgateway_test).
@@ -234,18 +229,23 @@ GO_TEST_USER_ARGS ?=
 
 .PHONY: go-test
 go-test: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
-go-test: clean-bug-report clean-test-logs $(BUG_REPORT_DIR) $(TEST_LOG_DIR) # Ensure the bug_report dir is reset before each invocation
-	@$(GO_TEST_ENV) go test -ldflags='$(LDFLAGS)' \
-    $(GO_TEST_ARGS) $(GO_TEST_USER_ARGS) \
-    $(TEST_PKG) > $(TEST_LOG_DIR)/go-test 2>&1; \
-    RESULT=$$?; \
-    cat $(TEST_LOG_DIR)/go-test; \
-    if [ $$RESULT -ne 0 ]; then exit $$RESULT; fi  # ensure non-zero exit code if tests fail
+go-test: reset-bug-report
+	$(GO_TEST_ENV) go test -ldflags='$(LDFLAGS)' $(if $(TEST_TAG),-tags=$(TEST_TAG)) $(GO_TEST_ARGS) $(GO_TEST_USER_ARGS) $(TEST_PKG)
 
 # https://go.dev/blog/cover#heat-maps
 .PHONY: go-test-with-coverage
 go-test-with-coverage: GO_TEST_ARGS += $(GO_TEST_COVERAGE_ARGS)
 go-test-with-coverage: go-test
+
+# https://go.dev/blog/cover#heat-maps
+.PHONY: unit-with-coverage
+unit-with-coverage:
+	@$(MAKE) --no-print-directory unit GO_TEST_ARGS="$(GO_TEST_ARGS) $(GO_TEST_COVERAGE_ARGS)"
+
+.PHONY: unit
+unit: ## Run all unit tests (excludes e2e tests)
+	@echo "Running unit tests (excluding e2e)..."
+	@$(MAKE) --no-print-directory go-test TEST_TAG=""
 
 .PHONY: validate-test-coverage
 validate-test-coverage: ## Validate the test coverage
@@ -282,13 +282,15 @@ clean-tests:
 	find * -type f -name '*.cov' -exec rm {} \;
 	find * -type f -name 'junit*.xml' -exec rm {} \;
 
+# NB: 'reset-bug-report: clean-bug-report $(BUG_REPORT_DIR)' would be a subtle
+# bug since we would never run 'mkdir' if the directory already existed.
+.PHONY: reset-bug-report
+reset-bug-report: clean-bug-report
+	@$(MAKE) --no-print-directory $(BUG_REPORT_DIR)
+
 .PHONY: clean-bug-report
 clean-bug-report:
 	rm -rf $(BUG_REPORT_DIR)
-
-.PHONY: clean-test-logs
-clean-test-logs:
-	rm -rf $(TEST_LOG_DIR)
 
 #----------------------------------------------------------------------------------
 # Generated Code
@@ -329,13 +331,18 @@ generate-licenses: ## Generate the licenses for the project
 #----------------------------------------------------------------------------------
 
 PYTHON_DIR := $(ROOTDIR)/python
+PYTHON_SOURCES := $(shell find $(PYTHON_DIR) -type f \( -name "*.py" -o -name "Dockerfile" -o -name "requirements*.txt" -o -name "pyproject.toml" \) 2>/dev/null)
 
 export AI_EXTENSION_IMAGE_REPO ?= kgateway-ai-extension
-.PHONY: kgateway-ai-extension-docker
-kgateway-ai-extension-docker:
-	docker buildx build $(LOAD_OR_PUSH) $(PLATFORM_MULTIARCH) -f $(PYTHON_DIR)/Dockerfile $(ROOTDIR) \
+
+$(OUTPUT_DIR)/.docker-stamp-ai-extension-$(VERSION): $(PYTHON_SOURCES)
+	$(BUILDX_BUILD) $(LOAD_OR_PUSH) $(PLATFORM_MULTIARCH) -f $(PYTHON_DIR)/Dockerfile $(ROOTDIR) \
 		--build-arg PYTHON_DIR=python \
 		-t  $(IMAGE_REGISTRY)/kgateway-ai-extension:$(VERSION)
+	@touch $@
+
+.PHONY: kgateway-ai-extension-docker
+kgateway-ai-extension-docker: $(OUTPUT_DIR)/.docker-stamp-ai-extension-$(VERSION)
 
 #----------------------------------------------------------------------------------
 # Controller
@@ -356,12 +363,15 @@ kgateway: $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH)
 $(CONTROLLER_OUTPUT_DIR)/Dockerfile: cmd/kgateway/Dockerfile
 	cp $< $@
 
-.PHONY: kgateway-docker
-kgateway-docker: $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH) $(CONTROLLER_OUTPUT_DIR)/Dockerfile
-	docker buildx build --load $(PLATFORM) $(CONTROLLER_OUTPUT_DIR) -f $(CONTROLLER_OUTPUT_DIR)/Dockerfile \
+$(CONTROLLER_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH) $(CONTROLLER_OUTPUT_DIR)/Dockerfile
+	$(BUILDX_BUILD) --load $(PLATFORM) $(CONTROLLER_OUTPUT_DIR) -f $(CONTROLLER_OUTPUT_DIR)/Dockerfile \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
 		-t $(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(VERSION)
+	@touch $@
+
+.PHONY: kgateway-docker
+kgateway-docker: $(CONTROLLER_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH)
 
 #----------------------------------------------------------------------------------
 # SDS Server - gRPC server for serving Secret Discovery Service config
@@ -381,12 +391,15 @@ sds: $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH)
 $(SDS_OUTPUT_DIR)/Dockerfile.sds: cmd/sds/Dockerfile
 	cp $< $@
 
-.PHONY: sds-docker
-sds-docker: $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH) $(SDS_OUTPUT_DIR)/Dockerfile.sds
-	docker buildx build --load $(PLATFORM) $(SDS_OUTPUT_DIR) -f $(SDS_OUTPUT_DIR)/Dockerfile.sds \
+$(SDS_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH) $(SDS_OUTPUT_DIR)/Dockerfile.sds
+	$(BUILDX_BUILD) --load $(PLATFORM) $(SDS_OUTPUT_DIR) -f $(SDS_OUTPUT_DIR)/Dockerfile.sds \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg BASE_IMAGE=$(ALPINE_BASE_IMAGE) \
 		-t $(IMAGE_REGISTRY)/$(SDS_IMAGE_REPO):$(VERSION)
+	@touch $@
+
+.PHONY: sds-docker
+sds-docker: $(SDS_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH)
 
 #----------------------------------------------------------------------------------
 # Envoy init (BASE/SIDECAR)
@@ -404,19 +417,26 @@ $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH): $(ENVOYINIT_SOURCES)
 envoyinit: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH)
 
 # TODO(nfuden) cheat the process for now with -r but try to find a cleaner method
-$(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit: cmd/envoyinit/Dockerfile
-	cp  -r  internal/envoyinit/rustformations $(ENVOYINIT_OUTPUT_DIR)
+# Allow override of Dockerfile for local development
+ENVOYINIT_DOCKERFILE ?= cmd/envoyinit/Dockerfile
+$(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit: $(ENVOYINIT_DOCKERFILE)
+	@if [ "$(ENVOYINIT_DOCKERFILE)" = "cmd/envoyinit/Dockerfile" ]; then \
+		cp -r internal/envoyinit/rustformations $(ENVOYINIT_OUTPUT_DIR); \
+	fi
 	cp $< $@
 
 $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh: cmd/envoyinit/docker-entrypoint.sh
 	cp $< $@
 
-.PHONY: envoy-wrapper-docker
-envoy-wrapper-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh
-	docker buildx build --load $(PLATFORM) $(ENVOYINIT_OUTPUT_DIR) -f $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit \
+$(ENVOYINIT_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh
+	$(BUILDX_BUILD) --load $(PLATFORM) $(ENVOYINIT_OUTPUT_DIR) -f $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
 		-t $(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(VERSION)
+	@touch $@
+
+.PHONY: envoy-wrapper-docker
+envoy-wrapper-docker: $(ENVOYINIT_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH)
 
 #----------------------------------------------------------------------------------
 # Helm
@@ -501,11 +521,12 @@ else
 endif
 
 # The version of the k8s gateway api inference extension CRDs to install.
-GIE_CRD_VERSION ?= $(shell go list -m sigs.k8s.io/gateway-api-inference-extension | awk '{print $$2}')
+# Managed by `make bump-gie`.
+GIE_CRD_VERSION ?= 51485db93d63bfa2f9264460798671b72bdf9f5d
 
 .PHONY: gie-crds
 gie-crds: ## Install the Gateway API Inference Extension CRDs
-	kubectl apply -f "https://github.com/kubernetes-sigs/gateway-api-inference-extension/releases/download/$(GIE_CRD_VERSION)/manifests.yaml"
+	kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api-inference-extension/config/crd?ref=$(GIE_CRD_VERSION)"
 
 .PHONY: kind-metallb
 metallb: ## Install the MetalLB load balancer
@@ -586,10 +607,15 @@ kind-load: kind-load-kgateway-ai-extension
 #----------------------------------------------------------------------------------
 
 TEST_AI_PROVIDER_SERVER_DIR := $(ROOTDIR)/test/mocks/mock-ai-provider-server
-.PHONY: test-ai-provider-docker
-test-ai-provider-docker:
-	docker buildx build $(LOAD_OR_PUSH) $(PLATFORM_MULTIARCH) -f $(TEST_AI_PROVIDER_SERVER_DIR)/Dockerfile $(TEST_AI_PROVIDER_SERVER_DIR) \
+TEST_AI_PROVIDER_SOURCES := $(shell find $(TEST_AI_PROVIDER_SERVER_DIR) -type f 2>/dev/null)
+
+$(OUTPUT_DIR)/.docker-stamp-test-ai-provider-$(VERSION): $(TEST_AI_PROVIDER_SOURCES)
+	$(BUILDX_BUILD) $(LOAD_OR_PUSH) $(PLATFORM_MULTIARCH) -f $(TEST_AI_PROVIDER_SERVER_DIR)/Dockerfile $(TEST_AI_PROVIDER_SERVER_DIR) \
 		-t $(IMAGE_REGISTRY)/test-ai-provider:$(VERSION)
+	@touch $@
+
+.PHONY: test-ai-provider-docker
+test-ai-provider-docker: $(OUTPUT_DIR)/.docker-stamp-test-ai-provider-$(VERSION)
 
 #----------------------------------------------------------------------------------
 # Load Testing
@@ -598,17 +624,17 @@ test-ai-provider-docker:
 .PHONY: run-load-tests
 run-load-tests: ## Run KGateway load testing suite (requires existing cluster and installation)
 	SKIP_INSTALL=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
-	go test -v ./test/kubernetes/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$"
+	go test -tags=e2e -v ./test/kubernetes/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$"
 
 .PHONY: run-load-tests-baseline
 run-load-tests-baseline: ## Run baseline load tests (1000 routes)
 	SKIP_INSTALL=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
-	go test -v ./test/kubernetes/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$/^TestAttachedRoutesBaseline$$"
+	go test -tags=e2e -v ./test/kubernetes/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$/^TestAttachedRoutesBaseline$$"
 
 .PHONY: run-load-tests-production
 run-load-tests-production: ## Run production load tests (5000 routes)
 	SKIP_INSTALL=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
-	go test -v ./test/kubernetes/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$/^TestAttachedRoutesProduction$$"
+	go test -tags=e2e -v ./test/kubernetes/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$/^TestAttachedRoutesProduction$$"
 
 #----------------------------------------------------------------------------------
 # Targets for running Kubernetes Gateway API conformance tests
@@ -621,7 +647,7 @@ $(TEST_ASSET_DIR)/conformance/conformance_test.go:
 	cat $(shell go list -json -m sigs.k8s.io/gateway-api | jq -r '.Dir')/conformance/conformance_test.go >> $@
 	go fmt $@
 
-CONFORMANCE_SUPPORTED_FEATURES ?= -supported-features=GatewayAddressEmpty,HTTPRouteParentRefPort,HTTPRouteRequestMirror,HTTPRouteBackendRequestHeaderModification,HTTPRouteNamedRouteRule,HTTPRouteDestinationPortMatching,HTTPRouteBackendProtocolH2C,HTTPRouteBackendProtocolWebSocket,HTTPRouteBackendTimeout,HTTPRouteHostRewrite,HTTPRouteMethodMatching,HTTPRoutePathRedirect,HTTPRoutePathRewrite,HTTPRoutePortRedirect,HTTPRouteQueryParamMatching,HTTPRouteRequestTimeout,HTTPRouteResponseHeaderModification,HTTPRouteSchemeRedirect
+CONFORMANCE_SUPPORTED_FEATURES ?= -supported-features=GatewayAddressEmpty,HTTPRouteParentRefPort,HTTPRouteRequestMirror,HTTPRouteBackendRequestHeaderModification,HTTPRouteNamedRouteRule,HTTPRouteDestinationPortMatching,HTTPRouteBackendProtocolH2C,HTTPRouteBackendProtocolWebSocket,HTTPRouteBackendTimeout,HTTPRouteHostRewrite,HTTPRouteMethodMatching,HTTPRoutePathRedirect,HTTPRoutePathRewrite,HTTPRoutePortRedirect,HTTPRouteQueryParamMatching,HTTPRouteRequestTimeout,HTTPRouteResponseHeaderModification,HTTPRouteSchemeRedirect,HTTPRouteCORS
 CONFORMANCE_UNSUPPORTED_FEATURES ?= -exempt-features=GatewayPort8080,GatewayStaticAddresses,GatewayHTTPListenerIsolation,GatewayInfrastructurePropagation,HTTPRouteRequestMultipleMirrors,HTTPRouteRequestPercentageMirror
 CONFORMANCE_SUPPORTED_PROFILES ?= -conformance-profiles=GATEWAY-HTTP,GATEWAY-TLS,GATEWAY-GRPC
 CONFORMANCE_GATEWAY_CLASS ?= kgateway
@@ -629,12 +655,12 @@ CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/$(VERSIO
 CONFORMANCE_ARGS := -gateway-class=$(CONFORMANCE_GATEWAY_CLASS) $(CONFORMANCE_SUPPORTED_FEATURES) $(CONFORMANCE_UNSUPPORTED_FEATURES) $(CONFORMANCE_SUPPORTED_PROFILES) $(CONFORMANCE_REPORT_ARGS)
 
 .PHONY: conformance ## Run the conformance test suite
-conformance: $(TEST_ASSET_DIR)/conformance/conformance_test.go
+conformance: $(TEST_ASSET_DIR)/conformance/conformance_test.go ## Run the Gateway API conformance suite
 	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(CONFORMANCE_ARGS)
 
 # Run only the specified conformance test. The name must correspond to the ShortName of one of the k8s gateway api
 # conformance tests.
-conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go
+conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go ## Run only the specified Gateway API conformance test by ShortName
 	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(CONFORMANCE_ARGS) \
 	-run-test=$*
 
@@ -692,8 +718,8 @@ all-conformance: conformance gie-conformance agw-conformance ## Run all conforma
 #----------------------------------------------------------------------------------
 
 # Agent Gateway conformance test configuration
-AGW_CONFORMANCE_SUPPORTED_FEATURES ?= -supported-features=HTTPRouteBackendProtocolH2C,HTTPRouteBackendProtocolWebSocket,HTTPRouteHostRewrite,HTTPRouteMethodMatching,HTTPRoutePathRedirect,HTTPRoutePathRewrite,HTTPRoutePortRedirect,HTTPRouteQueryParamMatching,HTTPRouteResponseHeaderModification,HTTPRouteSchemeRedirect
-AGW_CONFORMANCE_UNSUPPORTED_FEATURES ?= $(CONFORMANCE_UNSUPPORTED_FEATURES)
+AGW_CONFORMANCE_SUPPORTED_FEATURES ?= -supported-features=GatewayInfrastructurePropagation,HTTPRouteBackendProtocolH2C,HTTPRouteBackendProtocolWebSocket,HTTPRouteHostRewrite,HTTPRouteMethodMatching,HTTPRoutePathRedirect,HTTPRoutePathRewrite,HTTPRoutePortRedirect,HTTPRouteQueryParamMatching,HTTPRouteResponseHeaderModification,HTTPRouteSchemeRedirect,HTTPRouteCORS
+AGW_CONFORMANCE_UNSUPPORTED_FEATURES ?= -exempt-features=GatewayPort8080,GatewayStaticAddresses,GatewayHTTPListenerIsolation,HTTPRouteRequestMultipleMirrors,HTTPRouteRequestPercentageMirror
 AGW_CONFORMANCE_SUPPORTED_PROFILES ?= -conformance-profiles=GATEWAY-HTTP
 AGW_CONFORMANCE_GATEWAY_CLASS ?= agentgateway
 AGW_CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/agw-$(VERSION)-report.yaml -organization=kgateway-dev -project=kgateway -version=$(VERSION) -url=github.com/kgateway-dev/kgateway -contact=github.com/kgateway-dev/kgateway/issues/new/choose
@@ -735,6 +761,17 @@ bump-gie: ## Bump Gateway API Inference Extension to $DEP_REF (or $DEP_VERSION).
 	hack/bump_deps.sh gie "$$DEP_REF"; \
 	echo "Updating licensing..."; \
 	$(MAKE) generate-licenses
+
+#----------------------------------------------------------------------------
+# Info
+#----------------------------------------------------------------------------
+
+.PHONY: envoyversion
+envoyversion: ENVOY_VERSION_TAG ?= $(shell echo $(ENVOY_IMAGE) | cut -d':' -f2)
+envoyversion:
+	echo "Version is $(ENVOY_VERSION_TAG)"
+	echo "Commit for envoyproxy is $(shell curl -s https://raw.githubusercontent.com/solo-io/envoy-gloo/refs/tags/v$(ENVOY_VERSION_TAG)/bazel/repository_locations.bzl | grep "envoy =" -A 4 | grep commit | cut -d'"' -f2)"
+	echo "Current ABI in envoyinit can be found in the cargo.toml's envoy-proxy-dynamic-modules-rust-sdk"
 
 #----------------------------------------------------------------------------------
 # Printing makefile variables utility

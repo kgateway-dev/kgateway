@@ -13,7 +13,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	route "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/httproute"
@@ -23,6 +22,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 

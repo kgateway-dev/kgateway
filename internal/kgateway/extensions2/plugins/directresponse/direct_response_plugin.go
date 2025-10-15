@@ -18,12 +18,11 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
-	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
@@ -143,8 +142,8 @@ func (p *directResponsePluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, output
 }
 
 func (p *directResponsePluginGwPass) ApplyForRouteBackend(
-	policy pluginsdkir.PolicyIR,
-	pCtx *pluginsdkir.RouteBackendContext,
+	policy ir.PolicyIR,
+	pCtx *ir.RouteBackendContext,
 ) error {
 	return ir.ErrNotAttachable
 }

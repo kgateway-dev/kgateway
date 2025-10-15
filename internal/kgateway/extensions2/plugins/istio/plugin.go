@@ -17,11 +17,11 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	ourwellknown "github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 var VirtualIstioGK = schema.GroupKind{

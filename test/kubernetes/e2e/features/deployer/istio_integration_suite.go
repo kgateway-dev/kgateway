@@ -1,4 +1,4 @@
-//go:build ignore
+//go:build ignore && e2e
 
 package deployer
 
@@ -79,7 +79,7 @@ func (s *istioIntegrationDeployerSuite) AfterTest(suiteName, testName string) {
 func (s *istioIntegrationDeployerSuite) TestConfigureIstioIntegrationFromGatewayParameters() {
 	// Assert Istio integration is enabled and correct Istio image is set
 	listOpts := metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=gw",
+		LabelSelector: testdefaults.WellKnownAppLabel + "=gw",
 	}
 	matcher := gomega.And(
 		matchers.PodMatches(matchers.ExpectedPod{ContainerName: istio.SDSContainerName}),

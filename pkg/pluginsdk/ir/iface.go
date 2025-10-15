@@ -18,9 +18,9 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
@@ -168,12 +168,12 @@ type ProxyTranslationPass interface {
 		out *envoyroutev3.VirtualHost,
 	)
 
-	NetworkFilters() ([]plugins.StagedNetworkFilter, error)
+	NetworkFilters() ([]filters.StagedNetworkFilter, error)
 
 	// called 1 time per filter-chain.
 	// If a plugin emits new filters, they must be with a plugin unique name.
 	// filters added to impact specific routes should be disabled on the listener level, so they don't impact other routes.
-	HttpFilters(fc FilterChainCommon) ([]plugins.StagedHttpFilter, error)
+	HttpFilters(fc FilterChainCommon) ([]filters.StagedHttpFilter, error)
 
 	// called 1 time per filter chain after listeners and allows tweaking HCM settings.
 	ApplyHCM(
@@ -249,11 +249,11 @@ func (s UnimplementedProxyTranslationPass) ApplyForRouteBackend(policy PolicyIR,
 	return nil
 }
 
-func (s UnimplementedProxyTranslationPass) HttpFilters(fc FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
+func (s UnimplementedProxyTranslationPass) HttpFilters(fc FilterChainCommon) ([]filters.StagedHttpFilter, error) {
 	return nil, nil
 }
 
-func (s UnimplementedProxyTranslationPass) NetworkFilters() ([]plugins.StagedNetworkFilter, error) {
+func (s UnimplementedProxyTranslationPass) NetworkFilters() ([]filters.StagedNetworkFilter, error) {
 	return nil, nil
 }
 

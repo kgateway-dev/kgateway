@@ -3,25 +3,25 @@
 ## How do I run a test?
 
 1. Make sure you have a kind cluster running with the images loaded. You can do this by running `./hack/kind/setup-kind.sh`
-2. The `make go-test` command will run all tests (e2e and unit tests). To run a specific e2e test, you can use `go test` directly.
+2. The `make unit` command will not run e2e tests; `make e2e-test` does. To run a specific e2e test, you can use `go test -tags=e2e` directly. This is accomplished via go build tags, so when you add a new test, be sure to make the first line of each go source file read `//go:build e2e`.
 
 To run a specific test suite directly (everything that starts with `TestKgateway`):
 ```shell
-go test -v -timeout 600s ./test/kubernetes/e2e/tests -run ^TestKgateway
+go test -tags=e2e -v -timeout 600s ./test/kubernetes/e2e/tests -run ^TestKgateway
 ```
 Here the regex matches any test whose name starts with `TestKgateway` (e.g. `TestKgatewayBasicRouting` would also run).
 
 You can also run a specific match (only run the suite that starts with `TestKgateway`):
 ```shell
 
-go test -v -timeout 600s ./test/kubernetes/e2e/tests -run ^TestKgateway$
+go test -tags=e2e -v -timeout 600s ./test/kubernetes/e2e/tests -run ^TestKgateway$
 ```
 
 Here the `$` anchors the regex to the end of the string, so it would only match exactly `TestKgateway`.
 
 To run a specific e2e test, you can use regex to select a specific sub-suite or test:
 ```shell 
-go test -v -timeout 600s ./test/kubernetes/e2e/tests -run ^TestKgateway$$/^BasicRouting$$
+go test -tags=e2e -v -timeout 600s ./test/kubernetes/e2e/tests -run ^TestKgateway$$/^BasicRouting$$
 ```
 
 You can find more information on running tests in the [e2e test debugging guide](debugging.md#step-2-running-tests).

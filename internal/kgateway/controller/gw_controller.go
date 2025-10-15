@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -156,7 +158,7 @@ func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 	err = updateStatus(ctx, r.cli, &gw, generatedSvc)
 	if err != nil {
 		log.Error(err, "failed to update status")
-		result.Requeue = true
+		result.RequeueAfter = time.Second
 	}
 
 	err = r.deployer.DeployObjsWithSource(ctx, objs, &gw)
@@ -255,6 +257,10 @@ func updateGatewayStatusWithRetryFunc(
 	err := utilretry.RetryOnConflict(utilretry.DefaultRetry, func() error {
 		var gw api.Gateway
 		if err := cli.Get(ctx, gwNN, &gw); err != nil {
+			// If the Gateway no longer exists, there's nothing to update.
+			if apierrors.IsNotFound(err) {
+				return nil
+			}
 			return err
 		}
 		original := gw.DeepCopy()

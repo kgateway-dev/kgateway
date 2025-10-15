@@ -67,6 +67,41 @@ if [ $skip_get -eq 0 ]; then
   go mod tidy
 fi
 
+# Update GIE_CRD_VERSION in files (for GIE bumps only) to the exact ref passed in.
+update_gie_crd_version_line() {
+  # $1 = file path, $2 = mode ("mk" for Makefile-style, "sh" for shell)
+  local file="$1"
+  local mode="$2"
+  if [ ! -f "$file" ]; then
+    echo "WARN: $file not found, skipping"
+    return 0
+  fi
+  echo "Setting GIE_CRD_VERSION to '${ref}' in $file"
+
+  if [ "$mode" = "mk" ]; then
+    # If the var exists, replace its RHS (supports '=', '?=', '=').
+    if grep -Eq '^[[:space:]]*GIE_CRD_VERSION[[:space:]]*([?:]?=)' "$file"; then
+      sed -i.bak -E \
+        -e 's|^([[:space:]]*GIE_CRD_VERSION[[:space:]]*[?:]?=)[[:space:]]*.*$|\1 '"$ref"'|g' \
+        "$file"
+      rm -f "$file.bak"
+    else
+      # Append a sane default form if not present.
+      printf '\nGIE_CRD_VERSION ?= %s\n' "$ref" >> "$file"
+    fi
+  else
+    # Shell-style assignment; replace the whole line if present, else append.
+    if grep -Eq '^[[:space:]]*GIE_CRD_VERSION=' "$file"; then
+      sed -i.bak -E \
+        -e 's|^[[:space:]]*GIE_CRD_VERSION=.*$|GIE_CRD_VERSION="'"$ref"'"|g' \
+        "$file"
+      rm -f "$file.bak"
+    else
+      printf '\nGIE_CRD_VERSION="%s"\n' "$ref" >> "$file"
+    fi
+  fi
+}
+
 # Helper: derive image tag from module version.
 # - For pseudo-versions that end with '...-YYYYMMDDHHMMSS-<sha>', produce 'vYYYYMMDD-<sha7>'
 # - Otherwise (e.g., semver tag), use the version itself as the image tag.
@@ -93,6 +128,16 @@ if [ "$kind" = gie ]; then
     -e "s|(gateway-api-inference-extension/epp:)[^[:space:]\"]+|\1${img_tag}|g" \
     "$root/$EPP_YAML_PATH"
     rm -f "$root/$EPP_YAML_PATH.bak"
+
+  # Also update GIE_CRD_VERSION to the ref we were given (tag or SHA).
+  update_gie_crd_version_line "$root/Makefile" "mk"
+  if [ -f "$root/hack/kind/setup-kind.sh" ]; then
+    update_gie_crd_version_line "$root/hack/kind/setup-kind.sh" "sh"
+  elif [ -f "$root/kind/setup-kind.sh" ]; then
+    update_gie_crd_version_line "$root/kind/setup-kind.sh" "sh"
+  else
+    echo "WARN: No setup-kind.sh found under hack/kind or kind/, skipping"
+  fi
 fi
 
 # Fetch and store the CRDs

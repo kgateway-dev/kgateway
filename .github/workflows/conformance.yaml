@@ -30,8 +30,6 @@ jobs:
     - id: run-tests
       uses: ./.github/actions/kube-gateway-api-conformance-tests
 
-  # Temporarily disabled until https://github.com/kubernetes-sigs/gateway-api-inference-extension/pull/1691
-  # is merged upstream. This job is kept as a stub to satisfy required checks.
   kube_inference_extension_conformance_tests:
     name: kubernetes gateway api inference extension conformance tests (${{matrix.image-variant}})
     runs-on: ubuntu-22.04
@@ -44,14 +42,9 @@ jobs:
         image-variant:
           - standard
     steps:
-    - name: Temporarily skipped (awaiting GIE v1.4.0 support)
-      run: |
-        echo "This test is temporarily disabled while waiting for Gateway API v1.4.0 support in GIE."
-        echo "See: https://github.com/kubernetes-sigs/gateway-api-inference-extension/pull/1691"
-        echo "Test will be re-enabled once upstream PR is merged."
-    # - uses: actions/checkout@v4
-    # - id: run-tests
-    #   uses: ./.github/actions/kube-inference-extension-conformance-tests
+    - uses: actions/checkout@v4
+    - id: run-tests
+      uses: ./.github/actions/kube-inference-extension-conformance-tests
 
   kube_agent_gateway_conformance_tests:
     name: kubernetes gateway api agent-gateway conformance tests (${{matrix.image-variant}})

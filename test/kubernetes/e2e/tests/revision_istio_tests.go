@@ -1,4 +1,4 @@
-//go:build ignore
+//go:build ignore && e2e
 
 package tests
 

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -13,6 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
+	"sigs.k8s.io/yaml"
 
 	internaldeployer "github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
 	pkgdeployer "github.com/kgateway-dev/kgateway/v2/pkg/deployer"
@@ -131,8 +133,12 @@ func (dt DeployerTester) RunHelmChartTest(
 		}
 	}
 
+	// Validate the output YAML
+	validateYAML(t, outputFile, data)
+
 	diff := cmp.Diff(data, got)
-	assert.Empty(t, diff, diff)
+	outputStr := "%s\nthe golden file, which can be refreshed via `REFRESH_GOLDEN=true go test ./test/deployer`, is\n%s"
+	assert.Empty(t, diff, outputStr, diff, outputFile)
 }
 
 func DefaultDeployerInputs(dt DeployerTester, commonCols *collections.CommonCollections) *pkgdeployer.Inputs {
@@ -151,5 +157,35 @@ func DefaultDeployerInputs(dt DeployerTester, commonCols *collections.CommonColl
 		GatewayClassName:         dt.ClassName,
 		WaypointGatewayClassName: dt.WaypointClassName,
 		AgentgatewayClassName:    dt.AgwClassName,
+	}
+}
+
+// validateYAML checks that the YAML file is valid:
+// 1. No lines should end with ': ' (colon-space)
+// 2. Each YAML document should be unmarshalable
+func validateYAML(t *testing.T, filename string, data []byte) {
+	t.Helper()
+
+	// Check for lines ending with whitespace. This could be "innocent" go
+	// templating lint but can also be 'oops, the chart assumed that
+	// .Values.foo would never be empty'
+	lines := strings.Split(string(data), "\n")
+	for i, line := range lines {
+		if strings.HasSuffix(line, " ") || strings.HasSuffix(line, "\t") {
+			t.Errorf("helm chart produced yaml indicative of a buggy helm chart not handling edge cases: line %d in %s ends with whitespace: %q", i+1, filename, line)
+		}
+	}
+
+	// Split into YAML documents and unmarshal each one
+	documents := strings.Split(string(data), "\n---\n")
+	for i, doc := range documents {
+		doc = strings.TrimSpace(doc)
+		if doc == "" || doc == "---" {
+			continue
+		}
+		var obj interface{}
+		if err := yaml.Unmarshal([]byte(doc), &obj); err != nil {
+			t.Errorf("helm chart produced invalid yaml: failed to unmarshal document %d in %s: %v", i+1, filename, err)
+		}
 	}
 }

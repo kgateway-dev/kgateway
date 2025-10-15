@@ -44,6 +44,11 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.FieldDefault
           elementRelationship: atomic
+    - name: modelAliases
+      type:
+        map:
+          elementType:
+            scalar: string
     - name: promptEnrichment
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AIPromptEnrichment

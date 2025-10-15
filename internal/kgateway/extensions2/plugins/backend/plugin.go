@@ -24,13 +24,13 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/backend/ai"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
@@ -393,8 +393,8 @@ func (p *backendPlugin) ApplyForBackend(pCtx *ir.RouteBackendContext, in ir.Http
 // called 1 time per listener
 // if a plugin emits new filters, they must be with a plugin unique name.
 // any filter returned from route config must be disabled, so it doesnt impact other routes.
-func (p *backendPlugin) HttpFilters(fc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
-	result := []plugins.StagedHttpFilter{}
+func (p *backendPlugin) HttpFilters(fc ir.FilterChainCommon) ([]filters.StagedHttpFilter, error) {
+	result := []filters.StagedHttpFilter{}
 
 	var errs []error
 	if p.aiGatewayEnabled[fc.FilterChainName] {
@@ -405,8 +405,8 @@ func (p *backendPlugin) HttpFilters(fc ir.FilterChainCommon) ([]plugins.StagedHt
 		result = append(result, aiFilters...)
 	}
 	if p.needsDfpFilter[fc.FilterChainName] {
-		pluginStage := plugins.DuringStage(plugins.OutAuthStage)
-		f := plugins.MustNewStagedFilter("envoy.filters.http.dynamic_forward_proxy", dfpFilterConfig, pluginStage)
+		pluginStage := filters.DuringStage(filters.OutAuthStage)
+		f := filters.MustNewStagedFilter("envoy.filters.http.dynamic_forward_proxy", dfpFilterConfig, pluginStage)
 		result = append(result, f)
 	}
 	return result, errors.Join(errs...)

@@ -27,11 +27,11 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	kgwellknown "github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	pluginutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 )
 
