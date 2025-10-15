@@ -62,15 +62,7 @@ func (s *testingSuite) TestA2AMessageSend() {
 	s.Require().GreaterOrEqual(len(resp.Result.History), 1)
 
 	// Find the agent response in history
-	var agentMessage *struct {
-		Kind      string `json:"kind"`
-		MessageID string `json:"messageId"`
-		Parts     []struct {
-			Kind string `json:"kind"`
-			Text string `json:"text"`
-		} `json:"parts"`
-		Role string `json:"role"`
-	}
+	var agentMessage *A2AMessage
 	for _, msg := range resp.Result.History {
 		if msg.Role == "agent" {
 			agentMessage = &msg
@@ -102,15 +94,7 @@ func (s *testingSuite) TestA2AHelloWorld() {
 	s.Require().Equal("working", resp.Result.Status.State)
 
 	// Find the agent response in history
-	var agentMessage *struct {
-		Kind      string `json:"kind"`
-		MessageID string `json:"messageId"`
-		Parts     []struct {
-			Kind string `json:"kind"`
-			Text string `json:"text"`
-		} `json:"parts"`
-		Role string `json:"role"`
-	}
+	var agentMessage *A2AMessage
 	for _, msg := range resp.Result.History {
 		if msg.Role == "agent" {
 			agentMessage = &msg
