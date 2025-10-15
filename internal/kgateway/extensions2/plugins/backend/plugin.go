@@ -43,9 +43,9 @@ const (
 
 // backendIr is the internal representation of a backend.
 type backendIr struct {
-	AwsIr  *AwsIr
-	AIIr   *ai.IR
-	Errors []error
+	awsIr  *AwsIr
+	aiIr   *ai.IR
+	errors []error
 }
 
 func (u *backendIr) Equals(other any) bool {
@@ -54,11 +54,11 @@ func (u *backendIr) Equals(other any) bool {
 		return false
 	}
 	// AI
-	if !u.AIIr.Equals(otherBackend.AIIr) {
+	if !u.aiIr.Equals(otherBackend.aiIr) {
 		return false
 	}
 	// AWS
-	if !u.AwsIr.Equals(otherBackend.AwsIr) {
+	if !u.awsIr.Equals(otherBackend.awsIr) {
 		return false
 	}
 	return true
@@ -89,8 +89,8 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 	translateFn := buildTranslateFunc(ctx, commoncol.Secrets, commoncol.Services, commoncol.Namespaces)
 	bcol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *ir.BackendObjectIR {
 		backendIR := translateFn(krtctx, i)
-		if len(backendIR.Errors) > 0 {
-			logger.Error("failed to translate backend", "backend", i.GetName(), "error", errors.Join(backendIR.Errors...))
+		if len(backendIR.errors) > 0 {
+			logger.Error("failed to translate backend", "backend", i.GetName(), "error", errors.Join(backendIR.errors...))
 		}
 		objSrc := ir.ObjectSource{
 			Kind:      gk.Kind,
@@ -104,7 +104,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 		backend.AppProtocol = parseAppProtocol(i)
 		backend.Obj = i
 		backend.ObjIr = backendIR
-		backend.Errors = backendIR.Errors
+		backend.Errors = backendIR.errors
 
 		// Parse common annotations
 		ir.ParseObjectAnnotations(&backend, i)
@@ -153,12 +153,12 @@ func buildTranslateFunc(
 
 			lambdaArn, err := buildLambdaARN(i.Spec.Aws, region)
 			if err != nil {
-				beIr.Errors = append(beIr.Errors, err)
+				beIr.errors = append(beIr.errors, err)
 			}
 
 			endpointConfig, err := configureLambdaEndpoint(i.Spec.Aws)
 			if err != nil {
-				beIr.Errors = append(beIr.Errors, err)
+				beIr.errors = append(beIr.errors, err)
 			}
 
 			var lambdaTransportSocket *envoycorev3.TransportSocket
@@ -168,7 +168,7 @@ func buildTranslateFunc(
 					Sni: endpointConfig.hostname,
 				})
 				if err != nil {
-					beIr.Errors = append(beIr.Errors, err)
+					beIr.errors = append(beIr.errors, err)
 				}
 				lambdaTransportSocket = &envoycorev3.TransportSocket{
 					Name: envoywellknown.TransportSocketTls,
@@ -183,26 +183,26 @@ func buildTranslateFunc(
 				var err error
 				secret, err = pluginutils.GetSecretIr(secrets, krtctx, i.Spec.Aws.Auth.SecretRef.Name, i.GetNamespace())
 				if err != nil {
-					beIr.Errors = append(beIr.Errors, err)
+					beIr.errors = append(beIr.errors, err)
 				}
 			}
 
 			lambdaFilters, err := buildLambdaFilters(
 				lambdaArn, region, secret, invokeMode, i.Spec.Aws.Lambda.PayloadTransformMode)
 			if err != nil {
-				beIr.Errors = append(beIr.Errors, err)
+				beIr.errors = append(beIr.errors, err)
 			}
 
-			beIr.AwsIr = &AwsIr{
+			beIr.awsIr = &AwsIr{
 				lambdaEndpoint:        endpointConfig,
 				lambdaTransportSocket: lambdaTransportSocket,
 				lambdaFilters:         lambdaFilters,
 			}
 		case v1alpha1.BackendTypeAI:
-			beIr.AIIr = &ai.IR{}
-			err := ai.PreprocessAIBackend(ctx, i.Spec.AI, beIr.AIIr)
+			beIr.aiIr = &ai.IR{}
+			err := ai.PreprocessAIBackend(ctx, i.Spec.AI, beIr.aiIr)
 			if err != nil {
-				beIr.Errors = append(beIr.Errors, err)
+				beIr.errors = append(beIr.errors, err)
 			}
 			ns := i.GetNamespace()
 			if i.Spec.AI.LLM != nil {
@@ -211,14 +211,14 @@ func buildTranslateFunc(
 				if secretRef != nil {
 					secret, err := pluginutils.GetSecretIr(secrets, krtctx, secretRef.Name, ns)
 					if err != nil {
-						beIr.Errors = append(beIr.Errors, err)
+						beIr.errors = append(beIr.errors, err)
 					}
-					beIr.AIIr.AISecret = secret
+					beIr.aiIr.AISecret = secret
 				}
 				return &beIr
 			}
 			if len(i.Spec.AI.PriorityGroups) > 0 {
-				beIr.AIIr.AIMultiSecret = map[string]*ir.Secret{}
+				beIr.aiIr.AIMultiSecret = map[string]*ir.Secret{}
 				for idx, group := range i.Spec.AI.PriorityGroups {
 					for jdx, provider := range group.Providers {
 						secretRef := getAISecretRef(&provider.LLMProvider)
@@ -228,9 +228,9 @@ func buildTranslateFunc(
 						// if secretRef is used, set the secret on the backend ir
 						secret, err := pluginutils.GetSecretIr(secrets, krtctx, secretRef.Name, ns)
 						if err != nil {
-							beIr.Errors = append(beIr.Errors, err)
+							beIr.errors = append(beIr.errors, err)
 						}
-						beIr.AIIr.AIMultiSecret[ai.GetMultiPoolSecretKey(idx, jdx, secretRef.Name)] = secret
+						beIr.aiIr.AIMultiSecret[ai.GetMultiPoolSecretKey(idx, jdx, secretRef.Name)] = secret
 					}
 				}
 			}
@@ -279,28 +279,28 @@ func processBackendForEnvoy(ctx context.Context, in ir.BackendObjectIR, out *env
 	case v1alpha1.BackendTypeStatic:
 		if err := processStaticBackendForEnvoy(spec.Static, out); err != nil {
 			logger.Error("failed to process static backend", "error", err)
-			beIr.Errors = append(beIr.Errors, err)
+			beIr.errors = append(beIr.errors, err)
 		}
 	case v1alpha1.BackendTypeAWS:
-		if err := processAws(beIr.AwsIr, out); err != nil {
+		if err := processAws(beIr.awsIr, out); err != nil {
 			logger.Error("failed to process aws backend", "error", err)
-			beIr.Errors = append(beIr.Errors, err)
+			beIr.errors = append(beIr.errors, err)
 		}
 	case v1alpha1.BackendTypeAI:
-		err := ai.ProcessAIBackend(spec.AI, beIr.AIIr.AISecret, beIr.AIIr.AIMultiSecret, out)
+		err := ai.ProcessAIBackend(spec.AI, beIr.aiIr.AISecret, beIr.aiIr.AIMultiSecret, out)
 		if err != nil {
 			logger.Error("failed to process ai backend", "error", err)
-			beIr.Errors = append(beIr.Errors, err)
+			beIr.errors = append(beIr.errors, err)
 		}
 		err = ai.AddUpstreamClusterHttpFilters(out)
 		if err != nil {
 			logger.Error("failed to add upstream cluster http filters", "error", err)
-			beIr.Errors = append(beIr.Errors, err)
+			beIr.errors = append(beIr.errors, err)
 		}
 	case v1alpha1.BackendTypeDynamicForwardProxy:
 		if err := processDynamicForwardProxy(spec.DynamicForwardProxy, out); err != nil {
 			logger.Error("failed to process dynamic forward proxy backend", "error", err)
-			beIr.Errors = append(beIr.Errors, err)
+			beIr.errors = append(beIr.errors, err)
 		}
 	}
 	return nil
@@ -360,7 +360,7 @@ func (p *backendPlugin) ApplyForBackend(pCtx *ir.RouteBackendContext, in ir.Http
 	beIr := pCtx.Backend.ObjIr.(*backendIr)
 	switch backend.Spec.Type {
 	case v1alpha1.BackendTypeAI:
-		err := ai.ApplyAIBackend(beIr.AIIr, pCtx, out)
+		err := ai.ApplyAIBackend(beIr.aiIr, pCtx, out)
 		if err != nil {
 			return err
 		}

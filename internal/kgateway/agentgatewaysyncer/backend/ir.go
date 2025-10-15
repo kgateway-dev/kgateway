@@ -39,7 +39,7 @@ func (u *AgwBackendIr) Equals(other any) bool {
 		return false
 	}
 
-	// Compare Errors - simple string comparison
+	// Compare errors - simple string comparison
 	if len(u.Errors) != len(otherBackend.Errors) {
 		return false
 	}

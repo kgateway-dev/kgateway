@@ -169,7 +169,7 @@ func TestBackendTranslatorPropagatesPolicyErrors(t *testing.T) {
 	assert.Equal(t, envoyclusterv3.Cluster_STATIC, cluster.GetType())
 	assert.Empty(t, cluster.GetLoadAssignment().GetEndpoints())
 
-	// Validate that policy errors are not stored in backend.Errors
+	// Validate that policy errors are not stored in backend.errors
 	assert.Empty(t, backend.Errors)
 }
 
@@ -229,7 +229,7 @@ func TestBackendTranslatorHandlesXDSValidationErrors(t *testing.T) {
 	assert.Equal(t, envoyclusterv3.Cluster_STATIC, cluster.GetType())
 	assert.Empty(t, cluster.GetLoadAssignment().GetEndpoints())
 
-	// Backend IR should remain clean (xDS errors don't modify backend.Errors)
+	// Backend IR should remain clean (xDS errors don't modify backend.errors)
 	assert.Empty(t, backend.Errors)
 }
 
