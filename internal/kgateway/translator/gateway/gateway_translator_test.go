@@ -9,7 +9,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/kgateway-dev/kgateway/v2/api/settings"
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	translatortest "github.com/kgateway-dev/kgateway/v2/test/translator"
 )
@@ -66,7 +66,7 @@ func TestBasic(t *testing.T) {
 
 	t.Run("http gateway with basic routing", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "http-routing",
+			inputFile:  "http-routing/basic.yaml",
 			outputFile: "http-routing-proxy.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
@@ -160,7 +160,7 @@ func TestBasic(t *testing.T) {
 				Namespace: "infra",
 				Name:      "example-gateway",
 			},
-		}, func(s *settings.Settings) {
+		}, func(s *apisettings.Settings) {
 			s.WeightedRoutePrecedence = true
 		})
 	})
@@ -229,7 +229,7 @@ func TestBasic(t *testing.T) {
 				Name:      "example-gateway",
 			},
 		},
-			func(s *settings.Settings) {
+			func(s *apisettings.Settings) {
 				s.GlobalPolicyNamespace = "kgateway-system"
 			})
 	})
@@ -288,7 +288,7 @@ func TestBasic(t *testing.T) {
 				Name:      "test",
 			},
 		},
-			func(s *settings.Settings) {
+			func(s *apisettings.Settings) {
 				s.PolicyMerge = `{"trafficPolicy":{"extAuth":"DeepMerge"}}`
 			})
 	})
@@ -302,7 +302,7 @@ func TestBasic(t *testing.T) {
 				Name:      "test",
 			},
 		},
-			func(s *settings.Settings) {
+			func(s *apisettings.Settings) {
 				s.PolicyMerge = `{"trafficPolicy":{"extProc":"DeepMerge"}}`
 			})
 	})
@@ -316,7 +316,7 @@ func TestBasic(t *testing.T) {
 				Name:      "test",
 			},
 		},
-			func(s *settings.Settings) {
+			func(s *apisettings.Settings) {
 				s.PolicyMerge = `{"trafficPolicy":{"transformation":"DeepMerge"}}`
 			})
 	})
@@ -1266,195 +1266,206 @@ func TestBasic(t *testing.T) {
 			},
 		})
 	})
+
+	t.Run("HTTP RequestRedirect filter", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "http-routing/request-redirect.yaml",
+			outputFile: "http-routing/request-redirect.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
+			},
+		})
+	})
 }
 
-func TestRouteReplacement(t *testing.T) {
-	type routeReplacementTest struct {
+func TestValidation(t *testing.T) {
+	type validationTest struct {
 		name      string
 		category  string
 		inputFile string
-		minMode   settings.RouteReplacementMode
+		minMode   apisettings.ValidationMode
 	}
 
-	tt := []routeReplacementTest{
+	tt := []validationTest{
 		{
 			name:      "Path Prefix Invalid",
 			category:  "matcher",
 			inputFile: "matcher-path-prefix-invalid.yaml",
-			minMode:   settings.RouteReplacementStandard,
+			minMode:   apisettings.ValidationStandard,
 		},
 		{
 			name:      "Regex RE2 Unsupported",
 			category:  "matcher",
 			inputFile: "matcher-regex-re2-unsupported.yaml",
-			minMode:   settings.RouteReplacementStandard,
+			minMode:   apisettings.ValidationStandard,
 		},
 		{
 			name:      "Path Regex Invalid",
 			category:  "matcher",
 			inputFile: "matcher-path-regex-invalid.yaml",
-			minMode:   settings.RouteReplacementStandard,
+			minMode:   apisettings.ValidationStandard,
 		},
 		{
 			name:      "Header Regex Invalid",
 			category:  "matcher",
 			inputFile: "matcher-header-regex-invalid.yaml",
-			minMode:   settings.RouteReplacementStandard,
+			minMode:   apisettings.ValidationStandard,
 		},
 		{
 			name:      "Extension Ref Invalid",
 			category:  "policy",
 			inputFile: "policy-extension-ref-invalid.yaml",
-			minMode:   settings.RouteReplacementStandard,
+			minMode:   apisettings.ValidationStandard,
 		},
 		{
 			name:      "Gateway",
 			category:  "attachment",
 			inputFile: "gateway-invalid.yaml",
-			minMode:   settings.RouteReplacementStandard,
+			minMode:   apisettings.ValidationStandard,
 		},
 		{
 			name:      "Gateway/Listener",
 			category:  "attachment",
 			inputFile: "gateway-listener-invalid.yaml",
-			minMode:   settings.RouteReplacementStandard,
+			minMode:   apisettings.ValidationStandard,
 		},
 		{
 			name:      "XListenerSet",
 			category:  "attachment",
 			inputFile: "xlistenerset-invalid.yaml",
-			minMode:   settings.RouteReplacementStandard,
+			minMode:   apisettings.ValidationStandard,
 		},
 		{
 			name:      "XListenerSet/Listener",
 			category:  "attachment",
 			inputFile: "xlistenerset-listener-invalid.yaml",
-			minMode:   settings.RouteReplacementStandard,
+			minMode:   apisettings.ValidationStandard,
 		},
 		{
 			name:      "HTTPRoute",
 			category:  "attachment",
 			inputFile: "httproute-invalid.yaml",
-			minMode:   settings.RouteReplacementStandard,
+			minMode:   apisettings.ValidationStandard,
 		},
 		{
 			name:      "Multi-Target",
 			category:  "attachment",
 			inputFile: "multi-target-invalid.yaml",
-			minMode:   settings.RouteReplacementStandard,
+			minMode:   apisettings.ValidationStandard,
 		},
 		{
 			name:      "URLRewrite Invalid",
 			category:  "builtin",
 			inputFile: "urlrewrite-invalid.yaml",
-			minMode:   settings.RouteReplacementStandard,
+			minMode:   apisettings.ValidationStandard,
 		},
 		{
 			name:      "Query Regex Invalid",
 			category:  "matcher",
 			inputFile: "matcher-query-regex-invalid.yaml",
-			minMode:   settings.RouteReplacementStrict,
+			minMode:   apisettings.ValidationStrict,
 		},
 		{
 			name:      "CSRF Regex Invalid",
 			category:  "policy",
 			inputFile: "policy-csrf-regex-invalid.yaml",
-			minMode:   settings.RouteReplacementStrict,
+			minMode:   apisettings.ValidationStrict,
 		},
 		{
 			name:      "AI Invalid Default Values",
 			category:  "policy",
 			inputFile: "policy-ai-default-value-invalid.yaml",
-			minMode:   settings.RouteReplacementStandard,
+			minMode:   apisettings.ValidationStandard,
 		},
 		// TODO(tim): Uncomment this test once #11995 is fixed.
 		// {
 		// 	name:      "Multiple Invalid Policies Conflict",
 		// 	category:  "policy",
 		// 	inputFile: "policy-multiple-invalid-conflict.yaml",
-		// 	minMode:   settings.RouteReplacementStandard,
+		// 	minMode:   apisettings.ValidationStandard,
 		// },
 		{
 			name:      "ExtAuth Extension Ref Invalid",
 			category:  "policy",
 			inputFile: "policy-extauth-extension-ref-invalid.yaml",
-			minMode:   settings.RouteReplacementStrict,
+			minMode:   apisettings.ValidationStrict,
 		},
 		{
 			name:      "Transformation Body Template Invalid",
 			category:  "policy",
 			inputFile: "policy-transformation-body-template-invalid.yaml",
-			minMode:   settings.RouteReplacementStrict,
+			minMode:   apisettings.ValidationStrict,
 		},
 		{
 			name:      "Transformation Header Template Invalid",
 			category:  "policy",
 			inputFile: "policy-transformation-header-template-invalid.yaml",
-			minMode:   settings.RouteReplacementStrict,
+			minMode:   apisettings.ValidationStrict,
 		},
 		{
 			name:      "Transformation Malformed Template Invalid",
 			category:  "policy",
 			inputFile: "policy-transformation-malformed-template-invalid.yaml",
-			minMode:   settings.RouteReplacementStrict,
+			minMode:   apisettings.ValidationStrict,
 		},
 		{
 			name:      "Template Structure Invalid",
 			category:  "policy",
 			inputFile: "policy-template-structure-invalid.yaml",
-			minMode:   settings.RouteReplacementStrict,
+			minMode:   apisettings.ValidationStrict,
 		},
 		{
 			name:      "Header Template Invalid",
 			category:  "policy",
 			inputFile: "policy-header-template-invalid.yaml",
-			minMode:   settings.RouteReplacementStrict,
+			minMode:   apisettings.ValidationStrict,
 		},
 		{
 			name:      "Request Header Modifier Invalid",
 			category:  "builtin",
 			inputFile: "request-header-modifier-invalid.yaml",
-			minMode:   settings.RouteReplacementStrict,
+			minMode:   apisettings.ValidationStrict,
 		},
 		{
 			name:      "Response Header Modifier Invalid",
 			category:  "builtin",
 			inputFile: "response-header-modifier-invalid.yaml",
-			minMode:   settings.RouteReplacementStrict,
+			minMode:   apisettings.ValidationStrict,
 		},
 		{
 			name:      "Gateway/Listener/Merge",
 			category:  "attachment",
 			inputFile: "gateway-listener-merge-invalid.yaml",
-			minMode:   settings.RouteReplacementStandard,
+			minMode:   apisettings.ValidationStandard,
 		},
 		{
 			name:      "BackendConfigPolicy Missing Secret",
 			category:  "backendconfigpolicy",
 			inputFile: "invalid-missing-secret.yaml",
-			minMode:   settings.RouteReplacementStandard,
+			minMode:   apisettings.ValidationStandard,
 		},
 		{
 			name:      "BackendConfigPolicy Invalid Cipher Suites",
 			category:  "backendconfigpolicy",
 			inputFile: "invalid-cipher-suites.yaml",
-			minMode:   settings.RouteReplacementStandard,
+			minMode:   apisettings.ValidationStandard,
 		},
 		{
 			name:      "BackendConfigPolicy Invalid TLS Files Non-existent",
 			category:  "backendconfigpolicy",
 			inputFile: "invalid-tlsfiles-nonexistent.yaml",
-			minMode:   settings.RouteReplacementStandard,
+			minMode:   apisettings.ValidationStandard,
 		},
 		{
 			name:      "BackendConfigPolicy Invalid Outlier Detection Zero Interval",
 			category:  "backendconfigpolicy",
 			inputFile: "invalid-outlier-detection-zero-interval.yaml",
-			minMode:   settings.RouteReplacementStandard,
+			minMode:   apisettings.ValidationStandard,
 		},
 	}
 
-	runTest := func(t *testing.T, test routeReplacementTest, mode settings.RouteReplacementMode) {
+	runTest := func(t *testing.T, test validationTest, mode apisettings.ValidationMode) {
 		t.Helper()
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
@@ -1470,17 +1481,17 @@ func TestRouteReplacement(t *testing.T) {
 			Name:      "example-gateway",
 		}
 
-		settingOpts := func(s *settings.Settings) {
-			s.RouteReplacementMode = mode
+		settingOpts := func(s *apisettings.Settings) {
+			s.ValidationMode = mode
 		}
 		translatortest.TestTranslation(t, ctx, []string{inputFile}, outputFile, gwNN, settingOpts)
 	}
 
-	for _, mode := range []settings.RouteReplacementMode{settings.RouteReplacementStandard, settings.RouteReplacementStrict} {
+	for _, mode := range []apisettings.ValidationMode{apisettings.ValidationStandard, apisettings.ValidationStrict} {
 		t.Run(strings.ToLower(string(mode)), func(t *testing.T) {
 			for _, test := range tt {
 				// Skip tests that require a higher mode
-				if test.minMode == settings.RouteReplacementStrict && mode == settings.RouteReplacementStandard {
+				if test.minMode == apisettings.ValidationStrict && mode == apisettings.ValidationStandard {
 					continue
 				}
 				t.Run(fmt.Sprintf("%s/%s", test.category, test.name), func(t *testing.T) {
@@ -1546,6 +1557,10 @@ func TestRouteDelegation(t *testing.T) {
 
 	t.Run("Child rule matcher", func(t *testing.T) {
 		test(t, "child_rule_matcher.yaml")
+	})
+
+	t.Run("URL Rewrite inherit-parent-matcher", func(t *testing.T) {
+		test(t, "url_rewrite_inherit_parent_matcher.yaml")
 	})
 
 	t.Run("Child with multiple parents", func(t *testing.T) {
@@ -1636,7 +1651,7 @@ func TestDiscoveryNamespaceSelector(t *testing.T) {
 			Name:      "example-gateway",
 		}
 		settingOpts := []translatortest.SettingsOpts{
-			func(s *settings.Settings) {
+			func(s *apisettings.Settings) {
 				s.DiscoveryNamespaceSelectors = cfgJSON
 			},
 		}

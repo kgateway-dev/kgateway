@@ -1,3 +1,5 @@
+//go:build e2e
+
 package header_modifiers
 
 import (
@@ -40,7 +42,7 @@ func (s *testingSuite) checkPodsRunning() {
 		})
 	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx,
 		proxyObjectMeta.GetNamespace(), metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", proxyObjectMeta.GetName()),
+			LabelSelector: fmt.Sprintf("%s=%s", testdefaults.WellKnownAppLabel, proxyObjectMeta.GetName()),
 		})
 }
 

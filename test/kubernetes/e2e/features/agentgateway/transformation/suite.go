@@ -1,3 +1,5 @@
+//go:build e2e
+
 package transformation
 
 import (
@@ -57,6 +59,7 @@ func (s *testingSuite) TestGatewayWithTransformedRoute() {
 		gateway.Namespace,
 		gwv1.GatewayConditionProgrammed,
 		metav1.ConditionTrue,
+		timeout,
 	)
 	s.TestInstallation.Assertions.EventuallyGatewayCondition(
 		s.Ctx,
@@ -64,6 +67,7 @@ func (s *testingSuite) TestGatewayWithTransformedRoute() {
 		gateway.Namespace,
 		gwv1.GatewayConditionAccepted,
 		metav1.ConditionTrue,
+		timeout,
 	)
 
 	testCases := []struct {

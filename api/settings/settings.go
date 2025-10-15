@@ -2,36 +2,37 @@ package settings
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/kelseyhightower/envconfig"
 )
 
-// RouteReplacementMode determines how invalid routes are handled during translation.
-// Higher modes increase safety guarantees, but may have performance implications.
-type RouteReplacementMode string
+// ValidationMode determines how invalid routes and policies are handled during translation.
+// Higher levels increase safety guarantees, but may have performance implications.
+type ValidationMode string
 
 const (
-	// RouteReplacementStandard rewrites invalid routes to direct responses
+	// ValidationStandard rewrites invalid routes to direct responses
 	// (typically HTTP 500), preserving a valid config while isolating failures.
 	// This limits the blast radius of misconfigured routes or policies without
 	// affecting unrelated tenants.
-	RouteReplacementStandard RouteReplacementMode = "STANDARD"
-	// RouteReplacementStrict builds on STANDARD by running targeted validation
+	ValidationStandard ValidationMode = "STANDARD"
+	// ValidationStrict builds on standard by running targeted validation
 	// (e.g. RDS, CDS, and security-related policies). Routes that fail these
 	// checks are also replaced with direct responses, and helps prevent unsafe
 	// config from reaching Envoy.
-	RouteReplacementStrict RouteReplacementMode = "STRICT"
+	ValidationStrict ValidationMode = "STRICT"
 )
 
 // Decode implements envconfig.Decoder.
-func (m *RouteReplacementMode) Decode(value string) error {
-	mode := RouteReplacementMode(value)
-	switch mode {
-	case RouteReplacementStandard, RouteReplacementStrict:
-		*m = mode
+func (v *ValidationMode) Decode(value string) error {
+	level := ValidationMode(strings.ToUpper(value))
+	switch level {
+	case ValidationStandard, ValidationStrict:
+		*v = level
 		return nil
 	default:
-		return fmt.Errorf("invalid route replacement mode: %q", value)
+		return fmt.Errorf("invalid validation mode: %q", value)
 	}
 }
 
@@ -105,6 +106,14 @@ type Settings struct {
 	// This corresponds to the value of the `grpc-xds` port in the service.
 	XdsServicePort uint32 `split_words:"true" default:"9977"`
 
+	// XdsAuth enables or disables xDS authentication between the data-plane and control-plane.
+	// By default, this is enabled.
+	XdsAuth bool `split_words:"true" default:"true"`
+
+	// XdsTLS enables or disables TLS encryption for xDS communication between the data-plane and control-plane.
+	// By default, this is disabled.
+	XdsTLS bool `split_words:"true" default:"false"`
+
 	// AgentgatewayXdsServicePort is the port of the Kubernetes Service that serves xDS config for agentgateway.
 	// This corresponds to the value of the `grpc-xds-agw` port in the service.
 	AgentgatewayXdsServicePort uint32 `split_words:"true" default:"9978"`
@@ -154,11 +163,11 @@ type Settings struct {
 	// When enabled, the default weight for a route is 0.
 	WeightedRoutePrecedence bool `split_words:"true" default:"false"`
 
-	// RouteReplacementMode determines how invalid routes are handled during translation.
+	// ValidationMode determines how invalid routes and policies are handled during translation.
 	// If not set, kgateway will default to "STANDARD". Supported values are:
 	// - "STANDARD": Rewrites invalid routes to direct responses (typically HTTP 500)
 	// - "STRICT": Builds on STANDARD by running targeted validation
-	RouteReplacementMode RouteReplacementMode `split_words:"true" default:"STANDARD"`
+	ValidationMode ValidationMode `split_words:"true" default:"STANDARD"`
 
 	// EnableBuiltinDefaultMetrics enables the default builtin controller-runtime metrics and go runtime metrics.
 	// Since these metrics can be numerous, it is disabled by default.

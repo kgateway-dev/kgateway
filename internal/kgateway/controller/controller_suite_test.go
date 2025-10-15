@@ -34,7 +34,7 @@ import (
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/settings"
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
@@ -79,10 +79,15 @@ func getAssetsDir() string {
 	var assets string
 	if os.Getenv("KUBEBUILDER_ASSETS") == "" {
 		// set default if not user provided
-		out, err := exec.Command("sh", "-c", "make -sC $(dirname $(go env GOMOD)) envtest-path").CombinedOutput()
+		out, err := exec.Command("sh", "-c", "make -s --no-print-directory -C $(dirname $(go env GOMOD)) envtest-path").CombinedOutput()
 		fmt.Fprintln(GinkgoWriter, "out:", string(out))
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 		assets = strings.TrimSpace(string(out))
+	}
+	if assets != "" {
+		info, err := os.Stat(assets)
+		ExpectWithOffset(1, err).NotTo(HaveOccurred(), "assets directory does not exist: %s", assets)
+		ExpectWithOffset(1, info.IsDir()).To(BeTrue(), "assets path is not a directory: %s", assets)
 	}
 	return assets
 }
@@ -223,7 +228,7 @@ func createManager(
 		DiscoveryNamespaceFilter: fakeDiscoveryNamespaceFilter{},
 		CommonCollections:        newCommonCols(ctx, kubeClient),
 	}
-	if err := controller.NewBaseGatewayController(parentCtx, gwCfg, nil); err != nil {
+	if err := controller.NewBaseGatewayController(parentCtx, gwCfg, nil, nil); err != nil {
 		cancel()
 		return nil, err
 	}
@@ -273,7 +278,7 @@ func createManager(
 		ControllerName: gatewayControllerName,
 		InferenceExt:   inferenceExt,
 	}
-	if err := controller.NewBaseInferencePoolController(parentCtx, poolCfg, &gwCfg, nil); err != nil {
+	if err := controller.NewBaseInferencePoolController(parentCtx, poolCfg, &gwCfg, nil, nil); err != nil {
 		cancel()
 		return nil, err
 	}
@@ -298,7 +303,7 @@ func newCommonCols(ctx context.Context, kubeClient kube.Client) *collections.Com
 		Expect(err).ToNot(HaveOccurred())
 	}
 
-	settings, err := settings.BuildSettings()
+	settings, err := apisettings.BuildSettings()
 	if err != nil {
 		Expect(err).ToNot(HaveOccurred())
 	}

@@ -7,7 +7,7 @@ import (
 	types "k8s.io/apimachinery/pkg/types"
 	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
-	v1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	apisv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	internal "github.com/kgateway-dev/kgateway/v2/api/applyconfiguration/internal"
 	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -19,7 +19,7 @@ type TrafficPolicyApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
 	Spec                             *TrafficPolicySpecApplyConfiguration `json:"spec,omitempty"`
-	Status                           *v1alpha2.PolicyStatus               `json:"status,omitempty"`
+	Status                           *apisv1.PolicyStatus                 `json:"status,omitempty"`
 }
 
 // TrafficPolicy constructs a declarative configuration of the TrafficPolicy type for use with
@@ -68,6 +68,7 @@ func extractTrafficPolicy(trafficPolicy *apiv1alpha1.TrafficPolicy, fieldManager
 	b.WithAPIVersion("gateway.kgateway.dev/v1alpha1")
 	return b, nil
 }
+func (b TrafficPolicyApplyConfiguration) IsApplyConfiguration() {}
 
 // WithKind sets the Kind field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
@@ -238,13 +239,29 @@ func (b *TrafficPolicyApplyConfiguration) WithSpec(value *TrafficPolicySpecApply
 // WithStatus sets the Status field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Status field is set to the value of the last call.
-func (b *TrafficPolicyApplyConfiguration) WithStatus(value v1alpha2.PolicyStatus) *TrafficPolicyApplyConfiguration {
+func (b *TrafficPolicyApplyConfiguration) WithStatus(value apisv1.PolicyStatus) *TrafficPolicyApplyConfiguration {
 	b.Status = &value
 	return b
+}
+
+// GetKind retrieves the value of the Kind field in the declarative configuration.
+func (b *TrafficPolicyApplyConfiguration) GetKind() *string {
+	return b.TypeMetaApplyConfiguration.Kind
+}
+
+// GetAPIVersion retrieves the value of the APIVersion field in the declarative configuration.
+func (b *TrafficPolicyApplyConfiguration) GetAPIVersion() *string {
+	return b.TypeMetaApplyConfiguration.APIVersion
 }
 
 // GetName retrieves the value of the Name field in the declarative configuration.
 func (b *TrafficPolicyApplyConfiguration) GetName() *string {
 	b.ensureObjectMetaApplyConfigurationExists()
 	return b.ObjectMetaApplyConfiguration.Name
+}
+
+// GetNamespace retrieves the value of the Namespace field in the declarative configuration.
+func (b *TrafficPolicyApplyConfiguration) GetNamespace() *string {
+	b.ensureObjectMetaApplyConfigurationExists()
+	return b.ObjectMetaApplyConfiguration.Namespace
 }

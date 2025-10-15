@@ -49,7 +49,7 @@ runs:
       else
         # TODO(tim): this will require changes once the new helm chart is integrated
         # and published with the release pipeline.
-        # Else, use the provided version to install Gloo from the helm repository.
+        # Else, use the provided version to install kgateway from the helm repository.
         helm upgrade -i -n kgateway-system kgateway-crds oci://${{ env.IMAGE_REGISTRY }}/charts/kgateway-crds \
           --version ${VERSION} \
           --create-namespace

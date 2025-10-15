@@ -87,6 +87,17 @@ func (r *ReportMap) GatewayNamespaceName(key types.NamespacedName) *GatewayRepor
 	return r.Gateways[key]
 }
 
+// GatewayObservedGenerationFor returns the observed generation stored in the
+// GatewayReport for the provided namespaced name. The boolean indicates whether
+// a report was present for the provided key.
+func (r *ReportMap) GatewayObservedGenerationFor(key types.NamespacedName) (int64, bool) {
+	gr := r.GatewayNamespaceName(key)
+	if gr == nil {
+		return 0, false
+	}
+	return gr.observedGeneration, true
+}
+
 func (r *ReportMap) newGatewayReport(gateway *gwv1.Gateway) *GatewayReport {
 	gr := &GatewayReport{}
 	gr.observedGeneration = gateway.Generation
@@ -282,7 +293,6 @@ func (r *statusReporter) Gateway(gateway *gwv1.Gateway) reporter.GatewayReporter
 	if gr == nil {
 		gr = r.report.newGatewayReport(gateway)
 	}
-	gr.observedGeneration = gateway.Generation
 	return gr
 }
 
@@ -291,7 +301,6 @@ func (r *statusReporter) ListenerSet(listenerSet *gwxv1alpha1.XListenerSet) repo
 	if lsr == nil {
 		lsr = r.report.newListenerSetReport(listenerSet)
 	}
-	lsr.observedGeneration = listenerSet.Generation
 	return lsr
 }
 
@@ -300,7 +309,6 @@ func (r *statusReporter) Route(obj metav1.Object) reporter.RouteReporter {
 	if rr == nil {
 		rr = r.report.newRouteReport(obj)
 	}
-	rr.observedGeneration = obj.GetGeneration()
 	return rr
 }
 

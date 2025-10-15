@@ -17,23 +17,20 @@ type HelmConfig struct {
 
 type HelmGateway struct {
 	// naming
-	Name             *string `json:"name,omitempty"`
-	GatewayName      *string `json:"gatewayName,omitempty"`
-	GatewayNamespace *string `json:"gatewayNamespace,omitempty"`
-	NameOverride     *string `json:"nameOverride,omitempty"`
-	FullnameOverride *string `json:"fullnameOverride,omitempty"`
+	Name               *string           `json:"name,omitempty"`
+	GatewayName        *string           `json:"gatewayName,omitempty"`
+	GatewayNamespace   *string           `json:"gatewayNamespace,omitempty"`
+	GatewayClassName   *string           `json:"gatewayClassName,omitempty"`
+	GatewayAnnotations map[string]string `json:"gatewayAnnotations,omitempty"`
+	GatewayLabels      map[string]string `json:"gatewayLabels,omitempty"`
+	NameOverride       *string           `json:"nameOverride,omitempty"`
+	FullnameOverride   *string           `json:"fullnameOverride,omitempty"`
 
 	// deployment/service values
-	ReplicaCount   *uint32      `json:"replicaCount,omitempty"`
-	Ports          []HelmPort   `json:"ports,omitempty"`
-	Service        *HelmService `json:"service,omitempty"`
-	FloatingUserId *bool        `json:"floatingUserId,omitempty"`
-	// TODO(chandler): OmitDefaultSecurityContext is only for the agw internal
-	// helm chart, but that chart would be cleaner if we instead passed in
-	// entire SecurityContext and PodSecurityContext values. Then our
-	// opinionated securityContext defaults would only live in go.
-	OmitDefaultSecurityContext *bool                      `json:"omitDefaultSecurityContext,omitempty"`
-	Strategy                   *appsv1.DeploymentStrategy `json:"strategy,omitempty"`
+	ReplicaCount *uint32                    `json:"replicaCount,omitempty"`
+	Ports        []HelmPort                 `json:"ports,omitempty"`
+	Service      *HelmService               `json:"service,omitempty"`
+	Strategy     *appsv1.DeploymentStrategy `json:"strategy,omitempty"`
 
 	// serviceaccount values
 	ServiceAccount *HelmServiceAccount `json:"serviceAccount,omitempty"`
@@ -123,8 +120,14 @@ type HelmServiceAccount struct {
 // helmXds represents the xds host and port to which envoy will connect
 // to receive xds config updates
 type HelmXds struct {
-	Host *string `json:"host,omitempty"`
-	Port *uint32 `json:"port,omitempty"`
+	Host *string     `json:"host,omitempty"`
+	Port *uint32     `json:"port,omitempty"`
+	Tls  *HelmXdsTls `json:"tls,omitempty"`
+}
+
+type HelmXdsTls struct {
+	Enabled *bool   `json:"enabled,omitempty"`
+	CaCert  *string `json:"caCert,omitempty"`
 }
 
 type HelmIstio struct {

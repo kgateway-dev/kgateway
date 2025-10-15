@@ -38,7 +38,7 @@ API_INPUT_DIRS_SPACE="${API_INPUT_DIRS_SPACE%,}" # drop trailing space
 API_INPUT_DIRS_COMMA="${API_INPUT_DIRS_COMMA%,}" # drop trailing comma
 
 go tool register-gen --output-file zz_generated.register.go ${API_INPUT_DIRS_SPACE}
-go tool controller-gen crd:maxDescLen=0 object rbac:roleName=kgateway paths="${APIS_PKG}/api/${VERSION}" \
+go tool controller-gen crd:maxDescLen=50000 object rbac:roleName=kgateway paths="${APIS_PKG}/api/${VERSION}" \
     output:crd:artifacts:config=${ROOT_DIR}/${CRD_DIR} output:rbac:artifacts:config=${ROOT_DIR}/${MANIFESTS_DIR}
 # Template the ClusterRole name to include the namespace
 if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -86,11 +86,12 @@ go tool client-gen \
   --input "${API_INPUT_DIRS_COMMA//${APIS_PKG}/}" \
   --output-dir "${ROOT_DIR}/${CLIENT_GEN_DIR}/${CLIENTSET_PKG_NAME}" \
   --output-pkg "${OUTPUT_PKG}/${CLIENTSET_PKG_NAME}" \
-  --apply-configuration-package "${APIS_PKG}/api/applyconfiguration"
+  --apply-configuration-package "${APIS_PKG}/api/applyconfiguration" \
+  --plural-exceptions "GatewayParameters:GatewayParameters"
 
 go generate ${ROOT_DIR}/internal/...
 go generate ${ROOT_DIR}/pkg/...
 
 # fix imports of gen code
-go tool goimports -w ${ROOT_DIR}/${CLIENT_GEN_DIR}
-go tool goimports -w ${ROOT_DIR}/api
+go tool goimports -local "github.com/kgateway-dev/kgateway/v2/" -w ${ROOT_DIR}/${CLIENT_GEN_DIR}
+go tool goimports -local "github.com/kgateway-dev/kgateway/v2/" -w ${ROOT_DIR}/api

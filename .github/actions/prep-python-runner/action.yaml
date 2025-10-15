@@ -13,7 +13,15 @@ runs:
       with:
         python-version: '3.12'
 
+    - name: Cache Python venv
+      uses: actions/cache@v4
+      id: cache-venv
+      with:
+        path: .venv
+        key: venv-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('python/requirements-dev.txt', 'python/requirements.txt', 'test/kubernetes/e2e/features/aiextension/tests/requirements.txt') }}
+
     - name: Install dependencies for amd64 runner
+      if: steps.cache-venv.outputs.cache-hit != 'true'
       shell: bash
       run: |
         python3 -m venv .venv
@@ -21,6 +29,11 @@ runs:
         python3 -m pip install -r python/requirements-dev.txt --no-cache-dir
         python3 -m pip install -r python/requirements.txt --no-cache-dir
         python3 -m pip install -r test/kubernetes/e2e/features/aiextension/tests/requirements.txt --no-cache-dir
+
+    - name: Set Python environment variables
+      shell: bash
+      run: |
+        source .venv/bin/activate
         echo "$VIRTUAL_ENV/bin" >> $GITHUB_PATH
         echo "VIRTUAL_ENV=$VIRTUAL_ENV" >> $GITHUB_ENV
         echo "PYTHON=$(which python)" >> $GITHUB_ENV

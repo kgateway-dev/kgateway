@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-guardrails-webhook
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ai-guardrails-webhook
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ai-guardrails-webhook
+    spec:
+      containers:
+      - name: webhook
+        image: gcr.io/solo-public/docs/ai-guardrail-webhook:latest
+        ports:
+        - containerPort: 8000
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-guardrails-webhook
+spec:
+  selector:
+    app.kubernetes.io/name: ai-guardrails-webhook
+  ports:
+  - port: 8000

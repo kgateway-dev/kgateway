@@ -16,12 +16,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 func TestTracingConverter(t *testing.T) {
@@ -150,7 +149,7 @@ func TestTracingConverter(t *testing.T) {
 									},
 								},
 							},
-							ServiceName: pointer.String("my:service"),
+							ServiceName: ptr.To("my:service"),
 							ResourceDetectors: []v1alpha1.ResourceDetector{{
 								EnvironmentResourceDetector: &v1alpha1.EnvironmentResourceDetectorConfig{},
 							}},
@@ -159,11 +158,11 @@ func TestTracingConverter(t *testing.T) {
 							},
 						},
 					},
-					ClientSampling:   pointer.Int32(45),
-					RandomSampling:   pointer.Int32(55),
-					OverallSampling:  pointer.Int32(65),
-					Verbose:          pointer.Bool(true),
-					MaxPathTagLength: pointer.Int32(127),
+					ClientSampling:   ptr.To(int32(45)),
+					RandomSampling:   ptr.To(int32(55)),
+					OverallSampling:  ptr.To(int32(65)),
+					Verbose:          ptr.To(true),
+					MaxPathTagLength: ptr.To(int32(127)),
 					Attributes: []v1alpha1.CustomAttribute{
 						{
 							Name: "Literal",
@@ -175,14 +174,14 @@ func TestTracingConverter(t *testing.T) {
 							Name: "Environment",
 							Environment: &v1alpha1.CustomAttributeEnvironment{
 								Name:         "Env",
-								DefaultValue: pointer.String("Environment Value"),
+								DefaultValue: ptr.To("Environment Value"),
 							},
 						},
 						{
 							Name: "Request Header",
 							RequestHeader: &v1alpha1.CustomAttributeHeader{
 								Name:         "Header",
-								DefaultValue: pointer.String("Request"),
+								DefaultValue: ptr.To("Request"),
 							},
 						},
 						{
@@ -236,7 +235,7 @@ func TestTracingConverter(t *testing.T) {
 							},
 						},
 					},
-					SpawnUpstreamSpan: pointer.Bool(true),
+					SpawnUpstreamSpan: ptr.To(true),
 				},
 				expected: &envoy_hcm.HttpConnectionManager_Tracing{
 					Provider: &envoytracev3.Tracing_Http{
@@ -398,9 +397,9 @@ func TestTracingConverter(t *testing.T) {
 					},
 				)
 				updateTracingConfig(&ir.HcmContext{
-					Gateway: pluginsdkir.GatewayIR{
-						SourceObject: &pluginsdkir.Gateway{
-							ObjectSource: pluginsdkir.ObjectSource{
+					Gateway: ir.GatewayIR{
+						SourceObject: &ir.Gateway{
+							ObjectSource: ir.ObjectSource{
 								Namespace: "default",
 								Name:      "gw",
 							},

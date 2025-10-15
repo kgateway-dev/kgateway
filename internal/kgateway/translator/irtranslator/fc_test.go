@@ -11,10 +11,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
@@ -34,11 +34,11 @@ type addFilters struct {
 	ir.UnimplementedProxyTranslationPass
 }
 
-func (a addFilters) NetworkFilters() ([]plugins.StagedNetworkFilter, error) {
-	return []plugins.StagedNetworkFilter{
+func (a addFilters) NetworkFilters() ([]filters.StagedNetworkFilter, error) {
+	return []filters.StagedNetworkFilter{
 		{
 			Filter: &envoylistenerv3.Filter{Name: testPluginFilterName},
-			Stage:  plugins.BeforeStage(plugins.AuthZStage),
+			Stage:  filters.BeforeStage(filters.AuthZStage),
 		},
 	}, nil
 }
@@ -66,7 +66,7 @@ func TestFilterChains(t *testing.T) {
 				FilterChainName: "httpchain",
 				CustomNetworkFilters: []ir.CustomEnvoyFilter{{
 					Name:        testCustomFilterName,
-					FilterStage: plugins.BeforeStage(plugins.AuthZStage),
+					FilterStage: filters.BeforeStage(filters.AuthZStage),
 				}},
 			},
 		}},
@@ -75,7 +75,7 @@ func TestFilterChains(t *testing.T) {
 				FilterChainName: "tcpchain",
 				CustomNetworkFilters: []ir.CustomEnvoyFilter{{
 					Name:        testCustomFilterName,
-					FilterStage: plugins.BeforeStage(plugins.AuthZStage),
+					FilterStage: filters.BeforeStage(filters.AuthZStage),
 				}},
 			},
 		}},

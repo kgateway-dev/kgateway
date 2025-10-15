@@ -17,7 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/settings"
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/routeutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -38,7 +38,7 @@ type httpRouteConfigurationTranslator struct {
 	requireTlsOnVirtualHosts bool
 	pluginPass               TranslationPassPlugins
 	logger                   *slog.Logger
-	routeReplacementMode     settings.RouteReplacementMode
+	validationLevel          apisettings.ValidationMode
 	validator                validator.Validator
 }
 
@@ -269,7 +269,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 
 	// If there are no errors, validate the route will not be rejected by the xDS server.
 	if routeProcessingErr == nil {
-		routeProcessingErr = validateRoute(ctx, out, h.validator, h.routeReplacementMode)
+		routeProcessingErr = validateRoute(ctx, out, h.validator, h.validationLevel)
 	}
 
 	// routeAcceptanceErr is used to set the Accepted=false,Reason=RouteRuleDropped condition on the route
@@ -310,7 +310,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 			})
 		}
 
-		if h.routeReplacementMode == settings.RouteReplacementStandard || h.routeReplacementMode == settings.RouteReplacementStrict {
+		if h.validationLevel == apisettings.ValidationStandard || h.validationLevel == apisettings.ValidationStrict {
 			// Clear all headers and filter configs when the route is replaced with a direct response
 			out.TypedPerFilterConfig = nil
 			out.RequestHeadersToAdd = nil
@@ -418,6 +418,7 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			FilterChainName:   h.fc.FilterChainName,
 			In:                in,
 			TypedFilterConfig: typedPerFilterConfig,
+			ListenerPort:      h.listener.BindPort,
 		}
 		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
 		policies, mergeOrigins := mergePolicies(pass, pols)

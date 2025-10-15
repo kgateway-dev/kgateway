@@ -1,7 +1,9 @@
 name: labeler
 on:
   pull_request_target:
-    types: [opened, edited, reopened]
+    types: [opened, edited, reopened, synchronize, labeled, unlabeled]
+  merge_group:
+    types: [checks_requested]
 
 permissions:
   issues: write
@@ -9,13 +11,37 @@ permissions:
   contents: read
 
 jobs:
+  check-labels:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Conditional skip for merge queue
+        if: github.event_name == 'merge_group'
+        run: |
+          echo "Skipping check in merge queue"
+          exit 0
+
+      # only run this step on PRs, not in the merge queue
+      - name: Check for 'work in progress' label
+        if: github.event_name != 'merge_group' && contains(github.event.pull_request.labels.*.name, 'work in progress')
+        run: |
+          echo "Pull request has 'work in progress' label. Blocking merge."
+          exit 1
+
   labeler:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Conditional skip for merge queue
+        if: github.event_name == 'merge_group'
+        run: |
+          echo "Skipping check in merge queue"
+          exit 0
 
+      # only run these steps on PRs, not in the merge queue
+      - if: github.event_name != 'merge_group'
+        uses: actions/checkout@v4
       - name: Sync /kind labels & enforce changelog fields
+        if: github.event_name != 'merge_group'
         uses: kgateway-dev/pr-kind-labeler@main
         with:
           token: ${{ secrets.GITHUB_TOKEN }}

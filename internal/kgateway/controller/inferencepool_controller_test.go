@@ -99,6 +99,16 @@ var _ = Describe("InferencePool controller", func() {
 								Namespace: ptr.To(apiv1.Namespace(defaultNamespace)),
 							},
 							ControllerName: gatewayControllerName,
+							Conditions: []metav1.Condition{
+								{
+									Type:               "Accepted",
+									Status:             metav1.ConditionTrue,
+									ObservedGeneration: 1,
+									LastTransitionTime: metav1.Now(),
+									Reason:             "Accepted",
+									Message:            "Route accepted",
+								},
+							},
 						},
 					},
 				},

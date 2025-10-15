@@ -71,12 +71,12 @@ Statuses:
         status: Unknown
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: Gateway is accepted
+        message: Successfully accepted Gateway
         reason: Accepted
         status: "True"
         type: Accepted
       - lastTransitionTime: null
-        message: Gateway is programmed
+        message: Successfully programmed Gateway
         reason: Programmed
         status: "True"
         type: Programmed
@@ -84,22 +84,22 @@ Statuses:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: Listener is accepted
+          message: Successfully accepted Listener
           reason: Accepted
           status: "True"
           type: Accepted
         - lastTransitionTime: null
-          message: Listener does not have conflicts
+          message: Successfully verified that Listener has no conflicts
           reason: NoConflicts
           status: "False"
           type: Conflicted
         - lastTransitionTime: null
-          message: Listener has valid refs
+          message: Successfully resolved all references
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
         - lastTransitionTime: null
-          message: Listener is programmed
+          message: Successfully programmed Listener
           reason: Programmed
           status: "True"
           type: Programmed
@@ -115,13 +115,13 @@ Statuses:
       - conditions:
         - lastTransitionTime: null
           message: 'Replaced Rule (0): invalid xds configuration: error initializing
-            configuration '''': Failed to parse request template: Failed to parse
+            configuration ''/dev/fd/0'': Failed to parse request template: Failed to parse
             body template [inja.exception.parser_error] (at 1:21) unexpected ''}'''
           reason: RouteRuleReplaced
           status: "False"
           type: Accepted
         - lastTransitionTime: null
-          message: Route has valid refs
+          message: Successfully resolved all references
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
@@ -140,7 +140,7 @@ Statuses:
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: 'invalid xds configuration: error initializing configuration '''':
+          message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
             Failed to parse request template: Failed to parse body template [inja.exception.parser_error]
             (at 1:21) unexpected ''}'''
           reason: Invalid

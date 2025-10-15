@@ -4,8 +4,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gwv1alpha3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=backendconfigpolicies,verbs=get;list;watch
@@ -23,7 +22,7 @@ type BackendConfigPolicy struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Spec              BackendConfigPolicySpec `json:"spec,omitempty"`
-	Status            gwv1alpha2.PolicyStatus `json:"status,omitempty"`
+	Status            gwv1.PolicyStatus       `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -213,7 +212,7 @@ type TLS struct {
 	// certificates for validating the backend's certificate chain. Currently,
 	// only the system certificate pool is supported via SDS.
 	// +optional
-	WellKnownCACertificates *gwv1alpha3.WellKnownCACertificatesType `json:"wellKnownCACertificates,omitempty"`
+	WellKnownCACertificates *gwv1.WellKnownCACertificatesType `json:"wellKnownCACertificates,omitempty"`
 
 	// InsecureSkipVerify originates TLS but skips verification of the backend's certificate.
 	// WARNING: This is an insecure option that should only be used if the risks are understood.

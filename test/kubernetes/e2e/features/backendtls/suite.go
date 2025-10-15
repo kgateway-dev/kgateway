@@ -1,3 +1,5 @@
+//go:build e2e
+
 package backendtls
 
 import (
@@ -15,20 +17,17 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gwv1a3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
-
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/backendtlspolicy"
-	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
-	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
-	"github.com/kgateway-dev/kgateway/v2/test/helpers"
-	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/backendtlspolicy"
+	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 )
 
 var (
@@ -40,7 +39,7 @@ var (
 	}
 	proxyDeployment  = &appsv1.Deployment{ObjectMeta: proxyObjMeta}
 	proxyService     = &corev1.Service{ObjectMeta: proxyObjMeta}
-	backendTlsPolicy = &gwv1a3.BackendTLSPolicy{
+	backendTlsPolicy = &gwv1.BackendTLSPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "tls-policy",
 			Namespace: "default",
@@ -115,16 +114,16 @@ func (s *tsuite) TestBackendTLSPolicyAndStatus() {
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment, backendTlsPolicy, configMap)
 	// TODO: make this a specific assertion to remove the need for c/p the label selector
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, defaults.CurlPod.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=curl",
+		LabelSelector: defaults.WellKnownAppLabel + "=curl",
 	})
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, nginxMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=nginx",
+		LabelSelector: defaults.WellKnownAppLabel + "=nginx",
 	})
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, nginx2Meta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=nginx2",
+		LabelSelector: defaults.WellKnownAppLabel + "=nginx2",
 	})
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=gw",
+		LabelSelector: defaults.WellKnownAppLabel + "=gw",
 	})
 
 	tt := []struct {
@@ -192,9 +191,9 @@ func (s *tsuite) TestBackendTLSPolicyAndStatus() {
 	s.Require().NoError(err)
 
 	s.assertPolicyStatus(metav1.Condition{
-		Type:               string(gwv1a2.PolicyConditionAccepted),
+		Type:               string(gwv1.PolicyConditionAccepted),
 		Status:             metav1.ConditionFalse,
-		Reason:             string(gwv1a2.PolicyReasonInvalid),
+		Reason:             string(gwv1.PolicyReasonInvalid),
 		Message:            fmt.Sprintf("%s: default/ca", backendtlspolicy.ErrConfigMapNotFound),
 		ObservedGeneration: backendTlsPolicy.Generation,
 	})
@@ -204,14 +203,14 @@ func (s *tsuite) assertPolicyStatus(inCondition metav1.Condition) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
 	p := s.testInstallation.Assertions
 	p.Gomega.Eventually(func(g gomega.Gomega) {
-		tlsPol := &gwv1a3.BackendTLSPolicy{}
+		tlsPol := &gwv1.BackendTLSPolicy{}
 		objKey := client.ObjectKeyFromObject(backendTlsPolicy)
 		err := s.testInstallation.ClusterContext.Client.Get(s.ctx, objKey, tlsPol)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get BackendTLSPolicy %s", objKey)
 
 		g.Expect(tlsPol.Status.Ancestors).To(gomega.HaveLen(2), "ancestors didn't have length of 2")
 
-		expectedAncestorRefs := []gwv1a2.ParentReference{
+		expectedAncestorRefs := []gwv1.ParentReference{
 			{
 				Group:     (*gwv1.Group)(&svcGroup),
 				Kind:      (*gwv1.Kind)(&svcKind),

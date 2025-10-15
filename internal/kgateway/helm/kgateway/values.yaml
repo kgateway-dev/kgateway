@@ -44,5 +44,3 @@ gateway:
     # When set, the agent gateway will use this configmap instead of creating the default one
     # The configmap must contain a 'config.yaml' key with the agent gateway configuration
     customConfigMapName: ""
-
-  omitDefaultSecurityContext: false

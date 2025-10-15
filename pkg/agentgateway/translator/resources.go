@@ -27,6 +27,9 @@ type AgentGwXdsResources struct {
 	Reports        reports.ReportMap
 	AttachedRoutes map[string]uint
 
+	// Generation of the Gateway object used to produce Reports
+	GatewayGeneration int64
+
 	// Resources config for gateway (Bind, Listener, Route)
 	ResourceConfig envoycache.Resources
 
@@ -42,6 +45,7 @@ func (r AgentGwXdsResources) ResourceName() string {
 func (r AgentGwXdsResources) Equals(in AgentGwXdsResources) bool {
 	return r.NamespacedName == in.NamespacedName &&
 		report{reportMap: r.Reports, attachedRoutes: r.AttachedRoutes}.Equals(report{reportMap: in.Reports, attachedRoutes: in.AttachedRoutes}) &&
+		r.GatewayGeneration == in.GatewayGeneration &&
 		r.ResourceConfig.Version == in.ResourceConfig.Version &&
 		r.AddressConfig.Version == in.AddressConfig.Version
 }
@@ -109,6 +113,8 @@ func (l ListenerSetReports) Equals(in ListenerSetReports) bool {
 type GatewayReports struct {
 	Reports        map[types.NamespacedName]*reports.GatewayReport
 	AttachedRoutes map[types.NamespacedName]map[string]uint
+	// Generations carries the observed generation per Gateway
+	Generations map[types.NamespacedName]int64
 }
 
 func (g GatewayReports) ResourceName() string {
@@ -132,6 +138,11 @@ func (g GatewayReports) Equals(in GatewayReports) bool {
 		if !maps.Equal(gRoutes, inRoutes) {
 			return false
 		}
+	}
+
+	// Compare Generations
+	if !maps.Equal(g.Generations, in.Generations) {
+		return false
 	}
 
 	return true

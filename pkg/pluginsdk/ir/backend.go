@@ -76,7 +76,7 @@ const (
 // Recognizes http2 app protocols defined by istio (https://istio.io/latest/docs/ops/configuration/traffic-management/protocol-selection/)
 // and GEP-1911 (https://gateway-api.sigs.k8s.io/geps/gep-1911/#api-semantics).
 func ParseAppProtocol(appProtocol *string) AppProtocol {
-	switch ptr.Deref(appProtocol, "") {
+	switch strings.ToLower(ptr.Deref(appProtocol, "")) {
 	case string(v1alpha1.AppProtocolHttp2):
 		fallthrough
 	case string(v1alpha1.AppProtocolGrpc):
@@ -122,6 +122,10 @@ type BackendObjectIR struct {
 	// CanonicalHostname. We should see if it's possible to have multiple
 	// CanonicalHostnames.
 	ExtraKey string
+
+	// RequiresPolicyStatus indicates if this Backend may require updating status of an attached policy
+	// This is essentially a precomputation of whether there are any 'AttachedPolicies' that are objects
+	RequiresPolicyStatus bool
 
 	AttachedPolicies AttachedPolicies
 

@@ -21,7 +21,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
@@ -77,7 +76,7 @@ type Syncer struct {
 
 	// Collection status reporting
 	// TODO(npolshak): report these separately from proxy_syncer backends https://github.com/kgateway-dev/kgateway/issues/11966
-	//backendStatuses krt.StatusCollection[*v1alpha1.Backend, v1alpha1.BackendStatus]
+	// backendStatuses krt.StatusCollection[*v1alpha1.Backend, v1alpha1.BackendStatus]
 
 	// Synchronization
 	waitForSync []cache.InformerSynced
@@ -117,22 +116,22 @@ func NewAgwSyncer(
 // PolicyStatusAsyncQueue wraps AsyncQueue to implement controllers.Writer interface for Istio's StatusCollections
 // See: https://github.com/istio/istio/blob/531c61709aaa9bc9187c625e9e460be98f2abf2e/pilot/pkg/status/manager.go#L107
 type PolicyStatusAsyncQueue struct {
-	queue utils.AsyncQueue[krt.ObjectWithStatus[controllers.Object, gwv1alpha2.PolicyStatus]]
+	queue utils.AsyncQueue[krt.ObjectWithStatus[controllers.Object, gwv1.PolicyStatus]]
 }
 
-func (b *PolicyStatusAsyncQueue) Enqueue(obj krt.ObjectWithStatus[controllers.Object, gwv1alpha2.PolicyStatus]) {
+func (b *PolicyStatusAsyncQueue) Enqueue(obj krt.ObjectWithStatus[controllers.Object, gwv1.PolicyStatus]) {
 	b.queue.Enqueue(obj)
 }
 
 // GetAsyncQueue returns the underlying AsyncQueue for use in status syncer
-func (b *PolicyStatusAsyncQueue) GetAsyncQueue() utils.AsyncQueue[krt.ObjectWithStatus[controllers.Object, gwv1alpha2.PolicyStatus]] {
+func (b *PolicyStatusAsyncQueue) GetAsyncQueue() utils.AsyncQueue[krt.ObjectWithStatus[controllers.Object, gwv1.PolicyStatus]] {
 	return b.queue
 }
 
 // NewPolicyStatusAsyncQueue creates a new PolicyStatusAsyncQueue
 func NewPolicyStatusAsyncQueue() *PolicyStatusAsyncQueue {
 	return &PolicyStatusAsyncQueue{
-		queue: utils.NewAsyncQueue[krt.ObjectWithStatus[controllers.Object, gwv1alpha2.PolicyStatus]](),
+		queue: utils.NewAsyncQueue[krt.ObjectWithStatus[controllers.Object, gwv1.PolicyStatus]](),
 	}
 }
 
@@ -178,7 +177,7 @@ func (s *Syncer) buildGatewayCollection(
 	krtopts krtutil.KrtOptions,
 ) krt.Collection[translator.GatewayListener] {
 	return translator.GatewayCollection(
-		s.agentgatewayClassName,
+		s.controllerName,
 		s.agwCollections.Gateways,
 		gatewayClasses,
 		s.agwCollections.Namespaces,
@@ -192,7 +191,7 @@ func (s *Syncer) buildAgwResources(
 	gateways krt.Collection[translator.GatewayListener],
 	refGrants translator.ReferenceGrants,
 	krtopts krtutil.KrtOptions,
-) (krt.Collection[agwir.AgwResourcesForGateway], map[schema.GroupKind]krt.StatusCollection[controllers.Object, gwv1alpha2.PolicyStatus]) {
+) (krt.Collection[agwir.AgwResourcesForGateway], map[schema.GroupKind]krt.StatusCollection[controllers.Object, gwv1.PolicyStatus]) {
 	// Build ports and binds
 	ports := krtpkg.UnnamedIndex(gateways, func(l translator.GatewayListener) []string {
 		return []string{fmt.Sprint(l.ParentInfo.Port)}
@@ -294,7 +293,8 @@ func (s *Syncer) buildListenerFromGateway(obj translator.GatewayListener) *agwir
 func (s *Syncer) buildBackendFromBackend(ctx krt.HandlerContext,
 	backend *v1alpha1.Backend, svcCol krt.Collection[*corev1.Service],
 	secretsCol krt.Collection[*corev1.Secret],
-	nsCol krt.Collection[*corev1.Namespace]) ([]translator.AgwResourceWithCustomName, *v1alpha1.BackendStatus) {
+	nsCol krt.Collection[*corev1.Namespace],
+) ([]translator.AgwResourceWithCustomName, *v1alpha1.BackendStatus) {
 	var results []translator.AgwResourceWithCustomName
 	var backendStatus *v1alpha1.BackendStatus
 	backends, backendPolicies, err := s.translator.BackendTranslator().TranslateBackend(ctx, backend, svcCol, secretsCol, nsCol)
@@ -542,19 +542,25 @@ func (s *Syncer) buildXDSCollection(
 			addrVersion ^= res.Version
 		}
 
+		var gwObservedGen int64
+		if gen, ok := (&gwReports).GatewayObservedGenerationFor(gwNamespacedName); ok {
+			gwObservedGen = gen
+		}
+
 		result := &translator.AgentGwXdsResources{
-			NamespacedName: gwNamespacedName,
-			Reports:        gwReports,
-			AttachedRoutes: attachedRoutes,
-			ResourceConfig: envoycache.NewResources(fmt.Sprintf("%d", resourceVersion), cacheResources),
-			AddressConfig:  envoycache.NewResources(fmt.Sprintf("%d", addrVersion), envoytypesAddresses),
+			NamespacedName:    gwNamespacedName,
+			Reports:           gwReports,
+			AttachedRoutes:    attachedRoutes,
+			GatewayGeneration: gwObservedGen,
+			ResourceConfig:    envoycache.NewResources(fmt.Sprintf("%d", resourceVersion), cacheResources),
+			AddressConfig:     envoycache.NewResources(fmt.Sprintf("%d", addrVersion), envoytypesAddresses),
 		}
 		logger.Debug("created XDS resources for gateway with ID", "gwname", fmt.Sprintf("%s,%s", gwNamespacedName.Name, gwNamespacedName.Namespace), "resourceid", result.ResourceName())
 		return result
 	}, krtopts.ToOptions("agent-xds")...)
 }
 
-func (s *Syncer) buildStatusReporting(policyStatuses map[schema.GroupKind]krt.StatusCollection[controllers.Object, gwv1alpha2.PolicyStatus]) {
+func (s *Syncer) buildStatusReporting(policyStatuses map[schema.GroupKind]krt.StatusCollection[controllers.Object, gwv1.PolicyStatus]) {
 	// TODO(npolshak): Move away from report map and separately fetch resource reports
 	// Create separate singleton collections for each resource type instead of merging everything
 	// This avoids the overhead of creating and processing a single large merged report
@@ -563,11 +569,14 @@ func (s *Syncer) buildStatusReporting(policyStatuses map[schema.GroupKind]krt.St
 		merged := make(map[types.NamespacedName]*reports.GatewayReport)
 
 		attached := make(map[types.NamespacedName]map[string]uint)
+		generations := make(map[types.NamespacedName]int64)
 		for _, p := range proxies {
 			// merge GW status reports
 			if gwRep, ok := p.Reports.Gateways[p.NamespacedName]; ok {
 				merged[p.NamespacedName] = gwRep
 			}
+			// record observed generation for this gateway to update report
+			generations[p.NamespacedName] = p.GatewayGeneration
 			// take max per listener across proxies
 			if attached[p.NamespacedName] == nil {
 				attached[p.NamespacedName] = make(map[string]uint)
@@ -581,6 +590,7 @@ func (s *Syncer) buildStatusReporting(policyStatuses map[schema.GroupKind]krt.St
 		return &translator.GatewayReports{
 			Reports:        merged,
 			AttachedRoutes: attached,
+			Generations:    generations,
 		}
 	})
 
@@ -628,7 +638,7 @@ func (s *Syncer) buildStatusReporting(policyStatuses map[schema.GroupKind]krt.St
 }
 
 // registerPolicyStatus takes a policy status collection and registers it to be managed by Istio's StatusCollections.
-func registerPolicyStatus(s *status.StatusCollections, statusCols map[schema.GroupKind]krt.StatusCollection[controllers.Object, gwv1alpha2.PolicyStatus]) {
+func registerPolicyStatus(s *status.StatusCollections, statusCols map[schema.GroupKind]krt.StatusCollection[controllers.Object, gwv1.PolicyStatus]) {
 	for gvk, statusCol := range statusCols {
 		// Capture the GVK for the closure
 		currentGVK := gvk
@@ -637,7 +647,7 @@ func registerPolicyStatus(s *status.StatusCollections, statusCols map[schema.Gro
 		// Create a writer function that matches Istio's StatusCollections interface
 		writer := func(queue status.Queue) krt.HandlerRegistration {
 			// Register the status collection to write to the queue
-			h := currentStatusCol.Register(func(o krt.Event[krt.ObjectWithStatus[controllers.Object, gwv1alpha2.PolicyStatus]]) {
+			h := currentStatusCol.Register(func(o krt.Event[krt.ObjectWithStatus[controllers.Object, gwv1.PolicyStatus]]) {
 				l := o.Latest()
 
 				// Cast controllers.Object to TrafficPolicy for validation (following the pattern requested)
@@ -740,7 +750,7 @@ func (s *Syncer) Start(ctx context.Context) error {
 				Addresses: snap.AddressConfig,
 			}
 			logger.Debug("setting xds snapshot", "resource_name", snap.ResourceName())
-			logger.Debug("snapshot config", "resource_snapshot", snapshot.Resources, "workload_snapshot", snapshot.Addresses)
+			logger.Log(ctx, logging.LevelTrace, "snapshot config", "resource_snapshot", snapshot.Resources, "workload_snapshot", snapshot.Addresses)
 			err := s.xdsCache.SetSnapshot(ctx, snap.ResourceName(), snapshot)
 			if err != nil {
 				logger.Error("failed to set xds snapshot", "resource_name", snap.ResourceName(), "error", err.Error())

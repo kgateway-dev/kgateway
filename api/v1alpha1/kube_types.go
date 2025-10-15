@@ -89,11 +89,13 @@ type Service struct {
 	ClusterIP *string `json:"clusterIP,omitempty"`
 
 	// Additional labels to add to the Service object metadata.
+	// If the same label is present on `Gateway.spec.infrastructure.labels`, the `Gateway` takes precedence.
 	//
 	// +optional
 	ExtraLabels map[string]string `json:"extraLabels,omitempty"`
 
 	// Additional annotations to add to the Service object metadata.
+	// If the same annotation is present on `Gateway.spec.infrastructure.annotations`, the `Gateway` takes precedence.
 	//
 	// +optional
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
@@ -191,6 +193,7 @@ type ServiceAccount struct {
 	ExtraLabels map[string]string `json:"extraLabels,omitempty"`
 
 	// Additional annotations to add to the ServiceAccount object metadata.
+	// If the same annotation is present on `Gateway.spec.infrastructure.annotations`, the `Gateway` takes precedence.
 	//
 	// +optional
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
@@ -213,11 +216,13 @@ func (in *ServiceAccount) GetExtraAnnotations() map[string]string {
 // Configuration for a Kubernetes Pod template.
 type Pod struct {
 	// Additional labels to add to the Pod object metadata.
+	// If the same label is present on `Gateway.spec.infrastructure.labels`, the `Gateway` takes precedence.
 	//
 	// +optional
 	ExtraLabels map[string]string `json:"extraLabels,omitempty"`
 
 	// Additional annotations to add to the Pod object metadata.
+	// If the same annotation is present on `Gateway.spec.infrastructure.annotations`, the `Gateway` takes precedence.
 	//
 	// +optional
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`

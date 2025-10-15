@@ -6,21 +6,20 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/kgateway-dev/kgateway/v2/api/settings"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/xds/bootstrap"
 )
 
-// validateWithRouteReplacementMode performs validation based on route replacement mode.
-// Callers who need route replacement mode behavior should use this method instead of calling
+// validateWithValidationLevel performs validation based on validation level.
+// Callers who need validation level behavior should use this method instead of calling
 // the Validate() method on the TrafficPolicy type directly.
-func validateWithRouteReplacementMode(ctx context.Context, p *TrafficPolicy, v validator.Validator, mode settings.RouteReplacementMode) error {
+func validateWithValidationLevel(ctx context.Context, p *TrafficPolicy, v validator.Validator, mode apisettings.ValidationMode) error {
 	switch mode {
-	case settings.RouteReplacementStandard:
+	case apisettings.ValidationStandard:
 		return p.Validate()
-	case settings.RouteReplacementStrict:
+	case apisettings.ValidationStrict:
 		if err := p.Validate(); err != nil {
 			return err
 		}
@@ -38,7 +37,7 @@ func validateXDS(ctx context.Context, p *TrafficPolicy, v validator.Validator) e
 	// on the placeholder vhost.
 	typedPerFilterConfig := ir.TypedFilterConfigMap(map[string]proto.Message{})
 	fakePass := NewGatewayTranslationPass(ir.GwTranslationCtx{}, nil)
-	if err := fakePass.ApplyForRoute(&pluginsdkir.RouteContext{
+	if err := fakePass.ApplyForRoute(&ir.RouteContext{
 		Policy:            p,
 		TypedFilterConfig: typedPerFilterConfig,
 	}, nil); err != nil {

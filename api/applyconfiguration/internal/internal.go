@@ -6,7 +6,7 @@ import (
 	fmt "fmt"
 	sync "sync"
 
-	typed "sigs.k8s.io/structured-merge-diff/v4/typed"
+	typed "sigs.k8s.io/structured-merge-diff/v6/typed"
 )
 
 func Parser() *typed.Parser {
@@ -44,6 +44,11 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.FieldDefault
           elementRelationship: atomic
+    - name: modelAliases
+      type:
+        map:
+          elementType:
+            scalar: string
     - name: promptEnrichment
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AIPromptEnrichment
@@ -441,7 +446,7 @@ var schemaYAML = typed.YAMLObject(`types:
       default: {}
     - name: status
       type:
-        namedType: io.k8s.sigs.gateway-api.apis.v1alpha2.PolicyStatus
+        namedType: io.k8s.sigs.gateway-api.apis.v1.PolicyStatus
       default: {}
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BackendConfigPolicySpec
   map:
@@ -555,7 +560,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: model
       type:
         scalar: string
-      default: ""
     - name: region
       type:
         scalar: string
@@ -1233,7 +1237,7 @@ var schemaYAML = typed.YAMLObject(`types:
       default: {}
     - name: status
       type:
-        namedType: io.k8s.sigs.gateway-api.apis.v1alpha2.PolicyStatus
+        namedType: io.k8s.sigs.gateway-api.apis.v1.PolicyStatus
       default: {}
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HTTPListenerPolicySpec
   map:
@@ -2110,9 +2114,6 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ProxyDeployment
   map:
     fields:
-    - name: omitReplicas
-      type:
-        scalar: boolean
     - name: replicas
       type:
         scalar: numeric
@@ -2624,7 +2625,7 @@ var schemaYAML = typed.YAMLObject(`types:
       default: {}
     - name: status
       type:
-        namedType: io.k8s.sigs.gateway-api.apis.v1alpha2.PolicyStatus
+        namedType: io.k8s.sigs.gateway-api.apis.v1.PolicyStatus
       default: {}
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TrafficPolicySpec
   map:
@@ -3096,6 +3097,12 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: restartPolicy
       type:
         scalar: string
+    - name: restartPolicyRules
+      type:
+        list:
+          elementType:
+            namedType: io.k8s.api.core.v1.ContainerRestartRule
+          elementRelationship: atomic
     - name: securityContext
       type:
         namedType: io.k8s.api.core.v1.SecurityContext
@@ -3167,6 +3174,27 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
       default: ""
+- name: io.k8s.api.core.v1.ContainerRestartRule
+  map:
+    fields:
+    - name: action
+      type:
+        scalar: string
+    - name: exitCodes
+      type:
+        namedType: io.k8s.api.core.v1.ContainerRestartRuleOnExitCodes
+- name: io.k8s.api.core.v1.ContainerRestartRuleOnExitCodes
+  map:
+    fields:
+    - name: operator
+      type:
+        scalar: string
+    - name: values
+      type:
+        list:
+          elementType:
+            scalar: numeric
+          elementRelationship: associative
 - name: io.k8s.api.core.v1.DownwardAPIProjection
   map:
     fields:
@@ -3247,6 +3275,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: fieldRef
       type:
         namedType: io.k8s.api.core.v1.ObjectFieldSelector
+    - name: fileKeyRef
+      type:
+        namedType: io.k8s.api.core.v1.FileKeySelector
     - name: resourceFieldRef
       type:
         namedType: io.k8s.api.core.v1.ResourceFieldSelector
@@ -3292,6 +3323,26 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             scalar: string
           elementRelationship: atomic
+- name: io.k8s.api.core.v1.FileKeySelector
+  map:
+    fields:
+    - name: key
+      type:
+        scalar: string
+      default: ""
+    - name: optional
+      type:
+        scalar: boolean
+      default: false
+    - name: path
+      type:
+        scalar: string
+      default: ""
+    - name: volumeName
+      type:
+        scalar: string
+      default: ""
+    elementRelationship: atomic
 - name: io.k8s.api.core.v1.FlexVolumeSource
   map:
     fields:
@@ -3725,6 +3776,27 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             namedType: io.k8s.api.core.v1.PodAffinityTerm
           elementRelationship: atomic
+- name: io.k8s.api.core.v1.PodCertificateProjection
+  map:
+    fields:
+    - name: certificateChainPath
+      type:
+        scalar: string
+    - name: credentialBundlePath
+      type:
+        scalar: string
+    - name: keyPath
+      type:
+        scalar: string
+    - name: keyType
+      type:
+        scalar: string
+    - name: maxExpirationSeconds
+      type:
+        scalar: numeric
+    - name: signerName
+      type:
+        scalar: string
 - name: io.k8s.api.core.v1.PodSecurityContext
   map:
     fields:
@@ -4396,6 +4468,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: downwardAPI
       type:
         namedType: io.k8s.api.core.v1.DownwardAPIProjection
+    - name: podCertificate
+      type:
+        namedType: io.k8s.api.core.v1.PodCertificateProjection
     - name: secret
       type:
         namedType: io.k8s.api.core.v1.SecretProjection
@@ -4753,7 +4828,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: sectionName
       type:
         scalar: string
-- name: io.k8s.sigs.gateway-api.apis.v1alpha2.PolicyAncestorStatus
+- name: io.k8s.sigs.gateway-api.apis.v1.PolicyAncestorStatus
   map:
     fields:
     - name: ancestorRef
@@ -4772,14 +4847,14 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
       default: ""
-- name: io.k8s.sigs.gateway-api.apis.v1alpha2.PolicyStatus
+- name: io.k8s.sigs.gateway-api.apis.v1.PolicyStatus
   map:
     fields:
     - name: ancestors
       type:
         list:
           elementType:
-            namedType: io.k8s.sigs.gateway-api.apis.v1alpha2.PolicyAncestorStatus
+            namedType: io.k8s.sigs.gateway-api.apis.v1.PolicyAncestorStatus
           elementRelationship: atomic
 - name: __untyped_atomic_
   scalar: untyped

@@ -9,7 +9,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -25,13 +24,6 @@ type Inputs struct {
 	GatewayClassName         string
 	WaypointGatewayClassName string
 	AgentgatewayClassName    string
-}
-
-type ExtraGatewayParameters struct {
-	Group     string
-	Kind      string
-	Object    client.Object
-	Generator HelmValuesGenerator
 }
 
 // UpdateSecurityContexts updates the security contexts in the gateway parameters.
@@ -139,6 +131,20 @@ func defaultAgentgatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityCont
 	gwp.Spec.Kube.PodTemplate.StartupProbe.HTTPGet.Path = "/healthz/ready"
 	gwp.Spec.Kube.PodTemplate.StartupProbe.HTTPGet.Port = intstr.FromInt(15021)
 	gwp.Spec.Kube.PodTemplate.GracefulShutdown.Enabled = ptr.To(true)
+
+	// Add pod security context with sysctls for agentgateway (unless omitting default security context)
+	if !omitDefaultSecurityContext {
+		if gwp.Spec.Kube.PodTemplate.SecurityContext == nil {
+			gwp.Spec.Kube.PodTemplate.SecurityContext = &corev1.PodSecurityContext{}
+		}
+		gwp.Spec.Kube.PodTemplate.SecurityContext.Sysctls = []corev1.Sysctl{
+			{
+				Name:  "net.ipv4.ip_unprivileged_port_start",
+				Value: "0",
+			},
+		}
+	}
+
 	return gwp
 }
 
@@ -189,10 +195,6 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 		Spec: v1alpha1.GatewayParametersSpec{
 			SelfManaged: nil,
 			Kube: &v1alpha1.KubernetesProxyConfig{
-				Deployment: &v1alpha1.ProxyDeployment{
-					Replicas:     ptr.To[int32](1),
-					OmitReplicas: ptr.To(false),
-				},
 				Service: &v1alpha1.Service{
 					Type: (*corev1.ServiceType)(ptr.To(string(corev1.ServiceTypeLoadBalancer))),
 				},
@@ -243,7 +245,6 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 						RunAsUser:                ptr.To[int64](10101),
 						Capabilities: &corev1.Capabilities{
 							Drop: []corev1.Capability{"ALL"},
-							Add:  []corev1.Capability{"NET_BIND_SERVICE"},
 						},
 					},
 				},

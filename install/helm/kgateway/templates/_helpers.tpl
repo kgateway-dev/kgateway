@@ -61,3 +61,16 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Validate validation level and return the validated value.
+Supported values: "standard" or "strict" (case-insensitive).
+*/}}
+{{- define "kgateway.validationLevel" -}}
+{{- $level := .Values.validation.level | lower | trimAll " " -}}
+{{- if or (eq $level "standard") (eq $level "strict") -}}
+{{- $level -}}
+{{- else -}}
+{{- printf "ERROR: Invalid validation.level '%s'. Must be 'standard' or 'strict' (case-insensitive). Current value: '%s'" $level .Values.validation.level | fail -}}
+{{- end -}}
+{{- end }}

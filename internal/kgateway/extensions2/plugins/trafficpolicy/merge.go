@@ -6,8 +6,7 @@ import (
 
 	transformationpb "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 )
 
@@ -28,16 +27,16 @@ type TrafficPolicyMergeOpts struct {
 func MergeTrafficPolicies(
 	p1, p2 *TrafficPolicy,
 	p2Ref *ir.AttachedPolicyRef,
-	p2MergeOrigins pluginsdkir.MergeOrigins,
+	p2MergeOrigins ir.MergeOrigins,
 	opts policy.MergeOptions,
-	mergeOrigins pluginsdkir.MergeOrigins,
+	mergeOrigins ir.MergeOrigins,
 	tpOpts TrafficPolicyMergeOpts,
 ) {
 	if p1 == nil || p2 == nil {
 		return
 	}
 
-	mergeFuncs := []func(*TrafficPolicy, *TrafficPolicy, *ir.AttachedPolicyRef, pluginsdkir.MergeOrigins, policy.MergeOptions, pluginsdkir.MergeOrigins, TrafficPolicyMergeOpts){
+	mergeFuncs := []func(*TrafficPolicy, *TrafficPolicy, *ir.AttachedPolicyRef, ir.MergeOrigins, policy.MergeOptions, ir.MergeOrigins, TrafficPolicyMergeOpts){
 		mergeAI,
 		mergeExtProc,
 		mergeTransformation,
@@ -63,9 +62,9 @@ func MergeTrafficPolicies(
 func mergeTrafficPolicies(
 	p1, p2 *TrafficPolicy,
 	p2Ref *ir.AttachedPolicyRef,
-	p2MergeOrigins pluginsdkir.MergeOrigins,
+	p2MergeOrigins ir.MergeOrigins,
 	opts policy.MergeOptions,
-	mergeOrigins pluginsdkir.MergeOrigins,
+	mergeOrigins ir.MergeOrigins,
 	mergeSettingsJSON string,
 ) {
 	var polMergeOpts mergeOpts
@@ -82,10 +81,10 @@ func mergeTrafficPolicies(
 
 func mergeAI(
 	p1, p2 *TrafficPolicy,
-	p2Ref *pluginsdkir.AttachedPolicyRef,
-	p2MergeOrigins pluginsdkir.MergeOrigins,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
 	opts policy.MergeOptions,
-	mergeOrigins pluginsdkir.MergeOrigins,
+	mergeOrigins ir.MergeOrigins,
 	_ TrafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[aiPolicyIR]{
@@ -97,10 +96,10 @@ func mergeAI(
 
 func mergeExtProc(
 	p1, p2 *TrafficPolicy,
-	p2Ref *pluginsdkir.AttachedPolicyRef,
-	p2MergeOrigins pluginsdkir.MergeOrigins,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
 	opts policy.MergeOptions,
-	mergeOrigins pluginsdkir.MergeOrigins,
+	mergeOrigins ir.MergeOrigins,
 	tpOpts TrafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[extprocIR]{
@@ -169,10 +168,10 @@ func mergeExtProc(
 
 func mergeTransformation(
 	p1, p2 *TrafficPolicy,
-	p2Ref *pluginsdkir.AttachedPolicyRef,
-	p2MergeOrigins pluginsdkir.MergeOrigins,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
 	opts policy.MergeOptions,
-	mergeOrigins pluginsdkir.MergeOrigins,
+	mergeOrigins ir.MergeOrigins,
 	tpOpts TrafficPolicyMergeOpts,
 ) {
 	if tpOpts.Transformation != "" {
@@ -216,10 +215,10 @@ func mergeTransformation(
 
 func mergeRustformation(
 	p1, p2 *TrafficPolicy,
-	p2Ref *pluginsdkir.AttachedPolicyRef,
-	p2MergeOrigins pluginsdkir.MergeOrigins,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
 	opts policy.MergeOptions,
-	mergeOrigins pluginsdkir.MergeOrigins,
+	mergeOrigins ir.MergeOrigins,
 	_ TrafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[rustformationIR]{
@@ -231,10 +230,10 @@ func mergeRustformation(
 
 func mergeExtAuth(
 	p1, p2 *TrafficPolicy,
-	p2Ref *pluginsdkir.AttachedPolicyRef,
-	p2MergeOrigins pluginsdkir.MergeOrigins,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
 	opts policy.MergeOptions,
-	mergeOrigins pluginsdkir.MergeOrigins,
+	mergeOrigins ir.MergeOrigins,
 	tpOpts TrafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[extAuthIR]{
@@ -304,10 +303,10 @@ func mergeExtAuth(
 
 func mergeLocalRateLimit(
 	p1, p2 *TrafficPolicy,
-	p2Ref *pluginsdkir.AttachedPolicyRef,
-	p2MergeOrigins pluginsdkir.MergeOrigins,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
 	opts policy.MergeOptions,
-	mergeOrigins pluginsdkir.MergeOrigins,
+	mergeOrigins ir.MergeOrigins,
 	_ TrafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[localRateLimitIR]{
@@ -319,10 +318,10 @@ func mergeLocalRateLimit(
 
 func mergeGlobalRateLimit(
 	p1, p2 *TrafficPolicy,
-	p2Ref *pluginsdkir.AttachedPolicyRef,
-	p2MergeOrigins pluginsdkir.MergeOrigins,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
 	opts policy.MergeOptions,
-	mergeOrigins pluginsdkir.MergeOrigins,
+	mergeOrigins ir.MergeOrigins,
 	_ TrafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[globalRateLimitIR]{
@@ -334,10 +333,10 @@ func mergeGlobalRateLimit(
 
 func mergeCORS(
 	p1, p2 *TrafficPolicy,
-	p2Ref *pluginsdkir.AttachedPolicyRef,
-	p2MergeOrigins pluginsdkir.MergeOrigins,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
 	opts policy.MergeOptions,
-	mergeOrigins pluginsdkir.MergeOrigins,
+	mergeOrigins ir.MergeOrigins,
 	_ TrafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[corsIR]{
@@ -349,10 +348,10 @@ func mergeCORS(
 
 func mergeCSRF(
 	p1, p2 *TrafficPolicy,
-	p2Ref *pluginsdkir.AttachedPolicyRef,
-	p2MergeOrigins pluginsdkir.MergeOrigins,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
 	opts policy.MergeOptions,
-	mergeOrigins pluginsdkir.MergeOrigins,
+	mergeOrigins ir.MergeOrigins,
 	_ TrafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[csrfIR]{
@@ -364,10 +363,10 @@ func mergeCSRF(
 
 func mergeHeaderModifiers(
 	p1, p2 *TrafficPolicy,
-	p2Ref *pluginsdkir.AttachedPolicyRef,
-	p2MergeOrigins pluginsdkir.MergeOrigins,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
 	opts policy.MergeOptions,
-	mergeOrigins pluginsdkir.MergeOrigins,
+	mergeOrigins ir.MergeOrigins,
 	_ TrafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[headerModifiersIR]{
@@ -380,10 +379,10 @@ func mergeHeaderModifiers(
 
 func mergeBuffer(
 	p1, p2 *TrafficPolicy,
-	p2Ref *pluginsdkir.AttachedPolicyRef,
-	p2MergeOrigins pluginsdkir.MergeOrigins,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
 	opts policy.MergeOptions,
-	mergeOrigins pluginsdkir.MergeOrigins,
+	mergeOrigins ir.MergeOrigins,
 	_ TrafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[bufferIR]{
@@ -395,10 +394,10 @@ func mergeBuffer(
 
 func mergeAutoHostRewrite(
 	p1, p2 *TrafficPolicy,
-	p2Ref *pluginsdkir.AttachedPolicyRef,
-	p2MergeOrigins pluginsdkir.MergeOrigins,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
 	opts policy.MergeOptions,
-	mergeOrigins pluginsdkir.MergeOrigins,
+	mergeOrigins ir.MergeOrigins,
 	_ TrafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[autoHostRewriteIR]{
@@ -410,10 +409,10 @@ func mergeAutoHostRewrite(
 
 func mergeTimeouts(
 	p1, p2 *TrafficPolicy,
-	p2Ref *pluginsdkir.AttachedPolicyRef,
-	p2MergeOrigins pluginsdkir.MergeOrigins,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
 	opts policy.MergeOptions,
-	mergeOrigins pluginsdkir.MergeOrigins,
+	mergeOrigins ir.MergeOrigins,
 	_ TrafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[timeoutsIR]{
@@ -425,10 +424,10 @@ func mergeTimeouts(
 
 func mergeRBAC(
 	p1, p2 *TrafficPolicy,
-	p2Ref *pluginsdkir.AttachedPolicyRef,
-	p2MergeOrigins pluginsdkir.MergeOrigins,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
 	opts policy.MergeOptions,
-	mergeOrigins pluginsdkir.MergeOrigins,
+	mergeOrigins ir.MergeOrigins,
 	_ TrafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[rbacIR]{
@@ -440,10 +439,10 @@ func mergeRBAC(
 
 func mergeRetry(
 	p1, p2 *TrafficPolicy,
-	p2Ref *pluginsdkir.AttachedPolicyRef,
-	p2MergeOrigins pluginsdkir.MergeOrigins,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
 	opts policy.MergeOptions,
-	mergeOrigins pluginsdkir.MergeOrigins,
+	mergeOrigins ir.MergeOrigins,
 	_ TrafficPolicyMergeOpts,
 ) {
 	accessor := fieldAccessor[retryIR]{
@@ -463,10 +462,10 @@ type fieldAccessor[T any] struct {
 // It should be used when the policy being merged does not support deep merging or custom merge logic.
 func defaultMerge[T any](
 	p1, p2 *TrafficPolicy,
-	p2Ref *pluginsdkir.AttachedPolicyRef,
-	p2MergeOrigins pluginsdkir.MergeOrigins,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
 	opts policy.MergeOptions,
-	mergeOrigins pluginsdkir.MergeOrigins,
+	mergeOrigins ir.MergeOrigins,
 	accessor fieldAccessor[T],
 	fieldName string,
 ) {

@@ -13,7 +13,7 @@ import (
 	discoveryv1 "k8s.io/api/discovery/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/kgateway-dev/kgateway/v2/api/settings"
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -40,7 +40,7 @@ func NewPluginFromCollections(
 	pods krt.Collection[krtcollections.LocalityPod],
 	services krt.Collection[*corev1.Service],
 	endpointSlices krt.Collection[*discoveryv1.EndpointSlice],
-	stngs settings.Settings,
+	stngs apisettings.Settings,
 ) sdk.Plugin {
 	k8sServiceBackends := krt.NewManyCollection(services, func(kctx krt.HandlerContext, svc *corev1.Service) []ir.BackendObjectIR {
 		uss := []ir.BackendObjectIR{}
@@ -50,7 +50,7 @@ func NewPluginFromCollections(
 		return uss
 	}, krtOpts.ToOptions("KubernetesServiceBackends")...)
 
-	inputs := krtcollections.NewGlooK8sEndpointInputs(stngs, krtOpts, endpointSlices, pods, k8sServiceBackends)
+	inputs := krtcollections.NewKgatewayK8sEndpointInputs(stngs, krtOpts, endpointSlices, pods, k8sServiceBackends)
 	k8sServiceEndpoints := krtcollections.NewK8sEndpoints(ctx, inputs)
 
 	return sdk.Plugin{

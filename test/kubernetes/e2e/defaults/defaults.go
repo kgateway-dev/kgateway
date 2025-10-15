@@ -1,3 +1,5 @@
+//go:build e2e
+
 package defaults
 
 import (
@@ -112,4 +114,6 @@ Commercial support is available at
 
 	KGatewayDeployment = "deploy/kgateway"
 	KGatewayPodLabel   = "kgateway=kgateway"
+
+	AIGuardrailsWebhookManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "ai_guardrails_webhook.yaml")
 )

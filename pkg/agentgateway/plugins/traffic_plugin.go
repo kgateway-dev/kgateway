@@ -60,10 +60,10 @@ func init() {
 
 // convertStatusCollection converts the specific TrafficPolicy status collection
 // to the generic controllers.Object status collection expected by the interface
-func convertStatusCollection(col krt.Collection[krt.ObjectWithStatus[*v1alpha1.TrafficPolicy, v1alpha2.PolicyStatus]]) krt.StatusCollection[controllers.Object, v1alpha2.PolicyStatus] {
+func convertStatusCollection(col krt.Collection[krt.ObjectWithStatus[*v1alpha1.TrafficPolicy, gwv1.PolicyStatus]]) krt.StatusCollection[controllers.Object, gwv1.PolicyStatus] {
 	// Use krt.NewCollection to transform the collection
-	return krt.NewCollection(col, func(ctx krt.HandlerContext, item krt.ObjectWithStatus[*v1alpha1.TrafficPolicy, v1alpha2.PolicyStatus]) *krt.ObjectWithStatus[controllers.Object, v1alpha2.PolicyStatus] {
-		return &krt.ObjectWithStatus[controllers.Object, v1alpha2.PolicyStatus]{
+	return krt.NewCollection(col, func(ctx krt.HandlerContext, item krt.ObjectWithStatus[*v1alpha1.TrafficPolicy, gwv1.PolicyStatus]) *krt.ObjectWithStatus[controllers.Object, gwv1.PolicyStatus] {
+		return &krt.ObjectWithStatus[controllers.Object, gwv1.PolicyStatus]{
 			Obj:    controllers.Object(item.Obj),
 			Status: item.Status,
 		}
@@ -77,7 +77,7 @@ func NewTrafficPlugin(agw *AgwCollections) AgwPlugin {
 		kclient.Filter{ObjectFilter: agw.Client.ObjectFilter()},
 	), agw.KrtOpts.ToOptions("TrafficPolicy")...)
 	policyStatusCol, policyCol := krt.NewStatusManyCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.TrafficPolicy) (
-		*v1alpha2.PolicyStatus,
+		*gwv1.PolicyStatus,
 		[]AgwPolicy,
 	) {
 		return TranslateTrafficPolicy(krtctx, agw.GatewayExtensions, agw.Backends, agw.Secrets, policyCR, agw.ControllerName)
@@ -106,11 +106,11 @@ func TranslateTrafficPolicy(
 	secrets krt.Collection[*corev1.Secret],
 	trafficPolicy *v1alpha1.TrafficPolicy,
 	controllerName string,
-) (*v1alpha2.PolicyStatus, []AgwPolicy) {
+) (*gwv1.PolicyStatus, []AgwPolicy) {
 	var agwPolicies []AgwPolicy
 
 	isMcpTarget := false
-	var ancestors []v1alpha2.PolicyAncestorStatus
+	var ancestors []gwv1.PolicyAncestorStatus
 	for _, target := range trafficPolicy.Spec.TargetRefs {
 		var policyTarget *api.PolicyTarget
 		// Build a base ParentReference for status
@@ -181,8 +181,8 @@ func TranslateTrafficPolicy(
 					Reason:  string(v1alpha1.PolicyReasonInvalid),
 					Message: fmt.Sprintf("Backend %s not found", target.Name),
 				})
-				status := v1alpha2.PolicyStatus{
-					Ancestors: []v1alpha2.PolicyAncestorStatus{
+				status := gwv1.PolicyStatus{
+					Ancestors: []gwv1.PolicyAncestorStatus{
 						{
 							AncestorRef:    parentRef,
 							ControllerName: v1alpha2.GatewayController(controllerName),
@@ -280,7 +280,7 @@ func TranslateTrafficPolicy(
 			}
 			// Only append valid ancestors: require non-empty controllerName and parentRef name
 			if controllerName != "" && string(parentRef.Name) != "" {
-				ancestors = append(ancestors, v1alpha2.PolicyAncestorStatus{
+				ancestors = append(ancestors, gwv1.PolicyAncestorStatus{
 					AncestorRef:    parentRef,
 					ControllerName: v1alpha2.GatewayController(controllerName),
 					Conditions:     conds,
@@ -290,12 +290,12 @@ func TranslateTrafficPolicy(
 	}
 
 	// Build final status from accumulated ancestors
-	status := v1alpha2.PolicyStatus{Ancestors: ancestors}
+	status := gwv1.PolicyStatus{Ancestors: ancestors}
 
 	if len(status.Ancestors) > 15 {
 		ignored := status.Ancestors[15:]
 		status.Ancestors = status.Ancestors[:15]
-		status.Ancestors = append(status.Ancestors, v1alpha2.PolicyAncestorStatus{
+		status.Ancestors = append(status.Ancestors, gwv1.PolicyAncestorStatus{
 			AncestorRef: gwv1.ParentReference{
 				Group: ptr.To(gwv1.Group("gateway.kgateway.dev")),
 				Name:  "StatusSummary",
@@ -315,7 +315,7 @@ func TranslateTrafficPolicy(
 	// sort all parents for consistency with Equals and for Update
 	// match sorting semantics of istio/istio, see:
 	// https://github.com/istio/istio/blob/6dcaa0206bcaf20e3e3b4e45e9376f0f96365571/pilot/pkg/config/kube/gateway/conditions.go#L188-L193
-	slices.SortStableFunc(status.Ancestors, func(a, b v1alpha2.PolicyAncestorStatus) int {
+	slices.SortStableFunc(status.Ancestors, func(a, b gwv1.PolicyAncestorStatus) int {
 		return strings.Compare(reports.ParentString(a.AncestorRef), reports.ParentString(b.AncestorRef))
 	})
 
@@ -431,16 +431,33 @@ func processExtAuthPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collecti
 	if extauthSvcTarget == nil {
 		return nil, fmt.Errorf("failed to translate traffic policy: %s: missing extauthservice target", trafficPolicy.Name)
 	}
+	spec := &api.PolicySpec_ExternalAuth{
+		Target:  extauthSvcTarget,
+		Context: trafficPolicy.Spec.ExtAuth.ContextExtensions,
+	}
+	if extAuth.FailOpen {
+		spec.FailureMode = api.PolicySpec_ExternalAuth_ALLOW
+	} else if extAuth.StatusOnError != 0 {
+		spec.FailureMode = api.PolicySpec_ExternalAuth_DENY_WITH_STATUS
+		// nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+		spec.StatusOnError = wrapperspb.UInt32(uint32(extAuth.StatusOnError))
+	}
+
+	if b := extAuth.WithRequestBody; b != nil {
+		spec.IncludeRequestBody = &api.PolicySpec_ExternalAuth_BodyOptions{
+			// nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+			MaxRequestBytes:     uint32(b.MaxRequestBytes),
+			AllowPartialMessage: b.AllowPartialMessage,
+			PackAsBytes:         b.PackAsBytes,
+		}
+	}
 
 	extauthPolicy := &api.Policy{
 		Name:   policyName + extauthPolicySuffix + attachmentName(policyTarget),
 		Target: policyTarget,
 		Spec: &api.PolicySpec{
 			Kind: &api.PolicySpec_ExtAuthz{
-				ExtAuthz: &api.PolicySpec_ExternalAuth{
-					Target:  extauthSvcTarget,
-					Context: trafficPolicy.Spec.ExtAuth.ContextExtensions,
-				},
+				ExtAuthz: spec,
 			},
 		},
 	}
@@ -507,6 +524,11 @@ func processAIPolicy(krtctx krt.HandlerContext, secrets krt.Collection[*corev1.S
 		if aiSpec.PromptGuard.Response != nil {
 			aiPolicy.GetSpec().GetAi().PromptGuard.Response = processResponseGuard(aiSpec.PromptGuard.Response)
 		}
+	}
+
+	// Process model aliases
+	if aiSpec.ModelAliases != nil {
+		aiPolicy.GetSpec().GetAi().ModelAliases = aiSpec.ModelAliases
 	}
 
 	logger.Debug("generated AI policy",

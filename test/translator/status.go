@@ -25,7 +25,7 @@ type Statuses struct {
 	TCPRoutes    map[string]*gwv1.RouteStatus        `json:"tcpRoutes,omitempty"`
 	TLSRoutes    map[string]*gwv1.RouteStatus        `json:"tlsRoutes,omitempty"`
 	GRPCRoutes   map[string]*gwv1.RouteStatus        `json:"grpcRoutes,omitempty"`
-	Policies     map[string]*gwv1a2.PolicyStatus     `json:"policies,omitempty"`
+	Policies     map[string]*gwv1.PolicyStatus       `json:"policies,omitempty"`
 }
 
 func buildStatusesFromReports(
@@ -47,7 +47,7 @@ func buildStatusesFromReports(
 		TCPRoutes:    make(map[string]*gwv1.RouteStatus),
 		TLSRoutes:    make(map[string]*gwv1.RouteStatus),
 		GRPCRoutes:   make(map[string]*gwv1.RouteStatus),
-		Policies:     make(map[string]*gwv1a2.PolicyStatus),
+		Policies:     make(map[string]*gwv1.PolicyStatus),
 	}
 
 	// Build Gateway statuses. We need to use the actual Gateway object to make sure that
@@ -151,7 +151,7 @@ func buildStatusesFromReports(
 	// Build Policy statuses
 	for policyKey := range reportsMap.Policies {
 		policyKeyStr := fmt.Sprintf("%s/%s/%s", policyKey.Kind, policyKey.Namespace, policyKey.Name)
-		if status := reportsMap.BuildPolicyStatus(ctx, policyKey, wellknown.DefaultGatewayControllerName, gwv1a2.PolicyStatus{}); status != nil {
+		if status := reportsMap.BuildPolicyStatus(ctx, policyKey, wellknown.DefaultGatewayControllerName, gwv1.PolicyStatus{}); status != nil {
 			normalizePolicyStatus(status, fixedTime)
 			statuses.Policies[policyKeyStr] = status
 		}
@@ -194,7 +194,7 @@ func normalizeRouteStatus(status *gwv1.RouteStatus, time metav1.Time) {
 }
 
 // normalizePolicyStatus sets all fields (e.g. LastTransitionTime) to fixed values for deterministic testing
-func normalizePolicyStatus(status *gwv1a2.PolicyStatus, time metav1.Time) {
+func normalizePolicyStatus(status *gwv1.PolicyStatus, time metav1.Time) {
 	for i := range status.Ancestors {
 		for j := range status.Ancestors[i].Conditions {
 			status.Ancestors[i].Conditions[j].LastTransitionTime = time
@@ -244,7 +244,7 @@ func sortStatuses(statuses *Statuses) *Statuses {
 		TCPRoutes:    make(map[string]*gwv1.RouteStatus),
 		TLSRoutes:    make(map[string]*gwv1.RouteStatus),
 		GRPCRoutes:   make(map[string]*gwv1.RouteStatus),
-		Policies:     make(map[string]*gwv1a2.PolicyStatus),
+		Policies:     make(map[string]*gwv1.PolicyStatus),
 	}
 
 	// Sort gateways

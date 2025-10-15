@@ -52,7 +52,7 @@ Statuses:
           status: "False"
           type: Programmed
         - lastTransitionTime: null
-          message: Listener has valid refs
+          message: Successfully resolved all references
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs

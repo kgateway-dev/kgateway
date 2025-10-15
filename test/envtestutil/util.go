@@ -26,11 +26,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/yaml"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	"github.com/kgateway-dev/kgateway/v2/api/settings"
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -43,7 +44,7 @@ type postStartFunc func(t *testing.T, ctx context.Context, client istiokube.CLIC
 func RunController(
 	t *testing.T,
 	logger *zap.Logger,
-	globalSettings *settings.Settings,
+	globalSettings *apisettings.Settings,
 	testEnv *envtest.Environment,
 	postStart postStartFunc,
 	yamlFilesToApply [][]string,
@@ -56,7 +57,7 @@ func RunController(
 	),
 ) {
 	if globalSettings == nil {
-		st, err := settings.BuildSettings()
+		st, err := apisettings.BuildSettings()
 		if err != nil {
 			t.Fatalf("failed to get settings %v", err)
 		}
@@ -126,9 +127,10 @@ func RunController(
 				return &ctrl.Options{
 					BaseContext:      func() context.Context { return ctx },
 					Scheme:           runtime.NewScheme(),
-					PprofBindAddress: "127.0.0.1:9099",
+					PprofBindAddress: "127.0.0.1:0",
 					// if you change the port here, also change the port "health" in the helmchart.
-					HealthProbeBindAddress: ":9093",
+					HealthProbeBindAddress: "127.0.0.1:0",
+					Metrics:                metricsserver.Options{BindAddress: "127.0.0.1:0"},
 					Controller: config.Controller{
 						// 	// see https://github.com/kubernetes-sigs/controller-runtime/issues/2937
 						// 	// in short, our tests reuse the same name (reasonably so) and the controller-runtime
@@ -300,4 +302,14 @@ rules:
 		panic(err)
 	}
 	return f.Name()
+}
+
+func BuildSettings() (*apisettings.Settings, error) {
+	s, err := apisettings.BuildSettings()
+	if err != nil {
+		return nil, err
+	}
+	// xDS auth requires projected Service Account token which does not work in envtest
+	s.XdsAuth = false
+	return s, nil
 }

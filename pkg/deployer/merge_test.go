@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 
 	gw2_v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -38,14 +40,10 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 			},
 		},
 		{
-			name: "should override kube deployment replicas",
+			name: "should override kube deployment replicas by default",
 			dst: &gw2_v1alpha1.GatewayParameters{
 				Spec: gw2_v1alpha1.GatewayParametersSpec{
-					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-						Deployment: &gw2_v1alpha1.ProxyDeployment{
-							Replicas: ptr.To[int32](2),
-						},
-					},
+					Kube: &gw2_v1alpha1.KubernetesProxyConfig{},
 				},
 			},
 			src: &gw2_v1alpha1.GatewayParameters{
@@ -68,7 +66,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 			},
 		},
 		{
-			name: "should override kube deployment omitReplicas",
+			name: "should override kube deployment replicas if explicit",
 			dst: &gw2_v1alpha1.GatewayParameters{
 				Spec: gw2_v1alpha1.GatewayParametersSpec{
 					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
@@ -82,7 +80,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 				Spec: gw2_v1alpha1.GatewayParametersSpec{
 					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 						Deployment: &gw2_v1alpha1.ProxyDeployment{
-							OmitReplicas: ptr.To(true),
+							Replicas: ptr.To[int32](3),
 						},
 					},
 				},
@@ -91,7 +89,33 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 				Spec: gw2_v1alpha1.GatewayParametersSpec{
 					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 						Deployment: &gw2_v1alpha1.ProxyDeployment{
-							OmitReplicas: ptr.To(true),
+							Replicas: ptr.To[int32](3),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "should not override kube deployment replicas if src is nil",
+			dst: &gw2_v1alpha1.GatewayParameters{
+				Spec: gw2_v1alpha1.GatewayParametersSpec{
+					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
+						Deployment: &gw2_v1alpha1.ProxyDeployment{
+							Replicas: ptr.To[int32](2),
+						},
+					},
+				},
+			},
+			src: &gw2_v1alpha1.GatewayParameters{
+				Spec: gw2_v1alpha1.GatewayParametersSpec{
+					Kube: &gw2_v1alpha1.KubernetesProxyConfig{},
+				},
+			},
+			want: &gw2_v1alpha1.GatewayParameters{
+				Spec: gw2_v1alpha1.GatewayParametersSpec{
+					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
+						Deployment: &gw2_v1alpha1.ProxyDeployment{
+							Replicas: ptr.To[int32](2),
 						},
 					},
 				},
@@ -225,6 +249,92 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 				assert.Equal(t, expectedMap, got.Spec.Kube.Service.ExtraAnnotations)
 				assert.Equal(t, expectedMap, got.Spec.Kube.ServiceAccount.ExtraLabels)
 				assert.Equal(t, expectedMap, got.Spec.Kube.ServiceAccount.ExtraAnnotations)
+			},
+		},
+		{
+			name: "should have only one probeHandler action",
+			dst: &gw2_v1alpha1.GatewayParameters{
+				Spec: gw2_v1alpha1.GatewayParametersSpec{
+					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
+						PodTemplate: &gw2_v1alpha1.Pod{
+							StartupProbe: &corev1.Probe{
+								ProbeHandler: corev1.ProbeHandler{
+									Exec: &corev1.ExecAction{
+										Command: []string{"exec", "command"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			src: &gw2_v1alpha1.GatewayParameters{
+				Spec: gw2_v1alpha1.GatewayParametersSpec{
+					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
+						PodTemplate: &gw2_v1alpha1.Pod{
+							StartupProbe: &corev1.Probe{
+								ProbeHandler: corev1.ProbeHandler{
+									TCPSocket: &corev1.TCPSocketAction{
+										Port: intstr.FromString("8080"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: &gw2_v1alpha1.GatewayParameters{
+				Spec: gw2_v1alpha1.GatewayParametersSpec{
+					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
+						PodTemplate: &gw2_v1alpha1.Pod{
+							StartupProbe: &corev1.Probe{
+								ProbeHandler: corev1.ProbeHandler{
+									TCPSocket: &corev1.TCPSocketAction{
+										Port: intstr.FromString("8080"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "should merge the default probeHandler action if none specified",
+			dst: &gw2_v1alpha1.GatewayParameters{
+				Spec: gw2_v1alpha1.GatewayParametersSpec{
+					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
+						PodTemplate: &gw2_v1alpha1.Pod{
+							StartupProbe: &corev1.Probe{
+								ProbeHandler: corev1.ProbeHandler{
+									Exec: &corev1.ExecAction{
+										Command: []string{"exec", "command"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			src: &gw2_v1alpha1.GatewayParameters{
+				Spec: gw2_v1alpha1.GatewayParametersSpec{
+					Kube: &gw2_v1alpha1.KubernetesProxyConfig{},
+				},
+			},
+			want: &gw2_v1alpha1.GatewayParameters{
+				Spec: gw2_v1alpha1.GatewayParametersSpec{
+					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
+						PodTemplate: &gw2_v1alpha1.Pod{
+							StartupProbe: &corev1.Probe{
+								ProbeHandler: corev1.ProbeHandler{
+									Exec: &corev1.ExecAction{
+										Command: []string{"exec", "command"},
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 		},
 	}

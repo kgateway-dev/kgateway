@@ -1,0 +1,58 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: api-example-com-parent
+  namespace: infra
+  labels:
+    app: apis
+    extauth: basic
+spec:
+  parentRefs:
+    - name: example-gateway
+      namespace: infra
+  hostnames:
+    - "api.example.com"
+  rules:
+    - matches:  
+      - path:
+          type: PathPrefix
+          value: /httpbin
+      filters:
+      - type: URLRewrite
+        urlRewrite:
+          path:
+            type: ReplacePrefixMatch
+            replacePrefixMatch: /
+      backendRefs:
+      # Delegate to another HTTPRoute
+      - group: gateway.networking.k8s.io
+        kind: HTTPRoute
+        name: api-example-com-child
+        namespace: infra
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: api-example-com-child
+  namespace: infra
+  labels:
+    app: apis
+    extauth: basic
+  annotations:
+    delegation.kgateway.dev/inherit-parent-matcher: "true"
+spec:
+  rules:
+    - matches:  
+      - path:
+          type: PathPrefix
+          value: /httpbin
+      filters:
+      - type: URLRewrite
+        urlRewrite:
+          path:
+            type: ReplacePrefixMatch
+            replacePrefixMatch: /
+      backendRefs:
+      - name: example-svc
+        namespace: infra
+        port: 80

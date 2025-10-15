@@ -1,4 +1,4 @@
-//go:build ignore
+//go:build ignore && e2e
 
 package istio
 
@@ -12,6 +12,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -45,7 +46,7 @@ func (s *istioTestingSuite) BeforeTest(suiteName, testName string) {
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 	// Check that test resources are running. This can take a little longer for Istio tests due to the istio-proxy and sds sidecars
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(),
-		metav1.ListOptions{LabelSelector: "app.kubernetes.io/name=gw"}, time.Minute*2)
+		metav1.ListOptions{LabelSelector: defaults.WellKnownAppLabel + "=gw"}, time.Minute*2)
 }
 
 func (s *istioTestingSuite) AfterTest(suiteName, testName string) {

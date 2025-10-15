@@ -402,8 +402,10 @@ func (c *Cli) Describe(ctx context.Context, namespace string, name string) (stri
 }
 
 // GetContainerLogs retrieves the logs for the specified container
-func (c *Cli) GetContainerLogs(ctx context.Context, namespace string, name string) (string, error) {
-	stdout, stderr, err := c.Execute(ctx, "-n", namespace, "logs", name)
+func (c *Cli) GetContainerLogs(ctx context.Context, namespace string, name string, options ...LogOption) (string, error) {
+	args := []string{"-n", namespace, "logs", name}
+	args = append(args, BuildLogArgs(options...)...)
+	stdout, stderr, err := c.Execute(ctx, args...)
 	return stdout + stderr, err
 }
 
@@ -412,24 +414,24 @@ func (c *Cli) GetPodsInNsWithLabel(ctx context.Context, namespace string, label 
 	podStdOut := bytes.NewBuffer(nil)
 	podStdErr := bytes.NewBuffer(nil)
 
-	// Fetch the name of the Gloo Gateway controller pod
-	getGlooPodNamesCmd := c.Command(ctx, "get", "pod", "-n", namespace,
+	// Fetch the names of the pods with the given label
+	getPodNamesCmd := c.Command(ctx, "get", "pod", "-n", namespace,
 		"--selector", label, "--output", "jsonpath='{.items[*].metadata.name}'")
-	err := getGlooPodNamesCmd.WithStdout(podStdOut).WithStderr(podStdErr).Run().Cause()
+	err := getPodNamesCmd.WithStdout(podStdOut).WithStderr(podStdErr).Run().Cause()
 	if err != nil {
-		fmt.Printf("error running get gloo pod name command: %v\n", err)
+		fmt.Printf("error running get pod names command: %v\n", err)
 	}
 
 	// Clean up and check the output
-	glooPodNamesString := strings.Trim(podStdOut.String(), "'")
-	if glooPodNamesString == "" {
+	podNamesString := strings.Trim(podStdOut.String(), "'")
+	if podNamesString == "" {
 		fmt.Printf("no %s pods found in namespace %s\n", label, namespace)
 		return []string{}, nil
 	}
 
 	// Split the string on whitespace to get the pod names
-	glooPodNames := strings.Fields(glooPodNamesString)
-	return glooPodNames, nil
+	podNames := strings.Fields(podNamesString)
+	return podNames, nil
 }
 
 func (c *Cli) GetLeaseHolder(ctx context.Context, namespace string, leaderElectionID string) (string, error) {

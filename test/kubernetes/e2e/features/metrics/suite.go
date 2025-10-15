@@ -1,3 +1,5 @@
+//go:build e2e
+
 package metrics
 
 import (
@@ -36,7 +38,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 
 func (s *testingSuite) checkPodsRunning() {
 	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, kgatewayMetricsObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=kgateway",
+		LabelSelector: e2edefaults.WellKnownAppLabel + "=kgateway",
 	})
 }
 
@@ -78,6 +80,15 @@ func (s *testingSuite) TestMetrics() {
 		}()
 
 		gathered := metricstest.MustParseGatheredMetrics(c, resp.Body)
+
+		// Assert xDS auth metrics
+		var expectedGateways float64 = 2
+		gathered.AssertMetric("kgateway_xds_auth_rq_total", &metricstest.ExpectedMetricValueTest{
+			Test: metricstest.GreaterOrEqual(expectedGateways),
+		})
+		gathered.AssertMetric("kgateway_xds_auth_rq_success_total", &metricstest.ExpectedMetricValueTest{
+			Test: metricstest.GreaterOrEqual(expectedGateways),
+		})
 
 		gathered.AssertMetricsLabelsInclude("kgateway_controller_reconcile_duration_seconds", [][]metrics.Label{{
 			{Name: "controller", Value: "gateway"},

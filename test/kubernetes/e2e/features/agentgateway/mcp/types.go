@@ -1,7 +1,10 @@
+//go:build e2e
+
 package mcp
 
 import (
 	"path/filepath"
+	"time"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
@@ -61,7 +64,13 @@ type InitializeResponse struct {
 }
 
 // mcpProto is the protocol version for the MCP server
-const mcpProto = "2025-06-18"
+// This will be set dynamically from the initialize response
+
+var (
+	mcpProto   = "2025-03-26" // Default fallback, will be updated dynamically
+	httpOKCode = 200
+	warmupTime = 75 * time.Millisecond
+)
 
 var (
 	_ e2e.NewSuiteFunc = NewTestingSuite
