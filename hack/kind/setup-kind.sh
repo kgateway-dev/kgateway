@@ -5,8 +5,9 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 # The name of the kind cluster to deploy to
 CLUSTER_NAME="${CLUSTER_NAME:-kind}"
-# The version of the Node Docker image to use for booting the cluster
-CLUSTER_NODE_VERSION="${CLUSTER_NODE_VERSION:-v1.33.1@sha256:050072256b9a903bd914c0b2866828150cb229cea0efe5892e2b644d5dd3b34f}"
+# The version of the Node Docker image to use for booting the cluster: https://hub.docker.com/r/kindest/node/tags
+# This version should stay in sync with `../../Makefile`.
+CLUSTER_NODE_VERSION="${CLUSTER_NODE_VERSION:-v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a}"
 # The version used to tag images
 VERSION="${VERSION:-1.0.0-ci1}"
 # Skip building docker images if we are testing a released version
