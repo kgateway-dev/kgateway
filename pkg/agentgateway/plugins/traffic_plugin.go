@@ -97,6 +97,8 @@ func NewTrafficPlugin(agw *AgwCollections) AgwPlugin {
 }
 
 // TranslateTrafficPolicy generates policies for a single traffic policy
+// When adding a new traffic policy field, isPartiallyValid will also need to be updated to report partially valid
+// translations on the status.
 func TranslateTrafficPolicy(
 	ctx krt.HandlerContext,
 	gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension],
@@ -219,8 +221,8 @@ func TranslateTrafficPolicy(
 				if len(translatedPolicies) > 0 {
 					meta.SetStatusCondition(&conds, metav1.Condition{
 						Type:    string(v1alpha1.PolicyConditionAccepted),
-						Status:  metav1.ConditionFalse,
-						Reason:  "PartiallyValid",
+						Status:  metav1.ConditionTrue,
+						Reason:  string(v1alpha1.PolicyReasonPartiallyValid),
 						Message: err.Error(),
 					})
 				} else {
@@ -243,8 +245,8 @@ func TranslateTrafficPolicy(
 				if isPartiallyValid(translatedPolicies) {
 					meta.SetStatusCondition(&conds, metav1.Condition{
 						Type:    string(v1alpha1.PolicyConditionAccepted),
-						Status:  metav1.ConditionFalse,
-						Reason:  "PartiallyValid",
+						Status:  metav1.ConditionTrue,
+						Reason:  string(v1alpha1.PolicyReasonPartiallyValid),
 						Message: "Some transformations are invalid",
 					})
 					meta.SetStatusCondition(&conds, metav1.Condition{
