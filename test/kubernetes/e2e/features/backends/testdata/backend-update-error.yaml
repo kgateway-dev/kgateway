@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: openai-secret
+  namespace: default
+type: Opaque
+data:
+  # for openai it should be Authorization, token will give error when processing
+  token: c2stdGVzdC1zZWNyZXQK # Base64 encoded "sk-test-secret"

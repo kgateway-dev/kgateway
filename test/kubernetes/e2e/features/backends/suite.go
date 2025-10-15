@@ -143,6 +143,23 @@ func (s *testingSuite) TestBackendWithRuntimeError() {
 		Type:    "Accepted",
 		Status:  metav1.ConditionFalse,
 		Reason:  "Invalid",
+		Message: "Backend error: \"failed to find secret openai-secret: Secret \"openai-secret\" not found\"",
+	})
+
+	updateErrorManifest := filepath.Join(fsutils.MustGetThisDir(), "testdata/backend-update-error.yaml")
+
+	s.T().Cleanup(func() {
+		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, updateErrorManifest)
+		s.Require().NoError(err)
+	})
+
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, updateErrorManifest)
+	s.Require().NoError(err)
+
+	s.assertStatus(aiBackend, metav1.Condition{
+		Type:    "Accepted",
+		Status:  metav1.ConditionFalse,
+		Reason:  "Invalid",
 		Message: "Backend error: \"access_key is not a valid string\"",
 	})
 }

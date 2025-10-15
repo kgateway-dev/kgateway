@@ -18,6 +18,9 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
+// backendStatusClient is used to update Backend CRD status when runtime translation errors occur
+var backendStatusClient client.Client
+
 // deduplicateErrors removes duplicate errors based on their error message strings.
 func deduplicateErrors(errs []error) []error {
 	seen := make(map[string]bool, len(errs))
@@ -38,8 +41,8 @@ func deduplicateErrors(errs []error) []error {
 }
 
 // updateBackendStatus updates the Backend CRD status with the given errors.
-func updateBackendStatus(ctx context.Context, cl client.Client, namespace, name string, errs []error) {
-	if cl == nil {
+func updateBackendStatus(ctx context.Context, namespace, name string, errs []error) {
+	if backendStatusClient == nil {
 		logger.Error("error updating backend status: client not initialized")
 		return
 	}
@@ -54,7 +57,7 @@ func updateBackendStatus(ctx context.Context, cl client.Client, namespace, name 
 	res := v1alpha1.Backend{}
 	err := retry.Do(
 		func() error {
-			err := cl.Get(ctx, resNN, &res)
+			err := backendStatusClient.Get(ctx, resNN, &res)
 			if err != nil {
 				logger.Error("error getting backend", "error", err)
 				return err
@@ -77,7 +80,7 @@ func updateBackendStatus(ctx context.Context, cl client.Client, namespace, name 
 			conditions := make([]metav1.Condition, 0, 1)
 			meta.SetStatusCondition(&conditions, newCondition)
 			res.Status.Conditions = conditions
-			if err := cl.Status().Patch(ctx, &res, client.Merge); err != nil {
+			if err := backendStatusClient.Status().Patch(ctx, &res, client.Merge); err != nil {
 				logger.Error("error updating backend status", "error", err)
 				return err
 			}
@@ -96,11 +99,7 @@ func updateBackendStatus(ctx context.Context, cl client.Client, namespace, name 
 	}
 }
 
-func buildRegisterCallback(
-	ctx context.Context,
-	cl client.Client,
-	bcol krt.Collection[ir.BackendObjectIR],
-) func() {
+func buildRegisterCallback(ctx context.Context, bcol krt.Collection[ir.BackendObjectIR]) func() {
 	return func() {
 		bcol.Register(func(o krt.Event[ir.BackendObjectIR]) {
 			if o.Event == controllers.EventDelete {
@@ -113,7 +112,7 @@ func buildRegisterCallback(
 				return
 			}
 
-			updateBackendStatus(ctx, cl, in.ObjectSource.Namespace, in.ObjectSource.Name, ir.Errors)
+			updateBackendStatus(ctx, in.ObjectSource.Namespace, in.ObjectSource.Name, ir.Errors)
 		})
 	}
 }

@@ -19,7 +19,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/utils/ptr"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/backend/ai"
@@ -36,8 +35,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
-// backendStatusClient is used to update Backend CRD status when runtime translation errors occur
-var backendStatusClient client.Client
 var logger = logging.New("plugin/backend")
 
 const (
@@ -137,7 +134,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 			},
 		},
 		ContributesLeaderAction: map[schema.GroupKind]func(){
-			wellknown.BackendGVK.GroupKind(): buildRegisterCallback(ctx, commoncol.CrudClient, bcol),
+			wellknown.BackendGVK.GroupKind(): buildRegisterCallback(ctx, bcol),
 		},
 	}
 }
@@ -312,7 +309,7 @@ func processBackendForEnvoy(ctx context.Context, in ir.BackendObjectIR, out *env
 
 	// Update Backend status if new error
 	if len(backendIr.Errors) > errCount {
-		go updateBackendStatus(ctx, backendStatusClient, be.Namespace, be.Name, backendIr.Errors)
+		go updateBackendStatus(ctx, be.Namespace, be.Name, backendIr.Errors)
 	}
 
 	return nil
