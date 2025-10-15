@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -54,6 +55,8 @@ func (c *cliPortForwarder) startOnce(ctx context.Context) error {
 	}
 
 	cmdCtx, cmdCancel := context.WithCancel(ctx)
+	// assign cancel immediately to ensure we can cancel on early returns
+	c.cmdCancel = cmdCancel
 	c.cmd = exec.CommandContext( //nolint:gosec // G204: kubectl port-forward with controlled parameters from port forwarder config
 		cmdCtx,
 		"kubectl",
@@ -64,23 +67,37 @@ func (c *cliPortForwarder) startOnce(ctx context.Context) error {
 		fmt.Sprintf("%d:%d", c.properties.localPort, c.properties.remotePort),
 	)
 
+	// Print command being executed when enabled
+	if printPortForwardCommands {
+		args := []string{
+			"kubectl",
+			"port-forward",
+			"-n",
+			c.properties.resourceNamespace,
+			fmt.Sprintf("%s/%s", c.properties.resourceType, c.properties.resourceName),
+			fmt.Sprintf("%d:%d", c.properties.localPort, c.properties.remotePort),
+		}
+		fmt.Fprintf(os.Stderr, "+ %s\n", strings.Join(quoteArgs(args), " "))
+	}
+
 	// Errors should not happen here unless some other thing has futzed
 	// with this cmd's stdout/err.
 	fwdOut, err := c.cmd.StdoutPipe()
 	if err != nil {
+		c.cmdCancel()
 		return err
 	}
 	fwdErr, err := c.cmd.StderrPipe()
 	if err != nil {
+		c.cmdCancel()
 		return err
 	}
-
-	c.cmdCancel = cmdCancel
 
 	c.errCh = make(chan error, 1)
 
 	// short circuit error return if we can't even start
 	if err := c.cmd.Start(); err != nil {
+		c.cmdCancel()
 		return err
 	}
 
@@ -121,6 +138,14 @@ func (c *cliPortForwarder) WaitForStop() {
 	if c.cmd.Process != nil {
 		c.errCh <- c.cmd.Wait()
 	}
+}
+
+func quoteArgs(args []string) []string {
+	out := make([]string, 0, len(args))
+	for _, a := range args {
+		out = append(out, strconv.Quote(a))
+	}
+	return out
 }
 
 func getFreePort() (int, error) {
