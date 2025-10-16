@@ -37,22 +37,3 @@ jobs:
       # We intentionally ignore the errors while we build out our test coverage, to establish a good baseline
       # However, we should strive to establish a baseline, and then make it required on PRs
       run: make --always-make --ignore-errors validate-test-coverage
-  # Runs the units tests for Python
-  python:
-    timeout-minutes: 60
-    name: Python Unit Tests
-    env:
-      CONTEXT: Python Unit Tests
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Prepare Python Runner
-        uses: ./.github/actions/prep-python-runner
-
-      - name: Run Tests
-        shell: bash
-        run: |
-          echo "Running python unit tests"
-          cd python/ai_extension
-          python3 -m pytest test

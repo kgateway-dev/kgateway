@@ -122,7 +122,6 @@ mod-download:  ## Download the dependencies
 .PHONY: mod-tidy-nested
 mod-tidy-nested:  ## Tidy go mod files in nested modules
 	@echo "Tidying hack/utils/applier..." && cd hack/utils/applier && go mod tidy
-	@echo "Tidying test/mocks/mock-ai-provider-server..." && cd test/mocks/mock-ai-provider-server && go mod tidy
 
 .PHONY: mod-tidy
 mod-tidy: mod-download mod-tidy-nested ## Tidy the go mod file
@@ -325,24 +324,6 @@ generate-licenses: ## Generate the licenses for the project
 	GO111MODULE=on go run hack/utils/oss_compliance/oss_compliance.go osagen -c "GNU General Public License v2.0,GNU General Public License v3.0,GNU Lesser General Public License v2.1,GNU Lesser General Public License v3.0,GNU Affero General Public License v3.0"
 	GO111MODULE=on go run hack/utils/oss_compliance/oss_compliance.go osagen -s "Mozilla Public License 2.0,GNU General Public License v2.0,GNU General Public License v3.0,GNU Lesser General Public License v2.1,GNU Lesser General Public License v3.0,GNU Affero General Public License v3.0"> hack/utils/oss_compliance/osa_provided.md
 	GO111MODULE=on go run hack/utils/oss_compliance/oss_compliance.go osagen -i "Mozilla Public License 2.0"> hack/utils/oss_compliance/osa_included.md
-
-#----------------------------------------------------------------------------------
-# AI Extensions ExtProc Server
-#----------------------------------------------------------------------------------
-
-PYTHON_DIR := $(ROOTDIR)/python
-PYTHON_SOURCES := $(shell find $(PYTHON_DIR) -type f \( -name "*.py" -o -name "Dockerfile" -o -name "requirements*.txt" -o -name "pyproject.toml" \) 2>/dev/null)
-
-export AI_EXTENSION_IMAGE_REPO ?= kgateway-ai-extension
-
-$(OUTPUT_DIR)/.docker-stamp-ai-extension-$(VERSION): $(PYTHON_SOURCES)
-	$(BUILDX_BUILD) $(LOAD_OR_PUSH) $(PLATFORM_MULTIARCH) -f $(PYTHON_DIR)/Dockerfile $(ROOTDIR) \
-		--build-arg PYTHON_DIR=python \
-		-t  $(IMAGE_REGISTRY)/kgateway-ai-extension:$(VERSION)
-	@touch $@
-
-.PHONY: kgateway-ai-extension-docker
-kgateway-ai-extension-docker: $(OUTPUT_DIR)/.docker-stamp-ai-extension-$(VERSION)
 
 #----------------------------------------------------------------------------------
 # Controller
@@ -594,28 +575,11 @@ kind-reload-%: kind-build-and-load-% kind-set-image-% ; ## Use to build specifie
 kind-build-and-load: kind-build-and-load-kgateway
 kind-build-and-load: kind-build-and-load-envoy-wrapper
 kind-build-and-load: kind-build-and-load-sds
-kind-build-and-load: kind-build-and-load-kgateway-ai-extension
 
 .PHONY: kind-load ## Use to load all images into kind
 kind-load: kind-load-kgateway
 kind-load: kind-load-envoy-wrapper
 kind-load: kind-load-sds
-kind-load: kind-load-kgateway-ai-extension
-
-#----------------------------------------------------------------------------------
-# AI Extensions Test Server (for mocking AI Providers in e2e tests)
-#----------------------------------------------------------------------------------
-
-TEST_AI_PROVIDER_SERVER_DIR := $(ROOTDIR)/test/mocks/mock-ai-provider-server
-TEST_AI_PROVIDER_SOURCES := $(shell find $(TEST_AI_PROVIDER_SERVER_DIR) -type f 2>/dev/null)
-
-$(OUTPUT_DIR)/.docker-stamp-test-ai-provider-$(VERSION): $(TEST_AI_PROVIDER_SOURCES)
-	$(BUILDX_BUILD) $(LOAD_OR_PUSH) $(PLATFORM_MULTIARCH) -f $(TEST_AI_PROVIDER_SERVER_DIR)/Dockerfile $(TEST_AI_PROVIDER_SERVER_DIR) \
-		-t $(IMAGE_REGISTRY)/test-ai-provider:$(VERSION)
-	@touch $@
-
-.PHONY: test-ai-provider-docker
-test-ai-provider-docker: $(OUTPUT_DIR)/.docker-stamp-test-ai-provider-$(VERSION)
 
 #----------------------------------------------------------------------------------
 # Load Testing
