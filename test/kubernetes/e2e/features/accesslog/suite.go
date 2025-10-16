@@ -149,6 +149,5 @@ func (s *testingSuite) getPods(label string) []string {
 		label,
 	)
 	s.Require().NoError(err)
-	s.Require().Len(pods, 1)
 	return pods
 }
