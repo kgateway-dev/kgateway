@@ -211,7 +211,7 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 								Port: intstr.FromInt(8082),
 							},
 						},
-						InitialDelaySeconds: 5,
+						InitialDelaySeconds: 0,
 						PeriodSeconds:       10,
 					},
 					StartupProbe: &corev1.Probe{
@@ -245,7 +245,6 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 						RunAsUser:                ptr.To[int64](10101),
 						Capabilities: &corev1.Capabilities{
 							Drop: []corev1.Capability{"ALL"},
-							Add:  []corev1.Capability{"NET_BIND_SERVICE"},
 						},
 					},
 				},

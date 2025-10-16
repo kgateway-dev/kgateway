@@ -61,8 +61,16 @@ spec:
             httpGet:
               path: /readyz
               port: {{ .Values.controller.service.ports.health }}
-            initialDelaySeconds: 3
+            initialDelaySeconds: 1
             periodSeconds: 10
+          startupProbe:
+            httpGet:
+              path: /readyz
+              port: {{ .Values.controller.service.ports.health }}
+            initialDelaySeconds: 0
+            periodSeconds: 1
+            {{/* Allow failing for 120s before the pod is killed */}}
+            failureThreshold: 120
           env:
             - name: GOMEMLIMIT
               valueFrom:

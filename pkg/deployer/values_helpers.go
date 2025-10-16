@@ -8,10 +8,16 @@ import (
 	"sort"
 	"strings"
 
-	"golang.org/x/exp/slices"
+	"istio.io/istio/pkg/slices"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
+
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
@@ -26,17 +32,65 @@ var ComponentLogLevelEmptyError = func(key string, value string) error {
 	return fmt.Errorf("an empty key or value was provided in componentLogLevels: key=%s, value=%s", key, value)
 }
 
+func NewGatewayIRForDeployer(gw *ir.Gateway) GatewayIRForDeployer {
+	return GatewayIRForDeployer{
+		ObjectSource: gw.ObjectSource,
+		Listeners: slices.Map(gw.Listeners, func(e ir.Listener) ListenerForDeployer {
+			return ListenerForDeployer{
+				Name:       e.Name,
+				Port:       e.Port,
+				Parent:     kubeutils.NamespacedNameFrom(e.Parent),
+				ParentKind: getListenerSourceKind(e.Parent),
+			}
+		}),
+	}
+}
+
+func getListenerSourceKind(obj client.Object) string {
+	switch obj.(type) {
+	case *gwv1.Gateway:
+		return wellknown.GatewayKind
+	case *gwxv1a1.XListenerSet:
+		return wellknown.XListenerSetKind
+	default:
+		return ""
+	}
+}
+
+type GatewayIRForDeployer struct {
+	ir.ObjectSource
+	Listeners []ListenerForDeployer
+}
+
+func (c GatewayIRForDeployer) ResourceName() string {
+	return c.ObjectSource.ResourceName()
+}
+
+func (c GatewayIRForDeployer) Equals(in GatewayIRForDeployer) bool {
+	return c.ObjectSource.Equals(in.ObjectSource) &&
+		slices.EqualFunc(c.Listeners, in.Listeners, func(a ListenerForDeployer, b ListenerForDeployer) bool {
+			return a.Name == b.Name && a.Port == b.Port && a.ParentKind == b.ParentKind && a.Parent == b.Parent
+		})
+}
+
+type ListenerForDeployer struct {
+	Name       gwv1.SectionName
+	Port       gwv1.PortNumber
+	Parent     types.NamespacedName
+	ParentKind string
+}
+
 // Extract the listener ports from a Gateway and corresponding listener sets. These will be used to populate:
 // 1. the ports exposed on the envoy container
 // 2. the ports exposed on the proxy service
-func GetPortsValues(gw *ir.Gateway, gwp *v1alpha1.GatewayParameters) []HelmPort {
+func GetPortsValues(gw GatewayIRForDeployer, gwp *v1alpha1.GatewayParameters) []HelmPort {
 	gwPorts := []HelmPort{}
 
 	// Add ports from Gateway listeners
 	for _, l := range gw.Listeners {
 		listenerPort := int32(l.Port)
-		portName := listener.GenerateListenerName(l)
-		if err := validate.ListenerPort(l, l.Port); err != nil {
+		portName := listener.GenerateListenerNameFromPort(l.Port)
+		if err := validate.ListenerPortForParent(l.Name, l.Port, l.ParentKind, l.Parent); err != nil {
 			// skip invalid ports; statuses are handled in the translator
 			logger.Error("skipping port", "gateway", gw.ResourceName(), "error", err)
 			continue

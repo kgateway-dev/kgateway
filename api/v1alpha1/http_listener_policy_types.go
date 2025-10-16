@@ -57,8 +57,6 @@ type HTTPListenerPolicySpec struct {
 
 	// AccessLoggingConfig contains various settings for Envoy's access logging service.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto
-	// +kubebuilder:validation:Items={type=object}
-	//
 	// +kubebuilder:validation:MaxItems=16
 	AccessLog []AccessLog `json:"accessLog,omitempty"`
 
@@ -425,7 +423,6 @@ type CELFilter struct {
 // Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
 type GrpcStatusFilter struct {
 	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:Items={type=object}
 	Statuses []GrpcStatus `json:"statuses,omitempty"`
 	Exclude  bool         `json:"exclude,omitempty"`
 }

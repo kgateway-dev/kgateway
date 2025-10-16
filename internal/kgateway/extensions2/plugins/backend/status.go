@@ -30,7 +30,7 @@ func buildRegisterCallback(
 			}
 
 			in := o.Latest()
-			ir, ok := in.ObjIr.(*BackendIr)
+			ir, ok := in.ObjIr.(*backendIr)
 			if !ok {
 				return
 			}
@@ -48,7 +48,7 @@ func buildRegisterCallback(
 						return err
 					}
 
-					newCondition := pluginutils.BuildCondition("Backend", ir.Errors)
+					newCondition := pluginutils.BuildCondition("Backend", ir.errors)
 
 					found := meta.FindStatusCondition(res.Status.Conditions, string(gwv1.PolicyConditionAccepted))
 					if found != nil {
