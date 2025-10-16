@@ -285,6 +285,12 @@ func (s *testingSuite) TestProvisionResourcesNotUpdatedWithInvalidParameters() {
 }
 
 func (s *testingSuite) TestSelfManagedGateway() {
+	s.TestInstallation.Assertions.ConsistentlyObjectsNotExist(s.Ctx,
+		&appsv1.Deployment{ObjectMeta: proxyObjectMeta},
+		&corev1.Service{ObjectMeta: proxyObjectMeta},
+		&corev1.ServiceAccount{ObjectMeta: proxyObjectMeta},
+	)
+
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
 		gw := &gwv1.Gateway{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx,
@@ -305,12 +311,6 @@ func (s *testingSuite) TestSelfManagedGateway() {
 		}
 		assert.True(c, accepted, "gateway status not accepted")
 	}, 60*time.Second, 1*time.Second)
-
-	s.TestInstallation.Assertions.ConsistentlyObjectsNotExist(s.Ctx,
-		&appsv1.Deployment{ObjectMeta: proxyObjectMeta},
-		&corev1.Service{ObjectMeta: proxyObjectMeta},
-		&corev1.ServiceAccount{ObjectMeta: proxyObjectMeta},
-	)
 }
 
 // patchGateway accepts a reference to an object, and a patch function. It then queries the object,

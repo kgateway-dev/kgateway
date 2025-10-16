@@ -267,7 +267,13 @@ func updateGatewayStatusWithRetryFunc(
 		if !updateFunc(&gw) {
 			return nil // No update needed
 		}
-		return cli.Status().Patch(ctx, &gw, client.MergeFrom(original))
+		err := cli.Status().Patch(ctx, &gw, client.MergeFrom(original))
+		if err != nil {
+			log.FromContext(ctx).Error(fmt.Errorf("failed to update gateway status"), "error", err, "gateway", gwNN.String())
+			return err
+		}
+		log.FromContext(ctx).Info("updated gateway status", "gateway", gwNN.String(), "status", gw.Status)
+		return nil
 	})
 	if err != nil {
 		return fmt.Errorf("failed to update gateway status: %w", err)

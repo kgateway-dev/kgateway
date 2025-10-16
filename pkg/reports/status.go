@@ -371,12 +371,24 @@ func addMissingGatewayConditions(gwReport *GatewayReport, gw *gwv1.Gateway) {
 	if existing := meta.FindStatusCondition(gw.Status.Conditions, string(gwv1.GatewayConditionAccepted)); existing != nil &&
 		existing.Status == metav1.ConditionFalse &&
 		existing.Reason == string(gwv1.GatewayReasonInvalidParameters) {
+		slog.Info("propagating existing Accepted=False with Reason=InvalidParameters", "gateway", gw.Name, "namespace", gw.Namespace, "reason", existing.Reason, "message", existing.Message)
 		gwReport.SetCondition(reporter.GatewayCondition{
 			Type:    gwv1.GatewayConditionAccepted,
 			Status:  metav1.ConditionFalse,
 			Reason:  gwv1.GatewayConditionReason(existing.Reason),
 			Message: existing.Message,
 		})
+	}
+
+	if existing := meta.FindStatusCondition(gw.Status.Conditions, string(gwv1.GatewayConditionAccepted)); existing != nil &&
+		existing.Status == metav1.ConditionTrue {
+		slog.Info("propagating existing Accepted=True", "gateway", gw.Name, "namespace", gw.Namespace, "reason", existing.Reason, "message", existing.Message)
+		// gwReport.SetCondition(reporter.GatewayCondition{
+		// 	Type:    gwv1.GatewayConditionAccepted,
+		// 	Status:  metav1.ConditionTrue,
+		// 	Reason:  gwv1.GatewayConditionReason(existing.Reason),
+		// 	Message: existing.Message,
+		// })
 	}
 
 	if cond := meta.FindStatusCondition(gwReport.GetConditions(), string(gwv1.GatewayConditionAccepted)); cond == nil {
