@@ -211,7 +211,7 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 								Port: intstr.FromInt(8082),
 							},
 						},
-						InitialDelaySeconds: 5,
+						InitialDelaySeconds: 0,
 						PeriodSeconds:       10,
 					},
 					StartupProbe: &corev1.Probe{

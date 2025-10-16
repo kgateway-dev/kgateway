@@ -60,11 +60,6 @@ jobs:
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '^TestInferenceExtension$$|^TestListenerSet$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgatewayIstioAutoMtls$$|^TestZeroDowntimeRollout$$'
           localstack: 'false'
-        # August 29, 2025: ~7 minutes
-        - cluster-name: 'cluster-ai'
-          go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestAIExtension'
-          localstack: 'false'
         # August 29, 2025: ~4 minutes
         - cluster-name: 'cluster-metrics'
           go-test-args: '-v -timeout=25m'

@@ -151,15 +151,7 @@ spec:
             httpGet:
               path: /healthz/ready
               port: 15021
-            initialDelaySeconds: 5
             periodSeconds: 10
-          lifecycle:
-            preStop:
-              exec:
-                command:
-                  - /bin/sh
-                  - -c
-                  - wget --post-data "" -O /dev/null 127.0.0.1:15000/quitquitquit; sleep 10
           ports:
           - containerPort: 15020
             name: metrics
@@ -168,6 +160,10 @@ spec:
             - -f
             - /config/config.yaml
           env:
+            - name: TERMINATION_GRACE_PERIOD_SECONDS
+              value: "60"
+            - name: CONNECTION_MIN_TERMINATION_DEADLINE
+              value: "10s"
             - name: NODE_NAME
               valueFrom:
                 fieldRef:

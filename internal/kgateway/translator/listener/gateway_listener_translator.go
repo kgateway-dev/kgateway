@@ -845,6 +845,10 @@ func makeVhostName(
 }
 
 func GenerateListenerName(listener ir.Listener) string {
+	return GenerateListenerNameFromPort(listener.Port)
+}
+
+func GenerateListenerNameFromPort(port gwv1.PortNumber) string {
 	// Add a ~ to make sure the name won't collide with user provided names in other listeners
-	return fmt.Sprintf("listener~%d", listener.Port)
+	return fmt.Sprintf("listener~%d", port)
 }

@@ -3,6 +3,7 @@ package validate
 import (
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -41,9 +42,12 @@ func Gateway(gw *ir.Gateway) error {
 
 // ListenerPort validates that the given listener port does not conflict with reserved ports.
 func ListenerPort(listener ir.Listener, port gwv1.PortNumber) error {
+	return ListenerPortForParent(listener.Name, port, getListenerSourceKind(listener.Parent), kubeutils.NamespacedNameFrom(listener.Parent))
+}
+func ListenerPortForParent(name gwv1.SectionName, port gwv1.PortNumber, parentKind string, parentName types.NamespacedName) error {
 	if reservedPorts.Has(int32(port)) {
 		return fmt.Errorf("invalid port %d in listener %s/%s/%s: %w",
-			port, getListenerSourceKind(listener.Parent), kubeutils.NamespacedNameFrom(listener.Parent), listener.Name, ErrListenerPortReserved)
+			port, parentKind, parentName, name, ErrListenerPortReserved)
 	}
 	return nil
 }
