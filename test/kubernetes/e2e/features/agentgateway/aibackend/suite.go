@@ -174,6 +174,14 @@ func (s *testingSuite) TestWebhook() {
 		},
 	)
 
+	// Ensure the guardrails webhook Pod is running and ready before sending traffic
+	s.TestInstallation.Assertions.EventuallyPodsRunning(
+		s.T().Context(),
+		"default",
+		metav1.ListOptions{LabelSelector: "app.kubernetes.io/name=ai-guardrails-webhook"},
+		30*time.Second,
+	)
+
 	// Test request webhook
 	s.TestInstallation.Assertions.AssertEventualCurlResponse(
 		s.T().Context(),
@@ -195,7 +203,7 @@ func (s *testingSuite) TestWebhook() {
 			StatusCode: http.StatusForbidden,
 			Body:       gomega.ContainSubstring(guardrailsWebhookBlockResponse),
 		},
-		5*time.Second,
+		30*time.Second,
 	)
 
 	// Test response webhook
@@ -219,7 +227,7 @@ func (s *testingSuite) TestWebhook() {
 			StatusCode: http.StatusOK,
 			Body:       gomega.ContainSubstring(maskedPatternResponse),
 		},
-		5*time.Second,
+		30*time.Second,
 	)
 
 	s.Require().NoError(server.Stop(s.T().Context()))
