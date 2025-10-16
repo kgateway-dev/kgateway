@@ -23,7 +23,6 @@ const (
 	singleSvcNsName           = "single-tcp-route"
 	singleSvcGatewayName      = "single-tcp-gateway"
 	singleSvcListenerName8087 = "listener-8087"
-	singleSvcName             = "single-svc"
 	singleSvcTCPRouteName     = "single-tcp-route"
 
 	// Constants used by TestConfigureTCPRouteBackingDestinationsWithMultiServices
@@ -46,13 +45,12 @@ const (
 	crossNsTCPRouteName   = "tcp-route"
 
 	// Constants for CrossNamespaceTCPRouteWithoutReferenceGrant
-	crossNsNoRefGrantTestName       = "CrossNamespaceTCPRouteWithoutReferenceGrant"
-	crossNsNoRefGrantClientNsName   = "client-ns-no-refgrant"
-	crossNsNoRefGrantBackendNsName  = "backend-ns-no-refgrant"
-	crossNsNoRefGrantGatewayName    = "gateway"
-	crossNsNoRefGrantListenerName   = "listener-8080"
-	crossNsNoRefGrantBackendSvcName = "backend-svc"
-	crossNsNoRefGrantTCPRouteName   = "tcp-route"
+	crossNsNoRefGrantTestName      = "CrossNamespaceTCPRouteWithoutReferenceGrant"
+	crossNsNoRefGrantClientNsName  = "client-ns-no-refgrant"
+	crossNsNoRefGrantBackendNsName = "backend-ns-no-refgrant"
+	crossNsNoRefGrantGatewayName   = "gateway"
+	crossNsNoRefGrantListenerName  = "listener-8080"
+	crossNsNoRefGrantTCPRouteName  = "tcp-route"
 )
 
 var (

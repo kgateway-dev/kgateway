@@ -4,7 +4,6 @@ package lambda
 
 import (
 	"path/filepath"
-	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -18,7 +17,6 @@ const (
 	lambdaNamespace = "lambda-test"
 	localstackNS    = "localstack"
 	localstackSvc   = "localstack"
-	timeout         = 5 * time.Minute
 )
 
 var (
