@@ -271,8 +271,6 @@ spec:
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
-            add:
-            - NET_BIND_SERVICE
             drop:
             - ALL
           readOnlyRootFilesystem: true
@@ -320,7 +318,6 @@ spec:
           httpGet:
             path: /ready
             port: 8082
-          initialDelaySeconds: 5
           periodSeconds: 10
         lifecycle:
           preStop:

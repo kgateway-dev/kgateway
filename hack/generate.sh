@@ -38,7 +38,7 @@ API_INPUT_DIRS_SPACE="${API_INPUT_DIRS_SPACE%,}" # drop trailing space
 API_INPUT_DIRS_COMMA="${API_INPUT_DIRS_COMMA%,}" # drop trailing comma
 
 go tool register-gen --output-file zz_generated.register.go ${API_INPUT_DIRS_SPACE}
-go tool controller-gen crd:maxDescLen=0 object rbac:roleName=kgateway paths="${APIS_PKG}/api/${VERSION}" \
+go tool controller-gen crd:maxDescLen=50000 object rbac:roleName=kgateway paths="${APIS_PKG}/api/${VERSION}" \
     output:crd:artifacts:config=${ROOT_DIR}/${CRD_DIR} output:rbac:artifacts:config=${ROOT_DIR}/${MANIFESTS_DIR}
 # Template the ClusterRole name to include the namespace
 if [[ "$OSTYPE" == "darwin"* ]]; then

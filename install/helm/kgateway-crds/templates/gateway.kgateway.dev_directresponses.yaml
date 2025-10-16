@@ -22,20 +22,40 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: DirectResponse contains configuration for defining direct response
+          routes.
         properties:
           apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
           spec:
+            description: DirectResponseSpec describes the desired state of a DirectResponse.
             properties:
               body:
+                description: |-
+                  Body defines the content to be returned in the HTTP response body.
+                  The maximum length of the body is restricted to prevent excessively large responses.
+                  If this field is omitted, no body is included in the response.
                 maxLength: 4096
                 minLength: 1
                 type: string
               status:
+                description: StatusCode defines the HTTP status code to return for
+                  this route.
                 format: int32
                 maximum: 599
                 minimum: 200
@@ -44,6 +64,7 @@ spec:
             - status
             type: object
           status:
+            description: DirectResponseStatus defines the observed state of a DirectResponse.
             type: object
         type: object
     served: true

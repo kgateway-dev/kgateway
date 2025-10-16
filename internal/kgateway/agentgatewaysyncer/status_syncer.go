@@ -534,7 +534,9 @@ func (s *AgentGwStatusSyncer) syncGatewayStatus(ctx context.Context, logger *slo
 				if !isGatewayStatusEqual(&gwStatusWithoutAddress, status) {
 					gw.Status = *status
 					if err := s.mgr.GetClient().Status().Patch(ctx, &gw, client.Merge); err != nil {
-						logger.Error("error patching gateway status", logKeyError, err, logKeyGateway, gwnn.String())
+						if !apierrors.IsConflict(err) {
+							logger.Error("error patching gateway status", logKeyError, err, logKeyGateway, gwnn.String())
+						}
 						return err
 					}
 					logger.Info("patched gw status", logKeyGateway, gwnn.String())
@@ -635,7 +637,9 @@ func (s *AgentGwStatusSyncer) syncListenerSetStatus(ctx context.Context, logger 
 				if !isListenerSetStatusEqual(&lsStatus, status) {
 					ls.Status = *status
 					if err := s.mgr.GetClient().Status().Patch(ctx, &ls, client.Merge); err != nil {
-						logger.Error("error patching listener set status", logKeyError, err, logKeyGateway, lsnn.String())
+						if !apierrors.IsConflict(err) {
+							logger.Error("error patching listener set status", logKeyError, err, logKeyGateway, lsnn.String())
+						}
 						return err
 					}
 					logger.Info("patched ls status", "listenerset", lsnn.String())

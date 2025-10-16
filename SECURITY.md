@@ -11,3 +11,7 @@ Instructions for reporting a vulnerability can be found on the kgateway [Securit
 **Please do not report security vulnerabilities through public GitHub issues.**
 
 Instead, please report them by email to the private Google group **kgateway-vulnerability-reports@googlegroups.com**.
+
+## Security Incident Response Process
+
+Please refer to the [Security Response](SECURITY_RESPONSE.md) guide.
