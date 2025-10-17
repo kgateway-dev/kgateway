@@ -76,6 +76,16 @@ func reportPolicyAttachmentStatus(
 		}
 		r := rp.Policy(key, policy.Generation).AncestorRef(ancestorRef)
 
+		if len(policy.Errors) > 0 {
+			r.SetCondition(reporter.PolicyCondition{
+				Type:               string(v1alpha1.PolicyConditionAttached),
+				Status:             metav1.ConditionFalse,
+				Reason:             string(v1alpha1.PolicyReasonInvalid),
+				Message:            policy.FormatErrors(),
+				ObservedGeneration: policy.Generation,
+			})
+			continue
+		}
 		if !mergeOrigins.IsSet() {
 			// Not a merged policy so this should be a direct attachment
 			r.SetAttachmentState(reporter.PolicyAttachmentStateAttached)

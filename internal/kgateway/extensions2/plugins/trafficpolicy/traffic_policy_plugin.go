@@ -3,6 +3,7 @@ package trafficpolicy
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -375,6 +376,8 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, outputR
 		p.setTransformationInChain[pCtx.FilterChainName] = true
 	}
 
+	var errs []error
+
 	if policy.spec.ai != nil {
 		var aiBackends []*v1alpha1.Backend
 		// check if the backends selected by targetRef are all AI backends before applying the policy
@@ -385,15 +388,15 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, outputR
 			}
 			b, ok := backend.Backend.BackendObject.Obj.(*v1alpha1.Backend)
 			if !ok {
-				// AI policy cannot apply to kubernetes services
-				// TODO(npolshak): Report this as a warning on status
-				logger.Warn("AI Policy cannot apply to kubernetes services", "backend_name", backend.Backend.BackendObject.GetName())
+				err := fmt.Errorf("AI Policy cannot apply to kubernetes service, backend_name: %s", backend.Backend.BackendObject.GetName())
+				logger.Error(err.Error())
+				errs = append(errs, err)
 				continue
 			}
 			if b.Spec.Type != v1alpha1.BackendTypeAI {
-				// AI policy cannot apply to non-AI backends
-				// TODO(npolshak): Report this as a warning on status
-				logger.Warn("AI Policy cannot apply to non-AI backend", "backend_name", backend.Backend.BackendObject.GetName(), "backend_type", string(b.Spec.Type))
+				err := fmt.Errorf("AI Policy cannot apply to non-AI backend, backend_name: %s, backend_type: %s", backend.Backend.BackendObject.GetName(), string(b.Spec.Type))
+				logger.Error(err.Error())
+				errs = append(errs, err)
 				continue
 			}
 			aiBackends = append(aiBackends, b)
@@ -407,7 +410,7 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, outputR
 	p.handlePerRoutePolicies(policy.spec, outputRoute)
 	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, policy.spec)
 
-	return nil
+	return errors.Join(errs...)
 }
 
 func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(
@@ -681,6 +684,44 @@ func (p *trafficPolicyPluginGwPass) handlePerVHostPolicies(
 ) {
 	if spec.retry != nil {
 		out.RetryPolicy = spec.retry.policy
+	}
+}
+
+func AddErrToOriginPolicy(mergeOrigins ir.MergeOrigins, pols []ir.PolicyAtt, err error) {
+	// If no merge then append error on all AI policies
+	logger.Warn("test", "err", err, "set", mergeOrigins.IsSet(), "pols", pols)
+	if !mergeOrigins.IsSet() {
+		for _, pol := range pols {
+			ir, ok := pol.PolicyIr.(*TrafficPolicy)
+			if !ok || ir.spec.ai == nil {
+				continue
+			}
+			pol.Errors = append(pol.Errors, err)
+		}
+		return
+	}
+
+	// Check if any policy contributed AI configuration
+	aiPolicyIDs := mergeOrigins.Get("ai")
+	if len(aiPolicyIDs) == 0 {
+		return
+	}
+
+	aiPolicySet := make(map[string]bool, len(aiPolicyIDs))
+	for _, id := range aiPolicyIDs {
+		aiPolicySet[id] = true
+	}
+
+	// Add error only to policies that contributed the AI field
+	for i := range pols {
+		if pols[i].PolicyRef == nil {
+			continue
+		}
+
+		policyID := pols[i].PolicyRef.ID()
+		if aiPolicySet[policyID] {
+			pols[i].Errors = append(pols[i].Errors, err)
+		}
 	}
 }
 

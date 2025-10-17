@@ -12,6 +12,7 @@ import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/trafficpolicy"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -436,7 +437,7 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			pctx.Policy = pol.PolicyIr
 			err := pass.ApplyForRoute(pctx, out)
 			if err != nil {
-				errs = append(errs, err)
+				trafficpolicy.AddErrToOriginPolicy(mergeOrigins, pols, err)
 			}
 		}
 		out.Metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, out.GetMetadata())
