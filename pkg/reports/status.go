@@ -369,17 +369,15 @@ func addMissingGatewayConditions(gwReport *GatewayReport, gw *gwv1.Gateway) {
 	// we don't want to override it with a true Accepted status. The controller will set Accepted=True
 	// when the GatewayParameters are valid again. Otherwise there is a race condition between the controller and reporter.
 	// HACK: This is because both the controller and reporter set Accepted status.
-	existing := meta.FindStatusCondition(gw.Status.Conditions, string(gwv1.GatewayConditionAccepted))
-	hasInvalidParams := existing != nil && existing.Status == metav1.ConditionFalse && existing.Reason == string(gwv1.GatewayReasonInvalidParameters)
-	if !hasInvalidParams {
-		if meta.FindStatusCondition(gwReport.GetConditions(), string(gwv1.GatewayConditionAccepted)) == nil {
-			gwReport.SetCondition(reporter.GatewayCondition{
-				Type:    gwv1.GatewayConditionAccepted,
-				Status:  metav1.ConditionTrue,
-				Reason:  gwv1.GatewayReasonAccepted,
-				Message: GatewayAcceptedMessage,
-			})
-		}
+	existingAccepted := meta.FindStatusCondition(gw.Status.Conditions, string(gwv1.GatewayConditionAccepted))
+	hasInvalidParams := existingAccepted != nil && existingAccepted.Status == metav1.ConditionFalse && existingAccepted.Reason == string(gwv1.GatewayReasonInvalidParameters)
+	if !hasInvalidParams && meta.FindStatusCondition(gwReport.GetConditions(), string(gwv1.GatewayConditionAccepted)) == nil {
+		gwReport.SetCondition(reporter.GatewayCondition{
+			Type:    gwv1.GatewayConditionAccepted,
+			Status:  metav1.ConditionTrue,
+			Reason:  gwv1.GatewayReasonAccepted,
+			Message: GatewayAcceptedMessage,
+		})
 	}
 	if cond := meta.FindStatusCondition(gwReport.GetConditions(), string(gwv1.GatewayConditionProgrammed)); cond == nil {
 		gwReport.SetCondition(reporter.GatewayCondition{
