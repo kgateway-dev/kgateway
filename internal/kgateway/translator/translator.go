@@ -138,10 +138,7 @@ func (s *CombinedTranslator) TranslateGateway(kctx krt.HandlerContext, ctx conte
 
 	gwir := s.buildProxy(kctx, ctx, gw, r)
 	if gwir == nil {
-		// Return the ReportMap even if translation failed or produced no envoy config.
-		// This ensures the status syncer can still update Gateway status for self-managed
-		// gateways or gateways with translation errors.
-		return nil, rm
+		return nil, reports.ReportMap{}
 	}
 
 	// we are recomputing xds snapshots as proxies have changed, signal that we need to sync xds with these new snapshots
