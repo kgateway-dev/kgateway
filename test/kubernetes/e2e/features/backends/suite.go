@@ -42,14 +42,6 @@ var (
 	proxyDeployment = &appsv1.Deployment{ObjectMeta: proxyObjMeta}
 	proxyService    = &corev1.Service{ObjectMeta: proxyObjMeta}
 
-	backendMeta = metav1.ObjectMeta{
-		Name:      "nginx-static",
-		Namespace: "default",
-	}
-	backend = &v1alpha1.Backend{
-		ObjectMeta: backendMeta,
-	}
-
 	nginxMeta = metav1.ObjectMeta{
 		Name:      "nginx",
 		Namespace: "default",
@@ -70,6 +62,14 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 func (s *testingSuite) TestConfigureBackingDestinationsWithUpstream() {
+	backendMeta := metav1.ObjectMeta{
+		Name:      "nginx-static",
+		Namespace: "default",
+	}
+	backend := &v1alpha1.Backend{
+		ObjectMeta: backendMeta,
+	}
+
 	s.T().Cleanup(func() {
 		for _, manifest := range manifests {
 			err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
@@ -110,7 +110,7 @@ func (s *testingSuite) TestConfigureBackingDestinationsWithUpstream() {
 			Body:       gomega.ContainSubstring(defaults.NginxResponse),
 		})
 
-	s.assertStatus(metav1.Condition{
+	s.assertStatus(backend, metav1.Condition{
 		Type:    "Accepted",
 		Status:  metav1.ConditionTrue,
 		Reason:  "Accepted",
@@ -118,7 +118,53 @@ func (s *testingSuite) TestConfigureBackingDestinationsWithUpstream() {
 	})
 }
 
-func (s *testingSuite) assertStatus(expected metav1.Condition) {
+// TestBackendWithRuntimeError tests if backend condition is updated with error
+func (s *testingSuite) TestBackendWithRuntimeError() {
+	errorManifest := filepath.Join(fsutils.MustGetThisDir(), "testdata/backend-error.yaml")
+
+	s.T().Cleanup(func() {
+		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, errorManifest)
+		s.Require().NoError(err)
+	})
+
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, errorManifest)
+	s.Require().NoError(err)
+
+	aiBackend := &v1alpha1.Backend{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "example-ai-backend",
+			Namespace: "default",
+		},
+	}
+
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, aiBackend)
+
+	s.assertStatus(aiBackend, metav1.Condition{
+		Type:    "Accepted",
+		Status:  metav1.ConditionFalse,
+		Reason:  "Invalid",
+		Message: "Backend error: \"failed to find secret openai-secret: Secret \"openai-secret\" not found\"",
+	})
+
+	updateErrorManifest := filepath.Join(fsutils.MustGetThisDir(), "testdata/backend-update-error.yaml")
+
+	s.T().Cleanup(func() {
+		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, updateErrorManifest)
+		s.Require().NoError(err)
+	})
+
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, updateErrorManifest)
+	s.Require().NoError(err)
+
+	s.assertStatus(aiBackend, metav1.Condition{
+		Type:    "Accepted",
+		Status:  metav1.ConditionFalse,
+		Reason:  "Invalid",
+		Message: "Backend error: \"access_key is not a valid string\"",
+	})
+}
+
+func (s *testingSuite) assertStatus(backend *v1alpha1.Backend, expected metav1.Condition) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
 	p := s.testInstallation.Assertions
 	p.Gomega.Eventually(func(g gomega.Gomega) {

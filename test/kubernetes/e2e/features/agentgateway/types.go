@@ -13,12 +13,18 @@ import (
 )
 
 var (
-	// kgateway managed deployment for the agentgateway
-	deployAgentgatewayManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "agentgateway-deploy.yaml")
+	// kgateway managed deployment for the agentgateway with basic HTTPRoute
+	httpRouteManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "agw-http-route.yaml")
+	// kgateway managed deployment for the agentgateway with basic TCPRoute
+	tcpRouteManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "agw-tcp-route.yaml")
 
 	// Core infrastructure objects that we need to track
-	gatewayObjectMeta = metav1.ObjectMeta{
-		Name:      "agent-gateway",
+	httpGatewayObjectMeta = metav1.ObjectMeta{
+		Name:      "http-gw-for-test",
+		Namespace: "default",
+	}
+	tcpGatewayObjectMeta = metav1.ObjectMeta{
+		Name:      "tcp-gw-for-test",
 		Namespace: "default",
 	}
 
@@ -28,8 +34,11 @@ var (
 	}
 
 	testCases = map[string]*base.TestCase{
-		"TestAgentgatewayDeployment": {
-			Manifests: []string{defaults.HttpbinManifest, defaults.CurlPodManifest, deployAgentgatewayManifest},
+		"TestAgentgatewayHTTPRoute": {
+			Manifests: []string{defaults.HttpbinManifest, defaults.CurlPodManifest, httpRouteManifest},
+		},
+		"TestAgentgatewayTCPRoute": {
+			Manifests: []string{defaults.CurlPodManifest, tcpRouteManifest},
 		},
 	}
 )

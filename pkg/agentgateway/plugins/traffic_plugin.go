@@ -1094,7 +1094,7 @@ func processCSRFPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyName string,
 		if origin.Exact != nil {
 			additionalOrigins = append(additionalOrigins, *origin.Exact)
 		} else {
-			return nil, fmt.Errorf("CSRF additional origins must specify exact matches only, non-exact origin matchers are not supported")
+			return nil, fmt.Errorf("CSRF additional origins must specify exact matches only, non-exact origin matchers are not supported for agentgateway")
 		}
 	}
 

@@ -9,6 +9,13 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
+type DataPlaneType string
+
+const (
+	DataPlaneAgentgateway DataPlaneType = "agentgateway"
+	DataPlaneEnvoy        DataPlaneType = "envoy"
+)
+
 // helmConfig stores the top-level helm values used by the deployer.
 type HelmConfig struct {
 	Gateway            *HelmGateway            `json:"gateway,omitempty"`
@@ -16,6 +23,10 @@ type HelmConfig struct {
 }
 
 type HelmGateway struct {
+	// not needed by the helm charts, but by the code that select the correct
+	// helm chart:
+	DataPlaneType DataPlaneType `json:"dataPlaneType"`
+
 	// naming
 	Name               *string           `json:"name,omitempty"`
 	GatewayName        *string           `json:"gatewayName,omitempty"`
@@ -59,12 +70,12 @@ type HelmGateway struct {
 	Istio *HelmIstio `json:"istio,omitempty"`
 
 	// envoy container values
-	LogLevel          *string `json:"logLevel,omitempty"`
 	ComponentLogLevel *string `json:"componentLogLevel,omitempty"`
 
 	// envoy or agentgateway container values
 	// Note: ideally, these should be mapped to container specific values, but right now they
-	// map the the proxy container
+	// map to the proxy container
+	LogLevel          *string                      `json:"logLevel,omitempty"`
 	Image             *HelmImage                   `json:"image,omitempty"`
 	Resources         *corev1.ResourceRequirements `json:"resources,omitempty"`
 	SecurityContext   *corev1.SecurityContext      `json:"securityContext,omitempty"`
@@ -84,7 +95,7 @@ type HelmGateway struct {
 	AIExtension *HelmAIExtension `json:"aiExtension,omitempty"`
 
 	// agentgateway integration values
-	Agentgateway *HelmAgentgateway `json:"agentgateway,omitempty"`
+	CustomConfigMapName *string `json:"customConfigMapName,omitempty"`
 }
 
 // helmPort represents a Gateway Listener port
@@ -194,10 +205,4 @@ type HelmInferenceExtension struct {
 type HelmEndpointPickerExtension struct {
 	PoolName      string `json:"poolName"`
 	PoolNamespace string `json:"poolNamespace"`
-}
-
-type HelmAgentgateway struct {
-	Enabled             bool   `json:"enabled,omitempty"`
-	LogLevel            string `json:"logLevel,omitempty"`
-	CustomConfigMapName string `json:"customConfigMapName,omitempty"`
 }

@@ -80,6 +80,8 @@ func registerTypes(ourCli versioned.Interface) {
 func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
 	registerTypes(commoncol.OurClient)
 
+	setBackendStatusClient(commoncol.CrudClient)
+
 	col := krt.WrapClient(kclient.NewFiltered[*v1alpha1.Backend](
 		commoncol.Client,
 		kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()},
@@ -131,7 +133,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 			},
 		},
 		ContributesLeaderAction: map[schema.GroupKind]func(){
-			wellknown.BackendGVK.GroupKind(): buildRegisterCallback(ctx, commoncol.CrudClient, bcol),
+			wellknown.BackendGVK.GroupKind(): buildRegisterCallback(ctx, bcol),
 		},
 	}
 }
@@ -272,8 +274,8 @@ func processBackendForEnvoy(ctx context.Context, in ir.BackendObjectIR, out *env
 		return nil
 	}
 
-	// TODO(tim): Bubble up error to Backend status once https://github.com/kgateway-dev/kgateway/issues/10555
-	// is resolved and add test cases for invalid endpoint URLs.
+	errCount := len(beIr.errors)
+
 	spec := be.Spec
 	switch spec.Type {
 	case v1alpha1.BackendTypeStatic:
@@ -303,6 +305,12 @@ func processBackendForEnvoy(ctx context.Context, in ir.BackendObjectIR, out *env
 			beIr.errors = append(beIr.errors, err)
 		}
 	}
+
+	// Update Backend status if new error
+	if len(beIr.errors) > errCount {
+		go updateBackendStatus(ctx, be.Namespace, be.Name, beIr.errors)
+	}
+
 	return nil
 }
 

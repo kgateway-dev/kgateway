@@ -88,6 +88,7 @@ If needed, clone the [Kgateway.dev repo](https://github.com/kgateway-dev/kgatewa
 git clone -o $REMOTE https://github.com/kgateway-dev/kgateway.dev.git && cd kgateway.dev
 ```
 
+### Latest Stable Versions
 Bump the Kgateway version used by the docs. The following is an example of bumping from v2.0.3 to v2.0.4:
 
 ```bash
@@ -102,6 +103,11 @@ GW_API_VERSION=$(cd ../kgateway && go list -m sigs.k8s.io/gateway-api | awk '{pr
 sed -i '' "1s/.*/${GW_API_VERSION}/" assets/docs/versions/k8s-gw-version.md
 ```
 
+### Docs for previous Versions
+The [kgateway.dev repo](https://github.com/kgateway-dev/kgateway.dev) does not use branches to support documentation for previous versions. It uses versioned folders and conrefs. See [PR 447](https://github.com/kgateway-dev/kgateway.dev/pull/447/files) as an example of updating v2.0.4 to v2.0.5 when v2.1.0 was the latest release.
+
+
+### Push Changes (All Versions)
 Sign, commit, and push the changes to the Gateway API Inference Extension repo.
 
 ```shell

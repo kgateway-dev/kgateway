@@ -406,9 +406,15 @@ func createTCPRouteCollection[T controllers.Object](
 		collectionName,
 		translator,
 		func(e AgwTCPRoute, parent RouteParentReference) *api.Resource {
-			// TCP route wrapper doesn't expose a `Route` field like HTTP.
-			// For TCP we don't mutate ListenerKey/Key here; just pass through.
-			return ToAgwResource(e)
+			inner := protomarshal.Clone(e.TCPRoute)
+			_, name, _ := strings.Cut(parent.InternalName, "/")
+			inner.ListenerKey = name
+			if sec := string(parent.ParentSection); sec != "" {
+				inner.Key = inner.GetKey() + "." + sec
+			} else {
+				inner.Key = inner.GetKey()
+			}
+			return ToAgwResource(AgwTCPRoute{TCPRoute: inner})
 		},
 	)
 }

@@ -17,10 +17,12 @@ import (
 // the map of headers used in the curl request.
 func BuildArgs(options ...Option) []string {
 	config := &requestConfig{
-		verbose:           false,
-		ignoreServerCert:  false,
-		silent:            false,
-		connectionTimeout: 3,
+		verbose:          false,
+		ignoreServerCert: false,
+		silent:           false,
+		// Do not set a default timeout here; let the caller (e.g., kubectl.Cli.CurlFromPod)
+		// control defaults to avoid duplicate flags. Only add timeouts when explicitly requested.
+		connectionTimeout: 0,
 		headersOnly:       false,
 		method:            "",
 		host:              "127.0.0.1",

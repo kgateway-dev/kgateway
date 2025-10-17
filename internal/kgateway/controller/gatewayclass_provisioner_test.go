@@ -23,24 +23,28 @@ const (
 var _ = Describe("GatewayClassProvisioner", func() {
 	var (
 		ctx              context.Context
-		cancel           context.CancelFunc
+		cancelCtx        context.CancelFunc
+		cancelManager    context.CancelFunc
 		goroutineMonitor *assertions.GoRoutineMonitor
 	)
 
 	BeforeEach(func() {
-		ctx, cancel = context.WithCancel(context.Background())
+		ctx, cancelCtx = context.WithCancel(context.Background())
 		goroutineMonitor = assertions.NewGoRoutineMonitor()
 	})
 
 	AfterEach(func() {
-		cancel()
+		if cancelManager != nil {
+			cancelManager()
+		}
+		cancelCtx()
 		waitForGoroutinesToFinish(goroutineMonitor)
 	})
 
 	When("no GatewayClasses exist on the cluster", func() {
 		BeforeEach(func() {
 			var err error
-			cancel, err = createManager(ctx, nil, nil)
+			cancelManager, err = createManager(ctx, nil, nil)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -93,7 +97,7 @@ var _ = Describe("GatewayClassProvisioner", func() {
 			Expect(k8sClient.Create(ctx, wrongControllerGC)).To(Succeed())
 
 			var err error
-			cancel, err = createManager(ctx, nil, nil)
+			cancelManager, err = createManager(ctx, nil, nil)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -123,7 +127,7 @@ var _ = Describe("GatewayClassProvisioner", func() {
 	When("the default GCs are deleted", func() {
 		BeforeEach(func() {
 			var err error
-			cancel, err = createManager(ctx, nil, nil)
+			cancelManager, err = createManager(ctx, nil, nil)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -166,7 +170,7 @@ var _ = Describe("GatewayClassProvisioner", func() {
 		)
 		BeforeEach(func() {
 			var err error
-			cancel, err = createManager(ctx, nil, nil)
+			cancelManager, err = createManager(ctx, nil, nil)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("getting the default GC")
@@ -178,6 +182,9 @@ var _ = Describe("GatewayClassProvisioner", func() {
 		})
 
 		AfterEach(func() {
+			// Stop the manager first to prevent concurrent modifications
+			cancelManager()
+
 			By("restoring the default GC value")
 			gc := &apiv1.GatewayClass{}
 			err := k8sClient.Get(ctx, types.NamespacedName{Name: gatewayClassName}, gc)
@@ -234,8 +241,24 @@ var _ = Describe("GatewayClassProvisioner", func() {
 			}
 
 			var err error
-			cancel, err = createManager(ctx, nil, customClassConfigs)
+			cancelManager, err = createManager(ctx, nil, customClassConfigs)
 			Expect(err).NotTo(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			// Stop the manager first to prevent the controller from recreating the GatewayClass
+			cancelManager()
+
+			// Cleanup the custom GatewayClass
+			customGC := &apiv1.GatewayClass{ObjectMeta: metav1.ObjectMeta{Name: "custom-class"}}
+			_ = k8sClient.Delete(ctx, customGC)
+
+			// Wait for it to be deleted to prevent test pollution
+			Eventually(func() bool {
+				gc := &apiv1.GatewayClass{}
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: "custom-class"}, gc)
+				return err != nil
+			}, timeout, interval).Should(BeTrue())
 		})
 
 		It("should create GatewayClasses with custom configurations", func() {
