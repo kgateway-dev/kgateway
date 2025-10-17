@@ -23,8 +23,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
-// TODO (danehans): Rename this file to route.go since it supports different route types.
-
 // RouteInfo contains pre-resolved backends (Services, Upstreams and delegated xRoutes)
 // This allows all querying to happen upfront, and detailed logic for delegation to happen
 // as part of translation.
@@ -152,7 +150,10 @@ func (r *gatewayQueries) allowedRoutes(resource client.Object, l *gwv1.Listener)
 			{Kind: wellknown.GRPCRouteKind, Group: gwv1.GroupName},
 		}
 	case gwv1.TLSProtocolType:
-		allowedKinds = []metav1.GroupKind{{Kind: wellknown.TLSRouteKind, Group: gwv1.GroupName}}
+		allowedKinds = []metav1.GroupKind{{
+			Kind: wellknown.TLSRouteKind, Group: gwv1.GroupName},
+			{Kind: wellknown.TCPRouteKind, Group: gwv1a2.GroupName},
+		}
 	case gwv1.TCPProtocolType:
 		allowedKinds = []metav1.GroupKind{{Kind: wellknown.TCPRouteKind, Group: gwv1a2.GroupName}}
 	case gwv1.UDPProtocolType:
