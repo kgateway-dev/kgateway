@@ -28,7 +28,7 @@ apiVersion: gateway.networking.k8s.io/v1
 metadata:
   name: agentgateway
 spec:
-  controllerName: kgateway.dev/kgateway
+  controllerName: kgateway.dev/agentgateway
   parametersRef:
     group: gateway.kgateway.dev
     kind: GatewayParameters
@@ -366,7 +366,7 @@ REFRESH_GOLDEN="true" go test -shuffle on -run "TestBasic" ./internal/kgateway/a
 Setup the cluster:
 
 ```shell
-AGENTGATEWAY=true ./hack/kind/setup-kind.sh
+./hack/kind/setup-kind.sh
 ```
 
 Retag and load the image to match the default image tag in the values file for agentgateway, then run:
@@ -1201,7 +1201,7 @@ kind: GatewayClass
 metadata:
   name: agentgateway
 spec:
-  controllerName: kgateway.dev/kgateway
+  controllerName: kgateway.dev/agentgateway
   parametersRef:
     group: gateway.kgateway.dev
     kind: GatewayParameters
@@ -1412,7 +1412,7 @@ kind: GatewayClass
 metadata:
   name: agentgateway
 spec:
-  controllerName: kgateway.dev/kgateway
+  controllerName: kgateway.dev/agentgateway
   parametersRef:
     group: gateway.kgateway.dev
     kind: GatewayParameters
@@ -1507,7 +1507,7 @@ kind: GatewayClass
 metadata:
   name: agentgateway
 spec:
-  controllerName: kgateway.dev/kgateway
+  controllerName: kgateway.dev/agentgateway
   parametersRef:
     group: gateway.kgateway.dev
     kind: GatewayParameters

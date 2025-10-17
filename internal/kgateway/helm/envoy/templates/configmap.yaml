@@ -1,33 +1,17 @@
----
-# Source: kgateway-proxy/templates/serviceaccount.yaml
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: gw
-  labels:
-    kgateway: kube-gateway
-    app.kubernetes.io/name: gw
-    app.kubernetes.io/instance: gw
-    gateway.networking.k8s.io/gateway-name: gw
-    app.kubernetes.io/version: "1.0.0-ci1"
-    gateway.networking.k8s.io/gateway-class-name: kgateway
-    app.kubernetes.io/managed-by: kgateway
-automountServiceAccountToken: false
----
-# Source: kgateway-proxy/templates/configmap.yaml
+{{- $gateway := .Values.gateway }}
+{{- $statsConfig := $gateway.stats }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: gw
+  name: {{ include "kgateway.gateway.fullname" . }}
   labels:
-    kgateway: kube-gateway
-    app.kubernetes.io/name: gw
-    app.kubernetes.io/instance: gw
-    gateway.networking.k8s.io/gateway-name: gw
-    app.kubernetes.io/version: "1.0.0-ci1"
-    gateway.networking.k8s.io/gateway-class-name: kgateway
-    app.kubernetes.io/managed-by: kgateway
+    {{- include "kgateway.gateway.constLabels" . | nindent 4 }}
+    {{- include "kgateway.gateway.labels" . | nindent 4 }}
 data:
+{{- if and $gateway.xds.tls $gateway.xds.tls.enabled }}
+  ca.crt: |
+{{ $gateway.xds.tls.caCert | indent 4 }}
+{{- end }}
   envoy.yaml: |
     admin:
       address:
@@ -40,10 +24,19 @@ data:
       - name: admin_layer
         admin_layer: {}
     node:
-      cluster: gw.default
+      cluster: {{ include "kgateway.gateway.fullname" . }}.{{ .Release.Namespace }}
       metadata:
-        role: kgateway-kube-gateway-api~default~gw
+        role: kgateway-kube-gateway-api~{{ $gateway.gatewayNamespace }}~{{ $gateway.gatewayName | default (include "kgateway.gateway.fullname" .) }}
     static_resources:
+      {{- if and $gateway.xds.tls $gateway.xds.tls.enabled }}
+      secrets:
+        - name: validation_context_sds
+          validation_context:
+            trusted_ca:
+              filename: /etc/envoy/ca.crt
+            watched_directory:
+              path: /etc/envoy
+      {{- end }}
       listeners:
       - name: readiness_listener
         address:
@@ -70,6 +63,7 @@ data:
                           route:
                             cluster: admin_port_cluster
                 http_filters:
+{{- if $gateway.readinessProbe }}
                   - name: envoy.filters.http.health_check
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.health_check.v3.HealthCheck
@@ -78,9 +72,11 @@ data:
                       - name: ":path"
                         string_match:
                           exact: "/envoy-hc"
+{{- end }}{{/*if $gateway.readinessProbe*/}}
                   - name: envoy.filters.http.router
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+{{- if $statsConfig.enabled }}
       - name: prometheus_listener
         address:
           socket_address:
@@ -115,8 +111,9 @@ data:
                                   string_match:
                                     exact: GET
                             route:
-                              prefix_rewrite: /stats/prometheus?usedonly
+                              prefix_rewrite: {{ $statsConfig.routePrefixRewrite }}
                               cluster: admin_port_cluster
+                        {{- if $statsConfig.enableStatsRoute}}
                           - match:
                               prefix: "/stats"
                               headers:
@@ -124,12 +121,14 @@ data:
                                   string_match:
                                     exact: GET
                             route:
-                              prefix_rewrite: /stats
+                              prefix_rewrite: {{ $statsConfig.statsPrefixRewrite }}
                               cluster: admin_port_cluster
+                        {{- end }}
                   http_filters:
                     - name: envoy.filters.http.router
                       typed_config:
                         "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+{{- end }}{{/* if $gateway.stats.enabled */}}
       clusters:
         - name: xds_cluster
           alt_stat_name: xds_cluster
@@ -141,8 +140,17 @@ data:
               - endpoint:
                   address:
                     socket_address:
-                      address: xds.cluster.local
-                      port_value: 9977
+                      address: {{ $gateway.xds.host }}
+                      port_value: {{ $gateway.xds.port }}
+          {{- if and $gateway.xds.tls $gateway.xds.tls.enabled }}
+          transport_socket:
+            name: envoy.transport_sockets.tls
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+              common_tls_context:
+                validation_context_sds_secret_config:
+                  name: validation_context_sds
+          {{- end }}
           typed_extension_protocol_options:
             envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
               "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
@@ -159,7 +167,7 @@ data:
                       request_transformation:
                         transformation_template:
                           headers:
-                            authorization: {"text": 'Bearer {{ "{{ trim(data_source(\"token\")) -}}" }}'}
+                            authorization: {"text": 'Bearer {{ "{{ \"{{ trim(data_source(\\\"token\\\")) -}}\" }}" }}'}
                           passthrough: {}
                           data_sources:
                             token:
@@ -187,6 +195,20 @@ data:
                     socket_address:
                       address: 127.0.0.1
                       port_value: 19000
+        {{- if $gateway.istio.enabled }}
+        - name: gateway_proxy_sds
+          connect_timeout: 0.25s
+          http2_protocol_options: {}
+          load_assignment:
+            cluster_name: gateway_proxy_sds
+            endpoints:
+              - lb_endpoints:
+                - endpoint:
+                    address:
+                      socket_address:
+                        address: 127.0.0.1
+                        port_value: 8234
+        {{- end }}{{/* if $gateway.istio.enabled */}}
     dynamic_resources:
       ads_config:
         transport_api_version: V3
@@ -201,126 +223,3 @@ data:
       lds_config:
         resource_api_version: V3
         ads: {}
----
-# Source: kgateway-proxy/templates/service.yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: gw
-  labels:
-    kgateway: kube-gateway
-    app.kubernetes.io/name: gw
-    app.kubernetes.io/instance: gw
-    gateway.networking.k8s.io/gateway-name: gw
-    app.kubernetes.io/version: "1.0.0-ci1"
-    gateway.networking.k8s.io/gateway-class-name: kgateway
-    app.kubernetes.io/managed-by: kgateway
-spec:
-  type: LoadBalancer
-  ports:
-  - name: listener-8080
-    protocol: TCP
-    targetPort: 8080
-    port: 8080
-  selector:
-    app.kubernetes.io/name: gw
-    app.kubernetes.io/instance: gw
-    gateway.networking.k8s.io/gateway-name: gw
----
-# Source: kgateway-proxy/templates/deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: gw
-  labels:
-    kgateway: kube-gateway
-    app.kubernetes.io/name: gw
-    app.kubernetes.io/instance: gw
-    gateway.networking.k8s.io/gateway-name: gw
-    app.kubernetes.io/version: "1.0.0-ci1"
-    gateway.networking.k8s.io/gateway-class-name: kgateway
-    app.kubernetes.io/managed-by: kgateway
-spec:
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: gw
-      app.kubernetes.io/instance: gw
-      gateway.networking.k8s.io/gateway-name: gw
-  template:
-    metadata:
-      annotations:
-        prometheus.io/path: /metrics
-        prometheus.io/port: "9091"
-        prometheus.io/scrape: "true"
-      labels:
-        kgateway: kube-gateway
-        app.kubernetes.io/name: gw
-        app.kubernetes.io/instance: gw
-        gateway.networking.k8s.io/gateway-name: gw
-        gateway.networking.k8s.io/gateway-class-name: kgateway
-    spec:
-      serviceAccountName: gw
-      containers:
-      - name: kgateway-proxy
-        args:
-        - "--disable-hot-restart"
-        - "--service-node"
-        - $(POD_NAME).$(POD_NAMESPACE)
-        - "--log-level"
-        - "info"
-        image: "ghcr.io/envoy-wrapper:v2.1.0-dev"
-        volumeMounts:
-        - mountPath: /etc/envoy
-          name: envoy-config
-        - name: xds-token
-          mountPath: /var/run/secrets/tokens
-          readOnly: true
-        env:
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: POD_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: ENVOY_UID
-          value: "0"
-        ports:
-        - name: listener-8080
-          protocol: TCP
-          containerPort: 8080
-        - name: http-monitoring
-          containerPort: 9091
-        startupProbe:
-          failureThreshold: 60
-          httpGet:
-            path: /ready
-            port: 8082
-          periodSeconds: 1
-          successThreshold: 1
-          timeoutSeconds: 2
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: 8082
-          periodSeconds: 10
-        lifecycle:
-          preStop:
-            exec:
-              command:
-              - /bin/sh
-              - -c
-              - wget --post-data "" -O /dev/null 127.0.0.1:19000/healthcheck/fail; sleep 10
-      terminationGracePeriodSeconds: 60
-      volumes:
-      - name: xds-token
-        projected:
-          sources:
-          - serviceAccountToken:
-              audience: kgateway
-              expirationSeconds: 43200
-              path: xds-token
-      - configMap:
-          name: gw
-        name: envoy-config

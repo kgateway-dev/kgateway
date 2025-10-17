@@ -132,12 +132,22 @@ func (s *testingSuite) getPods(label string) []string {
 		},
 	)
 
+	// During rollouts we can briefly have 2 pods. Wait until only one remains.
+	s.Require().EventuallyWithT(func(c *assert.CollectT) {
+		pods, err := s.TestInstallation.Actions.Kubectl().GetPodsInNsWithLabel(
+			s.Ctx,
+			accessLoggerObjectMeta.GetNamespace(),
+			label,
+		)
+		s.Require().NoError(err)
+		assert.Len(c, pods, 1)
+	}, 60*time.Second, 200*time.Millisecond)
+
 	pods, err := s.TestInstallation.Actions.Kubectl().GetPodsInNsWithLabel(
 		s.Ctx,
 		accessLoggerObjectMeta.GetNamespace(),
 		label,
 	)
 	s.Require().NoError(err)
-	s.Require().Len(pods, 1)
 	return pods
 }

@@ -49,6 +49,8 @@ func GetAgwResourceName(r *api.Resource) string {
 		return "backend/" + t.Backend.GetName()
 	case *api.Resource_Route:
 		return "route/" + t.Route.GetKey()
+	case *api.Resource_TcpRoute:
+		return "tcp_route/" + t.TcpRoute.GetKey()
 	case *api.Resource_Policy:
 		return "policy/" + t.Policy.GetName()
 	default:

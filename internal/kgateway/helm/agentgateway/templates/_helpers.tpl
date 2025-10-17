@@ -1,16 +1,4 @@
 {{/*
-Create chart name and version as used by the chart label.
-*/}}
-{{- define "kgateway.chart" -}}
-{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
-{{- end }}
-
-{{/*
-Data-plane related macros:
-*/}}
-
-
-{{/*
 Expand the name of the chart.
 */}}
 {{- define "kgateway.gateway.name" -}}
@@ -47,13 +35,12 @@ kgateway: kube-gateway
 Common labels
 */}}
 {{- define "kgateway.gateway.labels" -}}
-helm.sh/chart: {{ include "kgateway.chart" . }}
 {{ include "kgateway.gateway.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 gateway.networking.k8s.io/gateway-class-name: {{ .Values.gateway.gatewayClassName }}
-app.kubernetes.io/managed-by: {{ .Release.Service }}
+app.kubernetes.io/managed-by: kgateway
 {{- end }}
 
 {{- define "kgateway.gateway.podLabels" -}}
@@ -70,6 +57,25 @@ app.kubernetes.io/name: {{ include "kgateway.gateway.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 gateway.networking.k8s.io/gateway-name: {{ .Release.Name }}
 {{- end }}
+
+{{/*
+All labels including selector labels, standard labels, and custom gateway labels
+*/}}
+{{- define "kgateway.gateway.allLabels" -}}
+{{- $gateway := .Values.gateway -}}
+{{- $labels := merge (dict
+  "kgateway" "kube-gateway"
+  "app.kubernetes.io/managed-by" "kgateway"
+  "gateway.networking.k8s.io/gateway-class-name" .Values.gateway.gatewayClassName
+  )
+  (include "kgateway.gateway.selectorLabels" . | fromYaml)
+  ($gateway.gatewayLabels | default dict)
+-}}
+{{- if .Chart.AppVersion -}}
+{{- $_ := set $labels "app.kubernetes.io/version" .Chart.AppVersion -}}
+{{- end -}}
+{{- $labels | toYaml -}}
+{{- end -}}
 
 {{/*
 Return a container image value as a string

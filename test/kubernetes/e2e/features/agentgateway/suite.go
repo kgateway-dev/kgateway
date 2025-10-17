@@ -31,7 +31,44 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
-func (s *testingSuite) TestAgentgatewayDeployment() {
+func (s *testingSuite) TestAgentgatewayTCPRoute() {
+	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+		s.Ctx,
+		tcpGatewayObjectMeta.Name,
+		tcpGatewayObjectMeta.Namespace,
+		gwv1.GatewayConditionProgrammed,
+		metav1.ConditionTrue,
+	)
+	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+		s.Ctx,
+		tcpGatewayObjectMeta.Name,
+		tcpGatewayObjectMeta.Namespace,
+		gwv1.GatewayConditionAccepted,
+		metav1.ConditionTrue,
+	)
+	s.TestInstallation.Assertions.EventuallyGatewayListenerAttachedRoutes(
+		s.Ctx,
+		tcpGatewayObjectMeta.Name,
+		tcpGatewayObjectMeta.Namespace,
+		"tcp",
+		1,
+	)
+
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(tcpGatewayObjectMeta)),
+			curl.VerboseOutput(),
+			curl.WithPort(8080),
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+		},
+	)
+}
+
+func (s *testingSuite) TestAgentgatewayHTTPRoute() {
 	// modify the default agentgateway GatewayClass to point to the custom GatewayParameters
 	err := s.TestInstallation.Actions.Kubectl().RunCommand(s.Ctx, "patch", "--type", "json",
 		"gatewayclass", wellknown.DefaultAgwClassName, "-p",
@@ -49,22 +86,22 @@ func (s *testingSuite) TestAgentgatewayDeployment() {
 
 	s.TestInstallation.Assertions.EventuallyGatewayCondition(
 		s.Ctx,
-		gatewayObjectMeta.Name,
-		gatewayObjectMeta.Namespace,
+		httpGatewayObjectMeta.Name,
+		httpGatewayObjectMeta.Namespace,
 		gwv1.GatewayConditionProgrammed,
 		metav1.ConditionTrue,
 	)
 	s.TestInstallation.Assertions.EventuallyGatewayCondition(
 		s.Ctx,
-		gatewayObjectMeta.Name,
-		gatewayObjectMeta.Namespace,
+		httpGatewayObjectMeta.Name,
+		httpGatewayObjectMeta.Namespace,
 		gwv1.GatewayConditionAccepted,
 		metav1.ConditionTrue,
 	)
 	s.TestInstallation.Assertions.EventuallyGatewayListenerAttachedRoutes(
 		s.Ctx,
-		gatewayObjectMeta.Name,
-		gatewayObjectMeta.Namespace,
+		httpGatewayObjectMeta.Name,
+		httpGatewayObjectMeta.Namespace,
 		"http",
 		1,
 	)
@@ -73,7 +110,7 @@ func (s *testingSuite) TestAgentgatewayDeployment() {
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(gatewayObjectMeta)),
+			curl.WithHost(kubeutils.ServiceFQDN(httpGatewayObjectMeta)),
 			curl.VerboseOutput(),
 			curl.WithHostHeader("www.example.com"),
 			curl.WithPath("/status/200"),

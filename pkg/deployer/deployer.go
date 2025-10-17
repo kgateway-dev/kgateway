@@ -54,6 +54,7 @@ type Deployer struct {
 	agwControllerName                    string
 	agwGatewayClassName                  string
 	chart                                *chart.Chart
+	agentgatewayChart                    *chart.Chart
 	cli                                  client.Client
 	helmValues                           HelmValuesGenerator
 	helmReleaseNameAndNamespaceGenerator func(obj client.Object) (string, string)
@@ -75,6 +76,28 @@ func NewDeployer(
 		agwGatewayClassName:                  agwGatewayClassName,
 		cli:                                  cli,
 		chart:                                chart,
+		agentgatewayChart:                    nil,
+		helmValues:                           hvg,
+		helmReleaseNameAndNamespaceGenerator: helmReleaseNameAndNamespaceGenerator,
+	}
+}
+
+// NewDeployerWithMultipleCharts creates a new gateway deployer that supports both envoy and agentgateway charts
+func NewDeployerWithMultipleCharts(
+	controllerName, agwControllerName, agwGatewayClassName string,
+	cli client.Client,
+	envoyChart *chart.Chart,
+	agentgatewayChart *chart.Chart,
+	hvg HelmValuesGenerator,
+	helmReleaseNameAndNamespaceGenerator func(obj client.Object) (string, string),
+) *Deployer {
+	return &Deployer{
+		controllerName:                       controllerName,
+		agwControllerName:                    agwControllerName,
+		agwGatewayClassName:                  agwGatewayClassName,
+		cli:                                  cli,
+		chart:                                envoyChart,
+		agentgatewayChart:                    agentgatewayChart,
 		helmValues:                           hvg,
 		helmReleaseNameAndNamespaceGenerator: helmReleaseNameAndNamespaceGenerator,
 	}
@@ -133,7 +156,19 @@ func (d *Deployer) RenderManifest(ns, name string, vals map[string]any) ([]byte,
 	install.ClientOnly = true
 	installCtx := context.Background()
 
-	release, err := install.RunWithContext(installCtx, d.chart, vals)
+	// Select the appropriate chart based on whether agentgateway is enabled
+	chartToUse := d.chart
+	if d.agentgatewayChart != nil {
+		if gateway, ok := vals["gateway"].(map[string]any); ok {
+			if dataPlaneType, ok := gateway["dataPlaneType"].(string); ok {
+				if dataPlaneType == string(DataPlaneAgentgateway) {
+					chartToUse = d.agentgatewayChart
+				}
+			}
+		}
+	}
+
+	release, err := install.RunWithContext(installCtx, chartToUse, vals)
 	if err != nil {
 		return nil, fmt.Errorf("failed to render helm chart for %s.%s: %w", ns, name, err)
 	}

@@ -87,9 +87,6 @@ func (dt DeployerTester) RunHelmChartTest(
 	}
 	fakeClient := NewFakeClientWithObjsWithScheme(scheme, objs...)
 
-	chart, err := internaldeployer.LoadGatewayChart()
-	assert.NoError(t, err, "error loading chart")
-
 	gwParams := internaldeployer.NewGatewayParameters(
 		fakeClient,
 		inputs,
@@ -97,15 +94,14 @@ func (dt DeployerTester) RunHelmChartTest(
 	if helmValuesGeneratorOverride != nil {
 		gwParams.WithHelmValuesGeneratorOverride(helmValuesGeneratorOverride(fakeClient, inputs))
 	}
-	deployer := pkgdeployer.NewDeployer(
+	deployer, err := internaldeployer.NewGatewayDeployer(
 		dt.ControllerName,
 		dt.AgwControllerName,
 		dt.AgwClassName,
 		fakeClient,
-		chart,
 		gwParams,
-		internaldeployer.GatewayReleaseNameAndNamespace,
 	)
+	assert.NoError(t, err, "error creating gateway deployer")
 
 	ctx := context.TODO()
 	vals, err := gwParams.GetValues(ctx, gtw)
