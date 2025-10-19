@@ -210,8 +210,8 @@ Statuses:
           status: "False"
           type: Accepted
         - lastTransitionTime: null
-          message: Attached to all targets
-          reason: Attached
-          status: "True"
+          message: ""
+          reason: Pending
+          status: "False"
           type: Attached
         controllerName: kgateway.dev/kgateway

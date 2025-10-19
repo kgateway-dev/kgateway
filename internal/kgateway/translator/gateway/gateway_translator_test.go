@@ -1378,6 +1378,12 @@ func TestValidation(t *testing.T) {
 			inputFile: "policy-ai-default-value-invalid.yaml",
 			minMode:   apisettings.ValidationStandard,
 		},
+		{
+			name:      "AI Invalid Backend",
+			category:  "policy",
+			inputFile: "policy-ai-invalid-backend.yaml",
+			minMode:   apisettings.ValidationStandard,
+		},
 		// TODO(tim): Uncomment this test once #11995 is fixed.
 		// {
 		// 	name:      "Multiple Invalid Policies Conflict",

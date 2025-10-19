@@ -12,13 +12,13 @@ import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/trafficpolicy"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/trafficpolicy"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/routeutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -423,6 +423,7 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 		}
 		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
 		policies, mergeOrigins := mergePolicies(pass, pols)
+		errPolicies := make([]ir.PolicyAtt, 0)
 		for _, pol := range policies {
 			// Builtin policies use InheritedPolicyPriority
 			pctx.InheritedPolicyPriority = pol.InheritedPolicyPriority
@@ -437,11 +438,13 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			pctx.Policy = pol.PolicyIr
 			err := pass.ApplyForRoute(pctx, out)
 			if err != nil {
-				trafficpolicy.AddErrToOriginPolicy(mergeOrigins, pols, err)
+				errPolicies = append(errPolicies, trafficpolicy.AddErrToOriginPolicy(mergeOrigins, pols, err)...)
+				errs = append(errs, err)
 			}
 		}
 		out.Metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, out.GetMetadata())
 		reportPolicyAttachmentStatus(h.reporter, h.listener.PolicyAncestorRef, mergeOrigins, pols...)
+		reportPolicyAttachmentErrStatus(h.reporter, h.listener.PolicyAncestorRef, errPolicies...)
 	}
 
 	return errors.Join(errs...)

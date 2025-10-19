@@ -52,7 +52,12 @@ Routes:
         status: 500
       match:
         prefix: /
-      name: listener~8080~www_example_com-route-0-httproute-invalid-traffic-policy-route-gwtest-0-0-matcher-0
+      metadata:
+        filterMetadata:
+          merge.TrafficPolicy.gateway.kgateway.dev:
+            ai:
+            - gateway.kgateway.dev/TrafficPolicy/gwtest/invalid-ai-field-default
+      name: listener~8080~www_example_com-route-0-httproute-invalid-ai-route-gwtest-0-0-matcher-0
 Statuses:
   gateways:
     gwtest/example-gateway:
@@ -102,14 +107,12 @@ Statuses:
         - group: gateway.networking.k8s.io
           kind: GRPCRoute
   httpRoutes:
-    gwtest/invalid-traffic-policy-route:
+    gwtest/invalid-ai-route:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: 'Replaced Rule (0): invalid xds configuration: error initializing
-            configuration ''/dev/fd/0'': Failed to parse request template: Failed to parse
-            body template [inja.exception.parser_error] (at 2:31) expected expression
-            close, got '''''''
+          message: 'Replaced Rule (0): AI Policy cannot apply to kubernetes service,
+            backend_name: example-svc'
           reason: RouteRuleReplaced
           status: "False"
           type: Accepted
@@ -124,7 +127,7 @@ Statuses:
           kind: ""
           name: example-gateway
   policies:
-    TrafficPolicy/gwtest/invalid-traffic-policy:
+    TrafficPolicy/gwtest/invalid-ai-field-default:
       ancestors:
       - ancestorRef:
           group: gateway.networking.k8s.io
@@ -133,15 +136,13 @@ Statuses:
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
-            Failed to parse request template: Failed to parse body template [inja.exception.parser_error]
-            (at 2:31) expected expression close, got '''''''
-          reason: Invalid
-          status: "False"
+          message: Policy accepted
+          reason: Valid
+          status: "True"
           type: Accepted
         - lastTransitionTime: null
-          message: ""
-          reason: Pending
+          message: 'AI Policy cannot apply to kubernetes service, backend_name: example-svc'
+          reason: Invalid
           status: "False"
           type: Attached
         controllerName: kgateway.dev/kgateway
