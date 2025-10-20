@@ -44,7 +44,7 @@ spec:
     - host: example2.com
       port: 8080
 ---
-apiVersion: gateway.networking.k8s.io/v1alpha3
+apiVersion: gateway.networking.k8s.io/v1
 kind: BackendTLSPolicy
 metadata:
   name: tls-policy
@@ -60,7 +60,7 @@ spec:
       kind: ConfigMap
       name: public-ca
 ---
-apiVersion: gateway.networking.k8s.io/v1alpha3
+apiVersion: gateway.networking.k8s.io/v1
 kind: BackendTLSPolicy
 metadata:
   name: tls-policy2

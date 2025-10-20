@@ -19,9 +19,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	sdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
@@ -134,8 +134,8 @@ func (n *filterChainTranslator) computeCustomFilters(
 	ctx context.Context,
 	customNetworkFilters []ir.CustomEnvoyFilter,
 	listenerReporter sdkreporter.ListenerReporter,
-) []plugins.StagedNetworkFilter {
-	var networkFilters []plugins.StagedNetworkFilter
+) []filters.StagedNetworkFilter {
+	var networkFilters []filters.StagedNetworkFilter
 	// Process the network filters.
 	for _, plug := range n.pluginPass {
 		stagedFilters, err := plug.NetworkFilters()
@@ -160,10 +160,10 @@ func (n *filterChainTranslator) computeCustomFilters(
 	return networkFilters
 }
 
-func convertCustomNetworkFilters(customNetworkFilters []ir.CustomEnvoyFilter) []plugins.StagedNetworkFilter {
-	var out []plugins.StagedNetworkFilter
+func convertCustomNetworkFilters(customNetworkFilters []ir.CustomEnvoyFilter) []filters.StagedNetworkFilter {
+	var out []filters.StagedNetworkFilter
 	for _, customFilter := range customNetworkFilters {
-		out = append(out, plugins.StagedNetworkFilter{
+		out = append(out, filters.StagedNetworkFilter{
 			Filter: &envoylistenerv3.Filter{
 				Name: customFilter.Name,
 				ConfigType: &envoylistenerv3.Filter_TypedConfig{
@@ -176,7 +176,7 @@ func convertCustomNetworkFilters(customNetworkFilters []ir.CustomEnvoyFilter) []
 	return out
 }
 
-func sortNetworkFilters(filters plugins.StagedNetworkFilterList) []*envoylistenerv3.Filter {
+func sortNetworkFilters(filters filters.StagedNetworkFilterList) []*envoylistenerv3.Filter {
 	sort.Sort(filters)
 	var sortedFilters []*envoylistenerv3.Filter
 	for _, filter := range filters {
@@ -272,7 +272,7 @@ func (h *hcmNetworkFilterTranslator) initializeHCM() *envoyhttp.HttpConnectionMa
 }
 
 func (h *hcmNetworkFilterTranslator) computeHttpFilters(ctx context.Context, l ir.HttpFilterChainIR) []*envoyhttp.HttpFilter {
-	var httpFilters plugins.StagedHttpFilterList
+	var httpFilters filters.StagedHttpFilterList
 
 	// run the HttpFilter Plugins
 	for _, plug := range h.pluginPass {
@@ -318,10 +318,10 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(ctx context.Context, l i
 	//
 	//	routerV3.DynamicStats = h.listener.GetOptions().GetRouter().GetDynamicStats()
 
-	newStagedFilter, err := plugins.NewStagedFilter(
+	newStagedFilter, err := filters.NewStagedFilter(
 		wellknown.Router,
 		&routerV3,
-		plugins.AfterStage(plugins.RouteStage),
+		filters.AfterStage(filters.RouteStage),
 	)
 	if err != nil {
 		h.listenerReporter.SetCondition(sdkreporter.ListenerCondition{
@@ -338,10 +338,10 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(ctx context.Context, l i
 	return envoyHttpFilters
 }
 
-func convertCustomHttpFilters(customHttpFilters []ir.CustomEnvoyFilter) []plugins.StagedHttpFilter {
-	var out []plugins.StagedHttpFilter
+func convertCustomHttpFilters(customHttpFilters []ir.CustomEnvoyFilter) []filters.StagedHttpFilter {
+	var out []filters.StagedHttpFilter
 	for _, customFilter := range customHttpFilters {
-		stagedFilter := plugins.StagedHttpFilter{
+		stagedFilter := filters.StagedHttpFilter{
 			Filter: &envoyhttp.HttpFilter{
 				Name: customFilter.Name,
 				ConfigType: &envoyhttp.HttpFilter_TypedConfig{
@@ -355,7 +355,7 @@ func convertCustomHttpFilters(customHttpFilters []ir.CustomEnvoyFilter) []plugin
 	return out
 }
 
-func sortHttpFilters(filters plugins.StagedHttpFilterList) []*envoyhttp.HttpFilter {
+func sortHttpFilters(filters filters.StagedHttpFilterList) []*envoyhttp.HttpFilter {
 	sort.Sort(filters)
 	var sortedFilters []*envoyhttp.HttpFilter
 	for _, filter := range filters {

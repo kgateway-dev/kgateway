@@ -9,9 +9,9 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	delegationutils "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/delegation"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 // filterDelegatedChildren takes a parent route matcher and a list of children

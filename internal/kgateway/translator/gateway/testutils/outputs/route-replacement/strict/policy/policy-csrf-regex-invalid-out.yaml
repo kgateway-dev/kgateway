@@ -107,7 +107,7 @@ Statuses:
       - conditions:
         - lastTransitionTime: null
           message: 'Replaced Rule (0): invalid xds configuration: error initializing
-            configuration '''': missing ]: ['
+            configuration ''/dev/fd/0'': missing ]: ['
           reason: RouteRuleReplaced
           status: "False"
           type: Accepted
@@ -131,7 +131,7 @@ Statuses:
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: 'invalid xds configuration: error initializing configuration '''':
+          message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
             missing ]: ['
           reason: Invalid
           status: "False"

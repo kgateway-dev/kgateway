@@ -1,3 +1,5 @@
+//go:build e2e
+
 package deployer
 
 import (
@@ -121,7 +123,7 @@ func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
 	s.Require().NoError(err)
 	s.Require().Subset(pod.Labels, map[string]string{
 		"app.kubernetes.io/instance":             proxyObjectMeta.Name,
-		"app.kubernetes.io/name":                 proxyObjectMeta.Name,
+		defaults.WellKnownAppLabel:               proxyObjectMeta.Name,
 		"gateway.networking.k8s.io/gateway-name": proxyObjectMeta.Name,
 		"kgateway":                               "kube-gateway",
 	})

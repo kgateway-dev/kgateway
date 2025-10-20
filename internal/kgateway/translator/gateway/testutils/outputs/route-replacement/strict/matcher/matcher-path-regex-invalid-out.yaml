@@ -107,7 +107,7 @@ Statuses:
       - conditions:
         - lastTransitionTime: null
           message: 'Dropped Rule (0): invalid matcher configuration: validation failed:
-            invalid xds configuration: error initializing configuration '''': missing
+            invalid xds configuration: error initializing configuration ''/dev/fd/0'': missing
             ]: [invalid-regex'
           reason: RouteRuleDropped
           status: "False"

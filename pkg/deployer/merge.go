@@ -37,8 +37,8 @@ func DeepMergeGatewayParameters(dst, src *v1alpha1.GatewayParameters) {
 	dstKube.ServiceAccount = deepMergeServiceAccount(dstKube.GetServiceAccount(), srcKube.GetServiceAccount())
 	dstKube.Istio = deepMergeIstioIntegration(dstKube.GetIstio(), srcKube.GetIstio())
 	dstKube.Stats = deepMergeStatsConfig(dstKube.GetStats(), srcKube.GetStats())
-	dstKube.AiExtension = deepMergeAIExtension(dstKube.GetAiExtension(), srcKube.GetAiExtension())
-	dstKube.FloatingUserId = MergePointers(dstKube.GetFloatingUserId(), srcKube.GetFloatingUserId())
+	dstKube.AiExtension = deepMergeAIExtension(dstKube.GetAiExtension(), srcKube.GetAiExtension())   //nolint:staticcheck
+	dstKube.FloatingUserId = MergePointers(dstKube.GetFloatingUserId(), srcKube.GetFloatingUserId()) //nolint:staticcheck
 	dstKube.OmitDefaultSecurityContext = MergePointers(dstKube.GetOmitDefaultSecurityContext(), srcKube.GetOmitDefaultSecurityContext())
 	dstKube.Agentgateway = deepMergeAgentgateway(dstKube.GetAgentgateway(), srcKube.GetAgentgateway())
 }
@@ -715,19 +715,7 @@ func deepMergeDeployment(dst, src *v1alpha1.ProxyDeployment) *v1alpha1.ProxyDepl
 		return src
 	}
 
-	// Handle AtMostOneOf constraint for replicas and omitReplicas
-	// If src has either field set, it takes precedence and we clear the other field
-	if src.GetReplicas() != nil {
-		dst.Replicas = src.GetReplicas()
-		dst.OmitReplicas = nil // Clear omitReplicas when replicas is set
-	} else if src.GetOmitReplicas() != nil {
-		dst.OmitReplicas = src.GetOmitReplicas()
-		dst.Replicas = nil // Clear replicas when omitReplicas is set
-	} else {
-		// src has neither field set, keep dst as is
-		// (dst.Replicas and dst.OmitReplicas remain unchanged)
-	}
-
+	dst.Replicas = MergePointers(dst.GetReplicas(), src.GetReplicas())
 	dst.Strategy = MergePointers(dst.Strategy, src.Strategy)
 
 	return dst

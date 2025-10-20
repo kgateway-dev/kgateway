@@ -15,6 +15,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/internal/version"
 )
 
 func RunAdminServer(ctx context.Context, setupOpts *controller.SetupOpts) error {
@@ -41,6 +42,8 @@ func getServerHandlers(_ context.Context, dbg *krt.DebugHandler, cache envoycach
 		addLoggingHandler("/logging", m, profiles)
 
 		addPprofHandler("/debug/pprof/", m, profiles)
+
+		addVersionHandler("/version", m, profiles)
 	}
 }
 
@@ -132,6 +135,20 @@ func index(profileDescriptions map[string]dynamicProfileDescription) func(w http
 		for _, p := range profiles {
 			fmt.Fprintf(&buf, "<h2><a href=\"%s\"}>%s</a></h2><p>%s</p>\n", p.Name, p.Name, p.Desc)
 		}
+		fmt.Fprintf(&buf, "<h2>About</h2>\n")
+		fmt.Fprintf(&buf, "<pre>%s</pre>\n", version.String())
 		w.Write(buf.Bytes())
 	}
+}
+
+// addVersionHandler registers a /version endpoint that exposes build info
+func addVersionHandler(path string, mux *http.ServeMux, profiles map[string]dynamicProfileDescription) {
+	mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+		payload := map[string]string{
+			"string":  version.String(),
+			"version": version.Version,
+		}
+		writeJSON(w, payload, r)
+	})
+	profiles[path] = func() string { return "Controller version and commit information" }
 }

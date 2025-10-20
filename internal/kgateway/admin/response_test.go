@@ -12,7 +12,9 @@ import (
 )
 
 var _ = Describe("SnapshotResponseData", func() {
-
+	// TODO(tim): these tests are brittle and coupled to K8s serialization internals. we should
+	// refactor to test semantic equality (unmarshal and compare structs) rather than exact JSON
+	// string matching since this is an internal only API.
 	DescribeTable("MarshalJSONString",
 		func(response admin.SnapshotResponseData, expectedString string) {
 			responseStr := response.MarshalJSONString()
@@ -23,13 +25,13 @@ var _ = Describe("SnapshotResponseData", func() {
 				Data:  "my data",
 				Error: nil,
 			},
-			"{\"data\":\"my data\",\"error\":\"\"}"),
+			`{"data":"my data","error":""}`),
 		Entry("errored response can be formatted as json",
 			admin.SnapshotResponseData{
 				Data:  "",
 				Error: errors.New("one error"),
 			},
-			"{\"data\":\"\",\"error\":\"one error\"}"),
+			`{"data":"","error":"one error"}`),
 		Entry("CR list can be formatted as json",
 			admin.SnapshotResponseData{
 				Data: []corev1.Namespace{
@@ -49,6 +51,6 @@ var _ = Describe("SnapshotResponseData", func() {
 				},
 				Error: nil,
 			},
-			"{\"data\":[{\"kind\":\"kind\",\"apiVersion\":\"version\",\"metadata\":{\"name\":\"name\",\"namespace\":\"namespace\",\"creationTimestamp\":null,\"managedFields\":[{\"manager\":\"manager\"}]},\"status\":{},\"spec\":{}}],\"error\":\"\"}"),
+			`{"data":[{"kind":"kind","apiVersion":"version","metadata":{"name":"name","namespace":"namespace","managedFields":[{"manager":"manager"}]},"spec":{},"status":{}}],"error":""}`),
 	)
 })

@@ -2,15 +2,11 @@
 
 package v1alpha1
 
-import (
-	v1 "sigs.k8s.io/gateway-api/apis/v1"
-)
-
 // HostApplyConfiguration represents a declarative configuration of the Host type for use
 // with apply.
 type HostApplyConfiguration struct {
-	Host *string        `json:"host,omitempty"`
-	Port *v1.PortNumber `json:"port,omitempty"`
+	Host *string `json:"host,omitempty"`
+	Port *int32  `json:"port,omitempty"`
 }
 
 // HostApplyConfiguration constructs a declarative configuration of the Host type for use with
@@ -30,7 +26,7 @@ func (b *HostApplyConfiguration) WithHost(value string) *HostApplyConfiguration 
 // WithPort sets the Port field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Port field is set to the value of the last call.
-func (b *HostApplyConfiguration) WithPort(value v1.PortNumber) *HostApplyConfiguration {
+func (b *HostApplyConfiguration) WithPort(value int32) *HostApplyConfiguration {
 	b.Port = &value
 	return b
 }

@@ -26,6 +26,20 @@ const (
 	// FallbackNodeCacheKey is used to let nodes know they have a bad config
 	// we assign a "fix me" snapshot for bad nodes
 	FallbackNodeCacheKey = "misconfigured-node"
+
+	// TLSSecretName is the name of the Kubernetes Secret containing the TLS certificate,
+	// private key, and CA certificate for xDS communication. This secret must exist in the
+	// kgateway installation namespace when TLS is enabled.
+	TLSSecretName = "kgateway-xds-cert" //nolint:gosec // G101: This is a well-known xDS TLS secret name, not a credential
+
+	// TLSCertPath is the path to the TLS certificate
+	TLSCertPath = "/etc/xds-tls/tls.crt"
+
+	// TLSKeyPath is the path to the TLS key
+	TLSKeyPath = "/etc/xds-tls/tls.key"
+
+	// TLSRootCAPath is the path to the TLS root CA
+	TLSRootCAPath = "/etc/xds-tls/ca.crt"
 )
 
 func IsKubeGatewayCacheKey(key string) bool {

@@ -46,6 +46,7 @@ func allEnvVarsSet() map[string]string {
 		"KGW_POLICY_MERGE":                   `{"TrafficPolicy":{"extProc":"DeepMerge"}}`,
 		"KGW_ENABLE_WAYPOINT":                "true",
 		"KGW_XDS_AUTH":                       "false",
+		"KGW_XDS_TLS":                        "true",
 	}
 }
 
@@ -97,6 +98,7 @@ func TestSettings(t *testing.T) {
 				PolicyMerge:                 "{}",
 				EnableWaypoint:              false,
 				XdsAuth:                     true,
+				XdsTLS:                      false,
 			},
 		},
 		{
@@ -133,6 +135,7 @@ func TestSettings(t *testing.T) {
 				PolicyMerge:                 `{"TrafficPolicy":{"extProc":"DeepMerge"}}`,
 				EnableWaypoint:              true,
 				XdsAuth:                     false,
+				XdsTLS:                      true,
 			},
 		},
 		{
@@ -197,6 +200,7 @@ func TestSettings(t *testing.T) {
 				ValidationMode:              ValidationStandard,
 				PolicyMerge:                 "{}",
 				XdsAuth:                     true,
+				XdsTLS:                      false,
 			},
 		},
 	}

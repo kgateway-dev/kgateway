@@ -11,7 +11,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
@@ -104,8 +103,8 @@ func (r *ReportMap) BuildPolicyStatus(
 	ctx context.Context,
 	key reporter.PolicyKey,
 	controller string,
-	currentStatus gwv1alpha2.PolicyStatus,
-) *gwv1alpha2.PolicyStatus {
+	currentStatus gwv1.PolicyStatus,
+) *gwv1.PolicyStatus {
 	report := r.policy(key)
 	if report == nil {
 		// no report for this policy
@@ -113,7 +112,7 @@ func (r *ReportMap) BuildPolicyStatus(
 	}
 
 	ancestorRefs := report.ancestorRefs()
-	status := gwv1alpha2.PolicyStatus{}
+	status := gwv1.PolicyStatus{}
 
 	// Process the parent references to build the RouteParentStatus
 	for _, ancestorRef := range ancestorRefs {
@@ -127,7 +126,7 @@ func (r *ReportMap) BuildPolicyStatus(
 
 		// Get the status of the current parentRef conditions if they exist
 		var currentParentRefConditions []metav1.Condition
-		currentParentRefIdx := slices.IndexFunc(currentStatus.Ancestors, func(s gwv1alpha2.PolicyAncestorStatus) bool {
+		currentParentRefIdx := slices.IndexFunc(currentStatus.Ancestors, func(s gwv1.PolicyAncestorStatus) bool {
 			return reflect.DeepEqual(s.AncestorRef, ancestorRef)
 		})
 		if currentParentRefIdx != -1 {
@@ -155,7 +154,7 @@ func (r *ReportMap) BuildPolicyStatus(
 			}
 		}
 
-		ancestorStatus := gwv1alpha2.PolicyAncestorStatus{
+		ancestorStatus := gwv1.PolicyAncestorStatus{
 			AncestorRef:    ancestorRef,
 			ControllerName: gwv1.GatewayController(controller),
 			Conditions:     finalConditions,
@@ -174,7 +173,7 @@ func (r *ReportMap) BuildPolicyStatus(
 	// sort all parents for consistency with Equals and for Update
 	// match sorting semantics of istio/istio, see:
 	// https://github.com/istio/istio/blob/6dcaa0206bcaf20e3e3b4e45e9376f0f96365571/pilot/pkg/config/kube/gateway/conditions.go#L188-L193
-	slices.SortStableFunc(status.Ancestors, func(a, b gwv1alpha2.PolicyAncestorStatus) int {
+	slices.SortStableFunc(status.Ancestors, func(a, b gwv1.PolicyAncestorStatus) int {
 		return strings.Compare(ParentString(a.AncestorRef), ParentString(b.AncestorRef))
 	})
 
@@ -182,7 +181,7 @@ func (r *ReportMap) BuildPolicyStatus(
 	if len(status.Ancestors) > 15 {
 		ignored := status.Ancestors[15:]
 		status.Ancestors = status.Ancestors[:15]
-		status.Ancestors = append(status.Ancestors, gwv1alpha2.PolicyAncestorStatus{
+		status.Ancestors = append(status.Ancestors, gwv1.PolicyAncestorStatus{
 			AncestorRef: gwv1.ParentReference{
 				Group: ptr.To(gwv1.Group("gateway.kgateway.dev")),
 				Name:  "StatusSummary",

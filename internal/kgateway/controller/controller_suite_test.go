@@ -79,10 +79,15 @@ func getAssetsDir() string {
 	var assets string
 	if os.Getenv("KUBEBUILDER_ASSETS") == "" {
 		// set default if not user provided
-		out, err := exec.Command("sh", "-c", "make -sC $(dirname $(go env GOMOD)) envtest-path").CombinedOutput()
+		out, err := exec.Command("sh", "-c", "make -s --no-print-directory -C $(dirname $(go env GOMOD)) envtest-path").CombinedOutput()
 		fmt.Fprintln(GinkgoWriter, "out:", string(out))
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 		assets = strings.TrimSpace(string(out))
+	}
+	if assets != "" {
+		info, err := os.Stat(assets)
+		ExpectWithOffset(1, err).NotTo(HaveOccurred(), "assets directory does not exist: %s", assets)
+		ExpectWithOffset(1, info.IsDir()).To(BeTrue(), "assets path is not a directory: %s", assets)
 	}
 	return assets
 }
@@ -223,7 +228,7 @@ func createManager(
 		DiscoveryNamespaceFilter: fakeDiscoveryNamespaceFilter{},
 		CommonCollections:        newCommonCols(ctx, kubeClient),
 	}
-	if err := controller.NewBaseGatewayController(parentCtx, gwCfg, nil); err != nil {
+	if err := controller.NewBaseGatewayController(parentCtx, gwCfg, nil, nil); err != nil {
 		cancel()
 		return nil, err
 	}
@@ -273,7 +278,7 @@ func createManager(
 		ControllerName: gatewayControllerName,
 		InferenceExt:   inferenceExt,
 	}
-	if err := controller.NewBaseInferencePoolController(parentCtx, poolCfg, &gwCfg, nil); err != nil {
+	if err := controller.NewBaseInferencePoolController(parentCtx, poolCfg, &gwCfg, nil, nil); err != nil {
 		cancel()
 		return nil, err
 	}
@@ -284,6 +289,13 @@ func createManager(
 		mgr.GetLogger().Info("starting manager", "kubeconfig", kubeconfig)
 		Expect(mgr.Start(ctx)).ToNot(HaveOccurred())
 	}()
+
+	// Wait for manager to be ready by checking if we can list GatewayClasses
+	// This ensures the controller is fully started before tests run
+	Eventually(func() error {
+		var gcList apiv1.GatewayClassList
+		return mgr.GetClient().List(ctx, &gcList)
+	}, "30s", "500ms").Should(Succeed(), "manager client not ready")
 
 	return func() {
 		cancel()

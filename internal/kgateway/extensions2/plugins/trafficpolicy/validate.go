@@ -7,8 +7,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/xds/bootstrap"
 )
@@ -38,7 +37,7 @@ func validateXDS(ctx context.Context, p *TrafficPolicy, v validator.Validator) e
 	// on the placeholder vhost.
 	typedPerFilterConfig := ir.TypedFilterConfigMap(map[string]proto.Message{})
 	fakePass := NewGatewayTranslationPass(ir.GwTranslationCtx{}, nil)
-	if err := fakePass.ApplyForRoute(&pluginsdkir.RouteContext{
+	if err := fakePass.ApplyForRoute(&ir.RouteContext{
 		Policy:            p,
 		TypedFilterConfig: typedPerFilterConfig,
 	}, nil); err != nil {

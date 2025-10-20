@@ -13,6 +13,7 @@ type AIPolicyApplyConfiguration struct {
 	PromptGuard      *AIPromptGuardApplyConfiguration      `json:"promptGuard,omitempty"`
 	Defaults         []FieldDefaultApplyConfiguration      `json:"defaults,omitempty"`
 	RouteType        *apiv1alpha1.RouteType                `json:"routeType,omitempty"`
+	ModelAliases     map[string]string                     `json:"modelAliases,omitempty"`
 }
 
 // AIPolicyApplyConfiguration constructs a declarative configuration of the AIPolicy type for use with
@@ -55,5 +56,19 @@ func (b *AIPolicyApplyConfiguration) WithDefaults(values ...*FieldDefaultApplyCo
 // If called multiple times, the RouteType field is set to the value of the last call.
 func (b *AIPolicyApplyConfiguration) WithRouteType(value apiv1alpha1.RouteType) *AIPolicyApplyConfiguration {
 	b.RouteType = &value
+	return b
+}
+
+// WithModelAliases puts the entries into the ModelAliases field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, the entries provided by each call will be put on the ModelAliases field,
+// overwriting an existing map entries in ModelAliases field with the same key.
+func (b *AIPolicyApplyConfiguration) WithModelAliases(entries map[string]string) *AIPolicyApplyConfiguration {
+	if b.ModelAliases == nil && len(entries) > 0 {
+		b.ModelAliases = make(map[string]string, len(entries))
+	}
+	for k, v := range entries {
+		b.ModelAliases[k] = v
+	}
 	return b
 }

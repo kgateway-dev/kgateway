@@ -1,3 +1,5 @@
+//go:build e2e
+
 package zero_downtime_rollout
 
 import (
@@ -31,7 +33,7 @@ func (s *testingSuite) TestZeroDowntimeRollout() {
 	// Ensure the gateway pod is up and running.
 	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx,
 		proxyObjectMeta.GetNamespace(), metav1.ListOptions{
-			LabelSelector: "app.kubernetes.io/name=" + proxyObjectMeta.GetName(),
+			LabelSelector: defaults.WellKnownAppLabel + "=" + proxyObjectMeta.GetName(),
 		})
 
 	s.TestInstallation.Assertions.AssertEventualCurlResponse(
@@ -84,7 +86,7 @@ func (s *testingSuite) TestZeroDowntimeRolloutAgentGateway() {
 	// Ensure the agentgateway pod is up and running.
 	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx,
 		agentgatewayObjectMeta.GetNamespace(), metav1.ListOptions{
-			LabelSelector: "app.kubernetes.io/name=" + agentgatewayObjectMeta.GetName(),
+			LabelSelector: defaults.WellKnownAppLabel + "=" + agentgatewayObjectMeta.GetName(),
 		})
 
 	s.TestInstallation.Assertions.AssertEventualCurlResponse(

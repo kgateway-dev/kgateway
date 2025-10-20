@@ -2,10 +2,6 @@
 
 package v1alpha1
 
-import (
-	v1 "sigs.k8s.io/gateway-api/apis/v1"
-)
-
 // LLMProviderApplyConfiguration represents a declarative configuration of the LLMProvider type for use
 // with apply.
 type LLMProviderApplyConfiguration struct {
@@ -16,7 +12,7 @@ type LLMProviderApplyConfiguration struct {
 	VertexAI    *VertexAIConfigApplyConfiguration    `json:"vertexai,omitempty"`
 	Bedrock     *BedrockConfigApplyConfiguration     `json:"bedrock,omitempty"`
 	Host        *string                              `json:"host,omitempty"`
-	Port        *v1.PortNumber                       `json:"port,omitempty"`
+	Port        *int32                               `json:"port,omitempty"`
 	Path        *PathOverrideApplyConfiguration      `json:"path,omitempty"`
 	AuthHeader  *AuthHeaderApplyConfiguration        `json:"authHeader,omitempty"`
 }
@@ -86,7 +82,7 @@ func (b *LLMProviderApplyConfiguration) WithHost(value string) *LLMProviderApply
 // WithPort sets the Port field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Port field is set to the value of the last call.
-func (b *LLMProviderApplyConfiguration) WithPort(value v1.PortNumber) *LLMProviderApplyConfiguration {
+func (b *LLMProviderApplyConfiguration) WithPort(value int32) *LLMProviderApplyConfiguration {
 	b.Port = &value
 	return b
 }

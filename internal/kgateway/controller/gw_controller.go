@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -38,7 +40,11 @@ type gatewayReconciler struct {
 	deployer *deployer.Deployer
 }
 
-func NewGatewayReconciler(ctx context.Context, cfg GatewayConfig, deployer *deployer.Deployer) *gatewayReconciler {
+func NewGatewayReconciler(
+	ctx context.Context,
+	cfg GatewayConfig,
+	deployer *deployer.Deployer,
+) *gatewayReconciler {
 	return &gatewayReconciler{
 		cli:               cfg.Mgr.GetClient(),
 		scheme:            cfg.Mgr.GetScheme(),
@@ -66,7 +72,6 @@ func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 		log.Error(err, "unable to get namespace")
 		return ctrl.Result{}, err
 	}
-
 	// check for the annotation:
 	if !r.autoProvision && namespace.Annotations[GatewayAutoDeployAnnotationKey] != "true" {
 		log.Info("namespace is not enabled for auto deploy.")
@@ -77,7 +82,6 @@ func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 	if err := r.cli.Get(ctx, req.NamespacedName, &gw); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-
 	if gw.GetDeletionTimestamp() != nil {
 		// no need to do anything as we have owner refs, so children will be deleted
 		log.Info("gateway deleted, no need for reconciling")
@@ -154,7 +158,7 @@ func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 	err = updateStatus(ctx, r.cli, &gw, generatedSvc)
 	if err != nil {
 		log.Error(err, "failed to update status")
-		result.Requeue = true
+		result.RequeueAfter = time.Second
 	}
 
 	err = r.deployer.DeployObjsWithSource(ctx, objs, &gw)
@@ -253,6 +257,10 @@ func updateGatewayStatusWithRetryFunc(
 	err := utilretry.RetryOnConflict(utilretry.DefaultRetry, func() error {
 		var gw api.Gateway
 		if err := cli.Get(ctx, gwNN, &gw); err != nil {
+			// If the Gateway no longer exists, there's nothing to update.
+			if apierrors.IsNotFound(err) {
+				return nil
+			}
 			return err
 		}
 		original := gw.DeepCopy()

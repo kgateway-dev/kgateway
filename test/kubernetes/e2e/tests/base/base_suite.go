@@ -1,13 +1,17 @@
+//go:build e2e
+
 package base
 
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"slices"
 	"time"
 
 	"github.com/onsi/gomega"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -29,6 +33,9 @@ import (
 type TestCase struct {
 	// Manifests contains a list of manifest filenames.
 	Manifests []string
+
+	// ManifestsWithTransform maps a manifest filename to a function that transforms its contents before applying it
+	ManifestsWithTransform map[string]func(string) string
 
 	// manifestResources contains the resources automatically loaded from the manifest files for
 	// this test case.
@@ -122,6 +129,16 @@ func (s *BaseTestingSuite) ApplyManifests(testCase *TestCase) {
 		}, 10*time.Second, 1*time.Second).Should(gomega.Succeed(), "can apply "+manifest)
 	}
 
+	for manifest, transform := range testCase.ManifestsWithTransform {
+		cur, err := os.ReadFile(manifest)
+		s.Require().NoError(err)
+		transformed := transform(string(cur))
+		s.Require().EventuallyWithT(func(c *assert.CollectT) {
+			err := s.TestInstallation.Actions.Kubectl().Apply(s.Ctx, []byte(transformed))
+			assert.NoError(c, err)
+		}, 10*time.Second, 1*time.Second)
+	}
+
 	// parse the expected resources and dynamic resources from the manifests, and wait until the resources are created.
 	// we must wait until the resources from the manifest exist on the cluster before calling loadDynamicResources,
 	// because in order to determine what dynamic resources are expected, certain resources (e.g. Gateways and
@@ -167,6 +184,13 @@ func (s *BaseTestingSuite) DeleteManifests(testCase *TestCase) {
 			return err
 		}, 10*time.Second, 1*time.Second).Should(gomega.Succeed(), "can delete "+manifest)
 	}
+	for manifest := range testCase.ManifestsWithTransform {
+		// we don't need to transform the manifest here, as we are just deleting by filename
+		gomega.Eventually(func() error {
+			err := s.TestInstallation.Actions.Kubectl().DeleteFileSafe(s.Ctx, manifest)
+			return err
+		}, 10*time.Second, 1*time.Second).Should(gomega.Succeed(), "can delete "+manifest)
+	}
 
 	// wait until the resources are deleted
 	allResources := slices.Concat(testCase.manifestResources, testCase.dynamicResources)
@@ -205,6 +229,13 @@ func (s *BaseTestingSuite) loadManifestResources(testCase *TestCase) {
 
 	var resources []client.Object
 	for _, manifest := range testCase.Manifests {
+		objs, err := testutils.LoadFromFiles(manifest, s.TestInstallation.ClusterContext.Client.Scheme(), s.gvkToStructuralSchema)
+		s.Require().NoError(err)
+		resources = append(resources, objs...)
+	}
+	for manifest := range testCase.ManifestsWithTransform {
+		// we don't need to transform the resource since the transformation applies to the spec and not object metadata,
+		// which ensures that parsed Go objects in manifestResources can be used normally
 		objs, err := testutils.LoadFromFiles(manifest, s.TestInstallation.ClusterContext.Client.Scheme(), s.gvkToStructuralSchema)
 		s.Require().NoError(err)
 		resources = append(resources, objs...)

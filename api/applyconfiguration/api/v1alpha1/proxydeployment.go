@@ -9,9 +9,8 @@ import (
 // ProxyDeploymentApplyConfiguration represents a declarative configuration of the ProxyDeployment type for use
 // with apply.
 type ProxyDeploymentApplyConfiguration struct {
-	Replicas     *int32                 `json:"replicas,omitempty"`
-	OmitReplicas *bool                  `json:"omitReplicas,omitempty"`
-	Strategy     *v1.DeploymentStrategy `json:"strategy,omitempty"`
+	Replicas *int32                 `json:"replicas,omitempty"`
+	Strategy *v1.DeploymentStrategy `json:"strategy,omitempty"`
 }
 
 // ProxyDeploymentApplyConfiguration constructs a declarative configuration of the ProxyDeployment type for use with
@@ -25,14 +24,6 @@ func ProxyDeployment() *ProxyDeploymentApplyConfiguration {
 // If called multiple times, the Replicas field is set to the value of the last call.
 func (b *ProxyDeploymentApplyConfiguration) WithReplicas(value int32) *ProxyDeploymentApplyConfiguration {
 	b.Replicas = &value
-	return b
-}
-
-// WithOmitReplicas sets the OmitReplicas field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the OmitReplicas field is set to the value of the last call.
-func (b *ProxyDeploymentApplyConfiguration) WithOmitReplicas(value bool) *ProxyDeploymentApplyConfiguration {
-	b.OmitReplicas = &value
 	return b
 }
 

@@ -3,12 +3,12 @@
 - [Common Make Targets](#common-make-targets)
   - [test](#test)
   - [test-with-coverage](#test-with-coverage)
-  - [run-tests](#run-tests)
-  - [run-kube-e2e-tests](#run-kube-e2e-tests)
-  - [run-benchmark-tests](#run-benchmark-tests)
+  - [go-test](#go-test)
+  - [go-test-with-coverage](#go-test-with-coverage)
 - [Environment Variables](#environment-variables)
   - [GINKGO_USER_FLAGS](#ginkgo_user_flags)
   - [TEST_PKG](#test_pkg)
+  - [GO_TEST_USER_ARGS](#go_test_user_args)
 
 ## Background
 Kgateway testing leverages the [Ginkgo](https://onsi.github.io/ginkgo/) test framework. As outlined in the linked documentation, Ginkgo pairs with the [Gomega](https://onsi.github.io/gomega/) matcher library to provide a BDD-style testing framework. For more details about how to write tests, check out our [writing tests docs](writing-tests.md).
@@ -20,17 +20,13 @@ There are a few common make targets that can be used to run tests
 The `test` target provides a wrapper around invoking `ginkgo` with a set of useful flags. This is the base target that is used by all other test targets.
 
 ### test-with-coverage
-Run tests with coverage reporting
+Run tests with coverage reporting using Ginkgo.
 
-### run-tests
-Run unit tests (ie non e2e)
+### go-test
+Run tests using `go test` directly. This is the primary target used by CI for running tests. Use the `TEST_PKG` environment variable to specify which packages to test, and `GO_TEST_USER_ARGS` to pass additional arguments like `-run` regex patterns for test selection.
 
-### run-kube-e2e-tests
-Run [kubernetes end-to-end tests](/test/kubernetes/e2e/README.md)
-
-### run-benchmark-tests
-Run [performance tests](performance-tests.md)
-
+### go-test-with-coverage
+Run tests with coverage reporting using `go test`. This is used by CI for unit tests
 
 ## Environment Variables
 Shared environment variables that can be used to control the behavior of the tests are defined in [env.go](/test/testutils/env.go). Below are a few that are commonly used:
@@ -56,4 +52,10 @@ TEST_PKG=package1,package2 make test
 If you would like to recursively run tests in a directory, you can use the `...` syntax:
 ```bash
 TEST_PKG=test/... make test
+```
+
+#### GO_TEST_USER_ARGS
+The `GO_TEST_USER_ARGS` environment variable can be used to pass additional arguments to `go test` when using the `go-test` target. For example, to run specific tests matching a regex pattern:
+```bash
+TEST_PKG=./test/kubernetes/e2e/tests GO_TEST_USER_ARGS="-run ^TestKgateway$" make go-test
 ```

@@ -1,3 +1,5 @@
+//go:build e2e
+
 package backendconfigpolicy
 
 import (
@@ -96,10 +98,10 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 		LabelSelector: testdefaults.CurlPodLabelSelector,
 	})
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=gw",
+		LabelSelector: testdefaults.WellKnownAppLabel + "=gw",
 	})
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, nginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=nginx",
+		LabelSelector: testdefaults.WellKnownAppLabel + "=nginx",
 	})
 }
 
@@ -117,7 +119,7 @@ func (s *testingSuite) AfterTest(suiteName, testName string) {
 func (s *testingSuite) TestBackendConfigPolicy() {
 	// make sure pods are running
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, nginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=nginx",
+		LabelSelector: testdefaults.WellKnownAppLabel + "=nginx",
 	})
 
 	// Should have a successful response
@@ -265,11 +267,11 @@ func (s *testingSuite) TestBackendConfigPolicyOutlierDetection() {
 		LabelSelector: testdefaults.CurlPodLabelSelector,
 	})
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, nginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=nginx",
+		LabelSelector: testdefaults.WellKnownAppLabel + "=nginx",
 	})
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, httpbinDeployment)
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, httpbinDeployment.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=httpbin",
+		LabelSelector: testdefaults.WellKnownAppLabel + "=httpbin",
 	})
 
 	// Send enough requests to trigger outlier detection (see `Consecutive5xx`)

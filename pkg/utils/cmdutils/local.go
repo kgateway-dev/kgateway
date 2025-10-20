@@ -2,6 +2,7 @@ package cmdutils
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -82,6 +83,11 @@ func (cmd *LocalCmd) WithStderr(w io.Writer) Cmd {
 func (cmd *LocalCmd) Run() *RunError {
 	var combinedOutput threadsafe.Buffer
 
+	if printCommands {
+		// Print to stderr to avoid interfering with stdout intended for parsing
+		fmt.Fprintf(os.Stderr, "+ %s\n", PrettyCommand(false, cmd.Args[0], cmd.Args[1:]...))
+	}
+
 	cmd.Stdout = io.MultiWriter(cmd.Stdout, &combinedOutput)
 	cmd.Stderr = io.MultiWriter(cmd.Stderr, &combinedOutput)
 
@@ -99,6 +105,11 @@ func (cmd *LocalCmd) Run() *RunError {
 // Start starts the command but doesn't block
 // If the returned error is non-nil, it should be of type *RunError
 func (cmd *LocalCmd) Start() *RunError {
+	if printCommands {
+		// Print to stderr to avoid interfering with stdout intended for parsing
+		fmt.Fprintf(os.Stderr, "+ %s\n", PrettyCommand(false, cmd.Args[0], cmd.Args[1:]...))
+	}
+
 	cmd.Stdout = io.MultiWriter(cmd.Stdout, cmd.combinedOutput)
 	cmd.Stderr = io.MultiWriter(cmd.Stderr, cmd.combinedOutput)
 
@@ -134,5 +145,5 @@ func (cmd *LocalCmd) Output() []byte {
 }
 
 func (cmd *LocalCmd) PrettyCommand() string {
-	return PrettyCommand(cmd.Args[0], cmd.Args[1:]...)
+	return PrettyCommand(true, cmd.Args[0], cmd.Args[1:]...)
 }

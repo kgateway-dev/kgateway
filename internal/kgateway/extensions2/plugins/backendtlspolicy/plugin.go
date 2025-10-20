@@ -7,9 +7,16 @@ import (
 	"log/slog"
 	"time"
 
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/proto"
+	"istio.io/istio/pkg/config/schema/kubeclient"
+	"istio.io/istio/pkg/kube/kclient"
+	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/kube/kubetypes"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -17,24 +24,14 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/utils/ptr"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
-
-	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"istio.io/istio/pkg/config/schema/kubeclient"
-	"istio.io/istio/pkg/kube/kclient"
-	"istio.io/istio/pkg/kube/krt"
-	"istio.io/istio/pkg/kube/kubetypes"
-
-	gwv1a3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
-
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	kgwellknown "github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	pluginutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 )
 
@@ -49,7 +46,7 @@ var (
 )
 
 var (
-	backendTlsPolicyGvr       = gwv1a3.SchemeGroupVersion.WithResource("backendtlspolicies")
+	backendTlsPolicyGvr       = gwv1.SchemeGroupVersion.WithResource("backendtlspolicies")
 	backendTlsPolicyGroupKind = kgwellknown.BackendTLSPolicyGVK
 )
 
@@ -73,28 +70,28 @@ func (d *backendTlsPolicy) Equals(in any) bool {
 }
 
 func registerTypes() {
-	kubeclient.Register[*gwv1a3.BackendTLSPolicy](
+	kubeclient.Register[*gwv1.BackendTLSPolicy](
 		backendTlsPolicyGvr,
 		backendTlsPolicyGroupKind,
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
-			return c.GatewayAPI().GatewayV1alpha3().BackendTLSPolicies(namespace).List(context.Background(), o)
+			return c.GatewayAPI().GatewayV1().BackendTLSPolicies(namespace).List(context.Background(), o)
 		},
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
-			return c.GatewayAPI().GatewayV1alpha3().BackendTLSPolicies(namespace).Watch(context.Background(), o)
+			return c.GatewayAPI().GatewayV1().BackendTLSPolicies(namespace).Watch(context.Background(), o)
 		},
 	)
 }
 
 func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
 	registerTypes()
-	inf := kclient.NewDelayedInformer[*gwv1a3.BackendTLSPolicy](
+	inf := kclient.NewDelayedInformer[*gwv1.BackendTLSPolicy](
 		commoncol.Client, backendTlsPolicyGvr, kubetypes.StandardInformer,
 		kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()},
 	)
 	col := krt.WrapClient(inf, commoncol.KrtOpts.ToOptions("BackendTLSPolicy")...)
 
 	translate := buildTranslateFunc(ctx, commoncol.ConfigMaps)
-	tlsPolicyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *gwv1a3.BackendTLSPolicy) *ir.PolicyWrapper {
+	tlsPolicyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *gwv1.BackendTLSPolicy) *ir.PolicyWrapper {
 		tlsPolicyIR, err := translate(krtctx, i)
 		pol := &ir.PolicyWrapper{
 			ObjectSource: ir.ObjectSource{
@@ -105,7 +102,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 			},
 			Policy:     i,
 			PolicyIR:   tlsPolicyIR,
-			TargetRefs: pluginutils.TargetRefsToPolicyRefsWithSectionNameV1Alpha2(i.Spec.TargetRefs),
+			TargetRefs: pluginutils.TargetRefsToPolicyRefsWithSectionNameV1(i.Spec.TargetRefs),
 		}
 		if err != nil {
 			pol.Errors = []error{err}
@@ -140,8 +137,8 @@ func processBackend(ctx context.Context, polir ir.PolicyIR, in ir.BackendObjectI
 func buildTranslateFunc(
 	ctx context.Context,
 	cfgmaps krt.Collection[*corev1.ConfigMap],
-) func(krtctx krt.HandlerContext, i *gwv1a3.BackendTLSPolicy) (*backendTlsPolicy, error) {
-	return func(krtctx krt.HandlerContext, policyCR *gwv1a3.BackendTLSPolicy) (*backendTlsPolicy, error) {
+) func(krtctx krt.HandlerContext, i *gwv1.BackendTLSPolicy) (*backendTlsPolicy, error) {
+	return func(krtctx krt.HandlerContext, policyCR *gwv1.BackendTLSPolicy) (*backendTlsPolicy, error) {
 		spec := policyCR.Spec
 		policyIr := backendTlsPolicy{
 			ct: policyCR.CreationTimestamp.Time,
@@ -150,7 +147,7 @@ func buildTranslateFunc(
 		validationContext.MatchTypedSubjectAltNames = convertSubjectAltNames(spec.Validation)
 		var tlsContextDefault *envoytlsv3.UpstreamTlsContext
 		switch {
-		case ptr.Deref(spec.Validation.WellKnownCACertificates, "") == gwv1a3.WellKnownCACertificatesSystem:
+		case ptr.Deref(spec.Validation.WellKnownCACertificates, "") == gwv1.WellKnownCACertificatesSystem:
 			sdsValidationCtx := &envoytlsv3.SdsSecretConfig{
 				Name: eiutils.SystemCaSecretName,
 			}
@@ -208,7 +205,7 @@ func buildTranslateFunc(
 	}
 }
 
-func convertSubjectAltNames(validation gwv1a3.BackendTLSPolicyValidation) []*envoytlsv3.SubjectAltNameMatcher {
+func convertSubjectAltNames(validation gwv1.BackendTLSPolicyValidation) []*envoytlsv3.SubjectAltNameMatcher {
 	if len(validation.SubjectAltNames) == 0 {
 		hostname := string(validation.Hostname)
 		if hostname != "" {
@@ -224,14 +221,14 @@ func convertSubjectAltNames(validation gwv1a3.BackendTLSPolicyValidation) []*env
 	matchers := make([]*envoytlsv3.SubjectAltNameMatcher, 0, len(validation.SubjectAltNames))
 	for _, san := range validation.SubjectAltNames {
 		switch san.Type {
-		case gwv1a3.HostnameSubjectAltNameType:
+		case gwv1.HostnameSubjectAltNameType:
 			matchers = append(matchers, &envoytlsv3.SubjectAltNameMatcher{
 				SanType: envoytlsv3.SubjectAltNameMatcher_DNS,
 				Matcher: &envoymatcher.StringMatcher{
 					MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: string(san.Hostname)},
 				},
 			})
-		case gwv1a3.URISubjectAltNameType:
+		case gwv1.URISubjectAltNameType:
 			matchers = append(matchers, &envoytlsv3.SubjectAltNameMatcher{
 				SanType: envoytlsv3.SubjectAltNameMatcher_URI,
 				Matcher: &envoymatcher.StringMatcher{

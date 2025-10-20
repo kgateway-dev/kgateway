@@ -1,3 +1,5 @@
+//go:build e2e
+
 package multiinstall
 
 import (
@@ -50,7 +52,7 @@ func (s *tsuite) TestPolicies() {
 
 	// Verify access logs with HTTPListenerPolicy
 	pods, err := s.ti.Actions.Kubectl().GetPodsInNsWithLabel(
-		s.ctx, s.namespace, fmt.Sprintf("app.kubernetes.io/name=%s", Gateway(s.namespace).Name),
+		s.ctx, s.namespace, fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, Gateway(s.namespace).Name),
 	)
 	s.Require().NoError(err)
 	s.Require().Len(pods, 1)

@@ -10,6 +10,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/testutil/promlint"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
+	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -194,7 +195,7 @@ func MustParseGatheredMetrics(t require.TestingT, data io.Reader) GatheredMetric
 		t:       t,
 	}
 
-	parser := expfmt.TextParser{}
+	parser := expfmt.NewTextParser(model.LegacyValidation)
 
 	metricFamilies, err := parser.TextToMetricFamilies(data)
 	require.NoError(t, err)

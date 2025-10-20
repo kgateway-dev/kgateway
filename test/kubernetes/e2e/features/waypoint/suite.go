@@ -1,3 +1,5 @@
+//go:build e2e
+
 package waypoint
 
 import (
@@ -7,17 +9,17 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/stretchr/testify/suite"
-
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
@@ -164,7 +166,7 @@ func (s *testingSuite) setDeploymentEnvVariable(name, value string) {
 		s.ctx,
 		controllerNamespace,
 		metav1.ListOptions{
-			LabelSelector: "app.kubernetes.io/name=kgateway",
+			LabelSelector: defaults.WellKnownAppLabel + "=kgateway",
 		},
 		helpers.KgatewayContainerName,
 		envVarToAdd,
@@ -181,7 +183,7 @@ func (s *testingSuite) setDeploymentEnvVariable(name, value string) {
 			s.ctx,
 			controllerNamespace,
 			metav1.ListOptions{
-				LabelSelector: "app.kubernetes.io/name=kgateway",
+				LabelSelector: defaults.WellKnownAppLabel + "=kgateway",
 			},
 			helpers.KgatewayContainerName,
 			envVarToAdd.Name,
@@ -190,7 +192,7 @@ func (s *testingSuite) setDeploymentEnvVariable(name, value string) {
 
 	// wait for pods to be running again, since controller deployment was patched
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, controllerNamespace, metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=kgateway",
+		LabelSelector: defaults.WellKnownAppLabel + "=kgateway",
 	})
 }
 

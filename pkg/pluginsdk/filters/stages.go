@@ -11,7 +11,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/filters"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
 
@@ -221,31 +220,118 @@ func StagedFilterListContainsName(filters StagedHttpFilterList, filterName strin
 	return false
 }
 
-// ConvertFilterStage converts user-specified FilterStage options to the FilterStage representation used for translation.
-func ConvertFilterStage(in *filters.FilterStage) *FilterStage[WellKnownFilterStage] {
+// List of filter stages which can be selected for a HTTP filter.
+type FilterStage_Stage int32
+
+const (
+	FilterStage_FaultStage     FilterStage_Stage = 0
+	FilterStage_CorsStage      FilterStage_Stage = 1
+	FilterStage_WafStage       FilterStage_Stage = 2
+	FilterStage_AuthNStage     FilterStage_Stage = 3
+	FilterStage_AuthZStage     FilterStage_Stage = 4
+	FilterStage_RateLimitStage FilterStage_Stage = 5
+	FilterStage_AcceptedStage  FilterStage_Stage = 6
+	FilterStage_OutAuthStage   FilterStage_Stage = 7
+	FilterStage_RouteStage     FilterStage_Stage = 8
+)
+
+// Enum value maps for FilterStage_Stage.
+var (
+	FilterStage_Stage_name = map[int32]string{
+		0: "FaultStage",
+		1: "CorsStage",
+		2: "WafStage",
+		3: "AuthNStage",
+		4: "AuthZStage",
+		5: "RateLimitStage",
+		6: "AcceptedStage",
+		7: "OutAuthStage",
+		8: "RouteStage",
+	}
+	FilterStage_Stage_value = map[string]int32{
+		"FaultStage":     0,
+		"CorsStage":      1,
+		"WafStage":       2,
+		"AuthNStage":     3,
+		"AuthZStage":     4,
+		"RateLimitStage": 5,
+		"AcceptedStage":  6,
+		"OutAuthStage":   7,
+		"RouteStage":     8,
+	}
+)
+
+// Desired placement of the HTTP filter relative to the stage. The default is `During`.
+type FilterStage_Predicate int32
+
+const (
+	FilterStage_During FilterStage_Predicate = 0
+	FilterStage_Before FilterStage_Predicate = 1
+	FilterStage_After  FilterStage_Predicate = 2
+)
+
+// Enum value maps for FilterStage_Predicate.
+var (
+	FilterStage_Predicate_name = map[int32]string{
+		0: "During",
+		1: "Before",
+		2: "After",
+	}
+	FilterStage_Predicate_value = map[string]int32{
+		"During": 0,
+		"Before": 1,
+		"After":  2,
+	}
+)
+
+// FilterStageSpec allows configuration of where in a filter chain a given HTTP filter is inserted,
+// relative to one of the pre-defined stages.
+type FilterStageSpec struct {
+	// Stage of the filter chain in which the selected filter should be added.
+	Stage FilterStage_Stage
+	// How this filter should be placed relative to the stage.
+	Predicate FilterStage_Predicate
+}
+
+func (x *FilterStageSpec) GetStage() FilterStage_Stage {
+	if x != nil {
+		return x.Stage
+	}
+	return FilterStage_FaultStage
+}
+
+func (x *FilterStageSpec) GetPredicate() FilterStage_Predicate {
+	if x != nil {
+		return x.Predicate
+	}
+	return FilterStage_During
+}
+
+// ConvertFilterStage converts user-specified FilterStageSpec options to the FilterStage representation used for translation.
+func ConvertFilterStage(in *FilterStageSpec) *FilterStage[WellKnownFilterStage] {
 	if in == nil {
 		return nil
 	}
 
 	var outStage WellKnownFilterStage
 	switch in.GetStage() {
-	case filters.FilterStage_CorsStage:
+	case FilterStage_CorsStage:
 		outStage = CorsStage
-	case filters.FilterStage_WafStage:
+	case FilterStage_WafStage:
 		outStage = WafStage
-	case filters.FilterStage_AuthNStage:
+	case FilterStage_AuthNStage:
 		outStage = AuthNStage
-	case filters.FilterStage_AuthZStage:
+	case FilterStage_AuthZStage:
 		outStage = AuthZStage
-	case filters.FilterStage_RateLimitStage:
+	case FilterStage_RateLimitStage:
 		outStage = RateLimitStage
-	case filters.FilterStage_AcceptedStage:
+	case FilterStage_AcceptedStage:
 		outStage = AcceptedStage
-	case filters.FilterStage_OutAuthStage:
+	case FilterStage_OutAuthStage:
 		outStage = OutAuthStage
-	case filters.FilterStage_RouteStage:
+	case FilterStage_RouteStage:
 		outStage = RouteStage
-	case filters.FilterStage_FaultStage:
+	case FilterStage_FaultStage:
 		fallthrough
 	default:
 		// default to Fault stage
@@ -254,11 +340,11 @@ func ConvertFilterStage(in *filters.FilterStage) *FilterStage[WellKnownFilterSta
 
 	var out FilterStage[WellKnownFilterStage]
 	switch in.GetPredicate() {
-	case filters.FilterStage_Before:
+	case FilterStage_Before:
 		out = BeforeStage(outStage)
-	case filters.FilterStage_After:
+	case FilterStage_After:
 		out = AfterStage(outStage)
-	case filters.FilterStage_During:
+	case FilterStage_During:
 		fallthrough
 	default:
 		// default to During

@@ -1,0 +1,19 @@
+name: CI Test Flake
+description: Report a flaky or non-deterministic CI test
+title: "Flake: "
+type: Flake
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Note**: Use this template to report flaky or non-deterministic tests that are causing CI failures.
+        **Labeling**: Please add the appropriate `Area:` label after creating the issue based on the test area (e.g., `Area: agentgateway`).
+
+  - type: input
+    id: github-actions-link
+    attributes:
+      label: GitHub Actions Run Link
+      description: Link to the GitHub Actions run that shows the flake
+      placeholder: https://github.com/kgateway-dev/kgateway/actions/runs/...
+    validations:
+      required: true

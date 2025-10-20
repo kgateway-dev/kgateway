@@ -1,3 +1,5 @@
+//go:build e2e
+
 package lambda
 
 import (
@@ -52,7 +54,7 @@ func (s *testingSuite) SetupSuite() {
 
 	s.ti.Assertions.EventuallyObjectsExist(s.ctx, testdefaults.CurlPod)
 	s.ti.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=curl",
+		LabelSelector: testdefaults.WellKnownAppLabel + "=curl",
 	})
 	s.ti.Assertions.EventuallyPodReady(s.ctx, "lambda-test", "aws-cli", 30*time.Second)
 
@@ -101,13 +103,13 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 
 	s.ti.Assertions.EventuallyObjectsExist(s.ctx, testdefaults.CurlPod)
 	s.ti.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=curl",
+		LabelSelector: testdefaults.WellKnownAppLabel + "=curl",
 	})
 
 	s.ti.Assertions.EventuallyObjectsExist(s.ctx, proxyServiceMeta)
 	s.ti.Assertions.EventuallyObjectsExist(s.ctx, proxyDeploymentMeta)
 	s.ti.Assertions.EventuallyPodsRunning(s.ctx, proxyDeploymentMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", gatewayName),
+		LabelSelector: fmt.Sprintf("%s=%s", testdefaults.WellKnownAppLabel, gatewayName),
 	})
 }
 

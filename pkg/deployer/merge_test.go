@@ -40,14 +40,10 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 			},
 		},
 		{
-			name: "should override kube deployment replicas",
+			name: "should override kube deployment replicas by default",
 			dst: &gw2_v1alpha1.GatewayParameters{
 				Spec: gw2_v1alpha1.GatewayParametersSpec{
-					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-						Deployment: &gw2_v1alpha1.ProxyDeployment{
-							Replicas: ptr.To[int32](2),
-						},
-					},
+					Kube: &gw2_v1alpha1.KubernetesProxyConfig{},
 				},
 			},
 			src: &gw2_v1alpha1.GatewayParameters{
@@ -70,7 +66,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 			},
 		},
 		{
-			name: "should override kube deployment omitReplicas",
+			name: "should override kube deployment replicas if explicit",
 			dst: &gw2_v1alpha1.GatewayParameters{
 				Spec: gw2_v1alpha1.GatewayParametersSpec{
 					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
@@ -84,7 +80,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 				Spec: gw2_v1alpha1.GatewayParametersSpec{
 					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 						Deployment: &gw2_v1alpha1.ProxyDeployment{
-							OmitReplicas: ptr.To(true),
+							Replicas: ptr.To[int32](3),
 						},
 					},
 				},
@@ -93,7 +89,33 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 				Spec: gw2_v1alpha1.GatewayParametersSpec{
 					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 						Deployment: &gw2_v1alpha1.ProxyDeployment{
-							OmitReplicas: ptr.To(true),
+							Replicas: ptr.To[int32](3),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "should not override kube deployment replicas if src is nil",
+			dst: &gw2_v1alpha1.GatewayParameters{
+				Spec: gw2_v1alpha1.GatewayParametersSpec{
+					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
+						Deployment: &gw2_v1alpha1.ProxyDeployment{
+							Replicas: ptr.To[int32](2),
+						},
+					},
+				},
+			},
+			src: &gw2_v1alpha1.GatewayParameters{
+				Spec: gw2_v1alpha1.GatewayParametersSpec{
+					Kube: &gw2_v1alpha1.KubernetesProxyConfig{},
+				},
+			},
+			want: &gw2_v1alpha1.GatewayParameters{
+				Spec: gw2_v1alpha1.GatewayParametersSpec{
+					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
+						Deployment: &gw2_v1alpha1.ProxyDeployment{
+							Replicas: ptr.To[int32](2),
 						},
 					},
 				},

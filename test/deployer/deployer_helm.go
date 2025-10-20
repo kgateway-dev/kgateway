@@ -66,7 +66,7 @@ func (dt DeployerTester) RunHelmChartTest(
 	tt HelmTestCase,
 	scheme *runtime.Scheme,
 	dir string,
-	extraParamsFunc func(cli client.Client, inputs *pkgdeployer.Inputs) []pkgdeployer.ExtraGatewayParameters,
+	helmValuesGeneratorOverride func(cli client.Client, inputs *pkgdeployer.Inputs) pkgdeployer.HelmValuesGenerator,
 ) {
 	filePath := filepath.Join(dir, "testdata/", tt.InputFile)
 	inputFile := filePath + ".yaml"
@@ -87,25 +87,21 @@ func (dt DeployerTester) RunHelmChartTest(
 	}
 	fakeClient := NewFakeClientWithObjsWithScheme(scheme, objs...)
 
-	chart, err := internaldeployer.LoadGatewayChart()
-	assert.NoError(t, err, "error loading chart")
-
 	gwParams := internaldeployer.NewGatewayParameters(
 		fakeClient,
 		inputs,
 	)
-	if extraParamsFunc != nil {
-		gwParams.WithExtraGatewayParameters(extraParamsFunc(fakeClient, inputs)...)
+	if helmValuesGeneratorOverride != nil {
+		gwParams.WithHelmValuesGeneratorOverride(helmValuesGeneratorOverride(fakeClient, inputs))
 	}
-	deployer := pkgdeployer.NewDeployer(
+	deployer, err := internaldeployer.NewGatewayDeployer(
 		dt.ControllerName,
 		dt.AgwControllerName,
 		dt.AgwClassName,
 		fakeClient,
-		chart,
 		gwParams,
-		internaldeployer.GatewayReleaseNameAndNamespace,
 	)
+	assert.NoError(t, err, "error creating gateway deployer")
 
 	ctx := context.TODO()
 	vals, err := gwParams.GetValues(ctx, gtw)
@@ -137,7 +133,8 @@ func (dt DeployerTester) RunHelmChartTest(
 	validateYAML(t, outputFile, data)
 
 	diff := cmp.Diff(data, got)
-	assert.Empty(t, diff, diff, tt)
+	outputStr := "%s\nthe golden file, which can be refreshed via `REFRESH_GOLDEN=true go test ./test/deployer`, is\n%s"
+	assert.Empty(t, diff, outputStr, diff, outputFile)
 }
 
 func DefaultDeployerInputs(dt DeployerTester, commonCols *collections.CommonCollections) *pkgdeployer.Inputs {
@@ -165,11 +162,13 @@ func DefaultDeployerInputs(dt DeployerTester, commonCols *collections.CommonColl
 func validateYAML(t *testing.T, filename string, data []byte) {
 	t.Helper()
 
-	// Check for lines ending with ': '
+	// Check for lines ending with whitespace. This could be "innocent" go
+	// templating lint but can also be 'oops, the chart assumed that
+	// .Values.foo would never be empty'
 	lines := strings.Split(string(data), "\n")
 	for i, line := range lines {
-		if strings.HasSuffix(line, ": ") {
-			t.Errorf("helm chart produced invalid yaml: line %d in %s ends with ': ' (colon-space): %q", i+1, filename, line)
+		if strings.HasSuffix(line, " ") || strings.HasSuffix(line, "\t") {
+			t.Errorf("helm chart produced yaml indicative of a buggy helm chart not handling edge cases: line %d in %s ends with whitespace: %q", i+1, filename, line)
 		}
 	}
 

@@ -7,7 +7,6 @@ import (
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 	apiv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	apiv1alpha3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 	apixv1alpha1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 )
@@ -82,7 +81,7 @@ var (
 	}
 	BackendTLSPolicyGVK = schema.GroupVersionKind{
 		Group:   GatewayGroup,
-		Version: apiv1alpha3.GroupVersion.Version,
+		Version: apiv1.GroupVersion.Version,
 		Kind:    BackendTLSPolicyKind,
 	}
 	InferencePoolGVK = schema.GroupVersionKind{
@@ -93,7 +92,7 @@ var (
 
 	BackendTLSPolicyGVR = schema.GroupVersionResource{
 		Group:    GatewayGroup,
-		Version:  apiv1alpha3.GroupVersion.Version,
+		Version:  apiv1.GroupVersion.Version,
 		Resource: "backendtlspolicies",
 	}
 

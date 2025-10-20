@@ -1,3 +1,5 @@
+//go:build e2e
+
 package accesslog
 
 import (
@@ -46,7 +48,7 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 
 // TestAccessLogWithFileSink tests access log with file sink
 func (s *testingSuite) TestAccessLogWithFileSink() {
-	pods := s.getPods(fmt.Sprintf("app.kubernetes.io/name=%s", gatewayObjectMeta.GetName()))
+	pods := s.getPods(fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, gatewayObjectMeta.GetName()))
 	s.sendTestRequest()
 
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
@@ -65,7 +67,7 @@ func (s *testingSuite) TestAccessLogWithFileSink() {
 
 // TestAccessLogWithGrpcSink tests access log with grpc sink
 func (s *testingSuite) TestAccessLogWithGrpcSink() {
-	pods := s.getPods("app.kubernetes.io/name=gateway-proxy-access-logger")
+	pods := s.getPods(defaults.WellKnownAppLabel + "=gateway-proxy-access-logger")
 	s.sendTestRequest()
 
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
@@ -80,7 +82,7 @@ func (s *testingSuite) TestAccessLogWithGrpcSink() {
 
 // TestAccessLogWithOTelSink tests access log with OTel sink
 func (s *testingSuite) TestAccessLogWithOTelSink() {
-	pods := s.getPods("app.kubernetes.io/name=otel-collector")
+	pods := s.getPods(defaults.WellKnownAppLabel + "=otel-collector")
 	s.sendTestRequest()
 
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
@@ -130,12 +132,22 @@ func (s *testingSuite) getPods(label string) []string {
 		},
 	)
 
+	// During rollouts we can briefly have 2 pods. Wait until only one remains.
+	s.Require().EventuallyWithT(func(c *assert.CollectT) {
+		pods, err := s.TestInstallation.Actions.Kubectl().GetPodsInNsWithLabel(
+			s.Ctx,
+			accessLoggerObjectMeta.GetNamespace(),
+			label,
+		)
+		s.Require().NoError(err)
+		assert.Len(c, pods, 1)
+	}, 60*time.Second, 200*time.Millisecond)
+
 	pods, err := s.TestInstallation.Actions.Kubectl().GetPodsInNsWithLabel(
 		s.Ctx,
 		accessLoggerObjectMeta.GetNamespace(),
 		label,
 	)
 	s.Require().NoError(err)
-	s.Require().Len(pods, 1)
 	return pods
 }

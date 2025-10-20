@@ -7,8 +7,8 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 func (h *RoutesIndex) transformGRPCRoute(kctx krt.HandlerContext, i *gwv1.GRPCRoute) *ir.HttpRouteIR {
@@ -24,7 +24,7 @@ func (h *RoutesIndex) transformGRPCRoute(kctx krt.HandlerContext, i *gwv1.GRPCRo
 		SourceObject:     i,
 		ParentRefs:       i.Spec.ParentRefs,
 		Hostnames:        tostr(i.Spec.Hostnames),
-		Rules:            h.transformGRPCRulesToHttp(kctx, src, i.GetLabels(), i.Spec.Rules),
+		Rules:            h.transformGRPCRulesToHttp(kctx, src, i.GetLabels(), i.GetAnnotations(), i.Spec.Rules),
 		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, src, "", i.GetLabels())),
 		// IsHTTP2: true
 	}
@@ -34,6 +34,7 @@ func (h *RoutesIndex) transformGRPCRulesToHttp(
 	kctx krt.HandlerContext,
 	src ir.ObjectSource,
 	srcLabels map[string]string,
+	srcAnnotations map[string]string,
 	rules []gwv1.GRPCRouteRule,
 	opts ...ir.PolicyAttachmentOpts,
 ) []ir.HttpRouteRuleIR {
@@ -44,7 +45,7 @@ func (h *RoutesIndex) transformGRPCRulesToHttp(
 
 		// ignore errors as they are irrelevant, GRPCRoute currently does not support extensionRef
 		// see: https://github.com/kgateway-dev/kgateway/issues/11914
-		extensionRefs, _ := h.getExtensionRefs(kctx, src.Namespace, convertFiltersToHTTP(r.Filters))
+		extensionRefs, _ := h.getExtensionRefs(kctx, src.Namespace, convertFiltersToHTTP(r.Filters), r.Name, srcAnnotations, opts...)
 		var policies ir.AttachedPolicies
 		if r.Name != nil {
 			policies = toAttachedPolicies(h.policies.getTargetingPolicies(kctx, src, string(*r.Name), srcLabels), opts...)

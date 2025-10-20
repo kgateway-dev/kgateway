@@ -40,9 +40,9 @@ import (
 	"istio.io/istio/pilot/pkg/util/protoconv"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
@@ -108,23 +108,21 @@ func (s *sandwichedTranslationPass) ApplyListenerPlugin(pCtx *ir.ListenerContext
 
 	out.ListenerFilters = append(out.GetListenerFilters(), ProxyProtocolTLV)
 	s.isSandwiched = true
-
-	return
 }
 
 // NetworkFilters adds the ProxyProtocolTLVAuthorityNetworkFilter which makes
 // the identity validated by zTunnel readable from Istio RBAC filters.
 // It does this by passing the TLV from PROXY Protocol into filter_state that
 // Istio's RBAC will read from.
-func (s *sandwichedTranslationPass) NetworkFilters() ([]plugins.StagedNetworkFilter, error) {
+func (s *sandwichedTranslationPass) NetworkFilters() ([]filters.StagedNetworkFilter, error) {
 	if !s.isSandwiched {
 		return nil, nil
 	}
 
-	return []plugins.StagedNetworkFilter{
+	return []filters.StagedNetworkFilter{
 		{
 			Filter: ProxyProtocolTLVAuthorityNetworkFilter,
-			Stage:  plugins.BeforeStage(plugins.AuthZStage),
+			Stage:  filters.BeforeStage(filters.AuthZStage),
 		},
 	}, nil
 }

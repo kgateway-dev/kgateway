@@ -1681,7 +1681,7 @@ func TestAgwRouteCollectionWithFilters(t *testing.T) {
 								{
 									Type: gwv1.HTTPRouteFilterCORS,
 									CORS: &gwv1.HTTPCORSFilter{
-										AllowCredentials: true,
+										AllowCredentials: ptr.To(true),
 										AllowHeaders: []gwv1.HTTPHeaderName{
 											"Content-Type",
 											"Authorization",
@@ -1691,7 +1691,7 @@ func TestAgwRouteCollectionWithFilters(t *testing.T) {
 											"POST",
 											"PUT",
 										},
-										AllowOrigins: []gwv1.AbsoluteURI{
+										AllowOrigins: []gwv1.CORSOrigin{
 											"https://example.com",
 											"https://*.example.org",
 										},
