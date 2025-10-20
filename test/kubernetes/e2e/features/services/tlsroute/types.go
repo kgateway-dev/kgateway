@@ -23,7 +23,6 @@ const (
 	singleSvcNsName          = "single-tls-route"
 	singleSvcGatewayName     = "single-tls-gateway"
 	singleSvcListenerName443 = "listener-443"
-	singleSvcName            = "single-svc"
 	singleSvcTLSRouteName    = "single-tls-route"
 
 	// Constants used by TestConfigureTLSRouteBackingDestinationsWithMultiServices
@@ -37,23 +36,21 @@ const (
 	multiSvcTLSRouteName2    = "tls-route-2"
 
 	// Constants for CrossNamespaceTLSRouteWithReferenceGrant
-	crossNsTestName           = "CrossNamespaceTLSRouteWithReferenceGrant"
-	crossNsClientName         = "cross-namespace-allowed-client-ns"
-	crossNsBackendNsName      = "cross-namespace-allowed-backend-ns"
-	crossNsGatewayName        = "gateway"
-	crossNsListenerName       = "listener-8443"
-	crossNsBackendSvcName     = "backend-svc"
-	crossNsTLSRouteName       = "tls-route"
-	crossNsReferenceGrantName = "reference-grant"
+	crossNsTestName       = "CrossNamespaceTLSRouteWithReferenceGrant"
+	crossNsClientName     = "cross-namespace-allowed-client-ns"
+	crossNsBackendNsName  = "cross-namespace-allowed-backend-ns"
+	crossNsGatewayName    = "gateway"
+	crossNsListenerName   = "listener-8443"
+	crossNsBackendSvcName = "backend-svc"
+	crossNsTLSRouteName   = "tls-route"
 
 	// Constants for CrossNamespaceTLSRouteWithoutReferenceGrant
-	crossNsNoRefGrantTestName       = "CrossNamespaceTLSRouteWithoutReferenceGrant"
-	crossNsNoRefGrantClientNsName   = "client-ns-no-refgrant"
-	crossNsNoRefGrantBackendNsName  = "backend-ns-no-refgrant"
-	crossNsNoRefGrantGatewayName    = "gateway"
-	crossNsNoRefGrantListenerName   = "listener-8443"
-	crossNsNoRefGrantBackendSvcName = "backend-svc"
-	crossNsNoRefGrantTLSRouteName   = "tls-route"
+	crossNsNoRefGrantTestName      = "CrossNamespaceTLSRouteWithoutReferenceGrant"
+	crossNsNoRefGrantClientNsName  = "client-ns-no-refgrant"
+	crossNsNoRefGrantBackendNsName = "backend-ns-no-refgrant"
+	crossNsNoRefGrantGatewayName   = "gateway"
+	crossNsNoRefGrantListenerName  = "listener-8443"
+	crossNsNoRefGrantTLSRouteName  = "tls-route"
 )
 
 var (
