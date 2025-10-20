@@ -607,10 +607,8 @@ func (tc TestCase) Run(
 	agentGwSyncer := NewAgwSyncer(
 		wellknown.DefaultAgwControllerName,
 		cli,
-		nil, // mgr not needed for test
 		agwCollections,
 		agwMergedPlugins,
-		true, // enableInferExt
 	)
 	agentGwSyncer.translator.Init()
 	gatewayClasses := agwtranslator.GatewayClassesCollection(agwCollections.GatewayClasses, krtOpts)

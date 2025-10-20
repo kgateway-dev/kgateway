@@ -6,7 +6,7 @@ Name|Version|License
 [avast/retry-go](https://github.com/avast/retry-go)|v2.4.3+incompatible|MIT License
 [retry-go/v4](https://github.com/avast/retry-go)|v4.3.3|MIT License
 [xds/go](https://github.com/cncf/xds)|v0.0.0-20250501225837-2ac532fd4443|Apache License 2.0
-[envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.13.5-0.20250811224534-421509affe26|Apache License 2.0
+[envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.13.5-0.20251013064519-48f97e33cb02|Apache License 2.0
 [go-control-plane/contrib](https://github.com/envoyproxy/go-control-plane)|v1.32.5-0.20250627145903-197b96a9c7f8|Apache License 2.0
 [go-control-plane/envoy](https://github.com/envoyproxy/go-control-plane)|v1.35.1-0.20251010000747-50f0b197aa55|Apache License 2.0
 [go-control-plane/ratelimit](https://github.com/envoyproxy/go-control-plane)|v0.1.1-0.20250507123352-93990c5ec02f|Apache License 2.0
@@ -42,9 +42,9 @@ Name|Version|License
 [google.golang.org/grpc](https://google.golang.org/grpc)|v1.76.0|Apache License 2.0
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.36.10|BSD 3-clause "New" or "Revised" License
 [helm/v3](https://helm.sh/helm/v3)|v3.18.6|Apache License 2.0
-[istio.io/api](https://istio.io/api)|v1.26.0-alpha.0.0.20251002142010-859b66f07fad|Apache License 2.0
-[istio.io/client-go](https://istio.io/client-go)|v1.26.0-alpha.0.0.20251002142408-752760d8f171|Apache License 2.0
-[istio.io/istio](https://istio.io/istio)|v0.0.0-20251009125038-5ab6df7e5282|Apache License 2.0
+[istio.io/api](https://istio.io/api)|v1.28.0-alpha.0.0.20251015201407-f6b4b4f56db2|Apache License 2.0
+[istio.io/client-go](https://istio.io/client-go)|v1.28.0-alpha.0.0.20251015201706-99349a9d18ee|Apache License 2.0
+[istio.io/istio](https://istio.io/istio)|v0.0.0-20251022175005-4d80c2b3b141|Apache License 2.0
 [k8s.io/api](https://k8s.io/api)|v0.34.1|Apache License 2.0
 [k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.34.1|Apache License 2.0
 [k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.34.1|Apache License 2.0

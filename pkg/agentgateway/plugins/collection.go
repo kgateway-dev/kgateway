@@ -16,7 +16,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	infversioned "sigs.k8s.io/gateway-api-inference-extension/client-go/clientset/versioned"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -35,9 +34,7 @@ import (
 type AgwCollections struct {
 	OurClient kgwversioned.Interface
 	Client    istiokube.Client
-	// full CRUD client, only needed for status writing currently
-	CrudClient client.Client
-	KrtOpts    krtutil.KrtOptions
+	KrtOpts   krtutil.KrtOptions
 
 	// Core Kubernetes resources
 	Namespaces     krt.Collection[*corev1.Namespace]
@@ -90,6 +87,9 @@ func registerKgwResources(kgwClient kgwversioned.Interface) {
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 			return kgwClient.GatewayV1alpha1().Backends(namespace).Watch(context.Background(), o)
 		},
+		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*v1alpha1.Backend] {
+			return kgwClient.GatewayV1alpha1().Backends(namespace)
+		},
 	)
 	kubeclient.Register[*v1alpha1.DirectResponse](
 		wellknown.DirectResponseGVR,
@@ -100,6 +100,9 @@ func registerKgwResources(kgwClient kgwversioned.Interface) {
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 			return kgwClient.GatewayV1alpha1().DirectResponses(namespace).Watch(context.Background(), o)
 		},
+		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*v1alpha1.DirectResponse] {
+			return kgwClient.GatewayV1alpha1().DirectResponses(namespace)
+		},
 	)
 	kubeclient.Register[*v1alpha1.TrafficPolicy](
 		wellknown.TrafficPolicyGVR,
@@ -109,6 +112,9 @@ func registerKgwResources(kgwClient kgwversioned.Interface) {
 		},
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 			return kgwClient.GatewayV1alpha1().TrafficPolicies(namespace).Watch(context.Background(), o)
+		},
+		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*v1alpha1.TrafficPolicy] {
+			return kgwClient.GatewayV1alpha1().TrafficPolicies(namespace)
 		},
 	)
 }
@@ -124,6 +130,9 @@ func registerGatewayAPITypes() {
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 			return c.GatewayAPI().GatewayV1().GatewayClasses().Watch(context.Background(), o)
 		},
+		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*gwv1.GatewayClass] {
+			return c.GatewayAPI().GatewayV1().GatewayClasses()
+		},
 	)
 	kubeclient.Register[*gwv1.Gateway](
 		gvr.KubernetesGateway_v1,
@@ -133,6 +142,9 @@ func registerGatewayAPITypes() {
 		},
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 			return c.GatewayAPI().GatewayV1().Gateways(namespace).Watch(context.Background(), o)
+		},
+		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*gwv1.Gateway] {
+			return c.GatewayAPI().GatewayV1().Gateways(namespace)
 		},
 	)
 	kubeclient.Register[*gwv1.HTTPRoute](
@@ -144,6 +156,9 @@ func registerGatewayAPITypes() {
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 			return c.GatewayAPI().GatewayV1().HTTPRoutes(namespace).Watch(context.Background(), o)
 		},
+		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*gwv1.HTTPRoute] {
+			return c.GatewayAPI().GatewayV1().HTTPRoutes(namespace)
+		},
 	)
 	kubeclient.Register[*gwv1.GRPCRoute](
 		gvr.GRPCRoute,
@@ -153,6 +168,9 @@ func registerGatewayAPITypes() {
 		},
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 			return c.GatewayAPI().GatewayV1().GRPCRoutes(namespace).Watch(context.Background(), o)
+		},
+		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*gwv1.GRPCRoute] {
+			return c.GatewayAPI().GatewayV1().GRPCRoutes(namespace)
 		},
 	)
 	kubeclient.Register[*gwv1beta1.ReferenceGrant](
@@ -164,6 +182,9 @@ func registerGatewayAPITypes() {
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 			return c.GatewayAPI().GatewayV1beta1().ReferenceGrants(namespace).Watch(context.Background(), o)
 		},
+		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*gwv1beta1.ReferenceGrant] {
+			return c.GatewayAPI().GatewayV1beta1().ReferenceGrants(namespace)
+		},
 	)
 	kubeclient.Register[*gwv1alpha2.TCPRoute](
 		gvr.TCPRoute,
@@ -174,6 +195,9 @@ func registerGatewayAPITypes() {
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 			return c.GatewayAPI().GatewayV1alpha2().TCPRoutes(namespace).Watch(context.Background(), o)
 		},
+		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*gwv1alpha2.TCPRoute] {
+			return c.GatewayAPI().GatewayV1alpha2().TCPRoutes(namespace)
+		},
 	)
 	kubeclient.Register[*gwv1alpha2.TLSRoute](
 		gvr.TLSRoute,
@@ -183,6 +207,9 @@ func registerGatewayAPITypes() {
 		},
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 			return c.GatewayAPI().GatewayV1alpha2().TLSRoutes(namespace).Watch(context.Background(), o)
+		},
+		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*gwv1alpha2.TLSRoute] {
+			return c.GatewayAPI().GatewayV1alpha2().TLSRoutes(namespace)
 		},
 	)
 }
@@ -202,6 +229,9 @@ func registerInferenceExtensionTypes(client istiokube.Client) {
 			},
 			func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 				return infCli.InferenceV1().InferencePools(namespace).Watch(context.Background(), o)
+			},
+			func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*inf.InferencePool] {
+				return infCli.InferenceV1().InferencePools(namespace)
 			},
 		)
 	}

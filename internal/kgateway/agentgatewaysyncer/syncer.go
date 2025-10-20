@@ -41,18 +41,11 @@ var (
 	_      manager.LeaderElectionRunnable = &Syncer{}
 )
 
-const (
-	logKeyGateway     = "gateway"
-	logKeyResourceRef = "resource_ref"
-	logKeyRouteType   = "route_type"
-)
-
 // Syncer synchronizes Kubernetes Gateway API resources with xDS for agentgateway proxies.
 // It watches Gateway resources with the agentgateway class and translates them to agentgateway configuration.
 type Syncer struct {
 	// Core collections and dependencies
 	agwCollections *plugins.AgwCollections
-	mgr            manager.Manager
 	client         kube.Client
 	agwPlugins     plugins.AgwPlugin
 	translator     *translator.AgwTranslator
@@ -63,26 +56,19 @@ type Syncer struct {
 	// Status reporting
 	statusCollections *status.StatusCollections
 
-	// Collection status reporting
-	// TODO(npolshak): report these separately from proxy_syncer backends https://github.com/kgateway-dev/kgateway/issues/11966
-	// backendStatuses krt.StatusCollection[*v1alpha1.Backend, v1alpha1.BackendStatus]
-
 	// Synchronization
 	waitForSync []cache.InformerSynced
 	ready       atomic.Bool
 
 	// features
-	EnableInferExt bool
-	Registrations  []krtxds.Registration
+	Registrations []krtxds.Registration
 }
 
 func NewAgwSyncer(
 	controllerName string,
 	client kube.Client,
-	mgr manager.Manager,
 	agwCollections *plugins.AgwCollections,
 	agwPlugins plugins.AgwPlugin,
-	enableInferExt bool,
 ) *Syncer {
 	return &Syncer{
 		agwCollections:    agwCollections,
@@ -90,8 +76,6 @@ func NewAgwSyncer(
 		agwPlugins:        agwPlugins,
 		translator:        translator.NewAgwTranslator(agwCollections),
 		client:            client,
-		mgr:               mgr,
-		EnableInferExt:    enableInferExt,
 		statusCollections: &status.StatusCollections{},
 	}
 }
@@ -482,10 +466,6 @@ func (s *Syncer) Start(ctx context.Context) error {
 		s.waitForSync...,
 	)
 
-	// wait for ctrl-rtime caches to sync before accepting events
-	if !s.mgr.GetCache().WaitForCacheSync(ctx) {
-		return fmt.Errorf("agent gateway sync loop waiting for all caches to sync failed")
-	}
 	logger.Info("caches warm!")
 
 	s.ready.Store(true)
