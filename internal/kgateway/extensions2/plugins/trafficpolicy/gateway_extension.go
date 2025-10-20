@@ -19,6 +19,7 @@ import (
 	envoytypev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -211,11 +212,31 @@ func ResolveExtGrpcService(
 				Authority:   authority,
 			},
 		},
+		RetryPolicy: buildGRPCRetryPolicy(grpcService.Retry),
 	}
 	if grpcService.RequestTimeout != nil {
 		envoyGrpcService.Timeout = durationpb.New(grpcService.RequestTimeout.Duration)
 	}
 	return envoyGrpcService, nil
+}
+
+func buildGRPCRetryPolicy(in *v1alpha1.GRPCRetryPolicy) *envoycorev3.RetryPolicy {
+	if in == nil {
+		return nil
+	}
+
+	p := &envoycorev3.RetryPolicy{
+		NumRetries: wrapperspb.UInt32(uint32(in.Attempts)), //nolint: gosec // G115: kubebuilder validation ensures safe conversion
+	}
+	if in.Backoff != nil {
+		p.RetryBackOff = &envoycorev3.BackoffStrategy{
+			BaseInterval: durationpb.New(in.Backoff.BaseInterval.Duration),
+		}
+		if in.Backoff.MaxInterval != nil {
+			p.RetryBackOff.MaxInterval = durationpb.New(in.Backoff.MaxInterval.Duration)
+		}
+	}
+	return p
 }
 
 // FIXME: Should this live here instead of the global rate limit plugin?

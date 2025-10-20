@@ -81,6 +81,8 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.FieldDefault":                              schema_kgateway_v2_api_v1alpha1_FieldDefault(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.FileSink":                                  schema_kgateway_v2_api_v1alpha1_FileSink(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.FilterType":                                schema_kgateway_v2_api_v1alpha1_FilterType(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GRPCRetryBackoff":                          schema_kgateway_v2_api_v1alpha1_GRPCRetryBackoff(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GRPCRetryPolicy":                           schema_kgateway_v2_api_v1alpha1_GRPCRetryPolicy(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GatewayExtension":                          schema_kgateway_v2_api_v1alpha1_GatewayExtension(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GatewayExtensionList":                      schema_kgateway_v2_api_v1alpha1_GatewayExtensionList(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GatewayExtensionSpec":                      schema_kgateway_v2_api_v1alpha1_GatewayExtensionSpec(ref),
@@ -3299,12 +3301,18 @@ func schema_kgateway_v2_api_v1alpha1_ExtGrpcService(ref common.ReferenceCallback
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
 						},
 					},
+					"retry": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Retry specifies the retry policy for gRPC streams associated with the service.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GRPCRetryPolicy"),
+						},
+					},
 				},
 				Required: []string{"backendRef"},
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.Duration", "sigs.k8s.io/gateway-api/apis/v1.BackendRef"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GRPCRetryPolicy", "k8s.io/apimachinery/pkg/apis/meta/v1.Duration", "sigs.k8s.io/gateway-api/apis/v1.BackendRef"},
 	}
 }
 
@@ -3538,6 +3546,60 @@ func schema_kgateway_v2_api_v1alpha1_FilterType(ref common.ReferenceCallback) co
 		},
 		Dependencies: []string{
 			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CELFilter", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.DurationFilter", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GrpcStatusFilter", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HeaderFilter", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ResponseFlagFilter", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StatusCodeFilter"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_GRPCRetryBackoff(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"baseInterval": {
+						SchemaProps: spec.SchemaProps{
+							Description: "BaseInterval specifies the base interval used with a fully jittered exponential back-off between retries.",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
+						},
+					},
+					"maxInterval": {
+						SchemaProps: spec.SchemaProps{
+							Description: "MaxInterval specifies the maximum interval between retry attempts. Defaults to 10 times the BaseInterval if not set.",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
+						},
+					},
+				},
+				Required: []string{"baseInterval"},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/apimachinery/pkg/apis/meta/v1.Duration"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_GRPCRetryPolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"attempts": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Attempts specifies the number of retry attempts for a request. Defaults to 1 attempt if not set. A value of 0 effectively disables retries.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"backoff": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Backoff specifies the retry backoff strategy. If not set, a default backoff with a base interval of 1000ms is used. The default max interval is 10 times the base interval.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GRPCRetryBackoff"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GRPCRetryBackoff"},
 	}
 }
 

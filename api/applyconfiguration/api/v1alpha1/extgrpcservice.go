@@ -10,9 +10,10 @@ import (
 // ExtGrpcServiceApplyConfiguration represents a declarative configuration of the ExtGrpcService type for use
 // with apply.
 type ExtGrpcServiceApplyConfiguration struct {
-	BackendRef     *v1.BackendRef   `json:"backendRef,omitempty"`
-	Authority      *string          `json:"authority,omitempty"`
-	RequestTimeout *metav1.Duration `json:"requestTimeout,omitempty"`
+	BackendRef     *v1.BackendRef                     `json:"backendRef,omitempty"`
+	Authority      *string                            `json:"authority,omitempty"`
+	RequestTimeout *metav1.Duration                   `json:"requestTimeout,omitempty"`
+	Retry          *GRPCRetryPolicyApplyConfiguration `json:"retry,omitempty"`
 }
 
 // ExtGrpcServiceApplyConfiguration constructs a declarative configuration of the ExtGrpcService type for use with
@@ -42,5 +43,13 @@ func (b *ExtGrpcServiceApplyConfiguration) WithAuthority(value string) *ExtGrpcS
 // If called multiple times, the RequestTimeout field is set to the value of the last call.
 func (b *ExtGrpcServiceApplyConfiguration) WithRequestTimeout(value metav1.Duration) *ExtGrpcServiceApplyConfiguration {
 	b.RequestTimeout = &value
+	return b
+}
+
+// WithRetry sets the Retry field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Retry field is set to the value of the last call.
+func (b *ExtGrpcServiceApplyConfiguration) WithRetry(value *GRPCRetryPolicyApplyConfiguration) *ExtGrpcServiceApplyConfiguration {
+	b.Retry = value
 	return b
 }

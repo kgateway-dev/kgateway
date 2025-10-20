@@ -77,6 +77,11 @@ Listeners:
             grpcService:
               envoyGrpc:
                 clusterName: kube_infra_ext-authz_9000
+              retryPolicy:
+                numRetries: 3
+                retryBackOff:
+                  baseInterval: 0.050s
+                  maxInterval: 0.200s
               timeout: 0.200s
             statPrefix: my_prefix
             statusOnError:

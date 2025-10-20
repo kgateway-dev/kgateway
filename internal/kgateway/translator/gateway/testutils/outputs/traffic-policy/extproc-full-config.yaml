@@ -108,6 +108,11 @@ Listeners:
                             grpcService:
                               envoyGrpc:
                                 clusterName: kube_infra_extproc_9000
+                              retryPolicy:
+                                numRetries: 3
+                                retryBackOff:
+                                  baseInterval: 0.050s
+                                  maxInterval: 0.200s
                               timeout: 0.300s
                             maxMessageTimeout: 0.500s
                             messageTimeout: 0.100s

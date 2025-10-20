@@ -94,6 +94,11 @@ spec:
         name: ext-authz
         port: 9000
       requestTimeout: 200ms
+      retry:
+        attempts: 3
+        backoff:
+          baseInterval: 50ms
+          maxInterval: 200ms      
     failOpen: true
     clearRouteCache: true
     statusOnError: 400
