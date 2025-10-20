@@ -3,7 +3,7 @@ module github.com/kgateway-dev/kgateway/v2
 go 1.25.3
 
 require (
-	// Also update AgentgatewayDefaultTag in pkg/deployer/wellknown.go
+	// Also update AgentgatewayDefaultTag in pkg/deployer/wellknown.go and test/deployer/testdata/*
 	github.com/agentgateway/agentgateway v0.10.3
 	github.com/avast/retry-go v2.4.3+incompatible
 	github.com/avast/retry-go/v4 v4.3.3
