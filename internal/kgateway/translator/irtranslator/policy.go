@@ -99,7 +99,7 @@ func reportPolicyAttachmentStatus(
 	}
 }
 
-func reportPolicyAttachmentErrStatus(rp reporter.Reporter, ancestorRef gwv1.ParentReference, policies ...ir.PolicyAtt) {
+func reportPolicyAttachmentErrStatus(rp reporter.Reporter, ancestorRef gwv1.ParentReference, policies map[string]ir.PolicyAtt) {
 	for _, policy := range policies {
 		if policy.PolicyRef == nil {
 			// Not a policy associated with a CR, can't report status on it

@@ -687,7 +687,7 @@ func (p *trafficPolicyPluginGwPass) handlePerVHostPolicies(
 	}
 }
 
-func AddErrToOriginPolicy(mergeOrigins ir.MergeOrigins, pols []ir.PolicyAtt, err error) []ir.PolicyAtt {
+func AddErrToOriginPolicy(errPolicyMap map[string]ir.PolicyAtt, mergeOrigins ir.MergeOrigins, pols []ir.PolicyAtt, err error) {
 	// If no merge then append error on all AI policies
 	if !mergeOrigins.IsSet() {
 		for i := range pols {
@@ -695,15 +695,20 @@ func AddErrToOriginPolicy(mergeOrigins ir.MergeOrigins, pols []ir.PolicyAtt, err
 			if !ok || ir.spec.ai == nil {
 				continue
 			}
+			policyID := pols[i].PolicyRef.ID()
+			if _, added := errPolicyMap[policyID]; added {
+				continue
+			}
 			pols[i].Errors = append(pols[i].Errors, err)
+			errPolicyMap[policyID] = pols[i]
 		}
-		return pols
+		return
 	}
 
 	// Check if any policy contributed AI configuration
 	aiPolicyIDs := mergeOrigins.Get("ai")
 	if len(aiPolicyIDs) == 0 {
-		return nil
+		return
 	}
 
 	aiPolicySet := make(map[string]bool, len(aiPolicyIDs))
@@ -712,19 +717,19 @@ func AddErrToOriginPolicy(mergeOrigins ir.MergeOrigins, pols []ir.PolicyAtt, err
 	}
 
 	// Add error only to policies that contributed the AI field
-	aiPolicies := make([]ir.PolicyAtt, 0)
 	for i := range pols {
 		if pols[i].PolicyRef == nil {
 			continue
 		}
 
 		policyID := pols[i].PolicyRef.ID()
-		if aiPolicySet[policyID] {
-			pols[i].Errors = append(pols[i].Errors, err)
-			aiPolicies = append(aiPolicies, pols[i])
+		if _, exist := aiPolicySet[policyID]; exist {
+			if _, added := errPolicyMap[policyID]; !added {
+				pols[i].Errors = append(pols[i].Errors, err)
+				errPolicyMap[policyID] = pols[i]
+			}
 		}
 	}
-	return aiPolicies
 }
 
 func (p *trafficPolicyPluginGwPass) SupportsPolicyMerge() bool {

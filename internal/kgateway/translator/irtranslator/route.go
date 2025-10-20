@@ -423,7 +423,7 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 		}
 		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
 		policies, mergeOrigins := mergePolicies(pass, pols)
-		errPolicies := make([]ir.PolicyAtt, 0)
+		errPolicyMap := make(map[string]ir.PolicyAtt)
 		for _, pol := range policies {
 			// Builtin policies use InheritedPolicyPriority
 			pctx.InheritedPolicyPriority = pol.InheritedPolicyPriority
@@ -438,13 +438,13 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			pctx.Policy = pol.PolicyIr
 			err := pass.ApplyForRoute(pctx, out)
 			if err != nil {
-				errPolicies = append(errPolicies, trafficpolicy.AddErrToOriginPolicy(mergeOrigins, pols, err)...)
+				trafficpolicy.AddErrToOriginPolicy(errPolicyMap, mergeOrigins, pols, err)
 				errs = append(errs, err)
 			}
 		}
 		out.Metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, out.GetMetadata())
 		reportPolicyAttachmentStatus(h.reporter, h.listener.PolicyAncestorRef, mergeOrigins, pols...)
-		reportPolicyAttachmentErrStatus(h.reporter, h.listener.PolicyAncestorRef, errPolicies...)
+		reportPolicyAttachmentErrStatus(h.reporter, h.listener.PolicyAncestorRef, errPolicyMap)
 	}
 
 	return errors.Join(errs...)
