@@ -23,13 +23,13 @@ jobs:
           fi
 
           # get the SHA of the PR's latest commit
-          COMMIT_SHA=$(gh pr view $PR_NUMBER --json headRefOid --jq '.headRefOid')
+          commit_sha=$(gh pr view $PR_NUMBER --json headRefOid --jq '.headRefOid')
 
           # get the failing workflow run IDs (if any) associated with the latest commit
-          FAILING_RUN_IDS=$(gh run list --commit $COMMIT_SHA --status failure --json databaseId | jq '.[].databaseId' -r)
+          failing_run_ids=$(gh run list --commit $commit_sha --status failure --json databaseId | jq '.[].databaseId' -r)
 
           # re-run the failing workflow runs
-          for RUN_ID in $FAILING_RUN_IDS; do
-            echo "Re-running failed workflow run $RUN_ID"
-            gh run rerun $RUN_ID --failed
+          for run_id in $failing_run_ids; do
+            echo "Re-running failed workflow run $run_id"
+            gh run rerun $run_id --failed
           done
