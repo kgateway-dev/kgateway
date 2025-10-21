@@ -19,6 +19,7 @@ const (
 	krtSnapshotPath = "/snapshots/krt"
 	pprofPath       = "/debug/pprof"
 	loggingPath     = "/logging"
+	versionPath     = "/version"
 )
 
 // Client is a utility for executing requests against the kgateway Admin API
@@ -103,6 +104,11 @@ func (c *Client) LoggingCmd(ctx context.Context) cmdutils.Cmd {
 	return c.RequestPathCmd(ctx, loggingPath)
 }
 
+// VersionCmd returns the cmdutils.Cmd that can be run, and will execute a request against the Version path
+func (c *Client) VersionCmd(ctx context.Context) cmdutils.Cmd {
+	return c.RequestPathCmd(ctx, versionPath)
+}
+
 // Response structure for xds snapshot endpoint
 type xdsSnapshotResponse struct {
 	// map from node id to resources
@@ -158,4 +164,18 @@ func (c *Client) GetLogging(ctx context.Context) (string, error) {
 		return "", err
 	}
 	return out.String(), nil
+}
+
+// GetVersion returns the data that is available at the version endpoint
+func (c *Client) GetVersion(ctx context.Context) (map[string]string, error) {
+	var out threadsafe.Buffer
+	err := c.VersionCmd(ctx).WithStdout(&out).Run().Cause()
+	if err != nil {
+		return nil, err
+	}
+	var resp map[string]string
+	if err := json.Unmarshal(out.Bytes(), &resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
 }

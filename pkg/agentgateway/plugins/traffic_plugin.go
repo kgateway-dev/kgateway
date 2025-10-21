@@ -41,6 +41,7 @@ const (
 	localRateLimitPolicySuffix  = ":rl-local"
 	globalRateLimitPolicySuffix = ":rl-global"
 	transformationPolicySuffix  = ":transformation"
+	csrfPolicySuffix            = ":csrf"
 )
 
 var logger = logging.New("agentgateway/plugins")
@@ -60,10 +61,10 @@ func init() {
 
 // convertStatusCollection converts the specific TrafficPolicy status collection
 // to the generic controllers.Object status collection expected by the interface
-func convertStatusCollection(col krt.Collection[krt.ObjectWithStatus[*v1alpha1.TrafficPolicy, v1alpha2.PolicyStatus]]) krt.StatusCollection[controllers.Object, v1alpha2.PolicyStatus] {
+func convertStatusCollection(col krt.Collection[krt.ObjectWithStatus[*v1alpha1.TrafficPolicy, gwv1.PolicyStatus]]) krt.StatusCollection[controllers.Object, gwv1.PolicyStatus] {
 	// Use krt.NewCollection to transform the collection
-	return krt.NewCollection(col, func(ctx krt.HandlerContext, item krt.ObjectWithStatus[*v1alpha1.TrafficPolicy, v1alpha2.PolicyStatus]) *krt.ObjectWithStatus[controllers.Object, v1alpha2.PolicyStatus] {
-		return &krt.ObjectWithStatus[controllers.Object, v1alpha2.PolicyStatus]{
+	return krt.NewCollection(col, func(ctx krt.HandlerContext, item krt.ObjectWithStatus[*v1alpha1.TrafficPolicy, gwv1.PolicyStatus]) *krt.ObjectWithStatus[controllers.Object, gwv1.PolicyStatus] {
+		return &krt.ObjectWithStatus[controllers.Object, gwv1.PolicyStatus]{
 			Obj:    controllers.Object(item.Obj),
 			Status: item.Status,
 		}
@@ -77,7 +78,7 @@ func NewTrafficPlugin(agw *AgwCollections) AgwPlugin {
 		kclient.Filter{ObjectFilter: agw.Client.ObjectFilter()},
 	), agw.KrtOpts.ToOptions("TrafficPolicy")...)
 	policyStatusCol, policyCol := krt.NewStatusManyCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.TrafficPolicy) (
-		*v1alpha2.PolicyStatus,
+		*gwv1.PolicyStatus,
 		[]AgwPolicy,
 	) {
 		return TranslateTrafficPolicy(krtctx, agw.GatewayExtensions, agw.Backends, agw.Secrets, policyCR, agw.ControllerName)
@@ -104,11 +105,11 @@ func TranslateTrafficPolicy(
 	secrets krt.Collection[*corev1.Secret],
 	trafficPolicy *v1alpha1.TrafficPolicy,
 	controllerName string,
-) (*v1alpha2.PolicyStatus, []AgwPolicy) {
+) (*gwv1.PolicyStatus, []AgwPolicy) {
 	var agwPolicies []AgwPolicy
 
 	isMcpTarget := false
-	var ancestors []v1alpha2.PolicyAncestorStatus
+	var ancestors []gwv1.PolicyAncestorStatus
 	for _, target := range trafficPolicy.Spec.TargetRefs {
 		var policyTarget *api.PolicyTarget
 		// Build a base ParentReference for status
@@ -179,8 +180,8 @@ func TranslateTrafficPolicy(
 					Reason:  string(v1alpha1.PolicyReasonInvalid),
 					Message: fmt.Sprintf("Backend %s not found", target.Name),
 				})
-				status := v1alpha2.PolicyStatus{
-					Ancestors: []v1alpha2.PolicyAncestorStatus{
+				status := gwv1.PolicyStatus{
+					Ancestors: []gwv1.PolicyAncestorStatus{
 						{
 							AncestorRef:    parentRef,
 							ControllerName: v1alpha2.GatewayController(controllerName),
@@ -247,7 +248,7 @@ func TranslateTrafficPolicy(
 			}
 			// Only append valid ancestors: require non-empty controllerName and parentRef name
 			if controllerName != "" && string(parentRef.Name) != "" {
-				ancestors = append(ancestors, v1alpha2.PolicyAncestorStatus{
+				ancestors = append(ancestors, gwv1.PolicyAncestorStatus{
 					AncestorRef:    parentRef,
 					ControllerName: v1alpha2.GatewayController(controllerName),
 					Conditions:     conds,
@@ -257,12 +258,12 @@ func TranslateTrafficPolicy(
 	}
 
 	// Build final status from accumulated ancestors
-	status := v1alpha2.PolicyStatus{Ancestors: ancestors}
+	status := gwv1.PolicyStatus{Ancestors: ancestors}
 
 	if len(status.Ancestors) > 15 {
 		ignored := status.Ancestors[15:]
 		status.Ancestors = status.Ancestors[:15]
-		status.Ancestors = append(status.Ancestors, v1alpha2.PolicyAncestorStatus{
+		status.Ancestors = append(status.Ancestors, gwv1.PolicyAncestorStatus{
 			AncestorRef: gwv1.ParentReference{
 				Group: ptr.To(gwv1.Group("gateway.kgateway.dev")),
 				Name:  "StatusSummary",
@@ -282,7 +283,7 @@ func TranslateTrafficPolicy(
 	// sort all parents for consistency with Equals and for Update
 	// match sorting semantics of istio/istio, see:
 	// https://github.com/istio/istio/blob/6dcaa0206bcaf20e3e3b4e45e9376f0f96365571/pilot/pkg/config/kube/gateway/conditions.go#L188-L193
-	slices.SortStableFunc(status.Ancestors, func(a, b v1alpha2.PolicyAncestorStatus) int {
+	slices.SortStableFunc(status.Ancestors, func(a, b gwv1.PolicyAncestorStatus) int {
 		return strings.Compare(reports.ParentString(a.AncestorRef), reports.ParentString(b.AncestorRef))
 	})
 
@@ -352,6 +353,16 @@ func translateTrafficPolicyToAgw(
 			errs = append(errs, err)
 		}
 		agwPolicies = append(agwPolicies, transformationPolicies...)
+	}
+
+	// Process CSRF policies if present
+	if trafficPolicy.Spec.Csrf != nil {
+		csrfPolicies, err := processCSRFPolicy(trafficPolicy, policyName, policyTarget)
+		if err != nil {
+			logger.Error("error processing CSRF policy", "error", err)
+			errs = append(errs, err)
+		}
+		agwPolicies = append(agwPolicies, csrfPolicies...)
 	}
 
 	return agwPolicies, errors.Join(errs...)
@@ -486,6 +497,11 @@ func processAIPolicy(krtctx krt.HandlerContext, secrets krt.Collection[*corev1.S
 		if aiSpec.PromptGuard.Response != nil {
 			aiPolicy.GetSpec().GetAi().PromptGuard.Response = processResponseGuard(aiSpec.PromptGuard.Response)
 		}
+	}
+
+	// Process model aliases
+	if aiSpec.ModelAliases != nil {
+		aiPolicy.GetSpec().GetAi().ModelAliases = aiSpec.ModelAliases
 	}
 
 	logger.Debug("generated AI policy",
@@ -1057,6 +1073,44 @@ func toJSONValue(value string) (string, error) {
 		return "", err
 	}
 	return string(marshaled), nil
+}
+
+func processCSRFPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) ([]AgwPolicy, error) {
+	csrf := trafficPolicy.Spec.Csrf
+
+	// Return error if PercentageEnabled is set since it's not supported for agentgateway
+	if csrf.PercentageEnabled != nil {
+		return nil, fmt.Errorf("percentageEnabled field is not supported for agentgateway, CSRF is enabled for all requests (percentage_enabled: %v)", *csrf.PercentageEnabled)
+	}
+
+	// Return error if PercentageShadowed is set since it's not supported for agentgateway
+	if csrf.PercentageShadowed != nil {
+		return nil, fmt.Errorf("percentageShadowed field is not supported for agentgateway, CSRF is always enforced when enabled (percentage_shadowed: %v)", *csrf.PercentageShadowed)
+	}
+
+	var additionalOrigins []string
+
+	for _, origin := range csrf.AdditionalOrigins {
+		if origin.Exact != nil {
+			additionalOrigins = append(additionalOrigins, *origin.Exact)
+		} else {
+			return nil, fmt.Errorf("CSRF additional origins must specify exact matches only, non-exact origin matchers are not supported for agentgateway")
+		}
+	}
+
+	csrfPolicy := &api.Policy{
+		Name:   policyName + csrfPolicySuffix + attachmentName(policyTarget),
+		Target: policyTarget,
+		Spec: &api.PolicySpec{
+			Kind: &api.PolicySpec_Csrf{
+				Csrf: &api.PolicySpec_CSRF{
+					AdditionalOrigins: additionalOrigins,
+				},
+			},
+		},
+	}
+
+	return []AgwPolicy{{Policy: csrfPolicy}}, nil
 }
 
 // processTransformationPolicy processes transformation configuration and creates corresponding Agw policies

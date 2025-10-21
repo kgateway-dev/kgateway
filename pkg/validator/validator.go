@@ -16,12 +16,12 @@ var (
 	defaultEnvoyImage = "quay.io/solo-io/envoy-gloo:1.35.2-patch4"
 )
 
-// ErrInvalidXDS is returned when Envoy rejects the supplied YAML.
+// ErrInvalidXDS is returned when Envoy rejects the supplied JSON.
 var ErrInvalidXDS = errors.New("invalid xds configuration")
 
-// Validator validates an Envoy bootstrap/partial YAML.
+// Validator validates an Envoy bootstrap/partial JSON.
 type Validator interface {
-	// Validate validates the given YAML configuration. Returns an error
+	// Validate validates the given JSON configuration. Returns an error
 	// if the configuration is invalid.
 	Validate(context.Context, string) error
 }
@@ -41,9 +41,9 @@ func NewBinary(path ...string) Validator {
 	return &binaryValidator{path: path[0]}
 }
 
-func (b *binaryValidator) Validate(ctx context.Context, yaml string) error {
-	cmd := exec.CommandContext(ctx, b.path, "--mode", "validate", "--config-yaml", yaml, "-l", "critical", "--log-format", "%v") //nolint:gosec // G204: envoy binary with controlled args for config validation
-	cmd.Stdin = strings.NewReader(yaml)
+func (b *binaryValidator) Validate(ctx context.Context, json string) error {
+	cmd := exec.CommandContext(ctx, b.path, "--mode", "validate", "--config-path", "/dev/fd/0", "-l", "critical", "--log-format", "%v") //nolint:gosec // G204: envoy binary with controlled args for config validation
+	cmd.Stdin = strings.NewReader(json)
 	var e bytes.Buffer
 	cmd.Stderr = &e
 	if err := cmd.Run(); err != nil {
@@ -73,7 +73,7 @@ func NewDocker(img ...string) Validator {
 	return &dockerValidator{img: img[0]}
 }
 
-func (d *dockerValidator) Validate(ctx context.Context, yaml string) error {
+func (d *dockerValidator) Validate(ctx context.Context, json string) error {
 	cmd := exec.CommandContext( //nolint:gosec // G204: docker command with controlled args for config validation
 		ctx,
 		"docker", "run",
@@ -83,11 +83,11 @@ func (d *dockerValidator) Validate(ctx context.Context, yaml string) error {
 		d.img,
 		"--mode",
 		"validate",
-		"--config-yaml", yaml,
+		"--config-path", "/dev/fd/0",
 		"-l", "critical",
 		"--log-format", "%v",
 	)
-	cmd.Stdin = strings.NewReader(yaml)
+	cmd.Stdin = strings.NewReader(json)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr

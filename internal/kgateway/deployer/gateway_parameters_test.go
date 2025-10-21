@@ -142,7 +142,7 @@ func TestIsSelfManagedWithExtendedGatewayParameters(t *testing.T) {
 	}
 
 	gwp := NewGatewayParameters(newFakeClientWithObjs(gwc, gwParams, extraGwParams), defaultInputs(t, gwc, gw)).
-		WithExtraGatewayParameters(deployer.ExtraGatewayParameters{Group: "v1", Kind: "ConfigMap", Object: extraGwParams, Generator: &testHelmValuesGenerator{}})
+		WithHelmValuesGeneratorOverride(&testHelmValuesGenerator{})
 	selfManaged, err := gwp.IsSelfManaged(context.Background(), gw)
 	assert.NoError(t, err)
 	assert.True(t, selfManaged)
@@ -215,7 +215,7 @@ func TestShouldUseExtendedGatewayParameters(t *testing.T) {
 	}
 
 	gwp := NewGatewayParameters(newFakeClientWithObjs(gwc, gwParams, extraGwParams), defaultInputs(t, gwc, gw)).
-		WithExtraGatewayParameters(deployer.ExtraGatewayParameters{Group: "v1", Kind: "ConfigMap", Object: extraGwParams, Generator: &testHelmValuesGenerator{}})
+		WithHelmValuesGeneratorOverride(&testHelmValuesGenerator{})
 	vals, err := gwp.GetValues(context.Background(), gw)
 
 	assert.NoError(t, err)

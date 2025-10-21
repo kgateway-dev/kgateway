@@ -1,3 +1,5 @@
+//go:build e2e
+
 package policyselector
 
 import (
@@ -100,7 +102,7 @@ func (s *tsuite) TestLabelSelector() {
 
 	// Verify access logs with HTTPListenerPolicy
 	pods, err := s.ti.Actions.Kubectl().GetPodsInNsWithLabel(
-		s.ctx, gateway.Namespace, fmt.Sprintf("app.kubernetes.io/name=%s", gateway.Name),
+		s.ctx, gateway.Namespace, fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, gateway.Name),
 	)
 	s.Require().NoError(err)
 	s.Require().Len(pods, 1)

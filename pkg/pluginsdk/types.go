@@ -9,7 +9,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/endpoints"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -41,9 +40,9 @@ type PerClientProcessBackend func(
 
 type (
 	// GetPolicyStatusFn is a type that plugins can implement to get the PolicyStatus for the given policy
-	GetPolicyStatusFn func(context.Context, types.NamespacedName) (gwv1alpha2.PolicyStatus, error)
+	GetPolicyStatusFn func(context.Context, types.NamespacedName) (gwv1.PolicyStatus, error)
 	// PatchPolicyStatusFn is a type that plugins can implement to patch the PolicyStatus for the given policy
-	PatchPolicyStatusFn func(context.Context, types.NamespacedName, gwv1alpha2.PolicyStatus) error
+	PatchPolicyStatusFn func(context.Context, types.NamespacedName, gwv1.PolicyStatus) error
 )
 
 type PolicyPlugin struct {

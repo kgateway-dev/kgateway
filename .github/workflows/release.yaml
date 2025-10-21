@@ -19,7 +19,7 @@ on:
   push:
     tags:
       - 'v*'
-      - '!v2.1.0-main'
+      - '!v**-main'
     branches:
       - main
   pull_request:
@@ -30,7 +30,7 @@ env:
   # this uses the `github.repository_owner` to support releases from forks (useful for testing).
   IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
   VANITY_REGISTRY: cr.kgateway.dev/kgateway-dev
-  MAIN_VERSION: v2.1.0-main
+  MAIN_VERSION: v2.2.0-main
   GORELEASER_DISABLE_RELEASE: false
 
 permissions:

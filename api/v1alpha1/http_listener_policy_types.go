@@ -4,7 +4,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=httplistenerpolicies,verbs=get;list;watch
@@ -29,7 +28,7 @@ type HTTPListenerPolicy struct {
 
 	Spec HTTPListenerPolicySpec `json:"spec,omitempty"`
 
-	Status gwv1alpha2.PolicyStatus `json:"status,omitempty"`
+	Status gwv1.PolicyStatus `json:"status,omitempty"`
 	// TODO: embed this into a typed Status field when
 	// https://github.com/kubernetes/kubernetes/issues/131533 is resolved
 }
@@ -58,8 +57,6 @@ type HTTPListenerPolicySpec struct {
 
 	// AccessLoggingConfig contains various settings for Envoy's access logging service.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto
-	// +kubebuilder:validation:Items={type=object}
-	//
 	// +kubebuilder:validation:MaxItems=16
 	AccessLog []AccessLog `json:"accessLog,omitempty"`
 
@@ -426,7 +423,6 @@ type CELFilter struct {
 // Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
 type GrpcStatusFilter struct {
 	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:Items={type=object}
 	Statuses []GrpcStatus `json:"statuses,omitempty"`
 	Exclude  bool         `json:"exclude,omitempty"`
 }

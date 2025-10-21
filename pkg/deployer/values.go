@@ -9,6 +9,13 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
+type DataPlaneType string
+
+const (
+	DataPlaneAgentgateway DataPlaneType = "agentgateway"
+	DataPlaneEnvoy        DataPlaneType = "envoy"
+)
+
 // helmConfig stores the top-level helm values used by the deployer.
 type HelmConfig struct {
 	Gateway            *HelmGateway            `json:"gateway,omitempty"`
@@ -16,13 +23,19 @@ type HelmConfig struct {
 }
 
 type HelmGateway struct {
+	// not needed by the helm charts, but by the code that select the correct
+	// helm chart:
+	DataPlaneType DataPlaneType `json:"dataPlaneType"`
+
 	// naming
-	Name             *string `json:"name,omitempty"`
-	GatewayName      *string `json:"gatewayName,omitempty"`
-	GatewayNamespace *string `json:"gatewayNamespace,omitempty"`
-	GatewayClassName *string `json:"gatewayClassName,omitempty"`
-	NameOverride     *string `json:"nameOverride,omitempty"`
-	FullnameOverride *string `json:"fullnameOverride,omitempty"`
+	Name               *string           `json:"name,omitempty"`
+	GatewayName        *string           `json:"gatewayName,omitempty"`
+	GatewayNamespace   *string           `json:"gatewayNamespace,omitempty"`
+	GatewayClassName   *string           `json:"gatewayClassName,omitempty"`
+	GatewayAnnotations map[string]string `json:"gatewayAnnotations,omitempty"`
+	GatewayLabels      map[string]string `json:"gatewayLabels,omitempty"`
+	NameOverride       *string           `json:"nameOverride,omitempty"`
+	FullnameOverride   *string           `json:"fullnameOverride,omitempty"`
 
 	// deployment/service values
 	ReplicaCount *uint32                    `json:"replicaCount,omitempty"`
@@ -57,12 +70,12 @@ type HelmGateway struct {
 	Istio *HelmIstio `json:"istio,omitempty"`
 
 	// envoy container values
-	LogLevel          *string `json:"logLevel,omitempty"`
 	ComponentLogLevel *string `json:"componentLogLevel,omitempty"`
 
 	// envoy or agentgateway container values
 	// Note: ideally, these should be mapped to container specific values, but right now they
-	// map the the proxy container
+	// map to the proxy container
+	LogLevel          *string                      `json:"logLevel,omitempty"`
 	Image             *HelmImage                   `json:"image,omitempty"`
 	Resources         *corev1.ResourceRequirements `json:"resources,omitempty"`
 	SecurityContext   *corev1.SecurityContext      `json:"securityContext,omitempty"`
@@ -82,7 +95,7 @@ type HelmGateway struct {
 	AIExtension *HelmAIExtension `json:"aiExtension,omitempty"`
 
 	// agentgateway integration values
-	Agentgateway *HelmAgentgateway `json:"agentgateway,omitempty"`
+	CustomConfigMapName *string `json:"customConfigMapName,omitempty"`
 }
 
 // helmPort represents a Gateway Listener port
@@ -118,8 +131,14 @@ type HelmServiceAccount struct {
 // helmXds represents the xds host and port to which envoy will connect
 // to receive xds config updates
 type HelmXds struct {
-	Host *string `json:"host,omitempty"`
-	Port *uint32 `json:"port,omitempty"`
+	Host *string     `json:"host,omitempty"`
+	Port *uint32     `json:"port,omitempty"`
+	Tls  *HelmXdsTls `json:"tls,omitempty"`
+}
+
+type HelmXdsTls struct {
+	Enabled *bool   `json:"enabled,omitempty"`
+	CaCert  *string `json:"caCert,omitempty"`
 }
 
 type HelmIstio struct {
@@ -186,10 +205,4 @@ type HelmInferenceExtension struct {
 type HelmEndpointPickerExtension struct {
 	PoolName      string `json:"poolName"`
 	PoolNamespace string `json:"poolNamespace"`
-}
-
-type HelmAgentgateway struct {
-	Enabled             bool   `json:"enabled,omitempty"`
-	LogLevel            string `json:"logLevel,omitempty"`
-	CustomConfigMapName string `json:"customConfigMapName,omitempty"`
 }

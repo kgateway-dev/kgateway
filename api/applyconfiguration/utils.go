@@ -5,7 +5,7 @@ package applyconfiguration
 import (
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
-	testing "k8s.io/client-go/testing"
+	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
 
 	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/applyconfiguration/api/v1alpha1"
 	internal "github.com/kgateway-dev/kgateway/v2/api/applyconfiguration/internal"
@@ -147,6 +147,10 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.GeminiConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("GracefulShutdownSpec"):
 		return &apiv1alpha1.GracefulShutdownSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("GRPCRetryBackoff"):
+		return &apiv1alpha1.GRPCRetryBackoffApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("GRPCRetryPolicy"):
+		return &apiv1alpha1.GRPCRetryPolicyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("GrpcStatusFilter"):
 		return &apiv1alpha1.GrpcStatusFilterApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("HashPolicy"):
@@ -346,6 +350,6 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 	return nil
 }
 
-func NewTypeConverter(scheme *runtime.Scheme) *testing.TypeConverter {
-	return &testing.TypeConverter{Scheme: scheme, TypeResolver: internal.Parser()}
+func NewTypeConverter(scheme *runtime.Scheme) managedfields.TypeConverter {
+	return managedfields.NewSchemeTypeConverter(scheme, internal.Parser())
 }

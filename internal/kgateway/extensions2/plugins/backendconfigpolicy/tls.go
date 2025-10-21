@@ -8,20 +8,17 @@ import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-
-	gwv1alpha3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
-
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/cert"
 	"k8s.io/utils/ptr"
-
-	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 // SecretGetter defines the interface for retrieving secrets
@@ -148,7 +145,7 @@ func buildValidationContext(tlsData *tlsData, tlsConfig *v1alpha1.TLS, tlsContex
 	// that references the SDS secret for the system CA set, and attach SAN matchers if any.
 	if tlsConfig.WellKnownCACertificates != nil {
 		switch *tlsConfig.WellKnownCACertificates {
-		case gwv1alpha3.WellKnownCACertificatesSystem:
+		case gwv1.WellKnownCACertificatesSystem:
 			combined := &envoytlsv3.CommonTlsContext_CombinedValidationContext{
 				CombinedValidationContext: &envoytlsv3.CommonTlsContext_CombinedCertificateValidationContext{
 					DefaultValidationContext: &envoytlsv3.CertificateValidationContext{

@@ -25,18 +25,17 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
-	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
@@ -234,7 +233,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 		healthCheckPolicy := convertHealthCheckPolicy(i)
 		var xffNumTrustedHops *uint32
 		if i.Spec.XffNumTrustedHops != nil {
-			xffNumTrustedHops = pointer.Uint32(uint32(*i.Spec.XffNumTrustedHops)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+			xffNumTrustedHops = ptr.To(uint32(*i.Spec.XffNumTrustedHops)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 		}
 
 		pol := &ir.PolicyWrapper{
@@ -290,7 +289,7 @@ func (p *httpListenerPolicyPluginGwPass) Name() string {
 }
 
 func (p *httpListenerPolicyPluginGwPass) ApplyHCM(
-	pCtx *pluginsdkir.HcmContext,
+	pCtx *ir.HcmContext,
 	out *envoy_hcm.HttpConnectionManager,
 ) error {
 	policy, ok := pCtx.Policy.(*httpListenerPolicy)
@@ -379,27 +378,27 @@ func (p *httpListenerPolicyPluginGwPass) ApplyHCM(
 	return nil
 }
 
-func (p *httpListenerPolicyPluginGwPass) HttpFilters(fc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
+func (p *httpListenerPolicyPluginGwPass) HttpFilters(fc ir.FilterChainCommon) ([]filters.StagedHttpFilter, error) {
 	if p.healthCheckPolicy == nil {
 		return nil, nil
 	}
 
 	// Add the health check filter after the authz filter but before the rate limit filter
 	// This allows the health check filter to be secured by authz if needed, but ensures it won't be rate limited
-	stagedFilter, err := plugins.NewStagedFilter(
+	stagedFilter, err := filters.NewStagedFilter(
 		"envoy.filters.http.health_check",
 		p.healthCheckPolicy,
-		plugins.AfterStage(plugins.AuthZStage),
+		filters.AfterStage(filters.AuthZStage),
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	return []plugins.StagedHttpFilter{stagedFilter}, nil
+	return []filters.StagedHttpFilter{stagedFilter}, nil
 }
 
 func (p *httpListenerPolicyPluginGwPass) ApplyListenerPlugin(
-	pCtx *pluginsdkir.ListenerContext,
+	pCtx *ir.ListenerContext,
 	out *envoylistenerv3.Listener,
 ) {
 	policy, ok := pCtx.Policy.(*httpListenerPolicy)

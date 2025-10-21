@@ -24,12 +24,12 @@ import (
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -271,7 +271,7 @@ func (p *endpointPickerPass) ApplyForBackend(
 }
 
 // HttpFilters returns one ext_proc filter, using the well-known filter name.
-func (p *endpointPickerPass) HttpFilters(fc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
+func (p *endpointPickerPass) HttpFilters(fc ir.FilterChainCommon) ([]filters.StagedHttpFilter, error) {
 	if p == nil || len(p.usedPools) == 0 {
 		return nil, nil
 	}
@@ -323,10 +323,10 @@ func (p *endpointPickerPass) HttpFilters(fc ir.FilterChainCommon) ([]plugins.Sta
 		},
 	}
 
-	extProcFilter, err := plugins.NewStagedFilter(
+	extProcFilter, err := filters.NewStagedFilter(
 		wellknown.InfPoolTransformationFilterName,
 		extProcSettings,
-		plugins.BeforeStage(plugins.AuthNStage),
+		filters.BeforeStage(filters.AuthNStage),
 	)
 	if err != nil {
 		return nil, err
@@ -343,13 +343,13 @@ func (p *endpointPickerPass) HttpFilters(fc ir.FilterChainCommon) ([]plugins.Sta
 			Remove: false,
 		}},
 	}
-	htmFilter, _ := plugins.NewStagedFilter(
+	htmFilter, _ := filters.NewStagedFilter(
 		"envoy.filters.http.header_to_metadata",
 		htm,
-		plugins.BeforeStage(plugins.RouteStage),
+		filters.BeforeStage(filters.RouteStage),
 	)
 
-	return []plugins.StagedHttpFilter{extProcFilter, htmFilter}, nil
+	return []filters.StagedHttpFilter{extProcFilter, htmFilter}, nil
 }
 
 // ResourcesToAdd returns the ext_proc clusters for all used InferencePools.

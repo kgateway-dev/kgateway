@@ -16,10 +16,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 func TestGlobalRateLimitIREquals(t *testing.T) {
@@ -376,9 +375,9 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 	typedDefaultNamespace := gwv1.Namespace(defaultNamespace)
 	defaultClusterName := "test-service.test-namespace.svc.cluster.local:8081"
 
-	createBackendRef := func() gwv1alpha2.BackendObjectReference {
-		port := gwv1alpha2.PortNumber(8081)
-		return gwv1alpha2.BackendObjectReference{
+	createBackendRef := func() gwv1.BackendObjectReference {
+		port := gwv1.PortNumber(8081)
+		return gwv1.BackendObjectReference{
 			Name: "test-service",
 			Port: &port,
 		}
@@ -399,7 +398,7 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 				RateLimit: &v1alpha1.RateLimitProvider{
 					Domain: "test-domain",
 					GrpcService: &v1alpha1.ExtGrpcService{
-						BackendRef: &gwv1alpha2.BackendRef{
+						BackendRef: &gwv1.BackendRef{
 							BackendObjectReference: createBackendRef(),
 						},
 					},
@@ -449,7 +448,7 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 				RateLimit: &v1alpha1.RateLimitProvider{
 					Domain: "test-domain",
 					GrpcService: &v1alpha1.ExtGrpcService{
-						BackendRef: &gwv1alpha2.BackendRef{
+						BackendRef: &gwv1.BackendRef{
 							BackendObjectReference: createBackendRef(),
 						},
 					},
@@ -492,7 +491,7 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 				RateLimit: &v1alpha1.RateLimitProvider{
 					Domain: "test-domain",
 					GrpcService: &v1alpha1.ExtGrpcService{
-						BackendRef: &gwv1alpha2.BackendRef{
+						BackendRef: &gwv1.BackendRef{
 							BackendObjectReference: createBackendRef(),
 						},
 					},

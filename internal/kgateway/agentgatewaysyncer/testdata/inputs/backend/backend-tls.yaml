@@ -87,7 +87,7 @@ spec:
           matchLabels:
             app: mcp-app
 ---
-apiVersion: gateway.networking.k8s.io/v1alpha3
+apiVersion: gateway.networking.k8s.io/v1
 kind: BackendTLSPolicy
 metadata:
   name: mcp-tls-system-cert
@@ -104,7 +104,7 @@ spec:
     hostname: mcp-app.foo
     wellKnownCACertificates: System
 ---
-apiVersion: gateway.networking.k8s.io/v1alpha3
+apiVersion: gateway.networking.k8s.io/v1
 kind: BackendTLSPolicy
 metadata:
   name: mcp-tls-ca-cert
@@ -117,7 +117,7 @@ spec:
     - name: ca-cert-1
       kind: ConfigMap
     - name: ca-cert-2
-      kind: ConfigMap      
+      kind: ConfigMap
     hostname: mcp-svc.foo
 ---
 apiVersion: v1
@@ -211,7 +211,7 @@ spec:
         authToken:
           kind: "SecretRef"
           secretRef:
-            name: openai-primary-secret         
+            name: openai-primary-secret
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend
@@ -227,9 +227,9 @@ spec:
         model: "claude-3-opus-20240229"
         authToken:
           kind: "Inline"
-          inline: "sk-anthropic-primary"          
+          inline: "sk-anthropic-primary"
 ---
-apiVersion: gateway.networking.k8s.io/v1alpha3
+apiVersion: gateway.networking.k8s.io/v1
 kind: BackendTLSPolicy
 metadata:
   name: ai-tls
@@ -246,7 +246,7 @@ spec:
     hostname: foo
     wellKnownCACertificates: System
 ---
-apiVersion: gateway.networking.k8s.io/v1alpha3
+apiVersion: gateway.networking.k8s.io/v1
 kind: BackendTLSPolicy
 metadata:
   name: ai-tls-all-groups
@@ -257,4 +257,4 @@ spec:
     group: gateway.kgateway.dev
   validation:
     hostname: baz
-    wellKnownCACertificates: System    
+    wellKnownCACertificates: System

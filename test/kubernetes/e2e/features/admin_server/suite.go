@@ -1,8 +1,11 @@
+//go:build e2e
+
 package admin_server
 
 import (
 	"context"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/onsi/gomega"
@@ -83,6 +86,14 @@ func (s *testingSuite) TestLogging() {
 	)
 }
 
+func (s *testingSuite) TestVersion() {
+	s.TestInstallation.Assertions.AssertKgatewayAdminApi(
+		s.Ctx,
+		kgatewayDeploymentObjectMeta,
+		s.versionAssertion(),
+	)
+}
+
 func (s *testingSuite) xdsSnapshotAssertion() func(ctx context.Context, adminClient *admincli.Client) {
 	return func(ctx context.Context, adminClient *admincli.Client) {
 		s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
@@ -131,6 +142,32 @@ func (s *testingSuite) loggingAssertion() func(ctx context.Context, adminClient 
 			loggingResponse, err := adminClient.GetLogging(ctx)
 			g.Expect(err).NotTo(gomega.HaveOccurred(), "can get logging response")
 			g.Expect(loggingResponse).NotTo(gomega.BeEmpty(), "logging response is not empty")
+		}).
+			WithContext(ctx).
+			WithTimeout(time.Second * 10).
+			WithPolling(time.Millisecond * 200).
+			Should(gomega.Succeed())
+	}
+}
+
+func (s *testingSuite) versionAssertion() func(ctx context.Context, adminClient *admincli.Client) {
+	return func(ctx context.Context, adminClient *admincli.Client) {
+		s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+			resp, err := adminClient.GetVersion(ctx)
+			g.Expect(err).NotTo(gomega.HaveOccurred(), "can get version response")
+			g.Expect(resp["version"]).NotTo(gomega.BeEmpty(), "version field present")
+			g.Expect(resp["string"]).To(gomega.ContainSubstring("controller version"), "string field contains version info")
+
+			// Ensure the version field matches the version embedded in the string
+			full := resp["string"]
+			const prefix = "controller version "
+			start := strings.Index(full, prefix)
+			g.Expect(start).ToNot(gomega.Equal(-1), "string contains controller version prefix")
+			remainder := full[start+len(prefix):]
+			end := strings.Index(remainder, ",")
+			g.Expect(end).ToNot(gomega.Equal(-1), "string contains a comma after version")
+			embeddedVersion := remainder[:end]
+			g.Expect(embeddedVersion).To(gomega.Equal(resp["version"]), "embedded version matches version field")
 		}).
 			WithContext(ctx).
 			WithTimeout(time.Second * 10).

@@ -6,10 +6,11 @@ import (
 	"strconv"
 
 	"k8s.io/utils/ptr"
+	v1 "sigs.k8s.io/gateway-api/apis/v1"
 	v1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 func TargetRefsToPolicyRefs(
@@ -55,6 +56,20 @@ func TargetRefsToPolicyRefsWithSectionName(
 			SectionName: string(ptr.Deref(targetSelector.SectionName, "")),
 		})
 	}
+	return refs
+}
+
+func TargetRefsToPolicyRefsWithSectionNameV1(targetRefs []v1.LocalPolicyTargetReferenceWithSectionName) []ir.PolicyRef {
+	refs := make([]ir.PolicyRef, 0, len(targetRefs))
+	for _, targetRef := range targetRefs {
+		refs = append(refs, ir.PolicyRef{
+			Group:       string(targetRef.Group),
+			Kind:        string(targetRef.Kind),
+			Name:        string(targetRef.Name),
+			SectionName: string(ptr.Deref(targetRef.SectionName, "")),
+		})
+	}
+
 	return refs
 }
 

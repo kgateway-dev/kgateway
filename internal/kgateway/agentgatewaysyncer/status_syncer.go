@@ -42,7 +42,7 @@ type policyStatusQueue struct {
 
 func (q *policyStatusQueue) EnqueueStatusUpdateResource(context any, resource status.Resource) {
 	// Convert the context back to our expected type
-	if obj, ok := context.(krt.ObjectWithStatus[controllers.Object, gwv1alpha2.PolicyStatus]); ok {
+	if obj, ok := context.(krt.ObjectWithStatus[controllers.Object, gwv1.PolicyStatus]); ok {
 		q.asyncQueue.Enqueue(obj)
 	}
 }
@@ -71,7 +71,7 @@ type AgentGwStatusSyncer struct {
 	gatewayReportQueue      utils.AsyncQueue[translator.GatewayReports]
 	listenerSetReportQueue  utils.AsyncQueue[translator.ListenerSetReports]
 	routeReportQueue        utils.AsyncQueue[translator.RouteReports]
-	policyStatusQueue       utils.AsyncQueue[krt.ObjectWithStatus[controllers.Object, gwv1alpha2.PolicyStatus]]
+	policyStatusQueue       utils.AsyncQueue[krt.ObjectWithStatus[controllers.Object, gwv1.PolicyStatus]]
 	policyStatusCollections *status.StatusCollections
 
 	// Policy status handlers
@@ -210,7 +210,7 @@ func (s *AgentGwStatusSyncer) Start(ctx context.Context) error {
 }
 
 // syncTrafficPolicyStatusHandler handles status syncing for TrafficPolicy resources
-func (s *AgentGwStatusSyncer) syncTrafficPolicyStatusHandler(ctx context.Context, client client.Client, namespacedName types.NamespacedName, status gwv1alpha2.PolicyStatus) error {
+func (s *AgentGwStatusSyncer) syncTrafficPolicyStatusHandler(ctx context.Context, client client.Client, namespacedName types.NamespacedName, status gwv1.PolicyStatus) error {
 	trafficpolicy := v1alpha1.TrafficPolicy{}
 	err := client.Get(ctx, namespacedName, &trafficpolicy)
 	if err != nil {
@@ -222,15 +222,15 @@ func (s *AgentGwStatusSyncer) syncTrafficPolicyStatusHandler(ctx context.Context
 	}
 
 	// Update the trafficpolicy status directly
-	var ancestors []gwv1alpha2.PolicyAncestorStatus
+	var ancestors []gwv1.PolicyAncestorStatus
 	for _, ancestor := range status.Ancestors {
-		ancestors = append(ancestors, gwv1alpha2.PolicyAncestorStatus{
+		ancestors = append(ancestors, gwv1.PolicyAncestorStatus{
 			AncestorRef:    ancestor.AncestorRef,
 			ControllerName: gwv1.GatewayController(ancestor.ControllerName),
 			Conditions:     ancestor.Conditions,
 		})
 	}
-	trafficpolicy.Status = gwv1alpha2.PolicyStatus{
+	trafficpolicy.Status = gwv1.PolicyStatus{
 		Ancestors: ancestors,
 	}
 
@@ -238,7 +238,7 @@ func (s *AgentGwStatusSyncer) syncTrafficPolicyStatusHandler(ctx context.Context
 }
 
 // syncPolicyStatus handles status syncing for all policy types with a registered policy status handler
-func (s *AgentGwStatusSyncer) syncPolicyStatus(ctx context.Context, logger *slog.Logger, policyStatusUpdate krt.ObjectWithStatus[controllers.Object, gwv1alpha2.PolicyStatus]) {
+func (s *AgentGwStatusSyncer) syncPolicyStatus(ctx context.Context, logger *slog.Logger, policyStatusUpdate krt.ObjectWithStatus[controllers.Object, gwv1.PolicyStatus]) {
 	stopwatch := utils.NewTranslatorStopWatch("PolicyStatusSyncer")
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
@@ -511,25 +511,6 @@ func (s *AgentGwStatusSyncer) syncGatewayStatus(ctx context.Context, logger *slo
 				return err
 			}
 
-			// Check the controller name of the gateway class to avoid syncing status for non-agentgateway controllers
-			gwClass := gwv1.GatewayClass{}
-			err = s.mgr.GetClient().Get(ctx, types.NamespacedName{
-				Name: string(gw.Spec.GatewayClassName),
-			}, &gwClass)
-			if err != nil {
-				if apierrors.IsNotFound(err) {
-					logger.Debug("gateway class not found, skipping", logKeyGateway, gwnn.String(), "gatewayClassName", gw.Spec.GatewayClassName)
-					continue
-				}
-				logger.Error("error getting gateway class", logKeyError, err, logKeyGateway, gwnn.String(), "gatewayClassName", gw.Spec.GatewayClassName)
-				return err
-			}
-
-			if string(gwClass.Spec.ControllerName) != s.controllerName {
-				logger.Debug("skipping status sync for non-agentgateway controller", logKeyGateway, gwnn.String(), "controllerName", gwClass.Spec.ControllerName, "gatewayClassName", gw.Spec.GatewayClassName)
-				continue
-			}
-
 			gwStatusWithoutAddress := gw.Status
 			gwStatusWithoutAddress.Addresses = nil
 			var attachedRoutesForGw map[string]uint
@@ -553,7 +534,9 @@ func (s *AgentGwStatusSyncer) syncGatewayStatus(ctx context.Context, logger *slo
 				if !isGatewayStatusEqual(&gwStatusWithoutAddress, status) {
 					gw.Status = *status
 					if err := s.mgr.GetClient().Status().Patch(ctx, &gw, client.Merge); err != nil {
-						logger.Error("error patching gateway status", logKeyError, err, logKeyGateway, gwnn.String())
+						if !apierrors.IsConflict(err) {
+							logger.Error("error patching gateway status", logKeyError, err, logKeyGateway, gwnn.String())
+						}
 						return err
 					}
 					logger.Info("patched gw status", logKeyGateway, gwnn.String())
@@ -654,7 +637,9 @@ func (s *AgentGwStatusSyncer) syncListenerSetStatus(ctx context.Context, logger 
 				if !isListenerSetStatusEqual(&lsStatus, status) {
 					ls.Status = *status
 					if err := s.mgr.GetClient().Status().Patch(ctx, &ls, client.Merge); err != nil {
-						logger.Error("error patching listener set status", logKeyError, err, logKeyGateway, lsnn.String())
+						if !apierrors.IsConflict(err) {
+							logger.Error("error patching listener set status", logKeyError, err, logKeyGateway, lsnn.String())
+						}
 						return err
 					}
 					logger.Info("patched ls status", "listenerset", lsnn.String())

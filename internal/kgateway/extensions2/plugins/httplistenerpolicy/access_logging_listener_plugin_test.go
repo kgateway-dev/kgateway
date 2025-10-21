@@ -25,15 +25,13 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/pointer"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 func TestConvertJsonFormat_EdgeCases(t *testing.T) {
@@ -381,9 +379,9 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 											Name: "test-service",
 										},
 									},
-									Authority:               pointer.String("www.example.com"),
-									MaxReceiveMessageLength: pointer.Int32(127),
-									SkipEnvoyHeaders:        pointer.Bool(true),
+									Authority:               ptr.To("www.example.com"),
+									MaxReceiveMessageLength: ptr.To(int32(127)),
+									SkipEnvoyHeaders:        ptr.To(true),
 									Timeout:                 &metav1.Duration{Duration: 10 * time.Second},
 									InitialMetadata: []v1alpha1.HeaderValue{{
 										Key:   "key",
@@ -394,7 +392,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 											BaseInterval: metav1.Duration{Duration: 5 * time.Second},
 											MaxInterval:  &metav1.Duration{Duration: 10 * time.Second},
 										},
-										NumRetries: pointer.Int32(3),
+										NumRetries: ptr.To(int32(3)),
 									},
 								},
 								LogName: "grpc-log",
@@ -824,20 +822,20 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 								},
 								LogName: "otel-log",
 							},
-							Body:                 pointer.String(`"%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %RESPONSE_CODE% "%REQ(:AUTHORITY)%" "%UPSTREAM_CLUSTER%"\n'`),
-							DisableBuiltinLabels: pointer.Bool(true),
+							Body:                 ptr.To(`"%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %RESPONSE_CODE% "%REQ(:AUTHORITY)%" "%UPSTREAM_CLUSTER%"\n'`),
+							DisableBuiltinLabels: ptr.To(true),
 							ResourceAttributes: &v1alpha1.KeyAnyValueList{
 								Values: []v1alpha1.KeyAnyValue{
 									{
 										Key: "ra-string-key-1",
 										Value: v1alpha1.AnyValue{
-											StringValue: pointer.String("ra-string-value-1"),
+											StringValue: ptr.To("ra-string-value-1"),
 										},
 									},
 									{
 										Key: "service.name",
 										Value: v1alpha1.AnyValue{
-											StringValue: pointer.String("my:service"),
+											StringValue: ptr.To("my:service"),
 										},
 									},
 									{
@@ -845,10 +843,10 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 										Value: v1alpha1.AnyValue{
 											ArrayValue: []v1alpha1.AnyValue{
 												{
-													StringValue: pointer.String("ra-1-string-value"),
+													StringValue: ptr.To("ra-1-string-value"),
 												},
 												{
-													StringValue: pointer.String("ra-2-string-value"),
+													StringValue: ptr.To("ra-2-string-value"),
 												},
 											},
 										},
@@ -861,7 +859,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 													{
 														Key: "ra-string-key-2",
 														Value: v1alpha1.AnyValue{
-															StringValue: pointer.String("ra-string-value-2"),
+															StringValue: ptr.To("ra-string-value-2"),
 														},
 													},
 													{
@@ -869,10 +867,10 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 														Value: v1alpha1.AnyValue{
 															ArrayValue: []v1alpha1.AnyValue{
 																{
-																	StringValue: pointer.String("ra-3-string-value"),
+																	StringValue: ptr.To("ra-3-string-value"),
 																},
 																{
-																	StringValue: pointer.String("ra-4-string-value"),
+																	StringValue: ptr.To("ra-4-string-value"),
 																},
 															},
 														},
@@ -885,13 +883,13 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 																	{
 																		Key: "ra-string-key-3",
 																		Value: v1alpha1.AnyValue{
-																			StringValue: pointer.String("ra-string-value-3"),
+																			StringValue: ptr.To("ra-string-value-3"),
 																		},
 																	},
 																	{
 																		Key: "ra-string-key-4",
 																		Value: v1alpha1.AnyValue{
-																			StringValue: pointer.String("ra-string-value-4"),
+																			StringValue: ptr.To("ra-string-value-4"),
 																		},
 																	},
 																},
@@ -909,7 +907,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 									{
 										Key: "string-key-1",
 										Value: v1alpha1.AnyValue{
-											StringValue: pointer.String("string-value-1"),
+											StringValue: ptr.To("string-value-1"),
 										},
 									},
 									{
@@ -917,10 +915,10 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 										Value: v1alpha1.AnyValue{
 											ArrayValue: []v1alpha1.AnyValue{
 												{
-													StringValue: pointer.String("1-string-value"),
+													StringValue: ptr.To("1-string-value"),
 												},
 												{
-													StringValue: pointer.String("2-string-value"),
+													StringValue: ptr.To("2-string-value"),
 												},
 											},
 										},
@@ -933,7 +931,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 													{
 														Key: "string-key-2",
 														Value: v1alpha1.AnyValue{
-															StringValue: pointer.String("string-value-2"),
+															StringValue: ptr.To("string-value-2"),
 														},
 													},
 													{
@@ -941,10 +939,10 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 														Value: v1alpha1.AnyValue{
 															ArrayValue: []v1alpha1.AnyValue{
 																{
-																	StringValue: pointer.String("3-string-value"),
+																	StringValue: ptr.To("3-string-value"),
 																},
 																{
-																	StringValue: pointer.String("4-string-value"),
+																	StringValue: ptr.To("4-string-value"),
 																},
 															},
 														},
@@ -957,13 +955,13 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 																	{
 																		Key: "string-key-3",
 																		Value: v1alpha1.AnyValue{
-																			StringValue: pointer.String("string-value-3"),
+																			StringValue: ptr.To("string-value-3"),
 																		},
 																	},
 																	{
 																		Key: "string-key-4",
 																		Value: v1alpha1.AnyValue{
-																			StringValue: pointer.String("string-value-4"),
+																			StringValue: ptr.To("string-value-4"),
 																		},
 																	},
 																},
@@ -1242,9 +1240,9 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 				)
 				require.NoError(t, err, "failed to convert access log config")
 				result, err := generateAccessLogConfig(&ir.HcmContext{
-					Gateway: pluginsdkir.GatewayIR{
-						SourceObject: &pluginsdkir.Gateway{
-							ObjectSource: pluginsdkir.ObjectSource{
+					Gateway: ir.GatewayIR{
+						SourceObject: &ir.Gateway{
+							ObjectSource: ir.ObjectSource{
 								Namespace: "default",
 								Name:      "gw",
 							},
@@ -1272,6 +1270,201 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 			})
 		}
 	})
+}
+
+func TestAccessLogFilters(t *testing.T) {
+	type verifyFn func(t *testing.T, got *envoyaccesslogv3.AccessLog)
+
+	headerExact := gwv1.HeaderMatchExact
+
+	tests := []struct {
+		name     string
+		alFilter *v1alpha1.AccessLogFilter
+		verify   verifyFn
+	}{
+		{
+			name: "StatusCode GE 400",
+			alFilter: &v1alpha1.AccessLogFilter{
+				FilterType: &v1alpha1.FilterType{
+					StatusCodeFilter: &v1alpha1.StatusCodeFilter{
+						Op:    v1alpha1.GE,
+						Value: 400,
+					},
+				},
+			},
+			verify: func(t *testing.T, got *envoyaccesslogv3.AccessLog) {
+				sc := got.GetFilter().GetStatusCodeFilter()
+				require.NotNil(t, sc)
+				require.NotNil(t, sc.Comparison)
+				assert.Equal(t, envoyaccesslogv3.ComparisonFilter_GE, sc.Comparison.Op)
+				assert.Equal(t, uint32(400), sc.GetComparison().GetValue().GetDefaultValue())
+			},
+		},
+		{
+			name: "Duration LE 10",
+			alFilter: &v1alpha1.AccessLogFilter{
+				FilterType: &v1alpha1.FilterType{
+					DurationFilter: &v1alpha1.DurationFilter{
+						Op:    v1alpha1.LE,
+						Value: 10,
+					},
+				},
+			},
+			verify: func(t *testing.T, got *envoyaccesslogv3.AccessLog) {
+				df := got.GetFilter().GetDurationFilter()
+				require.NotNil(t, df)
+				require.NotNil(t, df.Comparison)
+				assert.Equal(t, envoyaccesslogv3.ComparisonFilter_LE, df.Comparison.Op)
+				assert.Equal(t, uint32(10), df.GetComparison().GetValue().GetDefaultValue())
+			},
+		},
+		{
+			name: "NotHealthCheck",
+			alFilter: &v1alpha1.AccessLogFilter{
+				FilterType: &v1alpha1.FilterType{NotHealthCheckFilter: true},
+			},
+			verify: func(t *testing.T, got *envoyaccesslogv3.AccessLog) {
+				require.NotNil(t, got.GetFilter().GetNotHealthCheckFilter())
+			},
+		},
+		{
+			name: "Traceable",
+			alFilter: &v1alpha1.AccessLogFilter{
+				FilterType: &v1alpha1.FilterType{TraceableFilter: true},
+			},
+			verify: func(t *testing.T, got *envoyaccesslogv3.AccessLog) {
+				require.NotNil(t, got.GetFilter().GetTraceableFilter())
+			},
+		},
+		{
+			name: "Header Exact",
+			alFilter: &v1alpha1.AccessLogFilter{FilterType: &v1alpha1.FilterType{
+				HeaderFilter: &v1alpha1.HeaderFilter{
+					Header: gwv1.HTTPHeaderMatch{Type: &headerExact, Name: gwv1.HTTPHeaderName("x-test"), Value: "val"},
+				},
+			}},
+			verify: func(t *testing.T, got *envoyaccesslogv3.AccessLog) {
+				hf := got.GetFilter().GetHeaderFilter()
+				require.NotNil(t, hf)
+				require.NotNil(t, hf.Header)
+				assert.Equal(t, "x-test", hf.Header.GetName())
+				sm := hf.Header.GetStringMatch()
+				require.NotNil(t, sm)
+				assert.Equal(t, "val", sm.GetExact())
+			},
+		},
+		{
+			name: "ResponseFlag UH",
+			alFilter: &v1alpha1.AccessLogFilter{
+				FilterType: &v1alpha1.FilterType{
+					ResponseFlagFilter: &v1alpha1.ResponseFlagFilter{
+						Flags: []string{"UH"},
+					},
+				},
+			},
+			verify: func(t *testing.T, got *envoyaccesslogv3.AccessLog) {
+				rf := got.GetFilter().GetResponseFlagFilter()
+				require.NotNil(t, rf)
+				assert.Contains(t, rf.Flags, "UH")
+			},
+		},
+		{
+			name: "GrpcStatus NOT_FOUND",
+			alFilter: &v1alpha1.AccessLogFilter{
+				FilterType: &v1alpha1.FilterType{
+					GrpcStatusFilter: &v1alpha1.GrpcStatusFilter{
+						Statuses: []v1alpha1.GrpcStatus{v1alpha1.NOT_FOUND},
+					},
+				},
+			},
+			verify: func(t *testing.T, got *envoyaccesslogv3.AccessLog) {
+				gs := got.GetFilter().GetGrpcStatusFilter()
+				require.NotNil(t, gs)
+				require.Len(t, gs.Statuses, 1)
+				assert.Equal(t, envoyaccesslogv3.GrpcStatusFilter_NOT_FOUND, gs.Statuses[0])
+			},
+		},
+		{
+			name: "CEL",
+			alFilter: &v1alpha1.AccessLogFilter{
+				FilterType: &v1alpha1.FilterType{
+					CELFilter: &v1alpha1.CELFilter{Match: "response.code >= 400"},
+				},
+			},
+			verify: func(t *testing.T, got *envoyaccesslogv3.AccessLog) {
+				ext := got.GetFilter().GetExtensionFilter()
+				require.NotNil(t, ext)
+				assert.Equal(t, wellknown.CELExtensionFilter, ext.GetName())
+			},
+		},
+		{
+			name: "And NotHealthCheck && Traceable",
+			alFilter: &v1alpha1.AccessLogFilter{
+				AndFilter: []v1alpha1.FilterType{{NotHealthCheckFilter: true}, {TraceableFilter: true}},
+			},
+			verify: func(t *testing.T, got *envoyaccesslogv3.AccessLog) {
+				and := got.GetFilter().GetAndFilter()
+				require.NotNil(t, and)
+				require.Len(t, and.Filters, 2)
+				assert.NotNil(t, and.Filters[0].GetNotHealthCheckFilter())
+				assert.NotNil(t, and.Filters[1].GetTraceableFilter())
+			},
+		},
+		{
+			name: "Or Header || ResponseFlag",
+			alFilter: &v1alpha1.AccessLogFilter{
+				OrFilter: []v1alpha1.FilterType{
+					{
+						HeaderFilter: &v1alpha1.HeaderFilter{
+							Header: gwv1.HTTPHeaderMatch{Type: &headerExact, Name: gwv1.HTTPHeaderName("x-test"), Value: "val"},
+						},
+					},
+					{
+						ResponseFlagFilter: &v1alpha1.ResponseFlagFilter{Flags: []string{"UH"}},
+					},
+				},
+			},
+			verify: func(t *testing.T, got *envoyaccesslogv3.AccessLog) {
+				orf := got.GetFilter().GetOrFilter()
+				require.NotNil(t, orf)
+				require.Len(t, orf.Filters, 2)
+				assert.NotNil(t, orf.Filters[0].GetHeaderFilter())
+				assert.NotNil(t, orf.Filters[1].GetResponseFlagFilter())
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			cfgs, err := translateAccessLogs([]v1alpha1.AccessLog{{
+				FileSink: &v1alpha1.FileSink{Path: "/dev/stdout"},
+				Filter:   tc.alFilter,
+			}}, nil)
+			require.NoError(t, err)
+
+			hcmCtx := &ir.HcmContext{
+				Gateway: ir.GatewayIR{
+					SourceObject: &ir.Gateway{
+						ObjectSource: ir.ObjectSource{
+							Name:      "gw",
+							Namespace: "default",
+						},
+					},
+				},
+			}
+
+			accessLogs := []v1alpha1.AccessLog{{
+				Filter:   tc.alFilter,
+				FileSink: &v1alpha1.FileSink{Path: "/dev/stdout"},
+			}}
+
+			got, err := generateAccessLogConfig(hcmCtx, accessLogs, cfgs)
+			require.NoError(t, err)
+			require.Len(t, got, 1)
+			require.NotNil(t, got[0].GetFilter())
+			tc.verify(t, got[0])
+		})
+	}
 }
 
 // Helper function to handle MessageToAny error in test cases

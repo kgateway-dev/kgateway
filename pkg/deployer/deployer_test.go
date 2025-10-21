@@ -459,17 +459,14 @@ var _ = Describe("Deployer", func() {
 				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
 				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
 			})
-			chart, err := deployerinternal.LoadGatewayChart()
-			Expect(err).NotTo(HaveOccurred())
-			d := deployer.NewDeployer(
+			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
 				wellknown.DefaultAgwControllerName,
 				wellknown.DefaultAgwClassName,
 				newFakeClientWithObjs(gwc, gwParams),
-				chart,
 				gwp,
-				deployerinternal.GatewayReleaseNameAndNamespace,
 			)
+			Expect(err).NotTo(HaveOccurred())
 
 			var objs clientObjects
 			objs, err = d.GetObjsToDeploy(context.Background(), gw)
@@ -545,17 +542,14 @@ var _ = Describe("Deployer", func() {
 				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
 				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
 			})
-			chart, err := deployerinternal.LoadGatewayChart()
-			Expect(err).NotTo(HaveOccurred())
-			d = deployer.NewDeployer(
+			d, err = deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
 				wellknown.DefaultAgwControllerName,
 				wellknown.DefaultAgwClassName,
 				newFakeClientWithObjs(gwc, gwp),
-				chart,
 				gwParams,
-				deployerinternal.GatewayReleaseNameAndNamespace,
 			)
+			Expect(err).NotTo(HaveOccurred())
 
 			objs, err := d.GetObjsToDeploy(context.Background(), gw)
 			Expect(err).NotTo(HaveOccurred())
@@ -624,17 +618,14 @@ var _ = Describe("Deployer", func() {
 				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
 				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
 			})
-			chart, err := deployerinternal.LoadGatewayChart()
-			Expect(err).NotTo(HaveOccurred())
-			d := deployer.NewDeployer(
+			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
 				wellknown.DefaultAgwControllerName,
 				wellknown.DefaultAgwClassName,
 				newFakeClientWithObjs(gwc, gwp),
-				chart,
 				gwParams,
-				deployerinternal.GatewayReleaseNameAndNamespace,
 			)
+			Expect(err).NotTo(HaveOccurred())
 
 			var objs clientObjects
 			objs, err = d.GetObjsToDeploy(context.Background(), gw)
@@ -677,7 +668,7 @@ var _ = Describe("Deployer", func() {
 
 		It("clears RunAsUser for agentgateway when FloatingUserId=true", func() {
 			// enable floating user on kube config
-			gwp.Spec.Kube.FloatingUserId = ptr.To(true)
+			gwp.Spec.Kube.FloatingUserId = ptr.To(true) //nolint:staticcheck
 			// also set a PodSecurityContext and ensure it flows to the pod
 			uid := int64(12345)
 			gid := int64(23456)
@@ -725,17 +716,14 @@ var _ = Describe("Deployer", func() {
 				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
 				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
 			})
-			chart, err := deployerinternal.LoadGatewayChart()
-			Expect(err).NotTo(HaveOccurred())
-			d := deployer.NewDeployer(
+			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
 				wellknown.DefaultAgwControllerName,
 				wellknown.DefaultAgwClassName,
 				newFakeClientWithObjs(gwc, gwp),
-				chart,
 				gwParams,
-				deployerinternal.GatewayReleaseNameAndNamespace,
 			)
+			Expect(err).NotTo(HaveOccurred())
 
 			objsSlice, err := d.GetObjsToDeploy(context.Background(), gw)
 			Expect(err).NotTo(HaveOccurred())
@@ -812,17 +800,14 @@ var _ = Describe("Deployer", func() {
 				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
 				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
 			})
-			chart, err := deployerinternal.LoadGatewayChart()
-			Expect(err).NotTo(HaveOccurred())
-			d := deployer.NewDeployer(
+			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
 				wellknown.DefaultAgwControllerName,
 				wellknown.DefaultAgwClassName,
 				newFakeClientWithObjs(gwc, gwp),
-				chart,
 				gwParams,
-				deployerinternal.GatewayReleaseNameAndNamespace,
 			)
+			Expect(err).NotTo(HaveOccurred())
 
 			objsSlice, err := d.GetObjsToDeploy(context.Background(), gw)
 			Expect(err).NotTo(HaveOccurred())
@@ -879,17 +864,14 @@ var _ = Describe("Deployer", func() {
 				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
 				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
 			})
-			chart, err := deployerinternal.LoadGatewayChart()
-			Expect(err).NotTo(HaveOccurred())
-			d := deployer.NewDeployer(
+			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
 				wellknown.DefaultAgwControllerName,
 				wellknown.DefaultAgwClassName,
 				newFakeClientWithObjs(gwc, gwp),
-				chart,
 				gwParams,
-				deployerinternal.GatewayReleaseNameAndNamespace,
 			)
+			Expect(err).NotTo(HaveOccurred())
 
 			objsSlice, err := d.GetObjsToDeploy(context.Background(), gw)
 			Expect(err).NotTo(HaveOccurred())
@@ -979,17 +961,14 @@ var _ = Describe("Deployer", func() {
 				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
 				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
 			})
-			chart, err := deployerinternal.LoadGatewayChart()
-			Expect(err).NotTo(HaveOccurred())
-			d := deployer.NewDeployer(
+			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
 				wellknown.DefaultAgwControllerName,
 				wellknown.DefaultAgwClassName,
 				newFakeClientWithObjs(gwc, gwp),
-				chart,
 				gwParams,
-				deployerinternal.GatewayReleaseNameAndNamespace,
 			)
+			Expect(err).NotTo(HaveOccurred())
 
 			objsSlice, err := d.GetObjsToDeploy(context.Background(), gw)
 			Expect(err).NotTo(HaveOccurred())
@@ -1051,17 +1030,14 @@ var _ = Describe("Deployer", func() {
 				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
 				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
 			})
-			chart, err := deployerinternal.LoadGatewayChart()
-			Expect(err).NotTo(HaveOccurred())
-			d := deployer.NewDeployer(
+			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
 				wellknown.DefaultAgwControllerName,
 				wellknown.DefaultAgwClassName,
 				newFakeClientWithObjs(gwc, gwp),
-				chart,
 				gwParams,
-				deployerinternal.GatewayReleaseNameAndNamespace,
 			)
+			Expect(err).NotTo(HaveOccurred())
 
 			objsSlice, err := d.GetObjsToDeploy(context.Background(), gw)
 			Expect(err).NotTo(HaveOccurred())
@@ -1143,17 +1119,14 @@ var _ = Describe("Deployer", func() {
 				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
 				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
 			})
-			chart, err := deployerinternal.LoadGatewayChart()
-			Expect(err).NotTo(HaveOccurred())
-			d1 := deployer.NewDeployer(
+			d1, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
 				wellknown.DefaultAgwControllerName,
 				wellknown.DefaultAgwClassName,
 				newFakeClientWithObjs(gwc, defaultGatewayParams()),
-				chart,
 				gwParams1,
-				deployerinternal.GatewayReleaseNameAndNamespace,
 			)
+			Expect(err).NotTo(HaveOccurred())
 
 			gwParams2 := deployerinternal.NewGatewayParameters(newFakeClientWithObjs(gwc, defaultGatewayParams()), &deployer.Inputs{
 				CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw1, gw2),
@@ -1171,15 +1144,14 @@ var _ = Describe("Deployer", func() {
 				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
 				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
 			})
-			d2 := deployer.NewDeployer(
+			d2, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
 				wellknown.DefaultAgwControllerName,
 				wellknown.DefaultAgwClassName,
 				newFakeClientWithObjs(gwc, defaultGatewayParams()),
-				chart,
 				gwParams2,
-				deployerinternal.GatewayReleaseNameAndNamespace,
 			)
+			Expect(err).NotTo(HaveOccurred())
 
 			var objs1, objs2 clientObjects
 			objs1, err = d1.GetObjsToDeploy(context.Background(), gw1)
@@ -1242,17 +1214,14 @@ var _ = Describe("Deployer", func() {
 					Tag:      "bar",
 				},
 			})
-			chart, err := deployerinternal.LoadGatewayChart()
-			Expect(err).NotTo(HaveOccurred())
-			d := deployer.NewDeployer(
+			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
 				wellknown.DefaultAgwControllerName,
 				wellknown.DefaultAgwClassName,
 				newFakeClientWithObjs(defaultGatewayClass()),
-				chart,
 				gwParams,
-				deployerinternal.GatewayReleaseNameAndNamespace,
 			)
+			Expect(err).NotTo(HaveOccurred())
 
 			_, err = d.GetObjsToDeploy(context.Background(), gw)
 			Expect(err).To(MatchError(ContainSubstring("invalid group invalid.group for GatewayParameters")))
@@ -1290,17 +1259,14 @@ var _ = Describe("Deployer", func() {
 					Tag:      "bar",
 				},
 			})
-			chart, err := deployerinternal.LoadGatewayChart()
-			Expect(err).NotTo(HaveOccurred())
-			d := deployer.NewDeployer(
+			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
 				wellknown.DefaultAgwControllerName,
 				wellknown.DefaultAgwClassName,
 				newFakeClientWithObjs(defaultGatewayClass()),
-				chart,
 				gwParams,
-				deployerinternal.GatewayReleaseNameAndNamespace,
 			)
+			Expect(err).NotTo(HaveOccurred())
 
 			_, err = d.GetObjsToDeploy(context.Background(), gw)
 			Expect(err).To(MatchError(ContainSubstring("invalid kind InvalidKind for GatewayParameters")))
@@ -1355,17 +1321,14 @@ var _ = Describe("Deployer", func() {
 						Tag:      tag,
 					},
 				})
-				chart, err := deployerinternal.LoadGatewayChart()
-				Expect(err).NotTo(HaveOccurred())
-				d = deployer.NewDeployer(
+				d, err = deployerinternal.NewGatewayDeployer(
 					wellknown.DefaultGatewayControllerName,
 					wellknown.DefaultAgwControllerName,
 					wellknown.DefaultAgwClassName,
 					newFakeClientWithObjs(gwc),
-					chart,
 					gwParams,
-					deployerinternal.GatewayReleaseNameAndNamespace,
 				)
+				Expect(err).NotTo(HaveOccurred())
 
 				objs, err = d.GetObjsToDeploy(context.Background(), gw)
 				Expect(err).NotTo(HaveOccurred())
@@ -1450,17 +1413,14 @@ var _ = Describe("Deployer", func() {
 						Tag:      tag,
 					},
 				})
-				chart, err := deployerinternal.LoadGatewayChart()
-				Expect(err).NotTo(HaveOccurred())
-				d = deployer.NewDeployer(
+				d, err = deployerinternal.NewGatewayDeployer(
 					wellknown.DefaultGatewayControllerName,
 					wellknown.DefaultAgwControllerName,
 					wellknown.DefaultAgwClassName,
 					newFakeClientWithObjs(gwc, gwp),
-					chart,
 					gwParams,
-					deployerinternal.GatewayReleaseNameAndNamespace,
 				)
+				Expect(err).NotTo(HaveOccurred())
 
 				objs, err = d.GetObjsToDeploy(context.Background(), gw)
 				Expect(err).NotTo(HaveOccurred())
@@ -1553,17 +1513,14 @@ var _ = Describe("Deployer", func() {
 						Tag:      tag,
 					},
 				})
-				chart, err := deployerinternal.LoadGatewayChart()
-				Expect(err).NotTo(HaveOccurred())
-				d = deployer.NewDeployer(
+				d, err = deployerinternal.NewGatewayDeployer(
 					wellknown.DefaultGatewayControllerName,
 					wellknown.DefaultAgwControllerName,
 					wellknown.DefaultAgwClassName,
 					newFakeClientWithObjs(gwc, gwp),
-					chart,
 					gwParams,
-					deployerinternal.GatewayReleaseNameAndNamespace,
 				)
+				Expect(err).NotTo(HaveOccurred())
 
 				objs, err = d.GetObjsToDeploy(context.Background(), gw)
 				Expect(err).NotTo(HaveOccurred())
@@ -1581,7 +1538,7 @@ var _ = Describe("Deployer", func() {
 				By("verifying deployment inherited default replicas")
 				dep := objs.findDeployment(defaultNamespace, defaultDeploymentName)
 				Expect(dep).ToNot(BeNil())
-				Expect(*dep.Spec.Replicas).To(Equal(int32(1)))
+				Expect(dep.Spec.Replicas).To(BeNil())
 
 				By("verifying envoy container log level was overridden")
 				envoyContainer := dep.Spec.Template.Spec.Containers[0]
@@ -1653,7 +1610,7 @@ var _ = Describe("Deployer", func() {
 								Image: &gw2_v1alpha1.Image{
 									Registry:   ptr.To("foo"),
 									Repository: ptr.To("bar"),
-									Tag:        ptr.To("bat"),
+									Tag:        ptr.To("quux"),
 									PullPolicy: ptr.To(corev1.PullAlways),
 								},
 							},
@@ -1689,6 +1646,7 @@ var _ = Describe("Deployer", func() {
 					},
 				}
 			}
+
 			// this is the result of `defaultGatewayParams` (GatewayClass-level) merged with `defaultGatewayParamsOverride` (Gateway-level)
 			mergedGatewayParamsNoLowPorts = func() *gw2_v1alpha1.GatewayParameters {
 				return &gw2_v1alpha1.GatewayParameters{
@@ -1718,7 +1676,7 @@ var _ = Describe("Deployer", func() {
 								Image: &gw2_v1alpha1.Image{
 									Registry:   ptr.To("foo"),
 									Repository: ptr.To("bar"),
-									Tag:        ptr.To("bat"),
+									Tag:        ptr.To("quux"),
 									PullPolicy: ptr.To(corev1.PullAlways),
 								},
 							},
@@ -1759,6 +1717,7 @@ var _ = Describe("Deployer", func() {
 					},
 				}
 			}
+
 			mergedGatewayParams = func() *gw2_v1alpha1.GatewayParameters {
 				gwp := mergedGatewayParamsNoLowPorts()
 				gwp.Spec.Kube.PodTemplate.SecurityContext.Sysctls = []corev1.Sysctl{
@@ -1769,6 +1728,7 @@ var _ = Describe("Deployer", func() {
 				}
 				return gwp
 			}
+
 			gatewayParamsOverrideWithSds = func() *gw2_v1alpha1.GatewayParameters {
 				return &gw2_v1alpha1.GatewayParameters{
 					TypeMeta: metav1.TypeMeta{
@@ -1827,11 +1787,13 @@ var _ = Describe("Deployer", func() {
 					},
 				}
 			}
+
 			gatewayParamsOverrideWithSdsAndFloatingUserId = func() *gw2_v1alpha1.GatewayParameters {
 				params := gatewayParamsOverrideWithSds()
-				params.Spec.Kube.FloatingUserId = ptr.To(true)
+				params.Spec.Kube.FloatingUserId = ptr.To(true) //nolint:staticcheck
 				return params
 			}
+
 			gatewayParamsOverrideWithoutStats = func() *gw2_v1alpha1.GatewayParameters {
 				return &gw2_v1alpha1.GatewayParameters{
 					TypeMeta: metav1.TypeMeta{
@@ -1901,7 +1863,7 @@ var _ = Describe("Deployer", func() {
 
 			fullyDefinedGatewayParamsWithFloatingUserId = func() *gw2_v1alpha1.GatewayParameters {
 				params := fullyDefinedGatewayParameters(wellknown.DefaultGatewayParametersName, defaultNamespace)
-				params.Spec.Kube.FloatingUserId = ptr.To(true)
+				params.Spec.Kube.FloatingUserId = ptr.To(true) //nolint:staticcheck
 				params.Spec.Kube.PodTemplate.SecurityContext.RunAsUser = nil
 				return params
 			}
@@ -1925,6 +1887,8 @@ var _ = Describe("Deployer", func() {
 				return withGatewayParams(defaultGateway(), gwpName)
 			}
 
+			defaultImageTag string = "bar"
+
 			defaultDeployerInputs = func() *deployer.Inputs {
 				return &deployer.Inputs{
 					Dev: false,
@@ -1933,18 +1897,20 @@ var _ = Describe("Deployer", func() {
 					},
 					ImageInfo: &deployer.ImageInfo{
 						Registry: "foo",
-						Tag:      "bar",
+						Tag:      defaultImageTag,
 					},
 					GatewayClassName:         wellknown.DefaultGatewayClassName,
 					WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
 					AgentgatewayClassName:    wellknown.DefaultAgwClassName,
 				}
 			}
+
 			istioEnabledDeployerInputs = func() *deployer.Inputs {
 				inp := defaultDeployerInputs()
 				inp.IstioAutoMtlsEnabled = true
 				return inp
 			}
+
 			defaultInput = func() *input {
 				return &input{
 					dInputs:    defaultDeployerInputs(),
@@ -1952,6 +1918,36 @@ var _ = Describe("Deployer", func() {
 					gw:         defaultGateway(),
 					gwc:        defaultGatewayClassWithParamsRef(),
 				}
+			}
+
+			helpTestImage = func(apiImage *gw2_v1alpha1.Image, container corev1.Container, defaultTagValue string) {
+				// defaultGatewayParameters() contains the defaultTagValue,
+				// usually a semver tag like '1.22.0'
+				actualImageString := container.Image
+				actualPullPolicy := container.ImagePullPolicy
+				expectedImageRegAndRepo := fmt.Sprintf("%s/%s",
+					*apiImage.Registry,
+					*apiImage.Repository,
+				)
+
+				Expect(actualImageString).To(HavePrefix(expectedImageRegAndRepo))
+				expectedTagPtr := apiImage.Tag
+				expectedTagValue := ptr.Deref(expectedTagPtr, "")
+				if expectedTagPtr == nil {
+					// deepMergeImage indeed does a deep merge
+					Expect(defaultTagValue).NotTo(BeEmpty())
+					expectedTagValue = defaultTagValue
+				}
+				if expectedTagValue != "" {
+					Expect(actualImageString).To(ContainSubstring(":" + expectedTagValue))
+				} else {
+					Expect(actualImageString).ToNot(ContainSubstring(":"))
+				}
+				expectedDigestValue := ptr.Deref(apiImage.Digest, "")
+				if expectedDigestValue != "" {
+					Expect(actualImageString).To(HaveSuffix("@" + expectedDigestValue))
+				}
+				Expect(actualPullPolicy).To(Equal(*apiImage.PullPolicy))
 			}
 
 			validateGatewayParametersPropagation = func(objs clientObjects, gwp *gw2_v1alpha1.GatewayParameters) error {
@@ -1966,18 +1962,7 @@ var _ = Describe("Deployer", func() {
 
 				Expect(dep.Spec.Template.Spec.SecurityContext).To(Equal(expectedGwp.PodTemplate.SecurityContext))
 
-				expectedImage := fmt.Sprintf("%s/%s",
-					*expectedGwp.EnvoyContainer.Image.Registry,
-					*expectedGwp.EnvoyContainer.Image.Repository,
-				)
-
-				Expect(dep.Spec.Template.Spec.Containers[0].Image).To(ContainSubstring(expectedImage))
-				if expectedTag := expectedGwp.EnvoyContainer.Image.Tag; *expectedTag != "" {
-					Expect(dep.Spec.Template.Spec.Containers[0].Image).To(ContainSubstring(":" + *expectedTag))
-				} else {
-					Expect(dep.Spec.Template.Spec.Containers[0].Image).To(ContainSubstring(":" + version.Version))
-				}
-				Expect(dep.Spec.Template.Spec.Containers[0].ImagePullPolicy).To(Equal(*expectedGwp.EnvoyContainer.Image.PullPolicy))
+				helpTestImage(expectedGwp.EnvoyContainer.Image, dep.Spec.Template.Spec.Containers[0], version.Version)
 
 				Expect(dep.Spec.Template.Annotations).To(containMapElements(expectedGwp.PodTemplate.ExtraAnnotations))
 				Expect(dep.Spec.Template.Annotations).To(HaveKeyWithValue("prometheus.io/scrape", "true"))
@@ -2069,34 +2054,15 @@ var _ = Describe("Deployer", func() {
 			Expect(dep.Spec.Template.Annotations).To(containMapElements(expectedGwp.PodTemplate.ExtraAnnotations))
 
 			// assert envoy container
-			expectedEnvoyImage := fmt.Sprintf("%s/%s",
-				*expectedGwp.EnvoyContainer.Image.Registry,
-				*expectedGwp.EnvoyContainer.Image.Repository,
-			)
 			envoyContainer := dep.Spec.Template.Spec.Containers[0]
-			Expect(envoyContainer.Image).To(ContainSubstring(expectedEnvoyImage))
-			if expectedTag := expectedGwp.EnvoyContainer.Image.Tag; *expectedTag != "" {
-				Expect(envoyContainer.Image).To(ContainSubstring(":" + *expectedTag))
-			} else {
-				Expect(envoyContainer.Image).To(ContainSubstring(":" + version.Version))
-			}
-			Expect(envoyContainer.ImagePullPolicy).To(Equal(*expectedGwp.EnvoyContainer.Image.PullPolicy))
+			helpTestImage(expectedGwp.EnvoyContainer.Image, envoyContainer, version.Version)
 			Expect(envoyContainer.Resources.Limits.Cpu()).To(Equal(expectedGwp.EnvoyContainer.Resources.Limits.Cpu()))
 			Expect(envoyContainer.Resources.Requests.Cpu()).To(Equal(expectedGwp.EnvoyContainer.Resources.Requests.Cpu()))
 
 			// assert sds container
-			expectedSdsImage := fmt.Sprintf("%s/%s",
-				*expectedGwp.SdsContainer.Image.Registry,
-				*expectedGwp.SdsContainer.Image.Repository,
-			)
 			sdsContainer := dep.Spec.Template.Spec.Containers[1]
-			Expect(sdsContainer.Image).To(ContainSubstring(expectedSdsImage))
-			if expectedTag := expectedGwp.SdsContainer.Image.Tag; *expectedTag != "" {
-				Expect(sdsContainer.Image).To(ContainSubstring(":" + *expectedTag))
-			} else {
-				Expect(sdsContainer.Image).To(ContainSubstring(":" + version.Version))
-			}
-			Expect(sdsContainer.ImagePullPolicy).To(Equal(*expectedGwp.SdsContainer.Image.PullPolicy))
+			defaultSdsVersion := defaultImageTag
+			helpTestImage(expectedGwp.SdsContainer.Image, sdsContainer, defaultSdsVersion)
 			Expect(sdsContainer.Resources.Limits.Cpu()).To(Equal(expectedGwp.SdsContainer.Resources.Limits.Cpu()))
 			Expect(sdsContainer.Resources.Requests.Cpu()).To(Equal(expectedGwp.SdsContainer.Resources.Requests.Cpu()))
 			idx := slices.IndexFunc(sdsContainer.Env, func(e corev1.EnvVar) bool {
@@ -2106,30 +2072,21 @@ var _ = Describe("Deployer", func() {
 			Expect(sdsContainer.Env[idx].Value).To(Equal(*expectedGwp.SdsContainer.Bootstrap.LogLevel))
 
 			// assert istio container
-			istioExpectedImage := fmt.Sprintf("%s/%s",
-				*expectedGwp.Istio.IstioProxyContainer.Image.Registry,
-				*expectedGwp.Istio.IstioProxyContainer.Image.Repository,
-			)
 			istioContainer := dep.Spec.Template.Spec.Containers[2]
-			Expect(istioContainer.Image).To(ContainSubstring(istioExpectedImage))
-			if expectedTag := expectedGwp.Istio.IstioProxyContainer.Image.Tag; *expectedTag != "" {
-				Expect(istioContainer.Image).To(ContainSubstring(":" + *expectedTag))
-			} else {
-				Expect(istioContainer.Image).To(ContainSubstring(":" + version.Version))
-			}
-			Expect(istioContainer.ImagePullPolicy).To(Equal(*expectedGwp.Istio.IstioProxyContainer.Image.PullPolicy))
+			defaultIstioVersion := *deployer.GetInMemoryGatewayParameters("a", &deployer.ImageInfo{}, "b", "c", "d", true).Spec.Kube.Istio.IstioProxyContainer.Image.Tag
+			helpTestImage(expectedGwp.Istio.IstioProxyContainer.Image, istioContainer, defaultIstioVersion)
 			Expect(istioContainer.Resources.Limits.Cpu()).To(Equal(expectedGwp.Istio.IstioProxyContainer.Resources.Limits.Cpu()))
 			Expect(istioContainer.Resources.Requests.Cpu()).To(Equal(expectedGwp.Istio.IstioProxyContainer.Resources.Requests.Cpu()))
 			// TODO: assert on istio args (e.g. log level, istio meta fields, etc)
 
 			// assert AI extension container
 			expectedAIExtension := fmt.Sprintf("%s/%s",
-				*expectedGwp.AiExtension.Image.Registry,
-				*expectedGwp.AiExtension.Image.Repository,
+				*expectedGwp.AiExtension.Image.Registry,   //nolint:staticcheck
+				*expectedGwp.AiExtension.Image.Repository, //nolint:staticcheck
 			)
 			aiExt := dep.Spec.Template.Spec.Containers[3]
 			Expect(aiExt.Image).To(ContainSubstring(expectedAIExtension))
-			Expect(aiExt.Ports).To(HaveLen(len(expectedGwp.AiExtension.Ports)))
+			Expect(aiExt.Ports).To(HaveLen(len(expectedGwp.AiExtension.Ports))) //nolint:staticcheck
 
 			// assert Service
 			svc := objs.findService(defaultNamespace, defaultServiceName)
@@ -2400,17 +2357,14 @@ var _ = Describe("Deployer", func() {
 			}
 
 			gwParams := deployerinternal.NewGatewayParameters(newFakeClientWithObjs(gwc, defaultGwp, overrideGwp), inp.dInputs)
-			chart, err := deployerinternal.LoadGatewayChart()
-			Expect(err).NotTo(HaveOccurred())
-			d := deployer.NewDeployer(
+			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
 				wellknown.DefaultAgwControllerName,
 				wellknown.DefaultAgwClassName,
 				newFakeClientWithObjs(gwc, defaultGwp, overrideGwp),
-				chart,
 				gwParams,
-				deployerinternal.GatewayReleaseNameAndNamespace,
 			)
+			Expect(err).NotTo(HaveOccurred())
 
 			objs, err := d.GetObjsToDeploy(context.Background(), inp.gw)
 			if checkErr(err, expected.getObjsErr) {
@@ -2742,7 +2696,7 @@ var _ = Describe("Deployer", func() {
 					return nil
 				},
 			}),
-			Entry("OmitReplicas is true", &input{
+			Entry("Replicas is not set (default)", &input{
 				dInputs: defaultDeployerInputs(),
 				gw:      defaultGateway(),
 				defaultGwp: &gw2_v1alpha1.GatewayParameters{
@@ -2757,9 +2711,7 @@ var _ = Describe("Deployer", func() {
 					},
 					Spec: gw2_v1alpha1.GatewayParametersSpec{
 						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-							Deployment: &gw2_v1alpha1.ProxyDeployment{
-								OmitReplicas: ptr.To(true),
-							},
+							Deployment: &gw2_v1alpha1.ProxyDeployment{},
 						},
 					},
 				},
@@ -2799,34 +2751,6 @@ var _ = Describe("Deployer", func() {
 					deployment := objs.findDeployment(defaultNamespace, defaultServiceName)
 					Expect(deployment).NotTo(BeNil())
 					Expect(*deployment.Spec.Replicas).To(Equal(int32(3)))
-					return nil
-				},
-			}),
-			Entry("replicas and omitReplicas aren't set (default)", &input{
-				dInputs: defaultDeployerInputs(),
-				gw:      defaultGateway(),
-				defaultGwp: &gw2_v1alpha1.GatewayParameters{
-					TypeMeta: metav1.TypeMeta{
-						Kind:       wellknown.GatewayParametersGVK.Kind,
-						APIVersion: gw2_v1alpha1.GroupVersion.String(),
-					},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      wellknown.DefaultGatewayParametersName,
-						Namespace: defaultNamespace,
-						UID:       "1237",
-					},
-					Spec: gw2_v1alpha1.GatewayParametersSpec{
-						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-							Deployment: &gw2_v1alpha1.ProxyDeployment{},
-						},
-					},
-				},
-				overrideGwp: &gw2_v1alpha1.GatewayParameters{},
-			}, &expectedOutput{
-				validationFunc: func(objs clientObjects, inp *input) error {
-					deployment := objs.findDeployment(defaultNamespace, defaultServiceName)
-					Expect(deployment).NotTo(BeNil())
-					Expect(*deployment.Spec.Replicas).To(Equal(int32(1))) // default replicas is 1
 					return nil
 				},
 			}),
@@ -3007,17 +2931,14 @@ var _ = Describe("Deployer", func() {
 						Tag:      "bar",
 					},
 				})
-			chart, err := deployerinternal.LoadGatewayChart()
-			Expect(err).NotTo(HaveOccurred())
-			d := deployer.NewDeployer(
+			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
 				wellknown.DefaultAgwControllerName,
 				wellknown.DefaultAgwClassName,
 				newFakeClientWithObjs(defaultGatewayClass(), defaultGatewayParams()),
-				chart,
 				gwParams,
-				deployerinternal.GatewayReleaseNameAndNamespace,
 			)
+			Expect(err).NotTo(HaveOccurred())
 
 			var objs clientObjects
 			objs, err = d.GetObjsToDeploy(context.Background(), gw)
@@ -3086,7 +3007,7 @@ func fullyDefinedGatewayParameters(name, namespace string) *gw2_v1alpha1.Gateway
 					Image: &gw2_v1alpha1.Image{
 						Registry:   ptr.To("sds-registry"),
 						Repository: ptr.To("sds-repository"),
-						Tag:        ptr.To("sds-tag"),
+						Tag:        nil,
 						Digest:     ptr.To("sds-digest"),
 						PullPolicy: ptr.To(corev1.PullAlways),
 					},
@@ -3173,7 +3094,7 @@ func fullyDefinedGatewayParameters(name, namespace string) *gw2_v1alpha1.Gateway
 						Image: &gw2_v1alpha1.Image{
 							Registry:   ptr.To("istio-registry"),
 							Repository: ptr.To("istio-repository"),
-							Tag:        ptr.To("istio-tag"),
+							Tag:        ptr.To(""),
 							Digest:     ptr.To("istio-digest"),
 							PullPolicy: ptr.To(corev1.PullAlways),
 						},
@@ -3278,17 +3199,15 @@ var _ = Describe("DeployObjs", func() {
 	)
 
 	getDeployer := func(fc *fakeClient) *deployer.Deployer {
-		chart, err := deployerinternal.LoadGatewayChart()
-		Expect(err).ToNot(HaveOccurred())
-		return deployer.NewDeployer(
+		d, err := deployerinternal.NewGatewayDeployer(
 			wellknown.DefaultGatewayControllerName,
 			wellknown.DefaultAgwControllerName,
 			wellknown.DefaultAgwClassName,
 			fc,
-			chart,
 			nil,
-			deployerinternal.GatewayReleaseNameAndNamespace,
 		)
+		Expect(err).ToNot(HaveOccurred())
+		return d
 	}
 
 	It("skips patch if object is unchanged", func() {

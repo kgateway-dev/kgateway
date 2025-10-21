@@ -121,6 +121,10 @@ spec:
         value: "[1,2,3]"
       - field: array_string
         value: '["one","two","three"]'
+    modelAliases:
+      fast: "gpt-3.5-turbo"
+      smart: "gpt-4-turbo"
+      default: "gpt-4o-mini"
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: HTTPRoute

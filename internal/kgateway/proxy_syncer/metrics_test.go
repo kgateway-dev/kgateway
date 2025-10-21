@@ -41,14 +41,16 @@ func TestCollectStatusSyncMetrics_Success(t *testing.T) {
 		"kgateway_status_syncer_status_sync_duration_seconds",
 	)
 
-	currentMetrics.AssertMetric("kgateway_status_syncer_status_syncs_total", &metricstest.ExpectedMetric{
-		Labels: []metrics.Label{
-			{Name: "name", Value: testGatewayName},
-			{Name: "namespace", Value: testNamespace},
-			{Name: "result", Value: "success"},
-			{Name: "syncer", Value: "test-syncer"},
+	currentMetrics.AssertMetricsInclude("kgateway_status_syncer_status_syncs_total", []metricstest.ExpectMetric{
+		&metricstest.ExpectedMetric{
+			Labels: []metrics.Label{
+				{Name: "name", Value: testGatewayName},
+				{Name: "namespace", Value: testNamespace},
+				{Name: "result", Value: "success"},
+				{Name: "syncer", Value: "test-syncer"},
+			},
+			Value: 1,
 		},
-		Value: 1,
 	})
 
 	currentMetrics.AssertMetricLabels("kgateway_status_syncer_status_sync_duration_seconds", []metrics.Label{
@@ -77,14 +79,16 @@ func TestCollectStatusSyncMetrics_Error(t *testing.T) {
 		"kgateway_status_syncer_status_sync_duration_seconds",
 	)
 
-	currentMetrics.AssertMetric("kgateway_status_syncer_status_syncs_total", &metricstest.ExpectedMetric{
-		Labels: []metrics.Label{
-			{Name: "name", Value: testGatewayName},
-			{Name: "namespace", Value: testNamespace},
-			{Name: "result", Value: "error"},
-			{Name: "syncer", Value: "test-syncer"},
+	currentMetrics.AssertMetricsInclude("kgateway_status_syncer_status_syncs_total", []metricstest.ExpectMetric{
+		&metricstest.ExpectedMetric{
+			Labels: []metrics.Label{
+				{Name: "name", Value: testGatewayName},
+				{Name: "namespace", Value: testNamespace},
+				{Name: "result", Value: "error"},
+				{Name: "syncer", Value: "test-syncer"},
+			},
+			Value: 1,
 		},
-		Value: 1,
 	})
 
 	currentMetrics.AssertMetricLabels("kgateway_status_syncer_status_sync_duration_seconds", []metrics.Label{
@@ -127,22 +131,26 @@ func TestResourceSyncMetrics(t *testing.T) {
 		"kgateway_resources_status_sync_duration_seconds",
 	)
 
-	gathered.AssertMetric("kgateway_resources_status_syncs_started_total", &metricstest.ExpectedMetric{
-		Labels: []metrics.Label{
-			{Name: "gateway", Value: testName},
-			{Name: "namespace", Value: testNS},
-			{Name: "resource", Value: testResource},
+	gathered.AssertMetricsInclude("kgateway_resources_status_syncs_started_total", []metricstest.ExpectMetric{
+		&metricstest.ExpectedMetric{
+			Labels: []metrics.Label{
+				{Name: "gateway", Value: testName},
+				{Name: "namespace", Value: testNS},
+				{Name: "resource", Value: testResource},
+			},
+			Value: 1,
 		},
-		Value: 1,
 	})
 
-	gathered.AssertMetric("kgateway_resources_status_syncs_completed_total", &metricstest.ExpectedMetric{
-		Labels: []metrics.Label{
-			{Name: "gateway", Value: testName},
-			{Name: "namespace", Value: testNS},
-			{Name: "resource", Value: testResource},
+	gathered.AssertMetricsInclude("kgateway_resources_status_syncs_completed_total", []metricstest.ExpectMetric{
+		&metricstest.ExpectedMetric{
+			Labels: []metrics.Label{
+				{Name: "gateway", Value: testName},
+				{Name: "namespace", Value: testNS},
+				{Name: "resource", Value: testResource},
+			},
+			Value: 1,
 		},
-		Value: 1,
 	})
 
 	gathered.AssertMetricsLabels("kgateway_resources_status_sync_duration_seconds", [][]metrics.Label{{

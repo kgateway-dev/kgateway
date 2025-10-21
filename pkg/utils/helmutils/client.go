@@ -94,3 +94,15 @@ func (c *Client) AddRepository(ctx context.Context, chartName string, chartUrl s
 	}, extraArgs...)
 	return c.RunCommand(ctx, args...)
 }
+
+// ReleaseExists checks if a helm release exists in the given namespace.
+// It returns true if the release exists, false otherwise.
+func (c *Client) ReleaseExists(ctx context.Context, releaseName, namespace string) bool {
+	args := []string{"status", releaseName}
+	if namespace != "" {
+		args = append(args, "--namespace", namespace)
+	}
+
+	err := c.Command(ctx, args...).Run().Cause()
+	return err == nil
+}

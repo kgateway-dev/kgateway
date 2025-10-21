@@ -2,14 +2,10 @@ package envoyinit
 
 import (
 	"bytes"
-	"context"
 	"errors"
-	"fmt"
 	"log"
-	"log/slog"
 	"os"
 	"syscall"
-	"time"
 
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -17,7 +13,6 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/downward"
 	"github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmdutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/protoutils"
 )
 
@@ -34,30 +29,6 @@ const (
 	envoyExecutableEnv     = "ENVOY"
 	defaultEnvoyExecutable = "/usr/local/bin/envoy"
 )
-
-func RunEnvoyValidate(ctx context.Context, envoyExecutable, bootstrapConfig string) error {
-	validateCmd := cmdutils.Command(ctx, envoyExecutable, "--mode", "validate", "--config-path", "/dev/fd/0",
-		"-l", "critical", "--log-format", "%v")
-	validateCmd = validateCmd.WithStdin(bytes.NewBufferString(bootstrapConfig))
-
-	start := time.Now()
-	err := validateCmd.Run()
-	slog.Debug("envoy validation completed",
-		"size_bytes", len(bootstrapConfig),
-		"duration", time.Since(start))
-
-	if err != nil {
-		if os.IsNotExist(err) {
-			// log a warning and return nil; will allow users to continue to run kgateway locally without
-			// relying on the kgateway container with Envoy already published to the expected directory
-			slog.Warn("unable to validate envoy configuration", "executable", envoyExecutable)
-			return nil
-		}
-		return fmt.Errorf("envoy validation mode output: %v, error: %w", err.OutputString(), err)
-	}
-
-	return nil
-}
 
 // RunEnvoy run Envoy with bootstrap configuration injected from a file
 func RunEnvoy(envoyExecutable, inputPath, outputPath string) {

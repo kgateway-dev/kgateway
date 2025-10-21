@@ -98,7 +98,7 @@ Statuses:
       - conditions:
         - lastTransitionTime: null
           message: 'Dropped Rule (0): invalid matcher configuration: validation failed:
-            invalid xds configuration: error initializing configuration '''': invalid
+            invalid xds configuration: error initializing configuration ''/dev/fd/0'': invalid
             named capture group: (?<=foo)bar'
           reason: RouteRuleDropped
           status: "False"

@@ -1,0 +1,243 @@
+Clusters:
+- connectTimeout: 5s
+  metadata: {}
+  name: test-backend-plugin_default_example-svc_80
+Listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8080
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: listener~8080
+        statPrefix: http
+        useRemoteAddress: true
+    name: listener~8080
+  name: listener~8080
+Routes:
+- ignorePortInHostMatching: true
+  name: listener~8080
+  virtualHosts:
+  - domains:
+    - gwapi.com
+    name: listener~8080~gwapi_com
+    routes:
+    - match:
+        pathSeparatedPrefix: /rule0
+      name: listener~8080~gwapi_com-route-0-httproute-use-gwapi-default-0-0-matcher-0
+      redirect:
+        responseCode: FOUND
+  - domains:
+    - invalid-code-char.com
+    name: listener~8080~invalid-code-char_com
+    routes:
+    - directResponse:
+        body:
+          inlineString: invalid route configuration detected and replaced with a direct
+            response.
+        status: 500
+      match:
+        pathSeparatedPrefix: /rule0
+      name: listener~8080~invalid-code-char_com-route-0-httproute-invalid-code-char-default-0-0-rule0-matcher-0
+  - domains:
+    - invalid-code-numeric.com
+    name: listener~8080~invalid-code-numeric_com
+    routes:
+    - directResponse:
+        body:
+          inlineString: invalid route configuration detected and replaced with a direct
+            response.
+        status: 500
+      match:
+        pathSeparatedPrefix: /rule0
+      name: listener~8080~invalid-code-numeric_com-route-0-httproute-invalid-code-numeric-default-0-0-matcher-0
+  - domains:
+    - route-level-override.com
+    name: listener~8080~route-level-override_com
+    routes:
+    - match:
+        pathSeparatedPrefix: /rule0
+      name: listener~8080~route-level-override_com-route-0-httproute-route-level-override-default-0-0-matcher-0
+      redirect:
+        responseCode: TEMPORARY_REDIRECT
+    - match:
+        pathSeparatedPrefix: /rule1
+      name: listener~8080~route-level-override_com-route-1-httproute-route-level-override-default-1-0-matcher-0
+      redirect:
+        responseCode: TEMPORARY_REDIRECT
+  - domains:
+    - rule-level-override.com
+    name: listener~8080~rule-level-override_com
+    routes:
+    - match:
+        pathSeparatedPrefix: /rule0
+      name: listener~8080~rule-level-override_com-route-0-httproute-rule-level-override-default-0-0-rule0-matcher-0
+      redirect:
+        responseCode: TEMPORARY_REDIRECT
+    - match:
+        pathSeparatedPrefix: /rule1
+      name: listener~8080~rule-level-override_com-route-1-httproute-rule-level-override-default-1-0-rule1-matcher-0
+      redirect:
+        responseCode: PERMANENT_REDIRECT
+    - match:
+        pathSeparatedPrefix: /rule2
+      name: listener~8080~rule-level-override_com-route-2-httproute-rule-level-override-default-2-0-rule2-matcher-0
+      redirect:
+        responseCode: FOUND
+Statuses:
+  gateways:
+    default/test:
+      conditions:
+      - lastTransitionTime: null
+        message: ""
+        reason: ListenerSetsNotAllowed
+        status: Unknown
+        type: AttachedListenerSets
+      - lastTransitionTime: null
+        message: Successfully accepted Gateway
+        reason: Accepted
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: null
+        message: Successfully programmed Gateway
+        reason: Programmed
+        status: "True"
+        type: Programmed
+      listeners:
+      - attachedRoutes: 5
+        conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Listener
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully verified that Listener has no conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Listener
+          reason: Programmed
+          status: "True"
+          type: Programmed
+        name: http
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+        - group: gateway.networking.k8s.io
+          kind: GRPCRoute
+  httpRoutes:
+    default/invalid-code-char:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: |-
+            Replaced Rule (0): no action specified
+            invalid redirect status code: abc; must be one of 301, 302, 303, 307, 308
+          reason: RouteRuleReplaced
+          status: "False"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: test
+    default/invalid-code-numeric:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: |-
+            Replaced Rule (0): no action specified
+            invalid redirect status code: 200; must be one of 301, 302, 303, 307, 308
+          reason: RouteRuleReplaced
+          status: "False"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: test
+    default/route-level-override:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: test
+    default/rule-level-override:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: test
+    default/use-gwapi:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: test

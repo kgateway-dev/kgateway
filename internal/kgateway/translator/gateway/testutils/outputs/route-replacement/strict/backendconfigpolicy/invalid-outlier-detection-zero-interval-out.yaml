@@ -124,7 +124,7 @@ Statuses:
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: 'invalid xds configuration: error initializing configuration '''':
+          message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
             node { id: "validation-node-id" cluster: "validation-cluster" } static_resources
             { listeners { name: "placeholder_listener" address { socket_address {
             address: "0.0.0.0" port_value: 8081 } } filter_chains { filters { name:

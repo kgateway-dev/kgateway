@@ -4,7 +4,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=trafficpolicies,verbs=get;list;watch
@@ -25,7 +24,7 @@ type TrafficPolicy struct {
 
 	Spec TrafficPolicySpec `json:"spec,omitempty"`
 
-	Status gwv1alpha2.PolicyStatus `json:"status,omitempty"`
+	Status gwv1.PolicyStatus `json:"status,omitempty"`
 	// TODO: embed this into a typed Status field when
 	// https://github.com/kubernetes/kubernetes/issues/131533 is resolved
 }
@@ -355,21 +354,31 @@ type CorsPolicy struct {
 // enable shadow-only mode where policies will be evaluated and tracked, but not enforced and
 // add additional source origins that will be allowed in addition to the destination origin.
 //
+// Dataplane Support:
+// - Envoy: Supports PercentageEnabled, PercentageShadowed, and AdditionalOrigins
+// - Agentgateway: Only supports AdditionalOrigins (PercentageEnabled and PercentageShadowed are ignored)
+//
 // +kubebuilder:validation:AtMostOneOf=percentageEnabled;percentageShadowed
 type CSRFPolicy struct {
 	// Specifies the percentage of requests for which the CSRF filter is enabled.
+	// Envoy: Supported
+	// Agentgateway: Not supported (ignored)
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
 	PercentageEnabled *int32 `json:"percentageEnabled,omitempty"`
 
 	// Specifies that CSRF policies will be evaluated and tracked, but not enforced.
+	// Envoy: Supported
+	// Agentgateway: Not supported (ignored)
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
 	PercentageShadowed *int32 `json:"percentageShadowed,omitempty"`
 
 	// Specifies additional source origins that will be allowed in addition to the destination origin.
+	// Envoy: Supported
+	// Agentgateway: Supported
 	// +optional
 	// +kubebuilder:validation:MaxItems=16
 	AdditionalOrigins []StringMatcher `json:"additionalOrigins,omitempty"`

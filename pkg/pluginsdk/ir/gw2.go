@@ -1,14 +1,12 @@
 package ir
 
 import (
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
-
-	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 )
 
 // This is the IR that is used in the translation to XDS. it is self contained and no IO/krt is
@@ -100,7 +98,7 @@ type FilterChainCommon struct {
 
 type CustomEnvoyFilter struct {
 	// Determines filter ordering.
-	FilterStage plugins.HTTPOrNetworkFilterStage
+	FilterStage filters.HTTPOrNetworkFilterStage
 	// The name of the filter configuration.
 	Name string
 	// Filter specific configuration.

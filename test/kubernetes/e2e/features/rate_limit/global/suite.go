@@ -1,3 +1,5 @@
+//go:build e2e
+
 package global_rate_limit
 
 import (
@@ -105,7 +107,7 @@ func (s *testingSuite) SetupSuite() {
 		LabelSelector: "app=ratelimit",
 	})
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", proxyObjectMeta.GetName()),
+		LabelSelector: fmt.Sprintf("%s=%s", testdefaults.WellKnownAppLabel, proxyObjectMeta.GetName()),
 	})
 }
 
@@ -128,7 +130,7 @@ func (s *testingSuite) TearDownSuite() {
 		LabelSelector: "app=ratelimit",
 	})
 	s.testInstallation.Assertions.EventuallyPodsNotExist(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", proxyObjectMeta.GetName()),
+		LabelSelector: fmt.Sprintf("%s=%s", testdefaults.WellKnownAppLabel, proxyObjectMeta.GetName()),
 	})
 }
 

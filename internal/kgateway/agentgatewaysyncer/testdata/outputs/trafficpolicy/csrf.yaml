@@ -1,0 +1,41 @@
+Addresses:
+- service:
+    hostname: httpbin.default.svc.cluster.local
+    name: httpbin
+    namespace: default
+    ports:
+    - servicePort: 8000
+      targetPort: 8080
+Binds:
+- key: 8080/default/example-gateway
+  port: 8080
+Listeners:
+- bindKey: 8080/default/example-gateway
+  gatewayName: default/example-gateway
+  key: default/example-gateway.http
+  name: http
+  protocol: HTTP
+Policies:
+- name: trafficpolicy/default/csrf-policy/example-gateway:csrf:default/example-gateway
+  spec:
+    csrf:
+      additionalOrigins:
+      - https://example.com
+      - https://app.example.com
+      - http://localhost:3000
+  target:
+    gateway: default/example-gateway
+Routes:
+- backends:
+  - backend:
+      port: 8000
+      service: default/httpbin.default.svc.cluster.local
+    weight: 1
+  hostnames:
+  - httpbin.local
+  key: default/httpbin-route.0.0.http
+  listenerKey: default/example-gateway.http
+  matches:
+  - path:
+      pathPrefix: /
+  routeName: default/httpbin-route

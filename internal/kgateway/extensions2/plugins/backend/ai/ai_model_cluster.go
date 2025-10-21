@@ -17,8 +17,8 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	aiutils "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 const (
@@ -43,11 +43,7 @@ func ProcessAIBackend(in *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecrets 
 		return nil
 	}
 
-	if err := buildModelCluster(in, aiSecret, multiSecrets, out); err != nil {
-		return err
-	}
-
-	return nil
+	return buildModelCluster(in, aiSecret, multiSecrets, out)
 }
 
 // buildModelCluster builds a cluster for the given AI backend.

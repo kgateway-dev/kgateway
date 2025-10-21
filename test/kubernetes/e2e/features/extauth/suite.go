@@ -1,3 +1,5 @@
+//go:build e2e
+
 package extauth
 
 import (
@@ -77,7 +79,7 @@ func (s *testingSuite) SetupSuite() {
 	})
 
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", proxyObjMeta.GetName()),
+		LabelSelector: fmt.Sprintf("%s=%s", testdefaults.WellKnownAppLabel, proxyObjMeta.GetName()),
 	}, time.Minute*2)
 }
 
@@ -90,7 +92,7 @@ func (s *testingSuite) TearDownSuite() {
 	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, s.commonResources...)
 
 	s.testInstallation.Assertions.EventuallyPodsNotExist(s.ctx, proxyObjMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", proxyObjMeta.GetName()),
+		LabelSelector: fmt.Sprintf("%s=%s", testdefaults.WellKnownAppLabel, proxyObjMeta.GetName()),
 	})
 }
 
@@ -279,10 +281,10 @@ func (s *testingSuite) TestRouteTargetedExtAuthPolicy() {
 
 func (s *testingSuite) ensureBasicRunning() {
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=curl",
+		LabelSelector: testdefaults.WellKnownAppLabel + "=curl",
 	})
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=super-gateway",
+		LabelSelector: testdefaults.WellKnownAppLabel + "=super-gateway",
 	}, time.Minute)
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, extAuthSvc.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app=ext-authz",

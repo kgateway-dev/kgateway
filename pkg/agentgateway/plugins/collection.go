@@ -21,7 +21,6 @@ import (
 	infversioned "sigs.k8s.io/gateway-api-inference-extension/client-go/clientset/versioned"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gwv1alpha3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -56,7 +55,7 @@ type AgwCollections struct {
 	TCPRoutes          krt.Collection[*gwv1alpha2.TCPRoute]
 	TLSRoutes          krt.Collection[*gwv1alpha2.TLSRoute]
 	ReferenceGrants    krt.Collection[*gwv1beta1.ReferenceGrant]
-	BackendTLSPolicies krt.Collection[*gwv1alpha3.BackendTLSPolicy]
+	BackendTLSPolicies krt.Collection[*gwv1.BackendTLSPolicy]
 
 	// Extended resources
 	InferencePools krt.Collection[*inf.InferencePool]
@@ -279,17 +278,17 @@ func NewAgwCollections(
 			commoncol.KrtOpts.ToOptions("informer/EndpointSlices")...),
 
 		// Gateway API resources
-		GatewayClasses: krt.WrapClient(kclient.NewFiltered[*gwv1.GatewayClass](commoncol.Client, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/GatewayClasses")...),
-		Gateways:       krt.WrapClient(kclient.NewFiltered[*gwv1.Gateway](commoncol.Client, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/Gateways")...),
-		HTTPRoutes:     krt.WrapClient(kclient.NewFiltered[*gwv1.HTTPRoute](commoncol.Client, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/HTTPRoutes")...),
-		GRPCRoutes:     krt.WrapClient(kclient.NewFiltered[*gwv1.GRPCRoute](commoncol.Client, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/GRPCRoutes")...),
+		GatewayClasses:     krt.WrapClient(kclient.NewFiltered[*gwv1.GatewayClass](commoncol.Client, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/GatewayClasses")...),
+		Gateways:           krt.WrapClient(kclient.NewFiltered[*gwv1.Gateway](commoncol.Client, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/Gateways")...),
+		HTTPRoutes:         krt.WrapClient(kclient.NewFiltered[*gwv1.HTTPRoute](commoncol.Client, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/HTTPRoutes")...),
+		GRPCRoutes:         krt.WrapClient(kclient.NewFiltered[*gwv1.GRPCRoute](commoncol.Client, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/GRPCRoutes")...),
+		BackendTLSPolicies: krt.WrapClient(kclient.NewDelayedInformer[*gwv1.BackendTLSPolicy](commoncol.Client, gvr.BackendTLSPolicy, kubetypes.StandardInformer, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/BackendTLSPolicies")...),
 
+		// Gateway API alpha
+		TCPRoutes:       krt.WrapClient(kclient.NewDelayedInformer[*gwv1alpha2.TCPRoute](commoncol.Client, gvr.TCPRoute, kubetypes.StandardInformer, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/TCPRoutes")...),
+		TLSRoutes:       krt.WrapClient(kclient.NewDelayedInformer[*gwv1alpha2.TLSRoute](commoncol.Client, gvr.TLSRoute, kubetypes.StandardInformer, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/TLSRoutes")...),
 		ReferenceGrants: krt.WrapClient(kclient.NewFiltered[*gwv1beta1.ReferenceGrant](commoncol.Client, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/ReferenceGrants")...),
-
-		// kubernetes gateway alpha apis
-		TCPRoutes:          krt.WrapClient(kclient.NewDelayedInformer[*gwv1alpha2.TCPRoute](commoncol.Client, gvr.TCPRoute, kubetypes.StandardInformer, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/TCPRoutes")...),
-		TLSRoutes:          krt.WrapClient(kclient.NewDelayedInformer[*gwv1alpha2.TLSRoute](commoncol.Client, gvr.TLSRoute, kubetypes.StandardInformer, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/TLSRoutes")...),
-		BackendTLSPolicies: krt.WrapClient(kclient.NewDelayedInformer[*gwv1alpha3.BackendTLSPolicy](commoncol.Client, gvr.BackendTLSPolicy, kubetypes.StandardInformer, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/BackendTLSPolicies")...),
+		// BackendTrafficPolicy?
 
 		// inference extensions need to be enabled so control plane has permissions to watch resource. Disable by default
 		InferencePools: krt.NewStaticCollection[*inf.InferencePool](nil, nil, commoncol.KrtOpts.ToOptions("disable/inferencepools")...),

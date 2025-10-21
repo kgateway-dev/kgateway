@@ -19,18 +19,18 @@ var _ = Describe("GatewayClass Status Controller", func() {
 	)
 
 	var (
-		cancel context.CancelFunc
+		cancelManager context.CancelFunc
 	)
 
 	BeforeEach(func() {
 		var err error
-		cancel, err = createManager(ctx, nil, nil)
+		cancelManager, err = createManager(ctx, nil, nil)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
-		if cancel != nil {
-			cancel()
+		if cancelManager != nil {
+			cancelManager()
 		}
 		// ensure goroutines cleanup
 		Eventually(func() bool { return true }).WithTimeout(3 * time.Second).Should(BeTrue())

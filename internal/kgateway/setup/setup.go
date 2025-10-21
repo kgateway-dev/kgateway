@@ -16,17 +16,17 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
-
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/namespaces"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/admin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
@@ -36,6 +36,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/namespaces"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
@@ -98,7 +99,13 @@ func WithLeaderElectionID(id string) func(*setup) {
 	}
 }
 
-func ExtraGatewayParameters(extraGatewayParameters func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters) func(*setup) {
+func WithHelmValuesGeneratorOverride(helmValuesGeneratorOverride func(cli client.Client, inputs *deployer.Inputs) deployer.HelmValuesGenerator) func(*setup) {
+	return func(s *setup) {
+		s.helmValuesGeneratorOverride = helmValuesGeneratorOverride
+	}
+}
+
+func WithExtraGatewayParameters(extraGatewayParameters []client.Object) func(*setup) {
 	return func(s *setup) {
 		s.extraGatewayParameters = extraGatewayParameters
 	}
@@ -167,20 +174,21 @@ func WithExtraAgwPolicyStatusHandlers(handlers map[string]agwplugins.AgwPolicySt
 }
 
 type setup struct {
-	gatewayControllerName    string
-	agwControllerName        string
-	gatewayClassName         string
-	waypointClassName        string
-	agentgatewayClassName    string
-	additionalGatewayClasses map[string]*deployer.GatewayClassInfo
-	extraPlugins             func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []sdk.Plugin
-	extraAgwPlugins          func(ctx context.Context, agw *agwplugins.AgwCollections) []agwplugins.AgwPlugin
-	extraGatewayParameters   func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
-	extraXDSCallbacks        xdsserver.Callbacks
-	xdsListener              net.Listener
-	agwXdsListener           net.Listener
-	restConfig               *rest.Config
-	ctrlMgrOptionsInitFunc   func(context.Context) *ctrl.Options
+	gatewayControllerName       string
+	agwControllerName           string
+	gatewayClassName            string
+	waypointClassName           string
+	agentgatewayClassName       string
+	additionalGatewayClasses    map[string]*deployer.GatewayClassInfo
+	extraPlugins                func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []sdk.Plugin
+	extraAgwPlugins             func(ctx context.Context, agw *agwplugins.AgwCollections) []agwplugins.AgwPlugin
+	helmValuesGeneratorOverride func(cli client.Client, inputs *deployer.Inputs) deployer.HelmValuesGenerator
+	extraGatewayParameters      []client.Object
+	extraXDSCallbacks           xdsserver.Callbacks
+	xdsListener                 net.Listener
+	agwXdsListener              net.Listener
+	restConfig                  *rest.Config
+	ctrlMgrOptionsInitFunc      func(context.Context) *ctrl.Options
 	// extra controller manager config, like adding registering additional controllers
 	extraManagerConfig           []func(ctx context.Context, mgr manager.Manager, objectFilter kubetypes.DynamicObjectFilter) error
 	krtDebugger                  *krt.DebugHandler
@@ -303,12 +311,30 @@ func (s *setup) Start(ctx context.Context) error {
 		NewKubeJWTAuthenticator(istioClient.Kube()),
 	}
 
-	cache := NewControlPlane(ctx, s.xdsListener, s.agwXdsListener, uniqueClientCallbacks, authenticators, s.globalSettings.XdsAuth)
+	// Create shared certificate watcher if TLS is enabled. This watcher is used by both the xDS server
+	// and the Gateway controller to kick reconciliation on cert changes.
+	var certWatcher *certwatcher.CertWatcher
+	if s.globalSettings.XdsTLS {
+		var err error
+		certWatcher, err = certwatcher.New(xds.TLSCertPath, xds.TLSKeyPath)
+		if err != nil {
+			return err
+		}
+		go func() {
+			if err := certWatcher.Start(ctx); err != nil {
+				slog.Error("failed to start TLS certificate watcher", "error", err)
+			}
+			slog.Info("started TLS certificate watcher")
+		}()
+	}
+
+	cache := NewControlPlane(ctx, s.xdsListener, s.agwXdsListener, uniqueClientCallbacks, authenticators, s.globalSettings.XdsAuth, certWatcher)
 
 	setupOpts := &controller.SetupOpts{
 		Cache:          cache,
 		KrtDebugger:    s.krtDebugger,
 		GlobalSettings: s.globalSettings,
+		CertWatcher:    certWatcher,
 	}
 
 	slog.Info("creating krt collections")
@@ -351,6 +377,7 @@ func (s *setup) Start(ctx context.Context) error {
 		ctx, mgr, s.gatewayControllerName, s.agwControllerName, s.gatewayClassName, s.waypointClassName,
 		s.agentgatewayClassName, s.additionalGatewayClasses, setupOpts, s.restConfig,
 		istioClient, commoncol, agwCollections, uccBuilder, s.extraPlugins, s.extraAgwPlugins,
+		s.helmValuesGeneratorOverride,
 		s.extraGatewayParameters,
 		s.validator,
 		s.extraAgwPolicyStatusHandlers,
@@ -385,7 +412,8 @@ func BuildKgatewayWithConfig(
 	uccBuilder krtcollections.UniquelyConnectedClientsBulider,
 	extraPlugins func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []sdk.Plugin,
 	extraAgwPlugins func(ctx context.Context, agw *agwplugins.AgwCollections) []agwplugins.AgwPlugin,
-	extraGatewayParameters func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters,
+	helmValuesGeneratorOverride func(cli client.Client, inputs *deployer.Inputs) deployer.HelmValuesGenerator,
+	extraGatewayParameters []client.Object,
 	validator validator.Validator,
 	extraAgwPolicyStatusHandlers map[string]agwplugins.AgwPolicyStatusSyncHandler,
 ) error {
@@ -411,6 +439,7 @@ func BuildKgatewayWithConfig(
 		AdditionalGatewayClasses:     additionalGatewayClasses,
 		ExtraPlugins:                 extraPlugins,
 		ExtraAgwPlugins:              extraAgwPlugins,
+		HelmValuesGeneratorOverride:  helmValuesGeneratorOverride,
 		ExtraGatewayParameters:       extraGatewayParameters,
 		RestConfig:                   restConfig,
 		SetupOpts:                    setupOpts,

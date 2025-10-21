@@ -2,6 +2,7 @@ package setup
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"log/slog"
 	"math"
@@ -19,8 +20,10 @@ import (
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/reflection"
 	"istio.io/istio/pkg/security"
+	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
@@ -92,12 +95,13 @@ func NewControlPlane(
 	callbacks xdsserver.Callbacks,
 	authenticators []security.Authenticator,
 	xdsAuth bool,
+	certWatcher *certwatcher.CertWatcher,
 ) envoycache.SnapshotCache {
 	baseLogger := slog.Default().With("component", "envoy-controlplane")
 	envoyLoggerAdapter := &slogAdapterForEnvoy{logger: baseLogger}
 
 	// Create separate gRPC servers for each listener
-	serverOpts := getGRPCServerOpts(authenticators, xdsAuth)
+	serverOpts := getGRPCServerOpts(authenticators, xdsAuth, certWatcher, baseLogger)
 	kgwGRPCServer := grpc.NewServer(serverOpts...)
 	agwGRPCServer := grpc.NewServer(serverOpts...)
 
@@ -137,8 +141,13 @@ func NewControlPlane(
 	return snapshotCache
 }
 
-func getGRPCServerOpts(authenticators []security.Authenticator, xdsAuth bool) []grpc.ServerOption {
-	return []grpc.ServerOption{
+func getGRPCServerOpts(
+	authenticators []security.Authenticator,
+	xdsAuth bool,
+	certWatcher *certwatcher.CertWatcher,
+	logger *slog.Logger,
+) []grpc.ServerOption {
+	opts := []grpc.ServerOption{
 		grpc.MaxRecvMsgSize(math.MaxInt32),
 		grpc.StreamInterceptor(
 			grpc_middleware.ChainStreamServer(
@@ -167,4 +176,19 @@ func getGRPCServerOpts(authenticators []security.Authenticator, xdsAuth bool) []
 				},
 			)),
 	}
+
+	// Add TLS credentials if the certificate watcher was provided. Needed to react to
+	// certificate rotations to ensure we're always serving the latest CA certificate.
+	if certWatcher != nil {
+		creds := credentials.NewTLS(&tls.Config{
+			MinVersion:     tls.VersionTLS12,
+			GetCertificate: certWatcher.GetCertificate,
+		})
+		opts = append(opts, grpc.Creds(creds))
+		logger.Info("TLS enabled for xDS servers with certificate watcher")
+	} else {
+		logger.Warn("TLS disabled for xDS servers: connections will be unencrypted")
+	}
+
+	return opts
 }

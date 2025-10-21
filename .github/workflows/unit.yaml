@@ -1,0 +1,39 @@
+name: Unit Tests
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  merge_group:
+    types: [checks_requested]
+
+env:
+  VERSION: '1.0.0-ci1'
+  GITHUB_TOKEN: ${{ github.token }}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  # Runs the unit tests for Go packages
+  go:
+    name: Go Unit Tests
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: go.mod
+    - name: Install dependencies
+      run: make mod-download
+    - name: Run Tests
+      shell: bash
+      run: make unit-with-coverage
+    - name: Validate Test Coverage
+      shell: bash
+      # The make will error if test coverage drops below a certain threshold
+      # We intentionally ignore the errors while we build out our test coverage, to establish a good baseline
+      # However, we should strive to establish a baseline, and then make it required on PRs
+      run: make --always-make --ignore-errors validate-test-coverage
