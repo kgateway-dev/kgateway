@@ -1,0 +1,35 @@
+name: Re-run failed jobs
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  retest:
+    # only run this job on PR comments from org members
+    if: github.event.issue.pull_request && github.event.comment.author_association == 'MEMBER'
+    permissions:
+      contents: read
+      actions: write
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Re-run failed jobs
+        env:
+          PR_COMMENT: ${{ github.event.comment.body }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          if [[ "$PR_COMMENT" != "/retest" ]]; then
+            # only care about retest comment
+            exit 0
+          fi
+
+          # get the SHA of the PR's latest commit
+          COMMIT_SHA=$(gh pr view $PR_NUMBER --json headRefOid --jq '.headRefOid')
+
+          # get the failing workflow run IDs (if any) associated with the latest commit
+          FAILING_RUN_IDS=$(gh run list --commit $COMMIT_SHA --status failure --json databaseId | jq '.[].databaseId' -r)
+
+          # re-run the failing workflow runs
+          for RUN_ID in $FAILING_RUN_IDS; do
+            echo "Re-running failed workflow run $RUN_ID"
+            gh run rerun $RUN_ID --failed
+          done
