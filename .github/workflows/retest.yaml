@@ -1,5 +1,6 @@
 name: Re-run failed jobs
 on:
+  workflow_dispatch:
   issue_comment:
     types: [created]
 
