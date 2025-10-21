@@ -6,7 +6,8 @@ on:
 jobs:
   retest:
     # only run this job on PR comments from org members
-    if: github.event.issue.pull_request && github.event.comment.author_association == 'MEMBER'
+    if: github.event.issue.pull_request
+    # && github.event.comment.author_association == 'MEMBER'
     permissions:
       contents: read
       actions: write
@@ -17,6 +18,8 @@ jobs:
           PR_COMMENT: ${{ github.event.comment.body }}
           PR_NUMBER: ${{ github.event.issue.number }}
         run: |
+          echo "Author Assoc: ${{ github.event.comment.author_association }}"
+          echo "PR Comment: $PR_COMMENT"
           if [[ "$PR_COMMENT" != "/retest" ]]; then
             # only care about retest comment
             exit 0
