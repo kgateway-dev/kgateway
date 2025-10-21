@@ -40,7 +40,7 @@ do
     echo -n "." # progress indicator
 done
 
-echo -e "\nFailing e2e tests in merge queue over last $days days:"
+echo -e "\nFailing e2e tests in merge queue over last $days day(s):"
 echo "====================================="
 
 # Process each test entry and count occurrences
