@@ -344,25 +344,3 @@ func GetAIExtensionValues(config *v1alpha1.AiExtension) (*HelmAIExtension, error
 		Tracing:         tracingBase64,
 	}, nil
 }
-
-func GetAgentgatewayValues(config *v1alpha1.Agentgateway) (*HelmAgentgateway, error) {
-	if config == nil {
-		return nil, nil
-	}
-
-	var logLevel string
-	if config.GetLogLevel() != nil {
-		logLevel = *config.GetLogLevel()
-	}
-
-	var customConfigMapName string
-	if config.GetCustomConfigMapName() != nil {
-		customConfigMapName = *config.GetCustomConfigMapName()
-	}
-
-	return &HelmAgentgateway{
-		Enabled:             *config.GetEnabled(),
-		LogLevel:            logLevel,
-		CustomConfigMapName: customConfigMapName,
-	}, nil
-}

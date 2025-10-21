@@ -887,8 +887,10 @@ spec:
                   policy for this traffic policy.
                 properties:
                   additionalOrigins:
-                    description: Specifies additional source origins that will be
-                      allowed in addition to the destination origin.
+                    description: |-
+                      Specifies additional source origins that will be allowed in addition to the destination origin.
+                      Envoy: Supported
+                      Agentgateway: Supported
                     items:
                       description: Specifies the way to match a string.
                       properties:
@@ -938,15 +940,19 @@ spec:
                     maxItems: 16
                     type: array
                   percentageEnabled:
-                    description: Specifies the percentage of requests for which the
-                      CSRF filter is enabled.
+                    description: |-
+                      Specifies the percentage of requests for which the CSRF filter is enabled.
+                      Envoy: Supported
+                      Agentgateway: Not supported (ignored)
                     format: int32
                     maximum: 100
                     minimum: 0
                     type: integer
                   percentageShadowed:
-                    description: Specifies that CSRF policies will be evaluated and
-                      tracked, but not enforced.
+                    description: |-
+                      Specifies that CSRF policies will be evaluated and tracked, but not enforced.
+                      Envoy: Supported
+                      Agentgateway: Not supported (ignored)
                     format: int32
                     maximum: 100
                     minimum: 0

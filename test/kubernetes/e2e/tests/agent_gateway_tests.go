@@ -6,6 +6,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/agentgateway/aibackend"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/agentgateway/csrf"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/agentgateway/extauth"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/agentgateway/mcp"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/agentgateway/rbac"
@@ -20,6 +21,7 @@ func AgentgatewaySuiteRunner() e2e.SuiteRunner {
 	// TODO: re-enable A2A tests once the image is smaller
 	// agentgatewaySuiteRunner.Register("A2A", a2a.NewTestingSuite)
 	agentgatewaySuiteRunner.Register("BasicRouting", agentgateway.NewTestingSuite)
+	agentgatewaySuiteRunner.Register("CSRF", csrf.NewTestingSuite)
 	agentgatewaySuiteRunner.Register("Extauth", extauth.NewTestingSuite)
 	agentgatewaySuiteRunner.Register("LocalRateLimit", local_rate_limit.NewAgentgatewayTestingSuite)
 	agentgatewaySuiteRunner.Register("GlobalRateLimit", global_rate_limit.NewAgentgatewayTestingSuite)

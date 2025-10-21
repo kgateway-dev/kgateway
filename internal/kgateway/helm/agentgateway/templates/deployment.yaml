@@ -1,29 +1,9 @@
 {{- $gateway := .Values.gateway }}
-{{- $selectorLabels := dict
-  "app.kubernetes.io/name" (include "kgateway.gateway.name" .)
-  "app.kubernetes.io/instance" .Release.Name
-  "gateway.networking.k8s.io/gateway-name" .Release.Name
-}}
-{{/* gateway-class-name is the odd-man-out since we cannot make it a selector label, as selector is immutable; but we want it on the pod */}}
-{{- $labels := merge (dict
-  "kgateway" "kube-gateway"
-  "helm.sh/chart" (include "kgateway.chart" .)
-  "app.kubernetes.io/managed-by" .Release.Service
-  "gateway.networking.k8s.io/gateway-class-name" .Values.gateway.gatewayClassName
-  )
-  $selectorLabels
-  ($gateway.gatewayLabels | default dict)
-}}
 {{- $promAnnotations := (dict
   "prometheus.io/path" "/metrics"
   "prometheus.io/port" "15020"
   "prometheus.io/scrape" "true")
 }}
-{{- if .Chart.AppVersion }}
-{{$_ := set $labels "app.kubernetes.io/version" .Chart.AppVersion }}
-{{- end }}
-{{- if $gateway.agentgateway.enabled }}
-{{/* TODO(npolshak): look into having agentgateway as a separate helm chart https://github.com/kgateway-dev/kgateway/issues/11240 */}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -33,14 +13,14 @@ metadata:
       {{- toYaml . | nindent 4 }}
     {{- end }}
   labels:
-    {{- $labels | toYaml | nindent 4 }}
+    {{- include "kgateway.gateway.allLabels" . | nindent 4 }}
 spec:
   {{- if $gateway.replicaCount }}
   replicas: {{ $gateway.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      {{- $selectorLabels | toYaml | nindent 6 }}
+      {{- include "kgateway.gateway.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       annotations:
@@ -52,7 +32,7 @@ spec:
       labels:
         {{- toYaml (merge
           (dict "gateway.networking.k8s.io/gateway-class-name" .Values.gateway.gatewayClassName)
-          $selectorLabels
+          (include "kgateway.gateway.selectorLabels" . | fromYaml)
           ($gateway.gatewayLabels | default dict)
           ($gateway.extraPodLabels | default dict)
         ) | nindent 8 }}
@@ -124,7 +104,7 @@ spec:
             - name: RUST_BACKTRACE
               value: "1"
             - name: RUST_LOG
-              value: {{ $gateway.agentgateway.logLevel }}
+              value: {{ $gateway.logLevel }}
             - name: XDS_ADDRESS
               {{- if and $gateway.agwXds.tls $gateway.agwXds.tls.enabled }}
               value: "https://{{ $gateway.xds.host }}:{{ $gateway.agwXds.port }}"
@@ -164,8 +144,8 @@ spec:
       volumes:
         - name: config-volume
           configMap:
-            {{- if $gateway.agentgateway.customConfigMapName }}
-            name: {{ $gateway.agentgateway.customConfigMapName }}
+            {{- if $gateway.customConfigMapName }}
+            name: {{ $gateway.customConfigMapName }}
             {{- else }}
             name: {{ include "kgateway.gateway.fullname" . }}
             {{- end }}
@@ -208,85 +188,3 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: {{ include "kgateway.gateway.fullname" . }}
-  annotations:
-    {{- toYaml (merge
-      ($gateway.gatewayAnnotations| default dict)
-      ((($gateway.serviceAccount).extraAnnotations) | default dict)
-    ) | nindent 4 }}
-  labels:
-    {{- toYaml (merge
-      $labels
-      ((($gateway.serviceAccount).extraLabels) | default dict)
-    ) | nindent 4 }}
-automountServiceAccountToken: false
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ include "kgateway.gateway.fullname" . }}
-  annotations:
-    {{- toYaml (merge
-      ($gateway.gatewayAnnotations| default dict)
-      ((($gateway.service).extraAnnotations) | default dict)
-    ) | nindent 4 }}
-  labels:
-    {{- toYaml (merge
-      $labels
-      ((($gateway.service).extraLabels) | default dict)
-    ) | nindent 4 }}
-spec:
-  type: {{ $gateway.service.type }}
-  {{- if $gateway.service.externalTrafficPolicy }}
-  externalTrafficPolicy: {{ $gateway.service.externalTrafficPolicy }}
-  {{- end }}
-  {{- with $gateway.service.clusterIP }}
-  clusterIP: {{ . }}
-  {{- end }}
-  ports:
-  {{- range $p := $gateway.ports }}
-    - name: {{ $p.name }}
-      protocol: {{ $p.protocol }}
-      targetPort: {{ $p.port }}
-      port: {{ $p.port }}
-    {{- if $p.nodePort }}
-      nodePort: {{ $p.nodePort }}
-    {{- end }}
-  {{- end }}
-  selector:
-    {{- include "kgateway.gateway.selectorLabels" . | nindent 4 }}
-
-{{- if not $gateway.agentgateway.customConfigMapName }}
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ include "kgateway.gateway.fullname" . }}
-  annotations:
-    {{- toYaml ($gateway.gatewayAnnotations| default dict) | nindent 4 }}
-  labels:
-    {{- toYaml $labels | nindent 4 }}
-data:
-  config.yaml: |
-    config: {}
-{{- end }}
-
-{{- if and $gateway.agwXds.tls $gateway.agwXds.tls.enabled }}
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ include "kgateway.gateway.fullname" . }}-xds-ca
-  labels:
-    {{- include "kgateway.gateway.constLabels" . | nindent 4 }}
-    {{- include "kgateway.gateway.labels" . | nindent 4 }}
-data:
-  ca.crt: |
-{{ $gateway.agwXds.tls.caCert | indent 4 }}
-{{- end }}
-
-{{- end }}{{/* if $gateway.agentgateway.enabled */}}

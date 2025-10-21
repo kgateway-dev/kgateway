@@ -160,8 +160,8 @@ GINKGO_USER_FLAGS ?=
 GINKGO ?= go tool ginkgo
 
 .PHONY: test
-test: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
-	$(GINKGO_ENV) $(GINKGO) -ldflags='$(LDFLAGS)' \
+test: ## Run all tests with ginkgo, or only run the test package at {TEST_PKG} if it is specified
+	$(GO_TEST_ENV) $(GINKGO_ENV) $(GINKGO) -ldflags='$(LDFLAGS)' \
 		$(GINKGO_FLAGS) $(GINKGO_REPORT_FLAGS) $(GINKGO_USER_FLAGS) \
 		$(TEST_PKG)
 
@@ -487,9 +487,13 @@ KIND ?= go tool kind
 CLUSTER_NAME ?= kind
 INSTALL_NAMESPACE ?= kgateway-system
 
+# The version of the Node Docker image to use for booting the kind cluster: https://hub.docker.com/r/kindest/node/tags
+# This version should stay in sync with `hack/kind/setup-kind.sh`.
+CLUSTER_NODE_VERSION ?= kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
+
 .PHONY: kind-create
 kind-create: ## Create a KinD cluster
-	$(KIND) get clusters | grep $(CLUSTER_NAME) || $(KIND) create cluster --name $(CLUSTER_NAME)
+	$(KIND) get clusters | grep $(CLUSTER_NAME) || $(KIND) create cluster --name $(CLUSTER_NAME) --image kindest/node:$(CLUSTER_NODE_VERSION)
 
 CONFORMANCE_CHANNEL ?= experimental
 CONFORMANCE_VERSION ?= v1.4.0

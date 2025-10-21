@@ -354,21 +354,31 @@ type CorsPolicy struct {
 // enable shadow-only mode where policies will be evaluated and tracked, but not enforced and
 // add additional source origins that will be allowed in addition to the destination origin.
 //
+// Dataplane Support:
+// - Envoy: Supports PercentageEnabled, PercentageShadowed, and AdditionalOrigins
+// - Agentgateway: Only supports AdditionalOrigins (PercentageEnabled and PercentageShadowed are ignored)
+//
 // +kubebuilder:validation:AtMostOneOf=percentageEnabled;percentageShadowed
 type CSRFPolicy struct {
 	// Specifies the percentage of requests for which the CSRF filter is enabled.
+	// Envoy: Supported
+	// Agentgateway: Not supported (ignored)
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
 	PercentageEnabled *int32 `json:"percentageEnabled,omitempty"`
 
 	// Specifies that CSRF policies will be evaluated and tracked, but not enforced.
+	// Envoy: Supported
+	// Agentgateway: Not supported (ignored)
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
 	PercentageShadowed *int32 `json:"percentageShadowed,omitempty"`
 
 	// Specifies additional source origins that will be allowed in addition to the destination origin.
+	// Envoy: Supported
+	// Agentgateway: Supported
 	// +optional
 	// +kubebuilder:validation:MaxItems=16
 	AdditionalOrigins []StringMatcher `json:"additionalOrigins,omitempty"`

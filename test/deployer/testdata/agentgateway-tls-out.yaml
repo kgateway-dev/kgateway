@@ -1,5 +1,5 @@
 ---
-# Source: kgateway-proxy/templates/gateway/agent-gateway-deployment.yaml
+# Source: agentgateway/templates/serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -8,16 +8,15 @@ metadata:
     {}
   labels:
     app.kubernetes.io/instance: gw
-    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
     app.kubernetes.io/version: 1.0.0-ci1
     gateway.networking.k8s.io/gateway-class-name: agentgateway
     gateway.networking.k8s.io/gateway-name: gw
-    helm.sh/chart: kgateway-proxy-1.0.0-ci1
     kgateway: kube-gateway
 automountServiceAccountToken: false
 ---
-# Source: kgateway-proxy/templates/gateway/agent-gateway-deployment.yaml
+# Source: agentgateway/templates/configmap.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -26,31 +25,29 @@ metadata:
     {}
   labels:
     app.kubernetes.io/instance: gw
-    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
     app.kubernetes.io/version: 1.0.0-ci1
     gateway.networking.k8s.io/gateway-class-name: agentgateway
     gateway.networking.k8s.io/gateway-name: gw
-    helm.sh/chart: kgateway-proxy-1.0.0-ci1
     kgateway: kube-gateway
 data:
   config.yaml: |
     config: {}
 ---
-# Source: kgateway-proxy/templates/gateway/agent-gateway-deployment.yaml
+# Source: agentgateway/templates/xds-ca-configmap.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: gw-xds-ca
   labels:
-    kgateway: kube-gateway
-    helm.sh/chart: kgateway-proxy-1.0.0-ci1
-    app.kubernetes.io/name: gw
     app.kubernetes.io/instance: gw
-    gateway.networking.k8s.io/gateway-name: gw
-    app.kubernetes.io/version: "1.0.0-ci1"
+    app.kubernetes.io/managed-by: kgateway
+    app.kubernetes.io/name: gw
+    app.kubernetes.io/version: 1.0.0-ci1
     gateway.networking.k8s.io/gateway-class-name: agentgateway
-    app.kubernetes.io/managed-by: Helm
+    gateway.networking.k8s.io/gateway-name: gw
+    kgateway: kube-gateway
 data:
   ca.crt: |
     -----BEGIN CERTIFICATE-----
@@ -68,7 +65,7 @@ data:
     wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
     -----END CERTIFICATE-----
 ---
-# Source: kgateway-proxy/templates/gateway/agent-gateway-deployment.yaml
+# Source: agentgateway/templates/service.yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -77,12 +74,11 @@ metadata:
     {}
   labels:
     app.kubernetes.io/instance: gw
-    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
     app.kubernetes.io/version: 1.0.0-ci1
     gateway.networking.k8s.io/gateway-class-name: agentgateway
     gateway.networking.k8s.io/gateway-name: gw
-    helm.sh/chart: kgateway-proxy-1.0.0-ci1
     kgateway: kube-gateway
 spec:
   type: LoadBalancer
@@ -96,7 +92,7 @@ spec:
     app.kubernetes.io/instance: gw
     gateway.networking.k8s.io/gateway-name: gw
 ---
-# Source: kgateway-proxy/templates/gateway/agent-gateway-deployment.yaml
+# Source: agentgateway/templates/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -104,18 +100,17 @@ metadata:
   annotations:
   labels:
     app.kubernetes.io/instance: gw
-    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
     app.kubernetes.io/version: 1.0.0-ci1
     gateway.networking.k8s.io/gateway-class-name: agentgateway
     gateway.networking.k8s.io/gateway-name: gw
-    helm.sh/chart: kgateway-proxy-1.0.0-ci1
     kgateway: kube-gateway
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/instance: gw
       app.kubernetes.io/name: gw
+      app.kubernetes.io/instance: gw
       gateway.networking.k8s.io/gateway-name: gw
   template:
     metadata:
@@ -136,12 +131,10 @@ spec:
           value: "0"
       containers:
         - name: agent-gateway
-          image: "ghcr.io/agentgateway/agentgateway:0.10.1"
+          image: "ghcr.io/agentgateway/agentgateway:0.10.3"
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
-              add:
-              - NET_BIND_SERVICE
               drop:
               - ALL
             readOnlyRootFilesystem: true

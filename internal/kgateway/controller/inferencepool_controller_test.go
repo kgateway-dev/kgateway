@@ -1,6 +1,7 @@
 package controller_test
 
 import (
+	"context"
 	"fmt"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -19,6 +20,7 @@ import (
 
 var _ = Describe("InferencePool controller", func() {
 	var (
+		cancelManager    context.CancelFunc
 		goroutineMonitor *assertions.GoRoutineMonitor
 	)
 
@@ -27,7 +29,9 @@ var _ = Describe("InferencePool controller", func() {
 	})
 
 	AfterEach(func() {
-		cancel()
+		if cancelManager != nil {
+			cancelManager()
+		}
 		waitForGoroutinesToFinish(goroutineMonitor)
 	})
 
@@ -35,7 +39,7 @@ var _ = Describe("InferencePool controller", func() {
 		BeforeEach(func() {
 			var err error
 			inferenceExt = new(deployer.InferenceExtInfo)
-			cancel, err = createManager(ctx, inferenceExt, nil)
+			cancelManager, err = createManager(ctx, inferenceExt, nil)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -187,7 +191,7 @@ var _ = Describe("InferencePool controller", func() {
 		BeforeEach(func() {
 			var err error
 			inferenceExt = nil
-			cancel, err = createManager(ctx, inferenceExt, nil)
+			cancelManager, err = createManager(ctx, inferenceExt, nil)
 			Expect(err).NotTo(HaveOccurred())
 		})
 

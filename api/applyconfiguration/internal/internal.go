@@ -999,6 +999,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: requestTimeout
       type:
         namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+    - name: retry
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GRPCRetryPolicy
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ExtProcPolicy
   map:
     fields:
@@ -1092,6 +1095,24 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: traceableFilter
       type:
         scalar: boolean
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GRPCRetryBackoff
+  map:
+    fields:
+    - name: baseInterval
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+    - name: maxInterval
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Duration
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GRPCRetryPolicy
+  map:
+    fields:
+    - name: attempts
+      type:
+        scalar: numeric
+    - name: backoff
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GRPCRetryBackoff
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GatewayExtension
   map:
     fields:

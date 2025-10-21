@@ -7,12 +7,16 @@ import (
 )
 
 func NewGatewayDeployer(controllerName, agwControllerName, agwGatewayClassName string, cli client.Client, gwParams *GatewayParameters) (*deployer.Deployer, error) {
-	chart, err := LoadGatewayChart()
+	envoyChart, err := LoadEnvoyChart()
 	if err != nil {
 		return nil, err
 	}
-	return deployer.NewDeployer(
-		controllerName, agwControllerName, agwGatewayClassName, cli, chart, gwParams, GatewayReleaseNameAndNamespace), nil
+	agentgatewayChart, err := LoadAgentgatewayChart()
+	if err != nil {
+		return nil, err
+	}
+	return deployer.NewDeployerWithMultipleCharts(
+		controllerName, agwControllerName, agwGatewayClassName, cli, envoyChart, agentgatewayChart, gwParams, GatewayReleaseNameAndNamespace), nil
 }
 
 func NewInferencePoolDeployer(controllerName, agwControllerName, agwGatewayClassName string, cli client.Client) (*deployer.Deployer, error) {

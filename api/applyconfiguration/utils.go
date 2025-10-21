@@ -147,6 +147,10 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.GeminiConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("GracefulShutdownSpec"):
 		return &apiv1alpha1.GracefulShutdownSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("GRPCRetryBackoff"):
+		return &apiv1alpha1.GRPCRetryBackoffApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("GRPCRetryPolicy"):
+		return &apiv1alpha1.GRPCRetryPolicyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("GrpcStatusFilter"):
 		return &apiv1alpha1.GrpcStatusFilterApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("HashPolicy"):

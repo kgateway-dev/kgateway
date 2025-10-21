@@ -85,6 +85,9 @@ func (s *BaseTestingSuite) SetupSuite() {
 }
 
 func (s *BaseTestingSuite) TearDownSuite() {
+	if testutils.ShouldPersistInstall() {
+		return
+	}
 	s.DeleteManifests(&s.Setup)
 }
 
@@ -109,6 +112,9 @@ func (s *BaseTestingSuite) AfterTest(suiteName, testName string) {
 		s.TestInstallation.PreFailHandler(s.Ctx)
 	}
 
+	if testutils.ShouldPersistInstall() {
+		return
+	}
 	s.DeleteManifests(testCase)
 }
 

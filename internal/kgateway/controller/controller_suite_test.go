@@ -290,6 +290,13 @@ func createManager(
 		Expect(mgr.Start(ctx)).ToNot(HaveOccurred())
 	}()
 
+	// Wait for manager to be ready by checking if we can list GatewayClasses
+	// This ensures the controller is fully started before tests run
+	Eventually(func() error {
+		var gcList apiv1.GatewayClassList
+		return mgr.GetClient().List(ctx, &gcList)
+	}, "30s", "500ms").Should(Succeed(), "manager client not ready")
+
 	return func() {
 		cancel()
 		kubeClient.Shutdown()

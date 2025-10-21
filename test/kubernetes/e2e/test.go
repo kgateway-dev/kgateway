@@ -137,6 +137,9 @@ func (i *TestInstallation) InstallRevisionedIstio(ctx context.Context, rev, prof
 }
 
 func (i *TestInstallation) UninstallIstio() error {
+	if testutils.ShouldSkipIstioInstall() || testutils.ShouldSkipInstallAndTeardown() || testutils.ShouldPersistInstall() {
+		return nil
+	}
 	return cluster.UninstallIstio(i.IstioctlBinary, i.ClusterContext.KubeContext)
 }
 
@@ -150,8 +153,15 @@ func (i *TestInstallation) InstallKgatewayFromLocalChart(ctx context.Context) {
 }
 
 func (i *TestInstallation) InstallKgatewayCRDsFromLocalChart(ctx context.Context) {
-	if testutils.ShouldSkipInstall() {
+	if testutils.ShouldSkipInstallAndTeardown() {
 		return
+	}
+
+	// Check if we should skip installation if the release already exists (PERSIST_INSTALL mode)
+	if testutils.ShouldPersistInstall() {
+		if i.Actions.Helm().ReleaseExists(ctx, helmutils.CRDChartName, i.Metadata.InstallNamespace) {
+			return
+		}
 	}
 
 	// install the CRD chart first
@@ -169,8 +179,15 @@ func (i *TestInstallation) InstallKgatewayCRDsFromLocalChart(ctx context.Context
 }
 
 func (i *TestInstallation) InstallKgatewayCoreFromLocalChart(ctx context.Context) {
-	if testutils.ShouldSkipInstall() {
+	if testutils.ShouldSkipInstallAndTeardown() {
 		return
+	}
+
+	// Check if we should skip installation if the release already exists (PERSIST_INSTALL mode)
+	if testutils.ShouldPersistInstall() {
+		if i.Actions.Helm().ReleaseExists(ctx, helmutils.ChartName, i.Metadata.InstallNamespace) {
+			return
+		}
 	}
 
 	// and then install the main chart
@@ -203,7 +220,7 @@ func (i *TestInstallation) UninstallKgateway(ctx context.Context) {
 }
 
 func (i *TestInstallation) UninstallKgatewayCore(ctx context.Context) {
-	if testutils.ShouldSkipInstall() {
+	if testutils.ShouldSkipInstallAndTeardown() || testutils.ShouldPersistInstall() {
 		return
 	}
 
@@ -221,7 +238,7 @@ func (i *TestInstallation) UninstallKgatewayCore(ctx context.Context) {
 }
 
 func (i *TestInstallation) UninstallKgatewayCRDs(ctx context.Context) {
-	if testutils.ShouldSkipInstall() {
+	if testutils.ShouldSkipInstallAndTeardown() || testutils.ShouldPersistInstall() {
 		return
 	}
 

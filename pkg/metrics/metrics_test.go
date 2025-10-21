@@ -48,7 +48,14 @@ func TestCounterInterface(t *testing.T) {
 
 	counter.Reset()
 	gathered = metricstest.MustGatherMetrics(t)
-	gathered.AssertMetricNotExists("kgateway_test_total")
+	// After reset, counter exists with value 0 and empty label values
+	gathered.AssertMetric("kgateway_test_total", &metricstest.ExpectedMetric{
+		Labels: []Label{
+			{Name: "label1", Value: ""},
+			{Name: "label2", Value: ""},
+		},
+		Value: 0.0,
+	})
 }
 
 func TestCounterPartialLabels(t *testing.T) {

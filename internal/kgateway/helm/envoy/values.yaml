@@ -1,4 +1,4 @@
-# These values represent configurable values for the dynamic proxy chart
+# These values represent configurable values for the Envoy proxy chart
 # They are not intended to be actual "defaults," rather they are just placeholder values
 # meant to allow rendering of the chart/template, as the real values will come from:
 # * The control plane
@@ -6,14 +6,10 @@
 # * A (possibly merged) GatewayParameters object translated to helm values
 # The actual defaults for these values should come from the "default GatewayParameters" object
 # See: (/install/helm/kgateway/templates/gatewayparameters.yaml)
-# TODO: This file/workflow can be shored up via https://github.com/kgateway-dev/kgateway/issues/10696
 
 gateway:
   # xds values actually come from the control plane
   xds:
-    host: ""
-    port: 8080
-  agwXds:
     host: ""
     port: 8080
 
@@ -36,11 +32,3 @@ gateway:
     targetPort: 80
     protocol: TCP
     name: http
-
-  agentgateway:
-    enabled: false
-    logLevel: info
-    # Name of the custom configmap to use instead of the default generated one
-    # When set, the agent gateway will use this configmap instead of creating the default one
-    # The configmap must contain a 'config.yaml' key with the agent gateway configuration
-    customConfigMapName: ""

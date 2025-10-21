@@ -1,5 +1,5 @@
 ---
-# Source: kgateway-proxy/templates/gateway/agent-gateway-deployment.yaml
+# Source: agentgateway/templates/serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -10,18 +10,17 @@ metadata:
     prometheus.io/path: /something/else
   labels:
     app.kubernetes.io/instance: gw
-    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
     app.kubernetes.io/version: 1.0.0-ci1
     gateway.networking.k8s.io/gateway-class-name: agentgateway
     gateway.networking.k8s.io/gateway-name: gw
-    helm.sh/chart: kgateway-proxy-1.0.0-ci1
     infra-and-params: infra
     kgateway: kube-gateway
     my-label: my-value
 automountServiceAccountToken: false
 ---
-# Source: kgateway-proxy/templates/gateway/agent-gateway-deployment.yaml
+# Source: agentgateway/templates/configmap.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -32,12 +31,11 @@ metadata:
     prometheus.io/path: /something/else
   labels:
     app.kubernetes.io/instance: gw
-    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
     app.kubernetes.io/version: 1.0.0-ci1
     gateway.networking.k8s.io/gateway-class-name: agentgateway
     gateway.networking.k8s.io/gateway-name: gw
-    helm.sh/chart: kgateway-proxy-1.0.0-ci1
     infra-and-params: infra
     kgateway: kube-gateway
     my-label: my-value
@@ -45,7 +43,7 @@ data:
   config.yaml: |
     config: {}
 ---
-# Source: kgateway-proxy/templates/gateway/agent-gateway-deployment.yaml
+# Source: agentgateway/templates/service.yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -56,12 +54,11 @@ metadata:
     prometheus.io/path: /something/else
   labels:
     app.kubernetes.io/instance: gw
-    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
     app.kubernetes.io/version: 1.0.0-ci1
     gateway.networking.k8s.io/gateway-class-name: agentgateway
     gateway.networking.k8s.io/gateway-name: gw
-    helm.sh/chart: kgateway-proxy-1.0.0-ci1
     infra-and-params: infra
     kgateway: kube-gateway
     my-label: my-value
@@ -77,7 +74,7 @@ spec:
     app.kubernetes.io/instance: gw
     gateway.networking.k8s.io/gateway-name: gw
 ---
-# Source: kgateway-proxy/templates/gateway/agent-gateway-deployment.yaml
+# Source: agentgateway/templates/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -88,20 +85,19 @@ metadata:
     prometheus.io/path: /something/else
   labels:
     app.kubernetes.io/instance: gw
-    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
     app.kubernetes.io/version: 1.0.0-ci1
     gateway.networking.k8s.io/gateway-class-name: agentgateway
     gateway.networking.k8s.io/gateway-name: gw
-    helm.sh/chart: kgateway-proxy-1.0.0-ci1
     infra-and-params: infra
     kgateway: kube-gateway
     my-label: my-value
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/instance: gw
       app.kubernetes.io/name: gw
+      app.kubernetes.io/instance: gw
       gateway.networking.k8s.io/gateway-name: gw
   template:
     metadata:
@@ -128,12 +124,10 @@ spec:
           value: "0"
       containers:
         - name: agent-gateway
-          image: "ghcr.io/agentgateway/agentgateway:0.10.1"
+          image: "ghcr.io/agentgateway/agentgateway:0.10.3"
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
-              add:
-              - NET_BIND_SERVICE
               drop:
               - ALL
             readOnlyRootFilesystem: true

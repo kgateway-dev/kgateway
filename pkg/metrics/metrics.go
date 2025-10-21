@@ -117,9 +117,14 @@ func (c *prometheusCounter) Add(value float64, labels ...Label) {
 	c.m.WithLabelValues(c.validateLabels(labels)...).Add(value)
 }
 
-// Reset resets the counter to zero.
+// Reset resets the counter to zero and makes the metric visible in metrics
+// gathering.
 func (c *prometheusCounter) Reset() {
 	c.m.Reset()
+	// Initialize the counter to 0 so it's visible in metrics
+	// gathering. Otherwise we're undoing some initialization like
+	// StartResourceSyncMetricsProcessing() performs.
+	c.Add(0)
 }
 
 // Histogram defines the interface for a histogram metric.

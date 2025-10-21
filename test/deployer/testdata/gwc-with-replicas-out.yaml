@@ -1,35 +1,32 @@
 ---
-# Source: kgateway-proxy/templates/gateway/proxy-deployment.yaml
+# Source: kgateway-proxy/templates/serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: gw
   labels:
     kgateway: kube-gateway
-    helm.sh/chart: kgateway-proxy-1.0.0-ci1
     app.kubernetes.io/name: gw
     app.kubernetes.io/instance: gw
     gateway.networking.k8s.io/gateway-name: gw
     app.kubernetes.io/version: "1.0.0-ci1"
     gateway.networking.k8s.io/gateway-class-name: kgateway
-    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/managed-by: kgateway
 automountServiceAccountToken: false
 ---
-# Source: kgateway-proxy/templates/gateway/proxy-deployment.yaml
----
+# Source: kgateway-proxy/templates/configmap.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: gw
   labels:
     kgateway: kube-gateway
-    helm.sh/chart: kgateway-proxy-1.0.0-ci1
     app.kubernetes.io/name: gw
     app.kubernetes.io/instance: gw
     gateway.networking.k8s.io/gateway-name: gw
     app.kubernetes.io/version: "1.0.0-ci1"
     gateway.networking.k8s.io/gateway-class-name: kgateway
-    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/managed-by: kgateway
 data:
   envoy.yaml: |
     admin:
@@ -205,20 +202,19 @@ data:
         resource_api_version: V3
         ads: {}
 ---
-# Source: kgateway-proxy/templates/gateway/proxy-deployment.yaml
+# Source: kgateway-proxy/templates/service.yaml
 apiVersion: v1
 kind: Service
 metadata:
   name: gw
   labels:
     kgateway: kube-gateway
-    helm.sh/chart: kgateway-proxy-1.0.0-ci1
     app.kubernetes.io/name: gw
     app.kubernetes.io/instance: gw
     gateway.networking.k8s.io/gateway-name: gw
     app.kubernetes.io/version: "1.0.0-ci1"
     gateway.networking.k8s.io/gateway-class-name: kgateway
-    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/managed-by: kgateway
 spec:
   type: LoadBalancer
   ports:
@@ -231,20 +227,19 @@ spec:
     app.kubernetes.io/instance: gw
     gateway.networking.k8s.io/gateway-name: gw
 ---
-# Source: kgateway-proxy/templates/gateway/proxy-deployment.yaml
+# Source: kgateway-proxy/templates/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: gw
   labels:
     kgateway: kube-gateway
-    helm.sh/chart: kgateway-proxy-1.0.0-ci1
     app.kubernetes.io/name: gw
     app.kubernetes.io/instance: gw
     gateway.networking.k8s.io/gateway-name: gw
     app.kubernetes.io/version: "1.0.0-ci1"
     gateway.networking.k8s.io/gateway-class-name: kgateway
-    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/managed-by: kgateway
 spec:
   replicas: 2
   selector:

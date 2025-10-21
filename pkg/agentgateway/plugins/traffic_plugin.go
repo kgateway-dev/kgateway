@@ -41,6 +41,7 @@ const (
 	localRateLimitPolicySuffix  = ":rl-local"
 	globalRateLimitPolicySuffix = ":rl-global"
 	transformationPolicySuffix  = ":transformation"
+	csrfPolicySuffix            = ":csrf"
 )
 
 var logger = logging.New("agentgateway/plugins")
@@ -352,6 +353,16 @@ func translateTrafficPolicyToAgw(
 			errs = append(errs, err)
 		}
 		agwPolicies = append(agwPolicies, transformationPolicies...)
+	}
+
+	// Process CSRF policies if present
+	if trafficPolicy.Spec.Csrf != nil {
+		csrfPolicies, err := processCSRFPolicy(trafficPolicy, policyName, policyTarget)
+		if err != nil {
+			logger.Error("error processing CSRF policy", "error", err)
+			errs = append(errs, err)
+		}
+		agwPolicies = append(agwPolicies, csrfPolicies...)
 	}
 
 	return agwPolicies, errors.Join(errs...)
@@ -1062,6 +1073,44 @@ func toJSONValue(value string) (string, error) {
 		return "", err
 	}
 	return string(marshaled), nil
+}
+
+func processCSRFPolicy(trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) ([]AgwPolicy, error) {
+	csrf := trafficPolicy.Spec.Csrf
+
+	// Return error if PercentageEnabled is set since it's not supported for agentgateway
+	if csrf.PercentageEnabled != nil {
+		return nil, fmt.Errorf("percentageEnabled field is not supported for agentgateway, CSRF is enabled for all requests (percentage_enabled: %v)", *csrf.PercentageEnabled)
+	}
+
+	// Return error if PercentageShadowed is set since it's not supported for agentgateway
+	if csrf.PercentageShadowed != nil {
+		return nil, fmt.Errorf("percentageShadowed field is not supported for agentgateway, CSRF is always enforced when enabled (percentage_shadowed: %v)", *csrf.PercentageShadowed)
+	}
+
+	var additionalOrigins []string
+
+	for _, origin := range csrf.AdditionalOrigins {
+		if origin.Exact != nil {
+			additionalOrigins = append(additionalOrigins, *origin.Exact)
+		} else {
+			return nil, fmt.Errorf("CSRF additional origins must specify exact matches only, non-exact origin matchers are not supported for agentgateway")
+		}
+	}
+
+	csrfPolicy := &api.Policy{
+		Name:   policyName + csrfPolicySuffix + attachmentName(policyTarget),
+		Target: policyTarget,
+		Spec: &api.PolicySpec{
+			Kind: &api.PolicySpec_Csrf{
+				Csrf: &api.PolicySpec_CSRF{
+					AdditionalOrigins: additionalOrigins,
+				},
+			},
+		},
+	}
+
+	return []AgwPolicy{{Policy: csrfPolicy}}, nil
 }
 
 // processTransformationPolicy processes transformation configuration and creates corresponding Agw policies
