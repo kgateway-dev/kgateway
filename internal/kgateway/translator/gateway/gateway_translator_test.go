@@ -26,6 +26,9 @@ func TestBasic(t *testing.T) {
 		defer cancel()
 		dir := fsutils.MustGetThisDir()
 
+		settingOpts = append(settingOpts, func(s *apisettings.Settings) {
+			s.EnableExperimentalFeatures = true
+		})
 		inputFiles := []string{filepath.Join(dir, "testutils/inputs/", in.inputFile)}
 		expectedProxyFile := filepath.Join(dir, "testutils/outputs/", in.outputFile)
 		translatortest.TestTranslation(t, ctx, inputFiles, expectedProxyFile, in.gwNN, settingOpts...)
@@ -373,8 +376,6 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
-		}, func(s *apisettings.Settings) {
-			s.EnableExperimentalFeatures = true
 		})
 	})
 
@@ -386,8 +387,6 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
-		}, func(s *apisettings.Settings) {
-			s.EnableExperimentalFeatures = true
 		})
 	})
 
@@ -1048,8 +1047,6 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
-		}, func(s *apisettings.Settings) {
-			s.EnableExperimentalFeatures = true
 		})
 	})
 
@@ -1061,8 +1058,6 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
-		}, func(s *apisettings.Settings) {
-			s.EnableExperimentalFeatures = true
 		})
 	})
 
@@ -1074,8 +1069,6 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
-		}, func(s *apisettings.Settings) {
-			s.EnableExperimentalFeatures = true
 		})
 	})
 
@@ -1208,8 +1201,6 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
-		}, func(s *apisettings.Settings) {
-			s.EnableExperimentalFeatures = true
 		})
 	})
 
@@ -1221,8 +1212,6 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
-		}, func(s *apisettings.Settings) {
-			s.EnableExperimentalFeatures = true
 		})
 	})
 
@@ -1234,8 +1223,6 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
-		}, func(s *apisettings.Settings) {
-			s.EnableExperimentalFeatures = true
 		})
 	})
 
@@ -1247,8 +1234,6 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
-		}, func(s *apisettings.Settings) {
-			s.EnableExperimentalFeatures = true
 		})
 	})
 
@@ -1260,8 +1245,6 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
-		}, func(s *apisettings.Settings) {
-			s.EnableExperimentalFeatures = true
 		})
 	})
 
@@ -1284,8 +1267,6 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "test",
 			},
-		}, func(s *apisettings.Settings) {
-			s.EnableExperimentalFeatures = true
 		})
 	})
 
@@ -1540,7 +1521,10 @@ func TestRouteDelegation(t *testing.T) {
 			Namespace: "infra",
 			Name:      "example-gateway",
 		}
-		translatortest.TestTranslation(t, ctx, inputFiles, outputFile, gwNN)
+		settingOpt := func(s *apisettings.Settings) {
+			s.EnableExperimentalFeatures = true
+		}
+		translatortest.TestTranslation(t, ctx, inputFiles, outputFile, gwNN, settingOpt)
 	}
 	t.Run("Basic config", func(t *testing.T) {
 		test(t, "basic.yaml")
@@ -1676,6 +1660,7 @@ func TestDiscoveryNamespaceSelector(t *testing.T) {
 		settingOpts := []translatortest.SettingsOpts{
 			func(s *apisettings.Settings) {
 				s.DiscoveryNamespaceSelectors = cfgJSON
+				s.EnableExperimentalFeatures = true
 			},
 		}
 
