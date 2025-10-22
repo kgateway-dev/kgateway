@@ -81,18 +81,6 @@ func registerTypes(_ versioned.Interface) {
 			return c.GatewayAPI().GatewayV1().GatewayClasses().Watch(context.Background(), o)
 		},
 	)
-
-	// TODO: Update when istio supports ListenerSets
-	kubeclient.Register[*gwxv1a1.XListenerSet](
-		wellknown.XListenerSetGVR,
-		wellknown.XListenerSetGVK,
-		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
-			return c.GatewayAPI().ExperimentalV1alpha1().XListenerSets(namespace).List(context.Background(), o)
-		},
-		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
-			return c.GatewayAPI().ExperimentalV1alpha1().XListenerSets(namespace).Watch(context.Background(), o)
-		},
-	)
 }
 
 func InitCollections(
@@ -126,8 +114,13 @@ func InitCollections(
 	kubeRawGateways := krt.WrapClient(kclient.NewFiltered[*gwv1.Gateway](istioClient, filter), krtopts.ToOptions("KubeGateways")...)
 	metrics.RegisterEvents(kubeRawGateways, kmetrics.GetResourceMetricEventHandler[*gwv1.Gateway]())
 
-	kubeRawListenerSets := krt.WrapClient(kclient.NewDelayedInformer[*gwxv1a1.XListenerSet](istioClient, wellknown.XListenerSetGVR, kubetypes.StandardInformer, filter), krtopts.ToOptions("KubeListenerSets")...)
-	metrics.RegisterEvents(kubeRawListenerSets, kmetrics.GetResourceMetricEventHandler[*gwxv1a1.XListenerSet]())
+	var kubeRawListenerSets krt.Collection[*gwxv1a1.XListenerSet]
+	if globalSettings.EnableExperimentalFeatures {
+		kubeRawListenerSets = krt.WrapClient(kclient.NewDelayedInformer[*gwxv1a1.XListenerSet](istioClient, wellknown.XListenerSetGVR, kubetypes.StandardInformer, filter), krtopts.ToOptions("KubeListenerSets")...)
+	} else {
+		// If disabled, still build a collection but make it always empty
+		kubeRawListenerSets = krt.NewStaticCollection[*gwxv1a1.XListenerSet](nil, nil, krtopts.ToOptions("disable/KubeListenerSets")...)
+	}
 
 	//nolint:forbidigo // ObjectFilter is not needed for this client as it is cluster scoped
 	gatewayClasses := krt.WrapClient(kclient.New[*gwv1.GatewayClass](istioClient), krtopts.ToOptions("KubeGatewayClasses")...)

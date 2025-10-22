@@ -47,6 +47,7 @@ func allEnvVarsSet() map[string]string {
 		"KGW_ENABLE_WAYPOINT":                "true",
 		"KGW_XDS_AUTH":                       "false",
 		"KGW_XDS_TLS":                        "true",
+		"KGW_ENABLE_EXPERIMENTAL_FEATURES":   "true",
 	}
 }
 
@@ -99,6 +100,7 @@ func TestSettings(t *testing.T) {
 				EnableWaypoint:              false,
 				XdsAuth:                     true,
 				XdsTLS:                      false,
+				EnableExperimentalFeatures:  false,
 			},
 		},
 		{
@@ -136,6 +138,7 @@ func TestSettings(t *testing.T) {
 				EnableWaypoint:              true,
 				XdsAuth:                     false,
 				XdsTLS:                      true,
+				EnableExperimentalFeatures:  true,
 			},
 		},
 		{

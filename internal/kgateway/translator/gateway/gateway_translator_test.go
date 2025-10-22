@@ -373,6 +373,8 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
+		}, func(s *apisettings.Settings) {
+			s.EnableExperimentalFeatures = true
 		})
 	})
 
@@ -384,6 +386,8 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
+		}, func(s *apisettings.Settings) {
+			s.EnableExperimentalFeatures = true
 		})
 	})
 
@@ -1044,6 +1048,8 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
+		}, func(s *apisettings.Settings) {
+			s.EnableExperimentalFeatures = true
 		})
 	})
 
@@ -1055,6 +1061,8 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
+		}, func(s *apisettings.Settings) {
+			s.EnableExperimentalFeatures = true
 		})
 	})
 
@@ -1066,6 +1074,8 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
+		}, func(s *apisettings.Settings) {
+			s.EnableExperimentalFeatures = true
 		})
 	})
 
@@ -1198,6 +1208,8 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
+		}, func(s *apisettings.Settings) {
+			s.EnableExperimentalFeatures = true
 		})
 	})
 
@@ -1209,6 +1221,8 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
+		}, func(s *apisettings.Settings) {
+			s.EnableExperimentalFeatures = true
 		})
 	})
 
@@ -1220,6 +1234,8 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
+		}, func(s *apisettings.Settings) {
+			s.EnableExperimentalFeatures = true
 		})
 	})
 
@@ -1231,6 +1247,8 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
+		}, func(s *apisettings.Settings) {
+			s.EnableExperimentalFeatures = true
 		})
 	})
 
@@ -1242,6 +1260,8 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
+		}, func(s *apisettings.Settings) {
+			s.EnableExperimentalFeatures = true
 		})
 	})
 
@@ -1264,6 +1284,8 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "test",
 			},
+		}, func(s *apisettings.Settings) {
+			s.EnableExperimentalFeatures = true
 		})
 	})
 
@@ -1483,6 +1505,7 @@ func TestValidation(t *testing.T) {
 
 		settingOpts := func(s *apisettings.Settings) {
 			s.ValidationMode = mode
+			s.EnableExperimentalFeatures = true
 		}
 		translatortest.TestTranslation(t, ctx, []string{inputFile}, outputFile, gwNN, settingOpts)
 	}
