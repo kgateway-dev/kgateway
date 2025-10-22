@@ -63,6 +63,10 @@ func reportPolicyAttachmentStatus(
 	policies ...ir.PolicyAtt,
 ) {
 	for _, policy := range policies {
+		if len(policy.Errors) > 0 {
+			continue
+		}
+
 		if policy.PolicyRef == nil {
 			// Not a policy associated with a CR, can't report status on it
 			continue
