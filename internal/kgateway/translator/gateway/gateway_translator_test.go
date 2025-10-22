@@ -26,9 +26,11 @@ func TestBasic(t *testing.T) {
 		defer cancel()
 		dir := fsutils.MustGetThisDir()
 
-		settingOpts = append(settingOpts, func(s *apisettings.Settings) {
-			s.EnableExperimentalFeatures = true
-		})
+		// Prepend setting EnableExperimentalFeatures to true so it can be overwritten by settingOpts
+		settingOpts = append([]translatortest.SettingsOpts{
+			func(s *apisettings.Settings) {
+				s.EnableExperimentalFeatures = true
+			}}, settingOpts...)
 		inputFiles := []string{filepath.Join(dir, "testutils/inputs/", in.inputFile)}
 		expectedProxyFile := filepath.Join(dir, "testutils/outputs/", in.outputFile)
 		translatortest.TestTranslation(t, ctx, inputFiles, expectedProxyFile, in.gwNN, settingOpts...)
@@ -1036,6 +1038,19 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
+		})
+	})
+
+	t.Run("basic listener set with experimental features disabled", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-sets/basic.yaml",
+			outputFile: "listener-sets/basic-experimental-disabled.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}, func(s *apisettings.Settings) {
+			s.EnableExperimentalFeatures = false
 		})
 	})
 
