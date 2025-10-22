@@ -63,6 +63,7 @@ func reportPolicyAttachmentStatus(
 	policies ...ir.PolicyAtt,
 ) {
 	for _, policy := range policies {
+		// Skip report attach status if there are errors and keep in pending attach status
 		if len(policy.Errors) > 0 {
 			continue
 		}
