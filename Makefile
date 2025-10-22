@@ -43,7 +43,7 @@ SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
 # Note: When bumping this version, update the version in pkg/validator/validator.go as well.
 export ENVOY_IMAGE ?= quay.io/solo-io/envoy-gloo:1.35.2-patch4
-export LDFLAGS := -X 'github.com/kgateway-dev/kgateway/v2/internal/version.Version=$(VERSION)'
+export LDFLAGS := -X 'github.com/kgateway-dev/kgateway/v2/internal/version.Version=$(VERSION)' -s -w
 export GCFLAGS ?=
 
 UNAME_M := $(shell uname -m)
