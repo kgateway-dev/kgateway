@@ -1,0 +1,27 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+  namespace: default
+spec: null
+status:
+  parents:
+  - conditions:
+    - lastTransitionTime: fake
+      message: ""
+      reason: Accepted
+      status: "True"
+      type: Accepted
+    - lastTransitionTime: fake
+      message: 'Cannot combine multiple terminal filters: RequestRedirect and DirectResponse
+        are mutually exclusive. Only one terminal filter is allowed per route rule.'
+      reason: IncompatibleFilters
+      status: "False"
+      type: ResolvedRefs
+    controllerName: kgateway.dev/agentgateway
+    parentRef:
+      group: gateway.networking.k8s.io
+      kind: Gateway
+      name: example-gateway
+      namespace: default
+---

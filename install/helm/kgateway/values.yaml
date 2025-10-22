@@ -106,7 +106,7 @@ discoveryNamespaceSelectors: []
 
 # -- Enable the integration with Agent Gateway, which lets you use kgateway to help manage agent connectivity across MCP servers, A2A agents, and REST APIs.
 agentgateway:
-  enabled: false
+  enabled: true
 
 # -- Policy merging settings. Currently, TrafficPolicy's extAuth, extProc, and transformation policies support deep merging.
 # E.g., to enable deep merging of extProc policy in TrafficPolicy:

@@ -1,0 +1,17 @@
+Addresses:
+- service:
+    hostname: example-svc.default.svc.cluster.local
+    name: example-svc
+    namespace: default
+    ports:
+    - servicePort: 443
+Binds:
+- key: 443/default/example-gateway
+  port: 443
+Listeners:
+- bindKey: 443/default/example-gateway
+  gatewayName: default/example-gateway
+  hostname: '*.example.com'
+  key: default/example-gateway.https
+  name: https
+  protocol: TLS

@@ -6,12 +6,9 @@ import (
 	"github.com/agentgateway/agentgateway/go/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/proto"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
 )
 
@@ -270,101 +267,6 @@ func TestGetProtocolAndTLSConfig(t *testing.T) {
 					assert.Nil(t, tlsConfig)
 				}
 			}
-		})
-	}
-}
-
-func TestAgwResourcesForGatewayEquals(t *testing.T) {
-	testCases := []struct {
-		name      string
-		resource1 agwir.AgwResourcesForGateway
-		resource2 agwir.AgwResourcesForGateway
-		expected  bool
-	}{
-		{
-			name: "Equal bind resources",
-			resource1: agwir.AgwResourcesForGateway{
-				Resources: []*api.Resource{{
-					Kind: &api.Resource_Bind{
-						Bind: &api.Bind{
-							Key:  "test-key",
-							Port: 8080,
-						},
-					},
-				}},
-				Gateway: types.NamespacedName{Name: "test", Namespace: "default"},
-			},
-			resource2: agwir.AgwResourcesForGateway{
-				Resources: []*api.Resource{{
-					Kind: &api.Resource_Bind{
-						Bind: &api.Bind{
-							Key:  "test-key",
-							Port: 8080,
-						},
-					},
-				}},
-				Gateway: types.NamespacedName{Name: "test", Namespace: "default"},
-			},
-			expected: true,
-		},
-		{
-			name: "Different gateway",
-			resource1: agwir.AgwResourcesForGateway{
-				Resources: []*api.Resource{{
-					Kind: &api.Resource_Bind{
-						Bind: &api.Bind{
-							Key:  "test-key",
-							Port: 8080,
-						},
-					},
-				}},
-				Gateway: types.NamespacedName{Name: "test", Namespace: "default"},
-			},
-			resource2: agwir.AgwResourcesForGateway{
-				Resources: []*api.Resource{{
-					Kind: &api.Resource_Bind{
-						Bind: &api.Bind{
-							Key:  "test-key",
-							Port: 8080,
-						},
-					},
-				}},
-				Gateway: types.NamespacedName{Name: "other", Namespace: "default"},
-			},
-			expected: false,
-		},
-		{
-			name: "Different resource port",
-			resource1: agwir.AgwResourcesForGateway{
-				Resources: []*api.Resource{{
-					Kind: &api.Resource_Bind{
-						Bind: &api.Bind{
-							Key:  "test-key",
-							Port: 8080,
-						},
-					},
-				}},
-				Gateway: types.NamespacedName{Name: "test", Namespace: "default"},
-			},
-			resource2: agwir.AgwResourcesForGateway{
-				Resources: []*api.Resource{{
-					Kind: &api.Resource_Bind{
-						Bind: &api.Bind{
-							Key:  "test-key",
-							Port: 9090,
-						},
-					},
-				}},
-				Gateway: types.NamespacedName{Name: "test", Namespace: "default"},
-			},
-			expected: false,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			result := proto.Equal(tc.resource1.Resources[0], tc.resource2.Resources[0]) && tc.resource1.Gateway == tc.resource2.Gateway
-			assert.Equal(t, tc.expected, result)
 		})
 	}
 }

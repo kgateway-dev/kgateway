@@ -116,10 +116,8 @@ spec:
               value: {{ $value | quote }}
             {{- end }}
             {{- end }}
-            {{- if .Values.agentgateway.enabled }}
             - name: KGW_ENABLE_AGENTGATEWAY
-              value: "true"
-            {{- end }}
+              value: "{{.Values.agentgateway.enabled}}"
             {{- if .Values.waypoint.enabled }}
             - name: KGW_ENABLE_WAYPOINT
               value: "true"

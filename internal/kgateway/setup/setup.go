@@ -23,6 +23,7 @@ import (
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/admin"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -328,7 +329,7 @@ func (s *setup) Start(ctx context.Context) error {
 		}()
 	}
 
-	cache := NewControlPlane(ctx, s.xdsListener, s.agwXdsListener, uniqueClientCallbacks, authenticators, s.globalSettings.XdsAuth, certWatcher)
+	cache := NewControlPlane(ctx, s.xdsListener, uniqueClientCallbacks, authenticators, s.globalSettings.XdsAuth, certWatcher)
 
 	setupOpts := &controller.SetupOpts{
 		Cache:          cache,
@@ -347,6 +348,7 @@ func (s *setup) Start(ctx context.Context) error {
 		cli,
 		mgr.GetClient(),
 		s.gatewayControllerName,
+		s.agwControllerName,
 		*s.globalSettings,
 	)
 	if err != nil {
@@ -373,7 +375,7 @@ func (s *setup) Start(ctx context.Context) error {
 		}
 	}
 
-	BuildKgatewayWithConfig(
+	agw, err := BuildKgatewayWithConfig(
 		ctx, mgr, s.gatewayControllerName, s.agwControllerName, s.gatewayClassName, s.waypointClassName,
 		s.agentgatewayClassName, s.additionalGatewayClasses, setupOpts, s.restConfig,
 		istioClient, commoncol, agwCollections, uccBuilder, s.extraPlugins, s.extraAgwPlugins,
@@ -382,6 +384,13 @@ func (s *setup) Start(ctx context.Context) error {
 		s.validator,
 		s.extraAgwPolicyStatusHandlers,
 	)
+	if err != nil {
+		return err
+	}
+
+	if s.agwXdsListener != nil && agw != nil {
+		NewAgwControlPlane(ctx, s.agwXdsListener, authenticators, s.globalSettings.XdsAuth, certWatcher, agw.Registrations...)
+	}
 
 	slog.Info("starting admin server")
 	go admin.RunAdminServer(ctx, setupOpts)
@@ -416,7 +425,7 @@ func BuildKgatewayWithConfig(
 	extraGatewayParameters []client.Object,
 	validator validator.Validator,
 	extraAgwPolicyStatusHandlers map[string]agwplugins.AgwPolicyStatusSyncHandler,
-) error {
+) (*agentgatewaysyncer.Syncer, error) {
 	slog.Info("creating krt collections")
 	krtOpts := krtutil.NewKrtOptions(ctx.Done(), setupOpts.KrtDebugger)
 
@@ -455,7 +464,7 @@ func BuildKgatewayWithConfig(
 	})
 	if err != nil {
 		slog.Error("failed initializing controller: ", "error", err)
-		return err
+		return nil, err
 	}
 
 	slog.Info("waiting for cache sync")
