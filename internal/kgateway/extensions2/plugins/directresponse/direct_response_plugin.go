@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"istio.io/istio/pkg/kube/kubetypes"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -60,6 +61,9 @@ func registerTypes(ourCli versioned.Interface) {
 		},
 		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 			return ourCli.GatewayV1alpha1().DirectResponses(namespace).Watch(context.Background(), o)
+		},
+		func(c skubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*v1alpha1.DirectResponse] {
+			return ourCli.GatewayV1alpha1().DirectResponses(namespace)
 		},
 	)
 }

@@ -280,15 +280,6 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 						IstioMetaClusterId:    ptr.To("Kubernetes"),
 					},
 				},
-				AiExtension: &v1alpha1.AiExtension{
-					Enabled: ptr.To(false),
-					Image: &v1alpha1.Image{
-						Repository: ptr.To(KgatewayAIContainerName),
-						Registry:   ptr.To(imageInfo.Registry),
-						Tag:        ptr.To(imageInfo.Tag),
-						PullPolicy: (*corev1.PullPolicy)(ptr.To(imageInfo.PullPolicy)),
-					},
-				},
 				Agentgateway: &v1alpha1.Agentgateway{
 					Enabled:  ptr.To(false),
 					LogLevel: ptr.To("info"),

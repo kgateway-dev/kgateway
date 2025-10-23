@@ -396,20 +396,12 @@ func ParentString(ref gwv1.ParentReference) string {
 // to a given report, i.e. set healthy conditions
 func addMissingGatewayConditions(gwReport *GatewayReport, gw *gwv1.Gateway) {
 	// If the existing Gateway status contains an Accepted=False with Reason=InvalidParameters,
-	// propagate that into the reporter so it persists and is considered owned by the reporter.
+	// we don't want to override it with a true Accepted status. The controller will set Accepted=True
+	// when the GatewayParameters are valid again. Otherwise there is a race condition between the controller and reporter.
 	// HACK: This is because both the controller and reporter set Accepted status.
-	if existing := meta.FindStatusCondition(gw.Status.Conditions, string(gwv1.GatewayConditionAccepted)); existing != nil &&
-		existing.Status == metav1.ConditionFalse &&
-		existing.Reason == string(gwv1.GatewayReasonInvalidParameters) {
-		gwReport.SetCondition(reporter.GatewayCondition{
-			Type:    gwv1.GatewayConditionAccepted,
-			Status:  metav1.ConditionFalse,
-			Reason:  gwv1.GatewayConditionReason(existing.Reason),
-			Message: existing.Message,
-		})
-	}
-
-	if cond := meta.FindStatusCondition(gwReport.GetConditions(), string(gwv1.GatewayConditionAccepted)); cond == nil {
+	existingAccepted := meta.FindStatusCondition(gw.Status.Conditions, string(gwv1.GatewayConditionAccepted))
+	hasInvalidParams := existingAccepted != nil && existingAccepted.Status == metav1.ConditionFalse && existingAccepted.Reason == string(gwv1.GatewayReasonInvalidParameters)
+	if !hasInvalidParams && meta.FindStatusCondition(gwReport.GetConditions(), string(gwv1.GatewayConditionAccepted)) == nil {
 		gwReport.SetCondition(reporter.GatewayCondition{
 			Type:    gwv1.GatewayConditionAccepted,
 			Status:  metav1.ConditionTrue,
