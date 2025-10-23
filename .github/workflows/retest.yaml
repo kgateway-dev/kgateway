@@ -12,6 +12,8 @@ jobs:
       actions: write
     runs-on: ubuntu-22.04
     steps:
+      - name: Check out code
+        uses: actions/checkout@v4
       - name: Re-run failed jobs
         env:
           PR_COMMENT: ${{ github.event.comment.body }}
