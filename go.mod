@@ -8,7 +8,7 @@ require (
 	github.com/avast/retry-go v2.4.3+incompatible
 	github.com/avast/retry-go/v4 v4.3.3
 	github.com/cncf/xds/go v0.0.0-20250501225837-2ac532fd4443
-	github.com/envoyproxy/go-control-plane v0.13.5-0.20250811224534-421509affe26
+	github.com/envoyproxy/go-control-plane v0.13.5-0.20251013064519-48f97e33cb02
 	github.com/envoyproxy/go-control-plane/contrib v1.32.5-0.20250627145903-197b96a9c7f8
 	github.com/envoyproxy/go-control-plane/envoy v1.35.1-0.20251010000747-50f0b197aa55
 	github.com/envoyproxy/go-control-plane/ratelimit v0.1.1-0.20250507123352-93990c5ec02f
@@ -39,9 +39,9 @@ require (
 	google.golang.org/grpc v1.76.0
 	google.golang.org/protobuf v1.36.10
 	helm.sh/helm/v3 v3.18.6
-	istio.io/api v1.26.0-alpha.0.0.20251002142010-859b66f07fad
-	istio.io/client-go v1.26.0-alpha.0.0.20251002142408-752760d8f171
-	istio.io/istio v0.0.0-20251009125038-5ab6df7e5282
+	istio.io/api v1.28.0-alpha.0.0.20251015201407-f6b4b4f56db2
+	istio.io/client-go v1.28.0-alpha.0.0.20251015201706-99349a9d18ee
+	istio.io/istio v0.0.0-20251022175005-4d80c2b3b141
 	k8s.io/api v0.34.1
 	k8s.io/apiextensions-apiserver v0.34.1
 	k8s.io/apimachinery v0.34.1

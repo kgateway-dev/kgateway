@@ -59,20 +59,40 @@ var (
 		Version: apiv1.GroupVersion.Version,
 		Kind:    HTTPRouteKind,
 	}
+	HTTPRouteGVR = schema.GroupVersionResource{
+		Group:    GatewayGroup,
+		Version:  apiv1.GroupVersion.Version,
+		Resource: "httproutes",
+	}
 	TLSRouteGVK = schema.GroupVersionKind{
 		Group:   GatewayGroup,
 		Version: apiv1alpha2.GroupVersion.Version,
 		Kind:    TLSRouteKind,
+	}
+	TLSRouteGVR = schema.GroupVersionResource{
+		Group:    GatewayGroup,
+		Version:  apiv1alpha2.GroupVersion.Version,
+		Resource: "tlsroutes",
 	}
 	TCPRouteGVK = schema.GroupVersionKind{
 		Group:   GatewayGroup,
 		Version: apiv1alpha2.GroupVersion.Version,
 		Kind:    TCPRouteKind,
 	}
+	TCPRouteGVR = schema.GroupVersionResource{
+		Group:    GatewayGroup,
+		Version:  apiv1alpha2.GroupVersion.Version,
+		Resource: "tcproutes",
+	}
 	GRPCRouteGVK = schema.GroupVersionKind{
 		Group:   GatewayGroup,
 		Version: apiv1.GroupVersion.Version,
 		Kind:    GRPCRouteKind,
+	}
+	GRPCRouteGVR = schema.GroupVersionResource{
+		Group:    GatewayGroup,
+		Version:  apiv1.GroupVersion.Version,
+		Resource: "grpcroutes",
 	}
 	ReferenceGrantGVK = schema.GroupVersionKind{
 		Group:   GatewayGroup,
