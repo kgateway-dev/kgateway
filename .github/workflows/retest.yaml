@@ -5,11 +5,14 @@ on:
 
 jobs:
   retest:
-    # only run this job on PR comments from org members
-    if: github.event.issue.pull_request
-    permissions:
-      contents: read
-      actions: write
+    # only run this job on PR comments from org members/owners where the comment is exactly "/retest"
+    if: |
+      github.event.issue.pull_request &&
+      (github.event.comment.author_association == 'MEMBER' || github.event.comment.author_association == 'OWNER') &&
+      github.event.comment.body == "/retest"
+    #permissions:
+    #  contents: read
+    #  actions: write
     runs-on: ubuntu-22.04
     steps:
       - name: Check out code
@@ -21,15 +24,8 @@ jobs:
           MEMBER: ${{ github.event.comment.author_association }}
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          echo PR_COMMENT: $PR_COMMENT
           echo PR_NUMBER: $PR_NUMBER
           echo MEMBER: $MEMBER
-          echo "i did set gh token"
-
-          if [[ "$PR_COMMENT" != "/retest" ]]; then
-            # only care about retest comment
-            exit 0
-          fi
 
           # get the SHA of the PR's latest commit
           commit_sha=$(gh pr view $PR_NUMBER --json headRefOid --jq '.headRefOid')
