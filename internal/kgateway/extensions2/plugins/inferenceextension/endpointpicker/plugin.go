@@ -52,12 +52,10 @@ const (
 	subsetDstEndpointKey = dstEndpointKey + "-subset"
 )
 
-var (
-	logger = logging.New("plugin/inference-epp")
-)
+var logger = logging.New("plugin/inference-epp")
 
 func NewPlugin(ctx context.Context, commonCols *collections.CommonCollections) sdk.Plugin {
-	p := initInferencePoolCollections(ctx, commonCols)
+	p, cli := initInferencePoolCollections(ctx, commonCols)
 
 	// Wrap the init function so it can capture commonCols.Pods
 	initBackend := func(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
@@ -85,6 +83,7 @@ func NewPlugin(ctx context.Context, commonCols *collections.CommonCollections) s
 			wellknown.InferencePoolGVK.GroupKind(): buildRegisterCallback(
 				ctx,
 				commonCols,
+				cli,
 				p.backendsCtl,
 				p.poolIndex,
 				commonCols.LocalityPods,

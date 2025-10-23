@@ -27,14 +27,12 @@ import (
 	"istio.io/istio/pilot/pkg/config/kube/crd"
 	"istio.io/istio/pilot/test/util"
 	"istio.io/istio/pkg/config/schema/gvk"
-	"istio.io/istio/pkg/config/schema/gvr"
 	kubeclient "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/kclient/clienttest"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	"sigs.k8s.io/gateway-api/pkg/consts"
@@ -58,6 +56,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
+	translatortest "github.com/kgateway-dev/kgateway/v2/test/translator"
 )
 
 type AssertReports func(gwNN types.NamespacedName, reportsMap reports.ReportMap)
@@ -506,21 +505,7 @@ func (tc TestCase) Run(
 
 	ourCli := fake.NewSimpleClientset(ourObjs...)
 	cli := kubeclient.NewFakeClient(anyObjs...)
-	for _, crd := range []schema.GroupVersionResource{
-		gvr.KubernetesGateway_v1,
-		gvr.GatewayClass,
-		gvr.HTTPRoute_v1,
-		gvr.GRPCRoute,
-		gvr.Service,
-		gvr.Pod,
-		gvr.TCPRoute,
-		gvr.TLSRoute,
-		gvr.ServiceEntry,
-		gvr.WorkloadEntry,
-		gvr.AuthorizationPolicy,
-		wellknown.XListenerSetGVR,
-		wellknown.BackendTLSPolicyGVR,
-	} {
+	for _, crd := range translatortest.AllCRDs {
 		clienttest.MakeCRDWithAnnotations(t, cli, crd, map[string]string{
 			consts.BundleVersionAnnotation: consts.BundleVersion,
 		})
@@ -569,7 +554,6 @@ func (tc TestCase) Run(
 		krtOpts,
 		cli,
 		ourCli,
-		nil,
 		wellknown.DefaultGatewayControllerName,
 		wellknown.DefaultAgwControllerName,
 		*settings,
@@ -579,8 +563,6 @@ func (tc TestCase) Run(
 	}
 	proxySyncerPlugins := proxySyncerPluginFactory(ctx, commoncol, wellknown.DefaultAgwClassName, extraPluginsFn, *settings)
 	commoncol.InitPlugins(ctx, proxySyncerPlugins, *settings)
-
-	cli.RunAndWait(ctx.Done())
 
 	// Create AgwCollections with the necessary input collections
 	agwCollections, err := agwplugins.NewAgwCollections(
@@ -592,6 +574,9 @@ func (tc TestCase) Run(
 	if err != nil {
 		return ActualTestResult{}, err
 	}
+
+	cli.RunAndWait(ctx.Done())
+
 	agwMergedPlugins := agwPluginFactory(ctx, agwCollections)
 	kubeclient.WaitForCacheSync("tlsroutes", ctx.Done(), agwCollections.TLSRoutes.HasSynced)
 	kubeclient.WaitForCacheSync("tcproutes", ctx.Done(), agwCollections.TCPRoutes.HasSynced)

@@ -131,7 +131,7 @@ func InitCollections(
 	filter := kclient.Filter{ObjectFilter: istioClient.ObjectFilter()}
 
 	// create the KRT clients, remember to also register any needed types in the type registration setup.
-	httpRoutes := krt.WrapClient(kclient.NewFiltered[*gwv1.HTTPRoute](istioClient, filter), krtopts.ToOptions("HTTPRoute")...)
+	httpRoutes := krt.WrapClient(kclient.NewFilteredDelayed[*gwv1.HTTPRoute](istioClient, wellknown.HTTPRouteGVR, filter), krtopts.ToOptions("HTTPRoute")...)
 	metrics.RegisterEvents(httpRoutes, kmetrics.GetResourceMetricEventHandler[*gwv1.HTTPRoute]())
 
 	tcproutes := krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TCPRoute](istioClient, gvr.TCPRoute, kubetypes.StandardInformer, filter), krtopts.ToOptions("TCPRoute")...)
@@ -140,10 +140,10 @@ func InitCollections(
 	tlsRoutes := krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TLSRoute](istioClient, gvr.TLSRoute, kubetypes.StandardInformer, filter), krtopts.ToOptions("TLSRoute")...)
 	metrics.RegisterEvents(tlsRoutes, kmetrics.GetResourceMetricEventHandler[*gwv1a2.TLSRoute]())
 
-	grpcRoutes := krt.WrapClient(kclient.NewFiltered[*gwv1.GRPCRoute](istioClient, filter), krtopts.ToOptions("GRPCRoute")...)
+	grpcRoutes := krt.WrapClient(kclient.NewFilteredDelayed[*gwv1.GRPCRoute](istioClient, wellknown.GRPCRouteGVR, filter), krtopts.ToOptions("GRPCRoute")...)
 	metrics.RegisterEvents(grpcRoutes, kmetrics.GetResourceMetricEventHandler[*gwv1.GRPCRoute]())
 
-	kubeRawGateways := krt.WrapClient(kclient.NewFiltered[*gwv1.Gateway](istioClient, filter), krtopts.ToOptions("KubeGateways")...)
+	kubeRawGateways := krt.WrapClient(kclient.NewFilteredDelayed[*gwv1.Gateway](istioClient, wellknown.GatewayGVR, filter), krtopts.ToOptions("KubeGateways")...)
 	metrics.RegisterEvents(kubeRawGateways, kmetrics.GetResourceMetricEventHandler[*gwv1.Gateway]())
 
 	kubeRawListenerSets := krt.WrapClient(kclient.NewDelayedInformer[*gwxv1a1.XListenerSet](istioClient, wellknown.XListenerSetGVR, kubetypes.StandardInformer, filter), krtopts.ToOptions("KubeListenerSets")...)

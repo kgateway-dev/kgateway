@@ -6,16 +6,15 @@ import (
 	"net/http"
 	"time"
 
-	"istio.io/istio/pkg/kube/kubetypes"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/kube/kubetypes"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -71,8 +70,9 @@ func registerTypes(ourCli versioned.Interface) {
 func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
 	registerTypes(commoncol.OurClient)
 
-	col := krt.WrapClient(kclient.NewFiltered[*v1alpha1.DirectResponse](
+	col := krt.WrapClient(kclient.NewFilteredDelayed[*v1alpha1.DirectResponse](
 		commoncol.Client,
+		wellknown.DirectResponseGVR,
 		kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()},
 	), commoncol.KrtOpts.ToOptions("DirectResponse")...)
 

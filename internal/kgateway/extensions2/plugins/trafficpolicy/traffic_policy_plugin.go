@@ -232,10 +232,12 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 
 	useRustformations = commoncol.Settings.UseRustFormations // stash the state of the env setup for rustformation usage
 
-	col := krt.WrapClient(kclient.NewFiltered[*v1alpha1.TrafficPolicy](
+	cli := kclient.NewFilteredDelayed[*v1alpha1.TrafficPolicy](
 		commoncol.Client,
+		wellknown.TrafficPolicyGVR,
 		kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()},
-	), commoncol.KrtOpts.ToOptions("TrafficPolicy")...)
+	)
+	col := krt.WrapClient(cli, commoncol.KrtOpts.ToOptions("TrafficPolicy")...)
 	gk := wellknown.TrafficPolicyGVK.GroupKind()
 
 	constructor := NewTrafficPolicyConstructor(ctx, commoncol)
@@ -278,8 +280,8 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
 					return policy.MergePolicies(pols, mergeTrafficPolicies, mergeSettings)
 				},
-				GetPolicyStatus:   getPolicyStatusFn(commoncol.CrudClient),
-				PatchPolicyStatus: patchPolicyStatusFn(commoncol.CrudClient),
+				GetPolicyStatus:   getPolicyStatusFn(cli),
+				PatchPolicyStatus: patchPolicyStatusFn(cli),
 			},
 		},
 		ExtraHasSynced: constructor.HasSynced,

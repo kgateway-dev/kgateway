@@ -35,7 +35,7 @@ linters:
         - pattern: anypb.New
           msg: use utils.MessageToAny instead
         - pattern: kclient.New$
-          msg: use kclient.NewFiltered with discovery namespace ObjectFilter instead
+          msg: use kclient.NewFilteredDelayed for CRDs and kclient.NewFiltered for core types, with discovery namespace ObjectFilter instead
     gomodguard:
       blocked:
         modules:

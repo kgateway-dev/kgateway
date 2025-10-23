@@ -49,7 +49,7 @@ type BackendConfigPolicyIR struct {
 	outlierDetection              *envoyclusterv3.OutlierDetection
 }
 
-var logger = logging.New("backendconfigpolicy")
+var logger = logging.New("plugin/backendconfigpolicy")
 
 var _ ir.PolicyIR = &BackendConfigPolicyIR{}
 
@@ -130,10 +130,12 @@ func registerTypes(ourCli versioned.Interface) {
 
 func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v validator.Validator) sdk.Plugin {
 	registerTypes(commoncol.OurClient)
-	col := krt.WrapClient(kclient.NewFiltered[*v1alpha1.BackendConfigPolicy](
+	cli := kclient.NewFilteredDelayed[*v1alpha1.BackendConfigPolicy](
 		commoncol.Client,
+		wellknown.BackendConfigPolicyGVR,
 		kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()},
-	), commoncol.KrtOpts.ToOptions("BackendConfigPolicy")...)
+	)
+	col := krt.WrapClient(cli, commoncol.KrtOpts.ToOptions("BackendConfigPolicy")...)
 	backendConfigPolicyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, b *v1alpha1.BackendConfigPolicy) *ir.PolicyWrapper {
 		policyIR, errs := translate(commoncol, krtctx, b)
 		if err := validateXDS(ctx, policyIR, v, commoncol.Settings.ValidationMode); err != nil {
@@ -159,8 +161,8 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 				Name:              "BackendConfigPolicy",
 				Policies:          backendConfigPolicyCol,
 				ProcessBackend:    processBackend,
-				GetPolicyStatus:   getPolicyStatusFn(commoncol.CrudClient),
-				PatchPolicyStatus: patchPolicyStatusFn(commoncol.CrudClient),
+				GetPolicyStatus:   getPolicyStatusFn(cli),
+				PatchPolicyStatus: patchPolicyStatusFn(cli),
 			},
 		},
 	}

@@ -58,6 +58,35 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
+var AllCRDs = []schema.GroupVersionResource{
+	// Gateway API
+	gvr.KubernetesGateway_v1,
+	gvr.GatewayClass,
+	gvr.HTTPRoute_v1,
+	gvr.GRPCRoute,
+	gvr.TCPRoute,
+	gvr.TLSRoute,
+	gvr.ReferenceGrant,
+	gvr.BackendTLSPolicy,
+	gvr.XListenerSet,
+	wellknown.InferencePoolGVR,
+	// K8s API
+	gvr.Service,
+	gvr.Pod,
+	// Istio API
+	gvr.ServiceEntry,
+	gvr.WorkloadEntry,
+	gvr.AuthorizationPolicy,
+	// kgateway API
+	wellknown.BackendTLSPolicyGVR,
+	wellknown.BackendGVR,
+	wellknown.BackendConfigPolicyGVR,
+	wellknown.TrafficPolicyGVR,
+	wellknown.HTTPListenerPolicyGVR,
+	wellknown.DirectResponseGVR,
+	wellknown.GatewayExtensionGVR,
+}
+
 type translationResult struct {
 	Routes        []*envoyroutev3.RouteConfiguration
 	Listeners     []*envoylistenerv3.Listener
@@ -585,21 +614,7 @@ func (tc TestCase) Run(
 
 	ourCli := fake.NewSimpleClientset(ourObjs...)
 	cli := kubeclient.NewFakeClient(anyObjs...)
-	for _, crd := range []schema.GroupVersionResource{
-		gvr.KubernetesGateway_v1,
-		gvr.GatewayClass,
-		gvr.HTTPRoute_v1,
-		gvr.GRPCRoute,
-		gvr.Service,
-		gvr.Pod,
-		gvr.TCPRoute,
-		gvr.TLSRoute,
-		gvr.ServiceEntry,
-		gvr.WorkloadEntry,
-		gvr.AuthorizationPolicy,
-		wellknown.XListenerSetGVR,
-		wellknown.BackendTLSPolicyGVR,
-	} {
+	for _, crd := range AllCRDs {
 		clienttest.MakeCRDWithAnnotations(t, cli, crd, map[string]string{
 			consts.BundleVersionAnnotation: consts.BundleVersion,
 		})
@@ -643,7 +658,6 @@ func (tc TestCase) Run(
 		krtOpts,
 		cli,
 		ourCli,
-		nil,
 		wellknown.DefaultGatewayControllerName,
 		wellknown.DefaultAgwControllerName,
 		*settings,

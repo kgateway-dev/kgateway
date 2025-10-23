@@ -346,7 +346,6 @@ func (s *setup) Start(ctx context.Context) error {
 		krtOpts,
 		istioClient,
 		cli,
-		mgr.GetClient(),
 		s.gatewayControllerName,
 		s.agwControllerName,
 		*s.globalSettings,

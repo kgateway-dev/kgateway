@@ -59,6 +59,11 @@ var (
 		Version: apiv1.GroupVersion.Version,
 		Kind:    GatewayClassKind,
 	}
+	GatewayClassGVR = schema.GroupVersionResource{
+		Group:    GatewayGroup,
+		Version:  apiv1.GroupVersion.Version,
+		Resource: "gatewayclasses",
+	}
 	HTTPRouteGVK = schema.GroupVersionKind{
 		Group:   GatewayGroup,
 		Version: apiv1.GroupVersion.Version,
@@ -104,6 +109,11 @@ var (
 		Version: apiv1beta1.GroupVersion.Version,
 		Kind:    ReferenceGrantKind,
 	}
+	ReferenceGrantGVR = schema.GroupVersionResource{
+		Group:    GatewayGroup,
+		Version:  apiv1beta1.GroupVersion.Version,
+		Resource: "referencegrants",
+	}
 	BackendTLSPolicyGVK = schema.GroupVersionKind{
 		Group:   GatewayGroup,
 		Version: apiv1.GroupVersion.Version,
@@ -114,7 +124,11 @@ var (
 		Version: inf.GroupVersion.Version,
 		Kind:    InferencePoolKind,
 	}
-
+	InferencePoolGVR = schema.GroupVersionResource{
+		Group:    inf.GroupVersion.Group,
+		Version:  inf.GroupVersion.Version,
+		Resource: "inferencepools",
+	}
 	BackendTLSPolicyGVR = schema.GroupVersionResource{
 		Group:    GatewayGroup,
 		Version:  apiv1.GroupVersion.Version,
