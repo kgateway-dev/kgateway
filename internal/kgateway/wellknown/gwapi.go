@@ -49,6 +49,11 @@ var (
 		Version: apiv1.GroupVersion.Version,
 		Kind:    GatewayKind,
 	}
+	GatewayGVR = schema.GroupVersionResource{
+		Group:    GatewayGroup,
+		Version:  apiv1.GroupVersion.Version,
+		Resource: "gateways",
+	}
 	GatewayClassGVK = schema.GroupVersionKind{
 		Group:   GatewayGroup,
 		Version: apiv1.GroupVersion.Version,
