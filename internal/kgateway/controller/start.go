@@ -206,10 +206,8 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		agwSyncer = agentgatewaysyncer.NewAgwSyncer(
 			cfg.AgwControllerName,
 			cfg.Client,
-			cfg.Manager,
 			cfg.AgwCollections,
 			agwMergedPlugins,
-			cfg.SetupOpts.GlobalSettings.EnableInferExt,
 		)
 
 		agwSyncer.Init(cfg.KrtOptions.WithPrefix("agentgateway"))
@@ -223,7 +221,6 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			cfg.AgwControllerName,
 			cfg.AgentgatewayClassName,
 			cfg.Client,
-			cfg.Manager,
 			agwSyncer.StatusCollections(),
 			agwSyncer.CacheSyncs(),
 		)
