@@ -8,6 +8,7 @@ import (
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/kube/kubetypes"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -46,6 +47,9 @@ func registerTypes(cli versioned.Interface) {
 		},
 		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 			return cli.InferenceV1().InferencePools(namespace).Watch(context.Background(), o)
+		},
+		func(c skubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*inf.InferencePool] {
+			return cli.InferenceV1().InferencePools(namespace)
 		},
 	)
 }

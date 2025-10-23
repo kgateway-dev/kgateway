@@ -14,6 +14,7 @@ import (
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/kube/kubetypes"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -120,6 +121,9 @@ func registerTypes(ourCli versioned.Interface) {
 		},
 		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 			return ourCli.GatewayV1alpha1().BackendConfigPolicies(namespace).Watch(context.Background(), o)
+		},
+		func(c skubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*v1alpha1.BackendConfigPolicy] {
+			return ourCli.GatewayV1alpha1().BackendConfigPolicies(namespace)
 		},
 	)
 }
