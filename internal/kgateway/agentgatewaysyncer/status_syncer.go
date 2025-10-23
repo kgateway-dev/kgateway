@@ -125,7 +125,7 @@ func NewAgwStatusSyncer(
 			},
 		},
 		listenerSets: StatusSyncer[*gwxv1a1.XListenerSet, *gwxv1a1.ListenerSetStatus]{
-			name:   "tcpRoute",
+			name:   "listenerSet",
 			client: kclient.NewFilteredDelayed[*gwxv1a1.XListenerSet](client, wellknown.XListenerSetGVR, f),
 			build: func(om metav1.ObjectMeta, s *gwxv1a1.ListenerSetStatus) *gwxv1a1.XListenerSet {
 				return &gwxv1a1.XListenerSet{
@@ -135,7 +135,7 @@ func NewAgwStatusSyncer(
 			},
 		},
 		gateways: StatusSyncer[*gwv1.Gateway, *gwv1.GatewayStatus]{
-			name:   "tcpRoute",
+			name:   "gateway",
 			client: kclient.NewFilteredDelayed[*gwv1.Gateway](client, wellknown.XListenerSetGVR, f),
 			build: func(om metav1.ObjectMeta, s *gwv1.GatewayStatus) *gwv1.Gateway {
 				return &gwv1.Gateway{
