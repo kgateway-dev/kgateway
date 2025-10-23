@@ -10,19 +10,19 @@ jobs:
       github.event.issue.pull_request &&
       (github.event.comment.author_association == 'MEMBER' || github.event.comment.author_association == 'OWNER') &&
       github.event.comment.body == '/retest'
-    #permissions:
-    #  contents: read
-    #  actions: write
+    permissions:
+     contents: read
+     actions: write
     runs-on: ubuntu-22.04
     steps:
-      - name: Check out code
-        uses: actions/checkout@v4
+      # - name: Check out code
+      #   uses: actions/checkout@v4
       - name: Re-run failed jobs
         env:
           PR_COMMENT: ${{ github.event.comment.body }}
           PR_NUMBER: ${{ github.event.issue.number }}
           MEMBER: ${{ github.event.comment.author_association }}
-          GITHUB_TOKEN: ${{ github.token }}
+          #GITHUB_TOKEN: ${{ github.token }}
         run: |
           echo PR_NUMBER: $PR_NUMBER
           echo MEMBER: $MEMBER
