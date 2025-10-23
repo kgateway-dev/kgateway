@@ -18,13 +18,19 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
       - name: Re-run failed jobs
+        shell: bash
         env:
           PR_NUMBER: ${{ github.event.issue.number }}
           GH_TOKEN: ${{ github.token }}
         run: |
           # get the SHA of the PR's latest commit
           commit_sha=$(gh pr view $PR_NUMBER --json headRefOid --jq '.headRefOid')
-          echo "PR=$PR_NUMBER, latest commit sha=$commit_sha"
+          if [[ -z "$commit_sha" ]]; then
+            echo "cannot get latest commit sha for pr number=$PR_NUMBER; gh --version:"
+            gh --version
+            exit 1
+          fi
+          echo "pr number=$PR_NUMBER, latest commit sha=$commit_sha"
 
           # get the failing workflow run IDs (if any) associated with the latest commit
           failing_run_ids=$(gh run list --commit $commit_sha --status failure --json databaseId | jq '.[].databaseId' -r)
@@ -35,7 +41,7 @@ jobs:
             exit 0
           fi
 
-          # re-run the failing workflow runs
+          # re-run the failing workflow runs (this enqueues each workflow run and returns immediately)
           for run_id in $failing_run_ids; do
             echo "Re-running failed workflow run $run_id"
             gh run rerun $run_id --failed
