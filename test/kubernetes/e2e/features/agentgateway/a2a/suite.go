@@ -27,41 +27,52 @@ func (s *testingSuite) TestA2AAgentCard() {
 	s.waitA2AEnvironmentReady()
 
 	headers := a2aHeaders()
-	out, err := s.execCurlA2A(8080, "/.well-known/agent-card.json", headers, "", "--max-time", "5")
+	out, err := s.execCurlA2A(8080, "/agent-card", headers, "", "--max-time", "5")
 	s.Require().NoError(err, "agent card curl failed")
 
 	// Without -v, output is just the JSON response
 	var card A2AAgentCard
 	s.Require().NoError(json.Unmarshal([]byte(strings.TrimSpace(out)), &card), "failed to parse agent card")
 
-	s.Require().Equal("Hello World Agent", card.Name)
-	s.Require().Equal(a2aProto, card.ProtocolVersion)
-	s.Require().Equal("JSONRPC", card.PreferredTransport)
+	s.Require().Equal("Example A2A Agent", card.Name)
+	s.Require().Equal("1.0.0", card.Version)
+	s.Require().Equal("An example A2A agent using the a2a-protocol crate", card.Description)
 	s.Require().GreaterOrEqual(len(card.Skills), 1, "expected at least one skill")
 
 	s.T().Logf("Agent card: %s v%s with %d skills", card.Name, card.Version, len(card.Skills))
 }
 
 func (s *testingSuite) TestA2AMessageSend() {
-	s.T().Log("Testing A2A message/send")
+	s.T().Log("Testing A2A tasks/send")
 	s.waitA2AEnvironmentReady()
 
 	request := buildMessageSendRequest("hello", "test-123")
 	headers := a2aHeaders()
 
 	out, err := s.execCurlA2A(8080, "/", headers, request, "--max-time", "10")
-	s.Require().NoError(err, "message/send curl failed")
+	s.Require().NoError(err, "tasks/send curl failed")
 
-	var resp A2AMessageResponse
+	var resp A2ATaskResponse
 	s.Require().NoError(json.Unmarshal([]byte(strings.TrimSpace(out)), &resp), "failed to parse response")
 
 	s.Require().Nil(resp.Error, "unexpected error in response")
 	s.Require().NotNil(resp.Result, "missing result")
-	s.Require().Equal("message", resp.Result.Kind)
-	s.Require().Equal("agent", resp.Result.Role)
-	s.Require().GreaterOrEqual(len(resp.Result.Parts), 1)
+	s.Require().Equal("task", resp.Result.Kind)
+	s.Require().Equal("working", resp.Result.Status.State)
+	s.Require().GreaterOrEqual(len(resp.Result.History), 1)
 
-	s.T().Logf("Response: %s", resp.Result.Parts[0].Text)
+	// Find the agent response in history
+	var agentMessage *A2AMessage
+	for _, msg := range resp.Result.History {
+		if msg.Role == "agent" {
+			agentMessage = &msg
+			break
+		}
+	}
+	s.Require().NotNil(agentMessage, "expected agent response in history")
+	s.Require().GreaterOrEqual(len(agentMessage.Parts), 1)
+
+	s.T().Logf("Response: %s", agentMessage.Parts[0].Text)
 }
 
 func (s *testingSuite) TestA2AHelloWorld() {
@@ -74,12 +85,27 @@ func (s *testingSuite) TestA2AHelloWorld() {
 	out, err := s.execCurlA2A(8080, "/", headers, request, "--max-time", "10")
 	s.Require().NoError(err, "hello world curl failed")
 
-	var resp A2AMessageResponse
+	var resp A2ATaskResponse
 	s.Require().NoError(json.Unmarshal([]byte(strings.TrimSpace(out)), &resp), "failed to parse response")
 
 	s.Require().Nil(resp.Error)
 	s.Require().NotNil(resp.Result)
-	s.Require().Contains(resp.Result.Parts[0].Text, "Hello World", "expected Hello World in response")
+	s.Require().Equal("task", resp.Result.Kind)
+	s.Require().Equal("working", resp.Result.Status.State)
+
+	// Find the agent response in history
+	var agentMessage *A2AMessage
+	for _, msg := range resp.Result.History {
+		if msg.Role == "agent" {
+			agentMessage = &msg
+			break
+		}
+	}
+	s.Require().NotNil(agentMessage, "expected agent response in history")
+	s.Require().GreaterOrEqual(len(agentMessage.Parts), 1)
+	s.Require().Contains(agentMessage.Parts[0].Text, "Echo", "expected Echo in response")
+
+	s.T().Logf("Response: %s", agentMessage.Parts[0].Text)
 }
 
 func (s *testingSuite) waitA2AEnvironmentReady() {

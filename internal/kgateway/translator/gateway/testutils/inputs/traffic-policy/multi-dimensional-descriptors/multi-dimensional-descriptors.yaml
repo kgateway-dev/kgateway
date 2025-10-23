@@ -1,0 +1,55 @@
+# Complex multi-dimensional rate limiting
+# Tests rate limiting with multiple entry combinations for different user tiers and endpoints
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: ratelimit-multi-dimensional
+  namespace: infra
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-gateway
+    sectionName: tls1
+  rateLimit:
+    global:
+      descriptors:
+      # Premium users get higher limits
+      - entries:
+        - type: Header
+          header: "X-User-Tier"
+        - type: Generic
+          generic:
+            key: "endpoint_type"
+            value: "api"
+      # IP-based fallback for unauthenticated requests
+      - entries:
+        - type: RemoteAddress
+        - type: Path
+      # Service-to-service communication
+      - entries:
+        - type: Header
+          header: "X-Service-Auth"
+        - type: Generic
+          generic:
+            key: "traffic_type"
+            value: "internal"
+      extensionRef:
+        name: section-name-gw-ratelimit
+---
+# Gateway extension for section-specific rate limiting
+# Used when targeting specific gateway listeners/sections
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: section-name-gw-ratelimit
+  namespace: infra
+spec:
+  type: RateLimit
+  rateLimit:
+    grpcService:
+      backendRef:
+        name: ratelimit
+        port: 8081
+    domain: "api-gateway-section"
+    timeout: "200ms"

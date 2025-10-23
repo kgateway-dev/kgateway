@@ -8,7 +8,7 @@ require (
 	github.com/avast/retry-go v2.4.3+incompatible
 	github.com/avast/retry-go/v4 v4.3.3
 	github.com/cncf/xds/go v0.0.0-20250501225837-2ac532fd4443
-	github.com/envoyproxy/go-control-plane v0.13.5-0.20250811224534-421509affe26
+	github.com/envoyproxy/go-control-plane v0.13.5-0.20251013064519-48f97e33cb02
 	github.com/envoyproxy/go-control-plane/contrib v1.32.5-0.20250627145903-197b96a9c7f8
 	github.com/envoyproxy/go-control-plane/envoy v1.35.1-0.20251010000747-50f0b197aa55
 	github.com/envoyproxy/go-control-plane/ratelimit v0.1.1-0.20250507123352-93990c5ec02f
@@ -39,15 +39,15 @@ require (
 	google.golang.org/grpc v1.76.0
 	google.golang.org/protobuf v1.36.10
 	helm.sh/helm/v3 v3.18.6
-	istio.io/api v1.26.0-alpha.0.0.20251002142010-859b66f07fad
-	istio.io/client-go v1.26.0-alpha.0.0.20251002142408-752760d8f171
-	istio.io/istio v0.0.0-20251009125038-5ab6df7e5282
+	istio.io/api v1.28.0-alpha.0.0.20251015201407-f6b4b4f56db2
+	istio.io/client-go v1.28.0-alpha.0.0.20251015201706-99349a9d18ee
+	istio.io/istio v0.0.0-20251022175005-4d80c2b3b141
 	k8s.io/api v0.34.1
 	k8s.io/apiextensions-apiserver v0.34.1
 	k8s.io/apimachinery v0.34.1
 	k8s.io/client-go v0.34.1
 	k8s.io/klog/v2 v2.130.1
-	k8s.io/kube-openapi v0.0.0-20250814151709-d7b6acb124c3
+	k8s.io/kube-openapi v0.0.0-20250814151709-d7b6acb124c3 // indirect
 	k8s.io/utils v0.0.0-20250820121507-0af2bda4dd1d
 	sigs.k8s.io/controller-runtime v0.22.1
 	sigs.k8s.io/gateway-api v1.4.0
@@ -55,7 +55,7 @@ require (
 	sigs.k8s.io/yaml v1.6.0
 )
 
-require sigs.k8s.io/structured-merge-diff/v6 v6.3.0
+require sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
 
 require (
 	github.com/anthropics/anthropic-sdk-go v1.13.0
@@ -597,7 +597,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.38.0 // indirect
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.7.1
-	go.uber.org/atomic v1.11.0 // indirect
+	go.uber.org/atomic v1.11.0
 	go.uber.org/automaxprocs v1.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	gocloud.dev v0.42.0 // indirect
@@ -609,7 +609,7 @@ require (
 	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/term v0.35.0 // indirect
 	golang.org/x/text v0.29.0 // indirect
-	golang.org/x/time v0.12.0 // indirect
+	golang.org/x/time v0.12.0
 	golang.org/x/tools v0.37.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	gomodules.xyz/jsonpatch/v2 v2.5.0 // indirect

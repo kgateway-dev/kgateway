@@ -257,6 +257,94 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy with fail open rate limiting", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/fail-open",
+			outputFile: "traffic-policy/fail-open.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with rate limiting for extension ref", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/filter-extension-ref",
+			outputFile: "traffic-policy/filter-extension-ref.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with rate limiting on gateway section attachment", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/gateway-section-attachment",
+			outputFile: "traffic-policy/gateway-section-attachment.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with local and global rate limiting combined", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/local-and-global-combined",
+			outputFile: "traffic-policy/local-and-global-combined.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with multi-dimensional rate limiting descriptors", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/multi-dimensional-descriptors",
+			outputFile: "traffic-policy/multi-dimensional-descriptors.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with multiple descriptors OR rate limiting", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/multiple-descriptors-or",
+			outputFile: "traffic-policy/multiple-descriptors-or.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with multiple headers single descriptor rate limiting", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/multiple-headers-single-descriptor",
+			outputFile: "traffic-policy/multiple-headers-single-descriptor.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with rate limiting on route section attachment", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/route-section-attachment",
+			outputFile: "traffic-policy/route-section-attachment.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy ExtProc different attachment points", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/extproc.yaml",

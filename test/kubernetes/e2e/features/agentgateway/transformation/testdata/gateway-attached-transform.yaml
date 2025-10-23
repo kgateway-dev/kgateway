@@ -25,7 +25,7 @@ spec:
     request:
       set:
         - name: request-gateway
-          value: "'hello'"
+          value: "level_{%- if headers != \"\" -%}{{headers.X-Incoming-Stuff.0}}{% else %}unknown{% endif %}"
     response:
       set:
         - name: response-gateway

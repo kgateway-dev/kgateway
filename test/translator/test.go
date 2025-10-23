@@ -583,7 +583,7 @@ func (tc TestCase) Run(
 		}
 	}
 
-	ourCli := fake.NewClientset(ourObjs...)
+	ourCli := fake.NewSimpleClientset(ourObjs...)
 	cli := kubeclient.NewFakeClient(anyObjs...)
 	for _, crd := range []schema.GroupVersionResource{
 		gvr.KubernetesGateway_v1,
@@ -645,6 +645,7 @@ func (tc TestCase) Run(
 		ourCli,
 		nil,
 		wellknown.DefaultGatewayControllerName,
+		wellknown.DefaultAgwControllerName,
 		*settings,
 	)
 	if err != nil {

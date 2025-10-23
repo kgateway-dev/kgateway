@@ -58,35 +58,12 @@ fi
 # throw away
 new_report="$(mktemp -t "$(basename "$0").api_violations.XXXXXX")"
 
-go tool openapi-gen \
-  --output-file zz_generated.openapi.go \
-  --report-filename "${new_report}" \
-  --output-dir "${ROOT_DIR}/${OPENAPI_GEN_DIR}" \
-  --output-pkg "github.com/kgateway-dev/kgateway/v2/pkg/generated/openapi" \
-  $API_INPUT_DIRS_SPACE \
-  sigs.k8s.io/gateway-api/apis/v1 \
-  sigs.k8s.io/gateway-api/apis/v1alpha2 \
-  k8s.io/apimachinery/pkg/apis/meta/v1 \
-  k8s.io/api/apps/v1 \
-  k8s.io/api/core/v1 \
-  k8s.io/apimachinery/pkg/runtime \
-  k8s.io/apimachinery/pkg/util/intstr \
-  k8s.io/apimachinery/pkg/api/resource \
-  k8s.io/apimachinery/pkg/version
-
-go tool applyconfiguration-gen \
-  --openapi-schema <(go run ${ROOT_DIR}/cmd/modelschema) \
-  --output-dir "${ROOT_DIR}/${APPLY_CFG_DIR}" \
-  --output-pkg "github.com/kgateway-dev/kgateway/v2/api/applyconfiguration" \
-  ${API_INPUT_DIRS_SPACE}
-
 go tool client-gen \
   --clientset-name "versioned" \
   --input-base "${APIS_PKG}" \
   --input "${API_INPUT_DIRS_COMMA//${APIS_PKG}/}" \
   --output-dir "${ROOT_DIR}/${CLIENT_GEN_DIR}/${CLIENTSET_PKG_NAME}" \
   --output-pkg "${OUTPUT_PKG}/${CLIENTSET_PKG_NAME}" \
-  --apply-configuration-package "${APIS_PKG}/api/applyconfiguration" \
   --plural-exceptions "GatewayParameters:GatewayParameters"
 
 go generate ${ROOT_DIR}/internal/...

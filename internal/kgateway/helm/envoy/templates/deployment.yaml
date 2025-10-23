@@ -279,46 +279,6 @@ spec:
           - mountPath: /var/run/secrets/workload-spiffe-credentials
             name: workload-certs
 {{- end }}{{/* if $gateway.istio.enabled */}}
-{{- if and ($gateway.aiExtension).enabled ($gateway.aiExtension).image }}
-      - name: kgateway-ai-extension
-        image: "{{ template "kgateway.gateway.image" $gateway.aiExtension.image }}"
-        {{- if $gateway.aiExtension.image.pullPolicy }}
-        imagePullPolicy: {{ $gateway.aiExtension.image.pullPolicy }}
-        {{- end }}
-        env:
-          - name: POD_NAME
-            valueFrom:
-              fieldRef:
-                apiVersion: v1
-                fieldPath: metadata.name
-          - name: POD_NAMESPACE
-            valueFrom:
-              fieldRef:
-                apiVersion: v1
-                fieldPath: metadata.namespace
-{{- if $gateway.aiExtension.env }}
-{{ toYaml $gateway.aiExtension.env | indent 10 }}
-{{- end }}
-{{- with $gateway.aiExtension.ports }}
-        ports:
-{{ toYaml . | indent 10 }}
-{{- end }}
-        {{- with $gateway.aiExtension.resources }}
-        resources:
-          {{- toYaml . | nindent 10 }}
-        {{- end }}
-        {{- with $gateway.aiExtension.securityContext }}
-        securityContext:
-          {{- toYaml . | nindent 10 }}
-        {{- end }}
-        terminationMessagePath: /dev/termination-log
-        terminationMessagePolicy: File
-{{- if or $gateway.aiExtension.stats $gateway.aiExtension.tracing }}
-        volumeMounts:
-          - mountPath: /var/run/ai-otel-config
-            name: ai-otel-config
-{{- end }}
-{{- end }}{{/* if (($gateway.aiExtension).enabled) */}}
       {{- with $gateway.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

@@ -365,7 +365,7 @@ func endpointSlicesBuilder(
 				Waypoint:              nil, // Not supported. In theory, we could allow it as an EndpointSlice label, but there is no real use case.
 				Locality:              nil, // Not supported. We could maybe, there is a "zone", but it doesn't seem to be well supported
 			}
-			res = append(res, precomputeWorkload(WorkloadInfo{
+			res = append(res, PrecomputeWorkload(WorkloadInfo{
 				Workload:     w,
 				Labels:       nil,
 				Source:       kind.EndpointSlice,
@@ -495,10 +495,10 @@ func endpointSliceAddressIndex(EndpointSlices krt.Collection[*discovery.Endpoint
 }
 
 func precomputeWorkloadPtr(w *WorkloadInfo) *WorkloadInfo {
-	return ptr.Of(precomputeWorkload(*w))
+	return ptr.Of(PrecomputeWorkload(*w))
 }
 
-func precomputeWorkload(w WorkloadInfo) WorkloadInfo {
+func PrecomputeWorkload(w WorkloadInfo) WorkloadInfo {
 	addr := workloadToAddress(w.Workload)
 	w.MarshaledAddress = protoconv.MessageToAny(addr)
 	w.AsAddress = AddressInfo{

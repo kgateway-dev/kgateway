@@ -46,6 +46,25 @@ type AIBackend struct {
 	PriorityGroups []PriorityGroup `json:"priorityGroups,omitempty"`
 }
 
+// RouteType specifies how the AI gateway should process incoming requests
+// based on the URL path and the API format expected.
+// +kubebuilder:validation:Enum=completions;messages;models;passthrough
+type RouteType string
+
+const (
+	// RouteTypeCompletions processes OpenAI /v1/chat/completions format requests
+	RouteTypeCompletions RouteType = "completions"
+
+	// RouteTypeMessages processes Anthropic /v1/messages format requests
+	RouteTypeMessages RouteType = "messages"
+
+	// RouteTypeModels handles /v1/models endpoint (returns available models)
+	RouteTypeModels RouteType = "models"
+
+	// RouteTypePassthrough sends requests to upstream as-is without LLM processing
+	RouteTypePassthrough RouteType = "passthrough"
+)
+
 // LLMProvider specifies the target large language model provider that the backend should route requests to.
 // +kubebuilder:validation:ExactlyOneOf=openai;azureopenai;anthropic;gemini;vertexai;bedrock
 // +kubebuilder:validation:XValidation:rule="has(self.host) || has(self.port) ? has(self.host) && has(self.port) : true",message="both host and port must be set together"
@@ -98,6 +117,13 @@ type LLMProvider struct {
 	// For example, OpenAI uses header: "Authorization" and prefix: "Bearer" But Azure OpenAI uses header: "api-key"
 	// and no Bearer.
 	AuthHeader *AuthHeader `json:"authHeader,omitempty"`
+
+	// Routes defines how to identify the type of traffic to handle.
+	// The keys are URL path suffixes matched using ends-with comparison (e.g., "/v1/chat/completions").
+	// The special "*" wildcard matches any path.
+	// If not specified, all traffic defaults to "completions" type.
+	// +optional
+	Routes map[string]RouteType `json:"routes,omitempty"`
 }
 
 // NamedLLMProvider wraps an LLMProvider with a name.

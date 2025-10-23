@@ -22,12 +22,6 @@ type AIPolicy struct {
 	// Defaults do _not_ override the user input fields, unless you explicitly set `override` to `true`.
 	Defaults []FieldDefault `json:"defaults,omitempty"`
 
-	// The type of route to the LLM provider API. Currently, `CHAT` and `CHAT_STREAMING` are supported.
-	// Note: This field is not applicable when using agentgateway
-	// +kubebuilder:validation:Enum=CHAT;CHAT_STREAMING
-	// +kubebuilder:default=CHAT
-	RouteType *RouteType `json:"routeType,omitempty"`
-
 	// ModelAliases maps friendly model names to actual provider model names.
 	// Example: {"fast": "gpt-3.5-turbo", "smart": "gpt-4-turbo"}
 	// Note: This field is only applicable when using the agentgateway data plane.
@@ -36,7 +30,6 @@ type AIPolicy struct {
 }
 
 // AIPromptEnrichment defines the config to enrich requests sent to the LLM provider by appending and prepending system prompts.
-// This can be configured only for LLM providers that use the `CHAT` or `CHAT_STREAMING` API type.
 //
 // Prompt enrichment allows you to add additional context to the prompt before sending it to the model.
 // Unlike RAG or other dynamic context methods, prompt enrichment is static and is applied to every request.
@@ -75,17 +68,6 @@ type AIPromptEnrichment struct {
 	// A list of messages to be appended to the prompt sent by the client.
 	Append []Message `json:"append,omitempty"`
 }
-
-// RouteType is the type of route to the LLM provider API.
-type RouteType string
-
-const (
-	// The LLM generates the full response before responding to a client.
-	CHAT RouteType = "CHAT"
-
-	// Stream responses to a client, which allows the LLM to stream out tokens as they are generated.
-	CHAT_STREAMING RouteType = "CHAT_STREAMING"
-)
 
 // An entry for a message to prepend or append to each prompt.
 type Message struct {

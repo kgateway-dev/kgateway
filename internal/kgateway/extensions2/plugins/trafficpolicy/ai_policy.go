@@ -165,19 +165,6 @@ func preProcessAITrafficPolicy(
 		},
 	}
 
-	// If the route options specify this as a chat streaming route, add a header to the ext-proc request
-	if aiConfig.RouteType != nil && *aiConfig.RouteType == v1alpha1.CHAT_STREAMING {
-		// append streaming header if it's a streaming route
-		extprocSettings.GetOverrides().GrpcInitialMetadata = append(extprocSettings.GetOverrides().GetGrpcInitialMetadata(), &envoycorev3.HeaderValue{
-			Key:   "x-chat-streaming",
-			Value: "true",
-		})
-		transformationTemplate.DynamicMetadataValues = append(transformationTemplate.GetDynamicMetadataValues(), &envoytransformation.TransformationTemplate_DynamicMetadataValue{
-			Key:   "route_type",
-			Value: &envoytransformation.InjaTemplate{Text: "CHAT_STREAMING"},
-		})
-	}
-
 	err := handleAITrafficPolicy(aiConfig, extprocSettings, transformationTemplate, ir.AISecret)
 	if err != nil {
 		return err

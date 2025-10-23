@@ -20,8 +20,8 @@ Statuses:
     default/test:
       conditions:
       - lastTransitionTime: null
-        message: 'Some listeners are not programmed: http: invalid port 9091 in listener
-          XListenerSet/default/test/http: port is reserved'
+        message: 'Some listeners are not programmed: http: invalid port 9091 in listener:
+          port is reserved'
         reason: ListenersNotValid
         status: "True"
         type: Accepted
@@ -34,20 +34,17 @@ Statuses:
       - attachedRoutes: 0
         conditions:
         - lastTransitionTime: null
-          message: 'invalid port 9091 in listener XListenerSet/default/test/http:
-            port is reserved'
+          message: 'invalid port 9091 in listener: port is reserved'
           reason: Invalid
           status: "True"
           type: Conflicted
         - lastTransitionTime: null
-          message: 'invalid port 9091 in listener XListenerSet/default/test/http:
-            port is reserved'
+          message: 'invalid port 9091 in listener: port is reserved'
           reason: Invalid
           status: "False"
           type: Accepted
         - lastTransitionTime: null
-          message: 'invalid port 9091 in listener XListenerSet/default/test/http:
-            port is reserved'
+          message: 'invalid port 9091 in listener: port is reserved'
           reason: Invalid
           status: "False"
           type: Programmed

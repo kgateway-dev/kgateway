@@ -180,41 +180,6 @@ func TestProcessAITrafficPolicy(t *testing.T) {
 		wellknown.AIExtProcFilterName: backendExtprocSettings,
 	})
 
-	t.Run("sets streaming header for chat streaming route", func(t *testing.T) {
-		// Setup
-		plugin := &trafficPolicyPluginGwPass{}
-		chatStreamingType := v1alpha1.CHAT_STREAMING
-		aiConfig := &v1alpha1.AIPolicy{
-			RouteType: &chatStreamingType,
-		}
-		// extproc and transformation will be set by preProcessAITrafficPolicy
-		aiSecret := &ir.Secret{}
-		aiIR := &aiPolicyIR{
-			AISecret: aiSecret,
-		}
-
-		// Execute
-		err := preProcessAITrafficPolicy(aiConfig, aiIR)
-		require.NoError(t, err)
-		plugin.processAITrafficPolicy(&typedFilterConfig, aiIR)
-
-		// Verify streaming header was added
-		extprocSettingsPostPlugin := typedFilterConfig.GetTypedConfig(wellknown.AIExtProcFilterName).(*envoy_ext_proc_v3.ExtProcPerRoute)
-		found := false
-		for _, header := range extprocSettingsPostPlugin.GetOverrides().GrpcInitialMetadata {
-			if header.Key == "x-chat-streaming" && header.Value == "true" {
-				found = true
-				break
-			}
-		}
-		assert.True(t, found, "streaming header not found")
-
-		// Verify transformation and extproc were added to context
-		transformation, ok := typedFilterConfig.GetTypedConfig(wellknown.AIPolicyTransformationFilterName).(*envoytransformation.RouteTransformations)
-		assert.True(t, ok)
-		assert.NotNil(t, transformation)
-	})
-
 	t.Run("sets debug logging when environment variable is set", func(t *testing.T) {
 		// Setup
 		plugin := &trafficPolicyPluginGwPass{}

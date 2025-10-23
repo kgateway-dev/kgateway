@@ -79,6 +79,9 @@ func registerTypes() {
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 			return c.GatewayAPI().GatewayV1().BackendTLSPolicies(namespace).Watch(context.Background(), o)
 		},
+		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*gwv1.BackendTLSPolicy] {
+			return c.GatewayAPI().GatewayV1().BackendTLSPolicies(namespace)
+		},
 	)
 }
 

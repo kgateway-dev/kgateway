@@ -15,8 +15,8 @@ spec:
         app.kubernetes.io/name: a2a-helloworld
     spec:
       containers:
-        - name: a2a-helloworld
-          image: ghcr.io/kgateway-dev/test-a2a-server:0.0.3
+        - name: a2a-rs-example
+          image: ghcr.io/kgateway-dev/test-a2a-server:0.0.11 
           ports:
             - containerPort: 9999
 ---

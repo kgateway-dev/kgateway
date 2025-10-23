@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"istio.io/istio/pkg/kube/krt"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
 )
@@ -24,6 +25,11 @@ var (
 	// DefaultBuckets defines the default buckets used for histograms.
 	DefaultBuckets = prometheus.DefBuckets
 )
+
+func init() {
+	registry.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
+	registry.MustRegister(collectors.NewGoCollector())
+}
 
 // Metric defines a base interface for metrics.
 type Metric interface {

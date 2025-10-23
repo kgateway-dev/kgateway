@@ -213,6 +213,8 @@ github.com/agentgateway/agentgateway v0.10.3/go.mod h1:geHd31xH5d8OrCRuRyvnDxBeq
 github.com/agnivade/levenshtein v1.2.1 h1:EHBY3UOn1gwdy/VbFwgo4cxecRznFk7fKWN1KOX7eoM=
 github.com/agnivade/levenshtein v1.2.1/go.mod h1:QVVI16kDrtSuwcpd0p1+xMC6Z/VfhtCyDIjcwga4/DU=
 github.com/alcortesm/tgz v0.0.0-20161220082320-9c5fe88206d7/go.mod h1:6zEj6s6u/ghQa61ZWa/C2Aw3RkjiTBOix7dkqa1VLIs=
+github.com/alecholmes/xfccparser v0.4.0 h1:IFB4bP34oorjcV3n8utZtBhEwlAw9rZ43pb4LgT23Vo=
+github.com/alecholmes/xfccparser v0.4.0/go.mod h1:J9fzzUOtjw74IwNdGVbjnOVj1UDlwGQj1zZzgQRlRDY=
 github.com/alecthomas/assert/v2 v2.11.0 h1:2Q9r3ki8+JYXvGsDyBXwH3LcJ+WK5D0gc5E8vS6K3D0=
 github.com/alecthomas/assert/v2 v2.11.0/go.mod h1:Bze95FyfUr7x34QZrjL+XP+0qgp/zg8yS+TtBj1WA3k=
 github.com/alecthomas/chroma/v2 v2.20.0 h1:sfIHpxPyR07/Oylvmcai3X/exDlE8+FA820NTz+9sGw=
@@ -464,6 +466,9 @@ github.com/containerd/stargz-snapshotter/estargz v0.16.3/go.mod h1:uyr4BfYfOj3G9
 github.com/coreos/bbolt v1.3.2/go.mod h1:iRUV2dpdMOn7Bo10OQBFzIJO9kkE559Wcmn+qkEiiKk=
 github.com/coreos/etcd v3.3.10+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc32PjwdhPthX9715RE=
 github.com/coreos/etcd v3.3.13+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc32PjwdhPthX9715RE=
+github.com/coreos/go-oidc v2.3.0+incompatible h1:+5vEsrgprdLjjQ9FzIKAzQz1wwPD+83hQRfUIPh7rO0=
+github.com/coreos/go-oidc/v3 v3.15.0 h1:R6Oz8Z4bqWR7VFQ+sPSvZPQv4x8M+sJkDO5ojgwlyAg=
+github.com/coreos/go-oidc/v3 v3.15.0/go.mod h1:HaZ3szPaZ0e4r6ebqvsLWlk2Tn+aejfmrfah6hnSYEU=
 github.com/coreos/go-semver v0.2.0/go.mod h1:nnelYz7RCh+5ahJtPPxZlU+153eP4D4r3EedlOD2RNk=
 github.com/coreos/go-semver v0.3.0/go.mod h1:nnelYz7RCh+5ahJtPPxZlU+153eP4D4r3EedlOD2RNk=
 github.com/coreos/go-semver v0.3.1 h1:yi21YpKnrx1gt5R+la8n5WgS0kCrsPp33dmEyHReZr4=
@@ -562,8 +567,8 @@ github.com/emirpasic/gods v1.18.1/go.mod h1:8tpGGwCnJ5H4r6BWwaV6OrWmMoPhUl5jm/FM
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.4/go.mod h1:6rpuAdCZL397s3pYoYcLgu1mIlRU8Am5FuJP05cCM98=
-github.com/envoyproxy/go-control-plane v0.13.5-0.20250811224534-421509affe26 h1:MuS1+jBl5j2DpWXFz4wCICqh1PhvEbyLJOVN+wXkTF8=
-github.com/envoyproxy/go-control-plane v0.13.5-0.20250811224534-421509affe26/go.mod h1:VnuAaP4FFVMaFPwI7Oy4gS3FkUorsElEZnvYLzRmss4=
+github.com/envoyproxy/go-control-plane v0.13.5-0.20251013064519-48f97e33cb02 h1:VbmMEM1sWPDGm+v2MIa5dD55Ad/KrRXhARGJANxBV6U=
+github.com/envoyproxy/go-control-plane v0.13.5-0.20251013064519-48f97e33cb02/go.mod h1:Alz8LEClvR7xKsrq3qzoc4N0guvVNSS8KmSChGYr9hs=
 github.com/envoyproxy/go-control-plane/contrib v1.32.5-0.20250627145903-197b96a9c7f8 h1:KXgXPtBofHkRHr+8dO058dGZnLHapW7m0yJEgSYdAFA=
 github.com/envoyproxy/go-control-plane/contrib v1.32.5-0.20250627145903-197b96a9c7f8/go.mod h1:Nx/YcyEeIcgjT13QwKHdcPmS060urxZ835MeO8cLOrg=
 github.com/envoyproxy/go-control-plane/envoy v1.35.1-0.20251010000747-50f0b197aa55 h1:OPkqbKI9JcfINu2Bs5a/UELuLrasI5/tkTXcc7i+RIw=
@@ -1348,6 +1353,8 @@ github.com/opencontainers/image-spec v1.1.1 h1:y0fUlFfIZhPF1W537XOLg0/fcx6zcHCJw
 github.com/opencontainers/image-spec v1.1.1/go.mod h1:qpqAh3Dmcf36wStyyWU+kCeDgrGnAve2nCC8+7h8Q0M=
 github.com/opencontainers/runc v1.2.3 h1:fxE7amCzfZflJO2lHXf4y/y8M1BoAqp+FVmG19oYB80=
 github.com/opencontainers/runc v1.2.3/go.mod h1:nSxcWUydXrsBZVYNSkTjoQ/N6rcyTtn+1SD5D4+kRIM=
+github.com/openshift/api v0.0.0-20250806102053-6a7223edb2fc h1:kAiInOGnd0+nsDcwl5YVceHfbT8Xk7tJq1vlYDVBonA=
+github.com/openshift/api v0.0.0-20250806102053-6a7223edb2fc/go.mod h1:SPLf21TYPipzCO67BURkCfK6dcIIxx0oNRVWaOyRcXM=
 github.com/opentracing/opentracing-go v1.1.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
 github.com/opentracing/opentracing-go v1.2.0 h1:uEJPy/1a5RIPAJ0Ov+OIO8OxWu77jEv+1B0VhjKrZUs=
 github.com/opentracing/opentracing-go v1.2.0/go.mod h1:GxEUsuufX4nBwe+T+Wl9TAgYrxe9dPLANfrWvHYVTgc=
@@ -1444,6 +1451,8 @@ github.com/prometheus/procfs v0.7.3/go.mod h1:cz+aTbrPOrUb4q7XlbU9ygM+/jj0fzG6c1
 github.com/prometheus/procfs v0.8.0/go.mod h1:z7EfXMXOkbkqb9IINtpCn86r/to3BnA0uaxHdg830/4=
 github.com/prometheus/procfs v0.17.0 h1:FuLQ+05u4ZI+SS/w9+BWEM2TXiHKsUQ9TADiRH7DuK0=
 github.com/prometheus/procfs v0.17.0/go.mod h1:oPQLaDAMRbA+u8H5Pbfq+dl3VDAvHxMUOVhe0wYB2zw=
+github.com/prometheus/prometheus v0.306.0 h1:Q0Pvz/ZKS6vVWCa1VSgNyNJlEe8hxdRlKklFg7SRhNw=
+github.com/prometheus/prometheus v0.306.0/go.mod h1:7hMSGyZHt0dcmZ5r4kFPJ/vxPQU99N5/BGwSPDxeZrQ=
 github.com/prometheus/statsd_exporter v0.22.7/go.mod h1:N/TevpjkIh9ccs6nuzY3jQn9dFqnUakOjnEuMPJJJnI=
 github.com/prometheus/statsd_exporter v0.25.0 h1:gpVF1TMf1UqMJmBDpzBYrEaGOFMpbMBYYYUDwM38Y/I=
 github.com/prometheus/statsd_exporter v0.25.0/go.mod h1:HwzfSvg6ehmb0Qg71ZuFrlgj5XQt9C+MGVLz5Gt5lqc=
@@ -1737,6 +1746,8 @@ github.com/yeya24/promlinter v0.3.0 h1:JVDbMp08lVCP7Y6NP3qHroGAO6z2yGKQtS5Jsjqto
 github.com/yeya24/promlinter v0.3.0/go.mod h1:cDfJQQYv9uYciW60QT0eeHlFodotkYZlL+YcPQN+mW4=
 github.com/ykadowak/zerologlint v0.1.5 h1:Gy/fMz1dFQN9JZTPjv1hxEk+sRWm05row04Yoolgdiw=
 github.com/ykadowak/zerologlint v0.1.5/go.mod h1:KaUskqF3e/v59oPmdq1U1DnKcuHokl2/K1U4pmIELKg=
+github.com/yl2chen/cidranger v1.0.2 h1:lbOWZVCG1tCRX4u24kuM1Tb4nHqWkDxwLdoS+SevawU=
+github.com/yl2chen/cidranger v1.0.2/go.mod h1:9U1yz7WPYDwf0vpNWFaeRh0bjwz5RVgRy/9UEQfHl0g=
 github.com/yosida95/uritemplate/v3 v3.0.2 h1:Ed3Oyj9yrmi9087+NczuL5BwkIc4wvTb5zIM+UJPGz4=
 github.com/yosida95/uritemplate/v3 v3.0.2/go.mod h1:ILOh0sOhIJR3+L/8afwt/kE++YT040gmv5BQTMR2HP4=
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
@@ -2350,12 +2361,12 @@ honnef.co/go/tools v0.0.1-2020.1.3/go.mod h1:X/FiERA/W4tHapMX5mGpAtMSVEeEUOyHaw9
 honnef.co/go/tools v0.0.1-2020.1.4/go.mod h1:X/FiERA/W4tHapMX5mGpAtMSVEeEUOyHaw9vFzvIQ3k=
 honnef.co/go/tools v0.6.1 h1:R094WgE8K4JirYjBaOpz/AvTyUu/3wbmAoskKN/pxTI=
 honnef.co/go/tools v0.6.1/go.mod h1:3puzxxljPCe8RGJX7BIy1plGbxEOZni5mR2aXe3/uk4=
-istio.io/api v1.26.0-alpha.0.0.20251002142010-859b66f07fad h1:/KPSr8zxYROijN9dvolM8q9HwnmM0CP42N32fK4kQ94=
-istio.io/api v1.26.0-alpha.0.0.20251002142010-859b66f07fad/go.mod h1:BD3qv/ekm16kvSgvSpuiDawgKhEwG97wx849CednJSg=
-istio.io/client-go v1.26.0-alpha.0.0.20251002142408-752760d8f171 h1:kGlWXEWWQlzxA2WfzXI7YuGeGd/UrAPRKWDEoxF9fpk=
-istio.io/client-go v1.26.0-alpha.0.0.20251002142408-752760d8f171/go.mod h1:qq1p0YYijr4fQdp8pN2nyC8EnpZzx0HFUt5yMgNfHzY=
-istio.io/istio v0.0.0-20251009125038-5ab6df7e5282 h1:hcPyGMufjWtPvwJmVQnjKwTgMkFjZPHix8lssnHqh+0=
-istio.io/istio v0.0.0-20251009125038-5ab6df7e5282/go.mod h1:3WOLTiy5ZW9AlHXwxfy7lfFfaC/8FeyiHzWv3xxo9KM=
+istio.io/api v1.28.0-alpha.0.0.20251015201407-f6b4b4f56db2 h1:RBNf96ML/nTldg+Xd67tPy+QOIcJ2005QsWo3xDtXh0=
+istio.io/api v1.28.0-alpha.0.0.20251015201407-f6b4b4f56db2/go.mod h1:BD3qv/ekm16kvSgvSpuiDawgKhEwG97wx849CednJSg=
+istio.io/client-go v1.28.0-alpha.0.0.20251015201706-99349a9d18ee h1:zG0KovAVVj4IBOL5dbLS5COoYtbNhje0/P0S9XufbFw=
+istio.io/client-go v1.28.0-alpha.0.0.20251015201706-99349a9d18ee/go.mod h1:S8+EqCUnCaCT85y+6yIj094sw1MFNUCKnChUMNcQFKI=
+istio.io/istio v0.0.0-20251022175005-4d80c2b3b141 h1:+rhiWwVjd/19eHWY5TOxZpnDxbm0JGPFmu/orhlM6jw=
+istio.io/istio v0.0.0-20251022175005-4d80c2b3b141/go.mod h1:m0ORvqjWxbLRPcYYsUYFcX5eGpgCTBtMYOPpuX7sfrg=
 k8s.io/api v0.34.1 h1:jC+153630BMdlFukegoEL8E/yT7aLyQkIVuwhmwDgJM=
 k8s.io/api v0.34.1/go.mod h1:SB80FxFtXn5/gwzCoN6QCtPD7Vbu5w2n1S0J5gFfTYk=
 k8s.io/apiextensions-apiserver v0.34.1 h1:NNPBva8FNAPt1iSVwIE0FsdrVriRXMsaWFMqJbII2CI=

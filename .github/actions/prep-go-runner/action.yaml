@@ -35,15 +35,20 @@ runs:
         echo "Done removing large packages"
 
         # Clean up pre-installed tools
-        sudo rm -rf /usr/local/lib/android || true
-        sudo rm -rf /usr/share/dotnet || true
-        sudo rm -rf /usr/local/graalvm || true
-        sudo rm -rf /opt/ghc || true
-        sudo rm -rf /usr/local/.ghcup || true
-        sudo rm -rf /usr/local/share/boost || true
-        sudo rm -rf /usr/local/share/powershell || true
-        sudo rm -rf /usr/local/share/chromium || true
-        sudo rm -rf $AGENT_TOOLSDIRECTORY || true
+        # For some reason, GHA often takes minutes (up to 20min observed) to clean up somehow.
+        # Presumably this is due to a slow disk?
+        function clean-dir() {
+          echo "Cleaning $1"
+          time sudo rm -rf "$1" || true
+        }
+        # These two were found to take very very long. Even though its large, its not worth the cost
+        # clean-dir /usr/local/lib/android  # 8.9gb
+        # clean-dir $AGENT_TOOLSDIRECTORY  # 5.6gb
+        clean-dir /usr/share/dotnet  # 3.4gb
+        clean-dir /usr/share/swift  # 3.1gb
+        clean-dir /usr/local/.ghcup  # 6.3gb
+        clean-dir /usr/local/share/powershell  # 1.2gb
+        clean-dir /usr/local/share/chromium  # 600mb
 
         # Clean up images
         docker image rm node:18 || true

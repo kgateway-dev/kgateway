@@ -57,11 +57,6 @@ func (in *AIPolicy) DeepCopyInto(out *AIPolicy) {
 		*out = make([]FieldDefault, len(*in))
 		copy(*out, *in)
 	}
-	if in.RouteType != nil {
-		in, out := &in.RouteType, &out.RouteType
-		*out = new(RouteType)
-		**out = **in
-	}
 	if in.ModelAliases != nil {
 		in, out := &in.ModelAliases, &out.ModelAliases
 		*out = make(map[string]string, len(*in))
@@ -2883,6 +2878,13 @@ func (in *LLMProvider) DeepCopyInto(out *LLMProvider) {
 		in, out := &in.AuthHeader, &out.AuthHeader
 		*out = new(AuthHeader)
 		(*in).DeepCopyInto(*out)
+	}
+	if in.Routes != nil {
+		in, out := &in.Routes, &out.Routes
+		*out = make(map[string]RouteType, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
 	}
 }
 

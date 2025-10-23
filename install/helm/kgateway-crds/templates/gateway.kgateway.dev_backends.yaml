@@ -447,6 +447,23 @@ spec:
                           to.
                         format: int32
                         type: integer
+                      routes:
+                        additionalProperties:
+                          description: |-
+                            RouteType specifies how the AI gateway should process incoming requests
+                            based on the URL path and the API format expected.
+                          enum:
+                          - completions
+                          - messages
+                          - models
+                          - passthrough
+                          type: string
+                        description: |-
+                          Routes defines how to identify the type of traffic to handle.
+                          The keys are URL path suffixes matched using ends-with comparison (e.g., "/v1/chat/completions").
+                          The special "*" wildcard matches any path.
+                          If not specified, all traffic defaults to "completions" type.
+                        type: object
                       vertexai:
                         description: Vertex AI provider
                         properties:
@@ -974,6 +991,23 @@ spec:
                                   to.
                                 format: int32
                                 type: integer
+                              routes:
+                                additionalProperties:
+                                  description: |-
+                                    RouteType specifies how the AI gateway should process incoming requests
+                                    based on the URL path and the API format expected.
+                                  enum:
+                                  - completions
+                                  - messages
+                                  - models
+                                  - passthrough
+                                  type: string
+                                description: |-
+                                  Routes defines how to identify the type of traffic to handle.
+                                  The keys are URL path suffixes matched using ends-with comparison (e.g., "/v1/chat/completions").
+                                  The special "*" wildcard matches any path.
+                                  If not specified, all traffic defaults to "completions" type.
+                                type: object
                               vertexai:
                                 description: Vertex AI provider
                                 properties:

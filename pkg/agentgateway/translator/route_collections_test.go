@@ -18,9 +18,10 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/status"
+
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
@@ -105,13 +106,11 @@ func TestAgwRouteCollection(t *testing.T) {
 			},
 			gateways: []GatewayListener{
 				{
-					Config: &Config{
-						Meta: Meta{
-							Name:      "test-gateway",
-							Namespace: "default",
-						},
+					ParentGateway: types.NamespacedName{
+						Name:      "test-gateway",
+						Namespace: "default",
 					},
-					Parent: ParentKey{
+					ParentObject: ParentKey{
 						Kind:      wellknown.GatewayGVK,
 						Name:      "test-gateway",
 						Namespace: "default",
@@ -264,13 +263,11 @@ func TestAgwRouteCollection(t *testing.T) {
 			},
 			gateways: []GatewayListener{
 				{
-					Config: &Config{
-						Meta: Meta{
-							Name:      "test-gateway",
-							Namespace: "default",
-						},
+					ParentGateway: types.NamespacedName{
+						Name:      "test-gateway",
+						Namespace: "default",
 					},
-					Parent: ParentKey{
+					ParentObject: ParentKey{
 						Kind:      wellknown.GatewayGVK,
 						Name:      "test-gateway",
 						Namespace: "default",
@@ -442,13 +439,11 @@ func TestAgwRouteCollection(t *testing.T) {
 			},
 			gateways: []GatewayListener{
 				{
-					Config: &Config{
-						Meta: Meta{
-							Name:      "test-gateway",
-							Namespace: "default",
-						},
+					ParentGateway: types.NamespacedName{
+						Name:      "test-gateway",
+						Namespace: "default",
 					},
-					Parent: ParentKey{
+					ParentObject: ParentKey{
 						Kind:      wellknown.GatewayGVK,
 						Name:      "test-gateway",
 						Namespace: "default",
@@ -587,13 +582,11 @@ func TestAgwRouteCollection(t *testing.T) {
 			},
 			gateways: []GatewayListener{
 				{
-					Config: &Config{
-						Meta: Meta{
-							Name:      "test-gateway",
-							Namespace: "default",
-						},
+					ParentGateway: types.NamespacedName{
+						Name:      "test-gateway",
+						Namespace: "default",
 					},
-					Parent: ParentKey{
+					ParentObject: ParentKey{
 						Kind:      wellknown.GatewayGVK,
 						Name:      "test-gateway",
 						Namespace: "default",
@@ -715,13 +708,11 @@ func TestAgwRouteCollection(t *testing.T) {
 			},
 			gateways: []GatewayListener{
 				{
-					Config: &Config{
-						Meta: Meta{
-							Name:      "test-gateway",
-							Namespace: "default",
-						},
+					ParentGateway: types.NamespacedName{
+						Name:      "test-gateway",
+						Namespace: "default",
 					},
-					Parent: ParentKey{
+					ParentObject: ParentKey{
 						Kind:      wellknown.GatewayGVK,
 						Name:      "test-gateway",
 						Namespace: "default",
@@ -850,7 +841,7 @@ func TestAgwRouteCollection(t *testing.T) {
 			krtopts := krtutil.KrtOptions{}
 
 			// Call AgwRouteCollection
-			agwRoutes := AgwRouteCollection(httpRoutes, grpcRoutes, tcpRoutes, tlsRoutes, routeInputs, krtopts)
+			agwRoutes, _ := AgwRouteCollection(&status.StatusCollections{}, httpRoutes, grpcRoutes, tcpRoutes, tlsRoutes, routeInputs, krtopts)
 
 			// Wait for the collection to process
 			agwRoutes.WaitUntilSynced(context.Background().Done())
@@ -861,12 +852,7 @@ func TestAgwRouteCollection(t *testing.T) {
 			// Create a map of actual Routes by key for easy lookup
 			actualRoutes := make(map[string]*api.Route)
 			for _, result := range results {
-				require.NotNil(t, result.Resources, "Resource should not be nil")
-				for _, resource := range result.Resources {
-					routeResource := resource.GetRoute()
-					require.NotNil(t, routeResource, "Route resource should not be nil")
-					actualRoutes[routeResource.GetKey()] = routeResource
-				}
+				actualRoutes[result.Resource.GetRoute().GetKey()] = result.Resource.GetRoute()
 			}
 			// Verify expected count
 			assert.Equal(t, tc.expectedCount, len(actualRoutes), "Expected %d Routes but got %d", tc.expectedCount, len(actualRoutes))
@@ -1017,13 +1003,11 @@ func TestAgwRouteCollectionGRPC(t *testing.T) {
 			},
 			gateways: []GatewayListener{
 				{
-					Config: &Config{
-						Meta: Meta{
-							Name:      "test-gateway",
-							Namespace: "default",
-						},
+					ParentGateway: types.NamespacedName{
+						Name:      "test-gateway",
+						Namespace: "default",
 					},
-					Parent: ParentKey{
+					ParentObject: ParentKey{
 						Kind:      wellknown.GatewayGVK,
 						Name:      "test-gateway",
 						Namespace: "default",
@@ -1171,13 +1155,11 @@ func TestAgwRouteCollectionGRPC(t *testing.T) {
 			},
 			gateways: []GatewayListener{
 				{
-					Config: &Config{
-						Meta: Meta{
-							Name:      "test-gateway",
-							Namespace: "default",
-						},
+					ParentGateway: types.NamespacedName{
+						Name:      "test-gateway",
+						Namespace: "default",
 					},
-					Parent: ParentKey{
+					ParentObject: ParentKey{
 						Kind:      wellknown.GatewayGVK,
 						Name:      "test-gateway",
 						Namespace: "default",
@@ -1323,13 +1305,11 @@ func TestAgwRouteCollectionGRPC(t *testing.T) {
 			},
 			gateways: []GatewayListener{
 				{
-					Config: &Config{
-						Meta: Meta{
-							Name:      "test-gateway",
-							Namespace: "default",
-						},
+					ParentGateway: types.NamespacedName{
+						Name:      "test-gateway",
+						Namespace: "default",
 					},
-					Parent: ParentKey{
+					ParentObject: ParentKey{
 						Kind:      wellknown.GatewayGVK,
 						Name:      "test-gateway",
 						Namespace: "default",
@@ -1458,7 +1438,7 @@ func TestAgwRouteCollectionGRPC(t *testing.T) {
 			krtopts := krtutil.KrtOptions{}
 
 			// Call AgwRouteCollection
-			agwRoutes := AgwRouteCollection(httpRoutes, grpcRoutes, tcpRoutes, tlsRoutes, routeInputs, krtopts)
+			agwRoutes, _ := AgwRouteCollection(&status.StatusCollections{}, httpRoutes, grpcRoutes, tcpRoutes, tlsRoutes, routeInputs, krtopts)
 
 			// Wait for the collection to process
 			agwRoutes.WaitUntilSynced(context.Background().Done())
@@ -1469,12 +1449,7 @@ func TestAgwRouteCollectionGRPC(t *testing.T) {
 			// Create a map of actual Routes by key for easy lookup
 			actualRoutes := make(map[string]*api.Route)
 			for _, result := range results {
-				require.NotNil(t, result.Resources, "Resource should not be nil")
-				for _, resource := range result.Resources {
-					routeResource := resource.GetRoute()
-					require.NotNil(t, routeResource, "Route resource should not be nil")
-					actualRoutes[routeResource.GetKey()] = routeResource
-				}
+				actualRoutes[result.Resource.GetRoute().GetKey()] = result.Resource.GetRoute()
 			}
 			// Verify expected count
 			assert.Equal(t, tc.expectedCount, len(actualRoutes), "Expected %d Routes but got %d", tc.expectedCount, len(actualRoutes))
@@ -1816,13 +1791,11 @@ func TestAgwRouteCollectionWithFilters(t *testing.T) {
 			}
 
 			gateway := GatewayListener{
-				Config: &Config{
-					Meta: Meta{
-						Name:      "test-gateway",
-						Namespace: "default",
-					},
+				ParentGateway: types.NamespacedName{
+					Name:      "test-gateway",
+					Namespace: "default",
 				},
-				Parent: ParentKey{
+				ParentObject: ParentKey{
 					Kind:      wellknown.GatewayGVK,
 					Name:      "test-gateway",
 					Namespace: "default",
@@ -1904,7 +1877,7 @@ func TestAgwRouteCollectionWithFilters(t *testing.T) {
 			krtopts := krtutil.KrtOptions{}
 
 			// Call AgwRouteCollection
-			agwRoutes := AgwRouteCollection(httpRoutes, grpcRoutes, tcpRoutes, tlsRoutes, routeInputs, krtopts)
+			agwRoutes, _ := AgwRouteCollection(&status.StatusCollections{}, httpRoutes, grpcRoutes, tcpRoutes, tlsRoutes, routeInputs, krtopts)
 
 			// Wait for the collection to process
 			agwRoutes.WaitUntilSynced(context.Background().Done())
@@ -1916,9 +1889,7 @@ func TestAgwRouteCollectionWithFilters(t *testing.T) {
 			require.Len(t, results, 1, "Expected exactly one route")
 
 			result := results[0]
-			require.NotNil(t, result.Resources, "Resource should not be nil")
-
-			routeResource := result.Resources[0].GetRoute()
+			routeResource := result.Resource.GetRoute()
 			require.NotNil(t, routeResource, "Route resource should not be nil")
 
 			// Verify filters
@@ -1982,63 +1953,4 @@ func TestAgwRouteCollectionWithFilters(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestAgwRouteCollectionEquals(t *testing.T) {
-	// Test that AgwResourcesForGateway implements Equals correctly
-	route1 := &api.Route{
-		Key:       "test-key",
-		RouteName: "test-route",
-	}
-
-	route2 := &api.Route{
-		Key:       "test-key",
-		RouteName: "test-route",
-	}
-
-	route3 := &api.Route{
-		Key:       "different-key",
-		RouteName: "test-route",
-	}
-
-	gateway := types.NamespacedName{
-		Name:      "test-gateway",
-		Namespace: "default",
-	}
-
-	agwResource1 := agwir.AgwResourcesForGateway{
-		Resources: []*api.Resource{
-			{
-				Kind: &api.Resource_Route{
-					Route: route1,
-				},
-			},
-		},
-		Gateway: gateway,
-	}
-
-	agwResource2 := agwir.AgwResourcesForGateway{
-		Resources: []*api.Resource{
-			{
-				Kind: &api.Resource_Route{
-					Route: route2,
-				},
-			},
-		},
-		Gateway: gateway,
-	}
-
-	agwResource3 := agwir.AgwResourcesForGateway{
-		Resources: []*api.Resource{
-			{
-				Kind: &api.Resource_Route{
-					Route: route3,
-				},
-			},
-		},
-		Gateway: gateway,
-	}
-
-	assert.True(t, agwResource1.Equals(agwResource2), "Equal resources should return true")
-	assert.False(t, agwResource1.Equals(agwResource3), "Different resources should return false")
 }

@@ -15,7 +15,35 @@ type testingSuite struct {
 	*base.BaseTestingSuite
 }
 
-// A2AMessageResponse models the A2A JSON-RPC response
+// A2AMessage represents a message in the A2A protocol
+type A2AMessage struct {
+	Kind      string `json:"kind"`
+	MessageID string `json:"messageId"`
+	Parts     []struct {
+		Kind string `json:"kind"`
+		Text string `json:"text"`
+	} `json:"parts"`
+	Role string `json:"role"`
+}
+type A2ATaskResponse struct {
+	JSONRPC string `json:"jsonrpc"`
+	ID      string `json:"id"`
+	Result  *struct {
+		ContextID string       `json:"contextId"`
+		History   []A2AMessage `json:"history"`
+		ID        string       `json:"id"`
+		Kind      string       `json:"kind"`
+		Status    struct {
+			Message   A2AMessage `json:"message"`
+			State     string     `json:"state"`
+			Timestamp string     `json:"timestamp"`
+		} `json:"status"`
+	} `json:"result,omitempty"`
+	Error *struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+	} `json:"error,omitempty"`
+}
 type A2AMessageResponse struct {
 	JSONRPC string `json:"jsonrpc"`
 	ID      string `json:"id"`

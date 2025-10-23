@@ -16,14 +16,15 @@ import (
 
 // Inputs is the set of options used to configure gateway/inference pool deployment.
 type Inputs struct {
-	Dev                      bool
-	IstioAutoMtlsEnabled     bool
-	ControlPlane             ControlPlaneInfo
-	ImageInfo                *ImageInfo
-	CommonCollections        *collections.CommonCollections
-	GatewayClassName         string
-	WaypointGatewayClassName string
-	AgentgatewayClassName    string
+	Dev                        bool
+	IstioAutoMtlsEnabled       bool
+	ControlPlane               ControlPlaneInfo
+	ImageInfo                  *ImageInfo
+	CommonCollections          *collections.CommonCollections
+	GatewayClassName           string
+	WaypointGatewayClassName   string
+	AgentgatewayClassName      string
+	AgentgatewayControllerName string
 }
 
 // UpdateSecurityContexts updates the security contexts in the gateway parameters.
@@ -277,15 +278,6 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 						IstioDiscoveryAddress: ptr.To("istiod.istio-system.svc:15012"),
 						IstioMetaMeshId:       ptr.To("cluster.local"),
 						IstioMetaClusterId:    ptr.To("Kubernetes"),
-					},
-				},
-				AiExtension: &v1alpha1.AiExtension{
-					Enabled: ptr.To(false),
-					Image: &v1alpha1.Image{
-						Repository: ptr.To(KgatewayAIContainerName),
-						Registry:   ptr.To(imageInfo.Registry),
-						Tag:        ptr.To(imageInfo.Tag),
-						PullPolicy: (*corev1.PullPolicy)(ptr.To(imageInfo.PullPolicy)),
 					},
 				},
 				Agentgateway: &v1alpha1.Agentgateway{

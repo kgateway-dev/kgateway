@@ -1,0 +1,43 @@
+# Route section-specific rate limiting
+# Tests rate limiting attached to a specific HTTPRoute rule section
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: ratelimit-for-route-section-name
+  namespace: infra
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: example-tls-route-extension-ref
+    sectionName: route-name
+  rateLimit:
+    global:
+      descriptors:
+      - entries:
+        - type: Generic
+          generic:
+            key: "section_specific"
+            value: "true"
+        - type: Header
+          header: "X-API-Key"
+        - type: RemoteAddress
+      extensionRef: 
+        name: basic-ratelimit
+---
+# Gateway extension for route-level rate limiting
+# Used when rate limiting is applied to HTTPRoutes
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: basic-ratelimit
+  namespace: infra
+spec:
+  type: RateLimit
+  rateLimit:
+    grpcService:
+      backendRef:
+        name: ratelimit
+        port: 8081
+    domain: "api-gateway-routes"
+    timeout: "150ms"

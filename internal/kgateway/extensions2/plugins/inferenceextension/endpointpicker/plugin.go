@@ -304,11 +304,17 @@ func (p *endpointPickerPass) HttpFilters(fc ir.FilterChainCommon) ([]filters.Sta
 			},
 		},
 		ProcessingMode: &extprocv3.ProcessingMode{
-			RequestHeaderMode:   extprocv3.ProcessingMode_SEND,
-			RequestBodyMode:     extprocv3.ProcessingMode_FULL_DUPLEX_STREAMED,
-			RequestTrailerMode:  extprocv3.ProcessingMode_SEND,
-			ResponseBodyMode:    extprocv3.ProcessingMode_FULL_DUPLEX_STREAMED,
-			ResponseHeaderMode:  extprocv3.ProcessingMode_SEND,
+			RequestHeaderMode: extprocv3.ProcessingMode_SEND,
+			// OpenAI standard includes the model and other information the ext_proc server needs in the request body
+			RequestBodyMode: extprocv3.ProcessingMode_FULL_DUPLEX_STREAMED,
+			// If the ext_proc filter has the request_body_mode set to FULL_DUPLEX_STREAMED
+			// then the response_trailer_mode has to be set to SEND
+			RequestTrailerMode: extprocv3.ProcessingMode_SEND,
+			ResponseBodyMode:   extprocv3.ProcessingMode_FULL_DUPLEX_STREAMED,
+			// GIE collects statistics present in the OpenAI standard response message
+			ResponseHeaderMode: extprocv3.ProcessingMode_SEND,
+			// If the ext_proc filter has the response_body_mode set to FULL_DUPLEX_STREAMED
+			// then the response_trailer_mode has to be set to SEND
 			ResponseTrailerMode: extprocv3.ProcessingMode_SEND,
 		},
 		MessageTimeout:   durationpb.New(5 * time.Second),

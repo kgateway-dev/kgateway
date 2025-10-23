@@ -6,7 +6,7 @@ Name|Version|License
 [avast/retry-go](https://github.com/avast/retry-go)|v2.4.3+incompatible|MIT License
 [retry-go/v4](https://github.com/avast/retry-go)|v4.3.3|MIT License
 [xds/go](https://github.com/cncf/xds)|v0.0.0-20250501225837-2ac532fd4443|Apache License 2.0
-[envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.13.5-0.20250811224534-421509affe26|Apache License 2.0
+[envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.13.5-0.20251013064519-48f97e33cb02|Apache License 2.0
 [go-control-plane/contrib](https://github.com/envoyproxy/go-control-plane)|v1.32.5-0.20250627145903-197b96a9c7f8|Apache License 2.0
 [go-control-plane/envoy](https://github.com/envoyproxy/go-control-plane)|v1.35.1-0.20251010000747-50f0b197aa55|Apache License 2.0
 [go-control-plane/ratelimit](https://github.com/envoyproxy/go-control-plane)|v0.1.1-0.20250507123352-93990c5ec02f|Apache License 2.0
@@ -34,26 +34,26 @@ Name|Version|License
 [stretchr/testify](https://github.com/stretchr/testify)|v1.11.1|MIT License
 [go.opencensus.io](https://go.opencensus.io)|v0.24.0|Apache License 2.0
 [proto/otlp](https://go.opentelemetry.io/proto/otlp)|v1.7.1|Apache License 2.0
+[go.uber.org/atomic](https://go.uber.org/atomic)|v1.11.0|MIT License
 [go.uber.org/zap](https://go.uber.org/zap)|v1.27.0|MIT License
 [x/exp](https://golang.org/x/exp)|v0.0.0-20250506013437-ce4c2cf36ca6|BSD 3-clause "New" or "Revised" License
 [x/net](https://golang.org/x/net)|v0.44.0|BSD 3-clause "New" or "Revised" License
+[x/time](https://golang.org/x/time)|v0.12.0|BSD 3-clause "New" or "Revised" License
 [google.golang.org/grpc](https://google.golang.org/grpc)|v1.76.0|Apache License 2.0
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.36.10|BSD 3-clause "New" or "Revised" License
 [helm/v3](https://helm.sh/helm/v3)|v3.18.6|Apache License 2.0
-[istio.io/api](https://istio.io/api)|v1.26.0-alpha.0.0.20251002142010-859b66f07fad|Apache License 2.0
-[istio.io/client-go](https://istio.io/client-go)|v1.26.0-alpha.0.0.20251002142408-752760d8f171|Apache License 2.0
-[istio.io/istio](https://istio.io/istio)|v0.0.0-20251009125038-5ab6df7e5282|Apache License 2.0
+[istio.io/api](https://istio.io/api)|v1.28.0-alpha.0.0.20251015201407-f6b4b4f56db2|Apache License 2.0
+[istio.io/client-go](https://istio.io/client-go)|v1.28.0-alpha.0.0.20251015201706-99349a9d18ee|Apache License 2.0
+[istio.io/istio](https://istio.io/istio)|v0.0.0-20251022175005-4d80c2b3b141|Apache License 2.0
 [k8s.io/api](https://k8s.io/api)|v0.34.1|Apache License 2.0
 [k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.34.1|Apache License 2.0
 [k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.34.1|Apache License 2.0
 [k8s.io/client-go](https://k8s.io/client-go)|v0.34.1|Apache License 2.0
 [klog/v2](https://k8s.io/klog/v2)|v2.130.1|Apache License 2.0
-[k8s.io/kube-openapi](https://k8s.io/kube-openapi)|v0.0.0-20250814151709-d7b6acb124c3|Apache License 2.0
 [k8s.io/utils](https://k8s.io/utils)|v0.0.0-20250820121507-0af2bda4dd1d|Apache License 2.0
 [sigs.k8s.io/controller-runtime](https://sigs.k8s.io/controller-runtime)|v0.22.1|Apache License 2.0
 [sigs.k8s.io/gateway-api](https://sigs.k8s.io/gateway-api)|v1.4.0|Apache License 2.0
 [sigs.k8s.io/gateway-api-inference-extension](https://sigs.k8s.io/gateway-api-inference-extension)|v0.0.0-20251010035459-51485db93d63|Apache License 2.0
-[structured-merge-diff/v6](https://sigs.k8s.io/structured-merge-diff/v6)|v6.3.0|Apache License 2.0
 [sigs.k8s.io/yaml](https://sigs.k8s.io/yaml)|v1.6.0|MIT License
 [cmd/goimports](https://golang.org/x/tools/cmd/goimports)|latest|MIT License
 [gogo/protobuf](https://github.com/gogo/protobuf)|latest|MIT License

@@ -62,9 +62,8 @@ func init() {
 // convertStatusCollection converts the specific TrafficPolicy status collection
 // to the generic controllers.Object status collection expected by the interface
 func convertStatusCollection(col krt.Collection[krt.ObjectWithStatus[*v1alpha1.TrafficPolicy, gwv1.PolicyStatus]]) krt.StatusCollection[controllers.Object, gwv1.PolicyStatus] {
-	// Use krt.NewCollection to transform the collection
-	return krt.NewCollection(col, func(ctx krt.HandlerContext, item krt.ObjectWithStatus[*v1alpha1.TrafficPolicy, gwv1.PolicyStatus]) *krt.ObjectWithStatus[controllers.Object, gwv1.PolicyStatus] {
-		return &krt.ObjectWithStatus[controllers.Object, gwv1.PolicyStatus]{
+	return krt.MapCollection(col, func(item krt.ObjectWithStatus[*v1alpha1.TrafficPolicy, gwv1.PolicyStatus]) krt.ObjectWithStatus[controllers.Object, gwv1.PolicyStatus] {
+		return krt.ObjectWithStatus[controllers.Object, gwv1.PolicyStatus]{
 			Obj:    controllers.Object(item.Obj),
 			Status: item.Status,
 		}
@@ -98,6 +97,8 @@ func NewTrafficPlugin(agw *AgwCollections) AgwPlugin {
 }
 
 // TranslateTrafficPolicy generates policies for a single traffic policy
+// When adding a new traffic policy field, isPartiallyValid will also need to be updated to report partially valid
+// translations on the status.
 func TranslateTrafficPolicy(
 	ctx krt.HandlerContext,
 	gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension],
@@ -114,11 +115,11 @@ func TranslateTrafficPolicy(
 		var policyTarget *api.PolicyTarget
 		// Build a base ParentReference for status
 		parentRef := gwv1.ParentReference{
-			Name:      gwv1.ObjectName(target.Name),
+			Name:      target.Name,
 			Namespace: ptr.To(gwv1.Namespace(trafficPolicy.Namespace)),
 		}
 		if target.SectionName != nil {
-			parentRef.SectionName = (*gwv1.SectionName)(target.SectionName)
+			parentRef.SectionName = target.SectionName
 		}
 
 		switch string(target.Kind) {
@@ -176,7 +177,7 @@ func TranslateTrafficPolicy(
 				conds := []metav1.Condition{}
 				meta.SetStatusCondition(&conds, metav1.Condition{
 					Type:    string(v1alpha1.PolicyConditionAccepted),
-					Status:  metav1.ConditionFalse,
+					Status:  metav1.ConditionTrue,
 					Reason:  string(v1alpha1.PolicyReasonInvalid),
 					Message: fmt.Sprintf("Backend %s not found", target.Name),
 				})
@@ -215,31 +216,62 @@ func TranslateTrafficPolicy(
 			translatedPolicies, err := translateTrafficPolicyToAgw(ctx, gatewayExtensions, secrets, trafficPolicy, string(target.Name), policyTarget, isMcpTarget)
 			agwPolicies = append(agwPolicies, translatedPolicies...)
 			var conds []metav1.Condition
-			// TODO: support partial translation statuses https://github.com/kgateway-dev/kgateway/issues/12413
 			if err != nil {
-				// Build success conditions per ancestor
-				meta.SetStatusCondition(&conds, metav1.Condition{
-					Type:    string(v1alpha1.PolicyConditionAccepted),
-					Status:  metav1.ConditionFalse,
-					Reason:  string(v1alpha1.PolicyReasonInvalid),
-					Message: err.Error(),
-				})
+				// If we produced some policies alongside errors, treat as partial validity
+				if len(translatedPolicies) > 0 {
+					meta.SetStatusCondition(&conds, metav1.Condition{
+						Type:    string(v1alpha1.PolicyConditionAccepted),
+						Status:  metav1.ConditionTrue,
+						Reason:  string(v1alpha1.PolicyReasonPartiallyValid),
+						Message: err.Error(),
+					})
+				} else {
+					// No policies produced and error present -> invalid
+					meta.SetStatusCondition(&conds, metav1.Condition{
+						Type:    string(v1alpha1.PolicyConditionAccepted),
+						Status:  metav1.ConditionTrue,
+						Reason:  string(v1alpha1.PolicyReasonInvalid),
+						Message: err.Error(),
+					})
+					meta.SetStatusCondition(&conds, metav1.Condition{
+						Type:    string(v1alpha1.PolicyConditionAttached),
+						Status:  metav1.ConditionFalse,
+						Reason:  string(v1alpha1.PolicyReasonPending),
+						Message: "Policy is not attached due to invalid status",
+					})
+				}
 			} else {
-				// Build success conditions per ancestor
-				meta.SetStatusCondition(&conds, metav1.Condition{
-					Type:    string(v1alpha1.PolicyConditionAccepted),
-					Status:  metav1.ConditionTrue,
-					Reason:  string(v1alpha1.PolicyReasonValid),
-					Message: reporter.PolicyAcceptedMsg,
-				})
+				// Check for partial validity
+				if isPartiallyValid(translatedPolicies) {
+					meta.SetStatusCondition(&conds, metav1.Condition{
+						Type:    string(v1alpha1.PolicyConditionAccepted),
+						Status:  metav1.ConditionTrue,
+						Reason:  string(v1alpha1.PolicyReasonPartiallyValid),
+						Message: "Some transformations are invalid",
+					})
+					meta.SetStatusCondition(&conds, metav1.Condition{
+						Type:    string(v1alpha1.PolicyConditionAttached),
+						Status:  metav1.ConditionFalse,
+						Reason:  string(v1alpha1.PolicyReasonPending),
+						Message: "Policy is partially attached due to some invalid transformations",
+					})
+				} else {
+					// Build success conditions per ancestor
+					meta.SetStatusCondition(&conds, metav1.Condition{
+						Type:    string(v1alpha1.PolicyConditionAccepted),
+						Status:  metav1.ConditionTrue,
+						Reason:  string(v1alpha1.PolicyReasonValid),
+						Message: reporter.PolicyAcceptedMsg,
+					})
+					meta.SetStatusCondition(&conds, metav1.Condition{
+						Type:    string(v1alpha1.PolicyConditionAttached),
+						Status:  metav1.ConditionTrue,
+						Reason:  string(v1alpha1.PolicyReasonAttached),
+						Message: reporter.PolicyAttachedMsg,
+					})
+				}
 			}
 			// TODO: validate the target exists with dataplane https://github.com/kgateway-dev/kgateway/issues/12275
-			meta.SetStatusCondition(&conds, metav1.Condition{
-				Type:    string(v1alpha1.PolicyConditionAttached),
-				Status:  metav1.ConditionTrue,
-				Reason:  string(v1alpha1.PolicyReasonAttached),
-				Message: reporter.PolicyAttachedMsg,
-			})
 			// Ensure LastTransitionTime is set for all conditions
 			for i := range conds {
 				if conds[i].LastTransitionTime.IsZero() {
@@ -370,6 +402,7 @@ func translateTrafficPolicyToAgw(
 
 // processExtAuthPolicy processes ExtAuth configuration and creates corresponding agentgateway policies
 func processExtAuthPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension], trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) ([]AgwPolicy, error) {
+	var errs []error
 	// Look up the GatewayExtension referenced by the ExtAuth policy
 	extensionName := trafficPolicy.Spec.ExtAuth.ExtensionRef.Name
 	extensionNamespace := string(ptr.Deref(trafficPolicy.Spec.ExtAuth.ExtensionRef.Namespace, ""))
@@ -439,12 +472,16 @@ func processExtAuthPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collecti
 		},
 	}
 
+	if extauthPolicy.Spec.GetExtAuthz().Context == nil {
+		errs = append(errs, fmt.Errorf("missing context for ExtAuth policy"))
+	}
+
 	logger.Debug("generated ExtAuth policy",
 		"policy", trafficPolicy.Name,
 		"agentgateway_policy", extauthPolicy.Name,
-		"target", extauthSvcTarget)
+		"target", policyTarget)
 
-	return []AgwPolicy{{Policy: extauthPolicy}}, nil
+	return []AgwPolicy{{Policy: extauthPolicy}}, errors.Join(errs...)
 }
 
 // processAIPolicy processes AI configuration and creates corresponding Agw policies
@@ -774,6 +811,10 @@ func processRBACPolicy(
 		}
 	}
 
+	if len(allowPolicies) == 0 && len(denyPolicies) == 0 {
+		return nil, fmt.Errorf("no match expressions for RBAC policy")
+	}
+
 	logger.Debug("generated RBAC policy",
 		"policy", trafficPolicy.Name,
 		"agentgateway_policy", rbacPolicy.Name,
@@ -797,6 +838,7 @@ func getGatewayExtensionKey(extensionNamespace, extensionName string) string {
 // processRateLimitPolicy processes RateLimit configuration and creates corresponding agentgateway policies
 func processRateLimitPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collection[*v1alpha1.GatewayExtension], trafficPolicy *v1alpha1.TrafficPolicy, policyName string, policyTarget *api.PolicyTarget) ([]AgwPolicy, error) {
 	var agwPolicies []AgwPolicy
+	var errs []error
 
 	// Process local rate limiting if present
 	if trafficPolicy.Spec.RateLimit.Local != nil {
@@ -804,7 +846,7 @@ func processRateLimitPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collec
 		if localPolicy != nil && err == nil {
 			agwPolicies = append(agwPolicies, *localPolicy)
 		} else {
-			return nil, err
+			errs = append(errs, err)
 		}
 	}
 
@@ -814,11 +856,11 @@ func processRateLimitPolicy(ctx krt.HandlerContext, gatewayExtensions krt.Collec
 		if globalPolicy != nil && err == nil {
 			agwPolicies = append(agwPolicies, *globalPolicy)
 		} else {
-			return nil, err
+			errs = append(errs, err)
 		}
 	}
 
-	return agwPolicies, nil
+	return agwPolicies, errors.Join(errs...)
 }
 
 // processLocalRateLimitPolicy processes local rate limiting configuration
@@ -1174,7 +1216,7 @@ func convertTransformSpec(spec *v1alpha1.Transform) (*api.PolicySpec_Transformat
 				Expression: string(header.Value),
 			})
 		} else {
-			errs = append(errs, fmt.Errorf("invalid header value: %s", headerValue))
+			errs = append(errs, fmt.Errorf("header value is not a valid CEL expression: %s", headerValue))
 		}
 	}
 
@@ -1219,7 +1261,7 @@ func convertTransformSpec(spec *v1alpha1.Transform) (*api.PolicySpec_Transformat
 					Expression: string(bodyValue),
 				}
 			} else {
-				errs = append(errs, fmt.Errorf("invalid body value: %s", bodyValue))
+				errs = append(errs, fmt.Errorf("body value is not a valid CEL expression: %s", bodyValue))
 			}
 		}
 	}
@@ -1232,6 +1274,7 @@ func isCEL(expr v1alpha1.Template) bool {
 	_, iss := celEnv.Parse(string(expr))
 	return iss.Err() == nil
 }
+
 func attachmentName(target *api.PolicyTarget) string {
 	if target == nil {
 		return ""
@@ -1254,4 +1297,37 @@ func attachmentName(target *api.PolicyTarget) string {
 	default:
 		panic(fmt.Sprintf("unknown target kind %T", target))
 	}
+}
+
+// isPartiallyValid checks if the translated policies contain any invalid parts.
+func isPartiallyValid(translatedPolicies []AgwPolicy) bool {
+	for _, policy := range translatedPolicies {
+		switch spec := policy.Policy.Spec.Kind.(type) {
+		case *api.PolicySpec_ExtAuthz:
+			if spec.ExtAuthz.Target != nil {
+				return true
+			}
+		case *api.PolicySpec_Authorization:
+			if len(spec.Authorization.Allow) == 0 || len(spec.Authorization.Deny) == 0 {
+				return true
+			}
+		case *api.PolicySpec_Ai_:
+			if spec.Ai.Prompts == nil || spec.Ai.PromptGuard == nil {
+				return true
+			}
+		case *api.PolicySpec_Transformation:
+			if spec.Transformation.Request == nil || spec.Transformation.Response == nil {
+				return true
+			}
+		case *api.PolicySpec_LocalRateLimit_:
+			if spec.LocalRateLimit == nil {
+				return true
+			}
+		case *api.PolicySpec_RemoteRateLimit_:
+			if spec.RemoteRateLimit == nil {
+				return true
+			}
+		}
+	}
+	return false
 }

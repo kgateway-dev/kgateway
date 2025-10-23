@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"slices"
 	"strings"
-	"time"
 
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -1729,71 +1728,6 @@ var _ = Describe("Deployer", func() {
 				return gwp
 			}
 
-			gatewayParamsOverrideWithSds = func() *gw2_v1alpha1.GatewayParameters {
-				return &gw2_v1alpha1.GatewayParameters{
-					TypeMeta: metav1.TypeMeta{
-						Kind: wellknown.GatewayParametersGVK.Kind,
-						// The parsing expects GROUP/VERSION format in this field
-						APIVersion: gw2_v1alpha1.GroupVersion.String(),
-					},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      gwpOverrideName,
-						Namespace: defaultNamespace,
-						UID:       "1236",
-					},
-					Spec: gw2_v1alpha1.GatewayParametersSpec{
-						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-							SdsContainer: &gw2_v1alpha1.SdsContainer{
-								Image: &gw2_v1alpha1.Image{
-									Registry:   ptr.To("foo"),
-									Repository: ptr.To("bar"),
-									Tag:        ptr.To("baz"),
-								},
-							},
-							Istio: &gw2_v1alpha1.IstioIntegration{
-								IstioProxyContainer: &gw2_v1alpha1.IstioContainer{
-									Image: &gw2_v1alpha1.Image{
-										Registry:   ptr.To("scooby"),
-										Repository: ptr.To("dooby"),
-										Tag:        ptr.To("doo"),
-									},
-									IstioDiscoveryAddress: ptr.To("can't"),
-									IstioMetaMeshId:       ptr.To("be"),
-									IstioMetaClusterId:    ptr.To("overridden"),
-								},
-							},
-							AiExtension: &gw2_v1alpha1.AiExtension{
-								Enabled: ptr.To(true),
-								Image: &gw2_v1alpha1.Image{
-									Registry:   ptr.To("foo"),
-									Repository: ptr.To("bar"),
-									Tag:        ptr.To("baz"),
-								},
-								Ports: []corev1.ContainerPort{{
-									Name:          "foo",
-									ContainerPort: 80,
-								}},
-								Tracing: &gw2_v1alpha1.AiExtensionTrace{
-									EndPoint: "http://my-otel-collector.svc.cluster.local:4317",
-									Sampler: &gw2_v1alpha1.OTelTracesSampler{
-										SamplerType: ptr.To(gw2_v1alpha1.OTelTracesSamplerTraceidratio),
-										SamplerArg:  ptr.To("0.5"),
-									},
-									Timeout:  &metav1.Duration{Duration: 100 * time.Second},
-									Protocol: ptr.To(gw2_v1alpha1.OTLPTracesProtocolTypeGrpc),
-								},
-							},
-						},
-					},
-				}
-			}
-
-			gatewayParamsOverrideWithSdsAndFloatingUserId = func() *gw2_v1alpha1.GatewayParameters {
-				params := gatewayParamsOverrideWithSds()
-				params.Spec.Kube.FloatingUserId = ptr.To(true) //nolint:staticcheck
-				return params
-			}
-
 			gatewayParamsOverrideWithoutStats = func() *gw2_v1alpha1.GatewayParameters {
 				return &gw2_v1alpha1.GatewayParameters{
 					TypeMeta: metav1.TypeMeta{
@@ -2016,8 +1950,8 @@ var _ = Describe("Deployer", func() {
 		fullyDefinedValidationWithoutRunAsUser := func(objs clientObjects, inp *input) error {
 			expectedGwp := inp.defaultGwp.Spec.Kube
 			Expect(objs).NotTo(BeEmpty())
-			// Check we have Deployment, Envoy ConfigMap, ServiceAccount, Service, AI Stats ConfigMap
-			Expect(objs).To(HaveLen(5))
+			// Check we have Deployment, Envoy ConfigMap, ServiceAccount, Service
+			Expect(objs).To(HaveLen(4))
 			dep := objs.findDeployment(defaultNamespace, defaultDeploymentName)
 			Expect(dep).ToNot(BeNil())
 			Expect(dep.Spec.Replicas).ToNot(BeNil())
@@ -2079,15 +2013,6 @@ var _ = Describe("Deployer", func() {
 			Expect(istioContainer.Resources.Requests.Cpu()).To(Equal(expectedGwp.Istio.IstioProxyContainer.Resources.Requests.Cpu()))
 			// TODO: assert on istio args (e.g. log level, istio meta fields, etc)
 
-			// assert AI extension container
-			expectedAIExtension := fmt.Sprintf("%s/%s",
-				*expectedGwp.AiExtension.Image.Registry,   //nolint:staticcheck
-				*expectedGwp.AiExtension.Image.Repository, //nolint:staticcheck
-			)
-			aiExt := dep.Spec.Template.Spec.Containers[3]
-			Expect(aiExt.Image).To(ContainSubstring(expectedAIExtension))
-			Expect(aiExt.Ports).To(HaveLen(len(expectedGwp.AiExtension.Ports))) //nolint:staticcheck
-
 			// assert Service
 			svc := objs.findService(defaultNamespace, defaultServiceName)
 			Expect(svc).ToNot(BeNil())
@@ -2108,9 +2033,6 @@ var _ = Describe("Deployer", func() {
 
 			cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
 			Expect(cm).ToNot(BeNil())
-
-			aiTracingConfig := objs.findConfigMap(defaultNamespace, defaultConfigMapName+"-ai-otel-config")
-			Expect(aiTracingConfig).ToNot(BeNil())
 
 			logLevelsMap := expectedGwp.EnvoyContainer.Bootstrap.ComponentLogLevels
 			levels := []types.GomegaMatcher{}
@@ -2229,87 +2151,6 @@ var _ = Describe("Deployer", func() {
 			}
 
 			return nil
-		}
-
-		generalAiAndSdsValidationFunc := func(objs clientObjects, inp *input, expectNullRunAsUser bool) error {
-			containers := objs.findDeployment(defaultNamespace, defaultDeploymentName).Spec.Template.Spec.Containers
-			Expect(containers).To(HaveLen(4))
-			var foundGw, foundSds, foundIstioProxy, foundAIExtension bool
-			var sdsContainer, istioProxyContainer, aiContainer, gwContainer corev1.Container
-			for _, container := range containers {
-				switch container.Name {
-				case deployer.SdsContainerName:
-					sdsContainer = container
-					foundSds = true
-				case deployer.IstioContainerName:
-					istioProxyContainer = container
-					foundIstioProxy = true
-				case deployer.KgatewayContainerName:
-					gwContainer = container
-					foundGw = true
-				case deployer.KgatewayAIContainerName:
-					aiContainer = container
-					foundAIExtension = true
-				default:
-					Fail("unknown container name " + container.Name)
-				}
-			}
-			Expect(foundGw).To(BeTrue())
-			Expect(foundSds).To(BeTrue())
-			Expect(foundIstioProxy).To(BeTrue())
-			Expect(foundAIExtension).To(BeTrue())
-
-			if expectNullRunAsUser {
-				if sdsContainer.SecurityContext != nil {
-					Expect(sdsContainer.SecurityContext.RunAsUser).To(BeNil())
-				}
-				if gwContainer.SecurityContext != nil {
-					Expect(gwContainer.SecurityContext.RunAsUser).To(BeNil())
-				}
-				if istioProxyContainer.SecurityContext != nil {
-					Expect(istioProxyContainer.SecurityContext.RunAsUser).To(BeNil())
-				}
-				if aiContainer.SecurityContext != nil {
-					Expect(aiContainer.SecurityContext.RunAsUser).To(BeNil())
-				}
-			}
-
-			By("validating the override values are set in the istio container")
-			Expect(istioProxyContainer.Env).To(ContainElement(corev1.EnvVar{
-				Name:      "CA_ADDR",
-				Value:     *inp.overrideGwp.Spec.Kube.Istio.IstioProxyContainer.IstioDiscoveryAddress,
-				ValueFrom: nil,
-			}))
-			Expect(istioProxyContainer.Env).To(ContainElement(corev1.EnvVar{
-				Name:      "ISTIO_META_MESH_ID",
-				Value:     *inp.overrideGwp.Spec.Kube.Istio.IstioProxyContainer.IstioMetaMeshId,
-				ValueFrom: nil,
-			}))
-			Expect(istioProxyContainer.Env).To(ContainElement(corev1.EnvVar{
-				Name:      "ISTIO_META_CLUSTER_ID",
-				Value:     *inp.overrideGwp.Spec.Kube.Istio.IstioProxyContainer.IstioMetaClusterId,
-				ValueFrom: nil,
-			}))
-
-			bootstrapCfg := objs.getEnvoyConfig(defaultNamespace, defaultConfigMapName)
-			clusters := bootstrapCfg.GetStaticResources().GetClusters()
-			Expect(clusters).ToNot(BeNil())
-			Expect(clusters).To(ContainElement(HaveField("Name", "gateway_proxy_sds")))
-
-			sdsImg := inp.overrideGwp.Spec.Kube.SdsContainer.Image
-			Expect(sdsContainer.Image).To(Equal(fmt.Sprintf("%s/%s:%s", *sdsImg.Registry, *sdsImg.Repository, *sdsImg.Tag)))
-			istioProxyImg := inp.overrideGwp.Spec.Kube.Istio.IstioProxyContainer.Image
-			Expect(istioProxyContainer.Image).To(Equal(fmt.Sprintf("%s/%s:%s", *istioProxyImg.Registry, *istioProxyImg.Repository, *istioProxyImg.Tag)))
-
-			return nil
-		}
-
-		aiAndSdsValidationFunc := func(objs clientObjects, inp *input) error {
-			return generalAiAndSdsValidationFunc(objs, inp, false) // false: don't expect null runAsUser
-		}
-
-		aiSdsAndFloatingUserIdValidationFunc := func(objs clientObjects, inp *input) error {
-			return generalAiAndSdsValidationFunc(objs, inp, true) // true: expect null runAsUser
 		}
 
 		DescribeTable("create and validate objs", func(inp *input, expected *expectedOutput) {
@@ -2443,22 +2284,6 @@ var _ = Describe("Deployer", func() {
 				defaultGwp: fullyDefinedGatewayParamsWithFloatingUserId(),
 			}, &expectedOutput{
 				validationFunc: fullyDefinedValidationFloatingUserId,
-			}),
-			Entry("correct deployment with sds and AI extension enabled", &input{
-				dInputs:     istioEnabledDeployerInputs(),
-				gw:          defaultGatewayWithGatewayParams(gwpOverrideName),
-				defaultGwp:  defaultGatewayParams(),
-				overrideGwp: gatewayParamsOverrideWithSds(),
-			}, &expectedOutput{
-				validationFunc: aiAndSdsValidationFunc,
-			}),
-			Entry("correct deployment with sds, AI extension, and floatinguUserId enabled", &input{
-				dInputs:     istioEnabledDeployerInputs(),
-				gw:          defaultGatewayWithGatewayParams(gwpOverrideName),
-				defaultGwp:  defaultGatewayParams(),
-				overrideGwp: gatewayParamsOverrideWithSdsAndFloatingUserId(),
-			}, &expectedOutput{
-				validationFunc: aiSdsAndFloatingUserIdValidationFunc,
 			}),
 			Entry("no listeners on gateway", &input{
 				dInputs: defaultDeployerInputs(),
@@ -3109,31 +2934,6 @@ func fullyDefinedGatewayParameters(name, namespace string) *gw2_v1alpha1.Gateway
 						IstioDiscoveryAddress: ptr.To("istioDiscoveryAddress"),
 						IstioMetaMeshId:       ptr.To("istioMetaMeshId"),
 						IstioMetaClusterId:    ptr.To("istioMetaClusterId"),
-					},
-				},
-				AiExtension: &gw2_v1alpha1.AiExtension{
-					Enabled: ptr.To(true),
-					Ports: []corev1.ContainerPort{
-						{
-							Name:          "foo",
-							ContainerPort: 80,
-						},
-					},
-					Image: &gw2_v1alpha1.Image{
-						Registry:   ptr.To("ai-extension-registry"),
-						Repository: ptr.To("ai-extension-repository"),
-						Tag:        ptr.To("ai-extension-tag"),
-						Digest:     ptr.To("ai-extension-digest"),
-						PullPolicy: ptr.To(corev1.PullAlways),
-					},
-					Tracing: &gw2_v1alpha1.AiExtensionTrace{
-						EndPoint: "http://my-otel-collector.svc.cluster.local:4317",
-						Sampler: &gw2_v1alpha1.OTelTracesSampler{
-							SamplerType: ptr.To(gw2_v1alpha1.OTelTracesSamplerTraceidratio),
-							SamplerArg:  ptr.To("0.5"),
-						},
-						Timeout:  &metav1.Duration{Duration: 100 * time.Second},
-						Protocol: ptr.To(gw2_v1alpha1.OTLPTracesProtocolTypeGrpc),
 					},
 				},
 			},

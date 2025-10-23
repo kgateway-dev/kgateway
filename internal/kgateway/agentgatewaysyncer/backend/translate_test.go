@@ -761,6 +761,51 @@ func TestBuildAIBackendIr(t *testing.T) {
 			secrets:     nil,
 			expectError: true,
 		},
+		{
+			name: "OpenAI backend with routes configuration",
+			backend: &v1alpha1.Backend{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "openai-with-routes",
+					Namespace: "test-ns",
+				},
+				Spec: v1alpha1.BackendSpec{
+					Type: v1alpha1.BackendTypeAI,
+					AI: &v1alpha1.AIBackend{
+						LLM: &v1alpha1.LLMProvider{
+							OpenAI: &v1alpha1.OpenAIConfig{
+								Model: stringPtr("gpt-4o-mini"),
+								AuthToken: v1alpha1.SingleAuthToken{
+									Kind:   v1alpha1.Inline,
+									Inline: stringPtr("test-key"),
+								},
+							},
+							Routes: map[string]v1alpha1.RouteType{
+								"/v1/chat/completions": v1alpha1.RouteTypeCompletions,
+								"/v1/messages":         v1alpha1.RouteTypeMessages,
+								"/v1/models":           v1alpha1.RouteTypeModels,
+								"*":                    v1alpha1.RouteTypePassthrough,
+							},
+						},
+					},
+				},
+			},
+			secrets:     nil,
+			expectError: false,
+			validate: func(aiIr *AIIr) bool {
+				if aiIr == nil || aiIr.Backend == nil || len(aiIr.Backend.GetAi().ProviderGroups) != 1 || len(aiIr.Backend.GetAi().ProviderGroups[0].Providers) != 1 {
+					return false
+				}
+				provider := aiIr.Backend.GetAi().ProviderGroups[0].Providers[0]
+				// Verify routes are correctly translated
+				if provider.Routes == nil || len(provider.Routes) != 4 {
+					return false
+				}
+				return provider.Routes["/v1/chat/completions"] == api.AIBackend_COMPLETIONS &&
+					provider.Routes["/v1/messages"] == api.AIBackend_MESSAGES &&
+					provider.Routes["/v1/models"] == api.AIBackend_MODELS &&
+					provider.Routes["*"] == api.AIBackend_PASSTHROUGH
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -548,15 +548,6 @@ spec:
                             type: object
                         type: object
                     type: object
-                  routeType:
-                    default: CHAT
-                    description: |-
-                      The type of route to the LLM provider API. Currently, `CHAT` and `CHAT_STREAMING` are supported.
-                      Note: This field is not applicable when using agentgateway
-                    enum:
-                    - CHAT
-                    - CHAT_STREAMING
-                    type: string
                 type: object
               autoHostRewrite:
                 description: |-
