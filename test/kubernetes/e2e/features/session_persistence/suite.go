@@ -73,15 +73,15 @@ func (s *testingSuite) assertSessionPersistence(persistenceType string) {
 	}
 
 	firstResp, err := s.TestInstallation.ClusterContext.Cli.CurlFromPod(s.Ctx, testdefaults.CurlPodExecOpt, firstCurlOpts...)
-	s.Assert().NoError(err, "first request should succeed")
+	s.Require().NoError(err, "first request should succeed")
 
 	firstPodName := s.extractPodNameFromResponse(firstResp.StdOut)
-	s.Assert().NotEmpty(firstPodName, "should be able to extract pod name from first response")
+	s.Require().NotEmpty(firstPodName, "should be able to extract pod name from first response")
 
 	var subsequentCurlOpts []curl.Option
 	if persistenceType == "cookie" {
 		cookie := s.extractSessionCookieFromResponse(firstResp.StdOut)
-		s.Assert().NotEmpty(cookie, "should have received a session cookie")
+		s.Require().NotEmpty(cookie, "should have received a session cookie")
 		subsequentCurlOpts = []curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(gatewayService)),
 			curl.WithHostHeader("echo.local"),
@@ -89,11 +89,11 @@ func (s *testingSuite) assertSessionPersistence(persistenceType string) {
 			curl.Silent(),
 			curl.WithHeader("Cookie", cookie),
 			curl.WithConnectionTimeout(10),
-			curl.WithRetries(3, 0, 10),
+			curl.WithRetries(5, 0, 10),
 		}
 	} else {
 		headerValue := s.extractSessionHeaderFromResponse(firstResp.StdOut)
-		s.Assert().NotEmpty(headerValue, "should have received a session header")
+		s.Require().NotEmpty(headerValue, "should have received a session header")
 		subsequentCurlOpts = []curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(gatewayService)),
 			curl.WithHostHeader("echo.local"),
