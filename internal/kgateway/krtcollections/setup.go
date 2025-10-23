@@ -124,7 +124,9 @@ func InitCollections(
 	refgrants *RefGrantIndex,
 	krtopts krtutil.KrtOptions,
 	globalSettings apisettings.Settings,
-) (*GatewayIndex, *RoutesIndex, *BackendIndex, krt.Collection[ir.EndpointsForBackend]) {
+) (*GatewayIndex, *RoutesIndex, *BackendIndex, krt.Collection[ir.EndpointsForBackend], krt.Collection[*gwv1.HTTPRoute],
+	krt.Collection[*gwv1.GRPCRoute], krt.Collection[*gwv1a2.TCPRoute], krt.Collection[*gwv1a2.TLSRoute],
+	krt.Collection[*gwv1.Gateway], krt.Collection[*gwxv1a1.XListenerSet]) {
 	registerTypes(ourClient)
 
 	// discovery filter
@@ -167,7 +169,7 @@ func InitCollections(
 
 	gateways := NewGatewayIndex(krtopts, controllerNames, envoyControllerName, policies, kubeRawGateways, kubeRawListenerSets, gatewayClasses, namespaces)
 	routes := NewRoutesIndex(krtopts, httpRoutes, grpcRoutes, tcproutes, tlsRoutes, policies, backendIndex, refgrants, globalSettings)
-	return gateways, routes, backendIndex, endpointIRs
+	return gateways, routes, backendIndex, endpointIRs, httpRoutes, grpcRoutes, tcproutes, tlsRoutes, kubeRawGateways, kubeRawListenerSets
 }
 
 func initBackends(plugins sdk.Plugin, backendIndex *BackendIndex) {

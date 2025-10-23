@@ -26,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 
 	// TODO(nfuden): remove once rustformations are able to be used in a production environment
@@ -249,14 +250,20 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 			Name:      policyCR.Name,
 		}
 
-		policyIR, errors := constructor.ConstructIR(krtctx, policyCR)
+		errs := validateTargetRefsExist(krtctx, policyCR, commoncol)
+		if len(errs) > 0 {
+			logger.Error("failed to validate policy targetRef", "policy", policyCR.Name, "namespace", policyCR.Namespace, "errors", errs)
+		}
+		policyIR, newErrs := constructor.ConstructIR(krtctx, policyCR)
+		errs = append(errs, newErrs...)
+
 		if err := validateWithValidationLevel(ctx, policyIR, v, commoncol.Settings.ValidationMode); err != nil {
 			logger.Error("validation failed", "policy", policyCR.Name, "error", err)
-			errors = append(errors, err)
+			errs = append(errs, err)
 		}
 		precedenceWeight, err := pluginsdkutils.ParsePrecedenceWeightAnnotation(policyCR.Annotations, apiannotations.PolicyPrecedenceWeight)
 		if err != nil {
-			errors = append(errors, err)
+			errs = append(errs, err)
 		}
 
 		pol := &ir.PolicyWrapper{
@@ -264,7 +271,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 			Policy:           policyCR,
 			PolicyIR:         policyIR,
 			TargetRefs:       pluginsdkutils.TargetRefsToPolicyRefsWithSectionName(policyCR.Spec.TargetRefs, policyCR.Spec.TargetSelectors),
-			Errors:           errors,
+			Errors:           errs,
 			PrecedenceWeight: precedenceWeight,
 		}
 		return pol
@@ -690,4 +697,79 @@ func (p *trafficPolicyPluginGwPass) handlePerVHostPolicies(
 
 func (p *trafficPolicyPluginGwPass) SupportsPolicyMerge() bool {
 	return true
+}
+
+// validateTargetRefsExist validates that all targetRefs in a TrafficPolicy point to existing resources.
+func validateTargetRefsExist(
+	krtctx krt.HandlerContext,
+	policyCR *v1alpha1.TrafficPolicy,
+	commoncol *collections.CommonCollections,
+) []error {
+	// Skip validating global policies with no TargetRefs
+	if len(policyCR.Spec.TargetRefs) == 0 {
+		return nil
+	}
+
+	var errs []error
+
+	for _, targetRef := range policyCR.Spec.TargetRefs {
+		kind := string(targetRef.Kind)
+		ns := policyCR.Namespace
+		var err error
+		switch kind {
+		case wellknown.BackendGVK.Kind:
+			// Validate Backend exists using BackendIndex
+			found := false
+			if commoncol.BackendIndex != nil {
+				src := ir.ObjectSource{
+					Group:     wellknown.BackendGVK.Group,
+					Kind:      wellknown.BackendGVK.Kind,
+					Namespace: ns,
+					Name:      string(targetRef.Name),
+				}
+				// Backend CRs use port 0 in their resource name
+				backendResourceName := ir.BackendResourceName(src, 0, "")
+
+				for _, backendCol := range commoncol.BackendIndex.Backends() {
+					if backend := backendCol.GetKey(backendResourceName); backend != nil {
+						found = true
+						break
+					}
+				}
+			}
+			if !found {
+				err = fmt.Errorf("targetRef Backend %q not found in namespace %q", targetRef.Name, ns)
+			}
+		case wellknown.HTTPRouteKind:
+			err = validateKRTResource(krtctx, commoncol.RawHTTPRoutes, kind, ns, string(targetRef.Name))
+		case wellknown.GRPCRouteKind:
+			err = validateKRTResource(krtctx, commoncol.RawGRPCRoutes, kind, ns, string(targetRef.Name))
+		case wellknown.TCPRouteKind:
+			err = validateKRTResource(krtctx, commoncol.RawTCPRoutes, kind, ns, string(targetRef.Name))
+		case wellknown.TLSRouteKind:
+			err = validateKRTResource(krtctx, commoncol.RawTLSRoutes, kind, ns, string(targetRef.Name))
+		case wellknown.GatewayKind:
+			err = validateKRTResource(krtctx, commoncol.RawGateways, kind, ns, string(targetRef.Name))
+		case wellknown.XListenerSetKind:
+			err = validateKRTResource(krtctx, commoncol.RawXListenerSets, kind, ns, string(targetRef.Name))
+		default:
+			// Unknown target kind - this should be caught by CEL validation
+			err = fmt.Errorf("targetRef has unsupported kind %s", kind)
+		}
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	return errs
+}
+
+// validateKRTResource checks if a resource exists in a KRT collection by name
+func validateKRTResource[T any](krtctx krt.HandlerContext, collection krt.Collection[T], kind, namespace, name string) error {
+	obj := krt.FetchOne(krtctx, collection,
+		krt.FilterObjectName(types.NamespacedName{Namespace: namespace, Name: name}))
+	if obj == nil {
+		return fmt.Errorf("targetRef %s %q not found in namespace %q", kind, name, namespace)
+	}
+	return nil
 }

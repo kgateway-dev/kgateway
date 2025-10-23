@@ -144,6 +144,8 @@ func (s *CombinedTranslator) TranslateGateway(kctx krt.HandlerContext, ctx conte
 	// we are recomputing xds snapshots as proxies have changed, signal that we need to sync xds with these new snapshots
 	xdsSnap := s.irtranslator.Translate(ctx, *gwir, r)
 
+	reportOrphanPolicyStatus(kctx, &rm, s.extensions.ContributesPolicies)
+
 	return &xdsSnap, rm
 }
 
@@ -157,4 +159,21 @@ func (s *CombinedTranslator) TranslateEndpoints(kctx krt.HandlerContext, ucc ir.
 		hash ^= additionalHash
 	}
 	return endpoints.PrioritizeEndpoints(s.logger, ucc, epInputs), hash
+}
+
+// reportOrphanPolicyStatus report status for policies with no valid TargetRefs
+func reportOrphanPolicyStatus(kctx krt.HandlerContext, rm *reports.ReportMap, plugins sdk.ContributesPolicies) {
+	for _, plugin := range plugins {
+		if plugin.Policies == nil {
+			continue
+		}
+		// Only fetch policies with targetRefs and errors
+		policies := krt.Fetch(kctx, plugin.Policies, krt.FilterGeneric(func(a any) bool {
+			p := a.(ir.PolicyWrapper)
+			return len(p.TargetRefs) > 0 && len(p.Errors) > 0
+		}))
+		for i := range policies {
+			reports.ReportUnattachedPolicyStatus(&policies[i], rm)
+		}
+	}
 }

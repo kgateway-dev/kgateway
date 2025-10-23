@@ -13,7 +13,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
@@ -54,6 +57,15 @@ type CommonCollections struct {
 	Settings                   apisettings.Settings
 	ControllerName             string
 	AgentgatewayControllerName string
+
+	// Raw Kubernetes Gateway API collections - available before plugin initialization
+	// These can be used for validation during policy construction
+	RawHTTPRoutes    krt.Collection[*gwv1.HTTPRoute]
+	RawGRPCRoutes    krt.Collection[*gwv1.GRPCRoute]
+	RawTCPRoutes     krt.Collection[*gwv1a2.TCPRoute]
+	RawTLSRoutes     krt.Collection[*gwv1a2.TLSRoute]
+	RawGateways      krt.Collection[*gwv1.Gateway]
+	RawXListenerSets krt.Collection[*gwxv1a1.XListenerSet]
 }
 
 func (c *CommonCollections) HasSynced() bool {
@@ -177,7 +189,7 @@ func (c *CommonCollections) InitPlugins(
 	mergedPlugins pluginsdk.Plugin,
 	globalSettings apisettings.Settings,
 ) {
-	gateways, routeIndex, backendIndex, endpointIRs := krtcollections.InitCollections(
+	gateways, routeIndex, backendIndex, endpointIRs, rawHTTP, rawGRPC, rawTCP, rawTLS, rawGw, rawLS := krtcollections.InitCollections(
 		ctx,
 		smallset.New(c.ControllerName, c.AgentgatewayControllerName),
 		c.ControllerName,
@@ -194,4 +206,12 @@ func (c *CommonCollections) InitPlugins(
 	c.Routes = routeIndex
 	c.Endpoints = endpointIRs
 	c.GatewayIndex = gateways
+
+	// init raw collections for validation
+	c.RawHTTPRoutes = rawHTTP
+	c.RawGRPCRoutes = rawGRPC
+	c.RawTCPRoutes = rawTCP
+	c.RawTLSRoutes = rawTLS
+	c.RawGateways = rawGw
+	c.RawXListenerSets = rawLS
 }

@@ -130,6 +130,10 @@ func (i *BackendIndex) HasSynced() bool {
 	return true
 }
 
+func (i *BackendIndex) Backends() map[schema.GroupKind]krt.Collection[ir.BackendObjectIR] {
+	return i.availableBackends
+}
+
 func (i *BackendIndex) BackendsWithPolicy() []krt.Collection[*ir.BackendObjectIR] {
 	return i.availableBackendsWithPolicy
 }

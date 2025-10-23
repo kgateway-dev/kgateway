@@ -2,6 +2,7 @@ package reports
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"slices"
@@ -13,6 +14,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
@@ -268,4 +270,45 @@ func addAttachmentCondition(report *AncestorRefReport) []metav1.Condition {
 	}
 
 	return existing
+}
+
+// ReportUnattachedPolicyStatus reports status for an unattached policy.
+func ReportUnattachedPolicyStatus(policyWrapper *ir.PolicyWrapper, rm *ReportMap) {
+	// Skip policies with no targetRefs or no errors
+	if len(policyWrapper.TargetRefs) == 0 || len(policyWrapper.Errors) == 0 {
+		return
+	}
+
+	policyKey := reporter.PolicyKey{
+		Group:     policyWrapper.Group,
+		Kind:      policyWrapper.Kind,
+		Namespace: policyWrapper.Namespace,
+		Name:      policyWrapper.Name,
+	}
+
+	// Skip if policy was already attached
+	if rm.Policies[policyKey] != nil {
+		return
+	}
+
+	rep := NewReporter(rm)
+	errMessage := errors.Join(policyWrapper.Errors...).Error()
+
+	for _, targetRef := range policyWrapper.TargetRefs {
+		ancestorRef := gwv1.ParentReference{
+			Group:       ptr.To(gwv1.Group(targetRef.Group)),
+			Kind:        ptr.To(gwv1.Kind(targetRef.Kind)),
+			Namespace:   ptr.To(gwv1.Namespace(policyWrapper.Namespace)),
+			Name:        gwv1.ObjectName(targetRef.Name),
+			SectionName: ptr.To(gwv1.SectionName(targetRef.SectionName)),
+		}
+
+		r := rep.Policy(policyKey, policyWrapper.Policy.GetGeneration()).AncestorRef(ancestorRef)
+		r.SetCondition(reporter.PolicyCondition{
+			Type:    string(v1alpha1.PolicyConditionAccepted),
+			Status:  metav1.ConditionFalse,
+			Reason:  string(v1alpha1.PolicyReasonInvalid),
+			Message: errMessage,
+		})
+	}
 }
