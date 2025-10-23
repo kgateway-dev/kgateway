@@ -62,9 +62,8 @@ func init() {
 // convertStatusCollection converts the specific TrafficPolicy status collection
 // to the generic controllers.Object status collection expected by the interface
 func convertStatusCollection(col krt.Collection[krt.ObjectWithStatus[*v1alpha1.TrafficPolicy, gwv1.PolicyStatus]]) krt.StatusCollection[controllers.Object, gwv1.PolicyStatus] {
-	// Use krt.NewCollection to transform the collection
-	return krt.NewCollection(col, func(ctx krt.HandlerContext, item krt.ObjectWithStatus[*v1alpha1.TrafficPolicy, gwv1.PolicyStatus]) *krt.ObjectWithStatus[controllers.Object, gwv1.PolicyStatus] {
-		return &krt.ObjectWithStatus[controllers.Object, gwv1.PolicyStatus]{
+	return krt.MapCollection(col, func(item krt.ObjectWithStatus[*v1alpha1.TrafficPolicy, gwv1.PolicyStatus]) krt.ObjectWithStatus[controllers.Object, gwv1.PolicyStatus] {
+		return krt.ObjectWithStatus[controllers.Object, gwv1.PolicyStatus]{
 			Obj:    controllers.Object(item.Obj),
 			Status: item.Status,
 		}
@@ -1275,6 +1274,7 @@ func isCEL(expr v1alpha1.Template) bool {
 	_, iss := celEnv.Parse(string(expr))
 	return iss.Err() == nil
 }
+
 func attachmentName(target *api.PolicyTarget) string {
 	if target == nil {
 		return ""

@@ -6,7 +6,13 @@ import (
 
 	"github.com/agentgateway/agentgateway/go/api"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"istio.io/istio/pkg/log"
+	"istio.io/istio/pkg/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
+
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
 // ApplyTimeouts applies timeouts to an agw route
@@ -22,14 +28,22 @@ func ApplyTimeouts(rule *gwv1.HTTPRouteRule, route *api.Route) error {
 		if err != nil {
 			return fmt.Errorf("failed to parse request timeout: %w", err)
 		}
-		route.TrafficPolicy.RequestTimeout = durationpb.New(d)
+		if d != 0 {
+			// "Setting a timeout to the zero duration (e.g. "0s") SHOULD disable the timeout"
+			// However, agentgateway already defaults to no timeout, so only set for non-zero
+			route.TrafficPolicy.RequestTimeout = durationpb.New(d)
+		}
 	}
 	if rule.Timeouts.BackendRequest != nil {
 		d, err := time.ParseDuration(string(*rule.Timeouts.BackendRequest))
 		if err != nil {
 			return fmt.Errorf("failed to parse backend request timeout: %w", err)
 		}
-		route.TrafficPolicy.BackendRequestTimeout = durationpb.New(d)
+		if d != 0 {
+			// "Setting a timeout to the zero duration (e.g. "0s") SHOULD disable the timeout"
+			// However, agentgateway already defaults to no timeout, so only set for non-zero
+			route.TrafficPolicy.BackendRequestTimeout = durationpb.New(d)
+		}
 	}
 	return nil
 }
@@ -37,6 +51,9 @@ func ApplyTimeouts(rule *gwv1.HTTPRouteRule, route *api.Route) error {
 // ApplyRetries applies retries to an agw route
 func ApplyRetries(rule *gwv1.HTTPRouteRule, route *api.Route) error {
 	if rule == nil || rule.Retry == nil {
+		return nil
+	}
+	if a := rule.Retry.Attempts; a != nil && *a == 0 {
 		return nil
 	}
 	if route.TrafficPolicy == nil {
@@ -58,4 +75,26 @@ func ApplyRetries(rule *gwv1.HTTPRouteRule, route *api.Route) error {
 	}
 	route.TrafficPolicy.Retry = tpRetry
 	return nil
+}
+
+func GetStatus[I, IS any](spec I) IS {
+	switch t := any(spec).(type) {
+	case *gwv1.Gateway:
+		return any(t.Status).(IS)
+	case *gwv1.HTTPRoute:
+		return any(t.Status).(IS)
+	case *gwv1.GRPCRoute:
+		return any(t.Status).(IS)
+	case *gwv1alpha2.TCPRoute:
+		return any(t.Status).(IS)
+	case *gwv1alpha2.TLSRoute:
+		return any(t.Status).(IS)
+	case *v1alpha1.TrafficPolicy:
+		return any(t.Status).(IS)
+	case *gwxv1a1.XListenerSet:
+		return any(t.Status).(IS)
+	default:
+		log.Fatalf("GetStatus unknown type %T", t)
+		return ptr.Empty[IS]()
+	}
 }

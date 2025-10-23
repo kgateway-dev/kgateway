@@ -4,8 +4,6 @@ package deployer
 const (
 	// KgatewayContainerName is the name of the container in the proxy deployment.
 	KgatewayContainerName = "kgateway-proxy"
-	// KgatewayAIContainerName is the name of the container in the proxy deployment for the AI extension.
-	KgatewayAIContainerName = "kgateway-ai-extension"
 	// IstioContainerName is the name of the container in the proxy deployment for the Istio integration.
 	IstioContainerName = "istio-proxy"
 	// IstioWaypointPort - Port 15008 is reserved for Istio. This port enables sidecars to include waypoint proxies

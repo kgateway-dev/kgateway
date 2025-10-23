@@ -205,15 +205,14 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 
 		agwSyncer = agentgatewaysyncer.NewAgwSyncer(
 			cfg.AgwControllerName,
-			cfg.AgentgatewayClassName,
 			cfg.Client,
 			cfg.Manager,
 			cfg.AgwCollections,
 			agwMergedPlugins,
-			cfg.SetupOpts.Cache,
 			cfg.SetupOpts.GlobalSettings.EnableInferExt,
 		)
-		agwSyncer.Init(cfg.KrtOptions)
+
+		agwSyncer.Init(cfg.KrtOptions.WithPrefix("agentgateway"))
 
 		if err := cfg.Manager.Add(agwSyncer); err != nil {
 			setupLog.Error(err, "unable to add agentgateway Syncer runnable")
@@ -225,12 +224,8 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			cfg.AgentgatewayClassName,
 			cfg.Client,
 			cfg.Manager,
-			agwSyncer.GatewayReportQueue(),
-			agwSyncer.ListenerSetReportQueue(),
-			agwSyncer.RouteReportQueue(),
-			agwSyncer.PolicyStatusQueue(),
+			agwSyncer.StatusCollections(),
 			agwSyncer.CacheSyncs(),
-			cfg.ExtraAgwPolicyStatusHandlers,
 		)
 		if err := cfg.Manager.Add(agwStatusSyncer); err != nil {
 			setupLog.Error(err, "unable to add agentgateway StatusSyncer runnable")
@@ -288,7 +283,7 @@ func agwPluginFactory(cfg StartConfig) func(ctx context.Context, agw *agwplugins
 	}
 }
 
-func (c *ControllerBuilder) Build(ctx context.Context) error {
+func (c *ControllerBuilder) Build(ctx context.Context) (*agentgatewaysyncer.Syncer, error) {
 	slog.Info("creating gateway controllers")
 
 	globalSettings := c.cfg.SetupOpts.GlobalSettings
@@ -352,13 +347,13 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 		classInfos,
 	); err != nil {
 		setupLog.Error(err, "unable to create gateway class provisioner")
-		return err
+		return nil, err
 	}
 
 	setupLog.Info("creating base gateway controller")
 	if err := NewBaseGatewayController(ctx, gwCfg, c.cfg.HelmValuesGeneratorOverride, c.cfg.ExtraGatewayParameters); err != nil {
 		setupLog.Error(err, "unable to create gateway controller")
-		return err
+		return nil, err
 	}
 
 	setupLog.Info("creating inferencepool controller")
@@ -379,7 +374,7 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 		}
 		if err := NewBaseInferencePoolController(ctx, poolCfg, &gwCfg, c.cfg.HelmValuesGeneratorOverride, c.cfg.ExtraGatewayParameters); err != nil {
 			setupLog.Error(err, "unable to create inferencepool controller")
-			return err
+			return nil, err
 		}
 	}
 
@@ -387,7 +382,7 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 	// mgr WaitForCacheSync is part of proxySyncer's HasSynced
 	// so we can mark ready here before we call mgr.Start
 	c.ready.Store(true)
-	return nil
+	return c.agwSyncer, nil
 }
 
 func (c *ControllerBuilder) HasSynced() bool {

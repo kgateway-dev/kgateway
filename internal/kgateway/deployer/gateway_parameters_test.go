@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"istio.io/istio/pkg/kube/krt/krttest"
 	"istio.io/istio/pkg/test"
+	"istio.io/istio/pkg/util/smallset"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -490,7 +491,7 @@ func newCommonCols(t test.Failer, initObjs ...client.Object) *collections.Common
 	nsCol := krtcollections.NewNamespaceCollectionFromCol(ctx, krttest.GetMockCollection[*corev1.Namespace](mock), krtutil.KrtOptions{})
 
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
-	gateways := krtcollections.NewGatewayIndex(krtopts, wellknown.DefaultGatewayControllerName, policies, kubeRawGateways, kubeRawListenerSets, gatewayClasses, nsCol)
+	gateways := krtcollections.NewGatewayIndex(krtopts, smallset.New(wellknown.DefaultGatewayControllerName), wellknown.DefaultGatewayControllerName, policies, kubeRawGateways, kubeRawListenerSets, gatewayClasses, nsCol)
 
 	commonCols := &collections.CommonCollections{
 		GatewayIndex: gateways,

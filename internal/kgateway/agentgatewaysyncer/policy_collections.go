@@ -1,21 +1,25 @@
 package agentgatewaysyncer
 
 import (
-	"github.com/agentgateway/agentgateway/go/api"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
-	"istio.io/istio/pkg/slices"
+	"istio.io/istio/pkg/ptr"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 )
 
-func AgwPolicyCollection(binds krt.Collection[ir.AgwResourcesForGateway], agwPlugins plugins.AgwPlugin) (krt.Collection[ir.AgwResourcesForGateway], map[schema.GroupKind]krt.StatusCollection[controllers.Object, gwv1.PolicyStatus]) {
+type PolicyStatusCollections = map[schema.GroupKind]krt.StatusCollection[controllers.Object, gwv1.PolicyStatus]
+
+func AgwPolicyCollection(agwPlugins plugins.AgwPlugin, krtopts krtutil.KrtOptions) (krt.Collection[ir.AgwResource], PolicyStatusCollections) {
 	var allPolicies []krt.Collection[plugins.AgwPolicy]
-	policyStatusMap := map[schema.GroupKind]krt.StatusCollection[controllers.Object, gwv1.PolicyStatus]{}
+	policyStatusMap := PolicyStatusCollections{}
 	// Collect all policies from registered plugins.
 	// Note: Only one plugin should be used per source GVK.
 	// Avoid joining collections per-GVK before passing them to a plugin.
@@ -27,23 +31,11 @@ func AgwPolicyCollection(binds krt.Collection[ir.AgwResourcesForGateway], agwPlu
 			policyStatusMap[gvk] = policyStatus
 		}
 	}
-	joinPolicies := krt.JoinCollection(allPolicies, krt.WithName("AllPolicies"))
+	joinPolicies := krt.JoinCollection(allPolicies, krtopts.ToOptions("JoinPolicies")...)
 
-	// Generate all policies using the plugin system
-	allPoliciesCol := krt.NewCollection(binds, func(ctx krt.HandlerContext, i ir.AgwResourcesForGateway) *ir.AgwResourcesForGateway {
-		logger.Debug("generating policies for gateway", "gateway", i.Gateway)
-
-		// Convert all plugins.AgwPolicy structs to api.Resource structs
-		fetchedPolicies := krt.Fetch(ctx, joinPolicies)
-		allResources := slices.Map(fetchedPolicies, func(policy plugins.AgwPolicy) *api.Resource {
-			return translator.ToAgwResource(translator.AgwPolicy{policy.Policy})
-		})
-
-		return &ir.AgwResourcesForGateway{
-			Resources: allResources,
-			Gateway:   i.Gateway,
-		}
-	})
+	allPoliciesCol := krt.NewCollection(joinPolicies, func(ctx krt.HandlerContext, i plugins.AgwPolicy) *ir.AgwResource {
+		return ptr.Of(translator.ToResourceGlobal(i))
+	}, krtopts.ToOptions("AllPolicies")...)
 
 	return allPoliciesCol, policyStatusMap
 }

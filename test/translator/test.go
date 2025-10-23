@@ -645,6 +645,7 @@ func (tc TestCase) Run(
 		ourCli,
 		nil,
 		wellknown.DefaultGatewayControllerName,
+		wellknown.DefaultAgwControllerName,
 		*settings,
 	)
 	if err != nil {

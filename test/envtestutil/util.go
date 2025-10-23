@@ -54,6 +54,7 @@ func RunController(
 		kdbg *krt.DebugHandler,
 		client istiokube.CLIClient,
 		xdsPort int,
+		agwXdsPort int,
 	),
 ) {
 	if globalSettings == nil {
@@ -115,13 +116,18 @@ func RunController(
 		t.Fatalf("can't listen %v", err)
 	}
 
+	l2, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("can't listen %v", err)
+	}
+
 	s, err := setup.New(
 		setup.WithGlobalSettings(globalSettings),
 		setup.WithRestConfig(cfg),
 		setup.WithExtraPlugins(extraPlugins),
 		setup.WithKrtDebugger(krtDbg),
 		setup.WithXDSListener(l),
-		setup.WithAgwXDSListener(l),
+		setup.WithAgwXDSListener(l2),
 		setup.WithControllerManagerOptions(
 			func(ctx context.Context) *ctrl.Options {
 				return &ctrl.Options{
@@ -161,9 +167,10 @@ func RunController(
 	}()
 
 	xdsPort := l.Addr().(*net.TCPAddr).Port
-	t.Log("running tests, xds port:", xdsPort)
-	run(t, ctx, krtDbg, client, xdsPort)
-	t.Log("controller done. shutting down. xds port:", xdsPort)
+	agwXdsPort := l2.Addr().(*net.TCPAddr).Port
+	t.Logf("running tests, xds port: %v, agw xds port: %v", xdsPort, agwXdsPort)
+	run(t, ctx, krtDbg, client, xdsPort, agwXdsPort)
+	t.Logf("controller done. shutting down. xds port: %v, agw xds port: %v", xdsPort, agwXdsPort)
 }
 
 func GenerateKubeConfiguration(t *testing.T, restconfig *rest.Config) string {

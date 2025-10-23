@@ -8,6 +8,7 @@ import (
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/kubetypes"
+	"istio.io/istio/pkg/util/smallset"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -50,8 +51,9 @@ type CommonCollections struct {
 	// static set of global Settings, non-krt based for dev speed
 	// TODO: this should be refactored to a more correct location,
 	// or even better, be removed entirely and done per Gateway (maybe in GwParams)
-	Settings       apisettings.Settings
-	ControllerName string
+	Settings                   apisettings.Settings
+	ControllerName             string
+	AgentgatewayControllerName string
 }
 
 func (c *CommonCollections) HasSynced() bool {
@@ -80,6 +82,7 @@ func NewCommonCollections(
 	ourClient versioned.Interface,
 	cl client.Client,
 	controllerName string,
+	agentGatewayControllerName string,
 	settings apisettings.Settings,
 ) (*CommonCollections, error) {
 	// Namespace collection must be initialized first to enable discovery namespace
@@ -161,7 +164,8 @@ func NewCommonCollections(
 
 		DiscoveryNamespacesFilter: discoveryNamespacesFilter,
 
-		ControllerName: controllerName,
+		ControllerName:             controllerName,
+		AgentgatewayControllerName: agentGatewayControllerName,
 	}, nil
 }
 
@@ -175,6 +179,7 @@ func (c *CommonCollections) InitPlugins(
 ) {
 	gateways, routeIndex, backendIndex, endpointIRs := krtcollections.InitCollections(
 		ctx,
+		smallset.New(c.ControllerName, c.AgentgatewayControllerName),
 		c.ControllerName,
 		mergedPlugins,
 		c.Client,

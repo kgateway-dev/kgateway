@@ -42,6 +42,12 @@ set -eEuo pipefail
 #   # Run a top-level test function
 #   ./hack/run-e2e-test.sh TestKgateway
 #
+#   # Run a suite within a specific parent test (using slash notation)
+#   ./hack/run-e2e-test.sh TestKgateway/SessionPersistence
+#
+#   # Run a specific test method using slash notation
+#   ./hack/run-e2e-test.sh TestKgateway/SessionPersistence/TestHeaderSessionPersistence
+#
 #   # Skip setup if cluster exists (faster iteration) - using flag
 #   ./hack/run-e2e-test.sh --persist SessionPersistence
 #
@@ -150,88 +156,58 @@ check_and_cleanup_helm_conflicts() {
     return 0
 }
 
-# Search for test cases
-find_test_cases() {
-    local pattern="$1"
-
-    log_info "Searching for test cases matching: ${pattern}"
-
-    # Search for:
-    # 1. Top-level test functions: func TestXxx(t *testing.T)
-    # 2. Suite registrations: Register("SuiteName", ...)
-    # 3. Suite test methods: func (s *...) TestXxx()
-
-    # Try to find suite registrations first
-    local suite_matches
-    suite_matches=$(git grep -n "Register(\"${pattern}\"" -- 'test/kubernetes/e2e/tests/*.go' 2>/dev/null || true)
-
-    # Try to find test functions (handle both TestXxx and Xxx patterns)
-    local func_matches
-    if [[ "$pattern" == Test* ]]; then
-        func_matches=$(git grep -n "func ${pattern}" -- 'test/kubernetes/e2e/tests/*_test.go' 2>/dev/null || true)
-    else
-        func_matches=$(git grep -n "func Test${pattern}" -- 'test/kubernetes/e2e/tests/*_test.go' 2>/dev/null || true)
-    fi
-
-    # Try to find test methods in suites (handle both TestXxx and Xxx patterns)
-    local method_matches
-    if [[ "$pattern" == Test* ]]; then
-        method_matches=$(git grep -n "func (.*) ${pattern}" -- 'test/kubernetes/e2e/features' 2>/dev/null || true)
-    else
-        method_matches=$(git grep -n "func (.*) Test${pattern}" -- 'test/kubernetes/e2e/features' 2>/dev/null || true)
-    fi
-
-    # Also try pattern as substring
-    if [[ -z "$suite_matches" && -z "$func_matches" && -z "$method_matches" ]]; then
-        suite_matches=$(git grep -n "Register(\".*${pattern}.*\"" -- 'test/kubernetes/e2e/tests/*.go' 2>/dev/null || true)
-
-        # For partial match, search for Test.*pattern
-        if [[ "$pattern" == Test* ]]; then
-            func_matches=$(git grep -n "func .*${pattern}" -- 'test/kubernetes/e2e/tests/*_test.go' 2>/dev/null || true)
-            method_matches=$(git grep -n "func (.*) .*${pattern}" -- 'test/kubernetes/e2e/features' 2>/dev/null || true)
-        else
-            func_matches=$(git grep -n "func Test.*${pattern}" -- 'test/kubernetes/e2e/tests/*_test.go' 2>/dev/null || true)
-            method_matches=$(git grep -n "func (.*) Test.*${pattern}" -- 'test/kubernetes/e2e/features' 2>/dev/null || true)
-        fi
-    fi
-
-    if [[ -z "$suite_matches" && -z "$func_matches" && -z "$method_matches" ]]; then
-        log_error "No test cases found matching: ${pattern}"
-        echo ""
-        log_info "Available test suites:"
-        git grep -h 'Register("' -- 'test/kubernetes/e2e/tests/*.go' | \
-            sed -E 's/.*Register\("([^"]*)".*/  - \1/' | sort | head -20
-        echo ""
-        log_info "Available top-level tests:"
-        git grep -h '^func Test.*\(t \*testing\.T\)' -- 'test/kubernetes/e2e/tests/*_test.go' | \
-            sed -E 's/func (Test[^(]*).*/  - \1/' | sort | head -20
-        exit 1
-    fi
-
-    # Display findings
-    if [[ -n "$func_matches" ]]; then
-        log_info "Found top-level test functions:"
-        echo "$func_matches" | head -5
-    fi
-
-    if [[ -n "$suite_matches" ]]; then
-        log_info "Found suite registrations:"
-        echo "$suite_matches" | head -5
-    fi
-
-    if [[ -n "$method_matches" ]]; then
-        log_info "Found suite test methods:"
-        echo "$method_matches" | head -10
-    fi
-}
-
 # Build the go test run pattern
 build_test_pattern() {
     local pattern="$1"
 
+    # If pattern contains regex metacharacters, treat it as a regex
+    if [[ "$pattern" =~ [\.\*\+\?\[\]\(\)\|] ]]; then
+        log_info "Detected regex pattern: ${pattern}"
+        # If it looks like a test method pattern (starts with Test), search across all suites
+        if [[ "$pattern" == Test* ]]; then
+            log_info "Searching across all suites for matching test methods"
+            echo ".*/.*/${pattern}"
+        else
+            # Otherwise pass through as-is
+            echo "${pattern}"
+        fi
+        return
+    fi
+
+    # Check if the pattern contains slashes (nested test path like TestKgateway/SessionPersistence/TestHeaderSessionPersistence)
+    if [[ "$pattern" == */* ]]; then
+        log_info "Detected nested test path: ${pattern}"
+
+        # Split by '/', wrap each element with '^' and '$', then join with '/'
+        IFS='/' read -ra parts <<< "$pattern"
+        local result=""
+        for ((i=0; i<${#parts[@]}; i++)); do
+            local part="${parts[i]}"
+            # Strip existing anchors
+            part="${part#^}"
+            part="${part%\$}"
+            # Add to result
+            if [[ $i -eq 0 ]]; then
+                result="^${part}\$"
+            else
+                result="${result}/^${part}\$"
+            fi
+        done
+
+        log_info "Running nested test: ${pattern}"
+        echo "$result"
+        return
+    fi
+
     # Check if it's a top-level test function
     local test_func
-    test_func=$(git grep -h "^func Test${pattern}" -- 'test/kubernetes/e2e/tests/*_test.go' 2>/dev/null | head -1 || true)
+    if [[ "$pattern" == Test* ]]; then
+        # Pattern already starts with Test, search for exact match
+        test_func=$(git grep -h --no-line-number "^func ${pattern}(" -- 'test/kubernetes/e2e/tests/*_test.go' 2>/dev/null | head -1 || true)
+    else
+        # Pattern doesn't start with Test, add it
+        test_func=$(git grep -h --no-line-number "^func Test${pattern}(" -- 'test/kubernetes/e2e/tests/*_test.go' 2>/dev/null | head -1 || true)
+    fi
 
     if [[ -n "$test_func" ]]; then
         # Extract the test function name
@@ -315,7 +291,7 @@ build_test_pattern() {
 
                     if [[ -n "$parent_test" ]]; then
                         log_info "Running suite test: ${parent_test} -> ${suite_name} -> ${method_name}"
-                        echo "^${parent_test}$/${suite_name}/${method_name}$"
+                        echo "^${parent_test}$/^${suite_name}$/^${method_name}$"
                         return
                     fi
                 fi
@@ -374,20 +350,20 @@ build_test_pattern() {
                 local method_name
                 method_name=$(echo "$method_match" | sed -E 's/func .* ([^(]*)\(\).*/\1/')
                 log_info "Running suite test: ${parent_test} -> ${suite_name} -> ${method_name}"
-                echo "^${parent_test}$/${suite_name}/${method_name}$"
+                echo "^${parent_test}$/^${suite_name}$/^${method_name}$"
                 return
             fi
         fi
 
         # Running entire suite
         log_info "Running entire suite: ${parent_test} -> ${suite_name}"
-        echo "^${parent_test}$/${suite_name}$"
+        echo "^${parent_test}$/^${suite_name}$"
         return
     fi
 
     # Fallback: just use the pattern as-is
-    log_warn "Using pattern as-is: ${pattern}"
-    echo "${pattern}"
+    log_error "Test pattern not found: ${pattern}"
+    exit 1
 }
 
 # List available tests
@@ -446,6 +422,8 @@ main() {
         echo "  $0 SessionPersistence"
         echo "  $0 TestCookieSessionPersistence"
         echo "  $0 TestKgateway"
+        echo "  $0 TestKgateway/SessionPersistence"
+        echo "  $0 TestKgateway/SessionPersistence/TestHeaderSessionPersistence"
         echo "  $0 --persist SessionPersistence"
         echo "  $0 --rebuild SessionPersistence"
         echo "  $0 -n TestCookieSessionPersistence"
@@ -457,10 +435,6 @@ main() {
         echo "  --dry-run, -n   Print the test command that would be run without executing it"
         exit 1
     fi
-
-    # Find test cases
-    find_test_cases "$test_pattern"
-    echo ""
 
     # Build the test run pattern
     local run_pattern

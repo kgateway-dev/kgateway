@@ -115,3 +115,9 @@ jobs:
         run-regex: ${{ matrix.test.go-test-run-regex }}
         istio-version: ${{ steps.dotenv.outputs.istio_version }}
         matrix-label: "pr"
+    - id: debug-space
+      shell: bash
+      run: |
+        echo "After job disk space:"
+        df -h
+        docker system df -v

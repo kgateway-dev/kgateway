@@ -8,8 +8,11 @@ import (
 	"strings"
 
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/slices"
+	"istio.io/istio/pkg/util/smallset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -277,6 +280,31 @@ func (listener Listener) GetParentReporter(reporter reporter.Reporter) reporter.
 // TODO: need to reevaluate DeepEqual usage
 func (c Listener) Equals(in Listener) bool {
 	return reflect.DeepEqual(c, in)
+}
+
+type GatewayForDeployer struct {
+	ObjectSource
+	// Controller name for the gateway
+	ControllerName string
+	// All ports from all listeners
+	Ports smallset.Set[int32]
+}
+
+func (c GatewayForDeployer) ResourceName() string {
+	return c.ObjectSource.ResourceName()
+}
+
+func (c GatewayForDeployer) Equals(in GatewayForDeployer) bool {
+	return c.ObjectSource.Equals(in.ObjectSource) &&
+		c.ControllerName == in.ControllerName &&
+		slices.Equal(c.Ports.List(), in.Ports.List())
+}
+
+type ListenerForDeployer struct {
+	Name       gwv1.SectionName
+	Port       gwv1.PortNumber
+	Parent     types.NamespacedName
+	ParentKind string
 }
 
 type Gateway struct {

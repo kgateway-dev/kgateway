@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"log/slog"
 	"reflect"
-	"slices"
 	"strings"
+
+	"istio.io/istio/pkg/slices"
 
 	"istio.io/istio/pkg/ptr"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -15,6 +16,8 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
+
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
@@ -240,6 +243,14 @@ func (r *ReportMap) BuildRouteStatus(
 	obj client.Object,
 	controller string,
 ) *gwv1.RouteStatus {
+	return r.BuildRouteStatusWithParentRefDefaulting(ctx, obj, controller, false)
+}
+func (r *ReportMap) BuildRouteStatusWithParentRefDefaulting(
+	ctx context.Context,
+	obj client.Object,
+	controller string,
+	defaultParentRef bool,
+) *gwv1.RouteStatus {
 	routeReport := r.route(obj)
 	if routeReport == nil {
 		slog.Info("missing route report", "type", obj.GetObjectKind().GroupVersionKind().Kind, "name", obj.GetName(), "namespace", obj.GetNamespace())
@@ -282,6 +293,9 @@ func (r *ReportMap) BuildRouteStatus(
 	default:
 		slog.Error("unsupported route type for status reporting", "route_type", fmt.Sprintf("%T", obj))
 		return nil
+	}
+	if defaultParentRef {
+		parentRefs = ensureParentRefNamespaces(parentRefs, obj.GetNamespace())
 	}
 
 	newStatus := gwv1.RouteStatus{}
@@ -349,6 +363,22 @@ func (r *ReportMap) BuildRouteStatus(
 	return &newStatus
 }
 
+func ensureParentRefNamespaces(parentRefs []gwv1.ParentReference, routeNamespace string) []gwv1.ParentReference {
+	return slices.Map(parentRefs, func(e gwv1.ParentReference) gwv1.ParentReference {
+		if e.Namespace == nil {
+			routeNs := gwv1.Namespace(routeNamespace)
+			e.Namespace = &routeNs
+		}
+		if e.Group == nil {
+			e.Group = ptr.Of(gwv1.Group(wellknown.GatewayGVK.Group))
+		}
+		if e.Kind == nil {
+			e.Kind = ptr.Of(gwv1.Kind(wellknown.GatewayGVK.Kind))
+		}
+		return e
+	})
+}
+
 // match istio/istio logic, see:
 // https://github.com/istio/istio/blob/6dcaa0206bcaf20e3e3b4e45e9376f0f96365571/pilot/pkg/config/kube/gateway/conversion.go#L2714-L2722
 func ParentString(ref gwv1.ParentReference) string {
@@ -366,20 +396,12 @@ func ParentString(ref gwv1.ParentReference) string {
 // to a given report, i.e. set healthy conditions
 func addMissingGatewayConditions(gwReport *GatewayReport, gw *gwv1.Gateway) {
 	// If the existing Gateway status contains an Accepted=False with Reason=InvalidParameters,
-	// propagate that into the reporter so it persists and is considered owned by the reporter.
+	// we don't want to override it with a true Accepted status. The controller will set Accepted=True
+	// when the GatewayParameters are valid again. Otherwise there is a race condition between the controller and reporter.
 	// HACK: This is because both the controller and reporter set Accepted status.
-	if existing := meta.FindStatusCondition(gw.Status.Conditions, string(gwv1.GatewayConditionAccepted)); existing != nil &&
-		existing.Status == metav1.ConditionFalse &&
-		existing.Reason == string(gwv1.GatewayReasonInvalidParameters) {
-		gwReport.SetCondition(reporter.GatewayCondition{
-			Type:    gwv1.GatewayConditionAccepted,
-			Status:  metav1.ConditionFalse,
-			Reason:  gwv1.GatewayConditionReason(existing.Reason),
-			Message: existing.Message,
-		})
-	}
-
-	if cond := meta.FindStatusCondition(gwReport.GetConditions(), string(gwv1.GatewayConditionAccepted)); cond == nil {
+	existingAccepted := meta.FindStatusCondition(gw.Status.Conditions, string(gwv1.GatewayConditionAccepted))
+	hasInvalidParams := existingAccepted != nil && existingAccepted.Status == metav1.ConditionFalse && existingAccepted.Reason == string(gwv1.GatewayReasonInvalidParameters)
+	if !hasInvalidParams && meta.FindStatusCondition(gwReport.GetConditions(), string(gwv1.GatewayConditionAccepted)) == nil {
 		gwReport.SetCondition(reporter.GatewayCondition{
 			Type:    gwv1.GatewayConditionAccepted,
 			Status:  metav1.ConditionTrue,

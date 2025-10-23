@@ -25,6 +25,9 @@ func TestKgateway(t *testing.T) {
 			ValuesManifestFile:        e2e.EmptyValuesManifestPath,
 			ExtraHelmArgs: []string{
 				"--set", "controller.extraEnv.KGW_GLOBAL_POLICY_NAMESPACE=" + installNs,
+				// TODO(https://github.com/kgateway-dev/kgateway/issues/12694) enable this again (to make sure the two do not
+				// cause issues for each other).
+				"--set", "agentgateway.enabled=false",
 			},
 		},
 	)

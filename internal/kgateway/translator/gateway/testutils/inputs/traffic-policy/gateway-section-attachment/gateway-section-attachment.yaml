@@ -1,0 +1,38 @@
+# Gateway section-specific rate limiting policy
+# Tests rate limiting attached to a specific Gateway listener section
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: ratelimit-gateway-section
+  namespace: infra
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-gateway
+    sectionName: http1
+  rateLimit:
+    global:
+      descriptors:
+      - entries:
+        - type: Header
+          header: "X-User-ID"
+      extensionRef:
+        name: section-name-gw-ratelimit
+---
+# Gateway extension for section-specific rate limiting
+# Used when targeting specific gateway listeners/sections
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: section-name-gw-ratelimit
+  namespace: infra
+spec:
+  type: RateLimit
+  rateLimit:
+    grpcService:
+      backendRef:
+        name: ratelimit
+        port: 8081
+    domain: "api-gateway-section"
+    timeout: "200ms"
