@@ -33,10 +33,10 @@ type Fake struct {
 	t           *testing.T
 }
 
-func NewFakeDiscoveryServer(t *testing.T) Fake {
+func NewFakeDiscoveryServer(t *testing.T, initialAddress ...agentgatewaysyncer.Address) Fake {
 	stop := test.NewStop(t)
 	opts := krtutil.NewKrtOptions(stop, new(krt.DebugHandler))
-	xdsAddress := krt.NewStaticCollection[agentgatewaysyncer.Address](nil, nil, opts.ToOptions("address")...)
+	xdsAddress := krt.NewStaticCollection[agentgatewaysyncer.Address](nil, initialAddress, opts.ToOptions("address")...)
 	xdsResource := krt.NewStaticCollection[agwir.AgwResource](nil, nil, opts.ToOptions("resource")...)
 	agwResourcesByGateway := func(resource agwir.AgwResource) types.NamespacedName {
 		return resource.Gateway
@@ -106,15 +106,13 @@ func TestEmptyXDS(t *testing.T) {
 }
 
 func TestXDS(t *testing.T) {
-	s := NewFakeDiscoveryServer(t)
-	s.Addresses.UpdateObject(testWorkload1)
+	s := NewFakeDiscoveryServer(t, testWorkload1)
 	ads := s.ConnectDeltaADS().WithType(translator.TargetTypeAddressUrl)
 	ads.RequestResponseAck(nil)
 }
 
 func TestXDSUpdate(t *testing.T) {
-	s := NewFakeDiscoveryServer(t)
-	s.Addresses.UpdateObject(testWorkload1)
+	s := NewFakeDiscoveryServer(t, testWorkload1)
 	ads := s.ConnectDeltaADS().WithType(translator.TargetTypeAddressUrl)
 	ads.RequestResponseAck(nil)
 
