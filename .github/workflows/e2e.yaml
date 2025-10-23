@@ -32,47 +32,47 @@ jobs:
         test:
         # August 29, 2025: ~10 minutes
         - cluster-name: 'cluster-one'
-          go-test-args: '-v -timeout=25m -count 100 -failfast''
+          go-test-args: '-v -timeout=25m -count 100 -failfast'
           go-test-run-regex: '^TestKgateway$$/^SessionPersistence$$'
           localstack: 'false'
         # August 29, 2025: ~13 minutes
         - cluster-name: 'cluster-two'
-          go-test-args: '-v -timeout=25m -count 100 -failfast''
+          go-test-args: '-v -timeout=25m -count 100 -failfast'
           go-test-run-regex: '^TestKgatewayWaypoint$$'
           localstack: 'false'
         # August 29, 2025: ~9 minutes
         - cluster-name: 'cluster-three'
-          go-test-args: '-v -timeout=25m -count 100 -failfast''
+          go-test-args: '-v -timeout=25m -count 100 -failfast'
           go-test-run-regex: '^TestKgateway$$/^SessionPersistence$$'
           localstack: 'true'
         # August 29, 2025: ~9 minutes
         - cluster-name: 'cluster-four'
-          go-test-args: '-v -timeout=25m -count 100 -failfast''
+          go-test-args: '-v -timeout=25m -count 100 -failfast'
           go-test-run-regex: '^TestKgateway$$/^SessionPersistence$$'
           localstack: 'false'
         # August 29, 2025: ~10 minutes
         - cluster-name: 'cluster-five'
-          go-test-args: '-v -timeout=25m -count 100 -failfast''
+          go-test-args: '-v -timeout=25m -count 100 -failfast'
           go-test-run-regex: '^TestKgateway$$/^SessionPersistence$$'
           localstack: 'false'
         # August 29, 2025: ~9 minutes
         - cluster-name: 'cluster-six'
-          go-test-args: '-v -timeout=25m -count 100 -failfast''
+          go-test-args: '-v -timeout=25m -count 100 -failfast'
           go-test-run-regex: '^TestKgateway$$/^SessionPersistence$$'
           localstack: 'false'
         # August 29, 2025: ~4 minutes
         - cluster-name: 'cluster-metrics'
-          go-test-args: '-v -timeout=25m -count 100 -failfast''
+          go-test-args: '-v -timeout=25m -count 100 -failfast'
           go-test-run-regex: '^TestKgateway$$/^SessionPersistence$$'
           localstack: 'false'
         # August 29, 2025: ~4 minutes
         - cluster-name: 'cluster-multi-install'
-          go-test-args: '-v -timeout=5m -count 100 -failfast''
+          go-test-args: '-v -timeout=5m -count 100 -failfast'
           go-test-run-regex: '^TestKgateway$$/^SessionPersistence$$'
           localstack: 'false'
         # August 29, 2025: ~4 minutes
         - cluster-name: 'agent-gateway-cluster'
-          go-test-args: '-v -timeout=25m -count 100 -failfast''
+          go-test-args: '-v -timeout=25m -count 100 -failfast'
           go-test-run-regex: '^TestKgateway$$/^SessionPersistence$$'
           agentgateway: 'true'
         # August 29, 2025: ~3 minutes
