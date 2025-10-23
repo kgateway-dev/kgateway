@@ -990,11 +990,12 @@ func (c RouteWrapper) Equals(in RouteWrapper) bool {
 // MARK: RoutesIndex
 
 type RoutesIndex struct {
-	routes                  krt.Collection[RouteWrapper]
-	httpRoutes              krt.Collection[ir.HttpRouteIR]
-	httpBySelector          krt.Index[HTTPRouteSelector, ir.HttpRouteIR]
-	byParentRef             krt.Index[targetRefIndexKey, RouteWrapper]
-	weightedRoutePrecedence bool
+	routes                     krt.Collection[RouteWrapper]
+	httpRoutes                 krt.Collection[ir.HttpRouteIR]
+	httpBySelector             krt.Index[HTTPRouteSelector, ir.HttpRouteIR]
+	byParentRef                krt.Index[targetRefIndexKey, RouteWrapper]
+	weightedRoutePrecedence    bool
+	enableExperimentalFeatures bool
 
 	policies  *PolicyIndex
 	refgrants *RefGrantIndex
@@ -1029,10 +1030,11 @@ func NewRoutesIndex(
 	globalSettings apisettings.Settings,
 ) *RoutesIndex {
 	h := &RoutesIndex{
-		policies:                policies,
-		refgrants:               refgrants,
-		backends:                backends,
-		weightedRoutePrecedence: globalSettings.WeightedRoutePrecedence,
+		policies:                   policies,
+		refgrants:                  refgrants,
+		backends:                   backends,
+		weightedRoutePrecedence:    globalSettings.WeightedRoutePrecedence,
+		enableExperimentalFeatures: globalSettings.EnableExperimentalFeatures,
 	}
 	h.hasSyncedFuncs = append(h.hasSyncedFuncs, httproutes.HasSynced, grpcroutes.HasSynced, tcproutes.HasSynced, tlsroutes.HasSynced)
 
@@ -1313,6 +1315,12 @@ func (h *RoutesIndex) getBuiltInRulePolicies(
 	}
 	policy := NewBuiltInRuleIr(rule)
 	if policy != nil {
+		// ON_EXPERIMENTEAL_PROMOTION : Remove this block
+		if !h.enableExperimentalFeatures {
+			// TODO: Add logging that enableExperimentalFeatures is disbled but an experimental feature is used
+			policy.rule.sessionPersistence = nil
+			policy.rule.retry = nil
+		}
 		policyAtt := ir.PolicyAtt{PolicyIr: policy /*direct attachment - no target ref*/}
 		for _, o := range opts {
 			o(&policyAtt)
@@ -1375,6 +1383,12 @@ func (h *RoutesIndex) resolveExtension(
 	builtinIR, err := NewBuiltInIr(kctx, ext, fromGK, ns, h.refgrants, h.backends, ruleName, annotations)
 	if err != nil {
 		return nil, err
+	}
+
+	// ON_EXPERIMENTEAL_PROMOTION : Remove this block
+	if h.enableExperimentalFeatures && builtinIR.hasCors {
+		// TODO: Add logging that enableExperimentalFeatures is disbled but an experimental feature is used
+		return nil, nil
 	}
 	policyAtt := &ir.PolicyAtt{
 		GroupKind: ir.VirtualBuiltInGK,

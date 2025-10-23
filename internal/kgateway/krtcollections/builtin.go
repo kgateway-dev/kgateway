@@ -130,7 +130,7 @@ func NewBuiltInIr(
 	ups *BackendIndex,
 	ruleName *gwv1.SectionName,
 	annotations map[string]string,
-) (ir.PolicyIR, error) {
+) (*builtinPlugin, error) {
 	var cors *gwv1.HTTPCORSFilter
 	if f.Type == gwv1.HTTPRouteFilterCORS {
 		cors = f.CORS
@@ -146,7 +146,7 @@ func NewBuiltInIr(
 	}, nil
 }
 
-func NewBuiltInRuleIr(rule gwv1.HTTPRouteRule) ir.PolicyIR {
+func NewBuiltInRuleIr(rule gwv1.HTTPRouteRule) *builtinPlugin {
 	// If no rule policies are set, return nil so that we don't have a no-op policy
 	if rule.Timeouts == nil && rule.Retry == nil && rule.SessionPersistence == nil {
 		return nil
