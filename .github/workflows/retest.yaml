@@ -22,7 +22,7 @@ jobs:
           PR_COMMENT: ${{ github.event.comment.body }}
           PR_NUMBER: ${{ github.event.issue.number }}
           MEMBER: ${{ github.event.comment.author_association }}
-          #GITHUB_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           echo PR_NUMBER: $PR_NUMBER
           echo MEMBER: $MEMBER
