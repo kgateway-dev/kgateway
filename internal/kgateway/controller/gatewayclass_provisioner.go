@@ -38,8 +38,10 @@ type gatewayClassProvisioner struct {
 	defaultControllerName string
 }
 
-var _ reconcile.TypedReconciler[reconcile.Request] = &gatewayClassProvisioner{}
-var _ manager.LeaderElectionRunnable = &gatewayClassProvisioner{}
+var (
+	_ reconcile.TypedReconciler[reconcile.Request] = &gatewayClassProvisioner{}
+	_ manager.LeaderElectionRunnable               = &gatewayClassProvisioner{}
+)
 
 // NewGatewayClassProvisioner creates a new GatewayClassProvisioner. It will
 // watch for kick events on the channel for initial reconciliation and delete
@@ -95,7 +97,7 @@ func (r *gatewayClassProvisioner) Reconcile(ctx context.Context, req ctrl.Reques
 	log.Info("reconciling GatewayClasses", "controllerName", "gatewayclass-provisioner")
 	defer log.Info("finished reconciling GatewayClasses", "controllerName", "gatewayclass-provisioner")
 
-	finishMetrics := collectReconciliationMetrics("gatewayclass-provisioner", req)
+	finishMetrics := collectReconciliationMetrics("gatewayclass-provisioner", req.NamespacedName)
 	defer func() {
 		finishMetrics(rErr)
 	}()

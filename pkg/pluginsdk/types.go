@@ -6,10 +6,12 @@ import (
 	"errors"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/cache"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/endpoints"
@@ -154,4 +156,13 @@ func CloneObjectMetaForStatus(m metav1.ObjectMeta) metav1.ObjectMeta {
 		Namespace:       m.GetNamespace(),
 		ResourceVersion: m.GetResourceVersion(),
 	}
+}
+
+// GatewayControllerExtension is an interface for extending the Gateway controller with custom behavior
+type GatewayControllerExtension interface {
+	Register(gatewayQueue controllers.Queue, gatewayParamEventHandler cache.ResourceEventHandler)
+
+	Start(context.Context) error
+
+	Stop() error
 }

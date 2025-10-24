@@ -87,7 +87,7 @@ GOLANGCI_LINT ?= go tool golangci-lint
 ANALYZE_ARGS ?= --fix --verbose
 CUSTOM_GOLANGCI_LINT_BIN ?= $(DEPSGOBIN)/golangci-lint-custom
 CUSTOM_GOLANGCI_LINT_RUN ?= $(CUSTOM_GOLANGCI_LINT_BIN) run --build-tags e2e
-CUSTOM_GOLANGCI_LINT_FMT ?= $(CUSTOM_GOLANGCI_LINT_BIN) fmt
+CUSTOM_GOLANGCI_LINT_FMT ?= $(GOLANGCI_LINT) fmt
 
 #----------------------------------------------------------------------------------
 # Macros
@@ -106,11 +106,11 @@ init-git-hooks:  ## Use the tracked version of Git hooks from this repo
 	git config core.hooksPath .githooks
 
 .PHONY: fmt
-fmt: $(CUSTOM_GOLANGCI_LINT_BIN)  ## Format the code with golangci-lint
+fmt:  ## Format the code with golangci-lint
 	$(CUSTOM_GOLANGCI_LINT_FMT) ./...
 
 .PHONY: fmt-changed
-fmt-changed: $(CUSTOM_GOLANGCI_LINT_BIN)  ## Format only the changed code with golangci-lint
+fmt-changed: ## Format only the changed code with golangci-lint
 	git status -s -uno | awk '{print $2}' | grep '.*.go$$' | xargs -r $(CUSTOM_GOLANGCI_LINT_FMT)
 
 # must be a separate target so that make waits for it to complete before moving on

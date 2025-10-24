@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/avast/retry-go/v4"
-	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/kclient"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -21,6 +20,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/status"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 )
 
 var _ manager.LeaderElectionRunnable = &AgentGwStatusSyncer{}
@@ -37,7 +37,7 @@ const (
 // AgentGwStatusSyncer runs only on the leader and syncs the status of agent gateway resources.
 // It subscribes to the report queues, parses and updates the resource status.
 type AgentGwStatusSyncer struct {
-	client kube.Client
+	client apiclient.Client
 
 	agentgatewayPolicies StatusSyncer[*v1alpha1.AgentgatewayPolicy, *gwv1.PolicyStatus]
 
@@ -60,7 +60,7 @@ type AgentGwStatusSyncer struct {
 func NewAgwStatusSyncer(
 	controllerName string,
 	agwClassName string,
-	client kube.Client,
+	client apiclient.Client,
 	statusCollections *status.StatusCollections,
 	cacheSyncs []cache.InformerSynced,
 ) *AgentGwStatusSyncer {
@@ -234,7 +234,6 @@ func (s StatusSyncer[O, S]) ApplyStatus(ctx context.Context, obj status.Resource
 			Namespace:       obj.Namespace,
 			ResourceVersion: obj.ResourceVersion,
 		}, status))
-
 		if err != nil {
 			if errors.IsConflict(err) {
 				// This is normal. It is expected the collection will re-enqueue the write

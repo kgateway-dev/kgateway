@@ -10,7 +10,6 @@ import (
 	envoytypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"istio.io/istio/pkg/config"
-	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
 	"istio.io/istio/pkg/slices"
@@ -30,6 +29,7 @@ import (
 	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
+	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
@@ -46,7 +46,7 @@ var (
 type Syncer struct {
 	// Core collections and dependencies
 	agwCollections *plugins.AgwCollections
-	client         kube.Client
+	client         apiclient.Client
 	agwPlugins     plugins.AgwPlugin
 	translator     *translator.AgwTranslator
 
@@ -71,7 +71,7 @@ type Syncer struct {
 func NewAgwSyncer(
 	ctx context.Context,
 	controllerName string,
-	client kube.Client,
+	client apiclient.Client,
 	agwCollections *plugins.AgwCollections,
 	agwPlugins plugins.AgwPlugin,
 	additionalGatewayClasses map[string]*deployer.GatewayClassInfo,

@@ -397,6 +397,7 @@ func setupEnvTestAndRun(t *testing.T, globalSettings *apisettings.Settings, run 
 		},
 		nil, // no tests need a validator right now.
 		run,
+		nil,
 	)
 }
 

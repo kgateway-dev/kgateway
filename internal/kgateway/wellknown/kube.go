@@ -7,13 +7,11 @@ import (
 )
 
 var (
-	SecretGVK         = corev1.SchemeGroupVersion.WithKind("Secret")
-	ConfigMapGVK      = corev1.SchemeGroupVersion.WithKind("ConfigMap")
-	ServiceGVK        = corev1.SchemeGroupVersion.WithKind("Service")
-	ServiceAccountGVK = corev1.SchemeGroupVersion.WithKind("ServiceAccount")
-
-	// RBAC GVKs
+	DeploymentGVK         = appsv1.SchemeGroupVersion.WithKind("Deployment")
+	SecretGVK             = corev1.SchemeGroupVersion.WithKind("Secret")
+	ConfigMapGVK          = corev1.SchemeGroupVersion.WithKind("ConfigMap")
+	ServiceGVK            = corev1.SchemeGroupVersion.WithKind("Service")
+	ServiceAccountGVK     = corev1.SchemeGroupVersion.WithKind("ServiceAccount")
 	ClusterRoleBindingGVK = rbacv1.SchemeGroupVersion.WithKind("ClusterRoleBinding")
-
-	DeploymentGVK = appsv1.SchemeGroupVersion.WithKind("Deployment")
+	ClusterRoleGVK        = rbacv1.SchemeGroupVersion.WithKind("ClusterRole")
 )
