@@ -33,6 +33,7 @@ import (
 	"istio.io/istio/pkg/ptr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	"sigs.k8s.io/gateway-api/pkg/consts"
@@ -306,7 +307,7 @@ func TestTranslationWithExtraPlugins(
 	gwNN types.NamespacedName,
 	extraPluginsFn ExtraPluginsFn,
 	extraSchemes runtime.SchemeBuilder,
-	extraGroups []string,
+	extraGVRs []schema.GroupVersionResource,
 	settingsOpts ...SettingsOpts,
 ) {
 	scheme := NewScheme(extraSchemes)
@@ -314,7 +315,7 @@ func TestTranslationWithExtraPlugins(
 
 	results, err := TestCase{
 		InputFiles: inputFiles,
-	}.Run(t, ctx, scheme, extraPluginsFn, extraGroups, settingsOpts...)
+	}.Run(t, ctx, scheme, extraPluginsFn, extraGVRs, settingsOpts...)
 	r.NoError(err)
 
 	// TODO: do a json round trip to normalize the output (i.e. things like omit empty)
@@ -460,7 +461,7 @@ func (tc TestCase) Run(
 	ctx context.Context,
 	scheme *runtime.Scheme,
 	extraPluginsFn ExtraPluginsFn,
-	extraGroups []string,
+	extraGVRs []schema.GroupVersionResource,
 	settingsOpts ...SettingsOpts,
 ) (ActualTestResult, error) {
 	var (
@@ -489,8 +490,8 @@ func (tc TestCase) Run(
 					ourObjs = append(ourObjs, obj)
 				} else {
 					external := false
-					for _, group := range extraGroups {
-						if strings.Contains(apiversion, group) {
+					for _, gvr := range extraGVRs {
+						if strings.Contains(apiversion, gvr.Group) {
 							external = true
 							break
 						}
@@ -505,8 +506,9 @@ func (tc TestCase) Run(
 
 	ourCli := fake.NewSimpleClientset(ourObjs...)
 	cli := kubeclient.NewFakeClient(anyObjs...)
-	for _, crd := range translatortest.AllCRDs {
-		clienttest.MakeCRDWithAnnotations(t, cli, crd, map[string]string{
+	allGVRs := append(translatortest.AllCRDs, extraGVRs...)
+	for _, gvr := range allGVRs {
+		clienttest.MakeCRDWithAnnotations(t, cli, gvr, map[string]string{
 			consts.BundleVersionAnnotation: consts.BundleVersion,
 		})
 	}
