@@ -224,6 +224,7 @@ jobs:
             --set image.registry=${{ env.IMAGE_REGISTRY }} \
             --version ${{ needs.setup.outputs.version }} \
             --set inferenceExtension.enabled=true \
+            --set agentgateway.enabled=true \
             --wait --timeout 5m
 
       - name: Wait for the kgateway deployment to be ready
