@@ -454,13 +454,6 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(fcc ir.FilterChainCommon) ([]fil
 		)
 		rustFilter.Filter.Disabled = true
 		stagedFilters = append(stagedFilters, rustFilter)
-
-		// filters = append(filters, filters.MustNewStagedFilter(setFilterStateFilterName,
-		// 	&set_filter_statev3.Config{}, filters.AfterStage(filters.FaultStage)))
-		stagedFilters = append(stagedFilters, filters.MustNewStagedFilter(metadataRouteTransformation,
-			&transformationpb.FilterTransformations{},
-			filters.AfterStage(filters.FaultStage),
-		))
 	}
 
 	// Add global ExtAuth disable filter when there are providers
