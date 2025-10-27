@@ -312,10 +312,6 @@ mod tests {
     use super::*;
     #[test]
     fn test_injected_functions() {
-        //        let mut envoy_config = envoy_proxy_dynamic_modules_rust_sdk::EnvoyHttpFilterConfigImpl {
-        //            raw_ptr: std::ptr::null_mut(),
-        //        };
-
         // get envoy's mockall impl for httpfilter
         let mut envoy_filter = envoy_proxy_dynamic_modules_rust_sdk::MockEnvoyHttpFilter::default();
 
@@ -429,10 +425,6 @@ mod tests {
     }
     #[test]
     fn test_minininja_functionality() {
-        //        let mut envoy_config = envoy_proxy_dynamic_modules_rust_sdk::EnvoyHttpFilterConfigImpl {
-        //            raw_ptr: std::ptr::null_mut(),
-        //        };
-
         // get envoy's mockall impl for httpfilter
         let mut envoy_filter = envoy_proxy_dynamic_modules_rust_sdk::MockEnvoyHttpFilter::default();
 
