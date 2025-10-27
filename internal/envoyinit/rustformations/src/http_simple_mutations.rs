@@ -8,7 +8,7 @@ use mockall::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct PerRouteConfig {
     #[serde(default)]
     request_headers_setter: Vec<(String, String)>,
