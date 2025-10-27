@@ -770,6 +770,162 @@ func TestAgwRouteCollection(t *testing.T) {
 			},
 		},
 		{
+			name: "HTTP route with multiple header matches",
+			httpRoutes: []*gwv1.HTTPRoute{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "header-match-route",
+						Namespace: "default",
+					},
+					Spec: gwv1.HTTPRouteSpec{
+						CommonRouteSpec: gwv1.CommonRouteSpec{
+							ParentRefs: []gwv1.ParentReference{
+								{
+									Name: "test-gateway",
+								},
+							},
+						},
+						Hostnames: []gwv1.Hostname{"example.com"},
+						Rules: []gwv1.HTTPRouteRule{
+							{
+								Matches: []gwv1.HTTPRouteMatch{
+									{
+										Path: &gwv1.HTTPPathMatch{
+											Type:  ptr.To(gwv1.PathMatchPathPrefix),
+											Value: ptr.To("/api"),
+										},
+										Headers: []gwv1.HTTPHeaderMatch{
+											{
+												Type:  ptr.To(gwv1.HeaderMatchExact),
+												Name:  "X-API-Version",
+												Value: "v1",
+											},
+											{
+												Type:  ptr.To(gwv1.HeaderMatchExact),
+												Name:  "X-Header-One",
+												Value: "value-one",
+											},
+											{
+												Type:  ptr.To(gwv1.HeaderMatchExact),
+												Name:  "X-Header-Two",
+												Value: "value-two",
+											},
+										},
+									},
+								},
+								BackendRefs: []gwv1.HTTPBackendRef{
+									{
+										BackendRef: gwv1.BackendRef{
+											BackendObjectReference: gwv1.BackendObjectReference{
+												Name: "test-service",
+												Port: ptr.To(gwv1.PortNumber(80)),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			services: []*corev1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-service",
+						Namespace: "default",
+					},
+					Spec: corev1.ServiceSpec{
+						Ports: []corev1.ServicePort{
+							{
+								Port: 80,
+							},
+						},
+					},
+				},
+			},
+			namespaces: []*corev1.Namespace{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "default",
+					},
+				},
+			},
+			gateways: []GatewayListener{
+				{
+					ParentGateway: types.NamespacedName{
+						Name:      "test-gateway",
+						Namespace: "default",
+					},
+					ParentObject: ParentKey{
+						Kind:      wellknown.GatewayGVK,
+						Name:      "test-gateway",
+						Namespace: "default",
+					},
+					ParentInfo: ParentInfo{
+						InternalName: "default/test-gateway",
+						Protocol:     gwv1.HTTPProtocolType,
+						Port:         80,
+						SectionName:  "http",
+						AllowedKinds: []gwv1.RouteGroupKind{
+							{
+								Group: &groupName,
+								Kind:  gwv1.Kind(wellknown.HTTPRouteKind),
+							},
+						},
+					},
+					Valid: true,
+				},
+			},
+			refGrants:     []ReferenceGrant{},
+			expectedCount: 1,
+			expectedRoutes: []*api.Route{
+				{
+					Key:       "default/header-match-route.0.0.http",
+					RouteName: "default/header-match-route",
+					Hostnames: []string{"example.com"},
+					Matches: []*api.RouteMatch{
+						{
+							Path: &api.PathMatch{
+								Kind: &api.PathMatch_PathPrefix{
+									PathPrefix: "/api",
+								},
+							},
+							Headers: []*api.HeaderMatch{
+								{
+									Name: "X-API-Version",
+									Value: &api.HeaderMatch_Exact{
+										Exact: "v1",
+									},
+								},
+								{
+									Name: "X-Header-One",
+									Value: &api.HeaderMatch_Exact{
+										Exact: "value-one",
+									},
+								},
+								{
+									Name: "X-Header-Two",
+									Value: &api.HeaderMatch_Exact{
+										Exact: "value-two",
+									},
+								},
+							},
+						},
+					},
+					Backends: []*api.RouteBackend{
+						{
+							Backend: &api.BackendReference{
+								Kind: &api.BackendReference_Service{
+									Service: "default/test-service.default.svc.cluster.local",
+								},
+								Port: 80,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name:           "No HTTP Routes",
 			httpRoutes:     []*gwv1.HTTPRoute{},
 			services:       []*corev1.Service{},
