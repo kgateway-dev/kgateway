@@ -8,7 +8,7 @@ use mockall::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct PerRouteConfig {
     #[serde(default)]
     request_headers_setter: Vec<(String, String)>,
@@ -33,7 +33,7 @@ impl PerRouteConfig {
 ///
 /// The trait corresponds to a Envoy filter chain configuration.
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct FilterConfig {
     #[serde(default)]
     request_headers_setter: Vec<(String, String)>,
