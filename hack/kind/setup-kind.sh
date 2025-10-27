@@ -22,7 +22,7 @@ CONFORMANCE_VERSION="${CONFORMANCE_VERSION:-$(go list -m sigs.k8s.io/gateway-api
 CONFORMANCE_CHANNEL="${CONFORMANCE_CHANNEL:-"experimental"}"
 # The version of the k8s gateway api inference extension CRDs to install. Requires CONFORMANCE=true
 # Managed by `make bump-gie`.
-GIE_CRD_VERSION="51485db93d63bfa2f9264460798671b72bdf9f5d"
+GIE_CRD_VERSION="v1.1.0"
 # The kind CLI to use. Defaults to the latest version from the kind repo.
 KIND="${KIND:-go tool kind}"
 # The helm CLI to use. Defaults to the latest version from the helm repo.

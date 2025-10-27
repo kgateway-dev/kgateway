@@ -511,7 +511,7 @@ endif
 
 # The version of the k8s gateway api inference extension CRDs to install.
 # Managed by `make bump-gie`.
-GIE_CRD_VERSION ?= 51485db93d63bfa2f9264460798671b72bdf9f5d
+GIE_CRD_VERSION ?= v1.1.0
 
 .PHONY: gie-crds
 gie-crds: ## Install the Gateway API Inference Extension CRDs
