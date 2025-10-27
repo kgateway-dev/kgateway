@@ -28,6 +28,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var (
@@ -97,7 +98,7 @@ func NewAgentgatewayTestingSuite(ctx context.Context, testInst *e2e.TestInstalla
 }
 
 func (s *tsuite) TestBackendTLSPolicyAndStatus() {
-	s.T().Cleanup(func() {
+	testutils.Cleanup(s.T(), func() {
 		for _, manifest := range s.baseManifests {
 			err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
 			s.Require().NoError(err)

@@ -14,6 +14,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/cluster"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/install"
 	testruntime "github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/runtime"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var (
@@ -48,7 +49,7 @@ func TestInferenceExtension(t *testing.T) {
 
 	// We register the cleanup function _before_ we actually perform the installation.
 	// This allows us to uninstall kgateway, in case the original installation only completed partially
-	t.Cleanup(func() {
+	testutils.Cleanup(t, func() {
 		if t.Failed() {
 			testInstallation.PreFailHandler(ctx)
 		}

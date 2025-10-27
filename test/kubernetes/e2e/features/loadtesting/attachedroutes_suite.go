@@ -15,6 +15,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 // Timeout constants for the AttachedRoutes test suite
@@ -66,6 +67,9 @@ func (s *AttachedRoutesSuite) SetupSuite() {
 }
 
 func (s *AttachedRoutesSuite) TearDownSuite() {
+	if testutils.ShouldSkipCleanup(s.T()) {
+		return
+	}
 	if s.loadTestManager != nil {
 		s.loadTestManager.CleanupAll()
 	}

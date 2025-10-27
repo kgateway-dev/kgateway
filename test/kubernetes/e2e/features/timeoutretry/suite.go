@@ -18,6 +18,7 @@ import (
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 const (
@@ -59,6 +60,9 @@ func (s *testingSuite) SetupSuite() {
 }
 
 func (s *testingSuite) TearDownSuite() {
+	if testutils.ShouldSkipCleanup(s.T()) {
+		return
+	}
 	for i := len(s.commonManifests) - 1; i >= 0; i-- {
 		manifest := s.commonManifests[i]
 		err := s.ti.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
@@ -74,6 +78,9 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 }
 
 func (s *testingSuite) AfterTest(suiteName, testName string) {
+	if testutils.ShouldSkipCleanup(s.T()) {
+		return
+	}
 	for _, manifest := range s.testManifests[testName] {
 		err := s.ti.Actions.Kubectl().DeleteFile(s.ctx, manifest, "--grace-period", "0")
 		s.NoError(err, manifest)

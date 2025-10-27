@@ -6,6 +6,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var (
@@ -81,7 +82,7 @@ func (s *testingSuite) TestIngressHTTPRouteNamespaceLabel() {
 }
 
 func (s *testingSuite) setIngressUseWaypointLabel(kind, name, namespace string) {
-	s.T().Cleanup(func() {
+	testutils.Cleanup(s.T(), func() {
 		err := s.testInstallation.ClusterContext.Cli.UnsetLabel(s.ctx, kind, name, namespace, ingressWaypointLabel)
 		if err != nil {
 			// this could break other tests, so fail here

@@ -15,6 +15,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var _ e2e.NewSuiteFunc = NewIstioIntegrationTestingSuite
@@ -55,6 +56,9 @@ func (s *istioIntegrationDeployerSuite) SetupSuite() {
 }
 
 func (s *istioIntegrationDeployerSuite) TearDownSuite() {
+	if testutils.ShouldSkipCleanup(s.T()) {
+		return
+	}
 	// nothing at the moment
 }
 
@@ -68,6 +72,9 @@ func (s *istioIntegrationDeployerSuite) BeforeTest(suiteName, testName string) {
 }
 
 func (s *istioIntegrationDeployerSuite) AfterTest(suiteName, testName string) {
+	if testutils.ShouldSkipCleanup(s.T()) {
+		return
+	}
 	manifests := s.manifests[testName]
 	for _, manifest := range manifests {
 		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)

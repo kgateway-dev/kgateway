@@ -16,6 +16,7 @@ import (
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -113,6 +114,9 @@ func (s *testingSuite) SetupSuite() {
 }
 
 func (s *testingSuite) TearDownSuite() {
+	if testutils.ShouldSkipCleanup(s.T()) {
+		return
+	}
 	// clean up common resources
 	for _, manifest := range s.commonManifests {
 		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
@@ -189,7 +193,7 @@ func (s *testingSuite) TestCombinedLocalAndGlobalRateLimit() {
 }
 
 func (s *testingSuite) setupTest(manifests []string, resources []client.Object) {
-	s.T().Cleanup(func() {
+	testutils.Cleanup(s.T(), func() {
 		for _, manifest := range manifests {
 			err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
 			s.Require().NoError(err)

@@ -166,6 +166,40 @@ PERSIST_INSTALL=true ./hack/run-test.sh SessionPersistence
 
 Set to `true`/`1`/`yes`/`y` to enable.
 
+#### FAIL_FAST_AND_PERSIST (Debugging Test Failures)
+
+**Quick Start:**
+```shell
+FAIL_FAST_AND_PERSIST=true go test -failfast -tags=e2e ./test/kubernetes/e2e/tests -run ^TestKgateway$
+```
+
+**What it does:**
+- Installs kgateway if not present, but will not overwrite existing installations (same as PERSIST_INSTALL)
+- After tests pass: Runs teardown normally
+- After tests fail: Skips teardown to preserve resources for debugging
+- **Best combined with `go test -failfast` to stop after first failure**
+
+**Why use it:**
+- **Debugging mode** - automatically preserves failed test state for inspection
+- **Fast setup** - reuses existing installations like PERSIST_INSTALL
+- **Clean on success** - automatically cleans up when tests pass
+- **Inspect on failure** - resources remain for debugging with kubectl/logs
+
+**Example workflow:**
+```shell
+# First run - installs kgateway, test fails, resources preserved
+FAIL_FAST_AND_PERSIST=true go test -failfast -tags=e2e ./test/kubernetes/e2e/tests -run ^TestKgateway$
+
+# Inspect the failure state
+kubectl get pods -n kgateway-system
+kubectl logs -n kgateway-system deployment/kgateway
+
+# Fix the issue and re-run - reuses installation, cleans up on success
+FAIL_FAST_AND_PERSIST=true go test -failfast -tags=e2e ./test/kubernetes/e2e/tests -run ^TestKgateway$
+```
+
+Set to `true`/`1`/`yes`/`y` to enable.
+
 #### SKIP_INSTALL (Full Control Desired)
 
 **What it does:**

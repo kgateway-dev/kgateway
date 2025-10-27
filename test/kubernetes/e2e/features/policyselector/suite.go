@@ -20,6 +20,7 @@ import (
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -71,6 +72,9 @@ func (s *tsuite) SetupSuite() {
 }
 
 func (s *tsuite) TearDownSuite() {
+	if testutils.ShouldSkipCleanup(s.T()) {
+		return
+	}
 	for i := len(s.commonManifests) - 1; i >= 0; i-- {
 		manifest := s.commonManifests[i]
 		err := s.ti.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
@@ -87,6 +91,9 @@ func (s *tsuite) BeforeTest(suiteName, testName string) {
 }
 
 func (s *tsuite) AfterTest(suiteName, testName string) {
+	if testutils.ShouldSkipCleanup(s.T()) {
+		return
+	}
 	for _, manifest := range s.testManifests[testName] {
 		err := s.ti.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
 		s.NoError(err)

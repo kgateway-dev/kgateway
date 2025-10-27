@@ -23,6 +23,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -70,7 +71,7 @@ func (s *testingSuite) TestConfigureBackingDestinationsWithUpstream() {
 		ObjectMeta: backendMeta,
 	}
 
-	s.T().Cleanup(func() {
+	testutils.Cleanup(s.T(), func() {
 		for _, manifest := range manifests {
 			err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
 			s.Require().NoError(err)
@@ -122,7 +123,7 @@ func (s *testingSuite) TestConfigureBackingDestinationsWithUpstream() {
 func (s *testingSuite) TestBackendWithRuntimeError() {
 	errorManifest := filepath.Join(fsutils.MustGetThisDir(), "testdata/backend-error.yaml")
 
-	s.T().Cleanup(func() {
+	testutils.Cleanup(s.T(), func() {
 		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, errorManifest)
 		s.Require().NoError(err)
 	})
@@ -148,7 +149,7 @@ func (s *testingSuite) TestBackendWithRuntimeError() {
 
 	updateErrorManifest := filepath.Join(fsutils.MustGetThisDir(), "testdata/backend-update-error.yaml")
 
-	s.T().Cleanup(func() {
+	testutils.Cleanup(s.T(), func() {
 		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, updateErrorManifest)
 		s.Require().NoError(err)
 	})

@@ -13,6 +13,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 // testingSuite is the entire Suite of tests for testing K8s Service-specific features/fixes
@@ -34,7 +35,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 func (s *testingSuite) TestConfigureHTTPRouteBackingDestinationsWithService() {
-	s.T().Cleanup(func() {
+	testutils.Cleanup(s.T(), func() {
 		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, routeWithServiceManifest)
 		s.NoError(err, "can delete manifest")
 		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, serviceManifest)
@@ -68,7 +69,7 @@ func (s *testingSuite) TestConfigureHTTPRouteBackingDestinationsWithService() {
 }
 
 func (s *testingSuite) TestConfigureHTTPRouteBackingDestinationsWithServiceAndWithoutTCPRoute() {
-	s.T().Cleanup(func() {
+	testutils.Cleanup(s.T(), func() {
 		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, routeWithServiceManifest)
 		s.NoError(err, "can delete manifest")
 		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, serviceManifest)

@@ -86,7 +86,17 @@ _should run `kind-<CLUSTER_NAME>`_
 
 > Note: If you are running tests against a previously released version, you must set RELEASED_VERSION when invoking the tests
 
-**Tip for Local Development:** For faster iteration, use `PERSIST_INSTALL=true` with the test scripts (e.g., `PERSIST_INSTALL=true ./hack/run-test.sh TestName`). This automatically manages installation and skips teardown, so you can run tests repeatedly without reinstalling. For IDE debugging, use `SKIP_INSTALL=true` as shown below (but remember to manually set up your environment first).
+**Tip for Local Development:**
+- For faster iteration during development, use `FAIL_FAST_AND_PERSIST=true`
+  with the test scripts (e.g., `FAIL_FAST_AND_PERSIST=true ./hack/run-test.sh
+  TestName`). This automatically manages installation and skips teardown upon
+  failure (but see `SKIP_ALL_TEARDOWN=true` regarding skipping teardown even
+  upon success), so you can run tests repeatedly without reinstalling.
+- For debugging test failures, use `FAIL_FAST_AND_PERSIST=true` which reuses
+  existing installations but only skips cleanup when tests fail, allowing you
+  to inspect the failed state. Combine with `-failfast` to stop at the first
+  failure.
+- For IDE debugging, see below.
 
 ### Using Test Runner Scripts (Recommended)
 
@@ -127,7 +137,7 @@ PERSIST_INSTALL=true ./hack/run-test.sh SessionPersistence
 - `--unit, -u`: Force unit test mode
 - `--e2e, -e`: Force e2e test mode
 - `--package PKG`: Run tests in a specific package
-- `--rebuild, -r`: Delete cluster and rebuild from scratch (e2e only)
+- `--rebuild, -r`: Delete cluster and rebuild from scratch (e2e only), useful when you previously skipped cleanup/teardown to debug, or when you cannot seem to reproduce what you see on CI
 - `--dry-run, -n`: Print command without executing
 
 #### `hack/run-e2e-test.sh` - E2E-Specific Runner
@@ -138,6 +148,9 @@ A specialized script for running e2e tests with advanced features.
 - **Smart pattern matching**: Automatically builds the correct `-run` regex
 - **Setup management**: Integrates with `make setup` and respects `PERSIST_INSTALL`
 - **Auto-cleanup**: Can automatically clean up conflicting Helm releases with `AUTO_SETUP=true`
+- **Eager to reproduce in a debuggable fashion**: Uses
+  `FAIL_FAST_AND_PERSIST=true` and `go test -failfast` by default, leaving you
+  with a local Kind cluster on failure begging for forensic analysis.
 
 **Common Examples:**
 ```bash
@@ -167,12 +180,17 @@ AUTO_SETUP=true ./hack/run-e2e-test.sh SessionPersistence
 ```
 
 **Options:**
+- `--dry-run, -n`: Print the test command without executing it
 - `--list, -l`: List all available test suites and top-level tests
 - `--rebuild, -r`: Delete kind cluster, rebuild images, and create fresh cluster
-- `--dry-run, -n`: Print the test command without executing it
+- `--persist, -p`: Skip 'make setup' if kind cluster exists (faster iteration).
+- `--cleanup-on-failure, -c`: Always cleanup resources even if test fails (unless you have set `SKIP_ALL_TEARDOWN`
 
 **Environment Variables:**
-- `PERSIST_INSTALL`: Skip setup if cluster exists, skip teardown (recommended for local dev)
+- `FAIL_FAST_AND_PERSIST`: Skip setup if cluster exists, but only skip teardown (all teardown, per suite, per test case, CRDs, etc.) on failure (recommended for local dev and debugging)
+- `PERSIST_INSTALL`: Skip setup if cluster exists, skip Kind cluster and kgateway teardown but runs AfterTest,TearDownSuite,t.Cleanup, etc.
+- `SKIP_INSTALL`: Like `PERSIST_INSTALL` except that it does not set up the environment
+- `SKIP_ALL_TEARDOWN`: Skip teardown/cleanup of Kind cluster, kgateway, even the test case itself, even on test success
 - `AUTO_SETUP`: Automatically clean up conflicting Helm releases
 - `CLUSTER_NAME`: Name of the kind cluster (default: `kind`)
 - `TEST_PKG`: Go test package to run (default: `./test/kubernetes/e2e/tests`)
@@ -200,16 +218,16 @@ For example, to run the `Deployer` feature suite in the `TestKgateway` test:
 You can either set environment variables inline with the command:
 
 ```bash
-SKIP_INSTALL=true CLUSTER_NAME=kind INSTALL_NAMESPACE=kgateway-system go test -v -timeout 600s ./test/kubernetes/e2e/tests -run ^TestKgateway$/^Deployer$
+PERSIST_INSTALL=true CLUSTER_NAME=kind INSTALL_NAMESPACE=kgateway-system go test -v -timeout 600s -tags e2e ./test/kubernetes/e2e/tests -run ^TestKgateway$/^Deployer$
 ```
 
 Or export the environment variables first and then run the test:
 
 ```bash
-export SKIP_INSTALL=true
+export PERSIST_INSTALL=true
 export CLUSTER_NAME=kind
 export INSTALL_NAMESPACE=kgateway-system
-go test -v -timeout 600s ./test/kubernetes/e2e/tests -run ^TestKgateway$/^Deployer$
+go test -v -timeout 600s -tags e2e ./test/kubernetes/e2e/tests -run ^TestKgateway$/^Deployer$
 ```
 
 Note that the `-run` flag takes a sequence of regular expressions, and that each part may match a substring of a suite/test name. See https://pkg.go.dev/cmd/go#hdr-Testing_flags for details. To match only exact suite/test names, use the `^` and `$` characters as shown.
@@ -231,22 +249,24 @@ You can use a custom debugger launch config that sets the `test.run` flag to run
   "mode": "test",
   "program": "${workspaceFolder}/test/kubernetes/e2e/tests/kgateway_test.go",
   "args": [
+    "-tags",
+    "e2e",
     "-test.run",
     "^TestKgateway$/^Deployer$",
     "-test.v",
   ],
   "env": {
-    "SKIP_INSTALL": "true",
+    "FAIL_FAST_AND_PERSIST": "true",
     "CLUSTER_NAME": "kind",
     "INSTALL_NAMESPACE": "kgateway-system"
   },
 }
 ```
 
-Setting `SKIP_INSTALL` to `true` will skip the installation of kgateway, which is useful to
-debug against a pre-existing/stable environment with kgateway already installed. You must manually set up your environment first (e.g., using `make setup` or Tilt).
-
-**Alternative:** Consider using `PERSIST_INSTALL=true` if you want the test to handle installation automatically on first run.
+Setting `FAIL_FAST_AND_PERSIST` to `true` will skip the installation of
+kgateway, and, only upon test failure, skip teardown/cleanup.  You can manually
+set up your environment first (e.g., using `make setup` or Tilt) but don't have
+to.
 
 `CLUSTER_NAME` specifies the name of the cluster used for e2e tests (corresponds to the cluster name used when creating the kind cluster).
 
@@ -270,7 +290,7 @@ PERSIST_INSTALL=true ./hack/run-e2e-test.sh TestProvisionDeploymentAndService
 
 For example, to run `TestProvisionDeploymentAndService` in `Deployer` feature suite that is a part of `TestKgateway`:
 ```bash
-SKIP_INSTALL=true CLUSTER_NAME=kind INSTALL_NAMESPACE=kgateway-system go test -v -timeout 600s ./test/kubernetes/e2e/tests -run ^TestKgateway$/^Deployer$/^TestProvisionDeploymentAndService$
+FAIL_FAST_AND_PERSIST=true CLUSTER_NAME=kind INSTALL_NAMESPACE=kgateway-system go test -v -timeout 600s -failfast ./test/kubernetes/e2e/tests -run ^TestKgateway$/^Deployer$/^TestProvisionDeploymentAndService$
 ```
 
 **For IDE debugging:** Use `./hack/run-e2e-test.sh --dry-run TestProvisionDeploymentAndService` to see the exact pattern, then use it in your IDE config.
@@ -284,12 +304,13 @@ With VSCode you can use a custom debugger launch config that sets the `test.run`
   "mode": "test",
   "program": "${workspaceFolder}/test/kubernetes/e2e/tests/kgateway_test.go",
   "args": [
+    "-failfast",
     "-test.run",
     "^TestKgateway$/^Deployer$/^TestProvisionDeploymentAndService$",
     "-test.v",
   ],
   "env": {
-    "SKIP_INSTALL": "true",
+    "FAIL_FAST_AND_PERSIST": "true",
     "CLUSTER_NAME": "kind",
     "INSTALL_NAMESPACE": "kgateway-system"
   },
@@ -303,7 +324,7 @@ With VSCode you can use a custom debugger launch config that sets the `test.run`
 In Goland, you can run a single test feature by right-clicking on the test function and selecting `Run 'TestXyz'` or
 `Debug 'TestXyz'`.
 
-You will need to set the env variable `SKIP_INSTALL` to `true` in the run configuration to skip the installation of kgateway (make sure to manually set up your environment first). Alternatively, use `PERSIST_INSTALL=true` to have the test handle installation automatically.
+You will need to set the env variable ``FAIL_FAST_AND_PERSIST=true` to handle installation automatically and preserve resources only on test failure.
 
 You'll also need to set other env variables that are required for the test to run (`CLUSTER_NAME`, `INSTALL_NAMESPACE`, etc.)
 

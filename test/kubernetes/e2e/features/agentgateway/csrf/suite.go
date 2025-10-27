@@ -15,6 +15,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/tests/base"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -66,7 +67,7 @@ func (s *testingSuite) TestGatewayLevelCSRF() {
 }
 
 func (s *testingSuite) setupTest(manifests []string, resources []client.Object) {
-	s.T().Cleanup(func() {
+	testutils.Cleanup(s.T(), func() {
 		for _, manifest := range manifests {
 			err := s.TestInstallation.Actions.Kubectl().DeleteFileSafe(s.Ctx, manifest)
 			s.Require().NoError(err)

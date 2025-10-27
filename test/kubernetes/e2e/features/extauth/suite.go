@@ -18,6 +18,7 @@ import (
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -84,6 +85,9 @@ func (s *testingSuite) SetupSuite() {
 }
 
 func (s *testingSuite) TearDownSuite() {
+	if testutils.ShouldSkipCleanup(s.T()) {
+		return
+	}
 	// clean up common resources
 	for _, manifest := range s.commonManifests {
 		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
@@ -108,7 +112,7 @@ func (s *testingSuite) TestExtAuthPolicy() {
 		gatewayAttachedTrafficPolicy,
 		insecureRoute,
 	}
-	s.T().Cleanup(func() {
+	testutils.Cleanup(s.T(), func() {
 		for _, manifest := range manifests {
 			err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
 			s.Require().NoError(err)
@@ -200,7 +204,7 @@ func (s *testingSuite) TestRouteTargetedExtAuthPolicy() {
 		secureRoute, secureTrafficPolicy,
 		insecureRoute, insecureTrafficPolicy,
 	}
-	s.T().Cleanup(func() {
+	testutils.Cleanup(s.T(), func() {
 		for _, manifest := range manifests {
 			err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
 			s.Require().NoError(err)

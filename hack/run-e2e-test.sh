@@ -13,27 +13,37 @@ set -eEuo pipefail
 # The script will automatically generate the most specific go test -run pattern.
 #
 # Environment Variables:
-#   PERSIST_INSTALL - If set to true/1/yes/y, will skip 'make setup' if a kind
-#                     cluster already exists. This speeds up test runs when you're
-#                     iterating locally.
-#   AUTO_SETUP      - If set to true/1/yes/y, will automatically clean up conflicting
-#                     Helm releases if detected. Otherwise, will error out.
-#   CLUSTER_NAME    - Name of the kind cluster (default: kind)
-#   TEST_PKG        - Go test package to run (default: ./test/kubernetes/e2e/tests)
+#   PERSIST_INSTALL       - If set to true/1/yes/y, will skip 'make setup' if a kind
+#                           cluster already exists. This speeds up test runs when you're
+#                           iterating locally.
+#   FAIL_FAST_AND_PERSIST - If set to true (default for this script), skip cleanup on
+#                           test failure to allow resource inspection. Set to false to
+#                           always cleanup. Use --cleanup-on-failure flag to override.
+#   SKIP_ALL_TEARDOWN     - If set to true/1/yes/y, skip all cleanup/teardown operations
+#                           regardless of test success or failure. Use --skip-teardown flag.
+#   AUTO_SETUP            - If set to true/1/yes/y, will automatically clean up conflicting
+#                           Helm releases if detected. Otherwise, will error out.
+#   CLUSTER_NAME          - Name of the kind cluster (default: kind)
+#   TEST_PKG              - Go test package to run (default: ./test/kubernetes/e2e/tests)
 #
 # Usage: ./hack/run-e2e-test.sh [OPTIONS] [TEST_PATTERN]
 #
 # Options:
-#   --rebuild, -r   Delete the kind cluster, rebuild all docker images, create a
-#                   new kind cluster, load images into kind, and then run tests.
-#                   This ensures a completely fresh environment.
-#   --persist, -p   Skip 'make setup' if kind cluster exists (faster iteration).
-#                   Equivalent to setting PERSIST_INSTALL=true.
-#   --list, -l      List all available test suites and top-level tests
-#   --dry-run, -n   Print the test command that would be run without executing it
+#   --rebuild, -r             Delete the kind cluster, rebuild all docker images, create a
+#                             new kind cluster, load images into kind, and then run tests.
+#                             This ensures a completely fresh environment.
+#   --persist, -p             Skip 'make setup' if kind cluster exists (faster iteration).
+#                             Equivalent to setting PERSIST_INSTALL=true.
+#   --cleanup-on-failure, -c  Always cleanup resources even if test fails (disables default
+#                             FAIL_FAST_AND_PERSIST behavior). Useful for CI or running all tests.
+#   --skip-teardown, -s       Skip all cleanup/teardown operations regardless of test result.
+#                             Equivalent to setting SKIP_ALL_TEARDOWN=true.
+#   --list, -l                List all available test suites and top-level tests
+#   --dry-run, -n             Print the test command that would be run without executing it
+#   --help, -h                Show this help message
 #
 # Examples:
-#   # Run an entire test suite
+#   # Run an entire test suite (default: skip cleanup on failure for debugging)
 #   ./hack/run-e2e-test.sh SessionPersistence
 #
 #   # Run a specific test method within a suite
@@ -42,11 +52,14 @@ set -eEuo pipefail
 #   # Run a top-level test function
 #   ./hack/run-e2e-test.sh TestKgateway
 #
+#   # Always cleanup/tear-down, even on failure
+#   ./hack/run-e2e-test.sh --cleanup-on-failure SessionPersistence
+#
 #   # Run a suite within a specific parent test (using slash notation)
 #   ./hack/run-e2e-test.sh TestKgateway/SessionPersistence
 #
 #   # Run a specific test method using slash notation
-#   ./hack/run-e2e-test.sh TestKgateway/SessionPersistence/TestHeaderSessionPersistence
+#   ./hack/run-e2e-test.sh TestKgateway/^SessionPersistence$/TestHeaderSessionPersistence
 #
 #   # Skip setup if cluster exists (faster iteration) - using flag
 #   ./hack/run-e2e-test.sh --persist SessionPersistence
@@ -377,16 +390,94 @@ list_tests() {
         sed -E 's/func (Test[^(]*).*/  - \1/' | sort
 }
 
+# Show help message
+show_help() {
+    cat << EOF
+Usage: $0 [OPTIONS] [TEST_PATTERN]
+
+Script to run a single e2e test case
+
+This script intelligently finds and runs e2e test cases using git grep.
+It can run:
+  - Top-level test functions (e.g., TestKgateway)
+  - Entire test suites (e.g., SessionPersistence)
+  - Individual test methods within suites (e.g., TestCookieSessionPersistence)
+
+Options:
+  --help, -h                Show this help message
+  --list, -l                List all available test suites and top-level tests
+  --rebuild, -r             Delete the kind cluster, rebuild images, and create a fresh cluster
+  --persist, -p             Skip 'make setup' if kind cluster exists (faster iteration)
+  --cleanup-on-failure, -c  Always cleanup resources even if test fails (default: skip cleanup on failure)
+  --skip-teardown, -s       Skip all cleanup/teardown operations regardless of test result
+  --dry-run, -n             Print the test command that would be run without executing it
+
+Environment Variables:
+  PERSIST_INSTALL           If set to true/1/yes/y, skip 'make setup' if kind cluster exists
+  FAIL_FAST_AND_PERSIST     If set to true (default), skip cleanup on test failure
+  SKIP_ALL_TEARDOWN         If set to true/1/yes/y, skip all cleanup/teardown operations
+  AUTO_SETUP                If set to true/1/yes/y, automatically cleanup conflicting Helm releases
+  CLUSTER_NAME              Name of the kind cluster (default: kind)
+  TEST_PKG                  Go test package to run (default: ./test/kubernetes/e2e/tests)
+
+Examples:
+  # Run an entire test suite (default: skip cleanup on failure for debugging)
+  $0 SessionPersistence
+
+  # Run a specific test method within a suite
+  $0 TestCookieSessionPersistence
+
+  # Run a top-level test function
+  $0 TestKgateway
+
+  # Always cleanup/tear-down, even on failure
+  $0 --cleanup-on-failure SessionPersistence
+
+  # Skip all teardown/cleanup regardless of test result
+  $0 --skip-teardown SessionPersistence
+
+  # Run a suite within a specific parent test (using slash notation)
+  $0 TestKgateway/SessionPersistence
+
+  # Run a specific test method using slash notation
+  $0 TestKgateway/^SessionPersistence$/TestHeaderSessionPersistence
+
+  # Skip setup if cluster exists (faster iteration) - using flag
+  $0 --persist SessionPersistence
+
+  # Skip setup if cluster exists (faster iteration) - using env var
+  PERSIST_INSTALL=true $0 SessionPersistence
+
+  # Auto-cleanup conflicting Helm releases
+  AUTO_SETUP=true $0 SessionPersistence
+
+  # Delete cluster and rebuild everything from scratch
+  $0 --rebuild SessionPersistence
+
+  # Use a different cluster name
+  CLUSTER_NAME=my-cluster $0 SessionPersistence
+
+  # Print the test command without running it
+  $0 -n TestCookieSessionPersistence
+EOF
+}
+
 # Main script
 main() {
     local rebuild_cluster=false
     local dry_run=false
     local persist_install=false
+    local cleanup_on_failure=false
+    local skip_teardown=false
     local test_pattern=""
 
     # Parse arguments
     while [[ "$#" -gt 0 ]]; do
         case "$1" in
+            --help|-h)
+                show_help
+                exit 0
+                ;;
             --list|-l)
                 list_tests
                 exit 0
@@ -403,6 +494,14 @@ main() {
                 persist_install=true
                 shift
                 ;;
+            --cleanup-on-failure|-c)
+                cleanup_on_failure=true
+                shift
+                ;;
+            --skip-teardown|-s)
+                skip_teardown=true
+                shift
+                ;;
             *)
                 test_pattern="$1"
                 shift
@@ -415,6 +514,25 @@ main() {
         export PERSIST_INSTALL=true
     fi
 
+    # Set SKIP_ALL_TEARDOWN environment variable if --skip-teardown flag was used
+    if [[ "$skip_teardown" == "true" ]]; then
+        export SKIP_ALL_TEARDOWN=true
+        log_info "All teardown/cleanup is DISABLED (will skip cleanup regardless of test result)"
+    elif is_truthy SKIP_ALL_TEARDOWN; then
+        log_info "All teardown/cleanup is DISABLED (SKIP_ALL_TEARDOWN env var is set)"
+    fi
+
+    # Set FAIL_FAST_AND_PERSIST to true by default (for local development/debugging)
+    # unless --cleanup-on-failure flag was used or it's already set
+    if [[ "$cleanup_on_failure" == "true" ]]; then
+        export FAIL_FAST_AND_PERSIST=false
+        log_info "Cleanup on failure is ENABLED (will cleanup even if tests fail)"
+    elif [[ -z "${FAIL_FAST_AND_PERSIST:-}" ]]; then
+        export FAIL_FAST_AND_PERSIST=true
+        log_info "Cleanup on failure is DISABLED by default (will skip cleanup if tests fail)"
+        log_info "Use --cleanup-on-failure to always cleanup, even on test failure"
+    fi
+
     if [[ -z "$test_pattern" ]]; then
         log_error "Usage: $0 [OPTIONS] TEST_PATTERN"
         echo ""
@@ -425,14 +543,18 @@ main() {
         echo "  $0 TestKgateway/SessionPersistence"
         echo "  $0 TestKgateway/SessionPersistence/TestHeaderSessionPersistence"
         echo "  $0 --persist SessionPersistence"
+        echo "  $0 --cleanup-on-failure SessionPersistence"
         echo "  $0 --rebuild SessionPersistence"
         echo "  $0 -n TestCookieSessionPersistence"
         echo ""
         echo "Options:"
-        echo "  --list, -l      List all available test suites and top-level tests"
-        echo "  --rebuild, -r   Delete the kind cluster, rebuild images, and create a fresh cluster"
-        echo "  --persist, -p   Skip 'make setup' if kind cluster exists (faster iteration)"
-        echo "  --dry-run, -n   Print the test command that would be run without executing it"
+        echo "  --help, -h                Show full help message"
+        echo "  --list, -l                List all available test suites and top-level tests"
+        echo "  --rebuild, -r             Delete the kind cluster, rebuild images, and create a fresh cluster"
+        echo "  --persist, -p             Skip 'make setup' if kind cluster exists (faster iteration)"
+        echo "  --cleanup-on-failure, -c  Always cleanup resources even if test fails (default: skip cleanup on failure)"
+        echo "  --skip-teardown, -s       Skip all cleanup/teardown operations regardless of test result"
+        echo "  --dry-run, -n             Print the test command that would be run without executing it"
         exit 1
     fi
 
@@ -516,12 +638,20 @@ main() {
         echo ""
         echo "make go-test \\"
         echo "    VERSION=\"${test_version}\" \\"
-        echo "    GO_TEST_USER_ARGS=\"-run '$escaped_pattern'\" \\"
+        echo "    GO_TEST_USER_ARGS=\"-failfast -run '$escaped_pattern'\" \\"
         echo "    TEST_PKG=\"${test_pkg}\" TEST_TAG=e2e"
         echo ""
         log_info "Environment variables:"
         if is_truthy PERSIST_INSTALL; then
             echo "  PERSIST_INSTALL=true"
+        fi
+        if is_truthy SKIP_ALL_TEARDOWN; then
+            echo "  SKIP_ALL_TEARDOWN=true (skip all teardown/cleanup)"
+        fi
+        if is_truthy FAIL_FAST_AND_PERSIST; then
+            echo "  FAIL_FAST_AND_PERSIST=true (skip cleanup on failure)"
+        else
+            echo "  FAIL_FAST_AND_PERSIST=false (always cleanup)"
         fi
         echo ""
         log_success "Dry-run completed!"
@@ -538,7 +668,7 @@ main() {
     set -x
     make go-test \
         VERSION="${test_version}" \
-        "GO_TEST_USER_ARGS=-run '$escaped_pattern'" \
+        "GO_TEST_USER_ARGS=-failfast -run '$escaped_pattern'" \
         TEST_PKG="${test_pkg}" TEST_TAG=e2e 2>&1 | tee "$test_output_file"
     test_exit_code=${PIPESTATUS[0]}
     set +x

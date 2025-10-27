@@ -23,6 +23,7 @@ import (
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -79,6 +80,9 @@ func (s *testingSuite) SetupSuite() {
 }
 
 func (s *testingSuite) TearDownSuite() {
+	if testutils.ShouldSkipCleanup(s.T()) {
+		return
+	}
 	// nothing specific; each test cleans up via AfterTest
 }
 
@@ -106,6 +110,9 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 }
 
 func (s *testingSuite) AfterTest(suiteName, testName string) {
+	if testutils.ShouldSkipCleanup(s.T()) {
+		return
+	}
 	manifests, ok := s.manifests[testName]
 	if !ok {
 		s.FailNow("no manifests found for " + testName)

@@ -19,6 +19,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 // testingSuite is the entire suite of tests for testing K8s Service-specific features/fixes
@@ -42,7 +43,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 func (s *testingSuite) SetupSuite() {
 	var cancel context.CancelFunc
 	s.ctx, cancel = context.WithTimeout(context.Background(), ctxTimeout)
-	s.T().Cleanup(cancel)
+	testutils.Cleanup(s.T(), cancel)
 
 	manifests := []string{
 		singleSvcNsManifest,
@@ -169,7 +170,7 @@ func (s *testingSuite) TestConfigureTLSRouteBackingDestinations() {
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			// Cleanup function
-			s.T().Cleanup(func() {
+			testutils.Cleanup(s.T(), func() {
 				s.deleteManifests(tc.nsManifest)
 
 				// Delete additional namespaces if any

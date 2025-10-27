@@ -27,6 +27,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/tests/base"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -216,6 +217,12 @@ func (s *testingSuite) TestMissingGatewayParameters() {
 		metav1.ConditionFalse,
 	)
 
+	testutils.Cleanup(s.T(), func() {
+		s.DeleteManifests(&base.TestCase{
+			Manifests: []string{gatewayParametersCustom},
+		})
+	})
+
 	// create the missing GatewayParameters
 	s.ApplyManifests(&base.TestCase{
 		Manifests: []string{gatewayParametersCustom},
@@ -229,10 +236,6 @@ func (s *testingSuite) TestMissingGatewayParameters() {
 		gwv1.GatewayConditionAccepted,
 		metav1.ConditionTrue,
 	)
-
-	s.DeleteManifests(&base.TestCase{
-		Manifests: []string{gatewayParametersCustom},
-	})
 }
 
 func (s *testingSuite) TestProvisionResourcesNotUpdatedWithInvalidParameters() {

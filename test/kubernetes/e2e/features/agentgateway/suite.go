@@ -19,6 +19,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/tests/base"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 type testingSuite struct {
@@ -76,7 +77,7 @@ func (s *testingSuite) TestAgentgatewayHTTPRoute() {
 			v1alpha1.GroupName, wellknown.GatewayParametersGVK.Kind, gatewayParamsObjectMeta.GetName(), gatewayParamsObjectMeta.GetNamespace()))
 	s.Require().NoError(err, "patching gatewayclass %s", wellknown.DefaultAgwClassName)
 
-	s.T().Cleanup(func() {
+	testutils.Cleanup(s.T(), func() {
 		// revert to the original GatewayClass (by removing the parametersRef)
 		err := s.TestInstallation.Actions.Kubectl().RunCommand(s.Ctx, "patch", "--type", "json",
 			"gatewayclass", wellknown.DefaultAgwClassName, "-p",

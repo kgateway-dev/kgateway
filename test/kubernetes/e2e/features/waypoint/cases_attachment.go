@@ -9,6 +9,7 @@ import (
 	"istio.io/api/label"
 
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var (
@@ -32,7 +33,7 @@ var (
 )
 
 func (s *testingSuite) useWaypointLabelForTest(kind, name, namespace string) {
-	s.T().Cleanup(func() {
+	testutils.Cleanup(s.T(), func() {
 		err := s.testInstallation.ClusterContext.Cli.UnsetLabel(s.ctx, kind, name, namespace, waypointLabel)
 		if err != nil {
 			// this could break other tests, so fail here

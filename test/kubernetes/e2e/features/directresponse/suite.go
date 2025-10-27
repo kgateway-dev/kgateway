@@ -18,6 +18,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 type testingSuite struct {
@@ -75,6 +76,9 @@ func (s *testingSuite) SetupSuite() {
 }
 
 func (s *testingSuite) TearDownSuite() {
+	if testutils.ShouldSkipCleanup(s.T()) {
+		return
+	}
 	err := s.ti.Actions.Kubectl().DeleteFileSafe(s.ctx, gatewayManifest)
 	s.NoError(err, "can delete gateway manifest")
 	err = s.ti.Actions.Kubectl().DeleteFileSafe(s.ctx, setupManifest)
@@ -96,6 +100,9 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 }
 
 func (s *testingSuite) AfterTest(suiteName, testName string) {
+	if testutils.ShouldSkipCleanup(s.T()) {
+		return
+	}
 	manifests, ok := s.manifests[testName]
 	if !ok {
 		s.FailNow("no manifests found for " + testName)

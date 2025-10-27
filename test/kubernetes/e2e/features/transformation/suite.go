@@ -32,6 +32,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/helper"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -461,7 +462,7 @@ func (s *testingSuite) TestGatewayRustformationsWithTransformedRoute() {
 		rustFormationsEnvVar,
 	)
 
-	s.T().Cleanup(func() {
+	testutils.Cleanup(s.T(), func() {
 		// revert to original version of deployment
 		controllerDeploymentOriginal.ResourceVersion = ""
 		err = s.TestInstallation.ClusterContext.Client.Patch(s.Ctx, controllerDeploymentOriginal, client.MergeFrom(controllerDeployModified))

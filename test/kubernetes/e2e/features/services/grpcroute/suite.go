@@ -14,6 +14,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/grpcurl"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 // testingSuite is the test suite for gRPC routes
@@ -33,7 +34,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 func (s *testingSuite) SetupSuite() {
 	var cancel context.CancelFunc
 	s.ctx, cancel = context.WithTimeout(context.Background(), ctxTimeout)
-	s.T().Cleanup(cancel)
+	testutils.Cleanup(s.T(), cancel)
 
 	// Apply setup manifest
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest, "-n", testNamespace)
@@ -41,6 +42,9 @@ func (s *testingSuite) SetupSuite() {
 }
 
 func (s *testingSuite) TearDownSuite() {
+	if testutils.ShouldSkipCleanup(s.T()) {
+		return
+	}
 	// Clean up core infrastructure
 	err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, setupManifest)
 	s.Require().NoError(err)

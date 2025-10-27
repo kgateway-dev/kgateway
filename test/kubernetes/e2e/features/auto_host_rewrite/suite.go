@@ -16,6 +16,7 @@ import (
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite // makes the suite discoverable
@@ -62,6 +63,9 @@ func (s *testingSuite) SetupSuite() {
 	})
 }
 func (s *testingSuite) TearDownSuite() {
+	if testutils.ShouldSkipCleanup(s.T()) {
+		return
+	}
 	for _, mf := range s.commonManifests {
 		_ = s.ti.Actions.Kubectl().DeleteFileSafe(s.ctx, mf)
 	}

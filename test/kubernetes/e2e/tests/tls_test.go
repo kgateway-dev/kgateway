@@ -40,7 +40,7 @@ func TestControlPlaneTLS(t *testing.T) {
 	// Create the installation namespace first if it doesn't exist, since we need to create
 	// the TLS secret in it before kgateway starts.
 	nsYAML := nsManifest(installNs)
-	t.Cleanup(func() {
+	testutils.Cleanup(t, func() {
 		if err := testInstallation.Actions.Kubectl().Delete(cleanupCtx, []byte(nsYAML)); err != nil {
 			t.Fatalf("failed to delete namespace: %v", err)
 		}
@@ -64,7 +64,7 @@ func TestControlPlaneTLS(t *testing.T) {
 	}
 
 	// Install kgateway with TLS enabled
-	t.Cleanup(func() {
+	testutils.Cleanup(t, func() {
 		if !nsEnvPredefined {
 			os.Unsetenv(testutils.InstallNamespace)
 		}

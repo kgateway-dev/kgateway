@@ -139,7 +139,7 @@ GOLANGCI_LINT ?= go tool golangci-lint
 ANALYZE_ARGS ?= --fix --verbose
 .PHONY: analyze
 analyze:  ## Run golangci-lint. Override options with ANALYZE_ARGS.
-	GOTOOLCHAIN=$(GOTOOLCHAIN) $(GOLANGCI_LINT) run $(ANALYZE_ARGS) ./...
+	GOTOOLCHAIN=$(GOTOOLCHAIN) $(GOLANGCI_LINT) run $(ANALYZE_ARGS) --build-tags e2e ./...
 
 #----------------------------------------------------------------------------------
 # Ginkgo Tests

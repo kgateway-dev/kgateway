@@ -157,8 +157,8 @@ func (i *TestInstallation) InstallKgatewayCRDsFromLocalChart(ctx context.Context
 		return
 	}
 
-	// Check if we should skip installation if the release already exists (PERSIST_INSTALL mode)
-	if testutils.ShouldPersistInstall() {
+	// Check if we should skip installation if the release already exists (PERSIST_INSTALL or FAIL_FAST_AND_PERSIST mode)
+	if testutils.ShouldPersistInstall() || testutils.ShouldFailFastAndPersist() {
 		if i.Actions.Helm().ReleaseExists(ctx, helmutils.CRDChartName, i.Metadata.InstallNamespace) {
 			return
 		}
@@ -183,8 +183,8 @@ func (i *TestInstallation) InstallKgatewayCoreFromLocalChart(ctx context.Context
 		return
 	}
 
-	// Check if we should skip installation if the release already exists (PERSIST_INSTALL mode)
-	if testutils.ShouldPersistInstall() {
+	// Check if we should skip installation if the release already exists (PERSIST_INSTALL or FAIL_FAST_AND_PERSIST mode)
+	if testutils.ShouldPersistInstall() || testutils.ShouldFailFastAndPersist() {
 		if i.Actions.Helm().ReleaseExists(ctx, helmutils.ChartName, i.Metadata.InstallNamespace) {
 			return
 		}

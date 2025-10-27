@@ -243,8 +243,9 @@ func New(opts ...func(*setup)) (*setup, error) {
 				Metrics: metricsserver.Options{
 					BindAddress: ":9092",
 				},
-				LeaderElection:   !s.globalSettings.DisableLeaderElection,
-				LeaderElectionID: s.leaderElectionID,
+				LeaderElectionNamespace: namespaces.GetPodNamespace(),
+				LeaderElection:          !s.globalSettings.DisableLeaderElection,
+				LeaderElectionID:        s.leaderElectionID,
 			}
 		}
 	}

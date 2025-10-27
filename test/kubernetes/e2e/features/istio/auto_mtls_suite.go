@@ -13,6 +13,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var _ e2e.NewSuiteFunc = NewIstioAutoMtlsSuite
@@ -86,6 +87,9 @@ func (s *istioAutoMtlsTestingSuite) SetupSuite() {
 }
 
 func (s *istioAutoMtlsTestingSuite) TearDownSuite() {
+	if testutils.ShouldSkipCleanup(s.T()) {
+		return
+	}
 	err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, setupManifest)
 	s.NoError(err, "can delete setup manifest")
 	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, httpbinDeployment)

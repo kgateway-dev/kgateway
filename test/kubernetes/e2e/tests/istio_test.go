@@ -41,7 +41,7 @@ func TestKgatewayIstio(t *testing.T) {
 
 	// We register the cleanup function _before_ we actually perform the installation.
 	// This allows us to uninstall Gloo Gateway, in case the original installation only completed partially
-	t.Cleanup(func() {
+	testutils.Cleanup(t, func() {
 		if !nsEnvPredefined {
 			os.Unsetenv(testutils.InstallNamespace)
 		}

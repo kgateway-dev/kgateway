@@ -18,6 +18,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/transforms"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 // TODO(tim): manifest mapping
@@ -86,6 +87,9 @@ func (s *testingSuite) SetupSuite() {
 
 // TearDownSuite cleans up any remaining resources
 func (s *testingSuite) TearDownSuite() {
+	if testutils.ShouldSkipCleanup(s.T()) {
+		return
+	}
 	// Clean up core infrastructure
 	err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, setupManifest)
 	s.Require().NoError(err)
@@ -105,6 +109,9 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 }
 
 func (s *testingSuite) AfterTest(suiteName, testName string) {
+	if testutils.ShouldSkipCleanup(s.T()) {
+		return
+	}
 	for _, manifest := range s.testManifests[testName] {
 		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
 		s.NoError(err)
