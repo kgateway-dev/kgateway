@@ -28,4 +28,4 @@ spec:
         - name: RUST_BACKTRACE
           value: "1"
       bootstrap:
-        logLevel: trace
+        logLevel: info
