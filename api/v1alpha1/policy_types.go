@@ -54,6 +54,10 @@ const (
 
 	// PolicyReasonPending is used with the "Accepted" or "Attached" condition when the policy has been referenced but not yet fully processed by the controller.
 	PolicyReasonPending PolicyConditionReason = "Pending"
+
+	// PolicyReasonPartiallyValid is used with the "Accepted" condition when the policy has been accepted by the system,
+	// but some of the referenced resources are not valid.
+	PolicyReasonPartiallyValid PolicyConditionReason = "PartiallyValid"
 )
 
 // PolicyDisable is used to disable a policy.

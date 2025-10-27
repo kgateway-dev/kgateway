@@ -279,22 +279,26 @@ func TestResourceSync(t *testing.T) {
 		"kgateway_resources_status_sync_duration_seconds",
 	)
 
-	gathered.AssertMetric("kgateway_resources_status_syncs_started_total", &metricstest.ExpectedMetric{
-		Labels: []metrics.Label{
-			{Name: "gateway", Value: details.Gateway},
-			{Name: "namespace", Value: details.Namespace},
-			{Name: "resource", Value: details.ResourceType},
+	gathered.AssertMetricsInclude("kgateway_resources_status_syncs_started_total", []metricstest.ExpectMetric{
+		&metricstest.ExpectedMetric{
+			Labels: []metrics.Label{
+				{Name: "gateway", Value: details.Gateway},
+				{Name: "namespace", Value: details.Namespace},
+				{Name: "resource", Value: details.ResourceType},
+			},
+			Value: 1,
 		},
-		Value: 1,
 	})
 
-	gathered.AssertMetric("kgateway_resources_status_syncs_completed_total", &metricstest.ExpectedMetric{
-		Labels: []metrics.Label{
-			{Name: "gateway", Value: details.Gateway},
-			{Name: "namespace", Value: details.Namespace},
-			{Name: "resource", Value: details.ResourceType},
+	gathered.AssertMetricsInclude("kgateway_resources_status_syncs_completed_total", []metricstest.ExpectMetric{
+		&metricstest.ExpectedMetric{
+			Labels: []metrics.Label{
+				{Name: "gateway", Value: details.Gateway},
+				{Name: "namespace", Value: details.Namespace},
+				{Name: "resource", Value: details.ResourceType},
+			},
+			Value: 1,
 		},
-		Value: 1,
 	})
 
 	gathered.AssertMetricsLabels("kgateway_resources_status_sync_duration_seconds", [][]metrics.Label{{
@@ -319,12 +323,14 @@ func TestResourceSync(t *testing.T) {
 		"kgateway_xds_snapshot_sync_duration_seconds",
 	)
 
-	gathered.AssertMetric("kgateway_xds_snapshot_syncs_total", &metricstest.ExpectedMetric{
-		Labels: []metrics.Label{
-			{Name: "gateway", Value: details.Gateway},
-			{Name: "namespace", Value: details.Namespace},
+	gathered.AssertMetricsInclude("kgateway_xds_snapshot_syncs_total", []metricstest.ExpectMetric{
+		&metricstest.ExpectedMetric{
+			Labels: []metrics.Label{
+				{Name: "gateway", Value: details.Gateway},
+				{Name: "namespace", Value: details.Namespace},
+			},
+			Value: 1,
 		},
-		Value: 1,
 	})
 
 	gathered.AssertMetricsLabels("kgateway_xds_snapshot_sync_duration_seconds", [][]metrics.Label{{

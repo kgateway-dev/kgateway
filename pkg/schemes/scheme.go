@@ -14,7 +14,6 @@ import (
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gwv1a3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
@@ -67,9 +66,6 @@ func GatewayScheme() *runtime.Scheme {
 	}
 	if err := gwv1b1.Install(s); err != nil {
 		panic(fmt.Sprintf("Failed to install gateway v1beta1 scheme: %v", err))
-	}
-	if err := gwv1a3.Install(s); err != nil {
-		panic(fmt.Sprintf("Failed to install gateway v1alpha3 scheme: %v", err))
 	}
 	if err := gwxv1a1.Install(s); err != nil {
 		panic(fmt.Sprintf("Failed to install gateway experimental v1alpha1 scheme: %v", err))

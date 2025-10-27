@@ -8,6 +8,7 @@ import (
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/kube/kubetypes"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -15,16 +16,11 @@ import (
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	"sigs.k8s.io/gateway-api-inference-extension/client-go/clientset/versioned"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
-)
-
-var (
-	inferencePoolGVK = wellknown.InferencePoolGVK
-	inferencePoolGVR = inferencePoolGVK.GroupVersion().WithResource("inferencepools")
 )
 
 type inferencePoolPlugin struct {
@@ -39,13 +35,16 @@ type inferencePoolPlugin struct {
 
 func registerTypes(cli versioned.Interface) {
 	skubeclient.Register[*inf.InferencePool](
-		inferencePoolGVR,
-		inferencePoolGVK,
+		wellknown.InferencePoolGVR,
+		wellknown.InferencePoolGVK,
 		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
 			return cli.InferenceV1().InferencePools(namespace).List(context.Background(), o)
 		},
 		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 			return cli.InferenceV1().InferencePools(namespace).Watch(context.Background(), o)
+		},
+		func(c skubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*inf.InferencePool] {
+			return cli.InferenceV1().InferencePools(namespace)
 		},
 	)
 }
@@ -53,22 +52,24 @@ func registerTypes(cli versioned.Interface) {
 func initInferencePoolCollections(
 	ctx context.Context,
 	commonCol *collections.CommonCollections,
-) *inferencePoolPlugin {
+) (*inferencePoolPlugin, kclient.Client[*inf.InferencePool]) {
 	// Create the inference extension client
-	cli, err := versioned.NewForConfig(commonCol.Client.RESTConfig())
+	clientset, err := versioned.NewForConfig(commonCol.Client.RESTConfig())
 	if err != nil {
 		logger.Error("failed to create inference extension client", "error", err)
-		return nil
+		return nil, nil
 	}
 
 	// Register the InferencePool type
-	registerTypes(cli)
+	registerTypes(clientset)
 
 	// Create an InferencePool krt collection
-	poolCol := krt.WrapClient(kclient.NewFiltered[*inf.InferencePool](
+	cli := kclient.NewFilteredDelayed[*inf.InferencePool](
 		commonCol.Client,
+		wellknown.InferencePoolGVR,
 		kclient.Filter{ObjectFilter: commonCol.Client.ObjectFilter()},
-	), commonCol.KrtOpts.ToOptions("InferencePool")...)
+	)
+	poolCol := krt.WrapClient(cli, commonCol.KrtOpts.ToOptions("InferencePool")...)
 
 	// Create a krt index of pods whose labels match the InferencePool's selector
 	podIdx := krtpkg.UnnamedIndex(
@@ -155,5 +156,5 @@ func initInferencePoolCollections(
 		policies:    policies,
 		poolIndex:   poolIdx,
 		podIndex:    podIdx,
-	}
+	}, cli
 }

@@ -21,22 +21,22 @@ import (
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/kube/kubetypes"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
-	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
@@ -183,16 +183,21 @@ func registerTypes(ourCli versioned.Interface) {
 		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 			return ourCli.GatewayV1alpha1().HTTPListenerPolicies(namespace).Watch(context.Background(), o)
 		},
+		func(c skubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*v1alpha1.HTTPListenerPolicy] {
+			return ourCli.GatewayV1alpha1().HTTPListenerPolicies(namespace)
+		},
 	)
 }
 
 func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
 	registerTypes(commoncol.OurClient)
 
-	col := krt.WrapClient(kclient.NewFiltered[*v1alpha1.HTTPListenerPolicy](
+	cli := kclient.NewFilteredDelayed[*v1alpha1.HTTPListenerPolicy](
 		commoncol.Client,
+		wellknown.HTTPListenerPolicyGVR,
 		kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()},
-	), commoncol.KrtOpts.ToOptions("HTTPListenerPolicy")...)
+	)
+	col := krt.WrapClient(cli, commoncol.KrtOpts.ToOptions("HTTPListenerPolicy")...)
 	gk := wellknown.HTTPListenerPolicyGVK.GroupKind()
 	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.HTTPListenerPolicy) *ir.PolicyWrapper {
 		objSrc := ir.ObjectSource{
@@ -234,7 +239,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 		healthCheckPolicy := convertHealthCheckPolicy(i)
 		var xffNumTrustedHops *uint32
 		if i.Spec.XffNumTrustedHops != nil {
-			xffNumTrustedHops = pointer.Uint32(uint32(*i.Spec.XffNumTrustedHops)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+			xffNumTrustedHops = ptr.To(uint32(*i.Spec.XffNumTrustedHops)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 		}
 
 		pol := &ir.PolicyWrapper{
@@ -269,8 +274,8 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 			wellknown.HTTPListenerPolicyGVK.GroupKind(): {
 				NewGatewayTranslationPass: NewGatewayTranslationPass,
 				Policies:                  policyCol,
-				GetPolicyStatus:           getPolicyStatusFn(commoncol.CrudClient),
-				PatchPolicyStatus:         patchPolicyStatusFn(commoncol.CrudClient),
+				GetPolicyStatus:           getPolicyStatusFn(cli),
+				PatchPolicyStatus:         patchPolicyStatusFn(cli),
 				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
 					return policy.MergePolicies(pols, mergePolicies, "" /*no merge settings*/)
 				},
@@ -290,7 +295,7 @@ func (p *httpListenerPolicyPluginGwPass) Name() string {
 }
 
 func (p *httpListenerPolicyPluginGwPass) ApplyHCM(
-	pCtx *pluginsdkir.HcmContext,
+	pCtx *ir.HcmContext,
 	out *envoy_hcm.HttpConnectionManager,
 ) error {
 	policy, ok := pCtx.Policy.(*httpListenerPolicy)
@@ -379,27 +384,27 @@ func (p *httpListenerPolicyPluginGwPass) ApplyHCM(
 	return nil
 }
 
-func (p *httpListenerPolicyPluginGwPass) HttpFilters(fc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
+func (p *httpListenerPolicyPluginGwPass) HttpFilters(fc ir.FilterChainCommon) ([]filters.StagedHttpFilter, error) {
 	if p.healthCheckPolicy == nil {
 		return nil, nil
 	}
 
 	// Add the health check filter after the authz filter but before the rate limit filter
 	// This allows the health check filter to be secured by authz if needed, but ensures it won't be rate limited
-	stagedFilter, err := plugins.NewStagedFilter(
+	stagedFilter, err := filters.NewStagedFilter(
 		"envoy.filters.http.health_check",
 		p.healthCheckPolicy,
-		plugins.AfterStage(plugins.AuthZStage),
+		filters.AfterStage(filters.AuthZStage),
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	return []plugins.StagedHttpFilter{stagedFilter}, nil
+	return []filters.StagedHttpFilter{stagedFilter}, nil
 }
 
 func (p *httpListenerPolicyPluginGwPass) ApplyListenerPlugin(
-	pCtx *pluginsdkir.ListenerContext,
+	pCtx *ir.ListenerContext,
 	out *envoylistenerv3.Listener,
 ) {
 	policy, ok := pCtx.Policy.(*httpListenerPolicy)

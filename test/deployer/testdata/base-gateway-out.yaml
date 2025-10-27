@@ -1,35 +1,32 @@
 ---
-# Source: kgateway-proxy/templates/gateway/proxy-deployment.yaml
+# Source: kgateway-proxy/templates/serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: gw
   labels:
     kgateway: kube-gateway
-    helm.sh/chart: kgateway-proxy-1.0.0-ci1
     app.kubernetes.io/name: gw
     app.kubernetes.io/instance: gw
     gateway.networking.k8s.io/gateway-name: gw
     app.kubernetes.io/version: "1.0.0-ci1"
     gateway.networking.k8s.io/gateway-class-name: kgateway
-    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/managed-by: kgateway
 automountServiceAccountToken: false
 ---
-# Source: kgateway-proxy/templates/gateway/proxy-deployment.yaml
----
+# Source: kgateway-proxy/templates/configmap.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: gw
   labels:
     kgateway: kube-gateway
-    helm.sh/chart: kgateway-proxy-1.0.0-ci1
     app.kubernetes.io/name: gw
     app.kubernetes.io/instance: gw
     gateway.networking.k8s.io/gateway-name: gw
     app.kubernetes.io/version: "1.0.0-ci1"
     gateway.networking.k8s.io/gateway-class-name: kgateway
-    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/managed-by: kgateway
 data:
   envoy.yaml: |
     admin:
@@ -132,7 +129,7 @@ data:
                   http_filters:
                     - name: envoy.filters.http.router
                       typed_config:
-                        "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router 
+                        "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
       clusters:
         - name: xds_cluster
           alt_stat_name: xds_cluster
@@ -175,8 +172,11 @@ data:
           upstream_connection_options:
             tcp_keepalive:
               keepalive_time: 10
-          type: STRICT_DNS
-          respect_dns_ttl: true
+          cluster_type:
+            name: envoy.cluster.strict_dns
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.clusters.dns.v3.DnsCluster
+              respect_dns_ttl: true
         - name: admin_port_cluster
           connect_timeout: 5.000s
           type: STATIC
@@ -189,7 +189,7 @@ data:
                   address:
                     socket_address:
                       address: 127.0.0.1
-                      port_value: 19000 
+                      port_value: 19000
     dynamic_resources:
       ads_config:
         transport_api_version: V3
@@ -205,20 +205,19 @@ data:
         resource_api_version: V3
         ads: {}
 ---
-# Source: kgateway-proxy/templates/gateway/proxy-deployment.yaml
+# Source: kgateway-proxy/templates/service.yaml
 apiVersion: v1
 kind: Service
 metadata:
   name: gw
   labels:
     kgateway: kube-gateway
-    helm.sh/chart: kgateway-proxy-1.0.0-ci1
     app.kubernetes.io/name: gw
     app.kubernetes.io/instance: gw
     gateway.networking.k8s.io/gateway-name: gw
     app.kubernetes.io/version: "1.0.0-ci1"
     gateway.networking.k8s.io/gateway-class-name: kgateway
-    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/managed-by: kgateway
 spec:
   type: LoadBalancer
   ports:
@@ -231,22 +230,20 @@ spec:
     app.kubernetes.io/instance: gw
     gateway.networking.k8s.io/gateway-name: gw
 ---
-# Source: kgateway-proxy/templates/gateway/proxy-deployment.yaml
+# Source: kgateway-proxy/templates/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: gw
   labels:
     kgateway: kube-gateway
-    helm.sh/chart: kgateway-proxy-1.0.0-ci1
     app.kubernetes.io/name: gw
     app.kubernetes.io/instance: gw
     gateway.networking.k8s.io/gateway-name: gw
     app.kubernetes.io/version: "1.0.0-ci1"
     gateway.networking.k8s.io/gateway-class-name: kgateway
-    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/managed-by: kgateway
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: gw
@@ -271,8 +268,6 @@ spec:
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
-            add:
-            - NET_BIND_SERVICE
             drop:
             - ALL
           readOnlyRootFilesystem: true
@@ -301,7 +296,7 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         - name: ENVOY_UID
-          value: "0" 
+          value: "0"
         ports:
         - name: listener-8080
           protocol: TCP
@@ -320,7 +315,6 @@ spec:
           httpGet:
             path: /ready
             port: 8082
-          initialDelaySeconds: 5
           periodSeconds: 10
         lifecycle:
           preStop:
@@ -328,7 +322,7 @@ spec:
               command:
               - /bin/sh
               - -c
-              - wget --post-data "" -O /dev/null 127.0.0.1:19000/healthcheck/fail; sleep 10   
+              - wget --post-data "" -O /dev/null 127.0.0.1:19000/healthcheck/fail; sleep 10
       terminationGracePeriodSeconds: 60
       volumes:
       - name: xds-token

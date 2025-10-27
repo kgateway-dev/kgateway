@@ -29,7 +29,8 @@ func (g GinkgoTestReporter) Fatalf(format string, args ...interface{}) {
 var _ = Describe("GwControllerMetrics", func() {
 	var (
 		ctx              context.Context
-		cancel           context.CancelFunc
+		cancelCtx        context.CancelFunc
+		cancelManager    context.CancelFunc
 		goroutineMonitor *assertions.GoRoutineMonitor
 	)
 
@@ -38,10 +39,10 @@ var _ = Describe("GwControllerMetrics", func() {
 	})
 
 	JustBeforeEach(func() {
-		ctx, cancel = context.WithCancel(context.Background())
+		ctx, cancelCtx = context.WithCancel(context.Background())
 
 		var err error
-		cancel, err = createManager(ctx, inferenceExt, nil)
+		cancelManager, err = createManager(ctx, inferenceExt, nil)
 		Expect(err).NotTo(HaveOccurred())
 
 		ResetMetrics()
@@ -49,7 +50,10 @@ var _ = Describe("GwControllerMetrics", func() {
 	})
 
 	AfterEach(func() {
-		cancel()
+		if cancelManager != nil {
+			cancelManager()
+		}
+		cancelCtx()
 		waitForGoroutinesToFinish(goroutineMonitor)
 	})
 
@@ -208,6 +212,17 @@ func setupGateway(ctx context.Context) {
 	Expect(err).NotTo(HaveOccurred())
 
 	waitForGatewayService(ctx, gw)
+
+	if !metrics.Active() {
+		return
+	}
+	// Wait for gateway controller to reconcile and record metrics
+	// Check that reconciliation metrics have been recorded for the gateway controller
+	Eventually(func() bool {
+		gathered := metricstest.MustGatherMetrics(GinkgoT())
+		// Check if gateway controller reconciliation metrics exist
+		return gathered.MetricLength("kgateway_controller_reconciliations_total") > 0
+	}, timeout, interval).Should(BeTrue(), "gateway controller metrics not recorded")
 
 	if probs, err := metricstest.GatherAndLint(); err != nil || len(probs) > 0 {
 		Fail("metrics linter error: " + err.Error())

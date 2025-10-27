@@ -28,7 +28,7 @@ apiVersion: gateway.networking.k8s.io/v1
 metadata:
   name: agentgateway
 spec:
-  controllerName: kgateway.dev/kgateway
+  controllerName: kgateway.dev/agentgateway
   parametersRef:
     group: gateway.kgateway.dev
     kind: GatewayParameters
@@ -366,7 +366,7 @@ REFRESH_GOLDEN="true" go test -shuffle on -run "TestBasic" ./internal/kgateway/a
 Setup the cluster:
 
 ```shell
-AGENTGATEWAY=true ./hack/kind/setup-kind.sh
+./hack/kind/setup-kind.sh
 ```
 
 Retag and load the image to match the default image tag in the values file for agentgateway, then run:
@@ -380,8 +380,8 @@ make run HELM_ADDITIONAL_VALUES=test/kubernetes/e2e/tests/manifests/agent-gatewa
 Set up a kind cluster and install kgateway with the kubernetes Gateway APIs:
 ```shell
 kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.3.0/standard-install.yaml
-helm upgrade -i --create-namespace --namespace kgateway-system --version v2.1.0-main kgateway-crds oci://cr.kgateway.dev/kgateway-dev/charts/kgateway-crds
-helm upgrade -i --namespace kgateway-system --version v2.1.0-main kgateway oci://cr.kgateway.dev/kgateway-dev/charts/kgateway --set agentgateway.enabled=true --set inferenceExtension.enabled=true
+helm upgrade -i --create-namespace --namespace kgateway-system --version v2.2.0-main kgateway-crds oci://cr.kgateway.dev/kgateway-dev/charts/kgateway-crds
+helm upgrade -i --namespace kgateway-system --version v2.2.0-main kgateway oci://cr.kgateway.dev/kgateway-dev/charts/kgateway --set agentgateway.enabled=true --set inferenceExtension.enabled=true
 ```
 
 #### HTTPRoute
@@ -649,7 +649,7 @@ spec:
         namespaces:
           from: All
 ---
-apiVersion: gateway.networking.k8s.io/v1beta1
+apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: json-route
@@ -1037,8 +1037,6 @@ EOF
 
 #### A2A Backend
 
-Build the sample kgateway a2a application and load it into the kind cluster with `VERSION=$VERSION make kind-build-and-load-test-a2a-agent`.
-
 Apply the sample app:
 ```shell
 kubectl apply -f- <<EOF
@@ -1059,7 +1057,7 @@ spec:
     spec:
       containers:
         - name: a2a-agent
-          image: ghcr.io/kgateway-dev/test-a2a-agent:1.0.0-ci1
+          image: ghcr.io/kgateway-dev/test-a2a-server:0.0.3
           ports:
             - containerPort: 9090
 ---
@@ -1203,7 +1201,7 @@ kind: GatewayClass
 metadata:
   name: agentgateway
 spec:
-  controllerName: kgateway.dev/kgateway
+  controllerName: kgateway.dev/agentgateway
   parametersRef:
     group: gateway.kgateway.dev
     kind: GatewayParameters
@@ -1414,7 +1412,7 @@ kind: GatewayClass
 metadata:
   name: agentgateway
 spec:
-  controllerName: kgateway.dev/kgateway
+  controllerName: kgateway.dev/agentgateway
   parametersRef:
     group: gateway.kgateway.dev
     kind: GatewayParameters
@@ -1509,7 +1507,7 @@ kind: GatewayClass
 metadata:
   name: agentgateway
 spec:
-  controllerName: kgateway.dev/kgateway
+  controllerName: kgateway.dev/agentgateway
   parametersRef:
     group: gateway.kgateway.dev
     kind: GatewayParameters

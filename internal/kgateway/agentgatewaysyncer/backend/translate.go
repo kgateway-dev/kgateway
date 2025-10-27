@@ -92,6 +92,23 @@ func buildStaticIr(be *v1alpha1.Backend) (*StaticIr, error) {
 	}, nil
 }
 
+// translateRouteType converts kgateway RouteType to agentgateway proto RouteType
+func translateRouteType(rt v1alpha1.RouteType) api.AIBackend_RouteType {
+	switch rt {
+	case v1alpha1.RouteTypeCompletions:
+		return api.AIBackend_COMPLETIONS
+	case v1alpha1.RouteTypeMessages:
+		return api.AIBackend_MESSAGES
+	case v1alpha1.RouteTypeModels:
+		return api.AIBackend_MODELS
+	case v1alpha1.RouteTypePassthrough:
+		return api.AIBackend_PASSTHROUGH
+	default:
+		// Default to completions if unknown type
+		return api.AIBackend_COMPLETIONS
+	}
+}
+
 func translateLLMProviderToProvider(krtctx krt.HandlerContext, llm *v1alpha1.LLMProvider, providerName string, secrets krt.Collection[*corev1.Secret], namespace string) (*api.AIBackend_Provider, *api.BackendAuthPolicy, error) {
 	provider := &api.AIBackend_Provider{
 		Name: providerName,
@@ -109,6 +126,13 @@ func translateLLMProviderToProvider(krtctx krt.HandlerContext, llm *v1alpha1.LLM
 	if llm.Path != nil {
 		if llm.Path.Full != nil {
 			provider.PathOverride = &wrappers.StringValue{Value: *llm.Path.Full}
+		}
+	}
+
+	if llm.Routes != nil && len(llm.Routes) > 0 {
+		provider.Routes = make(map[string]api.AIBackend_RouteType)
+		for path, routeType := range llm.Routes {
+			provider.Routes[path] = translateRouteType(routeType)
 		}
 	}
 
@@ -157,8 +181,11 @@ func translateLLMProviderToProvider(krtctx krt.HandlerContext, llm *v1alpha1.LLM
 		}
 		auth = buildTranslatedAuthPolicy(krtctx, &llm.VertexAI.AuthToken, secrets, namespace)
 	} else if llm.Bedrock != nil {
-		model := &wrappers.StringValue{
-			Value: llm.Bedrock.Model,
+		var model *wrappers.StringValue
+		if llm.Bedrock.Model != nil {
+			model = &wrappers.StringValue{
+				Value: *llm.Bedrock.Model,
+			}
 		}
 		region := llm.Bedrock.Region
 		var guardrailIdentifier, guardrailVersion *wrappers.StringValue

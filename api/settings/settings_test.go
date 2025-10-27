@@ -37,7 +37,7 @@ func allEnvVarsSet() map[string]string {
 		"KGW_INGRESS_USE_WAYPOINTS":          "false",
 		"KGW_LOG_LEVEL":                      "debug",
 		"KGW_DISCOVERY_NAMESPACE_SELECTORS":  `[{"matchExpressions":[{"key":"kubernetes.io/metadata.name","operator":"In","values":["infra"]}]},{"matchLabels":{"app":"a"}}]`,
-		"KGW_ENABLE_AGENTGATEWAY":            "true",
+		"KGW_ENABLE_AGENTGATEWAY":            "false",
 		"KGW_WEIGHTED_ROUTE_PRECEDENCE":      "true",
 		"KGW_VALIDATION_MODE":                string(ValidationStrict),
 		"KGW_ENABLE_BUILTIN_DEFAULT_METRICS": "true",
@@ -46,6 +46,7 @@ func allEnvVarsSet() map[string]string {
 		"KGW_POLICY_MERGE":                   `{"TrafficPolicy":{"extProc":"DeepMerge"}}`,
 		"KGW_ENABLE_WAYPOINT":                "true",
 		"KGW_XDS_AUTH":                       "false",
+		"KGW_XDS_TLS":                        "true",
 	}
 }
 
@@ -88,7 +89,7 @@ func TestSettings(t *testing.T) {
 				IngressUseWaypoints:         true,
 				LogLevel:                    "info",
 				DiscoveryNamespaceSelectors: "[]",
-				EnableAgentgateway:          false,
+				EnableAgentgateway:          true,
 				WeightedRoutePrecedence:     false,
 				ValidationMode:              ValidationStandard,
 				EnableBuiltinDefaultMetrics: false,
@@ -97,6 +98,7 @@ func TestSettings(t *testing.T) {
 				PolicyMerge:                 "{}",
 				EnableWaypoint:              false,
 				XdsAuth:                     true,
+				XdsTLS:                      false,
 			},
 		},
 		{
@@ -124,7 +126,7 @@ func TestSettings(t *testing.T) {
 				IngressUseWaypoints:         false,
 				LogLevel:                    "debug",
 				DiscoveryNamespaceSelectors: `[{"matchExpressions":[{"key":"kubernetes.io/metadata.name","operator":"In","values":["infra"]}]},{"matchLabels":{"app":"a"}}]`,
-				EnableAgentgateway:          true,
+				EnableAgentgateway:          false,
 				WeightedRoutePrecedence:     true,
 				ValidationMode:              ValidationStrict,
 				EnableBuiltinDefaultMetrics: true,
@@ -133,6 +135,7 @@ func TestSettings(t *testing.T) {
 				PolicyMerge:                 `{"TrafficPolicy":{"extProc":"DeepMerge"}}`,
 				EnableWaypoint:              true,
 				XdsAuth:                     false,
+				XdsTLS:                      true,
 			},
 		},
 		{
@@ -192,11 +195,12 @@ func TestSettings(t *testing.T) {
 				IngressUseWaypoints:         true,
 				LogLevel:                    "info",
 				DiscoveryNamespaceSelectors: "[]",
-				EnableAgentgateway:          false,
+				EnableAgentgateway:          true,
 				WeightedRoutePrecedence:     false,
 				ValidationMode:              ValidationStandard,
 				PolicyMerge:                 "{}",
 				XdsAuth:                     true,
+				XdsTLS:                      false,
 			},
 		},
 	}

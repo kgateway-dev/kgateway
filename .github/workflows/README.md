@@ -17,7 +17,7 @@ it will trigger the action to run.
 ## [Lint Helm Charts](./lint-helm.yaml)
 Perform linting on project [Helm Charts](../../install/helm/README.md).
 
-## Future Work
-It would be great to add support for issue comment directives. This would mean that commenting `/sig-ci` would signal CI to run, or `/skip-ci` would auto-succeed CI.
-
-This was attempted, and the challenge is that Github workflows were kicked off, but not associated with the PR that contained the comment. Therefore, the PR status never changed, even if the job that was kicked off passed all the tests.
+## Comments That Trigger Workflows
+- Commenting `/retest` (without any other text) on a PR will trigger the [retest](./retest.yaml) job (limited to kgateway org members only). This will re-run any failed jobs from the latest workflow runs on the PR.
+- Commenting `/merge` (without any other text) on a PR will trigger the [enable auto-merge](./automerge.yaml) job (limited to kgateway org members only). This will enable auto-merge for the PR.
+- Commenting `/unmerge` (without any other text) on a PR will trigger the [disable auto-merge](./automerge.yaml) job (limited to kgateway org members only). This will disable auto-merge for the PR.

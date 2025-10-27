@@ -4,11 +4,6 @@ metadata:
   name: gw
 spec:
   gatewayClassName: agentgateway
-  infrastructure:
-    parametersRef:
-      group: gateway.kgateway.dev
-      kind: GatewayParameters
-      name: gw-params
   listeners:
     - protocol: HTTP
       port: 8080
@@ -16,12 +11,3 @@ spec:
       allowedRoutes:
         namespaces:
           from: Same
----
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: GatewayParameters
-metadata:
-  name: gw-params
-spec:
-  kube:
-    agentgateway:
-      enabled: true

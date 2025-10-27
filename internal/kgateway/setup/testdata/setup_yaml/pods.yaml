@@ -39,7 +39,7 @@ spec:
   podCIDR: 10.244.1.0/24
   podCIDRs:
   - 10.244.1.0/24
-  providerID: kind://docker/gloo-oss/worker
+  providerID: kind://docker/kgateway/worker
 ---
 apiVersion: v1
 kind: Node
@@ -58,7 +58,7 @@ spec:
   podCIDR: 10.244.2.0/24
   podCIDRs:
   - 10.244.2.0/24
-  providerID: kind://docker/gloo-oss/worker2
+  providerID: kind://docker/kgateway/worker2
 ---
 apiVersion: v1
 kind: Node
@@ -77,7 +77,7 @@ spec:
   podCIDR: 10.244.3.0/24
   podCIDRs:
   - 10.244.3.0/24
-  providerID: kind://docker/gloo-oss/worker3
+  providerID: kind://docker/kgateway/worker3
 ---
 apiVersion: v1
 kind: Pod
@@ -158,7 +158,7 @@ spec:
   podCIDR: 10.244.4.0/24
   podCIDRs:
   - 10.244.4.0/24
-  providerID: kind://docker/gloo-oss/worker4
+  providerID: kind://docker/kgateway/worker4
 ---
 apiVersion: v1
 kind: Pod

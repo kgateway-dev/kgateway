@@ -17,11 +17,11 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	ourwellknown "github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 var VirtualIstioGK = schema.GroupKind{
@@ -232,8 +232,6 @@ func buildSni(upstream ir.BackendObjectIR) string {
 
 // buildDNSSrvSubsetKey mirrors a similarly named function in Istio.
 // Istio auto-passthrough gateways expect this value for the SNI.
-// We also expect gloo mesh to tell Istio to match the virtual destination SNI
-// but route to the backing Service's cluster via EnvoyFilter.
 func buildDNSSrvSubsetKey(hostname string, port uint32) string {
 	return "outbound" + "_." + strconv.Itoa(int(port)) + "_._." + string(hostname)
 }

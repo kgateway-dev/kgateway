@@ -1,0 +1,47 @@
+name: Enable or disable auto-merge
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  enable-auto-merge:
+    # only run this job on PR comments from org members/owners where the comment is exactly "/merge"
+    if: |
+      github.event.issue.pull_request &&
+      (github.event.comment.author_association == 'MEMBER' || github.event.comment.author_association == 'OWNER') &&
+      github.event.comment.body == '/merge'
+    permissions:
+      contents: write
+      pull-requests: write
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Enable auto-merge
+        shell: bash
+        env:
+          PR_NUMBER: ${{ github.event.issue.number }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr merge $PR_NUMBER --auto --squash
+
+  disable-auto-merge:
+    # only run this job on PR comments from org members/owners where the comment is exactly "/unmerge"
+    if: |
+      github.event.issue.pull_request &&
+      (github.event.comment.author_association == 'MEMBER' || github.event.comment.author_association == 'OWNER') &&
+      github.event.comment.body == '/unmerge'
+    permissions:
+      contents: write
+      pull-requests: write
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Disable auto-merge
+        shell: bash
+        env:
+          PR_NUMBER: ${{ github.event.issue.number }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr merge $PR_NUMBER --disable-auto

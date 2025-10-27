@@ -5,20 +5,19 @@ package fake
 import (
 	gentype "k8s.io/client-go/gentype"
 
-	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/applyconfiguration/api/v1alpha1"
 	v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	typedapiv1alpha1 "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/typed/api/v1alpha1"
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/typed/api/v1alpha1"
 )
 
 // fakeDirectResponses implements DirectResponseInterface
 type fakeDirectResponses struct {
-	*gentype.FakeClientWithListAndApply[*v1alpha1.DirectResponse, *v1alpha1.DirectResponseList, *apiv1alpha1.DirectResponseApplyConfiguration]
+	*gentype.FakeClientWithList[*v1alpha1.DirectResponse, *v1alpha1.DirectResponseList]
 	Fake *FakeGatewayV1alpha1
 }
 
-func newFakeDirectResponses(fake *FakeGatewayV1alpha1, namespace string) typedapiv1alpha1.DirectResponseInterface {
+func newFakeDirectResponses(fake *FakeGatewayV1alpha1, namespace string) apiv1alpha1.DirectResponseInterface {
 	return &fakeDirectResponses{
-		gentype.NewFakeClientWithListAndApply[*v1alpha1.DirectResponse, *v1alpha1.DirectResponseList, *apiv1alpha1.DirectResponseApplyConfiguration](
+		gentype.NewFakeClientWithList[*v1alpha1.DirectResponse, *v1alpha1.DirectResponseList](
 			fake.Fake,
 			namespace,
 			v1alpha1.SchemeGroupVersion.WithResource("directresponses"),

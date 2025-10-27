@@ -2,6 +2,7 @@ package translator
 
 import (
 	"istio.io/istio/pilot/pkg/model/kstatus"
+	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/maps"
 	"istio.io/istio/pkg/slices"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -117,13 +118,13 @@ func setConditions(generation int64, existingConditions []metav1.Condition, cond
 	return existingConditions
 }
 
-func reportListenerCondition(index int, l gwv1.Listener, obj *gwv1.Gateway,
-	gs *gwv1.GatewayStatus, conditions map[string]*condition, attachedRoutes int32,
-) {
-	for index >= len(gs.Listeners) {
-		gs.Listeners = append(gs.Listeners, gwv1.ListenerStatus{})
+func reportListenerCondition(index int, l gwv1.Listener, obj controllers.Object,
+	statusListeners []gwv1.ListenerStatus, conditions map[string]*condition,
+) []gwv1.ListenerStatus {
+	for index >= len(statusListeners) {
+		statusListeners = append(statusListeners, gwv1.ListenerStatus{})
 	}
-	cond := gs.Listeners[index].Conditions
+	cond := statusListeners[index].Conditions
 	supported, valid := GenerateSupportedKinds(l)
 	if !valid {
 		conditions[string(gwv1.ListenerConditionResolvedRefs)] = &condition{
@@ -132,17 +133,17 @@ func reportListenerCondition(index int, l gwv1.Listener, obj *gwv1.Gateway,
 			message: "Invalid route kinds",
 		}
 	}
-	gs.Listeners[index] = gwv1.ListenerStatus{
+	statusListeners[index] = gwv1.ListenerStatus{
 		Name:           l.Name,
-		AttachedRoutes: attachedRoutes,
 		SupportedKinds: supported,
-		Conditions:     setConditions(obj.Generation, cond, conditions),
+		Conditions:     setConditions(obj.GetGeneration(), cond, conditions),
 	}
+	return statusListeners
 }
 
 // GenerateSupportedKinds returns the supported kinds for the listener.
 func GenerateSupportedKinds(l gwv1.Listener) ([]gwv1.RouteGroupKind, bool) {
-	var supported []gwv1.RouteGroupKind
+	supported := []gwv1.RouteGroupKind{}
 	switch l.Protocol {
 	case gwv1.HTTPProtocolType, gwv1.HTTPSProtocolType:
 		// Only terminate allowed, so its always HTTP
@@ -162,7 +163,7 @@ func GenerateSupportedKinds(l gwv1.Listener) ([]gwv1.RouteGroupKind, bool) {
 	}
 	if l.AllowedRoutes != nil && len(l.AllowedRoutes.Kinds) > 0 {
 		// We need to filter down to only ones we actually support
-		var intersection []gwv1.RouteGroupKind
+		intersection := []gwv1.RouteGroupKind{}
 		for _, s := range supported {
 			for _, kind := range l.AllowedRoutes.Kinds {
 				if routeGroupKindEqual(s, kind) {

@@ -29,14 +29,3 @@ func GatewayClassesCollection(
 		}
 	}, krtopts.ToOptions("GatewayClasses")...)
 }
-
-func fetchClass(ctx krt.HandlerContext, gatewayClasses krt.Collection[GatewayClass], gc gwv1.ObjectName, controllerName string) *GatewayClass {
-	class := krt.FetchOne(ctx, gatewayClasses, krt.FilterKey(string(gc)))
-	if class == nil {
-		return &GatewayClass{
-			Name:       string(gc),
-			Controller: gwv1.GatewayController(controllerName),
-		}
-	}
-	return class
-}

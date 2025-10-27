@@ -10,7 +10,6 @@ import (
 	watch "k8s.io/apimachinery/pkg/watch"
 	gentype "k8s.io/client-go/gentype"
 
-	applyconfigurationapiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/applyconfiguration/api/v1alpha1"
 	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	scheme "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/scheme"
 )
@@ -33,21 +32,18 @@ type HTTPListenerPolicyInterface interface {
 	List(ctx context.Context, opts v1.ListOptions) (*apiv1alpha1.HTTPListenerPolicyList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *apiv1alpha1.HTTPListenerPolicy, err error)
-	Apply(ctx context.Context, hTTPListenerPolicy *applyconfigurationapiv1alpha1.HTTPListenerPolicyApplyConfiguration, opts v1.ApplyOptions) (result *apiv1alpha1.HTTPListenerPolicy, err error)
-	// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
-	ApplyStatus(ctx context.Context, hTTPListenerPolicy *applyconfigurationapiv1alpha1.HTTPListenerPolicyApplyConfiguration, opts v1.ApplyOptions) (result *apiv1alpha1.HTTPListenerPolicy, err error)
 	HTTPListenerPolicyExpansion
 }
 
 // hTTPListenerPolicies implements HTTPListenerPolicyInterface
 type hTTPListenerPolicies struct {
-	*gentype.ClientWithListAndApply[*apiv1alpha1.HTTPListenerPolicy, *apiv1alpha1.HTTPListenerPolicyList, *applyconfigurationapiv1alpha1.HTTPListenerPolicyApplyConfiguration]
+	*gentype.ClientWithList[*apiv1alpha1.HTTPListenerPolicy, *apiv1alpha1.HTTPListenerPolicyList]
 }
 
 // newHTTPListenerPolicies returns a HTTPListenerPolicies
 func newHTTPListenerPolicies(c *GatewayV1alpha1Client, namespace string) *hTTPListenerPolicies {
 	return &hTTPListenerPolicies{
-		gentype.NewClientWithListAndApply[*apiv1alpha1.HTTPListenerPolicy, *apiv1alpha1.HTTPListenerPolicyList, *applyconfigurationapiv1alpha1.HTTPListenerPolicyApplyConfiguration](
+		gentype.NewClientWithList[*apiv1alpha1.HTTPListenerPolicy, *apiv1alpha1.HTTPListenerPolicyList](
 			"httplistenerpolicies",
 			c.RESTClient(),
 			scheme.ParameterCodec,

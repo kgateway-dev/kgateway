@@ -1,6 +1,8 @@
 package deployer
 
 import (
+	"istio.io/istio/pkg/util/smallset"
+	"k8s.io/apimachinery/pkg/util/sets"
 	api "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -10,7 +12,7 @@ import (
 
 var GetGatewayIR = DefaultGatewayIRGetter
 
-func DefaultGatewayIRGetter(gw *api.Gateway, commonCollections *collections.CommonCollections) *ir.Gateway {
+func DefaultGatewayIRGetter(gw *api.Gateway, commonCollections *collections.CommonCollections) *ir.GatewayForDeployer {
 	gwKey := ir.ObjectSource{
 		Group:     wellknown.GatewayGVK.GroupKind().Group,
 		Kind:      wellknown.GatewayGVK.GroupKind().Kind,
@@ -18,31 +20,29 @@ func DefaultGatewayIRGetter(gw *api.Gateway, commonCollections *collections.Comm
 		Namespace: gw.GetNamespace(),
 	}
 
-	irGW := commonCollections.GatewayIndex.Gateways.GetKey(gwKey.ResourceName())
+	irGW := commonCollections.GatewayIndex.GatewaysForDeployer.GetKey(gwKey.ResourceName())
 	if irGW == nil {
-		irGW = GatewayIRFrom(gw)
+		// If its not in the IR we cannot tell, so need to make a guess.
+		controllerNameGuess := commonCollections.ControllerName
+		irGW = GatewayIRFrom(gw, controllerNameGuess)
 	}
 
 	return irGW
 }
 
-func GatewayIRFrom(gw *api.Gateway) *ir.Gateway {
-	out := &ir.Gateway{
+func GatewayIRFrom(gw *api.Gateway, controllerNameGuess string) *ir.GatewayForDeployer {
+	ports := sets.New[int32]()
+	for _, l := range gw.Spec.Listeners {
+		ports.Insert(l.Port)
+	}
+	return &ir.GatewayForDeployer{
 		ObjectSource: ir.ObjectSource{
-			Group:     api.SchemeGroupVersion.Group,
+			Group:     api.GroupVersion.Group,
 			Kind:      wellknown.GatewayKind,
 			Namespace: gw.Namespace,
 			Name:      gw.Name,
 		},
-		Obj:       gw,
-		Listeners: make([]ir.Listener, 0, len(gw.Spec.Listeners)),
+		ControllerName: controllerNameGuess,
+		Ports:          smallset.New(ports.UnsortedList()...),
 	}
-
-	for _, l := range gw.Spec.Listeners {
-		out.Listeners = append(out.Listeners, ir.Listener{
-			Listener: l,
-			Parent:   gw,
-		})
-	}
-	return out
 }

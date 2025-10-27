@@ -25,18 +25,13 @@ inputs:
 runs:
   using: "composite"
   steps:
-  - name: Prepare Python Runner
-    uses: ./.github/actions/prep-python-runner
-    # cluster-ai is the only one that needs the python runner (running the ai extension tests)
-    if: ${{ inputs.cluster-name == 'cluster-ai' }}
   - name: Execute tests
     env:
       GO_TEST_USER_ARGS: ${{ inputs.test-args }} -run "${{ inputs.run-regex }}" -v
       CLUSTER_NAME: ${{ inputs.cluster-name }}
-      TEST_PKG: ./test/kubernetes/e2e/tests
       ISTIO_VERSION: ${{ inputs.istio-version }}
     shell: bash
-    run: make go-test
+    run: make e2e-test
   - name: Archive bug report directory on failure
     if: ${{ failure() }}
     uses: ./.github/actions/upload-artifact

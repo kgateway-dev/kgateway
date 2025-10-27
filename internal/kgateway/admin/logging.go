@@ -6,7 +6,6 @@ import (
 	"sort"
 	"strings"
 
-	// "github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 )
 
@@ -73,7 +72,7 @@ function setlevel() {
 			if (this.status == 200) {
 				alert("Log level for component '" + component + "' set to: " + level + ". Response: " + this.responseText);
 				// Optional: refresh the page or update the display dynamically
-				location.reload(); 
+				location.reload();
 			} else {
 				alert("Error setting log level for component '" + component + "'. Status: " + this.status + ". Response: " + this.responseText);
 			}

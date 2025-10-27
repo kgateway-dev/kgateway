@@ -14,6 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
@@ -24,14 +25,15 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/inferenceextension/endpointpicker"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/waypoint"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	kgtwschemes "github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -52,6 +54,10 @@ type SetupOpts struct {
 
 	// static set of global Settings
 	GlobalSettings *apisettings.Settings
+
+	// CertWatcher is the shared certificate watcher for xDS TLS
+	// Used by the Gateway controller to trigger reconciliation on cert changes
+	CertWatcher *certwatcher.CertWatcher
 
 	PprofBindAddress       string
 	HealthProbeBindAddress string
@@ -74,9 +80,17 @@ type StartConfig struct {
 	RestConfig *rest.Config
 	// ExtensionsFactory is the factory function which will return an extensions.K8sGatewayExtensions
 	// This is responsible for producing the extension points that this controller requires
-	ExtraPlugins           func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []sdk.Plugin
-	ExtraAgwPlugins        func(ctx context.Context, agw *agwplugins.AgwCollections) []agwplugins.AgwPlugin
-	ExtraGatewayParameters func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
+	ExtraPlugins    func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []sdk.Plugin
+	ExtraAgwPlugins func(ctx context.Context, agw *agwplugins.AgwCollections) []agwplugins.AgwPlugin
+	// HelmValuesGeneratorOverride allows replacing the default helm values generation logic.
+	// When set, this generator will be used instead of the built-in GatewayParameters-based generator
+	// for all Gateways. This is a 1:1 replacement - you provide one generator that handles everything.
+	HelmValuesGeneratorOverride func(cli client.Client, inputs *deployer.Inputs) deployer.HelmValuesGenerator
+	// ExtraGatewayParameters is a list of additional parameter object types that the controller should watch.
+	// These are used to set up watches so that changes to custom parameter objects trigger Gateway reconciliation.
+	// The objects should be empty instances of the types you want to watch (e.g., &corev1.ConfigMap{}, &MyCustomCRD{}).
+	// This is separate from HelmValuesGeneratorOverride - these are just for watch registration.
+	ExtraGatewayParameters []client.Object
 	Client                 istiokube.Client
 	Validator              validator.Validator
 
@@ -191,15 +205,12 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 
 		agwSyncer = agentgatewaysyncer.NewAgwSyncer(
 			cfg.AgwControllerName,
-			cfg.AgentgatewayClassName,
 			cfg.Client,
-			cfg.Manager,
 			cfg.AgwCollections,
 			agwMergedPlugins,
-			cfg.SetupOpts.Cache,
-			cfg.SetupOpts.GlobalSettings.EnableInferExt,
 		)
-		agwSyncer.Init(cfg.KrtOptions)
+
+		agwSyncer.Init(cfg.KrtOptions.WithPrefix("agentgateway"))
 
 		if err := cfg.Manager.Add(agwSyncer); err != nil {
 			setupLog.Error(err, "unable to add agentgateway Syncer runnable")
@@ -210,13 +221,8 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			cfg.AgwControllerName,
 			cfg.AgentgatewayClassName,
 			cfg.Client,
-			cfg.Manager,
-			agwSyncer.GatewayReportQueue(),
-			agwSyncer.ListenerSetReportQueue(),
-			agwSyncer.RouteReportQueue(),
-			agwSyncer.PolicyStatusQueue(),
+			agwSyncer.StatusCollections(),
 			agwSyncer.CacheSyncs(),
-			cfg.ExtraAgwPolicyStatusHandlers,
 		)
 		if err := cfg.Manager.Add(agwStatusSyncer); err != nil {
 			setupLog.Error(err, "unable to add agentgateway StatusSyncer runnable")
@@ -274,7 +280,7 @@ func agwPluginFactory(cfg StartConfig) func(ctx context.Context, agw *agwplugins
 	}
 }
 
-func (c *ControllerBuilder) Build(ctx context.Context) error {
+func (c *ControllerBuilder) Build(ctx context.Context) (*agentgatewaysyncer.Syncer, error) {
 	slog.Info("creating gateway controllers")
 
 	globalSettings := c.cfg.SetupOpts.GlobalSettings
@@ -301,9 +307,11 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 		AgwControllerName: c.cfg.AgwControllerName,
 		AutoProvision:     AutoProvision,
 		ControlPlane: deployer.ControlPlaneInfo{
-			XdsHost:    xdsHost,
-			XdsPort:    xdsPort,
-			AgwXdsPort: agwXdsPort,
+			XdsHost:      xdsHost,
+			XdsPort:      xdsPort,
+			AgwXdsPort:   agwXdsPort,
+			XdsTLS:       globalSettings.XdsTLS,
+			XdsTlsCaPath: xds.TLSRootCAPath,
 		},
 		IstioAutoMtlsEnabled: istioAutoMtlsEnabled,
 		ImageInfo: &deployer.ImageInfo{
@@ -316,29 +324,41 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 		GatewayClassName:         c.cfg.GatewayClassName,
 		WaypointGatewayClassName: c.cfg.WaypointGatewayClassName,
 		AgentgatewayClassName:    c.cfg.AgentgatewayClassName,
+		CertWatcher:              c.cfg.SetupOpts.CertWatcher,
 	}
 
+	classInfos := GetDefaultClassInfo(
+		globalSettings,
+		c.cfg.GatewayClassName,
+		c.cfg.WaypointGatewayClassName,
+		c.cfg.AgentgatewayClassName,
+		c.cfg.ControllerName,
+		c.cfg.AgwControllerName,
+		c.cfg.AdditionalGatewayClasses,
+	)
+
 	setupLog.Info("creating gateway class provisioner")
-	if err := NewGatewayClassProvisioner(c.mgr, c.cfg.ControllerName,
-		GetDefaultClassInfo(globalSettings, c.cfg.GatewayClassName, c.cfg.WaypointGatewayClassName,
-			c.cfg.AgentgatewayClassName, c.cfg.ControllerName, c.cfg.AgwControllerName, c.cfg.AdditionalGatewayClasses)); err != nil {
+	if err := NewGatewayClassProvisioner(
+		c.mgr,
+		c.cfg.ControllerName,
+		classInfos,
+	); err != nil {
 		setupLog.Error(err, "unable to create gateway class provisioner")
-		return err
+		return nil, err
 	}
 
 	setupLog.Info("creating base gateway controller")
-	if err := NewBaseGatewayController(ctx, gwCfg, c.cfg.ExtraGatewayParameters); err != nil {
+	if err := NewBaseGatewayController(ctx, gwCfg, c.cfg.HelmValuesGeneratorOverride, c.cfg.ExtraGatewayParameters); err != nil {
 		setupLog.Error(err, "unable to create gateway controller")
-		return err
+		return nil, err
 	}
 
 	setupLog.Info("creating inferencepool controller")
 	// Create the InferencePool controller if the inference extension feature is enabled and the API group is registered.
-	if globalSettings.EnableInferExt &&
-		c.mgr.GetScheme().IsGroupRegistered(inf.GroupVersion.Group) {
+	if globalSettings.EnableInferExt && c.mgr.GetScheme().IsGroupRegistered(inf.GroupVersion.Group) {
 		poolCfg := &InferencePoolConfig{
 			Mgr: c.mgr,
-			// TODO read this from globalSettings
+			// TODO(danehans): read this from globalSettings
 			ControllerName: c.cfg.ControllerName,
 		}
 		// Enable the inference extension deployer if set.
@@ -349,9 +369,9 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 		if !globalSettings.EnableAgentgateway {
 			setupLog.Info("using inference extension without agentgateway is deprecated in v2.1 and will not be supported in v2.2.")
 		}
-		if err := NewBaseInferencePoolController(ctx, poolCfg, &gwCfg, c.cfg.ExtraGatewayParameters); err != nil {
+		if err := NewBaseInferencePoolController(ctx, poolCfg, &gwCfg, c.cfg.HelmValuesGeneratorOverride, c.cfg.ExtraGatewayParameters); err != nil {
 			setupLog.Error(err, "unable to create inferencepool controller")
-			return err
+			return nil, err
 		}
 	}
 
@@ -359,7 +379,7 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 	// mgr WaitForCacheSync is part of proxySyncer's HasSynced
 	// so we can mark ready here before we call mgr.Start
 	c.ready.Store(true)
-	return nil
+	return c.agwSyncer, nil
 }
 
 func (c *ControllerBuilder) HasSynced() bool {
@@ -374,9 +394,15 @@ func (c *ControllerBuilder) HasSynced() bool {
 
 // GetDefaultClassInfo returns the default GatewayClass for the kgateway controller.
 // Exported for testing.
-func GetDefaultClassInfo(globalSettings *apisettings.Settings,
-	gatewayClassName, waypointGatewayClassName, agwClassName, controllerName, agwControllerName string,
-	additionalClassInfos map[string]*deployer.GatewayClassInfo) map[string]*deployer.GatewayClassInfo {
+func GetDefaultClassInfo(
+	globalSettings *apisettings.Settings,
+	gatewayClassName,
+	waypointGatewayClassName,
+	agwClassName,
+	controllerName,
+	agwControllerName string,
+	additionalClassInfos map[string]*deployer.GatewayClassInfo,
+) map[string]*deployer.GatewayClassInfo {
 	classInfos := map[string]*deployer.GatewayClassInfo{
 		gatewayClassName: {
 			Description:    "Standard class for managing Gateway API ingress traffic.",
@@ -386,13 +412,15 @@ func GetDefaultClassInfo(globalSettings *apisettings.Settings,
 		},
 	}
 	// Only enable waypoint gateway class if it's enabled in the settings
-	classInfos[waypointGatewayClassName] = &deployer.GatewayClassInfo{
-		Description: "Specialized class for Istio ambient mesh waypoint proxies.",
-		Labels:      map[string]string{},
-		Annotations: map[string]string{
-			"ambient.istio.io/waypoint-inbound-binding": "PROXY/15088",
-		},
-		ControllerName: controllerName,
+	if globalSettings.EnableWaypoint {
+		classInfos[waypointGatewayClassName] = &deployer.GatewayClassInfo{
+			Description: "Specialized class for Istio ambient mesh waypoint proxies.",
+			Labels:      map[string]string{},
+			Annotations: map[string]string{
+				"ambient.istio.io/waypoint-inbound-binding": "PROXY/15088",
+			},
+			ControllerName: controllerName,
+		}
 	}
 	// Only enable agentgateway gateway class if it's enabled in the settings
 	if globalSettings.EnableAgentgateway {

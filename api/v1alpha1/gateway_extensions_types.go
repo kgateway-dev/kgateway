@@ -81,6 +81,39 @@ type ExtGrpcService struct {
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid timeout value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="timeout must be at least 1ms."
 	RequestTimeout *metav1.Duration `json:"requestTimeout,omitempty"`
+
+	// Retry specifies the retry policy for gRPC streams associated with the service.
+	// +optional
+	Retry *GRPCRetryPolicy `json:"retry,omitempty"`
+}
+
+type GRPCRetryPolicy struct {
+	// Attempts specifies the number of retry attempts for a request.
+	// Defaults to 1 attempt if not set.
+	// A value of 0 effectively disables retries.
+	// +optional
+	//
+	// +kubebuilder:default=1
+	// +kubebuilder:validation:Minimum=0
+	Attempts int32 `json:"attempts,omitempty"`
+
+	// Backoff specifies the retry backoff strategy.
+	// If not set, a default backoff with a base interval of 1000ms is used. The default max interval is 10 times the base interval.
+	// +optional
+	Backoff *GRPCRetryBackoff `json:"backoff,omitempty"`
+}
+
+// +kubebuilder:validation:XValidation:rule="has(self.maxInterval) ? duration(self.maxInterval) >= duration(self.baseInterval) : true",message="maxInterval must be greater than or equal to baseInterval"
+type GRPCRetryBackoff struct {
+	// BaseInterval specifies the base interval used with a fully jittered exponential back-off between retries.
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="retry.BaseInterval must be at least 1ms."
+	BaseInterval metav1.Duration `json:"baseInterval"`
+
+	// MaxInterval specifies the maximum interval between retry attempts.
+	// Defaults to 10 times the BaseInterval if not set.
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	MaxInterval *metav1.Duration `json:"maxInterval,omitempty"`
 }
 
 // RateLimitProvider defines the configuration for a RateLimit service provider.

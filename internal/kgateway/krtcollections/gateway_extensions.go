@@ -7,6 +7,7 @@ import (
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/kube/kubetypes"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -14,9 +15,9 @@ import (
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 )
@@ -36,10 +37,14 @@ func NewGatewayExtensionsCollection(
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 			return ourClient.GatewayV1alpha1().GatewayExtensions(namespace).Watch(context.Background(), o)
 		},
+		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*v1alpha1.GatewayExtension] {
+			return ourClient.GatewayV1alpha1().GatewayExtensions(namespace)
+		},
 	)
 
-	rawGwExts := krt.WrapClient(kclient.NewFiltered[*v1alpha1.GatewayExtension](
+	rawGwExts := krt.WrapClient(kclient.NewFilteredDelayed[*v1alpha1.GatewayExtension](
 		client,
+		wellknown.GatewayExtensionGVR,
 		kclient.Filter{ObjectFilter: client.ObjectFilter()},
 	), krtOpts.ToOptions("GatewayExtension")...)
 	gwExtCol := krt.NewCollection(rawGwExts, func(krtctx krt.HandlerContext, cr *v1alpha1.GatewayExtension) *ir.GatewayExtension {

@@ -77,6 +77,7 @@ tilt up
 For more detailed instructions on using Tilt, see [devel/debugging/tilt.md](/devel/debugging/tilt.md).
 
 ## Step 2: Running Tests
+
 _To run the regression tests, your kubeconfig file must point to a running Kubernetes cluster:_
 ```bash
 kubectl config current-context
@@ -85,9 +86,114 @@ _should run `kind-<CLUSTER_NAME>`_
 
 > Note: If you are running tests against a previously released version, you must set RELEASED_VERSION when invoking the tests
 
-### Running a single feature's suite
+**Tip for Local Development:** For faster iteration, use `PERSIST_INSTALL=true` with the test scripts (e.g., `PERSIST_INSTALL=true ./hack/run-test.sh TestName`). This automatically manages installation and skips teardown, so you can run tests repeatedly without reinstalling. For IDE debugging, use `SKIP_INSTALL=true` as shown below (but remember to manually set up your environment first).
 
-Since each feature suite is a subtest of the top level suite, you can run a single feature suite by running the top level suite with the `-run` flag.
+### Using Test Runner Scripts (Recommended)
+
+We provide two convenient scripts for running tests:
+
+#### `hack/run-test.sh` - Universal Test Runner
+
+A unified script that auto-detects whether you're running e2e or unit tests and handles them appropriately.
+
+**Key Features:**
+- **Auto-detection**: Automatically determines if a test is e2e or unit
+- **Intelligent search**: Uses git grep to find tests by name
+- **Minimal setup**: Handles all the complexity for you
+
+**Common Examples:**
+```bash
+# Run an e2e test suite (auto-detected)
+./hack/run-test.sh SessionPersistence
+
+# Run a unit test (auto-detected)
+./hack/run-test.sh TestIsSelfManagedOnGateway
+
+# Run all tests in a package
+./hack/run-test.sh --package ./pkg/utils/helmutils
+
+# Skip setup if cluster exists (faster iteration for e2e tests)
+PERSIST_INSTALL=true ./hack/run-test.sh SessionPersistence
+
+# List all available tests
+./hack/run-test.sh --list
+
+# Print the command without running it
+./hack/run-test.sh --dry-run TestName
+```
+
+**Options:**
+- `--list, -l`: List all available tests (both e2e and unit)
+- `--unit, -u`: Force unit test mode
+- `--e2e, -e`: Force e2e test mode
+- `--package PKG`: Run tests in a specific package
+- `--rebuild, -r`: Delete cluster and rebuild from scratch (e2e only)
+- `--dry-run, -n`: Print command without executing
+
+#### `hack/run-e2e-test.sh` - E2E-Specific Runner
+
+A specialized script for running e2e tests with advanced features.
+
+**Key Features:**
+- **Smart pattern matching**: Automatically builds the correct `-run` regex
+- **Setup management**: Integrates with `make setup` and respects `PERSIST_INSTALL`
+- **Auto-cleanup**: Can automatically clean up conflicting Helm releases with `AUTO_SETUP=true`
+
+**Common Examples:**
+```bash
+# Run an entire test suite
+./hack/run-e2e-test.sh SessionPersistence
+
+# Run a specific test method within a suite
+./hack/run-e2e-test.sh TestCookieSessionPersistence
+
+# Run a top-level test function
+./hack/run-e2e-test.sh TestKgateway
+
+# Skip setup if cluster exists (faster iteration)
+PERSIST_INSTALL=true ./hack/run-e2e-test.sh SessionPersistence
+
+# Auto-cleanup conflicting Helm releases
+AUTO_SETUP=true ./hack/run-e2e-test.sh SessionPersistence
+
+# Delete cluster and rebuild everything from scratch
+./hack/run-e2e-test.sh --rebuild SessionPersistence
+
+# List all available e2e tests
+./hack/run-e2e-test.sh --list
+
+# See what command would run without executing
+./hack/run-e2e-test.sh --dry-run TestCookieSessionPersistence
+```
+
+**Options:**
+- `--list, -l`: List all available test suites and top-level tests
+- `--rebuild, -r`: Delete kind cluster, rebuild images, and create fresh cluster
+- `--dry-run, -n`: Print the test command without executing it
+
+**Environment Variables:**
+- `PERSIST_INSTALL`: Skip setup if cluster exists, skip teardown (recommended for local dev)
+- `AUTO_SETUP`: Automatically clean up conflicting Helm releases
+- `CLUSTER_NAME`: Name of the kind cluster (default: `kind`)
+- `TEST_PKG`: Go test package to run (default: `./test/kubernetes/e2e/tests`)
+
+**How Pattern Matching Works:**
+
+The script intelligently finds tests and generates the correct regex:
+
+1. **Suite name** (e.g., `SessionPersistence`) → Finds the suite registration and parent test → Generates `^TestKgateway$/^SessionPersistence$`
+
+2. **Test method** (e.g., `TestCookieSessionPersistence`) → Finds the method, its suite, and parent test → Generates `^TestKgateway$/^SessionPersistence$/^TestCookieSessionPersistence$`
+
+3. **Top-level test** (e.g., `TestKgateway`) → Generates `^TestKgateway$`
+
+This saves you from having to manually construct complex regex patterns.
+
+### Running Tests Manually (Advanced)
+
+If you need more control or prefer to run tests manually, you can use `go test` directly. Since each feature suite is a subtest of the top level suite, you can run a single feature suite by running the top level suite with the `-run` flag.
+
+**Note:** The test runner scripts (above) are the recommended approach as they handle pattern matching automatically. This section is for advanced use cases.
 
 For example, to run the `Deployer` feature suite in the `TestKgateway` test:
 
@@ -112,6 +218,9 @@ Note that the `-run` flag takes a sequence of regular expressions, and that each
 For a complete list of available environment variables that can be used to configure the test behavior, see [test/testutils/env.go](/test/testutils/env.go). This file contains all the environment variable definitions used by the e2e test suite.
 
 #### VSCode
+
+**Tip:** Use `./hack/run-e2e-test.sh --dry-run TestName` to see the exact regex pattern to use in your IDE config.
+
 You can use a custom debugger launch config that sets the `test.run` flag to run a specific test:
 
 ```json
@@ -135,7 +244,9 @@ You can use a custom debugger launch config that sets the `test.run` flag to run
 ```
 
 Setting `SKIP_INSTALL` to `true` will skip the installation of kgateway, which is useful to
-debug against a pre-existing/stable environment with kgateway already installed.
+debug against a pre-existing/stable environment with kgateway already installed. You must manually set up your environment first (e.g., using `make setup` or Tilt).
+
+**Alternative:** Consider using `PERSIST_INSTALL=true` if you want the test to handle installation automatically on first run.
 
 `CLUSTER_NAME` specifies the name of the cluster used for e2e tests (corresponds to the cluster name used when creating the kind cluster).
 
@@ -143,16 +254,28 @@ debug against a pre-existing/stable environment with kgateway already installed.
 
 When invoking tests using VSCode's `run test` option, remember to set `"go.testTimeout": "600s"` in the user `settings.json` file as this may default to a lower value such as `30s` which may not be enough time for the e2e test to complete.
 
-### Running a single test within a feature's suite
+### Running a specific test within a feature's suite
 
-Similar to running a specific feature suite, you can run a single test within a feature suite by selecting the test to run using the `-run` flag.
+**Recommended:** Use the test runner script which automatically finds the test and builds the pattern:
 
-For example, to run `TestProvisionDeploymentAndService` in `Deployer` feature suite that is a part of `TestKgateway`, you can run:
+```bash
+# The script figures out the full pattern for you
+./hack/run-e2e-test.sh TestProvisionDeploymentAndService
+
+# Or with PERSIST_INSTALL for faster iteration
+PERSIST_INSTALL=true ./hack/run-e2e-test.sh TestProvisionDeploymentAndService
+```
+
+**Manual approach:** If you need to run it manually, you can select a specific test using the `-run` flag.
+
+For example, to run `TestProvisionDeploymentAndService` in `Deployer` feature suite that is a part of `TestKgateway`:
 ```bash
 SKIP_INSTALL=true CLUSTER_NAME=kind INSTALL_NAMESPACE=kgateway-system go test -v -timeout 600s ./test/kubernetes/e2e/tests -run ^TestKgateway$/^Deployer$/^TestProvisionDeploymentAndService$
 ```
 
-Alternatively, with VSCode you can use a custom debugger launch config that sets the `test.run` flag to run a specific test:
+**For IDE debugging:** Use `./hack/run-e2e-test.sh --dry-run TestProvisionDeploymentAndService` to see the exact pattern, then use it in your IDE config.
+
+With VSCode you can use a custom debugger launch config that sets the `test.run` flag to run a specific test:
 ```json
 {
   "name": "e2e",
@@ -175,11 +298,14 @@ Alternatively, with VSCode you can use a custom debugger launch config that sets
 
 #### Goland
 
+**Tip:** Use `./hack/run-e2e-test.sh --dry-run TestName` to see the exact regex pattern to use in your run configuration.
+
 In Goland, you can run a single test feature by right-clicking on the test function and selecting `Run 'TestXyz'` or
 `Debug 'TestXyz'`.
 
-You will need to set the env variable `SKIP_INSTALL` to `true` in the run configuration to skip the installation of kgateway. This
-is also the case for other env variables that are required for the test to run (`CLUSTER_NAME`, etc.)
+You will need to set the env variable `SKIP_INSTALL` to `true` in the run configuration to skip the installation of kgateway (make sure to manually set up your environment first). Alternatively, use `PERSIST_INSTALL=true` to have the test handle installation automatically.
+
+You'll also need to set other env variables that are required for the test to run (`CLUSTER_NAME`, `INSTALL_NAMESPACE`, etc.)
 
 If there are multiple tests in a feature suite, you can run a single test by adding the test name to the `-run` flag in the run configuration:
 

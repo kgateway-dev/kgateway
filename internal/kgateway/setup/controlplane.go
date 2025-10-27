@@ -2,6 +2,7 @@ package setup
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"log/slog"
 	"math"
@@ -19,8 +20,12 @@ import (
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/reflection"
 	"istio.io/istio/pkg/security"
+	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
+
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/krtxds"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
@@ -88,18 +93,17 @@ func (s *slogAdapterForEnvoy) Errorf(format string, args ...interface{}) {
 func NewControlPlane(
 	ctx context.Context,
 	lis net.Listener,
-	agwLis net.Listener,
 	callbacks xdsserver.Callbacks,
 	authenticators []security.Authenticator,
 	xdsAuth bool,
+	certWatcher *certwatcher.CertWatcher,
 ) envoycache.SnapshotCache {
 	baseLogger := slog.Default().With("component", "envoy-controlplane")
 	envoyLoggerAdapter := &slogAdapterForEnvoy{logger: baseLogger}
 
 	// Create separate gRPC servers for each listener
-	serverOpts := getGRPCServerOpts(authenticators, xdsAuth)
+	serverOpts := getGRPCServerOpts(authenticators, xdsAuth, certWatcher, baseLogger)
 	kgwGRPCServer := grpc.NewServer(serverOpts...)
-	agwGRPCServer := grpc.NewServer(serverOpts...)
 
 	snapshotCache := envoycache.NewSnapshotCache(true, xds.NewNodeRoleHasher(), envoyLoggerAdapter)
 
@@ -107,7 +111,6 @@ func NewControlPlane(
 
 	// Register reflection and services on both servers
 	reflection.Register(kgwGRPCServer)
-	reflection.Register(agwGRPCServer)
 
 	// Register xDS services on first server
 	envoy_service_endpoint_v3.RegisterEndpointDiscoveryServiceServer(kgwGRPCServer, xdsServer)
@@ -116,29 +119,57 @@ func NewControlPlane(
 	envoy_service_listener_v3.RegisterListenerDiscoveryServiceServer(kgwGRPCServer, xdsServer)
 	envoy_service_discovery_v3.RegisterAggregatedDiscoveryServiceServer(kgwGRPCServer, xdsServer)
 
-	// Register xDS services on second server
-	envoy_service_endpoint_v3.RegisterEndpointDiscoveryServiceServer(agwGRPCServer, xdsServer)
-	envoy_service_cluster_v3.RegisterClusterDiscoveryServiceServer(agwGRPCServer, xdsServer)
-	envoy_service_route_v3.RegisterRouteDiscoveryServiceServer(agwGRPCServer, xdsServer)
-	envoy_service_listener_v3.RegisterListenerDiscoveryServiceServer(agwGRPCServer, xdsServer)
-	envoy_service_discovery_v3.RegisterAggregatedDiscoveryServiceServer(agwGRPCServer, xdsServer)
-
 	// Start both servers on their respective listeners
 	go kgwGRPCServer.Serve(lis)
-	go agwGRPCServer.Serve(agwLis)
 
 	// Handle graceful shutdown for both servers
 	go func() {
 		<-ctx.Done()
 		kgwGRPCServer.GracefulStop()
-		agwGRPCServer.GracefulStop()
 	}()
 
 	return snapshotCache
 }
 
-func getGRPCServerOpts(authenticators []security.Authenticator, xdsAuth bool) []grpc.ServerOption {
-	return []grpc.ServerOption{
+func NewAgwControlPlane(
+	ctx context.Context,
+	lis net.Listener,
+	authenticators []security.Authenticator,
+	xdsAuth bool,
+	certWatcher *certwatcher.CertWatcher,
+	reg ...krtxds.Registration,
+) {
+	baseLogger := slog.Default().With("component", "agentgateway-controlplane")
+
+	serverOpts := getGRPCServerOpts(authenticators, xdsAuth, certWatcher, baseLogger)
+	grpcServer := grpc.NewServer(serverOpts...)
+
+	ds := krtxds.NewDiscoveryServer(nil, reg...)
+	stop := make(chan struct{})
+	context.AfterFunc(ctx, func() {
+		close(stop)
+	})
+	ds.Start(stop)
+
+	reflection.Register(grpcServer)
+	envoy_service_discovery_v3.RegisterAggregatedDiscoveryServiceServer(grpcServer, ds)
+
+	baseLogger.Info("starting server", "address", lis.Addr().String())
+	go grpcServer.Serve(lis)
+
+	go func() {
+		<-ctx.Done()
+		grpcServer.GracefulStop()
+	}()
+}
+
+func getGRPCServerOpts(
+	authenticators []security.Authenticator,
+	xdsAuth bool,
+	certWatcher *certwatcher.CertWatcher,
+	logger *slog.Logger,
+) []grpc.ServerOption {
+	opts := []grpc.ServerOption{
 		grpc.MaxRecvMsgSize(math.MaxInt32),
 		grpc.StreamInterceptor(
 			grpc_middleware.ChainStreamServer(
@@ -167,4 +198,19 @@ func getGRPCServerOpts(authenticators []security.Authenticator, xdsAuth bool) []
 				},
 			)),
 	}
+
+	// Add TLS credentials if the certificate watcher was provided. Needed to react to
+	// certificate rotations to ensure we're always serving the latest CA certificate.
+	if certWatcher != nil {
+		creds := credentials.NewTLS(&tls.Config{
+			MinVersion:     tls.VersionTLS12,
+			GetCertificate: certWatcher.GetCertificate,
+		})
+		opts = append(opts, grpc.Creds(creds))
+		logger.Info("TLS enabled for xDS servers with certificate watcher")
+	} else {
+		logger.Warn("TLS disabled for xDS servers: connections will be unencrypted")
+	}
+
+	return opts
 }

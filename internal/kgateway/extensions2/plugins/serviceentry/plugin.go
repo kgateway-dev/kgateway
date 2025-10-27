@@ -6,11 +6,11 @@ import (
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/slices"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -64,7 +64,7 @@ func NewPluginWithOpts(
 				AliasKinds: []schema.GroupKind{
 					// allow backendRef with networking.istio.io/Hostname
 					wellknown.HostnameGVK.GroupKind(),
-					// alias to ourself because one SE -> multiple Backends
+					// alias to ourselves because one SE -> multiple Backends
 					wellknown.ServiceEntryGVK.GroupKind(),
 				},
 

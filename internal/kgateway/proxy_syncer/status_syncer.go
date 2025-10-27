@@ -399,14 +399,15 @@ func (s *StatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logge
 				return nil
 			}
 
-			// Prepare and apply the status patch
-			original := gw.DeepCopy()
+			// Apply the status update
 			gw.Status = *newStatus
-			if err := s.mgr.GetClient().Status().Patch(ctx, &gw, client.MergeFrom(original)); err != nil {
-				logger.Error("error patching gateway status", "error", err, "gateway", gwnn.String())
+			if err := s.mgr.GetClient().Status().Update(ctx, &gw); err != nil {
+				if !apierrors.IsConflict(err) {
+					logger.Error("error updating gateway status", "error", err, "gateway", gwnn.String())
+				}
 				return err
 			}
-			logger.Info("patched gateway status", "gateway", gwnn.String())
+			logger.Info("updated gateway status", "gateway", gwnn.String())
 
 			for _, cond := range gw.Status.Conditions {
 				if cond.Type != string(gwv1.GatewayConditionAccepted) &&
@@ -457,7 +458,7 @@ func (s *StatusSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.L
 			ls := gwxv1a1.XListenerSet{}
 			err := s.mgr.GetClient().Get(ctx, lsnn, &ls)
 			if err != nil {
-				logger.Info("error getting ls", "erro", err.Error())
+				logger.Info("error getting ls", "error", err.Error())
 				return err
 			}
 
@@ -477,10 +478,9 @@ func (s *StatusSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.L
 				if !isListenerSetStatusEqual(&lsStatus, status) {
 					ls.Status = *status
 					if err := s.mgr.GetClient().Status().Patch(ctx, &ls, client.Merge); err != nil {
-						if apierrors.IsConflict(err) {
-							return err // Expected conflict, retry will handle.
+						if !apierrors.IsConflict(err) {
+							logger.Error("error patching listener set status", "error", err, "gateway", lsnn.String())
 						}
-						logger.Error("error patching listener set status", "error", err, "gateway", lsnn.String())
 						return err
 					}
 					logger.Info("patched ls status", "listenerset", lsnn.String())

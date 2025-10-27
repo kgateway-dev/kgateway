@@ -1,3 +1,5 @@
+//go:build e2e
+
 package httproute
 
 import (
@@ -20,7 +22,7 @@ type testingSuite struct {
 	ctx context.Context
 
 	// testInstallation contains all the metadata/utilities necessary to execute a series of tests
-	// against an installation of Gloo Gateway
+	// against an installation of kgateway
 	testInstallation *e2e.TestInstallation
 }
 
@@ -49,10 +51,10 @@ func (s *testingSuite) TestConfigureHTTPRouteBackingDestinationsWithService() {
 
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, nginxMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=nginx",
+		LabelSelector: defaults.WellKnownAppLabel + "=nginx",
 	})
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=gw",
+		LabelSelector: defaults.WellKnownAppLabel + "=gw",
 	})
 
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
@@ -90,10 +92,10 @@ func (s *testingSuite) TestConfigureHTTPRouteBackingDestinationsWithServiceAndWi
 
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, nginxMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=nginx",
+		LabelSelector: defaults.WellKnownAppLabel + "=nginx",
 	})
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=gw",
+		LabelSelector: defaults.WellKnownAppLabel + "=gw",
 	})
 
 	s.testInstallation.Assertions.AssertEventualCurlResponse(

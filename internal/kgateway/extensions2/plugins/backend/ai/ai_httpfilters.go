@@ -15,10 +15,10 @@ import (
 	upstream_wait "github.com/solo-io/envoy-gloo/go/config/filter/http/upstream_wait/v2"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	translatorutils "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 )
 
 const (
@@ -109,8 +109,8 @@ func AddUpstreamClusterHttpFilters(out *envoyclusterv3.Cluster) error {
 	return nil
 }
 
-func AddExtprocHTTPFilter() ([]plugins.StagedHttpFilter, error) {
-	var result []plugins.StagedHttpFilter
+func AddExtprocHTTPFilter() ([]filters.StagedHttpFilter, error) {
+	var result []filters.StagedHttpFilter
 
 	// TODO: add ratelimit and jwt_authn if AI Backend is configured
 
@@ -145,11 +145,11 @@ func AddExtprocHTTPFilter() ([]plugins.StagedHttpFilter, error) {
 		},
 	}
 	// Run before rate limiting
-	stagedFilter, err := plugins.NewStagedFilter(
+	stagedFilter, err := filters.NewStagedFilter(
 		wellknown.AIExtProcFilterName,
 		extProcSettings,
-		plugins.HTTPFilterStage{
-			RelativeTo:     plugins.RateLimitStage,
+		filters.HTTPFilterStage{
+			RelativeTo:     filters.RateLimitStage,
 			RelativeWeight: -2,
 		},
 	)

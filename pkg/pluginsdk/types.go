@@ -3,18 +3,22 @@ package pluginsdk
 import (
 	"context"
 	"encoding/json"
+	"errors"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"istio.io/istio/pkg/kube/krt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/endpoints"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
+
+// ErrNotFound is returned when a requested resource is not found
+var ErrNotFound = errors.New("not found")
 
 type (
 	EndpointsInputs = endpoints.EndpointsInputs
@@ -41,9 +45,9 @@ type PerClientProcessBackend func(
 
 type (
 	// GetPolicyStatusFn is a type that plugins can implement to get the PolicyStatus for the given policy
-	GetPolicyStatusFn func(context.Context, types.NamespacedName) (gwv1alpha2.PolicyStatus, error)
+	GetPolicyStatusFn func(context.Context, types.NamespacedName) (gwv1.PolicyStatus, error)
 	// PatchPolicyStatusFn is a type that plugins can implement to patch the PolicyStatus for the given policy
-	PatchPolicyStatusFn func(context.Context, types.NamespacedName, gwv1alpha2.PolicyStatus) error
+	PatchPolicyStatusFn func(context.Context, types.NamespacedName, gwv1.PolicyStatus) error
 )
 
 type PolicyPlugin struct {
@@ -142,4 +146,12 @@ func (p Plugin) HasSynced() bool {
 
 type K8sGatewayExtensions2 struct {
 	Plugins []Plugin
+}
+
+func CloneObjectMetaForStatus(m metav1.ObjectMeta) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Name:            m.GetName(),
+		Namespace:       m.GetNamespace(),
+		ResourceVersion: m.GetResourceVersion(),
+	}
 }

@@ -25,21 +25,25 @@ var _ = Describe("GwController", func() {
 
 	var (
 		ctx              context.Context
-		cancel           context.CancelFunc
+		cancelCtx        context.CancelFunc
+		cancelManager    context.CancelFunc
 		goroutineMonitor *assertions.GoRoutineMonitor
 	)
 
 	BeforeEach(func() {
 		goroutineMonitor = assertions.NewGoRoutineMonitor()
-		ctx, cancel = context.WithCancel(context.Background())
+		ctx, cancelCtx = context.WithCancel(context.Background())
 
 		var err error
-		cancel, err = createManager(ctx, inferenceExt, nil)
+		cancelManager, err = createManager(ctx, inferenceExt, nil)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
-		cancel()
+		if cancelManager != nil {
+			cancelManager()
+		}
+		cancelCtx()
 		waitForGoroutinesToFinish(goroutineMonitor)
 	})
 

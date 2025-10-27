@@ -17,7 +17,7 @@ type GatewayV1alpha1Interface interface {
 	BackendConfigPoliciesGetter
 	DirectResponsesGetter
 	GatewayExtensionsGetter
-	GatewayParametersesGetter
+	GatewayParametersGetter
 	HTTPListenerPoliciesGetter
 	TrafficPoliciesGetter
 }
@@ -43,8 +43,8 @@ func (c *GatewayV1alpha1Client) GatewayExtensions(namespace string) GatewayExten
 	return newGatewayExtensions(c, namespace)
 }
 
-func (c *GatewayV1alpha1Client) GatewayParameterses(namespace string) GatewayParametersInterface {
-	return newGatewayParameterses(c, namespace)
+func (c *GatewayV1alpha1Client) GatewayParameters(namespace string) GatewayParametersInterface {
+	return newGatewayParameters(c, namespace)
 }
 
 func (c *GatewayV1alpha1Client) HTTPListenerPolicies(namespace string) HTTPListenerPolicyInterface {

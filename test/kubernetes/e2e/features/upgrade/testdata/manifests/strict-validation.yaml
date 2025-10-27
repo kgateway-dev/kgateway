@@ -1,5 +1,0 @@
-gateway:
-  validation:
-    failurePolicy: Fail
-    allowWarnings: false
-    alwaysAcceptResources: false

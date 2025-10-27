@@ -34,6 +34,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
+	"sigs.k8s.io/gateway-api/pkg/consts"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -56,6 +57,35 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
+
+var AllCRDs = []schema.GroupVersionResource{
+	// Gateway API
+	gvr.KubernetesGateway_v1,
+	gvr.GatewayClass,
+	gvr.HTTPRoute_v1,
+	gvr.GRPCRoute,
+	gvr.TCPRoute,
+	gvr.TLSRoute,
+	gvr.ReferenceGrant,
+	gvr.BackendTLSPolicy,
+	gvr.XListenerSet,
+	wellknown.InferencePoolGVR,
+	// K8s API
+	gvr.Service,
+	gvr.Pod,
+	// Istio API
+	gvr.ServiceEntry,
+	gvr.WorkloadEntry,
+	gvr.AuthorizationPolicy,
+	// kgateway API
+	wellknown.BackendTLSPolicyGVR,
+	wellknown.BackendGVR,
+	wellknown.BackendConfigPolicyGVR,
+	wellknown.TrafficPolicyGVR,
+	wellknown.HTTPListenerPolicyGVR,
+	wellknown.DirectResponseGVR,
+	wellknown.GatewayExtensionGVR,
+}
 
 type translationResult struct {
 	Routes        []*envoyroutev3.RouteConfiguration
@@ -406,7 +436,7 @@ func GetPolicyStatusError(
 		if policy != nil && *policy != key {
 			continue
 		}
-		status := reportsMap.BuildPolicyStatus(context.Background(), key, wellknown.DefaultGatewayControllerName, gwv1a2.PolicyStatus{})
+		status := reportsMap.BuildPolicyStatus(context.Background(), key, wellknown.DefaultGatewayControllerName, gwv1.PolicyStatus{})
 		for ancestor, report := range status.Ancestors {
 			for _, c := range report.Conditions {
 				if c.Status != metav1.ConditionTrue {
@@ -582,24 +612,12 @@ func (tc TestCase) Run(
 		}
 	}
 
-	ourCli := fake.NewClientset(ourObjs...)
+	ourCli := fake.NewSimpleClientset(ourObjs...)
 	cli := kubeclient.NewFakeClient(anyObjs...)
-	for _, crd := range []schema.GroupVersionResource{
-		gvr.KubernetesGateway_v1,
-		gvr.GatewayClass,
-		gvr.HTTPRoute_v1,
-		gvr.GRPCRoute,
-		gvr.Service,
-		gvr.Pod,
-		gvr.TCPRoute,
-		gvr.TLSRoute,
-		gvr.ServiceEntry,
-		gvr.WorkloadEntry,
-		gvr.AuthorizationPolicy,
-		wellknown.XListenerSetGVR,
-		wellknown.BackendTLSPolicyGVR,
-	} {
-		clienttest.MakeCRD(t, cli, crd)
+	for _, crd := range AllCRDs {
+		clienttest.MakeCRDWithAnnotations(t, cli, crd, map[string]string{
+			consts.BundleVersionAnnotation: consts.BundleVersion,
+		})
 	}
 	defer cli.Shutdown()
 
@@ -640,8 +658,8 @@ func (tc TestCase) Run(
 		krtOpts,
 		cli,
 		ourCli,
-		nil,
 		wellknown.DefaultGatewayControllerName,
+		wellknown.DefaultAgwControllerName,
 		*settings,
 	)
 	if err != nil {

@@ -1,3 +1,5 @@
+//go:build e2e
+
 package policyselector
 
 import (
@@ -27,7 +29,7 @@ type tsuite struct {
 
 	ctx context.Context
 	// ti contains all the metadata/utilities necessary to execute a series of tests
-	// against an installation of Gloo Gateway
+	// against an installation of kgateway
 	ti *e2e.TestInstallation
 
 	// maps test name to a list of manifests to apply before the test
@@ -100,7 +102,7 @@ func (s *tsuite) TestLabelSelector() {
 
 	// Verify access logs with HTTPListenerPolicy
 	pods, err := s.ti.Actions.Kubectl().GetPodsInNsWithLabel(
-		s.ctx, gateway.Namespace, fmt.Sprintf("app.kubernetes.io/name=%s", gateway.Name),
+		s.ctx, gateway.Namespace, fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, gateway.Name),
 	)
 	s.Require().NoError(err)
 	s.Require().Len(pods, 1)

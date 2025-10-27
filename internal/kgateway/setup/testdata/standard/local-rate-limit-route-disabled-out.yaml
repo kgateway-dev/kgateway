@@ -113,7 +113,7 @@ routes:
     name: listener~8080~www_example_com
     routes:
     - match:
-        pathSeparatedPrefix: /ratings
+        path: /ratings
       metadata:
         filterMetadata:
           merge.TrafficPolicy.gateway.kgateway.dev:

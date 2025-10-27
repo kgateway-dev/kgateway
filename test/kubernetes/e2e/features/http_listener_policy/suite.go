@@ -1,3 +1,5 @@
+//go:build e2e
+
 package http_listener_policy
 
 import (
@@ -47,7 +49,7 @@ func (s *testingSuite) SetupSuite() {
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, exampleSvc, nginxPod)
 	// Check that test app is running
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, nginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=nginx",
+		LabelSelector: testdefaults.WellKnownAppLabel + "=nginx",
 	})
 
 	// include gateway manifests for the tests, so we recreate it for each test run
@@ -80,7 +82,7 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 	// so let's assert the proxy svc and pod is ready before moving on
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=gw",
+		LabelSelector: testdefaults.WellKnownAppLabel + "=gw",
 	})
 }
 
@@ -189,7 +191,7 @@ func (s *testingSuite) TestAccessLogEmittedToStdout() {
 	// Fetch gateway pod logs and verify the 404 access log JSON fields are present
 	pods, err := s.testInstallation.Actions.Kubectl().GetPodsInNsWithLabel(
 		s.ctx, proxyDeployment.ObjectMeta.GetNamespace(),
-		"app.kubernetes.io/name="+proxyDeployment.ObjectMeta.GetName(),
+		testdefaults.WellKnownAppLabel+"="+proxyDeployment.ObjectMeta.GetName(),
 	)
 	s.Require().NoError(err)
 	s.Require().Len(pods, 1)

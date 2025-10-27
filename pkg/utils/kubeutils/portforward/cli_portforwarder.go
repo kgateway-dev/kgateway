@@ -5,11 +5,14 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 
 	"github.com/avast/retry-go/v4"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmdutils"
 )
 
 var _ PortForwarder = &cliPortForwarder{}
@@ -63,6 +66,18 @@ func (c *cliPortForwarder) startOnce(ctx context.Context) error {
 		fmt.Sprintf("%s/%s", c.properties.resourceType, c.properties.resourceName),
 		fmt.Sprintf("%d:%d", c.properties.localPort, c.properties.remotePort),
 	)
+
+	// Print command being executed when enabled
+	if printPortForwardCommands {
+		args := []string{
+			"port-forward",
+			"-n",
+			c.properties.resourceNamespace,
+			fmt.Sprintf("%s/%s", c.properties.resourceType, c.properties.resourceName),
+			fmt.Sprintf("%d:%d", c.properties.localPort, c.properties.remotePort),
+		}
+		fmt.Fprintf(os.Stderr, "+ %s\n", cmdutils.PrettyCommand(false, "kubectl", args...))
+	}
 
 	// Errors should not happen here unless some other thing has futzed
 	// with this cmd's stdout/err.

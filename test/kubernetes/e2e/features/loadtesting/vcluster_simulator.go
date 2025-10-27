@@ -1,3 +1,5 @@
+//go:build e2e
+
 package loadtesting
 
 import (
@@ -6,6 +8,7 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -234,16 +237,17 @@ func (vcs *VClusterSimulator) createServiceWithEndpoints(serviceIndex, nodeIndex
 	return nil
 }
 
-func (vcs *VClusterSimulator) buildFakeEndpoints(serviceName string, serviceIndex int) *corev1.Endpoints {
-	var addresses []corev1.EndpointAddress
+func (vcs *VClusterSimulator) buildFakeEndpoints(serviceName string, serviceIndex int) *discoveryv1.EndpointSlice {
+	var endpoints []discoveryv1.Endpoint
 
 	for podReplica := 0; podReplica < vcs.config.PodsPerService; podReplica++ {
 		uniquePodID := (serviceIndex * vcs.config.PodsPerService) + podReplica
 		subnet := (uniquePodID / 254) % 255
 		host := (uniquePodID % 254) + 1
 
-		addresses = append(addresses, corev1.EndpointAddress{
-			IP: fmt.Sprintf("10.244.%d.%d", subnet, host),
+		ip := fmt.Sprintf("10.244.%d.%d", subnet, host)
+		endpoints = append(endpoints, discoveryv1.Endpoint{
+			Addresses: []string{ip},
 			TargetRef: &corev1.ObjectReference{
 				Kind:      "Pod",
 				Name:      fmt.Sprintf("%s-pod-%d", serviceName, podReplica),
@@ -252,22 +256,26 @@ func (vcs *VClusterSimulator) buildFakeEndpoints(serviceName string, serviceInde
 		})
 	}
 
-	return &corev1.Endpoints{
+	httpProtocol := corev1.ProtocolTCP
+	httpPort := int32(8080)
+	httpPortName := "http"
+
+	return &discoveryv1.EndpointSlice{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      serviceName,
 			Namespace: vcs.config.Namespace,
 			Labels: map[string]string{
-				"vcluster-simulation": "true",
-				"simulation":          vcs.config.SimulationName,
+				"vcluster-simulation":        "true",
+				"simulation":                 vcs.config.SimulationName,
+				"kubernetes.io/service-name": serviceName,
 			},
 		},
-		Subsets: []corev1.EndpointSubset{{
-			Addresses: addresses,
-			Ports: []corev1.EndpointPort{{
-				Name:     "http",
-				Port:     8080,
-				Protocol: corev1.ProtocolTCP,
-			}},
+		AddressType: discoveryv1.AddressTypeIPv4,
+		Endpoints:   endpoints,
+		Ports: []discoveryv1.EndpointPort{{
+			Name:     &httpPortName,
+			Port:     &httpPort,
+			Protocol: &httpProtocol,
 		}},
 	}
 }

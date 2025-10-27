@@ -19,7 +19,7 @@ When implementing GatewayClass as a TargetRef for waypoint authorization policie
 ### Rationale
 - Maintaining consistency with Istio's implementation reduces confusion for users, especially during migration.
 - The `istio-system` namespace is typically the permanent root namespace for mesh configurations.
-- Waypoint configurations should be consistent with ztunnel regardless of whether using Istio, Gloo, or KGateway.
+- Waypoint configurations should be consistent with ztunnel regardless of whether using Istio or kgateway.
 - Having a single configurable namespace (rather than multiple namespaces) avoids potential conflicts between duplicate authorization policies.
 
 ### Usage

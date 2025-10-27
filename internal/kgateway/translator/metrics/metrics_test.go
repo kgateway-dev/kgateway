@@ -52,14 +52,16 @@ func TestCollectTranslationMetrics_Success(t *testing.T) {
 	// Check the translations_running metric
 	assertTranslationsRunning(currentMetrics, testTranslatorName, 0)
 
-	currentMetrics.AssertMetric("kgateway_translator_translations_total", &metricstest.ExpectedMetric{
-		Labels: []metrics.Label{
-			{Name: "name", Value: testGatewayName},
-			{Name: "namespace", Value: testNamespace},
-			{Name: "result", Value: "success"},
-			{Name: "translator", Value: testTranslatorName},
+	currentMetrics.AssertMetricsInclude("kgateway_translator_translations_total", []metricstest.ExpectMetric{
+		&metricstest.ExpectedMetric{
+			Labels: []metrics.Label{
+				{Name: "name", Value: testGatewayName},
+				{Name: "namespace", Value: testNamespace},
+				{Name: "result", Value: "success"},
+				{Name: "translator", Value: testTranslatorName},
+			},
+			Value: 1,
 		},
-		Value: 1,
 	})
 
 	// Check the translation_duration_seconds metric
@@ -87,8 +89,7 @@ func TestCollectTranslationMetrics_Error(t *testing.T) {
 	currentMetrics = metricstest.MustGatherMetrics(t)
 	assertTranslationsRunning(currentMetrics, testTranslatorName, 0)
 
-	currentMetrics.AssertMetric(
-		"kgateway_translator_translations_total",
+	currentMetrics.AssertMetricsInclude("kgateway_translator_translations_total", []metricstest.ExpectMetric{
 		&metricstest.ExpectedMetric{
 			Labels: []metrics.Label{
 				{Name: "name", Value: testGatewayName},
@@ -98,7 +99,7 @@ func TestCollectTranslationMetrics_Error(t *testing.T) {
 			},
 			Value: 1,
 		},
-	)
+	})
 
 	currentMetrics.AssertMetricLabels("kgateway_translator_translation_duration_seconds", []metrics.Label{
 		{Name: "name", Value: testGatewayName},
@@ -131,6 +132,15 @@ func TestTranslationMetricsNotActive(t *testing.T) {
 	currentMetrics = metricstest.MustGatherMetrics(t)
 
 	currentMetrics.AssertMetricNotExists("kgateway_translator_translations_running")
-	currentMetrics.AssertMetricNotExists("kgateway_translator_translations_total")
+	// Counter exists after Reset() but should have value 0 since no translations were recorded
+	currentMetrics.AssertMetric("kgateway_translator_translations_total", &metricstest.ExpectedMetric{
+		Labels: []metrics.Label{
+			{Name: "name", Value: ""},
+			{Name: "namespace", Value: ""},
+			{Name: "result", Value: ""},
+			{Name: "translator", Value: ""},
+		},
+		Value: 0.0,
+	})
 	currentMetrics.AssertMetricNotExists("kgateway_translator_translation_duration_seconds")
 }

@@ -199,7 +199,7 @@ Statuses:
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: 'invalid xds configuration: error initializing configuration '''':
+          message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
             Failed to parse request template: Failed to parse body template [inja.exception.parser_error]
             (at 1:21) unexpected ''}'''
           reason: Invalid

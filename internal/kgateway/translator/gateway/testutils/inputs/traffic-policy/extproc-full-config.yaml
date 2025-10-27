@@ -90,6 +90,11 @@ spec:
         name: extproc
         port: 9000
       requestTimeout: 300ms
+      retry:
+        attempts: 3
+        backoff:
+          baseInterval: 50ms
+          maxInterval: 200ms
     failOpen: false
     processingMode:
       requestHeaderMode: SKIP

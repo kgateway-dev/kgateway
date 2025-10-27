@@ -55,12 +55,21 @@ func getAssetsDir(t *testing.T) string {
 	var assets string
 	if os.Getenv("KUBEBUILDER_ASSETS") == "" {
 		// set default if not user provided
-		out, err := exec.Command("sh", "-c", "make -sC $(dirname $(go env GOMOD)) envtest-path").CombinedOutput()
+		out, err := exec.Command("sh", "-c", "make -s --no-print-directory -C $(dirname $(go env GOMOD)) envtest-path").CombinedOutput()
 		t.Log("out:", string(out))
 		if err != nil {
 			t.Fatalf("failed to get assets dir: %v", err)
 		}
 		assets = strings.TrimSpace(string(out))
+	}
+	if assets != "" {
+		info, err := os.Stat(assets)
+		if err != nil {
+			t.Fatalf("assets directory does not exist: %s: %v", assets, err)
+		}
+		if !info.IsDir() {
+			t.Fatalf("assets path is not a directory: %s", assets)
+		}
 	}
 	return assets
 }
@@ -222,7 +231,7 @@ func TestPolicyUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("can't get settings %v", err)
 	}
-	setupEnvTestAndRun(t, st, func(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler, client istiokube.CLIClient, xdsPort int) {
+	setupEnvTestAndRun(t, st, func(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler, client istiokube.CLIClient, xdsPort, _ int) {
 		client.Kube().CoreV1().Namespaces().Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "gwtest"}}, metav1.CreateOptions{})
 
 		err = client.ApplyYAMLContents("gwtest", `kind: Gateway
@@ -316,7 +325,7 @@ spec:
 }
 
 func runScenario(t *testing.T, scenarioDir string, globalSettings *apisettings.Settings) {
-	setupEnvTestAndRun(t, globalSettings, func(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler, client istiokube.CLIClient, xdsPort int) {
+	setupEnvTestAndRun(t, globalSettings, func(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler, client istiokube.CLIClient, xdsPort, _ int) {
 		// list all yamls in test data
 		files, err := os.ReadDir(scenarioDir)
 		if err != nil {
@@ -350,6 +359,7 @@ func setupEnvTestAndRun(t *testing.T, globalSettings *apisettings.Settings, run 
 	kdbg *krt.DebugHandler,
 	client istiokube.CLIClient,
 	xdsPort int,
+	agwXdsPort int,
 ),
 ) {
 	proxy_syncer.UseDetailedUnmarshalling = true
@@ -699,6 +709,18 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) (xdsDump, error) {
 		Routes:    routes,
 	}
 	return xdsDump, errs
+}
+
+type deltaXdsDumper struct {
+	conn *grpc.ClientConn
+	dr   *envoy_service_discovery_v3.DeltaDiscoveryRequest
+	ads  envoy_service_discovery_v3.AggregatedDiscoveryServiceClient
+}
+
+func (x deltaXdsDumper) Close() {
+	if x.conn != nil {
+		x.conn.Close()
+	}
 }
 
 type xdsDump struct {

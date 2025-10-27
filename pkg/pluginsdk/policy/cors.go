@@ -66,8 +66,8 @@ func BuildCorsPolicy(
 		}
 		corsPolicy.AllowHeaders = strings.Join(headers, ", ")
 	}
-	if f.AllowCredentials {
-		corsPolicy.AllowCredentials = &wrapperspb.BoolValue{Value: bool(f.AllowCredentials)}
+	if f.AllowCredentials != nil && *f.AllowCredentials {
+		corsPolicy.AllowCredentials = &wrapperspb.BoolValue{Value: *f.AllowCredentials}
 	}
 	if len(f.ExposeHeaders) > 0 {
 		headers := make([]string, len(f.ExposeHeaders))

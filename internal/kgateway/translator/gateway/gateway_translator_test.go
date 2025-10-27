@@ -66,7 +66,7 @@ func TestBasic(t *testing.T) {
 
 	t.Run("http gateway with basic routing", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "http-routing",
+			inputFile:  "http-routing/basic.yaml",
 			outputFile: "http-routing-proxy.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
@@ -250,6 +250,94 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/extauth-full-config.yaml",
 			outputFile: "traffic-policy/extauth-full-config.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with fail open rate limiting", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/fail-open",
+			outputFile: "traffic-policy/fail-open.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with rate limiting for extension ref", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/filter-extension-ref",
+			outputFile: "traffic-policy/filter-extension-ref.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with rate limiting on gateway section attachment", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/gateway-section-attachment",
+			outputFile: "traffic-policy/gateway-section-attachment.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with local and global rate limiting combined", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/local-and-global-combined",
+			outputFile: "traffic-policy/local-and-global-combined.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with multi-dimensional rate limiting descriptors", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/multi-dimensional-descriptors",
+			outputFile: "traffic-policy/multi-dimensional-descriptors.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with multiple descriptors OR rate limiting", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/multiple-descriptors-or",
+			outputFile: "traffic-policy/multiple-descriptors-or.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with multiple headers single descriptor rate limiting", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/multiple-headers-single-descriptor",
+			outputFile: "traffic-policy/multiple-headers-single-descriptor.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with rate limiting on route section attachment", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/route-section-attachment",
+			outputFile: "traffic-policy/route-section-attachment.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "infra",
 				Name:      "example-gateway",
@@ -1266,6 +1354,17 @@ func TestBasic(t *testing.T) {
 			},
 		})
 	})
+
+	t.Run("HTTP RequestRedirect filter", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "http-routing/request-redirect.yaml",
+			outputFile: "http-routing/request-redirect.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
+			},
+		})
+	})
 }
 
 func TestValidation(t *testing.T) {
@@ -1546,6 +1645,10 @@ func TestRouteDelegation(t *testing.T) {
 
 	t.Run("Child rule matcher", func(t *testing.T) {
 		test(t, "child_rule_matcher.yaml")
+	})
+
+	t.Run("URL Rewrite inherit-parent-matcher", func(t *testing.T) {
+		test(t, "url_rewrite_inherit_parent_matcher.yaml")
 	})
 
 	t.Run("Child with multiple parents", func(t *testing.T) {

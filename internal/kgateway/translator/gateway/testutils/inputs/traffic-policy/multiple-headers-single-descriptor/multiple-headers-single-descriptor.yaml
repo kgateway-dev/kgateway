@@ -1,0 +1,41 @@
+# Multiple header descriptors in one rule
+# Tests rate limiting with multiple header entries in a single descriptor
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: ratelimit-multi-headers
+  namespace: infra
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-gateway
+    sectionName: http2
+  rateLimit:
+    global:
+      descriptors:
+      - entries:
+        - type: Header
+          header: "X-User-ID"
+        - type: Header
+          header: "X-API-Version"
+        - type: Header
+          header: "X-Client-Type"
+      extensionRef:
+        name: basic-gw-ratelimit
+---
+# Basic gateway extension for gateway-level rate limiting
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: basic-gw-ratelimit
+  namespace: infra
+spec:
+  type: RateLimit
+  rateLimit:
+    grpcService:
+      backendRef:
+        name: ratelimit
+        port: 8081
+    domain: "api-gateway"
+    timeout: "100ms"

@@ -17,7 +17,7 @@ import (
 // +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:metadata:labels={app=kgateway,app.kubernetes.io/name=kgateway}
-// +kubebuilder:resource:categories=kgateway
+// +kubebuilder:resource:categories=kgateway,path=gatewayparameters
 // +kubebuilder:subresource:status
 type GatewayParameters struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -237,17 +237,15 @@ func (in *KubernetesProxyConfig) GetOmitDefaultSecurityContext() *bool {
 }
 
 // ProxyDeployment configures the Proxy deployment in Kubernetes.
-// +kubebuilder:validation:AtMostOneOf=replicas;omitReplicas
 type ProxyDeployment struct {
-	// The number of desired pods. Defaults to 1.
+	// The number of desired pods.
+	// If omitted, behavior will be managed by the K8s control plane, and will default to 1.
+	// If you are using an HPA, make sure to not explicitly define this.
+	// K8s reference: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#replicas
 	//
 	// +optional
-	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Minimum=0
 	Replicas *int32 `json:"replicas,omitempty"`
-
-	// If true, replicas will not be set in the deployment (allowing HPA to control scaling)
-	// +optional
-	OmitReplicas *bool `json:"omitReplicas,omitempty"`
 
 	// The deployment strategy to use to replace existing pods with new
 	// ones. The Kubernetes default is a RollingUpdate with 25% maxUnavailable,
@@ -271,13 +269,6 @@ func (in *ProxyDeployment) GetReplicas() *int32 {
 		return nil
 	}
 	return in.Replicas
-}
-
-func (in *ProxyDeployment) GetOmitReplicas() *bool {
-	if in == nil {
-		return nil
-	}
-	return in.OmitReplicas
 }
 
 func (in *ProxyDeployment) GetStrategy() *appsv1.DeploymentStrategy {

@@ -3,12 +3,16 @@ package krtcollections
 import (
 	"errors"
 	"fmt"
-	"slices"
+
+	"istio.io/istio/pkg/slices"
+	"k8s.io/apimachinery/pkg/util/sets"
+
 	"strings"
 
 	"istio.io/istio/pkg/config/labels"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
+	"istio.io/istio/pkg/util/smallset"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -22,14 +26,13 @@ import (
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	apilabels "github.com/kgateway-dev/kgateway/v2/api/labels"
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/backendref"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/delegation"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
-	pluginsdkir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	pluginsdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
@@ -316,13 +319,15 @@ func (i *BackendIndex) GetBackendFromRefWithoutRefGrantValidation(kctx krt.Handl
 // MARK: GatewayIndex
 
 type GatewayIndex struct {
-	policies *PolicyIndex
-	Gateways krt.Collection[ir.Gateway]
+	policies            *PolicyIndex
+	Gateways            krt.Collection[ir.Gateway]
+	GatewaysForDeployer krt.Collection[ir.GatewayForDeployer]
 }
 
 func NewGatewayIndex(
 	krtopts krtutil.KrtOptions,
-	controllerName string,
+	controllerNames smallset.Set[string],
+	envoyControllerName string,
 	policies *PolicyIndex,
 	gws krt.Collection[*gwv1.Gateway],
 	lss krt.Collection[*gwxv1a1.XListenerSet],
@@ -347,10 +352,45 @@ func NewGatewayIndex(
 		}}
 	})
 
-	h.Gateways = krt.NewCollection(gws, func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.Gateway {
-		// only care about gateways use a class controlled by us
+	h.GatewaysForDeployer = krt.NewCollection(gws, func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer {
+		// only care about gateways use a class controlled by us (envoy or agentgatway)
 		gwClass := ptr.Flatten(krt.FetchOne(kctx, gwClasses, krt.FilterKey(string(gw.Spec.GatewayClassName))))
-		if gwClass == nil || controllerName != string(gwClass.Spec.ControllerName) {
+		if gwClass == nil || !controllerNames.Contains(string(gwClass.Spec.ControllerName)) {
+			return nil
+		}
+		ports := sets.New[int32]()
+		for _, l := range gw.Spec.Listeners {
+			ports.Insert(l.Port)
+		}
+
+		listenerSets := krt.Fetch(kctx, lss, krt.FilterIndex(byParentRefIndex, targetRefIndexKey{
+			Group:     wellknown.GatewayGroup,
+			Kind:      wellknown.GatewayKind,
+			Name:      gw.GetName(),
+			Namespace: gw.GetNamespace(),
+		}))
+
+		for _, ls := range listenerSets {
+			for _, l := range ls.Spec.Listeners {
+				ports.Insert(l.Port)
+			}
+		}
+		return &ir.GatewayForDeployer{
+			ObjectSource: ir.ObjectSource{
+				Group:     gwv1.GroupVersion.Group,
+				Kind:      wellknown.GatewayKind,
+				Namespace: gw.Namespace,
+				Name:      gw.Name,
+			},
+			ControllerName: string(gwClass.Spec.ControllerName),
+			Ports:          smallset.New(ports.UnsortedList()...),
+		}
+	})
+
+	h.Gateways = krt.NewCollection(gws, func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.Gateway {
+		// only care about gateways use a class controlled by envoy
+		gwClass := ptr.Flatten(krt.FetchOne(kctx, gwClasses, krt.FilterKey(string(gw.Spec.GatewayClassName))))
+		if gwClass == nil || string(gwClass.Spec.ControllerName) != envoyControllerName {
 			return nil
 		}
 
@@ -1192,7 +1232,7 @@ func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRo
 		ParentRefs:   i.Spec.ParentRefs,
 		Hostnames:    tostr(i.Spec.Hostnames),
 		Rules: h.transformRules(
-			kctx, src, i.Spec.Rules, i.GetLabels(), ir.WithInheritedPolicyPriority(inheritedPolicyPriority)),
+			kctx, src, i.Spec.Rules, i.GetLabels(), i.GetAnnotations(), ir.WithInheritedPolicyPriority(inheritedPolicyPriority)),
 		AttachedPolicies: toAttachedPolicies(
 			h.policies.getTargetingPolicies(kctx, src, "", i.GetLabels()),
 			ir.WithInheritedPolicyPriority(inheritedPolicyPriority),
@@ -1207,11 +1247,12 @@ func (h *RoutesIndex) transformRules(
 	src ir.ObjectSource,
 	i []gwv1.HTTPRouteRule,
 	srcLabels map[string]string,
+	srcAnnotations map[string]string,
 	opts ...ir.PolicyAttachmentOpts,
 ) []ir.HttpRouteRuleIR {
 	rules := make([]ir.HttpRouteRuleIR, 0, len(i))
 	for _, r := range i {
-		extensionRefs, err := h.getExtensionRefs(kctx, src.Namespace, r.Filters, opts...)
+		extensionRefs, err := h.getExtensionRefs(kctx, src.Namespace, r.Filters, r.Name, srcAnnotations, opts...)
 
 		var policies ir.AttachedPolicies
 		if r.Name != nil {
@@ -1240,6 +1281,8 @@ func (h *RoutesIndex) getExtensionRefs(
 	kctx krt.HandlerContext,
 	ns string,
 	r []gwv1.HTTPRouteFilter,
+	ruleName *gwv1.SectionName,
+	annotations map[string]string,
 	opts ...ir.PolicyAttachmentOpts,
 ) (ir.AttachedPolicies, error) {
 	ret := ir.AttachedPolicies{
@@ -1247,7 +1290,7 @@ func (h *RoutesIndex) getExtensionRefs(
 	}
 	var errs []error
 	for _, ext := range r {
-		policyAtt, err := h.resolveExtension(kctx, ns, ext)
+		policyAtt, err := h.resolveExtension(kctx, ns, ext, ruleName, annotations)
 		if policyAtt != nil {
 			for _, o := range opts {
 				o(policyAtt)
@@ -1274,12 +1317,18 @@ func (h *RoutesIndex) getBuiltInRulePolicies(
 		for _, o := range opts {
 			o(&policyAtt)
 		}
-		ret.Policies[pluginsdkir.VirtualBuiltInGK] = append(ret.Policies[pluginsdkir.VirtualBuiltInGK], policyAtt)
+		ret.Policies[ir.VirtualBuiltInGK] = append(ret.Policies[ir.VirtualBuiltInGK], policyAtt)
 	}
 	return ret
 }
 
-func (h *RoutesIndex) resolveExtension(kctx krt.HandlerContext, ns string, ext gwv1.HTTPRouteFilter) (*ir.PolicyAtt, error) {
+func (h *RoutesIndex) resolveExtension(
+	kctx krt.HandlerContext,
+	ns string,
+	ext gwv1.HTTPRouteFilter,
+	ruleName *gwv1.SectionName,
+	annotations map[string]string,
+) (*ir.PolicyAtt, error) {
 	if ext.Type == gwv1.HTTPRouteFilterExtensionRef {
 		if ext.ExtensionRef == nil {
 			// TODO: report error!!
@@ -1323,9 +1372,12 @@ func (h *RoutesIndex) resolveExtension(kctx krt.HandlerContext, ns string, ext g
 		Kind:  "HTTPRoute",
 	}
 
-	builtinIR := NewBuiltInIr(kctx, ext, fromGK, ns, h.refgrants, h.backends)
+	builtinIR, err := NewBuiltInIr(kctx, ext, fromGK, ns, h.refgrants, h.backends, ruleName, annotations)
+	if err != nil {
+		return nil, err
+	}
 	policyAtt := &ir.PolicyAtt{
-		GroupKind: pluginsdkir.VirtualBuiltInGK,
+		GroupKind: ir.VirtualBuiltInGK,
 		PolicyIr:  builtinIR,
 	}
 	return policyAtt, nil
@@ -1353,7 +1405,7 @@ func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, 
 	for _, ref := range backendRefs {
 		// ignore errs as invalid/missing policy for backendRef filters is undefined currently
 		// see: https://github.com/kgateway-dev/kgateway/issues/11897
-		extensionRefs, _ := h.getExtensionRefs(kctx, src.Namespace, ref.Filters)
+		extensionRefs, _ := h.getExtensionRefs(kctx, src.Namespace, ref.Filters, nil, nil)
 		fromns := src.Namespace
 
 		to := toFromBackendRef(fromns, ref.BackendObjectReference)

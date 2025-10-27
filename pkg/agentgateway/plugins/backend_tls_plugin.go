@@ -13,7 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1alpha3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/sslutils"
@@ -25,7 +24,7 @@ import (
 // NewBackendTLSPlugin creates a new BackendTLSPolicy plugin
 func NewBackendTLSPlugin(agw *AgwCollections) AgwPlugin {
 	clusterDomain := kubeutils.GetClusterDomainName()
-	policyCol := krt.NewManyCollection(agw.BackendTLSPolicies, func(krtctx krt.HandlerContext, btls *gwv1alpha3.BackendTLSPolicy) []AgwPolicy {
+	policyCol := krt.NewManyCollection(agw.BackendTLSPolicies, func(krtctx krt.HandlerContext, btls *gwv1.BackendTLSPolicy) []AgwPolicy {
 		return translatePoliciesForBackendTLS(krtctx, agw.ConfigMaps, agw.Backends, btls, clusterDomain)
 	})
 	return AgwPlugin{
@@ -45,7 +44,7 @@ func translatePoliciesForBackendTLS(
 	krtctx krt.HandlerContext,
 	cfgmaps krt.Collection[*corev1.ConfigMap],
 	backends krt.Collection[*v1alpha1.Backend],
-	btls *gwv1alpha3.BackendTLSPolicy,
+	btls *gwv1.BackendTLSPolicy,
 	clusterDomain string,
 ) []AgwPolicy {
 	logger := logger.With("plugin_kind", "backendtls")
@@ -164,12 +163,12 @@ func translatePoliciesForBackendTLS(
 func getBackendTLSCACert(
 	krtctx krt.HandlerContext,
 	cfgmaps krt.Collection[*corev1.ConfigMap],
-	btls *gwv1alpha3.BackendTLSPolicy,
+	btls *gwv1.BackendTLSPolicy,
 ) (*wrapperspb.BytesValue, error) {
 	validation := btls.Spec.Validation
 	if wk := validation.WellKnownCACertificates; wk != nil {
 		switch kind := *wk; kind {
-		case gwv1alpha3.WellKnownCACertificatesSystem:
+		case gwv1.WellKnownCACertificatesSystem:
 			return nil, nil
 
 		default:

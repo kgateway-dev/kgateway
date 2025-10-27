@@ -110,6 +110,10 @@ type Settings struct {
 	// By default, this is enabled.
 	XdsAuth bool `split_words:"true" default:"true"`
 
+	// XdsTLS enables or disables TLS encryption for xDS communication between the data-plane and control-plane.
+	// By default, this is disabled.
+	XdsTLS bool `split_words:"true" default:"false"`
+
 	// AgentgatewayXdsServicePort is the port of the Kubernetes Service that serves xDS config for agentgateway.
 	// This corresponds to the value of the `grpc-xds-agw` port in the service.
 	AgentgatewayXdsServicePort uint32 `split_words:"true" default:"9978"`
@@ -152,7 +156,7 @@ type Settings struct {
 	DiscoveryNamespaceSelectors string `split_words:"true" default:"[]"`
 
 	// EnableAgentgateway enables kgateway to send config to the agentgateway
-	EnableAgentgateway bool `split_words:"true" default:"false"`
+	EnableAgentgateway bool `split_words:"true" default:"true"`
 
 	// WeightedRoutePrecedence enables routes with a larger weight to take precedence over routes with a smaller weight.
 	// If two routes have the same weight, Gateway API route precedence rules apply.

@@ -1,3 +1,5 @@
+//go:build e2e
+
 package auto_host_rewrite
 
 import (

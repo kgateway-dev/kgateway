@@ -5,9 +5,14 @@ import (
 )
 
 const (
-	// SkipInstall can be used when you plan to re-run a test suite and want to skip the installation
+	// SkipInstallAndTeardown can be used when you plan to re-run a test suite and want to skip the installation
 	// and teardown of kgateway.
-	SkipInstall = "SKIP_INSTALL"
+	SkipInstallAndTeardown = "SKIP_INSTALL"
+
+	// PersistInstall is a convenience flag that skips installation if charts are already installed
+	// and skips teardown. It will install if nothing is present, but skip installation if charts are already
+	// installed, and then skip teardown. Useful for local development - "just handle it" mode.
+	PersistInstall = "PERSIST_INSTALL"
 
 	// InstallNamespace is the namespace in which kgateway is installed
 	InstallNamespace = "INSTALL_NAMESPACE"
@@ -35,9 +40,15 @@ const (
 	KubeCtx = "KUBE_CTX"
 )
 
-// ShouldSkipInstall returns true if kgateway installation and teardown should be skipped.
-func ShouldSkipInstall() bool {
-	return envutils.IsEnvTruthy(SkipInstall)
+// ShouldSkipInstallAndTeardown returns true if kgateway installation and teardown should be skipped.
+func ShouldSkipInstallAndTeardown() bool {
+	return envutils.IsEnvTruthy(SkipInstallAndTeardown)
+}
+
+// ShouldPersistInstall returns true if the install should be persisted across test runs.
+// This skips installation when charts are already installed and skips teardown.
+func ShouldPersistInstall() bool {
+	return envutils.IsEnvTruthy(PersistInstall)
 }
 
 // ShouldSkipIstioInstall returns true if istio installation and teardown should be skipped.
