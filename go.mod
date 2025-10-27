@@ -8,9 +8,9 @@ require (
 	github.com/avast/retry-go v2.4.3+incompatible
 	github.com/avast/retry-go/v4 v4.3.3
 	github.com/cncf/xds/go v0.0.0-20250501225837-2ac532fd4443
-	github.com/envoyproxy/go-control-plane v0.13.5-0.20251013064519-48f97e33cb02
+	github.com/envoyproxy/go-control-plane v0.13.5-0.20251015221300-4138018a492b
 	github.com/envoyproxy/go-control-plane/contrib v1.32.5-0.20250627145903-197b96a9c7f8
-	github.com/envoyproxy/go-control-plane/envoy v1.35.1-0.20251010000747-50f0b197aa55
+	github.com/envoyproxy/go-control-plane/envoy v1.35.1-0.20251015221300-4138018a492b
 	github.com/envoyproxy/go-control-plane/ratelimit v0.1.1-0.20250507123352-93990c5ec02f
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32

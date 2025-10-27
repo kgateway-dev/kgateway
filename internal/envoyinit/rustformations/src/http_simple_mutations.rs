@@ -60,9 +60,9 @@ impl FilterConfig {
     }
 }
 
-impl<EC: EnvoyHttpFilterConfig, EHF: EnvoyHttpFilter> HttpFilterConfig<EC, EHF> for FilterConfig {
+impl<EHF: EnvoyHttpFilter> HttpFilterConfig<EHF> for FilterConfig {
     /// This is called for each new HTTP filter.
-    fn new_http_filter(&mut self, _envoy: &mut EC) -> Box<dyn HttpFilter<EHF>> {
+    fn new_http_filter(&mut self, _envoy: &mut EHF) -> Box<dyn HttpFilter<EHF>> {
         let mut env = Environment::new();
 
         // could add in line like this if we wanted to
@@ -312,13 +312,12 @@ mod tests {
     use super::*;
     #[test]
     fn test_injected_functions() {
-        // bootstrap envoy config to feed into the new http filter call
-        struct EnvoyConfig {}
-        impl EnvoyHttpFilterConfig for EnvoyConfig {}
-        let mut envoy_config = EnvoyConfig {};
+        //        let mut envoy_config = envoy_proxy_dynamic_modules_rust_sdk::EnvoyHttpFilterConfigImpl {
+        //            raw_ptr: std::ptr::null_mut(),
+        //        };
 
         // get envoy's mockall impl for httpfilter
-        let mut envoy_filter = envoy_proxy_dynamic_modules_rust_sdk::MockEnvoyHttpFilter::new();
+        let mut envoy_filter = envoy_proxy_dynamic_modules_rust_sdk::MockEnvoyHttpFilter::default();
 
         // construct the filter config
         // most upstream tests start with the filter itself but we are tryign to add heavier logic
@@ -344,7 +343,7 @@ mod tests {
             ],
             response_headers_setter: vec![("X-Bar".to_string(), "foo".to_string())],
         };
-        let mut filter = filter_conf.new_http_filter(&mut envoy_config);
+        let mut filter = filter_conf.new_http_filter(&mut envoy_filter);
 
         envoy_filter
             .expect_get_most_specific_route_config()
@@ -430,17 +429,16 @@ mod tests {
     }
     #[test]
     fn test_minininja_functionality() {
-        // bootstrap envoy config to feed into the new http filter call
-        struct EnvoyConfig {}
-        impl EnvoyHttpFilterConfig for EnvoyConfig {}
-        let mut envoy_config = EnvoyConfig {};
+        //        let mut envoy_config = envoy_proxy_dynamic_modules_rust_sdk::EnvoyHttpFilterConfigImpl {
+        //            raw_ptr: std::ptr::null_mut(),
+        //        };
 
         // get envoy's mockall impl for httpfilter
-        let mut envoy_filter = envoy_proxy_dynamic_modules_rust_sdk::MockEnvoyHttpFilter::new();
+        let mut envoy_filter = envoy_proxy_dynamic_modules_rust_sdk::MockEnvoyHttpFilter::default();
 
         // construct the filter config
-        // most upstream tests start with the filter itself but we are tryign to add heavier logic
-        // to the config factory strat rather than running it on header calls
+        // most upstream tests start with the filter itself but we are trying to add heavier logic
+        // to the config factory start rather than running it on header calls
         let mut filter_conf = FilterConfig {
             request_headers_setter: vec![(
                 "X-if-truth".to_string(),
@@ -448,7 +446,7 @@ mod tests {
             )],
             response_headers_setter: vec![("X-Bar".to_string(), "foo".to_string())],
         };
-        let mut filter = filter_conf.new_http_filter(&mut envoy_config);
+        let mut filter = filter_conf.new_http_filter(&mut envoy_filter);
 
         envoy_filter
             .expect_get_most_specific_route_config()

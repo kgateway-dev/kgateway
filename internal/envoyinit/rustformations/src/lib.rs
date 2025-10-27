@@ -34,7 +34,7 @@ fn new_http_filter_config_fn<EC: EnvoyHttpFilterConfig, EHF: EnvoyHttpFilter>(
     _envoy_filter_config: &mut EC,
     filter_name: &str,
     filter_config: &[u8],
-) -> Option<Box<dyn HttpFilterConfig<EC, EHF>>> {
+) -> Option<Box<dyn HttpFilterConfig<EHF>>> {
     let filter_config = match std::str::from_utf8(filter_config) {
         Ok(config) => config,
         Err(_) => {
@@ -44,7 +44,7 @@ fn new_http_filter_config_fn<EC: EnvoyHttpFilterConfig, EHF: EnvoyHttpFilter>(
     };
     match filter_name {
         "http_simple_mutations" => http_simple_mutations::FilterConfig::new(filter_config)
-            .map(|config| Box::new(config) as Box<dyn HttpFilterConfig<EC, EHF>>),
+            .map(|config| Box::new(config) as Box<dyn HttpFilterConfig<EHF>>),
         _ => panic!(
             "Unknown filter name: {}, known filters are {}",
             filter_name, "http_simple_mutations"
