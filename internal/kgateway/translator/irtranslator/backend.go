@@ -63,6 +63,10 @@ func (t *BackendTranslator) TranslateBackend(
 		return nil, errors.New("no backend plugin found for " + gk.String())
 	}
 
+	// Initialize the cluster with minimal configuration
+	out := initializeCluster(backend)
+	inlineEps := process.InitEnvoyBackend(ctx, *backend, out)
+
 	// Check for pre-existing errors in the Backend IR before starting translation.
 	// Exit translation early if we have errors
 	if backend.Errors != nil {
@@ -70,9 +74,6 @@ func (t *BackendTranslator) TranslateBackend(
 		return buildBlackholeCluster(backend), errors.Join(backend.Errors...)
 	}
 
-	// Initialize the cluster with minimal configuration
-	out := initializeCluster(backend)
-	inlineEps := process.InitEnvoyBackend(ctx, *backend, out)
 	processDnsLookupFamily(out, t.CommonCols)
 
 	// Apply policies to the computed cluster

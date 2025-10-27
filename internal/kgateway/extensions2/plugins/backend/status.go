@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/avast/retry-go"
-	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -130,18 +129,6 @@ func updateBackendStatus(ctx context.Context, namespace, name string, errs []err
 
 func buildRegisterCallback(ctx context.Context, bcol krt.Collection[ir.BackendObjectIR]) func() {
 	return func() {
-		bcol.Register(func(o krt.Event[ir.BackendObjectIR]) {
-			if o.Event == controllers.EventDelete {
-				return
-			}
-
-			in := o.Latest()
-			ir, ok := in.ObjIr.(*backendIr)
-			if !ok {
-				return
-			}
-
-			updateBackendStatus(ctx, in.ObjectSource.Namespace, in.ObjectSource.Name, ir.errors)
-		})
+		bcol.Register(func(o krt.Event[ir.BackendObjectIR]) {})
 	}
 }

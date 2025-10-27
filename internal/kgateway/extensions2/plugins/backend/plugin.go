@@ -280,41 +280,45 @@ func processBackendForEnvoy(ctx context.Context, in ir.BackendObjectIR, out *env
 		return nil
 	}
 
-	errCount := len(beIr.errors)
+	// TODO: update backend status report to be consistent with other plugins
+	errs := beIr.errors
+
+	defer func() {
+		go updateBackendStatus(ctx, be.Namespace, be.Name, errs)
+	}()
+
+	if len(errs) > 0 {
+		return nil
+	}
 
 	spec := be.Spec
 	switch spec.Type {
 	case v1alpha1.BackendTypeStatic:
 		if err := processStaticBackendForEnvoy(spec.Static, out); err != nil {
 			logger.Error("failed to process static backend", "error", err)
-			beIr.errors = append(beIr.errors, err)
+			errs = append(errs, err)
 		}
 	case v1alpha1.BackendTypeAWS:
 		if err := processAws(beIr.awsIr, out); err != nil {
 			logger.Error("failed to process aws backend", "error", err)
-			beIr.errors = append(beIr.errors, err)
+			errs = append(errs, err)
 		}
 	case v1alpha1.BackendTypeAI:
 		err := ai.ProcessAIBackend(spec.AI, beIr.aiIr.AISecret, beIr.aiIr.AIMultiSecret, out)
 		if err != nil {
 			logger.Error("failed to process ai backend", "error", err)
-			beIr.errors = append(beIr.errors, err)
+			errs = append(errs, err)
 		}
 		err = ai.AddUpstreamClusterHttpFilters(out)
 		if err != nil {
 			logger.Error("failed to add upstream cluster http filters", "error", err)
-			beIr.errors = append(beIr.errors, err)
+			errs = append(errs, err)
 		}
 	case v1alpha1.BackendTypeDynamicForwardProxy:
 		if err := processDynamicForwardProxy(spec.DynamicForwardProxy, out); err != nil {
 			logger.Error("failed to process dynamic forward proxy backend", "error", err)
-			beIr.errors = append(beIr.errors, err)
+			errs = append(errs, err)
 		}
-	}
-
-	// Update Backend status if new error
-	if len(beIr.errors) > errCount {
-		go updateBackendStatus(ctx, be.Namespace, be.Name, beIr.errors)
 	}
 
 	return nil
