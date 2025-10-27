@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
@@ -209,18 +210,21 @@ func CreateAgwRewriteFilter(filter *gwv1.HTTPURLRewriteFilter) *api.RouteFilter 
 	}
 }
 
-// CreateAgwMirrorFilter creates an agw RouteFilter based on a HTTPRequestMirrorFilter
+// CreateAgwMirrorFilter creates one or more agw RequestMirror filters from a HTTPRequestMirrorFilter.
+// If the backendRef (e.g. InferencePool) expands into multiple backends (ports), we generate one mirror
+// filter per expanded backend and split the mirror percentage proportionally to weights.
 func CreateAgwMirrorFilter(
 	ctx RouteContext,
 	filter *gwv1.HTTPRequestMirrorFilter,
 	ns string,
 	k schema.GroupVersionKind,
-) (*api.RouteFilter, *reporter.RouteCondition) {
+) ([]*api.RouteFilter, *reporter.RouteCondition) {
 	if filter == nil {
 		return nil, nil
 	}
+
 	var weightOne int32 = 1
-	dst, err := buildAgwDestination(ctx, gwv1.HTTPBackendRef{
+	dsts, err := buildAgwDestinations(ctx, gwv1.HTTPBackendRef{
 		BackendRef: gwv1.BackendRef{
 			BackendObjectReference: filter.BackendRef,
 			Weight:                 &weightOne,
@@ -229,6 +233,16 @@ func CreateAgwMirrorFilter(
 	if err != nil {
 		return nil, err
 	}
+	if len(dsts) == 0 {
+		return nil, &reporter.RouteCondition{
+			Type:    gwv1.RouteConditionResolvedRefs,
+			Status:  metav1.ConditionFalse,
+			Reason:  gwv1.RouteReasonBackendNotFound,
+			Message: "no mirror backends resolved",
+		}
+	}
+
+	// Compute mirror percentage
 	var percent float64
 	if f := filter.Fraction; f != nil {
 		denominator := float64(100)
@@ -244,11 +258,38 @@ func CreateAgwMirrorFilter(
 	if percent == 0 {
 		return nil, nil
 	}
-	rm := &api.RequestMirror{
-		Percentage: percent,
-		Backend:    dst.GetBackend(),
+
+	// Split percentage across expanded backends, proportionally to their weights.
+	var totalWeight int32
+	for _, d := range dsts {
+		w := d.GetWeight()
+		if w <= 0 {
+			w = 1
+		}
+		totalWeight += w
 	}
-	return &api.RouteFilter{Kind: &api.RouteFilter_RequestMirror{RequestMirror: rm}}, nil
+	if totalWeight == 0 {
+		// #nosec G115 -- len(dsts) safely fits in int32 in this context.
+		totalWeight = int32(len(dsts))
+	}
+
+	filters := make([]*api.RouteFilter, 0, len(dsts))
+	for _, d := range dsts {
+		w := d.GetWeight()
+		if w <= 0 {
+			w = 1
+		}
+		share := percent * float64(w) / float64(totalWeight)
+
+		rm := &api.RequestMirror{
+			Percentage: share,
+			Backend:    d.GetBackend(),
+		}
+		filters = append(filters, &api.RouteFilter{
+			Kind: &api.RouteFilter_RequestMirror{RequestMirror: rm},
+		})
+	}
+	return filters, nil
 }
 
 // CreateAgwRedirectFilter converts a HTTPRequestRedirectFilter into an api.RouteFilter for request redirection.
@@ -359,16 +400,15 @@ func BuildAgwGRPCFilters(
 			}
 			filters = append(filters, h)
 		case gwv1.GRPCRouteFilterRequestMirror:
-			h, err := CreateAgwMirrorFilter(ctx, filter.RequestMirror, ns, schema.GroupVersionKind{
-				Group:   "gateway.networking.k8s.io",
-				Version: "v1",
-				Kind:    "GRPCRoute",
+			hs, err := CreateAgwMirrorFilter(ctx, filter.RequestMirror, ns, schema.GroupVersionKind{
+				Group:   gwv1.GroupVersion.Group,
+				Version: gwv1.SchemeGroupVersion.Version,
+				Kind:    wellknown.GRPCRouteKind,
 			})
-			if err != nil {
+			if err != nil || len(hs) == 0 {
 				mirrorBackendErr = err
-			} else {
-				filters = append(filters, h)
 			}
+			filters = append(filters, hs...)
 		// TODO(npolshak): add ExtensionRef support for TrafficPolicy https://github.com/kgateway-dev/kgateway/issues/12037
 		default:
 			return nil, &reporter.RouteCondition{
@@ -393,14 +433,15 @@ func buildAgwGRPCDestination(
 
 	var invalidBackendErr *reporter.RouteCondition
 	var res []*api.RouteBackend
+
 	for _, fwd := range forwardTo {
-		dst, err := buildAgwDestination(ctx, gwv1.HTTPBackendRef{
+		dsts, err := buildAgwDestinations(ctx, gwv1.HTTPBackendRef{
 			BackendRef: fwd.BackendRef,
 			Filters:    nil, // GRPC filters are handled separately
 		}, ns, schema.GroupVersionKind{
-			Group:   "gateway.networking.k8s.io",
-			Version: "v1",
-			Kind:    "GRPCRoute",
+			Group:   gwv1.GroupVersion.Group,
+			Version: gwv1.SchemeGroupVersion.Version,
+			Kind:    wellknown.GRPCRouteKind,
 		}, ctx.Backends)
 		if err != nil {
 			logger.Error("error building agent gateway destination", "error", err)
@@ -411,14 +452,22 @@ func buildAgwGRPCDestination(
 				return nil, nil, err
 			}
 		}
-		if dst != nil {
-			filters, err := BuildAgwGRPCFilters(ctx, ns, fwd.Filters)
-			if err != nil {
-				return nil, nil, err
+		if len(dsts) != 0 {
+			// Build per-backend filters once for this fwd and apply to each expanded backend.
+			filters, ferr := BuildAgwGRPCFilters(ctx, ns, fwd.Filters)
+			if ferr != nil {
+				return nil, nil, ferr
 			}
-			dst.Filters = filters
+
+			for _, d := range dsts {
+				if d == nil {
+					continue
+				}
+				d.Filters = filters
+				res = append(res, d)
+			}
 		}
-		res = append(res, dst)
 	}
+
 	return res, invalidBackendErr, nil
 }

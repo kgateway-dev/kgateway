@@ -101,11 +101,26 @@ func TestEqualsAndEndpoints(t *testing.T) {
 	assert.False(t, a.Equals(c))
 	assert.False(t, c.Equals(a))
 
-	// Different targetPort
+	// Different single targetPort value
 	d := makePool(func(pool *inf.InferencePool) {
 		pool.Spec.TargetPorts[0].Number = 9999
 	})
 	assert.False(t, a.Equals(d))
+
+	// Different length of targetPorts (not equal)
+	diffLen := makePool(func(pool *inf.InferencePool) {
+		pool.Spec.TargetPorts = []inf.Port{{Number: 8080}, {Number: 8081}}
+	})
+	assert.False(t, a.Equals(diffLen))
+
+	// Same ports, different order (equal)
+	aOrder := makePool(func(pool *inf.InferencePool) {
+		pool.Spec.TargetPorts = []inf.Port{{Number: 8080}, {Number: 9000}}
+	})
+	bOrder := makePool(func(pool *inf.InferencePool) {
+		pool.Spec.TargetPorts = []inf.Port{{Number: 9000}, {Number: 8080}} // swapped
+	})
+	assert.True(t, aOrder.Equals(bOrder))
 
 	// Equal and different endpoints
 	a.setEndpoints([]endpoint{{address: "1.1.1.1", port: 80}})

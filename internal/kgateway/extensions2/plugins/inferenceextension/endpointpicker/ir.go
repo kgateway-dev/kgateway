@@ -67,11 +67,15 @@ func newInferencePool(pool *inf.InferencePool) *inferencePool {
 		ports: []servicePort{port},
 	}
 
+	ports := make([]targetPort, 0, len(pool.Spec.TargetPorts))
+	for _, p := range pool.Spec.TargetPorts {
+		ports = append(ports, targetPort{number: int32(p.Number)})
+	}
+
 	return &inferencePool{
 		obj:         pool,
 		podSelector: convertSelector(pool.Spec.Selector.MatchLabels),
-		// InferencePool v1 only supports single port
-		targetPorts: []targetPort{{number: int32(pool.Spec.TargetPorts[0].Number)}},
+		targetPorts: ports,
 		configRef:   svcIR,
 		endpoints:   []endpoint{},
 		failOpen:    isFailOpen(pool),
@@ -90,7 +94,7 @@ func (ir *inferencePool) getEndpoints() []endpoint {
 	return ir.endpoints
 }
 
-// resolvePoolEndpoints returns the slice of <IP:Port> for the given pool
+// resolvePoolEndpoints returns a slice of <IP:Port,IP:Port,...> for the given pool
 // by looking up only the pods that index to it.
 func (ir *inferencePool) resolvePoolEndpoints(
 	idx krt.Index[string, krtcollections.LocalityPod],
@@ -100,8 +104,9 @@ func (ir *inferencePool) resolvePoolEndpoints(
 	var eps []endpoint
 	for _, p := range idx.Lookup(key) {
 		if ip := p.Address(); ip != "" {
-			// InferencePool v1 only supports single port
-			eps = append(eps, endpoint{address: ip, port: ir.targetPorts[0].number})
+			for _, port := range ir.targetPorts {
+				eps = append(eps, endpoint{address: ip, port: port.number})
+			}
 		}
 	}
 
@@ -125,19 +130,23 @@ func (ir *inferencePool) Equals(other any) bool {
 	if !ok {
 		return false
 	}
+
 	// Compare pod selector
 	if !maps.Equal(ir.Selector(), otherPool.Selector()) {
 		return false
 	}
+
 	// Compare error presence (we only need the boolean)
 	if ir.hasErrors() != otherPool.hasErrors() {
 		return false
 	}
-	// Compare endpoint set (order‑insensitive)
+
+	// Compare endpoint set (order-insensitive)
 	ir.mu.Lock()
 	otherPool.mu.Lock()
 	defer ir.mu.Unlock()
 	defer otherPool.mu.Unlock()
+
 	if len(ir.endpoints) != len(otherPool.endpoints) {
 		return false
 	}
@@ -150,14 +159,23 @@ func (ir *inferencePool) Equals(other any) bool {
 			return false
 		}
 	}
-	// Compare target port
-	// InferencePool v1 only supports single port
-	if len(ir.targetPorts) != 1 || len(otherPool.targetPorts) != 1 {
+
+	// Compare target ports
+	if len(ir.targetPorts) != len(otherPool.targetPorts) {
 		return false
 	}
-	if ir.targetPorts[0].number != otherPool.targetPorts[0].number {
-		return false
+	if len(ir.targetPorts) > 0 {
+		ports := make(map[int32]struct{}, len(ir.targetPorts))
+		for _, p := range ir.targetPorts {
+			ports[p.number] = struct{}{}
+		}
+		for _, p := range otherPool.targetPorts {
+			if _, ok := ports[p.number]; !ok {
+				return false
+			}
+		}
 	}
+
 	// Compare object metadata
 	if ir.obj.GetName() != otherPool.obj.GetName() ||
 		ir.obj.GetNamespace() != otherPool.obj.GetNamespace() ||
@@ -166,14 +184,17 @@ func (ir *inferencePool) Equals(other any) bool {
 		ir.obj.GetGeneration() != otherPool.obj.GetGeneration() {
 		return false
 	}
+
 	// Compare configRef
 	if !ir.configRefEquals(otherPool) {
 		return false
 	}
+
 	// Compare failure mode
 	if !ir.failOpenEqual(otherPool) {
 		return false
 	}
+
 	return true
 }
 

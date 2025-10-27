@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: vllm-llama3-8b-instruct
-  namespace: inf-ext-e2e
 spec:
   replicas: 3
   selector:
@@ -37,10 +36,6 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        ports:
-        - containerPort: 8000
-          name: http
-          protocol: TCP
         resources:
           requests:
             cpu: 10m

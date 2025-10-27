@@ -1,6 +1,6 @@
 //go:build e2e
 
-package inferenceextension
+package inference
 
 import (
 	_ "embed"
@@ -8,16 +8,11 @@ import (
 	"time"
 
 	"github.com/onsi/gomega"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 )
 
 var (
-	// testNs is the namespace used for e2e tests. Test data manifests are hardcoded for this namespace.
-	testNs = "inf-ext-e2e"
 	// gtwName is the name of the gateway created by test manifests.
 	gtwName = "inference-gateway"
 	// vllmDeployName is the name of the vLLM deployment name
@@ -39,7 +34,7 @@ var (
 	// eppManifest is the manifest for the Endpoint Picker (EPP)
 	//go:embed testdata/epp.yaml
 	eppManifest []byte
-	// gtwManifest is the manifest for the Gateway resource
+	// gtwManifest is the manifest for the primary Gateway resource
 	//go:embed testdata/gateway.yaml
 	gtwManifest []byte
 	// routeManifest is the manifest for the HTTPRoute resource
@@ -50,18 +45,8 @@ var (
 	clientManifest []byte
 	// manifestLabelKey is the label selector key for manifests
 	manifestLabelKey = "app"
-	// clientPodName is the name of the client pod (must match the name in ./testdata/client.yaml)
+	// clientPodName is the name of the client pod
 	clientPodName = "curl"
-	// clientPodNs is the namespace of the client pod (must match the name in ./testdata/client.yaml)
-	clientPodNs = "curl"
-
-	// The Gateway resources created by kgateway
-	gtwObjectMeta = metav1.ObjectMeta{
-		Name:      gtwName,
-		Namespace: testNs,
-	}
-	gtwDeployment = &appsv1.Deployment{ObjectMeta: gtwObjectMeta}
-	gtwService    = &corev1.Service{ObjectMeta: gtwObjectMeta}
 )
 
 func expectedVllmRespWithPort(port string) *testmatchers.HttpResponse {

@@ -66,6 +66,7 @@ spec:
       app: gateway
   targetPorts:
   - number: 8080
+  - number: 8081
 ---
 # A dummy Pod so the InferencePool has at least one endpoint.
 apiVersion: v1

@@ -1,6 +1,6 @@
 //go:build e2e
 
-package inferenceextension
+package inference
 
 import (
 	"context"
@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/suite"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -16,7 +18,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
-	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 // testingSuite is the entire Suite of tests for testing K8s Service-specific features/fixes
@@ -42,19 +43,19 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 func (s *testingSuite) TestHTTPRouteWithInferencePool() {
-	testName := "TestHTTPRouteWithInferencePool"
+	var (
+		// testNs is the namespace used for test manifests
+		testName = "TestHTTPRouteWithInferencePool"
 
-	testutils.Cleanup(s.T(), func() {
-		manifests, ok := s.manifests[testName]
-		if !ok {
-			s.FailNow("no manifests found for %s", testName)
-		}
+		// The namespace used for test manifests. The CLusterRoleBinding in the epp.yaml
+		// requires this to be "agent-gateway-test".
+		testNs = s.testInstallation.Metadata.InstallNamespace
 
-		for _, m := range manifests {
-			err := s.testInstallation.Actions.Kubectl().Delete(s.ctx, m)
-			s.NoError(err, "can delete manifest %s", m)
-		}
-	})
+		// The Gateway resources created by kgateway
+		gtwObjectMeta = metav1.ObjectMeta{Name: gtwName, Namespace: testNs}
+		gtwDeployment = &appsv1.Deployment{ObjectMeta: gtwObjectMeta}
+		gtwService    = &corev1.Service{ObjectMeta: gtwObjectMeta}
+	)
 
 	// Add the testdata manifests to the manifests map
 	s.manifests = map[string][][]byte{
@@ -70,7 +71,7 @@ func (s *testingSuite) TestHTTPRouteWithInferencePool() {
 
 	// Apply the testdata manifests
 	for _, m := range s.manifests[testName] {
-		err := s.testInstallation.Actions.Kubectl().Apply(s.ctx, m)
+		err := s.testInstallation.Actions.Kubectl().Apply(s.ctx, m, "-n", testNs)
 		s.NoError(err, "can apply manifest %s", m)
 	}
 
@@ -78,7 +79,7 @@ func (s *testingSuite) TestHTTPRouteWithInferencePool() {
 	for k, v := range map[string]string{
 		vllmDeployName:          testNs,
 		vllmDeployName + "-epp": testNs,
-		clientPodName:           clientPodNs,
+		clientPodName:           testNs,
 	} {
 		s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, v, metav1.ListOptions{
 			LabelSelector: manifestLabelKey + "=" + k,
@@ -153,7 +154,7 @@ func (s *testingSuite) TestHTTPRouteWithInferencePool() {
 		testName := fmt.Sprintf("CurlTestCase%d", i)
 
 		s.T().Run(testName, func(t *testing.T) {
-			// Build the "prompt" or "messages" fragment of the request body
+			// Build the "prompt" or "messages" fragment of the request body.
 			var fieldJSON string
 			if tc.api == "/v1/completions" {
 				fieldJSON = fmt.Sprintf(`"prompt":"%s"`, tc.promptOrMessages)
@@ -168,10 +169,14 @@ func (s *testingSuite) TestHTTPRouteWithInferencePool() {
 				fieldJSON,
 			)
 
+			// Set the curl pod exec options
+			podOpts := defaults.CurlPodExecOpt
+			podOpts.Namespace = testNs
+
 			// Assert we eventually see vLLM rank 0 (port 8000 in testdata/vllm.yaml)
 			s.testInstallation.Assertions.AssertEventualCurlResponse(
 				s.ctx,
-				defaults.CurlPodExecOpt,
+				podOpts,
 				[]curl.Option{
 					curl.WithHost(kubeutils.ServiceFQDN(gtwService.ObjectMeta)),
 					curl.WithHeader("Content-Type", "application/json"),
@@ -184,7 +189,7 @@ func (s *testingSuite) TestHTTPRouteWithInferencePool() {
 			// Assert we eventually see vLLM rank 1 (port 8001 in testdata/vllm.yaml)
 			s.testInstallation.Assertions.AssertEventualCurlResponse(
 				s.ctx,
-				defaults.CurlPodExecOpt,
+				podOpts,
 				[]curl.Option{
 					curl.WithHost(kubeutils.ServiceFQDN(gtwService.ObjectMeta)),
 					curl.WithHeader("Content-Type", "application/json"),

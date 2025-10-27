@@ -3,6 +3,7 @@ package endpointpicker
 import (
 	"context"
 	"fmt"
+	"sort"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
@@ -115,16 +116,23 @@ func initInferencePoolCollections(
 			}))
 
 			var eps []endpoint
-
 			for _, p := range pods {
 				if ip := p.Address(); ip != "" {
-					// Note: InferencePool v1 only supports a single port
-					eps = append(eps, endpoint{address: ip, port: irPool.targetPorts[0].number})
+					for _, port := range irPool.targetPorts {
+						eps = append(eps, endpoint{address: ip, port: port.number})
+					}
 				}
 			}
 			if len(eps) == 0 {
 				return nil
 			}
+			// Ensure deterministic endpoint ordering across reconciles.
+			sort.Slice(eps, func(i, j int) bool {
+				if eps[i].address == eps[j].address {
+					return eps[i].port < eps[j].port
+				}
+				return eps[i].address < eps[j].address
+			})
 			irPool.setEndpoints(eps)
 			return buildBackendObjIrFromPool(irPool)
 		},

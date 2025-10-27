@@ -377,14 +377,10 @@ func buildAgwTCPDestination(
 	if forwardTo == nil {
 		return nil, nil, nil
 	}
-
 	var invalidBackendErr *reporter.RouteCondition
 	var res []*api.RouteBackend
 	for _, fwd := range forwardTo {
-		dst, err := buildAgwDestination(ctx, gwv1.HTTPBackendRef{
-			BackendRef: fwd,
-			Filters:    nil, // TCP Routes don't have per-backend filters?
-		}, ns, wellknown.TCPRouteGVK, ctx.Backends)
+		dsts, err := buildAgwDestinations(ctx, gwv1.HTTPBackendRef{BackendRef: fwd}, ns, wellknown.TCPRouteGVK, ctx.Backends)
 		if err != nil {
 			logger.Error("error building agent gateway destination", "error", err)
 			if isInvalidBackend(err) {
@@ -394,7 +390,7 @@ func buildAgwTCPDestination(
 				return nil, nil, err
 			}
 		}
-		res = append(res, dst)
+		res = append(res, dsts...)
 	}
 	return res, invalidBackendErr, nil
 }
@@ -407,14 +403,10 @@ func buildAgwTLSDestination(
 	if forwardTo == nil {
 		return nil, nil, nil
 	}
-
 	var invalidBackendErr *reporter.RouteCondition
 	var res []*api.RouteBackend
 	for _, fwd := range forwardTo {
-		dst, err := buildAgwDestination(ctx, gwv1.HTTPBackendRef{
-			BackendRef: fwd,
-			Filters:    nil, // TLS Routes don't have per-backend filters
-		}, ns, wellknown.TLSRouteGVK, ctx.Backends)
+		dsts, err := buildAgwDestinations(ctx, gwv1.HTTPBackendRef{BackendRef: fwd}, ns, wellknown.TLSRouteGVK, ctx.Backends)
 		if err != nil {
 			logger.Error("error building agent gateway destination", "error", err)
 			if isInvalidBackend(err) {
@@ -424,7 +416,7 @@ func buildAgwTLSDestination(
 				return nil, nil, err
 			}
 		}
-		res = append(res, dst)
+		res = append(res, dsts...)
 	}
 	return res, invalidBackendErr, nil
 }
@@ -477,13 +469,13 @@ func BuildAgwFilters(
 			hasTerminalFilter = true
 			terminalFilterType = "RequestRedirect"
 		case gwv1.HTTPRouteFilterRequestMirror:
-			h, err := CreateAgwMirrorFilter(ctx, filter.RequestMirror, ns, wellknown.HTTPRouteGVK)
+			hs, err := CreateAgwMirrorFilter(ctx, filter.RequestMirror, ns, wellknown.HTTPRouteGVK)
 			if err != nil {
 				if filterError == nil {
 					filterError = err
 				}
-			} else {
-				filters = append(filters, h)
+			} else if len(hs) > 0 {
+				filters = append(filters, hs...)
 			}
 		case gwv1.HTTPRouteFilterURLRewrite:
 			h := CreateAgwRewriteFilter(filter.URLRewrite)
@@ -559,13 +551,12 @@ func buildAgwHTTPDestination(
 	if forwardTo == nil {
 		return nil, nil, nil
 	}
-
 	var invalidBackendErr *reporter.RouteCondition
 	var res []*api.RouteBackend
 	for _, fwd := range forwardTo {
-		dst, err := buildAgwDestination(ctx, fwd, ns, wellknown.HTTPRouteGVK, ctx.Backends)
+		dsts, err := buildAgwDestinations(ctx, fwd, ns, wellknown.HTTPRouteGVK, ctx.Backends)
 		if err != nil {
-			logger.Error("erroring building agent gateway destination", "error", err)
+			logger.Error("error building agent gateway destinations", "error", err)
 			if isInvalidBackend(err) {
 				invalidBackendErr = err
 				// keep going, we will gracefully drop invalid backends
@@ -573,25 +564,30 @@ func buildAgwHTTPDestination(
 				return nil, nil, err
 			}
 		}
-		if dst != nil {
-			filters, err := BuildAgwFilters(ctx, ns, fwd.Filters)
-			if err != nil {
-				return nil, nil, err
+		// Apply per-backendRef filters to each expanded backend
+		if len(dsts) > 0 {
+			filters, ferr := BuildAgwFilters(ctx, ns, fwd.Filters)
+			if ferr != nil {
+				return nil, nil, ferr
 			}
-			dst.Filters = filters
+			for _, d := range dsts {
+				if d != nil {
+					d.Filters = filters
+					res = append(res, d)
+				}
+			}
 		}
-		res = append(res, dst)
 	}
 	return res, invalidBackendErr, nil
 }
 
-func buildAgwDestination(
+func buildAgwDestinations(
 	ctx RouteContext,
 	to gwv1.HTTPBackendRef,
 	ns string,
 	k schema.GroupVersionKind,
 	backendCol krt.Collection[*v1alpha1.Backend],
-) (*api.RouteBackend, *reporter.RouteCondition) {
+) ([]*api.RouteBackend, *reporter.RouteCondition) {
 	ref := normalizeReference(to.Group, to.Kind, wellknown.ServiceGVK)
 	// check if the reference is allowed
 	if toNs := to.Namespace; toNs != nil && string(*toNs) != ns {
@@ -609,16 +605,10 @@ func buildAgwDestination(
 	if to.Namespace != nil {
 		namespace = string(*to.Namespace)
 	}
-	var invalidBackendErr *reporter.RouteCondition
-	var hostname string
 	weight := int32(1) // default
 	if to.Weight != nil {
 		weight = *to.Weight
 	}
-	rb := &api.RouteBackend{
-		Weight: weight,
-	}
-	var port *gwv1.PortNumber
 
 	switch ref.GroupKind() {
 	case wellknown.InferencePoolGVK.GroupKind():
@@ -627,66 +617,97 @@ func buildAgwDestination(
 				Type:    gwv1.RouteConditionAccepted,
 				Status:  metav1.ConditionFalse,
 				Reason:  gwv1.RouteReasonUnsupportedValue,
-				Message: "service name invalid; the name of the Service must be used, not the hostname."}
+				Message: "service name invalid; the name of the Service must be used, not the hostname.",
+			}
 		}
-		hostname = kubeutils.GetInferenceServiceHostname(string(to.Name), namespace)
+		// Resolve the pool and build one backend per targetPort
 		key := namespace + "/" + string(to.Name)
-		svc := ptr.Flatten(krt.FetchOne(ctx.Krt, ctx.InferencePools, krt.FilterKey(key)))
-		logger.Debug("found pull pool for service", "svc", svc, "key", key)
-		if svc == nil {
-			invalidBackendErr = &reporter.RouteCondition{
+		pool := ptr.Flatten(krt.FetchOne(ctx.Krt, ctx.InferencePools, krt.FilterKey(key)))
+		if pool == nil {
+			return nil, &reporter.RouteCondition{
 				Type:    gwv1.RouteConditionResolvedRefs,
 				Status:  metav1.ConditionFalse,
 				Reason:  gwv1.RouteReasonBackendNotFound,
-				Message: fmt.Sprintf("backendRef(%s) not found", hostname)}
-		} else {
-			rb.Backend = &api.BackendReference{
-				Kind: &api.BackendReference_Service{
-					Service: namespace + "/" + hostname,
-				},
-				// InferencePool only supports single port
-				Port: uint32(svc.Spec.TargetPorts[0].Number), //nolint:gosec // G115: InferencePool TargetPort is int32 with validation 1-65535, always safe
+				Message: fmt.Sprintf("backendRef(%s) not found", string(to.Name)),
 			}
 		}
+		logger.Debug("found InferencePool", "namespace", namespace, "name", to.Name)
+
+		// Build N backends (one per target port), splitting weight across them
+		hostname := kubeutils.GetInferenceServiceHostname(string(to.Name), namespace)
+		// #nosec G115 -- len(dsts) safely fits in int32 in this context
+		n := int32(len(pool.Spec.TargetPorts))
+		base := weight / n
+		rem := weight % n
+
+		outs := make([]*api.RouteBackend, 0, len(pool.Spec.TargetPorts))
+		for i, tp := range pool.Spec.TargetPorts {
+			w := base
+			// #nosec G115 -- len(dsts) safely fits in int32 in this context
+			if int32(i) < rem {
+				w++
+			}
+			outs = append(outs, &api.RouteBackend{
+				Weight: w,
+				Backend: &api.BackendReference{
+					Kind: &api.BackendReference_Service{
+						Service: namespace + "/" + hostname,
+					},
+					// One backend per port
+					Port: uint32(tp.Number), //nolint:gosec // previously validated 1..65535
+				},
+			})
+		}
+		return outs, nil
 	case wellknown.ServiceGVK.GroupKind():
-		port = to.Port
 		if strings.Contains(string(to.Name), ".") {
 			return nil, &reporter.RouteCondition{
 				Type:    gwv1.RouteConditionAccepted,
 				Status:  metav1.ConditionFalse,
 				Reason:  gwv1.RouteReasonUnsupportedValue,
-				Message: "service name invalid; the name of the Service must be used, not the hostname."}
+				Message: "service name invalid; the name of the Service must be used, not the hostname.",
+			}
 		}
-		hostname = kubeutils.GetServiceHostname(string(to.Name), namespace)
+
+		// Determine namespace/name and hostname up front
+		hostname := kubeutils.GetServiceHostname(string(to.Name), namespace)
 		key := namespace + "/" + string(to.Name)
-		svc := ptr.Flatten(krt.FetchOne(ctx.Krt, ctx.Services, krt.FilterKey(key)))
-		if svc == nil {
-			invalidBackendErr = &reporter.RouteCondition{
+
+		// Soft "not found" condition if the Service doesn't exist
+		var notFoundCond *reporter.RouteCondition
+		if svc := ptr.Flatten(krt.FetchOne(ctx.Krt, ctx.Services, krt.FilterKey(key))); svc == nil {
+			notFoundCond = &reporter.RouteCondition{
 				Type:    gwv1.RouteConditionResolvedRefs,
 				Status:  metav1.ConditionFalse,
 				Reason:  gwv1.RouteReasonBackendNotFound,
-				Message: fmt.Sprintf("backend(%s) not found", hostname)}
+				Message: fmt.Sprintf("backend(%s) not found", hostname),
+			}
 		}
 		// TODO: All kubernetes service types currently require a Port, so we do this for everything; consider making this per-type if we have future types
 		// that do not require port.
-		if port == nil {
+		if to.Port == nil {
 			// "Port is required when the referent is a Kubernetes Service."
 			return nil, &reporter.RouteCondition{
 				Type:    gwv1.RouteConditionAccepted,
 				Status:  metav1.ConditionFalse,
 				Reason:  gwv1.RouteReasonUnsupportedValue,
-				Message: "port is required in backendRef"}
+				Message: "port is required in backendRef",
+			}
 		}
-		rb.Backend = &api.BackendReference{
-			Kind: &api.BackendReference_Service{
-				Service: namespace + "/" + hostname,
+
+		return []*api.RouteBackend{{
+			Weight: weight,
+			Backend: &api.BackendReference{
+				Kind: &api.BackendReference_Service{
+					Service: namespace + "/" + hostname,
+				},
+				Port: uint32(*to.Port), //nolint:gosec // G115: Gateway API PortNumber is int32 with validation 1-65535, always safe
 			},
-			Port: uint32(*port), //nolint:gosec // G115: Gateway API PortNumber is int32 with validation 1-65535, always safe
-		}
+		}}, notFoundCond
 	case wellknown.BackendGVK.GroupKind():
 		backendRefKey := ns + "/" + string(to.Name)
-		fetchedKgwBackend := krt.FetchOne(ctx.Krt, backendCol, krt.FilterKey(backendRefKey))
-		if fetchedKgwBackend == nil {
+		fetched := krt.FetchOne(ctx.Krt, backendCol, krt.FilterKey(backendRefKey))
+		if fetched == nil {
 			logger.Error("failed to get kgateway Backend", "backend", backendRefKey)
 			return nil, &reporter.RouteCondition{
 				Type:    gwv1.RouteConditionResolvedRefs,
@@ -695,22 +716,22 @@ func buildAgwDestination(
 				Message: fmt.Sprintf("kgateway Backend not found: %s", backendRefKey),
 			}
 		}
-		kgwBackend := *fetchedKgwBackend
-		logger.Debug("successfully resolved kgateway Backend", "backend", kgwBackend.Name)
-		rb.Backend = &api.BackendReference{
-			Kind: &api.BackendReference_Backend{
-				Backend: backendRefKey,
+		return []*api.RouteBackend{{
+			Weight: weight,
+			Backend: &api.BackendReference{
+				Kind: &api.BackendReference_Backend{
+					Backend: backendRefKey,
+				},
 			},
-		}
-	default:
-		return nil, &reporter.RouteCondition{
-			Type:    gwv1.RouteConditionResolvedRefs,
-			Status:  metav1.ConditionFalse,
-			Reason:  gwv1.RouteReasonInvalidKind,
-			Message: fmt.Sprintf("referencing unsupported backendRef: group %q kind %q", ptr.OrEmpty(to.Group), ptr.OrEmpty(to.Kind)),
-		}
+		}}, nil
 	}
-	return rb, invalidBackendErr
+
+	return nil, &reporter.RouteCondition{
+		Type:    gwv1.RouteConditionResolvedRefs,
+		Status:  metav1.ConditionFalse,
+		Reason:  gwv1.RouteReasonInvalidKind,
+		Message: fmt.Sprintf("referencing unsupported backendRef: group %q kind %q", ptr.OrEmpty(to.Group), ptr.OrEmpty(to.Kind)),
+	}
 }
 
 // ParentMeta generates a map of metadata for a parent resource, including its name and optional section-specific details.

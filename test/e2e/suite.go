@@ -4,9 +4,12 @@ package e2e
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
+
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/crds"
 )
 
 type (
@@ -36,6 +39,8 @@ type (
 var (
 	_ SuiteRunner = new(orderedSuites)
 	_ SuiteRunner = new(suites)
+	// InferenceCrdManifest defines the manifest file containing Inference Extension CRDs.
+	InferenceCrdManifest = filepath.Join(crds.AbsPathToCrd("inference-crds.yaml"))
 )
 
 // NewSuiteRunner returns an implementation of TestRunner that will execute tests as specified

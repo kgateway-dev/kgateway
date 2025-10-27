@@ -10,6 +10,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/configmap"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/csrf"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/extauth"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/inference"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/mcp"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/rbac"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/transformation"
@@ -32,6 +33,7 @@ func AgentgatewaySuiteRunner() e2e.SuiteRunner {
 	agentgatewaySuiteRunner.Register("BackendTLSPolicy", backendtls.NewAgentgatewayTestingSuite)
 	agentgatewaySuiteRunner.Register("AIBackend", aibackend.NewTestingSuite)
 	agentgatewaySuiteRunner.Register("ConfigMap", configmap.NewTestingSuite)
+	agentgatewaySuiteRunner.Register("Inference", inference.NewTestingSuite)
 
 	return agentgatewaySuiteRunner
 }

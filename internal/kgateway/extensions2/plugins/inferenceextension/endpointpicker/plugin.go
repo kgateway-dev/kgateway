@@ -124,9 +124,16 @@ func buildBackendObjIrFromPool(pool *inferencePool) *ir.BackendObjectIR {
 		Namespace: pool.obj.GetNamespace(),
 		Name:      pool.obj.GetName(),
 	}
-	// The backend's port is the first target port of the pool.
-	// InferencePool v1 only supports single port.
-	backend := ir.NewBackendObjectIR(objSrc, pool.targetPorts[0].number, "")
+	// Choose a deterministic port for the BackendObjectIR. The actual endpoints
+	// are populated later and may include different ports per pod. Envoy clusters
+	// can carry mixed port endpoints. We pick the lowest port for stability.
+	repPort := pool.targetPorts[0].number
+	for i := 1; i < len(pool.targetPorts); i++ {
+		if pool.targetPorts[i].number < repPort {
+			repPort = pool.targetPorts[i].number
+		}
+	}
+	backend := ir.NewBackendObjectIR(objSrc, repPort, "")
 	backend.GvPrefix = poolGroupKindName
 	backend.Obj = pool.obj
 	backend.ObjIr = pool

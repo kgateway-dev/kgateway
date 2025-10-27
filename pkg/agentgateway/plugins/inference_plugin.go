@@ -36,10 +36,12 @@ func NewInferencePlugin(agw *AgwCollections) AgwPlugin {
 func translatePoliciesForInferencePool(pool *inf.InferencePool, domainSuffix string) []AgwPolicy {
 	var infPolicies []AgwPolicy
 
-	// 'service/{namespace}/{hostname}:{port}'
-	svc := fmt.Sprintf("service/%v/%v.%v.inference.%v:%v",
-		// Note: InferencePool v1 only supports a single target port
-		pool.Namespace, pool.Name, pool.Namespace, domainSuffix, pool.Spec.TargetPorts[0].Number)
+	svcs := make([]string, 0, len(pool.Spec.TargetPorts))
+	for _, port := range pool.Spec.TargetPorts {
+		// 'service/{namespace}/{hostname}:{port}'
+		svcs = append(svcs, fmt.Sprintf("service/%v/%v.%v.inference.%v:%v",
+			pool.Namespace, pool.Name, pool.Namespace, domainSuffix, port.Number))
+	}
 
 	epr := pool.Spec.EndpointPickerRef
 	if epr.Group != nil && *epr.Group != "" {
@@ -69,23 +71,26 @@ func translatePoliciesForInferencePool(pool *inf.InferencePool, domainSuffix str
 		failureMode = api.PolicySpec_InferenceRouting_FAIL_OPEN
 	}
 
-	// Create the inference routing policy
-	inferencePolicy := &api.Policy{
-		Name:   pool.Namespace + "/" + pool.Name + ":inference",
-		Target: &api.PolicyTarget{Kind: &api.PolicyTarget_Backend{Backend: svc}},
-		Spec: &api.PolicySpec{
-			Kind: &api.PolicySpec_InferenceRouting_{
-				InferenceRouting: &api.PolicySpec_InferenceRouting{
-					EndpointPicker: &api.BackendReference{
-						Kind: &api.BackendReference_Service{Service: eppSvc},
-						Port: uint32(eppPort), //nolint:gosec // G115: eppPort is derived from validated port numbers
+	// Create the inference routing policy per service target port
+	var inferencePolicy api.Policy
+	for _, svc := range svcs {
+		inferencePolicy = api.Policy{
+			Name:   pool.Namespace + "/" + pool.Name + ":inference",
+			Target: &api.PolicyTarget{Kind: &api.PolicyTarget_Backend{Backend: svc}},
+			Spec: &api.PolicySpec{
+				Kind: &api.PolicySpec_InferenceRouting_{
+					InferenceRouting: &api.PolicySpec_InferenceRouting{
+						EndpointPicker: &api.BackendReference{
+							Kind: &api.BackendReference_Service{Service: eppSvc},
+							Port: uint32(eppPort), //nolint:gosec // G115: eppPort is derived from validated port numbers
+						},
+						FailureMode: failureMode,
 					},
-					FailureMode: failureMode,
 				},
 			},
-		},
+		}
 	}
-	infPolicies = append(infPolicies, AgwPolicy{Policy: inferencePolicy})
+	infPolicies = append(infPolicies, AgwPolicy{Policy: &inferencePolicy})
 
 	// Create the TLS policy for the endpoint picker
 	// TODO: we would want some way if they explicitly set a BackendTLSPolicy for the EPP to respect that

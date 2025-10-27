@@ -8,9 +8,7 @@ Listeners:
   name: grpc
   protocol: HTTP
 Routes:
-- backends:
-  - {}
-  key: default/example-grpc-route.0.grpc
+- key: default/example-grpc-route.0.grpc
   listenerKey: default/example-gateway.grpc
   matches:
   - path:

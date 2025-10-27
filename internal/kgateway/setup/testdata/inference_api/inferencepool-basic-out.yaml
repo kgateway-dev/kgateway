@@ -25,6 +25,16 @@ clusters:
           filterMetadata:
             envoy.lb:
               x-gateway-destination-endpoint: 10.0.0.5:8080
+      - endpoint:
+          address:
+            socketAddress:
+              address: 10.0.0.5
+              portValue: 8081
+        loadBalancingWeight: 1
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              x-gateway-destination-endpoint: 10.0.0.5:8081
   metadata: {}
   name: endpoint-picker_gwtest_gateway-pool_8080
   type: STATIC
@@ -165,6 +175,7 @@ routes:
             envoy.lb.subset_hint:
               x-gateway-destination-endpoint-subset:
               - 10.0.0.5:8080
+              - 10.0.0.5:8081
       typedPerFilterConfig:
         inferencepool.backend.transformation.kgateway.io:
           '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute

@@ -28,10 +28,9 @@ func validatePool(pool *inf.InferencePool, svcCol krt.Collection[*corev1.Service
 			fmt.Errorf("invalid extensionRef: Kind %q is not supported (only Service)", wellknown.ServiceKind))
 	}
 
-	// Inferencepool v1 only supports a single target port
-	if len(pool.Spec.TargetPorts) != 1 {
-		errs = append(errs,
-			fmt.Errorf("invalid InferencePool: must have exactly one target port"))
+	// Up to 8 target ports is allowed
+	if n := len(pool.Spec.TargetPorts); n < 1 || n > 8 {
+		errs = append(errs, fmt.Errorf("invalid InferencePool: must have 1..8 targetPorts, got %d", n))
 	}
 
 	// Port must be specified when kind is Service

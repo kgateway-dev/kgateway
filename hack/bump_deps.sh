@@ -5,7 +5,10 @@ set -o nounset
 set -o errexit
 
 # The GIE EPP used in e2e tests
-EPP_YAML_PATH="test/e2e/features/inferenceextension/testdata/epp.yaml"
+EPP_YAML_PATHS=(
+  "test/kubernetes/e2e/features/inferenceextension/testdata/epp.yaml"
+  "test/kubernetes/e2e/features/agentgateway/inference/testdata/epp.yaml"
+)
 
 # The base URLs for fetching CRDs
 GIE_CRD_BASE="https://raw.githubusercontent.com/kubernetes-sigs/gateway-api-inference-extension"
@@ -119,15 +122,29 @@ derive_image_tag() {
   fi
 }
 
-# Update e2e EPP image tag (GIE only)
+# Update e2e EPP image tag (GIE only) across all YAML paths
 if [ "$kind" = gie ]; then
   img_tag="$(derive_image_tag "$resolved_version")"
-  echo "Updating EPP image tag in $EPP_YAML_PATH to ${img_tag} (from module version: ${resolved_version})"
-  # macOS/BSD-safe inline edit
-  sed -i.bak -E \
-    -e "s|(gateway-api-inference-extension/epp:)[^[:space:]\"]+|\1${img_tag}|g" \
-    "$root/$EPP_YAML_PATH"
-    rm -f "$root/$EPP_YAML_PATH.bak"
+
+  for rel in "${EPP_YAML_PATHS[@]}"; do
+    file="$root/$rel"
+    if [ ! -f "$file" ]; then
+      echo "WARN: EPP YAML not found: $rel (skipping)"
+      continue
+    fi
+    echo "Updating EPP image tag in $rel to ${img_tag} (from module version: ${resolved_version})"
+
+    # Only attempt replace if the image reference is present
+    if grep -Eq 'gateway-api-inference-extension/epp:' "$file"; then
+      # macOS/BSD-safe inline edit
+      sed -i.bak -E \
+        -e "s|(gateway-api-inference-extension/epp:)[^[:space:]\"]+|\1${img_tag}|g" \
+        "$file"
+      rm -f "$file.bak"
+    else
+      echo "WARN: No 'gateway-api-inference-extension/epp:' image reference found in $rel; skipping replace"
+    fi
+  done
 
   # Also update GIE_CRD_VERSION to the ref we were given (tag or SHA).
   update_gie_crd_version_line "$root/Makefile" "mk"
