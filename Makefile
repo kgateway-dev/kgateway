@@ -131,7 +131,6 @@ mod-tidy: mod-download mod-tidy-nested ## Tidy the go mod file
 # Analyze
 #----------------------------------------------------------------------------
 
-YQ ?= go tool yq
 GO_VERSION := $(shell cat go.mod | grep -E '^go' | awk '{print $$2}')
 GOTOOLCHAIN ?= go$(GO_VERSION)
 
