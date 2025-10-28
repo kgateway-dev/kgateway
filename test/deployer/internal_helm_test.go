@@ -61,6 +61,10 @@ func TestRenderHelmChart(t *testing.T) {
 			Name:      "agentgateway-infrastructure",
 			InputFile: "agentgateway-infrastructure",
 		},
+		{
+			Name:      "envoy-infrastructure",
+			InputFile: "envoy-infrastructure",
+		},
 	}
 
 	tester := DeployerTester{
