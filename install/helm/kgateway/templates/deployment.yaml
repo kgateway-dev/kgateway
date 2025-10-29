@@ -118,6 +118,8 @@ spec:
             {{- end }}
             - name: KGW_ENABLE_AGENTGATEWAY
               value: "{{.Values.agentgateway.enabled}}"
+            - name: KGW_ENABLE_ENVOY
+              value: "{{.Values.envoy.enabled}}"
             {{- if .Values.waypoint.enabled }}
             - name: KGW_ENABLE_WAYPOINT
               value: "true"
