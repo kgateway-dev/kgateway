@@ -157,7 +157,7 @@ func (s *Syncer) buildGatewayCollection(
 	krtopts krtutil.KrtOptions,
 ) (
 	krt.StatusCollection[*gwv1.Gateway, gwv1.GatewayStatus],
-	krt.Collection[translator.GatewayListener],
+	krt.Collection[*translator.GatewayListener],
 ) {
 	return translator.GatewayCollection(
 		s.controllerName,
@@ -192,13 +192,13 @@ func (s *Syncer) buildListenerSetCollection(
 }
 
 func (s *Syncer) buildAgwResources(
-	gateways krt.Collection[translator.GatewayListener],
+	gateways krt.Collection[*translator.GatewayListener],
 	refGrants translator.ReferenceGrants,
 	krtopts krtutil.KrtOptions,
 ) (krt.Collection[agwir.AgwResource], krt.Collection[*translator.RouteAttachment], PolicyStatusCollections) {
 	// filter gateway collections to only include gateways which use a built-in gateway class
 	// (resources for additional gateway classes should be created by the downstream providing them)
-	filteredGateways := krt.NewCollection(gateways, func(ctx krt.HandlerContext, gw translator.GatewayListener) *translator.GatewayListener {
+	filteredGateways := krt.NewCollection(gateways, func(ctx krt.HandlerContext, gw *translator.GatewayListener) **translator.GatewayListener {
 		if _, isAdditionalClass := s.additionalGatewayClasses[gw.ParentInfo.ParentGatewayClassName]; isAdditionalClass {
 			return nil
 		}
@@ -206,11 +206,11 @@ func (s *Syncer) buildAgwResources(
 	}, krtopts.ToOptions("FilteredGateways")...)
 
 	// Build ports and binds
-	ports := krtpkg.UnnamedIndex(filteredGateways, func(l translator.GatewayListener) []string {
+	ports := krtpkg.UnnamedIndex(filteredGateways, func(l *translator.GatewayListener) []string {
 		return []string{fmt.Sprint(l.ParentInfo.Port)}
 	}).AsCollection(krtopts.ToOptions("PortBindings")...)
 
-	binds := krt.NewManyCollection(ports, func(ctx krt.HandlerContext, object krt.IndexObject[string, translator.GatewayListener]) []agwir.AgwResource {
+	binds := krt.NewManyCollection(ports, func(ctx krt.HandlerContext, object krt.IndexObject[string, *translator.GatewayListener]) []agwir.AgwResource {
 		port, _ := strconv.Atoi(object.Key)
 		uniq := sets.New[types.NamespacedName]()
 		for _, gw := range object.Objects {
@@ -234,7 +234,7 @@ func (s *Syncer) buildAgwResources(
 	}
 
 	// Build listeners
-	listeners := krt.NewCollection(filteredGateways, func(ctx krt.HandlerContext, obj translator.GatewayListener) *agwir.AgwResource {
+	listeners := krt.NewCollection(filteredGateways, func(ctx krt.HandlerContext, obj *translator.GatewayListener) *agwir.AgwResource {
 		return s.buildListenerFromGateway(obj)
 	}, krtopts.ToOptions("Listeners")...)
 	if s.agwPlugins.AddResourceExtension != nil && s.agwPlugins.AddResourceExtension.Listeners != nil {
@@ -271,7 +271,7 @@ func (s *Syncer) buildAgwResources(
 }
 
 // buildListenerFromGateway creates a listener resource from a gateway
-func (s *Syncer) buildListenerFromGateway(obj translator.GatewayListener) *agwir.AgwResource {
+func (s *Syncer) buildListenerFromGateway(obj *translator.GatewayListener) *agwir.AgwResource {
 	l := &api.Listener{
 		Key:         obj.ResourceName(),
 		Name:        string(obj.ParentInfo.SectionName),
@@ -366,7 +366,7 @@ func (s *Syncer) newAgwBackendCollection(finalBackends krt.Collection[*v1alpha1.
 }
 
 // getProtocolAndTLSConfig extracts protocol and TLS configuration from a gateway
-func (s *Syncer) getProtocolAndTLSConfig(obj translator.GatewayListener) (api.Protocol, *api.TLSConfig, bool) {
+func (s *Syncer) getProtocolAndTLSConfig(obj *translator.GatewayListener) (api.Protocol, *api.TLSConfig, bool) {
 	var tlsConfig *api.TLSConfig
 
 	// Build TLS config if needed

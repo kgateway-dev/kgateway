@@ -951,7 +951,7 @@ func TestAgwRouteCollection(t *testing.T) {
 				inputs = append(inputs, ns)
 			}
 			for _, gw := range tc.gateways {
-				inputs = append(inputs, gw)
+				inputs = append(inputs, &gw)
 			}
 			for _, gw := range tc.refGrants {
 				inputs = append(inputs, gw)
@@ -959,7 +959,7 @@ func TestAgwRouteCollection(t *testing.T) {
 
 			// Create mock collections
 			mock := krttest.NewMock(t, inputs)
-			gateways := krttest.GetMockCollection[GatewayListener](mock)
+			gateways := krttest.GetMockCollection[*GatewayListener](mock)
 			gatewayObjs := krttest.GetMockCollection[*gwv1.Gateway](mock)
 			httpRoutes := krttest.GetMockCollection[*gwv1.HTTPRoute](mock)
 			grpcRoutes := krttest.GetMockCollection[*gwv1.GRPCRoute](mock)
@@ -1548,7 +1548,7 @@ func TestAgwRouteCollectionGRPC(t *testing.T) {
 				inputs = append(inputs, ns)
 			}
 			for _, gw := range tc.gateways {
-				inputs = append(inputs, gw)
+				inputs = append(inputs, &gw)
 			}
 			for _, gw := range tc.refGrants {
 				inputs = append(inputs, gw)
@@ -1556,7 +1556,7 @@ func TestAgwRouteCollectionGRPC(t *testing.T) {
 
 			// Create mock collections
 			mock := krttest.NewMock(t, inputs)
-			gateways := krttest.GetMockCollection[GatewayListener](mock)
+			gateways := krttest.GetMockCollection[*GatewayListener](mock)
 			gatewayObjs := krttest.GetMockCollection[*gwv1.Gateway](mock)
 			httpRoutes := krttest.GetMockCollection[*gwv1.HTTPRoute](mock)
 			grpcRoutes := krttest.GetMockCollection[*gwv1.GRPCRoute](mock)
@@ -1974,7 +1974,7 @@ func TestAgwRouteCollectionWithFilters(t *testing.T) {
 			refGrant := ReferenceGrant{}
 
 			var inputs []any
-			inputs = []any{tc.httpRoute, service, namespace, gateway, refGrant}
+			inputs = []any{tc.httpRoute, service, namespace, &gateway, refGrant}
 
 			// Add DirectResponse resources for the DirectResponse filter tests
 			if tc.name == "Route with DirectResponse ExtensionRef filter" {
@@ -1993,7 +1993,7 @@ func TestAgwRouteCollectionWithFilters(t *testing.T) {
 
 			// Create mock collections
 			mock := krttest.NewMock(t, inputs)
-			gateways := krttest.GetMockCollection[GatewayListener](mock)
+			gateways := krttest.GetMockCollection[*GatewayListener](mock)
 			gatewayObjs := krttest.GetMockCollection[*gwv1.Gateway](mock)
 			httpRoutes := krttest.GetMockCollection[*gwv1.HTTPRoute](mock)
 			grpcRoutes := krttest.GetMockCollection[*gwv1.GRPCRoute](mock)
@@ -2195,11 +2195,11 @@ func TestAgwRouteCollectionTimeouts(t *testing.T) {
 			}
 			refGrant := ReferenceGrant{}
 
-			inputs := []any{route, svc, ns, gl, refGrant}
+			inputs := []any{route, svc, ns, &gl, refGrant}
 
 			// KRT collections
 			mock := krttest.NewMock(t, inputs)
-			gateways := krttest.GetMockCollection[GatewayListener](mock)
+			gateways := krttest.GetMockCollection[*GatewayListener](mock)
 			gwObjs := krttest.GetMockCollection[*gwv1.Gateway](mock)
 			httpRoutes := krttest.GetMockCollection[*gwv1.HTTPRoute](mock)
 			grpcRoutes := krttest.GetMockCollection[*gwv1.GRPCRoute](mock)

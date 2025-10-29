@@ -254,7 +254,7 @@ func TestGetProtocolAndTLSConfig(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			syncer := &Syncer{}
 
-			proto, tlsConfig, ok := syncer.getProtocolAndTLSConfig(tc.gateway)
+			proto, tlsConfig, ok := syncer.getProtocolAndTLSConfig(&tc.gateway)
 
 			assert.Equal(t, tc.expectedOk, ok)
 			if tc.expectedOk {

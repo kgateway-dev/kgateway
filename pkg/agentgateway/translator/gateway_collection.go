@@ -204,12 +204,12 @@ func GatewayCollection(
 	krtopts krtutil.KrtOptions,
 ) (
 	krt.StatusCollection[*gwv1.Gateway, gwv1.GatewayStatus],
-	krt.Collection[GatewayListener],
+	krt.Collection[*GatewayListener],
 ) {
 	listenerIndex := krt.NewIndex(listenerSets, "gatewayParent", func(o ListenerSet) []types.NamespacedName {
 		return []types.NamespacedName{o.GatewayParent}
 	})
-	statusCol, gw := krt.NewStatusManyCollection(gateways, func(ctx krt.HandlerContext, obj *gwv1.Gateway) (*gwv1.GatewayStatus, []GatewayListener) {
+	statusCol, gw := krt.NewStatusManyCollection(gateways, func(ctx krt.HandlerContext, obj *gwv1.Gateway) (*gwv1.GatewayStatus, []*GatewayListener) {
 		class := krt.FetchOne(ctx, gatewayClasses, krt.FilterKey(string(obj.Spec.GatewayClassName)))
 		if class == nil {
 			logger.Debug("gateway class not found, skipping", "gw_name", obj.GetName(), "gatewayClassName", obj.Spec.GatewayClassName)
@@ -224,7 +224,7 @@ func GatewayCollection(
 		gwReporter := statusReporter.Gateway(obj)
 		logger.Debug("translating Gateway", "gw_name", obj.GetName(), "resource_version", obj.GetResourceVersion())
 
-		var result []GatewayListener
+		var result []*GatewayListener
 		kgw := obj.Spec
 		status := obj.Status.DeepCopy()
 
@@ -281,7 +281,7 @@ func GatewayCollection(
 				TLSPassthrough:         l.TLS != nil && l.TLS.Mode != nil && *l.TLS.Mode == gwv1.TLSModePassthrough,
 			}
 
-			res := GatewayListener{
+			res := &GatewayListener{
 				Name:          name,
 				Valid:         programmed,
 				TLSInfo:       tlsInfo,
@@ -302,7 +302,7 @@ func GatewayCollection(
 		}
 		listenersFromSets := krt.Fetch(ctx, listenerSets, krt.FilterIndex(listenerIndex, config.NamespacedName(obj)))
 		for _, ls := range listenersFromSets {
-			result = append(result, GatewayListener{
+			result = append(result, &GatewayListener{
 				Name:          ls.Name,
 				ParentGateway: config.NamespacedName(obj),
 				ParentObject: ParentKey{
@@ -454,22 +454,22 @@ func ListenerSetCollection(
 
 // RouteParents holds information about things Routes can reference as parents.
 type RouteParents struct {
-	Gateways     krt.Collection[GatewayListener]
-	GatewayIndex krt.Index[ParentKey, GatewayListener]
+	Gateways     krt.Collection[*GatewayListener]
+	GatewayIndex krt.Index[ParentKey, *GatewayListener]
 }
 
 // Fetch returns the parents for a given parent key.
 func (p RouteParents) Fetch(ctx krt.HandlerContext, pk ParentKey) []*ParentInfo {
-	return slices.Map(krt.Fetch(ctx, p.Gateways, krt.FilterIndex(p.GatewayIndex, pk)), func(gw GatewayListener) *ParentInfo {
+	return slices.Map(krt.Fetch(ctx, p.Gateways, krt.FilterIndex(p.GatewayIndex, pk)), func(gw *GatewayListener) *ParentInfo {
 		return &gw.ParentInfo
 	})
 }
 
 // BuildRouteParents builds a RouteParents from a collection of gateways.
 func BuildRouteParents(
-	gateways krt.Collection[GatewayListener],
+	gateways krt.Collection[*GatewayListener],
 ) RouteParents {
-	idx := krt.NewIndex(gateways, "Parent", func(o GatewayListener) []ParentKey {
+	idx := krt.NewIndex(gateways, "Parent", func(o *GatewayListener) []ParentKey {
 		return []ParentKey{o.ParentObject}
 	})
 	return RouteParents{
