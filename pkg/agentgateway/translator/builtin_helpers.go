@@ -22,14 +22,22 @@ func ApplyTimeouts(rule *gwv1.HTTPRouteRule, route *api.Route) error {
 		if err != nil {
 			return fmt.Errorf("failed to parse request timeout: %w", err)
 		}
-		route.TrafficPolicy.RequestTimeout = durationpb.New(d)
+		if d != 0 {
+			// "Setting a timeout to the zero duration (e.g. "0s") SHOULD disable the timeout"
+			// However, agentgateway already defaults to no timeout, so only set for non-zero
+			route.TrafficPolicy.RequestTimeout = durationpb.New(d)
+		}
 	}
 	if rule.Timeouts.BackendRequest != nil {
 		d, err := time.ParseDuration(string(*rule.Timeouts.BackendRequest))
 		if err != nil {
 			return fmt.Errorf("failed to parse backend request timeout: %w", err)
 		}
-		route.TrafficPolicy.BackendRequestTimeout = durationpb.New(d)
+		if d != 0 {
+			// "Setting a timeout to the zero duration (e.g. "0s") SHOULD disable the timeout"
+			// However, agentgateway already defaults to no timeout, so only set for non-zero
+			route.TrafficPolicy.BackendRequestTimeout = durationpb.New(d)
+		}
 	}
 	return nil
 }
