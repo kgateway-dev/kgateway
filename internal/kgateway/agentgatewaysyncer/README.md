@@ -372,7 +372,7 @@ Setup the cluster:
 Retag and load the image to match the default image tag in the values file for agentgateway, then run:
 
 ```
-make run HELM_ADDITIONAL_VALUES=test/kubernetes/e2e/tests/manifests/agent-gateway-integration.yaml; CONFORMANCE_GATEWAY_CLASS=agentgateway make conformance
+make run HELM_ADDITIONAL_VALUES=test/e2e/tests/manifests/agent-gateway-integration.yaml; CONFORMANCE_GATEWAY_CLASS=agentgateway make conformance
 ```
 
 ## Examples
@@ -388,7 +388,7 @@ helm upgrade -i --namespace kgateway-system --version v2.2.0-main kgateway oci:/
 
 Apply the httpbin test app:
 ```shell
-kubectl apply -f  test/kubernetes/e2e/defaults/testdata/httpbin.yaml
+kubectl apply -f  test/e2e/defaults/testdata/httpbin.yaml
 ```
 
 Apply the following config to set up the HTTPRoute attached to the agentgateway Gateway:

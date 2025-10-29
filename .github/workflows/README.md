@@ -8,7 +8,7 @@ This Github Action will not run by default on a Draft Pull Request. After a Pull
 it will trigger the action to run.
 
 ## [Kubernetes End-to-End Tests](./pr-kubernetes-tests.yaml)
-Regression tests run the suite of [Kubernetes End-To-End Tests](https://github.com/kgateway-dev/kgateway/tree/main/test/kubernetes/e2e).
+Regression tests run the suite of [Kubernetes End-To-End Tests](https://github.com/kgateway-dev/kgateway/tree/main/test/e2e).
 
 ### Draft Pull Requests
 This Github Action will not run by default on a Draft Pull Request. After a Pull Request is marked as `Ready for Review`

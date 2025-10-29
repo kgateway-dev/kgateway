@@ -5,7 +5,7 @@ set -o nounset
 set -o errexit
 
 # The GIE EPP used in e2e tests
-EPP_YAML_PATH="test/kubernetes/e2e/features/inferenceextension/testdata/epp.yaml"
+EPP_YAML_PATH="test/e2e/features/inferenceextension/testdata/epp.yaml"
 
 # The base URLs for fetching CRDs
 GIE_CRD_BASE="https://raw.githubusercontent.com/kubernetes-sigs/gateway-api-inference-extension"
