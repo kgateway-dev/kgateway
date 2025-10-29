@@ -1,0 +1,73 @@
+name: Lint
+
+on:
+  pull_request: { }
+  merge_group:
+    types: [checks_requested]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  # Lint Go code with golangci-lint
+  go-lint:
+    name: Go
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v4
+    - name: Prep Go Runner
+      uses: ./.github/actions/prep-go-runner
+    - uses: golangci/golangci-lint-action@v7
+      with:
+        version: v2.5.0
+        args: --verbose --modules-download-mode=readonly --allow-parallel-runners
+        skip-cache: true
+        skip-save-cache: true
+        only-new-issues: false
+
+  # Lint Helm charts
+  helm-lint:
+    name: Helm
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v4
+    - name: Lint Helm Charts
+      run: make lint-kgateway-charts
+
+  # Lint GitHub workflow files
+  action-lint:
+    name: GHA
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        sparse-checkout: .github
+    - uses: actions/setup-go@v5
+      with:
+        go-version-file: 'go.mod'
+    - run: make lint-actions
+
+  # Lint Rust code
+  rust-lint:
+    name: Rust
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Install Rust
+      uses: actions-rust-lang/setup-rust-toolchain@v1
+      with:
+        toolchain: 1.89.0
+        components: clippy,rustfmt
+        cache: true
+    - name: Lint
+      run: |
+        make -C internal/envoyinit/rustformations lint

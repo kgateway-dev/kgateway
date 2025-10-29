@@ -346,7 +346,7 @@ func TestExtractEnvoyError(t *testing.T) {
 		},
 		{
 			name: "docker pull logs present",
-			input: `Unable to find image 'quay.io/solo-io/envoy-gloo:1.35.2-patch4' locally
+			input: `Unable to find image 'quay.io/solo-io/envoy-gloo:1.36.2-patch1' locally
 1.35.2-patch1: Pulling from solo-io/envoy-gloo
 f90c8eb4724c: Pulling fs layer
 9f37c34398c2: Pulling fs layer
@@ -365,16 +365,16 @@ f90c8eb4724c: Pull complete
 1cc4dfe322cb: Pull complete
 e800bbdc2f77: Pull complete
 Digest: sha256:98c645568997299a1c4301e6077a1d2f566bb20828c0739e6c4177a821524dad
-Status: Downloaded newer image for quay.io/solo-io/envoy-gloo:1.35.2-patch4
+Status: Downloaded newer image for quay.io/solo-io/envoy-gloo:1.36.2-patch1
 error initializing configuration '/dev/fd/0': invalid named capture group: (?<=foo)bar`,
 			expected: "error initializing configuration '/dev/fd/0': invalid named capture group: (?<=foo)bar",
 		},
 		{
 			name: "docker pull logs with multi-line error",
-			input: `Unable to find image 'quay.io/solo-io/envoy-gloo:1.35.2-patch4' locally
+			input: `Unable to find image 'quay.io/solo-io/envoy-gloo:1.36.2-patch1' locally
 1.35.2-patch1: Pulling from solo-io/envoy-gloo
 f90c8eb4724c: Pull complete
-Status: Downloaded newer image for quay.io/solo-io/envoy-gloo:1.35.2-patch4
+Status: Downloaded newer image for quay.io/solo-io/envoy-gloo:1.36.2-patch1
 error initializing configuration '/dev/fd/0': missing ]:
   at line 42 in filter configuration
   regex validation failed`,

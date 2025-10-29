@@ -1,9 +1,14 @@
 use envoy_proxy_dynamic_modules_rust_sdk::*;
+use std::any::Any;
 
 // ALL FILTERS HERE
 mod http_simple_mutations;
 
-declare_init_functions!(init, new_http_filter_config_fn);
+declare_init_functions!(
+    init,
+    new_http_filter_config_fn,
+    new_http_filter_per_route_config_fn
+);
 
 /// This implements the [`envoy_proxy_dynamic_modules_rust_sdk::ProgramInitFunction`].
 ///
@@ -29,7 +34,7 @@ fn new_http_filter_config_fn<EC: EnvoyHttpFilterConfig, EHF: EnvoyHttpFilter>(
     _envoy_filter_config: &mut EC,
     filter_name: &str,
     filter_config: &[u8],
-) -> Option<Box<dyn HttpFilterConfig<EC, EHF>>> {
+) -> Option<Box<dyn HttpFilterConfig<EHF>>> {
     let filter_config = match std::str::from_utf8(filter_config) {
         Ok(config) => config,
         Err(_) => {
@@ -39,10 +44,28 @@ fn new_http_filter_config_fn<EC: EnvoyHttpFilterConfig, EHF: EnvoyHttpFilter>(
     };
     match filter_name {
         "http_simple_mutations" => http_simple_mutations::FilterConfig::new(filter_config)
-            .map(|config| Box::new(config) as Box<dyn HttpFilterConfig<EC, EHF>>),
+            .map(|config| Box::new(config) as Box<dyn HttpFilterConfig<EHF>>),
         _ => panic!(
             "Unknown filter name: {}, known filters are {}",
             filter_name, "http_simple_mutations"
+        ),
+    }
+}
+
+fn new_http_filter_per_route_config_fn(name: &str, config: &[u8]) -> Option<Box<dyn Any>> {
+    let per_route_config = match std::str::from_utf8(config) {
+        Ok(config) => config,
+        Err(_) => {
+            eprintln!("Invalid UTF-8 in per route filter configuration");
+            return None;
+        }
+    };
+    match name {
+        "http_simple_mutations" => http_simple_mutations::PerRouteConfig::new(per_route_config)
+            .map(|config| Box::new(config) as Box<dyn Any>),
+        _ => panic!(
+            "Unknown filter name: {}, known filters are {}",
+            name, "http_simple_mutations"
         ),
     }
 }

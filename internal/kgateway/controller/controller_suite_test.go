@@ -314,7 +314,7 @@ func newCommonCols(ctx context.Context, kubeClient kube.Client) *collections.Com
 	if err != nil {
 		Expect(err).ToNot(HaveOccurred())
 	}
-	commoncol, err := collections.NewCommonCollections(ctx, krtopts, kubeClient, cli, nil, gatewayControllerName, agwControllerName, *settings)
+	commoncol, err := collections.NewCommonCollections(ctx, krtopts, kubeClient, cli, gatewayControllerName, agwControllerName, *settings)
 	if err != nil {
 		Expect(err).ToNot(HaveOccurred())
 	}

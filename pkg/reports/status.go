@@ -245,6 +245,7 @@ func (r *ReportMap) BuildRouteStatus(
 ) *gwv1.RouteStatus {
 	return r.BuildRouteStatusWithParentRefDefaulting(ctx, obj, controller, false)
 }
+
 func (r *ReportMap) BuildRouteStatusWithParentRefDefaulting(
 	ctx context.Context,
 	obj client.Object,
@@ -359,6 +360,10 @@ func (r *ReportMap) BuildRouteStatusWithParentRefDefaulting(
 	slices.SortStableFunc(kgwStatus.Parents, func(a, b gwv1.RouteParentStatus) int {
 		return strings.Compare(ParentString(a.ParentRef), ParentString(b.ParentRef))
 	})
+	if newStatus.Parents == nil {
+		// Kubernetes will not let us send "nil", so we need an empty
+		newStatus.Parents = []gwv1.RouteParentStatus{}
+	}
 
 	return &newStatus
 }

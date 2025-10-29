@@ -9,8 +9,8 @@ import (
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/kclient"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -136,7 +136,7 @@ func NewAgwStatusSyncer(
 		},
 		gateways: StatusSyncer[*gwv1.Gateway, *gwv1.GatewayStatus]{
 			name:   "gateway",
-			client: kclient.NewFilteredDelayed[*gwv1.Gateway](client, wellknown.XListenerSetGVR, f),
+			client: kclient.NewFilteredDelayed[*gwv1.Gateway](client, wellknown.GatewayGVR, f),
 			build: func(om metav1.ObjectMeta, s *gwv1.GatewayStatus) *gwv1.Gateway {
 				return &gwv1.Gateway{
 					ObjectMeta: om,
@@ -185,19 +185,19 @@ func (s *AgentGwStatusSyncer) Start(ctx context.Context) error {
 func (s *AgentGwStatusSyncer) SyncStatus(ctx context.Context, resource status.Resource, statusObj any) {
 	switch resource.GroupVersionKind {
 	case wellknown.GatewayGVK:
-		s.gateways.ApplyStatus(ctx, resource.NamespacedName, statusObj)
+		s.gateways.ApplyStatus(ctx, resource, statusObj)
 	case wellknown.XListenerSetGVK:
-		s.listenerSets.ApplyStatus(ctx, resource.NamespacedName, statusObj)
+		s.listenerSets.ApplyStatus(ctx, resource, statusObj)
 	case wellknown.GRPCRouteGVK:
-		s.grpcRoutes.ApplyStatus(ctx, resource.NamespacedName, statusObj)
+		s.grpcRoutes.ApplyStatus(ctx, resource, statusObj)
 	case wellknown.TLSRouteGVK:
-		s.tlsRoutes.ApplyStatus(ctx, resource.NamespacedName, statusObj)
+		s.tlsRoutes.ApplyStatus(ctx, resource, statusObj)
 	case wellknown.TCPRouteGVK:
-		s.tcpRoutes.ApplyStatus(ctx, resource.NamespacedName, statusObj)
+		s.tcpRoutes.ApplyStatus(ctx, resource, statusObj)
 	case wellknown.HTTPRouteGVK:
-		s.httpRoutes.ApplyStatus(ctx, resource.NamespacedName, statusObj)
+		s.httpRoutes.ApplyStatus(ctx, resource, statusObj)
 	case wellknown.TrafficPolicyGVK:
-		s.trafficPolicies.ApplyStatus(ctx, resource.NamespacedName, statusObj)
+		s.trafficPolicies.ApplyStatus(ctx, resource, statusObj)
 	default:
 		log.Fatalf("SyncStatus: unknown resource type: %v", resource.GroupVersionKind)
 	}
@@ -216,29 +216,31 @@ type StatusSyncer[O controllers.ComparableObject, S any] struct {
 	build func(om metav1.ObjectMeta, s S) O
 }
 
-func (s StatusSyncer[O, S]) ApplyStatus(ctx context.Context, obj types.NamespacedName, statusObj any) {
+func (s StatusSyncer[O, S]) ApplyStatus(ctx context.Context, obj status.Resource, statusObj any) {
 	status := statusObj.(S)
 	stopwatch := utils.NewTranslatorStopWatch(s.name + "Status")
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
 
-	logger := logger.With("kind", s.name, "resource", obj.String())
+	logger := logger.With("kind", s.name, "resource", obj.NamespacedName.String())
 	// TODO: move this to retry by putting it back on the queue, with some limit on the retry attempts allowed
 	err := retry.Do(func() error {
-		live := s.client.Get(obj.Name, obj.Namespace)
-		if controllers.IsNil(live) {
-			logger.Debug("resource not found, skipping status update")
-			return nil
-		}
-
+		// Pass only the status and minimal part of ObjectMetadata to find the resource and validate it.
+		// Passing Spec is ignored by the API server but has costs.
+		// Passing ResourceVersion is important to ensure we are not writing stale data. The collection is responsible for
+		// re-enqueuing a resource if it ends up being rejected due to stale ResourceVersion.
 		_, err := s.client.UpdateStatus(s.build(metav1.ObjectMeta{
-			Name:            live.GetName(),
-			Namespace:       live.GetNamespace(),
-			UID:             live.GetUID(),
-			ResourceVersion: live.GetResourceVersion(),
+			Name:            obj.Name,
+			Namespace:       obj.Namespace,
+			ResourceVersion: obj.ResourceVersion,
 		}, status))
 
 		if err != nil {
+			if errors.IsConflict(err) {
+				// This is normal. It is expected the collection will re-enqueue the write
+				logger.Debug("updating stale status, skipping", logKeyError, err)
+				return nil
+			}
 			logger.Error("error updating status", logKeyError, err)
 			return err
 		}
@@ -247,7 +249,7 @@ func (s StatusSyncer[O, S]) ApplyStatus(ctx context.Context, obj types.Namespace
 	}, retry.Attempts(maxRetryAttempts), retry.Delay(retryDelay))
 
 	if err != nil {
-		logger.Error("failed to sync status after retries", logKeyError, err, "policy", obj.String())
+		logger.Error("failed to sync status after retries", logKeyError, err, "policy", obj.NamespacedName.String())
 	} else {
 		logger.Debug("updated policy status")
 	}

@@ -385,7 +385,7 @@ type CSRFPolicy struct {
 }
 
 // HeaderModifiers can be used to define the policy to modify request and response headers.
-// +kubebuilder:validation:XValidation:rule="has(self.request) || has(self.response)",message="At least one of request or response must be provided."
+// +kubebuilder:validation:AtLeastOneOf=request;response
 type HeaderModifiers struct {
 	// Request modifies request headers.
 	// +optional

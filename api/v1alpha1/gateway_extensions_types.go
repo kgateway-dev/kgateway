@@ -33,24 +33,20 @@ type GatewayExtension struct {
 // +kubebuilder:validation:XValidation:message="RateLimit must not be set when type is not RateLimit",rule="self.type == 'RateLimit' || !has(self.rateLimit)"
 type GatewayExtensionSpec struct {
 	// Type indicates the type of the GatewayExtension to be used.
-	// +unionDiscriminator
 	// +kubebuilder:validation:Enum=ExtAuth;ExtProc;RateLimit
 	// +required
 	Type GatewayExtensionType `json:"type"`
 
 	// ExtAuth configuration for ExtAuth extension type.
 	// +optional
-	// +unionMember:type=ExtAuth
 	ExtAuth *ExtAuthProvider `json:"extAuth,omitempty"`
 
 	// ExtProc configuration for ExtProc extension type.
 	// +optional
-	// +unionMember:type=ExtProc
 	ExtProc *ExtProcProvider `json:"extProc,omitempty"`
 
 	// RateLimit configuration for RateLimit extension type.
 	// +optional
-	// +unionMember:type=RateLimit
 	RateLimit *RateLimitProvider `json:"rateLimit,omitempty"`
 }
 

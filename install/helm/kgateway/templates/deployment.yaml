@@ -42,7 +42,7 @@ spec:
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          image: "{{ .Values.controller.image.registry | default .Values.image.registry }}/{{ .Values.controller.image.repository }}:{{ .Values.controller.image.tag | default .Values.image.tag | default .Chart.Version }}"
+          image: "{{ .Values.controller.image.registry | default .Values.image.registry }}/{{ .Values.controller.image.repository }}:{{ .Values.controller.image.tag | default .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.controller.image.pullPolicy | default .Values.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.controller.service.ports.grpc }}
@@ -101,7 +101,7 @@ spec:
             - name: KGW_DEFAULT_IMAGE_REGISTRY
               value: {{ .Values.image.registry }}
             - name: KGW_DEFAULT_IMAGE_TAG
-              value: {{ .Values.image.tag | default .Chart.Version }}
+              value: {{ .Values.image.tag | default .Chart.AppVersion }}
             - name: KGW_DEFAULT_IMAGE_PULL_POLICY
               value: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
             - name: KGW_DISCOVERY_NAMESPACE_SELECTORS

@@ -2804,11 +2804,6 @@ func (in *KubernetesProxyConfig) DeepCopyInto(out *KubernetesProxyConfig) {
 		*out = new(Agentgateway)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.FloatingUserId != nil {
-		in, out := &in.FloatingUserId, &out.FloatingUserId
-		*out = new(bool)
-		**out = **in
-	}
 	if in.OmitDefaultSecurityContext != nil {
 		in, out := &in.OmitDefaultSecurityContext, &out.OmitDefaultSecurityContext
 		*out = new(bool)

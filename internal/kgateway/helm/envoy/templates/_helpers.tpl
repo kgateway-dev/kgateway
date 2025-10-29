@@ -71,6 +71,25 @@ gateway.networking.k8s.io/gateway-name: {{ .Release.Name }}
 {{- end }}
 
 {{/*
+All labels including selector labels, standard labels, and custom gateway labels
+*/}}
+{{- define "kgateway.gateway.allLabels" -}}
+{{- $gateway := .Values.gateway -}}
+{{- $labels := merge (dict
+  "kgateway" "kube-gateway"
+  "app.kubernetes.io/managed-by" "kgateway"
+  "gateway.networking.k8s.io/gateway-class-name" .Values.gateway.gatewayClassName
+  )
+  (include "kgateway.gateway.selectorLabels" . | fromYaml)
+  ($gateway.gatewayLabels | default dict)
+-}}
+{{- if .Chart.AppVersion -}}
+{{- $_ := set $labels "app.kubernetes.io/version" .Chart.AppVersion -}}
+{{- end -}}
+{{- $labels | toYaml -}}
+{{- end -}}
+
+{{/*
 Return a container image value as a string
 */}}
 {{- define "kgateway.gateway.image" -}}

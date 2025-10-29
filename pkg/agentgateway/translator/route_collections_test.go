@@ -770,6 +770,162 @@ func TestAgwRouteCollection(t *testing.T) {
 			},
 		},
 		{
+			name: "HTTP route with multiple header matches",
+			httpRoutes: []*gwv1.HTTPRoute{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "header-match-route",
+						Namespace: "default",
+					},
+					Spec: gwv1.HTTPRouteSpec{
+						CommonRouteSpec: gwv1.CommonRouteSpec{
+							ParentRefs: []gwv1.ParentReference{
+								{
+									Name: "test-gateway",
+								},
+							},
+						},
+						Hostnames: []gwv1.Hostname{"example.com"},
+						Rules: []gwv1.HTTPRouteRule{
+							{
+								Matches: []gwv1.HTTPRouteMatch{
+									{
+										Path: &gwv1.HTTPPathMatch{
+											Type:  ptr.To(gwv1.PathMatchPathPrefix),
+											Value: ptr.To("/api"),
+										},
+										Headers: []gwv1.HTTPHeaderMatch{
+											{
+												Type:  ptr.To(gwv1.HeaderMatchExact),
+												Name:  "X-API-Version",
+												Value: "v1",
+											},
+											{
+												Type:  ptr.To(gwv1.HeaderMatchExact),
+												Name:  "X-Header-One",
+												Value: "value-one",
+											},
+											{
+												Type:  ptr.To(gwv1.HeaderMatchExact),
+												Name:  "X-Header-Two",
+												Value: "value-two",
+											},
+										},
+									},
+								},
+								BackendRefs: []gwv1.HTTPBackendRef{
+									{
+										BackendRef: gwv1.BackendRef{
+											BackendObjectReference: gwv1.BackendObjectReference{
+												Name: "test-service",
+												Port: ptr.To(gwv1.PortNumber(80)),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			services: []*corev1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-service",
+						Namespace: "default",
+					},
+					Spec: corev1.ServiceSpec{
+						Ports: []corev1.ServicePort{
+							{
+								Port: 80,
+							},
+						},
+					},
+				},
+			},
+			namespaces: []*corev1.Namespace{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "default",
+					},
+				},
+			},
+			gateways: []GatewayListener{
+				{
+					ParentGateway: types.NamespacedName{
+						Name:      "test-gateway",
+						Namespace: "default",
+					},
+					ParentObject: ParentKey{
+						Kind:      wellknown.GatewayGVK,
+						Name:      "test-gateway",
+						Namespace: "default",
+					},
+					ParentInfo: ParentInfo{
+						InternalName: "default/test-gateway",
+						Protocol:     gwv1.HTTPProtocolType,
+						Port:         80,
+						SectionName:  "http",
+						AllowedKinds: []gwv1.RouteGroupKind{
+							{
+								Group: &groupName,
+								Kind:  gwv1.Kind(wellknown.HTTPRouteKind),
+							},
+						},
+					},
+					Valid: true,
+				},
+			},
+			refGrants:     []ReferenceGrant{},
+			expectedCount: 1,
+			expectedRoutes: []*api.Route{
+				{
+					Key:       "default/header-match-route.0.0.http",
+					RouteName: "default/header-match-route",
+					Hostnames: []string{"example.com"},
+					Matches: []*api.RouteMatch{
+						{
+							Path: &api.PathMatch{
+								Kind: &api.PathMatch_PathPrefix{
+									PathPrefix: "/api",
+								},
+							},
+							Headers: []*api.HeaderMatch{
+								{
+									Name: "X-API-Version",
+									Value: &api.HeaderMatch_Exact{
+										Exact: "v1",
+									},
+								},
+								{
+									Name: "X-Header-One",
+									Value: &api.HeaderMatch_Exact{
+										Exact: "value-one",
+									},
+								},
+								{
+									Name: "X-Header-Two",
+									Value: &api.HeaderMatch_Exact{
+										Exact: "value-two",
+									},
+								},
+							},
+						},
+					},
+					Backends: []*api.RouteBackend{
+						{
+							Backend: &api.BackendReference{
+								Kind: &api.BackendReference_Service{
+									Service: "default/test-service.default.svc.cluster.local",
+								},
+								Port: 80,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name:           "No HTTP Routes",
 			httpRoutes:     []*gwv1.HTTPRoute{},
 			services:       []*corev1.Service{},
@@ -1953,4 +2109,180 @@ func TestAgwRouteCollectionWithFilters(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAgwRouteCollectionTimeouts(t *testing.T) {
+	type tc struct {
+		name              string
+		request           gwv1.Duration
+		backendRequest    *gwv1.Duration
+		expectReqSeconds  *duration.Duration
+		expectBackendSecs *duration.Duration
+	}
+	five := duration.Duration{Seconds: int64(5)}
+	ten := duration.Duration{Seconds: int64(10)}
+	tests := []tc{
+		{
+			name:              "non-zero request and backend",
+			request:           gwv1.Duration("10s"),
+			backendRequest:    ptr.To(gwv1.Duration("5s")),
+			expectReqSeconds:  &ten,
+			expectBackendSecs: &five,
+		},
+		{
+			name:              "zero request timeout disables request timeout; backend non-zero kept",
+			request:           gwv1.Duration("0s"),
+			backendRequest:    ptr.To(gwv1.Duration("5s")),
+			expectReqSeconds:  nil,
+			expectBackendSecs: &five,
+		},
+		{
+			name:              "zero backend timeout disables backend timeout; request non-zero kept",
+			request:           gwv1.Duration("10s"),
+			backendRequest:    ptr.To(gwv1.Duration("0s")),
+			expectReqSeconds:  &ten,
+			expectBackendSecs: nil,
+		},
+		// Note: No test case to ensure BackendRequest is less than Request timeout
+		// since it's covered by API validation and not the responsibility of this function.
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Input objects
+			route := &gwv1.HTTPRoute{
+				ObjectMeta: metav1.ObjectMeta{Name: "timeouts", Namespace: "default"},
+				Spec: gwv1.HTTPRouteSpec{
+					CommonRouteSpec: gwv1.CommonRouteSpec{
+						ParentRefs: []gwv1.ParentReference{{Name: "test-gateway"}},
+					},
+					Hostnames: []gwv1.Hostname{"example.com"},
+					Rules: []gwv1.HTTPRouteRule{
+						{
+							Timeouts: &gwv1.HTTPRouteTimeouts{
+								Request:        ptr.To(tt.request),
+								BackendRequest: tt.backendRequest,
+							},
+							Matches: []gwv1.HTTPRouteMatch{
+								{Path: &gwv1.HTTPPathMatch{Type: ptr.To(gwv1.PathMatchPathPrefix), Value: ptr.To("/api")}},
+							},
+							BackendRefs: []gwv1.HTTPBackendRef{
+								{BackendRef: gwv1.BackendRef{
+									BackendObjectReference: gwv1.BackendObjectReference{Name: "svc", Port: ptr.To(gwv1.PortNumber(80))},
+								}},
+							},
+						},
+					},
+				},
+			}
+
+			svc := &corev1.Service{
+				ObjectMeta: metav1.ObjectMeta{Name: "svc", Namespace: "default"},
+				Spec:       corev1.ServiceSpec{Ports: []corev1.ServicePort{{Port: 80}}},
+			}
+			ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "default"}}
+			gl := GatewayListener{
+				ParentGateway: types.NamespacedName{Namespace: "default", Name: "test-gateway"},
+				ParentObject:  ParentKey{Kind: wellknown.GatewayGVK, Name: "test-gateway", Namespace: "default"},
+				ParentInfo: ParentInfo{
+					InternalName: "default/test-gateway",
+					Protocol:     gwv1.HTTPProtocolType,
+					Port:         80,
+					SectionName:  "http",
+					AllowedKinds: []gwv1.RouteGroupKind{{Group: &groupName, Kind: gwv1.Kind(wellknown.HTTPRouteKind)}},
+				},
+				Valid: true,
+			}
+			refGrant := ReferenceGrant{}
+
+			inputs := []any{route, svc, ns, gl, refGrant}
+
+			// KRT collections
+			mock := krttest.NewMock(t, inputs)
+			gateways := krttest.GetMockCollection[GatewayListener](mock)
+			gwObjs := krttest.GetMockCollection[*gwv1.Gateway](mock)
+			httpRoutes := krttest.GetMockCollection[*gwv1.HTTPRoute](mock)
+			grpcRoutes := krttest.GetMockCollection[*gwv1.GRPCRoute](mock)
+			tcpRoutes := krttest.GetMockCollection[*gwv1alpha2.TCPRoute](mock)
+			tlsRoutes := krttest.GetMockCollection[*gwv1alpha2.TLSRoute](mock)
+			refGrantsCol := krttest.GetMockCollection[ReferenceGrant](mock)
+			services := krttest.GetMockCollection[*corev1.Service](mock)
+			namespaces := krttest.GetMockCollection[*corev1.Namespace](mock)
+			serviceEntries := krttest.GetMockCollection[*networkingclient.ServiceEntry](mock)
+			inferencePools := krttest.GetMockCollection[*inf.InferencePool](mock)
+
+			gwObjs.WaitUntilSynced(context.Background().Done())
+			httpRoutes.WaitUntilSynced(context.Background().Done())
+			grpcRoutes.WaitUntilSynced(context.Background().Done())
+			tcpRoutes.WaitUntilSynced(context.Background().Done())
+			tlsRoutes.WaitUntilSynced(context.Background().Done())
+			refGrantsCol.WaitUntilSynced(context.Background().Done())
+			services.WaitUntilSynced(context.Background().Done())
+			namespaces.WaitUntilSynced(context.Background().Done())
+
+			routeParents := BuildRouteParents(gateways)
+			refGrants := BuildReferenceGrants(refGrantsCol)
+			routeInputs := RouteContextInputs{
+				Grants:         refGrants,
+				RouteParents:   routeParents,
+				Services:       services,
+				Namespaces:     namespaces,
+				ServiceEntries: serviceEntries,
+				InferencePools: inferencePools,
+			}
+
+			// Call function under test
+			agwRoutes, _ := AgwRouteCollection(&status.StatusCollections{}, httpRoutes, grpcRoutes, tcpRoutes, tlsRoutes, routeInputs, krtutil.KrtOptions{})
+			agwRoutes.WaitUntilSynced(context.Background().Done())
+
+			// Assert results
+			results := agwRoutes.List()
+			require.Len(t, results, 1, "expected exactly one route result")
+			require.NotNil(t, results[0].Resource)
+			rr := results[0].Resource.GetRoute()
+			require.NotNil(t, rr, "route must be present")
+
+			// Assert timeout mappings and “0s disables timeouts” semantics
+			beTimeout := getBackendRequestTimeout(rr)
+			reqTimeout := getRequestTimeout(rr)
+
+			// Request timeout
+			if tt.expectReqSeconds == nil {
+				require.True(t, isDisabled(reqTimeout), "request timeout should be disabled when set to 0s or omitted")
+			} else {
+				require.NotNil(t, reqTimeout, "request timeout missing")
+				assert.Equal(t, tt.expectReqSeconds, reqTimeout, "request timeout seconds")
+			}
+
+			// BackendRequest timeout
+			if tt.expectBackendSecs == nil {
+				require.True(t, isDisabled(beTimeout), "backendRequest timeout should be disabled when set to 0s or omitted")
+			} else {
+				require.NotNil(t, beTimeout, "backendRequest timeout missing")
+				assert.Equal(t, tt.expectBackendSecs, beTimeout, "backendRequest timeout seconds")
+			}
+		})
+	}
+}
+
+func isDisabled(d *duration.Duration) bool {
+	return d == nil || (d.GetSeconds() == 0 && d.GetNanos() == 0)
+}
+
+func getRequestTimeout(r *api.Route) *duration.Duration {
+	if r != nil {
+		if r.TrafficPolicy != nil && r.TrafficPolicy.RequestTimeout != nil {
+			return r.TrafficPolicy.RequestTimeout
+		}
+	}
+	return nil
+}
+
+func getBackendRequestTimeout(r *api.Route) *duration.Duration {
+	if r != nil {
+		if r.TrafficPolicy != nil && r.TrafficPolicy.BackendRequestTimeout != nil {
+			return r.TrafficPolicy.BackendRequestTimeout
+		}
+	}
+	return nil
 }

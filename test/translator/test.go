@@ -58,6 +58,35 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
+var AllCRDs = []schema.GroupVersionResource{
+	// Gateway API
+	gvr.KubernetesGateway_v1,
+	gvr.GatewayClass,
+	gvr.HTTPRoute_v1,
+	gvr.GRPCRoute,
+	gvr.TCPRoute,
+	gvr.TLSRoute,
+	gvr.ReferenceGrant,
+	gvr.BackendTLSPolicy,
+	gvr.XListenerSet,
+	wellknown.InferencePoolGVR,
+	// K8s API
+	gvr.Service,
+	gvr.Pod,
+	// Istio API
+	gvr.ServiceEntry,
+	gvr.WorkloadEntry,
+	gvr.AuthorizationPolicy,
+	// kgateway API
+	wellknown.BackendTLSPolicyGVR,
+	wellknown.BackendGVR,
+	wellknown.BackendConfigPolicyGVR,
+	wellknown.TrafficPolicyGVR,
+	wellknown.HTTPListenerPolicyGVR,
+	wellknown.DirectResponseGVR,
+	wellknown.GatewayExtensionGVR,
+}
+
 type translationResult struct {
 	Routes        []*envoyroutev3.RouteConfiguration
 	Listeners     []*envoylistenerv3.Listener
@@ -245,7 +274,7 @@ func TestTranslationWithExtraPlugins(
 	gwNN types.NamespacedName,
 	extraPluginsFn ExtraPluginsFn,
 	extraSchemes runtime.SchemeBuilder,
-	extraGroups []string,
+	extraGVRs []schema.GroupVersionResource,
 	crdDir string,
 	settingsOpts ...SettingsOpts,
 ) {
@@ -255,7 +284,7 @@ func TestTranslationWithExtraPlugins(
 	tc := TestCase{
 		InputFiles: inputFiles,
 	}
-	results, err := tc.Run(t, ctx, scheme, extraPluginsFn, extraGroups, crdDir, settingsOpts...)
+	results, err := tc.Run(t, ctx, scheme, extraPluginsFn, extraGVRs, crdDir, settingsOpts...)
 	r.NoError(err, "error running test case")
 	r.Len(results, 1, "expected exactly one gateway in the results")
 	r.Contains(results, gwNN)
@@ -537,7 +566,7 @@ func (tc TestCase) Run(
 	ctx context.Context,
 	scheme *runtime.Scheme,
 	extraPluginsFn ExtraPluginsFn,
-	extraGroups []string,
+	extraGVRs []schema.GroupVersionResource,
 	crdDir string,
 	settingsOpts ...SettingsOpts,
 ) (map[types.NamespacedName]ActualTestResult, error) {
@@ -569,8 +598,8 @@ func (tc TestCase) Run(
 					ourObjs = append(ourObjs, obj)
 				} else {
 					external := false
-					for _, group := range extraGroups {
-						if strings.Contains(apiversion, group) {
+					for _, gvr := range extraGVRs {
+						if strings.Contains(apiversion, gvr.Group) {
 							external = true
 							break
 						}
@@ -585,22 +614,9 @@ func (tc TestCase) Run(
 
 	ourCli := fake.NewSimpleClientset(ourObjs...)
 	cli := kubeclient.NewFakeClient(anyObjs...)
-	for _, crd := range []schema.GroupVersionResource{
-		gvr.KubernetesGateway_v1,
-		gvr.GatewayClass,
-		gvr.HTTPRoute_v1,
-		gvr.GRPCRoute,
-		gvr.Service,
-		gvr.Pod,
-		gvr.TCPRoute,
-		gvr.TLSRoute,
-		gvr.ServiceEntry,
-		gvr.WorkloadEntry,
-		gvr.AuthorizationPolicy,
-		wellknown.XListenerSetGVR,
-		wellknown.BackendTLSPolicyGVR,
-	} {
-		clienttest.MakeCRDWithAnnotations(t, cli, crd, map[string]string{
+	allGVRs := append(AllCRDs, extraGVRs...)
+	for _, gvr := range allGVRs {
+		clienttest.MakeCRDWithAnnotations(t, cli, gvr, map[string]string{
 			consts.BundleVersionAnnotation: consts.BundleVersion,
 		})
 	}
@@ -643,7 +659,6 @@ func (tc TestCase) Run(
 		krtOpts,
 		cli,
 		ourCli,
-		nil,
 		wellknown.DefaultGatewayControllerName,
 		wellknown.DefaultAgwControllerName,
 		*settings,

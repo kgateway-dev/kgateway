@@ -17,3 +17,9 @@ body:
       placeholder: https://github.com/kgateway-dev/kgateway/actions/runs/...
     validations:
       required: true
+
+  - type: textarea
+    id: additional-details
+    attributes:
+      label: Additional Details (logs, etc)
+      description: Any details that might help debugging, such as logs from the failed test run

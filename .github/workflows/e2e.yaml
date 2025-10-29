@@ -8,6 +8,7 @@ on:
 env:
   VERSION: '1.0.0-ci1'
   GITHUB_TOKEN: ${{ github.token }}
+  GO_TEST_RETRIES: 2
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
@@ -25,7 +26,7 @@ jobs:
         # We intentionally set an upper threshold of 30 minutes for our End-to-End tests
         # Our goal is to load balance tests in a way that allows quick iteration on PRs
         # If tests are exceeding the 30-minute limit, please see:
-        # /test/kubernetes/e2e/load_balancing_tests.md
+        # /test/e2e/load_balancing_tests.md
         #
         # Above each test below, we document the latest date/time for the GitHub action step `Run /./.github/actions/kubernetes-e2e-tests` to run
         # NOTE: We use the GitHub action step time (as opposed to the `go test` time or the GitHub action job time), because it is easier to capture and fairly consistent
@@ -102,11 +103,9 @@ jobs:
       with:
         cluster-name: ${{ matrix.test.cluster-name }}
         kind-node-version: ${{ steps.dotenv.outputs.node_version }}
-        kind-version: ${{ steps.dotenv.outputs.kind_version }}
         kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
         istio-version: ${{ steps.dotenv.outputs.istio_version }}
         localstack: ${{ matrix.test.localstack }}
-        agentgateway: ${{ matrix.test.agentgateway }}
     - id: run-tests
       uses: ./.github/actions/kubernetes-e2e-tests
       with:

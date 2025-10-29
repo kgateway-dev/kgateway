@@ -105,6 +105,7 @@ listeners:
         - name: inferencepool.backend.transformation.kgateway.io
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExternalProcessor
+            failureModeAllow: true
             grpcService:
               envoyGrpc:
                 authority: placeholder-service.placeholder-namespace.svc:9002

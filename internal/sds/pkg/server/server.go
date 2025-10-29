@@ -11,7 +11,7 @@ import (
 	"net"
 	"os"
 
-	"github.com/avast/retry-go"
+	"github.com/avast/retry-go/v4"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_service_secret_v3 "github.com/envoyproxy/go-control-plane/envoy/service/secret/v3"

@@ -19,8 +19,10 @@ RUN cargo fetch
 RUN rm -rf src
 
 # Then copy the rest of the source code and build the library.
-COPY ./${RUSTFORMATIONS_DIR} .
+COPY ${RUSTFORMATIONS_DIR} .
 RUN cargo zigbuild --target x86_64-unknown-linux-gnu
+# switch to this locally if you are on arm
+# RUN cargo zigbuild --target aarch64-unknown-linux-gnu
 
 # hard code amd64 for now as we only have that version of envoy-gloo
 RUN cp /build/target/x86_64-unknown-linux-gnu/debug/librust_module.so /build/amd64_librust_module.so

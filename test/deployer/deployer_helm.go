@@ -157,31 +157,75 @@ func DefaultDeployerInputs(dt DeployerTester, commonCols *collections.CommonColl
 }
 
 // validateYAML checks that the YAML file is valid:
-// 1. No lines should end with ': ' (colon-space)
-// 2. Each YAML document should be unmarshalable
+//
+// 1. No lines should end with whitespace. This sometimes means you forgot
+// something important, such as handling edge cases when certain values are
+// absent, e.g. `foo: {{ bar }}` leads to `foo: ` if bar is the empty string,
+// and should probably be handled by omitting `foo:` altogether. If it's not a
+// real problem, it's lint that can be quickly fixed.
+//
+// 2. No blank lines appear, which helps ensure good hygiene around usage of
+// helm `indent` and `nindent` template functions.
+//
+// 3. Each YAML document should round-trip: unmarshaling and then marshaling
+// should produce the same YAML content.
 func validateYAML(t *testing.T, filename string, data []byte) {
 	t.Helper()
 
-	// Check for lines ending with whitespace. This could be "innocent" go
-	// templating lint but can also be 'oops, the chart assumed that
-	// .Values.foo would never be empty'
+	// Check for (1,2)
 	lines := strings.Split(string(data), "\n")
 	for i, line := range lines {
 		if strings.HasSuffix(line, " ") || strings.HasSuffix(line, "\t") {
 			t.Errorf("helm chart produced yaml indicative of a buggy helm chart not handling edge cases: line %d in %s ends with whitespace: %q", i+1, filename, line)
 		}
+		if line == "" && i+1 != len(lines) {
+			t.Errorf("helm chart produced yaml with blank lines; please remove these to help ensure good hygiene around usage of helm template functions indent/nindent: line %d in %s is blank", i+1, filename)
+		}
 	}
 
-	// Split into YAML documents and unmarshal each one
+	// (3) Split into YAML documents and verify each one round-trips
 	documents := strings.Split(string(data), "\n---\n")
 	for i, doc := range documents {
 		doc = strings.TrimSpace(doc)
 		if doc == "" || doc == "---" {
 			continue
 		}
-		var obj interface{}
+		var obj any
 		if err := yaml.Unmarshal([]byte(doc), &obj); err != nil {
 			t.Errorf("helm chart produced invalid yaml: failed to unmarshal document %d in %s: %v", i+1, filename, err)
+			continue
+		}
+
+		// Verify round-trip: marshal back to YAML and compare
+		marshaled, err := yaml.Marshal(obj)
+		if err != nil {
+			t.Errorf("helm chart produced yaml that cannot be marshaled back: failed to marshal document %d in %s: %v", i+1, filename, err)
+			continue
+		}
+
+		// Unmarshal round-trip and compare objects (handles key ordering)
+		var objRoundTrip any
+		if err := yaml.Unmarshal(marshaled, &objRoundTrip); err != nil {
+			t.Errorf("helm chart produced yaml that fails to unmarshal after round-trip: document %d in %s: %v", i+1, filename, err)
+			continue
+		}
+
+		// First check: objects should be semantically equal (order-independent)
+		if diff := cmp.Diff(obj, objRoundTrip); diff != "" {
+			t.Errorf("helm chart produced yaml that does not round-trip semantically: document %d in %s\nDiff (- original, + after round-trip):\n%s", i+1, filename, diff)
+			continue
+		}
+
+		// Second check: string comparison to catch implicit null becoming
+		// explicit, which could be a mistaken use of '{{- with ... }}'
+		// Normalize whitespace but preserve the actual YAML syntax differences
+		originalNorm := strings.TrimSpace(doc)
+		marshaledNorm := strings.TrimSpace(string(marshaled))
+
+		// Check if marshaled version has explicit 'null' that wasn't in original
+		if !strings.Contains(originalNorm, ": null") && strings.Contains(marshaledNorm, ": null") {
+			diff := cmp.Diff(originalNorm, marshaledNorm)
+			t.Errorf("helm chart produced yaml with implicit null that becomes explicit: document %d in %s\nDiff (- original, + after round-trip):\n%s", i+1, filename, diff)
 		}
 	}
 }

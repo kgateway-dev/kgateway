@@ -9,7 +9,6 @@ import (
 	"time"
 
 	stateful_sessionv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/stateful_session/v3"
-	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	stateful_cookie "github.com/envoyproxy/go-control-plane/envoy/extensions/http/stateful_session/cookie/v3"
 	stateful_header "github.com/envoyproxy/go-control-plane/envoy/extensions/http/stateful_session/header/v3"
 	httpv3 "github.com/envoyproxy/go-control-plane/envoy/type/http/v3"
@@ -101,6 +100,7 @@ func (d *builtinPlugin) CreationTime() time.Time {
 func (d *builtinPlugin) Equals(in any) bool {
 	// we don't really need equality check here, because this policy is embedded in the httproute,
 	// and we have generation based equality checks for that already.
+	// +noKrtEquals
 	return true
 }
 
@@ -111,15 +111,7 @@ type builtinPluginGwPass struct {
 	needStatefulSession map[string]bool
 }
 
-func (p *builtinPluginGwPass) ApplyForBackend(pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoyroutev3.Route) error {
-	// no op
-	return nil
-}
-
-func (p *builtinPluginGwPass) ApplyHCM(pCtx *ir.HcmContext, out *envoyhttp.HttpConnectionManager) error {
-	// no-op
-	return nil
-}
+var _ ir.PolicyIR = &builtinPlugin{}
 
 func (h *RoutesIndex) NewBuiltInIr(
 	kctx krt.HandlerContext,
@@ -225,15 +217,15 @@ func convertTimeouts(timeout *gwv1.HTTPRouteTimeouts) *timeouts {
 	if timeout == nil {
 		return nil
 	}
-	var requestTimeout *durationpb.Duration
-	var backendRequestTimeout *durationpb.Duration
 
+	var requestTimeout *durationpb.Duration
 	if timeout.Request != nil {
 		if parsed, err := time.ParseDuration(string(*timeout.Request)); err == nil {
 			requestTimeout = durationpb.New(parsed)
 		}
 	}
 
+	var backendRequestTimeout *durationpb.Duration
 	if timeout.BackendRequest != nil {
 		if parsed, err := time.ParseDuration(string(*timeout.BackendRequest)); err == nil {
 			backendRequestTimeout = durationpb.New(parsed)
@@ -298,11 +290,9 @@ func convertRetry(
 		},
 		StatusCodes: retry.Codes,
 	}
-
 	if retry.Attempts != nil {
 		in.Attempts = int32(*retry.Attempts) //nolint:gosec // G115: retry attempts are small positive integers
 	}
-
 	if retry.Backoff != nil {
 		duration, err := time.ParseDuration(string(*retry.Backoff))
 		if err != nil {
@@ -450,8 +440,8 @@ func translateStatusCode(
 	annotations map[string]string,
 ) (envoyroutev3.RedirectAction_RedirectResponseCode, error) {
 	var overrideStatusCode *int
-	var err error
 	if value, ok := annotations[apiannotations.HTTPRedirectStatusCode]; ok {
+		var err error
 		overrideStatusCode, err = parseRedirectStatusCodeAnnotation(value, ruleName)
 		if err != nil {
 			return envoyroutev3.RedirectAction_FOUND, err
@@ -538,8 +528,10 @@ func (m *mirrorIr) apply(
 	outputRoute *envoyroutev3.Route,
 	mergeOpts policy.MergeOptions,
 ) {
-	if outputRoute == nil || outputRoute.GetRoute() == nil ||
-		!policy.IsSettable(outputRoute.GetRoute().GetRequestMirrorPolicies(), mergeOpts) {
+	// Note: we intentionally do not use policy.IsSettable() for mirrors,
+	// unlike single-value fields (redirect, timeouts, retry), as mirrors are
+	// append-only and cumulative to support multiple mirrors from the same HTTPRoute rule.
+	if outputRoute == nil || outputRoute.GetRoute() == nil {
 		return
 	}
 	mirror := &envoyroutev3.RouteAction_RequestMirrorPolicy{
@@ -549,7 +541,14 @@ func (m *mirrorIr) apply(
 	outputRoute.GetRoute().RequestMirrorPolicies = append(outputRoute.GetRoute().GetRequestMirrorPolicies(), mirror)
 }
 
-func convertMirrorIR(kctx krt.HandlerContext, f *gwv1.HTTPRequestMirrorFilter, fromgk schema.GroupKind, fromns string, refgrants *RefGrantIndex, ups *BackendIndex) *mirrorIr {
+func convertMirrorIR(
+	kctx krt.HandlerContext,
+	f *gwv1.HTTPRequestMirrorFilter,
+	fromgk schema.GroupKind,
+	fromns string,
+	refgrants *RefGrantIndex,
+	ups *BackendIndex,
+) *mirrorIr {
 	if f == nil {
 		return nil
 	}
@@ -647,20 +646,17 @@ func getFractionPercent(f gwv1.HTTPRequestMirrorFilter) *envoycorev3.RuntimeFrac
 			denom = float64(*f.Fraction.Denominator)
 		}
 		ratio := float64(f.Fraction.Numerator) / denom
+		// use MILLION denominator to maximize precision since arbitrary fractions are allowed.
 		return &envoycorev3.RuntimeFractionalPercent{
-			DefaultValue: toEnvoyPercentage(ratio),
+			DefaultValue: &envoytype.FractionalPercent{
+				Numerator:   uint32(ratio * 1000000),
+				Denominator: envoytype.FractionalPercent_MILLION,
+			},
 		}
 	}
 
 	// nil means 100%
 	return nil
-}
-
-func toEnvoyPercentage(percentage float64) *envoytype.FractionalPercent {
-	return &envoytype.FractionalPercent{
-		Numerator:   uint32(percentage * 10000),
-		Denominator: envoytype.FractionalPercent_MILLION,
-	}
 }
 
 func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
@@ -758,7 +754,7 @@ func (p *builtinPluginGwPass) HttpFilters(fcc ir.FilterChainCommon) ([]filters.S
 	return builtinStaged, nil
 }
 
-// New helper to create filterIR
+// convertFilterIR converts the HTTPRouteFilter to the IR.
 func (h *RoutesIndex) convertfilterIR(
 	kctx krt.HandlerContext,
 	f gwv1.HTTPRouteFilter,

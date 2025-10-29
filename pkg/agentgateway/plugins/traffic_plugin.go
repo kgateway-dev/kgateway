@@ -72,8 +72,9 @@ func convertStatusCollection(col krt.Collection[krt.ObjectWithStatus[*v1alpha1.T
 
 // NewTrafficPlugin creates a new TrafficPolicy plugin
 func NewTrafficPlugin(agw *AgwCollections) AgwPlugin {
-	col := krt.WrapClient(kclient.NewFiltered[*v1alpha1.TrafficPolicy](
+	col := krt.WrapClient(kclient.NewFilteredDelayed[*v1alpha1.TrafficPolicy](
 		agw.Client,
+		wellknown.TrafficPolicyGVR,
 		kclient.Filter{ObjectFilter: agw.Client.ObjectFilter()},
 	), agw.KrtOpts.ToOptions("TrafficPolicy")...)
 	policyStatusCol, policyCol := krt.NewStatusManyCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.TrafficPolicy) (

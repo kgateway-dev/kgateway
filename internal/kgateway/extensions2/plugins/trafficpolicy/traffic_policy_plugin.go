@@ -2,9 +2,6 @@ package trafficpolicy
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"strconv"
 	"time"
 
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -50,7 +47,6 @@ import (
 const (
 	transformationFilterNamePrefix = "transformation"
 	rustformationFilterNamePrefix  = "dynamic_modules/simple_mutations"
-	metadataRouteTransformation    = "transformation/helper"
 	localRateLimitFilterNamePrefix = "ratelimit/local"
 	localRateLimitStatPrefix       = "http_local_rate_limiter"
 	rateLimitFilterNamePrefix      = "ratelimit"
@@ -193,18 +189,16 @@ type trafficPolicyPluginGwPass struct {
 	ir.UnimplementedProxyTranslationPass
 
 	setTransformationInChain map[string]bool // TODO(nfuden): make this multi stage
-	// TODO(nfuden): dont abuse httplevel filter in favor of route level
-	rustformationStash    map[string]string
-	listenerTransform     *transformationpb.RouteTransformations
-	localRateLimitInChain map[string]*localratelimitv3.LocalRateLimit
-	extAuthPerProvider    ProviderNeededMap
-	extProcPerProvider    ProviderNeededMap
-	rateLimitPerProvider  ProviderNeededMap
-	rbacInChain           map[string]*envoyrbacv3.RBAC
-	corsInChain           map[string]*corsv3.Cors
-	csrfInChain           map[string]*envoy_csrf_v3.CsrfPolicy
-	headerMutationInChain map[string]*header_mutationv3.HeaderMutationPerRoute
-	bufferInChain         map[string]*bufferv3.Buffer
+	listenerTransform        *transformationpb.RouteTransformations
+	localRateLimitInChain    map[string]*localratelimitv3.LocalRateLimit
+	extAuthPerProvider       ProviderNeededMap
+	extProcPerProvider       ProviderNeededMap
+	rateLimitPerProvider     ProviderNeededMap
+	rbacInChain              map[string]*envoyrbacv3.RBAC
+	corsInChain              map[string]*corsv3.Cors
+	csrfInChain              map[string]*envoy_csrf_v3.CsrfPolicy
+	headerMutationInChain    map[string]*header_mutationv3.HeaderMutationPerRoute
+	bufferInChain            map[string]*bufferv3.Buffer
 }
 
 var _ ir.ProxyTranslationPass = &trafficPolicyPluginGwPass{}
@@ -231,11 +225,16 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 	registerTypes(commoncol.OurClient)
 
 	useRustformations = commoncol.Settings.UseRustFormations // stash the state of the env setup for rustformation usage
+	if useRustformations {
+		logger.Info("transformation is using Rust Dynamic Module.")
+	}
 
-	col := krt.WrapClient(kclient.NewFiltered[*v1alpha1.TrafficPolicy](
+	cli := kclient.NewFilteredDelayed[*v1alpha1.TrafficPolicy](
 		commoncol.Client,
+		wellknown.TrafficPolicyGVR,
 		kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()},
-	), commoncol.KrtOpts.ToOptions("TrafficPolicy")...)
+	)
+	col := krt.WrapClient(cli, commoncol.KrtOpts.ToOptions("TrafficPolicy")...)
 	gk := wellknown.TrafficPolicyGVK.GroupKind()
 
 	constructor := NewTrafficPolicyConstructor(ctx, commoncol)
@@ -278,8 +277,8 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
 					return policy.MergePolicies(pols, mergeTrafficPolicies, mergeSettings)
 				},
-				GetPolicyStatus:   getPolicyStatusFn(commoncol.CrudClient),
-				PatchPolicyStatus: patchPolicyStatusFn(commoncol.CrudClient),
+				GetPolicyStatus:   getPolicyStatusFn(cli),
+				PatchPolicyStatus: patchPolicyStatusFn(cli),
 			},
 		},
 		ExtraHasSynced: constructor.HasSynced,
@@ -327,56 +326,6 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, outputR
 	policy, ok := pCtx.Policy.(*TrafficPolicy)
 	if !ok {
 		return nil
-	}
-
-	if policy.spec.rustformation != nil {
-		// TODO(nfuden): get back to this path once we have valid perroute
-		// pCtx.TypedFilterConfig.AddTypedConfig(rustformationFilterNamePrefix, policy.spec.rustformation)
-
-		// Hack around not having route level.
-		// Note this is really really bad and rather fragile due to listener draining behaviors
-		routeHash := strconv.Itoa(int(utils.HashProto(outputRoute))) //nolint:gosec // G115: hash value used as string key, truncation is acceptable
-		if p.rustformationStash == nil {
-			p.rustformationStash = make(map[string]string)
-		}
-		// encode the configuration that would be route level and stash the serialized version in a map
-		p.rustformationStash[routeHash] = string(policy.spec.rustformation.toStash)
-
-		// augment the dynamic metadata so that we can do our route hack
-		// set_dynamic_metadata filter DOES NOT have a route level configuration
-		// set_filter_state can be used but the dynamic modules cannot access it on the current version of envoy
-		// therefore use the old transformation just for rustformation
-		reqm := &transformationpb.RouteTransformations_RouteTransformation_RequestMatch{
-			RequestTransformation: &transformationpb.Transformation{
-				TransformationType: &transformationpb.Transformation_TransformationTemplate{
-					TransformationTemplate: &transformationpb.TransformationTemplate{
-						ParseBodyBehavior: transformationpb.TransformationTemplate_DontParse, // Default is to try for JSON... Its kinda nice but failure is bad...
-						DynamicMetadataValues: []*transformationpb.TransformationTemplate_DynamicMetadataValue{
-							{
-								MetadataNamespace: "kgateway",
-								Key:               "route",
-								Value: &transformationpb.InjaTemplate{
-									Text: routeHash,
-								},
-							},
-						},
-					},
-				},
-			},
-		}
-
-		setmetaTransform := &transformationpb.RouteTransformations{
-			Transformations: []*transformationpb.RouteTransformations_RouteTransformation{
-				{
-					Match: &transformationpb.RouteTransformations_RouteTransformation_RequestMatch_{
-						RequestMatch: reqm,
-					},
-				},
-			},
-		}
-		pCtx.TypedFilterConfig.AddTypedConfig(metadataRouteTransformation, setmetaTransform)
-
-		p.setTransformationInChain[pCtx.FilterChainName] = true
 	}
 
 	if policy.spec.ai != nil {
@@ -482,49 +431,29 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(fcc ir.FilterChainCommon) ([]fil
 		// ---------------
 		// | END CLASSIC |
 		// ---------------
-		// TODO(nfuden/yuvalk): how to do route level correctly probably contribute to dynamic module upstream
-		// smash together configuration
-		filterRouteHashConfig := map[string]string{}
-		topLevel, ok := p.rustformationStash[""]
-
-		if topLevel == "" {
-			topLevel = "}"
-		} else {
-			// toplevel is already formatted and at this point its quicker to rip off the { than it is so unmarshal and all}
-			topLevel = "," + topLevel[1:]
-		}
-		if ok {
-			delete(p.rustformationStash, "")
-		}
-		for k, v := range p.rustformationStash {
-			filterRouteHashConfig[k] = v
-		}
-
-		filterConfig, _ := json.Marshal(filterRouteHashConfig)
-		msg, _ := utils.MessageToAny(&wrapperspb.StringValue{
-			Value: fmt.Sprintf(`{"route_specific": %s%s`, string(filterConfig), topLevel),
+		// TODO: on the rust module side, the deserialization would fail and envoy would reject the config if
+		//       any fields are missing in the json EVEN the filter is disabled, so need this for now until
+		//       we change the rust module to have default value
+		cfg, _ := utils.MessageToAny(&wrapperspb.StringValue{
+			Value: "{\"request_headers_setter\": [], \"response_headers_setter\": []}",
 		})
 		rustCfg := dynamicmodulesv3.DynamicModuleFilter{
 			DynamicModuleConfig: &exteniondynamicmodulev3.DynamicModuleConfig{
 				Name: "rust_module",
 			},
-			FilterName: "http_simple_mutations",
-
-			// currently we use stringvalue but we should look at using the json variant as supported in upstream
-			FilterConfig: msg,
+			FilterName:   "http_simple_mutations",
+			FilterConfig: cfg,
+		}
+		if p.listenerTransform != nil {
+			// TODO: Add the listener level transform config here?
 		}
 
-		stagedFilters = append(stagedFilters, filters.MustNewStagedFilter(rustformationFilterNamePrefix,
+		rustFilter := filters.MustNewStagedFilter(rustformationFilterNamePrefix,
 			&rustCfg,
 			filters.BeforeStage(filters.AcceptedStage),
-		))
-
-		// filters = append(filters, filters.MustNewStagedFilter(setFilterStateFilterName,
-		// 	&set_filter_statev3.Config{}, filters.AfterStage(filters.FaultStage)))
-		stagedFilters = append(stagedFilters, filters.MustNewStagedFilter(metadataRouteTransformation,
-			&transformationpb.FilterTransformations{},
-			filters.AfterStage(filters.FaultStage),
-		))
+		)
+		rustFilter.Filter.Disabled = true
+		stagedFilters = append(stagedFilters, rustFilter)
 	}
 
 	// Add global ExtAuth disable filter when there are providers
@@ -626,7 +555,12 @@ func (p *trafficPolicyPluginGwPass) handlePolicies(
 	typedFilterConfig *ir.TypedFilterConfigMap,
 	spec trafficPolicySpecIr,
 ) {
-	p.handleTransformation(fcn, typedFilterConfig, spec.transformation)
+	if useRustformations {
+		p.handleRustTransformation(fcn, typedFilterConfig, spec.rustformation)
+	} else {
+		p.handleTransformation(fcn, typedFilterConfig, spec.transformation)
+	}
+
 	// Apply ExtAuthz configuration if present
 	// ExtAuth does not allow for most information such as destination
 	// to be set at the route level so we need to smuggle info upwards.

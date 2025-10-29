@@ -115,8 +115,9 @@ Statuses:
       - conditions:
         - lastTransitionTime: null
           message: 'Replaced Rule (0): invalid xds configuration: error initializing
-            configuration ''/dev/fd/0'': Failed to parse request template: Failed to parse
-            body template [inja.exception.parser_error] (at 1:21) unexpected ''}'''
+            configuration ''/dev/fd/0'': Failed to parse request template: Failed
+            to parse body template [inja.exception.parser_error] (at 1:21) unexpected
+            ''}'''
           reason: RouteRuleReplaced
           status: "False"
           type: Accepted
@@ -147,8 +148,8 @@ Statuses:
           status: "False"
           type: Accepted
         - lastTransitionTime: null
-          message: Attached to all targets
-          reason: Attached
-          status: "True"
+          message: ""
+          reason: Pending
+          status: "False"
           type: Attached
         controllerName: kgateway.dev/kgateway

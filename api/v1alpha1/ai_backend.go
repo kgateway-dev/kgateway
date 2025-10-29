@@ -143,7 +143,7 @@ type PathOverride struct {
 // AuthHeader allows customization of the default Authorization header sent to the LLM Provider.
 // The default header is `Authorization: Bearer <token>`. HeaderName can change the Authorization
 // header name and Prefix can change the Bearer prefix
-// +kubebuilder:validation:XValidation:rule="has(self.prefix) || has(self.headerName)",message="at least one of prefix or headerName must be set"
+// +kubebuilder:validation:AtLeastOneOf=prefix;headerName
 type AuthHeader struct {
 	// Prefix specifies the prefix to use in the Authorization header.
 	// +optional

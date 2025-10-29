@@ -4,9 +4,12 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "kgateway.gateway.fullname" . }}
+  {{- with $gateway.gatewayAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   labels:
-    {{- include "kgateway.gateway.constLabels" . | nindent 4 }}
-    {{- include "kgateway.gateway.labels" . | nindent 4 }}
+    {{- include "kgateway.gateway.allLabels" . | nindent 4 }}
 spec:
   {{- if $gateway.replicaCount }}
   replicas: {{ $gateway.replicaCount }}
@@ -21,25 +24,30 @@ spec:
   template:
     metadata:
       annotations:
-      {{- with $gateway.extraPodAnnotations }}
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+      {{- $promAnnotations := dict }}
       {{- if $statsConfig.enabled }}
-        prometheus.io/path: /metrics
-        prometheus.io/port: "9091"
-        prometheus.io/scrape: "true"
+        {{- $promAnnotations = dict "prometheus.io/path" "/metrics" "prometheus.io/port" "9091" "prometheus.io/scrape" "true" }}
       {{- end}}
+      {{- $aiStatsAnnotations := dict }}
       {{- if (($gateway.aiExtension).enabled) }}
-      {{- if $gateway.aiExtension.stats }}
-        kgateway.dev/ai-stats-config-hash: {{ sha256sum $gateway.aiExtension.stats | trunc 64 }}
-      {{- end }}
-      {{- end}}
-      labels:
-        {{- include "kgateway.gateway.constLabels" . | nindent 8 }}
-        {{- include "kgateway.gateway.podLabels" . | nindent 8 }}
-        {{- with $gateway.extraPodLabels }}
-        {{- toYaml . | nindent 8 }}
+        {{- if $gateway.aiExtension.stats }}
+          {{- $aiStatsAnnotations = dict "kgateway.dev/ai-stats-config-hash" (sha256sum $gateway.aiExtension.stats | trunc 64) }}
         {{- end }}
+      {{- end}}
+      {{- toYaml (merge
+          (deepCopy ($gateway.gatewayAnnotations | default dict))
+          ($gateway.extraPodAnnotations | default dict)
+          $promAnnotations
+          $aiStatsAnnotations
+       ) | nindent 8 }}
+      labels:
+        {{- toYaml (merge
+          (dict "gateway.networking.k8s.io/gateway-class-name" .Values.gateway.gatewayClassName)
+          (include "kgateway.gateway.selectorLabels" . | fromYaml)
+          (dict "kgateway" "kube-gateway")
+          ($gateway.gatewayLabels | default dict)
+          ($gateway.extraPodLabels | default dict)
+        ) | nindent 8 }}
     spec:
       {{- with $gateway.imagePullSecrets }}
       imagePullSecrets:

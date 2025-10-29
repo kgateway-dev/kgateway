@@ -46,6 +46,10 @@ Routes:
   - headers:
     - exact: canary
       name: env
+    - exact: value-one
+      name: X-Header-One
+    - exact: value-two
+      name: X-Header-Two
   routeName: default/bar-route
 - backends:
   - backend:

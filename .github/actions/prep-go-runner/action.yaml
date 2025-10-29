@@ -24,15 +24,12 @@ runs:
 
         # https://github.com/actions/runner-images/discussions/3242 github runners are bad at cleanup
         echo "Removing large packages"
-        sudo apt-get remove -y '^dotnet-.*' || true
-        sudo apt-get remove -y '^llvm-.*' || true
-        sudo apt-get remove -y 'php.*' || true
-        sudo apt-get remove -y '^mongodb-.*' || true
-        sudo apt-get remove -y '^mysql-.*' || true
-        sudo apt-get remove -y azure-cli google-chrome-stable firefox powershell mono-devel libgl1-mesa-dri || true
-        sudo apt-get autoremove -y || true
-        sudo apt-get clean -y || true
+        time sudo apt-get remove -y '^dotnet-.*' '^llvm-.*' 'php.*' '^mongodb-.*' '^mysql-.*' azure-cli google-chrome-stable \
+          firefox powershell mono-devel libgl1-mesa-dri || true
+        time sudo apt-get autoremove -y || true
+        time sudo apt-get clean -y || true
         echo "Done removing large packages"
+        df -h
 
         # Clean up pre-installed tools
         # For some reason, GHA often takes minutes (up to 20min observed) to clean up somehow.

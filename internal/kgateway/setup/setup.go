@@ -243,8 +243,9 @@ func New(opts ...func(*setup)) (*setup, error) {
 				Metrics: metricsserver.Options{
 					BindAddress: ":9092",
 				},
-				LeaderElection:   !s.globalSettings.DisableLeaderElection,
-				LeaderElectionID: s.leaderElectionID,
+				LeaderElectionNamespace: namespaces.GetPodNamespace(),
+				LeaderElection:          !s.globalSettings.DisableLeaderElection,
+				LeaderElectionID:        s.leaderElectionID,
 			}
 		}
 	}
@@ -346,7 +347,6 @@ func (s *setup) Start(ctx context.Context) error {
 		krtOpts,
 		istioClient,
 		cli,
-		mgr.GetClient(),
 		s.gatewayControllerName,
 		s.agwControllerName,
 		*s.globalSettings,

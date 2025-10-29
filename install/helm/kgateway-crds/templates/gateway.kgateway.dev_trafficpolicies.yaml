@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.19.1-0.20251023132335-bf7d6b742e6a
   labels:
     app: kgateway
     app.kubernetes.io/name: kgateway
@@ -1387,8 +1387,10 @@ spec:
                     type: object
                 type: object
                 x-kubernetes-validations:
-                - message: At least one of request or response must be provided.
-                  rule: has(self.request) || has(self.response)
+                - message: at least one of the fields in [request response] must be
+                    set
+                  rule: '[has(self.request),has(self.response)].filter(x,x==true).size()
+                    >= 1'
               rateLimit:
                 description: |-
                   RateLimit specifies the rate limiting configuration for the policy.

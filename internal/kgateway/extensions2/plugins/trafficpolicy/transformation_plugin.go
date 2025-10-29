@@ -168,8 +168,7 @@ func toTransformFilterConfig(t *v1alpha1.TransformationPolicy) (*transformationp
 }
 
 type rustformationIR struct {
-	config  *dynamicmodulesv3.DynamicModuleFilter
-	toStash string
+	config *dynamicmodulesv3.DynamicModuleFilterPerRoute
 }
 
 var _ PolicySubIR = &rustformationIR{}
@@ -185,7 +184,7 @@ func (r *rustformationIR) Equals(other PolicySubIR) bool {
 	if r == nil || otherRustformation == nil {
 		return false
 	}
-	return proto.Equal(r.config, otherRustformation.config) && r.toStash == otherRustformation.toStash
+	return proto.Equal(r.config, otherRustformation.config)
 }
 
 func (r *rustformationIR) Validate() error {
@@ -200,18 +199,17 @@ func constructRustformation(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr
 	if in.Spec.Transformation == nil || !useRustformations {
 		return nil
 	}
-	rustformation, toStash, err := toRustformFilterConfig(in.Spec.Transformation)
+	rustformation, err := toRustFormationPerRouteConfig(in.Spec.Transformation)
 	if err != nil {
 		return err
 	}
 	out.rustformation = &rustformationIR{
-		config:  rustformation,
-		toStash: toStash,
+		config: rustformation,
 	}
 	return nil
 }
 
-func toRustFormationPerRouteConfig(t *v1alpha1.Transform) (map[string]interface{}, bool) {
+func toRustFormationConfig(t *v1alpha1.Transform) (map[string]interface{}, bool) {
 	// if there is no transformations present then return a
 	hasTransform := false
 	rustformationConfigMap := map[string]interface{}{}
@@ -251,51 +249,51 @@ func toRustFormationPerRouteConfig(t *v1alpha1.Transform) (map[string]interface{
 	return rustformationConfigMap, hasTransform
 }
 
-// toRustformFilterConfig converts a TransformationPolicy to a RustFormation filter config.
+// toRustFormationPerRouteConfig converts a TransformationPolicy to a RustFormation per route config.
 // The shape of this function currently resembles that of the traditional API
 // Feel free to change the shape and flow of this function as needed provided there are sufficient unit tests on the configuration output.
 // The most dangerous updates here will be any switch over env variables that we are working on.s
-func toRustformFilterConfig(t *v1alpha1.TransformationPolicy) (*dynamicmodulesv3.DynamicModuleFilter, string, error) {
+func toRustFormationPerRouteConfig(t *v1alpha1.TransformationPolicy) (*dynamicmodulesv3.DynamicModuleFilterPerRoute, error) {
 	if t == nil || *t == (v1alpha1.TransformationPolicy{}) {
-		return nil, "", nil
+		return nil, nil
 	}
 	hasTransform := false
 	rustformCfgMap := map[string]interface{}{}
 
-	requestMap, hasRequestTransform := toRustFormationPerRouteConfig(t.Request)
+	requestMap, hasRequestTransform := toRustFormationConfig(t.Request)
 	hasTransform = hasTransform || hasRequestTransform
 	for k, v := range requestMap {
 		rustformCfgMap["request_"+k] = v
 	}
 
-	requestMap, hasResponseTransform := toRustFormationPerRouteConfig(t.Response)
+	requestMap, hasResponseTransform := toRustFormationConfig(t.Response)
 	hasTransform = hasTransform || hasResponseTransform
 	for k, v := range requestMap {
 		rustformCfgMap["response_"+k] = v
 	}
 
 	if !hasTransform {
-		return nil, "", nil
+		return nil, nil
 	}
 
 	rustformationJson, err := json.Marshal(rustformCfgMap)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
 	stringConf := string(rustformationJson)
 	filterCfg, _ := utils.MessageToAny(&wrapperspb.StringValue{
 		Value: stringConf,
 	})
-	rustCfg := &dynamicmodulesv3.DynamicModuleFilter{
+	rustCfg := &dynamicmodulesv3.DynamicModuleFilterPerRoute{
 		DynamicModuleConfig: &exteniondynamicmodulev3.DynamicModuleConfig{
 			Name: "rust_module",
 		},
-		FilterName:   "http_simple_mutations",
-		FilterConfig: filterCfg,
+		PerRouteConfigName: "http_simple_mutations",
+		FilterConfig:       filterCfg,
 	}
 
-	return rustCfg, stringConf, nil
+	return rustCfg, nil
 }
 
 func convertClassicRouteToListener(
@@ -311,8 +309,8 @@ func convertClassicRouteToListener(
 	transform := transformationpb.TransformationRule{
 		Match: &envoyroutev3.RouteMatch{
 			PathSpecifier: &envoyroutev3.RouteMatch_Prefix{
-				// match all as we arent doing submatches at this point
-				// consider attaching to a route or wiating until merging logic is done
+				// match all as we aren't doing submatches at this point
+				// consider attaching to a route or waiting until merging logic is done
 				Prefix: "/",
 			},
 		},
@@ -331,6 +329,16 @@ func (p *trafficPolicyPluginGwPass) handleTransformation(fcn string, typedFilter
 	}
 	if transform.config != nil {
 		typedFilterConfig.AddTypedConfig(transformationFilterNamePrefix, transform.config)
+		p.setTransformationInChain[fcn] = true
+	}
+}
+
+func (p *trafficPolicyPluginGwPass) handleRustTransformation(fcn string, typedFilterConfig *ir.TypedFilterConfigMap, rustTransform *rustformationIR) {
+	if rustTransform == nil {
+		return
+	}
+	if rustTransform.config != nil {
+		typedFilterConfig.AddTypedConfig(rustformationFilterNamePrefix, rustTransform.config)
 		p.setTransformationInChain[fcn] = true
 	}
 }

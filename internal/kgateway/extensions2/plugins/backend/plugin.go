@@ -84,12 +84,14 @@ func registerTypes(ourCli versioned.Interface) {
 func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
 	registerTypes(commoncol.OurClient)
 
-	setBackendStatusClient(commoncol.CrudClient)
-
-	col := krt.WrapClient(kclient.NewFiltered[*v1alpha1.Backend](
+	cli := kclient.NewFilteredDelayed[*v1alpha1.Backend](
 		commoncol.Client,
+		wellknown.BackendGVR,
 		kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()},
-	), commoncol.KrtOpts.ToOptions("Backends")...)
+	)
+	setBackendStatusClient(cli)
+
+	col := krt.WrapClient(cli, commoncol.KrtOpts.ToOptions("Backends")...)
 
 	gk := wellknown.BackendGVK.GroupKind()
 	translateFn := buildTranslateFunc(ctx, commoncol.Secrets, commoncol.Services, commoncol.Namespaces)

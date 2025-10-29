@@ -67,7 +67,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: gw
-  annotations:
   labels:
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: kgateway

@@ -1,0 +1,70 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: kgateway
+spec:
+  controllerName: kgateway.dev/kgateway
+  description: Standard class for managing Gateway API ingress traffic.
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: opts
+  namespace: default
+spec:
+  kube:
+    service:
+      extraLabels:
+        infra-and-params: params
+      extraAnnotations:
+        infra-and-params: params
+    serviceAccount:
+      extraLabels:
+        infra-and-params: params
+      extraAnnotations:
+        infra-and-params: params
+    podTemplate:
+      extraAnnotations:
+        extra-annotation: v1
+        infra-and-params: params
+      extraLabels:
+        extra-label: v1
+        infra-and-params: params
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: kgateway-with-params
+spec:
+  controllerName: kgateway.dev/kgateway
+  description: Gateway class with parameters.
+  parametersRef:
+    group: gateway.kgateway.dev
+    kind: GatewayParameters
+    name: opts
+    namespace: default
+---
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: gw
+  namespace: default
+spec:
+  gatewayClassName: kgateway-with-params
+  infrastructure:
+    labels:
+      my-label: my-value
+      infra-and-params: infra
+      gateway.networking.k8s.io/gateway-name: ignored-should-not-be-used
+    annotations:
+      infra-and-params: infra
+      # Not sure why they would want this, but test it!
+      prometheus.io/path: /something/else
+      my-annotation: my-value
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: Same
