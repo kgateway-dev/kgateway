@@ -36,6 +36,7 @@ import (
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/namespaces"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
@@ -292,7 +293,7 @@ func (s *setup) Start(ctx context.Context) error {
 		return err
 	}
 
-	if err := controller.AddToScheme(mgr.GetScheme()); err != nil {
+	if err := schemes.AddToScheme(mgr.GetScheme()); err != nil {
 		slog.Error("unable to extend scheme", "error", err)
 		return err
 	}

@@ -26,6 +26,7 @@ var SchemeBuilder = runtime.SchemeBuilder{
 	// K8s Gateway API resources
 	gwv1.Install,
 	gwv1b1.Install,
+	gwv1a2.Install,
 	gwxv1a1.Install,
 
 	// Kubernetes Core resources
