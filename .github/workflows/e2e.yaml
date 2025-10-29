@@ -103,11 +103,9 @@ jobs:
       with:
         cluster-name: ${{ matrix.test.cluster-name }}
         kind-node-version: ${{ steps.dotenv.outputs.node_version }}
-        kind-version: ${{ steps.dotenv.outputs.kind_version }}
         kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
         istio-version: ${{ steps.dotenv.outputs.istio_version }}
         localstack: ${{ matrix.test.localstack }}
-        agentgateway: ${{ matrix.test.agentgateway }}
     - id: run-tests
       uses: ./.github/actions/kubernetes-e2e-tests
       with:

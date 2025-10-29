@@ -24,7 +24,7 @@ jobs:
           PR_NUMBER: ${{ github.event.issue.number }}
           GH_TOKEN: ${{ secrets.KGATEWAY_CI_TOKEN }}
         run: |
-          gh pr merge $PR_NUMBER --auto --squash
+          gh pr merge "$PR_NUMBER" --auto --squash
 
   disable-auto-merge:
     # only run this job on PR comments from org members/owners where the comment is exactly "/unmerge"
@@ -42,4 +42,4 @@ jobs:
           PR_NUMBER: ${{ github.event.issue.number }}
           GH_TOKEN: ${{ secrets.KGATEWAY_CI_TOKEN }}
         run: |
-          gh pr merge $PR_NUMBER --disable-auto
+          gh pr merge "$PR_NUMBER" --disable-auto

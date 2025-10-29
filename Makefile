@@ -140,6 +140,11 @@ ANALYZE_ARGS ?= --fix --verbose
 analyze:  ## Run golangci-lint. Override options with ANALYZE_ARGS.
 	GOTOOLCHAIN=$(GOTOOLCHAIN) $(GOLANGCI_LINT) run $(ANALYZE_ARGS) --build-tags e2e ./...
 
+ACTION_LINT ?= go tool github.com/rhysd/actionlint/cmd/actionlint
+.PHONY: lint-actions
+lint-actions: ## Lint the GitHub Actions workflows
+	$(ACTION_LINT)
+
 #----------------------------------------------------------------------------------
 # Ginkgo Tests
 #----------------------------------------------------------------------------------
