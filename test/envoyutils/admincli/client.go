@@ -10,7 +10,6 @@ import (
 	adminv3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	"github.com/solo-io/go-utils/threadsafe"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmdutils"
@@ -18,6 +17,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/portforward"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/protoutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/threadsafe"
 
 	// import for side effects; this is needed so we can unmarshal envoy types
 	_ "github.com/kgateway-dev/kgateway/v2/pkg/utils/filter_types"

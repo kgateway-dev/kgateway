@@ -134,7 +134,7 @@ func testAgentgatewayScenario(
 
 	// Use retry to wait for the agent gateway to be ready
 	retry.UntilSuccessOrFail(t, func() error {
-		dumper := newAgentgatewayXdsDumper(t, ctx, xdsPort, testgwname, "gwtest")
+		dumper := newAgentgatewayXdsDumper(t, xdsPort, testgwname, "gwtest")
 		defer dumper.Close()
 		dump := dumper.DumpAgentgateway(t, ctx)
 		if len(dump.Resources) == 0 {
@@ -535,7 +535,7 @@ func compareDumps(actual, expected agentGwDump) error {
 	return nil
 }
 
-func newAgentgatewayXdsDumper(t *testing.T, ctx context.Context, xdsPort int, gwname, gwnamespace string) deltaXdsDumper {
+func newAgentgatewayXdsDumper(t *testing.T, xdsPort int, gwname, gwnamespace string) deltaXdsDumper {
 	conn, err := grpc.NewClient(fmt.Sprintf("localhost:%d", xdsPort),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithIdleTimeout(time.Second*10),
@@ -615,7 +615,8 @@ func (x deltaXdsDumper) GetResources(t *testing.T, ctx context.Context) []*api.R
 				for _, anyResource := range dresp.GetResources() {
 					var resource api.Resource
 					if err := anyResource.Resource.UnmarshalTo(&resource); err != nil {
-						t.Fatalf("failed to unmarshal resource: %v", err)
+						t.Errorf("failed to unmarshal resource: %v", err)
+						return
 					}
 					resources = append(resources, &resource)
 				}
@@ -665,7 +666,8 @@ func (x deltaXdsDumper) GetAddress(t *testing.T, ctx context.Context) []*api.Add
 				for _, anyResource := range dresp.GetResources() {
 					var resource api.Address
 					if err := anyResource.Resource.UnmarshalTo(&resource); err != nil {
-						t.Fatalf("failed to unmarshal resource: %v", err)
+						t.Errorf("failed to unmarshal resource: %v", err)
+						return
 					}
 					address = append(address, &resource)
 				}

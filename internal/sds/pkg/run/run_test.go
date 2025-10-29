@@ -78,12 +78,12 @@ func TestCertRotation(t *testing.T) {
 		{
 			name:           "with ocsp",
 			ocsp:           true,
-			expectedHashes: []string{"969835737182439215", "6265739243366543658", "14893951670674740726"},
+			expectedHashes: []string{"5289428269630423385", "8388464980602675140", "1000014492521532438"},
 		},
 		{
 			name:           "without ocsp",
 			ocsp:           false,
-			expectedHashes: []string{"6730780456972595554", "16241649556325798095", "7644406922477208950"},
+			expectedHashes: []string{"18007595441331252348", "17445770948196530491", "11488245758000034245"},
 		},
 	}
 

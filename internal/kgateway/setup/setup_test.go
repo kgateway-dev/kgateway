@@ -383,7 +383,6 @@ func setupEnvTestAndRun(t *testing.T, globalSettings *apisettings.Settings, run 
 	}
 	envtestutil.RunController(
 		t,
-		logger,
 		globalSettings,
 		testEnv,
 		nil,

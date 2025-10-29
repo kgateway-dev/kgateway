@@ -18,7 +18,6 @@ import (
 	cache_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	server "github.com/envoyproxy/go-control-plane/pkg/server/v3"
-	"github.com/solo-io/go-utils/hashutils"
 	"google.golang.org/grpc"
 )
 
@@ -154,8 +153,12 @@ func (s *Server) UpdateSDSConfig(ctx context.Context) error {
 
 // GetSnapshotVersion generates a version string by hashing the certs
 func GetSnapshotVersion(certs ...interface{}) (string, error) {
-	hash, err := hashutils.HashAllSafe(fnv.New64(), certs...)
-	return fmt.Sprintf("%d", hash), err
+	hasher := fnv.New64()
+	for _, cert := range certs {
+		fmt.Fprintf(hasher, "%v", cert)
+	}
+	hash := hasher.Sum64()
+	return fmt.Sprintf("%d", hash), nil
 }
 
 // readAndVerifyCert will read the file from the given

@@ -102,8 +102,8 @@ var _ = Describe("SDS Server", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(snapshotVersion).To(Equal(expectedHashes[1]))
 	},
-		Entry("without ocsps", false, []string{"6730780456972595554", "4234248347190811569"}),
-		Entry("with ocsps", true, []string{"969835737182439215", "6328977429293055969"}),
+		Entry("without ocsps", false, []string{"18007595441331252348", "12285554972189208572"}),
+		Entry("with ocsps", true, []string{"5289428269630423385", "7362555741519408089"}),
 	)
 
 	Context("Test gRPC Server", func() {

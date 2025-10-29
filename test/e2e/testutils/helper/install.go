@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/solo-io/go-utils/log"
 	"helm.sh/helm/v3/pkg/repo"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
@@ -16,6 +16,10 @@ import (
 const (
 	defaultTestAssetDir   = "_test"
 	HelmRepoIndexFileName = "index.yaml"
+)
+
+var (
+	logger = logging.New("helper/install")
 )
 
 // Gets the absolute path to a locally-built helm chart. This assumes that the helm index has a reference
@@ -46,7 +50,7 @@ func getChartVersion(testAssetDir string, chartName string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("parsing Helm index file: %w", err)
 	}
-	log.Printf("found Helm index file at: %s", helmIndexPath)
+	logger.Info("found Helm index file", "path", helmIndexPath)
 
 	// Read and return version from helm index file
 	if chartVersions, ok := helmIndex.Entries[chartName]; !ok {
@@ -55,7 +59,7 @@ func getChartVersion(testAssetDir string, chartName string) (string, error) {
 		return "", fmt.Errorf("expected a single entry with name [%s], found: %v", chartName, len(chartVersions))
 	} else {
 		version := chartVersions[0].Version
-		log.Printf("version of [%s] Helm chart is: %s", chartName, version)
+		logger.Info("version of Helm chart", "chart", chartName, "version", version)
 		return version, nil
 	}
 }
