@@ -23,16 +23,14 @@ Listeners:
   name: http
   protocol: HTTP
 Policies:
-- name: trafficpolicy/default/secure-route-policy/example-route:extauth:default/example-route
-  spec:
+- name: traffic/default/secure-route-policy:extauth:default/example-route
+  target:
+    route: default/example-route
+  traffic:
     extAuthz:
-      failureMode: DENY_WITH_STATUS
-      statusOnError: 403
       target:
         port: 4444
         service: default/ext-authz.default.svc.cluster.local
-  target:
-    route: default/example-route
 Routes:
 - backends:
   - backend:

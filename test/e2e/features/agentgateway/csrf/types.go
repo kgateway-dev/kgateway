@@ -13,8 +13,8 @@ import (
 
 var (
 	// manifests
-	commonManifest              = filepath.Join(fsutils.MustGetThisDir(), "testdata", "common.yaml")
-	csrfGwTrafficPolicyManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "csrf-gw.yaml")
+	commonManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "common.yaml")
+	csrfAgwPolicyManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "csrf-gw.yaml")
 
 	// objects
 	proxyObjectMeta = metav1.ObjectMeta{
@@ -22,7 +22,7 @@ var (
 		Namespace: "default",
 	}
 
-	gwtrafficPolicy = &kgatewayv1alpha1.TrafficPolicy{
+	agwPolicy = &kgatewayv1alpha1.AgentgatewayPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "csrf-gw-policy",
 			Namespace: "default",

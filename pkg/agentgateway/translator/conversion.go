@@ -77,8 +77,8 @@ func ConvertHTTPRouteToAgw(ctx RouteContext, r gwv1.HTTPRouteRule,
 		}
 	}
 
-	filters, filterError := BuildAgwFilters(ctx, obj.Namespace, r.Filters)
-	res.Filters = filters
+	policies, policiesErr := BuildAgwTrafficPolicyFilters(ctx, obj.Namespace, r.Filters)
+	res.TrafficPolicies = policies
 
 	if err := ApplyTimeouts(&r, res); err != nil {
 		return nil, &reporter.RouteCondition{
@@ -115,11 +115,11 @@ func ConvertHTTPRouteToAgw(ctx RouteContext, r gwv1.HTTPRouteRule,
 	res.Hostnames = convertHostnames(obj.Spec.Hostnames)
 
 	if shouldInjectErrorResponse(backendErr) {
-		injectDirectResponseFilter(res, obj.Namespace, obj.Name)
+		injectDirectResponse(res, obj.Namespace, obj.Name)
 	}
 
-	if filterError != nil && !isFilterErrorCritical(filterError) {
-		return nil, filterError
+	if policiesErr != nil && !isPolicyErrorCritical(policiesErr) {
+		return nil, policiesErr
 	}
 	return res, backendErr
 }
@@ -192,14 +192,14 @@ func shouldInjectErrorResponse(backendErr *reporter.RouteCondition) bool {
 }
 
 // Helper function to inject direct response filter for errors
-func injectDirectResponseFilter(res *api.Route, namespace, name string) {
-	for _, f := range res.Filters {
-		if _, ok := f.GetKind().(*api.RouteFilter_DirectResponse); ok {
+func injectDirectResponse(res *api.Route, namespace, name string) {
+	for _, f := range res.TrafficPolicies {
+		if _, ok := f.GetKind().(*api.TrafficPolicySpec_DirectResponse); ok {
 			return
 		}
 	}
-	drf := &api.RouteFilter{
-		Kind: &api.RouteFilter_DirectResponse{
+	drf := &api.TrafficPolicySpec{
+		Kind: &api.TrafficPolicySpec_DirectResponse{
 			DirectResponse: &api.DirectResponse{
 				Status: 500,
 				Body:   []byte("Backend service unavailable"),
@@ -207,11 +207,11 @@ func injectDirectResponseFilter(res *api.Route, namespace, name string) {
 		},
 	}
 
-	res.Filters = append([]*api.RouteFilter{drf}, res.Filters...)
+	res.TrafficPolicies = append([]*api.TrafficPolicySpec{drf}, res.TrafficPolicies...)
 }
 
 // Helper function to determine if filter error is critical
-func isFilterErrorCritical(filterError *reporter.RouteCondition) bool {
+func isPolicyErrorCritical(filterError *reporter.RouteCondition) bool {
 	criticalReasons := []gwv1.RouteConditionReason{
 		"FilterNotSupported",
 		"FilterConfigInvalid",
@@ -314,12 +314,12 @@ func ConvertGRPCRouteToAgw(ctx RouteContext, r gwv1.GRPCRouteRule,
 		}}
 	}
 
-	filters, err := BuildAgwGRPCFilters(ctx, obj.Namespace, r.Filters)
+	policies, err := BuildAgwGRPCTrafficPolicies(ctx, obj.Namespace, r.Filters)
 	if err != nil {
 		logger.Error("failed to translate grpc filter", "err", err, "route_name", obj.Name, "route_ns", obj.Namespace)
 		return nil, err
 	}
-	res.Filters = filters
+	res.TrafficPolicies = policies
 
 	route, backendErr, err := buildAgwGRPCDestination(ctx, r.BackendRefs, obj.Namespace)
 	if err != nil {
@@ -434,17 +434,17 @@ func terminalFilterCombinationError(existingFilter, newFilter string) string {
 	return fmt.Sprintf("Cannot combine multiple terminal filters: %s and %s are mutually exclusive. Only one terminal filter is allowed per route rule.", existingFilter, newFilter)
 }
 
-// BuildAgwFilters builds a list of agentgateway filters from a list of k8s gateway api HTTPRoute filters
-func BuildAgwFilters(
+// BuildAgwTrafficPolicyFilters builds a list of agentgateway TrafficPolicySpec from a list of k8s gateway api HTTPRoute filters
+func BuildAgwTrafficPolicyFilters(
 	ctx RouteContext,
 	ns string,
 	inputFilters []gwv1.HTTPRouteFilter,
-) ([]*api.RouteFilter, *reporter.RouteCondition) {
-	var filters []*api.RouteFilter
+) ([]*api.TrafficPolicySpec, *reporter.RouteCondition) {
+	var policies []*api.TrafficPolicySpec
 	var hasTerminalFilter bool
 	var terminalFilterType string
 
-	var filterError *reporter.RouteCondition
+	var policyError *reporter.RouteCondition
 	for _, filter := range inputFilters {
 		switch filter.Type {
 		case gwv1.HTTPRouteFilterRequestHeaderModifier:
@@ -452,16 +452,16 @@ func BuildAgwFilters(
 			if h == nil {
 				continue
 			}
-			filters = append(filters, h)
+			policies = append(policies, &api.TrafficPolicySpec{Kind: &api.TrafficPolicySpec_RequestHeaderModifier{RequestHeaderModifier: h}})
 		case gwv1.HTTPRouteFilterResponseHeaderModifier:
 			h := CreateAgwResponseHeadersFilter(filter.ResponseHeaderModifier)
 			if h == nil {
 				continue
 			}
-			filters = append(filters, h)
+			policies = append(policies, &api.TrafficPolicySpec{Kind: &api.TrafficPolicySpec_ResponseHeaderModifier{ResponseHeaderModifier: h}})
 		case gwv1.HTTPRouteFilterRequestRedirect:
 			if hasTerminalFilter {
-				filterError = &reporter.RouteCondition{
+				policyError = &reporter.RouteCondition{
 					Type:    gwv1.RouteConditionAccepted,
 					Status:  metav1.ConditionFalse,
 					Reason:  gwv1.RouteReasonIncompatibleFilters,
@@ -473,42 +473,42 @@ func BuildAgwFilters(
 			if h == nil {
 				continue
 			}
-			filters = append(filters, h)
+			policies = append(policies, &api.TrafficPolicySpec{Kind: &api.TrafficPolicySpec_RequestRedirect{RequestRedirect: h}})
 			hasTerminalFilter = true
 			terminalFilterType = "RequestRedirect"
 		case gwv1.HTTPRouteFilterRequestMirror:
 			h, err := CreateAgwMirrorFilter(ctx, filter.RequestMirror, ns, wellknown.HTTPRouteGVK)
 			if err != nil {
-				if filterError == nil {
-					filterError = err
+				if policyError == nil {
+					policyError = err
 				}
 			} else {
-				filters = append(filters, h)
+				policies = append(policies, &api.TrafficPolicySpec{Kind: &api.TrafficPolicySpec_RequestMirror{RequestMirror: h}})
 			}
 		case gwv1.HTTPRouteFilterURLRewrite:
 			h := CreateAgwRewriteFilter(filter.URLRewrite)
 			if h == nil {
 				continue
 			}
-			filters = append(filters, h)
+			policies = append(policies, h)
 		case gwv1.HTTPRouteFilterCORS:
 			h := createAgwCorsFilter(filter.CORS)
 			if h == nil {
 				continue
 			}
-			filters = append(filters, h)
+			policies = append(policies, h)
 		case gwv1.HTTPRouteFilterExtensionRef:
 			h, err := createAgwExtensionRefFilter(ctx, filter.ExtensionRef, ns)
 			if err != nil {
-				if filterError == nil {
-					filterError = err
+				if policyError == nil {
+					policyError = err
 				}
 				continue
 			}
 			if h != nil {
-				if _, ok := h.Kind.(*api.RouteFilter_DirectResponse); ok {
+				if _, ok := h.Kind.(*api.TrafficPolicySpec_DirectResponse); ok {
 					if hasTerminalFilter {
-						filterError = &reporter.RouteCondition{
+						policyError = &reporter.RouteCondition{
 							Type:    gwv1.RouteConditionAccepted,
 							Status:  metav1.ConditionFalse,
 							Reason:  gwv1.RouteReasonIncompatibleFilters,
@@ -519,7 +519,7 @@ func BuildAgwFilters(
 					hasTerminalFilter = true
 					terminalFilterType = "DirectResponse"
 				}
-				filters = append(filters, h)
+				policies = append(policies, h)
 			}
 		default:
 			return nil, &reporter.RouteCondition{
@@ -530,15 +530,78 @@ func BuildAgwFilters(
 			}
 		}
 	}
-	return filters, filterError
+	return policies, policyError
 }
 
-func createAgwCorsFilter(cors *gwv1.HTTPCORSFilter) *api.RouteFilter {
+// BuildAgwBackendPolicyFilters builds a list of agentgateway BackendPolicySpec from a list of k8s gateway api HTTPRoute filters
+func BuildAgwBackendPolicyFilters(
+	ctx RouteContext,
+	ns string,
+	inputFilters []gwv1.HTTPRouteFilter,
+) ([]*api.BackendPolicySpec, *reporter.RouteCondition) {
+	var policies []*api.BackendPolicySpec
+	var hasTerminalFilter bool
+	var terminalFilterType string
+
+	var policyError *reporter.RouteCondition
+	for _, filter := range inputFilters {
+		switch filter.Type {
+		case gwv1.HTTPRouteFilterRequestHeaderModifier:
+			h := CreateAgwHeadersFilter(filter.RequestHeaderModifier)
+			if h == nil {
+				continue
+			}
+			policies = append(policies, &api.BackendPolicySpec{Kind: &api.BackendPolicySpec_RequestHeaderModifier{RequestHeaderModifier: h}})
+		case gwv1.HTTPRouteFilterResponseHeaderModifier:
+			h := CreateAgwResponseHeadersFilter(filter.ResponseHeaderModifier)
+			if h == nil {
+				continue
+			}
+			policies = append(policies, &api.BackendPolicySpec{Kind: &api.BackendPolicySpec_ResponseHeaderModifier{ResponseHeaderModifier: h}})
+		case gwv1.HTTPRouteFilterRequestRedirect:
+			if hasTerminalFilter {
+				policyError = &reporter.RouteCondition{
+					Type:    gwv1.RouteConditionAccepted,
+					Status:  metav1.ConditionFalse,
+					Reason:  gwv1.RouteReasonIncompatibleFilters,
+					Message: terminalFilterCombinationError(terminalFilterType, "RequestRedirect"),
+				}
+				continue
+			}
+			h := CreateAgwRedirectFilter(filter.RequestRedirect)
+			if h == nil {
+				continue
+			}
+			policies = append(policies, &api.BackendPolicySpec{Kind: &api.BackendPolicySpec_RequestRedirect{RequestRedirect: h}})
+			hasTerminalFilter = true
+			terminalFilterType = "RequestRedirect"
+		case gwv1.HTTPRouteFilterRequestMirror:
+			h, err := CreateAgwMirrorFilter(ctx, filter.RequestMirror, ns, wellknown.HTTPRouteGVK)
+			if err != nil {
+				if policyError == nil {
+					policyError = err
+				}
+			} else {
+				policies = append(policies, &api.BackendPolicySpec{Kind: &api.BackendPolicySpec_RequestMirror{RequestMirror: h}})
+			}
+		default:
+			return nil, &reporter.RouteCondition{
+				Type:    gwv1.RouteConditionAccepted,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.RouteReasonIncompatibleFilters,
+				Message: fmt.Sprintf("unsupported filter type %q", filter.Type),
+			}
+		}
+	}
+	return policies, policyError
+}
+
+func createAgwCorsFilter(cors *gwv1.HTTPCORSFilter) *api.TrafficPolicySpec {
 	if cors == nil {
 		return nil
 	}
-	return &api.RouteFilter{
-		Kind: &api.RouteFilter_Cors{Cors: &api.CORS{
+	return &api.TrafficPolicySpec{
+		Kind: &api.TrafficPolicySpec_Cors{Cors: &api.CORS{
 			AllowCredentials: ptr.OrEmpty(cors.AllowCredentials),
 			AllowHeaders:     slices.Map(cors.AllowHeaders, func(h gwv1.HTTPHeaderName) string { return string(h) }),
 			AllowMethods:     slices.Map(cors.AllowMethods, func(m gwv1.HTTPMethodWithWildcard) string { return string(m) }),
@@ -574,11 +637,11 @@ func buildAgwHTTPDestination(
 			}
 		}
 		if dst != nil {
-			filters, err := BuildAgwFilters(ctx, ns, fwd.Filters)
+			policies, err := BuildAgwBackendPolicyFilters(ctx, ns, fwd.Filters)
 			if err != nil {
 				return nil, nil, err
 			}
-			dst.Filters = filters
+			dst.BackendPolicies = policies
 		}
 		res = append(res, dst)
 	}
@@ -1456,7 +1519,7 @@ func createAgwExtensionRefFilter(
 	ctx RouteContext,
 	extensionRef *gwv1.LocalObjectReference,
 	ns string,
-) (*api.RouteFilter, *reporter.RouteCondition) {
+) (*api.TrafficPolicySpec, *reporter.RouteCondition) {
 	if extensionRef == nil {
 		return nil, nil
 	}
@@ -1475,8 +1538,8 @@ func createAgwExtensionRefFilter(
 		}
 
 		// Convert to Agw DirectResponse filter
-		filter := &api.RouteFilter{
-			Kind: &api.RouteFilter_DirectResponse{
+		filter := &api.TrafficPolicySpec{
+			Kind: &api.TrafficPolicySpec_DirectResponse{
 				DirectResponse: &api.DirectResponse{
 					Status: uint32(directResponse.Spec.StatusCode), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 				},

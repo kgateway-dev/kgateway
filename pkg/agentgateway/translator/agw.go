@@ -149,40 +149,32 @@ func CreateAgwHeadersMatch(match gwv1.HTTPRouteMatch) ([]*api.HeaderMatch, *repo
 	return res, nil
 }
 
-// CreateAgwHeadersFilter creates an agw RouteFilter based on a HTTPHeaderFilter
-func CreateAgwHeadersFilter(filter *gwv1.HTTPHeaderFilter) *api.RouteFilter {
+// CreateAgwHeadersFilter creates an agw HeaderModifier based on a HTTPHeaderFilter
+func CreateAgwHeadersFilter(filter *gwv1.HTTPHeaderFilter) *api.HeaderModifier {
 	if filter == nil {
 		return nil
 	}
-	return &api.RouteFilter{
-		Kind: &api.RouteFilter_RequestHeaderModifier{
-			RequestHeaderModifier: &api.HeaderModifier{
-				Add:    headerListToAgw(filter.Add),
-				Set:    headerListToAgw(filter.Set),
-				Remove: filter.Remove,
-			},
-		},
+	return &api.HeaderModifier{
+		Add:    headerListToAgw(filter.Add),
+		Set:    headerListToAgw(filter.Set),
+		Remove: filter.Remove,
 	}
 }
 
-// CreateAgwResponseHeadersFilter creates an agw RouteFilter based on a HTTPHeaderFilter
-func CreateAgwResponseHeadersFilter(filter *gwv1.HTTPHeaderFilter) *api.RouteFilter {
+// CreateAgwResponseHeadersFilter creates an agw TrafficPolicySpec based on a HTTPHeaderFilter
+func CreateAgwResponseHeadersFilter(filter *gwv1.HTTPHeaderFilter) *api.HeaderModifier {
 	if filter == nil {
 		return nil
 	}
-	return &api.RouteFilter{
-		Kind: &api.RouteFilter_ResponseHeaderModifier{
-			ResponseHeaderModifier: &api.HeaderModifier{
-				Add:    headerListToAgw(filter.Add),
-				Set:    headerListToAgw(filter.Set),
-				Remove: filter.Remove,
-			},
-		},
+	return &api.HeaderModifier{
+		Add:    headerListToAgw(filter.Add),
+		Set:    headerListToAgw(filter.Set),
+		Remove: filter.Remove,
 	}
 }
 
-// CreateAgwRewriteFilter creates an agw RouteFilter based on a HTTPURLRewriteFilter
-func CreateAgwRewriteFilter(filter *gwv1.HTTPURLRewriteFilter) *api.RouteFilter {
+// CreateAgwRewriteFilter creates an agw TrafficPolicySpec based on a HTTPURLRewriteFilter
+func CreateAgwRewriteFilter(filter *gwv1.HTTPURLRewriteFilter) *api.TrafficPolicySpec {
 	if filter == nil {
 		return nil
 	}
@@ -202,20 +194,20 @@ func CreateAgwRewriteFilter(filter *gwv1.HTTPURLRewriteFilter) *api.RouteFilter 
 			ff.Path = &api.UrlRewrite_Full{Full: strings.TrimSuffix(*filter.Path.ReplaceFullPath, "/")}
 		}
 	}
-	return &api.RouteFilter{
-		Kind: &api.RouteFilter_UrlRewrite{
+	return &api.TrafficPolicySpec{
+		Kind: &api.TrafficPolicySpec_UrlRewrite{
 			UrlRewrite: ff,
 		},
 	}
 }
 
-// CreateAgwMirrorFilter creates an agw RouteFilter based on a HTTPRequestMirrorFilter
+// CreateAgwMirrorFilter creates an agw RequestMirror based on a HTTPRequestMirrorFilter
 func CreateAgwMirrorFilter(
 	ctx RouteContext,
 	filter *gwv1.HTTPRequestMirrorFilter,
 	ns string,
 	k schema.GroupVersionKind,
-) (*api.RouteFilter, *reporter.RouteCondition) {
+) (*api.RequestMirror, *reporter.RouteCondition) {
 	if filter == nil {
 		return nil, nil
 	}
@@ -244,15 +236,14 @@ func CreateAgwMirrorFilter(
 	if percent == 0 {
 		return nil, nil
 	}
-	rm := &api.RequestMirror{
+	return &api.RequestMirror{
 		Percentage: percent,
 		Backend:    dst.GetBackend(),
-	}
-	return &api.RouteFilter{Kind: &api.RouteFilter_RequestMirror{RequestMirror: rm}}, nil
+	}, nil
 }
 
-// CreateAgwRedirectFilter converts a HTTPRequestRedirectFilter into an api.RouteFilter for request redirection.
-func CreateAgwRedirectFilter(filter *gwv1.HTTPRequestRedirectFilter) *api.RouteFilter {
+// CreateAgwRedirectFilter converts a HTTPRequestRedirectFilter into an api.RequestRedirect for request redirection.
+func CreateAgwRedirectFilter(filter *gwv1.HTTPRequestRedirectFilter) *api.RequestRedirect {
 	if filter == nil {
 		return nil
 	}
@@ -285,11 +276,7 @@ func CreateAgwRedirectFilter(filter *gwv1.HTTPRequestRedirectFilter) *api.RouteF
 			ff.Path = &api.RequestRedirect_Full{Full: strings.TrimSuffix(*filter.Path.ReplaceFullPath, "/")}
 		}
 	}
-	return &api.RouteFilter{
-		Kind: &api.RouteFilter_RequestRedirect{
-			RequestRedirect: ff,
-		},
-	}
+	return ff
 }
 
 func headerListToAgw(hl []gwv1.HTTPHeader) []*api.Header {
@@ -336,13 +323,13 @@ func CreateAgwGRPCHeadersMatch(match gwv1.GRPCRouteMatch) ([]*api.HeaderMatch, *
 	return res, nil
 }
 
-// BuildAgwGRPCFilters constructs gRPC route filters for agent gateway based on the input filters and route context.
-func BuildAgwGRPCFilters(
+// BuildAgwGRPCTrafficPolicies constructs gRPC route filters for agent gateway based on the input filters and route context.
+func BuildAgwGRPCTrafficPolicies(
 	ctx RouteContext,
 	ns string,
 	inputFilters []gwv1.GRPCRouteFilter,
-) ([]*api.RouteFilter, *reporter.RouteCondition) {
-	var filters []*api.RouteFilter
+) ([]*api.TrafficPolicySpec, *reporter.RouteCondition) {
+	var policies []*api.TrafficPolicySpec
 	var mirrorBackendErr *reporter.RouteCondition
 	for _, filter := range inputFilters {
 		switch filter.Type {
@@ -351,13 +338,21 @@ func BuildAgwGRPCFilters(
 			if h == nil {
 				continue
 			}
-			filters = append(filters, h)
+			policies = append(policies, &api.TrafficPolicySpec{
+				Kind: &api.TrafficPolicySpec_RequestHeaderModifier{
+					RequestHeaderModifier: h,
+				},
+			})
 		case gwv1.GRPCRouteFilterResponseHeaderModifier:
 			h := CreateAgwResponseHeadersFilter(filter.ResponseHeaderModifier)
 			if h == nil {
 				continue
 			}
-			filters = append(filters, h)
+			policies = append(policies, &api.TrafficPolicySpec{
+				Kind: &api.TrafficPolicySpec_ResponseHeaderModifier{
+					ResponseHeaderModifier: h,
+				},
+			})
 		case gwv1.GRPCRouteFilterRequestMirror:
 			h, err := CreateAgwMirrorFilter(ctx, filter.RequestMirror, ns, schema.GroupVersionKind{
 				Group:   "gateway.networking.k8s.io",
@@ -367,7 +362,11 @@ func BuildAgwGRPCFilters(
 			if err != nil {
 				mirrorBackendErr = err
 			} else {
-				filters = append(filters, h)
+				policies = append(policies, &api.TrafficPolicySpec{
+					Kind: &api.TrafficPolicySpec_RequestMirror{
+						RequestMirror: h,
+					},
+				})
 			}
 		// TODO(npolshak): add ExtensionRef support for TrafficPolicy https://github.com/kgateway-dev/kgateway/issues/12037
 		default:
@@ -379,7 +378,53 @@ func BuildAgwGRPCFilters(
 			}
 		}
 	}
-	return filters, mirrorBackendErr
+	return policies, mirrorBackendErr
+}
+
+// BuildAgwGRPCBackendPolicies constructs gRPC route filters for agent gateway based on the input filters and route context.
+func BuildAgwGRPCBackendPolicies(
+	ctx RouteContext,
+	ns string,
+	inputFilters []gwv1.GRPCRouteFilter,
+) ([]*api.BackendPolicySpec, *reporter.RouteCondition) {
+	var policies []*api.BackendPolicySpec
+	var mirrorBackendErr *reporter.RouteCondition
+	for _, filter := range inputFilters {
+		switch filter.Type {
+		case gwv1.GRPCRouteFilterRequestHeaderModifier:
+			h := CreateAgwHeadersFilter(filter.RequestHeaderModifier)
+			if h == nil {
+				continue
+			}
+			policies = append(policies, &api.BackendPolicySpec{Kind: &api.BackendPolicySpec_RequestHeaderModifier{RequestHeaderModifier: h}})
+		case gwv1.GRPCRouteFilterResponseHeaderModifier:
+			h := CreateAgwResponseHeadersFilter(filter.ResponseHeaderModifier)
+			if h == nil {
+				continue
+			}
+			policies = append(policies, &api.BackendPolicySpec{Kind: &api.BackendPolicySpec_ResponseHeaderModifier{ResponseHeaderModifier: h}})
+		case gwv1.GRPCRouteFilterRequestMirror:
+			h, err := CreateAgwMirrorFilter(ctx, filter.RequestMirror, ns, schema.GroupVersionKind{
+				Group:   "gateway.networking.k8s.io",
+				Version: "v1",
+				Kind:    "GRPCRoute",
+			})
+			if err != nil {
+				mirrorBackendErr = err
+			} else {
+				policies = append(policies, &api.BackendPolicySpec{Kind: &api.BackendPolicySpec_RequestMirror{RequestMirror: h}})
+			}
+		// TODO(npolshak): add ExtensionRef support for TrafficPolicy https://github.com/kgateway-dev/kgateway/issues/12037
+		default:
+			return nil, &reporter.RouteCondition{
+				Type:    gwv1.RouteConditionAccepted,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.RouteReasonIncompatibleFilters,
+				Message: fmt.Sprintf("unsupported filter type %q", filter.Type),
+			}
+		}
+	}
+	return policies, mirrorBackendErr
 }
 
 func buildAgwGRPCDestination(
@@ -412,11 +457,11 @@ func buildAgwGRPCDestination(
 			}
 		}
 		if dst != nil {
-			filters, err := BuildAgwGRPCFilters(ctx, ns, fwd.Filters)
+			policies, err := BuildAgwGRPCBackendPolicies(ctx, ns, fwd.Filters)
 			if err != nil {
 				return nil, nil, err
 			}
-			dst.Filters = filters
+			dst.BackendPolicies = policies
 		}
 		res = append(res, dst)
 	}

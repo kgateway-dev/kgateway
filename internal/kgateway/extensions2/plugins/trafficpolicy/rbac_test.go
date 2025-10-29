@@ -69,19 +69,19 @@ func TestTranslateRBAC(t *testing.T) {
 		name             string
 		ns               string
 		tpName           string
-		rbac             *v1alpha1.RBAC
+		rbac             *v1alpha1.Authorization
 		expected         *envoyauthz.RBACPerRoute
-		expectedCELRules map[string][]string // policy name -> expected CEL expressions
+		expectedCELRules map[string][]v1alpha1.CELExpression // policy name -> expected CEL expressions
 		wantErr          bool
 	}{
 		{
 			name:   "allow action with single rule",
 			ns:     "test-ns",
 			tpName: "test-policy",
-			rbac: &v1alpha1.RBAC{
+			rbac: &v1alpha1.Authorization{
 				Action: v1alpha1.AuthorizationPolicyActionAllow,
-				Policy: v1alpha1.RBACPolicy{
-					MatchExpressions: []string{"request.auth.claims.groups == 'group1'", "request.auth.claims.groups == 'group2'"},
+				Policy: v1alpha1.AuthorizationPolicy{
+					MatchExpressions: []v1alpha1.CELExpression{"request.auth.claims.groups == 'group1'", "request.auth.claims.groups == 'group2'"},
 				},
 			},
 			expected: &envoyauthz.RBACPerRoute{
@@ -89,7 +89,7 @@ func TestTranslateRBAC(t *testing.T) {
 					Matcher: createExpectedMatcher(v1alpha1.AuthorizationPolicyActionAllow, 1),
 				},
 			},
-			expectedCELRules: map[string][]string{
+			expectedCELRules: map[string][]v1alpha1.CELExpression{
 				"ns[test-ns]-policy[test-policy]-rule[0]": {"request.auth.claims.groups == 'group1'", "request.auth.claims.groups == 'group2'"},
 			},
 			wantErr: false,
@@ -98,9 +98,9 @@ func TestTranslateRBAC(t *testing.T) {
 			name:   "deny action with empty rules",
 			ns:     "test-ns",
 			tpName: "test-policy",
-			rbac: &v1alpha1.RBAC{
+			rbac: &v1alpha1.Authorization{
 				Action: v1alpha1.AuthorizationPolicyActionDeny,
-				Policy: v1alpha1.RBACPolicy{},
+				Policy: v1alpha1.AuthorizationPolicy{},
 			},
 			expected: &envoyauthz.RBACPerRoute{
 				Rbac: &envoyauthz.RBAC{
@@ -110,7 +110,7 @@ func TestTranslateRBAC(t *testing.T) {
 					Matcher: createExpectedMatcher(v1alpha1.AuthorizationPolicyActionDeny, 0),
 				},
 			},
-			expectedCELRules: map[string][]string{},
+			expectedCELRules: map[string][]v1alpha1.CELExpression{},
 			wantErr:          false,
 		},
 	}

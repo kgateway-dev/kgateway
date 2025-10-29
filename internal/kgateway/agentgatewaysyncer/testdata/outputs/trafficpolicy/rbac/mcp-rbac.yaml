@@ -23,16 +23,6 @@ Listeners:
   key: default/example-gateway.http
   name: http
   protocol: HTTP
-Policies:
-- name: trafficpolicy/default/cel-rbac-policy/mcp-backend:rbac:default/mcp-backend
-  spec:
-    mcpAuthorization:
-      allow:
-      - mcp.tool.name == "echo"
-      - jwt.sub == "test-user" && mcp.tool.name == "add"
-      - mcp.tool.name == "printEnv" && jwt.nested.key == "value"
-  target:
-    backend: default/mcp-backend
 Routes:
 - backends:
   - backend:

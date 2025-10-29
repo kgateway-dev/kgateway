@@ -36,7 +36,7 @@ spec:
             value: /get
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: TrafficPolicy
+kind: AgentgatewayPolicy
 metadata:
   name: cel-rbac-policy
 spec:
@@ -44,7 +44,8 @@ spec:
     - name: httpbin-route
       kind: HTTPRoute
       group: gateway.networking.k8s.io
-  rbac:
-    policy:
-      matchExpressions:
-          - "request.headers['x-my-header'] == 'cool-beans'"
+  traffic:
+    authorization:
+      policy:
+        matchExpressions:
+            - "request.headers['x-my-header'] == 'cool-beans'"

@@ -13,9 +13,10 @@ status:
       status: "True"
       type: Accepted
     - lastTransitionTime: fake
-      message: ""
-      reason: ResolvedRefs
-      status: "True"
+      message: 'failed to build backend destination: &{Accepted False IncompatibleFilters
+        unsupported filter type "ExtensionRef"}'
+      reason: BackendError
+      status: "False"
       type: ResolvedRefs
     controllerName: kgateway.dev/agentgateway
     parentRef:

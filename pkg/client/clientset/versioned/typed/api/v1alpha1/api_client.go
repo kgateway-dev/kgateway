@@ -13,6 +13,7 @@ import (
 
 type GatewayV1alpha1Interface interface {
 	RESTClient() rest.Interface
+	AgentgatewayPoliciesGetter
 	BackendsGetter
 	BackendConfigPoliciesGetter
 	DirectResponsesGetter
@@ -25,6 +26,10 @@ type GatewayV1alpha1Interface interface {
 // GatewayV1alpha1Client is used to interact with features provided by the gateway.kgateway.dev group.
 type GatewayV1alpha1Client struct {
 	restClient rest.Interface
+}
+
+func (c *GatewayV1alpha1Client) AgentgatewayPolicies(namespace string) AgentgatewayPolicyInterface {
+	return newAgentgatewayPolicies(c, namespace)
 }
 
 func (c *GatewayV1alpha1Client) Backends(namespace string) BackendInterface {

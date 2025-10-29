@@ -242,7 +242,7 @@ spec:
                                         description: |-
                                           Store the API key in a Kubernetes secret in the same namespace as the Backend.
                                           Then, refer to the secret in the Backend configuration. This option is more secure than an inline token,
-                                          because the API key is encoded and you can restrict access to secrets through RBAC rules.
+                                          because the API key is encoded and you can restrict access to secrets through Authorization rules.
                                           You might use this option in proofs of concept, controlled development and staging environments,
                                           or well-controlled prod environments that use secrets.
                                         properties:
@@ -1559,18 +1559,25 @@ spec:
                     type: string
                   policy:
                     description: |-
-                      Policy specifies the RBAC rule to evaluate.
-                      A policy matches only **all** the conditions evaluates to true.
+                      Policy specifies the Authorization rule to evaluate.
+                      A policy matches when **any** of the conditions evaluates to true.
                     properties:
                       matchExpressions:
                         description: |-
                           MatchExpressions defines a set of conditions that must be satisfied for the rule to match.
                           These expression should be in the form of a Common Expression Language (CEL) expression.
-                          See: https://www.envoyproxy.io/docs/envoy/latest/xds/type/matcher/v3/cel.proto
                         items:
+                          description: A Common Expression Language (CEL) expression.
+                            See https://agentgateway.dev/docs/reference/cel/ for more
+                            info.
+                          maxLength: 16384
+                          minLength: 1
                           type: string
+                        maxItems: 256
                         minItems: 1
                         type: array
+                    required:
+                    - matchExpressions
                     type: object
                 required:
                 - policy
@@ -1819,11 +1826,8 @@ spec:
                                 with.
                               type: string
                             value:
-                              description: |-
-                                Value is the template to apply to generate the output value for the header.
-                                Inja templates are supported for Envoy-based data planes only.
-                                CEL expressions are supported for agentgateway data plane only.
-                                The system will auto-detect the appropriate template format based on the data plane.
+                              description: Value is the Inja template to apply to
+                                generate the output value for the header.
                               type: string
                           required:
                           - name
@@ -1877,11 +1881,8 @@ spec:
                                 with.
                               type: string
                             value:
-                              description: |-
-                                Value is the template to apply to generate the output value for the header.
-                                Inja templates are supported for Envoy-based data planes only.
-                                CEL expressions are supported for agentgateway data plane only.
-                                The system will auto-detect the appropriate template format based on the data plane.
+                              description: Value is the Inja template to apply to
+                                generate the output value for the header.
                               type: string
                           required:
                           - name
@@ -1906,11 +1907,8 @@ spec:
                                 with.
                               type: string
                             value:
-                              description: |-
-                                Value is the template to apply to generate the output value for the header.
-                                Inja templates are supported for Envoy-based data planes only.
-                                CEL expressions are supported for agentgateway data plane only.
-                                The system will auto-detect the appropriate template format based on the data plane.
+                              description: Value is the Inja template to apply to
+                                generate the output value for the header.
                               type: string
                           required:
                           - name
@@ -1964,11 +1962,8 @@ spec:
                                 with.
                               type: string
                             value:
-                              description: |-
-                                Value is the template to apply to generate the output value for the header.
-                                Inja templates are supported for Envoy-based data planes only.
-                                CEL expressions are supported for agentgateway data plane only.
-                                The system will auto-detect the appropriate template format based on the data plane.
+                              description: Value is the Inja template to apply to
+                                generate the output value for the header.
                               type: string
                           required:
                           - name

@@ -57,7 +57,7 @@ func mergeSynced(funcs []func() bool) func() bool {
 // Plugins registers all built-in policy plugins
 func Plugins(agw *AgwCollections) []AgwPlugin {
 	return []AgwPlugin{
-		NewTrafficPlugin(agw),
+		NewAgentPlugin(agw),
 		NewInferencePlugin(agw),
 		NewA2APlugin(agw),
 		NewBackendTLSPlugin(agw),

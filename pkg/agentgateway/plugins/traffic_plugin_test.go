@@ -58,7 +58,7 @@ func TestToJSONValue(t *testing.T) {
 func TestProcessTransformationPolicy(t *testing.T) {
 	tests := []struct {
 		name         string
-		policy       *v1alpha1.TrafficPolicy
+		policy       *v1alpha1.AgentTransformationPolicy
 		policyName   string
 		policyTarget *api.PolicyTarget
 		wantErr      bool
@@ -67,20 +67,16 @@ func TestProcessTransformationPolicy(t *testing.T) {
 	}{
 		{
 			name: "valid request transformation with set headers",
-			policy: &v1alpha1.TrafficPolicy{
-				Spec: v1alpha1.TrafficPolicySpec{
-					Transformation: &v1alpha1.TransformationPolicy{
-						Request: &v1alpha1.Transform{
-							Set: []v1alpha1.HeaderTransformation{
-								{
-									Name:  "x-custom-header",
-									Value: "request.headers['x-forwarded-for']",
-								},
-								{
-									Name:  "x-user-id",
-									Value: "request.headers['authorization'].split(' ')[1]",
-								},
-							},
+			policy: &v1alpha1.AgentTransformationPolicy{
+				Request: &v1alpha1.AgentTransform{
+					Set: []v1alpha1.AgentHeaderTransformation{
+						{
+							Name:  "x-custom-header",
+							Value: "request.headers['x-forwarded-for']",
+						},
+						{
+							Name:  "x-user-id",
+							Value: "request.headers['authorization'].split(' ')[1]",
 						},
 					},
 				},
@@ -99,7 +95,8 @@ func TestProcessTransformationPolicy(t *testing.T) {
 				assert.Equal(t, "test-policy:transformation:test-route", policy.Name)
 				assert.Equal(t, "test-route", policy.Target.GetRoute())
 
-				transformation := policy.Spec.GetTransformation()
+				tpolicy := policy.GetTraffic()
+				transformation := tpolicy.GetTransformation()
 				require.NotNil(t, transformation)
 				require.NotNil(t, transformation.Request)
 				require.Len(t, transformation.Request.Set, 2)
@@ -112,19 +109,15 @@ func TestProcessTransformationPolicy(t *testing.T) {
 		},
 		{
 			name: "valid response transformation with add headers and remove",
-			policy: &v1alpha1.TrafficPolicy{
-				Spec: v1alpha1.TrafficPolicySpec{
-					Transformation: &v1alpha1.TransformationPolicy{
-						Response: &v1alpha1.Transform{
-							Add: []v1alpha1.HeaderTransformation{
-								{
-									Name:  "x-response-time",
-									Value: "string(timestamp(response.complete_time) - timestamp(request.start_time))",
-								},
-							},
-							Remove: []string{"server", "x-internal-header"},
+			policy: &v1alpha1.AgentTransformationPolicy{
+				Response: &v1alpha1.AgentTransform{
+					Add: []v1alpha1.AgentHeaderTransformation{
+						{
+							Name:  "x-response-time",
+							Value: "string(timestamp(response.complete_time) - timestamp(request.start_time))",
 						},
 					},
+					Remove: []v1alpha1.AgentHeaderName{"server", "x-internal-header"},
 				},
 			},
 			policyName: "test-policy",
@@ -141,7 +134,8 @@ func TestProcessTransformationPolicy(t *testing.T) {
 				assert.Equal(t, "test-policy:transformation:test-gateway", policy.Name)
 				assert.Equal(t, "test-gateway", policy.Target.GetGateway())
 
-				transformation := policy.Spec.GetTransformation()
+				tpolicy := policy.GetTraffic()
+				transformation := tpolicy.GetTransformation()
 				require.NotNil(t, transformation)
 				require.NotNil(t, transformation.Response)
 				require.Len(t, transformation.Response.Add, 1)
@@ -155,16 +149,9 @@ func TestProcessTransformationPolicy(t *testing.T) {
 		},
 		{
 			name: "valid body transformation",
-			policy: &v1alpha1.TrafficPolicy{
-				Spec: v1alpha1.TrafficPolicySpec{
-					Transformation: &v1alpha1.TransformationPolicy{
-						Request: &v1alpha1.Transform{
-							Body: &v1alpha1.BodyTransformation{
-								ParseAs: v1alpha1.BodyParseBehaviorAsJSON, // Should trigger warning but not error
-								Value:   ptr.To(v1alpha1.Template("json({'modified': true, 'original': json(request.body)})")),
-							},
-						},
-					},
+			policy: &v1alpha1.AgentTransformationPolicy{
+				Request: &v1alpha1.AgentTransform{
+					Body: ptr.To(v1alpha1.CELExpression("json({'modified': true, 'original': json(request.body)})")),
 				},
 			},
 			policyName: "test-policy",
@@ -178,7 +165,8 @@ func TestProcessTransformationPolicy(t *testing.T) {
 				require.Len(t, policies, 1)
 
 				policy := policies[0].Policy
-				transformation := policy.Spec.GetTransformation()
+				tpolicy := policy.GetTraffic()
+				transformation := tpolicy.GetTransformation()
 				require.NotNil(t, transformation)
 				require.NotNil(t, transformation.Request)
 				require.NotNil(t, transformation.Request.Body)
@@ -188,24 +176,20 @@ func TestProcessTransformationPolicy(t *testing.T) {
 		},
 		{
 			name: "both request and response transformations",
-			policy: &v1alpha1.TrafficPolicy{
-				Spec: v1alpha1.TrafficPolicySpec{
-					Transformation: &v1alpha1.TransformationPolicy{
-						Request: &v1alpha1.Transform{
-							Set: []v1alpha1.HeaderTransformation{
-								{
-									Name:  "x-request-id",
-									Value: "uuid()",
-								},
-							},
+			policy: &v1alpha1.AgentTransformationPolicy{
+				Request: &v1alpha1.AgentTransform{
+					Set: []v1alpha1.AgentHeaderTransformation{
+						{
+							Name:  "x-request-id",
+							Value: "uuid()",
 						},
-						Response: &v1alpha1.Transform{
-							Add: []v1alpha1.HeaderTransformation{
-								{
-									Name:  "x-processed",
-									Value: "'true'",
-								},
-							},
+					},
+				},
+				Response: &v1alpha1.AgentTransform{
+					Add: []v1alpha1.AgentHeaderTransformation{
+						{
+							Name:  "x-processed",
+							Value: "'true'",
 						},
 					},
 				},
@@ -221,7 +205,8 @@ func TestProcessTransformationPolicy(t *testing.T) {
 				require.Len(t, policies, 1)
 
 				policy := policies[0].Policy
-				transformation := policy.Spec.GetTransformation()
+				tpolicy := policy.GetTraffic()
+				transformation := tpolicy.GetTransformation()
 				require.NotNil(t, transformation)
 				require.NotNil(t, transformation.Request)
 				require.NotNil(t, transformation.Response)
@@ -237,16 +222,12 @@ func TestProcessTransformationPolicy(t *testing.T) {
 		},
 		{
 			name: "invalid CEL expression in header",
-			policy: &v1alpha1.TrafficPolicy{
-				Spec: v1alpha1.TrafficPolicySpec{
-					Transformation: &v1alpha1.TransformationPolicy{
-						Request: &v1alpha1.Transform{
-							Set: []v1alpha1.HeaderTransformation{
-								{
-									Name:  "x-custom-header",
-									Value: "invalid.cel.expression.(",
-								},
-							},
+			policy: &v1alpha1.AgentTransformationPolicy{
+				Request: &v1alpha1.AgentTransform{
+					Set: []v1alpha1.AgentHeaderTransformation{
+						{
+							Name:  "x-custom-header",
+							Value: "invalid.cel.expression.(",
 						},
 					},
 				},
@@ -268,20 +249,16 @@ func TestProcessTransformationPolicy(t *testing.T) {
 		},
 		{
 			name: "partially valid CEL expression in header",
-			policy: &v1alpha1.TrafficPolicy{
-				Spec: v1alpha1.TrafficPolicySpec{
-					Transformation: &v1alpha1.TransformationPolicy{
-						Request: &v1alpha1.Transform{
-							Set: []v1alpha1.HeaderTransformation{
-								{
-									Name:  "x-custom-header",
-									Value: "foolen_{{header(\"content-length\")}}",
-								},
-								{
-									Name:  "x-valid-header",
-									Value: "'foolen_' + request.headers['content-length']",
-								},
-							},
+			policy: &v1alpha1.AgentTransformationPolicy{
+				Request: &v1alpha1.AgentTransform{
+					Set: []v1alpha1.AgentHeaderTransformation{
+						{
+							Name:  "x-custom-header",
+							Value: "foolen_{{header(\"content-length\")}}",
+						},
+						{
+							Name:  "x-valid-header",
+							Value: "'foolen_' + request.headers['content-length']",
 						},
 					},
 				},
@@ -303,15 +280,9 @@ func TestProcessTransformationPolicy(t *testing.T) {
 		},
 		{
 			name: "invalid CEL expression in body",
-			policy: &v1alpha1.TrafficPolicy{
-				Spec: v1alpha1.TrafficPolicySpec{
-					Transformation: &v1alpha1.TransformationPolicy{
-						Request: &v1alpha1.Transform{
-							Body: &v1alpha1.BodyTransformation{
-								Value: ptr.To(v1alpha1.Template("invalid body expression }")),
-							},
-						},
-					},
+			policy: &v1alpha1.AgentTransformationPolicy{
+				Request: &v1alpha1.AgentTransform{
+					Body: ptr.To(v1alpha1.CELExpression("invalid body expression }")),
 				},
 			},
 			policyName: "test-policy",
@@ -331,13 +302,9 @@ func TestProcessTransformationPolicy(t *testing.T) {
 		},
 		{
 			name: "empty transformation spec",
-			policy: &v1alpha1.TrafficPolicy{
-				Spec: v1alpha1.TrafficPolicySpec{
-					Transformation: &v1alpha1.TransformationPolicy{
-						Request:  &v1alpha1.Transform{},
-						Response: &v1alpha1.Transform{},
-					},
-				},
+			policy: &v1alpha1.AgentTransformationPolicy{
+				Request:  &v1alpha1.AgentTransform{},
+				Response: &v1alpha1.AgentTransform{},
 			},
 			policyName: "test-policy",
 			policyTarget: &api.PolicyTarget{
@@ -354,13 +321,9 @@ func TestProcessTransformationPolicy(t *testing.T) {
 		},
 		{
 			name: "nil request and response specs",
-			policy: &v1alpha1.TrafficPolicy{
-				Spec: v1alpha1.TrafficPolicySpec{
-					Transformation: &v1alpha1.TransformationPolicy{
-						Request:  nil,
-						Response: nil,
-					},
-				},
+			policy: &v1alpha1.AgentTransformationPolicy{
+				Request:  nil,
+				Response: nil,
 			},
 			policyName: "test-policy",
 			policyTarget: &api.PolicyTarget{
@@ -375,20 +338,16 @@ func TestProcessTransformationPolicy(t *testing.T) {
 		},
 		{
 			name: "partially valid transformations",
-			policy: &v1alpha1.TrafficPolicy{
-				Spec: v1alpha1.TrafficPolicySpec{
-					Transformation: &v1alpha1.TransformationPolicy{
-						Request: &v1alpha1.Transform{
-							Set: []v1alpha1.HeaderTransformation{
-								{
-									Name:  "x-valid-header",
-									Value: "'valid'",
-								},
-								{
-									Name:  "x-invalid-header",
-									Value: "invalid.cel.expression.(",
-								},
-							},
+			policy: &v1alpha1.AgentTransformationPolicy{
+				Request: &v1alpha1.AgentTransform{
+					Set: []v1alpha1.AgentHeaderTransformation{
+						{
+							Name:  "x-valid-header",
+							Value: "'valid'",
+						},
+						{
+							Name:  "x-invalid-header",
+							Value: "invalid.cel.expression.(",
 						},
 					},
 				},
@@ -409,7 +368,8 @@ func TestProcessTransformationPolicy(t *testing.T) {
 				policy := policies[0].Policy
 				assert.Equal(t, "test-policy:transformation:test-route", policy.Name)
 				assert.Equal(t, "test-route", policy.Target.GetRoute())
-				transformation := policy.Spec.GetTransformation()
+				tpolicy := policy.GetTraffic()
+				transformation := tpolicy.GetTransformation()
 				require.NotNil(t, transformation)
 				require.NotNil(t, transformation.Request)
 				require.Len(t, transformation.Request.Set, 1)
@@ -421,7 +381,11 @@ func TestProcessTransformationPolicy(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			policies, err := processTransformationPolicy(tt.policy, tt.policyName, tt.policyTarget)
+			pol := &v1alpha1.AgentgatewayPolicy{
+				Spec: v1alpha1.AgentgatewayPolicySpec{
+					Traffic: &v1alpha1.AgentgatewayPolicyTraffic{
+						Transformation: tt.policy}}}
+			policies, err := processTransformationPolicy(pol, tt.policyName, tt.policyTarget)
 
 			if tt.wantErr {
 				require.Error(t, err)

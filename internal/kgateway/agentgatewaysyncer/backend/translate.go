@@ -232,9 +232,11 @@ func createAuthPolicy(authPolicy *api.BackendAuthPolicy, backendName, providerNa
 				SubBackend: subBackendTarget,
 			},
 		},
-		Spec: &api.PolicySpec{
-			Kind: &api.PolicySpec_Auth{
-				Auth: authPolicy,
+		Kind: &api.Policy_Backend{
+			Backend: &api.BackendPolicySpec{
+				Kind: &api.BackendPolicySpec_Auth{
+					Auth: authPolicy,
+				},
 			},
 		},
 	}

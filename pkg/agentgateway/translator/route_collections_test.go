@@ -1683,7 +1683,7 @@ func TestAgwRouteCollectionWithFilters(t *testing.T) {
 	testCases := []struct {
 		name           string
 		httpRoute      *gwv1.HTTPRoute
-		expectedFilter *api.RouteFilter
+		expectedPolicy *api.TrafficPolicySpec
 	}{
 		{
 			name: "Route with request header modifier",
@@ -1729,8 +1729,8 @@ func TestAgwRouteCollectionWithFilters(t *testing.T) {
 					},
 				},
 			},
-			expectedFilter: &api.RouteFilter{
-				Kind: &api.RouteFilter_RequestHeaderModifier{
+			expectedPolicy: &api.TrafficPolicySpec{
+				Kind: &api.TrafficPolicySpec_RequestHeaderModifier{
 					RequestHeaderModifier: &api.HeaderModifier{
 						Set: []*api.Header{
 							{
@@ -1782,8 +1782,8 @@ func TestAgwRouteCollectionWithFilters(t *testing.T) {
 					},
 				},
 			},
-			expectedFilter: &api.RouteFilter{
-				Kind: &api.RouteFilter_RequestRedirect{
+			expectedPolicy: &api.TrafficPolicySpec{
+				Kind: &api.TrafficPolicySpec_RequestRedirect{
 					RequestRedirect: &api.RequestRedirect{
 						Scheme: "https",
 						Status: 301,
@@ -1847,8 +1847,8 @@ func TestAgwRouteCollectionWithFilters(t *testing.T) {
 					},
 				},
 			},
-			expectedFilter: &api.RouteFilter{
-				Kind: &api.RouteFilter_Cors{
+			expectedPolicy: &api.TrafficPolicySpec{
+				Kind: &api.TrafficPolicySpec_Cors{
 					Cors: &api.CORS{
 						AllowCredentials: true,
 						AllowHeaders:     []string{"Content-Type", "Authorization"},
@@ -1912,8 +1912,8 @@ func TestAgwRouteCollectionWithFilters(t *testing.T) {
 					},
 				},
 			},
-			expectedFilter: &api.RouteFilter{
-				Kind: &api.RouteFilter_DirectResponse{
+			expectedPolicy: &api.TrafficPolicySpec{
+				Kind: &api.TrafficPolicySpec_DirectResponse{
 					DirectResponse: &api.DirectResponse{
 						Status: 200,
 						Body:   []byte("User-agent: *\nDisallow: /admin\nAllow: /"),
@@ -2049,13 +2049,13 @@ func TestAgwRouteCollectionWithFilters(t *testing.T) {
 			require.NotNil(t, routeResource, "Route resource should not be nil")
 
 			// Verify filters
-			require.Len(t, routeResource.GetFilters(), 1, "Expected exactly one filter")
-			actualFilter := routeResource.GetFilters()[0]
+			require.Len(t, routeResource.GetTrafficPolicies(), 1, "Expected exactly one filter")
+			actualFilter := routeResource.GetTrafficPolicies()[0]
 
 			// Verify filter type and content
-			switch expectedKind := tc.expectedFilter.GetKind().(type) {
-			case *api.RouteFilter_RequestHeaderModifier:
-				actualKind, ok := actualFilter.GetKind().(*api.RouteFilter_RequestHeaderModifier)
+			switch expectedKind := tc.expectedPolicy.GetKind().(type) {
+			case *api.TrafficPolicySpec_RequestHeaderModifier:
+				actualKind, ok := actualFilter.GetKind().(*api.TrafficPolicySpec_RequestHeaderModifier)
 				require.True(t, ok, "Expected RequestHeaderModifier filter")
 
 				expectedMod := expectedKind.RequestHeaderModifier
@@ -2068,8 +2068,8 @@ func TestAgwRouteCollectionWithFilters(t *testing.T) {
 					assert.Equal(t, expectedHeader.GetValue(), actualHeader.GetValue(), "Header value mismatch")
 				}
 
-			case *api.RouteFilter_RequestRedirect:
-				actualKind, ok := actualFilter.GetKind().(*api.RouteFilter_RequestRedirect)
+			case *api.TrafficPolicySpec_RequestRedirect:
+				actualKind, ok := actualFilter.GetKind().(*api.TrafficPolicySpec_RequestRedirect)
 				require.True(t, ok, "Expected RequestRedirect filter")
 
 				expectedRedirect := expectedKind.RequestRedirect
@@ -2077,8 +2077,8 @@ func TestAgwRouteCollectionWithFilters(t *testing.T) {
 
 				assert.Equal(t, expectedRedirect.GetScheme(), actualRedirect.GetScheme(), "Redirect scheme mismatch")
 				assert.Equal(t, expectedRedirect.GetStatus(), actualRedirect.GetStatus(), "Redirect status mismatch")
-			case *api.RouteFilter_Cors:
-				actualKind, ok := actualFilter.GetKind().(*api.RouteFilter_Cors)
+			case *api.TrafficPolicySpec_Cors:
+				actualKind, ok := actualFilter.GetKind().(*api.TrafficPolicySpec_Cors)
 				require.True(t, ok, "Expected CORS filter")
 
 				expectedCors := expectedKind.Cors
@@ -2090,8 +2090,8 @@ func TestAgwRouteCollectionWithFilters(t *testing.T) {
 				assert.Equal(t, expectedCors.GetAllowOrigins(), actualCors.GetAllowOrigins(), "CORS AllowOrigins mismatch")
 				assert.Equal(t, expectedCors.GetExposeHeaders(), actualCors.GetExposeHeaders(), "CORS ExposeHeaders mismatch")
 				assert.Equal(t, expectedCors.GetMaxAge().GetSeconds(), actualCors.GetMaxAge().GetSeconds(), "CORS MaxAge mismatch")
-			case *api.RouteFilter_DirectResponse:
-				actualKind, ok := actualFilter.GetKind().(*api.RouteFilter_DirectResponse)
+			case *api.TrafficPolicySpec_DirectResponse:
+				actualKind, ok := actualFilter.GetKind().(*api.TrafficPolicySpec_DirectResponse)
 				require.True(t, ok, "Expected DirectResponse filter")
 
 				expectedDirect := expectedKind.DirectResponse
