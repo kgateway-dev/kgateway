@@ -127,7 +127,6 @@ func (h *RoutesIndex) NewBuiltInIr(
 	if f.Type == gwv1.HTTPRouteFilterCORS {
 		cors = f.CORS
 	}
-
 	filterIR, err := h.convertfilterIR(kctx, f, fromgk, fromns, refgrants, ups, ruleName, annotations)
 	if err != nil {
 		return nil, err

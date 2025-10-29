@@ -1379,11 +1379,6 @@ func (h *RoutesIndex) resolveExtension(
 		return nil, err
 	}
 
-	// ON_EXPERIMENTEAL_PROMOTION : Remove this block
-	if h.enableExperimentalFeatures && builtinIR.hasCors {
-		// TODO: Add logging that enableExperimentalFeatures is disbled but an experimental feature is used
-		return nil, nil
-	}
 	policyAtt := &ir.PolicyAtt{
 		GroupKind: ir.VirtualBuiltInGK,
 		PolicyIr:  builtinIR,
