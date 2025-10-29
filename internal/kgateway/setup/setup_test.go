@@ -177,6 +177,15 @@ func TestWithStandardSettings(t *testing.T) {
 	runScenario(t, "testdata/standard", st)
 }
 
+func TestWithExperimentalFeaturesSettings(t *testing.T) {
+	st, err := envtestutil.BuildSettings()
+	st.EnableExperimentalFeatures = true
+	if err != nil {
+		t.Fatalf("can't get settings %v", err)
+	}
+	runScenario(t, "testdata/experimental", st)
+}
+
 func TestWithIstioAutomtlsSettings(t *testing.T) {
 	st, err := envtestutil.BuildSettings()
 	st.EnableIstioIntegration = true
