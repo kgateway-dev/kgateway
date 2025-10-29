@@ -1,4 +1,5 @@
 use envoy_proxy_dynamic_modules_rust_sdk::*;
+use serde::{Deserialize, Serialize};
 
 #[cfg(test)]
 use mockall::*;
@@ -9,21 +10,59 @@ use std::collections::HashMap;
 lazy_static! {
     static ref EMPTY_MAP: HashMap<String, String> = HashMap::new();
 }
+#[derive(Serialize, Deserialize, Clone)]
+pub struct PerRouteConfig {
+    #[serde(default)]
+    pub request_headers_setter: Vec<(String, String)>,
+    #[serde(default)]
+    pub response_headers_setter: Vec<(String, String)>,
+}
 
-use transformations::{FilterConfig, PerRouteConfig};
-
-pub struct LocalFilterConfig(pub FilterConfig);
-impl LocalFilterConfig {
-    pub fn new(filter_config: &str) -> Option<Self> {
-        Some(Self(FilterConfig::new(filter_config)?))
+impl PerRouteConfig {
+    pub fn new(config: &str) -> Option<Self> {
+        let per_route_config: PerRouteConfig = match serde_json::from_str(config) {
+            Ok(cfg) => cfg,
+            Err(err) => {
+                envoy_log_error!("Error parsing per route config: {config} {err}");
+                return None;
+            }
+        };
+        Some(per_route_config)
     }
 }
 
-impl<EHF: EnvoyHttpFilter> HttpFilterConfig<EHF> for LocalFilterConfig {
+#[derive(Serialize, Deserialize, Clone)]
+pub struct FilterConfig {
+    #[serde(default)]
+    pub request_headers_setter: Vec<(String, String)>,
+    #[serde(default)]
+    pub response_headers_setter: Vec<(String, String)>,
+}
+
+impl FilterConfig {
+    /// This is the constructor for the [`FilterConfig`].
+    ///
+    /// filter_config is the filter config from the Envoy config here:
+    /// https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/dynamic_modules/v3/dynamic_modules.proto#envoy-v3-api-msg-extensions-dynamic-modules-v3-dynamicmoduleconfig
+    pub fn new(filter_config: &str) -> Option<Self> {
+        let filter_config: FilterConfig = match serde_json::from_str(filter_config) {
+            // TODO(nfuden): Handle optional configuration entries more cleanly. Currently all values are required to be present
+            Ok(cfg) => cfg,
+            Err(err) => {
+                // TODO(nfuden): Dont panic if there is incorrect configuration
+                envoy_log_error!("Error parsing filter config: {filter_config} {err}");
+                return None;
+            }
+        };
+        Some(filter_config)
+    }
+}
+
+impl<EHF: EnvoyHttpFilter> HttpFilterConfig<EHF> for FilterConfig {
     /// This is called for each new HTTP filter.
     fn new_http_filter(&mut self, _envoy: &mut EHF) -> Box<dyn HttpFilter<EHF>> {
         Box::new(Filter {
-            filter_config: self.0.clone(),
+            filter_config: self.clone(),
             per_route_config: None,
             env: transformations::jinja::new_jinja_env(),
             request_headers_map: None,
@@ -45,7 +84,7 @@ impl Filter {
                 let per_route_config = match per_route_config.downcast_ref::<PerRouteConfig>() {
                     Some(cfg) => cfg,
                     None => {
-                        eprintln!(
+                        envoy_log_error!(
                             "set_per_route_config: wrong per route config type: {:?}",
                             per_route_config
                         );
@@ -141,6 +180,7 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
         envoy_filter: &mut EHF,
         _end_of_stream: bool,
     ) -> abi::envoy_dynamic_module_type_on_http_filter_request_headers_status {
+        envoy_log_trace!("on_request_headers");
         // TODO: need to test if we get called even if there is no transformation setting
         //       if yes, we need to short circuit here and return Continue
         if !_end_of_stream {
@@ -161,6 +201,7 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
         envoy_filter: &mut EHF,
         end_of_stream: bool,
     ) -> abi::envoy_dynamic_module_type_on_http_filter_request_body_status {
+        envoy_log_trace!("on_request_body");
         // TODO: need to test if we get called even if there is no transformation setting
         //       if yes, we need to short circuit here and return Continue
         if !end_of_stream {
@@ -183,6 +224,7 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
         envoy_filter: &mut EHF,
         _end_of_stream: bool,
     ) -> abi::envoy_dynamic_module_type_on_http_filter_response_headers_status {
+        envoy_log_trace!("on_response_headers");
         self.set_per_route_config(envoy_filter);
         // TODO(nfuden): find someone who knows rust to see if we really need this Hash map for serialization
         self.populate_request_headers_map(envoy_filter.get_request_headers());
@@ -202,7 +244,7 @@ mod tests {
         // construct the filter config
         // most upstream tests start with the filter itself but we are tryign to add heavier logic
         // to the config factory strat rather than running it on header calls
-        let filter_config_instance = FilterConfig {
+        let mut filter_conf = FilterConfig {
             request_headers_setter: vec![
                 (
                     "X-substring".to_string(),
@@ -223,7 +265,6 @@ mod tests {
             ],
             response_headers_setter: vec![("X-Bar".to_string(), "foo".to_string())],
         };
-        let mut filter_conf = LocalFilterConfig(filter_config_instance);
         let mut filter = filter_conf.new_http_filter(&mut envoy_filter);
 
         envoy_filter
@@ -316,14 +357,13 @@ mod tests {
         // construct the filter config
         // most upstream tests start with the filter itself but we are trying to add heavier logic
         // to the config factory start rather than running it on header calls
-        let filter_config_instance = FilterConfig {
+        let mut filter_conf = FilterConfig {
             request_headers_setter: vec![(
                 "X-if-truth".to_string(),
                 "{%- if true -%}supersuper{% endif %}".to_string(),
             )],
             response_headers_setter: vec![("X-Bar".to_string(), "foo".to_string())],
         };
-        let mut filter_conf = LocalFilterConfig(filter_config_instance);
         let mut filter = filter_conf.new_http_filter(&mut envoy_filter);
 
         envoy_filter

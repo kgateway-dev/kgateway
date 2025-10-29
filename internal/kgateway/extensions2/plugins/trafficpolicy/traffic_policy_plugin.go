@@ -428,14 +428,8 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(fcc ir.FilterChainCommon) ([]fil
 		stagedFilters = append(stagedFilters, filter)
 	}
 	if p.setTransformationInChain[fcc.FilterChainName] && useRustformations {
-		// ---------------
-		// | END CLASSIC |
-		// ---------------
-		// TODO: on the rust module side, the deserialization would fail and envoy would reject the config if
-		//       any fields are missing in the json EVEN the filter is disabled, so need this for now until
-		//       we change the rust module to have default value
 		cfg, _ := utils.MessageToAny(&wrapperspb.StringValue{
-			Value: "{\"request_headers_setter\": [], \"response_headers_setter\": []}",
+			Value: "{}",
 		})
 		rustCfg := dynamicmodulesv3.DynamicModuleFilter{
 			DynamicModuleConfig: &exteniondynamicmodulev3.DynamicModuleConfig{
