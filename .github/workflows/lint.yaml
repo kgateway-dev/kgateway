@@ -45,7 +45,6 @@ jobs:
     name: GHA
     runs-on: ubuntu-22.04
     timeout-minutes: 5
-    if: contains(github.event.pull_request.changed_files, '.github/') || github.event_name != 'pull_request'
     steps:
     - uses: actions/checkout@v4
       with:
@@ -53,7 +52,7 @@ jobs:
     - uses: actions/setup-go@v5
       with:
         go-version-file: 'go.mod'
-    - run: go tool github.com/rhysd/actionlint/cmd/actionlint
+    - run: make lint-actions
 
   # Lint Rust code
   rust-lint:

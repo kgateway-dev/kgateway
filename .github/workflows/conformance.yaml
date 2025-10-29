@@ -53,7 +53,7 @@ jobs:
     if: ${{ !github.event.pull_request.draft }}
     env:
       CONFORMANCE_GATEWAY_CLASS: agentgateway
-      HELM_ADDITIONAL_VALUES: test/kubernetes/e2e/tests/manifests/agent-gateway-integration.yaml
+      HELM_ADDITIONAL_VALUES: test/e2e/tests/manifests/agent-gateway-integration.yaml
     strategy:
       fail-fast: false
       matrix:

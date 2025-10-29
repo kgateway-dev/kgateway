@@ -57,5 +57,5 @@ TEST_PKG=test/... make test
 #### GO_TEST_USER_ARGS
 The `GO_TEST_USER_ARGS` environment variable can be used to pass additional arguments to `go test` when using the `go-test` target. For example, to run specific tests matching a regex pattern:
 ```bash
-TEST_PKG=./test/kubernetes/e2e/tests GO_TEST_USER_ARGS="-run ^TestKgateway$" make go-test
+TEST_PKG=./test/e2e/tests GO_TEST_USER_ARGS="-run ^TestKgateway$" make go-test
 ```

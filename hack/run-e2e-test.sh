@@ -24,7 +24,7 @@ set -eEuo pipefail
 #   AUTO_SETUP            - If set to true/1/yes/y, will automatically clean up conflicting
 #                           Helm releases if detected. Otherwise, will error out.
 #   CLUSTER_NAME          - Name of the kind cluster (default: kind)
-#   TEST_PKG              - Go test package to run (default: ./test/kubernetes/e2e/tests)
+#   TEST_PKG              - Go test package to run (default: ./test/e2e/tests)
 #
 # Usage: ./hack/run-e2e-test.sh [OPTIONS] [TEST_PATTERN]
 #
@@ -216,10 +216,10 @@ build_test_pattern() {
     local test_func
     if [[ "$pattern" == Test* ]]; then
         # Pattern already starts with Test, search for exact match
-        test_func=$(git grep -h --no-line-number "^func ${pattern}(" -- 'test/kubernetes/e2e/tests/*_test.go' 2>/dev/null | head -1 || true)
+        test_func=$(git grep -h --no-line-number "^func ${pattern}(" -- 'test/e2e/tests/*_test.go' 2>/dev/null | head -1 || true)
     else
         # Pattern doesn't start with Test, add it
-        test_func=$(git grep -h --no-line-number "^func Test${pattern}(" -- 'test/kubernetes/e2e/tests/*_test.go' 2>/dev/null | head -1 || true)
+        test_func=$(git grep -h --no-line-number "^func Test${pattern}(" -- 'test/e2e/tests/*_test.go' 2>/dev/null | head -1 || true)
     fi
 
     if [[ -n "$test_func" ]]; then
@@ -235,7 +235,7 @@ build_test_pattern() {
     if [[ "$pattern" == Test* ]]; then
         # Search for method with exact or partial match
         local method_match
-        method_match=$(git grep "func (.*) ${pattern}[^(]*\(\)" -- 'test/kubernetes/e2e/features' 2>/dev/null | head -1 || true)
+        method_match=$(git grep "func (.*) ${pattern}[^(]*\(\)" -- 'test/e2e/features' 2>/dev/null | head -1 || true)
 
         if [[ -n "$method_match" ]]; then
             # Extract the actual full method name (strip line numbers and file path)
@@ -244,18 +244,18 @@ build_test_pattern() {
 
             # Find which file contains this method
             local method_file
-            method_file=$(git grep -l "func (.*) ${method_name}\(\)" -- 'test/kubernetes/e2e/features' 2>/dev/null | head -1 || true)
+            method_file=$(git grep -l "func (.*) ${method_name}\(\)" -- 'test/e2e/features' 2>/dev/null | head -1 || true)
 
             if [[ -n "$method_file" ]]; then
                 # Found a test method, now find which suite it belongs to
                 # Get the package import path relative to the features directory
                 local rel_path
-                rel_path=$(echo "$method_file" | sed 's|test/kubernetes/e2e/features/||' | xargs dirname)
+                rel_path=$(echo "$method_file" | sed 's|test/e2e/features/||' | xargs dirname)
 
                 # Find the suite registration that imports from this path
                 # This handles both simple package names and import aliases
                 local suite_line
-                suite_line=$(git grep "Register(\"[^\"]*\", .*\\.NewTestingSuite)" -- 'test/kubernetes/e2e/tests/*.go' 2>/dev/null | \
+                suite_line=$(git grep "Register(\"[^\"]*\", .*\\.NewTestingSuite)" -- 'test/e2e/tests/*.go' 2>/dev/null | \
                     grep -v "^\s*//" | \
                     while IFS=: read -r file line_content; do
                         # Extract the package identifier from the Register call
@@ -314,11 +314,11 @@ build_test_pattern() {
 
     # Check if it's a suite
     local suite_line
-    suite_line=$(git grep "Register(\"${pattern}\"" -- 'test/kubernetes/e2e/tests/*.go' 2>/dev/null | head -1 || true)
+    suite_line=$(git grep "Register(\"${pattern}\"" -- 'test/e2e/tests/*.go' 2>/dev/null | head -1 || true)
 
     if [[ -z "$suite_line" ]]; then
         # Try partial match
-        suite_line=$(git grep "Register(\".*${pattern}.*\"" -- 'test/kubernetes/e2e/tests/*.go' 2>/dev/null | head -1 || true)
+        suite_line=$(git grep "Register(\".*${pattern}.*\"" -- 'test/e2e/tests/*.go' 2>/dev/null | head -1 || true)
     fi
 
     if [[ -n "$suite_line" ]]; then
@@ -356,7 +356,7 @@ build_test_pattern() {
         if [[ "$pattern" != "$suite_name" && "$pattern" == Test* ]]; then
             # The pattern looks like a test method name
             local method_match
-            method_match=$(git grep -h "func (.*) ${pattern}\(\)" -- 'test/kubernetes/e2e/features' 2>/dev/null | head -1 || true)
+            method_match=$(git grep -h "func (.*) ${pattern}\(\)" -- 'test/e2e/features' 2>/dev/null | head -1 || true)
 
             if [[ -n "$method_match" ]]; then
                 # Running a specific test method within a suite
@@ -382,11 +382,11 @@ build_test_pattern() {
 # List available tests
 list_tests() {
     log_info "Available test suites:"
-    git grep -h 'Register("' -- 'test/kubernetes/e2e/tests/*.go' | \
+    git grep -h 'Register("' -- 'test/e2e/tests/*.go' | \
         sed -E 's/.*Register\("([^"]*)".*/  - \1/' | sort
     echo ""
     log_info "Available top-level tests:"
-    git grep -h '^func Test.*\(t \*testing\.T\)' -- 'test/kubernetes/e2e/tests/*_test.go' | \
+    git grep -h '^func Test.*\(t \*testing\.T\)' -- 'test/e2e/tests/*_test.go' | \
         sed -E 's/func (Test[^(]*).*/  - \1/' | sort
 }
 
@@ -418,7 +418,7 @@ Environment Variables:
   SKIP_ALL_TEARDOWN         If set to true/1/yes/y, skip all cleanup/teardown operations
   AUTO_SETUP                If set to true/1/yes/y, automatically cleanup conflicting Helm releases
   CLUSTER_NAME              Name of the kind cluster (default: kind)
-  TEST_PKG                  Go test package to run (default: ./test/kubernetes/e2e/tests)
+  TEST_PKG                  Go test package to run (default: ./test/e2e/tests)
 
 Examples:
   # Run an entire test suite (default: skip cleanup on failure for debugging)
@@ -563,7 +563,7 @@ main() {
     run_pattern=$(build_test_pattern "$test_pattern")
 
     # Determine test package
-    local test_pkg="${TEST_PKG:-./test/kubernetes/e2e/tests}"
+    local test_pkg="${TEST_PKG:-./test/e2e/tests}"
 
     # Skip setup if in dry-run mode
     if [[ "$dry_run" == "true" ]]; then

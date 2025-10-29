@@ -141,6 +141,11 @@ ANALYZE_ARGS ?= --fix --verbose
 analyze:  ## Run golangci-lint. Override options with ANALYZE_ARGS.
 	GOTOOLCHAIN=$(GOTOOLCHAIN) $(GOLANGCI_LINT) run $(ANALYZE_ARGS) --build-tags e2e ./...
 
+ACTION_LINT ?= go tool github.com/rhysd/actionlint/cmd/actionlint
+.PHONY: lint-actions
+lint-actions: ## Lint the GitHub Actions workflows
+	$(ACTION_LINT)
+
 #----------------------------------------------------------------------------------
 # Ginkgo Tests
 #----------------------------------------------------------------------------------
@@ -165,7 +170,7 @@ test: ## Run all tests with ginkgo, or only run the test package at {TEST_PKG} i
 		$(GINKGO_FLAGS) $(GINKGO_REPORT_FLAGS) $(GINKGO_USER_FLAGS) \
 		$(TEST_PKG)
 
-# To run only e2e tests, we restrict to ./test/kubernetes/e2e/tests. We say
+# To run only e2e tests, we restrict to ./test/e2e/tests. We say
 # '-tags=e2e' because untagged files contain unit tests cases, not e2e test
 # cases, so we have to allow `go` to see our e2e tests. Someone might forget to
 # label a new e2e test case with `//go:build e2e`, in which case `make unit`
@@ -178,7 +183,7 @@ test: ## Run all tests with ginkgo, or only run the test package at {TEST_PKG} i
 # will still have e2e tests run by Github Actions once they publish a pull
 # request.
 .PHONY: e2e-test
-e2e-test: TEST_PKG = ./test/kubernetes/e2e/tests
+e2e-test: TEST_PKG = ./test/e2e/tests
 e2e-test: ## Run only e2e tests, and only run the test package at {TEST_PKG} if it is specified
 	@$(MAKE) --no-print-directory go-test TEST_TAG=e2e TEST_PKG=$(TEST_PKG)
 
@@ -678,17 +683,17 @@ kind-load: kind-load-sds
 .PHONY: run-load-tests
 run-load-tests: ## Run KGateway load testing suite (requires existing cluster and installation)
 	SKIP_INSTALL=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
-	go test -tags=e2e -v ./test/kubernetes/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$"
+	go test -tags=e2e -v ./test/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$"
 
 .PHONY: run-load-tests-baseline
 run-load-tests-baseline: ## Run baseline load tests (1000 routes)
 	SKIP_INSTALL=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
-	go test -tags=e2e -v ./test/kubernetes/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$/^TestAttachedRoutesBaseline$$"
+	go test -tags=e2e -v ./test/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$/^TestAttachedRoutesBaseline$$"
 
 .PHONY: run-load-tests-production
 run-load-tests-production: ## Run production load tests (5000 routes)
 	SKIP_INSTALL=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
-	go test -tags=e2e -v ./test/kubernetes/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$/^TestAttachedRoutesProduction$$"
+	go test -tags=e2e -v ./test/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$/^TestAttachedRoutesProduction$$"
 
 #----------------------------------------------------------------------------------
 # Targets for running Kubernetes Gateway API conformance tests

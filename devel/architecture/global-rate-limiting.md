@@ -30,10 +30,10 @@ The global rate limiting feature consists of three components:
 
 ### 1. Deploy the Rate Limit Service
 
-kgateway integrates with any service that implements the Envoy Rate Limit gRPC protocol. For your convenience, we provide an example deployment using the official Envoy rate limit service in the [test/kubernetes/e2e/features/rate_limit/testdata](../test/kubernetes/e2e/features/rate_limit/testdata) directory.
+kgateway integrates with any service that implements the Envoy Rate Limit gRPC protocol. For your convenience, we provide an example deployment using the official Envoy rate limit service in the [test/e2e/features/rate_limit/global/testdata](../test/e2e/features/rate_limit/global/testdata) directory.
 
 ```bash
-kubectl apply -f test/kubernetes/e2e/features/rate_limit/testdata/rate-limit-server.yaml
+kubectl apply -f test/e2e/features/rate_limit/global/testdata/rate-limit-server.yaml
 ```
 
 ### 2. Configure the Rate Limit Service

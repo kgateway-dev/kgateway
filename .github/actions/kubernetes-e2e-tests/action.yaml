@@ -1,6 +1,5 @@
 name: Kubernetes End-to-End tests
 
-# These tests are located in the /test/kubernetes/e2e directory
 description: Kubernetes End-to-End tests
 
 inputs:

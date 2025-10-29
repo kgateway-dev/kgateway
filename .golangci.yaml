@@ -37,7 +37,7 @@ linters:
         - pattern: kclient.New$
           msg: use kclient.NewFilteredDelayed for CRDs and kclient.NewFiltered for core types, with discovery namespace ObjectFilter instead
         - pattern: (\bt|\bT\(\))\.Cleanup
-          msg: require testutils.Cleanup in e2e tests (test/kubernetes/e2e/)          
+          msg: require testutils.Cleanup in e2e tests (test/e2e/)
     gomodguard:
       blocked:
         modules:
@@ -127,7 +127,7 @@ linters:
       - linters:
           - forbidigo
         text: 'require testutils.Cleanup'
-        path-except: test/kubernetes/e2e/
+        path-except: test/e2e/
 issues:
   max-same-issues: 0
   uniq-by-line: true

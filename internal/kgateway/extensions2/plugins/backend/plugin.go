@@ -89,7 +89,6 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 		wellknown.BackendGVR,
 		kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()},
 	)
-	setBackendStatusClient(cli)
 
 	col := krt.WrapClient(cli, commoncol.KrtOpts.ToOptions("Backends")...)
 
@@ -139,7 +138,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 			},
 		},
 		ContributesLeaderAction: map[schema.GroupKind]func(){
-			wellknown.BackendGVK.GroupKind(): buildRegisterCallback(ctx, bcol),
+			wellknown.BackendGVK.GroupKind(): buildRegisterCallback(ctx, cli, bcol),
 		},
 	}
 }
@@ -280,8 +279,7 @@ func processBackendForEnvoy(ctx context.Context, in ir.BackendObjectIR, out *env
 		return nil
 	}
 
-	errCount := len(beIr.errors)
-
+	// TODO: propagated error to CRD #11558.
 	spec := be.Spec
 	switch spec.Type {
 	case v1alpha1.BackendTypeStatic:
@@ -311,12 +309,6 @@ func processBackendForEnvoy(ctx context.Context, in ir.BackendObjectIR, out *env
 			beIr.errors = append(beIr.errors, err)
 		}
 	}
-
-	// Update Backend status if new error
-	if len(beIr.errors) > errCount {
-		go updateBackendStatus(ctx, be.Namespace, be.Name, beIr.errors)
-	}
-
 	return nil
 }
 
