@@ -121,7 +121,7 @@ func (p *builtinPluginGwPass) ApplyHCM(pCtx *ir.HcmContext, out *envoyhttp.HttpC
 	return nil
 }
 
-func NewBuiltInIr(
+func (h *RoutesIndex) NewBuiltInIr(
 	kctx krt.HandlerContext,
 	f gwv1.HTTPRouteFilter,
 	fromgk schema.GroupKind,
@@ -136,23 +136,25 @@ func NewBuiltInIr(
 		cors = f.CORS
 	}
 
-	filterIR, err := convertfilterIR(kctx, f, fromgk, fromns, refgrants, ups, ruleName, annotations)
+	filterIR, err := h.convertfilterIR(kctx, f, fromgk, fromns, refgrants, ups, ruleName, annotations)
 	if err != nil {
 		return nil, err
 	}
 	return &builtinPlugin{
-		hasCors: cors != nil,
+		// CORS might be configured but experimental features might be disabled,
+		// So set hasCors only if the HTTPCORSFilter has been translated
+		hasCors: cors != nil && filterIR != nil,
 		filter:  filterIR,
 	}, nil
 }
 
-func NewBuiltInRuleIr(rule gwv1.HTTPRouteRule) *builtinPlugin {
+func (h *RoutesIndex) NewBuiltInRuleIr(rule gwv1.HTTPRouteRule) *builtinPlugin {
 	// If no rule policies are set, return nil so that we don't have a no-op policy
 	if rule.Timeouts == nil && rule.Retry == nil && rule.SessionPersistence == nil {
 		return nil
 	}
 	return &builtinPlugin{
-		rule: buildHTTPRouteRulePolicy(rule),
+		rule: h.buildHTTPRouteRulePolicy(rule),
 	}
 }
 
@@ -166,12 +168,28 @@ func NewBuiltinPlugin(ctx context.Context) sdk.Plugin {
 	}
 }
 
-func buildHTTPRouteRulePolicy(rule gwv1.HTTPRouteRule) ruleIR {
-	return ruleIR{
-		retry:              convertRetry(rule.Retry, rule.Timeouts),
-		timeouts:           convertTimeouts(rule.Timeouts),
-		sessionPersistence: convertSessionPersistence(rule.SessionPersistence),
+func (h *RoutesIndex) buildHTTPRouteRulePolicy(rule gwv1.HTTPRouteRule) ruleIR {
+	ir := ruleIR{
+		timeouts: convertTimeouts(rule.Timeouts),
 	}
+
+	// ON_EXPERIMENTAL_PROMOTION : Remove this block
+	if rule.Retry != nil {
+		if h.enableExperimentalFeatures {
+			ir.retry = convertRetry(rule.Retry, rule.Timeouts)
+		} else {
+			logger.Warn("experimental features are disabled but HTTPRouteRetry is configured. Skipping")
+		}
+	}
+	// ON_EXPERIMENTAL_PROMOTION : Remove this block
+	if rule.SessionPersistence != nil {
+		if h.enableExperimentalFeatures {
+			ir.sessionPersistence = convertSessionPersistence(rule.SessionPersistence)
+		} else {
+			logger.Warn("experimental features are disabled but SessionPersistence is configured. Skipping")
+		}
+	}
+	return ir
 }
 
 func (p *builtinPluginGwPass) applyRulePolicy(
@@ -741,7 +759,7 @@ func (p *builtinPluginGwPass) HttpFilters(fcc ir.FilterChainCommon) ([]filters.S
 }
 
 // New helper to create filterIR
-func convertfilterIR(
+func (h *RoutesIndex) convertfilterIR(
 	kctx krt.HandlerContext,
 	f gwv1.HTTPRouteFilter,
 	fromgk schema.GroupKind,
@@ -782,9 +800,14 @@ func convertfilterIR(
 			policy = uw
 		}
 	case gwv1.HTTPRouteFilterCORS:
-		ci := convertCORSIR(kctx, f.CORS)
-		if ci != nil {
-			policy = ci
+		// ON_EXPERIMENTAL_PROMOTION : Remove this block
+		if h.enableExperimentalFeatures {
+			ci := convertCORSIR(kctx, f.CORS)
+			if ci != nil {
+				policy = ci
+			}
+		} else {
+			logger.Warn("experimental features are disabled but HTTPRouteFilterCORS is configured. Skipping")
 		}
 	}
 	if policy == nil {

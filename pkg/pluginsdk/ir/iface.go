@@ -271,7 +271,6 @@ type PolicyIR interface {
 	// in case multiple policies attached to the same resource, we sort by policy creation time.
 	CreationTime() time.Time
 	Equals(in any) bool
-	// DisableExperimentalFeatures()
 }
 
 type PolicyWrapper struct {

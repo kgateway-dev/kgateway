@@ -1313,14 +1313,8 @@ func (h *RoutesIndex) getBuiltInRulePolicies(
 	ret := ir.AttachedPolicies{
 		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
 	}
-	policy := NewBuiltInRuleIr(rule)
+	policy := h.NewBuiltInRuleIr(rule)
 	if policy != nil {
-		// ON_EXPERIMENTEAL_PROMOTION : Remove this block
-		if !h.enableExperimentalFeatures {
-			// TODO: Add logging that enableExperimentalFeatures is disbled but an experimental feature is used
-			policy.rule.sessionPersistence = nil
-			policy.rule.retry = nil
-		}
 		policyAtt := ir.PolicyAtt{PolicyIr: policy /*direct attachment - no target ref*/}
 		for _, o := range opts {
 			o(&policyAtt)
@@ -1380,7 +1374,7 @@ func (h *RoutesIndex) resolveExtension(
 		Kind:  "HTTPRoute",
 	}
 
-	builtinIR, err := NewBuiltInIr(kctx, ext, fromGK, ns, h.refgrants, h.backends, ruleName, annotations)
+	builtinIR, err := h.NewBuiltInIr(kctx, ext, fromGK, ns, h.refgrants, h.backends, ruleName, annotations)
 	if err != nil {
 		return nil, err
 	}

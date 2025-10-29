@@ -132,6 +132,7 @@ func InitCollections(
 	metrics.RegisterEvents(kubeRawGateways, kmetrics.GetResourceMetricEventHandler[*gwv1.Gateway]())
 
 	var kubeRawListenerSets krt.Collection[*gwxv1a1.XListenerSet]
+	// ON_EXPERIMENTAL_PROMOTION : Remove this block
 	if globalSettings.EnableExperimentalFeatures {
 		kubeRawListenerSets = krt.WrapClient(kclient.NewDelayedInformer[*gwxv1a1.XListenerSet](istioClient, wellknown.XListenerSetGVR, kubetypes.StandardInformer, filter), krtopts.ToOptions("KubeListenerSets")...)
 	} else {
