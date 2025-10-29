@@ -160,3 +160,6 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+{{- if and (not .Values.envoy.enabled) (not .Values.agentgateway.enabled) }}
+{{ fail "envoy.enabled or agentgateway.enabled must be set to true"}}
+{{- end }}
