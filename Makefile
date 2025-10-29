@@ -703,12 +703,10 @@ $(TEST_ASSET_DIR)/conformance/conformance_test.go:
 	cat $(shell go list -json -m sigs.k8s.io/gateway-api | jq -r '.Dir')/conformance/conformance_test.go >> $@
 	go fmt $@
 
-CONFORMANCE_SUPPORTED_FEATURES ?= -supported-features=GatewayAddressEmpty,GatewayInfrastructurePropagation,HTTPRouteParentRefPort,HTTPRouteRequestMirror,HTTPRouteRequestMultipleMirrors,HTTPRouteRequestPercentageMirror,HTTPRouteBackendRequestHeaderModification,HTTPRouteNamedRouteRule,HTTPRouteDestinationPortMatching,HTTPRouteBackendProtocolH2C,HTTPRouteBackendProtocolWebSocket,HTTPRouteBackendTimeout,HTTPRouteHostRewrite,HTTPRouteMethodMatching,HTTPRoutePathRedirect,HTTPRoutePathRewrite,HTTPRoutePortRedirect,HTTPRouteQueryParamMatching,HTTPRouteRequestTimeout,HTTPRouteResponseHeaderModification,HTTPRouteSchemeRedirect,HTTPRouteCORS
-CONFORMANCE_UNSUPPORTED_FEATURES ?= -exempt-features=GatewayPort8080,GatewayStaticAddresses,GatewayHTTPListenerIsolation
 CONFORMANCE_SUPPORTED_PROFILES ?= -conformance-profiles=GATEWAY-HTTP,GATEWAY-GRPC,GATEWAY-TLS
 CONFORMANCE_GATEWAY_CLASS ?= kgateway
 CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/$(VERSION)-report.yaml -organization=kgateway-dev -project=kgateway -version=$(VERSION) -url=github.com/kgateway-dev/kgateway -contact=github.com/kgateway-dev/kgateway/issues/new/choose
-CONFORMANCE_ARGS := -gateway-class=$(CONFORMANCE_GATEWAY_CLASS) $(CONFORMANCE_SUPPORTED_FEATURES) $(CONFORMANCE_UNSUPPORTED_FEATURES) $(CONFORMANCE_SUPPORTED_PROFILES) $(CONFORMANCE_REPORT_ARGS)
+CONFORMANCE_ARGS := -gateway-class=$(CONFORMANCE_GATEWAY_CLASS) $(CONFORMANCE_SUPPORTED_PROFILES) $(CONFORMANCE_REPORT_ARGS)
 
 # TODO [danehans]: Remove `kubectl wait` when gateway-api-inference-extension/issues/1315 is fixed.
 .PHONY: conformance ## Run the conformance test suite
@@ -780,12 +778,10 @@ all-conformance: conformance gie-conformance agw-conformance ## Run all conforma
 #----------------------------------------------------------------------------------
 
 # Agent Gateway conformance test configuration
-AGW_CONFORMANCE_SUPPORTED_FEATURES ?= -supported-features=HTTPRouteBackendProtocolH2C,HTTPRouteBackendProtocolWebSocket,HTTPRouteHostRewrite,HTTPRouteMethodMatching,HTTPRoutePathRedirect,HTTPRoutePathRewrite,HTTPRoutePortRedirect,HTTPRouteQueryParamMatching,HTTPRouteResponseHeaderModification,HTTPRouteSchemeRedirect,GatewayAddressEmpty,GatewayHTTPListenerIsolation,GatewayInfrastructurePropagation,GatewayPort8080,HTTPRouteBackendRequestHeaderModification,HTTPRouteBackendTimeout,HTTPRouteDestinationPortMatching,HTTPRouteParentRefPort,HTTPRouteRequestMirror,HTTPRouteRequestMultipleMirrors,HTTPRouteRequestPercentageMirror,HTTPRouteRequestTimeout,HTTPRouteCORS,HTTPRouteNamedRouteRule
-AGW_CONFORMANCE_UNSUPPORTED_FEATURES ?= -exempt-features=GatewayStaticAddresses
 AGW_CONFORMANCE_SUPPORTED_PROFILES ?= -conformance-profiles=GATEWAY-HTTP,GATEWAY-GRPC,GATEWAY-TLS
 AGW_CONFORMANCE_GATEWAY_CLASS ?= agentgateway
 AGW_CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/agw-$(VERSION)-report.yaml -organization=kgateway-dev -project=kgateway -version=$(VERSION) -url=github.com/kgateway-dev/kgateway -contact=github.com/kgateway-dev/kgateway/issues/new/choose
-AGW_CONFORMANCE_ARGS := -gateway-class=$(AGW_CONFORMANCE_GATEWAY_CLASS) $(AGW_CONFORMANCE_SUPPORTED_FEATURES) $(AGW_CONFORMANCE_UNSUPPORTED_FEATURES) $(AGW_CONFORMANCE_SUPPORTED_PROFILES) $(AGW_CONFORMANCE_REPORT_ARGS)
+AGW_CONFORMANCE_ARGS := -gateway-class=$(AGW_CONFORMANCE_GATEWAY_CLASS) $(AGW_CONFORMANCE_SUPPORTED_PROFILES) $(AGW_CONFORMANCE_REPORT_ARGS)
 
 # TODO [danehans]: Remove `kubectl wait` when gateway-api-inference-extension/issues/1315 is fixed.
 .PHONY: agw-conformance ## Run the agent gateway conformance test suite

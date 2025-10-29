@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"maps"
 	"net/http"
 	"sync/atomic"
 
@@ -74,6 +75,7 @@ type StartConfig struct {
 	WaypointGatewayClassName string
 	AgentgatewayClassName    string
 	AdditionalGatewayClasses map[string]*deployer.GatewayClassInfo
+	GatewayClassInfos        map[string]*deployer.GatewayClassInfo
 
 	Dev        bool
 	SetupOpts  *SetupOpts
@@ -327,28 +329,24 @@ func (c *ControllerBuilder) Build(ctx context.Context) (*agentgatewaysyncer.Sync
 		CertWatcher:              c.cfg.SetupOpts.CertWatcher,
 	}
 
-	classInfos := GetDefaultClassInfo(
-		globalSettings,
-		c.cfg.GatewayClassName,
-		c.cfg.WaypointGatewayClassName,
-		c.cfg.AgentgatewayClassName,
-		c.cfg.ControllerName,
-		c.cfg.AgwControllerName,
-		c.cfg.AdditionalGatewayClasses,
-	)
-
 	setupLog.Info("creating gateway class provisioner")
 	if err := NewGatewayClassProvisioner(
 		c.mgr,
 		c.cfg.ControllerName,
-		classInfos,
+		c.cfg.GatewayClassInfos,
 	); err != nil {
 		setupLog.Error(err, "unable to create gateway class provisioner")
 		return nil, err
 	}
 
 	setupLog.Info("creating base gateway controller")
-	if err := NewBaseGatewayController(ctx, gwCfg, c.cfg.HelmValuesGeneratorOverride, c.cfg.ExtraGatewayParameters); err != nil {
+	if err := NewBaseGatewayController(
+		ctx,
+		gwCfg,
+		c.cfg.GatewayClassInfos,
+		c.cfg.HelmValuesGeneratorOverride,
+		c.cfg.ExtraGatewayParameters,
+	); err != nil {
 		setupLog.Error(err, "unable to create gateway controller")
 		return nil, err
 	}
@@ -405,10 +403,11 @@ func GetDefaultClassInfo(
 ) map[string]*deployer.GatewayClassInfo {
 	classInfos := map[string]*deployer.GatewayClassInfo{
 		gatewayClassName: {
-			Description:    "Standard class for managing Gateway API ingress traffic.",
-			Labels:         map[string]string{},
-			Annotations:    map[string]string{},
-			ControllerName: controllerName,
+			Description:       "Standard class for managing Gateway API ingress traffic.",
+			Labels:            map[string]string{},
+			Annotations:       map[string]string{},
+			ControllerName:    controllerName,
+			SupportedFeatures: deployer.GetSupportedFeaturesForStandardGateway(),
 		},
 	}
 	// Only enable waypoint gateway class if it's enabled in the settings
@@ -419,20 +418,20 @@ func GetDefaultClassInfo(
 			Annotations: map[string]string{
 				"ambient.istio.io/waypoint-inbound-binding": "PROXY/15088",
 			},
-			ControllerName: controllerName,
+			ControllerName:    controllerName,
+			SupportedFeatures: deployer.GetSupportedFeaturesForWaypointGateway(),
 		}
 	}
 	// Only enable agentgateway gateway class if it's enabled in the settings
 	if globalSettings.EnableAgentgateway {
 		classInfos[agwClassName] = &deployer.GatewayClassInfo{
-			Description:    "Specialized class for agentgateway.",
-			Labels:         map[string]string{},
-			Annotations:    map[string]string{},
-			ControllerName: agwControllerName,
+			Description:       "Specialized class for agentgateway.",
+			Labels:            map[string]string{},
+			Annotations:       map[string]string{},
+			ControllerName:    agwControllerName,
+			SupportedFeatures: deployer.GetSupportedFeaturesForAgentGateway(),
 		}
 	}
-	for class, classInfo := range additionalClassInfos {
-		classInfos[class] = classInfo
-	}
+	maps.Copy(classInfos, additionalClassInfos)
 	return classInfos
 }

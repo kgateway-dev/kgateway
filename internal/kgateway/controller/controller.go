@@ -82,7 +82,13 @@ type GatewayConfig struct {
 
 type HelmValuesGeneratorOverrideFunc func(cli client.Client, inputs *deployer.Inputs) deployer.HelmValuesGenerator
 
-func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig, helmValuesGeneratorOverride HelmValuesGeneratorOverrideFunc, extraGatewayParameters []client.Object) error {
+func NewBaseGatewayController(
+	ctx context.Context,
+	cfg GatewayConfig,
+	classInfos map[string]*deployer.GatewayClassInfo,
+	helmValuesGeneratorOverride HelmValuesGeneratorOverrideFunc,
+	extraGatewayParameters []client.Object,
+) error {
 	log := log.FromContext(ctx)
 	log.V(5).Info("starting gateway controller", "controllerName", cfg.ControllerName)
 
@@ -93,6 +99,7 @@ func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig, helmValues
 			scheme:       cfg.Mgr.GetScheme(),
 			customEvents: make(chan event.TypedGenericEvent[ir.GatewayForDeployer], 1024),
 			metricsName:  "gatewayclass",
+			classInfos:   classInfos,
 		},
 		helmValuesGeneratorOverride: helmValuesGeneratorOverride,
 		extraGatewayParameters:      extraGatewayParameters,
@@ -619,36 +626,35 @@ type controllerReconciler struct {
 	scheme       *runtime.Scheme
 	customEvents chan event.TypedGenericEvent[ir.GatewayForDeployer]
 	metricsName  string
+	classInfos   map[string]*deployer.GatewayClassInfo
 }
 
 func (r *controllerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, rErr error) {
-	log := log.FromContext(ctx).WithValues("gwclass", req.NamespacedName)
+	log := log.FromContext(ctx).WithValues("gwc", req.NamespacedName)
+	log.Info("reconciling gateway class")
+	defer log.Info("finished reconciling gateway class")
 
 	finishMetrics := collectReconciliationMetrics(r.metricsName, req)
 	defer func() {
 		finishMetrics(rErr)
 	}()
 
-	gwclass := &apiv1.GatewayClass{}
-	if err := r.cli.Get(ctx, req.NamespacedName, gwclass); err != nil {
-		// NOTE: if this reconciliation is a result of a DELETE event, this err will be a NotFound,
-		// therefore we will return a nil error here and thus skip any additional reconciliation below.
-		// At the time of writing this comment, the retrieved GWClass object is only used to update the status,
-		// so it should be fine to return here, because there's no status update needed on a deleted resource.
+	gwc := &apiv1.GatewayClass{}
+	if err := r.cli.Get(ctx, req.NamespacedName, gwc); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-
-	log.Info("reconciling gateway class")
-
-	meta.SetStatusCondition(&gwclass.Status.Conditions, metav1.Condition{
+	meta.SetStatusCondition(&gwc.Status.Conditions, metav1.Condition{
 		Type:               string(apiv1.GatewayClassConditionStatusAccepted),
 		Status:             metav1.ConditionTrue,
 		Reason:             string(apiv1.GatewayClassReasonAccepted),
-		ObservedGeneration: gwclass.Generation,
+		ObservedGeneration: gwc.GetGeneration(),
 		Message:            "GatewayClass accepted by kgateway controller",
 	})
+	if i, ok := r.classInfos[gwc.GetName()]; ok {
+		gwc.Status.SupportedFeatures = i.SupportedFeatures
+	}
 
-	if err := r.cli.Status().Update(ctx, gwclass); err != nil {
+	if err := r.cli.Status().Update(ctx, gwc); err != nil {
 		return ctrl.Result{}, err
 	}
 	log.Info("updated gateway class status")
