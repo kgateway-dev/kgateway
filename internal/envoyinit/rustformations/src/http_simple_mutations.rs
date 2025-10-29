@@ -1,11 +1,10 @@
 use envoy_proxy_dynamic_modules_rust_sdk::*;
+use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[cfg(test)]
 use mockall::*;
-
-use lazy_static::lazy_static;
-use std::collections::HashMap;
 
 lazy_static! {
     static ref EMPTY_MAP: HashMap<String, String> = HashMap::new();
@@ -13,9 +12,9 @@ lazy_static! {
 #[derive(Serialize, Deserialize, Clone)]
 pub struct PerRouteConfig {
     #[serde(default)]
-    pub request_headers_setter: Vec<(String, String)>,
+    request_headers_setter: Vec<(String, String)>,
     #[serde(default)]
-    pub response_headers_setter: Vec<(String, String)>,
+    response_headers_setter: Vec<(String, String)>,
 }
 
 impl PerRouteConfig {
@@ -34,9 +33,9 @@ impl PerRouteConfig {
 #[derive(Serialize, Deserialize, Clone)]
 pub struct FilterConfig {
     #[serde(default)]
-    pub request_headers_setter: Vec<(String, String)>,
+    request_headers_setter: Vec<(String, String)>,
     #[serde(default)]
-    pub response_headers_setter: Vec<(String, String)>,
+    response_headers_setter: Vec<(String, String)>,
 }
 
 impl FilterConfig {
