@@ -32,11 +32,20 @@ ENVOY_IMAGE=<you own arm envoy image> RUST_BUILD_ARCH=aarch64 make envoy-wrapper
 Before creating a PR, make sure you run:
 
 ``` bash
-cargo clippy
-cargo fmt
+make lint
 ```
 
-## e2e tests
+## Testing
+
+### unit testing
+
+To run unit tests, do:
+
+``` bash
+carge test
+```
+
+### e2e testing
 
 At the kgateway project top level directory, run:
 

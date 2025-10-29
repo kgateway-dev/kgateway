@@ -202,7 +202,7 @@ mod tests {
         // construct the filter config
         // most upstream tests start with the filter itself but we are tryign to add heavier logic
         // to the config factory strat rather than running it on header calls
-        let mut filter_conf = LocalFilterConfig {
+        let filter_config_instance = FilterConfig {
             request_headers_setter: vec![
                 (
                     "X-substring".to_string(),
@@ -223,6 +223,7 @@ mod tests {
             ],
             response_headers_setter: vec![("X-Bar".to_string(), "foo".to_string())],
         };
+        let mut filter_conf = LocalFilterConfig(filter_config_instance);
         let mut filter = filter_conf.new_http_filter(&mut envoy_filter);
 
         envoy_filter
@@ -313,15 +314,16 @@ mod tests {
         let mut envoy_filter = envoy_proxy_dynamic_modules_rust_sdk::MockEnvoyHttpFilter::default();
 
         // construct the filter config
-        // most upstream tests start with the filter itself but we are tryign to add heavier logic
-        // to the config factory strat rather than running it on header calls
-        let mut filter_conf = LocalFilterConfig {
+        // most upstream tests start with the filter itself but we are trying to add heavier logic
+        // to the config factory start rather than running it on header calls
+        let filter_config_instance = FilterConfig {
             request_headers_setter: vec![(
                 "X-if-truth".to_string(),
                 "{%- if true -%}supersuper{% endif %}".to_string(),
             )],
             response_headers_setter: vec![("X-Bar".to_string(), "foo".to_string())],
         };
+        let mut filter_conf = LocalFilterConfig(filter_config_instance);
         let mut filter = filter_conf.new_http_filter(&mut envoy_filter);
 
         envoy_filter
