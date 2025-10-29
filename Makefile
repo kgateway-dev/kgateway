@@ -495,6 +495,7 @@ $(ENVOYINIT_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(ENVOYINIT_OUTPUT_D
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
 		--build-arg RUST_BUILD_ARCH=$(RUST_BUILD_ARCH) \
+		--build-arg RUSTFORMATIONS_DIR=./rustformations \
 		-t $(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(VERSION)
 	@touch $@
 

@@ -32,7 +32,7 @@ COPY --from=rust_build_deps /usr/local/cargo /usr/local/cargo
 COPY --from=rust_build_deps /build/target /build/target
 
 # Copy the source code and build the module.
-ARG RUSTFORMATIONS_DIR=./rustformations
+ARG RUSTFORMATIONS_DIR=./
 COPY ${RUSTFORMATIONS_DIR} .
 ARG RUST_BUILD_ARCH=x86_64 # set this to "aarch64" for local arm build
 RUN cargo zigbuild --target ${RUST_BUILD_ARCH}-unknown-linux-gnu
