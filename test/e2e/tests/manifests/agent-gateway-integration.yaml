@@ -10,3 +10,6 @@ inferenceExtension:
 
 agentgateway:
   enabled: true
+
+envoy:
+  enabled: false
