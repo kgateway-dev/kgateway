@@ -20,7 +20,7 @@ Name|Version|License
 [grpc-ecosystem/go-grpc-middleware](https://github.com/grpc-ecosystem/go-grpc-middleware)|v1.4.0|Apache License 2.0
 [kagent-dev/mockllm](https://github.com/kagent-dev/mockllm)|v0.0.2-0.20251008144831-c6105837f767|Apache License 2.0
 [kelseyhightower/envconfig](https://github.com/kelseyhightower/envconfig)|v1.4.0|MIT License
-[mitchellh/hashstructure](https://github.com/mitchellh/hashstructure)|v1.0.0|MIT License
+[mitchellh/hashstructure](https://github.com/mitchellh/hashstructure)|v1.1.0|MIT License
 [ginkgo/v2](https://github.com/onsi/ginkgo)|v2.26.0|MIT License
 [onsi/gomega](https://github.com/onsi/gomega)|v1.38.2|MIT License
 [openai/openai-go](https://github.com/openai/openai-go)|v1.12.0|Apache License 2.0
