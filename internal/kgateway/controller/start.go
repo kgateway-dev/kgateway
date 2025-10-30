@@ -158,7 +158,10 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	}
 
 	globalSettings := *cfg.SetupOpts.GlobalSettings
-	mergedPlugins := pluginFactoryWithBuiltin(cfg)(ctx, cfg.CommonCollections)
+	var mergedPlugins sdk.Plugin
+	if cfg.SetupOpts.GlobalSettings.EnableEnvoy {
+		mergedPlugins = pluginFactoryWithBuiltin(cfg)(ctx, cfg.CommonCollections)
+	}
 	cfg.CommonCollections.InitPlugins(ctx, mergedPlugins, globalSettings)
 
 	// Begin background processing of resource sync metrics.
