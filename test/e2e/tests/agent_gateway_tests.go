@@ -11,11 +11,11 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/csrf"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/extauth"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/mcp"
+	global_rate_limit "github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/rate_limit/global"
+	local_rate_limit "github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/rate_limit/local"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/rbac"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/transformation"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/backendtls"
-	global_rate_limit "github.com/kgateway-dev/kgateway/v2/test/e2e/features/rate_limit/global"
-	local_rate_limit "github.com/kgateway-dev/kgateway/v2/test/e2e/features/rate_limit/local"
 )
 
 func AgentgatewaySuiteRunner() e2e.SuiteRunner {
