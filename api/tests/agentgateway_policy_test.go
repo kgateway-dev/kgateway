@@ -40,7 +40,7 @@ func TestAttachments(t *testing.T) {
 			},
 		},
 		{
-			name:   "traffic",
+			name: "traffic",
 			policy: `traffic:
   extProc:
     backendRef:
@@ -57,7 +57,7 @@ func TestAttachments(t *testing.T) {
 			},
 		},
 		{
-			name:   "backend",
+			name: "backend",
 			policy: `backend:
   tls: {}`,
 			attachments: Attachments{

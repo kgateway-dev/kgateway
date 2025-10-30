@@ -656,7 +656,7 @@ func processExtProcPolicy(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, po
 		return nil, fmt.Errorf("failed to build extProc: %v", err)
 	}
 	spec := &api.TrafficPolicySpec_ExtProc{
-		Target:  be,
+		Target: be,
 	}
 
 	extprocPolicy := &api.Policy{
