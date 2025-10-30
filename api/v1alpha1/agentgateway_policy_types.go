@@ -71,21 +71,6 @@ type AgentgatewayPolicySpec struct {
 	// +kubebuilder:validation:XValidation:message="Only one Kind of targetRef can be set on one policy",rule="self.all(l1, !self.exists(l2, l1.kind != l2.kind))"
 	TargetSelectors []LocalPolicyTargetSelectorWithSectionName `json:"targetSelectors,omitempty"`
 
-	// backend defines settings for how to connect to destination backends.
-	//
-	// A backend policy can target a Gateway (optionally, with a sectionName indicating the listener), ListenerSet, Route
-	// (optionally, with a sectionName indicating the route rule), or a Service/Backend (optionally, with a sectionName
-	// indicating the port (for Service) or sub-backend (for Backend).
-	//
-	// Note that a backend policy applies when connecting to a specific destination backend. Targeting a higher level
-	// resource, like Gateway, is just a way to easily apply a policy to a group of backends.
-	//
-	// When multiple policies are selected for a given request, they are merged on a field-level basis, but not a deep
-	// merge. Precedence is given to more precise policies: Gateway < Listener < Route < Route Rule < Backend/Service. For
-	// example, if a Gateway policy sets 'tcp' and 'tls', and a Backend policy sets 'tls', the effective policy would be
-	// 'tcp' from the Gateway, and 'tls' from the Backend.
-	Backend *AgentgatewayPolicyBackend `json:"backend,omitempty"`
-
 	// frontend defines settings for how to handle incoming traffic.
 	//
 	// A frontend policy can only target a Gateway. Listener and ListenerSet are not valid targets.
@@ -105,6 +90,21 @@ type AgentgatewayPolicySpec struct {
 	// sets 'timeouts' and 'retries', and policy B sets 'retries', the effective policy would be 'timeouts' from policy A,
 	// and 'retries' from policy B.
 	Traffic *AgentgatewayPolicyTraffic `json:"traffic,omitempty"`
+
+	// backend defines settings for how to connect to destination backends.
+	//
+	// A backend policy can target a Gateway (optionally, with a sectionName indicating the listener), ListenerSet, Route
+	// (optionally, with a sectionName indicating the route rule), or a Service/Backend (optionally, with a sectionName
+	// indicating the port (for Service) or sub-backend (for Backend).
+	//
+	// Note that a backend policy applies when connecting to a specific destination backend. Targeting a higher level
+	// resource, like Gateway, is just a way to easily apply a policy to a group of backends.
+	//
+	// When multiple policies are selected for a given request, they are merged on a field-level basis, but not a deep
+	// merge. Precedence is given to more precise policies: Gateway < Listener < Route < Route Rule < Backend/Service. For
+	// example, if a Gateway policy sets 'tcp' and 'tls', and a Backend policy sets 'tls', the effective policy would be
+	// 'tcp' from the Gateway, and 'tls' from the Backend.
+	Backend *AgentgatewayPolicyBackend `json:"backend,omitempty"`
 }
 
 type AgentgatewayPolicyBackend struct {
@@ -118,7 +118,7 @@ type AgentgatewayPolicyBackend struct {
 	// http defines settings for managing HTTP requests to the backend.
 	HTTP *BackendHTTP `json:"http,omitempty"`
 
-	// auth defines settings for managing authneitcation to the backend
+	// auth defines settings for managing authentication to the backend
 	Auth *BackendAuth `json:"auth,omitempty"`
 
 	// mcp specifies settings for MCP workloads. This is only applicable when connecting to a Backend of type 'mcp'.
@@ -204,12 +204,12 @@ type BackendTLS struct {
 }
 
 type AgentgatewayPolicyFrontend struct {
-	// http defines settings on managing incoming HTTP requests.
-	HTTP *FrontendHTTP `json:"http,omitempty"`
-	// tls defines settings on managing incoming TLS connections.
-	TLS *FrontendTLS `json:"tls,omitempty"`
 	// tcp defines settings on managing incoming TCP connections.
 	TCP *FrontendTCP `json:"tcp,omitempty"`
+	// tls defines settings on managing incoming TLS connections.
+	TLS *FrontendTLS `json:"tls,omitempty"`
+	// http defines settings on managing incoming HTTP requests.
+	HTTP *FrontendHTTP `json:"http,omitempty"`
 
 	// AccessLoggingConfig contains access logging configuration
 	// TODO: not currently implemented
