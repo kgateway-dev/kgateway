@@ -10,9 +10,9 @@ spec:
   rateLimit:
     local:
       tokenBucket:
-        maxTokens: 1
+        maxTokens: 3
         tokensPerFill: 1
-        fillInterval: "60s"
+        fillInterval: "30s"
     global:
       descriptors:
       - entries:
