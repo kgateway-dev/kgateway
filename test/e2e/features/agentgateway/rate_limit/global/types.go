@@ -26,7 +26,7 @@ const (
 var (
 	// paths to test manifests
 	commonManifest            = getTestFile("common.yaml")
-	agwCommonManifest         = getTestFileAgentgateway("common.yaml")
+	agwCommonManifest         = getTestFile("common.yaml")
 	simpleServiceManifest     = getTestFile("service.yaml")
 	httpRoutesManifest        = getTestFile("routes.yaml")
 	ipRateLimitManifest       = getTestFile("ip-rate-limit.yaml")
@@ -139,8 +139,4 @@ var (
 
 func getTestFile(filename string) string {
 	return filepath.Join(fsutils.MustGetThisDir(), "testdata", filename)
-}
-
-func getTestFileAgentgateway(filename string) string {
-	return filepath.Join(fsutils.MustGetThisDir(), "../../agentgateway/rate_limit/testdata", filename)
 }
