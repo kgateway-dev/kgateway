@@ -91,6 +91,15 @@ spec:
         image: redis:7.4.3
         ports:
         - containerPort: 6379
+        startupProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 0
+          periodSeconds: 1
+          timeoutSeconds: 5
+          failureThreshold: 10
 ---
 apiVersion: v1
 kind: Service
