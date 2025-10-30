@@ -2270,18 +2270,18 @@ func isDisabled(d *duration.Duration) bool {
 }
 
 func getRequestTimeout(r *api.Route) *duration.Duration {
-	if r != nil {
-		if r.TrafficPolicy != nil && r.TrafficPolicy.RequestTimeout != nil {
-			return r.TrafficPolicy.RequestTimeout
+	for _, t := range r.TrafficPolicies {
+		if t.GetTimeout() != nil {
+			return t.GetTimeout().GetRequest()
 		}
 	}
 	return nil
 }
 
 func getBackendRequestTimeout(r *api.Route) *duration.Duration {
-	if r != nil {
-		if r.TrafficPolicy != nil && r.TrafficPolicy.BackendRequestTimeout != nil {
-			return r.TrafficPolicy.BackendRequestTimeout
+	for _, t := range r.TrafficPolicies {
+		if t.GetTimeout() != nil {
+			return t.GetTimeout().GetBackendRequest()
 		}
 	}
 	return nil

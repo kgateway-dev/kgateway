@@ -54,6 +54,8 @@ type CELExpression string
 // +kubebuilder:validation:XValidation:rule="has(self.frontend) && has(self.targetSelectors) ? self.targetSelectors.all(t, t.kind == 'Gateway' && !has(t.sectionName)) : true",message="the 'frontend' field can only target a Gateway"
 // +kubebuilder:validation:XValidation:rule="has(self.traffic) && has(self.targetRefs) ? self.targetRefs.all(t, t.kind in ['Gateway', 'HTTPRoute', 'XListenerSet']) : true",message="the 'traffic' field can only target a Gateway, XListenerSet, or HTTPRoute"
 // +kubebuilder:validation:XValidation:rule="has(self.traffic) && has(self.targetSelectors) ? self.targetSelectors.all(t, t.kind in ['Gateway', 'HTTPRoute', 'XListenerSet']) : true",message="the 'traffic' field can only target a Gateway, XListenerSet, or HTTPRoute"
+// +kubebuilder:validation:XValidation:rule="has(self.targetRefs) && has(self.traffic) && has(self.traffic.phase) && self.traffic.phase == 'PreRouting' ? self.targetRefs.all(t, t.kind in ['Gateway', 'XListenerSet']) : true",message="the 'traffic.phase=PreRouting' field can only target a Gateway or XListenerSet"
+// +kubebuilder:validation:XValidation:rule="has(self.targetSelectors) && has(self.traffic) && has(self.traffic.phase) && self.traffic.phase == 'PreRouting' ? self.targetSelectors.all(t, t.kind in ['Gateway', 'XListenerSet']) : true",message="the 'traffic.phase=PreRouting' field can only target a Gateway or XListenerSet"
 type AgentgatewayPolicySpec struct {
 	// targetRefs specifies the target resources by reference to attach the policy to.
 	//
@@ -107,6 +109,7 @@ type AgentgatewayPolicySpec struct {
 	Backend *AgentgatewayPolicyBackend `json:"backend,omitempty"`
 }
 
+// +kubebuilder:validation:AtLeastOneOf=tcp;tls;http;auth;mcp;ai
 type AgentgatewayPolicyBackend struct {
 	// tcp defines settings for managing TCP connections to the backend.
 	TCP *BackendTCP `json:"tcp,omitempty"`
@@ -203,6 +206,8 @@ type BackendTLS struct {
 	AlpnProtocols []TinyString `json:"alpnProtocols,omitempty"`
 }
 
+// +kubebuilder:validation:AtLeastOneOf=tcp;tls;http;accessLog;tracing
+// +kubebuilder:validation:XValidation:rule="!has(self.tracing)",message="tracing is not currently implemented"
 type AgentgatewayPolicyFrontend struct {
 	// tcp defines settings on managing incoming TCP connections.
 	TCP *FrontendTCP `json:"tcp,omitempty"`
@@ -212,7 +217,6 @@ type AgentgatewayPolicyFrontend struct {
 	HTTP *FrontendHTTP `json:"http,omitempty"`
 
 	// AccessLoggingConfig contains access logging configuration
-	// TODO: not currently implemented
 	AccessLog *AgentAccessLog `json:"accessLog,omitempty"`
 
 	// Tracing contains various settings for OpenTelemetry tracer.
@@ -220,12 +224,13 @@ type AgentgatewayPolicyFrontend struct {
 	Tracing *AgentTracing `json:"tracing,omitempty"`
 }
 
+// +kubebuilder:validation:AtLeastOneOf=maxBufferSize;http1MaxHeaders;http1IdleTimeout;http2WindowSize;http2ConnectionWindowSize;http2FrameSize;http2KeepaliveInterval;http2KeepaliveTimeout
 type FrontendHTTP struct {
 	// maxBufferSize defines the maximum size HTTP body that will be buffered into memory.
 	// Bodies will only be buffered for policies which require buffering.
 	// If unset, this defaults to 2mb.
 	// +kubebuilder:validation:Minimum=1
-	MaxBufferSize *int64 `json:"maxBufferSize,omitempty"`
+	MaxBufferSize *int32 `json:"maxBufferSize,omitempty"`
 
 	// http1MaxHeaders defines the maximum number of headers that are allowed in HTTP/1.1 requests.
 	// If unset, this defaults to 100.
@@ -256,19 +261,21 @@ type FrontendHTTP struct {
 	HTTP2KeepaliveTimeout *metav1.Duration `json:"http2KeepaliveTimeout,omitempty"`
 }
 
+// +kubebuilder:validation:AtLeastOneOf=handshakeTimeout
 type FrontendTLS struct {
 	// handshakeTimeout specifies the deadline for a TLS handshake to complete.
 	// If unset, this defaults to 15s.
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('100ms')",message="handshakeTimeout must be at least 100ms"
-	HandshakeTimeout *metav1.Duration `json:"handshakeTimeout"`
+	HandshakeTimeout *metav1.Duration `json:"handshakeTimeout,omitempty"`
 
 	// TODO: mirror the tuneables on BackendTLS
 }
 
+// +kubebuilder:validation:AtLeastOneOf=keepalive
 type FrontendTCP struct {
-	// keepAlive defines settings for enabling TCP keepalives on the connection.
-	KeepAlive *AgentgatewayKeepalive `json:"keepAlive,omitempty"`
+	// keepalive defines settings for enabling TCP keepalives on the connection.
+	KeepAlive *AgentgatewayKeepalive `json:"keepalive,omitempty"`
 }
 
 // TCP Keepalive settings
@@ -295,21 +302,23 @@ type AgentgatewayKeepalive struct {
 type PolicyPhase string
 
 const (
-	PolicyPhaseGateway PolicyPhase = "Gateway"
-	PolicyPhaseRoute   PolicyPhase = "Route"
+	PolicyPhasePreRouting  PolicyPhase = "PreRouting"
+	PolicyPhasePostRouting PolicyPhase = "PostRouting"
 )
 
+// +kubebuilder:validation:AtLeastOneOf=transformation;extProc;extAuth;rateLimit;cors;csrf;headerModifiers;hostRewrite;timeouts;retry;authorization
+// +kubebuilder:validation:XValidation:rule="has(self.phase) && self.phase == 'PreRouting' ? !has(self.rateLimit) && !has(self.cors) && !has(self.csrf) && !has(self.headerModifiers) && !has(self.hostRewrite) && !has(self.timeouts) && !has(self.retry) && !has(self.authorization): true",message="phase PreRouting only supports extAuth, transformation, and extProc"
+// +kubebuilder:validation:XValidation:rule="!has(self.hostRewrite)",message="hostRewrite is not currently implemented"
 type AgentgatewayPolicyTraffic struct {
-	// The phase to apply the traffic policy to. If the phase is Gateway, the targetRef must be a Gateway or a Listener.
-	// Gateway is typically used only when a policy needs to influence the routing decision.
+	// The phase to apply the traffic policy to. If the phase is PreRouting, the targetRef must be a Gateway or a Listener.
+	// PreRouting is typically used only when a policy needs to influence the routing decision.
 	//
-	// Even when using Route mode, the policy can target the Gateway/Listener. This is syntax sugar for applying the policy
+	// Even when using PostRouting mode, the policy can target the Gateway/Listener. This is a helper for applying the policy
 	// to all routes under that Gateway/Listener, and follows the merging logic described above.
 	//
-	// If unset, this defaults to Route.
+	// If unset, this defaults to PostRouting.
 	//
-	// +kubebuilder:validation:Enum=Gateway;Route
-	// +kubebuilder:default=Route
+	// +kubebuilder:validation:Enum=PreRouting;PostRouting
 	Phase *PolicyPhase `json:"phase,omitempty"`
 
 	// transformation is used to mutate and transform requests and responses
@@ -328,7 +337,6 @@ type AgentgatewayPolicyTraffic struct {
 	RateLimit *AgentRateLimit `json:"rateLimit,omitempty"`
 
 	// cors specifies the CORS configuration for the policy.
-	// TODO: not currently implemented
 	Cors *AgentCorsPolicy `json:"cors,omitempty"`
 
 	// csrf specifies the Cross-Site Request Forgery (CSRF) policy for this traffic policy.
@@ -340,7 +348,6 @@ type AgentgatewayPolicyTraffic struct {
 	Csrf *AgentCSRFPolicy `json:"csrf,omitempty"`
 
 	// headerModifiers defines the policy to modify request and response headers.
-	// TODO: not currently implemented
 	HeaderModifiers *HeaderModifiers `json:"headerModifiers,omitempty"`
 
 	// hostRewrite specifies how to rewrite the Host header for requests.
@@ -355,15 +362,10 @@ type AgentgatewayPolicyTraffic struct {
 
 	// timeouts defines the timeouts for requests
 	// It is applicable to HTTPRoutes and ignored for other targeted kinds.
-	// TODO: not currently implemented
 	Timeouts *AgentTimeouts `json:"timeouts,omitempty"`
 
 	// retry defines the policy for retrying requests.
-	// TODO: not currently implemented
 	Retry *Retry `json:"retry,omitempty"`
-
-	// directResponse returns an immediate response without sending a request to the backend.
-	DirectResponse *DirectResponseSpec `json:"directResponse,omitempty"`
 
 	// authorization specifies the access rules based on roles and permissions.
 	// If multiple authorization rules are applied across different policies (at the same, or different, attahcment points),
@@ -680,6 +682,7 @@ type AgentAccessLog struct {
 	Attributes *AgentLogTracingFields `json:"attributes,omitempty"`
 }
 
+// +kubebuilder:validation:AtLeastOneOf=remove;add
 type AgentLogTracingFields struct {
 	// remove lists the default fields that should be removed. For example, "http.method".
 	// +kubebuilder:validation:MinItems=1
@@ -687,9 +690,14 @@ type AgentLogTracingFields struct {
 	Remove []TinyString `json:"remove,omitempty"`
 	// add specifies additional key-value pairs to be added to each entry.
 	// The value is a CEL expression. If the CEL expression fails to evaluate, the pair will be excluded.
-	// +kubebuilder:validation:MinProperties=1
-	// +kubebuilder:validation:MaxProperties=64
-	Add map[string]CELExpression `json:"add,omitempty"`
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:maxItems=64
+	Add []AgentAttributeAdd `json:"add,omitempty"`
+}
+
+type AgentAttributeAdd struct {
+	Name       ShortString   `json:"name"`
+	Expression CELExpression `json:"expression"`
 }
 
 type TracingProtocol string
@@ -702,7 +710,7 @@ const (
 type AgentTracing struct {
 	// backendRef references the OTLP server to reach.
 	// Supported types: Service and Backend.
-	BackendRef gwv1.BackendObjectReference `json:"backendRef,omitempty"`
+	BackendRef gwv1.BackendObjectReference `json:"backendRef"`
 	// protocol specifies the OTLP protocol variant to use.
 	// +kubebuilder:default=HTTP
 	// +kubebuilder:validation:Enum=HTTP;GRPC

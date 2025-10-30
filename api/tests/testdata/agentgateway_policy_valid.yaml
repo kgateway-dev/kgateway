@@ -229,7 +229,7 @@ spec:
       name: dummy
   frontend:
     tcp:
-      keepAlive:
+      keepalive:
         retries: 10
         time: 120s
         interval: 60s
@@ -453,20 +453,6 @@ spec:
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
-  name: traffic-direct-response
-spec:
-  targetRefs:
-    - group: gateway.networking.k8s.io
-      kind: Gateway
-      name: dummy
-  traffic:
-    directResponse:
-      status: 200
-      body: "OK"
----
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: AgentgatewayPolicy
-metadata:
   name: traffic-access-log
 spec:
   targetRefs:
@@ -478,47 +464,48 @@ spec:
       filter: 'response.code >= 400'
       attributes:
         add:
-          custom-field: 'request.headers["x-custom"]'
+        - name: custom-field
+          expression: 'request.headers["x-custom"]'
         remove:
           - http.method
----
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: AgentgatewayPolicy
-metadata:
-  name: traffic-tracing-http
-spec:
-  targetRefs:
-    - group: gateway.networking.k8s.io
-      kind: Gateway
-      name: dummy
-  frontend:
-    tracing:
-      backendRef:
-        name: otel-collector
-        kind: Service
-        port: 4318
-      protocol: HTTP
-      randomSampling: '0.1'
-      clientSampling: '1.0'
----
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: AgentgatewayPolicy
-metadata:
-  name: traffic-tracing-grpc
-spec:
-  targetRefs:
-    - group: gateway.networking.k8s.io
-      kind: Gateway
-      name: dummy
-  frontend:
-    tracing:
-      backendRef:
-        name: otel-collector
-        kind: Service
-        port: 4317
-      protocol: GRPC
-      randomSampling: 'false'
-      clientSampling: 'true'
+#---
+#apiVersion: gateway.kgateway.dev/v1alpha1
+#kind: AgentgatewayPolicy
+#metadata:
+#  name: traffic-tracing-http
+#spec:
+#  targetRefs:
+#    - group: gateway.networking.k8s.io
+#      kind: Gateway
+#      name: dummy
+#  frontend:
+#    tracing:
+#      backendRef:
+#        name: otel-collector
+#        kind: Service
+#        port: 4318
+#      protocol: HTTP
+#      randomSampling: '0.1'
+#      clientSampling: '1.0'
+#---
+#apiVersion: gateway.kgateway.dev/v1alpha1
+#kind: AgentgatewayPolicy
+#metadata:
+#  name: traffic-tracing-grpc
+#spec:
+#  targetRefs:
+#    - group: gateway.networking.k8s.io
+#      kind: Gateway
+#      name: dummy
+#  frontend:
+#    tracing:
+#      backendRef:
+#        name: otel-collector
+#        kind: Service
+#        port: 4317
+#      protocol: GRPC
+#      randomSampling: 'false'
+#      clientSampling: 'true'
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
@@ -530,7 +517,7 @@ spec:
       kind: Gateway
       name: dummy
   traffic:
-    phase: Gateway
+    phase: PreRouting
     transformation:
       request:
         set:
@@ -547,7 +534,7 @@ spec:
       kind: Gateway
       name: dummy
   traffic:
-    phase: Route
+    phase: PostRouting
     transformation:
       request:
         set:
@@ -592,7 +579,7 @@ spec:
       name: dummy
   frontend:
     tcp:
-      keepAlive:
+      keepalive:
         retries: 5
         time: 60s
         interval: 30s

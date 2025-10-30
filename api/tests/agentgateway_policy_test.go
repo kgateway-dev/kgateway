@@ -21,10 +21,14 @@ func TestAttachments(t *testing.T) {
 	}
 	cases := []struct {
 		name        string
+		policy      string
 		attachments Attachments
 	}{
 		{
 			name: "frontend",
+			policy: `frontend:
+  tcp:
+    keepalive: {}`,
 			attachments: Attachments{
 				Gateway:    true,
 				Port:       false,
@@ -36,7 +40,12 @@ func TestAttachments(t *testing.T) {
 			},
 		},
 		{
-			name: "traffic",
+			name:   "traffic",
+			policy: `traffic:
+  extProc:
+    backendRef:
+      name: ext-processor
+      port: 80`,
 			attachments: Attachments{
 				Gateway:    true,
 				Port:       false,
@@ -48,7 +57,9 @@ func TestAttachments(t *testing.T) {
 			},
 		},
 		{
-			name: "backend",
+			name:   "backend",
+			policy: `backend:
+  tls: {}`,
 			attachments: Attachments{
 				Gateway:    true,
 				Port:       false,
@@ -89,7 +100,7 @@ spec:
 						inp := map[string]any{
 							"group":  p[0],
 							"kind":   p[1],
-							"policy": tt.name + `: {}`,
+							"policy": tt.policy,
 							"ref":    ref,
 						}
 						if len(p) > 2 {

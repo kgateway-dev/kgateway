@@ -25,7 +25,7 @@ func AgentgatewaySuiteRunner() e2e.SuiteRunner {
 	agentgatewaySuiteRunner.Register("CSRF", csrf.NewTestingSuite)
 	agentgatewaySuiteRunner.Register("Extauth", extauth.NewTestingSuite)
 	agentgatewaySuiteRunner.Register("LocalRateLimit", local_rate_limit.NewAgentgatewayTestingSuite)
-	agentgatewaySuiteRunner.Register("GlobalRateLimit", global_rate_limit.NewAgentgatewayTestingSuite)
+	agentgatewaySuiteRunner.Register("GlobalRateLimit", global_rate_limit.NewTestingSuite)
 	agentgatewaySuiteRunner.Register("MCP", mcp.NewTestingSuite)
 	agentgatewaySuiteRunner.Register("RBAC", rbac.NewTestingSuite)
 	agentgatewaySuiteRunner.Register("Transformation", transformation.NewTestingSuite)

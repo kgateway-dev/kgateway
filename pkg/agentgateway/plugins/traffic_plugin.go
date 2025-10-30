@@ -34,6 +34,7 @@ import (
 
 const (
 	extauthPolicySuffix         = ":extauth"
+	extprocPolicySuffix         = ":extproc"
 	rbacPolicySuffix            = ":rbac"
 	localRateLimitPolicySuffix  = ":rl-local"
 	globalRateLimitPolicySuffix = ":rl-global"
@@ -42,7 +43,6 @@ const (
 	corsPolicySuffix            = ":cors"
 	headerModifierPolicySuffix  = ":header-modifier"
 	hostnameRewritePolicySuffix = ":hostname-rewrite"
-	directResponsePolicySuffix  = ":direct-response"
 	retryPolicySuffix           = ":retry"
 	timeoutPolicySuffix         = ":timeout"
 )
@@ -362,6 +362,16 @@ func translateTrafficPolicyToAgw(
 		agwPolicies = append(agwPolicies, extAuthPolicies...)
 	}
 
+	// Convert ExtProc policy if present
+	if traffic.ExtProc != nil {
+		extProcPolicies, err := processExtProcPolicy(ctx, policy, policyName, policyTarget)
+		if err != nil {
+			logger.Error("error processing ExtProc policy", "error", err)
+			errs = append(errs, err)
+		}
+		agwPolicies = append(agwPolicies, extProcPolicies...)
+	}
+
 	// Convert Authorization policy if present
 	if traffic.Authorization != nil {
 		rbacPolicies, err := processAuthorizationPolicy(policy, policyName, policyTarget)
@@ -447,44 +457,10 @@ func translateTrafficPolicyToAgw(
 		agwPolicies = append(agwPolicies, retriesPolicies...)
 	}
 
-	if traffic.DirectResponse != nil {
-		retriesPolicies, err := processDirectResponse(policy, policyName, policyTarget)
-		if err != nil {
-			logger.Error("error processing DirectResponse policy", "error", err)
-			errs = append(errs, err)
-		}
-		agwPolicies = append(agwPolicies, retriesPolicies...)
-	}
-
 	// TODO:
 	// TODO: phase
 
 	return agwPolicies, errors.Join(errs...)
-}
-
-func processDirectResponse(policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) ([]AgwPolicy, error) {
-	directResp := policy.Spec.Traffic.DirectResponse
-	directRespPolicy := &api.Policy{
-		Name:   name + directResponsePolicySuffix + attachmentName(target),
-		Target: target,
-		Kind: &api.Policy_Traffic{
-			Traffic: &api.TrafficPolicySpec{
-				Kind: &api.TrafficPolicySpec_DirectResponse{
-					DirectResponse: &api.DirectResponse{
-						Status: uint32(directResp.StatusCode), //nolint:gosec // G115: status is always in valid range
-						Body:   []byte(ptr.OrDefault(directResp.Body, "")),
-					},
-				},
-			},
-		},
-	}
-
-	logger.Debug("generated DirectResponse policy",
-		"policy", policy.Name,
-		"agentgateway_policy", directRespPolicy.Name,
-		"target", target)
-
-	return []AgwPolicy{{Policy: directRespPolicy}}, nil
 }
 
 func processRetriesPolicy(policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) ([]AgwPolicy, error) {
@@ -650,22 +626,12 @@ func processExtAuthPolicy(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, po
 		}
 	}
 
-	var phase api.TrafficPolicySpec_PolicyPhase
-	if policy.Spec.Traffic.Phase != nil {
-		switch *policy.Spec.Traffic.Phase {
-		case v1alpha1.PolicyPhaseRoute:
-			phase = api.TrafficPolicySpec_ROUTE
-		case v1alpha1.PolicyPhaseGateway:
-			phase = api.TrafficPolicySpec_GATEWAY
-		}
-	}
-
 	extauthPolicy := &api.Policy{
 		Name:   policyName + extauthPolicySuffix + attachmentName(policyTarget),
 		Target: policyTarget,
 		Kind: &api.Policy_Traffic{
 			Traffic: &api.TrafficPolicySpec{
-				Phase: phase,
+				Phase: phase(policy),
 				Kind: &api.TrafficPolicySpec_ExtAuthz{
 					ExtAuthz: spec,
 				},
@@ -679,6 +645,52 @@ func processExtAuthPolicy(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, po
 		"target", policyTarget)
 
 	return []AgwPolicy{{Policy: extauthPolicy}}, nil
+}
+
+// processExtProcPolicy processes ExtProc configuration and creates corresponding agentgateway policies
+func processExtProcPolicy(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, policyName string, policyTarget *api.PolicyTarget) ([]AgwPolicy, error) {
+	extProc := policy.Spec.Traffic.ExtAuth
+
+	be, err := buildBackendRef(ctx, extProc.BackendRef, policy.Namespace)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build extProc: %v", err)
+	}
+	spec := &api.TrafficPolicySpec_ExtProc{
+		Target:  be,
+	}
+
+	extprocPolicy := &api.Policy{
+		Name:   policyName + extprocPolicySuffix + attachmentName(policyTarget),
+		Target: policyTarget,
+		Kind: &api.Policy_Traffic{
+			Traffic: &api.TrafficPolicySpec{
+				Phase: phase(policy),
+				Kind: &api.TrafficPolicySpec_ExtProc_{
+					ExtProc: spec,
+				},
+			},
+		},
+	}
+
+	logger.Debug("generated ExtProc policy",
+		"policy", policy.Name,
+		"agentgateway_policy", extprocPolicy.Name,
+		"target", policyTarget)
+
+	return []AgwPolicy{{Policy: extprocPolicy}}, nil
+}
+
+func phase(policy *v1alpha1.AgentgatewayPolicy) api.TrafficPolicySpec_PolicyPhase {
+	var phase api.TrafficPolicySpec_PolicyPhase
+	if policy.Spec.Traffic.Phase != nil {
+		switch *policy.Spec.Traffic.Phase {
+		case v1alpha1.PolicyPhasePreRouting:
+			phase = api.TrafficPolicySpec_ROUTE
+		case v1alpha1.PolicyPhasePostRouting:
+			phase = api.TrafficPolicySpec_GATEWAY
+		}
+	}
+	return phase
 }
 
 func cast[T ~string](items []T) []string {
@@ -816,7 +828,7 @@ func processGlobalRateLimitPolicy(
 ) (*AgwPolicy, error) {
 	be, err := buildBackendRef(ctx, grl.BackendRef, trafficPolicy.Namespace)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build extAuth: %v", err)
+		return nil, fmt.Errorf("failed to build global rate limit: %v", err)
 	}
 	// Translate descriptors
 	descriptors := make([]*api.TrafficPolicySpec_RemoteRateLimit_Descriptor, 0, len(grl.Descriptors))
@@ -983,23 +995,13 @@ func processTransformationPolicy(
 		errs = append(errs, err)
 	}
 
-	var phase api.TrafficPolicySpec_PolicyPhase
-	if policy.Spec.Traffic.Phase != nil {
-		switch *policy.Spec.Traffic.Phase {
-		case v1alpha1.PolicyPhaseRoute:
-			phase = api.TrafficPolicySpec_ROUTE
-		case v1alpha1.PolicyPhaseGateway:
-			phase = api.TrafficPolicySpec_GATEWAY
-		}
-	}
-
 	if convertedResp != nil || convertedReq != nil {
 		transformationPolicy := &api.Policy{
 			Name:   policyName + transformationPolicySuffix + attachmentName(policyTarget),
 			Target: policyTarget,
 			Kind: &api.Policy_Traffic{
 				Traffic: &api.TrafficPolicySpec{
-					Phase: phase,
+					Phase: phase(policy),
 					Kind: &api.TrafficPolicySpec_Transformation{
 						Transformation: &api.TrafficPolicySpec_TransformationPolicy{
 							Request:  convertedReq,

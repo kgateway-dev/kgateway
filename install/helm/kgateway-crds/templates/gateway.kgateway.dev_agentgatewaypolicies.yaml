@@ -643,7 +643,7 @@ spec:
                         type: object
                     type: object
                   auth:
-                    description: auth defines settings for managing authneitcation
+                    description: auth defines settings for managing authentication
                       to the backend
                     properties:
                       key:
@@ -924,6 +924,11 @@ spec:
                       rule: '[has(self.verifySubjectAltNames),has(self.insecureSkipVerify)].filter(x,x==true).size()
                         <= 1'
                 type: object
+                x-kubernetes-validations:
+                - message: at least one of the fields in [tcp tls http auth mcp ai]
+                    must be set
+                  rule: '[has(self.tcp),has(self.tls),has(self.http),has(self.auth),has(self.mcp),has(self.ai)].filter(x,x==true).size()
+                    >= 1'
               frontend:
                 description: |-
                   frontend defines settings for how to handle incoming traffic.
@@ -942,19 +947,27 @@ spec:
                           pairs that are logged
                         properties:
                           add:
-                            additionalProperties:
-                              description: A Common Expression Language (CEL) expression.
-                                See https://agentgateway.dev/docs/reference/cel/ for
-                                more info.
-                              maxLength: 16384
-                              minLength: 1
-                              type: string
                             description: |-
                               add specifies additional key-value pairs to be added to each entry.
                               The value is a CEL expression. If the CEL expression fails to evaluate, the pair will be excluded.
-                            maxProperties: 64
-                            minProperties: 1
-                            type: object
+                            items:
+                              properties:
+                                expression:
+                                  description: A Common Expression Language (CEL)
+                                    expression. See https://agentgateway.dev/docs/reference/cel/
+                                    for more info.
+                                  maxLength: 16384
+                                  minLength: 1
+                                  type: string
+                                name:
+                                  maxLength: 256
+                                  type: string
+                              required:
+                              - expression
+                              - name
+                              type: object
+                            minItems: 1
+                            type: array
                           remove:
                             description: remove lists the default fields that should
                               be removed. For example, "http.method".
@@ -965,6 +978,11 @@ spec:
                             minItems: 1
                             type: array
                         type: object
+                        x-kubernetes-validations:
+                        - message: at least one of the fields in [remove add] must
+                            be set
+                          rule: '[has(self.remove),has(self.add)].filter(x,x==true).size()
+                            >= 1'
                       filter:
                         description: |-
                           filter specifies a CEL expression that is used to filter logs. A log will only be emitted if the expression evaluates
@@ -1033,15 +1051,22 @@ spec:
                           maxBufferSize defines the maximum size HTTP body that will be buffered into memory.
                           Bodies will only be buffered for policies which require buffering.
                           If unset, this defaults to 2mb.
-                        format: int64
+                        format: int32
                         minimum: 1
                         type: integer
                     type: object
+                    x-kubernetes-validations:
+                    - message: at least one of the fields in [maxBufferSize http1MaxHeaders
+                        http1IdleTimeout http2WindowSize http2ConnectionWindowSize
+                        http2FrameSize http2KeepaliveInterval http2KeepaliveTimeout]
+                        must be set
+                      rule: '[has(self.maxBufferSize),has(self.http1MaxHeaders),has(self.http1IdleTimeout),has(self.http2WindowSize),has(self.http2ConnectionWindowSize),has(self.http2FrameSize),has(self.http2KeepaliveInterval),has(self.http2KeepaliveTimeout)].filter(x,x==true).size()
+                        >= 1'
                   tcp:
                     description: tcp defines settings on managing incoming TCP connections.
                     properties:
-                      keepAlive:
-                        description: keepAlive defines settings for enabling TCP keepalives
+                      keepalive:
+                        description: keepalive defines settings for enabling TCP keepalives
                           on the connection.
                         properties:
                           interval:
@@ -1074,6 +1099,9 @@ spec:
                               rule: duration(self) >= duration('1s')
                         type: object
                     type: object
+                    x-kubernetes-validations:
+                    - message: at least one of the fields in [keepalive] must be set
+                      rule: '[has(self.keepalive)].filter(x,x==true).size() >= 1'
                   tls:
                     description: tls defines settings on managing incoming TLS connections.
                     properties:
@@ -1087,9 +1115,12 @@ spec:
                           rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                         - message: handshakeTimeout must be at least 100ms
                           rule: duration(self) >= duration('100ms')
-                    required:
-                    - handshakeTimeout
                     type: object
+                    x-kubernetes-validations:
+                    - message: at least one of the fields in [handshakeTimeout] must
+                        be set
+                      rule: '[has(self.handshakeTimeout)].filter(x,x==true).size()
+                        >= 1'
                   tracing:
                     description: Tracing contains various settings for OpenTelemetry
                       tracer.
@@ -1099,19 +1130,27 @@ spec:
                           pairs that are included in the trace
                         properties:
                           add:
-                            additionalProperties:
-                              description: A Common Expression Language (CEL) expression.
-                                See https://agentgateway.dev/docs/reference/cel/ for
-                                more info.
-                              maxLength: 16384
-                              minLength: 1
-                              type: string
                             description: |-
                               add specifies additional key-value pairs to be added to each entry.
                               The value is a CEL expression. If the CEL expression fails to evaluate, the pair will be excluded.
-                            maxProperties: 64
-                            minProperties: 1
-                            type: object
+                            items:
+                              properties:
+                                expression:
+                                  description: A Common Expression Language (CEL)
+                                    expression. See https://agentgateway.dev/docs/reference/cel/
+                                    for more info.
+                                  maxLength: 16384
+                                  minLength: 1
+                                  type: string
+                                name:
+                                  maxLength: 256
+                                  type: string
+                              required:
+                              - expression
+                              - name
+                              type: object
+                            minItems: 1
+                            type: array
                           remove:
                             description: remove lists the default fields that should
                               be removed. For example, "http.method".
@@ -1122,6 +1161,11 @@ spec:
                             minItems: 1
                             type: array
                         type: object
+                        x-kubernetes-validations:
+                        - message: at least one of the fields in [remove add] must
+                            be set
+                          rule: '[has(self.remove),has(self.add)].filter(x,x==true).size()
+                            >= 1'
                       backendRef:
                         description: |-
                           backendRef references the OTLP server to reach.
@@ -1219,9 +1263,17 @@ spec:
                         minLength: 1
                         type: string
                     required:
+                    - backendRef
                     - protocol
                     type: object
                 type: object
+                x-kubernetes-validations:
+                - message: tracing is not currently implemented
+                  rule: '!has(self.tracing)'
+                - message: at least one of the fields in [tcp tls http accessLog tracing]
+                    must be set
+                  rule: '[has(self.tcp),has(self.tls),has(self.http),has(self.accessLog),has(self.tracing)].filter(x,x==true).size()
+                    >= 1'
               targetRefs:
                 description: targetRefs specifies the target resources by reference
                   to attach the policy to.
@@ -1684,28 +1736,6 @@ spec:
                         minItems: 1
                         type: array
                     type: object
-                  directResponse:
-                    description: directResponse returns an immediate response without
-                      sending a request to the backend.
-                    properties:
-                      body:
-                        description: |-
-                          Body defines the content to be returned in the HTTP response body.
-                          The maximum length of the body is restricted to prevent excessively large responses.
-                          If this field is omitted, no body is included in the response.
-                        maxLength: 4096
-                        minLength: 1
-                        type: string
-                      status:
-                        description: StatusCode defines the HTTP status code to return
-                          for this route.
-                        format: int32
-                        maximum: 599
-                        minimum: 200
-                        type: integer
-                    required:
-                    - status
-                    type: object
                   extAuth:
                     description: |-
                       extAuth specifies the external authentication configuration for the policy.
@@ -2166,18 +2196,17 @@ spec:
                     - None
                     type: string
                   phase:
-                    default: Route
                     description: |-
-                      The phase to apply the traffic policy to. If the phase is Gateway, the targetRef must be a Gateway or a Listener.
-                      Gateway is typically used only when a policy needs to influence the routing decision.
+                      The phase to apply the traffic policy to. If the phase is PreRouting, the targetRef must be a Gateway or a Listener.
+                      PreRouting is typically used only when a policy needs to influence the routing decision.
 
-                      Even when using Route mode, the policy can target the Gateway/Listener. This is syntax sugar for applying the policy
+                      Even when using PostRouting mode, the policy can target the Gateway/Listener. This is a helper for applying the policy
                       to all routes under that Gateway/Listener, and follows the merging logic described above.
 
-                      If unset, this defaults to Route.
+                      If unset, this defaults to PostRouting.
                     enum:
-                    - Gateway
-                    - Route
+                    - PreRouting
+                    - PostRouting
                     type: string
                   rateLimit:
                     description: |-
@@ -2672,6 +2701,20 @@ spec:
                         type: object
                     type: object
                 type: object
+                x-kubernetes-validations:
+                - message: phase PreRouting only supports extAuth, transformation,
+                    and extProc
+                  rule: 'has(self.phase) && self.phase == ''PreRouting'' ? !has(self.rateLimit)
+                    && !has(self.cors) && !has(self.csrf) && !has(self.headerModifiers)
+                    && !has(self.hostRewrite) && !has(self.timeouts) && !has(self.retry)
+                    && !has(self.authorization): true'
+                - message: hostRewrite is not currently implemented
+                  rule: '!has(self.hostRewrite)'
+                - message: at least one of the fields in [transformation extProc extAuth
+                    rateLimit cors csrf headerModifiers hostRewrite timeouts retry
+                    authorization] must be set
+                  rule: '[has(self.transformation),has(self.extProc),has(self.extAuth),has(self.rateLimit),has(self.cors),has(self.csrf),has(self.headerModifiers),has(self.hostRewrite),has(self.timeouts),has(self.retry),has(self.authorization)].filter(x,x==true).size()
+                    >= 1'
             type: object
             x-kubernetes-validations:
             - message: At least one of traffic, frontend, or backend must be provided.
@@ -2698,6 +2741,16 @@ spec:
                 or HTTPRoute
               rule: 'has(self.traffic) && has(self.targetSelectors) ? self.targetSelectors.all(t,
                 t.kind in [''Gateway'', ''HTTPRoute'', ''XListenerSet'']) : true'
+            - message: the 'traffic.phase=PreRouting' field can only target a Gateway
+                or XListenerSet
+              rule: 'has(self.targetRefs) && has(self.traffic) && has(self.traffic.phase)
+                && self.traffic.phase == ''PreRouting'' ? self.targetRefs.all(t, t.kind
+                in [''Gateway'', ''XListenerSet'']) : true'
+            - message: the 'traffic.phase=PreRouting' field can only target a Gateway
+                or XListenerSet
+              rule: 'has(self.targetSelectors) && has(self.traffic) && has(self.traffic.phase)
+                && self.traffic.phase == ''PreRouting'' ? self.targetSelectors.all(t,
+                t.kind in [''Gateway'', ''XListenerSet'']) : true'
             - message: exactly one of the fields in [targetRefs targetSelectors] must
                 be set
               rule: '[has(self.targetRefs),has(self.targetSelectors)].filter(x,x==true).size()
