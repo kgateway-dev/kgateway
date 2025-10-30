@@ -1,4 +1,4 @@
-package endpointpicker
+package inferencepool
 
 import (
 	"fmt"

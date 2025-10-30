@@ -1,6 +1,6 @@
 //go:build e2e
 
-package inferenceextension
+package inference_extension
 
 import (
 	"context"
