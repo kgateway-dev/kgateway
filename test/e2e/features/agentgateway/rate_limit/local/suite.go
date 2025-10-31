@@ -54,18 +54,10 @@ func NewAgentgatewayTestingSuite(ctx context.Context, testInst *e2e.TestInstalla
 }
 
 func (s *testingSuite) SetupSuite() {
-	if s.agentgateway {
-		s.commonManifests = []string{
-			testdefaults.CurlPodManifest,
-			simpleServiceManifest,
-			agwCommonManifest,
-		}
-	} else {
-		s.commonManifests = []string{
-			testdefaults.CurlPodManifest,
-			simpleServiceManifest,
-			commonManifest,
-		}
+	s.commonManifests = []string{
+		testdefaults.CurlPodManifest,
+		simpleServiceManifest,
+		agwCommonManifest,
 	}
 	s.commonResources = []client.Object{
 		// resources from curl manifest

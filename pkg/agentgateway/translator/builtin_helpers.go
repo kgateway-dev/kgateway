@@ -23,6 +23,8 @@ func ApplyTimeouts(rule *gwv1.HTTPRouteRule, route *api.Route) error {
 	if route.TrafficPolicies == nil {
 		route.TrafficPolicies = []*api.TrafficPolicySpec{}
 	}
+	var reqDur, beDur *durationpb.Duration
+
 	if rule.Timeouts.Request != nil {
 		d, err := time.ParseDuration(string(*rule.Timeouts.Request))
 		if err != nil {
@@ -31,13 +33,7 @@ func ApplyTimeouts(rule *gwv1.HTTPRouteRule, route *api.Route) error {
 		if d != 0 {
 			// "Setting a timeout to the zero duration (e.g. "0s") SHOULD disable the timeout"
 			// However, agentgateway already defaults to no timeout, so only set for non-zero
-			route.TrafficPolicies = append(route.TrafficPolicies, &api.TrafficPolicySpec{
-				Kind: &api.TrafficPolicySpec_Timeout{
-					Timeout: &api.Timeout{
-						Request: durationpb.New(d),
-					},
-				},
-			})
+			reqDur = durationpb.New(d)
 		}
 	}
 	if rule.Timeouts.BackendRequest != nil {
@@ -48,14 +44,18 @@ func ApplyTimeouts(rule *gwv1.HTTPRouteRule, route *api.Route) error {
 		if d != 0 {
 			// "Setting a timeout to the zero duration (e.g. "0s") SHOULD disable the timeout"
 			// However, agentgateway already defaults to no timeout, so only set for non-zero
-			// BackendRequestTimeout
-			route.TrafficPolicies = append(route.TrafficPolicies, &api.TrafficPolicySpec{
-				Kind: &api.TrafficPolicySpec_Timeout{
-					Timeout: &api.Timeout{
-						BackendRequest: durationpb.New(d)},
-				},
-			})
+			beDur = durationpb.New(d)
 		}
+	}
+	if reqDur != nil || beDur != nil {
+		route.TrafficPolicies = append(route.TrafficPolicies, &api.TrafficPolicySpec{
+			Kind: &api.TrafficPolicySpec_Timeout{
+				Timeout: &api.Timeout{
+					Request:        reqDur,
+					BackendRequest: beDur,
+				},
+			},
+		})
 	}
 	return nil
 }
