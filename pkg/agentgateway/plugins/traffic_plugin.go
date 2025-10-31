@@ -77,7 +77,7 @@ func convertStatusCollection(col krt.Collection[krt.ObjectWithStatus[*v1alpha1.A
 func NewAgentPlugin(agw *AgwCollections) AgwPlugin {
 	col := krt.WrapClient(kclient.NewFilteredDelayed[*v1alpha1.AgentgatewayPolicy](
 		agw.Client,
-		wellknown.TrafficPolicyGVR,
+		wellknown.AgentgatewayPolicyGVR,
 		kclient.Filter{ObjectFilter: agw.Client.ObjectFilter()},
 	), agw.KrtOpts.ToOptions("AgentgatewayPolicy")...)
 	policyStatusCol, policyCol := krt.NewStatusManyCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.AgentgatewayPolicy) (
@@ -89,7 +89,7 @@ func NewAgentPlugin(agw *AgwCollections) AgwPlugin {
 
 	return AgwPlugin{
 		ContributesPolicies: map[schema.GroupKind]PolicyPlugin{
-			wellknown.TrafficPolicyGVK.GroupKind(): {
+			wellknown.AgentgatewayPolicyGVK.GroupKind(): {
 				Policies:       policyCol,
 				PolicyStatuses: convertStatusCollection(policyStatusCol),
 			},
