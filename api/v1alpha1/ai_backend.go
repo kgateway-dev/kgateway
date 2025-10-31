@@ -254,10 +254,13 @@ type GeminiConfig struct {
 	ApiVersion string `json:"apiVersion"`
 }
 
-// Publisher configures the type of publisher model to use for VertexAI. Currently, only Google is supported.
+// Publisher configures the type of publisher model to use for VertexAI. Google and Anthropic are supported.
 type Publisher string
 
-const GOOGLE Publisher = "GOOGLE"
+const (
+	GOOGLE    Publisher = "GOOGLE"
+	ANTHROPIC Publisher = "ANTHROPIC"
+)
 
 // VertexAIConfig settings for the [Vertex AI](https://cloud.google.com/vertex-ai/docs) LLM provider.
 // To find the values for the project ID, project location, and publisher, you can check the fields of an API request, such as
@@ -293,8 +296,8 @@ type VertexAIConfig struct {
 	// Optional: The model path to route to. Defaults to the Gemini model path, `generateContent`.
 	ModelPath *string `json:"modelPath,omitempty"`
 
-	// The type of publisher model to use. Currently, only Google is supported.
-	// +kubebuilder:validation:Enum=GOOGLE
+	// The type of publisher model to use. Google and Anthropic are supported.
+	// +kubebuilder:validation:Enum=GOOGLE;ANTHROPIC
 	Publisher Publisher `json:"publisher"`
 }
 

@@ -542,10 +542,11 @@ spec:
                             minLength: 1
                             type: string
                           publisher:
-                            description: The type of publisher model to use. Currently,
-                              only Google is supported.
+                            description: The type of publisher model to use. Google
+                              and Anthropic are supported.
                             enum:
                             - GOOGLE
+                            - ANTHROPIC
                             type: string
                         required:
                         - apiVersion
@@ -1088,9 +1089,10 @@ spec:
                                     type: string
                                   publisher:
                                     description: The type of publisher model to use.
-                                      Currently, only Google is supported.
+                                      Google and Anthropic are supported.
                                     enum:
                                     - GOOGLE
+                                    - ANTHROPIC
                                     type: string
                                 required:
                                 - apiVersion
