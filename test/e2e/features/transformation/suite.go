@@ -484,7 +484,6 @@ func (s *testingSuite) SetRustformationInController(enabled bool) {
 			rustFormationsEnvVar,
 		)
 		controllerDeployModified.ResourceVersion = ""
-
 	} else {
 		controllerDeployModified.Spec.Template.Spec.Containers[0].Env = slices.DeleteFunc(controllerDeployModified.Spec.Template.Spec.Containers[0].Env, func(envVar corev1.EnvVar) bool {
 			return envVar.Name == "KGW_USE_RUST_FORMATIONS"
