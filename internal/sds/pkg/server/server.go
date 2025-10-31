@@ -2,8 +2,10 @@ package server
 
 import (
 	"context"
+	"encoding/binary"
 	"encoding/pem"
 	"fmt"
+	"hash"
 	"hash/fnv"
 	"log"
 	"log/slog"
@@ -18,7 +20,7 @@ import (
 	cache_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	server "github.com/envoyproxy/go-control-plane/pkg/server/v3"
-	"github.com/solo-io/go-utils/hashutils"
+	"github.com/mitchellh/hashstructure"
 	"google.golang.org/grpc"
 )
 
@@ -154,8 +156,30 @@ func (s *Server) UpdateSDSConfig(ctx context.Context) error {
 
 // GetSnapshotVersion generates a version string by hashing the certs
 func GetSnapshotVersion(certs ...interface{}) (string, error) {
-	hash, err := hashutils.HashAllSafe(fnv.New64(), certs...)
+	hash, err := hashAllSafe(fnv.New64(), certs...)
 	return fmt.Sprintf("%d", hash), err
+}
+
+// hashAllSafe replicates the behavior of hashutils.HashAllSafe from github.com/solo-io/go-utils
+func hashAllSafe(hasher hash.Hash64, values ...interface{}) (uint64, error) {
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	for _, v := range values {
+		if err := hashValueSafe(hasher, v); err != nil {
+			return 0, err
+		}
+	}
+	return hasher.Sum64(), nil
+}
+
+// hashValueSafe replicates the behavior of hashutils.hashValueSafe from github.com/solo-io/go-utils
+func hashValueSafe(hasher hash.Hash64, val interface{}) error {
+	h, err := hashstructure.Hash(val, nil)
+	if err != nil {
+		return err
+	}
+	return binary.Write(hasher, binary.LittleEndian, h)
 }
 
 // readAndVerifyCert will read the file from the given

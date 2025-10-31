@@ -65,5 +65,19 @@ var _ = Describe("GatewayClass Status Controller", func() {
 				WithTransform(func(c *metav1.Condition) string { return c.Message }, ContainSubstring(`accepted by kgateway controller`)),
 			))
 		})
+
+		It("should populate supportedFeatures for well-known GatewayClass", func() {
+			Eventually(func() []apiv1.SupportedFeature {
+				gc := &apiv1.GatewayClass{}
+				if err := k8sClient.Get(ctx, types.NamespacedName{Name: gatewayClassName}, gc); err != nil {
+					return nil
+				}
+				return gc.Status.SupportedFeatures
+			}, timeout, interval).Should(And(
+				Not(BeEmpty()),
+				ContainElement(WithTransform(func(f apiv1.SupportedFeature) string { return string(f.Name) }, Equal("Gateway"))),
+				ContainElement(WithTransform(func(f apiv1.SupportedFeature) string { return string(f.Name) }, Equal("HTTPRoute"))),
+			), "GatewayClass %s should have supportedFeatures populated", gatewayClassName)
+		})
 	})
 })

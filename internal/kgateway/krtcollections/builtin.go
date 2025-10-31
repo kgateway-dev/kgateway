@@ -8,24 +8,23 @@ import (
 	"strings"
 	"time"
 
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	corsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
 	stateful_sessionv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/stateful_session/v3"
 	stateful_cookie "github.com/envoyproxy/go-control-plane/envoy/extensions/http/stateful_session/cookie/v3"
 	stateful_header "github.com/envoyproxy/go-control-plane/envoy/extensions/http/stateful_session/header/v3"
 	httpv3 "github.com/envoyproxy/go-control-plane/envoy/type/http/v3"
+	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"istio.io/istio/pkg/kube/krt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
-
-	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	corsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
-	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
-	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
@@ -72,8 +71,7 @@ type ruleIR struct {
 
 type filterIR struct {
 	filterType gwv1.HTTPRouteFilterType
-
-	policy applyToRoute
+	policy     applyToRoute
 }
 
 func (f *filterIR) apply(
@@ -419,11 +417,21 @@ func translateScheme(out *envoyroutev3.RedirectAction, scheme *string) {
 	}
 }
 
-func translatePort(port *gwv1.PortNumber) uint32 {
-	if port == nil {
+func translatePort(scheme string, port *gwv1.PortNumber) uint32 {
+	// If port is explicitly provided, use it regardless of scheme
+	if port != nil {
+		return uint32(*port) //nolint:gosec // G115: Gateway API PortNumber is int32, always valid port range
+	}
+	// Otherwise, use default port for the scheme
+	switch strings.ToLower(scheme) {
+	case "http":
+		return 80
+	case "https":
+		return 443
+	default:
+		// Scheme is empty and port is nil - needs listener port (return 0 as sentinel)
 		return 0
 	}
-	return uint32(*port) //nolint:gosec // G115: Gateway API PortNumber is int32, always valid port range
 }
 
 func translateHostname(hostname *gwv1.PreciseHostname) string {
@@ -689,6 +697,7 @@ func (p *builtinPluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, outputRoute *
 	var errs error
 	if pol.filter != nil {
 		pol.filter.apply(outputRoute, mergeOpts)
+		applyRedirectPortPostProcessing(pCtx, pol, outputRoute)
 	}
 
 	p.applyRulePolicy(pCtx, pol.rule, mergeOpts, outputRoute)
@@ -817,7 +826,12 @@ func (h *RoutesIndex) convertfilterIR(
 // REQUEST REDIRECT IR
 // ===================
 type requestRedirectIr struct {
+	// Redir is the redirect action to apply to the route.
 	Redir *envoyroutev3.RedirectAction
+	// NeedsListenerPort indicates that the redirect port should be set to the listener port
+	// when scheme is empty and port is nil. This is set during IR creation and resolved
+	// during apply() when we have access to the listener context.
+	NeedsListenerPort bool
 }
 
 func (r *requestRedirectIr) apply(
@@ -834,26 +848,53 @@ func (r *requestRedirectIr) apply(
 
 func convertRequestRedirectIR(
 	_ krt.HandlerContext,
-	config *gwv1.HTTPRequestRedirectFilter,
+	f *gwv1.HTTPRequestRedirectFilter,
 	ruleName *gwv1.SectionName,
 	annotations map[string]string,
 ) (*requestRedirectIr, error) {
-	if config == nil {
+	if f == nil {
 		return nil, nil
 	}
 
-	statusCode, err := translateStatusCode(config.StatusCode, ruleName, annotations)
+	statusCode, err := translateStatusCode(f.StatusCode, ruleName, annotations)
 	if err != nil {
 		return nil, err
 	}
+
+	portRedirect := translatePort(ptr.Deref(f.Scheme, ""), f.Port)
 	redir := &envoyroutev3.RedirectAction{
-		HostRedirect: translateHostname(config.Hostname),
+		HostRedirect: translateHostname(f.Hostname),
 		ResponseCode: statusCode,
-		PortRedirect: translatePort(config.Port),
+		PortRedirect: portRedirect,
 	}
-	translateScheme(redir, config.Scheme)
-	translatePathRewrite(redir, config.Path)
-	return &requestRedirectIr{Redir: redir}, nil
+	translateScheme(redir, f.Scheme)
+	translatePathRewrite(redir, f.Path)
+
+	return &requestRedirectIr{
+		Redir:             redir,
+		NeedsListenerPort: portRedirect == 0 && f.Scheme == nil && f.Port == nil,
+	}, nil
+}
+
+// applyRedirectPortPostProcessing handles the special case where redirect port needs
+// to be set to the listener port when both scheme and port are nil in the redirect filter.
+// Per Gateway API spec: "If redirect scheme is empty, the redirect port MUST be the Gateway Listener port."
+func applyRedirectPortPostProcessing(
+	pCtx *ir.RouteContext,
+	pol *builtinPlugin,
+	outputRoute *envoyroutev3.Route,
+) {
+	if pol.filter.filterType != gwv1.HTTPRouteFilterRequestRedirect {
+		return
+	}
+	redirectIr, ok := pol.filter.policy.(*requestRedirectIr)
+	if !ok || !redirectIr.NeedsListenerPort {
+		return
+	}
+	redirect := outputRoute.GetRedirect()
+	if redirect != nil && redirect.GetPortRedirect() == 0 {
+		redirect.PortRedirect = pCtx.ListenerPort
+	}
 }
 
 // URL REWRITE IR

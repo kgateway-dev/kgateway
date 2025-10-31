@@ -214,6 +214,19 @@ func createManager(
 		return nil, err
 	}
 
+	if err := mgr.GetClient().Create(ctx, &v1alpha1.GatewayParameters{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      selfManagedGatewayClassName,
+			Namespace: "default",
+		},
+		Spec: v1alpha1.GatewayParametersSpec{
+			SelfManaged: &v1alpha1.SelfManagedGateway{},
+		},
+	}); client.IgnoreAlreadyExists(err) != nil {
+		cancel()
+		return nil, err
+	}
+
 	ctx, cancel := context.WithCancel(parentCtx)
 	kubeClient, _ := setup.CreateKubeClient(cfg)
 	gwCfg := controller.GatewayConfig{
@@ -228,33 +241,20 @@ func createManager(
 		DiscoveryNamespaceFilter: fakeDiscoveryNamespaceFilter{},
 		CommonCollections:        newCommonCols(ctx, kubeClient),
 	}
-	if err := controller.NewBaseGatewayController(parentCtx, gwCfg, nil, nil); err != nil {
-		cancel()
-		return nil, err
-	}
-	if err := mgr.GetClient().Create(ctx, &v1alpha1.GatewayParameters{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      selfManagedGatewayClassName,
-			Namespace: "default",
-		},
-		Spec: v1alpha1.GatewayParametersSpec{
-			SelfManaged: &v1alpha1.SelfManagedGateway{},
-		},
-	}); client.IgnoreAlreadyExists(err) != nil {
-		cancel()
-		return nil, err
-	}
 
 	// Use the default & alt GCs when no class configs are provided.
 	if classConfigs == nil {
+		supportedFeatures := deployer.GetSupportedFeaturesForStandardGateway()
 		classConfigs = map[string]*deployer.GatewayClassInfo{}
 		classConfigs[altGatewayClassName] = &deployer.GatewayClassInfo{
-			Description:    "alt gateway class",
-			ControllerName: agwControllerName, // custom controller name (not default)
+			Description:       "alt gateway class",
+			ControllerName:    agwControllerName, // custom controller name (not default)
+			SupportedFeatures: supportedFeatures,
 		}
 		classConfigs[gatewayClassName] = &deployer.GatewayClassInfo{
-			Description:    "default gateway class",
-			ControllerName: gatewayControllerName,
+			Description:       "default gateway class",
+			ControllerName:    gatewayControllerName,
+			SupportedFeatures: supportedFeatures,
 		}
 		classConfigs[selfManagedGatewayClassName] = &deployer.GatewayClassInfo{
 			Description: "self managed gw",
@@ -264,10 +264,14 @@ func createManager(
 				Name:      selfManagedGatewayClassName,
 				Namespace: ptr.To(apiv1.Namespace("default")),
 			},
-			// no controller name set, uses default
+			SupportedFeatures: supportedFeatures,
 		}
 	}
 
+	if err := controller.NewBaseGatewayController(parentCtx, gwCfg, classConfigs, nil, nil); err != nil {
+		cancel()
+		return nil, err
+	}
 	if err := controller.NewGatewayClassProvisioner(mgr, gatewayControllerName, classConfigs); err != nil {
 		cancel()
 		return nil, err

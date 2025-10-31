@@ -3,12 +3,11 @@ package matchers_test
 import (
 	"testing"
 
-	"github.com/solo-io/go-utils/testutils"
-
 	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func TestMatchers(t *testing.T) {
-	testutils.RegisterCommonFailHandlers()
+	RegisterFailHandler(Fail)
 	RunSpecs(t, "Matchers Suite")
 }

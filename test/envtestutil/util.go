@@ -4,15 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"path/filepath"
 	"sync"
 	"testing"
 
-	"github.com/solo-io/go-utils/contextutils"
-	"go.uber.org/zap"
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/kubetypes"
@@ -43,7 +40,6 @@ type postStartFunc func(t *testing.T, ctx context.Context, client istiokube.CLIC
 
 func RunController(
 	t *testing.T,
-	logger *zap.Logger,
 	globalSettings *apisettings.Settings,
 	testEnv *envtest.Environment,
 	postStart postStartFunc,
@@ -74,7 +70,6 @@ func RunController(
 
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
-	ctx = contextutils.WithExistingLogger(ctx, logger.Sugar())
 
 	cfg, err := testEnv.Start()
 	if err != nil {
@@ -158,13 +153,11 @@ func RunController(
 	}
 
 	// start kgateway
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		if err := s.Start(ctx); err != nil {
-			log.Fatalf("error starting kgateway %v", err)
+			t.Errorf("error starting kgateway %v", err)
 		}
-	}()
+	})
 
 	xdsPort := l.Addr().(*net.TCPAddr).Port
 	agwXdsPort := l2.Addr().(*net.TCPAddr).Port

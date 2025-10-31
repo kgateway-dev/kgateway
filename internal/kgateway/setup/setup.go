@@ -438,6 +438,16 @@ func BuildKgatewayWithConfig(
 
 	ucc := uccBuilder(ctx, krtOpts, augmentedPodsForUcc)
 
+	gatewayClassInfos := controller.GetDefaultClassInfo(
+		setupOpts.GlobalSettings,
+		gatewayClassName,
+		waypointClassName,
+		agentgatewayClassName,
+		gatewayControllerName,
+		agwControllerName,
+		additionalGatewayClasses,
+	)
+
 	slog.Info("initializing controller")
 	c, err := controller.NewControllerBuilder(ctx, controller.StartConfig{
 		Manager:                      mgr,
@@ -447,6 +457,7 @@ func BuildKgatewayWithConfig(
 		WaypointGatewayClassName:     waypointClassName,
 		AgentgatewayClassName:        agentgatewayClassName,
 		AdditionalGatewayClasses:     additionalGatewayClasses,
+		GatewayClassInfos:            gatewayClassInfos,
 		ExtraPlugins:                 extraPlugins,
 		ExtraAgwPlugins:              extraAgwPlugins,
 		HelmValuesGeneratorOverride:  helmValuesGeneratorOverride,

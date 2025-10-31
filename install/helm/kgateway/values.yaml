@@ -108,6 +108,10 @@ discoveryNamespaceSelectors: []
 agentgateway:
   enabled: true
 
+# -- Enable the integration with Envoy
+envoy:
+  enabled: true
+
 # -- Policy merging settings. Currently, TrafficPolicy's extAuth, extProc, and transformation policies support deep merging.
 # E.g., to enable deep merging of extProc policy in TrafficPolicy:
 # policyMerge:

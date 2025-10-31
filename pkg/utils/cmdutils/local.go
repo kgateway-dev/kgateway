@@ -8,7 +8,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/solo-io/go-utils/threadsafe"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/threadsafe"
 )
 
 var (

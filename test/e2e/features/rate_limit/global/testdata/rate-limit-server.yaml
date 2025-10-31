@@ -43,7 +43,7 @@ data:
         value: "/path2"
         rate_limit:
           unit: minute
-          requests_per_unit: 2
+          requests_per_unit: 1
       - key: X-User-ID
         rate_limit:
           unit: minute
@@ -57,7 +57,7 @@ data:
         value: premium-api
         rate_limit:
           unit: minute
-          requests_per_unit: 2
+          requests_per_unit: 1
 ---
 apiVersion: v1
 kind: Service

@@ -4,10 +4,10 @@ import (
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
-	"github.com/solo-io/go-utils/testutils"
+	. "github.com/onsi/gomega"
 )
 
 func TestTransforms(t *testing.T) {
-	testutils.RegisterCommonFailHandlers()
+	RegisterFailHandler(Fail)
 	RunSpecs(t, "Transforms Suite")
 }

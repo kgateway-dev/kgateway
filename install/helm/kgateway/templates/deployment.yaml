@@ -118,6 +118,8 @@ spec:
             {{- end }}
             - name: KGW_ENABLE_AGENTGATEWAY
               value: "{{.Values.agentgateway.enabled}}"
+            - name: KGW_ENABLE_ENVOY
+              value: "{{.Values.envoy.enabled}}"
             {{- if .Values.waypoint.enabled }}
             - name: KGW_ENABLE_WAYPOINT
               value: "true"
@@ -158,3 +160,6 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+{{- if and (not .Values.envoy.enabled) (not .Values.agentgateway.enabled) }}
+{{ fail "envoy.enabled or agentgateway.enabled must be set to true"}}
+{{- end }}

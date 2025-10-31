@@ -373,6 +373,9 @@ func setupEnvTestAndRun(t *testing.T, globalSettings *apisettings.Settings, run 
 ) {
 	proxy_syncer.UseDetailedUnmarshalling = true
 	writer.set(t)
+	t.Cleanup(func() {
+		writer.set(nil)
+	})
 
 	testEnv := &envtest.Environment{
 		CRDDirectoryPaths: []string{
@@ -389,7 +392,6 @@ func setupEnvTestAndRun(t *testing.T, globalSettings *apisettings.Settings, run 
 	}
 	envtestutil.RunController(
 		t,
-		logger,
 		globalSettings,
 		testEnv,
 		nil,

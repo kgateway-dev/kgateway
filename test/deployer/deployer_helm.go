@@ -72,7 +72,11 @@ func (dt DeployerTester) RunHelmChartTest(
 	inputFile := filePath + ".yaml"
 	outputFile := filePath + "-out.yaml"
 
-	objs, err := testutils.LoadFromFiles(inputFile, scheme, nil)
+	crdDir := filepath.Join(testutils.GitRootDirectory(), testutils.CRDPath)
+	gvkToStructuralSchema, err := testutils.GetStructuralSchemas(crdDir)
+	assert.NoError(t, err, "error getting structural schemas")
+
+	objs, err := testutils.LoadFromFiles(inputFile, scheme, gvkToStructuralSchema)
 	assert.NoError(t, err, "error loading files from input file")
 
 	commonObjs, gtw := ExtractCommonObjs(t, objs)

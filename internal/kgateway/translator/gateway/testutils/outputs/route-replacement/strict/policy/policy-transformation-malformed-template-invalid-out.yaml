@@ -107,8 +107,9 @@ Statuses:
       - conditions:
         - lastTransitionTime: null
           message: 'Replaced Rule (0): invalid xds configuration: error initializing
-            configuration ''/dev/fd/0'': Failed to parse request template: Failed to parse
-            body template [inja.exception.parser_error] (at 1:21) unexpected ''}'''
+            configuration ''/dev/fd/0'': Failed to parse request template: Failed
+            to parse body template [inja.exception.parser_error] (at 1:21) unexpected
+            ''}'''
           reason: RouteRuleReplaced
           status: "False"
           type: Accepted

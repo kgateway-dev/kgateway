@@ -107,9 +107,9 @@ Statuses:
       - conditions:
         - lastTransitionTime: null
           message: 'Replaced Rule (0): invalid xds configuration: error initializing
-            configuration ''/dev/fd/0'': Failed to parse request template: Failed to parse
-            header template ''x-forwarded-for'': [inja.exception.parser_error] (at
-            1:31) unknown function request_headers'
+            configuration ''/dev/fd/0'': Failed to parse request template: Failed
+            to parse header template ''x-forwarded-for'': [inja.exception.parser_error]
+            (at 1:31) unknown function request_headers'
           reason: RouteRuleReplaced
           status: "False"
           type: Accepted

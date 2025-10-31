@@ -40,6 +40,7 @@ Routes:
         pathSeparatedPrefix: /rule0
       name: listener~8080~gwapi_com-route-0-httproute-use-gwapi-default-0-0-matcher-0
       redirect:
+        portRedirect: 8080
         responseCode: FOUND
   - domains:
     - invalid-code-char.com
@@ -73,11 +74,13 @@ Routes:
         pathSeparatedPrefix: /rule0
       name: listener~8080~route-level-override_com-route-0-httproute-route-level-override-default-0-0-matcher-0
       redirect:
+        portRedirect: 8080
         responseCode: TEMPORARY_REDIRECT
     - match:
         pathSeparatedPrefix: /rule1
       name: listener~8080~route-level-override_com-route-1-httproute-route-level-override-default-1-0-matcher-0
       redirect:
+        portRedirect: 8080
         responseCode: TEMPORARY_REDIRECT
   - domains:
     - rule-level-override.com
@@ -87,16 +90,19 @@ Routes:
         pathSeparatedPrefix: /rule0
       name: listener~8080~rule-level-override_com-route-0-httproute-rule-level-override-default-0-0-rule0-matcher-0
       redirect:
+        portRedirect: 8080
         responseCode: TEMPORARY_REDIRECT
     - match:
         pathSeparatedPrefix: /rule1
       name: listener~8080~rule-level-override_com-route-1-httproute-rule-level-override-default-1-0-rule1-matcher-0
       redirect:
+        portRedirect: 8080
         responseCode: PERMANENT_REDIRECT
     - match:
         pathSeparatedPrefix: /rule2
       name: listener~8080~rule-level-override_com-route-2-httproute-rule-level-override-default-2-0-rule2-matcher-0
       redirect:
+        portRedirect: 8080
         responseCode: FOUND
 Statuses:
   gateways:
