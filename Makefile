@@ -62,16 +62,6 @@ else
 endif
 
 PLATFORM := --platform=linux/$(GOARCH)
-PLATFORM_MULTIARCH := $(PLATFORM)
-LOAD_OR_PUSH := --load
-ifeq ($(MULTIARCH), true)
-	PLATFORM_MULTIARCH := --platform=linux/amd64,linux/arm64
-	LOAD_OR_PUSH :=
-
-	ifeq ($(MULTIARCH_PUSH), true)
-		LOAD_OR_PUSH := --push
-	endif
-endif
 
 GOOS ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
 
