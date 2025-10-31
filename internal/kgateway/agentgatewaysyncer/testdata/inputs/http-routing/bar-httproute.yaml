@@ -15,6 +15,12 @@ spec:
       - type: Exact
         name: env
         value: canary
+      - type: Exact
+        name: X-Header-One
+        value: value-one
+      - type: Exact
+        name: X-Header-Two
+        value: value-two
     backendRefs:
     - name: bar-svc-canary
       port: 80

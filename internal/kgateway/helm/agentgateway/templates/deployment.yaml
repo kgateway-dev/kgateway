@@ -8,10 +8,10 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "kgateway.gateway.fullname" . }}
+  {{- with $gateway.gatewayAnnotations }}
   annotations:
-    {{- with $gateway.gatewayAnnotations }}
-      {{- toYaml . | nindent 4 }}
-    {{- end }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   labels:
     {{- include "kgateway.gateway.allLabels" . | nindent 4 }}
 spec:

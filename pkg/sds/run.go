@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/avast/retry-go"
+	"github.com/avast/retry-go/v4"
 	"github.com/kelseyhightower/envconfig"
 
 	"github.com/solo-io/go-utils/stats"

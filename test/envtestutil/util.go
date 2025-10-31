@@ -32,10 +32,10 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
@@ -148,7 +148,7 @@ func RunController(
 			}),
 		setup.WithExtraManagerConfig([]func(ctx context.Context, mgr manager.Manager, objectFilter kubetypes.DynamicObjectFilter) error{
 			func(ctx context.Context, mgr manager.Manager, objectFilter kubetypes.DynamicObjectFilter) error {
-				return controller.AddToScheme(mgr.GetScheme())
+				return schemes.AddToScheme(mgr.GetScheme())
 			},
 		}...),
 		setup.WithValidator(validator),

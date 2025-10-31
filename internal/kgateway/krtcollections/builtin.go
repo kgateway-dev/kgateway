@@ -8,25 +8,23 @@ import (
 	"strings"
 	"time"
 
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	corsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
 	stateful_sessionv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/stateful_session/v3"
-	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	stateful_cookie "github.com/envoyproxy/go-control-plane/envoy/extensions/http/stateful_session/cookie/v3"
 	stateful_header "github.com/envoyproxy/go-control-plane/envoy/extensions/http/stateful_session/header/v3"
 	httpv3 "github.com/envoyproxy/go-control-plane/envoy/type/http/v3"
+	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"istio.io/istio/pkg/kube/krt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
-
-	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	corsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
-	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
-	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
@@ -73,8 +71,7 @@ type ruleIR struct {
 
 type filterIR struct {
 	filterType gwv1.HTTPRouteFilterType
-
-	policy applyToRoute
+	policy     applyToRoute
 }
 
 func (f *filterIR) apply(
@@ -101,6 +98,7 @@ func (d *builtinPlugin) CreationTime() time.Time {
 func (d *builtinPlugin) Equals(in any) bool {
 	// we don't really need equality check here, because this policy is embedded in the httproute,
 	// and we have generation based equality checks for that already.
+	// +noKrtEquals
 	return true
 }
 
@@ -111,15 +109,7 @@ type builtinPluginGwPass struct {
 	needStatefulSession map[string]bool
 }
 
-func (p *builtinPluginGwPass) ApplyForBackend(pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoyroutev3.Route) error {
-	// no op
-	return nil
-}
-
-func (p *builtinPluginGwPass) ApplyHCM(pCtx *ir.HcmContext, out *envoyhttp.HttpConnectionManager) error {
-	// no-op
-	return nil
-}
+var _ ir.PolicyIR = &builtinPlugin{}
 
 func NewBuiltInIr(
 	kctx krt.HandlerContext,
@@ -135,8 +125,7 @@ func NewBuiltInIr(
 	if f.Type == gwv1.HTTPRouteFilterCORS {
 		cors = f.CORS
 	}
-
-	filterIR, err := convertfilterIR(kctx, f, fromgk, fromns, refgrants, ups, ruleName, annotations)
+	filterIR, err := convertFilterIR(kctx, f, fromgk, fromns, refgrants, ups, ruleName, annotations)
 	if err != nil {
 		return nil, err
 	}
@@ -207,15 +196,15 @@ func convertTimeouts(timeout *gwv1.HTTPRouteTimeouts) *timeouts {
 	if timeout == nil {
 		return nil
 	}
-	var requestTimeout *durationpb.Duration
-	var backendRequestTimeout *durationpb.Duration
 
+	var requestTimeout *durationpb.Duration
 	if timeout.Request != nil {
 		if parsed, err := time.ParseDuration(string(*timeout.Request)); err == nil {
 			requestTimeout = durationpb.New(parsed)
 		}
 	}
 
+	var backendRequestTimeout *durationpb.Duration
 	if timeout.BackendRequest != nil {
 		if parsed, err := time.ParseDuration(string(*timeout.BackendRequest)); err == nil {
 			backendRequestTimeout = durationpb.New(parsed)
@@ -280,11 +269,9 @@ func convertRetry(
 		},
 		StatusCodes: retry.Codes,
 	}
-
 	if retry.Attempts != nil {
 		in.Attempts = int32(*retry.Attempts) //nolint:gosec // G115: retry attempts are small positive integers
 	}
-
 	if retry.Backoff != nil {
 		duration, err := time.ParseDuration(string(*retry.Backoff))
 		if err != nil {
@@ -412,11 +399,21 @@ func translateScheme(out *envoyroutev3.RedirectAction, scheme *string) {
 	}
 }
 
-func translatePort(port *gwv1.PortNumber) uint32 {
-	if port == nil {
+func translatePort(scheme string, port *gwv1.PortNumber) uint32 {
+	// If port is explicitly provided, use it regardless of scheme
+	if port != nil {
+		return uint32(*port) //nolint:gosec // G115: Gateway API PortNumber is int32, always valid port range
+	}
+	// Otherwise, use default port for the scheme
+	switch strings.ToLower(scheme) {
+	case "http":
+		return 80
+	case "https":
+		return 443
+	default:
+		// Scheme is empty and port is nil - needs listener port (return 0 as sentinel)
 		return 0
 	}
-	return uint32(*port) //nolint:gosec // G115: Gateway API PortNumber is int32, always valid port range
 }
 
 func translateHostname(hostname *gwv1.PreciseHostname) string {
@@ -432,8 +429,8 @@ func translateStatusCode(
 	annotations map[string]string,
 ) (envoyroutev3.RedirectAction_RedirectResponseCode, error) {
 	var overrideStatusCode *int
-	var err error
 	if value, ok := annotations[apiannotations.HTTPRedirectStatusCode]; ok {
+		var err error
 		overrideStatusCode, err = parseRedirectStatusCodeAnnotation(value, ruleName)
 		if err != nil {
 			return envoyroutev3.RedirectAction_FOUND, err
@@ -520,8 +517,10 @@ func (m *mirrorIr) apply(
 	outputRoute *envoyroutev3.Route,
 	mergeOpts policy.MergeOptions,
 ) {
-	if outputRoute == nil || outputRoute.GetRoute() == nil ||
-		!policy.IsSettable(outputRoute.GetRoute().GetRequestMirrorPolicies(), mergeOpts) {
+	// Note: we intentionally do not use policy.IsSettable() for mirrors,
+	// unlike single-value fields (redirect, timeouts, retry), as mirrors are
+	// append-only and cumulative to support multiple mirrors from the same HTTPRoute rule.
+	if outputRoute == nil || outputRoute.GetRoute() == nil {
 		return
 	}
 	mirror := &envoyroutev3.RouteAction_RequestMirrorPolicy{
@@ -531,7 +530,14 @@ func (m *mirrorIr) apply(
 	outputRoute.GetRoute().RequestMirrorPolicies = append(outputRoute.GetRoute().GetRequestMirrorPolicies(), mirror)
 }
 
-func convertMirrorIR(kctx krt.HandlerContext, f *gwv1.HTTPRequestMirrorFilter, fromgk schema.GroupKind, fromns string, refgrants *RefGrantIndex, ups *BackendIndex) *mirrorIr {
+func convertMirrorIR(
+	kctx krt.HandlerContext,
+	f *gwv1.HTTPRequestMirrorFilter,
+	fromgk schema.GroupKind,
+	fromns string,
+	refgrants *RefGrantIndex,
+	ups *BackendIndex,
+) *mirrorIr {
 	if f == nil {
 		return nil
 	}
@@ -629,20 +635,17 @@ func getFractionPercent(f gwv1.HTTPRequestMirrorFilter) *envoycorev3.RuntimeFrac
 			denom = float64(*f.Fraction.Denominator)
 		}
 		ratio := float64(f.Fraction.Numerator) / denom
+		// use MILLION denominator to maximize precision since arbitrary fractions are allowed.
 		return &envoycorev3.RuntimeFractionalPercent{
-			DefaultValue: toEnvoyPercentage(ratio),
+			DefaultValue: &envoytype.FractionalPercent{
+				Numerator:   uint32(ratio * 1000000),
+				Denominator: envoytype.FractionalPercent_MILLION,
+			},
 		}
 	}
 
 	// nil means 100%
 	return nil
-}
-
-func toEnvoyPercentage(percentage float64) *envoytype.FractionalPercent {
-	return &envoytype.FractionalPercent{
-		Numerator:   uint32(percentage * 10000),
-		Denominator: envoytype.FractionalPercent_MILLION,
-	}
 }
 
 func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
@@ -676,6 +679,7 @@ func (p *builtinPluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, outputRoute *
 	var errs error
 	if pol.filter != nil {
 		pol.filter.apply(outputRoute, mergeOpts)
+		applyRedirectPortPostProcessing(pCtx, pol, outputRoute)
 	}
 
 	p.applyRulePolicy(pCtx, pol.rule, mergeOpts, outputRoute)
@@ -740,8 +744,8 @@ func (p *builtinPluginGwPass) HttpFilters(fcc ir.FilterChainCommon) ([]filters.S
 	return builtinStaged, nil
 }
 
-// New helper to create filterIR
-func convertfilterIR(
+// convertFilterIR converts the HTTPRouteFilter to the IR.
+func convertFilterIR(
 	kctx krt.HandlerContext,
 	f gwv1.HTTPRouteFilter,
 	fromgk schema.GroupKind,
@@ -799,7 +803,12 @@ func convertfilterIR(
 // REQUEST REDIRECT IR
 // ===================
 type requestRedirectIr struct {
+	// Redir is the redirect action to apply to the route.
 	Redir *envoyroutev3.RedirectAction
+	// NeedsListenerPort indicates that the redirect port should be set to the listener port
+	// when scheme is empty and port is nil. This is set during IR creation and resolved
+	// during apply() when we have access to the listener context.
+	NeedsListenerPort bool
 }
 
 func (r *requestRedirectIr) apply(
@@ -816,26 +825,53 @@ func (r *requestRedirectIr) apply(
 
 func convertRequestRedirectIR(
 	_ krt.HandlerContext,
-	config *gwv1.HTTPRequestRedirectFilter,
+	f *gwv1.HTTPRequestRedirectFilter,
 	ruleName *gwv1.SectionName,
 	annotations map[string]string,
 ) (*requestRedirectIr, error) {
-	if config == nil {
+	if f == nil {
 		return nil, nil
 	}
 
-	statusCode, err := translateStatusCode(config.StatusCode, ruleName, annotations)
+	statusCode, err := translateStatusCode(f.StatusCode, ruleName, annotations)
 	if err != nil {
 		return nil, err
 	}
+
+	portRedirect := translatePort(ptr.Deref(f.Scheme, ""), f.Port)
 	redir := &envoyroutev3.RedirectAction{
-		HostRedirect: translateHostname(config.Hostname),
+		HostRedirect: translateHostname(f.Hostname),
 		ResponseCode: statusCode,
-		PortRedirect: translatePort(config.Port),
+		PortRedirect: portRedirect,
 	}
-	translateScheme(redir, config.Scheme)
-	translatePathRewrite(redir, config.Path)
-	return &requestRedirectIr{Redir: redir}, nil
+	translateScheme(redir, f.Scheme)
+	translatePathRewrite(redir, f.Path)
+
+	return &requestRedirectIr{
+		Redir:             redir,
+		NeedsListenerPort: portRedirect == 0 && f.Scheme == nil && f.Port == nil,
+	}, nil
+}
+
+// applyRedirectPortPostProcessing handles the special case where redirect port needs
+// to be set to the listener port when both scheme and port are nil in the redirect filter.
+// Per Gateway API spec: "If redirect scheme is empty, the redirect port MUST be the Gateway Listener port."
+func applyRedirectPortPostProcessing(
+	pCtx *ir.RouteContext,
+	pol *builtinPlugin,
+	outputRoute *envoyroutev3.Route,
+) {
+	if pol.filter.filterType != gwv1.HTTPRouteFilterRequestRedirect {
+		return
+	}
+	redirectIr, ok := pol.filter.policy.(*requestRedirectIr)
+	if !ok || !redirectIr.NeedsListenerPort {
+		return
+	}
+	redirect := outputRoute.GetRedirect()
+	if redirect != nil && redirect.GetPortRedirect() == 0 {
+		redirect.PortRedirect = pCtx.ListenerPort
+	}
 }
 
 // URL REWRITE IR

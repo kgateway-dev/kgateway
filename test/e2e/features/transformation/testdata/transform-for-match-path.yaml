@@ -1,0 +1,41 @@
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route-for-path-match
+spec:
+  parentRefs:
+    - name: gw
+  hostnames:
+    - "example-match.com"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /path_match/
+      backendRefs:
+        - name: simple-svc
+          port: 8080
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: example-traffic-policy-for-path-match
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: example-route-for-path-match
+  transformation:
+    request:
+      set:
+        - name: x-foo-request
+          value: "path matched"
+        - name: x-path-request
+          value: "matched"
+    response:
+      set:
+        - name: x-foo-response
+          value: "path matched"
+        - name: x-path-response
+          value: "matched"

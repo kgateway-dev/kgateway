@@ -43,7 +43,6 @@ const (
 )
 
 // BackendSpec defines the desired state of Backend.
-// +union
 // +kubebuilder:validation:XValidation:message="ai backend must be specified when type is 'AI'",rule="self.type == 'AI' ? has(self.ai) : true"
 // +kubebuilder:validation:XValidation:message="aws backend must be specified when type is 'AWS'",rule="self.type == 'AWS' ? has(self.aws) : true"
 // +kubebuilder:validation:XValidation:message="static backend must be specified when type is 'Static'",rule="self.type == 'Static' ? has(self.static) : true"
@@ -52,7 +51,6 @@ const (
 // +kubebuilder:validation:ExactlyOneOf=ai;aws;static;dynamicForwardProxy;mcp
 type BackendSpec struct {
 	// Type indicates the type of the backend to be used.
-	// +unionDiscriminator
 	// +kubebuilder:validation:Enum=AI;AWS;Static;DynamicForwardProxy;MCP
 	// +required
 	Type BackendType `json:"type"`
@@ -144,12 +142,10 @@ const (
 )
 
 // AwsAuth specifies the authentication method to use for the backend.
-// +union
 // +kubebuilder:validation:XValidation:message="secretRef must be nil if the type is not 'Secret'",rule="!(has(self.secretRef) && self.type != 'Secret')"
 // +kubebuilder:validation:XValidation:message="secretRef must be specified when type is 'Secret'",rule="!(!has(self.secretRef) && self.type == 'Secret')"
 type AwsAuth struct {
 	// Type specifies the authentication method to use for the backend.
-	// +unionDiscriminator
 	// +required
 	// +kubebuilder:validation:Enum=Secret
 	Type AwsAuthType `json:"type"`

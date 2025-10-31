@@ -390,7 +390,6 @@ func hostNameConflict(portProtocol portProtocol, listener ir.Listener) bool {
 	// "protocol-conflict-listener.com": {gateway-protocol-conflict-listener}
 	// "listenerset-1-listener.com": {listenerset-listener}
 	if generateUniqueListenerName(listener) == portProtocol.hostnames[hostname] {
-		logger.Info("accepted listener with hostname conflict as per listener precedence", "name", listener.Name, "parent", listener.Parent.GetName())
 		return false
 	}
 	// Based on the example, the following listeners will be rejected :

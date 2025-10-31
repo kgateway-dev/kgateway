@@ -41,12 +41,22 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 
 	kgwxds "github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
-var log = logging.New("krtxds")
+var (
+	log                 = logging.New("krtxds")
+	agentGwXdsSubsystem = "agentgateway_xds"
+	xdsRejectsTotal     = metrics.NewCounter(
+		metrics.CounterOpts{
+			Subsystem: agentGwXdsSubsystem,
+			Name:      "rejects_total",
+			Help:      "Total number of xDS responses rejected by agentgateway proxy",
+		}, nil)
+)
 
 type CollectionRegistration struct {
 	Start     func(stop <-chan struct{})
@@ -501,7 +511,7 @@ func shouldRespondDelta(con *Connection, request *discovery.DeltaDiscoveryReques
 		// nolint: gosec // error side is bounded
 		errCode := codes.Code(request.ErrorDetail.Code)
 		log.Warn("ADS: ACK ERROR", "type", stype, "connection", con.ID(), "code", errCode.String(), "message", request.ErrorDetail.GetMessage())
-		xds.IncrementXDSRejects(request.TypeUrl, con.proxy.ID, errCode.String())
+		xdsRejectsTotal.Inc()
 		con.proxy.UpdateWatchedResource(request.TypeUrl, func(wr *model.WatchedResource) *model.WatchedResource {
 			wr.LastError = request.ErrorDetail.GetMessage()
 			return wr

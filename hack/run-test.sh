@@ -194,14 +194,14 @@ list_all_tests() {
     log_section "Unit Tests (sample)"
     log_info "Unit test functions:"
     git grep -h '^func Test.*\(t \*testing\.T\)' -- '**/*_test.go' | \
-        grep -v 'test/kubernetes/e2e/' | \
+        grep -v 'test/e2e/' | \
         sed -n 's/func \(Test[^(]*\).*/  - \1/p' | sort -u | head -30
     echo "  ... (showing first 30, use git grep to find more)"
     echo ""
 
     log_info "Ginkgo Describe blocks:"
     git grep -h 'Describe("' -- '**/*_test.go' | \
-        grep -v 'test/kubernetes/e2e/tests/' | \
+        grep -v 'test/e2e/tests/' | \
         grep -v 'vendor/' | \
         sed -n 's/.*Describe("\([^"]*\)".*/  - \1/p' | sort -u | head -30
     echo "  ... (showing first 30)"
@@ -269,7 +269,7 @@ find_unit_test() {
 
     test_file=$(git grep -l "${search_pattern}" 2>/dev/null | \
         grep '_test\.go$' | \
-        grep -v 'test/kubernetes/e2e/tests/' | \
+        grep -v 'test/e2e/tests/' | \
         grep -v 'vendor/' | \
         head -1)
 
@@ -277,7 +277,7 @@ find_unit_test() {
         # Try Ginkgo Describe blocks
         test_file=$(git grep -l "Describe(\".*${pattern}.*\"" 2>/dev/null | \
             grep '_test\.go$' | \
-            grep -v 'test/kubernetes/e2e/tests/' | \
+            grep -v 'test/e2e/tests/' | \
             grep -v 'vendor/' | \
             head -1)
     fi
@@ -291,7 +291,7 @@ find_unit_test() {
         fi
         test_file=$(git grep -l "${search_pattern}" 2>/dev/null | \
             grep '_test\.go$' | \
-            grep -v 'test/kubernetes/e2e/tests/' | \
+            grep -v 'test/e2e/tests/' | \
             grep -v 'vendor/' | \
             head -1)
     fi

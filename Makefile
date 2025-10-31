@@ -33,7 +33,7 @@ export IMAGE_REGISTRY ?= ghcr.io/kgateway-dev
 # Kind of a hack to make sure _output exists
 z := $(shell mkdir -p $(OUTPUT_DIR))
 
-BUILDX_BUILD := docker buildx build -q
+BUILDX_BUILD ?= docker buildx build -q
 
 # A semver resembling 1.0.1-dev. Most calling GHA jobs customize this. Exported for use in goreleaser.yaml.
 VERSION ?= 1.0.1-dev
@@ -42,12 +42,12 @@ export VERSION
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
 # Note: When bumping this version, update the version in pkg/validator/validator.go as well.
-export ENVOY_IMAGE ?= quay.io/solo-io/envoy-gloo:1.35.2-patch4
+export ENVOY_IMAGE ?= quay.io/solo-io/envoy-gloo:1.36.2-patch1
 export LDFLAGS := -X 'github.com/kgateway-dev/kgateway/v2/internal/version.Version=$(VERSION)' -s -w
 export GCFLAGS ?=
 
 UNAME_M := $(shell uname -m)
-# if `GO_ARCH` is set, then it will keep its value. Else, it will be changed based off the machine's host architecture.
+# if `GOARCH` is set, then it will keep its value. Else, it will be changed based off the machine's host architecture.
 # if the machines architecture is set to arm64 then we want to set the appropriate values, else we only support amd64
 IS_ARM_MACHINE := $(or	$(filter $(UNAME_M), arm64), $(filter $(UNAME_M), aarch64))
 ifneq ($(IS_ARM_MACHINE), )
@@ -131,7 +131,6 @@ mod-tidy: mod-download mod-tidy-nested ## Tidy the go mod file
 # Analyze
 #----------------------------------------------------------------------------
 
-YQ ?= go tool yq
 GO_VERSION := $(shell cat go.mod | grep -E '^go' | awk '{print $$2}')
 GOTOOLCHAIN ?= go$(GO_VERSION)
 
@@ -139,7 +138,12 @@ GOLANGCI_LINT ?= go tool golangci-lint
 ANALYZE_ARGS ?= --fix --verbose
 .PHONY: analyze
 analyze:  ## Run golangci-lint. Override options with ANALYZE_ARGS.
-	GOTOOLCHAIN=$(GOTOOLCHAIN) $(GOLANGCI_LINT) run $(ANALYZE_ARGS) ./...
+	GOTOOLCHAIN=$(GOTOOLCHAIN) $(GOLANGCI_LINT) run $(ANALYZE_ARGS) --build-tags e2e ./...
+
+ACTION_LINT ?= go tool github.com/rhysd/actionlint/cmd/actionlint
+.PHONY: lint-actions
+lint-actions: ## Lint the GitHub Actions workflows
+	$(ACTION_LINT)
 
 #----------------------------------------------------------------------------------
 # Ginkgo Tests
@@ -165,7 +169,7 @@ test: ## Run all tests with ginkgo, or only run the test package at {TEST_PKG} i
 		$(GINKGO_FLAGS) $(GINKGO_REPORT_FLAGS) $(GINKGO_USER_FLAGS) \
 		$(TEST_PKG)
 
-# To run only e2e tests, we restrict to ./test/kubernetes/e2e/tests. We say
+# To run only e2e tests, we restrict to ./test/e2e/tests. We say
 # '-tags=e2e' because untagged files contain unit tests cases, not e2e test
 # cases, so we have to allow `go` to see our e2e tests. Someone might forget to
 # label a new e2e test case with `//go:build e2e`, in which case `make unit`
@@ -178,7 +182,7 @@ test: ## Run all tests with ginkgo, or only run the test package at {TEST_PKG} i
 # will still have e2e tests run by Github Actions once they publish a pull
 # request.
 .PHONY: e2e-test
-e2e-test: TEST_PKG = ./test/kubernetes/e2e/tests
+e2e-test: TEST_PKG = ./test/e2e/tests
 e2e-test: ## Run only e2e tests, and only run the test package at {TEST_PKG} if it is specified
 	@$(MAKE) --no-print-directory go-test TEST_TAG=e2e TEST_PKG=$(TEST_PKG)
 
@@ -225,11 +229,14 @@ GO_TEST_COVERAGE ?= go tool github.com/vladopajic/go-test-coverage/v2
 # This is a way for a user executing `make go-test` to be able to provide args which we do not include by default
 # For example, you may want to run tests multiple times, or with various timeouts
 GO_TEST_USER_ARGS ?=
+GO_TEST_RETRIES ?= 0
+GOTESTSUM ?= go tool gotestsum
+GOTESTSUM_ARGS ?= --format=testname
 
 .PHONY: go-test
 go-test: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
 go-test: reset-bug-report
-	$(GO_TEST_ENV) go test -ldflags='$(LDFLAGS)' $(if $(TEST_TAG),-tags=$(TEST_TAG)) $(GO_TEST_ARGS) $(GO_TEST_USER_ARGS) $(TEST_PKG)
+	$(GO_TEST_ENV) $(GOTESTSUM) $(GOTESTSUM_ARGS) --rerun-fails-abort-on-data-race --rerun-fails=$(GO_TEST_RETRIES) --packages="$(TEST_PKG)" -- -ldflags='$(LDFLAGS)' $(if $(TEST_TAG),-tags=$(TEST_TAG)) $(GO_TEST_ARGS) $(GO_TEST_USER_ARGS)
 
 # https://go.dev/blog/cover#heat-maps
 .PHONY: go-test-with-coverage
@@ -265,15 +272,7 @@ clean:
 	rm -rf _output
 	rm -rf _test
 	git clean -f -X install
-
-# Clean generated code
-# see hack/generate.sh for source of truth of dirs to clean
-.PHONY: clean-gen
-clean-gen:
-	rm -rf api/applyconfiguration
-	rm -rf pkg/generated/openapi
-	rm -rf pkg/client
-	rm -f install/helm/kgateway-crds/templates/gateway.kgateway.dev_*.yaml
+	@# Note: _output removal also cleans stamps since STAMP_DIR is in _output
 
 .PHONY: clean-tests
 clean-tests:
@@ -294,36 +293,119 @@ clean-bug-report:
 #----------------------------------------------------------------------------------
 # Generated Code
 #----------------------------------------------------------------------------------
+# This section uses stamp files to optimize 'make generate-all' by tracking dependencies.
+#
+# For local development:
+#   - 'make generate-all' only regenerates code when source files change (fast!)
+#   - Use 'make clean-stamps' to force full regeneration
+#
+# For CI (always regenerates to catch dependency tracking bugs):
+#   - 'make verify' cleans stamps and always regenerates everything
+#   - This ensures CI catches any mistakes in our dependency tracking
+#
+# How it works:
+#   - Each generation step creates a stamp file in _output/stamps/
+#   - Make compares stamp file timestamps with source file timestamps
+#   - Only re-runs steps when source files are newer than stamps
+#----------------------------------------------------------------------------------
 
-.PHONY: verify
-verify: generate-all  ## Verify that generated code is up to date
-	git diff -U3 --exit-code
+# Stamp directory for tracking generation steps
+STAMP_DIR := $(OUTPUT_DIR)/stamps
+$(STAMP_DIR):
+	mkdir -p $(STAMP_DIR)
 
-.PHONY: generate-all
-generate-all: generated-code
+# Source files that trigger API codegen
+API_SOURCE_FILES := $(shell find api/v1alpha1 -name "*.go" ! -name "zz_generated*")
+API_SOURCE_FILES += hack/generate.sh hack/generate.go
 
-# Generates all required code, cleaning and formatting as well; this target is executed in CI
-.PHONY: generated-code
-generated-code: clean-gen go-generate-all mod-tidy
-generated-code: generate-licenses
-generated-code: fmt
+# Source files that trigger mockgen
+MOCK_SOURCE_FILES := internal/kgateway/query/query_test.go
 
-.PHONY: go-generate-all
-go-generate-all: go-generate-apis go-generate-mocks
+# Files that track dependency changes
+MOD_FILES := go.mod go.sum
 
-.PHONY: go-generate-apis
-go-generate-apis: ## Run all go generate directives in the repo, including codegen for protos, mockgen, and more
+# Clean generated code
+.PHONY: clean-gen
+clean-gen:
+	rm -rf api/applyconfiguration
+	rm -rf pkg/generated/openapi
+	rm -rf pkg/client
+	rm -f install/helm/kgateway-crds/templates/gateway.kgateway.dev_*.yaml
+
+# Clean all stamp files to force regeneration
+.PHONY: clean-stamps
+clean-stamps:
+	rm -rf $(STAMP_DIR)
+
+# API code generation with dependency tracking
+$(STAMP_DIR)/go-generate-apis: $(API_SOURCE_FILES) | $(STAMP_DIR)
+	@echo "Running API code generation..."
 	GO111MODULE=on go generate ./hack/...
+	@touch $@
 
-.PHONY: go-generate-mocks
-go-generate-mocks: ## Runs all generate directives for mockgen in the repo
+# Mock generation with dependency tracking
+$(STAMP_DIR)/go-generate-mocks: $(MOCK_SOURCE_FILES) | $(STAMP_DIR)
+	@echo "Running mock generation..."
 	GO111MODULE=on go generate -run="mockgen" ./...
+	@touch $@
 
-.PHONY: generate-licenses
-generate-licenses: ## Generate the licenses for the project
+# Combine both generation steps
+$(STAMP_DIR)/go-generate-all: $(STAMP_DIR)/go-generate-apis $(STAMP_DIR)/go-generate-mocks
+	@touch $@
+
+# Module tidy with dependency tracking
+$(STAMP_DIR)/mod-tidy: $(MOD_FILES) | $(STAMP_DIR)
+	@echo "Running mod tidy..."
+	@$(MAKE) --no-print-directory mod-download
+	@$(MAKE) --no-print-directory mod-tidy-nested
+	go mod tidy
+	@touch $@
+
+# License generation with dependency tracking
+$(STAMP_DIR)/generate-licenses: $(MOD_FILES) | $(STAMP_DIR)
+	@echo "Generating licenses..."
 	GO111MODULE=on go run hack/utils/oss_compliance/oss_compliance.go osagen -c "GNU General Public License v2.0,GNU General Public License v3.0,GNU Lesser General Public License v2.1,GNU Lesser General Public License v3.0,GNU Affero General Public License v3.0"
 	GO111MODULE=on go run hack/utils/oss_compliance/oss_compliance.go osagen -s "Mozilla Public License 2.0,GNU General Public License v2.0,GNU General Public License v3.0,GNU Lesser General Public License v2.1,GNU Lesser General Public License v3.0,GNU Affero General Public License v3.0"> hack/utils/oss_compliance/osa_provided.md
 	GO111MODULE=on go run hack/utils/oss_compliance/oss_compliance.go osagen -i "Mozilla Public License 2.0"> hack/utils/oss_compliance/osa_included.md
+	@touch $@
+
+# Formatting - only runs if generation steps changed
+$(STAMP_DIR)/fmt: $(STAMP_DIR)/go-generate-all
+	@echo "Formatting code..."
+	$(GOIMPORTS) -local "github.com/kgateway-dev/kgateway/v2/"  -w $(shell ls -d */ | grep -v vendor)
+	@touch $@
+
+# Fast generation using stamp files (for local development)
+$(STAMP_DIR)/generated-code: $(STAMP_DIR)/go-generate-all $(STAMP_DIR)/mod-tidy $(STAMP_DIR)/generate-licenses $(STAMP_DIR)/fmt
+	@touch $@
+
+.PHONY: verify
+verify: generated-code  ## Verify that generated code is up to date (always regenerates for CI safety)
+	git diff -U3 --exit-code
+
+.PHONY: generate-all
+generate-all: $(STAMP_DIR)/generated-code  ## Generate all code with optimized dependencies (uses stamp files for speed)
+
+.PHONY: generate
+generate: generate-all  ## Alias for generate
+
+# Force full regeneration by cleaning stamps and generated files
+.PHONY: generated-code
+generated-code: clean-gen clean-stamps  ## Force regenerate all code (always runs, ignoring stamps)
+	@$(MAKE) --no-print-directory generate-all
+
+# Convenience PHONY targets that trigger stamp-based generation
+.PHONY: go-generate-all
+go-generate-all: $(STAMP_DIR)/go-generate-all  ## Run all go generate directives (with dependency tracking)
+
+.PHONY: go-generate-apis
+go-generate-apis: $(STAMP_DIR)/go-generate-apis  ## Run all go generate directives in the repo, including codegen for protos, mockgen, and more
+
+.PHONY: go-generate-mocks
+go-generate-mocks: $(STAMP_DIR)/go-generate-mocks  ## Runs all generate directives for mockgen in the repo
+
+.PHONY: generate-licenses
+generate-licenses: $(STAMP_DIR)/generate-licenses  ## Generate the licenses for the project
 
 #----------------------------------------------------------------------------------
 # Controller
@@ -391,6 +473,10 @@ ENVOYINIT_SOURCES=$(call get_sources,$(ENVOYINIT_DIR))
 ENVOYINIT_OUTPUT_DIR=$(OUTPUT_DIR)/$(ENVOYINIT_DIR)
 export ENVOYINIT_IMAGE_REPO ?= envoy-wrapper
 
+RUSTFORMATIONS_DIR := internal/envoyinit/rustformations
+# find all the find under the rustformation directory but exclude the target directory
+RUSTFORMATIONS_SRC_FILES := $(shell find $(RUSTFORMATIONS_DIR) -type d -name target -prune -o -type f)
+
 $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH): $(ENVOYINIT_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ ./cmd/envoyinit/...
 
@@ -400,7 +486,7 @@ envoyinit: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH)
 # TODO(nfuden) cheat the process for now with -r but try to find a cleaner method
 # Allow override of Dockerfile for local development
 ENVOYINIT_DOCKERFILE ?= cmd/envoyinit/Dockerfile
-$(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit: $(ENVOYINIT_DOCKERFILE)
+$(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit: $(ENVOYINIT_DOCKERFILE) $(RUSTFORMATIONS_SRC_FILES)
 	@if [ "$(ENVOYINIT_DOCKERFILE)" = "cmd/envoyinit/Dockerfile" ]; then \
 		cp -r internal/envoyinit/rustformations $(ENVOYINIT_OUTPUT_DIR); \
 	fi
@@ -424,7 +510,14 @@ envoy-wrapper-docker: $(ENVOYINIT_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH)
 #----------------------------------------------------------------------------------
 
 HELM ?= go tool helm
-HELM_PACKAGE_ARGS ?= --version $(VERSION)
+# It would be nice to use actual semver '--version', as Helm docs clearly state
+# is intended (and yet is not enforced by 'helm lint'). Here we say '--version
+# v2.0.0', not '--version 2.0.0', e.g. To do it cleanly, you'd probably
+# repackage all published versions' charts and republish as vA.B.C and A.B.C
+# both. Users would be surprised if their installation recipes had to change on
+# some patch or minor version release. ('--app-version v2.0.0' is acceptable
+# and in fact preferred since it matches our git tags and OCI image tags.)
+HELM_PACKAGE_ARGS ?= --version $(VERSION) --app-version $(VERSION)
 HELM_CHART_DIR=install/helm/kgateway
 HELM_CHART_DIR_CRD=install/helm/kgateway-crds
 
@@ -499,19 +592,15 @@ CONFORMANCE_CHANNEL ?= experimental
 CONFORMANCE_VERSION ?= v1.4.0
 .PHONY: gw-api-crds
 gw-api-crds: ## Install the Gateway API CRDs. HACK: Use SSA to avoid the issue with the CRD annotations being too long.
-ifeq ($(CONFORMANCE_CHANNEL), standard)
-	kubectl apply --server-side --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd?ref=$(CONFORMANCE_VERSION)"
-else
-	kubectl apply --server-side --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd/$(CONFORMANCE_CHANNEL)?ref=$(CONFORMANCE_VERSION)"
-endif
+	kubectl apply --server-side -f "https://github.com/kubernetes-sigs/gateway-api/releases/download/$(CONFORMANCE_VERSION)/$(CONFORMANCE_CHANNEL)-install.yaml"
 
 # The version of the k8s gateway api inference extension CRDs to install.
 # Managed by `make bump-gie`.
-GIE_CRD_VERSION ?= 51485db93d63bfa2f9264460798671b72bdf9f5d
+GIE_CRD_VERSION ?= v1.1.0
 
 .PHONY: gie-crds
 gie-crds: ## Install the Gateway API Inference Extension CRDs
-	kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api-inference-extension/config/crd?ref=$(GIE_CRD_VERSION)"
+	kubectl apply -f "https://github.com/kubernetes-sigs/gateway-api-inference-extension/releases/download/$(GIE_CRD_VERSION)/manifests.yaml"
 
 .PHONY: kind-metallb
 metallb: ## Install the MetalLB load balancer
@@ -592,17 +681,17 @@ kind-load: kind-load-sds
 .PHONY: run-load-tests
 run-load-tests: ## Run KGateway load testing suite (requires existing cluster and installation)
 	SKIP_INSTALL=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
-	go test -tags=e2e -v ./test/kubernetes/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$"
+	go test -tags=e2e -v ./test/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$"
 
 .PHONY: run-load-tests-baseline
 run-load-tests-baseline: ## Run baseline load tests (1000 routes)
 	SKIP_INSTALL=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
-	go test -tags=e2e -v ./test/kubernetes/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$/^TestAttachedRoutesBaseline$$"
+	go test -tags=e2e -v ./test/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$/^TestAttachedRoutesBaseline$$"
 
 .PHONY: run-load-tests-production
 run-load-tests-production: ## Run production load tests (5000 routes)
 	SKIP_INSTALL=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
-	go test -tags=e2e -v ./test/kubernetes/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$/^TestAttachedRoutesProduction$$"
+	go test -tags=e2e -v ./test/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$/^TestAttachedRoutesProduction$$"
 
 #----------------------------------------------------------------------------------
 # Targets for running Kubernetes Gateway API conformance tests
@@ -615,28 +704,19 @@ $(TEST_ASSET_DIR)/conformance/conformance_test.go:
 	cat $(shell go list -json -m sigs.k8s.io/gateway-api | jq -r '.Dir')/conformance/conformance_test.go >> $@
 	go fmt $@
 
-CONFORMANCE_SUPPORTED_FEATURES ?= -supported-features=GatewayAddressEmpty,HTTPRouteParentRefPort,HTTPRouteRequestMirror,HTTPRouteBackendRequestHeaderModification,HTTPRouteNamedRouteRule,HTTPRouteDestinationPortMatching,HTTPRouteBackendProtocolH2C,HTTPRouteBackendProtocolWebSocket,HTTPRouteBackendTimeout,HTTPRouteHostRewrite,HTTPRouteMethodMatching,HTTPRoutePathRedirect,HTTPRoutePathRewrite,HTTPRoutePortRedirect,HTTPRouteQueryParamMatching,HTTPRouteRequestTimeout,HTTPRouteResponseHeaderModification,HTTPRouteSchemeRedirect,HTTPRouteCORS
-CONFORMANCE_UNSUPPORTED_FEATURES ?= -exempt-features=GatewayPort8080,GatewayStaticAddresses,GatewayHTTPListenerIsolation,GatewayInfrastructurePropagation,HTTPRouteRequestMultipleMirrors,HTTPRouteRequestPercentageMirror
-CONFORMANCE_SUPPORTED_PROFILES ?= -conformance-profiles=GATEWAY-HTTP,GATEWAY-TLS,GATEWAY-GRPC
+CONFORMANCE_SUPPORTED_PROFILES ?= -conformance-profiles=GATEWAY-HTTP,GATEWAY-GRPC,GATEWAY-TLS
 CONFORMANCE_GATEWAY_CLASS ?= kgateway
 CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/$(VERSION)-report.yaml -organization=kgateway-dev -project=kgateway -version=$(VERSION) -url=github.com/kgateway-dev/kgateway -contact=github.com/kgateway-dev/kgateway/issues/new/choose
-CONFORMANCE_ARGS := -gateway-class=$(CONFORMANCE_GATEWAY_CLASS) $(CONFORMANCE_SUPPORTED_FEATURES) $(CONFORMANCE_UNSUPPORTED_FEATURES) $(CONFORMANCE_SUPPORTED_PROFILES) $(CONFORMANCE_REPORT_ARGS)
+CONFORMANCE_ARGS := -gateway-class=$(CONFORMANCE_GATEWAY_CLASS) $(CONFORMANCE_SUPPORTED_PROFILES) $(CONFORMANCE_REPORT_ARGS)
 
-# TODO [danehans]: Remove `kubectl wait` when gateway-api-inference-extension/issues/1315 is fixed.
 .PHONY: conformance ## Run the conformance test suite
 conformance: $(TEST_ASSET_DIR)/conformance/conformance_test.go ## Run the Gateway API conformance suite
 	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(CONFORMANCE_ARGS)
-	@echo "Waiting for gateway-conformance-infra namespace to terminate..."
-	kubectl wait ns gateway-conformance-infra --for=delete --timeout=2m || true
 
-# Run only the specified conformance test. The name must correspond to the ShortName of one of the k8s gateway api
-# conformance tests.
-# TODO [danehans]: Remove `kubectl wait` when gateway-api-inference-extension/issues/1315 is fixed.
+# Run only the specified conformance test. The name must correspond to the ShortName of one of the k8s gateway api conformance tests.
 conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go ## Run only the specified Gateway API conformance test by ShortName
 	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(CONFORMANCE_ARGS) \
 	-run-test=$*
-	@echo "Waiting for gateway-conformance-infra namespace to terminate..."
-	kubectl wait ns gateway-conformance-infra --for=delete --timeout=2m || true
 
 #----------------------------------------------------------------------------------
 # Targets for running Gateway API Inference Extension conformance tests
@@ -658,7 +738,6 @@ GIE_CONFORMANCE_ARGS := \
 
 INFERENCE_CONFORMANCE_DIR := $(shell go list -m -f '{{.Dir}}' sigs.k8s.io/gateway-api-inference-extension)/conformance
 
-# TODO [danehans]: Remove `kubectl wait` when gateway-api-inference-extension/issues/1315 is fixed.
 .PHONY: gie-conformance
 gie-conformance: gie-crds ## Run the Gateway API Inference Extension conformance suite
 	@mkdir -p $(TEST_ASSET_DIR)/conformance
@@ -667,10 +746,7 @@ gie-conformance: gie-crds ## Run the Gateway API Inference Extension conformance
 	    -timeout=25m \
 	    -v $(INFERENCE_CONFORMANCE_DIR) \
 	    -args $(GIE_CONFORMANCE_ARGS)
-	@echo "Waiting for gateway-conformance-infra namespace to terminate..."
-	kubectl wait ns gateway-conformance-infra --for=delete --timeout=2m || true
 
-# TODO [danehans]: Remove `kubectl wait` when gateway-api-inference-extension/issues/1315 is fixed.
 .PHONY: gie-conformance-%
 gie-conformance-%: gie-crds ## Run only the specified Gateway API Inference Extension conformance test by ShortName
 	@mkdir -p $(TEST_ASSET_DIR)/conformance
@@ -679,8 +755,6 @@ gie-conformance-%: gie-crds ## Run only the specified Gateway API Inference Exte
 	    -timeout=25m \
 	    -v $(INFERENCE_CONFORMANCE_DIR) \
 	    -args $(GIE_CONFORMANCE_ARGS) -run-test=$*
-	@echo "Waiting for gateway-conformance-infra namespace to terminate..."
-	kubectl wait ns gateway-conformance-infra --for=delete --timeout=2m || true
 
 # An alias to run both Gateway API and Inference Extension conformance tests.
 .PHONY: all-conformance
@@ -692,27 +766,19 @@ all-conformance: conformance gie-conformance agw-conformance ## Run all conforma
 #----------------------------------------------------------------------------------
 
 # Agent Gateway conformance test configuration
-AGW_CONFORMANCE_SUPPORTED_FEATURES ?= -supported-features=HTTPRouteBackendProtocolH2C,HTTPRouteBackendProtocolWebSocket,HTTPRouteHostRewrite,HTTPRouteMethodMatching,HTTPRoutePathRedirect,HTTPRoutePathRewrite,HTTPRoutePortRedirect,HTTPRouteQueryParamMatching,HTTPRouteResponseHeaderModification,HTTPRouteSchemeRedirect,GatewayAddressEmpty,GatewayHTTPListenerIsolation,GatewayInfrastructurePropagation,GatewayPort8080,HTTPRouteBackendRequestHeaderModification,HTTPRouteBackendTimeout,HTTPRouteDestinationPortMatching,HTTPRouteParentRefPort,HTTPRouteRequestMirror,HTTPRouteRequestMultipleMirrors,HTTPRouteRequestPercentageMirror,HTTPRouteRequestTimeout,HTTPRouteCORS,HTTPRouteNamedRouteRule
-AGW_CONFORMANCE_UNSUPPORTED_FEATURES ?= -exempt-features=GatewayStaticAddresses
 AGW_CONFORMANCE_SUPPORTED_PROFILES ?= -conformance-profiles=GATEWAY-HTTP,GATEWAY-GRPC,GATEWAY-TLS
 AGW_CONFORMANCE_GATEWAY_CLASS ?= agentgateway
 AGW_CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/agw-$(VERSION)-report.yaml -organization=kgateway-dev -project=kgateway -version=$(VERSION) -url=github.com/kgateway-dev/kgateway -contact=github.com/kgateway-dev/kgateway/issues/new/choose
-AGW_CONFORMANCE_ARGS := -gateway-class=$(AGW_CONFORMANCE_GATEWAY_CLASS) $(AGW_CONFORMANCE_SUPPORTED_FEATURES) $(AGW_CONFORMANCE_UNSUPPORTED_FEATURES) $(AGW_CONFORMANCE_SUPPORTED_PROFILES) $(AGW_CONFORMANCE_REPORT_ARGS)
+AGW_CONFORMANCE_ARGS := -gateway-class=$(AGW_CONFORMANCE_GATEWAY_CLASS) $(AGW_CONFORMANCE_SUPPORTED_PROFILES) $(AGW_CONFORMANCE_REPORT_ARGS)
 
-# TODO [danehans]: Remove `kubectl wait` when gateway-api-inference-extension/issues/1315 is fixed.
 .PHONY: agw-conformance ## Run the agent gateway conformance test suite
 agw-conformance: $(TEST_ASSET_DIR)/conformance/conformance_test.go
 	CONFORMANCE_GATEWAY_CLASS=$(AGW_CONFORMANCE_GATEWAY_CLASS) go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(AGW_CONFORMANCE_ARGS)
-	@echo "Waiting for gateway-conformance-infra namespace to terminate..."
-	kubectl wait ns gateway-conformance-infra --for=delete --timeout=2m || true
 
-# TODO [danehans]: Remove `kubectl wait` when gateway-api-inference-extension/issues/1315 is fixed.
 # Run only the specified agent gateway conformance test
 agw-conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go
 	CONFORMANCE_GATEWAY_CLASS=$(AGW_CONFORMANCE_GATEWAY_CLASS) go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(AGW_CONFORMANCE_ARGS) \
 	-run-test=$*
-	@echo "Waiting for gateway-conformance-infra namespace to terminate..."
-	kubectl wait ns gateway-conformance-infra --for=delete --timeout=2m || true
 
 #----------------------------------------------------------------------------------
 # Dependency Bumping

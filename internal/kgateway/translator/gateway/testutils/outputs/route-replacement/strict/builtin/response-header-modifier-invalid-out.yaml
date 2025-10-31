@@ -107,9 +107,9 @@ Statuses:
       - conditions:
         - lastTransitionTime: null
           message: 'Replaced Rule (0): invalid route configuration: validation failed:
-            invalid xds configuration: error initializing configuration ''/dev/fd/0'': Incorrect
-            configuration: %RESPONSE(Invalid-Variable). Couldn''t find valid command
-            at position 0'
+            invalid xds configuration: error initializing configuration ''/dev/fd/0'':
+            Incorrect configuration: %RESPONSE(Invalid-Variable). Couldn''t find valid
+            command at position 0'
           reason: RouteRuleReplaced
           status: "False"
           type: Accepted

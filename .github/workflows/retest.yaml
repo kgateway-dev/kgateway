@@ -24,7 +24,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           # get the SHA of the PR's latest commit
-          commit_sha=$(gh pr view $PR_NUMBER --json headRefOid --jq '.headRefOid')
+          commit_sha=$(gh pr view "$PR_NUMBER" --json headRefOid --jq '.headRefOid')
           if [[ -z "$commit_sha" ]]; then
             echo "cannot get latest commit sha for pr number=$PR_NUMBER; gh --version:"
             gh --version
@@ -33,7 +33,7 @@ jobs:
           echo "pr number=$PR_NUMBER, latest commit sha=$commit_sha"
 
           # get the failing workflow run IDs (if any) associated with the latest commit
-          failing_run_ids=$(gh run list --commit $commit_sha --status failure --json databaseId | jq '.[].databaseId' -r)
+          failing_run_ids=$(gh run list --commit "$commit_sha" --status failure --json databaseId | jq '.[].databaseId' -r)
 
           # if no failing workflow runs found, exit
           if [[ -z "$failing_run_ids" ]]; then
@@ -44,5 +44,5 @@ jobs:
           # re-run the failing workflow runs (this enqueues each workflow run and returns immediately)
           for run_id in $failing_run_ids; do
             echo "Re-running failed workflow run $run_id"
-            gh run rerun $run_id --failed
+            gh run rerun "$run_id" --failed
           done

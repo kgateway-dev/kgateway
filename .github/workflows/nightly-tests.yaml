@@ -4,12 +4,6 @@ env:
   GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }} # necessary to pass upgrade tests
 
 on:
-  # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/crontab.html#tag_20_25_07
-  # Minute [0,59]
-  # Hour [0,23]
-  # Day of the month [1,31]
-  # Month of the year [1,12]
-  # Day of the week ([0,6] with 0=Sunday)
   schedule:
     - cron: "0 5 * * *" # every day @ 05:00 UTC, run tests against latest main
   workflow_dispatch:
@@ -33,8 +27,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
   cancel-in-progress: true
 
-# TODO(tim): Add back in main branch tests once they're green.
-# TODO(tim): Evaluate whether we want to publish nightly results to Slack.
 jobs:
   kube_gateway_api_conformance_tests_main:
     name: Conformance (branch=main, type=Kubernetes Gateway API, version=${{matrix.kube-version.node}} )

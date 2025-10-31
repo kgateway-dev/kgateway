@@ -37,8 +37,7 @@ func DeepMergeGatewayParameters(dst, src *v1alpha1.GatewayParameters) {
 	dstKube.ServiceAccount = deepMergeServiceAccount(dstKube.GetServiceAccount(), srcKube.GetServiceAccount())
 	dstKube.Istio = deepMergeIstioIntegration(dstKube.GetIstio(), srcKube.GetIstio())
 	dstKube.Stats = deepMergeStatsConfig(dstKube.GetStats(), srcKube.GetStats())
-	dstKube.AiExtension = deepMergeAIExtension(dstKube.GetAiExtension(), srcKube.GetAiExtension())   //nolint:staticcheck
-	dstKube.FloatingUserId = MergePointers(dstKube.GetFloatingUserId(), srcKube.GetFloatingUserId()) //nolint:staticcheck
+	dstKube.AiExtension = deepMergeAIExtension(dstKube.GetAiExtension(), srcKube.GetAiExtension()) //nolint:staticcheck
 	dstKube.OmitDefaultSecurityContext = MergePointers(dstKube.GetOmitDefaultSecurityContext(), srcKube.GetOmitDefaultSecurityContext())
 	dstKube.Agentgateway = deepMergeAgentgateway(dstKube.GetAgentgateway(), srcKube.GetAgentgateway())
 }

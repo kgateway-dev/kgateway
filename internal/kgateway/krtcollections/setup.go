@@ -126,12 +126,39 @@ func InitCollections(
 	globalSettings apisettings.Settings,
 ) (*GatewayIndex, *RoutesIndex, *BackendIndex, krt.Collection[ir.EndpointsForBackend]) {
 	registerTypes(ourClient)
-
 	// discovery filter
 	filter := kclient.Filter{ObjectFilter: istioClient.ObjectFilter()}
 
+	//nolint:forbidigo // ObjectFilter is not needed for this client as it is cluster scoped
+	gatewayClasses := krt.WrapClient(kclient.New[*gwv1.GatewayClass](istioClient), krtopts.ToOptions("KubeGatewayClasses")...)
+
+	namespaces, _ := NewNamespaceCollection(ctx, istioClient, krtopts)
+
+	kubeRawGateways := krt.WrapClient(kclient.NewFilteredDelayed[*gwv1.Gateway](istioClient, wellknown.GatewayGVR, filter), krtopts.ToOptions("KubeGateways")...)
+	metrics.RegisterEvents(kubeRawGateways, kmetrics.GetResourceMetricEventHandler[*gwv1.Gateway]())
+
+	kubeRawListenerSets := krt.WrapClient(kclient.NewDelayedInformer[*gwxv1a1.XListenerSet](istioClient, wellknown.XListenerSetGVR, kubetypes.StandardInformer, filter), krtopts.ToOptions("KubeListenerSets")...)
+	metrics.RegisterEvents(kubeRawListenerSets, kmetrics.GetResourceMetricEventHandler[*gwxv1a1.XListenerSet]())
+
+	var policies *PolicyIndex
+	if globalSettings.EnableEnvoy {
+		policies = NewPolicyIndex(krtopts, plugins.ContributesPolicies, globalSettings)
+		for _, plugin := range plugins.ContributesPolicies {
+			if plugin.Policies != nil {
+				metrics.RegisterEvents(plugin.Policies, kmetrics.GetResourceMetricEventHandler[ir.PolicyWrapper]())
+			}
+		}
+	}
+
+	gateways := NewGatewayIndex(krtopts, controllerNames, envoyControllerName, policies, kubeRawGateways, kubeRawListenerSets, gatewayClasses, namespaces)
+
+	if !globalSettings.EnableEnvoy {
+		// For now, the gateway index is used by Agentgateway as well in the deployer
+		return gateways, nil, nil, nil
+	}
+
 	// create the KRT clients, remember to also register any needed types in the type registration setup.
-	httpRoutes := krt.WrapClient(kclient.NewFiltered[*gwv1.HTTPRoute](istioClient, filter), krtopts.ToOptions("HTTPRoute")...)
+	httpRoutes := krt.WrapClient(kclient.NewFilteredDelayed[*gwv1.HTTPRoute](istioClient, wellknown.HTTPRouteGVR, filter), krtopts.ToOptions("HTTPRoute")...)
 	metrics.RegisterEvents(httpRoutes, kmetrics.GetResourceMetricEventHandler[*gwv1.HTTPRoute]())
 
 	tcproutes := krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TCPRoute](istioClient, gvr.TCPRoute, kubetypes.StandardInformer, filter), krtopts.ToOptions("TCPRoute")...)
@@ -140,32 +167,13 @@ func InitCollections(
 	tlsRoutes := krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TLSRoute](istioClient, gvr.TLSRoute, kubetypes.StandardInformer, filter), krtopts.ToOptions("TLSRoute")...)
 	metrics.RegisterEvents(tlsRoutes, kmetrics.GetResourceMetricEventHandler[*gwv1a2.TLSRoute]())
 
-	grpcRoutes := krt.WrapClient(kclient.NewFiltered[*gwv1.GRPCRoute](istioClient, filter), krtopts.ToOptions("GRPCRoute")...)
+	grpcRoutes := krt.WrapClient(kclient.NewFilteredDelayed[*gwv1.GRPCRoute](istioClient, wellknown.GRPCRouteGVR, filter), krtopts.ToOptions("GRPCRoute")...)
 	metrics.RegisterEvents(grpcRoutes, kmetrics.GetResourceMetricEventHandler[*gwv1.GRPCRoute]())
-
-	kubeRawGateways := krt.WrapClient(kclient.NewFiltered[*gwv1.Gateway](istioClient, filter), krtopts.ToOptions("KubeGateways")...)
-	metrics.RegisterEvents(kubeRawGateways, kmetrics.GetResourceMetricEventHandler[*gwv1.Gateway]())
-
-	kubeRawListenerSets := krt.WrapClient(kclient.NewDelayedInformer[*gwxv1a1.XListenerSet](istioClient, wellknown.XListenerSetGVR, kubetypes.StandardInformer, filter), krtopts.ToOptions("KubeListenerSets")...)
-	metrics.RegisterEvents(kubeRawListenerSets, kmetrics.GetResourceMetricEventHandler[*gwxv1a1.XListenerSet]())
-
-	//nolint:forbidigo // ObjectFilter is not needed for this client as it is cluster scoped
-	gatewayClasses := krt.WrapClient(kclient.New[*gwv1.GatewayClass](istioClient), krtopts.ToOptions("KubeGatewayClasses")...)
-
-	namespaces, _ := NewNamespaceCollection(ctx, istioClient, krtopts)
-
-	policies := NewPolicyIndex(krtopts, plugins.ContributesPolicies, globalSettings)
-	for _, plugin := range plugins.ContributesPolicies {
-		if plugin.Policies != nil {
-			metrics.RegisterEvents(plugin.Policies, kmetrics.GetResourceMetricEventHandler[ir.PolicyWrapper]())
-		}
-	}
 
 	backendIndex := NewBackendIndex(krtopts, policies, refgrants)
 	initBackends(plugins, backendIndex)
 	endpointIRs := initEndpoints(plugins, krtopts)
 
-	gateways := NewGatewayIndex(krtopts, controllerNames, envoyControllerName, policies, kubeRawGateways, kubeRawListenerSets, gatewayClasses, namespaces)
 	routes := NewRoutesIndex(krtopts, httpRoutes, grpcRoutes, tcproutes, tlsRoutes, policies, backendIndex, refgrants, globalSettings)
 	return gateways, routes, backendIndex, endpointIRs
 }

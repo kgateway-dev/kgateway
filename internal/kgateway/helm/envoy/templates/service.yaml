@@ -3,16 +3,16 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ include "kgateway.gateway.fullname" . }}
-  {{- with $gateway.service.extraAnnotations }}
+  {{- $annotations := merge ($gateway.gatewayAnnotations| default dict) ((($gateway.service).extraAnnotations) | default dict) }}
+  {{- if $annotations }}
   annotations:
-    {{- toYaml . | nindent 4 }}
+    {{- toYaml $annotations | nindent 4 }}
   {{- end }}
   labels:
-    {{- include "kgateway.gateway.constLabels" . | nindent 4 }}
-    {{- include "kgateway.gateway.labels" . | nindent 4 }}
-    {{- with $gateway.service.extraLabels }}
-    {{- toYaml . | nindent 4 }}
-    {{- end }}
+    {{- toYaml (merge
+      (include "kgateway.gateway.allLabels" . | fromYaml)
+      ((($gateway.service).extraLabels) | default dict)
+    ) | nindent 4 }}
 spec:
   type: {{ $gateway.service.type }}
   {{- if $gateway.service.externalTrafficPolicy }}

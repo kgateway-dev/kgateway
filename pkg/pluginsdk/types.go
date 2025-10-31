@@ -3,9 +3,11 @@ package pluginsdk
 import (
 	"context"
 	"encoding/json"
+	"errors"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"istio.io/istio/pkg/kube/krt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -14,6 +16,9 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
+
+// ErrNotFound is returned when a requested resource is not found
+var ErrNotFound = errors.New("not found")
 
 type (
 	EndpointsInputs = endpoints.EndpointsInputs
@@ -141,4 +146,12 @@ func (p Plugin) HasSynced() bool {
 
 type K8sGatewayExtensions2 struct {
 	Plugins []Plugin
+}
+
+func CloneObjectMetaForStatus(m metav1.ObjectMeta) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Name:            m.GetName(),
+		Namespace:       m.GetNamespace(),
+		ResourceVersion: m.GetResourceVersion(),
+	}
 }

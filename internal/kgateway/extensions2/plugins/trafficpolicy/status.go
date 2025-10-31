@@ -4,39 +4,43 @@ import (
 	"context"
 	"fmt"
 
+	"istio.io/istio/pkg/kube/kclient"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 )
 
 func getPolicyStatusFn(
-	cl client.Client,
-) sdk.GetPolicyStatusFn {
+	cl kclient.Client[*v1alpha1.TrafficPolicy],
+) pluginsdk.GetPolicyStatusFn {
 	return func(ctx context.Context, nn types.NamespacedName) (gwv1.PolicyStatus, error) {
-		res := v1alpha1.TrafficPolicy{}
-		err := cl.Get(ctx, nn, &res)
-		if err != nil {
-			return gwv1.PolicyStatus{}, err
+		res := cl.Get(nn.Name, nn.Namespace)
+		if res == nil {
+			return gwv1.PolicyStatus{}, pluginsdk.ErrNotFound
 		}
 		return res.Status, nil
 	}
 }
 
 func patchPolicyStatusFn(
-	cl client.Client,
-) sdk.PatchPolicyStatusFn {
+	cl kclient.Client[*v1alpha1.TrafficPolicy],
+) pluginsdk.PatchPolicyStatusFn {
 	return func(ctx context.Context, nn types.NamespacedName, policyStatus gwv1.PolicyStatus) error {
-		res := v1alpha1.TrafficPolicy{}
-		err := cl.Get(ctx, nn, &res)
-		if err != nil {
-			return err
+		cur := cl.Get(nn.Name, nn.Namespace)
+		if cur == nil {
+			return pluginsdk.ErrNotFound
 		}
-
-		res.Status = policyStatus
-		if err := cl.Status().Patch(ctx, &res, client.Merge); err != nil {
+		if _, err := cl.UpdateStatus(&v1alpha1.TrafficPolicy{
+			ObjectMeta: pluginsdk.CloneObjectMetaForStatus(cur.ObjectMeta),
+			Status:     policyStatus,
+		}); err != nil {
+			if errors.IsConflict(err) {
+				logger.Debug("error updating stale status", "ref", nn, "error", err)
+				return nil // let the conflicting Status update trigger a KRT event to requeue the updated object
+			}
 			return fmt.Errorf("error updating status for TrafficPolicy %s: %w", nn.String(), err)
 		}
 		return nil

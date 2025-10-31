@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"maps"
 	"net/http"
 	"sync/atomic"
 
@@ -74,6 +75,7 @@ type StartConfig struct {
 	WaypointGatewayClassName string
 	AgentgatewayClassName    string
 	AdditionalGatewayClasses map[string]*deployer.GatewayClassInfo
+	GatewayClassInfos        map[string]*deployer.GatewayClassInfo
 
 	Dev        bool
 	SetupOpts  *SetupOpts
@@ -156,47 +158,53 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	}
 
 	globalSettings := *cfg.SetupOpts.GlobalSettings
-	mergedPlugins := pluginFactoryWithBuiltin(cfg)(ctx, cfg.CommonCollections)
+	var mergedPlugins sdk.Plugin
+	if cfg.SetupOpts.GlobalSettings.EnableEnvoy {
+		mergedPlugins = pluginFactoryWithBuiltin(cfg)(ctx, cfg.CommonCollections)
+	}
 	cfg.CommonCollections.InitPlugins(ctx, mergedPlugins, globalSettings)
 
 	// Begin background processing of resource sync metrics.
 	// This only effects metrics in the resources subsystem and is not required for other metrics.
 	metrics.StartResourceSyncMetricsProcessing(ctx)
 
-	// Create the proxy syncer for the Gateway API resources
-	setupLog.Info("initializing proxy syncer")
-	proxySyncer := proxy_syncer.NewProxySyncer(
-		ctx,
-		cfg.ControllerName,
-		cfg.Manager,
-		cfg.Client,
-		cfg.UniqueClients,
-		mergedPlugins,
-		cfg.CommonCollections,
-		cfg.SetupOpts.Cache,
-		cfg.AgentgatewayClassName,
-		cfg.Validator,
-	)
-	proxySyncer.Init(ctx, cfg.KrtOptions)
-	if err := cfg.Manager.Add(proxySyncer); err != nil {
-		setupLog.Error(err, "unable to add proxySyncer runnable")
-		return nil, err
-	}
+	var proxySyncer *proxy_syncer.ProxySyncer
+	if cfg.SetupOpts.GlobalSettings.EnableEnvoy {
+		// Create the proxy syncer for the Gateway API resources
+		setupLog.Info("initializing proxy syncer")
+		proxySyncer = proxy_syncer.NewProxySyncer(
+			ctx,
+			cfg.ControllerName,
+			cfg.Manager,
+			cfg.Client,
+			cfg.UniqueClients,
+			mergedPlugins,
+			cfg.CommonCollections,
+			cfg.SetupOpts.Cache,
+			cfg.AgentgatewayClassName,
+			cfg.Validator,
+		)
+		proxySyncer.Init(ctx, cfg.KrtOptions)
+		if err := cfg.Manager.Add(proxySyncer); err != nil {
+			setupLog.Error(err, "unable to add proxySyncer runnable")
+			return nil, err
+		}
 
-	statusSyncer := proxy_syncer.NewStatusSyncer(
-		cfg.Manager,
-		mergedPlugins,
-		cfg.ControllerName,
-		cfg.AgentgatewayClassName,
-		cfg.Client,
-		cfg.CommonCollections,
-		proxySyncer.ReportQueue(),
-		proxySyncer.BackendPolicyReportQueue(),
-		proxySyncer.CacheSyncs(),
-	)
-	if err := cfg.Manager.Add(statusSyncer); err != nil {
-		setupLog.Error(err, "unable to add statusSyncer runnable")
-		return nil, err
+		statusSyncer := proxy_syncer.NewStatusSyncer(
+			cfg.Manager,
+			mergedPlugins,
+			cfg.ControllerName,
+			cfg.AgentgatewayClassName,
+			cfg.Client,
+			cfg.CommonCollections,
+			proxySyncer.ReportQueue(),
+			proxySyncer.BackendPolicyReportQueue(),
+			proxySyncer.CacheSyncs(),
+		)
+		if err := cfg.Manager.Add(statusSyncer); err != nil {
+			setupLog.Error(err, "unable to add statusSyncer runnable")
+			return nil, err
+		}
 	}
 
 	var agwSyncer *agentgatewaysyncer.Syncer
@@ -208,6 +216,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			cfg.Client,
 			cfg.AgwCollections,
 			agwMergedPlugins,
+			cfg.AdditionalGatewayClasses,
 		)
 
 		agwSyncer.Init(cfg.KrtOptions.WithPrefix("agentgateway"))
@@ -327,28 +336,24 @@ func (c *ControllerBuilder) Build(ctx context.Context) (*agentgatewaysyncer.Sync
 		CertWatcher:              c.cfg.SetupOpts.CertWatcher,
 	}
 
-	classInfos := GetDefaultClassInfo(
-		globalSettings,
-		c.cfg.GatewayClassName,
-		c.cfg.WaypointGatewayClassName,
-		c.cfg.AgentgatewayClassName,
-		c.cfg.ControllerName,
-		c.cfg.AgwControllerName,
-		c.cfg.AdditionalGatewayClasses,
-	)
-
 	setupLog.Info("creating gateway class provisioner")
 	if err := NewGatewayClassProvisioner(
 		c.mgr,
 		c.cfg.ControllerName,
-		classInfos,
+		c.cfg.GatewayClassInfos,
 	); err != nil {
 		setupLog.Error(err, "unable to create gateway class provisioner")
 		return nil, err
 	}
 
 	setupLog.Info("creating base gateway controller")
-	if err := NewBaseGatewayController(ctx, gwCfg, c.cfg.HelmValuesGeneratorOverride, c.cfg.ExtraGatewayParameters); err != nil {
+	if err := NewBaseGatewayController(
+		ctx,
+		gwCfg,
+		c.cfg.GatewayClassInfos,
+		c.cfg.HelmValuesGeneratorOverride,
+		c.cfg.ExtraGatewayParameters,
+	); err != nil {
 		setupLog.Error(err, "unable to create gateway controller")
 		return nil, err
 	}
@@ -383,13 +388,13 @@ func (c *ControllerBuilder) Build(ctx context.Context) (*agentgatewaysyncer.Sync
 }
 
 func (c *ControllerBuilder) HasSynced() bool {
-	var hasSynced bool
-	if c.agwSyncer != nil {
-		hasSynced = c.proxySyncer.HasSynced() && c.agwSyncer.HasSynced()
-	} else {
-		hasSynced = c.proxySyncer.HasSynced()
+	if c.agwSyncer != nil && !c.agwSyncer.HasSynced() {
+		return false
 	}
-	return hasSynced
+	if c.proxySyncer != nil && !c.proxySyncer.HasSynced() {
+		return false
+	}
+	return true
 }
 
 // GetDefaultClassInfo returns the default GatewayClass for the kgateway controller.
@@ -403,13 +408,15 @@ func GetDefaultClassInfo(
 	agwControllerName string,
 	additionalClassInfos map[string]*deployer.GatewayClassInfo,
 ) map[string]*deployer.GatewayClassInfo {
-	classInfos := map[string]*deployer.GatewayClassInfo{
-		gatewayClassName: {
-			Description:    "Standard class for managing Gateway API ingress traffic.",
-			Labels:         map[string]string{},
-			Annotations:    map[string]string{},
-			ControllerName: controllerName,
-		},
+	classInfos := map[string]*deployer.GatewayClassInfo{}
+	if globalSettings.EnableEnvoy {
+		classInfos[gatewayClassName] = &deployer.GatewayClassInfo{
+			Description:       "Standard class for managing Gateway API ingress traffic.",
+			Labels:            map[string]string{},
+			Annotations:       map[string]string{},
+			ControllerName:    controllerName,
+			SupportedFeatures: deployer.GetSupportedFeaturesForStandardGateway(),
+		}
 	}
 	// Only enable waypoint gateway class if it's enabled in the settings
 	if globalSettings.EnableWaypoint {
@@ -419,20 +426,20 @@ func GetDefaultClassInfo(
 			Annotations: map[string]string{
 				"ambient.istio.io/waypoint-inbound-binding": "PROXY/15088",
 			},
-			ControllerName: controllerName,
+			ControllerName:    controllerName,
+			SupportedFeatures: deployer.GetSupportedFeaturesForWaypointGateway(),
 		}
 	}
 	// Only enable agentgateway gateway class if it's enabled in the settings
 	if globalSettings.EnableAgentgateway {
 		classInfos[agwClassName] = &deployer.GatewayClassInfo{
-			Description:    "Specialized class for agentgateway.",
-			Labels:         map[string]string{},
-			Annotations:    map[string]string{},
-			ControllerName: agwControllerName,
+			Description:       "Specialized class for agentgateway.",
+			Labels:            map[string]string{},
+			Annotations:       map[string]string{},
+			ControllerName:    agwControllerName,
+			SupportedFeatures: deployer.GetSupportedFeaturesForAgentGateway(),
 		}
 	}
-	for class, classInfo := range additionalClassInfos {
-		classInfos[class] = classInfo
-	}
+	maps.Copy(classInfos, additionalClassInfos)
 	return classInfos
 }

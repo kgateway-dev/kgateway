@@ -982,7 +982,8 @@ func (p ParentReference) String() string {
 // ParentInfo holds info about a "Parent" - something that can be referenced as a ParentRef in the API.
 // Today, this is just Gateway
 type ParentInfo struct {
-	ParentGateway types.NamespacedName
+	ParentGateway          types.NamespacedName
+	ParentGatewayClassName string
 	// InternalName refers to the internal name we can reference it by. For example "my-ns/my-gateway"
 	InternalName string
 	// AllowedKinds indicates which kinds can be admitted by this Parent

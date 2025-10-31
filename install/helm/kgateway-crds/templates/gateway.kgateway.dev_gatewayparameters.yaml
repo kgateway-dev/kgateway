@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.19.1-0.20251023132335-bf7d6b742e6a
   labels:
     app: kgateway
     app.kubernetes.io/name: kgateway
@@ -1803,13 +1803,6 @@ spec:
                             type: object
                         type: object
                     type: object
-                  floatingUserId:
-                    description: |-
-                      Deprecated: Prefer to use omitDefaultSecurityContext instead. Will be
-                      removed in the next release.
-
-                      Used to unset the `runAsUser` values in security contexts.
-                    type: boolean
                   istio:
                     description: Configuration for the Istio integration.
                     properties:

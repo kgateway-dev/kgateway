@@ -27,7 +27,6 @@ import (
 	"istio.io/istio/pilot/pkg/config/kube/crd"
 	"istio.io/istio/pilot/test/util"
 	"istio.io/istio/pkg/config/schema/gvk"
-	"istio.io/istio/pkg/config/schema/gvr"
 	kubeclient "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/kclient/clienttest"
 	"istio.io/istio/pkg/kube/krt"
@@ -58,6 +57,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
+	translatortest "github.com/kgateway-dev/kgateway/v2/test/translator"
 )
 
 type AssertReports func(gwNN types.NamespacedName, reportsMap reports.ReportMap)
@@ -307,7 +307,7 @@ func TestTranslationWithExtraPlugins(
 	gwNN types.NamespacedName,
 	extraPluginsFn ExtraPluginsFn,
 	extraSchemes runtime.SchemeBuilder,
-	extraGroups []string,
+	extraGVRs []schema.GroupVersionResource,
 	settingsOpts ...SettingsOpts,
 ) {
 	scheme := NewScheme(extraSchemes)
@@ -315,7 +315,7 @@ func TestTranslationWithExtraPlugins(
 
 	results, err := TestCase{
 		InputFiles: inputFiles,
-	}.Run(t, ctx, scheme, extraPluginsFn, extraGroups, settingsOpts...)
+	}.Run(t, ctx, scheme, extraPluginsFn, extraGVRs, settingsOpts...)
 	r.NoError(err)
 
 	// TODO: do a json round trip to normalize the output (i.e. things like omit empty)
@@ -461,7 +461,7 @@ func (tc TestCase) Run(
 	ctx context.Context,
 	scheme *runtime.Scheme,
 	extraPluginsFn ExtraPluginsFn,
-	extraGroups []string,
+	extraGVRs []schema.GroupVersionResource,
 	settingsOpts ...SettingsOpts,
 ) (ActualTestResult, error) {
 	var (
@@ -490,8 +490,8 @@ func (tc TestCase) Run(
 					ourObjs = append(ourObjs, obj)
 				} else {
 					external := false
-					for _, group := range extraGroups {
-						if strings.Contains(apiversion, group) {
+					for _, gvr := range extraGVRs {
+						if strings.Contains(apiversion, gvr.Group) {
 							external = true
 							break
 						}
@@ -506,22 +506,9 @@ func (tc TestCase) Run(
 
 	ourCli := fake.NewSimpleClientset(ourObjs...)
 	cli := kubeclient.NewFakeClient(anyObjs...)
-	for _, crd := range []schema.GroupVersionResource{
-		gvr.KubernetesGateway_v1,
-		gvr.GatewayClass,
-		gvr.HTTPRoute_v1,
-		gvr.GRPCRoute,
-		gvr.Service,
-		gvr.Pod,
-		gvr.TCPRoute,
-		gvr.TLSRoute,
-		gvr.ServiceEntry,
-		gvr.WorkloadEntry,
-		gvr.AuthorizationPolicy,
-		wellknown.XListenerSetGVR,
-		wellknown.BackendTLSPolicyGVR,
-	} {
-		clienttest.MakeCRDWithAnnotations(t, cli, crd, map[string]string{
+	allGVRs := append(translatortest.AllCRDs, extraGVRs...)
+	for _, gvr := range allGVRs {
+		clienttest.MakeCRDWithAnnotations(t, cli, gvr, map[string]string{
 			consts.BundleVersionAnnotation: consts.BundleVersion,
 		})
 	}
@@ -569,7 +556,6 @@ func (tc TestCase) Run(
 		krtOpts,
 		cli,
 		ourCli,
-		nil,
 		wellknown.DefaultGatewayControllerName,
 		wellknown.DefaultAgwControllerName,
 		*settings,
@@ -579,8 +565,6 @@ func (tc TestCase) Run(
 	}
 	proxySyncerPlugins := proxySyncerPluginFactory(ctx, commoncol, wellknown.DefaultAgwClassName, extraPluginsFn, *settings)
 	commoncol.InitPlugins(ctx, proxySyncerPlugins, *settings)
-
-	cli.RunAndWait(ctx.Done())
 
 	// Create AgwCollections with the necessary input collections
 	agwCollections, err := agwplugins.NewAgwCollections(
@@ -592,6 +576,9 @@ func (tc TestCase) Run(
 	if err != nil {
 		return ActualTestResult{}, err
 	}
+
+	cli.RunAndWait(ctx.Done())
+
 	agwMergedPlugins := agwPluginFactory(ctx, agwCollections)
 	kubeclient.WaitForCacheSync("tlsroutes", ctx.Done(), agwCollections.TLSRoutes.HasSynced)
 	kubeclient.WaitForCacheSync("tcproutes", ctx.Done(), agwCollections.TCPRoutes.HasSynced)
@@ -609,6 +596,7 @@ func (tc TestCase) Run(
 		cli,
 		agwCollections,
 		agwMergedPlugins,
+		nil,
 	)
 	agentGwSyncer.translator.Init()
 	gatewayClasses := agwtranslator.GatewayClassesCollection(agwCollections.GatewayClasses, krtOpts)

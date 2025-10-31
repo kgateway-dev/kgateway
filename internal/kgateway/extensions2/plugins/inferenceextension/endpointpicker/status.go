@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"istio.io/istio/pkg/kube/controllers"
+	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -20,6 +21,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -38,14 +40,15 @@ const (
 func buildRegisterCallback(
 	ctx context.Context,
 	commonCol *collections.CommonCollections,
+	cli kclient.Client[*inf.InferencePool],
 	bcol krt.Collection[ir.BackendObjectIR],
 	poolIdx krt.Index[string, ir.BackendObjectIR],
 	pods krt.Collection[krtcollections.LocalityPod],
 ) func() {
 	return func() {
-		registerRouteHandlers(ctx, commonCol, bcol, poolIdx)
-		registerPoolHandlers(ctx, commonCol, bcol)
-		registerServiceHandlers(ctx, commonCol, bcol)
+		registerRouteHandlers(ctx, commonCol, cli, bcol, poolIdx)
+		registerPoolHandlers(ctx, commonCol, cli, bcol)
+		registerServiceHandlers(ctx, commonCol, cli, bcol)
 	}
 }
 
@@ -53,6 +56,8 @@ func buildRegisterCallback(
 func registerPoolHandlers(
 	ctx context.Context,
 	commonCol *collections.CommonCollections,
+	cli kclient.Client[*inf.InferencePool],
+
 	bcol krt.Collection[ir.BackendObjectIR],
 ) {
 	// Watch add/update InferencePool events
@@ -60,11 +65,11 @@ func registerPoolHandlers(
 		if ev.Event == controllers.EventDelete {
 			return
 		}
-		updatePoolStatus(ctx, commonCol, ev.Latest(), "", nil)
+		updatePoolStatus(ctx, commonCol, cli, ev.Latest(), "", nil)
 	})
 
 	for _, be := range bcol.List() {
-		updatePoolStatus(ctx, commonCol, be, "", nil)
+		updatePoolStatus(ctx, commonCol, cli, be, "", nil)
 	}
 }
 
@@ -72,12 +77,13 @@ func registerPoolHandlers(
 func registerRouteHandlers(
 	ctx context.Context,
 	commonCol *collections.CommonCollections,
+	cli kclient.Client[*inf.InferencePool],
 	bcol krt.Collection[ir.BackendObjectIR],
 	poolIdx krt.Index[string, ir.BackendObjectIR],
 ) {
 	// Watch add/update HTTPRoute events and trigger reconciliation for referenced pools.
 	commonCol.Routes.HTTPRoutes().Register(func(ev krt.Event[ir.HttpRouteIR]) {
-		reconcilePoolsForRoute(ctx, commonCol, bcol, poolIdx, ev)
+		reconcilePoolsForRoute(ctx, commonCol, cli, bcol, poolIdx, ev)
 	})
 
 	// Initial sweep – process routes that already existed
@@ -85,6 +91,7 @@ func registerRouteHandlers(
 		reconcilePoolsForRoute(
 			ctx,
 			commonCol,
+			cli,
 			bcol,
 			poolIdx,
 			krt.Event[ir.HttpRouteIR]{
@@ -100,6 +107,7 @@ func registerRouteHandlers(
 func reconcilePoolsForRoute(
 	ctx context.Context,
 	commonCol *collections.CommonCollections,
+	cli kclient.Client[*inf.InferencePool],
 	bcol krt.Collection[ir.BackendObjectIR],
 	poolIdx krt.Index[string, ir.BackendObjectIR],
 	ev krt.Event[ir.HttpRouteIR],
@@ -140,13 +148,13 @@ func reconcilePoolsForRoute(
 	for nn := range seen {
 		// Check if the pool is in the index
 		if irs := poolIdx.Lookup(nn.String()); len(irs) != 0 {
-			updatePoolStatus(ctx, commonCol, irs[0], deletedUID, parentGws)
+			updatePoolStatus(ctx, commonCol, cli, irs[0], deletedUID, parentGws)
 			continue
 		}
 		// If the pool is not found in the index, it may have been deleted.
 		for _, ir := range bcol.List() {
 			if ir.ObjectSource.Namespace == nn.Namespace && ir.ObjectSource.Name == nn.Name {
-				updatePoolStatus(ctx, commonCol, ir, deletedUID, parentGws)
+				updatePoolStatus(ctx, commonCol, cli, ir, deletedUID, parentGws)
 				break
 			}
 		}
@@ -157,11 +165,12 @@ func reconcilePoolsForRoute(
 func registerServiceHandlers(
 	ctx context.Context,
 	commonCol *collections.CommonCollections,
+	cli kclient.Client[*inf.InferencePool],
 	bcol krt.Collection[ir.BackendObjectIR],
 ) {
 	// Watch Service events and trigger reconciliation for referent InferencePools.
 	commonCol.Services.Register(func(ev krt.Event[*corev1.Service]) {
-		reconcilePoolsForService(ctx, commonCol, bcol, ev)
+		reconcilePoolsForService(ctx, commonCol, cli, bcol, ev)
 	})
 }
 
@@ -169,6 +178,7 @@ func registerServiceHandlers(
 func reconcilePoolsForService(
 	ctx context.Context,
 	commonCol *collections.CommonCollections,
+	cli kclient.Client[*inf.InferencePool],
 	bcol krt.Collection[ir.BackendObjectIR],
 	ev krt.Event[*corev1.Service],
 ) {
@@ -193,7 +203,7 @@ func reconcilePoolsForService(
 		if irPool.configRef.Namespace == svcNN.Namespace && irPool.configRef.Name == svcNN.Name {
 			// Compute new errors, then atomically swap them in
 			irPool.setErrors(validatePool(beIR.Obj.(*inf.InferencePool), commonCol.Services))
-			updatePoolStatus(ctx, commonCol, beIR, "", nil)
+			updatePoolStatus(ctx, commonCol, cli, beIR, "", nil)
 		}
 	}
 }
@@ -300,24 +310,25 @@ func upsert(conds *[]metav1.Condition, c metav1.Condition) {
 func updatePoolStatus(
 	ctx context.Context,
 	commonCol *collections.CommonCollections,
+	cli kclient.Client[*inf.InferencePool],
 	beIR ir.BackendObjectIR,
 	deletedUID types.UID,
 	parentGws map[types.NamespacedName]struct{},
-) {
+) *inf.InferencePool {
 	// Lookup the pool from the backend IR
 	irPool, ok := beIR.ObjIr.(*inferencePool)
 	if !ok {
-		return
+		return nil
 	}
 	poolNN := types.NamespacedName{Namespace: beIR.ObjectSource.Namespace, Name: beIR.ObjectSource.Name}
 
 	// Snapshot the errors under a lock
 	errs := irPool.snapshotErrors()
 
-	var pool inf.InferencePool
-	if err := commonCol.CrudClient.Get(ctx, poolNN, &pool); err != nil {
-		logger.Error("failed to get InferencePool", "pool", poolNN, "err", err)
-		return
+	pool := cli.Get(poolNN.Name, poolNN.Namespace)
+	if pool == nil {
+		logger.Error("failed to get InferencePool", "ref", poolNN, "error", pluginsdk.ErrNotFound)
+		return nil
 	}
 
 	// Build the set of current HTTPRoutes in the namespace
@@ -344,18 +355,18 @@ func updatePoolStatus(
 
 	// Rewrite status parents based on the active Gateways
 	before := append([]inf.ParentStatus(nil), pool.Status.Parents...)
-	pool.Status.Parents = nil
+	var updated []inf.ParentStatus
 
 	updateParent := func(ref inf.ParentReference) *inf.ParentStatus {
-		for i := range pool.Status.Parents {
-			if pool.Status.Parents[i].ParentRef.Name == ref.Name &&
-				pool.Status.Parents[i].ParentRef.Namespace == ref.Namespace &&
-				pool.Status.Parents[i].ParentRef.Kind == ref.Kind {
-				return &pool.Status.Parents[i]
+		for i := range updated {
+			if updated[i].ParentRef.Name == ref.Name &&
+				updated[i].ParentRef.Namespace == ref.Namespace &&
+				updated[i].ParentRef.Kind == ref.Kind {
+				return &updated[i]
 			}
 		}
-		pool.Status.Parents = append(pool.Status.Parents, inf.ParentStatus{ParentRef: ref})
-		return &pool.Status.Parents[len(pool.Status.Parents)-1]
+		updated = append(updated, inf.ParentStatus{ParentRef: ref})
+		return &updated[len(updated)-1]
 	}
 
 	// Add back each active Gateway
@@ -381,45 +392,57 @@ func updatePoolStatus(
 
 	// Remove default parent when no errors and no gateways
 	if !irPool.hasErrors() && len(activeGws) == 0 {
-		cleaned := pool.Status.Parents[:0]
-		for _, p := range pool.Status.Parents {
+		cleaned := updated[:0]
+		for _, p := range updated {
 			if !(p.ParentRef.Kind == inf.Kind(defaultInfPoolStatusKind) &&
 				p.ParentRef.Name == inf.ObjectName(defaultInfPoolStatusName)) {
 				cleaned = append(cleaned, p)
 			}
 		}
-		pool.Status.Parents = cleaned
+		updated = cleaned
 	}
 
 	// Did we really change anything? Return early if not.
-	if parentsEqual(before, pool.Status.Parents) {
-		return
+	if parentsEqual(before, updated) {
+		return pool
 	}
 
 	// Capture the final state of pool status to persist
-	finalParents := append([]inf.ParentStatus(nil), pool.Status.Parents...)
+	finalParents := append([]inf.ParentStatus(nil), updated...)
 
+	var updatedObj *inf.InferencePool
 	retryErr := retry.OnError(
 		wait.Backoff{Steps: 3, Duration: 50 * time.Millisecond, Factor: 2},
 		apierrors.IsConflict,
 		func() error {
-			var latest inf.InferencePool
-			if err := commonCol.CrudClient.Get(ctx, poolNN, &latest); err != nil {
-				return err
+			cur := cli.Get(poolNN.Name, poolNN.Namespace)
+			if cur == nil {
+				return pluginsdk.ErrNotFound
 			}
 
 			// Replace with the authoritative slice (may be empty)
-			latest.Status.Parents = finalParents
-			return commonCol.CrudClient.Status().Update(ctx, &latest)
+			var err error
+			updatedObj, err = cli.UpdateStatus(&inf.InferencePool{
+				ObjectMeta: pluginsdk.CloneObjectMetaForStatus(cur.ObjectMeta),
+				Status: inf.InferencePoolStatus{
+					Parents: finalParents,
+				},
+			})
+			if apierrors.IsConflict(err) {
+				logger.Debug("error updating stale status", "ref", poolNN, "error", err)
+				return nil // let the conflicting Status update trigger a KRT event to requeue the updated object
+			}
+			return err
 		})
 	if retryErr != nil {
 		logger.Error("failed to update InferencePool status", "pool", poolNN, "err", retryErr)
 	}
+	return updatedObj
 }
 
 // key returns a stable identity string for a Gateway-like ParentReference.
 func key(ref inf.ParentReference) string {
-	group := inferencePoolGVK.Group
+	group := wellknown.InferencePoolGVK.Group
 	if ref.Group != nil {
 		group = string(*ref.Group)
 	}

@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.19.1-0.20251023132335-bf7d6b742e6a
   labels:
     app: kgateway
     app.kubernetes.io/name: kgateway
@@ -146,8 +146,10 @@ spec:
                             type: string
                         type: object
                         x-kubernetes-validations:
-                        - message: at least one of prefix or headerName must be set
-                          rule: has(self.prefix) || has(self.headerName)
+                        - message: at least one of the fields in [prefix headerName]
+                            must be set
+                          rule: '[has(self.prefix),has(self.headerName)].filter(x,x==true).size()
+                            >= 1'
                       azureopenai:
                         description: Azure OpenAI provider
                         properties:
@@ -678,9 +680,10 @@ spec:
                                     type: string
                                 type: object
                                 x-kubernetes-validations:
-                                - message: at least one of prefix or headerName must
-                                    be set
-                                  rule: has(self.prefix) || has(self.headerName)
+                                - message: at least one of the fields in [prefix headerName]
+                                    must be set
+                                  rule: '[has(self.prefix),has(self.headerName)].filter(x,x==true).size()
+                                    >= 1'
                               azureopenai:
                                 description: Azure OpenAI provider
                                 properties:

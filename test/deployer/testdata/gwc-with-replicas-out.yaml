@@ -5,13 +5,13 @@ kind: ServiceAccount
 metadata:
   name: gw
   labels:
-    kgateway: kube-gateway
-    app.kubernetes.io/name: gw
     app.kubernetes.io/instance: gw
-    gateway.networking.k8s.io/gateway-name: gw
-    app.kubernetes.io/version: "1.0.0-ci1"
-    gateway.networking.k8s.io/gateway-class-name: kgateway
     app.kubernetes.io/managed-by: kgateway
+    app.kubernetes.io/name: gw
+    app.kubernetes.io/version: 1.0.0-ci1
+    gateway.networking.k8s.io/gateway-class-name: kgateway
+    gateway.networking.k8s.io/gateway-name: gw
+    kgateway: kube-gateway
 automountServiceAccountToken: false
 ---
 # Source: kgateway-proxy/templates/configmap.yaml
@@ -20,13 +20,13 @@ kind: ConfigMap
 metadata:
   name: gw
   labels:
-    kgateway: kube-gateway
-    app.kubernetes.io/name: gw
     app.kubernetes.io/instance: gw
-    gateway.networking.k8s.io/gateway-name: gw
-    app.kubernetes.io/version: "1.0.0-ci1"
-    gateway.networking.k8s.io/gateway-class-name: kgateway
     app.kubernetes.io/managed-by: kgateway
+    app.kubernetes.io/name: gw
+    app.kubernetes.io/version: 1.0.0-ci1
+    gateway.networking.k8s.io/gateway-class-name: kgateway
+    gateway.networking.k8s.io/gateway-name: gw
+    kgateway: kube-gateway
 data:
   envoy.yaml: |
     admin:
@@ -211,13 +211,13 @@ kind: Service
 metadata:
   name: gw
   labels:
-    kgateway: kube-gateway
-    app.kubernetes.io/name: gw
     app.kubernetes.io/instance: gw
-    gateway.networking.k8s.io/gateway-name: gw
-    app.kubernetes.io/version: "1.0.0-ci1"
-    gateway.networking.k8s.io/gateway-class-name: kgateway
     app.kubernetes.io/managed-by: kgateway
+    app.kubernetes.io/name: gw
+    app.kubernetes.io/version: 1.0.0-ci1
+    gateway.networking.k8s.io/gateway-class-name: kgateway
+    gateway.networking.k8s.io/gateway-name: gw
+    kgateway: kube-gateway
 spec:
   type: LoadBalancer
   ports:
@@ -236,13 +236,13 @@ kind: Deployment
 metadata:
   name: gw
   labels:
-    kgateway: kube-gateway
-    app.kubernetes.io/name: gw
     app.kubernetes.io/instance: gw
-    gateway.networking.k8s.io/gateway-name: gw
-    app.kubernetes.io/version: "1.0.0-ci1"
-    gateway.networking.k8s.io/gateway-class-name: kgateway
     app.kubernetes.io/managed-by: kgateway
+    app.kubernetes.io/name: gw
+    app.kubernetes.io/version: 1.0.0-ci1
+    gateway.networking.k8s.io/gateway-class-name: kgateway
+    gateway.networking.k8s.io/gateway-name: gw
+    kgateway: kube-gateway
 spec:
   replicas: 2
   selector:
@@ -257,11 +257,11 @@ spec:
         prometheus.io/port: "9091"
         prometheus.io/scrape: "true"
       labels:
-        kgateway: kube-gateway
-        app.kubernetes.io/name: gw
         app.kubernetes.io/instance: gw
-        gateway.networking.k8s.io/gateway-name: gw
+        app.kubernetes.io/name: gw
         gateway.networking.k8s.io/gateway-class-name: kgateway
+        gateway.networking.k8s.io/gateway-name: gw
+        kgateway: kube-gateway
     spec:
       serviceAccountName: gw
       containers:

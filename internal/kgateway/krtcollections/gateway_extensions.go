@@ -42,8 +42,9 @@ func NewGatewayExtensionsCollection(
 		},
 	)
 
-	rawGwExts := krt.WrapClient(kclient.NewFiltered[*v1alpha1.GatewayExtension](
+	rawGwExts := krt.WrapClient(kclient.NewFilteredDelayed[*v1alpha1.GatewayExtension](
 		client,
+		wellknown.GatewayExtensionGVR,
 		kclient.Filter{ObjectFilter: client.ObjectFilter()},
 	), krtOpts.ToOptions("GatewayExtension")...)
 	gwExtCol := krt.NewCollection(rawGwExts, func(krtctx krt.HandlerContext, cr *v1alpha1.GatewayExtension) *ir.GatewayExtension {

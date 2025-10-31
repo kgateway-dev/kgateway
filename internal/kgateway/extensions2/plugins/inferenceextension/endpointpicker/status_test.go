@@ -1,7 +1,6 @@
 package endpointpicker
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 	"testing"
@@ -9,15 +8,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"istio.io/istio/pkg/kube"
+	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/krt/krttest"
-	corev1 "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -25,25 +23,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
-	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 )
-
-func newFakeClient(t *testing.T, objs ...client.Object) client.Client {
-	// Create a new scheme and register the necessary types
-	sch := schemes.DefaultScheme()
-	require.NoError(t, corev1.AddToScheme(sch))
-	require.NoError(t, inf.Install(sch))
-	require.NoError(t, gwv1.Install(sch))
-
-	// Create a fake client with the provided objects
-	b := fakeclient.NewClientBuilder().WithScheme(sch)
-	b = b.WithObjects(objs...)
-
-	// Register status subresource for the InferencePool type
-	b = b.WithStatusSubresource(&inf.InferencePool{})
-
-	return b.Build()
-}
 
 func fakeRoutesIndex(col krt.Collection[ir.HttpRouteIR]) *krtcollections.RoutesIndex {
 	ri := &krtcollections.RoutesIndex{}
@@ -60,7 +40,7 @@ func fakeRoutesIndex(col krt.Collection[ir.HttpRouteIR]) *krtcollections.RoutesI
 
 func TestUpdatePoolStatus_NoReferences_NoErrors(t *testing.T) {
 	// Set up the context, controller name, namespace, and pool name
-	ctx := context.Background()
+	ctx := t.Context()
 	controllerName := "test-controller"
 	ns := "default"
 	poolName := "my-pool"
@@ -74,14 +54,21 @@ func TestUpdatePoolStatus_NoReferences_NoErrors(t *testing.T) {
 	}
 
 	// Create a fake client with the InferencePool object
-	fakeClient := newFakeClient(t, pool)
+	fakeClient := kube.NewFakeClient(pool)
+
 	mock := krttest.NewMock(t, []any{})
 	col := krttest.GetMockCollection[ir.HttpRouteIR](mock)
 	commonCol := &collections.CommonCollections{
-		CrudClient:     fakeClient,
 		ControllerName: controllerName,
 		Routes:         fakeRoutesIndex(col),
+		Client:         fakeClient,
 	}
+	cli := kclient.NewFiltered[*inf.InferencePool](
+		fakeClient,
+		kclient.Filter{ObjectFilter: commonCol.Client.ObjectFilter()},
+	)
+	fakeClient.RunAndWait(ctx.Done())
+
 	beIR := ir.BackendObjectIR{
 		ObjectSource: ir.ObjectSource{
 			Group:     inf.GroupVersion.Group,
@@ -93,18 +80,16 @@ func TestUpdatePoolStatus_NoReferences_NoErrors(t *testing.T) {
 	}
 
 	// Call the function to update the pool status
-	updatePoolStatus(ctx, commonCol, beIR, "", nil)
-	var updated inf.InferencePool
-	err := fakeClient.Get(ctx, poolNN, &updated)
+	updated := updatePoolStatus(ctx, commonCol, cli, beIR, "", nil)
 
 	// Assert that there are no errors and the status is updated correctly
-	require.NoError(t, err)
+	require.NotNil(t, updated)
 	assert.Empty(t, updated.Status.Parents)
 }
 
 func TestUpdatePoolStatus_WithReference_NoErrors(t *testing.T) {
 	// Set up the context, controller name, namespace, pool name, and gateway name
-	ctx := context.Background()
+	ctx := t.Context()
 	controllerName := "test-controller"
 	ns := "default"
 	poolName := "my-pool"
@@ -154,7 +139,7 @@ func TestUpdatePoolStatus_WithReference_NoErrors(t *testing.T) {
 	}
 
 	// Create a fake client with the InferencePool object
-	fakeClient := newFakeClient(t, pool)
+	fakeClient := kube.NewFakeClient(pool)
 	mock := krttest.NewMock(t, []any{
 		ir.HttpRouteIR{
 			ObjectSource: ir.ObjectSource{
@@ -170,10 +155,16 @@ func TestUpdatePoolStatus_WithReference_NoErrors(t *testing.T) {
 	// Get the mock collection for HTTPRouteIR
 	col := krttest.GetMockCollection[ir.HttpRouteIR](mock)
 	commonCol := &collections.CommonCollections{
-		CrudClient:     fakeClient,
 		ControllerName: controllerName,
 		Routes:         fakeRoutesIndex(col),
+		Client:         fakeClient,
 	}
+	cli := kclient.NewFiltered[*inf.InferencePool](
+		fakeClient,
+		kclient.Filter{ObjectFilter: commonCol.Client.ObjectFilter()},
+	)
+	fakeClient.RunAndWait(ctx.Done())
+
 	beIR := ir.BackendObjectIR{
 		ObjectSource: ir.ObjectSource{
 			Group:     inf.GroupVersion.Group,
@@ -185,12 +176,10 @@ func TestUpdatePoolStatus_WithReference_NoErrors(t *testing.T) {
 	}
 
 	// Call the function to update the pool status
-	updatePoolStatus(ctx, commonCol, beIR, "", nil)
-	var updated inf.InferencePool
-	err := fakeClient.Get(ctx, poolNN, &updated)
+	updated := updatePoolStatus(ctx, commonCol, cli, beIR, "", nil)
 
 	// Assert that there are no errors and the status is updated correctly
-	require.NoError(t, err)
+	require.NotNil(t, updated)
 	require.Len(t, updated.Status.Parents, 1)
 	p := updated.Status.Parents[0]
 	assert.Equal(t, inf.ParentReference{
@@ -220,7 +209,7 @@ func TestUpdatePoolStatus_WithReference_NoErrors(t *testing.T) {
 
 func TestUpdatePoolStatus_WithReference_WithErrors(t *testing.T) {
 	// Set up the context, controller name, namespace, pool name, and gateway name
-	ctx := context.Background()
+	ctx := t.Context()
 	controllerName := "test-controller"
 	ns := "default"
 	poolName := "my-pool"
@@ -269,7 +258,7 @@ func TestUpdatePoolStatus_WithReference_WithErrors(t *testing.T) {
 		},
 	}
 
-	fakeClient := newFakeClient(t, pool)
+	fakeClient := kube.NewFakeClient(pool)
 	mock := krttest.NewMock(t, []any{
 		ir.HttpRouteIR{
 			ObjectSource: ir.ObjectSource{
@@ -285,10 +274,16 @@ func TestUpdatePoolStatus_WithReference_WithErrors(t *testing.T) {
 	// Get the mock collection for HTTPRouteIR
 	col := krttest.GetMockCollection[ir.HttpRouteIR](mock)
 	commonCol := &collections.CommonCollections{
-		CrudClient:     fakeClient,
 		ControllerName: controllerName,
 		Routes:         fakeRoutesIndex(col),
+		Client:         fakeClient,
 	}
+	cli := kclient.NewFiltered[*inf.InferencePool](
+		fakeClient,
+		kclient.Filter{ObjectFilter: commonCol.Client.ObjectFilter()},
+	)
+	fakeClient.RunAndWait(ctx.Done())
+
 	beIR := ir.BackendObjectIR{
 		ObjectSource: ir.ObjectSource{
 			Group:     inf.GroupVersion.Group,
@@ -300,12 +295,10 @@ func TestUpdatePoolStatus_WithReference_WithErrors(t *testing.T) {
 	}
 
 	// Call the function to update the pool status with errors
-	updatePoolStatus(ctx, commonCol, beIR, "", nil)
-	var updated inf.InferencePool
-	err := fakeClient.Get(ctx, poolNN, &updated)
+	updated := updatePoolStatus(ctx, commonCol, cli, beIR, "", nil)
 
 	// Assert that there are no errors and the status is updated correctly
-	require.NoError(t, err)
+	require.NotNil(t, updated)
 	require.Len(t, updated.Status.Parents, 2)
 
 	// Check the gateway parent status
@@ -350,7 +343,7 @@ func TestUpdatePoolStatus_WithReference_WithErrors(t *testing.T) {
 
 func TestUpdatePoolStatus_DeleteRoute(t *testing.T) {
 	// Set up the context, controller name, namespace, pool name, and route UID
-	ctx := context.Background()
+	ctx := t.Context()
 	controllerName := "test-controller"
 	ns := "default"
 	poolName := "my-pool"
@@ -401,7 +394,7 @@ func TestUpdatePoolStatus_DeleteRoute(t *testing.T) {
 	}
 
 	// Create a fake client with the InferencePool object
-	fakeClient := newFakeClient(t, pool)
+	fakeClient := kube.NewFakeClient(pool)
 	mock := krttest.NewMock(t, []any{
 		ir.HttpRouteIR{
 			ObjectSource: ir.ObjectSource{
@@ -417,10 +410,16 @@ func TestUpdatePoolStatus_DeleteRoute(t *testing.T) {
 	// Get the mock collection for HTTPRouteIR
 	col := krttest.GetMockCollection[ir.HttpRouteIR](mock)
 	commonCol := &collections.CommonCollections{
-		CrudClient:     fakeClient,
 		ControllerName: controllerName,
 		Routes:         fakeRoutesIndex(col),
+		Client:         fakeClient,
 	}
+	cli := kclient.NewFiltered[*inf.InferencePool](
+		fakeClient,
+		kclient.Filter{ObjectFilter: commonCol.Client.ObjectFilter()},
+	)
+	fakeClient.RunAndWait(ctx.Done())
+
 	beIR := ir.BackendObjectIR{
 		ObjectSource: ir.ObjectSource{
 			Group:     inf.GroupVersion.Group,
@@ -432,21 +431,18 @@ func TestUpdatePoolStatus_DeleteRoute(t *testing.T) {
 	}
 
 	// Call the function to update the pool status with the route
-	updatePoolStatus(ctx, commonCol, beIR, routeUID, nil)
-	var updated inf.InferencePool
-	err := fakeClient.Get(ctx, poolNN, &updated)
+	updated := updatePoolStatus(ctx, commonCol, cli, beIR, routeUID, nil)
 
 	// Assert that there are no errors and the status is updated correctly
-	require.NoError(t, err)
+	require.NotNil(t, updated)
 	assert.Empty(t, updated.Status.Parents)
 }
 
 func TestUpdatePoolStatus_WithExtraGws(t *testing.T) {
 	// Set up the context, namespace, pool name, and extra gateway name
-	ctx := context.Background()
+	ctx := t.Context()
 	ns := "default"
 	poolName := "my-pool"
-	poolNN := types.NamespacedName{Namespace: ns, Name: poolName}
 	gwName := "extra-gw"
 
 	// Create a sample InferencePool object
@@ -459,16 +455,22 @@ func TestUpdatePoolStatus_WithExtraGws(t *testing.T) {
 	}
 
 	// Create a fake client with the InferencePool object
-	fakeClient := newFakeClient(t, pool)
+	fakeClient := kube.NewFakeClient(pool)
 	mock := krttest.NewMock(t, []any{}) // no HTTPRouteIRs
 	col := krttest.GetMockCollection[ir.HttpRouteIR](mock)
 
 	// Create a CommonCollections instance with the fake client and routes index
 	commonCol := &collections.CommonCollections{
-		CrudClient:     fakeClient,
 		ControllerName: "test-controller",
 		Routes:         fakeRoutesIndex(col),
+		Client:         fakeClient,
 	}
+	cli := kclient.NewFiltered[*inf.InferencePool](
+		fakeClient,
+		kclient.Filter{ObjectFilter: commonCol.Client.ObjectFilter()},
+	)
+	fakeClient.RunAndWait(ctx.Done())
+
 	beIR := ir.BackendObjectIR{
 		ObjectSource: ir.ObjectSource{
 			Group:     inf.GroupVersion.Group,
@@ -485,12 +487,10 @@ func TestUpdatePoolStatus_WithExtraGws(t *testing.T) {
 	}
 
 	// Call the function to update the pool status with the extra gateways
-	updatePoolStatus(ctx, commonCol, beIR, "", extraGws)
+	updated := updatePoolStatus(ctx, commonCol, cli, beIR, "", extraGws)
 
 	// Assert that the InferencePool status is updated correctly
-	var updated inf.InferencePool
-	err := fakeClient.Get(ctx, poolNN, &updated)
-	require.NoError(t, err)
+	require.NotNil(t, updated)
 	require.Len(t, updated.Status.Parents, 1)
 
 	assert.Equal(t, inf.ParentReference{

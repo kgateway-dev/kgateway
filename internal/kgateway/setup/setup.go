@@ -36,6 +36,7 @@ import (
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/namespaces"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
@@ -243,8 +244,9 @@ func New(opts ...func(*setup)) (*setup, error) {
 				Metrics: metricsserver.Options{
 					BindAddress: ":9092",
 				},
-				LeaderElection:   !s.globalSettings.DisableLeaderElection,
-				LeaderElectionID: s.leaderElectionID,
+				LeaderElectionNamespace: namespaces.GetPodNamespace(),
+				LeaderElection:          !s.globalSettings.DisableLeaderElection,
+				LeaderElectionID:        s.leaderElectionID,
 			}
 		}
 	}
@@ -291,7 +293,7 @@ func (s *setup) Start(ctx context.Context) error {
 		return err
 	}
 
-	if err := controller.AddToScheme(mgr.GetScheme()); err != nil {
+	if err := schemes.AddToScheme(mgr.GetScheme()); err != nil {
 		slog.Error("unable to extend scheme", "error", err)
 		return err
 	}
@@ -346,7 +348,6 @@ func (s *setup) Start(ctx context.Context) error {
 		krtOpts,
 		istioClient,
 		cli,
-		mgr.GetClient(),
 		s.gatewayControllerName,
 		s.agwControllerName,
 		*s.globalSettings,
@@ -437,6 +438,16 @@ func BuildKgatewayWithConfig(
 
 	ucc := uccBuilder(ctx, krtOpts, augmentedPodsForUcc)
 
+	gatewayClassInfos := controller.GetDefaultClassInfo(
+		setupOpts.GlobalSettings,
+		gatewayClassName,
+		waypointClassName,
+		agentgatewayClassName,
+		gatewayControllerName,
+		agwControllerName,
+		additionalGatewayClasses,
+	)
+
 	slog.Info("initializing controller")
 	c, err := controller.NewControllerBuilder(ctx, controller.StartConfig{
 		Manager:                      mgr,
@@ -446,6 +457,7 @@ func BuildKgatewayWithConfig(
 		WaypointGatewayClassName:     waypointClassName,
 		AgentgatewayClassName:        agentgatewayClassName,
 		AdditionalGatewayClasses:     additionalGatewayClasses,
+		GatewayClassInfos:            gatewayClassInfos,
 		ExtraPlugins:                 extraPlugins,
 		ExtraAgwPlugins:              extraAgwPlugins,
 		HelmValuesGeneratorOverride:  helmValuesGeneratorOverride,

@@ -87,11 +87,13 @@ func registerTypes() {
 
 func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
 	registerTypes()
-	inf := kclient.NewDelayedInformer[*gwv1.BackendTLSPolicy](
-		commoncol.Client, backendTlsPolicyGvr, kubetypes.StandardInformer,
+
+	cli := kclient.NewFilteredDelayed[*gwv1.BackendTLSPolicy](
+		commoncol.Client,
+		backendTlsPolicyGvr,
 		kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()},
 	)
-	col := krt.WrapClient(inf, commoncol.KrtOpts.ToOptions("BackendTLSPolicy")...)
+	col := krt.WrapClient(cli, commoncol.KrtOpts.ToOptions("BackendTLSPolicy")...)
 
 	translate := buildTranslateFunc(ctx, commoncol.ConfigMaps)
 	tlsPolicyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *gwv1.BackendTLSPolicy) *ir.PolicyWrapper {
@@ -119,8 +121,8 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 				Name:              "BackendTLSPolicy",
 				Policies:          tlsPolicyCol,
 				ProcessBackend:    processBackend,
-				GetPolicyStatus:   getPolicyStatusFn(commoncol.CrudClient),
-				PatchPolicyStatus: patchPolicyStatusFn(commoncol.CrudClient),
+				GetPolicyStatus:   getPolicyStatusFn(cli),
+				PatchPolicyStatus: patchPolicyStatusFn(cli),
 			},
 		},
 	}
