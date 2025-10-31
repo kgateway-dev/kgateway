@@ -2,6 +2,7 @@ package deployer
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -12,6 +13,7 @@ import (
 	pkgdeployer "github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 func mockVersion(t *testing.T) {
@@ -77,9 +79,10 @@ func TestRenderHelmChart(t *testing.T) {
 
 	dir := fsutils.MustGetThisDir()
 	scheme := schemes.GatewayScheme()
+	crdDir := filepath.Join(testutils.GitRootDirectory(), testutils.CRDPath)
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			tester.RunHelmChartTest(t, tt, scheme, dir, nil)
+			tester.RunHelmChartTest(t, tt, scheme, dir, crdDir, nil)
 		})
 	}
 }
@@ -138,9 +141,10 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 
 	dir := fsutils.MustGetThisDir()
 	scheme := schemes.GatewayScheme()
+	crdDir := filepath.Join(testutils.GitRootDirectory(), testutils.CRDPath)
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			tester.RunHelmChartTest(t, tt, scheme, dir, tlsExtraParams)
+			tester.RunHelmChartTest(t, tt, scheme, dir, crdDir, tlsExtraParams)
 		})
 	}
 }
