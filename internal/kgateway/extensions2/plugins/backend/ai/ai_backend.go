@@ -76,11 +76,8 @@ func (i *IR) Equals(otherAIIr *IR) bool {
 }
 
 func (c *AIClusterConfig) Equals(other *AIClusterConfig) bool {
-	if c == nil && other == nil {
-		return true
-	}
 	if c == nil || other == nil {
-		return false
+		return c == nil && other == nil
 	}
 
 	// Compare ClusterDiscoveryType

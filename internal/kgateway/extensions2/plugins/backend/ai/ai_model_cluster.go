@@ -166,8 +166,8 @@ func buildAIClusterConfig(in *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecr
 		},
 	}
 
-	// Build load assignment. Cluster name will be set at translation time.
 	config.LoadAssignment = &envoyendpointv3.ClusterLoadAssignment{
+		// ClusterName will be set at translation time.
 		Endpoints: prioritized,
 	}
 
@@ -183,6 +183,7 @@ func ProcessAI(config *AIClusterConfig, out *envoyclusterv3.Cluster) {
 	out.TransportSocketMatches = config.TransportSocketMatches
 
 	if config.LoadAssignment != nil {
+		// clone needed to avoid adding cluster name to original object in the IR.
 		out.LoadAssignment = proto.Clone(config.LoadAssignment).(*envoyendpointv3.ClusterLoadAssignment)
 		out.LoadAssignment.ClusterName = out.GetName()
 	}

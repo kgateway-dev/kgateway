@@ -109,6 +109,7 @@ func processStatic(ir *StaticIr, out *envoyclusterv3.Cluster) {
 	}
 
 	if ir.loadAssignment != nil {
+		// clone needed to avoid adding cluster name to original object in the IR.
 		out.LoadAssignment = proto.Clone(ir.loadAssignment).(*envoyendpointv3.ClusterLoadAssignment)
 		out.LoadAssignment.ClusterName = out.GetName()
 	}
