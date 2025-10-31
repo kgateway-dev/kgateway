@@ -64,8 +64,6 @@ func (s *testingSuite) SetupSuite() {
 		simpleSvc, simpleDeployment,
 		// resources from gateway manifest
 		gateway,
-		// resources from gateway extension manifest
-		gatewayExtension,
 		// rate limit service resources
 		rateLimitDeployment, rateLimitService, rateLimitConfigMap,
 		// deployer-generated resources

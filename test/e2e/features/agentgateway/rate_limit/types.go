@@ -98,14 +98,6 @@ var (
 		},
 	}
 
-	// Gateway Extension for rate limit service
-	gatewayExtension = &v1alpha1.GatewayExtension{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: extensionsNamespace,
-			Name:      "global-ratelimit",
-		},
-	}
-
 	// AgentgatewayPolicy for different rate limit scenarios
 	ipRateLimitAgentgatewayPolicy = &v1alpha1.AgentgatewayPolicy{
 		ObjectMeta: metav1.ObjectMeta{

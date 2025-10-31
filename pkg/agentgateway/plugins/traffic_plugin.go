@@ -787,13 +787,13 @@ func processLocalRateLimitPolicy(limits []v1alpha1.AgentLocalRateLimitPolicy, po
 	}
 	var capacity uint64
 	if limit.Requests != nil {
-		capacity = uint64(*limit.Requests)
+		capacity = uint64(*limit.Requests) //nolint:gosec // G115: kubebuilder validation ensures non-negative, safe for uint64
 		rule.Type = api.TrafficPolicySpec_LocalRateLimit_REQUEST
 	} else {
-		capacity = uint64(*limit.Tokens)
+		capacity = uint64(*limit.Tokens) //nolint:gosec // G115: kubebuilder validation ensures non-negative, safe for uint64
 		rule.Type = api.TrafficPolicySpec_LocalRateLimit_TOKEN
 	}
-	rule.MaxTokens = capacity + uint64(ptr.OrEmpty(limit.Burst))
+	rule.MaxTokens = capacity + uint64(ptr.OrEmpty(limit.Burst)) //nolint:gosec // G115: Burst is non-negative, safe for uint64
 	rule.TokensPerFill = capacity
 	switch limit.Unit {
 	case v1alpha1.LocalRateLimitUnitSeconds:

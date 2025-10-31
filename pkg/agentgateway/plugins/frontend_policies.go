@@ -154,7 +154,7 @@ func translateFrontendTCP(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, na
 			spec.Keepalives.Interval = durationpb.New(ka.Interval.Duration)
 		}
 		if ka.Retries != nil {
-			spec.Keepalives.Retries = wrapperspb.UInt32(uint32(*ka.Retries))
+			spec.Keepalives.Retries = wrapperspb.UInt32(uint32(*ka.Retries)) //nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 		}
 	}
 
@@ -209,22 +209,22 @@ func translateFrontendHTTP(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, n
 	http := policy.Spec.Frontend.HTTP
 	spec := &api.FrontendPolicySpec_HTTP{}
 	if v := http.MaxBufferSize; v != nil {
-		spec.MaxBufferSize = wrapperspb.UInt32(uint32(*v))
+		spec.MaxBufferSize = wrapperspb.UInt32(uint32(*v)) //nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 	}
 	if v := http.HTTP1MaxHeaders; v != nil {
-		spec.Http1MaxHeaders = wrapperspb.UInt32(uint32(*v))
+		spec.Http1MaxHeaders = wrapperspb.UInt32(uint32(*v)) //nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 	}
 	if v := http.HTTP1IdleTimeout; v != nil {
 		spec.Http1IdleTimeout = durationpb.New(v.Duration)
 	}
 	if v := http.HTTP2WindowSize; v != nil {
-		spec.Http2WindowSize = wrapperspb.UInt32(uint32(*v))
+		spec.Http2WindowSize = wrapperspb.UInt32(uint32(*v)) //nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 	}
 	if v := http.HTTP2ConnectionWindowSize; v != nil {
-		spec.Http2ConnectionWindowSize = wrapperspb.UInt32(uint32(*v))
+		spec.Http2ConnectionWindowSize = wrapperspb.UInt32(uint32(*v)) //nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 	}
 	if v := http.HTTP2FrameSize; v != nil {
-		spec.Http2FrameSize = wrapperspb.UInt32(uint32(*v))
+		spec.Http2FrameSize = wrapperspb.UInt32(uint32(*v)) //nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 	}
 	if v := http.HTTP2KeepaliveInterval; v != nil {
 		spec.Http2KeepaliveInterval = durationpb.New(v.Duration)

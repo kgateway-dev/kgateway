@@ -109,6 +109,8 @@ func GetStatus[I, IS any](spec I) IS {
 		return any(t.Status).(IS)
 	case *gwxv1a1.XListenerSet:
 		return any(t.Status).(IS)
+    case *v1alpha1.AgentgatewayPolicy:
+        return any(t.Status).(IS)
 	default:
 		log.Fatalf("GetStatus unknown type %T", t)
 		return ptr.Empty[IS]()

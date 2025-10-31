@@ -13,8 +13,8 @@ import (
 
 var (
 	// manifests
-	commonManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "common.yaml")
-	csrfAgwPolicyManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "csrf-gw.yaml")
+	commonManifest        = getTestFile("common.yaml")
+	csrfAgwPolicyManifest = getTestFile("csrf-gw.yaml")
 
 	// objects
 	proxyObjectMeta = metav1.ObjectMeta{
@@ -29,3 +29,7 @@ var (
 		},
 	}
 )
+
+func getTestFile(filename string) string {
+	return filepath.Join(fsutils.MustGetThisDir(), "testdata", filename)
+}

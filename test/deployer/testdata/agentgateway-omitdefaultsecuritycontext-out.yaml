@@ -96,7 +96,7 @@ spec:
       serviceAccountName: gw
       containers:
         - name: agent-gateway
-          image: "ghcr.io/agentgateway/agentgateway:0.10.3"
+          image: "ghcr.io/agentgateway/agentgateway:0.11.0-alpha.1ca00e32d3f475539a20120f72c45c05aaf80377"
           startupProbe:
             failureThreshold: 60
             httpGet:
