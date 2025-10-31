@@ -39,7 +39,6 @@ const (
 type AgentGwStatusSyncer struct {
 	client kube.Client
 
-	trafficPolicies      StatusSyncer[*v1alpha1.TrafficPolicy, *gwv1.PolicyStatus]
 	agentgatewayPolicies StatusSyncer[*v1alpha1.AgentgatewayPolicy, *gwv1.PolicyStatus]
 
 	// Configuration
@@ -73,18 +72,6 @@ func NewAgwStatusSyncer(
 		statusCollections: statusCollections,
 		cacheSyncs:        cacheSyncs,
 
-		trafficPolicies: StatusSyncer[*v1alpha1.TrafficPolicy, *gwv1.PolicyStatus]{
-			name:   "trafficPolicy",
-			client: kclient.NewFilteredDelayed[*v1alpha1.TrafficPolicy](client, wellknown.TrafficPolicyGVR, f),
-			build: func(om metav1.ObjectMeta, s *gwv1.PolicyStatus) *v1alpha1.TrafficPolicy {
-				return &v1alpha1.TrafficPolicy{
-					ObjectMeta: om,
-					Status: gwv1.PolicyStatus{
-						Ancestors: s.Ancestors,
-					},
-				}
-			},
-		},
 		agentgatewayPolicies: StatusSyncer[*v1alpha1.AgentgatewayPolicy, *gwv1.PolicyStatus]{
 			name:   "agentgatewayPolicy",
 			client: kclient.NewFilteredDelayed[*v1alpha1.AgentgatewayPolicy](client, wellknown.AgentgatewayPolicyGVR, f),
@@ -209,8 +196,6 @@ func (s *AgentGwStatusSyncer) SyncStatus(ctx context.Context, resource status.Re
 		s.tcpRoutes.ApplyStatus(ctx, resource, statusObj)
 	case wellknown.HTTPRouteGVK:
 		s.httpRoutes.ApplyStatus(ctx, resource, statusObj)
-	case wellknown.TrafficPolicyGVK:
-		s.trafficPolicies.ApplyStatus(ctx, resource, statusObj)
 	case wellknown.AgentgatewayPolicyGVK:
 		s.agentgatewayPolicies.ApplyStatus(ctx, resource, statusObj)
 	default:

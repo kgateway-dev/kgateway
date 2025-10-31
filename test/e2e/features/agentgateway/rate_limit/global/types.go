@@ -25,7 +25,6 @@ const (
 
 var (
 	// paths to test manifests
-	commonManifest            = getTestFile("common.yaml")
 	agwCommonManifest         = getTestFile("common.yaml")
 	simpleServiceManifest     = getTestFile("service.yaml")
 	httpRoutesManifest        = getTestFile("routes.yaml")

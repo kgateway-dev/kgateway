@@ -85,6 +85,7 @@ var AllCRDs = []schema.GroupVersionResource{
 	wellknown.HTTPListenerPolicyGVR,
 	wellknown.DirectResponseGVR,
 	wellknown.GatewayExtensionGVR,
+	wellknown.AgentgatewayPolicyGVR,
 }
 
 type translationResult struct {
