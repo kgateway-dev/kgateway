@@ -54,7 +54,7 @@ type BaseTestingSuite struct {
 	TestCases        map[string]*TestCase
 
 	// (Optional) Path of directory (relative to git root) containing the CRDs that will be used to read
-	// the objects from the manifests. If empty then defaults to "install/helm/kgateway-crds/templates"
+	// the objects from the manifests. If empty then defaults to "charts/kgateway-crds/templates"
 	CrdPath string
 
 	// (Optional) Helper to determine if a Gateway is self-managed. If not provided, a default implementation

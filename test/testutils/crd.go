@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	CRDPath = "install/helm/kgateway-crds/templates"
+	CRDPath = "charts/kgateway-crds/templates"
 )
 
 // GetStructuralSchemas returns a map of GroupVersionKind to Structural schemas for all CRDs in the given directory

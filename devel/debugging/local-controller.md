@@ -54,7 +54,7 @@ VERSION=2.0.0-dev ./hack/kind/setup-kind.sh
 
 Install the required CRDs:
 ```sh
-helm install kgateway-crds install/helm/kgateway-crds
+helm install kgateway-crds charts/kgateway-crds
 ```
 
 Create a namespace for testing:

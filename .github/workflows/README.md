@@ -15,7 +15,7 @@ This Github Action will not run by default on a Draft Pull Request. After a Pull
 it will trigger the action to run.
 
 ## [Lint Helm Charts](./lint-helm.yaml)
-Perform linting on project [Helm Charts](../../install/helm/README.md).
+Perform linting on project [Helm Charts](../../charts/README.md).
 
 ## Comments That Trigger Workflows
 - Commenting `/retest` (without any other text) on a PR will trigger the [retest](./retest.yaml) job (limited to kgateway org members only). This will re-run any failed jobs from the latest workflow runs on the PR.

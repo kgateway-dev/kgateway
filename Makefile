@@ -330,7 +330,7 @@ clean-gen:
 	rm -rf api/applyconfiguration
 	rm -rf pkg/generated/openapi
 	rm -rf pkg/client
-	rm -f install/helm/kgateway-crds/templates/gateway.kgateway.dev_*.yaml
+	rm -f charts/kgateway-crds/templates/gateway.kgateway.dev_*.yaml
 
 # Clean all stamp files to force regeneration
 .PHONY: clean-stamps
@@ -518,8 +518,8 @@ HELM ?= go tool helm
 # some patch or minor version release. ('--app-version v2.0.0' is acceptable
 # and in fact preferred since it matches our git tags and OCI image tags.)
 HELM_PACKAGE_ARGS ?= --version $(VERSION) --app-version $(VERSION)
-HELM_CHART_DIR=install/helm/kgateway
-HELM_CHART_DIR_CRD=install/helm/kgateway-crds
+HELM_CHART_DIR=charts/kgateway
+HELM_CHART_DIR_CRD=charts/kgateway-crds
 
 .PHONY: package-kgateway-charts
 package-kgateway-charts: package-kgateway-chart package-kgateway-crd-chart ## Package the kgateway charts

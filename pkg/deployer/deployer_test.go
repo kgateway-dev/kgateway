@@ -193,7 +193,7 @@ var _ = Describe("Deployer", func() {
 			return gw
 		}
 
-		// Note that this is NOT meant to reflect the actual defaults defined in install/helm/kgateway/templates/gatewayparameters.yaml
+		// Note that this is NOT meant to reflect the actual defaults defined in charts/kgateway/templates/gatewayparameters.yaml
 		defaultGatewayParams = func() *gw2_v1alpha1.GatewayParameters {
 			return &gw2_v1alpha1.GatewayParameters{
 				TypeMeta: metav1.TypeMeta{

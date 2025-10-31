@@ -21,9 +21,9 @@ readonly VERSIONS=( v1alpha1 )
 readonly OPENAPI_GEN_DIR=pkg/generated/openapi
 readonly APPLY_CFG_DIR=api/applyconfiguration
 readonly CLIENT_GEN_DIR=pkg/client
-readonly CRD_DIR=install/helm/kgateway-crds/templates
+readonly CRD_DIR=charts/kgateway-crds/templates
 # manifests dir only used for outputting rbac artifacts and existing file will be overwritten so no need to clean
-readonly MANIFESTS_DIR=install/helm/kgateway/templates
+readonly MANIFESTS_DIR=charts/kgateway/templates
 
 echo "Generating clientset at ${OUTPUT_PKG}/${CLIENTSET_PKG_NAME} for versions:" "${VERSIONS[@]}"
 
