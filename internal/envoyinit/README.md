@@ -42,7 +42,7 @@ make lint
 To run unit tests, do:
 
 ``` bash
-carge test
+cargo test
 ```
 
 ### e2e testing

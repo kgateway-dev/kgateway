@@ -9,18 +9,19 @@ ARG RUSTFORMATIONS_DIR=./rustformations
 # through the directories in Dockerfile. If we add more local crate, will need to add 
 # it's Cargo.toml file below
 COPY ${RUSTFORMATIONS_DIR}/Cargo.toml ${RUSTFORMATIONS_DIR}/Cargo.lock ./
-RUN mkdir rustformations transformations
+RUN mkdir -p rustformations/src transformations/src \
+    && echo "pub fn dummy() {}" > rustformations/src/lib.rs \
+    && echo "pub fn dummy() {}" > transformations/src/lib.rs
 COPY ${RUSTFORMATIONS_DIR}/rustformations/Cargo.toml ./rustformations
 COPY ${RUSTFORMATIONS_DIR}/transformations/Cargo.toml ./transformations
-RUN mkdir rustformations/src && echo "pub fn dummy() {}" > rustformations/src/lib.rs && \
-    mkdir transformations/src && echo "pub fn dummy() {}" > transformations/src/lib.rs
 ARG RUST_BUILD_ARCH=x86_64 # options are x86_64 or aarch64
-RUN cargo fetch && cargo zigbuild --target ${RUST_BUILD_ARCH}-unknown-linux-gnu
 # Because we built the dummy lib in this Stage to cache all the dependencies in docker layer cache
 # That unfortunately also cached the dummy libs, and in Stage 2 when we COPY, it preserved
 # the timestamps of the source code, so it never re-compile the real lib. Need to remove them
 # here
-RUN for file in `find /build/target -name librust_module.so -o -name libtransformations*.rlib`; do rm $file; done
+RUN cargo fetch \
+    && cargo zigbuild --target ${RUST_BUILD_ARCH}-unknown-linux-gnu \
+    && find /build/target \( -name librust_module.so -o -name 'libtransformations*.rlib' \) -type f -delete
 
 # Stage 2: build envoy dynamic module
 FROM --platform=$BUILDPLATFORM ${CARGO_ZBUILD_IMAGE} AS rust_builder
