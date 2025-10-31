@@ -20,6 +20,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -862,7 +863,9 @@ func preRouteIndex(t test.Failer, inputs []any) *RoutesIndex {
 	tcpproutes := krttest.GetMockCollection[*gwv1a2.TCPRoute](mock)
 	tlsroutes := krttest.GetMockCollection[*gwv1a2.TLSRoute](mock)
 	grpcroutes := krttest.GetMockCollection[*gwv1.GRPCRoute](mock)
-	rtidx := NewRoutesIndex(krtutil.KrtOptions{}, httproutes, grpcroutes, tcpproutes, tlsroutes, policies, upstreams, refgrants, apisettings.Settings{})
+	gateways := krttest.GetMockCollection[*gwv1.Gateway](mock)
+	listenerSets := krttest.GetMockCollection[*gwxv1a1.XListenerSet](mock)
+	rtidx := NewRoutesIndex(krtutil.KrtOptions{}, httproutes, grpcroutes, tcpproutes, tlsroutes, gateways, listenerSets, policies, upstreams, refgrants, apisettings.Settings{})
 	services.WaitUntilSynced(nil)
 	policyCol.WaitUntilSynced(nil)
 	for !rtidx.HasSynced() || !refgrants.HasSynced() || !policyCol.HasSynced() {

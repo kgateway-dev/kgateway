@@ -991,15 +991,18 @@ func (c RouteWrapper) Equals(in RouteWrapper) bool {
 
 type RoutesIndex struct {
 	routes                               krt.Collection[RouteWrapper]
+	HttpRouteStatus         krt.StatusCollection[*gwv1.HTTPRoute, gwv1.HTTPRouteStatus]
 	httpRoutes                           krt.Collection[ir.HttpRouteIR]
 	httpBySelector                       krt.Index[HTTPRouteSelector, ir.HttpRouteIR]
 	byParentRef                          krt.Index[targetRefIndexKey, RouteWrapper]
 	weightedRoutePrecedence              bool
 	enableExperimentalGatewayAPIFeatures bool
 
-	policies  *PolicyIndex
-	refgrants *RefGrantIndex
-	backends  *BackendIndex
+	policies     *PolicyIndex
+	refgrants    *RefGrantIndex
+	backends     *BackendIndex
+	gateways     krt.Collection[*gwv1.Gateway]
+	listenerSets krt.Collection[*gwxv1a1.XListenerSet]
 
 	hasSyncedFuncs []func() bool
 }
@@ -1024,6 +1027,8 @@ func NewRoutesIndex(
 	grpcroutes krt.Collection[*gwv1.GRPCRoute],
 	tcproutes krt.Collection[*gwv1a2.TCPRoute],
 	tlsroutes krt.Collection[*gwv1a2.TLSRoute],
+	gateways krt.Collection[*gwv1.Gateway],
+	listenerSets krt.Collection[*gwxv1a1.XListenerSet],
 	policies *PolicyIndex,
 	backends *BackendIndex,
 	refgrants *RefGrantIndex,
@@ -1033,12 +1038,14 @@ func NewRoutesIndex(
 		policies:                             policies,
 		refgrants:                            refgrants,
 		backends:                             backends,
+		gateways:                gateways,
+		listenerSets:            listenerSets,
 		weightedRoutePrecedence:              globalSettings.WeightedRoutePrecedence,
 		enableExperimentalGatewayAPIFeatures: globalSettings.EnableExperimentalGatewayAPIFeatures,
 	}
-	h.hasSyncedFuncs = append(h.hasSyncedFuncs, httproutes.HasSynced, grpcroutes.HasSynced, tcproutes.HasSynced, tlsroutes.HasSynced)
+	h.hasSyncedFuncs = append(h.hasSyncedFuncs, httproutes.HasSynced, grpcroutes.HasSynced, tcproutes.HasSynced, tlsroutes.HasSynced, gateways.HasSynced, listenerSets.HasSynced)
 
-	h.httpRoutes = krt.NewCollection(httproutes, h.transformHttpRoute, krtopts.ToOptions("http-routes-with-policy")...)
+	h.HttpRouteStatus, h.httpRoutes = krt.NewStatusCollection(httproutes, h.transformHttpRoute, krtopts.ToOptions("http-routes-with-policy")...)
 	httpRouteCollection := krt.NewCollection(h.httpRoutes, func(kctx krt.HandlerContext, i ir.HttpRouteIR) *RouteWrapper {
 		return &RouteWrapper{Route: &i}
 	}, krtopts.ToOptions("routes-http-routes-with-policy")...)
@@ -1209,7 +1216,7 @@ func (h *RoutesIndex) transformTlsRoute(kctx krt.HandlerContext, i *gwv1a2.TLSRo
 	}
 }
 
-func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRoute) *ir.HttpRouteIR {
+func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRoute) (*gwv1.HTTPRouteStatus, *ir.HttpRouteIR) {
 	src := ir.ObjectSource{
 		Group:     gwv1.SchemeGroupVersion.Group,
 		Kind:      "HTTPRoute",
@@ -1228,7 +1235,32 @@ func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRo
 		}
 	}
 
-	return &ir.HttpRouteIR{
+	// Validate parentRefs
+	var invalidParents []gwv1.RouteParentStatus
+	for _, parentRef := range i.Spec.ParentRefs {
+		if err := h.validateParentRef(kctx, parentRef, i.Namespace); err != nil {
+			invalidParents = append(invalidParents, gwv1.RouteParentStatus{
+				ParentRef: parentRef,
+				Conditions: []metav1.Condition{
+					{
+						Type:               string(gwv1.RouteConditionAccepted),
+						Status:             metav1.ConditionFalse,
+						Reason:             string(gwv1.RouteReasonNoMatchingParent),
+						Message:            err.Error(),
+						LastTransitionTime: metav1.Now(),
+						ObservedGeneration: i.Generation,
+					},
+				},
+			})
+		}
+	}
+
+	var status *gwv1.HTTPRouteStatus
+	if len(invalidParents) > 0 {
+		status = &gwv1.HTTPRouteStatus{RouteStatus: gwv1.RouteStatus{Parents: invalidParents}}
+	}
+
+	return status, &ir.HttpRouteIR{
 		ObjectSource: src,
 		SourceObject: i,
 		ParentRefs:   i.Spec.ParentRefs,
@@ -1242,6 +1274,51 @@ func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRo
 		PrecedenceWeight:               precedenceWeight,
 		DelegationInheritParentMatcher: delegation.ShouldInheritParentMatcher(i.GetAnnotations()),
 	}
+	// TODO: other gateway process the route
+}
+
+// validateParentRef checks if the referenced parent exists
+func (h *RoutesIndex) validateParentRef(kctx krt.HandlerContext, parentRef gwv1.ParentReference, routeNamespace string) error {
+	// Default values according to Gateway API spec
+	group := gwv1.GroupName
+	if parentRef.Group != nil {
+		group = string(*parentRef.Group)
+	}
+	kind := wellknown.GatewayKind
+	if parentRef.Kind != nil {
+		kind = string(*parentRef.Kind)
+	}
+	namespace := routeNamespace
+	if parentRef.Namespace != nil {
+		namespace = string(*parentRef.Namespace)
+	}
+	name := string(parentRef.Name)
+	key := namespace + "/" + name
+
+	switch {
+	case group == gwv1.GroupName && kind == wellknown.GatewayKind:
+		// Validate Gateway exists
+		gw := ptr.Flatten(krt.FetchOne(kctx, h.gateways, krt.FilterKey(key)))
+		if gw == nil {
+			return fmt.Errorf("parent Gateway %s/%s not found", namespace, name)
+		}
+	case group == gwxv1a1.GroupName && kind == wellknown.XListenerSetKind:
+		// Validate XListenerSet exists
+		ls := ptr.Flatten(krt.FetchOne(kctx, h.listenerSets, krt.FilterKey(key)))
+		if ls == nil {
+			return fmt.Errorf("parent XListenerSet %s/%s not found", namespace, name)
+		}
+	case group == gwv1.GroupName && kind == wellknown.HTTPRouteKind:
+		// HTTPRoute delegation - validate parent HTTPRoute exists
+		parentRoute := krt.FetchOne(kctx, h.httpRoutes, krt.FilterKey(key))
+		if parentRoute == nil {
+			return fmt.Errorf("parent HTTPRoute %s/%s not found", namespace, name)
+		}
+	default:
+		return fmt.Errorf("unsupported parent kind: %s/%s", group, kind)
+	}
+
+	return nil
 }
 
 func (h *RoutesIndex) transformRules(

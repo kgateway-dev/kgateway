@@ -56,6 +56,7 @@ type ProxySyncer struct {
 	uniqueClients krt.Collection[ir.UniqlyConnectedClient]
 
 	statusReport            krt.Singleton[report]
+	routeStatusReport       krt.Singleton[report]
 	backendPolicyReport     krt.Singleton[report]
 	mostXdsSnapshots        krt.Collection[GatewayXdsResources]
 	perclientSnapCollection krt.Collection[XdsSnapWrapper]
@@ -264,7 +265,29 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	// here we will merge reports that are per-Proxy to a singleton Report used to persist to k8s on a timer
 	s.statusReport = krt.NewSingleton(func(kctx krt.HandlerContext) *report {
 		proxies := krt.Fetch(kctx, s.mostXdsSnapshots)
+
+		objStatus := krt.Fetch(kctx, s.commonCols.Routes.HttpRouteStatus)
+		m := reports.NewReportMap()
+		for _, status := range objStatus {
+			rp := reports.NewReporter(&m)
+			rrp := rp.Route(status.Obj)
+			for _, p := range status.Status.Parents {
+				pr := rrp.ParentRef(&p.ParentRef)
+				for _, c := range p.Conditions {
+					pr.SetCondition(reporter.RouteCondition{
+						Type:    gwv1.RouteConditionType(c.Type),
+						Status:  c.Status,
+						Reason:  gwv1.RouteConditionReason(c.Reason),
+						Message: c.Message,
+					})
+				}
+			}
+		}
+		proxies = append(proxies, GatewayXdsResources{reports: m})
+
 		merged := mergeProxyReports(proxies)
+
+		// Skip merging with proxies - test StatusCollection in isolation
 		return &report{merged}
 	})
 
