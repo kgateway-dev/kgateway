@@ -68,14 +68,14 @@ var (
 		},
 	}
 
-	routeRateLimitTrafficPolicy = &v1alpha1.TrafficPolicy{
+	routeRateLimitTrafficPolicy = &v1alpha1.AgentgatewayPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "route-rl-policy",
 			Namespace: "default",
 		},
 	}
 
-	gwRateLimitTrafficPolicy = &v1alpha1.TrafficPolicy{
+	gwRateLimitTrafficPolicy = &v1alpha1.AgentgatewayPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "gw-rl-policy",
 			Namespace: "default",
