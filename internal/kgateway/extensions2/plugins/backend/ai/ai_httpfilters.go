@@ -11,12 +11,12 @@ import (
 	envoy_upstream_codec "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/upstream_codec/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_upstreams_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	envoytransformation "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
 	upstream_wait "github.com/solo-io/envoy-gloo/go/config/filter/http/upstream_wait/v2"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	translatorutils "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/utils"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 )
@@ -26,20 +26,20 @@ const (
 	upstreamCodecFilterName = "envoy.filters.http.upstream_codec"
 )
 
-func AddUpstreamClusterHttpFilters(out *envoyclusterv3.Cluster) error {
+func buildUpstreamClusterHttpFilters() ([]*envoy_hcm.HttpFilter, error) {
 	transformationMsg, err := utils.MessageToAny(&envoytransformation.FilterTransformations{})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	upstreamWaitMsg, err := utils.MessageToAny(&upstream_wait.UpstreamWaitFilterConfig{})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	codecConfigAny, err := utils.MessageToAny(&envoy_upstream_codec.UpstreamCodec{})
 	if err != nil {
-		return fmt.Errorf("failed to create upstream codec config: %v", err)
+		return nil, fmt.Errorf("failed to create upstream codec config: %v", err)
 	}
 
 	// The order of the filters is important as AIPolicyTransformationFilterName must run before the AIBackendTransformationFilterName
@@ -74,7 +74,11 @@ func AddUpstreamClusterHttpFilters(out *envoyclusterv3.Cluster) error {
 		},
 	}
 
-	if err = translatorutils.MutateHttpOptions(out, func(opts *envoy_upstreams_v3.HttpProtocolOptions) {
+	return orderedFilters, nil
+}
+
+func AddUpstreamClusterHttpFilters(filters []*envoy_hcm.HttpFilter, out *envoyclusterv3.Cluster) error {
+	return translatorutils.MutateHttpOptions(out, func(opts *envoy_upstreams_v3.HttpProtocolOptions) {
 		ts := out.GetTransportSocket()
 		supportsALPN := false
 		if ts != nil {
@@ -101,12 +105,8 @@ func AddUpstreamClusterHttpFilters(out *envoyclusterv3.Cluster) error {
 				Seconds: 30,
 			},
 		}
-		opts.HttpFilters = append(opts.GetHttpFilters(), orderedFilters...)
-	}); err != nil {
-		return err
-	}
-
-	return nil
+		opts.HttpFilters = append(opts.GetHttpFilters(), filters...)
+	})
 }
 
 func AddExtprocHTTPFilter() ([]filters.StagedHttpFilter, error) {

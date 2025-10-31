@@ -244,7 +244,7 @@ func TestApplyAIBackend(t *testing.T) {
 			}
 			tt.pCtx = pCtx
 			aiIR := &IR{}
-			err := PreprocessAIBackend(context.Background(), tt.aiBackend, aiIR)
+			err := PreprocessAIBackend(context.Background(), tt.aiBackend, nil, nil, aiIR)
 			if tt.expectedError != "" && err == nil {
 				t.Errorf("expected error but got nil")
 			} else if tt.expectedError == "" && err != nil {

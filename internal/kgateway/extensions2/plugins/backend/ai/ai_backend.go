@@ -7,9 +7,12 @@ import (
 	"maps"
 	"os"
 
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
+	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoytransformation "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -28,6 +31,16 @@ type IR struct {
 	AIMultiSecret  map[string]*ir.Secret
 	Transformation *envoytransformation.RouteTransformations
 	Extproc        *envoy_ext_proc_v3.ExtProcPerRoute
+	// Pre-computed cluster configuration
+	ClusterConfig *AIClusterConfig
+}
+
+// AIClusterConfig holds pre-computed cluster configuration for AI backends.
+type AIClusterConfig struct {
+	ClusterDiscoveryType   *envoyclusterv3.Cluster_Type
+	TransportSocketMatches []*envoyclusterv3.Cluster_TransportSocketMatch
+	LoadAssignment         *envoyendpointv3.ClusterLoadAssignment
+	HttpFilters            []*envoy_hcm.HttpFilter
 }
 
 func (i *IR) Equals(otherAIIr *IR) bool {
@@ -55,7 +68,54 @@ func (i *IR) Equals(otherAIIr *IR) bool {
 		if !proto.Equal(i.Transformation, otherAIIr.Transformation) {
 			return false
 		}
+		if !i.ClusterConfig.Equals(otherAIIr.ClusterConfig) {
+			return false
+		}
 	}
+	return true
+}
+
+func (c *AIClusterConfig) Equals(other *AIClusterConfig) bool {
+	if c == nil && other == nil {
+		return true
+	}
+	if c == nil || other == nil {
+		return false
+	}
+
+	// Compare ClusterDiscoveryType
+	if (c.ClusterDiscoveryType == nil) != (other.ClusterDiscoveryType == nil) {
+		return false
+	}
+	if c.ClusterDiscoveryType != nil && c.ClusterDiscoveryType.Type != other.ClusterDiscoveryType.Type {
+		return false
+	}
+
+	// Compare TransportSocketMatches
+	if len(c.TransportSocketMatches) != len(other.TransportSocketMatches) {
+		return false
+	}
+	for i := range c.TransportSocketMatches {
+		if !proto.Equal(c.TransportSocketMatches[i], other.TransportSocketMatches[i]) {
+			return false
+		}
+	}
+
+	// Compare LoadAssignment
+	if !proto.Equal(c.LoadAssignment, other.LoadAssignment) {
+		return false
+	}
+
+	// Compare HttpFilters
+	if len(c.HttpFilters) != len(other.HttpFilters) {
+		return false
+	}
+	for i := range c.HttpFilters {
+		if !proto.Equal(c.HttpFilters[i], other.HttpFilters[i]) {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -93,13 +153,17 @@ func ApplyAIBackend(ir *IR, pCtx *ir.RouteBackendContext, out *envoyroutev3.Rout
 	return nil
 }
 
-func PreprocessAIBackend(ctx context.Context, aiBackend *v1alpha1.AIBackend, ir *IR) error {
+func PreprocessAIBackend(ctx context.Context, aiBackend *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecrets map[string]*ir.Secret, aiIr *IR) error {
+	if aiBackend == nil {
+		return nil
+	}
+
 	// Setup ext-proc route filter config, we will conditionally modify it based on certain route options.
 	// A heavily used part of this config is the `GrpcInitialMetadata`.
 	// This is used to add headers to the ext-proc request.
 	// These headers are used to configure the AI server on a per-request basis.
 	// This was the best available way to pass per-route configuration to the AI server.
-	extProcRouteSettings := ir.Extproc
+	extProcRouteSettings := aiIr.Extproc
 	if extProcRouteSettings == nil {
 		extProcRouteSettings = &envoy_ext_proc_v3.ExtProcPerRoute{
 			Override: &envoy_ext_proc_v3.ExtProcPerRoute_Overrides{
@@ -151,7 +215,7 @@ func PreprocessAIBackend(ctx context.Context, aiBackend *v1alpha1.AIBackend, ir 
 		Transformations: []*envoytransformation.RouteTransformations_RouteTransformation{routeTransformation},
 	}
 	// Store transformations in IR
-	ir.Transformation = transformations
+	aiIr.Transformation = transformations
 
 	extProcRouteSettings.GetOverrides().GrpcInitialMetadata = append(extProcRouteSettings.GetOverrides().GetGrpcInitialMetadata(),
 		&envoycorev3.HeaderValue{
@@ -180,7 +244,19 @@ func PreprocessAIBackend(ctx context.Context, aiBackend *v1alpha1.AIBackend, ir 
 	)
 
 	// Store extproc settings in IR
-	ir.Extproc = extProcRouteSettings
+	aiIr.Extproc = extProcRouteSettings
+
+	// Build cluster configuration
+	clusterConfig, err := buildAIClusterConfig(aiBackend, aiSecret, multiSecrets)
+	if err != nil {
+		return err
+	}
+	filter, err := buildUpstreamClusterHttpFilters()
+	if err != nil {
+		return err
+	}
+	clusterConfig.HttpFilters = filter
+	aiIr.ClusterConfig = clusterConfig
 
 	return nil
 }

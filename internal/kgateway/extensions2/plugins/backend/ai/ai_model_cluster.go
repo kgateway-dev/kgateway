@@ -10,6 +10,7 @@ import (
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	envoytransformation "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/structpb"
 	"k8s.io/utils/ptr"
@@ -38,39 +39,38 @@ func tlsMatch() *structpb.Struct {
 	}
 }
 
-func ProcessAIBackend(in *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecrets map[string]*ir.Secret, out *envoyclusterv3.Cluster) error {
-	if in == nil {
-		return nil
-	}
-
-	return buildModelCluster(in, aiSecret, multiSecrets, out)
-}
-
-// buildModelCluster builds a cluster for the given AI backend.
-// This function is used by the `ProcessBackend` function to build the cluster for the AI backend.
+// buildAIClusterConfig pre-computes the cluster configuration for an AI backend.
+// This function is used by the `PreprocessAIBackend` function to build the cluster configuration for the AI backend.
 // It is ALSO used by `ProcessRoute` to create the cluster in the event of backup models being used
 // and fallbacks being required.
-func buildModelCluster(aiUs *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecrets map[string]*ir.Secret, out *envoyclusterv3.Cluster) error {
+func buildAIClusterConfig(in *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecrets map[string]*ir.Secret) (*AIClusterConfig, error) {
+	if in == nil {
+		return nil, nil
+	}
+
 	// set the type to strict dns to support mutli pool backends
-	out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{
-		Type: envoyclusterv3.Cluster_STRICT_DNS,
+	config := &AIClusterConfig{
+		ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{
+			Type: envoyclusterv3.Cluster_STRICT_DNS,
+		},
 	}
 
 	// We are reliant on https://github.com/envoyproxy/envoy/pull/34154 to merge
 	// before we can do OutlierDetection on 429s here
 	// out.OutlierDetection = getOutlierDetectionConfig(aiUs)
 
+	// Build endpoints
 	var prioritized []*envoyendpointv3.LocalityLbEndpoints
 	var err error
-	if aiUs.LLM != nil {
-		prioritized, err = buildLLMEndpoint(aiUs, aiSecret)
+	if in.LLM != nil {
+		prioritized, err = buildLLMEndpoint(in, aiSecret)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	} else {
 		epByType := map[string]struct{}{}
-		prioritized = make([]*envoyendpointv3.LocalityLbEndpoints, 0, len(aiUs.PriorityGroups))
-		for idx, group := range aiUs.PriorityGroups {
+		prioritized = make([]*envoyendpointv3.LocalityLbEndpoints, 0, len(in.PriorityGroups))
+		for idx, group := range in.PriorityGroups {
 			eps := make([]*envoyendpointv3.LbEndpoint, 0, len(group.Providers))
 			for jdx, ep := range group.Providers {
 				var result *envoyendpointv3.LbEndpoint
@@ -116,7 +116,7 @@ func buildModelCluster(aiUs *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecre
 					slog.Error("bedrock on the AI backend are not supported yet, switch to agentgateway class")
 				}
 				if err != nil {
-					return err
+					return nil, err
 				}
 				eps = append(eps, result)
 			}
@@ -127,7 +127,7 @@ func buildModelCluster(aiUs *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecre
 			})
 		}
 		if len(epByType) > 1 {
-			return fmt.Errorf("multi backend pools must all be of the same type, got %v", epByType)
+			return nil, fmt.Errorf("multi backend pools must all be of the same type, got %v", epByType)
 		}
 	}
 
@@ -139,9 +139,9 @@ func buildModelCluster(aiUs *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecre
 	}
 	tlsCtxAny, err := utils.MessageToAny(tlsCtx)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	out.TransportSocketMatches = append(out.GetTransportSocketMatches(), []*envoyclusterv3.Cluster_TransportSocketMatch{
+	config.TransportSocketMatches = []*envoyclusterv3.Cluster_TransportSocketMatch{
 		{
 			Name: "tls",
 			TransportSocket: &envoycorev3.TransportSocket{
@@ -164,13 +164,28 @@ func buildModelCluster(aiUs *v1alpha1.AIBackend, aiSecret *ir.Secret, multiSecre
 			},
 			Match: &structpb.Struct{},
 		},
-	}...)
-	out.LoadAssignment = &envoyendpointv3.ClusterLoadAssignment{
-		ClusterName: out.GetName(),
-		Endpoints:   prioritized,
 	}
 
-	return nil
+	// Build load assignment. Cluster name will be set at translation time.
+	config.LoadAssignment = &envoyendpointv3.ClusterLoadAssignment{
+		Endpoints: prioritized,
+	}
+
+	return config, nil
+}
+
+// ProcessAI applies the pre-computed AI cluster config to the envoy cluster.
+func ProcessAI(config *AIClusterConfig, out *envoyclusterv3.Cluster) {
+	// Apply cluster discovery type
+	out.ClusterDiscoveryType = config.ClusterDiscoveryType
+
+	// Apply transport socket matches
+	out.TransportSocketMatches = config.TransportSocketMatches
+
+	if config.LoadAssignment != nil {
+		out.LoadAssignment = proto.Clone(config.LoadAssignment).(*envoyendpointv3.ClusterLoadAssignment)
+		out.LoadAssignment.ClusterName = out.GetName()
+	}
 }
 
 func buildLLMEndpoint(aiUs *v1alpha1.AIBackend, aiSecrets *ir.Secret) ([]*envoyendpointv3.LocalityLbEndpoints, error) {

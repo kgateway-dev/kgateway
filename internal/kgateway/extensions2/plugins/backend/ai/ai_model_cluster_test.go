@@ -1,6 +1,7 @@
 package ai
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -19,9 +20,15 @@ func TestProcessAIBackend_Empty(t *testing.T) {
 		Name: "test-cluster",
 	}
 
-	err := ProcessAIBackend(nil, nil, nil, cluster)
-
+	// With nil backend, nothing should be processed
+	aiIR := &IR{}
+	err := PreprocessAIBackend(context.Background(), nil, nil, nil, aiIR)
 	assert.NoError(t, err)
+
+	// ClusterConfig should be nil for empty backend
+	assert.Nil(t, aiIR.ClusterConfig)
+
+	// Cluster should remain unchanged
 	assert.Equal(t, "test-cluster", cluster.Name)
 	assert.Nil(t, cluster.ClusterDiscoveryType)
 }
@@ -47,9 +54,14 @@ func TestProcessAIBackend_OpenAI(t *testing.T) {
 	secrets := &ir.Secret{}
 	multiSecrets := map[string]*ir.Secret{}
 
-	err := ProcessAIBackend(aiBackend, secrets, multiSecrets, cluster)
-
+	// Build IR with cluster config
+	aiIR := &IR{}
+	err := PreprocessAIBackend(context.Background(), aiBackend, secrets, multiSecrets, aiIR)
 	require.NoError(t, err)
+	require.NotNil(t, aiIR.ClusterConfig)
+
+	// Apply config to cluster
+	ProcessAI(aiIR.ClusterConfig, cluster)
 
 	// Verify cluster type
 	assert.Equal(t, envoyclusterv3.Cluster_STRICT_DNS, cluster.GetType())
@@ -113,9 +125,14 @@ func TestProcessAIBackend_Anthropic(t *testing.T) {
 	secrets := &ir.Secret{}
 	multiSecrets := map[string]*ir.Secret{}
 
-	err := ProcessAIBackend(aiBackend, secrets, multiSecrets, cluster)
-
+	// Build IR with cluster config
+	aiIR := &IR{}
+	err := PreprocessAIBackend(context.Background(), aiBackend, secrets, multiSecrets, aiIR)
 	require.NoError(t, err)
+	require.NotNil(t, aiIR.ClusterConfig)
+
+	// Apply config to cluster
+	ProcessAI(aiIR.ClusterConfig, cluster)
 
 	// Verify endpoint
 	endpoints := cluster.LoadAssignment.Endpoints[0].LbEndpoints
@@ -161,9 +178,14 @@ func TestProcessAIBackend_AzureOpenAI(t *testing.T) {
 	secrets := &ir.Secret{}
 	multiSecrets := map[string]*ir.Secret{}
 
-	err := ProcessAIBackend(aiBackend, secrets, multiSecrets, cluster)
-
+	// Build IR with cluster config
+	aiIR := &IR{}
+	err := PreprocessAIBackend(context.Background(), aiBackend, secrets, multiSecrets, aiIR)
 	require.NoError(t, err)
+	require.NotNil(t, aiIR.ClusterConfig)
+
+	// Apply config to cluster
+	ProcessAI(aiIR.ClusterConfig, cluster)
 
 	// Verify endpoint
 	endpoints := cluster.LoadAssignment.Endpoints[0].LbEndpoints
@@ -209,9 +231,14 @@ func TestProcessAIBackend_Gemini(t *testing.T) {
 	secrets := &ir.Secret{}
 	multiSecrets := map[string]*ir.Secret{}
 
-	err := ProcessAIBackend(aiBackend, secrets, multiSecrets, cluster)
-
+	// Build IR with cluster config
+	aiIR := &IR{}
+	err := PreprocessAIBackend(context.Background(), aiBackend, secrets, multiSecrets, aiIR)
 	require.NoError(t, err)
+	require.NotNil(t, aiIR.ClusterConfig)
+
+	// Apply config to cluster
+	ProcessAI(aiIR.ClusterConfig, cluster)
 
 	// Verify endpoint
 	endpoints := cluster.LoadAssignment.Endpoints[0].LbEndpoints
@@ -260,9 +287,14 @@ func TestProcessAIBackend_VertexAI(t *testing.T) {
 	secrets := &ir.Secret{}
 	multiSecrets := map[string]*ir.Secret{}
 
-	err := ProcessAIBackend(aiBackend, secrets, multiSecrets, cluster)
-
+	// Build IR with cluster config
+	aiIR := &IR{}
+	err := PreprocessAIBackend(context.Background(), aiBackend, secrets, multiSecrets, aiIR)
 	require.NoError(t, err)
+	require.NotNil(t, aiIR.ClusterConfig)
+
+	// Apply config to cluster
+	ProcessAI(aiIR.ClusterConfig, cluster)
 
 	// Verify endpoint
 	endpoints := cluster.LoadAssignment.Endpoints[0].LbEndpoints
@@ -321,9 +353,14 @@ func TestProcessAIBackend_CustomURL(t *testing.T) {
 	secrets := &ir.Secret{}
 	multiSecrets := map[string]*ir.Secret{}
 
-	err := ProcessAIBackend(aiBackend, secrets, multiSecrets, cluster)
-
+	// Build IR with cluster config
+	aiIR := &IR{}
+	err := PreprocessAIBackend(context.Background(), aiBackend, secrets, multiSecrets, aiIR)
 	require.NoError(t, err)
+	require.NotNil(t, aiIR.ClusterConfig)
+
+	// Apply config to cluster
+	ProcessAI(aiIR.ClusterConfig, cluster)
 
 	// Verify endpoint with custom host
 	endpoints := cluster.LoadAssignment.Endpoints[0].LbEndpoints
@@ -389,9 +426,14 @@ func TestProcessAIBackend_MultiPool(t *testing.T) {
 	secrets := &ir.Secret{}
 	multiSecrets := map[string]*ir.Secret{}
 
-	err := ProcessAIBackend(aiBackend, secrets, multiSecrets, cluster)
-
+	// Build IR with cluster config
+	aiIR := &IR{}
+	err := PreprocessAIBackend(context.Background(), aiBackend, secrets, multiSecrets, aiIR)
 	require.NoError(t, err)
+	require.NotNil(t, aiIR.ClusterConfig)
+
+	// Apply config to cluster
+	ProcessAI(aiIR.ClusterConfig, cluster)
 
 	// Verify we have 2 locality endpoints (priorities)
 	require.Len(t, cluster.LoadAssignment.Endpoints, 2)

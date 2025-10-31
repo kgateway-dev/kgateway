@@ -44,9 +44,11 @@ const (
 
 // backendIr is the internal representation of a backend.
 type backendIr struct {
-	awsIr  *AwsIr
-	aiIr   *ai.IR
-	errors []error
+	awsIr    *AwsIr
+	aiIr     *ai.IR
+	staticIr *StaticIr
+	dfpIr    *DfpIr
+	errors   []error
 }
 
 func (u *backendIr) Equals(other any) bool {
@@ -60,6 +62,14 @@ func (u *backendIr) Equals(other any) bool {
 	}
 	// AWS
 	if !u.awsIr.Equals(otherBackend.awsIr) {
+		return false
+	}
+	// Static
+	if !u.staticIr.Equals(otherBackend.staticIr) {
+		return false
+	}
+	// DFP
+	if !u.dfpIr.Equals(otherBackend.dfpIr) {
 		return false
 	}
 	return true
@@ -154,6 +164,18 @@ func buildTranslateFunc(
 	return func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *backendIr {
 		var beIr backendIr
 		switch i.Spec.Type {
+		case v1alpha1.BackendTypeStatic:
+			staticIr, err := buildStaticIr(i.Spec.Static)
+			if err != nil {
+				beIr.errors = append(beIr.errors, err)
+			}
+			beIr.staticIr = staticIr
+		case v1alpha1.BackendTypeDynamicForwardProxy:
+			dfpIr, err := buildDfpIr(i.Spec.DynamicForwardProxy)
+			if err != nil {
+				beIr.errors = append(beIr.errors, err)
+			}
+			beIr.dfpIr = dfpIr
 		case v1alpha1.BackendTypeAWS:
 			region := getRegion(i.Spec.Aws)
 			invokeMode := getLambdaInvocationMode(i.Spec.Aws)
@@ -207,11 +229,11 @@ func buildTranslateFunc(
 			}
 		case v1alpha1.BackendTypeAI:
 			beIr.aiIr = &ai.IR{}
-			err := ai.PreprocessAIBackend(ctx, i.Spec.AI, beIr.aiIr)
-			if err != nil {
-				beIr.errors = append(beIr.errors, err)
-			}
 			ns := i.GetNamespace()
+			var aiSecret *ir.Secret
+			var aiMultiSecret map[string]*ir.Secret
+
+			// Fetch secrets first
 			if i.Spec.AI.LLM != nil {
 				secretRef := getAISecretRef(i.Spec.AI.LLM)
 				// if secretRef is used, set the secret on the backend ir
@@ -220,12 +242,11 @@ func buildTranslateFunc(
 					if err != nil {
 						beIr.errors = append(beIr.errors, err)
 					}
-					beIr.aiIr.AISecret = secret
+					aiSecret = secret
 				}
-				return &beIr
 			}
 			if len(i.Spec.AI.PriorityGroups) > 0 {
-				beIr.aiIr.AIMultiSecret = map[string]*ir.Secret{}
+				aiMultiSecret = map[string]*ir.Secret{}
 				for idx, group := range i.Spec.AI.PriorityGroups {
 					for jdx, provider := range group.Providers {
 						secretRef := getAISecretRef(&provider.LLMProvider)
@@ -237,9 +258,19 @@ func buildTranslateFunc(
 						if err != nil {
 							beIr.errors = append(beIr.errors, err)
 						}
-						beIr.aiIr.AIMultiSecret[ai.GetMultiPoolSecretKey(idx, jdx, secretRef.Name)] = secret
+						aiMultiSecret[ai.GetMultiPoolSecretKey(idx, jdx, secretRef.Name)] = secret
 					}
 				}
+			}
+
+			// Store secrets in IR
+			beIr.aiIr.AISecret = aiSecret
+			beIr.aiIr.AIMultiSecret = aiMultiSecret
+
+			// Preprocess AI backend (builds cluster config)
+			err := ai.PreprocessAIBackend(ctx, i.Spec.AI, aiSecret, aiMultiSecret, beIr.aiIr)
+			if err != nil {
+				beIr.errors = append(beIr.errors, err)
 			}
 		}
 		return &beIr
@@ -283,31 +314,21 @@ func processBackendForEnvoy(ctx context.Context, in ir.BackendObjectIR, out *env
 	spec := be.Spec
 	switch spec.Type {
 	case v1alpha1.BackendTypeStatic:
-		if err := processStaticBackendForEnvoy(spec.Static, out); err != nil {
-			logger.Error("failed to process static backend", "error", err)
-			beIr.errors = append(beIr.errors, err)
-		}
+		processStatic(beIr.staticIr, out)
 	case v1alpha1.BackendTypeAWS:
 		if err := processAws(beIr.awsIr, out); err != nil {
 			logger.Error("failed to process aws backend", "error", err)
 			beIr.errors = append(beIr.errors, err)
 		}
 	case v1alpha1.BackendTypeAI:
-		err := ai.ProcessAIBackend(spec.AI, beIr.aiIr.AISecret, beIr.aiIr.AIMultiSecret, out)
-		if err != nil {
-			logger.Error("failed to process ai backend", "error", err)
-			beIr.errors = append(beIr.errors, err)
-		}
-		err = ai.AddUpstreamClusterHttpFilters(out)
-		if err != nil {
+		ai.ProcessAI(beIr.aiIr.ClusterConfig, out)
+
+		if err := ai.AddUpstreamClusterHttpFilters(beIr.aiIr.ClusterConfig.HttpFilters, out); err != nil {
 			logger.Error("failed to add upstream cluster http filters", "error", err)
 			beIr.errors = append(beIr.errors, err)
 		}
 	case v1alpha1.BackendTypeDynamicForwardProxy:
-		if err := processDynamicForwardProxy(spec.DynamicForwardProxy, out); err != nil {
-			logger.Error("failed to process dynamic forward proxy backend", "error", err)
-			beIr.errors = append(beIr.errors, err)
-		}
+		processDynamicForwardProxy(beIr.dfpIr, out)
 	}
 	return nil
 }
@@ -375,6 +396,11 @@ func (p *backendPlugin) ApplyForBackend(pCtx *ir.RouteBackendContext, in ir.Http
 			p.aiGatewayEnabled = make(map[string]bool)
 		}
 		p.aiGatewayEnabled[pCtx.FilterChainName] = true
+	case v1alpha1.BackendTypeDynamicForwardProxy:
+		if p.needsDfpFilter == nil {
+			p.needsDfpFilter = make(map[string]bool)
+		}
+		p.needsDfpFilter[pCtx.FilterChainName] = true
 	default:
 		// If it's not an AI route we want to disable our ext-proc filter just in case.
 		// This will have no effect if we don't add the listener filter.
@@ -385,11 +411,6 @@ func (p *backendPlugin) ApplyForBackend(pCtx *ir.RouteBackendContext, in ir.Http
 			},
 		}
 		pCtx.TypedFilterConfig.AddTypedConfig(wellknown.AIExtProcFilterName, disabledExtprocSettings)
-	case v1alpha1.BackendTypeDynamicForwardProxy:
-		if p.needsDfpFilter == nil {
-			p.needsDfpFilter = make(map[string]bool)
-		}
-		p.needsDfpFilter[pCtx.FilterChainName] = true
 	}
 
 	return nil
