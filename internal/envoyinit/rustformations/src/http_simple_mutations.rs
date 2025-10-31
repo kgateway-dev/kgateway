@@ -1,7 +1,9 @@
 use envoy_proxy_dynamic_modules_rust_sdk::*;
 use lazy_static::lazy_static;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::collections::HashMap;
+use std::ops::Deref;
+use transformations::{LocalTransformationConfig, TransformationOps};
 
 #[cfg(test)]
 use mockall::*;
@@ -9,33 +11,36 @@ use mockall::*;
 lazy_static! {
     static ref EMPTY_MAP: HashMap<String, String> = HashMap::new();
 }
-#[derive(Serialize, Deserialize, Clone)]
-pub struct PerRouteConfig {
-    #[serde(default)]
-    request_headers_setter: Vec<(String, String)>,
-    #[serde(default)]
-    response_headers_setter: Vec<(String, String)>,
+#[derive(Deserialize, Clone)]
+pub struct FilterConfig {
+    transformations: LocalTransformationConfig,
 }
 
-impl PerRouteConfig {
-    pub fn new(config: &str) -> Option<Self> {
-        let per_route_config: PerRouteConfig = match serde_json::from_str(config) {
-            Ok(cfg) => cfg,
-            Err(err) => {
-                envoy_log_error!("Error parsing per route config: {config} {err}");
-                return None;
-            }
-        };
-        Some(per_route_config)
+struct EnvoyTransformationOps<'a> {
+    envoy_filter: &'a mut dyn EnvoyHttpFilter,
+}
+
+impl TransformationOps for EnvoyTransformationOps<'_> {
+    fn set_request_header(&mut self, key: &str, value: &[u8]) -> bool {
+        self.envoy_filter.set_request_header(key, value)
+    }
+    fn remove_request_header(&mut self, key: &str) -> bool {
+        self.envoy_filter.remove_request_header(key)
+    }
+    fn set_response_header(&mut self, key: &str, value: &[u8]) -> bool {
+        self.envoy_filter.set_response_header(key, value)
+    }
+    fn remove_response_header(&mut self, key: &str) -> bool {
+        self.envoy_filter.remove_response_header(key)
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
-pub struct FilterConfig {
-    #[serde(default)]
-    request_headers_setter: Vec<(String, String)>,
-    #[serde(default)]
-    response_headers_setter: Vec<(String, String)>,
+impl Deref for FilterConfig {
+    type Target = LocalTransformationConfig;
+
+    fn deref(&self) -> &Self::Target {
+        &self.transformations
+    }
 }
 
 impl FilterConfig {
@@ -44,18 +49,22 @@ impl FilterConfig {
     /// filter_config is the filter config from the Envoy config here:
     /// https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/dynamic_modules/v3/dynamic_modules.proto#envoy-v3-api-msg-extensions-dynamic-modules-v3-dynamicmoduleconfig
     pub fn new(filter_config: &str) -> Option<Self> {
-        let filter_config: FilterConfig = match serde_json::from_str(filter_config) {
-            // TODO(nfuden): Handle optional configuration entries more cleanly. Currently all values are required to be present
+        let config: LocalTransformationConfig = match serde_json::from_str(filter_config) {
             Ok(cfg) => cfg,
             Err(err) => {
-                // TODO(nfuden): Dont panic if there is incorrect configuration
+                // Dont panic if there is incorrect configuration
                 envoy_log_error!("Error parsing filter config: {filter_config} {err}");
                 return None;
             }
         };
-        Some(filter_config)
+        Some(FilterConfig {
+            transformations: config,
+        })
     }
 }
+
+// Since PerRouteConfig is the same as the FilterConfig, for now just just a type alias
+pub type PerRouteConfig = FilterConfig;
 
 impl<EHF: EnvoyHttpFilter> HttpFilterConfig<EHF> for FilterConfig {
     /// This is called for each new HTTP filter.
@@ -140,35 +149,39 @@ impl Filter {
     }
 
     fn transform_request_headers<EHF: EnvoyHttpFilter>(&self, envoy_filter: &mut EHF) {
-        let setters = match self.get_per_route_config() {
-            Some(config) => &config.request_headers_setter,
-            None => &self.filter_config.request_headers_setter,
+        let set = match self.get_per_route_config() {
+            Some(config) => &config.request.as_ref().map(|r| &r.set),
+            None => &self.filter_config.request.as_ref().map(|r| &r.set),
         };
 
-        transformations::jinja::transform_request_headers(
-            setters,
-            &self.env,
-            self.get_request_headers_map(),
-            |key, value| envoy_filter.set_request_header(key, value),
-        );
+        if let Some(setters) = set {
+            transformations::jinja::transform_request_headers(
+                setters,
+                &self.env,
+                self.get_request_headers_map(),
+                EnvoyTransformationOps { envoy_filter },
+            );
+        }
     }
 
     fn transform_response_headers<EHF: EnvoyHttpFilter>(&self, envoy_filter: &mut EHF) {
-        let setters = match self.get_per_route_config() {
-            Some(config) => &config.response_headers_setter,
-            None => &self.filter_config.response_headers_setter,
+        let set = match self.get_per_route_config() {
+            Some(config) => &config.response.as_ref().map(|r| &r.set),
+            None => &self.filter_config.response.as_ref().map(|r| &r.set),
         };
 
-        // TODO(nfuden): find someone who knows rust to see if we really need this Hash map for serialization
-        let response_headers_map = self.create_headers_map(envoy_filter.get_response_headers());
+        if let Some(setters) = set {
+            // TODO(nfuden): find someone who knows rust to see if we really need this Hash map for serialization
+            let response_headers_map = self.create_headers_map(envoy_filter.get_response_headers());
 
-        transformations::jinja::transform_response_headers(
-            setters,
-            &self.env,
-            self.get_request_headers_map(),
-            &response_headers_map,
-            |key, value| envoy_filter.set_response_header(key, value),
-        );
+            transformations::jinja::transform_response_headers(
+                setters,
+                &self.env,
+                self.get_request_headers_map(),
+                &response_headers_map,
+                EnvoyTransformationOps { envoy_filter },
+            );
+        }
     }
 }
 
@@ -241,29 +254,28 @@ mod tests {
         let mut envoy_filter = envoy_proxy_dynamic_modules_rust_sdk::MockEnvoyHttpFilter::default();
 
         // construct the filter config
-        // most upstream tests start with the filter itself but we are tryign to add heavier logic
-        // to the config factory strat rather than running it on header calls
-        let mut filter_conf = FilterConfig {
-            request_headers_setter: vec![
-                (
-                    "X-substring".to_string(),
-                    "{{substring(\"ENVOYPROXY something\", 5, 10) }}".to_string(),
-                ),
-                (
-                    "X-substring-no-3rd".to_string(),
-                    "{{substring(\"ENVOYPROXY something\", 5) }}".to_string(),
-                ),
-                (
-                    "X-donor-header-contents".to_string(),
-                    "{{ header(\"x-donor\") }}".to_string(),
-                ),
-                (
-                    "X-donor-header-substringed".to_string(),
-                    "{{ substring( header(\"x-donor\"), 0, 7)}}".to_string(),
-                ),
-            ],
-            response_headers_setter: vec![("X-Bar".to_string(), "foo".to_string())],
-        };
+        // most upstream tests start with the filter itself but we are trying to add heavier logic
+        // to the config factory start rather than running it on header calls
+        let json_str = r#"
+        {
+          "request": {
+            "set": [
+              { "name": "X-substring", "value": "{{substring(\"ENVOYPROXY something\", 5, 10) }}" },
+              { "name": "X-substring-no-3rd", "value": "{{substring(\"ENVOYPROXY something\", 5) }}" },
+              { "name": "X-donor-header-contents", "value": "{{ header(\"x-donor\") }}" },
+              { "name": "X-donor-header-substringed", "value": "{{ substring( header(\"x-donor\"), 0, 7)}}" }
+            ]
+          },
+          "response": {
+            "set": [
+              { "name": "X-Bar", "value": "foo" }
+            ]
+          },
+          "foo": "This is a fake field to make sure the parser will ignore an new fields from the control plane for compatibility"
+        }
+        "#;
+        let mut filter_conf =
+            FilterConfig::new(json_str).expect("Failed to parse filter config json: {json_str}");
         let mut filter = filter_conf.new_http_filter(&mut envoy_filter);
 
         envoy_filter
@@ -356,13 +368,22 @@ mod tests {
         // construct the filter config
         // most upstream tests start with the filter itself but we are trying to add heavier logic
         // to the config factory start rather than running it on header calls
-        let mut filter_conf = FilterConfig {
-            request_headers_setter: vec![(
-                "X-if-truth".to_string(),
-                "{%- if true -%}supersuper{% endif %}".to_string(),
-            )],
-            response_headers_setter: vec![("X-Bar".to_string(), "foo".to_string())],
-        };
+        let json_str = r#"
+        {
+          "request": {
+            "set": [
+              { "name": "X-if-truth", "value": "{%- if true -%}supersuper{% endif %}" }
+            ]
+          },
+          "response": {
+            "set": [
+                { "name": "X-Bar", "value": "foo" }
+            ]
+          }
+        }
+        "#;
+        let mut filter_conf =
+            FilterConfig::new(json_str).expect("Failed to parse filter config json: {json_str}");
         let mut filter = filter_conf.new_http_filter(&mut envoy_filter);
 
         envoy_filter

@@ -1,3 +1,4 @@
+use crate::TransformationOps;
 use minijinja::value::Rest;
 use minijinja::{context, Environment, State};
 use serde::Deserialize;
@@ -87,15 +88,17 @@ pub fn new_jinja_env() -> Environment<'static> {
     env
 }
 
-pub fn transform_request_headers<F>(
+pub fn transform_request_headers<T: TransformationOps>(
     setters: &Vec<(String, String)>,
     env: &Environment<'static>,
     request_headers_map: &HashMap<String, String>,
-    mut set_request_header: F,
-) where
-    F: FnMut(&str, &[u8]) -> bool,
-{
+    mut ops: T,
+) {
     for (key, value) in setters {
+        if value.is_empty() {
+            ops.remove_request_header(key);
+            continue;
+        }
         let tmpl = env.template_from_str(value).unwrap();
         let rendered = tmpl.render(
             context!(headers => request_headers_map, request_headers => request_headers_map),
@@ -106,20 +109,22 @@ pub fn transform_request_headers<F>(
         } else {
             eprintln!("Error rendering template: {}", rendered.err().unwrap());
         }
-        set_request_header(key, rendered_str.as_bytes());
+        ops.set_request_header(key, rendered_str.as_bytes());
     }
 }
 
-pub fn transform_response_headers<F>(
+pub fn transform_response_headers<T: TransformationOps>(
     setters: &Vec<(String, String)>,
     env: &Environment<'static>,
     request_headers_map: &HashMap<String, String>,
     response_headers_map: &HashMap<String, String>,
-    mut set_response_header: F,
-) where
-    F: FnMut(&str, &[u8]) -> bool,
-{
+    mut ops: T,
+) {
     for (key, value) in setters {
+        if value.is_empty() {
+            ops.remove_response_header(key);
+            continue;
+        }
         let tmpl = env.template_from_str(value).unwrap();
         let rendered = tmpl.render(
             context!(headers => response_headers_map, request_headers => request_headers_map),
@@ -130,6 +135,6 @@ pub fn transform_response_headers<F>(
         } else {
             eprintln!("Error rendering template: {}", rendered.err().unwrap());
         }
-        set_response_header(key, rendered_str.as_bytes());
+        ops.set_response_header(key, rendered_str.as_bytes());
     }
 }
