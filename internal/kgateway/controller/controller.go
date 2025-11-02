@@ -55,8 +55,6 @@ type GatewayConfig struct {
 	// AgwControllerName is the name of the agentgateway controller. Any GatewayClass objects
 	// managed by this controller must have this name as their ControllerName.
 	AgwControllerName string
-	// AutoProvision enables auto-provisioning of GatewayClasses.
-	AutoProvision bool
 	// ControlPlane sets the default control plane information the deployer will use.
 	ControlPlane deployer.ControlPlaneInfo
 	// IstioAutoMtlsEnabled enables istio auto mtls mode for the controller,

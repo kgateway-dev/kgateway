@@ -25,13 +25,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
-const (
-	GatewayAutoDeployAnnotationKey = "gateway.kgateway.dev/auto-deploy"
-)
-
 type gatewayReconciler struct {
-	cli           client.Client
-	autoProvision bool
+	cli client.Client
 
 	controllerName    string
 	agwControllerName string
@@ -50,7 +45,6 @@ func NewGatewayReconciler(
 		scheme:            cfg.Mgr.GetScheme(),
 		controllerName:    cfg.ControllerName,
 		agwControllerName: cfg.AgwControllerName,
-		autoProvision:     cfg.AutoProvision,
 		deployer:          deployer,
 	}
 }
@@ -71,11 +65,6 @@ func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 	if err := r.cli.Get(ctx, client.ObjectKey{Name: ns}, &namespace); err != nil {
 		log.Error(err, "unable to get namespace")
 		return ctrl.Result{}, err
-	}
-	// check for the annotation:
-	if !r.autoProvision && namespace.Annotations[GatewayAutoDeployAnnotationKey] != "true" {
-		log.Info("namespace is not enabled for auto deploy.")
-		return ctrl.Result{}, nil
 	}
 
 	var gw api.Gateway
