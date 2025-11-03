@@ -40,16 +40,17 @@ var _ e2e.NewSuiteFunc = NewTestingSuite
 
 var (
 	// manifests
-	simpleServiceManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "service.yaml")
-	gatewayManifest                  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway.yaml")
-	transformForHeadersManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-headers.yaml")
-	transformForBodyJsonManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-body-json.yaml")
-	transformForBodyAsStringManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-body-as-string.yaml")
-	gatewayAttachedTransformManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway-attached-transform.yaml")
-	transformForMatchPathManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-path.yaml")
-	transformForMatchHeaderManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-header.yaml")
-	transformForMatchQueryManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-query.yaml")
-	transformForMatchMethodManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-method.yaml")
+	simpleServiceManifest               = filepath.Join(fsutils.MustGetThisDir(), "testdata", "service.yaml")
+	gatewayManifest                     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway.yaml")
+	transformForCustomFunctionsManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-custom-functions.yaml")
+	transformForHeadersManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-headers.yaml")
+	transformForBodyJsonManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-body-json.yaml")
+	transformForBodyAsStringManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-body-as-string.yaml")
+	gatewayAttachedTransformManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway-attached-transform.yaml")
+	transformForMatchPathManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-path.yaml")
+	transformForMatchHeaderManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-header.yaml")
+	transformForMatchQueryManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-query.yaml")
+	transformForMatchMethodManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "transform-for-match-method.yaml")
 
 	proxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gw",
@@ -62,6 +63,7 @@ var (
 			defaults.CurlPodManifest,
 			simpleServiceManifest,
 			gatewayManifest,
+			transformForCustomFunctionsManifest,
 			transformForHeadersManifest,
 			transformForBodyJsonManifest,
 			transformForBodyAsStringManifest,
@@ -140,6 +142,13 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 					Headers: map[string]any{
 						"x-foo-response":        "notsuper",
 						"x-foo-response-status": "200",
+						// These are commented out so the testcase will pass on both classic and rustformation
+						// and left here for documentation purpose
+						// There should be a space at the beginning and end but
+						// rust minijinja template rendering seems to right trim the space at the end
+						// "x-space-test": " foobar",
+						// while C++ inja leave the space untouched.
+						// "x-space-test": " foobar ",
 					},
 					NotHeaders: []string{
 						"response-gateway",
@@ -149,6 +158,9 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 					Headers: map[string]any{
 						"x-foo-bar":  "foolen_5",
 						"x-foo-bar2": "foolen_5",
+						// There should be a space at the beginning and end but
+						// there might be a side effect from the echo server where the header values are trimmed
+						"x-space-test": "foobar",
 					},
 					NotHeaders: []string{
 						// looks like the way we set up transformation targeting gateway, we are
@@ -157,6 +169,34 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 						// transformation (eg in vhost or prefix match), the gateway attached transformation
 						// will not apply. Make sure it's not there.
 						"request-gateway",
+					},
+				},
+			},
+			{
+				name:      "remove headers",
+				routeName: "headers",
+				opts: []curl.Option{
+					curl.WithBody("hello"),
+					curl.WithHeader("x-remove-me", "test"),
+					curl.WithHeader("x-dont-remove-me", "in request"),
+					// This instruct the echo server to set the response headers
+					curl.WithHeader("X-Echo-Set-Header", "x-remove-me:test,x-dont-remove-me:in response"),
+				},
+				resp: &testmatchers.HttpResponse{
+					StatusCode: http.StatusOK,
+					Headers: map[string]interface{}{
+						"x-dont-remove-me": "in response",
+					},
+					NotHeaders: []string{
+						"x-remove-me",
+					},
+				},
+				req: &testmatchers.HttpRequest{
+					Headers: map[string]interface{}{
+						"x-dont-remove-me": "in request",
+					},
+					NotHeaders: []string{
+						"x-remove-me",
 					},
 				},
 			},
@@ -399,6 +439,54 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 						"x-header-request",
 						"x-foo-request",
 						"x-query-request",
+					},
+				},
+			},
+			{
+				name:      "custom functions",
+				routeName: "custom-functions",
+				opts: []curl.Option{
+					curl.WithBody(`{"foo":"\"bar\""}`),
+				},
+				resp: &testmatchers.HttpResponse{
+					StatusCode: http.StatusOK,
+					Headers: map[string]interface{}{
+						"x-base64-encode":                   "YmFzZTY0IGVuY29kZSBpbiByZXNwb25zZSBoZWFkZXI=",
+						"x-base64-decode":                   "base64 decode in response header",
+						"x-base64-decode-invalid-non-empty": "foobar",
+						"x-substring":                       "response",
+						"x-substring2":                      "resp",
+						// when the len is invalid, we default to the end of the string
+						"x-substring-invalid2": "response",
+						"x-env":                gomega.MatchRegexp(`default/gw-[a-f0-9]*-[a-z0-9]*`),
+						"x-replace-random":     gomega.MatchRegexp(`.+ be or not .+ be`),
+					},
+					NotHeaders: []string{
+						// When decode fail, we return an empty string which in turn becomes a "remove" header ops
+						"x-base64-decode-invalid",
+						// when start is invalid, we return an empty string which in turn becomes a "remove" header ops
+						"x-substring-invalid",
+						"x-env-not-set",
+					},
+				},
+				req: &testmatchers.HttpRequest{
+					Headers: map[string]interface{}{
+						"x-base64-encode":                   "YmFzZTY0IGVuY29kZSBpbiByZXF1ZXN0IGhlYWRlcg==",
+						"x-base64-decode":                   "base64 decode in request header",
+						"x-base64-decode-invalid-non-empty": "foobar",
+						"x-substring":                       "request",
+						"x-substring2":                      "req",
+						// when the len is invalid, we default to the end of the string
+						"x-substring-invalid2": "request",
+						"x-env":                gomega.MatchRegexp(`default/gw-[a-f0-9]*-[a-z0-9]*`),
+						"x-replace-random":     gomega.MatchRegexp(`.+ be or not .+ be`),
+					},
+					NotHeaders: []string{
+						// When decode fail, we return an empty string which in turn becomes a "remove" header ops
+						"x-base64-decode-invalid",
+						// when start is invalid, we return an empty string which in turn becomes a "remove" header ops
+						"x-substring-invalid",
+						"x-env-not-set",
 					},
 				},
 			},
