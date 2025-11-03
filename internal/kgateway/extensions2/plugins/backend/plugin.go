@@ -241,6 +241,7 @@ func buildTranslateFunc(
 					secret, err := pluginutils.GetSecretIr(secrets, krtctx, secretRef.Name, ns)
 					if err != nil {
 						beIr.errors = append(beIr.errors, err)
+						break
 					}
 					aiSecret = secret
 				}
@@ -257,6 +258,7 @@ func buildTranslateFunc(
 						secret, err := pluginutils.GetSecretIr(secrets, krtctx, secretRef.Name, ns)
 						if err != nil {
 							beIr.errors = append(beIr.errors, err)
+							break
 						}
 						aiMultiSecret[ai.GetMultiPoolSecretKey(idx, jdx, secretRef.Name)] = secret
 					}
