@@ -445,6 +445,9 @@ func BuildAgwTrafficPolicyFilters(
 	var terminalFilterType string
 
 	var policyError *reporter.RouteCondition
+	// Collect multiples of same-type filters to merge
+	var mergedReqHdr *api.HeaderModifier
+	var mergedRespHdr *api.HeaderModifier
 	for _, filter := range inputFilters {
 		switch filter.Type {
 		case gwv1.HTTPRouteFilterRequestHeaderModifier:
@@ -452,13 +455,13 @@ func BuildAgwTrafficPolicyFilters(
 			if h == nil {
 				continue
 			}
-			policies = append(policies, &api.TrafficPolicySpec{Kind: &api.TrafficPolicySpec_RequestHeaderModifier{RequestHeaderModifier: h}})
+			mergedReqHdr = mergeHeaderModifiers(mergedReqHdr, h)
 		case gwv1.HTTPRouteFilterResponseHeaderModifier:
 			h := CreateAgwResponseHeadersFilter(filter.ResponseHeaderModifier)
 			if h == nil {
 				continue
 			}
-			policies = append(policies, &api.TrafficPolicySpec{Kind: &api.TrafficPolicySpec_ResponseHeaderModifier{ResponseHeaderModifier: h}})
+			mergedRespHdr = mergeHeaderModifiers(mergedRespHdr, h)
 		case gwv1.HTTPRouteFilterRequestRedirect:
 			if hasTerminalFilter {
 				policyError = &reporter.RouteCondition{
@@ -530,6 +533,13 @@ func BuildAgwTrafficPolicyFilters(
 			}
 		}
 	}
+	// Append merged header modifiers at the end to avoid duplicates
+	if mergedReqHdr != nil {
+		policies = append(policies, &api.TrafficPolicySpec{Kind: &api.TrafficPolicySpec_RequestHeaderModifier{RequestHeaderModifier: mergedReqHdr}})
+	}
+	if mergedRespHdr != nil {
+		policies = append(policies, &api.TrafficPolicySpec{Kind: &api.TrafficPolicySpec_ResponseHeaderModifier{ResponseHeaderModifier: mergedRespHdr}})
+	}
 	return policies, policyError
 }
 
@@ -544,6 +554,9 @@ func BuildAgwBackendPolicyFilters(
 	var terminalFilterType string
 
 	var policyError *reporter.RouteCondition
+	// Collect multiples of same-type filters to merge
+	var mergedReqHdr *api.HeaderModifier
+	var mergedRespHdr *api.HeaderModifier
 	for _, filter := range inputFilters {
 		switch filter.Type {
 		case gwv1.HTTPRouteFilterRequestHeaderModifier:
@@ -551,13 +564,13 @@ func BuildAgwBackendPolicyFilters(
 			if h == nil {
 				continue
 			}
-			policies = append(policies, &api.BackendPolicySpec{Kind: &api.BackendPolicySpec_RequestHeaderModifier{RequestHeaderModifier: h}})
+			mergedReqHdr = mergeHeaderModifiers(mergedReqHdr, h)
 		case gwv1.HTTPRouteFilterResponseHeaderModifier:
 			h := CreateAgwResponseHeadersFilter(filter.ResponseHeaderModifier)
 			if h == nil {
 				continue
 			}
-			policies = append(policies, &api.BackendPolicySpec{Kind: &api.BackendPolicySpec_ResponseHeaderModifier{ResponseHeaderModifier: h}})
+			mergedRespHdr = mergeHeaderModifiers(mergedRespHdr, h)
 		case gwv1.HTTPRouteFilterRequestRedirect:
 			if hasTerminalFilter {
 				policyError = &reporter.RouteCondition{
@@ -593,7 +606,46 @@ func BuildAgwBackendPolicyFilters(
 			}
 		}
 	}
+	// Append merged header modifiers at the end to avoid duplicates
+	if mergedReqHdr != nil {
+		policies = append(policies, &api.BackendPolicySpec{Kind: &api.BackendPolicySpec_RequestHeaderModifier{RequestHeaderModifier: mergedReqHdr}})
+	}
+	if mergedRespHdr != nil {
+		policies = append(policies, &api.BackendPolicySpec{Kind: &api.BackendPolicySpec_ResponseHeaderModifier{ResponseHeaderModifier: mergedRespHdr}})
+	}
 	return policies, policyError
+}
+
+// mergeHeaderModifiers merges two api.HeaderModifier instances by concatenating their Add/Set/Remove lists.
+// Later entries are applied after earlier ones by preserving order in the resulting slices.
+func mergeHeaderModifiers(dst, src *api.HeaderModifier) *api.HeaderModifier {
+	if src == nil {
+		return dst
+	}
+	if dst == nil {
+		// Create a copy of src to avoid mutating input
+		out := &api.HeaderModifier{}
+		if len(src.Add) > 0 {
+			out.Add = append([]*api.Header{}, src.Add...)
+		}
+		if len(src.Set) > 0 {
+			out.Set = append([]*api.Header{}, src.Set...)
+		}
+		if len(src.Remove) > 0 {
+			out.Remove = append([]string{}, src.Remove...)
+		}
+		return out
+	}
+	if len(src.Add) > 0 {
+		dst.Add = append(dst.Add, src.Add...)
+	}
+	if len(src.Set) > 0 {
+		dst.Set = append(dst.Set, src.Set...)
+	}
+	if len(src.Remove) > 0 {
+		dst.Remove = append(dst.Remove, src.Remove...)
+	}
+	return dst
 }
 
 func createAgwCorsFilter(cors *gwv1.HTTPCORSFilter) *api.TrafficPolicySpec {
