@@ -280,7 +280,7 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings Liste
 	// Add the final conditions on the Gateway
 	// Set this here in case there are no valid listeners so it won't need to be repeated later on
 	noAllowedListeners := gw.Obj.Spec.AllowedListeners == nil
-	if settings.EnableExperimentalFeatures && noAllowedListeners {
+	if settings.EnableExperimentalGatewayAPIFeatures && noAllowedListeners {
 		reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
 			Type:   GatewayConditionAttachedListenerSets,
 			Status: metav1.ConditionUnknown,
@@ -308,7 +308,7 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings Liste
 		return ok
 	})
 
-	if settings.EnableExperimentalFeatures {
+	if settings.EnableExperimentalGatewayAPIFeatures {
 		if listenerSetListenerExists {
 			reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
 				Type:   GatewayConditionAttachedListenerSets,

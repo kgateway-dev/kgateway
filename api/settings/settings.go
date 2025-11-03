@@ -189,7 +189,7 @@ type Settings struct {
 	EnableWaypoint bool `split_words:"true" default:"false"`
 
 	// EnableWaypoint enables kgateway to support experimental features and APIs
-	EnableExperimentalFeatures bool `split_words:"true" default:"false"`
+	EnableExperimentalGatewayAPIFeatures bool `split_words:"true" default:"false"`
 }
 
 // BuildSettings returns a zero-valued Settings obj if error is encountered when parsing env

@@ -26,10 +26,10 @@ func TestBasic(t *testing.T) {
 		defer cancel()
 		dir := fsutils.MustGetThisDir()
 
-		// Prepend setting EnableExperimentalFeatures to true so it can be overwritten by settingOpts
+		// Prepend setting EnableExperimentalGatewayAPIFeatures to true so it can be overwritten by settingOpts
 		settingOpts = append([]translatortest.SettingsOpts{
 			func(s *apisettings.Settings) {
-				s.EnableExperimentalFeatures = true
+				s.EnableExperimentalGatewayAPIFeatures = true
 			}}, settingOpts...)
 		inputFiles := []string{filepath.Join(dir, "testutils/inputs/", in.inputFile)}
 		expectedProxyFile := filepath.Join(dir, "testutils/outputs/", in.outputFile)
@@ -1138,7 +1138,7 @@ func TestBasic(t *testing.T) {
 				Name:      "example-gateway",
 			},
 		}, func(s *apisettings.Settings) {
-			s.EnableExperimentalFeatures = false
+			s.EnableExperimentalGatewayAPIFeatures = false
 		})
 	})
 
@@ -1589,7 +1589,7 @@ func TestValidation(t *testing.T) {
 
 		settingOpts := func(s *apisettings.Settings) {
 			s.ValidationMode = mode
-			s.EnableExperimentalFeatures = true
+			s.EnableExperimentalGatewayAPIFeatures = true
 		}
 		translatortest.TestTranslation(t, ctx, []string{inputFile}, outputFile, gwNN, settingOpts)
 	}
@@ -1625,7 +1625,7 @@ func TestRouteDelegation(t *testing.T) {
 			Name:      "example-gateway",
 		}
 		settingOpt := func(s *apisettings.Settings) {
-			s.EnableExperimentalFeatures = true
+			s.EnableExperimentalGatewayAPIFeatures = true
 		}
 		translatortest.TestTranslation(t, ctx, inputFiles, outputFile, gwNN, settingOpt)
 	}
@@ -1763,7 +1763,7 @@ func TestDiscoveryNamespaceSelector(t *testing.T) {
 		settingOpts := []translatortest.SettingsOpts{
 			func(s *apisettings.Settings) {
 				s.DiscoveryNamespaceSelectors = cfgJSON
-				s.EnableExperimentalFeatures = true
+				s.EnableExperimentalGatewayAPIFeatures = true
 			},
 		}
 

@@ -1036,7 +1036,7 @@ func NewRoutesIndex(
 		refgrants:                  refgrants,
 		backends:                   backends,
 		weightedRoutePrecedence:    globalSettings.WeightedRoutePrecedence,
-		enableExperimentalFeatures: globalSettings.EnableExperimentalFeatures,
+		enableExperimentalFeatures: globalSettings.EnableExperimentalGatewayAPIFeatures,
 	}
 	h.hasSyncedFuncs = append(h.hasSyncedFuncs, httproutes.HasSynced, grpcroutes.HasSynced, tcproutes.HasSynced, tlsroutes.HasSynced)
 

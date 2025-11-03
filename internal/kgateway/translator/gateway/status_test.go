@@ -21,7 +21,7 @@ func TestStatuses(t *testing.T) {
 	testFn := func(t *testing.T, inputFile string, wantPolicyErrors map[reporter.PolicyKey]*gwv1.PolicyStatus) {
 		dir := fsutils.MustGetThisDir()
 		settingOpt := func(s *apisettings.Settings) {
-			s.EnableExperimentalFeatures = true
+			s.EnableExperimentalGatewayAPIFeatures = true
 		}
 		translatortest.TestTranslation(
 			t,

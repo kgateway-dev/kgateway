@@ -61,7 +61,7 @@ func TestWaypointTranslator(t *testing.T) {
 				return []pluginsdk.Plugin{waypoint.NewPlugin(ctx, commoncol, wellknown.DefaultWaypointClassName)}
 			}
 			settingOpt := func(s *apisettings.Settings) {
-				s.EnableExperimentalFeatures = true
+				s.EnableExperimentalGatewayAPIFeatures = true
 			}
 			translatortest.TestTranslationWithExtraPlugins(
 				t,

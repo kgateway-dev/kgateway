@@ -57,7 +57,7 @@ func lsToIR(ls *gwxv1a1.XListenerSet) ir.ListenerSet {
 }
 
 var settings = ListenerTranslatorConfig{
-	EnableExperimentalFeatures: true,
+	EnableExperimentalGatewayAPIFeatures: true,
 }
 
 func TestValidate(t *testing.T) {

@@ -179,7 +179,7 @@ func TestWithStandardSettings(t *testing.T) {
 
 func TestWithExperimentalFeaturesSettings(t *testing.T) {
 	st, err := envtestutil.BuildSettings()
-	st.EnableExperimentalFeatures = true
+	st.EnableExperimentalGatewayAPIFeatures = true
 	if err != nil {
 		t.Fatalf("can't get settings %v", err)
 	}
