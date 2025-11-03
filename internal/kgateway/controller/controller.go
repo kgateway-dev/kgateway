@@ -34,6 +34,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 const (
@@ -646,7 +647,7 @@ func (r *controllerReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		Status:             metav1.ConditionTrue,
 		Reason:             string(apiv1.GatewayClassReasonAccepted),
 		ObservedGeneration: gwc.GetGeneration(),
-		Message:            "GatewayClass accepted by kgateway controller",
+		Message:            reports.GatewayClassAcceptedMessage,
 	})
 	if i, ok := r.classInfos[gwc.GetName()]; ok {
 		gwc.Status.SupportedFeatures = i.SupportedFeatures
