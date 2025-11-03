@@ -2203,6 +2203,9 @@ spec:
                       Even when using PostRouting mode, the policy can target the Gateway/Listener. This is a helper for applying the policy
                       to all routes under that Gateway/Listener, and follows the merging logic described above.
 
+                      Note: PreRouting and PostRouting rules do not merge together. These are independent execution phases. That is, all
+                      PreRouting rules will merge and execute, then all PostRouting rules will merge and execute.
+
                       If unset, this defaults to PostRouting.
                     enum:
                     - PreRouting

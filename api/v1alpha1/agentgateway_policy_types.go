@@ -299,6 +299,7 @@ type AgentgatewayKeepalive struct {
 	Interval *metav1.Duration `json:"interval,omitempty"`
 }
 
+// +kubebuilder:validation:Enum=PreRouting;PostRouting
 type PolicyPhase string
 
 const (
@@ -316,9 +317,10 @@ type AgentgatewayPolicyTraffic struct {
 	// Even when using PostRouting mode, the policy can target the Gateway/Listener. This is a helper for applying the policy
 	// to all routes under that Gateway/Listener, and follows the merging logic described above.
 	//
-	// If unset, this defaults to PostRouting.
+	// Note: PreRouting and PostRouting rules do not merge together. These are independent execution phases. That is, all
+	// PreRouting rules will merge and execute, then all PostRouting rules will merge and execute.
 	//
-	// +kubebuilder:validation:Enum=PreRouting;PostRouting
+	// If unset, this defaults to PostRouting.
 	Phase *PolicyPhase `json:"phase,omitempty"`
 
 	// transformation is used to mutate and transform requests and responses
