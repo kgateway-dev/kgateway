@@ -70,4 +70,4 @@ jobs:
         cache: true
     - name: Lint
       run: |
-        make -C internal/envoyinit/rustformations lint
+        make -C internal/envoyinit lint

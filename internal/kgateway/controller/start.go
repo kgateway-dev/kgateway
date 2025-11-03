@@ -42,12 +42,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
-const (
-	// AutoProvision controls whether the controller will be responsible for provisioning dynamic
-	// infrastructure for the Gateway API.
-	AutoProvision = true
-)
-
 type SetupOpts struct {
 	Cache envoycache.SnapshotCache
 
@@ -314,7 +308,6 @@ func (c *ControllerBuilder) Build(ctx context.Context) (*agentgatewaysyncer.Sync
 		Mgr:               c.mgr,
 		ControllerName:    c.cfg.ControllerName,
 		AgwControllerName: c.cfg.AgwControllerName,
-		AutoProvision:     AutoProvision,
 		ControlPlane: deployer.ControlPlaneInfo{
 			XdsHost:      xdsHost,
 			XdsPort:      xdsPort,

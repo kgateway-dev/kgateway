@@ -26,6 +26,7 @@ find the commit hash that is closest to the envoy release date and do:
 
 ```
 go get github.com/envoyproxy/go-control-plane@<commit_hash>
+go get github.com/envoyproxy/go-control-plane/envoy@<commit_hash>
 go mod tidy
 make verify
 ```

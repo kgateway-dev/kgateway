@@ -35,13 +35,15 @@ fn new_http_filter_config_fn<EC: EnvoyHttpFilterConfig, EHF: EnvoyHttpFilter>(
     filter_name: &str,
     filter_config: &[u8],
 ) -> Option<Box<dyn HttpFilterConfig<EHF>>> {
+    envoy_log_trace!("new_http_filter_config_fn");
     let filter_config = match std::str::from_utf8(filter_config) {
         Ok(config) => config,
         Err(_) => {
-            eprintln!("Invalid UTF-8 in filter configuration");
+            envoy_log_error!("Invalid UTF-8 in filter configuration");
             return None;
         }
     };
+    envoy_log_trace!("new_http_filter_config_fn: filter_config: {filter_config}");
     match filter_name {
         "http_simple_mutations" => http_simple_mutations::FilterConfig::new(filter_config)
             .map(|config| Box::new(config) as Box<dyn HttpFilterConfig<EHF>>),
@@ -53,13 +55,15 @@ fn new_http_filter_config_fn<EC: EnvoyHttpFilterConfig, EHF: EnvoyHttpFilter>(
 }
 
 fn new_http_filter_per_route_config_fn(name: &str, config: &[u8]) -> Option<Box<dyn Any>> {
+    envoy_log_trace!("new_http_filter_per_route_config_fn");
     let per_route_config = match std::str::from_utf8(config) {
         Ok(config) => config,
         Err(_) => {
-            eprintln!("Invalid UTF-8 in per route filter configuration");
+            envoy_log_error!("Invalid UTF-8 in per route filter configuration");
             return None;
         }
     };
+    envoy_log_trace!("new_http_filter_per_route_config_fn: per_route_config: {per_route_config}");
     match name {
         "http_simple_mutations" => http_simple_mutations::PerRouteConfig::new(per_route_config)
             .map(|config| Box::new(config) as Box<dyn Any>),

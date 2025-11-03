@@ -233,7 +233,6 @@ func createManager(
 		Mgr:               mgr,
 		ControllerName:    gatewayControllerName,
 		AgwControllerName: agwControllerName,
-		AutoProvision:     true,
 		ImageInfo: &deployer.ImageInfo{
 			Registry: "ghcr.io/kgateway-dev",
 			Tag:      "latest",

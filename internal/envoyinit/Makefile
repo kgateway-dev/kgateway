@@ -27,7 +27,7 @@ help: ## Output the self-documenting make targets
 .PHONY: lint
 lint: ## Run lint checks.
 	cargo fmt --check
-	cargo clippy --all-targets -- -D warnings
+	cargo clippy --workspace --all-targets -- -D warnings
 
 #----------------------------------------------------------------------------------
 # Printing makefile variables utility

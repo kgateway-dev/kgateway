@@ -66,13 +66,13 @@ func (dt DeployerTester) RunHelmChartTest(
 	tt HelmTestCase,
 	scheme *runtime.Scheme,
 	dir string,
+	crdDir string,
 	helmValuesGeneratorOverride func(cli client.Client, inputs *pkgdeployer.Inputs) pkgdeployer.HelmValuesGenerator,
 ) {
 	filePath := filepath.Join(dir, "testdata/", tt.InputFile)
 	inputFile := filePath + ".yaml"
 	outputFile := filePath + "-out.yaml"
 
-	crdDir := filepath.Join(testutils.GitRootDirectory(), testutils.CRDPath)
 	gvkToStructuralSchema, err := testutils.GetStructuralSchemas(crdDir)
 	assert.NoError(t, err, "error getting structural schemas")
 

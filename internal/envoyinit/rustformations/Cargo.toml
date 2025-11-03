@@ -13,6 +13,8 @@ matchers = "0.2.0"
 minijinja = { version = "2.7.0" }
 tempfile = "3.16.0"
 mockall = "0.13.1"
+transformations = { path = "../transformations" }
+lazy_static = "1.5.0"
 
 [lib]
 name = "rust_module"

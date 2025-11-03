@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -120,6 +121,40 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 				routeName: "headers",
 				opts: []curl.Option{
 					curl.WithBody("hello"),
+				},
+				resp: &testmatchers.HttpResponse{
+					StatusCode: http.StatusOK,
+					Headers: map[string]interface{}{
+						"x-foo-response":        "notsuper",
+						"x-foo-response-status": "200",
+					},
+					NotHeaders: []string{
+						"response-gateway",
+					},
+				},
+				req: &testmatchers.HttpRequest{
+					Headers: map[string]interface{}{
+						"x-foo-bar":  "foolen_5",
+						"x-foo-bar2": "foolen_5",
+					},
+					NotHeaders: []string{
+						// looks like the way we set up transformation targeting gateway, we are
+						// also using RouteTransformation instead of FilterTransformation and it's
+						// set , so it's set at the route table level and if there is a more specific
+						// transformation (eg in vhost or prefix match), the gateway attached transformation
+						// will not apply. Make sure it's not there.
+						"request-gateway",
+					},
+				},
+			},
+			{
+				name:      "set headers with headers already exists multiple times",
+				routeName: "headers",
+				opts: []curl.Option{
+					curl.WithBody("hello"),
+					// The 2 x-foo-bar headers will be replaced with a single one when we set the header
+					// to a value using transformation
+					curl.WithMultiHeader("x-foo-bar", []string{"original_1", "original_2"}),
 				},
 				resp: &testmatchers.HttpResponse{
 					StatusCode: http.StatusOK,
@@ -365,6 +400,8 @@ func (s *testingSuite) SetupSuite() {
 }
 
 func (s *testingSuite) TestGatewayWithTransformedRoute() {
+	s.SetRustformationInController(false)
+
 	s.TestInstallation.Assertions.AssertEnvoyAdminApi(
 		s.Ctx,
 		proxyObjectMeta,
@@ -426,7 +463,7 @@ func (s *testingSuite) TestGatewayWithTransformedRoute() {
 	s.runTestCases((testCases))
 }
 
-func (s *testingSuite) TestGatewayRustformationsWithTransformedRoute() {
+func (s *testingSuite) SetRustformationInController(enabled bool) {
 	// make a copy of the original controller deployment
 	controllerDeploymentOriginal := &appsv1.Deployment{}
 	err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
@@ -435,39 +472,41 @@ func (s *testingSuite) TestGatewayRustformationsWithTransformedRoute() {
 	}, controllerDeploymentOriginal)
 	s.Assert().NoError(err, "has controller deployment")
 
-	// add the environment variable RUSTFORMATIONS to the modified controller deployment
 	rustFormationsEnvVar := corev1.EnvVar{
 		Name:  "KGW_USE_RUST_FORMATIONS",
 		Value: "true",
 	}
 	controllerDeployModified := controllerDeploymentOriginal.DeepCopy()
-	controllerDeployModified.Spec.Template.Spec.Containers[0].Env = append(
-		controllerDeployModified.Spec.Template.Spec.Containers[0].Env,
-		rustFormationsEnvVar,
-	)
+	if enabled {
+		// add the environment variable RUSTFORMATIONS to the modified controller deployment
+		controllerDeployModified.Spec.Template.Spec.Containers[0].Env = append(
+			controllerDeployModified.Spec.Template.Spec.Containers[0].Env,
+			rustFormationsEnvVar,
+		)
+		controllerDeployModified.ResourceVersion = ""
+
+	} else {
+		controllerDeployModified.Spec.Template.Spec.Containers[0].Env = slices.DeleteFunc(controllerDeployModified.Spec.Template.Spec.Containers[0].Env, func(envVar corev1.EnvVar) bool {
+			return envVar.Name == "KGW_USE_RUST_FORMATIONS"
+		})
+	}
 
 	// patch the deployment
-	controllerDeployModified.ResourceVersion = ""
 	err = s.TestInstallation.ClusterContext.Client.Patch(s.Ctx, controllerDeployModified, client.MergeFrom(controllerDeploymentOriginal))
 	s.Assert().NoError(err, "patching controller deployment")
 
-	// wait for the changes to be reflected in pod
-	s.TestInstallation.Assertions.EventuallyPodContainerContainsEnvVar(
-		s.Ctx,
-		s.TestInstallation.Metadata.InstallNamespace,
-		metav1.ListOptions{
-			LabelSelector: defaults.ControllerLabelSelector,
-		},
-		helpers.KgatewayContainerName,
-		rustFormationsEnvVar,
-	)
-
-	testutils.Cleanup(s.T(), func() {
-		// revert to original version of deployment
-		controllerDeploymentOriginal.ResourceVersion = ""
-		err = s.TestInstallation.ClusterContext.Client.Patch(s.Ctx, controllerDeploymentOriginal, client.MergeFrom(controllerDeployModified))
-		s.Require().NoError(err)
-
+	if enabled {
+		// wait for the changes to be reflected in pod
+		s.TestInstallation.Assertions.EventuallyPodContainerContainsEnvVar(
+			s.Ctx,
+			s.TestInstallation.Metadata.InstallNamespace,
+			metav1.ListOptions{
+				LabelSelector: defaults.ControllerLabelSelector,
+			},
+			helpers.KgatewayContainerName,
+			rustFormationsEnvVar,
+		)
+	} else {
 		// make sure the env var is removed
 		s.TestInstallation.Assertions.EventuallyPodContainerDoesNotContainEnvVar(
 			s.Ctx,
@@ -478,6 +517,14 @@ func (s *testingSuite) TestGatewayRustformationsWithTransformedRoute() {
 			helpers.KgatewayContainerName,
 			rustFormationsEnvVar.Name,
 		)
+	}
+}
+
+func (s *testingSuite) TestGatewayRustformationsWithTransformedRoute() {
+	s.SetRustformationInController(true)
+
+	testutils.Cleanup(s.T(), func() {
+		s.SetRustformationInController(false)
 	})
 
 	// wait for pods to be running again, since controller deployment was patched
