@@ -21,4 +21,4 @@ spec:
         descriptors:
         - entries:
           - name: remote_address
-            expression: "remote_address"
+            expression: "source.address"

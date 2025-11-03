@@ -27,9 +27,8 @@ Routes:
   routeName: default/example-route-backend-request-both-timeout
   trafficPolicies:
   - timeout:
-      request: 10s
-  - timeout:
       backendRequest: 9s
+      request: 10s
 - backends:
   - backend:
       port: 80
@@ -74,9 +73,8 @@ Routes:
   routeName: default/example-route-retry-both-timeouts
   trafficPolicies:
   - timeout:
-      request: 10s
-  - timeout:
       backendRequest: 5s
+      request: 10s
   - retry:
       attempts: 3
 - backends:

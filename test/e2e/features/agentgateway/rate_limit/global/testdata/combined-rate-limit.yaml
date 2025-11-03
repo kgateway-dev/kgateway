@@ -23,4 +23,4 @@ spec:
         descriptors:
         - entries:
           - name: service
-            expression: "service == premium-api"
+            expression: '"premium-api"'
