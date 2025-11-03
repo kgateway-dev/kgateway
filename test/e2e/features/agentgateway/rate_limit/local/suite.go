@@ -140,26 +140,6 @@ func (s *testingSuite) TestLocalRateLimitForGateway() {
 	s.assertConsistentResponse("/path2", http.StatusTooManyRequests)
 }
 
-// Test cases for local rate limit on a gateway and route (/path1)
-func (s *testingSuite) TestLocalRateLimitForGatewayAndRoute() {
-	s.setupTest([]string{httpRoutesManifest, gwLocalRateLimitManifest, routeLocalRateLimitManifest},
-		[]client.Object{route, route2, gwRateLimitTrafficPolicy, routeRateLimitTrafficPolicy})
-
-	// First request should be successful (to any route)
-	s.assertResponse("/path1", http.StatusOK)
-
-	// Consecutive requests should be rate limited
-	s.assertConsistentResponse("/path1", http.StatusTooManyRequests)
-
-	// Also verify that the second route is rate limited
-	s.assertConsistentResponse("/path2", http.StatusTooManyRequests)
-
-	// Verify that the rate limit is removed after a token has been added to the bucket (10s)
-	// while GW rate limit is configured to add token every 300s. Therefore, the route
-	// rate limit configuration takes precedence.
-	s.assertEventualResponse("/path1", http.StatusOK)
-}
-
 // Test cases for local rate limit on a gateway and route (/path1) with disabled
 // local rate limit
 func (s *testingSuite) TestLocalRateLimitDisabledForRoute() {

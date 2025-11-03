@@ -17,5 +17,5 @@ spec:
         domain: "api-gateway"
         descriptors:
           - entries:
-          - key: "X-User-ID"
-            value: "request.headers[\"x-user-id\"]"
+            - name: "X-User-ID"
+              expression: "request.headers[\"x-user-id\"]"

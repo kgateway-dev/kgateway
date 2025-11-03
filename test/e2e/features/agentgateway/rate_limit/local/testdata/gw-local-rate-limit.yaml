@@ -11,5 +11,5 @@ spec:
     rateLimit:
       local:
         - requests: 1
-          unit: Seconds
-          burst: 300
+          unit: Hours
+          burst: 1
