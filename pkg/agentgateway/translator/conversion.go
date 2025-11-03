@@ -448,6 +448,7 @@ func BuildAgwTrafficPolicyFilters(
 	// Collect multiples of same-type filters to merge
 	var mergedReqHdr *api.HeaderModifier
 	var mergedRespHdr *api.HeaderModifier
+	var mergedMirror []*api.RequestMirrors_Mirror
 	for _, filter := range inputFilters {
 		switch filter.Type {
 		case gwv1.HTTPRouteFilterRequestHeaderModifier:
@@ -486,7 +487,7 @@ func BuildAgwTrafficPolicyFilters(
 					policyError = err
 				}
 			} else {
-				policies = append(policies, &api.TrafficPolicySpec{Kind: &api.TrafficPolicySpec_RequestMirror{RequestMirror: h}})
+				mergedMirror = append(mergedMirror, h)
 			}
 		case gwv1.HTTPRouteFilterURLRewrite:
 			h := CreateAgwRewriteFilter(filter.URLRewrite)
@@ -540,6 +541,9 @@ func BuildAgwTrafficPolicyFilters(
 	if mergedRespHdr != nil {
 		policies = append(policies, &api.TrafficPolicySpec{Kind: &api.TrafficPolicySpec_ResponseHeaderModifier{ResponseHeaderModifier: mergedRespHdr}})
 	}
+	if mergedMirror != nil {
+		policies = append(policies, &api.TrafficPolicySpec{Kind: &api.TrafficPolicySpec_RequestMirror{RequestMirror: &api.RequestMirrors{Mirrors: mergedMirror}}})
+	}
 	return policies, policyError
 }
 
@@ -557,6 +561,7 @@ func BuildAgwBackendPolicyFilters(
 	// Collect multiples of same-type filters to merge
 	var mergedReqHdr *api.HeaderModifier
 	var mergedRespHdr *api.HeaderModifier
+	var mergedMirror []*api.RequestMirrors_Mirror
 	for _, filter := range inputFilters {
 		switch filter.Type {
 		case gwv1.HTTPRouteFilterRequestHeaderModifier:
@@ -595,7 +600,7 @@ func BuildAgwBackendPolicyFilters(
 					policyError = err
 				}
 			} else {
-				policies = append(policies, &api.BackendPolicySpec{Kind: &api.BackendPolicySpec_RequestMirror{RequestMirror: h}})
+				mergedMirror = append(mergedMirror, h)
 			}
 		default:
 			return nil, &reporter.RouteCondition{
@@ -612,6 +617,9 @@ func BuildAgwBackendPolicyFilters(
 	}
 	if mergedRespHdr != nil {
 		policies = append(policies, &api.BackendPolicySpec{Kind: &api.BackendPolicySpec_ResponseHeaderModifier{ResponseHeaderModifier: mergedRespHdr}})
+	}
+	if mergedMirror != nil {
+		policies = append(policies, &api.BackendPolicySpec{Kind: &api.BackendPolicySpec_RequestMirror{RequestMirror: &api.RequestMirrors{Mirrors: mergedMirror}}})
 	}
 	return policies, policyError
 }

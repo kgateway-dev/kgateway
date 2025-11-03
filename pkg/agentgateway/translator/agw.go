@@ -207,7 +207,7 @@ func CreateAgwMirrorFilter(
 	filter *gwv1.HTTPRequestMirrorFilter,
 	ns string,
 	k schema.GroupVersionKind,
-) (*api.RequestMirror, *reporter.RouteCondition) {
+) (*api.RequestMirrors_Mirror, *reporter.RouteCondition) {
 	if filter == nil {
 		return nil, nil
 	}
@@ -236,7 +236,7 @@ func CreateAgwMirrorFilter(
 	if percent == 0 {
 		return nil, nil
 	}
-	return &api.RequestMirror{
+	return &api.RequestMirrors_Mirror{
 		Percentage: percent,
 		Backend:    dst.GetBackend(),
 	}, nil
@@ -331,6 +331,10 @@ func BuildAgwGRPCTrafficPolicies(
 ) ([]*api.TrafficPolicySpec, *reporter.RouteCondition) {
 	var policies []*api.TrafficPolicySpec
 	var mirrorBackendErr *reporter.RouteCondition
+	// Collect multiples of same-type filters to merge
+	var mergedReqHdr *api.HeaderModifier
+	var mergedRespHdr *api.HeaderModifier
+	var mergedMirror []*api.RequestMirrors_Mirror
 	for _, filter := range inputFilters {
 		switch filter.Type {
 		case gwv1.GRPCRouteFilterRequestHeaderModifier:
@@ -338,21 +342,13 @@ func BuildAgwGRPCTrafficPolicies(
 			if h == nil {
 				continue
 			}
-			policies = append(policies, &api.TrafficPolicySpec{
-				Kind: &api.TrafficPolicySpec_RequestHeaderModifier{
-					RequestHeaderModifier: h,
-				},
-			})
+			mergedReqHdr = mergeHeaderModifiers(mergedReqHdr, h)
 		case gwv1.GRPCRouteFilterResponseHeaderModifier:
 			h := CreateAgwResponseHeadersFilter(filter.ResponseHeaderModifier)
 			if h == nil {
 				continue
 			}
-			policies = append(policies, &api.TrafficPolicySpec{
-				Kind: &api.TrafficPolicySpec_ResponseHeaderModifier{
-					ResponseHeaderModifier: h,
-				},
-			})
+			mergedRespHdr = mergeHeaderModifiers(mergedRespHdr, h)
 		case gwv1.GRPCRouteFilterRequestMirror:
 			h, err := CreateAgwMirrorFilter(ctx, filter.RequestMirror, ns, schema.GroupVersionKind{
 				Group:   "gateway.networking.k8s.io",
@@ -362,11 +358,7 @@ func BuildAgwGRPCTrafficPolicies(
 			if err != nil {
 				mirrorBackendErr = err
 			} else {
-				policies = append(policies, &api.TrafficPolicySpec{
-					Kind: &api.TrafficPolicySpec_RequestMirror{
-						RequestMirror: h,
-					},
-				})
+				mergedMirror = append(mergedMirror, h)
 			}
 		// TODO(npolshak): add ExtensionRef support for TrafficPolicy https://github.com/kgateway-dev/kgateway/issues/12037
 		default:
@@ -377,6 +369,15 @@ func BuildAgwGRPCTrafficPolicies(
 				Message: fmt.Sprintf("unsupported filter type %q", filter.Type),
 			}
 		}
+	}
+	if mergedReqHdr != nil {
+		policies = append(policies, &api.TrafficPolicySpec{Kind: &api.TrafficPolicySpec_RequestHeaderModifier{RequestHeaderModifier: mergedReqHdr}})
+	}
+	if mergedRespHdr != nil {
+		policies = append(policies, &api.TrafficPolicySpec{Kind: &api.TrafficPolicySpec_ResponseHeaderModifier{ResponseHeaderModifier: mergedRespHdr}})
+	}
+	if mergedMirror != nil {
+		policies = append(policies, &api.TrafficPolicySpec{Kind: &api.TrafficPolicySpec_RequestMirror{RequestMirror: &api.RequestMirrors{Mirrors: mergedMirror}}})
 	}
 	return policies, mirrorBackendErr
 }
@@ -389,6 +390,10 @@ func BuildAgwGRPCBackendPolicies(
 ) ([]*api.BackendPolicySpec, *reporter.RouteCondition) {
 	var policies []*api.BackendPolicySpec
 	var mirrorBackendErr *reporter.RouteCondition
+	// Collect multiples of same-type filters to merge
+	var mergedReqHdr *api.HeaderModifier
+	var mergedRespHdr *api.HeaderModifier
+	var mergedMirror []*api.RequestMirrors_Mirror
 	for _, filter := range inputFilters {
 		switch filter.Type {
 		case gwv1.GRPCRouteFilterRequestHeaderModifier:
@@ -396,13 +401,13 @@ func BuildAgwGRPCBackendPolicies(
 			if h == nil {
 				continue
 			}
-			policies = append(policies, &api.BackendPolicySpec{Kind: &api.BackendPolicySpec_RequestHeaderModifier{RequestHeaderModifier: h}})
+			mergedReqHdr = mergeHeaderModifiers(mergedReqHdr, h)
 		case gwv1.GRPCRouteFilterResponseHeaderModifier:
 			h := CreateAgwResponseHeadersFilter(filter.ResponseHeaderModifier)
 			if h == nil {
 				continue
 			}
-			policies = append(policies, &api.BackendPolicySpec{Kind: &api.BackendPolicySpec_ResponseHeaderModifier{ResponseHeaderModifier: h}})
+			mergedRespHdr = mergeHeaderModifiers(mergedRespHdr, h)
 		case gwv1.GRPCRouteFilterRequestMirror:
 			h, err := CreateAgwMirrorFilter(ctx, filter.RequestMirror, ns, schema.GroupVersionKind{
 				Group:   "gateway.networking.k8s.io",
@@ -412,7 +417,7 @@ func BuildAgwGRPCBackendPolicies(
 			if err != nil {
 				mirrorBackendErr = err
 			} else {
-				policies = append(policies, &api.BackendPolicySpec{Kind: &api.BackendPolicySpec_RequestMirror{RequestMirror: h}})
+				mergedMirror = append(mergedMirror, h)
 			}
 		// TODO(npolshak): add ExtensionRef support for TrafficPolicy https://github.com/kgateway-dev/kgateway/issues/12037
 		default:
@@ -423,6 +428,16 @@ func BuildAgwGRPCBackendPolicies(
 				Message: fmt.Sprintf("unsupported filter type %q", filter.Type),
 			}
 		}
+	}
+	// Append merged header modifiers at the end to avoid duplicates
+	if mergedReqHdr != nil {
+		policies = append(policies, &api.BackendPolicySpec{Kind: &api.BackendPolicySpec_RequestHeaderModifier{RequestHeaderModifier: mergedReqHdr}})
+	}
+	if mergedRespHdr != nil {
+		policies = append(policies, &api.BackendPolicySpec{Kind: &api.BackendPolicySpec_ResponseHeaderModifier{ResponseHeaderModifier: mergedRespHdr}})
+	}
+	if mergedMirror != nil {
+		policies = append(policies, &api.BackendPolicySpec{Kind: &api.BackendPolicySpec_RequestMirror{RequestMirror: &api.RequestMirrors{Mirrors: mergedMirror}}})
 	}
 	return policies, mirrorBackendErr
 }

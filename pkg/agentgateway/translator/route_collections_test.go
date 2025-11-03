@@ -221,13 +221,15 @@ func TestAgwRouteCollection(t *testing.T) {
 				Hostnames: []string{"example.com"},
 				Matches:   []*api.RouteMatch{{Path: &api.PathMatch{Kind: &api.PathMatch_PathPrefix{PathPrefix: "/multi-mirror-and-modify-request-headers"}}}},
 				TrafficPolicies: []*api.TrafficPolicySpec{
-					{Kind: &api.TrafficPolicySpec_RequestMirror{RequestMirror: &api.RequestMirror{Percentage: 100, Backend: &api.BackendReference{Kind: &api.BackendReference_Service{Service: "default/infra-backend-v2.default.svc.cluster.local"}, Port: 8080}}}},
-					{Kind: &api.TrafficPolicySpec_RequestMirror{RequestMirror: &api.RequestMirror{Percentage: 100, Backend: &api.BackendReference{Kind: &api.BackendReference_Service{Service: "default/infra-backend-v3.default.svc.cluster.local"}, Port: 8080}}}},
 					{Kind: &api.TrafficPolicySpec_RequestHeaderModifier{RequestHeaderModifier: &api.HeaderModifier{
 						Set:    []*api.Header{{Name: "X-Header-Set", Value: "set-overwrites-values"}},
 						Add:    []*api.Header{{Name: "X-Header-Add", Value: "header-val-1"}, {Name: "X-Header-Add-Append", Value: "header-val-2"}},
 						Remove: []string{"X-Header-Remove"},
 					}}},
+					{Kind: &api.TrafficPolicySpec_RequestMirror{RequestMirror: &api.RequestMirrors{Mirrors: []*api.RequestMirrors_Mirror{
+						{Percentage: 100, Backend: &api.BackendReference{Kind: &api.BackendReference_Service{Service: "default/infra-backend-v2.default.svc.cluster.local"}, Port: 8080}},
+						{Percentage: 100, Backend: &api.BackendReference{Kind: &api.BackendReference_Service{Service: "default/infra-backend-v3.default.svc.cluster.local"}, Port: 8080}},
+					}}}},
 				},
 				Backends: []*api.RouteBackend{{Backend: &api.BackendReference{Kind: &api.BackendReference_Service{Service: "default/infra-backend-v1.default.svc.cluster.local"}, Port: 8080}}},
 			}},
@@ -330,14 +332,10 @@ func TestAgwRouteCollection(t *testing.T) {
 						Path: &api.PathMatch{Kind: &api.PathMatch_PathPrefix{PathPrefix: "/multi-mirror"}},
 					}},
 					TrafficPolicies: []*api.TrafficPolicySpec{
-						{Kind: &api.TrafficPolicySpec_RequestMirror{RequestMirror: &api.RequestMirror{
-							Percentage: 100,
-							Backend:    &api.BackendReference{Kind: &api.BackendReference_Service{Service: "default/infra-backend-v2.default.svc.cluster.local"}, Port: 8080},
-						}}},
-						{Kind: &api.TrafficPolicySpec_RequestMirror{RequestMirror: &api.RequestMirror{
-							Percentage: 100,
-							Backend:    &api.BackendReference{Kind: &api.BackendReference_Service{Service: "default/infra-backend-v3.default.svc.cluster.local"}, Port: 8080},
-						}}},
+						{Kind: &api.TrafficPolicySpec_RequestMirror{RequestMirror: &api.RequestMirrors{Mirrors: []*api.RequestMirrors_Mirror{
+							{Percentage: 100, Backend: &api.BackendReference{Kind: &api.BackendReference_Service{Service: "default/infra-backend-v2.default.svc.cluster.local"}, Port: 8080}},
+							{Percentage: 100, Backend: &api.BackendReference{Kind: &api.BackendReference_Service{Service: "default/infra-backend-v3.default.svc.cluster.local"}, Port: 8080}},
+						}}}},
 					},
 					Backends: []*api.RouteBackend{{
 						Backend: &api.BackendReference{Kind: &api.BackendReference_Service{Service: "default/infra-backend-v1.default.svc.cluster.local"}, Port: 8080},

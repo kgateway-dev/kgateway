@@ -57,7 +57,7 @@ func (s *testingSuite) SetupSuite() {
 	if s.agentgateway {
 		s.commonManifests = []string{
 			testdefaults.CurlPodManifest,
-			getTestFileAgentgateway("common.yaml"),
+			getTestFile("common.yaml"),
 			simpleServiceManifest,
 			rateLimitServerManifest,
 		}

@@ -659,4 +659,4 @@ tool (
 	sigs.k8s.io/kind
 )
 
-replace github.com/agentgateway/agentgateway => github.com/howardjohn/agentgateway v0.0.0-20251030173349-5f184cd7faa9
+replace github.com/agentgateway/agentgateway => github.com/howardjohn/agentgateway v0.0.0-20251103231247-f02cb6af64ae
