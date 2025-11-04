@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
-	"sync"
+	"sync/atomic"
 	"time"
 
 	"istio.io/istio/pkg/kube/krt"
@@ -27,19 +27,16 @@ type inferencePool struct {
 	// configRef is a reference to the extension configuration. A configRef is typically implemented
 	// as a Kubernetes Service resource.
 	configRef *service
-	// mu is a mutex to protect access to the errors list.
-	mu sync.Mutex
-	// errors is a list of errors that occurred while processing the InferencePool.
-	errors []error
+	// errors that occurred while processing the InferencePool.
+	errorsV    atomic.Value
+	errorCount atomic.Int64
 	// endpoints define the list of endpoints resolved by the podSelector.
-	endpoints []endpoint
+	endpoints atomic.Value
 	// failOpen configures how the proxy handles traffic when the EPP extension is
 	// non-responsive. When set to `false` and the gRPC stream cannot be established, or if
 	// it is closed prematurely with an error, the request will fail. When set to `true` and
 	// the gRPC stream cannot be established, the request is forwarded based on the cluster
 	// load balancing configuration.
-	//
-	// Defaults to `false`.
 	//
 	failOpen bool
 }
@@ -67,27 +64,35 @@ func newInferencePool(pool *inf.InferencePool) *inferencePool {
 		ports: []servicePort{port},
 	}
 
-	return &inferencePool{
+	ir := &inferencePool{
 		obj:         pool,
 		podSelector: convertSelector(pool.Spec.Selector.MatchLabels),
 		// InferencePool v1 only supports single port
 		targetPorts: []targetPort{{number: int32(pool.Spec.TargetPorts[0].Number)}},
 		configRef:   svcIR,
-		endpoints:   []endpoint{},
 		failOpen:    isFailOpen(pool),
 	}
+	ir.endpoints.Store([]endpoint(nil))
+	ir.errorsV.Store([]error(nil))
+	ir.errorCount.Store(0)
+
+	return ir
 }
 
 func (ir *inferencePool) setEndpoints(eps []endpoint) {
-	ir.mu.Lock()
-	defer ir.mu.Unlock()
-	ir.endpoints = eps
+	cp := append([]endpoint(nil), eps...)
+	ir.endpoints.Store(cp)
 }
 
 func (ir *inferencePool) getEndpoints() []endpoint {
-	ir.mu.Lock()
-	defer ir.mu.Unlock()
-	return ir.endpoints
+	v := ir.endpoints.Load()
+	if v == nil {
+		return nil
+	}
+	src := v.([]endpoint)
+	out := make([]endpoint, len(src))
+	copy(out, src)
+	return out
 }
 
 // resolvePoolEndpoints returns the slice of <IP:Port> for the given pool
@@ -125,31 +130,34 @@ func (ir *inferencePool) Equals(other any) bool {
 	if !ok {
 		return false
 	}
+
 	// Compare pod selector
 	if !maps.Equal(ir.Selector(), otherPool.Selector()) {
 		return false
 	}
+
 	// Compare error presence (we only need the boolean)
 	if ir.hasErrors() != otherPool.hasErrors() {
 		return false
 	}
-	// Compare endpoint set (order‑insensitive)
-	ir.mu.Lock()
-	otherPool.mu.Lock()
-	defer ir.mu.Unlock()
-	defer otherPool.mu.Unlock()
-	if len(ir.endpoints) != len(otherPool.endpoints) {
+
+	// Snapshot endpoints (avoid holding locks during compare)
+	epsA := ir.getEndpoints()
+	epsB := otherPool.getEndpoints()
+
+	if len(epsA) != len(epsB) {
 		return false
 	}
-	seen := make(map[string]struct{}, len(ir.endpoints))
-	for _, ep := range ir.endpoints {
+	seen := make(map[string]struct{}, len(epsA))
+	for _, ep := range epsA {
 		seen[ep.string()] = struct{}{}
 	}
-	for _, ep := range otherPool.endpoints {
+	for _, ep := range epsB {
 		if _, ok := seen[ep.string()]; !ok {
 			return false
 		}
 	}
+
 	// Compare target port
 	// InferencePool v1 only supports single port
 	if len(ir.targetPorts) != 1 || len(otherPool.targetPorts) != 1 {
@@ -158,6 +166,7 @@ func (ir *inferencePool) Equals(other any) bool {
 	if ir.targetPorts[0].number != otherPool.targetPorts[0].number {
 		return false
 	}
+
 	// Compare object metadata
 	if ir.obj.GetName() != otherPool.obj.GetName() ||
 		ir.obj.GetNamespace() != otherPool.obj.GetNamespace() ||
@@ -166,14 +175,17 @@ func (ir *inferencePool) Equals(other any) bool {
 		ir.obj.GetGeneration() != otherPool.obj.GetGeneration() {
 		return false
 	}
+
 	// Compare configRef
 	if !ir.configRefEquals(otherPool) {
 		return false
 	}
+
 	// Compare failure mode
 	if !ir.failOpenEqual(otherPool) {
 		return false
 	}
+
 	return true
 }
 
@@ -190,25 +202,26 @@ func (ir *inferencePool) configRefEquals(other *inferencePool) bool {
 
 // setErrors atomically replaces p.errors under lock.
 func (ir *inferencePool) setErrors(errs []error) {
-	ir.mu.Lock()
-	defer ir.mu.Unlock()
-	ir.errors = errs
+	cp := append([]error(nil), errs...)
+	ir.errorsV.Store(cp)
+	ir.errorCount.Store(int64(len(cp)))
 }
 
 // snapshotErrors returns a copy of p.errors under lock.
 func (ir *inferencePool) snapshotErrors() []error {
-	ir.mu.Lock()
-	defer ir.mu.Unlock()
-	out := make([]error, len(ir.errors))
-	copy(out, ir.errors)
+	v := ir.errorsV.Load()
+	if v == nil {
+		return nil
+	}
+	src := v.([]error)
+	out := make([]error, len(src))
+	copy(out, src)
 	return out
 }
 
 // hasErrors checks if the inferencePool has any errors.
 func (ir *inferencePool) hasErrors() bool {
-	ir.mu.Lock()
-	defer ir.mu.Unlock()
-	return len(ir.errors) > 0
+	return ir.errorCount.Load() > 0
 }
 
 func (ir *inferencePool) failOpenEqual(other *inferencePool) bool {

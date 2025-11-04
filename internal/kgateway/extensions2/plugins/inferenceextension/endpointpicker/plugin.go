@@ -61,7 +61,7 @@ func NewPlugin(ctx context.Context, commonCols *collections.CommonCollections) s
 
 	// Wrap the init function so it can capture commonCols.Pods
 	initBackend := func(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
-		return processPoolBackendObjIR(ctx, in, out, p.podIndex)
+		return processPoolBackendObjIR(ctx, in, out)
 	}
 
 	return sdk.Plugin{
@@ -215,11 +215,9 @@ func (p *endpointPickerPass) ApplyForBackend(
 
 	// Ensure we are working with the latest set of endpoints for the pool.
 	eps := irPool.resolvePoolEndpoints(p.podIdx)
-	if len(eps) == 0 {
-		return fmt.Errorf("no endpoints found for InferencePool %s/%s",
-			irPool.obj.GetNamespace(),
-			irPool.obj.GetName())
-	}
+	// If the pool has no endpoints yet, do not fail translation.
+	// Keep the route valid and provide an empty subset hint so the EPP
+	// will return 503 (or honor fail-open) rather than causing a 500.
 	irPool.setEndpoints(eps)
 
 	// Tell the EPP the subset of endpoints to choose from.

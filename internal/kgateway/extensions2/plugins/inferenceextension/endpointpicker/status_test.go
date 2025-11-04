@@ -89,7 +89,7 @@ func TestUpdatePoolStatus_NoReferences_NoErrors(t *testing.T) {
 			Namespace: poolNN.Namespace,
 			Name:      poolNN.Name,
 		},
-		ObjIr: &inferencePool{errors: nil},
+		ObjIr: &inferencePool{},
 	}
 
 	// Call the function to update the pool status
@@ -181,7 +181,7 @@ func TestUpdatePoolStatus_WithReference_NoErrors(t *testing.T) {
 			Namespace: poolNN.Namespace,
 			Name:      poolNN.Name,
 		},
-		ObjIr: &inferencePool{errors: nil},
+		ObjIr: &inferencePool{},
 	}
 
 	// Call the function to update the pool status
@@ -289,6 +289,10 @@ func TestUpdatePoolStatus_WithReference_WithErrors(t *testing.T) {
 		ControllerName: controllerName,
 		Routes:         fakeRoutesIndex(col),
 	}
+
+	poolIR := &inferencePool{}
+	poolIR.setErrors([]error{fmt.Errorf("test error")})
+
 	beIR := ir.BackendObjectIR{
 		ObjectSource: ir.ObjectSource{
 			Group:     inf.GroupVersion.Group,
@@ -296,7 +300,7 @@ func TestUpdatePoolStatus_WithReference_WithErrors(t *testing.T) {
 			Namespace: poolNN.Namespace,
 			Name:      poolNN.Name,
 		},
-		ObjIr: &inferencePool{errors: []error{fmt.Errorf("test error")}},
+		ObjIr: poolIR,
 	}
 
 	// Call the function to update the pool status with errors
@@ -428,7 +432,7 @@ func TestUpdatePoolStatus_DeleteRoute(t *testing.T) {
 			Namespace: poolNN.Namespace,
 			Name:      poolNN.Name,
 		},
-		ObjIr: &inferencePool{errors: nil},
+		ObjIr: &inferencePool{},
 	}
 
 	// Call the function to update the pool status with the route
@@ -476,7 +480,7 @@ func TestUpdatePoolStatus_WithExtraGws(t *testing.T) {
 			Namespace: ns,
 			Name:      poolName,
 		},
-		ObjIr: &inferencePool{errors: nil},
+		ObjIr: &inferencePool{},
 	}
 
 	// Simulate controller knowing about a parent Gateway even if no HTTPRoute is present

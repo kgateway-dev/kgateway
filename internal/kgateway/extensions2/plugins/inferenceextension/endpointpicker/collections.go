@@ -104,6 +104,12 @@ func initInferencePoolCollections(
 		poolCol,
 		func(ctx krt.HandlerContext, ip *inf.InferencePool) *ir.BackendObjectIR {
 			irPool := newInferencePool(ip)
+
+			// Propagate validation errors to the DP.
+			if errs := validatePool(ip, commonCol.Services); len(errs) > 0 {
+				irPool.setErrors(errs)
+			}
+
 			pods := krt.Fetch(ctx, commonCol.LocalityPods, krt.FilterGeneric(func(obj any) bool {
 				pod, ok := obj.(krtcollections.LocalityPod)
 				if !ok {
@@ -121,9 +127,8 @@ func initInferencePoolCollections(
 					eps = append(eps, endpoint{address: ip, port: irPool.targetPorts[0].number})
 				}
 			}
-			if len(eps) == 0 {
-				return nil
-			}
+			// Always return a backend IR so the static cluster exists.
+			// Endpoints may be empty on first pass, they'll populate in subsequent passes.
 			irPool.setEndpoints(eps)
 			return buildBackendObjIrFromPool(irPool)
 		},
@@ -135,7 +140,7 @@ func initInferencePoolCollections(
 		backendsDP,
 		func(_ krt.HandlerContext, be ir.BackendObjectIR) *ir.EndpointsForBackend {
 			stub := &envoyclusterv3.Cluster{Name: be.ClusterName()}
-			return processPoolBackendObjIR(ctx, be, stub, podIdx)
+			return processPoolBackendObjIR(ctx, be, stub)
 		},
 	)
 
