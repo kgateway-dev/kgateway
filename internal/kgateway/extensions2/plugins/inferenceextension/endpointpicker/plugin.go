@@ -311,8 +311,12 @@ func (p *endpointPickerPass) HttpFilters(fc ir.FilterChainCommon) ([]plugins.Sta
 			ResponseHeaderMode:  extprocv3.ProcessingMode_SEND,
 			ResponseTrailerMode: extprocv3.ProcessingMode_SEND,
 		},
-		MessageTimeout:   durationpb.New(5 * time.Second),
-		FailureModeAllow: false,
+		MessageTimeout: durationpb.New(5 * time.Second),
+		// Keep the *global* ext_proc in soft-fail mode so requests that do NOT match
+		// any route (which should produce a 404) are not converted into 500 due to
+		// ext_proc connection failures before routing occurs. Per-route overrides
+		// (set in ApplyForBackend) will still tighten this to fail-closed as needed.
+		FailureModeAllow: true,
 		MetadataOptions: &extprocv3.MetadataOptions{
 			ForwardingNamespaces: &extprocv3.MetadataOptions_MetadataNamespaces{
 				Untyped: []string{envoySubsetKey},
