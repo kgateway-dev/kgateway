@@ -4,57 +4,52 @@
 
 ## Background
 
-Currently, status updates for Kgateway CRDs (HTTPRoutes, TrafficPolicies, etc.) are only reported at the end
+Currently, status for Kgateway CRDs (HTTPRoutes, TrafficPolicies, etc.) are only reported at the end
 of translation phase. Resources are processed through a reverse lookup mechanism where parent resources trigger
 the discovery and processing of child resources. This approach works well for correctly configured resources but
-fails for "orphaned" resources—resources that reference non-existent or invalid parent/target references.
+leaves stale status for "orphaned" resources—resources that reference non-existent or invalid parent/target
+references.
 
 When a resource is orphaned (e.g., an HTTPRoute with all invalid `parentRefs`, or a TrafficPolicy with all
-invalid `targetRefs`), it is never picked up during translation. As a result, no status is reported for these
-resources. Users can technically detect orphaned resources by observing a mismatch between `observedGeneration`
-and the current generation in the status, but this requires subtle prior knowledge of Kubernetes status
-semantics and is not the best user experience.
+invalid `targetRefs`), it is never picked up during translation. As a result, the status from previous
+configurations remains stale and is never cleared. Users can technically detect orphaned resources by observing
+a mismatch between `observedGeneration` and the current generation in the status, but this requires subtle
+prior knowledge of Kubernetes status semantics and is not the best user experience.
 
 This problem affects user experience in several ways:
-- Users cannot easily distinguish between configuration errors and pending controller operations
-- Troubleshooting becomes difficult without clear status feedback
+- Users see stale status from previous valid configurations, making it unclear the resource is now orphaned
+- Troubleshooting becomes difficult as stale status can be misleading
 - The behavior deviates from Kubernetes best practices
 
 ## Motivation
 
-Providing clear, actionable status feedback for orphaned resources
-
-Other Kubernetes controllers provide clear status feedback for orphaned or misconfigured resources:
-
-- **Cilium** reports status on HTTPRoutes with invalid parent references
-  ([docs](https://docs.cilium.io/en/stable/network/servicemesh/gateway-api/gateway-api/))
-- **Cert-manager** validates and reports status on Issuer and Secret references
-  ([docs](https://cert-manager.io/docs/troubleshooting/))
-- **Istio** provides detailed validation messages for VirtualServices with invalid references
-  ([docs](https://istio.io/latest/docs/reference/config/analysis/ist0101/))
+Ensuring status accurately reflects the current state by clearing stale status for orphaned resources
 
 ### Goals
 
-- Report clear, actionable status conditions for resources with invalid or non-existent references
+- Clear stale status for resources that become orphaned
 - Maintain consistency with existing status reporting patterns
 - Handle partial validity scenarios (some refs valid, some invalid) correctly
 - Align with Gateway API and Kubernetes ecosystem best practices
-- Minimize performance overhead of reference validation
+- Minimize performance overhead of status management
+- Only manage status owned by kgateway controller (respect controllerName)
 
 ### Non-Goals
 
 - Change the core translation mechanism or reverse lookup approach
 - Implement "pending" states that might confuse transient controller operations with user errors
-- Add validation beyond reference existence (deeper semantic validation remains in the translator)
+- Validation of references
+- Modify status owned by other controllers (respect controllerName boundaries)
 - Modify the status syncer architecture significantly
 
 ## Implementation Details
 
 ### High-Level Design
 
-The solution introduces **early reference validation** during the initial intermediate representation (IR)
-construction phase, before the main translation phase. This validation checks whether referenced resources
-actually exist and reports errors immediately, ensuring orphaned resources receive status updates.
+The solution introduces **status clearing** using status collections during the intermediate representation (IR) construction phase. Each
+resource with existing status condition gets an empty status entry in the status collection at construction time, essentially marking them "dirty". After translation completes,
+the status collection is merged with the translation ReportMap. This ensures orphaned resources have their stale
+status updated and cleared, while valid resources have their status updated from translation.
 
 #### Current Flow (Problem)
 
@@ -76,110 +71,104 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Resources in K8s] --> B[IR Construction Phase]
-    B --> C[Reference Validation]
-    C -->|Check Parent/Target Refs| D{Refs Exist?}
-    D -->|Yes - Valid| G[Translation Phase]
-    D -->|No - Invalid| F[Status Error]
-    F --> M[Status Collection]
-    G -->|Reverse Lookup| H[Process Valid Resources]
-    H --> I[Generate xDS]
-    I --> J[Translation Status Reporter]
-    M --> K[Combined Status Reporter]
-    J --> K
-    K --> L[Update All Status in K8s]
-    L --> N[User Sees Clear Status]
+    A[Resources in K8s] --> C[IR Construction Phase]
+    C --> D[All Resources Get Empty Status Entry]
+    D --> E[Translation Phase]
+    E -->|Reverse Lookup| F[Process Valid Resources]
+    F --> G[Generate xDS]
+    G --> H[Translation ReportMap]
+    D --> I[Status Collection - Empty Status]
+    I --> J[Merge Status Collection into ReportMap]
+    H --> J
+    J --> K[Update Status in K8s]
     
-    style F fill:#0000ff
-    style M fill:#0000ff
-    style K fill:#009900
+    style I fill:#0000ff
+    style J fill:#009900
 ```
 
 ### Implementation Approach
 
-The solution leverages the existing `ReportMap` infrastructure and introduces reference validation during IR
+The solution leverages the existing `ReportMap` infrastructure and introduces status clearing during IR
 construction phase using a status collection pattern. This approach is consistent with agentgateway status
-reporting and minimizes changes to existing code while ensuring orphaned resources receive appropriate status
-updates.
+reporting and ensuring orphaned resources have their stale status cleared.
 
-#### 1. Reference Validation at IR Construction Phase
+#### 1. Empty Status Creation at IR Construction Phase
 
-During the IR construction phase (when building intermediate representation from CRDs), validate references and
-populate a status collection for invalid refs:
+During the IR construction phase (when building intermediate representation from CRDs), create empty status
+entries for all resources with existing status conditions:
 
 **For HTTPRoute:**
-- Iterate through each `parentRef` in `spec.parentRefs`
-- Check if referenced resource exists (using collection FetchOne)
-- For each **invalid** reference, add a status entry to the HTTPRoute status collection
-- Routes with at least one valid reference proceed to translation
-- Routes with all invalid references are fully orphaned (status collection only, no translation)
+- Create an empty status entry in the HTTPRoute status collection for each HTTPRoute that has existing status condition with kgateway as controller name
+- Empty status means no parent status conditions to begin with, which will clear any stale parent refs
+- All routes proceed to translation phase via reverse lookup
 
 **For TrafficPolicy:**
-- Iterate through each `targetRef` in `spec.targetRefs`  
-- Check if referenced resource exists (using collection FetchOne)
-- For each **invalid** reference, add a status entry to the TrafficPolicy status collection
-- Policies with at least one valid reference proceed to translation
-- Handle ancestor status reporting for multi-section targets
+- Create an empty status entry in the TrafficPolicy status collection for each TrafficPolicy with existing status condition
+- Empty status means no ancestor status conditions to begin with, which will clear any stale target refs
+- All policies proceed to translation phase via reverse lookup
 
 **For other CRDs with references:**
-- Apply similar validation during IR construction
-- Populate respective status collections for invalid references
+- Create empty status entries during IR construction
+- Empty status clears all stale conditions
+- Be careful of Gateway API resources like HTTPRoute, as those can be owned by other controllers simultaneously
 
 #### 2. Status Collection Pattern
 
-Each resource type has its own status collection that captures validation errors:
+Each resource type has its own status collection that captures status entries:
 
 ```go
 // Status collection for HTTPRoutes (created during IR construction)
 httpRouteStatusCollection, irCollection := krt.NewStatusCollection(
-    func(ctx krt.HandlerContext, route *gwv1.HTTPRoute) *gwv1.RouteStatus {
-        status := &gwv1.RouteStatus{}
+    func(ctx krt.HandlerContext, route *gwv1.HTTPRoute) (*gwv1.RouteStatus, *ir.HttpRouteIR) {
+        status := &gwv1.RouteStatus{
+            Parents: []gwv1.RouteParentStatus{},  // Empty - clears all stale parent status
+        }
         
-        // Validate each parentRef
+        // TODO: add empty status if there is existing status condition, check by condition parent length not 0
         for _, parentRef := range route.Spec.ParentRefs {
-            if !resourceExists(ctx, parentRef) {
-                // Add status for invalid ref
+            controllerName := ptr.OrEmpty(parentRef.ControllerName)
+            if controllerName == "" || controllerName == wellknown.GatewayController {
+                // This parent belongs to kgateway, include empty status entry
                 status.Parents = append(status.Parents, gwv1.RouteParentStatus{
-                    ParentRef: parentRef,
-                    Conditions: []metav1.Condition{{
-                        Type:    "Accepted",
-                        Status:  metav1.ConditionFalse,
-                        Reason:  "InvalidParentRef",
-                        Message: fmt.Sprintf("Parent reference %s not found", parentRef.Name),
-                    }},
+                    ParentRef:  parentRef,
+                    Conditions: []metav1.Condition{},  // Empty conditions
                 })
             }
         }
         
-        return status
+        // Build IR (normal IR construction logic)
+        routeIR := constructIR(ctx, route)
+        
+        return status, routeIR
     },
 )
 ```
 
 **Key characteristics:**
-- Status collection only contains entries for **invalid** references
-- Valid references are **not** in the status collection
-- Valid references proceed to translation and populate the ReportMap (existing behavior)
+- Status collection contains empty status entries for all resources with existing status conditions
+- Empty status will overwrite/clear any stale status
+- For HTTPRoute, only check status for parentRefs controlled by kgateway (controllerName check)
+- Translation will populate ReportMap with actual status for valid refs (existing behavior)
 
 #### 3. Status Merging
 
 At the end of translation, merge status collection entries into the existing ReportMap:
 
 **Merging Logic**:
-1. If resource **only** in status collection → fully orphaned (all refs invalid)
-2. If resource **only** in ReportMap → normal path (all refs valid and translated)
-3. If resource in **both** → partially orphaned:
-   - Status collection has conditions for invalid refs
-   - ReportMap has conditions for valid refs that were translated
-   - Merge both to create complete status
+1. If resource has entries in ReportMap (actually translated), overlay those statuses
+    - ReportMap with actual translation status entries merge corresponding empty status entries
+2. Final result:
+    - **Fully orphaned resources**: Only empty status (clears all stale conditions)
+    - **Fully valid resources**: ReportMap status merged with all empty entries (normal path)
+    - **Partially orphaned**: ReportMap merged with some refs, others remain empty (cleared)
 
 Merge will be specific to each resource, and following agentgateway's pattern, each resource will register themselves
 and corresponding merging function to the status syncer. Status syncer will be added with calling all registered merge
-functions. 
+functions.
 
 #### 4. Concrete Example: Partially Orphaned HTTPRoute
 
-Consider an HTTPRoute with two parent refs:
+Consider an HTTPRoute with a parent ref that previously had valid status, but now is changed to an invalid ref:
 
 ```yaml
 apiVersion: gateway.networking.k8s.io/v1
@@ -189,8 +178,9 @@ metadata:
   namespace: default
 spec:
   parentRefs:
-  - name: valid-gateway      # exists
-  - name: missing-gateway    # does NOT exist
+  # changed from valid to invalid
+  # - name: valid-gateway
+  - name: missing-gateway
   rules:
   - matches:
     - path: {type: PathPrefix, value: /app}
@@ -199,78 +189,61 @@ spec:
       port: 80
 ```
 
+**Previous Status (Stale)**:
+```yaml
+status:
+  parents:
+  - parentRef: {name: valid-gateway}
+    conditions: [{type: Accepted, status: "True", ...}] # Wrong - should be cleared
+```
+
 **Processing Flow:**
 
 1. **IR Construction Phase**:
-   - Check `valid-gateway`: exists ✓
-   - Check `missing-gateway`: does NOT exist ✗
-   - Create status collection entry for invalid ref:
-     ```go
-     httpRouteStatusCollection["default/my-route"] = {
-         Parents: [{
-             ParentRef: {Name: "missing-gateway"},
-             Conditions: [{
-                 Type: "Accepted",
-                 Status: "False",
-                 Reason: "InvalidParentRef",
-                 Message: "Gateway missing-gateway not found"
-             }]
-         }]
-     }
-     ```
+    - Create empty status collection entry:
+      ```go
+      httpRouteStatusCollection["default/my-route"] = {}
+      ```
 
 2. **Translation Phase**:
-   - Only `valid-gateway` ref processed (reverse lookup)
-   - Creates ReportMap entry:
-     ```go
-     reportMap.HTTPRoutes["default/my-route"].Parents["valid-gateway"] = {
-         Conditions: [{
-             Type: "Accepted",
-             Status: "True",
-             Reason: "Accepted"
-         }, {
-             Type: "ResolvedRefs", 
-             Status: "True"
-         }]
-     }
-     ```
+    - `missing-gateway` is NOT picked up during translation and not in ReportMap
 
 3. **Merge Phase**:
-   - Merge status collection into ReportMap
-   - Final status has TWO parent status entries:
-     - `valid-gateway`: Accepted=True, ResolvedRefs=True (from ReportMap)
-     - `missing-gateway`: Accepted=False (from status collection)
+    - Empty status from status collection merge with ReportMap from translation (empty report map in this example)
+    - Final status:
+        - `missing-gateway`: Empty conditions (cleared the stale status)
 
 4. **User sees**:
    ```yaml
    status:
      parents:
-     - parentRef: {name: valid-gateway}
-       conditions:
-       - type: Accepted
-         status: "True"
-       - type: ResolvedRefs
-         status: "True"
-     - parentRef: {name: missing-gateway}
-       conditions:
-       - type: Accepted
-         status: "False"
-         reason: InvalidParentRef
-         message: "Gateway missing-gateway not found"
+     # CLEARED - no stale status remains
    ```
 
 ### Status Condition Format
 
 Following Gateway API conventions:
 
-**For Invalid References:**
+**For Orphaned Resources:**
 ```yaml
 status:
-  conditions:
-  - type: Accepted
-    status: "False"
-    reason: InvalidParentRef
-    message: "Parent reference default/non-existent-gateway not found"
+  parents:
+  - parentRef:
+  # Empty - stale status cleared
+```
+
+**For Valid References:**
+```yaml
+status:
+  parents:
+  - parentRef:
+      name: valid-gateway
+    conditions:
+    - type: Accepted
+      status: "True"
+      reason: Accepted
+    - type: ResolvedRefs
+      status: "True"
 ```
 
 **For Partial Validity:**
@@ -282,21 +255,16 @@ status:
     conditions:
     - type: Accepted
       status: "True"
-      reason: Accepted
-  - parentRef:
-      name: invalid-gateway
-    conditions:
-    - type: Accepted
-      status: "False"
-      reason: InvalidParentRef
-      message: "Gateway invalid-gateway not found"
+    - type: ResolvedRefs
+      status: "True"
+  # Only valid shown
 ```
 
 ### Performance Considerations
 
-- Reference validation is a simple collection FetchOne
+- Creating empty status is lightweight
 - No additional API calls to Kubernetes
-- Validation uses existing collections
+- Uses existing collection infrastructure
 
 ### Integration with Existing Systems
 
@@ -310,47 +278,40 @@ TBD
 
 ## Alternatives
 
-### Alternative 1: Fill Missing Status at End of Translation
+### Alternative 1: Clear Missing Status at End of Translation
 
-**Approach:** At the end of translation, iterate through all resources and fill in "Invalid" status for any
-references not already reported.
+**Approach:** At the end of translation, iterate through all resources and clear status for any
+resources that have existing status but not reported.
 
 **Pros:**
-- Works well for HTTPRoute (1 parentRef → 1 parent condition)
-- Minimal changes to existing translation flow
+- Minimal changes, straightforward
 
 **Cons:**
-- Doesn't work for TrafficPolicy (1 targetRef → multiple ancestor conditions)
-- Requires complex deduplication logic
-- Need to filter policies and check existence in reporter map
-- Higher overhead due to post-processing all policies
+- Cannot add validation or other things in the future
 
 ### Alternative 2: Pending State
 
 **Approach:** Introduce a "Pending" status state for resources being processed but not reported at the end.
 
 **Pros:**
-- Explicitly shows resource status for orphaned resources
+- Explicitly shows resources are not processed
 
 **Cons:**
 - Users cannot distinguish between controller operations and configuration errors
+- Misleading for permanently orphaned resources
 
 ### Alternative 3: Mark Orphaned / Invalid Only
 
-**Approach:** Simply mark resources as "orphaned" or "invalid" without detailed reference validation.
+**Approach:** Mark resources as "orphaned" or "invalid".
 
 **Pros:**
 - Simple implementation
 - Low overhead
 
 **Cons:**
-- Doesn't help with partial validity scenarios
-- Missing/stale status for individual invalid references
-- Less actionable for users
-- Doesn't align with Gateway API granular status reporting
+- Might overwrite other controller status, if the parentRef is changed to Gateways owned by other controllers
 
 ## Open Questions
 
-1. **Cross-controller references**: How should we handle references to Gateways owned by other controllers?
-   - **Proposed**: Check for `gateway.spec.gatewayClassName` and skip validation if owned by a different
-     controller
+1. **ControllerName handling**: For HTTPRoute parentRefs, should we clear status for refs with unspecified
+   controllerName, or only those explicitly set to kgateway's controller?
