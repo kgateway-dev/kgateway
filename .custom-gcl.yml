@@ -1,0 +1,6 @@
+version: v2.5.0
+name: golangci-lint-custom
+destination: _output
+plugins:
+- module: github.com/kgateway-dev/kgateway/v2/hack/krtequals
+  path: ./hack/krtequals

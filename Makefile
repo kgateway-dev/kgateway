@@ -113,6 +113,7 @@ mod-download:  ## Download the dependencies
 .PHONY: mod-tidy-nested
 mod-tidy-nested:  ## Tidy go mod files in nested modules
 	@echo "Tidying hack/utils/applier..." && cd hack/utils/applier && go mod tidy
+	@echo "Tidying hack/krtequals..." && cd hack/krtequals && go mod tidy
 
 .PHONY: mod-tidy
 mod-tidy: mod-download mod-tidy-nested ## Tidy the go mod file
@@ -125,11 +126,18 @@ mod-tidy: mod-download mod-tidy-nested ## Tidy the go mod file
 GO_VERSION := $(shell cat go.mod | grep -E '^go' | awk '{print $$2}')
 GOTOOLCHAIN ?= go$(GO_VERSION)
 
+DEPSGOBIN ?= $(OUTPUT_DIR)
 GOLANGCI_LINT ?= go tool golangci-lint
 ANALYZE_ARGS ?= --fix --verbose
+
+CUSTOM_GOLANGCI_LINT_BIN ?= $(DEPSGOBIN)/golangci-lint-custom
 .PHONY: analyze
-analyze:  ## Run golangci-lint. Override options with ANALYZE_ARGS.
-	GOTOOLCHAIN=$(GOTOOLCHAIN) $(GOLANGCI_LINT) run $(ANALYZE_ARGS) --build-tags e2e ./...
+analyze: $(CUSTOM_GOLANGCI_LINT_BIN)  ## Run golangci-lint. Override options with ANALYZE_ARGS.
+	$(CUSTOM_GOLANGCI_LINT_BIN) run $(ANALYZE_ARGS) --build-tags e2e ./...
+
+.PHONY: $(CUSTOM_GOLANGCI_LINT_BIN)
+$(CUSTOM_GOLANGCI_LINT_BIN):
+	GOTOOLCHAIN=$(GOTOOLCHAIN) $(GOLANGCI_LINT) custom
 
 ACTION_LINT ?= go tool github.com/rhysd/actionlint/cmd/actionlint
 .PHONY: lint-actions
