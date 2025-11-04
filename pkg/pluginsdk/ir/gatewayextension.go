@@ -58,6 +58,9 @@ func (e GatewayExtension) Equals(other GatewayExtension) bool {
 	if !reflect.DeepEqual(e.RateLimit, other.RateLimit) {
 		return false
 	}
+	if !reflect.DeepEqual(e.JwtProviders, other.JwtProviders) {
+		return false
+	}
 	if e.PrecedenceWeight != other.PrecedenceWeight {
 		return false
 	}
