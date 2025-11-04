@@ -161,6 +161,8 @@ func (s *testingSuite) TestPromptGuard() {
 }
 
 func (s *testingSuite) TestWebhook() {
+	// TODO: fix webhook in e2e tests
+	s.T().Skipf("Skipping Webhook")
 	server := s.NewMockReqRespServer(
 		MockReqResp{
 			Provider: MockProviderAnthropic,

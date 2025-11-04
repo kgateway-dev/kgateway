@@ -20,9 +20,11 @@ func ApplyTimeouts(rule *gwv1.HTTPRouteRule, route *api.Route) error {
 	if rule == nil || rule.Timeouts == nil {
 		return nil
 	}
-	if route.TrafficPolicy == nil {
-		route.TrafficPolicy = &api.TrafficPolicy{}
+	if route.TrafficPolicies == nil {
+		route.TrafficPolicies = []*api.TrafficPolicySpec{}
 	}
+	var reqDur, beDur *durationpb.Duration
+
 	if rule.Timeouts.Request != nil {
 		d, err := time.ParseDuration(string(*rule.Timeouts.Request))
 		if err != nil {
@@ -31,7 +33,7 @@ func ApplyTimeouts(rule *gwv1.HTTPRouteRule, route *api.Route) error {
 		if d != 0 {
 			// "Setting a timeout to the zero duration (e.g. "0s") SHOULD disable the timeout"
 			// However, agentgateway already defaults to no timeout, so only set for non-zero
-			route.TrafficPolicy.RequestTimeout = durationpb.New(d)
+			reqDur = durationpb.New(d)
 		}
 	}
 	if rule.Timeouts.BackendRequest != nil {
@@ -42,8 +44,18 @@ func ApplyTimeouts(rule *gwv1.HTTPRouteRule, route *api.Route) error {
 		if d != 0 {
 			// "Setting a timeout to the zero duration (e.g. "0s") SHOULD disable the timeout"
 			// However, agentgateway already defaults to no timeout, so only set for non-zero
-			route.TrafficPolicy.BackendRequestTimeout = durationpb.New(d)
+			beDur = durationpb.New(d)
 		}
+	}
+	if reqDur != nil || beDur != nil {
+		route.TrafficPolicies = append(route.TrafficPolicies, &api.TrafficPolicySpec{
+			Kind: &api.TrafficPolicySpec_Timeout{
+				Timeout: &api.Timeout{
+					Request:        reqDur,
+					BackendRequest: beDur,
+				},
+			},
+		})
 	}
 	return nil
 }
@@ -56,8 +68,8 @@ func ApplyRetries(rule *gwv1.HTTPRouteRule, route *api.Route) error {
 	if a := rule.Retry.Attempts; a != nil && *a == 0 {
 		return nil
 	}
-	if route.TrafficPolicy == nil {
-		route.TrafficPolicy = &api.TrafficPolicy{}
+	if route.TrafficPolicies == nil {
+		route.TrafficPolicies = []*api.TrafficPolicySpec{}
 	}
 	tpRetry := &api.Retry{}
 	if rule.Retry.Codes != nil {
@@ -73,7 +85,11 @@ func ApplyRetries(rule *gwv1.HTTPRouteRule, route *api.Route) error {
 	if rule.Retry.Attempts != nil {
 		tpRetry.Attempts = int32(*rule.Retry.Attempts) //nolint:gosec // G115: kubebuilder validation ensures 0 <= value, safe for int32
 	}
-	route.TrafficPolicy.Retry = tpRetry
+	route.TrafficPolicies = append(route.TrafficPolicies, &api.TrafficPolicySpec{
+		Kind: &api.TrafficPolicySpec_Retry{
+			Retry: tpRetry,
+		},
+	})
 	return nil
 }
 
@@ -92,6 +108,8 @@ func GetStatus[I, IS any](spec I) IS {
 	case *v1alpha1.TrafficPolicy:
 		return any(t.Status).(IS)
 	case *gwxv1a1.XListenerSet:
+		return any(t.Status).(IS)
+	case *v1alpha1.AgentgatewayPolicy:
 		return any(t.Status).(IS)
 	default:
 		log.Fatalf("GetStatus unknown type %T", t)

@@ -64,23 +64,25 @@ func translatePoliciesForInferencePool(pool *inf.InferencePool, domainSuffix str
 	eppPolicyTarget := fmt.Sprintf("service/%v:%v",
 		eppSvc, eppPort)
 
-	failureMode := api.PolicySpec_InferenceRouting_FAIL_CLOSED
+	failureMode := api.BackendPolicySpec_InferenceRouting_FAIL_CLOSED
 	if epr.FailureMode == inf.EndpointPickerFailOpen {
-		failureMode = api.PolicySpec_InferenceRouting_FAIL_OPEN
+		failureMode = api.BackendPolicySpec_InferenceRouting_FAIL_OPEN
 	}
 
 	// Create the inference routing policy
 	inferencePolicy := &api.Policy{
 		Name:   pool.Namespace + "/" + pool.Name + ":inference",
 		Target: &api.PolicyTarget{Kind: &api.PolicyTarget_Backend{Backend: svc}},
-		Spec: &api.PolicySpec{
-			Kind: &api.PolicySpec_InferenceRouting_{
-				InferenceRouting: &api.PolicySpec_InferenceRouting{
-					EndpointPicker: &api.BackendReference{
-						Kind: &api.BackendReference_Service{Service: eppSvc},
-						Port: uint32(eppPort), //nolint:gosec // G115: eppPort is derived from validated port numbers
+		Kind: &api.Policy_Backend{
+			Backend: &api.BackendPolicySpec{
+				Kind: &api.BackendPolicySpec_InferenceRouting_{
+					InferenceRouting: &api.BackendPolicySpec_InferenceRouting{
+						EndpointPicker: &api.BackendReference{
+							Kind: &api.BackendReference_Service{Service: eppSvc},
+							Port: uint32(eppPort), //nolint:gosec // G115: eppPort is derived from validated port numbers
+						},
+						FailureMode: failureMode,
 					},
-					FailureMode: failureMode,
 				},
 			},
 		},
@@ -92,11 +94,13 @@ func translatePoliciesForInferencePool(pool *inf.InferencePool, domainSuffix str
 	inferencePolicyTLS := &api.Policy{
 		Name:   pool.Namespace + "/" + pool.Name + ":inferencetls",
 		Target: &api.PolicyTarget{Kind: &api.PolicyTarget_Backend{Backend: eppPolicyTarget}},
-		Spec: &api.PolicySpec{
-			Kind: &api.PolicySpec_BackendTls{
-				BackendTls: &api.PolicySpec_BackendTLS{
-					// The spec mandates this :vomit:
-					Insecure: wrappers.Bool(true),
+		Kind: &api.Policy_Backend{
+			Backend: &api.BackendPolicySpec{
+				Kind: &api.BackendPolicySpec_BackendTls{
+					BackendTls: &api.BackendPolicySpec_BackendTLS{
+						// The spec mandates this :vomit:
+						Insecure: wrappers.Bool(true),
+					},
 				},
 			},
 		},

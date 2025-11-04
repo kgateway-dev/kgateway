@@ -80,7 +80,7 @@ func constructRBAC(policy *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) err
 	return nil
 }
 
-func translateRBAC(rbac *v1alpha1.RBAC) (*envoyauthz.RBACPerRoute, error) {
+func translateRBAC(rbac *v1alpha1.Authorization) (*envoyauthz.RBACPerRoute, error) {
 	var errs []error
 
 	// Create matcher-based RBAC configuration
@@ -127,7 +127,7 @@ func translateRBAC(rbac *v1alpha1.RBAC) (*envoyauthz.RBACPerRoute, error) {
 	return res, nil
 }
 
-func createCELMatcher(celExprs []string, action v1alpha1.AuthorizationPolicyAction) (*cncfmatcherv3.Matcher_MatcherList_FieldMatcher, error) {
+func createCELMatcher(celExprs []v1alpha1.CELExpression, action v1alpha1.AuthorizationPolicyAction) (*cncfmatcherv3.Matcher_MatcherList_FieldMatcher, error) {
 	if len(celExprs) == 0 {
 		return nil, fmt.Errorf("no CEL expressions provided")
 	}
@@ -292,12 +292,12 @@ func createDefaultAction(action envoyrbacv3.RBAC_Action) *cncfmatcherv3.Matcher_
 
 // parseCELExpression takes a CEL expression string and converts it to a parsed expression
 // for use in Envoy matchers. It handles the conversion between different protobuf types.
-func parseCELExpression(env *cel.Env, celExpr string) (*expr.ParsedExpr, error) {
+func parseCELExpression(env *cel.Env, celExpr v1alpha1.CELExpression) (*expr.ParsedExpr, error) {
 	if env == nil {
 		return nil, fmt.Errorf("CEL environment is nil")
 	}
 
-	ast, iss := env.Parse(celExpr)
+	ast, iss := env.Parse(string(celExpr))
 	if iss.Err() != nil {
 		logger.Error("parse error", "err", iss.Err())
 		return nil, iss.Err()

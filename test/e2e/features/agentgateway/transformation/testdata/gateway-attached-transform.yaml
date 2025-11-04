@@ -13,20 +13,21 @@ spec:
           port: 8080
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: TrafficPolicy
+kind: AgentgatewayPolicy
 metadata:
-  name: example-traffic-policy-for-gateway-attached-transform
+  name: example-agw-policy-for-gateway-attached-transform
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: Gateway
     name: gw
-  transformation:
-    request:
-      set:
-        - name: request-gateway
-          value: "level_{%- if headers != \"\" -%}{{headers.X-Incoming-Stuff.0}}{% else %}unknown{% endif %}"
-    response:
-      set:
-        - name: response-gateway
-          value: "'goodbye'"
+  traffic:
+    transformation:
+      request:
+        set:
+          - name: request-gateway
+            value: "level_{%- if headers != \"\" -%}{{headers.X-Incoming-Stuff.0}}{% else %}unknown{% endif %}"
+      response:
+        set:
+          - name: response-gateway
+            value: "'goodbye'"

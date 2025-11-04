@@ -62,10 +62,10 @@ type AgwCollections struct {
 	RefGrants   *krtcollections.RefGrantIndex
 
 	// kgateway resources
-	Backends          krt.Collection[*v1alpha1.Backend]
-	TrafficPolicies   krt.Collection[*v1alpha1.TrafficPolicy]
-	DirectResponses   krt.Collection[*v1alpha1.DirectResponse]
-	GatewayExtensions krt.Collection[*v1alpha1.GatewayExtension]
+	Backends             krt.Collection[*v1alpha1.Backend]
+	AgentgatewayPolicies krt.Collection[*v1alpha1.AgentgatewayPolicy]
+	DirectResponses      krt.Collection[*v1alpha1.DirectResponse]
+	GatewayExtensions    krt.Collection[*v1alpha1.GatewayExtension]
 
 	// ControllerName is the name of the Gateway controller.
 	ControllerName string
@@ -102,17 +102,17 @@ func registerKgwResources(kgwClient kgwversioned.Interface) {
 			return kgwClient.GatewayV1alpha1().DirectResponses(namespace)
 		},
 	)
-	kubeclient.Register[*v1alpha1.TrafficPolicy](
-		wellknown.TrafficPolicyGVR,
-		wellknown.TrafficPolicyGVK,
+	kubeclient.Register[*v1alpha1.AgentgatewayPolicy](
+		wellknown.AgentgatewayPolicyGVR,
+		wellknown.AgentgatewayPolicyGVK,
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
-			return kgwClient.GatewayV1alpha1().TrafficPolicies(namespace).List(context.Background(), o)
+			return kgwClient.GatewayV1alpha1().AgentgatewayPolicies(namespace).List(context.Background(), o)
 		},
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
-			return kgwClient.GatewayV1alpha1().TrafficPolicies(namespace).Watch(context.Background(), o)
+			return kgwClient.GatewayV1alpha1().AgentgatewayPolicies(namespace).Watch(context.Background(), o)
 		},
-		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*v1alpha1.TrafficPolicy] {
-			return kgwClient.GatewayV1alpha1().TrafficPolicies(namespace)
+		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*v1alpha1.AgentgatewayPolicy] {
+			return kgwClient.GatewayV1alpha1().AgentgatewayPolicies(namespace)
 		},
 	)
 }
@@ -248,7 +248,7 @@ func (c *AgwCollections) HasSynced() bool {
 		c.WrappedPods != nil && c.WrappedPods.HasSynced() &&
 		c.RefGrants != nil && c.RefGrants.HasSynced() &&
 		c.Backends != nil && c.Backends.HasSynced() &&
-		c.TrafficPolicies != nil && c.TrafficPolicies.HasSynced() &&
+		c.AgentgatewayPolicies != nil && c.AgentgatewayPolicies.HasSynced() &&
 		c.DirectResponses != nil && c.DirectResponses.HasSynced() &&
 		c.GatewayExtensions != nil && c.GatewayExtensions.HasSynced()
 }
@@ -323,10 +323,10 @@ func NewAgwCollections(
 		RefGrants:   commoncol.RefGrants,
 
 		// kgateway resources
-		DirectResponses:   krt.NewInformer[*v1alpha1.DirectResponse](commoncol.Client),
-		TrafficPolicies:   krt.NewInformer[*v1alpha1.TrafficPolicy](commoncol.Client),
-		GatewayExtensions: krt.NewInformer[*v1alpha1.GatewayExtension](commoncol.Client),
-		Backends:          krt.NewInformer[*v1alpha1.Backend](commoncol.Client),
+		DirectResponses:      krt.NewInformer[*v1alpha1.DirectResponse](commoncol.Client),
+		AgentgatewayPolicies: krt.NewInformer[*v1alpha1.AgentgatewayPolicy](commoncol.Client),
+		GatewayExtensions:    krt.NewInformer[*v1alpha1.GatewayExtension](commoncol.Client),
+		Backends:             krt.NewInformer[*v1alpha1.Backend](commoncol.Client),
 	}
 
 	if commoncol.Settings.EnableInferExt {

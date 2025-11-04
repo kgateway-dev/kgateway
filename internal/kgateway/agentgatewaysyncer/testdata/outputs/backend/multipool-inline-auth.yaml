@@ -19,18 +19,18 @@ Listeners:
   name: http
   protocol: HTTP
 Policies:
-- name: auth-default/multipool-inline-anthropic
-  spec:
+- backend:
     auth:
       key:
         secret: sk-anthropic-primary-key
+  name: auth-default/multipool-inline-anthropic
   target:
     subBackend: default/multipool-inline/anthropic
-- name: auth-default/multipool-inline-openai
-  spec:
+- backend:
     auth:
       key:
         secret: sk-openai-primary-key
+  name: auth-default/multipool-inline-openai
   target:
     subBackend: default/multipool-inline/openai
 Routes:

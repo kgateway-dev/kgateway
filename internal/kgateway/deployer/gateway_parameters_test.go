@@ -243,25 +243,6 @@ func TestGatewayGVKsToWatch(t *testing.T) {
 	})
 }
 
-func TestInferencePoolGVKsToWatch(t *testing.T) {
-	gwc := defaultGatewayClass()
-	gwParams := emptyGatewayParameters()
-	cli := newFakeClientWithObjs(gwc, gwParams)
-
-	d, err := NewInferencePoolDeployer(wellknown.DefaultGatewayControllerName, wellknown.DefaultAgwControllerName, wellknown.DefaultAgwClassName, cli)
-	assert.NoError(t, err)
-
-	gvks, err := InferencePoolGVKsToWatch(context.TODO(), d)
-	assert.NoError(t, err)
-	assert.Len(t, gvks, 4)
-	assert.ElementsMatch(t, gvks, []schema.GroupVersionKind{
-		wellknown.DeploymentGVK,
-		wellknown.ServiceGVK,
-		wellknown.ServiceAccountGVK,
-		wellknown.ClusterRoleBindingGVK,
-	})
-}
-
 func TestAgentgatewayAndEnvoyContainerDistinctValues(t *testing.T) {
 	// Create GatewayParameters with agentgateway disabled and distinct values
 	gwParams := &gw2_v1alpha1.GatewayParameters{

@@ -215,17 +215,6 @@ func TestWithAutoDns(t *testing.T) {
 	runScenario(t, "testdata/autodns", st)
 }
 
-func TestWithInferenceAPI(t *testing.T) {
-	st, err := envtestutil.BuildSettings()
-	if err != nil {
-		t.Fatalf("can't get settings %v", err)
-	}
-	st.EnableInferExt = true
-	st.InferExtAutoProvision = true
-
-	runScenario(t, "testdata/inference_api", st)
-}
-
 func TestPolicyUpdate(t *testing.T) {
 	st, err := envtestutil.BuildSettings()
 	if err != nil {

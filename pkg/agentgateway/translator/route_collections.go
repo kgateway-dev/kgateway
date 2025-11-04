@@ -388,7 +388,8 @@ func createRouteCollection[T controllers.Object, ST any](
 		collectionName,
 		translator,
 		func(e AgwRoute, parent RouteParentReference) *api.Resource {
-			inner := protomarshal.Clone(e.Route)
+			// safety: a shallow clone is ok because we only modify a top level field (Key)
+			inner := protomarshal.ShallowClone(e.Route)
 			_, name, _ := strings.Cut(parent.InternalName, "/")
 			inner.ListenerKey = name
 			if sec := string(parent.ParentSection); sec != "" {

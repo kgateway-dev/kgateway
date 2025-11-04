@@ -4,22 +4,18 @@ package agentgateway
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
-	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 type testingSuite struct {
@@ -70,21 +66,6 @@ func (s *testingSuite) TestAgentgatewayTCPRoute() {
 }
 
 func (s *testingSuite) TestAgentgatewayHTTPRoute() {
-	// modify the default agentgateway GatewayClass to point to the custom GatewayParameters
-	err := s.TestInstallation.Actions.Kubectl().RunCommand(s.Ctx, "patch", "--type", "json",
-		"gatewayclass", wellknown.DefaultAgwClassName, "-p",
-		fmt.Sprintf(`[{"op": "add", "path": "/spec/parametersRef", "value": {"group":"%s", "kind":"%s", "name":"%s", "namespace":"%s"}}]`,
-			v1alpha1.GroupName, wellknown.GatewayParametersGVK.Kind, gatewayParamsObjectMeta.GetName(), gatewayParamsObjectMeta.GetNamespace()))
-	s.Require().NoError(err, "patching gatewayclass %s", wellknown.DefaultAgwClassName)
-
-	testutils.Cleanup(s.T(), func() {
-		// revert to the original GatewayClass (by removing the parametersRef)
-		err := s.TestInstallation.Actions.Kubectl().RunCommand(s.Ctx, "patch", "--type", "json",
-			"gatewayclass", wellknown.DefaultAgwClassName, "-p",
-			`[{"op": "remove", "path": "/spec/parametersRef"}]`)
-		s.Require().NoError(err, "patching gatewayclass %s", wellknown.DefaultAgwClassName)
-	})
-
 	s.TestInstallation.Assertions.EventuallyGatewayCondition(
 		s.Ctx,
 		httpGatewayObjectMeta.Name,

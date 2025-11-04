@@ -11,7 +11,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
-	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
@@ -39,9 +38,6 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 
 		// Service backing for routes
 		backingSvc *corev1.Service
-
-		// Inferencepool backing for routes
-		backingPool *inf.InferencePool
 	)
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
@@ -252,181 +248,6 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				Expect(routes[0].Backends[0].Backend.ClusterName).To(Equal("blackhole_cluster"))
 				Expect(routes[0].Match.Path.Type).To(BeEquivalentTo(ptr.To(gwv1.PathMatchPathPrefix)))
 				Expect(routes[0].Match.Path.Value).To(BeEquivalentTo(ptr.To("/")))
-
-				routeStatus := reportsMap.BuildRouteStatus(ctx, route, wellknown.DefaultGatewayClassName)
-				Expect(routeStatus).NotTo(BeNil())
-				Expect(routeStatus.Parents).To(HaveLen(1))
-				By("verifying the route was accepted")
-				accepted := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
-				Expect(accepted).NotTo(BeNil())
-				Expect(accepted.Status).To(Equal(metav1.ConditionTrue))
-				Expect(accepted.Reason).To(BeEquivalentTo(gwv1.RouteConditionAccepted))
-				By("verifying the route was not able to resolve the backend")
-				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
-				Expect(resolvedRefs).NotTo(BeNil())
-				Expect(resolvedRefs.Status).To(Equal(metav1.ConditionFalse))
-				Expect(resolvedRefs.Reason).To(BeEquivalentTo(gwv1.RouteReasonBackendNotFound))
-			})
-		})
-	})
-
-	Context("HTTPRoute resource routing with InferencePool backendRef", func() {
-		BeforeEach(func() {
-			backingPool = &inf.InferencePool{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       wellknown.InferencePoolKind,
-					APIVersion: inf.GroupVersion.String(),
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-inferencepool",
-					Namespace: "bar",
-				},
-				Spec: inf.InferencePoolSpec{
-					TargetPorts: []inf.Port{{Number: 8000}},
-				},
-			}
-		})
-
-		When("referencing a valid backing inferencepool", func() {
-			BeforeEach(func() {
-				route.Spec.Rules = []gwv1.HTTPRouteRule{
-					{
-						Matches: []gwv1.HTTPRouteMatch{
-							{
-								Path: &gwv1.HTTPPathMatch{
-									Type:  ptr.To(gwv1.PathMatchPathPrefix),
-									Value: ptr.To("/"),
-								},
-							},
-						},
-						BackendRefs: []gwv1.HTTPBackendRef{
-							{
-								BackendRef: gwv1.BackendRef{
-									BackendObjectReference: gwv1.BackendObjectReference{
-										Name:      gwv1.ObjectName(backingPool.Name),
-										Namespace: ptr.To(gwv1.Namespace(backingPool.Namespace)),
-										Kind:      ptr.To(gwv1.Kind(wellknown.InferencePoolKind)),
-										Group:     ptr.To(gwv1.Group(inf.GroupVersion.Group)),
-									},
-								},
-							},
-						},
-					},
-				}
-
-				// Set a rule referencing the backing InferencePool
-				routeir.Rules = []ir.HttpRouteRuleIR{
-					{
-						Matches: route.Spec.Rules[0].Matches,
-						Backends: []ir.HttpBackendOrDelegate{
-							{
-								Backend: &ir.BackendRefIR{
-									BackendObject: &ir.BackendObjectIR{
-										ObjectSource: ir.ObjectSource{
-											Namespace: backingPool.Namespace,
-											Name:      backingPool.Name,
-											Kind:      wellknown.InferencePoolKind,
-											Group:     inf.GroupVersion.Group,
-										},
-										Port: 8000,
-										Obj:  backingPool,
-									},
-									ClusterName: "inferencepool_cluster",
-								},
-							},
-						},
-					},
-				}
-
-				routeInfo = &query.RouteInfo{
-					Object: routeir,
-				}
-			})
-
-			It("translates the route correctly", func() {
-				routes := httproute.TranslateGatewayHTTPRouteRules(
-					ctx, routeInfo, parentRefReporter, baseReporter)
-
-				Expect(routes).To(HaveLen(1))
-				Expect(routes[0].Name).To(Equal("httproute-foo-httproute-bar-0-0"))
-
-				Expect(routes[0].Backends).To(HaveLen(1))
-				Expect(routes[0].Backends[0].Backend.ClusterName).To(Equal("inferencepool_cluster"))
-
-				routeStatus := reportsMap.BuildRouteStatus(ctx, route, wellknown.DefaultGatewayClassName)
-				Expect(routeStatus).NotTo(BeNil())
-				Expect(routeStatus.Parents).To(HaveLen(1))
-				By("verifying the route was accepted")
-				accepted := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
-				Expect(accepted).NotTo(BeNil())
-				Expect(accepted.Status).To(Equal(metav1.ConditionTrue))
-				Expect(accepted.Reason).To(BeEquivalentTo(gwv1.RouteReasonAccepted))
-				By("verifying the route was resolved correctly")
-				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
-				Expect(resolvedRefs).NotTo(BeNil())
-				Expect(resolvedRefs.Status).To(Equal(metav1.ConditionTrue))
-				Expect(resolvedRefs.Reason).To(BeEquivalentTo(gwv1.RouteReasonResolvedRefs))
-			})
-		})
-
-		When("referencing a non-existent backing inferencepool", func() {
-			BeforeEach(func() {
-				route.Spec.Rules = []gwv1.HTTPRouteRule{
-					{
-						Matches: []gwv1.HTTPRouteMatch{{
-							Path: &gwv1.HTTPPathMatch{
-								Type:  ptr.To(gwv1.PathMatchPathPrefix),
-								Value: ptr.To("/"),
-							},
-						}},
-						BackendRefs: []gwv1.HTTPBackendRef{{
-							BackendRef: gwv1.BackendRef{
-								BackendObjectReference: gwv1.BackendObjectReference{
-									Name:      "missing-inferencepool",
-									Namespace: ptr.To(gwv1.Namespace(backingPool.Namespace)),
-									Kind:      ptr.To(gwv1.Kind(wellknown.InferencePoolKind)),
-									Group:     ptr.To(gwv1.Group(inf.GroupVersion.Group)),
-									Port:      ptr.To(gwv1.PortNumber(9002)),
-								},
-							},
-						}},
-					},
-				}
-
-				routeir.Rules = []ir.HttpRouteRuleIR{
-					{
-						Matches: route.Spec.Rules[0].Matches,
-						Backends: []ir.HttpBackendOrDelegate{
-							{
-								Backend: &ir.BackendRefIR{
-									BackendObject: &ir.BackendObjectIR{
-										ObjectSource: ir.ObjectSource{
-											Namespace: backingPool.Namespace,
-											Name:      "missing-inferencepool",
-											Kind:      wellknown.InferencePoolKind,
-											Group:     inf.GroupVersion.Group,
-										},
-										Port: 9002,
-									},
-									ClusterName: "blackhole_cluster",
-									Err:         errors.New("inferencepool not found"),
-								},
-							},
-						},
-					},
-				}
-
-				routeInfo = &query.RouteInfo{
-					Object: routeir,
-				}
-			})
-
-			It("falls back to a blackhole cluster", func() {
-				routes := httproute.TranslateGatewayHTTPRouteRules(
-					ctx, routeInfo, parentRefReporter, baseReporter)
-
-				Expect(routes).To(HaveLen(1))
-				Expect(routes[0].Backends[0].Backend.ClusterName).To(Equal("blackhole_cluster"))
 
 				routeStatus := reportsMap.BuildRouteStatus(ctx, route, wellknown.DefaultGatewayClassName)
 				Expect(routeStatus).NotTo(BeNil())

@@ -25,9 +25,10 @@ Routes:
   key: default/example-route-backend-request-both-timeout.0.0.http
   listenerKey: default/example-gateway.http
   routeName: default/example-route-backend-request-both-timeout
-  trafficPolicy:
-    backendRequestTimeout: 9s
-    requestTimeout: 10s
+  trafficPolicies:
+  - timeout:
+      backendRequest: 9s
+      request: 10s
 - backends:
   - backend:
       port: 80
@@ -38,8 +39,9 @@ Routes:
   key: default/example-route-backend-request-timeout.0.0.http
   listenerKey: default/example-gateway.http
   routeName: default/example-route-backend-request-timeout
-  trafficPolicy:
-    backendRequestTimeout: 7s
+  trafficPolicies:
+  - timeout:
+      backendRequest: 7s
 - backends:
   - backend:
       port: 80
@@ -50,9 +52,10 @@ Routes:
   key: default/example-route-retry-backend-request.0.0.http
   listenerKey: default/example-gateway.http
   routeName: default/example-route-retry-backend-request
-  trafficPolicy:
-    backendRequestTimeout: 9s
-    retry:
+  trafficPolicies:
+  - timeout:
+      backendRequest: 9s
+  - retry:
       attempts: 2
       backoff: 1s
       retryStatusCodes:
@@ -68,10 +71,11 @@ Routes:
   key: default/example-route-retry-both-timeouts.0.0.http
   listenerKey: default/example-gateway.http
   routeName: default/example-route-retry-both-timeouts
-  trafficPolicy:
-    backendRequestTimeout: 5s
-    requestTimeout: 10s
-    retry:
+  trafficPolicies:
+  - timeout:
+      backendRequest: 5s
+      request: 10s
+  - retry:
       attempts: 3
 - backends:
   - backend:
@@ -83,8 +87,8 @@ Routes:
   key: default/example-route-retry.0.0.http
   listenerKey: default/example-gateway.http
   routeName: default/example-route-retry
-  trafficPolicy:
-    retry:
+  trafficPolicies:
+  - retry:
       attempts: 2
       backoff: 1s
       retryStatusCodes:
@@ -99,5 +103,6 @@ Routes:
   key: default/example-route-timeout.0.0.http
   listenerKey: default/example-gateway.http
   routeName: default/example-route-timeout
-  trafficPolicy:
-    requestTimeout: 9s
+  trafficPolicies:
+  - timeout:
+      request: 9s

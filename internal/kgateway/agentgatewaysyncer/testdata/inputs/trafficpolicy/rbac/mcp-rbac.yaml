@@ -54,7 +54,7 @@ spec:
             app: mcp-app
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: TrafficPolicy
+kind: AgentgatewayPolicy
 metadata:
   name: cel-rbac-policy
 spec:
@@ -62,9 +62,11 @@ spec:
     - name: mcp-backend
       kind: Backend
       group: gateway.networking.k8s.io
-  rbac:
-    policy:
-      matchExpressions:
+  backend:
+    mcp:
+      authorization:
+        policy:
+          matchExpressions:
           - 'mcp.tool.name == "echo"'
           - 'jwt.sub == "test-user" && mcp.tool.name == "add"'
           - 'mcp.tool.name == "printEnv" && jwt.nested.key == "value"'

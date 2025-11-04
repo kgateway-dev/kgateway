@@ -19,8 +19,7 @@ Listeners:
   name: http
   protocol: HTTP
 Policies:
-- name: auth-default/bedrock-backend
-  spec:
+- backend:
     auth:
       aws:
         explicitConfig:
@@ -28,6 +27,7 @@ Policies:
           region: us-west-2
           secretAccessKey: fakeSecretKeyString
           sessionToken: ""
+  name: auth-default/bedrock-backend
   target:
     subBackend: default/bedrock/backend
 Routes:

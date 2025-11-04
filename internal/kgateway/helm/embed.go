@@ -10,7 +10,4 @@ var (
 
 	//go:embed all:agentgateway
 	AgentgatewayHelmChart embed.FS
-
-	//go:embed all:inference-extension
-	InferenceExtensionHelmChart embed.FS
 )

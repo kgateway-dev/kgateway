@@ -191,7 +191,7 @@ type SingleAuthToken struct {
 
 	// Store the API key in a Kubernetes secret in the same namespace as the Backend.
 	// Then, refer to the secret in the Backend configuration. This option is more secure than an inline token,
-	// because the API key is encoded and you can restrict access to secrets through RBAC rules.
+	// because the API key is encoded and you can restrict access to secrets through Authorization rules.
 	// You might use this option in proofs of concept, controlled development and staging environments,
 	// or well-controlled prod environments that use secrets.
 	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`

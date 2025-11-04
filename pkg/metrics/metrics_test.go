@@ -441,3 +441,34 @@ func TestActiveMetrics(t *testing.T) {
 	SetActive(true)
 	assert.True(t, Active())
 }
+
+type exampleTypedLabels struct {
+	Namespace   string
+	GatewayName string
+	Port        string
+}
+
+func (r exampleTypedLabels) toMetricsLabels() []Label {
+	return []Label{
+		{Name: "namespace", Value: r.Namespace},
+		{Name: "gateway", Value: r.GatewayName},
+		{Name: "port", Value: r.Port},
+	}
+}
+
+func BenchmarkCounter(b *testing.B) {
+	opts := CounterOpts{
+		Name: "test_empty_labels_total",
+		Help: "A test counter for empty label testing",
+	}
+
+	counter := NewCounter(opts, []string{"namespace", "gateway", "port"})
+	tl := exampleTypedLabels{
+		Namespace:   "apple",
+		GatewayName: "banana",
+		Port:        "avocado",
+	}
+	for b.Loop() {
+		counter.Inc(tl.toMetricsLabels()...)
+	}
+}
