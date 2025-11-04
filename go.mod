@@ -37,8 +37,8 @@ require (
 	google.golang.org/grpc v1.76.0
 	google.golang.org/protobuf v1.36.10
 	helm.sh/helm/v3 v3.19.2
-	istio.io/api v1.28.0-alpha.0.0.20251027163102-1d538150001d
-	istio.io/client-go v1.28.0-alpha.0.0.20251027163503-4de5e66466a2
+	istio.io/api v1.28.0-alpha.0.0.20251118133802-3d6b80ec2d1e
+	istio.io/client-go v1.28.0-alpha.0.0.20251118134000-fa71d5732509
 	istio.io/istio v0.0.0-20251028211303-5e600e992cad
 	k8s.io/api v0.34.1
 	k8s.io/apiextensions-apiserver v0.34.1
@@ -656,3 +656,7 @@ tool (
 	sigs.k8s.io/controller-tools/cmd/controller-gen
 	sigs.k8s.io/kind
 )
+
+replace istio.io/istio => ../../../istio.io/istio
+
+replace github.com/agentgateway/agentgateway => /home/john/solo/agentgateway

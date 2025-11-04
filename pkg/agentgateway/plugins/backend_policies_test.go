@@ -39,7 +39,7 @@ func TestTranslateBackendMCPAuthorization(t *testing.T) {
 			name: "nil mcp",
 			pol: &v1alpha1.AgentgatewayPolicy{
 				Spec: v1alpha1.AgentgatewayPolicySpec{
-					Backend: &v1alpha1.AgentgatewayPolicyBackend{},
+					Backend: &v1alpha1.AgentgatewayPolicyBackendFull{},
 				},
 			},
 			target: targetGateway,
@@ -51,7 +51,7 @@ func TestTranslateBackendMCPAuthorization(t *testing.T) {
 			name: "nil authorization",
 			pol: &v1alpha1.AgentgatewayPolicy{
 				Spec: v1alpha1.AgentgatewayPolicySpec{
-					Backend: &v1alpha1.AgentgatewayPolicyBackend{
+					Backend: &v1alpha1.AgentgatewayPolicyBackendFull{
 						MCP: &v1alpha1.BackendMCP{},
 					},
 				},
@@ -77,7 +77,7 @@ func TestTranslateBackendMCPAuthorization(t *testing.T) {
 							},
 						},
 					},
-					Backend: &v1alpha1.AgentgatewayPolicyBackend{
+					Backend: &v1alpha1.AgentgatewayPolicyBackendFull{
 						MCP: &v1alpha1.BackendMCP{
 							Authorization: &v1alpha1.Authorization{
 								Policy: v1alpha1.AuthorizationPolicy{
@@ -116,7 +116,7 @@ func TestTranslateBackendMCPAuthorization(t *testing.T) {
 					Name:      "name",
 				},
 				Spec: v1alpha1.AgentgatewayPolicySpec{
-					Backend: &v1alpha1.AgentgatewayPolicyBackend{
+					Backend: &v1alpha1.AgentgatewayPolicyBackendFull{
 						MCP: &v1alpha1.BackendMCP{
 							Authorization: &v1alpha1.Authorization{
 								Action: v1alpha1.AuthorizationPolicyActionDeny,
