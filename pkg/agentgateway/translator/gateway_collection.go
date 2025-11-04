@@ -323,8 +323,10 @@ func GatewayCollection(
 }
 
 type ListenerSet struct {
-	Name          string               `json:"name"`
-	Parent        types.NamespacedName `json:"parent"`
+	Name string `json:"name"`
+	// +krtEqualsTodo include parent gateway identity in equality check
+	Parent types.NamespacedName `json:"parent"`
+	// +krtEqualsTodo ensure parent metadata differences trigger equality
 	ParentInfo    ParentInfo           `json:"parentInfo"`
 	TLSInfo       *TLSInfo             `json:"tlsInfo"`
 	GatewayParent types.NamespacedName `json:"gatewayParent"`

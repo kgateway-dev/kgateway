@@ -30,6 +30,7 @@ import (
 )
 
 type TrafficPolicyGatewayExtensionIR struct {
+	// +krtEqualsTodo decide whether extension name should affect equality
 	Name             string
 	ExtType          v1alpha1.GatewayExtensionType
 	ExtAuth          *envoy_ext_authz_v3.ExtAuthz

@@ -91,64 +91,64 @@ spec:
         value: response          
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: TrafficPolicy
+kind: AgentgatewayPolicy
 metadata:
   name: openai-prompt-guard
 spec:
   targetRefs:
-  - group: gateway.networking.k8s.io
-    kind: HTTPRoute
-    name: llm
-    sectionName: openai
-  ai:
-    promptGuard:
-      request:
-        customResponse:
-          message: "request rejected"
-          statusCode: 403
-        regex:
-          action: REJECT
-          matches:
-          - name: credit-card
-            pattern: "credit card"
-      response:
-        regex:
-          action: REJECT
-          builtins:
-            - SSN
+  - group: gateway.kgateway.dev
+    kind: Backend
+    name: openai
+  backend:
+    ai:
+      promptGuard:
+        request:
+          customResponse:
+            message: "request rejected"
+            statusCode: 403
+          regex:
+            action: REJECT
+            matches:
+            - name: credit-card
+              pattern: "credit card"
+        response:
+          regex:
+            action: REJECT
+            builtins:
+              - SSN
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: TrafficPolicy
+kind: AgentgatewayPolicy
 metadata:
   name: anthropic-request-guardrails
 spec:
   targetRefs:
-  - group: gateway.networking.k8s.io
-    kind: HTTPRoute
-    name: llm
-    sectionName: anthropic-0
-  ai:
-    promptGuard:
-      request:
-        webhook:
-          host:
-            host: ai-guardrails-webhook.default
-            port: 8000
+    - group: gateway.kgateway.dev
+      kind: Backend
+      name: anthropic
+  backend:
+    ai:
+      promptGuard:
+        request:
+          webhook:
+            host:
+              host: ai-guardrails-webhook.default
+              port: 8000
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: TrafficPolicy
+kind: AgentgatewayPolicy
 metadata:
   name: anthropic-response-guardrails
 spec:
   targetRefs:
-  - group: gateway.networking.k8s.io
-    kind: HTTPRoute
-    name: llm
-    sectionName: anthropic-1
-  ai:
-    promptGuard:
-      response:
-        webhook:
-          host:
-            host: ai-guardrails-webhook.default
-            port: 8000
+    - group: gateway.kgateway.dev
+      kind: Backend
+      name: anthropic
+  backend:
+    ai:
+      promptGuard:
+        response:
+          webhook:
+            host:
+              host: ai-guardrails-webhook.default
+              port: 8000

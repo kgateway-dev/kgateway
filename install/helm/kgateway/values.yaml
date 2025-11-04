@@ -98,8 +98,6 @@ image:
 inferenceExtension:
   # -- Enable Inference Extension. If enabled, agentgateway.enabled should also be set to true. Enabling inference extension without agentgateway is deprecated in v2.1 and will not be supported in v2.2.
   enabled: false
-  # -- Enable automatic provisioning for Inference Extension. Deprecated: this is deprecated in v2.1 and will be removed in v2.2.
-  autoProvision: false
 
 # -- List of namespace selectors (OR'ed): each entry can use 'matchLabels' or 'matchExpressions' (AND'ed within each entry if used together). Kgateway includes the selected namespaces in config discovery. For more information, see the docs https://kgateway.dev/docs/operations/install/#namespace-discovery.
 discoveryNamespaceSelectors: []

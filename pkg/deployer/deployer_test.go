@@ -18,18 +18,15 @@ import (
 	"google.golang.org/protobuf/proto"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	api "sigs.k8s.io/gateway-api/apis/v1"
 	apixv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	gw2_v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	deployerinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/httplistenerpolicy"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -2456,113 +2453,6 @@ var _ = Describe("Deployer", func() {
 				},
 			}),
 		)
-	})
-
-	Context("Inference Extension endpoint picker", func() {
-		const defaultNamespace = "default"
-
-		It("should deploy endpoint picker resources for an InferencePool when autoProvision is enabled", func() {
-			// Create a fake InferencePool resource.
-			pool := &inf.InferencePool{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       wellknown.InferencePoolKind,
-					APIVersion: fmt.Sprintf("%s/%s", inf.GroupVersion.Group, inf.GroupVersion.Version),
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pool1",
-					Namespace: defaultNamespace,
-					UID:       "pool-uid",
-				},
-			}
-
-			// Initialize a new deployer with InferenceExtension inputs.
-			ie := &deployerinternal.InferenceExtension{}
-			chart, err := deployerinternal.LoadInferencePoolChart()
-			Expect(err).NotTo(HaveOccurred())
-			cli := newFakeClientWithObjs(pool)
-			d := deployer.NewDeployer(
-				wellknown.DefaultGatewayControllerName,
-				wellknown.DefaultAgwControllerName,
-				wellknown.DefaultAgwClassName,
-				cli,
-				chart,
-				ie,
-				deployerinternal.InferenceExtensionReleaseNameAndNamespace,
-			)
-
-			// Simulate reconciliation so that the pool gets its finalizer added.
-			err = controller.EnsureFinalizer(context.Background(), cli, pool)
-			Expect(err).NotTo(HaveOccurred())
-
-			// Check that the pool itself has the finalizer set.
-			Expect(pool.GetFinalizers()).To(ContainElement(wellknown.InferencePoolFinalizer))
-
-			// Get the endpoint picker objects for the InferencePool.
-			objs, err := d.GetObjsToDeploy(context.Background(), pool)
-			Expect(err).NotTo(HaveOccurred())
-			objs = d.SetNamespaceAndOwner(pool, objs)
-
-			Expect(objs).NotTo(BeEmpty(), "expected non-empty objects for endpoint picker deployment")
-			Expect(objs).To(HaveLen(4))
-
-			// Find the child objects.
-			var sa *corev1.ServiceAccount
-			var crb *rbacv1.ClusterRoleBinding
-			var dep *appsv1.Deployment
-			var svc *corev1.Service
-			for _, obj := range objs {
-				switch t := obj.(type) {
-				case *corev1.ServiceAccount:
-					sa = t
-				case *rbacv1.ClusterRoleBinding:
-					crb = t
-				case *appsv1.Deployment:
-					dep = t
-				case *corev1.Service:
-					svc = t
-				}
-			}
-			Expect(sa).NotTo(BeNil(), "expected a ServiceAccount to be rendered")
-			Expect(crb).NotTo(BeNil(), "expected a ClusterRoleBinding to be rendered")
-			Expect(dep).NotTo(BeNil(), "expected a Deployment to be rendered")
-			Expect(svc).NotTo(BeNil(), "expected a Service to be rendered")
-
-			// Check that owner references are set on all rendered objects to the InferencePool.
-			for _, obj := range objs {
-				gvk := obj.GetObjectKind().GroupVersionKind()
-				if deployer.IsNamespaced(gvk) {
-					ownerRefs := obj.GetOwnerReferences()
-					Expect(ownerRefs).To(HaveLen(1))
-					ref := ownerRefs[0]
-					Expect(ref.Name).To(Equal(pool.Name))
-					Expect(ref.UID).To(Equal(pool.UID))
-					Expect(ref.Kind).To(Equal(pool.Kind))
-					Expect(ref.APIVersion).To(Equal(pool.APIVersion))
-					Expect(*ref.Controller).To(BeTrue())
-				}
-			}
-
-			// Validate that the rendered Deployment and Service have the expected names.
-			expectedName := fmt.Sprintf("%s-endpoint-picker", pool.Name)
-			Expect(sa.Name).To(Equal(expectedName))
-			Expect(crb.Name).To(Equal(expectedName))
-			Expect(dep.Name).To(Equal(expectedName))
-			Expect(svc.Name).To(Equal(expectedName))
-
-			// Check the container args for the expected poolName.
-			Expect(dep.Spec.Template.Spec.Containers).To(HaveLen(1))
-			pickerContainer := dep.Spec.Template.Spec.Containers[0]
-			Expect(pickerContainer.Args).To(Equal([]string{
-				"-poolName",
-				pool.Name,
-				"-v",
-				"4",
-				"-grpcPort",
-				"9002",
-				"-grpcHealthPort",
-				"9003",
-			}))
-		})
 	})
 
 	Context("with listener sets", func() {

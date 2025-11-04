@@ -13,26 +13,25 @@ spec:
           port: 8080
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: TrafficPolicy
+kind: AgentgatewayPolicy
 metadata:
-  name: example-traffic-policy-for-body
+  name: example-agw-policy-for-body
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: HTTPRoute
     name: example-route-for-body
-  transformation:
-    request:
-      set:
-        - name: "x-transformed-incoming"
-          value: "'mykey' in json(request.body) && 'myinnerkey' in json(request.body).mykey ? 'level_' + string(json(request.body).mykey.myinnerkey) : 'level_unknown'"
-      body:
-        value: "request.body"
-    response:
-      set:
-        - name: "x-how-great"
-          value:  "'x-incoming-stuff' in request.headers ? 'level_' + request.headers['x-incoming-stuff'] : 'level_unknown'"
-        - name: "from-incoming"
-          value: "'mykey' in json(request.body) && 'myinnerkey' in json(request.body).mykey ? 'key_level_' + string(json(request.body).mykey.myinnerkey) : 'key_unknown'"
-      body:
-        value: "request.headers"
+  traffic:
+    transformation:
+      request:
+        set:
+          - name: "x-transformed-incoming"
+            value: "'mykey' in json(request.body) && 'myinnerkey' in json(request.body).mykey ? 'level_' + string(json(request.body).mykey.myinnerkey) : 'level_unknown'"
+        body: "request.body"
+      response:
+        set:
+          - name: "x-how-great"
+            value:  "'x-incoming-stuff' in request.headers ? 'level_' + request.headers['x-incoming-stuff'] : 'level_unknown'"
+          - name: "from-incoming"
+            value: "'mykey' in json(request.body) && 'myinnerkey' in json(request.body).mykey ? 'key_level_' + string(json(request.body).mykey.myinnerkey) : 'key_unknown'"
+        body: "request.headers"

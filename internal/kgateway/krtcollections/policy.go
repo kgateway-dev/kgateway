@@ -352,7 +352,7 @@ func NewGatewayIndex(
 	})
 
 	h.GatewaysForDeployer = krt.NewCollection(gws, func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer {
-		// only care about gateways use a class controlled by us (envoy or agentgatway)
+		// only care about gateways use a class controlled by us (envoy or agentgateway)
 		gwClass := ptr.Flatten(krt.FetchOne(kctx, gwClasses, krt.FilterKey(string(gw.Spec.GatewayClassName))))
 		if gwClass == nil || !controllerNames.Contains(string(gwClass.Spec.ControllerName)) {
 			return nil

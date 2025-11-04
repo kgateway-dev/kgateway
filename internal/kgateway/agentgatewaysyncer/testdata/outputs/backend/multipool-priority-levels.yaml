@@ -31,41 +31,41 @@ Listeners:
   name: http
   protocol: HTTP
 Policies:
-- name: auth-default/multipool-priority-anthropic
-  spec:
+- backend:
     auth:
       key:
         secret: sk-anthropic-primary
+  name: auth-default/multipool-priority-anthropic
   target:
     subBackend: default/multipool-priority/anthropic
-- name: auth-default/multipool-priority-bedrock
-  spec:
+- backend:
     auth:
       aws:
         explicitConfig:
           accessKeyId: AKIABEDROCK
           region: us-east-1
           secretAccessKey: bedrock-secret-key
+  name: auth-default/multipool-priority-bedrock
   target:
     subBackend: default/multipool-priority/bedrock
-- name: auth-default/multipool-priority-gemini
-  spec:
+- backend:
     auth:
       key:
         secret: gemini-fallback-key
+  name: auth-default/multipool-priority-gemini
   target:
     subBackend: default/multipool-priority/gemini
-- name: auth-default/multipool-priority-openai
-  spec:
+- backend:
     auth:
       key:
         secret: sk-openai-primary-key
+  name: auth-default/multipool-priority-openai
   target:
     subBackend: default/multipool-priority/openai
-- name: auth-default/multipool-priority-vertexai
-  spec:
+- backend:
     auth:
       passthrough: {}
+  name: auth-default/multipool-priority-vertexai
   target:
     subBackend: default/multipool-priority/vertexai
 Routes:

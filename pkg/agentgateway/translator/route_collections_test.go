@@ -160,6 +160,190 @@ func TestAgwRouteCollection(t *testing.T) {
 			},
 		},
 		{
+			name: "HTTP route with multiple mirrors and header modifier",
+			httpRoutes: []*gwv1.HTTPRoute{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "request-multiple-mirrors-headers",
+						Namespace: "default",
+					},
+					Spec: gwv1.HTTPRouteSpec{
+						CommonRouteSpec: gwv1.CommonRouteSpec{ParentRefs: []gwv1.ParentReference{{Name: "test-gateway"}}},
+						Hostnames:       []gwv1.Hostname{"example.com"},
+						Rules: []gwv1.HTTPRouteRule{{
+							Matches: []gwv1.HTTPRouteMatch{{
+								Path: &gwv1.HTTPPathMatch{Type: ptr.To(gwv1.PathMatchPathPrefix), Value: ptr.To("/multi-mirror-and-modify-request-headers")},
+							}},
+							Filters: []gwv1.HTTPRouteFilter{
+								{
+									Type: gwv1.HTTPRouteFilterRequestHeaderModifier,
+									RequestHeaderModifier: &gwv1.HTTPHeaderFilter{
+										Set:    []gwv1.HTTPHeader{{Name: "X-Header-Set", Value: "set-overwrites-values"}},
+										Add:    []gwv1.HTTPHeader{{Name: "X-Header-Add", Value: "header-val-1"}, {Name: "X-Header-Add-Append", Value: "header-val-2"}},
+										Remove: []string{"X-Header-Remove"},
+									},
+								},
+								{
+									Type: gwv1.HTTPRouteFilterRequestMirror,
+									RequestMirror: &gwv1.HTTPRequestMirrorFilter{
+										BackendRef: gwv1.BackendObjectReference{Name: "infra-backend-v2", Namespace: ptr.To(gwv1.Namespace("default")), Port: ptr.To(gwv1.PortNumber(8080))},
+									},
+								},
+								{
+									Type: gwv1.HTTPRouteFilterRequestMirror,
+									RequestMirror: &gwv1.HTTPRequestMirrorFilter{
+										BackendRef: gwv1.BackendObjectReference{Name: "infra-backend-v3", Namespace: ptr.To(gwv1.Namespace("default")), Port: ptr.To(gwv1.PortNumber(8080))},
+									},
+								},
+							},
+							BackendRefs: []gwv1.HTTPBackendRef{{BackendRef: gwv1.BackendRef{BackendObjectReference: gwv1.BackendObjectReference{Name: "infra-backend-v1", Port: ptr.To(gwv1.PortNumber(8080))}}}},
+						}},
+					},
+				},
+			},
+			services: []*corev1.Service{
+				{ObjectMeta: metav1.ObjectMeta{Name: "infra-backend-v1", Namespace: "default"}, Spec: corev1.ServiceSpec{Ports: []corev1.ServicePort{{Port: 8080}}}},
+				{ObjectMeta: metav1.ObjectMeta{Name: "infra-backend-v2", Namespace: "default"}, Spec: corev1.ServiceSpec{Ports: []corev1.ServicePort{{Port: 8080}}}},
+				{ObjectMeta: metav1.ObjectMeta{Name: "infra-backend-v3", Namespace: "default"}, Spec: corev1.ServiceSpec{Ports: []corev1.ServicePort{{Port: 8080}}}},
+			},
+			namespaces: []*corev1.Namespace{{ObjectMeta: metav1.ObjectMeta{Name: "default"}}},
+			gateways: []GatewayListener{{
+				ParentGateway: types.NamespacedName{Name: "test-gateway", Namespace: "default"},
+				ParentObject:  ParentKey{Kind: wellknown.GatewayGVK, Name: "test-gateway", Namespace: "default"},
+				ParentInfo:    ParentInfo{InternalName: "default/test-gateway", Protocol: gwv1.HTTPProtocolType, Port: 80, SectionName: "http", AllowedKinds: []gwv1.RouteGroupKind{{Group: &groupName, Kind: gwv1.Kind(wellknown.HTTPRouteKind)}}},
+				Valid:         true,
+			}},
+			refGrants:     []ReferenceGrant{},
+			expectedCount: 1,
+			expectedRoutes: []*api.Route{{
+				Key:       "default/request-multiple-mirrors-headers.0.0.http",
+				RouteName: "default/request-multiple-mirrors-headers",
+				Hostnames: []string{"example.com"},
+				Matches:   []*api.RouteMatch{{Path: &api.PathMatch{Kind: &api.PathMatch_PathPrefix{PathPrefix: "/multi-mirror-and-modify-request-headers"}}}},
+				TrafficPolicies: []*api.TrafficPolicySpec{
+					{Kind: &api.TrafficPolicySpec_RequestHeaderModifier{RequestHeaderModifier: &api.HeaderModifier{
+						Set:    []*api.Header{{Name: "X-Header-Set", Value: "set-overwrites-values"}},
+						Add:    []*api.Header{{Name: "X-Header-Add", Value: "header-val-1"}, {Name: "X-Header-Add-Append", Value: "header-val-2"}},
+						Remove: []string{"X-Header-Remove"},
+					}}},
+					{Kind: &api.TrafficPolicySpec_RequestMirror{RequestMirror: &api.RequestMirrors{Mirrors: []*api.RequestMirrors_Mirror{
+						{Percentage: 100, Backend: &api.BackendReference{Kind: &api.BackendReference_Service{Service: "default/infra-backend-v2.default.svc.cluster.local"}, Port: 8080}},
+						{Percentage: 100, Backend: &api.BackendReference{Kind: &api.BackendReference_Service{Service: "default/infra-backend-v3.default.svc.cluster.local"}, Port: 8080}},
+					}}}},
+				},
+				Backends: []*api.RouteBackend{{Backend: &api.BackendReference{Kind: &api.BackendReference_Service{Service: "default/infra-backend-v1.default.svc.cluster.local"}, Port: 8080}}},
+			}},
+		},
+		{
+			name: "HTTP route with multiple request mirrors",
+			httpRoutes: []*gwv1.HTTPRoute{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "request-multiple-mirrors",
+						Namespace: "default",
+					},
+					Spec: gwv1.HTTPRouteSpec{
+						CommonRouteSpec: gwv1.CommonRouteSpec{
+							ParentRefs: []gwv1.ParentReference{{
+								Name: "test-gateway",
+							}},
+						},
+						Hostnames: []gwv1.Hostname{"example.com"},
+						Rules: []gwv1.HTTPRouteRule{
+							{
+								Matches: []gwv1.HTTPRouteMatch{{
+									Path: &gwv1.HTTPPathMatch{
+										Type:  ptr.To(gwv1.PathMatchPathPrefix),
+										Value: ptr.To("/multi-mirror"),
+									},
+								}},
+								Filters: []gwv1.HTTPRouteFilter{
+									{
+										Type: gwv1.HTTPRouteFilterRequestMirror,
+										RequestMirror: &gwv1.HTTPRequestMirrorFilter{
+											BackendRef: gwv1.BackendObjectReference{
+												Name:      "infra-backend-v2",
+												Namespace: ptr.To(gwv1.Namespace("default")),
+												Port:      ptr.To(gwv1.PortNumber(8080)),
+											},
+										},
+									},
+									{
+										Type: gwv1.HTTPRouteFilterRequestMirror,
+										RequestMirror: &gwv1.HTTPRequestMirrorFilter{
+											BackendRef: gwv1.BackendObjectReference{
+												Name:      "infra-backend-v3",
+												Namespace: ptr.To(gwv1.Namespace("default")),
+												Port:      ptr.To(gwv1.PortNumber(8080)),
+											},
+										},
+									},
+								},
+								BackendRefs: []gwv1.HTTPBackendRef{{
+									BackendRef: gwv1.BackendRef{
+										BackendObjectReference: gwv1.BackendObjectReference{
+											Name: "infra-backend-v1",
+											Port: ptr.To(gwv1.PortNumber(8080)),
+										},
+									},
+								}},
+							},
+						},
+					},
+				},
+			},
+			services: []*corev1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "infra-backend-v1", Namespace: "default"},
+					Spec:       corev1.ServiceSpec{Ports: []corev1.ServicePort{{Port: 8080}}},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "infra-backend-v2", Namespace: "default"},
+					Spec:       corev1.ServiceSpec{Ports: []corev1.ServicePort{{Port: 8080}}},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "infra-backend-v3", Namespace: "default"},
+					Spec:       corev1.ServiceSpec{Ports: []corev1.ServicePort{{Port: 8080}}},
+				},
+			},
+			namespaces: []*corev1.Namespace{{ObjectMeta: metav1.ObjectMeta{Name: "default"}}},
+			gateways: []GatewayListener{
+				{
+					ParentGateway: types.NamespacedName{Name: "test-gateway", Namespace: "default"},
+					ParentObject:  ParentKey{Kind: wellknown.GatewayGVK, Name: "test-gateway", Namespace: "default"},
+					ParentInfo: ParentInfo{
+						InternalName: "default/test-gateway",
+						Protocol:     gwv1.HTTPProtocolType,
+						Port:         80,
+						SectionName:  "http",
+						AllowedKinds: []gwv1.RouteGroupKind{{Group: &groupName, Kind: gwv1.Kind(wellknown.HTTPRouteKind)}},
+					},
+					Valid: true,
+				},
+			},
+			refGrants:     []ReferenceGrant{},
+			expectedCount: 1,
+			expectedRoutes: []*api.Route{
+				{
+					Key:       "default/request-multiple-mirrors.0.0.http",
+					RouteName: "default/request-multiple-mirrors",
+					Hostnames: []string{"example.com"},
+					Matches: []*api.RouteMatch{{
+						Path: &api.PathMatch{Kind: &api.PathMatch_PathPrefix{PathPrefix: "/multi-mirror"}},
+					}},
+					TrafficPolicies: []*api.TrafficPolicySpec{
+						{Kind: &api.TrafficPolicySpec_RequestMirror{RequestMirror: &api.RequestMirrors{Mirrors: []*api.RequestMirrors_Mirror{
+							{Percentage: 100, Backend: &api.BackendReference{Kind: &api.BackendReference_Service{Service: "default/infra-backend-v2.default.svc.cluster.local"}, Port: 8080}},
+							{Percentage: 100, Backend: &api.BackendReference{Kind: &api.BackendReference_Service{Service: "default/infra-backend-v3.default.svc.cluster.local"}, Port: 8080}},
+						}}}},
+					},
+					Backends: []*api.RouteBackend{{
+						Backend: &api.BackendReference{Kind: &api.BackendReference_Service{Service: "default/infra-backend-v1.default.svc.cluster.local"}, Port: 8080},
+					}},
+				},
+			},
+		},
+		{
 			name: "Two HTTP Routes on same gateway",
 			httpRoutes: []*gwv1.HTTPRoute{
 				{
@@ -1683,7 +1867,7 @@ func TestAgwRouteCollectionWithFilters(t *testing.T) {
 	testCases := []struct {
 		name           string
 		httpRoute      *gwv1.HTTPRoute
-		expectedFilter *api.RouteFilter
+		expectedPolicy *api.TrafficPolicySpec
 	}{
 		{
 			name: "Route with request header modifier",
@@ -1729,8 +1913,8 @@ func TestAgwRouteCollectionWithFilters(t *testing.T) {
 					},
 				},
 			},
-			expectedFilter: &api.RouteFilter{
-				Kind: &api.RouteFilter_RequestHeaderModifier{
+			expectedPolicy: &api.TrafficPolicySpec{
+				Kind: &api.TrafficPolicySpec_RequestHeaderModifier{
 					RequestHeaderModifier: &api.HeaderModifier{
 						Set: []*api.Header{
 							{
@@ -1782,8 +1966,8 @@ func TestAgwRouteCollectionWithFilters(t *testing.T) {
 					},
 				},
 			},
-			expectedFilter: &api.RouteFilter{
-				Kind: &api.RouteFilter_RequestRedirect{
+			expectedPolicy: &api.TrafficPolicySpec{
+				Kind: &api.TrafficPolicySpec_RequestRedirect{
 					RequestRedirect: &api.RequestRedirect{
 						Scheme: "https",
 						Status: 301,
@@ -1847,8 +2031,8 @@ func TestAgwRouteCollectionWithFilters(t *testing.T) {
 					},
 				},
 			},
-			expectedFilter: &api.RouteFilter{
-				Kind: &api.RouteFilter_Cors{
+			expectedPolicy: &api.TrafficPolicySpec{
+				Kind: &api.TrafficPolicySpec_Cors{
 					Cors: &api.CORS{
 						AllowCredentials: true,
 						AllowHeaders:     []string{"Content-Type", "Authorization"},
@@ -1912,8 +2096,8 @@ func TestAgwRouteCollectionWithFilters(t *testing.T) {
 					},
 				},
 			},
-			expectedFilter: &api.RouteFilter{
-				Kind: &api.RouteFilter_DirectResponse{
+			expectedPolicy: &api.TrafficPolicySpec{
+				Kind: &api.TrafficPolicySpec_DirectResponse{
 					DirectResponse: &api.DirectResponse{
 						Status: 200,
 						Body:   []byte("User-agent: *\nDisallow: /admin\nAllow: /"),
@@ -2049,13 +2233,13 @@ func TestAgwRouteCollectionWithFilters(t *testing.T) {
 			require.NotNil(t, routeResource, "Route resource should not be nil")
 
 			// Verify filters
-			require.Len(t, routeResource.GetFilters(), 1, "Expected exactly one filter")
-			actualFilter := routeResource.GetFilters()[0]
+			require.Len(t, routeResource.GetTrafficPolicies(), 1, "Expected exactly one filter")
+			actualFilter := routeResource.GetTrafficPolicies()[0]
 
 			// Verify filter type and content
-			switch expectedKind := tc.expectedFilter.GetKind().(type) {
-			case *api.RouteFilter_RequestHeaderModifier:
-				actualKind, ok := actualFilter.GetKind().(*api.RouteFilter_RequestHeaderModifier)
+			switch expectedKind := tc.expectedPolicy.GetKind().(type) {
+			case *api.TrafficPolicySpec_RequestHeaderModifier:
+				actualKind, ok := actualFilter.GetKind().(*api.TrafficPolicySpec_RequestHeaderModifier)
 				require.True(t, ok, "Expected RequestHeaderModifier filter")
 
 				expectedMod := expectedKind.RequestHeaderModifier
@@ -2068,8 +2252,8 @@ func TestAgwRouteCollectionWithFilters(t *testing.T) {
 					assert.Equal(t, expectedHeader.GetValue(), actualHeader.GetValue(), "Header value mismatch")
 				}
 
-			case *api.RouteFilter_RequestRedirect:
-				actualKind, ok := actualFilter.GetKind().(*api.RouteFilter_RequestRedirect)
+			case *api.TrafficPolicySpec_RequestRedirect:
+				actualKind, ok := actualFilter.GetKind().(*api.TrafficPolicySpec_RequestRedirect)
 				require.True(t, ok, "Expected RequestRedirect filter")
 
 				expectedRedirect := expectedKind.RequestRedirect
@@ -2077,8 +2261,8 @@ func TestAgwRouteCollectionWithFilters(t *testing.T) {
 
 				assert.Equal(t, expectedRedirect.GetScheme(), actualRedirect.GetScheme(), "Redirect scheme mismatch")
 				assert.Equal(t, expectedRedirect.GetStatus(), actualRedirect.GetStatus(), "Redirect status mismatch")
-			case *api.RouteFilter_Cors:
-				actualKind, ok := actualFilter.GetKind().(*api.RouteFilter_Cors)
+			case *api.TrafficPolicySpec_Cors:
+				actualKind, ok := actualFilter.GetKind().(*api.TrafficPolicySpec_Cors)
 				require.True(t, ok, "Expected CORS filter")
 
 				expectedCors := expectedKind.Cors
@@ -2090,8 +2274,8 @@ func TestAgwRouteCollectionWithFilters(t *testing.T) {
 				assert.Equal(t, expectedCors.GetAllowOrigins(), actualCors.GetAllowOrigins(), "CORS AllowOrigins mismatch")
 				assert.Equal(t, expectedCors.GetExposeHeaders(), actualCors.GetExposeHeaders(), "CORS ExposeHeaders mismatch")
 				assert.Equal(t, expectedCors.GetMaxAge().GetSeconds(), actualCors.GetMaxAge().GetSeconds(), "CORS MaxAge mismatch")
-			case *api.RouteFilter_DirectResponse:
-				actualKind, ok := actualFilter.GetKind().(*api.RouteFilter_DirectResponse)
+			case *api.TrafficPolicySpec_DirectResponse:
+				actualKind, ok := actualFilter.GetKind().(*api.TrafficPolicySpec_DirectResponse)
 				require.True(t, ok, "Expected DirectResponse filter")
 
 				expectedDirect := expectedKind.DirectResponse
@@ -2270,18 +2454,18 @@ func isDisabled(d *duration.Duration) bool {
 }
 
 func getRequestTimeout(r *api.Route) *duration.Duration {
-	if r != nil {
-		if r.TrafficPolicy != nil && r.TrafficPolicy.RequestTimeout != nil {
-			return r.TrafficPolicy.RequestTimeout
+	for _, t := range r.TrafficPolicies {
+		if t.GetTimeout() != nil {
+			return t.GetTimeout().GetRequest()
 		}
 	}
 	return nil
 }
 
 func getBackendRequestTimeout(r *api.Route) *duration.Duration {
-	if r != nil {
-		if r.TrafficPolicy != nil && r.TrafficPolicy.BackendRequestTimeout != nil {
-			return r.TrafficPolicy.BackendRequestTimeout
+	for _, t := range r.TrafficPolicies {
+		if t.GetTimeout() != nil {
+			return t.GetTimeout().GetBackendRequest()
 		}
 	}
 	return nil

@@ -19,6 +19,7 @@ linters:
     - gosec
     - importas
     - ineffassign
+    - krtequals
     - misspell
     - nakedret
     - predeclared
@@ -30,6 +31,12 @@ linters:
     - usestdlibvars
     - whitespace
   settings:
+    custom:
+      krtequals:
+        type: "module"
+        description: Checks Equals() implementations for KRT-style semantic equality issues
+        settings:
+          deepEqual: false
     forbidigo:
       forbid:
         - pattern: anypb.New
@@ -124,10 +131,14 @@ linters:
       - examples$
     rules:
       # Forbid t.Cleanup only in e2e tests (exclude the rule from non-e2e paths)
-      - linters:
+      - path-except: test/e2e/
+        linters:
           - forbidigo
         text: 'require testutils.Cleanup'
-        path-except: test/e2e/
+      # Restrict krtequals analyzer to the pkg and internal directories
+      - path-except: pkg/|internal/
+        linters:
+          - krtequals
 issues:
   max-same-issues: 0
   uniq-by-line: true

@@ -74,6 +74,7 @@ type GatewayXdsResources struct {
 
 	reports reports.ReportMap
 	// Clusters are items in the CDS response payload.
+	// +krtEqualsTodo include CDC resources in equality for diff detection
 	Clusters     []envoycachetypes.ResourceWithTTL
 	ClustersHash uint64
 

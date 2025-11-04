@@ -35,7 +35,6 @@ type testingSuite struct {
 	commonManifests []string
 	// resources from manifests shared by all tests
 	commonResources []client.Object
-	agentgateway    bool
 }
 
 // rlBurstTries: run a tiny burst so all checks stay in one fixed RL window.
@@ -51,29 +50,12 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
-func NewAgentgatewayTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
-	return &testingSuite{
-		ctx:              ctx,
-		testInstallation: testInst,
-		agentgateway:     true,
-	}
-}
-
 func (s *testingSuite) SetupSuite() {
-	if s.agentgateway {
-		s.commonManifests = []string{
-			testdefaults.CurlPodManifest,
-			agwCommonManifest,
-			simpleServiceManifest,
-			rateLimitServerManifest,
-		}
-	} else {
-		s.commonManifests = []string{
-			testdefaults.CurlPodManifest,
-			commonManifest,
-			simpleServiceManifest,
-			rateLimitServerManifest,
-		}
+	s.commonManifests = []string{
+		testdefaults.CurlPodManifest,
+		commonManifest,
+		simpleServiceManifest,
+		rateLimitServerManifest,
 	}
 	s.commonResources = []client.Object{
 		// resources from curl manifest

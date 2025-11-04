@@ -1,15 +1,3 @@
-kind: GatewayParameters
-apiVersion: gateway.kgateway.dev/v1alpha1
-metadata:
-  name: kgateway
-spec:
-  kube:
-    agentgateway:
-      enabled: true
-      logLevel: trace
-#      image:
-#        tag: b1b9c00
----
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
 metadata:

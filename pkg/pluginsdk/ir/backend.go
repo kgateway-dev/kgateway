@@ -100,14 +100,18 @@ type BackendObjectIR struct {
 	// set them explicitly here, and pass this around as the reference.
 	ObjectSource `json:",inline"`
 	// optional port for if ObjectSource is a service that can have multiple ports.
+	// +krtEqualsTodo propagate backend port differences in equality
 	Port int32
 	// optional application protocol for the backend. Can be used to enable http2.
+	// +krtEqualsTodo include AppProtocol in backend equality
 	AppProtocol AppProtocol
 
 	// prefix the cluster name with this string to distinguish it from other GVKs.
 	// here explicitly as it shows up in stats. each (group, kind) pair should have a unique prefix.
+	// +krtEqualsTodo incorporate prefix changes into equality or remove field
 	GvPrefix string
 	// for things that integrate with destination rule, we need to know what hostname to use.
+	// +krtEqualsTodo evaluate canonical hostname equality
 	CanonicalHostname string
 	// original object. Opaque to us other than metadata.
 	Obj metav1.Object
@@ -117,6 +121,7 @@ type BackendObjectIR struct {
 	ObjIr interface{ Equals(any) bool }
 
 	// Aliases that we can key by when referencing this backend from policy or routes.
+	// +krtEqualsTodo ensure alias list is compared
 	Aliases []ObjectSource
 
 	// ExtraKey allows ensuring uniqueness in the KRT key
@@ -124,16 +129,20 @@ type BackendObjectIR struct {
 	// TODO this is a hack for ServiceEntry to workaround only having one
 	// CanonicalHostname. We should see if it's possible to have multiple
 	// CanonicalHostnames.
+	// +krtEqualsTodo determine equality semantics for extra key
 	ExtraKey string
 
 	// RequiresPolicyStatus indicates if this Backend may require updating status of an attached policy
 	// This is essentially a precomputation of whether there are any 'AttachedPolicies' that are objects
+	// +krtEqualsTodo compare RequiresPolicyStatus or document ignoring
 	RequiresPolicyStatus bool
 
+	// +krtEqualsTodo include attached policies in equality diff
 	AttachedPolicies AttachedPolicies
 
 	// Errors is a list of errors, if any, encountered while constructing this BackendObject
 	// Not added to Equals() as it is derived from the inner ObjIr, which is already evaluated
+	// +krtEqualsTodo decide whether construction errors should impact equality
 	Errors []error
 
 	// Name is the pre-calculated resource name. used as the krt resource name.
@@ -141,6 +150,7 @@ type BackendObjectIR struct {
 
 	// TrafficDistribution is the desired traffic distribution for the backend.
 	// Default is any (no priority).
+	// +krtEqualsTodo ensure traffic distribution differences are compared
 	TrafficDistribution wellknown.TrafficDistribution
 
 	// DisableIstioAutoMTLS indicates if Istio auto-mTLS should be disabled for this backend
@@ -228,6 +238,7 @@ type Secret struct {
 	// original object. Opaque to us other than metadata.
 	Obj metav1.Object
 
+	// +krtEqualsTodo evaluate secret data equality handling
 	Data map[string][]byte
 }
 
@@ -262,8 +273,11 @@ func (l Secret) MarshalJSON() ([]byte, error) {
 // TODO: why is this in backend.go?
 type Listener struct {
 	gwv1.Listener
-	Parent            client.Object
-	AttachedPolicies  AttachedPolicies
+	// +krtEqualsTodo compare parent reference in listener equality
+	Parent client.Object
+	// +krtEqualsTodo include attached listener policies in equality
+	AttachedPolicies AttachedPolicies
+	// +krtEqualsTodo include policy ancestor reference in equality
 	PolicyAncestorRef gwv1.ParentReference
 }
 

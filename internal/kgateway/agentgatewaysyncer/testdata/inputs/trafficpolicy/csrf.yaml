@@ -45,7 +45,7 @@ spec:
       targetPort: 8080
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: TrafficPolicy
+kind: AgentgatewayPolicy
 metadata:
   name: csrf-policy
   namespace: default
@@ -54,8 +54,9 @@ spec:
   - group: gateway.networking.k8s.io
     kind: Gateway
     name: example-gateway
-  csrf:
-    additionalOrigins:
-    - exact: "https://example.com"
-    - exact: "https://app.example.com" 
-    - exact: "http://localhost:3000"
+  traffic:
+    csrf:
+      additionalOrigins:
+      - "https://example.com"
+      - "https://app.example.com"
+      - "http://localhost:3000"

@@ -4,7 +4,7 @@ metadata:
   name: inference-gateway
   namespace: inf-ext-e2e
 spec:
-  gatewayClassName: kgateway
+  gatewayClassName: agentgateway
   listeners:
   - name: http
     port: 8080

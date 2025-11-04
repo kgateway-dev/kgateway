@@ -1,7 +1,7 @@
 Name|Version|License
 ---|---|---
 [cel.dev/expr](https://cel.dev/expr)|v0.24.0|Apache License 2.0
-[agentgateway/agentgateway](https://github.com/agentgateway/agentgateway)|v0.10.3|Apache License 2.0
+[agentgateway/agentgateway](https://github.com/agentgateway/agentgateway)|v0.10.6-0.20251103234311-2f71d0e845d0|Apache License 2.0
 [anthropics/anthropic-sdk-go](https://github.com/anthropics/anthropic-sdk-go)|v1.13.0|MIT License
 [retry-go/v4](https://github.com/avast/retry-go)|v4.3.3|MIT License
 [xds/go](https://github.com/cncf/xds)|v0.0.0-20250501225837-2ac532fd4443|Apache License 2.0
@@ -35,15 +35,15 @@ Name|Version|License
 [proto/otlp](https://go.opentelemetry.io/proto/otlp)|v1.7.1|Apache License 2.0
 [go.uber.org/atomic](https://go.uber.org/atomic)|v1.11.0|MIT License
 [go.uber.org/zap](https://go.uber.org/zap)|v1.27.0|MIT License
-[x/exp](https://golang.org/x/exp)|v0.0.0-20250808145144-a408d31f581a|BSD 3-clause "New" or "Revised" License
+[x/exp](https://golang.org/x/exp)|v0.0.0-20251017212417-90e834f514db|BSD 3-clause "New" or "Revised" License
 [x/net](https://golang.org/x/net)|v0.46.0|BSD 3-clause "New" or "Revised" License
-[x/time](https://golang.org/x/time)|v0.13.0|BSD 3-clause "New" or "Revised" License
+[x/time](https://golang.org/x/time)|v0.14.0|BSD 3-clause "New" or "Revised" License
 [google.golang.org/grpc](https://google.golang.org/grpc)|v1.76.0|Apache License 2.0
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.36.10|BSD 3-clause "New" or "Revised" License
 [helm/v3](https://helm.sh/helm/v3)|v3.18.6|Apache License 2.0
-[istio.io/api](https://istio.io/api)|v1.28.0-alpha.0.0.20251015201407-f6b4b4f56db2|Apache License 2.0
-[istio.io/client-go](https://istio.io/client-go)|v1.28.0-alpha.0.0.20251015201706-99349a9d18ee|Apache License 2.0
-[istio.io/istio](https://istio.io/istio)|v0.0.0-20251022175005-4d80c2b3b141|Apache License 2.0
+[istio.io/api](https://istio.io/api)|v1.28.0-alpha.0.0.20251027163102-1d538150001d|Apache License 2.0
+[istio.io/client-go](https://istio.io/client-go)|v1.28.0-alpha.0.0.20251027163503-4de5e66466a2|Apache License 2.0
+[istio.io/istio](https://istio.io/istio)|v0.0.0-20251028211303-5e600e992cad|Apache License 2.0
 [k8s.io/api](https://k8s.io/api)|v0.34.1|Apache License 2.0
 [k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.34.1|Apache License 2.0
 [k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.34.1|Apache License 2.0

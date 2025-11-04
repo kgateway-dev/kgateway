@@ -298,11 +298,7 @@ func TestBuildAIBackendIr(t *testing.T) {
 					len(aiIr.Backend.GetAi().ProviderGroups[0].Providers) == 1 &&
 					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetOpenai() != nil &&
 					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetOpenai().Model != nil &&
-					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetOpenai().Model.Value == "gpt-4" &&
-					len(aiIr.Policies) == 1 &&
-					aiIr.Policies[0].GetSpec().GetAuth() != nil &&
-					aiIr.Policies[0].GetSpec().GetAuth().GetKey() != nil &&
-					aiIr.Policies[0].GetSpec().GetAuth().GetKey().Secret == "sk-test-token"
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetOpenai().Model.Value == "gpt-4"
 			},
 		},
 		{
@@ -338,11 +334,7 @@ func TestBuildAIBackendIr(t *testing.T) {
 					len(aiIr.Backend.GetAi().ProviderGroups[0].Providers) == 1 &&
 					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAnthropic() != nil &&
 					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAnthropic().Model != nil &&
-					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAnthropic().Model.Value == "claude-3-sonnet" &&
-					len(aiIr.Policies) == 1 &&
-					aiIr.Policies[0].GetSpec().GetAuth() != nil &&
-					aiIr.Policies[0].GetSpec().GetAuth().GetKey() != nil &&
-					aiIr.Policies[0].GetSpec().GetAuth().GetKey().Secret == "test-api-key"
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAnthropic().Model.Value == "claude-3-sonnet"
 			},
 		},
 		{
@@ -378,11 +370,7 @@ func TestBuildAIBackendIr(t *testing.T) {
 					len(aiIr.Backend.GetAi().ProviderGroups[0].Providers) == 1 &&
 					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetGemini() != nil &&
 					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetGemini().Model != nil &&
-					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetGemini().Model.Value == "gemini-pro" &&
-					len(aiIr.Policies) == 1 &&
-					aiIr.Policies[0].GetSpec().GetAuth() != nil &&
-					aiIr.Policies[0].GetSpec().GetAuth().GetKey() != nil &&
-					aiIr.Policies[0].GetSpec().GetAuth().GetKey().Secret == "gemini-api-key"
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetGemini().Model.Value == "gemini-pro"
 			},
 		},
 		{
@@ -409,9 +397,6 @@ func TestBuildAIBackendIr(t *testing.T) {
 			secrets:     nil,
 			expectError: false,
 			validate: func(aiIr *AIIr) bool {
-				if aiIr != nil && len(aiIr.Policies) > 0 && aiIr.Policies[0].GetSpec().GetAuth() != nil {
-					print(aiIr.Policies[0].GetSpec().GetAuth().GetPassthrough().String())
-				}
 				return aiIr != nil &&
 					aiIr.Backend != nil &&
 					aiIr.Backend.Name == "test-ns/vertex-backend" &&
@@ -420,10 +405,7 @@ func TestBuildAIBackendIr(t *testing.T) {
 					len(aiIr.Backend.GetAi().ProviderGroups[0].Providers) == 1 &&
 					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetVertex() != nil &&
 					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetVertex().Model != nil &&
-					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetVertex().Model.Value == "gemini-pro" &&
-					len(aiIr.Policies) == 1 &&
-					aiIr.Policies[0].GetSpec().GetAuth() != nil &&
-					aiIr.Policies[0].GetSpec().GetAuth().GetPassthrough() != nil
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetVertex().Model.Value == "gemini-pro"
 			},
 		},
 		{
@@ -466,7 +448,6 @@ func TestBuildAIBackendIr(t *testing.T) {
 					return false
 				}
 				bedrock := aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetBedrock()
-				aws := aiIr.Policies[0].GetSpec().GetAuth().GetAws().GetExplicitConfig()
 				return aiIr.Backend.Name == "test-ns/bedrock-backend-custom" &&
 					bedrock != nil &&
 					bedrock.Model.Value == "anthropic.claude-3-haiku-20240307-v1:0" &&
@@ -474,13 +455,7 @@ func TestBuildAIBackendIr(t *testing.T) {
 					bedrock.GuardrailIdentifier != nil &&
 					bedrock.GuardrailIdentifier.Value == "test-guardrail" &&
 					bedrock.GuardrailVersion != nil &&
-					bedrock.GuardrailVersion.Value == "1.0" &&
-					aws != nil &&
-					aws.AccessKeyId == "AKIACUSTOM" &&
-					aws.SecretAccessKey == "secretcustom" &&
-					aws.SessionToken != nil &&
-					*aws.SessionToken == "token123" &&
-					aws.Region == "eu-west-1"
+					bedrock.GuardrailVersion.Value == "1.0"
 			},
 		},
 		{
@@ -517,9 +492,7 @@ func TestBuildAIBackendIr(t *testing.T) {
 					aiIr.Backend.Name == "test-ns/openai-secret-backend" &&
 					len(aiIr.Backend.GetAi().ProviderGroups) == 1 &&
 					len(aiIr.Backend.GetAi().ProviderGroups[0].Providers) == 1 &&
-					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetOpenai().Model.Value == "gpt-3.5-turbo" &&
-					len(aiIr.Policies) == 1 &&
-					aiIr.Policies[0].GetSpec().GetAuth().GetKey().Secret == "sk-secret-token" // Bearer prefix should be stripped
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetOpenai().Model.Value == "gpt-3.5-turbo"
 			},
 		},
 		{
@@ -589,14 +562,6 @@ func TestBuildAIBackendIr(t *testing.T) {
 				// Check second provider (Anthropic)
 				if aiIr.Backend.GetAi().ProviderGroups[0].Providers[1].GetAnthropic() == nil ||
 					aiIr.Backend.GetAi().ProviderGroups[0].Providers[1].GetAnthropic().Model.Value != "claude-3" {
-					return false
-				}
-				// Check auth policies
-				if len(aiIr.Policies) != 2 {
-					return false
-				}
-				if aiIr.Policies[0].GetSpec().GetAuth().GetKey().Secret != "first-token" ||
-					aiIr.Policies[1].GetSpec().GetAuth().GetKey().Secret != "second-token" {
 					return false
 				}
 				return true
@@ -695,15 +660,6 @@ func TestBuildAIBackendIr(t *testing.T) {
 				// Check provider in second group (Gemini)
 				if aiIr.Backend.GetAi().ProviderGroups[1].Providers[0].GetGemini() == nil ||
 					aiIr.Backend.GetAi().ProviderGroups[1].Providers[0].GetGemini().Model.Value != "gemini-pro" {
-					return false
-				}
-				// Check auth policies
-				if len(aiIr.Policies) != 3 {
-					return false
-				}
-				if aiIr.Policies[0].GetSpec().GetAuth().GetKey().Secret != "openai-primary" ||
-					aiIr.Policies[1].GetSpec().GetAuth().GetKey().Secret != "anthropic-primary" ||
-					aiIr.Policies[2].GetSpec().GetAuth().GetKey().Secret != "gemini-fallback" {
 					return false
 				}
 				return true

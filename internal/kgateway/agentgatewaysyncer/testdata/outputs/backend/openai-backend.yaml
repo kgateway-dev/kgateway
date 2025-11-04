@@ -16,11 +16,11 @@ Listeners:
   name: http
   protocol: HTTP
 Policies:
-- name: auth-default/openai-backend
-  spec:
+- backend:
     auth:
       key:
         secret: mysecretkey
+  name: auth-default/openai-backend
   target:
     subBackend: default/openai/backend
 Routes:

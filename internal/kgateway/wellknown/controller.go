@@ -22,10 +22,6 @@ const (
 	// parametersRef to the GatewayClass.
 	DefaultGatewayParametersName = "kgateway"
 
-	// InferencePoolFinalizer is the InferencePool finalizer name to ensure cluster-scoped
-	// objects are cleaned up.
-	InferencePoolFinalizer = "kgateway/inferencepool-cleanup"
-
 	// GatewayNameLabel is a label on GW pods to indicate the name of the gateway
 	// they are associated with.
 	GatewayNameLabel = "gateway.networking.k8s.io/gateway-name"
