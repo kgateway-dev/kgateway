@@ -163,6 +163,7 @@ func (h *RoutesIndex) buildHTTPRouteRulePolicy(rule gwv1.HTTPRouteRule) ruleIR {
 	}
 
 	// ON_EXPERIMENTAL_PROMOTION : Remove this block
+	// Ref: https://github.com/kgateway-dev/kgateway/issues/12824
 	if rule.Retry != nil {
 		if h.enableExperimentalFeatures {
 			ir.retry = convertRetry(rule.Retry, rule.Timeouts)
@@ -171,6 +172,7 @@ func (h *RoutesIndex) buildHTTPRouteRulePolicy(rule gwv1.HTTPRouteRule) ruleIR {
 		}
 	}
 	// ON_EXPERIMENTAL_PROMOTION : Remove this block
+	// Ref: https://github.com/kgateway-dev/kgateway/issues/12825
 	if rule.SessionPersistence != nil {
 		if h.enableExperimentalFeatures {
 			ir.sessionPersistence = convertSessionPersistence(rule.SessionPersistence)
@@ -805,6 +807,7 @@ func (h *RoutesIndex) convertfilterIR(
 		}
 	case gwv1.HTTPRouteFilterCORS:
 		// ON_EXPERIMENTAL_PROMOTION : Remove this block
+		// Ref: https://github.com/kgateway-dev/kgateway/issues/12826
 		if h.enableExperimentalFeatures {
 			ci := convertCORSIR(kctx, f.CORS)
 			if ci != nil {

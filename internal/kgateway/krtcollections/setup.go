@@ -124,6 +124,7 @@ func InitCollections(
 
 	var kubeRawListenerSets krt.Collection[*gwxv1a1.XListenerSet]
 	// ON_EXPERIMENTAL_PROMOTION : Remove this block
+	// Ref: https://github.com/kgateway-dev/kgateway/issues/12827
 	if globalSettings.EnableExperimentalGatewayAPIFeatures {
 		kubeRawListenerSets = krt.WrapClient(kclient.NewDelayedInformer[*gwxv1a1.XListenerSet](istioClient, wellknown.XListenerSetGVR, kubetypes.StandardInformer, filter), krtopts.ToOptions("KubeListenerSets")...)
 	} else {
