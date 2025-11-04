@@ -102,6 +102,11 @@ func (e TrafficPolicyGatewayExtensionIR) Validate() error {
 			return err
 		}
 	}
+	if e.Jwt != nil {
+		if err := e.Jwt.ValidateAll(); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

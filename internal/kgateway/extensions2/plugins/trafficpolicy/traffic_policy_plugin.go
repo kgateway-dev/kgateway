@@ -194,6 +194,7 @@ type trafficPolicyPluginGwPass struct {
 	localRateLimitInChain    map[string]*localratelimitv3.LocalRateLimit
 	extAuthPerProvider       ProviderNeededMap
 	extProcPerProvider       ProviderNeededMap
+	jwtPerProvider           ProviderNeededMap
 	rateLimitPerProvider     ProviderNeededMap
 	rbacInChain              map[string]*envoyrbacv3.RBAC
 	corsInChain              map[string]*corsv3.Cors
@@ -561,6 +562,7 @@ func (p *trafficPolicyPluginGwPass) handlePolicies(
 	// to be set at the route level so we need to smuggle info upwards.
 	p.handleExtAuth(fcn, typedFilterConfig, spec.extAuth)
 	p.handleExtProc(fcn, typedFilterConfig, spec.extProc)
+	p.handleJwt(fcn, typedFilterConfig, spec.jwt)
 	p.handleGlobalRateLimit(fcn, typedFilterConfig, spec.globalRateLimit)
 	p.handleLocalRateLimit(fcn, typedFilterConfig, spec.localRateLimit)
 	p.handleCors(fcn, typedFilterConfig, spec.cors)

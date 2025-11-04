@@ -9,6 +9,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"slices"
 	"sort"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -17,71 +18,87 @@ import (
 	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
 
 const (
-	PayloadInMetadata string = "payload"
+	PayloadInMetadata   string = "payload"
+	jwtFilterNamePrefix        = "jwt"
 )
 
 type jwtIr struct {
-	provider    *ir.GatewayExtension
-	jwtPerRoute *jwtauthnv3.PerRouteConfig
+	perProviderConfig []*perProviderJwtConfig
+	// providerNames is used to track duplicates during policy merging,
+	// and has no relevance to the policy config, so it can be excluded from Equals
+	// +noKrtEquals
+	providerNames sets.Set[string]
 }
 
-func (j *jwtIr) Equals(other *jwtIr) bool {
-	if j == nil && other == nil {
-		return true
-	}
-	if j == nil || other == nil {
+type perProviderJwtConfig struct {
+	provider       *TrafficPolicyGatewayExtensionIR
+	perRouteConfig *jwtauthnv3.PerRouteConfig
+}
+
+var _ PolicySubIR = &jwtIr{}
+
+func (j *jwtIr) Equals(other PolicySubIR) bool {
+	otherJwt, ok := other.(*jwtIr)
+	if !ok {
 		return false
+	}
+	if j == nil || otherJwt == nil {
+		return j == nil && otherJwt == nil
 	}
 
-	// Compare providers
-	if (j.provider == nil) != (other.provider == nil) {
-		return false
-	}
-	if j.provider != nil && !j.provider.Equals(*other.provider) {
-		return false
-	}
-
-	return proto.Equal(j.jwtPerRoute, other.jwtPerRoute)
+	return slices.EqualFunc(j.perProviderConfig, otherJwt.perProviderConfig, func(a, b *perProviderJwtConfig) bool {
+		return proto.Equal(a.perRouteConfig, b.perRouteConfig) &&
+			cmputils.CompareWithNils(a.provider, b.provider, func(a, b *TrafficPolicyGatewayExtensionIR) bool {
+				return a.Equals(*b)
+			})
+	})
 }
 
 // handleJwt configures the filter JwtAuthentication and per-route JWT configuration for a specific route
 func (p *trafficPolicyPluginGwPass) handleJwt(fcn string, pCtxTypedFilterConfig *ir.TypedFilterConfigMap, jwtIr *jwtIr) {
-	if jwtIr == nil || jwtIr.jwtPerRoute == nil {
+	if jwtIr == nil {
 		return
 	}
 
-	providerName := jwtIr.provider.ResourceName()
-	jwtName := jwtFilterName(providerName)
-	if jwtIr.jwtPerRoute != nil {
-		pCtxTypedFilterConfig.AddTypedConfig(jwtName, jwtIr.jwtPerRoute)
+	for _, cfg := range jwtIr.perProviderConfig {
+		if cfg == nil {
+			continue
+		}
+		providerName := providerName(cfg.provider)
+		if cfg.perRouteConfig != nil {
+			jwtName := jwtFilterName(providerName)
+			pCtxTypedFilterConfig.AddTypedConfig(jwtName, cfg.perRouteConfig)
+		}
+		p.jwtPerProvider.Add(fcn, providerName, cfg.provider)
 	}
-
-	p.jwtPerProvider.Add(fcn, providerName, jwtIr.provider)
 }
 
-func translatePerRouteConfig(requirementsName string) (*jwtauthnv3.PerRouteConfig, error) {
+func translatePerRouteConfig(requirementsName string) *jwtauthnv3.PerRouteConfig {
 	perRouteConfig := &jwtauthnv3.PerRouteConfig{
 		RequirementSpecifier: &jwtauthnv3.PerRouteConfig_RequirementName{
 			RequirementName: requirementsName,
 		},
 	}
-	return perRouteConfig, nil
+	return perRouteConfig
 }
 
 // constructJwt translates the jwt spec into an envoy jwt policy and stores it in the traffic policy IR
 func constructJwt(
 	krtctx krt.HandlerContext,
 	in *v1alpha1.TrafficPolicy,
-	out *trafficPolicySpecIr, // todo move down
+	out *trafficPolicySpecIr,
 	fetchGatewayExtension FetchGatewayExtensionFunc,
 ) error {
 	spec := in.Spec.JWT
@@ -98,14 +115,16 @@ func constructJwt(
 	}
 
 	requirementsName := fmt.Sprintf("%s_%s_requirements", spec.ExtensionRef.Name, in.Namespace)
-	perRouteConfig, err := translatePerRouteConfig(requirementsName)
-	if err != nil {
-		return err
-	}
+	perRouteConfig := translatePerRouteConfig(requirementsName)
 
 	out.jwt = &jwtIr{
-		provider:    provider,
-		jwtPerRoute: perRouteConfig,
+		perProviderConfig: []*perProviderJwtConfig{
+			{
+				provider:       provider,
+				perRouteConfig: perRouteConfig,
+			},
+		},
+		providerNames: sets.New(providerName(provider)),
 	}
 	return nil
 }
@@ -122,14 +141,20 @@ func (j *jwtIr) validate() error {
 
 	var errs []error
 
-	err := j.provider.Validate()
-	if err != nil {
-		errs = append(errs, err)
-	}
-
-	err = j.jwtPerRoute.Validate()
-	if err != nil {
-		errs = append(errs, err)
+	for _, cfg := range j.perProviderConfig {
+		if cfg == nil {
+			continue
+		}
+		if cfg.provider != nil {
+			if err := cfg.provider.Validate(); err != nil {
+				errs = append(errs, err)
+			}
+		}
+		if cfg.perRouteConfig != nil {
+			if err := cfg.perRouteConfig.Validate(); err != nil {
+				errs = append(errs, err)
+			}
+		}
 	}
 
 	return errors.Join(errs...)
@@ -370,7 +395,7 @@ func GetSecretIr(secrets *krtcollections.SecretIndex, krtctx krt.HandlerContext,
 		Name: gwv1.ObjectName(secretName),
 	}
 	from := krtcollections.From{
-		GroupKind: ir.GatewayExtensionGVK.GroupKind(),
+		GroupKind: wellknown.GatewayExtensionGVK.GroupKind(),
 		Namespace: ns,
 	}
 	secret, err := secrets.GetSecret(krtctx, from, secretRef)
