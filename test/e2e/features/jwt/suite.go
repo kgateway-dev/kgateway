@@ -1,3 +1,5 @@
+//go:build e2e
+
 package jwt
 
 import (
@@ -216,7 +218,6 @@ func (s *testingSuite) TestJwtAuthentication() {
 		getReqCurlOpts,
 		expectedJwtMissingFailedResponse)
 
-	// correct JWT is used should result in 200 OK
 	s.T().Log("The /get route does have a JWT config applied, should fail when incorrect JWT is provided")
 	getReqBadJwtCurlOpts := append(getReqCurlOpts, curl.WithHeader("Authorization", "Bearer "+badJwtToken))
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
@@ -226,7 +227,6 @@ func (s *testingSuite) TestJwtAuthentication() {
 		expectedJwtVerificationFailedResponse,
 	)
 
-	// correct JWT is used should result in 200 OK
 	s.T().Log("The /get route does have a JWT config applied, should succeed when correct JWT is provided")
 	getReqJwtCurlOpts := append(getReqCurlOpts, curl.WithHeader("Authorization", "Bearer "+dev1JwtToken))
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
