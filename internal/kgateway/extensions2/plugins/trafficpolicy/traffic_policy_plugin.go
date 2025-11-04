@@ -156,6 +156,9 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	if !d.spec.rbac.Equals(d2.spec.rbac) {
 		return false
 	}
+	if !d.spec.jwt.Equals(d2.spec.jwt) {
+		return false
+	}
 	return true
 }
 
@@ -177,6 +180,7 @@ func (p *TrafficPolicy) Validate() error {
 	validators = append(validators, p.spec.buffer.Validate)
 	validators = append(validators, p.spec.autoHostRewrite.Validate)
 	validators = append(validators, p.spec.rbac.Validate)
+	validators = append(validators, p.spec.jwt.Validate)
 	for _, validator := range validators {
 		if err := validator(); err != nil {
 			return err
@@ -477,6 +481,25 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(fcc ir.FilterChainCommon) ([]fil
 
 		stagedExtAuthFilter.Filter.Disabled = true
 		stagedFilters = append(stagedFilters, stagedExtAuthFilter)
+	}
+
+	// TODO: Add support for global jwt disable filter
+	for _, provider := range p.jwtPerProvider.Providers[fcc.FilterChainName] {
+		jwtFilter := provider.Extension.Jwt
+		if jwtFilter == nil {
+			continue
+		}
+
+		// add the specific jwt filter
+		jwtName := jwtFilterName(provider.Name)
+		stagedJwtFilter := filters.MustNewStagedFilter(
+			jwtName,
+			jwtFilter,
+			filters.DuringStage(filters.AuthNStage),
+		)
+
+		// stagedJwtFilter.Filter.Disabled = true
+		stagedFilters = append(stagedFilters, stagedJwtFilter)
 	}
 
 	if f := p.localRateLimitInChain[fcc.FilterChainName]; f != nil {

@@ -1401,16 +1401,21 @@ spec:
                       the jwt providers
                     properties:
                       name:
-                        default: ""
-                        description: |-
-                          Name of the referent.
-                          This field is effectively required, but due to backwards compatibility is
-                          allowed to be empty. Instances of this type with an empty value here are
-                          almost certainly wrong.
-                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        description: The name of the target resource.
+                        maxLength: 253
+                        minLength: 1
                         type: string
+                      namespace:
+                        description: |-
+                          The namespace of the target resource.
+                          If not set, defaults to the namespace of the parent object.
+                        maxLength: 63
+                        minLength: 1
+                        pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                        type: string
+                    required:
+                    - name
                     type: object
-                    x-kubernetes-map-type: atomic
                 required:
                 - extensionRef
                 type: object

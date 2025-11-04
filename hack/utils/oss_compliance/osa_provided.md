@@ -11,6 +11,7 @@ Name|Version|License
 [go-control-plane/ratelimit](https://github.com/envoyproxy/go-control-plane)|v0.1.1-0.20250507123352-93990c5ec02f|Apache License 2.0
 [fsnotify/fsnotify](https://github.com/fsnotify/fsnotify)|v1.9.0|BSD 3-clause "New" or "Revised" License
 [ghodss/yaml](https://github.com/ghodss/yaml)|v1.0.1-0.20190212211648-25d852aebe32|MIT License
+[go-jose/v3](https://github.com/go-jose/go-jose)|v3.0.4|Apache License 2.0
 [go-logr/logr](https://github.com/go-logr/logr)|v1.4.3|Apache License 2.0
 [go-logr/zapr](https://github.com/go-logr/zapr)|v1.3.0|Apache License 2.0
 [golang/protobuf](https://github.com/golang/protobuf)|v1.5.4|BSD 3-clause "New" or "Revised" License

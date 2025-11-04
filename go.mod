@@ -57,6 +57,7 @@ require sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
 
 require (
 	github.com/anthropics/anthropic-sdk-go v1.13.0
+	github.com/go-jose/go-jose/v3 v3.0.4
 	github.com/golang/protobuf v1.5.4
 	github.com/kagent-dev/mockllm v0.0.2-0.20251008144831-c6105837f767
 	github.com/openai/openai-go v1.12.0
