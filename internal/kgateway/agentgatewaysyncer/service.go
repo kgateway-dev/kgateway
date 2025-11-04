@@ -292,6 +292,7 @@ type Service struct {
 	ServiceAccounts []string `json:"serviceAccounts,omitempty"`
 
 	// CreationTime records the time this service was created, if available.
+	// +krtEqualsTodo decide if CreationTime impacts KRT outputs
 	CreationTime time.Time `json:"creationTime,omitempty"`
 
 	// Name of the service, e.g. "catalog.mystore.com"
@@ -328,6 +329,7 @@ type Service struct {
 	Resolution Resolution
 
 	// ResourceVersion represents the internal version of this object.
+	// +krtEqualsTodo propagate ResourceVersion into equality if needed
 	ResourceVersion string
 }
 
@@ -544,6 +546,7 @@ type ServiceAttributes struct {
 	// node port IPs, we need to use the kubernetes assigned node ports of the service
 	ClusterExternalPorts map[cluster.ID]map[uint32]uint32
 
+	// +krtEqualsTodo evaluate passthrough target port equality semantics
 	PassthroughTargetPorts map[uint32]uint32
 
 	K8sAttributes
@@ -665,6 +668,7 @@ func (s *ServiceAttributes) Equals(other *ServiceAttributes) bool {
 
 type AddressInfo struct {
 	*api.Address
+	// +krtEqualsTodo verify marshaled proto cache handling in equality
 	Marshaled *anypb.Any
 }
 
@@ -721,13 +725,16 @@ type ServiceInfo struct {
 	// PortNames provides a mapping of ServicePort -> port names. Note these are only used internally, not sent over XDS
 	PortNames map[int32]ServicePortName
 	// Source is the type that introduced this service.
-	Source   TypedObject
+	Source TypedObject
+	// +krtEqualsTodo include waypoint binding status in equality or mark as ignore
 	Waypoint WaypointBindingStatus
 	// MarshaledAddress contains the pre-marshaled representation.
 	// Note: this is an Address -- not a Service.
+	// +krtEqualsTodo revisit marshaled address usage in equality
 	MarshaledAddress *anypb.Any
 	// AsAddress contains a pre-created AddressInfo representation. This ensures we do not need repeated conversions on
 	// the hotpath
+	// +krtEqualsTodo compare fast-path AddressInfo if it impacts outputs
 	AsAddress AddressInfo
 }
 
@@ -824,9 +831,11 @@ type WorkloadInfo struct {
 	CreationTime time.Time
 	// MarshaledAddress contains the pre-marshaled representation.
 	// Note: this is an Address -- not a Workload.
+	// +krtEqualsTodo revisit marshaled address usage in equality
 	MarshaledAddress *anypb.Any
 	// AsAddress contains a pre-created AddressInfo representation. This ensures we do not need repeated conversions on
 	// the hotpath
+	// +krtEqualsTodo compare fast-path AddressInfo if it impacts outputs
 	AsAddress AddressInfo
 }
 

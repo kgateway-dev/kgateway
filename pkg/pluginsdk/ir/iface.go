@@ -290,6 +290,7 @@ type PolicyWrapper struct {
 	PolicyIR PolicyIR
 
 	// Where to attach the policy. This usually comes from the policy CRD.
+	// +krtEqualsTodo ensure target refs differences are surfaced in equality
 	TargetRefs []PolicyRef
 
 	// PrecedenceWeight specifies the weight of the policy as an integer value (negative values are allowed).
