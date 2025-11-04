@@ -449,7 +449,7 @@ var _ = Describe("Query", func() {
 				},
 			}
 
-			tcpRoute := tcpRoute("test-tcp-route", gw.Namespace)
+			tcpRoute := tcpRoute(gw.Namespace)
 			tcpRoute.Spec = gwv1a2.TCPRouteSpec{
 				CommonRouteSpec: gwv1.CommonRouteSpec{
 					ParentRefs: []gwv1.ParentReference{
@@ -482,7 +482,7 @@ var _ = Describe("Query", func() {
 				},
 			}
 
-			tcpRoute := tcpRoute("test-tcp-route", "other-ns")
+			tcpRoute := tcpRoute("other-ns")
 			tcpRoute.Spec = gwv1a2.TCPRouteSpec{
 				CommonRouteSpec: gwv1.CommonRouteSpec{
 					ParentRefs: []gwv1.ParentReference{
@@ -518,7 +518,7 @@ var _ = Describe("Query", func() {
 				},
 			}
 
-			tcpRoute := tcpRoute("test-tcp-route", gw.Namespace)
+			tcpRoute := tcpRoute(gw.Namespace)
 			var badPort gwv1.PortNumber = 9999
 			tcpRoute.Spec = gwv1a2.TCPRouteSpec{
 				CommonRouteSpec: gwv1.CommonRouteSpec{
@@ -553,7 +553,7 @@ var _ = Describe("Query", func() {
 				},
 			}
 
-			tcpRoute := tcpRoute("test-tcp-route", gw.Namespace)
+			tcpRoute := tcpRoute(gw.Namespace)
 			tcpRoute.Spec = gwv1a2.TCPRouteSpec{
 				CommonRouteSpec: gwv1.CommonRouteSpec{
 					ParentRefs: []gwv1.ParentReference{
@@ -591,7 +591,7 @@ var _ = Describe("Query", func() {
 				},
 			}
 
-			tcpRoute := tcpRoute("test-tcp-route", gw.Namespace)
+			tcpRoute := tcpRoute(gw.Namespace)
 			tcpRoute.Spec = gwv1a2.TCPRouteSpec{
 				CommonRouteSpec: gwv1.CommonRouteSpec{
 					ParentRefs: []gwv1.ParentReference{
@@ -663,7 +663,7 @@ var _ = Describe("Query", func() {
 			},
 		}
 
-		tlsRoute := tlsRoute("test-tls-route", "other-ns")
+		tlsRoute := tlsRoute("other-ns")
 		tlsRoute.Spec = gwv1a2.TLSRouteSpec{
 			CommonRouteSpec: gwv1.CommonRouteSpec{
 				ParentRefs: []gwv1.ParentReference{
@@ -698,7 +698,7 @@ var _ = Describe("Query", func() {
 			},
 		}
 
-		tlsRoute := tlsRoute("test-tls-route", gw.Namespace)
+		tlsRoute := tlsRoute(gw.Namespace)
 		var badPort gwv1.PortNumber = 9999
 		tlsRoute.Spec = gwv1a2.TLSRouteSpec{
 			CommonRouteSpec: gwv1.CommonRouteSpec{
@@ -733,7 +733,7 @@ var _ = Describe("Query", func() {
 			},
 		}
 
-		tlsRoute := tlsRoute("test-tls-route", gw.Namespace)
+		tlsRoute := tlsRoute(gw.Namespace)
 		tlsRoute.Spec = gwv1a2.TLSRouteSpec{
 			CommonRouteSpec: gwv1.CommonRouteSpec{
 				ParentRefs: []gwv1.ParentReference{
@@ -771,7 +771,7 @@ var _ = Describe("Query", func() {
 			},
 		}
 
-		tlsRoute := tlsRoute("test-tls-route", gw.Namespace)
+		tlsRoute := tlsRoute(gw.Namespace)
 		tlsRoute.Spec = gwv1a2.TLSRouteSpec{
 			CommonRouteSpec: gwv1.CommonRouteSpec{
 				ParentRefs: []gwv1.ParentReference{
@@ -801,7 +801,7 @@ var _ = Describe("Query", func() {
 			},
 		}
 
-		gr := grpcRoute("test-grpc-route", gw.Namespace)
+		gr := grpcRoute(gw.Namespace)
 		gr.Spec = gwv1.GRPCRouteSpec{
 			CommonRouteSpec: gwv1.CommonRouteSpec{
 				ParentRefs: []gwv1.ParentReference{
@@ -834,7 +834,7 @@ var _ = Describe("Query", func() {
 			},
 		}
 
-		gr := grpcRoute("test-grpc-route", "other-ns")
+		gr := grpcRoute("other-ns")
 		gr.Spec = gwv1.GRPCRouteSpec{
 			CommonRouteSpec: gwv1.CommonRouteSpec{
 				ParentRefs: []gwv1.ParentReference{
@@ -869,7 +869,7 @@ var _ = Describe("Query", func() {
 			},
 		}
 
-		gr := grpcRoute("test-grpc-route", gw.Namespace)
+		gr := grpcRoute(gw.Namespace)
 		var badPort gwv1.PortNumber = 9999
 		gr.Spec = gwv1.GRPCRouteSpec{
 			CommonRouteSpec: gwv1.CommonRouteSpec{
@@ -904,7 +904,7 @@ var _ = Describe("Query", func() {
 			},
 		}
 
-		gr := grpcRoute("test-grpc-route", gw.Namespace)
+		gr := grpcRoute(gw.Namespace)
 		gr.Spec = gwv1.GRPCRouteSpec{
 			CommonRouteSpec: gwv1.CommonRouteSpec{
 				ParentRefs: []gwv1.ParentReference{
@@ -942,7 +942,7 @@ var _ = Describe("Query", func() {
 			},
 		}
 
-		gr := grpcRoute("test-grpc-route", gw.Namespace)
+		gr := grpcRoute(gw.Namespace)
 		gr.Spec = gwv1.GRPCRouteSpec{
 			CommonRouteSpec: gwv1.CommonRouteSpec{
 				ParentRefs: []gwv1.ParentReference{
@@ -1070,40 +1070,40 @@ func secret(ns string) *corev1.Secret {
 	}
 }
 
-func tcpRoute(name, ns string) *gwv1a2.TCPRoute {
+func tcpRoute(ns string) *gwv1a2.TCPRoute {
 	return &gwv1a2.TCPRoute{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       wellknown.TCPRouteKind,
 			APIVersion: gwv1a2.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
+			Name:      "test-tcp-route",
 			Namespace: ns,
 		},
 	}
 }
 
-func tlsRoute(name, ns string) *gwv1a2.TLSRoute {
+func tlsRoute(ns string) *gwv1a2.TLSRoute {
 	return &gwv1a2.TLSRoute{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       wellknown.TLSRouteKind,
 			APIVersion: gwv1a2.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
+			Name:      "test-tls-route",
 			Namespace: ns,
 		},
 	}
 }
 
-func grpcRoute(name, ns string) *gwv1.GRPCRoute {
+func grpcRoute(ns string) *gwv1.GRPCRoute {
 	return &gwv1.GRPCRoute{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       wellknown.GRPCRouteKind,
 			APIVersion: gwv1.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
+			Name:      "test-grpc-route",
 			Namespace: ns,
 		},
 	}

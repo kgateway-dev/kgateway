@@ -84,7 +84,7 @@ func registerTypes(ourCli versioned.Interface) {
 	)
 }
 
-func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
+func NewPlugin(commoncol *collections.CommonCollections) sdk.Plugin {
 	registerTypes(commoncol.OurClient)
 
 	cli := kclient.NewFilteredDelayed[*v1alpha1.Backend](
@@ -141,7 +141,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 			},
 		},
 		ContributesLeaderAction: map[schema.GroupKind]func(){
-			wellknown.BackendGVK.GroupKind(): buildRegisterCallback(ctx, cli, bcol),
+			wellknown.BackendGVK.GroupKind(): buildRegisterCallback(cli, bcol),
 		},
 	}
 }

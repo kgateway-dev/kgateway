@@ -71,9 +71,9 @@ func (p *trafficPolicyPluginGwPass) handleCsrf(fcn string, typedFilterConfig *ir
 }
 
 // constructCSRF constructs the CSRF policy IR from the policy specification.
-func constructCSRF(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) error {
+func constructCSRF(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) {
 	if spec.Csrf == nil {
-		return nil
+		return
 	}
 
 	csrfPolicy := &envoy_csrf_v3.CsrfPolicy{}
@@ -118,7 +118,6 @@ func constructCSRF(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) er
 	out.csrf = &csrfIR{
 		policy: csrfPolicy,
 	}
-	return nil
 }
 
 func toEnvoyStringMatcher(origin v1alpha1.StringMatcher) *envoy_matcher_v3.StringMatcher {

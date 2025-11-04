@@ -1747,7 +1747,7 @@ func TestRouteDelegation(t *testing.T) {
 }
 
 func TestDiscoveryNamespaceSelector(t *testing.T) {
-	test := func(t *testing.T, cfgJSON string, inputFile string, outputFile string, errdesc string) {
+	test := func(t *testing.T, cfgJSON string, inputFile string, outputFile string) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		dir := fsutils.MustGetThisDir()
@@ -1787,7 +1787,7 @@ func TestDiscoveryNamespaceSelector(t *testing.T) {
 			"app": "a"
 		}
 	}
-]`, "base.yaml", "base_select_all.yaml", "")
+]`, "base.yaml", "base_select_all.yaml")
 	})
 
 	t.Run("Select all resources; AND matchExpressions and matchLabels", func(t *testing.T) {
@@ -1817,7 +1817,7 @@ func TestDiscoveryNamespaceSelector(t *testing.T) {
 			"app": "a"
 		}
 	}
-]`, "base.yaml", "base_select_all.yaml", "")
+]`, "base.yaml", "base_select_all.yaml")
 	})
 
 	t.Run("Select only namespace infra", func(t *testing.T) {
@@ -1833,6 +1833,6 @@ func TestDiscoveryNamespaceSelector(t *testing.T) {
       }
     ]
   }
-]`, "base.yaml", "base_select_infra.yaml", "condition error for httproute: infra/example-route")
+]`, "base.yaml", "base_select_infra.yaml")
 	})
 }

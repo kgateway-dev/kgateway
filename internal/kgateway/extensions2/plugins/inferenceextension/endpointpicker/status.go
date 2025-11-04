@@ -1,7 +1,6 @@
 package endpointpicker
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -19,7 +18,6 @@ import (
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -38,23 +36,20 @@ const (
 // buildRegisterCallback returns a function that registers all handlers for the
 // Inference Extension plugin.
 func buildRegisterCallback(
-	ctx context.Context,
 	commonCol *collections.CommonCollections,
 	cli kclient.Client[*inf.InferencePool],
 	bcol krt.Collection[ir.BackendObjectIR],
 	poolIdx krt.Index[string, ir.BackendObjectIR],
-	pods krt.Collection[krtcollections.LocalityPod],
 ) func() {
 	return func() {
-		registerRouteHandlers(ctx, commonCol, cli, bcol, poolIdx)
-		registerPoolHandlers(ctx, commonCol, cli, bcol)
-		registerServiceHandlers(ctx, commonCol, cli, bcol)
+		registerRouteHandlers(commonCol, cli, bcol, poolIdx)
+		registerPoolHandlers(commonCol, cli, bcol)
+		registerServiceHandlers(commonCol, cli, bcol)
 	}
 }
 
 // registerPoolHandlers sets up handlers for InferencePool events that affect their status.
 func registerPoolHandlers(
-	ctx context.Context,
 	commonCol *collections.CommonCollections,
 	cli kclient.Client[*inf.InferencePool],
 
@@ -65,17 +60,16 @@ func registerPoolHandlers(
 		if ev.Event == controllers.EventDelete {
 			return
 		}
-		updatePoolStatus(ctx, commonCol, cli, ev.Latest(), "", nil)
+		updatePoolStatus(commonCol, cli, ev.Latest(), "", nil)
 	})
 
 	for _, be := range bcol.List() {
-		updatePoolStatus(ctx, commonCol, cli, be, "", nil)
+		updatePoolStatus(commonCol, cli, be, "", nil)
 	}
 }
 
 // registerRouteHandlers sets up handlers for HTTPRoute events that affect InferencePools.
 func registerRouteHandlers(
-	ctx context.Context,
 	commonCol *collections.CommonCollections,
 	cli kclient.Client[*inf.InferencePool],
 	bcol krt.Collection[ir.BackendObjectIR],
@@ -83,13 +77,12 @@ func registerRouteHandlers(
 ) {
 	// Watch add/update HTTPRoute events and trigger reconciliation for referenced pools.
 	commonCol.Routes.HTTPRoutes().Register(func(ev krt.Event[ir.HttpRouteIR]) {
-		reconcilePoolsForRoute(ctx, commonCol, cli, bcol, poolIdx, ev)
+		reconcilePoolsForRoute(commonCol, cli, bcol, poolIdx, ev)
 	})
 
 	// Initial sweep – process routes that already existed
 	for _, rt := range commonCol.Routes.HTTPRoutes().List() {
 		reconcilePoolsForRoute(
-			ctx,
 			commonCol,
 			cli,
 			bcol,
@@ -105,7 +98,6 @@ func registerRouteHandlers(
 // reconcilePoolsForRoute handles an HTTPRoute event, extracting all referenced InferencePools
 // and updating their status based on the current state of the route and its parent Gateways.
 func reconcilePoolsForRoute(
-	ctx context.Context,
 	commonCol *collections.CommonCollections,
 	cli kclient.Client[*inf.InferencePool],
 	bcol krt.Collection[ir.BackendObjectIR],
@@ -148,13 +140,13 @@ func reconcilePoolsForRoute(
 	for nn := range seen {
 		// Check if the pool is in the index
 		if irs := poolIdx.Lookup(nn.String()); len(irs) != 0 {
-			updatePoolStatus(ctx, commonCol, cli, irs[0], deletedUID, parentGws)
+			updatePoolStatus(commonCol, cli, irs[0], deletedUID, parentGws)
 			continue
 		}
 		// If the pool is not found in the index, it may have been deleted.
 		for _, ir := range bcol.List() {
 			if ir.ObjectSource.Namespace == nn.Namespace && ir.ObjectSource.Name == nn.Name {
-				updatePoolStatus(ctx, commonCol, cli, ir, deletedUID, parentGws)
+				updatePoolStatus(commonCol, cli, ir, deletedUID, parentGws)
 				break
 			}
 		}
@@ -163,20 +155,18 @@ func reconcilePoolsForRoute(
 
 // registerServiceHandlers sets up handlers for Service events that may affect InferencePools.
 func registerServiceHandlers(
-	ctx context.Context,
 	commonCol *collections.CommonCollections,
 	cli kclient.Client[*inf.InferencePool],
 	bcol krt.Collection[ir.BackendObjectIR],
 ) {
 	// Watch Service events and trigger reconciliation for referent InferencePools.
 	commonCol.Services.Register(func(ev krt.Event[*corev1.Service]) {
-		reconcilePoolsForService(ctx, commonCol, cli, bcol, ev)
+		reconcilePoolsForService(commonCol, cli, bcol, ev)
 	})
 }
 
 // reconcilePoolsForService validates all InferencePools that reference the given Service.
 func reconcilePoolsForService(
-	ctx context.Context,
 	commonCol *collections.CommonCollections,
 	cli kclient.Client[*inf.InferencePool],
 	bcol krt.Collection[ir.BackendObjectIR],
@@ -203,7 +193,7 @@ func reconcilePoolsForService(
 		if irPool.configRef.Namespace == svcNN.Namespace && irPool.configRef.Name == svcNN.Name {
 			// Compute new errors, then atomically swap them in
 			irPool.setErrors(validatePool(beIR.Obj.(*inf.InferencePool), commonCol.Services))
-			updatePoolStatus(ctx, commonCol, cli, beIR, "", nil)
+			updatePoolStatus(commonCol, cli, beIR, "", nil)
 		}
 	}
 }
@@ -308,7 +298,6 @@ func upsert(conds *[]metav1.Condition, c metav1.Condition) {
 // updatePoolStatus reconciles status parents of an InferencePool. deletedUID != ""
 // means the HTTPRoute with this UID no longer exists.
 func updatePoolStatus(
-	ctx context.Context,
 	commonCol *collections.CommonCollections,
 	cli kclient.Client[*inf.InferencePool],
 	beIR ir.BackendObjectIR,

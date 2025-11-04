@@ -300,10 +300,7 @@ func (s *DiscoveryServer) StreamDeltas(stream pilotxds.DeltaDiscoveryStream) err
 		return status.Errorf(codes.ResourceExhausted, "request rate limit exceeded: %v", err)
 	}
 
-	id, err := s.authenticate(ctx)
-	if err != nil {
-		return status.Error(codes.Unauthenticated, err.Error())
-	}
+	id := s.authenticate(ctx)
 	if id != nil {
 		log.Debug("authenticated XDS", "peer", peerAddr, "identity", id)
 	} else {
@@ -761,17 +758,17 @@ func (s *DiscoveryServer) NextVersion() string {
 	return time.Now().Format(time.RFC3339) + "/" + strconv.FormatUint(s.pushVersion.Inc(), 10)
 }
 
-func (s *DiscoveryServer) authenticate(ctx context.Context) (*types.NamespacedName, error) {
+func (s *DiscoveryServer) authenticate(ctx context.Context) *types.NamespacedName {
 	peer, ok := ctx.Value(kgwxds.PeerCtxKey).(*security.Caller)
 	if !ok {
 		// Not authenticated. If XDS auth was enabled, this will be rejected by the middleware, so no need to fail here
-		return nil, nil
+		return nil
 	}
 	return &types.NamespacedName{
 		Namespace: peer.KubernetesInfo.PodNamespace,
 		// We assume the SA and gateway name are the same
 		Name: peer.KubernetesInfo.PodServiceAccount,
-	}, nil
+	}
 }
 
 func (s *DiscoveryServer) ProxyNeedsPush(proxy *Proxy, request *PushRequest) bool {
@@ -804,10 +801,7 @@ func (conn *Connection) watchedResourcesByOrder(pushOrder []string) []*model.Wat
 // to the tracking map.
 func (s *DiscoveryServer) initConnection(node *envoycorev3.Node, con *Connection, id *types.NamespacedName) error {
 	// Setup the initial proxy metadata
-	proxy, err := s.initProxyMetadata(node)
-	if err != nil {
-		return err
-	}
+	proxy := s.initProxyMetadata(node)
 	// First request so initialize connection id and start tracking it.
 	con.SetID(connectionID(proxy.ID))
 	con.node = node
@@ -979,7 +973,7 @@ func debounce(ch chan *PushRequest, stopCh <-chan struct{}, opts DebounceOptions
 	free := true
 	freeCh := make(chan struct{}, 1)
 
-	push := func(req *PushRequest, debouncedEvents int, startDebounce time.Time) {
+	push := func(req *PushRequest, debouncedEvents int) {
 		pushFn(req)
 		updateSent.Add(int64(debouncedEvents))
 		//debounceTime.Record(time.Since(startDebounce).Seconds())
@@ -1009,7 +1003,7 @@ func debounce(ch chan *PushRequest, stopCh <-chan struct{}, opts DebounceOptions
 					)
 				}
 				free = false
-				go push(req, debouncedEvents, startDebounce)
+				go push(req, debouncedEvents)
 				req = nil
 				debouncedEvents = 0
 			}
@@ -1066,13 +1060,12 @@ func nonce(noncePrefix string) string {
 // initProxyMetadata initializes just the basic metadata of a proxy. This is decoupled from
 // initProxyState such that we can perform authorization before attempting expensive computations to
 // fully initialize the proxy.
-func (s *DiscoveryServer) initProxyMetadata(node *envoycorev3.Node) (*Proxy, error) {
-	proxy := Proxy{
+func (s *DiscoveryServer) initProxyMetadata(node *envoycorev3.Node) *Proxy {
+	return &Proxy{
 		RWMutex:          sync.RWMutex{},
 		ID:               node.Id,
 		WatchedResources: nil,
 	}
-	return &proxy, nil
 }
 
 func (s *DiscoveryServer) findGenerator(url string) (CollectionGenerator, bool) {

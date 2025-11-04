@@ -25,7 +25,7 @@ const (
 
 func GetIstioctl(ctx context.Context) (string, error) {
 	// Download istioctl binary
-	istioctlBinary, err := downloadIstio(ctx, getIstioVersion())
+	istioctlBinary, err := downloadIstio(getIstioVersion())
 	if err != nil {
 		return "", fmt.Errorf("failed to download istio: %w", err)
 	}
@@ -118,7 +118,7 @@ func getIstioVersion() string {
 }
 
 // Download istioctl binary from istio.io/downloadIstio and returns the path to the binary
-func downloadIstio(ctx context.Context, version string) (string, error) {
+func downloadIstio(version string) (string, error) {
 	if version == "" {
 		slog.Info("ISTIO_VERSION not specified, using istioctl from PATH")
 		binaryPath, err := exec.LookPath("istioctl")

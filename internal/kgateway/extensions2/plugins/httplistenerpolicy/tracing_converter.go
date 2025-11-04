@@ -1,7 +1,6 @@
 package httplistenerpolicy
 
 import (
-	"context"
 	"fmt"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -22,7 +21,6 @@ import (
 )
 
 func convertTracingConfig(
-	ctx context.Context,
 	policy *v1alpha1.HTTPListenerPolicy,
 	commoncol *collections.CommonCollections,
 	krtctx krt.HandlerContext,

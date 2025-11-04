@@ -35,8 +35,9 @@ func prefixMatcher(s string) gwv1.HTTPRouteMatch {
 	}
 }
 
-func exactMatcher(s string) gwv1.HTTPRouteMatch {
+func exactMatcher() gwv1.HTTPRouteMatch {
 	t := gwv1.PathMatchExact
+	s := "/exact"
 	return gwv1.HTTPRouteMatch{
 		Path: &gwv1.HTTPPathMatch{
 			Type:  &t,
@@ -103,7 +104,7 @@ var _ = DescribeTable("SortableRoutes Less()",
 		&SortableRoute{
 			RouteObject: defaultRt(),
 			Route: ir.HttpRouteRuleMatchIR{
-				Match: exactMatcher("/exact"),
+				Match: exactMatcher(),
 			},
 		},
 		true,
@@ -119,7 +120,7 @@ var _ = DescribeTable("SortableRoutes Less()",
 		&SortableRoute{
 			RouteObject: defaultRt(),
 			Route: ir.HttpRouteRuleMatchIR{
-				Match: exactMatcher("/exact"),
+				Match: exactMatcher(),
 			},
 		},
 		true,
@@ -386,7 +387,7 @@ var _ = DescribeTable("SortableRoutes Less()",
 		&SortableRoute{
 			RouteObject: defaultRt(),
 			Route: ir.HttpRouteRuleMatchIR{
-				Match: exactMatcher("/exact"),
+				Match: exactMatcher(),
 			},
 		},
 		true,
@@ -403,7 +404,7 @@ var _ = DescribeTable("SortableRoutes Less()",
 		&SortableRoute{
 			RouteObject: defaultRt(),
 			Route: ir.HttpRouteRuleMatchIR{
-				Match:            exactMatcher("/exact"),
+				Match:            exactMatcher(),
 				PrecedenceWeight: 0,
 			},
 		},

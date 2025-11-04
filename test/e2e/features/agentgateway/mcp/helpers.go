@@ -94,7 +94,7 @@ func (s *testingSuite) testToolsListWithSession(sessionID string) {
 	mcpRequest := buildToolsListRequest(3)
 
 	headers := withSessionID(mcpHeaders(), sessionID)
-	out, err := s.execCurlMCP(8080, headers, mcpRequest, "-N", "--max-time", "10")
+	out, err := s.execCurlMCP(headers, mcpRequest, "-N", "--max-time", "10")
 	s.Require().NoError(err, "tools/list curl failed")
 
 	// Session is warmed during initialize; 401 retry no longer needed here.
@@ -105,7 +105,7 @@ func (s *testingSuite) testToolsListWithSession(sessionID string) {
 	if !ok {
 		s.T().Log("No SSE payload from tools/list; sending notifications/initialized and retrying once")
 		s.notifyInitialized(sessionID)
-		out, err = s.execCurlMCP(8080, headers, mcpRequest, "-N", "--max-time", "10")
+		out, err = s.execCurlMCP(headers, mcpRequest, "-N", "--max-time", "10")
 		s.Require().NoError(err, "tools/list retry curl failed")
 		s.requireHTTPStatus(out, httpOKCode)
 		payload, ok = FirstSSEDataPayload(out)
@@ -136,7 +136,7 @@ func (s *testingSuite) notifyInitialized(sessionID string) {
 	mcpRequest := buildNotifyInitializedRequest()
 	headers := withSessionID(mcpHeaders(), sessionID)
 	// We don't care about the body; just make sure it doesn't 401.
-	out, _ := s.execCurlMCP(8080, headers, mcpRequest, "-N", "--max-time", "2")
+	out, _ := s.execCurlMCP(headers, mcpRequest, "-N", "--max-time", "2")
 	if strings.Contains(out, "401 Unauthorized") {
 		s.T().Log("notifyInitialized hit 401; session likely already GC’d")
 	}
@@ -146,7 +146,7 @@ func (s *testingSuite) notifyInitialized(sessionID string) {
 
 // helper to run a request via curl pod to a given path and return combined
 // output.
-func (s *testingSuite) execCurl(port int, path string, headers map[string]string, body string, extraArgs ...string) (string, error) {
+func (s *testingSuite) execCurl(path string, headers map[string]string, body string, extraArgs ...string) (string, error) {
 	// Use -swi to silence progress, write-out HTTP status, and include headers.
 	// The custom format includes a sentinel "HTTP_STATUS:" line after the body.
 	args := []string{"exec", "-n", "curl", "curl", "--", "curl", "-N", "--http1.1", "-si",
@@ -159,7 +159,7 @@ func (s *testingSuite) execCurl(port int, path string, headers map[string]string
 		args = append(args, "-d", body)
 	}
 	args = append(args, extraArgs...)
-	args = append(args, fmt.Sprintf("http://%s.%s.svc.cluster.local:%d%s", gatewayName, gatewayNamespace, port, path))
+	args = append(args, fmt.Sprintf("http://%s.%s.svc.cluster.local:%d%s", gatewayName, gatewayNamespace, 8080, path))
 
 	cmd := exec.Command("kubectl", args...)
 	out, err := cmd.CombinedOutput()
@@ -193,8 +193,8 @@ func (s *testingSuite) execCurl(port int, path string, headers map[string]string
 }
 
 // helper to run a POST to /mcp with optional headers and body via curl pod and return combined output
-func (s *testingSuite) execCurlMCP(port int, headers map[string]string, body string, extraArgs ...string) (string, error) {
-	out, err := s.execCurl(port, "/mcp", headers, body, extraArgs...)
+func (s *testingSuite) execCurlMCP(headers map[string]string, body string, extraArgs ...string) (string, error) {
+	out, err := s.execCurl("/mcp", headers, body, extraArgs...)
 	s.T().Logf("execCurlMCP:\n%s", out) // always print
 	return out, err
 }
@@ -291,7 +291,7 @@ func updateProtocolVersion(payload string) {
 func (s *testingSuite) mustListTools(sessionID, label string, routeHeaders map[string]string) []string {
 	mcpRequest := buildToolsListRequest(999)
 	headers := withRouteHeaders(withSessionID(mcpHeaders(), sessionID), routeHeaders)
-	out, err := s.execCurlMCP(8080, headers, mcpRequest, "-N", "--max-time", "10")
+	out, err := s.execCurlMCP(headers, mcpRequest, "-N", "--max-time", "10")
 	s.Require().NoError(err, "%s curl failed", label)
 	s.requireHTTPStatus(out, httpOKCode)
 
@@ -308,7 +308,7 @@ func (s *testingSuite) mustListTools(sessionID, label string, routeHeaders map[s
 		if strings.Contains(strings.ToLower(resp.Error.Message), "session not found") ||
 			strings.Contains(strings.ToLower(resp.Error.Message), "start sse client") {
 			s.notifyInitializedWithHeaders(sessionID, routeHeaders)
-			out, err = s.execCurlMCP(8080, headers, mcpRequest, "-N", "--max-time", "10")
+			out, err = s.execCurlMCP(headers, mcpRequest, "-N", "--max-time", "10")
 			s.Require().NoError(err, "%s retry curl failed", label)
 			s.requireHTTPStatus(out, httpOKCode)
 			payload, ok = FirstSSEDataPayload(out)
@@ -330,7 +330,7 @@ func (s *testingSuite) mustListTools(sessionID, label string, routeHeaders map[s
 func (s *testingSuite) notifyInitializedWithHeaders(sessionID string, routeHeaders map[string]string) {
 	mcpRequest := buildNotifyInitializedRequest()
 	headers := withRouteHeaders(withSessionID(mcpHeaders(), sessionID), routeHeaders)
-	_, _ = s.execCurlMCP(8080, headers, mcpRequest, "-N", "--max-time", "5")
+	_, _ = s.execCurlMCP(headers, mcpRequest, "-N", "--max-time", "5")
 	// Allow the gateway to register the session before the first RPC.
 	time.Sleep(warmupTime)
 }
@@ -348,7 +348,7 @@ func (s *testingSuite) initializeSession(initBody string, hdr map[string]string,
 	}
 	for attempt := 0; attempt <= len(backoffs); attempt++ {
 		// Fetch the full response and parse
-		out, err := s.execCurlMCP(8080, hdr, initBody, "--max-time", "10")
+		out, err := s.execCurlMCP(hdr, initBody, "--max-time", "10")
 		s.Require().NoError(err, "%s initialize failed", label)
 
 		payload, ok := FirstSSEDataPayload(out)

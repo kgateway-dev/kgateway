@@ -1,7 +1,6 @@
 package serviceentry
 
 import (
-	"context"
 	"fmt"
 	"net"
 
@@ -18,7 +17,7 @@ import (
 
 // buildInlineEndpoints creates a static EndpointsForBackend for non-EDS a ServiceEntry using
 // the inline endpoints (or hosts field for DNS resolution without endpoints).
-func (s *serviceEntryPlugin) buildInlineEndpoints(ctx context.Context, be ir.BackendObjectIR, se *networkingclient.ServiceEntry) *ir.EndpointsForBackend {
+func (s *serviceEntryPlugin) buildInlineEndpoints(be ir.BackendObjectIR, se *networkingclient.ServiceEntry) *ir.EndpointsForBackend {
 	var inlineWorkloads []selectedWorkload
 	for i, e := range se.Spec.GetEndpoints() {
 		converted := selectedWorkloadFromEntry(

@@ -1,7 +1,6 @@
 package httplistenerpolicy
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -42,7 +41,6 @@ const serviceNameKey = "service.name"
 // we return partially translated configs. As these configs are of different types, we return an list of interfaces
 // that is stored in the IR to be fully translated during translation.
 func convertAccessLogConfig(
-	ctx context.Context,
 	policy *v1alpha1.HTTPListenerPolicy,
 	commoncol *collections.CommonCollections,
 	krtctx krt.HandlerContext,

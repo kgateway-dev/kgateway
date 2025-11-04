@@ -315,7 +315,7 @@ func translatePolicyToAgw(
 	agwPolicies := make([]AgwPolicy, 0)
 	var errs []error
 
-	frontend, err := translateFrontendPolicyToAgw(ctx, policy, policyTarget)
+	frontend, err := translateFrontendPolicyToAgw(policy, policyTarget)
 	agwPolicies = append(agwPolicies, frontend...)
 	if err != nil {
 		errs = append(errs, err)
@@ -374,11 +374,7 @@ func translateTrafficPolicyToAgw(
 
 	// Convert Authorization policy if present
 	if traffic.Authorization != nil {
-		rbacPolicies, err := processAuthorizationPolicy(policy, policyName, policyTarget)
-		if err != nil {
-			logger.Error("error processing Authorization policy", "error", err)
-			errs = append(errs, err)
-		}
+		rbacPolicies := processAuthorizationPolicy(policy, policyName, policyTarget)
 		agwPolicies = append(agwPolicies, rbacPolicies...)
 	}
 
@@ -404,29 +400,17 @@ func translateTrafficPolicyToAgw(
 
 	// Process CSRF policies if present
 	if traffic.Csrf != nil {
-		csrfPolicies, err := processCSRFPolicy(policy, policyName, policyTarget)
-		if err != nil {
-			logger.Error("error processing CSRF policy", "error", err)
-			errs = append(errs, err)
-		}
+		csrfPolicies := processCSRFPolicy(policy, policyName, policyTarget)
 		agwPolicies = append(agwPolicies, csrfPolicies...)
 	}
 
 	if traffic.Cors != nil {
-		corsPolicies, err := processCorsPolicy(policy, policyName, policyTarget)
-		if err != nil {
-			logger.Error("error processing CSRF policy", "error", err)
-			errs = append(errs, err)
-		}
+		corsPolicies := processCorsPolicy(policy, policyName, policyTarget)
 		agwPolicies = append(agwPolicies, corsPolicies...)
 	}
 
 	if traffic.HeaderModifiers != nil {
-		headerModifiersPolicies, err := processHeaderModifierPolicy(policy, policyName, policyTarget)
-		if err != nil {
-			logger.Error("error processing HeaderModifier policy", "error", err)
-			errs = append(errs, err)
-		}
+		headerModifiersPolicies := processHeaderModifierPolicy(policy, policyName, policyTarget)
 		agwPolicies = append(agwPolicies, headerModifiersPolicies...)
 	}
 
@@ -440,20 +424,12 @@ func translateTrafficPolicyToAgw(
 	}
 
 	if traffic.Timeouts != nil {
-		timeoutsPolicies, err := processTimeoutPolicy(policy, policyName, policyTarget)
-		if err != nil {
-			logger.Error("error processing Timeout policy", "error", err)
-			errs = append(errs, err)
-		}
+		timeoutsPolicies := processTimeoutPolicy(policy, policyName, policyTarget)
 		agwPolicies = append(agwPolicies, timeoutsPolicies...)
 	}
 
 	if traffic.Retry != nil {
-		retriesPolicies, err := processRetriesPolicy(policy, policyName, policyTarget)
-		if err != nil {
-			logger.Error("error processing Retry policy", "error", err)
-			errs = append(errs, err)
-		}
+		retriesPolicies := processRetriesPolicy(policy, policyName, policyTarget)
 		agwPolicies = append(agwPolicies, retriesPolicies...)
 	}
 
@@ -463,7 +439,7 @@ func translateTrafficPolicyToAgw(
 	return agwPolicies, errors.Join(errs...)
 }
 
-func processRetriesPolicy(policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) ([]AgwPolicy, error) {
+func processRetriesPolicy(policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) []AgwPolicy {
 	retry := policy.Spec.Traffic.Retry
 	translatedRetry := &api.Retry{}
 
@@ -494,10 +470,10 @@ func processRetriesPolicy(policy *v1alpha1.AgentgatewayPolicy, name string, targ
 		"agentgateway_policy", retryPolicy.Name,
 		"target", target)
 
-	return []AgwPolicy{{Policy: retryPolicy}}, nil
+	return []AgwPolicy{{Policy: retryPolicy}}
 }
 
-func processTimeoutPolicy(policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) ([]AgwPolicy, error) {
+func processTimeoutPolicy(policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) []AgwPolicy {
 	timeout := policy.Spec.Traffic.Timeouts
 	timeoutPolicy := &api.Policy{
 		Name:   name + timeoutPolicySuffix + attachmentName(target),
@@ -516,7 +492,7 @@ func processTimeoutPolicy(policy *v1alpha1.AgentgatewayPolicy, name string, targ
 		"agentgateway_policy", timeoutPolicy.Name,
 		"target", target)
 
-	return []AgwPolicy{{Policy: timeoutPolicy}}, nil
+	return []AgwPolicy{{Policy: timeoutPolicy}}
 }
 
 func processHostnameRewritePolicy(policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) ([]AgwPolicy, error) {
@@ -524,7 +500,7 @@ func processHostnameRewritePolicy(policy *v1alpha1.AgentgatewayPolicy, name stri
 	return nil, nil
 }
 
-func processHeaderModifierPolicy(policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) ([]AgwPolicy, error) {
+func processHeaderModifierPolicy(policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) []AgwPolicy {
 	var policies []AgwPolicy
 	headerModifier := policy.Spec.Traffic.HeaderModifiers
 
@@ -571,10 +547,10 @@ func processHeaderModifierPolicy(policy *v1alpha1.AgentgatewayPolicy, name strin
 		policies = append(policies, AgwPolicy{Policy: headerModifierPolicyResponse})
 	}
 
-	return policies, nil
+	return policies
 }
 
-func processCorsPolicy(policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) ([]AgwPolicy, error) {
+func processCorsPolicy(policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) []AgwPolicy {
 	cors := policy.Spec.Traffic.Cors
 	corsPolicy := &api.Policy{
 		Name:   name + corsPolicySuffix + attachmentName(target),
@@ -600,7 +576,7 @@ func processCorsPolicy(policy *v1alpha1.AgentgatewayPolicy, name string, target 
 		"agentgateway_policy", corsPolicy.Name,
 		"target", target)
 
-	return []AgwPolicy{{Policy: corsPolicy}}, nil
+	return []AgwPolicy{{Policy: corsPolicy}}
 }
 
 // processExtAuthPolicy processes ExtAuth configuration and creates corresponding agentgateway policies
@@ -704,7 +680,7 @@ func processAuthorizationPolicy(
 	policy *v1alpha1.AgentgatewayPolicy,
 	policyName string,
 	policyTarget *api.PolicyTarget,
-) ([]AgwPolicy, error) {
+) []AgwPolicy {
 	auth := policy.Spec.Traffic.Authorization
 	var allowPolicies, denyPolicies []string
 	if auth.Action == v1alpha1.AuthorizationPolicyActionDeny {
@@ -733,7 +709,7 @@ func processAuthorizationPolicy(
 		"agentgateway_policy", pol.Name,
 		"target", policyTarget)
 
-	return []AgwPolicy{{Policy: pol}}, nil
+	return []AgwPolicy{{Policy: pol}}
 }
 
 func getFrontendPolicyName(trafficPolicyNs, trafficPolicyName string) string {
@@ -756,11 +732,9 @@ func processRateLimitPolicy(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, 
 
 	// Process local rate limiting if present
 	if rl.Local != nil {
-		localPolicy, err := processLocalRateLimitPolicy(rl.Local, policyName, policyTarget)
-		if localPolicy != nil && err == nil {
+		localPolicy := processLocalRateLimitPolicy(rl.Local, policyName, policyTarget)
+		if localPolicy != nil {
 			agwPolicies = append(agwPolicies, *localPolicy)
-		} else {
-			errs = append(errs, err)
 		}
 	}
 
@@ -778,7 +752,7 @@ func processRateLimitPolicy(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, 
 }
 
 // processLocalRateLimitPolicy processes local rate limiting configuration
-func processLocalRateLimitPolicy(limits []v1alpha1.AgentLocalRateLimitPolicy, policyName string, policyTarget *api.PolicyTarget) (*AgwPolicy, error) {
+func processLocalRateLimitPolicy(limits []v1alpha1.AgentLocalRateLimitPolicy, policyName string, policyTarget *api.PolicyTarget) *AgwPolicy {
 	// TODO: support multiple
 	limit := limits[0]
 
@@ -816,7 +790,7 @@ func processLocalRateLimitPolicy(limits []v1alpha1.AgentLocalRateLimitPolicy, po
 		},
 	}
 
-	return &AgwPolicy{Policy: localRateLimitPolicy}, nil
+	return &AgwPolicy{Policy: localRateLimitPolicy}
 }
 
 func processGlobalRateLimitPolicy(
@@ -958,7 +932,7 @@ func toJSONValue(value string) (string, error) {
 	return string(marshaled), nil
 }
 
-func processCSRFPolicy(policy *v1alpha1.AgentgatewayPolicy, policyName string, policyTarget *api.PolicyTarget) ([]AgwPolicy, error) {
+func processCSRFPolicy(policy *v1alpha1.AgentgatewayPolicy, policyName string, policyTarget *api.PolicyTarget) []AgwPolicy {
 	csrf := policy.Spec.Traffic.Csrf
 	csrfPolicy := &api.Policy{
 		Name:   policyName + csrfPolicySuffix + attachmentName(policyTarget),
@@ -974,7 +948,7 @@ func processCSRFPolicy(policy *v1alpha1.AgentgatewayPolicy, policyName string, p
 		},
 	}
 
-	return []AgwPolicy{{Policy: csrfPolicy}}, nil
+	return []AgwPolicy{{Policy: csrfPolicy}}
 }
 
 // processTransformationPolicy processes transformation configuration and creates corresponding Agw policies

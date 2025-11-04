@@ -159,13 +159,12 @@ func (s *testingSuite) getLeader() string {
 	return leaderPodName
 }
 
-func (s *testingSuite) leadershipChanges(oldLeader string) string {
+func (s *testingSuite) leadershipChanges(oldLeader string) {
 	var holder string
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
 		holder = s.getLeader()
 		assert.NotEqual(c, holder, oldLeader, "leadership did not change")
 	}, 30*time.Second, 10*time.Second)
-	return holder
 }
 
 func (s *testingSuite) killLeader(leader string) {

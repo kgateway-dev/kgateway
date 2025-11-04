@@ -1,7 +1,6 @@
 package irtranslator
 
 import (
-	"context"
 	"fmt"
 	"sort"
 
@@ -94,9 +93,9 @@ func (h *filterChainTranslator) initFilterChain(fcc ir.FilterChainCommon) *envoy
 	return fc
 }
 
-func (h *filterChainTranslator) computeHttpFilters(ctx context.Context, l ir.HttpFilterChainIR, reporter sdkreporter.ListenerReporter) []*envoylistenerv3.Filter {
+func (h *filterChainTranslator) computeHttpFilters(l ir.HttpFilterChainIR, reporter sdkreporter.ListenerReporter) []*envoylistenerv3.Filter {
 	// 1. Generate all the network filters (including the HttpConnectionManager)
-	networkFilters, err := h.computeNetworkFiltersForHttp(ctx, l, reporter)
+	networkFilters, err := h.computeNetworkFiltersForHttp(l, reporter)
 	if err != nil {
 		logger.Error("error computing network filters", "error", err)
 		// TODO: report? return error?
@@ -109,7 +108,7 @@ func (h *filterChainTranslator) computeHttpFilters(ctx context.Context, l ir.Htt
 	return networkFilters
 }
 
-func (n *filterChainTranslator) computeNetworkFiltersForHttp(ctx context.Context, l ir.HttpFilterChainIR, listenerReporter sdkreporter.ListenerReporter) ([]*envoylistenerv3.Filter, error) {
+func (n *filterChainTranslator) computeNetworkFiltersForHttp(l ir.HttpFilterChainIR, listenerReporter sdkreporter.ListenerReporter) ([]*envoylistenerv3.Filter, error) {
 	hcm := hcmNetworkFilterTranslator{
 		routeConfigName:   n.routeConfigName,
 		pluginPass:        n.pluginPass,
@@ -118,8 +117,8 @@ func (n *filterChainTranslator) computeNetworkFiltersForHttp(ctx context.Context
 		gateway:           n.gateway, // corresponds to Gateway API listener
 		policyAncestorRef: n.listener.PolicyAncestorRef,
 	}
-	networkFilters := sortNetworkFilters(n.computeCustomFilters(ctx, l.CustomNetworkFilters, listenerReporter))
-	networkFilter, err := hcm.computeNetworkFilters(ctx, l)
+	networkFilters := sortNetworkFilters(n.computeCustomFilters(l.CustomNetworkFilters, listenerReporter))
+	networkFilter, err := hcm.computeNetworkFilters(l)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +130,6 @@ func (n *filterChainTranslator) computeNetworkFiltersForHttp(ctx context.Context
 // from embedded filters on the FilterChain itself.
 // For HTTP FilterChains these must be added before HCM.
 func (n *filterChainTranslator) computeCustomFilters(
-	ctx context.Context,
 	customNetworkFilters []ir.CustomEnvoyFilter,
 	listenerReporter sdkreporter.ListenerReporter,
 ) []filters.StagedNetworkFilter {
@@ -195,13 +193,13 @@ type hcmNetworkFilterTranslator struct {
 	policyAncestorRef gwv1.ParentReference
 }
 
-func (h *hcmNetworkFilterTranslator) computeNetworkFilters(ctx context.Context, l ir.HttpFilterChainIR) (*envoylistenerv3.Filter, error) {
+func (h *hcmNetworkFilterTranslator) computeNetworkFilters(l ir.HttpFilterChainIR) (*envoylistenerv3.Filter, error) {
 	// 1. Initialize the HttpConnectionManager (HCM)
 	httpConnectionManager := h.initializeHCM()
 
 	// 2. Apply HttpFilters
 	var err error
-	httpConnectionManager.HttpFilters = h.computeHttpFilters(ctx, l)
+	httpConnectionManager.HttpFilters = h.computeHttpFilters(l)
 
 	// 3. Allow any HCM plugins to make their changes, with respect to any changes the core plugin made
 	var attachedPolicies ir.AttachedPolicies
@@ -271,7 +269,7 @@ func (h *hcmNetworkFilterTranslator) initializeHCM() *envoyhttp.HttpConnectionMa
 	}
 }
 
-func (h *hcmNetworkFilterTranslator) computeHttpFilters(ctx context.Context, l ir.HttpFilterChainIR) []*envoyhttp.HttpFilter {
+func (h *hcmNetworkFilterTranslator) computeHttpFilters(l ir.HttpFilterChainIR) []*envoyhttp.HttpFilter {
 	var httpFilters filters.StagedHttpFilterList
 
 	// run the HttpFilter Plugins
@@ -368,8 +366,8 @@ func sortHttpFilters(filters filters.StagedHttpFilterList) []*envoyhttp.HttpFilt
 	return sortedFilters
 }
 
-func (h *filterChainTranslator) computeTcpFilters(ctx context.Context, l ir.TcpIR, reporter sdkreporter.ListenerReporter) []*envoylistenerv3.Filter {
-	networkFilters := sortNetworkFilters(h.computeCustomFilters(ctx, l.CustomNetworkFilters, reporter))
+func (h *filterChainTranslator) computeTcpFilters(l ir.TcpIR, reporter sdkreporter.ListenerReporter) []*envoylistenerv3.Filter {
+	networkFilters := sortNetworkFilters(h.computeCustomFilters(l.CustomNetworkFilters, reporter))
 
 	cfg := &envoytcp.TcpProxy{
 		StatPrefix: l.FilterChainName,

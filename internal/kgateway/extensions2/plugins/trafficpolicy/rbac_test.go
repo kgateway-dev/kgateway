@@ -15,7 +15,7 @@ import (
 )
 
 // createExpectedMatcher creates an expected matcher structure for testing
-func createExpectedMatcher(action v1alpha1.AuthorizationPolicyAction, numRules int) *cncfmatcherv3.Matcher {
+func createExpectedMatcher(numRules int) *cncfmatcherv3.Matcher {
 	// Create a simplified matcher structure for testing
 	// We don't need to match the exact complex internal structure,
 	// just the basic structure with the right number of matchers
@@ -86,7 +86,7 @@ func TestTranslateRBAC(t *testing.T) {
 			},
 			expected: &envoyauthz.RBACPerRoute{
 				Rbac: &envoyauthz.RBAC{
-					Matcher: createExpectedMatcher(v1alpha1.AuthorizationPolicyActionAllow, 1),
+					Matcher: createExpectedMatcher(1),
 				},
 			},
 			expectedCELRules: map[string][]v1alpha1.CELExpression{
@@ -107,7 +107,7 @@ func TestTranslateRBAC(t *testing.T) {
 					Rules: &envoyrbacv3.RBAC{
 						Action: envoyrbacv3.RBAC_DENY,
 					},
-					Matcher: createExpectedMatcher(v1alpha1.AuthorizationPolicyActionDeny, 0),
+					Matcher: createExpectedMatcher(0),
 				},
 			},
 			expectedCELRules: map[string][]v1alpha1.CELExpression{},

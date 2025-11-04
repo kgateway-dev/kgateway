@@ -63,7 +63,7 @@ func (s *serviceEntryPlugin) initServiceEntryBackend(ctx context.Context, in ir.
 		// STATIC with inline endpoints, or either kind of DNS require an inline load assignment
 
 		// compute endpoints from ServiceEntry
-		staticEps = s.buildInlineEndpoints(ctx, in, se)
+		staticEps = s.buildInlineEndpoints(in, se)
 	}
 	return staticEps
 }
