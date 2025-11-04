@@ -46,10 +46,51 @@ Ensuring status accurately reflects the current state by clearing stale status f
 
 ### High-Level Design
 
-The solution introduces **status clearing** using status collections during the intermediate representation (IR) construction phase. Each
-resource with existing status condition gets an empty status entry in the status collection at construction time, essentially marking them "dirty". After translation completes,
-the status collection is merged with the translation ReportMap. This ensures orphaned resources have their stale
-status updated and cleared, while valid resources have their status updated from translation.
+The solution introduces **status clearing** using status collections during the intermediate representation (IR)
+construction phase. Each resource with existing status condition gets an empty status entry in the status
+collection at construction time, essentially marking them "dirty". After translation completes, the status
+collection is merged with the translation ReportMap. This ensures orphaned resources have their stale status
+updated and cleared, while valid resources have their status updated from translation.
+
+### Status Condition Format
+
+Following Gateway API conventions:
+
+**For Orphaned Resources:**
+```yaml
+status:
+  parents:
+  - parentRef:
+  # Empty - stale status cleared
+```
+
+**For Valid References:**
+```yaml
+status:
+  parents:
+  - parentRef:
+      name: valid-gateway
+    conditions:
+    - type: Accepted
+      status: "True"
+      reason: Accepted
+    - type: ResolvedRefs
+      status: "True"
+```
+
+**For Partial Validity:**
+```yaml
+status:
+  parents:
+  - parentRef:
+      name: valid-gateway
+    conditions:
+    - type: Accepted
+      status: "True"
+    - type: ResolvedRefs
+      status: "True"
+  # Only valid shown
+```
 
 #### Current Flow (Problem)
 
@@ -57,11 +98,10 @@ status updated and cleared, while valid resources have their status updated from
 graph TD
     A[Resources in K8s] --> B[Translation Phase]
     B --> C{Reverse Lookup}
-    C -->|Valid Parent Refs| D[Process Child Resources]
+    C -->|Valid Parent Refs| F[Process Resources]
     C -->|Invalid/Missing Parent Refs| E[Resource Ignored]
-    D --> F[Generate IR]
     F --> G[Generate xDS]
-    G --> H[Status Reporter]
+    G --> H[Translation ReportMap]
     H --> I[Update Status in K8s]
     
     style E fill:#ff9999
@@ -88,9 +128,12 @@ graph TD
 
 ### Implementation Approach
 
-The solution leverages the existing `ReportMap` infrastructure and introduces status clearing during IR
-construction phase using a status collection pattern. This approach is consistent with agentgateway status
-reporting and ensuring orphaned resources have their stale status cleared.
+The solution leverages the existing `ReportMap` infrastructure and introduces empty status object during IR
+construction phase using a status collection pattern. The empty statuses will be merged with final translation
+reports, essentially serve as a dirty marker. Any existing status in final report map will overwrite the empty
+status, ensuring no actual status is lost. The status collection is also used in agentgateway status reporting,
+and ensuring orphaned resources have their stale status cleared. The status syncer will continue to be in charge
+of eventually updating the CRD status, remain to be the single source of truth.
 
 #### 1. Empty Status Creation at IR Construction Phase
 
@@ -98,12 +141,14 @@ During the IR construction phase (when building intermediate representation from
 entries for all resources with existing status conditions:
 
 **For HTTPRoute:**
-- Create an empty status entry in the HTTPRoute status collection for each HTTPRoute that has existing status condition with kgateway as controller name
+- Create an empty status entry in the HTTPRoute status collection for each HTTPRoute that has existing status
+  condition with kgateway as controller name
 - Empty status means no parent status conditions to begin with, which will clear any stale parent refs
 - All routes proceed to translation phase via reverse lookup
 
 **For TrafficPolicy:**
-- Create an empty status entry in the TrafficPolicy status collection for each TrafficPolicy with existing status condition
+- Create an empty status entry in the TrafficPolicy status collection for each TrafficPolicy with existing status
+  condition
 - Empty status means no ancestor status conditions to begin with, which will clear any stale target refs
 - All policies proceed to translation phase via reverse lookup
 
@@ -120,23 +165,17 @@ Each resource type has its own status collection that captures status entries:
 // Status collection for HTTPRoutes (created during IR construction)
 httpRouteStatusCollection, irCollection := krt.NewStatusCollection(
     func(ctx krt.HandlerContext, route *gwv1.HTTPRoute) (*gwv1.RouteStatus, *ir.HttpRouteIR) {
-        status := &gwv1.RouteStatus{
-            Parents: []gwv1.RouteParentStatus{},  // Empty - clears all stale parent status
-        }
+        var status *gwv1.RouteStatus
         
-        // TODO: add empty status if there is existing status condition, check by condition parent length not 0
-        for _, parentRef := range route.Spec.ParentRefs {
-            controllerName := ptr.OrEmpty(parentRef.ControllerName)
-            if controllerName == "" || controllerName == wellknown.GatewayController {
-                // This parent belongs to kgateway, include empty status entry
-                status.Parents = append(status.Parents, gwv1.RouteParentStatus{
-                    ParentRef:  parentRef,
-                    Conditions: []metav1.Condition{},  // Empty conditions
-                })
+        // Check if route has existing parent status
+        if len(route.Status.Parents) > 0 {
+            // Create empty status to clear stale conditions
+            status = &gwv1.RouteStatus{
+                Parents: []gwv1.RouteParentStatus{},
             }
         }
         
-        // Build IR (normal IR construction logic)
+        // Build IR (existing IR construction logic)
         routeIR := constructIR(ctx, route)
         
         return status, routeIR
@@ -145,17 +184,17 @@ httpRouteStatusCollection, irCollection := krt.NewStatusCollection(
 ```
 
 **Key characteristics:**
-- Status collection contains empty status entries for all resources with existing status conditions
+- Status collection contains empty status entries only for resources that have existing status
 - Empty status will overwrite/clear any stale status
-- For HTTPRoute, only check status for parentRefs controlled by kgateway (controllerName check)
+- For HTTPRoute, the status syncer handles controllerName filtering when writing status
 - Translation will populate ReportMap with actual status for valid refs (existing behavior)
 
-#### 3. Status Merging
+#### 3. Status Merging Post Translation
 
 At the end of translation, merge status collection entries into the existing ReportMap:
 
 **Merging Logic**:
-1. If resource has entries in ReportMap (actually translated), overlay those statuses
+1. If resource has entries in ReportMap (actually translated), overwrite the empty statuses
     - ReportMap with actual translation status entries merge corresponding empty status entries
 2. Final result:
     - **Fully orphaned resources**: Only empty status (clears all stale conditions)
@@ -166,7 +205,12 @@ Merge will be specific to each resource, and following agentgateway's pattern, e
 and corresponding merging function to the status syncer. Status syncer will be added with calling all registered merge
 functions.
 
-#### 4. Concrete Example: Partially Orphaned HTTPRoute
+#### 4. Status Syncer (Existing)
+
+Status syncer will see minimal changes and still be in charge of updating the CRD status. It will receive a complete
+ReportMap with all statuses that need to be updated. For HTTPRoute, the controller name check logic already exists.
+
+#### 4. Concrete Example: Orphaned HTTPRoute
 
 Consider an HTTPRoute with a parent ref that previously had valid status, but now is changed to an invalid ref:
 
@@ -220,45 +264,24 @@ status:
      # CLEARED - no stale status remains
    ```
 
-### Status Condition Format
+### Pros and Cons
 
-Following Gateway API conventions:
+**Pros:**
+- **Future extendability**: Architecture supports adding validation or other status reporting outside translation
+  phase if needed in the future. The status collection pattern can be extended to report validation errors,
+  warnings, or other status information without modifying translation logic.
+- **Aligns with agentgateway**: Consistent with agentgateway's status collection pattern, making the codebase
+  more uniform and easier to understand for developers familiar with agentgateway.
+- **Separation of concerns**: Status clearing is separated from translation logic, making both easier to
+  understand and maintain.
+- **Flexibility**: Can easily add more status-related logic at IR construction phase without touching
+  translation code.
 
-**For Orphaned Resources:**
-```yaml
-status:
-  parents:
-  - parentRef:
-  # Empty - stale status cleared
-```
-
-**For Valid References:**
-```yaml
-status:
-  parents:
-  - parentRef:
-      name: valid-gateway
-    conditions:
-    - type: Accepted
-      status: "True"
-      reason: Accepted
-    - type: ResolvedRefs
-      status: "True"
-```
-
-**For Partial Validity:**
-```yaml
-status:
-  parents:
-  - parentRef:
-      name: valid-gateway
-    conditions:
-    - type: Accepted
-      status: "True"
-    - type: ResolvedRefs
-      status: "True"
-  # Only valid shown
-```
+**Cons:**
+- Takes a detour through status collections rather than directly solving the problem at the point where status
+  is normally generated. Adds an extra layer of abstraction.
+- May be more complex than necessary if only solving this specific stale status problem. The status collection
+  infrastructure adds conceptual and code overhead.
 
 ### Performance Considerations
 
@@ -280,14 +303,57 @@ TBD
 
 ### Alternative 1: Clear Missing Status at End of Translation
 
-**Approach:** At the end of translation, iterate through all resources and clear status for any
-resources that have existing status but not reported.
+**Approach:** At the end of translation, iterate through all resources and check if they have:
+1. Existing status
+2. Entries in the ReportMap
+
+For resources with status and not in the ReportMap (orphaned), add empty status entries to clear stale
+status. This will happen at the end of translation phase and adding empty statuses into the same ReportMap.
+
+**Detailed Flow:**
+
+```mermaid
+graph TD
+    A[Resources in K8s] --> B[Translation Phase]
+    B --> |Reverse Lookup| C[Process Valid Resources]
+    C --> D[Generate xDS]
+    D --> E[Translation ReportMap]
+    E --> F[Iterate All Resources]
+    F --> G{Has Existing Status?}
+    G -->|Yes| H{In ReportMap?}
+    G -->|No| I[No-op]
+    H -->|Yes| I
+    H -->|No| K[Empty Added to Report Map]
+    K --> L[Complete ReportMap]
+    L --> M[Update Status in K8s]
+    
+    style F fill:#dd9900
+    style G fill:#dd9900
+    style H fill:#dd9900
+    style I fill:#dd9900
+    style K fill:#dd9900
+```
+
+**Implementation Details:**
+
+1. Translation main logic completes with ReportMap
+2. For each HTTPRoute in collection:
+    - Check if has existing status
+    - Check if it exists in ReportMap
+    - If has existing status and missing in ReportMap, add empty status entry to ReportMap
+3. Proceed with normal status syncer using the complete ReportMap
 
 **Pros:**
-- Minimal changes, straightforward
+- Direct solution at the point where status is generated
+- No additional infrastructure needed
 
 **Cons:**
-- Cannot add validation or other things in the future
+- Even when only one resource changes, need to fetch and iterate through all resources to find orphaned ones,
+  which is expensive.
+- Performance relates linearly with number of resources in cluster, regardless of how many resources actually
+  changed.
+- Status clearing logic is embedded in translation phase, making it harder to extend or modify independently.
+- Limited to status clearing, no room for future extensions like validation at IR construction phase.
 
 ### Alternative 2: Pending State
 
@@ -315,3 +381,4 @@ resources that have existing status but not reported.
 
 1. **ControllerName handling**: For HTTPRoute parentRefs, should we clear status for refs with unspecified
    controllerName, or only those explicitly set to kgateway's controller?
+   - **Proposed**: No, we only care about our resources
