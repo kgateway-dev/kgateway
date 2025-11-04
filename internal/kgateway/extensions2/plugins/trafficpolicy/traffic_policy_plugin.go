@@ -95,6 +95,7 @@ type trafficPolicySpecIr struct {
 	retry           *retryIR
 	timeouts        *timeoutsIR
 	rbac            *rbacIR
+	jwt             *jwtIr
 }
 
 func (d *TrafficPolicy) CreationTime() time.Time {

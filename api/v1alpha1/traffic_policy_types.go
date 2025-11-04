@@ -121,6 +121,11 @@ type TrafficPolicySpec struct {
 	// Agentgateway-based Gateway supports cumulative RBAC policies across different attachment points, such that
 	// an RBAC policy attached to a route augments policies applied to the gateway or listener without overriding them.
 	RBAC *RBAC `json:"rbac,omitempty"`
+
+	// JWT specifies the JWT validation configuration for the policy.
+	// This defines the JWT providers and their configurations.
+	// +optional
+	JWT *JWTValidation `json:"jwt,omitempty"`
 }
 
 // TransformationPolicy config is used to modify envoy behavior at a route level.

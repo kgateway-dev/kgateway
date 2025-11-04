@@ -26,6 +26,9 @@ type GatewayExtension struct {
 	// This is specifically for global rate limiting that communicates with an external rate limit service.
 	RateLimit *v1alpha1.RateLimitProvider
 
+	// JwtProviders configures the jwt providers
+	JwtProviders map[string]v1alpha1.JWTProvider
+
 	// PrecedenceWeight specifies the precedence weight associated with the provider.
 	// A higher weight implies higher priority.
 	// It is used to order provider filters by their weight.

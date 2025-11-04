@@ -1391,6 +1391,29 @@ spec:
                     set
                   rule: '[has(self.request),has(self.response)].filter(x,x==true).size()
                     >= 1'
+              jwt:
+                description: |-
+                  JWT specifies the JWT validation configuration for the policy.
+                  This defines the JWT providers and their configurations.
+                properties:
+                  extensionRef:
+                    description: ExtensionRef references a GatewayExtension that provides
+                      the jwt providers
+                    properties:
+                      name:
+                        default: ""
+                        description: |-
+                          Name of the referent.
+                          This field is effectively required, but due to backwards compatibility is
+                          allowed to be empty. Instances of this type with an empty value here are
+                          almost certainly wrong.
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        type: string
+                    type: object
+                    x-kubernetes-map-type: atomic
+                required:
+                - extensionRef
+                type: object
               rateLimit:
                 description: |-
                   RateLimit specifies the rate limiting configuration for the policy.

@@ -31,9 +31,10 @@ type GatewayExtension struct {
 // +kubebuilder:validation:XValidation:message="ExtAuth must not be set when type is not ExtAuth",rule="self.type == 'ExtAuth' || !has(self.extAuth)"
 // +kubebuilder:validation:XValidation:message="ExtProc must not be set when type is not ExtProc",rule="self.type == 'ExtProc' || !has(self.extProc)"
 // +kubebuilder:validation:XValidation:message="RateLimit must not be set when type is not RateLimit",rule="self.type == 'RateLimit' || !has(self.rateLimit)"
+// +kubebuilder:validation:XValidation:message="JwtProviders must not be set when type is not JWT",rule="self.type == 'JWTProviders' || !has(self.jwtProviders)"
 type GatewayExtensionSpec struct {
 	// Type indicates the type of the GatewayExtension to be used.
-	// +kubebuilder:validation:Enum=ExtAuth;ExtProc;RateLimit
+	// +kubebuilder:validation:Enum=ExtAuth;ExtProc;RateLimit;JWTProviders
 	// +required
 	Type GatewayExtensionType `json:"type"`
 
@@ -48,6 +49,11 @@ type GatewayExtensionSpec struct {
 	// RateLimit configuration for RateLimit extension type.
 	// +optional
 	RateLimit *RateLimitProvider `json:"rateLimit,omitempty"`
+
+	// JWTProviders configures a map of unique JWTProvider name to JWTProviders
+	// +optional
+	// +kubebuilder:validation:MaxProperties=32
+	JWTProviders map[string]JWTProvider `json:"jwtProviders,omitempty"`
 }
 
 // GatewayExtensionType indicates the type of the GatewayExtension.
@@ -60,6 +66,8 @@ const (
 	GatewayExtensionTypeExtProc GatewayExtensionType = "ExtProc"
 	// GatewayExtensionTypeRateLimit is the type for RateLimit extensions.
 	GatewayExtensionTypeRateLimit GatewayExtensionType = "RateLimit"
+	// GatewayExtensionTypeJWTProvider is the type for the JWT Provider extensions
+	GatewayExtensionTypeJWTProvider GatewayExtensionType = "JWTProviders"
 )
 
 // ExtGrpcService defines the GRPC service that will handle the processing.

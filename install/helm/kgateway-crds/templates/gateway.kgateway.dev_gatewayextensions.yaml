@@ -560,6 +560,150 @@ spec:
                 required:
                 - grpcService
                 type: object
+              jwtProviders:
+                additionalProperties:
+                  description: |-
+                    JWTProvider configures the JWT Provider
+                    If multiple providers are specified for a given JWT policy, the providers will be `OR`-ed together and will allow validation to any of the providers.
+                  properties:
+                    audiences:
+                      description: |-
+                        Audiences is the list of audiences to be used for the JWT provider.
+                        If specified an incoming JWT must have an 'aud' claim, and it must be in this list.
+                        If not specified, the audiences will not be checked in the token.
+                      items:
+                        type: string
+                      maxItems: 100
+                      minItems: 1
+                      type: array
+                    claimsToHeaders:
+                      description: |-
+                        ClaimsToHeaders is the list of claims to headers to be used for the JWT provider.
+                        Optionally set the claims from the JWT payload that you want to extract and add as headers
+                        to the request before the request is forwarded to the upstream destination.
+                      items:
+                        description: JWTClaimToHeader allows copying verified claims
+                          to headers sent upstream
+                        properties:
+                          header:
+                            description: Header is the header the claim will be copied
+                              to, for example, "x-sub".
+                            maxLength: 2048
+                            minLength: 1
+                            type: string
+                          name:
+                            description: Name is the JWT claim name, for example,
+                              "sub".
+                            maxLength: 2048
+                            minLength: 1
+                            type: string
+                        required:
+                        - header
+                        - name
+                        type: object
+                      maxItems: 100
+                      minItems: 1
+                      type: array
+                    issuer:
+                      description: Issuer of the JWT. the 'iss' claim of the JWT must
+                        match this.
+                      maxLength: 2048
+                      minLength: 1
+                      type: string
+                    jwks:
+                      description: JWKS is the source for the JSON Web Keys to be
+                        used to validate the JWT.
+                      properties:
+                        local:
+                          description: LocalJWKS configures provide a PEM-formatted
+                            public key or file to verify the JWT token.
+                          properties:
+                            file:
+                              description: File is the path to the file containing
+                                the JWKS
+                              maxLength: 2048
+                              minLength: 1
+                              type: string
+                            key:
+                              description: InlineKey is the JWKS key as the raw, inline
+                                JWKS string
+                              maxLength: 2048
+                              minLength: 1
+                              type: string
+                            secretRef:
+                              description: SecretRef configures storing the JWK in
+                                a Kubernetes secret in the same namespace as the JWTValidationPolicy.
+                              properties:
+                                name:
+                                  default: ""
+                                  description: |-
+                                    Name of the referent.
+                                    This field is effectively required, but due to backwards compatibility is
+                                    allowed to be empty. Instances of this type with an empty value here are
+                                    almost certainly wrong.
+                                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                  type: string
+                              type: object
+                              x-kubernetes-map-type: atomic
+                          type: object
+                          x-kubernetes-validations:
+                          - message: exactly one of file, key, or secretRef must be
+                              set
+                            rule: (has(self.file) && !has(self.key) && !has(self.secretRef))
+                              || (!has(self.file) && has(self.key) && !has(self.secretRef))
+                              || (!has(self.file) && !has(self.key) && has(self.secretRef))
+                      type: object
+                    keepToken:
+                      default: Remove
+                      description: KeepToken configures if the token forwarded upstream.
+                        if false, the header containing the token will be removed.
+                      enum:
+                      - Forward
+                      - Remove
+                      type: string
+                    tokenSource:
+                      description: TokenSource configures where to find the JWT of
+                        the current provider.
+                      properties:
+                        headers:
+                          description: HeaderSource configures retrieving token from
+                            the headers
+                          items:
+                            description: HeaderSource configures how to retrieve a
+                              JWT from a header
+                            properties:
+                              header:
+                                description: Header is the name of the header. for
+                                  example, "Authorization"
+                                maxLength: 2048
+                                minLength: 1
+                                type: string
+                              prefix:
+                                description: Prefix before the token. for example,
+                                  "Bearer "
+                                maxLength: 2048
+                                minLength: 1
+                                type: string
+                            type: object
+                          maxItems: 100
+                          minItems: 1
+                          type: array
+                        queryParams:
+                          description: QueryParams configures retrieving token from
+                            these query params
+                          items:
+                            type: string
+                          maxItems: 100
+                          minItems: 1
+                          type: array
+                      type: object
+                  required:
+                  - jwks
+                  type: object
+                description: JWTProviders configures a map of unique JWTProvider name
+                  to JWTProviders
+                maxProperties: 32
+                type: object
               rateLimit:
                 description: RateLimit configuration for RateLimit extension type.
                 properties:
@@ -761,6 +905,7 @@ spec:
                 - ExtAuth
                 - ExtProc
                 - RateLimit
+                - JWTProviders
                 type: string
             required:
             - type
@@ -778,6 +923,8 @@ spec:
               rule: self.type == 'ExtProc' || !has(self.extProc)
             - message: RateLimit must not be set when type is not RateLimit
               rule: self.type == 'RateLimit' || !has(self.rateLimit)
+            - message: JwtProviders must not be set when type is not JWT
+              rule: self.type == 'JWTProviders' || !has(self.jwtProviders)
           status:
             description: GatewayExtensionStatus defines the observed state of GatewayExtension.
             properties:
