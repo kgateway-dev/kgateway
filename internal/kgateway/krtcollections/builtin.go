@@ -168,7 +168,7 @@ func (h *RoutesIndex) buildHTTPRouteRulePolicy(rule gwv1.HTTPRouteRule) ruleIR {
 		if h.enableExperimentalGatewayAPIFeatures {
 			ir.retry = convertRetry(rule.Retry, rule.Timeouts)
 		} else {
-			logger.Warn("experimental features are disabled but HTTPRouteRetry is configured. Skipping")
+			logger.Warn("experimental gateway api features are disabled but HTTPRouteRetry is configured. Skipping")
 		}
 	}
 	// ON_EXPERIMENTAL_PROMOTION : Remove this block
@@ -177,7 +177,7 @@ func (h *RoutesIndex) buildHTTPRouteRulePolicy(rule gwv1.HTTPRouteRule) ruleIR {
 		if h.enableExperimentalGatewayAPIFeatures {
 			ir.sessionPersistence = convertSessionPersistence(rule.SessionPersistence)
 		} else {
-			logger.Warn("experimental features are disabled but SessionPersistence is configured. Skipping")
+			logger.Warn("experimental gateway api features are disabled but SessionPersistence is configured. Skipping")
 		}
 	}
 	return ir
@@ -814,7 +814,7 @@ func (h *RoutesIndex) convertfilterIR(
 				policy = ci
 			}
 		} else {
-			logger.Warn("experimental features are disabled but HTTPRouteFilterCORS is configured. Skipping")
+			logger.Warn("experimental gateway api features are disabled but HTTPRouteFilterCORS is configured. Skipping")
 		}
 	}
 	if policy == nil {
