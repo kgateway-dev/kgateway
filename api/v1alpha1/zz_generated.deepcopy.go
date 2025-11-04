@@ -4305,7 +4305,7 @@ func (in *LocalJWKS) DeepCopyInto(out *LocalJWKS) {
 	}
 	if in.SecretRef != nil {
 		in, out := &in.SecretRef, &out.SecretRef
-		*out = new(corev1.LocalObjectReference)
+		*out = new(v1.LocalObjectReference)
 		**out = **in
 	}
 }
