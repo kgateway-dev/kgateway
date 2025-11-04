@@ -4,16 +4,13 @@ package jwt
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"path/filepath"
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
@@ -21,6 +18,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 )
 
@@ -34,14 +32,7 @@ var (
 		Name:      "gw",
 		Namespace: "default",
 	}
-	gatewayService    = &corev1.Service{ObjectMeta: gatewayObjectMeta}
-	gatewayDeployment = &appsv1.Deployment{ObjectMeta: gatewayObjectMeta}
-
-	httpbinObjectMeta = metav1.ObjectMeta{
-		Name:      "httpbin",
-		Namespace: "default",
-	}
-	httpbinDeployment = &appsv1.Deployment{ObjectMeta: httpbinObjectMeta}
+	gatewayService = &corev1.Service{ObjectMeta: gatewayObjectMeta}
 
 	// Matches
 	expectedJwtMissingFailedResponse = &matchers.HttpResponse{
@@ -79,117 +70,45 @@ var (
 	*/
 	// claim has email=dev1@kgateway.io
 	dev1JwtToken = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2Rldi5leGFtcGxlLmNvbSIsImV4cCI6NDgwNDMyNDczNiwiaWF0IjoxNjQ4NjUxMTM2LCJvcmciOiJpbnRlcm5hbCIsImVtYWlsIjoiZGV2MUBrZ2F0ZXdheS5pbyIsImdyb3VwIjoiZW5naW5lZXJpbmciLCJzY29wZSI6ImlzOmRldmVsb3BlciJ9.pqzk87Gny6mT8Gk7CVfkminm3u9CrNPhRt0oElwmfwZ7Jak1Ss4iOZ7MSZEgZFPxGiaz3DQyvos65dqbM_e4RaLYXb9fFYylaBl8kE8bhqMnXfPBNp9C4XTsSz4mR-eUvnkXXZ31dhMkoZvwIswWXR50wZ0rC6NF60Tye0sHJRdDcwL5778wDzLnualvtIiL-CbhWzXgRmjcrK3sbikLCHBjQiTEyBMPOVqS5NqJBgd7ZW1UASoxuxjCLsN8tBIaAFSACf8FZggAh9vEUJ_uc39kvOKQ0vs0pxvoYtsMPcndBYhws6IUhx_iF__qs_zz9mDNp8aMbXSlEdJG30wiRA"
+
+	setup = base.TestCase{
+		Manifests: []string{
+			setupManifest,
+			testdefaults.HttpbinManifest,
+			testdefaults.CurlPodManifest,
+		},
+	}
+
+	testCases = map[string]*base.TestCase{
+		"TestJwtAuthentication": {
+			Manifests: []string{jwtManifest},
+		},
+	}
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
 
 // testingSuite is a suite of tests for jwt functionality
 type testingSuite struct {
-	suite.Suite
-
-	ctx context.Context
-
-	// testInstallation contains all the metadata/utilities necessary to execute a series of tests
-	// against an installation of kgateway
-	testInstallation *e2e.TestInstallation
-
-	// maps test name to a list of manifests to apply before the test
-	manifests map[string][]string
-
-	// Track core objects for cleanup
-	coreObjects []client.Object
+	*base.BaseTestingSuite
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &testingSuite{
-		ctx:              ctx,
-		testInstallation: testInst,
-	}
-}
-
-// SetupSuite runs before all tests in the suite
-func (s *testingSuite) SetupSuite() {
-	// Initialize test manifest mappings
-	s.manifests = map[string][]string{
-		"TestJwtAuthentication": {jwtManifest},
-	}
-
-	// Apply core infrastructure
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
-	s.Require().NoError(err)
-
-	// Apply curl pod for testing
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, testdefaults.HttpbinManifest)
-	s.Require().NoError(err)
-
-	// Apply curl pod for testing
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, testdefaults.CurlPodManifest)
-	s.Require().NoError(err)
-
-	// Track core objects
-	s.coreObjects = []client.Object{
-		testdefaults.CurlPod,              // curl
-		httpbinDeployment,                 // httpbin
-		gatewayService, gatewayDeployment, // gateway service
-	}
-
-	// Wait for core infrastructure to be ready
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, s.coreObjects...)
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
-		LabelSelector: testdefaults.CurlPodLabelSelector,
-	})
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, httpbinDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", httpbinDeployment.GetName()),
-	})
-	s.testInstallation.Assertions.EventuallyPodsRunning(
-		s.ctx,
-		gatewayDeployment.ObjectMeta.GetNamespace(),
-		metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", gatewayObjectMeta.GetName()),
-		},
-	)
-	s.testInstallation.Assertions.EventuallyHTTPRouteCondition(s.ctx, "httpbin-route", "default", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
-}
-
-// TearDownSuite cleans up any remaining resources
-func (s *testingSuite) TearDownSuite() {
-	// Clean up core infrastructure
-	err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, setupManifest)
-	s.Require().NoError(err)
-
-	// Clean up curl pod
-	err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, testdefaults.CurlPodManifest)
-	s.Require().NoError(err)
-
-	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, s.coreObjects...)
-	s.testInstallation.Assertions.EventuallyPodsNotExist(s.ctx, gatewayObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", gatewayObjectMeta.GetName()),
-	})
-	s.testInstallation.Assertions.EventuallyPodsNotExist(s.ctx, httpbinObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", httpbinObjectMeta.GetName()),
-	})
-}
-
-// BeforeTest runs before each test
-func (s *testingSuite) BeforeTest(suiteName, testName string) {
-	manifests := s.manifests[testName]
-	for _, manifest := range manifests {
-		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
-		s.Require().NoError(err)
-	}
-}
-
-// AfterTest runs after each test
-func (s *testingSuite) AfterTest(suiteName, testName string) {
-	manifests := s.manifests[testName]
-	for _, manifest := range manifests {
-		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
-		s.Require().NoError(err)
+		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setup, testCases),
 	}
 }
 
 // TestJwtAuthentication tests the jwt is valid
 func (s *testingSuite) TestJwtAuthentication() {
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.Ctx,
+		"httpbin-route",
+		"default",
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionTrue,
+	)
+
 	// Send request to route with no JWT config applied, should get 200 OK
 	s.T().Log("send request to route with no JWT config applied, should get 200 OK")
 	statusReqCurlOpts := []curl.Option{
@@ -198,8 +117,8 @@ func (s *testingSuite) TestJwtAuthentication() {
 		curl.WithPort(8080),
 		curl.WithPath("/status/200"),
 	}
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		statusReqCurlOpts,
 		expectStatus200Success)
@@ -212,16 +131,16 @@ func (s *testingSuite) TestJwtAuthentication() {
 		curl.WithPort(8080),
 		curl.WithPath("/get"),
 	}
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		getReqCurlOpts,
 		expectedJwtMissingFailedResponse)
 
 	s.T().Log("The /get route does have a JWT config applied, should fail when incorrect JWT is provided")
 	getReqBadJwtCurlOpts := append(getReqCurlOpts, curl.WithHeader("Authorization", "Bearer "+badJwtToken))
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		getReqBadJwtCurlOpts,
 		expectedJwtVerificationFailedResponse,
@@ -229,8 +148,8 @@ func (s *testingSuite) TestJwtAuthentication() {
 
 	s.T().Log("The /get route does have a JWT config applied, should succeed when correct JWT is provided")
 	getReqJwtCurlOpts := append(getReqCurlOpts, curl.WithHeader("Authorization", "Bearer "+dev1JwtToken))
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		getReqJwtCurlOpts,
 		expectStatus200Success,
