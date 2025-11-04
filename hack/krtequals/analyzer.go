@@ -100,7 +100,7 @@ func (a *analyzer) Run(pass *analysis.Pass) (any, error) {
 				continue
 			}
 			if !usedFields[f.name] {
-				pass.Reportf(f.pos, "field %q in type %q is not used in Equals; either compare it or add //+noKrtEquals", f.name, sinfo.name)
+				pass.Reportf(f.pos, "field %q in type %q is not used in Equals; either compare it or add // +noKrtEquals", f.name, sinfo.name)
 			}
 		}
 	})
