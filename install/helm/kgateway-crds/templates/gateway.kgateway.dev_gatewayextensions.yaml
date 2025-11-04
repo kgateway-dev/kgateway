@@ -655,8 +655,10 @@ spec:
                       type: object
                     keepToken:
                       default: Remove
-                      description: KeepToken configures if the token forwarded upstream.
-                        if false, the header containing the token will be removed.
+                      description: |-
+                        KeepToken configures if the token is forwarded upstream.
+                        If Remove, the header containing the token will be removed.
+                        If Forward, the header containing the token will be forwarded upstream.
                       enum:
                       - Forward
                       - Remove

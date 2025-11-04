@@ -45,14 +45,16 @@ type JWTProvider struct {
 	// JWKS is the source for the JSON Web Keys to be used to validate the JWT.
 	JWKS JWKS `json:"jwks"`
 
-	// KeepToken configures if the token forwarded upstream. if false, the header containing the token will be removed.
+	// KeepToken configures if the token is forwarded upstream.
+	// If Remove, the header containing the token will be removed.
+	// If Forward, the header containing the token will be forwarded upstream.
 	// +kubebuilder:validation:Enum=Forward;Remove
 	// +kubebuilder:default=Remove
 	// +optional
 	KeepToken *KeepToken `json:"keepToken,omitempty"`
 }
 
-// KeepToken configures if the token forwarded behavior.
+// KeepToken configures if the token is forwarded upstream.
 type KeepToken string
 
 const (
