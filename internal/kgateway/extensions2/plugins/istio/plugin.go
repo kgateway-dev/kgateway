@@ -30,6 +30,7 @@ var VirtualIstioGK = schema.GroupKind{
 }
 
 type IstioSettings struct {
+	// +krtEqualsTodo ensure ISTIO auto-mtls flag participates in equality
 	EnableAutoMtls bool
 }
 

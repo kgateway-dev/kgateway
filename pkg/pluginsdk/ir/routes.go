@@ -24,11 +24,14 @@ type Route interface {
 type HttpRouteIR struct {
 	ObjectSource `json:",inline"`
 	SourceObject metav1.Object
-	ParentRefs   []gwv1.ParentReference
+	// +krtEqualsTodo compare parent refs when determining equality
+	ParentRefs []gwv1.ParentReference
 
+	// +krtEqualsTodo ensure hostname list differences are observed
 	Hostnames        []string
 	AttachedPolicies AttachedPolicies
-	Rules            []HttpRouteRuleIR
+	// +krtEqualsTodo include rule array comparisons (beyond versionEquals) or annotate why not
+	Rules []HttpRouteRuleIR
 
 	// PrecedenceWeight specifies the weight of this route relative to other route.
 	// Higher weight means higher priority, and are evaluated before routes with lower weight
@@ -132,8 +135,9 @@ func (c HttpRouteIR) rulesEqual(in HttpRouteIR) bool {
 var _ Route = &HttpRouteIR{}
 
 type TcpRouteIR struct {
-	ObjectSource     `json:",inline"`
-	SourceObject     *gwv1alpha2.TCPRoute
+	ObjectSource `json:",inline"`
+	SourceObject *gwv1alpha2.TCPRoute
+	// +krtEqualsTodo include parent references when computing equality
 	ParentRefs       []gwv1.ParentReference
 	AttachedPolicies AttachedPolicies
 	Backends         []BackendRefIR
@@ -176,8 +180,10 @@ var _ Route = &TcpRouteIR{}
 type TlsRouteIR struct {
 	ObjectSource `json:",inline"`
 	SourceObject *gwv1alpha2.TLSRoute
-	ParentRefs   []gwv1.ParentReference
+	// +krtEqualsTodo include parent references when computing equality
+	ParentRefs []gwv1.ParentReference
 
+	// +krtEqualsTodo ensure hostname list differences are observed
 	Hostnames        []string
 	AttachedPolicies AttachedPolicies
 	Backends         []BackendRefIR
