@@ -31,12 +31,14 @@ import (
 )
 
 type TrafficPolicyGatewayExtensionIR struct {
-	Name             string
-	ExtType          v1alpha1.GatewayExtensionType
-	ExtAuth          *envoy_ext_authz_v3.ExtAuthz
-	ExtProc          *envoymatchingv3.ExtensionWithMatcher
-	RateLimit        *ratev3.RateLimit
-	Jwt              *envoyjwtauthnv3.JwtAuthentication
+	Name      string
+	ExtType   v1alpha1.GatewayExtensionType
+	ExtAuth   *envoy_ext_authz_v3.ExtAuthz
+	ExtProc   *envoymatchingv3.ExtensionWithMatcher
+	RateLimit *ratev3.RateLimit
+	Jwt       *envoyjwtauthnv3.JwtAuthentication
+	// No need to compare JwtProviders, already compared in Jwt
+	// +noKrtEquals
 	JwtProviders     map[string]v1alpha1.JWTProvider
 	PrecedenceWeight int32
 	Err              error
