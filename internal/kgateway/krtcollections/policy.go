@@ -992,12 +992,12 @@ func (c RouteWrapper) Equals(in RouteWrapper) bool {
 // MARK: RoutesIndex
 
 type RoutesIndex struct {
-	routes                     krt.Collection[RouteWrapper]
-	httpRoutes                 krt.Collection[ir.HttpRouteIR]
-	httpBySelector             krt.Index[HTTPRouteSelector, ir.HttpRouteIR]
-	byParentRef                krt.Index[targetRefIndexKey, RouteWrapper]
-	weightedRoutePrecedence    bool
-	enableExperimentalFeatures bool
+	routes                               krt.Collection[RouteWrapper]
+	httpRoutes                           krt.Collection[ir.HttpRouteIR]
+	httpBySelector                       krt.Index[HTTPRouteSelector, ir.HttpRouteIR]
+	byParentRef                          krt.Index[targetRefIndexKey, RouteWrapper]
+	weightedRoutePrecedence              bool
+	enableExperimentalGatewayAPIFeatures bool
 
 	policies  *PolicyIndex
 	refgrants *RefGrantIndex
@@ -1032,11 +1032,11 @@ func NewRoutesIndex(
 	globalSettings apisettings.Settings,
 ) *RoutesIndex {
 	h := &RoutesIndex{
-		policies:                   policies,
-		refgrants:                  refgrants,
-		backends:                   backends,
-		weightedRoutePrecedence:    globalSettings.WeightedRoutePrecedence,
-		enableExperimentalFeatures: globalSettings.EnableExperimentalGatewayAPIFeatures,
+		policies:                             policies,
+		refgrants:                            refgrants,
+		backends:                             backends,
+		weightedRoutePrecedence:              globalSettings.WeightedRoutePrecedence,
+		enableExperimentalGatewayAPIFeatures: globalSettings.EnableExperimentalGatewayAPIFeatures,
 	}
 	h.hasSyncedFuncs = append(h.hasSyncedFuncs, httproutes.HasSynced, grpcroutes.HasSynced, tcproutes.HasSynced, tlsroutes.HasSynced)
 

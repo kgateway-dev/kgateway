@@ -165,7 +165,7 @@ func (h *RoutesIndex) buildHTTPRouteRulePolicy(rule gwv1.HTTPRouteRule) ruleIR {
 	// ON_EXPERIMENTAL_PROMOTION : Remove this block
 	// Ref: https://github.com/kgateway-dev/kgateway/issues/12824
 	if rule.Retry != nil {
-		if h.enableExperimentalFeatures {
+		if h.enableExperimentalGatewayAPIFeatures {
 			ir.retry = convertRetry(rule.Retry, rule.Timeouts)
 		} else {
 			logger.Warn("experimental features are disabled but HTTPRouteRetry is configured. Skipping")
@@ -174,7 +174,7 @@ func (h *RoutesIndex) buildHTTPRouteRulePolicy(rule gwv1.HTTPRouteRule) ruleIR {
 	// ON_EXPERIMENTAL_PROMOTION : Remove this block
 	// Ref: https://github.com/kgateway-dev/kgateway/issues/12825
 	if rule.SessionPersistence != nil {
-		if h.enableExperimentalFeatures {
+		if h.enableExperimentalGatewayAPIFeatures {
 			ir.sessionPersistence = convertSessionPersistence(rule.SessionPersistence)
 		} else {
 			logger.Warn("experimental features are disabled but SessionPersistence is configured. Skipping")
@@ -808,7 +808,7 @@ func (h *RoutesIndex) convertfilterIR(
 	case gwv1.HTTPRouteFilterCORS:
 		// ON_EXPERIMENTAL_PROMOTION : Remove this block
 		// Ref: https://github.com/kgateway-dev/kgateway/issues/12826
-		if h.enableExperimentalFeatures {
+		if h.enableExperimentalGatewayAPIFeatures {
 			ci := convertCORSIR(kctx, f.CORS)
 			if ci != nil {
 				policy = ci
