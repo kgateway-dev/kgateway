@@ -658,3 +658,5 @@ tool (
 	sigs.k8s.io/controller-tools/cmd/controller-gen
 	sigs.k8s.io/kind
 )
+
+replace github.com/agentgateway/agentgateway => github.com/jenshu/agentgateway v0.9.1-0.20251105145124-a67c2a7532f9
