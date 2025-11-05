@@ -54,6 +54,7 @@ spec:
       - name: gemini
         gemini:
           model: "gemini-1.5-flash"
+          apiVersion: "v1"
           authToken:
             kind: "SecretRef"
             secretRef:
@@ -61,6 +62,10 @@ spec:
       - name: vertexai
         vertexai:
           model: "gemini-pro"
+          apiVersion: "v1"
+          location: "us-central1"
+          projectId: "vertex-fallback-project"
+          publisher: "GOOGLE"
           authToken:
             kind: "Passthrough"
     # Priority 2 - Tertiary fallback provider
