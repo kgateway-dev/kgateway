@@ -74,4 +74,7 @@ spec:
     grpc:
       serviceName: grpc.health.v1.Health
       authority: example.com
-
+    timeout: 3s
+    interval: 2s
+    unhealthyThreshold: 3
+    healthyThreshold: 2
