@@ -13,6 +13,7 @@ import (
 
 	"github.com/ghodss/yaml"
 	apiserverschema "k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
+	apiextensionsvalidation "k8s.io/apiextensions-apiserver/pkg/apiserver/validation"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -136,12 +137,17 @@ func parseFile(
 		}
 
 		if structuralSchema, ok := gvkToStructuralSchema[gvk]; ok {
-			objYamlWithDefaults, err := ApplyDefaults(objYaml, structuralSchema)
+			unstructuredObj, objYamlWithDefaults, err := ApplyDefaults(objYaml, structuralSchema)
 			if err != nil {
 				return nil, fmt.Errorf("failed to apply defaults for %s: %w", gvk, err)
 			}
-			err = yaml.Unmarshal(objYamlWithDefaults, obj)
-			if err != nil {
+			validator := apiextensionsvalidation.NewSchemaValidatorFromOpenAPI(structuralSchema.ToKubeOpenAPI())
+			validationErrs := apiextensionsvalidation.ValidateCustomResource(nil, unstructuredObj.UnstructuredContent(), validator)
+			if len(validationErrs) > 0 {
+				agg := validationErrs.ToAggregate()
+				return nil, fmt.Errorf("failed to validate %s: %w", gvk, agg)
+			}
+			if err := yaml.Unmarshal(objYamlWithDefaults, obj); err != nil {
 				return nil, fmt.Errorf("failed to unmarshal object with defaults for %s: %w", gvk, err)
 			}
 		}

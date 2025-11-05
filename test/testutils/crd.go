@@ -67,12 +67,12 @@ func GetStructuralSchemas(
 func ApplyDefaults(
 	objYAML []byte,
 	structuralSchema *apiserverschema.Structural,
-) ([]byte, error) {
+) (*unstructured.Unstructured, []byte, error) {
 	// Convert YAML to map without losing any fields (using the Go type with omitempty will drop zero-value fields)
 	raw := make(map[string]interface{})
 	err := yaml.Unmarshal(objYAML, &raw)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	u := &unstructured.Unstructured{
 		Object: raw,
@@ -86,7 +86,7 @@ func ApplyDefaults(
 	}
 	unknownFields := structuralpruning.PruneWithOptions(u.Object, structuralSchema, true, pruneOpts)
 	if len(unknownFields) > 0 {
-		return nil, fmt.Errorf("got unknown fields: %v", unknownFields)
+		return nil, nil, fmt.Errorf("got unknown fields: %v", unknownFields)
 	}
 	structuraldefaulting.PruneNonNullableNullsWithoutDefaults(u.Object, structuralSchema)
 
@@ -94,9 +94,9 @@ func ApplyDefaults(
 	structuraldefaulting.Default(u.UnstructuredContent(), structuralSchema)
 	objYAML, err = yaml.Marshal(u.Object)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return objYAML, nil
+	return u, objYAML, nil
 }
 
 func parseCRDs(path string) ([]*apiextensions.CustomResourceDefinition, error) {
