@@ -266,28 +266,28 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	s.statusReport = krt.NewSingleton(func(kctx krt.HandlerContext) *report {
 		proxies := krt.Fetch(kctx, s.mostXdsSnapshots)
 
-		objStatus := krt.Fetch(kctx, s.commonCols.Routes.HttpRouteStatus)
-		m := reports.NewReportMap()
-		for _, status := range objStatus {
-			rp := reports.NewReporter(&m)
-			rrp := rp.Route(status.Obj)
-			for _, p := range status.Status.Parents {
-				pr := rrp.ParentRef(&p.ParentRef)
-				for _, c := range p.Conditions {
-					pr.SetCondition(reporter.RouteCondition{
-						Type:    gwv1.RouteConditionType(c.Type),
-						Status:  c.Status,
-						Reason:  gwv1.RouteConditionReason(c.Reason),
-						Message: c.Message,
-					})
-				}
-			}
-		}
-		proxies = append(proxies, GatewayXdsResources{reports: m})
-
+		// First merge translation results from all proxies
 		merged := mergeProxyReports(proxies)
 
-		// Skip merging with proxies - test StatusCollection in isolation
+		// Then merge HTTPRouteStatus from status collection
+		// Only add empty status for routes that don't already have status from translation
+		objStatus := krt.Fetch(kctx, s.commonCols.Routes.HttpRouteStatus)
+		for _, status := range objStatus {
+			routeKey := types.NamespacedName{
+				Namespace: status.Obj.GetNamespace(),
+				Name:      status.Obj.GetName(),
+			}
+
+			// Skip if this route already has status from translation
+			if merged.HTTPRoutes[routeKey] != nil {
+				continue
+			}
+
+			// Add empty status for orphaned routes
+			rp := reports.NewReporter(&merged)
+			_ = rp.Route(status.Obj)
+		}
+
 		return &report{merged}
 	})
 

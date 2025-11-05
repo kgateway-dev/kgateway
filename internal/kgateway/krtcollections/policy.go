@@ -1235,29 +1235,15 @@ func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRo
 		}
 	}
 
-	// Validate parentRefs
-	var invalidParents []gwv1.RouteParentStatus
-	for _, parentRef := range i.Spec.ParentRefs {
-		if err := h.validateParentRef(kctx, parentRef, i.Namespace); err != nil {
-			invalidParents = append(invalidParents, gwv1.RouteParentStatus{
-				ParentRef: parentRef,
-				Conditions: []metav1.Condition{
-					{
-						Type:               string(gwv1.RouteConditionAccepted),
-						Status:             metav1.ConditionFalse,
-						Reason:             string(gwv1.RouteReasonNoMatchingParent),
-						Message:            err.Error(),
-						LastTransitionTime: metav1.Now(),
-						ObservedGeneration: i.Generation,
-					},
-				},
-			})
-		}
-	}
-
+	// Create empty status if there are existing status parents to clear
 	var status *gwv1.HTTPRouteStatus
-	if len(invalidParents) > 0 {
-		status = &gwv1.HTTPRouteStatus{RouteStatus: gwv1.RouteStatus{Parents: invalidParents}}
+	if len(i.Status.Parents) > 0 {
+		// Create empty status to clear stale conditions
+		status = &gwv1.HTTPRouteStatus{
+			RouteStatus: gwv1.RouteStatus{
+				Parents: []gwv1.RouteParentStatus{}, // Empty - clears all stale parent status
+			},
+		}
 	}
 
 	return status, &ir.HttpRouteIR{
@@ -1275,50 +1261,6 @@ func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRo
 		DelegationInheritParentMatcher: delegation.ShouldInheritParentMatcher(i.GetAnnotations()),
 	}
 	// TODO: other gateway process the route
-}
-
-// validateParentRef checks if the referenced parent exists
-func (h *RoutesIndex) validateParentRef(kctx krt.HandlerContext, parentRef gwv1.ParentReference, routeNamespace string) error {
-	// Default values according to Gateway API spec
-	group := gwv1.GroupName
-	if parentRef.Group != nil {
-		group = string(*parentRef.Group)
-	}
-	kind := wellknown.GatewayKind
-	if parentRef.Kind != nil {
-		kind = string(*parentRef.Kind)
-	}
-	namespace := routeNamespace
-	if parentRef.Namespace != nil {
-		namespace = string(*parentRef.Namespace)
-	}
-	name := string(parentRef.Name)
-	key := namespace + "/" + name
-
-	switch {
-	case group == gwv1.GroupName && kind == wellknown.GatewayKind:
-		// Validate Gateway exists
-		gw := ptr.Flatten(krt.FetchOne(kctx, h.gateways, krt.FilterKey(key)))
-		if gw == nil {
-			return fmt.Errorf("parent Gateway %s/%s not found", namespace, name)
-		}
-	case group == gwxv1a1.GroupName && kind == wellknown.XListenerSetKind:
-		// Validate XListenerSet exists
-		ls := ptr.Flatten(krt.FetchOne(kctx, h.listenerSets, krt.FilterKey(key)))
-		if ls == nil {
-			return fmt.Errorf("parent XListenerSet %s/%s not found", namespace, name)
-		}
-	case group == gwv1.GroupName && kind == wellknown.HTTPRouteKind:
-		// HTTPRoute delegation - validate parent HTTPRoute exists
-		parentRoute := krt.FetchOne(kctx, h.httpRoutes, krt.FilterKey(key))
-		if parentRoute == nil {
-			return fmt.Errorf("parent HTTPRoute %s/%s not found", namespace, name)
-		}
-	default:
-		return fmt.Errorf("unsupported parent kind: %s/%s", group, kind)
-	}
-
-	return nil
 }
 
 func (h *RoutesIndex) transformRules(
