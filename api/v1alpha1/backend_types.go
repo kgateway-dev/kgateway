@@ -219,7 +219,7 @@ type StaticBackend struct {
 	// Hosts is a list of hosts to use for the backend.
 	// +required
 	// +kubebuilder:validation:MinItems=1
-	Hosts []Host `json:"hosts,omitempty"`
+	Hosts []Host `json:"hosts"`
 
 	// AppProtocol is the application protocol to use when communicating with the backend.
 	// +optional

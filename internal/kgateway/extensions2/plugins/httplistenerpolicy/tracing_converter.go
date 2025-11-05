@@ -33,10 +33,6 @@ func convertTracingConfig(
 		return nil, nil, nil
 	}
 
-	if config.Provider.OpenTelemetry.GrpcService.BackendRef == nil {
-		return nil, nil, fmt.Errorf("Tracing.OpenTelemetryConfig.GrpcService.BackendRef must be specified")
-	}
-
 	backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, parentSrc, config.Provider.OpenTelemetry.GrpcService.BackendRef.BackendObjectReference)
 	if err != nil {
 		return nil, nil, fmt.Errorf("%w: %v", ErrUnresolvedBackendRef, err)
@@ -51,10 +47,6 @@ func translateTracing(
 ) (*envoytracev3.OpenTelemetryConfig, *envoy_hcm.HttpConnectionManager_Tracing, error) {
 	if config == nil {
 		return nil, nil, nil
-	}
-
-	if config.Provider.OpenTelemetry == nil || config.Provider.OpenTelemetry.GrpcService.BackendRef == nil {
-		return nil, nil, fmt.Errorf("Tracing.OpenTelemetryConfig.GrpcService.BackendRef must be specified")
 	}
 
 	provider, err := convertOTelTracingConfig(config.Provider.OpenTelemetry, backend)

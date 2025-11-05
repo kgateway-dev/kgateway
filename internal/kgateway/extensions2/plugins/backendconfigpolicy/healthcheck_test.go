@@ -29,10 +29,10 @@ func TestTranslateHealthCheck(t *testing.T) {
 		{
 			name: "basic health check config",
 			config: &v1alpha1.HealthCheck{
-				Timeout:            &metav1.Duration{Duration: 5 * time.Second},
-				Interval:           &metav1.Duration{Duration: 10 * time.Second},
-				UnhealthyThreshold: ptr.To(int32(3)),
-				HealthyThreshold:   ptr.To(int32(2)),
+				Timeout:            metav1.Duration{Duration: 5 * time.Second},
+				Interval:           metav1.Duration{Duration: 10 * time.Second},
+				UnhealthyThreshold: int32(3),
+				HealthyThreshold:   int32(2),
 				Http: &v1alpha1.HealthCheckHttp{
 					Path: "/health",
 				},
@@ -52,8 +52,10 @@ func TestTranslateHealthCheck(t *testing.T) {
 		{
 			name: "HTTP health check",
 			config: &v1alpha1.HealthCheck{
-				Timeout:  &metav1.Duration{Duration: 5 * time.Second},
-				Interval: &metav1.Duration{Duration: 10 * time.Second},
+				Timeout:            metav1.Duration{Duration: 5 * time.Second},
+				Interval:           metav1.Duration{Duration: 10 * time.Second},
+				UnhealthyThreshold: 3,
+				HealthyThreshold:   2,
 				Http: &v1alpha1.HealthCheckHttp{
 					Host:   ptr.To("example.com"),
 					Path:   "/health",
@@ -61,8 +63,10 @@ func TestTranslateHealthCheck(t *testing.T) {
 				},
 			},
 			expected: &envoycorev3.HealthCheck{
-				Timeout:  durationpb.New(5 * time.Second),
-				Interval: durationpb.New(10 * time.Second),
+				Timeout:            durationpb.New(5 * time.Second),
+				Interval:           durationpb.New(10 * time.Second),
+				UnhealthyThreshold: &wrapperspb.UInt32Value{Value: 3},
+				HealthyThreshold:   &wrapperspb.UInt32Value{Value: 2},
 				HealthChecker: &envoycorev3.HealthCheck_HttpHealthCheck_{
 					HttpHealthCheck: &envoycorev3.HealthCheck_HttpHealthCheck{
 						Host:   "example.com",
@@ -75,16 +79,20 @@ func TestTranslateHealthCheck(t *testing.T) {
 		{
 			name: "gRPC health check",
 			config: &v1alpha1.HealthCheck{
-				Timeout:  &metav1.Duration{Duration: 5 * time.Second},
-				Interval: &metav1.Duration{Duration: 10 * time.Second},
+				Timeout:            metav1.Duration{Duration: 5 * time.Second},
+				Interval:           metav1.Duration{Duration: 10 * time.Second},
+				UnhealthyThreshold: 4,
+				HealthyThreshold:   1,
 				Grpc: &v1alpha1.HealthCheckGrpc{
 					ServiceName: ptr.To("grpc.health.v1.Health"),
 					Authority:   ptr.To("example.com"),
 				},
 			},
 			expected: &envoycorev3.HealthCheck{
-				Timeout:  durationpb.New(5 * time.Second),
-				Interval: durationpb.New(10 * time.Second),
+				Timeout:            durationpb.New(5 * time.Second),
+				Interval:           durationpb.New(10 * time.Second),
+				UnhealthyThreshold: &wrapperspb.UInt32Value{Value: 4},
+				HealthyThreshold:   &wrapperspb.UInt32Value{Value: 1},
 				HealthChecker: &envoycorev3.HealthCheck_GrpcHealthCheck_{
 					GrpcHealthCheck: &envoycorev3.HealthCheck_GrpcHealthCheck{
 						ServiceName: "grpc.health.v1.Health",
@@ -96,16 +104,20 @@ func TestTranslateHealthCheck(t *testing.T) {
 		{
 			name: "HTTP health check with multiple status ranges",
 			config: &v1alpha1.HealthCheck{
-				Timeout:  &metav1.Duration{Duration: 5 * time.Second},
-				Interval: &metav1.Duration{Duration: 10 * time.Second},
+				Timeout:            metav1.Duration{Duration: 5 * time.Second},
+				Interval:           metav1.Duration{Duration: 10 * time.Second},
+				UnhealthyThreshold: 2,
+				HealthyThreshold:   3,
 				Http: &v1alpha1.HealthCheckHttp{
 					Host: ptr.To("example.com"),
 					Path: "/health",
 				},
 			},
 			expected: &envoycorev3.HealthCheck{
-				Timeout:  durationpb.New(5 * time.Second),
-				Interval: durationpb.New(10 * time.Second),
+				Timeout:            durationpb.New(5 * time.Second),
+				Interval:           durationpb.New(10 * time.Second),
+				UnhealthyThreshold: &wrapperspb.UInt32Value{Value: 2},
+				HealthyThreshold:   &wrapperspb.UInt32Value{Value: 3},
 				HealthChecker: &envoycorev3.HealthCheck_HttpHealthCheck_{
 					HttpHealthCheck: &envoycorev3.HealthCheck_HttpHealthCheck{
 						Host: "example.com",

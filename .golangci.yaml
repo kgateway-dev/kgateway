@@ -40,16 +40,25 @@ linters:
           deepEqual: false
       kubeapilinter:
         type: module
-        description: Kube API LInter lints Kube like APIs based on API conventions and best practices.
+        description: Kube API Linter lints Kube like APIs based on API conventions and best practices
         settings:
           linters:
+            enable:
+            - "*"
             disable:
             - commentstart
+            - integers
+            - maxlength
+            - nobools
             - nomaps
+            - optionalfields
             - optionalorrequired
             - ssatags
-            - integers
-          lintersConfig: {}
+          lintersConfig:
+            conditions:
+              isFirstField: Ignore
+              useProtobuf: Forbid
+              usePatchStrategy: Ignore
     forbidigo:
       forbid:
         - pattern: anypb.New

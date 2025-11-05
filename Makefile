@@ -128,7 +128,6 @@ GOTOOLCHAIN ?= go$(GO_VERSION)
 
 DEPSGOBIN ?= $(OUTPUT_DIR)
 GOLANGCI_LINT ?= go tool golangci-lint
-CUSTOM_GOLANGCI_LINT_BIN ?= $(OUTPUT_DIR)/golangci-lint-custom
 ANALYZE_ARGS ?= --fix --verbose
 
 CUSTOM_GOLANGCI_LINT_BIN ?= $(DEPSGOBIN)/golangci-lint-custom
