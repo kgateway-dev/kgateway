@@ -37,7 +37,6 @@ func DeepMergeGatewayParameters(dst, src *v1alpha1.GatewayParameters) {
 	dstKube.ServiceAccount = deepMergeServiceAccount(dstKube.GetServiceAccount(), srcKube.GetServiceAccount())
 	dstKube.Istio = deepMergeIstioIntegration(dstKube.GetIstio(), srcKube.GetIstio())
 	dstKube.Stats = deepMergeStatsConfig(dstKube.GetStats(), srcKube.GetStats())
-	dstKube.AiExtension = deepMergeAIExtension(dstKube.GetAiExtension(), srcKube.GetAiExtension()) //nolint:staticcheck
 	dstKube.OmitDefaultSecurityContext = MergePointers(dstKube.GetOmitDefaultSecurityContext(), srcKube.GetOmitDefaultSecurityContext())
 	dstKube.Agentgateway = deepMergeAgentgateway(dstKube.GetAgentgateway(), srcKube.GetAgentgateway())
 }
@@ -716,57 +715,6 @@ func deepMergeDeployment(dst, src *v1alpha1.ProxyDeployment) *v1alpha1.ProxyDepl
 
 	dst.Replicas = MergePointers(dst.GetReplicas(), src.GetReplicas())
 	dst.Strategy = MergePointers(dst.Strategy, src.Strategy)
-
-	return dst
-}
-
-func deepMergeAIExtension(dst, src *v1alpha1.AiExtension) *v1alpha1.AiExtension {
-	// nil src override means just use dst
-	if src == nil {
-		return dst
-	}
-
-	if dst == nil {
-		return src
-	}
-
-	dst.Enabled = MergePointers(dst.GetEnabled(), src.GetEnabled())
-	dst.Image = DeepMergeImage(dst.GetImage(), src.GetImage())
-	dst.SecurityContext = DeepMergeSecurityContext(dst.GetSecurityContext(), src.GetSecurityContext())
-	dst.Resources = DeepMergeResourceRequirements(dst.GetResources(), src.GetResources())
-	dst.Env = DeepMergeSlices(dst.GetEnv(), src.GetEnv())
-	dst.Ports = DeepMergeSlices(dst.GetPorts(), src.GetPorts())
-	dst.Stats = deepMergeAIExtensionStats(dst.GetStats(), src.GetStats())
-	dst.Tracing = deepMergeAIExtensionTracing(dst.GetTracing(), src.GetTracing())
-	return dst
-}
-
-func deepMergeAIExtensionTracing(dst, src *v1alpha1.AiExtensionTrace) *v1alpha1.AiExtensionTrace {
-	// nil src override means just use dst
-	if src == nil {
-		return dst
-	}
-	if dst == nil {
-		return src
-	}
-	dst.EndPoint = MergeComparable(dst.EndPoint, src.EndPoint)
-	dst.Sampler = MergePointers(dst.Sampler, src.Sampler)
-	dst.Timeout = MergePointers(dst.Timeout, src.Timeout)
-	dst.Protocol = MergePointers(dst.Protocol, src.Protocol)
-	return dst
-}
-
-func deepMergeAIExtensionStats(dst, src *v1alpha1.AiExtensionStats) *v1alpha1.AiExtensionStats {
-	// nil src override means just use dst
-	if src == nil {
-		return dst
-	}
-
-	if dst == nil {
-		return src
-	}
-
-	dst.CustomLabels = DeepMergeSlices(dst.GetCustomLabels(), src.GetCustomLabels())
 
 	return dst
 }
