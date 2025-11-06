@@ -3,6 +3,8 @@ kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: kgateway-inference-extension-{{ .Release.Namespace }}
+  labels:
+    {{- include "kgateway.labels" . | nindent 4 }}
 rules:
 - apiGroups: ["inference.networking.x-k8s.io"]
   resources: ["inferencemodels"]
@@ -49,6 +51,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: {{ include "kgateway.name" . }}-inference-extension-role-{{ .Release.Namespace }}
+  labels:
+    {{- include "kgateway.labels" . | nindent 4 }}
 subjects:
 - kind: ServiceAccount
   name: {{ include "kgateway.serviceAccountName" . }}
