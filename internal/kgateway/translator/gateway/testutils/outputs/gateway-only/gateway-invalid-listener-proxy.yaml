@@ -1,0 +1,48 @@
+Clusters:
+- connectTimeout: 5s
+  metadata: {}
+  name: test-backend-plugin_default_example-svc_80
+Statuses:
+  gateways:
+    default/example-gateway:
+      conditions:
+      - lastTransitionTime: null
+        message: ""
+        reason: ListenerSetsNotAllowed
+        status: Unknown
+        type: AttachedListenerSets
+      - lastTransitionTime: null
+        message: No valid listeners
+        reason: ListenersNotValid
+        status: "False"
+        type: Accepted
+      - lastTransitionTime: null
+        message: ""
+        reason: Invalid
+        status: "False"
+        type: Programmed
+      listeners:
+      - attachedRoutes: 0
+        conditions:
+        - lastTransitionTime: null
+          message: 'Found invalid route kinds: [TCPRoute]'
+          reason: InvalidRouteKinds
+          status: "False"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully accepted Listener
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully verified that Listener has no conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        - lastTransitionTime: null
+          message: Successfully programmed Listener
+          reason: Programmed
+          status: "True"
+          type: Programmed
+        name: http
+        supportedKinds: []

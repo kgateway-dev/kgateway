@@ -9,13 +9,10 @@ import (
 	"strings"
 
 	"istio.io/istio/pkg/kube/krt"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	corev1 "k8s.io/api/core/v1"
-
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	route "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/httproute"
@@ -23,14 +20,22 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/routeutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/sslutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 var logger = logging.New("translator/listener")
 
+const (
+	TcpTlsListenerNoBackendsMessage = "TCP/TLS listener has no valid backends or routes"
+	SecretNotFoundMessageTemplate   = "Secret %s/%s not found." //nolint:gosec // G101: This is a template string, not hardcoded credentials
+)
+
 type ListenerTranslatorConfig struct {
-	ListenerBindIpv6 bool
+	ListenerBindIpv6                     bool
+	EnableExperimentalGatewayAPIFeatures bool
 }
 
 // TranslateListeners translates the set of ListenerIRs required to produce a full output proxy (either from one Gateway or multiple merged Gateways)
@@ -49,10 +54,10 @@ func TranslateListeners(
 		Translator: "TranslateListeners",
 	})(nil)
 
-	validatedListeners := validateGateway(gateway, reporter)
-
+	validatedListeners := validateGateway(gateway, reporter, settings)
 	mergedListeners := mergeGWListeners(queries, gateway.Namespace, validatedListeners, *gateway, routesForGw, reporter, settings)
 	translatedListeners := mergedListeners.translateListeners(kctx, ctx, queries, reporter)
+
 	return translatedListeners
 }
 
@@ -134,27 +139,26 @@ func (ml *MergedListeners) appendHttpListener(
 		routesWithHosts:     routesWithHosts,
 		attachedPolicies:    listener.AttachedPolicies,
 	}
-
 	fc := &httpFilterChain{
 		parents: []httpFilterChainParent{parent},
 	}
-	listenerName := GenerateListenerName(listener)
-	finalPort := getListenerPortNumber(listener)
 
+	finalPort := getListenerPortNumber(listener)
 	for _, lis := range ml.Listeners {
-		if lis.port == finalPort {
-			if lis.httpFilterChain != nil {
-				lis.httpFilterChain.parents = append(lis.httpFilterChain.parents, parent)
-			} else {
-				lis.httpFilterChain = fc
-			}
-			return
+		if lis.port != finalPort {
+			continue
 		}
+		if lis.httpFilterChain != nil {
+			lis.httpFilterChain.parents = append(lis.httpFilterChain.parents, parent)
+		} else {
+			lis.httpFilterChain = fc
+		}
+		return
 	}
 
 	// create a new filter chain for the listener
 	ml.Listeners = append(ml.Listeners, &MergedListener{
-		name:             listenerName,
+		name:             GenerateListenerName(listener),
 		gatewayNamespace: ml.GatewayNamespace,
 		port:             finalPort,
 		httpFilterChain:  fc,
@@ -170,13 +174,15 @@ func (ml *MergedListeners) appendHttpsListener(
 	routesWithHosts []*query.RouteInfo,
 	reporter reports.ListenerReporter,
 ) {
-	// create a new filter chain for the listener
-	// protocol:            listener.Protocol,
+	tls := listener.TLS
+	if tls == nil {
+		tls = &gwv1.ListenerTLSConfig{}
+	}
 
 	mfc := httpsFilterChain{
 		gatewayListenerName: query.GenerateRouteKey(listener.Parent, string(listener.Name)),
 		sniDomain:           listener.Hostname,
-		tls:                 listener.TLS,
+		tls:                 tls,
 		routesWithHosts:     routesWithHosts,
 		attachedPolicies:    listener.AttachedPolicies,
 	}
@@ -184,16 +190,15 @@ func (ml *MergedListeners) appendHttpsListener(
 	// Perform the port transformation away from privileged ports only once to use
 	// during both lookup and when appending the listener.
 	finalPort := getListenerPortNumber(listener)
-
-	listenerName := GenerateListenerName(listener)
 	for _, lis := range ml.Listeners {
 		if lis.port == finalPort {
 			lis.httpsFilterChains = append(lis.httpsFilterChains, mfc)
 			return
 		}
 	}
+
 	ml.Listeners = append(ml.Listeners, &MergedListener{
-		name:              listenerName,
+		name:              GenerateListenerName(listener),
 		gatewayNamespace:  ml.GatewayNamespace,
 		port:              finalPort,
 		httpsFilterChains: []httpsFilterChain{mfc},
@@ -213,13 +218,12 @@ func (ml *MergedListeners) AppendTcpListener(
 		gatewayListenerName: query.GenerateRouteKey(listener.Parent, string(listener.Name)),
 		routesWithHosts:     routeInfos,
 	}
-
 	fc := tcpFilterChain{
-		parents: parent,
+		parents:          parent,
+		listenerReporter: reporter,
 	}
-	listenerName := GenerateListenerName(listener)
-	finalPort := getListenerPortNumber(listener)
 
+	finalPort := getListenerPortNumber(listener)
 	for _, lis := range ml.Listeners {
 		if lis.port == finalPort {
 			lis.TcpFilterChains = append(lis.TcpFilterChains, fc)
@@ -229,7 +233,7 @@ func (ml *MergedListeners) AppendTcpListener(
 
 	// create a new filter chain for the listener
 	ml.Listeners = append(ml.Listeners, &MergedListener{
-		name:             listenerName,
+		name:             GenerateListenerName(listener),
 		gatewayNamespace: ml.GatewayNamespace,
 		port:             finalPort,
 		TcpFilterChains:  []tcpFilterChain{fc},
@@ -249,16 +253,18 @@ func (ml *MergedListeners) AppendTlsListener(
 		gatewayListenerName: query.GenerateRouteKey(listener.Parent, string(listener.Name)),
 		routesWithHosts:     routeInfos,
 	}
-
+	tls := listener.TLS
+	if tls == nil {
+		tls = &gwv1.ListenerTLSConfig{}
+	}
 	fc := tcpFilterChain{
-		parents:   parent,
-		tls:       listener.TLS,
-		sniDomain: listener.Hostname,
+		parents:          parent,
+		tls:              tls,
+		sniDomain:        listener.Hostname,
+		listenerReporter: reporter,
 	}
 
-	listenerName := GenerateListenerName(listener)
 	finalPort := getListenerPortNumber(listener)
-
 	for _, lis := range ml.Listeners {
 		if lis.port == finalPort {
 			lis.TcpFilterChains = append(lis.TcpFilterChains, fc)
@@ -268,7 +274,7 @@ func (ml *MergedListeners) AppendTlsListener(
 
 	// create a new filter chain for the listener
 	ml.Listeners = append(ml.Listeners, &MergedListener{
-		name:             listenerName,
+		name:             GenerateListenerName(listener),
 		gatewayNamespace: ml.GatewayNamespace,
 		port:             finalPort,
 		TcpFilterChains:  []tcpFilterChain{fc},
@@ -284,7 +290,7 @@ func (ml *MergedListeners) translateListeners(
 	queries query.GatewayQueries,
 	reporter reports.Reporter,
 ) []ir.ListenerIR {
-	var listeners []ir.ListenerIR
+	listeners := make([]ir.ListenerIR, 0, len(ml.Listeners))
 	for _, mergedListener := range ml.Listeners {
 		listener := mergedListener.TranslateListener(kctx, ctx, queries, reporter)
 		listeners = append(listeners, listener)
@@ -303,8 +309,6 @@ type MergedListener struct {
 	listener          ir.Listener
 	gateway           ir.Gateway
 	settings          ListenerTranslatorConfig
-
-	// TODO(policy via http listener options)
 }
 
 func (ml *MergedListener) TranslateListener(
@@ -313,12 +317,8 @@ func (ml *MergedListener) TranslateListener(
 	queries query.GatewayQueries,
 	reporter reports.Reporter,
 ) ir.ListenerIR {
-	var (
-		httpFilterChains    []ir.HttpFilterChainIR
-		matchedTcpListeners []ir.TcpIR
-	)
-
 	// Translate HTTP filter chains
+	var httpFilterChains []ir.HttpFilterChainIR
 	if ml.httpFilterChain != nil {
 		httpFilterChain := ml.httpFilterChain.translateHttpFilterChain(
 			ctx,
@@ -326,18 +326,6 @@ func (ml *MergedListener) TranslateListener(
 			reporter,
 		)
 		httpFilterChains = append(httpFilterChains, httpFilterChain)
-		/* TODO: not sure why this logic is here, vhosts can duplicate across filter chains. and name should be unique
-		for vhostRef, vhost := range vhostsForFilterchain {
-			if _, ok := mergedVhosts[vhostRef]; ok {
-				// Handle potential error if duplicate vhosts are found
-				contextutils.LoggerFrom(ctx).Errorf(
-					"Duplicate virtual host found: %s", vhostRef,
-				)
-				continue
-			}
-			mergedVhosts[vhostRef] = vhost
-		}
-		*/
 	}
 
 	// Translate HTTPS filter chains
@@ -358,22 +346,28 @@ func (ml *MergedListener) TranslateListener(
 		}
 
 		httpFilterChains = append(httpFilterChains, *httpsFilterChain)
-		/* TODO: not sure why this logic is here, vhosts can duplicate across filter chains. and name should be unique
-
-		for vhostRef, vhost := range vhostsForFilterchain {
-			if _, ok := mergedVhosts[vhostRef]; ok {
-				logger.Error("Duplicate virtual host found", "vhostRef", vhostRef)
-				continue
-			}
-			mergedVhosts[vhostRef] = vhost
-		}
-		*/
 	}
 
 	// Translate TCP listeners (if any exist)
+	var matchedTcpListeners []ir.TcpIR
 	for _, tfc := range ml.TcpFilterChains {
 		if tcpListener := tfc.translateTcpFilterChain(ml.name, reporter); tcpListener != nil {
 			matchedTcpListeners = append(matchedTcpListeners, *tcpListener)
+		}
+	}
+
+	// Only report errors if ALL TCP filter chains failed (port is not programmed)
+	if len(ml.TcpFilterChains) > 0 && len(matchedTcpListeners) == 0 {
+		// All TCP filter chains failed - the port is not programmed
+		listenerCondition := reports.ListenerCondition{
+			Type:    gwv1.ListenerConditionProgrammed,
+			Status:  metav1.ConditionFalse,
+			Reason:  gwv1.ListenerReasonInvalid,
+			Message: TcpTlsListenerNoBackendsMessage,
+		}
+		// Report to all TCP filter chains since the entire port failed
+		for _, tfc := range ml.TcpFilterChains {
+			tfc.listenerReporter.SetCondition(listenerCondition)
 		}
 	}
 
@@ -387,21 +381,22 @@ func (ml *MergedListener) TranslateListener(
 	return ir.ListenerIR{
 		Name:              ml.name,
 		BindAddress:       bindAddress,
-		BindPort:          uint32(ml.port),
-		AttachedPolicies:  ir.AttachedPolicies{}, // TODO: find policies attached to listener and attach them <- this might not be possilbe due to listener merging. also a gw listener ~= envoy filter chain; and i don't believe we need policies there
+		BindPort:          uint32(ml.port),       //nolint:gosec // G115: Gateway listener port is int32, always positive, safe to convert to uint32
+		AttachedPolicies:  ir.AttachedPolicies{}, // TODO: find policies attached to listener and attach them <- this might not be possible due to listener merging. also a gw listener ~= envoy filter chain; and i don't believe we need policies there
 		HttpFilterChain:   httpFilterChains,
 		TcpFilterChain:    matchedTcpListeners,
 		PolicyAncestorRef: ml.listener.PolicyAncestorRef,
 	}
 }
 
-// tcpFilterChain each one represents a Gateway listener that has been merged into a single Gloo Listener
+// tcpFilterChain each one represents a Gateway listener that has been merged into a single kgateway Listener
 // (with distinct filter chains). In the case where no Gateway listener merging takes place, every listener
-// will use a Gloo AggregatedListener with one TCP filter chain.
+// will use a kgateway AggregatedListener with one TCP filter chain.
 type tcpFilterChain struct {
-	parents   tcpFilterChainParent
-	tls       *gwv1.GatewayTLSConfig
-	sniDomain *gwv1.Hostname
+	parents          tcpFilterChainParent
+	tls              *gwv1.ListenerTLSConfig
+	sniDomain        *gwv1.Hostname
+	listenerReporter reports.ListenerReporter
 }
 
 type tcpFilterChainParent struct {
@@ -431,8 +426,6 @@ func (tc *tcpFilterChain) translateTcpFilterChain(parentName string, reporter re
 	switch r.Object.(type) {
 	case *ir.TcpRouteIR:
 		tRoute := r.Object.(*ir.TcpRouteIR)
-		// Collect ParentRefReporters for the TCPRoute
-		parentRefReporters := make([]reports.ParentRefReporter, 0, len(tRoute.ParentRefs))
 
 		var condition reports.RouteCondition
 		if len(tRoute.SourceObject.Spec.Rules) == 1 {
@@ -448,15 +441,16 @@ func (tc *tcpFilterChain) translateTcpFilterChain(parentName string, reporter re
 				Reason: gwv1.RouteReasonUnsupportedValue,
 			}
 		}
+		if condition.Status != metav1.ConditionTrue {
+			return nil
+		}
 
+		// Collect ParentRefReporters for the TCPRoute
+		parentRefReporters := make([]reports.ParentRefReporter, 0, len(tRoute.ParentRefs))
 		for _, parentRef := range tRoute.ParentRefs {
 			parentRefReporter := reporter.Route(tRoute.SourceObject).ParentRef(&parentRef)
 			parentRefReporter.SetCondition(condition)
 			parentRefReporters = append(parentRefReporters, parentRefReporter)
-		}
-
-		if condition.Status != metav1.ConditionTrue {
-			return nil
 		}
 
 		// Ensure unique names by appending the rule index to the TCPRoute name
@@ -477,7 +471,6 @@ func (tc *tcpFilterChain) translateTcpFilterChain(parentName string, reporter re
 			// they should fail based of the weights.
 			backends = append(backends, backend)
 		}
-
 		// Avoid creating a TcpListener if there are no TcpHosts
 		if len(backends) == 0 {
 			return nil
@@ -491,8 +484,6 @@ func (tc *tcpFilterChain) translateTcpFilterChain(parentName string, reporter re
 		}
 	case *ir.TlsRouteIR:
 		tRoute := r.Object.(*ir.TlsRouteIR)
-
-		parentRefReporters := make([]reports.ParentRefReporter, 0, len(tRoute.ParentRefs))
 
 		var condition reports.RouteCondition
 		if len(tRoute.SourceObject.Spec.Rules) == 1 {
@@ -508,15 +499,15 @@ func (tc *tcpFilterChain) translateTcpFilterChain(parentName string, reporter re
 				Reason: gwv1.RouteReasonUnsupportedValue,
 			}
 		}
+		if condition.Status != metav1.ConditionTrue {
+			return nil
+		}
 
+		parentRefReporters := make([]reports.ParentRefReporter, 0, len(tRoute.ParentRefs))
 		for _, parentRef := range tRoute.ParentRefs {
 			parentRefReporter := reporter.Route(tRoute.SourceObject).ParentRef(&parentRef)
 			parentRefReporter.SetCondition(condition)
 			parentRefReporters = append(parentRefReporters, parentRefReporter)
-		}
-
-		if condition.Status != metav1.ConditionTrue {
-			return nil
 		}
 
 		// Ensure unique names by appending the rule index to the TLSRoute name
@@ -537,7 +528,6 @@ func (tc *tcpFilterChain) translateTcpFilterChain(parentName string, reporter re
 			// they should fail based of the weights.
 			backends = append(backends, backend)
 		}
-
 		// Avoid creating a TcpListener if there are no TcpHosts
 		if len(backends) == 0 {
 			return nil
@@ -560,8 +550,8 @@ func (tc *tcpFilterChain) translateTcpFilterChain(parentName string, reporter re
 	}
 }
 
-// httpFilterChain each one represents a GW Listener that has been merged into a single Gloo Listener (with distinct filter chains).
-// In the case where no GW Listener merging takes place, every listener will use a Gloo AggregatedListeener with 1 HTTP filter chain.
+// httpFilterChain each one represents a GW Listener that has been merged into a single Listener (with distinct filter chains).
+// In the case where no GW Listener merging takes place, every listener will use a MergedListener with 1 HTTP filter chain.
 type httpFilterChain struct {
 	parents []httpFilterChainParent
 }
@@ -607,35 +597,46 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 	)
 	for host, vhostRoutes := range routesByHost {
 		// find the parent this host belongs to, and use its policies
-		var attachedPolicies ir.AttachedPolicies
+		var (
+			attachedPolicies ir.AttachedPolicies
+			listenerRef      ir.Listener
+		)
 		maxHostnameLen := -1
 		for _, p := range httpFilterChain.parents {
-			if isHostContained(host, p.gatewayListener.Hostname) {
-				hostnameLen := 0
-				if p.gatewayListener.Hostname != nil {
-					hostnameLen = len(string(*p.gatewayListener.Hostname))
-				}
-				if hostnameLen > maxHostnameLen {
-					attachedPolicies = p.attachedPolicies
-					maxHostnameLen = hostnameLen
-				}
+			// does this listener's hostname match our host?
+			if !isHostContained(host, p.gatewayListener.Hostname) {
+				continue
+			}
+			// calculate the length of the hostname; most specific match wins
+			var hostnameLen int
+			if p.gatewayListener.Hostname != nil {
+				hostnameLen = len(string(*p.gatewayListener.Hostname))
+			}
+			if hostnameLen > maxHostnameLen {
+				attachedPolicies = p.attachedPolicies
+				listenerRef = p.gatewayListener
+				maxHostnameLen = hostnameLen
 			}
 		}
 
+		// ensure we sort the routes before creating the vhost
 		sort.Stable(vhostRoutes)
-		vhostName := makeVhostName(ctx, parentName, host)
-		if !virtualHostNames[vhostName] {
-			virtualHostNames[vhostName] = true
-			virtualHost := &ir.VirtualHost{
-				Name:             vhostName,
-				Hostname:         host,
-				Rules:            vhostRoutes.ToRoutes(),
-				AttachedPolicies: attachedPolicies,
-			}
-			virtualHosts = append(virtualHosts, virtualHost)
-		}
-	}
 
+		// ensure we don't create duplicate vhosts
+		vhostName := makeVhostName(ctx, parentName, host)
+		if virtualHostNames[vhostName] {
+			continue
+		}
+		virtualHostNames[vhostName] = true
+
+		virtualHosts = append(virtualHosts, &ir.VirtualHost{
+			Name:             vhostName,
+			Hostname:         host,
+			Rules:            vhostRoutes.ToRoutes(),
+			AttachedPolicies: attachedPolicies,
+			ParentRef:        listenerRef,
+		})
+	}
 	// sort vhosts, to make sure the resource is stable
 	sort.Slice(virtualHosts, func(i, j int) bool {
 		return virtualHosts[i].Name < virtualHosts[j].Name
@@ -660,7 +661,7 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 type httpsFilterChain struct {
 	gatewayListenerName string
 	sniDomain           *gwv1.Hostname
-	tls                 *gwv1.GatewayTLSConfig
+	tls                 *gwv1.ListenerTLSConfig
 	routesWithHosts     []*query.RouteInfo
 	attachedPolicies    ir.AttachedPolicies
 }
@@ -700,8 +701,8 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 			virtualHosts = append(virtualHosts, virtualHost)
 		}
 	}
-	var matcher ir.FilterChainMatch
 
+	var matcher ir.FilterChainMatch
 	if httpsFilterChain.sniDomain != nil {
 		matcher.SniDomains = []string{string(*httpsFilterChain.sniDomain)}
 	}
@@ -725,7 +726,7 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 		}
 		var notFoundErr *krtcollections.NotFoundError
 		if errors.As(err, &notFoundErr) {
-			message = fmt.Sprintf("Secret %s/%s not found.", notFoundErr.NotFoundObj.Namespace, notFoundErr.NotFoundObj.Name)
+			message = fmt.Sprintf(SecretNotFoundMessageTemplate, notFoundErr.NotFoundObj.Namespace, notFoundErr.NotFoundObj.Name)
 		}
 		listenerReporter.SetCondition(reports.ListenerCondition{
 			Type:    gwv1.ListenerConditionResolvedRefs,
@@ -745,6 +746,7 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 	sort.Slice(virtualHosts, func(i, j int) bool {
 		return virtualHosts[i].Name < virtualHosts[j].Name
 	})
+
 	return &ir.HttpFilterChainIR{
 		FilterChainCommon: ir.FilterChainCommon{
 			FilterChainName: parentName,
@@ -762,7 +764,6 @@ func buildRoutesPerHost(
 	routes []*query.RouteInfo,
 	reporter reports.Reporter,
 ) {
-	// func() { panic("TODO: handle policy attachment") }()
 	for _, routeWithHosts := range routes {
 		parentRefReporter := reporter.Route(routeWithHosts.Object.GetSourceObject()).ParentRef(&routeWithHosts.ParentRef)
 		routes := route.TranslateGatewayHTTPRouteRules(
@@ -771,7 +772,6 @@ func buildRoutesPerHost(
 			parentRefReporter,
 			reporter,
 		)
-
 		if len(routes) == 0 {
 			// TODO report
 			continue
@@ -781,7 +781,6 @@ func buildRoutesPerHost(
 		if len(hostnames) == 0 {
 			hostnames = []string{"*"}
 		}
-
 		for _, host := range hostnames {
 			routesByHost[host] = append(routesByHost[host], routeutils.ToSortable(routeWithHosts.Object.GetSourceObject(), routes)...)
 		}
@@ -792,48 +791,49 @@ func translateSslConfig(
 	kctx krt.HandlerContext,
 	ctx context.Context,
 	parentNamespace string,
-	tls *gwv1.GatewayTLSConfig,
+	tls *gwv1.ListenerTLSConfig,
 	queries query.GatewayQueries,
 ) (*ir.TlsBundle, error) {
 	if tls == nil {
 		return nil, nil
 	}
-
 	if tls.Mode == nil ||
 		*tls.Mode != gwv1.TLSModeTerminate {
 		return nil, nil
 	}
-
-	for _, certRef := range tls.CertificateRefs {
-		// validate via query
-		secret, err := queries.GetSecretForRef(kctx, ctx, schema.GroupKind{
-			Group: gwv1.GroupName,
-			Kind:  "Gateway",
-		},
-			parentNamespace,
-			certRef)
-		if err != nil {
-			return nil, err
-		}
-		// The resulting sslconfig will still have to go through a real translation where we run through this again.
-		// This means that while its nice to still fail early here we dont need to scrub the actual contents of the secret.
-		if _, err := sslutils.ValidateTlsSecretData(secret.Name, secret.Namespace, secret.Data); err != nil {
-			return nil, err
-		}
-
-		certChain := secret.Data[corev1.TLSCertKey]
-		privateKey := secret.Data[corev1.TLSPrivateKeyKey]
-		rootCa := secret.Data[corev1.ServiceAccountRootCAKey]
-
-		return &ir.TlsBundle{
-			PrivateKey: privateKey,
-			CertChain:  certChain,
-			CA:         rootCa,
-		}, nil
-		// TODO support multiple certs
+	// TODO: support multiple certificate refs
+	if len(tls.CertificateRefs) != 1 {
+		return nil, fmt.Errorf("only one certificate ref is supported for now")
 	}
 
-	return nil, nil
+	certRef := tls.CertificateRefs[0]
+	// validate secret reference exists
+	secret, err := queries.GetSecretForRef(
+		kctx,
+		ctx,
+		wellknown.GatewayGVK.GroupKind(),
+		parentNamespace,
+		certRef,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// The resulting sslconfig will still have to go through a real translation where we run through this again.
+	// This means that while its nice to still fail early here we dont need to scrub the actual contents of the secret.
+	if _, err := sslutils.ValidateTlsSecretData(secret.Name, secret.Namespace, secret.Data); err != nil {
+		return nil, err
+	}
+
+	certChain := secret.Data[corev1.TLSCertKey]
+	privateKey := secret.Data[corev1.TLSPrivateKeyKey]
+	rootCa := secret.Data[corev1.ServiceAccountRootCAKey]
+
+	return &ir.TlsBundle{
+		PrivateKey: privateKey,
+		CertChain:  certChain,
+		CA:         rootCa,
+	}, nil
 }
 
 // makeVhostName computes the name of a virtual host based on the parent name and domain.
@@ -846,6 +846,10 @@ func makeVhostName(
 }
 
 func GenerateListenerName(listener ir.Listener) string {
+	return GenerateListenerNameFromPort(listener.Port)
+}
+
+func GenerateListenerNameFromPort(port gwv1.PortNumber) string {
 	// Add a ~ to make sure the name won't collide with user provided names in other listeners
-	return fmt.Sprintf("listener~%d", listener.Port)
+	return fmt.Sprintf("listener~%d", port)
 }

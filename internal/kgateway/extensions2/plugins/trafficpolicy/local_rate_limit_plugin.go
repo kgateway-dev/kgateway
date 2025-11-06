@@ -9,7 +9,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 const (
@@ -46,37 +46,33 @@ func (l *localRateLimitIR) Validate() error {
 }
 
 // constructLocalRateLimit constructs the local rate limit policy IR from the policy specification.
-func constructLocalRateLimit(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) error {
+func constructLocalRateLimit(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) {
 	if in.Spec.RateLimit == nil || in.Spec.RateLimit.Local == nil {
-		return nil
+		return
 	}
-	localRateLimit, err := toLocalRateLimitFilterConfig(in.Spec.RateLimit.Local)
-	if err != nil {
-		return err
-	}
+	localRateLimit := toLocalRateLimitFilterConfig(in.Spec.RateLimit.Local)
 	out.localRateLimit = &localRateLimitIR{
 		config: localRateLimit,
 	}
-	return nil
 }
 
-func toLocalRateLimitFilterConfig(t *v1alpha1.LocalRateLimitPolicy) (*localratelimitv3.LocalRateLimit, error) {
+func toLocalRateLimitFilterConfig(t *v1alpha1.LocalRateLimitPolicy) *localratelimitv3.LocalRateLimit {
 	if t == nil {
-		return nil, nil
+		return nil
 	}
 
 	// If the local rate limit policy is empty, we add a LocalRateLimit configuration that disables
 	// any other applied local rate limit policy (if any) for the target.
 	if *t == (v1alpha1.LocalRateLimitPolicy{}) {
-		return createDisabledRateLimit(), nil
+		return createDisabledRateLimit()
 	}
 
 	tokenBucket := &typev3.TokenBucket{}
 	if t.TokenBucket != nil {
 		tokenBucket.FillInterval = durationpb.New(t.TokenBucket.FillInterval.Duration)
-		tokenBucket.MaxTokens = t.TokenBucket.MaxTokens
+		tokenBucket.MaxTokens = uint32(t.TokenBucket.MaxTokens) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 		if t.TokenBucket.TokensPerFill != nil {
-			tokenBucket.TokensPerFill = wrapperspb.UInt32(*t.TokenBucket.TokensPerFill)
+			tokenBucket.TokensPerFill = wrapperspb.UInt32(uint32(*t.TokenBucket.TokensPerFill)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 		}
 	}
 
@@ -104,7 +100,7 @@ func toLocalRateLimitFilterConfig(t *v1alpha1.LocalRateLimitPolicy) (*localratel
 		},
 	}
 
-	return lrl, nil
+	return lrl
 }
 
 // createDisabledRateLimit returns a LocalRateLimit configuration that disables rate limiting.

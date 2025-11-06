@@ -21,17 +21,17 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	infv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	extplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
@@ -52,42 +52,39 @@ const (
 	subsetDstEndpointKey = dstEndpointKey + "-subset"
 )
 
-var (
-	logger = logging.New("plugin/inference-epp")
-)
+var logger = logging.New("plugin/inference-epp")
 
-func NewPlugin(ctx context.Context, commonCols *common.CommonCollections) *extplug.Plugin {
-	p := initInferencePoolCollections(ctx, commonCols)
+func NewPlugin(ctx context.Context, commonCols *collections.CommonCollections) sdk.Plugin {
+	p, cli := initInferencePoolCollections(commonCols)
 
 	// Wrap the init function so it can capture commonCols.Pods
 	initBackend := func(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
-		return processPoolBackendObjIR(ctx, in, out, p.podIndex)
+		return processPoolBackendObjIR(in, out, p.podIndex)
 	}
 
-	return &extplug.Plugin{
-		ContributesBackends: map[schema.GroupKind]extplug.BackendPlugin{
+	return sdk.Plugin{
+		ContributesBackends: map[schema.GroupKind]sdk.BackendPlugin{
 			wellknown.InferencePoolGVK.GroupKind(): {
 				BackendInit: ir.BackendInit{InitEnvoyBackend: initBackend},
 				Backends:    p.backendsDP,
 				Endpoints:   p.endpoints,
 			},
 		},
-		ContributesPolicies: map[schema.GroupKind]extplug.PolicyPlugin{
+		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			wellknown.InferencePoolGVK.GroupKind(): {
 				Name:     poolGroupKindName,
 				Policies: p.policies,
-				NewGatewayTranslationPass: func(ctx context.Context, t ir.GwTranslationCtx, r reports.Reporter) ir.ProxyTranslationPass {
+				NewGatewayTranslationPass: func(t ir.GwTranslationCtx, r reporter.Reporter) ir.ProxyTranslationPass {
 					return newEndpointPickerPass(r, p.podIndex)
 				},
 			},
 		},
 		ContributesLeaderAction: map[schema.GroupKind]func(){
 			wellknown.InferencePoolGVK.GroupKind(): buildRegisterCallback(
-				ctx,
 				commonCols,
+				cli,
 				p.backendsCtl,
 				p.poolIndex,
-				commonCols.LocalityPods,
 			),
 		},
 	}
@@ -96,7 +93,7 @@ func NewPlugin(ctx context.Context, commonCols *common.CommonCollections) *extpl
 // buildPolicyWrapperCollection returns a krt.Collection[ir.PolicyWrapper]
 // whose source is the supplied backends collection.
 func buildPolicyWrapperCollection(
-	commonCol *common.CommonCollections,
+	commonCol *collections.CommonCollections,
 	backends krt.Collection[ir.BackendObjectIR],
 ) krt.Collection[ir.PolicyWrapper] {
 	return krt.NewCollection(
@@ -109,7 +106,7 @@ func buildPolicyWrapperCollection(
 
 			return &ir.PolicyWrapper{
 				ObjectSource: be.ObjectSource,
-				Policy:       be.Obj.(*infv1a2.InferencePool),
+				Policy:       be.Obj.(*inf.InferencePool),
 				PolicyIR:     irPool,
 			}
 		},
@@ -125,12 +122,18 @@ func buildBackendObjIrFromPool(pool *inferencePool) *ir.BackendObjectIR {
 		Namespace: pool.obj.GetNamespace(),
 		Name:      pool.obj.GetName(),
 	}
-	backend := ir.NewBackendObjectIR(objSrc, pool.targetPort, "")
+	// The backend's port is the first target port of the pool.
+	// InferencePool v1 only supports single port.
+	backend := ir.NewBackendObjectIR(objSrc, pool.targetPorts[0].number, "")
 	backend.GvPrefix = poolGroupKindName
 	backend.Obj = pool.obj
 	backend.ObjIr = pool
 	// TODO [danehans]: Look into using backend.AppProtocol to set H1/H2 for the static cluster.
 	backend.CanonicalHostname = kubeutils.GetServiceHostname(objSrc.Name, objSrc.Namespace)
+
+	// Parse common annotations
+	ir.ParseObjectAnnotations(&backend, pool.obj)
+
 	return &backend
 }
 
@@ -141,13 +144,13 @@ type endpointPickerPass struct {
 	usedPools map[types.NamespacedName]*inferencePool
 	ir.UnimplementedProxyTranslationPass
 
-	reporter reports.Reporter
+	reporter reporter.Reporter
 }
 
 var _ ir.ProxyTranslationPass = &endpointPickerPass{}
 
 func newEndpointPickerPass(
-	reporter reports.Reporter,
+	reporter reporter.Reporter,
 	podIdx krt.Index[string, krtcollections.LocalityPod],
 ) ir.ProxyTranslationPass {
 	return &endpointPickerPass{
@@ -163,7 +166,6 @@ func (p *endpointPickerPass) Name() string {
 
 // ApplyForBackend updates the Envoy route for each InferencePool-backed HTTPRoute.
 func (p *endpointPickerPass) ApplyForBackend(
-	ctx context.Context,
 	pCtx *ir.RouteBackendContext,
 	in ir.HttpBackend,
 	out *envoyroutev3.Route,
@@ -266,14 +268,14 @@ func (p *endpointPickerPass) ApplyForBackend(
 }
 
 // HttpFilters returns one ext_proc filter, using the well-known filter name.
-func (p *endpointPickerPass) HttpFilters(ctx context.Context, fc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
+func (p *endpointPickerPass) HttpFilters(fc ir.FilterChainCommon) ([]filters.StagedHttpFilter, error) {
 	if p == nil || len(p.usedPools) == 0 {
 		return nil, nil
 	}
 
 	// Create a pool as placeholder for the static config
 	tmpPool := &inferencePool{
-		obj: &infv1a2.InferencePool{
+		obj: &inf.InferencePool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "placeholder-pool",
 				Namespace: "placeholder-namespace",
@@ -281,7 +283,7 @@ func (p *endpointPickerPass) HttpFilters(ctx context.Context, fc ir.FilterChainC
 		},
 		configRef: &service{
 			ObjectSource: ir.ObjectSource{Name: "placeholder-service"},
-			ports:        []servicePort{{name: "grpc", portNum: 9002}},
+			ports:        []servicePort{{name: "grpc", number: 9002}},
 		},
 	}
 
@@ -299,15 +301,25 @@ func (p *endpointPickerPass) HttpFilters(ctx context.Context, fc ir.FilterChainC
 			},
 		},
 		ProcessingMode: &extprocv3.ProcessingMode{
-			RequestHeaderMode:   extprocv3.ProcessingMode_SEND,
-			RequestBodyMode:     extprocv3.ProcessingMode_FULL_DUPLEX_STREAMED,
-			RequestTrailerMode:  extprocv3.ProcessingMode_SEND,
-			ResponseBodyMode:    extprocv3.ProcessingMode_FULL_DUPLEX_STREAMED,
-			ResponseHeaderMode:  extprocv3.ProcessingMode_SEND,
+			RequestHeaderMode: extprocv3.ProcessingMode_SEND,
+			// OpenAI standard includes the model and other information the ext_proc server needs in the request body
+			RequestBodyMode: extprocv3.ProcessingMode_FULL_DUPLEX_STREAMED,
+			// If the ext_proc filter has the request_body_mode set to FULL_DUPLEX_STREAMED
+			// then the response_trailer_mode has to be set to SEND
+			RequestTrailerMode: extprocv3.ProcessingMode_SEND,
+			ResponseBodyMode:   extprocv3.ProcessingMode_FULL_DUPLEX_STREAMED,
+			// GIE collects statistics present in the OpenAI standard response message
+			ResponseHeaderMode: extprocv3.ProcessingMode_SEND,
+			// If the ext_proc filter has the response_body_mode set to FULL_DUPLEX_STREAMED
+			// then the response_trailer_mode has to be set to SEND
 			ResponseTrailerMode: extprocv3.ProcessingMode_SEND,
 		},
-		MessageTimeout:   durationpb.New(5 * time.Second),
-		FailureModeAllow: false,
+		MessageTimeout: durationpb.New(5 * time.Second),
+		// Keep the *global* ext_proc in soft-fail mode so requests that do NOT match
+		// any route (which should produce a 404) are not converted into 500 due to
+		// ext_proc connection failures before routing occurs. Per-route overrides
+		// (set in ApplyForBackend) will still tighten this to fail-closed as needed.
+		FailureModeAllow: true,
 		MetadataOptions: &extprocv3.MetadataOptions{
 			ForwardingNamespaces: &extprocv3.MetadataOptions_MetadataNamespaces{
 				Untyped: []string{envoySubsetKey},
@@ -318,10 +330,10 @@ func (p *endpointPickerPass) HttpFilters(ctx context.Context, fc ir.FilterChainC
 		},
 	}
 
-	extProcFilter, err := plugins.NewStagedFilter(
+	extProcFilter, err := filters.NewStagedFilter(
 		wellknown.InfPoolTransformationFilterName,
 		extProcSettings,
-		plugins.BeforeStage(plugins.AuthNStage),
+		filters.BeforeStage(filters.AuthNStage),
 	)
 	if err != nil {
 		return nil, err
@@ -338,17 +350,17 @@ func (p *endpointPickerPass) HttpFilters(ctx context.Context, fc ir.FilterChainC
 			Remove: false,
 		}},
 	}
-	htmFilter, _ := plugins.NewStagedFilter(
+	htmFilter, _ := filters.NewStagedFilter(
 		"envoy.filters.http.header_to_metadata",
 		htm,
-		plugins.BeforeStage(plugins.RouteStage),
+		filters.BeforeStage(filters.RouteStage),
 	)
 
-	return []plugins.StagedHttpFilter{extProcFilter, htmFilter}, nil
+	return []filters.StagedHttpFilter{extProcFilter, htmFilter}, nil
 }
 
 // ResourcesToAdd returns the ext_proc clusters for all used InferencePools.
-func (p *endpointPickerPass) ResourcesToAdd(ctx context.Context) ir.Resources {
+func (p *endpointPickerPass) ResourcesToAdd() ir.Resources {
 	if p == nil || len(p.usedPools) == 0 {
 		return ir.Resources{}
 	}
@@ -388,7 +400,7 @@ func buildExtProcCluster(pool *inferencePool) *envoyclusterv3.Cluster {
 										Address:  fmt.Sprintf("%s.%s.svc", pool.configRef.Name, pool.obj.GetNamespace()),
 										Protocol: envoycorev3.SocketAddress_TCP,
 										PortSpecifier: &envoycorev3.SocketAddress_PortValue{
-											PortValue: uint32(pool.configRef.ports[0].portNum),
+											PortValue: uint32(pool.configRef.ports[0].number), //nolint:gosec // G115: port number is int32 representing a port, always in valid range
 										},
 									},
 								},
@@ -441,6 +453,6 @@ func clusterNameExtProc(name, ns string) string {
 func authorityForPool(pool *inferencePool) string {
 	ns := pool.obj.GetNamespace()
 	svc := pool.configRef.Name
-	port := pool.configRef.ports[0].portNum
+	port := pool.configRef.ports[0].number
 	return fmt.Sprintf("%s.%s.svc:%d", svc, ns, port)
 }

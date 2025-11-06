@@ -89,11 +89,13 @@ type Service struct {
 	ClusterIP *string `json:"clusterIP,omitempty"`
 
 	// Additional labels to add to the Service object metadata.
+	// If the same label is present on `Gateway.spec.infrastructure.labels`, the `Gateway` takes precedence.
 	//
 	// +optional
 	ExtraLabels map[string]string `json:"extraLabels,omitempty"`
 
 	// Additional annotations to add to the Service object metadata.
+	// If the same annotation is present on `Gateway.spec.infrastructure.annotations`, the `Gateway` takes precedence.
 	//
 	// +optional
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
@@ -122,23 +124,27 @@ type Port struct {
 	// The port number to match on the Gateway
 	//
 	// +required
-	Port uint16 `json:"port"`
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
+	Port int32 `json:"port"`
 
 	// The NodePort to be used for the service. If not specified, a random port
 	// will be assigned by the Kubernetes API server.
 	//
 	// +optional
-	NodePort *uint16 `json:"nodePort,omitempty"`
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
+	NodePort *int32 `json:"nodePort,omitempty"`
 }
 
-func (in *Port) GetPort() uint16 {
+func (in *Port) GetPort() int32 {
 	if in == nil {
 		return 0
 	}
 	return in.Port
 }
 
-func (in *Port) GetNodePort() *uint16 {
+func (in *Port) GetNodePort() *int32 {
 	if in == nil {
 		return nil
 	}
@@ -187,6 +193,7 @@ type ServiceAccount struct {
 	ExtraLabels map[string]string `json:"extraLabels,omitempty"`
 
 	// Additional annotations to add to the ServiceAccount object metadata.
+	// If the same annotation is present on `Gateway.spec.infrastructure.annotations`, the `Gateway` takes precedence.
 	//
 	// +optional
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
@@ -209,11 +216,13 @@ func (in *ServiceAccount) GetExtraAnnotations() map[string]string {
 // Configuration for a Kubernetes Pod template.
 type Pod struct {
 	// Additional labels to add to the Pod object metadata.
+	// If the same label is present on `Gateway.spec.infrastructure.labels`, the `Gateway` takes precedence.
 	//
 	// +optional
 	ExtraLabels map[string]string `json:"extraLabels,omitempty"`
 
 	// Additional annotations to add to the Pod object metadata.
+	// If the same annotation is present on `Gateway.spec.infrastructure.annotations`, the `Gateway` takes precedence.
 	//
 	// +optional
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
@@ -265,7 +274,17 @@ type Pod struct {
 	// for details
 	//
 	// +optional
-	TerminationGracePeriodSeconds *int `json:"terminationGracePeriodSeconds,omitempty"`
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=31536000
+	TerminationGracePeriodSeconds *int64 `json:"terminationGracePeriodSeconds,omitempty"`
+
+	// If specified, the pod's startup probe. A probe of container startup readiness.
+	// Container will be only be added to service endpoints if the probe succeeds. See
+	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#probe-v1-core
+	// for details.
+	//
+	// +optional
+	StartupProbe *corev1.Probe `json:"startupProbe,omitempty"`
 
 	// If specified, the pod's readiness probe. Periodic probe of container service readiness.
 	// Container will be removed from service endpoints if the probe fails. See
@@ -289,6 +308,13 @@ type Pod struct {
 	//
 	// +optional
 	TopologySpreadConstraints []corev1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
+
+	// Additional volumes to add to the pod. See
+	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#volume-v1-core
+	// for details.
+	//
+	// +optional
+	ExtraVolumes []corev1.Volume `json:"extraVolumes,omitempty"`
 }
 
 func (in *Pod) GetExtraLabels() map[string]string {
@@ -340,6 +366,13 @@ func (in *Pod) GetTolerations() []corev1.Toleration {
 	return in.Tolerations
 }
 
+func (in *Pod) GetStartupProbe() *corev1.Probe {
+	if in == nil {
+		return nil
+	}
+	return in.StartupProbe
+}
+
 func (in *Pod) GetReadinessProbe() *corev1.Probe {
 	if in == nil {
 		return nil
@@ -354,7 +387,7 @@ func (in *Pod) GetGracefulShutdown() *GracefulShutdownSpec {
 	return in.GracefulShutdown
 }
 
-func (in *Pod) GetTerminationGracePeriodSeconds() *int {
+func (in *Pod) GetTerminationGracePeriodSeconds() *int64 {
 	if in == nil {
 		return nil
 	}
@@ -375,6 +408,13 @@ func (in *Pod) GetTopologySpreadConstraints() []corev1.TopologySpreadConstraint 
 	return in.TopologySpreadConstraints
 }
 
+func (in *Pod) GetExtraVolumes() []corev1.Volume {
+	if in == nil {
+		return nil
+	}
+	return in.ExtraVolumes
+}
+
 type GracefulShutdownSpec struct {
 	// Enable grace period before shutdown to finish current requests while Envoy health checks fail to e.g. notify external load balancers. *NOTE:* This will not have any effect if you have not defined health checks via the health check filter
 	//
@@ -384,7 +424,9 @@ type GracefulShutdownSpec struct {
 	// Time (in seconds) for the preStop hook to wait before allowing Envoy to terminate
 	//
 	// +optional
-	SleepTimeSeconds *int `json:"sleepTimeSeconds,omitempty"`
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=31536000
+	SleepTimeSeconds *int64 `json:"sleepTimeSeconds,omitempty"`
 }
 
 func (in *GracefulShutdownSpec) GetEnabled() *bool {
@@ -394,7 +436,7 @@ func (in *GracefulShutdownSpec) GetEnabled() *bool {
 	return in.Enabled
 }
 
-func (in *GracefulShutdownSpec) GetSleepTimeSeconds() *int {
+func (in *GracefulShutdownSpec) GetSleepTimeSeconds() *int64 {
 	if in == nil {
 		return nil
 	}

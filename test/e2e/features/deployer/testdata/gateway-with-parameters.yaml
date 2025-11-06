@@ -1,0 +1,75 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: gw
+spec:
+  gatewayClassName: kgateway
+  infrastructure:
+    parametersRef:
+      group: gateway.kgateway.dev
+      kind: GatewayParameters
+      name: gw-params
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: All
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+spec:
+  parentRefs:
+    - name: gw
+  hostnames:
+    - "example.com"
+  rules:
+    - backendRefs:
+        - name: httpbin
+          port: 8000
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: gw-params
+spec:
+  kube:
+    deployment:
+      replicas: 1
+      strategy:
+        rollingUpdate:
+          maxSurge: 2
+          maxUnavailable: 1%
+        # TODO(chandler): At admission time, reject a GatewayParameters object
+        # if it would later lead to 'failed to apply object ...  is invalid:
+        # spec.strategy.rollingUpdate: Forbidden: may not be specified when
+        # strategy `type` is 'Recreate'
+        type: RollingUpdate
+    podTemplate:
+      extraLabels:
+        pod-label-key: pod-label-val
+      extraAnnotations:
+        pod-anno-key: pod-anno-val
+    service:
+      extraLabels:
+        svc-label-key: svc-label-val
+      extraAnnotations:
+        svc-anno-key: svc-anno-val
+    serviceAccount:
+      extraLabels:
+        sa-label-key: sa-label-val
+      extraAnnotations:
+        sa-anno-key: sa-anno-val
+    envoyContainer:
+      bootstrap:
+        logLevel: debug
+        componentLogLevels:
+          upstream: debug
+          connection: trace
+      securityContext:
+        runAsUser: null
+        runAsNonRoot: false
+        allowPrivilegeEscalation: true

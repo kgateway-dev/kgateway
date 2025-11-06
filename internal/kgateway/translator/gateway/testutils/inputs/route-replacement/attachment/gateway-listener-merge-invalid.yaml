@@ -1,0 +1,129 @@
+# Test case for listener merging with invalid policy and multiple hostnames
+# Validates that when multiple listeners share the same port and one has an invalid policy,
+# the entire merged route configuration gets replaced with fallback behavior.
+# This demonstrates the expected "blast radius" due to HTTP listener merging architecture.
+# Each HTTPRoute has multiple hostnames to show how virtual hosts are created per hostname.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+  namespace: gwtest
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - name: http-a
+    port: 8080
+    protocol: HTTP
+    hostname: "*.a.example.com"
+    allowedRoutes:
+      namespaces:
+        from: All
+  - name: http-b
+    port: 8080
+    protocol: HTTP
+    hostname: "*.b.example.com"
+    allowedRoutes:
+      namespaces:
+        from: All
+  - name: http-isolated
+    port: 8081
+    protocol: HTTP
+    hostname: "*.example.com"
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+  namespace: gwtest
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: example
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-a
+  namespace: gwtest
+spec:
+  parentRefs:
+  - name: example-gateway
+    sectionName: http-a
+  hostnames:
+  - "www.a.example.com"
+  - "api.a.example.com"
+  - "admin.a.example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a
+    backendRefs:
+    - name: example-svc
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-b
+  namespace: gwtest
+spec:
+  parentRefs:
+  - name: example-gateway
+    sectionName: http-b
+  hostnames:
+  - "www.b.example.com"
+  - "backend.b.example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /b
+    backendRefs:
+    - name: example-svc
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-isolated
+  namespace: gwtest
+spec:
+  parentRefs:
+  - name: example-gateway
+    sectionName: http-isolated
+  hostnames:
+  - "isolated.example.com"
+  - "secure.example.com"
+  - "private.example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /isolated
+    backendRefs:
+    - name: example-svc
+      port: 80
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: listener-merge-invalid-policy
+  namespace: gwtest
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-gateway
+    sectionName: http-a
+  transformation:
+    request:
+      body:
+        parseAs: AsJson
+        value: "{{ invalid_template }"

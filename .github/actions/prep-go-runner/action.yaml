@@ -1,6 +1,6 @@
 name: Prep Go Runner
 
-description: Common setup steps for Gloo actions
+description: Common setup steps for kgateway actions
 
 inputs:
   working-directory:
@@ -24,26 +24,28 @@ runs:
 
         # https://github.com/actions/runner-images/discussions/3242 github runners are bad at cleanup
         echo "Removing large packages"
-        sudo apt-get remove -y '^dotnet-.*' || true
-        sudo apt-get remove -y '^llvm-.*' || true
-        sudo apt-get remove -y 'php.*' || true
-        sudo apt-get remove -y '^mongodb-.*' || true
-        sudo apt-get remove -y '^mysql-.*' || true
-        sudo apt-get remove -y azure-cli google-chrome-stable firefox powershell mono-devel libgl1-mesa-dri || true
-        sudo apt-get autoremove -y || true
-        sudo apt-get clean -y || true
+        time sudo apt-get remove -y '^dotnet-.*' '^llvm-.*' 'php.*' '^mongodb-.*' '^mysql-.*' azure-cli google-chrome-stable \
+          firefox powershell mono-devel libgl1-mesa-dri || true
+        time sudo apt-get autoremove -y || true
+        time sudo apt-get clean -y || true
         echo "Done removing large packages"
+        df -h
 
         # Clean up pre-installed tools
-        sudo rm -rf /usr/local/lib/android || true
-        sudo rm -rf /usr/share/dotnet || true
-        sudo rm -rf /usr/local/graalvm || true
-        sudo rm -rf /opt/ghc || true
-        sudo rm -rf /usr/local/.ghcup || true
-        sudo rm -rf /usr/local/share/boost || true
-        sudo rm -rf /usr/local/share/powershell || true
-        sudo rm -rf /usr/local/share/chromium || true
-        sudo rm -rf $AGENT_TOOLSDIRECTORY || true
+        # For some reason, GHA often takes minutes (up to 20min observed) to clean up somehow.
+        # Presumably this is due to a slow disk?
+        function clean-dir() {
+          echo "Cleaning $1"
+          time sudo rm -rf "$1" || true
+        }
+        # These two were found to take very very long. Even though its large, its not worth the cost
+        # clean-dir /usr/local/lib/android  # 8.9gb
+        # clean-dir $AGENT_TOOLSDIRECTORY  # 5.6gb
+        clean-dir /usr/share/dotnet  # 3.4gb
+        clean-dir /usr/share/swift  # 3.1gb
+        clean-dir /usr/local/.ghcup  # 6.3gb
+        clean-dir /usr/local/share/powershell  # 1.2gb
+        clean-dir /usr/local/share/chromium  # 600mb
 
         # Clean up images
         docker image rm node:18 || true

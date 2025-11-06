@@ -8,23 +8,19 @@ import (
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/kube/kubetypes"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
-	infv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	"sigs.k8s.io/gateway-api-inference-extension/client-go/clientset/versioned"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
-)
-
-var (
-	inferencePoolGVK = wellknown.InferencePoolGVK
-	inferencePoolGVR = inferencePoolGVK.GroupVersion().WithResource("inferencepools")
 )
 
 type inferencePoolPlugin struct {
@@ -38,37 +34,41 @@ type inferencePoolPlugin struct {
 }
 
 func registerTypes(cli versioned.Interface) {
-	skubeclient.Register[*infv1a2.InferencePool](
-		inferencePoolGVR,
-		inferencePoolGVK,
+	skubeclient.Register[*inf.InferencePool](
+		wellknown.InferencePoolGVR,
+		wellknown.InferencePoolGVK,
 		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
-			return cli.InferenceV1alpha2().InferencePools(namespace).List(context.Background(), o)
+			return cli.InferenceV1().InferencePools(namespace).List(context.Background(), o)
 		},
 		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
-			return cli.InferenceV1alpha2().InferencePools(namespace).Watch(context.Background(), o)
+			return cli.InferenceV1().InferencePools(namespace).Watch(context.Background(), o)
+		},
+		func(c skubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*inf.InferencePool] {
+			return cli.InferenceV1().InferencePools(namespace)
 		},
 	)
 }
 
 func initInferencePoolCollections(
-	ctx context.Context,
-	commonCol *common.CommonCollections,
-) *inferencePoolPlugin {
+	commonCol *collections.CommonCollections,
+) (*inferencePoolPlugin, kclient.Client[*inf.InferencePool]) {
 	// Create the inference extension client
-	cli, err := versioned.NewForConfig(commonCol.Client.RESTConfig())
+	clientset, err := versioned.NewForConfig(commonCol.Client.RESTConfig())
 	if err != nil {
 		logger.Error("failed to create inference extension client", "error", err)
-		return nil
+		return nil, nil
 	}
 
 	// Register the InferencePool type
-	registerTypes(cli)
+	registerTypes(clientset)
 
 	// Create an InferencePool krt collection
-	poolCol := krt.WrapClient(kclient.NewFiltered[*infv1a2.InferencePool](
+	cli := kclient.NewFilteredDelayed[*inf.InferencePool](
 		commonCol.Client,
+		wellknown.InferencePoolGVR,
 		kclient.Filter{ObjectFilter: commonCol.Client.ObjectFilter()},
-	), commonCol.KrtOpts.ToOptions("InferencePool")...)
+	)
+	poolCol := krt.WrapClient(cli, commonCol.KrtOpts.ToOptions("InferencePool")...)
 
 	// Create a krt index of pods whose labels match the InferencePool's selector
 	podIdx := krtpkg.UnnamedIndex(
@@ -76,7 +76,7 @@ func initInferencePoolCollections(
 		func(p krtcollections.LocalityPod) []string {
 			var keys []string
 			for _, pool := range poolCol.List() {
-				sel := labels.Set(convertSelector(pool.Spec.Selector))
+				sel := labels.Set(convertSelector(pool.Spec.Selector.MatchLabels))
 				if p.Namespace == pool.Namespace &&
 					labels.SelectorFromSet(sel).Matches(labels.Set(p.AugmentedLabels)) {
 					nn := fmt.Sprintf("%s/%s", pool.Namespace, pool.Name)
@@ -89,7 +89,7 @@ func initInferencePoolCollections(
 	// Controller backends – only the InferencePool drives this collection
 	backendsCtl := krt.NewCollection(
 		poolCol,
-		func(_ krt.HandlerContext, p *infv1a2.InferencePool) *ir.BackendObjectIR {
+		func(_ krt.HandlerContext, p *inf.InferencePool) *ir.BackendObjectIR {
 			irPool := newInferencePool(p)
 			if errs := validatePool(p, commonCol.Services); len(errs) > 0 {
 				irPool.setErrors(errs)
@@ -102,7 +102,7 @@ func initInferencePoolCollections(
 	// Data‑plane backends – rebuilt on any pod change to update LB endpoints
 	backendsDP := krt.NewCollection(
 		poolCol,
-		func(ctx krt.HandlerContext, ip *infv1a2.InferencePool) *ir.BackendObjectIR {
+		func(ctx krt.HandlerContext, ip *inf.InferencePool) *ir.BackendObjectIR {
 			irPool := newInferencePool(ip)
 			pods := krt.Fetch(ctx, commonCol.LocalityPods, krt.FilterGeneric(func(obj any) bool {
 				pod, ok := obj.(krtcollections.LocalityPod)
@@ -117,7 +117,8 @@ func initInferencePoolCollections(
 
 			for _, p := range pods {
 				if ip := p.Address(); ip != "" {
-					eps = append(eps, endpoint{address: ip, port: irPool.targetPort})
+					// Note: InferencePool v1 only supports a single port
+					eps = append(eps, endpoint{address: ip, port: irPool.targetPorts[0].number})
 				}
 			}
 			if len(eps) == 0 {
@@ -134,7 +135,7 @@ func initInferencePoolCollections(
 		backendsDP,
 		func(_ krt.HandlerContext, be ir.BackendObjectIR) *ir.EndpointsForBackend {
 			stub := &envoyclusterv3.Cluster{Name: be.ClusterName()}
-			return processPoolBackendObjIR(ctx, be, stub, podIdx)
+			return processPoolBackendObjIR(be, stub, podIdx)
 		},
 	)
 
@@ -154,5 +155,5 @@ func initInferencePoolCollections(
 		policies:    policies,
 		poolIndex:   poolIdx,
 		podIndex:    podIdx,
-	}
+	}, cli
 }

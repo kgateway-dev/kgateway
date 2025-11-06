@@ -91,8 +91,10 @@ var _ json.Marshaler = LocalityLbMap{}
 type EndpointsForBackend struct {
 	// preserve the labels from the original backend object
 	// for use in endpoints plugins
+	// +krtEqualsTodo include backend labels in equality or confirm omission
 	BackendLabels map[string]string
 
+	// +krtEqualsTodo compare load-balanced endpoint map
 	LbEps LocalityLbMap
 	// Note - in theory, cluster name should be a function of the UpstreamResourceName.
 	// But due to an upstream envoy bug, the cluster name also includes the upstream hash.
@@ -101,6 +103,7 @@ type EndpointsForBackend struct {
 	Port                 uint32
 	Hostname             string
 	// Inherited from the backend object
+	// +krtEqualsTodo ensure traffic distribution differences are respected
 	TrafficDistribution wellknown.TrafficDistribution
 
 	LbEpsEqualityHash uint64
@@ -140,7 +143,7 @@ func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
 		LbEps:                make(map[PodLocality][]EndpointWithMd),
 		ClusterName:          us.ClusterName(),
 		UpstreamResourceName: us.ResourceName(),
-		Port:                 uint32(us.Port),
+		Port:                 uint32(us.Port), //nolint:gosec // G115: upstream port is always valid port range
 		Hostname:             us.CanonicalHostname,
 		LbEpsEqualityHash:    upstreamHash,
 		upstreamHash:         upstreamHash,

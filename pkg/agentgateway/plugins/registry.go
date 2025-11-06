@@ -4,14 +4,15 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-type AgentgatewayPlugin struct {
-	ContributesPolicies map[schema.GroupKind]PolicyPlugin
+type AgwPlugin struct {
+	AddResourceExtension *AddResourcesPlugin
+	ContributesPolicies  map[schema.GroupKind]PolicyPlugin
 	// extra has sync beyond primary resources in the collections above
 	ExtraHasSynced func() bool
 }
 
-func MergePlugins(plug ...AgentgatewayPlugin) AgentgatewayPlugin {
-	ret := AgentgatewayPlugin{
+func MergePlugins(plug ...AgwPlugin) AgwPlugin {
+	ret := AgwPlugin{
 		ContributesPolicies: make(map[schema.GroupKind]PolicyPlugin),
 	}
 	var hasSynced []func() bool
@@ -19,6 +20,20 @@ func MergePlugins(plug ...AgentgatewayPlugin) AgentgatewayPlugin {
 		// Merge contributed policies
 		for gk, policy := range p.ContributesPolicies {
 			ret.ContributesPolicies[gk] = policy
+		}
+		if p.AddResourceExtension != nil {
+			if ret.AddResourceExtension == nil {
+				ret.AddResourceExtension = &AddResourcesPlugin{}
+			}
+			if ret.AddResourceExtension.Binds == nil {
+				ret.AddResourceExtension.Binds = p.AddResourceExtension.Binds
+			}
+			if p.AddResourceExtension.Listeners != nil {
+				ret.AddResourceExtension.Listeners = p.AddResourceExtension.Listeners
+			}
+			if p.AddResourceExtension.Routes != nil {
+				ret.AddResourceExtension.Routes = p.AddResourceExtension.Routes
+			}
 		}
 		if p.ExtraHasSynced != nil {
 			hasSynced = append(hasSynced, p.ExtraHasSynced)
@@ -40,15 +55,16 @@ func mergeSynced(funcs []func() bool) func() bool {
 }
 
 // Plugins registers all built-in policy plugins
-func Plugins(agw *AgwCollections) []AgentgatewayPlugin {
-	return []AgentgatewayPlugin{
-		NewTrafficPlugin(agw),
+func Plugins(agw *AgwCollections) []AgwPlugin {
+	return []AgwPlugin{
+		NewAgentPlugin(agw),
 		NewInferencePlugin(agw),
 		NewA2APlugin(agw),
+		NewBackendTLSPlugin(agw),
 	}
 }
 
-func (p AgentgatewayPlugin) HasSynced() bool {
+func (p AgwPlugin) HasSynced() bool {
 	for _, pol := range p.ContributesPolicies {
 		if pol.Policies != nil && !pol.Policies.HasSynced() {
 			return false

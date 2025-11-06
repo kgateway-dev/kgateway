@@ -1,7 +1,7 @@
 
 helm_installation_name: kgateway
 helm_values_files:
-- ./test/kubernetes/e2e/tests/manifests/common-recommendations.yaml
+- ./test/e2e/tests/manifests/common-recommendations.yaml
 helm_installation_namespace: kgateway-system
 
 enabled_providers:
@@ -36,5 +36,5 @@ providers:
     # Custom port forwarding. This can include non debug ports such as the envoy admin port
     port_forwards:
       - 9092
-      - 9097
+      - 9095
       #- 50100

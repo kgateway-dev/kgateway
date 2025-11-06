@@ -10,6 +10,7 @@ import (
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=backends/status,verbs=get;update;patch
 
 // +kubebuilder:printcolumn:name="Type",type=string,JSONPath=".spec.type",description="Which backend type?"
+// +kubebuilder:printcolumn:name="Accepted",type=string,JSONPath=".status.conditions[?(@.type=='Accepted')].status",description="Backend configuration acceptance status"
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=".metadata.creationTimestamp",description="The age of the backend."
 
 // +genclient
@@ -42,7 +43,6 @@ const (
 )
 
 // BackendSpec defines the desired state of Backend.
-// +union
 // +kubebuilder:validation:XValidation:message="ai backend must be specified when type is 'AI'",rule="self.type == 'AI' ? has(self.ai) : true"
 // +kubebuilder:validation:XValidation:message="aws backend must be specified when type is 'AWS'",rule="self.type == 'AWS' ? has(self.aws) : true"
 // +kubebuilder:validation:XValidation:message="static backend must be specified when type is 'Static'",rule="self.type == 'Static' ? has(self.static) : true"
@@ -51,7 +51,6 @@ const (
 // +kubebuilder:validation:ExactlyOneOf=ai;aws;static;dynamicForwardProxy;mcp
 type BackendSpec struct {
 	// Type indicates the type of the backend to be used.
-	// +unionDiscriminator
 	// +kubebuilder:validation:Enum=AI;AWS;Static;DynamicForwardProxy;MCP
 	// +required
 	Type BackendType `json:"type"`
@@ -70,6 +69,7 @@ type BackendSpec struct {
 	// +optional
 	DynamicForwardProxy *DynamicForwardProxyBackend `json:"dynamicForwardProxy,omitempty"`
 	// MCP is the mcp backend configuration. The MCP backend type is only supported with agentgateway.
+	// +optional
 	MCP *MCP `json:"mcp,omitempty"`
 }
 
@@ -142,12 +142,10 @@ const (
 )
 
 // AwsAuth specifies the authentication method to use for the backend.
-// +union
 // +kubebuilder:validation:XValidation:message="secretRef must be nil if the type is not 'Secret'",rule="!(has(self.secretRef) && self.type != 'Secret')"
 // +kubebuilder:validation:XValidation:message="secretRef must be specified when type is 'Secret'",rule="!(!has(self.secretRef) && self.type == 'Secret')"
 type AwsAuth struct {
 	// Type specifies the authentication method to use for the backend.
-	// +unionDiscriminator
 	// +required
 	// +kubebuilder:validation:Enum=Secret
 	Type AwsAuthType `json:"type"`
@@ -221,7 +219,7 @@ type StaticBackend struct {
 	// Hosts is a list of hosts to use for the backend.
 	// +required
 	// +kubebuilder:validation:MinItems=1
-	Hosts []Host `json:"hosts,omitempty"`
+	Hosts []Host `json:"hosts"`
 
 	// AppProtocol is the application protocol to use when communicating with the backend.
 	// +optional

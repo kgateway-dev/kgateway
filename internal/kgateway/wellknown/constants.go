@@ -3,7 +3,7 @@ package wellknown
 const (
 	// Note: These are coming from istio: https://github.com/istio/istio/blob/fa321ebd2a1186325788b0f461aa9f36a1a8d90e/pilot/pkg/model/service.go#L206
 	// IstioCertSecret is the secret that holds the server cert and key for Istio mTLS
-	IstioCertSecret = "istio_server_cert"
+	IstioCertSecret = "istio_server_cert" //nolint:gosec // G101: This is a well-known Istio secret name, not a credential
 
 	// IstioValidationContext is the secret that holds the root cert for Istio mTLS
 	IstioValidationContext = "istio_validation_context"

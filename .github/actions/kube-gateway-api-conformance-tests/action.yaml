@@ -45,17 +45,19 @@ runs:
           --create-namespace
         helm upgrade -i -n kgateway-system kgateway ./install/helm/kgateway/ \
           --create-namespace \
+          --set controller.extraEnv.KGW_ENABLE_EXPERIMENTAL_GATEWAY_API_FEATURES="true" \
           --set image.tag=${VERSION} --set image.registry=ghcr.io/kgateway-dev
       else
         # TODO(tim): this will require changes once the new helm chart is integrated
         # and published with the release pipeline.
-        # Else, use the provided version to install Gloo from the helm repository.
+        # Else, use the provided version to install kgateway from the helm repository.
         helm upgrade -i -n kgateway-system kgateway-crds oci://${{ env.IMAGE_REGISTRY }}/charts/kgateway-crds \
           --version ${VERSION} \
           --create-namespace
         helm upgrade -i -n kgateway-system kgateway oci://${{ env.IMAGE_REGISTRY }}/charts/kgateway \
           --version ${VERSION} \
           --create-namespace \
+          --set controller.extraEnv.KGW_ENABLE_EXPERIMENTAL_GATEWAY_API_FEATURES="true" \
           --set image.tag=${VERSION}
       fi
   - name: Run the kubernetes gateway API conformance tests

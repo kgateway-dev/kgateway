@@ -8,6 +8,8 @@ import (
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/sslutils"
 )
 
 var CA_CERT = `-----BEGIN CERTIFICATE-----
@@ -56,7 +58,7 @@ func TestUpstreamTlsConfig(t *testing.T) {
 						ValidationContext: &envoytlsv3.CertificateValidationContext{
 							TrustedCa: &envoycorev3.DataSource{
 								Specifier: &envoycorev3.DataSource_InlineString{
-									InlineString: CA_CERT,
+									InlineString: CA_CERT + "\n",
 								},
 							},
 						},
@@ -75,7 +77,21 @@ func TestUpstreamTlsConfig(t *testing.T) {
 				Data: map[string]string{},
 			},
 			sni:           "example.com",
-			expectedError: noKeyFoundMsg,
+			expectedError: sslutils.ErrMissingCACertKey.Error(),
+		},
+		{
+			name: "Invalid ca.crt in configmap",
+			cm: &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-ca",
+					Namespace: "default",
+				},
+				Data: map[string]string{
+					"ca.crt": "invalid-certificate-data",
+				},
+			},
+			sni:           "example.com",
+			expectedError: "invalid ca.crt in ConfigMap default/my-ca: data does not contain any valid RSA or ECDSA certificates",
 		},
 	}
 

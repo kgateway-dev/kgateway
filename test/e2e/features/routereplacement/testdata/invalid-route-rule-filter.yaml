@@ -1,0 +1,28 @@
+---
+# HTTPRoute with valid configuration but invalid built-in policy (RequestHeaderModifier)
+# This should result in the route being replaced with a 500 direct response
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: invalid-config-route
+  namespace: default
+spec:
+  parentRefs:
+  - name: gw
+    namespace: default
+  hostnames:
+  - "invalid-config.example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    filters:
+    - type: RequestHeaderModifier
+      requestHeaderModifier:
+        add:
+        - name: "correlation-id"
+          value: "%REQ(Correlation-Id)"
+    backendRefs:
+    - name: httpbin
+      port: 8000

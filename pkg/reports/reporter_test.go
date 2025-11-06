@@ -15,7 +15,7 @@ import (
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	pluginsdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
@@ -47,7 +47,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 		It("should preserve conditions set externally", func() {
 			gw := gw()
 			gw.Status.Conditions = append(gw.Status.Conditions, metav1.Condition{
-				Type:   "gloo.solo.io/SomeCondition",
+				Type:   "gateway.kgateway.dev/SomeCondition",
 				Status: metav1.ConditionFalse,
 			})
 			rm := reports.NewReportMap()
@@ -67,8 +67,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 		It("should correctly set negative gateway conditions from report and not add extra conditions", func() {
 			gw := gw()
 			rm := reports.NewReportMap()
-			reporter := reports.NewReporter(&rm)
-			reporter.Gateway(gw).SetCondition(pluginsdkreporter.GatewayCondition{
+			r := reports.NewReporter(&rm)
+			r.Gateway(gw).SetCondition(reporter.GatewayCondition{
 				Type:   gwv1.GatewayConditionProgrammed,
 				Status: metav1.ConditionFalse,
 				Reason: gwv1.GatewayReasonAddressNotUsable,
@@ -87,8 +87,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 		It("should correctly set negative listener conditions from report and not add extra conditions", func() {
 			gw := gw()
 			rm := reports.NewReportMap()
-			reporter := reports.NewReporter(&rm)
-			reporter.Gateway(gw).Listener(listener()).SetCondition(pluginsdkreporter.ListenerCondition{
+			r := reports.NewReporter(&rm)
+			r.Gateway(gw).Listener(listener()).SetCondition(reporter.ListenerCondition{
 				Type:   gwv1.ListenerConditionResolvedRefs,
 				Status: metav1.ConditionFalse,
 				Reason: gwv1.ListenerReasonInvalidRouteKinds,
@@ -284,8 +284,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 		DescribeTable("should correctly set negative route conditions from report and not add extra conditions",
 			func(obj client.Object, parentRef *gwv1.ParentReference) {
 				rm := reports.NewReportMap()
-				reporter := reports.NewReporter(&rm)
-				reporter.Route(obj).ParentRef(parentRef).SetCondition(pluginsdkreporter.RouteCondition{
+				r := reports.NewReporter(&rm)
+				r.Route(obj).ParentRef(parentRef).SetCondition(reporter.RouteCondition{
 					Type:   gwv1.RouteConditionResolvedRefs,
 					Status: metav1.ConditionFalse,
 					Reason: gwv1.RouteReasonBackendNotFound,
@@ -310,13 +310,13 @@ var _ = Describe("Reporting Infrastructure", func() {
 		DescribeTable("should filter out multiple negative route conditions of the same type from report",
 			func(obj client.Object, parentRef *gwv1.ParentReference) {
 				rm := reports.NewReportMap()
-				reporter := reports.NewReporter(&rm)
-				reporter.Route(obj).ParentRef(parentRef).SetCondition(pluginsdkreporter.RouteCondition{
+				r := reports.NewReporter(&rm)
+				r.Route(obj).ParentRef(parentRef).SetCondition(reporter.RouteCondition{
 					Type:   gwv1.RouteConditionResolvedRefs,
 					Status: metav1.ConditionFalse,
 					Reason: gwv1.RouteReasonBackendNotFound,
 				})
-				reporter.Route(obj).ParentRef(parentRef).SetCondition(pluginsdkreporter.RouteCondition{
+				r.Route(obj).ParentRef(parentRef).SetCondition(reporter.RouteCondition{
 					Type:   gwv1.RouteConditionResolvedRefs,
 					Status: metav1.ConditionFalse,
 					Reason: gwv1.RouteReasonBackendNotFound,
@@ -545,7 +545,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 		It("should preserve conditions set externally", func() {
 			ls := ls()
 			meta.SetStatusCondition(&ls.Status.Conditions, metav1.Condition{
-				Type:   "gloo.solo.io/SomeCondition",
+				Type:   "gateway.kgateway.dev/SomeCondition",
 				Status: metav1.ConditionFalse,
 			})
 			rm := reports.NewReportMap()
@@ -565,8 +565,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 		It("should correctly set negative gateway conditions from report and not add extra conditions", func() {
 			ls := ls()
 			rm := reports.NewReportMap()
-			reporter := reports.NewReporter(&rm)
-			reporter.ListenerSet(ls).SetCondition(pluginsdkreporter.GatewayCondition{
+			r := reports.NewReporter(&rm)
+			r.ListenerSet(ls).SetCondition(reporter.GatewayCondition{
 				Type:   gwv1.GatewayConditionProgrammed,
 				Status: metav1.ConditionFalse,
 				Reason: gwv1.GatewayReasonAddressNotUsable,
@@ -585,8 +585,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 		It("should correctly set negative listener conditions from report and not add extra conditions", func() {
 			ls := ls()
 			rm := reports.NewReportMap()
-			reporter := reports.NewReporter(&rm)
-			reporter.ListenerSet(ls).Listener(listener()).SetCondition(pluginsdkreporter.ListenerCondition{
+			r := reports.NewReporter(&rm)
+			r.ListenerSet(ls).Listener(listener()).SetCondition(reporter.ListenerCondition{
 				Type:   gwv1.ListenerConditionResolvedRefs,
 				Status: metav1.ConditionFalse,
 				Reason: gwv1.ListenerReasonInvalidRouteKinds,
@@ -637,14 +637,14 @@ var _ = Describe("Reporting Infrastructure", func() {
 			ls := ls()
 			rm := reports.NewReportMap()
 
-			reporter := reports.NewReporter(&rm)
+			r := reports.NewReporter(&rm)
 			// initialize ListenerSetReporter to mimic translation loop (i.e. report gets initialized for all GWs)
-			reporter.ListenerSet(ls).SetCondition(pluginsdkreporter.GatewayCondition{
+			r.ListenerSet(ls).SetCondition(reporter.GatewayCondition{
 				Type:   gwv1.GatewayConditionAccepted,
 				Status: metav1.ConditionFalse,
 				Reason: gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonNotAllowed),
 			})
-			reporter.ListenerSet(ls).SetCondition(pluginsdkreporter.GatewayCondition{
+			r.ListenerSet(ls).SetCondition(reporter.GatewayCondition{
 				Type:   gwv1.GatewayConditionProgrammed,
 				Status: metav1.ConditionFalse,
 				Reason: gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonNotAllowed),
@@ -661,7 +661,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 
 // fakeTranslate mimics the translation loop and reports for the provided route
 // along with all parentRefs defined in the route
-func fakeTranslate(reporter reports.Reporter, obj client.Object) {
+func fakeTranslate(reporter reporter.Reporter, obj client.Object) {
 	// translation will call Route() and ParentRef() for routes it translates out
 	// we use the same pattern here to establish reports that would reflect translation
 	switch route := obj.(type) {

@@ -11,8 +11,8 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -154,7 +154,7 @@ func prioritizeWithLbInfo(logger *slog.Logger, ep ir.EndpointsForBackend, lbInfo
 
 	// in theory we want to run endpoint plugins here.
 	// we only have one endpoint plugin, and it's not clear if it is in use. so
-	// consider deprecating the functionality. it's not easy to do as with krt we no longer have gloo 'Endpoint' objects
+	// consider deprecating the functionality. it's not easy to do as with krt we no longer have kgateway 'Endpoint' objects
 	return cla
 }
 
@@ -212,7 +212,7 @@ func applyFailoverPriorityPerLocality(
 	out := make([]*envoyendpointv3.LocalityLbEndpoints, len(priorityMap))
 	for i, priority := range priorities {
 		out[i] = &envoyendpointv3.LocalityLbEndpoints{}
-		out[i].Priority = uint32(priority)
+		out[i].Priority = uint32(priority) //nolint:gosec // G115: priority is bounded by locality failover (0-4)
 		var weight uint32
 		for _, index := range priorityMap[priority] {
 			out[i].LbEndpoints = append(out[i].GetLbEndpoints(), eps[index].LbEndpoint)
@@ -264,7 +264,7 @@ func applyLocalityFailover(
 		// we multiply the priority by 5 for maintaining the priorities already assigned.
 		// Afterwards the final priorities can be calculted from 0 (highest) to N (lowest) without skipping.
 		priorityInt := int(loadAssignment.GetEndpoints()[i].GetPriority()*5) + priority
-		loadAssignment.GetEndpoints()[i].Priority = uint32(priorityInt)
+		loadAssignment.GetEndpoints()[i].Priority = uint32(priorityInt) //nolint:gosec // G115: priorityInt is calculated from bounded locality priorities
 		priorityMap[priorityInt] = append(priorityMap[priorityInt], i)
 	}
 
@@ -282,7 +282,7 @@ func applyLocalityFailover(
 		if i != priority {
 			// the LocalityLbEndpoints index in ClusterLoadAssignment.Endpoints
 			for _, index := range priorityMap[priority] {
-				loadAssignment.GetEndpoints()[index].Priority = uint32(i)
+				loadAssignment.GetEndpoints()[index].Priority = uint32(i) //nolint:gosec // G115: i is array index, always non-negative
 			}
 		}
 	}

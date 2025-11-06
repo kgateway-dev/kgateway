@@ -1,11 +1,19 @@
 package deployer
 
 import (
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+)
+
+type DataPlaneType string
+
+const (
+	DataPlaneAgentgateway DataPlaneType = "agentgateway"
+	DataPlaneEnvoy        DataPlaneType = "envoy"
 )
 
 // helmConfig stores the top-level helm values used by the deployer.
@@ -15,18 +23,25 @@ type HelmConfig struct {
 }
 
 type HelmGateway struct {
+	// not needed by the helm charts, but by the code that select the correct
+	// helm chart:
+	DataPlaneType DataPlaneType `json:"dataPlaneType"`
+
 	// naming
-	Name             *string `json:"name,omitempty"`
-	GatewayName      *string `json:"gatewayName,omitempty"`
-	GatewayNamespace *string `json:"gatewayNamespace,omitempty"`
-	NameOverride     *string `json:"nameOverride,omitempty"`
-	FullnameOverride *string `json:"fullnameOverride,omitempty"`
+	Name               *string           `json:"name,omitempty"`
+	GatewayName        *string           `json:"gatewayName,omitempty"`
+	GatewayNamespace   *string           `json:"gatewayNamespace,omitempty"`
+	GatewayClassName   *string           `json:"gatewayClassName,omitempty"`
+	GatewayAnnotations map[string]string `json:"gatewayAnnotations,omitempty"`
+	GatewayLabels      map[string]string `json:"gatewayLabels,omitempty"`
+	NameOverride       *string           `json:"nameOverride,omitempty"`
+	FullnameOverride   *string           `json:"fullnameOverride,omitempty"`
 
 	// deployment/service values
-	ReplicaCount   *uint32      `json:"replicaCount,omitempty"`
-	Ports          []HelmPort   `json:"ports,omitempty"`
-	Service        *HelmService `json:"service,omitempty"`
-	FloatingUserId *bool        `json:"floatingUserId,omitempty"`
+	ReplicaCount *uint32                    `json:"replicaCount,omitempty"`
+	Ports        []HelmPort                 `json:"ports,omitempty"`
+	Service      *HelmService               `json:"service,omitempty"`
+	Strategy     *appsv1.DeploymentStrategy `json:"strategy,omitempty"`
 
 	// serviceaccount values
 	ServiceAccount *HelmServiceAccount `json:"serviceAccount,omitempty"`
@@ -39,10 +54,12 @@ type HelmGateway struct {
 	NodeSelector                  map[string]string                 `json:"nodeSelector,omitempty"`
 	Affinity                      *corev1.Affinity                  `json:"affinity,omitempty"`
 	Tolerations                   []corev1.Toleration               `json:"tolerations,omitempty"`
+	StartupProbe                  *corev1.Probe                     `json:"startupProbe,omitempty"`
 	ReadinessProbe                *corev1.Probe                     `json:"readinessProbe,omitempty"`
 	LivenessProbe                 *corev1.Probe                     `json:"livenessProbe,omitempty"`
+	ExtraVolumes                  []corev1.Volume                   `json:"extraVolumes,omitempty"`
 	GracefulShutdown              *v1alpha1.GracefulShutdownSpec    `json:"gracefulShutdown,omitempty"`
-	TerminationGracePeriodSeconds *int                              `json:"terminationGracePeriodSeconds,omitempty"`
+	TerminationGracePeriodSeconds *int64                            `json:"terminationGracePeriodSeconds,omitempty"`
 	TopologySpreadConstraints     []corev1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
 
 	// sds container values
@@ -53,35 +70,41 @@ type HelmGateway struct {
 	Istio *HelmIstio `json:"istio,omitempty"`
 
 	// envoy container values
-	LogLevel          *string `json:"logLevel,omitempty"`
 	ComponentLogLevel *string `json:"componentLogLevel,omitempty"`
 
 	// envoy or agentgateway container values
-	Image           *HelmImage                   `json:"image,omitempty"`
-	Resources       *corev1.ResourceRequirements `json:"resources,omitempty"`
-	SecurityContext *corev1.SecurityContext      `json:"securityContext,omitempty"`
-	Env             []corev1.EnvVar              `json:"env,omitempty"`
+	// Note: ideally, these should be mapped to container specific values, but right now they
+	// map to the proxy container
+	LogLevel          *string                      `json:"logLevel,omitempty"`
+	Image             *HelmImage                   `json:"image,omitempty"`
+	Resources         *corev1.ResourceRequirements `json:"resources,omitempty"`
+	SecurityContext   *corev1.SecurityContext      `json:"securityContext,omitempty"`
+	Env               []corev1.EnvVar              `json:"env,omitempty"`
+	ExtraVolumeMounts []corev1.VolumeMount         `json:"extraVolumeMounts,omitempty"`
 
 	// xds values
 	Xds *HelmXds `json:"xds,omitempty"`
+	// agentgateway xds values
+	AgwXds *HelmXds `json:"agwXds,omitempty"`
 
 	// stats values
 	Stats *HelmStatsConfig `json:"stats,omitempty"`
 
 	// AI extension values
+	// Deprecated: Envoy-based AI gateway is deprecated in v2.1 and will be removed in v2.2.
 	AIExtension *HelmAIExtension `json:"aiExtension,omitempty"`
 
 	// agentgateway integration values
-	AgentGateway *HelmAgentGateway `json:"agentGateway,omitempty"`
+	CustomConfigMapName *string `json:"customConfigMapName,omitempty"`
 }
 
 // helmPort represents a Gateway Listener port
 type HelmPort struct {
-	Port       *uint16 `json:"port,omitempty"`
+	Port       *int32  `json:"port,omitempty"`
 	Protocol   *string `json:"protocol,omitempty"`
 	Name       *string `json:"name,omitempty"`
-	TargetPort *uint16 `json:"targetPort,omitempty"`
-	NodePort   *uint16 `json:"nodePort,omitempty"`
+	TargetPort *int32  `json:"targetPort,omitempty"`
+	NodePort   *int32  `json:"nodePort,omitempty"`
 }
 
 type HelmImage struct {
@@ -108,8 +131,14 @@ type HelmServiceAccount struct {
 // helmXds represents the xds host and port to which envoy will connect
 // to receive xds config updates
 type HelmXds struct {
-	Host *string `json:"host,omitempty"`
-	Port *uint32 `json:"port,omitempty"`
+	Host *string     `json:"host,omitempty"`
+	Port *uint32     `json:"port,omitempty"`
+	Tls  *HelmXdsTls `json:"tls,omitempty"`
+}
+
+type HelmXdsTls struct {
+	Enabled *bool   `json:"enabled,omitempty"`
+	CaCert  *string `json:"caCert,omitempty"`
 }
 
 type HelmIstio struct {
@@ -176,10 +205,4 @@ type HelmInferenceExtension struct {
 type HelmEndpointPickerExtension struct {
 	PoolName      string `json:"poolName"`
 	PoolNamespace string `json:"poolNamespace"`
-}
-
-type HelmAgentGateway struct {
-	Enabled             bool   `json:"enabled,omitempty"`
-	LogLevel            string `json:"logLevel,omitempty"`
-	CustomConfigMapName string `json:"customConfigMapName,omitempty"`
 }

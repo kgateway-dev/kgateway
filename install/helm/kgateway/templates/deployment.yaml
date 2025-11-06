@@ -14,6 +14,10 @@ spec:
   selector:
     matchLabels:
       {{- include "kgateway.selectorLabels" . | nindent 6 }}
+  {{- with .Values.controller.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   template:
     metadata:
       annotations:
@@ -28,17 +32,24 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "kgateway.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
       securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
+          {{- with .Values.securityContext }}
           securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.controller.image.registry | default .Values.image.registry }}/{{ .Values.controller.image.repository }}:{{ .Values.controller.image.tag | default .Values.image.tag | default .Chart.Version }}"
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.controller.image.registry | default .Values.image.registry }}/{{ .Values.controller.image.repository }}:{{ .Values.controller.image.tag | default .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.controller.image.pullPolicy | default .Values.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.controller.service.ports.grpc }}
               name: grpc-xds
+              protocol: TCP
+            - containerPort: {{ .Values.controller.service.ports.agwGrpc }}
+              name: grpc-xds-agw
               protocol: TCP
             - containerPort: {{ .Values.controller.service.ports.health }}
               name: health
@@ -50,8 +61,16 @@ spec:
             httpGet:
               path: /readyz
               port: {{ .Values.controller.service.ports.health }}
-            initialDelaySeconds: 3
+            initialDelaySeconds: 1
             periodSeconds: 10
+          startupProbe:
+            httpGet:
+              path: /readyz
+              port: {{ .Values.controller.service.ports.health }}
+            initialDelaySeconds: 0
+            periodSeconds: 1
+            {{/* Allow failing for 120s before the pod is killed */}}
+            failureThreshold: 120
           env:
             - name: GOMEMLIMIT
               valueFrom:
@@ -69,33 +88,43 @@ spec:
               value: {{ include "kgateway.fullname" . }}
             - name: KGW_XDS_SERVICE_PORT
               value: {{ .Values.controller.service.ports.grpc | quote }}
+            - name: KGW_AGENTGATEWAY_XDS_SERVICE_PORT
+              value: {{ .Values.controller.service.ports.agwGrpc | quote }}
             {{- if .Values.inferenceExtension.enabled }}
             - name: KGW_ENABLE_INFER_EXT
-              value: "true"
-            {{- end }}
-            {{- if .Values.inferenceExtension.autoProvision }}
-            - name: KGW_INFER_EXT_AUTO_PROVISION
               value: "true"
             {{- end }}
             - name: KGW_DEFAULT_IMAGE_REGISTRY
               value: {{ .Values.image.registry }}
             - name: KGW_DEFAULT_IMAGE_TAG
-              value: {{ .Values.image.tag | default .Chart.Version }}
+              value: {{ .Values.image.tag | default .Chart.AppVersion }}
             - name: KGW_DEFAULT_IMAGE_PULL_POLICY
               value: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
             - name: KGW_DISCOVERY_NAMESPACE_SELECTORS
               value: {{ .Values.discoveryNamespaceSelectors | toJson | quote }}
+            - name: KGW_POLICY_MERGE
+              value: {{ .Values.policyMerge | toJson | quote }}
+            - name: KGW_VALIDATION_MODE
+              value: {{ include "kgateway.validationLevel" . | quote }}
             {{- if .Values.controller.extraEnv }}
             {{- range $key, $value := .Values.controller.extraEnv }}
             - name: {{ $key }}
               value: {{ $value | quote }}
             {{- end }}
             {{- end }}
-            {{- if .Values.agentGateway.enabled }}
-            - name: KGW_ENABLE_AGENT_GATEWAY
+            - name: KGW_ENABLE_AGENTGATEWAY
+              value: "{{.Values.agentgateway.enabled}}"
+            - name: KGW_ENABLE_ENVOY
+              value: "{{.Values.envoy.enabled}}"
+            {{- if .Values.waypoint.enabled }}
+            - name: KGW_ENABLE_WAYPOINT
               value: "true"
             {{- end }}
-            # TODO: Remove this once the cleanup is done. Required as the gloo-system
+            {{- if .Values.controller.xds.tls.enabled }}
+            - name: KGW_XDS_TLS_ENABLED
+              value: "true"
+            {{- end }}
+            # TODO: Remove this once the cleanup is done. Required as the kgateway-system
             # namespace is the default namespace and conformance will fail as a result.
             - name: POD_NAMESPACE
               valueFrom:
@@ -103,6 +132,18 @@ spec:
                   fieldPath: metadata.namespace
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          {{- if .Values.controller.xds.tls.enabled }}
+          volumeMounts:
+            - name: xds-tls
+              mountPath: /etc/xds-tls
+              readOnly: true
+          {{- end }}
+      {{- if .Values.controller.xds.tls.enabled }}
+      volumes:
+        - name: xds-tls
+          secret:
+            secretName: kgateway-xds-cert
+      {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -115,3 +156,6 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+{{- if and (not .Values.envoy.enabled) (not .Values.agentgateway.enabled) }}
+{{ fail "envoy.enabled or agentgateway.enabled must be set to true"}}
+{{- end }}

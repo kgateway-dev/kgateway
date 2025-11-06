@@ -4,15 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"path/filepath"
 	"sync"
 	"testing"
 
-	"github.com/solo-io/go-utils/contextutils"
-	"go.uber.org/zap"
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/kubetypes"
@@ -26,41 +23,43 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/yaml"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
-	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
+	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
-var setupLogging = sync.Once{}
+type postStartFunc func(t *testing.T, ctx context.Context, client istiokube.CLIClient) func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []pluginsdk.Plugin
 
-func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Settings, testEnv *envtest.Environment,
-	postStart func(t *testing.T, ctx context.Context, client istiokube.CLIClient) func(ctx context.Context, commoncol *common.CommonCollections) []pluginsdk.Plugin,
+func RunController(
+	t *testing.T,
+	globalSettings *apisettings.Settings,
+	testEnv *envtest.Environment,
+	postStart postStartFunc,
 	yamlFilesToApply [][]string,
+	validator validator.Validator,
 	run func(t *testing.T,
 		ctx context.Context,
 		kdbg *krt.DebugHandler,
 		client istiokube.CLIClient,
 		xdsPort int,
-	)) {
+		agwXdsPort int,
+	),
+) {
 	if globalSettings == nil {
-		st, err := settings.BuildSettings()
+		st, err := apisettings.BuildSettings()
 		if err != nil {
 			t.Fatalf("failed to get settings %v", err)
 		}
 		globalSettings = st
 	}
-	// Always set once instead of each time to avoid races
-	logLevel := globalSettings.LogLevel
-	globalSettings.LogLevel = ""
-	setupLogging.Do(func() {
-		setup.SetupLogging(logLevel)
-	})
 
 	// Enable this if you want api server logs and audit logs.
 	if os.Getenv("DEBUG_APISERVER") == "true" {
@@ -71,7 +70,6 @@ func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Se
 
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
-	ctx = contextutils.WithExistingLogger(ctx, logger.Sugar())
 
 	cfg, err := testEnv.Start()
 	if err != nil {
@@ -88,7 +86,7 @@ func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Se
 	}
 	istiokube.EnableCrdWatcher(client)
 
-	var extraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []pluginsdk.Plugin
+	var extraPlugins func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []pluginsdk.Plugin
 	if postStart != nil {
 		extraPlugins = postStart(t, ctx, client)
 	}
@@ -113,20 +111,27 @@ func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Se
 		t.Fatalf("can't listen %v", err)
 	}
 
+	l2, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("can't listen %v", err)
+	}
+
 	s, err := setup.New(
 		setup.WithGlobalSettings(globalSettings),
 		setup.WithRestConfig(cfg),
 		setup.WithExtraPlugins(extraPlugins),
 		setup.WithKrtDebugger(krtDbg),
 		setup.WithXDSListener(l),
+		setup.WithAgwXDSListener(l2),
 		setup.WithControllerManagerOptions(
 			func(ctx context.Context) *ctrl.Options {
 				return &ctrl.Options{
 					BaseContext:      func() context.Context { return ctx },
 					Scheme:           runtime.NewScheme(),
-					PprofBindAddress: "127.0.0.1:9099",
+					PprofBindAddress: "127.0.0.1:0",
 					// if you change the port here, also change the port "health" in the helmchart.
-					HealthProbeBindAddress: ":9093",
+					HealthProbeBindAddress: "127.0.0.1:0",
+					Metrics:                metricsserver.Options{BindAddress: "127.0.0.1:0"},
 					Controller: config.Controller{
 						// 	// see https://github.com/kubernetes-sigs/controller-runtime/issues/2937
 						// 	// in short, our tests reuse the same name (reasonably so) and the controller-runtime
@@ -138,27 +143,27 @@ func RunController(t *testing.T, logger *zap.Logger, globalSettings *settings.Se
 			}),
 		setup.WithExtraManagerConfig([]func(ctx context.Context, mgr manager.Manager, objectFilter kubetypes.DynamicObjectFilter) error{
 			func(ctx context.Context, mgr manager.Manager, objectFilter kubetypes.DynamicObjectFilter) error {
-				return controller.AddToScheme(mgr.GetScheme())
+				return schemes.AddToScheme(mgr.GetScheme())
 			},
 		}...),
+		setup.WithValidator(validator),
 	)
 	if err != nil {
 		t.Fatalf("error setting up kgateway %v", err)
 	}
 
 	// start kgateway
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		if err := s.Start(ctx); err != nil {
-			log.Fatalf("error starting kgateway %v", err)
+			t.Errorf("error starting kgateway %v", err)
 		}
-	}()
+	})
 
 	xdsPort := l.Addr().(*net.TCPAddr).Port
-	t.Log("running tests, xds port:", xdsPort)
-	run(t, ctx, krtDbg, client, xdsPort)
-	t.Log("controller done. shutting down. xds port:", xdsPort)
+	agwXdsPort := l2.Addr().(*net.TCPAddr).Port
+	t.Logf("running tests, xds port: %v, agw xds port: %v", xdsPort, agwXdsPort)
+	run(t, ctx, krtDbg, client, xdsPort, agwXdsPort)
+	t.Logf("controller done. shutting down. xds port: %v, agw xds port: %v", xdsPort, agwXdsPort)
 }
 
 func GenerateKubeConfiguration(t *testing.T, restconfig *rest.Config) string {
@@ -297,4 +302,14 @@ rules:
 		panic(err)
 	}
 	return f.Name()
+}
+
+func BuildSettings() (*apisettings.Settings, error) {
+	s, err := apisettings.BuildSettings()
+	if err != nil {
+		return nil, err
+	}
+	// xDS auth requires projected Service Account token which does not work in envtest
+	s.XdsAuth = false
+	return s, nil
 }

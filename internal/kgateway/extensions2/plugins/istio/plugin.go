@@ -17,11 +17,11 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	ourwellknown "github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 var VirtualIstioGK = schema.GroupKind{
@@ -30,6 +30,7 @@ var VirtualIstioGK = schema.GroupKind{
 }
 
 type IstioSettings struct {
+	// +krtEqualsTodo ensure ISTIO auto-mtls flag participates in equality
 	EnableAutoMtls bool
 }
 
@@ -53,7 +54,7 @@ func (i IstioSettings) Equals(in any) bool {
 
 var _ ir.PolicyIR = &IstioSettings{}
 
-func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
+func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
 	p := istioPlugin{}
 
 	// TODO: if plumb settings from gw class; then they should be in the new translation pass
@@ -63,8 +64,8 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		EnableAutoMtls: commoncol.Settings.EnableIstioAutoMtls,
 	}
 
-	return extensionsplug.Plugin{
-		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
+	return sdk.Plugin{
+		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			VirtualIstioGK: {
 				Name:           "istio",
 				ProcessBackend: p.processBackend,
@@ -79,11 +80,8 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 
 type istioPlugin struct{}
 
-func isDisabledForUpstream(_ ir.BackendObjectIR) bool {
-	// return in.GetDisableIstioAutoMtls().GetValue()
-
-	// TODO: implement this; we can do it by checking annotations?
-	return false
+func isDisabledForUpstream(in ir.BackendObjectIR) bool {
+	return in.DisableIstioAutoMTLS
 }
 
 // we don't have a good way of know if we have ssl on the upstream, so check cluster instead
@@ -104,7 +102,8 @@ func (p istioPlugin) processBackend(ctx context.Context, ir ir.PolicyIR, in ir.B
 	// Istio automtls will only be applied when:
 	// 1) automtls is enabled on the settings
 	// 2) the upstream has not disabled auto mtls
-	// 3) the upstream has no sslConfig
+	// 3) the upstream has no sslConfig (not implemented yet)
+	// 4) no explicit annotation to disable auto mtls
 	if st.EnableAutoMtls && !isDisabledForUpstream(in) && !doesClusterHaveSslConfigPresent(out) {
 		sni := buildSni(in)
 
@@ -234,8 +233,6 @@ func buildSni(upstream ir.BackendObjectIR) string {
 
 // buildDNSSrvSubsetKey mirrors a similarly named function in Istio.
 // Istio auto-passthrough gateways expect this value for the SNI.
-// We also expect gloo mesh to tell Istio to match the virtual destination SNI
-// but route to the backing Service's cluster via EnvoyFilter.
 func buildDNSSrvSubsetKey(hostname string, port uint32) string {
 	return "outbound" + "_." + strconv.Itoa(int(port)) + "_._." + string(hostname)
 }

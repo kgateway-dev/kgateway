@@ -6,21 +6,15 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 )
 
-func NewGatewayDeployer(controllerName string, cli client.Client, gwParams *GatewayParameters) (*deployer.Deployer, error) {
-	chart, err := LoadGatewayChart()
+func NewGatewayDeployer(controllerName, agwControllerName, agwGatewayClassName string, cli client.Client, gwParams *GatewayParameters) (*deployer.Deployer, error) {
+	envoyChart, err := LoadEnvoyChart()
 	if err != nil {
 		return nil, err
 	}
-	return deployer.NewDeployer(
-		controllerName, cli, chart, gwParams, GatewayReleaseNameAndNamespace), nil
-}
-
-func NewInferencePoolDeployer(controllerName string, cli client.Client) (*deployer.Deployer, error) {
-	inferenceExt := &InferenceExtension{}
-	chart, err := LoadInferencePoolChart()
+	agentgatewayChart, err := LoadAgentgatewayChart()
 	if err != nil {
 		return nil, err
 	}
-	return deployer.NewDeployer(
-		controllerName, cli, chart, inferenceExt, InferenceExtensionReleaseNameAndNamespace), nil
+	return deployer.NewDeployerWithMultipleCharts(
+		controllerName, agwControllerName, agwGatewayClassName, cli, envoyChart, agentgatewayChart, gwParams, GatewayReleaseNameAndNamespace), nil
 }

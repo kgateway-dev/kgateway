@@ -8,7 +8,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 const (
@@ -71,9 +71,9 @@ func (p *trafficPolicyPluginGwPass) handleCsrf(fcn string, typedFilterConfig *ir
 }
 
 // constructCSRF constructs the CSRF policy IR from the policy specification.
-func constructCSRF(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) error {
+func constructCSRF(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) {
 	if spec.Csrf == nil {
-		return nil
+		return
 	}
 
 	csrfPolicy := &envoy_csrf_v3.CsrfPolicy{}
@@ -81,7 +81,7 @@ func constructCSRF(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) er
 	// Set filter enabled percentage
 	numerator := uint32(0)
 	if spec.Csrf.PercentageEnabled != nil {
-		numerator = *spec.Csrf.PercentageEnabled
+		numerator = uint32(*spec.Csrf.PercentageEnabled) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 	}
 
 	// FilterEnabled is required by the envoy filter and is set to 0 (off) by default
@@ -97,7 +97,7 @@ func constructCSRF(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) er
 	if spec.Csrf.PercentageShadowed != nil {
 		csrfPolicy.ShadowEnabled = &envoycorev3.RuntimeFractionalPercent{
 			DefaultValue: &envoy_type_v3.FractionalPercent{
-				Numerator:   *spec.Csrf.PercentageShadowed,
+				Numerator:   uint32(*spec.Csrf.PercentageShadowed), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 				Denominator: envoy_type_v3.FractionalPercent_HUNDRED,
 			},
 			RuntimeKey: csrfShadowEnabledKey,
@@ -118,7 +118,6 @@ func constructCSRF(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) er
 	out.csrf = &csrfIR{
 		policy: csrfPolicy,
 	}
-	return nil
 }
 
 func toEnvoyStringMatcher(origin v1alpha1.StringMatcher) *envoy_matcher_v3.StringMatcher {

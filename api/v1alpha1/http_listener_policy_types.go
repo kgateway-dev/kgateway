@@ -4,11 +4,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=httplistenerpolicies,verbs=get;list;watch
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=httplistenerpolicies/status,verbs=get;update;patch
+
+// +kubebuilder:printcolumn:name="Accepted",type=string,JSONPath=".status.ancestors[*].conditions[?(@.type=='Accepted')].status",description="HTTP listener policy acceptance status"
+// +kubebuilder:printcolumn:name="Attached",type=string,JSONPath=".status.ancestors[*].conditions[?(@.type=='Attached')].status",description="HTTP listener policy attachment status"
 
 // +genclient
 // +kubebuilder:object:root=true
@@ -26,7 +28,7 @@ type HTTPListenerPolicy struct {
 
 	Spec HTTPListenerPolicySpec `json:"spec,omitempty"`
 
-	Status gwv1alpha2.PolicyStatus `json:"status,omitempty"`
+	Status gwv1.PolicyStatus `json:"status,omitempty"`
 	// TODO: embed this into a typed Status field when
 	// https://github.com/kubernetes/kubernetes/issues/131533 is resolved
 }
@@ -55,8 +57,6 @@ type HTTPListenerPolicySpec struct {
 
 	// AccessLoggingConfig contains various settings for Envoy's access logging service.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto
-	// +kubebuilder:validation:Items={type=object}
-	//
 	// +kubebuilder:validation:MaxItems=16
 	AccessLog []AccessLog `json:"accessLog,omitempty"`
 
@@ -82,7 +82,7 @@ type HTTPListenerPolicySpec struct {
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-xff-num-trusted-hops
 	// +kubebuilder:validation:Minimum=0
 	// +optional
-	XffNumTrustedHops *uint32 `json:"xffNumTrustedHops,omitempty"`
+	XffNumTrustedHops *int32 `json:"xffNumTrustedHops,omitempty"`
 
 	// ServerHeaderTransformation determines how the server header is transformed.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-server-header-transformation
@@ -95,6 +95,12 @@ type HTTPListenerPolicySpec struct {
 	// +optional
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	StreamIdleTimeout *metav1.Duration `json:"streamIdleTimeout,omitempty"`
+
+	// IdleTimeout is the idle timeout for connnections.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-httpprotocoloptions
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	IdleTimeout *metav1.Duration `json:"idleTimeout,omitempty"`
 
 	// HealthCheck configures [Envoy health checks](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/health_check/v3/health_check.proto)
 	// +optional
@@ -177,7 +183,7 @@ type CommonAccessLogGrpcService struct {
 type CommonGrpcService struct {
 	// The backend gRPC service. Can be any type of supported backend (Kubernetes Service, kgateway Backend, etc..)
 	// +required
-	BackendRef *gwv1.BackendRef `json:"backendRef"`
+	BackendRef gwv1.BackendRef `json:"backendRef"`
 
 	// The :authority header in the grpc request. If this field is not set, the authority header value will be cluster_name.
 	// Note that this authority does not override the SNI. The SNI is provided by the transport socket of the cluster.
@@ -187,7 +193,8 @@ type CommonGrpcService struct {
 	// Maximum gRPC message size that is allowed to be received. If a message over this limit is received, the gRPC stream is terminated with the RESOURCE_EXHAUSTED error.
 	// Defaults to 0, which means unlimited.
 	// +optional
-	MaxReceiveMessageLength *uint32 `json:"maxReceiveMessageLength,omitempty"`
+	// +kubebuilder:validation:Minimum=1
+	MaxReceiveMessageLength *int32 `json:"maxReceiveMessageLength,omitempty"`
 
 	// This provides gRPC client level control over envoy generated headers. If false, the header will be sent but it can be overridden by per stream option. If true, the header will be removed and can not be overridden by per stream option. Default to false.
 	// +optional
@@ -231,7 +238,8 @@ type RetryPolicy struct {
 
 	// Specifies the allowed number of retries. Defaults to 1.
 	// +optional
-	NumRetries *uint32 `json:"numRetries,omitempty"`
+	// +kubebuilder:validation:Minimum=1
+	NumRetries *int32 `json:"numRetries,omitempty"`
 }
 
 // Configuration defining a jittered exponential back off strategy.
@@ -345,12 +353,12 @@ type FilterType struct {
 // Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-comparisonfilter
 type ComparisonFilter struct {
 	// +required
-	Op Op `json:"op,omitempty"`
+	Op Op `json:"op"`
 
 	// Value to compare against.
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=4294967295
-	Value uint32 `json:"value,omitempty"`
+	Value int32 `json:"value,omitempty"`
 }
 
 // Op represents comparison operators.
@@ -359,7 +367,7 @@ type Op string
 
 const (
 	EQ Op = "EQ" // Equal
-	GE Op = "GQ" // Greater or equal
+	GE Op = "GE" // Greater or equal
 	LE Op = "LE" // Less or equal
 )
 
@@ -415,7 +423,6 @@ type CELFilter struct {
 // Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
 type GrpcStatusFilter struct {
 	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:Items={type=object}
 	Statuses []GrpcStatus `json:"statuses,omitempty"`
 	Exclude  bool         `json:"exclude,omitempty"`
 }
@@ -431,19 +438,19 @@ type Tracing struct {
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
-	ClientSampling *uint32 `json:"clientSampling,omitempty"`
+	ClientSampling *int32 `json:"clientSampling,omitempty"`
 
 	// Target percentage of requests managed by this HTTP connection manager that will be randomly selected for trace generation, if not requested by the client or not forced. Defaults to 100%
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
-	RandomSampling *uint32 `json:"randomSampling,omitempty"`
+	RandomSampling *int32 `json:"randomSampling,omitempty"`
 
 	// Target percentage of requests managed by this HTTP connection manager that will be traced after all other sampling checks have been applied (client-directed, force tracing, random sampling). Defaults to 100%
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
-	OverallSampling *uint32 `json:"overallSampling,omitempty"`
+	OverallSampling *int32 `json:"overallSampling,omitempty"`
 
 	// Whether to annotate spans with additional data. If true, spans will include logs for stream events. Defaults to false
 	// +optional
@@ -451,7 +458,8 @@ type Tracing struct {
 
 	// Maximum length of the request path to extract and include in the HttpUrl tag. Used to truncate lengthy request paths to meet the needs of a tracing backend. Default: 256
 	// +optional
-	MaxPathTagLength *uint32 `json:"maxPathTagLength,omitempty"`
+	// +kubebuilder:validation:Minimum=1
+	MaxPathTagLength *int32 `json:"maxPathTagLength,omitempty"`
 
 	// A list of attributes with a unique name to create attributes for the active span.
 	// +optional

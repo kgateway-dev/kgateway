@@ -68,6 +68,12 @@ rules:
   - update
   - watch
 - apiGroups:
+  - authentication.k8s.io
+  resources:
+  - tokenreviews
+  verbs:
+  - create
+- apiGroups:
   - coordination.k8s.io
   resources:
   - leases
@@ -86,6 +92,7 @@ rules:
 - apiGroups:
   - gateway.kgateway.dev
   resources:
+  - agentgatewaypolicies
   - backendconfigpolicies
   - backends
   - directresponses
@@ -100,6 +107,7 @@ rules:
 - apiGroups:
   - gateway.kgateway.dev
   resources:
+  - agentgatewaypolicies/status
   - backendconfigpolicies/status
   - backends/status
   - directresponses/status

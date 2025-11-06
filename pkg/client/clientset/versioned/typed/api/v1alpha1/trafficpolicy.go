@@ -10,7 +10,6 @@ import (
 	watch "k8s.io/apimachinery/pkg/watch"
 	gentype "k8s.io/client-go/gentype"
 
-	applyconfigurationapiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/applyconfiguration/api/v1alpha1"
 	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	scheme "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/scheme"
 )
@@ -33,21 +32,18 @@ type TrafficPolicyInterface interface {
 	List(ctx context.Context, opts v1.ListOptions) (*apiv1alpha1.TrafficPolicyList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *apiv1alpha1.TrafficPolicy, err error)
-	Apply(ctx context.Context, trafficPolicy *applyconfigurationapiv1alpha1.TrafficPolicyApplyConfiguration, opts v1.ApplyOptions) (result *apiv1alpha1.TrafficPolicy, err error)
-	// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
-	ApplyStatus(ctx context.Context, trafficPolicy *applyconfigurationapiv1alpha1.TrafficPolicyApplyConfiguration, opts v1.ApplyOptions) (result *apiv1alpha1.TrafficPolicy, err error)
 	TrafficPolicyExpansion
 }
 
 // trafficPolicies implements TrafficPolicyInterface
 type trafficPolicies struct {
-	*gentype.ClientWithListAndApply[*apiv1alpha1.TrafficPolicy, *apiv1alpha1.TrafficPolicyList, *applyconfigurationapiv1alpha1.TrafficPolicyApplyConfiguration]
+	*gentype.ClientWithList[*apiv1alpha1.TrafficPolicy, *apiv1alpha1.TrafficPolicyList]
 }
 
 // newTrafficPolicies returns a TrafficPolicies
 func newTrafficPolicies(c *GatewayV1alpha1Client, namespace string) *trafficPolicies {
 	return &trafficPolicies{
-		gentype.NewClientWithListAndApply[*apiv1alpha1.TrafficPolicy, *apiv1alpha1.TrafficPolicyList, *applyconfigurationapiv1alpha1.TrafficPolicyApplyConfiguration](
+		gentype.NewClientWithList[*apiv1alpha1.TrafficPolicy, *apiv1alpha1.TrafficPolicyList](
 			"trafficpolicies",
 			c.RESTClient(),
 			scheme.ParameterCodec,

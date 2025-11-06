@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"istio.io/istio/pkg/kube/krt"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
 )
@@ -24,6 +25,11 @@ var (
 	// DefaultBuckets defines the default buckets used for histograms.
 	DefaultBuckets = prometheus.DefBuckets
 )
+
+func init() {
+	registry.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
+	registry.MustRegister(collectors.NewGoCollector())
+}
 
 // Metric defines a base interface for metrics.
 type Metric interface {
@@ -117,9 +123,14 @@ func (c *prometheusCounter) Add(value float64, labels ...Label) {
 	c.m.WithLabelValues(c.validateLabels(labels)...).Add(value)
 }
 
-// Reset resets the counter to zero.
+// Reset resets the counter to zero and makes the metric visible in metrics
+// gathering.
 func (c *prometheusCounter) Reset() {
 	c.m.Reset()
+	// Initialize the counter to 0 so it's visible in metrics
+	// gathering. Otherwise we're undoing some initialization like
+	// StartResourceSyncMetricsProcessing() performs.
+	c.Add(0)
 }
 
 // Histogram defines the interface for a histogram metric.

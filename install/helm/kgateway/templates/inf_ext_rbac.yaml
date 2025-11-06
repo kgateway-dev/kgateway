@@ -7,15 +7,15 @@ metadata:
     {{- include "kgateway.labels" . | nindent 4 }}
 rules:
 - apiGroups: ["inference.networking.x-k8s.io"]
-  resources: ["inferencemodels"]
+  resources: ["inferenceobjectives"]
   verbs: ["get", "watch", "list"]
 - apiGroups: [""]
   resources: ["pods"]
   verbs: ["get", "watch", "list"]
-- apiGroups: ["inference.networking.x-k8s.io"]
+- apiGroups: ["inference.networking.k8s.io"]
   resources: ["inferencepools"]
   verbs: ["get", "watch", "list", "update"]
-- apiGroups: ["inference.networking.x-k8s.io"]
+- apiGroups: ["inference.networking.k8s.io"]
   resources: ["inferencepools/status"]
   verbs: ["update"]
 - apiGroups: ["discovery.k8s.io"]

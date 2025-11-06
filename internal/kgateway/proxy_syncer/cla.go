@@ -6,13 +6,14 @@ import (
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"istio.io/istio/pkg/kube/krt"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	krtutil "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
 type UccWithEndpoints struct {
-	Client        ir.UniqlyConnectedClient
+	Client ir.UniqlyConnectedClient
+	// +krtEqualsTodo compare load assignments when equality matters
 	Endpoints     *envoyendpointv3.ClusterLoadAssignment
 	EndpointsHash uint64
 	endpointsName string
@@ -36,12 +37,12 @@ func (ie *PerClientEnvoyEndpoints) FetchEndpointsForClient(kctx krt.HandlerConte
 }
 
 func NewPerClientEnvoyEndpoints(
-	krtopts krtinternal.KrtOptions,
+	krtopts krtutil.KrtOptions,
 	uccs krt.Collection[ir.UniqlyConnectedClient],
-	glooEndpoints krt.Collection[ir.EndpointsForBackend],
+	kgatewayEndpoints krt.Collection[ir.EndpointsForBackend],
 	translateEndpoints func(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient, ep ir.EndpointsForBackend) (*envoyendpointv3.ClusterLoadAssignment, uint64),
 ) PerClientEnvoyEndpoints {
-	eps := krt.NewManyCollection(glooEndpoints, func(kctx krt.HandlerContext, ep ir.EndpointsForBackend) []UccWithEndpoints {
+	eps := krt.NewManyCollection(kgatewayEndpoints, func(kctx krt.HandlerContext, ep ir.EndpointsForBackend) []UccWithEndpoints {
 		uccs := krt.Fetch(kctx, uccs)
 		uccWithEndpointsRet := make([]UccWithEndpoints, 0, len(uccs))
 		for _, ucc := range uccs {

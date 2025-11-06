@@ -8,14 +8,15 @@ import (
 	"sort"
 	"strings"
 
-	"golang.org/x/exp/slices"
+	"istio.io/istio/pkg/slices"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/validate"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 // This file contains helper functions that generate helm values in the format needed
@@ -28,14 +29,18 @@ var ComponentLogLevelEmptyError = func(key string, value string) error {
 // Extract the listener ports from a Gateway and corresponding listener sets. These will be used to populate:
 // 1. the ports exposed on the envoy container
 // 2. the ports exposed on the proxy service
-func GetPortsValues(gw *ir.Gateway, gwp *v1alpha1.GatewayParameters) []HelmPort {
+func GetPortsValues(gw *ir.GatewayForDeployer, gwp *v1alpha1.GatewayParameters, agentgateway bool) []HelmPort {
 	gwPorts := []HelmPort{}
 
 	// Add ports from Gateway listeners
-	for _, l := range gw.Listeners {
-		listenerPort := uint16(l.Port)
-		portName := listener.GenerateListenerName(l)
-		gwPorts = AppendPortValue(gwPorts, listenerPort, portName, gwp)
+	for _, port := range gw.Ports.List() {
+		portName := listener.GenerateListenerNameFromPort(port)
+		if err := validate.ListenerPortForParent(port, agentgateway); err != nil {
+			// skip invalid ports; statuses are handled in the translator
+			logger.Error("skipping port", "gateway", gw.ResourceName(), "error", err)
+			continue
+		}
+		gwPorts = AppendPortValue(gwPorts, port, portName, gwp)
 	}
 
 	// Add ports from GatewayParameters.Service.Ports
@@ -72,7 +77,7 @@ func SanitizePortName(name string) string {
 	return str
 }
 
-func AppendPortValue(gwPorts []HelmPort, port uint16, name string, gwp *v1alpha1.GatewayParameters) []HelmPort {
+func AppendPortValue(gwPorts []HelmPort, port int32, name string, gwp *v1alpha1.GatewayParameters) []HelmPort {
 	if slices.IndexFunc(gwPorts, func(p HelmPort) bool { return *p.Port == port }) != -1 {
 		return gwPorts
 	}
@@ -82,12 +87,12 @@ func AppendPortValue(gwPorts []HelmPort, port uint16, name string, gwp *v1alpha1
 
 	// Search for static NodePort set from the GatewayParameters spec
 	// If not found the default value of `nil` will not render anything.
-	var nodePort *uint16 = nil
+	var nodePort *int32 = nil
 	if gwp.Spec.GetKube().GetService().GetType() != nil && *(gwp.Spec.GetKube().GetService().GetType()) == corev1.ServiceTypeNodePort {
 		if idx := slices.IndexFunc(gwp.Spec.GetKube().GetService().GetPorts(), func(p v1alpha1.Port) bool {
-			return p.GetPort() == uint16(port)
+			return p.GetPort() == port
 		}); idx != -1 {
-			nodePort = ptr.To(uint16(*gwp.Spec.GetKube().GetService().GetPorts()[idx].GetNodePort()))
+			nodePort = gwp.Spec.GetKube().GetService().GetPorts()[idx].GetNodePort()
 		}
 	}
 	return append(gwPorts, HelmPort{
@@ -282,27 +287,5 @@ func GetAIExtensionValues(config *v1alpha1.AiExtension) (*HelmAIExtension, error
 		Ports:           config.GetPorts(),
 		Stats:           byt,
 		Tracing:         tracingBase64,
-	}, nil
-}
-
-func GetAgentGatewayValues(config *v1alpha1.AgentGateway) (*HelmAgentGateway, error) {
-	if config == nil {
-		return nil, nil
-	}
-
-	var logLevel string
-	if config.GetLogLevel() != nil {
-		logLevel = *config.GetLogLevel()
-	}
-
-	var customConfigMapName string
-	if config.GetCustomConfigMapName() != nil {
-		customConfigMapName = *config.GetCustomConfigMapName()
-	}
-
-	return &HelmAgentGateway{
-		Enabled:             *config.GetEnabled(),
-		LogLevel:            logLevel,
-		CustomConfigMapName: customConfigMapName,
 	}, nil
 }

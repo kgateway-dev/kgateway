@@ -11,7 +11,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/filters"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
 
@@ -54,9 +53,9 @@ func FilterStageComparison[WellKnown ~int](a, b FilterStage[WellKnown]) int {
 	} else if a.RelativeTo > b.RelativeTo {
 		return 1
 	}
-	if a.Weight < b.Weight {
+	if a.RelativeWeight < b.RelativeWeight {
 		return -1
-	} else if a.Weight > b.Weight {
+	} else if a.RelativeWeight > b.RelativeWeight {
 		return 1
 	}
 	return 0
@@ -65,28 +64,34 @@ func FilterStageComparison[WellKnown ~int](a, b FilterStage[WellKnown]) int {
 func BeforeStage[WellKnown ~int](wellKnown WellKnown) FilterStage[WellKnown] {
 	return RelativeToStage(wellKnown, -1)
 }
+
 func DuringStage[WellKnown ~int](wellKnown WellKnown) FilterStage[WellKnown] {
 	return RelativeToStage(wellKnown, 0)
 }
+
 func AfterStage[WellKnown ~int](wellKnown WellKnown) FilterStage[WellKnown] {
 	return RelativeToStage(wellKnown, 1)
 }
-func RelativeToStage[WellKnown ~int](wellKnown WellKnown, weight int) FilterStage[WellKnown] {
+
+// RelativeToStage creates a FilterStage that is relative to a well-known stage by a given weight
+func RelativeToStage[WellKnown ~int](wellKnown WellKnown, relativeWeight int) FilterStage[WellKnown] {
 	return FilterStage[WellKnown]{
-		RelativeTo: wellKnown,
-		Weight:     weight,
+		RelativeTo:     wellKnown,
+		RelativeWeight: relativeWeight,
 	}
 }
 
 type FilterStage[WellKnown ~int] struct {
-	RelativeTo WellKnown
-	Weight     int
+	RelativeTo     WellKnown
+	RelativeWeight int
 }
 
-type HTTPOrNetworkFilterStage = FilterStage[WellKnownFilterStage]
-type HTTPFilterStage = FilterStage[WellKnownFilterStage]
-type NetworkFilterStage = FilterStage[WellKnownFilterStage]
-type UpstreamHTTPFilterStage = FilterStage[WellKnownUpstreamHTTPFilterStage]
+type (
+	HTTPOrNetworkFilterStage = FilterStage[WellKnownFilterStage]
+	HTTPFilterStage          = FilterStage[WellKnownFilterStage]
+	NetworkFilterStage       = FilterStage[WellKnownFilterStage]
+	UpstreamHTTPFilterStage  = FilterStage[WellKnownUpstreamHTTPFilterStage]
+)
 
 type Filter interface {
 	proto.Message
@@ -97,6 +102,7 @@ type Filter interface {
 type StagedFilter[WellKnown ~int, FilterType Filter] struct {
 	Filter FilterType
 	Stage  FilterStage[WellKnown]
+	Weight int32
 }
 
 type StagedFilterList[WellKnown ~int, FilterType Filter] []StagedFilter[WellKnown, FilterType]
@@ -111,6 +117,16 @@ func (s StagedFilterList[WellKnown, FilterType]) Len() int {
 func (s StagedFilterList[WellKnown, FilterType]) Less(i, j int) bool {
 	if compare := FilterStageComparison(s[i].Stage, s[j].Stage); compare != 0 {
 		return compare < 0
+	}
+
+	// If the filters are of the same type, compare their weights. Higher weights are ordered
+	// before lower weights.
+	if s[i].Filter.GetTypedConfig().GetTypeUrl() == s[j].Filter.GetTypedConfig().GetTypeUrl() {
+		if s[i].Weight > s[j].Weight {
+			return true
+		} else if s[i].Weight < s[j].Weight {
+			return false
+		}
 	}
 
 	if compare := strings.Compare(s[i].Filter.GetName(), s[j].Filter.GetName()); compare != 0 {
@@ -133,13 +149,17 @@ func (s StagedFilterList[WellKnown, FilterType]) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-type StagedHttpFilter = StagedFilter[WellKnownFilterStage, *envoyhttp.HttpFilter]
-type StagedNetworkFilter = StagedFilter[WellKnownFilterStage, *envoylistenerv3.Filter]
-type StagedUpstreamHttpFilter = StagedFilter[WellKnownUpstreamHTTPFilterStage, *envoyhttp.HttpFilter]
+type (
+	StagedHttpFilter         = StagedFilter[WellKnownFilterStage, *envoyhttp.HttpFilter]
+	StagedNetworkFilter      = StagedFilter[WellKnownFilterStage, *envoylistenerv3.Filter]
+	StagedUpstreamHttpFilter = StagedFilter[WellKnownUpstreamHTTPFilterStage, *envoyhttp.HttpFilter]
+)
 
-type StagedHttpFilterList = StagedFilterList[WellKnownFilterStage, *envoyhttp.HttpFilter]
-type StagedNetworkFilterList = StagedFilterList[WellKnownFilterStage, *envoylistenerv3.Filter]
-type StagedUpstreamHttpFilterList = StagedFilterList[WellKnownUpstreamHTTPFilterStage, *envoyhttp.HttpFilter]
+type (
+	StagedHttpFilterList         = StagedFilterList[WellKnownFilterStage, *envoyhttp.HttpFilter]
+	StagedNetworkFilterList      = StagedFilterList[WellKnownFilterStage, *envoylistenerv3.Filter]
+	StagedUpstreamHttpFilterList = StagedFilterList[WellKnownUpstreamHTTPFilterStage, *envoyhttp.HttpFilter]
+)
 
 // MustNewStagedFilter creates an instance of the named filter with the desired stage.
 // Returns a filter even if an error occurred.
@@ -148,6 +168,14 @@ type StagedUpstreamHttpFilterList = StagedFilterList[WellKnownUpstreamHTTPFilter
 // If not directly appending consider using NewStagedFilter instead of this function.
 func MustNewStagedFilter(name string, config proto.Message, stage FilterStage[WellKnownFilterStage]) StagedHttpFilter {
 	s, _ := NewStagedFilter(name, config, stage)
+	return s
+}
+
+// MustNewStagedFilterWithWeight creates an instance of the named filter with the desired stage and weight.
+// The weight is used to order filters of the same type within the same stage based on their weights
+func MustNewStagedFilterWithWeight(name string, config proto.Message, stage FilterStage[WellKnownFilterStage], weight int32) StagedHttpFilter {
+	s, _ := NewStagedFilter(name, config, stage)
+	s.Weight = weight
 	return s
 }
 
@@ -192,31 +220,118 @@ func StagedFilterListContainsName(filters StagedHttpFilterList, filterName strin
 	return false
 }
 
-// ConvertFilterStage converts user-specified FilterStage options to the FilterStage representation used for translation.
-func ConvertFilterStage(in *filters.FilterStage) *FilterStage[WellKnownFilterStage] {
+// List of filter stages which can be selected for a HTTP filter.
+type FilterStage_Stage int32
+
+const (
+	FilterStage_FaultStage     FilterStage_Stage = 0
+	FilterStage_CorsStage      FilterStage_Stage = 1
+	FilterStage_WafStage       FilterStage_Stage = 2
+	FilterStage_AuthNStage     FilterStage_Stage = 3
+	FilterStage_AuthZStage     FilterStage_Stage = 4
+	FilterStage_RateLimitStage FilterStage_Stage = 5
+	FilterStage_AcceptedStage  FilterStage_Stage = 6
+	FilterStage_OutAuthStage   FilterStage_Stage = 7
+	FilterStage_RouteStage     FilterStage_Stage = 8
+)
+
+// Enum value maps for FilterStage_Stage.
+var (
+	FilterStage_Stage_name = map[int32]string{
+		0: "FaultStage",
+		1: "CorsStage",
+		2: "WafStage",
+		3: "AuthNStage",
+		4: "AuthZStage",
+		5: "RateLimitStage",
+		6: "AcceptedStage",
+		7: "OutAuthStage",
+		8: "RouteStage",
+	}
+	FilterStage_Stage_value = map[string]int32{
+		"FaultStage":     0,
+		"CorsStage":      1,
+		"WafStage":       2,
+		"AuthNStage":     3,
+		"AuthZStage":     4,
+		"RateLimitStage": 5,
+		"AcceptedStage":  6,
+		"OutAuthStage":   7,
+		"RouteStage":     8,
+	}
+)
+
+// Desired placement of the HTTP filter relative to the stage. The default is `During`.
+type FilterStage_Predicate int32
+
+const (
+	FilterStage_During FilterStage_Predicate = 0
+	FilterStage_Before FilterStage_Predicate = 1
+	FilterStage_After  FilterStage_Predicate = 2
+)
+
+// Enum value maps for FilterStage_Predicate.
+var (
+	FilterStage_Predicate_name = map[int32]string{
+		0: "During",
+		1: "Before",
+		2: "After",
+	}
+	FilterStage_Predicate_value = map[string]int32{
+		"During": 0,
+		"Before": 1,
+		"After":  2,
+	}
+)
+
+// FilterStageSpec allows configuration of where in a filter chain a given HTTP filter is inserted,
+// relative to one of the pre-defined stages.
+type FilterStageSpec struct {
+	// Stage of the filter chain in which the selected filter should be added.
+	Stage FilterStage_Stage
+	// How this filter should be placed relative to the stage.
+	Predicate FilterStage_Predicate
+}
+
+func (x *FilterStageSpec) GetStage() FilterStage_Stage {
+	if x != nil {
+		return x.Stage
+	}
+	return FilterStage_FaultStage
+}
+
+func (x *FilterStageSpec) GetPredicate() FilterStage_Predicate {
+	if x != nil {
+		return x.Predicate
+	}
+	return FilterStage_During
+}
+
+// ConvertFilterStage converts user-specified FilterStageSpec options to the FilterStage representation used for translation.
+func ConvertFilterStage(in *FilterStageSpec) *FilterStage[WellKnownFilterStage] {
 	if in == nil {
 		return nil
 	}
 
 	var outStage WellKnownFilterStage
 	switch in.GetStage() {
-	case filters.FilterStage_CorsStage:
+	case FilterStage_CorsStage:
 		outStage = CorsStage
-	case filters.FilterStage_WafStage:
+	case FilterStage_WafStage:
 		outStage = WafStage
-	case filters.FilterStage_AuthNStage:
+	case FilterStage_AuthNStage:
 		outStage = AuthNStage
-	case filters.FilterStage_AuthZStage:
+	case FilterStage_AuthZStage:
 		outStage = AuthZStage
-	case filters.FilterStage_RateLimitStage:
+	case FilterStage_RateLimitStage:
 		outStage = RateLimitStage
-	case filters.FilterStage_AcceptedStage:
+	case FilterStage_AcceptedStage:
 		outStage = AcceptedStage
-	case filters.FilterStage_OutAuthStage:
+	case FilterStage_OutAuthStage:
 		outStage = OutAuthStage
-	case filters.FilterStage_RouteStage:
+	case FilterStage_RouteStage:
 		outStage = RouteStage
-	case filters.FilterStage_FaultStage:
+	case FilterStage_FaultStage:
 		fallthrough
 	default:
 		// default to Fault stage
@@ -225,11 +340,11 @@ func ConvertFilterStage(in *filters.FilterStage) *FilterStage[WellKnownFilterSta
 
 	var out FilterStage[WellKnownFilterStage]
 	switch in.GetPredicate() {
-	case filters.FilterStage_Before:
+	case FilterStage_Before:
 		out = BeforeStage(outStage)
-	case filters.FilterStage_After:
+	case FilterStage_After:
 		out = AfterStage(outStage)
-	case filters.FilterStage_During:
+	case FilterStage_During:
 		fallthrough
 	default:
 		// default to During

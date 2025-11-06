@@ -1,7 +1,6 @@
 package httplistenerpolicy
 
 import (
-	"context"
 	"fmt"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -16,25 +15,20 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 func convertTracingConfig(
-	ctx context.Context,
 	policy *v1alpha1.HTTPListenerPolicy,
-	commoncol *common.CommonCollections,
+	commoncol *collections.CommonCollections,
 	krtctx krt.HandlerContext,
 	parentSrc ir.ObjectSource,
 ) (*envoytracev3.OpenTelemetryConfig, *envoy_hcm.HttpConnectionManager_Tracing, error) {
 	config := policy.Spec.Tracing
 	if config == nil {
 		return nil, nil, nil
-	}
-
-	if config.Provider.OpenTelemetry.GrpcService.BackendRef == nil {
-		return nil, nil, fmt.Errorf("Tracing.OpenTelemetryConfig.GrpcService.BackendRef must be specified")
 	}
 
 	backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, parentSrc, config.Provider.OpenTelemetry.GrpcService.BackendRef.BackendObjectReference)
@@ -51,10 +45,6 @@ func translateTracing(
 ) (*envoytracev3.OpenTelemetryConfig, *envoy_hcm.HttpConnectionManager_Tracing, error) {
 	if config == nil {
 		return nil, nil, nil
-	}
-
-	if config.Provider.OpenTelemetry == nil || config.Provider.OpenTelemetry.GrpcService.BackendRef == nil {
-		return nil, nil, fmt.Errorf("Tracing.OpenTelemetryConfig.GrpcService.BackendRef must be specified")
 	}
 
 	provider, err := convertOTelTracingConfig(config.Provider.OpenTelemetry, backend)
@@ -83,7 +73,7 @@ func translateTracing(
 	}
 	if config.MaxPathTagLength != nil {
 		tracingConfig.MaxPathTagLength = &wrapperspb.UInt32Value{
-			Value: *config.MaxPathTagLength,
+			Value: uint32(*config.MaxPathTagLength), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 		}
 	}
 	if len(config.Attributes) != 0 {

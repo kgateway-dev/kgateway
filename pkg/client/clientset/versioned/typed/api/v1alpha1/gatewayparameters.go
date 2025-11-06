@@ -10,15 +10,14 @@ import (
 	watch "k8s.io/apimachinery/pkg/watch"
 	gentype "k8s.io/client-go/gentype"
 
-	applyconfigurationapiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/applyconfiguration/api/v1alpha1"
 	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	scheme "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/scheme"
 )
 
-// GatewayParametersesGetter has a method to return a GatewayParametersInterface.
+// GatewayParametersGetter has a method to return a GatewayParametersInterface.
 // A group's client should implement this interface.
-type GatewayParametersesGetter interface {
-	GatewayParameterses(namespace string) GatewayParametersInterface
+type GatewayParametersGetter interface {
+	GatewayParameters(namespace string) GatewayParametersInterface
 }
 
 // GatewayParametersInterface has methods to work with GatewayParameters resources.
@@ -33,22 +32,19 @@ type GatewayParametersInterface interface {
 	List(ctx context.Context, opts v1.ListOptions) (*apiv1alpha1.GatewayParametersList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *apiv1alpha1.GatewayParameters, err error)
-	Apply(ctx context.Context, gatewayParameters *applyconfigurationapiv1alpha1.GatewayParametersApplyConfiguration, opts v1.ApplyOptions) (result *apiv1alpha1.GatewayParameters, err error)
-	// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
-	ApplyStatus(ctx context.Context, gatewayParameters *applyconfigurationapiv1alpha1.GatewayParametersApplyConfiguration, opts v1.ApplyOptions) (result *apiv1alpha1.GatewayParameters, err error)
 	GatewayParametersExpansion
 }
 
-// gatewayParameterses implements GatewayParametersInterface
-type gatewayParameterses struct {
-	*gentype.ClientWithListAndApply[*apiv1alpha1.GatewayParameters, *apiv1alpha1.GatewayParametersList, *applyconfigurationapiv1alpha1.GatewayParametersApplyConfiguration]
+// gatewayParameters implements GatewayParametersInterface
+type gatewayParameters struct {
+	*gentype.ClientWithList[*apiv1alpha1.GatewayParameters, *apiv1alpha1.GatewayParametersList]
 }
 
-// newGatewayParameterses returns a GatewayParameterses
-func newGatewayParameterses(c *GatewayV1alpha1Client, namespace string) *gatewayParameterses {
-	return &gatewayParameterses{
-		gentype.NewClientWithListAndApply[*apiv1alpha1.GatewayParameters, *apiv1alpha1.GatewayParametersList, *applyconfigurationapiv1alpha1.GatewayParametersApplyConfiguration](
-			"gatewayparameterses",
+// newGatewayParameters returns a GatewayParameters
+func newGatewayParameters(c *GatewayV1alpha1Client, namespace string) *gatewayParameters {
+	return &gatewayParameters{
+		gentype.NewClientWithList[*apiv1alpha1.GatewayParameters, *apiv1alpha1.GatewayParametersList](
+			"gatewayparameters",
 			c.RESTClient(),
 			scheme.ParameterCodec,
 			namespace,

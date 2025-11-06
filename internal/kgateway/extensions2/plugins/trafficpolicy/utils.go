@@ -4,40 +4,48 @@ import (
 	set_metadata "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/set_metadata/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 )
 
 type ProviderNeededMap struct {
-	// map filter_chain name -> provider name -> provider
-	Providers map[string]map[string]*TrafficPolicyGatewayExtensionIR
+	// map filter_chain name -> providers
+	Providers map[string][]Provider
+}
+
+type Provider struct {
+	Name      string
+	Extension *TrafficPolicyGatewayExtensionIR
 }
 
 func (p *ProviderNeededMap) Add(filterChain, providerName string, provider *TrafficPolicyGatewayExtensionIR) {
 	if p.Providers == nil {
-		p.Providers = make(map[string]map[string]*TrafficPolicyGatewayExtensionIR)
+		p.Providers = make(map[string][]Provider)
 	}
-	if p.Providers[filterChain] == nil {
-		p.Providers[filterChain] = make(map[string]*TrafficPolicyGatewayExtensionIR)
-	}
-	p.Providers[filterChain][providerName] = provider
+	p.Providers[filterChain] = append(p.Providers[filterChain], Provider{
+		Name:      providerName,
+		Extension: provider,
+	})
 }
 
 func AddDisableFilterIfNeeded(
-	filters []plugins.StagedHttpFilter,
+	stagedFilters []filters.StagedHttpFilter,
 	disableFilterName string,
 	disableFilterMetadataNamespace string,
-) []plugins.StagedHttpFilter {
-	for _, f := range filters {
+) []filters.StagedHttpFilter {
+	for _, f := range stagedFilters {
 		if f.Filter.GetName() == disableFilterName {
-			return filters
+			return stagedFilters
 		}
 	}
 
-	f := plugins.MustNewStagedFilter(
-		disableFilterName, newSetMetadataConfig(disableFilterMetadataNamespace), plugins.BeforeStage(plugins.FaultStage))
+	f := filters.MustNewStagedFilter(
+		disableFilterName,
+		newSetMetadataConfig(disableFilterMetadataNamespace),
+		filters.BeforeStage(filters.FaultStage),
+	)
 	f.Filter.Disabled = true
-	filters = append(filters, f)
-	return filters
+	stagedFilters = append(stagedFilters, f)
+	return stagedFilters
 }
 
 func newSetMetadataConfig(metadataNamespace string) *set_metadata.Config {

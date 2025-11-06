@@ -23,13 +23,14 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/test/util/retry"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer"
-	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
+	"github.com/kgateway-dev/kgateway/v2/test/envtestutil"
 )
 
 func TestAgentgateway(t *testing.T) {
-	st, err := settings.BuildSettings()
-	st.EnableAgentGateway = true
+	st, err := envtestutil.BuildSettings()
+	st.EnableAgentgateway = true
 	st.EnableInferExt = true
 
 	if err != nil {
@@ -37,11 +38,11 @@ func TestAgentgateway(t *testing.T) {
 	}
 
 	// Use the runScenario approach to test agent gateway scenarios
-	runAgentGatewayScenario(t, "testdata/agentgateway", st)
+	runAgentgatewayScenario(t, "testdata/agentgateway", st)
 }
 
-func runAgentGatewayScenario(t *testing.T, scenarioDir string, globalSettings *settings.Settings) {
-	setupEnvTestAndRun(t, globalSettings, func(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler, client istiokube.CLIClient, xdsPort int) {
+func runAgentgatewayScenario(t *testing.T, scenarioDir string, globalSettings *apisettings.Settings) {
+	setupEnvTestAndRun(t, globalSettings, func(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler, client istiokube.CLIClient, _, xdsPort int) {
 		// list all yamls in test data
 		files, err := os.ReadDir(scenarioDir)
 		if err != nil {
@@ -59,14 +60,14 @@ func runAgentGatewayScenario(t *testing.T, scenarioDir string, globalSettings *s
 					t.Cleanup(func() {
 						writer.set(nil)
 					})
-					testAgentGatewayScenario(t, ctx, kdbg, client, xdsPort, fullpath)
+					testAgentgatewayScenario(t, ctx, kdbg, client, xdsPort, fullpath)
 				})
 			}
 		}
 	})
 }
 
-func testAgentGatewayScenario(
+func testAgentgatewayScenario(
 	t *testing.T,
 	ctx context.Context,
 	kdbg *krt.DebugHandler,
@@ -105,7 +106,7 @@ func testAgentGatewayScenario(
 	testyaml := strings.ReplaceAll(string(testyamlbytes), gwname, testgwname)
 
 	yamlfile := filepath.Join(t.TempDir(), "test.yaml")
-	os.WriteFile(yamlfile, []byte(testyaml), 0o644)
+	os.WriteFile(yamlfile, []byte(testyaml), 0o600)
 
 	err = client.ApplyYAMLFiles("", yamlfile)
 
@@ -123,10 +124,6 @@ func testAgentGatewayScenario(
 	}
 	t.Log("applied yamls", t.Name())
 
-	// wait at least a second before the first check
-	// to give the CP time to process
-	time.Sleep(time.Second)
-
 	t.Cleanup(func() {
 		if t.Failed() {
 			logKrtState(t, fmt.Sprintf("krt state for failed test: %s", t.Name()), kdbg)
@@ -137,9 +134,9 @@ func testAgentGatewayScenario(
 
 	// Use retry to wait for the agent gateway to be ready
 	retry.UntilSuccessOrFail(t, func() error {
-		dumper := newAgentGatewayXdsDumper(t, ctx, xdsPort, testgwname, "gwtest")
+		dumper := newAgentgatewayXdsDumper(t, xdsPort, testgwname, "gwtest")
 		defer dumper.Close()
-		dump := dumper.DumpAgentGateway(t, ctx)
+		dump := dumper.DumpAgentgateway(t, ctx)
 		if len(dump.Resources) == 0 {
 			return fmt.Errorf("timed out waiting for agent gateway resources")
 		}
@@ -161,7 +158,7 @@ func testAgentGatewayScenario(
 			switch resource.GetKind().(type) {
 			case *api.Resource_Bind:
 				bindCount++
-				t.Logf("ADPBind resource: %+v", resource.GetBind())
+				t.Logf("AgwBind resource: %+v", resource.GetBind())
 			case *api.Resource_Listener:
 				listenerCount++
 				t.Logf("Listener resource: %+v", resource.GetListener())
@@ -238,7 +235,7 @@ func dumpProtoToJSON(t *testing.T, dump agentGwDump, fpre string) {
 		return
 	}
 
-	err = os.WriteFile(jsonFile, jsonData, 0o644)
+	err = os.WriteFile(jsonFile, jsonData, 0o600)
 	if err != nil {
 		t.Logf("failed to write JSON file: %v", err)
 		return
@@ -538,18 +535,20 @@ func compareDumps(actual, expected agentGwDump) error {
 	return nil
 }
 
-func newAgentGatewayXdsDumper(t *testing.T, ctx context.Context, xdsPort int, gwname, gwnamespace string) xdsDumper {
+func newAgentgatewayXdsDumper(t *testing.T, xdsPort int, gwname, gwnamespace string) deltaXdsDumper {
 	conn, err := grpc.NewClient(fmt.Sprintf("localhost:%d", xdsPort),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithIdleTimeout(time.Second*10),
+		//nolint:staticcheck // for testing
+		grpc.WithBlock(),
 	)
 	if err != nil {
 		t.Fatalf("failed to connect to xds server: %v", err)
 	}
 
-	d := xdsDumper{
+	d := deltaXdsDumper{
 		conn: conn,
-		dr: &envoy_service_discovery_v3.DiscoveryRequest{
+		dr: &envoy_service_discovery_v3.DeltaDiscoveryRequest{
 			Node: &envoycorev3.Node{
 				Id: "gateway.gwtest",
 				Metadata: &structpb.Struct{
@@ -562,13 +561,7 @@ func newAgentGatewayXdsDumper(t *testing.T, ctx context.Context, xdsPort int, gw
 	}
 
 	ads := envoy_service_discovery_v3.NewAggregatedDiscoveryServiceClient(d.conn)
-	ctx, cancel := context.WithTimeout(ctx, time.Second*30) // long timeout - just in case. we should never reach it.
-	adsClient, err := ads.StreamAggregatedResources(ctx)
-	if err != nil {
-		t.Fatalf("failed to get ads client: %v", err)
-	}
-	d.adsClient = adsClient
-	d.cancel = cancel
+	d.ads = ads
 
 	return d
 }
@@ -578,7 +571,7 @@ type agentGwDump struct {
 	Addresses []*api.Address
 }
 
-func (x xdsDumper) DumpAgentGateway(t *testing.T, ctx context.Context) agentGwDump {
+func (x deltaXdsDumper) DumpAgentgateway(t *testing.T, ctx context.Context) agentGwDump {
 	// get resources
 	resources := x.GetResources(t, ctx)
 	addresses := x.GetAddress(t, ctx)
@@ -589,30 +582,48 @@ func (x xdsDumper) DumpAgentGateway(t *testing.T, ctx context.Context) agentGwDu
 	}
 }
 
-func (x xdsDumper) GetResources(t *testing.T, ctx context.Context) []*api.Resource {
-	dr := proto.Clone(x.dr).(*envoy_service_discovery_v3.DiscoveryRequest)
-	dr.TypeUrl = agentgatewaysyncer.TargetTypeResourceUrl
-	x.adsClient.Send(dr)
-	var resources []*api.Resource
+func (x deltaXdsDumper) GetConn(t *testing.T) (envoy_service_discovery_v3.AggregatedDiscoveryService_DeltaAggregatedResourcesClient, context.CancelFunc) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30) // long timeout - just in case. we should never reach it.
+	adsClient, err := x.ads.DeltaAggregatedResources(ctx)
+	if err != nil {
+		t.Fatalf("failed to get ads client: %v", err)
+	}
+	return adsClient, cancel
+}
+
+func (x deltaXdsDumper) GetResources(t *testing.T, ctx context.Context) []*api.Resource {
+	dr := proto.Clone(x.dr).(*envoy_service_discovery_v3.DeltaDiscoveryRequest)
+	dr.TypeUrl = translator.TargetTypeResourceUrl
 	// run this in parallel with a 5s timeout
+	var resources []*api.Resource
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		sent := 1
-		for i := 0; i < sent; i++ {
-			dresp, err := x.adsClient.Recv()
+		for iter := range 100 {
+			resources = nil
+			con, cancel := x.GetConn(t)
+			defer cancel()
+			con.Send(dr)
+			dresp, err := con.Recv()
 			if err != nil {
-				t.Errorf("failed to get response from xds server: %v", err)
+				time.Sleep(time.Millisecond * 100 * time.Duration(iter))
+				t.Logf("failed to get response from xds server: %v", err)
+				continue
 			}
 			t.Logf("got response: %s len: %d", dresp.GetTypeUrl(), len(dresp.GetResources()))
-			if dresp.GetTypeUrl() == agentgatewaysyncer.TargetTypeResourceUrl {
+			if dresp.GetTypeUrl() == translator.TargetTypeResourceUrl {
 				for _, anyResource := range dresp.GetResources() {
 					var resource api.Resource
-					if err := anyResource.UnmarshalTo(&resource); err != nil {
+					if err := anyResource.Resource.UnmarshalTo(&resource); err != nil {
 						t.Errorf("failed to unmarshal resource: %v", err)
+						return
 					}
 					resources = append(resources, &resource)
 				}
+				if len(resources) > 0 {
+					break
+				}
+				time.Sleep(time.Millisecond * 100 * time.Duration(iter))
 			}
 		}
 	}()
@@ -620,41 +631,50 @@ func (x xdsDumper) GetResources(t *testing.T, ctx context.Context) []*api.Resour
 	case <-done:
 	case <-time.After(5 * time.Second):
 		// don't fatal yet as we want to dump the state while still connected
-		t.Error("timed out waiting for resources for agent gateway xds dump")
+		t.Fatalf("timed out waiting for resources for agent gateway xds dump")
 		return nil
 	}
 	if len(resources) == 0 {
-		t.Error("no resources found")
+		t.Fatalf("no resources found")
 		return nil
 	}
 	t.Logf("xds: found %d resources", len(resources))
 	return resources
 }
 
-func (x xdsDumper) GetAddress(t *testing.T, ctx context.Context) []*api.Address {
-	dr := proto.Clone(x.dr).(*envoy_service_discovery_v3.DiscoveryRequest)
-	dr.TypeUrl = agentgatewaysyncer.TargetTypeAddressUrl
-	x.adsClient.Send(dr)
+func (x deltaXdsDumper) GetAddress(t *testing.T, ctx context.Context) []*api.Address {
+	dr := proto.Clone(x.dr).(*envoy_service_discovery_v3.DeltaDiscoveryRequest)
+	dr.TypeUrl = translator.TargetTypeAddressUrl
 	var address []*api.Address
 	// run this in parallel with a 5s timeout
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		sent := 1
-		for i := 0; i < sent; i++ {
-			dresp, err := x.adsClient.Recv()
+		for iter := range 100 {
+			address = nil
+			con, cancel := x.GetConn(t)
+			defer cancel()
+			con.Send(dr)
+			dresp, err := con.Recv()
 			if err != nil {
-				t.Errorf("failed to get response from xds server: %v", err)
+				time.Sleep(time.Millisecond * 100 * time.Duration(iter))
+				t.Logf("failed to get response from xds server: %v", err)
+				continue
 			}
 			t.Logf("got address response: %s len: %d", dresp.GetTypeUrl(), len(dresp.GetResources()))
-			if dresp.GetTypeUrl() == agentgatewaysyncer.TargetTypeAddressUrl {
+			if dresp.GetTypeUrl() == translator.TargetTypeAddressUrl {
 				for _, anyResource := range dresp.GetResources() {
 					var resource api.Address
-					if err := anyResource.UnmarshalTo(&resource); err != nil {
+					if err := anyResource.Resource.UnmarshalTo(&resource); err != nil {
 						t.Errorf("failed to unmarshal resource: %v", err)
+						return
 					}
 					address = append(address, &resource)
 				}
+				if len(address) > 0 {
+					break
+				}
+				time.Sleep(time.Millisecond * 100 * time.Duration(iter))
 			}
 		}
 	}()
@@ -662,11 +682,11 @@ func (x xdsDumper) GetAddress(t *testing.T, ctx context.Context) []*api.Address 
 	case <-done:
 	case <-time.After(5 * time.Second):
 		// don't fatal yet as we want to dump the state while still connected
-		t.Error("timed out waiting for address resources for agent gateway xds dump")
+		t.Fatalf("timed out waiting for address resources for agent gateway xds dump")
 		return nil
 	}
 	if len(address) == 0 {
-		t.Error("no address resources found")
+		t.Fatalf("no address resources found")
 		return nil
 	}
 	t.Logf("xds: found %d address resources", len(address))

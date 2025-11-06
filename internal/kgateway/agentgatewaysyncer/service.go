@@ -25,33 +25,38 @@ import (
 	"istio.io/istio/pkg/config/host"
 	kubeutil "istio.io/istio/pkg/config/kube"
 	"istio.io/istio/pkg/config/protocol"
+	"istio.io/istio/pkg/config/schema/gvk"
 	"istio.io/istio/pkg/config/schema/kind"
+	"istio.io/istio/pkg/config/schema/kubetypes"
 	"istio.io/istio/pkg/config/visibility"
+	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/maps"
+	"istio.io/istio/pkg/ptr"
 	"istio.io/istio/pkg/slices"
 	"istio.io/istio/pkg/util/protomarshal"
 	"istio.io/istio/pkg/util/sets"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 
-	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
 func (a *index) ServicesCollection(
 	services krt.Collection[*corev1.Service],
 	serviceEntries krt.Collection[*networkingclient.ServiceEntry],
+	waypoints krt.Collection[Waypoint],
 	inferencePools krt.Collection[*inf.InferencePool],
 	namespaces krt.Collection[*corev1.Namespace],
-	krtopts krtinternal.KrtOptions,
+	krtopts krtutil.KrtOptions,
 ) krt.Collection[ServiceInfo] {
-	servicesInfo := krt.NewCollection(services, a.serviceServiceBuilder(namespaces),
+	servicesInfo := krt.NewCollection(services, a.serviceServiceBuilder(waypoints, namespaces),
 		krtopts.ToOptions("ServicesInfo")...)
 	//ServiceEntriesInfo := krt.NewManyCollection(serviceEntries, a.serviceEntryServiceBuilder(namespaces),
 	//	krtopts.ToOptions("ServiceEntriesInfo")...)
-	inferencePoolsInfo := krt.NewCollection(inferencePools, a.inferencePoolBuilder(namespaces),
+	inferencePoolsInfo := krt.NewCollection(inferencePools, a.inferencePoolBuilder(),
 		krtopts.ToOptions("InferencePools")...)
 	//WorkloadServices := krt.JoinCollection([]krt.Collection[ServiceInfo]{ServicesInfo, ServiceEntriesInfo}, krtopts.ToOptions("WorkloadService")...)
 
@@ -60,6 +65,7 @@ func (a *index) ServicesCollection(
 }
 
 func (a *index) serviceServiceBuilder(
+	waypoints krt.Collection[Waypoint],
 	namespaces krt.Collection[*corev1.Namespace],
 ) krt.TransformationSingle[*corev1.Service, ServiceInfo] {
 	return func(ctx krt.HandlerContext, s *corev1.Service) *ServiceInfo {
@@ -78,13 +84,26 @@ func (a *index) serviceServiceBuilder(
 				TargetPortName: p.TargetPort.StrVal,
 			}
 		}
+		waypointStatus := WaypointBindingStatus{}
+		waypoint, wperr := fetchWaypointForService(ctx, waypoints, namespaces, s.ObjectMeta)
+		if waypoint != nil {
+			waypointStatus.ResourceName = waypoint.ResourceName()
 
-		svc := a.constructService(ctx, s)
+			// TODO: add this label to the istio api labels so we have constants to use
+			if val, ok := s.Labels["istio.io/ingress-use-waypoint"]; ok {
+				waypointStatus.IngressLabelPresent = true
+				waypointStatus.IngressUseWaypoint = strings.EqualFold(val, "true")
+			}
+		}
+		waypointStatus.Error = wperr
+
+		svc := a.constructService(s, waypoint)
 		return precomputeServicePtr(&ServiceInfo{
 			Service:       svc,
 			PortNames:     portNames,
 			LabelSelector: NewSelector(s.Spec.Selector),
 			Source:        MakeSource(s),
+			Waypoint:      waypointStatus,
 		})
 	}
 }
@@ -94,15 +113,13 @@ func InferenceHostname(name, namespace, domainSuffix string) host.Name {
 	return host.Name(name + "." + namespace + "." + "inference" + "." + domainSuffix) // Format: "%s.%s.svc.%s"
 }
 
-func (a *index) inferencePoolBuilder(
-	namespaces krt.Collection[*corev1.Namespace],
-) krt.TransformationSingle[*inf.InferencePool, ServiceInfo] {
+func (a *index) inferencePoolBuilder() krt.TransformationSingle[*inf.InferencePool, ServiceInfo] {
 	domainSuffix := kubeutils.GetClusterDomainName()
 	return func(ctx krt.HandlerContext, s *inf.InferencePool) *ServiceInfo {
 		portNames := map[int32]ServicePortName{}
 		ports := []*api.Port{{
-			ServicePort: uint32(s.Spec.TargetPortNumber),
-			TargetPort:  uint32(s.Spec.TargetPortNumber),
+			ServicePort: uint32(s.Spec.TargetPorts[0].Number), //nolint:gosec // G115: InferencePool TargetPort is int32 with validation 1-65535, always safe
+			TargetPort:  uint32(s.Spec.TargetPorts[0].Number), //nolint:gosec // G115: InferencePool TargetPort is int32 with validation 1-65535, always safe
 			AppProtocol: api.AppProtocol_HTTP11,
 		}}
 
@@ -114,8 +131,8 @@ func (a *index) inferencePoolBuilder(
 			Ports:     ports,
 		}
 
-		selector := make(map[string]string, len(s.Spec.Selector))
-		for k, v := range s.Spec.Selector {
+		selector := make(map[string]string, len(s.Spec.Selector.MatchLabels))
+		for k, v := range s.Spec.Selector.MatchLabels {
 			selector[string(k)] = string(v)
 		}
 		return precomputeServicePtr(&ServiceInfo{
@@ -157,18 +174,18 @@ func toAppProtocolFromProtocol(p protocol.Instance) api.AppProtocol {
 	return api.AppProtocol_UNKNOWN
 }
 
-func (a *index) constructService(ctx krt.HandlerContext, svc *corev1.Service) *api.Service {
+func (a *index) constructService(svc *corev1.Service, w *Waypoint) *api.Service {
 	ports := make([]*api.Port, 0, len(svc.Spec.Ports))
 	for _, p := range svc.Spec.Ports {
 		ports = append(ports, &api.Port{
-			ServicePort: uint32(p.Port),
-			TargetPort:  uint32(p.TargetPort.IntVal),
+			ServicePort: uint32(p.Port),              //nolint:gosec // G115: Kubernetes service port is int32, always in valid range
+			TargetPort:  uint32(p.TargetPort.IntVal), //nolint:gosec // G115: Kubernetes target port is int32, always in valid range
 			AppProtocol: toAppProtocolFromKube(p),
 		})
 	}
 
 	addresses, err := slices.MapErr(getVIPs(svc), func(e string) (*api.NetworkAddress, error) {
-		return a.toNetworkAddress(ctx, e)
+		return a.toNetworkAddress(e)
 	})
 	if err != nil {
 		logger.Warn("fail to parse service", "svc", config.NamespacedName(svc), "error", err)
@@ -219,6 +236,7 @@ func (a *index) constructService(ctx krt.HandlerContext, svc *corev1.Service) *a
 		Hostname:      kubeutils.ServiceFQDN(svc.ObjectMeta),
 		Addresses:     addresses,
 		Ports:         ports,
+		Waypoint:      w.GetAddress(),
 		LoadBalancing: lb,
 		IpFamilies:    ipFamily,
 	}
@@ -272,6 +290,7 @@ type Service struct {
 	ServiceAccounts []string `json:"serviceAccounts,omitempty"`
 
 	// CreationTime records the time this service was created, if available.
+	// +krtEqualsTodo decide if CreationTime impacts KRT outputs
 	CreationTime time.Time `json:"creationTime,omitempty"`
 
 	// Name of the service, e.g. "catalog.mystore.com"
@@ -308,6 +327,7 @@ type Service struct {
 	Resolution Resolution
 
 	// ResourceVersion represents the internal version of this object.
+	// +krtEqualsTodo propagate ResourceVersion into equality if needed
 	ResourceVersion string
 }
 
@@ -407,7 +427,7 @@ const (
 	DisabledTLSModeLabel = "disabled"
 
 	// MutualTLSModeLabel implies that the endpoint is ready to receive agent mTLS connections.
-	MutualTLSModeLabel = "mtls"
+	MutualTLSModeLabel = "istio"
 )
 
 func SupportsTunnel(labels map[string]string, tunnelType string) bool {
@@ -524,6 +544,7 @@ type ServiceAttributes struct {
 	// node port IPs, we need to use the kubernetes assigned node ports of the service
 	ClusterExternalPorts map[cluster.ID]map[uint32]uint32
 
+	// +krtEqualsTodo evaluate passthrough target port equality semantics
 	PassthroughTargetPorts map[uint32]uint32
 
 	K8sAttributes
@@ -645,6 +666,7 @@ func (s *ServiceAttributes) Equals(other *ServiceAttributes) bool {
 
 type AddressInfo struct {
 	*api.Address
+	// +krtEqualsTodo verify marshaled proto cache handling in equality
 	Marshaled *anypb.Any
 }
 
@@ -702,11 +724,15 @@ type ServiceInfo struct {
 	PortNames map[int32]ServicePortName
 	// Source is the type that introduced this service.
 	Source TypedObject
+	// +krtEqualsTodo include waypoint binding status in equality or mark as ignore
+	Waypoint WaypointBindingStatus
 	// MarshaledAddress contains the pre-marshaled representation.
 	// Note: this is an Address -- not a Service.
+	// +krtEqualsTodo revisit marshaled address usage in equality
 	MarshaledAddress *anypb.Any
 	// AsAddress contains a pre-created AddressInfo representation. This ensures we do not need repeated conversions on
 	// the hotpath
+	// +krtEqualsTodo compare fast-path AddressInfo if it impacts outputs
 	AsAddress AddressInfo
 }
 
@@ -721,6 +747,24 @@ func (i ServiceInfo) GetStatusTarget() TypedObject {
 type StatusMessage struct {
 	Reason  string
 	Message string
+}
+
+type WaypointBindingStatus struct {
+	// ResourceName that clients should use when addressing traffic to this Service.
+	ResourceName string
+	// IngressUseWaypoint specifies whether ingress gateways should use the waypoint for this service.
+	IngressUseWaypoint bool
+	// IngressLabelPresent specifies whether the istio.io/ingress-use-waypoint label is set on the service.
+	IngressLabelPresent bool
+	// Error represents some error
+	Error *StatusMessage
+}
+
+func (i WaypointBindingStatus) Equals(other WaypointBindingStatus) bool {
+	return i.ResourceName == other.ResourceName &&
+		i.IngressUseWaypoint == other.IngressUseWaypoint &&
+		i.IngressLabelPresent == other.IngressLabelPresent &&
+		ptr.Equal(i.Error, other.Error)
 }
 
 func (i ServiceInfo) NamespacedName() types.NamespacedName {
@@ -747,6 +791,34 @@ func serviceResourceName(s *api.Service) string {
 	return s.GetNamespace() + "/" + s.GetHostname()
 }
 
+type Address struct {
+	Workload *WorkloadInfo
+	Service  *ServiceInfo
+}
+
+func (i Address) ResourceName() string {
+	if i.Workload != nil {
+		return i.Workload.ResourceName()
+	}
+	return i.Service.ResourceName()
+}
+func (i Address) Equals(other Address) bool {
+	if (i.Workload != nil) != (other.Workload != nil) {
+		return false
+	}
+	if i.Workload != nil {
+		return i.Workload.Equals(*other.Workload)
+	}
+	return i.Service.Equals(*other.Service)
+}
+
+func (i Address) IntoProto() *api.Address {
+	if i.Workload != nil {
+		return i.Workload.AsAddress.Address
+	}
+	return i.Service.AsAddress.Address
+}
+
 type WorkloadInfo struct {
 	Workload *api.Workload
 	// Labels for the workload. Note these are only used internally, not sent over XDS
@@ -757,9 +829,11 @@ type WorkloadInfo struct {
 	CreationTime time.Time
 	// MarshaledAddress contains the pre-marshaled representation.
 	// Note: this is an Address -- not a Workload.
+	// +krtEqualsTodo revisit marshaled address usage in equality
 	MarshaledAddress *anypb.Any
 	// AsAddress contains a pre-created AddressInfo representation. This ensures we do not need repeated conversions on
 	// the hotpath
+	// +krtEqualsTodo compare fast-path AddressInfo if it impacts outputs
 	AsAddress AddressInfo
 }
 
@@ -1100,4 +1174,46 @@ func (m *AddressMap) ForEach(fn func(c cluster.ID, addresses []string)) {
 	for c, addresses := range m.Addresses {
 		fn(c, addresses)
 	}
+}
+
+func precomputeServicePtr(w *ServiceInfo) *ServiceInfo {
+	return ptr.Of(precomputeService(*w))
+}
+
+func precomputeService(w ServiceInfo) ServiceInfo {
+	addr := serviceToAddress(w.Service)
+	w.MarshaledAddress = protoconv.MessageToAny(addr)
+	w.AsAddress = AddressInfo{
+		Address:   addr,
+		Marshaled: w.MarshaledAddress,
+	}
+	return w
+}
+
+func serviceToAddress(s *api.Service) *api.Address {
+	return &api.Address{
+		Type: &api.Address_Service{
+			Service: s,
+		},
+	}
+}
+
+// MakeSource is a helper to turn an Object into a model.TypedObject.
+func MakeSource(o controllers.Object) TypedObject {
+	kind := gvk.MustToKind(kubetypes.GvkFromObject(o)).String()
+	return TypedObject{
+		NamespacedName: config.NamespacedName(o),
+		Kind:           kind,
+	}
+}
+
+func (a *index) toNetworkAddress(vip string) (*api.NetworkAddress, error) {
+	ip, err := netip.ParseAddr(vip)
+	if err != nil {
+		return nil, fmt.Errorf("parse %v: %v", vip, err)
+	}
+	return &api.NetworkAddress{
+		// TODO: calculate network
+		Address: ip.AsSlice(),
+	}, nil
 }

@@ -1,0 +1,120 @@
+Clusters:
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  metadata: {}
+  name: kube_default_example-tcp-svc_8080
+  type: EDS
+- connectTimeout: 5s
+  metadata: {}
+  name: test-backend-plugin_default_example-svc_80
+Listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8081
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.tcp_proxy
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+        cluster: kube_default_example-tcp-svc_8080
+        statPrefix: listener~8081-default.example-tcp-route-rule-0
+    name: listener~8081-default.example-tcp-route-rule-0
+  name: listener~8081
+Statuses:
+  gateways:
+    default/example-gateway:
+      conditions:
+      - lastTransitionTime: null
+        message: ""
+        reason: ListenerSetsNotAllowed
+        status: Unknown
+        type: AttachedListenerSets
+      - lastTransitionTime: null
+        message: 'Some listeners are not programmed: tcp-no-routes: TCP/TLS listener
+          has no valid backends or routes'
+        reason: ListenersNotValid
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: null
+        message: Successfully programmed Gateway
+        reason: Programmed
+        status: "True"
+        type: Programmed
+      listeners:
+      - attachedRoutes: 0
+        conditions:
+        - lastTransitionTime: null
+          message: TCP/TLS listener has no valid backends or routes
+          reason: Invalid
+          status: "False"
+          type: Programmed
+        - lastTransitionTime: null
+          message: Successfully accepted Listener
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully verified that Listener has no conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        name: tcp-no-routes
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: TCPRoute
+      - attachedRoutes: 1
+        conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Listener
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully verified that Listener has no conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Listener
+          reason: Programmed
+          status: "True"
+          type: Programmed
+        name: tcp-with-routes
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: TCPRoute
+  tcpRoutes:
+    default/example-tcp-route:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: ""
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: example-gateway

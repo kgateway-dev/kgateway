@@ -4,14 +4,18 @@ Binds:
 Listeners:
 - bindKey: 8080/default/example-gateway
   gatewayName: default/example-gateway
-  key: default/example-gateway/http
+  key: default/example-gateway.http
   name: http
   protocol: HTTP
 Routes:
-- hostnames:
+- filters:
+  - directResponse:
+      status: 500
+      body: RGlyZWN0UmVzcG9uc2UgZGVmYXVsdC9ub24tZXhpc3RlbnQtcmVmIG5vdCBmb3VuZA==
+  hostnames:
   - www.example.com
-  key: default.example-route.0.0.http
-  listenerKey: default/example-gateway/http
+  key: default/example-route.0.0.http
+  listenerKey: default/example-gateway.http
   matches:
   - path:
       exact: /non-existent

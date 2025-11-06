@@ -16,15 +16,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
-	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	collections "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 /******
@@ -124,7 +121,7 @@ func extractTargetRefs(cm *corev1.ConfigMap) []ir.PolicyRef {
 
 // Create a collection of our policies. This will be done by converting a configmap collection
 // to our policy IR.
-func ourPolicies(commoncol *common.CommonCollections) krt.Collection[ir.PolicyWrapper] {
+func ourPolicies(commoncol *collections.CommonCollections) krt.Collection[ir.PolicyWrapper] {
 	// We create 2 collections here - one for the source config maps, and one for the policy IR.
 	// Whenever creating a new krtCollection use commoncol.KrtOpts.ToOptions("<Name>") to provide the
 	// collection with common options and a name. It's important so that the collection appears in
@@ -168,7 +165,7 @@ type ourPolicyPass struct {
 }
 
 // ApplyForRoute is called when a an HTTPRouteRule is being translated to an envoy route.
-func (s *ourPolicyPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext, out *envoyroutev3.Route) error {
+func (s *ourPolicyPass) ApplyForRoute(pCtx *ir.RouteContext, out *envoyroutev3.Route) error {
 	// get our policy IR. Kgateway used the targetRef to attach the policy to the HTTPRoute. and now as it
 	// translates the HTTPRoute to xDS, it calls our plugin and passes the policy for the plugin's translation pass to do the
 	// policy to xDS translation.
@@ -192,13 +189,13 @@ func (s *ourPolicyPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext
 	return nil
 }
 
-func (s *ourPolicyPass) HttpFilters(ctx context.Context, fc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
+func (s *ourPolicyPass) HttpFilters(fc ir.FilterChainCommon) ([]filters.StagedHttpFilter, error) {
 	if !s.filterNeeded[fc.FilterChainName] {
 		return nil, nil
 	}
 	// Add an http filter to the chain that adds a header indicating metadata was added.
-	return []plugins.StagedHttpFilter{
-		plugins.MustNewStagedFilter("example_plugin",
+	return []filters.StagedHttpFilter{
+		filters.MustNewStagedFilter("example_plugin",
 			&header_mutationv3.HeaderMutation{
 				Mutations: &header_mutationv3.Mutations{
 					ResponseMutations: []*mutation_v3.HeaderMutation{
@@ -215,18 +212,18 @@ func (s *ourPolicyPass) HttpFilters(ctx context.Context, fc ir.FilterChainCommon
 					},
 				},
 			},
-			plugins.BeforeStage(plugins.AcceptedStage)),
+			filters.BeforeStage(filters.AcceptedStage)),
 	}, nil
 }
 
 // A function that initializes our plugins.
-func pluginFactory(ctx context.Context, commoncol *common.CommonCollections) []extensionsplug.Plugin {
-	return []extensionsplug.Plugin{
+func pluginFactory(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []sdk.Plugin {
+	return []sdk.Plugin{
 		{
-			ContributesPolicies: extensionsplug.ContributesPolicies{
-				configMapGK: extensionsplug.PolicyPlugin{
+			ContributesPolicies: sdk.ContributesPolicies{
+				configMapGK: sdk.PolicyPlugin{
 					Name: "metadataPolicy",
-					NewGatewayTranslationPass: func(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {
+					NewGatewayTranslationPass: func(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
 						// Return a fresh new translation pass
 						return &ourPolicyPass{}
 					},
@@ -238,10 +235,6 @@ func pluginFactory(ctx context.Context, commoncol *common.CommonCollections) []e
 	}
 }
 
-func extraGatewayParametersFactory(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters {
-	return make([]deployer.ExtraGatewayParameters, 0)
-}
-
 func main() {
 	// TODO: move setup.StartGGv2 from internal to public.
 	// Start Kgateway and provide our plugin.
@@ -251,7 +244,6 @@ func main() {
 
 	setup, _ := setup.New(
 		setup.WithExtraPlugins(pluginFactory),
-		setup.ExtraGatewayParameters(extraGatewayParametersFactory),
 	)
 	setup.Start(context.Background())
 }

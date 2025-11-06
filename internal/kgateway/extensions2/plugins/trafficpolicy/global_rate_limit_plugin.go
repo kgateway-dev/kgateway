@@ -11,7 +11,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
 
@@ -94,7 +94,7 @@ func constructGlobalRateLimit(
 		return fmt.Errorf("ratelimit: %w", err)
 	}
 	if gwExtIR.ExtType != v1alpha1.GatewayExtensionTypeRateLimit || gwExtIR.RateLimit == nil {
-		return pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, gwExtIR.ExtType)
+		return pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeRateLimit, gwExtIR.ExtType)
 	}
 	// Create route rate limits and store in the RateLimitIR struct
 	out.globalRateLimit = &globalRateLimitIR{

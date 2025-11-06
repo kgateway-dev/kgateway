@@ -1,0 +1,20 @@
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: example-gateway
+  namespace: default
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+  - protocol: TCP
+    port: 8081
+    name: tcp
+  - name: tls
+    protocol: TLS
+    hostname: "example.com"
+    tls:
+      mode: Passthrough
+    port: 8443

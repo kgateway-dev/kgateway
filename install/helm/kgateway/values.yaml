@@ -68,10 +68,26 @@ controller:
     # -- Set the service ports for gRPC and health endpoints.
     ports:
       grpc: 9977
+      agwGrpc: 9978
       health: 9093
       metrics: 9092
   # -- Add extra environment variables to the controller container.
   extraEnv: {}
+  # -- Configure TLS settings for the xDS gRPC servers.
+  xds:
+    tls:
+      # -- Enable TLS encryption for xDS communication. When enabled, both the main xDS server (port 9977) and agent gateway xDS server (port 9978) will use TLS. When TLS is enabled, you must create a Secret named 'kgateway-xds-cert' in the kgateway installation namespace. The Secret must be of type 'kubernetes.io/tls' with 'tls.crt', 'tls.key', and 'ca.crt' data fields present.
+      enabled: false
+  # -- Change the rollout strategy from the Kubernetes default of a RollingUpdate with 25% maxUnavailable, 25% maxSurge.
+  # E.g., to recreate pods, minimizing resources for the rollout but causing downtime:
+  # strategy:
+  #   type: Recreate
+  # E.g., to roll out as a RollingUpdate but with non-default parameters:
+  # strategy:
+  #   type: RollingUpdate
+  #   rollingUpdate:
+  #     maxSurge: 100%
+  strategy: {}
 
 # -- Configure the default container image for the components that Helm deploys. You can override these settings for each particular component in that component's section, such as 'controller.image' for the kgateway control plane. If you use your own private registry, make sure to include the imagePullSecrets.
 image:
@@ -84,14 +100,37 @@ image:
 
 # -- Configure the integration with the Gateway API Inference Extension project, which lets you use kgateway to route to AI inference workloads like LLMs that run locally in your Kubernetes cluster. Documentation for Inference Extension can be found here: https://kgateway.dev/docs/integrations/inference-extension/
 inferenceExtension:
-  # -- Enable Inference Extension.
+  # -- Enable Inference Extension. If enabled, agentgateway.enabled should also be set to true. Enabling inference extension without agentgateway is deprecated in v2.1 and will not be supported in v2.2.
   enabled: false
-  # -- Enable automatic provisioning for Inference Extension.
-  autoProvision: false
 
 # -- List of namespace selectors (OR'ed): each entry can use 'matchLabels' or 'matchExpressions' (AND'ed within each entry if used together). Kgateway includes the selected namespaces in config discovery. For more information, see the docs https://kgateway.dev/docs/operations/install/#namespace-discovery.
 discoveryNamespaceSelectors: []
 
 # -- Enable the integration with Agent Gateway, which lets you use kgateway to help manage agent connectivity across MCP servers, A2A agents, and REST APIs.
-agentGateway:
+agentgateway:
+  enabled: true
+
+# -- Enable the integration with Envoy
+envoy:
+  enabled: true
+
+# -- Policy merging settings. Currently, TrafficPolicy's extAuth, extProc, and transformation policies support deep merging.
+# E.g., to enable deep merging of extProc policy in TrafficPolicy:
+# policyMerge:
+#   trafficPolicy:
+#     extProc: DeepMerge
+policyMerge: {}
+
+# -- Enable the waypoint integration. This enables kgateway to translate istio waypoints and use kgateway as a waypoint in an Istio Ambient service mesh setup.
+waypoint:
   enabled: false
+
+# -- Configure validation behavior for route and policy safety checks in the control plane.
+#    This setting determines how invalid configuration is handled to prevent security bypasses
+#    and to maintain multi-tenant isolation.
+validation:
+  # -- Validation level. Accepted values: "standard" or "strict" (case-insensitive).
+  #    Standard replaces invalid routes with a direct 500 response and continues applying valid configuration.
+  #    Strict adds xDS preflight validation and blocks snapshots that would NACK in Envoy.
+  #    Default is "standard".
+  level: standard

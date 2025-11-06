@@ -21,24 +21,25 @@ import (
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/kube/kubetypes"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
-
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
 
@@ -51,6 +52,7 @@ type httpListenerPolicy struct {
 	xffNumTrustedHops          *uint32
 	serverHeaderTransformation *envoy_hcm.HttpConnectionManager_ServerHeaderTransformation
 	streamIdleTimeout          *time.Duration
+	idleTimeout                *time.Duration
 	healthCheckPolicy          *healthcheckv3.HealthCheck
 	preserveHttp1HeaderCase    *bool
 	// For a better UX, we set the default serviceName for access logs to the envoy cluster name (`<gateway-name>.<gateway-namespace>`).
@@ -126,6 +128,11 @@ func (d *httpListenerPolicy) Equals(in any) bool {
 		return false
 	}
 
+	// Check idleTimeout
+	if !cmputils.PointerValsEqual(d.idleTimeout, d2.idleTimeout) {
+		return false
+	}
+
 	// Check healthCheckPolicy
 	if d.healthCheckPolicy == nil && d2.healthCheckPolicy != nil {
 		return false
@@ -159,7 +166,7 @@ func (d *httpListenerPolicy) Equals(in any) bool {
 
 type httpListenerPolicyPluginGwPass struct {
 	ir.UnimplementedProxyTranslationPass
-	reporter reports.Reporter
+	reporter reporter.Reporter
 
 	healthCheckPolicy *healthcheckv3.HealthCheck
 }
@@ -176,16 +183,21 @@ func registerTypes(ourCli versioned.Interface) {
 		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 			return ourCli.GatewayV1alpha1().HTTPListenerPolicies(namespace).Watch(context.Background(), o)
 		},
+		func(c skubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*v1alpha1.HTTPListenerPolicy] {
+			return ourCli.GatewayV1alpha1().HTTPListenerPolicies(namespace)
+		},
 	)
 }
 
-func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
+func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
 	registerTypes(commoncol.OurClient)
 
-	col := krt.WrapClient(kclient.NewFiltered[*v1alpha1.HTTPListenerPolicy](
+	cli := kclient.NewFilteredDelayed[*v1alpha1.HTTPListenerPolicy](
 		commoncol.Client,
+		wellknown.HTTPListenerPolicyGVR,
 		kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()},
-	), commoncol.KrtOpts.ToOptions("HTTPListenerPolicy")...)
+	)
+	col := krt.WrapClient(cli, commoncol.KrtOpts.ToOptions("HTTPListenerPolicy")...)
 	gk := wellknown.HTTPListenerPolicyGVK.GroupKind()
 	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.HTTPListenerPolicy) *ir.PolicyWrapper {
 		objSrc := ir.ObjectSource{
@@ -196,13 +208,13 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		}
 
 		errs := []error{}
-		accessLog, err := convertAccessLogConfig(ctx, i, commoncol, krtctx, objSrc)
+		accessLog, err := convertAccessLogConfig(i, commoncol, krtctx, objSrc)
 		if err != nil {
 			logger.Error("error translating access log", "error", err)
 			errs = append(errs, err)
 		}
 
-		tracingProvider, tracingConfig, err := convertTracingConfig(ctx, i, commoncol, krtctx, objSrc)
+		tracingProvider, tracingConfig, err := convertTracingConfig(i, commoncol, krtctx, objSrc)
 		if err != nil {
 			logger.Error("error translating tracing", "error", err)
 			errs = append(errs, err)
@@ -218,7 +230,17 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			streamIdleTimeout = &duration
 		}
 
+		var idleTimeout *time.Duration
+		if i.Spec.IdleTimeout != nil {
+			duration := i.Spec.IdleTimeout.Duration
+			idleTimeout = &duration
+		}
+
 		healthCheckPolicy := convertHealthCheckPolicy(i)
+		var xffNumTrustedHops *uint32
+		if i.Spec.XffNumTrustedHops != nil {
+			xffNumTrustedHops = ptr.To(uint32(*i.Spec.XffNumTrustedHops)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+		}
 
 		pol := &ir.PolicyWrapper{
 			ObjectSource: objSrc,
@@ -231,9 +253,10 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				tracingConfig:              tracingConfig,
 				upgradeConfigs:             upgradeConfigs,
 				useRemoteAddress:           i.Spec.UseRemoteAddress,
-				xffNumTrustedHops:          i.Spec.XffNumTrustedHops,
+				xffNumTrustedHops:          xffNumTrustedHops,
 				serverHeaderTransformation: serverHeaderTransformation,
 				streamIdleTimeout:          streamIdleTimeout,
+				idleTimeout:                idleTimeout,
 				healthCheckPolicy:          healthCheckPolicy,
 				preserveHttp1HeaderCase:    i.Spec.PreserveHttp1HeaderCase,
 				acceptHttp10:               i.Spec.AcceptHttp10,
@@ -246,22 +269,22 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		return pol
 	})
 
-	return extensionsplug.Plugin{
-		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
+	return sdk.Plugin{
+		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			wellknown.HTTPListenerPolicyGVK.GroupKind(): {
 				NewGatewayTranslationPass: NewGatewayTranslationPass,
 				Policies:                  policyCol,
-				GetPolicyStatus:           getPolicyStatusFn(commoncol.CrudClient),
-				PatchPolicyStatus:         patchPolicyStatusFn(commoncol.CrudClient),
+				GetPolicyStatus:           getPolicyStatusFn(cli),
+				PatchPolicyStatus:         patchPolicyStatusFn(cli),
 				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
-					return policy.MergePolicies(pols, mergePolicies)
+					return policy.MergePolicies(pols, mergePolicies, "" /*no merge settings*/)
 				},
 			},
 		},
 	}
 }
 
-func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx, reporter reports.Reporter) ir.ProxyTranslationPass {
+func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
 	return &httpListenerPolicyPluginGwPass{
 		reporter: reporter,
 	}
@@ -272,7 +295,6 @@ func (p *httpListenerPolicyPluginGwPass) Name() string {
 }
 
 func (p *httpListenerPolicyPluginGwPass) ApplyHCM(
-	ctx context.Context,
 	pCtx *ir.HcmContext,
 	out *envoy_hcm.HttpConnectionManager,
 ) error {
@@ -317,6 +339,14 @@ func (p *httpListenerPolicyPluginGwPass) ApplyHCM(
 		out.StreamIdleTimeout = durationpb.New(*policy.streamIdleTimeout)
 	}
 
+	// translate idleTimeout
+	if policy.idleTimeout != nil {
+		if out.CommonHttpProtocolOptions == nil {
+			out.CommonHttpProtocolOptions = &envoycorev3.HttpProtocolOptions{}
+		}
+		out.GetCommonHttpProtocolOptions().IdleTimeout = durationpb.New(*policy.idleTimeout)
+	}
+
 	if policy.preserveHttp1HeaderCase != nil && *policy.preserveHttp1HeaderCase {
 		if out.HttpProtocolOptions == nil {
 			out.HttpProtocolOptions = &envoycorev3.Http1ProtocolOptions{}
@@ -354,27 +384,26 @@ func (p *httpListenerPolicyPluginGwPass) ApplyHCM(
 	return nil
 }
 
-func (p *httpListenerPolicyPluginGwPass) HttpFilters(ctx context.Context, fc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
+func (p *httpListenerPolicyPluginGwPass) HttpFilters(fc ir.FilterChainCommon) ([]filters.StagedHttpFilter, error) {
 	if p.healthCheckPolicy == nil {
 		return nil, nil
 	}
 
 	// Add the health check filter after the authz filter but before the rate limit filter
 	// This allows the health check filter to be secured by authz if needed, but ensures it won't be rate limited
-	stagedFilter, err := plugins.NewStagedFilter(
+	stagedFilter, err := filters.NewStagedFilter(
 		"envoy.filters.http.health_check",
 		p.healthCheckPolicy,
-		plugins.AfterStage(plugins.AuthZStage),
+		filters.AfterStage(filters.AuthZStage),
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	return []plugins.StagedHttpFilter{stagedFilter}, nil
+	return []filters.StagedHttpFilter{stagedFilter}, nil
 }
 
 func (p *httpListenerPolicyPluginGwPass) ApplyListenerPlugin(
-	ctx context.Context,
 	pCtx *ir.ListenerContext,
 	out *envoylistenerv3.Listener,
 ) {

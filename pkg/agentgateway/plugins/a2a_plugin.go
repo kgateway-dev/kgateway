@@ -9,7 +9,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 )
 
 const (
@@ -17,11 +16,11 @@ const (
 )
 
 // NewA2APlugin creates a new A2A policy plugin
-func NewA2APlugin(agw *AgwCollections) AgentgatewayPlugin {
-	policyCol := krt.NewManyCollection(agw.Services, func(krtctx krt.HandlerContext, svc *corev1.Service) []ADPPolicy {
+func NewA2APlugin(agw *AgwCollections) AgwPlugin {
+	policyCol := krt.NewManyCollection(agw.Services, func(krtctx krt.HandlerContext, svc *corev1.Service) []AgwPolicy {
 		return translatePoliciesForService(svc)
 	})
-	return AgentgatewayPlugin{
+	return AgwPlugin{
 		ContributesPolicies: map[schema.GroupKind]PolicyPlugin{
 			wellknown.ServiceGVK.GroupKind(): {
 				Policies: policyCol,
@@ -34,9 +33,8 @@ func NewA2APlugin(agw *AgwCollections) AgentgatewayPlugin {
 }
 
 // translatePoliciesForService generates A2A policies for a single service
-func translatePoliciesForService(svc *corev1.Service) []ADPPolicy {
-	logger := logging.New("agentgateway/plugins/a2a")
-	var a2aPolicies []ADPPolicy
+func translatePoliciesForService(svc *corev1.Service) []AgwPolicy {
+	var a2aPolicies []AgwPolicy
 
 	for _, port := range svc.Spec.Ports {
 		if port.AppProtocol != nil && *port.AppProtocol == a2aProtocol {
@@ -46,12 +44,16 @@ func translatePoliciesForService(svc *corev1.Service) []ADPPolicy {
 			policy := &api.Policy{
 				Name:   fmt.Sprintf("a2a/%s/%s/%d", svc.Namespace, svc.Name, port.Port),
 				Target: &api.PolicyTarget{Kind: &api.PolicyTarget_Backend{Backend: svcRef}},
-				Spec: &api.PolicySpec{Kind: &api.PolicySpec_A2A_{
-					A2A: &api.PolicySpec_A2A{},
-				}},
+				Kind: &api.Policy_Backend{
+					Backend: &api.BackendPolicySpec{
+						Kind: &api.BackendPolicySpec_A2A_{
+							A2A: &api.BackendPolicySpec_A2A{},
+						},
+					},
+				},
 			}
 
-			a2aPolicies = append(a2aPolicies, ADPPolicy{Policy: policy})
+			a2aPolicies = append(a2aPolicies, AgwPolicy{Policy: policy})
 		}
 	}
 

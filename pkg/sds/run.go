@@ -7,11 +7,8 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/avast/retry-go"
+	"github.com/avast/retry-go/v4"
 	"github.com/kelseyhightower/envconfig"
-	corev1 "k8s.io/api/core/v1"
-
-	"github.com/solo-io/go-utils/stats"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/sds/pkg/run"
 	"github.com/kgateway-dev/kgateway/v2/internal/sds/pkg/server"
@@ -32,11 +29,6 @@ type Config struct {
 	PodName      string `split_words:"true"`
 	PodNamespace string `split_words:"true"`
 
-	GlooMtlsSdsEnabled    bool   `split_words:"true"`
-	GlooMtlsSecretDir     string `split_words:"true" default:"/etc/envoy/ssl/"`
-	GlooServerCert        string `split_words:"true" default:"server_cert"`
-	GlooValidationContext string `split_words:"true" default:"validation_context"`
-
 	IstioMtlsSdsEnabled    bool   `split_words:"true"`
 	IstioCertDir           string `split_words:"true" default:"/etc/istio-certs/"`
 	IstioServerCert        string `split_words:"true" default:"istio_server_cert"`
@@ -44,8 +36,6 @@ type Config struct {
 }
 
 func RunMain() {
-	// Initialize stats server to dynamically change log level. This will also use LOG_LEVEL if set.
-	stats.ConditionallyStartStatsServer()
 	logger.Info("initializing config")
 
 	c := setup()
@@ -53,7 +43,6 @@ func RunMain() {
 	//nolint:sloglint // ignore key case
 	logger.Info(
 		"config loaded",
-		slog.Bool("glooMtlsSdsEnabled", c.GlooMtlsSdsEnabled),
 		slog.Bool("istioMtlsSdsEnabled", c.IstioMtlsSdsEnabled),
 	)
 
@@ -67,17 +56,6 @@ func RunMain() {
 			SslKeyFile:        c.IstioCertDir + "key.pem",
 		}
 		secrets = append(secrets, istioCertsSecret)
-	}
-
-	if c.GlooMtlsSdsEnabled {
-		glooMtlsSecret := server.Secret{
-			ServerCert:        c.GlooServerCert,
-			ValidationContext: c.GlooValidationContext,
-			SslCaFile:         c.GlooMtlsSecretDir + corev1.ServiceAccountRootCAKey,
-			SslCertFile:       c.GlooMtlsSecretDir + corev1.TLSCertKey,
-			SslKeyFile:        c.GlooMtlsSecretDir + corev1.TLSPrivateKeyKey,
-		}
-		secrets = append(secrets, glooMtlsSecret)
 	}
 
 	logger.Info("checking for existence of secrets")
@@ -108,9 +86,8 @@ func setup() Config {
 		c.SdsClient = determineSdsClient(c)
 	}
 
-	// At least one must be enabled, otherwise we have nothing to do.
-	if !c.GlooMtlsSdsEnabled && !c.IstioMtlsSdsEnabled {
-		err := fmt.Errorf("at least one of Istio Cert rotation or Gloo Cert rotation must be enabled, using env vars GLOO_MTLS_SDS_ENABLED or ISTIO_MTLS_SDS_ENABLED")
+	if !c.IstioMtlsSdsEnabled {
+		err := fmt.Errorf("Istio Cert rotation must be enabled, using env var ISTIO_MTLS_SDS_ENABLED")
 		log.Fatalf("invalid config: %v", err)
 	}
 	return c

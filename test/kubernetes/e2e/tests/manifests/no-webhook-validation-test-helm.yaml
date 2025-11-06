@@ -1,7 +1,0 @@
-gateway:
-  validation:
-    # this is not relevant for k8s GW
-    allowWarnings: true
-    # always accept regardless of validation result
-    alwaysAcceptResources: true
-

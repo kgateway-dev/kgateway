@@ -12,5 +12,9 @@ spec:
     protocol: TCP
     port: {{ .Values.controller.service.ports.grpc }}
     targetPort: {{ .Values.controller.service.ports.grpc }}
+  - name: grpc-xds-agw
+    protocol: TCP
+    port: {{ .Values.controller.service.ports.agwGrpc }}
+    targetPort: {{ .Values.controller.service.ports.agwGrpc }}
   selector:
     {{- include "kgateway.selectorLabels" . | nindent 4 }}

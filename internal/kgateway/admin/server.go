@@ -8,12 +8,14 @@ import (
 	"log/slog"
 	"net/http"
 	"sort"
+	"time"
 
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/internal/version"
 )
 
 func RunAdminServer(ctx context.Context, setupOpts *controller.SetupOpts) error {
@@ -40,6 +42,8 @@ func getServerHandlers(_ context.Context, dbg *krt.DebugHandler, cache envoycach
 		addLoggingHandler("/logging", m, profiles)
 
 		addPprofHandler("/debug/pprof/", m, profiles)
+
+		addVersionHandler("/version", m, profiles)
 	}
 }
 
@@ -70,7 +74,7 @@ func writeJSON(w http.ResponseWriter, obj any, req *http.Request) {
 	}
 }
 
-func startHandlers(ctx context.Context, addHandlers ...func(mux *http.ServeMux, profiles map[string]dynamicProfileDescription)) error {
+func startHandlers(ctx context.Context, addHandlers ...func(mux *http.ServeMux, profiles map[string]dynamicProfileDescription)) {
 	mux := new(http.ServeMux)
 	profileDescriptions := map[string]dynamicProfileDescription{}
 	for _, addHandler := range addHandlers {
@@ -80,8 +84,9 @@ func startHandlers(ctx context.Context, addHandlers ...func(mux *http.ServeMux, 
 	mux.HandleFunc("/", idx)
 	mux.HandleFunc("/snapshots/", idx)
 	server := &http.Server{
-		Addr:    fmt.Sprintf("localhost:%d", wellknown.KgatewayAdminPort),
-		Handler: mux,
+		Addr:              fmt.Sprintf("localhost:%d", wellknown.KgatewayAdminPort),
+		Handler:           mux,
+		ReadHeaderTimeout: 10 * time.Second,
 	}
 	slog.Info("admin server starting", "address", server.Addr)
 	go func() {
@@ -101,7 +106,6 @@ func startHandlers(ctx context.Context, addHandlers ...func(mux *http.ServeMux, 
 			}
 		}
 	}()
-	return nil
 }
 
 func index(profileDescriptions map[string]dynamicProfileDescription) func(w http.ResponseWriter, r *http.Request) {
@@ -130,6 +134,20 @@ func index(profileDescriptions map[string]dynamicProfileDescription) func(w http
 		for _, p := range profiles {
 			fmt.Fprintf(&buf, "<h2><a href=\"%s\"}>%s</a></h2><p>%s</p>\n", p.Name, p.Name, p.Desc)
 		}
+		fmt.Fprintf(&buf, "<h2>About</h2>\n")
+		fmt.Fprintf(&buf, "<pre>%s</pre>\n", version.String())
 		w.Write(buf.Bytes())
 	}
+}
+
+// addVersionHandler registers a /version endpoint that exposes build info
+func addVersionHandler(path string, mux *http.ServeMux, profiles map[string]dynamicProfileDescription) {
+	mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+		payload := map[string]string{
+			"string":  version.String(),
+			"version": version.Version,
+		}
+		writeJSON(w, payload, r)
+	})
+	profiles[path] = func() string { return "Controller version and commit information" }
 }

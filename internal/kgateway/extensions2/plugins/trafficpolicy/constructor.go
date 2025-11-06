@@ -10,22 +10,22 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 // FetchGatewayExtensionFunc defines the signature for fetching gateway extensions
 type FetchGatewayExtensionFunc func(krtctx krt.HandlerContext, extensionRef v1alpha1.NamespacedObjectReference, ns string) (*TrafficPolicyGatewayExtensionIR, error)
 
 type TrafficPolicyConstructor struct {
-	commoncol         *common.CommonCollections
+	commoncol         *collections.CommonCollections
 	gatewayExtensions krt.Collection[TrafficPolicyGatewayExtensionIR]
 	extBuilder        func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR
 }
 
 func NewTrafficPolicyConstructor(
 	ctx context.Context,
-	commoncol *common.CommonCollections,
+	commoncol *collections.CommonCollections,
 ) *TrafficPolicyConstructor {
 	extBuilder := TranslateGatewayExtensionBuilder(commoncol)
 	defaultExtBuilder := func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
@@ -54,9 +54,7 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 		errors = append(errors, err)
 	}
 	// Construct transformation specific IR
-	if err := constructTransformation(policyCR, &outSpec); err != nil {
-		errors = append(errors, err)
-	}
+	constructTransformation(policyCR, &outSpec)
 	// Construct rustformation specific IR
 	if err := constructRustformation(policyCR, &outSpec); err != nil {
 		errors = append(errors, err)
@@ -70,38 +68,36 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 		errors = append(errors, err)
 	}
 	// Construct local rate limit specific IR
-	if err := constructLocalRateLimit(policyCR, &outSpec); err != nil {
-		errors = append(errors, err)
-	}
+	constructLocalRateLimit(policyCR, &outSpec)
 	// Construct global rate limit specific IR
 	if err := constructGlobalRateLimit(krtctx, policyCR, c.FetchGatewayExtension, &outSpec); err != nil {
 		errors = append(errors, err)
 	}
 	// Construct cors specific IR
-	if err := constructCORS(policyCR, &outSpec); err != nil {
-		errors = append(errors, err)
-	}
+	constructCORS(policyCR, &outSpec)
 	// Construct csrf specific IR
-	if err := constructCSRF(policyCR.Spec, &outSpec); err != nil {
-		errors = append(errors, err)
-	}
+	constructCSRF(policyCR.Spec, &outSpec)
 
 	// Construct header modifiers specific IR
-	if err := constructHeaderModifiers(policyCR.Spec, &outSpec); err != nil {
-		errors = append(errors, err)
-	}
-
+	constructHeaderModifiers(policyCR.Spec, &outSpec)
 	// Construct header modifiers specific IR
-	if err := constructHeaderModifiers(policyCR.Spec, &outSpec); err != nil {
-		errors = append(errors, err)
-	}
-
+	constructHeaderModifiers(policyCR.Spec, &outSpec)
 	// Construct auto host rewrite specific IR
 	constructAutoHostRewrite(policyCR.Spec, &outSpec)
 	// Construct buffer specific IR
 	constructBuffer(policyCR.Spec, &outSpec)
 	// Construct timeout and retry specific IR
 	constructTimeoutRetry(policyCR.Spec, &outSpec)
+
+	// Construct rbac specific IR
+	if err := constructRBAC(policyCR, &outSpec); err != nil {
+		errors = append(errors, err)
+	}
+
+	// Construct rbac specific IR
+	if err := constructRBAC(policyCR, &outSpec); err != nil {
+		errors = append(errors, err)
+	}
 
 	for _, err := range errors {
 		logger.Error("error translating traffic policy", "namespace", policyCR.GetNamespace(), "name", policyCR.GetName(), "error", err)

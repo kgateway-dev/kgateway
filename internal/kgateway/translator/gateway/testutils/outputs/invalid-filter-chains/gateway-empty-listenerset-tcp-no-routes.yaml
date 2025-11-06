@@ -1,0 +1,65 @@
+Clusters:
+- connectTimeout: 5s
+  metadata: {}
+  name: test-backend-plugin_default_example-svc_80
+Statuses:
+  gateways:
+    default/example-gateway:
+      conditions:
+      - lastTransitionTime: null
+        message: ""
+        reason: ListenerSetsAttached
+        status: "True"
+        type: AttachedListenerSets
+      - lastTransitionTime: null
+        message: Successfully accepted Gateway
+        reason: Accepted
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: null
+        message: Successfully programmed Gateway
+        reason: Programmed
+        status: "True"
+        type: Programmed
+  listenerSets:
+    default/example-listenerset:
+      conditions:
+      - lastTransitionTime: null
+        message: 'Some listeners are not programmed: tcp: TCP/TLS listener has no
+          valid backends or routes'
+        reason: ListenersNotValid
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: null
+        message: Successfully programmed ListenerSet
+        reason: Programmed
+        status: "True"
+        type: Programmed
+      listeners:
+      - attachedRoutes: 0
+        conditions:
+        - lastTransitionTime: null
+          message: TCP/TLS listener has no valid backends or routes
+          reason: Invalid
+          status: "False"
+          type: Programmed
+        - lastTransitionTime: null
+          message: Successfully accepted Listener
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully verified that Listener has no conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        name: tcp
+        port: 8080
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: TCPRoute

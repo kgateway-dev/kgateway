@@ -16,12 +16,6 @@ Listeners:
     socketAddress:
       address: '::'
       ipv4Compat: true
-      portValue: 443
-  name: listener~443
-- address:
-    socketAddress:
-      address: '::'
-      ipv4Compat: true
       portValue: 80
   filterChains:
   - filters:
@@ -43,12 +37,6 @@ Listeners:
         useRemoteAddress: true
     name: listener~80
   name: listener~80
-- address:
-    socketAddress:
-      address: '::'
-      ipv4Compat: true
-      portValue: 8443
-  name: listener~8443
 Routes:
 - ignorePortInHostMatching: true
   name: listener~80
@@ -63,3 +51,126 @@ Routes:
       route:
         cluster: kube_default_example-svc_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+Statuses:
+  gateways:
+    default/example-gateway:
+      conditions:
+      - lastTransitionTime: null
+        message: ""
+        reason: ListenerSetsNotAllowed
+        status: Unknown
+        type: AttachedListenerSets
+      - lastTransitionTime: null
+        message: 'Some listeners are not programmed: https: Secret default/missing-cert
+          not found.; https2: invalid TLS secret default/invalid-cert: tls: failed
+          to find any PEM data in key input'
+        reason: ListenersNotValid
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: null
+        message: Successfully programmed Gateway
+        reason: Programmed
+        status: "True"
+        type: Programmed
+      listeners:
+      - attachedRoutes: 1
+        conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Listener
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully verified that Listener has no conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Listener
+          reason: Programmed
+          status: "True"
+          type: Programmed
+        name: http
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+        - group: gateway.networking.k8s.io
+          kind: GRPCRoute
+      - attachedRoutes: 1
+        conditions:
+        - lastTransitionTime: null
+          message: Secret default/missing-cert not found.
+          reason: InvalidCertificateRef
+          status: "False"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Secret default/missing-cert not found.
+          reason: Invalid
+          status: "False"
+          type: Programmed
+        - lastTransitionTime: null
+          message: Successfully accepted Listener
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully verified that Listener has no conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        name: https
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+      - attachedRoutes: 1
+        conditions:
+        - lastTransitionTime: null
+          message: 'invalid TLS secret default/invalid-cert: tls: failed to find any
+            PEM data in key input'
+          reason: InvalidCertificateRef
+          status: "False"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: 'invalid TLS secret default/invalid-cert: tls: failed to find any
+            PEM data in key input'
+          reason: Invalid
+          status: "False"
+          type: Programmed
+        - lastTransitionTime: null
+          message: Successfully accepted Listener
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully verified that Listener has no conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        name: https2
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+  httpRoutes:
+    default/example-route:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: example-gateway

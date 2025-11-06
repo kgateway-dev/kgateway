@@ -4,7 +4,7 @@ Binds:
 Listeners:
 - bindKey: 8080/default/example-gateway
   gatewayName: default/example-gateway
-  key: default/example-gateway/http
+  key: default/example-gateway.http
   name: http
   protocol: HTTP
 Routes:
@@ -12,8 +12,11 @@ Routes:
   - requestRedirect:
       host: redirect.example.com
       status: 301
+  - directResponse:
+      status: 500
+      body: aW52YWxpZCByb3V0ZSBjb25maWd1cmF0aW9uIGRldGVjdGVkIGFuZCByZXBsYWNlZCB3aXRoIGEgZGlyZWN0IHJlc3BvbnNlLg==
   hostnames:
   - www.example.com
-  key: default.example-route.0.0.http
-  listenerKey: default/example-gateway/http
+  key: default/example-route.0.0.http
+  listenerKey: default/example-gateway.http
   routeName: default/example-route

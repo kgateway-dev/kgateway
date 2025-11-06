@@ -4,19 +4,24 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/slices"
+	"istio.io/istio/pkg/util/smallset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwxv1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
+	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	pluginsdkreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 type ObjectSource struct {
@@ -74,7 +79,7 @@ const (
 // Recognizes http2 app protocols defined by istio (https://istio.io/latest/docs/ops/configuration/traffic-management/protocol-selection/)
 // and GEP-1911 (https://gateway-api.sigs.k8s.io/geps/gep-1911/#api-semantics).
 func ParseAppProtocol(appProtocol *string) AppProtocol {
-	switch ptr.Deref(appProtocol, "") {
+	switch strings.ToLower(ptr.Deref(appProtocol, "")) {
 	case string(v1alpha1.AppProtocolHttp2):
 		fallthrough
 	case string(v1alpha1.AppProtocolGrpc):
@@ -95,14 +100,18 @@ type BackendObjectIR struct {
 	// set them explicitly here, and pass this around as the reference.
 	ObjectSource `json:",inline"`
 	// optional port for if ObjectSource is a service that can have multiple ports.
+	// +krtEqualsTodo propagate backend port differences in equality
 	Port int32
 	// optional application protocol for the backend. Can be used to enable http2.
+	// +krtEqualsTodo include AppProtocol in backend equality
 	AppProtocol AppProtocol
 
 	// prefix the cluster name with this string to distinguish it from other GVKs.
 	// here explicitly as it shows up in stats. each (group, kind) pair should have a unique prefix.
+	// +krtEqualsTodo incorporate prefix changes into equality or remove field
 	GvPrefix string
 	// for things that integrate with destination rule, we need to know what hostname to use.
+	// +krtEqualsTodo evaluate canonical hostname equality
 	CanonicalHostname string
 	// original object. Opaque to us other than metadata.
 	Obj metav1.Object
@@ -112,6 +121,7 @@ type BackendObjectIR struct {
 	ObjIr interface{ Equals(any) bool }
 
 	// Aliases that we can key by when referencing this backend from policy or routes.
+	// +krtEqualsTodo ensure alias list is compared
 	Aliases []ObjectSource
 
 	// ExtraKey allows ensuring uniqueness in the KRT key
@@ -119,12 +129,20 @@ type BackendObjectIR struct {
 	// TODO this is a hack for ServiceEntry to workaround only having one
 	// CanonicalHostname. We should see if it's possible to have multiple
 	// CanonicalHostnames.
+	// +krtEqualsTodo determine equality semantics for extra key
 	ExtraKey string
 
+	// RequiresPolicyStatus indicates if this Backend may require updating status of an attached policy
+	// This is essentially a precomputation of whether there are any 'AttachedPolicies' that are objects
+	// +krtEqualsTodo compare RequiresPolicyStatus or document ignoring
+	RequiresPolicyStatus bool
+
+	// +krtEqualsTodo include attached policies in equality diff
 	AttachedPolicies AttachedPolicies
 
 	// Errors is a list of errors, if any, encountered while constructing this BackendObject
 	// Not added to Equals() as it is derived from the inner ObjIr, which is already evaluated
+	// +krtEqualsTodo decide whether construction errors should impact equality
 	Errors []error
 
 	// Name is the pre-calculated resource name. used as the krt resource name.
@@ -132,7 +150,11 @@ type BackendObjectIR struct {
 
 	// TrafficDistribution is the desired traffic distribution for the backend.
 	// Default is any (no priority).
+	// +krtEqualsTodo ensure traffic distribution differences are compared
 	TrafficDistribution wellknown.TrafficDistribution
+
+	// DisableIstioAutoMTLS indicates if Istio auto-mTLS should be disabled for this backend
+	DisableIstioAutoMTLS bool
 }
 
 // NewBackendObjectIR creates a new BackendObjectIR with pre-calculated resource name
@@ -166,6 +188,7 @@ func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
 	objVersionEq := versionEquals(c.Obj, in.Obj)
 	polEq := c.AttachedPolicies.Equals(in.AttachedPolicies)
 	nameEq := c.resourceName == in.resourceName
+	disableIstioAutoMTLSEq := c.DisableIstioAutoMTLS == in.DisableIstioAutoMTLS
 
 	// objIr may currently be nil in the case of k8s Services
 	// TODO: add an IR for Services to avoid the need for this
@@ -175,7 +198,7 @@ func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
 		objIrEq = c.ObjIr.Equals(in.ObjIr)
 	}
 
-	return objEq && objVersionEq && objIrEq && polEq && nameEq
+	return objEq && objVersionEq && objIrEq && polEq && nameEq && disableIstioAutoMTLSEq
 }
 
 func (c BackendObjectIR) ClusterName() string {
@@ -215,6 +238,7 @@ type Secret struct {
 	// original object. Opaque to us other than metadata.
 	Obj metav1.Object
 
+	// +krtEqualsTodo evaluate secret data equality handling
 	Data map[string][]byte
 }
 
@@ -249,12 +273,15 @@ func (l Secret) MarshalJSON() ([]byte, error) {
 // TODO: why is this in backend.go?
 type Listener struct {
 	gwv1.Listener
-	Parent            client.Object
-	AttachedPolicies  AttachedPolicies
+	// +krtEqualsTodo compare parent reference in listener equality
+	Parent client.Object
+	// +krtEqualsTodo include attached listener policies in equality
+	AttachedPolicies AttachedPolicies
+	// +krtEqualsTodo include policy ancestor reference in equality
 	PolicyAncestorRef gwv1.ParentReference
 }
 
-func (listener Listener) GetParentReporter(reporter pluginsdkreporter.Reporter) pluginsdkreporter.GatewayReporter {
+func (listener Listener) GetParentReporter(reporter reporter.Reporter) reporter.GatewayReporter {
 	switch t := listener.Parent.(type) {
 	case *gwv1.Gateway:
 		return reporter.Gateway(t)
@@ -267,6 +294,31 @@ func (listener Listener) GetParentReporter(reporter pluginsdkreporter.Reporter) 
 // TODO: need to reevaluate DeepEqual usage
 func (c Listener) Equals(in Listener) bool {
 	return reflect.DeepEqual(c, in)
+}
+
+type GatewayForDeployer struct {
+	ObjectSource
+	// Controller name for the gateway
+	ControllerName string
+	// All ports from all listeners
+	Ports smallset.Set[int32]
+}
+
+func (c GatewayForDeployer) ResourceName() string {
+	return c.ObjectSource.ResourceName()
+}
+
+func (c GatewayForDeployer) Equals(in GatewayForDeployer) bool {
+	return c.ObjectSource.Equals(in.ObjectSource) &&
+		c.ControllerName == in.ControllerName &&
+		slices.Equal(c.Ports.List(), in.Ports.List())
+}
+
+type ListenerForDeployer struct {
+	Name       gwv1.SectionName
+	Port       gwv1.PortNumber
+	Parent     types.NamespacedName
+	ParentKind string
 }
 
 type Gateway struct {
@@ -377,4 +429,26 @@ func (c Listeners) Equals(in Listeners) bool {
 		}
 	}
 	return true
+}
+
+// ParseObjectAnnotations parses common annotations from a Kubernetes object
+// and sets the corresponding fields on the BackendObjectIR. If parsing fails, an error is added
+// to the backend's errors slice.
+func ParseObjectAnnotations(backend *BackendObjectIR, obj metav1.Object) {
+	if obj == nil {
+		return
+	}
+
+	annotations := obj.GetAnnotations()
+
+	// Parse Istio auto-mTLS annotation
+	if val, exists := annotations[apiannotations.DisableIstioAutoMTLS]; exists {
+		if disabled, err := strconv.ParseBool(val); err != nil {
+			// Add error to backend.errors instead of just logging
+			backend.Errors = append(backend.Errors, fmt.Errorf("invalid annotation %s value %q: %w", apiannotations.DisableIstioAutoMTLS, val, err))
+		} else {
+			// Store the parsed value
+			backend.DisableIstioAutoMTLS = disabled
+		}
+	}
 }

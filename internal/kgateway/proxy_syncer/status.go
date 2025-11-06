@@ -6,7 +6,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	reportssdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
@@ -18,7 +18,9 @@ type ObjWithAttachedPolicies interface {
 
 var _ ObjWithAttachedPolicies = ir.BackendObjectIR{}
 
-func generateBackendPolicyReport(in []*ir.BackendObjectIR) reports.ReportMap {
+// GenerateBackendPolicyReport generates a report map for all policies attached to the given backends.
+// Exported for testing.
+func GenerateBackendPolicyReport(in []*ir.BackendObjectIR) reports.ReportMap {
 	merged := reports.NewReportMap()
 	reporter := reports.NewReporter(&merged)
 
@@ -34,7 +36,7 @@ func generateBackendPolicyReport(in []*ir.BackendObjectIR) reports.ReportMap {
 					continue
 				}
 
-				key := reports.PolicyKey{
+				key := reportssdk.PolicyKey{
 					Group:     polAtt.PolicyRef.Group,
 					Kind:      polAtt.PolicyRef.Kind,
 					Namespace: polAtt.PolicyRef.Namespace,

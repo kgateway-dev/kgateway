@@ -1,0 +1,190 @@
+{{- $gateway := .Values.gateway }}
+{{- $promAnnotations := (dict
+  "prometheus.io/path" "/metrics"
+  "prometheus.io/port" "15020"
+  "prometheus.io/scrape" "true")
+}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kgateway.gateway.fullname" . }}
+  {{- with $gateway.gatewayAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  labels:
+    {{- include "kgateway.gateway.allLabels" . | nindent 4 }}
+spec:
+  {{- if $gateway.replicaCount }}
+  replicas: {{ $gateway.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "kgateway.gateway.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+      {{- toYaml (merge
+          (deepCopy ($gateway.gatewayAnnotations | default dict))
+          ($gateway.extraPodAnnotations | default dict)
+          $promAnnotations
+       ) | nindent 8 }}
+      labels:
+        {{- toYaml (merge
+          (dict "gateway.networking.k8s.io/gateway-class-name" .Values.gateway.gatewayClassName)
+          (include "kgateway.gateway.selectorLabels" . | fromYaml)
+          ($gateway.gatewayLabels | default dict)
+          ($gateway.extraPodLabels | default dict)
+        ) | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "kgateway.gateway.fullname" . }}
+      {{- with $gateway.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $gateway.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: agent-gateway
+          image: "{{ template "kgateway.gateway.image" $gateway.image }}"
+          {{- if $gateway.image.pullPolicy }}
+          imagePullPolicy: {{ $gateway.image.pullPolicy }}
+          {{- end }}
+          {{- with $gateway.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $gateway.startupProbe }}
+          startupProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $gateway.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $gateway.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- /*  Note: this is not *all* ports, since those will be dynamically set. However, this is the static port which is useful for setting up monitoring */}}
+          ports:
+          - containerPort: 15020
+            name: metrics
+            protocol: TCP
+          {{- with $gateway.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          args:
+            - -f
+            - /config/config.yaml
+          env:
+          {{- with $gateway.terminationGracePeriodSeconds }}
+            - name: TERMINATION_GRACE_PERIOD_SECONDS
+              value: "{{.}}"
+          {{- end }}
+            - name: CONNECTION_MIN_TERMINATION_DEADLINE
+              value: "{{ $gateway.gracefulShutdown.sleepTimeSeconds | default "5" }}s"
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: GW_NAME
+              value: {{ include "kgateway.gateway.fullname" . }}
+            - name: RUST_BACKTRACE
+              value: "1"
+            - name: RUST_LOG
+              value: {{ $gateway.logLevel }}
+            - name: XDS_ADDRESS
+              {{- if and $gateway.agwXds.tls $gateway.agwXds.tls.enabled }}
+              value: "https://{{ $gateway.xds.host }}:{{ $gateway.agwXds.port }}"
+              {{- else }}
+              value: "http://{{ $gateway.xds.host }}:{{ $gateway.agwXds.port }}"
+              {{- end }}
+            {{- if and $gateway.agwXds.tls $gateway.agwXds.tls.enabled }}
+            - name: XDS_ROOT_CA
+              value: "/etc/xds-tls/ca.crt"
+            {{- end }}
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: GATEWAY
+              value: {{ include "kgateway.gateway.fullname" . }}
+            {{- if $gateway.env }}
+            {{- toYaml $gateway.env | nindent 12 }}
+            {{- end }}
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+            # Make /tmp writeable, needed for pprof
+            - name: tmp
+              mountPath: /tmp
+            - name: xds-token
+              mountPath: /var/run/secrets/xds-tokens
+              readOnly: true
+            {{- if and $gateway.agwXds.tls $gateway.agwXds.tls.enabled }}
+            - name: xds-ca
+              mountPath: /etc/xds-tls
+              readOnly: true
+            {{- end }}
+            {{- with $gateway.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: config-volume
+          configMap:
+            {{- if $gateway.customConfigMapName }}
+            name: {{ $gateway.customConfigMapName }}
+            {{- else }}
+            name: {{ include "kgateway.gateway.fullname" . }}
+            {{- end }}
+        - name: xds-token
+          projected:
+            sources:
+            - serviceAccountToken:
+                audience: kgateway
+                expirationSeconds: 43200
+                path: xds-token
+        - name: tmp
+          emptyDir: {}
+        {{- if and $gateway.agwXds.tls $gateway.agwXds.tls.enabled }}
+        - name: xds-ca
+          configMap:
+            name: {{ include "kgateway.gateway.fullname" . }}-xds-ca
+            items:
+            - key: ca.crt
+              path: ca.crt
+        {{- end }}
+        {{- with $gateway.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with $gateway.affinity }}
+      affinity:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $gateway.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if $gateway.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ $gateway.terminationGracePeriodSeconds }}
+      {{- end }}
+      {{- with $gateway.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $gateway.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

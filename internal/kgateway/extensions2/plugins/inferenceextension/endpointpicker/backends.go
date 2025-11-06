@@ -1,7 +1,6 @@
 package endpointpicker
 
 import (
-	"context"
 	"fmt"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -19,7 +18,6 @@ import (
 )
 
 func processPoolBackendObjIR(
-	ctx context.Context,
 	in ir.BackendObjectIR,
 	out *envoyclusterv3.Cluster,
 	podIdx krt.Index[string, krtcollections.LocalityPod],
@@ -86,7 +84,7 @@ func processPoolBackendObjIR(
 						Address: &envoycorev3.Address_SocketAddress{
 							SocketAddress: &envoycorev3.SocketAddress{
 								Address:       ep.address,
-								PortSpecifier: &envoycorev3.SocketAddress_PortValue{PortValue: uint32(ep.port)},
+								PortSpecifier: &envoycorev3.SocketAddress_PortValue{PortValue: uint32(ep.port)}, //nolint:gosec // G115: ep.port is int32 representing a port number, always in valid range
 							},
 						},
 					},

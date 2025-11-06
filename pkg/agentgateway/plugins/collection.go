@@ -2,7 +2,6 @@ package plugins
 
 import (
 	"context"
-	"log/slog"
 
 	"istio.io/istio/pkg/config/schema/gvk"
 	"istio.io/istio/pkg/config/schema/gvr"
@@ -16,45 +15,44 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
-	infversioned "sigs.k8s.io/gateway-api-inference-extension/client-go/clientset/versioned"
+	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	kgwversioned "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
-	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 )
 
 type AgwCollections struct {
 	OurClient kgwversioned.Interface
 	Client    istiokube.Client
-	// full CRUD client, only needed for status writing currently
-	CrudClient client.Client
-	KrtOpts    krtutil.KrtOptions
+	KrtOpts   krtutil.KrtOptions
 
 	// Core Kubernetes resources
 	Namespaces     krt.Collection[*corev1.Namespace]
+	Nodes          krt.Collection[*corev1.Node]
+	Pods           krt.Collection[*corev1.Pod]
 	Services       krt.Collection[*corev1.Service]
 	Secrets        krt.Collection[*corev1.Secret]
+	ConfigMaps     krt.Collection[*corev1.ConfigMap]
 	EndpointSlices krt.Collection[*discovery.EndpointSlice]
 
 	// Gateway API resources
-	GatewayClasses  krt.Collection[*gwv1.GatewayClass]
-	Gateways        krt.Collection[*gwv1.Gateway]
-	HTTPRoutes      krt.Collection[*gwv1.HTTPRoute]
-	GRPCRoutes      krt.Collection[*gwv1.GRPCRoute]
-	TCPRoutes       krt.Collection[*gwv1alpha2.TCPRoute]
-	TLSRoutes       krt.Collection[*gwv1alpha2.TLSRoute]
-	ReferenceGrants krt.Collection[*gwv1beta1.ReferenceGrant]
+	GatewayClasses     krt.Collection[*gwv1.GatewayClass]
+	Gateways           krt.Collection[*gwv1.Gateway]
+	HTTPRoutes         krt.Collection[*gwv1.HTTPRoute]
+	GRPCRoutes         krt.Collection[*gwv1.GRPCRoute]
+	TCPRoutes          krt.Collection[*gwv1alpha2.TCPRoute]
+	TLSRoutes          krt.Collection[*gwv1alpha2.TLSRoute]
+	ReferenceGrants    krt.Collection[*gwv1beta1.ReferenceGrant]
+	BackendTLSPolicies krt.Collection[*gwv1.BackendTLSPolicy]
+	XListenerSets      krt.Collection[*gwxv1a1.XListenerSet]
 
 	// Extended resources
 	InferencePools krt.Collection[*inf.InferencePool]
@@ -64,17 +62,17 @@ type AgwCollections struct {
 	RefGrants   *krtcollections.RefGrantIndex
 
 	// kgateway resources
-	BackendIndex      *krtcollections.BackendIndex
-	TrafficPolicies   krt.Collection[*v1alpha1.TrafficPolicy]
-	DirectResponses   krt.Collection[*v1alpha1.DirectResponse]
-	GatewayExtensions krt.Collection[*v1alpha1.GatewayExtension]
+	Backends             krt.Collection[*v1alpha1.Backend]
+	AgentgatewayPolicies krt.Collection[*v1alpha1.AgentgatewayPolicy]
+	DirectResponses      krt.Collection[*v1alpha1.DirectResponse]
+	GatewayExtensions    krt.Collection[*v1alpha1.GatewayExtension]
 
-	// Plugin-initialized collections (set by InitPlugins)
-	Routes       *krtcollections.RoutesIndex
-	Endpoints    krt.Collection[ir.EndpointsForBackend]
-	GatewayIndex *krtcollections.GatewayIndex
-
+	// ControllerName is the name of the Gateway controller.
 	ControllerName string
+	// SystemNamespace is control plane system namespace (default is kgateway-system)
+	SystemNamespace string
+	// ClusterID is the cluster ID of the cluster the proxy is running in.
+	ClusterID string
 }
 
 func registerKgwResources(kgwClient kgwversioned.Interface) {
@@ -87,6 +85,9 @@ func registerKgwResources(kgwClient kgwversioned.Interface) {
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 			return kgwClient.GatewayV1alpha1().Backends(namespace).Watch(context.Background(), o)
 		},
+		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*v1alpha1.Backend] {
+			return kgwClient.GatewayV1alpha1().Backends(namespace)
+		},
 	)
 	kubeclient.Register[*v1alpha1.DirectResponse](
 		wellknown.DirectResponseGVR,
@@ -97,15 +98,21 @@ func registerKgwResources(kgwClient kgwversioned.Interface) {
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 			return kgwClient.GatewayV1alpha1().DirectResponses(namespace).Watch(context.Background(), o)
 		},
+		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*v1alpha1.DirectResponse] {
+			return kgwClient.GatewayV1alpha1().DirectResponses(namespace)
+		},
 	)
-	kubeclient.Register[*v1alpha1.TrafficPolicy](
-		wellknown.TrafficPolicyGVR,
-		wellknown.TrafficPolicyGVK,
+	kubeclient.Register[*v1alpha1.AgentgatewayPolicy](
+		wellknown.AgentgatewayPolicyGVR,
+		wellknown.AgentgatewayPolicyGVK,
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
-			return kgwClient.GatewayV1alpha1().TrafficPolicies(namespace).List(context.Background(), o)
+			return kgwClient.GatewayV1alpha1().AgentgatewayPolicies(namespace).List(context.Background(), o)
 		},
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
-			return kgwClient.GatewayV1alpha1().TrafficPolicies(namespace).Watch(context.Background(), o)
+			return kgwClient.GatewayV1alpha1().AgentgatewayPolicies(namespace).Watch(context.Background(), o)
+		},
+		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*v1alpha1.AgentgatewayPolicy] {
+			return kgwClient.GatewayV1alpha1().AgentgatewayPolicies(namespace)
 		},
 	)
 }
@@ -121,6 +128,9 @@ func registerGatewayAPITypes() {
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 			return c.GatewayAPI().GatewayV1().GatewayClasses().Watch(context.Background(), o)
 		},
+		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*gwv1.GatewayClass] {
+			return c.GatewayAPI().GatewayV1().GatewayClasses()
+		},
 	)
 	kubeclient.Register[*gwv1.Gateway](
 		gvr.KubernetesGateway_v1,
@@ -130,6 +140,9 @@ func registerGatewayAPITypes() {
 		},
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 			return c.GatewayAPI().GatewayV1().Gateways(namespace).Watch(context.Background(), o)
+		},
+		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*gwv1.Gateway] {
+			return c.GatewayAPI().GatewayV1().Gateways(namespace)
 		},
 	)
 	kubeclient.Register[*gwv1.HTTPRoute](
@@ -141,6 +154,9 @@ func registerGatewayAPITypes() {
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 			return c.GatewayAPI().GatewayV1().HTTPRoutes(namespace).Watch(context.Background(), o)
 		},
+		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*gwv1.HTTPRoute] {
+			return c.GatewayAPI().GatewayV1().HTTPRoutes(namespace)
+		},
 	)
 	kubeclient.Register[*gwv1.GRPCRoute](
 		gvr.GRPCRoute,
@@ -150,6 +166,9 @@ func registerGatewayAPITypes() {
 		},
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 			return c.GatewayAPI().GatewayV1().GRPCRoutes(namespace).Watch(context.Background(), o)
+		},
+		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*gwv1.GRPCRoute] {
+			return c.GatewayAPI().GatewayV1().GRPCRoutes(namespace)
 		},
 	)
 	kubeclient.Register[*gwv1beta1.ReferenceGrant](
@@ -161,6 +180,9 @@ func registerGatewayAPITypes() {
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 			return c.GatewayAPI().GatewayV1beta1().ReferenceGrants(namespace).Watch(context.Background(), o)
 		},
+		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*gwv1beta1.ReferenceGrant] {
+			return c.GatewayAPI().GatewayV1beta1().ReferenceGrants(namespace)
+		},
 	)
 	kubeclient.Register[*gwv1alpha2.TCPRoute](
 		gvr.TCPRoute,
@@ -170,6 +192,9 @@ func registerGatewayAPITypes() {
 		},
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 			return c.GatewayAPI().GatewayV1alpha2().TCPRoutes(namespace).Watch(context.Background(), o)
+		},
+		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*gwv1alpha2.TCPRoute] {
+			return c.GatewayAPI().GatewayV1alpha2().TCPRoutes(namespace)
 		},
 	)
 	kubeclient.Register[*gwv1alpha2.TLSRoute](
@@ -181,27 +206,27 @@ func registerGatewayAPITypes() {
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 			return c.GatewayAPI().GatewayV1alpha2().TLSRoutes(namespace).Watch(context.Background(), o)
 		},
+		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*gwv1alpha2.TLSRoute] {
+			return c.GatewayAPI().GatewayV1alpha2().TLSRoutes(namespace)
+		},
 	)
 }
 
 func registerInferenceExtensionTypes(client istiokube.Client) {
 	// Create the inference extension clientset.
-	inferencePoolGVR := wellknown.InferencePoolGVK.GroupVersion().WithResource("inferencepools")
-	infCli, err := infversioned.NewForConfig(client.RESTConfig())
-	if err != nil {
-		slog.Error("failed to create inference extension client", "error", err)
-	} else {
-		kubeclient.Register[*inf.InferencePool](
-			inferencePoolGVR,
-			wellknown.InferencePoolGVK,
-			func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
-				return infCli.InferenceV1alpha2().InferencePools(namespace).List(context.Background(), o)
-			},
-			func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
-				return infCli.InferenceV1alpha2().InferencePools(namespace).Watch(context.Background(), o)
-			},
-		)
-	}
+	kubeclient.Register(
+		wellknown.InferencePoolGVR,
+		wellknown.InferencePoolGVK,
+		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
+			return client.GatewayAPIInference().InferenceV1().InferencePools(namespace).List(context.Background(), o)
+		},
+		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
+			return client.GatewayAPIInference().InferenceV1().InferencePools(namespace).Watch(context.Background(), o)
+		},
+		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*inf.InferencePool] {
+			return client.GatewayAPIInference().InferenceV1().InferencePools(namespace)
+		},
+	)
 }
 
 func (c *AgwCollections) HasSynced() bool {
@@ -210,6 +235,7 @@ func (c *AgwCollections) HasSynced() bool {
 	return c.Namespaces != nil && c.Namespaces.HasSynced() &&
 		c.Services != nil && c.Services.HasSynced() &&
 		c.Secrets != nil && c.Secrets.HasSynced() &&
+		c.ConfigMaps != nil && c.ConfigMaps.HasSynced() &&
 		c.GatewayClasses != nil && c.GatewayClasses.HasSynced() &&
 		c.Gateways != nil && c.Gateways.HasSynced() &&
 		c.HTTPRoutes != nil && c.HTTPRoutes.HasSynced() &&
@@ -217,16 +243,14 @@ func (c *AgwCollections) HasSynced() bool {
 		c.TCPRoutes != nil && c.TCPRoutes.HasSynced() &&
 		c.TLSRoutes != nil && c.TLSRoutes.HasSynced() &&
 		c.ReferenceGrants != nil && c.ReferenceGrants.HasSynced() &&
+		c.BackendTLSPolicies != nil && c.BackendTLSPolicies.HasSynced() &&
 		c.InferencePools != nil && c.InferencePools.HasSynced() &&
 		c.WrappedPods != nil && c.WrappedPods.HasSynced() &&
 		c.RefGrants != nil && c.RefGrants.HasSynced() &&
-		c.BackendIndex != nil && c.BackendIndex.HasSynced() &&
-		c.TrafficPolicies != nil && c.TrafficPolicies.HasSynced() &&
+		c.Backends != nil && c.Backends.HasSynced() &&
+		c.AgentgatewayPolicies != nil && c.AgentgatewayPolicies.HasSynced() &&
 		c.DirectResponses != nil && c.DirectResponses.HasSynced() &&
-		c.GatewayExtensions != nil && c.GatewayExtensions.HasSynced() &&
-		c.Routes != nil && c.Routes.HasSynced() &&
-		c.Endpoints != nil && c.Endpoints.HasSynced() &&
-		c.GatewayIndex != nil && c.GatewayIndex.Gateways.HasSynced()
+		c.GatewayExtensions != nil && c.GatewayExtensions.HasSynced()
 }
 
 // NewAgwCollections initializes the core krt collections.
@@ -234,6 +258,9 @@ func (c *AgwCollections) HasSynced() bool {
 // and InitPlugins must be called.
 func NewAgwCollections(
 	commoncol *collections.CommonCollections,
+	agwControllerName string,
+	systemNamespace string,
+	clusterID string,
 ) (*AgwCollections, error) {
 	// Register Gateway API and kgateway types with Istio kubeclient system
 	registerGatewayAPITypes()
@@ -241,34 +268,52 @@ func NewAgwCollections(
 	registerKgwResources(commoncol.OurClient)
 
 	agwCollections := &AgwCollections{
-		Client:         commoncol.Client,
-		ControllerName: commoncol.ControllerName,
+		Client:          commoncol.Client,
+		ControllerName:  agwControllerName,
+		SystemNamespace: systemNamespace,
+		ClusterID:       clusterID,
 
 		// Core Kubernetes resources
 		Namespaces: krt.NewInformer[*corev1.Namespace](commoncol.Client),
-		Secrets: krt.WrapClient[*corev1.Secret](
+		Nodes: krt.NewInformerFiltered[*corev1.Node](commoncol.Client, kclient.Filter{
+			ObjectFilter: commoncol.Client.ObjectFilter(),
+		}, commoncol.KrtOpts.ToOptions("informer/Nodes")...),
+		Pods: krt.NewInformerFiltered[*corev1.Pod](commoncol.Client, kclient.Filter{
+			ObjectTransform: istiokube.StripPodUnusedFields,
+			ObjectFilter:    commoncol.Client.ObjectFilter(),
+		}, commoncol.KrtOpts.ToOptions("informer/Pods")...),
+
+		Secrets: krt.WrapClient(
 			kclient.NewFiltered[*corev1.Secret](commoncol.Client, kubetypes.Filter{
 				ObjectFilter: commoncol.Client.ObjectFilter(),
 			}),
 		),
-		Services: krt.WrapClient[*corev1.Service](
+		ConfigMaps: krt.WrapClient(
+			kclient.NewFiltered[*corev1.ConfigMap](commoncol.Client, kubetypes.Filter{
+				ObjectFilter: commoncol.Client.ObjectFilter(),
+			}),
+			commoncol.KrtOpts.ToOptions("informer/ConfigMaps")...,
+		),
+		Services: krt.WrapClient(
 			kclient.NewFiltered[*corev1.Service](commoncol.Client, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}),
 			commoncol.KrtOpts.ToOptions("informer/Services")...),
-		EndpointSlices: krt.WrapClient[*discovery.EndpointSlice](
+		EndpointSlices: krt.WrapClient(
 			kclient.NewFiltered[*discovery.EndpointSlice](commoncol.Client, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}),
 			commoncol.KrtOpts.ToOptions("informer/EndpointSlices")...),
 
 		// Gateway API resources
-		GatewayClasses: krt.WrapClient(kclient.NewFiltered[*gwv1.GatewayClass](commoncol.Client, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/GatewayClasses")...),
-		Gateways:       krt.WrapClient(kclient.NewFiltered[*gwv1.Gateway](commoncol.Client, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/Gateways")...),
-		HTTPRoutes:     krt.WrapClient(kclient.NewFiltered[*gwv1.HTTPRoute](commoncol.Client, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/HTTPRoutes")...),
-		GRPCRoutes:     krt.WrapClient(kclient.NewFiltered[*gwv1.GRPCRoute](commoncol.Client, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/GRPCRoutes")...),
+		GatewayClasses:     krt.WrapClient(kclient.NewFilteredDelayed[*gwv1.GatewayClass](commoncol.Client, wellknown.GatewayClassGVR, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/GatewayClasses")...),
+		Gateways:           krt.WrapClient(kclient.NewFilteredDelayed[*gwv1.Gateway](commoncol.Client, wellknown.GatewayGVR, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/Gateways")...),
+		HTTPRoutes:         krt.WrapClient(kclient.NewFilteredDelayed[*gwv1.HTTPRoute](commoncol.Client, wellknown.HTTPRouteGVR, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/HTTPRoutes")...),
+		GRPCRoutes:         krt.WrapClient(kclient.NewFilteredDelayed[*gwv1.GRPCRoute](commoncol.Client, wellknown.GRPCRouteGVR, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/GRPCRoutes")...),
+		BackendTLSPolicies: krt.WrapClient(kclient.NewDelayedInformer[*gwv1.BackendTLSPolicy](commoncol.Client, gvr.BackendTLSPolicy, kubetypes.StandardInformer, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/BackendTLSPolicies")...),
 
-		ReferenceGrants: krt.WrapClient(kclient.NewFiltered[*gwv1beta1.ReferenceGrant](commoncol.Client, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/ReferenceGrants")...),
-
-		// kubernetes gateway alpha apis
-		TCPRoutes: krt.WrapClient(kclient.NewDelayedInformer[*gwv1alpha2.TCPRoute](commoncol.Client, gvr.TCPRoute, kubetypes.StandardInformer, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/TCPRoutes")...),
-		TLSRoutes: krt.WrapClient(kclient.NewDelayedInformer[*gwv1alpha2.TLSRoute](commoncol.Client, gvr.TLSRoute, kubetypes.StandardInformer, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/TLSRoutes")...),
+		// Gateway API alpha
+		TCPRoutes:       krt.WrapClient(kclient.NewDelayedInformer[*gwv1alpha2.TCPRoute](commoncol.Client, gvr.TCPRoute, kubetypes.StandardInformer, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/TCPRoutes")...),
+		TLSRoutes:       krt.WrapClient(kclient.NewDelayedInformer[*gwv1alpha2.TLSRoute](commoncol.Client, gvr.TLSRoute, kubetypes.StandardInformer, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/TLSRoutes")...),
+		ReferenceGrants: krt.WrapClient(kclient.NewFilteredDelayed[*gwv1beta1.ReferenceGrant](commoncol.Client, wellknown.ReferenceGrantGVR, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/ReferenceGrants")...),
+		XListenerSets:   krt.WrapClient(kclient.NewDelayedInformer[*gwxv1a1.XListenerSet](commoncol.Client, gvr.XListenerSet, kubetypes.StandardInformer, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/XListenerSets")...),
+		// BackendTrafficPolicy?
 
 		// inference extensions need to be enabled so control plane has permissions to watch resource. Disable by default
 		InferencePools: krt.NewStaticCollection[*inf.InferencePool](nil, nil, commoncol.KrtOpts.ToOptions("disable/inferencepools")...),
@@ -278,10 +323,10 @@ func NewAgwCollections(
 		RefGrants:   commoncol.RefGrants,
 
 		// kgateway resources
-		DirectResponses:   krt.NewInformer[*v1alpha1.DirectResponse](commoncol.Client),
-		TrafficPolicies:   krt.NewInformer[*v1alpha1.TrafficPolicy](commoncol.Client),
-		GatewayExtensions: krt.NewInformer[*v1alpha1.GatewayExtension](commoncol.Client),
-		BackendIndex:      commoncol.BackendIndex,
+		DirectResponses:      krt.NewInformer[*v1alpha1.DirectResponse](commoncol.Client),
+		AgentgatewayPolicies: krt.NewInformer[*v1alpha1.AgentgatewayPolicy](commoncol.Client),
+		GatewayExtensions:    krt.NewInformer[*v1alpha1.GatewayExtension](commoncol.Client),
+		Backends:             krt.NewInformer[*v1alpha1.Backend](commoncol.Client),
 	}
 
 	if commoncol.Settings.EnableInferExt {
@@ -291,30 +336,4 @@ func NewAgwCollections(
 	}
 
 	return agwCollections, nil
-}
-
-// InitPlugins set up collections that rely on plugins.
-// This can't be part of NewAgwCollections because the setup
-// of plugins themselves rely on a reference to AgwCollections.
-func (c *AgwCollections) InitPlugins(
-	ctx context.Context,
-	mergedPlugins extensionsplug.Plugin,
-	globalSettings settings.Settings,
-) {
-	gateways, routeIndex, backendIndex, endpointIRs := krtcollections.InitCollections(
-		ctx,
-		c.ControllerName,
-		mergedPlugins,
-		c.Client,
-		c.OurClient,
-		c.RefGrants,
-		c.KrtOpts,
-		globalSettings,
-	)
-
-	// init plugin-extended collections
-	c.BackendIndex = backendIndex
-	c.Routes = routeIndex
-	c.Endpoints = endpointIRs
-	c.GatewayIndex = gateways
 }

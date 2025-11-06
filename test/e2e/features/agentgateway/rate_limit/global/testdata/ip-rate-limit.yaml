@@ -1,0 +1,24 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: AgentgatewayPolicy
+metadata:
+  name: ip-rate-limit
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: test-route-1
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: test-route-2
+  traffic:
+    rateLimit:
+      global:
+        backendRef:
+          name: ratelimit
+          namespace: kgateway-test-extensions
+          port: 8081
+        domain: "api-gateway"
+        descriptors:
+        - entries:
+          - name: remote_address
+            expression: "source.address"

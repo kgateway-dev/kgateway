@@ -14,21 +14,23 @@ import (
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/kube/kubetypes"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
 const PreserveCasePlugin = "envoy.http.stateful_header_formatters.preserve_case"
@@ -36,7 +38,7 @@ const PreserveCasePlugin = "envoy.http.stateful_header_formatters.preserve_case"
 type BackendConfigPolicyIR struct {
 	ct                            time.Time
 	connectTimeout                *durationpb.Duration
-	perConnectionBufferLimitBytes *int
+	perConnectionBufferLimitBytes *uint32
 	tcpKeepalive                  *envoycorev3.TcpKeepalive
 	commonHttpProtocolOptions     *envoycorev3.HttpProtocolOptions
 	http1ProtocolOptions          *envoycorev3.Http1ProtocolOptions
@@ -47,7 +49,7 @@ type BackendConfigPolicyIR struct {
 	outlierDetection              *envoyclusterv3.OutlierDetection
 }
 
-var logger = logging.New("backendconfigpolicy")
+var logger = logging.New("plugin/backendconfigpolicy")
 
 var _ ir.PolicyIR = &BackendConfigPolicyIR{}
 
@@ -120,44 +122,47 @@ func registerTypes(ourCli versioned.Interface) {
 		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 			return ourCli.GatewayV1alpha1().BackendConfigPolicies(namespace).Watch(context.Background(), o)
 		},
+		func(c skubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*v1alpha1.BackendConfigPolicy] {
+			return ourCli.GatewayV1alpha1().BackendConfigPolicies(namespace)
+		},
 	)
 }
 
-func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
+func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v validator.Validator) sdk.Plugin {
 	registerTypes(commoncol.OurClient)
-	col := krt.WrapClient(kclient.NewFiltered[*v1alpha1.BackendConfigPolicy](
+	cli := kclient.NewFilteredDelayed[*v1alpha1.BackendConfigPolicy](
 		commoncol.Client,
+		wellknown.BackendConfigPolicyGVR,
 		kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()},
-	), commoncol.KrtOpts.ToOptions("BackendConfigPolicy")...)
+	)
+	col := krt.WrapClient(cli, commoncol.KrtOpts.ToOptions("BackendConfigPolicy")...)
 	backendConfigPolicyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, b *v1alpha1.BackendConfigPolicy) *ir.PolicyWrapper {
-		objSrc := ir.ObjectSource{
-			Group:     wellknown.BackendConfigPolicyGVK.Group,
-			Kind:      wellknown.BackendConfigPolicyGVK.Kind,
-			Namespace: b.Namespace,
-			Name:      b.Name,
-		}
-
-		policyIR, err := translate(commoncol, krtctx, b)
-		errs := []error{}
-		if err != nil {
+		policyIR, errs := translate(commoncol, krtctx, b)
+		if err := validateXDS(ctx, policyIR, v, commoncol.Settings.ValidationMode); err != nil {
 			errs = append(errs, err)
 		}
+
 		return &ir.PolicyWrapper{
-			ObjectSource: objSrc,
-			Policy:       b,
-			PolicyIR:     policyIR,
-			TargetRefs:   pluginsdkutils.TargetRefsToPolicyRefs(b.Spec.TargetRefs, b.Spec.TargetSelectors),
-			Errors:       errs,
+			ObjectSource: ir.ObjectSource{
+				Group:     wellknown.BackendConfigPolicyGVK.Group,
+				Kind:      wellknown.BackendConfigPolicyGVK.Kind,
+				Namespace: b.Namespace,
+				Name:      b.Name,
+			},
+			Policy:     b,
+			PolicyIR:   policyIR,
+			TargetRefs: pluginsdkutils.TargetRefsToPolicyRefs(b.Spec.TargetRefs, b.Spec.TargetSelectors),
+			Errors:     errs,
 		}
 	}, commoncol.KrtOpts.ToOptions("BackendConfigPolicyIRs")...)
-	return extensionsplug.Plugin{
-		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
+	return sdk.Plugin{
+		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			wellknown.BackendConfigPolicyGVK.GroupKind(): {
 				Name:              "BackendConfigPolicy",
 				Policies:          backendConfigPolicyCol,
 				ProcessBackend:    processBackend,
-				GetPolicyStatus:   getPolicyStatusFn(commoncol.CrudClient),
-				PatchPolicyStatus: patchPolicyStatusFn(commoncol.CrudClient),
+				GetPolicyStatus:   getPolicyStatusFn(cli),
+				PatchPolicyStatus: patchPolicyStatusFn(cli),
 			},
 		},
 	}
@@ -170,7 +175,7 @@ func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObje
 	}
 
 	if pol.perConnectionBufferLimitBytes != nil {
-		out.PerConnectionBufferLimitBytes = &wrapperspb.UInt32Value{Value: uint32(*pol.perConnectionBufferLimitBytes)}
+		out.PerConnectionBufferLimitBytes = &wrapperspb.UInt32Value{Value: *pol.perConnectionBufferLimitBytes} //nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 4294967295, safe for uint32
 	}
 
 	if pol.tcpKeepalive != nil {
@@ -208,7 +213,12 @@ func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObje
 	}
 }
 
-func translate(commoncol *common.CommonCollections, krtctx krt.HandlerContext, pol *v1alpha1.BackendConfigPolicy) (*BackendConfigPolicyIR, error) {
+func translate(
+	commoncol *collections.CommonCollections,
+	krtctx krt.HandlerContext,
+	pol *v1alpha1.BackendConfigPolicy,
+) (*BackendConfigPolicyIR, []error) {
+	var errs []error
 	ir := BackendConfigPolicyIR{
 		ct: pol.CreationTimestamp.Time,
 	}
@@ -216,7 +226,8 @@ func translate(commoncol *common.CommonCollections, krtctx krt.HandlerContext, p
 		ir.connectTimeout = durationpb.New(pol.Spec.ConnectTimeout.Duration)
 	}
 	if pol.Spec.PerConnectionBufferLimitBytes != nil {
-		ir.perConnectionBufferLimitBytes = pol.Spec.PerConnectionBufferLimitBytes
+		bufferSize := uint32(*pol.Spec.PerConnectionBufferLimitBytes) //nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 4294967295, safe for uint32
+		ir.perConnectionBufferLimitBytes = &bufferSize
 	}
 
 	if pol.Spec.TCPKeepalive != nil {
@@ -230,7 +241,7 @@ func translate(commoncol *common.CommonCollections, krtctx krt.HandlerContext, p
 	if pol.Spec.Http1ProtocolOptions != nil {
 		http1ProtocolOptions, err := translateHttp1ProtocolOptions(pol.Spec.Http1ProtocolOptions)
 		if err != nil {
-			return &ir, err
+			errs = append(errs, err)
 		}
 		ir.http1ProtocolOptions = http1ProtocolOptions
 	}
@@ -242,7 +253,7 @@ func translate(commoncol *common.CommonCollections, krtctx krt.HandlerContext, p
 	if pol.Spec.TLS != nil {
 		tlsConfig, err := translateTLSConfig(NewDefaultSecretGetter(commoncol.Secrets, krtctx), pol.Spec.TLS, pol.Namespace)
 		if err != nil {
-			return &ir, err
+			errs = append(errs, err)
 		}
 		ir.tlsConfig = tlsConfig
 	}
@@ -250,7 +261,7 @@ func translate(commoncol *common.CommonCollections, krtctx krt.HandlerContext, p
 	if pol.Spec.LoadBalancer != nil {
 		loadBalancerConfig, err := translateLoadBalancerConfig(pol.Spec.LoadBalancer, pol.Name, pol.Namespace)
 		if err != nil {
-			return &ir, err
+			errs = append(errs, err)
 		}
 		ir.loadBalancerConfig = loadBalancerConfig
 	}
@@ -263,13 +274,13 @@ func translate(commoncol *common.CommonCollections, krtctx krt.HandlerContext, p
 		ir.outlierDetection = translateOutlierDetection(pol.Spec.OutlierDetection)
 	}
 
-	return &ir, nil
+	return &ir, errs
 }
 
 func translateTCPKeepalive(tcpKeepalive *v1alpha1.TCPKeepalive) *envoycorev3.TcpKeepalive {
 	out := &envoycorev3.TcpKeepalive{}
 	if tcpKeepalive.KeepAliveProbes != nil {
-		out.KeepaliveProbes = &wrapperspb.UInt32Value{Value: uint32(*tcpKeepalive.KeepAliveProbes)}
+		out.KeepaliveProbes = &wrapperspb.UInt32Value{Value: uint32(*tcpKeepalive.KeepAliveProbes)} //nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 4294967295, safe for uint32
 	}
 	if tcpKeepalive.KeepAliveTime != nil {
 		out.KeepaliveTime = &wrapperspb.UInt32Value{Value: uint32(tcpKeepalive.KeepAliveTime.Duration.Seconds())}

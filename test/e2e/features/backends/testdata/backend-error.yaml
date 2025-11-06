@@ -1,0 +1,51 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+  namespace: default
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - name: http
+    port: 8080
+    protocol: HTTP
+    hostname: www.example.com
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+  namespace: default
+spec:
+  parentRefs:
+  - name: example-gateway
+    namespace: default
+  hostnames:
+  - "www.example.com"
+  rules:
+  - matches:
+    backendRefs:
+    - group: gateway.kgateway.dev
+      kind: Backend
+      name: example-aws-backend
+---
+# error no secret
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: example-aws-backend
+  namespace: default
+spec:
+  type: AWS
+  aws:
+    accountId: "000000000000"
+    auth:
+      type: Secret
+      secretRef:
+        name: lambda-secret
+    lambda:
+      functionName: "example-function"
+      qualifier: "$LATEST"

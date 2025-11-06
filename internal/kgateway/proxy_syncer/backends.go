@@ -7,19 +7,22 @@ import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"istio.io/istio/pkg/kube/krt"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
-	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	krtutil "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
 type uccWithCluster struct {
-	Client         ir.UniqlyConnectedClient
+	Client ir.UniqlyConnectedClient
+	// +krtEqualsTodo include full cluster diff in equality
 	Cluster        *envoyclusterv3.Cluster
 	ClusterVersion uint64
-	Name           string
-	Error          error
+	// +krtEqualsTodo reconcile name-only equality semantics
+	Name string
+	// +krtEqualsTodo surface translation errors in equality or drop field
+	Error error
 }
 
 func (c uccWithCluster) ResourceName() string {
@@ -41,7 +44,7 @@ func (iu *PerClientEnvoyClusters) FetchClustersForClient(kctx krt.HandlerContext
 
 func NewPerClientEnvoyClusters(
 	ctx context.Context,
-	krtopts krtinternal.KrtOptions,
+	krtopts krtutil.KrtOptions,
 	translator *irtranslator.BackendTranslator,
 	finalBackends krt.Collection[*ir.BackendObjectIR],
 	uccs krt.Collection[ir.UniqlyConnectedClient],
@@ -54,14 +57,14 @@ func NewPerClientEnvoyClusters(
 		for _, ucc := range uccs {
 			backendLogger.Debug("applying destination rules for backend", "ucc", ucc.ResourceName())
 
-			c, err := translator.TranslateBackend(kctx, ucc, backendObj)
+			c, err := translator.TranslateBackend(ctx, kctx, ucc, backendObj)
 			if c == nil {
 				continue
 			}
 			uccWithClusterRet = append(uccWithClusterRet, uccWithCluster{
+				Name:    c.GetName(),
 				Client:  ucc,
 				Cluster: c,
-				Name:    c.GetName(),
 				// pass along the error(s) indicating to consumers that this cluster is not usable
 				Error:          err,
 				ClusterVersion: utils.HashProto(c),

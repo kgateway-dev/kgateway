@@ -1,0 +1,152 @@
+# Configuration:
+#
+# Deployments:
+# - team1/httpbin
+# - team2/httpbin
+#
+# Services:
+# - team1/svc1
+# - team2/svc2
+#
+# Gateway:
+# - infra/http-gateway
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: team1
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc1
+  namespace: team1
+  labels:
+    app: httpbin
+spec:
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 8080
+  selector:
+    app: httpbin
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httpbin-v1
+  namespace: team1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: httpbin
+      version: v1
+      app.kubernetes.io/name: httpbin-v1
+  template:
+    metadata:
+      labels:
+        app: httpbin
+        version: v1
+        app.kubernetes.io/name: httpbin-v1
+    spec:
+      containers:
+      - image: docker.io/kennethreitz/httpbin@sha256:599fe5e5073102dbb0ee3dbb65f049dab44fa9fc251f6835c9990f8fb196a72b
+        imagePullPolicy: IfNotPresent
+        name: httpbin
+        command:
+        - gunicorn
+        - -b
+        - 0.0.0.0:8080
+        - httpbin:app
+        - -k
+        - gevent
+        env:
+        # Tells pipenv to use a writable directory instead of $HOME
+        - name: WORKON_HOME
+          value: /tmp
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: team2
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc2
+  namespace: team2
+  labels:
+    app: httpbin
+spec:
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 8080
+  selector:
+    app: httpbin
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httpbin-v2
+  namespace: team2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: httpbin
+      version: v2
+      app.kubernetes.io/name: httpbin-v2
+  template:
+    metadata:
+      labels:
+        app: httpbin
+        version: v2
+        app.kubernetes.io/name: httpbin-v2
+    spec:
+      containers:
+      - image: docker.io/kennethreitz/httpbin@sha256:599fe5e5073102dbb0ee3dbb65f049dab44fa9fc251f6835c9990f8fb196a72b
+        imagePullPolicy: IfNotPresent
+        name: httpbin
+        command:
+        - gunicorn
+        - -b
+        - 0.0.0.0:8080
+        - httpbin:app
+        - -k
+        - gevent
+        env:
+        # Tells pipenv to use a writable directory instead of $HOME
+        - name: WORKON_HOME
+          value: /tmp
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: infra
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: http-gateway
+  namespace: infra
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+    allowedRoutes:
+      namespaces:
+        from: Same
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: team2-root
+---

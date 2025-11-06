@@ -48,7 +48,14 @@ func TestCounterInterface(t *testing.T) {
 
 	counter.Reset()
 	gathered = metricstest.MustGatherMetrics(t)
-	gathered.AssertMetricNotExists("kgateway_test_total")
+	// After reset, counter exists with value 0 and empty label values
+	gathered.AssertMetric("kgateway_test_total", &metricstest.ExpectedMetric{
+		Labels: []Label{
+			{Name: "label1", Value: ""},
+			{Name: "label2", Value: ""},
+		},
+		Value: 0.0,
+	})
 }
 
 func TestCounterPartialLabels(t *testing.T) {
@@ -433,4 +440,35 @@ func TestActiveMetrics(t *testing.T) {
 
 	SetActive(true)
 	assert.True(t, Active())
+}
+
+type exampleTypedLabels struct {
+	Namespace   string
+	GatewayName string
+	Port        string
+}
+
+func (r exampleTypedLabels) toMetricsLabels() []Label {
+	return []Label{
+		{Name: "namespace", Value: r.Namespace},
+		{Name: "gateway", Value: r.GatewayName},
+		{Name: "port", Value: r.Port},
+	}
+}
+
+func BenchmarkCounter(b *testing.B) {
+	opts := CounterOpts{
+		Name: "test_empty_labels_total",
+		Help: "A test counter for empty label testing",
+	}
+
+	counter := NewCounter(opts, []string{"namespace", "gateway", "port"})
+	tl := exampleTypedLabels{
+		Namespace:   "apple",
+		GatewayName: "banana",
+		Port:        "avocado",
+	}
+	for b.Loop() {
+		counter.Inc(tl.toMetricsLabels()...)
+	}
 }

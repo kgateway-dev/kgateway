@@ -5,20 +5,19 @@ package fake
 import (
 	gentype "k8s.io/client-go/gentype"
 
-	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/applyconfiguration/api/v1alpha1"
 	v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	typedapiv1alpha1 "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/typed/api/v1alpha1"
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/typed/api/v1alpha1"
 )
 
 // fakeGatewayExtensions implements GatewayExtensionInterface
 type fakeGatewayExtensions struct {
-	*gentype.FakeClientWithListAndApply[*v1alpha1.GatewayExtension, *v1alpha1.GatewayExtensionList, *apiv1alpha1.GatewayExtensionApplyConfiguration]
+	*gentype.FakeClientWithList[*v1alpha1.GatewayExtension, *v1alpha1.GatewayExtensionList]
 	Fake *FakeGatewayV1alpha1
 }
 
-func newFakeGatewayExtensions(fake *FakeGatewayV1alpha1, namespace string) typedapiv1alpha1.GatewayExtensionInterface {
+func newFakeGatewayExtensions(fake *FakeGatewayV1alpha1, namespace string) apiv1alpha1.GatewayExtensionInterface {
 	return &fakeGatewayExtensions{
-		gentype.NewFakeClientWithListAndApply[*v1alpha1.GatewayExtension, *v1alpha1.GatewayExtensionList, *apiv1alpha1.GatewayExtensionApplyConfiguration](
+		gentype.NewFakeClientWithList[*v1alpha1.GatewayExtension, *v1alpha1.GatewayExtensionList](
 			fake.Fake,
 			namespace,
 			v1alpha1.SchemeGroupVersion.WithResource("gatewayextensions"),

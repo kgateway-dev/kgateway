@@ -7,7 +7,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/agentgateway/agentgateway/go/api"
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -27,11 +26,6 @@ type BackendInit struct {
 	// This will never override a ClusterLoadAssignment that is set inside of an InitEnvoyBackend implementation.
 	// The CLA is only added if the Cluster has a compatible type (EDS, LOGICAL_DNS, STRICT_DNS).
 	InitEnvoyBackend func(ctx context.Context, in BackendObjectIR, out *envoyclusterv3.Cluster) *EndpointsForBackend
-
-	// InitAgentBackend translates backend objects for the agent gateway data plane.
-	// It takes a BackendObjectIR (which includes the backend and any attached policies)
-	// and returns the corresponding agent gateway Backend and Policy resources.
-	InitAgentBackend func(in BackendObjectIR) ([]*api.Backend, []*api.Policy, error)
 }
 
 type PolicyRef struct {
@@ -83,6 +77,13 @@ type PolicyAtt struct {
 	// A higher value means higher priority. It is used to accurately merge policies
 	// that are at different levels in the config tree hierarchy.
 	HierarchicalPriority int
+
+	// PrecedenceWeight specifies the weight of the policy as an integer value (negative values are allowed).
+	// Policies with higher weight implies higher priority, and are evaluated before policies with lower weight.
+	// By default, policies have a weight of 0.
+	// The policy's weight is relevant to policy prioritization during policy merging, such that higher priority
+	// policies are preferred during a merge conflict or when ordering policies during a merge.
+	PrecedenceWeight int32
 
 	// MergeOrigins maps field names in the PolicyIr to their original source in the merged PolicyAtt.
 	// It can be used to determine which PolicyAtt a merged field came from.
@@ -142,7 +143,8 @@ func (c PolicyAtt) Equals(in PolicyAtt) bool {
 		c.PolicyIr.Equals(in.PolicyIr) &&
 		ptrEquals(c.PolicyRef, in.PolicyRef) &&
 		c.InheritedPolicyPriority == in.InheritedPolicyPriority &&
-		c.HierarchicalPriority == in.HierarchicalPriority
+		c.HierarchicalPriority == in.HierarchicalPriority &&
+		c.PrecedenceWeight == in.PrecedenceWeight
 }
 
 func ptrEquals[T comparable](a, b *T) bool {

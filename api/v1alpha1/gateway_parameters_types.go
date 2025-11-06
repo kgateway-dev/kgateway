@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -16,7 +17,7 @@ import (
 // +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:metadata:labels={app=kgateway,app.kubernetes.io/name=kgateway}
-// +kubebuilder:resource:categories=kgateway
+// +kubebuilder:resource:categories=kgateway,path=gatewayparameters
 // +kubebuilder:subresource:status
 type GatewayParameters struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -79,7 +80,7 @@ type KubernetesProxyConfig struct {
 	Deployment *ProxyDeployment `json:"deployment,omitempty"`
 
 	// Configuration for the container running Envoy.
-	// If AgentGateway is enabled, the EnvoyContainer values will be ignored.
+	// If agentgateway is enabled, the EnvoyContainer values will be ignored.
 	//
 	// +optional
 	EnvoyContainer *EnvoyContainer `json:"envoyContainer,omitempty"`
@@ -115,19 +116,34 @@ type KubernetesProxyConfig struct {
 	// +optional
 	Stats *StatsConfig `json:"stats,omitempty"`
 
+	// Deprecated: `aiExtension` is deprecated in v2.1 and will be removed in v2.2.
+	// Prefer to use `agentgateway` instead.
+	//
 	// Configuration for the AI extension.
 	//
 	// +optional
 	AiExtension *AiExtension `json:"aiExtension,omitempty"`
 
-	// Configure the AgentGateway integration. If AgentGateway is disabled, the EnvoyContainer values will be used by
-	// default to configure the data plane proxy.
+	// Configure the agentgateway integration. If agentgateway is disabled, the
+	// EnvoyContainer values will be used by default to configure the data
+	// plane proxy.
 	//
 	// +optional
-	AgentGateway *AgentGateway `json:"agentGateway,omitempty"`
+	Agentgateway *Agentgateway `json:"agentgateway,omitempty"`
 
-	// Used to unset the `runAsUser` values in security contexts.
-	FloatingUserId *bool `json:"floatingUserId,omitempty"`
+	// OmitDefaultSecurityContext is used to control whether or not
+	// `securityContext` fields should be rendered for the various generated
+	// Deployments/Containers that are dynamically provisioned by the deployer.
+	//
+	// When set to true, no `securityContexts` will be provided and will left
+	// to the user/platform to be provided.
+	//
+	// This should be enabled on platforms such as Red Hat OpenShift where the
+	// `securityContext` will be dynamically added to enforce the appropriate
+	// level of security.
+	//
+	// +optional
+	OmitDefaultSecurityContext *bool `json:"omitDefaultSecurityContext,omitempty"`
 }
 
 func (in *KubernetesProxyConfig) GetDeployment() *ProxyDeployment {
@@ -193,45 +209,60 @@ func (in *KubernetesProxyConfig) GetAiExtension() *AiExtension {
 	return in.AiExtension
 }
 
-func (in *KubernetesProxyConfig) GetAgentGateway() *AgentGateway {
+func (in *KubernetesProxyConfig) GetAgentgateway() *Agentgateway {
 	if in == nil {
 		return nil
 	}
-	return in.AgentGateway
+	return in.Agentgateway
 }
 
-func (in *KubernetesProxyConfig) GetFloatingUserId() *bool {
+func (in *KubernetesProxyConfig) GetOmitDefaultSecurityContext() *bool {
 	if in == nil {
 		return nil
 	}
-	return in.FloatingUserId
+	return in.OmitDefaultSecurityContext
 }
 
 // ProxyDeployment configures the Proxy deployment in Kubernetes.
-// +kubebuilder:validation:AtMostOneOf=replicas;omitReplicas
 type ProxyDeployment struct {
-	// The number of desired pods. Defaults to 1.
+	// The number of desired pods.
+	// If omitted, behavior will be managed by the K8s control plane, and will default to 1.
+	// If you are using an HPA, make sure to not explicitly define this.
+	// K8s reference: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#replicas
 	//
 	// +optional
-	Replicas *uint32 `json:"replicas,omitempty"`
+	// +kubebuilder:validation:Minimum=0
+	Replicas *int32 `json:"replicas,omitempty"`
 
-	// If true, replicas will not be set in the deployment (allowing HPA to control scaling)
+	// The deployment strategy to use to replace existing pods with new
+	// ones. The Kubernetes default is a RollingUpdate with 25% maxUnavailable,
+	// 25% maxSurge.
+	//
+	// E.g., to recreate pods, minimizing resources for the rollout but causing downtime:
+	// strategy:
+	//   type: Recreate
+	// E.g., to roll out as a RollingUpdate but with non-default parameters:
+	// strategy:
+	//   type: RollingUpdate
+	//   rollingUpdate:
+	//     maxSurge: 100%
+	//
 	// +optional
-	OmitReplicas *bool `json:"omitReplicas,omitempty"`
+	Strategy *appsv1.DeploymentStrategy `json:"strategy,omitempty"`
 }
 
-func (in *ProxyDeployment) GetReplicas() *uint32 {
+func (in *ProxyDeployment) GetReplicas() *int32 {
 	if in == nil {
 		return nil
 	}
 	return in.Replicas
 }
 
-func (in *ProxyDeployment) GetOmitReplicas() *bool {
+func (in *ProxyDeployment) GetStrategy() *appsv1.DeploymentStrategy {
 	if in == nil {
 		return nil
 	}
-	return in.OmitReplicas
+	return in.Strategy
 }
 
 // EnvoyContainer configures the container running Envoy.
@@ -275,6 +306,13 @@ type EnvoyContainer struct {
 	//
 	// +optional
 	Env []corev1.EnvVar `json:"env,omitempty"`
+
+	// Additional volume mounts to add to the container. See
+	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#volumemount-v1-core
+	// for details.
+	//
+	// +optional
+	ExtraVolumeMounts []corev1.VolumeMount `json:"extraVolumeMounts,omitempty"`
 }
 
 func (in *EnvoyContainer) GetBootstrap() *EnvoyBootstrap {
@@ -989,8 +1027,8 @@ func (otelTransportSecurityMode OTLPTransportSecurityMode) String() string {
 	}
 }
 
-// AgentGateway configures the AgentGateway integration. If AgentGateway is enabled, Envoy
-type AgentGateway struct {
+// Agentgateway configures the agentgateway dataplane integration to be enabled if the `agentgateway` GatewayClass is used.
+type Agentgateway struct {
 	// Whether to enable the extension.
 	//
 	// +optional
@@ -1043,51 +1081,58 @@ type AgentGateway struct {
 	//
 	// +optional
 	CustomConfigMapName *string `json:"customConfigMapName,omitempty"`
+
+	// Additional volume mounts to add to the container. See
+	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#volumemount-v1-core
+	// for details.
+	//
+	// +optional
+	ExtraVolumeMounts []corev1.VolumeMount `json:"extraVolumeMounts,omitempty"`
 }
 
-func (in *AgentGateway) GetEnabled() *bool {
+func (in *Agentgateway) GetEnabled() *bool {
 	if in == nil {
 		return nil
 	}
 	return in.Enabled
 }
 
-func (in *AgentGateway) GetLogLevel() *string {
+func (in *Agentgateway) GetLogLevel() *string {
 	if in == nil {
 		return nil
 	}
 	return in.LogLevel
 }
 
-func (in *AgentGateway) GetImage() *Image {
+func (in *Agentgateway) GetImage() *Image {
 	if in == nil {
 		return nil
 	}
 	return in.Image
 }
 
-func (in *AgentGateway) GetSecurityContext() *corev1.SecurityContext {
+func (in *Agentgateway) GetSecurityContext() *corev1.SecurityContext {
 	if in == nil {
 		return nil
 	}
 	return in.SecurityContext
 }
 
-func (in *AgentGateway) GetResources() *corev1.ResourceRequirements {
+func (in *Agentgateway) GetResources() *corev1.ResourceRequirements {
 	if in == nil {
 		return nil
 	}
 	return in.Resources
 }
 
-func (in *AgentGateway) GetEnv() []corev1.EnvVar {
+func (in *Agentgateway) GetEnv() []corev1.EnvVar {
 	if in == nil {
 		return nil
 	}
 	return in.Env
 }
 
-func (in *AgentGateway) GetCustomConfigMapName() *string {
+func (in *Agentgateway) GetCustomConfigMapName() *string {
 	if in == nil {
 		return nil
 	}

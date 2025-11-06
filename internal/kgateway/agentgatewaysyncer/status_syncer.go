@@ -2,69 +2,151 @@ package agentgatewaysyncer
 
 import (
 	"context"
-	"fmt"
-	"log/slog"
+	"log"
+	"time"
 
 	"github.com/avast/retry-go/v4"
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"istio.io/istio/pkg/kube"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"istio.io/istio/pkg/kube/controllers"
+	"istio.io/istio/pkg/kube/kclient"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/status"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 var _ manager.LeaderElectionRunnable = &AgentGwStatusSyncer{}
 
+const (
+	// Retry configuration constants for status updates
+	maxRetryAttempts = 5
+	retryDelay       = 100 * time.Millisecond
+
+	// Log message keys
+	logKeyError = "error"
+)
+
 // AgentGwStatusSyncer runs only on the leader and syncs the status of agent gateway resources.
 // It subscribes to the report queues, parses and updates the resource status.
 type AgentGwStatusSyncer struct {
-	// Core collections and dependencies
-	mgr    manager.Manager
 	client kube.Client
 
+	agentgatewayPolicies StatusSyncer[*v1alpha1.AgentgatewayPolicy, *gwv1.PolicyStatus]
+
 	// Configuration
-	controllerName        string
-	agentGatewayClassName string
+	controllerName string
+	agwClassName   string
 
-	// Report queues
-	gatewayReportQueue     utils.AsyncQueue[GatewayReports]
-	listenerSetReportQueue utils.AsyncQueue[ListenerSetReports]
-	routeReportQueue       utils.AsyncQueue[RouteReports]
+	statusCollections *status.StatusCollections
 
-	// Synchronization
 	cacheSyncs []cache.InformerSynced
+
+	listenerSets StatusSyncer[*gwxv1a1.XListenerSet, *gwxv1a1.ListenerSetStatus]
+	gateways     StatusSyncer[*gwv1.Gateway, *gwv1.GatewayStatus]
+	httpRoutes   StatusSyncer[*gwv1.HTTPRoute, *gwv1.HTTPRouteStatus]
+	grpcRoutes   StatusSyncer[*gwv1.GRPCRoute, *gwv1.GRPCRouteStatus]
+	tcpRoutes    StatusSyncer[*gwv1alpha2.TCPRoute, *gwv1alpha2.TCPRouteStatus]
+	tlsRoutes    StatusSyncer[*gwv1alpha2.TLSRoute, *gwv1alpha2.TLSRouteStatus]
 }
 
-func NewAgentGwStatusSyncer(
+func NewAgwStatusSyncer(
 	controllerName string,
-	agentGatewayClassName string,
+	agwClassName string,
 	client kube.Client,
-	mgr manager.Manager,
-	gatewayReportQueue utils.AsyncQueue[GatewayReports],
-	listenerSetReportQueue utils.AsyncQueue[ListenerSetReports],
-	routeReportQueue utils.AsyncQueue[RouteReports],
+	statusCollections *status.StatusCollections,
 	cacheSyncs []cache.InformerSynced,
 ) *AgentGwStatusSyncer {
-	return &AgentGwStatusSyncer{
-		controllerName:         controllerName,
-		agentGatewayClassName:  agentGatewayClassName,
-		client:                 client,
-		mgr:                    mgr,
-		gatewayReportQueue:     gatewayReportQueue,
-		listenerSetReportQueue: listenerSetReportQueue,
-		routeReportQueue:       routeReportQueue,
-		cacheSyncs:             cacheSyncs,
+	f := kclient.Filter{ObjectFilter: client.ObjectFilter()}
+	syncer := &AgentGwStatusSyncer{
+		controllerName:    controllerName,
+		agwClassName:      agwClassName,
+		client:            client,
+		statusCollections: statusCollections,
+		cacheSyncs:        cacheSyncs,
+
+		agentgatewayPolicies: StatusSyncer[*v1alpha1.AgentgatewayPolicy, *gwv1.PolicyStatus]{
+			name:   "agentgatewayPolicy",
+			client: kclient.NewFilteredDelayed[*v1alpha1.AgentgatewayPolicy](client, wellknown.AgentgatewayPolicyGVR, f),
+			build: func(om metav1.ObjectMeta, s *gwv1.PolicyStatus) *v1alpha1.AgentgatewayPolicy {
+				return &v1alpha1.AgentgatewayPolicy{
+					ObjectMeta: om,
+					Status: gwv1.PolicyStatus{
+						Ancestors: s.Ancestors,
+					},
+				}
+			},
+		},
+		httpRoutes: StatusSyncer[*gwv1.HTTPRoute, *gwv1.HTTPRouteStatus]{
+			name:   "httpRoute",
+			client: kclient.NewFilteredDelayed[*gwv1.HTTPRoute](client, wellknown.HTTPRouteGVR, f),
+			build: func(om metav1.ObjectMeta, s *gwv1.HTTPRouteStatus) *gwv1.HTTPRoute {
+				return &gwv1.HTTPRoute{
+					ObjectMeta: om,
+					Status:     *s,
+				}
+			},
+		},
+		grpcRoutes: StatusSyncer[*gwv1.GRPCRoute, *gwv1.GRPCRouteStatus]{
+			name:   "grpcRoute",
+			client: kclient.NewFilteredDelayed[*gwv1.GRPCRoute](client, wellknown.GRPCRouteGVR, f),
+			build: func(om metav1.ObjectMeta, s *gwv1.GRPCRouteStatus) *gwv1.GRPCRoute {
+				return &gwv1.GRPCRoute{
+					ObjectMeta: om,
+					Status:     *s,
+				}
+			},
+		},
+		tlsRoutes: StatusSyncer[*gwv1alpha2.TLSRoute, *gwv1alpha2.TLSRouteStatus]{
+			name:   "tlsRoute",
+			client: kclient.NewFilteredDelayed[*gwv1alpha2.TLSRoute](client, wellknown.TLSRouteGVR, f),
+			build: func(om metav1.ObjectMeta, s *gwv1alpha2.TLSRouteStatus) *gwv1alpha2.TLSRoute {
+				return &gwv1alpha2.TLSRoute{
+					ObjectMeta: om,
+					Status:     *s,
+				}
+			},
+		},
+		tcpRoutes: StatusSyncer[*gwv1alpha2.TCPRoute, *gwv1alpha2.TCPRouteStatus]{
+			name:   "tcpRoute",
+			client: kclient.NewFilteredDelayed[*gwv1alpha2.TCPRoute](client, wellknown.TCPRouteGVR, f),
+			build: func(om metav1.ObjectMeta, s *gwv1alpha2.TCPRouteStatus) *gwv1alpha2.TCPRoute {
+				return &gwv1alpha2.TCPRoute{
+					ObjectMeta: om,
+					Status:     *s,
+				}
+			},
+		},
+		listenerSets: StatusSyncer[*gwxv1a1.XListenerSet, *gwxv1a1.ListenerSetStatus]{
+			name:   "listenerSet",
+			client: kclient.NewFilteredDelayed[*gwxv1a1.XListenerSet](client, wellknown.XListenerSetGVR, f),
+			build: func(om metav1.ObjectMeta, s *gwxv1a1.ListenerSetStatus) *gwxv1a1.XListenerSet {
+				return &gwxv1a1.XListenerSet{
+					ObjectMeta: om,
+					Status:     *s,
+				}
+			},
+		},
+		gateways: StatusSyncer[*gwv1.Gateway, *gwv1.GatewayStatus]{
+			name:   "gateway",
+			client: kclient.NewFilteredDelayed[*gwv1.Gateway](client, wellknown.GatewayGVR, f),
+			build: func(om metav1.ObjectMeta, s *gwv1.GatewayStatus) *gwv1.Gateway {
+				return &gwv1.Gateway{
+					ObjectMeta: om,
+					Status:     *s,
+				}
+			},
+		},
 	}
+
+	return syncer
 }
 
 func (s *AgentGwStatusSyncer) Start(ctx context.Context) error {
@@ -78,299 +160,102 @@ func (s *AgentGwStatusSyncer) Start(ctx context.Context) error {
 		ctx.Done(),
 		s.cacheSyncs...,
 	)
+	s.client.WaitForCacheSync(
+		"agent gateway status clients",
+		ctx.Done(),
+		s.listenerSets.client.HasSynced,
+		s.gateways.client.HasSynced,
+		s.httpRoutes.client.HasSynced,
+		s.grpcRoutes.client.HasSynced,
+		s.tcpRoutes.client.HasSynced,
+		s.tlsRoutes.client.HasSynced,
+	)
 
-	// wait for ctrl-rtime caches to sync before accepting events
-	if !s.mgr.GetCache().WaitForCacheSync(ctx) {
-		return fmt.Errorf("agent gateway status sync loop waiting for all caches to sync failed")
-	}
 	logger.Info("caches warm!")
 
-	// Start separate goroutines for each status syncer
-	routeStatusLogger := logger.With("subcomponent", "routeStatusSyncer")
-	listenerSetStatusLogger := logger.With("subcomponent", "listenerSetStatusSyncer")
-	gatewayStatusLogger := logger.With("subcomponent", "gatewayStatusSyncer")
-
-	// Gateway status syncer
-	go func() {
-		for {
-			gatewayReports, err := s.gatewayReportQueue.Dequeue(ctx)
-			if err != nil {
-				logger.Error("failed to dequeue gateway reports", "error", err)
-				return
-			}
-			s.syncGatewayStatus(ctx, gatewayStatusLogger, gatewayReports)
-		}
-	}()
-
-	// Listener set status syncer
-	go func() {
-		for {
-			listenerSetReports, err := s.listenerSetReportQueue.Dequeue(ctx)
-			if err != nil {
-				logger.Error("failed to dequeue listener set reports", "error", err)
-				return
-			}
-			s.syncListenerSetStatus(ctx, listenerSetStatusLogger, listenerSetReports)
-		}
-	}()
-
-	// Route status syncer
-	go func() {
-		for {
-			routeReports, err := s.routeReportQueue.Dequeue(ctx)
-			if err != nil {
-				logger.Error("failed to dequeue route reports", "error", err)
-				return
-			}
-			s.syncRouteStatus(ctx, routeStatusLogger, routeReports)
-		}
-	}()
+	// Create a controllers.Queue that wraps our async queue for Istio's StatusCollections
+	// The policyStatusQueue implements https://github.com/istio/istio/blob/531c61709aaa9bc9187c625e9e460be98f2abf2e/pilot/pkg/status/manager.go#L107
+	nq := s.NewStatusWorker(ctx)
+	s.statusCollections.SetQueue(nq)
 
 	<-ctx.Done()
 	return nil
 }
 
-func (s *AgentGwStatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, routeReports RouteReports) {
-	stopwatch := utils.NewTranslatorStopWatch("RouteStatusSyncer")
+func (s *AgentGwStatusSyncer) SyncStatus(ctx context.Context, resource status.Resource, statusObj any) {
+	switch resource.GroupVersionKind {
+	case wellknown.GatewayGVK:
+		s.gateways.ApplyStatus(ctx, resource, statusObj)
+	case wellknown.XListenerSetGVK:
+		s.listenerSets.ApplyStatus(ctx, resource, statusObj)
+	case wellknown.GRPCRouteGVK:
+		s.grpcRoutes.ApplyStatus(ctx, resource, statusObj)
+	case wellknown.TLSRouteGVK:
+		s.tlsRoutes.ApplyStatus(ctx, resource, statusObj)
+	case wellknown.TCPRouteGVK:
+		s.tcpRoutes.ApplyStatus(ctx, resource, statusObj)
+	case wellknown.HTTPRouteGVK:
+		s.httpRoutes.ApplyStatus(ctx, resource, statusObj)
+	case wellknown.AgentgatewayPolicyGVK:
+		s.agentgatewayPolicies.ApplyStatus(ctx, resource, statusObj)
+	default:
+		log.Fatalf("SyncStatus: unknown resource type: %v", resource.GroupVersionKind)
+	}
+}
+
+func (s *AgentGwStatusSyncer) NewStatusWorker(ctx context.Context) *status.WorkerPool {
+	return status.NewWorkerPool(ctx, s.SyncStatus, 100)
+}
+
+type StatusSyncer[O controllers.ComparableObject, S any] struct {
+	// Name for logging
+	name string
+
+	client kclient.Client[O]
+
+	build func(om metav1.ObjectMeta, s S) O
+}
+
+func (s StatusSyncer[O, S]) ApplyStatus(ctx context.Context, obj status.Resource, statusObj any) {
+	status := statusObj.(S)
+	stopwatch := utils.NewTranslatorStopWatch(s.name + "Status")
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
 
-	// TODO: add routeStatusMetrics
+	logger := logger.With("kind", s.name, "resource", obj.NamespacedName.String())
+	// TODO: move this to retry by putting it back on the queue, with some limit on the retry attempts allowed
+	err := retry.Do(func() error {
+		// Pass only the status and minimal part of ObjectMetadata to find the resource and validate it.
+		// Passing Spec is ignored by the API server but has costs.
+		// Passing ResourceVersion is important to ensure we are not writing stale data. The collection is responsible for
+		// re-enqueuing a resource if it ends up being rejected due to stale ResourceVersion.
+		_, err := s.client.UpdateStatus(s.build(metav1.ObjectMeta{
+			Name:            obj.Name,
+			Namespace:       obj.Namespace,
+			ResourceVersion: obj.ResourceVersion,
+		}, status))
 
-	// Helper function to sync route status with retry
-	syncStatusWithRetry := func(
-		routeType string,
-		routeKey client.ObjectKey,
-		getRouteFunc func() client.Object,
-		statusUpdater func(route client.Object) error,
-	) error {
-		return retry.Do(
-			func() error {
-				route := getRouteFunc()
-				err := s.mgr.GetClient().Get(ctx, routeKey, route)
-				if err != nil {
-					if apierrors.IsNotFound(err) {
-						// the route is not found, we can't report status on it
-						// if it's recreated, we'll retranslate it anyway
-						return nil
-					}
-					logger.Error("error getting route", logKeyError, err, logKeyResourceRef, routeKey, logKeyRouteType, routeType)
-					return err
-				}
-				if err := statusUpdater(route); err != nil {
-					logger.Debug("error updating status for route", logKeyError, err, logKeyResourceRef, routeKey, logKeyRouteType, routeType)
-					return err
-				}
-				return nil
-			},
-			retry.Attempts(maxRetryAttempts),
-			retry.Delay(retryDelay),
-			retry.DelayType(retry.BackOffDelay),
-		)
-	}
-
-	// Create a minimal ReportMap with just the route reports for BuildRouteStatus to work
-	rm := reports.ReportMap{
-		HTTPRoutes: routeReports.HTTPRoutes,
-		GRPCRoutes: routeReports.GRPCRoutes,
-		TCPRoutes:  routeReports.TCPRoutes,
-		TLSRoutes:  routeReports.TLSRoutes,
-	}
-
-	// Helper function to build route status and update if needed
-	buildAndUpdateStatus := func(route client.Object, routeType string) error {
-		var status *gwv1.RouteStatus
-		switch r := route.(type) {
-		case *gwv1.HTTPRoute: // TODO: beta1?
-			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
-			if status == nil || isRouteStatusEqual(&r.Status.RouteStatus, status) {
-				return nil
-			}
-			r.Status.RouteStatus = *status
-		case *gwv1alpha2.TCPRoute:
-			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
-			if status == nil || isRouteStatusEqual(&r.Status.RouteStatus, status) {
-				return nil
-			}
-			r.Status.RouteStatus = *status
-		case *gwv1alpha2.TLSRoute:
-			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
-			if status == nil || isRouteStatusEqual(&r.Status.RouteStatus, status) {
-				return nil
-			}
-			r.Status.RouteStatus = *status
-		case *gwv1.GRPCRoute:
-			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
-			if status == nil || isRouteStatusEqual(&r.Status.RouteStatus, status) {
-				return nil
-			}
-			r.Status.RouteStatus = *status
-		default:
-			logger.Warn("unsupported route type", logKeyRouteType, routeType, logKeyResourceRef, client.ObjectKeyFromObject(route))
-			return nil
-		}
-
-		// Update the status
-		return s.mgr.GetClient().Status().Update(ctx, route)
-	}
-
-	for rnn := range routeReports.HTTPRoutes {
-		err := syncStatusWithRetry(
-			wellknown.HTTPRouteKind,
-			rnn,
-			func() client.Object {
-				return new(gwv1.HTTPRoute)
-			},
-			func(route client.Object) error {
-				return buildAndUpdateStatus(route, wellknown.HTTPRouteKind)
-			},
-		)
 		if err != nil {
-			logger.Error("all attempts failed at updating HTTPRoute status", logKeyError, err, "route", rnn)
+			if errors.IsConflict(err) {
+				// This is normal. It is expected the collection will re-enqueue the write
+				logger.Debug("updating stale status, skipping", logKeyError, err)
+				return nil
+			}
+			logger.Error("error updating status", logKeyError, err)
+			return err
 		}
-	}
-}
-
-// syncGatewayStatus will build and update status for all Gateways in gateway reports
-func (s *AgentGwStatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger, gatewayReports GatewayReports) {
-	stopwatch := utils.NewTranslatorStopWatch("GatewayStatusSyncer")
-	stopwatch.Start()
-
-	// TODO: add gatewayStatusMetrics
-
-	// Create a minimal ReportMap with just the gateway reports for BuildGWStatus to work
-	rm := reports.ReportMap{
-		Gateways: gatewayReports.Reports,
-	}
-
-	// TODO: retry within loop per GW rather that as a full block
-	err := retry.Do(func() error {
-		for gwnn := range gatewayReports.Reports {
-			gw := gwv1.Gateway{}
-			err := s.mgr.GetClient().Get(ctx, gwnn, &gw)
-			if err != nil {
-				if apierrors.IsNotFound(err) {
-					// the gateway is not found, we can't report status on it
-					// if it's recreated, we'll retranslate it anyway
-					continue
-				}
-				logger.Info("error getting gw", logKeyError, err, logKeyGateway, gwnn.String())
-				return err
-			}
-
-			// Only process agentgateway classes - others are handled by ProxySyncer
-			if string(gw.Spec.GatewayClassName) != s.agentGatewayClassName {
-				logger.Debug("skipping status sync for non-agentgateway", logKeyGateway, gwnn.String())
-				continue
-			}
-
-			gwStatusWithoutAddress := gw.Status
-			gwStatusWithoutAddress.Addresses = nil
-			var attachedRoutesForGw map[string]uint
-			if gatewayReports.AttachedRoutes != nil {
-				attachedRoutesForGw = gatewayReports.AttachedRoutes[gwnn]
-			}
-
-			if status := rm.BuildGWStatus(ctx, gw, attachedRoutesForGw); status != nil {
-				if !isGatewayStatusEqual(&gwStatusWithoutAddress, status) {
-					gw.Status = *status
-					if err := s.mgr.GetClient().Status().Patch(ctx, &gw, client.Merge); err != nil {
-						logger.Error("error patching gateway status", logKeyError, err, logKeyGateway, gwnn.String())
-						return err
-					}
-					logger.Info("patched gw status", logKeyGateway, gwnn.String())
-				} else {
-					logger.Info("skipping k8s gateway status update, status equal", logKeyGateway, gwnn.String())
-				}
-			}
-		}
+		logger.Debug("updated status")
 		return nil
-	},
-		retry.Attempts(maxRetryAttempts),
-		retry.Delay(retryDelay),
-		retry.DelayType(retry.BackOffDelay),
-	)
+	}, retry.Attempts(maxRetryAttempts), retry.Delay(retryDelay))
+
 	if err != nil {
-		logger.Error("all attempts failed at updating gateway statuses", logKeyError, err)
+		logger.Error("failed to sync status after retries", logKeyError, err, "policy", obj.NamespacedName.String())
+	} else {
+		logger.Debug("updated policy status")
 	}
-	duration := stopwatch.Stop(ctx)
-	logger.Debug("synced gw status for gateways", "count", len(gatewayReports.Reports), "duration", duration)
-}
-
-// syncListenerSetStatus will build and update status for all Listener Sets in listener set reports
-func (s *AgentGwStatusSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.Logger, listenerSetReports ListenerSetReports) {
-	stopwatch := utils.NewTranslatorStopWatch("ListenerSetStatusSyncer")
-	stopwatch.Start()
-
-	// TODO: add listenerStatusMetrics
-
-	// Create a minimal ReportMap with just the listener set reports for BuildListenerSetStatus to work
-	rm := reports.ReportMap{
-		ListenerSets: listenerSetReports.Reports,
-	}
-
-	// TODO: retry within loop per LS rathen that as a full block
-	err := retry.Do(func() error {
-		for lsnn := range listenerSetReports.Reports {
-			ls := gwxv1a1.XListenerSet{}
-			err := s.mgr.GetClient().Get(ctx, lsnn, &ls)
-			if err != nil {
-				if apierrors.IsNotFound(err) {
-					// the listener set is not found, we can't report status on it
-					// if it's recreated, we'll retranslate it anyway
-					continue
-				}
-				logger.Info("error getting ls", "error", err.Error())
-				return err
-			}
-			lsStatus := ls.Status
-			if status := rm.BuildListenerSetStatus(ctx, ls); status != nil {
-				if !isListenerSetStatusEqual(&lsStatus, status) {
-					ls.Status = *status
-					if err := s.mgr.GetClient().Status().Patch(ctx, &ls, client.Merge); err != nil {
-						logger.Error("error patching listener set status", logKeyError, err, logKeyGateway, lsnn.String())
-						return err
-					}
-					logger.Info("patched ls status", "listenerset", lsnn.String())
-				} else {
-					logger.Info("skipping k8s ls status update, status equal", "listenerset", lsnn.String())
-				}
-			}
-		}
-		return nil
-	},
-		retry.Attempts(maxRetryAttempts),
-		retry.Delay(retryDelay),
-		retry.DelayType(retry.BackOffDelay),
-	)
-	if err != nil {
-		logger.Error("all attempts failed at updating listener set statuses", logKeyError, err)
-	}
-	duration := stopwatch.Stop(ctx)
-	logger.Debug("synced listener sets status for listener set", "count", len(listenerSetReports.Reports), "duration", duration.String())
 }
 
 // NeedLeaderElection returns true to ensure that the AgentGwStatusSyncer runs only on the leader
 func (r *AgentGwStatusSyncer) NeedLeaderElection() bool {
 	return true
-}
-
-var opts = cmp.Options{
-	cmpopts.IgnoreFields(metav1.Condition{}, "LastTransitionTime"),
-	cmpopts.IgnoreMapEntries(func(k string, _ any) bool {
-		return k == "lastTransitionTime"
-	}),
-}
-
-// isRouteStatusEqual compares two RouteStatus objects directly
-func isRouteStatusEqual(objA, objB *gwv1.RouteStatus) bool {
-	return cmp.Equal(objA, objB, opts)
-}
-
-func isListenerSetStatusEqual(objA, objB *gwxv1a1.ListenerSetStatus) bool {
-	return cmp.Equal(objA, objB, opts)
-}
-
-func isGatewayStatusEqual(objA, objB *gwv1.GatewayStatus) bool {
-	return cmp.Equal(objA, objB, opts)
 }

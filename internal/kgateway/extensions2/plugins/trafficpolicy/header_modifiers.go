@@ -7,7 +7,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 const (
@@ -41,9 +41,9 @@ func (hm *headerModifiersIR) Validate() error {
 }
 
 // constructHeaderModifiers constructs the headerModifiers policy IR from the policy specification.
-func constructHeaderModifiers(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) error {
+func constructHeaderModifiers(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) {
 	if spec.HeaderModifiers == nil {
-		return nil
+		return
 	}
 
 	p := buildHeaderModifiersPolicy(spec.HeaderModifiers)
@@ -51,8 +51,6 @@ func constructHeaderModifiers(spec v1alpha1.TrafficPolicySpec, out *trafficPolic
 	out.headerModifiers = &headerModifiersIR{
 		policy: p,
 	}
-
-	return nil
 }
 
 // handleHeaderModifiers adds header modifier filters.

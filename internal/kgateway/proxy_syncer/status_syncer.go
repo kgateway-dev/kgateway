@@ -20,16 +20,16 @@ import (
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
-	"github.com/avast/retry-go"
+	"github.com/avast/retry-go/v4"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
-	tmetrics "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	plug "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
@@ -40,7 +40,7 @@ type StatusSyncer struct {
 	mgr                   manager.Manager
 	plugins               plug.Plugin
 	controllerName        string
-	agentGatewayClassName string
+	agentgatewayClassName string
 	istioClient           kube.Client
 
 	latestReportQueue              utils.AsyncQueue[reports.ReportMap]
@@ -52,9 +52,9 @@ func NewStatusSyncer(
 	mgr manager.Manager,
 	plugins plug.Plugin,
 	controllerName string,
-	agentGatewayClassName string,
+	agentgatewayClassName string,
 	client kube.Client,
-	commonCols *common.CommonCollections,
+	commonCols *collections.CommonCollections,
 	reportQueue utils.AsyncQueue[reports.ReportMap],
 	backendPolicyReportQueue utils.AsyncQueue[reports.ReportMap],
 	cacheSyncs []cache.InformerSynced,
@@ -64,7 +64,7 @@ func NewStatusSyncer(
 		plugins:                        plugins,
 		istioClient:                    client,
 		controllerName:                 controllerName,
-		agentGatewayClassName:          agentGatewayClassName,
+		agentgatewayClassName:          agentgatewayClassName,
 		latestReportQueue:              reportQueue,
 		latestBackendPolicyReportQueue: backendPolicyReportQueue,
 		cacheSyncs:                     cacheSyncs,
@@ -102,6 +102,7 @@ func (s *StatusSyncer) Start(ctx context.Context) error {
 		for {
 			latestReport, err := s.latestReportQueue.Dequeue(ctx)
 			if err != nil {
+				logger.Error("failed to dequeue gateway reports", "error", err)
 				return
 			}
 			s.syncGatewayStatus(ctx, gatewayStatusLogger, latestReport)
@@ -114,6 +115,7 @@ func (s *StatusSyncer) Start(ctx context.Context) error {
 		for {
 			latestReport, err := s.latestBackendPolicyReportQueue.Dequeue(ctx)
 			if err != nil {
+				logger.Error("failed to dequeue backend policy reports", "error", err)
 				return
 			}
 			s.syncPolicyStatus(ctx, latestReport)
@@ -194,12 +196,12 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 
 				defer func() {
 					for _, gatewayName := range gatewayNames {
-						tmetrics.EndResourceSync(tmetrics.ResourceSyncDetails{
+						metrics.EndResourceStatusSync(metrics.ResourceSyncDetails{
 							Namespace:    routeKey.Namespace,
 							Gateway:      gatewayName,
 							ResourceType: routeType,
 							ResourceName: routeKey.Name,
-						}, false, resourcesStatusSyncsCompletedTotal, resourcesStatusSyncDuration)
+						})
 
 						if finish, exists := finishMetrics[gatewayName]; exists {
 							finish.finishFunc(errors.Join(rErr, finish.statusError))
@@ -363,14 +365,29 @@ func (s *StatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logge
 				return err
 			}
 
-			// Skip agentgateway classes, they are handled by agentgateway syncer
-			if string(gw.Spec.GatewayClassName) == s.agentGatewayClassName {
-				logger.Debug("skipping status sync for agentgateway", "gateway", gwnn.String())
+			// Check the controller name of the gateway class to avoid syncing status for non-envoy controllers
+			gwClass := gwv1.GatewayClass{}
+			err := s.mgr.GetClient().Get(ctx, types.NamespacedName{
+				Name: string(gw.Spec.GatewayClassName),
+			}, &gwClass)
+			if err != nil {
+				if apierrors.IsNotFound(err) {
+					logger.Debug("gateway class not found, skipping", "gateway", gwnn.String(), "gatewayClassName", gw.Spec.GatewayClassName)
+					return nil
+				}
+				logger.Error("error getting gateway class", "error", err, "gateway", gwnn.String(), "gatewayClassName", gw.Spec.GatewayClassName)
+				return err
+			}
+
+			if string(gwClass.Spec.ControllerName) != s.controllerName {
+				logger.Debug("skipping status sync for non-kgateway controller", "gateway", gwnn.String(), "controllerName", gwClass.Spec.ControllerName, "gatewayClassName", gw.Spec.GatewayClassName)
+				return nil
 			}
 
 			// Build the desired status
 			newStatus := rm.BuildGWStatus(ctx, gw, nil)
 			if newStatus == nil {
+				logger.Debug("new status is nil; skipping status update", "gateway", gwnn.String())
 				return nil
 			}
 
@@ -382,14 +399,15 @@ func (s *StatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logge
 				return nil
 			}
 
-			// Prepare and apply the status patch
-			original := gw.DeepCopy()
+			// Apply the status update
 			gw.Status = *newStatus
-			if err := s.mgr.GetClient().Status().Patch(ctx, &gw, client.MergeFrom(original)); err != nil {
-				logger.Error("error patching gateway status", "error", err, "gateway", gwnn.String())
+			if err := s.mgr.GetClient().Status().Update(ctx, &gw); err != nil {
+				if !apierrors.IsConflict(err) {
+					logger.Error("error updating gateway status", "error", err, "gateway", gwnn.String())
+				}
 				return err
 			}
-			logger.Info("patched gateway status", "gateway", gwnn.String())
+			logger.Info("updated gateway status", "gateway", gwnn.String())
 
 			for _, cond := range gw.Status.Conditions {
 				if cond.Type != string(gwv1.GatewayConditionAccepted) &&
@@ -400,6 +418,8 @@ func (s *StatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logge
 				if cond.Reason != string(gwv1.GatewayReasonAccepted) &&
 					cond.Reason != string(gwv1.GatewayReasonProgrammed) &&
 					cond.Reason != string(gwv1.GatewayReasonPending) {
+					logger.Debug("invalid status condition reason", "reason", cond.Reason, "gateway", gwnn.String())
+
 					statusErr = fmt.Errorf("invalid gateway condition")
 
 					break
@@ -413,12 +433,12 @@ func (s *StatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logge
 		}
 
 		// Record metrics for this gateway
-		tmetrics.EndResourceSync(tmetrics.ResourceSyncDetails{
+		metrics.EndResourceStatusSync(metrics.ResourceSyncDetails{
 			Namespace:    gwnn.Namespace,
 			Gateway:      gwnn.Name,
 			ResourceType: wellknown.GatewayKind,
 			ResourceName: gwnn.Name,
-		}, false, resourcesStatusSyncsCompletedTotal, resourcesStatusSyncDuration)
+		})
 
 		finishMetrics(errors.Join(err, statusErr))
 	}
@@ -438,7 +458,7 @@ func (s *StatusSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.L
 			ls := gwxv1a1.XListenerSet{}
 			err := s.mgr.GetClient().Get(ctx, lsnn, &ls)
 			if err != nil {
-				logger.Info("error getting ls", "erro", err.Error())
+				logger.Info("error getting ls", "error", err.Error())
 				return err
 			}
 
@@ -458,10 +478,9 @@ func (s *StatusSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.L
 				if !isListenerSetStatusEqual(&lsStatus, status) {
 					ls.Status = *status
 					if err := s.mgr.GetClient().Status().Patch(ctx, &ls, client.Merge); err != nil {
-						if apierrors.IsConflict(err) {
-							return err // Expected conflict, retry will handle.
+						if !apierrors.IsConflict(err) {
+							logger.Error("error patching listener set status", "error", err, "gateway", lsnn.String())
 						}
-						logger.Error("error patching listener set status", "error", err, "gateway", lsnn.String())
 						return err
 					}
 					logger.Info("patched ls status", "listenerset", lsnn.String())
@@ -484,12 +503,12 @@ func (s *StatusSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.L
 					logger.Debug("skipping k8s ls status update, status equal", "listenerset", lsnn.String())
 				}
 
-				tmetrics.EndResourceSync(tmetrics.ResourceSyncDetails{
+				metrics.EndResourceStatusSync(metrics.ResourceSyncDetails{
 					Namespace:    ls.Namespace,
 					Gateway:      string(ls.Spec.ParentRef.Name),
 					ResourceType: "XListenerSet",
 					ResourceName: ls.Name,
-				}, false, resourcesStatusSyncsCompletedTotal, resourcesStatusSyncDuration)
+				})
 			}
 		}
 		return nil
@@ -579,21 +598,12 @@ func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMa
 			continue
 		}
 
-		for _, ancestor := range status.Ancestors {
-			if ancestor.AncestorRef.Kind != nil && *ancestor.AncestorRef.Kind == "Gateway" {
-				namespace := nsName.Namespace
-				if ancestor.AncestorRef.Namespace != nil {
-					namespace = string(*ancestor.AncestorRef.Namespace)
-				}
-
-				tmetrics.EndResourceSync(tmetrics.ResourceSyncDetails{
-					Namespace:    namespace,
-					Gateway:      string(ancestor.AncestorRef.Name),
-					ResourceType: gk.Kind,
-					ResourceName: nsName.Name,
-				}, false, resourcesStatusSyncsCompletedTotal, resourcesStatusSyncDuration)
-			}
-		}
+		metrics.EndResourceStatusSync(metrics.ResourceSyncDetails{
+			Namespace:    nsName.Namespace,
+			Gateway:      "",
+			ResourceType: gk.Kind,
+			ResourceName: nsName.Name,
+		})
 
 		finishMetrics(statusErr)
 	}

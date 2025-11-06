@@ -6,7 +6,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 )
 
@@ -36,15 +36,14 @@ func (c *corsIR) Validate() error {
 }
 
 // constructCORS constructs the CORS policy IR from the policy specification.
-func constructCORS(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) error {
+func constructCORS(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) {
 	spec := in.Spec.Cors
 	if spec == nil {
-		return nil
+		return
 	}
 	out.cors = &corsIR{
 		policy: policy.BuildCorsPolicy(spec.HTTPCORSFilter, spec.Disable != nil),
 	}
-	return nil
 }
 
 func (p *trafficPolicyPluginGwPass) handleCors(fcn string, pCtxTypedFilterConfig *ir.TypedFilterConfigMap, cors *corsIR) {

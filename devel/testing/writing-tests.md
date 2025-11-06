@@ -13,7 +13,7 @@
 ## Conventions
 - All new packages and most new significant functionality must come with unit tests
 - Table-driven tests are preferred for testing multiple scenarios/inputs
-- Significant features should come with [kubernetes end-to-end (test/kubernetes/e2e) tests](/test/kubernetes/e2e/README.md)
+- Significant features should come with [kubernetes end-to-end (test/e2e) tests](/test/e2e/README.md)
 - Tests which are platform-dependent, should be marked as such using [test requirements](/test/testutils/requirements.go)
 
 ## Matchers
@@ -73,7 +73,7 @@ A common pattern to assert than an error occurred
 Expect(err).To(HaveOccurred())
 ```
 
-A more explict way to perfrom this assertion is:
+A more explicit way to perform this assertion is:
 ```go
 Expect(err).To(MatchError("expected error"))
 ```

@@ -1,0 +1,8 @@
+version: v2.5.0
+name: golangci-lint-custom
+destination: _output
+plugins:
+- module: github.com/kgateway-dev/kgateway/v2/hack/krtequals
+  path: ./hack/krtequals
+- module: 'sigs.k8s.io/kube-api-linter'
+  version: 'v0.0.0-20250715075424-4fab82d26a8e' # Pin to a commit while there's no tag

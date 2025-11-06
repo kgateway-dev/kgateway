@@ -4,9 +4,8 @@ import (
 	"testing"
 
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 func TestValidateWeightedClusters(t *testing.T) {
