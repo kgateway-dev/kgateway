@@ -17,7 +17,7 @@ var (
 
 	hasEnvoy = matchers.HttpResponse{
 		StatusCode: http.StatusOK,
-		Headers: map[string]interface{}{
+		Headers: map[string]any{
 			"server": "envoy",
 		},
 		Body: gstruct.Ignore(),

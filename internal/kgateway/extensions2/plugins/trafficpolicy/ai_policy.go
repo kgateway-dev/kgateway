@@ -429,7 +429,7 @@ func applyPromptGuard(pg *v1alpha1.AIPromptGuard, extProcRouteSettings *envoy_ex
 
 // hashUnique generates a hash of the struct that is unique to the object by
 // hashing the entire structure using hashstructure.
-func hashUnique(obj interface{}, hasher hash.Hash64) (uint64, error) {
+func hashUnique(obj any, hasher hash.Hash64) (uint64, error) {
 	if obj == nil {
 		return 0, nil
 	}

@@ -391,7 +391,7 @@ func sortClusters(clusters []*envoyclusterv3.Cluster) []*envoyclusterv3.Cluster 
 	return clusters
 }
 
-func ReadYamlFile(file string, out interface{}) error {
+func ReadYamlFile(file string, out any) error {
 	data, err := os.ReadFile(file)
 	if err != nil {
 		return err

@@ -4,35 +4,9 @@ Clusters:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
-  healthChecks:
-  - grpcHealthCheck:
-      authority: example.com
-      serviceName: grpc.health.v1.Health
-    healthyThreshold: 2
-    interval: 2s
-    timeout: 3s
-    unhealthyThreshold: 3
   ignoreHealthOnHostRemoval: true
   metadata: {}
-  name: kube_default_httpbin-grpc_8080
-  type: EDS
-- connectTimeout: 5s
-  edsClusterConfig:
-    edsConfig:
-      ads: {}
-      resourceApiVersion: V3
-  healthChecks:
-  - healthyThreshold: 2
-    httpHealthCheck:
-      host: example.com
-      method: HEAD
-      path: /healthz
-    interval: 2s
-    timeout: 3s
-    unhealthyThreshold: 3
-  ignoreHealthOnHostRemoval: true
-  metadata: {}
-  name: kube_default_httpbin_8080
+  name: kube_default_foo-svc_8080
   type: EDS
 - connectTimeout: 5s
   metadata: {}
@@ -71,11 +45,6 @@ Statuses:
     default/example-gateway:
       conditions:
       - lastTransitionTime: null
-        message: ""
-        reason: ListenerSetsNotAllowed
-        status: Unknown
-        type: AttachedListenerSets
-      - lastTransitionTime: null
         message: Successfully accepted Gateway
         reason: Accepted
         status: "True"
@@ -108,48 +77,9 @@ Statuses:
           reason: Programmed
           status: "True"
           type: Programmed
-        name: http
+        name: http-8080
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: HTTPRoute
         - group: gateway.networking.k8s.io
           kind: GRPCRoute
-  policies:
-    BackendConfigPolicy/default/httpbin-grpc-hc-policy:
-      ancestors:
-      - ancestorRef:
-          group: ""
-          kind: Service
-          name: httpbin-grpc
-          namespace: default
-        conditions:
-        - lastTransitionTime: null
-          message: Policy accepted
-          reason: Valid
-          status: "True"
-          type: Accepted
-        - lastTransitionTime: null
-          message: Attached to all targets
-          reason: Attached
-          status: "True"
-          type: Attached
-        controllerName: kgateway.dev/kgateway
-    BackendConfigPolicy/default/httpbin-policy:
-      ancestors:
-      - ancestorRef:
-          group: ""
-          kind: Service
-          name: httpbin
-          namespace: default
-        conditions:
-        - lastTransitionTime: null
-          message: Policy accepted
-          reason: Valid
-          status: "True"
-          type: Accepted
-        - lastTransitionTime: null
-          message: Attached to all targets
-          reason: Attached
-          status: "True"
-          type: Attached
-        controllerName: kgateway.dev/kgateway

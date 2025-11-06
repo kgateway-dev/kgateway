@@ -39,7 +39,7 @@ metadata:
 spec:
   containers:
     - name: hey
-      image: ricoli/hey
+      image: ricoli/hey@sha256:306dcd944a4398264f8a6bb43501afb3bb2285be4be248859bac971c57e3c270
       imagePullPolicy: IfNotPresent
       command:
         - "tail"

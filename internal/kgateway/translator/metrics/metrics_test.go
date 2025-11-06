@@ -20,12 +20,12 @@ func setupTest() {
 	ResetMetrics()
 }
 
-func assertTranslationsRunning(currentMetrics metricstest.GatheredMetrics, translatorName string, count int) {
+func assertTranslationsRunning(currentMetrics metricstest.GatheredMetrics, count int) {
 	currentMetrics.AssertMetric("kgateway_translator_translations_running", &metricstest.ExpectedMetric{
 		Labels: []metrics.Label{
 			{Name: "name", Value: testGatewayName},
 			{Name: "namespace", Value: testNamespace},
-			{Name: "translator", Value: translatorName},
+			{Name: "translator", Value: testTranslatorName},
 		},
 		Value: float64(count),
 	})
@@ -43,14 +43,14 @@ func TestCollectTranslationMetrics_Success(t *testing.T) {
 
 	// Check that the translations_running metric is 1
 	currentMetrics := metricstest.MustGatherMetrics(t)
-	assertTranslationsRunning(currentMetrics, testTranslatorName, 1)
+	assertTranslationsRunning(currentMetrics, 1)
 
 	// Finish translation
 	finishFunc(nil)
 	currentMetrics = metricstest.MustGatherMetrics(t)
 
 	// Check the translations_running metric
-	assertTranslationsRunning(currentMetrics, testTranslatorName, 0)
+	assertTranslationsRunning(currentMetrics, 0)
 
 	currentMetrics.AssertMetricsInclude("kgateway_translator_translations_total", []metricstest.ExpectMetric{
 		&metricstest.ExpectedMetric{
@@ -83,11 +83,11 @@ func TestCollectTranslationMetrics_Error(t *testing.T) {
 	})
 
 	currentMetrics := metricstest.MustGatherMetrics(t)
-	assertTranslationsRunning(currentMetrics, testTranslatorName, 1)
+	assertTranslationsRunning(currentMetrics, 1)
 
 	finishFunc(assert.AnError)
 	currentMetrics = metricstest.MustGatherMetrics(t)
-	assertTranslationsRunning(currentMetrics, testTranslatorName, 0)
+	assertTranslationsRunning(currentMetrics, 0)
 
 	currentMetrics.AssertMetricsInclude("kgateway_translator_translations_total", []metricstest.ExpectMetric{
 		&metricstest.ExpectedMetric{

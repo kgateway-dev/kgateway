@@ -80,7 +80,7 @@ func TestUpdatePoolStatus_NoReferences_NoErrors(t *testing.T) {
 	}
 
 	// Call the function to update the pool status
-	updated := updatePoolStatus(ctx, commonCol, cli, beIR, "", nil)
+	updated := updatePoolStatus(commonCol, cli, beIR, "", nil)
 
 	// Assert that there are no errors and the status is updated correctly
 	require.NotNil(t, updated)
@@ -176,7 +176,7 @@ func TestUpdatePoolStatus_WithReference_NoErrors(t *testing.T) {
 	}
 
 	// Call the function to update the pool status
-	updated := updatePoolStatus(ctx, commonCol, cli, beIR, "", nil)
+	updated := updatePoolStatus(commonCol, cli, beIR, "", nil)
 
 	// Assert that there are no errors and the status is updated correctly
 	require.NotNil(t, updated)
@@ -295,7 +295,7 @@ func TestUpdatePoolStatus_WithReference_WithErrors(t *testing.T) {
 	}
 
 	// Call the function to update the pool status with errors
-	updated := updatePoolStatus(ctx, commonCol, cli, beIR, "", nil)
+	updated := updatePoolStatus(commonCol, cli, beIR, "", nil)
 
 	// Assert that there are no errors and the status is updated correctly
 	require.NotNil(t, updated)
@@ -431,7 +431,7 @@ func TestUpdatePoolStatus_DeleteRoute(t *testing.T) {
 	}
 
 	// Call the function to update the pool status with the route
-	updated := updatePoolStatus(ctx, commonCol, cli, beIR, routeUID, nil)
+	updated := updatePoolStatus(commonCol, cli, beIR, routeUID, nil)
 
 	// Assert that there are no errors and the status is updated correctly
 	require.NotNil(t, updated)
@@ -487,7 +487,7 @@ func TestUpdatePoolStatus_WithExtraGws(t *testing.T) {
 	}
 
 	// Call the function to update the pool status with the extra gateways
-	updated := updatePoolStatus(ctx, commonCol, cli, beIR, "", extraGws)
+	updated := updatePoolStatus(commonCol, cli, beIR, "", extraGws)
 
 	// Assert that the InferencePool status is updated correctly
 	require.NotNil(t, updated)

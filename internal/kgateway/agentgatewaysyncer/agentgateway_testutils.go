@@ -39,15 +39,12 @@ import (
 	"sigs.k8s.io/gateway-api/pkg/consts"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/status"
-
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
-	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
-
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/status"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	agwtranslator "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/fake"
@@ -56,6 +53,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 	translatortest "github.com/kgateway-dev/kgateway/v2/test/translator"
 )
@@ -78,7 +76,7 @@ func (tr *translationResult) MarshalJSON() ([]byte, error) {
 	}
 
 	// Create a map to hold the marshaled fields
-	result := make(map[string]interface{})
+	result := make(map[string]any)
 
 	// Marshal each field using protojson
 	if len(tr.Routes) > 0 {
@@ -259,14 +257,14 @@ func (tr *translationResult) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func marshalProtoMessages[T proto.Message](messages []T, m protojson.MarshalOptions) ([]interface{}, error) {
-	var result []interface{}
+func marshalProtoMessages[T proto.Message](messages []T, m protojson.MarshalOptions) ([]any, error) {
+	var result []any
 	for _, msg := range messages {
 		data, err := m.Marshal(msg)
 		if err != nil {
 			return nil, err
 		}
-		var jsonObj interface{}
+		var jsonObj any
 		if err := json.Unmarshal(data, &jsonObj); err != nil {
 			return nil, err
 		}
@@ -446,7 +444,7 @@ func sortTranslationResult(tr *translationResult) *translationResult {
 	return tr
 }
 
-func ReadYamlFile(file string, out interface{}) error {
+func ReadYamlFile(file string, out any) error {
 	data, err := os.ReadFile(file)
 	if err != nil {
 		return err
@@ -563,7 +561,7 @@ func (tc TestCase) Run(
 	if err != nil {
 		return ActualTestResult{}, err
 	}
-	proxySyncerPlugins := proxySyncerPluginFactory(ctx, commoncol, wellknown.DefaultAgwClassName, extraPluginsFn, *settings)
+	proxySyncerPlugins := proxySyncerPluginFactory(ctx, commoncol, extraPluginsFn, *settings)
 	commoncol.InitPlugins(ctx, proxySyncerPlugins, *settings)
 
 	// Create AgwCollections with the necessary input collections
@@ -696,7 +694,7 @@ func (t *TestStatusQueue) Dump() string {
 	return sb.String()
 }
 
-func proxySyncerPluginFactory(ctx context.Context, commoncol *collections.CommonCollections, name string, extraPluginsFn ExtraPluginsFn, globalSettings apisettings.Settings) pluginsdk.Plugin {
+func proxySyncerPluginFactory(ctx context.Context, commoncol *collections.CommonCollections, extraPluginsFn ExtraPluginsFn, globalSettings apisettings.Settings) pluginsdk.Plugin {
 	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultAgwClassName, globalSettings, nil)
 
 	var extraPlugs []pluginsdk.Plugin

@@ -9,11 +9,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
-
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
 // AddGatewayV1A2Scheme adds the Gateway v1alpha2 scheme to the provided scheme if the TCPRoute CRD exists.

@@ -103,7 +103,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 				routeName: "gateway-attached-transform",
 				resp: &testmatchers.HttpResponse{
 					StatusCode: http.StatusOK,
-					Headers: map[string]interface{}{
+					Headers: map[string]any{
 						"response-gateway": "goodbye",
 					},
 					NotHeaders: []string{
@@ -111,7 +111,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 					},
 				},
 				req: &testmatchers.HttpRequest{
-					Headers: map[string]interface{}{
+					Headers: map[string]any{
 						"request-gateway": "hello",
 					},
 				},
@@ -124,7 +124,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 				},
 				resp: &testmatchers.HttpResponse{
 					StatusCode: http.StatusOK,
-					Headers: map[string]interface{}{
+					Headers: map[string]any{
 						"x-foo-response":        "notsuper",
 						"x-foo-response-status": "200",
 					},
@@ -133,7 +133,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 					},
 				},
 				req: &testmatchers.HttpRequest{
-					Headers: map[string]interface{}{
+					Headers: map[string]any{
 						"x-foo-bar":  "foolen_5",
 						"x-foo-bar2": "foolen_5",
 					},
@@ -158,7 +158,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 				},
 				resp: &testmatchers.HttpResponse{
 					StatusCode: http.StatusOK,
-					Headers: map[string]interface{}{
+					Headers: map[string]any{
 						"x-foo-response":        "notsuper",
 						"x-foo-response-status": "200",
 					},
@@ -167,7 +167,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 					},
 				},
 				req: &testmatchers.HttpRequest{
-					Headers: map[string]interface{}{
+					Headers: map[string]any{
 						"x-foo-bar":  "foolen_5",
 						"x-foo-bar2": "foolen_5",
 					},
@@ -190,13 +190,13 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 				},
 				resp: &testmatchers.HttpResponse{
 					StatusCode: http.StatusOK,
-					Headers: map[string]interface{}{
+					Headers: map[string]any{
 						"x-foo-response":        "supersupersuper",
 						"x-foo-response-status": "200",
 					},
 				},
 				req: &testmatchers.HttpRequest{
-					Headers: map[string]interface{}{
+					Headers: map[string]any{
 						"x-foo-bar":  "foolen_11",
 						"x-foo-bar2": "foolen_11",
 					},
@@ -221,7 +221,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 				},
 				resp: &testmatchers.HttpResponse{
 					StatusCode: http.StatusOK,
-					Headers: map[string]interface{}{
+					Headers: map[string]any{
 						"x-foo-response":  "path matched",
 						"x-path-response": "matched",
 					},
@@ -233,7 +233,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 					},
 				},
 				req: &testmatchers.HttpRequest{
-					Headers: map[string]interface{}{
+					Headers: map[string]any{
 						"x-foo-request":  "path matched",
 						"x-path-request": "matched",
 					},
@@ -256,7 +256,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 				},
 				resp: &testmatchers.HttpResponse{
 					StatusCode: http.StatusOK,
-					Headers: map[string]interface{}{
+					Headers: map[string]any{
 						"x-foo-response":    "method matched",
 						"x-method-response": "matched",
 					},
@@ -268,7 +268,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 					},
 				},
 				req: &testmatchers.HttpRequest{
-					Headers: map[string]interface{}{
+					Headers: map[string]any{
 						"x-foo-request":    "method matched",
 						"x-method-request": "matched",
 					},
@@ -292,7 +292,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 				},
 				resp: &testmatchers.HttpResponse{
 					StatusCode: http.StatusOK,
-					Headers: map[string]interface{}{
+					Headers: map[string]any{
 						"x-foo-response":    "header matched",
 						"x-header-response": "matched",
 					},
@@ -304,7 +304,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 					},
 				},
 				req: &testmatchers.HttpRequest{
-					Headers: map[string]interface{}{
+					Headers: map[string]any{
 						"x-foo-request":    "header matched",
 						"x-header-request": "matched",
 					},
@@ -326,7 +326,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 				},
 				resp: &testmatchers.HttpResponse{
 					StatusCode: http.StatusOK,
-					Headers: map[string]interface{}{
+					Headers: map[string]any{
 						"x-foo-response":   "query matched",
 						"x-query-response": "matched",
 					},
@@ -338,7 +338,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 					},
 				},
 				req: &testmatchers.HttpRequest{
-					Headers: map[string]interface{}{
+					Headers: map[string]any{
 						"x-foo-request":   "query matched",
 						"x-query-request": "matched",
 					},
@@ -361,7 +361,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 				},
 				resp: &testmatchers.HttpResponse{
 					StatusCode: http.StatusNotFound,
-					Headers:    map[string]interface{}{
+					Headers:    map[string]any{
 						// The Gateway attached transformation never apply when no route match
 						//						"response-gateway": "goodbyte",
 					},
@@ -375,7 +375,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 					},
 				},
 				req: &testmatchers.HttpRequest{
-					Headers: map[string]interface{}{
+					Headers: map[string]any{
 						// The Gateway attached transformation never apply when no route match
 						//						"request-gateway": "hello",
 					},
@@ -418,7 +418,7 @@ func (s *testingSuite) TestGatewayWithTransformedRoute() {
 			},
 			resp: &testmatchers.HttpResponse{
 				StatusCode: http.StatusOK,
-				Headers: map[string]interface{}{
+				Headers: map[string]any{
 					"x-how-great":   "level_super",
 					"from-incoming": "key_level_myinnervalue",
 				},
@@ -426,7 +426,7 @@ func (s *testingSuite) TestGatewayWithTransformedRoute() {
 			// Note: for this test, there is a response body transformation setup which extracts just the headers field
 			// When we create the Request Object from the echo response, we accounted for that
 			req: &testmatchers.HttpRequest{
-				Headers: map[string]interface{}{
+				Headers: map[string]any{
 					"X-Transformed-Incoming": "level_myinnervalue",
 				},
 			},

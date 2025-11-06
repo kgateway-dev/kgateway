@@ -5,6 +5,9 @@ import (
 	"sync"
 )
 
+// Following code has been extracted from: https://github.com/solo-io/go-utils/blob/baaf9bb972468c16c64f955e41bf246081348281/threadsafe/buffer.go to avoid
+// importing the whole package.
+
 // Buffer provides a thread-safe wrapper around bytes.Buffer
 type Buffer struct {
 	buffer bytes.Buffer

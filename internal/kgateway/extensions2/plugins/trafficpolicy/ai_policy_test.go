@@ -510,18 +510,18 @@ func TestDefault(t *testing.T) {
 // Mock implementation of RouteBackendContext for testing
 func (ir *RouteBackendContext) NewRouteBackendContext() *RouteBackendContext {
 	return &RouteBackendContext{
-		configs: make(map[string]interface{}),
+		configs: make(map[string]any),
 	}
 }
 
-func (ir *RouteBackendContext) AddTypedConfig(name string, config interface{}) {
+func (ir *RouteBackendContext) AddTypedConfig(name string, config any) {
 	ir.configs[name] = config
 }
 
-func (ir *RouteBackendContext) GetTypedConfig(name string) interface{} {
+func (ir *RouteBackendContext) GetTypedConfig(name string) any {
 	return ir.configs[name]
 }
 
 type RouteBackendContext struct {
-	configs map[string]interface{}
+	configs map[string]any
 }

@@ -1,11 +1,12 @@
 package routeutils
 
 import (
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -35,8 +36,9 @@ func prefixMatcher(s string) gwv1.HTTPRouteMatch {
 	}
 }
 
-func exactMatcher(s string) gwv1.HTTPRouteMatch {
+func exactMatcher() gwv1.HTTPRouteMatch {
 	t := gwv1.PathMatchExact
+	s := "/exact"
 	return gwv1.HTTPRouteMatch{
 		Path: &gwv1.HTTPPathMatch{
 			Type:  &t,
@@ -103,7 +105,7 @@ var _ = DescribeTable("SortableRoutes Less()",
 		&SortableRoute{
 			RouteObject: defaultRt(),
 			Route: ir.HttpRouteRuleMatchIR{
-				Match: exactMatcher("/exact"),
+				Match: exactMatcher(),
 			},
 		},
 		true,
@@ -119,7 +121,7 @@ var _ = DescribeTable("SortableRoutes Less()",
 		&SortableRoute{
 			RouteObject: defaultRt(),
 			Route: ir.HttpRouteRuleMatchIR{
-				Match: exactMatcher("/exact"),
+				Match: exactMatcher(),
 			},
 		},
 		true,
@@ -386,7 +388,7 @@ var _ = DescribeTable("SortableRoutes Less()",
 		&SortableRoute{
 			RouteObject: defaultRt(),
 			Route: ir.HttpRouteRuleMatchIR{
-				Match: exactMatcher("/exact"),
+				Match: exactMatcher(),
 			},
 		},
 		true,
@@ -403,7 +405,7 @@ var _ = DescribeTable("SortableRoutes Less()",
 		&SortableRoute{
 			RouteObject: defaultRt(),
 			Route: ir.HttpRouteRuleMatchIR{
-				Match:            exactMatcher("/exact"),
+				Match:            exactMatcher(),
 				PrecedenceWeight: 0,
 			},
 		},

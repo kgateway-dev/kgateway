@@ -180,7 +180,7 @@ type (
 	HeaderTransformation struct {
 		// Name is the name of the header to interact with.
 		// +required
-		Name HeaderName `json:"name,omitempty"`
+		Name HeaderName `json:"name"`
 		// Value is the Inja template to apply to generate the output value for the header.
 		Value Template `json:"value,omitempty"`
 	}

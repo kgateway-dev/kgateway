@@ -29,7 +29,7 @@ spec:
     spec:
       containers:
       - name: echo
-        image: hashicorp/http-echo:latest
+        image: hashicorp/http-echo:1.0.0
         args:
           - -listen=:8080
           - -text=pod=$(HOSTNAME)

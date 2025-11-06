@@ -321,7 +321,7 @@ type AgentgatewayPolicyTraffic struct {
 	// PreRouting rules will merge and execute, then all PostRouting rules will merge and execute.
 	//
 	// If unset, this defaults to PostRouting.
-	Phase *PolicyPhase `json:"phase,omitempty"`
+	Phase *PolicyPhase `json:"phase,omitempty"` //nolint:kubeapilinter // false positive for the nophase sub-linter
 
 	// transformation is used to mutate and transform requests and responses
 	// before forwarding them to the destination.

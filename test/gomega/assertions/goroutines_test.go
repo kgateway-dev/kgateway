@@ -3,10 +3,11 @@ package assertions_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gleak"
 	"github.com/onsi/gomega/types"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/assertions"
 )

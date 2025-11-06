@@ -714,6 +714,7 @@ spec:
 `,
 		},
 		{
+			// TODO: Update this to use the agw based Backend API.
 			name: "AI priorityGroups with no overlapping provider names",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
@@ -749,6 +750,7 @@ spec:
 `,
 		},
 		{
+			// TODO: Update this to use the agw based Backend API.
 			name: "AI priorityGroups with overlapping provider names within a group",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
@@ -785,6 +787,7 @@ spec:
 			wantErrors: []string{`spec.ai.priorityGroups[0].providers: Invalid value: "array": provider names must be unique within a group`},
 		},
 		/* Test is disabled since the CEL rule is disabled to support older k8s versions
+			// TODO: Update this to use the agw based Backend API.
 				{
 					name: "AI priorityGroups with overlapping provider names across groups",
 					input: `---

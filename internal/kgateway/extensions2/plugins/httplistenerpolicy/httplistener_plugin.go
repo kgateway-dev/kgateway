@@ -208,13 +208,13 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 		}
 
 		errs := []error{}
-		accessLog, err := convertAccessLogConfig(ctx, i, commoncol, krtctx, objSrc)
+		accessLog, err := convertAccessLogConfig(i, commoncol, krtctx, objSrc)
 		if err != nil {
 			logger.Error("error translating access log", "error", err)
 			errs = append(errs, err)
 		}
 
-		tracingProvider, tracingConfig, err := convertTracingConfig(ctx, i, commoncol, krtctx, objSrc)
+		tracingProvider, tracingConfig, err := convertTracingConfig(i, commoncol, krtctx, objSrc)
 		if err != nil {
 			logger.Error("error translating tracing", "error", err)
 			errs = append(errs, err)

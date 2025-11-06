@@ -3,6 +3,8 @@ package translator
 import (
 	"crypto/tls"
 	"fmt"
+	"maps"
+	slices0 "slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -115,7 +117,7 @@ func ConvertHTTPRouteToAgw(ctx RouteContext, r gwv1.HTTPRouteRule,
 	res.Hostnames = convertHostnames(obj.Spec.Hostnames)
 
 	if shouldInjectErrorResponse(backendErr) {
-		injectDirectResponse(res, obj.Namespace, obj.Name)
+		injectDirectResponseFilter(res)
 	}
 
 	if policiesErr != nil && !isPolicyErrorCritical(policiesErr) {
@@ -192,7 +194,7 @@ func shouldInjectErrorResponse(backendErr *reporter.RouteCondition) bool {
 }
 
 // Helper function to inject direct response filter for errors
-func injectDirectResponse(res *api.Route, namespace, name string) {
+func injectDirectResponseFilter(res *api.Route) {
 	for _, f := range res.TrafficPolicies {
 		if _, ok := f.GetKind().(*api.TrafficPolicySpec_DirectResponse); ok {
 			return
@@ -218,12 +220,7 @@ func isPolicyErrorCritical(filterError *reporter.RouteCondition) bool {
 		// Add other critical filter error reasons as needed
 	}
 
-	for _, reason := range criticalReasons {
-		if filterError.Reason == reason {
-			return true
-		}
-	}
-	return false
+	return slices0.Contains(criticalReasons, filterError.Reason)
 }
 
 // ConvertTCPRouteToAgw converts a TCPRouteRule to an agentgateway TCPRoute
@@ -1544,9 +1541,7 @@ func toNamespaceSet(name string, labels map[string]string) klabels.Set {
 	}
 	// First we need a copy to not modify the underlying object
 	ret := make(map[string]string, len(labels)+1)
-	for k, v := range labels {
-		ret[k] = v
-	}
+	maps.Copy(ret, labels)
 	ret[NamespaceNameLabel] = name
 	return ret
 }

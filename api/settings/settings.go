@@ -184,6 +184,9 @@ type Settings struct {
 
 	// EnableWaypoint enables kgateway to translate istio waypoints
 	EnableWaypoint bool `split_words:"true" default:"false"`
+
+	// EnableExperimentalGatewayAPIFeatures enables kgateway to support experimental features and APIs
+	EnableExperimentalGatewayAPIFeatures bool `split_words:"true" default:"false"`
 }
 
 // BuildSettings returns a zero-valued Settings obj if error is encountered when parsing env

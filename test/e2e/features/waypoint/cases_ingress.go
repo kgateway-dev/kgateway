@@ -28,7 +28,7 @@ func (s *testingSuite) TestIngressHTTPRouteWithoutLabel() {
 	s.assertCurlInner(fromCurl, kubeutils.ServiceFQDN(metav1.ObjectMeta{
 		Name:      "gw",
 		Namespace: testNamespace,
-	}), "example.com", noHTTPRoute, "", "GET")
+	}), "example.com", noHTTPRoute, "GET")
 }
 
 func (s *testingSuite) TestIngressHTTPRouteServiceLabel() {
@@ -53,7 +53,7 @@ func (s *testingSuite) TestIngressHTTPRouteServiceLabel() {
 	s.assertCurlInner(fromCurl, kubeutils.ServiceFQDN(metav1.ObjectMeta{
 		Name:      "gw",
 		Namespace: testNamespace,
-	}), "example.com", expected, "", "GET")
+	}), "example.com", expected, "GET")
 }
 
 func (s *testingSuite) TestIngressHTTPRouteNamespaceLabel() {
@@ -78,7 +78,7 @@ func (s *testingSuite) TestIngressHTTPRouteNamespaceLabel() {
 	s.assertCurlInner(fromCurl, kubeutils.ServiceFQDN(metav1.ObjectMeta{
 		Name:      "gw",
 		Namespace: testNamespace,
-	}), "example.com", expected, "", "GET")
+	}), "example.com", expected, "GET")
 }
 
 func (s *testingSuite) setIngressUseWaypointLabel(kind, name, namespace string) {
