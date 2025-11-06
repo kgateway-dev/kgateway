@@ -28,17 +28,10 @@ spec:
       {{- if $statsConfig.enabled }}
         {{- $promAnnotations = dict "prometheus.io/path" "/metrics" "prometheus.io/port" "9091" "prometheus.io/scrape" "true" }}
       {{- end}}
-      {{- $aiStatsAnnotations := dict }}
-      {{- if (($gateway.aiExtension).enabled) }}
-        {{- if $gateway.aiExtension.stats }}
-          {{- $aiStatsAnnotations = dict "kgateway.dev/ai-stats-config-hash" (sha256sum $gateway.aiExtension.stats | trunc 64) }}
-        {{- end }}
-      {{- end}}
       {{- toYaml (merge
           (deepCopy ($gateway.gatewayAnnotations | default dict))
           ($gateway.extraPodAnnotations | default dict)
           $promAnnotations
-          $aiStatsAnnotations
        ) | nindent 8 }}
       labels:
         {{- toYaml (merge
@@ -317,13 +310,6 @@ spec:
       - configMap:
           name: {{ include "kgateway.gateway.fullname" . }}
         name: envoy-config
-{{- if (($gateway.aiExtension).enabled) }}
-{{- if or $gateway.aiExtension.stats $gateway.aiExtension.tracing }}
-      - configMap:
-          name: {{ include "kgateway.gateway.fullname" . }}-ai-otel-config
-        name: ai-otel-config
-{{- end }}
-{{- end }}{{/* if (($gateway.aiExtension).enabled) */}}
 {{- if $gateway.istio.enabled }}
       - emptyDir:
           medium: Memory

@@ -282,7 +282,6 @@ func (k *kGatewayParameters) getGatewayParametersForGatewayClass(ctx context.Con
 }
 
 func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameters) (*deployer.HelmConfig, error) {
-	var err error
 	irGW := deployer.GetGatewayIR(gw, k.inputs.CommonCollections)
 	ports := deployer.GetPortsValues(irGW, gwParam, irGW.ControllerName == k.inputs.AgentgatewayControllerName)
 	if len(ports) == 0 {
@@ -358,10 +357,6 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 	sdsContainerConfig := kubeProxyConfig.GetSdsContainer()
 	statsConfig := kubeProxyConfig.GetStats()
 	istioContainerConfig := istioConfig.GetIstioProxyContainer()
-	aiExtensionConfig := kubeProxyConfig.GetAiExtension()
-	if aiExtensionConfig != nil && aiExtensionConfig.GetEnabled() != nil && *aiExtensionConfig.GetEnabled() {
-		slog.Warn("gatewayparameters spec.kube.aiExtension is deprecated in v2.1 and will be removed in v2.2. Use spec.kube.agentgateway instead.")
-	}
 
 	gateway := vals.Gateway
 
@@ -422,12 +417,6 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 	gateway.Istio = deployer.GetIstioValues(k.inputs.IstioAutoMtlsEnabled, istioConfig)
 	gateway.SdsContainer = deployer.GetSdsContainerValues(sdsContainerConfig)
 	gateway.IstioContainer = deployer.GetIstioContainerValues(istioContainerConfig)
-
-	// ai values
-	gateway.AIExtension, err = deployer.GetAIExtensionValues(aiExtensionConfig)
-	if err != nil {
-		return nil, err
-	}
 
 	gateway.Stats = deployer.GetStatsValues(statsConfig)
 
