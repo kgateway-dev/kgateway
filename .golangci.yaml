@@ -22,6 +22,7 @@ linters:
     - krtequals
     - kubeapilinter
     - misspell
+    - modernize
     - nakedret
     - predeclared
     - promlinter
@@ -106,6 +107,10 @@ linters:
     misspell:
       ignore-rules:
         - kgateway
+    modernize:
+      disable:
+        # disabled because modernize gets confused with conflicting edits. we can probably rely on the kube api linter instead for this one.
+        - omitzero
     nakedret:
       # The team consensus is that naked returns hinder the readability of the code.
       # However, named return values can still be useful as documentation for certain scenarios.
