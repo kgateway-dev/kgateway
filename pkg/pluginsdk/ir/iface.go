@@ -120,21 +120,13 @@ type HcmContext struct {
 // for the duration of the translation.
 // Each of the functions here will be called in the order they appear in the interface.
 type ProxyTranslationPass interface {
-	//	Name() string
-	// called 1 time for each listener
+	// ApplyListenerPlugin is called 1 time for each listener
 	ApplyListenerPlugin(
 		pCtx *ListenerContext,
 		out *envoylistenerv3.Listener,
 	)
 
-	// called 1 time for all the routes in a filter chain. Use this to set default PerFilterConfig
-	// No policy is provided here.
-	ApplyRouteConfigPlugin(
-		pCtx *RouteConfigContext,
-		out *envoyroutev3.RouteConfiguration,
-	)
-
-	// no policy applied - this is called for every backend in a route.
+	// ApplyForBackend is called for every backend in a route. No policy is applied.
 	// For this to work the backend needs to register itself as a policy. TODO: rethink this.
 	// Note: TypedFilterConfig should be applied in the pCtx and is shared between ApplyForRoute, ApplyForBackend
 	// and ApplyForRouteBacken (do not apply on the output route directly)
@@ -144,7 +136,7 @@ type ProxyTranslationPass interface {
 		out *envoyroutev3.Route,
 	) error
 
-	// Applies a policy attached to a specific Backend (via extensionRef on the BackendRef).
+	// ApplyForRouteBackend applies a policy attached to a specific Backend (via extensionRef on the BackendRef).
 	// Note: TypedFilterConfig should be applied in the pCtx and is shared between ApplyForRoute, ApplyForBackend
 	// and ApplyForRouteBackend
 	ApplyForRouteBackend(
@@ -152,8 +144,8 @@ type ProxyTranslationPass interface {
 		pCtx *RouteBackendContext,
 	) error
 
-	// called once per route rule if SupportsPolicyMerge returns false, otherwise this is called only
-	// once on the value returned by MergePolicies.
+	// ApplyForRoute is called once per route rule if SupportsPolicyMerge returns false,
+	// otherwise this is called only once on the value returned by MergePolicies.
 	// Applies policy for an HTTPRoute that has a policy attached via a targetRef.
 	// The output configures the envoyroutev3.Route
 	// Note: TypedFilterConfig should be applied in the pCtx and is shared between ApplyForRoute, ApplyForBackend
@@ -166,6 +158,13 @@ type ProxyTranslationPass interface {
 	ApplyVhostPlugin(
 		pCtx *VirtualHostContext,
 		out *envoyroutev3.VirtualHost,
+	)
+
+	// ApplyRouteConfigPlugin is called 1 time for all the routes in a filter chain. Use this to set default PerFilterConfig
+	// Applies policy for a Gateway that has a policy attached via a targetRef.
+	ApplyRouteConfigPlugin(
+		pCtx *RouteConfigContext,
+		out *envoyroutev3.RouteConfiguration,
 	)
 
 	NetworkFilters() ([]filters.StagedNetworkFilter, error)
