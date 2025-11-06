@@ -21,23 +21,23 @@ type AIBackend struct {
 	// ```yaml
 	// priorityGroups:
 	//	- providers:
-	//	  - azureOpenai:
+	//	  - azureopenai:
 	//	      deploymentName: gpt-4o-mini
 	//	      apiVersion: 2024-02-15-preview
 	//	      endpoint: ai-gateway.openai.azure.com
 	//	      authToken:
+	//          kind: "SecretRef"
 	//	        secretRef:
 	//	          name: azure-secret
-	//	          namespace: kgateway-system
 	//	- providers:
-	//	  - azureOpenai:
+	//	  - azureopenai:
 	//	      deploymentName: gpt-4o-mini-2
 	//	      apiVersion: 2024-02-15-preview
 	//	      endpoint: ai-gateway-2.openai.azure.com
 	//	      authToken:
+	//          kind: "SecretRef"
 	//	        secretRef:
 	//	          name: azure-secret-2
-	//	          namespace: kgateway-system
 	// ```
 	// +optional
 	// +kubebuilder:validation:MinItems=1
