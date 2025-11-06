@@ -43,18 +43,14 @@ func (t *transformationIR) Validate() error {
 }
 
 // constructTransformation constructs the transformation policy IR from the policy specification.
-func constructTransformation(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) error {
+func constructTransformation(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) {
 	if in.Spec.Transformation == nil && !useRustformations {
-		return nil
+		return
 	}
-	transformation, err := toTransformFilterConfig(in.Spec.Transformation)
-	if err != nil {
-		return err
-	}
+	transformation := toTransformFilterConfig(in.Spec.Transformation)
 	out.transformation = &transformationIR{
 		config: transformation,
 	}
-	return nil
 }
 
 func toTraditionalTransform(t *v1alpha1.Transform) *transformationpb.Transformation_TransformationTemplate {
@@ -127,9 +123,9 @@ func toTraditionalTransform(t *v1alpha1.Transform) *transformationpb.Transformat
 	return tt
 }
 
-func toTransformFilterConfig(t *v1alpha1.TransformationPolicy) (*transformationpb.RouteTransformations, error) {
+func toTransformFilterConfig(t *v1alpha1.TransformationPolicy) *transformationpb.RouteTransformations {
 	if t == nil || *t == (v1alpha1.TransformationPolicy{}) {
-		return nil, nil
+		return nil
 	}
 
 	var reqt *transformationpb.Transformation
@@ -146,7 +142,7 @@ func toTransformFilterConfig(t *v1alpha1.TransformationPolicy) (*transformationp
 		}
 	}
 	if reqt == nil && respt == nil {
-		return nil, nil
+		return nil
 	}
 	// note we use request match as we arent really doing anything on the matching
 	// once we figure out inheritance then we can go deeper on how to deal with matches
@@ -164,7 +160,7 @@ func toTransformFilterConfig(t *v1alpha1.TransformationPolicy) (*transformationp
 			},
 		},
 	}
-	return envoyT, nil
+	return envoyT
 }
 
 type rustformationIR struct {

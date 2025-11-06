@@ -1,7 +1,6 @@
 package endpointpicker
 
 import (
-	"context"
 	"fmt"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -19,7 +18,6 @@ import (
 )
 
 func processPoolBackendObjIR(
-	ctx context.Context,
 	in ir.BackendObjectIR,
 	out *envoyclusterv3.Cluster,
 	podIdx krt.Index[string, krtcollections.LocalityPod],

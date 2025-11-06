@@ -161,7 +161,7 @@ func (s *AttachedRoutesSuite) runIncrementalRouteTestWithSimulation(config *Atta
 	}
 
 	// Setup phases
-	s.setupSimulation(config, results)
+	s.setupSimulation(config)
 	s.setupInfrastructure()
 	s.createAndWaitForGateways(config)
 	s.createBaselineRoutes(config)
@@ -196,7 +196,7 @@ func (s *AttachedRoutesSuite) runIncrementalRouteTestWithSimulation(config *Atta
 	return results
 }
 
-func (s *AttachedRoutesSuite) setupSimulation(config *AttachedRoutesConfig, results *TestResults) {
+func (s *AttachedRoutesSuite) setupSimulation(config *AttachedRoutesConfig) {
 	s.T().Logf("Phase 1: Setting up cluster simulation for %d baseline routes", config.Routes)
 	simulationStart := time.Now()
 	err := s.loadTestManager.SetupSimulation(config.Routes, "incremental-attachedroutes")

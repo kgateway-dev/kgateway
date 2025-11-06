@@ -80,7 +80,7 @@ func (gp *GatewayParameters) AllKnownGatewayParameters() []client.Object {
 }
 
 func (gp *GatewayParameters) IsSelfManaged(ctx context.Context, obj client.Object) (bool, error) {
-	generator, err := gp.getHelmValuesGenerator(ctx, obj)
+	generator, err := gp.getHelmValuesGenerator(obj)
 	if err != nil {
 		return false, err
 	}
@@ -88,7 +88,7 @@ func (gp *GatewayParameters) IsSelfManaged(ctx context.Context, obj client.Objec
 }
 
 func (gp *GatewayParameters) GetValues(ctx context.Context, obj client.Object) (map[string]any, error) {
-	generator, err := gp.getHelmValuesGenerator(ctx, obj)
+	generator, err := gp.getHelmValuesGenerator(obj)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +100,7 @@ func GatewayReleaseNameAndNamespace(obj client.Object) (string, string) {
 	return obj.GetName(), obj.GetNamespace()
 }
 
-func (gp *GatewayParameters) getHelmValuesGenerator(ctx context.Context, obj client.Object) (deployer.HelmValuesGenerator, error) {
+func (gp *GatewayParameters) getHelmValuesGenerator(obj client.Object) (deployer.HelmValuesGenerator, error) {
 	gw, ok := obj.(*api.Gateway)
 	if !ok {
 		return nil, fmt.Errorf("expected a Gateway resource, got %s", obj.GetObjectKind().GroupVersionKind().String())

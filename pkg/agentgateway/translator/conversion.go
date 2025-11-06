@@ -115,7 +115,7 @@ func ConvertHTTPRouteToAgw(ctx RouteContext, r gwv1.HTTPRouteRule,
 	res.Hostnames = convertHostnames(obj.Spec.Hostnames)
 
 	if shouldInjectErrorResponse(backendErr) {
-		injectDirectResponse(res, obj.Namespace, obj.Name)
+		injectDirectResponseFilter(res)
 	}
 
 	if policiesErr != nil && !isPolicyErrorCritical(policiesErr) {
@@ -192,7 +192,7 @@ func shouldInjectErrorResponse(backendErr *reporter.RouteCondition) bool {
 }
 
 // Helper function to inject direct response filter for errors
-func injectDirectResponse(res *api.Route, namespace, name string) {
+func injectDirectResponseFilter(res *api.Route) {
 	for _, f := range res.TrafficPolicies {
 		if _, ok := f.GetKind().(*api.TrafficPolicySpec_DirectResponse); ok {
 			return

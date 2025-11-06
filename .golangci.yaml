@@ -28,6 +28,7 @@ linters:
     - sloglint
     - spancheck
     - staticcheck
+    - unparam
     - unused
     - usestdlibvars
     - whitespace

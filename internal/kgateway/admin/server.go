@@ -74,7 +74,7 @@ func writeJSON(w http.ResponseWriter, obj any, req *http.Request) {
 	}
 }
 
-func startHandlers(ctx context.Context, addHandlers ...func(mux *http.ServeMux, profiles map[string]dynamicProfileDescription)) error {
+func startHandlers(ctx context.Context, addHandlers ...func(mux *http.ServeMux, profiles map[string]dynamicProfileDescription)) {
 	mux := new(http.ServeMux)
 	profileDescriptions := map[string]dynamicProfileDescription{}
 	for _, addHandler := range addHandlers {
@@ -106,7 +106,6 @@ func startHandlers(ctx context.Context, addHandlers ...func(mux *http.ServeMux, 
 			}
 		}
 	}()
-	return nil
 }
 
 func index(profileDescriptions map[string]dynamicProfileDescription) func(w http.ResponseWriter, r *http.Request) {

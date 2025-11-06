@@ -169,7 +169,7 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 
 	typedPerFilterConfigRoute := ir.TypedFilterConfigMap(map[string]proto.Message{})
 	// run any plugins attached to an HTTP-based listener on the computed vhost.
-	if err := h.runVhostPlugins(ctx, virtualHost, out, typedPerFilterConfigRoute); err != nil {
+	if err := h.runVhostPlugins(virtualHost, out, typedPerFilterConfigRoute); err != nil {
 		h.logger.Error("error running vhost plugins", "error", err)
 		reporter := virtualHost.ParentRef.GetParentReporter(h.reporter)
 		reporter.Listener(&virtualHost.ParentRef.Listener).SetCondition(reportssdk.ListenerCondition{
@@ -231,15 +231,15 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 	backendConfigCtx := backendConfigContext{typedPerFilterConfigRoute: ir.TypedFilterConfigMap(map[string]proto.Message{})}
 	if len(in.Backends) == 1 {
 		// If there's only one backend, we need to reuse typedPerFilterConfigRoute in both translateRouteAction and runRoutePlugins
-		out.Action = h.translateRouteAction(ctx, in, out, &backendConfigCtx)
+		out.Action = h.translateRouteAction(in, out, &backendConfigCtx)
 	} else if len(in.Backends) > 0 {
 		// If there is more than one backend, we translate the backends as WeightedClusters and each weighted cluster
 		// will have a TypedPerFilterConfig that overrides the parent route-level config.
-		out.Action = h.translateRouteAction(ctx, in, out, nil)
+		out.Action = h.translateRouteAction(in, out, nil)
 	}
 
 	// Run plugins here that may set action. Handle the routeProcessingErr error later.
-	routeProcessingErr := h.runRoutePlugins(ctx, in, out, backendConfigCtx.typedPerFilterConfigRoute)
+	routeProcessingErr := h.runRoutePlugins(in, out, backendConfigCtx.typedPerFilterConfigRoute)
 
 	// Apply typed per filter config from translating route action and route plugins
 	typedPerFilterConfig := backendConfigCtx.typedPerFilterConfigRoute.ToAnyMap()
@@ -336,7 +336,6 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 }
 
 func (h *httpRouteConfigurationTranslator) runVhostPlugins(
-	ctx context.Context,
 	virtualHost *ir.VirtualHost,
 	out *envoyroutev3.VirtualHost,
 	typedPerFilterConfig ir.TypedFilterConfigMap,
@@ -374,7 +373,6 @@ func (h *httpRouteConfigurationTranslator) runVhostPlugins(
 }
 
 func (h *httpRouteConfigurationTranslator) runRoutePlugins(
-	ctx context.Context,
 	in ir.HttpRouteRuleMatchIR,
 	out *envoyroutev3.Route,
 	typedPerFilterConfig ir.TypedFilterConfigMap,
@@ -456,7 +454,7 @@ func mergePolicies(pass *TranslationPass, policies []ir.PolicyAtt) ([]ir.PolicyA
 	return policies, nil
 }
 
-func (h *httpRouteConfigurationTranslator) runBackendPolicies(ctx context.Context, in ir.HttpBackend, pCtx *ir.RouteBackendContext) error {
+func (h *httpRouteConfigurationTranslator) runBackendPolicies(in ir.HttpBackend, pCtx *ir.RouteBackendContext) error {
 	var errs []error
 	for _, gk := range in.AttachedPolicies.ApplyOrderedGroupKinds() {
 		pols := in.AttachedPolicies.Policies[gk]
@@ -478,7 +476,7 @@ func (h *httpRouteConfigurationTranslator) runBackendPolicies(ctx context.Contex
 	return errors.Join(errs...)
 }
 
-func (h *httpRouteConfigurationTranslator) runBackend(ctx context.Context, in ir.HttpBackend, pCtx *ir.RouteBackendContext, outRoute *envoyroutev3.Route) error {
+func (h *httpRouteConfigurationTranslator) runBackend(in ir.HttpBackend, pCtx *ir.RouteBackendContext, outRoute *envoyroutev3.Route) error {
 	var errs []error
 	if in.Backend.BackendObject != nil {
 		backendPass := h.pluginPass[in.Backend.BackendObject.GetGroupKind()]
@@ -494,7 +492,6 @@ func (h *httpRouteConfigurationTranslator) runBackend(ctx context.Context, in ir
 }
 
 func (h *httpRouteConfigurationTranslator) translateRouteAction(
-	ctx context.Context,
 	in ir.HttpRouteRuleMatchIR,
 	outRoute *envoyroutev3.Route,
 	parentBackendConfigCtx *backendConfigContext,
@@ -524,7 +521,6 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 
 		// non attached policy translation
 		err := h.runBackend(
-			ctx,
 			backend,
 			&pCtx,
 			outRoute,
@@ -534,7 +530,6 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 			h.logger.Error("error processing backends", "error", err)
 		}
 		err = h.runBackendPolicies(
-			ctx,
 			backend,
 			&pCtx,
 		)

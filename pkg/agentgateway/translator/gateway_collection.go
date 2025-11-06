@@ -449,7 +449,7 @@ func ListenerSetCollection(
 				result = append(result, res)
 			}
 
-			reportListenerSetStatus(parentGwObj, obj, status)
+			reportListenerSetStatus(obj, status)
 			return status, result
 		}, krtopts.ToOptions("ListenerSets")...)
 }
@@ -556,7 +556,6 @@ func convertListenerSetStatusToStandardStatus(e gatewayx.ListenerEntryStatus) gw
 }
 
 func reportListenerSetStatus(
-	parentGwObj *gwv1.Gateway,
 	obj *gatewayx.XListenerSet,
 	gs *gatewayx.ListenerSetStatus,
 ) {

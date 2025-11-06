@@ -563,7 +563,7 @@ func (tc TestCase) Run(
 	if err != nil {
 		return ActualTestResult{}, err
 	}
-	proxySyncerPlugins := proxySyncerPluginFactory(ctx, commoncol, wellknown.DefaultAgwClassName, extraPluginsFn, *settings)
+	proxySyncerPlugins := proxySyncerPluginFactory(ctx, commoncol, extraPluginsFn, *settings)
 	commoncol.InitPlugins(ctx, proxySyncerPlugins, *settings)
 
 	// Create AgwCollections with the necessary input collections
@@ -696,7 +696,7 @@ func (t *TestStatusQueue) Dump() string {
 	return sb.String()
 }
 
-func proxySyncerPluginFactory(ctx context.Context, commoncol *collections.CommonCollections, name string, extraPluginsFn ExtraPluginsFn, globalSettings apisettings.Settings) pluginsdk.Plugin {
+func proxySyncerPluginFactory(ctx context.Context, commoncol *collections.CommonCollections, extraPluginsFn ExtraPluginsFn, globalSettings apisettings.Settings) pluginsdk.Plugin {
 	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultAgwClassName, globalSettings, nil)
 
 	var extraPlugs []pluginsdk.Plugin
