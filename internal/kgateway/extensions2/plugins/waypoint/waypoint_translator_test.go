@@ -8,6 +8,7 @@ import (
 	"github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
 
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/waypoint"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -59,6 +60,9 @@ func TestWaypointTranslator(t *testing.T) {
 			extraPluginsFn := func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []pluginsdk.Plugin {
 				return []pluginsdk.Plugin{waypoint.NewPlugin(ctx, commoncol, wellknown.DefaultWaypointClassName)}
 			}
+			settingOpt := func(s *apisettings.Settings) {
+				s.EnableExperimentalGatewayAPIFeatures = true
+			}
 			translatortest.TestTranslationWithExtraPlugins(
 				t,
 				ctx,
@@ -67,6 +71,7 @@ func TestWaypointTranslator(t *testing.T) {
 				tt.gw,
 				extraPluginsFn,
 				nil, nil, "",
+				settingOpt,
 			)
 		})
 	}

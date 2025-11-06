@@ -22,7 +22,7 @@ import (
 )
 
 func buildRegisterCallback(
-	ctx context.Context,
+	_ context.Context,
 	cl kclient.Client[*v1alpha1.Backend],
 	bcol krt.Collection[ir.BackendObjectIR],
 ) func() {

@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Secret
 metadata:
-  name: openai-secret
+  name: lambda-secret
   namespace: default
 type: Opaque
 data:
-  # for openai it should be Authorization, token will give error when processing
+  # purposefully use unsupported key to surface status update error
   token: c2stdGVzdC1zZWNyZXQK # Base64 encoded "sk-test-secret"

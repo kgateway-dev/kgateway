@@ -8,7 +8,7 @@ import (
 type ExtProcProvider struct {
 	// GrpcService is the GRPC service that will handle the processing.
 	// +required
-	GrpcService *ExtGrpcService `json:"grpcService"`
+	GrpcService ExtGrpcService `json:"grpcService"`
 
 	// FailOpen determines if requests are allowed when the ext proc service is unavailable.
 	// Defaults to true, meaning requests are allowed upstream even if the ext proc service is unavailable.

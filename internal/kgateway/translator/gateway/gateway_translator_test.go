@@ -26,6 +26,11 @@ func TestBasic(t *testing.T) {
 		defer cancel()
 		dir := fsutils.MustGetThisDir()
 
+		// Prepend setting EnableExperimentalGatewayAPIFeatures to true so it can be overwritten by settingOpts
+		settingOpts = append([]translatortest.SettingsOpts{
+			func(s *apisettings.Settings) {
+				s.EnableExperimentalGatewayAPIFeatures = true
+			}}, settingOpts...)
 		inputFiles := []string{filepath.Join(dir, "testutils/inputs/", in.inputFile)}
 		expectedProxyFile := filepath.Join(dir, "testutils/outputs/", in.outputFile)
 		translatortest.TestTranslation(t, ctx, inputFiles, expectedProxyFile, in.gwNN, settingOpts...)
@@ -1124,6 +1129,19 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("basic listener set with experimental features disabled", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-sets/basic.yaml",
+			outputFile: "listener-sets/basic-experimental-disabled.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}, func(s *apisettings.Settings) {
+			s.EnableExperimentalGatewayAPIFeatures = false
+		})
+	})
+
 	t.Run("basic listener set", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "listener-sets/basic.yaml",
@@ -1571,6 +1589,7 @@ func TestValidation(t *testing.T) {
 
 		settingOpts := func(s *apisettings.Settings) {
 			s.ValidationMode = mode
+			s.EnableExperimentalGatewayAPIFeatures = true
 		}
 		translatortest.TestTranslation(t, ctx, []string{inputFile}, outputFile, gwNN, settingOpts)
 	}
@@ -1605,7 +1624,10 @@ func TestRouteDelegation(t *testing.T) {
 			Namespace: "infra",
 			Name:      "example-gateway",
 		}
-		translatortest.TestTranslation(t, ctx, inputFiles, outputFile, gwNN)
+		settingOpt := func(s *apisettings.Settings) {
+			s.EnableExperimentalGatewayAPIFeatures = true
+		}
+		translatortest.TestTranslation(t, ctx, inputFiles, outputFile, gwNN, settingOpt)
 	}
 	t.Run("Basic config", func(t *testing.T) {
 		test(t, "basic.yaml")
@@ -1741,6 +1763,7 @@ func TestDiscoveryNamespaceSelector(t *testing.T) {
 		settingOpts := []translatortest.SettingsOpts{
 			func(s *apisettings.Settings) {
 				s.DiscoveryNamespaceSelectors = cfgJSON
+				s.EnableExperimentalGatewayAPIFeatures = true
 			},
 		}
 

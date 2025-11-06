@@ -14,7 +14,6 @@ import (
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/kubetypes"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -22,7 +21,6 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/backend/ai"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
@@ -45,7 +43,6 @@ const (
 // backendIr is the internal representation of a backend.
 type backendIr struct {
 	awsIr    *AwsIr
-	aiIr     *ai.IR
 	staticIr *StaticIr
 	dfpIr    *DfpIr
 	errors   []error
@@ -54,10 +51,6 @@ type backendIr struct {
 func (u *backendIr) Equals(other any) bool {
 	otherBackend, ok := other.(*backendIr)
 	if !ok {
-		return false
-	}
-	// AI
-	if !u.aiIr.Equals(otherBackend.aiIr) {
 		return false
 	}
 	// AWS
@@ -103,7 +96,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 	col := krt.WrapClient(cli, commoncol.KrtOpts.ToOptions("Backends")...)
 
 	gk := wellknown.BackendGVK.GroupKind()
-	translateFn := buildTranslateFunc(ctx, commoncol.Secrets, commoncol.Services, commoncol.Namespaces)
+	translateFn := buildTranslateFunc(commoncol.Secrets)
 	bcol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *ir.BackendObjectIR {
 		backendIR := translateFn(krtctx, i)
 		if len(backendIR.errors) > 0 {
@@ -156,10 +149,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 // buildTranslateFunc builds a function that translates a Backend to a backendIr that
 // the plugin can use to build the envoy config.
 func buildTranslateFunc(
-	ctx context.Context,
 	secrets *krtcollections.SecretIndex,
-	services krt.Collection[*corev1.Service],
-	namespaces krt.Collection[krtcollections.NamespaceMetadata],
 ) func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *backendIr {
 	return func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *backendIr {
 		var beIr backendIr
@@ -227,77 +217,9 @@ func buildTranslateFunc(
 				lambdaTransportSocket: lambdaTransportSocket,
 				lambdaFilters:         lambdaFilters,
 			}
-		case v1alpha1.BackendTypeAI:
-			beIr.aiIr = &ai.IR{}
-			ns := i.GetNamespace()
-			var aiSecret *ir.Secret
-			var aiMultiSecret map[string]*ir.Secret
-
-			// Fetch secrets first
-			if i.Spec.AI.LLM != nil {
-				secretRef := getAISecretRef(i.Spec.AI.LLM)
-				// if secretRef is used, set the secret on the backend ir
-				if secretRef != nil {
-					secret, err := pluginutils.GetSecretIr(secrets, krtctx, secretRef.Name, ns)
-					if err != nil {
-						beIr.errors = append(beIr.errors, err)
-						break
-					}
-					aiSecret = secret
-				}
-			}
-			if len(i.Spec.AI.PriorityGroups) > 0 {
-				aiMultiSecret = map[string]*ir.Secret{}
-				for idx, group := range i.Spec.AI.PriorityGroups {
-					for jdx, provider := range group.Providers {
-						secretRef := getAISecretRef(&provider.LLMProvider)
-						if secretRef == nil {
-							continue
-						}
-						// if secretRef is used, set the secret on the backend ir
-						secret, err := pluginutils.GetSecretIr(secrets, krtctx, secretRef.Name, ns)
-						if err != nil {
-							beIr.errors = append(beIr.errors, err)
-							break
-						}
-						aiMultiSecret[ai.GetMultiPoolSecretKey(idx, jdx, secretRef.Name)] = secret
-					}
-				}
-			}
-
-			// Store secrets in IR
-			beIr.aiIr.AISecret = aiSecret
-			beIr.aiIr.AIMultiSecret = aiMultiSecret
-
-			// Preprocess AI backend (builds cluster config)
-			err := ai.PreprocessAIBackend(ctx, i.Spec.AI, aiSecret, aiMultiSecret, beIr.aiIr)
-			if err != nil {
-				beIr.errors = append(beIr.errors, err)
-			}
 		}
 		return &beIr
 	}
-}
-
-func getAISecretRef(llm *v1alpha1.LLMProvider) *corev1.LocalObjectReference {
-	if llm == nil {
-		// should never happen
-		return nil
-	}
-	var secretRef *corev1.LocalObjectReference
-	if llm.OpenAI != nil {
-		secretRef = llm.OpenAI.AuthToken.SecretRef
-	} else if llm.Anthropic != nil {
-		secretRef = llm.Anthropic.AuthToken.SecretRef
-	} else if llm.AzureOpenAI != nil {
-		secretRef = llm.AzureOpenAI.AuthToken.SecretRef
-	} else if llm.Gemini != nil {
-		secretRef = llm.Gemini.AuthToken.SecretRef
-	} else if llm.VertexAI != nil {
-		secretRef = llm.VertexAI.AuthToken.SecretRef
-	}
-
-	return secretRef
 }
 
 func processBackendForEnvoy(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
@@ -313,6 +235,7 @@ func processBackendForEnvoy(ctx context.Context, in ir.BackendObjectIR, out *env
 	}
 
 	// TODO: propagated error to CRD #11558.
+	// TODO(tim): do we need to do anything here for AI backends?
 	spec := be.Spec
 	switch spec.Type {
 	case v1alpha1.BackendTypeStatic:
@@ -320,13 +243,6 @@ func processBackendForEnvoy(ctx context.Context, in ir.BackendObjectIR, out *env
 	case v1alpha1.BackendTypeAWS:
 		if err := processAws(beIr.awsIr, out); err != nil {
 			logger.Error("failed to process aws backend", "error", err)
-			beIr.errors = append(beIr.errors, err)
-		}
-	case v1alpha1.BackendTypeAI:
-		ai.ProcessAI(beIr.aiIr.ClusterConfig, out)
-
-		if err := ai.AddUpstreamClusterHttpFilters(beIr.aiIr.ClusterConfig.HttpFilters, out); err != nil {
-			logger.Error("failed to add upstream cluster http filters", "error", err)
 			beIr.errors = append(beIr.errors, err)
 		}
 	case v1alpha1.BackendTypeDynamicForwardProxy:
@@ -370,8 +286,7 @@ func processEndpoints(be *v1alpha1.Backend) *ir.EndpointsForBackend {
 
 type backendPlugin struct {
 	ir.UnimplementedProxyTranslationPass
-	aiGatewayEnabled map[string]bool
-	needsDfpFilter   map[string]bool
+	needsDfpFilter map[string]bool
 }
 
 var _ ir.ProxyTranslationPass = &backendPlugin{}
@@ -386,18 +301,7 @@ func (p *backendPlugin) Name() string {
 
 func (p *backendPlugin) ApplyForBackend(pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoyroutev3.Route) error {
 	backend := pCtx.Backend.Obj.(*v1alpha1.Backend)
-	beIr := pCtx.Backend.ObjIr.(*backendIr)
 	switch backend.Spec.Type {
-	case v1alpha1.BackendTypeAI:
-		err := ai.ApplyAIBackend(beIr.aiIr, pCtx, out)
-		if err != nil {
-			return err
-		}
-
-		if p.aiGatewayEnabled == nil {
-			p.aiGatewayEnabled = make(map[string]bool)
-		}
-		p.aiGatewayEnabled[pCtx.FilterChainName] = true
 	case v1alpha1.BackendTypeDynamicForwardProxy:
 		if p.needsDfpFilter == nil {
 			p.needsDfpFilter = make(map[string]bool)
@@ -425,13 +329,6 @@ func (p *backendPlugin) HttpFilters(fc ir.FilterChainCommon) ([]filters.StagedHt
 	result := []filters.StagedHttpFilter{}
 
 	var errs []error
-	if p.aiGatewayEnabled[fc.FilterChainName] {
-		aiFilters, err := ai.AddExtprocHTTPFilter()
-		if err != nil {
-			errs = append(errs, err)
-		}
-		result = append(result, aiFilters...)
-	}
 	if p.needsDfpFilter[fc.FilterChainName] {
 		pluginStage := filters.DuringStage(filters.OutAuthStage)
 		f := filters.MustNewStagedFilter("envoy.filters.http.dynamic_forward_proxy", dfpFilterConfig, pluginStage)
@@ -442,15 +339,5 @@ func (p *backendPlugin) HttpFilters(fc ir.FilterChainCommon) ([]filters.StagedHt
 
 // called 1 time (per envoy proxy). replaces GeneratedResources
 func (p *backendPlugin) ResourcesToAdd() ir.Resources {
-	var additionalClusters []*envoyclusterv3.Cluster
-	if len(p.aiGatewayEnabled) > 0 {
-		aiClusters, err := ai.GetAIAdditionalResources()
-		if err != nil {
-			logger.Error("failed to get ai additional resources", "error", err)
-		}
-		additionalClusters = append(additionalClusters, aiClusters...)
-	}
-	return ir.Resources{
-		Clusters: additionalClusters,
-	}
+	return ir.Resources{}
 }

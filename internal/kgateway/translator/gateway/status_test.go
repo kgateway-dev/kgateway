@@ -9,6 +9,7 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
@@ -19,6 +20,9 @@ import (
 func TestStatuses(t *testing.T) {
 	testFn := func(t *testing.T, inputFile string, wantPolicyErrors map[reporter.PolicyKey]*gwv1.PolicyStatus) {
 		dir := fsutils.MustGetThisDir()
+		settingOpt := func(s *apisettings.Settings) {
+			s.EnableExperimentalGatewayAPIFeatures = true
+		}
 		translatortest.TestTranslation(
 			t,
 			t.Context(),
@@ -30,6 +34,7 @@ func TestStatuses(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
+			settingOpt,
 		)
 	}
 

@@ -15,6 +15,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	gwtranslator "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -68,8 +69,12 @@ func NewCombinedTranslator(
 func (s *CombinedTranslator) Init(ctx context.Context) {
 	queries := query.NewData(s.commonCols)
 
-	listenerTranslatorConfig := gwtranslator.TranslatorConfig{}
-	listenerTranslatorConfig.ListenerTranslatorConfig.ListenerBindIpv6 = s.commonCols.Settings.ListenerBindIpv6
+	listenerTranslatorConfig := gwtranslator.TranslatorConfig{
+		ListenerTranslatorConfig: listener.ListenerTranslatorConfig{
+			ListenerBindIpv6:                     s.commonCols.Settings.ListenerBindIpv6,
+			EnableExperimentalGatewayAPIFeatures: s.commonCols.Settings.EnableExperimentalGatewayAPIFeatures,
+		},
+	}
 
 	s.gwtranslator = gwtranslator.NewTranslator(queries, listenerTranslatorConfig)
 	s.irtranslator = &irtranslator.Translator{

@@ -397,8 +397,8 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 				Type: v1alpha1.GatewayExtensionTypeRateLimit,
 				RateLimit: &v1alpha1.RateLimitProvider{
 					Domain: "test-domain",
-					GrpcService: &v1alpha1.ExtGrpcService{
-						BackendRef: &gwv1.BackendRef{
+					GrpcService: v1alpha1.ExtGrpcService{
+						BackendRef: gwv1.BackendRef{
 							BackendObjectReference: createBackendRef(),
 						},
 					},
@@ -447,8 +447,8 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 				Type: v1alpha1.GatewayExtensionTypeRateLimit,
 				RateLimit: &v1alpha1.RateLimitProvider{
 					Domain: "test-domain",
-					GrpcService: &v1alpha1.ExtGrpcService{
-						BackendRef: &gwv1.BackendRef{
+					GrpcService: v1alpha1.ExtGrpcService{
+						BackendRef: gwv1.BackendRef{
 							BackendObjectReference: createBackendRef(),
 						},
 					},
@@ -490,8 +490,8 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 				Type: v1alpha1.GatewayExtensionTypeRateLimit,
 				RateLimit: &v1alpha1.RateLimitProvider{
 					Domain: "test-domain",
-					GrpcService: &v1alpha1.ExtGrpcService{
-						BackendRef: &gwv1.BackendRef{
+					GrpcService: v1alpha1.ExtGrpcService{
+						BackendRef: gwv1.BackendRef{
 							BackendObjectReference: createBackendRef(),
 						},
 					},
@@ -525,40 +525,6 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 				require.NotNil(t, rl)
 				assert.False(t, rl.FailureModeDeny) // Should be fail open (deny=false)
 			},
-		},
-		{
-			name: "without backend reference",
-			gatewayExtension: &ir.GatewayExtension{
-				Type: v1alpha1.GatewayExtensionTypeRateLimit,
-				RateLimit: &v1alpha1.RateLimitProvider{
-					Domain:      "test-domain",
-					GrpcService: &v1alpha1.ExtGrpcService{},
-				},
-				ObjectSource: ir.ObjectSource{
-					Name:      defaultExtensionName,
-					Namespace: defaultNamespace,
-				},
-			},
-			policy: &v1alpha1.RateLimitPolicy{
-				ExtensionRef: v1alpha1.NamespacedObjectReference{
-					Name: gwv1.ObjectName(defaultExtensionName),
-				},
-				Descriptors: []v1alpha1.RateLimitDescriptor{
-					{
-						Entries: []v1alpha1.RateLimitDescriptorEntry{
-							{
-								Type: v1alpha1.RateLimitDescriptorEntryTypeGeneric,
-								Generic: &v1alpha1.RateLimitDescriptorEntryGeneric{
-									Key:   "service",
-									Value: "api",
-								},
-							},
-						},
-					},
-				},
-			},
-			trafficPolicy: &v1alpha1.TrafficPolicy{},
-			expectedError: "backend not provided in grpc service",
 		},
 		{
 			name: "with wrong extension type",
@@ -617,34 +583,31 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 					domain := extension.Domain
 
 					// Construct cluster name from the backendRef
-					if extension.GrpcService != nil && extension.GrpcService.BackendRef != nil {
-						clusterName := fmt.Sprintf("%s.%s.svc.cluster.local:%d",
-							extension.GrpcService.BackendRef.Name,
-							tt.gatewayExtension.Namespace,
-							*extension.GrpcService.BackendRef.Port)
+					clusterName := fmt.Sprintf("%s.%s.svc.cluster.local:%d",
+						extension.GrpcService.BackendRef.Name,
+						tt.gatewayExtension.Namespace,
+						*extension.GrpcService.BackendRef.Port,
+					)
 
-						// Create a rate limit configuration
-						rl = &ratev3.RateLimit{
-							Domain:          domain,
-							Timeout:         timeout,
-							FailureModeDeny: !extension.FailOpen,
-							RateLimitService: &envoyratelimitv3.RateLimitServiceConfig{
-								GrpcService: &envoycorev3.GrpcService{
-									TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
-										EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
-											ClusterName: clusterName,
-										},
+					// Create a rate limit configuration
+					rl = &ratev3.RateLimit{
+						Domain:          domain,
+						Timeout:         timeout,
+						FailureModeDeny: !extension.FailOpen,
+						RateLimitService: &envoyratelimitv3.RateLimitServiceConfig{
+							GrpcService: &envoycorev3.GrpcService{
+								TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+									EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
+										ClusterName: clusterName,
 									},
 								},
-								TransportApiVersion: envoycorev3.ApiVersion_V3,
 							},
-							Stage:                   0,
-							EnableXRatelimitHeaders: ratev3.RateLimit_OFF,
-							RequestType:             "both",
-							StatPrefix:              "",
-						}
-					} else {
-						err = fmt.Errorf("backend not provided in grpc service")
+							TransportApiVersion: envoycorev3.ApiVersion_V3,
+						},
+						Stage:                   0,
+						EnableXRatelimitHeaders: ratev3.RateLimit_OFF,
+						RequestType:             "both",
+						StatPrefix:              "",
 					}
 				}
 			}

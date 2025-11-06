@@ -20,6 +20,7 @@ linters:
     - importas
     - ineffassign
     - krtequals
+    - kubeapilinter
     - misspell
     - nakedret
     - predeclared
@@ -37,6 +38,27 @@ linters:
         description: Checks Equals() implementations for KRT-style semantic equality issues
         settings:
           deepEqual: false
+      kubeapilinter:
+        type: module
+        description: Kube API Linter lints Kube like APIs based on API conventions and best practices
+        settings:
+          linters:
+            enable:
+            - "*"
+            disable:
+            - commentstart
+            - integers
+            - maxlength
+            - nobools
+            - nomaps
+            - optionalfields
+            - optionalorrequired
+            - ssatags
+          lintersConfig:
+            conditions:
+              isFirstField: Ignore
+              useProtobuf: Forbid
+              usePatchStrategy: Ignore
     forbidigo:
       forbid:
         - pattern: anypb.New
@@ -139,6 +161,11 @@ linters:
       - path-except: pkg/|internal/
         linters:
           - krtequals
+      # Only run kubeapilinter inside the 'api/' directory. This prevents running API-specific checks
+      # on unrelated packages like controllers or tests and producing false positives.
+      - path-except: "^api/v1alpha1"
+        linters:
+          - kubeapilinter
 issues:
   max-same-issues: 0
   uniq-by-line: true

@@ -66,7 +66,7 @@ const (
 type ExtGrpcService struct {
 	// BackendRef references the backend GRPC service.
 	// +required
-	BackendRef *gwv1.BackendRef `json:"backendRef"`
+	BackendRef gwv1.BackendRef `json:"backendRef"`
 
 	// Authority is the authority header to use for the GRPC service.
 	// +optional
@@ -116,7 +116,7 @@ type GRPCRetryBackoff struct {
 type RateLimitProvider struct {
 	// GrpcService is the GRPC service that will handle the rate limiting.
 	// +required
-	GrpcService *ExtGrpcService `json:"grpcService"`
+	GrpcService ExtGrpcService `json:"grpcService"`
 
 	// Domain identifies a rate limiting configuration for the rate limit service.
 	// All rate limit requests must specify a domain, which enables the configuration

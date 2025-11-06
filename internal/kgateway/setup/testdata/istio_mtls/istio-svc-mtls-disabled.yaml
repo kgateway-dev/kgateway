@@ -58,7 +58,7 @@ metadata:
 spec:
   containers:
     - name: httpbin
-      image: httpbin:stable
+      image: docker.io/mccutchen/go-httpbin:v2.15.0
       ports:
         - containerPort: 8080
           name: http

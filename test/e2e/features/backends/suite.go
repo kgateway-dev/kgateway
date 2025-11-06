@@ -131,20 +131,20 @@ func (s *testingSuite) TestBackendWithRuntimeError() {
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, errorManifest)
 	s.Require().NoError(err)
 
-	aiBackend := &v1alpha1.Backend{
+	backendWithError := &v1alpha1.Backend{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "example-ai-backend",
+			Name:      "example-aws-backend",
 			Namespace: "default",
 		},
 	}
 
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, aiBackend)
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, backendWithError)
 
-	s.assertStatus(aiBackend, metav1.Condition{
+	s.assertStatus(backendWithError, metav1.Condition{
 		Type:    "Accepted",
 		Status:  metav1.ConditionFalse,
 		Reason:  "Invalid",
-		Message: "Backend error: \"failed to find secret openai-secret: Secret \"openai-secret\" not found\"",
+		Message: `Backend error: "failed to find secret lambda-secret: Secret "lambda-secret" not found"`,
 	})
 
 	updateErrorManifest := filepath.Join(fsutils.MustGetThisDir(), "testdata/backend-update-error.yaml")
@@ -157,11 +157,12 @@ func (s *testingSuite) TestBackendWithRuntimeError() {
 	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, updateErrorManifest)
 	s.Require().NoError(err)
 
-	s.assertStatus(aiBackend, metav1.Condition{
-		Type:    "Accepted",
-		Status:  metav1.ConditionFalse,
-		Reason:  "Invalid",
-		Message: "Backend error: \"access_key is not a valid string\"",
+	s.assertStatus(backendWithError, metav1.Condition{
+		Type:   "Accepted",
+		Status: metav1.ConditionFalse,
+		Reason: "Invalid",
+		Message: `Backend error: "failed to create aws request signing config: failed to derive static secret: access_key is not a valid string
+secret_key is not a valid string"`,
 	})
 }
 

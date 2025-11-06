@@ -47,6 +47,7 @@ runs:
           --create-namespace \
           --set image.tag=${VERSION} \
           --set image.registry=ghcr.io/kgateway-dev \
+          --set controller.extraEnv.KGW_ENABLE_EXPERIMENTAL_GATEWAY_API_FEATURES="true" \
           --set inferenceExtension.enabled=true
       else
         # TODO(tim): this will require changes once the new helm chart is integrated
@@ -60,6 +61,7 @@ runs:
           --version ${VERSION} \
           --create-namespace \
           --set image.tag=${VERSION} \
+          --set controller.extraEnv.KGW_ENABLE_EXPERIMENTAL_GATEWAY_API_FEATURES="true" \
           --set inferenceExtension.enabled=true
       fi
   - name: Run the kubernetes gateway API inference extension conformance tests

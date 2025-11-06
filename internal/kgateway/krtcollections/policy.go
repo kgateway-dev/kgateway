@@ -992,11 +992,12 @@ func (c RouteWrapper) Equals(in RouteWrapper) bool {
 // MARK: RoutesIndex
 
 type RoutesIndex struct {
-	routes                  krt.Collection[RouteWrapper]
-	httpRoutes              krt.Collection[ir.HttpRouteIR]
-	httpBySelector          krt.Index[HTTPRouteSelector, ir.HttpRouteIR]
-	byParentRef             krt.Index[targetRefIndexKey, RouteWrapper]
-	weightedRoutePrecedence bool
+	routes                               krt.Collection[RouteWrapper]
+	httpRoutes                           krt.Collection[ir.HttpRouteIR]
+	httpBySelector                       krt.Index[HTTPRouteSelector, ir.HttpRouteIR]
+	byParentRef                          krt.Index[targetRefIndexKey, RouteWrapper]
+	weightedRoutePrecedence              bool
+	enableExperimentalGatewayAPIFeatures bool
 
 	policies  *PolicyIndex
 	refgrants *RefGrantIndex
@@ -1031,10 +1032,11 @@ func NewRoutesIndex(
 	globalSettings apisettings.Settings,
 ) *RoutesIndex {
 	h := &RoutesIndex{
-		policies:                policies,
-		refgrants:               refgrants,
-		backends:                backends,
-		weightedRoutePrecedence: globalSettings.WeightedRoutePrecedence,
+		policies:                             policies,
+		refgrants:                            refgrants,
+		backends:                             backends,
+		weightedRoutePrecedence:              globalSettings.WeightedRoutePrecedence,
+		enableExperimentalGatewayAPIFeatures: globalSettings.EnableExperimentalGatewayAPIFeatures,
 	}
 	h.hasSyncedFuncs = append(h.hasSyncedFuncs, httproutes.HasSynced, grpcroutes.HasSynced, tcproutes.HasSynced, tlsroutes.HasSynced)
 
@@ -1313,7 +1315,7 @@ func (h *RoutesIndex) getBuiltInRulePolicies(
 	ret := ir.AttachedPolicies{
 		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
 	}
-	policy := NewBuiltInRuleIr(rule)
+	policy := h.NewBuiltInRuleIr(rule)
 	if policy != nil {
 		policyAtt := ir.PolicyAtt{PolicyIr: policy /*direct attachment - no target ref*/}
 		for _, o := range opts {
@@ -1374,10 +1376,11 @@ func (h *RoutesIndex) resolveExtension(
 		Kind:  "HTTPRoute",
 	}
 
-	builtinIR, err := NewBuiltInIr(kctx, ext, fromGK, ns, h.refgrants, h.backends, ruleName, annotations)
+	builtinIR, err := h.NewBuiltInIr(kctx, ext, fromGK, ns, h.refgrants, h.backends, ruleName, annotations)
 	if err != nil {
 		return nil, err
 	}
+
 	policyAtt := &ir.PolicyAtt{
 		GroupKind: ir.VirtualBuiltInGK,
 		PolicyIr:  builtinIR,

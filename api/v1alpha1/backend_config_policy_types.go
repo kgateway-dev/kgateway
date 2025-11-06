@@ -461,12 +461,12 @@ type HealthCheck struct {
 	// health check attempt will be considered a failure.
 	// +required
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
-	Timeout *metav1.Duration `json:"timeout"`
+	Timeout metav1.Duration `json:"timeout"`
 
 	// Interval is the time between health checks.
 	// +required
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
-	Interval *metav1.Duration `json:"interval"`
+	Interval metav1.Duration `json:"interval"`
 
 	// UnhealthyThreshold is the number of consecutive failed health checks that will be considered
 	// unhealthy.
@@ -474,14 +474,14 @@ type HealthCheck struct {
 	// this threshold is ignored and the host is considered immediately unhealthy.
 	// +required
 	// +kubebuilder:validation:Minimum=0
-	UnhealthyThreshold *int32 `json:"unhealthyThreshold"`
+	UnhealthyThreshold int32 `json:"unhealthyThreshold"`
 
 	// HealthyThreshold is the number of healthy health checks required before a host is marked
 	// healthy. Note that during startup, only a single successful health check is
 	// required to mark a host healthy.
 	// +required
 	// +kubebuilder:validation:Minimum=0
-	HealthyThreshold *int32 `json:"healthyThreshold"`
+	HealthyThreshold int32 `json:"healthyThreshold"`
 
 	// Http contains the options to configure the HTTP health check.
 	// +optional
