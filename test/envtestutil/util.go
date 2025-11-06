@@ -238,9 +238,9 @@ func ApplyPodStatusFromFile(ctx context.Context, c istiokube.CLIClient, defaultN
 		return fmt.Errorf("reading YAML file %q: %w", filePath, err)
 	}
 
-	docs := bytes.Split(data, []byte("\n---\n"))
+	docs := bytes.SplitSeq(data, []byte("\n---\n"))
 
-	for _, doc := range docs {
+	for doc := range docs {
 		doc = bytes.TrimSpace(doc)
 		if len(doc) == 0 {
 			continue

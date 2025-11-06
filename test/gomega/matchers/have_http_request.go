@@ -14,7 +14,7 @@ import (
 var _ types.GomegaMatcher = new(HaveHttpRequestMatcher)
 
 // HaveRequestWithHeaders expects a set of headers that match the provided headers
-func HaveRequestWithHeaders(headers map[string]interface{}) types.GomegaMatcher {
+func HaveRequestWithHeaders(headers map[string]any) types.GomegaMatcher {
 	return HaveHttpRequest(&HttpRequest{
 		Headers: headers,
 	})
@@ -46,7 +46,7 @@ type HttpRequest struct {
 	// Headers is the set of expected header values for an http.Request
 	// Each header can be of type: {string, GomegaMatcher}
 	// Optional: If not provided, does not perform header validation
-	Headers map[string]interface{}
+	Headers map[string]any
 	// NotHeaders is a list of headers that should not be present in the request
 	// Optional: If not provided, does not perform header absence validation
 	NotHeaders []string
@@ -108,7 +108,7 @@ type HaveHttpRequestMatcher struct {
 	requestMatcher types.GomegaMatcher
 }
 
-func (m *HaveHttpRequestMatcher) Match(actual interface{}) (success bool, err error) {
+func (m *HaveHttpRequestMatcher) Match(actual any) (success bool, err error) {
 	if ok, matchErr := m.requestMatcher.Match(actual); !ok {
 		return false, matchErr
 	}
@@ -116,13 +116,13 @@ func (m *HaveHttpRequestMatcher) Match(actual interface{}) (success bool, err er
 	return true, nil
 }
 
-func (m *HaveHttpRequestMatcher) FailureMessage(actual interface{}) (message string) {
+func (m *HaveHttpRequestMatcher) FailureMessage(actual any) (message string) {
 	return fmt.Sprintf("%s \n%s",
 		m.requestMatcher.FailureMessage(actual),
 		informativeRequestComparison(m.Expected, actual))
 }
 
-func (m *HaveHttpRequestMatcher) NegatedFailureMessage(actual interface{}) (message string) {
+func (m *HaveHttpRequestMatcher) NegatedFailureMessage(actual any) (message string) {
 	return fmt.Sprintf("%s \n%s",
 		m.requestMatcher.NegatedFailureMessage(actual),
 		informativeRequestComparison(m.Expected, actual))
@@ -134,7 +134,7 @@ type HaveHTTPRequestHeaderWithValueMatcher struct {
 	Value  any
 }
 
-func (m *HaveHTTPRequestHeaderWithValueMatcher) Match(actual interface{}) (success bool, err error) {
+func (m *HaveHTTPRequestHeaderWithValueMatcher) Match(actual any) (success bool, err error) {
 	request, ok := actual.(*http.Request)
 	if !ok {
 		return false, fmt.Errorf("HaveHTTPRequestHeaderWithValueMatcher expects an *http.Request, got %T", actual)
@@ -166,7 +166,7 @@ func (m *HaveHTTPRequestHeaderWithValueMatcher) Match(actual interface{}) (succe
 	}
 }
 
-func (m *HaveHTTPRequestHeaderWithValueMatcher) FailureMessage(actual interface{}) string {
+func (m *HaveHTTPRequestHeaderWithValueMatcher) FailureMessage(actual any) string {
 	request, ok := actual.(*http.Request)
 	if !ok || request == nil {
 		return fmt.Sprintf("Expected a valid *http.Request, got %T", actual)
@@ -179,7 +179,7 @@ func (m *HaveHTTPRequestHeaderWithValueMatcher) FailureMessage(actual interface{
 	return fmt.Sprintf("Expected HTTP request to have header '%s: %s', but the value does not match. Actual: %v", m.Header, m.Value, values)
 }
 
-func (m *HaveHTTPRequestHeaderWithValueMatcher) NegatedFailureMessage(actual interface{}) string {
+func (m *HaveHTTPRequestHeaderWithValueMatcher) NegatedFailureMessage(actual any) string {
 	request, ok := actual.(*http.Request)
 	if !ok || request == nil {
 		return fmt.Sprintf("Expected a valid *http.Request, got %T", actual)
@@ -193,7 +193,7 @@ type NotHaveHTTPRequestHeaderMatcher struct {
 	Header string
 }
 
-func (m *NotHaveHTTPRequestHeaderMatcher) Match(actual interface{}) (success bool, err error) {
+func (m *NotHaveHTTPRequestHeaderMatcher) Match(actual any) (success bool, err error) {
 	request, ok := actual.(*http.Request)
 	if !ok {
 		return false, fmt.Errorf("NotHaveHTTPRequestHeaderMatcher expects an *http.Request, got %T", actual)
@@ -207,7 +207,7 @@ func (m *NotHaveHTTPRequestHeaderMatcher) Match(actual interface{}) (success boo
 	return !headerExists, nil
 }
 
-func (m *NotHaveHTTPRequestHeaderMatcher) FailureMessage(actual interface{}) string {
+func (m *NotHaveHTTPRequestHeaderMatcher) FailureMessage(actual any) string {
 	request, ok := actual.(*http.Request)
 	if !ok || request == nil {
 		return fmt.Sprintf("Expected a valid *http.Request, got %T", actual)
@@ -216,7 +216,7 @@ func (m *NotHaveHTTPRequestHeaderMatcher) FailureMessage(actual interface{}) str
 	return fmt.Sprintf("Expected HTTP request not to have header '%s', but it was present", m.Header)
 }
 
-func (m *NotHaveHTTPRequestHeaderMatcher) NegatedFailureMessage(actual interface{}) string {
+func (m *NotHaveHTTPRequestHeaderMatcher) NegatedFailureMessage(actual any) string {
 	request, ok := actual.(*http.Request)
 	if !ok || request == nil {
 		return fmt.Sprintf("Expected a valid *http.Request, got %T", actual)
@@ -229,7 +229,7 @@ func (m *NotHaveHTTPRequestHeaderMatcher) NegatedFailureMessage(actual interface
 // The HaveHttpRequestMatcher uses an And matcher, which intentionally short-circuits and only
 // logs the first failure that occurred.
 // To help developers, we print more details in this function.
-func informativeRequestComparison(expected, actual interface{}) string {
+func informativeRequestComparison(expected, actual any) string {
 	expectedJson, _ := json.MarshalIndent(expected, "", "  ")
 
 	request, ok := actual.(*http.Request)

@@ -69,7 +69,7 @@ func ApplyDefaults(
 	structuralSchema *apiserverschema.Structural,
 ) (*unstructured.Unstructured, []byte, error) {
 	// Convert YAML to map without losing any fields (using the Go type with omitempty will drop zero-value fields)
-	raw := make(map[string]interface{})
+	raw := make(map[string]any)
 	err := yaml.Unmarshal(objYAML, &raw)
 	if err != nil {
 		return nil, nil, err

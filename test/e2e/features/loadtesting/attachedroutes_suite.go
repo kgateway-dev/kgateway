@@ -5,6 +5,7 @@ package loadtesting
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sync"
 	"time"
 
@@ -104,11 +105,8 @@ func (s *AttachedRoutesSuite) forceCleanupTestResources() {
 	}); err == nil {
 		testGateways := []string{"test-gateway", "gw-1", "gw-2", "gw-3"}
 		for _, gateway := range gatewayList.Items {
-			for _, testGW := range testGateways {
-				if gateway.Name == testGW {
-					s.testInstallation.ClusterContext.Client.Delete(s.ctx, &gateway, deleteOptions)
-					break
-				}
+			if slices.Contains(testGateways, gateway.Name) {
+				s.testInstallation.ClusterContext.Client.Delete(s.ctx, &gateway, deleteOptions)
 			}
 		}
 	}

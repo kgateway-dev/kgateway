@@ -78,7 +78,7 @@ func (tr *translationResult) MarshalJSON() ([]byte, error) {
 	}
 
 	// Create a map to hold the marshaled fields
-	result := make(map[string]interface{})
+	result := make(map[string]any)
 
 	// Marshal each field using protojson
 	if len(tr.Routes) > 0 {
@@ -259,14 +259,14 @@ func (tr *translationResult) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func marshalProtoMessages[T proto.Message](messages []T, m protojson.MarshalOptions) ([]interface{}, error) {
-	var result []interface{}
+func marshalProtoMessages[T proto.Message](messages []T, m protojson.MarshalOptions) ([]any, error) {
+	var result []any
 	for _, msg := range messages {
 		data, err := m.Marshal(msg)
 		if err != nil {
 			return nil, err
 		}
-		var jsonObj interface{}
+		var jsonObj any
 		if err := json.Unmarshal(data, &jsonObj); err != nil {
 			return nil, err
 		}
@@ -446,7 +446,7 @@ func sortTranslationResult(tr *translationResult) *translationResult {
 	return tr
 }
 
-func ReadYamlFile(file string, out interface{}) error {
+func ReadYamlFile(file string, out any) error {
 	data, err := os.ReadFile(file)
 	if err != nil {
 		return err

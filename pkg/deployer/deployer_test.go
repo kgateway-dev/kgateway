@@ -1842,7 +1842,7 @@ var _ = Describe("Deployer", func() {
 					levels = append(levels, ContainSubstring(fmt.Sprintf("%s:%s", k, v)))
 				}
 
-				argsMatchers := []interface{}{
+				argsMatchers := []any{
 					"--log-level",
 					*expectedGwp.EnvoyContainer.Bootstrap.LogLevel,
 					"--component-log-level",
@@ -1950,7 +1950,7 @@ var _ = Describe("Deployer", func() {
 				levels = append(levels, ContainSubstring(fmt.Sprintf("%s:%s", k, v)))
 			}
 
-			argsMatchers := []interface{}{
+			argsMatchers := []any{
 				"--log-level",
 				*expectedGwp.EnvoyContainer.Bootstrap.LogLevel,
 				"--component-log-level",
@@ -2295,7 +2295,7 @@ var _ = Describe("Deployer", func() {
 
 					// make sure the stats listener is enabled
 					staticResources := envoyConfig["static_resources"].(map[string]any)
-					listeners := staticResources["listeners"].([]interface{})
+					listeners := staticResources["listeners"].([]any)
 					var prometheusListener map[string]any
 					for _, lis := range listeners {
 						lis := lis.(map[string]any)
@@ -2339,7 +2339,7 @@ var _ = Describe("Deployer", func() {
 
 					// make sure the stats listener is enabled
 					staticResources := envoyConfig["static_resources"].(map[string]any)
-					listeners := staticResources["listeners"].([]interface{})
+					listeners := staticResources["listeners"].([]any)
 					var prometheusListener map[string]any
 					for _, lis := range listeners {
 						lis := lis.(map[string]any)

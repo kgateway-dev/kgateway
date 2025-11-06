@@ -98,8 +98,8 @@ func extractRequestToken(req *http.Request) (string, error) {
 		return "", fmt.Errorf("no HTTP authorization header exists")
 	}
 
-	if strings.HasPrefix(value, bearerTokenPrefix) {
-		return strings.TrimPrefix(value, bearerTokenPrefix), nil
+	if after, ok := strings.CutPrefix(value, bearerTokenPrefix); ok {
+		return after, nil
 	}
 
 	return "", fmt.Errorf("no bearer token exists in HTTP authorization header")

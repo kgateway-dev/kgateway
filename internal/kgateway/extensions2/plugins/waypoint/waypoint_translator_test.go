@@ -53,8 +53,7 @@ func TestWaypointTranslator(t *testing.T) {
 			if tt.skip != "" {
 				t.Skip(tt.skip)
 			}
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			ctx := t.Context()
 			dir := fsutils.MustGetThisDir()
 
 			extraPluginsFn := func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []pluginsdk.Plugin {

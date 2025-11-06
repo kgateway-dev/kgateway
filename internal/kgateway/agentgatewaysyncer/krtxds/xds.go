@@ -1037,20 +1037,20 @@ func debounce(ch chan *PushRequest, stopCh <-chan struct{}, opts DebounceOptions
 }
 
 func configsUpdated(req *PushRequest) string {
-	configs := ""
+	var configs strings.Builder
 	count := 0
 	for _, keys := range req.ConfigsUpdated {
 		count += len(keys)
 		for key := range keys {
-			configs += key
+			configs.WriteString(key)
 			break
 		}
 	}
 	if count > 1 {
 		more := " and " + strconv.Itoa(count-1) + " more configs"
-		configs += more
+		configs.WriteString(more)
 	}
-	return configs
+	return configs.String()
 }
 
 func nonce(noncePrefix string) string {

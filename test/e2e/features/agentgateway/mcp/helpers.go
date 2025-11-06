@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -55,9 +56,7 @@ func mcpHeaders() map[string]string {
 // withSessionID returns a copy of headers including mcp-session-id.
 func withSessionID(headers map[string]string, sessionID string) map[string]string {
 	cp := make(map[string]string, len(headers)+1)
-	for k, v := range headers {
-		cp[k] = v
-	}
+	maps.Copy(cp, headers)
 	if sessionID != "" {
 		cp["mcp-session-id"] = sessionID
 	}
@@ -70,12 +69,8 @@ func withRouteHeaders(headers map[string]string, extras map[string]string) map[s
 		return headers
 	}
 	cp := make(map[string]string, len(headers)+len(extras))
-	for k, v := range headers {
-		cp[k] = v
-	}
-	for k, v := range extras {
-		cp[k] = v
-	}
+	maps.Copy(cp, headers)
+	maps.Copy(cp, extras)
 	return cp
 }
 

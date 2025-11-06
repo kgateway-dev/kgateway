@@ -22,7 +22,7 @@ func ContainHeaders(headers http.Header) types.GomegaMatcher {
 	}
 
 	// generic transform: extract http.Header no matter if it's a *http.Request or *http.Response
-	headerExtractor := func(actual interface{}) (http.Header, error) {
+	headerExtractor := func(actual any) (http.Header, error) {
 		switch v := actual.(type) {
 		case *http.Response:
 			return v.Header, nil
@@ -41,7 +41,7 @@ func ContainHeaders(headers http.Header) types.GomegaMatcher {
 	for k, v := range headers {
 		//nolint:bodyclose // The caller of this matcher constructor should be responsible for ensuring the body close
 		headerMatchers = append(headerMatchers,
-			gomega.WithTransform(func(actual interface{}) []string {
+			gomega.WithTransform(func(actual any) []string {
 				hdr, err := headerExtractor(actual)
 				if err != nil {
 					// cause the matcher to fail fast if unexpected type

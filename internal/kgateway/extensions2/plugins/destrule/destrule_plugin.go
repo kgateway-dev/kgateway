@@ -76,7 +76,7 @@ func (d *destrulePlugin) processEndpoints(
 	out.PriorityInfo = getPriorityInfoFromDestrule(localityLb)
 	hasher := fnv.New64()
 	hasher.Write([]byte(destrule.UID))
-	hasher.Write([]byte(fmt.Sprintf("%v", destrule.Generation)))
+	hasher.Write(fmt.Appendf(nil, "%v", destrule.Generation))
 	return hasher.Sum64()
 }
 

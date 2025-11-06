@@ -66,25 +66,25 @@ type slogAdapterForEnvoy struct {
 // Ensure it implements the interface
 var _ envoylog.Logger = (*slogAdapterForEnvoy)(nil)
 
-func (s *slogAdapterForEnvoy) Debugf(format string, args ...interface{}) {
+func (s *slogAdapterForEnvoy) Debugf(format string, args ...any) {
 	if s.logger.Enabled(context.Background(), slog.LevelDebug) {
 		s.logger.Debug(fmt.Sprintf(format, args...)) //nolint:sloglint // ignore formatting
 	}
 }
 
-func (s *slogAdapterForEnvoy) Infof(format string, args ...interface{}) {
+func (s *slogAdapterForEnvoy) Infof(format string, args ...any) {
 	if s.logger.Enabled(context.Background(), slog.LevelInfo) {
 		s.logger.Info(fmt.Sprintf(format, args...)) //nolint:sloglint // ignore formatting
 	}
 }
 
-func (s *slogAdapterForEnvoy) Warnf(format string, args ...interface{}) {
+func (s *slogAdapterForEnvoy) Warnf(format string, args ...any) {
 	if s.logger.Enabled(context.Background(), slog.LevelWarn) {
 		s.logger.Warn(fmt.Sprintf(format, args...)) //nolint:sloglint // ignore formatting
 	}
 }
 
-func (s *slogAdapterForEnvoy) Errorf(format string, args ...interface{}) {
+func (s *slogAdapterForEnvoy) Errorf(format string, args ...any) {
 	if s.logger.Enabled(context.Background(), slog.LevelError) {
 		s.logger.Error(fmt.Sprintf(format, args...)) //nolint:sloglint // ignore formatting
 	}

@@ -287,9 +287,9 @@ var (
 
 // expectedEnvVars returns a map of all the env vars that should be set for the given Settings value.
 // The value of the map is the default value of the field.
-func expectedEnvVars(settingsValue reflect.Value) map[string]interface{} {
+func expectedEnvVars(settingsValue reflect.Value) map[string]any {
 	// This is a modified version of the code in https://github.com/kelseyhightower/envconfig/blob/7834011875d613aec60c606b52c2b0fe8949fe91/envconfig.go#L102-L128
-	expectedEnvVars := make(map[string]interface{}, settingsValue.NumField())
+	expectedEnvVars := make(map[string]any, settingsValue.NumField())
 	for i := 0; i < settingsValue.NumField(); i++ {
 		fieldType := settingsValue.Type().Field(i)
 		splitWords := fieldType.Tag.Get("split_words") == "true"

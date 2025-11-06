@@ -3,6 +3,7 @@ package query
 import (
 	"context"
 	"fmt"
+	"maps"
 	"strings"
 
 	"istio.io/istio/pkg/kube/krt"
@@ -134,9 +135,7 @@ func (r *RoutesForGwResult) setListenerResult(parent client.Object, listenerName
 }
 
 func (r *RoutesForGwResult) merge(r2 *RoutesForGwResult) {
-	for k, v := range r2.listenerResults {
-		r.listenerResults[k] = v
-	}
+	maps.Copy(r.listenerResults, r2.listenerResults)
 	r.RouteErrors = append(r.RouteErrors, r2.RouteErrors...)
 }
 

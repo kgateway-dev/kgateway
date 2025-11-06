@@ -205,10 +205,10 @@ func constructRustformation(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr
 	return nil
 }
 
-func toRustFormationConfig(t *v1alpha1.Transform) (map[string]interface{}, bool) {
+func toRustFormationConfig(t *v1alpha1.Transform) (map[string]any, bool) {
 	// if there is no transformations present then return a
 	hasTransform := false
-	rustformationConfigMap := map[string]interface{}{}
+	rustformationConfigMap := map[string]any{}
 	if t == nil {
 		return rustformationConfigMap, hasTransform
 	}
@@ -254,7 +254,7 @@ func toRustFormationPerRouteConfig(t *v1alpha1.TransformationPolicy) (*dynamicmo
 		return nil, nil
 	}
 	hasTransform := false
-	rustformCfgMap := map[string]interface{}{}
+	rustformCfgMap := map[string]any{}
 
 	requestMap, hasRequestTransform := toRustFormationConfig(t.Request)
 	hasTransform = hasTransform || hasRequestTransform
