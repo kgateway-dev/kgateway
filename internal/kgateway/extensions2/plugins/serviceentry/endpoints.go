@@ -5,7 +5,6 @@ import (
 	"net"
 
 	"google.golang.org/protobuf/types/known/wrapperspb"
-
 	networking "istio.io/api/networking/v1alpha3"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/kube/krt"

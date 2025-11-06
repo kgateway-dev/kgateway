@@ -65,7 +65,7 @@ func processPoolBackendObjIR(
 		addr := fmt.Sprintf("%s:%d", ep.address, ep.port)
 
 		// Build the subset metadata struct used by the EPP for endpoint selection
-		mdStruct, err := structpb.NewStruct(map[string]interface{}{
+		mdStruct, err := structpb.NewStruct(map[string]any{
 			dstEndpointKey: addr,
 		})
 		if err != nil {

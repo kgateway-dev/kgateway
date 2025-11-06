@@ -20,7 +20,8 @@ func getLoggingDescription() string {
 	componentLevels := logging.GetComponentLevels()
 
 	// Build component selector
-	componentSelector := `<select id="componentselector">`
+	var componentSelector strings.Builder
+	componentSelector.WriteString(`<select id="componentselector">`)
 	// Ensure consistent order for the selector
 	components := make([]string, 0, len(componentLevels))
 	for comp := range componentLevels {
@@ -29,29 +30,31 @@ func getLoggingDescription() string {
 	sort.Strings(components) // Sort alphabetically
 
 	for _, comp := range components {
-		componentSelector += fmt.Sprintf(`<option value="%s">%s (Current: %s)</option>`, comp, comp, logging.LevelToString(componentLevels[comp]))
+		componentSelector.WriteString(fmt.Sprintf(`<option value="%s">%s (Current: %s)</option>`, comp, comp, logging.LevelToString(componentLevels[comp])))
 	}
-	componentSelector += `</select>`
+	componentSelector.WriteString(`</select>`)
 
 	// Build level selector
-	levelSelector := `<select id="loglevelselector">`
+	var levelSelector strings.Builder
+	levelSelector.WriteString(`<select id="loglevelselector">`)
 	supportedLogLevels := []string{"trace", "debug", "info", "warn", "error"}
 	for _, level := range supportedLogLevels {
-		levelSelector += fmt.Sprintf(`<option value="%s">%s</option>`, level, strings.ToUpper(level))
+		levelSelector.WriteString(fmt.Sprintf(`<option value="%s">%s</option>`, level, strings.ToUpper(level)))
 	}
-	levelSelector += `</select>`
+	levelSelector.WriteString(`</select>`)
 
 	// Display current levels
-	currentLevelsDisplay := "<h4>Current Levels:</h4><ul>"
+	var currentLevelsDisplay strings.Builder
+	currentLevelsDisplay.WriteString("<h4>Current Levels:</h4><ul>")
 	for _, comp := range components {
-		currentLevelsDisplay += fmt.Sprintf("<li>%s: %s</li>", comp, logging.LevelToString(componentLevels[comp]))
+		currentLevelsDisplay.WriteString(fmt.Sprintf("<li>%s: %s</li>", comp, logging.LevelToString(componentLevels[comp])))
 	}
-	currentLevelsDisplay += "</ul><hr/>"
+	currentLevelsDisplay.WriteString("</ul><hr/>")
 
-	return currentLevelsDisplay + `Set log level for a specific component.<br/>
+	return currentLevelsDisplay.String() + `Set log level for a specific component.<br/>
 
-Component: ` + componentSelector + `
-Level: ` + levelSelector + `
+Component: ` + componentSelector.String() + `
+Level: ` + levelSelector.String() + `
 
 <button onclick="setlevel()">Set Component Level</button>
 <button onclick="setAllLevels()">Set All Levels</button>

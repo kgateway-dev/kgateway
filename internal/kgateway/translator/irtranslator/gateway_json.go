@@ -18,7 +18,7 @@ func (tr *TranslationResult) MarshalJSON() ([]byte, error) {
 	}
 
 	// Create a map to hold the marshaled fields
-	result := make(map[string]interface{})
+	result := make(map[string]any)
 
 	// Marshal each field using protojson
 	if len(tr.Routes) > 0 {
@@ -49,14 +49,14 @@ func (tr *TranslationResult) MarshalJSON() ([]byte, error) {
 	return json.Marshal(result)
 }
 
-func marshalProtoMessages[T proto.Message](messages []T, m protojson.MarshalOptions) ([]interface{}, error) {
-	var result []interface{}
+func marshalProtoMessages[T proto.Message](messages []T, m protojson.MarshalOptions) ([]any, error) {
+	var result []any
 	for _, msg := range messages {
 		data, err := m.Marshal(msg)
 		if err != nil {
 			return nil, err
 		}
-		var jsonObj interface{}
+		var jsonObj any
 		if err := json.Unmarshal(data, &jsonObj); err != nil {
 			return nil, err
 		}

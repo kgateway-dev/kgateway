@@ -35,15 +35,15 @@ import (
 	"istio.io/istio/pkg/ptr"
 	"istio.io/istio/pkg/security"
 	"istio.io/istio/pkg/slices"
-	_ "istio.io/istio/pkg/util/protomarshal" // Ensure we get the more efficient vtproto gRPC encoder
 	"istio.io/istio/pkg/util/sets"
 	"istio.io/istio/pkg/xds"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
-	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
+	_ "istio.io/istio/pkg/util/protomarshal" // Ensure we get the more efficient vtproto gRPC encoder
 
 	kgwxds "github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
@@ -1037,20 +1037,20 @@ func debounce(ch chan *PushRequest, stopCh <-chan struct{}, opts DebounceOptions
 }
 
 func configsUpdated(req *PushRequest) string {
-	configs := ""
+	var configs strings.Builder
 	count := 0
 	for _, keys := range req.ConfigsUpdated {
 		count += len(keys)
 		for key := range keys {
-			configs += key
+			configs.WriteString(key)
 			break
 		}
 	}
 	if count > 1 {
 		more := " and " + strconv.Itoa(count-1) + " more configs"
-		configs += more
+		configs.WriteString(more)
 	}
-	return configs
+	return configs.String()
 }
 
 func nonce(noncePrefix string) string {

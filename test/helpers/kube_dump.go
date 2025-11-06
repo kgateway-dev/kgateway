@@ -296,7 +296,7 @@ func kubeList(namespace string, target string) ([]string, error) {
 	}
 
 	var toReturn []string
-	for _, line := range strings.Split(strings.TrimSuffix(lines, "\n"), "\n") {
+	for line := range strings.SplitSeq(strings.TrimSuffix(lines, "\n"), "\n") {
 		if strings.HasPrefix(line, "NAME") || strings.HasPrefix(line, "No resources found") {
 			continue // skip header line and cases where there are no resources
 		}

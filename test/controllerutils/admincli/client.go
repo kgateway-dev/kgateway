@@ -111,12 +111,12 @@ func (c *Client) VersionCmd(ctx context.Context) cmdutils.Cmd {
 // Response structure for xds snapshot endpoint
 type xdsSnapshotResponse struct {
 	// map from node id to resources
-	Data  map[string]interface{} `json:"data"`
-	Error string                 `json:"error"`
+	Data  map[string]any `json:"data"`
+	Error string         `json:"error"`
 }
 
 // GetXdsSnapshot returns the data that is available at the xds snapshot endpoint
-func (c *Client) GetXdsSnapshot(ctx context.Context) (map[string]interface{}, error) {
+func (c *Client) GetXdsSnapshot(ctx context.Context) (map[string]any, error) {
 	var out threadsafe.Buffer
 
 	err := c.XdsSnapshotCmd(ctx).WithStdout(&out).Run().Cause()

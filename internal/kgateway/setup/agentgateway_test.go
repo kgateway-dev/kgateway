@@ -223,7 +223,7 @@ func dumpProtoToJSON(t *testing.T, dump agentGwDump, fpre string) {
 	sortAddresses(sortedAddresses)
 
 	// Create a structured dump map
-	dumpMap := map[string]interface{}{
+	dumpMap := map[string]any{
 		"resources": sortedResources,
 		"addresses": sortedAddresses,
 	}
@@ -348,7 +348,7 @@ func readExpectedDump(t *testing.T, filename string) (agentGwDump, error) {
 	}
 
 	// Parse the JSON structure using a custom approach that matches the actual JSON format
-	var jsonData map[string]interface{}
+	var jsonData map[string]any
 	if err := json.Unmarshal(data, &jsonData); err != nil {
 		return dump, fmt.Errorf("failed to unmarshal JSON: %v", err)
 	}
@@ -359,14 +359,14 @@ func readExpectedDump(t *testing.T, filename string) (agentGwDump, error) {
 	}
 
 	// Parse resources
-	if resourcesData, ok := jsonData["resources"].([]interface{}); ok {
+	if resourcesData, ok := jsonData["resources"].([]any); ok {
 		for _, r := range resourcesData {
-			if resourceMap, ok := r.(map[string]interface{}); ok {
+			if resourceMap, ok := r.(map[string]any); ok {
 				resource := &api.Resource{}
 
 				// Parse Kind field
-				if kindData, ok := resourceMap["Kind"].(map[string]interface{}); ok {
-					if bindData, ok := kindData["Bind"].(map[string]interface{}); ok {
+				if kindData, ok := resourceMap["Kind"].(map[string]any); ok {
+					if bindData, ok := kindData["Bind"].(map[string]any); ok {
 						bindJSON, err := json.Marshal(bindData)
 						if err != nil {
 							t.Logf("failed to marshal bind data: %v", err)
@@ -378,7 +378,7 @@ func readExpectedDump(t *testing.T, filename string) (agentGwDump, error) {
 							continue
 						}
 						resource.Kind = &api.Resource_Bind{Bind: bind}
-					} else if listenerData, ok := kindData["Listener"].(map[string]interface{}); ok {
+					} else if listenerData, ok := kindData["Listener"].(map[string]any); ok {
 						listenerJSON, err := json.Marshal(listenerData)
 						if err != nil {
 							t.Logf("failed to marshal listener data: %v", err)
@@ -390,7 +390,7 @@ func readExpectedDump(t *testing.T, filename string) (agentGwDump, error) {
 							continue
 						}
 						resource.Kind = &api.Resource_Listener{Listener: listener}
-					} else if routeData, ok := kindData["Route"].(map[string]interface{}); ok {
+					} else if routeData, ok := kindData["Route"].(map[string]any); ok {
 						routeJSON, err := json.Marshal(routeData)
 						if err != nil {
 							t.Logf("failed to marshal route data: %v", err)
@@ -402,7 +402,7 @@ func readExpectedDump(t *testing.T, filename string) (agentGwDump, error) {
 							continue
 						}
 						resource.Kind = &api.Resource_Route{Route: route}
-					} else if tcprouteData, ok := kindData["TcpRoute"].(map[string]interface{}); ok {
+					} else if tcprouteData, ok := kindData["TcpRoute"].(map[string]any); ok {
 						tcprouteJSON, err := json.Marshal(tcprouteData)
 						if err != nil {
 							t.Logf("failed to marshal tcp route data: %v", err)
@@ -414,7 +414,7 @@ func readExpectedDump(t *testing.T, filename string) (agentGwDump, error) {
 							continue
 						}
 						resource.Kind = &api.Resource_TcpRoute{TcpRoute: tcproute}
-					} else if policyData, ok := kindData["Policy"].(map[string]interface{}); ok {
+					} else if policyData, ok := kindData["Policy"].(map[string]any); ok {
 						policyJSON, err := json.Marshal(policyData)
 						if err != nil {
 							t.Logf("failed to marshal policy data: %v", err)
@@ -437,14 +437,14 @@ func readExpectedDump(t *testing.T, filename string) (agentGwDump, error) {
 	}
 
 	// Parse addresses
-	if addressesData, ok := jsonData["addresses"].([]interface{}); ok {
+	if addressesData, ok := jsonData["addresses"].([]any); ok {
 		for _, a := range addressesData {
-			if addressMap, ok := a.(map[string]interface{}); ok {
+			if addressMap, ok := a.(map[string]any); ok {
 				address := &api.Address{}
 
 				// Parse Type field
-				if typeData, ok := addressMap["Type"].(map[string]interface{}); ok {
-					if serviceData, ok := typeData["Service"].(map[string]interface{}); ok {
+				if typeData, ok := addressMap["Type"].(map[string]any); ok {
+					if serviceData, ok := typeData["Service"].(map[string]any); ok {
 						serviceJSON, err := json.Marshal(serviceData)
 						if err != nil {
 							t.Logf("failed to marshal service data: %v", err)
@@ -456,7 +456,7 @@ func readExpectedDump(t *testing.T, filename string) (agentGwDump, error) {
 							continue
 						}
 						address.Type = &api.Address_Service{Service: service}
-					} else if workloadData, ok := typeData["Workload"].(map[string]interface{}); ok {
+					} else if workloadData, ok := typeData["Workload"].(map[string]any); ok {
 						workloadJSON, err := json.Marshal(workloadData)
 						if err != nil {
 							t.Logf("failed to marshal workload data: %v", err)

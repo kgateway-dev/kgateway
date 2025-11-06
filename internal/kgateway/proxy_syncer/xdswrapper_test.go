@@ -52,7 +52,7 @@ func TestRedacted(t *testing.T) {
 	snap := &envoycache.Snapshot{}
 	snap.Resources[envoycachetypes.Cluster] = envoycache.Resources{
 		Version: "foo",
-		Items:   map[string]envoycachetypes.ResourceWithTTL{"foo": envoycachetypes.ResourceWithTTL{Resource: c}},
+		Items:   map[string]envoycachetypes.ResourceWithTTL{"foo": {Resource: c}},
 	}
 
 	x := XdsSnapWrapper{}.WithSnapshot(snap)

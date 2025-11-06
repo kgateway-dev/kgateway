@@ -1,6 +1,8 @@
 package deployer
 
 import (
+	"maps"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
@@ -64,9 +66,7 @@ func DeepMergeMaps[keyT comparable, valT any](dst, src map[keyT]valT) map[keyT]v
 		return src
 	}
 
-	for k, v := range src {
-		dst[k] = v
-	}
+	maps.Copy(dst, src)
 	return dst
 }
 

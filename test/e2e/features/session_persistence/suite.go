@@ -117,8 +117,8 @@ func (s *testingSuite) assertSessionPersistence(persistenceType string) {
 // extractPodNameFromResponse extracts the pod name from the echo service response
 func (s *testingSuite) extractPodNameFromResponse(response string) string {
 	// The echo service returns something like "pod=echo-abc123-xyz"
-	lines := strings.Split(response, "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(response, "\n")
+	for line := range lines {
 		if strings.Contains(line, "pod=") {
 			parts := strings.Split(line, "pod=")
 			if len(parts) > 1 {
@@ -131,8 +131,8 @@ func (s *testingSuite) extractPodNameFromResponse(response string) string {
 
 // extractSessionCookieFromResponse extracts the session cookie from the curl response
 func (s *testingSuite) extractSessionCookieFromResponse(response string) string {
-	lines := strings.Split(response, "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(response, "\n")
+	for line := range lines {
 		if strings.Contains(line, "set-cookie:") && strings.Contains(line, "Session-A") {
 			// Extract cookie value from "Set-Cookie: Session-A=value; ..."
 			parts := strings.Split(line, "set-cookie:")
@@ -151,8 +151,8 @@ func (s *testingSuite) extractSessionCookieFromResponse(response string) string 
 
 // extractSessionHeaderFromResponse extracts the session header from the curl response
 func (s *testingSuite) extractSessionHeaderFromResponse(response string) string {
-	lines := strings.Split(response, "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(response, "\n")
+	for line := range lines {
 		if strings.Contains(line, "session-a:") {
 			parts := strings.Split(line, "session-a:")
 			if len(parts) > 1 {
