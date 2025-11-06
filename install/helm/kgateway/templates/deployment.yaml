@@ -94,10 +94,6 @@ spec:
             - name: KGW_ENABLE_INFER_EXT
               value: "true"
             {{- end }}
-            {{- if .Values.inferenceExtension.autoProvision }}
-            - name: KGW_INFER_EXT_AUTO_PROVISION
-              value: "true"
-            {{- end }}
             - name: KGW_DEFAULT_IMAGE_REGISTRY
               value: {{ .Values.image.registry }}
             - name: KGW_DEFAULT_IMAGE_TAG

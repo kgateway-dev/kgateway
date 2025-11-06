@@ -6,15 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"google.golang.org/protobuf/proto"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
-
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
-
 	"github.com/agentgateway/agentgateway/go/api"
+	"google.golang.org/protobuf/proto"
 	"istio.io/api/annotation"
 	"istio.io/api/label"
 	"istio.io/istio/pkg/config/constants"
@@ -22,6 +15,12 @@ import (
 	"istio.io/istio/pkg/log"
 	"istio.io/istio/pkg/ptr"
 	"istio.io/istio/pkg/slices"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
 type InboundBinding struct {
@@ -200,7 +199,7 @@ func (a *index) WaypointsCollection(
 			trafficType = tt
 		}
 
-		return a.makeWaypoint(ctx, gateway, gatewayClass, serviceAccounts, trafficType)
+		return a.makeWaypoint(gateway, gatewayClass, serviceAccounts, trafficType)
 	}, opts.ToOptions("Waypoints")...)
 }
 
@@ -262,7 +261,6 @@ func getGatewayOrGatewayClassAnnotation(gateway *gatewayv1.Gateway, class *gatew
 }
 
 func (a *index) makeWaypoint(
-	ctx krt.HandlerContext,
 	gateway *gatewayv1.Gateway,
 	gatewayClass *gatewayv1.GatewayClass,
 	serviceAccounts []string,
@@ -271,7 +269,7 @@ func (a *index) makeWaypoint(
 	binding := makeInboundBinding(gateway, gatewayClass)
 	return &Waypoint{
 		Named:           krt.NewNamed(gateway),
-		Address:         a.getGatewayAddress(ctx, gateway),
+		Address:         a.getGatewayAddress(gateway),
 		DefaultBinding:  binding,
 		AllowedRoutes:   makeAllowedRoutes(gateway, binding),
 		TrafficType:     trafficType,
@@ -394,7 +392,7 @@ func makeWaypointSelector(l gatewayv1.Listener) WaypointSelector {
 	}
 }
 
-func (a *index) getGatewayAddress(ctx krt.HandlerContext, gw *gatewayv1.Gateway) *api.GatewayAddress {
+func (a *index) getGatewayAddress(gw *gatewayv1.Gateway) *api.GatewayAddress {
 	for _, addr := range gw.Status.Addresses {
 		if addr.Type != nil && *addr.Type == gatewayv1.HostnameAddressType {
 			// Prefer hostname from status, if we can find it.
@@ -425,7 +423,7 @@ func (a *index) getGatewayAddress(ctx krt.HandlerContext, gw *gatewayv1.Gateway)
 			return &api.GatewayAddress{
 				Destination: &api.GatewayAddress_Address{
 					// probably use from Cidr instead?
-					Address: a.toNetworkAddressFromIP(ctx, ip),
+					Address: a.toNetworkAddressFromIP(ip),
 				},
 				// TODO: look up the HBONE port instead of hardcoding it
 				HboneMtlsPort: 15008,
@@ -456,7 +454,7 @@ func ReportWaypointUnsupportedTrafficType(waypoint string, ttype string) *Status
 	}
 }
 
-func (a *index) toNetworkAddressFromIP(ctx krt.HandlerContext, ip netip.Addr) *api.NetworkAddress {
+func (a *index) toNetworkAddressFromIP(ip netip.Addr) *api.NetworkAddress {
 	return &api.NetworkAddress{
 		Network: "", // TODO
 		Address: ip.AsSlice(),

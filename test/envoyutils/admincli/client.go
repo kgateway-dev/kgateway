@@ -13,14 +13,13 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmdutils"
+	// import for side effects; this is needed so we can unmarshal envoy types
+	_ "github.com/kgateway-dev/kgateway/v2/pkg/utils/filter_types"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/portforward"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/protoutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/threadsafe"
-
-	// import for side effects; this is needed so we can unmarshal envoy types
-	_ "github.com/kgateway-dev/kgateway/v2/pkg/utils/filter_types"
 )
 
 const (
@@ -100,8 +99,10 @@ func NewPortForwardedClient(ctx context.Context, proxySelector, namespace string
 
 // WithReceiver sets the io.Writer that will be used by default for the stdout and stderr
 // of cmdutils.Cmd created by the Client
+// This modifies the value in place, so affects shared references to the Client and future commands run by the Client.
+// Wrap this in a threadsafe struct to avoid data races when wrapped in io.MultiWriter in cmdutils.
 func (c *Client) WithReceiver(receiver io.Writer) *Client {
-	c.receiver = receiver
+	c.receiver = &threadsafe.WriterWrapper{W: receiver}
 	return c
 }
 

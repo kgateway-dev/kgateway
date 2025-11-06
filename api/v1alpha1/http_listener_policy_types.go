@@ -183,7 +183,7 @@ type CommonAccessLogGrpcService struct {
 type CommonGrpcService struct {
 	// The backend gRPC service. Can be any type of supported backend (Kubernetes Service, kgateway Backend, etc..)
 	// +required
-	BackendRef *gwv1.BackendRef `json:"backendRef"`
+	BackendRef gwv1.BackendRef `json:"backendRef"`
 
 	// The :authority header in the grpc request. If this field is not set, the authority header value will be cluster_name.
 	// Note that this authority does not override the SNI. The SNI is provided by the transport socket of the cluster.
@@ -353,7 +353,7 @@ type FilterType struct {
 // Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-comparisonfilter
 type ComparisonFilter struct {
 	// +required
-	Op Op `json:"op,omitempty"`
+	Op Op `json:"op"`
 
 	// Value to compare against.
 	// +kubebuilder:validation:Minimum=0

@@ -26,22 +26,19 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	internaldeployer "github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 const (
 	GatewayClassField = "spec.gatewayClassName"
 	// GatewayParamsField is the field name used for indexing Gateway objects.
 	GatewayParamsField = "gateway-params"
-	// InferencePoolField is the field name used for indexing HTTPRoute objects.
-	InferencePoolField = "inferencepool-index"
 )
 
 // TODO [danehans]: Refactor so controller config is organized into shared and Gateway/InferencePool-specific controllers.
@@ -55,8 +52,6 @@ type GatewayConfig struct {
 	// AgwControllerName is the name of the agentgateway controller. Any GatewayClass objects
 	// managed by this controller must have this name as their ControllerName.
 	AgwControllerName string
-	// AutoProvision enables auto-provisioning of GatewayClasses.
-	AutoProvision bool
 	// ControlPlane sets the default control plane information the deployer will use.
 	ControlPlane deployer.ControlPlaneInfo
 	// IstioAutoMtlsEnabled enables istio auto mtls mode for the controller,
@@ -113,39 +108,6 @@ func NewBaseGatewayController(
 	)
 }
 
-type InferencePoolConfig struct {
-	Mgr            manager.Manager
-	ControllerName string
-	InferenceExt   *deployer.InferenceExtInfo
-}
-
-func NewBaseInferencePoolController(
-	ctx context.Context,
-	poolCfg *InferencePoolConfig,
-	gwCfg *GatewayConfig,
-	helmValuesGeneratorOverride func(cli client.Client, inputs *deployer.Inputs) deployer.HelmValuesGenerator,
-	extraGatewayParameters []client.Object,
-) error {
-	log := log.FromContext(ctx)
-	log.V(5).Info("starting inferencepool controller", "controllerName", poolCfg.ControllerName)
-
-	// TODO [danehans]: Make GatewayConfig optional since Gateway and InferencePool are independent controllers.
-	controllerBuilder := &controllerBuilder{
-		cfg:     *gwCfg,
-		poolCfg: poolCfg,
-		reconciler: &controllerReconciler{
-			cli:          poolCfg.Mgr.GetClient(),
-			scheme:       poolCfg.Mgr.GetScheme(),
-			customEvents: make(chan event.TypedGenericEvent[ir.GatewayForDeployer], 1024),
-			metricsName:  "gatewayclass-inferencepool",
-		},
-		helmValuesGeneratorOverride: helmValuesGeneratorOverride,
-		extraGatewayParameters:      extraGatewayParameters,
-	}
-
-	return run(ctx, controllerBuilder.watchInferencePool)
-}
-
 func run(ctx context.Context, funcs ...func(ctx context.Context) error) error {
 	for _, f := range funcs {
 		if err := f(ctx); err != nil {
@@ -157,7 +119,6 @@ func run(ctx context.Context, funcs ...func(ctx context.Context) error) error {
 
 type controllerBuilder struct {
 	cfg                         GatewayConfig
-	poolCfg                     *InferencePoolConfig
 	reconciler                  *controllerReconciler
 	helmValuesGeneratorOverride func(cli client.Client, inputs *deployer.Inputs) deployer.HelmValuesGenerator
 	extraGatewayParameters      []client.Object
@@ -415,142 +376,6 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	return buildr.Complete(NewGatewayReconciler(ctx, c.cfg, d))
 }
 
-func (c *controllerBuilder) addHTTPRouteIndexes(ctx context.Context) error {
-	return c.cfg.Mgr.GetFieldIndexer().IndexField(ctx, new(apiv1.HTTPRoute), InferencePoolField, httpRouteInferencePoolIndex)
-}
-
-func httpRouteInferencePoolIndex(obj client.Object) []string {
-	route, ok := obj.(*apiv1.HTTPRoute)
-	if !ok {
-		// Should never happen, but return empty slice in case of unexpected type.
-		return nil
-	}
-
-	var poolNames []string
-	for _, rule := range route.Spec.Rules {
-		for _, ref := range rule.BackendRefs {
-			if ref.Kind != nil && *ref.Kind == wellknown.InferencePoolKind {
-				poolNames = append(poolNames, string(ref.Name))
-			}
-		}
-	}
-	return poolNames
-}
-
-// watchInferencePool adds a watch on InferencePool and HTTPRoute objects (that reference an InferencePool)
-// to trigger reconciliation.
-func (c *controllerBuilder) watchInferencePool(ctx context.Context) error {
-	log := log.FromContext(ctx)
-	log.Info("creating inference extension deployer", "controller", c.cfg.ControllerName)
-
-	// Register the HTTPRoute index.
-	if err := c.addHTTPRouteIndexes(ctx); err != nil {
-		return fmt.Errorf("failed to register HTTPRoute index: %w", err)
-	}
-
-	discoveryNamespaceFilterPredicate := predicate.NewPredicateFuncs(func(o client.Object) bool {
-		return c.cfg.DiscoveryNamespaceFilter.Filter(o)
-	})
-
-	buildr := ctrl.NewControllerManagedBy(c.cfg.Mgr).
-		WithEventFilter(discoveryNamespaceFilterPredicate).
-		For(&inf.InferencePool{}, builder.WithPredicates(
-			predicate.Or(
-				predicate.AnnotationChangedPredicate{},
-				predicate.GenerationChangedPredicate{},
-			),
-		)).
-		// Watch HTTPRoute objects so that changes there trigger a reconcile for referenced InferencePools.
-		Watches(&apiv1.HTTPRoute{}, handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
-			route, ok := obj.(*apiv1.HTTPRoute)
-			if !ok {
-				return nil
-			}
-
-			// Use the index function to get the inference pool names.
-			poolNames := httpRouteInferencePoolIndex(route)
-			if len(poolNames) == 0 {
-				return nil
-			}
-
-			hasOurGateway := false
-			for _, pStatus := range route.Status.Parents {
-				if pStatus.ControllerName == apiv1.GatewayController(c.cfg.ControllerName) {
-					hasOurGateway = true
-					break
-				}
-			}
-			if !hasOurGateway {
-				// If no parentRef references one of our Gateways, skip it.
-				return nil
-			}
-
-			// The HTTPRoute references an InferencePool and one of our Gateways.
-			// Enqueue each referenced InferencePool for reconciliation.
-			var reqs []reconcile.Request
-			for _, poolName := range poolNames {
-				reqs = append(reqs, reconcile.Request{
-					NamespacedName: client.ObjectKey{
-						Namespace: route.Namespace,
-						Name:      poolName,
-					},
-				})
-			}
-			return reqs
-		}),
-			builder.WithPredicates(discoveryNamespaceFilterPredicate),
-		)
-
-	// If enabled, create a deployer using the controllerBuilder as inputs.
-	if c.poolCfg.InferenceExt != nil {
-		d, err := internaldeployer.NewInferencePoolDeployer(c.cfg.ControllerName, c.cfg.AgwControllerName, c.cfg.AgentgatewayClassName, c.cfg.Mgr.GetClient())
-		if err != nil {
-			return err
-		}
-		// Watch child objects, e.g. Deployments, created by the inference pool deployer.
-		gvks, err := internaldeployer.InferencePoolGVKsToWatch(ctx, d)
-		if err != nil {
-			return err
-		}
-		for _, gvk := range gvks {
-			obj, err := c.cfg.Mgr.GetScheme().New(gvk)
-			if err != nil {
-				return err
-			}
-			clientObj, ok := obj.(client.Object)
-			if !ok {
-				return fmt.Errorf("object %T is not a client.Object", obj)
-			}
-			log.Info("watching gvk as inferencepool child", "gvk", gvk)
-			var opts []builder.OwnsOption
-			if shouldIgnoreStatusChild(gvk) {
-				opts = append(opts, builder.WithPredicates(predicate.GenerationChangedPredicate{}))
-			}
-			buildr.Owns(clientObj, opts...)
-		}
-		r := &inferencePoolReconciler{
-			cli:      c.cfg.Mgr.GetClient(),
-			scheme:   c.cfg.Mgr.GetScheme(),
-			deployer: d,
-		}
-
-		// The controller should only run on the leader as the inferencePoolReconciler manages reconciliation.
-		// It deploys and manages the relevant resources (deployment, service, etc.) and should run only on the leader.
-		// This is the default behaviour. Ref: https://github.com/kubernetes-sigs/controller-runtime/blob/682465344b9b74efad4657016668e62438000541/pkg/internal/controller/controller.go#L223
-		// but calling it out explicitly here as the inferencePoolReconciler is not directly added
-		// as a runnable to the manager and can not be static typed as a manager.LeaderElectionRunnable
-		// Translation is managed by the proxySyncer and runs on all pods (leader and follower)
-		buildr.WithOptions(controller.TypedOptions[reconcile.Request]{
-			NeedLeaderElection: ptr.To(true),
-		})
-		if err := buildr.Complete(r); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 func shouldIgnoreStatusChild(gvk schema.GroupVersionKind) bool {
 	// avoid triggering on pod changes that update deployment status
 	return gvk.Kind == "Deployment"
@@ -648,7 +473,7 @@ func (r *controllerReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		Status:             metav1.ConditionTrue,
 		Reason:             string(apiv1.GatewayClassReasonAccepted),
 		ObservedGeneration: gwc.GetGeneration(),
-		Message:            "GatewayClass accepted by kgateway controller",
+		Message:            reports.GatewayClassAcceptedMessage,
 	})
 	if i, ok := r.classInfos[gwc.GetName()]; ok {
 		gwc.Status.SupportedFeatures = i.SupportedFeatures

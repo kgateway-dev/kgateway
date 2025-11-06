@@ -8,6 +8,10 @@ Clusters:
   - grpcHealthCheck:
       authority: example.com
       serviceName: grpc.health.v1.Health
+    healthyThreshold: 2
+    interval: 2s
+    timeout: 3s
+    unhealthyThreshold: 3
   ignoreHealthOnHostRemoval: true
   metadata: {}
   name: kube_default_httpbin-grpc_8080

@@ -16,15 +16,15 @@ Listeners:
   name: http
   protocol: HTTP
 Policies:
-- name: trafficpolicy/default/csrf-policy/example-gateway:csrf:default/example-gateway
-  spec:
+- name: traffic/default/csrf-policy:csrf:default/example-gateway
+  target:
+    gateway: default/example-gateway
+  traffic:
     csrf:
       additionalOrigins:
       - https://example.com
       - https://app.example.com
       - http://localhost:3000
-  target:
-    gateway: default/example-gateway
 Routes:
 - backends:
   - backend:

@@ -2,14 +2,8 @@
 
 ## Setup
 
-To use the agentgateway control plane with kgateway, you need to enable the integration in the helm chart via 
-`--set agentgateway.enabled=true` or in the values.yaml:
-```yaml
-agentgateway:
-  enabled: true # set this to true
-```
+The agentgateway control plane is automatically enabled when installing kgateway.
 
-This is done automatically by the agentgateway e2e suite. 
 
 ## Testing with an unreleased agentgateway commit 
 

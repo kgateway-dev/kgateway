@@ -1,5 +1,5 @@
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: TrafficPolicy
+kind: AgentgatewayPolicy
 metadata:
   name: csrf-gw-policy
 spec:
@@ -7,6 +7,7 @@ spec:
   - group: gateway.networking.k8s.io
     kind: Gateway
     name: gw
-  csrf:
-    additionalOrigins:
-    - exact: example.org
+  traffic:
+    csrf:
+      additionalOrigins:
+      - example.org

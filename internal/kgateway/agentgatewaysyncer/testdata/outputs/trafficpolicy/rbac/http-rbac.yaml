@@ -13,13 +13,13 @@ Listeners:
   name: http
   protocol: HTTP
 Policies:
-- name: trafficpolicy/default/cel-rbac-policy/example-route:rbac:default/example-route
-  spec:
+- name: traffic/default/cel-rbac-policy:rbac:default/example-route
+  target:
+    route: default/example-route
+  traffic:
     authorization:
       allow:
       - request.headers['x-my-header'] == 'cool-beans'
-  target:
-    route: default/example-route
 Routes:
 - backends:
   - backend:

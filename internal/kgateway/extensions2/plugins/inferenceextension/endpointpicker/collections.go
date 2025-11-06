@@ -50,7 +50,6 @@ func registerTypes(cli versioned.Interface) {
 }
 
 func initInferencePoolCollections(
-	ctx context.Context,
 	commonCol *collections.CommonCollections,
 ) (*inferencePoolPlugin, kclient.Client[*inf.InferencePool]) {
 	// Create the inference extension client
@@ -136,7 +135,7 @@ func initInferencePoolCollections(
 		backendsDP,
 		func(_ krt.HandlerContext, be ir.BackendObjectIR) *ir.EndpointsForBackend {
 			stub := &envoyclusterv3.Cluster{Name: be.ClusterName()}
-			return processPoolBackendObjIR(ctx, be, stub, podIdx)
+			return processPoolBackendObjIR(be, stub, podIdx)
 		},
 	)
 

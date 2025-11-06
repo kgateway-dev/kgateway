@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"istio.io/api/label"
+	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	authcr "istio.io/client-go/pkg/apis/security/v1"
 	"istio.io/istio/pkg/config/schema/gvr"
 	"istio.io/istio/pkg/kube/kclient"
@@ -24,8 +25,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
-
-	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 )
 
 const (

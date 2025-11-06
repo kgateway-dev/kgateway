@@ -351,7 +351,7 @@ flowchart TD
     style E4 fill:#f1f8e9
 ```
 
-### Translator tests 
+### Translator tests
 
 The translator tests are unit tests that test the translation of the CRD input YAML resources to the agentgateway xDS API.
 
@@ -692,6 +692,7 @@ kubectl create secret generic openai-secret \
 ```
 
 Apply the following config to set up the HTTPRoute pointing to the AI Backend:
+
 ```shell
 kubectl apply -f- <<EOF
 kind: Gateway
@@ -728,6 +729,7 @@ spec:
           group: gateway.kgateway.dev
           kind: Backend
 ---
+# TODO: Update this to use the agw based Backend API.
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend
 metadata:
@@ -794,6 +796,7 @@ spec:
           kind: Backend
           name: bedrock
 ---
+# TODO: Update this to use the agw based Backend API.
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend
 metadata:
@@ -883,6 +886,7 @@ spec:
           group: gateway.kgateway.dev
           kind: Backend
 ---
+# TODO: Update this to use the agw based Backend API.
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend
 metadata:
@@ -1248,7 +1252,7 @@ config:
         gen_ai.response.model: "llm.response_model"
         gen_ai.usage.completion_tokens: "llm.output_tokens"
         gen_ai.usage.prompt_tokens: "llm.input_tokens"
-        
+
         # Custom business logic fields
         user.id: "request.headers['x-user-id']"
         request.path: "request.path"
@@ -1431,6 +1435,7 @@ spec:
       name: http
 ---
 # AI Backend and Route
+# TODO: Update this to use the agw based Backend API.
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend
 metadata:
@@ -1566,7 +1571,7 @@ spec:
           cors:
             allowOrigins:
             - "http://localhost:3000"
-            - "http://localhost:8080" 
+            - "http://localhost:8080"
             - "http://localhost:15000"
             - "http://127.0.0.1:3000"
             - "http://127.0.0.1:8080"

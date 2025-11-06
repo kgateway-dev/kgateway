@@ -9,12 +9,11 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+	query "github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
+	ir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	krt "istio.io/istio/pkg/kube/krt"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
-
-	query "github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
-	ir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 // MockGatewayQueries is a mock of GatewayQueries interface.

@@ -95,7 +95,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 	)
 	col := krt.WrapClient(cli, commoncol.KrtOpts.ToOptions("BackendTLSPolicy")...)
 
-	translate := buildTranslateFunc(ctx, commoncol.ConfigMaps)
+	translate := buildTranslateFunc(commoncol.ConfigMaps)
 	tlsPolicyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *gwv1.BackendTLSPolicy) *ir.PolicyWrapper {
 		tlsPolicyIR, err := translate(krtctx, i)
 		pol := &ir.PolicyWrapper{
@@ -140,7 +140,6 @@ func processBackend(ctx context.Context, polir ir.PolicyIR, in ir.BackendObjectI
 }
 
 func buildTranslateFunc(
-	ctx context.Context,
 	cfgmaps krt.Collection[*corev1.ConfigMap],
 ) func(krtctx krt.HandlerContext, i *gwv1.BackendTLSPolicy) (*backendTlsPolicy, error) {
 	return func(krtctx krt.HandlerContext, policyCR *gwv1.BackendTLSPolicy) (*backendTlsPolicy, error) {

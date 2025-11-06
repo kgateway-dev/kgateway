@@ -20,6 +20,7 @@ controller:
   logLevel: debug
   extraEnv:
     KGW_WEIGHTED_ROUTE_PRECEDENCE: "true" # enable weighted route precedence by default in tests
+    KGW_ENABLE_EXPERIMENTAL_GATEWAY_API_FEATURES: "true" # enables experimental features
 # TODO enable other values
   # deployment:
   #   livenessProbeEnabled: true

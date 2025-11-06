@@ -10,17 +10,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
-
-	"k8s.io/client-go/rest"
-
 	"github.com/avast/retry-go/v4"
-
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
 
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
 var _ PortForwarder = &apiPortForwarder{}

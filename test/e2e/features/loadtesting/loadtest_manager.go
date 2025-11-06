@@ -381,7 +381,7 @@ func (ltm *LoadTestManager) deleteResourcesConcurrently(resources []client.Objec
 		}(resource)
 	}
 
-	for i := 0; i < len(resources); i++ {
+	for range resources {
 		if err := <-errChan; err != nil {
 			return err
 		}

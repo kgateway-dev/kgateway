@@ -27,28 +27,25 @@ spec:
   - "www.example.com"
   rules:
   - matches:
-    - path:
-        type: PathPrefix
-        value: /ai
     backendRefs:
     - group: gateway.kgateway.dev
       kind: Backend
-      name: example-ai-backend
+      name: example-aws-backend
 ---
 # error no secret
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend
 metadata:
-  name: example-ai-backend
+  name: example-aws-backend
   namespace: default
 spec:
-  type: AI
-  ai:
-    llm:
-      openai:
-        model: "gpt-4"
-        authToken:
-          kind: "SecretRef"
-          secretRef:
-            name: openai-secret
-
+  type: AWS
+  aws:
+    accountId: "000000000000"
+    auth:
+      type: Secret
+      secretRef:
+        name: lambda-secret
+    lambda:
+      functionName: "example-function"
+      qualifier: "$LATEST"

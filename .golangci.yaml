@@ -19,17 +19,48 @@ linters:
     - gosec
     - importas
     - ineffassign
+    - krtequals
+    - kubeapilinter
     - misspell
+    - modernize
     - nakedret
     - predeclared
     - promlinter
     - sloglint
     - spancheck
     - staticcheck
+    - unparam
     - unused
     - usestdlibvars
     - whitespace
   settings:
+    custom:
+      krtequals:
+        type: "module"
+        description: Checks Equals() implementations for KRT-style semantic equality issues
+        settings:
+          deepEqual: false
+      kubeapilinter:
+        type: module
+        description: Kube API Linter lints Kube like APIs based on API conventions and best practices
+        settings:
+          linters:
+            enable:
+            - "*"
+            disable:
+            - commentstart
+            - integers
+            - maxlength
+            - nobools
+            - nomaps
+            - optionalfields
+            - optionalorrequired
+            - ssatags
+          lintersConfig:
+            conditions:
+              isFirstField: Ignore
+              useProtobuf: Forbid
+              usePatchStrategy: Ignore
     forbidigo:
       forbid:
         - pattern: anypb.New
@@ -76,6 +107,10 @@ linters:
     misspell:
       ignore-rules:
         - kgateway
+    modernize:
+      disable:
+        # disabled because modernize gets confused with conflicting edits. we can probably rely on the kube api linter instead for this one.
+        - omitzero
     nakedret:
       # The team consensus is that naked returns hinder the readability of the code.
       # However, named return values can still be useful as documentation for certain scenarios.
@@ -124,16 +159,36 @@ linters:
       - examples$
     rules:
       # Forbid t.Cleanup only in e2e tests (exclude the rule from non-e2e paths)
-      - linters:
+      - path-except: test/e2e/
+        linters:
           - forbidigo
         text: 'require testutils.Cleanup'
-        path-except: test/e2e/
+      # Restrict krtequals analyzer to the pkg and internal directories
+      - path-except: pkg/|internal/
+        linters:
+          - krtequals
+      # Only run kubeapilinter inside the 'api/' directory. This prevents running API-specific checks
+      # on unrelated packages like controllers or tests and producing false positives.
+      - path-except: "^api/v1alpha1"
+        linters:
+          - kubeapilinter
 issues:
   max-same-issues: 0
   uniq-by-line: true
 formatters:
   enable:
-    - goimports
+    - gofmt
+    - gci
+  settings:
+    gci:
+      sections:
+      - standard
+      - default
+      - prefix(github.com/kgateway-dev)
+      - blank
+      - dot
+      - localmodule
+      custom-order: true
   exclusions:
     generated: lax
     paths:

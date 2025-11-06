@@ -13,7 +13,7 @@ spec:
           port: 8080
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: TrafficPolicy
+kind: AgentgatewayPolicy
 metadata:
   name: gw-policy
 spec:
@@ -21,6 +21,8 @@ spec:
   - group: gateway.networking.k8s.io
     kind: Gateway
     name: super-gateway
-  extAuth:
-    extensionRef: 
-      name: basic-extauth
+  traffic:
+    extAuth:
+      backendRef:
+        name: ext-authz
+        port: 4444

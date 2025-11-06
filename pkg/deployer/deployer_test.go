@@ -9,36 +9,32 @@ import (
 
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"github.com/ghodss/yaml"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
 	jsonpb "google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	api "sigs.k8s.io/gateway-api/apis/v1"
 	apixv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
 	gw2_v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	deployerinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/httplistenerpolicy"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/internal/version"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
-	deployertest "github.com/kgateway-dev/kgateway/v2/test/deployer"
-	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
-
 	// TODO BML tests in this suite fail if this no-op import is not imported first.
 	//
 	// I know, I know, you're reading this, and you're skeptical. I can feel it.
@@ -53,9 +49,14 @@ import (
 	// "correctly" available to use via `envoyinit`; note that the autogeneration of these types
 	// is currently broken. see: https://github.com/kgateway-dev/kgateway/issues/10491
 	_ "github.com/kgateway-dev/kgateway/v2/pkg/utils/filter_types"
+	deployertest "github.com/kgateway-dev/kgateway/v2/test/deployer"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 )
 
-const envoyDataKey = "envoy.yaml"
+const (
+	defaultNamespace = "default"
+	envoyDataKey     = "envoy.yaml"
+)
 
 func unmarshalYaml(data []byte, into proto.Message) error {
 	jsn, err := yaml.YAMLToJSON(data)
@@ -70,10 +71,10 @@ func unmarshalYaml(data []byte, into proto.Message) error {
 
 type clientObjects []client.Object
 
-func (objs *clientObjects) findDeployment(namespace, name string) *appsv1.Deployment {
+func (objs *clientObjects) findDeployment(name string) *appsv1.Deployment {
 	for _, obj := range *objs {
 		if dep, ok := obj.(*appsv1.Deployment); ok {
-			if dep.Name == name && dep.Namespace == namespace {
+			if dep.Name == name && dep.Namespace == defaultNamespace {
 				return dep
 			}
 		}
@@ -81,10 +82,10 @@ func (objs *clientObjects) findDeployment(namespace, name string) *appsv1.Deploy
 	return nil
 }
 
-func (objs *clientObjects) findServiceAccount(namespace, name string) *corev1.ServiceAccount {
+func (objs *clientObjects) findServiceAccount(name string) *corev1.ServiceAccount {
 	for _, obj := range *objs {
 		if sa, ok := obj.(*corev1.ServiceAccount); ok {
-			if sa.Name == name && sa.Namespace == namespace {
+			if sa.Name == name && sa.Namespace == defaultNamespace {
 				return sa
 			}
 		}
@@ -92,10 +93,10 @@ func (objs *clientObjects) findServiceAccount(namespace, name string) *corev1.Se
 	return nil
 }
 
-func (objs *clientObjects) findService(namespace, name string) *corev1.Service {
+func (objs *clientObjects) findService(name string) *corev1.Service {
 	for _, obj := range *objs {
 		if svc, ok := obj.(*corev1.Service); ok {
-			if svc.Name == name && svc.Namespace == namespace {
+			if svc.Name == name && svc.Namespace == defaultNamespace {
 				return svc
 			}
 		}
@@ -137,9 +138,6 @@ func containMapElements[keyT comparable, valT any](m map[keyT]valT) types.Gomega
 }
 
 var _ = Describe("Deployer", func() {
-	const (
-		defaultNamespace = "default"
-	)
 	var (
 		defaultGatewayClass = func() *api.GatewayClass {
 			return &api.GatewayClass{
@@ -472,10 +470,10 @@ var _ = Describe("Deployer", func() {
 			Expect(err).NotTo(HaveOccurred())
 			objs = d.SetNamespaceAndOwner(gw, objs)
 			Expect(objs).To(HaveLen(4))
-			Expect(objs.findDeployment(defaultNamespace, gw.Name)).ToNot(BeNil())
-			Expect(objs.findService(defaultNamespace, gw.Name)).ToNot(BeNil())
+			Expect(objs.findDeployment(gw.Name)).ToNot(BeNil())
+			Expect(objs.findService(gw.Name)).ToNot(BeNil())
 			Expect(objs.findConfigMap(defaultNamespace, gw.Name)).ToNot(BeNil())
-			Expect(objs.findServiceAccount(defaultNamespace, gw.Name)).ToNot(BeNil())
+			Expect(objs.findServiceAccount(gw.Name)).ToNot(BeNil())
 		})
 	})
 
@@ -631,7 +629,7 @@ var _ = Describe("Deployer", func() {
 			Expect(err).NotTo(HaveOccurred())
 			objs = d.SetNamespaceAndOwner(gw, objs)
 			// check the image is using the agentgateway image
-			deployment := objs.findDeployment(defaultNamespace, "agent-gateway")
+			deployment := objs.findDeployment("agent-gateway")
 			Expect(deployment).ToNot(BeNil())
 			// check the image uses the override tag
 			Expect(deployment.Spec.Template.Spec.Containers[0].Image).To(ContainSubstring("agentgateway"))
@@ -657,7 +655,7 @@ var _ = Describe("Deployer", func() {
 			Expect(testEnvVar.Name).To(Equal("test"))
 			Expect(testEnvVar.Value).To(Equal("value"))
 			// check the service is using the agentgateway port
-			svc := objs.findService(defaultNamespace, "agent-gateway")
+			svc := objs.findService("agent-gateway")
 			Expect(svc).ToNot(BeNil())
 			Expect(svc.Spec.Ports[0].Port).To(Equal(int32(80)))
 			// check the config map is using the xds address and port
@@ -734,7 +732,7 @@ var _ = Describe("Deployer", func() {
 			objsSlice = d.SetNamespaceAndOwner(gw, objsSlice)
 
 			objs := clientObjects(objsSlice)
-			dep := objs.findDeployment(defaultNamespace, "agent-gateway")
+			dep := objs.findDeployment("agent-gateway")
 			Expect(dep).ToNot(BeNil())
 			actualSecurityContext := dep.Spec.Template.Spec.Containers[0].SecurityContext
 			expectedSecurityContext := &corev1.SecurityContext{RunAsUser: ptr.To(int64(333))}
@@ -798,7 +796,7 @@ var _ = Describe("Deployer", func() {
 			objsSlice = d.SetNamespaceAndOwner(gw, objsSlice)
 
 			objs := clientObjects(objsSlice)
-			dep := objs.findDeployment(defaultNamespace, "agent-gateway")
+			dep := objs.findDeployment("agent-gateway")
 			Expect(dep).ToNot(BeNil())
 			Expect(dep.Spec.Template.Spec.Containers[0].SecurityContext).To(BeNil())
 			// assert pod-level security context is rendered, including the custom RunAsUser, while other fields preserved
@@ -895,7 +893,7 @@ var _ = Describe("Deployer", func() {
 			objsSlice = d.SetNamespaceAndOwner(gw, objsSlice)
 
 			objs := clientObjects(objsSlice)
-			dep := objs.findDeployment(defaultNamespace, gw.ObjectMeta.Name)
+			dep := objs.findDeployment(gw.ObjectMeta.Name)
 			Expect(dep).ToNot(BeNil())
 			expectedSecurityContext := dep.Spec.Template.Spec.Containers[0].SecurityContext
 			Expect(expectedSecurityContext).To(Not(BeNil()))
@@ -963,7 +961,7 @@ var _ = Describe("Deployer", func() {
 			Expect(err).NotTo(HaveOccurred())
 			objsSlice = d.SetNamespaceAndOwner(gw, objsSlice)
 			objs := clientObjects(objsSlice)
-			dep := objs.findDeployment(defaultNamespace, gw.ObjectMeta.Name)
+			dep := objs.findDeployment(gw.ObjectMeta.Name)
 			Expect(dep).ToNot(BeNil())
 			Expect(dep.Spec.Template.Spec.Containers[0].SecurityContext).To(BeNil())
 			psc := dep.Spec.Template.Spec.SecurityContext
@@ -1078,19 +1076,19 @@ var _ = Describe("Deployer", func() {
 			Expect(err).NotTo(HaveOccurred())
 			objs1 = d1.SetNamespaceAndOwner(gw1, objs1)
 			Expect(objs1).NotTo(BeEmpty())
-			Expect(objs1.findDeployment(defaultNamespace, gw1.Name)).ToNot(BeNil())
-			Expect(objs1.findService(defaultNamespace, gw1.Name)).ToNot(BeNil())
+			Expect(objs1.findDeployment(gw1.Name)).ToNot(BeNil())
+			Expect(objs1.findService(gw1.Name)).ToNot(BeNil())
 			Expect(objs1.findConfigMap(defaultNamespace, gw1.Name)).ToNot(BeNil())
-			Expect(objs1.findServiceAccount(defaultNamespace, gw1.Name)).ToNot(BeNil())
+			Expect(objs1.findServiceAccount(gw1.Name)).ToNot(BeNil())
 
 			objs2, err = d2.GetObjsToDeploy(context.Background(), gw2)
 			Expect(err).NotTo(HaveOccurred())
 			objs2 = d2.SetNamespaceAndOwner(gw2, objs2)
 			Expect(objs2).NotTo(BeEmpty())
-			Expect(objs2.findDeployment(defaultNamespace, gw2.Name)).ToNot(BeNil())
-			Expect(objs2.findService(defaultNamespace, gw2.Name)).ToNot(BeNil())
+			Expect(objs2.findDeployment(gw2.Name)).ToNot(BeNil())
+			Expect(objs2.findService(gw2.Name)).ToNot(BeNil())
 			Expect(objs2.findConfigMap(defaultNamespace, gw2.Name)).ToNot(BeNil())
-			Expect(objs2.findServiceAccount(defaultNamespace, gw2.Name)).ToNot(BeNil())
+			Expect(objs2.findServiceAccount(gw2.Name)).ToNot(BeNil())
 
 			for _, obj := range objs1 {
 				Expect(obj.GetName()).To(Equal(gw1.Name))
@@ -1256,13 +1254,13 @@ var _ = Describe("Deployer", func() {
 
 				By("validating the expected objects are deployed")
 				Expect(objs).NotTo(BeEmpty())
-				Expect(objs.findDeployment(defaultNamespace, "foo")).NotTo(BeNil())
-				Expect(objs.findService(defaultNamespace, "foo")).NotTo(BeNil())
-				Expect(objs.findServiceAccount(defaultNamespace, "foo")).NotTo(BeNil())
+				Expect(objs.findDeployment("foo")).NotTo(BeNil())
+				Expect(objs.findService("foo")).NotTo(BeNil())
+				Expect(objs.findServiceAccount("foo")).NotTo(BeNil())
 				Expect(objs.findConfigMap(defaultNamespace, "foo")).NotTo(BeNil())
 
 				By("validating the default values are used")
-				Expect(objs.findDeployment(defaultNamespace, "foo").Spec.Template.Spec.Containers[0].Image).To(Equal(fmt.Sprintf("%s/%s:%s", registry, deployer.EnvoyWrapperImage, tag)))
+				Expect(objs.findDeployment("foo").Spec.Template.Spec.Containers[0].Image).To(Equal(fmt.Sprintf("%s/%s:%s", registry, deployer.EnvoyWrapperImage, tag)))
 			})
 		})
 
@@ -1348,13 +1346,13 @@ var _ = Describe("Deployer", func() {
 
 				By("validating the expected objects are deployed")
 				Expect(objs).NotTo(BeEmpty())
-				Expect(objs.findDeployment(defaultNamespace, "foo")).NotTo(BeNil())
-				Expect(objs.findService(defaultNamespace, "foo")).NotTo(BeNil())
-				Expect(objs.findServiceAccount(defaultNamespace, "foo")).NotTo(BeNil())
+				Expect(objs.findDeployment("foo")).NotTo(BeNil())
+				Expect(objs.findService("foo")).NotTo(BeNil())
+				Expect(objs.findServiceAccount("foo")).NotTo(BeNil())
 				Expect(objs.findConfigMap(defaultNamespace, "foo")).NotTo(BeNil())
 
 				By("validating the image overrides the default")
-				Expect(objs.findDeployment(defaultNamespace, "foo").Spec.Template.Spec.Containers[0].Image).To(Equal(fmt.Sprintf("bar/%s:2.3.4", deployer.EnvoyWrapperImage)))
+				Expect(objs.findDeployment("foo").Spec.Template.Spec.Containers[0].Image).To(Equal(fmt.Sprintf("bar/%s:2.3.4", deployer.EnvoyWrapperImage)))
 			})
 		})
 
@@ -1451,12 +1449,12 @@ var _ = Describe("Deployer", func() {
 				Expect(objs).To(HaveLen(4))
 
 				By("verifying service type was overridden")
-				svc := objs.findService(defaultNamespace, defaultDeploymentName)
+				svc := objs.findService(defaultDeploymentName)
 				Expect(svc).ToNot(BeNil())
 				Expect(svc.Spec.Type).To(Equal(corev1.ServiceTypeClusterIP))
 
 				By("verifying deployment inherited default replicas")
-				dep := objs.findDeployment(defaultNamespace, defaultDeploymentName)
+				dep := objs.findDeployment(defaultDeploymentName)
 				Expect(dep).ToNot(BeNil())
 				Expect(dep.Spec.Replicas).To(BeNil())
 
@@ -1496,7 +1494,7 @@ var _ = Describe("Deployer", func() {
 
 		type expectedOutput struct {
 			getObjsErr     error
-			validationFunc func(objs clientObjects, inp *input) error
+			validationFunc func(objs clientObjects, inp *input)
 		}
 
 		var (
@@ -1672,17 +1670,17 @@ var _ = Describe("Deployer", func() {
 				}
 			}
 			fullyDefinedGatewayParams = func() *gw2_v1alpha1.GatewayParameters {
-				return fullyDefinedGatewayParameters(wellknown.DefaultGatewayParametersName, defaultNamespace)
+				return fullyDefinedGatewayParameters()
 			}
 
 			gwParamsNoPodTemplate = func() *gw2_v1alpha1.GatewayParameters {
-				params := fullyDefinedGatewayParameters(wellknown.DefaultGatewayParametersName, defaultNamespace)
+				params := fullyDefinedGatewayParameters()
 				params.Spec.Kube.PodTemplate = nil
 				return params
 			}
 
 			fullyDefinedGatewayParamsWithUnprivilegedPortStartSysctl = func() *gw2_v1alpha1.GatewayParameters {
-				params := fullyDefinedGatewayParameters(wellknown.DefaultGatewayParametersName, defaultNamespace)
+				params := fullyDefinedGatewayParameters()
 				params.Spec.Kube.PodTemplate.SecurityContext.Sysctls = []corev1.Sysctl{
 					{
 						Name:  "net.ipv4.ip_unprivileged_port_start",
@@ -1693,7 +1691,7 @@ var _ = Describe("Deployer", func() {
 			}
 
 			fullyDefinedGatewayParamsWithProbes = func() *gw2_v1alpha1.GatewayParameters {
-				params := fullyDefinedGatewayParameters(wellknown.DefaultGatewayParametersName, defaultNamespace)
+				params := fullyDefinedGatewayParameters()
 				params.Spec.Kube.PodTemplate.LivenessProbe = generateLivenessProbe()
 				params.Spec.Kube.PodTemplate.ReadinessProbe = generateReadinessProbe()
 				params.Spec.Kube.PodTemplate.StartupProbe = generateStartupProbe()
@@ -1706,7 +1704,7 @@ var _ = Describe("Deployer", func() {
 			}
 
 			fullyDefinedGatewayParamsWithCustomEnv = func() *gw2_v1alpha1.GatewayParameters {
-				params := fullyDefinedGatewayParameters(wellknown.DefaultGatewayParametersName, defaultNamespace)
+				params := fullyDefinedGatewayParameters()
 				params.Spec.Kube.EnvoyContainer.Env = []corev1.EnvVar{
 					{
 						Name:  "CUSTOM_ENV",
@@ -1798,12 +1796,12 @@ var _ = Describe("Deployer", func() {
 				Expect(actualPullPolicy).To(Equal(*apiImage.PullPolicy))
 			}
 
-			validateGatewayParametersPropagation = func(objs clientObjects, gwp *gw2_v1alpha1.GatewayParameters) error {
+			validateGatewayParametersPropagation = func(objs clientObjects, gwp *gw2_v1alpha1.GatewayParameters) {
 				expectedGwp := gwp.Spec.Kube
 				Expect(objs).NotTo(BeEmpty())
 				// Check we have Deployment, ConfigMap, ServiceAccount, Service
 				Expect(objs).To(HaveLen(4))
-				dep := objs.findDeployment(defaultNamespace, defaultDeploymentName)
+				dep := objs.findDeployment(defaultDeploymentName)
 				Expect(dep).ToNot(BeNil())
 				Expect(dep.Spec.Replicas).ToNot(BeNil())
 				Expect(*dep.Spec.Replicas).To(Equal(int32(*expectedGwp.Deployment.Replicas)))
@@ -1817,7 +1815,7 @@ var _ = Describe("Deployer", func() {
 				Expect(dep.Spec.Template.Spec.SecurityContext.RunAsUser).To(Equal(expectedGwp.PodTemplate.SecurityContext.RunAsUser))
 				Expect(dep.Spec.Template.Spec.SecurityContext.RunAsGroup).To(Equal(expectedGwp.PodTemplate.SecurityContext.RunAsGroup))
 
-				svc := objs.findService(defaultNamespace, defaultServiceName)
+				svc := objs.findService(defaultServiceName)
 				Expect(svc).ToNot(BeNil())
 				Expect(svc.GetAnnotations()).ToNot(BeNil())
 				Expect(svc.GetAnnotations()).To(containMapElements(expectedGwp.Service.ExtraAnnotations))
@@ -1827,7 +1825,7 @@ var _ = Describe("Deployer", func() {
 				Expect(svc.Spec.ClusterIP).To(Equal(*expectedGwp.Service.ClusterIP))
 				Expect(svc.Spec.ExternalTrafficPolicy).To(Equal(corev1.ServiceExternalTrafficPolicyTypeLocal))
 
-				sa := objs.findServiceAccount(defaultNamespace, defaultServiceAccountName)
+				sa := objs.findServiceAccount(defaultServiceAccountName)
 				Expect(sa).ToNot(BeNil())
 				Expect(sa.GetAnnotations()).ToNot(BeNil())
 				Expect(sa.GetAnnotations()).To(containMapElements(expectedGwp.ServiceAccount.ExtraAnnotations))
@@ -1845,28 +1843,27 @@ var _ = Describe("Deployer", func() {
 					levels = append(levels, ContainSubstring(fmt.Sprintf("%s:%s", k, v)))
 				}
 
-				argsMatchers := []interface{}{
+				argsMatchers := []any{
 					"--log-level",
 					*expectedGwp.EnvoyContainer.Bootstrap.LogLevel,
 					"--component-log-level",
 					And(levels...),
 				}
 
-				Expect(objs.findDeployment(defaultNamespace, defaultDeploymentName).Spec.Template.Spec.Containers[0].Args).To(ContainElements(
+				Expect(objs.findDeployment(defaultDeploymentName).Spec.Template.Spec.Containers[0].Args).To(ContainElements(
 					argsMatchers...,
 				))
-				return nil
 			}
 		)
 
 		// fullyDefinedValidationWithoutRunAsUser doesn't validate "runAsUser" at the container level
 		// The entire PodSecurityContext is validated in this function.
-		fullyDefinedValidationWithoutRunAsUser := func(objs clientObjects, inp *input) error {
+		fullyDefinedValidationWithoutRunAsUser := func(objs clientObjects, inp *input) {
 			expectedGwp := inp.defaultGwp.Spec.Kube
 			Expect(objs).NotTo(BeEmpty())
 			// Check we have Deployment, Envoy ConfigMap, ServiceAccount, Service
 			Expect(objs).To(HaveLen(4))
-			dep := objs.findDeployment(defaultNamespace, defaultDeploymentName)
+			dep := objs.findDeployment(defaultDeploymentName)
 			Expect(dep).ToNot(BeNil())
 			Expect(dep.Spec.Replicas).ToNot(BeNil())
 			Expect(*dep.Spec.Replicas).To(Equal(int32(*expectedGwp.Deployment.Replicas)))
@@ -1928,7 +1925,7 @@ var _ = Describe("Deployer", func() {
 			// TODO: assert on istio args (e.g. log level, istio meta fields, etc)
 
 			// assert Service
-			svc := objs.findService(defaultNamespace, defaultServiceName)
+			svc := objs.findService(defaultServiceName)
 			Expect(svc).ToNot(BeNil())
 			Expect(svc.GetAnnotations()).ToNot(BeNil())
 			Expect(svc.GetAnnotations()).To(containMapElements(expectedGwp.Service.ExtraAnnotations))
@@ -1938,7 +1935,7 @@ var _ = Describe("Deployer", func() {
 			Expect(svc.Spec.ClusterIP).To(Equal(*expectedGwp.Service.ClusterIP))
 			Expect(svc.Spec.ExternalTrafficPolicy).To(Equal(corev1.ServiceExternalTrafficPolicyTypeLocal))
 
-			sa := objs.findServiceAccount(defaultNamespace, defaultServiceAccountName)
+			sa := objs.findServiceAccount(defaultServiceAccountName)
 			Expect(sa).ToNot(BeNil())
 			Expect(sa.GetAnnotations()).ToNot(BeNil())
 			Expect(sa.GetAnnotations()).To(containMapElements(expectedGwp.ServiceAccount.ExtraAnnotations))
@@ -1954,30 +1951,28 @@ var _ = Describe("Deployer", func() {
 				levels = append(levels, ContainSubstring(fmt.Sprintf("%s:%s", k, v)))
 			}
 
-			argsMatchers := []interface{}{
+			argsMatchers := []any{
 				"--log-level",
 				*expectedGwp.EnvoyContainer.Bootstrap.LogLevel,
 				"--component-log-level",
 				And(levels...),
 			}
 
-			Expect(objs.findDeployment(defaultNamespace, defaultDeploymentName).Spec.Template.Spec.Containers[0].Args).To(ContainElements(
+			Expect(objs.findDeployment(defaultDeploymentName).Spec.Template.Spec.Containers[0].Args).To(ContainElements(
 				argsMatchers...,
 			))
 
-			deployment := objs.findDeployment(defaultNamespace, defaultDeploymentName)
+			deployment := objs.findDeployment(defaultDeploymentName)
 
 			Expect(deployment.Spec.Template.Spec.TopologySpreadConstraints).To(Equal(expectedGwp.PodTemplate.TopologySpreadConstraints))
 			Expect(deployment.Spec.Template.Spec.Tolerations).To(Equal(expectedGwp.PodTemplate.Tolerations))
 			Expect(deployment.Spec.Template.Spec.Affinity).To(Equal(expectedGwp.PodTemplate.Affinity))
 			Expect(deployment.Spec.Template.Spec.NodeSelector).To(Equal(expectedGwp.PodTemplate.NodeSelector))
-
-			return nil
 		}
 
 		validateRunAsUser := func(objs clientObjects, inp *input) {
 			expectedGwp := inp.defaultGwp.Spec.Kube
-			dep := objs.findDeployment(defaultNamespace, defaultDeploymentName)
+			dep := objs.findDeployment(defaultDeploymentName)
 			Expect(dep.Spec.Template.Spec.SecurityContext.RunAsUser).To(Equal(expectedGwp.PodTemplate.SecurityContext.RunAsUser))
 
 			sdsContainer := dep.Spec.Template.Spec.Containers[1]
@@ -1987,24 +1982,15 @@ var _ = Describe("Deployer", func() {
 			Expect(istioContainer.SecurityContext.RunAsUser).To(Equal(expectedGwp.Istio.IstioProxyContainer.SecurityContext.RunAsUser))
 		}
 
-		fullyDefinedValidation := func(objs clientObjects, inp *input) error {
-			err := fullyDefinedValidationWithoutRunAsUser(objs, inp)
-			if err != nil {
-				return err
-			}
-
+		fullyDefinedValidation := func(objs clientObjects, inp *input) {
+			fullyDefinedValidationWithoutRunAsUser(objs, inp)
 			validateRunAsUser(objs, inp)
-
-			return nil
 		}
 
-		fullyDefinedValidationWithProbes := func(objs clientObjects, inp *input) error {
-			err := fullyDefinedValidationWithoutRunAsUser(objs, inp)
-			if err != nil {
-				return err
-			}
+		fullyDefinedValidationWithProbes := func(objs clientObjects, inp *input) {
+			fullyDefinedValidationWithoutRunAsUser(objs, inp)
 
-			dep := objs.findDeployment(defaultNamespace, defaultDeploymentName)
+			dep := objs.findDeployment(defaultDeploymentName)
 			Expect(*dep.Spec.Template.Spec.TerminationGracePeriodSeconds).To(Equal(int64(5)))
 
 			envoyContainer := dep.Spec.Template.Spec.Containers[0]
@@ -2016,24 +2002,17 @@ var _ = Describe("Deployer", func() {
 				"-c",
 				"wget --post-data \"\" -O /dev/null 127.0.0.1:19000/healthcheck/fail; sleep 7",
 			}))
-
-			return nil
 		}
 
-		fullyDefinedValidationCustomEnv := func(objs clientObjects, inp *input) error {
-			err := fullyDefinedValidationWithoutRunAsUser(objs, inp)
-			if err != nil {
-				return err
-			}
+		fullyDefinedValidationCustomEnv := func(objs clientObjects, inp *input) {
+			fullyDefinedValidationWithoutRunAsUser(objs, inp)
 
-			envoyContainer := objs.findDeployment(defaultNamespace, defaultDeploymentName).Spec.Template.Spec.Containers[0]
+			envoyContainer := objs.findDeployment(defaultDeploymentName).Spec.Template.Spec.Containers[0]
 			Expect(envoyContainer.Env).To(ContainElement(corev1.EnvVar{
 				Name:      "CUSTOM_ENV",
 				Value:     "abcd",
 				ValueFrom: nil,
 			}))
-
-			return nil
 		}
 
 		DescribeTable("create and validate objs", func(inp *input, expected *expectedOutput) {
@@ -2097,7 +2076,7 @@ var _ = Describe("Deployer", func() {
 			objs = d.SetNamespaceAndOwner(inp.gw, objs)
 
 			// handle custom test validation func
-			Expect(expected.validationFunc(objs, inp)).NotTo(HaveOccurred())
+			expected.validationFunc(objs, inp)
 		},
 			Entry("GatewayParameters overrides", &input{
 				dInputs:     defaultDeployerInputs(),
@@ -2105,8 +2084,8 @@ var _ = Describe("Deployer", func() {
 				defaultGwp:  defaultGatewayParams(),
 				overrideGwp: defaultGatewayParamsOverride(),
 			}, &expectedOutput{
-				validationFunc: func(objs clientObjects, inp *input) error {
-					return validateGatewayParametersPropagation(objs, mergedGatewayParams())
+				validationFunc: func(objs clientObjects, inp *input) {
+					validateGatewayParametersPropagation(objs, mergedGatewayParams())
 				},
 			}),
 			Entry("high port gateway", &input{
@@ -2115,8 +2094,8 @@ var _ = Describe("Deployer", func() {
 				defaultGwp:  defaultGatewayParams(),
 				overrideGwp: defaultGatewayParamsOverride(),
 			}, &expectedOutput{
-				validationFunc: func(objs clientObjects, inp *input) error {
-					return validateGatewayParametersPropagation(objs, mergedGatewayParamsNoLowPorts())
+				validationFunc: func(objs clientObjects, inp *input) {
+					validateGatewayParametersPropagation(objs, mergedGatewayParamsNoLowPorts())
 				},
 			}),
 			Entry("Fully defined GatewayParameters", &input{
@@ -2124,42 +2103,54 @@ var _ = Describe("Deployer", func() {
 				gw:         defaultGateway(),
 				defaultGwp: fullyDefinedGatewayParams(),
 			}, &expectedOutput{
-				validationFunc: fullyDefinedValidation,
+				validationFunc: func(objs clientObjects, inp *input) {
+					fullyDefinedValidation(objs, inp)
+				},
 			}),
 			Entry("Fully defined GatewayParameters with ip_unprivileged_port_start sysctl already defined", &input{
 				dInputs:    istioEnabledDeployerInputs(),
 				gw:         defaultGateway(),
 				defaultGwp: fullyDefinedGatewayParams(),
 			}, &expectedOutput{
-				validationFunc: fullyDefinedValidation,
+				validationFunc: func(objs clientObjects, inp *input) {
+					fullyDefinedValidation(objs, inp)
+				},
 			}),
 			Entry("Fully defined GatewayParameters with probes", &input{
 				dInputs:    istioEnabledDeployerInputs(),
 				gw:         defaultGateway(),
 				defaultGwp: fullyDefinedGatewayParamsWithProbes(),
 			}, &expectedOutput{
-				validationFunc: fullyDefinedValidationWithProbes,
+				validationFunc: func(objs clientObjects, inp *input) {
+					fullyDefinedValidationWithProbes(objs, inp)
+				},
 			}),
 			Entry("Fully defined GatewayParameters with unprivileged port start sysctl", &input{
 				dInputs:    istioEnabledDeployerInputs(),
 				gw:         defaultGateway(),
 				defaultGwp: fullyDefinedGatewayParamsWithUnprivilegedPortStartSysctl(),
 			}, &expectedOutput{
-				validationFunc: fullyDefinedValidation,
+				validationFunc: func(objs clientObjects, inp *input) {
+					fullyDefinedValidation(objs, inp)
+				},
 			}),
 			Entry("Fully defined GatewayParameters with no pod template", &input{
 				dInputs:    istioEnabledDeployerInputs(),
 				gw:         defaultGateway(),
 				defaultGwp: gwParamsNoPodTemplate(),
 			}, &expectedOutput{
-				validationFunc: fullyDefinedValidation,
+				validationFunc: func(objs clientObjects, inp *input) {
+					fullyDefinedValidation(objs, inp)
+				},
 			}),
 			Entry("Fully defined GatewayParameters with custom env vars", &input{
 				dInputs:    istioEnabledDeployerInputs(),
 				gw:         defaultGateway(),
 				defaultGwp: fullyDefinedGatewayParamsWithCustomEnv(),
 			}, &expectedOutput{
-				validationFunc: fullyDefinedValidationCustomEnv,
+				validationFunc: func(objs clientObjects, inp *input) {
+					fullyDefinedValidationCustomEnv(objs, inp)
+				},
 			}),
 			Entry("no listeners on gateway", &input{
 				dInputs: defaultDeployerInputs(),
@@ -2182,15 +2173,14 @@ var _ = Describe("Deployer", func() {
 				getObjsErr: deployerinternal.ErrNoValidPorts,
 			}),
 			Entry("no port offset", defaultInput(), &expectedOutput{
-				validationFunc: func(objs clientObjects, inp *input) error {
-					svc := objs.findService(defaultNamespace, defaultServiceName)
+				validationFunc: func(objs clientObjects, inp *input) {
+					svc := objs.findService(defaultServiceName)
 					Expect(svc).NotTo(BeNil())
 
 					port := svc.Spec.Ports[0]
 					Expect(port.Port).To(Equal(int32(80)))
 					Expect(port.TargetPort.IntVal).To(Equal(int32(80)))
 					Expect(port.NodePort).To(Equal(int32(0)))
-					return nil
 				},
 			}),
 			Entry("static NodePort", &input{
@@ -2217,15 +2207,14 @@ var _ = Describe("Deployer", func() {
 					},
 				},
 			}, &expectedOutput{
-				validationFunc: func(objs clientObjects, inp *input) error {
-					svc := objs.findService(defaultNamespace, defaultServiceName)
+				validationFunc: func(objs clientObjects, inp *input) {
+					svc := objs.findService(defaultServiceName)
 					Expect(svc).NotTo(BeNil())
 
 					port := svc.Spec.Ports[0]
 					Expect(port.Port).To(Equal(int32(80)))
 					Expect(port.TargetPort.IntVal).To(Equal(int32(80)))
 					Expect(port.NodePort).To(Equal(int32(30000)))
-					return nil
 				},
 			}),
 			Entry("duplicate ports", &input{
@@ -2256,19 +2245,18 @@ var _ = Describe("Deployer", func() {
 				},
 				defaultGwp: defaultGatewayParams(),
 			}, &expectedOutput{
-				validationFunc: func(objs clientObjects, inp *input) error {
-					svc := objs.findService(defaultNamespace, defaultServiceName)
+				validationFunc: func(objs clientObjects, inp *input) {
+					svc := objs.findService(defaultServiceName)
 					Expect(svc).NotTo(BeNil())
 
 					Expect(svc.Spec.Ports).To(HaveLen(1))
 					port := svc.Spec.Ports[0]
 					Expect(port.Port).To(Equal(int32(80)))
 					Expect(port.TargetPort.IntVal).To(Equal(int32(80)))
-					return nil
 				},
 			}),
 			Entry("object owner refs are set", defaultInput(), &expectedOutput{
-				validationFunc: func(objs clientObjects, inp *input) error {
+				validationFunc: func(objs clientObjects, inp *input) {
 					Expect(objs).NotTo(BeEmpty())
 
 					gw := defaultGateway()
@@ -2282,11 +2270,10 @@ var _ = Describe("Deployer", func() {
 						Expect(ownerRefs[0].APIVersion).To(Equal(gw.APIVersion))
 						Expect(*ownerRefs[0].Controller).To(BeTrue())
 					}
-					return nil
 				},
 			}),
 			Entry("envoy yaml is valid", defaultInput(), &expectedOutput{
-				validationFunc: func(objs clientObjects, inp *input) error {
+				validationFunc: func(objs clientObjects, inp *input) {
 					gw := defaultGateway()
 					Expect(objs).NotTo(BeEmpty())
 
@@ -2309,7 +2296,7 @@ var _ = Describe("Deployer", func() {
 
 					// make sure the stats listener is enabled
 					staticResources := envoyConfig["static_resources"].(map[string]any)
-					listeners := staticResources["listeners"].([]interface{})
+					listeners := staticResources["listeners"].([]any)
 					var prometheusListener map[string]any
 					for _, lis := range listeners {
 						lis := lis.(map[string]any)
@@ -2321,7 +2308,6 @@ var _ = Describe("Deployer", func() {
 					}
 					Expect(prometheusListener).NotTo(BeNil())
 
-					return nil
 				},
 			}),
 			Entry("envoy yaml is valid with stats disabled", &input{
@@ -2331,7 +2317,7 @@ var _ = Describe("Deployer", func() {
 				overrideGwp: gatewayParamsOverrideWithoutStats(),
 				gwc:         defaultGatewayClassWithParamsRef(),
 			}, &expectedOutput{
-				validationFunc: func(objs clientObjects, inp *input) error {
+				validationFunc: func(objs clientObjects, inp *input) {
 					gw := defaultGatewayWithGatewayParams(gwpOverrideName)
 					Expect(objs).NotTo(BeEmpty())
 
@@ -2354,7 +2340,7 @@ var _ = Describe("Deployer", func() {
 
 					// make sure the stats listener is enabled
 					staticResources := envoyConfig["static_resources"].(map[string]any)
-					listeners := staticResources["listeners"].([]interface{})
+					listeners := staticResources["listeners"].([]any)
 					var prometheusListener map[string]any
 					for _, lis := range listeners {
 						lis := lis.(map[string]any)
@@ -2366,7 +2352,6 @@ var _ = Describe("Deployer", func() {
 					}
 					Expect(prometheusListener).To(BeNil())
 
-					return nil
 				},
 			}),
 			Entry("failed to get GatewayParameters", &input{
@@ -2381,9 +2366,8 @@ var _ = Describe("Deployer", func() {
 				gw:         defaultGateway(),
 				defaultGwp: selfManagedGatewayParam(wellknown.DefaultGatewayParametersName),
 			}, &expectedOutput{
-				validationFunc: func(objs clientObjects, inp *input) error {
+				validationFunc: func(objs clientObjects, inp *input) {
 					Expect(objs).To(BeEmpty())
-					return nil
 				},
 			}),
 			Entry("Self-managed GatewayParameters override; should not deploy gateway", &input{
@@ -2392,9 +2376,8 @@ var _ = Describe("Deployer", func() {
 				defaultGwp:  defaultGatewayParams(),
 				overrideGwp: selfManagedGatewayParam("self-managed"),
 			}, &expectedOutput{
-				validationFunc: func(objs clientObjects, inp *input) error {
+				validationFunc: func(objs clientObjects, inp *input) {
 					Expect(objs).To(BeEmpty())
-					return nil
 				},
 			}),
 			Entry("Replicas is not set (default)", &input{
@@ -2418,11 +2401,10 @@ var _ = Describe("Deployer", func() {
 				},
 				overrideGwp: &gw2_v1alpha1.GatewayParameters{},
 			}, &expectedOutput{
-				validationFunc: func(objs clientObjects, inp *input) error {
-					deployment := objs.findDeployment(defaultNamespace, defaultServiceName)
+				validationFunc: func(objs clientObjects, inp *input) {
+					deployment := objs.findDeployment(defaultServiceName)
 					Expect(deployment).NotTo(BeNil())
 					Expect(deployment.Spec.Replicas).To(BeNil())
-					return nil
 				},
 			}),
 			Entry("have replicas set", &input{
@@ -2448,121 +2430,13 @@ var _ = Describe("Deployer", func() {
 				},
 				overrideGwp: &gw2_v1alpha1.GatewayParameters{},
 			}, &expectedOutput{
-				validationFunc: func(objs clientObjects, inp *input) error {
-					deployment := objs.findDeployment(defaultNamespace, defaultServiceName)
+				validationFunc: func(objs clientObjects, inp *input) {
+					deployment := objs.findDeployment(defaultServiceName)
 					Expect(deployment).NotTo(BeNil())
 					Expect(*deployment.Spec.Replicas).To(Equal(int32(3)))
-					return nil
 				},
 			}),
 		)
-	})
-
-	Context("Inference Extension endpoint picker", func() {
-		const defaultNamespace = "default"
-
-		It("should deploy endpoint picker resources for an InferencePool when autoProvision is enabled", func() {
-			// Create a fake InferencePool resource.
-			pool := &inf.InferencePool{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       wellknown.InferencePoolKind,
-					APIVersion: fmt.Sprintf("%s/%s", inf.GroupVersion.Group, inf.GroupVersion.Version),
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pool1",
-					Namespace: defaultNamespace,
-					UID:       "pool-uid",
-				},
-			}
-
-			// Initialize a new deployer with InferenceExtension inputs.
-			ie := &deployerinternal.InferenceExtension{}
-			chart, err := deployerinternal.LoadInferencePoolChart()
-			Expect(err).NotTo(HaveOccurred())
-			cli := newFakeClientWithObjs(pool)
-			d := deployer.NewDeployer(
-				wellknown.DefaultGatewayControllerName,
-				wellknown.DefaultAgwControllerName,
-				wellknown.DefaultAgwClassName,
-				cli,
-				chart,
-				ie,
-				deployerinternal.InferenceExtensionReleaseNameAndNamespace,
-			)
-
-			// Simulate reconciliation so that the pool gets its finalizer added.
-			err = controller.EnsureFinalizer(context.Background(), cli, pool)
-			Expect(err).NotTo(HaveOccurred())
-
-			// Check that the pool itself has the finalizer set.
-			Expect(pool.GetFinalizers()).To(ContainElement(wellknown.InferencePoolFinalizer))
-
-			// Get the endpoint picker objects for the InferencePool.
-			objs, err := d.GetObjsToDeploy(context.Background(), pool)
-			Expect(err).NotTo(HaveOccurred())
-			objs = d.SetNamespaceAndOwner(pool, objs)
-
-			Expect(objs).NotTo(BeEmpty(), "expected non-empty objects for endpoint picker deployment")
-			Expect(objs).To(HaveLen(4))
-
-			// Find the child objects.
-			var sa *corev1.ServiceAccount
-			var crb *rbacv1.ClusterRoleBinding
-			var dep *appsv1.Deployment
-			var svc *corev1.Service
-			for _, obj := range objs {
-				switch t := obj.(type) {
-				case *corev1.ServiceAccount:
-					sa = t
-				case *rbacv1.ClusterRoleBinding:
-					crb = t
-				case *appsv1.Deployment:
-					dep = t
-				case *corev1.Service:
-					svc = t
-				}
-			}
-			Expect(sa).NotTo(BeNil(), "expected a ServiceAccount to be rendered")
-			Expect(crb).NotTo(BeNil(), "expected a ClusterRoleBinding to be rendered")
-			Expect(dep).NotTo(BeNil(), "expected a Deployment to be rendered")
-			Expect(svc).NotTo(BeNil(), "expected a Service to be rendered")
-
-			// Check that owner references are set on all rendered objects to the InferencePool.
-			for _, obj := range objs {
-				gvk := obj.GetObjectKind().GroupVersionKind()
-				if deployer.IsNamespaced(gvk) {
-					ownerRefs := obj.GetOwnerReferences()
-					Expect(ownerRefs).To(HaveLen(1))
-					ref := ownerRefs[0]
-					Expect(ref.Name).To(Equal(pool.Name))
-					Expect(ref.UID).To(Equal(pool.UID))
-					Expect(ref.Kind).To(Equal(pool.Kind))
-					Expect(ref.APIVersion).To(Equal(pool.APIVersion))
-					Expect(*ref.Controller).To(BeTrue())
-				}
-			}
-
-			// Validate that the rendered Deployment and Service have the expected names.
-			expectedName := fmt.Sprintf("%s-endpoint-picker", pool.Name)
-			Expect(sa.Name).To(Equal(expectedName))
-			Expect(crb.Name).To(Equal(expectedName))
-			Expect(dep.Name).To(Equal(expectedName))
-			Expect(svc.Name).To(Equal(expectedName))
-
-			// Check the container args for the expected poolName.
-			Expect(dep.Spec.Template.Spec.Containers).To(HaveLen(1))
-			pickerContainer := dep.Spec.Template.Spec.Containers[0]
-			Expect(pickerContainer.Args).To(Equal([]string{
-				"-poolName",
-				pool.Name,
-				"-v",
-				"4",
-				"-grpcPort",
-				"9002",
-				"-grpcHealthPort",
-				"9003",
-			}))
-		})
 	})
 
 	Context("with listener sets", func() {
@@ -2648,15 +2522,15 @@ var _ = Describe("Deployer", func() {
 
 			Expect(objs).To(HaveLen(4))
 			Expect(objs.findConfigMap(defaultNamespace, gw.Name)).ToNot(BeNil())
-			Expect(objs.findServiceAccount(defaultNamespace, gw.Name)).ToNot(BeNil())
+			Expect(objs.findServiceAccount(gw.Name)).ToNot(BeNil())
 
-			servicePorts := objs.findService(defaultNamespace, gw.Name).Spec.Ports
+			servicePorts := objs.findService(gw.Name).Spec.Ports
 			Expect(servicePorts[0].Name).To(Equal(fmt.Sprintf("listener-%d", listenerPort)))
 			Expect(servicePorts[0].Port).To(Equal(listenerPort))
 			Expect(servicePorts[1].Name).To(Equal(fmt.Sprintf("listener-%d", listenerSetPort)))
 			Expect(servicePorts[1].Port).To(Equal(listenerSetPort))
 
-			deploymentPorts := objs.findDeployment(defaultNamespace, gw.Name).Spec.Template.Spec.Containers[0].Ports
+			deploymentPorts := objs.findDeployment(gw.Name).Spec.Template.Spec.Containers[0].Ports
 			Expect(deploymentPorts[0].Name).To(Equal(fmt.Sprintf("listener-%d", listenerPort)))
 			Expect(deploymentPorts[0].ContainerPort).To(Equal(listenerPort))
 			Expect(deploymentPorts[1].Name).To(Equal(fmt.Sprintf("listener-%d", listenerSetPort)))
@@ -2665,7 +2539,7 @@ var _ = Describe("Deployer", func() {
 	})
 })
 
-func fullyDefinedGatewayParameters(name, namespace string) *gw2_v1alpha1.GatewayParameters {
+func fullyDefinedGatewayParameters() *gw2_v1alpha1.GatewayParameters {
 	return &gw2_v1alpha1.GatewayParameters{
 		TypeMeta: metav1.TypeMeta{
 			Kind: wellknown.GatewayParametersGVK.Kind,
@@ -2673,8 +2547,8 @@ func fullyDefinedGatewayParameters(name, namespace string) *gw2_v1alpha1.Gateway
 			APIVersion: gw2_v1alpha1.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
+			Name:      wellknown.DefaultGatewayParametersName,
+			Namespace: defaultNamespace,
 			UID:       "1236",
 		},
 		Spec: gw2_v1alpha1.GatewayParametersSpec{

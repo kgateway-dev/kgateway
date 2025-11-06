@@ -44,9 +44,13 @@ func translatePoliciesForService(svc *corev1.Service) []AgwPolicy {
 			policy := &api.Policy{
 				Name:   fmt.Sprintf("a2a/%s/%s/%d", svc.Namespace, svc.Name, port.Port),
 				Target: &api.PolicyTarget{Kind: &api.PolicyTarget_Backend{Backend: svcRef}},
-				Spec: &api.PolicySpec{Kind: &api.PolicySpec_A2A_{
-					A2A: &api.PolicySpec_A2A{},
-				}},
+				Kind: &api.Policy_Backend{
+					Backend: &api.BackendPolicySpec{
+						Kind: &api.BackendPolicySpec_A2A_{
+							A2A: &api.BackendPolicySpec_A2A{},
+						},
+					},
+				},
 			}
 
 			a2aPolicies = append(a2aPolicies, AgwPolicy{Policy: policy})

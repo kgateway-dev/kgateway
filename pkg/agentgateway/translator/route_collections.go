@@ -23,14 +23,13 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/status"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
-
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/status"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
@@ -388,7 +387,8 @@ func createRouteCollection[T controllers.Object, ST any](
 		collectionName,
 		translator,
 		func(e AgwRoute, parent RouteParentReference) *api.Resource {
-			inner := protomarshal.Clone(e.Route)
+			// safety: a shallow clone is ok because we only modify a top level field (Key)
+			inner := protomarshal.ShallowClone(e.Route)
 			_, name, _ := strings.Cut(parent.InternalName, "/")
 			inner.ListenerKey = name
 			if sec := string(parent.ParentSection); sec != "" {

@@ -10,7 +10,7 @@ spec:
   terminationGracePeriodSeconds: 0
   containers:
   - name: aws-cli
-    image: amazon/aws-cli:latest
+    image: amazon/aws-cli:2.31.29
     command:
     - /bin/sh
     - -c

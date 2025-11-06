@@ -4,13 +4,12 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-
-	"github.com/google/go-cmp/cmp"
-	"github.com/stretchr/testify/assert"
 )
 
 // makeTCPRoute constructs a TCPRoute with specified metadata.

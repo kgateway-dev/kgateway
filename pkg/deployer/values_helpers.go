@@ -1,8 +1,6 @@
 package deployer
 
 import (
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"sort"
@@ -213,21 +211,6 @@ func GetStatsValues(statsConfig *v1alpha1.StatsConfig) *HelmStatsConfig {
 	}
 }
 
-func getTracingValues(tracingConfig *v1alpha1.AiExtensionTrace) *helmAITracing {
-	if tracingConfig == nil {
-		return nil
-	}
-	return &helmAITracing{
-		EndPoint: tracingConfig.EndPoint,
-		Sampler: &helmAITracingSampler{
-			SamplerType: tracingConfig.GetSamplerType(),
-			SamplerArg:  tracingConfig.GetSamplerArg(),
-		},
-		Timeout:  tracingConfig.GetTimeout(),
-		Protocol: tracingConfig.GetOTLPProtocolType(),
-	}
-}
-
 // ComponentLogLevelsToString converts the key-value pairs in the map into a string of the
 // format: key1:value1,key2:value2,key3:value3, where the keys are sorted alphabetically.
 // If an empty map is passed in, then an empty string is returned.
@@ -247,45 +230,4 @@ func ComponentLogLevelsToString(vals map[string]string) (string, error) {
 	}
 	sort.Strings(parts)
 	return strings.Join(parts, ","), nil
-}
-
-func GetAIExtensionValues(config *v1alpha1.AiExtension) (*HelmAIExtension, error) {
-	if config == nil {
-		return nil, nil
-	}
-
-	// If we don't do this check, a byte array containing the characters "null" will be rendered
-	// This will not be marshallable by the component so instead we render nothing.
-	var byt []byte
-	if config.GetStats() != nil {
-		var err error
-		byt, err = json.Marshal(config.GetStats())
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Handle Tracing with base64 encoding
-	var tracingBase64 string
-	if config.Tracing != nil {
-		// Convert tracing config to JSON
-		tracingJSON, err := json.Marshal(getTracingValues(config.Tracing))
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal tracing config: %w", err)
-		}
-
-		// Encode JSON to base64
-		tracingBase64 = base64.StdEncoding.EncodeToString(tracingJSON)
-	}
-
-	return &HelmAIExtension{
-		Enabled:         *config.GetEnabled(),
-		Image:           GetImageValues(config.GetImage()),
-		SecurityContext: config.GetSecurityContext(),
-		Resources:       config.GetResources(),
-		Env:             config.GetEnv(),
-		Ports:           config.GetPorts(),
-		Stats:           byt,
-		Tracing:         tracingBase64,
-	}, nil
 }

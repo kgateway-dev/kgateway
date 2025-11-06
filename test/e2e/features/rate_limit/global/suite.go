@@ -35,7 +35,6 @@ type testingSuite struct {
 	commonManifests []string
 	// resources from manifests shared by all tests
 	commonResources []client.Object
-	agentgateway    bool
 }
 
 // rlBurstTries: run a tiny burst so all checks stay in one fixed RL window.
@@ -51,29 +50,12 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
-func NewAgentgatewayTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
-	return &testingSuite{
-		ctx:              ctx,
-		testInstallation: testInst,
-		agentgateway:     true,
-	}
-}
-
 func (s *testingSuite) SetupSuite() {
-	if s.agentgateway {
-		s.commonManifests = []string{
-			testdefaults.CurlPodManifest,
-			agwCommonManifest,
-			simpleServiceManifest,
-			rateLimitServerManifest,
-		}
-	} else {
-		s.commonManifests = []string{
-			testdefaults.CurlPodManifest,
-			commonManifest,
-			simpleServiceManifest,
-			rateLimitServerManifest,
-		}
+	s.commonManifests = []string{
+		testdefaults.CurlPodManifest,
+		commonManifest,
+		simpleServiceManifest,
+		rateLimitServerManifest,
 	}
 	s.commonResources = []client.Object{
 		// resources from curl manifest
@@ -240,7 +222,7 @@ func (s *testingSuite) assertResponseWithHeader(path string, headerName string, 
 
 // Burst a few quick checks so the test doesn't cross a rate-limit window boundary.
 func (s *testingSuite) assertConsistentResponse(path string, expectedStatus int) {
-	for i := 0; i < rlBurstTries; i++ {
+	for range rlBurstTries {
 		s.testInstallation.Assertions.AssertEventualCurlResponse(
 			s.ctx,
 			testdefaults.CurlPodExecOpt,
@@ -257,7 +239,7 @@ func (s *testingSuite) assertConsistentResponse(path string, expectedStatus int)
 
 // Safe burst a few quick checks so the test doesn't cross a rate-limit window boundary.
 func (s *testingSuite) assertConsistentResponseWithHeader(path, headerName, headerValue string, expectedStatus int) {
-	for i := 0; i < rlBurstTries; i++ {
+	for range rlBurstTries {
 		s.testInstallation.Assertions.AssertEventualCurlResponse(
 			s.ctx,
 			testdefaults.CurlPodExecOpt,

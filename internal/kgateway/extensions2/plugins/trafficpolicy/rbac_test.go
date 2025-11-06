@@ -15,12 +15,12 @@ import (
 )
 
 // createExpectedMatcher creates an expected matcher structure for testing
-func createExpectedMatcher(action v1alpha1.AuthorizationPolicyAction, numRules int) *cncfmatcherv3.Matcher {
+func createExpectedMatcher(numRules int) *cncfmatcherv3.Matcher {
 	// Create a simplified matcher structure for testing
 	// We don't need to match the exact complex internal structure,
 	// just the basic structure with the right number of matchers
 	var matchers []*cncfmatcherv3.Matcher_MatcherList_FieldMatcher
-	for i := 0; i < numRules; i++ {
+	for range numRules {
 		matcher := &cncfmatcherv3.Matcher_MatcherList_FieldMatcher{
 			// Simplified structure - the actual implementation creates complex CEL matchers
 			Predicate: &cncfmatcherv3.Matcher_MatcherList_Predicate{
@@ -69,27 +69,27 @@ func TestTranslateRBAC(t *testing.T) {
 		name             string
 		ns               string
 		tpName           string
-		rbac             *v1alpha1.RBAC
+		rbac             *v1alpha1.Authorization
 		expected         *envoyauthz.RBACPerRoute
-		expectedCELRules map[string][]string // policy name -> expected CEL expressions
+		expectedCELRules map[string][]v1alpha1.CELExpression // policy name -> expected CEL expressions
 		wantErr          bool
 	}{
 		{
 			name:   "allow action with single rule",
 			ns:     "test-ns",
 			tpName: "test-policy",
-			rbac: &v1alpha1.RBAC{
+			rbac: &v1alpha1.Authorization{
 				Action: v1alpha1.AuthorizationPolicyActionAllow,
-				Policy: v1alpha1.RBACPolicy{
-					MatchExpressions: []string{"request.auth.claims.groups == 'group1'", "request.auth.claims.groups == 'group2'"},
+				Policy: v1alpha1.AuthorizationPolicy{
+					MatchExpressions: []v1alpha1.CELExpression{"request.auth.claims.groups == 'group1'", "request.auth.claims.groups == 'group2'"},
 				},
 			},
 			expected: &envoyauthz.RBACPerRoute{
 				Rbac: &envoyauthz.RBAC{
-					Matcher: createExpectedMatcher(v1alpha1.AuthorizationPolicyActionAllow, 1),
+					Matcher: createExpectedMatcher(1),
 				},
 			},
-			expectedCELRules: map[string][]string{
+			expectedCELRules: map[string][]v1alpha1.CELExpression{
 				"ns[test-ns]-policy[test-policy]-rule[0]": {"request.auth.claims.groups == 'group1'", "request.auth.claims.groups == 'group2'"},
 			},
 			wantErr: false,
@@ -98,19 +98,19 @@ func TestTranslateRBAC(t *testing.T) {
 			name:   "deny action with empty rules",
 			ns:     "test-ns",
 			tpName: "test-policy",
-			rbac: &v1alpha1.RBAC{
+			rbac: &v1alpha1.Authorization{
 				Action: v1alpha1.AuthorizationPolicyActionDeny,
-				Policy: v1alpha1.RBACPolicy{},
+				Policy: v1alpha1.AuthorizationPolicy{},
 			},
 			expected: &envoyauthz.RBACPerRoute{
 				Rbac: &envoyauthz.RBAC{
 					Rules: &envoyrbacv3.RBAC{
 						Action: envoyrbacv3.RBAC_DENY,
 					},
-					Matcher: createExpectedMatcher(v1alpha1.AuthorizationPolicyActionDeny, 0),
+					Matcher: createExpectedMatcher(0),
 				},
 			},
-			expectedCELRules: map[string][]string{},
+			expectedCELRules: map[string][]v1alpha1.CELExpression{},
 			wantErr:          false,
 		},
 	}

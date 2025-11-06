@@ -1,7 +1,6 @@
 package endpointpicker
 
 import (
-	"context"
 	"fmt"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -19,7 +18,6 @@ import (
 )
 
 func processPoolBackendObjIR(
-	ctx context.Context,
 	in ir.BackendObjectIR,
 	out *envoyclusterv3.Cluster,
 	podIdx krt.Index[string, krtcollections.LocalityPod],
@@ -67,7 +65,7 @@ func processPoolBackendObjIR(
 		addr := fmt.Sprintf("%s:%d", ep.address, ep.port)
 
 		// Build the subset metadata struct used by the EPP for endpoint selection
-		mdStruct, err := structpb.NewStruct(map[string]interface{}{
+		mdStruct, err := structpb.NewStruct(map[string]any{
 			dstEndpointKey: addr,
 		})
 		if err != nil {

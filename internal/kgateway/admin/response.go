@@ -9,8 +9,8 @@ import (
 // It allows us to encapsulate data and errors together, so that if an issue occurs during the request,
 // we can get access to all the relevant information
 type SnapshotResponseData struct {
-	Data  interface{} `json:"data"`
-	Error error       `json:"error"`
+	Data  any   `json:"data"`
+	Error error `json:"error"`
 }
 
 // OutputFormat identifies the format to output an object
@@ -38,8 +38,8 @@ func (r SnapshotResponseData) Format(format OutputFormat) ([]byte, error) {
 		errorMsg = r.Error.Error()
 	}
 	anon := struct {
-		Data  interface{} `json:"data"`
-		Error string      `json:"error"`
+		Data  any    `json:"data"`
+		Error string `json:"error"`
 	}{
 		Data:  r.Data,
 		Error: errorMsg,
@@ -61,7 +61,7 @@ func (r SnapshotResponseData) MarshalJSONString() string {
 }
 
 // formatOutput formats a generic object into the specified output format
-func formatOutput(format OutputFormat, genericOutput interface{}) ([]byte, error) {
+func formatOutput(format OutputFormat, genericOutput any) ([]byte, error) {
 	switch format {
 	case Json:
 		return json.MarshalIndent(genericOutput, "", "    ")
@@ -76,7 +76,7 @@ func formatOutput(format OutputFormat, genericOutput interface{}) ([]byte, error
 	}
 }
 
-func completeSnapshotResponse(data interface{}) SnapshotResponseData {
+func completeSnapshotResponse(data any) SnapshotResponseData {
 	return SnapshotResponseData{
 		Data:  data,
 		Error: nil,

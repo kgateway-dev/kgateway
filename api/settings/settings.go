@@ -124,9 +124,6 @@ type Settings struct {
 	// If enabled, EnableAgentgateway should also be set to true. Enabling inference extension without agentgateway
 	// is deprecated in v2.1 and will not be supported in v2.2.
 	EnableInferExt bool `split_words:"true"`
-	// InferExtAutoProvision defines whether to enable/disable the Gateway API inference extension deployer.
-	// Deprecated: inference extension auto-provisioning is deprecated in v2.1 and will be removed in v2.2.
-	InferExtAutoProvision bool `split_words:"true"`
 
 	// DefaultImageRegistry is the default image registry to use for the kgateway image.
 	DefaultImageRegistry string `split_words:"true" default:"cr.kgateway.dev"`
@@ -187,6 +184,9 @@ type Settings struct {
 
 	// EnableWaypoint enables kgateway to translate istio waypoints
 	EnableWaypoint bool `split_words:"true" default:"false"`
+
+	// EnableExperimentalGatewayAPIFeatures enables kgateway to support experimental features and APIs
+	EnableExperimentalGatewayAPIFeatures bool `split_words:"true" default:"false"`
 }
 
 // BuildSettings returns a zero-valued Settings obj if error is encountered when parsing env

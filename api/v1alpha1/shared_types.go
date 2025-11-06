@@ -5,7 +5,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-// Control-plane RBAC rules not specific to policies:
+// Control-plane Authorization rules not specific to policies:
 // +kubebuilder:rbac:groups=authentication.k8s.io,resources=tokenreviews,verbs=create
 
 // Select the object by Name and Namespace.
@@ -114,6 +114,7 @@ type PolicyAncestorStatus struct {
 
 	// Conditions describes the status of the Policy with respect to the given Ancestor.
 	//
+	// +optional
 	// +listType=map
 	// +listMapKey=type
 	// +kubebuilder:validation:MinItems=1

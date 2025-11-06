@@ -56,7 +56,7 @@ func (s *testingSuite) TestSSEEndpoint() {
 
 	headers := mcpHeaders()
 
-	out, err := s.execCurlMCP(8080, headers, initBody, "--max-time", "8")
+	out, err := s.execCurlMCP(headers, initBody, "--max-time", "8")
 	s.Require().NoError(err, "SSE initialize curl failed")
 	s.requireHTTPStatus(out, httpOKCode)
 	// Match header w/ or w/o '-v' prefix, any casing, and optional params.
@@ -148,7 +148,7 @@ func (s *testingSuite) runDynamicRoutingCase(clientName string, routeHeaders map
 		100*time.Millisecond, 250*time.Millisecond, 500*time.Millisecond, 1*time.Second)
 
 	// Get full response for logging + session extraction
-	out, err := s.execCurlMCP(8080, headers, initBody, "--max-time", "10")
+	out, err := s.execCurlMCP(headers, initBody, "--max-time", "10")
 	s.Require().NoError(err, "%s initialize failed", label)
 	s.T().Logf("%s initialize: %s", label, out)
 

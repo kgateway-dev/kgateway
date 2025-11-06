@@ -149,7 +149,7 @@ func validateSupportedRoutes(listeners []ir.Listener, reporter reports.Reporter)
 	return validListeners
 }
 
-func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener {
+func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings ListenerTranslatorConfig) []ir.Listener {
 	if len(gw.Listeners) == 0 {
 		// gwReporter.Err("gateway must contain at least 1 listener")
 	}
@@ -278,8 +278,9 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 	}
 
 	// Add the final conditions on the Gateway
+	// Set this here in case there are no valid listeners so it won't need to be repeated later on
 	noAllowedListeners := gw.Obj.Spec.AllowedListeners == nil
-	if noAllowedListeners {
+	if settings.EnableExperimentalGatewayAPIFeatures && noAllowedListeners {
 		reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
 			Type:   GatewayConditionAttachedListenerSets,
 			Status: metav1.ConditionUnknown,
@@ -307,26 +308,29 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener 
 		return ok
 	})
 
-	if listenerSetListenerExists {
-		reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
-			Type:   GatewayConditionAttachedListenerSets,
-			Status: metav1.ConditionTrue,
-			Reason: GatewayReasonListenerSetsAttached,
-		})
-	} else if !noAllowedListeners {
-		// if there are allowed listeners, but no listener sets, then the gateway is not attached to any listener sets
-		reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
-			Type:   GatewayConditionAttachedListenerSets,
-			Status: metav1.ConditionFalse,
-			Reason: gwv1.GatewayReasonNoResources,
-		})
+	if settings.EnableExperimentalGatewayAPIFeatures {
+		if listenerSetListenerExists {
+			reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
+				Type:   GatewayConditionAttachedListenerSets,
+				Status: metav1.ConditionTrue,
+				Reason: GatewayReasonListenerSetsAttached,
+			})
+		} else if !noAllowedListeners {
+			// if there are allowed listeners, but no listener sets, then the gateway is not attached to any listener sets
+			reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
+				Type:   GatewayConditionAttachedListenerSets,
+				Status: metav1.ConditionFalse,
+				Reason: gwv1.GatewayReasonNoResources,
+			})
+		}
 	}
+
 	return validListeners
 }
 
-func validateGateway(consolidatedGateway *ir.Gateway, reporter reports.Reporter) []ir.Listener {
+func validateGateway(consolidatedGateway *ir.Gateway, reporter reports.Reporter, settings ListenerTranslatorConfig) []ir.Listener {
 	rejectDeniedListenerSets(consolidatedGateway, reporter)
-	validatedListeners := validateListeners(consolidatedGateway, reporter)
+	validatedListeners := validateListeners(consolidatedGateway, reporter, settings)
 	return validatedListeners
 }
 

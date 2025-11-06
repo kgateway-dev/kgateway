@@ -1,7 +1,6 @@
 package backend
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -22,7 +21,6 @@ import (
 )
 
 func buildRegisterCallback(
-	ctx context.Context,
 	cl kclient.Client[*v1alpha1.Backend],
 	bcol krt.Collection[ir.BackendObjectIR],
 ) func() {

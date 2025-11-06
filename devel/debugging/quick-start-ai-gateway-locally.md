@@ -74,6 +74,7 @@ EOF
 
     ```yaml
     kubectl apply -f- <<EOF
+    # TODO: Update this to use the agw based Backend API.
     apiVersion: gateway.kgateway.dev/v1alpha1
     kind: Backend
     metadata:

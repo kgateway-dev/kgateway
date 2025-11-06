@@ -7,18 +7,16 @@ import (
 	udpaannontations "github.com/cncf/xds/go/udpa/annotations"
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
-
-	"istio.io/istio/pkg/kube/krt"
-
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/known/anypb"
+	"istio.io/istio/pkg/kube/krt"
+
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 )
 
 var (
@@ -139,7 +137,7 @@ func visitFields(msg protoreflect.Message, ancestor_sensitive bool) {
 			for i := 0; i < list.Len(); i++ {
 				elem := list.Get(i)
 				if fd.Message() != nil {
-					visitMessage(fd, elem, sensitive)
+					visitMessage(elem, sensitive)
 				} else {
 					// Redact scalar fields if needed
 					if sensitive {
@@ -151,7 +149,7 @@ func visitFields(msg protoreflect.Message, ancestor_sensitive bool) {
 			m := v.Map()
 			m.Range(func(k protoreflect.MapKey, v protoreflect.Value) bool {
 				if fd.MapValue().Message() != nil {
-					visitMessage(fd.MapValue(), v, sensitive)
+					visitMessage(v, sensitive)
 				} else {
 					// Redact scalar fields if needed
 					if sensitive {
@@ -162,7 +160,7 @@ func visitFields(msg protoreflect.Message, ancestor_sensitive bool) {
 			})
 		} else {
 			if fd.Message() != nil {
-				visitMessage(fd, v, sensitive)
+				visitMessage(v, sensitive)
 			} else {
 				// Redact scalar fields if needed
 				if sensitive {
@@ -174,7 +172,7 @@ func visitFields(msg protoreflect.Message, ancestor_sensitive bool) {
 	})
 }
 
-func visitMessage(fd protoreflect.FieldDescriptor, v protoreflect.Value, sensitive bool) {
+func visitMessage(v protoreflect.Value, sensitive bool) {
 	msg := v.Message()
 	m := msg.Interface()
 	anymsg, ok := m.(*anypb.Any)

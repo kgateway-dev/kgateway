@@ -13,53 +13,60 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 // testingSuite is the entire Suite of tests for testing K8s Service-specific features/fixes
 type testingSuite struct {
-	suite.Suite
-
-	ctx context.Context
-
-	// testInstallation contains all the metadata/utilities necessary to execute a series of tests
-	// against an installation of kgateway
-	testInstallation *e2e.TestInstallation
+	*base.BaseTestingSuite
 }
+
+var (
+	// No setup since we handle manifests manually in each test
+	setup = base.TestCase{}
+
+	testCases = map[string]*base.TestCase{
+		"TestConfigureHTTPRouteBackingDestinationsWithService": {},
+		// If the TCPRoute CRD is not installed, TestConfigureHTTPRouteBackingDestinationsWithService implicitly tests that HTTPRoute services still work without the CRD
+		"TestConfigureHTTPRouteBackingDestinationsWithServiceAndWithoutTCPRoute": {
+			MinGwApiVersion: base.GwApiRequireTcpRoutes,
+		},
+	}
+)
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &testingSuite{
-		ctx:              ctx,
-		testInstallation: testInst,
+		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setup, testCases),
 	}
 }
 
 func (s *testingSuite) TestConfigureHTTPRouteBackingDestinationsWithService() {
 	testutils.Cleanup(s.T(), func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, routeWithServiceManifest)
+		err := s.TestInstallation.Actions.Kubectl().DeleteFile(s.Ctx, routeWithServiceManifest)
 		s.NoError(err, "can delete manifest")
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, serviceManifest)
+		err = s.TestInstallation.Actions.Kubectl().DeleteFile(s.Ctx, serviceManifest)
 		s.NoError(err, "can delete manifest")
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
+		s.TestInstallation.Assertions.EventuallyObjectsNotExist(s.Ctx, proxyService, proxyDeployment)
 	})
 
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, routeWithServiceManifest)
+	err := s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, routeWithServiceManifest)
 	s.Assert().NoError(err, "can apply manifest")
 
 	// apply the service manifest separately, after the route table is applied, to ensure it can be applied after the route table
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, serviceManifest)
+	err = s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, serviceManifest)
 	s.Assert().NoError(err, "can apply manifest")
 
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, nginxMeta.GetNamespace(), metav1.ListOptions{
+	s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx, proxyService, proxyDeployment)
+	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, nginxMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: defaults.WellKnownAppLabel + "=nginx",
 	})
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
+	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: defaults.WellKnownAppLabel + "=gw",
 	})
 
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
@@ -69,38 +76,44 @@ func (s *testingSuite) TestConfigureHTTPRouteBackingDestinationsWithService() {
 }
 
 func (s *testingSuite) TestConfigureHTTPRouteBackingDestinationsWithServiceAndWithoutTCPRoute() {
+	// Get the current TCPRoute CRD before deleting it. We don't know until runtime which version is installed.
+	tcpRouteCrdYaml, _, err := s.TestInstallation.Actions.Kubectl().Execute(s.Ctx, "get", "crd", "tcproutes.gateway.networking.k8s.io", "-o", "yaml")
+	s.Assert().NoError(err, "can get TCPRoute CRD")
+
 	testutils.Cleanup(s.T(), func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, routeWithServiceManifest)
-		s.NoError(err, "can delete manifest")
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, serviceManifest)
-		s.NoError(err, "can delete manifest")
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
-		err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, tcpRouteCrdManifest)
-		s.NoError(err, "can apply manifest")
-		s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, &wellknown.TCPRouteCRD)
+		err := s.TestInstallation.Actions.Kubectl().DeleteFile(s.Ctx, routeWithServiceManifest)
+		s.Assert().NoError(err, "can delete manifest")
+		err = s.TestInstallation.Actions.Kubectl().DeleteFile(s.Ctx, serviceManifest)
+		s.Assert().NoError(err, "can delete manifest")
+		s.TestInstallation.Assertions.EventuallyObjectsNotExist(s.Ctx, proxyService, proxyDeployment)
+
+		// Restore the TCPRoute CRD using the saved content
+		err = s.TestInstallation.Actions.Kubectl().Apply(s.Ctx, []byte(tcpRouteCrdYaml))
+		s.NoError(err, "can apply TCPRoute CRD")
+		s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx, &wellknown.TCPRouteCRD)
 	})
 
 	// Remove the TCPRoute CRD to assert HTTPRoute services still work.
-	err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, tcpRouteCrdManifest)
-	s.NoError(err, "can delete manifest")
+	err = s.TestInstallation.Actions.Kubectl().DeleteFile(s.Ctx, tcpRouteCrdManifest)
+	s.Assert().NoError(err, "can delete manifest")
 
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, routeWithServiceManifest)
+	err = s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, routeWithServiceManifest)
 	s.Assert().NoError(err, "can apply manifest")
 
 	// apply the service manifest separately, after the route table is applied, to ensure it can be applied after the route table
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, serviceManifest)
+	err = s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, serviceManifest)
 	s.Assert().NoError(err, "can apply manifest")
 
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, nginxMeta.GetNamespace(), metav1.ListOptions{
+	s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx, proxyService, proxyDeployment)
+	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, nginxMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: defaults.WellKnownAppLabel + "=nginx",
 	})
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
+	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: defaults.WellKnownAppLabel + "=gw",
 	})
 
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),

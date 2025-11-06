@@ -4,13 +4,6 @@ import (
 	"net/netip"
 
 	"github.com/agentgateway/agentgateway/go/api"
-	corev1 "k8s.io/api/core/v1"
-	discovery "k8s.io/api/discovery/v1"
-	"k8s.io/apimachinery/pkg/types"
-
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
-
 	"istio.io/api/annotation"
 	"istio.io/istio/pilot/pkg/features"
 	"istio.io/istio/pilot/pkg/model"
@@ -26,6 +19,12 @@ import (
 	"istio.io/istio/pkg/ptr"
 	"istio.io/istio/pkg/slices"
 	"istio.io/istio/pkg/util/sets"
+	corev1 "k8s.io/api/core/v1"
+	discovery "k8s.io/api/discovery/v1"
+	"k8s.io/apimachinery/pkg/types"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
 // index maintains an index of ambient WorkloadInfo objects by various keys.

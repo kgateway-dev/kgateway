@@ -174,7 +174,7 @@ func recordKubeDump(outDir string, namespaces ...string) {
 
 // recordPods records logs from each pod to <output-dir>/$namespace/pods/$pod.log
 func recordPods(podDir, namespace string) error {
-	pods, _, err := kubeList(namespace, "pod")
+	pods, err := kubeList(namespace, "pod")
 	if err != nil {
 		return err
 	}
@@ -213,7 +213,7 @@ func recordPods(podDir, namespace string) error {
 
 // recordCRs records all unique CRs floating about to <output-dir>/$namespace/$crd/$cr.yaml
 func recordCRs(namespaceDir string, namespace string) error {
-	crds, _, err := kubeList(namespace, "crd")
+	crds, err := kubeList(namespace, "crd")
 	if err != nil {
 		return err
 	}
@@ -226,7 +226,7 @@ func recordCRs(namespaceDir string, namespace string) error {
 		}
 
 		// if there are any existing CRs corresponding to this CRD
-		crs, _, err := kubeList(namespace, crd)
+		crs, err := kubeList(namespace, crd)
 		if err != nil {
 			return err
 		}
@@ -288,15 +288,15 @@ func kubeExecute(args []string) (string, string, error) {
 }
 
 // kubeList runs $(kubectl -n $namespace $target) and returns a slice of kubernetes object names
-func kubeList(namespace string, target string) ([]string, string, error) {
+func kubeList(namespace string, target string) ([]string, error) {
 	args := []string{"-n", namespace, "get", target}
-	lines, errContent, err := kubeExecute(args)
+	lines, _, err := kubeExecute(args)
 	if err != nil {
-		return nil, errContent, err
+		return nil, err
 	}
 
 	var toReturn []string
-	for _, line := range strings.Split(strings.TrimSuffix(lines, "\n"), "\n") {
+	for line := range strings.SplitSeq(strings.TrimSuffix(lines, "\n"), "\n") {
 		if strings.HasPrefix(line, "NAME") || strings.HasPrefix(line, "No resources found") {
 			continue // skip header line and cases where there are no resources
 		}
@@ -304,7 +304,7 @@ func kubeList(namespace string, target string) ([]string, string, error) {
 			toReturn = append(toReturn, split[0])
 		}
 	}
-	return toReturn, "", nil
+	return toReturn, nil
 }
 
 // ControllerDumpOnFail creates a small dump of the controller state when a test fails.

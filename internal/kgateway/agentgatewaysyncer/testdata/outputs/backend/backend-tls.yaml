@@ -58,55 +58,55 @@ Listeners:
   name: http
   protocol: HTTP
 Policies:
-- name: auth-default/ai-groups-anthropic
-  spec:
+- backend:
     auth:
       key:
         secret: sk-anthropic-primary
+  name: auth-default/ai-groups-anthropic
   target:
     subBackend: default/ai-groups/anthropic
-- name: auth-default/anthropic-single-backend
-  spec:
+- backend:
     auth:
       key:
         secret: sk-anthropic-primary
+  name: auth-default/anthropic-single-backend
   target:
     subBackend: default/anthropic-single/backend
-- name: default/ai-tls-all-groups:backendtls:default/ai-groups
-  spec:
+- backend:
     backendTls:
       hostname: baz
+  name: default/ai-tls-all-groups:backendtls:default/ai-groups
   target:
     backend: default/ai-groups
-- name: default/ai-tls:backendtls:default/ai-groups/anthropic
-  spec:
+- backend:
     backendTls:
       hostname: foo
+  name: default/ai-tls:backendtls:default/ai-groups/anthropic
   target:
     subBackend: default/ai-groups/anthropic
-- name: default/ai-tls:backendtls:default/openai-single/backend
-  spec:
+- backend:
     backendTls:
       hostname: foo
+  name: default/ai-tls:backendtls:default/openai-single/backend
   target:
     subBackend: default/openai-single/backend
-- name: default/mcp-tls-ca-cert:backendtls:default/mcp-svc.default.svc.cluster.local
-  spec:
+- backend:
     backendTls:
       hostname: mcp-svc.foo
       root: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUMxakNDQWI0Q0NRQ0pjekx5QkJaMUdUQU5CZ2txaGtpRzl3MEJBUXNGQURBdE1SVXdFd1lEVlFRS0RBeGwKZUdGdGNHeGxJRWx1WXk0eEZEQVNCZ05WQkFNTUMyVjRZVzF3YkdVdVkyOXRNQjRYRFRJMU1ETXdOekUwTWpreApObG9YRFRJMk1ETXdOekUwTWpreE5sb3dMVEVWTUJNR0ExVUVDZ3dNWlhoaGJYQnNaU0JKYm1NdU1SUXdFZ1lEClZRUUREQXRsZUdGdGNHeGxMbU52YlRDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUIKQU4wVTZUVllFQ2t3cW54aDFLdDNkUytMaWFsclhCT1hLYWdqOXRFNTgyVDZkd21xVGhENzVWWlByTktrUm9ZTwphVXpDY3RmRGtVQlhSZW1PVE11dDdFUzV4b0F0U0FocjJHQW5xZ00zK3lCQ0xPeG9vU2pFRmRscEZUN2RoaTF3CmpPUGE1aU1oNnZlL3BIdVJIdkV1YUYvSjZQOHRyODN3R3V0eC94RlpWdUdBOVYxQW1CbVloZVBNK0poZGN3YUIKMStJYkpwMzBnR3lQZlk0dmRSUTlWUVdiVGhFOHBzRXphaCszU2dUS0pTSVQ3TkFkd2lJdTNPM3JYT1JiYVlZVQpveWNnWFVIZE9LUmJKbmJ2eTNwVG5GWko1MHNnMUhJQTR5QmRYN2MwZGl5OFp6M1N1b29uZGczRGZvcldyMHBCCkhzNnR5U0FRb3oyUmlBcURxY0UycmJNQ0F3RUFBVEFOQmdrcWhraUc5dzBCQVFzRkFBT0NBUUVBV1BrejNkSlcKYitMRnRudjdNbE9WTTc5WTRQcWVpSG5helAxRzlGd25XQkhBUmtqSVNzYXgzYjB6WDgvUkhuVTgzYzN0TFA1RApWd2VuWWI5QjltelhiTGlXSThhYVgwVVhQLy9ENTkzdGkxNXkwT2Q3eUMyaFFzemxxSWJ4WW5rRlZ3WG9UOWZRCmJkUTlPdHBDdDhFWm5LRXlDeGNrK2hsS0V5WVRjSDJQcVo3TmRwME04STJ6bnozS3V0L3VZSExVZGRmb1BGL20KTzBWNmZieUIvTXgvRzF1TGl2L0JWcHgzQWRQKzN5Z0p5S3RlbFhrRCtJZGxZM3kxMTBmem1WcjZOZ3hBYnovaApuOUtwdUs0U0Vsb0l5Y1pVYUtWWEFhWDdUNDJTRll3N21zbUIrVXU3ejVvTE9panNqWDZUamVvZmRGQlovQnlsClN4T0RncWh0YVBuT3hRPT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQoKLS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURGVENDQWYyZ0F3SUJBZ0lVRzlNZHYzbk9RMmk3djY4T2dqQXJVNGxoQmlrd0RRWUpLb1pJaHZjTkFRRUwKQlFBd0ZqRVVNQklHQTFVRUF3d0xaWGhoYlhCc1pTNWpiMjB3SGhjTk1qVXdOekEzTVRBME1EUXdXaGNOTWpZdwpOekEzTVRBME1EUXdXakFXTVJRd0VnWURWUVFEREF0bGVHRnRjR3hsTG1OdmJUQ0NBU0l3RFFZSktvWklodmNOCkFRRUJCUUFEZ2dFUEFEQ0NBUW9DZ2dFQkFOdWVxd2ZBQXBqVGZnK254SW9LVks0c0svWWxOSUN2ZG9FcTFVRUwKU3RFOXdmVHYwSjI3dU5Jc2ZwTXFDeDBOaTlSanQxaHpqdW5jOEhVSkRlb2JNTnhHYVptcnlRb2ZyZEpXSjdVdQp0NWplTFcvdzBNZWxQT2ZGTHNEaU01UkV5NFd1UG0yWDZ2MVoxTjNONUdSM1VORE90RHRzYmpTMW1vbXZvb0xPCjlXeFBJcjJjZm1QcXI4MWZ5eUQyUmVac01DLzhsVnMwUGtBOVhCcGxNenBTVTUzRFdsNS9OeWgyZDFXNUVOSzAKWncxbDVaZTRVR1Vlb2hRTWE1Y0Q1aG1aY0JqT2VKRjhNdVNUaTMxNjdLU29wb3FmZ0hUdkM1SXNCZVdYQXlaRgo4MWloRllBcStTYmhVWmVVbHN4YzF3dmV1QWRCUnphZmNZa0s0N2dZbWJxMUs2MENBd0VBQWFOYk1Ga3dGZ1lEClZSMFJCQTh3RFlJTFpYaGhiWEJzWlM1amIyMHdDd1lEVlIwUEJBUURBZ2VBTUJNR0ExVWRKUVFNTUFvR0NDc0cKQVFVRkJ3TUJNQjBHQTFVZERnUVdCQlNvYTFadTJvK3BRNnNxMkhjT2pBZ2xaa3AwMXpBTkJna3Foa2lHOXcwQgpBUXNGQUFPQ0FRRUFEWnExRU13L2pNbDB6MkxwUGg4Y1hiUDA5Qm5mWGhvRmJwTDRjRnJjQk5FeWlnMG9QTzBqCllOMWU0YmZVUk5kdUZWbkMvRkRuWmhSM0ZsQXQ4YTZvekpBd21KcCtuUUNZRm9EUXdvdFN4MTJ5NUJjOUlYd2QKQlJaYUxnSFl5Mk5qR3AyVWdBeWEyejIzQmtVbndPSndKTk1DenVHdzNwT3NtRFFZMGRpUjhaV21FWVlFUGhlVwo2QlZrcmlrelVOWHYzdEI4TG1XenhWOVYzZU43MWZuUDV1MzlJTS9VUXNPWkdSVW93Lzh0dk4yL2QwVzRkSGt5CnQva2RnTEtoZjRnVTJ3WHEvV2JlcXhsRFNwam83cS9lbU5sNTl2MUZIZVIzZUlUU1NqRVNVK2RRZ1JzWWFHRW4KU1dQKzU4QXBmQ2NVUkxwTXhVbXhrTzFheWZlY05KYm1TUT09Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+  name: default/mcp-tls-ca-cert:backendtls:default/mcp-svc.default.svc.cluster.local
   target:
     service: default/mcp-svc.default.svc.cluster.local
-- name: default/mcp-tls-system-cert:backendtls:default/mcp-backend/mcp-static
-  spec:
+- backend:
     backendTls:
       hostname: mcp-app.foo
+  name: default/mcp-tls-system-cert:backendtls:default/mcp-backend/mcp-static
   target:
     backend: default/mcp-backend/mcp-static
-- name: default/mcp-tls-system-cert:backendtls:service/default/mcp-svc.default.svc.cluster.local:80
-  spec:
+- backend:
     backendTls:
       hostname: mcp-app.foo
+  name: default/mcp-tls-system-cert:backendtls:service/default/mcp-svc.default.svc.cluster.local:80
   target:
     backend: service/default/mcp-svc.default.svc.cluster.local:80
 Routes:

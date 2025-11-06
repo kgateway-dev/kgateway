@@ -17,8 +17,10 @@ Listeners:
   name: http
   protocol: HTTP
 Policies:
-- name: trafficpolicy/default/example-traffic-policy-for-gateway-attached-transform/example-gateway:transformation:default/example-gateway
-  spec:
+- name: traffic/default/example-traffic-policy-for-gateway-attached-transform:transformation:default/example-gateway
+  target:
+    gateway: default/example-gateway
+  traffic:
     transformation:
       request:
         set:
@@ -28,8 +30,6 @@ Policies:
         set:
         - expression: '''goodbye'''
           name: response-gateway
-  target:
-    gateway: default/example-gateway
 Routes:
 - backends:
   - backend:

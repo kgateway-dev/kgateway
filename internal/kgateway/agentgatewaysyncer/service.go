@@ -56,7 +56,7 @@ func (a *index) ServicesCollection(
 		krtopts.ToOptions("ServicesInfo")...)
 	//ServiceEntriesInfo := krt.NewManyCollection(serviceEntries, a.serviceEntryServiceBuilder(namespaces),
 	//	krtopts.ToOptions("ServiceEntriesInfo")...)
-	inferencePoolsInfo := krt.NewCollection(inferencePools, a.inferencePoolBuilder(namespaces),
+	inferencePoolsInfo := krt.NewCollection(inferencePools, a.inferencePoolBuilder(),
 		krtopts.ToOptions("InferencePools")...)
 	//WorkloadServices := krt.JoinCollection([]krt.Collection[ServiceInfo]{ServicesInfo, ServiceEntriesInfo}, krtopts.ToOptions("WorkloadService")...)
 
@@ -97,7 +97,7 @@ func (a *index) serviceServiceBuilder(
 		}
 		waypointStatus.Error = wperr
 
-		svc := a.constructService(ctx, s, waypoint)
+		svc := a.constructService(s, waypoint)
 		return precomputeServicePtr(&ServiceInfo{
 			Service:       svc,
 			PortNames:     portNames,
@@ -113,9 +113,7 @@ func InferenceHostname(name, namespace, domainSuffix string) host.Name {
 	return host.Name(name + "." + namespace + "." + "inference" + "." + domainSuffix) // Format: "%s.%s.svc.%s"
 }
 
-func (a *index) inferencePoolBuilder(
-	namespaces krt.Collection[*corev1.Namespace],
-) krt.TransformationSingle[*inf.InferencePool, ServiceInfo] {
+func (a *index) inferencePoolBuilder() krt.TransformationSingle[*inf.InferencePool, ServiceInfo] {
 	domainSuffix := kubeutils.GetClusterDomainName()
 	return func(ctx krt.HandlerContext, s *inf.InferencePool) *ServiceInfo {
 		portNames := map[int32]ServicePortName{}
@@ -176,7 +174,7 @@ func toAppProtocolFromProtocol(p protocol.Instance) api.AppProtocol {
 	return api.AppProtocol_UNKNOWN
 }
 
-func (a *index) constructService(ctx krt.HandlerContext, svc *corev1.Service, w *Waypoint) *api.Service {
+func (a *index) constructService(svc *corev1.Service, w *Waypoint) *api.Service {
 	ports := make([]*api.Port, 0, len(svc.Spec.Ports))
 	for _, p := range svc.Spec.Ports {
 		ports = append(ports, &api.Port{
@@ -187,7 +185,7 @@ func (a *index) constructService(ctx krt.HandlerContext, svc *corev1.Service, w 
 	}
 
 	addresses, err := slices.MapErr(getVIPs(svc), func(e string) (*api.NetworkAddress, error) {
-		return a.toNetworkAddress(ctx, e)
+		return a.toNetworkAddress(e)
 	})
 	if err != nil {
 		logger.Warn("fail to parse service", "svc", config.NamespacedName(svc), "error", err)
@@ -292,6 +290,7 @@ type Service struct {
 	ServiceAccounts []string `json:"serviceAccounts,omitempty"`
 
 	// CreationTime records the time this service was created, if available.
+	// +krtEqualsTodo decide if CreationTime impacts KRT outputs
 	CreationTime time.Time `json:"creationTime,omitempty"`
 
 	// Name of the service, e.g. "catalog.mystore.com"
@@ -328,6 +327,7 @@ type Service struct {
 	Resolution Resolution
 
 	// ResourceVersion represents the internal version of this object.
+	// +krtEqualsTodo propagate ResourceVersion into equality if needed
 	ResourceVersion string
 }
 
@@ -544,6 +544,7 @@ type ServiceAttributes struct {
 	// node port IPs, we need to use the kubernetes assigned node ports of the service
 	ClusterExternalPorts map[cluster.ID]map[uint32]uint32
 
+	// +krtEqualsTodo evaluate passthrough target port equality semantics
 	PassthroughTargetPorts map[uint32]uint32
 
 	K8sAttributes
@@ -665,6 +666,7 @@ func (s *ServiceAttributes) Equals(other *ServiceAttributes) bool {
 
 type AddressInfo struct {
 	*api.Address
+	// +krtEqualsTodo verify marshaled proto cache handling in equality
 	Marshaled *anypb.Any
 }
 
@@ -721,13 +723,16 @@ type ServiceInfo struct {
 	// PortNames provides a mapping of ServicePort -> port names. Note these are only used internally, not sent over XDS
 	PortNames map[int32]ServicePortName
 	// Source is the type that introduced this service.
-	Source   TypedObject
+	Source TypedObject
+	// +krtEqualsTodo include waypoint binding status in equality or mark as ignore
 	Waypoint WaypointBindingStatus
 	// MarshaledAddress contains the pre-marshaled representation.
 	// Note: this is an Address -- not a Service.
+	// +krtEqualsTodo revisit marshaled address usage in equality
 	MarshaledAddress *anypb.Any
 	// AsAddress contains a pre-created AddressInfo representation. This ensures we do not need repeated conversions on
 	// the hotpath
+	// +krtEqualsTodo compare fast-path AddressInfo if it impacts outputs
 	AsAddress AddressInfo
 }
 
@@ -824,9 +829,11 @@ type WorkloadInfo struct {
 	CreationTime time.Time
 	// MarshaledAddress contains the pre-marshaled representation.
 	// Note: this is an Address -- not a Workload.
+	// +krtEqualsTodo revisit marshaled address usage in equality
 	MarshaledAddress *anypb.Any
 	// AsAddress contains a pre-created AddressInfo representation. This ensures we do not need repeated conversions on
 	// the hotpath
+	// +krtEqualsTodo compare fast-path AddressInfo if it impacts outputs
 	AsAddress AddressInfo
 }
 
@@ -1200,7 +1207,7 @@ func MakeSource(o controllers.Object) TypedObject {
 	}
 }
 
-func (a *index) toNetworkAddress(ctx krt.HandlerContext, vip string) (*api.NetworkAddress, error) {
+func (a *index) toNetworkAddress(vip string) (*api.NetworkAddress, error) {
 	ip, err := netip.ParseAddr(vip)
 	if err != nil {
 		return nil, fmt.Errorf("parse %v: %v", vip, err)

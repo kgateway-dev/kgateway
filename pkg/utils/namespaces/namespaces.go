@@ -2,6 +2,7 @@ package namespaces
 
 import (
 	"os"
+	"slices"
 )
 
 const (
@@ -27,11 +28,8 @@ func ProcessWatchNamespaces(watchNamespaces []string, writeNamespace string) []s
 	}
 
 	var writeNamespaceProvided bool
-	for _, ns := range watchNamespaces {
-		if ns == writeNamespace {
-			writeNamespaceProvided = true
-			break
-		}
+	if slices.Contains(watchNamespaces, writeNamespace) {
+		writeNamespaceProvided = true
 	}
 	if !writeNamespaceProvided {
 		watchNamespaces = append(watchNamespaces, writeNamespace)

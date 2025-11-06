@@ -19,7 +19,7 @@ func addXdsSnapshotHandler(path string, mux *http.ServeMux, profiles map[string]
 
 func getXdsSnapshotDataFromCache(xdsCache cache.SnapshotCache) SnapshotResponseData {
 	cacheKeys := xdsCache.GetStatusKeys()
-	cacheEntries := make(map[string]interface{}, len(cacheKeys))
+	cacheEntries := make(map[string]any, len(cacheKeys))
 
 	for _, k := range cacheKeys {
 		xdsSnapshot, err := getXdsSnapshot(xdsCache, k)

@@ -42,7 +42,7 @@ func (s *testingSuite) SetupSuite() {
 }
 
 func (s *testingSuite) TestGatewayLevelCSRF() {
-	s.setupTest([]string{csrfGwTrafficPolicyManifest}, []client.Object{gwtrafficPolicy})
+	s.setupTest([]string{csrfAgwPolicyManifest}, []client.Object{agwPolicy})
 
 	// Request without origin header should be allowed (agentgateway CSRF allows this)
 	s.assertPreflightResponse("/path1", http.StatusOK, []curl.Option{})

@@ -46,29 +46,25 @@ func (l *localRateLimitIR) Validate() error {
 }
 
 // constructLocalRateLimit constructs the local rate limit policy IR from the policy specification.
-func constructLocalRateLimit(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) error {
+func constructLocalRateLimit(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) {
 	if in.Spec.RateLimit == nil || in.Spec.RateLimit.Local == nil {
-		return nil
+		return
 	}
-	localRateLimit, err := toLocalRateLimitFilterConfig(in.Spec.RateLimit.Local)
-	if err != nil {
-		return err
-	}
+	localRateLimit := toLocalRateLimitFilterConfig(in.Spec.RateLimit.Local)
 	out.localRateLimit = &localRateLimitIR{
 		config: localRateLimit,
 	}
-	return nil
 }
 
-func toLocalRateLimitFilterConfig(t *v1alpha1.LocalRateLimitPolicy) (*localratelimitv3.LocalRateLimit, error) {
+func toLocalRateLimitFilterConfig(t *v1alpha1.LocalRateLimitPolicy) *localratelimitv3.LocalRateLimit {
 	if t == nil {
-		return nil, nil
+		return nil
 	}
 
 	// If the local rate limit policy is empty, we add a LocalRateLimit configuration that disables
 	// any other applied local rate limit policy (if any) for the target.
 	if *t == (v1alpha1.LocalRateLimitPolicy{}) {
-		return createDisabledRateLimit(), nil
+		return createDisabledRateLimit()
 	}
 
 	tokenBucket := &typev3.TokenBucket{}
@@ -104,7 +100,7 @@ func toLocalRateLimitFilterConfig(t *v1alpha1.LocalRateLimitPolicy) (*localratel
 		},
 	}
 
-	return lrl, nil
+	return lrl
 }
 
 // createDisabledRateLimit returns a LocalRateLimit configuration that disables rate limiting.

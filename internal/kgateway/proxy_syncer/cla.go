@@ -12,7 +12,8 @@ import (
 )
 
 type UccWithEndpoints struct {
-	Client        ir.UniqlyConnectedClient
+	Client ir.UniqlyConnectedClient
+	// +krtEqualsTodo compare load assignments when equality matters
 	Endpoints     *envoyendpointv3.ClusterLoadAssignment
 	EndpointsHash uint64
 	endpointsName string

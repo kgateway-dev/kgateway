@@ -81,7 +81,7 @@ var (
 		return &testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body:       gstruct.Ignore(),
-			Headers: map[string]interface{}{
+			Headers: map[string]any{
 				key: value,
 			},
 		}

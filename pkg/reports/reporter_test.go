@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
@@ -13,6 +11,9 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
@@ -220,11 +221,11 @@ var _ = Describe("Reporting Infrastructure", func() {
 					Status: gwv1.HTTPRouteStatus{
 						RouteStatus: gwv1.RouteStatus{
 							Parents: []gwv1.RouteParentStatus{
-								gwv1.RouteParentStatus{
+								{
 									ControllerName: "other.io/controller",
 									ParentRef:      *otherParentRef(),
 									Conditions: []metav1.Condition{
-										metav1.Condition{
+										{
 											Type:   string(gwv1.RouteConditionAccepted),
 											Status: metav1.ConditionTrue,
 											Reason: string(gwv1.RouteConditionAccepted),
@@ -264,11 +265,11 @@ var _ = Describe("Reporting Infrastructure", func() {
 				Status: gwv1.HTTPRouteStatus{
 					RouteStatus: gwv1.RouteStatus{
 						Parents: []gwv1.RouteParentStatus{
-							gwv1.RouteParentStatus{
+							{
 								ControllerName: "other.io/controller",
 								ParentRef:      *otherParentRef(),
 								Conditions: []metav1.Condition{
-									metav1.Condition{
+									{
 										Type:   string(gwv1.RouteConditionAccepted),
 										Status: metav1.ConditionTrue,
 										Reason: string(gwv1.RouteConditionAccepted),

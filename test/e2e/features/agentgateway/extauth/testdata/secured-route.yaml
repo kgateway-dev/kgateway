@@ -14,7 +14,7 @@ spec:
 ---
 ## On a route that is not part of the gw gateway opt in
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: TrafficPolicy
+kind: AgentgatewayPolicy
 metadata:
   name: secure-route-policy
 spec:
@@ -22,6 +22,8 @@ spec:
   - group: gateway.networking.k8s.io
     kind: HTTPRoute
     name: route-example-secure
-  extAuth:
-    extensionRef: 
-      name: basic-extauth2
+  traffic:
+    extAuth:
+      backendRef:
+        name: ext-authz
+        port: 4444

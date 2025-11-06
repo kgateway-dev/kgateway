@@ -80,7 +80,7 @@ func (gp *GatewayParameters) AllKnownGatewayParameters() []client.Object {
 }
 
 func (gp *GatewayParameters) IsSelfManaged(ctx context.Context, obj client.Object) (bool, error) {
-	generator, err := gp.getHelmValuesGenerator(ctx, obj)
+	generator, err := gp.getHelmValuesGenerator(obj)
 	if err != nil {
 		return false, err
 	}
@@ -88,7 +88,7 @@ func (gp *GatewayParameters) IsSelfManaged(ctx context.Context, obj client.Objec
 }
 
 func (gp *GatewayParameters) GetValues(ctx context.Context, obj client.Object) (map[string]any, error) {
-	generator, err := gp.getHelmValuesGenerator(ctx, obj)
+	generator, err := gp.getHelmValuesGenerator(obj)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +100,7 @@ func GatewayReleaseNameAndNamespace(obj client.Object) (string, string) {
 	return obj.GetName(), obj.GetNamespace()
 }
 
-func (gp *GatewayParameters) getHelmValuesGenerator(ctx context.Context, obj client.Object) (deployer.HelmValuesGenerator, error) {
+func (gp *GatewayParameters) getHelmValuesGenerator(obj client.Object) (deployer.HelmValuesGenerator, error) {
 	gw, ok := obj.(*api.Gateway)
 	if !ok {
 		return nil, fmt.Errorf("expected a Gateway resource, got %s", obj.GetObjectKind().GroupVersionKind().String())
@@ -282,7 +282,6 @@ func (k *kGatewayParameters) getGatewayParametersForGatewayClass(ctx context.Con
 }
 
 func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameters) (*deployer.HelmConfig, error) {
-	var err error
 	irGW := deployer.GetGatewayIR(gw, k.inputs.CommonCollections)
 	ports := deployer.GetPortsValues(irGW, gwParam, irGW.ControllerName == k.inputs.AgentgatewayControllerName)
 	if len(ports) == 0 {
@@ -358,10 +357,6 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 	sdsContainerConfig := kubeProxyConfig.GetSdsContainer()
 	statsConfig := kubeProxyConfig.GetStats()
 	istioContainerConfig := istioConfig.GetIstioProxyContainer()
-	aiExtensionConfig := kubeProxyConfig.GetAiExtension()
-	if aiExtensionConfig != nil && aiExtensionConfig.GetEnabled() != nil && *aiExtensionConfig.GetEnabled() {
-		slog.Warn("gatewayparameters spec.kube.aiExtension is deprecated in v2.1 and will be removed in v2.2. Use spec.kube.agentgateway instead.")
-	}
 
 	gateway := vals.Gateway
 
@@ -422,12 +417,6 @@ func (k *kGatewayParameters) getValues(gw *api.Gateway, gwParam *v1alpha1.Gatewa
 	gateway.Istio = deployer.GetIstioValues(k.inputs.IstioAutoMtlsEnabled, istioConfig)
 	gateway.SdsContainer = deployer.GetSdsContainerValues(sdsContainerConfig)
 	gateway.IstioContainer = deployer.GetIstioContainerValues(istioContainerConfig)
-
-	// ai values
-	gateway.AIExtension, err = deployer.GetAIExtensionValues(aiExtensionConfig)
-	if err != nil {
-		return nil, err
-	}
 
 	gateway.Stats = deployer.GetStatsValues(statsConfig)
 

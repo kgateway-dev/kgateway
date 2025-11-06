@@ -15,11 +15,14 @@ import (
 )
 
 type uccWithCluster struct {
-	Client         ir.UniqlyConnectedClient
+	Client ir.UniqlyConnectedClient
+	// +krtEqualsTodo include full cluster diff in equality
 	Cluster        *envoyclusterv3.Cluster
 	ClusterVersion uint64
-	Name           string
-	Error          error
+	// +krtEqualsTodo reconcile name-only equality semantics
+	Name string
+	// +krtEqualsTodo surface translation errors in equality or drop field
+	Error error
 }
 
 func (c uccWithCluster) ResourceName() string {
