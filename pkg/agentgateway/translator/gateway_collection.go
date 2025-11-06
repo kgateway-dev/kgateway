@@ -496,6 +496,8 @@ func namespaceAcceptedByAllowListeners(localNamespace string, parent *gwv1.Gatew
 			return localNamespace == parent.Namespace
 		case gwv1.NamespacesFromNone:
 			return false
+		case gwv1.NamespacesFromSelector:
+			// handled below
 		default:
 			// Unknown?
 			return false
