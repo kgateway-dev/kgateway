@@ -25,6 +25,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/krtxds"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/nack"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/status"
 	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
@@ -60,11 +61,15 @@ type Syncer struct {
 	waitForSync []cache.InformerSynced
 	ready       atomic.Bool
 
+	// NACK handling
+	EventPublisher *nack.NackEventPublisher
+
 	// features
 	Registrations []krtxds.Registration
 }
 
 func NewAgwSyncer(
+	ctx context.Context,
 	controllerName string,
 	client kube.Client,
 	agwCollections *plugins.AgwCollections,
@@ -79,6 +84,7 @@ func NewAgwSyncer(
 		additionalGatewayClasses: additionalGatewayClasses,
 		client:                   client,
 		statusCollections:        &status.StatusCollections{},
+		EventPublisher:           nack.NewNackEventPublisher(ctx, client),
 	}
 }
 
