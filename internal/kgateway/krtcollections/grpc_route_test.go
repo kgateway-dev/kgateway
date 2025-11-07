@@ -15,7 +15,6 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
-	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
@@ -489,8 +488,6 @@ func TestTransformGRPCRoute(t *testing.T) {
 				grpcRoutes,
 				krttest.GetMockCollection[*gwv1a2.TCPRoute](mock),
 				krttest.GetMockCollection[*gwv1a2.TLSRoute](mock),
-				krttest.GetMockCollection[*gwv1.Gateway](mock),
-				krttest.GetMockCollection[*gwxv1a1.XListenerSet](mock),
 				policies,
 				backends,
 				refgrants,

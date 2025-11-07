@@ -33,6 +33,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	pluginsdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
@@ -396,7 +397,7 @@ func NewGatewayIndex(
 
 		gwIR := ir.Gateway{
 			ObjectSource: ir.ObjectSource{
-				Group:     gwv1.SchemeGroupVersion.Group,
+				Group:     gwv1.GroupVersion.Group,
 				Kind:      wellknown.GatewayKind,
 				Namespace: gw.Namespace,
 				Name:      gw.Name,
@@ -991,18 +992,16 @@ func (c RouteWrapper) Equals(in RouteWrapper) bool {
 
 type RoutesIndex struct {
 	routes                               krt.Collection[RouteWrapper]
-	HttpRouteStatus         krt.StatusCollection[*gwv1.HTTPRoute, gwv1.HTTPRouteStatus]
+	httpRouteStatusMarker                krt.StatusCollection[*gwv1.HTTPRoute, struct{}]
 	httpRoutes                           krt.Collection[ir.HttpRouteIR]
 	httpBySelector                       krt.Index[HTTPRouteSelector, ir.HttpRouteIR]
 	byParentRef                          krt.Index[targetRefIndexKey, RouteWrapper]
 	weightedRoutePrecedence              bool
 	enableExperimentalGatewayAPIFeatures bool
 
-	policies     *PolicyIndex
-	refgrants    *RefGrantIndex
-	backends     *BackendIndex
-	gateways     krt.Collection[*gwv1.Gateway]
-	listenerSets krt.Collection[*gwxv1a1.XListenerSet]
+	policies  *PolicyIndex
+	refgrants *RefGrantIndex
+	backends  *BackendIndex
 
 	hasSyncedFuncs []func() bool
 }
@@ -1021,14 +1020,28 @@ func (r *RoutesIndex) HTTPRoutes() krt.Collection[ir.HttpRouteIR] {
 	return r.httpRoutes
 }
 
+func (r *RoutesIndex) ProcessHTTPRouteStatusMarkers(kctx krt.HandlerContext, reportMap reports.ReportMap) {
+	objStatus := krt.Fetch(kctx, r.httpRouteStatusMarker)
+	for _, status := range objStatus {
+		routeKey := types.NamespacedName{
+			Namespace: status.Obj.GetNamespace(),
+			Name:      status.Obj.GetName(),
+		}
+
+		// Add empty status to clear stale status for routes with no valid ParentRefs
+		if reportMap.HTTPRoutes[routeKey] == nil {
+			rp := reports.NewReporter(&reportMap)
+			_ = rp.Route(status.Obj)
+		}
+	}
+}
+
 func NewRoutesIndex(
 	krtopts krtutil.KrtOptions,
 	httproutes krt.Collection[*gwv1.HTTPRoute],
 	grpcroutes krt.Collection[*gwv1.GRPCRoute],
 	tcproutes krt.Collection[*gwv1a2.TCPRoute],
 	tlsroutes krt.Collection[*gwv1a2.TLSRoute],
-	gateways krt.Collection[*gwv1.Gateway],
-	listenerSets krt.Collection[*gwxv1a1.XListenerSet],
 	policies *PolicyIndex,
 	backends *BackendIndex,
 	refgrants *RefGrantIndex,
@@ -1038,14 +1051,12 @@ func NewRoutesIndex(
 		policies:                             policies,
 		refgrants:                            refgrants,
 		backends:                             backends,
-		gateways:                gateways,
-		listenerSets:            listenerSets,
 		weightedRoutePrecedence:              globalSettings.WeightedRoutePrecedence,
 		enableExperimentalGatewayAPIFeatures: globalSettings.EnableExperimentalGatewayAPIFeatures,
 	}
-	h.hasSyncedFuncs = append(h.hasSyncedFuncs, httproutes.HasSynced, grpcroutes.HasSynced, tcproutes.HasSynced, tlsroutes.HasSynced, gateways.HasSynced, listenerSets.HasSynced)
+	h.hasSyncedFuncs = append(h.hasSyncedFuncs, httproutes.HasSynced, grpcroutes.HasSynced, tcproutes.HasSynced, tlsroutes.HasSynced)
 
-	h.HttpRouteStatus, h.httpRoutes = krt.NewStatusCollection(httproutes, h.transformHttpRoute, krtopts.ToOptions("http-routes-with-policy")...)
+	h.httpRouteStatusMarker, h.httpRoutes = krt.NewStatusCollection(httproutes, h.transformHttpRoute, krtopts.ToOptions("http-routes-with-policy")...)
 	httpRouteCollection := krt.NewCollection(h.httpRoutes, func(kctx krt.HandlerContext, i ir.HttpRouteIR) *RouteWrapper {
 		return &RouteWrapper{Route: &i}
 	}, krtopts.ToOptions("routes-http-routes-with-policy")...)
@@ -1145,7 +1156,7 @@ func (h *RoutesIndex) RoutesFor(kctx krt.HandlerContext, nns types.NamespacedNam
 
 func (h *RoutesIndex) FetchHttp(kctx krt.HandlerContext, ns, n string) *ir.HttpRouteIR {
 	src := ir.ObjectSource{
-		Group:     gwv1.SchemeGroupVersion.Group,
+		Group:     gwv1.GroupVersion.Group,
 		Kind:      "HTTPRoute",
 		Namespace: ns,
 		Name:      n,
@@ -1177,7 +1188,7 @@ func (h *RoutesIndex) Fetch(kctx krt.HandlerContext, gk schema.GroupKind, ns, n 
 
 func (h *RoutesIndex) transformTcpRoute(kctx krt.HandlerContext, i *gwv1a2.TCPRoute) *ir.TcpRouteIR {
 	src := ir.ObjectSource{
-		Group:     gwv1a2.SchemeGroupVersion.Group,
+		Group:     gwv1a2.GroupVersion.Group,
 		Kind:      "TCPRoute",
 		Namespace: i.Namespace,
 		Name:      i.Name,
@@ -1197,7 +1208,7 @@ func (h *RoutesIndex) transformTcpRoute(kctx krt.HandlerContext, i *gwv1a2.TCPRo
 
 func (h *RoutesIndex) transformTlsRoute(kctx krt.HandlerContext, i *gwv1a2.TLSRoute) *ir.TlsRouteIR {
 	src := ir.ObjectSource{
-		Group:     gwv1a2.SchemeGroupVersion.Group,
+		Group:     gwv1a2.GroupVersion.Group,
 		Kind:      "TLSRoute",
 		Namespace: i.Namespace,
 		Name:      i.Name,
@@ -1216,9 +1227,9 @@ func (h *RoutesIndex) transformTlsRoute(kctx krt.HandlerContext, i *gwv1a2.TLSRo
 	}
 }
 
-func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRoute) (*gwv1.HTTPRouteStatus, *ir.HttpRouteIR) {
+func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRoute) (*struct{}, *ir.HttpRouteIR) {
 	src := ir.ObjectSource{
-		Group:     gwv1.SchemeGroupVersion.Group,
+		Group:     gwv1.GroupVersion.Group,
 		Kind:      "HTTPRoute",
 		Namespace: i.Namespace,
 		Name:      i.Name,
@@ -1235,18 +1246,16 @@ func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRo
 		}
 	}
 
-	// Create empty status if there are existing status parents to clear
-	var status *gwv1.HTTPRouteStatus
-	if len(i.Status.Parents) > 0 {
-		// Create empty status to clear stale conditions
-		status = &gwv1.HTTPRouteStatus{
-			RouteStatus: gwv1.RouteStatus{
-				Parents: []gwv1.RouteParentStatus{}, // Empty - clears all stale parent status
-			},
+	// Create a marker if there are existing status parents with kgateway controllerName
+	var statusMarker *struct{}
+	for _, parentStatus := range i.Status.Parents {
+		if string(parentStatus.ControllerName) == wellknown.DefaultGatewayControllerName {
+			statusMarker = &struct{}{}
+			break
 		}
 	}
 
-	return status, &ir.HttpRouteIR{
+	return statusMarker, &ir.HttpRouteIR{
 		ObjectSource: src,
 		SourceObject: i,
 		ParentRefs:   i.Spec.ParentRefs,
@@ -1260,7 +1269,6 @@ func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRo
 		PrecedenceWeight:               precedenceWeight,
 		DelegationInheritParentMatcher: delegation.ShouldInheritParentMatcher(i.GetAnnotations()),
 	}
-	// TODO: other gateway process the route
 }
 
 func (h *RoutesIndex) transformRules(
@@ -1389,7 +1397,7 @@ func (h *RoutesIndex) resolveExtension(
 	}
 
 	fromGK := schema.GroupKind{
-		Group: gwv1.SchemeGroupVersion.Group,
+		Group: gwv1.GroupVersion.Group,
 		Kind:  "HTTPRoute",
 	}
 

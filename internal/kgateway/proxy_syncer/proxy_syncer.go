@@ -56,7 +56,6 @@ type ProxySyncer struct {
 	uniqueClients krt.Collection[ir.UniqlyConnectedClient]
 
 	statusReport            krt.Singleton[report]
-	routeStatusReport       krt.Singleton[report]
 	backendPolicyReport     krt.Singleton[report]
 	mostXdsSnapshots        krt.Collection[GatewayXdsResources]
 	perclientSnapCollection krt.Collection[XdsSnapWrapper]
@@ -266,27 +265,10 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	s.statusReport = krt.NewSingleton(func(kctx krt.HandlerContext) *report {
 		proxies := krt.Fetch(kctx, s.mostXdsSnapshots)
 
-		// First merge translation results from all proxies
 		merged := mergeProxyReports(proxies)
 
-		// Then merge HTTPRouteStatus from status collection
-		// Only add empty status for routes that don't already have status from translation
-		objStatus := krt.Fetch(kctx, s.commonCols.Routes.HttpRouteStatus)
-		for _, status := range objStatus {
-			routeKey := types.NamespacedName{
-				Namespace: status.Obj.GetNamespace(),
-				Name:      status.Obj.GetName(),
-			}
-
-			// Skip if this route already has status from translation
-			if merged.HTTPRoutes[routeKey] != nil {
-				continue
-			}
-
-			// Add empty status for orphaned routes
-			rp := reports.NewReporter(&merged)
-			_ = rp.Route(status.Obj)
-		}
+		// Process status markers
+		s.commonCols.Routes.ProcessHTTPRouteStatusMarkers(kctx, merged)
 
 		return &report{merged}
 	})
