@@ -155,7 +155,7 @@ func translateLLMProviderToProvider(krtctx krt.HandlerContext, llm *v1alpha1.LLM
 			Azureopenai: &api.AIBackend_AzureOpenAI{
 				Host:       llm.AzureOpenAI.Endpoint,
 				Model:      &wrappers.StringValue{Value: llm.AzureOpenAI.DeploymentName},
-				ApiVersion: llm.AzureOpenAI.ApiVersion,
+				ApiVersion: &wrappers.StringValue{Value: llm.AzureOpenAI.ApiVersion},
 			},
 		}
 		auth = buildTranslatedAuthPolicy(krtctx, &llm.AzureOpenAI.AuthToken, secrets, namespace)

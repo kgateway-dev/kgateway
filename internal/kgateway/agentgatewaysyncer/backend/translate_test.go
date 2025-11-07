@@ -337,7 +337,8 @@ func TestBuildAIBackendIr(t *testing.T) {
 					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAzureopenai().Model != nil &&
 					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAzureopenai().Model.Value == "my-deployment" &&
 					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAzureopenai().Host == "endpoint-123.openai.azure.com" &&
-					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAzureopenai().ApiVersion == "2024-02-15-preview"
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAzureopenai().ApiVersion != nil &&
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAzureopenai().ApiVersion.Value == "2024-02-15-preview"
 			},
 		},
 		{
