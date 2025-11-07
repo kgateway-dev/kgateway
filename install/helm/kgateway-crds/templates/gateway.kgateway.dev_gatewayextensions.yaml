@@ -636,8 +636,9 @@ spec:
                               type: object
                               x-kubernetes-map-type: atomic
                             key:
-                              description: InlineKey is the JWKS key as the raw, inline
-                                JWKS string
+                              description: |-
+                                InlineKey is the JWKS key as the raw, inline JWKS string
+                                This can be an individual key, a key set or a pem block public key
                               maxLength: 2048
                               minLength: 1
                               type: string

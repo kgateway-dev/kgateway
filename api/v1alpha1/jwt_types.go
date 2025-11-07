@@ -118,6 +118,7 @@ type JWKS struct {
 // +kubebuilder:validation:ExactlyOneOf=key;configMapRef
 type LocalJWKS struct {
 	// InlineKey is the JWKS key as the raw, inline JWKS string
+	// This can be an individual key, a key set or a pem block public key
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=2048
 	// +optional
