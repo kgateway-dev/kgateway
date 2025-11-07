@@ -11,7 +11,6 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 func TestTranslateKey(t *testing.T) {
@@ -115,21 +114,21 @@ func TestBuildJwtRequirementFromProviders(t *testing.T) {
 	}
 }
 
-func TestTranslateJwksSecret(t *testing.T) {
+func TestTranslateJwksConfigMap(t *testing.T) {
 	tests := []struct {
 		name          string
-		secret        *corev1.Secret
+		cm            *corev1.ConfigMap
 		ref           *corev1.LocalObjectReference
 		expectedError bool
 	}{
 		{
-			name: "valid secret",
-			secret: &corev1.Secret{
+			name: "valid configmap",
+			cm: &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-secret",
+					Name: "test-cm",
 				},
-				Data: map[string][]byte{
-					"test-key": []byte(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
+				Data: map[string]string{
+					"test-key": `{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`,
 				},
 			},
 			ref: &corev1.LocalObjectReference{
@@ -138,12 +137,12 @@ func TestTranslateJwksSecret(t *testing.T) {
 			expectedError: false,
 		},
 		{
-			name: "missing key in secret",
-			secret: &corev1.Secret{
+			name: "missing key in configmap",
+			cm: &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-secret",
+					Name: "test-cm",
 				},
-				Data: map[string][]byte{},
+				Data: map[string]string{},
 			},
 			ref: &corev1.LocalObjectReference{
 				Name: "test-key",
@@ -154,10 +153,7 @@ func TestTranslateJwksSecret(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			secretIr := &ir.Secret{
-				Obj: tt.secret,
-			}
-			jwks, err := translateJwksSecret(tt.ref, secretIr)
+			jwks, err := translateJwksConfigMap(tt.ref, tt.cm)
 			if tt.expectedError {
 				assert.Error(t, err)
 				return
@@ -347,7 +343,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			config, err := resolveJwtProviders(nil, "test-policy", "test-ns", tt.providers)
+			config, err := resolveJwtProviders(nil, nil, "test-policy", "test-ns", tt.providers)
 			if tt.expectedError {
 				assert.Error(t, err)
 				return

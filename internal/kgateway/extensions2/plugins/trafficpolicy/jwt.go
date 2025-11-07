@@ -18,12 +18,11 @@ import (
 	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
@@ -159,7 +158,7 @@ func ProviderName(resourceName, providerName string) string {
 	return fmt.Sprintf("%s_%s", resourceName, providerName)
 }
 
-func translateProvider(krtctx krt.HandlerContext, provider v1alpha1.JWTProvider, policyNs string, secrets *krtcollections.SecretIndex) (*jwtauthnv3.JwtProvider, error) {
+func translateProvider(krtctx krt.HandlerContext, provider v1alpha1.JWTProvider, policyNs string, configMaps krt.Collection[*corev1.ConfigMap]) (*jwtauthnv3.JwtProvider, error) {
 	var claimToHeaders []*jwtauthnv3.JwtClaimToHeader
 	for _, claim := range provider.ClaimsToHeaders {
 		claimToHeaders = append(claimToHeaders, &jwtauthnv3.JwtClaimToHeader{
@@ -180,7 +179,7 @@ func translateProvider(krtctx krt.HandlerContext, provider v1alpha1.JWTProvider,
 		// TODO(npolshak): Do we want to set NormalizePayload  to support https://datatracker.ietf.org/doc/html/rfc8693#name-scope-scopes-claim
 	}
 	translateTokenSource(provider, jwtProvider)
-	err := translateJwks(krtctx, provider.JWKS, secrets, policyNs, jwtProvider)
+	err := translateJwks(krtctx, provider.JWKS, configMaps, policyNs, jwtProvider)
 
 	if err != nil {
 		return nil, err
@@ -214,30 +213,28 @@ func translateTokenSource(provider v1alpha1.JWTProvider, out *jwtauthnv3.JwtProv
 	}
 }
 
-func translateJwks(krtctx krt.HandlerContext, jwkConfig v1alpha1.JWKS, secrets *krtcollections.SecretIndex, policyNs string, out *jwtauthnv3.JwtProvider) error {
+func translateJwks(krtctx krt.HandlerContext, jwkConfig v1alpha1.JWKS, configMaps krt.Collection[*corev1.ConfigMap], policyNs string, out *jwtauthnv3.JwtProvider) error {
 	var err error
-	var secret *ir.Secret
 	var jwkSource *jwtauthnv3.JwtProvider_LocalJwks
 	if jwkConfig.LocalJWKS.InlineKey != nil {
 		jwkSource, err = translateJwksInline(*jwkConfig.LocalJWKS.InlineKey)
-	} else if jwkConfig.LocalJWKS.SecretRef != nil {
-		secret, err = GetSecretIr(secrets, krtctx, jwkConfig.LocalJWKS.SecretRef.Name, policyNs)
-		if err != nil {
-			return errors.New("failed to find secret " + jwkConfig.LocalJWKS.SecretRef.Name)
+	} else if jwkConfig.LocalJWKS.ConfigMapRef != nil {
+		cm, err2 := GetConfigMap(krtctx, configMaps, jwkConfig.LocalJWKS.ConfigMapRef.Name, policyNs)
+		if err2 != nil {
+			return fmt.Errorf("failed to find configmap %s: %v", jwkConfig.LocalJWKS.ConfigMapRef.Name, err2)
 		}
-		jwkSource, err = translateJwksSecret(jwkConfig.LocalJWKS.SecretRef, secret)
+		jwkSource, err = translateJwksConfigMap(jwkConfig.LocalJWKS.ConfigMapRef, cm)
 	}
 	out.JwksSourceSpecifier = jwkSource
 	return err
 }
 
-func translateJwksSecret(ref *corev1.LocalObjectReference, secret *ir.Secret) (*jwtauthnv3.JwtProvider_LocalJwks, error) {
-	k8sSecret := secret.Obj.(*corev1.Secret)
-	secretKey := k8sSecret.Data[ref.Name]
-	if secretKey == nil {
-		return nil, errors.New("secret key not found")
+func translateJwksConfigMap(ref *corev1.LocalObjectReference, cm *corev1.ConfigMap) (*jwtauthnv3.JwtProvider_LocalJwks, error) {
+	data := cm.Data[ref.Name]
+	if data == "" {
+		return nil, errors.New("configmap key not found")
 	}
-	return translateJwksInline(string(secretKey))
+	return translateJwksInline(data)
 }
 
 func translateJwksInline(inlineKey string) (*jwtauthnv3.JwtProvider_LocalJwks, error) {
@@ -372,19 +369,15 @@ func buildJwtRequirementFromProviders(providersMap map[string]*jwtauthnv3.JwtPro
 	}
 }
 
-func GetSecretIr(secrets *krtcollections.SecretIndex, krtctx krt.HandlerContext, secretName, ns string) (*ir.Secret, error) {
-	secretRef := gwv1.SecretObjectReference{
-		Name: gwv1.ObjectName(secretName),
+func GetConfigMap(krtctx krt.HandlerContext, configMaps krt.Collection[*corev1.ConfigMap], cmName, ns string) (*corev1.ConfigMap, error) {
+	if configMaps == nil {
+		return nil, errors.New("configmaps collection not available")
 	}
-	from := krtcollections.From{
-		GroupKind: wellknown.GatewayExtensionGVK.GroupKind(),
-		Namespace: ns,
+	obj := krt.FetchOne(krtctx, configMaps, krt.FilterObjectName(types.NamespacedName{Namespace: ns, Name: cmName}))
+	if obj == nil {
+		return nil, &krtcollections.NotFoundError{NotFoundObj: ir.ObjectSource{Group: "", Kind: "ConfigMap", Namespace: ns, Name: cmName}}
 	}
-	secret, err := secrets.GetSecret(krtctx, from, secretRef)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find secret %s: %v", secretName, err)
-	}
-	return secret, nil
+	return *obj, nil
 }
 
 func jwtFilterName(name string) string {

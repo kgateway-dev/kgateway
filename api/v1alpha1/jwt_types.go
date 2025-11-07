@@ -105,16 +105,17 @@ type JWTClaimToHeader struct {
 
 // JWKS (JSON Web Key Set) configures the source for the JWKS
 type JWKS struct {
-	// LocalJWKS configures provide a PEM-formatted public key or file to verify the JWT token.
+	// LocalJWKS configures getting the public keys to validate the JWT from a Kubernetes configmap,
+	// or inline (raw string) JWKS.
 	// +optional
 	LocalJWKS *LocalJWKS `json:"local,omitempty"`
 
-	// TODO: Add support RemoteJWKs here in the future
+	// TODO: Add support for remote JWKS
 }
 
-// LocalJWKS configures getting the public keys to validate the JWT from a local source, such as a Kubernetes secret,
-// inline, raw string JWKS or file source.
-// +kubebuilder:validation:ExactlyOneOf=key;secretRef
+// LocalJWKS configures getting the public keys to validate the JWT from a Kubernetes ConfigMap,
+// or inline (raw string) JWKS.
+// +kubebuilder:validation:ExactlyOneOf=key;configMapRef
 type LocalJWKS struct {
 	// InlineKey is the JWKS key as the raw, inline JWKS string
 	// +kubebuilder:validation:MinLength=1
@@ -122,7 +123,7 @@ type LocalJWKS struct {
 	// +optional
 	InlineKey *string `json:"key,omitempty"`
 
-	// SecretRef configures storing the JWK in a Kubernetes secret in the same namespace as the JWTValidationPolicy.
+	// ConfigMapRef configures storing the JWK in a Kubernetes ConfigMap in the same namespace as the JWTValidationPolicy.
 	// +optional
-	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
+	ConfigMapRef *corev1.LocalObjectReference `json:"configMapRef,omitempty"`
 }

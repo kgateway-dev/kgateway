@@ -22,6 +22,7 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
@@ -183,7 +184,7 @@ func TranslateGatewayExtensionBuilder(commoncol *collections.CommonCollections) 
 			p.JwtProviders = gExt.JwtProviders
 
 			// Use the specialized function for jwt provider resolution
-			jwtConfig, err := resolveJwtProviders(krtctx, gExt.Name, gExt.Namespace, gExt.JwtProviders)
+			jwtConfig, err := resolveJwtProviders(krtctx, commoncol.ConfigMaps, gExt.Name, gExt.Namespace, gExt.JwtProviders)
 			if err != nil {
 				p.Err = fmt.Errorf("jwt: %w", err)
 				return p
@@ -196,6 +197,7 @@ func TranslateGatewayExtensionBuilder(commoncol *collections.CommonCollections) 
 
 func resolveJwtProviders(
 	krtctx krt.HandlerContext,
+	configMaps krt.Collection[*corev1.ConfigMap],
 	policyName, policyNamespace string,
 	jwtProviders map[string]v1alpha1.JWTProvider,
 ) (*envoyjwtauthnv3.JwtAuthentication, error) {
@@ -204,7 +206,7 @@ func resolveJwtProviders(
 
 	for providerName, provider := range jwtProviders {
 		providerNameForPolicy := ProviderName(policyNameNamespace, providerName)
-		jwtProvider, err := translateProvider(krtctx, provider, policyNamespace, nil)
+		jwtProvider, err := translateProvider(krtctx, provider, policyNamespace, configMaps)
 		if err != nil {
 			return nil, err
 		}

@@ -615,24 +615,14 @@ spec:
                         used to validate the JWT.
                       properties:
                         local:
-                          description: LocalJWKS configures provide a PEM-formatted
-                            public key or file to verify the JWT token.
+                          description: |-
+                            LocalJWKS configures getting the public keys to validate the JWT from a Kubernetes configmap,
+                            or inline (raw string) JWKS.
                           properties:
-                            file:
-                              description: File is the path to the file containing
-                                the JWKS
-                              maxLength: 2048
-                              minLength: 1
-                              type: string
-                            key:
-                              description: InlineKey is the JWKS key as the raw, inline
-                                JWKS string
-                              maxLength: 2048
-                              minLength: 1
-                              type: string
-                            secretRef:
-                              description: SecretRef configures storing the JWK in
-                                a Kubernetes secret in the same namespace as the JWTValidationPolicy.
+                            configMapRef:
+                              description: ConfigMapRef configures storing the JWK
+                                in a Kubernetes ConfigMap in the same namespace as
+                                the JWTValidationPolicy.
                               properties:
                                 name:
                                   default: ""
@@ -645,13 +635,18 @@ spec:
                                   type: string
                               type: object
                               x-kubernetes-map-type: atomic
+                            key:
+                              description: InlineKey is the JWKS key as the raw, inline
+                                JWKS string
+                              maxLength: 2048
+                              minLength: 1
+                              type: string
                           type: object
                           x-kubernetes-validations:
-                          - message: exactly one of file, key, or secretRef must be
-                              set
-                            rule: (has(self.file) && !has(self.key) && !has(self.secretRef))
-                              || (!has(self.file) && has(self.key) && !has(self.secretRef))
-                              || (!has(self.file) && !has(self.key) && has(self.secretRef))
+                          - message: exactly one of the fields in [key configMapRef]
+                              must be set
+                            rule: '[has(self.key),has(self.configMapRef)].filter(x,x==true).size()
+                              == 1'
                       type: object
                     keepToken:
                       default: Remove
