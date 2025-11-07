@@ -24,8 +24,9 @@ import (
 
 var (
 	// manifests
-	setupManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
-	jwtManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt.yaml")
+	setupManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
+	jwtManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt.yaml")
+	jwtRbacManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt-rbac.yaml")
 
 	// Core infrastructure objects that we need to track
 	gatewayObjectMeta = metav1.ObjectMeta{
@@ -47,6 +48,11 @@ var (
 	expectStatus200Success = &matchers.HttpResponse{
 		StatusCode: http.StatusOK,
 		Body:       nil,
+	}
+
+	expectRbacDeniedWithJwt = &matchers.HttpResponse{
+		StatusCode: http.StatusForbidden,
+		Body:       gomega.ContainSubstring("RBAC: access denied"),
 	}
 
 	// invalid jwt (not signed with correct key)
@@ -71,6 +77,9 @@ var (
 	// claim has email=dev1@kgateway.io
 	dev1JwtToken = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2Rldi5leGFtcGxlLmNvbSIsImV4cCI6NDgwNDMyNDczNiwiaWF0IjoxNjQ4NjUxMTM2LCJvcmciOiJpbnRlcm5hbCIsImVtYWlsIjoiZGV2MUBrZ2F0ZXdheS5pbyIsImdyb3VwIjoiZW5naW5lZXJpbmciLCJzY29wZSI6ImlzOmRldmVsb3BlciJ9.pqzk87Gny6mT8Gk7CVfkminm3u9CrNPhRt0oElwmfwZ7Jak1Ss4iOZ7MSZEgZFPxGiaz3DQyvos65dqbM_e4RaLYXb9fFYylaBl8kE8bhqMnXfPBNp9C4XTsSz4mR-eUvnkXXZ31dhMkoZvwIswWXR50wZ0rC6NF60Tye0sHJRdDcwL5778wDzLnualvtIiL-CbhWzXgRmjcrK3sbikLCHBjQiTEyBMPOVqS5NqJBgd7ZW1UASoxuxjCLsN8tBIaAFSACf8FZggAh9vEUJ_uc39kvOKQ0vs0pxvoYtsMPcndBYhws6IUhx_iF__qs_zz9mDNp8aMbXSlEdJG30wiRA" //gosec:disable G101
 
+	// claim has email=dev2@kgateway.io
+	dev2JwtToken = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2Rldi5leGFtcGxlLmNvbSIsImV4cCI6NDgwNDMyNDczNiwiaWF0IjoxNjQ4NjUxMTM2LCJvcmciOiJpbnRlcm5hbCIsImVtYWlsIjoiZGV2MkBrZ2F0ZXdheS5pbyIsImdyb3VwIjoiZW5naW5lZXJpbmciLCJzY29wZSI6ImlzOmRldmVsb3BlciJ9.S0a_Lu2y0gaXBCnO3ydGJCnXt5R-QMxBvJOjYOTzorcnUOcaOTMOd3fUBY8ojZR-f0xTEy6M6K1V0yKxeq6Mys9Le9SE6oabP6gttktnwL5c9e9rzMcmGz1NVyUBav2N8Yiuw7Va8gyIod02vJrllQteMfZSqoAUmDLmpFs3bvkIgMlWDtVAWPqoGJ4ZI-yf0WfTSmW-kFbaiIz4pQNm03Q9M_ZMiHyOTtCDZuc0pSQ0_uvjnqHrefBgJJkFEv58pVqZVJphEOAfl7CpWlT9dXiPVoMhy4RTezkfrjuCqvW7dDwGZGSUqLYDZsOJ8yeIdeW9LKMaGcPag1AbRCe4HQ"
+
 	setup = base.TestCase{
 		Manifests: []string{
 			setupManifest,
@@ -82,6 +91,9 @@ var (
 	testCases = map[string]*base.TestCase{
 		"TestJwtAuthentication": {
 			Manifests: []string{jwtManifest},
+		},
+		"TestJwtAuthorization": {
+			Manifests: []string{jwtRbacManifest},
 		},
 	}
 )
@@ -152,6 +164,35 @@ func (s *testingSuite) TestJwtAuthentication() {
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		getReqJwtCurlOpts,
+		expectStatus200Success,
+	)
+}
+
+// TestJwtAuthorization tests the jwt claims have permissions
+func (s *testingSuite) TestJwtAuthorization() {
+	getReqCurlOpts := []curl.Option{
+		curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
+		curl.WithHostHeader("httpbin"),
+		curl.WithPort(8080),
+		curl.WithPath("/get"),
+	}
+
+	// correct JWT, but incorrect claims should be denied
+	s.T().Log("The /get route has a JWT applies at the route level, should fail when correct JWT is provided but incorrect claims")
+	getReqDev1JwtCurlOpts := append(getReqCurlOpts, curl.WithHeader("Authorization", "Bearer "+dev1JwtToken))
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		getReqDev1JwtCurlOpts,
+		expectRbacDeniedWithJwt,
+	)
+	// correct JWT is used should result in 200 OK
+	s.T().Log("The /get route has a JWT applies at the route level, should succeed when correct JWT is provided with correct claims")
+	getReqDev2JwtCurlOpts := append(getReqCurlOpts, curl.WithHeader("Authorization", "Bearer "+dev2JwtToken))
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		getReqDev2JwtCurlOpts,
 		expectStatus200Success,
 	)
 }
