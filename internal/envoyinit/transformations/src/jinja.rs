@@ -1,5 +1,7 @@
 use crate::LocalTransform;
+use crate::NameValuePair;
 use crate::TransformationOps;
+use anyhow::{Context, Error, Result};
 use base64::{
     engine::general_purpose::{STANDARD, STANDARD_NO_PAD},
     Engine,
@@ -129,46 +131,63 @@ pub fn new_jinja_env() -> Environment<'static> {
     env
 }
 
-fn render(env: &Environment<'static>, ctx: minijinja::Value, template: &str) -> String {
-    let tmpl = match env.template_from_str(template) {
-        Ok(tmpl) => tmpl,
-        Err(e) => {
-            eprintln!("Error creating template: {e}");
-            return "".to_string();
-        }
-    };
-    match tmpl.render(ctx) {
-        Ok(rendered) => rendered,
-        Err(e) => {
-            eprintln!("Error rendering template: {e}");
-            "".to_string()
-        }
-    }
+fn render(env: &Environment<'static>, ctx: minijinja::Value, template: &str) -> Result<String> {
+    let tmpl = env
+        .template_from_str(template)
+        .context("error creating jinja template {template}")?;
+    tmpl.render(ctx)
+        .context("error rendering jinja template {template}")
 }
 
+fn combine_errors(msg: &str, errors: Vec<Error>) -> Result<()> {
+    if !errors.is_empty() {
+        let combined = errors
+            .into_iter()
+            .map(|e| e.to_string())
+            .collect::<Vec<_>>()
+            .join("; ");
+        return Err(anyhow::anyhow!("{}: {}", msg, combined));
+    }
+
+    Ok(())
+}
+
+/// Transform Request Headers
+///
+/// On any rendering errors, we will remove the header and continue
+/// All the errors are collected and bubble up the chain so they can be logged
 pub fn transform_request_headers<T: TransformationOps>(
     transform: &LocalTransform,
     env: &Environment<'static>,
     request_headers_map: &HashMap<String, String>,
     mut ops: T,
-) {
-    for (key, value) in &transform.set {
+) -> Result<()> {
+    let mut errors = Vec::new();
+
+    for NameValuePair { name: key, value } in &transform.set {
         if value.is_empty() {
             // This is following the legacy transformation filter behavior
             ops.remove_request_header(key);
             continue;
         }
-        let rendered_str = render(
+        let rendered = match render(
             env,
             // for request rendering, both the header() and request_header() use the request_headers
             // so, setting both to the request_headers_map in the context
             context!(headers => request_headers_map, request_headers => request_headers_map),
             value,
-        );
-        if rendered_str.is_empty() {
-            ops.remove_request_header(key);
+        ) {
+            Ok(str) => Some(str),
+            Err(e) => {
+                errors.push(e);
+                None
+            }
+        };
+
+        if rendered.as_deref().is_some_and(|s| !s.is_empty()) {
+            ops.set_request_header(key, rendered.as_deref().unwrap().as_bytes());
         } else {
-            ops.set_request_header(key, rendered_str.as_bytes());
+            ops.remove_request_header(key);
         }
     }
 
@@ -177,32 +196,47 @@ pub fn transform_request_headers<T: TransformationOps>(
     for key in &transform.remove {
         ops.remove_request_header(key);
     }
+
+    combine_errors("transform_request_headers()", errors)
 }
 
+/// Transform Resposne Headers
+///
+/// On any rendering errors, we will remove the header and continue
+/// All the errors are collected and bubble up the chain so they can be logged
 pub fn transform_response_headers<T: TransformationOps>(
     transform: &LocalTransform,
     env: &Environment<'static>,
     request_headers_map: &HashMap<String, String>,
     response_headers_map: &HashMap<String, String>,
     mut ops: T,
-) {
-    for (key, value) in &transform.set {
+) -> Result<()> {
+    let mut errors = Vec::new();
+
+    for NameValuePair { name: key, value } in &transform.set {
         if value.is_empty() {
             // This is following the legacy transformation filter behavior
             ops.remove_response_header(key);
             continue;
         }
-        let rendered_str = render(
+        let rendered = match render(
             env,
             // for response rendering, header() uses response_headers and request_header()
             // uses the request_headers. So, setting them in the context accordingly
             context!(headers => response_headers_map, request_headers => request_headers_map),
             value,
-        );
-        if rendered_str.is_empty() {
-            ops.remove_response_header(key);
+        ) {
+            Ok(str) => Some(str),
+            Err(e) => {
+                errors.push(e);
+                None
+            }
+        };
+
+        if rendered.as_deref().is_some_and(|s| !s.is_empty()) {
+            ops.set_response_header(key, rendered.as_deref().unwrap().as_bytes());
         } else {
-            ops.set_response_header(key, rendered_str.as_bytes());
+            ops.remove_response_header(key);
         }
     }
 
@@ -211,4 +245,6 @@ pub fn transform_response_headers<T: TransformationOps>(
     for key in &transform.remove {
         ops.remove_response_header(key);
     }
+
+    combine_errors("transform_response_headers()", errors)
 }

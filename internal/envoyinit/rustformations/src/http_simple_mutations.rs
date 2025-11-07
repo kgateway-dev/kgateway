@@ -2,7 +2,6 @@ use envoy_proxy_dynamic_modules_rust_sdk::*;
 use lazy_static::lazy_static;
 use serde::Deserialize;
 use std::collections::HashMap;
-use std::ops::Deref;
 use transformations::{LocalTransformationConfig, TransformationOps};
 
 #[cfg(test)]
@@ -58,14 +57,6 @@ impl TransformationOps for EnvoyTransformationOps<'_> {
            new_pattern
        }
     */
-}
-
-impl Deref for FilterConfig {
-    type Target = LocalTransformationConfig;
-
-    fn deref(&self) -> &Self::Target {
-        &self.transformations
-    }
 }
 
 impl FilterConfig {
@@ -175,37 +166,41 @@ impl Filter {
 
     fn transform_request_headers<EHF: EnvoyHttpFilter>(&self, envoy_filter: &mut EHF) {
         let request_transform = match self.get_per_route_config() {
-            Some(config) => &config.request,
-            None => &self.filter_config.request,
+            Some(config) => &config.transformations.request,
+            None => &self.filter_config.transformations.request,
         };
 
         if let Some(transform) = request_transform {
-            transformations::jinja::transform_request_headers(
+            if let Err(e) = transformations::jinja::transform_request_headers(
                 transform,
                 &self.env,
                 self.get_request_headers_map(),
                 EnvoyTransformationOps { envoy_filter },
-            );
+            ) {
+                envoy_log_warn!("{e}");
+            }
         }
     }
 
     fn transform_response_headers<EHF: EnvoyHttpFilter>(&self, envoy_filter: &mut EHF) {
         let response_transform = match self.get_per_route_config() {
-            Some(config) => &config.response,
-            None => &self.filter_config.response,
+            Some(config) => &config.transformations.response,
+            None => &self.filter_config.transformations.response,
         };
 
         if let Some(transform) = response_transform {
             // TODO(nfuden): find someone who knows rust to see if we really need this Hash map for serialization
             let response_headers_map = self.create_headers_map(envoy_filter.get_response_headers());
 
-            transformations::jinja::transform_response_headers(
+            if let Err(e) = transformations::jinja::transform_response_headers(
                 transform,
                 &self.env,
                 self.get_request_headers_map(),
                 &response_headers_map,
                 EnvoyTransformationOps { envoy_filter },
-            );
+            ) {
+                envoy_log_warn!("{e}");
+            }
         }
     }
 }
