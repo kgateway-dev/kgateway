@@ -156,6 +156,7 @@ type ProxyTranslationPass interface {
 	) error
 
 	// ApplyVhostPlugin applies HTTP-listener-attached policies at vhost scope.
+	// This includes policies attached to HTTP listeners via sectionName, and HTTP listeners on ListenerSets.
 	ApplyVhostPlugin(
 		pCtx *VirtualHostContext,
 		out *envoyroutev3.VirtualHost,
@@ -163,7 +164,7 @@ type ProxyTranslationPass interface {
 
 	// ApplyRouteConfigPlugin is called 1 time for all the routes in a filter chain. Use this to set default PerFilterConfig
 	// Applies policy for a Gateway that has a policy attached via a targetRef,
-	// and for policies attached to HTTPS listeners via sectionName.
+	// and for policies attached to HTTPS listeners via sectionName or on ListenerSets.
 	ApplyRouteConfigPlugin(
 		pCtx *RouteConfigContext,
 		out *envoyroutev3.RouteConfiguration,
