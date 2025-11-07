@@ -6,12 +6,14 @@ import (
 	"log/slog"
 	"maps"
 	"net/http"
+	"strings"
 	"sync/atomic"
 
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"istio.io/istio/pkg/kube/krt"
 	istiolog "istio.io/istio/pkg/log"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
@@ -210,6 +212,26 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 
 		agwSyncer.Init(cfg.KrtOptions.WithPrefix("agentgateway"))
 
+		// Provide extra Kind->GVK mappings to status collections based on external handlers keys
+		if len(cfg.ExtraAgwPolicyStatusHandlers) > 0 {
+			m := map[string]schema.GroupVersionKind{}
+			for k := range cfg.ExtraAgwPolicyStatusHandlers {
+				// Expected format: "group/version, Kind=Kind"
+				parts := strings.SplitN(k, ", Kind=", 2)
+				if len(parts) != 2 || parts[1] == "" {
+					continue
+				}
+				gvStr := parts[0]
+				kind := parts[1]
+				gv, err := schema.ParseGroupVersion(strings.TrimSpace(gvStr))
+				if err != nil {
+					continue
+				}
+				m[kind] = gv.WithKind(kind)
+			}
+			agwSyncer.StatusCollections().SetExtraGVKMap(m)
+		}
+
 		if err := cfg.Manager.Add(agwSyncer); err != nil {
 			setupLog.Error(err, "unable to add agentgateway Syncer runnable")
 			return nil, err
@@ -221,6 +243,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			cfg.Client,
 			agwSyncer.StatusCollections(),
 			agwSyncer.CacheSyncs(),
+			cfg.ExtraAgwPolicyStatusHandlers,
 		)
 		if err := cfg.Manager.Add(agwStatusSyncer); err != nil {
 			setupLog.Error(err, "unable to add agentgateway StatusSyncer runnable")

@@ -1,6 +1,8 @@
 package status
 
 import (
+	"fmt"
+	"strings"
 	"sync"
 
 	"istio.io/istio/pkg/config"
@@ -32,6 +34,8 @@ type StatusCollections struct {
 	constructors []func(statusWriter WorkerQueue) krt.HandlerRegistration
 	active       []krt.HandlerRegistration
 	queue        WorkerQueue
+	// extraGVKs maps external Kind -> full GVK, used to enrich unknown resources
+	extraGVKs map[string]schema.GroupVersionKind
 }
 
 func (s *StatusCollections) Register(sr StatusRegistration) {
@@ -63,6 +67,13 @@ func (s *StatusCollections) SetQueue(queue WorkerQueue) []krt.Syncer {
 	})
 }
 
+// SetExtraGVKMap configures external Kind->GVK mappings for status enqueue.
+func (s *StatusCollections) SetExtraGVKMap(m map[string]schema.GroupVersionKind) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.extraGVKs = m
+}
+
 // RegisterStatus takes a status collection and registers it to be managed by the status queue.
 // krt.ObjectWithStatus, in theory, can contain anything in the "object" field. This function requires it to contain
 // the current live *status*, and a passed in getStatus to extract it from the object.
@@ -86,7 +97,7 @@ func RegisterStatus[I controllers.Object, IS any](s *StatusCollections, statusCo
 				var empty IS
 				status = &empty
 			}
-			enqueueStatus(statusWriter, l.Obj, status)
+			enqueueStatus(statusWriter, l.Obj, status, s.extraGVKs)
 			log.Debugf("Enqueued status update for %v %v: %v", l.ResourceName(), l.Obj.GetResourceVersion(), status)
 		})
 		return h
@@ -94,7 +105,7 @@ func RegisterStatus[I controllers.Object, IS any](s *StatusCollections, statusCo
 	s.Register(reg)
 }
 
-func enqueueStatus[T any](sw WorkerQueue, obj controllers.Object, ws T) {
+func enqueueStatus[T any](sw WorkerQueue, obj controllers.Object, ws T, extraGVKs map[string]schema.GroupVersionKind) {
 	res := Resource{
 		GroupVersionKind: schema.GroupVersionKind{},
 		NamespacedName:   config.NamespacedName(obj),
@@ -111,14 +122,26 @@ func enqueueStatus[T any](sw WorkerQueue, obj controllers.Object, ws T) {
 		res.GroupVersionKind = wellknown.TLSRouteGVK
 	case *gwv1.GRPCRoute:
 		res.GroupVersionKind = wellknown.GRPCRouteGVK
-	case *v1alpha1.TrafficPolicy:
-		res.GroupVersionKind = wellknown.TrafficPolicyGVK
 	case *v1alpha1.AgentgatewayPolicy:
 		res.GroupVersionKind = wellknown.AgentgatewayPolicyGVK
 	case *gwxv1a1.XListenerSet:
 		res.GroupVersionKind = wellknown.XListenerSetGVK
 	default:
-		log.Fatalf("enqueueStatus unknown type %T", t)
+		// Map external types by their concrete Kind using extraGVKs
+		if extraGVKs != nil {
+			typeName := fmt.Sprintf("%T", t)
+			if strings.HasPrefix(typeName, "*") {
+				typeName = typeName[1:]
+			}
+			if idx := strings.LastIndex(typeName, "."); idx >= 0 {
+				typeName = typeName[idx+1:]
+			}
+			if mapped, ok := extraGVKs[typeName]; ok {
+				res.GroupVersionKind = mapped
+				break
+			}
+		}
+		log.Warnf("enqueueStatus unknown external type %T", t)
 	}
 	sw.Push(res, ws)
 }
