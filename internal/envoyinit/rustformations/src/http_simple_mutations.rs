@@ -133,9 +133,11 @@ impl Filter {
             let Some(key) = std::str::from_utf8(key.as_slice()).ok() else {
                 continue;
             };
-            let value = std::str::from_utf8(val.as_slice()).unwrap().to_string();
+            let Some(value) = std::str::from_utf8(val.as_slice()).ok() else {
+                continue;
+            };
 
-            headers_map.insert(key.to_string(), value);
+            headers_map.insert(key.to_string(), value.to_string());
         }
 
         headers_map
@@ -146,17 +148,7 @@ impl Filter {
     // on_response_headers().
     fn populate_request_headers_map(&mut self, headers: Vec<(EnvoyBuffer, EnvoyBuffer)>) {
         if self.request_headers_map.is_none() {
-            let mut request_headers_map = HashMap::new();
-            for (key, val) in headers {
-                let Some(key) = std::str::from_utf8(key.as_slice()).ok() else {
-                    continue;
-                };
-                let value = std::str::from_utf8(val.as_slice()).unwrap().to_string();
-
-                request_headers_map.insert(key.to_string(), value);
-            }
-
-            self.request_headers_map = Some(request_headers_map);
+            self.request_headers_map = Some(self.create_headers_map(headers));
         }
     }
 
