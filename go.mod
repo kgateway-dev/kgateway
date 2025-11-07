@@ -4,7 +4,7 @@ go 1.25.3
 
 require (
 	// Also update AgentgatewayDefaultTag in pkg/deployer/wellknown.go and test/deployer/testdata/*
-	github.com/agentgateway/agentgateway v0.10.6-0.20251103234311-2f71d0e845d0
+	github.com/agentgateway/agentgateway v0.10.6-0.20251107185501-e3e1d15dd205
 	github.com/avast/retry-go/v4 v4.3.3
 	github.com/cncf/xds/go v0.0.0-20250501225837-2ac532fd4443
 	github.com/envoyproxy/go-control-plane v0.13.5-0.20251015221300-4138018a492b
@@ -656,5 +656,3 @@ tool (
 	sigs.k8s.io/controller-tools/cmd/controller-gen
 	sigs.k8s.io/kind
 )
-
-replace github.com/agentgateway/agentgateway => github.com/jenshu/agentgateway v0.9.1-0.20251107163459-576cd96f11f2
