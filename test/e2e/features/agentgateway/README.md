@@ -34,8 +34,9 @@ AGW_TAG=$(docker images ghcr.io/agentgateway/agentgateway --format "{{.Tag}}" | 
 kind load --name kind docker-image ghcr.io/agentgateway/agentgateway:$AGW_TAG
 ```
 
-You can configure the agentgateway Gateway class to use a specific image by setting the image field on the
-GatewayClass:
+You can either configure the agentgateway GatewayClass or a specific Gateway to use the local image.
+
+GatewayClass example:
 ```shell
 kubectl apply -f - <<EOF
 kind: GatewayParameters
@@ -77,5 +78,42 @@ spec:
         from: All
 EOF
 ```
+
+Gateway example:
+```shell
+kubectl apply -f - <<EOF
+kind: GatewayParameters
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: gwp
+spec:
+  kube:
+    agentgateway:
+      enabled: true
+      logLevel: debug
+      image:
+        tag: $AGW_TAG
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: gw
+spec:
+  gatewayClassName: agentgateway
+  infrastructure:
+    parametersRef:
+      group: gateway.kgateway.dev
+      kind: GatewayParameters
+      name: gwp
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+    allowedRoutes:
+      namespaces:
+        from: All
+EOF
+```
+
 
 This is useful for testing, but the final e2e agentgateway tests should use a released agentgateway image and not a local build.
