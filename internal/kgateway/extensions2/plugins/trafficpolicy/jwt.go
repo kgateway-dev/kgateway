@@ -18,7 +18,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/util/sets"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -36,10 +35,6 @@ const (
 
 type jwtIr struct {
 	perProviderConfig []*perProviderJwtConfig
-	// providerNames is used to track duplicates during policy merging,
-	// and has no relevance to the policy config, so it can be excluded from Equals
-	// +noKrtEquals
-	providerNames sets.Set[string]
 }
 
 type perProviderJwtConfig struct {
@@ -124,7 +119,6 @@ func constructJwt(
 				perRouteConfig: perRouteConfig,
 			},
 		},
-		providerNames: sets.New(providerName(provider)),
 	}
 	return nil
 }
