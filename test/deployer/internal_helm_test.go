@@ -64,6 +64,14 @@ func TestRenderHelmChart(t *testing.T) {
 			InputFile: "agentgateway-infrastructure",
 		},
 		{
+			Name:      "agentgateway-controller-but-custom-gatewayclass",
+			InputFile: "agentgateway-controller-but-custom-gatewayclass",
+		},
+		{
+			Name:      "envoy-controller-ignores-agentgateway-class-name",
+			InputFile: "envoy-controller-ignores-agentgateway-class-name",
+		},
+		{
 			Name:      "envoy-infrastructure",
 			InputFile: "envoy-infrastructure",
 		},

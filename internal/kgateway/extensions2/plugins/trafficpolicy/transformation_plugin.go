@@ -205,46 +205,6 @@ func constructRustformation(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr
 	return nil
 }
 
-func toRustFormationConfig(t *v1alpha1.Transform) (map[string]any, bool) {
-	// if there is no transformations present then return a
-	hasTransform := false
-	rustformationConfigMap := map[string]any{}
-	if t == nil {
-		return rustformationConfigMap, hasTransform
-	}
-
-	// we dont currently have strongly typed objects in rustformation
-	setter := make([][2]string, 0, len(t.Set)/2)
-	for _, h := range t.Set {
-		setter = append(setter, [2]string{string(h.Name), string(h.Value)})
-	}
-
-	rustformationConfigMap["headers_setter"] = setter
-	if len(setter) > 0 {
-		hasTransform = true
-	}
-
-	// BODY
-	// if t.Body == nil {
-	// 	tt.TransformationTemplate.BodyTransformation = &transformationpb.TransformationTemplate_Passthrough{
-	// 		Passthrough: &transformationpb.Passthrough{},
-	// 	}
-	// } else {
-	// 	if t.Body.ParseAs == v1alpha1.BodyParseBehaviorAsString {
-	// 		tt.TransformationTemplate.ParseBodyBehavior = transformationpb.TransformationTemplate_DontParse
-	// 	}
-	// 	if value := t.Body.Value; value != nil {
-	// 		hasTransform = true
-	// 		tt.TransformationTemplate.BodyTransformation = &transformationpb.TransformationTemplate_Body{
-	// 			Body: &transformationpb.InjaTemplate{
-	// 				Text: string(*value),
-	// 			},
-	// 		}
-	// 	}
-	// }
-	return rustformationConfigMap, hasTransform
-}
-
 // toRustFormationPerRouteConfig converts a TransformationPolicy to a RustFormation per route config.
 // The shape of this function currently resembles that of the traditional API
 // Feel free to change the shape and flow of this function as needed provided there are sufficient unit tests on the configuration output.
@@ -253,26 +213,7 @@ func toRustFormationPerRouteConfig(t *v1alpha1.TransformationPolicy) (*dynamicmo
 	if t == nil || *t == (v1alpha1.TransformationPolicy{}) {
 		return nil, nil
 	}
-	hasTransform := false
-	rustformCfgMap := map[string]any{}
-
-	requestMap, hasRequestTransform := toRustFormationConfig(t.Request)
-	hasTransform = hasTransform || hasRequestTransform
-	for k, v := range requestMap {
-		rustformCfgMap["request_"+k] = v
-	}
-
-	requestMap, hasResponseTransform := toRustFormationConfig(t.Response)
-	hasTransform = hasTransform || hasResponseTransform
-	for k, v := range requestMap {
-		rustformCfgMap["response_"+k] = v
-	}
-
-	if !hasTransform {
-		return nil, nil
-	}
-
-	rustformationJson, err := json.Marshal(rustformCfgMap)
+	rustformationJson, err := json.Marshal(t)
 	if err != nil {
 		return nil, err
 	}

@@ -81,6 +81,7 @@ func (cmd *LocalCmd) WithStderr(w io.Writer) Cmd {
 // Run runs the command
 // If the returned error is non-nil, it should be of type *RunError
 func (cmd *LocalCmd) Run() *RunError {
+	// Combined output is used to capture the stdout and stderr of the command for logging
 	var combinedOutput threadsafe.Buffer
 
 	if printCommands {

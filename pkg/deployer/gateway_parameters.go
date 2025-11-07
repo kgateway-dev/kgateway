@@ -72,18 +72,32 @@ func allowPrivilegedPorts(cfg *v1alpha1.KubernetesProxyConfig) {
 	})
 }
 
-// GetInMemoryGatewayParameters returns an in-memory GatewayParameters based on the name of the gateway class.
-func GetInMemoryGatewayParameters(name string, imageInfo *ImageInfo, gatewayClassName, waypointClassName, agentgatewayClassName string, omitDefaultSecurityContext bool) *v1alpha1.GatewayParameters {
-	switch name {
-	case waypointClassName:
-		return defaultWaypointGatewayParameters(imageInfo, omitDefaultSecurityContext)
-	case gatewayClassName:
-		return defaultGatewayParameters(imageInfo, omitDefaultSecurityContext)
-	case agentgatewayClassName:
-		return defaultAgentgatewayParameters(imageInfo, omitDefaultSecurityContext)
-	default:
-		return defaultGatewayParameters(imageInfo, omitDefaultSecurityContext)
+// InMemoryGatewayParametersConfig holds the configuration for creating in-memory GatewayParameters.
+type InMemoryGatewayParametersConfig struct {
+	ControllerName             string
+	ClassName                  string
+	ImageInfo                  *ImageInfo
+	WaypointClassName          string
+	AgwControllerName          string
+	OmitDefaultSecurityContext bool
+}
+
+// GetInMemoryGatewayParameters returns an in-memory GatewayParameters.
+// Priority order:
+// 1. Agentgateway controller name (highest priority)
+// 2. Waypoint class name (must check before envoy controller since waypoint uses the same controller)
+// 3. Envoy controller name, or no controller name -- either way, use default gateway parameters
+//
+// This allows users to define their own GatewayClass that acts very much like a
+// built-in class but is not an exact name match.
+func GetInMemoryGatewayParameters(cfg InMemoryGatewayParametersConfig) *v1alpha1.GatewayParameters {
+	if cfg.ControllerName == cfg.AgwControllerName {
+		return defaultAgentgatewayParameters(cfg.ImageInfo, cfg.OmitDefaultSecurityContext)
 	}
+	if cfg.ClassName == cfg.WaypointClassName {
+		return defaultWaypointGatewayParameters(cfg.ImageInfo, cfg.OmitDefaultSecurityContext)
+	}
+	return defaultGatewayParameters(cfg.ImageInfo, cfg.OmitDefaultSecurityContext)
 }
 
 // defaultAgentgatewayParameters returns an in-memory GatewayParameters with default values

@@ -154,9 +154,10 @@ func DefaultDeployerInputs(dt DeployerTester, commonCols *collections.CommonColl
 			Registry: "ghcr.io",
 			Tag:      "v2.1.0-dev",
 		},
-		GatewayClassName:         dt.ClassName,
-		WaypointGatewayClassName: dt.WaypointClassName,
-		AgentgatewayClassName:    dt.AgwClassName,
+		GatewayClassName:           dt.ClassName,
+		WaypointGatewayClassName:   dt.WaypointClassName,
+		AgentgatewayClassName:      dt.AgwClassName,
+		AgentgatewayControllerName: dt.AgwControllerName,
 	}
 }
 

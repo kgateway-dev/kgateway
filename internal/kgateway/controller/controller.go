@@ -46,7 +46,7 @@ type GatewayConfig struct {
 	Mgr manager.Manager
 	// Dev enables development mode for the controller.
 	Dev bool
-	// ControllerName is the name of the controller. Any GatewayClass objects
+	// ControllerName is the name of the Envoy controller. Any GatewayClass objects
 	// managed by this controller must have this name as their ControllerName.
 	ControllerName string
 	// AgwControllerName is the name of the agentgateway controller. Any GatewayClass objects

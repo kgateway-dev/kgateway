@@ -70,7 +70,7 @@ func LoadFromFiles(
 			_, isGwc := clientObj.(*gwv1.GatewayClass)
 			if !isGwc && clientObj.GetNamespace() == "" {
 				// fill in default namespace
-				clientObj.SetNamespace("default")
+				clientObj.SetNamespace(GetDefaultNamespace())
 			}
 			resources = append(resources, clientObj)
 		}

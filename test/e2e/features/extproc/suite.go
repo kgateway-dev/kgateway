@@ -9,124 +9,57 @@ import (
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/transforms"
-	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
-
-// TODO(tim): manifest mapping
-// TODO(tim): validate the GW pod is ready before running tests
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
 
 // testingSuite is a suite of tests for external processing functionality
 type testingSuite struct {
-	suite.Suite
-
-	ctx context.Context
-
-	// testInstallation contains all the metadata/utilities necessary to execute a series of tests
-	// against an installation of kgateway
-	testInstallation *e2e.TestInstallation
-
-	// Track active manifests and objects for cleanup
-	testManifests map[string][]string
-	activeObjects []client.Object
+	*base.BaseTestingSuite
 }
+
+var (
+	setup = base.TestCase{
+		Manifests: []string{setupManifest, testdefaults.CurlPodManifest},
+	}
+
+	testCases = map[string]*base.TestCase{
+		"TestExtProcWithGatewayTargetRef": {
+			Manifests:       []string{gatewayTargetRefManifest},
+			MinGwApiVersion: base.GwApiRequireRouteNames,
+		},
+		"TestExtProcWithHTTPRouteTargetRef": {
+			Manifests: []string{httpRouteTargetRefManifest},
+		},
+		"TestExtProcWithSingleRoute": {
+			Manifests: []string{singleRouteManifest},
+		},
+		"TestExtProcWithBackendFilter": {
+			Manifests: []string{backendFilterManifest},
+		},
+	}
+)
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &testingSuite{
-		ctx:              ctx,
-		testInstallation: testInst,
-		testManifests: map[string][]string{
-			"TestExtProcWithGatewayTargetRef":   {gatewayTargetRefManifest},
-			"TestExtProcWithHTTPRouteTargetRef": {httpRouteTargetRefManifest},
-			"TestExtProcWithSingleRoute":        {singleRouteManifest},
-			"TestExtProcWithBackendFilter":      {backendFilterManifest},
-		},
-	}
-}
-
-// SetupSuite runs before all tests in the suite
-func (s *testingSuite) SetupSuite() {
-	// Apply core infrastructure
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
-	s.Require().NoError(err)
-
-	// Apply curl pod for testing
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, testdefaults.CurlPodManifest)
-	s.Require().NoError(err)
-
-	// Track core objects
-	s.activeObjects = []client.Object{
-		testdefaults.CurlPod,              // curl
-		extProcService, extProcDeployment, // ext-proc service
-		backendService, backendDeployment, // backend service
-		gatewayService, gatewayDeployment, // gateway service
-	}
-
-	// Wait for core infrastructure to be ready
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, s.activeObjects...)
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
-		LabelSelector: testdefaults.CurlPodLabelSelector,
-	})
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, extProcDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app=ext-proc-grpc",
-	})
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, backendDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app=backend-0",
-	})
-}
-
-// TearDownSuite cleans up any remaining resources
-func (s *testingSuite) TearDownSuite() {
-	if testutils.ShouldSkipCleanup(s.T()) {
-		return
-	}
-	// Clean up core infrastructure
-	err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, setupManifest)
-	s.Require().NoError(err)
-
-	// Clean up curl pod
-	err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, testdefaults.CurlPodManifest)
-	s.Require().NoError(err)
-
-	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, s.activeObjects...)
-}
-
-func (s *testingSuite) BeforeTest(suiteName, testName string) {
-	for _, manifest := range s.testManifests[testName] {
-		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
-		s.Require().NoError(err)
-	}
-}
-
-func (s *testingSuite) AfterTest(suiteName, testName string) {
-	if testutils.ShouldSkipCleanup(s.T()) {
-		return
-	}
-	for _, manifest := range s.testManifests[testName] {
-		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
-		s.NoError(err)
+		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setup, testCases),
 	}
 }
 
 // TestExtProcWithGatewayTargetRef tests ExtProc with targetRef to Gateway
 func (s *testingSuite) TestExtProcWithGatewayTargetRef() {
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, gatewayTargetRefManifest)
-	s.Require().NoError(err)
-
 	// Test that ExtProc is applied to all routes through the Gateway
 	// First route - should have ExtProc applied
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
@@ -147,8 +80,8 @@ func (s *testingSuite) TestExtProcWithGatewayTargetRef() {
 		})
 
 	// Second route rule0 - should also have ExtProc applied
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
@@ -170,8 +103,8 @@ func (s *testingSuite) TestExtProcWithGatewayTargetRef() {
 		})
 
 	// Second route rule1 - should not have ExtProc applied since it has a disable policy applied
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
@@ -195,12 +128,9 @@ func (s *testingSuite) TestExtProcWithGatewayTargetRef() {
 
 // TestExtProcWithHTTPRouteTargetRef tests ExtProc with targetRef to HTTPRoute
 func (s *testingSuite) TestExtProcWithHTTPRouteTargetRef() {
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, httpRouteTargetRefManifest)
-	s.Require().NoError(err)
-
 	// Test route with ExtProc - should have header modified
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
@@ -222,8 +152,8 @@ func (s *testingSuite) TestExtProcWithHTTPRouteTargetRef() {
 		})
 
 	// Test route without ExtProc - should not have header modified
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
@@ -246,14 +176,11 @@ func (s *testingSuite) TestExtProcWithHTTPRouteTargetRef() {
 
 // TestExtProcWithSingleRoute tests ExtProc applied to a specific rule within a route
 func (s *testingSuite) TestExtProcWithSingleRoute() {
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, singleRouteManifest)
-	s.Require().NoError(err)
-
 	// TODO: Should header-based routing work?
 
 	// Test route with ExtProc and matching header - should have header modified
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
@@ -275,8 +202,8 @@ func (s *testingSuite) TestExtProcWithSingleRoute() {
 		})
 
 	// Test second rule - should not have header modified
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
@@ -299,13 +226,9 @@ func (s *testingSuite) TestExtProcWithSingleRoute() {
 
 // TestExtProcWithBackendFilter tests backend-level ExtProc filtering
 func (s *testingSuite) TestExtProcWithBackendFilter() {
-	// Apply the backend filter test manifests
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, backendFilterManifest)
-	s.Require().NoError(err)
-
 	// Test path with ExtProc enabled
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
@@ -326,8 +249,8 @@ func (s *testingSuite) TestExtProcWithBackendFilter() {
 		})
 
 	// Test path without ExtProc
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),

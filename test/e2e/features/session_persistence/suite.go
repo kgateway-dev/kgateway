@@ -43,7 +43,9 @@ type testingSuite struct {
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &testingSuite{
-		base.NewBaseTestingSuite(ctx, testInst, setup, testCases),
+		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setup, testCases,
+			base.WithMinGwApiVersion(base.GwApiRequireSessionPersistence),
+		),
 	}
 }
 

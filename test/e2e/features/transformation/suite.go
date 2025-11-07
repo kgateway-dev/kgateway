@@ -101,6 +101,15 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 			{
 				name:      "basic-gateway-attached",
 				routeName: "gateway-attached-transform",
+				opts: []curl.Option{
+					// in testdata/gateway-attached-transform.yaml,
+					//    for x-empty, the value is set to ""
+					//    for x-not-set, the value is not set
+					// The behavior for both is removing the existing header
+					// Testing this to make sure rustformation behaves the same
+					curl.WithHeader("x-empty", "not empty"),
+					curl.WithHeader("x-not-set", "set"),
+				},
 				resp: &testmatchers.HttpResponse{
 					StatusCode: http.StatusOK,
 					Headers: map[string]any{
@@ -113,6 +122,10 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 				req: &testmatchers.HttpRequest{
 					Headers: map[string]any{
 						"request-gateway": "hello",
+					},
+					NotHeaders: []string{
+						"x-not-set",
+						"x-empty",
 					},
 				},
 			},
@@ -557,7 +570,9 @@ func (s *testingSuite) runTestCases(testCases []transformationTestCase) {
 					curl.WithHostHeader(fmt.Sprintf("example-%s.com", tc.routeName)),
 					curl.WithPort(8080),
 				),
-				tc.resp)
+				tc.resp,
+				6, /* timeout */
+				2 /* retry interval */)
 			if resp.StatusCode == http.StatusOK {
 				req, err := helper.CreateRequestFromEchoResponse(resp.Body)
 				g.Expect(err).NotTo(gomega.HaveOccurred())

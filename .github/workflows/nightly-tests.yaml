@@ -22,6 +22,10 @@ on:
         description: "Run load testing suite"
         type: boolean
         default: false
+      run-e2e-tests:
+        description: "Run e2e tests"
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
@@ -59,3 +63,50 @@ jobs:
       with:
         ref: main
     - uses: ./.github/actions/kube-gateway-api-load-tests
+
+  kgateway_e2e_tests_for_gateway_api_versions:
+    name: GwApi E2E
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-e2e-tests) || github.event.schedule == '0 5 * * *' }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        gateway-api-version: [ { version: 'v1.4.0', channel: 'experimental' },
+                              { version: 'v1.4.0', channel: 'standard' },
+                              { version: 'v1.3.0', channel: 'experimental' },
+                              { version: 'v1.3.0', channel: 'standard' },
+                              { version: 'v1.2.1', channel: 'experimental' },
+                              { version: 'v1.2.1', channel: 'standard' }]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Prep Go Runner
+      uses: ./.github/actions/prep-go-runner
+    - name: Dotenv Action
+      uses: falti/dotenv-action@v1.1.4
+      id: dotenv
+      with:
+        path: "./.github/workflows/.env/nightly-tests/max_versions.env"
+        log-variables: true
+    - name: Setup KinD Cluster
+      uses: ./.github/actions/setup-kind-cluster
+      with:
+        gateway-api-version: ${{ matrix.gateway-api-version.version }}
+        gateway-api-channel: ${{ matrix.gateway-api-version.channel }}
+        cluster-name: "kgw-api-e2e-${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }}"
+        kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
+        istio-version: ${{ steps.dotenv.outputs.istio_version }}
+        kind-node-version: ${{ steps.dotenv.outputs.node_version }}
+    - id: run-tests
+      uses: ./.github/actions/kubernetes-e2e-tests
+      env:
+        VERSION: '1.0.0-ci1'
+        GITHUB_TOKEN: ${{ github.token }}
+        GO_TEST_RETRIES: '3' # Use a higher number of retries because there are so many tests and we don't want to rerun
+        GOTESTSUM_ARGS: '--format=standard-verbose --rerun-fails-max-failures 60' # High value for "rerun-fails-max-failures" because 3 failed tests can result in gotestsum thinking there's 40+ failures
+      with:
+        cluster-name: "kgw-api-e2e-${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }}"
+        test-args: '-v -timeout=120m'
+        run-regex: "^Test"
+        istio-version: ${{ steps.dotenv.outputs.istio_version }}
+        matrix-label: "nightly-kgw-api-${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }}"

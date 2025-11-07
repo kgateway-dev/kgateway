@@ -1,6 +1,7 @@
 Name|Version|License
 ---|---|---
 [cel.dev/expr](https://cel.dev/expr)|v0.24.0|Apache License 2.0
+[semver/v3](https://github.com/Masterminds/semver)|v3.4.0|MIT License
 [agentgateway/agentgateway](https://github.com/agentgateway/agentgateway)|v0.9.1-0.20251106001326-e9523b28ae9d|Apache License 2.0
 [anthropics/anthropic-sdk-go](https://github.com/anthropics/anthropic-sdk-go)|v1.13.0|MIT License
 [retry-go/v4](https://github.com/avast/retry-go)|v4.3.3|MIT License

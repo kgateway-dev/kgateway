@@ -29,13 +29,14 @@ spec:
           name: httpbin
           port: 8000
           weight: 1
+      name: httpbin-get
       matches:
         - path:
             type: PathPrefix
             value: /get
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: AgentgatewayPolicy
+kind: TrafficPolicy
 metadata:
   name: cel-rbac-policy
 spec:
@@ -43,8 +44,8 @@ spec:
     - name: httpbin-route
       kind: HTTPRoute
       group: gateway.networking.k8s.io
-  traffic:
-    authorization:
-      policy:
-        matchExpressions:
-            - "request.headers['x-my-header'] == 'cool-beans'"
+      sectionName: httpbin-get
+  rbac:
+    policy:
+      matchExpressions:
+          - "request.headers['x-my-header'] == 'cool-beans'"
