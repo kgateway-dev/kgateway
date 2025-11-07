@@ -48,7 +48,7 @@ spec:
           value: "{{replace_with_random(\"to be or not to be\", \"to\")}}"
       body:
           parseAs: "AsJson"
-          value: "{\"Foo\":\"{{ raw_string(foo) }}\"}"
+          value: "{\"Foo\":\"{{ raw_string(foo) }}\", \"test\":\"123\"}"
     response:
       set:
         - name: x-base64-encode
@@ -73,3 +73,5 @@ spec:
           value: "{{env(\"FOOBAR\")}}"
         - name: x-replace-random
           value: "{{replace_with_random(\"to be or not to be\", \"to\")}}"
+        - name: x-replace-nested
+          value: '{{ replace_with_random(request_header("x-nested-call"), "andy") }}'

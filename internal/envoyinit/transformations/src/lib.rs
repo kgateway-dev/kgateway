@@ -1,4 +1,10 @@
+/*
+#![deny(clippy::unwrap_used, clippy::expect_used)]
+*/
+
+use anyhow::Result;
 use serde::Deserialize;
+use serde_json::Value as JsonValue;
 
 pub mod jinja;
 
@@ -22,14 +28,41 @@ pub struct LocalTransform {
     pub body: Option<BodyTransform>,
 }
 
+impl LocalTransform {
+    pub fn is_empty(&self) -> bool {
+        if !self.add.is_empty() {
+            return false;
+        }
+        if !self.set.is_empty() {
+            return false;
+        }
+        if !self.remove.is_empty() {
+            return false;
+        }
+
+        match &self.body {
+            Some(config) => config.is_empty(),
+            None => true,
+        }
+    }
+}
+
 #[derive(Default, Clone, Deserialize)]
 pub struct BodyTransform {
-    #[serde(default)]
+    #[serde(default, rename = "parseAs")]
     pub parse_as: BodyParseBehavior,
     #[serde(default)]
     pub value: String,
 }
 
+impl BodyTransform {
+    pub fn is_empty(&self) -> bool {
+        if self.value.is_empty() && matches!(self.parse_as, BodyParseBehavior::AsString) {
+            return true;
+        }
+        false
+    }
+}
 #[derive(Default, Clone, Deserialize)]
 pub struct NameValuePair {
     pub name: String,
@@ -49,4 +82,18 @@ pub trait TransformationOps {
     fn remove_request_header(&mut self, key: &str) -> bool;
     fn set_response_header(&mut self, key: &str, value: &[u8]) -> bool;
     fn remove_response_header(&mut self, key: &str) -> bool;
+    fn parse_request_json_body(&mut self) -> Result<JsonValue>;
+    fn get_request_body(&mut self) -> Vec<u8>;
+    fn drain_request_body(&mut self, number_of_bytes: usize) -> bool;
+    fn append_request_body(&mut self, data: &[u8]) -> bool;
+    fn parse_response_json_body(&mut self) -> Result<JsonValue>;
+    fn get_response_body(&mut self) -> Vec<u8>;
+    fn drain_response_body(&mut self, number_of_bytes: usize) -> bool;
+    fn append_response_body(&mut self, data: &[u8]) -> bool;
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum TransformationError {
+    #[error("undeclared json variables: {0}")]
+    UndeclaredJsonVariables(String),
 }

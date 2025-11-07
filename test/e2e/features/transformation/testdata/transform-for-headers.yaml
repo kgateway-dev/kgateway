@@ -46,4 +46,6 @@ spec:
         - name: "x-space-test"
           value: " foobar "
       remove:
-        - "x-remove-me"
+#        - "x-remove-me"
+# go-httpbin does not support custom response header, so remove one of the  Access-Control header
+        - "access-control-allow-origin"

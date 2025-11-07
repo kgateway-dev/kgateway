@@ -2,12 +2,12 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: example-route-for-body-as-string
+  name: example-route-for-pseudo-headers
 spec:
   parentRefs:
     - name: gw
   hostnames:
-    - "example-route-for-body.com"
+    - "example-pseudo-headers.com"
   rules:
     - backendRefs:
         - name: simple-svc
@@ -16,14 +16,18 @@ spec:
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
-  name: example-traffic-policy-for-body-as-string
+  name: example-traffic-policy-for-pseudo-headers
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: HTTPRoute
-    name: example-route-for-body-as-string
+    name: example-route-for-pseudo-headers
   transformation:
+    request:
+      set:
+        - name: :method
+          value: "POST"
     response:
       set:
-        - name: "x-what-method"
-          value: "method_{%- if method != \"\" -%}{{method}}{% else %}unknown{% endif %}"
+        - name: :status
+          value: '{% if request_header("foo") == "bar" %}201{% else %}202{% endif %}'

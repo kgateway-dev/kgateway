@@ -4,10 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/onsi/gomega"
+	"github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/gstruct"
+	"github.com/onsi/gomega/matchers"
 	"github.com/onsi/gomega/types"
 )
 
@@ -39,9 +42,7 @@ type HttpRequest struct {
 	// Body is the expected request body for an http.Request
 	// Body can be of type: {string, bytes, GomegaMatcher}
 	// Optional: If not provided, defaults to an empty string
-	// TODO: currently, the http echo service we use in our test does not
-	//       return the request body. So, this is not implemented yet and commented out
-	// Body interface{}
+	Body any
 
 	// Headers is the set of expected header values for an http.Request
 	// Each header can be of type: {string, GomegaMatcher}
@@ -95,6 +96,11 @@ func HaveHttpRequest(expected *HttpRequest) types.GomegaMatcher {
 		})
 	}
 	partialRequestMatchers = append(partialRequestMatchers, expectedCustomMatcher)
+	if expected.Body != nil {
+		partialRequestMatchers = append(partialRequestMatchers, &HaveHTTPRequestBodyMatcher{
+			Expected: expected.Body,
+		})
+	}
 
 	return &HaveHttpRequestMatcher{
 		Expected:       expected,
@@ -232,6 +238,95 @@ func (m *NotHaveHTTPRequestHeaderMatcher) NegatedFailureMessage(actual any) stri
 	}
 
 	return fmt.Sprintf("Expected HTTP request to have header '%s', but it was not present", m.Header)
+}
+
+type HaveHTTPRequestBodyMatcher struct {
+	Expected      any
+	cachedRequest any
+	cachedBody    []byte
+}
+
+func (matcher *HaveHTTPRequestBodyMatcher) Match(actual any) (bool, error) {
+	body, err := matcher.body(actual)
+	if err != nil {
+		return false, err
+	}
+
+	switch e := matcher.Expected.(type) {
+	case string:
+		return (&matchers.EqualMatcher{Expected: e}).Match(string(body))
+	case []byte:
+		return (&matchers.EqualMatcher{Expected: e}).Match(body)
+	case types.GomegaMatcher:
+		return e.Match(body)
+	default:
+		return false, fmt.Errorf("HaveHTTPBody matcher expects string, []byte, or GomegaMatcher. Got:\n%s", format.Object(matcher.Expected, 1))
+	}
+}
+
+func (matcher *HaveHTTPRequestBodyMatcher) FailureMessage(actual any) (message string) {
+	body, err := matcher.body(actual)
+	if err != nil {
+		return fmt.Sprintf("failed to read body: %s", err)
+	}
+
+	switch e := matcher.Expected.(type) {
+	case string:
+		return (&matchers.EqualMatcher{Expected: e}).FailureMessage(string(body))
+	case []byte:
+		return (&matchers.EqualMatcher{Expected: e}).FailureMessage(body)
+	case types.GomegaMatcher:
+		return e.FailureMessage(body)
+	default:
+		return fmt.Sprintf("HaveHTTPBody matcher expects string, []byte, or GomegaMatcher. Got:\n%s", format.Object(matcher.Expected, 1))
+	}
+}
+
+func (matcher *HaveHTTPRequestBodyMatcher) NegatedFailureMessage(actual any) (message string) {
+	body, err := matcher.body(actual)
+	if err != nil {
+		return fmt.Sprintf("failed to read body: %s", err)
+	}
+
+	switch e := matcher.Expected.(type) {
+	case string:
+		return (&matchers.EqualMatcher{Expected: e}).NegatedFailureMessage(string(body))
+	case []byte:
+		return (&matchers.EqualMatcher{Expected: e}).NegatedFailureMessage(body)
+	case types.GomegaMatcher:
+		return e.NegatedFailureMessage(body)
+	default:
+		return fmt.Sprintf("HaveHTTPBody matcher expects string, []byte, or GomegaMatcher. Got:\n%s", format.Object(matcher.Expected, 1))
+	}
+}
+
+// body returns the body. It is cached because once we read it in Match()
+// the Reader is closed and it is not readable again in FailureMessage()
+// or NegatedFailureMessage()
+func (matcher *HaveHTTPRequestBodyMatcher) body(actual any) ([]byte, error) {
+	if matcher.cachedRequest == actual && matcher.cachedBody != nil {
+		return matcher.cachedBody, nil
+	}
+
+	body := func(a *http.Request) ([]byte, error) {
+		if a.Body != nil {
+			defer a.Body.Close()
+			var err error
+			matcher.cachedBody, err = io.ReadAll(a.Body)
+			if err != nil {
+				return nil, fmt.Errorf("error reading request body: %w", err)
+			}
+		}
+		return matcher.cachedBody, nil
+	}
+
+	switch a := actual.(type) {
+	case *http.Request:
+		matcher.cachedRequest = a
+		return body(a)
+	default:
+		return nil, fmt.Errorf("HaveHTTPRequestBody matcher expects *http.Request. Got:\n%s", format.Object(actual, 1))
+	}
 }
 
 // informativeRequestComparison returns a string which presents data to the user to help them understand why a failure occurred.

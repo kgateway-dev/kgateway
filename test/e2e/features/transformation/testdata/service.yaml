@@ -8,7 +8,7 @@ spec:
   ports:
     - name: http
       port: 8080
-      targetPort: 3000
+      targetPort: 8080
   selector:
     app.kubernetes.io/name: backend-0
 ---
@@ -29,11 +29,11 @@ spec:
         version: v1
     spec:
       containers:
-        - image: gcr.io/k8s-staging-gateway-api/echo-basic:v20231214-v1.0.0-140-gf544a46e
+        - image: ghcr.io/mccutchen/go-httpbin:2.19
           imagePullPolicy: IfNotPresent
           name: backend-0
           ports:
-            - containerPort: 3000
+            - containerPort: 8080
           env:
             - name: POD_NAME
               valueFrom:

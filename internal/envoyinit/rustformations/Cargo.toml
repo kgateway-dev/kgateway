@@ -14,8 +14,8 @@ minijinja = { version = "2.7.0" }
 tempfile = "3.16.0"
 mockall = "0.13.1"
 transformations = { path = "../transformations" }
-lazy_static = "1.5.0"
 anyhow = "1.0.100"
+once_cell = "1.21.3"
 
 [lib]
 name = "rust_module"
