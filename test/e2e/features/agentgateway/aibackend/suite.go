@@ -92,22 +92,25 @@ func (s *testingSuite) TestRouting() {
 		Resp: "The name of this project is kgateway",
 	})
 
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
-		s.T().Context(),
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(gatewayObjectMeta)),
-			curl.WithPort(8080),
-			curl.WithPath("/v1/chat/completions"),
-			curl.WithPostBody(`{"messages": [{"role": "user", "content": "What is the name of this project?"}]}`),
-			curl.WithHeader("Content-Type", "application/json"),
-		},
-		&testmatchers.HttpResponse{
-			StatusCode: http.StatusOK,
-			Body:       gomega.ContainSubstring(`The name of this project is kgateway`),
-		},
-		5*time.Second,
-	)
+	paths := []string{"/v1/chat/completions", "/azure"}
+	for _, path := range paths {
+		s.TestInstallation.Assertions.AssertEventualCurlResponse(
+			s.T().Context(),
+			testdefaults.CurlPodExecOpt,
+			[]curl.Option{
+				curl.WithHost(kubeutils.ServiceFQDN(gatewayObjectMeta)),
+				curl.WithPort(8080),
+				curl.WithPath(path),
+				curl.WithPostBody(`{"messages": [{"role": "user", "content": "What is the name of this project?"}]}`),
+				curl.WithHeader("Content-Type", "application/json"),
+			},
+			&testmatchers.HttpResponse{
+				StatusCode: http.StatusOK,
+				Body:       gomega.ContainSubstring(`The name of this project is kgateway`),
+			},
+			5*time.Second,
+		)
+	}
 
 	s.Require().NoError(server.Stop(s.T().Context()))
 }
