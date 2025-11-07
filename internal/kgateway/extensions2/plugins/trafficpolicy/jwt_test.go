@@ -214,29 +214,6 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 			},
 		},
 		{
-			name: "provider with file JWKS",
-			providers: map[string]v1alpha1.JWTProvider{
-				"test-provider": {
-					Issuer: "test-issuer",
-					JWKS: v1alpha1.JWKS{
-						LocalJWKS: &v1alpha1.LocalJWKS{
-							File: ptr.To("/path/to/jwks.json"),
-						},
-					},
-				},
-			},
-			expectedError: false,
-			expectedConfig: &jwtauthnv3.JwtAuthentication{
-				Providers: map[string]*jwtauthnv3.JwtProvider{
-					"test-policy_test-ns_test-provider": {
-						Issuer:            "test-issuer",
-						Audiences:         nil,
-						PayloadInMetadata: PayloadInMetadata,
-					},
-				},
-			},
-		},
-		{
 			name: "missing inline key for inline JWKS",
 			providers: map[string]v1alpha1.JWTProvider{
 				"test-provider": {

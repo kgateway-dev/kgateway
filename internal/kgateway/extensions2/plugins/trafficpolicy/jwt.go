@@ -224,9 +224,7 @@ func translateJwks(krtctx krt.HandlerContext, jwkConfig v1alpha1.JWKS, secrets *
 	var err error
 	var secret *ir.Secret
 	var jwkSource *jwtauthnv3.JwtProvider_LocalJwks
-	if jwkConfig.LocalJWKS.File != nil {
-		jwkSource, err = translateJwksFile(*jwkConfig.LocalJWKS.File)
-	} else if jwkConfig.LocalJWKS.InlineKey != nil {
+	if jwkConfig.LocalJWKS.InlineKey != nil {
 		jwkSource, err = translateJwksInline(*jwkConfig.LocalJWKS.InlineKey)
 	} else if jwkConfig.LocalJWKS.SecretRef != nil {
 		secret, err = GetSecretIr(secrets, krtctx, jwkConfig.LocalJWKS.SecretRef.Name, policyNs)
@@ -246,16 +244,6 @@ func translateJwksSecret(ref *corev1.LocalObjectReference, secret *ir.Secret) (*
 		return nil, errors.New("secret key not found")
 	}
 	return translateJwksInline(string(secretKey))
-}
-
-func translateJwksFile(filename string) (*jwtauthnv3.JwtProvider_LocalJwks, error) {
-	return &jwtauthnv3.JwtProvider_LocalJwks{
-		LocalJwks: &envoycorev3.DataSource{
-			Specifier: &envoycorev3.DataSource_Filename{
-				Filename: filename,
-			},
-		},
-	}, nil
 }
 
 func translateJwksInline(inlineKey string) (*jwtauthnv3.JwtProvider_LocalJwks, error) {

@@ -114,14 +114,8 @@ type JWKS struct {
 
 // LocalJWKS configures getting the public keys to validate the JWT from a local source, such as a Kubernetes secret,
 // inline, raw string JWKS or file source.
-// +kubebuilder:validation:XValidation:message="exactly one of file, key, or secretRef must be set",rule="(has(self.file) && !has(self.key) && !has(self.secretRef)) || (!has(self.file) && has(self.key) && !has(self.secretRef)) || (!has(self.file) && !has(self.key) && has(self.secretRef))"
+// +kubebuilder:validation:ExactlyOneOf=key;secretRef
 type LocalJWKS struct {
-	// File is the path to the file containing the JWKS
-	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:MaxLength=2048
-	// +optional
-	File *string `json:"file,omitempty"`
-
 	// InlineKey is the JWKS key as the raw, inline JWKS string
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=2048
