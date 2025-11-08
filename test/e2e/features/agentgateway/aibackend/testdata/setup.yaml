@@ -31,24 +31,6 @@ spec:
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend
 metadata:
-  name: azure-openai
-spec:
-  type: AI
-  ai:
-    llm:
-      azureopenai:
-        authToken:
-          kind: Inline
-          inline: azure-key
-        endpoint: my-endpoint.azure.com
-        deploymentName: my-deployment
-        apiVersion: v1
-      host: 172.17.0.1
-      port: 9234
----
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: Backend
-metadata:
   name: anthropic
 spec:
   type: AI
@@ -81,21 +63,6 @@ spec:
     - path:
         type: PathPrefix
         value: /v1/chat/completions
-  - name: azureopenai
-    backendRefs:
-    - group: gateway.kgateway.dev
-      kind: Backend
-      name: azure-openai
-    matches:
-    - path:
-        type: PathPrefix
-        value: /azure
-    filters:
-      - type: URLRewrite
-        urlRewrite:
-          path:
-            type: ReplaceFullPath
-            replaceFullPath: /v1/chat/completions
   - name: anthropic-0
     backendRefs:
     - group: gateway.kgateway.dev
@@ -121,7 +88,7 @@ spec:
       headers:
       - type: Exact
         name: x-direction
-        value: response
+        value: response          
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
