@@ -48,7 +48,7 @@ type AIBackend struct {
 
 // RouteType specifies how the AI gateway should process incoming requests
 // based on the URL path and the API format expected.
-// +kubebuilder:validation:Enum=completions;messages;models;passthrough
+// +kubebuilder:validation:Enum=completions;messages;models;passthrough;responses;anthropic_token_count
 type RouteType string
 
 const (
@@ -63,6 +63,12 @@ const (
 
 	// RouteTypePassthrough sends requests to upstream as-is without LLM processing
 	RouteTypePassthrough RouteType = "passthrough"
+
+	// RouteTypeResponses processes OpenAI /v1/responses format requests
+	RouteTypeResponses RouteType = "responses"
+
+	// RouteTypeAnthropicTokenCount processes Anthropic /v1/messages/count_tokens format requests
+	RouteTypeAnthropicTokenCount RouteType = "anthropic_token_count" //nolint:gosec // G101: False positive - this is a route type name, not credentials
 )
 
 // LLMProvider specifies the target large language model provider that the backend should route requests to.

@@ -419,6 +419,12 @@ type BackendAI struct {
 	// TODO: should this use 'overrides', and we add CEL conditionals?
 	// +kubebuilder:validation:MaxProperties=64
 	ModelAliases map[string]string `json:"modelAliases,omitempty"`
+
+	// PromptCaching enables automatic prompt caching for supported providers (AWS Bedrock).
+	// Reduces API costs by caching static content like system prompts and tool definitions.
+	// Only applicable for Bedrock Claude 3+ and Nova models.
+	// +optional
+	PromptCaching *PromptCachingConfig `json:"promptCaching,omitempty"`
 }
 
 // +kubebuilder:validation:AtLeastOneOf=authorization

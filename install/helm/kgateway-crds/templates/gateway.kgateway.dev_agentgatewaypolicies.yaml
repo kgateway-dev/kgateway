@@ -257,6 +257,39 @@ spec:
                               type: object
                             type: array
                         type: object
+                      promptCaching:
+                        description: |-
+                          PromptCaching enables automatic prompt caching for supported providers (AWS Bedrock).
+                          Reduces API costs by caching static content like system prompts and tool definitions.
+                          Only applicable for Bedrock Claude 3+ and Nova models.
+                        properties:
+                          cacheMessages:
+                            default: true
+                            description: |-
+                              CacheMessages enables caching for conversation messages.
+                              Caches all messages in the conversation for cost savings.
+                            type: boolean
+                          cacheSystem:
+                            default: true
+                            description: |-
+                              CacheSystem enables caching for system prompts.
+                              Inserts a cache point after all system messages.
+                            type: boolean
+                          cacheTools:
+                            default: false
+                            description: |-
+                              CacheTools enables caching for tool definitions.
+                              Inserts a cache point after all tool specifications.
+                            type: boolean
+                          minTokens:
+                            default: 1024
+                            description: |-
+                              MinTokens specifies the minimum estimated token count
+                              before caching is enabled. Uses rough heuristic (word count × 1.3) to estimate tokens.
+                              Bedrock requires at least 1,024 tokens for caching to be effective.
+                            minimum: 0
+                            type: integer
+                        type: object
                       promptGuard:
                         description: "AIPromptGuard configures a prompt guards to
                           block unwanted requests to the LLM provider and mask sensitive

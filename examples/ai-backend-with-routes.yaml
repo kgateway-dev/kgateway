@@ -27,6 +27,8 @@ spec:
       routes:
         "/v1/chat/completions": "completions"
         "/v1/messages": "messages"
+        "/v1/responses": "responses"
+        "/v1/messages/count_tokens": "anthropic_token_count"
         "/v1/models": "models"
         "*": "passthrough"
 ---

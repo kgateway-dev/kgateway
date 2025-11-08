@@ -103,6 +103,10 @@ func translateRouteType(rt v1alpha1.RouteType) api.AIBackend_RouteType {
 		return api.AIBackend_MODELS
 	case v1alpha1.RouteTypePassthrough:
 		return api.AIBackend_PASSTHROUGH
+	case v1alpha1.RouteTypeResponses:
+		return api.AIBackend_RESPONSES
+	case v1alpha1.RouteTypeAnthropicTokenCount:
+		return api.AIBackend_ANTHROPIC_TOKEN_COUNT
 	default:
 		// Default to completions if unknown type
 		return api.AIBackend_COMPLETIONS

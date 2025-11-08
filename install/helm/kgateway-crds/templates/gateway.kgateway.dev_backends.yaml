@@ -459,6 +459,8 @@ spec:
                           - messages
                           - models
                           - passthrough
+                          - responses
+                          - anthropic_token_count
                           type: string
                         description: |-
                           Routes defines how to identify the type of traffic to handle.
@@ -1004,6 +1006,8 @@ spec:
                                   - messages
                                   - models
                                   - passthrough
+                                  - responses
+                                  - anthropic_token_count
                                   type: string
                                 description: |-
                                   Routes defines how to identify the type of traffic to handle.
