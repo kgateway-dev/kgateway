@@ -2,7 +2,6 @@ use envoy_proxy_dynamic_modules_rust_sdk::*;
 use lazy_static::lazy_static;
 use serde::Deserialize;
 use std::collections::HashMap;
-use std::ops::Deref;
 use transformations::{LocalTransformationConfig, TransformationOps};
 
 #[cfg(test)]
@@ -18,6 +17,8 @@ pub struct FilterConfig {
 
 struct EnvoyTransformationOps<'a> {
     envoy_filter: &'a mut dyn EnvoyHttpFilter,
+    //    TODO: see comment for get_random_pattern() below
+    //    random_pattern_map: &'a mut Option<HashMap<String, String>>,
 }
 
 impl TransformationOps for EnvoyTransformationOps<'_> {
@@ -33,14 +34,29 @@ impl TransformationOps for EnvoyTransformationOps<'_> {
     fn remove_response_header(&mut self, key: &str) -> bool {
         self.envoy_filter.remove_response_header(key)
     }
-}
+    /*
+       TODO: was trying to use this to store the pattern in the request context that can be re-used
+             for all replace_with_random() custom function but have not been able to find a way to
+             do that yet with rust and minijinja
 
-impl Deref for FilterConfig {
-    type Target = LocalTransformationConfig;
+       fn get_random_pattern(&mut self, key: &str) -> String {
+           let map = self.random_pattern_map.get_or_insert_with(HashMap::new);
 
-    fn deref(&self) -> &Self::Target {
-        &self.transformations
-    }
+           if let Some(pattern) = map.get(key) {
+               return pattern.clone();
+           }
+
+           let new_pattern = rand::thread_rng()
+               .sample_iter(&Alphanumeric)
+               .take(8)
+               .map(char::from)
+               .collect()
+
+           map.insert(key.to_string(), new_pattern.clone());
+
+           new_pattern
+       }
+    */
 }
 
 impl FilterConfig {
@@ -117,9 +133,11 @@ impl Filter {
             let Some(key) = std::str::from_utf8(key.as_slice()).ok() else {
                 continue;
             };
-            let value = std::str::from_utf8(val.as_slice()).unwrap().to_string();
+            let Some(value) = std::str::from_utf8(val.as_slice()).ok() else {
+                continue;
+            };
 
-            headers_map.insert(key.to_string(), value);
+            headers_map.insert(key.to_string(), value.to_string());
         }
 
         headers_map
@@ -130,17 +148,7 @@ impl Filter {
     // on_response_headers().
     fn populate_request_headers_map(&mut self, headers: Vec<(EnvoyBuffer, EnvoyBuffer)>) {
         if self.request_headers_map.is_none() {
-            let mut request_headers_map = HashMap::new();
-            for (key, val) in headers {
-                let Some(key) = std::str::from_utf8(key.as_slice()).ok() else {
-                    continue;
-                };
-                let value = std::str::from_utf8(val.as_slice()).unwrap().to_string();
-
-                request_headers_map.insert(key.to_string(), value);
-            }
-
-            self.request_headers_map = Some(request_headers_map);
+            self.request_headers_map = Some(self.create_headers_map(headers));
         }
     }
 
@@ -149,38 +157,42 @@ impl Filter {
     }
 
     fn transform_request_headers<EHF: EnvoyHttpFilter>(&self, envoy_filter: &mut EHF) {
-        let set = match self.get_per_route_config() {
-            Some(config) => &config.request.as_ref().map(|r| &r.set),
-            None => &self.filter_config.request.as_ref().map(|r| &r.set),
+        let request_transform = match self.get_per_route_config() {
+            Some(config) => &config.transformations.request,
+            None => &self.filter_config.transformations.request,
         };
 
-        if let Some(setters) = set {
-            transformations::jinja::transform_request_headers(
-                setters,
+        if let Some(transform) = request_transform {
+            if let Err(e) = transformations::jinja::transform_request_headers(
+                transform,
                 &self.env,
                 self.get_request_headers_map(),
                 EnvoyTransformationOps { envoy_filter },
-            );
+            ) {
+                envoy_log_warn!("{e}");
+            }
         }
     }
 
     fn transform_response_headers<EHF: EnvoyHttpFilter>(&self, envoy_filter: &mut EHF) {
-        let set = match self.get_per_route_config() {
-            Some(config) => &config.response.as_ref().map(|r| &r.set),
-            None => &self.filter_config.response.as_ref().map(|r| &r.set),
+        let response_transform = match self.get_per_route_config() {
+            Some(config) => &config.transformations.response,
+            None => &self.filter_config.transformations.response,
         };
 
-        if let Some(setters) = set {
+        if let Some(transform) = response_transform {
             // TODO(nfuden): find someone who knows rust to see if we really need this Hash map for serialization
             let response_headers_map = self.create_headers_map(envoy_filter.get_response_headers());
 
-            transformations::jinja::transform_response_headers(
-                setters,
+            if let Err(e) = transformations::jinja::transform_response_headers(
+                transform,
                 &self.env,
                 self.get_request_headers_map(),
                 &response_headers_map,
                 EnvoyTransformationOps { envoy_filter },
-            );
+            ) {
+                envoy_log_warn!("{e}");
+            }
         }
     }
 }
