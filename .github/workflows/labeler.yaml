@@ -2,9 +2,13 @@
 name: Labeler
 on:
   pull_request_target:
-    types: [opened, edited, reopened]
+    types: [opened, edited, reopened, synchronize]
   merge_group:
     types: [checks_requested]
+
+concurrency:
+  group: pr-kind-labeler-and-check-labels-mutex-${{ github.ref_name }}
+  cancel-in-progress: false
 
 permissions:
   issues: write
