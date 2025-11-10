@@ -70,7 +70,6 @@ type gatewayReconciler struct {
 }
 
 func NewGatewayReconciler(
-	ctx context.Context,
 	cfg GatewayConfig,
 	deployer *deployer.Deployer,
 	gwParams *internaldeployer.GatewayParameters,
@@ -220,7 +219,7 @@ func NewGatewayReconciler(
 	return r
 }
 
-// NeedLeaderElection returns true to ensure that the gatewayReconciler runs only on the leader
+// NeedLeaderElection returns true to ensure that the Gateway reconciler runs only on the leader
 func (r *gatewayReconciler) NeedLeaderElection() bool {
 	return true
 }
@@ -261,11 +260,6 @@ func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
 	defer func() {
 		finishMetrics(rErr)
 	}()
-
-	namespace := r.nsClient.Get(req.Namespace, "")
-	if namespace == nil {
-		return fmt.Errorf("namespace %s not found", req.Name)
-	}
 
 	gw := r.gwClient.Get(req.Name, req.Namespace)
 	if gw == nil || gw.GetDeletionTimestamp() != nil {

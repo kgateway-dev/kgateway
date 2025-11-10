@@ -184,7 +184,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 				},
 				resp: &testmatchers.HttpResponse{
 					StatusCode: http.StatusOK,
-					Headers: map[string]interface{}{
+					Headers: map[string]any{
 						"x-dont-remove-me": "in response",
 					},
 					NotHeaders: []string{
@@ -192,7 +192,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 					},
 				},
 				req: &testmatchers.HttpRequest{
-					Headers: map[string]interface{}{
+					Headers: map[string]any{
 						"x-dont-remove-me": "in request",
 					},
 					NotHeaders: []string{
@@ -450,7 +450,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 				},
 				resp: &testmatchers.HttpResponse{
 					StatusCode: http.StatusOK,
-					Headers: map[string]interface{}{
+					Headers: map[string]any{
 						"x-base64-encode":                   "YmFzZTY0IGVuY29kZSBpbiByZXNwb25zZSBoZWFkZXI=",
 						"x-base64-decode":                   "base64 decode in response header",
 						"x-base64-decode-invalid-non-empty": "foobar",
@@ -470,7 +470,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 					},
 				},
 				req: &testmatchers.HttpRequest{
-					Headers: map[string]interface{}{
+					Headers: map[string]any{
 						"x-base64-encode":                   "YmFzZTY0IGVuY29kZSBpbiByZXF1ZXN0IGhlYWRlcg==",
 						"x-base64-decode":                   "base64 decode in request header",
 						"x-base64-decode-invalid-non-empty": "foobar",
