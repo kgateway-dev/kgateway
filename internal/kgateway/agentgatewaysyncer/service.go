@@ -168,7 +168,7 @@ func (a *index) servicesInfo(se *networkingclient.ServiceEntry, w *Waypoint) []S
 	sel := NewSelector(se.Spec.GetWorkloadSelector().GetLabels())
 	portNames := map[int32]ServicePortName{}
 	for _, p := range se.Spec.Ports {
-		portNames[int32(p.Number)] = ServicePortName{
+		portNames[int32(p.Number)] = ServicePortName{ //nolint:gosec // G115: ServiceEntry port number is always in valid range
 			PortName: p.Name,
 		}
 	}
@@ -214,7 +214,7 @@ func (a *index) constructServices(se *networkingclient.ServiceEntry, w *Waypoint
 		ports = append(ports, &api.Port{
 			ServicePort: p.Number,
 			TargetPort:  target,
-			AppProtocol: toAppProtocolFromProtocol(kubeutil.ConvertProtocol(int32(p.Number), p.Name, corev1.ProtocolTCP, ptr.Of(p.Protocol))),
+			AppProtocol: toAppProtocolFromProtocol(kubeutil.ConvertProtocol(int32(p.Number), p.Name, corev1.ProtocolTCP, ptr.Of(p.Protocol))), //nolint:gosec // G115: ServiceEntry port number is always in valid range
 		})
 	}
 

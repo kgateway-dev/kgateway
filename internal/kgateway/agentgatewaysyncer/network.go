@@ -121,8 +121,8 @@ func k8sGatewayToNetworkGateways(clusterID cluster.ID, gw *gatewayv1.Gateway) []
 			if l.Protocol == "HBONE" {
 				networkGateway := base
 				networkGateway.Addr = addr.Value
-				networkGateway.Port = uint32(l.Port)
-				networkGateway.HBONEPort = uint32(l.Port)
+				networkGateway.Port = uint32(l.Port)      //nolint:gosec // G115: Gateway listener port is always in valid range
+				networkGateway.HBONEPort = uint32(l.Port) //nolint:gosec // G115: Gateway listener port is always in valid range
 				gateways = append(gateways, networkGateway)
 				break // Only need one HBONE listener per address
 			}

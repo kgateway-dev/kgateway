@@ -799,11 +799,8 @@ func buildAgwDestination(
 			// Check if it's a ServiceEntry hostname
 			found := false
 			for _, se := range krt.Fetch(ctx.Krt, ctx.ServiceEntries) {
-				for _, h := range se.Spec.Hosts {
-					if h == hostname {
-						found = true
-						break
-					}
+				if slices0.Contains(se.Spec.Hosts, hostname) {
+					found = true
 				}
 				if found {
 					break

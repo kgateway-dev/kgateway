@@ -853,7 +853,7 @@ func constructServicesFromWorkloadEntry(wle *networkingv1alpha3.WorkloadEntry, n
 			targetPort := port.TargetPort
 			// Map workload entry ports to service ports
 			if wle.Ports != nil {
-				if named, f := svc.PortNames[int32(port.ServicePort)]; f && named.TargetPortName != "" {
+				if named, f := svc.PortNames[int32(port.ServicePort)]; f && named.TargetPortName != "" { //nolint:gosec // G115: port.ServicePort is uint32 representing a port number, safe to convert to int32
 					// Try to find the port in the workload entry
 					if tp, ok := wle.Ports[named.TargetPortName]; ok {
 						targetPort = tp
