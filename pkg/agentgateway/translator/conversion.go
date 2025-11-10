@@ -795,18 +795,10 @@ func buildAgwDestination(
 		// Validate that the hostname exists (check both Services and ServiceEntries)
 		key := namespace + "/" + hostname
 		svc := ptr.Flatten(krt.FetchOne(ctx.Krt, ctx.Services, krt.FilterKey(key)))
-		if svc == nil && ctx.ServiceEntries != nil {
-			// Check if it's a ServiceEntry hostname
-			found := false
-			for _, se := range krt.Fetch(ctx.Krt, ctx.ServiceEntries) {
-				if slices0.Contains(se.Spec.Hosts, hostname) {
-					found = true
-				}
-				if found {
-					break
-				}
-			}
-			if !found {
+		if svc == nil && ctx.ServiceEntriesByHost != nil {
+			// Check if it's a ServiceEntry hostname using index
+			serviceEntries := ctx.ServiceEntriesByHost.Lookup(hostname)
+			if len(serviceEntries) == 0 {
 				invalidBackendErr = &reporter.RouteCondition{
 					Type:    gwv1.RouteConditionResolvedRefs,
 					Status:  metav1.ConditionFalse,

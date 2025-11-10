@@ -9,6 +9,7 @@ import (
 	"github.com/agentgateway/agentgateway/go/api"
 	envoytypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/config"
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
@@ -247,15 +248,22 @@ func (s *Syncer) buildAgwResources(
 
 	// Build routes
 	routeParents := translator.BuildRouteParents(filteredGateways)
+	// Create ServiceEntry hostname index for efficient O(1) lookups
+	serviceEntriesByHost := krt.NewIndex(s.agwCollections.ServiceEntries, "hostname", func(se *networkingclient.ServiceEntry) []string {
+		return se.Spec.Hosts
+	})
+
 	routeInputs := translator.RouteContextInputs{
-		Grants:          refGrants,
-		RouteParents:    routeParents,
-		ControllerName:  s.controllerName,
-		Services:        s.agwCollections.Services,
-		Namespaces:      s.agwCollections.Namespaces,
-		InferencePools:  s.agwCollections.InferencePools,
-		Backends:        s.agwCollections.Backends,
-		DirectResponses: s.agwCollections.DirectResponses,
+		Grants:               refGrants,
+		RouteParents:         routeParents,
+		ControllerName:       s.controllerName,
+		Services:             s.agwCollections.Services,
+		Namespaces:           s.agwCollections.Namespaces,
+		ServiceEntries:       s.agwCollections.ServiceEntries,
+		ServiceEntriesByHost: serviceEntriesByHost,
+		InferencePools:       s.agwCollections.InferencePools,
+		Backends:             s.agwCollections.Backends,
+		DirectResponses:      s.agwCollections.DirectResponses,
 	}
 
 	agwRoutes, routeAttachments := translator.AgwRouteCollection(s.statusCollections, s.agwCollections.HTTPRoutes, s.agwCollections.GRPCRoutes, s.agwCollections.TCPRoutes, s.agwCollections.TLSRoutes, routeInputs, krtopts)
