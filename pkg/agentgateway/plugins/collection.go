@@ -3,6 +3,7 @@ package plugins
 import (
 	"context"
 
+	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/config/schema/gvk"
 	"istio.io/istio/pkg/config/schema/gvr"
 	"istio.io/istio/pkg/config/schema/kubeclient"
@@ -42,6 +43,10 @@ type AgwCollections struct {
 	Secrets        krt.Collection[*corev1.Secret]
 	ConfigMaps     krt.Collection[*corev1.ConfigMap]
 	EndpointSlices krt.Collection[*discovery.EndpointSlice]
+
+	// Istio resources for ambient mesh
+	WorkloadEntries krt.Collection[*networkingclient.WorkloadEntry]
+	ServiceEntries  krt.Collection[*networkingclient.ServiceEntry]
 
 	// Gateway API resources
 	GatewayClasses     krt.Collection[*gwv1.GatewayClass]
@@ -236,6 +241,8 @@ func (c *AgwCollections) HasSynced() bool {
 		c.Services != nil && c.Services.HasSynced() &&
 		c.Secrets != nil && c.Secrets.HasSynced() &&
 		c.ConfigMaps != nil && c.ConfigMaps.HasSynced() &&
+		c.WorkloadEntries != nil && c.WorkloadEntries.HasSynced() &&
+		c.ServiceEntries != nil && c.ServiceEntries.HasSynced() &&
 		c.GatewayClasses != nil && c.GatewayClasses.HasSynced() &&
 		c.Gateways != nil && c.Gateways.HasSynced() &&
 		c.HTTPRoutes != nil && c.HTTPRoutes.HasSynced() &&
@@ -300,6 +307,14 @@ func NewAgwCollections(
 		EndpointSlices: krt.WrapClient(
 			kclient.NewFiltered[*discovery.EndpointSlice](commoncol.Client, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}),
 			commoncol.KrtOpts.ToOptions("informer/EndpointSlices")...),
+
+		// Istio resources
+		WorkloadEntries: krt.WrapClient(
+			kclient.NewDelayedInformer[*networkingclient.WorkloadEntry](commoncol.Client, gvr.WorkloadEntry, kubetypes.StandardInformer, kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}),
+			commoncol.KrtOpts.ToOptions("informer/WorkloadEntries")...),
+		ServiceEntries: krt.WrapClient(
+			kclient.NewDelayedInformer[*networkingclient.ServiceEntry](commoncol.Client, gvr.ServiceEntry, kubetypes.StandardInformer, kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}),
+			commoncol.KrtOpts.ToOptions("informer/ServiceEntries")...),
 
 		// Gateway API resources
 		GatewayClasses:     krt.WrapClient(kclient.NewFilteredDelayed[*gwv1.GatewayClass](commoncol.Client, wellknown.GatewayClassGVR, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/GatewayClasses")...),

@@ -15,8 +15,10 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	apiannotation "istio.io/api/annotation"
 	"istio.io/api/label"
+	networkingv1alpha3 "istio.io/api/networking/v1alpha3"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pilot/pkg/features"
+	"istio.io/istio/pilot/pkg/networking/serviceentry"
 	"istio.io/istio/pilot/pkg/serviceregistry/provider"
 	"istio.io/istio/pilot/pkg/util/protoconv"
 	"istio.io/istio/pkg/cluster"
@@ -54,13 +56,15 @@ func (a *index) ServicesCollection(
 ) krt.Collection[ServiceInfo] {
 	servicesInfo := krt.NewCollection(services, a.serviceServiceBuilder(waypoints, namespaces),
 		krtopts.ToOptions("ServicesInfo")...)
-	//ServiceEntriesInfo := krt.NewManyCollection(serviceEntries, a.serviceEntryServiceBuilder(namespaces),
-	//	krtopts.ToOptions("ServiceEntriesInfo")...)
+
+	serviceEntriesInfo := krt.NewManyCollection(serviceEntries, a.serviceEntryServiceBuilder(waypoints, namespaces),
+		krtopts.ToOptions("ServiceEntriesInfo")...)
+
 	inferencePoolsInfo := krt.NewCollection(inferencePools, a.inferencePoolBuilder(),
 		krtopts.ToOptions("InferencePools")...)
-	//WorkloadServices := krt.JoinCollection([]krt.Collection[ServiceInfo]{ServicesInfo, ServiceEntriesInfo}, krtopts.ToOptions("WorkloadService")...)
 
-	WorkloadServices := krt.JoinCollection([]krt.Collection[ServiceInfo]{servicesInfo, inferencePoolsInfo}, krtopts.ToOptions("WorkloadService")...)
+	WorkloadServices := krt.JoinCollection([]krt.Collection[ServiceInfo]{servicesInfo, serviceEntriesInfo, inferencePoolsInfo}, krtopts.ToOptions("WorkloadService")...)
+
 	return WorkloadServices
 }
 
@@ -150,13 +154,104 @@ func (a *index) inferencePoolBuilder() krt.TransformationSingle[*inf.InferencePo
 	}
 }
 
-//func (a *index) serviceEntryServiceBuilder(
-//	namespaces krt.Collection[*corev1.Namespace],
-//) krt.TransformationMulti[*networkingclient.ServiceEntry, ServiceInfo] {
-//	return func(ctx krt.HandlerContext, s *networkingclient.ServiceEntry) []ServiceInfo {
-//		return a.serviceEntriesInfo(ctx, s)
-//	}
-//}
+func (a *index) serviceEntryServiceBuilder(
+	waypoints krt.Collection[Waypoint],
+	namespaces krt.Collection[*corev1.Namespace],
+) krt.TransformationMulti[*networkingclient.ServiceEntry, ServiceInfo] {
+	return func(ctx krt.HandlerContext, se *networkingclient.ServiceEntry) []ServiceInfo {
+		waypoint, _ := fetchWaypointForService(ctx, waypoints, namespaces, se.ObjectMeta)
+		return a.servicesInfo(se, waypoint)
+	}
+}
+
+func (a *index) servicesInfo(se *networkingclient.ServiceEntry, w *Waypoint) []ServiceInfo {
+	sel := NewSelector(se.Spec.GetWorkloadSelector().GetLabels())
+	portNames := map[int32]ServicePortName{}
+	for _, p := range se.Spec.Ports {
+		portNames[int32(p.Number)] = ServicePortName{
+			PortName: p.Name,
+		}
+	}
+	waypointStatus := WaypointBindingStatus{}
+	if w != nil {
+		waypointStatus.ResourceName = w.ResourceName()
+		if val, ok := se.Labels["istio.io/ingress-use-waypoint"]; ok {
+			waypointStatus.IngressLabelPresent = true
+			waypointStatus.IngressUseWaypoint = strings.EqualFold(val, "true")
+		}
+	}
+	return slices.Map(a.constructServices(se, w), func(e *api.Service) ServiceInfo {
+		return precomputeService(ServiceInfo{
+			Service:       e,
+			PortNames:     portNames,
+			LabelSelector: sel,
+			Source:        MakeSource(se),
+			Waypoint:      waypointStatus,
+		})
+	})
+}
+
+func (a *index) constructServices(se *networkingclient.ServiceEntry, w *Waypoint) []*api.Service {
+	// Get manually specified addresses
+	addresses, err := slices.MapErr(se.Spec.Addresses, a.toNetworkAddress)
+	if err != nil {
+		logger.Warn("failed to parse service entry addresses", "serviceentry", config.NamespacedName(se), "error", err)
+		return nil
+	}
+
+	// Check for auto-allocated IPs
+	var autoassignedHostAddresses map[string][]netip.Addr
+	if serviceentry.ShouldV2AutoAllocateIP(se) {
+		autoassignedHostAddresses = serviceentry.GetHostAddressesFromServiceEntry(se)
+	}
+
+	ports := make([]*api.Port, 0, len(se.Spec.Ports))
+	for _, p := range se.Spec.Ports {
+		target := p.TargetPort
+		if target == 0 {
+			target = p.Number
+		}
+		ports = append(ports, &api.Port{
+			ServicePort: p.Number,
+			TargetPort:  target,
+			AppProtocol: toAppProtocolFromProtocol(kubeutil.ConvertProtocol(int32(p.Number), p.Name, corev1.ProtocolTCP, ptr.Of(p.Protocol))),
+		})
+	}
+
+	// handle service waypoint scenario
+	var waypointAddress *api.GatewayAddress
+	if w != nil {
+		waypointAddress = w.GetAddress()
+	}
+
+	res := make([]*api.Service, 0, len(se.Spec.Hosts))
+	for _, h := range se.Spec.Hosts {
+		hostname := string(host.Name(h))
+
+		// Use auto-assigned addresses if no manual addresses are specified
+		// and the hostname is not wildcarded
+		hostsAddresses := addresses
+		if len(hostsAddresses) == 0 && !host.Name(h).IsWildCarded() && se.Spec.Resolution != networkingv1alpha3.ServiceEntry_NONE {
+			if hostsAddrs, ok := autoassignedHostAddresses[h]; ok {
+				hostsAddresses = slices.Map(hostsAddrs, func(e netip.Addr) *api.NetworkAddress {
+					return &api.NetworkAddress{
+						Address: e.AsSlice(),
+					}
+				})
+			}
+		}
+
+		res = append(res, &api.Service{
+			Name:      se.Name,
+			Namespace: se.Namespace,
+			Hostname:  hostname,
+			Addresses: hostsAddresses,
+			Ports:     ports,
+			Waypoint:  waypointAddress,
+		})
+	}
+	return res
+}
 
 func toAppProtocolFromKube(p corev1.ServicePort) api.AppProtocol {
 	return toAppProtocolFromProtocol(kubeutil.ConvertProtocol(p.Port, p.Name, p.Protocol, p.AppProtocol))

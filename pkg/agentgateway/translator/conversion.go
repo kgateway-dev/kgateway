@@ -770,6 +770,60 @@ func buildAgwDestination(
 				Port: uint32(svc.Spec.TargetPorts[0].Number), //nolint:gosec // G115: InferencePool TargetPort is int32 with validation 1-65535, always safe
 			}
 		}
+	case schema.GroupKind{Group: "networking.istio.io", Kind: "Hostname"}:
+		// Hostname is an Istio-specific backend kind where the name is the literal hostname
+		// Used for referencing services by their full hostname (e.g., from ServiceEntry)
+		port = to.Port
+		if port == nil {
+			return nil, &reporter.RouteCondition{
+				Type:    gwv1.RouteConditionAccepted,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.RouteReasonUnsupportedValue,
+				Message: "port is required in backendRef for Hostname kind",
+			}
+		}
+		if to.Namespace != nil {
+			return nil, &reporter.RouteCondition{
+				Type:    gwv1.RouteConditionAccepted,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.RouteReasonUnsupportedValue,
+				Message: "namespace may not be set with Hostname type",
+			}
+		}
+		// Use the name directly as the hostname
+		hostname = string(to.Name)
+		// Validate that the hostname exists (check both Services and ServiceEntries)
+		key := namespace + "/" + hostname
+		svc := ptr.Flatten(krt.FetchOne(ctx.Krt, ctx.Services, krt.FilterKey(key)))
+		if svc == nil && ctx.ServiceEntries != nil {
+			// Check if it's a ServiceEntry hostname
+			found := false
+			for _, se := range krt.Fetch(ctx.Krt, ctx.ServiceEntries) {
+				for _, h := range se.Spec.Hosts {
+					if h == hostname {
+						found = true
+						break
+					}
+				}
+				if found {
+					break
+				}
+			}
+			if !found {
+				invalidBackendErr = &reporter.RouteCondition{
+					Type:    gwv1.RouteConditionResolvedRefs,
+					Status:  metav1.ConditionFalse,
+					Reason:  gwv1.RouteReasonBackendNotFound,
+					Message: fmt.Sprintf("backend hostname(%s) not found", hostname),
+				}
+			}
+		}
+		rb.Backend = &api.BackendReference{
+			Kind: &api.BackendReference_Service{
+				Service: namespace + "/" + hostname,
+			},
+			Port: uint32(*port), //nolint:gosec // G115: Gateway API PortNumber is int32 with validation 1-65535, always safe
+		}
 	case wellknown.ServiceGVK.GroupKind():
 		port = to.Port
 		if strings.Contains(string(to.Name), ".") {
