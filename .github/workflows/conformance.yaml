@@ -16,7 +16,7 @@ concurrency:
 jobs:
   kube_gateway_api_conformance_tests:
     name: kubernetes gateway api conformance tests (${{matrix.image-variant}})
-    runs-on: ubuntu-22.04
+    runs-on: oracle-vm-16cpu-64gb-x86-64
     timeout-minutes: 60
     if: ${{ !github.event.pull_request.draft }}
     strategy:
@@ -32,7 +32,7 @@ jobs:
 
   kube_inference_extension_conformance_tests:
     name: kubernetes gateway api inference extension conformance tests (${{matrix.image-variant}})
-    runs-on: ubuntu-22.04
+    runs-on: oracle-vm-16cpu-64gb-x86-64
     timeout-minutes: 60
     if: ${{ !github.event.pull_request.draft }}
     strategy:
@@ -48,7 +48,7 @@ jobs:
 
   kube_agent_gateway_conformance_tests:
     name: kubernetes gateway api agent-gateway conformance tests (${{matrix.image-variant}})
-    runs-on: ubuntu-22.04
+    runs-on: oracle-vm-16cpu-64gb-x86-64
     timeout-minutes: 60
     if: ${{ !github.event.pull_request.draft }}
     env:

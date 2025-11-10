@@ -12,7 +12,7 @@ concurrency:
 jobs:
   verify:
     name: verify
-    runs-on: ubuntu-22.04
+    runs-on: oracle-vm-16cpu-64gb-x86-64
     timeout-minutes: 30
     steps:
     - name: Check out code into the Go module directory

@@ -10,7 +10,7 @@ on:
 jobs:
   setup-mod-cache:
     name: Setup Go Modules Cache
-    runs-on: ubuntu-22.04
+    runs-on: oracle-vm-16cpu-64gb-x86-64
     timeout-minutes: 15
     steps:
     - name: Check out code into the Go module directory

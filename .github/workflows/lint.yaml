@@ -14,7 +14,7 @@ jobs:
   # Lint Go code with golangci-lint
   go-lint:
     name: Go
-    runs-on: ubuntu-22.04
+    runs-on: oracle-24cpu-384gb-x86-64
     timeout-minutes: 20
     steps:
     - name: Check out code into the Go module directory
@@ -27,7 +27,7 @@ jobs:
   # Lint Helm charts
   helm-lint:
     name: Helm
-    runs-on: ubuntu-22.04
+    runs-on: oracle-vm-16cpu-64gb-x86-64
     timeout-minutes: 5
     steps:
     - name: Check out code into the Go module directory
@@ -38,7 +38,7 @@ jobs:
   # Lint GitHub workflow files
   action-lint:
     name: GHA
-    runs-on: ubuntu-22.04
+    runs-on: oracle-vm-16cpu-64gb-x86-64
     timeout-minutes: 5
     steps:
     - uses: actions/checkout@v4
@@ -52,7 +52,7 @@ jobs:
   # Lint Rust code
   rust-lint:
     name: Rust
-    runs-on: ubuntu-latest
+    runs-on: oracle-vm-16cpu-64gb-x86-64
     timeout-minutes: 10
     steps:
     - name: Checkout repository

@@ -17,7 +17,7 @@ concurrency:
 jobs:
   end_to_end_tests:
     name: End-to-End (${{ matrix.test.cluster-name }})
-    runs-on: ubuntu-22.04
+    runs-on: oracle-vm-16cpu-64gb-x86-64
     timeout-minutes: 60
     if: ${{ !github.event.pull_request.draft }}
     strategy:

@@ -35,7 +35,7 @@ jobs:
   kube_gateway_api_conformance_tests_main:
     name: Conformance (branch=main, type=Kubernetes Gateway API, version=${{matrix.kube-version.node}} )
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-conformance && inputs.branch == 'main') || github.event.schedule == '0 5 * * *' }}
-    runs-on: ubuntu-22.04
+    runs-on: oracle-vm-16cpu-64gb-x86-64
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -51,7 +51,7 @@ jobs:
   kube_gateway_api_load_tests:
     name: Load Tests (branch=main, type=Kubernetes Gateway API, version=${{matrix.kube-version.node}} )
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-load-tests && inputs.branch == 'main') || github.event.schedule == '0 5 * * *' }}
-    runs-on: ubuntu-22.04
+    runs-on: oracle-vm-16cpu-64gb-x86-64
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -67,7 +67,7 @@ jobs:
   kgateway_e2e_tests_for_gateway_api_versions:
     name: GwApi E2E
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-e2e-tests) || github.event.schedule == '0 5 * * *' }}
-    runs-on: ubuntu-22.04
+    runs-on: oracle-vm-16cpu-64gb-x86-64
     timeout-minutes: 120
     strategy:
       fail-fast: false
