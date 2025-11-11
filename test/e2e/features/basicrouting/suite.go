@@ -26,6 +26,11 @@ import (
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
 
+const (
+	kgatewayControllerName = "kgateway.dev/kgateway"
+	otherControllerName    = "other-controller.example.com/controller"
+)
+
 var (
 	// manifests
 	serviceManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "service.yaml")
@@ -82,14 +87,14 @@ func (s *testingSuite) TestHeadlessService() {
 }
 
 func (s *testingSuite) TestClearStaleStatus() {
-	// Verify route has parent status true
-	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
-		s.Ctx,
-		"example-route",
-		"default",
-		gwv1.RouteConditionAccepted,
-		metav1.ConditionTrue,
-	)
+	// Inject fake parent status from another controller
+	s.addParentStatus("example-route", "default", otherControllerName)
+
+	// Verify status
+	s.assertParentStatuses("gw", map[string]bool{
+		kgatewayControllerName: true,
+		otherControllerName:    true,
+	})
 
 	// Modify route to reference missing-gw
 	err := s.TestInstallation.Actions.Kubectl().ApplyFile(
@@ -98,8 +103,11 @@ func (s *testingSuite) TestClearStaleStatus() {
 	)
 	s.Require().NoError(err)
 
-	// Verify the parent status for "gw" is removed
-	s.assertParentStatusRemoved("gw")
+	// Verify kgateway status is cleared but other controller status remains
+	s.assertParentStatuses("gw", map[string]bool{
+		kgatewayControllerName: false,
+		otherControllerName:    true,
+	})
 
 	// Re-apply the correct parent ref
 	err = s.TestInstallation.Actions.Kubectl().ApplyFile(
@@ -126,7 +134,41 @@ func (s *testingSuite) assertSuccessfulResponse() {
 	}
 }
 
-func (s *testingSuite) assertParentStatusRemoved(parentName string) {
+func (s *testingSuite) addParentStatus(routeName, routeNamespace, controllerName string) {
+	currentTimeout, pollingInterval := helpers.GetTimeouts()
+	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+		route := &gwv1.HTTPRoute{}
+		err := s.TestInstallation.ClusterContext.Client.Get(
+			s.Ctx,
+			types.NamespacedName{Name: routeName, Namespace: routeNamespace},
+			route,
+		)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+
+		// Add fake parent status entry
+		fakeStatus := gwv1.RouteParentStatus{
+			ParentRef: gwv1.ParentReference{
+				Name: "gw",
+			},
+			ControllerName: gwv1.GatewayController(controllerName),
+			Conditions: []metav1.Condition{
+				{
+					Type:               string(gwv1.RouteConditionAccepted),
+					Status:             metav1.ConditionTrue,
+					Reason:             string(gwv1.RouteReasonAccepted),
+					Message:            "Accepted by fake controller",
+					LastTransitionTime: metav1.Now(),
+				},
+			},
+		}
+
+		route.Status.Parents = append(route.Status.Parents, fakeStatus)
+		err = s.TestInstallation.ClusterContext.Client.Status().Update(s.Ctx, route)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+}
+
+func (s *testingSuite) assertParentStatuses(parentName string, expectedControllers map[string]bool) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
 	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
 		route := &gwv1.HTTPRoute{}
@@ -137,10 +179,26 @@ func (s *testingSuite) assertParentStatusRemoved(parentName string) {
 		)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get HTTPRoute")
 
-		// Check that no parent status exists for the original "gw" gateway
+		// Build map of found controllers for this parent
+		foundControllers := make(map[string]bool)
 		for _, parent := range route.Status.Parents {
-			g.Expect(string(parent.ParentRef.Name)).NotTo(gomega.Equal(parentName),
-				fmt.Sprintf("parent status for gateway %s should be removed. Full status: %+v", parentName, route.Status))
+			if string(parent.ParentRef.Name) == parentName {
+				foundControllers[string(parent.ControllerName)] = true
+			}
+		}
+
+		// Verify each expected controller status
+		for controller, shouldExist := range expectedControllers {
+			exists := foundControllers[controller]
+			if shouldExist {
+				g.Expect(exists).To(gomega.BeTrue(),
+					fmt.Sprintf("parent status for gateway %s with controller %s should exist. Full status: %+v",
+						parentName, controller, route.Status))
+			} else {
+				g.Expect(exists).To(gomega.BeFalse(),
+					fmt.Sprintf("parent status for gateway %s with controller %s should not exist. Full status: %+v",
+						parentName, controller, route.Status))
+			}
 		}
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
