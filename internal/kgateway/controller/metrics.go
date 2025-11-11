@@ -3,7 +3,7 @@ package controller
 import (
 	"time"
 
-	ctrl "sigs.k8s.io/controller-runtime"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 )
@@ -51,7 +51,7 @@ var (
 // collectReconciliationMetrics is called at the start of a controller reconciliation
 // function to begin metrics collection and returns a function called at the end to
 // complete metrics recording.
-func collectReconciliationMetrics(controllerName string, req ctrl.Request) func(error) {
+func collectReconciliationMetrics(controllerName string, req types.NamespacedName) func(error) {
 	if !metrics.Active() {
 		return func(err error) {}
 	}
