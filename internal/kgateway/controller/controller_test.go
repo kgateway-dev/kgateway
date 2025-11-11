@@ -746,7 +746,7 @@ func (s *ControllerSuite) startController(
 		},
 	}
 
-	if err := NewBaseGatewayController(ctx, gwCfg, gatewayControllerName, classConfigs, nil, nil); err != nil {
+	if err := NewBaseGatewayController(ctx, gwCfg, classConfigs, nil, nil); err != nil {
 		return err
 	}
 	kubeClient.RunAndWait(ctx.Done())

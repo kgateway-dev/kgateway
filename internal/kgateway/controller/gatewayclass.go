@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -29,35 +30,35 @@ var _ manager.LeaderElectionRunnable = (*gatewayClassReconciler)(nil)
 var emptyGatewayClass = types.NamespacedName{}
 
 type gatewayClassReconciler struct {
-	defaultControllerName string
 	classInfo             map[string]*deployer.GatewayClassInfo
+	defaultControllerName string
 	gwClassClient         kclient.Client[*gwv1.GatewayClass]
 	queue                 controllers.Queue
 }
 
 func newGatewayClassReconciler(
 	cfg GatewayConfig,
-	defaultControllerName string,
 	classInfo map[string]*deployer.GatewayClassInfo,
 ) *gatewayClassReconciler {
 	filter := kclient.Filter{ObjectFilter: cfg.Client.ObjectFilter()}
 	r := &gatewayClassReconciler{
-		defaultControllerName: defaultControllerName,
+		defaultControllerName: cfg.ControllerName,
 		classInfo:             classInfo,
 		gwClassClient:         kclient.NewFilteredDelayed[*gwv1.GatewayClass](cfg.Client, gvr.GatewayClass_v1, filter),
 	}
 	r.queue = controllers.NewQueue("GatewayClassController", controllers.WithReconciler(r.reconcile), controllers.WithMaxAttempts(10))
+	ourControllers := sets.New(cfg.ControllerName, cfg.AgwControllerName)
 
 	r.gwClassClient.AddEventHandler(
 		controllers.FromEventHandler(func(o controllers.Event) {
 			switch o.Event {
 			case controllers.EventAdd:
 				logger.Debug("reconciling Gateway due to add event", "ref", kubeutils.NamespacedNameFrom(o.New))
-				if r.isOurGatewayClass(o.New.(*gwv1.GatewayClass)) {
+				if isOurGatewayClass(o.New.(*gwv1.GatewayClass), ourControllers) {
 					r.queue.AddObject(o.New)
 				}
 			case controllers.EventUpdate:
-				if o.New.GetGeneration() != o.Old.GetGeneration() && r.isOurGatewayClass(o.New.(*gwv1.GatewayClass)) {
+				if o.New.GetGeneration() != o.Old.GetGeneration() && isOurGatewayClass(o.New.(*gwv1.GatewayClass), ourControllers) {
 					logger.Debug("reconciling Gateway due to generation change", "ref", kubeutils.NamespacedNameFrom(o.New))
 					r.queue.AddObject(o.New)
 					return
@@ -170,8 +171,8 @@ func (r *gatewayClassReconciler) createGatewayClass(name string, info *deployer.
 	return err
 }
 
-func (r *gatewayClassReconciler) isOurGatewayClass(gwc *gwv1.GatewayClass) bool {
-	return string(gwc.Spec.ControllerName) == r.getControllerName(gwc.Name)
+func isOurGatewayClass(gwc *gwv1.GatewayClass, ourControllers sets.Set[string]) bool {
+	return ourControllers.Has(string(gwc.Spec.ControllerName))
 }
 
 func (r *gatewayClassReconciler) getControllerName(gwc string) string {

@@ -329,7 +329,6 @@ func (c *ControllerBuilder) Build(ctx context.Context) (*agentgatewaysyncer.Sync
 	if err := NewBaseGatewayController(
 		ctx,
 		gwCfg,
-		c.cfg.ControllerName,
 		c.cfg.GatewayClassInfos,
 		c.cfg.HelmValuesGeneratorOverride,
 		c.cfg.GatewayControllerExtension,
