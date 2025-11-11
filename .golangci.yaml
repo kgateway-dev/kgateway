@@ -67,6 +67,8 @@ linters:
           msg: use utils.MessageToAny instead
         - pattern: kclient.New$
           msg: use kclient.NewFilteredDelayed for CRDs and kclient.NewFiltered for core types, with discovery namespace ObjectFilter instead
+        - pattern: ^client.Client$
+          msg: use apiclient.Client instead of controller-runtime's client.Client
         - pattern: (\bt|\bT\(\))\.Cleanup
           msg: require testutils.Cleanup in e2e tests (test/e2e/)
     gomodguard:
@@ -163,6 +165,11 @@ linters:
         linters:
           - forbidigo
         text: 'require testutils.Cleanup'
+      # Skip client.Client forbidgo rule for e2e tests
+      - path: test/e2e/
+        linters:
+          - forbidigo
+        text: 'use apiclient.Client instead'
       # Restrict krtequals analyzer to the pkg and internal directories
       - path-except: pkg/|internal/
         linters:

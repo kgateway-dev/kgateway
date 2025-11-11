@@ -80,7 +80,7 @@ type ControllerSuite struct {
 	// fields below are set in SetupSuite
 	suitCtxCancelFn context.CancelFunc
 	env             *envtest.Environment
-	client          client.Client
+	client          client.Client //nolint:forbidigo // can use client.Client in envtest
 	kubeconfigPath  string
 }
 
@@ -746,10 +746,7 @@ func (s *ControllerSuite) startController(
 		},
 	}
 
-	if err := NewBaseGatewayController(ctx, gwCfg, classConfigs, nil, nil); err != nil {
-		return err
-	}
-	if err := NewGatewayClassProvisioner(mgr, gatewayControllerName, classConfigs); err != nil {
+	if err := NewBaseGatewayController(ctx, gwCfg, gatewayControllerName, classConfigs, nil, nil); err != nil {
 		return err
 	}
 	kubeClient.RunAndWait(ctx.Done())

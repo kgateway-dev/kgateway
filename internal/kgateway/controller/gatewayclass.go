@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"istio.io/istio/pkg/config/schema/gvr"
@@ -11,7 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -23,42 +24,48 @@ import (
 
 var _ manager.LeaderElectionRunnable = (*gatewayClassReconciler)(nil)
 
+// emptyGatewayClass is a sentinel value for an empty GatewayClass used to create
+// the default GatewayClass
+var emptyGatewayClass = types.NamespacedName{}
+
 type gatewayClassReconciler struct {
-	classInfo     map[string]*deployer.GatewayClassInfo
-	gwClassClient kclient.Client[*gwv1.GatewayClass]
-	queue         controllers.Queue
+	defaultControllerName string
+	classInfo             map[string]*deployer.GatewayClassInfo
+	gwClassClient         kclient.Client[*gwv1.GatewayClass]
+	queue                 controllers.Queue
 }
 
 func newGatewayClassReconciler(
 	cfg GatewayConfig,
+	defaultControllerName string,
 	classInfo map[string]*deployer.GatewayClassInfo,
 ) *gatewayClassReconciler {
 	filter := kclient.Filter{ObjectFilter: cfg.Client.ObjectFilter()}
 	r := &gatewayClassReconciler{
-		classInfo:     classInfo,
-		gwClassClient: kclient.NewFilteredDelayed[*gwv1.GatewayClass](cfg.Client, gvr.GatewayClass_v1, filter),
+		defaultControllerName: defaultControllerName,
+		classInfo:             classInfo,
+		gwClassClient:         kclient.NewFilteredDelayed[*gwv1.GatewayClass](cfg.Client, gvr.GatewayClass_v1, filter),
 	}
-	r.queue = controllers.NewQueue("GatewayClassController", controllers.WithReconciler(r.Reconcile), controllers.WithMaxAttempts(10))
-
-	ourControllers := sets.New(cfg.ControllerName, cfg.AgwControllerName)
+	r.queue = controllers.NewQueue("GatewayClassController", controllers.WithReconciler(r.reconcile), controllers.WithMaxAttempts(10))
 
 	r.gwClassClient.AddEventHandler(
 		controllers.FromEventHandler(func(o controllers.Event) {
 			switch o.Event {
 			case controllers.EventAdd:
 				logger.Debug("reconciling Gateway due to add event", "ref", kubeutils.NamespacedNameFrom(o.New))
-				if isOurGatewayClass(o.New.(*gwv1.GatewayClass), ourControllers) {
+				if r.isOurGatewayClass(o.New.(*gwv1.GatewayClass)) {
 					r.queue.AddObject(o.New)
 				}
 			case controllers.EventUpdate:
-				if o.New.GetGeneration() != o.Old.GetGeneration() && isOurGatewayClass(o.New.(*gwv1.GatewayClass), ourControllers) {
+				if o.New.GetGeneration() != o.Old.GetGeneration() && r.isOurGatewayClass(o.New.(*gwv1.GatewayClass)) {
 					logger.Debug("reconciling Gateway due to generation change", "ref", kubeutils.NamespacedNameFrom(o.New))
 					r.queue.AddObject(o.New)
 					return
 				}
 				logger.Debug("skip reconciling Gateway with no relevant changes", "ref", kubeutils.NamespacedNameFrom(o.New))
-			default:
-				// no-op
+			case controllers.EventDelete:
+				logger.Debug("reconciling Gateway due to delete event", "ref", kubeutils.NamespacedNameFrom(o.Old))
+				r.queue.Add(emptyGatewayClass)
 			}
 		}))
 
@@ -72,6 +79,9 @@ func (r *gatewayClassReconciler) NeedLeaderElection() bool {
 
 // Start starts the GatewayClass reconciler and blocks until the stop channel is closed.
 func (r *gatewayClassReconciler) Start(ctx context.Context) error {
+	// Seed the queue with an initial event to ensure default GatewayClass creation
+	r.queue.Add(emptyGatewayClass)
+
 	// Wait for all caches to sync
 	kube.WaitForCacheSync("GatewayClassController", ctx.Done(), r.gwClassClient.HasSynced)
 	r.queue.Run(ctx.Done())
@@ -81,11 +91,16 @@ func (r *gatewayClassReconciler) Start(ctx context.Context) error {
 	return nil
 }
 
-func (r *gatewayClassReconciler) Reconcile(req types.NamespacedName) (rErr error) {
+func (r *gatewayClassReconciler) reconcile(req types.NamespacedName) (rErr error) {
 	finishMetrics := collectReconciliationMetrics("gatewayclass", req)
 	defer func() {
 		finishMetrics(rErr)
 	}()
+
+	if req == emptyGatewayClass {
+		// This is the initial reconciliation event to ensure the default GatewayClasses are created
+		return r.createGatewayClasses()
+	}
 
 	gwClass := r.gwClassClient.Get(req.Name, req.Namespace)
 	if gwClass == nil || gwClass.GetDeletionTimestamp() != nil {
@@ -116,6 +131,54 @@ func (r *gatewayClassReconciler) Reconcile(req types.NamespacedName) (rErr error
 	return nil
 }
 
-func isOurGatewayClass(gwc *gwv1.GatewayClass, ourControllers sets.Set[string]) bool {
-	return ourControllers.Has(string(gwc.Spec.ControllerName))
+func (r *gatewayClassReconciler) createGatewayClasses() error {
+	var errs []error
+	for name, info := range r.classInfo {
+		if err := r.createGatewayClass(name, info); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		logger.Info("created GatewayClass", "name", name)
+	}
+	return errors.Join(errs...)
+}
+
+func (r *gatewayClassReconciler) createGatewayClass(name string, info *deployer.GatewayClassInfo) error {
+	gwc := r.gwClassClient.Get(name, metav1.NamespaceNone)
+	if gwc != nil {
+		// already exists, nothing to do
+		return nil
+	}
+
+	gwc = &gwv1.GatewayClass{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        name,
+			Annotations: info.Annotations,
+			Labels:      info.Labels,
+		},
+		Spec: gwv1.GatewayClassSpec{
+			ControllerName: gwv1.GatewayController(r.getControllerName(name)),
+		},
+	}
+	if info.Description != "" {
+		gwc.Spec.Description = ptr.To(info.Description)
+	}
+	if info.ParametersRef != nil {
+		gwc.Spec.ParametersRef = info.ParametersRef
+	}
+	_, err := r.gwClassClient.Create(gwc)
+	return err
+}
+
+func (r *gatewayClassReconciler) isOurGatewayClass(gwc *gwv1.GatewayClass) bool {
+	return string(gwc.Spec.ControllerName) == r.getControllerName(gwc.Name)
+}
+
+func (r *gatewayClassReconciler) getControllerName(gwc string) string {
+	controllerName := r.defaultControllerName
+	info, ok := r.classInfo[gwc]
+	if ok && info.ControllerName != "" {
+		controllerName = info.ControllerName
+	}
+	return controllerName
 }

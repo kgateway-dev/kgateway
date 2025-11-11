@@ -54,6 +54,7 @@ type HelmValuesGeneratorOverrideFunc func(inputs *deployer.Inputs) deployer.Helm
 func NewBaseGatewayController(
 	ctx context.Context,
 	cfg GatewayConfig,
+	defaultControllerName string,
 	classInfos map[string]*deployer.GatewayClassInfo,
 	helmValuesGeneratorOverride HelmValuesGeneratorOverrideFunc,
 	gatewayControllerExtension pluginsdk.GatewayControllerExtension,
@@ -66,7 +67,7 @@ func NewBaseGatewayController(
 	}
 
 	// Initialize GatewayClass reconciler
-	if err := cfg.Mgr.Add(newGatewayClassReconciler(cfg, classInfos)); err != nil {
+	if err := cfg.Mgr.Add(newGatewayClassReconciler(cfg, defaultControllerName, classInfos)); err != nil {
 		return err
 	}
 
