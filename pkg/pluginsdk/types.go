@@ -160,9 +160,14 @@ func CloneObjectMetaForStatus(m metav1.ObjectMeta) metav1.ObjectMeta {
 
 // GatewayControllerExtension is an interface for extending the Gateway controller with custom behavior
 type GatewayControllerExtension interface {
+	// Register is called to allow the extension to interact with the Queue used to reconcile Gateways,
+	// and access to a ResourceEventHandler that the extension can use to integrate additional Gateway parameter events
+	// that should contribute to triggering Gateway reconciliation
 	Register(gatewayQueue controllers.Queue, gatewayParamEventHandler cache.ResourceEventHandler)
 
+	// Start is called to start the extension. It must be non-blocking.
 	Start(context.Context) error
 
+	// Stop is called to stop the extension.
 	Stop() error
 }
