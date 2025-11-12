@@ -74,6 +74,12 @@ func (m *DnsLookupFamily) Decode(value string) error {
 	}
 }
 
+// ParametersReferenceSettings captures the configuration for a GatewayParameters reference.
+type ParametersReferenceSettings struct {
+	Name      string
+	Namespace string
+}
+
 type Settings struct {
 	// Controls the DnsLookupFamily for all static clusters created via Backend resources.
 	// If not set, kgateway will default to "V4_PREFERRED". Note that this is different
@@ -155,8 +161,16 @@ type Settings struct {
 	// EnableEnvoy enables kgateway to send config to Envoy
 	EnableEnvoy bool `split_words:"true" default:"true"`
 
+	// EnvoyCustomParameters optionally references a GatewayParameters resource
+	// that will be attached to the default envoy GatewayClass.
+	EnvoyCustomParameters ParametersReferenceSettings `split_words:"true"`
+
 	// EnableAgentgateway enables kgateway to send config to Agentgateway
 	EnableAgentgateway bool `split_words:"true" default:"true"`
+
+	// AgentgatewayCustomParameters optionally references a GatewayParameters resource
+	// that will be attached to the default agentgateway GatewayClass.
+	AgentgatewayCustomParameters ParametersReferenceSettings `split_words:"true"`
 
 	// WeightedRoutePrecedence enables routes with a larger weight to take precedence over routes with a smaller weight.
 	// If two routes have the same weight, Gateway API route precedence rules apply.

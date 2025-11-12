@@ -16,6 +16,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer"
@@ -26,6 +27,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
@@ -367,10 +369,12 @@ func GetDefaultClassInfo(
 ) map[string]*deployer.GatewayClassInfo {
 	classInfos := map[string]*deployer.GatewayClassInfo{}
 	if globalSettings.EnableEnvoy {
+		parametersRef := getParametersReference(globalSettings.EnvoyCustomParameters)
 		classInfos[gatewayClassName] = &deployer.GatewayClassInfo{
 			Description:       "Standard class for managing Gateway API ingress traffic.",
 			Labels:            map[string]string{},
 			Annotations:       map[string]string{},
+			ParametersRef:     parametersRef,
 			ControllerName:    controllerName,
 			SupportedFeatures: deployer.GetSupportedFeaturesForStandardGateway(),
 		}
@@ -389,14 +393,32 @@ func GetDefaultClassInfo(
 	}
 	// Only enable agentgateway gateway class if it's enabled in the settings
 	if globalSettings.EnableAgentgateway {
+		parametersRef := getParametersReference(globalSettings.AgentgatewayCustomParameters)
 		classInfos[agwClassName] = &deployer.GatewayClassInfo{
 			Description:       "Specialized class for agentgateway.",
 			Labels:            map[string]string{},
 			Annotations:       map[string]string{},
+			ParametersRef:     parametersRef,
 			ControllerName:    agwControllerName,
 			SupportedFeatures: deployer.GetSupportedFeaturesForAgentGateway(),
 		}
 	}
 	maps.Copy(classInfos, additionalClassInfos)
 	return classInfos
+}
+
+func getParametersReference(params apisettings.ParametersReferenceSettings) *gwv1.ParametersReference {
+	if params.Name == "" {
+		return nil
+	}
+	parametersRef := &gwv1.ParametersReference{
+		Group: gwv1.Group(wellknown.GatewayParametersGVK.Group),
+		Kind:  gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
+		Name:  params.Name,
+	}
+	if params.Namespace != "" {
+		ns := gwv1.Namespace(params.Namespace)
+		parametersRef.Namespace = &ns
+	}
+	return parametersRef
 }

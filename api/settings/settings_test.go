@@ -36,7 +36,11 @@ func allEnvVarsSet() map[string]string {
 		"KGW_INGRESS_USE_WAYPOINTS":                    "false",
 		"KGW_LOG_LEVEL":                                "debug",
 		"KGW_DISCOVERY_NAMESPACE_SELECTORS":            `[{"matchExpressions":[{"key":"kubernetes.io/metadata.name","operator":"In","values":["infra"]}]},{"matchLabels":{"app":"a"}}]`,
+		"KGW_ENVOY_CUSTOM_PARAMETERS_NAME":             "envoy-params",
+		"KGW_ENVOY_CUSTOM_PARAMETERS_NAMESPACE":        "envoy-ns",
 		"KGW_ENABLE_AGENTGATEWAY":                      "false",
+		"KGW_AGENTGATEWAY_CUSTOM_PARAMETERS_NAME":      "agw-params",
+		"KGW_AGENTGATEWAY_CUSTOM_PARAMETERS_NAMESPACE": "agw-ns",
 		"KGW_ENABLE_ENVOY":                             "false",
 		"KGW_WEIGHTED_ROUTE_PRECEDENCE":                "true",
 		"KGW_VALIDATION_MODE":                          string(ValidationStrict),
@@ -89,7 +93,9 @@ func TestSettings(t *testing.T) {
 				IngressUseWaypoints:                  true,
 				LogLevel:                             "info",
 				DiscoveryNamespaceSelectors:          "[]",
+				EnvoyCustomParameters:                ParametersReferenceSettings{},
 				EnableAgentgateway:                   true,
+				AgentgatewayCustomParameters:         ParametersReferenceSettings{},
 				EnableEnvoy:                          true,
 				WeightedRoutePrecedence:              false,
 				ValidationMode:                       ValidationStandard,
@@ -109,25 +115,33 @@ func TestSettings(t *testing.T) {
 			name:    "all values set",
 			envVars: allEnvVarsSet(),
 			expectedSettings: &Settings{
-				DnsLookupFamily:                      DnsLookupFamilyV4Only,
-				ListenerBindIpv6:                     false,
-				EnableIstioIntegration:               true,
-				EnableIstioAutoMtls:                  true,
-				IstioNamespace:                       "my-istio-namespace",
-				XdsServiceHost:                       "my-xds-host",
-				XdsServiceName:                       "custom-svc",
-				XdsServicePort:                       1234,
-				AgentgatewayXdsServicePort:           5678,
-				UseRustFormations:                    true,
-				EnableInferExt:                       true,
-				DefaultImageRegistry:                 "my-registry",
-				DefaultImageTag:                      "my-tag",
-				DefaultImagePullPolicy:               "Always",
-				WaypointLocalBinding:                 true,
-				IngressUseWaypoints:                  false,
-				LogLevel:                             "debug",
-				DiscoveryNamespaceSelectors:          `[{"matchExpressions":[{"key":"kubernetes.io/metadata.name","operator":"In","values":["infra"]}]},{"matchLabels":{"app":"a"}}]`,
-				EnableAgentgateway:                   false,
+				DnsLookupFamily:             DnsLookupFamilyV4Only,
+				ListenerBindIpv6:            false,
+				EnableIstioIntegration:      true,
+				EnableIstioAutoMtls:         true,
+				IstioNamespace:              "my-istio-namespace",
+				XdsServiceHost:              "my-xds-host",
+				XdsServiceName:              "custom-svc",
+				XdsServicePort:              1234,
+				AgentgatewayXdsServicePort:  5678,
+				UseRustFormations:           true,
+				EnableInferExt:              true,
+				DefaultImageRegistry:        "my-registry",
+				DefaultImageTag:             "my-tag",
+				DefaultImagePullPolicy:      "Always",
+				WaypointLocalBinding:        true,
+				IngressUseWaypoints:         false,
+				LogLevel:                    "debug",
+				DiscoveryNamespaceSelectors: `[{"matchExpressions":[{"key":"kubernetes.io/metadata.name","operator":"In","values":["infra"]}]},{"matchLabels":{"app":"a"}}]`,
+				EnvoyCustomParameters: ParametersReferenceSettings{
+					Name:      "envoy-params",
+					Namespace: "envoy-ns",
+				},
+				EnableAgentgateway: false,
+				AgentgatewayCustomParameters: ParametersReferenceSettings{
+					Name:      "agw-params",
+					Namespace: "agw-ns",
+				},
 				EnableEnvoy:                          false,
 				WeightedRoutePrecedence:              true,
 				ValidationMode:                       ValidationStrict,
@@ -184,27 +198,29 @@ func TestSettings(t *testing.T) {
 				"KGW_ENABLE_ISTIO_AUTO_MTLS": "true",
 			},
 			expectedSettings: &Settings{
-				DnsLookupFamily:             DnsLookupFamilyV4Preferred,
-				EnableIstioAutoMtls:         true,
-				ListenerBindIpv6:            true,
-				IstioNamespace:              "istio-system",
-				XdsServiceName:              wellknown.DefaultXdsService,
-				XdsServicePort:              wellknown.DefaultXdsPort,
-				AgentgatewayXdsServicePort:  wellknown.DefaultAgwXdsPort,
-				DefaultImageRegistry:        "cr.kgateway.dev",
-				DefaultImageTag:             "",
-				DefaultImagePullPolicy:      "IfNotPresent",
-				WaypointLocalBinding:        false,
-				IngressUseWaypoints:         true,
-				LogLevel:                    "info",
-				DiscoveryNamespaceSelectors: "[]",
-				EnableAgentgateway:          true,
-				EnableEnvoy:                 true,
-				WeightedRoutePrecedence:     false,
-				ValidationMode:              ValidationStandard,
-				PolicyMerge:                 "{}",
-				XdsAuth:                     true,
-				XdsTLS:                      false,
+				DnsLookupFamily:              DnsLookupFamilyV4Preferred,
+				EnableIstioAutoMtls:          true,
+				ListenerBindIpv6:             true,
+				IstioNamespace:               "istio-system",
+				XdsServiceName:               wellknown.DefaultXdsService,
+				XdsServicePort:               wellknown.DefaultXdsPort,
+				AgentgatewayXdsServicePort:   wellknown.DefaultAgwXdsPort,
+				DefaultImageRegistry:         "cr.kgateway.dev",
+				DefaultImageTag:              "",
+				DefaultImagePullPolicy:       "IfNotPresent",
+				WaypointLocalBinding:         false,
+				IngressUseWaypoints:          true,
+				LogLevel:                     "info",
+				DiscoveryNamespaceSelectors:  "[]",
+				EnvoyCustomParameters:        ParametersReferenceSettings{},
+				EnableAgentgateway:           true,
+				AgentgatewayCustomParameters: ParametersReferenceSettings{},
+				EnableEnvoy:                  true,
+				WeightedRoutePrecedence:      false,
+				ValidationMode:               ValidationStandard,
+				PolicyMerge:                  "{}",
+				XdsAuth:                      true,
+				XdsTLS:                       false,
 			},
 		},
 	}
@@ -242,12 +258,13 @@ func TestEnvVarCoverage(t *testing.T) {
 	settingsValue := reflect.ValueOf(s)
 
 	allEnvVars := allEnvVarsSet()
+	expected := expectedEnvVars(settingsValue)
 	// Check for the right number of env vars defined
-	require.Equal(t, settingsValue.NumField(), len(allEnvVars), "Number of fields in Settings does not match number of tested env vars")
+	require.Equal(t, len(expected), len(allEnvVars), "Number of environment variables derived from Settings does not match number of tested env vars")
 
 	// Check that each field of Settings has a corresponding env var set in the test map
 	// This protects against typos when adding new settings to the test map.
-	for envVar, defaultValue := range expectedEnvVars(settingsValue) {
+	for envVar, defaultValue := range expected {
 		require.Contains(t, allEnvVars, envVar, "Env var %s is not tested", envVar)
 		require.NotEqual(t, allEnvVars[envVar], defaultValue, "Env var %s is set to the default value", envVar)
 	}
@@ -288,6 +305,10 @@ var (
 // expectedEnvVars returns a map of all the env vars that should be set for the given Settings value.
 // The value of the map is the default value of the field.
 func expectedEnvVars(settingsValue reflect.Value) map[string]any {
+	return expectedEnvVarsWithPrefix(settingsValue, "KGW")
+}
+
+func expectedEnvVarsWithPrefix(settingsValue reflect.Value, prefix string) map[string]any {
 	// This is a modified version of the code in https://github.com/kelseyhightower/envconfig/blob/7834011875d613aec60c606b52c2b0fe8949fe91/envconfig.go#L102-L128
 	expectedEnvVars := make(map[string]any, settingsValue.NumField())
 	for i := 0; i < settingsValue.NumField(); i++ {
@@ -312,11 +333,19 @@ func expectedEnvVars(settingsValue reflect.Value) map[string]any {
 
 		envVarName = strings.ToUpper(envVarName)
 		// Always have a prefix
-		envVarName = fmt.Sprintf("KGW_%s", envVarName)
+		envVarName = fmt.Sprintf("%s_%s", prefix, envVarName)
 
 		// If the field has an alt tag, use that as the env var name
 		if fieldType.Tag.Get("alt") != "" {
 			envVarName = fieldType.Tag.Get("alt")
+		}
+
+		if fieldType.Type.Kind() == reflect.Struct && fieldType.Type.NumField() > 0 {
+			nested := expectedEnvVarsWithPrefix(reflect.New(fieldType.Type).Elem(), envVarName)
+			for k, v := range nested {
+				expectedEnvVars[k] = v
+			}
+			continue
 		}
 		expectedEnvVars[envVarName] = fieldType.Tag.Get("default")
 	}
