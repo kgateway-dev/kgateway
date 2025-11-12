@@ -17,15 +17,14 @@ import (
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
+	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
 type CommonCollections struct {
-	OurClient         versioned.Interface
-	Client            kube.Client
+	Client            apiclient.Client
 	KrtOpts           krtutil.KrtOptions
 	Secrets           *krtcollections.SecretIndex
 	BackendIndex      *krtcollections.BackendIndex
@@ -74,8 +73,7 @@ func (c *CommonCollections) HasSynced() bool {
 func NewCommonCollections(
 	ctx context.Context,
 	krtOptions krtutil.KrtOptions,
-	client kube.Client,
-	ourClient versioned.Interface,
+	client apiclient.Client,
 	controllerName string,
 	agentGatewayControllerName string,
 	settings apisettings.Settings,
@@ -89,7 +87,7 @@ func NewCommonCollections(
 	if err != nil {
 		return nil, err
 	}
-	kube.SetObjectFilter(client, discoveryNamespacesFilter)
+	kube.SetObjectFilter(client.Core(), discoveryNamespacesFilter)
 
 	secretClient := kclient.NewFiltered[*corev1.Secret](
 		client,
@@ -138,12 +136,11 @@ func NewCommonCollections(
 	)
 	cfgmaps := krt.WrapClient(cmClient, krtOptions.ToOptions("ConfigMaps")...)
 
-	gwExts := krtcollections.NewGatewayExtensionsCollection(ctx, client, ourClient, krtOptions)
+	gwExts := krtcollections.NewGatewayExtensionsCollection(ctx, client, krtOptions)
 
 	localityPods, wrappedPods := krtcollections.NewPodsCollection(client, krtOptions)
 
 	return &CommonCollections{
-		OurClient:         ourClient,
 		Client:            client,
 		KrtOpts:           krtOptions,
 		Secrets:           krtcollections.NewSecretIndex(secrets, refgrants),
@@ -178,7 +175,6 @@ func (c *CommonCollections) InitPlugins(
 		c.ControllerName,
 		mergedPlugins,
 		c.Client,
-		c.OurClient,
 		c.RefGrants,
 		c.KrtOpts,
 		globalSettings,

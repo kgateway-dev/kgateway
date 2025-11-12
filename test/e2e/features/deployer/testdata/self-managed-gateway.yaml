@@ -9,6 +9,9 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
   name: gw
+  annotations:
+    # should match selfManagedGatewayAnnotation in test/e2e/tests/base/base_suite.go
+    e2e.kgateway.dev/self-managed: "true"
 spec:
   gatewayClassName: kgateway
   infrastructure:

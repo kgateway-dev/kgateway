@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/Masterminds/semver/v3"
@@ -23,9 +24,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	deployerinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
@@ -94,6 +92,9 @@ var (
 	}
 )
 
+// selfManagedGatewayAnnotation is the annotation used to mark a Gateway as self-managed in e2e tests
+const selfManagedGatewayAnnotation = "e2e.kgateway.dev/self-managed"
+
 // TestCase defines the manifests and resources used by a test or test suite.
 type TestCase struct {
 	// Manifests contains a list of manifest filenames.
@@ -139,10 +140,6 @@ type BaseTestingSuite struct {
 	// (Optional) Path of directory (relative to git root) containing the CRDs that will be used to read
 	// the objects from the manifests. If empty then defaults to "install/helm/kgateway-crds/templates"
 	CrdPath string
-
-	// (Optional) Helper to determine if a Gateway is self-managed. If not provided, a default implementation
-	// is used.
-	GatewayHelper GatewayHelper
 
 	// used internally to parse the manifest files
 	gvkToStructuralSchema map[schema.GroupVersionKind]*apiserverschema.Structural
@@ -483,9 +480,6 @@ func (s *BaseTestingSuite) DeleteManifests(testCase *TestCase) {
 }
 
 func (s *BaseTestingSuite) setupHelpers() {
-	if s.GatewayHelper == nil {
-		s.GatewayHelper = newGatewayHelper(s.TestInstallation)
-	}
 	if s.CrdPath == "" {
 		s.CrdPath = testutils.CRDPath
 	}
@@ -534,8 +528,7 @@ func (s *BaseTestingSuite) loadDynamicResources(testCase *TestCase) {
 	var dynamicResources []client.Object
 	for _, obj := range testCase.manifestResources {
 		if gw, ok := obj.(*gwv1.Gateway); ok {
-			selfManaged, err := s.GatewayHelper.IsSelfManaged(s.Ctx, gw)
-			s.Require().NoError(err)
+			selfManaged := IsSelfManagedGateway(gw)
 
 			// if the gateway is not self-managed, then we expect a proxy deployment and service
 			// to be created, so add them to the dynamic resource list
@@ -555,34 +548,9 @@ func (s *BaseTestingSuite) loadDynamicResources(testCase *TestCase) {
 	testCase.dynamicResources = dynamicResources
 }
 
-// GatewayHelper is an interface that can be implemented to provide a custom way to determine if a
-// Gateway is self-managed.
-type GatewayHelper interface {
-	IsSelfManaged(ctx context.Context, gw *gwv1.Gateway) (bool, error)
-}
-
-type defaultGatewayHelper struct {
-	gwpClient *deployerinternal.GatewayParameters
-}
-
-func newGatewayHelper(testInst *e2e.TestInstallation) *defaultGatewayHelper {
-	gwpClient := deployerinternal.NewGatewayParameters(
-		testInst.ClusterContext.Client,
-
-		// empty is ok as we only care whether it's self-managed or not
-		&deployer.Inputs{
-			ImageInfo:                  &deployer.ImageInfo{},
-			GatewayClassName:           wellknown.DefaultGatewayClassName,
-			WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
-			AgentgatewayClassName:      wellknown.DefaultAgwClassName,
-			AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
-		},
-	)
-	return &defaultGatewayHelper{gwpClient: gwpClient}
-}
-
-func (h *defaultGatewayHelper) IsSelfManaged(ctx context.Context, gw *gwv1.Gateway) (bool, error) {
-	return h.gwpClient.IsSelfManaged(ctx, gw)
+func IsSelfManagedGateway(gw *gwv1.Gateway) bool {
+	val, ok := gw.Annotations[selfManagedGatewayAnnotation]
+	return ok && strings.EqualFold(val, "true")
 }
 
 // detectAndCacheGwApiInfo detects the Gateway API version and channel from installed CRDs

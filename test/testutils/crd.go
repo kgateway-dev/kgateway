@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"istio.io/istio/pkg/config/schema/gvr"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiserverschema "k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
@@ -18,7 +19,40 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilyaml "k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/yaml"
+
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
+
+var AllCRDs = []schema.GroupVersionResource{
+	// Gateway API
+	gvr.KubernetesGateway_v1,
+	gvr.GatewayClass_v1,
+	gvr.HTTPRoute_v1,
+	gvr.GRPCRoute,
+	gvr.TCPRoute,
+	gvr.TLSRoute,
+	gvr.ReferenceGrant,
+	gvr.BackendTLSPolicy,
+	gvr.XListenerSet,
+	wellknown.InferencePoolGVR,
+	wellknown.BackendTLSPolicyGVR,
+	// K8s API
+	gvr.Service,
+	gvr.Pod,
+	// Istio API
+	gvr.ServiceEntry,
+	gvr.WorkloadEntry,
+	gvr.AuthorizationPolicy,
+	// kgateway API
+	wellknown.BackendGVR,
+	wellknown.BackendConfigPolicyGVR,
+	wellknown.TrafficPolicyGVR,
+	wellknown.HTTPListenerPolicyGVR,
+	wellknown.DirectResponseGVR,
+	wellknown.GatewayExtensionGVR,
+	wellknown.GatewayParametersGVR,
+	wellknown.AgentgatewayPolicyGVR,
+}
 
 const (
 	CRDPath = "install/helm/kgateway-crds/templates"

@@ -8,11 +8,11 @@ import (
 	"istio.io/api/networking/v1alpha3"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/config/schema/gvr"
-	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/kubetypes"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
@@ -57,7 +57,7 @@ func (c DestinationRuleWrapper) Equals(k DestinationRuleWrapper) bool {
 	return proto.Equal(&c.Spec, &k.Spec)
 }
 
-func NewDestRuleIndex(istioClient kube.Client, krtopts *krtutil.KrtOptions) DestinationRuleIndex {
+func NewDestRuleIndex(istioClient apiclient.Client, krtopts *krtutil.KrtOptions) DestinationRuleIndex {
 	destRuleClient := kclient.NewDelayedInformer[*networkingclient.DestinationRule](
 		istioClient, gvr.DestinationRule, kubetypes.StandardInformer,
 		kclient.Filter{ObjectFilter: istioClient.ObjectFilter()},

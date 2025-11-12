@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"istio.io/istio/pkg/kube"
 	istiosets "istio.io/istio/pkg/util/sets"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -42,7 +41,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
+	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
@@ -81,7 +80,7 @@ type ControllerSuite struct {
 	// fields below are set in SetupSuite
 	suitCtxCancelFn context.CancelFunc
 	env             *envtest.Environment
-	client          client.Client
+	client          client.Client //nolint:forbidigo // can use client.Client in envtest
 	kubeconfigPath  string
 }
 
@@ -208,21 +207,6 @@ func (s *ControllerSuite) TestGatewayStatus() {
 
 			if tc.gatewayClass != selfManagedGatewayClassName {
 				// Update the status of the service for the controller to pick up
-				svc := &corev1.Service{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      gw.Name,
-						Namespace: gw.Namespace,
-					},
-					Status: corev1.ServiceStatus{
-						LoadBalancer: corev1.LoadBalancerStatus{
-							Ingress: []corev1.LoadBalancerIngress{
-								{
-									IP: localhost,
-								},
-							},
-						},
-					},
-				}
 				// We use an Eventually to ensure the Status updates succeeds on a retry if there is a conflict
 				// with the Object written by the controller
 				r.EventuallyWithT(func(c *assert.CollectT) {
@@ -230,11 +214,20 @@ func (s *ControllerSuite) TestGatewayStatus() {
 					err := s.client.Get(ctx, types.NamespacedName{Name: gw.Name, Namespace: gw.Namespace}, cur)
 					require.NoError(c, err, "error getting Gateway Service")
 
-					err = s.client.Status().Patch(ctx, svc, client.MergeFrom(cur))
+					cur.Status = corev1.ServiceStatus{
+						LoadBalancer: corev1.LoadBalancerStatus{
+							Ingress: []corev1.LoadBalancerIngress{
+								{
+									IP: localhost,
+								},
+							},
+						},
+					}
+
+					err = s.client.Status().Patch(ctx, cur, client.Merge)
 					require.NoError(c, err, "error updating Gateway Service status")
 				}, defaultPollTimeout, 500*time.Millisecond, "timed out waiting for Gateway Service to be created")
 			}
-
 			r.EventuallyWithT(func(c *assert.CollectT) {
 				err := s.client.Get(ctx, types.NamespacedName{Name: gw.Name, Namespace: gw.Namespace}, &gw)
 				require.NoError(c, err, "error getting Gateway")
@@ -653,7 +646,7 @@ func generateKubeconfig(restconfig *rest.Config) (string, error) {
 		AuthInfos:      authinfos,
 	}
 	// create temp file
-	tmpfile, err := os.CreateTemp("", "ggii_envtest_*.kubeconfig")
+	tmpfile, err := os.CreateTemp("", "kgw*_controller_test_kubeconfig.yaml")
 	if err != nil {
 		return "", fmt.Errorf("error creating tmp kubeconfig file: %w", err)
 	}
@@ -671,11 +664,7 @@ func (s *ControllerSuite) startController(
 	scheme *runtime.Scheme,
 	env *envtest.Environment,
 ) error {
-	kubeClient, err := createKubeClient(cfg)
-	if err != nil {
-		return err
-	}
-	kgwClient, err := versioned.NewForConfig(cfg)
+	kubeClient, err := apiclient.New(cfg)
 	if err != nil {
 		return err
 	}
@@ -714,12 +703,13 @@ func (s *ControllerSuite) startController(
 		return err
 	}
 
-	commonCols, err := newCommonCols(ctx, kubeClient, kgwClient)
+	commonCols, err := newCommonCols(ctx, kubeClient)
 	if err != nil {
 		return err
 	}
 
 	gwCfg := GatewayConfig{
+		Client:            kubeClient,
 		Mgr:               mgr,
 		ControllerName:    gatewayControllerName,
 		AgwControllerName: agwControllerName,
@@ -759,9 +749,6 @@ func (s *ControllerSuite) startController(
 	if err := NewBaseGatewayController(ctx, gwCfg, classConfigs, nil, nil); err != nil {
 		return err
 	}
-	if err := NewGatewayClassProvisioner(mgr, gatewayControllerName, classConfigs); err != nil {
-		return err
-	}
 	kubeClient.RunAndWait(ctx.Done())
 
 	s.kubeconfigPath, err = generateKubeconfig(cfg)
@@ -786,24 +773,14 @@ func (s *ControllerSuite) startController(
 	return nil
 }
 
-func createKubeClient(restConfig *rest.Config) (kube.Client, error) {
-	restCfg := kube.NewClientConfigForRestConfig(restConfig)
-	client, err := kube.NewClient(restCfg, "")
-	if err != nil {
-		return nil, err
-	}
-	kube.EnableCrdWatcher(client)
-	return client, nil
-}
-
-func newCommonCols(ctx context.Context, kubeClient kube.Client, kgwClient versioned.Interface) (*collections.CommonCollections, error) {
+func newCommonCols(ctx context.Context, kubeClient apiclient.Client) (*collections.CommonCollections, error) {
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
 
 	settings, err := apisettings.BuildSettings()
 	if err != nil {
 		return nil, fmt.Errorf("error building Settings: %w", err)
 	}
-	commoncol, err := collections.NewCommonCollections(ctx, krtopts, kubeClient, kgwClient, gatewayControllerName, agwControllerName, *settings)
+	commoncol, err := collections.NewCommonCollections(ctx, krtopts, kubeClient, gatewayControllerName, agwControllerName, *settings)
 	if err != nil {
 		return nil, fmt.Errorf("error building CommonCollections: %w", err)
 	}
