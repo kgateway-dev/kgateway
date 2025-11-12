@@ -29,6 +29,7 @@ import (
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
+	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
@@ -51,6 +52,7 @@ func RunController(
 		xdsPort int,
 		agwXdsPort int,
 	),
+	newAPIClientFn func(restconfig *rest.Config) (apiclient.Client, error),
 ) {
 	if globalSettings == nil {
 		st, err := apisettings.BuildSettings()
@@ -78,6 +80,14 @@ func RunController(
 
 	kubeconfig := GenerateKubeConfiguration(t, cfg)
 	t.Log("kubeconfig:", kubeconfig)
+
+	var apiClient apiclient.Client
+	if newAPIClientFn != nil {
+		apiClient, err = newAPIClientFn(cfg)
+		if err != nil {
+			t.Fatalf("failed to create api client: %v", err)
+		}
+	}
 
 	client, err := istiokube.NewCLIClient(istiokube.NewClientConfigForRestConfig(cfg))
 	if err != nil {
@@ -116,6 +126,7 @@ func RunController(
 	}
 
 	s, err := setup.New(
+		setup.WithAPIClient(apiClient),
 		setup.WithGlobalSettings(globalSettings),
 		setup.WithRestConfig(cfg),
 		setup.WithExtraPlugins(extraPlugins),

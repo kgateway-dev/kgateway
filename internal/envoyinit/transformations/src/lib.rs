@@ -1,7 +1,4 @@
-use serde::de::{self, Deserializer};
 use serde::Deserialize;
-use serde_json::Value;
-type Strng = String;
 
 pub mod jinja;
 
@@ -16,13 +13,11 @@ pub struct LocalTransformationConfig {
 #[derive(Default, Clone, Deserialize)]
 pub struct LocalTransform {
     #[serde(default)]
-    #[serde(deserialize_with = "deserialize_name_value")]
-    pub add: Vec<(Strng, Strng)>,
+    pub add: Vec<NameValuePair>,
     #[serde(default)]
-    #[serde(deserialize_with = "deserialize_name_value")]
-    pub set: Vec<(Strng, Strng)>,
+    pub set: Vec<NameValuePair>,
     #[serde(default)]
-    pub remove: Vec<Strng>,
+    pub remove: Vec<String>,
     #[serde(default)]
     pub body: Option<BodyTransform>,
 }
@@ -30,32 +25,23 @@ pub struct LocalTransform {
 #[derive(Default, Clone, Deserialize)]
 pub struct BodyTransform {
     #[serde(default)]
-    pub parse_as: Strng,
+    pub parse_as: BodyParseBehavior,
     #[serde(default)]
     pub value: String,
 }
 
-fn deserialize_name_value<'de, D>(deserializer: D) -> Result<Vec<(Strng, Strng)>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let raw: Vec<Value> = Deserialize::deserialize(deserializer)?;
-    let mut result = Vec::new();
+#[derive(Default, Clone, Deserialize)]
+pub struct NameValuePair {
+    pub name: String,
+    #[serde(default)]
+    pub value: String,
+}
 
-    for item in raw {
-        if let Some(name) = item.get("name") {
-            let header_name = name.as_str().unwrap().to_string();
-            let mut header_value = String::new();
-            if let Some(value) = item.get("value") {
-                header_value = value.as_str().unwrap().to_string();
-            }
-            result.push((header_name, header_value));
-        } else {
-            return Err(de::Error::custom("missing name in header item"));
-        }
-    }
-
-    Ok(result)
+#[derive(Default, Clone, Deserialize)]
+pub enum BodyParseBehavior {
+    #[default]
+    AsString,
+    AsJson,
 }
 
 pub trait TransformationOps {

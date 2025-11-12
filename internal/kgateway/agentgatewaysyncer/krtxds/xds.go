@@ -41,6 +41,7 @@ import (
 
 	_ "istio.io/istio/pkg/util/protomarshal" // Ensure we get the more efficient vtproto gRPC encoder
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/nack"
 	kgwxds "github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
@@ -162,8 +163,8 @@ func Collection[T IntoProto[TT], TT proto.Message](collection krt.Collection[T],
 	return PerGatewayCollection(collection, nil, krtopts)
 }
 
-// NewDiscoveryServer creates DiscoveryServer that sources data from Pilot's internal mesh data structures
-func NewDiscoveryServer(debugger *krt.DebugHandler, reg ...Registration) *DiscoveryServer {
+// NewDiscoveryServer creates a DiscoveryServer for agentgateway that sources data from KRT collections via registered generators
+func NewDiscoveryServer(debugger *krt.DebugHandler, eventPublisher *nack.NackEventPublisher, reg ...Registration) *DiscoveryServer {
 	out := &DiscoveryServer{
 		concurrentPushLimit: make(chan struct{}, features.PushThrottle),
 		RequestRateLimit:    rate.NewLimiter(rate.Limit(features.RequestLimit), 1),
@@ -174,6 +175,7 @@ func NewDiscoveryServer(debugger *krt.DebugHandler, reg ...Registration) *Discov
 		debugHandlers:       map[string]string{},
 		adsClients:          map[string]*Connection{},
 		krtDebugger:         debugger,
+		nackHandler:         eventPublisher,
 		DebounceOptions: DebounceOptions{
 			DebounceAfter: features.DebounceAfter,
 			DebounceMax:   features.DebounceMax,
@@ -233,6 +235,8 @@ type DiscoveryServer struct {
 	krtDebugger   *krt.DebugHandler
 	pushOrder     []string
 	registrations []CollectionRegistration
+
+	nackHandler *nack.NackEventPublisher
 }
 
 // Proxy contains information about an specific instance of a proxy.
@@ -473,7 +477,7 @@ func (s *DiscoveryServer) processDeltaRequest(req *discovery.DeltaDiscoveryReque
 	stype := v3.GetShortType(req.TypeUrl)
 	log.Debug("ADS: REQ resources", "type", stype, "connection", con.ID(), "subscribe", len(req.ResourceNamesSubscribe), "unsubscribe", len(req.ResourceNamesUnsubscribe), "nonce", req.ResponseNonce)
 
-	shouldRespond := shouldRespondDelta(con, req)
+	shouldRespond := shouldRespondDelta(con, req, s.nackHandler)
 	if !shouldRespond {
 		log.Debug("no response needed")
 		return nil
@@ -498,7 +502,7 @@ func (s *DiscoveryServer) processDeltaRequest(req *discovery.DeltaDiscoveryReque
 
 // shouldRespondDelta determines whether this request needs to be responded back. It applies the ack/nack rules as per xds protocol
 // using WatchedResource for previous state and discovery request for the current state.
-func shouldRespondDelta(con *Connection, request *discovery.DeltaDiscoveryRequest) bool {
+func shouldRespondDelta(con *Connection, request *discovery.DeltaDiscoveryRequest, nackHandler *nack.NackEventPublisher) bool {
 	stype := v3.GetShortType(request.TypeUrl)
 
 	// If there is an error in request that means previous response is erroneous.
@@ -513,6 +517,17 @@ func shouldRespondDelta(con *Connection, request *discovery.DeltaDiscoveryReques
 			wr.LastError = request.ErrorDetail.GetMessage()
 			return wr
 		})
+
+		if nackHandler != nil {
+			gateway := kgwxds.AgentgatewayID(con.node)
+			nackEvent := nack.NackEvent{
+				Gateway:   gateway,
+				TypeUrl:   request.TypeUrl,
+				ErrorMsg:  request.ErrorDetail.GetMessage(),
+				Timestamp: time.Now(),
+			}
+			nackHandler.PublishNack(&nackEvent)
+		}
 		return false
 	}
 

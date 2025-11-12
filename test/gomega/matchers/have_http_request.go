@@ -161,8 +161,17 @@ func (m *HaveHTTPRequestHeaderWithValueMatcher) Match(actual any) (success bool,
 		}
 		return true, nil
 
+	case types.GomegaMatcher:
+		for _, value := range values {
+			matched, _ := expected.Match(value)
+			if matched {
+				return true, nil
+			}
+		}
+		return false, nil
+
 	default:
-		return false, errors.New("HaveHTTPRequestHeaderWithValueMatcher only supports string or []string value")
+		return false, errors.New("HaveHTTPRequestHeaderWithValueMatcher only supports string, []string, GomegaMatcher value")
 	}
 }
 
