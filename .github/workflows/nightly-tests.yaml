@@ -106,7 +106,7 @@ jobs:
         GOTESTSUM_ARGS: '--format=standard-verbose --rerun-fails-max-failures 60' # High value for "rerun-fails-max-failures" because 3 failed tests can result in gotestsum thinking there's 40+ failures
       with:
         cluster-name: "kgw-api-e2e-${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }}"
-        test-args: '-v -timeout=120m'
+        test-args: '-timeout=120m'
         run-regex: "^Test"
         istio-version: ${{ steps.dotenv.outputs.istio_version }}
         matrix-label: "nightly-kgw-api-${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }}"
