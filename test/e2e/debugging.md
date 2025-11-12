@@ -247,10 +247,9 @@ You can use a custom debugger launch config that sets the `test.run` flag to run
   "type": "go",
   "request": "launch",
   "mode": "test",
+  "buildFlags": "-tags=e2e",
   "program": "${workspaceFolder}/test/e2e/tests/kgateway_test.go",
   "args": [
-    "-tags",
-    "e2e",
     "-test.run",
     "^TestKgateway$/^Deployer$",
     "-test.v",

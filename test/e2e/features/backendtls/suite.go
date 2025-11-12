@@ -126,6 +126,11 @@ func (s *tsuite) TestBackendTLSPolicyAndStatus() {
 		)
 	}
 
+	expectedStatus := http.StatusNotFound
+	if s.agentgateway {
+		// agentgateway does auto host rewrite
+		expectedStatus = http.StatusMovedPermanently
+	}
 	s.TestInstallation.Assertions.AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
@@ -136,7 +141,7 @@ func (s *tsuite) TestBackendTLSPolicyAndStatus() {
 		},
 		&matchers.HttpResponse{
 			// google return 404 this when going to google.com  with host header of "foo.com"
-			StatusCode: http.StatusNotFound,
+			StatusCode: expectedStatus,
 		},
 	)
 

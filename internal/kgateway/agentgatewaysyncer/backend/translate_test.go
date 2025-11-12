@@ -302,6 +302,46 @@ func TestBuildAIBackendIr(t *testing.T) {
 			},
 		},
 		{
+			name: "Valid Azure OpenAI backend",
+			backend: &v1alpha1.Backend{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "azure-openai-backend",
+					Namespace: "test-ns",
+				},
+				Spec: v1alpha1.BackendSpec{
+					Type: v1alpha1.BackendTypeAI,
+					AI: &v1alpha1.AIBackend{
+						LLM: &v1alpha1.LLMProvider{
+							AzureOpenAI: &v1alpha1.AzureOpenAIConfig{
+								AuthToken: v1alpha1.SingleAuthToken{
+									Kind: v1alpha1.Passthrough,
+								},
+								Endpoint:       "endpoint-123.openai.azure.com",
+								DeploymentName: "my-deployment",
+								ApiVersion:     "2024-02-15-preview",
+							},
+						},
+					},
+				},
+			},
+			secrets:     nil,
+			expectError: false,
+			validate: func(aiIr *AIIr) bool {
+				return aiIr != nil &&
+					aiIr.Backend != nil &&
+					aiIr.Backend.Name == "test-ns/azure-openai-backend" &&
+					aiIr.Backend.GetAi() != nil &&
+					len(aiIr.Backend.GetAi().ProviderGroups) == 1 &&
+					len(aiIr.Backend.GetAi().ProviderGroups[0].Providers) == 1 &&
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAzureopenai() != nil &&
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAzureopenai().Model != nil &&
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAzureopenai().Model.Value == "my-deployment" &&
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAzureopenai().Host == "endpoint-123.openai.azure.com" &&
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAzureopenai().ApiVersion != nil &&
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAzureopenai().ApiVersion.Value == "2024-02-15-preview"
+			},
+		},
+		{
 			name: "Valid Anthropic backend with model",
 			backend: &v1alpha1.Backend{
 				ObjectMeta: metav1.ObjectMeta{
