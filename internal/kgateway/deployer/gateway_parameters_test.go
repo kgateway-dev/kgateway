@@ -35,10 +35,6 @@ const (
 
 type testHelmValuesGenerator struct{}
 
-func (thv *testHelmValuesGenerator) IsSelfManaged(ctx context.Context, gw client.Object) (bool, error) {
-	return true, nil
-}
-
 func (thv *testHelmValuesGenerator) GetValues(ctx context.Context, gw client.Object) (map[string]any, error) {
 	return map[string]any{
 		"testHelmValuesGenerator": struct{}{},
@@ -47,107 +43,6 @@ func (thv *testHelmValuesGenerator) GetValues(ctx context.Context, gw client.Obj
 
 func (thv *testHelmValuesGenerator) GetCacheSyncHandlers() []cache.InformerSynced {
 	return nil
-}
-
-func TestIsSelfManagedOnGatewayClass(t *testing.T) {
-	gwc := defaultGatewayClass()
-	gwParams := emptyGatewayParameters()
-	gwParams.Spec.SelfManaged = &gw2_v1alpha1.SelfManagedGateway{}
-
-	gw := &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "foo",
-			Namespace: defaultNamespace,
-			UID:       "1235",
-		},
-		Spec: gwv1.GatewaySpec{
-			GatewayClassName: wellknown.DefaultGatewayClassName,
-		},
-	}
-
-	ctx := t.Context()
-	fakeClient := fake.NewClient(t, gwc, gwParams)
-	gwp := NewGatewayParameters(fakeClient, defaultInputs(t, gwc, gw))
-	fakeClient.RunAndWait(ctx.Done())
-
-	selfManaged, err := gwp.IsSelfManaged(context.Background(), gw)
-	assert.NoError(t, err)
-	assert.True(t, selfManaged)
-}
-
-func TestIsSelfManagedOnGateway(t *testing.T) {
-	gwc := defaultGatewayClass()
-	defaultGwp := emptyGatewayParameters()
-
-	// gateway params attached to gateway
-	customGwp := emptyGatewayParameters()
-	customGwp.ObjectMeta.Name = "custom-gwp"
-	customGwp.ObjectMeta.Namespace = defaultNamespace
-	customGwp.Spec.SelfManaged = &gw2_v1alpha1.SelfManagedGateway{}
-
-	gw := &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "foo",
-			Namespace: defaultNamespace,
-			UID:       "1235",
-		},
-		Spec: gwv1.GatewaySpec{
-			GatewayClassName: wellknown.DefaultGatewayClassName,
-			Infrastructure: &gwv1.GatewayInfrastructure{
-				ParametersRef: &gwv1.LocalParametersReference{
-					Group: gw2_v1alpha1.GroupName,
-					Kind:  gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
-					Name:  "custom-gwp",
-				},
-			},
-		},
-	}
-
-	ctx := t.Context()
-	fakeClient := fake.NewClient(t, gwc, defaultGwp, customGwp)
-	gwp := NewGatewayParameters(fakeClient, defaultInputs(t, gwc, gw))
-	fakeClient.RunAndWait(ctx.Done())
-
-	selfManaged, err := gwp.IsSelfManaged(ctx, gw)
-	assert.NoError(t, err)
-	assert.True(t, selfManaged)
-}
-
-func TestIsSelfManagedWithExtendedGatewayParameters(t *testing.T) {
-	gwc := defaultGatewayClass()
-	gwParams := emptyGatewayParameters()
-	extraGwParams := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{Namespace: defaultNamespace},
-	}
-
-	gw := &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "foo",
-			Namespace: defaultNamespace,
-			UID:       "1235",
-		},
-
-		Spec: gwv1.GatewaySpec{
-			Infrastructure: &gwv1.GatewayInfrastructure{
-				ParametersRef: &gwv1.LocalParametersReference{
-					Group: "v1",
-					Kind:  "ConfigMap",
-					Name:  "testing",
-				},
-			},
-			GatewayClassName: wellknown.DefaultGatewayClassName,
-		},
-	}
-
-	ctx := t.Context()
-	fakeClient := fake.NewClient(t, gwc, gwParams, extraGwParams)
-	gwp := NewGatewayParameters(fakeClient, defaultInputs(t, gwc, gw)).
-		WithHelmValuesGeneratorOverride(&testHelmValuesGenerator{})
-	fakeClient.RunAndWait(ctx.Done())
-
-	selfManaged, err := gwp.IsSelfManaged(ctx, gw)
-	assert.NoError(t, err)
-	assert.True(t, selfManaged)
 }
 
 func TestShouldUseDefaultGatewayParameters(t *testing.T) {
@@ -180,10 +75,6 @@ func TestShouldUseDefaultGatewayParameters(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Contains(t, vals, "gateway")
-
-	selfManaged, err := gwp.IsSelfManaged(ctx, gw)
-	assert.NoError(t, err)
-	assert.False(t, selfManaged)
 }
 
 func TestShouldUseExtendedGatewayParameters(t *testing.T) {

@@ -11,7 +11,7 @@ The easiest way to run any test (e2e or unit) is using the `hack/run-test.sh` sc
 ./hack/run-test.sh SessionPersistence
 
 # Run a unit test
-./hack/run-test.sh TestIsSelfManagedOnGateway
+./hack/run-test.sh TestShouldUseDefaultGatewayParameters
 
 # Run all tests in a package
 ./hack/run-test.sh --package ./pkg/utils/helmutils

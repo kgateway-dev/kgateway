@@ -117,7 +117,7 @@ A unified script that auto-detects whether you're running e2e or unit tests and 
 ./hack/run-test.sh SessionPersistence
 
 # Run a unit test (auto-detected)
-./hack/run-test.sh TestIsSelfManagedOnGateway
+./hack/run-test.sh TestShouldUseDefaultGatewayParameters
 
 # Run all tests in a package
 ./hack/run-test.sh --package ./pkg/utils/helmutils
