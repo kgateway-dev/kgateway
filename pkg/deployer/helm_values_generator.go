@@ -3,6 +3,7 @@ package deployer
 import (
 	"context"
 
+	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -17,4 +18,7 @@ type HelmValuesGenerator interface {
 	// IsSelfManaged returns true if the object is self-managed (i.e. no resources should be
 	// provisioned dynamically).
 	IsSelfManaged(ctx context.Context, obj client.Object) (bool, error)
+
+	// GetCacheSyncHandlers returns the cache sync handlers for the HelmValuesGenerator controller
+	GetCacheSyncHandlers() []cache.InformerSynced
 }

@@ -11,19 +11,13 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
-	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
-	"istio.io/istio/pkg/kube/kubetypes"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -112,24 +106,7 @@ func (d *BackendConfigPolicyIR) Equals(other any) bool {
 	return true
 }
 
-func registerTypes(ourCli versioned.Interface) {
-	skubeclient.Register[*v1alpha1.BackendConfigPolicy](
-		wellknown.BackendConfigPolicyGVR,
-		wellknown.BackendConfigPolicyGVK,
-		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
-			return ourCli.GatewayV1alpha1().BackendConfigPolicies(namespace).List(context.Background(), o)
-		},
-		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
-			return ourCli.GatewayV1alpha1().BackendConfigPolicies(namespace).Watch(context.Background(), o)
-		},
-		func(c skubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*v1alpha1.BackendConfigPolicy] {
-			return ourCli.GatewayV1alpha1().BackendConfigPolicies(namespace)
-		},
-	)
-}
-
 func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v validator.Validator) sdk.Plugin {
-	registerTypes(commoncol.OurClient)
 	cli := kclient.NewFilteredDelayed[*v1alpha1.BackendConfigPolicy](
 		commoncol.Client,
 		wellknown.BackendConfigPolicyGVR,

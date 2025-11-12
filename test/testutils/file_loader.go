@@ -182,3 +182,11 @@ func UnmarshalAnyYaml(data []byte, into any) error {
 
 	return json.Unmarshal(jsn, into)
 }
+
+func ToRuntimeObjects(objs ...client.Object) []runtime.Object {
+	res := make([]runtime.Object, len(objs))
+	for i, obj := range objs {
+		res[i] = obj
+	}
+	return res
+}
