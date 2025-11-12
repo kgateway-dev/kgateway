@@ -770,7 +770,7 @@ func buildAgwDestination(
 				Port: uint32(svc.Spec.TargetPorts[0].Number), //nolint:gosec // G115: InferencePool TargetPort is int32 with validation 1-65535, always safe
 			}
 		}
-	case schema.GroupKind{Group: "networking.istio.io", Kind: "Hostname"}:
+	case wellknown.HostnameGVK.GroupKind():
 		// Hostname is an Istio-specific backend kind where the name is the literal hostname
 		// Used for referencing services by their full hostname (e.g., from ServiceEntry)
 		port = to.Port

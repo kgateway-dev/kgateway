@@ -42,6 +42,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
@@ -93,8 +94,7 @@ func (a *index) serviceServiceBuilder(
 		if waypoint != nil {
 			waypointStatus.ResourceName = waypoint.ResourceName()
 
-			// TODO: add this label to the istio api labels so we have constants to use
-			if val, ok := s.Labels["istio.io/ingress-use-waypoint"]; ok {
+			if val, ok := s.Labels[wellknown.IngressUseWaypointLabel]; ok {
 				waypointStatus.IngressLabelPresent = true
 				waypointStatus.IngressUseWaypoint = strings.EqualFold(val, "true")
 			}
@@ -175,7 +175,7 @@ func (a *index) servicesInfo(se *networkingclient.ServiceEntry, w *Waypoint) []S
 	waypointStatus := WaypointBindingStatus{}
 	if w != nil {
 		waypointStatus.ResourceName = w.ResourceName()
-		if val, ok := se.Labels["istio.io/ingress-use-waypoint"]; ok {
+		if val, ok := se.Labels[wellknown.IngressUseWaypointLabel]; ok {
 			waypointStatus.IngressLabelPresent = true
 			waypointStatus.IngressUseWaypoint = strings.EqualFold(val, "true")
 		}
