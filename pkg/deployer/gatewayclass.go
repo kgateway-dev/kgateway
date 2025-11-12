@@ -5,7 +5,7 @@ import (
 	"slices"
 
 	"k8s.io/apimachinery/pkg/util/sets"
-	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	"sigs.k8s.io/gateway-api/pkg/features"
 )
 
@@ -18,17 +18,17 @@ type GatewayClassInfo struct {
 	// Annotations are the annotations to be added to the GatewayClass.
 	Annotations map[string]string
 	// ParametersRef is the reference to the GatewayParameters object.
-	ParametersRef *apiv1.ParametersReference
+	ParametersRef *gwv1.ParametersReference
 	// ControllerName is the name of the controller that is managing the GatewayClass.
 	ControllerName string
 	// SupportedFeatures is the list of Gateway API features supported by this GatewayClass.
 	// This will be populated in the GatewayClass status.supportedFeatures field.
-	SupportedFeatures []apiv1.SupportedFeature
+	SupportedFeatures []gwv1.SupportedFeature
 }
 
 // GetSupportedFeaturesForStandardGateway returns the supported features for the standard Gateway class.
 // This is derived from the conformance test configuration where we exempt certain features.
-func GetSupportedFeaturesForStandardGateway() []apiv1.SupportedFeature {
+func GetSupportedFeaturesForStandardGateway() []gwv1.SupportedFeature {
 	exemptFeatures := getCommonExemptFeatures()
 	// backfill individual features that we don't support yet.
 	exemptFeatures.Insert(
@@ -40,14 +40,14 @@ func GetSupportedFeaturesForStandardGateway() []apiv1.SupportedFeature {
 
 // GetSupportedFeaturesForWaypointGateway returns the supported features for the waypoint Gateway class.
 // Waypoint gateways have similar support to standard gateways but may have some differences.
-func GetSupportedFeaturesForWaypointGateway() []apiv1.SupportedFeature {
+func GetSupportedFeaturesForWaypointGateway() []gwv1.SupportedFeature {
 	// For now, waypoint gateways support the same features as standard gateways
 	return GetSupportedFeaturesForStandardGateway()
 }
 
 // GetSupportedFeaturesForAgentGateway returns the supported features for the agent Gateway class.
 // Agent gateways support additional features beyond the standard gateway class.
-func GetSupportedFeaturesForAgentGateway() []apiv1.SupportedFeature {
+func GetSupportedFeaturesForAgentGateway() []gwv1.SupportedFeature {
 	exemptFeatures := getCommonExemptFeatures()
 	// Agent gateways support GatewayHTTPListenerIsolation and GatewayPort8080,
 	// but still don't support GatewayStaticAddresses.
@@ -76,17 +76,17 @@ func getCommonExemptFeatures() sets.Set[features.Feature] {
 }
 
 // getSupportedFeatures builds a sorted list of supported features, excluding the provided exempt features.
-func getSupportedFeatures(exemptFeatures sets.Set[features.Feature]) []apiv1.SupportedFeature {
-	var allSupportedFeatures []apiv1.SupportedFeature
+func getSupportedFeatures(exemptFeatures sets.Set[features.Feature]) []gwv1.SupportedFeature {
+	var allSupportedFeatures []gwv1.SupportedFeature
 	for _, feature := range features.AllFeatures.UnsortedList() {
 		if exemptFeatures.Has(feature) {
 			continue
 		}
-		allSupportedFeatures = append(allSupportedFeatures, apiv1.SupportedFeature{
-			Name: apiv1.FeatureName(feature.Name),
+		allSupportedFeatures = append(allSupportedFeatures, gwv1.SupportedFeature{
+			Name: gwv1.FeatureName(feature.Name),
 		})
 	}
-	slices.SortFunc(allSupportedFeatures, func(a, b apiv1.SupportedFeature) int {
+	slices.SortFunc(allSupportedFeatures, func(a, b gwv1.SupportedFeature) int {
 		return cmp.Compare(a.Name, b.Name)
 	})
 	return allSupportedFeatures

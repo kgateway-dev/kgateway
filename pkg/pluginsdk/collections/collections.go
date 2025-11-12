@@ -12,7 +12,7 @@ import (
 	"istio.io/istio/pkg/util/smallset"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
@@ -111,7 +111,7 @@ func NewCommonCollections(
 		{Group: "", Kind: "Secret"}: k8sSecrets,
 	}
 
-	refgrantsCol := krt.WrapClient(kclient.NewFilteredDelayed[*gwv1beta1.ReferenceGrant](
+	refgrantsCol := krt.WrapClient(kclient.NewFilteredDelayed[*gwv1b1.ReferenceGrant](
 		client,
 		wellknown.ReferenceGrantGVR,
 		kclient.Filter{ObjectFilter: client.ObjectFilter()},

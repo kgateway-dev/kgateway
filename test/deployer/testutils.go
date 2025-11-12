@@ -9,7 +9,7 @@ import (
 	"istio.io/istio/pkg/util/smallset"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	api "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	apixv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
@@ -31,9 +31,9 @@ func NewCommonCols(t test.Failer, initObjs ...client.Object) *collections.Common
 	mock := krttest.NewMock(t, anys)
 
 	policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, sdk.ContributesPolicies{}, apisettings.Settings{})
-	kubeRawGateways := krttest.GetMockCollection[*api.Gateway](mock)
+	kubeRawGateways := krttest.GetMockCollection[*gwv1.Gateway](mock)
 	kubeRawListenerSets := krttest.GetMockCollection[*apixv1a1.XListenerSet](mock)
-	gatewayClasses := krttest.GetMockCollection[*api.GatewayClass](mock)
+	gatewayClasses := krttest.GetMockCollection[*gwv1.GatewayClass](mock)
 	nsCol := krtcollections.NewNamespaceCollectionFromCol(ctx, krttest.GetMockCollection[*corev1.Namespace](mock), krtutil.KrtOptions{})
 
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)

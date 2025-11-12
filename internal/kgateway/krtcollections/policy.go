@@ -18,7 +18,7 @@ import (
 	k8sptr "k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
@@ -895,16 +895,16 @@ func (k refGrantIndexKey) String() string {
 // MARK: RefGrantIndex
 
 type RefGrantIndex struct {
-	refgrants     krt.Collection[*gwv1beta1.ReferenceGrant]
-	refGrantIndex krt.Index[refGrantIndexKey, *gwv1beta1.ReferenceGrant]
+	refgrants     krt.Collection[*gwv1b1.ReferenceGrant]
+	refGrantIndex krt.Index[refGrantIndexKey, *gwv1b1.ReferenceGrant]
 }
 
 func (h *RefGrantIndex) HasSynced() bool {
 	return h.refgrants.HasSynced()
 }
 
-func NewRefGrantIndex(refgrants krt.Collection[*gwv1beta1.ReferenceGrant]) *RefGrantIndex {
-	refGrantIndex := krtpkg.UnnamedIndex(refgrants, func(p *gwv1beta1.ReferenceGrant) []refGrantIndexKey {
+func NewRefGrantIndex(refgrants krt.Collection[*gwv1b1.ReferenceGrant]) *RefGrantIndex {
+	refGrantIndex := krtpkg.UnnamedIndex(refgrants, func(p *gwv1b1.ReferenceGrant) []refGrantIndexKey {
 		ret := make([]refGrantIndexKey, 0, len(p.Spec.To)*len(p.Spec.From))
 		for _, from := range p.Spec.From {
 			for _, to := range p.Spec.To {

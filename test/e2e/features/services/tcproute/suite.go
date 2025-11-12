@@ -10,7 +10,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
@@ -57,7 +57,7 @@ type tcpRouteTestCase struct {
 	expectedResponses   []*matchers.HttpResponse
 	expectedErrorCode   int
 	ports               []int
-	listenerNames       []v1.SectionName
+	listenerNames       []gwv1.SectionName
 	expectedRouteCounts []int32
 	tcpRouteNames       []string
 }
@@ -78,8 +78,8 @@ func (s *testingSuite) TestConfigureTCPRouteBackingDestinations() {
 				expectedSingleSvcResp,
 			},
 			ports: []int{8087},
-			listenerNames: []v1.SectionName{
-				v1.SectionName(singleSvcListenerName8087),
+			listenerNames: []gwv1.SectionName{
+				gwv1.SectionName(singleSvcListenerName8087),
 			},
 			expectedRouteCounts: []int32{1},
 			tcpRouteNames:       []string{singleSvcTCPRouteName},
@@ -99,9 +99,9 @@ func (s *testingSuite) TestConfigureTCPRouteBackingDestinations() {
 				expectedMultiSvc2Resp,
 			},
 			ports: []int{8088, 8089},
-			listenerNames: []v1.SectionName{
-				v1.SectionName(multiSvcListenerName8088),
-				v1.SectionName(multiSvcListenerName8089),
+			listenerNames: []gwv1.SectionName{
+				gwv1.SectionName(multiSvcListenerName8088),
+				gwv1.SectionName(multiSvcListenerName8089),
 			},
 			expectedRouteCounts: []int32{1, 1},
 			tcpRouteNames:       []string{multiSvcTCPRouteName1, multiSvcTCPRouteName2},
@@ -120,8 +120,8 @@ func (s *testingSuite) TestConfigureTCPRouteBackingDestinations() {
 				expectedCrossNsResp,
 			},
 			ports: []int{8080},
-			listenerNames: []v1.SectionName{
-				v1.SectionName(crossNsListenerName),
+			listenerNames: []gwv1.SectionName{
+				gwv1.SectionName(crossNsListenerName),
 			},
 			expectedRouteCounts: []int32{1},
 			tcpRouteNames:       []string{crossNsTCPRouteName},
@@ -138,8 +138,8 @@ func (s *testingSuite) TestConfigureTCPRouteBackingDestinations() {
 			proxyDeployment:   crossNsNoRefGrantProxyDeployment,
 			expectedErrorCode: 56,
 			ports:             []int{8080},
-			listenerNames: []v1.SectionName{
-				v1.SectionName(crossNsNoRefGrantListenerName),
+			listenerNames: []gwv1.SectionName{
+				gwv1.SectionName(crossNsNoRefGrantListenerName),
 			},
 			expectedRouteCounts: []int32{1},
 			tcpRouteNames:       []string{crossNsNoRefGrantTCPRouteName},
@@ -199,12 +199,12 @@ func (s *testingSuite) TestConfigureTCPRouteBackingDestinations() {
 
 			// Assert TCPRoute conditions
 			for _, tcpRouteName := range tc.tcpRouteNames {
-				s.TestInstallation.Assertions.EventuallyTCPRouteCondition(s.Ctx, tcpRouteName, tc.gtwNs, v1.RouteConditionAccepted, metav1.ConditionTrue, timeout)
-				s.TestInstallation.Assertions.EventuallyTCPRouteCondition(s.Ctx, tcpRouteName, tc.gtwNs, v1.RouteConditionResolvedRefs, expected, timeout)
+				s.TestInstallation.Assertions.EventuallyTCPRouteCondition(s.Ctx, tcpRouteName, tc.gtwNs, gwv1.RouteConditionAccepted, metav1.ConditionTrue, timeout)
+				s.TestInstallation.Assertions.EventuallyTCPRouteCondition(s.Ctx, tcpRouteName, tc.gtwNs, gwv1.RouteConditionResolvedRefs, expected, timeout)
 			}
 
 			// Assert gateway programmed condition
-			s.TestInstallation.Assertions.EventuallyGatewayCondition(s.Ctx, tc.gtwName, tc.gtwNs, v1.GatewayConditionProgrammed, metav1.ConditionTrue, timeout)
+			s.TestInstallation.Assertions.EventuallyGatewayCondition(s.Ctx, tc.gtwName, tc.gtwNs, gwv1.GatewayConditionProgrammed, metav1.ConditionTrue, timeout)
 
 			// Assert listener attached routes
 			for i, listenerName := range tc.listenerNames {
@@ -246,7 +246,7 @@ func (s *testingSuite) setupTestEnvironment(nsManifest, gtwName, gtwNs, gtwManif
 	s.applyManifests(gtwNs, nsManifest)
 
 	s.applyManifests(gtwNs, gtwManifest)
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(s.Ctx, gtwName, gtwNs, v1.GatewayConditionAccepted, metav1.ConditionTrue, timeout)
+	s.TestInstallation.Assertions.EventuallyGatewayCondition(s.Ctx, gtwName, gtwNs, gwv1.GatewayConditionAccepted, metav1.ConditionTrue, timeout)
 
 	s.applyManifests(gtwNs, svcManifest)
 	s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx, proxySvc, proxyDeploy)

@@ -5,7 +5,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
 type Route interface {
@@ -136,7 +136,7 @@ var _ Route = &HttpRouteIR{}
 
 type TcpRouteIR struct {
 	ObjectSource `json:",inline"`
-	SourceObject *gwv1alpha2.TCPRoute
+	SourceObject *gwv1a2.TCPRoute
 	// +krtEqualsTodo include parent references when computing equality
 	ParentRefs       []gwv1.ParentReference
 	AttachedPolicies AttachedPolicies
@@ -179,7 +179,7 @@ var _ Route = &TcpRouteIR{}
 
 type TlsRouteIR struct {
 	ObjectSource `json:",inline"`
-	SourceObject *gwv1alpha2.TLSRoute
+	SourceObject *gwv1a2.TLSRoute
 	// +krtEqualsTodo include parent references when computing equality
 	ParentRefs []gwv1.ParentReference
 
