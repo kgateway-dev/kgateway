@@ -22,7 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	api "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	apixv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
@@ -146,38 +146,38 @@ func containMapElements[keyT comparable, valT any](m map[keyT]valT) types.Gomega
 
 var _ = Describe("Deployer", func() {
 	var (
-		defaultGatewayClass = func() *api.GatewayClass {
-			return &api.GatewayClass{
+		defaultGatewayClass = func() *gwv1.GatewayClass {
+			return &gwv1.GatewayClass{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: wellknown.DefaultGatewayClassName,
 				},
-				Spec: api.GatewayClassSpec{
+				Spec: gwv1.GatewayClassSpec{
 					ControllerName: wellknown.DefaultGatewayControllerName,
 				},
 			}
 		}
 
-		defaultGatewayClassWithParamsRef = func() *api.GatewayClass {
+		defaultGatewayClassWithParamsRef = func() *gwv1.GatewayClass {
 			gwc := defaultGatewayClass()
-			gwc.Spec.ParametersRef = &api.ParametersReference{
+			gwc.Spec.ParametersRef = &gwv1.ParametersReference{
 				Group:     gw2_v1alpha1.GroupName,
-				Kind:      api.Kind(wellknown.GatewayParametersGVK.Kind),
+				Kind:      gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 				Name:      wellknown.DefaultGatewayParametersName,
-				Namespace: ptr.To(api.Namespace(defaultNamespace)),
+				Namespace: ptr.To(gwv1.Namespace(defaultNamespace)),
 			}
 			return gwc
 		}
 
-		defaultGateway = func() *api.Gateway {
-			return &api.Gateway{
+		defaultGateway = func() *gwv1.Gateway {
+			return &gwv1.Gateway{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: defaultNamespace,
 					UID:       "1235",
 				},
-				Spec: api.GatewaySpec{
+				Spec: gwv1.GatewaySpec{
 					GatewayClassName: wellknown.DefaultGatewayClassName,
-					Listeners: []api.Listener{{
+					Listeners: []gwv1.Listener{{
 						Name: "listener-1",
 						Port: 80,
 					}},
@@ -185,9 +185,9 @@ var _ = Describe("Deployer", func() {
 			}
 		}
 
-		highPortGateway = func() *api.Gateway {
+		highPortGateway = func() *gwv1.Gateway {
 			gw := defaultGateway()
-			gw.Spec.Listeners = []api.Listener{{
+			gw.Spec.Listeners = []gwv1.Listener{{
 				Name: "listener-1",
 				Port: 8088,
 			}}
@@ -374,17 +374,17 @@ var _ = Describe("Deployer", func() {
 
 	Context("default case", func() {
 		It("should work with empty params", func() {
-			gwc := &api.GatewayClass{
+			gwc := &gwv1.GatewayClass{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: wellknown.DefaultGatewayClassName,
 				},
-				Spec: api.GatewayClassSpec{
+				Spec: gwv1.GatewayClassSpec{
 					ControllerName: wellknown.DefaultGatewayControllerName,
-					ParametersRef: &api.ParametersReference{
+					ParametersRef: &gwv1.ParametersReference{
 						Group:     gw2_v1alpha1.GroupName,
-						Kind:      api.Kind(wellknown.GatewayParametersGVK.Kind),
+						Kind:      gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 						Name:      wellknown.DefaultGatewayParametersName,
-						Namespace: ptr.To(api.Namespace(defaultNamespace)),
+						Namespace: ptr.To(gwv1.Namespace(defaultNamespace)),
 					},
 				},
 			}
@@ -396,17 +396,17 @@ var _ = Describe("Deployer", func() {
 				},
 			}
 
-			gw := &api.Gateway{
+			gw := &gwv1.Gateway{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: defaultNamespace,
 					UID:       "1235",
 				},
-				Spec: api.GatewaySpec{
+				Spec: gwv1.GatewaySpec{
 					GatewayClassName: wellknown.DefaultGatewayClassName,
-					Listeners: []api.Listener{
+					Listeners: []gwv1.Listener{
 						{
-							Protocol: api.HTTPProtocolType,
+							Protocol: gwv1.HTTPProtocolType,
 							Port:     80,
 							Name:     "http",
 						},
@@ -458,42 +458,42 @@ var _ = Describe("Deployer", func() {
 		var (
 			d   *deployer.Deployer
 			gwp *gw2_v1alpha1.GatewayParameters
-			gwc *api.GatewayClass
+			gwc *gwv1.GatewayClass
 		)
 		BeforeEach(func() {
 			gwp = selfManagedGatewayParam("self-managed-gateway-params")
-			gwc = &api.GatewayClass{
+			gwc = &gwv1.GatewayClass{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: wellknown.DefaultGatewayClassName,
 				},
-				Spec: api.GatewayClassSpec{
+				Spec: gwv1.GatewayClassSpec{
 					ControllerName: wellknown.DefaultGatewayControllerName,
-					ParametersRef: &api.ParametersReference{
+					ParametersRef: &gwv1.ParametersReference{
 						Group:     gw2_v1alpha1.GroupName,
-						Kind:      api.Kind(wellknown.GatewayParametersGVK.Kind),
+						Kind:      gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 						Name:      gwp.GetName(),
-						Namespace: ptr.To(api.Namespace(defaultNamespace)),
+						Namespace: ptr.To(gwv1.Namespace(defaultNamespace)),
 					},
 				},
 			}
 		})
 
 		It("deploys nothing", func() {
-			gw := &api.Gateway{
+			gw := &gwv1.Gateway{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: defaultNamespace,
 				},
-				Spec: api.GatewaySpec{
+				Spec: gwv1.GatewaySpec{
 					GatewayClassName: wellknown.DefaultGatewayClassName,
-					Infrastructure: &api.GatewayInfrastructure{
-						ParametersRef: &api.LocalParametersReference{
+					Infrastructure: &gwv1.GatewayInfrastructure{
+						ParametersRef: &gwv1.LocalParametersReference{
 							Group: gw2_v1alpha1.GroupName,
-							Kind:  api.Kind(wellknown.GatewayParametersGVK.Kind),
+							Kind:  gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 							Name:  gwp.GetName(),
 						},
 					},
-					Listeners: []api.Listener{{
+					Listeners: []gwv1.Listener{{
 						Name: "listener-1",
 						Port: 80,
 					}},
@@ -538,42 +538,42 @@ var _ = Describe("Deployer", func() {
 	Context("agentgateway", func() {
 		var (
 			gwp *gw2_v1alpha1.GatewayParameters
-			gwc *api.GatewayClass
+			gwc *gwv1.GatewayClass
 		)
 		BeforeEach(func() {
 			gwp = agentgatewayParam("agent-gateway-params")
-			gwc = &api.GatewayClass{
+			gwc = &gwv1.GatewayClass{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "agentgateway",
 				},
-				Spec: api.GatewayClassSpec{
+				Spec: gwv1.GatewayClassSpec{
 					ControllerName: wellknown.DefaultAgwControllerName,
-					ParametersRef: &api.ParametersReference{
+					ParametersRef: &gwv1.ParametersReference{
 						Group:     gw2_v1alpha1.GroupName,
-						Kind:      api.Kind(wellknown.GatewayParametersGVK.Kind),
+						Kind:      gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 						Name:      gwp.GetName(),
-						Namespace: ptr.To(api.Namespace(defaultNamespace)),
+						Namespace: ptr.To(gwv1.Namespace(defaultNamespace)),
 					},
 				},
 			}
 		})
 
 		It("deploys agentgateway", func() {
-			gw := &api.Gateway{
+			gw := &gwv1.Gateway{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "agent-gateway",
 					Namespace: defaultNamespace,
 				},
-				Spec: api.GatewaySpec{
+				Spec: gwv1.GatewaySpec{
 					GatewayClassName: "agentgateway",
-					Infrastructure: &api.GatewayInfrastructure{
-						ParametersRef: &api.LocalParametersReference{
+					Infrastructure: &gwv1.GatewayInfrastructure{
+						ParametersRef: &gwv1.LocalParametersReference{
 							Group: gw2_v1alpha1.GroupName,
-							Kind:  api.Kind(wellknown.GatewayParametersGVK.Kind),
+							Kind:  gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 							Name:  gwp.GetName(),
 						},
 					},
-					Listeners: []api.Listener{{
+					Listeners: []gwv1.Listener{{
 						Name: "listener-1",
 						Port: 80,
 					}},
@@ -665,21 +665,21 @@ var _ = Describe("Deployer", func() {
 			gwp.Spec.Kube.PodTemplate = &gw2_v1alpha1.Pod{
 				SecurityContext: gwpPodSecurityContext,
 			}
-			gw := &api.Gateway{
+			gw := &gwv1.Gateway{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "agent-gateway",
 					Namespace: defaultNamespace,
 				},
-				Spec: api.GatewaySpec{
+				Spec: gwv1.GatewaySpec{
 					GatewayClassName: "agentgateway",
-					Infrastructure: &api.GatewayInfrastructure{
-						ParametersRef: &api.LocalParametersReference{
+					Infrastructure: &gwv1.GatewayInfrastructure{
+						ParametersRef: &gwv1.LocalParametersReference{
 							Group: gw2_v1alpha1.GroupName,
-							Kind:  api.Kind(wellknown.GatewayParametersGVK.Kind),
+							Kind:  gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 							Name:  gwp.GetName(),
 						},
 					},
-					Listeners: []api.Listener{{
+					Listeners: []gwv1.Listener{{
 						Name: "listener-1",
 						Port: 80,
 					}},
@@ -732,21 +732,21 @@ var _ = Describe("Deployer", func() {
 			gwp.Spec.Kube.OmitDefaultSecurityContext = ptr.To(true)
 			gwp.Spec.Kube.Agentgateway.SecurityContext = nil
 			gwp.Spec.Kube.PodTemplate = &gw2_v1alpha1.Pod{}
-			gw := &api.Gateway{
+			gw := &gwv1.Gateway{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "agent-gateway",
 					Namespace: defaultNamespace,
 				},
-				Spec: api.GatewaySpec{
+				Spec: gwv1.GatewaySpec{
 					GatewayClassName: "agentgateway",
-					Infrastructure: &api.GatewayInfrastructure{
-						ParametersRef: &api.LocalParametersReference{
+					Infrastructure: &gwv1.GatewayInfrastructure{
+						ParametersRef: &gwv1.LocalParametersReference{
 							Group: gw2_v1alpha1.GroupName,
-							Kind:  api.Kind(wellknown.GatewayParametersGVK.Kind),
+							Kind:  gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 							Name:  gwp.GetName(),
 						},
 					},
-					Listeners: []api.Listener{{
+					Listeners: []gwv1.Listener{{
 						Name: "listener-1",
 						Port: 80,
 					}},
@@ -797,21 +797,21 @@ var _ = Describe("Deployer", func() {
 	Context("envoy", func() {
 		var (
 			gwp *gw2_v1alpha1.GatewayParameters
-			gwc *api.GatewayClass
+			gwc *gwv1.GatewayClass
 		)
 		BeforeEach(func() {
 			gwp = envoyOmitDefaultSecurityContextParam("envoy-params")
-			gwc = &api.GatewayClass{
+			gwc = &gwv1.GatewayClass{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: wellknown.DefaultGatewayClassName,
 				},
-				Spec: api.GatewayClassSpec{
+				Spec: gwv1.GatewayClassSpec{
 					ControllerName: wellknown.DefaultGatewayControllerName,
-					ParametersRef: &api.ParametersReference{
+					ParametersRef: &gwv1.ParametersReference{
 						Group:     gw2_v1alpha1.GroupName,
-						Kind:      api.Kind(wellknown.GatewayParametersGVK.Kind),
+						Kind:      gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 						Name:      gwp.GetName(),
-						Namespace: ptr.To(api.Namespace(defaultNamespace)),
+						Namespace: ptr.To(gwv1.Namespace(defaultNamespace)),
 					},
 				},
 			}
@@ -831,21 +831,21 @@ var _ = Describe("Deployer", func() {
 					FSGroup:    &fsGroup,
 				},
 			}
-			gw := &api.Gateway{
+			gw := &gwv1.Gateway{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "envoy-gateway",
 					Namespace: defaultNamespace,
 				},
-				Spec: api.GatewaySpec{
+				Spec: gwv1.GatewaySpec{
 					GatewayClassName: wellknown.DefaultGatewayClassName,
-					Infrastructure: &api.GatewayInfrastructure{
-						ParametersRef: &api.LocalParametersReference{
+					Infrastructure: &gwv1.GatewayInfrastructure{
+						ParametersRef: &gwv1.LocalParametersReference{
 							Group: gw2_v1alpha1.GroupName,
-							Kind:  api.Kind(wellknown.GatewayParametersGVK.Kind),
+							Kind:  gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 							Name:  gwp.GetName(),
 						},
 					},
-					Listeners: []api.Listener{{
+					Listeners: []gwv1.Listener{{
 						Name: "listener-1",
 						Port: 80,
 					}},
@@ -903,21 +903,21 @@ var _ = Describe("Deployer", func() {
 			gwp.Spec.Kube.OmitDefaultSecurityContext = ptr.To(true)
 			gwp.Spec.Kube.EnvoyContainer.SecurityContext = nil
 			gwp.Spec.Kube.PodTemplate = &gw2_v1alpha1.Pod{}
-			gw := &api.Gateway{
+			gw := &gwv1.Gateway{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "envoy-gateway",
 					Namespace: defaultNamespace,
 				},
-				Spec: api.GatewaySpec{
+				Spec: gwv1.GatewaySpec{
 					GatewayClassName: wellknown.DefaultGatewayClassName,
-					Infrastructure: &api.GatewayInfrastructure{
-						ParametersRef: &api.LocalParametersReference{
+					Infrastructure: &gwv1.GatewayInfrastructure{
+						ParametersRef: &gwv1.LocalParametersReference{
 							Group: gw2_v1alpha1.GroupName,
-							Kind:  api.Kind(wellknown.GatewayParametersGVK.Kind),
+							Kind:  gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 							Name:  gwp.GetName(),
 						},
 					},
-					Listeners: []api.Listener{{
+					Listeners: []gwv1.Listener{{
 						Name: "listener-1",
 						Port: 80,
 					}},
@@ -964,23 +964,23 @@ var _ = Describe("Deployer", func() {
 	})
 
 	Context("special cases", func() {
-		var gwc *api.GatewayClass
+		var gwc *gwv1.GatewayClass
 		BeforeEach(func() {
 			gwc = defaultGatewayClass()
 		})
 
 		It("deploys multiple GWs with the same GWP", func() {
-			gw1 := &api.Gateway{
+			gw1 := &gwv1.Gateway{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: defaultNamespace,
 					UID:       "1235",
 				},
-				Spec: api.GatewaySpec{
+				Spec: gwv1.GatewaySpec{
 					GatewayClassName: wellknown.DefaultGatewayClassName,
-					Listeners: []api.Listener{
+					Listeners: []gwv1.Listener{
 						{
-							Protocol: api.HTTPProtocolType,
+							Protocol: gwv1.HTTPProtocolType,
 							Port:     80,
 							Name:     "http",
 						},
@@ -988,17 +988,17 @@ var _ = Describe("Deployer", func() {
 				},
 			}
 
-			gw2 := &api.Gateway{
+			gw2 := &gwv1.Gateway{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "bar",
 					Namespace: defaultNamespace,
 					UID:       "1235",
 				},
-				Spec: api.GatewaySpec{
+				Spec: gwv1.GatewaySpec{
 					GatewayClassName: wellknown.DefaultGatewayClassName,
-					Listeners: []api.Listener{
+					Listeners: []gwv1.Listener{
 						{
-							Protocol: api.HTTPProtocolType,
+							Protocol: gwv1.HTTPProtocolType,
 							Port:     80,
 							Name:     "http",
 						},
@@ -1090,18 +1090,18 @@ var _ = Describe("Deployer", func() {
 
 	Context("Gateway API infrastructure field", func() {
 		It("rejects invalid group in spec.infrastructure.parametersRef", func() {
-			gw := &api.Gateway{
+			gw := &gwv1.Gateway{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: defaultNamespace,
 					UID:       "1235",
 				},
-				Spec: api.GatewaySpec{
+				Spec: gwv1.GatewaySpec{
 					GatewayClassName: wellknown.DefaultGatewayClassName,
-					Infrastructure: &api.GatewayInfrastructure{
-						ParametersRef: &api.LocalParametersReference{
+					Infrastructure: &gwv1.GatewayInfrastructure{
+						ParametersRef: &gwv1.LocalParametersReference{
 							Group: "invalid.group",
-							Kind:  api.Kind(wellknown.GatewayParametersGVK.Kind),
+							Kind:  gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 							Name:  "test-gwp",
 						},
 					},
@@ -1138,16 +1138,16 @@ var _ = Describe("Deployer", func() {
 		})
 
 		It("rejects invalid kind in spec.infrastructure.parametersRef", func() {
-			gw := &api.Gateway{
+			gw := &gwv1.Gateway{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: defaultNamespace,
 					UID:       "1235",
 				},
-				Spec: api.GatewaySpec{
+				Spec: gwv1.GatewaySpec{
 					GatewayClassName: wellknown.DefaultGatewayClassName,
-					Infrastructure: &api.GatewayInfrastructure{
-						ParametersRef: &api.LocalParametersReference{
+					Infrastructure: &gwv1.GatewayInfrastructure{
+						ParametersRef: &gwv1.LocalParametersReference{
 							Group: gw2_v1alpha1.GroupName,
 							Kind:  "InvalidKind",
 							Name:  "test-gwp",
@@ -1202,15 +1202,15 @@ var _ = Describe("Deployer", func() {
 				var err error
 
 				gwc := defaultGatewayClass()
-				gw := &api.Gateway{
+				gw := &gwv1.Gateway{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "foo",
 						Namespace: defaultNamespace,
 						UID:       "1235",
 					},
-					Spec: api.GatewaySpec{
+					Spec: gwv1.GatewaySpec{
 						GatewayClassName: wellknown.DefaultGatewayClassName,
-						Listeners: []api.Listener{{
+						Listeners: []gwv1.Listener{{
 							Name: "listener-1",
 							Port: 80,
 						}},
@@ -1286,22 +1286,22 @@ var _ = Describe("Deployer", func() {
 				var objs clientObjects
 				var err error
 
-				gw := &api.Gateway{
+				gw := &gwv1.Gateway{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "foo",
 						Namespace: defaultNamespace,
 						UID:       "1235",
 					},
-					Spec: api.GatewaySpec{
+					Spec: gwv1.GatewaySpec{
 						GatewayClassName: wellknown.DefaultGatewayClassName,
-						Infrastructure: &api.GatewayInfrastructure{
-							ParametersRef: &api.LocalParametersReference{
+						Infrastructure: &gwv1.GatewayInfrastructure{
+							ParametersRef: &gwv1.LocalParametersReference{
 								Group: gw2_v1alpha1.GroupName,
-								Kind:  api.Kind(wellknown.GatewayParametersGVK.Kind),
+								Kind:  gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 								Name:  gwp.GetName(),
 							},
 						},
-						Listeners: []api.Listener{{
+						Listeners: []gwv1.Listener{{
 							Name: "listener-1",
 							Port: 80,
 						}},
@@ -1353,7 +1353,7 @@ var _ = Describe("Deployer", func() {
 			var (
 				d   *deployer.Deployer
 				gwp *gw2_v1alpha1.GatewayParameters
-				gwc *api.GatewayClass
+				gwc *gwv1.GatewayClass
 			)
 			BeforeEach(func() {
 				gwp = &gw2_v1alpha1.GatewayParameters{
@@ -1382,22 +1382,22 @@ var _ = Describe("Deployer", func() {
 				var objs clientObjects
 				var err error
 
-				gw := &api.Gateway{
+				gw := &gwv1.Gateway{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "foo",
 						Namespace: defaultNamespace,
 						UID:       "1235",
 					},
-					Spec: api.GatewaySpec{
+					Spec: gwv1.GatewaySpec{
 						GatewayClassName: wellknown.DefaultGatewayClassName,
-						Infrastructure: &api.GatewayInfrastructure{
-							ParametersRef: &api.LocalParametersReference{
+						Infrastructure: &gwv1.GatewayInfrastructure{
+							ParametersRef: &gwv1.LocalParametersReference{
 								Group: "gateway.kgateway.dev",
 								Kind:  "GatewayParameters",
 								Name:  gwp.GetName(),
 							},
 						},
-						Listeners: []api.Listener{{
+						Listeners: []gwv1.Listener{{
 							Name: "listener-1",
 							Port: 80,
 						}},
@@ -1473,10 +1473,10 @@ var _ = Describe("Deployer", func() {
 	Context("Single gwc and gw", func() {
 		type input struct {
 			dInputs        *deployer.Inputs
-			gw             *api.Gateway
+			gw             *gwv1.Gateway
 			defaultGwp     *gw2_v1alpha1.GatewayParameters
 			overrideGwp    *gw2_v1alpha1.GatewayParameters
-			gwc            *api.GatewayClass
+			gwc            *gwv1.GatewayClass
 			arbitrarySetup func()
 		}
 
@@ -1687,22 +1687,22 @@ var _ = Describe("Deployer", func() {
 				return params
 			}
 
-			withGatewayParams = func(gw *api.Gateway, gwpName string) *api.Gateway {
-				gw.Spec.Infrastructure = &api.GatewayInfrastructure{
-					ParametersRef: &api.LocalParametersReference{
+			withGatewayParams = func(gw *gwv1.Gateway, gwpName string) *gwv1.Gateway {
+				gw.Spec.Infrastructure = &gwv1.GatewayInfrastructure{
+					ParametersRef: &gwv1.LocalParametersReference{
 						Group: gw2_v1alpha1.GroupName,
-						Kind:  api.Kind(wellknown.GatewayParametersGVK.Kind),
+						Kind:  gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 						Name:  gwpName,
 					},
 				}
 				return gw
 			}
 
-			highPortGatewayWithGatewayParams = func(gwpName string) *api.Gateway {
+			highPortGatewayWithGatewayParams = func(gwpName string) *gwv1.Gateway {
 				return withGatewayParams(highPortGateway(), gwpName)
 			}
 
-			defaultGatewayWithGatewayParams = func(gwpName string) *api.Gateway {
+			defaultGatewayWithGatewayParams = func(gwpName string) *gwv1.Gateway {
 				return withGatewayParams(defaultGateway(), gwpName)
 			}
 
@@ -2137,13 +2137,13 @@ var _ = Describe("Deployer", func() {
 			}),
 			Entry("no listeners on gateway", &input{
 				dInputs: defaultDeployerInputs(),
-				gw: &api.Gateway{
+				gw: &gwv1.Gateway{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "foo",
 						Namespace: defaultNamespace,
 						UID:       "1235",
 					},
-					Spec: api.GatewaySpec{
+					Spec: gwv1.GatewaySpec{
 						GatewayClassName: wellknown.DefaultGatewayClassName,
 					},
 				},
@@ -2198,15 +2198,15 @@ var _ = Describe("Deployer", func() {
 			}),
 			Entry("duplicate ports", &input{
 				dInputs: defaultDeployerInputs(),
-				gw: &api.Gateway{
+				gw: &gwv1.Gateway{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "foo",
 						Namespace: defaultNamespace,
 						UID:       "1235",
 					},
-					Spec: api.GatewaySpec{
+					Spec: gwv1.GatewaySpec{
 						GatewayClassName: wellknown.DefaultGatewayClassName,
-						Listeners: []api.Listener{
+						Listeners: []gwv1.Listener{
 							{
 								Name: "listener-1",
 								Port: 80,
@@ -2411,24 +2411,24 @@ var _ = Describe("Deployer", func() {
 		)
 
 		It("exposes all necessary ports", func() {
-			allNamespaces := api.NamespacesFromAll
-			gw := &api.Gateway{
+			allNamespaces := gwv1.NamespacesFromAll
+			gw := &gwv1.Gateway{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: defaultNamespace,
 					UID:       "1235",
 				},
-				Spec: api.GatewaySpec{
+				Spec: gwv1.GatewaySpec{
 					GatewayClassName: wellknown.DefaultGatewayClassName,
-					AllowedListeners: &api.AllowedListeners{
-						Namespaces: &api.ListenerNamespaces{
+					AllowedListeners: &gwv1.AllowedListeners{
+						Namespaces: &gwv1.ListenerNamespaces{
 							From: &allNamespaces,
 						},
 					},
-					Listeners: []api.Listener{
+					Listeners: []gwv1.Listener{
 						{
 							Name: "gateway-listener",
-							Port: api.PortNumber(listenerPort),
+							Port: gwv1.PortNumber(listenerPort),
 						},
 					},
 				},

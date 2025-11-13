@@ -6,8 +6,8 @@ import (
 	"strconv"
 
 	"k8s.io/utils/ptr"
-	v1 "sigs.k8s.io/gateway-api/apis/v1"
-	v1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -59,7 +59,7 @@ func TargetRefsToPolicyRefsWithSectionName(
 	return refs
 }
 
-func TargetRefsToPolicyRefsWithSectionNameV1(targetRefs []v1.LocalPolicyTargetReferenceWithSectionName) []ir.PolicyRef {
+func TargetRefsToPolicyRefsWithSectionNameV1(targetRefs []gwv1.LocalPolicyTargetReferenceWithSectionName) []ir.PolicyRef {
 	refs := make([]ir.PolicyRef, 0, len(targetRefs))
 	for _, targetRef := range targetRefs {
 		refs = append(refs, ir.PolicyRef{
@@ -73,7 +73,7 @@ func TargetRefsToPolicyRefsWithSectionNameV1(targetRefs []v1.LocalPolicyTargetRe
 	return refs
 }
 
-func TargetRefsToPolicyRefsWithSectionNameV1Alpha2(targetRefs []v1alpha2.LocalPolicyTargetReferenceWithSectionName) []ir.PolicyRef {
+func TargetRefsToPolicyRefsWithSectionNameV1Alpha2(targetRefs []gwv1a2.LocalPolicyTargetReferenceWithSectionName) []ir.PolicyRef {
 	refs := make([]ir.PolicyRef, 0, len(targetRefs))
 	for _, targetRef := range targetRefs {
 		refs = append(refs, ir.PolicyRef{

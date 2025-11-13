@@ -66,14 +66,6 @@ func LoadAgentgatewayChart() (*chart.Chart, error) {
 	return loadChart(helm.AgentgatewayHelmChart)
 }
 
-func (gp *GatewayParameters) IsSelfManaged(ctx context.Context, obj client.Object) (bool, error) {
-	generator, err := gp.getHelmValuesGenerator(obj)
-	if err != nil {
-		return false, err
-	}
-	return generator.IsSelfManaged(ctx, obj)
-}
-
 func (gp *GatewayParameters) GetValues(ctx context.Context, obj client.Object) (map[string]any, error) {
 	generator, err := gp.getHelmValuesGenerator(obj)
 	if err != nil {
@@ -122,19 +114,6 @@ func newkgatewayParameters(cli apiclient.Client, inputs *deployer.Inputs) *kgate
 		gwClassClient: kclient.NewFilteredDelayed[*gwv1.GatewayClass](cli, wellknown.GatewayClassGVR, kclient.Filter{ObjectFilter: cli.ObjectFilter()}),
 		inputs:        inputs,
 	}
-}
-
-func (h *kgatewayParameters) IsSelfManaged(ctx context.Context, obj client.Object) (bool, error) {
-	gw, ok := obj.(*gwv1.Gateway)
-	if !ok {
-		return false, fmt.Errorf("expected a Gateway resource, got %s", obj.GetObjectKind().GroupVersionKind().String())
-	}
-
-	gwParam, err := h.getGatewayParametersForGateway(gw)
-	if err != nil {
-		return false, err
-	}
-	return gwParam != nil && gwParam.Spec.SelfManaged != nil, nil
 }
 
 func (h *kgatewayParameters) GetValues(ctx context.Context, obj client.Object) (map[string]any, error) {

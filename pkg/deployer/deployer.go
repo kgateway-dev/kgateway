@@ -23,7 +23,7 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
-	api "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
@@ -312,7 +312,7 @@ func (d *Deployer) DeployObjsWithSource(ctx context.Context, objs []client.Objec
 	// Determine the correct controller name based on the source object
 	controllerName := d.controllerName
 	if sourceObj != nil {
-		if gw, ok := sourceObj.(*api.Gateway); ok {
+		if gw, ok := sourceObj.(*gwv1.Gateway); ok {
 			controllerName = d.getControllerNameForGatewayClass(string(gw.Spec.GatewayClassName))
 		}
 		// For InferencePool objects, use the agwControllerName if this deployer was configured

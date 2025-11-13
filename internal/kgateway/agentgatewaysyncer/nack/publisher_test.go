@@ -11,7 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 var (
@@ -44,7 +44,7 @@ func TestPublisher_OnNack(t *testing.T) {
 
 	ctx := context.TODO()
 	// Ensure involved objects exist so UID lookups succeed
-	_, _ = client.GatewayAPI().GatewayV1().Gateways(testGateway.Namespace).Create(ctx, &apiv1.Gateway{
+	_, _ = client.GatewayAPI().GatewayV1().Gateways(testGateway.Namespace).Create(ctx, &gwv1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      testGateway.Name,
 			Namespace: testGateway.Namespace,

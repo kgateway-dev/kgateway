@@ -19,7 +19,7 @@ import (
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -354,7 +354,7 @@ func TestInferencePoolPortOverride(t *testing.T) {
 	cases := []struct {
 		name         string
 		poolNs       string
-		refGrant     *gwv1beta1.ReferenceGrant
+		refGrant     *gwv1b1.ReferenceGrant
 		providedPort gwv1.PortNumber
 		wantPort     int32
 		expectError  bool
@@ -431,7 +431,7 @@ func TestBackendPortNotAllowed(t *testing.T) {
 	cases := []struct {
 		name        string
 		backendNs   string
-		refGrant    *gwv1beta1.ReferenceGrant
+		refGrant    *gwv1b1.ReferenceGrant
 		expectError bool
 	}{
 		{
@@ -530,14 +530,14 @@ func infPool(ns string) *inf.InferencePool {
 	}
 }
 
-func refGrant() *gwv1beta1.ReferenceGrant {
-	return &gwv1beta1.ReferenceGrant{
+func refGrant() *gwv1b1.ReferenceGrant {
+	return &gwv1b1.ReferenceGrant{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default2",
 			Name:      "foo",
 		},
-		Spec: gwv1beta1.ReferenceGrantSpec{
-			From: []gwv1beta1.ReferenceGrantFrom{
+		Spec: gwv1b1.ReferenceGrantSpec{
+			From: []gwv1b1.ReferenceGrantFrom{
 				{
 					Group:     gwv1.Group("gateway.networking.k8s.io"),
 					Kind:      gwv1.Kind("HTTPRoute"),
@@ -549,7 +549,7 @@ func refGrant() *gwv1beta1.ReferenceGrant {
 					Namespace: gwv1.Namespace("default"),
 				},
 			},
-			To: []gwv1beta1.ReferenceGrantTo{
+			To: []gwv1b1.ReferenceGrantTo{
 				{
 					Group: gwv1.Group("core"),
 					Kind:  gwv1.Kind("Service"),
@@ -564,7 +564,7 @@ func refGrant() *gwv1beta1.ReferenceGrant {
 }
 
 // Helper that calls refGrant() but with its Namespace set to the given namespace
-func refGrantWithNs(ns string) *gwv1beta1.ReferenceGrant {
+func refGrantWithNs(ns string) *gwv1b1.ReferenceGrant {
 	rg := refGrant()
 	rg.Namespace = ns
 	for i := range rg.Spec.From {
@@ -574,21 +574,21 @@ func refGrantWithNs(ns string) *gwv1beta1.ReferenceGrant {
 }
 
 // Helper that creates a ReferenceGrant for Backend resources
-func refGrantWithBackend() *gwv1beta1.ReferenceGrant {
-	return &gwv1beta1.ReferenceGrant{
+func refGrantWithBackend() *gwv1b1.ReferenceGrant {
+	return &gwv1b1.ReferenceGrant{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default2",
 			Name:      "backend-ref-grant",
 		},
-		Spec: gwv1beta1.ReferenceGrantSpec{
-			From: []gwv1beta1.ReferenceGrantFrom{
+		Spec: gwv1b1.ReferenceGrantSpec{
+			From: []gwv1b1.ReferenceGrantFrom{
 				{
 					Group:     gwv1.Group("gateway.networking.k8s.io"),
 					Kind:      gwv1.Kind("HTTPRoute"),
 					Namespace: gwv1.Namespace("default"),
 				},
 			},
-			To: []gwv1beta1.ReferenceGrantTo{
+			To: []gwv1b1.ReferenceGrantTo{
 				{
 					Group: gwv1.Group(wellknown.BackendGVK.Group),
 					Kind:  gwv1.Kind(wellknown.BackendGVK.Kind),
@@ -850,7 +850,7 @@ func preRouteIndex(t test.Failer, inputs []any) *RoutesIndex {
 		},
 		apisettings.Settings{},
 	)
-	refgrants := NewRefGrantIndex(krttest.GetMockCollection[*gwv1beta1.ReferenceGrant](mock))
+	refgrants := NewRefGrantIndex(krttest.GetMockCollection[*gwv1b1.ReferenceGrant](mock))
 	upstreams := NewBackendIndex(krtutil.KrtOptions{}, policies, refgrants)
 	upstreams.AddBackends(svcGk, k8sSvcUpstreams(services))
 	pools := krttest.GetMockCollection[*inf.InferencePool](mock)
