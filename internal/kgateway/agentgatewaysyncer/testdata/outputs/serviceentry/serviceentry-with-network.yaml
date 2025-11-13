@@ -1,0 +1,107 @@
+Addresses:
+- service:
+    addresses:
+    - address: 8PAACg==
+    hostname: api.example.com
+    name: multi-cluster-api
+    namespace: default
+    ports:
+    - appProtocol: HTTP11
+      servicePort: 8080
+      targetPort: 8080
+- workload:
+    addresses:
+    - CgAAZA==
+    canonicalName: api-service
+    canonicalRevision: latest
+    clusterId: Kubernetes
+    locality:
+      region: us-west
+      zone: zone1
+    name: api-service-cluster1
+    namespace: default
+    network: network1
+    networkGateway:
+      address:
+        address: wKgKAQ==
+      hboneMtlsPort: 15008
+    serviceAccount: api-service
+    services:
+      default/api.example.com:
+        ports:
+        - servicePort: 8080
+          targetPort: 8080
+    uid: Kubernetes//WorkloadEntry/default/api-service-cluster1
+    workloadName: api-service-cluster1
+    workloadType: POD
+- workload:
+    addresses:
+    - CgABZA==
+    canonicalName: api-service
+    canonicalRevision: latest
+    clusterId: Kubernetes
+    locality:
+      region: us-east
+      zone: zone1
+    name: api-service-cluster2
+    namespace: default
+    network: network2
+    networkGateway:
+      address:
+        address: wKgUAQ==
+      hboneMtlsPort: 15008
+    serviceAccount: api-service
+    services:
+      default/api.example.com:
+        ports:
+        - servicePort: 8080
+          targetPort: 8080
+    uid: Kubernetes//WorkloadEntry/default/api-service-cluster2
+    workloadName: api-service-cluster2
+    workloadType: POD
+- workload:
+    addresses:
+    - wKgKAQ==
+    canonicalName: network1-gateway
+    canonicalRevision: latest
+    clusterId: Kubernetes
+    name: network1-gateway-network1
+    namespace: default
+    serviceAccount: network1-gateway-istio
+    tunnelProtocol: HBONE
+    uid: Kubernetes/gateway/default/network1-gateway-network1
+    workloadName: network1-gateway
+    workloadType: POD
+- workload:
+    addresses:
+    - wKgUAQ==
+    canonicalName: network2-gateway
+    canonicalRevision: latest
+    clusterId: Kubernetes
+    name: network2-gateway-network2
+    namespace: default
+    serviceAccount: network2-gateway-istio
+    tunnelProtocol: HBONE
+    uid: Kubernetes/gateway/default/network2-gateway-network2
+    workloadName: network2-gateway
+    workloadType: POD
+Binds:
+- key: 80/default/example-gateway
+  port: 80
+Listeners:
+- bindKey: 80/default/example-gateway
+  gatewayName: default/example-gateway
+  key: default/example-gateway.http
+  name: http
+  protocol: HTTP
+Routes:
+- backends:
+  - backend:
+      port: 8080
+      service: default/api.example.com
+    weight: 1
+  hostnames:
+  - api.example.com
+  key: default/cross-cluster-route.0.0.http
+  listenerKey: default/example-gateway.http
+  routeName: default/cross-cluster-route
