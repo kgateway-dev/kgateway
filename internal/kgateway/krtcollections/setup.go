@@ -75,10 +75,21 @@ func InitCollections(
 	httpRoutes := krt.WrapClient(kclient.NewFilteredDelayed[*gwv1.HTTPRoute](client, wellknown.HTTPRouteGVR, filter), krtopts.ToOptions("HTTPRoute")...)
 	metrics.RegisterEvents(httpRoutes, kmetrics.GetResourceMetricEventHandler[*gwv1.HTTPRoute]())
 
-	tcproutes := krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TCPRoute](client, gvr.TCPRoute, kubetypes.StandardInformer, filter), krtopts.ToOptions("TCPRoute")...)
-	metrics.RegisterEvents(tcproutes, kmetrics.GetResourceMetricEventHandler[*gwv1a2.TCPRoute]())
+	// ON_EXPERIMENTAL_PROMOTION : Remove this block
+	// Ref: https://github.com/kgateway-dev/kgateway/issues/12879
+	var tcproutes krt.Collection[*gwv1a2.TCPRoute]
+	// Ref: https://github.com/kgateway-dev/kgateway/issues/12880
+	var tlsRoutes krt.Collection[*gwv1a2.TLSRoute]
+	if globalSettings.EnableExperimentalGatewayAPIFeatures {
+		tcproutes = krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TCPRoute](client, gvr.TCPRoute, kubetypes.StandardInformer, filter), krtopts.ToOptions("TCPRoute")...)
+		tlsRoutes = krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TLSRoute](client, gvr.TLSRoute, kubetypes.StandardInformer, filter), krtopts.ToOptions("TLSRoute")...)
 
-	tlsRoutes := krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TLSRoute](client, gvr.TLSRoute, kubetypes.StandardInformer, filter), krtopts.ToOptions("TLSRoute")...)
+	} else {
+		// If disabled, still build a collection but make it always empty
+		tcproutes = krt.NewStaticCollection[*gwv1a2.TCPRoute](nil, nil, krtopts.ToOptions("disable/TCPRoute")...)
+		tlsRoutes = krt.NewStaticCollection[*gwv1a2.TLSRoute](nil, nil, krtopts.ToOptions("disable/TLSRoute")...)
+	}
+	metrics.RegisterEvents(tcproutes, kmetrics.GetResourceMetricEventHandler[*gwv1a2.TCPRoute]())
 	metrics.RegisterEvents(tlsRoutes, kmetrics.GetResourceMetricEventHandler[*gwv1a2.TLSRoute]())
 
 	grpcRoutes := krt.WrapClient(kclient.NewFilteredDelayed[*gwv1.GRPCRoute](client, wellknown.GRPCRouteGVR, filter), krtopts.ToOptions("GRPCRoute")...)
