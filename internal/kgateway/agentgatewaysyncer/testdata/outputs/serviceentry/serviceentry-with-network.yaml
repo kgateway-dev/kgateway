@@ -3,7 +3,7 @@ Addresses:
     addresses:
     - address: 8PAACg==
     hostname: api.example.com
-    name: multi-cluster-api
+    name: api-service
     namespace: default
     ports:
     - appProtocol: HTTP11
@@ -18,7 +18,7 @@ Addresses:
     locality:
       region: us-west
       zone: zone1
-    name: api-service-cluster1
+    name: api-service
     namespace: default
     network: network1
     networkGateway:
@@ -31,8 +31,8 @@ Addresses:
         ports:
         - servicePort: 8080
           targetPort: 8080
-    uid: Kubernetes//WorkloadEntry/default/api-service-cluster1
-    workloadName: api-service-cluster1
+    uid: Kubernetes//ServiceEntry/default/api-service/10.0.0.100
+    workloadName: api-service
     workloadType: POD
 - workload:
     addresses:
@@ -43,7 +43,7 @@ Addresses:
     locality:
       region: us-east
       zone: zone1
-    name: api-service-cluster2
+    name: api-service
     namespace: default
     network: network2
     networkGateway:
@@ -56,8 +56,8 @@ Addresses:
         ports:
         - servicePort: 8080
           targetPort: 8080
-    uid: Kubernetes//WorkloadEntry/default/api-service-cluster2
-    workloadName: api-service-cluster2
+    uid: Kubernetes//ServiceEntry/default/api-service/10.0.1.100
+    workloadName: api-service
     workloadType: POD
 - workload:
     addresses:
@@ -102,6 +102,6 @@ Routes:
     weight: 1
   hostnames:
   - api.example.com
-  key: default/cross-cluster-route.0.0.http
+  key: default/multi-network-route.0.0.http
   listenerKey: default/example-gateway.http
-  routeName: default/cross-cluster-route
+  routeName: default/multi-network-route

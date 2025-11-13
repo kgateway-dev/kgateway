@@ -61,7 +61,7 @@ status:
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: cross-cluster-route
+  name: multi-network-route
   namespace: default
 spec:
   parentRefs:
@@ -78,7 +78,7 @@ spec:
 apiVersion: networking.istio.io/v1
 kind: ServiceEntry
 metadata:
-  name: multi-cluster-api
+  name: api-service
   namespace: default
 spec:
   hosts:
@@ -91,39 +91,25 @@ spec:
     name: http
     protocol: HTTP
   resolution: STATIC
-  workloadSelector:
+  endpoints:
+  - address: 10.0.0.100
+    network: network1
+    locality: us-west/zone1
+    serviceAccount: api-service
+    ports:
+      http: 8080
     labels:
       app: api-service
----
-apiVersion: networking.istio.io/v1
-kind: WorkloadEntry
-metadata:
-  name: api-service-cluster1
-  namespace: default
-  labels:
-    app: api-service
-    security.istio.io/tlsMode: istio
-spec:
-  address: 10.0.0.100
-  locality: us-west/zone1
-  network: network1
-  serviceAccount: api-service
-  ports:
-    http: 8080
----
-apiVersion: networking.istio.io/v1
-kind: WorkloadEntry
-metadata:
-  name: api-service-cluster2
-  namespace: default
-  labels:
-    app: api-service
-    security.istio.io/tlsMode: istio
-spec:
-  address: 10.0.1.100
-  locality: us-east/zone1
-  network: network2
-  serviceAccount: api-service
-  ports:
-    http: 8080
+      version: v1
+      security.istio.io/tlsMode: istio
+  - address: 10.0.1.100
+    network: network2
+    locality: us-east/zone1
+    serviceAccount: api-service
+    ports:
+      http: 8080
+    labels:
+      app: api-service
+      version: v1
+      security.istio.io/tlsMode: istio
 

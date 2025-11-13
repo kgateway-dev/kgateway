@@ -387,7 +387,7 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("ServiceEntry with WorkloadEntry and network gateways", func(t *testing.T) {
+	t.Run("ServiceEntry with multi-network endpoints", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "serviceentry/serviceentry-with-network.yaml",
 			outputFile: "serviceentry/serviceentry-with-network.yaml",
