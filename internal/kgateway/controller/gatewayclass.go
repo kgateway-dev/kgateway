@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 
 	"istio.io/istio/pkg/config/schema/gvr"
 	"istio.io/istio/pkg/kube"
@@ -46,7 +47,7 @@ func newGatewayClassReconciler(
 		classInfo:             classInfo,
 		gwClassClient:         kclient.NewFilteredDelayed[*gwv1.GatewayClass](cfg.Client, gvr.GatewayClass_v1, filter),
 	}
-	r.queue = controllers.NewQueue("GatewayClassController", controllers.WithReconciler(r.reconcile), controllers.WithMaxAttempts(10))
+	r.queue = controllers.NewQueue("GatewayClassController", controllers.WithReconciler(r.reconcile), controllers.WithMaxAttempts(math.MaxInt), controllers.WithRateLimiter(rateLimiter))
 	ourControllers := sets.New(cfg.ControllerName, cfg.AgwControllerName)
 
 	r.gwClassClient.AddEventHandler(
