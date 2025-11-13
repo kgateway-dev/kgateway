@@ -237,7 +237,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 
 		var statusMarker *struct{}
 		for _, ancestor := range policyCR.Status.Ancestors {
-			if string(ancestor.ControllerName) == wellknown.DefaultGatewayControllerName {
+			if string(ancestor.ControllerName) == commoncol.ControllerName {
 				statusMarker = &struct{}{}
 				break
 			}

@@ -14,6 +14,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
@@ -334,13 +335,11 @@ func (s *testingSuite) assertResponse(path string, requestHeaders map[string]str
 		})
 }
 
-const (
-	kgatewayControllerName = "kgateway.dev/kgateway"
-	otherControllerName    = "other-controller.example.com/controller"
-)
-
 // TestTrafficPolicyClearStaleStatus verifies that stale status is cleared when targetRef becomes invalid
 func (s *testingSuite) TestTrafficPolicyClearStaleStatus() {
+	kgatewayControllerName := wellknown.DefaultGatewayControllerName
+	otherControllerName := "other-controller.example.com/controller"
+
 	// Add fake ancestor status from another controller
 	s.addAncestorStatus("gw-cors-policy", "default", otherControllerName)
 

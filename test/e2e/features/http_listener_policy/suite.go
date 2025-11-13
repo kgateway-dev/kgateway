@@ -16,6 +16,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
@@ -235,13 +236,11 @@ func (s *testingSuite) TestAccessLogEmittedToStdout() {
 	}, 10*time.Second, 200*time.Millisecond).ShouldNot(gomega.ContainSubstring("\"response_code\":200"))
 }
 
-const (
-	kgatewayControllerName = "kgateway.dev/kgateway"
-	otherControllerName    = "other-controller.example.com/controller"
-)
-
 // TestHttpListenerPolicyClearStaleStatus verifies that stale status is cleared when targetRef becomes invalid
 func (s *testingSuite) TestHttpListenerPolicyClearStaleStatus() {
+	kgatewayControllerName := wellknown.DefaultGatewayControllerName
+	otherControllerName := "other-controller.example.com/controller"
+
 	// Add fake ancestor status from another controller
 	s.addAncestorStatus("http-listener-policy-server-header", "default", otherControllerName)
 

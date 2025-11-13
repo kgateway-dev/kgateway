@@ -223,7 +223,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 		// Create status marker if existing status has kgateway controller
 		var statusMarker *struct{}
 		for _, ancestor := range i.Status.Ancestors {
-			if string(ancestor.ControllerName) == wellknown.DefaultGatewayControllerName {
+			if string(ancestor.ControllerName) == commoncol.ControllerName {
 				statusMarker = &struct{}{}
 				break
 			}
