@@ -773,6 +773,7 @@ func buildAgwDestination(
 	case wellknown.HostnameGVK.GroupKind():
 		// Hostname is an Istio-specific backend kind where the name is the literal hostname
 		// Used for referencing services by their full hostname (e.g., from ServiceEntry)
+		// The actual resolution to ServiceEntry happens via the BackendIndex alias mechanism
 		port = to.Port
 		if port == nil {
 			return nil, &reporter.RouteCondition{
@@ -792,21 +793,8 @@ func buildAgwDestination(
 		}
 		// Use the name directly as the hostname
 		hostname = string(to.Name)
-		// Validate that the hostname exists (check both Services and ServiceEntries)
-		key := namespace + "/" + hostname
-		svc := ptr.Flatten(krt.FetchOne(ctx.Krt, ctx.Services, krt.FilterKey(key)))
-		if svc == nil && ctx.ServiceEntriesByHost != nil {
-			// Check if it's a ServiceEntry hostname using index
-			serviceEntries := ctx.ServiceEntriesByHost.Lookup(hostname)
-			if len(serviceEntries) == 0 {
-				invalidBackendErr = &reporter.RouteCondition{
-					Type:    gwv1.RouteConditionResolvedRefs,
-					Status:  metav1.ConditionFalse,
-					Reason:  gwv1.RouteReasonBackendNotFound,
-					Message: fmt.Sprintf("backend hostname(%s) not found", hostname),
-				}
-			}
-		}
+		// Note: Backend validation happens via BackendIndex which uses the Hostname->ServiceEntry alias
+		// No need to explicitly check ServiceEntries here as the BackendIndex handles the resolution
 		rb.Backend = &api.BackendReference{
 			Kind: &api.BackendReference_Service{
 				Service: namespace + "/" + hostname,

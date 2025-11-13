@@ -18,7 +18,7 @@ import (
 	networkingv1alpha3 "istio.io/api/networking/v1alpha3"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pilot/pkg/features"
-	"istio.io/istio/pilot/pkg/networking/serviceentry"
+	istioserviceentry "istio.io/istio/pilot/pkg/networking/serviceentry"
 	"istio.io/istio/pilot/pkg/serviceregistry/provider"
 	"istio.io/istio/pilot/pkg/util/protoconv"
 	"istio.io/istio/pkg/cluster"
@@ -42,6 +42,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/serviceentry"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -192,17 +193,19 @@ func (a *index) servicesInfo(se *networkingclient.ServiceEntry, w *Waypoint) []S
 }
 
 func (a *index) constructServices(se *networkingclient.ServiceEntry, w *Waypoint) []*api.Service {
-	// Get manually specified addresses
-	addresses, err := slices.MapErr(se.Spec.Addresses, a.toNetworkAddress)
+	// Get all addresses (both manually specified and auto-allocated from status)
+	// This uses the shared utility that includes Spec.Addresses AND Status.Addresses
+	addressStrings := serviceentry.ServiceEntryAddresses(se)
+	addresses, err := slices.MapErr(addressStrings, a.toNetworkAddress)
 	if err != nil {
 		logger.Warn("failed to parse service entry addresses", "serviceentry", config.NamespacedName(se), "error", err)
 		return nil
 	}
 
-	// Check for auto-allocated IPs
+	// Check for per-hostname auto-allocated IPs
 	var autoassignedHostAddresses map[string][]netip.Addr
-	if serviceentry.ShouldV2AutoAllocateIP(se) {
-		autoassignedHostAddresses = serviceentry.GetHostAddressesFromServiceEntry(se)
+	if istioserviceentry.ShouldV2AutoAllocateIP(se) {
+		autoassignedHostAddresses = istioserviceentry.GetHostAddressesFromServiceEntry(se)
 	}
 
 	ports := make([]*api.Port, 0, len(se.Spec.Ports))

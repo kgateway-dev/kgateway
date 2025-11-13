@@ -521,17 +521,16 @@ type RouteContext struct {
 
 // RouteContextInputs defines the collections needed to translate a route.
 type RouteContextInputs struct {
-	Grants               ReferenceGrants
-	RouteParents         RouteParents
-	Services             krt.Collection[*corev1.Service]
-	InferencePools       krt.Collection[*inf.InferencePool]
-	Namespaces           krt.Collection[*corev1.Namespace]
-	ServiceEntries       krt.Collection[*networkingclient.ServiceEntry]
-	ServiceEntriesByHost krt.Index[string, *networkingclient.ServiceEntry]
-	Backends             krt.Collection[*v1alpha1.Backend]
-	Policies             *krtcollections.PolicyIndex
-	DirectResponses      krt.Collection[*v1alpha1.DirectResponse]
-	ControllerName       string
+	Grants          ReferenceGrants
+	RouteParents    RouteParents
+	Services        krt.Collection[*corev1.Service]
+	InferencePools  krt.Collection[*inf.InferencePool]
+	Namespaces      krt.Collection[*corev1.Namespace]
+	ServiceEntries  krt.Collection[*networkingclient.ServiceEntry]
+	Backends        krt.Collection[*v1alpha1.Backend]
+	Policies        *krtcollections.PolicyIndex
+	DirectResponses krt.Collection[*v1alpha1.DirectResponse]
+	ControllerName  string
 }
 
 func (i RouteContextInputs) WithCtx(krtctx krt.HandlerContext) RouteContext {
