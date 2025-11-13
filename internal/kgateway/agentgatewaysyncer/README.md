@@ -2,10 +2,10 @@
 
 This syncer configures xds updates for the [agentgateway](https://agentgateway.dev/) data plane.
 
-To use the agentgateway control plane with kgateway, you need to enable the integration in the helm chart:
+To use the agentgateway control plane with kgateway, the kgateway helm chart must be installed with `agentgateway.enabled` set to `true` (which is the default):
 ```yaml
 agentgateway:
-  enabled: true # set this to true
+  enabled: true
 ```
 
 You can configure the agentgateway Gateway class to use a specific image by setting the image field on the
