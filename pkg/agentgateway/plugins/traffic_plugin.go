@@ -51,7 +51,7 @@ const (
 	timeoutPolicySuffix         = ":timeout"
 	jwtPolicySuffix             = ":jwt"
 	basicAuthPolicySuffix       = ":basicauth"
-	apiKeyPolicySuffix          = ":apikeyauth"
+	apiKeyPolicySuffix          = ":apikeyauth" //nolint:gosec
 )
 
 var logger = logging.New("agentgateway/plugins")
@@ -441,11 +441,7 @@ func translateTrafficPolicyToAgw(
 	}
 
 	if traffic.JWTAuthentication != nil {
-		jwtAuthenticationPolicies, err := processJWTAuthenticationPolicy(policy, policyName, policyTarget)
-		if err != nil {
-			logger.Error("error processing jWTAuthentication policy", "error", err)
-			errs = append(errs, err)
-		}
+		jwtAuthenticationPolicies := processJWTAuthenticationPolicy(policy, policyName, policyTarget)
 		agwPolicies = append(agwPolicies, jwtAuthenticationPolicies...)
 	}
 
@@ -503,7 +499,7 @@ func processRetriesPolicy(policy *v1alpha1.AgentgatewayPolicy, name string, targ
 	return []AgwPolicy{{Policy: retryPolicy}}
 }
 
-func processJWTAuthenticationPolicy(policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) ([]AgwPolicy, error) {
+func processJWTAuthenticationPolicy(policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) []AgwPolicy {
 	jwt := policy.Spec.Traffic.JWTAuthentication
 	p := &api.TrafficPolicySpec_JWT{
 		Mode: api.TrafficPolicySpec_JWT_OPTIONAL,
@@ -547,7 +543,7 @@ func processJWTAuthenticationPolicy(policy *v1alpha1.AgentgatewayPolicy, name st
 		"agentgateway_policy", jwtPolicy.Name,
 		"target", target)
 
-	return []AgwPolicy{{Policy: jwtPolicy}}, nil
+	return []AgwPolicy{{Policy: jwtPolicy}}
 }
 
 func processBasicAuthenticationPolicy(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) ([]AgwPolicy, error) {

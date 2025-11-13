@@ -18,14 +18,14 @@ import (
 )
 
 func main() {
-	kid := strconv.Itoa(random.Int())
+	kid := strconv.Itoa(random.Int()) //nolint:gosec
 	jwks, key, err := generateJWKS(kid)
 	if err != nil {
 		fmt.Printf("error generating jwks: %s", err.Error())
 		os.Exit(1)
 	}
 
-	serializedJwks, err := json.Marshal(jwks) //MarshalIndent(jwks, "", "  ")
+	serializedJwks, err := json.Marshal(jwks)
 	if err != nil {
 		fmt.Printf("error serializing jwks: %s", err.Error())
 		os.Exit(1)
