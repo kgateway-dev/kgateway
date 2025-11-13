@@ -407,7 +407,7 @@ type AgentJWTAuthentication struct {
 }
 
 type AgentJWTProvider struct {
-	// issue identifies the issuer that issued the JWT. This corresponds to the 'iss' claim (https://tools.ietf.org/html/rfc7519#section-4.1.1).
+	// issuer identifies the IdP that issued the JWT. This corresponds to the 'iss' claim (https://tools.ietf.org/html/rfc7519#section-4.1.1).
 	Issuer ShortString `json:"issuer,omitempty"`
 	// audiences specifies the list of allowed audiences that are allowed access. This corresponds to the 'aud' claim (https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.3).
 	// If unset, any audience is allowed.

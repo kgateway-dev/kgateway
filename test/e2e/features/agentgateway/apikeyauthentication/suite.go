@@ -107,7 +107,6 @@ var (
 	}
 )
 
-// testingSuite is a suite of global rate limiting tests
 type testingSuite struct {
 	suite.Suite
 
