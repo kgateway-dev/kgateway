@@ -1038,6 +1038,7 @@ func (r *RoutesIndex) ProcessHTTPRouteStatusMarkers(kctx krt.HandlerContext, rep
 
 func NewRoutesIndex(
 	krtopts krtutil.KrtOptions,
+	controllerName string,
 	httproutes krt.Collection[*gwv1.HTTPRoute],
 	grpcroutes krt.Collection[*gwv1.GRPCRoute],
 	tcproutes krt.Collection[*gwv1a2.TCPRoute],
@@ -1056,7 +1057,10 @@ func NewRoutesIndex(
 	}
 	h.hasSyncedFuncs = append(h.hasSyncedFuncs, httproutes.HasSynced, grpcroutes.HasSynced, tcproutes.HasSynced, tlsroutes.HasSynced)
 
-	h.httpRouteStatusMarker, h.httpRoutes = krt.NewStatusCollection(httproutes, h.transformHttpRoute, krtopts.ToOptions("http-routes-with-policy")...)
+	h.httpRouteStatusMarker, h.httpRoutes = krt.NewStatusCollection(httproutes, func(kctx krt.HandlerContext, i *gwv1.HTTPRoute) (*struct{}, *ir.HttpRouteIR) {
+		return h.transformHttpRoute(kctx, i, controllerName)
+	}, krtopts.ToOptions("http-routes-with-policy")...)
+
 	httpRouteCollection := krt.NewCollection(h.httpRoutes, func(kctx krt.HandlerContext, i ir.HttpRouteIR) *RouteWrapper {
 		return &RouteWrapper{Route: &i}
 	}, krtopts.ToOptions("routes-http-routes-with-policy")...)
@@ -1227,7 +1231,7 @@ func (h *RoutesIndex) transformTlsRoute(kctx krt.HandlerContext, i *gwv1a2.TLSRo
 	}
 }
 
-func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRoute) (*struct{}, *ir.HttpRouteIR) {
+func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRoute, controllerName string) (*struct{}, *ir.HttpRouteIR) {
 	src := ir.ObjectSource{
 		Group:     gwv1.GroupVersion.Group,
 		Kind:      "HTTPRoute",
@@ -1249,7 +1253,7 @@ func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRo
 	// Create a marker if there are existing status parents with kgateway controllerName
 	var statusMarker *struct{}
 	for _, parentStatus := range i.Status.Parents {
-		if string(parentStatus.ControllerName) == wellknown.DefaultGatewayControllerName {
+		if string(parentStatus.ControllerName) == controllerName {
 			statusMarker = &struct{}{}
 			break
 		}
