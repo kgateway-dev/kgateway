@@ -40,7 +40,9 @@ type Options struct {
 	RestConfig                  *rest.Config
 	CtrlMgrOptions              func(context.Context) *ctrl.Options
 	// extra controller manager config, like registering additional controllers
-	ExtraManagerConfig []func(ctx context.Context, mgr manager.Manager, objectFilter kubetypes.DynamicObjectFilter) error
+	ExtraManagerConfig []func(context.Context, manager.Manager, kubetypes.DynamicObjectFilter) error
+	// ExtraRunnables are additional runnables to add to the manager
+	ExtraRunnables []manager.Runnable
 	// Validator is the validator to use for the controller.
 	Validator validator.Validator
 	// ExtraAgwPolicyStatusHandlers maps policy kinds to their status sync handlers for AgentGateway
@@ -66,6 +68,7 @@ func New(opts Options) (setup.Server, error) {
 		setup.WithRestConfig(opts.RestConfig),
 		setup.WithControllerManagerOptions(opts.CtrlMgrOptions),
 		setup.WithExtraManagerConfig(opts.ExtraManagerConfig...),
+		setup.WithExtraRunnables(opts.ExtraRunnables...),
 		setup.WithValidator(opts.Validator),
 		setup.WithExtraAgwPolicyStatusHandlers(opts.ExtraAgwPolicyStatusHandlers),
 	)

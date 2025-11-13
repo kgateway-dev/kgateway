@@ -157,9 +157,15 @@ func WithAgwXDSListener(l net.Listener) func(*setup) {
 	}
 }
 
-func WithExtraManagerConfig(mgrConfigFuncs ...func(ctx context.Context, mgr manager.Manager, objectFilter kubetypes.DynamicObjectFilter) error) func(*setup) {
+func WithExtraManagerConfig(mgrConfigFuncs ...func(context.Context, manager.Manager, kubetypes.DynamicObjectFilter) error) func(*setup) {
 	return func(s *setup) {
 		s.extraManagerConfig = mgrConfigFuncs
+	}
+}
+
+func WithExtraRunnables(runnables ...manager.Runnable) func(*setup) {
+	return func(s *setup) {
+		s.extraRunnables = runnables
 	}
 }
 
@@ -206,7 +212,9 @@ type setup struct {
 	restConfig                     *rest.Config
 	ctrlMgrOptionsInitFunc         func(context.Context) *ctrl.Options
 	// extra controller manager config, like adding registering additional controllers
-	extraManagerConfig           []func(ctx context.Context, mgr manager.Manager, objectFilter kubetypes.DynamicObjectFilter) error
+	extraManagerConfig []func(ctx context.Context, mgr manager.Manager, objectFilter kubetypes.DynamicObjectFilter) error
+	// extra Runnable to add to the manager
+	extraRunnables               []manager.Runnable
 	krtDebugger                  *krt.DebugHandler
 	globalSettings               *apisettings.Settings
 	leaderElectionID             string
@@ -380,9 +388,14 @@ func (s *setup) Start(ctx context.Context) error {
 	}
 
 	for _, mgrCfgFunc := range s.extraManagerConfig {
-		err := mgrCfgFunc(ctx, mgr, commoncol.DiscoveryNamespacesFilter)
+		err := mgrCfgFunc(ctx, mgr, s.apiClient.ObjectFilter())
 		if err != nil {
 			return err
+		}
+	}
+	for _, runnable := range s.extraRunnables {
+		if err := mgr.Add(runnable); err != nil {
+			return fmt.Errorf("error adding extra Runnable to manager: %w", err)
 		}
 	}
 
