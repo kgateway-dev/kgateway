@@ -70,6 +70,8 @@ type AgwCollections struct {
 	ControllerName string
 	// SystemNamespace is control plane system namespace (default is kgateway-system)
 	SystemNamespace string
+	// IstioNamespace is the Istio control plane namespace (default is istio-system)
+	IstioNamespace string
 	// ClusterID is the cluster ID of the cluster the proxy is running in.
 	ClusterID string
 }
@@ -113,6 +115,7 @@ func NewAgwCollections(
 		Client:          commoncol.Client,
 		ControllerName:  agwControllerName,
 		SystemNamespace: systemNamespace,
+		IstioNamespace:  commoncol.Settings.IstioNamespace,
 		ClusterID:       clusterID,
 
 		// Core Kubernetes resources
