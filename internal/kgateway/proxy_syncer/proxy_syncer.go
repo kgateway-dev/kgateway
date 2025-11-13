@@ -271,6 +271,12 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		objStatus := krt.Fetch(kctx, s.commonCols.Routes.GetHTTPRouteStatusMarkers())
 		s.commonCols.Routes.ProcessHTTPRouteStatusMarkers(objStatus, merged)
 
+		for _, plugin := range s.plugins.ContributesPolicies {
+			if plugin.ProcessPolicyStatusMarkers != nil {
+				plugin.ProcessPolicyStatusMarkers(kctx, &merged)
+			}
+		}
+
 		return &report{merged}
 	})
 

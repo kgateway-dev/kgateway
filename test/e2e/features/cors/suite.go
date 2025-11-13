@@ -7,14 +7,20 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -326,4 +332,95 @@ func (s *testingSuite) assertResponse(path string, requestHeaders map[string]str
 			Headers:    expectedHeaders,
 			NotHeaders: notExpectedHeaders,
 		})
+}
+
+const (
+	kgatewayControllerName = "kgateway.dev/kgateway"
+	otherControllerName    = "other-controller.example.com/controller"
+)
+
+// TestTrafficPolicyClearStaleStatus verifies that stale status is cleared when targetRef becomes invalid
+func (s *testingSuite) TestTrafficPolicyClearStaleStatus() {
+	// Add fake ancestor status from another controller
+	s.addAncestorStatus("gw-cors-policy", "default", otherControllerName)
+
+	// Verify both kgateway and other controller statuses exist
+	s.assertAncestorStatuses("gw", map[string]bool{
+		kgatewayControllerName: true,
+		otherControllerName:    true,
+	})
+
+	// Apply policy with missing gateway target
+	err := s.TestInstallation.Actions.Kubectl().ApplyFile(
+		s.Ctx,
+		gwCorsTrafficPolicyMissingTargetManifest,
+	)
+	s.Require().NoError(err)
+
+	// Verify kgateway status cleared, other remains
+	s.assertAncestorStatuses("gw", map[string]bool{
+		kgatewayControllerName: false,
+		otherControllerName:    true,
+	})
+}
+
+func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, controllerName string) {
+	currentTimeout, pollingInterval := helpers.GetTimeouts()
+	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+		policy := &v1alpha1.TrafficPolicy{}
+		err := s.TestInstallation.ClusterContext.Client.Get(
+			s.Ctx,
+			types.NamespacedName{Name: policyName, Namespace: policyNamespace},
+			policy,
+		)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+
+		// Add fake ancestor status
+		fakeStatus := gwv1.PolicyAncestorStatus{
+			AncestorRef:    gwv1.ParentReference{Name: "gw"},
+			ControllerName: gwv1.GatewayController(controllerName),
+			Conditions: []metav1.Condition{
+				{
+					Type:               string(v1alpha1.PolicyConditionAccepted),
+					Status:             metav1.ConditionTrue,
+					Reason:             string(v1alpha1.PolicyReasonValid),
+					Message:            "Accepted by fake controller",
+					LastTransitionTime: metav1.Now(),
+				},
+			},
+		}
+
+		policy.Status.Ancestors = append(policy.Status.Ancestors, fakeStatus)
+		err = s.TestInstallation.ClusterContext.Client.Status().Update(s.Ctx, policy)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+}
+
+func (s *testingSuite) assertAncestorStatuses(ancestorName string, expectedControllers map[string]bool) {
+	currentTimeout, pollingInterval := helpers.GetTimeouts()
+	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+		policy := &v1alpha1.TrafficPolicy{}
+		err := s.TestInstallation.ClusterContext.Client.Get(
+			s.Ctx,
+			types.NamespacedName{Name: "gw-cors-policy", Namespace: "default"},
+			policy,
+		)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+
+		foundControllers := make(map[string]bool)
+		for _, ancestor := range policy.Status.Ancestors {
+			if string(ancestor.AncestorRef.Name) == ancestorName {
+				foundControllers[string(ancestor.ControllerName)] = true
+			}
+		}
+
+		for controller, shouldExist := range expectedControllers {
+			exists := foundControllers[controller]
+			if shouldExist {
+				g.Expect(exists).To(gomega.BeTrue(), "Expected controller %s to exist in status", controller)
+			} else {
+				g.Expect(exists).To(gomega.BeFalse(), "Expected controller %s to not exist in status", controller)
+			}
+		}
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
