@@ -2419,9 +2419,11 @@ spec:
                               minItems: 1
                               type: array
                             issuer:
-                              description: issuer identifies the IdP that issued the
-                                JWT. This corresponds to the 'iss' claim (https://tools.ietf.org/html/rfc7519#section-4.1.1).
-                              maxLength: 256
+                              description: |-
+                                issuer identifies the IdP that issued the JWT. This corresponds to the 'iss' claim (https://tools.ietf.org/html/rfc7519#section-4.1.1).
+                                max length is max length of a dns name (253) + "https://"" prefix
+                              maxLength: 261
+                              minLength: 1
                               type: string
                             jwks:
                               description: jwks defines the JSON Web Key Set used
