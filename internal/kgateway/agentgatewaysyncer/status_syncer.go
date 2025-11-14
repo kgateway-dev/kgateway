@@ -220,7 +220,7 @@ func (s *AgentGwStatusSyncer) SyncStatus(ctx context.Context, resource status.Re
 				return
 			}
 		}
-		logger.Error("SyncStatus: unknown resource type", "gvk", resource.GroupVersionKind.String())
+		logger.Error("sync status: unknown resource type", "gvk", resource.GroupVersionKind.String())
 	}
 }
 
