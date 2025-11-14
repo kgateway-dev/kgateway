@@ -504,16 +504,16 @@ func processJWTAuthenticationPolicy(policy *v1alpha1.AgentgatewayPolicy, name st
 	p := &api.TrafficPolicySpec_JWT{
 		Mode: api.TrafficPolicySpec_JWT_OPTIONAL,
 	}
-	if m := jwt.Mode; m != nil {
-		switch *m {
-		case v1alpha1.JWTAuthenticationModeOptional:
-			p.Mode = api.TrafficPolicySpec_JWT_OPTIONAL
-		case v1alpha1.JWTAuthenticationModeStrict:
-			p.Mode = api.TrafficPolicySpec_JWT_STRICT
-		case v1alpha1.JWTAuthenticationModePermissive:
-			p.Mode = api.TrafficPolicySpec_JWT_PERMISSIVE
-		}
+
+	switch jwt.Mode {
+	case v1alpha1.JWTAuthenticationModeOptional:
+		p.Mode = api.TrafficPolicySpec_JWT_OPTIONAL
+	case v1alpha1.JWTAuthenticationModeStrict:
+		p.Mode = api.TrafficPolicySpec_JWT_STRICT
+	case v1alpha1.JWTAuthenticationModePermissive:
+		p.Mode = api.TrafficPolicySpec_JWT_PERMISSIVE
 	}
+
 	for _, pp := range jwt.Providers {
 		jp := &api.TrafficPolicySpec_JWTProvider{
 			Issuer:    pp.Issuer,
@@ -554,14 +554,14 @@ func processBasicAuthenticationPolicy(ctx PolicyCtx, policy *v1alpha1.Agentgatew
 	if ba.Realm != nil {
 		p.Realm = wrapperspb.String(*ba.Realm)
 	}
-	if ba.Mode != nil {
-		switch *ba.Mode {
-		case v1alpha1.BasicAuthenticationModeOptional:
-			p.Mode = api.TrafficPolicySpec_BasicAuthentication_OPTIONAL
-		case v1alpha1.BasicAuthenticationModeStrict:
-			p.Mode = api.TrafficPolicySpec_BasicAuthentication_STRICT
-		}
+
+	switch ba.Mode {
+	case v1alpha1.BasicAuthenticationModeOptional:
+		p.Mode = api.TrafficPolicySpec_BasicAuthentication_OPTIONAL
+	case v1alpha1.BasicAuthenticationModeStrict:
+		p.Mode = api.TrafficPolicySpec_BasicAuthentication_STRICT
 	}
+
 	if s := ba.SecretRef; s != nil {
 		scrt := ptr.Flatten(krt.FetchOne(ctx.Krt, ctx.Collections.Secrets, krt.FilterKey(policy.Namespace+"/"+s.Name)))
 		if scrt == nil {
@@ -604,13 +604,12 @@ func processAPIKeyAuthenticationPolicy(ctx PolicyCtx, policy *v1alpha1.Agentgate
 	p := &api.TrafficPolicySpec_APIKey{
 		Mode: api.TrafficPolicySpec_APIKey_OPTIONAL,
 	}
-	if ak.Mode != nil {
-		switch *ak.Mode {
-		case v1alpha1.APIKeyAuthenticationModeOptional:
-			p.Mode = api.TrafficPolicySpec_APIKey_OPTIONAL
-		case v1alpha1.APIKeyAuthenticationModeStrict:
-			p.Mode = api.TrafficPolicySpec_APIKey_STRICT
-		}
+
+	switch ak.Mode {
+	case v1alpha1.APIKeyAuthenticationModeOptional:
+		p.Mode = api.TrafficPolicySpec_APIKey_OPTIONAL
+	case v1alpha1.APIKeyAuthenticationModeStrict:
+		p.Mode = api.TrafficPolicySpec_APIKey_STRICT
 	}
 
 	var secrets []*corev1.Secret
@@ -628,17 +627,15 @@ func processAPIKeyAuthenticationPolicy(ctx PolicyCtx, policy *v1alpha1.Agentgate
 	for _, s := range secrets {
 		for k, v := range s.Data {
 			var ke APIKeyEntry
-			if err := json.Unmarshal(v, &ke); err != nil {
-				if bytes.TrimSpace(v)[0] == '{' {
-					errs = append(errs, fmt.Errorf("secret %v contains invalid key %v: %w", s.Name, k, err))
-					continue
-				} else {
-					// A raw key entry without metadata
-					ke = APIKeyEntry{
-						Key:      string(v),
-						Metadata: nil,
-					}
+			if bytes.TrimSpace(v)[0] != '{' {
+				// A raw key entry without metadata
+				ke = APIKeyEntry{
+					Key:      string(v),
+					Metadata: nil,
 				}
+			} else if err := json.Unmarshal(v, &ke); err != nil {
+				errs = append(errs, fmt.Errorf("secret %v contains invalid key %v: %w", s.Name, k, err))
+				continue
 			}
 
 			p.ApiKeys = append(p.ApiKeys, &api.TrafficPolicySpec_APIKey_User{

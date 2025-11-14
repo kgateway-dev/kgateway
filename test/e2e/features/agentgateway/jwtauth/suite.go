@@ -1,6 +1,6 @@
 //go:build e2e
 
-package jwtauthentication
+package jwtauth
 
 import (
 	"context"
@@ -26,7 +26,7 @@ import (
 )
 
 //
-// Use `go run test/e2e/testutils/jwt/jwt-generator.go`
+// Use `go run hack/utils/jwt/jwt-generator.go`
 // to generate jwks and a jwt signed by the key in it
 //
 

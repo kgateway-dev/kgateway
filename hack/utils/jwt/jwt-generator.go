@@ -17,6 +17,8 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// use this to generate jwks and a jwt signed by the key in it
+
 func main() {
 	kid := strconv.Itoa(random.Int()) //nolint:gosec
 	jwks, key, err := generateJWKS(kid)
