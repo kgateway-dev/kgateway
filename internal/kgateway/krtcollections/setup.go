@@ -83,7 +83,6 @@ func InitCollections(
 	if globalSettings.EnableExperimentalGatewayAPIFeatures {
 		tcproutes = krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TCPRoute](client, gvr.TCPRoute, kubetypes.StandardInformer, filter), krtopts.ToOptions("TCPRoute")...)
 		tlsRoutes = krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TLSRoute](client, gvr.TLSRoute, kubetypes.StandardInformer, filter), krtopts.ToOptions("TLSRoute")...)
-
 	} else {
 		// If disabled, still build a collection but make it always empty
 		tcproutes = krt.NewStaticCollection[*gwv1a2.TCPRoute](nil, nil, krtopts.ToOptions("disable/TCPRoute")...)

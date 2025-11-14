@@ -40,13 +40,20 @@ type discoveryNamespacesFilter struct {
 	handlers            []func(added, removed sets.String)
 }
 
-// newDiscoveryNamespacesFilter creates a new DynamicObjectFilter that filters namespaced objects based
+// NewDiscoveryNamespacesFilter creates a new DynamicObjectFilter that filters namespaced objects based
 // on the given discovery namespace selector config JSON (cfgJSON).
-func newDiscoveryNamespacesFilter(
+func NewDiscoveryNamespacesFilter(
 	namespaces kclient.Client[*corev1.Namespace],
 	cfgJSON string,
 	stop <-chan struct{},
 ) (kubetypes.DynamicObjectFilter, error) {
+	// If the config is unset, default to empty JSON array which selects all namespaces.
+	// This prevents needing to pass an empty JSON array from tests, which would otherwise result
+	// in an unmarshalling error.
+	if cfgJSON == "" {
+		cfgJSON = "[]"
+	}
+
 	// convert LabelSelectors to Selectors
 	var labelSelectors []metav1.LabelSelector
 	err := json.Unmarshal([]byte(cfgJSON), &labelSelectors)

@@ -26,11 +26,9 @@ func (n NamespaceMetadata) Equals(in NamespaceMetadata) bool {
 }
 
 func NewNamespaceCollection(ctx context.Context, cli apiclient.Client, krtOpts krtutil.KrtOptions) (krt.Collection[NamespaceMetadata], kclient.Client[*corev1.Namespace]) {
-	client := kclient.NewFiltered[*corev1.Namespace](cli, kclient.Filter{
-		// ObjectTransform: ...,
-		// NOTE: Do not apply an ObjectFilter to namespaces as the discovery namespace ObjectFilter for other clients
-		// requires all namespaces to be watched
-	})
+	// NOTE: Do not apply an ObjectFilter to namespaces as the discovery namespace ObjectFilter for other clients
+	// requires all namespaces to be watched
+	client := kclient.New[*corev1.Namespace](cli) //nolint:forbidigo // should not use filtered client
 	col := krt.WrapClient(client, krtOpts.ToOptions("Namespaces")...)
 	return NewNamespaceCollectionFromCol(ctx, col, krtOpts), client
 }

@@ -82,12 +82,17 @@ func NewCommonCollections(
 	// selectors to be applies as filters to other collections
 	namespaces, nsClient := krtcollections.NewNamespaceCollection(ctx, client, krtOptions)
 
-	// Initialize discovery namespace filter
-	discoveryNamespacesFilter, err := newDiscoveryNamespacesFilter(nsClient, settings.DiscoveryNamespaceSelectors, ctx.Done())
-	if err != nil {
-		return nil, err
+	var err error
+	// Initialize discovery namespace filter if it has not already been set.
+	// We should not overwrite an existing filter as it may have been set up with a custom apiclient.Client
+	discoveryNamespacesFilter := client.ObjectFilter()
+	if discoveryNamespacesFilter == nil {
+		discoveryNamespacesFilter, err = NewDiscoveryNamespacesFilter(nsClient, settings.DiscoveryNamespaceSelectors, ctx.Done())
+		if err != nil {
+			return nil, err
+		}
+		kube.SetObjectFilter(client.Core(), discoveryNamespacesFilter)
 	}
-	kube.SetObjectFilter(client.Core(), discoveryNamespacesFilter)
 
 	secretClient := kclient.NewFiltered[*corev1.Secret](
 		client,
