@@ -27,7 +27,7 @@ type GatewayExtension struct {
 	RateLimit *v1alpha1.RateLimitProvider
 
 	// JwtProviders configures the jwt providers
-	JwtProviders map[string]v1alpha1.JWTProvider
+	JwtProviders []v1alpha1.NamedJWTProvider
 
 	// PrecedenceWeight specifies the precedence weight associated with the provider.
 	// A higher weight implies higher priority.

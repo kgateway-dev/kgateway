@@ -168,27 +168,30 @@ func TestTranslateJwksConfigMap(t *testing.T) {
 func TestConvertJwtValidationConfig(t *testing.T) {
 	tests := []struct {
 		name           string
-		providers      map[string]v1alpha1.JWTProvider
+		providers      []v1alpha1.NamedJWTProvider
 		expectedError  bool
 		expectedConfig *jwtauthnv3.JwtAuthentication
 	}{
 		{
 			name: "basic provider with inline JWKS",
-			providers: map[string]v1alpha1.JWTProvider{
-				"test-provider": {
-					Issuer: "test-issuer",
-					JWKS: v1alpha1.JWKS{
-						LocalJWKS: &v1alpha1.LocalJWKS{
-							InlineKey: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
+			providers: []v1alpha1.NamedJWTProvider{
+				{
+					Name: "test-provider",
+					JWTProvider: v1alpha1.JWTProvider{
+						Issuer: "test-issuer",
+						JWKS: v1alpha1.JWKS{
+							LocalJWKS: &v1alpha1.LocalJWKS{
+								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
+							},
 						},
-					},
-					ClaimsToHeaders: []v1alpha1.JWTClaimToHeader{
-						{
-							Name:   "sub",
-							Header: "X-Subject",
+						ClaimsToHeaders: []v1alpha1.JWTClaimToHeader{
+							{
+								Name:   "sub",
+								Header: "X-Subject",
+							},
 						},
+						KeepToken: ptr.To(v1alpha1.TokenForward),
 					},
-					KeepToken: ptr.To(v1alpha1.TokenForward),
 				},
 			},
 			expectedError: false,
@@ -211,12 +214,15 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 		},
 		{
 			name: "missing inline key for inline JWKS",
-			providers: map[string]v1alpha1.JWTProvider{
-				"test-provider": {
-					Issuer: "test-issuer",
-					JWKS: v1alpha1.JWKS{
-						LocalJWKS: &v1alpha1.LocalJWKS{
-							InlineKey: ptr.To("abc"),
+			providers: []v1alpha1.NamedJWTProvider{
+				{
+					Name: "test-provider",
+					JWTProvider: v1alpha1.JWTProvider{
+						Issuer: "test-issuer",
+						JWKS: v1alpha1.JWKS{
+							LocalJWKS: &v1alpha1.LocalJWKS{
+								Inline: ptr.To("abc"),
+							},
 						},
 					},
 				},
@@ -226,20 +232,26 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 		},
 		{
 			name: "multiple providers",
-			providers: map[string]v1alpha1.JWTProvider{
-				"provider1": {
-					Issuer: "test-issuer-1",
-					JWKS: v1alpha1.JWKS{
-						LocalJWKS: &v1alpha1.LocalJWKS{
-							InlineKey: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key-1","use":"sig","alg":"RS256","n":"test-n-1","e":"AQAB"}]}`),
+			providers: []v1alpha1.NamedJWTProvider{
+				{
+					Name: "provider1",
+					JWTProvider: v1alpha1.JWTProvider{
+						Issuer: "test-issuer-1",
+						JWKS: v1alpha1.JWKS{
+							LocalJWKS: &v1alpha1.LocalJWKS{
+								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key-1","use":"sig","alg":"RS256","n":"test-n-1","e":"AQAB"}]}`),
+							},
 						},
 					},
 				},
-				"provider2": {
-					Issuer: "test-issuer-2",
-					JWKS: v1alpha1.JWKS{
-						LocalJWKS: &v1alpha1.LocalJWKS{
-							InlineKey: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key-2","use":"sig","alg":"RS256","n":"test-n-2","e":"AQAB"}]}`),
+				{
+					Name: "provider2",
+					JWTProvider: v1alpha1.JWTProvider{
+						Issuer: "test-issuer-2",
+						JWKS: v1alpha1.JWKS{
+							LocalJWKS: &v1alpha1.LocalJWKS{
+								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key-2","use":"sig","alg":"RS256","n":"test-n-2","e":"AQAB"}]}`),
+							},
 						},
 					},
 				},
@@ -262,13 +274,16 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 		},
 		{
 			name: "provider with audiences",
-			providers: map[string]v1alpha1.JWTProvider{
-				"test-provider": {
-					Issuer:    "test-issuer",
-					Audiences: []string{"aud1", "aud2"},
-					JWKS: v1alpha1.JWKS{
-						LocalJWKS: &v1alpha1.LocalJWKS{
-							InlineKey: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
+			providers: []v1alpha1.NamedJWTProvider{
+				{
+					Name: "test-provider",
+					JWTProvider: v1alpha1.JWTProvider{
+						Issuer:    "test-issuer",
+						Audiences: []string{"aud1", "aud2"},
+						JWKS: v1alpha1.JWKS{
+							LocalJWKS: &v1alpha1.LocalJWKS{
+								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
+							},
 						},
 					},
 				},
@@ -286,19 +301,22 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 		},
 		{
 			name: "provider with token source",
-			providers: map[string]v1alpha1.JWTProvider{
-				"test-provider": {
-					Issuer: "test-issuer",
-					TokenSource: &v1alpha1.JWTTokenSource{
-						HeaderSource: []v1alpha1.HeaderSource{
-							{
-								Header: ptr.To("Authorization"),
+			providers: []v1alpha1.NamedJWTProvider{
+				{
+					Name: "test-provider",
+					JWTProvider: v1alpha1.JWTProvider{
+						Issuer: "test-issuer",
+						TokenSource: &v1alpha1.JWTTokenSource{
+							HeaderSource: []v1alpha1.HeaderSource{
+								{
+									Header: ptr.To("Authorization"),
+								},
 							},
 						},
-					},
-					JWKS: v1alpha1.JWKS{
-						LocalJWKS: &v1alpha1.LocalJWKS{
-							InlineKey: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
+						JWKS: v1alpha1.JWKS{
+							LocalJWKS: &v1alpha1.LocalJWKS{
+								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
+							},
 						},
 					},
 				},
@@ -316,15 +334,18 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 		},
 		{
 			name: "provider with remove token",
-			providers: map[string]v1alpha1.JWTProvider{
-				"test-provider": {
-					Issuer: "test-issuer",
-					JWKS: v1alpha1.JWKS{
-						LocalJWKS: &v1alpha1.LocalJWKS{
-							InlineKey: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
+			providers: []v1alpha1.NamedJWTProvider{
+				{
+					Name: "test-provider",
+					JWTProvider: v1alpha1.JWTProvider{
+						Issuer: "test-issuer",
+						JWKS: v1alpha1.JWKS{
+							LocalJWKS: &v1alpha1.LocalJWKS{
+								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
+							},
 						},
+						KeepToken: ptr.To(v1alpha1.TokenRemove),
 					},
-					KeepToken: ptr.To(v1alpha1.TokenRemove),
 				},
 			},
 			expectedError: false,

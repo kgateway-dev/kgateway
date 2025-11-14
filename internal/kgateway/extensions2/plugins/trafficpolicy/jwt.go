@@ -216,8 +216,8 @@ func translateTokenSource(provider v1alpha1.JWTProvider, out *jwtauthnv3.JwtProv
 func translateJwks(krtctx krt.HandlerContext, jwkConfig v1alpha1.JWKS, configMaps krt.Collection[*corev1.ConfigMap], policyNs string, out *jwtauthnv3.JwtProvider) error {
 	var err error
 	var jwkSource *jwtauthnv3.JwtProvider_LocalJwks
-	if jwkConfig.LocalJWKS.InlineKey != nil {
-		jwkSource, err = translateJwksInline(*jwkConfig.LocalJWKS.InlineKey)
+	if jwkConfig.LocalJWKS.Inline != nil {
+		jwkSource, err = translateJwksInline(*jwkConfig.LocalJWKS.Inline)
 	} else if jwkConfig.LocalJWKS.ConfigMapRef != nil {
 		cm, err2 := GetConfigMap(krtctx, configMaps, jwkConfig.LocalJWKS.ConfigMapRef.Name, policyNs)
 		if err2 != nil {

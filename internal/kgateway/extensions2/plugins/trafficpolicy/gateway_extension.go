@@ -41,7 +41,7 @@ type TrafficPolicyGatewayExtensionIR struct {
 	Jwt       *envoyjwtauthnv3.JwtAuthentication
 	// No need to compare JwtProviders, already compared in Jwt
 	// +noKrtEquals
-	JwtProviders     map[string]v1alpha1.JWTProvider
+	JwtProviders     []v1alpha1.NamedJWTProvider
 	PrecedenceWeight int32
 	Err              error
 }
@@ -199,14 +199,14 @@ func resolveJwtProviders(
 	krtctx krt.HandlerContext,
 	configMaps krt.Collection[*corev1.ConfigMap],
 	policyName, policyNamespace string,
-	jwtProviders map[string]v1alpha1.JWTProvider,
+	jwtProviders []v1alpha1.NamedJWTProvider,
 ) (*envoyjwtauthnv3.JwtAuthentication, error) {
 	uniqProviders := make(map[string]*envoyjwtauthnv3.JwtProvider)
 	policyNameNamespace := fmt.Sprintf("%s_%s", policyName, policyNamespace)
 
-	for providerName, provider := range jwtProviders {
-		providerNameForPolicy := ProviderName(policyNameNamespace, providerName)
-		jwtProvider, err := translateProvider(krtctx, provider, policyNamespace, configMaps)
+	for _, provider := range jwtProviders {
+		providerNameForPolicy := ProviderName(policyNameNamespace, provider.Name)
+		jwtProvider, err := translateProvider(krtctx, provider.JWTProvider, policyNamespace, configMaps)
 		if err != nil {
 			return nil, err
 		}

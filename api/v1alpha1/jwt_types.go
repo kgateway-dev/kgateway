@@ -115,14 +115,14 @@ type JWKS struct {
 
 // LocalJWKS configures getting the public keys to validate the JWT from a Kubernetes ConfigMap,
 // or inline (raw string) JWKS.
-// +kubebuilder:validation:ExactlyOneOf=key;configMapRef
+// +kubebuilder:validation:ExactlyOneOf=inline;configMapRef
 type LocalJWKS struct {
-	// InlineKey is the JWKS key as the raw, inline JWKS string
+	// Inline is the JWKS as the raw, inline JWKS string
 	// This can be an individual key, a key set or a pem block public key
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=2048
 	// +optional
-	InlineKey *string `json:"key,omitempty"`
+	Inline *string `json:"inline,omitempty"`
 
 	// ConfigMapRef configures storing the JWK in a Kubernetes ConfigMap in the same namespace as the JWTValidationPolicy.
 	// +optional

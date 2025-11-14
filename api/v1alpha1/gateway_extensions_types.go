@@ -24,6 +24,17 @@ type GatewayExtension struct {
 	Status GatewayExtensionStatus `json:"status,omitempty"`
 }
 
+// NamedJWTProvider is a named JWT provider entry used for list-as-map semantics.
+// The Name field is the unique key.
+type NamedJWTProvider struct {
+	// Name is the unique name of the JWT provider.
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=253
+	Name string `json:"name"`
+	// Inline JWTProvider fields.
+	JWTProvider `json:",inline"`
+}
+
 // GatewayExtensionSpec defines the desired state of GatewayExtension.
 // +kubebuilder:validation:XValidation:message="ExtAuth must be set when type is ExtAuth",rule="self.type != 'ExtAuth' || has(self.extAuth)"
 // +kubebuilder:validation:XValidation:message="ExtProc must be set when type is ExtProc",rule="self.type != 'ExtProc' || has(self.extProc)"
@@ -50,10 +61,12 @@ type GatewayExtensionSpec struct {
 	// +optional
 	RateLimit *RateLimitProvider `json:"rateLimit,omitempty"`
 
-	// JWTProviders configures a map of unique JWTProvider name to JWTProviders
+	// JWTProviders configures named JWT providers
 	// +optional
-	// +kubebuilder:validation:MaxProperties=32
-	JWTProviders map[string]JWTProvider `json:"jwtProviders,omitempty"`
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=32
+	JWTProviders []NamedJWTProvider `json:"jwtProviders,omitempty"`
 }
 
 // GatewayExtensionType indicates the type of the GatewayExtension.
