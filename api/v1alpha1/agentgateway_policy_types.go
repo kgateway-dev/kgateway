@@ -412,9 +412,7 @@ type AgentJWTAuthentication struct {
 
 type AgentJWTProvider struct {
 	// issuer identifies the IdP that issued the JWT. This corresponds to the 'iss' claim (https://tools.ietf.org/html/rfc7519#section-4.1.1).
-	// max length is max length of a dns name (253) + "https://"" prefix
 	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:MaxLength=261
 	Issuer ShortString `json:"issuer,omitempty"`
 	// audiences specifies the list of allowed audiences that are allowed access. This corresponds to the 'aud' claim (https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.3).
 	// If unset, any audience is allowed.
