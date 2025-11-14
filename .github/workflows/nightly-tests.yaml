@@ -97,6 +97,7 @@ jobs:
         kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
         istio-version: ${{ steps.dotenv.outputs.istio_version }}
         kind-node-version: ${{ steps.dotenv.outputs.node_version }}
+        localstack: "true"
     - id: run-tests
       uses: ./.github/actions/kubernetes-e2e-tests
       env:
