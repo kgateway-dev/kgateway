@@ -1432,8 +1432,8 @@ spec:
                       a configured API Key.
                     properties:
                       mode:
-                        description: mode controls how to handle requests that do
-                          not successfully authenticate.
+                        default: Strict
+                        description: Validation mode for api key authentication.
                         enum:
                         - Strict
                         - Optional
@@ -1513,6 +1513,8 @@ spec:
                         required:
                         - matchLabels
                         type: object
+                    required:
+                    - mode
                     type: object
                     x-kubernetes-validations:
                     - message: exactly one of the fields in [secretRef secretSelector]
@@ -1565,8 +1567,8 @@ spec:
                       are encoded in the request.
                     properties:
                       mode:
-                        description: mode controls how to handle requests that do
-                          not successfully authenticate.
+                        default: Strict
+                        description: validation mode for basic auth authentication.
                         enum:
                         - Strict
                         - Optional
@@ -1623,6 +1625,8 @@ spec:
                         maxItems: 256
                         minItems: 1
                         type: array
+                    required:
+                    - mode
                     type: object
                     x-kubernetes-validations:
                     - message: exactly one of the fields in [users secretRef] must
@@ -2395,8 +2399,8 @@ spec:
                       tokens.
                     properties:
                       mode:
-                        description: mode controls how to handle requests that do
-                          successfully authenticate.
+                        default: Strict
+                        description: validation mode for JWT authentication.
                         enum:
                         - Strict
                         - Optional
@@ -2415,8 +2419,8 @@ spec:
                               minItems: 1
                               type: array
                             issuer:
-                              description: issue identifies the issuer that issued
-                                the JWT. This corresponds to the 'iss' claim (https://tools.ietf.org/html/rfc7519#section-4.1.1).
+                              description: issuer identifies the IdP that issued the
+                                JWT. This corresponds to the 'iss' claim (https://tools.ietf.org/html/rfc7519#section-4.1.1).
                               maxLength: 256
                               type: string
                             jwks:
@@ -2524,6 +2528,7 @@ spec:
                         minItems: 1
                         type: array
                     required:
+                    - mode
                     - providers
                     type: object
                   phase:
