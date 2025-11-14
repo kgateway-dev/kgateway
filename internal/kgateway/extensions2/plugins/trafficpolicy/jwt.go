@@ -224,13 +224,13 @@ func translateJwks(krtctx krt.HandlerContext, jwkConfig v1alpha1.JWKS, configMap
 		if err2 != nil {
 			return fmt.Errorf("failed to find configmap %s: %v", jwkConfig.LocalJWKS.ConfigMapRef.Name, err2)
 		}
-		jwkSource, err = translateJwksConfigMap(jwkConfig.LocalJWKS.ConfigMapRef, cm)
+		jwkSource, err = translateJwksConfigMap(cm)
 	}
 	out.JwksSourceSpecifier = jwkSource
 	return err
 }
 
-func translateJwksConfigMap(ref *corev1.LocalObjectReference, cm *corev1.ConfigMap) (*jwtauthnv3.JwtProvider_LocalJwks, error) {
+func translateJwksConfigMap(cm *corev1.ConfigMap) (*jwtauthnv3.JwtProvider_LocalJwks, error) {
 	data := cm.Data[jwtConfigMapKey]
 	if data == "" {
 		return nil, errors.New("configmap key not found")

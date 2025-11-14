@@ -118,7 +118,6 @@ func TestTranslateJwksConfigMap(t *testing.T) {
 	tests := []struct {
 		name          string
 		cm            *corev1.ConfigMap
-		ref           *corev1.LocalObjectReference
 		expectedError bool
 	}{
 		{
@@ -128,11 +127,8 @@ func TestTranslateJwksConfigMap(t *testing.T) {
 					Name: "test-cm",
 				},
 				Data: map[string]string{
-					"test-key": `{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`,
+					"jwks": `{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`,
 				},
-			},
-			ref: &corev1.LocalObjectReference{
-				Name: "test-key",
 			},
 			expectedError: false,
 		},
@@ -144,16 +140,13 @@ func TestTranslateJwksConfigMap(t *testing.T) {
 				},
 				Data: map[string]string{},
 			},
-			ref: &corev1.LocalObjectReference{
-				Name: "test-key",
-			},
 			expectedError: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			jwks, err := translateJwksConfigMap(tt.ref, tt.cm)
+			jwks, err := translateJwksConfigMap(tt.cm)
 			if tt.expectedError {
 				assert.Error(t, err)
 				return
