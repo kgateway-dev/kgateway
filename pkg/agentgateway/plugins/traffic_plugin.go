@@ -638,9 +638,14 @@ func processAPIKeyAuthenticationPolicy(ctx PolicyCtx, policy *v1alpha1.Agentgate
 				continue
 			}
 
+			pbs, err := toStruct(ke.Metadata)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("secret %v contains invalid key %v: %w", s.Name, k, err))
+				continue
+			}
 			p.ApiKeys = append(p.ApiKeys, &api.TrafficPolicySpec_APIKey_User{
 				Key:      ke.Key,
-				Metadata: toStruct(ke.Metadata),
+				Metadata: pbs,
 			})
 		}
 	}
@@ -1286,16 +1291,16 @@ func headerListToAgw(hl []gwv1.HTTPHeader) []*api.Header {
 	})
 }
 
-func toStruct(rm json.RawMessage) *structpb.Struct {
+func toStruct(rm json.RawMessage) (*structpb.Struct, error) {
 	j, err := json.Marshal(rm)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	pbs := &structpb.Struct{}
 	if err := protomarshal.Unmarshal(j, pbs); err != nil {
-		return nil
+		return nil, err
 	}
 
-	return pbs
+	return pbs, nil
 }
