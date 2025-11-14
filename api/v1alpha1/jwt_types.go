@@ -125,6 +125,7 @@ type LocalJWKS struct {
 	Inline *string `json:"inline,omitempty"`
 
 	// ConfigMapRef configures storing the JWK in a Kubernetes ConfigMap in the same namespace as the JWTValidationPolicy.
+	// The ConfigMap must have a data key named 'jwks' that contains the JWKS.
 	// +optional
 	ConfigMapRef *corev1.LocalObjectReference `json:"configMapRef,omitempty"`
 }

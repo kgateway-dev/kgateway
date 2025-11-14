@@ -1377,6 +1377,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("JWT Policy at gateway level using configmap", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "jwt/gateway-configmap.yaml",
+			outputFile: "jwt/gateway-configmap.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("JWT Policy at route level", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "jwt/route.yaml",

@@ -621,9 +621,9 @@ spec:
                             or inline (raw string) JWKS.
                           properties:
                             configMapRef:
-                              description: ConfigMapRef configures storing the JWK
-                                in a Kubernetes ConfigMap in the same namespace as
-                                the JWTValidationPolicy.
+                              description: |-
+                                ConfigMapRef configures storing the JWK in a Kubernetes ConfigMap in the same namespace as the JWTValidationPolicy.
+                                The ConfigMap must have a data key named 'jwks' that contains the JWKS.
                               properties:
                                 name:
                                   default: ""

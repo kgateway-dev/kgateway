@@ -30,6 +30,7 @@ import (
 const (
 	PayloadInMetadata   string = "payload"
 	jwtFilterNamePrefix        = "jwt"
+	jwtConfigMapKey            = "jwks"
 )
 
 type jwtIr struct {
@@ -230,7 +231,7 @@ func translateJwks(krtctx krt.HandlerContext, jwkConfig v1alpha1.JWKS, configMap
 }
 
 func translateJwksConfigMap(ref *corev1.LocalObjectReference, cm *corev1.ConfigMap) (*jwtauthnv3.JwtProvider_LocalJwks, error) {
-	data := cm.Data[ref.Name]
+	data := cm.Data[jwtConfigMapKey]
 	if data == "" {
 		return nil, errors.New("configmap key not found")
 	}
