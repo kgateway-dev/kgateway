@@ -501,9 +501,7 @@ func processRetriesPolicy(policy *v1alpha1.AgentgatewayPolicy, name string, targ
 
 func processJWTAuthenticationPolicy(policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) []AgwPolicy {
 	jwt := policy.Spec.Traffic.JWTAuthentication
-	p := &api.TrafficPolicySpec_JWT{
-		Mode: api.TrafficPolicySpec_JWT_OPTIONAL,
-	}
+	p := &api.TrafficPolicySpec_JWT{}
 
 	switch jwt.Mode {
 	case v1alpha1.JWTAuthenticationModeOptional:
@@ -548,9 +546,7 @@ func processJWTAuthenticationPolicy(policy *v1alpha1.AgentgatewayPolicy, name st
 
 func processBasicAuthenticationPolicy(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) ([]AgwPolicy, error) {
 	ba := policy.Spec.Traffic.BasicAuthentication
-	p := &api.TrafficPolicySpec_BasicAuthentication{
-		Mode: api.TrafficPolicySpec_BasicAuthentication_OPTIONAL,
-	}
+	p := &api.TrafficPolicySpec_BasicAuthentication{}
 	if ba.Realm != nil {
 		p.Realm = wrapperspb.String(*ba.Realm)
 	}
@@ -601,9 +597,7 @@ type APIKeyEntry struct {
 
 func processAPIKeyAuthenticationPolicy(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) ([]AgwPolicy, error) {
 	ak := policy.Spec.Traffic.APIKeyAuthentication
-	p := &api.TrafficPolicySpec_APIKey{
-		Mode: api.TrafficPolicySpec_APIKey_OPTIONAL,
-	}
+	p := &api.TrafficPolicySpec_APIKey{}
 
 	switch ak.Mode {
 	case v1alpha1.APIKeyAuthenticationModeOptional:

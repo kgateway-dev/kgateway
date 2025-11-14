@@ -391,9 +391,9 @@ type JWTAuthenticationMode string
 
 const (
 	// A valid token, issued by a configured issuer, must be present.
+	// This is the default option.
 	JWTAuthenticationModeStrict JWTAuthenticationMode = "Strict"
 	// If a token exists, validate it.
-	// This is the default option.
 	// Warning: this allows requests without a JWT token!
 	JWTAuthenticationModeOptional JWTAuthenticationMode = "Optional"
 	// Requests are never rejected. This is useful for usage of claims in later steps (authorization, logging, etc).
