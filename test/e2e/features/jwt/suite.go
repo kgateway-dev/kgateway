@@ -24,9 +24,10 @@ import (
 
 var (
 	// manifests
-	setupManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
-	jwtManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt.yaml")
-	jwtRbacManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt-rbac.yaml")
+	setupManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
+	jwtManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt.yaml")
+	jwtRbacManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt-rbac.yaml")
+	jwtHTTPRouteManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt-httproute.yaml")
 
 	// Core infrastructure objects that we need to track
 	gatewayObjectMeta = metav1.ObjectMeta{
@@ -92,6 +93,9 @@ var (
 		"TestJwtAuthentication": {
 			Manifests: []string{jwtManifest},
 		},
+		"TestJwtAuthenticationHTTPRoute": {
+			Manifests: []string{jwtHTTPRouteManifest},
+		},
 		"TestJwtAuthorization": {
 			Manifests: []string{jwtRbacManifest},
 		},
@@ -111,11 +115,68 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
-// TestJwtAuthentication tests the jwt is valid
+// TestJwtAuthentication tests the JWT Policy applied at the HTTPRoute rule (extensionRef) level
 func (s *testingSuite) TestJwtAuthentication() {
 	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"httpbin-route",
+		"default",
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionTrue,
+	)
+
+	// Send request to route with no JWT config applied, should get 200 OK
+	s.T().Log("send request to route with no JWT config applied, should get 200 OK")
+	statusReqCurlOpts := []curl.Option{
+		curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
+		curl.WithHostHeader("httpbin"),
+		curl.WithPort(8080),
+		curl.WithPath("/status/200"),
+	}
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		statusReqCurlOpts,
+		expectStatus200Success)
+
+	// The /get route does have a JWT config applied, should get 401 Unauthorized
+	s.T().Log("The /get route does have a JWT config applied, should fail when no JWT is provided")
+	getReqCurlOpts := []curl.Option{
+		curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
+		curl.WithHostHeader("httpbin"),
+		curl.WithPort(8080),
+		curl.WithPath("/get"),
+	}
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		getReqCurlOpts,
+		expectedJwtMissingFailedResponse)
+
+	s.T().Log("The /get route does have a JWT config applied, should fail when incorrect JWT is provided")
+	getReqBadJwtCurlOpts := append(getReqCurlOpts, curl.WithHeader("Authorization", "Bearer "+badJwtToken))
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		getReqBadJwtCurlOpts,
+		expectedJwtVerificationFailedResponse,
+	)
+
+	s.T().Log("The /get route does have a JWT config applied, should succeed when correct JWT is provided")
+	getReqJwtCurlOpts := append(getReqCurlOpts, curl.WithHeader("Authorization", "Bearer "+dev1JwtToken))
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		getReqJwtCurlOpts,
+		expectStatus200Success,
+	)
+}
+
+// TestJwtAuthenticationHTTPRoute tests the JWT Policy applied at the HTTPRoute level
+func (s *testingSuite) TestJwtAuthenticationHTTPRoute() {
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.Ctx,
+		"httpbin-route-get",
 		"default",
 		gwv1.RouteConditionAccepted,
 		metav1.ConditionTrue,
