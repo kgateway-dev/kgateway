@@ -68,6 +68,8 @@ func (s *StatusCollections) SetQueue(queue WorkerQueue) []krt.Syncer {
 }
 
 // SetExtraGVKMap configures external Kind->GVK mappings for status enqueue.
+// This must be called before the manager starts and must not be updated afterwards.
+// The map may be read without locking in hot paths.
 func (s *StatusCollections) SetExtraGVKMap(m map[string]schema.GroupVersionKind) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -138,10 +140,12 @@ func enqueueStatus[T any](sw WorkerQueue, obj controllers.Object, ws T, extraGVK
 			}
 			if mapped, ok := extraGVKs[typeName]; ok {
 				res.GroupVersionKind = mapped
-				break
 			}
 		}
-		log.Warnf("enqueueStatus unknown external type %T", t)
 	}
-	sw.Push(res, ws)
+	if res.GroupVersionKind.Empty() {
+		log.Warnf("enqueueStatus unknown external type %T", obj)
+	} else {
+		sw.Push(res, ws)
+	}
 }

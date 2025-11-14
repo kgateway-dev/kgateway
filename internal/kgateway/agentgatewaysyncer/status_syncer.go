@@ -205,32 +205,19 @@ func (s *AgentGwStatusSyncer) SyncStatus(ctx context.Context, resource status.Re
 		s.agentgatewayPolicies.ApplyStatus(ctx, resource, statusObj)
 	default:
 		// Attempt to handle extra policy kinds via registered handlers.
-		// Match group/kind or group/version/kind
+		// Match only full "group/version, Kind=Kind" keys (schema.GroupVersionKind.String()).
 		if s.extraAgwPolicyStatusHandlers != nil {
-			kind := resource.GroupVersionKind.Kind
-			group := resource.GroupVersionKind.Group
-			version := resource.GroupVersionKind.Version
-			keysToTry := []string{resource.GroupVersionKind.String()}
-			if kind != "" {
-				if group != "" {
-					keysToTry = append(keysToTry, group+"/"+kind)
-					if version != "" {
-						keysToTry = append(keysToTry, group+"/"+version+"/"+kind)
-					}
-				}
-			}
-			for _, k := range keysToTry {
-				if handler, ok := s.extraAgwPolicyStatusHandlers[k]; ok {
-					ps, _ := statusObj.(*gwv1.PolicyStatus)
-					if ps == nil {
-						logger.Warn("external status handler received non-PolicyStatus", "gvk", resource.GroupVersionKind.String())
-						return
-					}
-					if err := handler(ctx, s.client, types.NamespacedName{Name: resource.Name, Namespace: resource.Namespace}, *ps); err != nil {
-						logger.Error("external policy status handler failed", "gvk", resource.GroupVersionKind.String(), logKeyError, err)
-					}
+			key := resource.GroupVersionKind.String()
+			if handler, ok := s.extraAgwPolicyStatusHandlers[key]; ok {
+				ps, _ := statusObj.(*gwv1.PolicyStatus)
+				if ps == nil {
+					logger.Warn("external status handler received non-PolicyStatus", "gvk", resource.GroupVersionKind.String())
 					return
 				}
+				if err := handler(ctx, s.client, types.NamespacedName{Name: resource.Name, Namespace: resource.Namespace}, *ps); err != nil {
+					logger.Error("external policy status handler failed", "gvk", resource.GroupVersionKind.String(), logKeyError, err)
+				}
+				return
 			}
 		}
 		logger.Error("SyncStatus: unknown resource type", "gvk", resource.GroupVersionKind.String())

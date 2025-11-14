@@ -216,7 +216,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		if len(cfg.ExtraAgwPolicyStatusHandlers) > 0 {
 			m := map[string]schema.GroupVersionKind{}
 			for k := range cfg.ExtraAgwPolicyStatusHandlers {
-				// Expected format: "group/version, Kind=Kind"
+				// Expected format: "group/version, Kind=Kind" (schema.GroupVersionKind.String())
 				parts := strings.SplitN(k, ", Kind=", 2)
 				if len(parts) != 2 || parts[1] == "" {
 					continue
