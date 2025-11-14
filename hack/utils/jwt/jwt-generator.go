@@ -57,7 +57,7 @@ func generateJWKS(kid string) (*jose.JSONWebKeySet, *rsa.PrivateKey, error) {
 	template := x509.Certificate{
 		SerialNumber: serialNumber,
 		Subject: pkix.Name{
-			Organization: []string{"solo.io"},
+			Organization: []string{"kgateway.dev"},
 		},
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().Add(2 * time.Hour),
@@ -89,8 +89,8 @@ func generateJWKS(kid string) (*jose.JSONWebKeySet, *rsa.PrivateKey, error) {
 
 func generateJwt(kid string, key *rsa.PrivateKey) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.RegisteredClaims{
-		Issuer:    "https://solo.io",
-		Subject:   "test@solo.io",
+		Issuer:    "https://kgateway.dev",
+		Subject:   "ignore@kgateway.dev",
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
 		NotBefore: jwt.NewNumericDate(time.Now()),
 		ExpiresAt: jwt.NewNumericDate(time.Now().Add(85440 * time.Hour)), // 10 years
