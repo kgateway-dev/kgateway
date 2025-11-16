@@ -1,6 +1,7 @@
 package plugins
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,11 +12,15 @@ import (
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/google/cel-go/cel"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
 	"istio.io/istio/pkg/slices"
+	"istio.io/istio/pkg/util/protomarshal"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -44,6 +49,9 @@ const (
 	hostnameRewritePolicySuffix = ":hostname-rewrite"
 	retryPolicySuffix           = ":retry"
 	timeoutPolicySuffix         = ":timeout"
+	jwtPolicySuffix             = ":jwt"
+	basicAuthPolicySuffix       = ":basicauth"
+	apiKeyPolicySuffix          = ":apikeyauth" //nolint:gosec
 )
 
 var logger = logging.New("agentgateway/plugins")
@@ -432,9 +440,28 @@ func translateTrafficPolicyToAgw(
 		agwPolicies = append(agwPolicies, retriesPolicies...)
 	}
 
-	// TODO:
-	// TODO: phase
+	if traffic.JWTAuthentication != nil {
+		jwtAuthenticationPolicies := processJWTAuthenticationPolicy(policy, policyName, policyTarget)
+		agwPolicies = append(agwPolicies, jwtAuthenticationPolicies...)
+	}
 
+	if traffic.APIKeyAuthentication != nil {
+		apiKeyAuthenticationPolicies, err := processAPIKeyAuthenticationPolicy(ctx, policy, policyName, policyTarget)
+		if err != nil {
+			logger.Error("error processing apiKeyAuthentication policy", "error", err)
+			errs = append(errs, err)
+		}
+		agwPolicies = append(agwPolicies, apiKeyAuthenticationPolicies...)
+	}
+
+	if traffic.BasicAuthentication != nil {
+		basicAuthenticationPolicies, err := processBasicAuthenticationPolicy(ctx, policy, policyName, policyTarget)
+		if err != nil {
+			logger.Error("error processing basicAuthentication policy", "error", err)
+			errs = append(errs, err)
+		}
+		agwPolicies = append(agwPolicies, basicAuthenticationPolicies...)
+	}
 	return agwPolicies, errors.Join(errs...)
 }
 
@@ -470,6 +497,168 @@ func processRetriesPolicy(policy *v1alpha1.AgentgatewayPolicy, name string, targ
 		"target", target)
 
 	return []AgwPolicy{{Policy: retryPolicy}}
+}
+
+func processJWTAuthenticationPolicy(policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) []AgwPolicy {
+	jwt := policy.Spec.Traffic.JWTAuthentication
+	p := &api.TrafficPolicySpec_JWT{}
+
+	switch jwt.Mode {
+	case v1alpha1.JWTAuthenticationModeOptional:
+		p.Mode = api.TrafficPolicySpec_JWT_OPTIONAL
+	case v1alpha1.JWTAuthenticationModeStrict:
+		p.Mode = api.TrafficPolicySpec_JWT_STRICT
+	case v1alpha1.JWTAuthenticationModePermissive:
+		p.Mode = api.TrafficPolicySpec_JWT_PERMISSIVE
+	}
+
+	for _, pp := range jwt.Providers {
+		jp := &api.TrafficPolicySpec_JWTProvider{
+			Issuer:    pp.Issuer,
+			Audiences: pp.Audiences,
+		}
+		if i := pp.JWKS.Inline; i != "" {
+			jp.JwksSource = &api.TrafficPolicySpec_JWTProvider_Inline{Inline: i}
+			p.Providers = append(p.Providers, jp)
+		}
+		if r := pp.JWKS.Remote; r != nil {
+			// TODO: this is not yet implemented and rejected by CEL
+		}
+	}
+
+	jwtPolicy := &api.Policy{
+		Name:   name + jwtPolicySuffix + attachmentName(target),
+		Target: target,
+		Kind: &api.Policy_Traffic{
+			Traffic: &api.TrafficPolicySpec{
+				Kind: &api.TrafficPolicySpec_Jwt{Jwt: p},
+			},
+		},
+	}
+
+	logger.Debug("generated jwt policy",
+		"policy", policy.Name,
+		"agentgateway_policy", jwtPolicy.Name,
+		"target", target)
+
+	return []AgwPolicy{{Policy: jwtPolicy}}
+}
+
+func processBasicAuthenticationPolicy(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) ([]AgwPolicy, error) {
+	ba := policy.Spec.Traffic.BasicAuthentication
+	p := &api.TrafficPolicySpec_BasicAuthentication{}
+	if ba.Realm != nil {
+		p.Realm = wrapperspb.String(*ba.Realm)
+	}
+
+	switch ba.Mode {
+	case v1alpha1.BasicAuthenticationModeOptional:
+		p.Mode = api.TrafficPolicySpec_BasicAuthentication_OPTIONAL
+	case v1alpha1.BasicAuthenticationModeStrict:
+		p.Mode = api.TrafficPolicySpec_BasicAuthentication_STRICT
+	}
+
+	if s := ba.SecretRef; s != nil {
+		scrt := ptr.Flatten(krt.FetchOne(ctx.Krt, ctx.Collections.Secrets, krt.FilterKey(policy.Namespace+"/"+s.Name)))
+		if scrt == nil {
+			return nil, fmt.Errorf("basic authentication secret %v not found", s.Name)
+		}
+		d, ok := scrt.Data[".htaccess"]
+		if !ok {
+			return nil, fmt.Errorf("basic authentication secret %v found, but doesn't contain '.htaccess' key", s.Name)
+		}
+		p.HtpasswdContent = string(d)
+	}
+	if len(ba.Users) > 0 {
+		p.HtpasswdContent = strings.Join(ba.Users, "\n")
+	}
+	basicAuthPolicy := &api.Policy{
+		Name:   name + basicAuthPolicySuffix + attachmentName(target),
+		Target: target,
+		Kind: &api.Policy_Traffic{
+			Traffic: &api.TrafficPolicySpec{
+				Kind: &api.TrafficPolicySpec_BasicAuth{BasicAuth: p},
+			},
+		},
+	}
+
+	logger.Debug("generated basic auth policy",
+		"policy", policy.Name,
+		"agentgateway_policy", basicAuthPolicy.Name,
+		"target", target)
+
+	return []AgwPolicy{{Policy: basicAuthPolicy}}, nil
+}
+
+type APIKeyEntry struct {
+	Key      string          `json:"key"`
+	Metadata json.RawMessage `json:"metadata"`
+}
+
+func processAPIKeyAuthenticationPolicy(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) ([]AgwPolicy, error) {
+	ak := policy.Spec.Traffic.APIKeyAuthentication
+	p := &api.TrafficPolicySpec_APIKey{}
+
+	switch ak.Mode {
+	case v1alpha1.APIKeyAuthenticationModeOptional:
+		p.Mode = api.TrafficPolicySpec_APIKey_OPTIONAL
+	case v1alpha1.APIKeyAuthenticationModeStrict:
+		p.Mode = api.TrafficPolicySpec_APIKey_STRICT
+	}
+
+	var secrets []*corev1.Secret
+	if s := ak.SecretRef; s != nil {
+		scrt := ptr.Flatten(krt.FetchOne(ctx.Krt, ctx.Collections.Secrets, krt.FilterKey(policy.Namespace+"/"+s.Name)))
+		if scrt == nil {
+			return nil, fmt.Errorf("API Key secret %v not found", s.Name)
+		}
+		secrets = []*corev1.Secret{scrt}
+	}
+	if s := ak.SecretSelector; s != nil {
+		secrets = krt.Fetch(ctx.Krt, ctx.Collections.Secrets, krt.FilterLabel(s.MatchLabels), krt.FilterIndex(ctx.Collections.SecretsByNamespace, policy.Namespace))
+	}
+	var errs []error
+	for _, s := range secrets {
+		for k, v := range s.Data {
+			var ke APIKeyEntry
+			if bytes.TrimSpace(v)[0] != '{' {
+				// A raw key entry without metadata
+				ke = APIKeyEntry{
+					Key:      string(v),
+					Metadata: nil,
+				}
+			} else if err := json.Unmarshal(v, &ke); err != nil {
+				errs = append(errs, fmt.Errorf("secret %v contains invalid key %v: %w", s.Name, k, err))
+				continue
+			}
+
+			pbs, err := toStruct(ke.Metadata)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("secret %v contains invalid key %v: %w", s.Name, k, err))
+				continue
+			}
+			p.ApiKeys = append(p.ApiKeys, &api.TrafficPolicySpec_APIKey_User{
+				Key:      ke.Key,
+				Metadata: pbs,
+			})
+		}
+	}
+	apiKeyPolicy := &api.Policy{
+		Name:   name + apiKeyPolicySuffix + attachmentName(target),
+		Target: target,
+		Kind: &api.Policy_Traffic{
+			Traffic: &api.TrafficPolicySpec{
+				Kind: &api.TrafficPolicySpec_ApiKeyAuth{ApiKeyAuth: p},
+			},
+		},
+	}
+
+	logger.Debug("generated api key auth policy",
+		"policy", policy.Name,
+		"agentgateway_policy", apiKeyPolicy.Name,
+		"target", target)
+
+	return []AgwPolicy{{Policy: apiKeyPolicy}}, errors.Join(errs...)
 }
 
 func processTimeoutPolicy(policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) []AgwPolicy {
@@ -1094,4 +1283,18 @@ func headerListToAgw(hl []gwv1.HTTPHeader) []*api.Header {
 			Value: hl.Value,
 		}
 	})
+}
+
+func toStruct(rm json.RawMessage) (*structpb.Struct, error) {
+	j, err := json.Marshal(rm)
+	if err != nil {
+		return nil, err
+	}
+
+	pbs := &structpb.Struct{}
+	if err := protomarshal.Unmarshal(j, pbs); err != nil {
+		return nil, err
+	}
+
+	return pbs, nil
 }
