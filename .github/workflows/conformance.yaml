@@ -15,15 +15,15 @@ concurrency:
 
 jobs:
   conformance_tests:
-    name: Kubernetes Gateway API Conformance Tests
+    name: K8s Gw Api Conformance Tests
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     if: ${{ !github.event.pull_request.draft }}
     strategy:
       fail-fast: false
       matrix:
-        kube-version: [ { node: 'v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a', kubectl: 'v1.34.1', kind: 'v0.30.0' } ]
         gateway-api-channel: [ 'experimental', 'standard' ]
+        kube-version: [ { node: 'v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a', kubectl: 'v1.34.1', kind: 'v0.30.0' } ]
         test-type: [ { 
             type: 'gateway-api',
             enable-inference-extension: false,
