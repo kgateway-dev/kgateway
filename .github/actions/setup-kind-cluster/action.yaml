@@ -19,6 +19,10 @@ inputs:
     required: false
     default: "" # If this is undefined the setup-kind script has its own default value
     description: The version of the gateway-api to use
+  gateway-api-channel:
+    required: false
+    default: "" # If this is undefined the setup-kind script has its own default value
+    description: The channel of the gateway-api to use
   localstack:
     required: false
     default: "false"
@@ -38,6 +42,7 @@ runs:
         CLUSTER_NODE_VERSION: ${{ inputs.kind-node-version }}
         ISTIO_VERSION: ${{ inputs.istio-version }}
         CONFORMANCE_VERSION: ${{ inputs.gateway-api-version }}
+        CONFORMANCE_CHANNEL: ${{ inputs.gateway-api-channel }}
         LOCALSTACK: ${{ inputs.localstack }}
         CONFORMANCE: true
       run: |

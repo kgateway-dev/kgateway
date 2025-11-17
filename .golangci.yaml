@@ -19,23 +19,56 @@ linters:
     - gosec
     - importas
     - ineffassign
+    - krtequals
+    - kubeapilinter
     - misspell
+    - modernize
     - nakedret
     - predeclared
     - promlinter
     - sloglint
     - spancheck
     - staticcheck
+    - unparam
     - unused
     - usestdlibvars
     - whitespace
   settings:
+    custom:
+      krtequals:
+        type: "module"
+        description: Checks Equals() implementations for KRT-style semantic equality issues
+        settings:
+          deepEqual: false
+      kubeapilinter:
+        type: module
+        description: Kube API Linter lints Kube like APIs based on API conventions and best practices
+        settings:
+          linters:
+            enable:
+            - "*"
+            disable:
+            - commentstart
+            - integers
+            - maxlength
+            - nobools
+            - nomaps
+            - optionalfields
+            - optionalorrequired
+            - ssatags
+          lintersConfig:
+            conditions:
+              isFirstField: Ignore
+              useProtobuf: Forbid
+              usePatchStrategy: Ignore
     forbidigo:
       forbid:
         - pattern: anypb.New
           msg: use utils.MessageToAny instead
         - pattern: kclient.New$
           msg: use kclient.NewFilteredDelayed for CRDs and kclient.NewFiltered for core types, with discovery namespace ObjectFilter instead
+        - pattern: ^client.Client$
+          msg: use apiclient.Client instead of controller-runtime's client.Client
         - pattern: (\bt|\bT\(\))\.Cleanup
           msg: require testutils.Cleanup in e2e tests (test/e2e/)
     gomodguard:
@@ -65,6 +98,14 @@ linters:
           alias: metav1
         - pkg: k8s.io/api/batch/v1
           alias: batchv1
+        - pkg: sigs.k8s.io/gateway-api/apis/v1
+          alias: gwv1
+        - pkg: sigs.k8s.io/gateway-api/apis/v1alpha2
+          alias: gwv1a2
+        - pkg: sigs.k8s.io/gateway-api/apis/v1alpha3
+          alias: gwv1a3
+        - pkg: sigs.k8s.io/gateway-api/apis/v1beta1
+          alias: gwv1b1
         - pkg: github.com/envoyproxy/go-control-plane/envoy/config/(\w+)/(v[\w\d]+)
           alias: envoy$1$2
         - pkg: github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3
@@ -76,6 +117,10 @@ linters:
     misspell:
       ignore-rules:
         - kgateway
+    modernize:
+      disable:
+        # disabled because modernize gets confused with conflicting edits. we can probably rely on the kube api linter instead for this one.
+        - omitzero
     nakedret:
       # The team consensus is that naked returns hinder the readability of the code.
       # However, named return values can still be useful as documentation for certain scenarios.
@@ -124,16 +169,41 @@ linters:
       - examples$
     rules:
       # Forbid t.Cleanup only in e2e tests (exclude the rule from non-e2e paths)
-      - linters:
+      - path-except: test/e2e/
+        linters:
           - forbidigo
         text: 'require testutils.Cleanup'
-        path-except: test/e2e/
+      # Skip client.Client forbidgo rule for e2e tests
+      - path: test/e2e/
+        linters:
+          - forbidigo
+        text: 'use apiclient.Client instead'
+      # Restrict krtequals analyzer to the pkg and internal directories
+      - path-except: pkg/|internal/
+        linters:
+          - krtequals
+      # Only run kubeapilinter inside the 'api/' directory. This prevents running API-specific checks
+      # on unrelated packages like controllers or tests and producing false positives.
+      - path-except: "^api/v1alpha1"
+        linters:
+          - kubeapilinter
 issues:
   max-same-issues: 0
   uniq-by-line: true
 formatters:
   enable:
-    - goimports
+    - gofmt
+    - gci
+  settings:
+    gci:
+      sections:
+      - standard
+      - default
+      - prefix(github.com/kgateway-dev)
+      - blank
+      - dot
+      - localmodule
+      custom-order: true
   exclusions:
     generated: lax
     paths:

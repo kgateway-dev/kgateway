@@ -4,8 +4,6 @@ import (
 	"context"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/krt/krttest"
 	"istio.io/istio/pkg/test"
@@ -16,8 +14,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
@@ -449,7 +450,7 @@ var _ = Describe("Query", func() {
 				},
 			}
 
-			tcpRoute := tcpRoute("test-tcp-route", gw.Namespace)
+			tcpRoute := tcpRoute(gw.Namespace)
 			tcpRoute.Spec = gwv1a2.TCPRouteSpec{
 				CommonRouteSpec: gwv1.CommonRouteSpec{
 					ParentRefs: []gwv1.ParentReference{
@@ -482,7 +483,7 @@ var _ = Describe("Query", func() {
 				},
 			}
 
-			tcpRoute := tcpRoute("test-tcp-route", "other-ns")
+			tcpRoute := tcpRoute("other-ns")
 			tcpRoute.Spec = gwv1a2.TCPRouteSpec{
 				CommonRouteSpec: gwv1.CommonRouteSpec{
 					ParentRefs: []gwv1.ParentReference{
@@ -518,7 +519,7 @@ var _ = Describe("Query", func() {
 				},
 			}
 
-			tcpRoute := tcpRoute("test-tcp-route", gw.Namespace)
+			tcpRoute := tcpRoute(gw.Namespace)
 			var badPort gwv1.PortNumber = 9999
 			tcpRoute.Spec = gwv1a2.TCPRouteSpec{
 				CommonRouteSpec: gwv1.CommonRouteSpec{
@@ -553,7 +554,7 @@ var _ = Describe("Query", func() {
 				},
 			}
 
-			tcpRoute := tcpRoute("test-tcp-route", gw.Namespace)
+			tcpRoute := tcpRoute(gw.Namespace)
 			tcpRoute.Spec = gwv1a2.TCPRouteSpec{
 				CommonRouteSpec: gwv1.CommonRouteSpec{
 					ParentRefs: []gwv1.ParentReference{
@@ -591,7 +592,7 @@ var _ = Describe("Query", func() {
 				},
 			}
 
-			tcpRoute := tcpRoute("test-tcp-route", gw.Namespace)
+			tcpRoute := tcpRoute(gw.Namespace)
 			tcpRoute.Spec = gwv1a2.TCPRouteSpec{
 				CommonRouteSpec: gwv1.CommonRouteSpec{
 					ParentRefs: []gwv1.ParentReference{
@@ -663,7 +664,7 @@ var _ = Describe("Query", func() {
 			},
 		}
 
-		tlsRoute := tlsRoute("test-tls-route", "other-ns")
+		tlsRoute := tlsRoute("other-ns")
 		tlsRoute.Spec = gwv1a2.TLSRouteSpec{
 			CommonRouteSpec: gwv1.CommonRouteSpec{
 				ParentRefs: []gwv1.ParentReference{
@@ -698,7 +699,7 @@ var _ = Describe("Query", func() {
 			},
 		}
 
-		tlsRoute := tlsRoute("test-tls-route", gw.Namespace)
+		tlsRoute := tlsRoute(gw.Namespace)
 		var badPort gwv1.PortNumber = 9999
 		tlsRoute.Spec = gwv1a2.TLSRouteSpec{
 			CommonRouteSpec: gwv1.CommonRouteSpec{
@@ -733,7 +734,7 @@ var _ = Describe("Query", func() {
 			},
 		}
 
-		tlsRoute := tlsRoute("test-tls-route", gw.Namespace)
+		tlsRoute := tlsRoute(gw.Namespace)
 		tlsRoute.Spec = gwv1a2.TLSRouteSpec{
 			CommonRouteSpec: gwv1.CommonRouteSpec{
 				ParentRefs: []gwv1.ParentReference{
@@ -771,7 +772,7 @@ var _ = Describe("Query", func() {
 			},
 		}
 
-		tlsRoute := tlsRoute("test-tls-route", gw.Namespace)
+		tlsRoute := tlsRoute(gw.Namespace)
 		tlsRoute.Spec = gwv1a2.TLSRouteSpec{
 			CommonRouteSpec: gwv1.CommonRouteSpec{
 				ParentRefs: []gwv1.ParentReference{
@@ -801,7 +802,7 @@ var _ = Describe("Query", func() {
 			},
 		}
 
-		gr := grpcRoute("test-grpc-route", gw.Namespace)
+		gr := grpcRoute(gw.Namespace)
 		gr.Spec = gwv1.GRPCRouteSpec{
 			CommonRouteSpec: gwv1.CommonRouteSpec{
 				ParentRefs: []gwv1.ParentReference{
@@ -834,7 +835,7 @@ var _ = Describe("Query", func() {
 			},
 		}
 
-		gr := grpcRoute("test-grpc-route", "other-ns")
+		gr := grpcRoute("other-ns")
 		gr.Spec = gwv1.GRPCRouteSpec{
 			CommonRouteSpec: gwv1.CommonRouteSpec{
 				ParentRefs: []gwv1.ParentReference{
@@ -869,7 +870,7 @@ var _ = Describe("Query", func() {
 			},
 		}
 
-		gr := grpcRoute("test-grpc-route", gw.Namespace)
+		gr := grpcRoute(gw.Namespace)
 		var badPort gwv1.PortNumber = 9999
 		gr.Spec = gwv1.GRPCRouteSpec{
 			CommonRouteSpec: gwv1.CommonRouteSpec{
@@ -904,7 +905,7 @@ var _ = Describe("Query", func() {
 			},
 		}
 
-		gr := grpcRoute("test-grpc-route", gw.Namespace)
+		gr := grpcRoute(gw.Namespace)
 		gr.Spec = gwv1.GRPCRouteSpec{
 			CommonRouteSpec: gwv1.CommonRouteSpec{
 				ParentRefs: []gwv1.ParentReference{
@@ -942,7 +943,7 @@ var _ = Describe("Query", func() {
 			},
 		}
 
-		gr := grpcRoute("test-grpc-route", gw.Namespace)
+		gr := grpcRoute(gw.Namespace)
 		gr.Spec = gwv1.GRPCRouteSpec{
 			CommonRouteSpec: gwv1.CommonRouteSpec{
 				ParentRefs: []gwv1.ParentReference{
@@ -1015,21 +1016,21 @@ var _ = Describe("Query", func() {
 	})
 })
 
-func refGrantSecret() *gwv1beta1.ReferenceGrant {
-	return &gwv1beta1.ReferenceGrant{
+func refGrantSecret() *gwv1b1.ReferenceGrant {
+	return &gwv1b1.ReferenceGrant{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default2",
 			Name:      "foo",
 		},
-		Spec: gwv1beta1.ReferenceGrantSpec{
-			From: []gwv1beta1.ReferenceGrantFrom{
+		Spec: gwv1b1.ReferenceGrantSpec{
+			From: []gwv1b1.ReferenceGrantFrom{
 				{
 					Group:     gwv1.Group("gateway.networking.k8s.io"),
 					Kind:      gwv1.Kind("Gateway"),
 					Namespace: gwv1.Namespace("default"),
 				},
 			},
-			To: []gwv1beta1.ReferenceGrantTo{
+			To: []gwv1b1.ReferenceGrantTo{
 				{
 					Group: gwv1.Group("core"),
 					Kind:  gwv1.Kind("Secret"),
@@ -1070,40 +1071,40 @@ func secret(ns string) *corev1.Secret {
 	}
 }
 
-func tcpRoute(name, ns string) *gwv1a2.TCPRoute {
+func tcpRoute(ns string) *gwv1a2.TCPRoute {
 	return &gwv1a2.TCPRoute{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       wellknown.TCPRouteKind,
 			APIVersion: gwv1a2.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
+			Name:      "test-tcp-route",
 			Namespace: ns,
 		},
 	}
 }
 
-func tlsRoute(name, ns string) *gwv1a2.TLSRoute {
+func tlsRoute(ns string) *gwv1a2.TLSRoute {
 	return &gwv1a2.TLSRoute{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       wellknown.TLSRouteKind,
 			APIVersion: gwv1a2.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
+			Name:      "test-tls-route",
 			Namespace: ns,
 		},
 	}
 }
 
-func grpcRoute(name, ns string) *gwv1.GRPCRoute {
+func grpcRoute(ns string) *gwv1.GRPCRoute {
 	return &gwv1.GRPCRoute{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       wellknown.GRPCRouteKind,
 			APIVersion: gwv1.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
+			Name:      "test-grpc-route",
 			Namespace: ns,
 		},
 	}
@@ -1126,7 +1127,7 @@ func newQueries(t test.Failer, initObjs ...client.Object) query.GatewayQueries {
 	}
 	mock := krttest.NewMock(t, anys)
 	services := krttest.GetMockCollection[*corev1.Service](mock)
-	refgrants := krtcollections.NewRefGrantIndex(krttest.GetMockCollection[*gwv1beta1.ReferenceGrant](mock))
+	refgrants := krtcollections.NewRefGrantIndex(krttest.GetMockCollection[*gwv1b1.ReferenceGrant](mock))
 
 	policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, sdk.ContributesPolicies{}, apisettings.Settings{})
 	upstreams := krtcollections.NewBackendIndex(krtutil.KrtOptions{}, policies, refgrants)

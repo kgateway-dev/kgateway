@@ -16,15 +16,14 @@ Listeners:
   name: http
   protocol: HTTP
 Policies:
-- name: auth-default/openai-backend
-  spec:
+- backend:
     auth:
       key:
         secret: mysecretkey
+  name: auth-default/openai-backend
   target:
     subBackend: default/openai/backend
-- name: trafficpolicy/default/ai-policy/openai-test:ai:default/openai-test
-  spec:
+- backend:
     ai:
       defaults:
         array_int: '[1,2,3]'
@@ -98,6 +97,7 @@ Policies:
           role: system
         - content: Remember to follow company guidelines.
           role: system
+  name: backend/default/ai-policy:ai:default/openai-test
   target:
     route: default/openai-test
 Routes:

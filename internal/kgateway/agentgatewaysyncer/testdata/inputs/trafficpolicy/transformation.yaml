@@ -75,7 +75,7 @@ spec:
           port: 8080
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: TrafficPolicy
+kind: AgentgatewayPolicy
 metadata:
   name: example-traffic-policy-for-gateway-attached-transform
 spec:
@@ -83,12 +83,13 @@ spec:
   - group: gateway.networking.k8s.io
     kind: Gateway
     name: example-gateway
-  transformation:
-    request:
-      set:
-        - name: request-gateway
-          value: "'hello'"
-    response:
-      set:
-        - name: response-gateway
-          value: "'goodbye'"
+  traffic:
+    transformation:
+      request:
+        set:
+          - name: request-gateway
+            value: "'hello'"
+      response:
+        set:
+          - name: response-gateway
+            value: "'goodbye'"

@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/krt/krttest"
 	"istio.io/istio/pkg/test"
@@ -14,14 +16,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
-
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -46,17 +44,17 @@ var (
 	}
 )
 
-func backends(refN, refNs string) []any {
+func backends(refNs string) []any {
 	return []any{
-		httpRouteWithSvcBackendRef(refN, refNs),
-		tcpRouteWithBackendRef(refN, refNs),
-		httpRouteWithInfPoolBackendRefWithPort(refN, refNs, gwv1.PortNumber(8080)), // matching port
-		httpRouteWithInfPoolBackendRefWithPort(refN, refNs, gwv1.PortNumber(1234)), // overridden
+		httpRouteWithSvcBackendRef(refNs),
+		tcpRouteWithBackendRef(refNs),
+		httpRouteWithInfPoolBackendRefWithPort(refNs, gwv1.PortNumber(8080)), // matching port
+		httpRouteWithInfPoolBackendRefWithPort(refNs, gwv1.PortNumber(1234)), // overridden
 	}
 }
 
 func TestGetBackendSameNamespace(t *testing.T) {
-	for _, backend := range backends("foo", "") {
+	for _, backend := range backends("") {
 		t.Run(fmt.Sprintf("backend %T", backend), func(t *testing.T) {
 			inputs := []any{svc("")}
 
@@ -92,7 +90,7 @@ func TestGetBackendSameNamespace(t *testing.T) {
 }
 
 func TestGetBackendDifNsWithRefGrant(t *testing.T) {
-	for _, backend := range backends("foo", "default2") {
+	for _, backend := range backends("default2") {
 		t.Run(fmt.Sprintf("backend %T", backend), func(t *testing.T) {
 			inputs := []any{svc("default2"), refGrant()}
 
@@ -131,7 +129,7 @@ func TestFailWithNotFoundIfWeHaveRefGrant(t *testing.T) {
 		refGrant(),
 	}
 
-	for _, backend := range backends("foo", "default2") {
+	for _, backend := range backends("default2") {
 		t.Run(fmt.Sprintf("backend %T", backend), func(t *testing.T) {
 			inputs := append(inputs, backend)
 			ir := translateRoute(t, inputs)
@@ -161,7 +159,7 @@ func TestFailWitWithRefGrantAndWrongFrom(t *testing.T) {
 	inputs := []any{
 		rg,
 	}
-	for _, backend := range backends("foo", "default2") {
+	for _, backend := range backends("default2") {
 		t.Run(fmt.Sprintf("backend %T", backend), func(t *testing.T) {
 			inputs := append(inputs, backend)
 			ir := translateRoute(t, inputs)
@@ -188,7 +186,7 @@ func TestFailWithNoRefGrant(t *testing.T) {
 		svc("default2"),
 	}
 
-	for _, backend := range backends("foo", "default2") {
+	for _, backend := range backends("default2") {
 		t.Run(fmt.Sprintf("backend %T", backend), func(t *testing.T) {
 			inputs := append(inputs, backend)
 			ir := translateRoute(t, inputs)
@@ -214,7 +212,7 @@ func TestFailWithWrongNs(t *testing.T) {
 		svc("default3"),
 		refGrant(),
 	}
-	for _, backend := range backends("foo", "default3") {
+	for _, backend := range backends("default3") {
 		t.Run(fmt.Sprintf("backend %T", backend), func(t *testing.T) {
 			inputs := append(inputs, backend)
 			ir := translateRoute(t, inputs)
@@ -240,7 +238,7 @@ func TestInferencePoolBackendSameNamespace(t *testing.T) {
 		infPool(""),
 	}
 
-	backend := httpRouteWithInfPoolBackendRef("foo", "")
+	backend := httpRouteWithInfPoolBackendRef("")
 	inputs = append(inputs, backend)
 
 	ir := translateRoute(t, inputs)
@@ -274,7 +272,7 @@ func TestInferencePoolDiffNsBackend(t *testing.T) {
 		refGrant(),
 	}
 
-	backend := httpRouteWithInfPoolBackendRef("foo", "default2")
+	backend := httpRouteWithInfPoolBackendRef("default2")
 	inputs = append(inputs, backend)
 	ir := translateRoute(t, inputs)
 	if ir == nil {
@@ -307,7 +305,7 @@ func TestFailInferencePoolBackendWithoutRefGrant(t *testing.T) {
 		// intentionally missing refGrant
 	}
 
-	backend := httpRouteWithInfPoolBackendRef("foo", "default2")
+	backend := httpRouteWithInfPoolBackendRef("default2")
 	inputs = append(inputs, backend)
 
 	ir := translateRoute(t, inputs)
@@ -333,7 +331,7 @@ func TestFailInferencePoolWithRefGrantWrongKind(t *testing.T) {
 	inputs := []any{
 		infPool("default2"),
 		rg,
-		httpRouteWithInfPoolBackendRef("foo", "default2"),
+		httpRouteWithInfPoolBackendRef("default2"),
 	}
 
 	ir := translateRoute(t, inputs)
@@ -356,7 +354,7 @@ func TestInferencePoolPortOverride(t *testing.T) {
 	cases := []struct {
 		name         string
 		poolNs       string
-		refGrant     *gwv1beta1.ReferenceGrant
+		refGrant     *gwv1b1.ReferenceGrant
 		providedPort gwv1.PortNumber
 		wantPort     int32
 		expectError  bool
@@ -433,7 +431,7 @@ func TestBackendPortNotAllowed(t *testing.T) {
 	cases := []struct {
 		name        string
 		backendNs   string
-		refGrant    *gwv1beta1.ReferenceGrant
+		refGrant    *gwv1b1.ReferenceGrant
 		expectError bool
 	}{
 		{
@@ -532,14 +530,14 @@ func infPool(ns string) *inf.InferencePool {
 	}
 }
 
-func refGrant() *gwv1beta1.ReferenceGrant {
-	return &gwv1beta1.ReferenceGrant{
+func refGrant() *gwv1b1.ReferenceGrant {
+	return &gwv1b1.ReferenceGrant{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default2",
 			Name:      "foo",
 		},
-		Spec: gwv1beta1.ReferenceGrantSpec{
-			From: []gwv1beta1.ReferenceGrantFrom{
+		Spec: gwv1b1.ReferenceGrantSpec{
+			From: []gwv1b1.ReferenceGrantFrom{
 				{
 					Group:     gwv1.Group("gateway.networking.k8s.io"),
 					Kind:      gwv1.Kind("HTTPRoute"),
@@ -551,7 +549,7 @@ func refGrant() *gwv1beta1.ReferenceGrant {
 					Namespace: gwv1.Namespace("default"),
 				},
 			},
-			To: []gwv1beta1.ReferenceGrantTo{
+			To: []gwv1b1.ReferenceGrantTo{
 				{
 					Group: gwv1.Group("core"),
 					Kind:  gwv1.Kind("Service"),
@@ -566,7 +564,7 @@ func refGrant() *gwv1beta1.ReferenceGrant {
 }
 
 // Helper that calls refGrant() but with its Namespace set to the given namespace
-func refGrantWithNs(ns string) *gwv1beta1.ReferenceGrant {
+func refGrantWithNs(ns string) *gwv1b1.ReferenceGrant {
 	rg := refGrant()
 	rg.Namespace = ns
 	for i := range rg.Spec.From {
@@ -576,21 +574,21 @@ func refGrantWithNs(ns string) *gwv1beta1.ReferenceGrant {
 }
 
 // Helper that creates a ReferenceGrant for Backend resources
-func refGrantWithBackend() *gwv1beta1.ReferenceGrant {
-	return &gwv1beta1.ReferenceGrant{
+func refGrantWithBackend() *gwv1b1.ReferenceGrant {
+	return &gwv1b1.ReferenceGrant{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default2",
 			Name:      "backend-ref-grant",
 		},
-		Spec: gwv1beta1.ReferenceGrantSpec{
-			From: []gwv1beta1.ReferenceGrantFrom{
+		Spec: gwv1b1.ReferenceGrantSpec{
+			From: []gwv1b1.ReferenceGrantFrom{
 				{
 					Group:     gwv1.Group("gateway.networking.k8s.io"),
 					Kind:      gwv1.Kind("HTTPRoute"),
 					Namespace: gwv1.Namespace("default"),
 				},
 			},
-			To: []gwv1beta1.ReferenceGrantTo{
+			To: []gwv1b1.ReferenceGrantTo{
 				{
 					Group: gwv1.Group(wellknown.BackendGVK.Group),
 					Kind:  gwv1.Kind(wellknown.BackendGVK.Kind),
@@ -712,7 +710,7 @@ func backendUpstreams(backendCol krt.Collection[*v1alpha1.Backend]) krt.Collecti
 	})
 }
 
-func httpRouteWithSvcBackendRef(refN, refNs string) *gwv1.HTTPRoute {
+func httpRouteWithSvcBackendRef(refNs string) *gwv1.HTTPRoute {
 	var ns *gwv1.Namespace
 	if refNs != "" {
 		n := gwv1.Namespace(refNs)
@@ -731,7 +729,7 @@ func httpRouteWithSvcBackendRef(refN, refNs string) *gwv1.HTTPRoute {
 						{
 							BackendRef: gwv1.BackendRef{
 								BackendObjectReference: gwv1.BackendObjectReference{
-									Name:      gwv1.ObjectName(refN),
+									Name:      gwv1.ObjectName("foo"),
 									Namespace: ns,
 									Port:      &port,
 								},
@@ -744,7 +742,7 @@ func httpRouteWithSvcBackendRef(refN, refNs string) *gwv1.HTTPRoute {
 	}
 }
 
-func httpRouteWithInfPoolBackendRef(refN, refNs string) *gwv1.HTTPRoute {
+func httpRouteWithInfPoolBackendRef(refNs string) *gwv1.HTTPRoute {
 	var ns *gwv1.Namespace
 	if refNs != "" {
 		n := gwv1.Namespace(refNs)
@@ -765,7 +763,7 @@ func httpRouteWithInfPoolBackendRef(refN, refNs string) *gwv1.HTTPRoute {
 								BackendObjectReference: gwv1.BackendObjectReference{
 									Group:     ptr.To(gwv1.Group(inf.GroupVersion.Group)),
 									Kind:      ptr.To(gwv1.Kind(wellknown.InferencePoolKind)),
-									Name:      gwv1.ObjectName(refN),
+									Name:      gwv1.ObjectName("foo"),
 									Namespace: ns,
 									Port:      &port,
 								},
@@ -778,7 +776,7 @@ func httpRouteWithInfPoolBackendRef(refN, refNs string) *gwv1.HTTPRoute {
 	}
 }
 
-func tcpRouteWithBackendRef(refN, refNs string) *gwv1a2.TCPRoute {
+func tcpRouteWithBackendRef(refNs string) *gwv1a2.TCPRoute {
 	var ns *gwv1.Namespace
 	if refNs != "" {
 		n := gwv1.Namespace(refNs)
@@ -796,7 +794,7 @@ func tcpRouteWithBackendRef(refN, refNs string) *gwv1a2.TCPRoute {
 					BackendRefs: []gwv1.BackendRef{
 						{
 							BackendObjectReference: gwv1.BackendObjectReference{
-								Name:      gwv1.ObjectName(refN),
+								Name:      gwv1.ObjectName("foo"),
 								Namespace: ns,
 								Port:      &port,
 							},
@@ -809,7 +807,7 @@ func tcpRouteWithBackendRef(refN, refNs string) *gwv1a2.TCPRoute {
 }
 
 // helper to generate an HTTPRoute that references an InferencePool with a custom port
-func httpRouteWithInfPoolBackendRefWithPort(refN, refNs string, port gwv1.PortNumber) *gwv1.HTTPRoute {
+func httpRouteWithInfPoolBackendRefWithPort(refNs string, port gwv1.PortNumber) *gwv1.HTTPRoute {
 	var ns *gwv1.Namespace
 	if refNs != "" {
 		n := gwv1.Namespace(refNs)
@@ -827,7 +825,7 @@ func httpRouteWithInfPoolBackendRefWithPort(refN, refNs string, port gwv1.PortNu
 						BackendObjectReference: gwv1.BackendObjectReference{
 							Group:     ptr.To(gwv1.Group(inf.GroupVersion.Group)),
 							Kind:      ptr.To(gwv1.Kind(wellknown.InferencePoolKind)),
-							Name:      gwv1.ObjectName(refN),
+							Name:      gwv1.ObjectName("foo"),
 							Namespace: ns,
 							Port:      &port,
 						},
@@ -852,7 +850,7 @@ func preRouteIndex(t test.Failer, inputs []any) *RoutesIndex {
 		},
 		apisettings.Settings{},
 	)
-	refgrants := NewRefGrantIndex(krttest.GetMockCollection[*gwv1beta1.ReferenceGrant](mock))
+	refgrants := NewRefGrantIndex(krttest.GetMockCollection[*gwv1b1.ReferenceGrant](mock))
 	upstreams := NewBackendIndex(krtutil.KrtOptions{}, policies, refgrants)
 	upstreams.AddBackends(svcGk, k8sSvcUpstreams(services))
 	pools := krttest.GetMockCollection[*inf.InferencePool](mock)

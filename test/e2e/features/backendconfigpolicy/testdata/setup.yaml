@@ -71,7 +71,7 @@ metadata:
 spec:
   containers:
     - name: nginx
-      image: nginx:stable
+      image: nginx:1.28.0
       ports:
         - containerPort: 80
           name: http-web-svc

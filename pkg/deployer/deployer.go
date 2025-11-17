@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"reflect"
 	"slices"
 
 	"helm.sh/helm/v3/pkg/action"
@@ -19,14 +18,17 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
-	api "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
 var logger = logging.New("deployer")
@@ -48,6 +50,9 @@ type ImageInfo struct {
 	PullPolicy string
 }
 
+// Custom patcher; used for testing since SSA does not work with Dynamic fake client
+type Patcher func(client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error
+
 // A Deployer is responsible for deploying proxies and inference extensions.
 type Deployer struct {
 	controllerName                       string
@@ -55,9 +60,26 @@ type Deployer struct {
 	agwGatewayClassName                  string
 	chart                                *chart.Chart
 	agentgatewayChart                    *chart.Chart
-	cli                                  client.Client
+	scheme                               *runtime.Scheme
+	client                               apiclient.Client
 	helmValues                           HelmValuesGenerator
 	helmReleaseNameAndNamespaceGenerator func(obj client.Object) (string, string)
+	gvkToGVRMapper                       map[schema.GroupVersionKind]schema.GroupVersionResource
+	patcher                              Patcher
+}
+
+type Option func(*Deployer)
+
+func WithPatcher(p Patcher) Option {
+	return func(d *Deployer) {
+		d.patcher = p
+	}
+}
+
+func WithGVKToGVRMapper(m map[schema.GroupVersionKind]schema.GroupVersionResource) Option {
+	return func(d *Deployer) {
+		d.gvkToGVRMapper = m
+	}
 }
 
 // NewDeployer creates a new gateway/inference pool/etc
@@ -65,42 +87,67 @@ type Deployer struct {
 // See https://github.com/kgateway-dev/kgateway/issues/10672 for details.
 func NewDeployer(
 	controllerName, agwControllerName, agwGatewayClassName string,
-	cli client.Client,
+	scheme *runtime.Scheme,
+	client apiclient.Client,
 	chart *chart.Chart,
 	hvg HelmValuesGenerator,
 	helmReleaseNameAndNamespaceGenerator func(obj client.Object) (string, string),
+	opts ...Option,
 ) *Deployer {
-	return &Deployer{
+	d := &Deployer{
 		controllerName:                       controllerName,
 		agwControllerName:                    agwControllerName,
 		agwGatewayClassName:                  agwGatewayClassName,
-		cli:                                  cli,
+		scheme:                               scheme,
+		client:                               client,
 		chart:                                chart,
 		agentgatewayChart:                    nil,
 		helmValues:                           hvg,
 		helmReleaseNameAndNamespaceGenerator: helmReleaseNameAndNamespaceGenerator,
+		patcher:                              applyPatch,
 	}
+	for _, o := range opts {
+		o(d)
+	}
+	return d
 }
 
 // NewDeployerWithMultipleCharts creates a new gateway deployer that supports both envoy and agentgateway charts
 func NewDeployerWithMultipleCharts(
 	controllerName, agwControllerName, agwGatewayClassName string,
-	cli client.Client,
+	scheme *runtime.Scheme,
+	client apiclient.Client,
 	envoyChart *chart.Chart,
 	agentgatewayChart *chart.Chart,
 	hvg HelmValuesGenerator,
 	helmReleaseNameAndNamespaceGenerator func(obj client.Object) (string, string),
+	opts ...Option,
 ) *Deployer {
-	return &Deployer{
+	d := &Deployer{
 		controllerName:                       controllerName,
 		agwControllerName:                    agwControllerName,
 		agwGatewayClassName:                  agwGatewayClassName,
-		cli:                                  cli,
+		scheme:                               scheme,
+		client:                               client,
 		chart:                                envoyChart,
 		agentgatewayChart:                    agentgatewayChart,
 		helmValues:                           hvg,
 		helmReleaseNameAndNamespaceGenerator: helmReleaseNameAndNamespaceGenerator,
+		patcher:                              applyPatch,
 	}
+	for _, o := range opts {
+		o(d)
+	}
+	return d
+}
+
+func applyPatch(client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
+	c := client.Dynamic().Resource(gvr).Namespace(namespace)
+	_, err := c.Patch(context.Background(), name, types.ApplyPatchType, data, metav1.PatchOptions{
+		Force:        ptr.To(true),
+		FieldManager: fieldManager,
+	}, subresources...)
+	return err
 }
 
 func JsonConvert(in *HelmConfig, out any) error {
@@ -133,7 +180,7 @@ func (d *Deployer) RenderToObjects(ns, name string, vals map[string]any) ([]clie
 		return nil, err
 	}
 
-	objs, err := ConvertYAMLToObjects(d.cli.Scheme(), manifest)
+	objs, err := ConvertYAMLToObjects(d.scheme, manifest)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert helm manifest yaml to objects for %s.%s: %w", ns, name, err)
 	}
@@ -191,7 +238,7 @@ func (d *Deployer) RenderManifest(ns, name string, vals map[string]any) ([]byte,
 func (d *Deployer) GetObjsToDeploy(ctx context.Context, obj client.Object) ([]client.Object, error) {
 	vals, err := d.helmValues.GetValues(ctx, obj)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get helm values %s.%s: %w", obj.GetNamespace(), obj.GetName(), err)
+		return nil, fmt.Errorf("failed to get helm values for object %s %s/%s: %w", obj.GetObjectKind().GroupVersionKind().String(), obj.GetNamespace(), obj.GetName(), err)
 	}
 	if vals == nil {
 		return nil, nil
@@ -212,11 +259,19 @@ func (d *Deployer) GetObjsToDeploy(ctx context.Context, obj client.Object) ([]cl
 	return objs, nil
 }
 
+// Deprecated: use SetNamespaceAndOwnerWithGVK
+// Using this without specifying the GVK breaks with client-go clients which do not set the
+// GVK in the TypeMeta after the initial List()
 func (d *Deployer) SetNamespaceAndOwner(owner client.Object, objs []client.Object) []client.Object {
+	return d.SetNamespaceAndOwnerWithGVK(owner, owner.GetObjectKind().GroupVersionKind(), objs)
+}
+
+// SetNamespaceAndOwnerWithGVK sets namespace and ownerRef for rendered objects using the owner GVK
+func (d *Deployer) SetNamespaceAndOwnerWithGVK(owner client.Object, ownerGVK schema.GroupVersionKind, objs []client.Object) []client.Object {
 	// Ensure that each namespaced rendered object has its namespace and ownerRef set.
 	for _, renderedObj := range objs {
 		gvk := renderedObj.GetObjectKind().GroupVersionKind()
-		if IsNamespaced(gvk) {
+		if kubeutils.IsNamespacedGVK(gvk) {
 			if renderedObj.GetNamespace() == "" {
 				renderedObj.SetNamespace(owner.GetNamespace())
 			}
@@ -224,8 +279,8 @@ func (d *Deployer) SetNamespaceAndOwner(owner client.Object, objs []client.Objec
 			// this works for resources retrieved using kube api,
 			// but these fields won't be set on newly instantiated objects
 			renderedObj.SetOwnerReferences([]metav1.OwnerReference{{
-				APIVersion: owner.GetObjectKind().GroupVersionKind().GroupVersion().String(),
-				Kind:       owner.GetObjectKind().GroupVersionKind().Kind,
+				APIVersion: ownerGVK.GroupVersion().String(),
+				Kind:       ownerGVK.Kind,
 				Name:       owner.GetName(),
 				UID:        owner.GetUID(),
 				Controller: ptr.To(true),
@@ -257,7 +312,7 @@ func (d *Deployer) DeployObjsWithSource(ctx context.Context, objs []client.Objec
 	// Determine the correct controller name based on the source object
 	controllerName := d.controllerName
 	if sourceObj != nil {
-		if gw, ok := sourceObj.(*api.Gateway); ok {
+		if gw, ok := sourceObj.(*gwv1.Gateway); ok {
 			controllerName = d.getControllerNameForGatewayClass(string(gw.Spec.GatewayClassName))
 		}
 		// For InferencePool objects, use the agwControllerName if this deployer was configured
@@ -269,9 +324,20 @@ func (d *Deployer) DeployObjsWithSource(ctx context.Context, objs []client.Objec
 	}
 
 	for _, obj := range objs {
+		u, err := kubeutils.ToUnstructured(obj)
+		if err != nil {
+			return fmt.Errorf("error converting object %s to unstructured: %w", kubeutils.NamespacedNameFrom(obj), err)
+		}
+		gvr, err := d.gvkToGVR(obj.GetObjectKind().GroupVersionKind())
+		if err != nil {
+			return fmt.Errorf("error getting GVR for object %s: %w", kubeutils.NamespacedNameFrom(obj), err)
+		}
+
 		// Get the existing object from the cache to check if it needs to be updated
-		existing := obj.DeepCopyObject().(client.Object)
-		err := d.cli.Get(ctx, client.ObjectKey{Namespace: obj.GetNamespace(), Name: obj.GetName()}, existing)
+		c := d.client.Dynamic().Resource(gvr).Namespace(obj.GetNamespace())
+		existing, err := c.Get(ctx, obj.GetName(), metav1.GetOptions{})
+		// Avoid modifying the existing object from the cache
+		existing = existing.DeepCopy()
 
 		// If the object doesn't exist or there's an error other than "not found", proceed with patching
 		switch {
@@ -284,12 +350,15 @@ func (d *Deployer) DeployObjsWithSource(ctx context.Context, objs []client.Objec
 			existing.SetDeletionTimestamp(nil)
 			existing.SetDeletionGracePeriodSeconds(nil)
 			existing.SetManagedFields(nil)
-			// clear the status from existing object using reflection
-			if statusField := reflect.ValueOf(existing).Elem().FieldByName("Status"); statusField.IsValid() && statusField.CanSet() {
-				statusField.Set(reflect.Zero(statusField.Type()))
+			// clear the status from existing object. Uses SetNestedField if u.Object["status"] exists
+			// to ensure they are equal
+			if v, ok := u.Object["status"]; ok {
+				unstructured.SetNestedField(existing.Object, v, "status")
+			} else {
+				unstructured.RemoveNestedField(existing.Object, "status")
 			}
 			// Check if the objects are equal - if they are, skip the patch
-			if equality.Semantic.DeepEqual(obj, existing) {
+			if equality.Semantic.DeepEqual(u, existing) {
 				logger.Debug("object unchanged, skipping apply",
 					"kind", obj.GetObjectKind().GroupVersionKind().String(),
 					"namespace", obj.GetNamespace(),
@@ -308,13 +377,31 @@ func (d *Deployer) DeployObjsWithSource(ctx context.Context, objs []client.Objec
 			// TODO: inc a metric when we add metrics.
 		}
 
-		logger.Info("deploying object", "kind", obj.GetObjectKind(), "namespace", obj.GetNamespace(), "name", obj.GetName())
-
-		if err := d.cli.Patch(ctx, obj, client.Apply, client.ForceOwnership, client.FieldOwner(controllerName)); err != nil {
-			return fmt.Errorf("failed to apply object %s %s: %w", obj.GetObjectKind().GroupVersionKind().String(), obj.GetName(), err)
+		logger.Debug("deploying object", "kind", obj.GetObjectKind(), "namespace", obj.GetNamespace(), "name", obj.GetName())
+		js, err := json.Marshal(u.Object)
+		if err != nil {
+			return err
+		}
+		if err := d.patcher(d.client, controllerName, gvr, u.GetName(), u.GetNamespace(), js); err != nil {
+			return fmt.Errorf("failed to apply object %s %s/%s: %w", u.GetObjectKind().GroupVersionKind().String(), u.GetNamespace(), u.GetName(), err)
 		}
 	}
 	return nil
+}
+
+func (d *Deployer) gvkToGVR(gvk schema.GroupVersionKind) (schema.GroupVersionResource, error) {
+	// 1. Try our lib
+	gvr, err := wellknown.GVKToGVR(gvk)
+	if err == nil {
+		return gvr, nil
+	}
+
+	// 2. Try custom mapper
+	if gvr, ok := d.gvkToGVRMapper[gvk]; ok {
+		return gvr, nil
+	}
+
+	return schema.GroupVersionResource{}, fmt.Errorf("unknown GVK: %v", gvk)
 }
 
 func (d *Deployer) GetGvksToWatch(ctx context.Context, vals map[string]any) ([]schema.GroupVersionKind, error) {
@@ -352,11 +439,6 @@ func (d *Deployer) GetGvksToWatch(ctx context.Context, vals map[string]any) ([]s
 
 	logger.Debug("watching GVKs", "gvks", ret)
 	return ret, nil
-}
-
-// IsNamespaced returns true if the resource is namespaced.
-func IsNamespaced(gvk schema.GroupVersionKind) bool {
-	return gvk != wellknown.ClusterRoleBindingGVK
 }
 
 func ConvertYAMLToObjects(scheme *runtime.Scheme, yamlData []byte) ([]client.Object, error) {

@@ -14,25 +14,18 @@ import (
 	localratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	envoyrbacv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"google.golang.org/protobuf/types/known/anypb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
-	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
-	"istio.io/istio/pkg/kube/kclient"
-	"istio.io/istio/pkg/kube/krt"
-	"istio.io/istio/pkg/kube/kubetypes"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/watch"
-
 	// TODO(nfuden): remove once rustformations are able to be used in a production environment
 	transformationpb "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
+	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
+	"istio.io/istio/pkg/kube/kclient"
+	"istio.io/istio/pkg/kube/krt"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -205,25 +198,7 @@ var _ ir.ProxyTranslationPass = &trafficPolicyPluginGwPass{}
 
 var useRustformations bool
 
-func registerTypes(ourCli versioned.Interface) {
-	skubeclient.Register[*v1alpha1.TrafficPolicy](
-		wellknown.TrafficPolicyGVR,
-		wellknown.TrafficPolicyGVK,
-		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
-			return ourCli.GatewayV1alpha1().TrafficPolicies(namespace).List(context.Background(), o)
-		},
-		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
-			return ourCli.GatewayV1alpha1().TrafficPolicies(namespace).Watch(context.Background(), o)
-		},
-		func(c skubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*v1alpha1.TrafficPolicy] {
-			return ourCli.GatewayV1alpha1().TrafficPolicies(namespace)
-		},
-	)
-}
-
 func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, mergeSettings string, v validator.Validator) sdk.Plugin {
-	registerTypes(commoncol.OurClient)
-
 	useRustformations = commoncol.Settings.UseRustFormations // stash the state of the env setup for rustformation usage
 	if useRustformations {
 		logger.Info("transformation is using Rust Dynamic Module.")
@@ -428,14 +403,8 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(fcc ir.FilterChainCommon) ([]fil
 		stagedFilters = append(stagedFilters, filter)
 	}
 	if p.setTransformationInChain[fcc.FilterChainName] && useRustformations {
-		// ---------------
-		// | END CLASSIC |
-		// ---------------
-		// TODO: on the rust module side, the deserialization would fail and envoy would reject the config if
-		//       any fields are missing in the json EVEN the filter is disabled, so need this for now until
-		//       we change the rust module to have default value
 		cfg, _ := utils.MessageToAny(&wrapperspb.StringValue{
-			Value: "{\"request_headers_setter\": [], \"response_headers_setter\": []}",
+			Value: "{}",
 		})
 		rustCfg := dynamicmodulesv3.DynamicModuleFilter{
 			DynamicModuleConfig: &exteniondynamicmodulev3.DynamicModuleConfig{

@@ -1,0 +1,7 @@
+[workspace]
+resolver = "2"
+members = [
+    "rustformations",
+    "transformations",
+]
+default-members = ["rustformations"]

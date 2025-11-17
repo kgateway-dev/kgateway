@@ -33,52 +33,51 @@ jobs:
         test:
         # August 29, 2025: ~10 minutes
         - cluster-name: 'cluster-one'
-          go-test-args: '-v -timeout=25m'
+          go-test-args: '-timeout=25m'
           go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^PathMatching$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^TLSRouteServices$$|^TestKgateway$$/^GRPCRouteServices$$|^TestKgateway$$/^SessionPersistence$$'
           localstack: 'false'
         # August 29, 2025: ~13 minutes
         - cluster-name: 'cluster-two'
-          go-test-args: '-v -timeout=25m'
+          go-test-args: '-timeout=25m'
           go-test-run-regex: '^TestKgatewayWaypoint$$'
           localstack: 'false'
         # August 29, 2025: ~9 minutes
         - cluster-name: 'cluster-three'
-          go-test-args: '-v -timeout=25m'
+          go-test-args: '-timeout=25m'
           go-test-run-regex: '^TestKgateway$$/^DynamicForwardProxy$$|^TestKgateway$$/^Lambda$$|^TestKgateway$$/^AccessLog$$|^TestKgateway$$/^LocalRateLimit$$|^TestKgateway$$/^Cors$$|^TestKgateway$$/^BackendConfigPolicy$$|^TestKgateway$$/^HttpListenerPolicy$$|^TestKgateway$$/^Tracing$$|^TestKgateway$$/^DirectResponse$$|^TestKgateway$$/^AdminServer$$'
           localstack: 'true'
         # August 29, 2025: ~9 minutes
         - cluster-name: 'cluster-four'
-          go-test-args: '-v -timeout=25m'
+          go-test-args: '-timeout=25m'
           go-test-run-regex: '^TestKgateway$$/^ExtProc$$|^TestKgateway$$/^ExtAuth$$|^TestKgateway$$/^PolicySelector$$|^TestKgateway$$/^Backends$$|^TestKgateway$$/^BackendTLSPolicies$$|^TestKgateway$$/^CSRF$$|^TestKgateway$$/^AutoHostRewrite$$|^TestKgateway$$/^LeaderElection$$'
           localstack: 'false'
         # August 29, 2025: ~10 minutes
         - cluster-name: 'cluster-five'
-          go-test-args: '-v -timeout=25m'
+          go-test-args: '-timeout=25m'
           go-test-run-regex: '^TestKgateway$$/^TimeoutRetry$$|^TestKgateway$$/^HeaderModifiers$$|^TestKgateway$$/^RBAC$$|^TestKgateway$$/^Deployer$$|^TestKgateway$$/^Transforms$$|^TestRouteReplacement$$|^TestKgateway$$/^RouteDelegation$$'
           localstack: 'false'
         # August 29, 2025: ~9 minutes
         - cluster-name: 'cluster-six'
-          go-test-args: '-v -timeout=25m'
+          go-test-args: '-timeout=25m'
           go-test-run-regex: '^TestInferenceExtension$$|^TestListenerSet$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgatewayIstioAutoMtls$$|^TestZeroDowntimeRollout$$'
           localstack: 'false'
         # August 29, 2025: ~4 minutes
         - cluster-name: 'cluster-metrics'
-          go-test-args: '-v -timeout=25m'
+          go-test-args: '-timeout=25m'
           go-test-run-regex: '^TestKgatewayMetrics$$|^TestControlPlaneTLS$$'
           localstack: 'false'
         # August 29, 2025: ~4 minutes
         - cluster-name: 'cluster-multi-install'
-          go-test-args: '-v -timeout=5m'
+          go-test-args: '-timeout=5m'
           go-test-run-regex: '^TestMultipleInstalls'
           localstack: 'false'
         # August 29, 2025: ~4 minutes
         - cluster-name: 'agent-gateway-cluster'
-          go-test-args: '-v -timeout=25m'
+          go-test-args: '-timeout=25m'
           go-test-run-regex: '^TestAgentgatewayIntegration'
-          agentgateway: 'true'
         # August 29, 2025: ~3 minutes
         - cluster-name: 'api-validation'
-          go-test-args: '-v -timeout=10m'
+          go-test-args: '-timeout=10m'
           go-test-run-regex: '^TestAPIValidation'
 
         # In our PR tests, we run the suite of tests using the upper ends of versions that we claim to support

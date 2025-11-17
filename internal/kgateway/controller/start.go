@@ -9,16 +9,13 @@ import (
 	"sync/atomic"
 
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
 	istiolog "istio.io/istio/pkg/log"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer"
@@ -31,6 +28,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
+	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -40,12 +38,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/namespaces"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
-)
-
-const (
-	// AutoProvision controls whether the controller will be responsible for provisioning dynamic
-	// infrastructure for the Gateway API.
-	AutoProvision = true
 )
 
 type SetupOpts struct {
@@ -87,14 +79,10 @@ type StartConfig struct {
 	// HelmValuesGeneratorOverride allows replacing the default helm values generation logic.
 	// When set, this generator will be used instead of the built-in GatewayParameters-based generator
 	// for all Gateways. This is a 1:1 replacement - you provide one generator that handles everything.
-	HelmValuesGeneratorOverride func(cli client.Client, inputs *deployer.Inputs) deployer.HelmValuesGenerator
-	// ExtraGatewayParameters is a list of additional parameter object types that the controller should watch.
-	// These are used to set up watches so that changes to custom parameter objects trigger Gateway reconciliation.
-	// The objects should be empty instances of the types you want to watch (e.g., &corev1.ConfigMap{}, &MyCustomCRD{}).
-	// This is separate from HelmValuesGeneratorOverride - these are just for watch registration.
-	ExtraGatewayParameters []client.Object
-	Client                 istiokube.Client
-	Validator              validator.Validator
+	HelmValuesGeneratorOverride HelmValuesGeneratorOverrideFunc
+
+	Client    apiclient.Client
+	Validator validator.Validator
 
 	AgwCollections    *agwplugins.AgwCollections
 	CommonCollections *collections.CommonCollections
@@ -103,6 +91,9 @@ type StartConfig struct {
 
 	KrtOptions                   krtutil.KrtOptions
 	ExtraAgwPolicyStatusHandlers map[string]agwplugins.AgwPolicyStatusSyncHandler
+
+	// GatewayControllerExtension is an extension that can be used to extend Gateway controller
+	GatewayControllerExtension sdk.GatewayControllerExtension
 }
 
 // Start runs the controllers responsible for processing the K8s Gateway API objects
@@ -132,14 +123,11 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	var gatedPlugins []sdk.Plugin
 	// Extend the scheme and add the EPP plugin if the inference extension is enabled and the InferencePool CRD exists.
 	if cfg.SetupOpts.GlobalSettings.EnableInferExt {
-		exists, err := kgtwschemes.AddInferExtV1Scheme(cfg.RestConfig, cfg.Manager.GetScheme())
-		switch {
-		case err != nil:
+		if _, err := kgtwschemes.AddInferExtV1Scheme(cfg.RestConfig, cfg.Manager.GetScheme()); err != nil {
 			return nil, err
-		case exists:
-			setupLog.Info("adding the endpoint-picker inference extension")
-			gatedPlugins = append(gatedPlugins, endpointpicker.NewPlugin(ctx, cfg.CommonCollections))
 		}
+		setupLog.Info("adding the endpoint-picker inference extension plugin")
+		gatedPlugins = append(gatedPlugins, endpointpicker.NewPlugin(ctx, cfg.CommonCollections))
 	}
 	// Add the waypoint plugin if enabled
 	if cfg.SetupOpts.GlobalSettings.EnableWaypoint {
@@ -212,6 +200,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		agwMergedPlugins := agwPluginFactory(cfg)(ctx, cfg.AgwCollections)
 
 		agwSyncer = agentgatewaysyncer.NewAgwSyncer(
+			ctx,
 			cfg.AgwControllerName,
 			cfg.Client,
 			cfg.AgwCollections,
@@ -311,10 +300,10 @@ func (c *ControllerBuilder) Build(ctx context.Context) (*agentgatewaysyncer.Sync
 	istioAutoMtlsEnabled := globalSettings.EnableIstioAutoMtls
 
 	gwCfg := GatewayConfig{
+		Client:            c.cfg.Client,
 		Mgr:               c.mgr,
 		ControllerName:    c.cfg.ControllerName,
 		AgwControllerName: c.cfg.AgwControllerName,
-		AutoProvision:     AutoProvision,
 		ControlPlane: deployer.ControlPlaneInfo{
 			XdsHost:      xdsHost,
 			XdsPort:      xdsPort,
@@ -336,48 +325,16 @@ func (c *ControllerBuilder) Build(ctx context.Context) (*agentgatewaysyncer.Sync
 		CertWatcher:              c.cfg.SetupOpts.CertWatcher,
 	}
 
-	setupLog.Info("creating gateway class provisioner")
-	if err := NewGatewayClassProvisioner(
-		c.mgr,
-		c.cfg.ControllerName,
-		c.cfg.GatewayClassInfos,
-	); err != nil {
-		setupLog.Error(err, "unable to create gateway class provisioner")
-		return nil, err
-	}
-
 	setupLog.Info("creating base gateway controller")
 	if err := NewBaseGatewayController(
 		ctx,
 		gwCfg,
 		c.cfg.GatewayClassInfos,
 		c.cfg.HelmValuesGeneratorOverride,
-		c.cfg.ExtraGatewayParameters,
+		c.cfg.GatewayControllerExtension,
 	); err != nil {
 		setupLog.Error(err, "unable to create gateway controller")
 		return nil, err
-	}
-
-	setupLog.Info("creating inferencepool controller")
-	// Create the InferencePool controller if the inference extension feature is enabled and the API group is registered.
-	if globalSettings.EnableInferExt && c.mgr.GetScheme().IsGroupRegistered(inf.GroupVersion.Group) {
-		poolCfg := &InferencePoolConfig{
-			Mgr: c.mgr,
-			// TODO(danehans): read this from globalSettings
-			ControllerName: c.cfg.ControllerName,
-		}
-		// Enable the inference extension deployer if set.
-		if globalSettings.InferExtAutoProvision {
-			setupLog.Info("inference extension auto-provisioning is deprecated in v2.1 and will be removed in v2.2.")
-			poolCfg.InferenceExt = new(deployer.InferenceExtInfo)
-		}
-		if !globalSettings.EnableAgentgateway {
-			setupLog.Info("using inference extension without agentgateway is deprecated in v2.1 and will not be supported in v2.2.")
-		}
-		if err := NewBaseInferencePoolController(ctx, poolCfg, &gwCfg, c.cfg.HelmValuesGeneratorOverride, c.cfg.ExtraGatewayParameters); err != nil {
-			setupLog.Error(err, "unable to create inferencepool controller")
-			return nil, err
-		}
 	}
 
 	// TODO (dmitri-d) don't think c.ready field is used anywhere and can be removed

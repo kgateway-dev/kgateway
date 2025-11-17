@@ -7,16 +7,13 @@ import (
 	"maps"
 	"sync/atomic"
 
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/tools/cache"
-
-	"istio.io/istio/pkg/kube"
-	"istio.io/istio/pkg/kube/controllers"
-	"istio.io/istio/pkg/kube/krt"
-
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"google.golang.org/protobuf/proto"
+	"istio.io/istio/pkg/kube/controllers"
+	"istio.io/istio/pkg/kube/krt"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
@@ -26,6 +23,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
+	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	plug "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -52,7 +50,7 @@ type ProxySyncer struct {
 	translator *translator.CombinedTranslator
 	plugins    plug.Plugin
 
-	istioClient     kube.Client
+	apiClient       apiclient.Client
 	proxyTranslator ProxyTranslator
 
 	uniqueClients krt.Collection[ir.UniqlyConnectedClient]
@@ -74,6 +72,7 @@ type GatewayXdsResources struct {
 
 	reports reports.ReportMap
 	// Clusters are items in the CDS response payload.
+	// +krtEqualsTodo include CDC resources in equality for diff detection
 	Clusters     []envoycachetypes.ResourceWithTTL
 	ClustersHash uint64
 
@@ -135,7 +134,7 @@ func NewProxySyncer(
 	ctx context.Context,
 	controllerName string,
 	mgr manager.Manager,
-	client kube.Client,
+	client apiclient.Client,
 	uniqueClients krt.Collection[ir.UniqlyConnectedClient],
 	mergedPlugins plug.Plugin,
 	commonCols *collections.CommonCollections,
@@ -148,7 +147,7 @@ func NewProxySyncer(
 		agentgatewayClassName:    agentgatewayClassName,
 		commonCols:               commonCols,
 		mgr:                      mgr,
-		istioClient:              client,
+		apiClient:                client,
 		proxyTranslator:          NewProxyTranslator(xdsCache),
 		uniqueClients:            uniqueClients,
 		translator:               translator.NewCombinedTranslator(ctx, mergedPlugins, commonCols, validator),
@@ -361,7 +360,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 
 	// wait for krt collections to sync
 	logger.Info("waiting for cache to sync")
-	s.istioClient.WaitForCacheSync(
+	s.apiClient.WaitForCacheSync(
 		"kube gw proxy syncer",
 		ctx.Done(),
 		s.waitForSync...,

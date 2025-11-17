@@ -3,6 +3,7 @@ package query
 import (
 	"context"
 	"fmt"
+	"maps"
 	"strings"
 
 	"istio.io/istio/pkg/kube/krt"
@@ -11,7 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 	apixv1alpha1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
@@ -134,9 +135,7 @@ func (r *RoutesForGwResult) setListenerResult(parent client.Object, listenerName
 }
 
 func (r *RoutesForGwResult) merge(r2 *RoutesForGwResult) {
-	for k, v := range r2.listenerResults {
-		r.listenerResults[k] = v
-	}
+	maps.Copy(r.listenerResults, r2.listenerResults)
 	r.RouteErrors = append(r.RouteErrors, r2.RouteErrors...)
 }
 
@@ -327,7 +326,7 @@ func (r *gatewayQueries) GetSecretForRef(kctx krt.HandlerContext, ctx context.Co
 	return r.collections.Secrets.GetSecret(kctx, f, secretRef)
 }
 
-func ReferenceAllowed(ctx context.Context, fromgk metav1.GroupKind, fromns string, togk metav1.GroupKind, toname string, grantsInToNs []apiv1beta1.ReferenceGrant) bool {
+func ReferenceAllowed(ctx context.Context, fromgk metav1.GroupKind, fromns string, togk metav1.GroupKind, toname string, grantsInToNs []gwv1b1.ReferenceGrant) bool {
 	for _, refGrant := range grantsInToNs {
 		for _, from := range refGrant.Spec.From {
 			if string(from.Namespace) != fromns {

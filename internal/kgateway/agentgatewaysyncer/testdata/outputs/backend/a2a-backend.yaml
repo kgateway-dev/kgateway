@@ -16,9 +16,9 @@ Listeners:
   name: http
   protocol: HTTP
 Policies:
-- name: a2a/default/a2a-agent/9090
-  spec:
+- backend:
     a2a: {}
+  name: a2a/default/a2a-agent/9090
   target:
     backend: default/a2a-agent:9090
 Routes:

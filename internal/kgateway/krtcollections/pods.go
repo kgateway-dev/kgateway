@@ -13,6 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
@@ -142,10 +143,10 @@ func (c LocalityPod) Equals(in LocalityPod) bool {
 		slices.Equal(c.Addresses, in.Addresses)
 }
 
-func newNodeCollection(istioClient kube.Client, krtOptions krtutil.KrtOptions) krt.Collection[NodeMetadata] {
+func newNodeCollection(client apiclient.Client, krtOptions krtutil.KrtOptions) krt.Collection[NodeMetadata] {
 	nodeClient := kclient.NewFiltered[*corev1.Node](
-		istioClient,
-		kclient.Filter{ObjectFilter: istioClient.ObjectFilter()},
+		client,
+		kclient.Filter{ObjectFilter: client.ObjectFilter()},
 	)
 	nodes := krt.WrapClient(nodeClient, krtOptions.ToOptions("Nodes")...)
 	return NewNodeMetadataCollection(nodes)
@@ -160,13 +161,13 @@ func NewNodeMetadataCollection(nodes krt.Collection[*corev1.Node]) krt.Collectio
 	})
 }
 
-func NewPodsCollection(istioClient kube.Client, krtOptions krtutil.KrtOptions) (krt.Collection[LocalityPod], krt.Collection[WrappedPod]) {
-	podClient := kclient.NewFiltered[*corev1.Pod](istioClient, kclient.Filter{
+func NewPodsCollection(client apiclient.Client, krtOptions krtutil.KrtOptions) (krt.Collection[LocalityPod], krt.Collection[WrappedPod]) {
+	podClient := kclient.NewFiltered[*corev1.Pod](client, kclient.Filter{
 		ObjectTransform: kube.StripPodUnusedFields,
-		ObjectFilter:    istioClient.ObjectFilter(),
+		ObjectFilter:    client.ObjectFilter(),
 	})
 	pods := krt.WrapClient(podClient, krtOptions.ToOptions("Pods")...)
-	nodes := newNodeCollection(istioClient, krtOptions)
+	nodes := newNodeCollection(client, krtOptions)
 	return NewLocalityPodsCollection(nodes, pods, krtOptions), NewPodWrapperCollection(pods, krtOptions)
 }
 

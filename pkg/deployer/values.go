@@ -3,8 +3,6 @@ package deployer
 import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
@@ -90,10 +88,6 @@ type HelmGateway struct {
 	// stats values
 	Stats *HelmStatsConfig `json:"stats,omitempty"`
 
-	// AI extension values
-	// Deprecated: Envoy-based AI gateway is deprecated in v2.1 and will be removed in v2.2.
-	AIExtension *HelmAIExtension `json:"aiExtension,omitempty"`
-
 	// agentgateway integration values
 	CustomConfigMapName *string `json:"customConfigMapName,omitempty"`
 }
@@ -173,29 +167,6 @@ type HelmStatsConfig struct {
 	RoutePrefixRewrite *string `json:"routePrefixRewrite,omitempty"`
 	EnableStatsRoute   *bool   `json:"enableStatsRoute,omitempty"`
 	StatsPrefixRewrite *string `json:"statsPrefixRewrite,omitempty"`
-}
-
-type HelmAIExtension struct {
-	Enabled         bool                         `json:"enabled,omitempty"`
-	Image           *HelmImage                   `json:"image,omitempty"`
-	SecurityContext *corev1.SecurityContext      `json:"securityContext,omitempty"`
-	Resources       *corev1.ResourceRequirements `json:"resources,omitempty"`
-	Env             []corev1.EnvVar              `json:"env,omitempty"`
-	Ports           []corev1.ContainerPort       `json:"ports,omitempty"`
-	Stats           []byte                       `json:"stats,omitempty"`
-	Tracing         string                       `json:"tracing,omitempty"`
-}
-
-type helmAITracing struct {
-	EndPoint gwv1.AbsoluteURI      `json:"endpoint"`
-	Sampler  *helmAITracingSampler `json:"sampler,omitempty"`
-	Timeout  *metav1.Duration      `json:"timeout,omitempty"`
-	Protocol *string               `json:"protocol,omitempty"`
-}
-
-type helmAITracingSampler struct {
-	SamplerType *string `json:"type,omitempty"`
-	SamplerArg  *string `json:"arg,omitempty"`
 }
 
 type HelmInferenceExtension struct {

@@ -8,7 +8,6 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
 	"github.com/kgateway-dev/kgateway/v2/internal/version"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/probes"
 )
 
 func main() {
@@ -21,7 +20,6 @@ func main() {
 				fmt.Println(version.String())
 				return nil
 			}
-			probes.StartLivenessProbeServer(cmd.Context())
 			s, err := setup.New()
 			if err != nil {
 				return fmt.Errorf("error setting up kgateway: %w", err)

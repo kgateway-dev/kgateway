@@ -4,15 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"path/filepath"
 	"sync"
 	"testing"
 
-	"github.com/solo-io/go-utils/contextutils"
-	"go.uber.org/zap"
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/kubetypes"
@@ -23,16 +20,16 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/utils/ptr"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/yaml"
 
-	ctrl "sigs.k8s.io/controller-runtime"
-
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
+	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
@@ -43,7 +40,6 @@ type postStartFunc func(t *testing.T, ctx context.Context, client istiokube.CLIC
 
 func RunController(
 	t *testing.T,
-	logger *zap.Logger,
 	globalSettings *apisettings.Settings,
 	testEnv *envtest.Environment,
 	postStart postStartFunc,
@@ -56,6 +52,7 @@ func RunController(
 		xdsPort int,
 		agwXdsPort int,
 	),
+	newAPIClientFn func(restconfig *rest.Config) (apiclient.Client, error),
 ) {
 	if globalSettings == nil {
 		st, err := apisettings.BuildSettings()
@@ -74,7 +71,6 @@ func RunController(
 
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
-	ctx = contextutils.WithExistingLogger(ctx, logger.Sugar())
 
 	cfg, err := testEnv.Start()
 	if err != nil {
@@ -84,6 +80,14 @@ func RunController(
 
 	kubeconfig := GenerateKubeConfiguration(t, cfg)
 	t.Log("kubeconfig:", kubeconfig)
+
+	var apiClient apiclient.Client
+	if newAPIClientFn != nil {
+		apiClient, err = newAPIClientFn(cfg)
+		if err != nil {
+			t.Fatalf("failed to create api client: %v", err)
+		}
+	}
 
 	client, err := istiokube.NewCLIClient(istiokube.NewClientConfigForRestConfig(cfg))
 	if err != nil {
@@ -122,6 +126,7 @@ func RunController(
 	}
 
 	s, err := setup.New(
+		setup.WithAPIClient(apiClient),
 		setup.WithGlobalSettings(globalSettings),
 		setup.WithRestConfig(cfg),
 		setup.WithExtraPlugins(extraPlugins),
@@ -158,13 +163,11 @@ func RunController(
 	}
 
 	// start kgateway
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		if err := s.Start(ctx); err != nil {
-			log.Fatalf("error starting kgateway %v", err)
+			t.Errorf("error starting kgateway %v", err)
 		}
-	}()
+	})
 
 	xdsPort := l.Addr().(*net.TCPAddr).Port
 	agwXdsPort := l2.Addr().(*net.TCPAddr).Port
@@ -245,9 +248,9 @@ func ApplyPodStatusFromFile(ctx context.Context, c istiokube.CLIClient, defaultN
 		return fmt.Errorf("reading YAML file %q: %w", filePath, err)
 	}
 
-	docs := bytes.Split(data, []byte("\n---\n"))
+	docs := bytes.SplitSeq(data, []byte("\n---\n"))
 
-	for _, doc := range docs {
+	for doc := range docs {
 		doc = bytes.TrimSpace(doc)
 		if len(doc) == 0 {
 			continue

@@ -9,7 +9,6 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
-	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/listenerset"
 	. "github.com/kgateway-dev/kgateway/v2/test/e2e/tests"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/install"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
@@ -26,10 +25,6 @@ func TestListenerSet(t *testing.T) {
 			ValuesManifestFile:        e2e.EmptyValuesManifestPath,
 		},
 	)
-
-	if !listenerset.RequiredCrdExists(testInstallation) {
-		t.Skip("Skipping as the XListenerSet CRD is not installed")
-	}
 
 	// Set the env to the install namespace if it is not already set
 	if !nsEnvPredefined {

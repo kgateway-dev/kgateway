@@ -233,80 +233,141 @@ build_test_pattern() {
 
     # Check if it's a test method within a suite (e.g., TestCookieSessionPersistence)
     if [[ "$pattern" == Test* ]]; then
-        # Search for method with exact or partial match
-        local method_match
-        method_match=$(git grep "func (.*) ${pattern}[^(]*\(\)" -- 'test/e2e/features' 2>/dev/null | head -1 || true)
+        # Search for method with exact or partial match (find ALL matches, not just first)
+        local method_matches
+        method_matches=$(git grep "func (.*) ${pattern}[^(]*\(\)" -- 'test/e2e/features' 2>/dev/null || true)
 
-        if [[ -n "$method_match" ]]; then
-            # Extract the actual full method name (strip line numbers and file path)
+        if [[ -n "$method_matches" ]]; then
+            # Extract the actual full method name from first match
             local method_name
-            method_name=$(echo "$method_match" | sed -E 's/^[^:]*:[0-9]*:func .* (Test[^(]*)\(\).*/\1/')
+            method_name=$(echo "$method_matches" | head -1 | sed -E 's/^[^:]*:[0-9]*:func .* (Test[^(]*)\(\).*/\1/')
 
-            # Find which file contains this method
-            local method_file
-            method_file=$(git grep -l "func (.*) ${method_name}\(\)" -- 'test/e2e/features' 2>/dev/null | head -1 || true)
+            # Find ALL files containing this method
+            local method_files
+            method_files=$(git grep -l "func (.*) ${method_name}\(\)" -- 'test/e2e/features' 2>/dev/null || true)
 
-            if [[ -n "$method_file" ]]; then
-                # Found a test method, now find which suite it belongs to
-                # Get the package import path relative to the features directory
-                local rel_path
-                rel_path=$(echo "$method_file" | sed 's|test/e2e/features/||' | xargs dirname)
+            if [[ -n "$method_files" ]]; then
+                # Build patterns for all matching suites
+                local patterns=()
+                local suite_info=()
 
-                # Find the suite registration that imports from this path
-                # This handles both simple package names and import aliases
-                local suite_line
-                suite_line=$(git grep "Register(\"[^\"]*\", .*\\.NewTestingSuite)" -- 'test/e2e/tests/*.go' 2>/dev/null | \
-                    grep -v "^\s*//" | \
-                    while IFS=: read -r file line_content; do
-                        # Extract the package identifier from the Register call
-                        pkg_id=$(echo "$line_content" | sed -E 's/.*Register\("[^"]*", ([^.]*)\..*/\1/')
-                        # Check if this package identifier's import path matches our method's path
-                        # Look for either:
-                        # 1. Aliased import: pkg_id "path/to/rel_path"
-                        # 2. Non-aliased import: "path/to/rel_path" (where pkg_id matches the last component)
-                        if git grep -q "[[:space:]]${pkg_id}[[:space:]]\".*/${rel_path}\"" "$file" 2>/dev/null; then
-                            echo "${file}:${line_content}"
-                            break
-                        elif git grep -q "\".*/${rel_path}\"" "$file" 2>/dev/null; then
-                            # For non-aliased imports, verify pkg_id matches the last path component
-                            local import_line
-                            import_line=$(git grep "\".*/${rel_path}\"" "$file" 2>/dev/null | head -1)
-                            # Extract the last component of the import path
-                            local last_component
-                            last_component=$(echo "$import_line" | sed -E 's|.*/([^/"]+)".*|\1|')
-                            if [[ "$last_component" == "$pkg_id" ]]; then
+                while IFS= read -r method_file; do
+                    # Get the package import path relative to the features directory
+                    local rel_path
+                    rel_path=$(echo "$method_file" | sed 's|test/e2e/features/||' | xargs dirname)
+
+                    # Find the suite registration that imports from this path
+                    local suite_line
+                    suite_line=$(git grep "Register(\"[^\"]*\", .*\\.NewTestingSuite)" -- 'test/e2e/tests/*.go' 2>/dev/null | \
+                        grep -v "^\s*//" | \
+                        while IFS=: read -r file line_content; do
+                            # Extract the package identifier from the Register call
+                            pkg_id=$(echo "$line_content" | sed -E 's/.*Register\("[^"]*", ([^.]*)\..*/\1/')
+                            # Check if this package identifier's import path matches our method's path
+                            # Look for either:
+                            # 1. Aliased import: pkg_id "path/to/features/rel_path"
+                            # 2. Non-aliased import: "path/to/features/rel_path" (where pkg_id matches the last component)
+                            # IMPORTANT: Match exactly /features/rel_path" to avoid matching /features/foo/rel_path"
+                            if git grep -q "[[:space:]]${pkg_id}[[:space:]]\".*\/features\/${rel_path}\"" "$file" 2>/dev/null; then
                                 echo "${file}:${line_content}"
                                 break
+                            elif git grep -q "\".*\/features\/${rel_path}\"" "$file" 2>/dev/null; then
+                                # For non-aliased imports, verify pkg_id matches the last path component
+                                local import_line
+                                import_line=$(git grep "\".*\/features\/${rel_path}\"" "$file" 2>/dev/null | head -1)
+                                # Extract the last component of the import path
+                                local last_component
+                                last_component=$(echo "$import_line" | sed -E 's|.*/([^/"]+)".*|\1|')
+                                if [[ "$last_component" == "$pkg_id" ]]; then
+                                    echo "${file}:${line_content}"
+                                    break
+                                fi
+                            fi
+                        done || true)
+
+                    if [[ -n "$suite_line" ]]; then
+                        local suite_name
+                        suite_name=$(echo "$suite_line" | sed -E 's/.*Register\("([^"]*)".*/\1/')
+
+                        local file
+                        file=$(echo "$suite_line" | cut -d: -f1)
+
+                        local parent_test
+                        parent_test=$(git grep "func Test.*\(t \*testing\.T\)" "$file" | cut -d: -f3- | head -1 | sed -E 's/func (Test[^(]*).*/\1/')
+
+                        if [[ -z "$parent_test" ]]; then
+                            local dir=$(dirname "$file")
+                            local base=$(basename "$file" .go)
+                            if [[ "$base" == *_tests ]]; then
+                                local alt_file="${dir}/${base%s}.go"
+                                if [[ -f "$alt_file" ]]; then
+                                    parent_test=$(git grep "func Test.*\(t \*testing\.T\)" "$alt_file" | cut -d: -f3- | head -1 | sed -E 's/func (Test[^(]*).*/\1/')
+                                fi
                             fi
                         fi
-                    done | head -1 || true)
 
-                if [[ -n "$suite_line" ]]; then
-                    local suite_name
-                    suite_name=$(echo "$suite_line" | sed -E 's/.*Register\("([^"]*)".*/\1/')
-
-                    local file
-                    file=$(echo "$suite_line" | cut -d: -f1)
-
-                    local parent_test
-                    parent_test=$(git grep "func Test.*\(t \*testing\.T\)" "$file" | cut -d: -f3- | head -1 | sed -E 's/func (Test[^(]*).*/\1/')
-
-                    if [[ -z "$parent_test" ]]; then
-                        local dir=$(dirname "$file")
-                        local base=$(basename "$file" .go)
-                        if [[ "$base" == *_tests ]]; then
-                            local alt_file="${dir}/${base%s}.go"
-                            if [[ -f "$alt_file" ]]; then
-                                parent_test=$(git grep "func Test.*\(t \*testing\.T\)" "$alt_file" | cut -d: -f3- | head -1 | sed -E 's/func (Test[^(]*).*/\1/')
-                            fi
+                        if [[ -n "$parent_test" ]]; then
+                            patterns+=("^${parent_test}$/^${suite_name}$/^${method_name}$")
+                            suite_info+=("${parent_test} -> ${suite_name} -> ${method_name}")
                         fi
                     fi
+                done <<< "$method_files"
 
-                    if [[ -n "$parent_test" ]]; then
-                        log_info "Running suite test: ${parent_test} -> ${suite_name} -> ${method_name}"
-                        echo "^${parent_test}$/^${suite_name}$/^${method_name}$"
-                        return
+                # If we found patterns, combine them and return
+                if [[ ${#patterns[@]} -gt 0 ]]; then
+                    if [[ ${#patterns[@]} -eq 1 ]]; then
+                        log_info "Running suite test: ${suite_info[0]}"
+                        echo "${patterns[0]}"
+                    else
+                        log_info "Running test in ${#patterns[@]} suites:"
+                        for info in "${suite_info[@]}"; do
+                            log_info "  - ${info}"
+                        done
+                        # For multiple patterns, we need to combine them intelligently
+                        # If they share the same suite/method but different parent tests,
+                        # we can use alternation at the parent level
+                        # Otherwise, we need to run them separately or use complex regex
+
+                        # Extract parent tests, suite names, and method names
+                        local parent_tests=()
+                        local suite_names=()
+                        local method_names=()
+                        for pattern in "${patterns[@]}"; do
+                            # Pattern format: ^ParentTest$/^Suite$/^Method$
+                            local parts
+                            IFS='/' read -ra parts <<< "$pattern"
+                            parent_tests+=("${parts[0]#^}")
+                            parent_tests[-1]="${parent_tests[-1]%\$}"
+                            suite_names+=("${parts[1]#^}")
+                            suite_names[-1]="${suite_names[-1]%\$}"
+                            method_names+=("${parts[2]#^}")
+                            method_names[-1]="${method_names[-1]%\$}"
+                        done
+
+                        # Check if suite and method are the same across all patterns
+                        local first_suite="${suite_names[0]}"
+                        local first_method="${method_names[0]}"
+                        local same_suite_method=true
+                        for ((i=1; i<${#suite_names[@]}; i++)); do
+                            if [[ "${suite_names[i]}" != "$first_suite" ]] || [[ "${method_names[i]}" != "$first_method" ]]; then
+                                same_suite_method=false
+                                break
+                            fi
+                        done
+
+                        if [[ "$same_suite_method" == true ]]; then
+                            # Same suite/method, different parents - use alternation at parent level
+                            local parent_alternation
+                            parent_alternation=$(IFS='|'; echo "${parent_tests[*]}")
+                            echo "^(${parent_alternation})$/^${first_suite}$/^${first_method}$"
+                        else
+                            # Different suites or methods - combine with | at top level
+                            local combined_pattern
+                            combined_pattern=$(IFS='|'; echo "${patterns[*]}")
+                            echo "(${combined_pattern})"
+                        fi
                     fi
+                    return
                 fi
             fi
         fi
@@ -675,7 +736,13 @@ main() {
     set -e
 
     # Check if no tests were run
-    if grep -q '\[no tests to run\]' "$test_output_file"; then
+    # Look for various indicators that no tests matched:
+    # - "[no tests to run]" from gotestsum
+    # - "DONE 0 tests" from test output
+    # - "EMPTY" package with cached result
+    if grep -q '\[no tests to run\]' "$test_output_file" || \
+       grep -q 'DONE 0 tests' "$test_output_file" || \
+       (grep -q 'EMPTY' "$test_output_file" && grep -q 'DONE 0 tests' "$test_output_file"); then
         echo ""
         log_error "No tests were run! The pattern '${run_pattern}' did not match any tests."
         log_error ""

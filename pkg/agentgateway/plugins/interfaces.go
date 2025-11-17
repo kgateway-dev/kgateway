@@ -8,14 +8,14 @@ import (
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 )
 
 // AgwPolicyStatusSyncHandler defines a function that handles status syncing for a specific policy type in AgentGateway
-type AgwPolicyStatusSyncHandler func(ctx context.Context, client client.Client, namespacedName types.NamespacedName, status gwv1.PolicyStatus) error
+type AgwPolicyStatusSyncHandler func(ctx context.Context, client apiclient.Client, namespacedName types.NamespacedName, status gwv1.PolicyStatus) error
 
 type PolicyPlugin struct {
 	Policies       krt.Collection[AgwPolicy]

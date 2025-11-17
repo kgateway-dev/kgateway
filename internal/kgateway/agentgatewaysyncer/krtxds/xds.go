@@ -35,15 +35,16 @@ import (
 	"istio.io/istio/pkg/ptr"
 	"istio.io/istio/pkg/security"
 	"istio.io/istio/pkg/slices"
-	_ "istio.io/istio/pkg/util/protomarshal" // Ensure we get the more efficient vtproto gRPC encoder
 	"istio.io/istio/pkg/util/sets"
 	"istio.io/istio/pkg/xds"
 	"k8s.io/apimachinery/pkg/types"
 
+	_ "istio.io/istio/pkg/util/protomarshal" // Ensure we get the more efficient vtproto gRPC encoder
+
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/nack"
+	kgwxds "github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
-
-	kgwxds "github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
@@ -162,8 +163,8 @@ func Collection[T IntoProto[TT], TT proto.Message](collection krt.Collection[T],
 	return PerGatewayCollection(collection, nil, krtopts)
 }
 
-// NewDiscoveryServer creates DiscoveryServer that sources data from Pilot's internal mesh data structures
-func NewDiscoveryServer(debugger *krt.DebugHandler, reg ...Registration) *DiscoveryServer {
+// NewDiscoveryServer creates a DiscoveryServer for agentgateway that sources data from KRT collections via registered generators
+func NewDiscoveryServer(debugger *krt.DebugHandler, eventPublisher *nack.NackEventPublisher, reg ...Registration) *DiscoveryServer {
 	out := &DiscoveryServer{
 		concurrentPushLimit: make(chan struct{}, features.PushThrottle),
 		RequestRateLimit:    rate.NewLimiter(rate.Limit(features.RequestLimit), 1),
@@ -174,6 +175,7 @@ func NewDiscoveryServer(debugger *krt.DebugHandler, reg ...Registration) *Discov
 		debugHandlers:       map[string]string{},
 		adsClients:          map[string]*Connection{},
 		krtDebugger:         debugger,
+		nackHandler:         eventPublisher,
 		DebounceOptions: DebounceOptions{
 			DebounceAfter: features.DebounceAfter,
 			DebounceMax:   features.DebounceMax,
@@ -233,6 +235,8 @@ type DiscoveryServer struct {
 	krtDebugger   *krt.DebugHandler
 	pushOrder     []string
 	registrations []CollectionRegistration
+
+	nackHandler *nack.NackEventPublisher
 }
 
 // Proxy contains information about an specific instance of a proxy.
@@ -300,10 +304,7 @@ func (s *DiscoveryServer) StreamDeltas(stream pilotxds.DeltaDiscoveryStream) err
 		return status.Errorf(codes.ResourceExhausted, "request rate limit exceeded: %v", err)
 	}
 
-	id, err := s.authenticate(ctx)
-	if err != nil {
-		return status.Error(codes.Unauthenticated, err.Error())
-	}
+	id := s.authenticate(ctx)
 	if id != nil {
 		log.Debug("authenticated XDS", "peer", peerAddr, "identity", id)
 	} else {
@@ -476,7 +477,7 @@ func (s *DiscoveryServer) processDeltaRequest(req *discovery.DeltaDiscoveryReque
 	stype := v3.GetShortType(req.TypeUrl)
 	log.Debug("ADS: REQ resources", "type", stype, "connection", con.ID(), "subscribe", len(req.ResourceNamesSubscribe), "unsubscribe", len(req.ResourceNamesUnsubscribe), "nonce", req.ResponseNonce)
 
-	shouldRespond := shouldRespondDelta(con, req)
+	shouldRespond := shouldRespondDelta(con, req, s.nackHandler)
 	if !shouldRespond {
 		log.Debug("no response needed")
 		return nil
@@ -501,7 +502,7 @@ func (s *DiscoveryServer) processDeltaRequest(req *discovery.DeltaDiscoveryReque
 
 // shouldRespondDelta determines whether this request needs to be responded back. It applies the ack/nack rules as per xds protocol
 // using WatchedResource for previous state and discovery request for the current state.
-func shouldRespondDelta(con *Connection, request *discovery.DeltaDiscoveryRequest) bool {
+func shouldRespondDelta(con *Connection, request *discovery.DeltaDiscoveryRequest, nackHandler *nack.NackEventPublisher) bool {
 	stype := v3.GetShortType(request.TypeUrl)
 
 	// If there is an error in request that means previous response is erroneous.
@@ -516,6 +517,17 @@ func shouldRespondDelta(con *Connection, request *discovery.DeltaDiscoveryReques
 			wr.LastError = request.ErrorDetail.GetMessage()
 			return wr
 		})
+
+		if nackHandler != nil {
+			gateway := kgwxds.AgentgatewayID(con.node)
+			nackEvent := nack.NackEvent{
+				Gateway:   gateway,
+				TypeUrl:   request.TypeUrl,
+				ErrorMsg:  request.ErrorDetail.GetMessage(),
+				Timestamp: time.Now(),
+			}
+			nackHandler.PublishNack(&nackEvent)
+		}
 		return false
 	}
 
@@ -761,17 +773,17 @@ func (s *DiscoveryServer) NextVersion() string {
 	return time.Now().Format(time.RFC3339) + "/" + strconv.FormatUint(s.pushVersion.Inc(), 10)
 }
 
-func (s *DiscoveryServer) authenticate(ctx context.Context) (*types.NamespacedName, error) {
+func (s *DiscoveryServer) authenticate(ctx context.Context) *types.NamespacedName {
 	peer, ok := ctx.Value(kgwxds.PeerCtxKey).(*security.Caller)
 	if !ok {
 		// Not authenticated. If XDS auth was enabled, this will be rejected by the middleware, so no need to fail here
-		return nil, nil
+		return nil
 	}
 	return &types.NamespacedName{
 		Namespace: peer.KubernetesInfo.PodNamespace,
 		// We assume the SA and gateway name are the same
 		Name: peer.KubernetesInfo.PodServiceAccount,
-	}, nil
+	}
 }
 
 func (s *DiscoveryServer) ProxyNeedsPush(proxy *Proxy, request *PushRequest) bool {
@@ -804,10 +816,7 @@ func (conn *Connection) watchedResourcesByOrder(pushOrder []string) []*model.Wat
 // to the tracking map.
 func (s *DiscoveryServer) initConnection(node *envoycorev3.Node, con *Connection, id *types.NamespacedName) error {
 	// Setup the initial proxy metadata
-	proxy, err := s.initProxyMetadata(node)
-	if err != nil {
-		return err
-	}
+	proxy := s.initProxyMetadata(node)
 	// First request so initialize connection id and start tracking it.
 	con.SetID(connectionID(proxy.ID))
 	con.node = node
@@ -979,7 +988,7 @@ func debounce(ch chan *PushRequest, stopCh <-chan struct{}, opts DebounceOptions
 	free := true
 	freeCh := make(chan struct{}, 1)
 
-	push := func(req *PushRequest, debouncedEvents int, startDebounce time.Time) {
+	push := func(req *PushRequest, debouncedEvents int) {
 		pushFn(req)
 		updateSent.Add(int64(debouncedEvents))
 		//debounceTime.Record(time.Since(startDebounce).Seconds())
@@ -1009,7 +1018,7 @@ func debounce(ch chan *PushRequest, stopCh <-chan struct{}, opts DebounceOptions
 					)
 				}
 				free = false
-				go push(req, debouncedEvents, startDebounce)
+				go push(req, debouncedEvents)
 				req = nil
 				debouncedEvents = 0
 			}
@@ -1043,20 +1052,20 @@ func debounce(ch chan *PushRequest, stopCh <-chan struct{}, opts DebounceOptions
 }
 
 func configsUpdated(req *PushRequest) string {
-	configs := ""
+	var configs strings.Builder
 	count := 0
 	for _, keys := range req.ConfigsUpdated {
 		count += len(keys)
 		for key := range keys {
-			configs += key
+			configs.WriteString(key)
 			break
 		}
 	}
 	if count > 1 {
 		more := " and " + strconv.Itoa(count-1) + " more configs"
-		configs += more
+		configs.WriteString(more)
 	}
-	return configs
+	return configs.String()
 }
 
 func nonce(noncePrefix string) string {
@@ -1066,13 +1075,12 @@ func nonce(noncePrefix string) string {
 // initProxyMetadata initializes just the basic metadata of a proxy. This is decoupled from
 // initProxyState such that we can perform authorization before attempting expensive computations to
 // fully initialize the proxy.
-func (s *DiscoveryServer) initProxyMetadata(node *envoycorev3.Node) (*Proxy, error) {
-	proxy := Proxy{
+func (s *DiscoveryServer) initProxyMetadata(node *envoycorev3.Node) *Proxy {
+	return &Proxy{
 		RWMutex:          sync.RWMutex{},
 		ID:               node.Id,
 		WatchedResources: nil,
 	}
-	return &proxy, nil
 }
 
 func (s *DiscoveryServer) findGenerator(url string) (CollectionGenerator, bool) {

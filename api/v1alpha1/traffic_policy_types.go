@@ -39,7 +39,7 @@ type TrafficPolicyList struct {
 // TrafficPolicySpec defines the desired state of a traffic policy.
 // Note: Backend attachment is only supported for agentgateway.
 // +kubebuilder:validation:XValidation:rule="!has(self.autoHostRewrite) || ((has(self.targetRefs) && self.targetRefs.all(r, r.kind == 'HTTPRoute')) || (has(self.targetSelectors) && self.targetSelectors.all(r, r.kind == 'HTTPRoute')))",message="autoHostRewrite can only be used when targeting HTTPRoute resources"
-// +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.timeouts) ? (has(self.retry.perTryTimeout) && has(self.timeouts.request) ? duration(self.retry.perTryTimeout) < duration(self.timeouts.request) : true) : true",message="retry.perTryTimeout must be lesser than timeouts.request"
+// +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.timeouts) ? (has(self.retry.perTryTimeout) && has(self.timeouts.request) ? duration(self.retry.perTryTimeout) < duration(self.timeouts.request) : true) : true",message="retry.perTryTimeout must be less than timeouts.request"
 // +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.targetRefs) ? self.targetRefs.all(r, (r.kind == 'Gateway' ? has(r.sectionName) : true )) : true",message="targetRefs[].sectionName must be set when targeting Gateway resources with retry policy"
 // +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.targetSelectors) ? self.targetSelectors.all(r, (r.kind == 'Gateway' ? has(r.sectionName) : true )) : true",message="targetSelectors[].sectionName must be set when targeting Gateway resources with retry policy"
 type TrafficPolicySpec struct {
@@ -120,7 +120,7 @@ type TrafficPolicySpec struct {
 	// attached to a route will override any RBAC policies applied to the gateway or listener. In contrast, an
 	// Agentgateway-based Gateway supports cumulative RBAC policies across different attachment points, such that
 	// an RBAC policy attached to a route augments policies applied to the gateway or listener without overriding them.
-	RBAC *RBAC `json:"rbac,omitempty"`
+	RBAC *Authorization `json:"rbac,omitempty"`
 }
 
 // TransformationPolicy config is used to modify envoy behavior at a route level.
@@ -180,11 +180,8 @@ type (
 	HeaderTransformation struct {
 		// Name is the name of the header to interact with.
 		// +required
-		Name HeaderName `json:"name,omitempty"`
-		// Value is the template to apply to generate the output value for the header.
-		// Inja templates are supported for Envoy-based data planes only.
-		// CEL expressions are supported for agentgateway data plane only.
-		// The system will auto-detect the appropriate template format based on the data plane.
+		Name HeaderName `json:"name"`
+		// Value is the Inja template to apply to generate the output value for the header.
 		Value Template `json:"value,omitempty"`
 	}
 )

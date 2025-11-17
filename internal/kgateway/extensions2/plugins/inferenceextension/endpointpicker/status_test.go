@@ -8,7 +8,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/krt/krttest"
@@ -21,6 +20,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -54,7 +54,7 @@ func TestUpdatePoolStatus_NoReferences_NoErrors(t *testing.T) {
 	}
 
 	// Create a fake client with the InferencePool object
-	fakeClient := kube.NewFakeClient(pool)
+	fakeClient := fake.NewClient(t, pool)
 
 	mock := krttest.NewMock(t, []any{})
 	col := krttest.GetMockCollection[ir.HttpRouteIR](mock)
@@ -80,7 +80,7 @@ func TestUpdatePoolStatus_NoReferences_NoErrors(t *testing.T) {
 	}
 
 	// Call the function to update the pool status
-	updated := updatePoolStatus(ctx, commonCol, cli, beIR, "", nil)
+	updated := updatePoolStatus(commonCol, cli, beIR, "", nil)
 
 	// Assert that there are no errors and the status is updated correctly
 	require.NotNil(t, updated)
@@ -139,7 +139,7 @@ func TestUpdatePoolStatus_WithReference_NoErrors(t *testing.T) {
 	}
 
 	// Create a fake client with the InferencePool object
-	fakeClient := kube.NewFakeClient(pool)
+	fakeClient := fake.NewClient(t, pool)
 	mock := krttest.NewMock(t, []any{
 		ir.HttpRouteIR{
 			ObjectSource: ir.ObjectSource{
@@ -176,7 +176,7 @@ func TestUpdatePoolStatus_WithReference_NoErrors(t *testing.T) {
 	}
 
 	// Call the function to update the pool status
-	updated := updatePoolStatus(ctx, commonCol, cli, beIR, "", nil)
+	updated := updatePoolStatus(commonCol, cli, beIR, "", nil)
 
 	// Assert that there are no errors and the status is updated correctly
 	require.NotNil(t, updated)
@@ -258,7 +258,7 @@ func TestUpdatePoolStatus_WithReference_WithErrors(t *testing.T) {
 		},
 	}
 
-	fakeClient := kube.NewFakeClient(pool)
+	fakeClient := fake.NewClient(t, pool)
 	mock := krttest.NewMock(t, []any{
 		ir.HttpRouteIR{
 			ObjectSource: ir.ObjectSource{
@@ -295,7 +295,7 @@ func TestUpdatePoolStatus_WithReference_WithErrors(t *testing.T) {
 	}
 
 	// Call the function to update the pool status with errors
-	updated := updatePoolStatus(ctx, commonCol, cli, beIR, "", nil)
+	updated := updatePoolStatus(commonCol, cli, beIR, "", nil)
 
 	// Assert that there are no errors and the status is updated correctly
 	require.NotNil(t, updated)
@@ -394,7 +394,7 @@ func TestUpdatePoolStatus_DeleteRoute(t *testing.T) {
 	}
 
 	// Create a fake client with the InferencePool object
-	fakeClient := kube.NewFakeClient(pool)
+	fakeClient := fake.NewClient(t, pool)
 	mock := krttest.NewMock(t, []any{
 		ir.HttpRouteIR{
 			ObjectSource: ir.ObjectSource{
@@ -431,7 +431,7 @@ func TestUpdatePoolStatus_DeleteRoute(t *testing.T) {
 	}
 
 	// Call the function to update the pool status with the route
-	updated := updatePoolStatus(ctx, commonCol, cli, beIR, routeUID, nil)
+	updated := updatePoolStatus(commonCol, cli, beIR, routeUID, nil)
 
 	// Assert that there are no errors and the status is updated correctly
 	require.NotNil(t, updated)
@@ -455,7 +455,7 @@ func TestUpdatePoolStatus_WithExtraGws(t *testing.T) {
 	}
 
 	// Create a fake client with the InferencePool object
-	fakeClient := kube.NewFakeClient(pool)
+	fakeClient := fake.NewClient(t, pool)
 	mock := krttest.NewMock(t, []any{}) // no HTTPRouteIRs
 	col := krttest.GetMockCollection[ir.HttpRouteIR](mock)
 
@@ -487,7 +487,7 @@ func TestUpdatePoolStatus_WithExtraGws(t *testing.T) {
 	}
 
 	// Call the function to update the pool status with the extra gateways
-	updated := updatePoolStatus(ctx, commonCol, cli, beIR, "", extraGws)
+	updated := updatePoolStatus(commonCol, cli, beIR, "", extraGws)
 
 	// Assert that the InferencePool status is updated correctly
 	require.NotNil(t, updated)

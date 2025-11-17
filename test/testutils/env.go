@@ -66,6 +66,10 @@ const (
 	// This can be used to override the default KubeCtx created.
 	// The default KubeCtx used is "kind-<ClusterName>"
 	KubeCtx = "KUBE_CTX"
+
+	// DefaultNamespace is the default namespace to use for resources that don't specify one
+	// Typically "default" for kind/k8s clusters, may differ for OpenShift/CRC
+	DefaultNamespace = "DEFAULT_NAMESPACE"
 )
 
 // ShouldSkipInstallAndTeardown returns true if kgateway installation and teardown should be skipped.
@@ -136,4 +140,11 @@ func Cleanup(t TestingT, f func()) {
 		}
 		f()
 	})
+}
+
+// GetDefaultNamespace returns the default namespace to use for resources that don't specify one.
+// This can be overridden via the DEFAULT_NAMESPACE environment variable.
+// Defaults to "default" if not set.
+func GetDefaultNamespace() string {
+	return envutils.GetOrDefault(DefaultNamespace, "default", false)
 }

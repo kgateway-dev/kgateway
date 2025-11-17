@@ -15,21 +15,3 @@ Listeners:
   key: default/example-gateway.http
   name: http
   protocol: HTTP
-Routes:
-- backends:
-  - backend:
-      port: 8000
-      service: default/httpbin.default.svc.cluster.local
-    filters:
-    - directResponse:
-        body: VXNlci1hZ2VudDogKgpEaXNhbGxvdzogL2N1c3RvbQo=
-        status: 200
-    weight: 1
-  hostnames:
-  - www.example.com
-  key: default/example-route.0.0.http
-  listenerKey: default/example-gateway.http
-  matches:
-  - path:
-      pathPrefix: /
-  routeName: default/example-route

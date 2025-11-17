@@ -21,6 +21,7 @@ import (
 )
 
 type EndpointsSettings struct {
+	// +krtEqualsTodo propagate AutoMtls setting into equality
 	EnableAutoMtls bool
 }
 

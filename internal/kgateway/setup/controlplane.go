@@ -26,7 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/krtxds"
-
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/nack"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 )
@@ -66,25 +66,25 @@ type slogAdapterForEnvoy struct {
 // Ensure it implements the interface
 var _ envoylog.Logger = (*slogAdapterForEnvoy)(nil)
 
-func (s *slogAdapterForEnvoy) Debugf(format string, args ...interface{}) {
+func (s *slogAdapterForEnvoy) Debugf(format string, args ...any) {
 	if s.logger.Enabled(context.Background(), slog.LevelDebug) {
 		s.logger.Debug(fmt.Sprintf(format, args...)) //nolint:sloglint // ignore formatting
 	}
 }
 
-func (s *slogAdapterForEnvoy) Infof(format string, args ...interface{}) {
+func (s *slogAdapterForEnvoy) Infof(format string, args ...any) {
 	if s.logger.Enabled(context.Background(), slog.LevelInfo) {
 		s.logger.Info(fmt.Sprintf(format, args...)) //nolint:sloglint // ignore formatting
 	}
 }
 
-func (s *slogAdapterForEnvoy) Warnf(format string, args ...interface{}) {
+func (s *slogAdapterForEnvoy) Warnf(format string, args ...any) {
 	if s.logger.Enabled(context.Background(), slog.LevelWarn) {
 		s.logger.Warn(fmt.Sprintf(format, args...)) //nolint:sloglint // ignore formatting
 	}
 }
 
-func (s *slogAdapterForEnvoy) Errorf(format string, args ...interface{}) {
+func (s *slogAdapterForEnvoy) Errorf(format string, args ...any) {
 	if s.logger.Enabled(context.Background(), slog.LevelError) {
 		s.logger.Error(fmt.Sprintf(format, args...)) //nolint:sloglint // ignore formatting
 	}
@@ -137,6 +137,7 @@ func NewAgwControlPlane(
 	authenticators []security.Authenticator,
 	xdsAuth bool,
 	certWatcher *certwatcher.CertWatcher,
+	eventPublisher *nack.NackEventPublisher,
 	reg ...krtxds.Registration,
 ) {
 	baseLogger := slog.Default().With("component", "agentgateway-controlplane")
@@ -144,7 +145,7 @@ func NewAgwControlPlane(
 	serverOpts := getGRPCServerOpts(authenticators, xdsAuth, certWatcher, baseLogger)
 	grpcServer := grpc.NewServer(serverOpts...)
 
-	ds := krtxds.NewDiscoveryServer(nil, reg...)
+	ds := krtxds.NewDiscoveryServer(nil, eventPublisher, reg...)
 	stop := make(chan struct{})
 	context.AfterFunc(ctx, func() {
 		close(stop)

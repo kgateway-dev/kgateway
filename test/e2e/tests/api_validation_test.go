@@ -439,7 +439,7 @@ spec:
 			wantErrors: []string{"retryOn or statusCodes must be set"},
 		},
 		{
-			name: "TrafficPolicy: retry.perTryTimeout must be lesser than timeouts.request",
+			name: "TrafficPolicy: retry.perTryTimeout must be less than timeouts.request",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
@@ -457,7 +457,7 @@ spec:
     request: 5s
     streamIdle: 60s
 `,
-			wantErrors: []string{"retry.perTryTimeout must be lesser than timeouts.request"},
+			wantErrors: []string{"retry.perTryTimeout must be less than timeouts.request"},
 		},
 		{
 			name: "TrafficPolicy: retry.perTryTimeout must be at least 1ms",
@@ -714,6 +714,7 @@ spec:
 `,
 		},
 		{
+			// TODO: Update this to use the agw based Backend API.
 			name: "AI priorityGroups with no overlapping provider names",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
@@ -749,6 +750,7 @@ spec:
 `,
 		},
 		{
+			// TODO: Update this to use the agw based Backend API.
 			name: "AI priorityGroups with overlapping provider names within a group",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
@@ -785,6 +787,7 @@ spec:
 			wantErrors: []string{`spec.ai.priorityGroups[0].providers: Invalid value: "array": provider names must be unique within a group`},
 		},
 		/* Test is disabled since the CEL rule is disabled to support older k8s versions
+			// TODO: Update this to use the agw based Backend API.
 				{
 					name: "AI priorityGroups with overlapping provider names across groups",
 					input: `---

@@ -141,18 +141,21 @@ func translatePoliciesForBackendTLS(
 		policy := &api.Policy{
 			Name:   btls.Namespace + "/" + btls.Name + ":backendtls" + attachmentName(policyTarget),
 			Target: policyTarget,
-			Spec: &api.PolicySpec{Kind: &api.PolicySpec_BackendTls{
-				BackendTls: &api.PolicySpec_BackendTLS{
-					Root: caCert,
-					// Used for mTLS, not part of the spec currently
-					Cert: nil,
-					Key:  nil,
-					// Not currently in the spec.
-					Insecure: nil,
-					// Validation.Hostname is a required value and validated with CEL
-					Hostname: wrapperspb.String(string(btls.Spec.Validation.Hostname)),
-				},
-			}},
+			Kind: &api.Policy_Backend{
+				Backend: &api.BackendPolicySpec{
+					Kind: &api.BackendPolicySpec_BackendTls{
+						BackendTls: &api.BackendPolicySpec_BackendTLS{
+							Root: caCert,
+							// Used for mTLS, not part of the spec currently
+							Cert: nil,
+							Key:  nil,
+							// Not currently in the spec.
+							Insecure: nil,
+							// Validation.Hostname is a required value and validated with CEL
+							Hostname: wrapperspb.String(string(btls.Spec.Validation.Hostname)),
+						},
+					},
+				}},
 		}
 		policies = append(policies, AgwPolicy{policy})
 	}

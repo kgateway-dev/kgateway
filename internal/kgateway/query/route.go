@@ -120,7 +120,7 @@ func (r *gatewayQueries) GetRouteChain(
 
 	switch typedRoute := route.(type) {
 	case *ir.HttpRouteIR:
-		children = r.getDelegatedChildren(kctx, ctx, parentRef, typedRoute, sets.New[types.NamespacedName]())
+		children = r.getDelegatedChildren(kctx, parentRef, typedRoute, sets.New[types.NamespacedName]())
 	case *ir.TcpRouteIR:
 		// TODO (danehans): Should TCPRoute delegation support be added in the future?
 	case *ir.TlsRouteIR:
@@ -199,7 +199,6 @@ func (r *gatewayQueries) allowedRoutes(resource client.Object, l *gwv1.Listener)
 
 func (r *gatewayQueries) getDelegatedChildren(
 	kctx krt.HandlerContext,
-	ctx context.Context,
 	listenerRef gwv1.ParentReference,
 	parent *ir.HttpRouteIR,
 	visited sets.Set[types.NamespacedName],
@@ -253,7 +252,7 @@ func (r *gatewayQueries) getDelegatedChildren(
 						Name:      gwv1.ObjectName(parent.Name),
 					},
 					ListenerParentRef: listenerRef,
-					Children:          r.getDelegatedChildren(kctx, ctx, listenerRef, &childRoute, visited),
+					Children:          r.getDelegatedChildren(kctx, listenerRef, &childRoute, visited),
 				}
 				refChildren = append(refChildren, routeInfo)
 			}

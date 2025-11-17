@@ -45,8 +45,8 @@ func NewFakeDiscoveryServer(t *testing.T, initialAddress ...agentgatewaysyncer.A
 		krtxds.Collection[agentgatewaysyncer.Address, *api.Address](xdsAddress, opts),
 		krtxds.PerGatewayCollection[agwir.AgwResource, *api.Resource](xdsResource, agwResourcesByGateway, opts),
 	}
-
-	s := krtxds.NewDiscoveryServer(opts.Debugger, reg...)
+	// we won't need a mock nack event publisher for this testing, so we pass nil
+	s := krtxds.NewDiscoveryServer(opts.Debugger, nil, reg...)
 	s.Start(stop)
 	xdsAddress.WaitUntilSynced(stop)
 	xdsResource.WaitUntilSynced(stop)

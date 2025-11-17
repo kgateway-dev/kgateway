@@ -27,7 +27,7 @@ spec:
   terminationGracePeriodSeconds: 0
   containers:
   - name: tcp-echo
-    image: soloio/tcp-echo:latest
+    image: soloio/tcp-echo@sha256:6ad961aa515283242f8f18bfedb41f93ffe8cc983846da139f247fbab7519f16
     ports:
       - containerPort: 1025
     resources:

@@ -22,9 +22,9 @@ func (s *testingSuite) assertCurlService(
 	from kubectl.PodExecOptions,
 	svcName, svcNs string,
 	matchers matchers.HttpResponse,
-	path ...string,
+	path ...string, //nolint:unparam // The variadic params might cause false positive
 ) {
-	s.assertCurlInner(from, fqdn(svcName, svcNs), "", matchers, "", "GET", path...)
+	s.assertCurlInner(from, fqdn(svcName, svcNs), "", matchers, "GET", path...)
 }
 
 // assertCurlServicePost is a helper function to assert a POST request to a service
@@ -32,9 +32,9 @@ func (s *testingSuite) assertCurlServicePost(
 	from kubectl.PodExecOptions,
 	svcName, svcNs string,
 	matchers matchers.HttpResponse,
-	path ...string,
+	path ...string, //nolint:unparam // The variadic params might cause false positive
 ) {
-	s.assertCurlInner(from, fqdn(svcName, svcNs), "", matchers, "", "POST", path...)
+	s.assertCurlInner(from, fqdn(svcName, svcNs), "", matchers, "POST", path...)
 }
 
 func fqdn(name, ns string) string {
@@ -45,9 +45,9 @@ func (s *testingSuite) assertCurlHost(
 	from kubectl.PodExecOptions,
 	targetHost string,
 	matchers matchers.HttpResponse,
-	path ...string,
+	path ...string, //nolint:unparam // The variadic params might cause false positive
 ) {
-	s.assertCurlInner(from, targetHost, "", matchers, "", "GET", path...)
+	s.assertCurlInner(from, targetHost, "", matchers, "GET", path...)
 }
 
 // assertCurlHostPost is a helper function to assert a POST request to a host
@@ -55,9 +55,9 @@ func (s *testingSuite) assertCurlHostPost(
 	from kubectl.PodExecOptions,
 	targetHost string,
 	matchers matchers.HttpResponse,
-	path ...string,
+	path ...string, //nolint:unparam // The variadic params might cause false positive
 ) {
-	s.assertCurlInner(from, targetHost, "", matchers, "", "POST", path...)
+	s.assertCurlInner(from, targetHost, "", matchers, "POST", path...)
 }
 
 func (s *testingSuite) assertCurlInner(
@@ -65,16 +65,12 @@ func (s *testingSuite) assertCurlInner(
 	targetHost string,
 	hostHeader string,
 	matchers matchers.HttpResponse,
-	authHeader string,
 	method string,
 	path ...string,
 ) {
 	curlOpts := []curl.Option{
 		curl.WithHost(targetHost),
 		curl.WithPort(testAppPort),
-	}
-	if authHeader != "" {
-		curlOpts = append(curlOpts, curl.WithHeader("Authorization", authHeader))
 	}
 	if hostHeader != "" {
 		curlOpts = append(curlOpts, curl.WithHostHeader(hostHeader))
@@ -114,5 +110,5 @@ func (s *testingSuite) assertCurlGeneric(
 	svc, method, path string,
 	expected matchers.HttpResponse,
 ) {
-	s.assertCurlInner(from, fqdn(svc, testNamespace), "", expected, "", method, path)
+	s.assertCurlInner(from, fqdn(svc, testNamespace), "", expected, method, path)
 }

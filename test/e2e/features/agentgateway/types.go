@@ -28,17 +28,13 @@ var (
 		Namespace: "default",
 	}
 
-	gatewayParamsObjectMeta = metav1.ObjectMeta{
-		Name:      "kgateway",
-		Namespace: "default",
-	}
-
 	testCases = map[string]*base.TestCase{
 		"TestAgentgatewayHTTPRoute": {
 			Manifests: []string{defaults.HttpbinManifest, defaults.CurlPodManifest, httpRouteManifest},
 		},
 		"TestAgentgatewayTCPRoute": {
-			Manifests: []string{defaults.CurlPodManifest, tcpRouteManifest},
+			Manifests:       []string{defaults.CurlPodManifest, tcpRouteManifest},
+			MinGwApiVersion: base.GwApiRequireTcpRoutes, // TCPRoutes are experimental only
 		},
 	}
 )

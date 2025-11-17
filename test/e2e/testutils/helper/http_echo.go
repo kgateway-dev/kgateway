@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"maps"
 	"net/http"
 	"net/url"
 )
@@ -79,9 +80,7 @@ func CreateRequestFromEchoResponse(r io.ReadCloser) (*http.Request, error) {
 		if response.Headers == nil {
 			response.Headers = make(map[string][]string)
 		}
-		for k, v := range m {
-			response.Headers[k] = v
-		}
+		maps.Copy(response.Headers, m)
 	}
 	return response.ToHttpRequest()
 }

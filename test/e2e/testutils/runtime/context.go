@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
-
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 

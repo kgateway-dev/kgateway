@@ -30,6 +30,7 @@ import (
 )
 
 type TrafficPolicyGatewayExtensionIR struct {
+	// +krtEqualsTodo decide whether extension name should affect equality
 	Name             string
 	ExtType          v1alpha1.GatewayExtensionType
 	ExtAuth          *envoy_ext_authz_v3.ExtAuthz
@@ -109,7 +110,7 @@ func TranslateGatewayExtensionBuilder(commoncol *collections.CommonCollections) 
 
 		switch gExt.Type {
 		case v1alpha1.GatewayExtensionTypeExtAuth:
-			envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, gExt.ExtAuth.GrpcService)
+			envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, &gExt.ExtAuth.GrpcService)
 			if err != nil {
 				// TODO: should this be a warning, and set cluster to blackhole?
 				p.Err = fmt.Errorf("failed to resolve ExtAuth backend: %w", err)
@@ -138,7 +139,7 @@ func TranslateGatewayExtensionBuilder(commoncol *collections.CommonCollections) 
 			}
 
 		case v1alpha1.GatewayExtensionTypeExtProc:
-			envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, gExt.ExtProc.GrpcService)
+			envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, &gExt.ExtProc.GrpcService)
 			if err != nil {
 				p.Err = fmt.Errorf("failed to resolve ExtProc backend: %w", err)
 				return p
@@ -151,7 +152,7 @@ func TranslateGatewayExtensionBuilder(commoncol *collections.CommonCollections) 
 				return p
 			}
 
-			grpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, gExt.RateLimit.GrpcService)
+			grpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, &gExt.RateLimit.GrpcService)
 			if err != nil {
 				p.Err = fmt.Errorf("ratelimit: %w", err)
 				return p
@@ -176,9 +177,6 @@ func ResolveExtGrpcService(
 	// defensive checks, both of these fields are required
 	if grpcService == nil {
 		return nil, errors.New("grpcService not provided")
-	}
-	if grpcService.BackendRef == nil {
-		return nil, errors.New("backend not provided")
 	}
 
 	var backend *ir.BackendObjectIR

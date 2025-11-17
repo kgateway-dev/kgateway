@@ -14,20 +14,21 @@ spec:
           port: 8080
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: TrafficPolicy
+kind: AgentgatewayPolicy
 metadata:
-  name: example-traffic-policy-for-headers
+  name: example-agw-policy-for-headers
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: HTTPRoute
     name: example-route-for-headers
-  transformation:
-    request:
-      set:
-        - name: x-foo-bar
-          value: "'foolen_' + request.headers['content-length']"
-    response:
-      set:
-        - name: x-foo-response
-          value: "'x-add-bar' in request.headers ? 'supersuper' + request.headers['x-add-bar'] : 'notsuper'"
+  traffic:
+    transformation:
+      request:
+        set:
+          - name: x-foo-bar
+            value: "'foolen_' + request.headers['content-length']"
+      response:
+        set:
+          - name: x-foo-response
+            value: "'x-add-bar' in request.headers ? 'supersuper' + request.headers['x-add-bar'] : 'notsuper'"

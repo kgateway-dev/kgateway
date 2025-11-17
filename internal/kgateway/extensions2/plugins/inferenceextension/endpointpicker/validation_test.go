@@ -17,11 +17,6 @@ import (
 )
 
 func TestValidatePool(t *testing.T) {
-	const (
-		ns      = "default"
-		svcName = "test-svc"
-	)
-
 	tests := []struct {
 		name       string
 		modifyPool func(p *inf.InferencePool)
@@ -33,7 +28,7 @@ func TestValidatePool(t *testing.T) {
 			modifyPool: func(p *inf.InferencePool) {
 				p.Spec.EndpointPickerRef.Group = ptr.To(inf.Group("foo.example.com"))
 			},
-			svc:      makeSvc(ns, svcName, 80, corev1.ProtocolTCP, corev1.ServiceTypeClusterIP),
+			svc:      makeSvc(corev1.ProtocolTCP, corev1.ServiceTypeClusterIP),
 			wantErrs: 1,
 		},
 		{
@@ -41,7 +36,7 @@ func TestValidatePool(t *testing.T) {
 			modifyPool: func(p *inf.InferencePool) {
 				p.Spec.EndpointPickerRef.Kind = inf.Kind(wellknown.ConfigMapGVK.Kind)
 			},
-			svc:      makeSvc(ns, svcName, 80, corev1.ProtocolTCP, corev1.ServiceTypeClusterIP),
+			svc:      makeSvc(corev1.ProtocolTCP, corev1.ServiceTypeClusterIP),
 			wantErrs: 1,
 		},
 		{
@@ -63,19 +58,19 @@ func TestValidatePool(t *testing.T) {
 		{
 			name:       "happy path",
 			modifyPool: func(_ *inf.InferencePool) {},
-			svc:        makeSvc(ns, svcName, 80, corev1.ProtocolTCP, corev1.ServiceTypeClusterIP),
+			svc:        makeSvc(corev1.ProtocolTCP, corev1.ServiceTypeClusterIP),
 			wantErrs:   0,
 		},
 		{
 			name:       "ExternalName service rejected",
 			modifyPool: func(_ *inf.InferencePool) {},
-			svc:        makeSvc(ns, svcName, 80, corev1.ProtocolTCP, corev1.ServiceTypeExternalName),
+			svc:        makeSvc(corev1.ProtocolTCP, corev1.ServiceTypeExternalName),
 			wantErrs:   1,
 		},
 		{
 			name:       "UDP port not accepted",
 			modifyPool: func(_ *inf.InferencePool) {},
-			svc:        makeSvc(ns, svcName, 80, corev1.ProtocolUDP, corev1.ServiceTypeClusterIP),
+			svc:        makeSvc(corev1.ProtocolUDP, corev1.ServiceTypeClusterIP),
 			wantErrs:   1,
 		},
 	}
@@ -83,7 +78,7 @@ func TestValidatePool(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Build the pool
-			pool := makeBasePool(ns, svcName)
+			pool := makeBasePool()
 			tc.modifyPool(pool)
 
 			// Collect only the Service input(s), since validatePool() only consumes the Service collection.
@@ -94,7 +89,7 @@ func TestValidatePool(t *testing.T) {
 			// Create a dummy LocalityPod
 			corePod := &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
-					Namespace: ns,
+					Namespace: "default",
 					Name:      "fake-pod",
 					Labels:    map[string]string{"foo": "bar"},
 				},
@@ -126,11 +121,11 @@ func TestValidatePool(t *testing.T) {
 	}
 }
 
-func makeBasePool(ns, svcName string) *inf.InferencePool {
+func makeBasePool() *inf.InferencePool {
 	return &inf.InferencePool{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      svcName,
-			Namespace: ns,
+			Name:      "test-svc",
+			Namespace: "default",
 		},
 		Spec: inf.InferencePoolSpec{
 			Selector: inf.LabelSelector{
@@ -140,24 +135,24 @@ func makeBasePool(ns, svcName string) *inf.InferencePool {
 			EndpointPickerRef: inf.EndpointPickerRef{
 				Group: ptr.To(inf.Group("")),
 				Kind:  inf.Kind(wellknown.ServiceKind),
-				Name:  inf.ObjectName(svcName),
+				Name:  inf.ObjectName("test-svc"),
 				Port:  &inf.Port{Number: inf.PortNumber(80)},
 			},
 		},
 	}
 }
 
-func makeSvc(ns, name string, port int32, proto corev1.Protocol, typ corev1.ServiceType) *corev1.Service {
+func makeSvc(proto corev1.Protocol, typ corev1.ServiceType) *corev1.Service {
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: ns,
+			Name:      "test-svc",
+			Namespace: "default",
 		},
 		Spec: corev1.ServiceSpec{
 			Type: typ,
 			Ports: []corev1.ServicePort{{
 				Name:     "test-port",
-				Port:     port,
+				Port:     int32(80),
 				Protocol: proto,
 			}},
 		},

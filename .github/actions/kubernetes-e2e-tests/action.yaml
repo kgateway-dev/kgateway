@@ -26,7 +26,7 @@ runs:
   steps:
   - name: Execute tests
     env:
-      GO_TEST_USER_ARGS: ${{ inputs.test-args }} -run "${{ inputs.run-regex }}" -v
+      GO_TEST_USER_ARGS: ${{ inputs.test-args }} -run "${{ inputs.run-regex }}"
       CLUSTER_NAME: ${{ inputs.cluster-name }}
       ISTIO_VERSION: ${{ inputs.istio-version }}
     shell: bash
