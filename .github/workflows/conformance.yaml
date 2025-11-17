@@ -33,7 +33,7 @@ jobs:
         api-channel: ${{ matrix.gateway-api-channel }}
 
   kube_inference_extension_conformance_tests:
-    name: kubernetes gateway api inference extension conformance tests (${{ matrix.gateway-api-channel} })
+    name: kubernetes gateway api inference extension conformance tests (${{ matrix.gateway-api-channel}} )
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     if: ${{ !github.event.pull_request.draft }}
@@ -52,7 +52,7 @@ jobs:
         api-channel: ${{ matrix.gateway-api-channel }}
 
   kube_agent_gateway_conformance_tests:
-    name: kubernetes gateway api agent-gateway conformance tests (${{ matrix.gateway-api-channel a}})
+    name: kubernetes gateway api agent-gateway conformance tests (${{ matrix.gateway-api-channel }})
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     if: ${{ !github.event.pull_request.draft }}

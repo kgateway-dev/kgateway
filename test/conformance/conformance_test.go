@@ -2,6 +2,7 @@ package conformance_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
@@ -12,8 +13,6 @@ import (
 	"sigs.k8s.io/gateway-api/conformance"
 	"sigs.k8s.io/gateway-api/conformance/utils/suite"
 	"sigs.k8s.io/gateway-api/pkg/features"
-
-	"encoding/json"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 )
