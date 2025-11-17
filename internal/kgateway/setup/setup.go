@@ -13,6 +13,7 @@ import (
 	"istio.io/istio/pkg/kube/kubetypes"
 	"istio.io/istio/pkg/security"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
@@ -187,7 +188,7 @@ func WithValidator(v validator.Validator) func(*setup) {
 	}
 }
 
-func WithExtraAgwPolicyStatusHandlers(handlers map[string]agwplugins.AgwPolicyStatusSyncHandler) func(*setup) {
+func WithExtraAgwPolicyStatusHandlers(handlers map[schema.GroupVersionKind]agwplugins.AgwPolicyStatusSyncHandler) func(*setup) {
 	return func(s *setup) {
 		s.extraAgwPolicyStatusHandlers = handlers
 	}
@@ -219,7 +220,7 @@ type setup struct {
 	globalSettings               *apisettings.Settings
 	leaderElectionID             string
 	validator                    validator.Validator
-	extraAgwPolicyStatusHandlers map[string]agwplugins.AgwPolicyStatusSyncHandler
+	extraAgwPolicyStatusHandlers map[schema.GroupVersionKind]agwplugins.AgwPolicyStatusSyncHandler
 }
 
 var _ Server = &setup{}

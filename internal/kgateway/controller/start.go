@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"maps"
 	"net/http"
-	"strings"
 	"sync/atomic"
 
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
@@ -92,7 +91,7 @@ type StartConfig struct {
 	UniqueClients     krt.Collection[ir.UniqlyConnectedClient]
 
 	KrtOptions                   krtutil.KrtOptions
-	ExtraAgwPolicyStatusHandlers map[string]agwplugins.AgwPolicyStatusSyncHandler
+	ExtraAgwPolicyStatusHandlers map[schema.GroupVersionKind]agwplugins.AgwPolicyStatusSyncHandler
 
 	// GatewayControllerExtension is an extension that can be used to extend Gateway controller
 	GatewayControllerExtension sdk.GatewayControllerExtension
@@ -215,19 +214,11 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		// Provide extra Kind->GVK mappings to status collections based on external handlers keys
 		if len(cfg.ExtraAgwPolicyStatusHandlers) > 0 {
 			m := map[string]schema.GroupVersionKind{}
-			for k := range cfg.ExtraAgwPolicyStatusHandlers {
-				// Expected format: "group/version, Kind=Kind" (schema.GroupVersionKind.String())
-				parts := strings.SplitN(k, ", Kind=", 2)
-				if len(parts) != 2 || parts[1] == "" {
+			for gvk := range cfg.ExtraAgwPolicyStatusHandlers {
+				if gvk.Kind == "" {
 					continue
 				}
-				gvStr := parts[0]
-				kind := parts[1]
-				gv, err := schema.ParseGroupVersion(strings.TrimSpace(gvStr))
-				if err != nil {
-					continue
-				}
-				m[kind] = gv.WithKind(kind)
+				m[gvk.Kind] = gvk
 			}
 			agwSyncer.StatusCollections().SetExtraGVKMap(m)
 		}

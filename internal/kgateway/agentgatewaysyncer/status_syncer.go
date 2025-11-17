@@ -9,6 +9,7 @@ import (
 	"istio.io/istio/pkg/kube/kclient"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -57,7 +58,7 @@ type AgentGwStatusSyncer struct {
 	tcpRoutes    StatusSyncer[*gwv1a2.TCPRoute, *gwv1a2.TCPRouteStatus]
 	tlsRoutes    StatusSyncer[*gwv1a2.TLSRoute, *gwv1a2.TLSRouteStatus]
 
-	extraAgwPolicyStatusHandlers map[string]agwplugins.AgwPolicyStatusSyncHandler
+	extraAgwPolicyStatusHandlers map[schema.GroupVersionKind]agwplugins.AgwPolicyStatusSyncHandler
 }
 
 func NewAgwStatusSyncer(
@@ -66,7 +67,7 @@ func NewAgwStatusSyncer(
 	client apiclient.Client,
 	statusCollections *status.StatusCollections,
 	cacheSyncs []cache.InformerSynced,
-	extraHandlers map[string]agwplugins.AgwPolicyStatusSyncHandler,
+	extraHandlers map[schema.GroupVersionKind]agwplugins.AgwPolicyStatusSyncHandler,
 ) *AgentGwStatusSyncer {
 	f := kclient.Filter{ObjectFilter: client.ObjectFilter()}
 	syncer := &AgentGwStatusSyncer{
@@ -205,9 +206,8 @@ func (s *AgentGwStatusSyncer) SyncStatus(ctx context.Context, resource status.Re
 		s.agentgatewayPolicies.ApplyStatus(ctx, resource, statusObj)
 	default:
 		// Attempt to handle extra policy kinds via registered handlers.
-		// Match only full "group/version, Kind=Kind" keys (schema.GroupVersionKind.String()).
 		if s.extraAgwPolicyStatusHandlers != nil {
-			key := resource.GroupVersionKind.String()
+			key := resource.GroupVersionKind
 			if handler, ok := s.extraAgwPolicyStatusHandlers[key]; ok {
 				ps, _ := statusObj.(*gwv1.PolicyStatus)
 				if ps == nil {
