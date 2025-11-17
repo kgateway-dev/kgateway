@@ -130,7 +130,7 @@ spec:
   - group: gateway.networking.x-k8s.io
     kind: XListenerSet
     name: test-listenerset
-  ai:
-    defaults:
-      - field: "invalid_object"
-        value: "\"model\":\"gpt-4\"}"
+  extAuth:
+    extensionRef: 
+      name: missing-extauth
+
