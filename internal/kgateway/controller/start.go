@@ -212,14 +212,11 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		agwSyncer.Init(cfg.KrtOptions.WithPrefix("agentgateway"))
 
 		// Provide extra Kind->GVK mappings to status collections based on external handlers keys
-		if len(cfg.ExtraAgwPolicyStatusHandlers) > 0 {
-			var gvks []schema.GroupVersionKind
-			for gvk := range cfg.ExtraAgwPolicyStatusHandlers {
-				if gvk.Kind == "" {
-					continue
-				}
-				gvks = append(gvks, gvk)
-			}
+		var gvks []schema.GroupVersionKind
+		for gvk := range cfg.ExtraAgwPolicyStatusHandlers {
+			gvks = append(gvks, gvk)
+		}
+		if len(gvks) > 0 {
 			agwSyncer.StatusCollections().SetExtraGVKs(gvks)
 		}
 

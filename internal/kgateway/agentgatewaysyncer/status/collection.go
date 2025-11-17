@@ -127,8 +127,15 @@ func enqueueStatus[T any](sw WorkerQueue, obj controllers.Object, ws T, extraGVK
 	case *gwxv1a1.XListenerSet:
 		res.GroupVersionKind = wellknown.XListenerSetGVK
 	default:
-		// Map external types by their concrete Kind using extraGVKs
-		if extraGVKs != nil {
+		// Prefer the object's own GVK if available
+		if gvk := obj.GetObjectKind().GroupVersionKind(); !gvk.Empty() {
+			res.GroupVersionKind = schema.GroupVersionKind{
+				Group:   gvk.Group,
+				Version: gvk.Version,
+				Kind:    gvk.Kind,
+			}
+		} else if extraGVKs != nil {
+			// Fallback: map external types by their concrete Kind using provided extraGVKs
 			kind := obj.GetObjectKind().GroupVersionKind().Kind
 			if kind != "" {
 				for _, mapped := range extraGVKs {
