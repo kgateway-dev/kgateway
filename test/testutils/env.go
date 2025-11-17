@@ -70,6 +70,9 @@ const (
 	// DefaultNamespace is the default namespace to use for resources that don't specify one
 	// Typically "default" for kind/k8s clusters, may differ for OpenShift/CRC
 	DefaultNamespace = "DEFAULT_NAMESPACE"
+
+	// ConformanceGatewayClass is the name of the gateway class to use for conformance tests
+	ConformanceGatewayClass = "CONFORMANCE_GATEWAY_CLASS"
 )
 
 // ShouldSkipInstallAndTeardown returns true if kgateway installation and teardown should be skipped.

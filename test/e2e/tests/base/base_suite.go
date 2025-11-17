@@ -17,14 +17,13 @@ import (
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiserverschema "k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/gwapiutils"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
@@ -563,14 +562,20 @@ func IsSelfManagedGateway(gw *gwv1.Gateway) bool {
 // detectAndCacheGwApiInfo detects the Gateway API version and channel from installed CRDs
 // and caches the results. This is called once during suite setup.
 func (s *BaseTestingSuite) detectAndCacheGwApiInfo() {
-	apiextensionsClient, err := apiextensionsv1.NewForConfig(s.TestInstallation.ClusterContext.RestConfig)
-	s.Require().NoError(err, "failed to create apiextensions client")
+	crd := &apiextensionsv1.CustomResourceDefinition{}
+	err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{Name: "gateways.gateway.networking.k8s.io"}, crd)
+	s.Require().NoError(err, "failed to get Gateway CRD to detect Gateway API version/channel")
 
-	apiInfo, err := gwapiutils.DetectGatewayAPIVersionWithClient(s.Ctx, apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions())
-	s.Require().NoError(err, "failed to detect Gateway API version/channel")
+	channel, hasChannel := crd.Annotations["gateway.networking.k8s.io/channel"]
+	s.Require().True(hasChannel, "Gateway CRD missing 'gateway.networking.k8s.io/channel' annotation")
+	s.gwApiChannel = GwApiChannel(channel)
 
-	s.gwApiChannel = GwApiChannel(apiInfo.Channel)
-	s.gwApiVersion = &apiInfo.Version.Version
+	versionStr, hasVersion := crd.Annotations["gateway.networking.k8s.io/bundle-version"]
+	s.Require().True(hasVersion, "Gateway CRD missing 'gateway.networking.k8s.io/bundle-version' annotation")
+
+	version, err := semver.NewVersion(versionStr)
+	s.Require().NoError(err, "failed to parse Gateway API version '%s'", versionStr)
+	s.gwApiVersion = version
 }
 
 // getCurrentGwApiChannel returns the cached Gateway API channel
