@@ -29,13 +29,14 @@ type AgwCollections struct {
 	KrtOpts   krtutil.KrtOptions
 
 	// Core Kubernetes resources
-	Namespaces     krt.Collection[*corev1.Namespace]
-	Nodes          krt.Collection[*corev1.Node]
-	Pods           krt.Collection[*corev1.Pod]
-	Services       krt.Collection[*corev1.Service]
-	Secrets        krt.Collection[*corev1.Secret]
-	ConfigMaps     krt.Collection[*corev1.ConfigMap]
-	EndpointSlices krt.Collection[*discovery.EndpointSlice]
+	Namespaces         krt.Collection[*corev1.Namespace]
+	Nodes              krt.Collection[*corev1.Node]
+	Pods               krt.Collection[*corev1.Pod]
+	Services           krt.Collection[*corev1.Service]
+	Secrets            krt.Collection[*corev1.Secret]
+	SecretsByNamespace krt.Index[string, *corev1.Secret]
+	ConfigMaps         krt.Collection[*corev1.ConfigMap]
+	EndpointSlices     krt.Collection[*discovery.EndpointSlice]
 
 	// Gateway API resources
 	GatewayClasses     krt.Collection[*gwv1.GatewayClass]
@@ -169,6 +170,7 @@ func NewAgwCollections(
 		inferencePoolGVR := wellknown.InferencePoolGVK.GroupVersion().WithResource("inferencepools")
 		agwCollections.InferencePools = krt.WrapClient(kclient.NewDelayedInformer[*inf.InferencePool](commoncol.Client, inferencePoolGVR, kubetypes.StandardInformer, kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/InferencePools")...)
 	}
+	agwCollections.SecretsByNamespace = krt.NewNamespaceIndex(agwCollections.Secrets)
 
 	return agwCollections, nil
 }

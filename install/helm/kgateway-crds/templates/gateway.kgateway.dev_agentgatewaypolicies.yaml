@@ -1427,6 +1427,100 @@ spec:
                   sets 'timeouts' and 'retries', and policy B sets 'retries', the effective policy would be 'timeouts' from policy A,
                   and 'retries' from policy B.
                 properties:
+                  apiKeyAuthentication:
+                    description: apiKeyAuthentication authenticates users based on
+                      a configured API Key.
+                    properties:
+                      mode:
+                        default: Strict
+                        description: Validation mode for api key authentication.
+                        enum:
+                        - Strict
+                        - Optional
+                        type: string
+                      secretRef:
+                        description: |-
+                          secretRef references a Kubernetes secret storing a set of API Keys. If there are many keys, 'secretSelector' can be
+                          used instead.
+
+                          Each entry in the Secret represents one API Key. The key is an arbitrary identifier. The value can either be:
+                          * A string, representing the API Key.
+                          * A JSON object, with two fields, `key` and `metadata`. `key` contains the API Key. `metadata` contains arbitrary JSON
+                            metadata associated with the key, which may be used by other policies. For example, you may write an authorization
+                            policy allow `apiKey.group == 'sales'`.
+
+                          Example:
+
+                          apiVersion: v1
+                          kind: Secret
+                          metadata:
+                            name: api-key
+                          stringData:
+                            client1: |
+                              {
+                                "key": "k-123",
+                                "metadata": {
+                                  "group": "sales",
+                                  "created_at": "2024-10-01T12:00:00Z",
+                                }
+                              }
+                            client2: "k-456"
+                        properties:
+                          name:
+                            default: ""
+                            description: |-
+                              Name of the referent.
+                              This field is effectively required, but due to backwards compatibility is
+                              allowed to be empty. Instances of this type with an empty value here are
+                              almost certainly wrong.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                            type: string
+                        type: object
+                        x-kubernetes-map-type: atomic
+                      secretSelector:
+                        description: |-
+                          secretSelector selects multiple secrets containing API Keys. If the same key is defined in multiple secrets, the
+                          behavior is undefined.
+
+                          Each entry in the Secret represents one API Key. The key is an arbitrary identifier. The value can either be:
+                          * A string, representing the API Key.
+                          * A JSON object, with two fields, `key` and `metadata`. `key` contains the API Key. `metadata` contains arbitrary JSON
+                            metadata associated with the key, which may be used by other policies. For example, you may write an authorization
+                            policy allow `apiKey.group == 'sales'`.
+
+                          Example:
+
+                          apiVersion: v1
+                          kind: Secret
+                          metadata:
+                            name: api-key
+                          stringData:
+                            client1: |
+                              {
+                                "key": "k-123",
+                                "metadata": {
+                                  "group": "sales",
+                                  "created_at": "2024-10-01T12:00:00Z",
+                                }
+                              }
+                            client2: "k-456"
+                        properties:
+                          matchLabels:
+                            additionalProperties:
+                              type: string
+                            description: Label selector to select the target resource.
+                            type: object
+                        required:
+                        - matchLabels
+                        type: object
+                    required:
+                    - mode
+                    type: object
+                    x-kubernetes-validations:
+                    - message: exactly one of the fields in [secretRef secretSelector]
+                        must be set
+                      rule: '[has(self.secretRef),has(self.secretSelector)].filter(x,x==true).size()
+                        == 1'
                   authorization:
                     description: |-
                       authorization specifies the access rules based on roles and permissions.
@@ -1467,6 +1561,78 @@ spec:
                     required:
                     - policy
                     type: object
+                  basicAuthentication:
+                    description: |-
+                      basicAuthentication authenticates users based on the "Basic" authentication scheme (RFC 7617), where a username and password
+                      are encoded in the request.
+                    properties:
+                      mode:
+                        default: Strict
+                        description: validation mode for basic auth authentication.
+                        enum:
+                        - Strict
+                        - Optional
+                        type: string
+                      realm:
+                        description: |-
+                          realm specifies the 'realm' to return in the WWW-Authenticate header for failed authentication requests.
+                          If unset, "Restricted" will be used.
+                        type: string
+                      secretRef:
+                        description: |-
+                          secretRef references a Kubernetes secret storing the .htaccess file. The Secret must have a key named '.htaccess',
+                          and should contain the complete .htaccess file.
+
+                          Note: passwords should be the hash of the password, not the raw password. Use the `htpasswd` or similar commands
+                          to generate a hash. MD5, bcrypt, crypt, and SHA-1 are supported.
+
+                          Example:
+
+                          apiVersion: v1
+                          kind: Secret
+                          metadata:
+                            name: basic-auth
+                          stringData:
+                            .htaccess: |
+                              alice:$apr1$3zSE0Abt$IuETi4l5yO87MuOrbSE4V.
+                              bob:$apr1$Ukb5LgRD$EPY2lIfY.A54jzLELNIId/
+                        properties:
+                          name:
+                            default: ""
+                            description: |-
+                              Name of the referent.
+                              This field is effectively required, but due to backwards compatibility is
+                              allowed to be empty. Instances of this type with an empty value here are
+                              almost certainly wrong.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                            type: string
+                        type: object
+                        x-kubernetes-map-type: atomic
+                      users:
+                        description: |-
+                          users provides an inline list of username/password pairs that will be accepted.
+                          Each entry represents one line of the htpasswd format: https://httpd.apache.org/docs/2.4/programs/htpasswd.html.
+
+                          Note: passwords should be the hash of the password, not the raw password. Use the `htpasswd` or similar commands
+                          to generate a hash. MD5, bcrypt, crypt, and SHA-1 are supported.
+
+                          Example:
+                          users:
+                          - "user1:$apr1$ivPt0D4C$DmRhnewfHRSrb3DQC.WHC."
+                          - "user2:$2y$05$r3J4d3VepzFkedkd/q1vI.pBYIpSqjfN0qOARV3ScUHysatnS0cL2"
+                        items:
+                          type: string
+                        maxItems: 256
+                        minItems: 1
+                        type: array
+                    required:
+                    - mode
+                    type: object
+                    x-kubernetes-validations:
+                    - message: exactly one of the fields in [users secretRef] must
+                        be set
+                      rule: '[has(self.users),has(self.secretRef)].filter(x,x==true).size()
+                        == 1'
                   cors:
                     description: cors specifies the CORS configuration for the policy.
                     properties:
@@ -2228,6 +2394,144 @@ spec:
                     - Auto
                     - None
                     type: string
+                  jwtAuthentication:
+                    description: jwtAuthentication authenticates users based on JWT
+                      tokens.
+                    properties:
+                      mode:
+                        default: Strict
+                        description: validation mode for JWT authentication.
+                        enum:
+                        - Strict
+                        - Optional
+                        - Permissive
+                        type: string
+                      providers:
+                        items:
+                          properties:
+                            audiences:
+                              description: |-
+                                audiences specifies the list of allowed audiences that are allowed access. This corresponds to the 'aud' claim (https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.3).
+                                If unset, any audience is allowed.
+                              items:
+                                type: string
+                              maxItems: 64
+                              minItems: 1
+                              type: array
+                            issuer:
+                              description: issuer identifies the IdP that issued the
+                                JWT. This corresponds to the 'iss' claim (https://tools.ietf.org/html/rfc7519#section-4.1.1).
+                              maxLength: 256
+                              minLength: 1
+                              type: string
+                            jwks:
+                              description: jwks defines the JSON Web Key Set used
+                                to validate the signature of the JWT.
+                              properties:
+                                inline:
+                                  description: inline specifies an inline JSON Web
+                                    Key Set used validate the signature of the JWT.
+                                  maxLength: 65536
+                                  minLength: 2
+                                  type: string
+                                remote:
+                                  description: remote specifies how to reach the JSON
+                                    Web Key Set from a remote address.
+                                  properties:
+                                    backendRef:
+                                      description: |-
+                                        backendRef references the remote JWKS server to reach.
+
+                                        Supported types: Service and Backend.
+                                      properties:
+                                        group:
+                                          default: ""
+                                          description: |-
+                                            Group is the group of the referent. For example, "gateway.networking.k8s.io".
+                                            When unspecified or empty string, core API group is inferred.
+                                          maxLength: 253
+                                          pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                          type: string
+                                        kind:
+                                          default: Service
+                                          description: |-
+                                            Kind is the Kubernetes resource kind of the referent. For example
+                                            "Service".
+
+                                            Defaults to "Service" when not specified.
+
+                                            ExternalName services can refer to CNAME DNS records that may live
+                                            outside of the cluster and as such are difficult to reason about in
+                                            terms of conformance. They also may not be safe to forward to (see
+                                            CVE-2021-25740 for more information). Implementations SHOULD NOT
+                                            support ExternalName Services.
+
+                                            Support: Core (Services with a type other than ExternalName)
+
+                                            Support: Implementation-specific (Services with type ExternalName)
+                                          maxLength: 63
+                                          minLength: 1
+                                          pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
+                                          type: string
+                                        name:
+                                          description: Name is the name of the referent.
+                                          maxLength: 253
+                                          minLength: 1
+                                          type: string
+                                        namespace:
+                                          description: |-
+                                            Namespace is the namespace of the backend. When unspecified, the local
+                                            namespace is inferred.
+
+                                            Note that when a namespace different than the local namespace is specified,
+                                            a ReferenceGrant object is required in the referent namespace to allow that
+                                            namespace's owner to accept the reference. See the ReferenceGrant
+                                            documentation for details.
+
+                                            Support: Core
+                                          maxLength: 63
+                                          minLength: 1
+                                          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                          type: string
+                                        port:
+                                          description: |-
+                                            Port specifies the destination port number to use for this resource.
+                                            Port is required when the referent is a Kubernetes Service. In this
+                                            case, the port number is the service port number, not the target port.
+                                            For other resources, destination port might be derived from the referent
+                                            resource or this field.
+                                          format: int32
+                                          maximum: 65535
+                                          minimum: 1
+                                          type: integer
+                                      required:
+                                      - name
+                                      type: object
+                                      x-kubernetes-validations:
+                                      - message: Must have port for Service reference
+                                        rule: '(size(self.group) == 0 && self.kind
+                                          == ''Service'') ? has(self.port) : true'
+                                  required:
+                                  - backendRef
+                                  type: object
+                              type: object
+                              x-kubernetes-validations:
+                              - message: remote is not currently implemented
+                                rule: '!has(self.remote)'
+                              - message: exactly one of the fields in [remote inline]
+                                  must be set
+                                rule: '[has(self.remote),has(self.inline)].filter(x,x==true).size()
+                                  == 1'
+                          required:
+                          - jwks
+                          type: object
+                        maxItems: 64
+                        minItems: 1
+                        type: array
+                    required:
+                    - mode
+                    - providers
+                    type: object
                   phase:
                     description: |-
                       The phase to apply the traffic policy to. If the phase is PreRouting, the targetRef must be a Gateway or a Listener.
@@ -2748,8 +3052,9 @@ spec:
                   rule: '!has(self.hostRewrite)'
                 - message: at least one of the fields in [transformation extProc extAuth
                     rateLimit cors csrf headerModifiers hostRewrite timeouts retry
-                    authorization] must be set
-                  rule: '[has(self.transformation),has(self.extProc),has(self.extAuth),has(self.rateLimit),has(self.cors),has(self.csrf),has(self.headerModifiers),has(self.hostRewrite),has(self.timeouts),has(self.retry),has(self.authorization)].filter(x,x==true).size()
+                    authorization jwtAuthentication basicAuthentication apiKeyAuthentication]
+                    must be set
+                  rule: '[has(self.transformation),has(self.extProc),has(self.extAuth),has(self.rateLimit),has(self.cors),has(self.csrf),has(self.headerModifiers),has(self.hostRewrite),has(self.timeouts),has(self.retry),has(self.authorization),has(self.jwtAuthentication),has(self.basicAuthentication),has(self.apiKeyAuthentication)].filter(x,x==true).size()
                     >= 1'
             type: object
             x-kubernetes-validations:

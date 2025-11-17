@@ -307,7 +307,7 @@ const (
 	PolicyPhasePostRouting PolicyPhase = "PostRouting"
 )
 
-// +kubebuilder:validation:AtLeastOneOf=transformation;extProc;extAuth;rateLimit;cors;csrf;headerModifiers;hostRewrite;timeouts;retry;authorization
+// +kubebuilder:validation:AtLeastOneOf=transformation;extProc;extAuth;rateLimit;cors;csrf;headerModifiers;hostRewrite;timeouts;retry;authorization;jwtAuthentication;basicAuthentication;apiKeyAuthentication
 // +kubebuilder:validation:XValidation:rule="has(self.phase) && self.phase == 'PreRouting' ? !has(self.rateLimit) && !has(self.cors) && !has(self.csrf) && !has(self.headerModifiers) && !has(self.hostRewrite) && !has(self.timeouts) && !has(self.retry) && !has(self.authorization): true",message="phase PreRouting only supports extAuth, transformation, and extProc"
 // +kubebuilder:validation:XValidation:rule="!has(self.hostRewrite)",message="hostRewrite is not currently implemented"
 type AgentgatewayPolicyTraffic struct {
@@ -373,7 +373,206 @@ type AgentgatewayPolicyTraffic struct {
 	// If multiple authorization rules are applied across different policies (at the same, or different, attahcment points),
 	// all rules are merged.
 	Authorization *Authorization `json:"authorization,omitempty"`
-	// TODO jwt
+
+	// jwtAuthentication authenticates users based on JWT tokens.
+	// +optional
+	JWTAuthentication *AgentJWTAuthentication `json:"jwtAuthentication,omitempty"`
+	// basicAuthentication authenticates users based on the "Basic" authentication scheme (RFC 7617), where a username and password
+	// are encoded in the request.
+	// +optional
+	BasicAuthentication *AgentBasicAuthentication `json:"basicAuthentication,omitempty"`
+	// apiKeyAuthentication authenticates users based on a configured API Key.
+	// +optional
+	APIKeyAuthentication *AgentAPIKeyAuthentication `json:"apiKeyAuthentication,omitempty"`
+}
+
+// +kubebuilder:validation:Enum=Strict;Optional;Permissive
+type JWTAuthenticationMode string
+
+const (
+	// A valid token, issued by a configured issuer, must be present.
+	// This is the default option.
+	JWTAuthenticationModeStrict JWTAuthenticationMode = "Strict"
+	// If a token exists, validate it.
+	// Warning: this allows requests without a JWT token!
+	JWTAuthenticationModeOptional JWTAuthenticationMode = "Optional"
+	// Requests are never rejected. This is useful for usage of claims in later steps (authorization, logging, etc).
+	// Warning: this allows requests without a JWT token!
+	JWTAuthenticationModePermissive JWTAuthenticationMode = "Permissive"
+)
+
+type AgentJWTAuthentication struct {
+	// validation mode for JWT authentication.
+	// +kubebuilder:default=Strict
+	Mode JWTAuthenticationMode `json:"mode"`
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=64
+	Providers []AgentJWTProvider `json:"providers"`
+}
+
+type AgentJWTProvider struct {
+	// issuer identifies the IdP that issued the JWT. This corresponds to the 'iss' claim (https://tools.ietf.org/html/rfc7519#section-4.1.1).
+	// +kubebuilder:validation:MinLength=1
+	Issuer ShortString `json:"issuer,omitempty"`
+	// audiences specifies the list of allowed audiences that are allowed access. This corresponds to the 'aud' claim (https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.3).
+	// If unset, any audience is allowed.
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=64
+	Audiences []string `json:"audiences,omitempty"`
+	// jwks defines the JSON Web Key Set used to validate the signature of the JWT.
+	JWKS AgentJWKS `json:"jwks"`
+}
+
+// +kubebuilder:validation:ExactlyOneOf=remote;inline
+// +kubebuilder:validation:XValidation:rule="!has(self.remote)",message="remote is not currently implemented"
+type AgentJWKS struct {
+	// remote specifies how to reach the JSON Web Key Set from a remote address.
+	Remote *AgentRemoteJWKS `json:"remote,omitempty"`
+	// inline specifies an inline JSON Web Key Set used validate the signature of the JWT.
+	// +kubebuilder:validation:MinLength=2
+	// +kubebuilder:validation:MaxLength=65536
+	Inline string `json:"inline,omitempty"`
+}
+
+type AgentRemoteJWKS struct {
+	// backendRef references the remote JWKS server to reach.
+	//
+	// Supported types: Service and Backend.
+	BackendRef gwv1.BackendObjectReference `json:"backendRef"`
+}
+
+// +kubebuilder:validation:Enum=Strict;Optional
+type BasicAuthenticationMode string
+
+const (
+	// A valid username and password must be present.
+	// This is the default option.
+	BasicAuthenticationModeStrict BasicAuthenticationMode = "Strict"
+	// If a username and password exists, validate it.
+	// Warning: this allows requests without a username!
+	BasicAuthenticationModeOptional BasicAuthenticationMode = "Optional"
+)
+
+// +kubebuilder:validation:ExactlyOneOf=users;secretRef
+type AgentBasicAuthentication struct {
+	// validation mode for basic auth authentication.
+	// +kubebuilder:default=Strict
+	Mode BasicAuthenticationMode `json:"mode"`
+
+	// realm specifies the 'realm' to return in the WWW-Authenticate header for failed authentication requests.
+	// If unset, "Restricted" will be used.
+	Realm *string `json:"realm,omitempty"`
+
+	// users provides an inline list of username/password pairs that will be accepted.
+	// Each entry represents one line of the htpasswd format: https://httpd.apache.org/docs/2.4/programs/htpasswd.html.
+	//
+	// Note: passwords should be the hash of the password, not the raw password. Use the `htpasswd` or similar commands
+	// to generate a hash. MD5, bcrypt, crypt, and SHA-1 are supported.
+	//
+	// Example:
+	// users:
+	// - "user1:$apr1$ivPt0D4C$DmRhnewfHRSrb3DQC.WHC."
+	// - "user2:$2y$05$r3J4d3VepzFkedkd/q1vI.pBYIpSqjfN0qOARV3ScUHysatnS0cL2"
+	//
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=256
+	Users []string `json:"users,omitempty"`
+
+	// secretRef references a Kubernetes secret storing the .htaccess file. The Secret must have a key named '.htaccess',
+	// and should contain the complete .htaccess file.
+	//
+	// Note: passwords should be the hash of the password, not the raw password. Use the `htpasswd` or similar commands
+	// to generate a hash. MD5, bcrypt, crypt, and SHA-1 are supported.
+	//
+	// Example:
+	//
+	// apiVersion: v1
+	// kind: Secret
+	// metadata:
+	//   name: basic-auth
+	// stringData:
+	//   .htaccess: |
+	//     alice:$apr1$3zSE0Abt$IuETi4l5yO87MuOrbSE4V.
+	//     bob:$apr1$Ukb5LgRD$EPY2lIfY.A54jzLELNIId/
+	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
+}
+
+// +kubebuilder:validation:Enum=Strict;Optional
+type APIKeyAuthenticationMode string
+
+const (
+	// A valid API Key must be present.
+	// This is the default option.
+	APIKeyAuthenticationModeStrict APIKeyAuthenticationMode = "Strict"
+	// If an API Key exists, validate it.
+	// Warning: this allows requests without an API Key!
+	APIKeyAuthenticationModeOptional APIKeyAuthenticationMode = "Optional"
+)
+
+// +kubebuilder:validation:ExactlyOneOf=secretRef;secretSelector
+type AgentAPIKeyAuthentication struct {
+	// Validation mode for api key authentication.
+	// +kubebuilder:default=Strict
+	Mode APIKeyAuthenticationMode `json:"mode"`
+
+	// secretRef references a Kubernetes secret storing a set of API Keys. If there are many keys, 'secretSelector' can be
+	// used instead.
+	//
+	// Each entry in the Secret represents one API Key. The key is an arbitrary identifier. The value can either be:
+	// * A string, representing the API Key.
+	// * A JSON object, with two fields, `key` and `metadata`. `key` contains the API Key. `metadata` contains arbitrary JSON
+	//   metadata associated with the key, which may be used by other policies. For example, you may write an authorization
+	//   policy allow `apiKey.group == 'sales'`.
+	//
+	// Example:
+	//
+	// apiVersion: v1
+	// kind: Secret
+	// metadata:
+	//   name: api-key
+	// stringData:
+	//   client1: |
+	//     {
+	//       "key": "k-123",
+	//       "metadata": {
+	//         "group": "sales",
+	//         "created_at": "2024-10-01T12:00:00Z",
+	//       }
+	//     }
+	//   client2: "k-456"
+	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
+
+	// secretSelector selects multiple secrets containing API Keys. If the same key is defined in multiple secrets, the
+	// behavior is undefined.
+	//
+	// Each entry in the Secret represents one API Key. The key is an arbitrary identifier. The value can either be:
+	// * A string, representing the API Key.
+	// * A JSON object, with two fields, `key` and `metadata`. `key` contains the API Key. `metadata` contains arbitrary JSON
+	//   metadata associated with the key, which may be used by other policies. For example, you may write an authorization
+	//   policy allow `apiKey.group == 'sales'`.
+	//
+	// Example:
+	//
+	// apiVersion: v1
+	// kind: Secret
+	// metadata:
+	//   name: api-key
+	// stringData:
+	//   client1: |
+	//     {
+	//       "key": "k-123",
+	//       "metadata": {
+	//         "group": "sales",
+	//         "created_at": "2024-10-01T12:00:00Z",
+	//       }
+	//     }
+	//   client2: "k-456"
+	SecretSelector *SecretSelector `json:"secretSelector,omitempty"`
+}
+
+type SecretSelector struct {
+	// Label selector to select the target resource.
+	MatchLabels map[string]string `json:"matchLabels"`
 }
 
 type AgentHostnameRewrite string

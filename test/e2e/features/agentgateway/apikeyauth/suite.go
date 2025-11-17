@@ -1,0 +1,145 @@
+//go:build e2e
+
+package apikeyauth
+
+import (
+	"context"
+	"net/http"
+	"path/filepath"
+
+	"github.com/stretchr/testify/suite"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
+	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
+)
+
+var _ e2e.NewSuiteFunc = NewTestingSuite
+
+const (
+	// test namespace for proxy resources
+	namespace = "default"
+)
+
+var (
+	insecureRouteManifest     = getTestFile("insecure-route.yaml")
+	secureGwPolicyManifest    = getTestFile("secured-gateway-policy.yaml")
+	secureRoutePolicyManifest = getTestFile("secured-route.yaml")
+
+	proxyObjectMeta = metav1.ObjectMeta{Name: "super-gateway", Namespace: namespace}
+
+	setup = base.TestCase{
+		Manifests: []string{
+			getTestFile("common.yaml"),
+			getTestFile("service.yaml"),
+			testdefaults.CurlPodManifest,
+		},
+	}
+
+	testCases = map[string]*base.TestCase{
+		"TestRoutePolicy": {
+			Manifests: []string{insecureRouteManifest, secureRoutePolicyManifest},
+		},
+		"TestGatewayPolicy": {
+			Manifests: []string{secureGwPolicyManifest},
+		},
+	}
+)
+
+type testingSuite struct {
+	*base.BaseTestingSuite
+
+	// testInstallation contains all the metadata/utilities necessary to execute a series of tests
+	// against an installation of kgateway
+	testInstallation *e2e.TestInstallation
+}
+
+func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+	return &testingSuite{
+		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setup, testCases),
+		testInstallation: testInst,
+	}
+}
+
+func (s *testingSuite) TestRoutePolicy() {
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.Ctx,
+		"route-example-insecure",
+		"default",
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionTrue,
+	)
+	// verify insecure route works
+	s.assertResponseWithoutAuth("insecureroute.com", http.StatusOK)
+
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.Ctx,
+		"route-secure",
+		"default",
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionTrue,
+	)
+	// verify key without metadata works
+	s.assertResponse("secureroute.com", "k-1230", http.StatusOK)
+	// verify key with metadata works
+	s.assertResponse("secureroute.com", "k-4560", http.StatusOK)
+	// verify invalid keys are rejected
+	s.assertResponse("secureroute.com", "nosuchkey", http.StatusUnauthorized)
+	s.assertResponseWithoutAuth("secureroute.com", http.StatusUnauthorized)
+}
+
+func (s *testingSuite) TestGatewayPolicy() {
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.Ctx,
+		"route-secure-gw",
+		"default",
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionTrue,
+	)
+	// verify key without metadata works
+	s.assertResponse("securegateways.com", "k-123", http.StatusOK)
+	// verify key with metadata works
+	s.assertResponse("securegateways.com", "k-456", http.StatusOK)
+	// verify invalid keys are rejected
+	s.assertResponse("securegateways.com", "nosuchkey", http.StatusUnauthorized)
+	s.assertResponseWithoutAuth("securegateways.com", http.StatusUnauthorized)
+}
+
+func (s *testingSuite) assertResponse(hostHeader, authHeader string, expectedStatus int) {
+	s.testInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
+			curl.WithHostHeader(hostHeader),
+			curl.WithHeader("Authorization", "Bearer "+authHeader),
+			curl.WithPort(8080),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: expectedStatus,
+		})
+}
+
+func (s *testingSuite) assertResponseWithoutAuth(hostHeader string, expectedStatus int) {
+	s.testInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
+			curl.WithHostHeader(hostHeader),
+			curl.WithPort(8080),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: expectedStatus,
+		})
+}
+
+func getTestFile(filename string) string {
+	return filepath.Join(fsutils.MustGetThisDir(), "testdata", filename)
+}
