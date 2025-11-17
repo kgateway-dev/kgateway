@@ -50,7 +50,7 @@ jobs:
     - uses: ./.github/actions/kube-conformance-tests
       with:
         test-type: gateway-api
-        conformance-channel: ${{ matrix.gateway-api-channel }}
+        api-channel: ${{ matrix.gateway-api-channel }}
 
   kube_gateway_api_load_tests:
     name: Load Tests (branch=main, type=Kubernetes Gateway API, version=${{matrix.kube-version.node}} )
