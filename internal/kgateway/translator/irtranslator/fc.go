@@ -28,6 +28,8 @@ const (
 	UpstreamCodeFilterName = "envoy.filters.http.upstream_codec"
 )
 
+var defaultDownstreamAlpnProtocols = []string{"h2", "http/1.1"}
+
 type filterChainTranslator struct {
 	listener        ir.ListenerIR
 	gateway         ir.GatewayIR
@@ -458,10 +460,15 @@ func (info *FilterChainInfo) toTransportSocket() *envoycorev3.TransportSocket {
 		return nil
 	}
 
+	alpnProtocols := ssl.AlpnProtocols
+	if len(alpnProtocols) == 0 {
+		alpnProtocols = defaultDownstreamAlpnProtocols
+	}
+
 	common := &envoytlsv3.CommonTlsContext{
 		// default params
 		TlsParams:     &envoytlsv3.TlsParameters{},
-		AlpnProtocols: ssl.AlpnProtocols,
+		AlpnProtocols: alpnProtocols,
 	}
 
 	common.TlsCertificates = []*envoytlsv3.TlsCertificate{
@@ -474,13 +481,6 @@ func (info *FilterChainInfo) toTransportSocket() *envoycorev3.TransportSocket {
 	//	var requireClientCert *wrappers.BoolValue
 	//	if common.GetValidationContextType() != nil {
 	//		requireClientCert = &wrappers.BoolValue{Value: !dc.GetOneWayTls().GetValue()}
-	//	}
-
-	// default alpn for downstreams.
-	//	if len(common.GetAlpnProtocols()) == 0 {
-	//		common.AlpnProtocols = []string{"h2", "http/1.1"}
-	//	} else if len(common.GetAlpnProtocols()) == 1 && common.GetAlpnProtocols()[0] == AllowEmpty { // allow override for advanced usage to set to a dangerous setting
-	//		common.AlpnProtocols = []string{}
 	//	}
 
 	out := &envoytlsv3.DownstreamTlsContext{
