@@ -2,8 +2,11 @@ package controller
 
 import (
 	"context"
+	"time"
 
+	"golang.org/x/time/rate"
 	"istio.io/istio/pkg/kube/kubetypes"
+	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
@@ -12,6 +15,13 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+)
+
+// rateLimiter uses token bucket for overall rate limiting and exponential backoff for per-item rate limiting
+var rateLimiter = workqueue.NewTypedMaxOfRateLimiter(
+	workqueue.NewTypedItemExponentialFailureRateLimiter[any](500*time.Millisecond, 10*time.Second),
+	// 10 qps, 100 bucket size.  This is only for retry speed and its only the overall factor (not per item)
+	&workqueue.TypedBucketRateLimiter[any]{Limiter: rate.NewLimiter(rate.Limit(10), 100)},
 )
 
 // TODO [danehans]: Refactor so controller config is organized into shared and Gateway/InferencePool-specific controllers.

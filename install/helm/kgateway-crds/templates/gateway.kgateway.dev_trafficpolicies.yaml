@@ -122,14 +122,6 @@ spec:
                       - value
                       type: object
                     type: array
-                  modelAliases:
-                    additionalProperties:
-                      type: string
-                    description: |-
-                      ModelAliases maps friendly model names to actual provider model names.
-                      Example: {"fast": "gpt-3.5-turbo", "smart": "gpt-4-turbo"}
-                      Note: This field is only applicable when using the agentgateway data plane.
-                    type: object
                   promptEnrichment:
                     description: |-
                       Enrich requests sent to the LLM provider by appending and prepending system prompts.

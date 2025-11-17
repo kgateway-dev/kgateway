@@ -198,6 +198,12 @@ func WithSetupByVersion(setupByVersion map[GwApiChannel]map[GwApiVersion]*TestCa
 	}
 }
 
+func WithCrdPath(crdPath string) SuiteOption {
+	return func(s *BaseTestingSuite) {
+		s.CrdPath = crdPath
+	}
+}
+
 // NewBaseTestingSuite returns a BaseTestingSuite that performs all the pre-requisites of upgrading helm installations,
 // applying manifests and verifying resources exist before a suite and tests and the corresponding post-run cleanup.
 // The pre-requisites for the suite are defined in the setup parameter and for each test in the individual testCase.

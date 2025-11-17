@@ -3,8 +3,11 @@ package kubeutils
 import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
 func NamespacedNameFrom(obj client.Object) types.NamespacedName {
@@ -31,4 +34,14 @@ func ToUnstructured(obj client.Object) (*unstructured.Unstructured, error) {
 		u.SetGroupVersionKind(gvk)
 	}
 	return u, nil
+}
+
+// IsNamespacedGVK returns true if the GVK is namespaced
+func IsNamespacedGVK(gvk schema.GroupVersionKind) bool {
+	switch gvk {
+	case wellknown.ClusterRoleBindingGVK, wellknown.ClusterRoleGVK:
+		return false
+	default:
+		return true
+	}
 }

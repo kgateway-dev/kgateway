@@ -271,7 +271,7 @@ func (d *Deployer) SetNamespaceAndOwnerWithGVK(owner client.Object, ownerGVK sch
 	// Ensure that each namespaced rendered object has its namespace and ownerRef set.
 	for _, renderedObj := range objs {
 		gvk := renderedObj.GetObjectKind().GroupVersionKind()
-		if IsNamespaced(gvk) {
+		if kubeutils.IsNamespacedGVK(gvk) {
 			if renderedObj.GetNamespace() == "" {
 				renderedObj.SetNamespace(owner.GetNamespace())
 			}
@@ -439,11 +439,6 @@ func (d *Deployer) GetGvksToWatch(ctx context.Context, vals map[string]any) ([]s
 
 	logger.Debug("watching GVKs", "gvks", ret)
 	return ret, nil
-}
-
-// IsNamespaced returns true if the resource is namespaced.
-func IsNamespaced(gvk schema.GroupVersionKind) bool {
-	return gvk != wellknown.ClusterRoleBindingGVK
 }
 
 func ConvertYAMLToObjects(scheme *runtime.Scheme, yamlData []byte) ([]client.Object, error) {
