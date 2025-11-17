@@ -849,9 +849,9 @@ func phase(policy *v1alpha1.AgentgatewayPolicy) api.TrafficPolicySpec_PolicyPhas
 	if policy.Spec.Traffic.Phase != nil {
 		switch *policy.Spec.Traffic.Phase {
 		case v1alpha1.PolicyPhasePreRouting:
-			phase = api.TrafficPolicySpec_ROUTE
-		case v1alpha1.PolicyPhasePostRouting:
 			phase = api.TrafficPolicySpec_GATEWAY
+		case v1alpha1.PolicyPhasePostRouting:
+			phase = api.TrafficPolicySpec_ROUTE
 		}
 	}
 	return phase
