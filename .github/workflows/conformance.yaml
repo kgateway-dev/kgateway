@@ -14,8 +14,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  kube_gateway_api_conformance_tests:
-    name: kubernetes gateway api conformance tests (${{ matrix.gateway-api-channel }})
+  conformance_tests:
+    name: Kubernetes Gateway API Conformance Tests
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     if: ${{ !github.event.pull_request.draft }}
@@ -24,48 +24,39 @@ jobs:
       matrix:
         kube-version: [ { node: 'v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a', kubectl: 'v1.34.1', kind: 'v0.30.0' } ]
         gateway-api-channel: [ 'experimental', 'standard' ]
+        test-type: [ { 
+            type: 'gateway-api',
+            enable-inference-extension: false,
+          }, { 
+            type: 'agent-gateway',
+            enable-inference-extension: false,
+            additional-helm-values: test/e2e/tests/manifests/agent-gateway-integration.yaml
+          }, { 
+            type: 'inference-extension',
+            enable-inference-extension: true,
+          } ]
     steps:
     - uses: actions/checkout@v4
     - id: run-tests
       uses: ./.github/actions/kube-conformance-tests
       with:
-        test-type: gateway-api
+        test-type: ${{ matrix.test-type.type }}
         api-channel: ${{ matrix.gateway-api-channel }}
+        enable-inference-extension: ${{ matrix.test-type.enable-inference-extension }}
+        additional-helm-values: ${{ matrix.test-type.additional-helm-values }}
 
-  kube_inference_extension_conformance_tests:
-    name: kubernetes gateway api inference extension conformance tests (${{ matrix.gateway-api-channel}} )
-    runs-on: ubuntu-22.04
-    timeout-minutes: 60
-    if: ${{ !github.event.pull_request.draft }}
-    strategy:
-      fail-fast: false
-      matrix:
-        kube-version: [ { node: 'v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a', kubectl: 'v1.34.1', kind: 'v0.30.0' } ]
-        gateway-api-channel: [ 'experimental', 'standard' ]
-    steps:
-    - uses: actions/checkout@v4
-    - id: run-tests
-      uses: ./.github/actions/kube-conformance-tests
-      with:
-        test-type: inference-extension
-        enable-inference-extension: true
-        api-channel: ${{ matrix.gateway-api-channel }}
 
-  kube_agent_gateway_conformance_tests:
-    name: kubernetes gateway api agent-gateway conformance tests (${{ matrix.gateway-api-channel }})
-    runs-on: ubuntu-22.04
-    timeout-minutes: 60
-    if: ${{ !github.event.pull_request.draft }}
-    strategy:
-      fail-fast: false
-      matrix:
-        kube-version: [ { node: 'v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a', kubectl: 'v1.34.1', kind: 'v0.30.0' } ]
-        gateway-api-channel: [ 'experimental', 'standard' ]
+  conformance:
+    if: always()
+    runs-on: ubuntu-latest
+    needs: [conformance_tests]
     steps:
-    - uses: actions/checkout@v4
-    - id: run-tests
-      uses: ./.github/actions/kube-conformance-tests
-      with:
-        test-type: agent-gateway
-        additional-helm-values: test/e2e/tests/manifests/agent-gateway-integration.yaml
-        api-channel: ${{ matrix.gateway-api-channel }}
+    - name: Check e2e matrix status
+      run: |
+          if [[ "${{ needs.conformance_tests.result }}" == "success" ]]; then
+            echo "All conformance matrix jobs passed successfully"
+            exit 0
+          else
+            echo "Conformance matrix jobs failed with status: ${{ needs.conformance_tests.result }}"
+            exit 1
+          fi
