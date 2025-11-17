@@ -14,8 +14,6 @@ import (
 	"sigs.k8s.io/gateway-api/pkg/features"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
-	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 func TestConformance(t *testing.T) {
@@ -46,9 +44,7 @@ func TestConformance(t *testing.T) {
 	exemptFeatureString := suite.ParseSupportedFeatures(featureSetToCommaSeparatedString(exemptFeatures))
 	options.ExemptFeatures = suite.FeaturesSet(exemptFeatureString)
 
-	options.GatewayClassName = envutils.GetOrDefault(testutils.ConformanceGatewayClass, "kgateway", true)
-
-	t.Logf("Running conformance tests with\nprofiles: %+v\nexempt features: %+v\ngateway class: %s", profiles, exemptFeatures, options.GatewayClassName)
+	t.Logf("Running conformance tests with\nprofiles: %+v\nexempt features: %+v\n", profiles, exemptFeatures)
 	conformance.RunConformanceWithOptions(t, options)
 }
 
