@@ -699,6 +699,7 @@ run-load-tests-production: ## Run production load tests (5000 routes)
 # Targets for running Kubernetes Gateway API conformance tests
 #----------------------------------------------------------------------------------
 
+# TODO - remove, not pulling from here anymore
 # Pull the conformance test suite from the k8s gateway api repo and copy it into the test dir.
 $(TEST_ASSET_DIR)/conformance/conformance_test.go:
 	mkdir -p $(TEST_ASSET_DIR)/conformance
@@ -714,11 +715,13 @@ CONFORMANCE_ARGS := -gateway-class=$(CONFORMANCE_GATEWAY_CLASS) $(CONFORMANCE_RE
 CONFORMANCE_TEST_DIR ?= ./test/conformance/...
 
 .PHONY: conformance ## Run the conformance test suite
-conformance: $(TEST_ASSET_DIR)/conformance/conformance_test.go ## Run the Gateway API conformance suite
+conformance:  ## Run the Gateway API conformance suite
+	@mkdir -p $(TEST_ASSET_DIR)/conformance
 	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(CONFORMANCE_TEST_DIR) -args $(CONFORMANCE_ARGS)
 
 # Run only the specified conformance test. The name must correspond to the ShortName of one of the k8s gateway api conformance tests.
-conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go ## Run only the specified Gateway API conformance test by ShortName
+conformance-%:  ## Run only the specified Gateway API conformance test by ShortName
+	@mkdir -p $(TEST_ASSET_DIR)/conformance
 	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(CONFORMANCE_TEST_DIR) -args $(CONFORMANCE_ARGS) \
 	-run-test=$*
 
@@ -733,12 +736,14 @@ AGW_CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/agw-
 AGW_CONFORMANCE_ARGS := -gateway-class=$(AGW_CONFORMANCE_GATEWAY_CLASS)  $(AGW_CONFORMANCE_REPORT_ARGS)
 
 .PHONY: agw-conformance ## Run the agent gateway conformance test suite
-agw-conformance: $(TEST_ASSET_DIR)/conformance/conformance_test.go
-	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(AGW_CONFORMANCE_ARGS)
+agw-conformance:
+	@mkdir -p $(TEST_ASSET_DIR)/conformance
+	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(CONFORMANCE_TEST_DIR) -args $(AGW_CONFORMANCE_ARGS)
 
 # Run only the specified agent gateway conformance test
-agw-conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go
-	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(AGW_CONFORMANCE_ARGS) \
+agw-conformance-%:
+	@mkdir -p $(TEST_ASSET_DIR)/conformance
+	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(CONFORMANCE_TEST_DIR) -args $(AGW_CONFORMANCE_ARGS) \
 	-run-test=$*
 
 #----------------------------------------------------------------------------------
