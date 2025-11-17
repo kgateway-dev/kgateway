@@ -733,7 +733,7 @@ conformance-%:  ## Run only the specified Gateway API conformance test by ShortN
 # Use same profile logic as regular conformance tests
 AGW_CONFORMANCE_GATEWAY_CLASS ?= agentgateway
 AGW_CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/agw-$(VERSION)-report.yaml -organization=kgateway-dev -project=kgateway -version=$(VERSION) -url=github.com/kgateway-dev/kgateway -contact=github.com/kgateway-dev/kgateway/issues/new/choose
-AGW_CONFORMANCE_ARGS := -gateway-class=$(AGW_CONFORMANCE_GATEWAY_CLASS)  $(AGW_CONFORMANCE_REPORT_ARGS)
+AGW_CONFORMANCE_ARGS := -gateway-class=$(AGW_CONFORMANCE_GATEWAY_CLASS) $(AGW_CONFORMANCE_REPORT_ARGS)
 
 .PHONY: agw-conformance ## Run the agent gateway conformance test suite
 agw-conformance:

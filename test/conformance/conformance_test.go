@@ -13,6 +13,8 @@ import (
 	"sigs.k8s.io/gateway-api/conformance/utils/suite"
 	"sigs.k8s.io/gateway-api/pkg/features"
 
+	"encoding/json"
+
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 )
 
@@ -48,6 +50,12 @@ func TestConformance(t *testing.T) {
 	conformance.RunConformanceWithOptions(t, options)
 }
 
+type CRD struct {
+	Metadata struct {
+		Annotations map[string]string `json:"annotations"`
+	} `json:"metadata"`
+}
+
 // detectGatewayAPIChannel checks which Gateway API CRDs are installed to determine the channel
 func detectGatewayAPIChannel() (string, error) {
 	cfg, err := config.GetConfig()
@@ -68,18 +76,18 @@ func detectGatewayAPIChannel() (string, error) {
 		return "", err
 	}
 
-	// Look for the channel annotation
-	crdStr := string(crd)
-	switch {
-	case strings.Contains(crdStr, `"gateway.networking.k8s.io/channel":"experimental"`),
-		strings.Contains(crdStr, `"gateway.networking.k8s.io/channel": "experimental"`):
-		return "experimental", nil
-	case strings.Contains(crdStr, `"gateway.networking.k8s.io/channel":"standard"`),
-		strings.Contains(crdStr, `"gateway.networking.k8s.io/channel": "standard"`):
-		return "standard", nil
-	default:
+	var crdObj CRD
+	if err := json.Unmarshal(crd, &crdObj); err != nil {
+		return "", err
+	}
+
+	channel := crdObj.Metadata.Annotations["gateway.networking.k8s.io/channel"]
+
+	if channel == "" {
 		return "", fmt.Errorf("gateway.networking.k8s.io/channel annotation not found on HTTPRoute CRD")
 	}
+
+	return channel, nil
 }
 
 // exemptExperimentalFeatures exempts all experimental features from the exemptFeatures set. Modifies the set in place.
