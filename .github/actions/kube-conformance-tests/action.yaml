@@ -146,17 +146,33 @@ runs:
       echo
       kubectl -n kgateway-system logs deploy/kgateway
 
+  - name: Set artifact name and path
+    shell: bash
+    run: |
+      case "${{ inputs.test-type }}" in
+        "gateway-api")
+          echo "ARTIFACT_NAME=conformance-kgateway-gateway-report@k8s${{ matrix.kube-version.kubectl }}" >> $GITHUB_ENV
+          echo "ARTIFACT_PATH=_test/conformance/${{ env.VERSION }}-report.yaml" >> $GITHUB_ENV
+          ;;
+        "agent-gateway")
+          echo "ARTIFACT_NAME=conformance-kgateway-agentgateway-report@k8s${{ matrix.kube-version.kubectl }}" >> $GITHUB_ENV
+          echo "ARTIFACT_PATH=_test/conformance/${{ env.VERSION }}-report.yaml" >> $GITHUB_ENV
+          ;;
+        "inference-extension")
+          echo "ARTIFACT_NAME=conformance-kgateway-gateway-inference-extension-report@k8s${{ matrix.kube-version.kubectl }}" >> $GITHUB_ENV
+          echo "ARTIFACT_PATH=_test/conformance/${{ env.VERSION }}-inference-extension-report.yaml" >> $GITHUB_ENV
+          ;;
+        *)
+          echo "Unknown test type: ${{ inputs.test-type }}"
+          exit 1
+          ;;
+      esac
+
   - name: Upload reports
     if: ${{ failure() }}
     uses: ./.github/actions/upload-artifact
     with:
       # Name of the path to upload. The VERSION variable refers to the Makefile
       # VERSION variable.
-      name: |
-        ${{ inputs.test-type == 'gateway-api' && format('conformance-kgateway-gateway-report@k8s{0}', matrix.kube-version.kubectl) ||
-            inputs.test-type == 'agent-gateway' && format('conformance-kgateway-agentgateway-report@k8s{0}', matrix.kube-version.kubectl) ||
-            inputs.test-type == 'inference-extension' && format('conformance-kgateway-gateway-inference-extension-report@k8s{0}', matrix.kube-version.kubectl) }}
-      path: |
-        ${{ inputs.test-type == 'gateway-api' && format('_test/conformance/{0}-report.yaml', env.VERSION) ||
-            inputs.test-type == 'agent-gateway' && format('_test/conformance/{0}-report.yaml', env.VERSION) ||
-            inputs.test-type == 'inference-extension' && format('_test/conformance/{0}-inference-extension-report.yaml', env.VERSION) }}
+      name: ${{ env.ARTIFACT_NAME }}
+      path: ${{ env.ARTIFACT_PATH }}
