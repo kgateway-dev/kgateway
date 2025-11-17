@@ -156,11 +156,11 @@ runs:
           ;;
         "agent-gateway")
           echo "ARTIFACT_NAME=conformance-kgateway-agentgateway-report@k8s${{ matrix.kube-version.kubectl }}" >> $GITHUB_ENV
-          echo "ARTIFACT_PATH=_test/conformance/${{ env.VERSION }}-report.yaml" >> $GITHUB_ENV
+          echo "ARTIFACT_PATH=_test/conformance/agw-${{ env.VERSION }}-report.yaml" >> $GITHUB_ENV
           ;;
         "inference-extension")
           echo "ARTIFACT_NAME=conformance-kgateway-gateway-inference-extension-report@k8s${{ matrix.kube-version.kubectl }}" >> $GITHUB_ENV
-          echo "ARTIFACT_PATH=_test/conformance/agw-${{ env.VERSION }}-inference-extension-report.yaml" >> $GITHUB_ENV
+          echo "ARTIFACT_PATH=_test/conformance/inference-${{ env.VERSION }}-report.yaml" >> $GITHUB_ENV
           ;;
         *)
           echo "Unknown test type: ${{ inputs.test-type }}"
