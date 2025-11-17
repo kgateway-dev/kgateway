@@ -192,21 +192,19 @@ func translateTokenSource(provider v1alpha1.JWTProvider, out *jwtauthnv3.JwtProv
 	if provider.TokenSource == nil {
 		return
 	}
-	if provider.TokenSource.HeaderSource != nil {
-		if headers := provider.TokenSource.HeaderSource; len(headers) != 0 {
-			for _, header := range headers {
-				var headerStr, prefixStr string
-				if header.Header != nil {
-					headerStr = *header.Header
-				}
-				if header.Prefix != nil {
-					prefixStr = *header.Prefix
-				}
-				out.FromHeaders = append(out.GetFromHeaders(), &jwtauthnv3.JwtHeader{
-					Name:        headerStr,
-					ValuePrefix: prefixStr,
-				})
+	if headers := provider.TokenSource.HeaderSource; len(headers) > 0 {
+		for _, header := range headers {
+			var headerStr, prefixStr string
+			if header.Header != nil {
+				headerStr = *header.Header
 			}
+			if header.Prefix != nil {
+				prefixStr = *header.Prefix
+			}
+			out.FromHeaders = append(out.FromHeaders, &jwtauthnv3.JwtHeader{
+				Name:        headerStr,
+				ValuePrefix: prefixStr,
+			})
 		}
 	}
 	if provider.TokenSource.QueryParams != nil {
