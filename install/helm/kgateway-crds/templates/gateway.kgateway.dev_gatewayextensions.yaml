@@ -561,7 +561,10 @@ spec:
                 - grpcService
                 type: object
               jwtProviders:
-                description: JWTProviders configures named JWT providers
+                description: |-
+                  JWTProviders configures named JWT providers.
+                  If multiple providers are specified for a given JWT policy,
+                  the providers will be `OR`-ed together and will allow validation to any of the providers.
                 items:
                   description: |-
                     NamedJWTProvider is a named JWT provider entry used for list-as-map semantics.

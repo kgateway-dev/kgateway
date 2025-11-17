@@ -61,7 +61,9 @@ type GatewayExtensionSpec struct {
 	// +optional
 	RateLimit *RateLimitProvider `json:"rateLimit,omitempty"`
 
-	// JWTProviders configures named JWT providers
+	// JWTProviders configures named JWT providers.
+	// If multiple providers are specified for a given JWT policy,
+	// the providers will be `OR`-ed together and will allow validation to any of the providers.
 	// +optional
 	// +listType=map
 	// +listMapKey=name
