@@ -444,9 +444,9 @@ func (s *setup) buildKgatewayWithConfig(
 	// Detect Gateway API channel (standard or experimental) to adjust supported features
 	apiChannel := detectGatewayAPIChannel(ctx, s.restConfig)
 	if apiChannel != "" {
-		slog.Info("detected Gateway API channel", "channel", apiChannel)
+		slog.Info("detected gateway api channel", "channel", apiChannel)
 	} else {
-		slog.Warn("Gateway API channel not detected during setup, will use default feature support")
+		slog.Warn("gateway api channel not detected during setup, will use default feature support")
 	}
 
 	gatewayClassInfos := controller.GetDefaultClassInfo(
@@ -538,7 +538,7 @@ func detectGatewayAPIChannel(ctx context.Context, restConfig *rest.Config) strin
 
 	apiInfo, err := gwapiutils.DetectGatewayAPIVersionWithClient(ctx, clientset.ApiextensionsV1().CustomResourceDefinitions())
 	if err != nil {
-		slog.Debug("Gateway API channel detection failed during setup", "error", err)
+		slog.Debug("gateway api channel detection failed during setup", "error", err)
 		return ""
 	}
 	return string(apiInfo.Channel)

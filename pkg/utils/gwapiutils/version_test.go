@@ -5,15 +5,16 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Masterminds/semver/v3"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsv1client "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
+	fakeapiextensions "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1/fake"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	testing2 "k8s.io/client-go/testing"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/gwapiutils"
 )
 
@@ -22,45 +23,31 @@ func TestGwApiUtils(t *testing.T) {
 	RunSpecs(t, "GwApiUtils Suite")
 }
 
-var _ = Describe("GwApiVersion", func() {
-	Describe("String", func() {
-		It("should return version string without v prefix", func() {
-			v120 := MustParseVersion("1.2.0")
-			v140 := MustParseVersion("1.4.0")
-			Expect(v120.String()).To(Equal("1.2.0"))
-			Expect(v140.String()).To(Equal("1.4.0"))
-		})
+// setupCRDReactor adds a reactor to return the given CRD when requested
+func setupCRDReactor(fakeClient *fakeapiextensions.FakeApiextensionsV1, crd *apiextensionsv1.CustomResourceDefinition) {
+	fakeClient.Fake.AddReactor("get", "customresourcedefinitions", func(action testing2.Action) (handled bool, ret runtime.Object, err error) {
+		getAction := action.(testing2.GetAction)
+		if getAction.GetName() == "gateways.gateway.networking.k8s.io" {
+			if crd != nil {
+				return true, crd, nil
+			}
+			return true, nil, fmt.Errorf("customresourcedefinition.apiextensions.k8s.io %q not found", getAction.GetName())
+		}
+		return false, nil, fmt.Errorf("not found")
 	})
-})
+}
 
-var _ = Describe("MustParseVersion", func() {
-	It("should parse valid version strings", func() {
-		v := MustParseVersion("1.2.3")
-		Expect(v).NotTo(BeNil())
-		Expect(v.String()).To(Equal("1.2.3"))
-	})
-
-	It("should parse version strings with v prefix", func() {
-		v := MustParseVersion("v1.2.3")
-		Expect(v).NotTo(BeNil())
-		Expect(v.String()).To(Equal("1.2.3"))
-	})
-
-	It("should panic on invalid version strings", func() {
-		Expect(func() {
-			MustParseVersion("not-a-version")
-		}).To(Panic())
-	})
-})
-
-var _ = Describe("DetectGatewayAPIVersion", func() {
+var _ = Describe("DetectGatewayAPIVersionWithClient", func() {
 	var (
-		ctx    context.Context
-		client client.Client
+		ctx        context.Context
+		crdClient  apiextensionsv1client.CustomResourceDefinitionInterface
+		fakeClient *fakeapiextensions.FakeApiextensionsV1
 	)
 
 	BeforeEach(func() {
 		ctx = context.Background()
+		fakeClient = &fakeapiextensions.FakeApiextensionsV1{Fake: &testing2.Fake{}}
+		crdClient = fakeClient.CustomResourceDefinitions()
 	})
 
 	Context("with valid Gateway CRD", func() {
@@ -74,10 +61,9 @@ var _ = Describe("DetectGatewayAPIVersion", func() {
 					},
 				},
 			}
-			scheme := schemes.DefaultScheme()
-			client = fake.NewClientBuilder().WithScheme(scheme).WithObjects(crd).Build()
+			setupCRDReactor(fakeClient, crd)
 
-			info, err := gwapiutils.DetectGatewayAPIVersion(ctx, client)
+			info, err := gwapiutils.DetectGatewayAPIVersionWithClient(ctx, crdClient)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(info).NotTo(BeNil())
 			Expect(info.Channel).To(Equal(gwapiutils.GwApiChannelStandard))
@@ -96,10 +82,9 @@ var _ = Describe("DetectGatewayAPIVersion", func() {
 					},
 				},
 			}
-			scheme := schemes.DefaultScheme()
-			client = fake.NewClientBuilder().WithScheme(scheme).WithObjects(crd).Build()
+			setupCRDReactor(fakeClient, crd)
 
-			info, err := gwapiutils.DetectGatewayAPIVersion(ctx, client)
+			info, err := gwapiutils.DetectGatewayAPIVersionWithClient(ctx, crdClient)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(info).NotTo(BeNil())
 			Expect(info.Channel).To(Equal(gwapiutils.GwApiChannelExperimental))
@@ -111,10 +96,9 @@ var _ = Describe("DetectGatewayAPIVersion", func() {
 
 	Context("with missing Gateway CRD", func() {
 		It("should return an error", func() {
-			scheme := schemes.DefaultScheme()
-			client = fake.NewClientBuilder().WithScheme(scheme).Build()
+			setupCRDReactor(fakeClient, nil)
 
-			info, err := gwapiutils.DetectGatewayAPIVersion(ctx, client)
+			info, err := gwapiutils.DetectGatewayAPIVersionWithClient(ctx, crdClient)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("failed to get Gateway CRD"))
 			Expect(info).To(BeNil())
@@ -131,10 +115,9 @@ var _ = Describe("DetectGatewayAPIVersion", func() {
 					},
 				},
 			}
-			scheme := schemes.DefaultScheme()
-			client = fake.NewClientBuilder().WithScheme(scheme).WithObjects(crd).Build()
+			setupCRDReactor(fakeClient, crd)
 
-			info, err := gwapiutils.DetectGatewayAPIVersion(ctx, client)
+			info, err := gwapiutils.DetectGatewayAPIVersionWithClient(ctx, crdClient)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("missing 'gateway.networking.k8s.io/channel' annotation"))
 			Expect(info).To(BeNil())
@@ -151,10 +134,9 @@ var _ = Describe("DetectGatewayAPIVersion", func() {
 					},
 				},
 			}
-			scheme := schemes.DefaultScheme()
-			client = fake.NewClientBuilder().WithScheme(scheme).WithObjects(crd).Build()
+			setupCRDReactor(fakeClient, crd)
 
-			info, err := gwapiutils.DetectGatewayAPIVersion(ctx, client)
+			info, err := gwapiutils.DetectGatewayAPIVersionWithClient(ctx, crdClient)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("missing 'gateway.networking.k8s.io/bundle-version' annotation"))
 			Expect(info).To(BeNil())
@@ -172,32 +154,12 @@ var _ = Describe("DetectGatewayAPIVersion", func() {
 					},
 				},
 			}
-			scheme := schemes.DefaultScheme()
-			client = fake.NewClientBuilder().WithScheme(scheme).WithObjects(crd).Build()
+			setupCRDReactor(fakeClient, crd)
 
-			info, err := gwapiutils.DetectGatewayAPIVersion(ctx, client)
+			info, err := gwapiutils.DetectGatewayAPIVersionWithClient(ctx, crdClient)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("failed to parse Gateway API version"))
 			Expect(info).To(BeNil())
 		})
 	})
 })
-
-var _ = Describe("DetectGatewayAPIVersionWithClient", func() {
-	It("should compile with correct function signature", func() {
-		// This test ensures that the DetectGatewayAPIVersionWithClient function
-		// has the correct signature and compiles properly.
-		// The actual functionality is tested in integration or e2e tests.
-		Expect(true).To(BeTrue())
-	})
-})
-
-// MustParseVersion parses a version string and panics if it fails.
-// This is useful for defining version constants.
-func MustParseVersion(version string) *gwapiutils.GwApiVersion {
-	v, err := semver.NewVersion(version)
-	if err != nil {
-		panic(fmt.Sprintf("invalid version string %q: %v", version, err))
-	}
-	return &gwapiutils.GwApiVersion{Version: *v}
-}

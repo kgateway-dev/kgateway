@@ -18,6 +18,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apiserverschema "k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -562,7 +563,10 @@ func IsSelfManagedGateway(gw *gwv1.Gateway) bool {
 // detectAndCacheGwApiInfo detects the Gateway API version and channel from installed CRDs
 // and caches the results. This is called once during suite setup.
 func (s *BaseTestingSuite) detectAndCacheGwApiInfo() {
-	apiInfo, err := gwapiutils.DetectGatewayAPIVersion(s.Ctx, s.TestInstallation.ClusterContext.Client)
+	apiextensionsClient, err := apiextensionsv1.NewForConfig(s.TestInstallation.ClusterContext.RestConfig)
+	s.Require().NoError(err, "failed to create apiextensions client")
+
+	apiInfo, err := gwapiutils.DetectGatewayAPIVersionWithClient(s.Ctx, apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions())
 	s.Require().NoError(err, "failed to detect Gateway API version/channel")
 
 	s.gwApiChannel = GwApiChannel(apiInfo.Channel)
