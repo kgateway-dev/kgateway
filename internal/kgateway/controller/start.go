@@ -19,8 +19,8 @@ import (
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/backend/inferencepool"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/inferenceextension/endpointpicker"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/waypoint"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
@@ -127,7 +127,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			return nil, err
 		}
 		setupLog.Info("adding the endpoint-picker inference extension plugin")
-		gatedPlugins = append(gatedPlugins, endpointpicker.NewPlugin(ctx, cfg.CommonCollections))
+		gatedPlugins = append(gatedPlugins, inferencepool.NewPlugin(ctx, cfg.CommonCollections))
 	}
 	// Add the waypoint plugin if enabled
 	if cfg.SetupOpts.GlobalSettings.EnableWaypoint {
