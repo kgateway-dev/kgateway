@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   conformance_tests:
-    name: K8s Gw Api Conformance Tests
+    name: K8s Gw Api Conformance Tests (${{ matrix.test-type.type }}, ${{ matrix.gateway-api-channel }})
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     if: ${{ !github.event.pull_request.draft }}
