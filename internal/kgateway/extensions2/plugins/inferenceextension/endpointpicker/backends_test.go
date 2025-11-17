@@ -1,7 +1,6 @@
 package endpointpicker
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -45,7 +44,7 @@ func TestProcessPoolBackendObjIR_BuildsLoadAssignment(t *testing.T) {
 			Selector: inf.LabelSelector{
 				MatchLabels: map[inf.LabelKey]inf.LabelValue{"app": "test"},
 			},
-			TargetPorts: []inf.Port{inf.Port{Number: 9000}},
+			TargetPorts: []inf.Port{{Number: 9000}},
 			EndpointPickerRef: inf.EndpointPickerRef{
 				Name: "svc",
 				Port: &inf.Port{Number: inf.PortNumber(9002)},
@@ -80,7 +79,7 @@ func TestProcessPoolBackendObjIR_BuildsLoadAssignment(t *testing.T) {
 
 	// Call the code under test
 	cluster := &envoyclusterv3.Cluster{}
-	ret := processPoolBackendObjIR(context.Background(), *makeBackendIR(pool), cluster, podIdx)
+	ret := processPoolBackendObjIR(*makeBackendIR(pool), cluster, podIdx)
 	assert.Nil(t, ret, "Should return nil for a static cluster")
 
 	// Validate the generated LoadAssignment
@@ -107,7 +106,7 @@ func TestProcessPoolBackendObjIR_SkipsOnErrors(t *testing.T) {
 	pool := &inf.InferencePool{
 		ObjectMeta: metav1.ObjectMeta{Name: "p", Namespace: "ns"},
 		Spec: inf.InferencePoolSpec{
-			TargetPorts: []inf.Port{inf.Port{Number: 9000}},
+			TargetPorts: []inf.Port{{Number: 9000}},
 			EndpointPickerRef: inf.EndpointPickerRef{
 				Name: "svc",
 				Port: &inf.Port{Number: inf.PortNumber(9002)},
@@ -125,7 +124,7 @@ func TestProcessPoolBackendObjIR_SkipsOnErrors(t *testing.T) {
 	podIdx := krtpkg.UnnamedIndex(podCol, func(krtcollections.LocalityPod) []string { return nil })
 
 	cluster := &envoyclusterv3.Cluster{}
-	ret := processPoolBackendObjIR(context.Background(), *beIR, cluster, podIdx)
+	ret := processPoolBackendObjIR(*beIR, cluster, podIdx)
 	assert.Nil(t, ret)
 
 	cla := cluster.LoadAssignment

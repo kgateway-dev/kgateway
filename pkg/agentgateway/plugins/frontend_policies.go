@@ -20,7 +20,6 @@ const (
 )
 
 func translateFrontendPolicyToAgw(
-	ctx PolicyCtx,
 	policy *v1alpha1.AgentgatewayPolicy,
 	policyTarget *api.PolicyTarget,
 ) ([]AgwPolicy, error) {
@@ -34,54 +33,34 @@ func translateFrontendPolicyToAgw(
 	policyName := getFrontendPolicyName(policy.Namespace, policy.Name)
 
 	if s := frontend.HTTP; s != nil {
-		pol, err := translateFrontendHTTP(ctx, policy, policyName, policyTarget)
-		if err != nil {
-			logger.Error("error processing frontend HTTP", "err", err)
-			errs = append(errs, err)
-		}
+		pol := translateFrontendHTTP(policy, policyName, policyTarget)
 		agwPolicies = append(agwPolicies, pol...)
 	}
 
 	if s := frontend.TLS; s != nil {
-		pol, err := translateFrontendTLS(ctx, policy, policyName, policyTarget)
-		if err != nil {
-			logger.Error("error processing frontend TLS", "err", err)
-			errs = append(errs, err)
-		}
+		pol := translateFrontendTLS(policy, policyName, policyTarget)
 		agwPolicies = append(agwPolicies, pol...)
 	}
 
 	if s := frontend.TCP; s != nil {
-		pol, err := translateFrontendTCP(ctx, policy, policyName, policyTarget)
-		if err != nil {
-			logger.Error("error processing frontend TCP", "err", err)
-			errs = append(errs, err)
-		}
+		pol := translateFrontendTCP(policy, policyName, policyTarget)
 		agwPolicies = append(agwPolicies, pol...)
 	}
 
 	if s := frontend.AccessLog; s != nil {
-		pol, err := translateFrontendAccessLog(ctx, policy, policyName, policyTarget)
-		if err != nil {
-			logger.Error("error processing frontend AccessLog", "err", err)
-			errs = append(errs, err)
-		}
+		pol := translateFrontendAccessLog(policy, policyName, policyTarget)
 		agwPolicies = append(agwPolicies, pol...)
 	}
 
 	if s := frontend.Tracing; s != nil {
-		pol, err := translateFrontendTracing(ctx, policy, policyName, policyTarget)
-		if err != nil {
-			logger.Error("error processing frontend Tracing", "err", err)
-			errs = append(errs, err)
-		}
+		pol := translateFrontendTracing(policy, policyName, policyTarget)
 		agwPolicies = append(agwPolicies, pol...)
 	}
 
 	return agwPolicies, errors.Join(errs...)
 }
 
-func translateFrontendTracing(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) ([]AgwPolicy, error) {
+func translateFrontendTracing(policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) []AgwPolicy {
 	tracing := policy.Spec.Frontend.Tracing
 	tracingPolicy := &api.Policy{
 		Name:   name + frontendTracingPolicySuffix + attachmentName(target),
@@ -100,10 +79,10 @@ func translateFrontendTracing(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy
 		"agentgateway_policy", tracingPolicy.Name,
 		"target", target)
 
-	return []AgwPolicy{{Policy: tracingPolicy}}, nil
+	return []AgwPolicy{{Policy: tracingPolicy}}
 }
 
-func translateFrontendAccessLog(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) ([]AgwPolicy, error) {
+func translateFrontendAccessLog(policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) []AgwPolicy {
 	logging := policy.Spec.Frontend.AccessLog
 	spec := &api.FrontendPolicySpec_Logging{}
 	if f := logging.Filter; f != nil {
@@ -139,10 +118,10 @@ func translateFrontendAccessLog(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPoli
 		"agentgateway_policy", loggingPolicy.Name,
 		"target", target)
 
-	return []AgwPolicy{{Policy: loggingPolicy}}, nil
+	return []AgwPolicy{{Policy: loggingPolicy}}
 }
 
-func translateFrontendTCP(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) ([]AgwPolicy, error) {
+func translateFrontendTCP(policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) []AgwPolicy {
 	tcp := policy.Spec.Frontend.TCP
 	spec := &api.FrontendPolicySpec_TCP{}
 	if ka := tcp.KeepAlive; ka != nil {
@@ -175,10 +154,10 @@ func translateFrontendTCP(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, na
 		"agentgateway_policy", tcpPolicy.Name,
 		"target", target)
 
-	return []AgwPolicy{{Policy: tcpPolicy}}, nil
+	return []AgwPolicy{{Policy: tcpPolicy}}
 }
 
-func translateFrontendTLS(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) ([]AgwPolicy, error) {
+func translateFrontendTLS(policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) []AgwPolicy {
 	tls := policy.Spec.Frontend.TLS
 	spec := &api.FrontendPolicySpec_TLS{}
 	if ka := tls.HandshakeTimeout; ka != nil {
@@ -202,10 +181,10 @@ func translateFrontendTLS(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, na
 		"agentgateway_policy", tlsPolicy.Name,
 		"target", target)
 
-	return []AgwPolicy{{Policy: tlsPolicy}}, nil
+	return []AgwPolicy{{Policy: tlsPolicy}}
 }
 
-func translateFrontendHTTP(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) ([]AgwPolicy, error) {
+func translateFrontendHTTP(policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) []AgwPolicy {
 	http := policy.Spec.Frontend.HTTP
 	spec := &api.FrontendPolicySpec_HTTP{}
 	if v := http.MaxBufferSize; v != nil {
@@ -250,5 +229,5 @@ func translateFrontendHTTP(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, n
 		"agentgateway_policy", httpPolicy.Name,
 		"target", target)
 
-	return []AgwPolicy{{Policy: httpPolicy}}, nil
+	return []AgwPolicy{{Policy: httpPolicy}}
 }

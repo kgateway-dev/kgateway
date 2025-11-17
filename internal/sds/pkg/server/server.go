@@ -155,13 +155,13 @@ func (s *Server) UpdateSDSConfig(ctx context.Context) error {
 }
 
 // GetSnapshotVersion generates a version string by hashing the certs
-func GetSnapshotVersion(certs ...interface{}) (string, error) {
+func GetSnapshotVersion(certs ...any) (string, error) {
 	hash, err := hashAllSafe(fnv.New64(), certs...)
 	return fmt.Sprintf("%d", hash), err
 }
 
 // hashAllSafe replicates the behavior of hashutils.HashAllSafe from github.com/solo-io/go-utils
-func hashAllSafe(hasher hash.Hash64, values ...interface{}) (uint64, error) {
+func hashAllSafe(hasher hash.Hash64, values ...any) (uint64, error) {
 	if hasher == nil {
 		hasher = fnv.New64()
 	}
@@ -174,7 +174,7 @@ func hashAllSafe(hasher hash.Hash64, values ...interface{}) (uint64, error) {
 }
 
 // hashValueSafe replicates the behavior of hashutils.hashValueSafe from github.com/solo-io/go-utils
-func hashValueSafe(hasher hash.Hash64, val interface{}) error {
+func hashValueSafe(hasher hash.Hash64, val any) error {
 	h, err := hashstructure.Hash(val, nil)
 	if err != nil {
 		return err

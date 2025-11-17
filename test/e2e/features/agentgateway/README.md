@@ -2,73 +2,118 @@
 
 ## Setup
 
-To use the agentgateway control plane with kgateway, you need to enable the integration in the helm chart via 
-`--set agentgateway.enabled=true` or in the values.yaml:
-```yaml
-agentgateway:
-  enabled: true # set this to true
-```
+The agentgateway control plane is automatically enabled when installing kgateway.
 
-This is done automatically by the agentgateway e2e suite. 
 
 ## Testing with an unreleased agentgateway commit 
 
-Update the go.mod to point to the unreleased agentgateway commit:
+Add this line to the kgateway go.mod to point to the unreleased agentgateway commit:
 ```shell
-go get github.com/my-fork/agentgateway@my-commit-sha
+replace github.com/agentgateway/agentgateway => github.com/<my-fork>/agentgateway <branch-or-commit>
 ```
 
-In the agentgateway repo, build the docker image locally with:
+Then run:
+```shell
+go mod tidy
+make generate-all -B
+```
+
+Build and install kgateway:
+```shell
+make run -B
+```
+
+In the agentgateway repo (on your branch), build the docker image locally with:
 ```shell
 make docker 
 ```
 
 Then load it into the kind cluster where you are running the e2e tests:
 ```shell
-kind load --name kind docker-image ghcr.io/agentgateway/agentgateway:my-commit-sha
+AGW_TAG=$(docker images ghcr.io/agentgateway/agentgateway --format "{{.Tag}}" | head -n 1)
+kind load --name kind docker-image ghcr.io/agentgateway/agentgateway:$AGW_TAG
 ```
 
-You can configure the agentgateway Gateway class to use a specific image by setting the image field on the
-GatewayClass:
-```yaml
+You can either configure the agentgateway GatewayClass or a specific Gateway to use the local image.
+
+GatewayClass example:
+```shell
+kubectl apply -f - <<EOF
 kind: GatewayParameters
 apiVersion: gateway.kgateway.dev/v1alpha1
 metadata:
-  name: kgateway
+  name: gwp
 spec:
   kube:
     agentgateway:
       enabled: true
       logLevel: debug
       image:
-        tag: my-commit-sha
+        tag: $AGW_TAG
 ---
-kind: GatewayClass
 apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
 metadata:
   name: agentgateway
 spec:
-  controllerName: kgateway.dev/kgateway
+  controllerName: kgateway.dev/agentgateway
   parametersRef:
     group: gateway.kgateway.dev
     kind: GatewayParameters
-    name: kgateway
+    name: gwp
     namespace: default
 ---
-kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
 metadata:
-  name: agent-gateway
+  name: gw
 spec:
   gatewayClassName: agentgateway
   listeners:
-    - protocol: HTTP
-      port: 8080
-      name: http
-      allowedRoutes:
-        namespaces:
-          from: All
+  - protocol: HTTP
+    port: 8080
+    name: http
+    allowedRoutes:
+      namespaces:
+        from: All
+EOF
 ```
 
-This is useful for testing, but the final e2e agentgateway tests should use a released agentgateway image and not a 
-local build.
+Gateway example:
+```shell
+kubectl apply -f - <<EOF
+kind: GatewayParameters
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: gwp
+spec:
+  kube:
+    agentgateway:
+      enabled: true
+      logLevel: debug
+      image:
+        tag: $AGW_TAG
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: gw
+spec:
+  gatewayClassName: agentgateway
+  infrastructure:
+    parametersRef:
+      group: gateway.kgateway.dev
+      kind: GatewayParameters
+      name: gwp
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+    allowedRoutes:
+      namespaces:
+        from: All
+EOF
+```
+
+
+This is useful for testing, but the final e2e agentgateway tests should use a released agentgateway image and not a local build.

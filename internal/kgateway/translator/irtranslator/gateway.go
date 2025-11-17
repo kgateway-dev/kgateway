@@ -104,7 +104,7 @@ func (t *Translator) ComputeListener(
 	if gw.PerConnectionBufferLimitBytes != nil {
 		ret.PerConnectionBufferLimitBytes = &wrapperspb.UInt32Value{Value: *gw.PerConnectionBufferLimitBytes}
 	}
-	t.runListenerPlugins(ctx, pass, gw, lis, reporter, ret)
+	t.runListenerPlugins(pass, gw, lis, reporter, ret)
 
 	var routes []*envoyroutev3.RouteConfiguration
 	hasTls := false
@@ -152,7 +152,7 @@ func (t *Translator) ComputeListener(
 		// TODO: make sure that all matchers are unique
 		rl := getReporterForFilterChain(gw, reporter, hfc.FilterChainName)
 		fc := fct.initFilterChain(hfc.FilterChainCommon)
-		fc.Filters = fct.computeHttpFilters(ctx, hfc, rl)
+		fc.Filters = fct.computeHttpFilters(hfc, rl)
 		ret.FilterChains = append(ret.GetFilterChains(), fc)
 		if len(hfc.Matcher.SniDomains) > 0 {
 			hasTls = true
@@ -175,7 +175,7 @@ func (t *Translator) ComputeListener(
 	for _, tfc := range lis.TcpFilterChain {
 		rl := getReporterForFilterChain(gw, reporter, tfc.FilterChainName)
 		fc := fct.initFilterChain(tfc.FilterChainCommon)
-		fc.Filters = fct.computeTcpFilters(ctx, tfc, rl)
+		fc.Filters = fct.computeTcpFilters(tfc, rl)
 		ret.FilterChains = append(ret.GetFilterChains(), fc)
 		if len(tfc.Matcher.SniDomains) > 0 {
 			hasTls = true
@@ -193,7 +193,6 @@ func (t *Translator) ComputeListener(
 }
 
 func (t *Translator) runListenerPlugins(
-	ctx context.Context,
 	pass TranslationPassPlugins,
 	gw ir.GatewayIR,
 	l ir.ListenerIR,

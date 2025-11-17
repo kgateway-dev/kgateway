@@ -114,6 +114,7 @@ type PolicyAncestorStatus struct {
 
 	// Conditions describes the status of the Policy with respect to the given Ancestor.
 	//
+	// +optional
 	// +listType=map
 	// +listMapKey=type
 	// +kubebuilder:validation:MinItems=1

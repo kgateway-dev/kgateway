@@ -5,13 +5,14 @@ import (
 	"errors"
 
 	"github.com/golang/mock/gomock"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query/mocks"
@@ -125,7 +126,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 		Describe("translates gateway API resources to kgateway proxy listeners", func() {
 			It("should create a TCP listener with multiple backend references", func() {
 				By("Creating a TCPRoute with multiple backend references")
-				tcpRoute := tcpRoute("test-tcp-route", "default")
+				tcpRoute := tcpRoute("test-tcp-route")
 				tcpRoute.Spec = gwv1a2.TCPRouteSpec{
 					CommonRouteSpec: gwv1.CommonRouteSpec{
 						ParentRefs: []gwv1.ParentReference{
@@ -184,7 +185,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 			})
 			It("should handle TCPRoute with empty backend references", func() {
 				By("Creating a TCPRoute with an empty backend references")
-				tcpRoute := tcpRoute("test-empty-backend", "default")
+				tcpRoute := tcpRoute("test-empty-backend")
 				tcpRoute.Spec = gwv1a2.TCPRouteSpec{
 					CommonRouteSpec: gwv1.CommonRouteSpec{
 						ParentRefs: []gwv1.ParentReference{
@@ -237,7 +238,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 
 			It("should skip routes with invalid parent references and process valid ones", func() {
 				By("Creating a TCPRoute with a backend reference")
-				validRoute := tcpRoute("valid-tcp-route", "default")
+				validRoute := tcpRoute("valid-tcp-route")
 				validRoute.Spec = gwv1a2.TCPRouteSpec{
 					CommonRouteSpec: gwv1.CommonRouteSpec{
 						ParentRefs: []gwv1.ParentReference{
@@ -264,7 +265,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 				}
 
 				By("Creating an invalid TCPRoute with no parent references")
-				invalidRoute := tcpRoute("invalid-tcp-route", "default")
+				invalidRoute := tcpRoute("invalid-tcp-route")
 				invalidRoute.Spec = gwv1a2.TCPRouteSpec{
 					CommonRouteSpec: gwv1.CommonRouteSpec{
 						ParentRefs: []gwv1.ParentReference{}, // No parent reference provided
@@ -299,7 +300,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 
 			It("should create a TCP listener with a single weighted backend reference", func() {
 				By("Creating a weighted TCPRoute with a single backend reference")
-				tcpRoute := tcpRoute("test-tcp-route", "default")
+				tcpRoute := tcpRoute("test-tcp-route")
 				tcpRoute.Spec = gwv1a2.TCPRouteSpec{
 					CommonRouteSpec: gwv1.CommonRouteSpec{
 						ParentRefs: []gwv1.ParentReference{
@@ -355,7 +356,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 
 			It("should create a TCP listener with multiple weighted backend references", func() {
 				By("Creating a TCPRoute with multiple weighted backend references")
-				tcpRoute := tcpRoute("test-multi-weighted-tcp-route", "default")
+				tcpRoute := tcpRoute("test-multi-weighted-tcp-route")
 				tcpRoute.Spec = gwv1a2.TCPRouteSpec{
 					CommonRouteSpec: gwv1.CommonRouteSpec{
 						ParentRefs: []gwv1.ParentReference{
@@ -431,7 +432,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 
 		It("should not create a DestinationSpec when backendRef refers to a service in a different namespace without a permitting ReferenceGrant", func() {
 			By("Creating a TCPRoute with a backendRef to a different namespace")
-			tcpRoute := tcpRoute("cross-namespace-tcp-route", "default")
+			tcpRoute := tcpRoute("cross-namespace-tcp-route")
 			tcpRoute.Spec = gwv1a2.TCPRouteSpec{
 				CommonRouteSpec: gwv1.CommonRouteSpec{
 					ParentRefs: []gwv1.ParentReference{
@@ -563,7 +564,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 
 		It("should set listener condition when TCPRoute has empty backend references", func() {
 			By("Creating a TCPRoute with an empty backend references")
-			tcpRoute := tcpRoute("test-empty-backend", "default")
+			tcpRoute := tcpRoute("test-empty-backend")
 			tcpRoute.Spec = gwv1a2.TCPRouteSpec{
 				CommonRouteSpec: gwv1.CommonRouteSpec{
 					ParentRefs: []gwv1.ParentReference{
@@ -672,7 +673,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 
 		Describe("translates gateway API resources to kgateway proxy listeners", func() {
 			It("should create a TLS listener with multiple backend references", func() {
-				tlsRoute := tlsRoute("test-tls-route", "default")
+				tlsRoute := tlsRoute("test-tls-route")
 				tlsRoute.Spec = gwv1a2.TLSRouteSpec{
 					CommonRouteSpec: gwv1.CommonRouteSpec{
 						ParentRefs: []gwv1.ParentReference{
@@ -733,7 +734,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 
 			It("should skip routes with invalid parent references and process valid ones", func() {
 				By("Creating a TLSRoute with a backend reference")
-				validRoute := tlsRoute("valid-tls-route", "default")
+				validRoute := tlsRoute("valid-tls-route")
 				validRoute.Spec = gwv1a2.TLSRouteSpec{
 					CommonRouteSpec: gwv1.CommonRouteSpec{
 						ParentRefs: []gwv1.ParentReference{
@@ -760,7 +761,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 				}
 
 				By("Creating an invalid TLSRoute with no parent references")
-				invalidRoute := tlsRoute("invalid-tls-route", "default")
+				invalidRoute := tlsRoute("invalid-tls-route")
 				invalidRoute.Spec = gwv1a2.TLSRouteSpec{
 					CommonRouteSpec: gwv1.CommonRouteSpec{
 						ParentRefs: []gwv1.ParentReference{}, // No parent reference provided
@@ -796,7 +797,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 
 			It("should create a TLS listener with a single weighted backend reference", func() {
 				By("Creating a weighted TLSRoute with a single backend reference")
-				tlsRoute := tlsRoute("test-tls-route", "default")
+				tlsRoute := tlsRoute("test-tls-route")
 				tlsRoute.Spec = gwv1a2.TLSRouteSpec{
 					CommonRouteSpec: gwv1.CommonRouteSpec{
 						ParentRefs: []gwv1.ParentReference{
@@ -854,7 +855,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 	})
 })
 
-func tcpRoute(name, ns string) *gwv1a2.TCPRoute {
+func tcpRoute(name string) *gwv1a2.TCPRoute {
 	return &gwv1a2.TCPRoute{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       wellknown.TCPRouteKind,
@@ -862,12 +863,12 @@ func tcpRoute(name, ns string) *gwv1a2.TCPRoute {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: ns,
+			Namespace: "default",
 		},
 	}
 }
 
-func tlsRoute(name, ns string) *gwv1a2.TLSRoute {
+func tlsRoute(name string) *gwv1a2.TLSRoute {
 	return &gwv1a2.TLSRoute{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       wellknown.TLSRouteKind,
@@ -875,7 +876,7 @@ func tlsRoute(name, ns string) *gwv1a2.TLSRoute {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: ns,
+			Namespace: "default",
 		},
 	}
 }

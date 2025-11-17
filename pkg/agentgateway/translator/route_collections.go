@@ -21,16 +21,15 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/status"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
+	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/status"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
@@ -40,8 +39,8 @@ func AgwRouteCollection(
 	queue *status.StatusCollections,
 	httpRouteCol krt.Collection[*gwv1.HTTPRoute],
 	grpcRouteCol krt.Collection[*gwv1.GRPCRoute],
-	tcpRouteCol krt.Collection[*gwv1alpha2.TCPRoute],
-	tlsRouteCol krt.Collection[*gwv1alpha2.TLSRoute],
+	tcpRouteCol krt.Collection[*gwv1a2.TCPRoute],
+	tlsRouteCol krt.Collection[*gwv1a2.TLSRoute],
 	inputs RouteContextInputs,
 	krtopts krtutil.KrtOptions,
 ) (krt.Collection[agwir.AgwResource], krt.Collection[*RouteAttachment]) {
@@ -89,7 +88,7 @@ func AgwRouteCollection(
 	status.RegisterStatus(queue, grpcRouteStatus, GetStatus)
 
 	tcpRouteStatus, tcpRoutes := createTCPRouteCollection(tcpRouteCol, inputs, krtopts, "TCPRoutes",
-		func(ctx RouteContext, obj *gwv1alpha2.TCPRoute, rep reporter.Reporter) (RouteContext, iter.Seq2[AgwTCPRoute, *reporter.RouteCondition]) {
+		func(ctx RouteContext, obj *gwv1a2.TCPRoute, rep reporter.Reporter) (RouteContext, iter.Seq2[AgwTCPRoute, *reporter.RouteCondition]) {
 			route := obj.Spec
 			return ctx, func(yield func(AgwTCPRoute, *reporter.RouteCondition) bool) {
 				for n, r := range route.Rules {
@@ -100,13 +99,13 @@ func AgwRouteCollection(
 					}
 				}
 			}
-		}, func(status gwv1.RouteStatus) gwv1alpha2.TCPRouteStatus {
-			return gwv1alpha2.TCPRouteStatus{RouteStatus: status}
+		}, func(status gwv1.RouteStatus) gwv1a2.TCPRouteStatus {
+			return gwv1a2.TCPRouteStatus{RouteStatus: status}
 		})
 	status.RegisterStatus(queue, tcpRouteStatus, GetStatus)
 
 	tlsRouteStatus, tlsRoutes := createTCPRouteCollection(tlsRouteCol, inputs, krtopts, "TLSRoutes",
-		func(ctx RouteContext, obj *gwv1alpha2.TLSRoute, rep reporter.Reporter) (RouteContext, iter.Seq2[AgwTCPRoute, *reporter.RouteCondition]) {
+		func(ctx RouteContext, obj *gwv1a2.TLSRoute, rep reporter.Reporter) (RouteContext, iter.Seq2[AgwTCPRoute, *reporter.RouteCondition]) {
 			route := obj.Spec
 			return ctx, func(yield func(AgwTCPRoute, *reporter.RouteCondition) bool) {
 				for n, r := range route.Rules {
@@ -117,8 +116,8 @@ func AgwRouteCollection(
 					}
 				}
 			}
-		}, func(status gwv1.RouteStatus) gwv1alpha2.TLSRouteStatus {
-			return gwv1alpha2.TLSRouteStatus{RouteStatus: status}
+		}, func(status gwv1.RouteStatus) gwv1a2.TLSRouteStatus {
+			return gwv1a2.TLSRouteStatus{RouteStatus: status}
 		})
 	status.RegisterStatus(queue, tlsRouteStatus, GetStatus)
 

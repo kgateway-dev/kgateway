@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: webhook
-        image: gcr.io/solo-public/docs/ai-guardrail-webhook:latest
+        image: gcr.io/solo-public/docs/ai-guardrail-webhook@sha256:01f81b20ae016d123f018841c62daff7f6f44d0dec9189ecf591b3e99753c6b1
         ports:
         - containerPort: 8000
         resources:

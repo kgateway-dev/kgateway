@@ -8,6 +8,7 @@ import (
 	"github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
 
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/waypoint"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -52,12 +53,17 @@ func TestWaypointTranslator(t *testing.T) {
 			if tt.skip != "" {
 				t.Skip(tt.skip)
 			}
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			ctx := t.Context()
 			dir := fsutils.MustGetThisDir()
 
 			extraPluginsFn := func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []pluginsdk.Plugin {
 				return []pluginsdk.Plugin{waypoint.NewPlugin(ctx, commoncol, wellknown.DefaultWaypointClassName)}
+			}
+			settingOpt := func(s *apisettings.Settings) {
+				s.EnableExperimentalGatewayAPIFeatures = true
+			}
+			extraConfig := translatortest.ExtraConfig{
+				PluginsFn: extraPluginsFn,
 			}
 			translatortest.TestTranslationWithExtraPlugins(
 				t,
@@ -65,8 +71,8 @@ func TestWaypointTranslator(t *testing.T) {
 				[]string{filepath.Join(dir, "testdata/input", tt.file+".yaml")},
 				filepath.Join(dir, "testdata/output", tt.file+".yaml"),
 				tt.gw,
-				extraPluginsFn,
-				nil, nil, "",
+				extraConfig,
+				settingOpt,
 			)
 		})
 	}

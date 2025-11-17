@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/utils/ptr"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -127,7 +128,13 @@ func TestBuildEnvoyExtProc(t *testing.T) {
 			name: "with all processing modes",
 			gatewayExt: &ir.GatewayExtension{
 				ExtProc: &v1alpha1.ExtProcProvider{
-					GrpcService: &v1alpha1.ExtGrpcService{},
+					GrpcService: v1alpha1.ExtGrpcService{
+						BackendRef: gwv1.BackendRef{
+							BackendObjectReference: gwv1.BackendObjectReference{
+								Name: "test-service",
+							},
+						},
+					},
 				},
 			},
 			extprocConfig: &v1alpha1.ExtProcPolicy{
@@ -155,7 +162,13 @@ func TestBuildEnvoyExtProc(t *testing.T) {
 			name: "with default processing modes",
 			gatewayExt: &ir.GatewayExtension{
 				ExtProc: &v1alpha1.ExtProcProvider{
-					GrpcService: &v1alpha1.ExtGrpcService{},
+					GrpcService: v1alpha1.ExtGrpcService{
+						BackendRef: gwv1.BackendRef{
+							BackendObjectReference: gwv1.BackendObjectReference{
+								Name: "test-service",
+							},
+						},
+					},
 				},
 			},
 			extprocConfig: &v1alpha1.ExtProcPolicy{
@@ -176,7 +189,13 @@ func TestBuildEnvoyExtProc(t *testing.T) {
 			name: "with invalid processing modes",
 			gatewayExt: &ir.GatewayExtension{
 				ExtProc: &v1alpha1.ExtProcProvider{
-					GrpcService: &v1alpha1.ExtGrpcService{},
+					GrpcService: v1alpha1.ExtGrpcService{
+						BackendRef: gwv1.BackendRef{
+							BackendObjectReference: gwv1.BackendObjectReference{
+								Name: "test-service",
+							},
+						},
+					},
 				},
 			},
 			extprocConfig: &v1alpha1.ExtProcPolicy{

@@ -6,9 +6,10 @@ import (
 	"context"
 	"time"
 
-	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	. "github.com/onsi/gomega"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )

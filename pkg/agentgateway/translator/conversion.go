@@ -3,6 +3,8 @@ package translator
 import (
 	"crypto/tls"
 	"fmt"
+	"maps"
+	slices0 "slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -32,8 +34,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -115,7 +117,7 @@ func ConvertHTTPRouteToAgw(ctx RouteContext, r gwv1.HTTPRouteRule,
 	res.Hostnames = convertHostnames(obj.Spec.Hostnames)
 
 	if shouldInjectErrorResponse(backendErr) {
-		injectDirectResponse(res, obj.Namespace, obj.Name)
+		injectDirectResponseFilter(res)
 	}
 
 	if policiesErr != nil && !isPolicyErrorCritical(policiesErr) {
@@ -192,7 +194,7 @@ func shouldInjectErrorResponse(backendErr *reporter.RouteCondition) bool {
 }
 
 // Helper function to inject direct response filter for errors
-func injectDirectResponse(res *api.Route, namespace, name string) {
+func injectDirectResponseFilter(res *api.Route) {
 	for _, f := range res.TrafficPolicies {
 		if _, ok := f.GetKind().(*api.TrafficPolicySpec_DirectResponse); ok {
 			return
@@ -218,17 +220,12 @@ func isPolicyErrorCritical(filterError *reporter.RouteCondition) bool {
 		// Add other critical filter error reasons as needed
 	}
 
-	for _, reason := range criticalReasons {
-		if filterError.Reason == reason {
-			return true
-		}
-	}
-	return false
+	return slices0.Contains(criticalReasons, filterError.Reason)
 }
 
 // ConvertTCPRouteToAgw converts a TCPRouteRule to an agentgateway TCPRoute
-func ConvertTCPRouteToAgw(ctx RouteContext, r gwv1alpha2.TCPRouteRule,
-	obj *gwv1alpha2.TCPRoute, pos int,
+func ConvertTCPRouteToAgw(ctx RouteContext, r gwv1a2.TCPRouteRule,
+	obj *gwv1a2.TCPRoute, pos int,
 ) (*api.TCPRoute, *reporter.RouteCondition) {
 	routeRuleKey := strconv.Itoa(pos)
 	var ruleName string
@@ -334,8 +331,8 @@ func ConvertGRPCRouteToAgw(ctx RouteContext, r gwv1.GRPCRouteRule,
 }
 
 // ConvertTLSRouteToAgw converts a TLSRouteRule to an agentgateway TCPRoute
-func ConvertTLSRouteToAgw(ctx RouteContext, r gwv1alpha2.TLSRouteRule,
-	obj *gwv1alpha2.TLSRoute, pos int,
+func ConvertTLSRouteToAgw(ctx RouteContext, r gwv1a2.TLSRouteRule,
+	obj *gwv1a2.TLSRoute, pos int,
 ) (*api.TCPRoute, *reporter.RouteCondition) {
 	routeRuleKey := strconv.Itoa(pos)
 	var ruleName string
@@ -1544,22 +1541,20 @@ func toNamespaceSet(name string, labels map[string]string) klabels.Set {
 	}
 	// First we need a copy to not modify the underlying object
 	ret := make(map[string]string, len(labels)+1)
-	for k, v := range labels {
-		ret[k] = v
-	}
+	maps.Copy(ret, labels)
 	ret[NamespaceNameLabel] = name
 	return ret
 }
 
 func GetCommonRouteInfo(spec any) ([]gwv1.ParentReference, []gwv1.Hostname, schema.GroupVersionKind) {
 	switch t := spec.(type) {
-	case *gwv1alpha2.TCPRoute:
+	case *gwv1a2.TCPRoute:
 		return t.Spec.ParentRefs, nil, wellknown.TCPRouteGVK
-	case *gwv1alpha2.TLSRoute:
+	case *gwv1a2.TLSRoute:
 		return t.Spec.ParentRefs, t.Spec.Hostnames, wellknown.TLSRouteGVK
 	case *gwv1.HTTPRoute:
 		return t.Spec.ParentRefs, t.Spec.Hostnames, wellknown.HTTPRouteGVK
-	case *gwv1beta1.HTTPRoute:
+	case *gwv1b1.HTTPRoute:
 		return t.Spec.ParentRefs, t.Spec.Hostnames, wellknown.HTTPRouteGVK
 	case *gwv1.GRPCRoute:
 		return t.Spec.ParentRefs, t.Spec.Hostnames, wellknown.GRPCRouteGVK

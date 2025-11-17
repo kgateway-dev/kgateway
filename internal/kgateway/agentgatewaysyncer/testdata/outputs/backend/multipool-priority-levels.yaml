@@ -8,6 +8,11 @@ Backends:
       - anthropic:
           model: claude-3-opus-20240229
         name: anthropic
+      - azureopenai:
+          apiVersion: 2024-02-15-preview
+          host: ai-gateway.openai.azure.com
+          model: gpt-4o-mini
+        name: azureopenai
     - providers:
       - gemini:
           model: gemini-1.5-flash
@@ -15,6 +20,8 @@ Backends:
       - name: vertexai
         vertex:
           model: gemini-pro
+          projectId: vertex-fallback-project
+          region: us-central1
     - providers:
       - bedrock:
           model: anthropic.claude-3-haiku-20240307-v1:0
@@ -38,6 +45,13 @@ Policies:
   name: auth-default/multipool-priority-anthropic
   target:
     subBackend: default/multipool-priority/anthropic
+- backend:
+    auth:
+      key:
+        secret: azure-api-key
+  name: auth-default/multipool-priority-azureopenai
+  target:
+    subBackend: default/multipool-priority/azureopenai
 - backend:
     auth:
       aws:

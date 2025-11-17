@@ -16,11 +16,10 @@ import (
 	"k8s.io/utils/ptr"
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/status"
+	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/status"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
@@ -1147,8 +1146,8 @@ func TestAgwRouteCollection(t *testing.T) {
 			gatewayObjs := krttest.GetMockCollection[*gwv1.Gateway](mock)
 			httpRoutes := krttest.GetMockCollection[*gwv1.HTTPRoute](mock)
 			grpcRoutes := krttest.GetMockCollection[*gwv1.GRPCRoute](mock)
-			tcpRoutes := krttest.GetMockCollection[*gwv1alpha2.TCPRoute](mock)
-			tlsRoutes := krttest.GetMockCollection[*gwv1alpha2.TLSRoute](mock)
+			tcpRoutes := krttest.GetMockCollection[*gwv1a2.TCPRoute](mock)
+			tlsRoutes := krttest.GetMockCollection[*gwv1a2.TLSRoute](mock)
 			refGrantsCollection := krttest.GetMockCollection[ReferenceGrant](mock)
 			services := krttest.GetMockCollection[*corev1.Service](mock)
 			namespaces := krttest.GetMockCollection[*corev1.Namespace](mock)
@@ -1744,8 +1743,8 @@ func TestAgwRouteCollectionGRPC(t *testing.T) {
 			gatewayObjs := krttest.GetMockCollection[*gwv1.Gateway](mock)
 			httpRoutes := krttest.GetMockCollection[*gwv1.HTTPRoute](mock)
 			grpcRoutes := krttest.GetMockCollection[*gwv1.GRPCRoute](mock)
-			tcpRoutes := krttest.GetMockCollection[*gwv1alpha2.TCPRoute](mock)
-			tlsRoutes := krttest.GetMockCollection[*gwv1alpha2.TLSRoute](mock)
+			tcpRoutes := krttest.GetMockCollection[*gwv1a2.TCPRoute](mock)
+			tlsRoutes := krttest.GetMockCollection[*gwv1a2.TLSRoute](mock)
 			refGrantsCollection := krttest.GetMockCollection[ReferenceGrant](mock)
 			services := krttest.GetMockCollection[*corev1.Service](mock)
 			namespaces := krttest.GetMockCollection[*corev1.Namespace](mock)
@@ -2181,8 +2180,8 @@ func TestAgwRouteCollectionWithFilters(t *testing.T) {
 			gatewayObjs := krttest.GetMockCollection[*gwv1.Gateway](mock)
 			httpRoutes := krttest.GetMockCollection[*gwv1.HTTPRoute](mock)
 			grpcRoutes := krttest.GetMockCollection[*gwv1.GRPCRoute](mock)
-			tcpRoutes := krttest.GetMockCollection[*gwv1alpha2.TCPRoute](mock)
-			tlsRoutes := krttest.GetMockCollection[*gwv1alpha2.TLSRoute](mock)
+			tcpRoutes := krttest.GetMockCollection[*gwv1a2.TCPRoute](mock)
+			tlsRoutes := krttest.GetMockCollection[*gwv1a2.TLSRoute](mock)
 			refGrantsCollection := krttest.GetMockCollection[ReferenceGrant](mock)
 			services := krttest.GetMockCollection[*corev1.Service](mock)
 			namespaces := krttest.GetMockCollection[*corev1.Namespace](mock)
@@ -2387,8 +2386,8 @@ func TestAgwRouteCollectionTimeouts(t *testing.T) {
 			gwObjs := krttest.GetMockCollection[*gwv1.Gateway](mock)
 			httpRoutes := krttest.GetMockCollection[*gwv1.HTTPRoute](mock)
 			grpcRoutes := krttest.GetMockCollection[*gwv1.GRPCRoute](mock)
-			tcpRoutes := krttest.GetMockCollection[*gwv1alpha2.TCPRoute](mock)
-			tlsRoutes := krttest.GetMockCollection[*gwv1alpha2.TLSRoute](mock)
+			tcpRoutes := krttest.GetMockCollection[*gwv1a2.TCPRoute](mock)
+			tlsRoutes := krttest.GetMockCollection[*gwv1a2.TLSRoute](mock)
 			refGrantsCol := krttest.GetMockCollection[ReferenceGrant](mock)
 			services := krttest.GetMockCollection[*corev1.Service](mock)
 			namespaces := krttest.GetMockCollection[*corev1.Namespace](mock)

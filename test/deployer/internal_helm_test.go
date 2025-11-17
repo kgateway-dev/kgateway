@@ -6,10 +6,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/internal/version"
+	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
 	pkgdeployer "github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
@@ -64,6 +64,14 @@ func TestRenderHelmChart(t *testing.T) {
 			InputFile: "agentgateway-infrastructure",
 		},
 		{
+			Name:      "agentgateway-controller-but-custom-gatewayclass",
+			InputFile: "agentgateway-controller-but-custom-gatewayclass",
+		},
+		{
+			Name:      "envoy-controller-ignores-agentgateway-class-name",
+			InputFile: "envoy-controller-ignores-agentgateway-class-name",
+		},
+		{
 			Name:      "envoy-infrastructure",
 			InputFile: "envoy-infrastructure",
 		},
@@ -82,7 +90,8 @@ func TestRenderHelmChart(t *testing.T) {
 	crdDir := filepath.Join(testutils.GitRootDirectory(), testutils.CRDPath)
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			tester.RunHelmChartTest(t, tt, scheme, dir, crdDir, nil)
+			fakeClient := fake.NewClient(t, tester.GetObjects(t, tt, scheme, dir, crdDir)...)
+			tester.RunHelmChartTest(t, tt, scheme, dir, crdDir, nil, fakeClient)
 		})
 	}
 }
@@ -133,7 +142,8 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 
 	// ExtraGatewayParameters function that enables TLS. this is needed as TLS
 	// is injected by the control plane and not via the GWP API.
-	tlsExtraParams := func(cli client.Client, inputs *pkgdeployer.Inputs) pkgdeployer.HelmValuesGenerator {
+	//nolint:unparam // tlsExtra is the fifth parameter for tester.RunHelmChartTest which should follow its signature.
+	tlsExtraParams := func(inputs *pkgdeployer.Inputs) pkgdeployer.HelmValuesGenerator {
 		inputs.ControlPlane.XdsTLS = true
 		inputs.ControlPlane.XdsTlsCaPath = caCertPath
 		return nil
@@ -144,7 +154,8 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 	crdDir := filepath.Join(testutils.GitRootDirectory(), testutils.CRDPath)
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			tester.RunHelmChartTest(t, tt, scheme, dir, crdDir, tlsExtraParams)
+			fakeClient := fake.NewClient(t, tester.GetObjects(t, tt, scheme, dir, crdDir)...)
+			tester.RunHelmChartTest(t, tt, scheme, dir, crdDir, tlsExtraParams, fakeClient)
 		})
 	}
 }

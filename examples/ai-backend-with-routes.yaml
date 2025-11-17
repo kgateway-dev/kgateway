@@ -9,6 +9,7 @@ spec:
     port: 8080
     protocol: HTTP
 ---
+# TODO: Update this to use the agw based Backend API.
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend
 metadata:
@@ -26,6 +27,8 @@ spec:
       routes:
         "/v1/chat/completions": "completions"
         "/v1/messages": "messages"
+        "/v1/responses": "responses"
+        "/v1/messages/count_tokens": "anthropic_token_count"
         "/v1/models": "models"
         "*": "passthrough"
 ---

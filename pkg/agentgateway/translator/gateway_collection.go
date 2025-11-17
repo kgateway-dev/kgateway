@@ -449,7 +449,7 @@ func ListenerSetCollection(
 				result = append(result, res)
 			}
 
-			reportListenerSetStatus(parentGwObj, obj, status)
+			reportListenerSetStatus(obj, status)
 			return status, result
 		}, krtopts.ToOptions("ListenerSets")...)
 }
@@ -496,6 +496,8 @@ func namespaceAcceptedByAllowListeners(localNamespace string, parent *gwv1.Gatew
 			return localNamespace == parent.Namespace
 		case gwv1.NamespacesFromNone:
 			return false
+		case gwv1.NamespacesFromSelector:
+			// handled below
 		default:
 			// Unknown?
 			return false
@@ -556,7 +558,6 @@ func convertListenerSetStatusToStandardStatus(e gatewayx.ListenerEntryStatus) gw
 }
 
 func reportListenerSetStatus(
-	parentGwObj *gwv1.Gateway,
 	obj *gatewayx.XListenerSet,
 	gs *gatewayx.ListenerSetStatus,
 ) {

@@ -4,17 +4,16 @@ import (
 	"context"
 	"log/slog"
 
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
-
-	"istio.io/istio/pkg/kube/krt"
-
-	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/endpoints"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	gwtranslator "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -68,8 +67,12 @@ func NewCombinedTranslator(
 func (s *CombinedTranslator) Init(ctx context.Context) {
 	queries := query.NewData(s.commonCols)
 
-	listenerTranslatorConfig := gwtranslator.TranslatorConfig{}
-	listenerTranslatorConfig.ListenerTranslatorConfig.ListenerBindIpv6 = s.commonCols.Settings.ListenerBindIpv6
+	listenerTranslatorConfig := gwtranslator.TranslatorConfig{
+		ListenerTranslatorConfig: listener.ListenerTranslatorConfig{
+			ListenerBindIpv6:                     s.commonCols.Settings.ListenerBindIpv6,
+			EnableExperimentalGatewayAPIFeatures: s.commonCols.Settings.EnableExperimentalGatewayAPIFeatures,
+		},
+	}
 
 	s.gwtranslator = gwtranslator.NewTranslator(queries, listenerTranslatorConfig)
 	s.irtranslator = &irtranslator.Translator{

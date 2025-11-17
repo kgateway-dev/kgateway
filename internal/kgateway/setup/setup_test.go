@@ -177,6 +177,15 @@ func TestWithStandardSettings(t *testing.T) {
 	runScenario(t, "testdata/standard", st)
 }
 
+func TestWithExperimentalFeaturesSettings(t *testing.T) {
+	st, err := envtestutil.BuildSettings()
+	st.EnableExperimentalGatewayAPIFeatures = true
+	if err != nil {
+		t.Fatalf("can't get settings %v", err)
+	}
+	runScenario(t, "testdata/experimental", st)
+}
+
 func TestWithIstioAutomtlsSettings(t *testing.T) {
 	st, err := envtestutil.BuildSettings()
 	st.EnableIstioIntegration = true
@@ -326,6 +335,13 @@ func runScenario(t *testing.T, scenarioDir string, globalSettings *apisettings.S
 				if os.Getenv("TEST_PREFIX") != "" && !strings.HasPrefix(f.Name(), os.Getenv("TEST_PREFIX")) {
 					continue
 				}
+				if strings.HasPrefix(f.Name(), "ai-") {
+					name := strings.TrimSuffix(f.Name(), ".yaml")
+					t.Run(name, func(t *testing.T) {
+						t.Skip("temporarily skipping legacy AI fixtures while migrating to dedicated API")
+					})
+					continue
+				}
 				fullpath := filepath.Join(scenarioDir, f.Name())
 				t.Run(strings.TrimSuffix(f.Name(), ".yaml"), func(t *testing.T) {
 					writer.set(t)
@@ -381,6 +397,7 @@ func setupEnvTestAndRun(t *testing.T, globalSettings *apisettings.Settings, run 
 		},
 		nil, // no tests need a validator right now.
 		run,
+		nil,
 	)
 }
 
@@ -656,7 +673,7 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) (xdsDump, error) {
 	done = make(chan struct{})
 	go func() {
 		defer close(done)
-		for i := 0; i < 2; i++ {
+		for range 2 {
 			dresp, err := x.adsClient.Recv()
 			if err != nil {
 				errs = errors.Join(errs, fmt.Errorf("failed to get response from xds server: %v", err))

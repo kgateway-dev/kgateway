@@ -12,8 +12,6 @@ import (
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
@@ -29,15 +27,13 @@ type testingSuite struct {
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &testingSuite{
-		base.NewBaseTestingSuite(ctx, testInst, setup, testCases),
+		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setup, testCases,
+			base.WithMinGwApiVersion(base.GwApiRequireListenerSets),
+		),
 	}
 }
 
 func (s *testingSuite) SetupSuite() {
-	if !RequiredCrdExists(s.TestInstallation) {
-		s.T().Skip("Skipping as the XListenerSet CRD is not installed")
-	}
-
 	s.BaseTestingSuite.SetupSuite()
 }
 
@@ -600,10 +596,4 @@ func (s *testingSuite) expectConflictedListenerSetConflicted(obj client.Object) 
 				},
 			},
 		})
-}
-
-func RequiredCrdExists(testInstallation *e2e.TestInstallation) bool {
-	xListenerSetExists, err := schemes.CRDExists(testInstallation.ClusterContext.RestConfig, gwxv1a1.GroupVersion.Group, gwxv1a1.GroupVersion.Version, wellknown.XListenerSetKind)
-	testInstallation.Assertions.Assert.NoError(err)
-	return xListenerSetExists
 }

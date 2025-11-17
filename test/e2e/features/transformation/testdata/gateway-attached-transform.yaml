@@ -26,6 +26,9 @@ spec:
       set:
         - name: request-gateway
           value: "hello"
+        - name: x-empty
+          value: ""
+        - name: x-not-set
     response:
       set:
         - name: response-gateway

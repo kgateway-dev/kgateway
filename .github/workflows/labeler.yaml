@@ -2,7 +2,7 @@
 name: Labeler
 on:
   pull_request_target:
-    types: [opened, edited, reopened]
+    types: [opened, edited, reopened, synchronize]
   merge_group:
     types: [checks_requested]
 
@@ -30,4 +30,8 @@ jobs:
         if: github.event_name != 'merge_group'
         uses: kgateway-dev/pr-kind-labeler@main
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # Github Actions cannot trigger Github Actions, but with this
+          # Personal Access Token we can make labels that trigger
+          # check-labels.yaml. Test this by editing your PR's description to
+          # have no kind and then editing it again to have a kind.
+          token: ${{ secrets.KGATEWAY_CI_TOKEN }}

@@ -34,7 +34,8 @@ const (
 )
 
 type ListenerTranslatorConfig struct {
-	ListenerBindIpv6 bool
+	ListenerBindIpv6                     bool
+	EnableExperimentalGatewayAPIFeatures bool
 }
 
 // TranslateListeners translates the set of ListenerIRs required to produce a full output proxy (either from one Gateway or multiple merged Gateways)
@@ -53,7 +54,7 @@ func TranslateListeners(
 		Translator: "TranslateListeners",
 	})(nil)
 
-	validatedListeners := validateGateway(gateway, reporter)
+	validatedListeners := validateGateway(gateway, reporter, settings)
 	mergedListeners := mergeGWListeners(queries, gateway.Namespace, validatedListeners, *gateway, routesForGw, reporter, settings)
 	translatedListeners := mergedListeners.translateListeners(kctx, ctx, queries, reporter)
 

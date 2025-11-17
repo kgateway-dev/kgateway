@@ -6,15 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"google.golang.org/protobuf/proto"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
-
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
-
 	"github.com/agentgateway/agentgateway/go/api"
+	"google.golang.org/protobuf/proto"
 	"istio.io/api/annotation"
 	"istio.io/api/label"
 	"istio.io/istio/pkg/config/constants"
@@ -22,6 +15,12 @@ import (
 	"istio.io/istio/pkg/log"
 	"istio.io/istio/pkg/ptr"
 	"istio.io/istio/pkg/slices"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
 type InboundBinding struct {
@@ -163,13 +162,13 @@ func (w Waypoint) ResourceName() string {
 }
 
 func (a *index) WaypointsCollection(
-	gateways krt.Collection[*gatewayv1.Gateway],
-	gatewayClasses krt.Collection[*gatewayv1.GatewayClass],
+	gateways krt.Collection[*gwv1.Gateway],
+	gatewayClasses krt.Collection[*gwv1.GatewayClass],
 	pods krt.Collection[*corev1.Pod],
 	opts krtutil.KrtOptions,
 ) krt.Collection[Waypoint] {
 	podsByNamespace := krt.NewNamespaceIndex(pods)
-	return krt.NewCollection(gateways, func(ctx krt.HandlerContext, gateway *gatewayv1.Gateway) *Waypoint {
+	return krt.NewCollection(gateways, func(ctx krt.HandlerContext, gateway *gwv1.Gateway) *Waypoint {
 		if len(gateway.Status.Addresses) == 0 {
 			// gateway.Status.Addresses should only be populated once the Waypoint's deployment has at least 1 ready pod, it should never be removed after going ready
 			// ignore Kubernetes Gateways which aren't waypoints
@@ -200,11 +199,11 @@ func (a *index) WaypointsCollection(
 			trafficType = tt
 		}
 
-		return a.makeWaypoint(ctx, gateway, gatewayClass, serviceAccounts, trafficType)
+		return a.makeWaypoint(gateway, gatewayClass, serviceAccounts, trafficType)
 	}, opts.ToOptions("Waypoints")...)
 }
 
-func makeInboundBinding(gateway *gatewayv1.Gateway, gatewayClass *gatewayv1.GatewayClass) *InboundBinding {
+func makeInboundBinding(gateway *gwv1.Gateway, gatewayClass *gwv1.GatewayClass) *InboundBinding {
 	ann, ok := getGatewayOrGatewayClassAnnotation(gateway, gatewayClass)
 	if !ok {
 		return nil
@@ -246,7 +245,7 @@ func makeInboundBinding(gateway *gatewayv1.Gateway, gatewayClass *gatewayv1.Gate
 	}
 }
 
-func getGatewayOrGatewayClassAnnotation(gateway *gatewayv1.Gateway, class *gatewayv1.GatewayClass) (string, bool) {
+func getGatewayOrGatewayClassAnnotation(gateway *gwv1.Gateway, class *gwv1.GatewayClass) (string, bool) {
 	// Gateway > GatewayClass
 	an, ok := gateway.Annotations[annotation.AmbientWaypointInboundBinding.Name]
 	if ok {
@@ -262,16 +261,15 @@ func getGatewayOrGatewayClassAnnotation(gateway *gatewayv1.Gateway, class *gatew
 }
 
 func (a *index) makeWaypoint(
-	ctx krt.HandlerContext,
-	gateway *gatewayv1.Gateway,
-	gatewayClass *gatewayv1.GatewayClass,
+	gateway *gwv1.Gateway,
+	gatewayClass *gwv1.GatewayClass,
 	serviceAccounts []string,
 	trafficType string,
 ) *Waypoint {
 	binding := makeInboundBinding(gateway, gatewayClass)
 	return &Waypoint{
 		Named:           krt.NewNamed(gateway),
-		Address:         a.getGatewayAddress(ctx, gateway),
+		Address:         a.getGatewayAddress(gateway),
 		DefaultBinding:  binding,
 		AllowedRoutes:   makeAllowedRoutes(gateway, binding),
 		TrafficType:     trafficType,
@@ -280,7 +278,7 @@ func (a *index) makeWaypoint(
 }
 
 type WaypointSelector struct {
-	FromNamespaces gatewayv1.FromNamespaces
+	FromNamespaces gwv1.FromNamespaces
 	Selector       labels.Selector
 }
 
@@ -299,12 +297,12 @@ func (w WaypointSelector) Equals(other WaypointSelector) bool {
 
 func (w Waypoint) AllowsAttachmentFromNamespaceOrLookup(ctx krt.HandlerContext, Namespaces krt.Collection[*corev1.Namespace], namespace string) bool {
 	switch w.AllowedRoutes.FromNamespaces {
-	case gatewayv1.NamespacesFromAll:
+	case gwv1.NamespacesFromAll:
 		return true
-	case gatewayv1.NamespacesFromSelector:
+	case gwv1.NamespacesFromSelector:
 		ns := ptr.OrEmpty[*corev1.Namespace](krt.FetchOne[*corev1.Namespace](ctx, Namespaces, krt.FilterKey(namespace)))
 		return w.AllowedRoutes.Selector.Matches(labels.Set(ns.GetLabels()))
-	case gatewayv1.NamespacesFromSame:
+	case gwv1.NamespacesFromSame:
 		return w.Namespace == namespace
 	default:
 		// Should be impossible
@@ -314,11 +312,11 @@ func (w Waypoint) AllowsAttachmentFromNamespaceOrLookup(ctx krt.HandlerContext, 
 
 func (w Waypoint) AllowsAttachmentFromNamespace(namespace *corev1.Namespace) bool {
 	switch w.AllowedRoutes.FromNamespaces {
-	case gatewayv1.NamespacesFromAll:
+	case gwv1.NamespacesFromAll:
 		return true
-	case gatewayv1.NamespacesFromSelector:
+	case gwv1.NamespacesFromSelector:
 		return w.AllowedRoutes.Selector.Matches(labels.Set(namespace.GetLabels()))
-	case gatewayv1.NamespacesFromSame:
+	case gwv1.NamespacesFromSame:
 		return w.Namespace == namespace.Name
 	default:
 		// Should be impossible
@@ -337,7 +335,7 @@ func (w *Waypoint) GetAddress() *api.GatewayAddress {
 // makeAllowedRoutes returns a WaypointSelector that matches the listener with the given binding
 // if we don't have a binding we use the default HBONE listener
 // if we have a binding we use the protocol and port defined in the binding
-func makeAllowedRoutes(gateway *gatewayv1.Gateway, binding *InboundBinding) WaypointSelector {
+func makeAllowedRoutes(gateway *gwv1.Gateway, binding *InboundBinding) WaypointSelector {
 	// First see if we can find a bound listener
 	if listener, found := findBoundListener(gateway, binding); found {
 		return makeWaypointSelector(listener)
@@ -353,21 +351,21 @@ func makeAllowedRoutes(gateway *gatewayv1.Gateway, binding *InboundBinding) Wayp
 
 	// We didn't find any listener, just use "Same"
 	return WaypointSelector{
-		FromNamespaces: gatewayv1.NamespacesFromSame,
+		FromNamespaces: gwv1.NamespacesFromSame,
 	}
 }
 
-func findBoundListener(gateway *gatewayv1.Gateway, binding *InboundBinding) (gatewayv1.Listener, bool) {
+func findBoundListener(gateway *gwv1.Gateway, binding *InboundBinding) (gwv1.Listener, bool) {
 	if binding == nil {
-		return gatewayv1.Listener{}, false
+		return gwv1.Listener{}, false
 	}
-	var match func(l gatewayv1.Listener) bool
+	var match func(l gwv1.Listener) bool
 	if binding.Port != 0 {
-		match = func(l gatewayv1.Listener) bool {
-			return l.Port == gatewayv1.PortNumber(binding.Port) //nolint:gosec // G115: binding.Port is uint32 representing a port number, safe to convert to PortNumber (int32)
+		match = func(l gwv1.Listener) bool {
+			return l.Port == gwv1.PortNumber(binding.Port) //nolint:gosec // G115: binding.Port is uint32 representing a port number, safe to convert to PortNumber (int32)
 		}
 	} else if binding.Protocol == api.ApplicationTunnel_PROXY {
-		match = func(l gatewayv1.Listener) bool {
+		match = func(l gwv1.Listener) bool {
 			return l.Protocol == constants.WaypointSandwichListenerProxyProtocol
 		}
 	}
@@ -376,17 +374,17 @@ func findBoundListener(gateway *gatewayv1.Gateway, binding *InboundBinding) (gat
 			return l, true
 		}
 	}
-	return gatewayv1.Listener{}, false
+	return gwv1.Listener{}, false
 }
 
-func makeWaypointSelector(l gatewayv1.Listener) WaypointSelector {
+func makeWaypointSelector(l gwv1.Listener) WaypointSelector {
 	if l.AllowedRoutes == nil || l.AllowedRoutes.Namespaces == nil {
 		return WaypointSelector{
-			FromNamespaces: gatewayv1.NamespacesFromSame,
+			FromNamespaces: gwv1.NamespacesFromSame,
 		}
 	}
 	al := *l.AllowedRoutes.Namespaces
-	from := ptr.OrDefault(al.From, gatewayv1.NamespacesFromSame)
+	from := ptr.OrDefault(al.From, gwv1.NamespacesFromSame)
 	label, _ := metav1.LabelSelectorAsSelector(l.AllowedRoutes.Namespaces.Selector)
 	return WaypointSelector{
 		FromNamespaces: from,
@@ -394,9 +392,9 @@ func makeWaypointSelector(l gatewayv1.Listener) WaypointSelector {
 	}
 }
 
-func (a *index) getGatewayAddress(ctx krt.HandlerContext, gw *gatewayv1.Gateway) *api.GatewayAddress {
+func (a *index) getGatewayAddress(gw *gwv1.Gateway) *api.GatewayAddress {
 	for _, addr := range gw.Status.Addresses {
-		if addr.Type != nil && *addr.Type == gatewayv1.HostnameAddressType {
+		if addr.Type != nil && *addr.Type == gwv1.HostnameAddressType {
 			// Prefer hostname from status, if we can find it.
 			// Hostnames are a more reliable lookup key than IP; hostname is already the unique key for services, and IPs can be re-allocated.
 			// Additionally, a destination can have multiple IPs, which makes handling more challenging. For example, was the IPv4 address
@@ -415,7 +413,7 @@ func (a *index) getGatewayAddress(ctx krt.HandlerContext, gw *gatewayv1.Gateway)
 	}
 	// Fallback to IP address
 	for _, addr := range gw.Status.Addresses {
-		if addr.Type != nil && *addr.Type == gatewayv1.IPAddressType {
+		if addr.Type != nil && *addr.Type == gwv1.IPAddressType {
 			ip, err := netip.ParseAddr(addr.Value)
 			if err != nil {
 				log.Warnf("parsed invalid IP address %q: %v", addr.Value, err)
@@ -425,7 +423,7 @@ func (a *index) getGatewayAddress(ctx krt.HandlerContext, gw *gatewayv1.Gateway)
 			return &api.GatewayAddress{
 				Destination: &api.GatewayAddress_Address{
 					// probably use from Cidr instead?
-					Address: a.toNetworkAddressFromIP(ctx, ip),
+					Address: a.toNetworkAddressFromIP(ip),
 				},
 				// TODO: look up the HBONE port instead of hardcoding it
 				HboneMtlsPort: 15008,
@@ -456,7 +454,7 @@ func ReportWaypointUnsupportedTrafficType(waypoint string, ttype string) *Status
 	}
 }
 
-func (a *index) toNetworkAddressFromIP(ctx krt.HandlerContext, ip netip.Addr) *api.NetworkAddress {
+func (a *index) toNetworkAddressFromIP(ip netip.Addr) *api.NetworkAddress {
 	return &api.NetworkAddress{
 		Network: "", // TODO
 		Address: ip.AsSlice(),

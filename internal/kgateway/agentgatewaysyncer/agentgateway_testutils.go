@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"reflect"
 	"regexp"
 	"slices"
 	"sort"
@@ -28,36 +27,32 @@ import (
 	"istio.io/istio/pilot/test/util"
 	"istio.io/istio/pkg/config/schema/gvk"
 	kubeclient "istio.io/istio/pkg/kube"
-	"istio.io/istio/pkg/kube/kclient/clienttest"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	"sigs.k8s.io/gateway-api/pkg/consts"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/status"
-
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
-	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
-
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/status"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	agwtranslator "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
-	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/fake"
+	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
+	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
-	translatortest "github.com/kgateway-dev/kgateway/v2/test/translator"
 )
 
 type AssertReports func(gwNN types.NamespacedName, reportsMap reports.ReportMap)
@@ -78,7 +73,7 @@ func (tr *translationResult) MarshalJSON() ([]byte, error) {
 	}
 
 	// Create a map to hold the marshaled fields
-	result := make(map[string]interface{})
+	result := make(map[string]any)
 
 	// Marshal each field using protojson
 	if len(tr.Routes) > 0 {
@@ -259,14 +254,14 @@ func (tr *translationResult) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func marshalProtoMessages[T proto.Message](messages []T, m protojson.MarshalOptions) ([]interface{}, error) {
-	var result []interface{}
+func marshalProtoMessages[T proto.Message](messages []T, m protojson.MarshalOptions) ([]any, error) {
+	var result []any
 	for _, msg := range messages {
 		data, err := m.Marshal(msg)
 		if err != nil {
 			return nil, err
 		}
-		var jsonObj interface{}
+		var jsonObj any
 		if err := json.Unmarshal(data, &jsonObj); err != nil {
 			return nil, err
 		}
@@ -276,6 +271,12 @@ func marshalProtoMessages[T proto.Message](messages []T, m protojson.MarshalOpti
 }
 
 type ExtraPluginsFn func(ctx context.Context, commoncol *collections.CommonCollections) []pluginsdk.Plugin
+
+type ExtraConfig struct {
+	NewClientFn func(*testing.T, ...client.Object) apiclient.Client
+	PluginsFn   ExtraPluginsFn
+	Schemes     runtime.SchemeBuilder
+}
 
 func NewScheme(extraSchemes runtime.SchemeBuilder) *runtime.Scheme {
 	scheme := schemes.GatewayScheme()
@@ -295,7 +296,7 @@ func TestTranslation(
 	gwNN types.NamespacedName,
 	settingsOpts ...SettingsOpts,
 ) {
-	TestTranslationWithExtraPlugins(t, ctx, inputFiles, outputFile, expectedStatusFile, gwNN, nil, nil, nil, settingsOpts...)
+	TestTranslationWithExtraPlugins(t, ctx, inputFiles, outputFile, expectedStatusFile, gwNN, ExtraConfig{}, settingsOpts...)
 }
 
 func TestTranslationWithExtraPlugins(
@@ -305,17 +306,15 @@ func TestTranslationWithExtraPlugins(
 	outputFile string,
 	expectedStatusFile string,
 	gwNN types.NamespacedName,
-	extraPluginsFn ExtraPluginsFn,
-	extraSchemes runtime.SchemeBuilder,
-	extraGVRs []schema.GroupVersionResource,
+	extraConfig ExtraConfig,
 	settingsOpts ...SettingsOpts,
 ) {
-	scheme := NewScheme(extraSchemes)
+	scheme := NewScheme(extraConfig.Schemes)
 	r := require.New(t)
 
 	results, err := TestCase{
 		InputFiles: inputFiles,
-	}.Run(t, ctx, scheme, extraPluginsFn, extraGVRs, settingsOpts...)
+	}.Run(t, ctx, scheme, extraConfig, settingsOpts...)
 	r.NoError(err)
 
 	// TODO: do a json round trip to normalize the output (i.e. things like omit empty)
@@ -446,7 +445,7 @@ func sortTranslationResult(tr *translationResult) *translationResult {
 	return tr
 }
 
-func ReadYamlFile(file string, out interface{}) error {
+func ReadYamlFile(file string, out any) error {
 	data, err := os.ReadFile(file)
 	if err != nil {
 		return err
@@ -460,59 +459,31 @@ func (tc TestCase) Run(
 	t *testing.T,
 	ctx context.Context,
 	scheme *runtime.Scheme,
-	extraPluginsFn ExtraPluginsFn,
-	extraGVRs []schema.GroupVersionResource,
+	extraConfig ExtraConfig,
 	settingsOpts ...SettingsOpts,
 ) (ActualTestResult, error) {
-	var (
-		anyObjs []runtime.Object
-		ourObjs []runtime.Object
-	)
 	gvkToStructuralSchema, err := testutils.GetStructuralSchemas(
 		filepath.Join(testutils.GitRootDirectory(), testutils.CRDPath))
 	if err != nil {
 		return ActualTestResult{}, fmt.Errorf("error getting structural schemas: %w", err)
 	}
 
+	var allObjs []client.Object
 	for _, file := range tc.InputFiles {
 		objs, err := testutils.LoadFromFiles(file, scheme, gvkToStructuralSchema)
 		if err != nil {
 			return ActualTestResult{}, err
 		}
-		for i := range objs {
-			switch obj := objs[i].(type) {
-			case *gwv1.Gateway:
-				anyObjs = append(anyObjs, obj)
-
-			default:
-				apiversion := reflect.ValueOf(obj).Elem().FieldByName("TypeMeta").FieldByName("APIVersion").String()
-				if strings.Contains(apiversion, v1alpha1.GroupName) {
-					ourObjs = append(ourObjs, obj)
-				} else {
-					external := false
-					for _, gvr := range extraGVRs {
-						if strings.Contains(apiversion, gvr.Group) {
-							external = true
-							break
-						}
-					}
-					if !external {
-						anyObjs = append(anyObjs, objs[i])
-					}
-				}
-			}
-		}
+		allObjs = append(allObjs, objs...)
 	}
 
-	ourCli := fake.NewSimpleClientset(ourObjs...)
-	cli := kubeclient.NewFakeClient(anyObjs...)
-	allGVRs := append(translatortest.AllCRDs, extraGVRs...)
-	for _, gvr := range allGVRs {
-		clienttest.MakeCRDWithAnnotations(t, cli, gvr, map[string]string{
-			consts.BundleVersionAnnotation: consts.BundleVersion,
-		})
+	var fakeClient apiclient.Client
+	if extraConfig.NewClientFn != nil {
+		fakeClient = extraConfig.NewClientFn(t, allObjs...)
+	} else {
+		fakeClient = fake.NewClient(t, allObjs...)
 	}
-	defer cli.Shutdown()
+	defer fakeClient.Shutdown()
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -522,7 +493,7 @@ func (tc TestCase) Run(
 		wellknown.DefaultAgwClassName,
 	}
 	for _, className := range gwClasses {
-		cli.GatewayAPI().GatewayV1().GatewayClasses().Create(ctx, &gwv1.GatewayClass{
+		fakeClient.GatewayAPI().GatewayV1().GatewayClasses().Create(ctx, &gwv1.GatewayClass{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: className,
 			},
@@ -554,8 +525,7 @@ func (tc TestCase) Run(
 	commoncol, err := collections.NewCommonCollections(
 		ctx,
 		krtOpts,
-		cli,
-		ourCli,
+		fakeClient,
 		wellknown.DefaultGatewayControllerName,
 		wellknown.DefaultAgwControllerName,
 		*settings,
@@ -563,7 +533,7 @@ func (tc TestCase) Run(
 	if err != nil {
 		return ActualTestResult{}, err
 	}
-	proxySyncerPlugins := proxySyncerPluginFactory(ctx, commoncol, wellknown.DefaultAgwClassName, extraPluginsFn, *settings)
+	proxySyncerPlugins := proxySyncerPluginFactory(ctx, commoncol, extraConfig.PluginsFn, *settings)
 	commoncol.InitPlugins(ctx, proxySyncerPlugins, *settings)
 
 	// Create AgwCollections with the necessary input collections
@@ -577,7 +547,7 @@ func (tc TestCase) Run(
 		return ActualTestResult{}, err
 	}
 
-	cli.RunAndWait(ctx.Done())
+	fakeClient.RunAndWait(ctx.Done())
 
 	agwMergedPlugins := agwPluginFactory(ctx, agwCollections)
 	kubeclient.WaitForCacheSync("tlsroutes", ctx.Done(), agwCollections.TLSRoutes.HasSynced)
@@ -592,8 +562,9 @@ func (tc TestCase) Run(
 	// Instead of calling full Init(), manually initialize just what we need for testing
 	// to avoid race conditions with XDS collection building
 	agentGwSyncer := NewAgwSyncer(
+		context.TODO(),
 		wellknown.DefaultAgwControllerName,
-		cli,
+		fakeClient,
 		agwCollections,
 		agwMergedPlugins,
 		nil,
@@ -696,7 +667,7 @@ func (t *TestStatusQueue) Dump() string {
 	return sb.String()
 }
 
-func proxySyncerPluginFactory(ctx context.Context, commoncol *collections.CommonCollections, name string, extraPluginsFn ExtraPluginsFn, globalSettings apisettings.Settings) pluginsdk.Plugin {
+func proxySyncerPluginFactory(ctx context.Context, commoncol *collections.CommonCollections, extraPluginsFn ExtraPluginsFn, globalSettings apisettings.Settings) pluginsdk.Plugin {
 	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultAgwClassName, globalSettings, nil)
 
 	var extraPlugs []pluginsdk.Plugin

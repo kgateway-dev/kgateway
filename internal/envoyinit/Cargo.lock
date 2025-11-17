@@ -18,6 +18,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5192cca8006f1fd4f7237516f40fa183bb07f8fbdfedaa0036de5ea9b0b45e78"
 
 [[package]]
+name = "anyhow"
+version = "1.0.100"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a23eb6b1614318a8071c9b2521f36b424b2c83db5eb3a0fead4a6c0809af6e61"
+
+[[package]]
 name = "autocfg"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -519,6 +525,7 @@ checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 name = "rustformations"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "envoy-proxy-dynamic-modules-rust-sdk",
  "lazy_static",
  "matchers",
@@ -698,7 +705,10 @@ checksum = "40868e7c1d2f0b8d73e4a8c7f0ff63af4f6d19be117e90bd73eb1d62cf831c6b"
 name = "transformations"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "base64",
  "minijinja",
+ "rand",
  "serde",
  "serde_json",
  "serde_with",

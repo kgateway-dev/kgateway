@@ -7,10 +7,9 @@ import (
 	"net/http"
 	"strings"
 
-	"k8s.io/client-go/kubernetes"
-
 	"istio.io/istio/pkg/security"
 	"istio.io/istio/security/pkg/k8s/tokenreview"
+	"k8s.io/client-go/kubernetes"
 )
 
 const (
@@ -98,8 +97,8 @@ func extractRequestToken(req *http.Request) (string, error) {
 		return "", fmt.Errorf("no HTTP authorization header exists")
 	}
 
-	if strings.HasPrefix(value, bearerTokenPrefix) {
-		return strings.TrimPrefix(value, bearerTokenPrefix), nil
+	if after, ok := strings.CutPrefix(value, bearerTokenPrefix); ok {
+		return after, nil
 	}
 
 	return "", fmt.Errorf("no bearer token exists in HTTP authorization header")

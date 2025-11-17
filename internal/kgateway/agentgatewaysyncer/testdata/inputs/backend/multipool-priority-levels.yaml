@@ -49,11 +49,21 @@ spec:
           authToken:
             kind: "Inline"
             inline: "sk-anthropic-primary"
+      - name: azureopenai
+        azureopenai:
+          endpoint: ai-gateway.openai.azure.com
+          deploymentName: gpt-4o-mini
+          apiVersion: 2024-02-15-preview
+          authToken:
+            kind: "SecretRef"
+            secretRef:
+              name: azure-secret
     # Priority 1 - Secondary fallback providers
     - providers:
       - name: gemini
         gemini:
           model: "gemini-1.5-flash"
+          apiVersion: "v1"
           authToken:
             kind: "SecretRef"
             secretRef:
@@ -61,6 +71,10 @@ spec:
       - name: vertexai
         vertexai:
           model: "gemini-pro"
+          apiVersion: "v1"
+          location: "us-central1"
+          projectId: "vertex-fallback-project"
+          publisher: "GOOGLE"
           authToken:
             kind: "Passthrough"
     # Priority 2 - Tertiary fallback provider
@@ -81,6 +95,14 @@ metadata:
 type: Opaque
 data:
   Authorization: QmVhcmVyIHNrLW9wZW5haS1wcmltYXJ5LWtleQ== # Bearer sk-openai-primary-key
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: azure-secret
+type: Opaque
+data:
+  Authorization: QmVhcmVyIGF6dXJlLWFwaS1rZXkK # Bearer azure-api-key
 ---
 apiVersion: v1
 kind: Secret

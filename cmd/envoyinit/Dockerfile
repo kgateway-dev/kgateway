@@ -46,7 +46,6 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Update our deps to make cve toil lower
 # install wget for our default probes
-USER root
 RUN apt-get update \
     && apt-get upgrade -y \
     && apt-get install wget ca-certificates -y \

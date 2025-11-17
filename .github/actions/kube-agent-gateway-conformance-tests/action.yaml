@@ -45,7 +45,7 @@ runs:
         ADDITIONAL_VALUES="-f ${HELM_ADDITIONAL_VALUES}"
         echo "Using additional Helm values from: ${HELM_ADDITIONAL_VALUES}"
       fi
-      
+
       if [[ -z "${{ matrix.version }}" ]]; then
         # If matrix.version is empty, use the local chart path specified in the Makefile.
           helm upgrade -i -n kgateway-system kgateway-crds ./install/helm/kgateway-crds/ \

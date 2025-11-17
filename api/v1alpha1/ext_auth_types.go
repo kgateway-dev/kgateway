@@ -55,7 +55,7 @@ type ExtAuthBufferSettings struct {
 type ExtAuthProvider struct {
 	// GrpcService is the GRPC service that will handle the auth.
 	// +required
-	GrpcService *ExtGrpcService `json:"grpcService"`
+	GrpcService ExtGrpcService `json:"grpcService"`
 
 	// FailOpen determines if requests are allowed when the ext auth service is unavailable.
 	// Defaults to false, meaning requests will be denied if the ext auth service is unavailable.

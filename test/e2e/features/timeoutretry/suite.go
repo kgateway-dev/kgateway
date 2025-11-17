@@ -10,15 +10,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/envoyutils/admincli"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
-	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 const (
@@ -26,70 +25,25 @@ const (
 )
 
 type testingSuite struct {
-	suite.Suite
-	ctx             context.Context
-	ti              *e2e.TestInstallation
-	commonManifests []string
-	testManifests   map[string][]string
+	*base.BaseTestingSuite
 }
+
+var (
+	testCases = map[string]*base.TestCase{
+		"TestRouteTimeout": {},
+		"TestRetries":      {},
+	}
+)
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &testingSuite{
-		ctx:             ctx,
-		ti:              testInst,
-		commonManifests: []string{setupManifest, testdefaults.CurlPodManifest, testdefaults.HttpbinManifest},
-		testManifests:   map[string][]string{},
-	}
-}
-
-func (s *testingSuite) SetupSuite() {
-	for _, manifest := range s.commonManifests {
-		err := s.ti.Actions.Kubectl().ApplyFile(s.ctx, manifest)
-		s.Require().NoError(err, manifest)
-	}
-
-	s.ti.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.Namespace, metav1.ListOptions{
-		LabelSelector: testdefaults.CurlPodLabelSelector,
-	})
-	s.ti.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.HttpbinDeployment.Namespace, metav1.ListOptions{
-		LabelSelector: testdefaults.HttpbinLabelSelector,
-	})
-	s.ti.Assertions.EventuallyPodsRunning(s.ctx, gatewayObjectMeta.Namespace, metav1.ListOptions{
-		LabelSelector: testdefaults.WellKnownAppLabel + "=" + gatewayObjectMeta.Name,
-	})
-}
-
-func (s *testingSuite) TearDownSuite() {
-	if testutils.ShouldSkipCleanup(s.T()) {
-		return
-	}
-	for i := len(s.commonManifests) - 1; i >= 0; i-- {
-		manifest := s.commonManifests[i]
-		err := s.ti.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
-		s.NoError(err, manifest)
-	}
-}
-
-func (s *testingSuite) BeforeTest(suiteName, testName string) {
-	for _, manifest := range s.testManifests[testName] {
-		err := s.ti.Actions.Kubectl().ApplyFile(s.ctx, manifest)
-		s.Require().NoError(err, manifest)
-	}
-}
-
-func (s *testingSuite) AfterTest(suiteName, testName string) {
-	if testutils.ShouldSkipCleanup(s.T()) {
-		return
-	}
-	for _, manifest := range s.testManifests[testName] {
-		err := s.ti.Actions.Kubectl().DeleteFile(s.ctx, manifest, "--grace-period", "0")
-		s.NoError(err, manifest)
+		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setup, testCases, base.WithMinGwApiVersion(base.GwApiRequireRouteNames)),
 	}
 }
 
 func (s *testingSuite) TestRouteTimeout() {
-	s.ti.Assertions.AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(gatewayObjectMeta)),
@@ -104,8 +58,8 @@ func (s *testingSuite) TestRouteTimeout() {
 }
 
 func (s *testingSuite) TestRetries() {
-	s.ti.Assertions.AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(gatewayObjectMeta)),
@@ -117,14 +71,14 @@ func (s *testingSuite) TestRetries() {
 		},
 	)
 	// Assert that there were 2 retry attempts
-	s.ti.Assertions.AssertEnvoyAdminApi(
+	s.TestInstallation.Assertions.AssertEnvoyAdminApi(
 		s.T().Context(),
 		gatewayObjectMeta,
 		assertStat(s.Assert(), "cluster.kube_default_httpbin_8000.upstream_rq_retry$", 2),
 	)
 
-	s.ti.Assertions.AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(gatewayObjectMeta)),
@@ -137,15 +91,15 @@ func (s *testingSuite) TestRetries() {
 		},
 	)
 	// Assert that there were 2 more retry attempts, 4 in total
-	s.ti.Assertions.AssertEnvoyAdminApi(
+	s.TestInstallation.Assertions.AssertEnvoyAdminApi(
 		s.T().Context(),
 		gatewayObjectMeta,
 		assertStat(s.Assert(), "cluster.kube_default_httpbin_8000.upstream_rq_retry$", 4),
 	)
 
 	// Test retry policy attached to Gateway's listener
-	s.ti.Assertions.AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(gatewayObjectMeta)),
@@ -157,7 +111,7 @@ func (s *testingSuite) TestRetries() {
 		},
 	)
 	// Assert that there were 2 more retry attempts, 6 in total
-	s.ti.Assertions.AssertEnvoyAdminApi(
+	s.TestInstallation.Assertions.AssertEnvoyAdminApi(
 		s.T().Context(),
 		gatewayObjectMeta,
 		assertStat(s.Assert(), "cluster.kube_default_httpbin_8000.upstream_rq_retry$", 6),

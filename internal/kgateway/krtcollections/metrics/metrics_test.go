@@ -350,7 +350,7 @@ func TestSyncChannelFull(t *testing.T) {
 		ResourceName: "test-resource",
 	}
 
-	for i := 0; i < 1024; i++ {
+	for range 1024 {
 		success := EndResourceXDSSync(details)
 		assert.True(t, success)
 	}

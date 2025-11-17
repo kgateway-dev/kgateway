@@ -3,24 +3,22 @@ package krtcollections
 import (
 	"errors"
 	"fmt"
-
-	"istio.io/istio/pkg/slices"
-	"k8s.io/apimachinery/pkg/util/sets"
-
 	"strings"
 
 	"istio.io/istio/pkg/config/labels"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
+	"istio.io/istio/pkg/slices"
 	"istio.io/istio/pkg/util/smallset"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/sets"
 	k8sptr "k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
@@ -897,16 +895,16 @@ func (k refGrantIndexKey) String() string {
 // MARK: RefGrantIndex
 
 type RefGrantIndex struct {
-	refgrants     krt.Collection[*gwv1beta1.ReferenceGrant]
-	refGrantIndex krt.Index[refGrantIndexKey, *gwv1beta1.ReferenceGrant]
+	refgrants     krt.Collection[*gwv1b1.ReferenceGrant]
+	refGrantIndex krt.Index[refGrantIndexKey, *gwv1b1.ReferenceGrant]
 }
 
 func (h *RefGrantIndex) HasSynced() bool {
 	return h.refgrants.HasSynced()
 }
 
-func NewRefGrantIndex(refgrants krt.Collection[*gwv1beta1.ReferenceGrant]) *RefGrantIndex {
-	refGrantIndex := krtpkg.UnnamedIndex(refgrants, func(p *gwv1beta1.ReferenceGrant) []refGrantIndexKey {
+func NewRefGrantIndex(refgrants krt.Collection[*gwv1b1.ReferenceGrant]) *RefGrantIndex {
+	refGrantIndex := krtpkg.UnnamedIndex(refgrants, func(p *gwv1b1.ReferenceGrant) []refGrantIndexKey {
 		ret := make([]refGrantIndexKey, 0, len(p.Spec.To)*len(p.Spec.From))
 		for _, from := range p.Spec.From {
 			for _, to := range p.Spec.To {
@@ -992,11 +990,12 @@ func (c RouteWrapper) Equals(in RouteWrapper) bool {
 // MARK: RoutesIndex
 
 type RoutesIndex struct {
-	routes                  krt.Collection[RouteWrapper]
-	httpRoutes              krt.Collection[ir.HttpRouteIR]
-	httpBySelector          krt.Index[HTTPRouteSelector, ir.HttpRouteIR]
-	byParentRef             krt.Index[targetRefIndexKey, RouteWrapper]
-	weightedRoutePrecedence bool
+	routes                               krt.Collection[RouteWrapper]
+	httpRoutes                           krt.Collection[ir.HttpRouteIR]
+	httpBySelector                       krt.Index[HTTPRouteSelector, ir.HttpRouteIR]
+	byParentRef                          krt.Index[targetRefIndexKey, RouteWrapper]
+	weightedRoutePrecedence              bool
+	enableExperimentalGatewayAPIFeatures bool
 
 	policies  *PolicyIndex
 	refgrants *RefGrantIndex
@@ -1031,10 +1030,11 @@ func NewRoutesIndex(
 	globalSettings apisettings.Settings,
 ) *RoutesIndex {
 	h := &RoutesIndex{
-		policies:                policies,
-		refgrants:               refgrants,
-		backends:                backends,
-		weightedRoutePrecedence: globalSettings.WeightedRoutePrecedence,
+		policies:                             policies,
+		refgrants:                            refgrants,
+		backends:                             backends,
+		weightedRoutePrecedence:              globalSettings.WeightedRoutePrecedence,
+		enableExperimentalGatewayAPIFeatures: globalSettings.EnableExperimentalGatewayAPIFeatures,
 	}
 	h.hasSyncedFuncs = append(h.hasSyncedFuncs, httproutes.HasSynced, grpcroutes.HasSynced, tcproutes.HasSynced, tlsroutes.HasSynced)
 
@@ -1313,7 +1313,7 @@ func (h *RoutesIndex) getBuiltInRulePolicies(
 	ret := ir.AttachedPolicies{
 		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
 	}
-	policy := NewBuiltInRuleIr(rule)
+	policy := h.NewBuiltInRuleIr(rule)
 	if policy != nil {
 		policyAtt := ir.PolicyAtt{PolicyIr: policy /*direct attachment - no target ref*/}
 		for _, o := range opts {
@@ -1374,10 +1374,11 @@ func (h *RoutesIndex) resolveExtension(
 		Kind:  "HTTPRoute",
 	}
 
-	builtinIR, err := NewBuiltInIr(kctx, ext, fromGK, ns, h.refgrants, h.backends, ruleName, annotations)
+	builtinIR, err := h.NewBuiltInIr(kctx, ext, fromGK, ns, h.refgrants, h.backends, ruleName, annotations)
 	if err != nil {
 		return nil, err
 	}
+
 	policyAtt := &ir.PolicyAtt{
 		GroupKind: ir.VirtualBuiltInGK,
 		PolicyIr:  builtinIR,

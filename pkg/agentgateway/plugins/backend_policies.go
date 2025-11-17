@@ -47,7 +47,7 @@ func translateBackendPolicyToAgw(
 	}
 
 	if s := backend.TLS; s != nil {
-		pol, err := translateBackendTLS(ctx, policy, policyName, policyTarget)
+		pol, err := translateBackendTLS(ctx, policy, policyTarget)
 		if err != nil {
 			logger.Error("error processing backend TLS", "err", err)
 			errs = append(errs, err)
@@ -65,11 +65,7 @@ func translateBackendPolicyToAgw(
 	}
 
 	if s := backend.MCP; s != nil {
-		pol, err := translateBackendMCPAuthorization(ctx, policy, policyName, policyTarget)
-		if err != nil {
-			logger.Error("error processing backend MCP Authorization", "err", err)
-			errs = append(errs, err)
-		}
+		pol := translateBackendMCPAuthorization(policy, policyTarget)
 		agwPolicies = append(agwPolicies, pol...)
 	}
 
@@ -98,7 +94,7 @@ func translateBackendTCP(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, nam
 	// TODO
 	return nil, nil
 }
-func translateBackendTLS(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) ([]AgwPolicy, error) {
+func translateBackendTLS(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, target *api.PolicyTarget) ([]AgwPolicy, error) {
 	var errs []error
 
 	// Build CA bundle from referenced ConfigMaps, if provided
@@ -172,7 +168,7 @@ func translateBackendHTTP(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, na
 	return nil, nil
 }
 
-func translateBackendMCPAuthorization(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) ([]AgwPolicy, error) {
+func translateBackendMCPAuthorization(policy *v1alpha1.AgentgatewayPolicy, target *api.PolicyTarget) []AgwPolicy {
 	auth := policy.Spec.Traffic.Authorization
 	var allowPolicies, denyPolicies []string
 	if auth.Action == v1alpha1.AuthorizationPolicyActionDeny {
@@ -199,7 +195,7 @@ func translateBackendMCPAuthorization(ctx PolicyCtx, policy *v1alpha1.Agentgatew
 		"policy", policy.Name,
 		"agentgateway_policy", mcpPolicy.Name)
 
-	return []AgwPolicy{{Policy: mcpPolicy}}, nil
+	return []AgwPolicy{{Policy: mcpPolicy}}
 }
 
 // translateBackendAI processes AI configuration and creates corresponding Agw policies
@@ -247,6 +243,20 @@ func translateBackendAI(ctx PolicyCtx, agwPolicy *v1alpha1.AgentgatewayPolicy, n
 
 	if aiSpec.ModelAliases != nil {
 		translatedAIPolicy.ModelAliases = aiSpec.ModelAliases
+	}
+
+	if aiSpec.PromptCaching != nil {
+		translatedAIPolicy.PromptCaching = &api.BackendPolicySpec_Ai_PromptCaching{
+			CacheSystem:   ptr.OrDefault(aiSpec.PromptCaching.CacheSystem, true),
+			CacheMessages: ptr.OrDefault(aiSpec.PromptCaching.CacheMessages, true),
+			CacheTools:    ptr.OrDefault(aiSpec.PromptCaching.CacheTools, false),
+		}
+
+		// Handle optional MinTokens field
+		if aiSpec.PromptCaching.MinTokens != nil {
+			translatedAIPolicy.PromptCaching.MinTokens = ptr.Of(uint32(*aiSpec.PromptCaching.MinTokens)) //nolint:gosec // G115: MinTokens is validated by kubebuilder to be >= 0
+		}
+		// Note: If nil, proto optional field will be unset (uses agentgateway's default of 1024)
 	}
 
 	aiPolicy := &api.Policy{

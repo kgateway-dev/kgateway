@@ -111,7 +111,7 @@ type builtinPluginGwPass struct {
 
 var _ ir.PolicyIR = &builtinPlugin{}
 
-func NewBuiltInIr(
+func (h *RoutesIndex) NewBuiltInIr(
 	kctx krt.HandlerContext,
 	f gwv1.HTTPRouteFilter,
 	fromgk schema.GroupKind,
@@ -120,28 +120,30 @@ func NewBuiltInIr(
 	ups *BackendIndex,
 	ruleName *gwv1.SectionName,
 	annotations map[string]string,
-) (ir.PolicyIR, error) {
+) (*builtinPlugin, error) {
 	var cors *gwv1.HTTPCORSFilter
 	if f.Type == gwv1.HTTPRouteFilterCORS {
 		cors = f.CORS
 	}
-	filterIR, err := convertFilterIR(kctx, f, fromgk, fromns, refgrants, ups, ruleName, annotations)
+	filterIR, err := h.convertfilterIR(kctx, f, fromgk, fromns, refgrants, ups, ruleName, annotations)
 	if err != nil {
 		return nil, err
 	}
 	return &builtinPlugin{
-		hasCors: cors != nil,
+		// CORS might be configured but experimental features might be disabled,
+		// So set hasCors only if the HTTPCORSFilter has been translated
+		hasCors: cors != nil && filterIR != nil,
 		filter:  filterIR,
 	}, nil
 }
 
-func NewBuiltInRuleIr(rule gwv1.HTTPRouteRule) ir.PolicyIR {
+func (h *RoutesIndex) NewBuiltInRuleIr(rule gwv1.HTTPRouteRule) *builtinPlugin {
 	// If no rule policies are set, return nil so that we don't have a no-op policy
 	if rule.Timeouts == nil && rule.Retry == nil && rule.SessionPersistence == nil {
 		return nil
 	}
 	return &builtinPlugin{
-		rule: buildHTTPRouteRulePolicy(rule),
+		rule: h.buildHTTPRouteRulePolicy(rule),
 	}
 }
 
@@ -155,12 +157,30 @@ func NewBuiltinPlugin(ctx context.Context) sdk.Plugin {
 	}
 }
 
-func buildHTTPRouteRulePolicy(rule gwv1.HTTPRouteRule) ruleIR {
-	return ruleIR{
-		retry:              convertRetry(rule.Retry, rule.Timeouts),
-		timeouts:           convertTimeouts(rule.Timeouts),
-		sessionPersistence: convertSessionPersistence(rule.SessionPersistence),
+func (h *RoutesIndex) buildHTTPRouteRulePolicy(rule gwv1.HTTPRouteRule) ruleIR {
+	ir := ruleIR{
+		timeouts: convertTimeouts(rule.Timeouts),
 	}
+
+	// ON_EXPERIMENTAL_PROMOTION : Remove this block
+	// Ref: https://github.com/kgateway-dev/kgateway/issues/12824
+	if rule.Retry != nil {
+		if h.enableExperimentalGatewayAPIFeatures {
+			ir.retry = convertRetry(rule.Retry, rule.Timeouts)
+		} else {
+			logger.Warn("experimental gateway api features are disabled but HTTPRouteRetry is configured. Skipping")
+		}
+	}
+	// ON_EXPERIMENTAL_PROMOTION : Remove this block
+	// Ref: https://github.com/kgateway-dev/kgateway/issues/12825
+	if rule.SessionPersistence != nil {
+		if h.enableExperimentalGatewayAPIFeatures {
+			ir.sessionPersistence = convertSessionPersistence(rule.SessionPersistence)
+		} else {
+			logger.Warn("experimental gateway api features are disabled but SessionPersistence is configured. Skipping")
+		}
+	}
+	return ir
 }
 
 func (p *builtinPluginGwPass) applyRulePolicy(
@@ -745,7 +765,7 @@ func (p *builtinPluginGwPass) HttpFilters(fcc ir.FilterChainCommon) ([]filters.S
 }
 
 // convertFilterIR converts the HTTPRouteFilter to the IR.
-func convertFilterIR(
+func (h *RoutesIndex) convertfilterIR(
 	kctx krt.HandlerContext,
 	f gwv1.HTTPRouteFilter,
 	fromgk schema.GroupKind,
@@ -786,9 +806,15 @@ func convertFilterIR(
 			policy = uw
 		}
 	case gwv1.HTTPRouteFilterCORS:
-		ci := convertCORSIR(kctx, f.CORS)
-		if ci != nil {
-			policy = ci
+		// ON_EXPERIMENTAL_PROMOTION : Remove this block
+		// Ref: https://github.com/kgateway-dev/kgateway/issues/12826
+		if h.enableExperimentalGatewayAPIFeatures {
+			ci := convertCORSIR(kctx, f.CORS)
+			if ci != nil {
+				policy = ci
+			}
+		} else {
+			logger.Warn("experimental gateway api features are disabled but HTTPRouteFilterCORS is configured. Skipping")
 		}
 	}
 	if policy == nil {
