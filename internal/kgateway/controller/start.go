@@ -200,6 +200,12 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	if cfg.SetupOpts.GlobalSettings.EnableAgentgateway {
 		agwMergedPlugins := agwPluginFactory(cfg)(ctx, cfg.AgwCollections)
 
+		// Compute the extra GVKs list to provide at initialization time
+		var gvks []schema.GroupVersionKind
+		for gvk := range cfg.ExtraAgwPolicyStatusHandlers {
+			gvks = append(gvks, gvk)
+		}
+
 		agwSyncer = agentgatewaysyncer.NewAgwSyncer(
 			ctx,
 			cfg.AgwControllerName,
@@ -207,18 +213,10 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			cfg.AgwCollections,
 			agwMergedPlugins,
 			cfg.AdditionalGatewayClasses,
+			gvks,
 		)
 
 		agwSyncer.Init(cfg.KrtOptions.WithPrefix("agentgateway"))
-
-		// Provide extra Kind->GVK mappings to status collections based on external handlers keys
-		var gvks []schema.GroupVersionKind
-		for gvk := range cfg.ExtraAgwPolicyStatusHandlers {
-			gvks = append(gvks, gvk)
-		}
-		if len(gvks) > 0 {
-			agwSyncer.StatusCollections().SetExtraGVKs(gvks)
-		}
 
 		if err := cfg.Manager.Add(agwSyncer); err != nil {
 			setupLog.Error(err, "unable to add agentgateway Syncer runnable")

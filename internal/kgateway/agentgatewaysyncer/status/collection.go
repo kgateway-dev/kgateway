@@ -36,6 +36,14 @@ type StatusCollections struct {
 	extraGVKs []schema.GroupVersionKind
 }
 
+// NewStatusCollections creates a StatusCollections with an optional immutable set of extra GVKs.
+// extraGVKs should be provided at construction time and not modified after.
+func NewStatusCollections(extraGVKs []schema.GroupVersionKind) *StatusCollections {
+	return &StatusCollections{
+		extraGVKs: extraGVKs,
+	}
+}
+
 func (s *StatusCollections) Register(sr StatusRegistration) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -63,15 +71,6 @@ func (s *StatusCollections) SetQueue(queue WorkerQueue) []krt.Syncer {
 	return slices.Map(s.active, func(e krt.HandlerRegistration) krt.Syncer {
 		return e
 	})
-}
-
-// SetExtraGVKs configures external GVKs for status enqueue.
-// This must be called before the manager starts and must not be updated afterwards.
-// The list may be read without locking in hot paths.
-func (s *StatusCollections) SetExtraGVKs(m []schema.GroupVersionKind) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.extraGVKs = m
 }
 
 // RegisterStatus takes a status collection and registers it to be managed by the status queue.
