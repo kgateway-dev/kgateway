@@ -1,8 +1,6 @@
 package status
 
 import (
-	"fmt"
-	"strings"
 	"sync"
 
 	"istio.io/istio/pkg/config"
@@ -34,8 +32,8 @@ type StatusCollections struct {
 	constructors []func(statusWriter WorkerQueue) krt.HandlerRegistration
 	active       []krt.HandlerRegistration
 	queue        WorkerQueue
-	// extraGVKs maps external Kind -> full GVK, used to enrich unknown resources
-	extraGVKs map[string]schema.GroupVersionKind
+	// extraGVKs tracks extra GVKs to sync statuses for
+	extraGVKs []schema.GroupVersionKind
 }
 
 func (s *StatusCollections) Register(sr StatusRegistration) {
@@ -67,10 +65,10 @@ func (s *StatusCollections) SetQueue(queue WorkerQueue) []krt.Syncer {
 	})
 }
 
-// SetExtraGVKMap configures external Kind->GVK mappings for status enqueue.
+// SetExtraGVKs configures external GVKs for status enqueue.
 // This must be called before the manager starts and must not be updated afterwards.
-// The map may be read without locking in hot paths.
-func (s *StatusCollections) SetExtraGVKMap(m map[string]schema.GroupVersionKind) {
+// The list may be read without locking in hot paths.
+func (s *StatusCollections) SetExtraGVKs(m []schema.GroupVersionKind) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.extraGVKs = m
@@ -107,13 +105,13 @@ func RegisterStatus[I controllers.Object, IS any](s *StatusCollections, statusCo
 	s.Register(reg)
 }
 
-func enqueueStatus[T any](sw WorkerQueue, obj controllers.Object, ws T, extraGVKs map[string]schema.GroupVersionKind) {
+func enqueueStatus[T any](sw WorkerQueue, obj controllers.Object, ws T, extraGVKs []schema.GroupVersionKind) {
 	res := Resource{
 		GroupVersionKind: schema.GroupVersionKind{},
 		NamespacedName:   config.NamespacedName(obj),
 		ResourceVersion:  obj.GetResourceVersion(),
 	}
-	switch t := obj.(type) {
+	switch obj.(type) {
 	case *gwv1.Gateway:
 		res.GroupVersionKind = wellknown.GatewayGVK
 	case *gwv1.HTTPRoute:
@@ -131,15 +129,14 @@ func enqueueStatus[T any](sw WorkerQueue, obj controllers.Object, ws T, extraGVK
 	default:
 		// Map external types by their concrete Kind using extraGVKs
 		if extraGVKs != nil {
-			typeName := fmt.Sprintf("%T", t)
-			if strings.HasPrefix(typeName, "*") {
-				typeName = typeName[1:]
-			}
-			if idx := strings.LastIndex(typeName, "."); idx >= 0 {
-				typeName = typeName[idx+1:]
-			}
-			if mapped, ok := extraGVKs[typeName]; ok {
-				res.GroupVersionKind = mapped
+			kind := obj.GetObjectKind().GroupVersionKind().Kind
+			if kind != "" {
+				for _, mapped := range extraGVKs {
+					if mapped.Kind == kind {
+						res.GroupVersionKind = mapped
+						break
+					}
+				}
 			}
 		}
 	}

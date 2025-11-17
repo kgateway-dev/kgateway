@@ -213,14 +213,14 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 
 		// Provide extra Kind->GVK mappings to status collections based on external handlers keys
 		if len(cfg.ExtraAgwPolicyStatusHandlers) > 0 {
-			m := map[string]schema.GroupVersionKind{}
+			var gvks []schema.GroupVersionKind
 			for gvk := range cfg.ExtraAgwPolicyStatusHandlers {
 				if gvk.Kind == "" {
 					continue
 				}
-				m[gvk.Kind] = gvk
+				gvks = append(gvks, gvk)
 			}
-			agwSyncer.StatusCollections().SetExtraGVKMap(m)
+			agwSyncer.StatusCollections().SetExtraGVKs(gvks)
 		}
 
 		if err := cfg.Manager.Add(agwSyncer); err != nil {
