@@ -699,15 +699,6 @@ run-load-tests-production: ## Run production load tests (5000 routes)
 # Targets for running Kubernetes Gateway API conformance tests
 #----------------------------------------------------------------------------------
 
-# TODO - remove, not pulling from here anymore
-# Pull the conformance test suite from the k8s gateway api repo and copy it into the test dir.
-$(TEST_ASSET_DIR)/conformance/conformance_test.go:
-	mkdir -p $(TEST_ASSET_DIR)/conformance
-	echo "//go:build conformance" > $@
-	cat $(shell go list -json -m sigs.k8s.io/gateway-api | jq -r '.Dir')/conformance/conformance_test.go >> $@
-	go fmt $@
-
-
 CONFORMANCE_GATEWAY_CLASS ?= kgateway
 CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/$(VERSION)-report.yaml -organization=kgateway-dev -project=kgateway -version=$(VERSION) -url=github.com/kgateway-dev/kgateway -contact=github.com/kgateway-dev/kgateway/issues/new/choose
 CONFORMANCE_ARGS := -gateway-class=$(CONFORMANCE_GATEWAY_CLASS) $(CONFORMANCE_REPORT_ARGS)

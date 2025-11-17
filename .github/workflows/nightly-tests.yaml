@@ -33,7 +33,7 @@ concurrency:
 
 jobs:
   kube_gateway_api_conformance_tests_main:
-    name: Conformance (branch=main, type=Kubernetes Gateway API, k8s=${{matrix.kube-version.node}}, gw-api=${{matrix.gateway-api-channel}})
+    name: Conformance (branch=main, type=Kubernetes Gateway API, k8s=${{ matrix.kube-version.node }}, gw-api=${{matrix.gateway-api-channel}})
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-conformance && inputs.branch == 'main') || github.event.schedule == '0 5 * * *' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 60
@@ -53,7 +53,7 @@ jobs:
         api-channel: ${{ matrix.gateway-api-channel }}
 
   kube_gateway_api_load_tests:
-    name: Load Tests (branch=main, type=Kubernetes Gateway API, version=${{matrix.kube-version.node}} )
+    name: Load Tests (branch=main, type=Kubernetes Gateway API, version=${{ matrix.kube-version.node }} )
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-load-tests && inputs.branch == 'main') || github.event.schedule == '0 5 * * *' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 60
