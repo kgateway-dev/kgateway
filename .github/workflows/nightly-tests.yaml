@@ -37,23 +37,24 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
     - name: Determine Branch
+      shell: bash
       run: |
         BRANCH=main
         if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.branch }}" == "workflow_initiating_branch" ]]; then
-          BRANCH=${{ inputs.branch }}
+          BRANCH="${{ inputs.branch }}"
         fi
-        echo "BRANCH=${BRANCH}" >> $GITHUB_ENV
+        echo "BRANCH=${BRANCH}" >> "$GITHUB_ENV"
 
   kube_gateway_api_conformance_tests:
-    name: Conformance (branch=main, type=Kubernetes Gateway API, k8s=${{ matrix.env-versions.desc }}, gw-api=${{matrix.gateway-api-channel}})
+    name: Conformance (branch=main, type=Kubernetes Gateway API, k8s=${{ matrix.env-versions.label }}, gw-api=${{matrix.gateway-api-channel}})
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-conformance ) || github.event.schedule == '0 5 * * *' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
-        env-versions: [ {file: "./.github/workflows/.env/nightly-tests/max_versions.env", desc: "max_versions"},
-                        {file: "./.github/workflows/.env/nightly-tests/min_versions.env", desc: "min_versions"} ]
+        env-versions: [ {file: "./.github/workflows/.env/nightly-tests/max_versions.env", label: "max_versions"},
+                        {file: "./.github/workflows/.env/nightly-tests/min_versions.env", label: "min_versions"} ]
         gateway-api-channel: [ 'experimental', 'standard' ]
     steps:
     - uses: actions/checkout@v4
