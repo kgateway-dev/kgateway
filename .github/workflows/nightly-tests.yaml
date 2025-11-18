@@ -63,7 +63,7 @@ jobs:
       uses: falti/dotenv-action@v1.1.4
       id: dotenv
       with:
-        path: ${{ matrix.env-versions }}
+        path: ${{ matrix.env-versions.file }}
         log-variables: true
     - uses: ./.github/actions/kube-conformance-tests
       with:
