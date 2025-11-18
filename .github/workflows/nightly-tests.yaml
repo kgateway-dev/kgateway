@@ -32,7 +32,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  kube_gateway_api_conformance_tests_main:
+  determine_branch:
+    name: Determine Branch
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Determine Branch
+      run: |
+        BRANCH=main
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.branch }}" == "workflow_initiating_branch" ]]; then
+          BRANCH=${{ inputs.branch }}
+        end
+        echo "BRANCH=${BRANCH}" >> $GITHUB_ENV
+
+  kube_gateway_api_conformance_tests:
     name: Conformance (branch=main, type=Kubernetes Gateway API, k8s=${{ matrix.kube-version.node }}, gw-api=${{matrix.gateway-api-channel}})
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-conformance ) || github.event.schedule == '0 5 * * *' }}
     runs-on: ubuntu-22.04
@@ -46,7 +58,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        ref: main
+        ref: ${{ env.BRANCH }}
     - uses: ./.github/actions/kube-conformance-tests
       with:
         test-type: gateway-api
@@ -67,7 +79,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        ref: main
+        ref: ${{ env.BRANCH }}
     - uses: ./.github/actions/kube-gateway-api-load-tests
 
   kgateway_e2e_tests_for_gateway_api_versions:
@@ -86,6 +98,8 @@ jobs:
                               { version: 'v1.2.1', channel: 'standard' }]
     steps:
     - uses: actions/checkout@v4
+      with:
+        ref: ${{ env.BRANCH }}
     - name: Prep Go Runner
       uses: ./.github/actions/prep-go-runner
     - name: Dotenv Action
