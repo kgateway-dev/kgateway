@@ -41,7 +41,7 @@ jobs:
         BRANCH=main
         if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.branch }}" == "workflow_initiating_branch" ]]; then
           BRANCH=${{ inputs.branch }}
-        end
+        fi
         echo "BRANCH=${BRANCH}" >> $GITHUB_ENV
 
   kube_gateway_api_conformance_tests:
