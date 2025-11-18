@@ -23,28 +23,42 @@ jobs:
       fail-fast: false
       matrix:
         gateway-api-channel: [ 'experimental', 'standard' ]
-        kube-version: [ { node: 'v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a', kubectl: 'v1.34.1', kind: 'v0.30.0' } ]
         test-type: [ gateway-api, agent-gateway ]
     steps:
     - uses: actions/checkout@v4
+    - name: Dotenv Action
+      uses: falti/dotenv-action@v1.1.4
+      id: dotenv
+      with:
+        path: "./.github/workflows/.env/pr-tests/versions.env"
+        log-variables: true
     - id: run-tests
       uses: ./.github/actions/kube-conformance-tests
       with:
         test-type: ${{ matrix.test-type }}
         api-channel: ${{ matrix.gateway-api-channel }}
-
+        kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
+        kind-node-version: ${{ steps.dotenv.outputs.node_version }}
 
   gie_conformance_tests:
     name: Kubernetes Gateway API Inference Extension Conformance Tests
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v4
+    - name: Dotenv Action
+      uses: falti/dotenv-action@v1.1.4
+      id: dotenv
+      with:
+        path: "./.github/workflows/.env/pr-tests/versions.env"
+        log-variables: true
     - name: Run GIE Conformance Tests
       uses: ./.github/actions/kube-conformance-tests
       with:
         test-type: inference-extension
-        api-channel: "experimental"
+        api-channel: experimental
         enable-inference-extension: true
+        kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
+        kind-node-version: ${{ steps.dotenv.outputs.node_version }}
 
   conformance:
     if: always()
