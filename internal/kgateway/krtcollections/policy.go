@@ -60,6 +60,9 @@ func (e *BackendPortNotAllowedError) Error() string {
 	return fmt.Sprintf("BackendRef to \"%s\" includes a port. Do not specify a port when referencing a Backend resource, as it defines its own port configuration", e.BackendName)
 }
 
+// StatusMarker is used to mark objects that need status updates.
+type StatusMarker struct{}
+
 // MARK: BackendIndex
 
 type BackendIndex struct {
@@ -992,7 +995,7 @@ func (c RouteWrapper) Equals(in RouteWrapper) bool {
 
 type RoutesIndex struct {
 	routes                               krt.Collection[RouteWrapper]
-	httpRouteStatusMarker                krt.StatusCollection[*gwv1.HTTPRoute, struct{}]
+	httpRouteStatusMarker                krt.StatusCollection[*gwv1.HTTPRoute, StatusMarker]
 	httpRoutes                           krt.Collection[ir.HttpRouteIR]
 	httpBySelector                       krt.Index[HTTPRouteSelector, ir.HttpRouteIR]
 	byParentRef                          krt.Index[targetRefIndexKey, RouteWrapper]
@@ -1057,7 +1060,7 @@ func NewRoutesIndex(
 	}
 	h.hasSyncedFuncs = append(h.hasSyncedFuncs, httproutes.HasSynced, grpcroutes.HasSynced, tcproutes.HasSynced, tlsroutes.HasSynced)
 
-	h.httpRouteStatusMarker, h.httpRoutes = krt.NewStatusCollection(httproutes, func(kctx krt.HandlerContext, i *gwv1.HTTPRoute) (*struct{}, *ir.HttpRouteIR) {
+	h.httpRouteStatusMarker, h.httpRoutes = krt.NewStatusCollection(httproutes, func(kctx krt.HandlerContext, i *gwv1.HTTPRoute) (*StatusMarker, *ir.HttpRouteIR) {
 		return h.transformHttpRoute(kctx, i, controllerName)
 	}, krtopts.ToOptions("http-routes-with-policy")...)
 
@@ -1231,7 +1234,7 @@ func (h *RoutesIndex) transformTlsRoute(kctx krt.HandlerContext, i *gwv1a2.TLSRo
 	}
 }
 
-func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRoute, controllerName string) (*struct{}, *ir.HttpRouteIR) {
+func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRoute, controllerName string) (*StatusMarker, *ir.HttpRouteIR) {
 	src := ir.ObjectSource{
 		Group:     gwv1.GroupVersion.Group,
 		Kind:      "HTTPRoute",
@@ -1251,10 +1254,10 @@ func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRo
 	}
 
 	// Create a marker if there are existing status parents with kgateway controllerName
-	var statusMarker *struct{}
+	var statusMarker *StatusMarker
 	for _, parentStatus := range i.Status.Parents {
 		if string(parentStatus.ControllerName) == controllerName {
-			statusMarker = &struct{}{}
+			statusMarker = &StatusMarker{}
 			break
 		}
 	}
