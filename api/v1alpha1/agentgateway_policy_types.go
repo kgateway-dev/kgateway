@@ -109,7 +109,6 @@ type AgentgatewayPolicySpec struct {
 	Backend *AgentgatewayPolicyBackend `json:"backend,omitempty"`
 }
 
-// +kubebuilder:validation:AtLeastOneOf=tcp;tls;http;auth;mcp;ai
 type AgentgatewayPolicyBackend struct {
 	// tcp defines settings for managing TCP connections to the backend.
 	TCP *BackendTCP `json:"tcp,omitempty"`
@@ -206,7 +205,6 @@ type BackendTLS struct {
 	AlpnProtocols []TinyString `json:"alpnProtocols,omitempty"`
 }
 
-// +kubebuilder:validation:AtLeastOneOf=tcp;tls;http;accessLog;tracing
 // +kubebuilder:validation:XValidation:rule="!has(self.tracing)",message="tracing is not currently implemented"
 type AgentgatewayPolicyFrontend struct {
 	// tcp defines settings on managing incoming TCP connections.
@@ -307,7 +305,6 @@ const (
 	PolicyPhasePostRouting PolicyPhase = "PostRouting"
 )
 
-// +kubebuilder:validation:AtLeastOneOf=transformation;extProc;extAuth;rateLimit;cors;csrf;headerModifiers;hostRewrite;timeouts;retry;authorization;jwtAuthentication;basicAuthentication;apiKeyAuthentication
 // +kubebuilder:validation:XValidation:rule="has(self.phase) && self.phase == 'PreRouting' ? !has(self.rateLimit) && !has(self.cors) && !has(self.csrf) && !has(self.headerModifiers) && !has(self.hostRewrite) && !has(self.timeouts) && !has(self.retry) && !has(self.authorization): true",message="phase PreRouting only supports extAuth, transformation, and extProc"
 // +kubebuilder:validation:XValidation:rule="!has(self.hostRewrite)",message="hostRewrite is not currently implemented"
 type AgentgatewayPolicyTraffic struct {

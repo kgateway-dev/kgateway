@@ -13,6 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	route "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/httproute"
@@ -789,6 +790,12 @@ func translateTLSConfig(
 		*tls.Mode != gwv1.TLSModeTerminate {
 		return nil, nil
 	}
+
+	var alpnProtocols []string
+	if tls.Options[annotations.AlpnProtocols] != "" {
+		alpnProtocols = strings.Split(string(tls.Options[annotations.AlpnProtocols]), ",")
+	}
+
 	// TODO: support multiple certificate refs
 	if len(tls.CertificateRefs) != 1 {
 		return nil, fmt.Errorf("only one certificate ref is supported for now")
@@ -818,9 +825,10 @@ func translateTLSConfig(
 	rootCa := secret.Data[corev1.ServiceAccountRootCAKey]
 
 	return &ir.TlsBundle{
-		PrivateKey: privateKey,
-		CertChain:  certChain,
-		CA:         rootCa,
+		PrivateKey:    privateKey,
+		CertChain:     certChain,
+		CA:            rootCa,
+		AlpnProtocols: alpnProtocols,
 	}, nil
 }
 
