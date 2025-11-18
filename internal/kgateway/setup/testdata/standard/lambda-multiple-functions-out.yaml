@@ -212,37 +212,21 @@ routes:
       route:
         cluster: backend_gwtest_lambda-products-backend_0
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-      typedPerFilterConfig:
-        ai.extproc.kgateway.io:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
-          disabled: true
     - match:
         pathSeparatedPrefix: /orders
       name: listener~8080~multi-lambda_example_com-route-1-httproute-route-to-multiple-lambdas-gwtest-1-0-matcher-0
       route:
         cluster: backend_gwtest_lambda-orders-backend_0
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-      typedPerFilterConfig:
-        ai.extproc.kgateway.io:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
-          disabled: true
     - match:
         pathSeparatedPrefix: /local
       name: listener~8080~multi-lambda_example_com-route-2-httproute-route-to-multiple-lambdas-gwtest-3-0-matcher-0
       route:
         cluster: backend_gwtest_lambda-local-integration_0
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-      typedPerFilterConfig:
-        ai.extproc.kgateway.io:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
-          disabled: true
     - match:
         pathSeparatedPrefix: /auth
       name: listener~8080~multi-lambda_example_com-route-3-httproute-route-to-multiple-lambdas-gwtest-0-0-matcher-0
       route:
         cluster: backend_gwtest_lambda-auth-backend_0
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-      typedPerFilterConfig:
-        ai.extproc.kgateway.io:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
-          disabled: true

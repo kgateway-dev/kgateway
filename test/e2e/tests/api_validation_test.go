@@ -295,7 +295,7 @@ spec:
     kind: Deployment
     name: test-deployment
 `,
-			wantErrors: []string{"targetRefs may only reference Gateway, HTTPRoute, XListenerSet, or Backend resources"},
+			wantErrors: []string{"targetRefs may only reference Gateway, HTTPRoute, or XListenerSet resources"},
 		},
 		{
 			name: "TrafficPolicy: policy with autoHostRewrite can only target HTTPRoute",

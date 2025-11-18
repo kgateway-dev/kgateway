@@ -73,7 +73,6 @@ type TrafficPolicy struct {
 }
 
 type trafficPolicySpecIr struct {
-	ai              *aiPolicyIR
 	buffer          *bufferIR
 	extProc         *extprocIR
 	transformation  *transformationIR
@@ -103,9 +102,6 @@ func (d *TrafficPolicy) Equals(in any) bool {
 		return false
 	}
 
-	if !d.spec.ai.Equals(d2.spec.ai) {
-		return false
-	}
 	if !d.spec.transformation.Equals(d2.spec.transformation) {
 		return false
 	}
@@ -156,7 +152,6 @@ func (d *TrafficPolicy) Equals(in any) bool {
 // PGV validation is always performed regardless of route replacement mode.
 func (p *TrafficPolicy) Validate() error {
 	var validators []func() error
-	validators = append(validators, p.spec.ai.Validate)
 	validators = append(validators, p.spec.transformation.Validate)
 	validators = append(validators, p.spec.rustformation.Validate)
 	validators = append(validators, p.spec.localRateLimit.Validate)
@@ -303,35 +298,6 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, outputR
 		return nil
 	}
 
-	if policy.spec.ai != nil {
-		var aiBackends []*v1alpha1.Backend
-		// check if the backends selected by targetRef are all AI backends before applying the policy
-		for _, backend := range pCtx.In.Backends {
-			if backend.Backend.BackendObject == nil {
-				// could be nil if not found or no ref grant
-				continue
-			}
-			b, ok := backend.Backend.BackendObject.Obj.(*v1alpha1.Backend)
-			if !ok {
-				// AI policy cannot apply to kubernetes services
-				// TODO(npolshak): Report this as a warning on status
-				logger.Warn("AI Policy cannot apply to kubernetes services", "backend_name", backend.Backend.BackendObject.GetName())
-				continue
-			}
-			if b.Spec.Type != v1alpha1.BackendTypeAI {
-				// AI policy cannot apply to non-AI backends
-				// TODO(npolshak): Report this as a warning on status
-				logger.Warn("AI Policy cannot apply to non-AI backend", "backend_name", backend.Backend.BackendObject.GetName(), "backend_type", string(b.Spec.Type))
-				continue
-			}
-			aiBackends = append(aiBackends, b)
-		}
-		if len(aiBackends) > 0 {
-			// Apply the AI policy to the all AI backends
-			p.processAITrafficPolicy(&pCtx.TypedFilterConfig, policy.spec.ai)
-		}
-	}
-
 	p.handlePerRoutePolicies(policy.spec, outputRoute)
 	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, policy.spec)
 
@@ -348,10 +314,6 @@ func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(
 	}
 
 	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, rtPolicy.spec)
-
-	if rtPolicy.spec.ai != nil && (rtPolicy.spec.ai.Transformation != nil || rtPolicy.spec.ai.Extproc != nil) {
-		p.processAITrafficPolicy(&pCtx.TypedFilterConfig, rtPolicy.spec.ai)
-	}
 
 	return nil
 }

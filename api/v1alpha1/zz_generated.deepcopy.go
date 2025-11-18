@@ -1900,7 +1900,7 @@ func (in *BodyTransformation) DeepCopyInto(out *BodyTransformation) {
 	*out = *in
 	if in.Value != nil {
 		in, out := &in.Value, &out.Value
-		*out = new(Template)
+		*out = new(InjaTemplate)
 		**out = **in
 	}
 }
@@ -6009,11 +6009,6 @@ func (in *TrafficPolicySpec) DeepCopyInto(out *TrafficPolicySpec) {
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
-	}
-	if in.AI != nil {
-		in, out := &in.AI, &out.AI
-		*out = new(AIPolicy)
-		(*in).DeepCopyInto(*out)
 	}
 	if in.Transformation != nil {
 		in, out := &in.Transformation, &out.Transformation

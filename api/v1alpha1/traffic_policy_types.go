@@ -37,7 +37,6 @@ type TrafficPolicyList struct {
 }
 
 // TrafficPolicySpec defines the desired state of a traffic policy.
-// Note: Backend attachment is only supported for agentgateway.
 // +kubebuilder:validation:XValidation:rule="!has(self.autoHostRewrite) || ((has(self.targetRefs) && self.targetRefs.all(r, r.kind == 'HTTPRoute')) || (has(self.targetSelectors) && self.targetSelectors.all(r, r.kind == 'HTTPRoute')))",message="autoHostRewrite can only be used when targeting HTTPRoute resources"
 // +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.timeouts) ? (has(self.retry.perTryTimeout) && has(self.timeouts.request) ? duration(self.retry.perTryTimeout) < duration(self.timeouts.request) : true) : true",message="retry.perTryTimeout must be less than timeouts.request"
 // +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.targetRefs) ? self.targetRefs.all(r, (r.kind == 'Gateway' ? has(r.sectionName) : true )) : true",message="targetRefs[].sectionName must be set when targeting Gateway resources with retry policy"
@@ -48,17 +47,13 @@ type TrafficPolicySpec struct {
 	//
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
-	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Backend' || r.kind == 'Gateway' || r.kind == 'HTTPRoute' || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io')) && (!has(r.group) || r.group == 'gateway.networking.k8s.io' || r.group == 'gateway.networking.x-k8s.io' || r.group == 'gateway.kgateway.dev' ))",message="targetRefs may only reference Gateway, HTTPRoute, XListenerSet, or Backend resources"
+	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Gateway' || r.kind == 'HTTPRoute' || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io')) && (!has(r.group) || r.group == 'gateway.networking.k8s.io' || r.group == 'gateway.networking.x-k8s.io' || r.group == 'gateway.kgateway.dev' ))",message="targetRefs may only reference Gateway, HTTPRoute, or XListenerSet resources"
 	TargetRefs []LocalPolicyTargetReferenceWithSectionName `json:"targetRefs,omitempty"`
 
 	// TargetSelectors specifies the target selectors to select resources to attach the policy to.
 	// +optional
 	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Gateway' || r.kind == 'HTTPRoute' || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io')) && (!has(r.group) || r.group == 'gateway.networking.k8s.io' || r.group == 'gateway.networking.x-k8s.io'))",message="targetSelectors may only reference Gateway, HTTPRoute, or XListenerSet resources"
 	TargetSelectors []LocalPolicyTargetSelectorWithSectionName `json:"targetSelectors,omitempty"`
-
-	// AI is used to configure AI-based policies for the policy.
-	// +optional
-	AI *AIPolicy `json:"ai,omitempty"`
 
 	// Transformation is used to mutate and transform requests and responses
 	// before forwarding them to the destination.
@@ -115,11 +110,9 @@ type TrafficPolicySpec struct {
 
 	// RBAC specifies the role-based access control configuration for the policy.
 	// This defines the rules for authorization based on roles and permissions.
-	// With an Envoy-based Gateway, RBAC policies applied at different attachment points in the configuration
-	// hierarchy are not cumulative, and only the most specific policy is enforced. In Envoy, this means an RBAC policy
-	// attached to a route will override any RBAC policies applied to the gateway or listener. In contrast, an
-	// Agentgateway-based Gateway supports cumulative RBAC policies across different attachment points, such that
-	// an RBAC policy attached to a route augments policies applied to the gateway or listener without overriding them.
+	// RBAC policies applied at different attachment points in the configuration
+	// hierarchy are not cumulative, and only the most specific policy is enforced. This means an RBAC policy
+	// attached to a route will override any RBAC policies applied to the gateway or listener.
 	RBAC *Authorization `json:"rbac,omitempty"`
 }
 
@@ -166,7 +159,7 @@ type Transform struct {
 	Body *BodyTransformation `json:"body,omitempty"`
 }
 
-type Template string
+type InjaTemplate string
 
 // EnvoyHeaderName is the name of a header or pseudo header
 // Based on gateway api v1.Headername but allows a singular : at the start
@@ -182,7 +175,7 @@ type (
 		// +required
 		Name HeaderName `json:"name"`
 		// Value is the Inja template to apply to generate the output value for the header.
-		Value Template `json:"value,omitempty"`
+		Value InjaTemplate `json:"value,omitempty"`
 	}
 )
 
@@ -202,17 +195,13 @@ const (
 type BodyTransformation struct {
 	// ParseAs defines what auto formatting should be applied to the body.
 	// This can make interacting with keys within a json body much easier if AsJson is selected.
-	// This field is only supported for kgateway (Envoy) data plane and is ignored by agentgateway.
-	// For agentgateway, use json(request.body) or json(response.body) directly in CEL expressions.
 	// +kubebuilder:default=AsString
 	ParseAs BodyParseBehavior `json:"parseAs"`
 
 	// Value is the template to apply to generate the output value for the body.
-	// Inja templates are supported for Envoy-based data planes only.
-	// CEL expressions are supported for agentgateway data plane only.
-	// The system will auto-detect the appropriate template format based on the data plane.
+	// Only Inja templates are supported.
 	// +optional
-	Value *Template `json:"value,omitempty"`
+	Value *InjaTemplate `json:"value,omitempty"`
 }
 
 // RateLimit defines a rate limiting policy.
@@ -351,31 +340,21 @@ type CorsPolicy struct {
 // enable shadow-only mode where policies will be evaluated and tracked, but not enforced and
 // add additional source origins that will be allowed in addition to the destination origin.
 //
-// Dataplane Support:
-// - Envoy: Supports PercentageEnabled, PercentageShadowed, and AdditionalOrigins
-// - Agentgateway: Only supports AdditionalOrigins (PercentageEnabled and PercentageShadowed are ignored)
-//
 // +kubebuilder:validation:AtMostOneOf=percentageEnabled;percentageShadowed
 type CSRFPolicy struct {
 	// Specifies the percentage of requests for which the CSRF filter is enabled.
-	// Envoy: Supported
-	// Agentgateway: Not supported (ignored)
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
 	PercentageEnabled *int32 `json:"percentageEnabled,omitempty"`
 
 	// Specifies that CSRF policies will be evaluated and tracked, but not enforced.
-	// Envoy: Supported
-	// Agentgateway: Not supported (ignored)
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
 	PercentageShadowed *int32 `json:"percentageShadowed,omitempty"`
 
 	// Specifies additional source origins that will be allowed in addition to the destination origin.
-	// Envoy: Supported
-	// Agentgateway: Supported
 	// +optional
 	// +kubebuilder:validation:MaxItems=16
 	AdditionalOrigins []StringMatcher `json:"additionalOrigins,omitempty"`

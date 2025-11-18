@@ -1478,12 +1478,6 @@ func TestValidation(t *testing.T) {
 			inputFile: "policy-csrf-regex-invalid.yaml",
 			minMode:   apisettings.ValidationStrict,
 		},
-		{
-			name:      "AI Invalid Default Values",
-			category:  "policy",
-			inputFile: "policy-ai-default-value-invalid.yaml",
-			minMode:   apisettings.ValidationStandard,
-		},
 		// TODO(tim): Uncomment this test once #11995 is fixed.
 		// {
 		// 	name:      "Multiple Invalid Policies Conflict",
