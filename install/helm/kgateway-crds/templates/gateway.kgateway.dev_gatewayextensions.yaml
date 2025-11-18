@@ -674,36 +674,33 @@ spec:
                       properties:
                         headers:
                           description: HeaderSource configures retrieving token from
-                            the headers
-                          items:
-                            description: HeaderSource configures how to retrieve a
-                              JWT from a header
-                            properties:
-                              header:
-                                description: Header is the name of the header. for
-                                  example, "Authorization"
-                                maxLength: 2048
-                                minLength: 1
-                                type: string
-                              prefix:
-                                description: Prefix before the token. for example,
-                                  "Bearer "
-                                maxLength: 2048
-                                minLength: 1
-                                type: string
-                            type: object
-                          maxItems: 100
-                          minItems: 1
-                          type: array
+                            a header
+                          properties:
+                            header:
+                              description: Header is the name of the header. for example,
+                                "Authorization"
+                              maxLength: 2048
+                              minLength: 1
+                              type: string
+                            prefix:
+                              description: Prefix before the token. for example, "Bearer
+                                "
+                              maxLength: 2048
+                              minLength: 1
+                              type: string
+                          required:
+                          - header
+                          type: object
                         queryParams:
                           description: QueryParams configures retrieving token from
                             these query params
-                          items:
-                            type: string
-                          maxItems: 100
-                          minItems: 1
-                          type: array
+                          type: string
                       type: object
+                      x-kubernetes-validations:
+                      - message: exactly one of the fields in [headers queryParams]
+                          must be set
+                        rule: '[has(self.headers),has(self.queryParams)].filter(x,x==true).size()
+                          == 1'
                   required:
                   - jwks
                   - name

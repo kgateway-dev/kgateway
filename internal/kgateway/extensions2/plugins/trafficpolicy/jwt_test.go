@@ -300,10 +300,8 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 					JWTProvider: v1alpha1.JWTProvider{
 						Issuer: "test-issuer",
 						TokenSource: &v1alpha1.JWTTokenSource{
-							HeaderSource: []v1alpha1.HeaderSource{
-								{
-									Header: ptr.To("Authorization"),
-								},
+							HeaderSource: &v1alpha1.HeaderSource{
+								Header: "Authorization",
 							},
 						},
 						JWKS: v1alpha1.JWKS{
@@ -321,6 +319,36 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 						Issuer:            "test-issuer",
 						Audiences:         nil,
 						PayloadInMetadata: PayloadInMetadata,
+					},
+				},
+			},
+		},
+		{
+			name: "provider with query params",
+			providers: []v1alpha1.NamedJWTProvider{
+				{
+					Name: "test-provider",
+					JWTProvider: v1alpha1.JWTProvider{
+						Issuer: "test-issuer",
+						TokenSource: &v1alpha1.JWTTokenSource{
+							QueryParams: ptr.To("jwt"),
+						},
+						JWKS: v1alpha1.JWKS{
+							LocalJWKS: &v1alpha1.LocalJWKS{
+								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
+							},
+						},
+					},
+				},
+			},
+			expectedError: false,
+			expectedConfig: &jwtauthnv3.JwtAuthentication{
+				Providers: map[string]*jwtauthnv3.JwtProvider{
+					"test-policy_test-ns_test-provider": {
+						Issuer:            "test-issuer",
+						Audiences:         nil,
+						PayloadInMetadata: PayloadInMetadata,
+						FromParams:        []string{"jwt"},
 					},
 				},
 			},

@@ -67,8 +67,8 @@ type HeaderSource struct {
 	// Header is the name of the header. for example, "Authorization"
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=2048
-	// +optional
-	Header *string `json:"header,omitempty"`
+	// +required
+	Header string `json:"header"`
 	// Prefix before the token. for example, "Bearer "
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=2048
@@ -77,17 +77,15 @@ type HeaderSource struct {
 }
 
 // JWTTokenSource configures the source for the JWTToken
+// Exactly one of HeaderSource or QueryParams must be specified.
+// +kubebuilder:validation:ExactlyOneOf=headers;queryParams
 type JWTTokenSource struct {
-	// HeaderSource configures retrieving token from the headers
-	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:MaxItems=100
+	// HeaderSource configures retrieving token from a header
 	// +optional
-	HeaderSource []HeaderSource `json:"headers,omitempty"`
+	HeaderSource *HeaderSource `json:"headers,omitempty"`
 	// QueryParams configures retrieving token from these query params
-	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:MaxItems=100
 	// +optional
-	QueryParams []string `json:"queryParams,omitempty"`
+	QueryParams *string `json:"queryParams,omitempty"`
 }
 
 // JWTClaimToHeader allows copying verified claims to headers sent upstream
