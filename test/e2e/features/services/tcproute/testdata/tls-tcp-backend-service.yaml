@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: tls-listener-svc
+  labels:
+    app: tls-listener-svc
+spec:
+  ports:
+    - name: http
+      port: 3001
+      targetPort: 3000
+  selector:
+    app: tls-listener-backend
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tls-listener-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tls-listener-backend
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: tls-listener-backend
+        version: v1
+    spec:
+      containers:
+        - image: gcr.io/k8s-staging-gateway-api/echo-basic:v20231214-v1.0.0-140-gf544a46e
+          imagePullPolicy: IfNotPresent
+          name: tls-listener-backend
+          ports:
+            - containerPort: 3000
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: SERVICE_NAME
+              value: tls-listener-svc
+
