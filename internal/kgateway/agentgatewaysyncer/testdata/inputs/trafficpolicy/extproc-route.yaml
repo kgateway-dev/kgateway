@@ -1,0 +1,67 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: agentgateway
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+spec:
+  parentRefs:
+    - name: example-gateway
+  hostnames:
+    - "example.com"
+  rules:
+    - backendRefs:
+        - name: example-svc
+          port: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+spec:
+  selector:
+    test: test
+  ports:
+    - protocol: TCP
+      appProtocol: anything
+      port: 80
+      targetPort: test
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: AgentgatewayPolicy
+metadata:
+  name: example-policy
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: example-route
+  traffic:
+    extProc:
+      backendRef:
+        name: extproc-svc
+        port: 4444
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: extproc-svc
+  labels:
+    app: extproc
+spec:
+  ports:
+    - port: 4444
+      targetPort: 9000
+      protocol: TCP
+      appProtocol: kubernetes.io/h2c
+  selector:
+    app: extproc

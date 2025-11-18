@@ -813,7 +813,7 @@ func processExtAuthPolicy(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, po
 
 // processExtProcPolicy processes ExtProc configuration and creates corresponding agentgateway policies
 func processExtProcPolicy(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, policyName string, policyTarget *api.PolicyTarget) ([]AgwPolicy, error) {
-	extProc := policy.Spec.Traffic.ExtAuth
+	extProc := policy.Spec.Traffic.ExtProc
 
 	be, err := buildBackendRef(ctx, extProc.BackendRef, policy.Namespace)
 	if err != nil {
