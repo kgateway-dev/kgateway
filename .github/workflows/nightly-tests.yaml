@@ -40,8 +40,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        kube-version: [ { node: 'v1.30.13@sha256:397209b3d947d154f6641f2d0ce8d473732bd91c87d9575ade99049aa33cd648', kubectl: 'v1.30.14', kind: 'v0.29.0' },
-                        { node: 'v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a', kubectl: 'v1.34.1', kind: 'v0.30.0' }]
+        kube-version: [ { node: 'v1.30.13@sha256:397209b3d947d154f6641f2d0ce8d473732bd91c87d9575ade99049aa33cd648', kubectl: 'v1.30.14' },
+                        { node: 'v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a', kubectl: 'v1.34.1' }]
         gateway-api-channel: [ 'experimental', 'standard' ]
     steps:
     - uses: actions/checkout@v4
@@ -51,6 +51,8 @@ jobs:
       with:
         test-type: gateway-api
         api-channel: ${{ matrix.gateway-api-channel }}
+        kubectl-version: ${{ matrix.kube-version.kubectl }}
+        kind-node-version: ${{ matrix.kube-version.node }}
 
   kube_gateway_api_load_tests:
     name: Load Tests (branch=main, type=Kubernetes Gateway API, version=${{ matrix.kube-version.node }} )
