@@ -2,7 +2,6 @@ package agentgatewaysyncer
 
 import (
 	"context"
-	"log"
 	"time"
 
 	"github.com/avast/retry-go/v4"
@@ -10,6 +9,8 @@ import (
 	"istio.io/istio/pkg/kube/kclient"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -20,6 +21,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/status"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 )
 
@@ -55,6 +57,8 @@ type AgentGwStatusSyncer struct {
 	grpcRoutes   StatusSyncer[*gwv1.GRPCRoute, *gwv1.GRPCRouteStatus]
 	tcpRoutes    StatusSyncer[*gwv1a2.TCPRoute, *gwv1a2.TCPRouteStatus]
 	tlsRoutes    StatusSyncer[*gwv1a2.TLSRoute, *gwv1a2.TLSRouteStatus]
+
+	extraAgwPolicyStatusHandlers map[schema.GroupVersionKind]agwplugins.AgwPolicyStatusSyncHandler
 }
 
 func NewAgwStatusSyncer(
@@ -63,14 +67,16 @@ func NewAgwStatusSyncer(
 	client apiclient.Client,
 	statusCollections *status.StatusCollections,
 	cacheSyncs []cache.InformerSynced,
+	extraHandlers map[schema.GroupVersionKind]agwplugins.AgwPolicyStatusSyncHandler,
 ) *AgentGwStatusSyncer {
 	f := kclient.Filter{ObjectFilter: client.ObjectFilter()}
 	syncer := &AgentGwStatusSyncer{
-		controllerName:    controllerName,
-		agwClassName:      agwClassName,
-		client:            client,
-		statusCollections: statusCollections,
-		cacheSyncs:        cacheSyncs,
+		controllerName:               controllerName,
+		agwClassName:                 agwClassName,
+		client:                       client,
+		statusCollections:            statusCollections,
+		cacheSyncs:                   cacheSyncs,
+		extraAgwPolicyStatusHandlers: extraHandlers,
 
 		agentgatewayPolicies: StatusSyncer[*v1alpha1.AgentgatewayPolicy, *gwv1.PolicyStatus]{
 			name:   "agentgatewayPolicy",
@@ -199,7 +205,22 @@ func (s *AgentGwStatusSyncer) SyncStatus(ctx context.Context, resource status.Re
 	case wellknown.AgentgatewayPolicyGVK:
 		s.agentgatewayPolicies.ApplyStatus(ctx, resource, statusObj)
 	default:
-		log.Fatalf("SyncStatus: unknown resource type: %v", resource.GroupVersionKind)
+		// Attempt to handle extra policy kinds via registered handlers.
+		if s.extraAgwPolicyStatusHandlers != nil {
+			key := resource.GroupVersionKind
+			if handler, ok := s.extraAgwPolicyStatusHandlers[key]; ok {
+				ps, _ := statusObj.(*gwv1.PolicyStatus)
+				if ps == nil {
+					logger.Warn("external status handler received non-PolicyStatus", "gvk", resource.GroupVersionKind.String())
+					return
+				}
+				if err := handler(ctx, s.client, types.NamespacedName{Name: resource.Name, Namespace: resource.Namespace}, *ps); err != nil {
+					logger.Error("external policy status handler failed", "gvk", resource.GroupVersionKind.String(), logKeyError, err)
+				}
+				return
+			}
+		}
+		logger.Error("sync status: unknown resource type", "gvk", resource.GroupVersionKind.String())
 	}
 }
 

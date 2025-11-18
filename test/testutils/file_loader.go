@@ -23,10 +23,22 @@ import (
 
 var ErrNoFilesFound = errors.New("no k8s files found")
 
+// FileContentTransformer is a function that transforms a file's contents
+type FileContentTransformer func(content string) string
+
 func LoadFromFiles(
 	filename string,
 	scheme *runtime.Scheme,
 	gvkToStructuralSchema map[schema.GroupVersionKind]*apiserverschema.Structural,
+) ([]client.Object, error) {
+	return LoadFromFileWithTransform(filename, scheme, gvkToStructuralSchema, nil)
+}
+
+func LoadFromFileWithTransform(
+	filename string,
+	scheme *runtime.Scheme,
+	gvkToStructuralSchema map[schema.GroupVersionKind]*apiserverschema.Structural,
+	transformer FileContentTransformer,
 ) ([]client.Object, error) {
 	fileOrDir, err := os.Stat(filename)
 	if err != nil {
@@ -57,7 +69,7 @@ func LoadFromFiles(
 
 	var resources []client.Object
 	for _, file := range yamlFiles {
-		objs, err := parseFile(file, scheme, gvkToStructuralSchema)
+		objs, err := parseFile(file, scheme, gvkToStructuralSchema, transformer)
 		if err != nil {
 			return nil, err
 		}
@@ -83,10 +95,14 @@ func parseFile(
 	filename string,
 	scheme *runtime.Scheme,
 	gvkToStructuralSchema map[schema.GroupVersionKind]*apiserverschema.Structural,
+	transformer FileContentTransformer,
 ) ([]runtime.Object, error) {
 	file, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
+	}
+	if transformer != nil {
+		file = []byte(transformer(string(file)))
 	}
 
 	type metaOnly struct {

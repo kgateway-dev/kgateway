@@ -17,6 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -27,6 +28,8 @@ const (
 	DefaultHttpStatPrefix  = "http"
 	UpstreamCodeFilterName = "envoy.filters.http.upstream_codec"
 )
+
+var defaultDownstreamAlpnProtocols = []string{"h2", "http/1.1"}
 
 type filterChainTranslator struct {
 	listener        ir.ListenerIR
@@ -458,10 +461,17 @@ func (info *FilterChainInfo) toTransportSocket() *envoycorev3.TransportSocket {
 		return nil
 	}
 
+	alpnProtocols := ssl.AlpnProtocols
+	if len(alpnProtocols) == 0 {
+		alpnProtocols = defaultDownstreamAlpnProtocols
+	} else if len(alpnProtocols) == 1 && alpnProtocols[0] == string(annotations.AllowEmptyAlpnProtocols) {
+		alpnProtocols = []string{}
+	}
+
 	common := &envoytlsv3.CommonTlsContext{
 		// default params
 		TlsParams:     &envoytlsv3.TlsParameters{},
-		AlpnProtocols: ssl.AlpnProtocols,
+		AlpnProtocols: alpnProtocols,
 	}
 
 	common.TlsCertificates = []*envoytlsv3.TlsCertificate{
@@ -474,13 +484,6 @@ func (info *FilterChainInfo) toTransportSocket() *envoycorev3.TransportSocket {
 	//	var requireClientCert *wrappers.BoolValue
 	//	if common.GetValidationContextType() != nil {
 	//		requireClientCert = &wrappers.BoolValue{Value: !dc.GetOneWayTls().GetValue()}
-	//	}
-
-	// default alpn for downstreams.
-	//	if len(common.GetAlpnProtocols()) == 0 {
-	//		common.AlpnProtocols = []string{"h2", "http/1.1"}
-	//	} else if len(common.GetAlpnProtocols()) == 1 && common.GetAlpnProtocols()[0] == AllowEmpty { // allow override for advanced usage to set to a dangerous setting
-	//		common.AlpnProtocols = []string{}
 	//	}
 
 	out := &envoytlsv3.DownstreamTlsContext{

@@ -165,27 +165,16 @@ routes:
       route:
         cluster: backend_gwtest_lambda-latest_0
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-      typedPerFilterConfig:
-        ai.extproc.kgateway.io:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
-          disabled: true
     - match:
         path: /lambda/prod
       name: listener~8080~www_example_com-route-1-httproute-lambda-route-gwtest-0-0-matcher-0
       route:
         cluster: backend_gwtest_lambda-prod_0
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-      typedPerFilterConfig:
-        ai.extproc.kgateway.io:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
-          disabled: true
     - match:
         path: /lambda/dev
       name: listener~8080~www_example_com-route-2-httproute-lambda-route-gwtest-1-0-matcher-0
       route:
         cluster: backend_gwtest_lambda-dev_0
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-      typedPerFilterConfig:
-        ai.extproc.kgateway.io:
-          '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
-          disabled: true
+        

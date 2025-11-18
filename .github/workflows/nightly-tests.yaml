@@ -32,25 +32,50 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  kube_gateway_api_conformance_tests_main:
-    name: Conformance (branch=main, type=Kubernetes Gateway API, version=${{matrix.kube-version.node}} )
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-conformance && inputs.branch == 'main') || github.event.schedule == '0 5 * * *' }}
+  determine_branch:
+    name: Determine Branch
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Determine Branch
+      shell: bash
+      run: |
+        BRANCH=main
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.branch }}" == "workflow_initiating_branch" ]]; then
+          BRANCH="${{ inputs.branch }}"
+        fi
+        echo "BRANCH=${BRANCH}" >> "$GITHUB_ENV"
+
+  kube_gateway_api_conformance_tests:
+    name: Conformance (branch=main, type=Kubernetes Gateway API, k8s=${{ matrix.env-versions.label }}, gw-api=${{matrix.gateway-api-channel}})
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-conformance ) || github.event.schedule == '0 5 * * *' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
-        kube-version: [ { node: 'v1.30.13@sha256:397209b3d947d154f6641f2d0ce8d473732bd91c87d9575ade99049aa33cd648', kubectl: 'v1.30.14', kind: 'v0.29.0' },
-                        { node: 'v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a', kubectl: 'v1.34.1', kind: 'v0.30.0' }]
+        env-versions: [ {file: "./.github/workflows/.env/nightly-tests/max_versions.env", label: "max_versions"},
+                        {file: "./.github/workflows/.env/nightly-tests/min_versions.env", label: "min_versions"} ]
+        gateway-api-channel: [ 'experimental', 'standard' ]
     steps:
     - uses: actions/checkout@v4
       with:
-        ref: main
-    - uses: ./.github/actions/kube-gateway-api-conformance-tests
+        ref: ${{ env.BRANCH }}
+    - name: Dotenv Action
+      uses: falti/dotenv-action@v1.1.4
+      id: dotenv
+      with:
+        path: ${{ matrix.env-versions.file }}
+        log-variables: true
+    - uses: ./.github/actions/kube-conformance-tests
+      with:
+        test-type: gateway-api
+        api-channel: ${{ matrix.gateway-api-channel }}
+        kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
+        kind-node-version: ${{ steps.dotenv.outputs.node_version }}
 
   kube_gateway_api_load_tests:
-    name: Load Tests (branch=main, type=Kubernetes Gateway API, version=${{matrix.kube-version.node}} )
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-load-tests && inputs.branch == 'main') || github.event.schedule == '0 5 * * *' }}
+    name: Load Tests (branch=main, type=Kubernetes Gateway API, version=${{ matrix.kube-version.node }} )
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-load-tests ) || github.event.schedule == '0 5 * * *' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     strategy:
@@ -61,12 +86,12 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        ref: main
+        ref: ${{ env.BRANCH }}
     - uses: ./.github/actions/kube-gateway-api-load-tests
 
   kgateway_e2e_tests_for_gateway_api_versions:
     name: GwApi E2E
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-e2e-tests) || github.event.schedule == '0 5 * * *' }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-e2e-tests ) || github.event.schedule == '0 5 * * *' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 120
     strategy:
@@ -80,6 +105,8 @@ jobs:
                               { version: 'v1.2.1', channel: 'standard' }]
     steps:
     - uses: actions/checkout@v4
+      with:
+        ref: ${{ env.BRANCH }}
     - name: Prep Go Runner
       uses: ./.github/actions/prep-go-runner
     - name: Dotenv Action

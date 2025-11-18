@@ -169,7 +169,11 @@ func translateBackendHTTP(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, na
 }
 
 func translateBackendMCPAuthorization(policy *v1alpha1.AgentgatewayPolicy, target *api.PolicyTarget) []AgwPolicy {
-	auth := policy.Spec.Traffic.Authorization
+	backend := policy.Spec.Backend
+	if backend == nil || backend.MCP == nil || backend.MCP.Authorization == nil {
+		return nil
+	}
+	auth := backend.MCP.Authorization
 	var allowPolicies, denyPolicies []string
 	if auth.Action == v1alpha1.AuthorizationPolicyActionDeny {
 		denyPolicies = append(denyPolicies, cast(auth.Policy.MatchExpressions)...)

@@ -29,7 +29,7 @@ type GatewayClassInfo struct {
 // GetSupportedFeaturesForStandardGateway returns the supported features for the standard Gateway class.
 // This is derived from the conformance test configuration where we exempt certain features.
 func GetSupportedFeaturesForStandardGateway() []gwv1.SupportedFeature {
-	exemptFeatures := getCommonExemptFeatures()
+	exemptFeatures := GetCommonExemptFeatures()
 	// backfill individual features that we don't support yet.
 	exemptFeatures.Insert(
 		features.GatewayStaticAddressesFeature,
@@ -48,15 +48,16 @@ func GetSupportedFeaturesForWaypointGateway() []gwv1.SupportedFeature {
 // GetSupportedFeaturesForAgentGateway returns the supported features for the agent Gateway class.
 // Agent gateways support additional features beyond the standard gateway class.
 func GetSupportedFeaturesForAgentGateway() []gwv1.SupportedFeature {
-	exemptFeatures := getCommonExemptFeatures()
+	exemptFeatures := GetCommonExemptFeatures()
 	// Agent gateways support GatewayHTTPListenerIsolation and GatewayPort8080,
 	// but still don't support GatewayStaticAddresses.
 	exemptFeatures.Insert(features.GatewayStaticAddressesFeature)
 	return getSupportedFeatures(exemptFeatures)
 }
 
-// getCommonExemptFeatures returns the set of features that are commonly unsupported across all gateway classes.
-func getCommonExemptFeatures() sets.Set[features.Feature] {
+// GetCommonExemptFeatures returns the set of features that are commonly unsupported across all gateway classes.
+// Exported for use in the conformance test suite.
+func GetCommonExemptFeatures() sets.Set[features.Feature] {
 	exemptFeatures := sets.New[features.Feature]()
 	// we don't support any mesh features at all.
 	for _, feature := range features.MeshCoreFeatures.UnsortedList() {
