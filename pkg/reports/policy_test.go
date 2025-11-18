@@ -228,6 +228,51 @@ func TestPolicyStatusReport(t *testing.T) {
 			},
 		},
 		{
+			name: "status on existing object and report map with empty policy entry during translation",
+			fakeTranslation: func(a *assert.Assertions, statusReporter reporter.Reporter) {
+				// Policy is added to report map but no ancestor refs are added
+				policyReport := statusReporter.Policy(reporter.PolicyKey{
+					Group:     "example.com",
+					Kind:      "Policy",
+					Namespace: "default",
+					Name:      "example",
+				}, 2)
+				a.NotNil(policyReport)
+			},
+			key: reporter.PolicyKey{
+				Group:     "example.com",
+				Kind:      "Policy",
+				Namespace: "default",
+				Name:      "example",
+			},
+			controller: "example-controller",
+			currentStatus: gwv1.PolicyStatus{
+				Ancestors: []gwv1.PolicyAncestorStatus{
+					// Existing stale status for gw-1 that should be cleared
+					{
+						AncestorRef: gwv1.ParentReference{
+							Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
+							Kind:      ptr.To(gwv1.Kind("Gateway")),
+							Namespace: ptr.To(gwv1.Namespace("default")),
+							Name:      gwv1.ObjectName("gw-1"),
+						},
+						ControllerName: "example-controller",
+						Conditions: []metav1.Condition{
+							{
+								ObservedGeneration: 1,
+								Type:               string(v1alpha1.PolicyConditionAccepted),
+								Status:             metav1.ConditionTrue,
+								Reason:             string(v1alpha1.PolicyReasonValid),
+							},
+						},
+					},
+				},
+			},
+			wantStatus: &gwv1.PolicyStatus{
+				Ancestors: []gwv1.PolicyAncestorStatus{},
+			},
+		},
+		{
 			name: "preserve ancestor status belonging to external controllers",
 			fakeTranslation: func(a *assert.Assertions, statusReporter reporter.Reporter) {
 				policyReport := statusReporter.Policy(reporter.PolicyKey{

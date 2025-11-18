@@ -66,9 +66,9 @@ type PolicyPlugin struct {
 	ProcessAgentBackend func(pol ir.PolicyIR, in ir.BackendObjectIR) error
 
 	Policies krt.Collection[ir.PolicyWrapper]
-	// ProcessPolicyStatusMarkers add empty reports for policies to clear stale status
-	ProcessPolicyStatusMarkers func(krt.HandlerContext, *reports.ReportMap)
-	GlobalPolicies             func(krt.HandlerContext) ir.PolicyIR
+	// ProcessPolicyStaleStatusMarkers add empty reports for policies to clear stale status
+	ProcessPolicyStaleStatusMarkers func(krt.HandlerContext, *reports.ReportMap)
+	GlobalPolicies                  func(krt.HandlerContext) ir.PolicyIR
 	// PoliciesFetch can optionally be set if the plugin needs a custom mechanism for fetching the policy IR,
 	// rather than the default behavior of fetching by name from the aggregated policy KRT collection
 	PoliciesFetch func(n, ns string) ir.PolicyIR

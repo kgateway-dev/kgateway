@@ -256,8 +256,8 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 		return statusMarker, pol
 	})
 
-	// processPolicyStatusMarkers for policies that have existing status but no current report
-	processPolicyStatusMarkers := func(kctx krt.HandlerContext, reportMap *reports.ReportMap) {
+	// processMarkers for policies that have existing status but no current report
+	processMarkers := func(kctx krt.HandlerContext, reportMap *reports.ReportMap) {
 		objStatus := krt.Fetch(kctx, policyStatusMarker)
 		for _, status := range objStatus {
 			policyKey := reporter.PolicyKey{
@@ -278,11 +278,11 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 	return sdk.Plugin{
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			wellknown.HTTPListenerPolicyGVK.GroupKind(): {
-				NewGatewayTranslationPass:  NewGatewayTranslationPass,
-				Policies:                   policyCol,
-				ProcessPolicyStatusMarkers: processPolicyStatusMarkers,
-				GetPolicyStatus:            getPolicyStatusFn(cli),
-				PatchPolicyStatus:          patchPolicyStatusFn(cli),
+				NewGatewayTranslationPass:       NewGatewayTranslationPass,
+				Policies:                        policyCol,
+				ProcessPolicyStaleStatusMarkers: processMarkers,
+				GetPolicyStatus:                 getPolicyStatusFn(cli),
+				PatchPolicyStatus:               patchPolicyStatusFn(cli),
 				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
 					return policy.MergePolicies(pols, mergePolicies, "" /*no merge settings*/)
 				},

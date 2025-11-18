@@ -20,9 +20,8 @@ var (
 	corsHttpRoutesManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httproutes-cors.yaml")
 
 	// traffic policies with cors configuration
-	gwCorsTrafficPolicyManifest              = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-gw-cors.yaml")
-	routeCorsTrafficPolicyManifest           = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-cors.yaml")
-	gwCorsTrafficPolicyMissingTargetManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-gw-cors-missing-target.yaml")
+	gwCorsTrafficPolicyManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-gw-cors.yaml")
+	routeCorsTrafficPolicyManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-cors.yaml")
 
 	// objects created by deployer after applying gateway manifest
 	proxyObjectMeta = metav1.ObjectMeta{
@@ -54,9 +53,6 @@ var (
 		"TestHttpRouteAndTrafficPolicyCors": {
 			Manifests:       []string{httpRoutesManifest, corsHttpRoutesManifest, gwCorsTrafficPolicyManifest},
 			MinGwApiVersion: base.GwApiRequireCorsFilters,
-		},
-		"TestTrafficPolicyClearStaleStatus": {
-			Manifests: []string{httpRoutesManifest, gwCorsTrafficPolicyManifest},
 		},
 	}
 )

@@ -254,8 +254,8 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 		return statusMarker, pol
 	})
 
-	// processPolicyStatusMarkers for policies that have existing status but no current report
-	processPolicyStatusMarkers := func(kctx krt.HandlerContext, reportMap *reports.ReportMap) {
+	// processMarkers for policies that have existing status but no current report
+	processMarkers := func(kctx krt.HandlerContext, reportMap *reports.ReportMap) {
 		objStatus := krt.Fetch(kctx, statusCol)
 		for _, status := range objStatus {
 			policyKey := reporter.PolicyKey{
@@ -276,9 +276,9 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 	return sdk.Plugin{
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			wellknown.TrafficPolicyGVK.GroupKind(): {
-				NewGatewayTranslationPass:  NewGatewayTranslationPass,
-				Policies:                   policyCol,
-				ProcessPolicyStatusMarkers: processPolicyStatusMarkers,
+				NewGatewayTranslationPass:       NewGatewayTranslationPass,
+				Policies:                        policyCol,
+				ProcessPolicyStaleStatusMarkers: processMarkers,
 				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
 					return policy.MergePolicies(pols, mergeTrafficPolicies, mergeSettings)
 				},
