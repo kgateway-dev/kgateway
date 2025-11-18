@@ -2,13 +2,13 @@ package conformance_test
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
 
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
-	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/gateway-api/conformance"
 	"sigs.k8s.io/gateway-api/conformance/utils/suite"
@@ -30,9 +30,9 @@ func TestConformance(t *testing.T) {
 	}
 
 	// Configure profiles and exempt features based on detected channel
-	profiles := suite.ParseConformanceProfiles("GATEWAY-HTTP,GATEWAY-GRPC")
+	profiles := sets.New(suite.GatewayGRPCConformanceProfileName, suite.GatewayHTTPConformanceProfileName)
 	if channel == features.FeatureChannelExperimental {
-		profiles.Insert("GATEWAY-TLS")
+		profiles.Insert(suite.GatewayTLSConformanceProfileName)
 	}
 	options.ConformanceProfiles = profiles
 
@@ -49,39 +49,28 @@ func TestConformance(t *testing.T) {
 	conformance.RunConformanceWithOptions(t, options)
 }
 
-type CRD struct {
-	Metadata struct {
-		Annotations map[string]string `json:"annotations"`
-	} `json:"metadata"`
-}
-
 // detectGatewayAPIChannel checks which Gateway API CRDs are installed to determine the channel
 func detectGatewayAPIChannel() (string, error) {
 	cfg, err := config.GetConfig()
 	if err != nil {
 		return "", err
 	}
-	clientset, err := kubernetes.NewForConfig(cfg)
+	clientset, err := apiextensionsclient.NewForConfig(cfg)
 	if err != nil {
 		return "", err
 	}
 
 	// Check the gateway.networking.k8s.io/channel annotation on HTTPRoute CRD
-	crd, err := clientset.RESTClient().
-		Get().
-		AbsPath("/apis/apiextensions.k8s.io/v1/customresourcedefinitions/httproutes.gateway.networking.k8s.io").
-		DoRaw(context.Background())
+	crd, err := clientset.ApiextensionsV1().CustomResourceDefinitions().Get(
+		context.Background(),
+		"httproutes.gateway.networking.k8s.io",
+		metav1.GetOptions{},
+	)
 	if err != nil {
 		return "", err
 	}
 
-	var crdObj CRD
-	if err := json.Unmarshal(crd, &crdObj); err != nil {
-		return "", err
-	}
-
-	channel := crdObj.Metadata.Annotations["gateway.networking.k8s.io/channel"]
-
+	channel := crd.Annotations["gateway.networking.k8s.io/channel"]
 	if channel == "" {
 		return "", fmt.Errorf("gateway.networking.k8s.io/channel annotation not found on HTTPRoute CRD")
 	}

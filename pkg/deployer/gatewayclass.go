@@ -56,6 +56,7 @@ func GetSupportedFeaturesForAgentGateway() []gwv1.SupportedFeature {
 }
 
 // GetCommonExemptFeatures returns the set of features that are commonly unsupported across all gateway classes.
+// Exported for use in the conformance test suite.
 func GetCommonExemptFeatures() sets.Set[features.Feature] {
 	exemptFeatures := sets.New[features.Feature]()
 	// we don't support any mesh features at all.

@@ -14,8 +14,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  conformance_tests:
-    name: K8s Gw Api Conformance Tests (${{ matrix.test-type.type }}, ${{ matrix.gateway-api-channel }})
+  gw_api_conformance_tests:
+    name: K8s Gw Api Conformance Tests (${{ matrix.test-type }}, ${{ matrix.gateway-api-channel }})
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     if: ${{ !github.event.pull_request.draft }}
@@ -24,40 +24,40 @@ jobs:
       matrix:
         gateway-api-channel: [ 'experimental', 'standard' ]
         kube-version: [ { node: 'v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a', kubectl: 'v1.34.1', kind: 'v0.30.0' } ]
-        test-type: [ { 
-            type: 'gateway-api',
-            enable-inference-extension: false,
-          }, { 
-            type: 'agent-gateway',
-            enable-inference-extension: false,
-            additional-helm-values: test/e2e/tests/manifests/agent-gateway-integration.yaml
-          }, { 
-            type: 'inference-extension',
-            enable-inference-extension: true,
-          } ]
+        test-type: [ gateway-api, agent-gateway ]
     steps:
     - uses: actions/checkout@v4
     - id: run-tests
       uses: ./.github/actions/kube-conformance-tests
       with:
-        test-type: ${{ matrix.test-type.type }}
+        test-type: ${{ matrix.test-type }}
         api-channel: ${{ matrix.gateway-api-channel }}
-        enable-inference-extension: ${{ matrix.test-type.enable-inference-extension }}
-        additional-helm-values: ${{ matrix.test-type.additional-helm-values }}
 
+
+  gie_conformance_tests:
+    name: Kubernetes Gateway API Inference Extension Conformance Tests
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v4
+    - name: Run GIE Conformance Tests
+      uses: ./.github/actions/kube-conformance-tests
+      with:
+        test-type: inference-extension
+        api-channel: "experimental"
+        enable-inference-extension: true
 
   conformance:
     if: always()
     name: Kubernetes Gateway API Conformance Tests
-    runs-on: ubuntu-latest
-    needs: [conformance_tests]
+    runs-on: ubuntu-22.04
+    needs: [gw_api_conformance_tests, gie_conformance_tests]
     steps:
     - name: Check e2e matrix status
       run: |
-          if [[ "${{ needs.conformance_tests.result }}" == "success" ]]; then
+          if [[ "${{ needs.gw_api_conformance_tests.result }}" == "success" && "${{ needs.gie_conformance_tests.result }}" == "success" ]]; then
             echo "All conformance matrix jobs passed successfully"
             exit 0
           else
-            echo "Conformance matrix jobs failed with status: ${{ needs.conformance_tests.result }}"
+            echo "Conformance matrix jobs failed with status: ${{ needs.gw_api_conformance_tests.result }} and ${{ needs.gie_conformance_tests.result }}"
             exit 1
           fi
