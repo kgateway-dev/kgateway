@@ -482,22 +482,16 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 			return nil
 		}
 
-		sslConfig, err := translateSslConfig(
-			kctx,
-			ctx,
-			gatewayNamespace,
-			tc.tls,
-			queries,
-		)
+		tlsConfig, err := translateTLSConfig(kctx, ctx, gatewayNamespace, tc.tls, queries)
 		if err != nil {
-			reportSslConfigError(err, tc.listenerReporter)
+			reportTLSConfigError(err, tc.listenerReporter)
 			return nil
 		}
 
 		return &ir.TcpIR{
 			FilterChainCommon: ir.FilterChainCommon{
 				FilterChainName: tcpHostName,
-				TLS:             sslConfig,
+				TLS:             tlsConfig,
 			},
 			BackendRefs: backends,
 		}
@@ -726,7 +720,7 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 		matcher.SniDomains = []string{string(*httpsFilterChain.sniDomain)}
 	}
 
-	sslConfig, err := translateSslConfig(
+	tlsConfig, err := translateTLSConfig(
 		kctx,
 		ctx,
 		gatewayNamespace,
@@ -734,7 +728,7 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 		queries,
 	)
 	if err != nil {
-		reportSslConfigError(err, listenerReporter)
+		reportTLSConfigError(err, listenerReporter)
 		return nil, err
 	}
 	sort.Slice(virtualHosts, func(i, j int) bool {
@@ -745,7 +739,7 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 		FilterChainCommon: ir.FilterChainCommon{
 			FilterChainName: parentName,
 			Matcher:         matcher,
-			TLS:             sslConfig,
+			TLS:             tlsConfig,
 		},
 		AttachedPolicies: httpsFilterChain.attachedPolicies,
 		Vhosts:           virtualHosts,
@@ -781,7 +775,7 @@ func buildRoutesPerHost(
 	}
 }
 
-func translateSslConfig(
+func translateTLSConfig(
 	kctx krt.HandlerContext,
 	ctx context.Context,
 	parentNamespace string,
@@ -830,8 +824,8 @@ func translateSslConfig(
 	}, nil
 }
 
-// reportSslConfigError reports SSL configuration errors by setting appropriate listener conditions.
-func reportSslConfigError(err error, listenerReporter reports.ListenerReporter) {
+// reportTLSConfigError reports TLS configuration errors by setting appropriate listener conditions.
+func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter) {
 	reason := gwv1.ListenerReasonInvalidCertificateRef
 	message := "Invalid certificate ref."
 	if errors.Is(err, krtcollections.ErrMissingReferenceGrant) {
