@@ -29,6 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
@@ -48,8 +49,8 @@ func (a *index) workloadEntryWorkloadBuilder(
 	workloadServices krt.Collection[ServiceInfo],
 	workloadServicesNamespaceIndex krt.Index[string, ServiceInfo],
 	namespaces krt.Collection[*corev1.Namespace],
-	networkGateways krt.Collection[NetworkGateway],
-	gatewaysByNetwork krt.Index[network.ID, NetworkGateway],
+	networkGateways krt.Collection[translator.NetworkGateway],
+	gatewaysByNetwork krt.Index[network.ID, translator.NetworkGateway],
 ) krt.TransformationSingle[*networkingclient.WorkloadEntry, WorkloadInfo] {
 	return func(ctx krt.HandlerContext, wle *networkingclient.WorkloadEntry) *WorkloadInfo {
 		// Fetch services that select this workload entry
@@ -114,8 +115,8 @@ func (a *index) workloadEntryWorkloadBuilder(
 func (a *index) serviceEntryWorkloadBuilder(
 	waypoints krt.Collection[Waypoint],
 	namespaces krt.Collection[*corev1.Namespace],
-	networkGateways krt.Collection[NetworkGateway],
-	gatewaysByNetwork krt.Index[network.ID, NetworkGateway],
+	networkGateways krt.Collection[translator.NetworkGateway],
+	gatewaysByNetwork krt.Index[network.ID, translator.NetworkGateway],
 ) krt.TransformationMulti[*networkingclient.ServiceEntry, WorkloadInfo] {
 	return func(ctx krt.HandlerContext, se *networkingclient.ServiceEntry) []WorkloadInfo {
 		// Get waypoint for this ServiceEntry
@@ -208,8 +209,8 @@ func (a *index) WorkloadsCollection(
 	workloadServices krt.Collection[ServiceInfo],
 	endpointSlices krt.Collection[*discovery.EndpointSlice],
 	namespaces krt.Collection[*corev1.Namespace],
-	networkGateways krt.Collection[NetworkGateway],
-	gatewaysByNetwork krt.Index[network.ID, NetworkGateway],
+	networkGateways krt.Collection[translator.NetworkGateway],
+	gatewaysByNetwork krt.Index[network.ID, translator.NetworkGateway],
 	krtopts krtutil.KrtOptions,
 ) krt.Collection[WorkloadInfo] {
 	WorkloadServicesNamespaceIndex := krt.NewNamespaceIndex(workloadServices)
@@ -780,15 +781,15 @@ func namespacedHostname(namespace, hostname string) string {
 func getNetworkGatewayAddress(
 	ctx krt.HandlerContext,
 	nw string,
-	networkGateways krt.Collection[NetworkGateway],
-	gatewaysByNetwork krt.Index[network.ID, NetworkGateway],
+	networkGateways krt.Collection[translator.NetworkGateway],
+	gatewaysByNetwork krt.Index[network.ID, translator.NetworkGateway],
 ) *api.GatewayAddress {
 	if nw == "" {
 		// Default network, no gateway needed
 		return nil
 	}
 
-	gateways := LookupNetworkGateway(ctx, network.ID(nw), networkGateways, gatewaysByNetwork)
+	gateways := translator.LookupNetworkGateway(ctx, network.ID(nw), networkGateways, gatewaysByNetwork)
 	if len(gateways) == 0 {
 		return nil
 	}
@@ -814,12 +815,11 @@ func getNetworkGatewayAddress(
 		}
 
 		// It's an IP address
-		// Note: Network should be empty because the gateway itself is on this network,
-		// not on the other network it provides access to
+		// Gateway provides access to the network specified in gw.Network
 		return &api.GatewayAddress{
 			Destination: &api.GatewayAddress_Address{
 				Address: &api.NetworkAddress{
-					Network: "", // Gateway is on this network
+					Network: string(gw.Network), // Gateway provides access to this network
 					Address: ip.AsSlice(),
 				},
 			},

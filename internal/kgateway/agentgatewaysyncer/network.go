@@ -2,6 +2,7 @@ package agentgatewaysyncer
 
 import (
 	"net/netip"
+	"strconv"
 
 	"github.com/agentgateway/agentgateway/go/api"
 	"istio.io/api/annotation"
@@ -15,56 +16,25 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
-
-// NetworkGateway represents a gateway that provides connectivity to a specific network
-type NetworkGateway struct {
-	// Network is the ID of the network this gateway provides access to
-	Network network.ID
-	// Cluster is the ID of the k8s cluster where this Gateway resides
-	Cluster cluster.ID
-	// Addr is the gateway address (IP or hostname)
-	Addr string
-	// Port is the gateway port
-	Port uint32
-	// HBONEPort indicates that the gateway supports HBONE on this port
-	HBONEPort uint32
-	// ServiceAccount the gateway runs as
-	ServiceAccount types.NamespacedName
-	// Source is the Gateway resource that this NetworkGateway was derived from
-	Source types.NamespacedName
-}
-
-func (n NetworkGateway) ResourceName() string {
-	return n.Source.String() + "/" + n.Addr
-}
-
-func (n NetworkGateway) Equals(other NetworkGateway) bool {
-	return n.Network == other.Network &&
-		n.Cluster == other.Cluster &&
-		n.Addr == other.Addr &&
-		n.Port == other.Port &&
-		n.HBONEPort == other.HBONEPort &&
-		n.ServiceAccount == other.ServiceAccount &&
-		n.Source == other.Source
-}
 
 // NetworkGatewaysCollection builds a collection of NetworkGateway objects from Gateway resources
 // that have the topology.istio.io/network label set.
 func (a *index) NetworkGatewaysCollection(
 	gateways krt.Collection[*gatewayv1.Gateway],
 	krtopts krtutil.KrtOptions,
-) (krt.Collection[NetworkGateway], krt.Index[network.ID, NetworkGateway]) {
+) (krt.Collection[translator.NetworkGateway], krt.Index[network.ID, translator.NetworkGateway]) {
 	networkGateways := krt.NewManyCollection(
 		gateways,
-		func(ctx krt.HandlerContext, gw *gatewayv1.Gateway) []NetworkGateway {
+		func(ctx krt.HandlerContext, gw *gatewayv1.Gateway) []translator.NetworkGateway {
 			return k8sGatewayToNetworkGateways(cluster.ID(a.ClusterID), gw)
 		},
 		krtopts.ToOptions("NetworkGateways")...,
 	)
 
-	gatewaysByNetwork := krt.NewIndex(networkGateways, "network", func(o NetworkGateway) []network.ID {
+	gatewaysByNetwork := krt.NewIndex(networkGateways, "network", func(o translator.NetworkGateway) []network.ID {
 		return []network.ID{o.Network}
 	})
 
@@ -76,7 +46,7 @@ func (a *index) NetworkGatewaysCollection(
 // 1. topology.istio.io/network label set
 // 2. GatewayClassName of "istio-remote" (for declaring gateways that provide access to other networks)
 // 3. At least one HBONE listener
-func k8sGatewayToNetworkGateways(clusterID cluster.ID, gw *gatewayv1.Gateway) []NetworkGateway {
+func k8sGatewayToNetworkGateways(clusterID cluster.ID, gw *gatewayv1.Gateway) []translator.NetworkGateway {
 	// Check if this gateway has a network label
 	netLabel := gw.GetLabels()[label.TopologyNetwork.Name]
 	if netLabel == "" {
@@ -94,7 +64,7 @@ func k8sGatewayToNetworkGateways(clusterID cluster.ID, gw *gatewayv1.Gateway) []
 		return nil
 	}
 
-	base := NetworkGateway{
+	base := translator.NetworkGateway{
 		Network: network.ID(netLabel),
 		Cluster: clusterID,
 		ServiceAccount: types.NamespacedName{
@@ -104,7 +74,7 @@ func k8sGatewayToNetworkGateways(clusterID cluster.ID, gw *gatewayv1.Gateway) []
 		Source: config.NamespacedName(gw),
 	}
 
-	var gateways []NetworkGateway
+	var gateways []translator.NetworkGateway
 
 	// Process each address in the gateway
 	for _, addr := range gw.Status.Addresses {
@@ -134,55 +104,46 @@ func k8sGatewayToNetworkGateways(clusterID cluster.ID, gw *gatewayv1.Gateway) []
 
 // getGatewaySA returns the service account for a gateway.
 // If the gateway has a service account annotation, use that.
-// Otherwise, default to the gateway name with "-istio" suffix.
+// Otherwise, use gateway name with appropriate suffix based on GatewayClassName to match Istio conventions.
 func getGatewaySA(gw *gatewayv1.Gateway) string {
 	if sa, ok := gw.Annotations[annotation.GatewayServiceAccount.Name]; ok {
 		return sa
 	}
-	// Default service account name for Istio gateways
-	return gw.Name + "-istio"
-}
-
-// LookupNetworkGateway finds network gateways for the given network
-func LookupNetworkGateway(
-	ctx krt.HandlerContext,
-	nw network.ID,
-	networkGateways krt.Collection[NetworkGateway],
-	gatewaysByNetwork krt.Index[network.ID, NetworkGateway],
-) []NetworkGateway {
-	if nw == "" {
-		// Default network, no gateway needed
-		return nil
+	// Use appropriate suffix based on GatewayClassName to match Istio conventions
+	if gw.Spec.GatewayClassName == constants.RemoteGatewayClassName {
+		return gw.Name + "-" + constants.RemoteGatewayClassName
 	}
-	return krt.Fetch(ctx, networkGateways, krt.FilterIndex(gatewaysByNetwork, nw))
+	// Default service account name for other gateways
+	return gw.Name
 }
 
 // networkGatewayToWorkload converts a NetworkGateway to a WorkloadInfo
 // This creates gateway workloads that agentgateway uses to establish mTLS connections
-func (a *index) networkGatewayToWorkload(ctx krt.HandlerContext, ng NetworkGateway) *WorkloadInfo {
-	// Parse the gateway address
-	addr, err := netip.ParseAddr(ng.Addr)
-	if err != nil {
-		// If not an IP, treat as hostname
-		return nil
-	}
-
+func (a *index) networkGatewayToWorkload(ctx krt.HandlerContext, ng translator.NetworkGateway) *WorkloadInfo {
 	w := &api.Workload{
-		Uid:               a.ClusterID + "/gateway/" + ng.Source.Namespace + "/" + ng.Source.Name + "-" + string(ng.Network),
-		Name:              ng.Source.Name + "-" + string(ng.Network),
+		Uid:               a.ClusterID + "/gateway/" + string(ng.Network) + "/" + ng.Addr + "/" + strconv.Itoa(int(ng.HBONEPort)),
+		Name:              ng.Source.Name + "-" + string(ng.Network) + "-" + ng.Addr,
 		Namespace:         ng.Source.Namespace,
 		ClusterId:         a.ClusterID,
-		Addresses:         [][]byte{addr.AsSlice()},
-		Network:           "", // Gateway is on the local network
+		Network:           string(ng.Network), // Gateway provides access to this network
 		ServiceAccount:    ng.ServiceAccount.Name,
 		TunnelProtocol:    api.TunnelProtocol_HBONE,
 		TrustDomain:       pickTrustDomain(),
 		Status:            api.WorkloadStatus_HEALTHY,
 		WorkloadName:      ng.Source.Name,
-		WorkloadType:      api.WorkloadType_POD,
 		CanonicalName:     ng.Source.Name,
 		CanonicalRevision: "latest",
 		Services:          map[string]*api.PortList{},
+	}
+
+	// Parse the gateway address
+	if addr, err := netip.ParseAddr(ng.Addr); err == nil {
+		w.Addresses = [][]byte{addr.AsSlice()}
+		w.Hostname = ""
+	} else {
+		// If not an IP, treat as hostname
+		w.Hostname = ng.Addr
+		w.Addresses = nil
 	}
 
 	return precomputeWorkloadPtr(&WorkloadInfo{
