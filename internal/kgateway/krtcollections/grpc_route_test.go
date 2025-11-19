@@ -483,8 +483,18 @@ func TestTransformGRPCRoute(t *testing.T) {
 			backends.AddBackends(svcGk, k8sSvcUpstreams(services))
 
 			// Create RouteIndex with minimal collections needed for GRPC route transformation
-			routesIndex := krtcollections.NewRoutesIndex(krtutil.KrtOptions{}, wellknown.DefaultGatewayControllerName, krttest.GetMockCollection[*gwv1.HTTPRoute](mock), grpcRoutes, krttest.GetMockCollection[*gwv1a2.TCPRoute](mock), krttest.GetMockCollection[*gwv1a2.TLSRoute](mock), policies, backends, refgrants, apisettings.Settings{})
-
+			routesIndex := krtcollections.NewRoutesIndex(
+				krtutil.KrtOptions{},
+				wellknown.DefaultGatewayControllerName,
+				krttest.GetMockCollection[*gwv1.HTTPRoute](mock),
+				grpcRoutes,
+				krttest.GetMockCollection[*gwv1a2.TCPRoute](mock),
+				krttest.GetMockCollection[*gwv1a2.TLSRoute](mock),
+				policies,
+				backends,
+				refgrants,
+				apisettings.Settings{},
+			)
 			// Wait until collections are synced
 			// grpcRoutes.WaitUntilSynced(context.Background().Done())
 			services.WaitUntilSynced(context.Background().Done())

@@ -995,7 +995,7 @@ func (c RouteWrapper) Equals(in RouteWrapper) bool {
 
 type RoutesIndex struct {
 	routes                               krt.Collection[RouteWrapper]
-	httpRouteStatusMarker                krt.StatusCollection[*gwv1.HTTPRoute, StatusMarker]
+	httpRouteStatusMarkers               krt.StatusCollection[*gwv1.HTTPRoute, StatusMarker]
 	httpRoutes                           krt.Collection[ir.HttpRouteIR]
 	httpBySelector                       krt.Index[HTTPRouteSelector, ir.HttpRouteIR]
 	byParentRef                          krt.Index[targetRefIndexKey, RouteWrapper]
@@ -1023,8 +1023,12 @@ func (r *RoutesIndex) HTTPRoutes() krt.Collection[ir.HttpRouteIR] {
 	return r.httpRoutes
 }
 
-func (r *RoutesIndex) ProcessHTTPRouteStatusMarkers(kctx krt.HandlerContext, reportMap reports.ReportMap) {
-	objStatus := krt.Fetch(kctx, r.httpRouteStatusMarker)
+// ProcessHTTPRouteStatusMarkers adds empty status in report map if no status reported for the marked route.
+// Used for clearing stale status for orphaned routes.
+func (r *RoutesIndex) ProcessHTTPRouteStatusMarkers(
+	objStatus []krt.ObjectWithStatus[*gwv1.HTTPRoute, StatusMarker],
+	reportMap reports.ReportMap,
+) {
 	for _, status := range objStatus {
 		routeKey := types.NamespacedName{
 			Namespace: status.Obj.GetNamespace(),
@@ -1034,7 +1038,7 @@ func (r *RoutesIndex) ProcessHTTPRouteStatusMarkers(kctx krt.HandlerContext, rep
 		// Add empty status to clear stale status for routes with no valid ParentRefs
 		if reportMap.HTTPRoutes[routeKey] == nil {
 			rp := reports.NewReporter(&reportMap)
-			_ = rp.Route(status.Obj)
+			rp.Route(status.Obj)
 		}
 	}
 }
@@ -1060,7 +1064,7 @@ func NewRoutesIndex(
 	}
 	h.hasSyncedFuncs = append(h.hasSyncedFuncs, httproutes.HasSynced, grpcroutes.HasSynced, tcproutes.HasSynced, tlsroutes.HasSynced)
 
-	h.httpRouteStatusMarker, h.httpRoutes = krt.NewStatusCollection(httproutes, func(kctx krt.HandlerContext, i *gwv1.HTTPRoute) (*StatusMarker, *ir.HttpRouteIR) {
+	h.httpRouteStatusMarkers, h.httpRoutes = krt.NewStatusCollection(httproutes, func(kctx krt.HandlerContext, i *gwv1.HTTPRoute) (*StatusMarker, *ir.HttpRouteIR) {
 		return h.transformHttpRoute(kctx, i, controllerName)
 	}, krtopts.ToOptions("http-routes-with-policy")...)
 
@@ -1133,6 +1137,10 @@ func NewRoutesIndex(
 	h.byParentRef = byParentRef
 
 	return h
+}
+
+func (h *RoutesIndex) GetHTTPRouteStatusMarkers() krt.StatusCollection[*gwv1.HTTPRoute, StatusMarker] {
+	return h.httpRouteStatusMarkers
 }
 
 func (h *RoutesIndex) FetchHTTPRoutesBySelector(kctx krt.HandlerContext, selector HTTPRouteSelector) []ir.HttpRouteIR {
