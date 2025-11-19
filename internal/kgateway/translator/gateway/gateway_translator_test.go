@@ -1459,6 +1459,17 @@ func TestBasic(t *testing.T) {
 			},
 		})
 	})
+
+	t.Run("JWT Policy at gateway and route level", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "jwt/gateway-and-route.yaml",
+			outputFile: "jwt/gateway-and-route.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
 }
 
 func TestValidation(t *testing.T) {
