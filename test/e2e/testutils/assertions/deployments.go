@@ -4,14 +4,17 @@ package assertions
 
 import (
 	"context"
+	"fmt"
 	"time"
 
+	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/gomega"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 )
 
 // EventuallyReadyReplicas asserts that given a Deployment, eventually the number of pods matching the replicaMatcher
@@ -29,4 +32,24 @@ func (p *Provider) EventuallyReadyReplicas(ctx context.Context, deploymentMeta m
 		WithTimeout(time.Second * 30).
 		WithPolling(time.Millisecond * 200).
 		Should(Succeed())
+}
+
+func (p *Provider) EventuallyDeploymentNotExists(ctx context.Context,
+	deploymentNamespace string,
+	listOpt metav1.ListOptions,
+	timeout ...time.Duration,
+) {
+
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
+
+	p.Gomega.Eventually(func(g gomega.Gomega) {
+		deployments, err := p.clusterContext.Clientset.AppsV1().Deployments(deploymentNamespace).List(ctx, listOpt)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "Failed to list pods")
+		g.Expect(deployments.Items).To(gomega.BeEmpty(), "No pods should be found")
+	}).
+		WithTimeout(currentTimeout).
+		WithPolling(pollingInterval).
+		Should(gomega.Succeed(), fmt.Sprintf("pods matching %v in namespace %s should not be found in cluster",
+			listOpt, deploymentNamespace))
+
 }
