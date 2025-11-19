@@ -1,20 +1,32 @@
   labels:
     helm.sh/chart: kgateway-v0.0.1
 --
-    app.kubernetes.io/instance: foobar
+    app.kubernetes.io/part-of: kgateway
     app.kubernetes.io/version: "v0.0.2"
 --
   labels:
     helm.sh/chart: kgateway-v0.0.1
 --
-    app.kubernetes.io/instance: foobar
+    app.kubernetes.io/part-of: kgateway
     app.kubernetes.io/version: "v0.0.2"
 --
   labels:
     helm.sh/chart: kgateway-v0.0.1
 --
-    app.kubernetes.io/instance: foobar
+    app.kubernetes.io/part-of: kgateway
     app.kubernetes.io/version: "v0.0.2"
+--
+  labels:
+    helm.sh/chart: kgateway-v0.0.1
+--
+    app.kubernetes.io/part-of: kgateway
+    app.kubernetes.io/version: "v0.0.2"
+--
+      labels:
+        helm.sh/chart: kgateway-v0.0.1
+--
+        app.kubernetes.io/part-of: kgateway
+        app.kubernetes.io/version: "v0.0.2"
 --
         - name: kgateway
           image: "cr.kgateway.dev/kgateway-dev/kgateway:v0.0.2"
