@@ -571,6 +571,10 @@ spec:
                                             rule: 'has(self.insecureSkipVerify) &&
                                               self.insecureSkipVerify == ''All'' ?
                                               !has(self.caCertificateRefs) : true'
+                                          - message: insecureSkipVerify and verifySubjectAltNames
+                                              may not be set together
+                                            rule: 'has(self.insecureSkipVerify) ?
+                                              !has(self.verifySubjectAltNames) : true'
                                           - message: at most one of the fields in
                                               [verifySubjectAltNames insecureSkipVerify]
                                               may be set
@@ -1345,6 +1349,10 @@ spec:
                         be set together
                       rule: 'has(self.insecureSkipVerify) && self.insecureSkipVerify
                         == ''All'' ? !has(self.caCertificateRefs) : true'
+                    - message: insecureSkipVerify and verifySubjectAltNames may not
+                        be set together
+                      rule: 'has(self.insecureSkipVerify) ? !has(self.verifySubjectAltNames)
+                        : true'
                     - message: at most one of the fields in [verifySubjectAltNames
                         insecureSkipVerify] may be set
                       rule: '[has(self.verifySubjectAltNames),has(self.insecureSkipVerify)].filter(x,x==true).size()
