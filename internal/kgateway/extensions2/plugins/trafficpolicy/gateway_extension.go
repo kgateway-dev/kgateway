@@ -32,7 +32,6 @@ import (
 type TrafficPolicyGatewayExtensionIR struct {
 	// +krtEqualsTodo decide whether extension name should affect equality
 	Name             string
-	ExtType          v1alpha1.GatewayExtensionType
 	ExtAuth          *envoy_ext_authz_v3.ExtAuthz
 	ExtProc          *envoymatchingv3.ExtensionWithMatcher
 	RateLimit        *ratev3.RateLimit
@@ -46,10 +45,6 @@ func (e TrafficPolicyGatewayExtensionIR) ResourceName() string {
 }
 
 func (e TrafficPolicyGatewayExtensionIR) Equals(other TrafficPolicyGatewayExtensionIR) bool {
-	if e.ExtType != other.ExtType {
-		return false
-	}
-
 	if !proto.Equal(e.ExtAuth, other.ExtAuth) {
 		return false
 	}
@@ -104,12 +99,11 @@ func TranslateGatewayExtensionBuilder(commoncol *collections.CommonCollections) 
 	return func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
 		p := &TrafficPolicyGatewayExtensionIR{
 			Name:             krt.Named{Name: gExt.Name, Namespace: gExt.Namespace}.ResourceName(),
-			ExtType:          gExt.Type,
 			PrecedenceWeight: gExt.PrecedenceWeight,
 		}
 
-		switch gExt.Type {
-		case v1alpha1.GatewayExtensionTypeExtAuth:
+		switch {
+		case gExt.ExtAuth != nil:
 			envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, &gExt.ExtAuth.GrpcService)
 			if err != nil {
 				// TODO: should this be a warning, and set cluster to blackhole?
@@ -138,7 +132,7 @@ func TranslateGatewayExtensionBuilder(commoncol *collections.CommonCollections) 
 				p.ExtAuth.StatPrefix = *gExt.ExtAuth.StatPrefix
 			}
 
-		case v1alpha1.GatewayExtensionTypeExtProc:
+		case gExt.ExtProc != nil:
 			envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, &gExt.ExtProc.GrpcService)
 			if err != nil {
 				p.Err = fmt.Errorf("failed to resolve ExtProc backend: %w", err)
@@ -146,12 +140,7 @@ func TranslateGatewayExtensionBuilder(commoncol *collections.CommonCollections) 
 			}
 			p.ExtProc = buildCompositeExtProcFilter(*gExt.ExtProc, envoyGrpcService)
 
-		case v1alpha1.GatewayExtensionTypeRateLimit:
-			if gExt.RateLimit == nil {
-				p.Err = fmt.Errorf("rate limit extension missing configuration")
-				return p
-			}
-
+		case gExt.RateLimit != nil:
 			grpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, &gExt.RateLimit.GrpcService)
 			if err != nil {
 				p.Err = fmt.Errorf("ratelimit: %w", err)

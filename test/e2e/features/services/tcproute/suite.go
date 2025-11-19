@@ -52,6 +52,7 @@ type tcpRouteTestCase struct {
 	gtwManifest         string
 	svcManifest         string
 	tcpRouteManifest    string
+	preGatewayManifests []string
 	proxyService        *corev1.Service
 	proxyDeployment     *appsv1.Deployment
 	expectedResponses   []*matchers.HttpResponse
@@ -60,6 +61,7 @@ type tcpRouteTestCase struct {
 	listenerNames       []gwv1.SectionName
 	expectedRouteCounts []int32
 	tcpRouteNames       []string
+	curlOptions         []curl.Option
 }
 
 func (s *testingSuite) TestConfigureTCPRouteBackingDestinations() {
@@ -105,6 +107,34 @@ func (s *testingSuite) TestConfigureTCPRouteBackingDestinations() {
 			},
 			expectedRouteCounts: []int32{1, 1},
 			tcpRouteNames:       []string{multiSvcTCPRouteName1, multiSvcTCPRouteName2},
+		},
+		{
+			name:             tlsListenerSameNsTestName,
+			nsManifest:       tlsListenerNsManifest,
+			gtwName:          tlsListenerGatewayName,
+			gtwNs:            tlsListenerNsName,
+			gtwManifest:      tlsListenerGatewayAndClientManifest,
+			svcManifest:      tlsListenerBackendManifest,
+			tcpRouteManifest: tlsListenerTcpRouteManifest,
+			preGatewayManifests: []string{
+				tlsListenerTlsSecretManifest,
+			},
+			proxyService:    tlsListenerProxyService,
+			proxyDeployment: tlsListenerProxyDeployment,
+			expectedResponses: []*matchers.HttpResponse{
+				expectedTlsListenerResp,
+			},
+			ports: []int{8443},
+			listenerNames: []gwv1.SectionName{
+				gwv1.SectionName(tlsListenerListenerName),
+			},
+			expectedRouteCounts: []int32{1},
+			tcpRouteNames:       []string{tlsListenerTCPRouteName},
+			curlOptions: []curl.Option{
+				curl.WithScheme("https"),
+				curl.WithCaFile("/etc/server-certs/tls.crt"),
+				curl.WithSni("example.com"),
+			},
 		},
 		{
 			name:             crossNsTestName,
@@ -186,6 +216,7 @@ func (s *testingSuite) TestConfigureTCPRouteBackingDestinations() {
 				tc.svcManifest,
 				tc.proxyService,
 				tc.proxyDeployment,
+				tc.preGatewayManifests...,
 			)
 
 			// Apply TCPRoute manifest
@@ -214,26 +245,28 @@ func (s *testingSuite) TestConfigureTCPRouteBackingDestinations() {
 
 			// Assert expected responses
 			for i, port := range tc.ports {
-				if tc.name == crossNsNoRefGrantTestName {
+				curlOpts := []curl.Option{
+					curl.WithHost(kubeutils.ServiceFQDN(tc.proxyService.ObjectMeta)),
+					curl.WithPort(port),
+					curl.VerboseOutput(),
+				}
+
+				if len(tc.curlOptions) > 0 {
+					curlOpts = append(curlOpts, tc.curlOptions...)
+				}
+
+				if tc.expectedErrorCode != 0 {
 					s.TestInstallation.Assertions.AssertEventualCurlError(
 						s.Ctx,
 						s.execOpts(tc.gtwNs),
-						[]curl.Option{
-							curl.WithHost(kubeutils.ServiceFQDN(tc.proxyService.ObjectMeta)),
-							curl.WithPort(port),
-							curl.VerboseOutput(),
-						},
+						curlOpts,
 						tc.expectedErrorCode,
 						timeout)
 				} else {
 					s.TestInstallation.Assertions.AssertEventualCurlResponse(
 						s.Ctx,
 						s.execOpts(tc.gtwNs),
-						[]curl.Option{
-							curl.WithHost(kubeutils.ServiceFQDN(tc.proxyService.ObjectMeta)),
-							curl.WithPort(port),
-							curl.VerboseOutput(),
-						},
+						curlOpts,
 						tc.expectedResponses[i],
 						timeout)
 				}
@@ -242,8 +275,12 @@ func (s *testingSuite) TestConfigureTCPRouteBackingDestinations() {
 	}
 }
 
-func (s *testingSuite) setupTestEnvironment(nsManifest, gtwName, gtwNs, gtwManifest, svcManifest string, proxySvc *corev1.Service, proxyDeploy *appsv1.Deployment) {
+func (s *testingSuite) setupTestEnvironment(nsManifest, gtwName, gtwNs, gtwManifest, svcManifest string, proxySvc *corev1.Service, proxyDeploy *appsv1.Deployment, preGatewayManifests ...string) {
 	s.applyManifests(gtwNs, nsManifest)
+
+	if len(preGatewayManifests) > 0 {
+		s.applyManifests(gtwNs, preGatewayManifests...)
+	}
 
 	s.applyManifests(gtwNs, gtwManifest)
 	s.TestInstallation.Assertions.EventuallyGatewayCondition(s.Ctx, gtwName, gtwNs, gwv1.GatewayConditionAccepted, metav1.ConditionTrue, timeout)

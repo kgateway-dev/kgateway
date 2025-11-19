@@ -755,29 +755,29 @@ spec:
                 - grpcService
                 type: object
               type:
-                description: Type indicates the type of the GatewayExtension to be
-                  used.
+                description: |-
+                  DEPRECATED: Setting this field has no effect.
+                  Type indicates the type of the GatewayExtension to be used.
                 enum:
                 - ExtAuth
                 - ExtProc
                 - RateLimit
                 type: string
-            required:
-            - type
             type: object
             x-kubernetes-validations:
-            - message: ExtAuth must be set when type is ExtAuth
-              rule: self.type != 'ExtAuth' || has(self.extAuth)
-            - message: ExtProc must be set when type is ExtProc
-              rule: self.type != 'ExtProc' || has(self.extProc)
-            - message: RateLimit must be set when type is RateLimit
-              rule: self.type != 'RateLimit' || has(self.rateLimit)
-            - message: ExtAuth must not be set when type is not ExtAuth
-              rule: self.type == 'ExtAuth' || !has(self.extAuth)
-            - message: ExtProc must not be set when type is not ExtProc
-              rule: self.type == 'ExtProc' || !has(self.extProc)
-            - message: RateLimit must not be set when type is not RateLimit
-              rule: self.type == 'RateLimit' || !has(self.rateLimit)
+            - message: extAuth must be set when type is ExtAuth
+              rule: 'has(self.type) && self.type == ''ExtAuth'' ? has(self.extAuth)
+                : true'
+            - message: extProc must be set when type is ExtProc
+              rule: 'has(self.type) && self.type == ''ExtProc'' ? has(self.extProc)
+                : true'
+            - message: rateLimit must be set when type is RateLimit
+              rule: 'has(self.type) && self.type == ''RateLimit'' ? has(self.rateLimit)
+                : true'
+            - message: exactly one of the fields in [extAuth extProc rateLimit] must
+                be set
+              rule: '[has(self.extAuth),has(self.extProc),has(self.rateLimit)].filter(x,x==true).size()
+                == 1'
           status:
             description: GatewayExtensionStatus defines the observed state of GatewayExtension.
             properties:

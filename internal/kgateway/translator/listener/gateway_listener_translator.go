@@ -352,7 +352,7 @@ func (ml *MergedListener) TranslateListener(
 	// Translate TCP listeners (if any exist)
 	var matchedTcpListeners []ir.TcpIR
 	for _, tfc := range ml.TcpFilterChains {
-		if tcpListener := tfc.translateTcpFilterChain(ml.name, reporter); tcpListener != nil {
+		if tcpListener := tfc.translateTcpFilterChain(kctx, ctx, ml.gatewayNamespace, queries, ml.name, reporter); tcpListener != nil {
 			matchedTcpListeners = append(matchedTcpListeners, *tcpListener)
 		}
 	}
@@ -405,7 +405,13 @@ type tcpFilterChainParent struct {
 	routesWithHosts     []*query.RouteInfo
 }
 
-func (tc *tcpFilterChain) translateTcpFilterChain(parentName string, reporter reports.Reporter) *ir.TcpIR {
+func (tc *tcpFilterChain) translateTcpFilterChain(
+	kctx krt.HandlerContext, ctx context.Context,
+	gatewayNamespace string,
+	queries query.GatewayQueries,
+	parentName string,
+	reporter reports.Reporter,
+) *ir.TcpIR {
 	parent := tc.parents
 	if len(parent.routesWithHosts) == 0 {
 		return nil
@@ -477,9 +483,20 @@ func (tc *tcpFilterChain) translateTcpFilterChain(parentName string, reporter re
 			return nil
 		}
 
+		tlsConfig, err := translateTLSConfig(kctx, ctx, gatewayNamespace, tc.tls, queries)
+		if err != nil {
+			reportTLSConfigError(err, tc.listenerReporter)
+			return nil
+		}
+
+		if tlsConfig != nil && len(tlsConfig.AlpnProtocols) == 0 {
+			tlsConfig.AlpnProtocols = []string{string(annotations.AllowEmptyAlpnProtocols)}
+		}
+
 		return &ir.TcpIR{
 			FilterChainCommon: ir.FilterChainCommon{
 				FilterChainName: tcpHostName,
+				TLS:             tlsConfig,
 			},
 			BackendRefs: backends,
 		}
@@ -708,7 +725,7 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 		matcher.SniDomains = []string{string(*httpsFilterChain.sniDomain)}
 	}
 
-	sslConfig, err := translateSslConfig(
+	tlsConfig, err := translateTLSConfig(
 		kctx,
 		ctx,
 		gatewayNamespace,
@@ -716,32 +733,7 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 		queries,
 	)
 	if err != nil {
-		reason := gwv1.ListenerReasonInvalidCertificateRef
-		message := "Invalid certificate ref."
-		if errors.Is(err, krtcollections.ErrMissingReferenceGrant) {
-			reason = gwv1.ListenerReasonRefNotPermitted
-			message = "Reference not permitted by ReferenceGrant."
-		}
-		if errors.Is(err, sslutils.ErrInvalidTlsSecret) {
-			message = err.Error()
-		}
-		var notFoundErr *krtcollections.NotFoundError
-		if errors.As(err, &notFoundErr) {
-			message = fmt.Sprintf(SecretNotFoundMessageTemplate, notFoundErr.NotFoundObj.Namespace, notFoundErr.NotFoundObj.Name)
-		}
-		listenerReporter.SetCondition(reports.ListenerCondition{
-			Type:    gwv1.ListenerConditionResolvedRefs,
-			Status:  metav1.ConditionFalse,
-			Reason:  reason,
-			Message: message,
-		})
-		// listener with no ssl is invalid. We return nil so set programmed to false
-		listenerReporter.SetCondition(reports.ListenerCondition{
-			Type:    gwv1.ListenerConditionProgrammed,
-			Status:  metav1.ConditionFalse,
-			Reason:  gwv1.ListenerReasonInvalid,
-			Message: message,
-		})
+		reportTLSConfigError(err, listenerReporter)
 		return nil, err
 	}
 	sort.Slice(virtualHosts, func(i, j int) bool {
@@ -752,7 +744,7 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 		FilterChainCommon: ir.FilterChainCommon{
 			FilterChainName: parentName,
 			Matcher:         matcher,
-			TLS:             sslConfig,
+			TLS:             tlsConfig,
 		},
 		AttachedPolicies: httpsFilterChain.attachedPolicies,
 		Vhosts:           virtualHosts,
@@ -788,7 +780,7 @@ func buildRoutesPerHost(
 	}
 }
 
-func translateSslConfig(
+func translateTLSConfig(
 	kctx krt.HandlerContext,
 	ctx context.Context,
 	parentNamespace string,
@@ -842,6 +834,36 @@ func translateSslConfig(
 		CA:            rootCa,
 		AlpnProtocols: alpnProtocols,
 	}, nil
+}
+
+// reportTLSConfigError reports TLS configuration errors by setting appropriate listener conditions.
+func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter) {
+	reason := gwv1.ListenerReasonInvalidCertificateRef
+	message := "Invalid certificate ref."
+	if errors.Is(err, krtcollections.ErrMissingReferenceGrant) {
+		reason = gwv1.ListenerReasonRefNotPermitted
+		message = "Reference not permitted by ReferenceGrant."
+	}
+	if errors.Is(err, sslutils.ErrInvalidTlsSecret) {
+		message = err.Error()
+	}
+	var notFoundErr *krtcollections.NotFoundError
+	if errors.As(err, &notFoundErr) {
+		message = fmt.Sprintf(SecretNotFoundMessageTemplate, notFoundErr.NotFoundObj.Namespace, notFoundErr.NotFoundObj.Name)
+	}
+	listenerReporter.SetCondition(reports.ListenerCondition{
+		Type:    gwv1.ListenerConditionResolvedRefs,
+		Status:  metav1.ConditionFalse,
+		Reason:  reason,
+		Message: message,
+	})
+	// listener with no ssl is invalid. We return nil so set programmed to false
+	listenerReporter.SetCondition(reports.ListenerCondition{
+		Type:    gwv1.ListenerConditionProgrammed,
+		Status:  metav1.ConditionFalse,
+		Reason:  gwv1.ListenerReasonInvalid,
+		Message: message,
+	})
 }
 
 // makeVhostName computes the name of a virtual host based on the parent name and domain.
