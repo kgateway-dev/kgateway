@@ -489,6 +489,10 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 			return nil
 		}
 
+		if tlsConfig != nil && len(tlsConfig.AlpnProtocols) == 0 {
+			tlsConfig.AlpnProtocols = []string{string(annotations.AllowEmptyAlpnProtocols)}
+		}
+
 		return &ir.TcpIR{
 			FilterChainCommon: ir.FilterChainCommon{
 				FilterChainName: tcpHostName,
