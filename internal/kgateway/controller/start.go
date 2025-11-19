@@ -96,7 +96,7 @@ type StartConfig struct {
 	// GatewayControllerExtension is an extension that can be used to extend Gateway controller
 	GatewayControllerExtension sdk.GatewayControllerExtension
 
-	CustomSync proxy_syncer.CustomSyncFunction
+	CustomStatusSyncFunc proxy_syncer.CustomStatusSyncFunction
 }
 
 // Start runs the controllers responsible for processing the K8s Gateway API objects
@@ -191,7 +191,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			proxySyncer.ReportQueue(),
 			proxySyncer.BackendPolicyReportQueue(),
 			proxySyncer.CacheSyncs(),
-			proxy_syncer.WithCustomSync(cfg.CustomSync),
+			proxy_syncer.WithCustomStatusSync(cfg.CustomStatusSyncFunc),
 		)
 		if err := cfg.Manager.Add(statusSyncer); err != nil {
 			setupLog.Error(err, "unable to add statusSyncer runnable")

@@ -373,18 +373,18 @@ type GatewayIndexConfig struct {
 
 	gatewaysForDeployerTransformationFunc func(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer
 	gatewaysForEnvoyTransformationFunc    func(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.Gateway
-	byParentRefIndex                      krt.Index[targetRefIndexKey, *gwxv1a1.XListenerSet]
+	byParentRefIndex                      krt.Index[TargetRefIndexKey, *gwxv1a1.XListenerSet]
 }
 
 func processConfig(config *GatewayIndexConfig) {
-	config.byParentRefIndex = krtpkg.UnnamedIndex(config.ListenerSets, func(in *gwxv1a1.XListenerSet) []targetRefIndexKey {
+	config.byParentRefIndex = krtpkg.UnnamedIndex(config.ListenerSets, func(in *gwxv1a1.XListenerSet) []TargetRefIndexKey {
 		pRef := in.Spec.ParentRef
 		ns := strOr(pRef.Namespace, "")
 		if ns == "" {
 			ns = in.GetNamespace()
 		}
 		// lookup by the root object
-		return []targetRefIndexKey{{
+		return []TargetRefIndexKey{{
 			Group:     wellknown.GatewayGroup,
 			Kind:      wellknown.GatewayKind,
 			Name:      string(pRef.Name),
@@ -428,7 +428,7 @@ func GatewaysForDeployerTransformationFunc(config *GatewayIndexConfig) func(kctx
 			ports.Insert(l.Port)
 		}
 
-		listenerSets := krt.Fetch(kctx, config.ListenerSets, krt.FilterIndex(config.byParentRefIndex, targetRefIndexKey{
+		listenerSets := krt.Fetch(kctx, config.ListenerSets, krt.FilterIndex(config.byParentRefIndex, TargetRefIndexKey{
 			Group:     wellknown.GatewayGroup,
 			Kind:      wellknown.GatewayKind,
 			Name:      gw.GetName(),
@@ -501,7 +501,7 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 			})
 		}
 
-		listenerSets := krt.Fetch(kctx, config.ListenerSets, krt.FilterIndex(config.byParentRefIndex, targetRefIndexKey{
+		listenerSets := krt.Fetch(kctx, config.ListenerSets, krt.FilterIndex(config.byParentRefIndex, TargetRefIndexKey{
 			Group:     wellknown.GatewayGroup,
 			Kind:      wellknown.GatewayKind,
 			Name:      gw.GetName(),
@@ -627,7 +627,7 @@ func allowedListenerSet(gw *gwv1.Gateway, namespaces krt.Collection[NamespaceMet
 	return allowedNs, nil
 }
 
-type targetRefIndexKey struct {
+type TargetRefIndexKey struct {
 	Group       string
 	Kind        string
 	Name        string
@@ -635,7 +635,7 @@ type targetRefIndexKey struct {
 	SectionName string
 }
 
-func (k targetRefIndexKey) String() string {
+func (k TargetRefIndexKey) String() string {
 	return fmt.Sprintf("%s/%s/%s/%s/%s", k.Group, k.Kind, k.Name, k.Namespace, k.SectionName)
 }
 
@@ -665,7 +665,7 @@ type globalPolicy struct {
 type policyAndIndex struct {
 	policies            krt.Collection[ir.PolicyWrapper]
 	policiesByTargetRef krt.Collection[ir.PolicyWrapper]
-	index               krt.Index[targetRefIndexKey, ir.PolicyWrapper]
+	index               krt.Index[TargetRefIndexKey, ir.PolicyWrapper]
 	forBackends         bool
 }
 type PolicyIndex struct {
@@ -718,12 +718,12 @@ func NewPolicyIndex(
 				return &a
 			}, krtopts.ToOptions(fmt.Sprintf("%s-policiesByTargetRef", gk.String()))...)
 
-			targetRefIndex := krtpkg.UnnamedIndex(policiesByTargetRef, func(p ir.PolicyWrapper) []targetRefIndexKey {
+			targetRefIndex := krtpkg.UnnamedIndex(policiesByTargetRef, func(p ir.PolicyWrapper) []TargetRefIndexKey {
 				// Every policy is indexed by PolicyRef and PolicyRef without Name (by Group+Kind+Namespace)
-				ret := make([]targetRefIndexKey, len(p.TargetRefs)*2)
+				ret := make([]TargetRefIndexKey, len(p.TargetRefs)*2)
 				for i, tr := range p.TargetRefs {
 					// Index using standard PolicyRef
-					ret[i] = targetRefIndexKey{
+					ret[i] = TargetRefIndexKey{
 						Group:       tr.Group,
 						Kind:        tr.Kind,
 						Name:        tr.Name,
@@ -731,7 +731,7 @@ func NewPolicyIndex(
 						Namespace:   p.Namespace,
 					}
 					// Also index by Namespace without Name
-					ret[i+len(p.TargetRefs)] = targetRefIndexKey{
+					ret[i+len(p.TargetRefs)] = TargetRefIndexKey{
 						Group:       tr.Group,
 						Kind:        tr.Kind,
 						SectionName: tr.SectionName,
@@ -765,7 +765,7 @@ func NewPolicyIndex(
 
 func (p *PolicyIndex) fetchByTargetRef(
 	kctx krt.HandlerContext,
-	targetRef targetRefIndexKey,
+	targetRef TargetRefIndexKey,
 	onlyBackends bool,
 ) []ir.PolicyWrapper {
 	var ret []ir.PolicyWrapper
@@ -781,7 +781,7 @@ func (p *PolicyIndex) fetchByTargetRef(
 
 func (p *PolicyIndex) fetchByTargetRefLabels(
 	kctx krt.HandlerContext,
-	targetRef targetRefIndexKey,
+	targetRef TargetRefIndexKey,
 	onlyBackends bool,
 	targetLabels map[string]string,
 ) []ir.PolicyWrapper {
@@ -794,7 +794,7 @@ func (p *PolicyIndex) fetchByTargetRefLabels(
 			krt.FilterGeneric(func(a any) bool {
 				p := a.(ir.PolicyWrapper)
 				for _, ref := range p.TargetRefs {
-					targetRefKey := targetRefIndexKey{
+					targetRefKey := TargetRefIndexKey{
 						Group:       ref.Group,
 						Kind:        ref.Kind,
 						SectionName: ref.SectionName,
@@ -856,7 +856,7 @@ func (p *PolicyIndex) getTargetingPoliciesMaybeForBackends(
 	}
 
 	// no need for ref grants here as target refs are namespace local
-	refIndexKey := targetRefIndexKey{
+	refIndexKey := TargetRefIndexKey{
 		Group:       targetRef.Group,
 		Kind:        targetRef.Kind,
 		Name:        targetRef.Name,
@@ -867,7 +867,7 @@ func (p *PolicyIndex) getTargetingPoliciesMaybeForBackends(
 	policies := p.fetchByTargetRef(kctx, refIndexKey, onlyBackends)
 	// Lookup policies that select targetLabels
 	if len(targetLabels) > 0 {
-		refIndexKeyByNamespace := targetRefIndexKey{
+		refIndexKeyByNamespace := TargetRefIndexKey{
 			Group:       targetRef.Group,
 			Kind:        targetRef.Kind,
 			Namespace:   targetRef.Namespace,
@@ -1059,7 +1059,7 @@ type RoutesIndex struct {
 	routes                               krt.Collection[RouteWrapper]
 	httpRoutes                           krt.Collection[ir.HttpRouteIR]
 	httpBySelector                       krt.Index[HTTPRouteSelector, ir.HttpRouteIR]
-	byParentRef                          krt.Index[targetRefIndexKey, RouteWrapper]
+	byParentRef                          krt.Index[TargetRefIndexKey, RouteWrapper]
 	weightedRoutePrecedence              bool
 	enableExperimentalGatewayAPIFeatures bool
 
@@ -1143,9 +1143,9 @@ func NewRoutesIndex(
 	})
 	h.httpBySelector = httpBySelector
 
-	byParentRef := krtpkg.UnnamedIndex(h.routes, func(in RouteWrapper) []targetRefIndexKey {
+	byParentRef := krtpkg.UnnamedIndex(h.routes, func(in RouteWrapper) []TargetRefIndexKey {
 		parentRefs := in.Route.GetParentRefs()
-		ret := make([]targetRefIndexKey, len(parentRefs))
+		ret := make([]TargetRefIndexKey, len(parentRefs))
 		for i, pRef := range parentRefs {
 			ns := strOr(pRef.Namespace, "")
 			if ns == "" {
@@ -1161,7 +1161,7 @@ func NewRoutesIndex(
 				kind = string(*pRef.Kind)
 			}
 			// lookup by the root object
-			ret[i] = targetRefIndexKey{
+			ret[i] = TargetRefIndexKey{
 				Namespace: ns,
 				Group:     group,
 				Kind:      kind,
@@ -1189,7 +1189,7 @@ func (h *RoutesIndex) RoutesForListenerSet(kctx krt.HandlerContext, nns types.Na
 }
 
 func (h *RoutesIndex) RoutesFor(kctx krt.HandlerContext, nns types.NamespacedName, group, kind string) []ir.Route {
-	rts := krt.Fetch(kctx, h.routes, krt.FilterIndex(h.byParentRef, targetRefIndexKey{
+	rts := krt.Fetch(kctx, h.routes, krt.FilterIndex(h.byParentRef, TargetRefIndexKey{
 		Name:      nns.Name,
 		Group:     group,
 		Kind:      kind,

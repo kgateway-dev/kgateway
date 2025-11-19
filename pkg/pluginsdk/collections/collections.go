@@ -89,7 +89,9 @@ func NewCommonCollections(
 	options := &option{}
 	for _, fn := range opts {
 		fn(options)
-	} // Namespace collection must be initialized first to enable discovery namespace
+	}
+
+	// Namespace collection must be initialized first to enable discovery namespace
 	// selectors to be applies as filters to other collections
 	namespaces, nsClient := krtcollections.NewNamespaceCollection(ctx, client, krtOptions)
 

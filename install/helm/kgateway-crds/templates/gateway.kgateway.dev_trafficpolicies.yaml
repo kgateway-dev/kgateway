@@ -1220,14 +1220,6 @@ spec:
                 maxItems: 16
                 minItems: 1
                 type: array
-                x-kubernetes-validations:
-                - message: targetRefs may only reference Gateway, HTTPRoute, or XListenerSet
-                    resources
-                  rule: self.all(r, (r.kind == 'Gateway' || r.kind == 'HTTPRoute'
-                    || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io'))
-                    && (!has(r.group) || r.group == 'gateway.networking.k8s.io' ||
-                    r.group == 'gateway.networking.x-k8s.io' || r.group == 'gateway.kgateway.dev'
-                    ))
               targetSelectors:
                 description: TargetSelectors specifies the target selectors to select
                   resources to attach the policy to.

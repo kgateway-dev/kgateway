@@ -201,7 +201,7 @@ func WithCommonCollections(commonCollections *collections.CommonCollections) fun
 	}
 }
 
-func WithCustomStatusSyncFunc(customStatusSyncFunc proxy_syncer.CustomSyncFunction) func(*setup) {
+func WithCustomStatusSyncFunc(customStatusSyncFunc proxy_syncer.CustomStatusSyncFunction) func(*setup) {
 	return func(s *setup) {
 		s.customStatusSyncFunc = customStatusSyncFunc
 	}
@@ -236,7 +236,7 @@ type setup struct {
 
 	krtOpts              *krtutil.KrtOptions
 	commonCollections    *collections.CommonCollections
-	customStatusSyncFunc proxy_syncer.CustomSyncFunction
+	customStatusSyncFunc proxy_syncer.CustomStatusSyncFunction
 }
 
 var _ Server = &setup{}
@@ -492,7 +492,7 @@ func (s *setup) buildKgatewayWithConfig(
 		Validator:                    s.validator,
 		ExtraAgwPolicyStatusHandlers: s.extraAgwPolicyStatusHandlers,
 		GatewayControllerExtension:   s.gatewayControllerExtension,
-		CustomSync:                   s.customStatusSyncFunc,
+		CustomStatusSyncFunc:         s.customStatusSyncFunc,
 	})
 	if err != nil {
 		slog.Error("failed initializing controller: ", "error", err)

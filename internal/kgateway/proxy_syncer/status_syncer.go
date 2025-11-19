@@ -34,17 +34,17 @@ import (
 
 var _ manager.LeaderElectionRunnable = &StatusSyncer{}
 
-type CustomSyncFunction func(ctx context.Context, rm reports.ReportMap)
+type CustomStatusSyncFunction func(ctx context.Context, rm reports.ReportMap)
 
 type config struct {
-	customSync CustomSyncFunction
+	customStatusSync CustomStatusSyncFunction
 }
 
 type Option func(*config)
 
-func WithCustomSync(customSync CustomSyncFunction) Option {
+func WithCustomStatusSync(customSync CustomStatusSyncFunction) Option {
 	return func(cfg *config) {
-		cfg.customSync = customSync
+		cfg.customStatusSync = customSync
 	}
 }
 
@@ -68,7 +68,7 @@ type StatusSyncer struct {
 	latestBackendPolicyReportQueue utils.AsyncQueue[reports.ReportMap]
 	cacheSyncs                     []cache.InformerSynced
 
-	customSync CustomSyncFunction
+	customStatusSync CustomStatusSyncFunction
 }
 
 func NewStatusSyncer(
@@ -93,7 +93,7 @@ func NewStatusSyncer(
 		latestReportQueue:              reportQueue,
 		latestBackendPolicyReportQueue: backendPolicyReportQueue,
 		cacheSyncs:                     cacheSyncs,
-		customSync:                     cfg.customSync,
+		customStatusSync:               cfg.customStatusSync,
 	}
 }
 
@@ -135,8 +135,8 @@ func (s *StatusSyncer) Start(ctx context.Context) error {
 			s.syncListenerSetStatus(ctx, listenerSetStatusLogger, latestReport)
 			s.syncRouteStatus(ctx, routeStatusLogger, latestReport)
 			s.syncPolicyStatus(ctx, latestReport)
-			if s.customSync != nil {
-				s.customSync(ctx, latestReport)
+			if s.customStatusSync != nil {
+				s.customStatusSync(ctx, latestReport)
 			}
 		}
 	}()

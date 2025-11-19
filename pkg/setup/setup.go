@@ -51,7 +51,7 @@ type Options struct {
 	ExtraAgwPolicyStatusHandlers map[schema.GroupVersionKind]agwplugins.AgwPolicyStatusSyncHandler
 
 	CommonCollections    *collections.CommonCollections
-	CustomStatusSyncFunc proxy_syncer.CustomSyncFunction
+	CustomStatusSyncFunc proxy_syncer.CustomStatusSyncFunction
 }
 
 func New(opts Options) (setup.Server, error) {
