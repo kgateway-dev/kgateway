@@ -19,10 +19,13 @@ import (
 // +kubebuilder:resource:categories=kgateway
 // +kubebuilder:subresource:status
 type BackendConfigPolicy struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              BackendConfigPolicySpec `json:"spec,omitempty"`
-	Status            gwv1.PolicyStatus       `json:"status,omitempty"`
+	// +required
+	Spec BackendConfigPolicySpec `json:"spec"`
+	// +optional
+	Status gwv1.PolicyStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -357,7 +360,7 @@ type LoadBalancerLeastRequestConfig struct {
 	// How many choices to take into account.
 	// Defaults to 2.
 	// +optional
-	// +default=2
+	// +kubebuilder:default=2
 	ChoiceCount int32 `json:"choiceCount,omitempty"`
 
 	// SlowStart configures the slow start configuration for the load balancer.
@@ -393,7 +396,7 @@ type LoadBalancerRingHashConfig struct {
 	// +optional
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
-	HashPolicies []*HashPolicy `json:"hashPolicies,omitempty"`
+	HashPolicies []HashPolicy `json:"hashPolicies,omitempty"`
 }
 
 type LoadBalancerMaglevConfig struct {
@@ -406,7 +409,7 @@ type LoadBalancerMaglevConfig struct {
 	// +optional
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
-	HashPolicies []*HashPolicy `json:"hashPolicies,omitempty"`
+	HashPolicies []HashPolicy `json:"hashPolicies,omitempty"`
 }
 
 type (
@@ -454,7 +457,7 @@ const (
 
 // HealthCheck contains the options to configure the health check.
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/health_check.proto) for more details.
-// +optional
+
 // +kubebuilder:validation:XValidation:rule="has(self.http) != has(self.grpc)",message="exactly one of http or grpc must be set"
 type HealthCheck struct {
 	// Timeout is time to wait for a health check response. If the timeout is reached the
@@ -523,7 +526,7 @@ type HealthCheckGrpc struct {
 
 // OutlierDetection contains the options to configure passive health checks.
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/outlier#outlier-detection) for more details.
-// +optional
+
 type OutlierDetection struct {
 	// The number of consecutive server-side error responses (for HTTP traffic,
 	// 5xx responses; for TCP traffic, connection failures; etc.) before an
@@ -533,7 +536,7 @@ type OutlierDetection struct {
 	// +optional
 	// +kubebuilder:default=5
 	// +kubebuilder:validation:Minimum=0
-	Consecutive5xx *int32 `json:"consecutive5xx,omitempty"`
+	Consecutive5xx int32 `json:"consecutive5xx,omitempty"`
 
 	// The time interval between ejection analysis sweeps. This can result in
 	// both new ejections as well as hosts being returned to service. Defaults
@@ -542,7 +545,7 @@ type OutlierDetection struct {
 	// +kubebuilder:default="10s"
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="interval must be at least 1ms"
-	Interval *metav1.Duration `json:"interval,omitempty"`
+	Interval metav1.Duration `json:"interval,omitempty"`
 
 	// The base time that a host is ejected for. The real time is equal to the
 	// base time multiplied by the number of times the host has been ejected.
@@ -551,7 +554,7 @@ type OutlierDetection struct {
 	// +kubebuilder:default="30s"
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="baseEjectionTime must be at least 1ms"
-	BaseEjectionTime *metav1.Duration `json:"baseEjectionTime,omitempty"`
+	BaseEjectionTime metav1.Duration `json:"baseEjectionTime,omitempty"`
 
 	// The maximum % of an upstream cluster that can be ejected due to outlier
 	// detection. Defaults to 10%.
@@ -559,7 +562,7 @@ type OutlierDetection struct {
 	// +kubebuilder:default=10
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
-	MaxEjectionPercent *int32 `json:"maxEjectionPercent,omitempty"`
+	MaxEjectionPercent int32 `json:"maxEjectionPercent,omitempty"`
 }
 
 // +kubebuilder:validation:ExactlyOneOf=header;cookie;sourceIP
@@ -586,12 +589,14 @@ type HashPolicy struct {
 type Header struct {
 	// Name is the name of the header to use as a component of the hash key.
 	// +kubebuilder:validation:MinLength=1
+	// +required
 	Name string `json:"name"`
 }
 
 type Cookie struct {
 	// Name of the cookie.
 	// +kubebuilder:validation:MinLength=1
+	// +required
 	Name string `json:"name"`
 
 	// Path is the name of the path for the cookie.
