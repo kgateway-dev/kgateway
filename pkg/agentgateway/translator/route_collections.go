@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/agentgateway/agentgateway/go/api"
-	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/config"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
@@ -25,7 +24,6 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/status"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -526,9 +524,7 @@ type RouteContextInputs struct {
 	Services        krt.Collection[*corev1.Service]
 	InferencePools  krt.Collection[*inf.InferencePool]
 	Namespaces      krt.Collection[*corev1.Namespace]
-	ServiceEntries  krt.Collection[*networkingclient.ServiceEntry]
 	Backends        krt.Collection[*v1alpha1.Backend]
-	Policies        *krtcollections.PolicyIndex
 	DirectResponses krt.Collection[*v1alpha1.DirectResponse]
 	ControllerName  string
 }
