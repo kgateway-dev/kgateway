@@ -1,0 +1,23 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: AgentgatewayPolicy
+metadata:
+  name: agw
+  namespace: default
+spec:
+  targetRefs:
+    - kind: Gateway
+      name: test
+      group: gateway.networking.k8s.io
+  traffic:
+    authorization:
+      action: Deny
+      policy:
+        matchExpressions:
+          - "should_be_ignored"
+  backend:
+    mcp:
+      authorization:
+        policy:
+          matchExpressions:
+            - 'mcp.tool.name == "echo"'
+            - 'jwt.sub == "test-user" && mcp.tool.name == "add"'

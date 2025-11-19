@@ -1,23 +1,30 @@
 package testutils
 
 import (
+	"path/filepath"
+	"regexp"
 	"strconv"
+	"testing"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
+	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 	"istio.io/istio/pilot/test/util"
+	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/krt/krttest"
 	"istio.io/istio/pkg/test"
+	"istio.io/istio/pkg/test/util/file"
 	corev1 "k8s.io/api/core/v1"
 	discovery "k8s.io/api/discovery/v1"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
-
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
+	"sigs.k8s.io/yaml"
 )
 
 func CompareGolden(t test.Failer, content []byte, goldenFile string) {
@@ -59,6 +66,44 @@ func isSpace(r rune) bool {
 		}
 	}
 	return false
+}
+
+func init() {
+	// Add our types to Istio since we are using their library
+	utilruntime.Must(schemes.AddToScheme(kube.IstioScheme))
+}
+
+func GetTestResource[T any](t *testing.T, collection krt.Collection[T]) T {
+	t.Helper()
+	l := collection.List()
+	if len(l) != 1 {
+		t.Fatalf("expected 1 resource, got %d", len(l))
+	}
+	return l[0]
+}
+
+var timestampRegex = regexp.MustCompile(`lastTransitionTime:.*`)
+
+func RunForDirectory[Status any, Output any](t *testing.T, base string, run func(t *testing.T, ctx plugins.PolicyCtx) (Status, []Output)) {
+	for _, f := range file.ReadDirOrFail(t, base) {
+		name := filepath.Base(f)
+		t.Run(name, func(t *testing.T) {
+			data := file.AsStringOrFail(t, f)
+			ctx := BuildMockPolicyContext(t, []any{data})
+			st, objs := run(t, ctx)
+			stb, err := yaml.Marshal(st)
+			if err != nil {
+				t.Fatalf("failed to marshal status: %v", err)
+			}
+			stb = timestampRegex.ReplaceAll(stb, []byte("lastTransitionTime: fake"))
+			objsb, err := yaml.Marshal(objs)
+			if err != nil {
+				t.Fatalf("failed to marshal objects: %v", err)
+			}
+			t.Log(string(stb))
+			t.Log(string(objsb))
+		})
+	}
 }
 
 func BuildMockPolicyContext(t test.Failer, inputs []any) plugins.PolicyCtx {
