@@ -107,11 +107,9 @@ func processWebhook(ctx PolicyCtx, namespace string, webhook *v1alpha1.Webhook) 
 	if err != nil {
 		return nil, fmt.Errorf("failed to build webhook: %v", err)
 	}
-	// TODO: use be
-	_ = be
+
 	w := &api.BackendPolicySpec_Ai_Webhook{
-		//Host: webhook.BackendRef.Host,
-		//Port: uint32(webhook.Host.Port), //nolint:gosec // G115: webhook port is validated to be valid port range
+		Backend: be,
 	}
 
 	if len(webhook.ForwardHeaderMatches) > 0 {

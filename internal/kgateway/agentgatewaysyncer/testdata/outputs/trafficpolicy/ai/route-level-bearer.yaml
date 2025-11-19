@@ -31,6 +31,9 @@ Policies:
             body: WW91ciByZXF1ZXN0IHdhcyByZWplY3RlZCBkdWUgdG8gaW5hcHByb3ByaWF0ZSBjb250ZW50
             status: 403
           webhook:
+            backend:
+              port: 8443
+              service: default/webhook.default.svc.cluster.local
             forwardHeaderMatches:
             - exact: bar
               name: x-foo
@@ -50,7 +53,10 @@ Policies:
                   secret: mysecretkey
             model: text-moderation-latest
         response:
-        - webhook: {}
+        - webhook:
+            backend:
+              port: 8443
+              service: default/webhook.default.svc.cluster.local
         - regex:
             action: MASK
             rules:

@@ -119,7 +119,7 @@ func RunForDirectory[Status any, Output any](t *testing.T, base string, run func
 			if util.Refresh() {
 				util.RefreshGoldenFile(t, []byte(output), f)
 			} else {
-				util.CompareBytes(t, []byte(inputData), []byte(output), name)
+				util.CompareBytes(t, []byte(data), []byte(output), name)
 			}
 		})
 	}
