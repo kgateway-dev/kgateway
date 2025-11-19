@@ -56,6 +56,7 @@ Listeners:
                 claimToHeaders:
                 - claimName: listenerset
                   headerName: x-listenerset
+                clearRouteCache: true
                 issuer: https://gateway.example.com
                 localJwks:
                   inlineString: '{"keys":[{"use":"sig","kty":"RSA","alg":"RS256","n":"ruK9KacQjDePRyfG7oPIaqAIyCeOCBIGB2nBbDLGp1Szdm7rsWcrzGf7Avpa_ijLV9huoNvpdflld4B-SaT7m3EDDMDUyA4LayJC5JBI10Qfu3Qn8BEpcdN2uRiycXOzgsoIXneXp9hENlS5Vsr3ur5BaBCc-BZZRRaXDTLy6KyD1Pyd6XRsxyZXt_SYOIww0NSt5u0CTyZUGJhQungJpI8Hhrzdf87mLZGZd16dOGObE5LqFwk2prN3D0-owLsA25WJOPZXizxpTB4tPvJuYGATajDpzrHf-WXgOgvwyxaHJSN_fE-eFuRT3ooDaAuytsfYotsn4z_ajdEPSwXYCw","e":"AQAB"}]}'
@@ -96,6 +97,7 @@ Listeners:
                 claimToHeaders:
                 - claimName: listenerset
                   headerName: x-listenerset
+                clearRouteCache: true
                 issuer: https://gateway.example.com
                 localJwks:
                   inlineString: '{"keys":[{"use":"sig","kty":"RSA","alg":"RS256","n":"ruK9KacQjDePRyfG7oPIaqAIyCeOCBIGB2nBbDLGp1Szdm7rsWcrzGf7Avpa_ijLV9huoNvpdflld4B-SaT7m3EDDMDUyA4LayJC5JBI10Qfu3Qn8BEpcdN2uRiycXOzgsoIXneXp9hENlS5Vsr3ur5BaBCc-BZZRRaXDTLy6KyD1Pyd6XRsxyZXt_SYOIww0NSt5u0CTyZUGJhQungJpI8Hhrzdf87mLZGZd16dOGObE5LqFwk2prN3D0-owLsA25WJOPZXizxpTB4tPvJuYGATajDpzrHf-WXgOgvwyxaHJSN_fE-eFuRT3ooDaAuytsfYotsn4z_ajdEPSwXYCw","e":"AQAB"}]}'

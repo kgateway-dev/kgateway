@@ -28,9 +28,9 @@ import (
 )
 
 const (
-	PayloadInMetadata   string = "payload"
-	jwtFilterNamePrefix        = "jwt"
-	jwtConfigMapKey            = "jwks"
+	PayloadInMetadata   = "payload"
+	jwtFilterNamePrefix = "jwt"
+	jwtConfigMapKey     = "jwks"
 )
 
 type jwtIr struct {
@@ -178,6 +178,9 @@ func translateProvider(krtctx krt.HandlerContext, provider v1alpha1.JWTProvider,
 		ClaimToHeaders:    claimToHeaders,
 		Forward:           shouldForward,
 		// TODO(npolshak): Do we want to set NormalizePayload  to support https://datatracker.ietf.org/doc/html/rfc8693#name-scope-scopes-claim
+	}
+	if len(claimToHeaders) > 0 {
+		jwtProvider.ClearRouteCache = true
 	}
 	translateTokenSource(provider, jwtProvider)
 	err := translateJwks(krtctx, provider.JWKS, configMaps, policyNs, jwtProvider)
