@@ -68,27 +68,6 @@ output:
         weight: 1
       hostnames:
       - example.com
-      key: default/request-multiple-mirrors-headers.2.0.http
-      listenerKey: test-gateway
-      matches:
-      - path:
-          pathPrefix: /zero-backend
-      routeName: default/request-multiple-mirrors-headers
-      trafficPolicies:
-      - timeout:
-          request: 10s
-- gateway:
-    Name: test-gateway
-    Namespace: default
-  resource:
-    route:
-      backends:
-      - backend:
-          port: 8080
-          service: default/infra-backend-v1.default.svc.cluster.local
-        weight: 1
-      hostnames:
-      - example.com
       key: default/request-multiple-mirrors-headers.0.0.http
       listenerKey: test-gateway
       matches:
@@ -120,3 +99,24 @@ output:
       trafficPolicies:
       - timeout:
           backendRequest: 5s
+- gateway:
+    Name: test-gateway
+    Namespace: default
+  resource:
+    route:
+      backends:
+      - backend:
+          port: 8080
+          service: default/infra-backend-v1.default.svc.cluster.local
+        weight: 1
+      hostnames:
+      - example.com
+      key: default/request-multiple-mirrors-headers.2.0.http
+      listenerKey: test-gateway
+      matches:
+      - path:
+          pathPrefix: /zero-backend
+      routeName: default/request-multiple-mirrors-headers
+      trafficPolicies:
+      - timeout:
+          request: 10s

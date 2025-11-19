@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"istio.io/istio/pkg/slices"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/status"
@@ -24,8 +25,9 @@ func TestRouteCollection(t *testing.T) {
 			ctx.Collections.TLSRoutes,
 			ri,
 			krtutil.KrtOptions{})
-		//
 		agwRoutes.WaitUntilSynced(context.Background().Done())
-		return nil, agwRoutes.List()
+		return nil, slices.SortBy(agwRoutes.List(), func(a ir.AgwResource) string {
+			return a.ResourceName()
+		})
 	})
 }
