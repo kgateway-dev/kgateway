@@ -1,0 +1,86 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: exact-match-route
+  namespace: default
+spec:
+  parentRefs:
+  - name: test-gateway
+  hostnames:
+  - api.example.com
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api
+      headers:
+      - type: Exact
+        name: X-API-Version
+        value: v1
+    backendRefs:
+    - name: test-service
+      port: 80
+  - matches:
+    - path:
+        type: Exact
+        value: /exact
+    backendRefs:
+    - name: test-service
+      port: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-service
+  namespace: default
+spec:
+  ports:
+  - port: 80
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: default
+
+---
+# Output
+output:
+- gateway:
+    Name: test-gateway
+    Namespace: default
+  resource:
+    route:
+      backends:
+      - backend:
+          port: 80
+          service: default/test-service.default.svc.cluster.local
+        weight: 1
+      hostnames:
+      - api.example.com
+      key: default/exact-match-route.0.0.http
+      listenerKey: test-gateway
+      matches:
+      - headers:
+        - exact: v1
+          name: X-API-Version
+        path:
+          pathPrefix: /api
+      routeName: default/exact-match-route
+- gateway:
+    Name: test-gateway
+    Namespace: default
+  resource:
+    route:
+      backends:
+      - backend:
+          port: 80
+          service: default/test-service.default.svc.cluster.local
+        weight: 1
+      hostnames:
+      - api.example.com
+      key: default/exact-match-route.1.0.http
+      listenerKey: test-gateway
+      matches:
+      - path:
+          exact: /exact
+      routeName: default/exact-match-route

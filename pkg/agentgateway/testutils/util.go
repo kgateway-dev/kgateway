@@ -7,18 +7,18 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
-	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"istio.io/istio/pilot/test/util"
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/krt/krttest"
+	"istio.io/istio/pkg/ptr"
 	"istio.io/istio/pkg/test"
 	"istio.io/istio/pkg/test/util/file"
 	corev1 "k8s.io/api/core/v1"
 	discovery "k8s.io/api/discovery/v1"
+	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -26,6 +26,11 @@ import (
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 	"sigs.k8s.io/yaml"
+
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
+	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 )
 
 func CompareGolden(t test.Failer, content []byte, goldenFile string) {
@@ -121,8 +126,62 @@ func RunForDirectory[Status any, Output any](t *testing.T, base string, run func
 }
 
 type testOutput[Status any, Output any] struct {
-	Status Status   `json:"status"`
+	Status Status   `json:"status,omitempty"`
 	Output []Output `json:"output"`
+}
+
+func RouteInputs(ctx plugins.PolicyCtx) translator.RouteContextInputs {
+	opts := krtutil.KrtOptions{}
+	return translator.RouteContextInputs{
+		Grants: translator.BuildReferenceGrants(translator.ReferenceGrantsCollection(ctx.Collections.ReferenceGrants, opts)),
+		// TODO: it would be nice to use the real one
+		RouteParents: translator.BuildRouteParents(krt.NewStaticCollection[*translator.GatewayListener](nil, []*translator.GatewayListener{{
+			ParentGateway: types.NamespacedName{
+				Name:      "test-gateway",
+				Namespace: "default",
+			},
+			ParentObject: translator.ParentKey{
+				Kind:      wellknown.GatewayGVK,
+				Name:      "test-gateway",
+				Namespace: "default",
+			},
+			ParentInfo: translator.ParentInfo{
+				InternalName: "default/test-gateway",
+				Protocol:     gwv1.HTTPProtocolType,
+				Port:         80,
+				SectionName:  "http",
+				ParentGateway: types.NamespacedName{
+					Name:      "test-gateway",
+					Namespace: "default",
+				},
+				AllowedKinds: []gwv1.RouteGroupKind{
+					{
+						Group: ptr.Of(gwv1.Group("gateway.networking.k8s.io")),
+						Kind:  gwv1.Kind(wellknown.HTTPRouteKind),
+					},
+					{
+						Group: ptr.Of(gwv1.Group("gateway.networking.k8s.io")),
+						Kind:  gwv1.Kind(wellknown.GRPCRouteKind),
+					},
+					{
+						Group: ptr.Of(gwv1.Group("gateway.networking.k8s.io")),
+						Kind:  gwv1.Kind(wellknown.TLSRouteKind),
+					},
+					{
+						Group: ptr.Of(gwv1.Group("gateway.networking.k8s.io")),
+						Kind:  gwv1.Kind(wellknown.TCPRouteKind),
+					},
+				},
+			},
+			Valid: true,
+		}})),
+		Services:        ctx.Collections.Services,
+		InferencePools:  ctx.Collections.InferencePools,
+		Namespaces:      ctx.Collections.Namespaces,
+		Backends:        ctx.Collections.Backends,
+		DirectResponses: ctx.Collections.DirectResponses,
+		ControllerName:  ctx.Collections.ControllerName,
+	}
 }
 
 func BuildMockPolicyContext(t test.Failer, inputs []any) plugins.PolicyCtx {

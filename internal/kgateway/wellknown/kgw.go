@@ -36,7 +36,7 @@ var (
 	BackendGVR             = BackendGVK.GroupVersion().WithResource("backends")
 	TrafficPolicyGVR       = TrafficPolicyGVK.GroupVersion().WithResource("trafficpolicies")
 	AgentgatewayPolicyGVR  = AgentgatewayPolicyGVK.GroupVersion().WithResource("agentgatewaypolicies")
-	AgentgatewayBackendGVR = AgentgatewayPolicyGVK.GroupVersion().WithResource("agentgatewaybackends")
+	AgentgatewayBackendGVR = AgentgatewayBackendGVK.GroupVersion().WithResource("agentgatewaybackends")
 	HTTPListenerPolicyGVR  = HTTPListenerPolicyGVK.GroupVersion().WithResource("httplistenerpolicies")
 	BackendConfigPolicyGVR = BackendConfigPolicyGVK.GroupVersion().WithResource("backendconfigpolicies")
 )

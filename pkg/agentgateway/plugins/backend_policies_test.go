@@ -3,9 +3,10 @@ package plugins_test
 import (
 	"testing"
 
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/testutils"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 func TestBackendPolicies(t *testing.T) {
