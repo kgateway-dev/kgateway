@@ -695,9 +695,9 @@ spec:
                           type: string
                       type: object
                       x-kubernetes-validations:
-                      - message: exactly one of the fields in [headers queryParams]
+                      - message: exactly one of the fields in [header queryParameter]
                           must be set
-                        rule: '[has(self.headers),has(self.queryParams)].filter(x,x==true).size()
+                        rule: '[has(self.header),has(self.queryParameter)].filter(x,x==true).size()
                           == 1'
                   required:
                   - jwks

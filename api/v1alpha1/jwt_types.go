@@ -77,8 +77,8 @@ type HeaderSource struct {
 }
 
 // JWTTokenSource configures the source for the JWTToken
-// Exactly one of HeaderSource or QueryParams must be specified.
-// +kubebuilder:validation:ExactlyOneOf=headers;queryParams
+// Exactly one of HeaderSource or QueryParameter must be specified.
+// +kubebuilder:validation:ExactlyOneOf=header;queryParameter
 type JWTTokenSource struct {
 	// HeaderSource configures retrieving token from a header
 	// +optional
