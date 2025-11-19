@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -84,26 +85,44 @@ func GetTestResource[T any](t *testing.T, collection krt.Collection[T]) T {
 
 var timestampRegex = regexp.MustCompile(`lastTransitionTime:.*`)
 
+// RunForDirectory runs a set of tests against each file in a directory.
+// The file should pass in the input YAMLs at the top of the file, and the expected outputs at the bottom of the file split by:
+//
+// ---
+// # Output
+// ... the output
+//
+// The output is generally created by running the test with `REFRESH_GOLDEN=true`.
 func RunForDirectory[Status any, Output any](t *testing.T, base string, run func(t *testing.T, ctx plugins.PolicyCtx) (Status, []Output)) {
 	for _, f := range file.ReadDirOrFail(t, base) {
 		name := filepath.Base(f)
 		t.Run(name, func(t *testing.T) {
 			data := file.AsStringOrFail(t, f)
-			ctx := BuildMockPolicyContext(t, []any{data})
+			inputData := data
+			idx := strings.Index(data, "---\n# Output")
+			if idx != -1 {
+				inputData = data[:idx-1]
+			}
+			ctx := BuildMockPolicyContext(t, []any{inputData})
 			st, objs := run(t, ctx)
-			stb, err := yaml.Marshal(st)
+			o, err := yaml.Marshal(testOutput[Status, Output]{Status: st, Output: objs})
 			if err != nil {
-				t.Fatalf("failed to marshal status: %v", err)
+				t.Fatalf("failed to marshal output: %v", err)
 			}
-			stb = timestampRegex.ReplaceAll(stb, []byte("lastTransitionTime: fake"))
-			objsb, err := yaml.Marshal(objs)
-			if err != nil {
-				t.Fatalf("failed to marshal objects: %v", err)
+			o = timestampRegex.ReplaceAll(o, []byte("lastTransitionTime: fake"))
+			output := inputData + "\n---\n# Output\n" + string(o)
+			if util.Refresh() {
+				util.RefreshGoldenFile(t, []byte(output), f)
+			} else {
+				util.CompareBytes(t, []byte(inputData), []byte(output), name)
 			}
-			t.Log(string(stb))
-			t.Log(string(objsb))
 		})
 	}
+}
+
+type testOutput[Status any, Output any] struct {
+	Status Status   `json:"status"`
+	Output []Output `json:"output"`
 }
 
 func BuildMockPolicyContext(t test.Failer, inputs []any) plugins.PolicyCtx {

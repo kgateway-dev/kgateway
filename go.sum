@@ -194,8 +194,8 @@ github.com/ProtonMail/gopenpgp/v2 v2.7.1 h1:Awsg7MPc2gD3I7IFac2qE3Gdls0lZW8SzrFZ
 github.com/ProtonMail/gopenpgp/v2 v2.7.1/go.mod h1:/BU5gfAVwqyd8EfC3Eu7zmuhwYQpKs+cGD8M//iiaxs=
 github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d h1:licZJFw2RwpHMqeKTCYkitsPqHNxTmd4SNR5r94FGM8=
 github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d/go.mod h1:asat636LX7Bqt5lYEZ27JNDcqxfjdBQuJ/MM4CN/Lzo=
-github.com/agentgateway/agentgateway v0.10.6-0.20251119180848-18e45de0f30a h1:/ntUin5Gey1rBofXMv9cZntPhYkI0f59zdDSi72nyUo=
-github.com/agentgateway/agentgateway v0.10.6-0.20251119180848-18e45de0f30a/go.mod h1:/Lzpteag/nnE4bwW/3Dh5GaxuICmCQs40VhQpkTatlk=
+github.com/agentgateway/agentgateway v0.10.6-0.20251119191927-ca81e838d23c h1:cNM7L9gyuOrHzQQLnkImnLxhYBqDfmApmSz2MW0Ysds=
+github.com/agentgateway/agentgateway v0.10.6-0.20251119191927-ca81e838d23c/go.mod h1:/Lzpteag/nnE4bwW/3Dh5GaxuICmCQs40VhQpkTatlk=
 github.com/agnivade/levenshtein v1.2.1 h1:EHBY3UOn1gwdy/VbFwgo4cxecRznFk7fKWN1KOX7eoM=
 github.com/agnivade/levenshtein v1.2.1/go.mod h1:QVVI16kDrtSuwcpd0p1+xMC6Z/VfhtCyDIjcwga4/DU=
 github.com/alcortesm/tgz v0.0.0-20161220082320-9c5fe88206d7/go.mod h1:6zEj6s6u/ghQa61ZWa/C2Aw3RkjiTBOix7dkqa1VLIs=
@@ -974,8 +974,6 @@ github.com/hexops/gotextdiff v1.0.3 h1:gitA9+qJrrTCsiCl7+kh75nPqQt1cx4ZkudSTLoUq
 github.com/hexops/gotextdiff v1.0.3/go.mod h1:pSWU5MAI3yDq+fZBTazCSJysOMbxWL1BSow5/V2vxeg=
 github.com/hinshun/vt10x v0.0.0-20180616224451-1954e6464174/go.mod h1:DqJ97dSdRW1W22yXSB90986pcOyQ7r45iio1KN2ez1A=
 github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c/go.mod h1:DqJ97dSdRW1W22yXSB90986pcOyQ7r45iio1KN2ez1A=
-github.com/howardjohn/istio v0.0.0-20251119180024-02f76f942295 h1:d8HPhj69hKRLL3yUsH7zmi3XEXUpDjQnn6OM27ItPoI=
-github.com/howardjohn/istio v0.0.0-20251119180024-02f76f942295/go.mod h1:1wFmSxnfIZFdeADxeB9A1JvJBbK2wglQIRJHA0R2x/Q=
 github.com/howeyc/gopass v0.0.0-20210920133722-c8aef6fb66ef h1:A9HsByNhogrvm9cWb28sjiS3i7tcKCkflWFEkHfuAgM=
 github.com/howeyc/gopass v0.0.0-20210920133722-c8aef6fb66ef/go.mod h1:lADxMC39cJJqL93Duh1xhAs4I2Zs8mKS89XWXFGp9cs=
 github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
@@ -2244,6 +2242,8 @@ istio.io/api v1.28.0-alpha.0.0.20251118133802-3d6b80ec2d1e h1:qfJY+yQTjm0AWhPXIT
 istio.io/api v1.28.0-alpha.0.0.20251118133802-3d6b80ec2d1e/go.mod h1:BD3qv/ekm16kvSgvSpuiDawgKhEwG97wx849CednJSg=
 istio.io/client-go v1.28.0-alpha.0.0.20251118134000-fa71d5732509 h1:U0SrRSda3au07r6b4ZbHa+NeKXkV4mVofPvTlQMF7oA=
 istio.io/client-go v1.28.0-alpha.0.0.20251118134000-fa71d5732509/go.mod h1:G0jE4yjFmzhXjlTAi6/TYvE8jjFaWM34EpR9OfIb4Ac=
+istio.io/istio v0.0.0-20251119184502-ea018f0048ef h1:cPQ0mEnI8OowXDqjbN+LO0p5RgRAlaNPD4OLrCWklyw=
+istio.io/istio v0.0.0-20251119184502-ea018f0048ef/go.mod h1:dHC3ogx0AJFiITIn11ky0gTaaG6m3QZNi4DmzWtC0hQ=
 k8s.io/api v0.34.1 h1:jC+153630BMdlFukegoEL8E/yT7aLyQkIVuwhmwDgJM=
 k8s.io/api v0.34.1/go.mod h1:SB80FxFtXn5/gwzCoN6QCtPD7Vbu5w2n1S0J5gFfTYk=
 k8s.io/apiextensions-apiserver v0.34.1 h1:NNPBva8FNAPt1iSVwIE0FsdrVriRXMsaWFMqJbII2CI=

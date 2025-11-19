@@ -1,0 +1,62 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: AgentgatewayPolicy
+metadata:
+  name: agw
+  namespace: default
+spec:
+  targetRefs:
+    - kind: HTTPRoute
+      name: test
+      group: gateway.networking.k8s.io
+  traffic:
+    authorization:
+      action: Deny
+      policy:
+        matchExpressions:
+          - "true"
+  backend:
+    mcp:
+      authorization:
+        policy:
+          matchExpressions:
+            - 'mcp.tool.name == "echo"'
+            - 'jwt.sub == "test-user" && mcp.tool.name == "add"'
+---
+# Output
+output:
+- Policy:
+    name: traffic/default/agw:rbac:default/test
+    target:
+      route: default/test
+    traffic:
+      authorization:
+        deny:
+        - "true"
+- Policy:
+    backend:
+      mcpAuthorization:
+        allow:
+        - mcp.tool.name == "echo"
+        - jwt.sub == "test-user" && mcp.tool.name == "add"
+    name: default/agw:mcp-authorization:default/test
+    target:
+      route: default/test
+status:
+  ancestors:
+  - ancestorRef:
+      group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: test
+      namespace: default
+    conditions:
+    - lastTransitionTime: fake
+      message: Policy accepted
+      reason: Valid
+      status: "True"
+      type: Accepted
+    - lastTransitionTime: fake
+      message: Attached to all targets
+      reason: Attached
+      status: "True"
+      type: Attached
+    controllerName: kgateway.dev/agentgateway
