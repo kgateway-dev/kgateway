@@ -20,16 +20,16 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/utils/ptr"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/yaml"
 
-	ctrl "sigs.k8s.io/controller-runtime"
-
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
+	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
@@ -52,6 +52,7 @@ func RunController(
 		xdsPort int,
 		agwXdsPort int,
 	),
+	newAPIClientFn func(restconfig *rest.Config) (apiclient.Client, error),
 ) {
 	if globalSettings == nil {
 		st, err := apisettings.BuildSettings()
@@ -79,6 +80,14 @@ func RunController(
 
 	kubeconfig := GenerateKubeConfiguration(t, cfg)
 	t.Log("kubeconfig:", kubeconfig)
+
+	var apiClient apiclient.Client
+	if newAPIClientFn != nil {
+		apiClient, err = newAPIClientFn(cfg)
+		if err != nil {
+			t.Fatalf("failed to create api client: %v", err)
+		}
+	}
 
 	client, err := istiokube.NewCLIClient(istiokube.NewClientConfigForRestConfig(cfg))
 	if err != nil {
@@ -117,6 +126,7 @@ func RunController(
 	}
 
 	s, err := setup.New(
+		setup.WithAPIClient(apiClient),
 		setup.WithGlobalSettings(globalSettings),
 		setup.WithRestConfig(cfg),
 		setup.WithExtraPlugins(extraPlugins),
@@ -238,9 +248,9 @@ func ApplyPodStatusFromFile(ctx context.Context, c istiokube.CLIClient, defaultN
 		return fmt.Errorf("reading YAML file %q: %w", filePath, err)
 	}
 
-	docs := bytes.Split(data, []byte("\n---\n"))
+	docs := bytes.SplitSeq(data, []byte("\n---\n"))
 
-	for _, doc := range docs {
+	for doc := range docs {
 		doc = bytes.TrimSpace(doc)
 		if len(doc) == 0 {
 			continue

@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmdutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/threadsafe"
 )
 
 // Client is a utility for executing `helm` commands
@@ -26,8 +27,10 @@ func NewClient() *Client {
 
 // WithReceiver sets the io.Writer that will be used by default for the stdout and stderr
 // of cmdutils.Cmd created by the Client
+// This modifies the value in place, so affects shared references to the Client and future commands run by the Client.
+// Wrap this in a threadsafe struct to avoid data races when wrapped in io.MultiWriter in cmdutils.
 func (c *Client) WithReceiver(receiver io.Writer) *Client {
-	c.receiver = receiver
+	c.receiver = &threadsafe.WriterWrapper{W: receiver}
 	return c
 }
 

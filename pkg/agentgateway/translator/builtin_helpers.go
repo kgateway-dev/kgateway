@@ -6,10 +6,9 @@ import (
 
 	"github.com/agentgateway/agentgateway/go/api"
 	"google.golang.org/protobuf/types/known/durationpb"
-	"istio.io/istio/pkg/log"
 	"istio.io/istio/pkg/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -101,18 +100,17 @@ func GetStatus[I, IS any](spec I) IS {
 		return any(t.Status).(IS)
 	case *gwv1.GRPCRoute:
 		return any(t.Status).(IS)
-	case *gwv1alpha2.TCPRoute:
+	case *gwv1a2.TCPRoute:
 		return any(t.Status).(IS)
-	case *gwv1alpha2.TLSRoute:
-		return any(t.Status).(IS)
-	case *v1alpha1.TrafficPolicy:
+	case *gwv1a2.TLSRoute:
 		return any(t.Status).(IS)
 	case *gwxv1a1.XListenerSet:
 		return any(t.Status).(IS)
 	case *v1alpha1.AgentgatewayPolicy:
 		return any(t.Status).(IS)
 	default:
-		log.Fatalf("GetStatus unknown type %T", t)
+		// For external resources (registered via extraGVKs), we don't introspect the object here.
+		// Returning the zero status ensures we always enqueue a write when desired status is set.
 		return ptr.Empty[IS]()
 	}
 }

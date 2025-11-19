@@ -36,7 +36,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
 	"k8s.io/utils/ptr"
 )
 

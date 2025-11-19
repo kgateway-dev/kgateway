@@ -1,7 +1,6 @@
 package deployer
 
 import (
-	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -17,6 +17,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	internaldeployer "github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
+	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	pkgdeployer "github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
@@ -61,23 +62,38 @@ func ExtractCommonObjs(t *testing.T, objs []client.Object) ([]client.Object, *gw
 	return commonObjs, gtw
 }
 
+func (dt DeployerTester) GetObjects(
+	t *testing.T,
+	tt HelmTestCase,
+	scheme *runtime.Scheme,
+	dir string,
+	crdDir string,
+) []client.Object {
+	filePath := filepath.Join(dir, "testdata/", tt.InputFile)
+	inputFile := filePath + ".yaml"
+
+	gvkToStructuralSchema, err := testutils.GetStructuralSchemas(crdDir)
+	require.NoError(t, err, "error getting structural schemas")
+
+	objs, err := testutils.LoadFromFiles(inputFile, scheme, gvkToStructuralSchema)
+	require.NoError(t, err, "error loading files from input file")
+
+	return objs
+}
+
 func (dt DeployerTester) RunHelmChartTest(
 	t *testing.T,
 	tt HelmTestCase,
 	scheme *runtime.Scheme,
 	dir string,
 	crdDir string,
-	helmValuesGeneratorOverride func(cli client.Client, inputs *pkgdeployer.Inputs) pkgdeployer.HelmValuesGenerator,
+	helmValuesGeneratorOverride func(inputs *pkgdeployer.Inputs) pkgdeployer.HelmValuesGenerator,
+	fakeClient apiclient.Client,
 ) {
 	filePath := filepath.Join(dir, "testdata/", tt.InputFile)
-	inputFile := filePath + ".yaml"
 	outputFile := filePath + "-out.yaml"
 
-	gvkToStructuralSchema, err := testutils.GetStructuralSchemas(crdDir)
-	assert.NoError(t, err, "error getting structural schemas")
-
-	objs, err := testutils.LoadFromFiles(inputFile, scheme, gvkToStructuralSchema)
-	assert.NoError(t, err, "error loading files from input file")
+	objs := dt.GetObjects(t, tt, scheme, dir, crdDir)
 
 	commonObjs, gtw := ExtractCommonObjs(t, objs)
 	if gtw == nil {
@@ -89,25 +105,27 @@ func (dt DeployerTester) RunHelmChartTest(
 	if tt.Inputs != nil {
 		inputs = tt.Inputs
 	}
-	fakeClient := NewFakeClientWithObjsWithScheme(scheme, objs...)
 
 	gwParams := internaldeployer.NewGatewayParameters(
 		fakeClient,
 		inputs,
 	)
 	if helmValuesGeneratorOverride != nil {
-		gwParams.WithHelmValuesGeneratorOverride(helmValuesGeneratorOverride(fakeClient, inputs))
+		gwParams.WithHelmValuesGeneratorOverride(helmValuesGeneratorOverride(inputs))
 	}
 	deployer, err := internaldeployer.NewGatewayDeployer(
 		dt.ControllerName,
 		dt.AgwControllerName,
 		dt.AgwClassName,
+		scheme,
 		fakeClient,
 		gwParams,
 	)
 	assert.NoError(t, err, "error creating gateway deployer")
 
-	ctx := context.TODO()
+	ctx := t.Context()
+	fakeClient.RunAndWait(ctx.Done())
+
 	vals, err := gwParams.GetValues(ctx, gtw)
 	assert.NoError(t, err, "error getting values for GwParams")
 
@@ -154,9 +172,10 @@ func DefaultDeployerInputs(dt DeployerTester, commonCols *collections.CommonColl
 			Registry: "ghcr.io",
 			Tag:      "v2.1.0-dev",
 		},
-		GatewayClassName:         dt.ClassName,
-		WaypointGatewayClassName: dt.WaypointClassName,
-		AgentgatewayClassName:    dt.AgwClassName,
+		GatewayClassName:           dt.ClassName,
+		WaypointGatewayClassName:   dt.WaypointClassName,
+		AgentgatewayClassName:      dt.AgwClassName,
+		AgentgatewayControllerName: dt.AgwControllerName,
 	}
 }
 

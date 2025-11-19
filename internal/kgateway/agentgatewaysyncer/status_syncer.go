@@ -2,25 +2,27 @@ package agentgatewaysyncer
 
 import (
 	"context"
-	"log"
 	"time"
 
 	"github.com/avast/retry-go/v4"
-	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/kclient"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/status"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
+	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 )
 
 var _ manager.LeaderElectionRunnable = &AgentGwStatusSyncer{}
@@ -37,7 +39,7 @@ const (
 // AgentGwStatusSyncer runs only on the leader and syncs the status of agent gateway resources.
 // It subscribes to the report queues, parses and updates the resource status.
 type AgentGwStatusSyncer struct {
-	client kube.Client
+	client apiclient.Client
 
 	agentgatewayPolicies StatusSyncer[*v1alpha1.AgentgatewayPolicy, *gwv1.PolicyStatus]
 
@@ -53,24 +55,28 @@ type AgentGwStatusSyncer struct {
 	gateways     StatusSyncer[*gwv1.Gateway, *gwv1.GatewayStatus]
 	httpRoutes   StatusSyncer[*gwv1.HTTPRoute, *gwv1.HTTPRouteStatus]
 	grpcRoutes   StatusSyncer[*gwv1.GRPCRoute, *gwv1.GRPCRouteStatus]
-	tcpRoutes    StatusSyncer[*gwv1alpha2.TCPRoute, *gwv1alpha2.TCPRouteStatus]
-	tlsRoutes    StatusSyncer[*gwv1alpha2.TLSRoute, *gwv1alpha2.TLSRouteStatus]
+	tcpRoutes    StatusSyncer[*gwv1a2.TCPRoute, *gwv1a2.TCPRouteStatus]
+	tlsRoutes    StatusSyncer[*gwv1a2.TLSRoute, *gwv1a2.TLSRouteStatus]
+
+	extraAgwPolicyStatusHandlers map[schema.GroupVersionKind]agwplugins.AgwPolicyStatusSyncHandler
 }
 
 func NewAgwStatusSyncer(
 	controllerName string,
 	agwClassName string,
-	client kube.Client,
+	client apiclient.Client,
 	statusCollections *status.StatusCollections,
 	cacheSyncs []cache.InformerSynced,
+	extraHandlers map[schema.GroupVersionKind]agwplugins.AgwPolicyStatusSyncHandler,
 ) *AgentGwStatusSyncer {
 	f := kclient.Filter{ObjectFilter: client.ObjectFilter()}
 	syncer := &AgentGwStatusSyncer{
-		controllerName:    controllerName,
-		agwClassName:      agwClassName,
-		client:            client,
-		statusCollections: statusCollections,
-		cacheSyncs:        cacheSyncs,
+		controllerName:               controllerName,
+		agwClassName:                 agwClassName,
+		client:                       client,
+		statusCollections:            statusCollections,
+		cacheSyncs:                   cacheSyncs,
+		extraAgwPolicyStatusHandlers: extraHandlers,
 
 		agentgatewayPolicies: StatusSyncer[*v1alpha1.AgentgatewayPolicy, *gwv1.PolicyStatus]{
 			name:   "agentgatewayPolicy",
@@ -104,21 +110,21 @@ func NewAgwStatusSyncer(
 				}
 			},
 		},
-		tlsRoutes: StatusSyncer[*gwv1alpha2.TLSRoute, *gwv1alpha2.TLSRouteStatus]{
+		tlsRoutes: StatusSyncer[*gwv1a2.TLSRoute, *gwv1a2.TLSRouteStatus]{
 			name:   "tlsRoute",
-			client: kclient.NewFilteredDelayed[*gwv1alpha2.TLSRoute](client, wellknown.TLSRouteGVR, f),
-			build: func(om metav1.ObjectMeta, s *gwv1alpha2.TLSRouteStatus) *gwv1alpha2.TLSRoute {
-				return &gwv1alpha2.TLSRoute{
+			client: kclient.NewFilteredDelayed[*gwv1a2.TLSRoute](client, wellknown.TLSRouteGVR, f),
+			build: func(om metav1.ObjectMeta, s *gwv1a2.TLSRouteStatus) *gwv1a2.TLSRoute {
+				return &gwv1a2.TLSRoute{
 					ObjectMeta: om,
 					Status:     *s,
 				}
 			},
 		},
-		tcpRoutes: StatusSyncer[*gwv1alpha2.TCPRoute, *gwv1alpha2.TCPRouteStatus]{
+		tcpRoutes: StatusSyncer[*gwv1a2.TCPRoute, *gwv1a2.TCPRouteStatus]{
 			name:   "tcpRoute",
-			client: kclient.NewFilteredDelayed[*gwv1alpha2.TCPRoute](client, wellknown.TCPRouteGVR, f),
-			build: func(om metav1.ObjectMeta, s *gwv1alpha2.TCPRouteStatus) *gwv1alpha2.TCPRoute {
-				return &gwv1alpha2.TCPRoute{
+			client: kclient.NewFilteredDelayed[*gwv1a2.TCPRoute](client, wellknown.TCPRouteGVR, f),
+			build: func(om metav1.ObjectMeta, s *gwv1a2.TCPRouteStatus) *gwv1a2.TCPRoute {
+				return &gwv1a2.TCPRoute{
 					ObjectMeta: om,
 					Status:     *s,
 				}
@@ -199,7 +205,22 @@ func (s *AgentGwStatusSyncer) SyncStatus(ctx context.Context, resource status.Re
 	case wellknown.AgentgatewayPolicyGVK:
 		s.agentgatewayPolicies.ApplyStatus(ctx, resource, statusObj)
 	default:
-		log.Fatalf("SyncStatus: unknown resource type: %v", resource.GroupVersionKind)
+		// Attempt to handle extra policy kinds via registered handlers.
+		if s.extraAgwPolicyStatusHandlers != nil {
+			key := resource.GroupVersionKind
+			if handler, ok := s.extraAgwPolicyStatusHandlers[key]; ok {
+				ps, _ := statusObj.(*gwv1.PolicyStatus)
+				if ps == nil {
+					logger.Warn("external status handler received non-PolicyStatus", "gvk", resource.GroupVersionKind.String())
+					return
+				}
+				if err := handler(ctx, s.client, types.NamespacedName{Name: resource.Name, Namespace: resource.Namespace}, *ps); err != nil {
+					logger.Error("external policy status handler failed", "gvk", resource.GroupVersionKind.String(), logKeyError, err)
+				}
+				return
+			}
+		}
+		logger.Error("sync status: unknown resource type", "gvk", resource.GroupVersionKind.String())
 	}
 }
 
@@ -234,7 +255,6 @@ func (s StatusSyncer[O, S]) ApplyStatus(ctx context.Context, obj status.Resource
 			Namespace:       obj.Namespace,
 			ResourceVersion: obj.ResourceVersion,
 		}, status))
-
 		if err != nil {
 			if errors.IsConflict(err) {
 				// This is normal. It is expected the collection will re-enqueue the write

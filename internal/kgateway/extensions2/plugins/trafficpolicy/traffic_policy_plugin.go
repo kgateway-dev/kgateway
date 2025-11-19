@@ -14,25 +14,18 @@ import (
 	localratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	envoyrbacv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"google.golang.org/protobuf/types/known/anypb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
-	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
-	"istio.io/istio/pkg/kube/kclient"
-	"istio.io/istio/pkg/kube/krt"
-	"istio.io/istio/pkg/kube/kubetypes"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/watch"
-
 	// TODO(nfuden): remove once rustformations are able to be used in a production environment
 	transformationpb "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
+	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
+	"istio.io/istio/pkg/kube/kclient"
+	"istio.io/istio/pkg/kube/krt"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -80,7 +73,6 @@ type TrafficPolicy struct {
 }
 
 type trafficPolicySpecIr struct {
-	ai              *aiPolicyIR
 	buffer          *bufferIR
 	extProc         *extprocIR
 	transformation  *transformationIR
@@ -110,9 +102,6 @@ func (d *TrafficPolicy) Equals(in any) bool {
 		return false
 	}
 
-	if !d.spec.ai.Equals(d2.spec.ai) {
-		return false
-	}
 	if !d.spec.transformation.Equals(d2.spec.transformation) {
 		return false
 	}
@@ -163,7 +152,6 @@ func (d *TrafficPolicy) Equals(in any) bool {
 // PGV validation is always performed regardless of route replacement mode.
 func (p *TrafficPolicy) Validate() error {
 	var validators []func() error
-	validators = append(validators, p.spec.ai.Validate)
 	validators = append(validators, p.spec.transformation.Validate)
 	validators = append(validators, p.spec.rustformation.Validate)
 	validators = append(validators, p.spec.localRateLimit.Validate)
@@ -205,25 +193,7 @@ var _ ir.ProxyTranslationPass = &trafficPolicyPluginGwPass{}
 
 var useRustformations bool
 
-func registerTypes(ourCli versioned.Interface) {
-	skubeclient.Register[*v1alpha1.TrafficPolicy](
-		wellknown.TrafficPolicyGVR,
-		wellknown.TrafficPolicyGVK,
-		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
-			return ourCli.GatewayV1alpha1().TrafficPolicies(namespace).List(context.Background(), o)
-		},
-		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
-			return ourCli.GatewayV1alpha1().TrafficPolicies(namespace).Watch(context.Background(), o)
-		},
-		func(c skubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*v1alpha1.TrafficPolicy] {
-			return ourCli.GatewayV1alpha1().TrafficPolicies(namespace)
-		},
-	)
-}
-
 func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, mergeSettings string, v validator.Validator) sdk.Plugin {
-	registerTypes(commoncol.OurClient)
-
 	useRustformations = commoncol.Settings.UseRustFormations // stash the state of the env setup for rustformation usage
 	if useRustformations {
 		logger.Info("transformation is using Rust Dynamic Module.")
@@ -328,35 +298,6 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, outputR
 		return nil
 	}
 
-	if policy.spec.ai != nil {
-		var aiBackends []*v1alpha1.Backend
-		// check if the backends selected by targetRef are all AI backends before applying the policy
-		for _, backend := range pCtx.In.Backends {
-			if backend.Backend.BackendObject == nil {
-				// could be nil if not found or no ref grant
-				continue
-			}
-			b, ok := backend.Backend.BackendObject.Obj.(*v1alpha1.Backend)
-			if !ok {
-				// AI policy cannot apply to kubernetes services
-				// TODO(npolshak): Report this as a warning on status
-				logger.Warn("AI Policy cannot apply to kubernetes services", "backend_name", backend.Backend.BackendObject.GetName())
-				continue
-			}
-			if b.Spec.Type != v1alpha1.BackendTypeAI {
-				// AI policy cannot apply to non-AI backends
-				// TODO(npolshak): Report this as a warning on status
-				logger.Warn("AI Policy cannot apply to non-AI backend", "backend_name", backend.Backend.BackendObject.GetName(), "backend_type", string(b.Spec.Type))
-				continue
-			}
-			aiBackends = append(aiBackends, b)
-		}
-		if len(aiBackends) > 0 {
-			// Apply the AI policy to the all AI backends
-			p.processAITrafficPolicy(&pCtx.TypedFilterConfig, policy.spec.ai)
-		}
-	}
-
 	p.handlePerRoutePolicies(policy.spec, outputRoute)
 	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, policy.spec)
 
@@ -373,10 +314,6 @@ func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(
 	}
 
 	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, rtPolicy.spec)
-
-	if rtPolicy.spec.ai != nil && (rtPolicy.spec.ai.Transformation != nil || rtPolicy.spec.ai.Extproc != nil) {
-		p.processAITrafficPolicy(&pCtx.TypedFilterConfig, rtPolicy.spec.ai)
-	}
 
 	return nil
 }

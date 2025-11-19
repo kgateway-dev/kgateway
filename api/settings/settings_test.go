@@ -47,7 +47,7 @@ func allEnvVarsSet() map[string]string {
 		"KGW_ENABLE_WAYPOINT":                          "true",
 		"KGW_XDS_AUTH":                                 "false",
 		"KGW_XDS_TLS":                                  "true",
-		"KGW_ENABLE_EXPERIMENTAL_GATEWAY_API_FEATURES": "true",
+		"KGW_ENABLE_EXPERIMENTAL_GATEWAY_API_FEATURES": "false",
 	}
 }
 
@@ -100,7 +100,7 @@ func TestSettings(t *testing.T) {
 				EnableWaypoint:                       false,
 				XdsAuth:                              true,
 				XdsTLS:                               false,
-				EnableExperimentalGatewayAPIFeatures: false,
+				EnableExperimentalGatewayAPIFeatures: true,
 			},
 		},
 		{
@@ -138,7 +138,7 @@ func TestSettings(t *testing.T) {
 				EnableWaypoint:                       true,
 				XdsAuth:                              false,
 				XdsTLS:                               true,
-				EnableExperimentalGatewayAPIFeatures: true,
+				EnableExperimentalGatewayAPIFeatures: false,
 			},
 		},
 		{
@@ -184,27 +184,28 @@ func TestSettings(t *testing.T) {
 				"KGW_ENABLE_ISTIO_AUTO_MTLS": "true",
 			},
 			expectedSettings: &Settings{
-				DnsLookupFamily:             DnsLookupFamilyV4Preferred,
-				EnableIstioAutoMtls:         true,
-				ListenerBindIpv6:            true,
-				IstioNamespace:              "istio-system",
-				XdsServiceName:              wellknown.DefaultXdsService,
-				XdsServicePort:              wellknown.DefaultXdsPort,
-				AgentgatewayXdsServicePort:  wellknown.DefaultAgwXdsPort,
-				DefaultImageRegistry:        "cr.kgateway.dev",
-				DefaultImageTag:             "",
-				DefaultImagePullPolicy:      "IfNotPresent",
-				WaypointLocalBinding:        false,
-				IngressUseWaypoints:         true,
-				LogLevel:                    "info",
-				DiscoveryNamespaceSelectors: "[]",
-				EnableAgentgateway:          true,
-				EnableEnvoy:                 true,
-				WeightedRoutePrecedence:     false,
-				ValidationMode:              ValidationStandard,
-				PolicyMerge:                 "{}",
-				XdsAuth:                     true,
-				XdsTLS:                      false,
+				DnsLookupFamily:                      DnsLookupFamilyV4Preferred,
+				EnableIstioAutoMtls:                  true,
+				ListenerBindIpv6:                     true,
+				IstioNamespace:                       "istio-system",
+				XdsServiceName:                       wellknown.DefaultXdsService,
+				XdsServicePort:                       wellknown.DefaultXdsPort,
+				AgentgatewayXdsServicePort:           wellknown.DefaultAgwXdsPort,
+				DefaultImageRegistry:                 "cr.kgateway.dev",
+				DefaultImageTag:                      "",
+				DefaultImagePullPolicy:               "IfNotPresent",
+				WaypointLocalBinding:                 false,
+				IngressUseWaypoints:                  true,
+				LogLevel:                             "info",
+				DiscoveryNamespaceSelectors:          "[]",
+				EnableAgentgateway:                   true,
+				EnableEnvoy:                          true,
+				WeightedRoutePrecedence:              false,
+				ValidationMode:                       ValidationStandard,
+				PolicyMerge:                          "{}",
+				XdsAuth:                              true,
+				XdsTLS:                               false,
+				EnableExperimentalGatewayAPIFeatures: true,
 			},
 		},
 	}
@@ -287,9 +288,9 @@ var (
 
 // expectedEnvVars returns a map of all the env vars that should be set for the given Settings value.
 // The value of the map is the default value of the field.
-func expectedEnvVars(settingsValue reflect.Value) map[string]interface{} {
+func expectedEnvVars(settingsValue reflect.Value) map[string]any {
 	// This is a modified version of the code in https://github.com/kelseyhightower/envconfig/blob/7834011875d613aec60c606b52c2b0fe8949fe91/envconfig.go#L102-L128
-	expectedEnvVars := make(map[string]interface{}, settingsValue.NumField())
+	expectedEnvVars := make(map[string]any, settingsValue.NumField())
 	for i := 0; i < settingsValue.NumField(); i++ {
 		fieldType := settingsValue.Type().Field(i)
 		splitWords := fieldType.Tag.Get("split_words") == "true"

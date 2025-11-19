@@ -1,0 +1,188 @@
+name: KGateway Conformance Tests
+description: Run KGateway conformance tests
+inputs:
+  test-type:
+    description: "Type of test to run: gateway-api, agent-gateway, inference-extension"
+    required: true
+  api-version:
+    description: "Override of the sig Gateway API to test against."
+    required: false
+  api-channel:
+    description: "Gateway API conformance channel (experimental or standard)"
+    required: false
+  additional-helm-values:
+    description: "Path to additional Helm values file"
+    required: false
+  enable-inference-extension:
+    description: "Enable inference extension (default: false)"
+    required: false
+    default: "false"
+  kubectl-version:
+    description: "Version of Kubectl to use"
+    required: true
+  kind-node-version:
+    description: "Version of Kind Node to use"
+    required: true
+  version:
+    description: "Version of the kgateway and kgateway-crds charts to use"
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+  - name: Prep Go Runner
+    uses: ./.github/actions/prep-go-runner
+
+
+  - uses: azure/setup-kubectl@v4
+    id: kubectl
+    with:
+      version: ${{ inputs.kubectl-version }}
+
+  - name: Set and retrieve environment variables
+    shell: bash
+    run: |
+      # We want to conditionally set the VERSION variable based on the inputs.version value
+      if [[ -z "${{ inputs.version }}" ]]; then
+        echo "VERSION=$(make print-VERSION)" >> $GITHUB_ENV
+      else
+        # else, set the VERSION variable to the inputs.version value and
+        # skip the docker build step so we use real image tags from
+        # the helm repository.
+        echo "VERSION=${{ inputs.version }}" >> $GITHUB_ENV
+        echo "SKIP_DOCKER=true" >> $GITHUB_ENV
+      fi
+
+      # Set conformance environment variables
+      if [[ -n "${{ inputs.api-version }}" ]]; then
+        echo "CONFORMANCE_VERSION=${{ inputs.api-version }}" >> $GITHUB_ENV
+      fi
+
+      if [[ -n "${{ inputs.api-channel }}" ]]; then
+        echo "CONFORMANCE_CHANNEL=${{ inputs.api-channel }}" >> $GITHUB_ENV
+      fi
+
+  - name: Setup test env
+    shell: bash
+    env:
+      CLUSTER_NODE_VERSION: ${{ inputs.kind-node-version }}
+      CONFORMANCE: "true"
+      CONFORMANCE_VERSION: ${{ env.CONFORMANCE_VERSION }}
+      CONFORMANCE_CHANNEL: ${{ env.CONFORMANCE_CHANNEL }}
+    run: ./hack/kind/setup-kind.sh
+
+  - name: Install kgateway via helm
+    shell: bash
+    run: |
+      # Set experimental features flag based on conformance channel
+      EXPERIMENTAL_FLAG=""
+      if [[ "${{ inputs.api-channel }}" == "standard" ]]; then
+        EXPERIMENTAL_FLAG="--set controller.extraEnv.KGW_ENABLE_EXPERIMENTAL_GATEWAY_API_FEATURES=false"
+      fi
+
+      echo "EXPERIMENTAL_FLAG: $EXPERIMENTAL_FLAG"
+
+      # Set inference extension flag
+      INFERENCE_EXT_FLAG=""
+      if [[ "${{ inputs.enable-inference-extension }}" == "true" ]]; then
+        INFERENCE_EXT_FLAG="--set inferenceExtension.enabled=true"
+      fi
+
+      # Check if additional Helm values file is provided
+      ADDITIONAL_VALUES=""
+      if [[ -n "${{ inputs.additional-helm-values }}" && -f "${{ inputs.additional-helm-values }}" ]]; then
+        ADDITIONAL_VALUES="-f ${{ inputs.additional-helm-values }}"
+        echo "Using additional Helm values from: ${{ inputs.additional-helm-values }}"
+      fi
+
+      if [[ -z "${{ inputs.version }}" ]]; then
+        # If inputs.version is empty, use the local chart path specified in the Makefile.
+        helm upgrade -i -n kgateway-system kgateway-crds ./install/helm/kgateway-crds/ \
+          --create-namespace \
+          ${INFERENCE_EXT_FLAG}
+        helm upgrade -i -n kgateway-system kgateway ./install/helm/kgateway/ \
+          --create-namespace \
+          ${EXPERIMENTAL_FLAG} \
+          --set image.tag=${VERSION} --set image.registry=ghcr.io/kgateway-dev \
+          ${INFERENCE_EXT_FLAG} \
+          ${ADDITIONAL_VALUES}
+      else
+        # TODO(tim): this will require changes once the new helm chart is integrated
+        # and published with the release pipeline.
+        # Else, use the provided version to install kgateway from the helm repository.
+        helm upgrade -i -n kgateway-system kgateway-crds oci://${{ env.IMAGE_REGISTRY }}/charts/kgateway-crds \
+          --version ${VERSION} \
+          --create-namespace \
+          ${INFERENCE_EXT_FLAG}
+        helm upgrade -i -n kgateway-system kgateway oci://${{ env.IMAGE_REGISTRY }}/charts/kgateway \
+          --version ${VERSION} \
+          --create-namespace \
+          ${EXPERIMENTAL_FLAG} \
+          --set image.tag=${VERSION} \
+          ${INFERENCE_EXT_FLAG} \
+          ${ADDITIONAL_VALUES}
+      fi
+
+  - name: Run tests
+    shell: bash
+    run: |
+      case "${{ inputs.test-type }}" in
+        "gateway-api")
+          make conformance
+          ;;
+        "agent-gateway")
+          make agw-conformance
+          ;;
+        "inference-extension")
+          make gie-conformance
+          ;;
+        *)
+          echo "Unknown test type: ${{ inputs.test-type }}"
+          exit 1
+          ;;
+      esac
+
+  - name: Capture debug information when tests fail
+    if: ${{ failure() }}
+    shell: bash
+    run: |
+      kubectl -n kgateway-system get events --sort-by='{.lastTimestamp}'
+      echo
+      kubectl -n gateway-conformance-infra get events --sort-by='{.lastTimestamp}'
+      echo
+      kubectl -n gateway-conformance-app-backend get events --sort-by='{.lastTimestamp}'
+      echo
+      kubectl -n gateway-conformance-web-backend get events --sort-by='{.lastTimestamp}'
+      echo
+      kubectl -n kgateway-system logs deploy/kgateway
+
+  - name: Set artifact name and path
+    shell: bash
+    run: |
+      case "${{ inputs.test-type }}" in
+        "gateway-api")
+          echo "ARTIFACT_NAME=conformance-kgateway-gateway-report@k8s${{ inputs.kubectl-version }}" >> $GITHUB_ENV
+          echo "ARTIFACT_PATH=_test/conformance/${{ env.VERSION }}-report.yaml" >> $GITHUB_ENV
+          ;;
+        "agent-gateway")
+          echo "ARTIFACT_NAME=conformance-kgateway-agentgateway-report@k8s${{ inputs.kubectl-version }}" >> $GITHUB_ENV
+          echo "ARTIFACT_PATH=_test/conformance/agw-${{ env.VERSION }}-report.yaml" >> $GITHUB_ENV
+          ;;
+        "inference-extension")
+          echo "ARTIFACT_NAME=conformance-kgateway-gateway-inference-extension-report@k8s${{ inputs.kubectl-version }}" >> $GITHUB_ENV
+          echo "ARTIFACT_PATH=_test/conformance/inference-${{ env.VERSION }}-report.yaml" >> $GITHUB_ENV
+          ;;
+        *)
+          echo "Unknown test type: ${{ inputs.test-type }}"
+          exit 1
+          ;;
+      esac
+
+  - name: Upload reports
+    if: ${{ failure() }}
+    uses: ./.github/actions/upload-artifact
+    with:
+      # Name of the path to upload. The VERSION variable refers to the Makefile
+      # VERSION variable.
+      name: ${{ env.ARTIFACT_NAME }}
+      path: ${{ env.ARTIFACT_PATH }}

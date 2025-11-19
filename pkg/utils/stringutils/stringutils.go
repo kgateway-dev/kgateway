@@ -1,6 +1,10 @@
 package stringutils
 
-import slices "golang.org/x/exp/slices"
+import (
+	slices0 "slices"
+
+	slices "golang.org/x/exp/slices"
+)
 
 // Only deletes the first instance of value!
 // Takes a slice and a value and if that value is found, uses Delete from the exp.slices package to remove it.
@@ -16,10 +20,8 @@ func DeleteOneByValue(slice []string, value string) []string {
 // AppendIfMissing returns a slice, with the provided value included
 // If the value already exists in the slice, it will not be duplicated
 func AppendIfMissing(slice []string, value string) []string {
-	for _, ele := range slice {
-		if ele == value {
-			return slice
-		}
+	if slices0.Contains(slice, value) {
+		return slice
 	}
 	return append(slice, value)
 }

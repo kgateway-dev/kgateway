@@ -459,6 +459,8 @@ spec:
                           - messages
                           - models
                           - passthrough
+                          - responses
+                          - anthropic_token_count
                           type: string
                         description: |-
                           Routes defines how to identify the type of traffic to handle.
@@ -572,14 +574,14 @@ spec:
                       groups. Backend policies\nmay target a specific provider by
                       name using targetRefs[].sectionName.\n\nExample configuration
                       with two priority groups:\n```yaml\npriorityGroups:\n\t- providers:\n\t
-                      \ - azureOpenai:\n\t      deploymentName: gpt-4o-mini\n\t      apiVersion:
+                      \ - azureopenai:\n\t      deploymentName: gpt-4o-mini\n\t      apiVersion:
                       2024-02-15-preview\n\t      endpoint: ai-gateway.openai.azure.com\n\t
-                      \     authToken:\n\t        secretRef:\n\t          name: azure-secret\n\t
-                      \         namespace: kgateway-system\n\t- providers:\n\t  -
-                      azureOpenai:\n\t      deploymentName: gpt-4o-mini-2\n\t      apiVersion:
-                      2024-02-15-preview\n\t      endpoint: ai-gateway-2.openai.azure.com\n\t
-                      \     authToken:\n\t        secretRef:\n\t          name: azure-secret-2\n\t
-                      \         namespace: kgateway-system\n```"
+                      \     authToken:\n         kind: \"SecretRef\"\n\t        secretRef:\n\t
+                      \         name: azure-secret\n\t- providers:\n\t  - azureopenai:\n\t
+                      \     deploymentName: gpt-4o-mini-2\n\t      apiVersion: 2024-02-15-preview\n\t
+                      \     endpoint: ai-gateway-2.openai.azure.com\n\t      authToken:\n
+                      \        kind: \"SecretRef\"\n\t        secretRef:\n\t          name:
+                      azure-secret-2\n```"
                     items:
                       description: |-
                         MultiPoolConfig configures the backends for multiple hosts or models from the same provider in one Backend resource.
@@ -1004,6 +1006,8 @@ spec:
                                   - messages
                                   - models
                                   - passthrough
+                                  - responses
+                                  - anthropic_token_count
                                   type: string
                                 description: |-
                                   Routes defines how to identify the type of traffic to handle.

@@ -841,7 +841,7 @@ func (i WorkloadInfo) Equals(other WorkloadInfo) bool {
 	return equalUsingPremarshaled(i.Workload, i.MarshaledAddress, other.Workload, other.MarshaledAddress) &&
 		maps.Equal(i.Labels, other.Labels) &&
 		i.Source == other.Source &&
-		i.CreationTime == other.CreationTime
+		i.CreationTime.Equal(other.CreationTime)
 }
 
 func workloadResourceName(w *api.Workload) string {

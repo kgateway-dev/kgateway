@@ -20,7 +20,7 @@ func createExpectedMatcher(numRules int) *cncfmatcherv3.Matcher {
 	// We don't need to match the exact complex internal structure,
 	// just the basic structure with the right number of matchers
 	var matchers []*cncfmatcherv3.Matcher_MatcherList_FieldMatcher
-	for i := 0; i < numRules; i++ {
+	for range numRules {
 		matcher := &cncfmatcherv3.Matcher_MatcherList_FieldMatcher{
 			// Simplified structure - the actual implementation creates complex CEL matchers
 			Predicate: &cncfmatcherv3.Matcher_MatcherList_Predicate{

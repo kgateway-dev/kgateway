@@ -302,6 +302,46 @@ func TestBuildAIBackendIr(t *testing.T) {
 			},
 		},
 		{
+			name: "Valid Azure OpenAI backend",
+			backend: &v1alpha1.Backend{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "azure-openai-backend",
+					Namespace: "test-ns",
+				},
+				Spec: v1alpha1.BackendSpec{
+					Type: v1alpha1.BackendTypeAI,
+					AI: &v1alpha1.AIBackend{
+						LLM: &v1alpha1.LLMProvider{
+							AzureOpenAI: &v1alpha1.AzureOpenAIConfig{
+								AuthToken: v1alpha1.SingleAuthToken{
+									Kind: v1alpha1.Passthrough,
+								},
+								Endpoint:       "endpoint-123.openai.azure.com",
+								DeploymentName: "my-deployment",
+								ApiVersion:     "2024-02-15-preview",
+							},
+						},
+					},
+				},
+			},
+			secrets:     nil,
+			expectError: false,
+			validate: func(aiIr *AIIr) bool {
+				return aiIr != nil &&
+					aiIr.Backend != nil &&
+					aiIr.Backend.Name == "test-ns/azure-openai-backend" &&
+					aiIr.Backend.GetAi() != nil &&
+					len(aiIr.Backend.GetAi().ProviderGroups) == 1 &&
+					len(aiIr.Backend.GetAi().ProviderGroups[0].Providers) == 1 &&
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAzureopenai() != nil &&
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAzureopenai().Model != nil &&
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAzureopenai().Model.Value == "my-deployment" &&
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAzureopenai().Host == "endpoint-123.openai.azure.com" &&
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAzureopenai().ApiVersion != nil &&
+					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAzureopenai().ApiVersion.Value == "2024-02-15-preview"
+			},
+		},
+		{
 			name: "Valid Anthropic backend with model",
 			backend: &v1alpha1.Backend{
 				ObjectMeta: metav1.ObjectMeta{
@@ -760,6 +800,49 @@ func TestBuildAIBackendIr(t *testing.T) {
 					provider.Routes["/v1/messages"] == api.AIBackend_MESSAGES &&
 					provider.Routes["/v1/models"] == api.AIBackend_MODELS &&
 					provider.Routes["*"] == api.AIBackend_PASSTHROUGH
+			},
+		},
+		{
+			name: "Bedrock backend with new route types (responses and anthropic_token_count)",
+			backend: &v1alpha1.Backend{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "bedrock-with-new-routes",
+					Namespace: "test-ns",
+				},
+				Spec: v1alpha1.BackendSpec{
+					Type: v1alpha1.BackendTypeAI,
+					AI: &v1alpha1.AIBackend{
+						LLM: &v1alpha1.LLMProvider{
+							Bedrock: &v1alpha1.BedrockConfig{
+								Region: "us-east-1",
+							},
+							Routes: map[string]v1alpha1.RouteType{
+								"/v1/chat/completions":      v1alpha1.RouteTypeCompletions,
+								"/v1/messages":              v1alpha1.RouteTypeMessages,
+								"/v1/responses":             v1alpha1.RouteTypeResponses,
+								"/v1/messages/count_tokens": v1alpha1.RouteTypeAnthropicTokenCount,
+								"/v1/models":                v1alpha1.RouteTypeModels,
+							},
+						},
+					},
+				},
+			},
+			secrets:     nil,
+			expectError: false,
+			validate: func(aiIr *AIIr) bool {
+				if aiIr == nil || aiIr.Backend == nil || len(aiIr.Backend.GetAi().ProviderGroups) != 1 || len(aiIr.Backend.GetAi().ProviderGroups[0].Providers) != 1 {
+					return false
+				}
+				provider := aiIr.Backend.GetAi().ProviderGroups[0].Providers[0]
+				// Verify all routes including new ones are correctly translated
+				if provider.Routes == nil || len(provider.Routes) != 5 {
+					return false
+				}
+				return provider.Routes["/v1/chat/completions"] == api.AIBackend_COMPLETIONS &&
+					provider.Routes["/v1/messages"] == api.AIBackend_MESSAGES &&
+					provider.Routes["/v1/responses"] == api.AIBackend_RESPONSES &&
+					provider.Routes["/v1/messages/count_tokens"] == api.AIBackend_ANTHROPIC_TOKEN_COUNT &&
+					provider.Routes["/v1/models"] == api.AIBackend_MODELS
 			},
 		},
 	}

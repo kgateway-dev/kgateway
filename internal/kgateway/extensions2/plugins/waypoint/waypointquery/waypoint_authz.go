@@ -7,7 +7,7 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/types"
-	gwapi "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -75,7 +75,7 @@ func buildAuthzTargetIndex(policies krt.Collection[*authcr.AuthorizationPolicy],
 func (w *waypointQueries) GetAuthorizationPoliciesForGateway(
 	kctx krt.HandlerContext,
 	ctx context.Context,
-	gateway *gwapi.Gateway,
+	gateway *gwv1.Gateway,
 	settingRootNamespace string,
 ) []*authcr.AuthorizationPolicy {
 	rootNamespace := getRootNamespace(settingRootNamespace)

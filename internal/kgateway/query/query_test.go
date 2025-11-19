@@ -4,8 +4,6 @@ import (
 	"context"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/krt/krttest"
 	"istio.io/istio/pkg/test"
@@ -16,8 +14,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
@@ -1015,21 +1016,21 @@ var _ = Describe("Query", func() {
 	})
 })
 
-func refGrantSecret() *gwv1beta1.ReferenceGrant {
-	return &gwv1beta1.ReferenceGrant{
+func refGrantSecret() *gwv1b1.ReferenceGrant {
+	return &gwv1b1.ReferenceGrant{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default2",
 			Name:      "foo",
 		},
-		Spec: gwv1beta1.ReferenceGrantSpec{
-			From: []gwv1beta1.ReferenceGrantFrom{
+		Spec: gwv1b1.ReferenceGrantSpec{
+			From: []gwv1b1.ReferenceGrantFrom{
 				{
 					Group:     gwv1.Group("gateway.networking.k8s.io"),
 					Kind:      gwv1.Kind("Gateway"),
 					Namespace: gwv1.Namespace("default"),
 				},
 			},
-			To: []gwv1beta1.ReferenceGrantTo{
+			To: []gwv1b1.ReferenceGrantTo{
 				{
 					Group: gwv1.Group("core"),
 					Kind:  gwv1.Kind("Secret"),
@@ -1126,7 +1127,7 @@ func newQueries(t test.Failer, initObjs ...client.Object) query.GatewayQueries {
 	}
 	mock := krttest.NewMock(t, anys)
 	services := krttest.GetMockCollection[*corev1.Service](mock)
-	refgrants := krtcollections.NewRefGrantIndex(krttest.GetMockCollection[*gwv1beta1.ReferenceGrant](mock))
+	refgrants := krtcollections.NewRefGrantIndex(krttest.GetMockCollection[*gwv1b1.ReferenceGrant](mock))
 
 	policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, sdk.ContributesPolicies{}, apisettings.Settings{})
 	upstreams := krtcollections.NewBackendIndex(krtutil.KrtOptions{}, policies, refgrants)

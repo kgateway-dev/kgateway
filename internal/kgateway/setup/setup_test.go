@@ -397,6 +397,7 @@ func setupEnvTestAndRun(t *testing.T, globalSettings *apisettings.Settings, run 
 		},
 		nil, // no tests need a validator right now.
 		run,
+		nil,
 	)
 }
 
@@ -672,7 +673,7 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) (xdsDump, error) {
 	done = make(chan struct{})
 	go func() {
 		defer close(done)
-		for i := 0; i < 2; i++ {
+		for range 2 {
 			dresp, err := x.adsClient.Recv()
 			if err != nil {
 				errs = errors.Join(errs, fmt.Errorf("failed to get response from xds server: %v", err))

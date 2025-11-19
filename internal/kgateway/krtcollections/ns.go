@@ -4,11 +4,11 @@ import (
 	"context"
 	"maps"
 
-	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
@@ -25,12 +25,10 @@ func (n NamespaceMetadata) Equals(in NamespaceMetadata) bool {
 	return n.Name == in.Name && maps.Equal(n.Labels, in.Labels)
 }
 
-func NewNamespaceCollection(ctx context.Context, istioClient kube.Client, krtOpts krtutil.KrtOptions) (krt.Collection[NamespaceMetadata], kclient.Client[*corev1.Namespace]) {
-	client := kclient.NewFiltered[*corev1.Namespace](istioClient, kclient.Filter{
-		// ObjectTransform: ...,
-		// NOTE: Do not apply an ObjectFilter to namespaces as the discovery namespace ObjectFilter for other clients
-		// requires all namespaces to be watched
-	})
+func NewNamespaceCollection(ctx context.Context, cli apiclient.Client, krtOpts krtutil.KrtOptions) (krt.Collection[NamespaceMetadata], kclient.Client[*corev1.Namespace]) {
+	// NOTE: Do not apply an ObjectFilter to namespaces as the discovery namespace ObjectFilter for other clients
+	// requires all namespaces to be watched
+	client := kclient.New[*corev1.Namespace](cli) //nolint:forbidigo // should not use filtered client
 	col := krt.WrapClient(client, krtOpts.ToOptions("Namespaces")...)
 	return NewNamespaceCollectionFromCol(ctx, col, krtOpts), client
 }

@@ -5,15 +5,14 @@ import (
 	"fmt"
 	"hash/fnv"
 
-	"google.golang.org/protobuf/types/known/wrapperspb"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/api/networking/v1alpha3"
 	"istio.io/istio/pkg/config/schema/gvr"
 	"istio.io/istio/pkg/kube/krt"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/endpoints"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -76,7 +75,7 @@ func (d *destrulePlugin) processEndpoints(
 	out.PriorityInfo = getPriorityInfoFromDestrule(localityLb)
 	hasher := fnv.New64()
 	hasher.Write([]byte(destrule.UID))
-	hasher.Write([]byte(fmt.Sprintf("%v", destrule.Generation)))
+	hasher.Write(fmt.Appendf(nil, "%v", destrule.Generation))
 	return hasher.Sum64()
 }
 

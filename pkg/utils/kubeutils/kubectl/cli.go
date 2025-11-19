@@ -11,12 +11,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmdutils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
-
 	"github.com/avast/retry-go/v4"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmdutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/portforward"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/threadsafe"
 )
 
 // Cli is a utility for executing `kubectl` commands
@@ -53,8 +53,10 @@ type CurlResponse struct {
 
 // WithReceiver sets the io.Writer that will be used by default for the stdout and stderr
 // of cmdutils.Cmd created by the Cli
+// This modifies the value in place, so affects shared references to the Cli and future commands run by the Cli.
+// Wrap this in a threadsafe struct to avoid data races when wrapped in io.MultiWriter in cmdutils.
 func (c *Cli) WithReceiver(receiver io.Writer) *Cli {
-	c.receiver = receiver
+	c.receiver = &threadsafe.WriterWrapper{W: receiver}
 	return c
 }
 
@@ -356,14 +358,12 @@ func (c *Cli) Execute(ctx context.Context, args ...string) (string, string, erro
 		}
 	}
 
-	stdout := new(strings.Builder)
-	stderr := new(strings.Builder)
+	stdout := threadsafe.Buffer{}
+	stderr := threadsafe.Buffer{}
 
 	err := cmdutils.Command(ctx, "kubectl", args...).
-		// For convenience, we set the stdout and stderr to the receiver
-		// This can still be overwritten by consumers who use the commands
-		WithStdout(stdout).
-		WithStderr(stderr).Run().Cause()
+		WithStdout(&stdout).
+		WithStderr(&stderr).Run().Cause()
 
 	return stdout.String(), stderr.String(), err
 }

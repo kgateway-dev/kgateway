@@ -103,6 +103,10 @@ func translateRouteType(rt v1alpha1.RouteType) api.AIBackend_RouteType {
 		return api.AIBackend_MODELS
 	case v1alpha1.RouteTypePassthrough:
 		return api.AIBackend_PASSTHROUGH
+	case v1alpha1.RouteTypeResponses:
+		return api.AIBackend_RESPONSES
+	case v1alpha1.RouteTypeAnthropicTokenCount:
+		return api.AIBackend_ANTHROPIC_TOKEN_COUNT
 	default:
 		// Default to completions if unknown type
 		return api.AIBackend_COMPLETIONS
@@ -151,8 +155,12 @@ func translateLLMProviderToProvider(krtctx krt.HandlerContext, llm *v1alpha1.LLM
 		}
 		auth = buildTranslatedAuthPolicy(krtctx, &llm.OpenAI.AuthToken, secrets, namespace)
 	} else if llm.AzureOpenAI != nil {
-		provider.Provider = &api.AIBackend_Provider_Openai{
-			Openai: &api.AIBackend_OpenAI{},
+		provider.Provider = &api.AIBackend_Provider_Azureopenai{
+			Azureopenai: &api.AIBackend_AzureOpenAI{
+				Host:       llm.AzureOpenAI.Endpoint,
+				Model:      &wrappers.StringValue{Value: llm.AzureOpenAI.DeploymentName},
+				ApiVersion: &wrappers.StringValue{Value: llm.AzureOpenAI.ApiVersion},
+			},
 		}
 		auth = buildTranslatedAuthPolicy(krtctx, &llm.AzureOpenAI.AuthToken, secrets, namespace)
 	} else if llm.Anthropic != nil {

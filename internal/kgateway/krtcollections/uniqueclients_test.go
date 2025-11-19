@@ -7,7 +7,6 @@ import (
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
-	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 	"istio.io/istio/pkg/kube/krt"
@@ -15,6 +14,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
+
+	. "github.com/onsi/gomega"
 
 	. "github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
@@ -201,7 +202,7 @@ func TestUniqueClients(t *testing.T) {
 				g.Expect(err).NotTo(HaveOccurred())
 				fetchNames.Insert(fetchDR.GetNode().GetMetadata().GetFields()[xds.RoleKey].GetStringValue())
 
-				for j := 0; j < 10; j++ { // simulate 10 requests that are the same client
+				for j := range 10 { // simulate 10 requests that are the same client
 					cb.OnStreamRequest(int64(i*10+j), proto.Clone(r).(*envoy_service_discovery_v3.DiscoveryRequest))
 				}
 			}
@@ -221,7 +222,7 @@ func TestUniqueClients(t *testing.T) {
 			g.Expect(names).To(Equal(tc.result))
 
 			for i := range tc.requests {
-				for j := 0; j < 9; j++ {
+				for j := range 9 {
 					cb.OnStreamClosed(int64(i*10+j), nil)
 				}
 			}

@@ -53,8 +53,7 @@ func TestWaypointTranslator(t *testing.T) {
 			if tt.skip != "" {
 				t.Skip(tt.skip)
 			}
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			ctx := t.Context()
 			dir := fsutils.MustGetThisDir()
 
 			extraPluginsFn := func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []pluginsdk.Plugin {
@@ -63,14 +62,16 @@ func TestWaypointTranslator(t *testing.T) {
 			settingOpt := func(s *apisettings.Settings) {
 				s.EnableExperimentalGatewayAPIFeatures = true
 			}
+			extraConfig := translatortest.ExtraConfig{
+				PluginsFn: extraPluginsFn,
+			}
 			translatortest.TestTranslationWithExtraPlugins(
 				t,
 				ctx,
 				[]string{filepath.Join(dir, "testdata/input", tt.file+".yaml")},
 				filepath.Join(dir, "testdata/output", tt.file+".yaml"),
 				tt.gw,
-				extraPluginsFn,
-				nil, nil, "",
+				extraConfig,
 				settingOpt,
 			)
 		})

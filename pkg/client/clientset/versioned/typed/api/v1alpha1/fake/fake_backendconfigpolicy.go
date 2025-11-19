@@ -3,10 +3,9 @@
 package fake
 
 import (
-	gentype "k8s.io/client-go/gentype"
-
 	v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/typed/api/v1alpha1"
+	gentype "k8s.io/client-go/gentype"
 )
 
 // fakeBackendConfigPolicies implements BackendConfigPolicyInterface

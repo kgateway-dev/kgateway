@@ -79,6 +79,16 @@ $(BUG_REPORT_DIR):
 # Base Alpine image used for all containers. Exported for use in goreleaser.yaml.
 export ALPINE_BASE_IMAGE ?= alpine:3.17.6
 
+GO_VERSION := $(shell cat go.mod | grep -E '^go' | awk '{print $$2}')
+GOTOOLCHAIN ?= go$(GO_VERSION)
+
+DEPSGOBIN ?= $(OUTPUT_DIR)
+GOLANGCI_LINT ?= go tool golangci-lint
+ANALYZE_ARGS ?= --fix --verbose
+CUSTOM_GOLANGCI_LINT_BIN ?= $(DEPSGOBIN)/golangci-lint-custom
+CUSTOM_GOLANGCI_LINT_RUN ?= $(CUSTOM_GOLANGCI_LINT_BIN) run --build-tags e2e
+CUSTOM_GOLANGCI_LINT_FMT ?= $(GOLANGCI_LINT) fmt
+
 #----------------------------------------------------------------------------------
 # Macros
 #----------------------------------------------------------------------------------
@@ -91,19 +101,17 @@ get_sources = $(shell find $(1) -name "*.go" | grep -v test | grep -v generated.
 # Repo setup
 #----------------------------------------------------------------------------------
 
-GOIMPORTS ?= go tool goimports
-
 .PHONY: init-git-hooks
 init-git-hooks:  ## Use the tracked version of Git hooks from this repo
 	git config core.hooksPath .githooks
 
 .PHONY: fmt
-fmt:  ## Format the code with goimports
-	$(GOIMPORTS) -local "github.com/kgateway-dev/kgateway/v2/"  -w $(shell ls -d */ | grep -v vendor)
+fmt:  ## Format the code with golangci-lint
+	$(CUSTOM_GOLANGCI_LINT_FMT) ./...
 
 .PHONY: fmt-changed
-fmt-changed:  ## Format the code with goimports
-	git diff --name-only | grep '.*.go$$' | xargs -- $(GOIMPORTS) -w
+fmt-changed: ## Format only the changed code with golangci-lint
+	git status -s -uno | awk '{print $$2}' | grep '.*.go$$' | xargs -r $(CUSTOM_GOLANGCI_LINT_FMT)
 
 # must be a separate target so that make waits for it to complete before moving on
 .PHONY: mod-download
@@ -123,20 +131,11 @@ mod-tidy: mod-download mod-tidy-nested ## Tidy the go mod file
 # Analyze
 #----------------------------------------------------------------------------
 
-GO_VERSION := $(shell cat go.mod | grep -E '^go' | awk '{print $$2}')
-GOTOOLCHAIN ?= go$(GO_VERSION)
-
-DEPSGOBIN ?= $(OUTPUT_DIR)
-GOLANGCI_LINT ?= go tool golangci-lint
-ANALYZE_ARGS ?= --fix --verbose
-
-CUSTOM_GOLANGCI_LINT_BIN ?= $(DEPSGOBIN)/golangci-lint-custom
 .PHONY: analyze
 analyze: $(CUSTOM_GOLANGCI_LINT_BIN)  ## Run golangci-lint. Override options with ANALYZE_ARGS.
-	$(CUSTOM_GOLANGCI_LINT_BIN) run $(ANALYZE_ARGS) --build-tags e2e ./...
+	$(CUSTOM_GOLANGCI_LINT_RUN) $(ANALYZE_ARGS) ./...
 
-.PHONY: $(CUSTOM_GOLANGCI_LINT_BIN)
-$(CUSTOM_GOLANGCI_LINT_BIN):
+$(CUSTOM_GOLANGCI_LINT_BIN): go.mod go.sum .custom-gcl.yml
 	GOTOOLCHAIN=$(GOTOOLCHAIN) $(GOLANGCI_LINT) custom
 
 ACTION_LINT ?= go tool github.com/rhysd/actionlint/cmd/actionlint
@@ -181,7 +180,7 @@ test: ## Run all tests with ginkgo, or only run the test package at {TEST_PKG} i
 # will still have e2e tests run by Github Actions once they publish a pull
 # request.
 .PHONY: e2e-test
-e2e-test: TEST_PKG = ./test/e2e/tests
+e2e-test: TEST_PKG ?= ./test/e2e/tests 
 e2e-test: ## Run only e2e tests, and only run the test package at {TEST_PKG} if it is specified
 	@$(MAKE) --no-print-directory go-test TEST_TAG=e2e TEST_PKG=$(TEST_PKG)
 
@@ -340,12 +339,14 @@ clean-stamps:
 $(STAMP_DIR)/go-generate-apis: $(API_SOURCE_FILES) | $(STAMP_DIR)
 	@echo "Running API code generation..."
 	GO111MODULE=on go generate ./hack/...
+	$(MAKE) fmt-changed
 	@touch $@
 
 # Mock generation with dependency tracking
 $(STAMP_DIR)/go-generate-mocks: $(MOCK_SOURCE_FILES) | $(STAMP_DIR)
 	@echo "Running mock generation..."
 	GO111MODULE=on go generate -run="mockgen" ./...
+	$(MAKE) fmt-changed
 	@touch $@
 
 # Combine both generation steps
@@ -369,9 +370,9 @@ $(STAMP_DIR)/generate-licenses: $(MOD_FILES) | $(STAMP_DIR)
 	@touch $@
 
 # Formatting - only runs if generation steps changed
-$(STAMP_DIR)/fmt: $(STAMP_DIR)/go-generate-all
+$(STAMP_DIR)/fmt: $(STAMP_DIR)/go-generate-all $(CUSTOM_GOLANGCI_LINT_BIN)
 	@echo "Formatting code..."
-	$(GOIMPORTS) -local "github.com/kgateway-dev/kgateway/v2/"  -w $(shell ls -d */ | grep -v vendor)
+	$(CUSTOM_GOLANGCI_LINT_FMT) ./...
 	@touch $@
 
 # Fast generation using stamp files (for local development)
@@ -698,25 +699,21 @@ run-load-tests-production: ## Run production load tests (5000 routes)
 # Targets for running Kubernetes Gateway API conformance tests
 #----------------------------------------------------------------------------------
 
-# Pull the conformance test suite from the k8s gateway api repo and copy it into the test dir.
-$(TEST_ASSET_DIR)/conformance/conformance_test.go:
-	mkdir -p $(TEST_ASSET_DIR)/conformance
-	echo "//go:build conformance" > $@
-	cat $(shell go list -json -m sigs.k8s.io/gateway-api | jq -r '.Dir')/conformance/conformance_test.go >> $@
-	go fmt $@
-
-CONFORMANCE_SUPPORTED_PROFILES ?= -conformance-profiles=GATEWAY-HTTP,GATEWAY-GRPC,GATEWAY-TLS
 CONFORMANCE_GATEWAY_CLASS ?= kgateway
 CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/$(VERSION)-report.yaml -organization=kgateway-dev -project=kgateway -version=$(VERSION) -url=github.com/kgateway-dev/kgateway -contact=github.com/kgateway-dev/kgateway/issues/new/choose
-CONFORMANCE_ARGS := -gateway-class=$(CONFORMANCE_GATEWAY_CLASS) $(CONFORMANCE_SUPPORTED_PROFILES) $(CONFORMANCE_REPORT_ARGS)
+CONFORMANCE_ARGS := -gateway-class=$(CONFORMANCE_GATEWAY_CLASS) $(CONFORMANCE_REPORT_ARGS)
+
+CONFORMANCE_TEST_DIR ?= ./test/conformance/...
 
 .PHONY: conformance ## Run the conformance test suite
-conformance: $(TEST_ASSET_DIR)/conformance/conformance_test.go ## Run the Gateway API conformance suite
-	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(CONFORMANCE_ARGS)
+conformance:  ## Run the Gateway API conformance suite
+	@mkdir -p $(TEST_ASSET_DIR)/conformance
+	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(CONFORMANCE_TEST_DIR) -args $(CONFORMANCE_ARGS)
 
 # Run only the specified conformance test. The name must correspond to the ShortName of one of the k8s gateway api conformance tests.
-conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go ## Run only the specified Gateway API conformance test by ShortName
-	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(CONFORMANCE_ARGS) \
+conformance-%:  ## Run only the specified Gateway API conformance test by ShortName
+	@mkdir -p $(TEST_ASSET_DIR)/conformance
+	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(CONFORMANCE_TEST_DIR) -args $(CONFORMANCE_ARGS) \
 	-run-test=$*
 
 #----------------------------------------------------------------------------------
@@ -724,18 +721,19 @@ conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go ## Run only the
 #----------------------------------------------------------------------------------
 
 # Agent Gateway conformance test configuration
-AGW_CONFORMANCE_SUPPORTED_PROFILES ?= -conformance-profiles=GATEWAY-HTTP,GATEWAY-GRPC,GATEWAY-TLS
 AGW_CONFORMANCE_GATEWAY_CLASS ?= agentgateway
 AGW_CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/agw-$(VERSION)-report.yaml -organization=kgateway-dev -project=kgateway -version=$(VERSION) -url=github.com/kgateway-dev/kgateway -contact=github.com/kgateway-dev/kgateway/issues/new/choose
-AGW_CONFORMANCE_ARGS := -gateway-class=$(AGW_CONFORMANCE_GATEWAY_CLASS) $(AGW_CONFORMANCE_SUPPORTED_PROFILES) $(AGW_CONFORMANCE_REPORT_ARGS)
+AGW_CONFORMANCE_ARGS := -gateway-class=$(AGW_CONFORMANCE_GATEWAY_CLASS) $(AGW_CONFORMANCE_REPORT_ARGS)
 
 .PHONY: agw-conformance ## Run the agent gateway conformance test suite
-agw-conformance: $(TEST_ASSET_DIR)/conformance/conformance_test.go
-	CONFORMANCE_GATEWAY_CLASS=$(AGW_CONFORMANCE_GATEWAY_CLASS) go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(AGW_CONFORMANCE_ARGS)
+agw-conformance:
+	@mkdir -p $(TEST_ASSET_DIR)/conformance
+	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(CONFORMANCE_TEST_DIR) -args $(AGW_CONFORMANCE_ARGS)
 
 # Run only the specified agent gateway conformance test
-agw-conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go
-	CONFORMANCE_GATEWAY_CLASS=$(AGW_CONFORMANCE_GATEWAY_CLASS) go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(AGW_CONFORMANCE_ARGS) \
+agw-conformance-%:
+	@mkdir -p $(TEST_ASSET_DIR)/conformance
+	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(CONFORMANCE_TEST_DIR) -args $(AGW_CONFORMANCE_ARGS) \
 	-run-test=$*
 
 #----------------------------------------------------------------------------------

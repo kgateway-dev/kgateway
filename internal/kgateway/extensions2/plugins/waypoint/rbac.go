@@ -11,7 +11,7 @@ import (
 	"istio.io/istio/pilot/pkg/security/authz/builder"
 	"istio.io/istio/pilot/pkg/security/trustdomain"
 	"istio.io/istio/pkg/config/schema/gvk"
-	gwapi "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/waypoint/waypointquery"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
@@ -30,7 +30,7 @@ const (
 // httpRBAC - only used in http chains
 func BuildRBAC(
 	authzPolicies []*authcr.AuthorizationPolicy,
-	gw *gwapi.Gateway,
+	gw *gwv1.Gateway,
 	svc *waypointquery.Service,
 ) (
 	tcpRBAC []*ir.CustomEnvoyFilter,

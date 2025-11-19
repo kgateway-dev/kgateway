@@ -7,17 +7,11 @@ import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
-	"istio.io/istio/pkg/kube/kubetypes"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -25,7 +19,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -68,25 +61,7 @@ func (u *backendIr) Equals(other any) bool {
 	return true
 }
 
-func registerTypes(ourCli versioned.Interface) {
-	kubeclient.Register[*v1alpha1.Backend](
-		wellknown.BackendGVR,
-		wellknown.BackendGVK,
-		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
-			return ourCli.GatewayV1alpha1().Backends(namespace).List(context.Background(), o)
-		},
-		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
-			return ourCli.GatewayV1alpha1().Backends(namespace).Watch(context.Background(), o)
-		},
-		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*v1alpha1.Backend] {
-			return ourCli.GatewayV1alpha1().Backends(namespace)
-		},
-	)
-}
-
 func NewPlugin(commoncol *collections.CommonCollections) sdk.Plugin {
-	registerTypes(commoncol.OurClient)
-
 	cli := kclient.NewFilteredDelayed[*v1alpha1.Backend](
 		commoncol.Client,
 		wellknown.BackendGVR,
@@ -308,15 +283,7 @@ func (p *backendPlugin) ApplyForBackend(pCtx *ir.RouteBackendContext, in ir.Http
 		}
 		p.needsDfpFilter[pCtx.FilterChainName] = true
 	default:
-		// If it's not an AI route we want to disable our ext-proc filter just in case.
-		// This will have no effect if we don't add the listener filter.
-		// TODO: optimize this be on the route config so it applied to all routes (https://github.com/kgateway-dev/kgateway/issues/10721)
-		disabledExtprocSettings := &envoy_ext_proc_v3.ExtProcPerRoute{
-			Override: &envoy_ext_proc_v3.ExtProcPerRoute_Disabled{
-				Disabled: true,
-			},
-		}
-		pCtx.TypedFilterConfig.AddTypedConfig(wellknown.AIExtProcFilterName, disabledExtprocSettings)
+		return nil
 	}
 
 	return nil

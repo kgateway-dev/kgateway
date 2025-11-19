@@ -9,7 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1alpha1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
@@ -138,9 +138,9 @@ func (r *ReportMap) route(obj metav1.Object) *RouteReport {
 	switch obj.(type) {
 	case *gwv1.HTTPRoute:
 		return r.HTTPRoutes[key]
-	case *gwv1alpha2.TCPRoute:
+	case *gwv1a2.TCPRoute:
 		return r.TCPRoutes[key]
-	case *gwv1alpha2.TLSRoute:
+	case *gwv1a2.TLSRoute:
 		return r.TLSRoutes[key]
 	case *gwv1.GRPCRoute:
 		return r.GRPCRoutes[key]
@@ -160,9 +160,9 @@ func (r *ReportMap) newRouteReport(obj metav1.Object) *RouteReport {
 	switch obj.(type) {
 	case *gwv1.HTTPRoute:
 		r.HTTPRoutes[key] = rr
-	case *gwv1alpha2.TCPRoute:
+	case *gwv1a2.TCPRoute:
 		r.TCPRoutes[key] = rr
-	case *gwv1alpha2.TLSRoute:
+	case *gwv1a2.TLSRoute:
 		r.TLSRoutes[key] = rr
 	case *gwv1.GRPCRoute:
 		r.GRPCRoutes[key] = rr

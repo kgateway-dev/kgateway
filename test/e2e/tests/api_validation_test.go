@@ -295,7 +295,7 @@ spec:
     kind: Deployment
     name: test-deployment
 `,
-			wantErrors: []string{"targetRefs may only reference Gateway, HTTPRoute, XListenerSet, or Backend resources"},
+			wantErrors: []string{"targetRefs may only reference Gateway, HTTPRoute, or XListenerSet resources"},
 		},
 		{
 			name: "TrafficPolicy: policy with autoHostRewrite can only target HTTPRoute",
@@ -439,7 +439,7 @@ spec:
 			wantErrors: []string{"retryOn or statusCodes must be set"},
 		},
 		{
-			name: "TrafficPolicy: retry.perTryTimeout must be lesser than timeouts.request",
+			name: "TrafficPolicy: retry.perTryTimeout must be less than timeouts.request",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
@@ -457,7 +457,7 @@ spec:
     request: 5s
     streamIdle: 60s
 `,
-			wantErrors: []string{"retry.perTryTimeout must be lesser than timeouts.request"},
+			wantErrors: []string{"retry.perTryTimeout must be less than timeouts.request"},
 		},
 		{
 			name: "TrafficPolicy: retry.perTryTimeout must be at least 1ms",

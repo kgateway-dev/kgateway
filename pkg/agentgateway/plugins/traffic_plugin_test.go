@@ -385,7 +385,7 @@ func TestProcessTransformationPolicy(t *testing.T) {
 				Spec: v1alpha1.AgentgatewayPolicySpec{
 					Traffic: &v1alpha1.AgentgatewayPolicyTraffic{
 						Transformation: tt.policy}}}
-			policies, err := processTransformationPolicy(pol, tt.policyName, tt.policyTarget)
+			policies, err := processTransformationPolicy(pol.Spec.Traffic.Transformation, pol.Spec.Traffic.Phase, tt.policyName, tt.policyTarget)
 
 			if tt.wantErr {
 				require.Error(t, err)

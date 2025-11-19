@@ -78,8 +78,11 @@ type testingSuite struct {
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+	// This suite applies TrafficPolicy to specific named sections of the HTTPRoute, and requires HTTPRoutes.spec.rules[].name to be present in the Gateway API version.
 	return &testingSuite{
-		base.NewBaseTestingSuite(ctx, testInst, setup, testCases),
+		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setup, testCases,
+			base.WithMinGwApiVersion(base.GwApiRequireRouteNames),
+		),
 	}
 }
 

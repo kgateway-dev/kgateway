@@ -1,10 +1,11 @@
 package crds
 
 import (
-	_ "embed"
 	"path"
 	"path/filepath"
 	"runtime"
+
+	_ "embed"
 )
 
 //go:embed gateway-crds.yaml

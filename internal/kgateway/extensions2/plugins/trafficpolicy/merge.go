@@ -37,7 +37,6 @@ func MergeTrafficPolicies(
 	}
 
 	mergeFuncs := []func(*TrafficPolicy, *TrafficPolicy, *ir.AttachedPolicyRef, ir.MergeOrigins, policy.MergeOptions, ir.MergeOrigins, TrafficPolicyMergeOpts){
-		mergeAI,
 		mergeExtProc,
 		mergeTransformation,
 		mergeRustformation,
@@ -77,21 +76,6 @@ func mergeTrafficPolicies(
 	}
 
 	MergeTrafficPolicies(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, polMergeOpts.TrafficPolicy)
-}
-
-func mergeAI(
-	p1, p2 *TrafficPolicy,
-	p2Ref *ir.AttachedPolicyRef,
-	p2MergeOrigins ir.MergeOrigins,
-	opts policy.MergeOptions,
-	mergeOrigins ir.MergeOrigins,
-	_ TrafficPolicyMergeOpts,
-) {
-	accessor := fieldAccessor[aiPolicyIR]{
-		Get: func(spec *trafficPolicySpecIr) *aiPolicyIR { return spec.ai },
-		Set: func(spec *trafficPolicySpecIr, val *aiPolicyIR) { spec.ai = val },
-	}
-	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "ai")
 }
 
 func mergeExtProc(

@@ -4,18 +4,17 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
-	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-
-	"github.com/google/go-cmp/cmp"
-	"github.com/stretchr/testify/assert"
+	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
 // makeTCPRoute constructs a TCPRoute with specified metadata.
-func makeTCPRoute(name, namespace, rv string, gen int64, uid types.UID) *gwv1alpha2.TCPRoute {
-	return &gwv1alpha2.TCPRoute{
+func makeTCPRoute(name, namespace, rv string, gen int64, uid types.UID) *gwv1a2.TCPRoute {
+	return &gwv1a2.TCPRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            name,
 			Namespace:       namespace,
