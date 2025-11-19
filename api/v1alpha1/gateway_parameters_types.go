@@ -10,7 +10,7 @@ import (
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=gatewayparameters/status,verbs=get;update;patch
 
 // A GatewayParameters contains configuration that is used to dynamically
-// provision kgateway's data plane (Envoy proxy instance), based on a
+// provision kgateway's data plane (Envoy or agentgateway proxy instance), based on a
 // Kubernetes Gateway.
 //
 // +genclient
@@ -94,13 +94,13 @@ type KubernetesProxyConfig struct {
 	// +optional
 	PodTemplate *Pod `json:"podTemplate,omitempty"`
 
-	// Configuration for the Kubernetes Service that exposes the Envoy proxy over
+	// Configuration for the Kubernetes Service that exposes the proxy over
 	// the network.
 	//
 	// +optional
 	Service *Service `json:"service,omitempty"`
 
-	// Configuration for the Kubernetes ServiceAccount used by the Envoy pod.
+	// Configuration for the Kubernetes ServiceAccount used by the proxy pods.
 	//
 	// +optional
 	ServiceAccount *ServiceAccount `json:"serviceAccount,omitempty"`
@@ -453,7 +453,7 @@ func (in *SdsBootstrap) GetLogLevel() *string {
 	return in.LogLevel
 }
 
-// IstioIntegration configures the Istio integration settings used by a kgateway's data plane (Envoy proxy instance)
+// IstioIntegration configures the Istio integration settings used by kgateway's data plane
 type IstioIntegration struct {
 	// Configuration for the container running istio-proxy.
 	// Note that if Istio integration is not enabled, the istio container will not be injected
@@ -485,7 +485,7 @@ func (in *IstioIntegration) GetCustomSidecars() []corev1.Container {
 
 // IstioContainer configures the container running the istio-proxy.
 type IstioContainer struct {
-	// The envoy container image. See
+	// The container image. See
 	// https://kubernetes.io/docs/concepts/containers/images
 	// for details.
 	//

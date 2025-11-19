@@ -6,7 +6,9 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"istio.io/istio/pkg/kube/krt"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8scert "k8s.io/client-go/util/cert"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
@@ -14,6 +16,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query/mocks"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
@@ -851,6 +854,118 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 				Expect(tlsListener.BackendRefs[0].ClusterName).To(Equal("backend-svc1"))
 				Expect(tlsListener.FilterChainCommon.Matcher.SniDomains).To(ContainElement("example.com"))
 			})
+		})
+	})
+
+	Context("TLS listener with TCPRoute", func() {
+		var tlsSecretRef gwv1.SecretObjectReference
+
+		BeforeEach(func() {
+			ctx = context.Background()
+			ctrl = gomock.NewController(GinkgoT())
+			queries = mocks.NewMockGatewayQueries(ctrl)
+
+			mode := gwv1.TLSModeTerminate
+			hostname := gwv1.Hostname("example.com")
+			tlsSecretRef = gwv1.SecretObjectReference{
+				Name: "test-secret",
+			}
+
+			gwListener = gwv1.Listener{
+				Name:     "foo-tls-tcproute",
+				Protocol: gwv1.TLSProtocolType,
+				Port:     8443,
+				Hostname: &hostname,
+				TLS: &gwv1.ListenerTLSConfig{
+					Mode:            &mode,
+					CertificateRefs: []gwv1.SecretObjectReference{tlsSecretRef},
+				},
+			}
+
+			gateway = &gwv1.Gateway{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-gateway", Namespace: "default"},
+			}
+
+			rm := reports.NewReportMap()
+			statusReporter = reports.NewReporter(&rm)
+			gatewayReporter := statusReporter.Gateway(gateway)
+			listenerReporter = gatewayReporter.Listener(&gwListener)
+			ml = &listener.MergedListeners{
+				Listeners:        []*listener.MergedListener{},
+				Queries:          queries,
+				GatewayNamespace: "default",
+			}
+		})
+
+		AfterEach(func() {
+			ctrl.Finish()
+		})
+
+		It("should default to no ALPN for terminated TLS TCPRoutes", func() {
+			tcpRoute := tcpRoute("tls-terminated-tcproute")
+			tcpRoute.Spec = gwv1a2.TCPRouteSpec{
+				CommonRouteSpec: gwv1.CommonRouteSpec{
+					ParentRefs: []gwv1.ParentReference{
+						{
+							Name:      gwv1.ObjectName("test-gateway"),
+							Namespace: ptr.To(gwv1.Namespace("default")),
+							Kind:      ptr.To(gwv1.Kind(wellknown.GatewayKind)),
+						},
+					},
+				},
+				Rules: []gwv1a2.TCPRouteRule{
+					{
+						BackendRefs: []gwv1.BackendRef{
+							{
+								BackendObjectReference: gwv1.BackendObjectReference{
+									Name:      "backend-svc1",
+									Namespace: ptr.To(gwv1.Namespace("default")),
+									Port:      ptr.To(gwv1.PortNumber(3001)),
+								},
+							},
+						},
+					},
+				},
+			}
+
+			certPEM, keyPEM, err := k8scert.GenerateSelfSignedCertKey("example.com", nil, nil)
+			Expect(err).NotTo(HaveOccurred())
+
+			queries.EXPECT().
+				GetSecretForRef(
+					gomock.Any(),
+					gomock.Any(),
+					wellknown.GatewayGVK.GroupKind(),
+					"default",
+					gomock.Eq(tlsSecretRef),
+				).
+				Return(&ir.Secret{
+					ObjectSource: ir.ObjectSource{
+						Group:     "",
+						Kind:      "Secret",
+						Namespace: "default",
+						Name:      string(tlsSecretRef.Name),
+					},
+					Data: map[string][]byte{
+						corev1.TLSCertKey:       certPEM,
+						corev1.TLSPrivateKeyKey: keyPEM,
+					},
+				}, nil)
+
+			routes := []*query.RouteInfo{
+				{
+					Object: tcpToIr(tcpRoute),
+				},
+			}
+
+			ml.AppendTlsListener(lisToIr(gwListener), routes, listenerReporter)
+
+			translatedListener := ml.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, queries, statusReporter)
+			Expect(translatedListener).NotTo(BeNil())
+			Expect(translatedListener.TcpFilterChain).To(HaveLen(1))
+			tcpListener := translatedListener.TcpFilterChain[0]
+			Expect(tcpListener.FilterChainCommon.TLS).NotTo(BeNil())
+			Expect(tcpListener.FilterChainCommon.TLS.AlpnProtocols).To(Equal([]string{string(annotations.AllowEmptyAlpnProtocols)}))
 		})
 	})
 })
