@@ -978,6 +978,7 @@ type AgentHostnameRewriteConfig struct {
 	//
 	// This setting defaults to Auto when connecting to hostname-based Backend types, and None otherwise (for Service or
 	// IP-based Backends).
+	// +required
 	Mode AgentHostnameRewrite `json:"mode"`
 }
 
