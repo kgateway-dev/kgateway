@@ -8,7 +8,6 @@ import (
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/kube/krt/krttest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -1151,7 +1150,6 @@ func TestAgwRouteCollection(t *testing.T) {
 			refGrantsCollection := krttest.GetMockCollection[ReferenceGrant](mock)
 			services := krttest.GetMockCollection[*corev1.Service](mock)
 			namespaces := krttest.GetMockCollection[*corev1.Namespace](mock)
-			serviceEntries := krttest.GetMockCollection[*networkingclient.ServiceEntry](mock)
 			inferencePools := krttest.GetMockCollection[*inf.InferencePool](mock)
 
 			// Wait for collections to sync
@@ -1172,7 +1170,6 @@ func TestAgwRouteCollection(t *testing.T) {
 				RouteParents:   routeParents,
 				Services:       services,
 				Namespaces:     namespaces,
-				ServiceEntries: serviceEntries,
 				InferencePools: inferencePools,
 			}
 
@@ -1748,7 +1745,6 @@ func TestAgwRouteCollectionGRPC(t *testing.T) {
 			refGrantsCollection := krttest.GetMockCollection[ReferenceGrant](mock)
 			services := krttest.GetMockCollection[*corev1.Service](mock)
 			namespaces := krttest.GetMockCollection[*corev1.Namespace](mock)
-			serviceEntries := krttest.GetMockCollection[*networkingclient.ServiceEntry](mock)
 			inferencePools := krttest.GetMockCollection[*inf.InferencePool](mock)
 
 			// Wait for collections to sync
@@ -1769,7 +1765,6 @@ func TestAgwRouteCollectionGRPC(t *testing.T) {
 				RouteParents:   routeParents,
 				Services:       services,
 				Namespaces:     namespaces,
-				ServiceEntries: serviceEntries,
 				InferencePools: inferencePools,
 			}
 
@@ -2185,7 +2180,6 @@ func TestAgwRouteCollectionWithFilters(t *testing.T) {
 			refGrantsCollection := krttest.GetMockCollection[ReferenceGrant](mock)
 			services := krttest.GetMockCollection[*corev1.Service](mock)
 			namespaces := krttest.GetMockCollection[*corev1.Namespace](mock)
-			serviceEntries := krttest.GetMockCollection[*networkingclient.ServiceEntry](mock)
 			inferencePools := krttest.GetMockCollection[*inf.InferencePool](mock)
 			directResponses := krttest.GetMockCollection[*v1alpha1.DirectResponse](mock)
 
@@ -2207,7 +2201,6 @@ func TestAgwRouteCollectionWithFilters(t *testing.T) {
 				RouteParents:    routeParents,
 				Services:        services,
 				Namespaces:      namespaces,
-				ServiceEntries:  serviceEntries,
 				InferencePools:  inferencePools,
 				DirectResponses: directResponses,
 			}
@@ -2391,7 +2384,6 @@ func TestAgwRouteCollectionTimeouts(t *testing.T) {
 			refGrantsCol := krttest.GetMockCollection[ReferenceGrant](mock)
 			services := krttest.GetMockCollection[*corev1.Service](mock)
 			namespaces := krttest.GetMockCollection[*corev1.Namespace](mock)
-			serviceEntries := krttest.GetMockCollection[*networkingclient.ServiceEntry](mock)
 			inferencePools := krttest.GetMockCollection[*inf.InferencePool](mock)
 
 			gwObjs.WaitUntilSynced(context.Background().Done())
@@ -2410,7 +2402,6 @@ func TestAgwRouteCollectionTimeouts(t *testing.T) {
 				RouteParents:   routeParents,
 				Services:       services,
 				Namespaces:     namespaces,
-				ServiceEntries: serviceEntries,
 				InferencePools: inferencePools,
 			}
 
