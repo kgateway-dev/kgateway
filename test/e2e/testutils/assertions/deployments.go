@@ -34,6 +34,7 @@ func (p *Provider) EventuallyReadyReplicas(ctx context.Context, deploymentMeta m
 		Should(Succeed())
 }
 
+// EventuallyDeploymentNotExists asserts that eventually no deployments matching the given selector and namespace exist on the cluster.
 func (p *Provider) EventuallyDeploymentNotExists(ctx context.Context,
 	deploymentNamespace string,
 	listOpt metav1.ListOptions,
@@ -44,12 +45,12 @@ func (p *Provider) EventuallyDeploymentNotExists(ctx context.Context,
 
 	p.Gomega.Eventually(func(g gomega.Gomega) {
 		deployments, err := p.clusterContext.Clientset.AppsV1().Deployments(deploymentNamespace).List(ctx, listOpt)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), "Failed to list pods")
-		g.Expect(deployments.Items).To(gomega.BeEmpty(), "No pods should be found")
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "Failed to list deployments")
+		g.Expect(deployments.Items).To(gomega.BeEmpty(), "No deployments should be found")
 	}).
 		WithTimeout(currentTimeout).
 		WithPolling(pollingInterval).
-		Should(gomega.Succeed(), fmt.Sprintf("pods matching %v in namespace %s should not be found in cluster",
+		Should(gomega.Succeed(), fmt.Sprintf("deployments matching %v in namespace %s should not be found in cluster",
 			listOpt, deploymentNamespace))
 
 }
