@@ -34,6 +34,28 @@ import (
 
 var _ manager.LeaderElectionRunnable = &StatusSyncer{}
 
+type CustomSyncFunction func(ctx context.Context, rm reports.ReportMap)
+
+type config struct {
+	customSync CustomSyncFunction
+}
+
+type Option func(*config)
+
+func WithCustomSync(customSync CustomSyncFunction) Option {
+	return func(cfg *config) {
+		cfg.customSync = customSync
+	}
+}
+
+func processOptions(opts ...Option) *config {
+	cfg := &config{}
+	for _, fn := range opts {
+		fn(cfg)
+	}
+	return cfg
+}
+
 // StatusSyncer runs only on the leader and syncs the status of resources.
 type StatusSyncer struct {
 	mgr                   manager.Manager
@@ -45,6 +67,8 @@ type StatusSyncer struct {
 	latestReportQueue              utils.AsyncQueue[reports.ReportMap]
 	latestBackendPolicyReportQueue utils.AsyncQueue[reports.ReportMap]
 	cacheSyncs                     []cache.InformerSynced
+
+	customSync CustomSyncFunction
 }
 
 func NewStatusSyncer(
@@ -57,7 +81,9 @@ func NewStatusSyncer(
 	reportQueue utils.AsyncQueue[reports.ReportMap],
 	backendPolicyReportQueue utils.AsyncQueue[reports.ReportMap],
 	cacheSyncs []cache.InformerSynced,
+	opts ...Option,
 ) *StatusSyncer {
+	cfg := processOptions(opts...)
 	return &StatusSyncer{
 		mgr:                            mgr,
 		plugins:                        plugins,
@@ -67,6 +93,7 @@ func NewStatusSyncer(
 		latestReportQueue:              reportQueue,
 		latestBackendPolicyReportQueue: backendPolicyReportQueue,
 		cacheSyncs:                     cacheSyncs,
+		customSync:                     cfg.customSync,
 	}
 }
 
@@ -108,6 +135,9 @@ func (s *StatusSyncer) Start(ctx context.Context) error {
 			s.syncListenerSetStatus(ctx, listenerSetStatusLogger, latestReport)
 			s.syncRouteStatus(ctx, routeStatusLogger, latestReport)
 			s.syncPolicyStatus(ctx, latestReport)
+			if s.customSync != nil {
+				s.customSync(ctx, latestReport)
+			}
 		}
 	}()
 	go func() {
@@ -454,6 +484,7 @@ func (s *StatusSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.L
 	// TODO: retry within loop per LS rather than as a full block
 	err := retry.Do(func() (rErr error) {
 		for lsnn := range rm.ListenerSets {
+			// add type check
 			ls := gwxv1a1.XListenerSet{}
 			err := s.mgr.GetClient().Get(ctx, lsnn, &ls)
 			if err != nil {

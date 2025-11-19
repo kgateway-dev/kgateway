@@ -27,6 +27,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
@@ -170,9 +171,9 @@ func WithExtraRunnables(runnables ...manager.Runnable) func(*setup) {
 	}
 }
 
-func WithKrtDebugger(dbg *krt.DebugHandler) func(*setup) {
+func WithKrtOpts(opts *krtutil.KrtOptions) func(*setup) {
 	return func(s *setup) {
-		s.krtDebugger = dbg
+		s.krtOpts = opts
 	}
 }
 
@@ -191,6 +192,18 @@ func WithValidator(v validator.Validator) func(*setup) {
 func WithExtraAgwPolicyStatusHandlers(handlers map[schema.GroupVersionKind]agwplugins.AgwPolicyStatusSyncHandler) func(*setup) {
 	return func(s *setup) {
 		s.extraAgwPolicyStatusHandlers = handlers
+	}
+}
+
+func WithCommonCollections(commonCollections *collections.CommonCollections) func(*setup) {
+	return func(s *setup) {
+		s.commonCollections = commonCollections
+	}
+}
+
+func WithCustomStatusSyncFunc(customStatusSyncFunc proxy_syncer.CustomSyncFunction) func(*setup) {
+	return func(s *setup) {
+		s.customStatusSyncFunc = customStatusSyncFunc
 	}
 }
 
@@ -216,11 +229,14 @@ type setup struct {
 	extraManagerConfig []func(ctx context.Context, mgr manager.Manager, objectFilter kubetypes.DynamicObjectFilter) error
 	// extra Runnable to add to the manager
 	extraRunnables               []manager.Runnable
-	krtDebugger                  *krt.DebugHandler
 	globalSettings               *apisettings.Settings
 	leaderElectionID             string
 	validator                    validator.Validator
 	extraAgwPolicyStatusHandlers map[schema.GroupVersionKind]agwplugins.AgwPolicyStatusSyncHandler
+
+	krtOpts              *krtutil.KrtOptions
+	commonCollections    *collections.CommonCollections
+	customStatusSyncFunc proxy_syncer.CustomSyncFunction
 }
 
 var _ Server = &setup{}
@@ -279,10 +295,6 @@ func New(opts ...func(*setup)) (*setup, error) {
 				LeaderElectionID:        s.leaderElectionID,
 			}
 		}
-	}
-
-	if s.krtDebugger == nil {
-		s.krtDebugger = new(krt.DebugHandler)
 	}
 
 	if s.xdsListener == nil {
@@ -353,31 +365,37 @@ func (s *setup) Start(ctx context.Context) error {
 
 	cache := NewControlPlane(ctx, s.xdsListener, uniqueClientCallbacks, authenticators, s.globalSettings.XdsAuth, certWatcher)
 
+	if s.krtOpts == nil {
+		krtOpts := krtutil.NewKrtOptions(ctx.Done(), new(krt.DebugHandler))
+		s.krtOpts = &krtOpts
+	}
+
 	setupOpts := &controller.SetupOpts{
 		Cache:          cache,
-		KrtDebugger:    s.krtDebugger,
+		KrtOpts:        s.krtOpts,
 		GlobalSettings: s.globalSettings,
 		CertWatcher:    certWatcher,
 	}
 
 	slog.Info("creating krt collections")
-	krtOpts := krtutil.NewKrtOptions(ctx.Done(), setupOpts.KrtDebugger)
 
-	commoncol, err := collections.NewCommonCollections(
-		ctx,
-		krtOpts,
-		s.apiClient,
-		s.gatewayControllerName,
-		s.agwControllerName,
-		*s.globalSettings,
-	)
-	if err != nil {
-		slog.Error("error creating common collections", "error", err)
-		return err
+	if s.commonCollections == nil {
+		s.commonCollections, err = collections.NewCommonCollections(
+			ctx,
+			*s.krtOpts,
+			s.apiClient,
+			s.gatewayControllerName,
+			s.agwControllerName,
+			*s.globalSettings,
+		)
+		if err != nil {
+			slog.Error("error creating common collections", "error", err)
+			return err
+		}
 	}
 
 	agwCollections, err := agwplugins.NewAgwCollections(
-		commoncol,
+		s.commonCollections,
 		s.agwControllerName,
 		// control plane system namespace (default is kgateway-system)
 		namespaces.GetPodNamespace(),
@@ -400,7 +418,7 @@ func (s *setup) Start(ctx context.Context) error {
 		}
 	}
 
-	agw, err := s.buildKgatewayWithConfig(ctx, mgr, setupOpts, commoncol, agwCollections, uccBuilder)
+	agw, err := s.buildKgatewayWithConfig(ctx, mgr, setupOpts, s.commonCollections, agwCollections, uccBuilder)
 	if err != nil {
 		return err
 	}
@@ -430,15 +448,14 @@ func (s *setup) buildKgatewayWithConfig(
 	uccBuilder krtcollections.UniquelyConnectedClientsBulider,
 ) (*agentgatewaysyncer.Syncer, error) {
 	slog.Info("creating krt collections")
-	krtOpts := krtutil.NewKrtOptions(ctx.Done(), setupOpts.KrtDebugger)
 
-	augmentedPods, _ := krtcollections.NewPodsCollection(s.apiClient, krtOpts)
+	augmentedPods, _ := krtcollections.NewPodsCollection(s.apiClient, *s.krtOpts)
 	augmentedPodsForUcc := augmentedPods
 	if envutils.IsEnvTruthy("DISABLE_POD_LOCALITY_XDS") {
 		augmentedPodsForUcc = nil
 	}
 
-	ucc := uccBuilder(ctx, krtOpts, augmentedPodsForUcc)
+	ucc := uccBuilder(ctx, *s.krtOpts, augmentedPodsForUcc)
 
 	gatewayClassInfos := controller.GetDefaultClassInfo(
 		setupOpts.GlobalSettings,
@@ -469,12 +486,13 @@ func (s *setup) buildKgatewayWithConfig(
 		AugmentedPods:                augmentedPods,
 		UniqueClients:                ucc,
 		Dev:                          logging.MustGetLevel(logging.DefaultComponent) <= logging.LevelTrace,
-		KrtOptions:                   krtOpts,
+		KrtOptions:                   *s.krtOpts,
 		CommonCollections:            commonCollections,
 		AgwCollections:               agwCollections,
 		Validator:                    s.validator,
 		ExtraAgwPolicyStatusHandlers: s.extraAgwPolicyStatusHandlers,
 		GatewayControllerExtension:   s.gatewayControllerExtension,
+		CustomSync:                   s.customStatusSyncFunc,
 	})
 	if err != nil {
 		slog.Error("failed initializing controller: ", "error", err)

@@ -11,6 +11,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
 	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
@@ -48,6 +49,9 @@ type Options struct {
 	Validator validator.Validator
 	// ExtraAgwPolicyStatusHandlers maps policy kinds to their status sync handlers for AgentGateway
 	ExtraAgwPolicyStatusHandlers map[schema.GroupVersionKind]agwplugins.AgwPolicyStatusSyncHandler
+
+	CommonCollections    *collections.CommonCollections
+	CustomStatusSyncFunc proxy_syncer.CustomSyncFunction
 }
 
 func New(opts Options) (setup.Server, error) {
@@ -72,5 +76,7 @@ func New(opts Options) (setup.Server, error) {
 		setup.WithExtraRunnables(opts.ExtraRunnables...),
 		setup.WithValidator(opts.Validator),
 		setup.WithExtraAgwPolicyStatusHandlers(opts.ExtraAgwPolicyStatusHandlers),
+		setup.WithCommonCollections(opts.CommonCollections),
+		setup.WithCustomStatusSyncFunc(opts.CustomStatusSyncFunc),
 	)
 }

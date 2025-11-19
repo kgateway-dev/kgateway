@@ -325,10 +325,12 @@ func (r *gatewayQueries) GetRoutesForResource(kctx krt.HandlerContext, ctx conte
 
 	var routes []ir.Route
 	switch resource.(type) {
+	case *gwv1.Gateway:
+		routes = r.collections.Routes.RoutesForGateway(kctx, nns)
 	case *gwxv1a1.XListenerSet:
 		routes = r.collections.Routes.RoutesForListenerSet(kctx, nns)
 	default:
-		routes = r.collections.Routes.RoutesForGateway(kctx, nns)
+		routes = r.collections.Routes.RoutesFor(kctx, nns, resource.GetObjectKind().GroupVersionKind().Group, resource.GetObjectKind().GroupVersionKind().Kind)
 	}
 
 	for _, route := range routes {
@@ -338,18 +340,6 @@ func (r *gatewayQueries) GetRoutesForResource(kctx krt.HandlerContext, ctx conte
 	}
 
 	return ret, nil
-}
-
-func getParentGatewayRef(ls *gwxv1a1.XListenerSet) *types.NamespacedName {
-	ns := ls.Namespace
-	if ls.Spec.ParentRef.Namespace != nil && *ls.Spec.ParentRef.Namespace != "" {
-		ns = string(*ls.Spec.ParentRef.Namespace)
-	}
-
-	return &types.NamespacedName{
-		Namespace: ns,
-		Name:      string(ls.Spec.ParentRef.Name),
-	}
 }
 
 func (r *gatewayQueries) GetRoutesForGateway(kctx krt.HandlerContext, ctx context.Context, gw *ir.Gateway) (*RoutesForGwResult, error) {
@@ -366,6 +356,15 @@ func (r *gatewayQueries) GetRoutesForGateway(kctx krt.HandlerContext, ctx contex
 		routes.merge(lsRoutes)
 	}
 
+	for _, kid := range gw.AllowedChildren {
+		kidRoutes, err := r.GetRoutesForResource(kctx, ctx, kid)
+		if err != nil {
+			fmt.Println("======== err getting kids routes : ", err)
+			return nil, err
+		}
+		routes.merge(kidRoutes)
+	}
+
 	return routes, nil
 }
 
@@ -379,6 +378,10 @@ func GenerateRouteKey(parent client.Object, listenerName string) string {
 	return fmt.Sprintf("%s/%s/%s", parent.GetNamespace(), parent.GetName(), listenerName)
 }
 
+type ListenerCollection interface {
+	GetListeners() []gwv1.Listener
+}
+
 func getListeners(resource client.Object) ([]gwv1.Listener, error) {
 	var listeners []gwv1.Listener
 	switch typed := resource.(type) {
@@ -386,6 +389,8 @@ func getListeners(resource client.Object) ([]gwv1.Listener, error) {
 		listeners = typed.Spec.Listeners
 	case *gwxv1a1.XListenerSet:
 		listeners = utils.ToListenerSlice(typed.Spec.Listeners)
+	case ListenerCollection:
+		listeners = typed.GetListeners()
 	default:
 		return nil, fmt.Errorf("unknown type")
 	}

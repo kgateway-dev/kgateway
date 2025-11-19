@@ -184,6 +184,9 @@ func (r report) Equals(in report) bool {
 	if !maps.Equal(r.reportMap.ListenerSets, in.reportMap.ListenerSets) {
 		return false
 	}
+	if !maps.Equal(r.reportMap.GatewayChildren, in.reportMap.GatewayChildren) {
+		return false
+	}
 	if !maps.Equal(r.reportMap.HTTPRoutes, in.reportMap.HTTPRoutes) {
 		return false
 	}
@@ -289,7 +292,10 @@ func mergeProxyReports(
 		// 2. merge LS Reports for all Proxies' status reports
 		maps.Copy(merged.ListenerSets, p.reports.ListenerSets)
 
-		// 3. merge httproute parentRefs into RouteReports
+		// 3. merge GW Children Reports for all Proxies' status reports
+		maps.Copy(merged.GatewayChildren, p.reports.GatewayChildren)
+
+		// 4. merge httproute parentRefs into RouteReports
 		for rnn, rr := range p.reports.HTTPRoutes {
 			// if we haven't encountered this route, just copy it over completely
 			old := merged.HTTPRoutes[rnn]
@@ -302,7 +308,7 @@ func mergeProxyReports(
 			maps.Copy(merged.HTTPRoutes[rnn].Parents, rr.Parents)
 		}
 
-		// 4. merge tcproute parentRefs into RouteReports
+		// 5. merge tcproute parentRefs into RouteReports
 		for rnn, rr := range p.reports.TCPRoutes {
 			// if we haven't encountered this route, just copy it over completely
 			old := merged.TCPRoutes[rnn]

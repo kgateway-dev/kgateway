@@ -44,7 +44,7 @@ import (
 type SetupOpts struct {
 	Cache envoycache.SnapshotCache
 
-	KrtDebugger *krt.DebugHandler
+	KrtOpts *krtutil.KrtOptions
 
 	// static set of global Settings
 	GlobalSettings *apisettings.Settings
@@ -95,6 +95,8 @@ type StartConfig struct {
 
 	// GatewayControllerExtension is an extension that can be used to extend Gateway controller
 	GatewayControllerExtension sdk.GatewayControllerExtension
+
+	CustomSync proxy_syncer.CustomSyncFunction
 }
 
 // Start runs the controllers responsible for processing the K8s Gateway API objects
@@ -189,6 +191,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			proxySyncer.ReportQueue(),
 			proxySyncer.BackendPolicyReportQueue(),
 			proxySyncer.CacheSyncs(),
+			proxy_syncer.WithCustomSync(cfg.CustomSync),
 		)
 		if err := cfg.Manager.Add(statusSyncer); err != nil {
 			setupLog.Error(err, "unable to add statusSyncer runnable")

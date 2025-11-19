@@ -287,8 +287,9 @@ func (listener Listener) GetParentReporter(reporter reporter.Reporter) reporter.
 		return reporter.Gateway(t)
 	case *gwxv1.XListenerSet:
 		return reporter.ListenerSet(t)
+	default:
+		return reporter.GatewayChild(t)
 	}
-	panic("Unknown parent type")
 }
 
 // TODO: need to reevaluate DeepEqual usage
@@ -327,6 +328,9 @@ type Gateway struct {
 	AllowedListenerSets ListenerSets
 	DeniedListenerSets  ListenerSets
 	Obj                 *gwv1.Gateway
+	// Just shove it into AllowedListenerSets
+	AllowedChildren []client.Object
+	DeniedChildren  []client.Object
 
 	AttachedListenerPolicies AttachedPolicies
 	AttachedHttpPolicies     AttachedPolicies

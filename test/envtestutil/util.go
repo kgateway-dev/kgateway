@@ -32,6 +32,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
@@ -125,12 +126,13 @@ func RunController(
 		t.Fatalf("can't listen %v", err)
 	}
 
+	krtOpts := krtutil.NewKrtOptions(t.Context().Done(), krtDbg)
 	s, err := setup.New(
 		setup.WithAPIClient(apiClient),
 		setup.WithGlobalSettings(globalSettings),
 		setup.WithRestConfig(cfg),
 		setup.WithExtraPlugins(extraPlugins),
-		setup.WithKrtDebugger(krtDbg),
+		setup.WithKrtOpts(&krtOpts),
 		setup.WithXDSListener(l),
 		setup.WithAgwXDSListener(l2),
 		setup.WithControllerManagerOptions(
