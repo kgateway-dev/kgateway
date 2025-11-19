@@ -1406,6 +1406,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("JWT Policy at gateway level selecting listener with sectionName", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "jwt/gateway-listener.yaml",
+			outputFile: "jwt/gateway-listener.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("JWT Policy at gateway level using configmap", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "jwt/gateway-configmap.yaml",
