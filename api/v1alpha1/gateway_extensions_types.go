@@ -24,8 +24,7 @@ type GatewayExtension struct {
 	Status GatewayExtensionStatus `json:"status,omitempty"`
 }
 
-// NamedJWTProvider is a named JWT provider entry used for list-as-map semantics.
-// The Name field is the unique key.
+// NamedJWTProvider is a named JWT provider entry.
 type NamedJWTProvider struct {
 	// Name is the unique name of the JWT provider.
 	// +kubebuilder:validation:MinLength=1

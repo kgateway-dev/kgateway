@@ -566,9 +566,7 @@ spec:
                   If multiple providers are specified for a given JWT policy,
                   the providers will be `OR`-ed together and will allow validation to any of the providers.
                 items:
-                  description: |-
-                    NamedJWTProvider is a named JWT provider entry used for list-as-map semantics.
-                    The Name field is the unique key.
+                  description: NamedJWTProvider is a named JWT provider entry.
                   properties:
                     audiences:
                       description: |-
@@ -577,7 +575,7 @@ spec:
                         If not specified, the audiences will not be checked in the token.
                       items:
                         type: string
-                      maxItems: 100
+                      maxItems: 32
                       minItems: 1
                       type: array
                     claimsToHeaders:
@@ -605,7 +603,7 @@ spec:
                         - header
                         - name
                         type: object
-                      maxItems: 100
+                      maxItems: 32
                       minItems: 1
                       type: array
                     issuer:
@@ -672,7 +670,7 @@ spec:
                       description: TokenSource configures where to find the JWT of
                         the current provider.
                       properties:
-                        headers:
+                        header:
                           description: HeaderSource configures retrieving token from
                             a header
                           properties:
@@ -691,9 +689,9 @@ spec:
                           required:
                           - header
                           type: object
-                        queryParams:
-                          description: QueryParams configures retrieving token from
-                            these query params
+                        queryParameter:
+                          description: QueryParameter configures retrieving token
+                            from the query parameter
                           type: string
                       type: object
                       x-kubernetes-validations:

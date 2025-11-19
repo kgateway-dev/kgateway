@@ -2,8 +2,8 @@ package v1alpha1
 
 import corev1 "k8s.io/api/core/v1"
 
-// JWTValidation defines the providers used to configure JWT validation
-type JWTValidation struct {
+// JWTAuthentication defines the providers used to configure JWT validation
+type JWTAuthentication struct {
 	// ExtensionRef references a GatewayExtension that provides the jwt providers
 	// +required
 	ExtensionRef *NamespacedObjectReference `json:"extensionRef"`
@@ -26,7 +26,7 @@ type JWTProvider struct {
 	// If specified an incoming JWT must have an 'aud' claim, and it must be in this list.
 	// If not specified, the audiences will not be checked in the token.
 	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:MaxItems=100
+	// +kubebuilder:validation:MaxItems=32
 	// +optional
 	Audiences []string `json:"audiences,omitempty"`
 
@@ -38,7 +38,7 @@ type JWTProvider struct {
 	// Optionally set the claims from the JWT payload that you want to extract and add as headers
 	// to the request before the request is forwarded to the upstream destination.
 	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:MaxItems=100
+	// +kubebuilder:validation:MaxItems=32
 	// +optional
 	ClaimsToHeaders []JWTClaimToHeader `json:"claimsToHeaders,omitempty"`
 
@@ -82,10 +82,10 @@ type HeaderSource struct {
 type JWTTokenSource struct {
 	// HeaderSource configures retrieving token from a header
 	// +optional
-	HeaderSource *HeaderSource `json:"headers,omitempty"`
-	// QueryParams configures retrieving token from these query params
+	HeaderSource *HeaderSource `json:"header,omitempty"`
+	// QueryParameter configures retrieving token from the query parameter
 	// +optional
-	QueryParams *string `json:"queryParams,omitempty"`
+	QueryParameter *string `json:"queryParameter,omitempty"`
 }
 
 // JWTClaimToHeader allows copying verified claims to headers sent upstream

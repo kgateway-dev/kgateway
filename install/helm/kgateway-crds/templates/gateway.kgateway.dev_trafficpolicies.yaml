@@ -892,7 +892,7 @@ spec:
                     >= 1'
               jwt:
                 description: |-
-                  JWT specifies the JWT validation configuration for the policy.
+                  JWT specifies the JWT authentication configuration for the policy.
                   This defines the JWT providers and their configurations.
                 properties:
                   extensionRef:

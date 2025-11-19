@@ -331,7 +331,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 					JWTProvider: v1alpha1.JWTProvider{
 						Issuer: "test-issuer",
 						TokenSource: &v1alpha1.JWTTokenSource{
-							QueryParams: ptr.To("jwt"),
+							QueryParameter: ptr.To("jwt"),
 						},
 						JWKS: v1alpha1.JWKS{
 							LocalJWKS: &v1alpha1.LocalJWKS{

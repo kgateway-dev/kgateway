@@ -204,7 +204,7 @@ func translateTokenSource(provider v1alpha1.JWTProvider, out *jwtauthnv3.JwtProv
 			},
 		}
 	}
-	if queryParams := provider.TokenSource.QueryParams; queryParams != nil {
+	if queryParams := provider.TokenSource.QueryParameter; queryParams != nil {
 		out.FromParams = []string{*queryParams}
 	}
 }
