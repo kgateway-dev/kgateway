@@ -13,19 +13,18 @@ import (
 // ExtensionTypeError is an error for when an extension type is mismatched
 type ExtensionTypeError struct {
 	expected v1alpha1.GatewayExtensionType
-	actual   v1alpha1.GatewayExtensionType
 }
 
 var _ error = &ExtensionTypeError{}
 
 // Error implements error.
 func (e *ExtensionTypeError) Error() string {
-	return fmt.Sprintf("expected gatewayextension type %v, got %v", e.expected, e.actual)
+	return fmt.Sprintf("expected gatewayextension type %v", e.expected)
 }
 
 // ErrInvalidExtensionType is an error for when an extension type is invalid.
-func ErrInvalidExtensionType(expected, actual v1alpha1.GatewayExtensionType) error {
-	return &ExtensionTypeError{expected: expected, actual: actual}
+func ErrInvalidExtensionType(expected v1alpha1.GatewayExtensionType) error {
+	return &ExtensionTypeError{expected: expected}
 }
 
 // GetGatewayExtension retrieves a GatewayExtension resource by name and namespace.

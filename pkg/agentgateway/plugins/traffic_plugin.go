@@ -422,11 +422,7 @@ func translateTrafficPolicyToAgw(
 	}
 
 	if traffic.HostnameRewrite != nil {
-		hostnameRewritePolicies, err := processHostnameRewritePolicy(traffic.HostnameRewrite, basePolicyName, policyTarget)
-		if err != nil {
-			logger.Error("error processing HostnameRewrite policy", "error", err)
-			errs = append(errs, err)
-		}
+		hostnameRewritePolicies := processHostnameRewritePolicy(traffic.HostnameRewrite, basePolicyName, policyTarget)
 		agwPolicies = append(agwPolicies, hostnameRewritePolicies...)
 	}
 
@@ -678,9 +674,31 @@ func processTimeoutPolicy(timeout *v1alpha1.AgentTimeouts, basePolicyName string
 	return []AgwPolicy{{Policy: timeoutPolicy}}
 }
 
-func processHostnameRewritePolicy(hostnameRewrite *v1alpha1.AgentHostnameRewrite, basePolicyName string, target *api.PolicyTarget) ([]AgwPolicy, error) {
-	// TODO
-	return nil, nil
+func processHostnameRewritePolicy(hnrw *v1alpha1.AgentHostnameRewriteConfig, basePolicyName string, target *api.PolicyTarget) []AgwPolicy {
+	r := &api.TrafficPolicySpec_HostRewrite{}
+	switch hnrw.Mode {
+	case v1alpha1.AgentHostnameRewriteAuto:
+		r.Mode = api.TrafficPolicySpec_HostRewrite_AUTO
+	case v1alpha1.AgentHostnameRewriteNone:
+		r.Mode = api.TrafficPolicySpec_HostRewrite_NONE
+	}
+
+	p := &api.Policy{
+		Name:   basePolicyName + hostnameRewritePolicySuffix + attachmentName(target),
+		Target: target,
+		Kind: &api.Policy_Traffic{
+			Traffic: &api.TrafficPolicySpec{
+				Kind: &api.TrafficPolicySpec_HostRewrite_{HostRewrite: r},
+			},
+		},
+	}
+
+	logger.Debug("generated HostnameRewrite policy",
+		"policy", basePolicyName,
+		"agentgateway_policy", p.Name,
+		"target", target)
+
+	return []AgwPolicy{{Policy: p}}
 }
 
 func processHeaderModifierPolicy(headerModifier *v1alpha1.HeaderModifiers, basePolicyName string, target *api.PolicyTarget) []AgwPolicy {
