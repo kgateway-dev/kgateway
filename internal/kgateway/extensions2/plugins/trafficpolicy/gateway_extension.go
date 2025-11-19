@@ -162,13 +162,7 @@ func TranslateGatewayExtensionBuilder(commoncol *collections.CommonCollections) 
 			rateLimitConfig := buildRateLimitFilter(grpcService, gExt.RateLimit)
 
 			p.RateLimit = rateLimitConfig
-		case v1alpha1.GatewayExtensionTypeJWTProvider:
-			if gExt.JwtProviders == nil {
-				p.Err = fmt.Errorf("jwt extension missing configuration")
-				return p
-			}
-
-			// Use the specialized function for jwt provider resolution
+		case gExt.JwtProviders != nil:
 			jwtConfig, err := resolveJwtProviders(krtctx, commoncol.ConfigMaps, gExt.Name, gExt.Namespace, gExt.JwtProviders)
 			if err != nil {
 				p.Err = fmt.Errorf("jwt: %w", err)

@@ -35,7 +35,7 @@ type NamedJWTProvider struct {
 }
 
 // GatewayExtensionSpec defines the desired state of GatewayExtension.
-// +kubebuilder:validation:ExactlyOneOf=extAuth;extProc;rateLimit
+// +kubebuilder:validation:ExactlyOneOf=extAuth;extProc;rateLimit;jwtProviders
 // +kubebuilder:validation:XValidation:message="extAuth must be set when type is ExtAuth",rule="has(self.type) && self.type == 'ExtAuth' ? has(self.extAuth) : true"
 // +kubebuilder:validation:XValidation:message="extProc must be set when type is ExtProc",rule="has(self.type) && self.type == 'ExtProc' ? has(self.extProc) : true"
 // +kubebuilder:validation:XValidation:message="rateLimit must be set when type is RateLimit",rule="has(self.type) && self.type == 'RateLimit' ? has(self.rateLimit) : true"

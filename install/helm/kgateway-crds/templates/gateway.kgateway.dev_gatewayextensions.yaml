@@ -926,9 +926,9 @@ spec:
             - message: JwtProviders must be set when type is JWTProviders
               rule: 'has(self.type) && self.type == ''JWTProviders'' ? has(self.jwtProviders)
                 : true'
-            - message: exactly one of the fields in [extAuth extProc rateLimit] must
-                be set
-              rule: '[has(self.extAuth),has(self.extProc),has(self.rateLimit)].filter(x,x==true).size()
+            - message: exactly one of the fields in [extAuth extProc rateLimit jwtProviders]
+                must be set
+              rule: '[has(self.extAuth),has(self.extProc),has(self.rateLimit),has(self.jwtProviders)].filter(x,x==true).size()
                 == 1'
           status:
             description: GatewayExtensionStatus defines the observed state of GatewayExtension.

@@ -105,8 +105,8 @@ func constructJwt(
 	if err != nil {
 		return fmt.Errorf("jwt: %w", err)
 	}
-	if provider.ExtType != v1alpha1.GatewayExtensionTypeJWTProvider || provider.Jwt == nil {
-		return pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeJWTProvider, provider.ExtType)
+	if provider.Jwt == nil {
+		return pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeJWTProvider)
 	}
 
 	requirementsName := fmt.Sprintf("%s_%s_requirements", spec.ExtensionRef.Name, in.Namespace)
