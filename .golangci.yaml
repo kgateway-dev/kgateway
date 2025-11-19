@@ -54,7 +54,6 @@ linters:
             - nobools
             - nomaps
             - optionalfields
-            - optionalorrequired
             - ssatags
           lintersConfig:
             conditions:
