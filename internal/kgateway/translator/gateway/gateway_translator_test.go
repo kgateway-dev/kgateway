@@ -30,7 +30,8 @@ func TestBasic(t *testing.T) {
 		settingOpts = append([]translatortest.SettingsOpts{
 			func(s *apisettings.Settings) {
 				s.EnableExperimentalGatewayAPIFeatures = true
-			}}, settingOpts...)
+			},
+		}, settingOpts...)
 		inputFiles := []string{filepath.Join(dir, "testutils/inputs/", in.inputFile)}
 		expectedProxyFile := filepath.Join(dir, "testutils/outputs/", in.outputFile)
 		translatortest.TestTranslation(t, ctx, inputFiles, expectedProxyFile, in.gwNN, settingOpts...)
