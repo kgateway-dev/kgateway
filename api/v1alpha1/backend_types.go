@@ -19,10 +19,12 @@ import (
 // +kubebuilder:resource:categories=kgateway
 // +kubebuilder:subresource:status
 type Backend struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec   BackendSpec   `json:"spec,omitempty"`
+	// +required
+	Spec BackendSpec `json:"spec"`
+	// +optional
 	Status BackendStatus `json:"status,omitempty"`
 }
 
@@ -101,6 +103,7 @@ type DynamicForwardProxyBackend struct {
 // AwsBackend is the AWS backend configuration.
 type AwsBackend struct {
 	// Lambda configures the AWS lambda service.
+	// +required
 	Lambda AwsLambda `json:"lambda"`
 
 	// AccountId is the AWS account ID to use for the backend.
@@ -130,7 +133,7 @@ type AwsBackend struct {
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=63
 	// +kubebuilder:validation:Pattern="^[a-z0-9-]+$"
-	Region *string `json:"region,omitempty"`
+	Region string `json:"region,omitempty"`
 }
 
 // AwsAuthType specifies the authentication method to use for the backend.
@@ -230,6 +233,7 @@ type StaticBackend struct {
 type Host struct {
 	// Host is the host name to use for the backend.
 	// +kubebuilder:validation:MinLength=1
+	// +required
 	Host string `json:"host"`
 	// Port is the port to use for the backend.
 	// +required
