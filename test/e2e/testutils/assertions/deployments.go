@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -40,17 +39,15 @@ func (p *Provider) EventuallyDeploymentNotExists(ctx context.Context,
 	listOpt metav1.ListOptions,
 	timeout ...time.Duration,
 ) {
-
 	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
 
-	p.Gomega.Eventually(func(g gomega.Gomega) {
+	p.Gomega.Eventually(func(g Gomega) {
 		deployments, err := p.clusterContext.Clientset.AppsV1().Deployments(deploymentNamespace).List(ctx, listOpt)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), "Failed to list deployments")
-		g.Expect(deployments.Items).To(gomega.BeEmpty(), "No deployments should be found")
+		g.Expect(err).NotTo(HaveOccurred(), "Failed to list deployments")
+		g.Expect(deployments.Items).To(BeEmpty(), "No deployments should be found")
 	}).
 		WithTimeout(currentTimeout).
 		WithPolling(pollingInterval).
-		Should(gomega.Succeed(), fmt.Sprintf("deployments matching %v in namespace %s should not be found in cluster",
+		Should(Succeed(), fmt.Sprintf("deployments matching %v in namespace %s should not be found in cluster",
 			listOpt, deploymentNamespace))
-
 }
