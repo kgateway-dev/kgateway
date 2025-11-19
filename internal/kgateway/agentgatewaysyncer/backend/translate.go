@@ -27,7 +27,6 @@ func BuildAgwBackend(
 	ctx plugins.PolicyCtx,
 	backend *v1alpha1.AgentgatewayBackend,
 ) ([]*api.Backend, error) {
-
 	pols, err := translateBackendPolicies(ctx, backend.Namespace, backend.Spec.Policies)
 	if err != nil {
 		// TODO: bubble this up to a status message without blocking the entire Backend
@@ -232,7 +231,6 @@ func translateAIBackends(ctx plugins.PolicyCtx, be *v1alpha1.AgentgatewayBackend
 			providerGroup := &api.AIBackend_ProviderGroup{}
 
 			for _, provider := range group.Providers {
-
 				tp, err := translateLLMProvider(&provider.LLMProvider, string(provider.Name))
 				if err != nil {
 					return nil, fmt.Errorf("failed to translate LLM provider: %w", err)
@@ -322,7 +320,6 @@ func translateLLMProvider(llm *v1alpha1.LLMProvider, providerName string) (*api.
 			},
 		}
 	} else if llm.AzureOpenAI != nil {
-
 		provider.Provider = &api.AIBackend_Provider_Azureopenai{
 			Azureopenai: &api.AIBackend_AzureOpenAI{
 				Host:       llm.AzureOpenAI.Endpoint,

@@ -37,6 +37,7 @@ type AgentgatewayBackendStatus struct {
 	// +listType=map
 	// +listMapKey=type
 	// +kubebuilder:validation:MaxItems=8
+	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 

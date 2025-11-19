@@ -7,8 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"istio.io/istio/pilot/test/util"
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
@@ -30,6 +28,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 )
 

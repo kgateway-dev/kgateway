@@ -65,7 +65,7 @@ type AgentgatewayPolicySpec struct {
 	// +listType=atomic
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
-	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Service' && r.group == '') || (r.kind == 'Backend' && r.group == 'gateway.kgateway.dev') || (r.kind in ['Gateway', 'HTTPRoute'] && r.group == 'gateway.networking.k8s.io') || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io'))",message="targetRefs may only reference Gateway, HTTPRoute, XListenerSet, Service, or Backend resources"
+	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Service' && r.group == '') || (r.kind == 'AgentgatewayBackend' && r.group == 'gateway.kgateway.dev') || (r.kind in ['Gateway', 'HTTPRoute'] && r.group == 'gateway.networking.k8s.io') || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io'))",message="targetRefs may only reference Gateway, HTTPRoute, XListenerSet, Service, or AgentgatewayBackend resources"
 	// +kubebuilder:validation:XValidation:message="Only one Kind of targetRef can be set on one policy",rule="self.all(l1, !self.exists(l2, l1.kind != l2.kind))"
 	// +optional
 	TargetRefs []LocalPolicyTargetReferenceWithSectionName `json:"targetRefs,omitempty"`
@@ -73,7 +73,7 @@ type AgentgatewayPolicySpec struct {
 	// targetSelectors specifies the target selectors to select resources to attach the policy to.
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
-	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Service' && r.group == '') || (r.kind == 'Backend' && r.group == 'gateway.kgateway.dev') || (r.kind in ['Gateway', 'HTTPRoute'] && r.group == 'gateway.networking.k8s.io') || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io'))",message="targetRefs may only reference Gateway, HTTPRoute, XListenerSet, Service, or Backend resources"
+	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Service' && r.group == '') || (r.kind == 'AgentgatewayBackend' && r.group == 'gateway.kgateway.dev') || (r.kind in ['Gateway', 'HTTPRoute'] && r.group == 'gateway.networking.k8s.io') || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io'))",message="targetRefs may only reference Gateway, HTTPRoute, XListenerSet, Service, or AgentgatewayBackend resources"
 	// +kubebuilder:validation:XValidation:message="Only one Kind of targetRef can be set on one policy",rule="self.all(l1, !self.exists(l2, l1.kind != l2.kind))"
 	// +optional
 	TargetSelectors []LocalPolicyTargetSelectorWithSectionName `json:"targetSelectors,omitempty"`
@@ -286,6 +286,7 @@ type FrontendHTTP struct {
 	// http1MaxHeaders defines the maximum number of headers that are allowed in HTTP/1.1 requests.
 	// If unset, this defaults to 100.
 	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=4096
 	// +optional
 	HTTP1MaxHeaders *int32 `json:"http1MaxHeaders,omitempty"`
 	// http1IdleTimeout defines the timeout before an unused connection is closed.
@@ -303,7 +304,7 @@ type FrontendHTTP struct {
 	// +kubebuilder:validation:Minimum=1
 	// +optional
 	HTTP2ConnectionWindowSize *int32 `json:"http2ConnectionWindowSize,omitempty"`
-	// http2FrameSize sets the maxmimum frame size to use.
+	// http2FrameSize sets the maximum frame size to use.
 	// If unset, this defaults to 16kb
 	// +kubebuilder:validation:Minimum=16384
 	// +kubebuilder:validation:Maximum=1677215
@@ -482,7 +483,6 @@ type AgentJWTAuthentication struct {
 
 type AgentJWTProvider struct {
 	// issuer identifies the IdP that issued the JWT. This corresponds to the 'iss' claim (https://tools.ietf.org/html/rfc7519#section-4.1.1).
-	// +kubebuilder:validation:MinLength=1
 	// +required
 	Issuer ShortString `json:"issuer"`
 	// audiences specifies the list of allowed audiences that are allowed access. This corresponds to the 'aud' claim (https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.3).
@@ -711,7 +711,6 @@ type BackendAI struct {
 	// +kubebuilder:validation:MaxItems=64
 	// +optional
 	Overrides []FieldDefault `json:"overrides,omitempty"`
-	// Intentionally omitted: `model`. Instead, use overrides.
 
 	// ModelAliases maps friendly model names to actual provider model names.
 	// Example: {"fast": "gpt-3.5-turbo", "smart": "gpt-4-turbo"}

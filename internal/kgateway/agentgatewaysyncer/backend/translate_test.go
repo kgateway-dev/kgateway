@@ -1,4 +1,4 @@
-package agentgatewaybackend
+package agentgatewaybackend_test
 
 import (
 	"fmt"
@@ -15,6 +15,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	agentgatewaybackend "github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/backend"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/testutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -140,7 +141,7 @@ func TestBuildMCP(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := testutils.BuildMockPolicyContext(t, tt.inputs)
-			result, err := BuildAgwBackend(ctx, tt.backend)
+			result, err := agentgatewaybackend.BuildAgwBackend(ctx, tt.backend)
 			if tt.expectError {
 				assert.Error(t, err)
 				return
@@ -494,7 +495,7 @@ func TestBuildAIBackend(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := testutils.BuildMockPolicyContext(t, tt.inputs)
-			result, err := BuildAgwBackend(ctx, tt.backend)
+			result, err := agentgatewaybackend.BuildAgwBackend(ctx, tt.backend)
 			assert.NoError(t, err)
 
 			b, err := protomarshal.ToYAML(result[0])
@@ -560,7 +561,7 @@ func TestBuildStaticIr(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := BuildAgwBackend(plugins.PolicyCtx{}, tt.backend)
+			result, err := agentgatewaybackend.BuildAgwBackend(plugins.PolicyCtx{}, tt.backend)
 
 			if tt.expectError {
 				if err == nil {
@@ -706,7 +707,7 @@ func createMockMCPService(namespace, serviceName, labels string) *corev1.Service
 				{
 					Name:        "mcp",
 					Port:        8080,
-					AppProtocol: ptr.To(mcpProtocol),
+					AppProtocol: ptr.To("kgateway.dev/mcp"),
 				},
 			},
 		},
@@ -730,7 +731,7 @@ func createMockMultipleNamespaceServices() []any {
 					{
 						Name:        "mcp",
 						Port:        8080,
-						AppProtocol: ptr.To(mcpProtocol),
+						AppProtocol: ptr.To("kgateway.dev/mcp"),
 					},
 				},
 			},
@@ -748,7 +749,7 @@ func createMockMultipleNamespaceServices() []any {
 					{
 						Name:        "mcp",
 						Port:        8080,
-						AppProtocol: ptr.To(mcpProtocol),
+						AppProtocol: ptr.To("kgateway.dev/mcp"),
 					},
 				},
 			},
@@ -766,7 +767,7 @@ func createMockMultipleNamespaceServices() []any {
 					{
 						Name:        "mcp",
 						Port:        8080,
-						AppProtocol: ptr.To(mcpProtocol),
+						AppProtocol: ptr.To("kgateway.dev/mcp"),
 					},
 				},
 			},
