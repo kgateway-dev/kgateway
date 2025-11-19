@@ -122,6 +122,7 @@ type LLMProvider struct {
 	// Note: Not all LLM providers use the Authorization header and prefix.
 	// For example, OpenAI uses header: "Authorization" and prefix: "Bearer" But Azure OpenAI uses header: "api-key"
 	// and no Bearer.
+	// +optional
 	AuthHeader *AuthHeader `json:"authHeader,omitempty"`
 
 	// Routes defines how to identify the type of traffic to handle.
@@ -135,6 +136,7 @@ type LLMProvider struct {
 // NamedLLMProvider wraps an LLMProvider with a name.
 type NamedLLMProvider struct {
 	// Name of the provider. Policies can target this provider by name.
+	// +required
 	Name gwv1.SectionName `json:"name"`
 
 	LLMProvider `json:",inline"`
@@ -143,6 +145,7 @@ type NamedLLMProvider struct {
 // PathOverride allows overriding the default URL path used for LLM provider API requests.
 type PathOverride struct {
 	// +kubebuilder:validation:MinLength=1
+	// +optional
 	Full *string `json:"full,omitempty"`
 }
 
@@ -189,10 +192,12 @@ type SingleAuthToken struct {
 	// Must be one of: "Inline", "SecretRef", "Passthrough".
 	//
 	// +kubebuilder:validation:Enum=Inline;SecretRef;Passthrough
+	// +required
 	Kind SingleAuthTokenKind `json:"kind"`
 
 	// Provide the token directly in the configuration for the Backend.
 	// This option is the least secure. Only use this option for quick tests such as trying out AI Gateway.
+	// +optional
 	Inline *string `json:"inline,omitempty"`
 
 	// Store the API key in a Kubernetes secret in the same namespace as the Backend.
@@ -200,6 +205,7 @@ type SingleAuthToken struct {
 	// because the API key is encoded and you can restrict access to secrets through Authorization rules.
 	// You might use this option in proofs of concept, controlled development and staging environments,
 	// or well-controlled prod environments that use secrets.
+	// +optional
 	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
 }
 
@@ -213,6 +219,7 @@ type OpenAIConfig struct {
 	// Optional: Override the model name, such as `gpt-4o-mini`.
 	// If unset, the model name is taken from the request.
 	// This setting can be useful when setting up model failover within the same LLM provider.
+	// +optional
 	Model *string `json:"model,omitempty"`
 }
 
@@ -297,10 +304,12 @@ type VertexAIConfig struct {
 	Location string `json:"location"`
 
 	// Optional: The model path to route to. Defaults to the Gemini model path, `generateContent`.
+	// +optional
 	ModelPath *string `json:"modelPath,omitempty"`
 
 	// The type of publisher model to use. Currently, only Google is supported.
 	// +kubebuilder:validation:Enum=GOOGLE
+	// +required
 	Publisher Publisher `json:"publisher"`
 }
 
@@ -312,10 +321,12 @@ type AnthropicConfig struct {
 	AuthToken SingleAuthToken `json:"authToken"`
 	// Optional: A version header to pass to the Anthropic API.
 	// For more information, see the [Anthropic API versioning docs](https://docs.anthropic.com/en/api/versioning).
-	Version string `json:"apiVersion,omitempty"`
+	// +optional
+	Version *string `json:"apiVersion,omitempty"`
 	// Optional: Override the model name.
 	// If unset, the model name is taken from the request.
 	// This setting can be useful when testing model failover scenarios.
+	// +optional
 	Model *string `json:"model,omitempty"`
 }
 
@@ -358,10 +369,12 @@ type BedrockConfig struct {
 type AWSGuardrailConfig struct {
 	// GuardrailIdentifier is the identifier of the Guardrail policy to use for the backend.
 	// +kubebuilder:validation:MinLength=1
+	// +required
 	GuardrailIdentifier string `json:"identifier"`
 
 	// GuardrailVersion is the version of the Guardrail policy to use for the backend.
 	// +kubebuilder:validation:MinLength=1
+	// +required
 	GuardrailVersion string `json:"version"`
 }
 
@@ -377,5 +390,6 @@ type PriorityGroup struct {
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=32
 	// +kubebuilder:validation:XValidation:message="provider names must be unique within a group",rule="self.all(p1, self.exists_one(p2, p1.name == p2.name))"
+	// +optional
 	Providers []NamedLLMProvider `json:"providers,omitempty"`
 }

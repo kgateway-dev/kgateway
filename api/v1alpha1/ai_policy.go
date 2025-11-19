@@ -11,15 +11,18 @@ import (
 type AIPolicy struct {
 	// Enrich requests sent to the LLM provider by appending and prepending system prompts.
 	// This can be configured only for LLM providers that use the `CHAT` or `CHAT_STREAMING` API route type.
+	// +optional
 	PromptEnrichment *AIPromptEnrichment `json:"promptEnrichment,omitempty"`
 
 	// Set up prompt guards to block unwanted requests to the LLM provider and mask sensitive data.
 	// Prompt guards can be used to reject requests based on the content of the prompt, as well as
 	// mask responses based on the content of the response.
+	// +optional
 	PromptGuard *AIPromptGuard `json:"promptGuard,omitempty"`
 
 	// Provide defaults to merge with user input fields.
 	// Defaults do _not_ override the user input fields, unless you explicitly set `override` to `true`.
+	// +optional
 	Defaults []FieldDefault `json:"defaults,omitempty"`
 }
 
@@ -57,9 +60,11 @@ type AIPolicy struct {
 // ```
 type AIPromptEnrichment struct {
 	// A list of messages to be prepended to the prompt sent by the client.
+	// +optional
 	Prepend []Message `json:"prepend,omitempty"`
 
 	// A list of messages to be appended to the prompt sent by the client.
+	// +optional
 	Append []Message `json:"append,omitempty"`
 }
 
@@ -67,9 +72,11 @@ type AIPromptEnrichment struct {
 type Message struct {
 	// Role of the message. The available roles depend on the backend
 	// LLM provider model, such as `SYSTEM` or `USER` in the OpenAI API.
+	// +required
 	Role string `json:"role"`
 
 	// String content of the message.
+	// +required
 	Content string `json:"content"`
 }
 
@@ -96,9 +103,11 @@ const (
 // RegexMatch configures the regular expression (regex) matching for prompt guards and data masking.
 type RegexMatch struct {
 	// The regex pattern to match against the request or response.
+	// +optional
 	Pattern *string `json:"pattern,omitempty"`
 
 	// An optional name for this match, which can be used for debugging purposes.
+	// +optional
 	Name *string `json:"name,omitempty"`
 }
 
@@ -118,16 +127,19 @@ const (
 type Regex struct {
 	// A list of regex patterns to match against the request or response.
 	// Matches and built-ins are additive.
+	// +optional
 	Matches []RegexMatch `json:"matches,omitempty"`
 
 	// A list of built-in regex patterns to match against the request or response.
 	// Matches and built-ins are additive.
+	// +optional
 	Builtins []BuiltIn `json:"builtins,omitempty"`
 
 	// The action to take if a regex pattern is matched in a request or response.
 	// This setting applies only to request matches. PromptguardResponse matches are always masked by default.
 	// Defaults to `MASK`.
 	// +kubebuilder:default=MASK
+	// +optional
 	Action *Action `json:"action,omitempty"`
 }
 
@@ -149,6 +161,7 @@ type Webhook struct {
 	// Request headers are used when forwarding requests and response headers
 	// are used when forwarding responses.
 	// By default, no headers are forwarded.
+	// +optional
 	ForwardHeaderMatches []gwv1.HTTPHeaderMatch `json:"forwardHeaderMatches,omitempty"`
 }
 
@@ -158,13 +171,15 @@ type CustomResponse struct {
 	// A custom response message to return to the client. If not specified, defaults to
 	// "The request was rejected due to inappropriate content".
 	// +kubebuilder:default="The request was rejected due to inappropriate content"
-	Message *string `json:"message,omitempty"`
+	// +optional
+	Message string `json:"message,omitempty"`
 
 	// The status code to return to the client. Defaults to 403.
 	// +kubebuilder:default=403
 	// +kubebuilder:validation:Minimum=200
 	// +kubebuilder:validation:Maximum=599
-	StatusCode *int32 `json:"statusCode,omitempty"`
+	// +optional
+	StatusCode int32 `json:"statusCode,omitempty"`
 }
 
 // Moderation configures an external moderation model endpoint. This endpoint evaluates
@@ -181,6 +196,7 @@ type Moderation struct {
 	// Pass prompt data through an external moderation model endpoint,
 	// which compares the request prompt input to predefined content rules.
 	// Configure an OpenAI moderation endpoint.
+	// +optional
 	OpenAIModeration *OpenAIConfig `json:"openAIModeration,omitempty"`
 
 	// TODO: support other moderation models
@@ -192,16 +208,20 @@ type Moderation struct {
 type PromptguardRequest struct {
 	// A custom response message to return to the client. If not specified, defaults to
 	// "The request was rejected due to inappropriate content".
+	// +optional
 	CustomResponse *CustomResponse `json:"customResponse,omitempty"`
 
 	// Regular expression (regex) matching for prompt guards and data masking.
+	// +optional
 	Regex *Regex `json:"regex,omitempty"`
 
 	// Configure a webhook to forward requests to for prompt guarding.
+	// +optional
 	Webhook *Webhook `json:"webhook,omitempty"`
 
 	// Pass prompt data through an external moderation model endpoint,
 	// which compares the request prompt input to predefined content rules.
+	// +optional
 	Moderation *Moderation `json:"moderation,omitempty"`
 }
 
@@ -211,9 +231,11 @@ type PromptguardRequest struct {
 // Note: This is not yet supported for agentgateway.
 type PromptguardResponse struct {
 	// Regular expression (regex) matching for prompt guards and data masking.
+	// +optional
 	Regex *Regex `json:"regex,omitempty"`
 
 	// Configure a webhook to forward responses to for prompt guarding.
+	// +optional
 	Webhook *Webhook `json:"webhook,omitempty"`
 }
 
@@ -243,9 +265,11 @@ type PromptguardResponse struct {
 // ```
 type AIPromptGuard struct {
 	// Prompt guards to apply to requests sent by the client.
+	// +optional
 	Request *PromptguardRequest `json:"request,omitempty"`
 
 	// Prompt guards to apply to responses returned by the LLM provider.
+	// +optional
 	Response *PromptguardResponse `json:"response,omitempty"`
 }
 
@@ -289,10 +313,12 @@ type AIPromptGuard struct {
 type FieldDefault struct {
 	// The name of the field.
 	// +kubebuilder:validation:MinLength=1
+	// +required
 	Field string `json:"field"`
 
 	// The field default value, which can be any JSON Data Type.
 	// +kubebuilder:validation:MinLength=1
+	// +required
 	Value string `json:"value"`
 
 	// Whether to override the field's value if it already exists.
@@ -324,19 +350,19 @@ type PromptCachingConfig struct {
 	// Inserts a cache point after all system messages.
 	// +optional
 	// +kubebuilder:default=true
-	CacheSystem *bool `json:"cacheSystem,omitempty"`
+	CacheSystem bool `json:"cacheSystem,omitempty"`
 
 	// CacheMessages enables caching for conversation messages.
 	// Caches all messages in the conversation for cost savings.
 	// +optional
 	// +kubebuilder:default=true
-	CacheMessages *bool `json:"cacheMessages,omitempty"`
+	CacheMessages bool `json:"cacheMessages,omitempty"`
 
 	// CacheTools enables caching for tool definitions.
 	// Inserts a cache point after all tool specifications.
 	// +optional
 	// +kubebuilder:default=false
-	CacheTools *bool `json:"cacheTools,omitempty"`
+	CacheTools bool `json:"cacheTools,omitempty"`
 
 	// MinTokens specifies the minimum estimated token count
 	// before caching is enabled. Uses rough heuristic (word count × 1.3) to estimate tokens.
@@ -344,5 +370,5 @@ type PromptCachingConfig struct {
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:default=1024
-	MinTokens *int `json:"minTokens,omitempty"`
+	MinTokens int `json:"minTokens,omitempty"`
 }
