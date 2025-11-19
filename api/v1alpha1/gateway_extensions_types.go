@@ -17,10 +17,12 @@ import (
 // +kubebuilder:resource:categories=kgateway
 // +kubebuilder:subresource:status
 type GatewayExtension struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec   GatewayExtensionSpec   `json:"spec,omitempty"`
+	// +required
+	Spec GatewayExtensionSpec `json:"spec"`
+	// +optional
 	Status GatewayExtensionStatus `json:"status,omitempty"`
 }
 
@@ -87,7 +89,6 @@ type GRPCRetryPolicy struct {
 	// Defaults to 1 attempt if not set.
 	// A value of 0 effectively disables retries.
 	// +optional
-	//
 	// +kubebuilder:default=1
 	// +kubebuilder:validation:Minimum=0
 	Attempts int32 `json:"attempts,omitempty"`
@@ -103,11 +104,13 @@ type GRPCRetryBackoff struct {
 	// BaseInterval specifies the base interval used with a fully jittered exponential back-off between retries.
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="retry.BaseInterval must be at least 1ms."
+	// +required
 	BaseInterval metav1.Duration `json:"baseInterval"`
 
 	// MaxInterval specifies the maximum interval between retry attempts.
 	// Defaults to 10 times the BaseInterval if not set.
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +optional
 	MaxInterval *metav1.Duration `json:"maxInterval,omitempty"`
 }
 
@@ -142,6 +145,7 @@ type RateLimitProvider struct {
 	// Disabled by default.
 	// +kubebuilder:validation:Enum=Off;DraftVersion03
 	// +kubebuilder:default="Off"
+	// +optional
 	XRateLimitHeaders XRateLimitHeadersStandard `json:"xRateLimitHeaders,omitempty"`
 }
 
