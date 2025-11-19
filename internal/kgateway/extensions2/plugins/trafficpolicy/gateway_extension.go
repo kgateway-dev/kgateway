@@ -33,15 +33,12 @@ import (
 
 type TrafficPolicyGatewayExtensionIR struct {
 	// +krtEqualsTodo decide whether extension name should affect equality
-	Name      string
-	ExtType   v1alpha1.GatewayExtensionType
-	ExtAuth   *envoy_ext_authz_v3.ExtAuthz
-	ExtProc   *envoymatchingv3.ExtensionWithMatcher
-	RateLimit *ratev3.RateLimit
-	Jwt       *envoyjwtauthnv3.JwtAuthentication
-	// No need to compare JwtProviders, already compared in Jwt
-	// +noKrtEquals
-	JwtProviders     []v1alpha1.NamedJWTProvider
+	Name             string
+	ExtType          v1alpha1.GatewayExtensionType
+	ExtAuth          *envoy_ext_authz_v3.ExtAuthz
+	ExtProc          *envoymatchingv3.ExtensionWithMatcher
+	RateLimit        *ratev3.RateLimit
+	Jwt              *envoyjwtauthnv3.JwtAuthentication
 	PrecedenceWeight int32
 	Err              error
 }
@@ -181,7 +178,6 @@ func TranslateGatewayExtensionBuilder(commoncol *collections.CommonCollections) 
 				p.Err = fmt.Errorf("jwt extension missing configuration")
 				return p
 			}
-			p.JwtProviders = gExt.JwtProviders
 
 			// Use the specialized function for jwt provider resolution
 			jwtConfig, err := resolveJwtProviders(krtctx, commoncol.ConfigMaps, gExt.Name, gExt.Namespace, gExt.JwtProviders)

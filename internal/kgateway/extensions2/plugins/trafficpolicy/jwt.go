@@ -105,7 +105,7 @@ func constructJwt(
 	if err != nil {
 		return fmt.Errorf("jwt: %w", err)
 	}
-	if provider.ExtType != v1alpha1.GatewayExtensionTypeJWTProvider || provider.JwtProviders == nil {
+	if provider.ExtType != v1alpha1.GatewayExtensionTypeJWTProvider || provider.Jwt == nil {
 		return pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeJWTProvider, provider.ExtType)
 	}
 
