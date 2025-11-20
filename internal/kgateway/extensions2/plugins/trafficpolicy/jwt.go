@@ -101,7 +101,7 @@ func constructJwt(
 		return nil
 	}
 
-	provider, err := fetchGatewayExtension(krtctx, *spec.ExtensionRef, in.GetNamespace())
+	provider, err := fetchGatewayExtension(krtctx, spec.ExtensionRef, in.GetNamespace())
 	if err != nil {
 		return fmt.Errorf("jwt: %w", err)
 	}
@@ -154,7 +154,6 @@ func (j *jwtIr) validate() error {
 	return errors.Join(errs...)
 }
 
-// ProviderName returns a unique name for a provider in the context of a route
 func ProviderName(resourceName, providerName string) string {
 	return fmt.Sprintf("%s_%s", resourceName, providerName)
 }
@@ -304,7 +303,7 @@ func parsePem(key string) (*jose.JSONWebKeySet, error) {
 		return nil, errors.New("no PEM block found")
 	}
 	var err error
-	var publicKey interface{}
+	var publicKey any
 	publicKey, err = x509.ParsePKCS1PublicKey(block.Bytes)
 	if err != nil {
 		publicKey, err = x509.ParsePKIXPublicKey(block.Bytes) // Parses both RS256 and PS256

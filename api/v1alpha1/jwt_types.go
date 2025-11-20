@@ -2,11 +2,11 @@ package v1alpha1
 
 import corev1 "k8s.io/api/core/v1"
 
-// JWTAuthentication defines the providers used to configure JWT validation
+// JWTAuthentication defines the providers used to configure JWT authentication
 type JWTAuthentication struct {
 	// ExtensionRef references a GatewayExtension that provides the jwt providers
 	// +required
-	ExtensionRef *NamespacedObjectReference `json:"extensionRef"`
+	ExtensionRef NamespacedObjectReference `json:"extensionRef"`
 
 	// TODO: add support for ValidationMode here (REQUIRE_VALID,ALLOW_MISSING,ALLOW_MISSING_OR_FAILED)
 
@@ -37,12 +37,15 @@ type JWTProvider struct {
 	// ClaimsToHeaders is the list of claims to headers to be used for the JWT provider.
 	// Optionally set the claims from the JWT payload that you want to extract and add as headers
 	// to the request before the request is forwarded to the upstream destination.
+	// Note: if ClaimsToHeaders is set, the Envoy route cache will be cleared.
+	// This allows the JWT filter to correctly affect routing decisions.
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=32
 	// +optional
 	ClaimsToHeaders []JWTClaimToHeader `json:"claimsToHeaders,omitempty"`
 
 	// JWKS is the source for the JSON Web Keys to be used to validate the JWT.
+	// +required
 	JWKS JWKS `json:"jwks"`
 
 	// KeepToken configures if the token is forwarded upstream.
@@ -93,11 +96,13 @@ type JWTClaimToHeader struct {
 	// Name is the JWT claim name, for example, "sub".
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=2048
+	// +required
 	Name string `json:"name"`
 
 	// Header is the header the claim will be copied to, for example, "x-sub".
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=2048
+	// +required
 	Header string `json:"header"`
 }
 
@@ -118,7 +123,7 @@ type LocalJWKS struct {
 	// Inline is the JWKS as the raw, inline JWKS string
 	// This can be an individual key, a key set or a pem block public key
 	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:MaxLength=2048
+	// +kubebuilder:validation:MaxLength=16384
 	// +optional
 	Inline *string `json:"inline,omitempty"`
 

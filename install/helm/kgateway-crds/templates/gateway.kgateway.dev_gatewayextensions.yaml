@@ -583,6 +583,8 @@ spec:
                         ClaimsToHeaders is the list of claims to headers to be used for the JWT provider.
                         Optionally set the claims from the JWT payload that you want to extract and add as headers
                         to the request before the request is forwarded to the upstream destination.
+                        Note: if ClaimsToHeaders is set, the Envoy route cache will be cleared.
+                        This allows the JWT filter to correctly affect routing decisions.
                       items:
                         description: JWTClaimToHeader allows copying verified claims
                           to headers sent upstream
@@ -641,7 +643,7 @@ spec:
                               description: |-
                                 Inline is the JWKS as the raw, inline JWKS string
                                 This can be an individual key, a key set or a pem block public key
-                              maxLength: 2048
+                              maxLength: 16384
                               minLength: 1
                               type: string
                           type: object
