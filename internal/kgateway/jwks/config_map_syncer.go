@@ -11,7 +11,6 @@ import (
 
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
-	"istio.io/istio/pkg/kube/kubetypes"
 	"istio.io/istio/pkg/ptr"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,13 +34,13 @@ type configMapSyncer struct {
 	cmCollection        krt.Collection[*corev1.ConfigMap]
 }
 
-func NewConfigMapSyncer(client apiclient.Client, deploymentNamespace string, krtOptions krtutil.KrtOptions, discoveryNamespacesFilter kubetypes.DynamicObjectFilter) *configMapSyncer {
+func NewConfigMapSyncer(client apiclient.Client, deploymentNamespace string, krtOptions krtutil.KrtOptions) *configMapSyncer {
 	toret := configMapSyncer{
 		client:              client,
 		deploymentNamespace: deploymentNamespace,
 		cmCollection: krt.NewInformerFiltered[*corev1.ConfigMap](client,
 			kclient.Filter{
-				ObjectFilter:  discoveryNamespacesFilter,
+				ObjectFilter:  client.ObjectFilter(),
 				LabelSelector: JwksStoreComponent + "=" + jwksStorePrefix},
 			krtOptions.ToOptions("config_map_syncer/ConfigMaps")...),
 	}
@@ -59,6 +58,10 @@ func JwksFromConfigMap(cm *corev1.ConfigMap) (map[string]string, error) {
 		return nil, err
 	}
 	return jwks, nil
+}
+
+func (cs *configMapSyncer) WaitForCacheSync(ctx context.Context) bool {
+	return cs.client.WaitForCacheSync("config_map_syncer/ConfigMaps", ctx.Done(), cs.cmCollection.HasSynced)
 }
 
 // Generates ConfigMap name based on jwks uri. Resulting name is a concatenation of "jwks-store-" prefix and an MD5 hash of the jwks uri.

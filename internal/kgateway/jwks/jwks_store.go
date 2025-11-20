@@ -35,7 +35,7 @@ func BuildJwksStore(ctx context.Context, cli apiclient.Client, commonCols *colle
 		jwksCache:       jwksCache,
 		latestJwksQueue: jwksQueue,
 		jwksFetcher:     NewJwksFetcher(jwksCache),
-		configMapSyncer: NewConfigMapSyncer(cli, deploymentNamespace, commonCols.KrtOpts, commonCols.DiscoveryNamespacesFilter),
+		configMapSyncer: NewConfigMapSyncer(cli, deploymentNamespace, commonCols.KrtOpts),
 	}
 	jwksStore.updates = jwksStore.jwksFetcher.SubscribeToUpdates()
 	BuildJwksConfigMapNamespacedNameFunc(deploymentNamespace)
@@ -50,6 +50,8 @@ func BuildJwksConfigMapNamespacedNameFunc(deploymentNamespace string) {
 
 func (s *JwksStore) Start(ctx context.Context) error {
 	log := log.FromContext(ctx)
+
+	s.configMapSyncer.WaitForCacheSync(ctx)
 
 	storedJwks, err := s.configMapSyncer.LoadJwksFromConfigMaps(ctx)
 	if err != nil {
