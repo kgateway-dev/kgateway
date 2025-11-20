@@ -40,7 +40,12 @@ var (
 func lisToIr(l gwv1.Listener) ir.Listener {
 	return ir.Listener{
 		Listener: l,
-		Parent:   &gwv1.Gateway{},
+		Parent: &gwv1.Gateway{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "gw",
+				Namespace: "default",
+			},
+		},
 	}
 }
 
