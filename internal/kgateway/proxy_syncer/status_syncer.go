@@ -115,7 +115,7 @@ func (s *StatusSyncer) Start(ctx context.Context) error {
 			s.syncRouteStatus(ctx, routeStatusLogger, latestReport)
 			s.syncPolicyStatus(ctx, latestReport)
 			if s.customStatusSync != nil {
-\				s.customStatusSync(ctx, latestReport)
+				s.customStatusSync(ctx, latestReport)
 			}
 		}
 	}()
