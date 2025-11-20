@@ -143,10 +143,10 @@ func (s *testingSuite) TestClearStaleStatus() {
 	s.addParentStatus("example-route", "default", "other-gw", otherControllerName)
 
 	// Verify status
-	s.assertParentStatuses("example-route", "default", "gw", map[string]bool{
+	s.assertParentStatuses("gw", map[string]bool{
 		kgatewayControllerName: true,
 	})
-	s.assertParentStatuses("example-route", "default", "other-gw", map[string]bool{
+	s.assertParentStatuses("other-gw", map[string]bool{
 		otherControllerName: true,
 	})
 
@@ -155,10 +155,10 @@ func (s *testingSuite) TestClearStaleStatus() {
 	s.Require().NoError(err, "can apply manifest")
 
 	// Verify kgateway status is cleared but other controller status remains
-	s.assertParentStatuses("example-route", "default", "gw", map[string]bool{
+	s.assertParentStatuses("gw", map[string]bool{
 		kgatewayControllerName: false,
 	})
-	s.assertParentStatuses("example-route", "default", "other-gw", map[string]bool{
+	s.assertParentStatuses("other-gw", map[string]bool{
 		otherControllerName: true,
 	})
 }
@@ -197,13 +197,13 @@ func (s *testingSuite) addParentStatus(routeName, routeNamespace, gwName, contro
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
-func (s *testingSuite) assertParentStatuses(routeName, routeNamespace, parentName string, expectedControllers map[string]bool) {
+func (s *testingSuite) assertParentStatuses(parentName string, expectedControllers map[string]bool) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
 	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
 		route := &gwv1.HTTPRoute{}
 		err := s.TestInstallation.ClusterContext.Client.Get(
 			s.Ctx,
-			types.NamespacedName{Name: routeName, Namespace: routeNamespace},
+			types.NamespacedName{Name: "example-route", Namespace: "default"},
 			route,
 		)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get HTTPRoute")
