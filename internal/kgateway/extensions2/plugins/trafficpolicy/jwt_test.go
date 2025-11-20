@@ -1,16 +1,21 @@
 package trafficpolicy
 
 import (
+	"errors"
 	"testing"
+	"time"
 
 	jwtauthnv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/jwt_authn/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 func TestTranslateKey(t *testing.T) {
@@ -386,7 +391,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			config, err := resolveJwtProviders(nil, nil, "test-policy", "test-ns", tt.providers)
+			config, err := resolveJwtProviders(nil, nil, nil, ir.ObjectSource{}, "test-policy", "test-ns", tt.providers)
 			if tt.expectedError {
 				assert.Error(t, err)
 				return
@@ -433,4 +438,91 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 			}
 		})
 	}
+}
+
+type fakeBackendResolver struct {
+	backend *ir.BackendObjectIR
+	err     error
+}
+
+func (f *fakeBackendResolver) GetBackendFromRef(krtctx krt.HandlerContext, src ir.ObjectSource, ref gwv1.BackendObjectReference) (*ir.BackendObjectIR, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	return f.backend, nil
+}
+
+func TestTranslateJwksRemote(t *testing.T) {
+	makeBackendRef := func(name, namespace string, portNumber int32) *gwv1.BackendObjectReference {
+		ns := gwv1.Namespace(namespace)
+		port := gwv1.PortNumber(portNumber)
+		return &gwv1.BackendObjectReference{
+			Name:      gwv1.ObjectName(name),
+			Namespace: &ns,
+			Port:      &port,
+		}
+	}
+
+	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+		backend := &ir.BackendObjectIR{
+			ObjectSource: ir.ObjectSource{
+				Kind:      "Service",
+				Namespace: "backend-ns",
+				Name:      "backend",
+			},
+			GvPrefix: "svc",
+			Port:     8443,
+		}
+		resolver := &fakeBackendResolver{backend: backend}
+		out := &jwtauthnv3.JwtProvider{}
+		cacheDuration := metav1.Duration{Duration: time.Minute}
+
+		err := translateJwks(
+			nil,
+			v1alpha1.JWKS{
+				RemoteJWKS: &v1alpha1.RemoteJWKS{
+					URL:           "https://example.com/jwks",
+					BackendRef:    makeBackendRef("backend", "backend-ns", 8443),
+					CacheDuration: &cacheDuration,
+				},
+			},
+			"policy-ns",
+			out,
+			nil,
+			resolver,
+			ir.ObjectSource{Namespace: "policy-ns"},
+		)
+		require.NoError(t, err)
+
+		remote, ok := out.JwksSourceSpecifier.(*jwtauthnv3.JwtProvider_RemoteJwks)
+		require.True(t, ok, "expected remote jwks config to be set")
+		assert.Equal(t, "https://example.com/jwks", remote.RemoteJwks.GetHttpUri().GetUri())
+		assert.Equal(t, backend.ClusterName(), remote.RemoteJwks.GetHttpUri().GetCluster())
+		require.NotNil(t, remote.RemoteJwks.GetCacheDuration())
+		assert.Equal(t, time.Minute, remote.RemoteJwks.GetCacheDuration().AsDuration())
+	})
+
+	t.Run("missing backend ref errors", func(t *testing.T) {
+		t.Parallel()
+		resolver := &fakeBackendResolver{err: errors.New("backend missing")}
+		out := &jwtauthnv3.JwtProvider{}
+
+		err := translateJwks(
+			nil,
+			v1alpha1.JWKS{
+				RemoteJWKS: &v1alpha1.RemoteJWKS{
+					URL:        "https://example.com/jwks",
+					BackendRef: makeBackendRef("backend", "backend-ns", 80),
+				},
+			},
+			"policy-ns",
+			out,
+			nil,
+			resolver,
+			ir.ObjectSource{Namespace: "policy-ns"},
+		)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "remote jwks: unresolved backend ref")
+	})
 }
