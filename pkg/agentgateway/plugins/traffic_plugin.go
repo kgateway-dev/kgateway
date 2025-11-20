@@ -87,13 +87,13 @@ func NewAgentPlugin(agw *AgwCollections) AgwPlugin {
 		agw.Client,
 		wellknown.AgentgatewayPolicyGVR,
 		kclient.Filter{ObjectFilter: agw.Client.ObjectFilter()},
-	), agw.KrtOpts.ToOptions("AgentgatewayPolicy")...)
+	), agw.KrtOpts.ToOptions("informer/AgentgatewayPolicy")...)
 	policyStatusCol, policyCol := krt.NewStatusManyCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.AgentgatewayPolicy) (
 		*gwv1.PolicyStatus,
 		[]AgwPolicy,
 	) {
 		return TranslateAgentgatewayPolicy(krtctx, policyCR, agw)
-	})
+	}, agw.KrtOpts.ToOptions("AgentgatewayPolicy")...)
 
 	return AgwPlugin{
 		ContributesPolicies: map[schema.GroupKind]PolicyPlugin{
@@ -177,7 +177,7 @@ func TranslateAgentgatewayPolicy(
 				}
 			}
 
-		case wellknown.BackendGVK.GroupKind():
+		case wellknown.AgentgatewayBackendGVK.GroupKind():
 			policyTarget = &api.PolicyTarget{
 				Kind: &api.PolicyTarget_Backend{
 					Backend: utils.InternalBackendName(policy.Namespace, string(target.Name), ""),

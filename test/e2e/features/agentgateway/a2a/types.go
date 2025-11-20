@@ -96,7 +96,7 @@ var (
 	_ e2e.NewSuiteFunc = NewTestingSuite
 
 	gatewayName      = "gw"
-	gatewayNamespace = "default"
+	gatewayNamespace = "agent-gateway-test"
 
 	setupManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "common.yaml")
 

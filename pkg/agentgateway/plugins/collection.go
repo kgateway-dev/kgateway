@@ -99,6 +99,7 @@ func NewAgwCollections(
 ) (*AgwCollections, error) {
 	agwCollections := &AgwCollections{
 		Client:          commoncol.Client,
+		KrtOpts:         commoncol.KrtOpts,
 		ControllerName:  agwControllerName,
 		SystemNamespace: systemNamespace,
 		ClusterID:       clusterID,

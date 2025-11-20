@@ -2,6 +2,7 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
   name: ai-gateway
+  namespace: default
 spec:
   gatewayClassName: agentgateway
   listeners:
@@ -16,6 +17,7 @@ apiVersion: gateway.kgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   name: openai
+  namespace: default
 spec:
   ai:
     provider:
@@ -31,6 +33,7 @@ apiVersion: gateway.kgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   name: anthropic
+  namespace: default
 spec:
   ai:
     provider:
@@ -46,6 +49,7 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: llm
+  namespace: default
 spec:
   parentRefs:
   - group: gateway.networking.k8s.io
@@ -92,6 +96,7 @@ apiVersion: gateway.kgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: openai-prompt-guard
+  namespace: default
 spec:
   targetRefs:
   - group: gateway.kgateway.dev
@@ -118,6 +123,7 @@ apiVersion: gateway.kgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: anthropic-request-guardrails
+  namespace: default
 spec:
   targetRefs:
     - group: gateway.kgateway.dev
@@ -136,6 +142,7 @@ apiVersion: gateway.kgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: anthropic-response-guardrails
+  namespace: default
 spec:
   targetRefs:
     - group: gateway.kgateway.dev

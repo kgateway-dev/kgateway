@@ -93,7 +93,7 @@ func translateBackendPolicyToAgw(
 	if s := backend.AI; s != nil {
 		pol, err := translateBackendAI(ctx, policy, policyName, policyTarget)
 		if err != nil {
-			logger.Error("error processing backend Tracing", "err", err)
+			logger.Error("error processing backend AI", "err", err)
 			errs = append(errs, err)
 		}
 		agwPolicies = append(agwPolicies, pol...)
@@ -102,7 +102,7 @@ func translateBackendPolicyToAgw(
 	if s := backend.Auth; s != nil {
 		pol, err := translateBackendAuth(ctx, policy, policyName, policyTarget)
 		if err != nil {
-			logger.Error("error processing backend Tracing", "err", err)
+			logger.Error("error processing backend Auth", "err", err)
 			errs = append(errs, err)
 		}
 		agwPolicies = append(agwPolicies, pol...)
