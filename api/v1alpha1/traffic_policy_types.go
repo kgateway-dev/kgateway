@@ -19,11 +19,12 @@ import (
 // +kubebuilder:subresource:status
 // +kubebuilder:metadata:labels="gateway.networking.k8s.io/policy=Direct"
 type TrafficPolicy struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec TrafficPolicySpec `json:"spec,omitempty"`
-
+	// +required
+	Spec TrafficPolicySpec `json:"spec"`
+	// +optional
 	Status gwv1.PolicyStatus `json:"status,omitempty"`
 	// TODO: embed this into a typed Status field when
 	// https://github.com/kubernetes/kubernetes/issues/131533 is resolved
@@ -113,6 +114,7 @@ type TrafficPolicySpec struct {
 	// RBAC policies applied at different attachment points in the configuration
 	// hierarchy are not cumulative, and only the most specific policy is enforced. This means an RBAC policy
 	// attached to a route will override any RBAC policies applied to the gateway or listener.
+	// +optional
 	RBAC *Authorization `json:"rbac,omitempty"`
 }
 
@@ -175,6 +177,7 @@ type (
 		// +required
 		Name HeaderName `json:"name"`
 		// Value is the Inja template to apply to generate the output value for the header.
+		// +optional
 		Value InjaTemplate `json:"value,omitempty"`
 	}
 )
@@ -196,7 +199,8 @@ type BodyTransformation struct {
 	// ParseAs defines what auto formatting should be applied to the body.
 	// This can make interacting with keys within a json body much easier if AsJson is selected.
 	// +kubebuilder:default=AsString
-	ParseAs BodyParseBehavior `json:"parseAs"`
+	// +optional
+	ParseAs BodyParseBehavior `json:"parseAs,omitempty"`
 
 	// Value is the template to apply to generate the output value for the body.
 	// Only Inja templates are supported.
