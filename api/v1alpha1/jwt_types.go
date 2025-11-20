@@ -17,7 +17,6 @@ type JWTAuthentication struct {
 // If multiple providers are specified for a given JWT policy, the providers will be `OR`-ed together and will allow validation to any of the providers.
 type JWTProvider struct {
 	// Issuer of the JWT. the 'iss' claim of the JWT must match this.
-	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=2048
 	// +optional
 	Issuer string `json:"issuer"`
@@ -110,7 +109,7 @@ type JWTClaimToHeader struct {
 type JWKS struct {
 	// LocalJWKS configures getting the public keys to validate the JWT from a Kubernetes configmap,
 	// or inline (raw string) JWKS.
-	// +optional
+	// +required
 	LocalJWKS *LocalJWKS `json:"local,omitempty"`
 
 	// TODO: Add support for remote JWKS
@@ -127,7 +126,7 @@ type LocalJWKS struct {
 	// +optional
 	Inline *string `json:"inline,omitempty"`
 
-	// ConfigMapRef configures storing the JWK in a Kubernetes ConfigMap in the same namespace as the JWTValidationPolicy.
+	// ConfigMapRef configures storing the JWK in a Kubernetes ConfigMap in the same namespace as the GatewayExtension.
 	// The ConfigMap must have a data key named 'jwks' that contains the JWKS.
 	// +optional
 	ConfigMapRef *corev1.LocalObjectReference `json:"configMapRef,omitempty"`
