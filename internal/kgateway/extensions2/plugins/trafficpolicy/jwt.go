@@ -212,19 +212,25 @@ func translateTokenSource(provider v1alpha1.JWTProvider, out *jwtauthnv3.JwtProv
 }
 
 func translateJwks(krtctx krt.HandlerContext, jwkConfig v1alpha1.JWKS, configMaps krt.Collection[*corev1.ConfigMap], policyNs string, out *jwtauthnv3.JwtProvider) error {
-	var err error
 	var jwkSource *jwtauthnv3.JwtProvider_LocalJwks
 	if jwkConfig.LocalJWKS.Inline != nil {
+		var err error
 		jwkSource, err = translateJwksInline(*jwkConfig.LocalJWKS.Inline)
+		if err != nil {
+			return err
+		}
 	} else if jwkConfig.LocalJWKS.ConfigMapRef != nil {
-		cm, err2 := GetConfigMap(krtctx, configMaps, jwkConfig.LocalJWKS.ConfigMapRef.Name, policyNs)
-		if err2 != nil {
-			return fmt.Errorf("failed to find configmap %s: %v", jwkConfig.LocalJWKS.ConfigMapRef.Name, err2)
+		cm, err := GetConfigMap(krtctx, configMaps, jwkConfig.LocalJWKS.ConfigMapRef.Name, policyNs)
+		if err != nil {
+			return fmt.Errorf("failed to find configmap %s: %v", jwkConfig.LocalJWKS.ConfigMapRef.Name, err)
 		}
 		jwkSource, err = translateJwksConfigMap(cm)
+		if err != nil {
+			return err
+		}
 	}
 	out.JwksSourceSpecifier = jwkSource
-	return err
+	return nil
 }
 
 func translateJwksConfigMap(cm *corev1.ConfigMap) (*jwtauthnv3.JwtProvider_LocalJwks, error) {
