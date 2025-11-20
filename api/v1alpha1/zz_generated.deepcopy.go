@@ -669,7 +669,7 @@ func (in *AgentRemoteJWKS) DeepCopyInto(out *AgentRemoteJWKS) {
 	*out = *in
 	if in.CacheDuration != nil {
 		in, out := &in.CacheDuration, &out.CacheDuration
-		*out = new(metav1.Duration)
+		*out = new(v1.Duration)
 		**out = **in
 	}
 	in.BackendRef.DeepCopyInto(&out.BackendRef)
