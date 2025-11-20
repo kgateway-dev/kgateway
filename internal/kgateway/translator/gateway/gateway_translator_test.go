@@ -1406,6 +1406,82 @@ func TestBasic(t *testing.T) {
 			},
 		})
 	})
+
+	t.Run("JWT Policy at gateway level", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "jwt/gateway.yaml",
+			outputFile: "jwt/gateway.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("JWT Policy at gateway level selecting listener with sectionName", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "jwt/gateway-listener.yaml",
+			outputFile: "jwt/gateway-listener.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("JWT Policy at gateway level using configmap", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "jwt/gateway-configmap.yaml",
+			outputFile: "jwt/gateway-configmap.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("JWT Policy targeting listenerset", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "jwt/listenerset.yaml",
+			outputFile: "jwt/listenerset.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+	t.Run("JWT Policy at route level", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "jwt/route.yaml",
+			outputFile: "jwt/route.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("JWT Policy at httproute level", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "jwt/httproute.yaml",
+			outputFile: "jwt/httproute.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("JWT Policy at gateway and route level", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "jwt/gateway-and-route.yaml",
+			outputFile: "jwt/gateway-and-route.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
 }
 
 func TestValidation(t *testing.T) {
