@@ -8,7 +8,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 )
 
 var JwksConfigMapNamespacedName = func(jwksUri string) *types.NamespacedName {
@@ -26,7 +26,7 @@ type JwksStore struct {
 	latestJwksQueue utils.AsyncQueue[JwksSources]
 }
 
-func BuildJwksStore(ctx context.Context, cli apiclient.Client, krtOptions krtutil.KrtOptions, jwksQueue utils.AsyncQueue[JwksSources], deploymentNamespace string) *JwksStore {
+func BuildJwksStore(ctx context.Context, cli apiclient.Client, commonCols *collections.CommonCollections, jwksQueue utils.AsyncQueue[JwksSources], deploymentNamespace string) *JwksStore {
 	log := log.Log.WithName("jwks store setup")
 	log.Info("creating jwks store")
 
@@ -35,7 +35,7 @@ func BuildJwksStore(ctx context.Context, cli apiclient.Client, krtOptions krtuti
 		jwksCache:       jwksCache,
 		latestJwksQueue: jwksQueue,
 		jwksFetcher:     NewJwksFetcher(jwksCache),
-		configMapSyncer: NewConfigMapSyncer(cli, deploymentNamespace, krtOptions),
+		configMapSyncer: NewConfigMapSyncer(cli, deploymentNamespace, commonCols.KrtOpts, commonCols.DiscoveryNamespacesFilter),
 	}
 	jwksStore.updates = jwksStore.jwksFetcher.SubscribeToUpdates()
 	BuildJwksConfigMapNamespacedNameFunc(deploymentNamespace)

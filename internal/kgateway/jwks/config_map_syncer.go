@@ -11,6 +11,7 @@ import (
 
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/kube/kubetypes"
 	"istio.io/istio/pkg/ptr"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,12 +35,14 @@ type configMapSyncer struct {
 	cmCollection        krt.Collection[*corev1.ConfigMap]
 }
 
-func NewConfigMapSyncer(client apiclient.Client, deploymentNamespace string, krtOptions krtutil.KrtOptions) *configMapSyncer {
+func NewConfigMapSyncer(client apiclient.Client, deploymentNamespace string, krtOptions krtutil.KrtOptions, discoveryNamespacesFilter kubetypes.DynamicObjectFilter) *configMapSyncer {
 	toret := configMapSyncer{
 		client:              client,
 		deploymentNamespace: deploymentNamespace,
 		cmCollection: krt.NewInformerFiltered[*corev1.ConfigMap](client,
-			kclient.Filter{LabelSelector: JwksStoreComponent + "=" + jwksStorePrefix},
+			kclient.Filter{
+				ObjectFilter:  discoveryNamespacesFilter,
+				LabelSelector: JwksStoreComponent + "=" + jwksStorePrefix},
 			krtOptions.ToOptions("config_map_syncer/ConfigMaps")...),
 	}
 
