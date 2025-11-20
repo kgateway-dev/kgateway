@@ -20,12 +20,15 @@ type AgentgatewayBackend struct {
 	metav1.TypeMeta `json:",inline"`
 	// metadata for the object
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// spec defines the desired state of AgentgatewayBackend.
+	// +required
 	Spec AgentgatewayBackendSpec `json:"spec"`
 
 	// status defines the current state of AgentgatewayBackend.
+	// +optional
 	Status AgentgatewayBackendStatus `json:"status,omitempty"`
 	// TODO: embed this into a typed Status field when
 	// https://github.com/kubernetes/kubernetes/issues/131533 is resolved
@@ -53,12 +56,15 @@ type AgentgatewayBackendList struct {
 // +kubebuilder:validation:XValidation:rule="has(self.policies) && has(self.policies.mcp) ? has(self.mcp) : true",message="MCP policies require MCP backend"
 type AgentgatewayBackendSpec struct {
 	// static represents a static hostname.
+	// +optional
 	Static *AgentStaticBackend `json:"static,omitempty"`
 
 	// ai represents a LLM backend.
+	// +optional
 	AI *AIBackend `json:"ai,omitempty"`
 
 	// mcp represents an MCP backend
+	// +optional
 	MCP *MCPBackend `json:"mcp,omitempty"`
 
 	// dynamicForwardProxy configures the proxy to dynamically send requests to the destination based on the incoming
@@ -66,10 +72,12 @@ type AgentgatewayBackendSpec struct {
 	//
 	// Note: this Backend type enables users to send trigger the proxy to send requests to arbitrary destinations. Proper
 	// access controls must be put in place when using this backend type.
+	// +optional
 	DynamicForwardProxy *AgentDynamicForwardProxyBackend `json:"dynamicForwardProxy,omitempty"`
 
 	// policies controls policies for communicating with this backend. Policies may also be set in AgentgatewayPolicy;
 	// policies are merged on a field-level basis, with policies on the Backend (this field) taking precedence.
+	// +optional
 	Policies *AgentgatewayPolicyBackendFull `json:"policies,omitempty"`
 }
 
@@ -78,10 +86,12 @@ type AgentDynamicForwardProxyBackend struct {
 
 type AgentStaticBackend struct {
 	// host to connect to.
+	// +required
 	Host ShortString `json:"host"`
 	// port to connect to.
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=65535
+	// +required
 	Port int32 `json:"port"`
 }
 
@@ -89,6 +99,7 @@ type AgentStaticBackend struct {
 // +kubebuilder:validation:ExactlyOneOf=provider;groups
 type AIBackend struct {
 	// provider specifies configuration for how to reach the configured LLM provider.
+	// +optional
 	LLM *LLMProvider `json:"provider,omitempty"`
 
 	// groups specifies a list of groups in priority order where each group defines
@@ -116,6 +127,7 @@ type AIBackend struct {
 	// ```
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=32
+	// +optional
 	// TODO: enable this rule when we don't need to support older k8s versions where this rule breaks // +kubebuilder:validation:XValidation:message="provider names must be unique across groups",rule="self.map(pg, pg.providers.map(pp, pp.name)).map(p, self.map(pg, pg.providers.map(pp, pp.name)).filter(cp, cp != p).exists(cp, p.exists(pn, pn in cp))).exists(p, !p)"
 	PriorityGroups []PriorityGroup `json:"groups,omitempty"`
 }
@@ -127,16 +139,19 @@ type PriorityGroup struct {
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=32
 	// +kubebuilder:validation:XValidation:message="provider names must be unique within a group",rule="self.all(p1, self.exists_one(p2, p1.name == p2.name))"
-	Providers []NamedLLMProvider `json:"providers,omitempty"`
+	// +required
+	Providers []NamedLLMProvider `json:"providers"`
 }
 
 type NamedLLMProvider struct {
 	// Name of the provider. Policies can target this provider by name.
+	// +required
 	Name gwv1.SectionName `json:"name"`
 
 	// policies controls policies for communicating with this backend. Policies may also be set in AgentgatewayPolicy, or
 	// in the top level AgentgatewayBackend. policies are merged on a field-level basis, with order: AgentgatewayPolicy <
 	// AgentgatewayBackend < AgentgatewayBackend LLM provider (this field).
+	// +optional
 	Policies *AgentgatewayPolicyBackendAI `json:"policies,omitempty"`
 
 	LLMProvider `json:",inline"`
@@ -147,36 +162,45 @@ type NamedLLMProvider struct {
 // +kubebuilder:validation:XValidation:rule="has(self.host) || has(self.port) ? has(self.host) && has(self.port) : true",message="both host and port must be set together"
 type LLMProvider struct {
 	// OpenAI provider
+	// +optional
 	OpenAI *OpenAIConfig `json:"openai,omitempty"`
 
 	// Azure OpenAI provider
+	// +optional
 	AzureOpenAI *AzureOpenAIConfig `json:"azureopenai,omitempty"`
 
 	// Anthropic provider
+	// +optional
 	Anthropic *AnthropicConfig `json:"anthropic,omitempty"`
 
 	// Gemini provider
+	// +optional
 	Gemini *GeminiConfig `json:"gemini,omitempty"`
 
 	// Vertex AI provider
+	// +optional
 	VertexAI *VertexAIConfig `json:"vertexai,omitempty"`
 
 	// Bedrock provider
+	// +optional
 	Bedrock *BedrockConfig `json:"bedrock,omitempty"`
 
 	// Host specifies the hostname to send the requests to.
 	// If not specified, the default hostname for the provider is used.
+	// +optional
 	Host ShortString `json:"host,omitempty"`
 
 	// Port specifies the port to send the requests to.
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=65535
+	// +optional
 	Port int32 `json:"port,omitempty"`
 
 	// Path specifies the URL path to use for the LLM provider API requests.
 	// This is useful when you need to route requests to a different API endpoint while maintaining
 	// compatibility with the original provider's API structure.
 	// If not specified, the default path for the provider is used.
+	// +optional
 	Path LongString `json:"path,omitempty"`
 }
 
@@ -184,6 +208,7 @@ type LLMProvider struct {
 type OpenAIConfig struct {
 	// Optional: Override the model name, such as `gpt-4o-mini`.
 	// If unset, the model name is taken from the request.
+	// +optional
 	Model *ShortString `json:"model,omitempty"`
 }
 
@@ -193,17 +218,20 @@ type AzureOpenAIConfig struct {
 	// The endpoint for the Azure OpenAI API to use, such as `my-endpoint.openai.azure.com`.
 	// If the scheme is included, it is stripped.
 	// +kubebuilder:validation:MinLength=1
+	// +required
 	Endpoint ShortString `json:"endpoint"`
 
 	// The name of the Azure OpenAI model deployment to use.
 	// For more information, see the [Azure OpenAI model docs](https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models).
 	// This is required if ApiVersion is not 'v1'. For v1, the model can be set in the request.
 	// +kubebuilder:validation:MinLength=1
+	// +optional
 	DeploymentName *ShortString `json:"deploymentName,omitempty"`
 
 	// The version of the Azure OpenAI API to use.
 	// For more information, see the [Azure OpenAI API version reference](https://learn.microsoft.com/en-us/azure/ai-services/openai/reference#api-specs).
 	// If unset, defaults to "v1"
+	// +optional
 	ApiVersion *TinyString `json:"apiVersion,omitempty"`
 }
 
@@ -211,6 +239,7 @@ type AzureOpenAIConfig struct {
 type GeminiConfig struct {
 	// Optional: Override the model name, such as `gemini-2.5-pro`.
 	// If unset, the model name is taken from the request.
+	// +optional
 	Model *ShortString `json:"model,omitempty"`
 }
 
@@ -218,14 +247,17 @@ type GeminiConfig struct {
 type VertexAIConfig struct {
 	// Optional: Override the model name, such as `gpt-4o-mini`.
 	// If unset, the model name is taken from the request.
+	// +optional
 	Model *ShortString `json:"model,omitempty"`
 
 	// The ID of the Google Cloud Project that you use for the Vertex AI.
 	// +kubebuilder:validation:MinLength=1
+	// +required
 	ProjectId TinyString `json:"projectId"`
 
 	// The location of the Google Cloud Project that you use for the Vertex AI.
 	// +kubebuilder:validation:MinLength=1
+	// +required
 	Region TinyString `json:"region"`
 }
 
@@ -233,6 +265,7 @@ type VertexAIConfig struct {
 type AnthropicConfig struct {
 	// Optional: Override the model name, such as `gpt-4o-mini`.
 	// If unset, the model name is taken from the request.
+	// +optional
 	Model *ShortString `json:"model,omitempty"`
 }
 
@@ -248,18 +281,22 @@ type BedrockConfig struct {
 
 	// Optional: Override the model name, such as `gpt-4o-mini`.
 	// If unset, the model name is taken from the request.
+	// +optional
 	Model *ShortString `json:"model,omitempty"`
 
 	// Guardrail configures the Guardrail policy to use for the backend. See <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails.html>
 	// If not specified, the AWS Guardrail policy will not be used.
+	// +optional
 	Guardrail *AWSGuardrailConfig `json:"guardrail,omitempty"`
 }
 
 type AWSGuardrailConfig struct {
 	// GuardrailIdentifier is the identifier of the Guardrail policy to use for the backend.
+	// +required
 	GuardrailIdentifier ShortString `json:"identifier"`
 
 	// GuardrailVersion is the version of the Guardrail policy to use for the backend.
+	// +required
 	GuardrailVersion ShortString `json:"version"`
 }
 
@@ -273,6 +310,7 @@ type MCPBackend struct {
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=32
 	// +kubebuilder:validation:XValidation:message="target names must be unique",rule="self.all(t1, self.exists_one(t2, t1.name == t2.name))"
+	// +required
 	Targets []McpTargetSelector `json:"targets"`
 }
 
@@ -280,14 +318,17 @@ type MCPBackend struct {
 // +kubebuilder:validation:ExactlyOneOf=selector;static
 type McpTargetSelector struct {
 	// Name of the MCPBackend target.
+	// +required
 	Name gwv1.SectionName `json:"name"`
 
 	// selector is a label selector is the selector to use to select Services.
 	// If policies are needed on a per-service basis, AgentgatewayPolicy can target the desired Service.
+	// +optional
 	Selector *McpSelector `json:"selector,omitempty"`
 
 	// static configures a static MCP destination. When connecting to in-cluster Services, it is recommended to use
 	// 'selector' instead.
+	// +optional
 	Static *McpTarget `json:"static,omitempty"`
 }
 
@@ -295,32 +336,39 @@ type McpTargetSelector struct {
 type McpSelector struct {
 	// namespace is the label selector in which namespaces Services should be selected from.
 	// If unset, only the namespace of the AgentgatewayBackend is searched.
+	// +optional
 	Namespace *metav1.LabelSelector `json:"namespaces,omitempty"`
 
 	// services is the label selector for which Services should be selected.
+	// +optional
 	Service *metav1.LabelSelector `json:"services,omitempty"`
 }
 
 // McpTarget defines a single MCPBackend target configuration.
 type McpTarget struct {
 	// Host is the hostname or IP address of the MCPBackend target.
+	// +required
 	Host ShortString `json:"host"`
 
 	// Port is the port number of the MCPBackend target.
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=65535
+	// +required
 	Port int32 `json:"port"`
 
 	// Path is the URL path of the MCPBackend target endpoint.
 	// Defaults to "/sse" for SSE protocol or "/mcp" for StreamableHTTP protocol if not specified.
+	// +optional
 	Path *LongString `json:"path,omitempty"`
 
 	// Protocol is the protocol to use for the connection to the MCPBackend target.
+	// +optional
 	Protocol *MCPProtocol `json:"protocol,omitempty"`
 
 	// policies controls policies for communicating with this backend. Policies may also be set in AgentgatewayPolicy, or
 	// in the top level AgentgatewayBackend. Policies are merged on a field-level basis, with order: AgentgatewayPolicy <
 	// AgentgatewayBackend < AgentgatewayBackend MCP (this field).
+	// +optional
 	Policies *AgentgatewayPolicyBackendMCP `json:"policies,omitempty"`
 }
 

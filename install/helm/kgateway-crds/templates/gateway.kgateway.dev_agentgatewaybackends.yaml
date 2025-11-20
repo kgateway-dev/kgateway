@@ -1589,6 +1589,8 @@ spec:
                           x-kubernetes-validations:
                           - message: provider names must be unique within a group
                             rule: self.all(p1, self.exists_one(p2, p1.name == p2.name))
+                      required:
+                      - providers
                       type: object
                     maxItems: 32
                     minItems: 1

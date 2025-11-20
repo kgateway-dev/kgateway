@@ -150,6 +150,7 @@ type AgentgatewayPolicyBackendAI struct {
 	AgentgatewayPolicyBackendSimple `json:",inline"`
 
 	// ai specifies settings for AI workloads. This is only applicable when connecting to a Backend of type 'ai'.
+	// +optional
 	AI *BackendAI `json:"ai,omitempty"`
 }
 
@@ -162,6 +163,7 @@ type AgentgatewayPolicyBackendFull struct {
 	AI *BackendAI `json:"ai,omitempty"`
 
 	// mcp specifies settings for MCP workloads. This is only applicable when connecting to a Backend of type 'mcp'.
+	// +optional
 	MCP *BackendMCP `json:"mcp,omitempty"`
 }
 
@@ -446,13 +448,16 @@ type AgentgatewayPolicyTraffic struct {
 	Authorization *Authorization `json:"authorization,omitempty"`
 
 	// jwtAuthentication authenticates users based on JWT tokens.
+	// +optional
 	JWTAuthentication *AgentJWTAuthentication `json:"jwtAuthentication,omitempty"`
 
 	// basicAuthentication authenticates users based on the "Basic" authentication scheme (RFC 7617), where a username and password
 	// are encoded in the request.
+	// +optional
 	BasicAuthentication *AgentBasicAuthentication `json:"basicAuthentication,omitempty"`
 
 	// apiKeyAuthentication authenticates users based on a configured API Key.
+	// +optional
 	APIKeyAuthentication *AgentAPIKeyAuthentication `json:"apiKeyAuthentication,omitempty"`
 }
 
@@ -684,6 +689,7 @@ type BackendAuth struct {
 	// JWT and API Key authentication, will strip the original client credentials. Passthrough backend authentication
 	// causes the original token to be added back into the request. If there are no client authentication policies on the
 	// request, the original token would be unchanged, so this would have no effect.
+	// +optional
 	Passthrough *BackendAuthPassthrough `json:"passthrough,omitempty"`
 	// TODO: aws, azure, gcp
 }
@@ -723,6 +729,7 @@ type BackendAI struct {
 	// promptCaching enables automatic prompt caching for supported providers (AWS Bedrock).
 	// Reduces API costs by caching static content like system prompts and tool definitions.
 	// Only applicable for Bedrock Claude 3+ and Nova models.
+	// +optional
 	PromptCaching *PromptCachingConfig `json:"promptCaching,omitempty"`
 
 	// routes defines how to identify the type of traffic to handle.
@@ -815,6 +822,7 @@ type BackendHTTP struct {
 	// * If the incoming traffic was HTTPS, HTTP1 will be used. This is because most clients will
 	//   transparently upgrade HTTPS traffic to HTTP2, even if the backend doesn't support it
 	// +kubebuilder:validation:Enum=HTTP1;HTTP2
+	// +optional
 	Version *HTTPVersion `json:"version,omitempty"`
 }
 

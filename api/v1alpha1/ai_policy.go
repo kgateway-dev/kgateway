@@ -116,6 +116,7 @@ type Webhook struct {
 	// backendRef references the webhook server to reach.
 	//
 	// Supported types: Service and Backend.
+	// +required
 	BackendRef gwv1.BackendObjectReference `json:"backendRef"`
 
 	// ForwardHeaderMatches defines a list of HTTP header matches that will be
@@ -182,6 +183,7 @@ type PromptguardRequest struct {
 type PromptguardResponse struct {
 	// A custom response message to return to the client. If not specified, defaults to
 	// "The response was rejected due to inappropriate content".
+	// +optional
 	CustomResponse *CustomResponse `json:"response,omitempty"`
 
 	// Regular expression (regex) matching for prompt guards and data masking.
