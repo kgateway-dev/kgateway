@@ -29,20 +29,34 @@ var JwksStoreLabel = map[string]string{JwksStoreComponent: jwksStorePrefix}
 
 // configMapSyncer is used for writing/reading jwks' to/from ConfigMaps.
 type configMapSyncer struct {
-	client              apiclient.Client
 	deploymentNamespace string
-	cmCollection        krt.Collection[*corev1.ConfigMap]
+	cmAccessor          cmAccessor
+}
+
+// this is an abstraction over ConfigMap access to facilitate testing
+type cmAccessor interface {
+	Create(context.Context, *corev1.ConfigMap) error
+	Update(context.Context, *corev1.ConfigMap) error
+	Delete(context.Context, string) error
+	List() []*corev1.ConfigMap
+	Get(string) *corev1.ConfigMap
+	WaitForCacheSync(ctx context.Context) bool
 }
 
 func NewConfigMapSyncer(client apiclient.Client, deploymentNamespace string, krtOptions krtutil.KrtOptions) *configMapSyncer {
+	cmCollection := krt.NewInformerFiltered[*corev1.ConfigMap](client,
+		kclient.Filter{
+			ObjectFilter:  client.ObjectFilter(),
+			LabelSelector: JwksStoreComponent + "=" + jwksStorePrefix},
+		krtOptions.ToOptions("config_map_syncer/ConfigMaps")...)
+
 	toret := configMapSyncer{
-		client:              client,
 		deploymentNamespace: deploymentNamespace,
-		cmCollection: krt.NewInformerFiltered[*corev1.ConfigMap](client,
-			kclient.Filter{
-				ObjectFilter:  client.ObjectFilter(),
-				LabelSelector: JwksStoreComponent + "=" + jwksStorePrefix},
-			krtOptions.ToOptions("config_map_syncer/ConfigMaps")...),
+		cmAccessor: &defaultCmAccessor{
+			client:              client,
+			deploymentNamespace: deploymentNamespace,
+			cmCollection:        cmCollection,
+		},
 	}
 
 	return &toret
@@ -61,7 +75,7 @@ func JwksFromConfigMap(cm *corev1.ConfigMap) (map[string]string, error) {
 }
 
 func (cs *configMapSyncer) WaitForCacheSync(ctx context.Context) bool {
-	return cs.client.Core().WaitForCacheSync("config_map_syncer/ConfigMaps", ctx.Done(), cs.cmCollection.HasSynced)
+	return cs.cmAccessor.WaitForCacheSync(ctx)
 }
 
 // Generates ConfigMap name based on jwks uri. Resulting name is a concatenation of "jwks-store-" prefix and an MD5 hash of the jwks uri.
@@ -80,7 +94,7 @@ func (cs *configMapSyncer) WriteJwksToConfigMaps(ctx context.Context, updates ma
 	for uri, jwks := range updates {
 		switch jwks {
 		case "": // empty jwks == remove the underlying ConfigMap
-			err := cs.client.Kube().CoreV1().ConfigMaps(cs.deploymentNamespace).Delete(ctx, JwksConfigMapName(uri), metav1.DeleteOptions{})
+			err := cs.cmAccessor.Delete(ctx, JwksConfigMapName(uri))
 			if client.IgnoreNotFound(err) != nil {
 				log.Error(err, "error deleting jwks ConfigMap")
 				errs = append(errs, err)
@@ -93,12 +107,12 @@ func (cs *configMapSyncer) WriteJwksToConfigMaps(ctx context.Context, updates ma
 				continue
 			}
 
-			existing := cs.fetchPersistedJwks(uri)
+			existing := cs.cmAccessor.Get(JwksConfigMapName(uri))
 			if existing == nil {
 				cm := cs.newJwksStoreConfigMap(JwksConfigMapName(uri))
-
 				cm.Data[jwksStorePrefix] = string(cmData)
-				cm, err := cs.client.Kube().CoreV1().ConfigMaps(cs.deploymentNamespace).Create(ctx, cm, metav1.CreateOptions{})
+
+				err := cs.cmAccessor.Create(ctx, cm)
 				if err != nil {
 					log.Error(err, "error persisting jwks to ConfigMap")
 					errs = append(errs, err)
@@ -106,7 +120,7 @@ func (cs *configMapSyncer) WriteJwksToConfigMaps(ctx context.Context, updates ma
 				}
 			} else {
 				existing.Data[jwksStorePrefix] = string(cmData)
-				_, err = cs.client.Kube().CoreV1().ConfigMaps(cs.deploymentNamespace).Update(ctx, existing, metav1.UpdateOptions{})
+				err = cs.cmAccessor.Update(ctx, existing)
 				if err != nil {
 					log.Error(err, "error updating jwks ConfigMap")
 					errs = append(errs, err)
@@ -123,7 +137,7 @@ func (cs *configMapSyncer) WriteJwksToConfigMaps(ctx context.Context, updates ma
 func (cs *configMapSyncer) LoadJwksFromConfigMaps(ctx context.Context) (map[string]string, error) {
 	log := log.FromContext(ctx)
 
-	allPersistedJwks := cs.cmCollection.List()
+	allPersistedJwks := cs.cmAccessor.List()
 
 	if len(allPersistedJwks) == 0 {
 		return nil, nil
@@ -156,10 +170,40 @@ func (cs *configMapSyncer) newJwksStoreConfigMap(name string) *corev1.ConfigMap 
 	}
 }
 
-func (cs *configMapSyncer) fetchPersistedJwks(jwksUri string) *corev1.ConfigMap {
-	cmPtr := cs.cmCollection.GetKey(types.NamespacedName{Namespace: cs.deploymentNamespace, Name: JwksConfigMapName(jwksUri)}.String())
+type defaultCmAccessor struct {
+	cmCollection        krt.Collection[*corev1.ConfigMap]
+	client              apiclient.Client
+	deploymentNamespace string
+}
+
+var _ cmAccessor = &defaultCmAccessor{}
+
+func (cma *defaultCmAccessor) Create(ctx context.Context, newCm *corev1.ConfigMap) error {
+	_, err := cma.client.Kube().CoreV1().ConfigMaps(cma.deploymentNamespace).Create(ctx, newCm, metav1.CreateOptions{})
+	return err
+}
+
+func (cma *defaultCmAccessor) Update(ctx context.Context, existingCm *corev1.ConfigMap) error {
+	_, err := cma.client.Kube().CoreV1().ConfigMaps(cma.deploymentNamespace).Update(ctx, existingCm, metav1.UpdateOptions{})
+	return err
+}
+
+func (cma *defaultCmAccessor) Delete(ctx context.Context, cmName string) error {
+	return cma.client.Kube().CoreV1().ConfigMaps(cma.deploymentNamespace).Delete(ctx, cmName, metav1.DeleteOptions{})
+}
+
+func (cma *defaultCmAccessor) Get(cmName string) *corev1.ConfigMap {
+	cmPtr := cma.cmCollection.GetKey(types.NamespacedName{Namespace: cma.deploymentNamespace, Name: cmName}.String())
 	if cmPtr == nil {
 		return nil
 	}
 	return ptr.Flatten(cmPtr)
+}
+
+func (cma *defaultCmAccessor) List() []*corev1.ConfigMap {
+	return cma.cmCollection.List()
+}
+
+func (cma *defaultCmAccessor) WaitForCacheSync(ctx context.Context) bool {
+	return cma.client.Core().WaitForCacheSync("config_map_syncer/ConfigMaps", ctx.Done(), cma.cmCollection.HasSynced)
 }
