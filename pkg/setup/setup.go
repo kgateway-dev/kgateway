@@ -11,13 +11,13 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
 	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/syncer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
@@ -51,7 +51,7 @@ type Options struct {
 	ExtraAgwPolicyStatusHandlers map[schema.GroupVersionKind]agwplugins.AgwPolicyStatusSyncHandler
 
 	CommonCollectionsOptions []collections.Option
-	CustomStatusSyncFunc     proxy_syncer.CustomStatusSyncFunction
+	StatusSyncerOptions      []syncer.StatusSyncerOption
 }
 
 func New(opts Options) (setup.Server, error) {
@@ -77,6 +77,6 @@ func New(opts Options) (setup.Server, error) {
 		setup.WithValidator(opts.Validator),
 		setup.WithExtraAgwPolicyStatusHandlers(opts.ExtraAgwPolicyStatusHandlers),
 		setup.WithCommonCollectionsOptions(opts.CommonCollectionsOptions),
-		setup.WithCustomStatusSyncFunc(opts.CustomStatusSyncFunc),
+		setup.WithStatusSyncerOptions(opts.StatusSyncerOptions),
 	)
 }

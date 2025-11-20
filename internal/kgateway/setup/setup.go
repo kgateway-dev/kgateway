@@ -26,7 +26,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/admin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
@@ -39,6 +38,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
+	"github.com/kgateway-dev/kgateway/v2/pkg/syncer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/namespaces"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
@@ -201,9 +201,9 @@ func WithCommonCollectionsOptions(commonCollectionsOptions []collections.Option)
 	}
 }
 
-func WithCustomStatusSyncFunc(customStatusSyncFunc proxy_syncer.CustomStatusSyncFunction) func(*setup) {
+func WithStatusSyncerOptions(statusSyncerOptions []syncer.StatusSyncerOption) func(*setup) {
 	return func(s *setup) {
-		s.customStatusSyncFunc = customStatusSyncFunc
+		s.statusSyncerOptions = statusSyncerOptions
 	}
 }
 
@@ -236,7 +236,7 @@ type setup struct {
 	extraAgwPolicyStatusHandlers map[schema.GroupVersionKind]agwplugins.AgwPolicyStatusSyncHandler
 
 	commonCollectionsOptions []collections.Option
-	customStatusSyncFunc     proxy_syncer.CustomStatusSyncFunction
+	statusSyncerOptions      []syncer.StatusSyncerOption
 }
 
 var _ Server = &setup{}
@@ -492,7 +492,7 @@ func (s *setup) buildKgatewayWithConfig(
 		Validator:                    s.validator,
 		ExtraAgwPolicyStatusHandlers: s.extraAgwPolicyStatusHandlers,
 		GatewayControllerExtension:   s.gatewayControllerExtension,
-		CustomStatusSyncFunc:         s.customStatusSyncFunc,
+		StatusSyncerOptions:          s.statusSyncerOptions,
 	})
 	if err != nil {
 		slog.Error("failed initializing controller: ", "error", err)

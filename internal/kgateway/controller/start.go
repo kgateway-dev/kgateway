@@ -36,6 +36,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	kgtwschemes "github.com/kgateway-dev/kgateway/v2/pkg/schemes"
+	"github.com/kgateway-dev/kgateway/v2/pkg/syncer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/namespaces"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
@@ -96,7 +97,7 @@ type StartConfig struct {
 	// GatewayControllerExtension is an extension that can be used to extend Gateway controller
 	GatewayControllerExtension sdk.GatewayControllerExtension
 
-	CustomStatusSyncFunc proxy_syncer.CustomStatusSyncFunction
+	StatusSyncerOptions []syncer.StatusSyncerOption
 }
 
 // Start runs the controllers responsible for processing the K8s Gateway API objects
@@ -191,7 +192,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			proxySyncer.ReportQueue(),
 			proxySyncer.BackendPolicyReportQueue(),
 			proxySyncer.CacheSyncs(),
-			proxy_syncer.WithCustomStatusSync(cfg.CustomStatusSyncFunc),
+			cfg.StatusSyncerOptions...,
 		)
 		if err := cfg.Manager.Add(statusSyncer); err != nil {
 			setupLog.Error(err, "unable to add statusSyncer runnable")

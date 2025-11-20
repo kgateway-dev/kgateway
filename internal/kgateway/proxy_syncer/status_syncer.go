@@ -30,31 +30,10 @@ import (
 	plug "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	"github.com/kgateway-dev/kgateway/v2/pkg/syncer"
 )
 
 var _ manager.LeaderElectionRunnable = &StatusSyncer{}
-
-type CustomStatusSyncFunction func(ctx context.Context, rm reports.ReportMap)
-
-type statusSyncerConfig struct {
-	customStatusSync CustomStatusSyncFunction
-}
-
-type StatusSyncerOption func(*statusSyncerConfig)
-
-func WithCustomStatusSync(customSync CustomStatusSyncFunction) StatusSyncerOption {
-	return func(cfg *statusSyncerConfig) {
-		cfg.customStatusSync = customSync
-	}
-}
-
-func processStatusSyncerOptions(opts ...StatusSyncerOption) *statusSyncerConfig {
-	cfg := &statusSyncerConfig{}
-	for _, fn := range opts {
-		fn(cfg)
-	}
-	return cfg
-}
 
 // StatusSyncer runs only on the leader and syncs the status of resources.
 type StatusSyncer struct {
@@ -68,7 +47,7 @@ type StatusSyncer struct {
 	latestBackendPolicyReportQueue utils.AsyncQueue[reports.ReportMap]
 	cacheSyncs                     []cache.InformerSynced
 
-	customStatusSync CustomStatusSyncFunction
+	customStatusSync func(ctx context.Context, rm reports.ReportMap)
 }
 
 func NewStatusSyncer(
@@ -81,9 +60,9 @@ func NewStatusSyncer(
 	reportQueue utils.AsyncQueue[reports.ReportMap],
 	backendPolicyReportQueue utils.AsyncQueue[reports.ReportMap],
 	cacheSyncs []cache.InformerSynced,
-	opts ...StatusSyncerOption,
+	opts ...syncer.StatusSyncerOption,
 ) *StatusSyncer {
-	cfg := processStatusSyncerOptions(opts...)
+	cfg := syncer.ProcessStatusSyncerOptions(opts...)
 	return &StatusSyncer{
 		mgr:                            mgr,
 		plugins:                        plugins,
@@ -93,7 +72,7 @@ func NewStatusSyncer(
 		latestReportQueue:              reportQueue,
 		latestBackendPolicyReportQueue: backendPolicyReportQueue,
 		cacheSyncs:                     cacheSyncs,
-		customStatusSync:               cfg.customStatusSync,
+		customStatusSync:               cfg.CustomStatusSync,
 	}
 }
 
@@ -136,7 +115,7 @@ func (s *StatusSyncer) Start(ctx context.Context) error {
 			s.syncRouteStatus(ctx, routeStatusLogger, latestReport)
 			s.syncPolicyStatus(ctx, latestReport)
 			if s.customStatusSync != nil {
-				s.customStatusSync(ctx, latestReport)
+\				s.customStatusSync(ctx, latestReport)
 			}
 		}
 	}()
