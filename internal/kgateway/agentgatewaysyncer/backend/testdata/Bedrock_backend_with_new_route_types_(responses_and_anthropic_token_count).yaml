@@ -1,0 +1,9 @@
+ai:
+  providerGroups:
+  - providers:
+    - bedrock:
+        region: us-east-1
+      name: backend
+inlinePolicies:
+- ai: {}
+name: test-ns/bedrock-with-new-routes

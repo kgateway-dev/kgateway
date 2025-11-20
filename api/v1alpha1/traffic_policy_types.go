@@ -116,6 +116,11 @@ type TrafficPolicySpec struct {
 	// attached to a route will override any RBAC policies applied to the gateway or listener.
 	// +optional
 	RBAC *Authorization `json:"rbac,omitempty"`
+
+	// JWT specifies the JWT authentication configuration for the policy.
+	// This defines the JWT providers and their configurations.
+	// +optional
+	JWT *JWTAuthentication `json:"jwt,omitempty"`
 }
 
 // TransformationPolicy config is used to modify envoy behavior at a route level.

@@ -1,0 +1,9 @@
+ai:
+  providerGroups:
+  - providers:
+    - name: backend
+      openai:
+        model: gpt-4o-mini
+inlinePolicies:
+- ai: {}
+name: test-ns/openai-with-routes

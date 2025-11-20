@@ -887,6 +887,34 @@ spec:
                     set
                   rule: '[has(self.request),has(self.response)].filter(x,x==true).size()
                     >= 1'
+              jwt:
+                description: |-
+                  JWT specifies the JWT authentication configuration for the policy.
+                  This defines the JWT providers and their configurations.
+                properties:
+                  extensionRef:
+                    description: ExtensionRef references a GatewayExtension that provides
+                      the jwt providers
+                    properties:
+                      name:
+                        description: The name of the target resource.
+                        maxLength: 253
+                        minLength: 1
+                        type: string
+                      namespace:
+                        description: |-
+                          The namespace of the target resource.
+                          If not set, defaults to the namespace of the parent object.
+                        maxLength: 63
+                        minLength: 1
+                        pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                        type: string
+                    required:
+                    - name
+                    type: object
+                required:
+                - extensionRef
+                type: object
               rateLimit:
                 description: |-
                   RateLimit specifies the rate limiting configuration for the policy.

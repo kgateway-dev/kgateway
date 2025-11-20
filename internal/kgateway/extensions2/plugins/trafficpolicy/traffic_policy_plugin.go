@@ -87,6 +87,7 @@ type trafficPolicySpecIr struct {
 	retry           *retryIR
 	timeouts        *timeoutsIR
 	rbac            *rbacIR
+	jwt             *jwtIr
 }
 
 func (d *TrafficPolicy) CreationTime() time.Time {
@@ -144,6 +145,9 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	if !d.spec.rbac.Equals(d2.spec.rbac) {
 		return false
 	}
+	if !d.spec.jwt.Equals(d2.spec.jwt) {
+		return false
+	}
 	return true
 }
 
@@ -164,6 +168,7 @@ func (p *TrafficPolicy) Validate() error {
 	validators = append(validators, p.spec.buffer.Validate)
 	validators = append(validators, p.spec.autoHostRewrite.Validate)
 	validators = append(validators, p.spec.rbac.Validate)
+	validators = append(validators, p.spec.jwt.Validate)
 	for _, validator := range validators {
 		if err := validator(); err != nil {
 			return err
@@ -181,6 +186,7 @@ type trafficPolicyPluginGwPass struct {
 	localRateLimitInChain    map[string]*localratelimitv3.LocalRateLimit
 	extAuthPerProvider       ProviderNeededMap
 	extProcPerProvider       ProviderNeededMap
+	jwtPerProvider           ProviderNeededMap
 	rateLimitPerProvider     ProviderNeededMap
 	rbacInChain              map[string]*envoyrbacv3.RBAC
 	corsInChain              map[string]*corsv3.Cors
@@ -414,6 +420,25 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(fcc ir.FilterChainCommon) ([]fil
 		stagedFilters = append(stagedFilters, stagedExtAuthFilter)
 	}
 
+	// TODO: Add support for global jwt disable filter
+	for _, provider := range p.jwtPerProvider.Providers[fcc.FilterChainName] {
+		jwtFilter := provider.Extension.Jwt
+		if jwtFilter == nil {
+			continue
+		}
+
+		// add the specific jwt filter
+		jwtName := jwtFilterName(provider.Name)
+		stagedJwtFilter := filters.MustNewStagedFilter(
+			jwtName,
+			jwtFilter,
+			filters.DuringStage(filters.AuthNStage),
+		)
+
+		// stagedJwtFilter.Filter.Disabled = true
+		stagedFilters = append(stagedFilters, stagedJwtFilter)
+	}
+
 	if f := p.localRateLimitInChain[fcc.FilterChainName]; f != nil {
 		filter := filters.MustNewStagedFilter(localRateLimitFilterNamePrefix, f, filters.BeforeStage(filters.AcceptedStage))
 		filter.Filter.Disabled = true
@@ -497,6 +522,7 @@ func (p *trafficPolicyPluginGwPass) handlePolicies(
 	// to be set at the route level so we need to smuggle info upwards.
 	p.handleExtAuth(fcn, typedFilterConfig, spec.extAuth)
 	p.handleExtProc(fcn, typedFilterConfig, spec.extProc)
+	p.handleJwt(fcn, typedFilterConfig, spec.jwt)
 	p.handleGlobalRateLimit(fcn, typedFilterConfig, spec.globalRateLimit)
 	p.handleLocalRateLimit(fcn, typedFilterConfig, spec.localRateLimit)
 	p.handleCors(fcn, typedFilterConfig, spec.cors)

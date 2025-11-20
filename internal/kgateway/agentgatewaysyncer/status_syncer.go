@@ -42,6 +42,7 @@ type AgentGwStatusSyncer struct {
 	client apiclient.Client
 
 	agentgatewayPolicies StatusSyncer[*v1alpha1.AgentgatewayPolicy, *gwv1.PolicyStatus]
+	agentgatewayBackends StatusSyncer[*v1alpha1.AgentgatewayBackend, *v1alpha1.AgentgatewayBackendStatus]
 
 	// Configuration
 	controllerName string
@@ -87,6 +88,16 @@ func NewAgwStatusSyncer(
 					Status: gwv1.PolicyStatus{
 						Ancestors: s.Ancestors,
 					},
+				}
+			},
+		},
+		agentgatewayBackends: StatusSyncer[*v1alpha1.AgentgatewayBackend, *v1alpha1.AgentgatewayBackendStatus]{
+			name:   "agentgatewayPolicy",
+			client: kclient.NewFilteredDelayed[*v1alpha1.AgentgatewayBackend](client, wellknown.AgentgatewayBackendGVR, f),
+			build: func(om metav1.ObjectMeta, s *v1alpha1.AgentgatewayBackendStatus) *v1alpha1.AgentgatewayBackend {
+				return &v1alpha1.AgentgatewayBackend{
+					ObjectMeta: om,
+					Status:     *s,
 				}
 			},
 		},
@@ -204,6 +215,8 @@ func (s *AgentGwStatusSyncer) SyncStatus(ctx context.Context, resource status.Re
 		s.httpRoutes.ApplyStatus(ctx, resource, statusObj)
 	case wellknown.AgentgatewayPolicyGVK:
 		s.agentgatewayPolicies.ApplyStatus(ctx, resource, statusObj)
+	case wellknown.AgentgatewayBackendGVK:
+		s.agentgatewayBackends.ApplyStatus(ctx, resource, statusObj)
 	default:
 		// Attempt to handle extra policy kinds via registered handlers.
 		if s.extraAgwPolicyStatusHandlers != nil {
