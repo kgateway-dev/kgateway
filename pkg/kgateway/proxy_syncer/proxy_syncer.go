@@ -81,6 +81,9 @@ type GatewayXdsResources struct {
 
 	// Listeners are items in the LDS response payload.
 	Listeners envoycache.Resources
+
+	// Secrets are items in the SDS response payload.
+	Secrets envoycache.Resources
 }
 
 func (r GatewayXdsResources) ResourceName() string {
@@ -92,7 +95,8 @@ func (r GatewayXdsResources) Equals(in GatewayXdsResources) bool {
 		report{r.reports}.Equals(report{in.reports}) &&
 		r.ClustersHash == in.ClustersHash &&
 		r.Routes.Version == in.Routes.Version &&
-		r.Listeners.Version == in.Listeners.Version
+		r.Listeners.Version == in.Listeners.Version &&
+		r.Secrets.Version == in.Secrets.Version
 }
 
 func sliceToResourcesHash[T proto.Message](slice []T) ([]envoycachetypes.ResourceWithTTL, uint64) {
@@ -125,6 +129,7 @@ func toResources(gw ir.Gateway, xdsSnap irtranslator.TranslationResult, r report
 		Clusters:     c,
 		Routes:       sliceToResources(xdsSnap.Routes),
 		Listeners:    sliceToResources(xdsSnap.Listeners),
+		Secrets:      sliceToResources(xdsSnap.Secrets),
 	}
 }
 

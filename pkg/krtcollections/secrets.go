@@ -1,6 +1,8 @@
 package krtcollections
 
 import (
+	"fmt"
+
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -47,7 +49,6 @@ func (s *SecretIndex) GetSecret(kctx krt.HandlerContext, from From, secretRef gw
 	if secretRef.Kind != nil {
 		secretKind = string(*secretRef.Kind)
 	}
-	gk := schema.GroupKind{Group: secretGroup, Kind: secretKind}
 
 	to := ir.ObjectSource{
 		Group:     secretGroup,
@@ -55,13 +56,14 @@ func (s *SecretIndex) GetSecret(kctx krt.HandlerContext, from From, secretRef gw
 		Namespace: toNs,
 		Name:      string(secretRef.Name),
 	}
-	col := s.secrets[gk]
+	col := s.secrets[schema.GroupKind{Group: secretGroup, Kind: secretKind}]
 	if col == nil {
-		return nil, ErrUnknownBackendKind
+		// should never happen
+		return nil, fmt.Errorf("internal error looking up secret %s", to.NamespacedName())
 	}
 
 	if !s.refgrants.ReferenceAllowed(kctx, from.GroupKind, from.Namespace, to) {
-		return nil, ErrMissingReferenceGrant
+		return nil, fmt.Errorf("cannot reference secret %s : %w", to.NamespacedName(), ErrMissingReferenceGrant)
 	}
 	secret := krt.FetchOne(kctx, col, krt.FilterKey(to.ResourceName()))
 	if secret == nil {

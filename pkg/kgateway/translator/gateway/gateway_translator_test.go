@@ -1933,6 +1933,7 @@ func TestBasic(t *testing.T) {
 			},
 		})
 	})
+
 	t.Run("JWT Policy at route level", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "jwt/route.yaml",
@@ -2017,6 +2018,17 @@ func TestBasic(t *testing.T) {
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("OAuth2 policy", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/oauth2.yaml",
+			outputFile: "traffic-policy/oauth2.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
 			},
 		})
 	})

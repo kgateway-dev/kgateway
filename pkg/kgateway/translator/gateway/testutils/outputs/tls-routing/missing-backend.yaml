@@ -82,7 +82,7 @@ Statuses:
           status: "True"
           type: Accepted
         - lastTransitionTime: null
-          message: Service "example-tls-svc" not found
+          message: Service default/example-tls-svc not found
           reason: BackendNotFound
           status: "False"
           type: ResolvedRefs

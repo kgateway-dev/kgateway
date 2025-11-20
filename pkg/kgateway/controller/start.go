@@ -25,6 +25,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/agentgatewaysyncer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/agentgatewaysyncer/backend/inferencepool"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/bootstrap"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/waypoint"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/registry"
@@ -199,6 +200,10 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		)
 		if err := cfg.Manager.Add(statusSyncer); err != nil {
 			setupLog.Error(err, "unable to add statusSyncer runnable")
+			return nil, err
+		}
+		if err := cfg.Manager.Add(bootstrap.NewController(cfg.Client)); err != nil {
+			setupLog.Error(err, "unable to add bootstrap controller runnable")
 			return nil, err
 		}
 	}
