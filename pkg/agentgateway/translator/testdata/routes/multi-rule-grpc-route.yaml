@@ -1,0 +1,88 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: GRPCRoute
+metadata:
+  name: multi-rule-grpc-route
+  namespace: default
+spec:
+  parentRefs:
+  - name: test-gateway
+  hostnames:
+  - grpc.example.com
+  rules:
+  - matches:
+    - method:
+        service: user.Service
+        method: GetUser
+    backendRefs:
+    - name: user-service
+      port: 9090
+  - matches:
+    - method:
+        service: order.Service
+        method: CreateOrder
+    backendRefs:
+    - name: order-service
+      port: 9091
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+  namespace: default
+spec:
+  ports:
+  - port: 9090
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+  namespace: default
+spec:
+  ports:
+  - port: 9091
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: default
+
+---
+# Output
+output:
+- gateway:
+    Name: test-gateway
+    Namespace: default
+  resource:
+    route:
+      backends:
+      - backend:
+          port: 9090
+          service: default/user-service.default.svc.cluster.local
+        weight: 1
+      hostnames:
+      - grpc.example.com
+      key: default/multi-rule-grpc-route.0.http
+      listenerKey: test-gateway
+      matches:
+      - path:
+          exact: /user.Service/GetUser
+      routeName: default/multi-rule-grpc-route
+- gateway:
+    Name: test-gateway
+    Namespace: default
+  resource:
+    route:
+      backends:
+      - backend:
+          port: 9091
+          service: default/order-service.default.svc.cluster.local
+        weight: 1
+      hostnames:
+      - grpc.example.com
+      key: default/multi-rule-grpc-route.1.http
+      listenerKey: test-gateway
+      matches:
+      - path:
+          exact: /order.Service/CreateOrder
+      routeName: default/multi-rule-grpc-route

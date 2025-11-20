@@ -81,11 +81,15 @@ type FilterChainMatch struct {
 	DestinationPort *wrapperspb.UInt32Value
 }
 
-type TlsBundle struct {
-	CA            []byte
-	PrivateKey    []byte
-	CertChain     []byte
+type TLSConfig struct {
 	AlpnProtocols []string
+	Certificates  []TLSCertificate
+}
+
+type TLSCertificate struct {
+	CA         []byte
+	PrivateKey []byte
+	CertChain  []byte
 }
 
 type FilterChainCommon struct {
@@ -93,7 +97,7 @@ type FilterChainCommon struct {
 	FilterChainName      string
 	CustomNetworkFilters []CustomEnvoyFilter
 	NetworkFilters       []*anypb.Any
-	TLS                  *TlsBundle
+	TLS                  *TLSConfig
 }
 
 type CustomEnvoyFilter struct {

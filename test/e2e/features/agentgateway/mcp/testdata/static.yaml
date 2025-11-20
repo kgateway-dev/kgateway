@@ -1,10 +1,9 @@
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: Backend
+kind: AgentgatewayBackend
 metadata:
   name: mcp-backend
 spec:
-  type: MCP
   mcp:
     targets:
     - name: mcp-target
@@ -24,6 +23,4 @@ spec:
     - backendRefs:
       - name: mcp-backend
         group: gateway.kgateway.dev
-        kind: Backend
-
-
+        kind: AgentgatewayBackend

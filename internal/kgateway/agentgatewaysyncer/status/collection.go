@@ -123,6 +123,8 @@ func enqueueStatus[T any](sw WorkerQueue, obj controllers.Object, ws T, extraGVK
 		res.GroupVersionKind = wellknown.GRPCRouteGVK
 	case *v1alpha1.AgentgatewayPolicy:
 		res.GroupVersionKind = wellknown.AgentgatewayPolicyGVK
+	case *v1alpha1.AgentgatewayBackend:
+		res.GroupVersionKind = wellknown.AgentgatewayBackendGVK
 	case *gwxv1a1.XListenerSet:
 		res.GroupVersionKind = wellknown.XListenerSetGVK
 	default:

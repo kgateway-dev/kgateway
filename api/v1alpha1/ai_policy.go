@@ -1,30 +1,9 @@
 package v1alpha1
 
 import (
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
-
-// AIPolicy config is used to configure the behavior of the LLM provider
-// on the level of individual routes. These route settings, such as prompt enrichment,
-// retrieval augmented generation (RAG), and semantic caching, are applicable only
-// for routes that send requests to an LLM provider backend.
-type AIPolicy struct {
-	// Enrich requests sent to the LLM provider by appending and prepending system prompts.
-	// This can be configured only for LLM providers that use the `CHAT` or `CHAT_STREAMING` API route type.
-	// +optional
-	PromptEnrichment *AIPromptEnrichment `json:"promptEnrichment,omitempty"`
-
-	// Set up prompt guards to block unwanted requests to the LLM provider and mask sensitive data.
-	// Prompt guards can be used to reject requests based on the content of the prompt, as well as
-	// mask responses based on the content of the response.
-	// +optional
-	PromptGuard *AIPromptGuard `json:"promptGuard,omitempty"`
-
-	// Provide defaults to merge with user input fields.
-	// Defaults do _not_ override the user input fields, unless you explicitly set `override` to `true`.
-	// +optional
-	Defaults []FieldDefault `json:"defaults,omitempty"`
-}
 
 // AIPromptEnrichment defines the config to enrich requests sent to the LLM provider by appending and prepending system prompts.
 //
@@ -100,17 +79,6 @@ const (
 	EMAIL BuiltIn = "EMAIL"
 )
 
-// RegexMatch configures the regular expression (regex) matching for prompt guards and data masking.
-type RegexMatch struct {
-	// The regex pattern to match against the request or response.
-	// +optional
-	Pattern *string `json:"pattern,omitempty"`
-
-	// An optional name for this match, which can be used for debugging purposes.
-	// +optional
-	Name *string `json:"name,omitempty"`
-}
-
 // Action to take if a regex pattern is matched in a request or response.
 // This setting applies only to request matches. PromptguardResponse matches are always masked by default.
 type Action string
@@ -128,7 +96,7 @@ type Regex struct {
 	// A list of regex patterns to match against the request or response.
 	// Matches and built-ins are additive.
 	// +optional
-	Matches []RegexMatch `json:"matches,omitempty"`
+	Matches []LongString `json:"matches,omitempty"`
 
 	// A list of built-in regex patterns to match against the request or response.
 	// Matches and built-ins are additive.
@@ -145,16 +113,11 @@ type Regex struct {
 
 // Webhook configures a webhook to forward requests or responses to for prompt guarding.
 type Webhook struct {
-	// Host to send the traffic to.
-	// Note: TLS is not currently supported for webhook.
-	// Example:
-	// ```yaml
-	// host:
-	//   host: example.com  #The host name of the webhook endpoint.
-	//   port: 443 	        #The port number on which the webhook is listening.
-	// ```
+	// backendRef references the webhook server to reach.
+	//
+	// Supported types: Service and Backend.
 	// +required
-	Host Host `json:"host"`
+	BackendRef gwv1.BackendObjectReference `json:"backendRef"`
 
 	// ForwardHeaderMatches defines a list of HTTP header matches that will be
 	// used to select the headers to forward to the webhook.
@@ -167,6 +130,7 @@ type Webhook struct {
 
 // CustomResponse configures a response to return to the client if request content
 // is matched against a regex pattern and the action is `REJECT`.
+// +kubebuilder:validation:AtLeastOneOf=message;statusCode
 type CustomResponse struct {
 	// A custom response message to return to the client. If not specified, defaults to
 	// "The request was rejected due to inappropriate content".
@@ -182,34 +146,23 @@ type CustomResponse struct {
 	StatusCode int32 `json:"statusCode,omitempty"`
 }
 
-// Moderation configures an external moderation model endpoint. This endpoint evaluates
-// request prompt data against predefined content rules to determine if the content
-// adheres to those rules.
-//
-// Any requests routed through the AI Gateway are processed by the specified
-// moderation model. If the model identifies the content as harmful based on its rules,
-// the request is automatically rejected.
-//
-// You can configure a moderation endpoint either as a standalone prompt guard setting
-// or alongside other request and response guard settings.
-type Moderation struct {
-	// Pass prompt data through an external moderation model endpoint,
-	// which compares the request prompt input to predefined content rules.
-	// Configure an OpenAI moderation endpoint.
+type OpenAIModeration struct {
+	// model specifies the moderation model to use. For example, `omni-moderation`.
 	// +optional
-	OpenAIModeration *OpenAIConfig `json:"openAIModeration,omitempty"`
-
-	// TODO: support other moderation models
+	Model *string `json:"model,omitempty"`
+	// policies controls policies for communicating with OpenAI.
+	// +kubebuilder:validation:AtLeastOneOf=tcp;tls;http;auth
+	// +optional
+	Policies *AgentgatewayPolicyBackendSimple `json:"policies,omitempty"`
 }
 
 // PromptguardRequest defines the prompt guards to apply to requests sent by the client.
-// Multiple prompt guard configurations can be set, and they will be executed in the following order:
-// webhook → regex → moderation for requests, where each step can reject the request and stop further processing.
+// +kubebuilder:validation:ExactlyOneOf=regex;webhook;openAIModeration
 type PromptguardRequest struct {
 	// A custom response message to return to the client. If not specified, defaults to
 	// "The request was rejected due to inappropriate content".
 	// +optional
-	CustomResponse *CustomResponse `json:"customResponse,omitempty"`
+	CustomResponse *CustomResponse `json:"response,omitempty"`
 
 	// Regular expression (regex) matching for prompt guards and data masking.
 	// +optional
@@ -219,17 +172,20 @@ type PromptguardRequest struct {
 	// +optional
 	Webhook *Webhook `json:"webhook,omitempty"`
 
-	// Pass prompt data through an external moderation model endpoint,
-	// which compares the request prompt input to predefined content rules.
+	// openAIModeration passes prompt data through the OpenAI Moderations endpoint.
+	// See https://platform.openai.com/docs/api-reference/moderations for more information.
 	// +optional
-	Moderation *Moderation `json:"moderation,omitempty"`
+	OpenAIModeration *OpenAIModeration `json:"openAIModeration,omitempty"`
 }
 
 // PromptguardResponse configures the response that the prompt guard applies to responses returned by the LLM provider.
-// Both webhook and regex can be set, they will be executed in the following order: webhook → regex, where each step
-// can reject the request and stop further processing.
-// Note: This is not yet supported for agentgateway.
+// +kubebuilder:validation:ExactlyOneOf=regex;webhook
 type PromptguardResponse struct {
+	// A custom response message to return to the client. If not specified, defaults to
+	// "The response was rejected due to inappropriate content".
+	// +optional
+	CustomResponse *CustomResponse `json:"response,omitempty"`
+
 	// Regular expression (regex) matching for prompt guards and data masking.
 	// +optional
 	Regex *Regex `json:"regex,omitempty"`
@@ -249,7 +205,7 @@ type PromptguardResponse struct {
 // promptGuard:
 //
 //	request:
-//	  customResponse:
+//	- response:
 //	    message: "Rejected due to inappropriate content"
 //	  regex:
 //	    action: REJECT
@@ -257,20 +213,25 @@ type PromptguardResponse struct {
 //	    - pattern: "credit card"
 //	      name: "CC"
 //	response:
-//	  regex:
+//	- regex:
 //	    builtins:
 //	    - CREDIT_CARD
 //	    action: MASK
 //
 // ```
+// +kubebuilder:validation:AtLeastOneOf=request;response
 type AIPromptGuard struct {
 	// Prompt guards to apply to requests sent by the client.
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=8
 	// +optional
-	Request *PromptguardRequest `json:"request,omitempty"`
+	Request []PromptguardRequest `json:"request,omitempty"`
 
 	// Prompt guards to apply to responses returned by the LLM provider.
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=8
 	// +optional
-	Response *PromptguardResponse `json:"response,omitempty"`
+	Response []PromptguardResponse `json:"response,omitempty"`
 }
 
 // FieldDefault provides default values for specific fields in the JSON request body sent to the LLM provider.
@@ -302,10 +263,11 @@ type AIPromptGuard struct {
 // ```yaml
 // defaults:
 //   - field: "custom_integer_list"
-//     value: "[1,2,3]"
+//     value: [1,2,3]
+//
+// overrides:
 //   - field: "custom_string_list"
-//     value: '["one","two","three"]'
-//     override: true
+//     value: ["one","two","three"]
 //
 // ```
 //
@@ -314,18 +276,12 @@ type FieldDefault struct {
 	// The name of the field.
 	// +kubebuilder:validation:MinLength=1
 	// +required
-	Field string `json:"field"`
+	Field ShortString `json:"field"`
 
 	// The field default value, which can be any JSON Data Type.
-	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:pruning:PreserveUnknownFields
 	// +required
-	Value string `json:"value"`
-
-	// Whether to override the field's value if it already exists.
-	// Defaults to false.
-	// +optional
-	// +kubebuilder:default=false
-	Override bool `json:"override,omitempty"`
+	Value apiextensionsv1.JSON `json:"value"`
 }
 
 // PromptCachingConfig configures automatic prompt caching for supported LLM providers.

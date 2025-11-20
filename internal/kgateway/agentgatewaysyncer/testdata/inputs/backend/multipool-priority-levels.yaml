@@ -21,41 +21,40 @@ spec:
   rules:
     - backendRefs:
         - group: gateway.kgateway.dev
-          kind: Backend
+          kind: AgentgatewayBackend
           name: multipool-priority
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: Backend
+kind: AgentgatewayBackend
 metadata:
   labels:
     app: kgateway
   name: multipool-priority
 spec:
-  type: AI
   ai:
-    priorityGroups:
+    groups:
     # Priority 0 - Primary providers
     - providers:
       - name: openai
         openai:
           model: "gpt-4o"
-          authToken:
-            kind: "SecretRef"
+        policies:
+          auth:
             secretRef:
               name: openai-primary-secret
       - name: anthropic
         anthropic:
           model: "claude-3-opus-20240229"
-          authToken:
-            kind: "Inline"
-            inline: "sk-anthropic-primary"
+        policies:
+          auth:
+            key: "sk-anthropic-primary"
       - name: azureopenai
         azureopenai:
           endpoint: ai-gateway.openai.azure.com
           deploymentName: gpt-4o-mini
           apiVersion: 2024-02-15-preview
-          authToken:
-            kind: "SecretRef"
+        policies:
+          auth:
             secretRef:
               name: azure-secret
     # Priority 1 - Secondary fallback providers
@@ -63,28 +62,26 @@ spec:
       - name: gemini
         gemini:
           model: "gemini-1.5-flash"
-          apiVersion: "v1"
-          authToken:
-            kind: "SecretRef"
+        policies:
+          auth:
             secretRef:
               name: gemini-fallback-secret
       - name: vertexai
         vertexai:
           model: "gemini-pro"
-          apiVersion: "v1"
-          location: "us-central1"
+          region: "us-central1"
           projectId: "vertex-fallback-project"
-          publisher: "GOOGLE"
-          authToken:
-            kind: "Passthrough"
+        policies:
+          auth:
+            passthrough: {}
     # Priority 2 - Tertiary fallback provider
     - providers:
       - name: bedrock
         bedrock:
           model: "anthropic.claude-3-haiku-20240307-v1:0"
           region: "us-east-1"
+        policies:
           auth:
-            type: "Secret"
             secretRef:
               name: aws-bedrock-secret
 ---

@@ -259,4 +259,17 @@ func RegisterTypes() {
 			return c.(Client).Kgateway().GatewayV1alpha1().AgentgatewayPolicies(namespace)
 		},
 	)
+	kubeclient.Register(
+		wellknown.AgentgatewayBackendGVR,
+		wellknown.AgentgatewayBackendGVK,
+		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
+			return c.(Client).Kgateway().GatewayV1alpha1().AgentgatewayBackends(namespace).List(context.Background(), o)
+		},
+		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
+			return c.(Client).Kgateway().GatewayV1alpha1().AgentgatewayBackends(namespace).Watch(context.Background(), o)
+		},
+		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*v1alpha1.AgentgatewayBackend] {
+			return c.(Client).Kgateway().GatewayV1alpha1().AgentgatewayBackends(namespace)
+		},
+	)
 }

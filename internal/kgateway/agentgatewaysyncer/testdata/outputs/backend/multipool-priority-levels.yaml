@@ -2,20 +2,36 @@ Backends:
 - ai:
     providerGroups:
     - providers:
-      - name: openai
+      - inlinePolicies:
+        - auth:
+            key:
+              secret: sk-openai-primary-key
+        name: openai
         openai:
           model: gpt-4o
       - anthropic:
           model: claude-3-opus-20240229
+        inlinePolicies:
+        - auth:
+            key:
+              secret: sk-anthropic-primary
         name: anthropic
       - azureopenai:
           apiVersion: 2024-02-15-preview
           host: ai-gateway.openai.azure.com
           model: gpt-4o-mini
+        inlinePolicies:
+        - auth:
+            key:
+              secret: azure-api-key
         name: azureopenai
     - providers:
       - gemini:
           model: gemini-1.5-flash
+        inlinePolicies:
+        - auth:
+            key:
+              secret: gemini-fallback-key
         name: gemini
       - name: vertexai
         vertex:
@@ -37,51 +53,6 @@ Listeners:
   key: default/example-gateway.http
   name: http
   protocol: HTTP
-Policies:
-- backend:
-    auth:
-      key:
-        secret: sk-anthropic-primary
-  name: auth-default/multipool-priority-anthropic
-  target:
-    subBackend: default/multipool-priority/anthropic
-- backend:
-    auth:
-      key:
-        secret: azure-api-key
-  name: auth-default/multipool-priority-azureopenai
-  target:
-    subBackend: default/multipool-priority/azureopenai
-- backend:
-    auth:
-      aws:
-        explicitConfig:
-          accessKeyId: AKIABEDROCK
-          region: us-east-1
-          secretAccessKey: bedrock-secret-key
-  name: auth-default/multipool-priority-bedrock
-  target:
-    subBackend: default/multipool-priority/bedrock
-- backend:
-    auth:
-      key:
-        secret: gemini-fallback-key
-  name: auth-default/multipool-priority-gemini
-  target:
-    subBackend: default/multipool-priority/gemini
-- backend:
-    auth:
-      key:
-        secret: sk-openai-primary-key
-  name: auth-default/multipool-priority-openai
-  target:
-    subBackend: default/multipool-priority/openai
-- backend:
-    auth:
-      passthrough: {}
-  name: auth-default/multipool-priority-vertexai
-  target:
-    subBackend: default/multipool-priority/vertexai
 Routes:
 - backends:
   - backend:

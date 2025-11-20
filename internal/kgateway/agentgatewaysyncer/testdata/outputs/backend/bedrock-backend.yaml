@@ -18,18 +18,6 @@ Listeners:
   key: default/example-gateway.http
   name: http
   protocol: HTTP
-Policies:
-- backend:
-    auth:
-      aws:
-        explicitConfig:
-          accessKeyId: fakeAccessKeyId
-          region: us-west-2
-          secretAccessKey: fakeSecretKeyString
-          sessionToken: ""
-  name: auth-default/bedrock-backend
-  target:
-    subBackend: default/bedrock/backend
 Routes:
 - backends:
   - backend:

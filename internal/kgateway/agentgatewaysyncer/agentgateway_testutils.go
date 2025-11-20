@@ -577,7 +577,7 @@ func (tc TestCase) Run(
 	_, gateways := agentGwSyncer.buildGatewayCollection(gatewayClasses, listenerSets, refGrants, krtOpts)
 
 	// Build ADP resources and addresses collections
-	agwResourcesCollection, _, _ := agentGwSyncer.buildAgwResources(gateways, refGrants, krtOpts)
+	agwResourcesCollection, _, _, _ := agentGwSyncer.buildAgwResources(gateways, refGrants, krtOpts)
 	addressesCollection := agentGwSyncer.buildAddressCollections(krtOpts)
 
 	// Wait for collections to sync

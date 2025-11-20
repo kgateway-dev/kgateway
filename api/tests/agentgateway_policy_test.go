@@ -116,8 +116,8 @@ spec:
 				eval("gateway.networking.k8s.io/Gateway/sec1", tt.attachments.Listener)
 				eval("gateway.networking.k8s.io/HTTPRoute", tt.attachments.Route)
 				eval("gateway.networking.k8s.io/HTTPRoute/sec1", tt.attachments.RouteRule)
-				eval("gateway.kgateway.dev/Backend", tt.attachments.Backend)
-				eval("gateway.kgateway.dev/Backend/sec1", tt.attachments.SubBackend)
+				eval("gateway.kgateway.dev/AgentgatewayBackend", tt.attachments.Backend)
+				eval("gateway.kgateway.dev/AgentgatewayBackend/sec1", tt.attachments.SubBackend)
 			})
 		}
 	}
