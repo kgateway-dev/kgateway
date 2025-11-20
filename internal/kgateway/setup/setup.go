@@ -297,6 +297,10 @@ func New(opts ...func(*setup)) (*setup, error) {
 		}
 	}
 
+	if s.krtDebugger == nil {
+		s.krtDebugger = new(krt.DebugHandler)
+	}
+
 	if s.xdsListener == nil {
 		var err error
 		s.xdsListener, err = newXDSListener("0.0.0.0", s.globalSettings.XdsServicePort)
@@ -375,7 +379,7 @@ func (s *setup) Start(ctx context.Context) error {
 	slog.Info("creating krt collections")
 	krtOpts := krtutil.NewKrtOptions(ctx.Done(), setupOpts.KrtDebugger)
 
-	commonCollections, err := collections.NewCommonCollections(
+	commoncol, err := collections.NewCommonCollections(
 		ctx,
 		krtOpts,
 		s.apiClient,
@@ -390,7 +394,7 @@ func (s *setup) Start(ctx context.Context) error {
 	}
 
 	agwCollections, err := agwplugins.NewAgwCollections(
-		commonCollections,
+		commoncol,
 		s.agwControllerName,
 		// control plane system namespace (default is kgateway-system)
 		namespaces.GetPodNamespace(),
@@ -413,13 +417,9 @@ func (s *setup) Start(ctx context.Context) error {
 		}
 	}
 
-	agw, err := s.buildKgatewayWithConfig(ctx, mgr, setupOpts, commonCollections, agwCollections, uccBuilder)
+	agw, err := s.buildKgatewayWithConfig(ctx, mgr, setupOpts, commoncol, agwCollections, uccBuilder)
 	if err != nil {
 		return err
-	}
-
-	if s.krtDebugger == nil {
-		s.krtDebugger = new(krt.DebugHandler)
 	}
 
 	if s.agwXdsListener != nil && agw != nil {

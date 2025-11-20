@@ -2,7 +2,6 @@ package collections
 
 import (
 	"context"
-	"fmt"
 
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/config/schema/gvr"
@@ -86,7 +85,6 @@ func NewCommonCollections(
 	for _, fn := range opts {
 		fn(options)
 	}
-	fmt.Println("=========== cc options", options)
 
 	// Namespace collection must be initialized first to enable discovery namespace
 	// selectors to be applies as filters to other collections
