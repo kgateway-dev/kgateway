@@ -267,7 +267,7 @@ func translateBackendAI(ctx PolicyCtx, agwPolicy *v1alpha1.AgentgatewayPolicy, n
 		if aiSpec.PromptGuard.Request != nil {
 			r, err := processRequestGuard(ctx, agwPolicy.Namespace, aiSpec.PromptGuard.Request)
 			if err != nil {
-				logger.Error("error parsing prompt guard", "error", err)
+				logger.Error("error parsing request prompt guard", "error", err)
 				errs = append(errs, err)
 			} else {
 				translatedAIPolicy.PromptGuard.Request = r
@@ -277,7 +277,7 @@ func translateBackendAI(ctx PolicyCtx, agwPolicy *v1alpha1.AgentgatewayPolicy, n
 		if aiSpec.PromptGuard.Response != nil {
 			r, err := processResponseGuard(ctx, agwPolicy.Namespace, aiSpec.PromptGuard.Response)
 			if err != nil {
-				logger.Error("error parsing prompt guard", "error", err)
+				logger.Error("error parsing response prompt guard", "error", err)
 				errs = append(errs, err)
 			} else {
 				translatedAIPolicy.PromptGuard.Response = r

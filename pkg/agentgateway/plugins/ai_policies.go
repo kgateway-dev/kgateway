@@ -36,8 +36,8 @@ func processRequestGuard(ctx PolicyCtx, namespace string, reqs []v1alpha1.Prompt
 
 		if req.CustomResponse != nil {
 			pgReq.Rejection = &api.BackendPolicySpec_Ai_RequestRejection{
-				Body:   []byte(*req.CustomResponse.Message),
-				Status: uint32(*req.CustomResponse.StatusCode), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+				Body:   []byte(req.CustomResponse.Message),
+				Status: uint32(req.CustomResponse.StatusCode), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 			}
 		}
 		res = append(res, pgReq)
