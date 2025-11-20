@@ -465,6 +465,10 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 			return nil
 		}
 
+		if gw.GroupVersionKind().Group == "" || gw.GroupVersionKind().Kind == "" {
+			gw.SetGroupVersionKind(wellknown.GatewayGVK)
+		}
+
 		gwIR := &ir.Gateway{
 			ObjectSource: ir.ObjectSource{
 				Group:     gwv1.SchemeGroupVersion.Group,
@@ -539,6 +543,10 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 		}
 
 		for _, ls := range listenerSets {
+			if ls.GroupVersionKind().Group == "" || ls.GroupVersionKind().Kind == "" {
+				ls.SetGroupVersionKind(wellknown.XListenerSetGVK)
+			}
+
 			lsIR := ir.ListenerSet{
 				ObjectSource: ir.ObjectSource{
 					Group:     wellknown.XListenerSetGroup,
