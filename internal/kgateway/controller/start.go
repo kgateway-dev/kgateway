@@ -97,6 +97,7 @@ type StartConfig struct {
 	// GatewayControllerExtension is an extension that can be used to extend Gateway controller
 	GatewayControllerExtension sdk.GatewayControllerExtension
 
+	// StatusSyncerOptions is the list of options to be passed when creating the StatusSyncer
 	StatusSyncerOptions []syncer.StatusSyncerOption
 }
 
