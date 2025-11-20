@@ -61,7 +61,7 @@ func JwksFromConfigMap(cm *corev1.ConfigMap) (map[string]string, error) {
 }
 
 func (cs *configMapSyncer) WaitForCacheSync(ctx context.Context) bool {
-	return cs.client.WaitForCacheSync("config_map_syncer/ConfigMaps", ctx.Done(), cs.cmCollection.HasSynced)
+	return cs.client.Core().WaitForCacheSync("config_map_syncer/ConfigMaps", ctx.Done(), cs.cmCollection.HasSynced)
 }
 
 // Generates ConfigMap name based on jwks uri. Resulting name is a concatenation of "jwks-store-" prefix and an MD5 hash of the jwks uri.
