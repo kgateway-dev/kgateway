@@ -399,7 +399,6 @@ spec:
                             Example: abc matches the value abc
                           type: string
                         ignoreCase:
-                          default: false
                           description: |-
                             If true, indicates the exact/prefix/suffix/contains matching should be
                             case insensitive. This has no effect on the regex match.
@@ -423,8 +422,6 @@ spec:
                             Note: empty prefix is not allowed, please use regex instead.
                             Example: abc matches the value xyz.abc
                           type: string
-                      required:
-                      - ignoreCase
                       type: object
                       x-kubernetes-validations:
                       - message: exactly one of the fields in [exact prefix suffix
@@ -890,6 +887,34 @@ spec:
                     set
                   rule: '[has(self.request),has(self.response)].filter(x,x==true).size()
                     >= 1'
+              jwt:
+                description: |-
+                  JWT specifies the JWT authentication configuration for the policy.
+                  This defines the JWT providers and their configurations.
+                properties:
+                  extensionRef:
+                    description: ExtensionRef references a GatewayExtension that provides
+                      the jwt providers
+                    properties:
+                      name:
+                        description: The name of the target resource.
+                        maxLength: 253
+                        minLength: 1
+                        type: string
+                      namespace:
+                        description: |-
+                          The namespace of the target resource.
+                          If not set, defaults to the namespace of the parent object.
+                        maxLength: 63
+                        minLength: 1
+                        pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                        type: string
+                    required:
+                    - name
+                    type: object
+                required:
+                - extensionRef
+                type: object
               rateLimit:
                 description: |-
                   RateLimit specifies the rate limiting configuration for the policy.
@@ -1345,8 +1370,6 @@ spec:
                               Value is the template to apply to generate the output value for the body.
                               Only Inja templates are supported.
                             type: string
-                        required:
-                        - parseAs
                         type: object
                       remove:
                         description: Remove is a list of header names to remove from
@@ -1422,8 +1445,6 @@ spec:
                               Value is the template to apply to generate the output value for the body.
                               Only Inja templates are supported.
                             type: string
-                        required:
-                        - parseAs
                         type: object
                       remove:
                         description: Remove is a list of header names to remove from
@@ -1804,6 +1825,8 @@ spec:
             required:
             - ancestors
             type: object
+        required:
+        - spec
         type: object
     served: true
     storage: true

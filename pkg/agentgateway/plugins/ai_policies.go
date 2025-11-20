@@ -27,8 +27,8 @@ func processRequestGuard(krtctx krt.HandlerContext, secrets krt.Collection[*core
 
 	if req.CustomResponse != nil {
 		pgReq.Rejection = &api.BackendPolicySpec_Ai_RequestRejection{
-			Body:   []byte(*req.CustomResponse.Message),
-			Status: uint32(*req.CustomResponse.StatusCode), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+			Body:   []byte(req.CustomResponse.Message),
+			Status: uint32(req.CustomResponse.StatusCode), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 		}
 	}
 
@@ -136,12 +136,8 @@ func processRegex(regex *v1alpha1.Regex, customResponse *v1alpha1.CustomResponse
 			rules.Action.Kind = api.BackendPolicySpec_Ai_REJECT
 			rules.Action.RejectResponse = &api.BackendPolicySpec_Ai_RequestRejection{}
 			if customResponse != nil {
-				if customResponse.Message != nil {
-					rules.Action.RejectResponse.Body = []byte(*customResponse.Message)
-				}
-				if customResponse.StatusCode != nil {
-					rules.Action.RejectResponse.Status = uint32(*customResponse.StatusCode) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
-				}
+				rules.Action.RejectResponse.Body = []byte(customResponse.Message)
+				rules.Action.RejectResponse.Status = uint32(customResponse.StatusCode) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 			}
 		default:
 			logger.Warn("unsupported regex action", "action", *regex.Action)

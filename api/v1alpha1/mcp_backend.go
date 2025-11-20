@@ -15,6 +15,7 @@ type MCP struct {
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=32
 	// +kubebuilder:validation:XValidation:message="target names must be unique",rule="self.all(t1, self.exists_one(t2, t1.name == t2.name))"
+	// +required
 	Targets []McpTargetSelector `json:"targets"`
 }
 
@@ -22,6 +23,7 @@ type MCP struct {
 // +kubebuilder:validation:ExactlyOneOf=selector;static
 type McpTargetSelector struct {
 	// Name of the MCP target.
+	// +required
 	Name gwv1.SectionName `json:"name"`
 
 	// Selector is the selector to use to select the MCP targets.
@@ -55,11 +57,13 @@ type McpSelector struct {
 type McpTarget struct {
 	// Host is the hostname or IP address of the MCP target.
 	// +kubebuilder:validation:MinLength=1
+	// +required
 	Host string `json:"host"`
 
 	// Port is the port number of the MCP target.
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=65535
+	// +required
 	Port int32 `json:"port"`
 
 	// Path is the URL path of the MCP target endpoint.

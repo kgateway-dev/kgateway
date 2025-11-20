@@ -1292,7 +1292,6 @@ spec:
                         type: string
                     required:
                     - backendRef
-                    - protocol
                     type: object
                 type: object
                 x-kubernetes-validations:
@@ -1504,8 +1503,6 @@ spec:
                         required:
                         - matchLabels
                         type: object
-                    required:
-                    - mode
                     type: object
                     x-kubernetes-validations:
                     - message: exactly one of the fields in [secretRef secretSelector]
@@ -1616,8 +1613,6 @@ spec:
                         maxItems: 256
                         minItems: 1
                         type: array
-                    required:
-                    - mode
                     type: object
                     x-kubernetes-validations:
                     - message: exactly one of the fields in [users secretRef] must
@@ -2105,6 +2100,8 @@ spec:
                         - message: Must have port for Service reference
                           rule: '(size(self.group) == 0 && self.kind == ''Service'')
                             ? has(self.port) : true'
+                    required:
+                    - backendRef
                     type: object
                   headerModifiers:
                     description: headerModifiers defines the policy to modify request
@@ -2526,13 +2523,13 @@ spec:
                                 rule: '[has(self.remote),has(self.inline)].filter(x,x==true).size()
                                   == 1'
                           required:
+                          - issuer
                           - jwks
                           type: object
                         maxItems: 64
                         minItems: 1
                         type: array
                     required:
-                    - mode
                     - providers
                     type: object
                   phase:

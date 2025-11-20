@@ -142,7 +142,7 @@ func buildTranslateFunc(
 			}
 			beIr.dfpIr = dfpIr
 		case v1alpha1.BackendTypeAWS:
-			region := getRegion(i.Spec.Aws)
+			region := i.Spec.Aws.Region
 			invokeMode := getLambdaInvocationMode(i.Spec.Aws)
 
 			lambdaArn, err := buildLambdaARN(i.Spec.Aws, region)

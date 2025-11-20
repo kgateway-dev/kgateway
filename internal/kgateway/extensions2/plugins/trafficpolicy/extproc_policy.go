@@ -142,11 +142,8 @@ func translateExtProcPerFilterConfig(
 }
 
 // headerSendModeFromString converts a string to envoy HeaderSendMode
-func headerSendModeFromString(mode *string) envoy_ext_proc_v3.ProcessingMode_HeaderSendMode {
-	if mode == nil {
-		return envoy_ext_proc_v3.ProcessingMode_DEFAULT
-	}
-	switch *mode {
+func headerSendModeFromString(mode string) envoy_ext_proc_v3.ProcessingMode_HeaderSendMode {
+	switch mode {
 	case "SEND":
 		return envoy_ext_proc_v3.ProcessingMode_SEND
 	case "SKIP":
@@ -157,11 +154,8 @@ func headerSendModeFromString(mode *string) envoy_ext_proc_v3.ProcessingMode_Hea
 }
 
 // bodySendModeFromString converts a string to envoy BodySendMode
-func bodySendModeFromString(mode *string) envoy_ext_proc_v3.ProcessingMode_BodySendMode {
-	if mode == nil {
-		return envoy_ext_proc_v3.ProcessingMode_NONE
-	}
-	switch *mode {
+func bodySendModeFromString(mode string) envoy_ext_proc_v3.ProcessingMode_BodySendMode {
+	switch mode {
 	case "STREAMED":
 		return envoy_ext_proc_v3.ProcessingMode_STREAMED
 	case "BUFFERED":

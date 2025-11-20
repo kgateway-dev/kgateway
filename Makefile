@@ -84,7 +84,7 @@ GOTOOLCHAIN ?= go$(GO_VERSION)
 
 DEPSGOBIN ?= $(OUTPUT_DIR)
 GOLANGCI_LINT ?= go tool golangci-lint
-ANALYZE_ARGS ?= --fix --verbose
+ANALYZE_ARGS ?= --fix --verbose --max-issues-per-linter 0 --max-same-issues 0
 CUSTOM_GOLANGCI_LINT_BIN ?= $(DEPSGOBIN)/golangci-lint-custom
 CUSTOM_GOLANGCI_LINT_RUN ?= $(CUSTOM_GOLANGCI_LINT_BIN) run --build-tags e2e
 CUSTOM_GOLANGCI_LINT_FMT ?= $(GOLANGCI_LINT) fmt

@@ -511,8 +511,8 @@ func processJWTAuthenticationPolicy(jwt *v1alpha1.AgentJWTAuthentication, basePo
 			Issuer:    pp.Issuer,
 			Audiences: pp.Audiences,
 		}
-		if i := pp.JWKS.Inline; i != "" {
-			jp.JwksSource = &api.TrafficPolicySpec_JWTProvider_Inline{Inline: i}
+		if i := pp.JWKS.Inline; i != nil {
+			jp.JwksSource = &api.TrafficPolicySpec_JWTProvider_Inline{Inline: *i}
 			p.Providers = append(p.Providers, jp)
 		}
 		if r := pp.JWKS.Remote; r != nil {

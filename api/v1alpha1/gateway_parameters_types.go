@@ -19,10 +19,12 @@ import (
 // +kubebuilder:resource:categories=kgateway,path=gatewayparameters
 // +kubebuilder:subresource:status
 type GatewayParameters struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec   GatewayParametersSpec   `json:"spec,omitempty"`
+	// +required
+	Spec GatewayParametersSpec `json:"spec"`
+	// +optional
 	Status GatewayParametersStatus `json:"status,omitempty"`
 }
 
