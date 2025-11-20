@@ -106,6 +106,15 @@ func BuildCorsPolicy(
 // - "https://sub.*.example.com" -> Regex match: ^https://sub\..*\.example\.com$
 // - "https://example.*:8080" -> Regex match: ^https://example\..*:8080$
 func ConvertOriginToEnvoyStringMatcher(origin string) *envoymatcherv3.StringMatcher {
+	if origin == "*" {
+		return &envoymatcherv3.StringMatcher{
+			MatchPattern: &envoymatcherv3.StringMatcher_SafeRegex{
+				SafeRegex: &envoymatcherv3.RegexMatcher{
+					Regex: "^.*$",
+				},
+			},
+		}
+	}
 	// Check if the origin contains wildcards
 	if !strings.Contains(origin, "*") {
 		// No wildcards, use exact match
