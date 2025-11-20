@@ -13,6 +13,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
@@ -114,6 +115,9 @@ func (r *ReportMap) newGatewayReport(gateway *gwv1.Gateway) *GatewayReport {
 // NOTE: Exported for unit testing, validation_test.go should be refactored to reduce this visibility
 func (r *ReportMap) ListenerSet(listenerSet client.Object) *ListenerSetReport {
 	gvk := listenerSet.GetObjectKind().GroupVersionKind()
+	if gvk.Empty() {
+		gvk = wellknown.XListenerSetGVK
+	}
 	if r.ListenerSets[gvk] == nil {
 		r.ListenerSets[gvk] = make(map[types.NamespacedName]*ListenerSetReport)
 	}
@@ -127,6 +131,9 @@ func (r *ReportMap) newListenerSetReport(listenerSet client.Object) *ListenerSet
 	}
 
 	gvk := listenerSet.GetObjectKind().GroupVersionKind()
+	if gvk.Empty() {
+		gvk = wellknown.XListenerSetGVK
+	}
 	if r.ListenerSets[gvk] == nil {
 		r.ListenerSets[gvk] = make(map[types.NamespacedName]*ListenerSetReport)
 	}

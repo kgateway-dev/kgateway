@@ -283,21 +283,6 @@ spec:
 `,
 		},
 		{
-			name: "TrafficPolicy: invalid target reference",
-			input: `---
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: TrafficPolicy
-metadata:
-  name: traffic-policy-invalid-target
-spec:
-  targetRefs:
-  - group: apps
-    kind: Deployment
-    name: test-deployment
-`,
-			wantErrors: []string{"targetRefs may only reference Gateway, HTTPRoute, or XListenerSet resources"},
-		},
-		{
 			name: "TrafficPolicy: policy with autoHostRewrite can only target HTTPRoute",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1

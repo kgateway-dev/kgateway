@@ -13,7 +13,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+	apixv1alpha1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -199,10 +201,20 @@ func isParentRefForResource(pRef *gwv1.ParentReference, resource client.Object, 
 		return false
 	}
 
-	if pRef.Group != nil && *pRef.Group != gwv1.Group(resource.GetObjectKind().GroupVersionKind().Group) {
+	gvk := resource.GetObjectKind().GroupVersionKind()
+	if gvk.Empty() {
+		switch resource.(type) {
+		case *gwv1.Gateway:
+			gvk = wellknown.GatewayGVK
+		case *apixv1alpha1.XListenerSet:
+			gvk = wellknown.XListenerSetGVK
+		}
+	}
+
+	if pRef.Group != nil && *pRef.Group != gwv1.Group(gvk.Group) {
 		return false
 	}
-	if pRef.Kind != nil && *pRef.Kind != gwv1.Kind(resource.GetObjectKind().GroupVersionKind().Kind) {
+	if pRef.Kind != nil && *pRef.Kind != gwv1.Kind(gvk.Kind) {
 		return false
 	}
 

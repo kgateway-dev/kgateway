@@ -469,10 +469,6 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 			return nil
 		}
 
-		if gw.GroupVersionKind().Group == "" || gw.GroupVersionKind().Kind == "" {
-			gw.SetGroupVersionKind(wellknown.GatewayGVK)
-		}
-
 		gwIR := &ir.Gateway{
 			ObjectSource: ir.ObjectSource{
 				Group:     gwv1.SchemeGroupVersion.Group,
@@ -1199,14 +1195,6 @@ func NewRoutesIndex(
 
 func (h *RoutesIndex) FetchHTTPRoutesBySelector(kctx krt.HandlerContext, selector HTTPRouteSelector) []ir.HttpRouteIR {
 	return krt.Fetch(kctx, h.httpRoutes, krt.FilterIndex(h.httpBySelector, selector))
-}
-
-func (h *RoutesIndex) RoutesForGateway(kctx krt.HandlerContext, nns types.NamespacedName) []ir.Route {
-	return h.RoutesFor(kctx, nns, wellknown.GatewayGVK.Group, wellknown.GatewayGVK.Kind)
-}
-
-func (h *RoutesIndex) RoutesForListenerSet(kctx krt.HandlerContext, nns types.NamespacedName) []ir.Route {
-	return h.RoutesFor(kctx, nns, wellknown.XListenerSetGVK.Group, wellknown.XListenerSetGVK.Kind)
 }
 
 func (h *RoutesIndex) RoutesFor(kctx krt.HandlerContext, nns types.NamespacedName, group, kind string) []ir.Route {

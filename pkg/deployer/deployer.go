@@ -238,7 +238,7 @@ func (d *Deployer) RenderManifest(ns, name string, vals map[string]any) ([]byte,
 func (d *Deployer) GetObjsToDeploy(ctx context.Context, obj client.Object) ([]client.Object, error) {
 	vals, err := d.helmValues.GetValues(ctx, obj)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get helm values for object %s/%s: %w", obj.GetNamespace(), obj.GetName(), err)
+		return nil, fmt.Errorf("failed to get helm values for object %s %s/%s: %w", obj.GetObjectKind().GroupVersionKind().String(), obj.GetNamespace(), obj.GetName(), err)
 	}
 	if vals == nil {
 		return nil, nil
