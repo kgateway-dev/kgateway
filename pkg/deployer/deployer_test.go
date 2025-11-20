@@ -39,6 +39,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
+
 	// TODO BML tests in this suite fail if this no-op import is not imported first.
 	//
 	// I know, I know, you're reading this, and you're skeptical. I can feel it.
@@ -169,7 +170,7 @@ var _ = Describe("Deployer", func() {
 		}
 
 		defaultGateway = func() *gwv1.Gateway {
-			return &gwv1.Gateway{
+			gw := &gwv1.Gateway{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: defaultNamespace,
@@ -183,6 +184,8 @@ var _ = Describe("Deployer", func() {
 					}},
 				},
 			}
+			gw.SetGroupVersionKind(wellknown.GatewayGVK)
+			return gw
 		}
 
 		highPortGateway = func() *gwv1.Gateway {

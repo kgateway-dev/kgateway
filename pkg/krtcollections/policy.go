@@ -482,6 +482,12 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 			},
 			Obj:       gw,
 			Listeners: make([]ir.Listener, 0, len(gw.Spec.Listeners)),
+			DeniedListenerSets: map[schema.GroupVersionKind]ir.ListenerSets{
+				wellknown.XListenerSetGVK: []ir.ListenerSet{},
+			},
+			AllowedListenerSets: map[schema.GroupVersionKind]ir.ListenerSets{
+				wellknown.XListenerSetGVK: []ir.ListenerSet{},
+			},
 		}
 
 		if gw.Annotations[apiannotations.PerConnectionBufferLimit] != "" {

@@ -173,7 +173,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 					JWTProvider: v1alpha1.JWTProvider{
 						Issuer: "test-issuer",
 						JWKS: v1alpha1.JWKS{
-							LocalJWKS: &v1alpha1.LocalJWKS{
+							LocalJWKS: v1alpha1.LocalJWKS{
 								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
 							},
 						},
@@ -214,7 +214,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 					JWTProvider: v1alpha1.JWTProvider{
 						Issuer: "test-issuer",
 						JWKS: v1alpha1.JWKS{
-							LocalJWKS: &v1alpha1.LocalJWKS{
+							LocalJWKS: v1alpha1.LocalJWKS{
 								Inline: ptr.To("abc"),
 							},
 						},
@@ -232,7 +232,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 					JWTProvider: v1alpha1.JWTProvider{
 						Issuer: "test-issuer-1",
 						JWKS: v1alpha1.JWKS{
-							LocalJWKS: &v1alpha1.LocalJWKS{
+							LocalJWKS: v1alpha1.LocalJWKS{
 								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key-1","use":"sig","alg":"RS256","n":"test-n-1","e":"AQAB"}]}`),
 							},
 						},
@@ -243,7 +243,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 					JWTProvider: v1alpha1.JWTProvider{
 						Issuer: "test-issuer-2",
 						JWKS: v1alpha1.JWKS{
-							LocalJWKS: &v1alpha1.LocalJWKS{
+							LocalJWKS: v1alpha1.LocalJWKS{
 								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key-2","use":"sig","alg":"RS256","n":"test-n-2","e":"AQAB"}]}`),
 							},
 						},
@@ -275,7 +275,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 						Issuer:    "test-issuer",
 						Audiences: []string{"aud1", "aud2"},
 						JWKS: v1alpha1.JWKS{
-							LocalJWKS: &v1alpha1.LocalJWKS{
+							LocalJWKS: v1alpha1.LocalJWKS{
 								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
 							},
 						},
@@ -306,7 +306,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 							},
 						},
 						JWKS: v1alpha1.JWKS{
-							LocalJWKS: &v1alpha1.LocalJWKS{
+							LocalJWKS: v1alpha1.LocalJWKS{
 								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
 							},
 						},
@@ -335,7 +335,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 							QueryParameter: ptr.To("jwt"),
 						},
 						JWKS: v1alpha1.JWKS{
-							LocalJWKS: &v1alpha1.LocalJWKS{
+							LocalJWKS: v1alpha1.LocalJWKS{
 								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
 							},
 						},
@@ -362,7 +362,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 					JWTProvider: v1alpha1.JWTProvider{
 						Issuer: "test-issuer",
 						JWKS: v1alpha1.JWKS{
-							LocalJWKS: &v1alpha1.LocalJWKS{
+							LocalJWKS: v1alpha1.LocalJWKS{
 								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
 							},
 						},
