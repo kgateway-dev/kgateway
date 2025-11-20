@@ -9,6 +9,7 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
@@ -32,7 +33,7 @@ func TestTranslateOutlierDetection(t *testing.T) {
 		{
 			name: "partial outlier detection config",
 			config: &v1alpha1.OutlierDetection{
-				Interval: metav1.Duration{Duration: 11 * time.Second},
+				Interval: &metav1.Duration{Duration: 11 * time.Second},
 			},
 			expected: &envoyclusterv3.OutlierDetection{
 				Interval: durationpb.New(11 * time.Second),
@@ -41,10 +42,10 @@ func TestTranslateOutlierDetection(t *testing.T) {
 		{
 			name: "full outlier detection config",
 			config: &v1alpha1.OutlierDetection{
-				Consecutive5xx:     int32(2),
-				Interval:           metav1.Duration{Duration: 5 * time.Second},
-				BaseEjectionTime:   metav1.Duration{Duration: 7 * time.Minute},
-				MaxEjectionPercent: int32(99),
+				Consecutive5xx:     ptr.To(int32(2)),
+				Interval:           &metav1.Duration{Duration: 5 * time.Second},
+				BaseEjectionTime:   &metav1.Duration{Duration: 7 * time.Minute},
+				MaxEjectionPercent: ptr.To(int32(99)),
 			},
 			expected: &envoyclusterv3.OutlierDetection{
 				Consecutive_5Xx:    &wrapperspb.UInt32Value{Value: 2},
