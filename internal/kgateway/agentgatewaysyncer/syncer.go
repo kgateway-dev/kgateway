@@ -9,6 +9,7 @@ import (
 	"github.com/agentgateway/agentgateway/go/api"
 	envoytypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	"istio.io/istio/pilot/pkg/model/kstatus"
 	"istio.io/istio/pkg/config"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
@@ -318,15 +319,14 @@ func (s *Syncer) buildBackendFromBackend(ctx krt.HandlerContext, backend *v1alph
 	if err != nil {
 		logger.Error("failed to translate backend", "backend", backend.Name, "namespace", backend.Namespace, "error", err)
 		backendStatus = &v1alpha1.AgentgatewayBackendStatus{
-			Conditions: []metav1.Condition{
-				{
-					Type:               "Accepted",
-					Status:             metav1.ConditionFalse,
-					Reason:             "TranslationError",
-					Message:            fmt.Sprintf("failed to translate backend %v", err),
-					ObservedGeneration: backend.Generation,
-				},
-			},
+			Conditions: kstatus.UpdateConditionIfChanged(backend.Status.Conditions, metav1.Condition{
+				Type:               "Accepted",
+				Status:             metav1.ConditionFalse,
+				Reason:             "TranslationError",
+				Message:            fmt.Sprintf("failed to translate backend %v", err),
+				ObservedGeneration: backend.Generation,
+				LastTransitionTime: metav1.Now(),
+			}),
 		}
 		return results, backendStatus
 	}
@@ -341,14 +341,14 @@ func (s *Syncer) buildBackendFromBackend(ctx krt.HandlerContext, backend *v1alph
 		results = append(results, resourceWrapper)
 	}
 	backendStatus = &v1alpha1.AgentgatewayBackendStatus{
-		Conditions: []metav1.Condition{
-			{
-				Type:               "Accepted",
-				Status:             metav1.ConditionTrue,
-				Reason:             "Accepted",
-				ObservedGeneration: backend.Generation,
-			},
-		},
+		Conditions: kstatus.UpdateConditionIfChanged(backend.Status.Conditions, metav1.Condition{
+			Type:               "Accepted",
+			Status:             metav1.ConditionTrue,
+			Reason:             "Accepted",
+			Message:            "Backend successfully accepted",
+			ObservedGeneration: backend.Generation,
+			LastTransitionTime: metav1.Now(),
+		}),
 	}
 	return results, backendStatus
 }
