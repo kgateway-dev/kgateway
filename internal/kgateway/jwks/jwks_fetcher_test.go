@@ -87,6 +87,8 @@ func TestSuccessfulJwksFetch(t *testing.T) {
 		}
 	}, 1000*time.Second, 100*time.Millisecond)
 
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	// check that we scheduled next fetch
 	fetch := f.schedule.Peek()
 	assert.NotNil(t, fetch)
@@ -124,6 +126,8 @@ func TestSuccessfulJwksFetchButNoUpdates(t *testing.T) {
 		}
 	}, 2*time.Second, 100*time.Millisecond)
 
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	// check that we scheduled next fetch
 	fetch := f.schedule.Peek()
 	assert.NotNil(t, fetch)
@@ -155,6 +159,8 @@ func TestFetchJwksWithError(t *testing.T) {
 		}
 	}, 1*time.Second, 100*time.Millisecond)
 
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	// check that we scheduled a retry
 	retry := f.schedule.Peek()
 	assert.NotNil(t, retry)
