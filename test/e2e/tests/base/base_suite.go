@@ -367,7 +367,7 @@ func (s *BaseTestingSuite) BeforeTest(suiteName, testName string) {
 }
 
 func (s *BaseTestingSuite) AfterTest(suiteName, testName string) {
-	if s.T().Failed() {
+	if s.T().Failed() && !testutils.ShouldSkipBugReport() {
 		s.TestInstallation.PerTestPreFailHandler(s.Ctx, testName)
 	}
 

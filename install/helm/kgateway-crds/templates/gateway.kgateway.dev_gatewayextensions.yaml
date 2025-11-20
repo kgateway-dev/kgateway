@@ -1126,6 +1126,46 @@ spec:
                     - message: Must have port for Service reference
                       rule: '(size(self.group) == 0 && self.kind == ''Service'') ?
                         has(self.port) : true'
+                  cookies:
+                    description: Cookies specifies the configuration for the OAuth2
+                      cookies.
+                    properties:
+                      domain:
+                        description: |-
+                          CookieDomain specifies the domain to set on the access and ID token cookies.
+                          If set, the cookies will be set for the specified domain and all its subdomains. This is useful when requests
+                          to subdomains are not required to be re-authenticated after the user has logged into the parent domain.
+                          If not set, the cookies will default to the host of the request, not including the subdomains.
+                        maxLength: 253
+                        minLength: 1
+                        pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9]))*$
+                        type: string
+                      names:
+                        description: |-
+                          Names specifies the names of the cookies used to store the tokens.
+                          If not set, the default names will be used.
+                        properties:
+                          accessToken:
+                            description: AccessToken specifies the name of the cookie
+                              used to store the access token.
+                            minLength: 1
+                            type: string
+                          idToken:
+                            description: IDToken specifies the name of the cookie
+                              used to store the ID token.
+                            minLength: 1
+                            type: string
+                        type: object
+                      sameSite:
+                        description: |-
+                          SameSite specifies the SameSite attribute for the OAuth2 cookies.
+                          If not set, the default is Lax.
+                        enum:
+                        - Lax
+                        - Strict
+                        - None
+                        type: string
+                    type: object
                   credentials:
                     description: Credentials specifies the Oauth2 client credentials
                       to use for authentication.
@@ -1156,6 +1196,71 @@ spec:
                     required:
                     - clientID
                     - clientSecretRef
+                    type: object
+                  denyRedirect:
+                    description: |-
+                      DenyRedirectMatcher specifies the matcher to match requests that should be denied redirects to the authorization endpoint.
+                      Matching requests will receive a 401 Unauthorized response instead of being redirected.
+                      This is useful for AJAX requests where redirects should be avoided.
+                    properties:
+                      headers:
+                        description: Headers specifies the list of HTTP headers to
+                          match on requests that should be denied redirects.
+                        items:
+                          description: |-
+                            HTTPHeaderMatch describes how to select a HTTP route by matching HTTP request
+                            headers.
+                          properties:
+                            name:
+                              description: |-
+                                Name is the name of the HTTP Header to be matched. Name matching MUST be
+                                case-insensitive. (See https://tools.ietf.org/html/rfc7230#section-3.2).
+
+                                If multiple entries specify equivalent header names, only the first
+                                entry with an equivalent name MUST be considered for a match. Subsequent
+                                entries with an equivalent header name MUST be ignored. Due to the
+                                case-insensitivity of header names, "foo" and "Foo" are considered
+                                equivalent.
+
+                                When a header is repeated in an HTTP request, it is
+                                implementation-specific behavior as to how this is represented.
+                                Generally, proxies should follow the guidance from the RFC:
+                                https://www.rfc-editor.org/rfc/rfc7230.html#section-3.2.2 regarding
+                                processing a repeated header, with special handling for "Set-Cookie".
+                              maxLength: 256
+                              minLength: 1
+                              pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                              type: string
+                            type:
+                              default: Exact
+                              description: |-
+                                Type specifies how to match against the value of the header.
+
+                                Support: Core (Exact)
+
+                                Support: Implementation-specific (RegularExpression)
+
+                                Since RegularExpression HeaderMatchType has implementation-specific
+                                conformance, implementations can support POSIX, PCRE or any other dialects
+                                of regular expressions. Please read the implementation's documentation to
+                                determine the supported dialect.
+                              enum:
+                              - Exact
+                              - RegularExpression
+                              type: string
+                            value:
+                              description: Value is the value of HTTP Header to be
+                                matched.
+                              maxLength: 4096
+                              minLength: 1
+                              type: string
+                          required:
+                          - name
+                          - value
+                          type: object
+                        maxItems: 16
+                        minItems: 1
+                        type: array
                     type: object
                   endSessionEndpoint:
                     description: |-
