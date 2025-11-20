@@ -358,6 +358,9 @@ func NewGatewayIndexConfig(krtOpts krtutil.KrtOptions,
 		GatewayClasses:      gatewayClasses,
 		Namespaces:          namespaces,
 	}
+	for _, fn := range opts {
+		fn(&gwIC)
+	}
 	return gwIC
 }
 
