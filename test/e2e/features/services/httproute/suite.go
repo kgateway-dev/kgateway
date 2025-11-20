@@ -140,12 +140,14 @@ func (s *testingSuite) TestClearStaleStatus() {
 	s.Assert().NoError(err, "can apply manifest")
 
 	// Inject fake parent status from another controller
-	s.addParentStatus("example-route", "default", otherControllerName)
+	s.addParentStatus("example-route", "default", "other-gw", otherControllerName)
 
 	// Verify status
 	s.assertParentStatuses("example-route", "default", "gw", map[string]bool{
 		kgatewayControllerName: true,
-		otherControllerName:    true,
+	})
+	s.assertParentStatuses("example-route", "default", "other-gw", map[string]bool{
+		otherControllerName: true,
 	})
 
 	// Modify route to reference missing-gw
@@ -155,11 +157,13 @@ func (s *testingSuite) TestClearStaleStatus() {
 	// Verify kgateway status is cleared but other controller status remains
 	s.assertParentStatuses("example-route", "default", "gw", map[string]bool{
 		kgatewayControllerName: false,
-		otherControllerName:    true,
+	})
+	s.assertParentStatuses("example-route", "default", "other-gw", map[string]bool{
+		otherControllerName: true,
 	})
 }
 
-func (s *testingSuite) addParentStatus(routeName, routeNamespace, controllerName string) {
+func (s *testingSuite) addParentStatus(routeName, routeNamespace, gwName, controllerName string) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
 	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
 		route := &gwv1.HTTPRoute{}
@@ -173,7 +177,7 @@ func (s *testingSuite) addParentStatus(routeName, routeNamespace, controllerName
 		// Add fake parent status entry
 		fakeStatus := gwv1.RouteParentStatus{
 			ParentRef: gwv1.ParentReference{
-				Name: "gw",
+				Name: gwv1.ObjectName(gwName),
 			},
 			ControllerName: gwv1.GatewayController(controllerName),
 			Conditions: []metav1.Condition{
