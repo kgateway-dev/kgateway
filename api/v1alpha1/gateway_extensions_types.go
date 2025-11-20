@@ -25,17 +25,16 @@ type GatewayExtension struct {
 }
 
 // GatewayExtensionSpec defines the desired state of GatewayExtension.
-// +kubebuilder:validation:XValidation:message="ExtAuth must be set when type is ExtAuth",rule="self.type != 'ExtAuth' || has(self.extAuth)"
-// +kubebuilder:validation:XValidation:message="ExtProc must be set when type is ExtProc",rule="self.type != 'ExtProc' || has(self.extProc)"
-// +kubebuilder:validation:XValidation:message="RateLimit must be set when type is RateLimit",rule="self.type != 'RateLimit' || has(self.rateLimit)"
-// +kubebuilder:validation:XValidation:message="ExtAuth must not be set when type is not ExtAuth",rule="self.type == 'ExtAuth' || !has(self.extAuth)"
-// +kubebuilder:validation:XValidation:message="ExtProc must not be set when type is not ExtProc",rule="self.type == 'ExtProc' || !has(self.extProc)"
-// +kubebuilder:validation:XValidation:message="RateLimit must not be set when type is not RateLimit",rule="self.type == 'RateLimit' || !has(self.rateLimit)"
+// +kubebuilder:validation:ExactlyOneOf=extAuth;extProc;rateLimit
+// +kubebuilder:validation:XValidation:message="extAuth must be set when type is ExtAuth",rule="has(self.type) && self.type == 'ExtAuth' ? has(self.extAuth) : true"
+// +kubebuilder:validation:XValidation:message="extProc must be set when type is ExtProc",rule="has(self.type) && self.type == 'ExtProc' ? has(self.extProc) : true"
+// +kubebuilder:validation:XValidation:message="rateLimit must be set when type is RateLimit",rule="has(self.type) && self.type == 'RateLimit' ? has(self.rateLimit) : true"
 type GatewayExtensionSpec struct {
+	// DEPRECATED: Setting this field has no effect.
 	// Type indicates the type of the GatewayExtension to be used.
 	// +kubebuilder:validation:Enum=ExtAuth;ExtProc;RateLimit
-	// +required
-	Type GatewayExtensionType `json:"type"`
+	// +optional
+	Type *GatewayExtensionType `json:"type,omitempty"`
 
 	// ExtAuth configuration for ExtAuth extension type.
 	// +optional

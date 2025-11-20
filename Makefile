@@ -699,25 +699,21 @@ run-load-tests-production: ## Run production load tests (5000 routes)
 # Targets for running Kubernetes Gateway API conformance tests
 #----------------------------------------------------------------------------------
 
-# Pull the conformance test suite from the k8s gateway api repo and copy it into the test dir.
-$(TEST_ASSET_DIR)/conformance/conformance_test.go:
-	mkdir -p $(TEST_ASSET_DIR)/conformance
-	echo "//go:build conformance" > $@
-	cat $(shell go list -json -m sigs.k8s.io/gateway-api | jq -r '.Dir')/conformance/conformance_test.go >> $@
-	go fmt $@
-
-CONFORMANCE_SUPPORTED_PROFILES ?= -conformance-profiles=GATEWAY-HTTP,GATEWAY-GRPC,GATEWAY-TLS
 CONFORMANCE_GATEWAY_CLASS ?= kgateway
 CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/$(VERSION)-report.yaml -organization=kgateway-dev -project=kgateway -version=$(VERSION) -url=github.com/kgateway-dev/kgateway -contact=github.com/kgateway-dev/kgateway/issues/new/choose
-CONFORMANCE_ARGS := -gateway-class=$(CONFORMANCE_GATEWAY_CLASS) $(CONFORMANCE_SUPPORTED_PROFILES) $(CONFORMANCE_REPORT_ARGS)
+CONFORMANCE_ARGS := -gateway-class=$(CONFORMANCE_GATEWAY_CLASS) $(CONFORMANCE_REPORT_ARGS)
+
+CONFORMANCE_TEST_DIR ?= ./test/conformance/...
 
 .PHONY: conformance ## Run the conformance test suite
-conformance: $(TEST_ASSET_DIR)/conformance/conformance_test.go ## Run the Gateway API conformance suite
-	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(CONFORMANCE_ARGS)
+conformance:  ## Run the Gateway API conformance suite
+	@mkdir -p $(TEST_ASSET_DIR)/conformance
+	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(CONFORMANCE_TEST_DIR) -args $(CONFORMANCE_ARGS)
 
 # Run only the specified conformance test. The name must correspond to the ShortName of one of the k8s gateway api conformance tests.
-conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go ## Run only the specified Gateway API conformance test by ShortName
-	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(CONFORMANCE_ARGS) \
+conformance-%:  ## Run only the specified Gateway API conformance test by ShortName
+	@mkdir -p $(TEST_ASSET_DIR)/conformance
+	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(CONFORMANCE_TEST_DIR) -args $(CONFORMANCE_ARGS) \
 	-run-test=$*
 
 #----------------------------------------------------------------------------------
@@ -725,18 +721,19 @@ conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go ## Run only the
 #----------------------------------------------------------------------------------
 
 # Agent Gateway conformance test configuration
-AGW_CONFORMANCE_SUPPORTED_PROFILES ?= -conformance-profiles=GATEWAY-HTTP,GATEWAY-GRPC,GATEWAY-TLS
 AGW_CONFORMANCE_GATEWAY_CLASS ?= agentgateway
 AGW_CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/agw-$(VERSION)-report.yaml -organization=kgateway-dev -project=kgateway -version=$(VERSION) -url=github.com/kgateway-dev/kgateway -contact=github.com/kgateway-dev/kgateway/issues/new/choose
-AGW_CONFORMANCE_ARGS := -gateway-class=$(AGW_CONFORMANCE_GATEWAY_CLASS) $(AGW_CONFORMANCE_SUPPORTED_PROFILES) $(AGW_CONFORMANCE_REPORT_ARGS)
+AGW_CONFORMANCE_ARGS := -gateway-class=$(AGW_CONFORMANCE_GATEWAY_CLASS) $(AGW_CONFORMANCE_REPORT_ARGS)
 
 .PHONY: agw-conformance ## Run the agent gateway conformance test suite
-agw-conformance: $(TEST_ASSET_DIR)/conformance/conformance_test.go
-	CONFORMANCE_GATEWAY_CLASS=$(AGW_CONFORMANCE_GATEWAY_CLASS) go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(AGW_CONFORMANCE_ARGS)
+agw-conformance:
+	@mkdir -p $(TEST_ASSET_DIR)/conformance
+	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(CONFORMANCE_TEST_DIR) -args $(AGW_CONFORMANCE_ARGS)
 
 # Run only the specified agent gateway conformance test
-agw-conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go
-	CONFORMANCE_GATEWAY_CLASS=$(AGW_CONFORMANCE_GATEWAY_CLASS) go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(AGW_CONFORMANCE_ARGS) \
+agw-conformance-%:
+	@mkdir -p $(TEST_ASSET_DIR)/conformance
+	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(CONFORMANCE_TEST_DIR) -args $(AGW_CONFORMANCE_ARGS) \
 	-run-test=$*
 
 #----------------------------------------------------------------------------------

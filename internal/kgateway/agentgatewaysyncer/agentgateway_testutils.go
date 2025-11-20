@@ -568,6 +568,7 @@ func (tc TestCase) Run(
 		agwCollections,
 		agwMergedPlugins,
 		nil,
+		nil,
 	)
 	agentGwSyncer.translator.Init()
 	gatewayClasses := agwtranslator.GatewayClassesCollection(agwCollections.GatewayClasses, krtOpts)

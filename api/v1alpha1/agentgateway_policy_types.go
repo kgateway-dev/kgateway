@@ -109,7 +109,6 @@ type AgentgatewayPolicySpec struct {
 	Backend *AgentgatewayPolicyBackend `json:"backend,omitempty"`
 }
 
-// +kubebuilder:validation:AtLeastOneOf=tcp;tls;http;auth;mcp;ai
 type AgentgatewayPolicyBackend struct {
 	// tcp defines settings for managing TCP connections to the backend.
 	TCP *BackendTCP `json:"tcp,omitempty"`
@@ -206,7 +205,6 @@ type BackendTLS struct {
 	AlpnProtocols []TinyString `json:"alpnProtocols,omitempty"`
 }
 
-// +kubebuilder:validation:AtLeastOneOf=tcp;tls;http;accessLog;tracing
 // +kubebuilder:validation:XValidation:rule="!has(self.tracing)",message="tracing is not currently implemented"
 type AgentgatewayPolicyFrontend struct {
 	// tcp defines settings on managing incoming TCP connections.
@@ -307,9 +305,7 @@ const (
 	PolicyPhasePostRouting PolicyPhase = "PostRouting"
 )
 
-// +kubebuilder:validation:AtLeastOneOf=transformation;extProc;extAuth;rateLimit;cors;csrf;headerModifiers;hostRewrite;timeouts;retry;authorization;jwtAuthentication;basicAuthentication;apiKeyAuthentication
 // +kubebuilder:validation:XValidation:rule="has(self.phase) && self.phase == 'PreRouting' ? !has(self.rateLimit) && !has(self.cors) && !has(self.csrf) && !has(self.headerModifiers) && !has(self.hostRewrite) && !has(self.timeouts) && !has(self.retry) && !has(self.authorization): true",message="phase PreRouting only supports extAuth, transformation, and extProc"
-// +kubebuilder:validation:XValidation:rule="!has(self.hostRewrite)",message="hostRewrite is not currently implemented"
 type AgentgatewayPolicyTraffic struct {
 	// The phase to apply the traffic policy to. If the phase is PreRouting, the targetRef must be a Gateway or a Listener.
 	// PreRouting is typically used only when a policy needs to influence the routing decision.
@@ -354,13 +350,9 @@ type AgentgatewayPolicyTraffic struct {
 
 	// hostRewrite specifies how to rewrite the Host header for requests.
 	//
-	// The following may be specified:
-	// * Auto: automatically set the Host header based on the destination.
-	// * None: do not rewrite the Host header. The original Host header will be passed through.
-	//
-	// TODO: not currently implemented
+	// If the HTTPRoute `urlRewrite` filter already specifies a host rewrite, this setting is ignored.
 	// +kubebuilder:validation:Enum=Auto;None
-	HostnameRewrite *AgentHostnameRewrite `json:"hostRewrite,omitempty"`
+	HostnameRewrite *AgentHostnameRewriteConfig `json:"hostRewrite,omitempty"`
 
 	// timeouts defines the timeouts for requests
 	// It is applicable to HTTPRoutes and ignored for other targeted kinds.
@@ -864,6 +856,18 @@ type AgentCSRFPolicy struct {
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
 	AdditionalOrigins []ShortString `json:"additionalOrigins,omitempty"`
+}
+
+type AgentHostnameRewriteConfig struct {
+	// mode sets the hostname rewrite mode.
+	//
+	// The following may be specified:
+	// * Auto: automatically set the Host header based on the destination.
+	// * None: do not rewrite the Host header. The original Host header will be passed through.
+	//
+	// This setting defaults to Auto when connecting to hostname-based Backend types, and None otherwise (for Service or
+	// IP-based Backends).
+	Mode AgentHostnameRewrite `json:"mode"`
 }
 
 type AgentTimeouts struct {

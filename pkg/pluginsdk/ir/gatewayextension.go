@@ -13,9 +13,6 @@ type GatewayExtension struct {
 	// ObjectSource identifies the source of this extension.
 	ObjectSource
 
-	// Type indicates the type of the GatewayPolicy.
-	Type v1alpha1.GatewayExtensionType
-
 	// ExtAuth configuration for ExtAuth extension type.
 	ExtAuth *v1alpha1.ExtAuthProvider
 
@@ -43,9 +40,6 @@ func (e GatewayExtension) ResourceName() string {
 }
 
 func (e GatewayExtension) Equals(other GatewayExtension) bool {
-	if e.Type != other.Type {
-		return false
-	}
 	if !reflect.DeepEqual(e.ExtAuth, other.ExtAuth) {
 		return false
 	}

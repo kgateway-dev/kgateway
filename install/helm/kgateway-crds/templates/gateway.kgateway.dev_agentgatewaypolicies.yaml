@@ -957,11 +957,6 @@ spec:
                       rule: '[has(self.verifySubjectAltNames),has(self.insecureSkipVerify)].filter(x,x==true).size()
                         <= 1'
                 type: object
-                x-kubernetes-validations:
-                - message: at least one of the fields in [tcp tls http auth mcp ai]
-                    must be set
-                  rule: '[has(self.tcp),has(self.tls),has(self.http),has(self.auth),has(self.mcp),has(self.ai)].filter(x,x==true).size()
-                    >= 1'
               frontend:
                 description: |-
                   frontend defines settings for how to handle incoming traffic.
@@ -1303,10 +1298,6 @@ spec:
                 x-kubernetes-validations:
                 - message: tracing is not currently implemented
                   rule: '!has(self.tracing)'
-                - message: at least one of the fields in [tcp tls http accessLog tracing]
-                    must be set
-                  rule: '[has(self.tcp),has(self.tls),has(self.http),has(self.accessLog),has(self.tracing)].filter(x,x==true).size()
-                    >= 1'
               targetRefs:
                 description: targetRefs specifies the target resources by reference
                   to attach the policy to.
@@ -2384,16 +2375,28 @@ spec:
                       rule: '[has(self.request),has(self.response)].filter(x,x==true).size()
                         >= 1'
                   hostRewrite:
-                    description: |
+                    description: |-
                       hostRewrite specifies how to rewrite the Host header for requests.
 
-                      The following may be specified:
-                      * Auto: automatically set the Host header based on the destination.
-                      * None: do not rewrite the Host header. The original Host header will be passed through.
+                      If the HTTPRoute `urlRewrite` filter already specifies a host rewrite, this setting is ignored.
                     enum:
                     - Auto
                     - None
-                    type: string
+                    properties:
+                      mode:
+                        description: |-
+                          mode sets the hostname rewrite mode.
+
+                          The following may be specified:
+                          * Auto: automatically set the Host header based on the destination.
+                          * None: do not rewrite the Host header. The original Host header will be passed through.
+
+                          This setting defaults to Auto when connecting to hostname-based Backend types, and None otherwise (for Service or
+                          IP-based Backends).
+                        type: string
+                    required:
+                    - mode
+                    type: object
                   jwtAuthentication:
                     description: jwtAuthentication authenticates users based on JWT
                       tokens.
@@ -3048,14 +3051,6 @@ spec:
                     && !has(self.cors) && !has(self.csrf) && !has(self.headerModifiers)
                     && !has(self.hostRewrite) && !has(self.timeouts) && !has(self.retry)
                     && !has(self.authorization): true'
-                - message: hostRewrite is not currently implemented
-                  rule: '!has(self.hostRewrite)'
-                - message: at least one of the fields in [transformation extProc extAuth
-                    rateLimit cors csrf headerModifiers hostRewrite timeouts retry
-                    authorization jwtAuthentication basicAuthentication apiKeyAuthentication]
-                    must be set
-                  rule: '[has(self.transformation),has(self.extProc),has(self.extAuth),has(self.rateLimit),has(self.cors),has(self.csrf),has(self.headerModifiers),has(self.hostRewrite),has(self.timeouts),has(self.retry),has(self.authorization),has(self.jwtAuthentication),has(self.basicAuthentication),has(self.apiKeyAuthentication)].filter(x,x==true).size()
-                    >= 1'
             type: object
             x-kubernetes-validations:
             - message: At least one of traffic, frontend, or backend must be provided.

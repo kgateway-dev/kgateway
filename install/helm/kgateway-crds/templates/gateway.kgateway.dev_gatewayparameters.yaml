@@ -24,7 +24,7 @@ spec:
       openAPIV3Schema:
         description: |-
           A GatewayParameters contains configuration that is used to dynamically
-          provision kgateway's data plane (Envoy proxy instance), based on a
+          provision kgateway's data plane (Envoy or agentgateway proxy instance), based on a
           Kubernetes Gateway.
         properties:
           apiVersion:
@@ -2740,7 +2740,7 @@ spec:
                         properties:
                           image:
                             description: |-
-                              The envoy container image. See
+                              The container image. See
                               https://kubernetes.io/docs/concepts/containers/images
                               for details.
                             properties:
@@ -7188,7 +7188,7 @@ spec:
                     type: object
                   service:
                     description: |-
-                      Configuration for the Kubernetes Service that exposes the Envoy proxy over
+                      Configuration for the Kubernetes Service that exposes the proxy over
                       the network.
                     properties:
                       clusterIP:
@@ -7254,7 +7254,7 @@ spec:
                     type: object
                   serviceAccount:
                     description: Configuration for the Kubernetes ServiceAccount used
-                      by the Envoy pod.
+                      by the proxy pods.
                     properties:
                       extraAnnotations:
                         additionalProperties:

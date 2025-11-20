@@ -369,7 +369,7 @@ Statuses:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: 'ai: field invalid_object contains invalid JSON string: "model":"gpt-4"}'
+          message: 'extauth: gateway extension gwtest/missing-extauth not found'
           reason: ListenerReplaced
           status: "False"
           type: Accepted
@@ -398,7 +398,7 @@ Statuses:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: 'ai: field invalid_object contains invalid JSON string: "model":"gpt-4"}'
+          message: 'extauth: gateway extension gwtest/missing-extauth not found'
           reason: ListenerReplaced
           status: "False"
           type: Accepted
@@ -468,7 +468,7 @@ Statuses:
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: 'ai: field invalid_object contains invalid JSON string: "model":"gpt-4"}'
+          message: 'extauth: gateway extension gwtest/missing-extauth not found'
           reason: Invalid
           status: "False"
           type: Accepted

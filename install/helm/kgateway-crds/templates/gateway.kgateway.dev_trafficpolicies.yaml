@@ -51,496 +51,9 @@ spec:
           metadata:
             type: object
           spec:
-            description: |-
-              TrafficPolicySpec defines the desired state of a traffic policy.
-              Note: Backend attachment is only supported for agentgateway.
+            description: TrafficPolicySpec defines the desired state of a traffic
+              policy.
             properties:
-              ai:
-                description: AI is used to configure AI-based policies for the policy.
-                properties:
-                  defaults:
-                    description: |-
-                      Provide defaults to merge with user input fields.
-                      Defaults do _not_ override the user input fields, unless you explicitly set `override` to `true`.
-                    items:
-                      description: |-
-                        FieldDefault provides default values for specific fields in the JSON request body sent to the LLM provider.
-                        These defaults are merged with the user-provided request to ensure missing fields are populated.
-
-                        User input fields here refer to the fields in the JSON request body that a client sends when making a request to the LLM provider.
-                        Defaults set here do _not_ override those user-provided values unless you explicitly set `override` to `true`.
-
-                        Example: Setting a default system field for Anthropic, which does not support system role messages:
-                        ```yaml
-                        defaults:
-                          - field: "system"
-                            value: "answer all questions in French"
-
-                        ```
-
-                        Example: Setting a default temperature and overriding `max_tokens`:
-                        ```yaml
-                        defaults:
-                          - field: "temperature"
-                            value: "0.5"
-                          - field: "max_tokens"
-                            value: "100"
-                            override: true
-
-                        ```
-
-                        Example: Setting custom lists fields:
-                        ```yaml
-                        defaults:
-                          - field: "custom_integer_list"
-                            value: "[1,2,3]"
-                          - field: "custom_string_list"
-                            value: '["one","two","three"]'
-                            override: true
-
-                        ```
-
-                        Note: The `field` values correspond to keys in the JSON request body, not fields in this CRD.
-                      properties:
-                        field:
-                          description: The name of the field.
-                          minLength: 1
-                          type: string
-                        override:
-                          default: false
-                          description: |-
-                            Whether to override the field's value if it already exists.
-                            Defaults to false.
-                          type: boolean
-                        value:
-                          description: The field default value, which can be any JSON
-                            Data Type.
-                          minLength: 1
-                          type: string
-                      required:
-                      - field
-                      - value
-                      type: object
-                    type: array
-                  promptEnrichment:
-                    description: |-
-                      Enrich requests sent to the LLM provider by appending and prepending system prompts.
-                      This can be configured only for LLM providers that use the `CHAT` or `CHAT_STREAMING` API route type.
-                    properties:
-                      append:
-                        description: A list of messages to be appended to the prompt
-                          sent by the client.
-                        items:
-                          description: An entry for a message to prepend or append
-                            to each prompt.
-                          properties:
-                            content:
-                              description: String content of the message.
-                              type: string
-                            role:
-                              description: |-
-                                Role of the message. The available roles depend on the backend
-                                LLM provider model, such as `SYSTEM` or `USER` in the OpenAI API.
-                              type: string
-                          required:
-                          - content
-                          - role
-                          type: object
-                        type: array
-                      prepend:
-                        description: A list of messages to be prepended to the prompt
-                          sent by the client.
-                        items:
-                          description: An entry for a message to prepend or append
-                            to each prompt.
-                          properties:
-                            content:
-                              description: String content of the message.
-                              type: string
-                            role:
-                              description: |-
-                                Role of the message. The available roles depend on the backend
-                                LLM provider model, such as `SYSTEM` or `USER` in the OpenAI API.
-                              type: string
-                          required:
-                          - content
-                          - role
-                          type: object
-                        type: array
-                    type: object
-                  promptGuard:
-                    description: |-
-                      Set up prompt guards to block unwanted requests to the LLM provider and mask sensitive data.
-                      Prompt guards can be used to reject requests based on the content of the prompt, as well as
-                      mask responses based on the content of the response.
-                    properties:
-                      request:
-                        description: Prompt guards to apply to requests sent by the
-                          client.
-                        properties:
-                          customResponse:
-                            description: |-
-                              A custom response message to return to the client. If not specified, defaults to
-                              "The request was rejected due to inappropriate content".
-                            properties:
-                              message:
-                                default: The request was rejected due to inappropriate
-                                  content
-                                description: |-
-                                  A custom response message to return to the client. If not specified, defaults to
-                                  "The request was rejected due to inappropriate content".
-                                type: string
-                              statusCode:
-                                default: 403
-                                description: The status code to return to the client.
-                                  Defaults to 403.
-                                format: int32
-                                maximum: 599
-                                minimum: 200
-                                type: integer
-                            type: object
-                          moderation:
-                            description: |-
-                              Pass prompt data through an external moderation model endpoint,
-                              which compares the request prompt input to predefined content rules.
-                            properties:
-                              openAIModeration:
-                                description: |-
-                                  Pass prompt data through an external moderation model endpoint,
-                                  which compares the request prompt input to predefined content rules.
-                                  Configure an OpenAI moderation endpoint.
-                                properties:
-                                  authToken:
-                                    description: |-
-                                      The authorization token that the AI gateway uses to access the OpenAI API.
-                                      This token is automatically sent in the `Authorization` header of the
-                                      request and prefixed with `Bearer`.
-                                    properties:
-                                      inline:
-                                        description: |-
-                                          Provide the token directly in the configuration for the Backend.
-                                          This option is the least secure. Only use this option for quick tests such as trying out AI Gateway.
-                                        type: string
-                                      kind:
-                                        description: |-
-                                          Kind specifies which type of authorization token is being used.
-                                          Must be one of: "Inline", "SecretRef", "Passthrough".
-                                        enum:
-                                        - Inline
-                                        - SecretRef
-                                        - Passthrough
-                                        type: string
-                                      secretRef:
-                                        description: |-
-                                          Store the API key in a Kubernetes secret in the same namespace as the Backend.
-                                          Then, refer to the secret in the Backend configuration. This option is more secure than an inline token,
-                                          because the API key is encoded and you can restrict access to secrets through Authorization rules.
-                                          You might use this option in proofs of concept, controlled development and staging environments,
-                                          or well-controlled prod environments that use secrets.
-                                        properties:
-                                          name:
-                                            default: ""
-                                            description: |-
-                                              Name of the referent.
-                                              This field is effectively required, but due to backwards compatibility is
-                                              allowed to be empty. Instances of this type with an empty value here are
-                                              almost certainly wrong.
-                                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                            type: string
-                                        type: object
-                                        x-kubernetes-map-type: atomic
-                                    required:
-                                    - kind
-                                    type: object
-                                    x-kubernetes-validations:
-                                    - message: at most one of the fields in [inline
-                                        secretRef] may be set
-                                      rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
-                                        <= 1'
-                                  model:
-                                    description: |-
-                                      Optional: Override the model name, such as `gpt-4o-mini`.
-                                      If unset, the model name is taken from the request.
-                                      This setting can be useful when setting up model failover within the same LLM provider.
-                                    type: string
-                                required:
-                                - authToken
-                                type: object
-                            type: object
-                          regex:
-                            description: Regular expression (regex) matching for prompt
-                              guards and data masking.
-                            properties:
-                              action:
-                                default: MASK
-                                description: |-
-                                  The action to take if a regex pattern is matched in a request or response.
-                                  This setting applies only to request matches. PromptguardResponse matches are always masked by default.
-                                  Defaults to `MASK`.
-                                type: string
-                              builtins:
-                                description: |-
-                                  A list of built-in regex patterns to match against the request or response.
-                                  Matches and built-ins are additive.
-                                items:
-                                  description: |-
-                                    BuiltIn regex patterns for specific types of strings in prompts.
-                                    For example, if you specify `CREDIT_CARD`, any credit card numbers
-                                    in the request or response are matched.
-                                  enum:
-                                  - SSN
-                                  - CREDIT_CARD
-                                  - PHONE_NUMBER
-                                  - EMAIL
-                                  type: string
-                                type: array
-                              matches:
-                                description: |-
-                                  A list of regex patterns to match against the request or response.
-                                  Matches and built-ins are additive.
-                                items:
-                                  description: RegexMatch configures the regular expression
-                                    (regex) matching for prompt guards and data masking.
-                                  properties:
-                                    name:
-                                      description: An optional name for this match,
-                                        which can be used for debugging purposes.
-                                      type: string
-                                    pattern:
-                                      description: The regex pattern to match against
-                                        the request or response.
-                                      type: string
-                                  type: object
-                                type: array
-                            type: object
-                          webhook:
-                            description: Configure a webhook to forward requests to
-                              for prompt guarding.
-                            properties:
-                              forwardHeaderMatches:
-                                description: |-
-                                  ForwardHeaderMatches defines a list of HTTP header matches that will be
-                                  used to select the headers to forward to the webhook.
-                                  Request headers are used when forwarding requests and response headers
-                                  are used when forwarding responses.
-                                  By default, no headers are forwarded.
-                                items:
-                                  description: |-
-                                    HTTPHeaderMatch describes how to select a HTTP route by matching HTTP request
-                                    headers.
-                                  properties:
-                                    name:
-                                      description: |-
-                                        Name is the name of the HTTP Header to be matched. Name matching MUST be
-                                        case-insensitive. (See https://tools.ietf.org/html/rfc7230#section-3.2).
-
-                                        If multiple entries specify equivalent header names, only the first
-                                        entry with an equivalent name MUST be considered for a match. Subsequent
-                                        entries with an equivalent header name MUST be ignored. Due to the
-                                        case-insensitivity of header names, "foo" and "Foo" are considered
-                                        equivalent.
-
-                                        When a header is repeated in an HTTP request, it is
-                                        implementation-specific behavior as to how this is represented.
-                                        Generally, proxies should follow the guidance from the RFC:
-                                        https://www.rfc-editor.org/rfc/rfc7230.html#section-3.2.2 regarding
-                                        processing a repeated header, with special handling for "Set-Cookie".
-                                      maxLength: 256
-                                      minLength: 1
-                                      pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
-                                      type: string
-                                    type:
-                                      default: Exact
-                                      description: |-
-                                        Type specifies how to match against the value of the header.
-
-                                        Support: Core (Exact)
-
-                                        Support: Implementation-specific (RegularExpression)
-
-                                        Since RegularExpression HeaderMatchType has implementation-specific
-                                        conformance, implementations can support POSIX, PCRE or any other dialects
-                                        of regular expressions. Please read the implementation's documentation to
-                                        determine the supported dialect.
-                                      enum:
-                                      - Exact
-                                      - RegularExpression
-                                      type: string
-                                    value:
-                                      description: Value is the value of HTTP Header
-                                        to be matched.
-                                      maxLength: 4096
-                                      minLength: 1
-                                      type: string
-                                  required:
-                                  - name
-                                  - value
-                                  type: object
-                                type: array
-                              host:
-                                description: "Host to send the traffic to.\nNote:
-                                  TLS is not currently supported for webhook.\nExample:\n```yaml\nhost:\n
-                                  \ host: example.com  #The host name of the webhook
-                                  endpoint.\n  port: 443 \t        #The port number
-                                  on which the webhook is listening.\n```"
-                                properties:
-                                  host:
-                                    description: Host is the host name to use for
-                                      the backend.
-                                    minLength: 1
-                                    type: string
-                                  port:
-                                    description: Port is the port to use for the backend.
-                                    format: int32
-                                    type: integer
-                                required:
-                                - host
-                                - port
-                                type: object
-                            required:
-                            - host
-                            type: object
-                        type: object
-                      response:
-                        description: Prompt guards to apply to responses returned
-                          by the LLM provider.
-                        properties:
-                          regex:
-                            description: Regular expression (regex) matching for prompt
-                              guards and data masking.
-                            properties:
-                              action:
-                                default: MASK
-                                description: |-
-                                  The action to take if a regex pattern is matched in a request or response.
-                                  This setting applies only to request matches. PromptguardResponse matches are always masked by default.
-                                  Defaults to `MASK`.
-                                type: string
-                              builtins:
-                                description: |-
-                                  A list of built-in regex patterns to match against the request or response.
-                                  Matches and built-ins are additive.
-                                items:
-                                  description: |-
-                                    BuiltIn regex patterns for specific types of strings in prompts.
-                                    For example, if you specify `CREDIT_CARD`, any credit card numbers
-                                    in the request or response are matched.
-                                  enum:
-                                  - SSN
-                                  - CREDIT_CARD
-                                  - PHONE_NUMBER
-                                  - EMAIL
-                                  type: string
-                                type: array
-                              matches:
-                                description: |-
-                                  A list of regex patterns to match against the request or response.
-                                  Matches and built-ins are additive.
-                                items:
-                                  description: RegexMatch configures the regular expression
-                                    (regex) matching for prompt guards and data masking.
-                                  properties:
-                                    name:
-                                      description: An optional name for this match,
-                                        which can be used for debugging purposes.
-                                      type: string
-                                    pattern:
-                                      description: The regex pattern to match against
-                                        the request or response.
-                                      type: string
-                                  type: object
-                                type: array
-                            type: object
-                          webhook:
-                            description: Configure a webhook to forward responses
-                              to for prompt guarding.
-                            properties:
-                              forwardHeaderMatches:
-                                description: |-
-                                  ForwardHeaderMatches defines a list of HTTP header matches that will be
-                                  used to select the headers to forward to the webhook.
-                                  Request headers are used when forwarding requests and response headers
-                                  are used when forwarding responses.
-                                  By default, no headers are forwarded.
-                                items:
-                                  description: |-
-                                    HTTPHeaderMatch describes how to select a HTTP route by matching HTTP request
-                                    headers.
-                                  properties:
-                                    name:
-                                      description: |-
-                                        Name is the name of the HTTP Header to be matched. Name matching MUST be
-                                        case-insensitive. (See https://tools.ietf.org/html/rfc7230#section-3.2).
-
-                                        If multiple entries specify equivalent header names, only the first
-                                        entry with an equivalent name MUST be considered for a match. Subsequent
-                                        entries with an equivalent header name MUST be ignored. Due to the
-                                        case-insensitivity of header names, "foo" and "Foo" are considered
-                                        equivalent.
-
-                                        When a header is repeated in an HTTP request, it is
-                                        implementation-specific behavior as to how this is represented.
-                                        Generally, proxies should follow the guidance from the RFC:
-                                        https://www.rfc-editor.org/rfc/rfc7230.html#section-3.2.2 regarding
-                                        processing a repeated header, with special handling for "Set-Cookie".
-                                      maxLength: 256
-                                      minLength: 1
-                                      pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
-                                      type: string
-                                    type:
-                                      default: Exact
-                                      description: |-
-                                        Type specifies how to match against the value of the header.
-
-                                        Support: Core (Exact)
-
-                                        Support: Implementation-specific (RegularExpression)
-
-                                        Since RegularExpression HeaderMatchType has implementation-specific
-                                        conformance, implementations can support POSIX, PCRE or any other dialects
-                                        of regular expressions. Please read the implementation's documentation to
-                                        determine the supported dialect.
-                                      enum:
-                                      - Exact
-                                      - RegularExpression
-                                      type: string
-                                    value:
-                                      description: Value is the value of HTTP Header
-                                        to be matched.
-                                      maxLength: 4096
-                                      minLength: 1
-                                      type: string
-                                  required:
-                                  - name
-                                  - value
-                                  type: object
-                                type: array
-                              host:
-                                description: "Host to send the traffic to.\nNote:
-                                  TLS is not currently supported for webhook.\nExample:\n```yaml\nhost:\n
-                                  \ host: example.com  #The host name of the webhook
-                                  endpoint.\n  port: 443 \t        #The port number
-                                  on which the webhook is listening.\n```"
-                                properties:
-                                  host:
-                                    description: Host is the host name to use for
-                                      the backend.
-                                    minLength: 1
-                                    type: string
-                                  port:
-                                    description: Port is the port to use for the backend.
-                                    format: int32
-                                    type: integer
-                                required:
-                                - host
-                                - port
-                                type: object
-                            required:
-                            - host
-                            type: object
-                        type: object
-                    type: object
-                type: object
               autoHostRewrite:
                 description: |-
                   AutoHostRewrite rewrites the Host header to the DNS name of the selected upstream.
@@ -870,10 +383,8 @@ spec:
                   policy for this traffic policy.
                 properties:
                   additionalOrigins:
-                    description: |-
-                      Specifies additional source origins that will be allowed in addition to the destination origin.
-                      Envoy: Supported
-                      Agentgateway: Supported
+                    description: Specifies additional source origins that will be
+                      allowed in addition to the destination origin.
                     items:
                       description: Specifies the way to match a string.
                       properties:
@@ -923,19 +434,15 @@ spec:
                     maxItems: 16
                     type: array
                   percentageEnabled:
-                    description: |-
-                      Specifies the percentage of requests for which the CSRF filter is enabled.
-                      Envoy: Supported
-                      Agentgateway: Not supported (ignored)
+                    description: Specifies the percentage of requests for which the
+                      CSRF filter is enabled.
                     format: int32
                     maximum: 100
                     minimum: 0
                     type: integer
                   percentageShadowed:
-                    description: |-
-                      Specifies that CSRF policies will be evaluated and tracked, but not enforced.
-                      Envoy: Supported
-                      Agentgateway: Not supported (ignored)
+                    description: Specifies that CSRF policies will be evaluated and
+                      tracked, but not enforced.
                     format: int32
                     maximum: 100
                     minimum: 0
@@ -1534,11 +1041,9 @@ spec:
                 description: |-
                   RBAC specifies the role-based access control configuration for the policy.
                   This defines the rules for authorization based on roles and permissions.
-                  With an Envoy-based Gateway, RBAC policies applied at different attachment points in the configuration
-                  hierarchy are not cumulative, and only the most specific policy is enforced. In Envoy, this means an RBAC policy
-                  attached to a route will override any RBAC policies applied to the gateway or listener. In contrast, an
-                  Agentgateway-based Gateway supports cumulative RBAC policies across different attachment points, such that
-                  an RBAC policy attached to a route augments policies applied to the gateway or listener without overriding them.
+                  RBAC policies applied at different attachment points in the configuration
+                  hierarchy are not cumulative, and only the most specific policy is enforced. This means an RBAC policy
+                  attached to a route will override any RBAC policies applied to the gateway or listener.
                 properties:
                   action:
                     default: Allow
@@ -1716,13 +1221,13 @@ spec:
                 minItems: 1
                 type: array
                 x-kubernetes-validations:
-                - message: targetRefs may only reference Gateway, HTTPRoute, XListenerSet,
-                    or Backend resources
-                  rule: self.all(r, (r.kind == 'Backend' || r.kind == 'Gateway' ||
-                    r.kind == 'HTTPRoute' || (r.kind == 'XListenerSet' && r.group
-                    == 'gateway.networking.x-k8s.io')) && (!has(r.group) || r.group
-                    == 'gateway.networking.k8s.io' || r.group == 'gateway.networking.x-k8s.io'
-                    || r.group == 'gateway.kgateway.dev' ))
+                - message: targetRefs may only reference Gateway, HTTPRoute, or XListenerSet
+                    resources
+                  rule: self.all(r, (r.kind == 'Gateway' || r.kind == 'HTTPRoute'
+                    || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io'))
+                    && (!has(r.group) || r.group == 'gateway.networking.k8s.io' ||
+                    r.group == 'gateway.networking.x-k8s.io' || r.group == 'gateway.kgateway.dev'
+                    ))
               targetSelectors:
                 description: TargetSelectors specifies the target selectors to select
                   resources to attach the policy to.
@@ -1839,8 +1344,6 @@ spec:
                             description: |-
                               ParseAs defines what auto formatting should be applied to the body.
                               This can make interacting with keys within a json body much easier if AsJson is selected.
-                              This field is only supported for kgateway (Envoy) data plane and is ignored by agentgateway.
-                              For agentgateway, use json(request.body) or json(response.body) directly in CEL expressions.
                             enum:
                             - AsString
                             - AsJson
@@ -1848,9 +1351,7 @@ spec:
                           value:
                             description: |-
                               Value is the template to apply to generate the output value for the body.
-                              Inja templates are supported for Envoy-based data planes only.
-                              CEL expressions are supported for agentgateway data plane only.
-                              The system will auto-detect the appropriate template format based on the data plane.
+                              Only Inja templates are supported.
                             type: string
                         required:
                         - parseAs
@@ -1920,8 +1421,6 @@ spec:
                             description: |-
                               ParseAs defines what auto formatting should be applied to the body.
                               This can make interacting with keys within a json body much easier if AsJson is selected.
-                              This field is only supported for kgateway (Envoy) data plane and is ignored by agentgateway.
-                              For agentgateway, use json(request.body) or json(response.body) directly in CEL expressions.
                             enum:
                             - AsString
                             - AsJson
@@ -1929,9 +1428,7 @@ spec:
                           value:
                             description: |-
                               Value is the template to apply to generate the output value for the body.
-                              Inja templates are supported for Envoy-based data planes only.
-                              CEL expressions are supported for agentgateway data plane only.
-                              The system will auto-detect the appropriate template format based on the data plane.
+                              Only Inja templates are supported.
                             type: string
                         required:
                         - parseAs

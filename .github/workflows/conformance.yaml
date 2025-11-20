@@ -14,53 +14,64 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  kube_gateway_api_conformance_tests:
-    name: kubernetes gateway api conformance tests (${{matrix.image-variant}})
+  gw_api_conformance_tests:
+    name: K8s Gw Api Conformance Tests (${{ matrix.test-type }}, ${{ matrix.gateway-api-channel }})
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     if: ${{ !github.event.pull_request.draft }}
     strategy:
       fail-fast: false
       matrix:
-        kube-version: [ { node: 'v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a', kubectl: 'v1.34.1', kind: 'v0.30.0' } ]
-        image-variant:
-          - standard
+        gateway-api-channel: [ 'experimental', 'standard' ]
+        test-type: [ gateway-api, agent-gateway ]
     steps:
     - uses: actions/checkout@v4
+    - name: Dotenv Action
+      uses: falti/dotenv-action@v1.1.4
+      id: dotenv
+      with:
+        path: "./.github/workflows/.env/pr-tests/versions.env"
+        log-variables: true
     - id: run-tests
-      uses: ./.github/actions/kube-gateway-api-conformance-tests
+      uses: ./.github/actions/kube-conformance-tests
+      with:
+        test-type: ${{ matrix.test-type }}
+        api-channel: ${{ matrix.gateway-api-channel }}
+        kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
+        kind-node-version: ${{ steps.dotenv.outputs.node_version }}
 
-  kube_inference_extension_conformance_tests:
-    name: kubernetes gateway api inference extension conformance tests (${{matrix.image-variant}})
+  gie_conformance_tests:
+    name: Kubernetes Gateway API Inference Extension Conformance Tests
     runs-on: ubuntu-22.04
-    timeout-minutes: 60
-    if: ${{ !github.event.pull_request.draft }}
-    strategy:
-      fail-fast: false
-      matrix:
-        kube-version: [ { node: 'v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a', kubectl: 'v1.34.1', kind: 'v0.30.0' } ]
-        image-variant:
-          - standard
     steps:
     - uses: actions/checkout@v4
-    - id: run-tests
-      uses: ./.github/actions/kube-inference-extension-conformance-tests
+    - name: Dotenv Action
+      uses: falti/dotenv-action@v1.1.4
+      id: dotenv
+      with:
+        path: "./.github/workflows/.env/pr-tests/versions.env"
+        log-variables: true
+    - name: Run GIE Conformance Tests
+      uses: ./.github/actions/kube-conformance-tests
+      with:
+        test-type: inference-extension
+        api-channel: experimental
+        enable-inference-extension: true
+        kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
+        kind-node-version: ${{ steps.dotenv.outputs.node_version }}
 
-  kube_agent_gateway_conformance_tests:
-    name: kubernetes gateway api agent-gateway conformance tests (${{matrix.image-variant}})
+  conformance:
+    if: always()
+    name: Kubernetes Gateway API Conformance Tests
     runs-on: ubuntu-22.04
-    timeout-minutes: 60
-    if: ${{ !github.event.pull_request.draft }}
-    env:
-      CONFORMANCE_GATEWAY_CLASS: agentgateway
-      HELM_ADDITIONAL_VALUES: test/e2e/tests/manifests/agent-gateway-integration.yaml
-    strategy:
-      fail-fast: false
-      matrix:
-        kube-version: [ { node: 'v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a', kubectl: 'v1.34.1', kind: 'v0.30.0' } ]
-        image-variant:
-          - standard
+    needs: [gw_api_conformance_tests, gie_conformance_tests]
     steps:
-    - uses: actions/checkout@v4
-    - id: run-tests
-      uses: ./.github/actions/kube-agent-gateway-conformance-tests
+    - name: Check e2e matrix status
+      run: |
+          if [[ "${{ needs.gw_api_conformance_tests.result }}" == "success" && "${{ needs.gie_conformance_tests.result }}" == "success" ]]; then
+            echo "All conformance matrix jobs passed successfully"
+            exit 0
+          else
+            echo "Conformance matrix jobs failed with status: ${{ needs.gw_api_conformance_tests.result }} and ${{ needs.gie_conformance_tests.result }}"
+            exit 1
+          fi

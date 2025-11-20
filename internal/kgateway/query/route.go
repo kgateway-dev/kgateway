@@ -150,7 +150,10 @@ func (r *gatewayQueries) allowedRoutes(resource client.Object, l *gwv1.Listener)
 			{Kind: wellknown.GRPCRouteKind, Group: gwv1.GroupName},
 		}
 	case gwv1.TLSProtocolType:
-		allowedKinds = []metav1.GroupKind{{Kind: wellknown.TLSRouteKind, Group: gwv1.GroupName}}
+		allowedKinds = []metav1.GroupKind{
+			{Kind: wellknown.TLSRouteKind, Group: gwv1.GroupName},
+			{Kind: wellknown.TCPRouteKind, Group: gwv1.GroupName},
+		}
 	case gwv1.TCPProtocolType:
 		allowedKinds = []metav1.GroupKind{{Kind: wellknown.TCPRouteKind, Group: gwv1a2.GroupName}}
 	case gwv1.UDPProtocolType:

@@ -32,6 +32,16 @@ type StatusCollections struct {
 	constructors []func(statusWriter WorkerQueue) krt.HandlerRegistration
 	active       []krt.HandlerRegistration
 	queue        WorkerQueue
+	// extraGVKs tracks extra GVKs to sync statuses for
+	extraGVKs []schema.GroupVersionKind
+}
+
+// NewStatusCollections creates a StatusCollections with an optional immutable set of extra GVKs.
+// extraGVKs should be provided at construction time and not modified after.
+func NewStatusCollections(extraGVKs []schema.GroupVersionKind) *StatusCollections {
+	return &StatusCollections{
+		extraGVKs: extraGVKs,
+	}
 }
 
 func (s *StatusCollections) Register(sr StatusRegistration) {
@@ -86,7 +96,7 @@ func RegisterStatus[I controllers.Object, IS any](s *StatusCollections, statusCo
 				var empty IS
 				status = &empty
 			}
-			enqueueStatus(statusWriter, l.Obj, status)
+			enqueueStatus(statusWriter, l.Obj, status, s.extraGVKs)
 			log.Debugf("Enqueued status update for %v %v: %v", l.ResourceName(), l.Obj.GetResourceVersion(), status)
 		})
 		return h
@@ -94,13 +104,13 @@ func RegisterStatus[I controllers.Object, IS any](s *StatusCollections, statusCo
 	s.Register(reg)
 }
 
-func enqueueStatus[T any](sw WorkerQueue, obj controllers.Object, ws T) {
+func enqueueStatus[T any](sw WorkerQueue, obj controllers.Object, ws T, extraGVKs []schema.GroupVersionKind) {
 	res := Resource{
 		GroupVersionKind: schema.GroupVersionKind{},
 		NamespacedName:   config.NamespacedName(obj),
 		ResourceVersion:  obj.GetResourceVersion(),
 	}
-	switch t := obj.(type) {
+	switch obj.(type) {
 	case *gwv1.Gateway:
 		res.GroupVersionKind = wellknown.GatewayGVK
 	case *gwv1.HTTPRoute:
@@ -111,14 +121,34 @@ func enqueueStatus[T any](sw WorkerQueue, obj controllers.Object, ws T) {
 		res.GroupVersionKind = wellknown.TLSRouteGVK
 	case *gwv1.GRPCRoute:
 		res.GroupVersionKind = wellknown.GRPCRouteGVK
-	case *v1alpha1.TrafficPolicy:
-		res.GroupVersionKind = wellknown.TrafficPolicyGVK
 	case *v1alpha1.AgentgatewayPolicy:
 		res.GroupVersionKind = wellknown.AgentgatewayPolicyGVK
 	case *gwxv1a1.XListenerSet:
 		res.GroupVersionKind = wellknown.XListenerSetGVK
 	default:
-		log.Fatalf("enqueueStatus unknown type %T", t)
+		// Prefer the object's own GVK if available
+		if gvk := obj.GetObjectKind().GroupVersionKind(); !gvk.Empty() {
+			res.GroupVersionKind = schema.GroupVersionKind{
+				Group:   gvk.Group,
+				Version: gvk.Version,
+				Kind:    gvk.Kind,
+			}
+		} else if extraGVKs != nil {
+			// Fallback: map external types by their concrete Kind using provided extraGVKs
+			kind := obj.GetObjectKind().GroupVersionKind().Kind
+			if kind != "" {
+				for _, mapped := range extraGVKs {
+					if mapped.Kind == kind {
+						res.GroupVersionKind = mapped
+						break
+					}
+				}
+			}
+		}
 	}
-	sw.Push(res, ws)
+	if res.GroupVersionKind.Empty() {
+		log.Warnf("enqueueStatus unknown external type %T", obj)
+	} else {
+		sw.Push(res, ws)
+	}
 }

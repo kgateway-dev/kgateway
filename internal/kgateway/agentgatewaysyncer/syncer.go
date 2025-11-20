@@ -16,6 +16,7 @@ import (
 	"istio.io/istio/pkg/util/sets"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -75,6 +76,7 @@ func NewAgwSyncer(
 	agwCollections *plugins.AgwCollections,
 	agwPlugins plugins.AgwPlugin,
 	additionalGatewayClasses map[string]*deployer.GatewayClassInfo,
+	extraGVKs []schema.GroupVersionKind,
 ) *Syncer {
 	return &Syncer{
 		agwCollections:           agwCollections,
@@ -83,7 +85,7 @@ func NewAgwSyncer(
 		translator:               translator.NewAgwTranslator(agwCollections),
 		additionalGatewayClasses: additionalGatewayClasses,
 		client:                   client,
-		statusCollections:        &status.StatusCollections{},
+		statusCollections:        status.NewStatusCollections(extraGVKs),
 		EventPublisher:           nack.NewNackEventPublisher(ctx, client),
 	}
 }

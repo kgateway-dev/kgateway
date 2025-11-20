@@ -310,6 +310,39 @@ func TestBasic(t *testing.T) {
 			},
 		})
 	})
+
+	t.Run("TrafficPolicy with extproc on route", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "trafficpolicy/extproc-route.yaml",
+			outputFile: "trafficpolicy/extproc-route.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with extproc on gateway", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "trafficpolicy/extproc-gateway.yaml",
+			outputFile: "trafficpolicy/extproc-gateway.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+	t.Run("TrafficPolicy with extauth on listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "trafficpolicy/extproc-listener.yaml",
+			outputFile: "trafficpolicy/extproc-listener.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("AI TrafficPolicy on route level", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "trafficpolicy/ai/route-level.yaml",

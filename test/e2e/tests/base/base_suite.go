@@ -508,10 +508,10 @@ func (s *BaseTestingSuite) loadManifestResources(testCase *TestCase) {
 		s.Require().NoError(err)
 		resources = append(resources, objs...)
 	}
-	for manifest := range testCase.ManifestsWithTransform {
+	for manifest, transform := range testCase.ManifestsWithTransform {
 		// we don't need to transform the resource since the transformation applies to the spec and not object metadata,
 		// which ensures that parsed Go objects in manifestResources can be used normally
-		objs, err := testutils.LoadFromFiles(manifest, s.TestInstallation.ClusterContext.Client.Scheme(), s.gvkToStructuralSchema)
+		objs, err := testutils.LoadFromFileWithTransform(manifest, s.TestInstallation.ClusterContext.Client.Scheme(), s.gvkToStructuralSchema, transform)
 		s.Require().NoError(err)
 		resources = append(resources, objs...)
 	}
