@@ -56,7 +56,7 @@ func TranslateListeners(
 	})(nil)
 
 	validatedListeners := validateGateway(gateway, reporter, settings)
-	mergedListeners := mergeGWListeners(queries, gateway.Namespace, validatedListeners, *gateway, routesForGw, reporter, settings)
+	mergedListeners := mergeGWListeners(queries, validatedListeners, *gateway, routesForGw, reporter, settings)
 	translatedListeners := mergedListeners.translateListeners(kctx, ctx, queries, reporter)
 
 	return translatedListeners
@@ -64,7 +64,6 @@ func TranslateListeners(
 
 func mergeGWListeners(
 	queries query.GatewayQueries,
-	gatewayNamespace string,
 	listeners []ir.Listener,
 	parentGw ir.Gateway,
 	routesForGw *query.RoutesForGwResult,
