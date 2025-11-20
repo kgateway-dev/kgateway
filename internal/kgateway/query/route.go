@@ -354,12 +354,14 @@ func (r *gatewayQueries) GetRoutesForGateway(kctx krt.HandlerContext, ctx contex
 		return nil, err
 	}
 
-	for _, ls := range gw.AllowedListenerSets[wellknown.XListenerSetGVK] {
-		lsRoutes, err := r.GetRoutesForResource(kctx, ctx, ls.Obj)
-		if err != nil {
-			return nil, err
+	for _, lss := range gw.AllowedListenerSets {
+		for _, ls := range lss {
+			lsRoutes, err := r.GetRoutesForResource(kctx, ctx, ls.Obj)
+			if err != nil {
+				return nil, err
+			}
+			routes.merge(lsRoutes)
 		}
-		routes.merge(lsRoutes)
 	}
 
 	return routes, nil

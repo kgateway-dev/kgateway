@@ -16,7 +16,6 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwxv1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -383,7 +382,7 @@ func errorsEqual(a, b error) bool {
 type ListenerSet struct {
 	ObjectSource `json:",inline"`
 	Listeners    Listeners
-	Obj          *gwxv1.XListenerSet
+	Obj          client.Object
 	// ListenerSet polices are attached to the individual listeners in addition
 	// to their specific policies
 
