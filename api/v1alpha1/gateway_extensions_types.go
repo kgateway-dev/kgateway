@@ -29,6 +29,7 @@ type NamedJWTProvider struct {
 	// Name is the unique name of the JWT provider.
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=253
+	// +required
 	Name string `json:"name"`
 	// Inline JWTProvider fields.
 	JWTProvider `json:",inline"`
