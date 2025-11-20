@@ -2,8 +2,8 @@ package reporter
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwxv1alpha1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 )
 
 const (
@@ -111,10 +111,9 @@ type PolicyReporter interface {
 
 type Reporter interface {
 	Gateway(gateway *gwv1.Gateway) GatewayReporter
-	ListenerSet(listenerSet *gwxv1alpha1.XListenerSet) ListenerSetReporter
+	ListenerSet(listenerSet client.Object) ListenerSetReporter
 	Route(obj metav1.Object) RouteReporter
 	Policy(ref PolicyKey, observedGeneration int64) PolicyReporter
-	GatewayChild(obj metav1.Object) GatewayChildReporter
 }
 
 type GatewayReporter interface {
@@ -129,11 +128,6 @@ type ListenerSetReporter interface {
 	SetCondition(condition GatewayCondition)
 }
 
-type GatewayChildReporter interface {
-	Listener(listener *gwv1.Listener) ListenerReporter
-	ListenerName(listenerName string) ListenerReporter
-	SetCondition(condition GatewayCondition)
-}
 type ListenerReporter interface {
 	SetCondition(ListenerCondition)
 	SetSupportedKinds([]gwv1.RouteGroupKind)

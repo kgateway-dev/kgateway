@@ -462,8 +462,7 @@ func (s *StatusSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.L
 
 	// TODO: retry within loop per LS rather than as a full block
 	err := retry.Do(func() (rErr error) {
-		for lsnn := range rm.ListenerSets {
-			// add type check
+		for lsnn := range rm.ListenerSets[wellknown.XListenerSetGVK] {
 			ls := gwxv1a1.XListenerSet{}
 			err := s.mgr.GetClient().Get(ctx, lsnn, &ls)
 			if err != nil {

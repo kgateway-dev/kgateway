@@ -59,6 +59,10 @@ func (e *BackendPortNotAllowedError) Error() string {
 	return fmt.Sprintf("BackendRef to \"%s\" includes a port. Do not specify a port when referencing a Backend resource, as it defines its own port configuration", e.BackendName)
 }
 
+type ListenerCollection interface {
+	GetListeners() []gwv1.Listener
+}
+
 // MARK: BackendIndex
 
 type BackendIndex struct {
@@ -581,7 +585,7 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 
 			if gw.Spec.AllowedListeners == nil {
 				lsIR.Err = errors.New("Unable to attach to parent, gateway has not enabled allowedListeners")
-				gwIR.DeniedListenerSets = append(gwIR.DeniedListenerSets, lsIR)
+				gwIR.DeniedListenerSets[wellknown.XListenerSetGVK] = append(gwIR.DeniedListenerSets[wellknown.XListenerSetGVK], lsIR)
 				continue
 			}
 
@@ -590,7 +594,7 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 			allowedNs, err := allowedListenerSet(gw, config.Namespaces)
 			if err != nil {
 				lsIR.Err = errors.New("Unable to parse allowedListeners")
-				gwIR.DeniedListenerSets = append(gwIR.DeniedListenerSets, lsIR)
+				gwIR.DeniedListenerSets[wellknown.XListenerSetGVK] = append(gwIR.DeniedListenerSets[wellknown.XListenerSetGVK], lsIR)
 				continue
 			}
 
@@ -598,11 +602,11 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 			// We return the denied list of ls to have their status set to rejected during validation
 			if !allowedNs(kctx, ls.GetNamespace()) {
 				lsIR.Err = errors.New("Attachment not allowed")
-				gwIR.DeniedListenerSets = append(gwIR.DeniedListenerSets, lsIR)
+				gwIR.DeniedListenerSets[wellknown.XListenerSetGVK] = append(gwIR.DeniedListenerSets[wellknown.XListenerSetGVK], lsIR)
 				continue
 			}
 
-			gwIR.AllowedListenerSets = append(gwIR.AllowedListenerSets, lsIR)
+			gwIR.AllowedListenerSets[wellknown.XListenerSetGVK] = append(gwIR.AllowedListenerSets[wellknown.XListenerSetGVK], lsIR)
 			gwIR.Listeners = append(gwIR.Listeners, lsIR.Listeners...)
 		}
 

@@ -326,15 +326,9 @@ func (r *gatewayQueries) GetRoutesForResource(kctx krt.HandlerContext, ctx conte
 	// Process each route
 	ret := NewRoutesForGwResult()
 
-	var routes []ir.Route
-	switch resource.(type) {
-	case *gwv1.Gateway:
-		routes = r.collections.Routes.RoutesForGateway(kctx, nns)
-	case *gwxv1a1.XListenerSet:
-		routes = r.collections.Routes.RoutesForListenerSet(kctx, nns)
-	default:
-		routes = r.collections.Routes.RoutesFor(kctx, nns, resource.GetObjectKind().GroupVersionKind().Group, resource.GetObjectKind().GroupVersionKind().Kind)
-	}
+	routes := r.collections.Routes.RoutesFor(kctx, nns,
+		resource.GetObjectKind().GroupVersionKind().Group,
+		resource.GetObjectKind().GroupVersionKind().Kind)
 
 	for _, route := range routes {
 		if err := r.processRoute(kctx, ctx, resource, route, ret); err != nil {
@@ -351,21 +345,12 @@ func (r *gatewayQueries) GetRoutesForGateway(kctx krt.HandlerContext, ctx contex
 		return nil, err
 	}
 
-	for _, ls := range gw.AllowedListenerSets {
+	for _, ls := range gw.AllowedListenerSets[wellknown.XListenerSetGVK] {
 		lsRoutes, err := r.GetRoutesForResource(kctx, ctx, ls.Obj)
 		if err != nil {
 			return nil, err
 		}
 		routes.merge(lsRoutes)
-	}
-
-	for _, kid := range gw.AllowedChildren {
-		kidRoutes, err := r.GetRoutesForResource(kctx, ctx, kid)
-		if err != nil {
-			fmt.Println("======== err getting kids routes : ", err)
-			return nil, err
-		}
-		routes.merge(kidRoutes)
 	}
 
 	return routes, nil
@@ -381,10 +366,6 @@ func GenerateRouteKey(parent client.Object, listenerName string) string {
 	return fmt.Sprintf("%s/%s/%s", parent.GetNamespace(), parent.GetName(), listenerName)
 }
 
-type ListenerCollection interface {
-	GetListeners() []gwv1.Listener
-}
-
 func getListeners(resource client.Object) ([]gwv1.Listener, error) {
 	var listeners []gwv1.Listener
 	switch typed := resource.(type) {
@@ -392,7 +373,7 @@ func getListeners(resource client.Object) ([]gwv1.Listener, error) {
 		listeners = typed.Spec.Listeners
 	case *gwxv1a1.XListenerSet:
 		listeners = utils.ToListenerSlice(typed.Spec.Listeners)
-	case ListenerCollection:
+	case krtcollections.ListenerCollection:
 		listeners = typed.GetListeners()
 	default:
 		return nil, fmt.Errorf("unknown type")

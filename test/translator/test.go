@@ -508,7 +508,7 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 		}
 	}
 
-	for ls := range reportsMap.ListenerSets {
+	for ls := range reportsMap.ListenerSets[wellknown.XListenerSetGVK] {
 		l := gwxv1a1.XListenerSet{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      ls.Name,

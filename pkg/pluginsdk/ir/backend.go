@@ -285,10 +285,8 @@ func (listener Listener) GetParentReporter(reporter reporter.Reporter) reporter.
 	switch t := listener.Parent.(type) {
 	case *gwv1.Gateway:
 		return reporter.Gateway(t)
-	case *gwxv1.XListenerSet:
-		return reporter.ListenerSet(t)
 	default:
-		return reporter.GatewayChild(t)
+		return reporter.ListenerSet(t)
 	}
 }
 
@@ -325,12 +323,9 @@ type ListenerForDeployer struct {
 type Gateway struct {
 	ObjectSource        `json:",inline"`
 	Listeners           Listeners
-	AllowedListenerSets ListenerSets
-	DeniedListenerSets  ListenerSets
+	AllowedListenerSets GVKListenerSets
+	DeniedListenerSets  GVKListenerSets
 	Obj                 *gwv1.Gateway
-	// Just shove it into AllowedListenerSets
-	AllowedChildren []client.Object
-	DeniedChildren  []client.Object
 
 	AttachedListenerPolicies AttachedPolicies
 	AttachedHttpPolicies     AttachedPolicies
@@ -405,6 +400,20 @@ func (c ListenerSet) Equals(in ListenerSet) bool {
 		versionEquals(c.Obj, in.Obj) &&
 		c.Listeners.Equals(in.Listeners) &&
 		errorsEqual(c.Err, in.Err)
+}
+
+type GVKListenerSets map[schema.GroupVersionKind]ListenerSets
+
+func (c GVKListenerSets) Equals(in GVKListenerSets) bool {
+	if len(c) != len(in) {
+		return false
+	}
+	for gvk, ls := range c {
+		if !ls.Equals(in[gvk]) {
+			return false
+		}
+	}
+	return true
 }
 
 type ListenerSets []ListenerSet

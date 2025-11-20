@@ -405,25 +405,27 @@ func hostNameConflict(portProtocol portProtocol, listener ir.Listener) bool {
 }
 
 func rejectDeniedListenerSets(consolidatedGateway *ir.Gateway, reporter reports.Reporter) {
-	for _, ls := range consolidatedGateway.DeniedListenerSets {
-		acceptedCond := reports.GatewayCondition{
-			Type:   gwv1.GatewayConditionType(gwxv1a1.ListenerSetConditionAccepted),
-			Status: metav1.ConditionFalse,
-			Reason: gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonNotAllowed),
+	for _, lss := range consolidatedGateway.DeniedListenerSets {
+		for _, ls := range lss {
+			acceptedCond := reports.GatewayCondition{
+				Type:   gwv1.GatewayConditionType(gwxv1a1.ListenerSetConditionAccepted),
+				Status: metav1.ConditionFalse,
+				Reason: gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonNotAllowed),
+			}
+			if ls.Err != nil {
+				acceptedCond.Message = ls.Err.Error()
+			}
+			reporter.ListenerSet(ls.Obj).SetCondition(acceptedCond)
+			programmedCond := reports.GatewayCondition{
+				Type:   gwv1.GatewayConditionType(gwxv1a1.ListenerSetConditionProgrammed),
+				Status: metav1.ConditionFalse,
+				Reason: gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonNotAllowed),
+			}
+			if ls.Err != nil {
+				programmedCond.Message = ls.Err.Error()
+			}
+			reporter.ListenerSet(ls.Obj).SetCondition(programmedCond)
 		}
-		if ls.Err != nil {
-			acceptedCond.Message = ls.Err.Error()
-		}
-		reporter.ListenerSet(ls.Obj).SetCondition(acceptedCond)
-		programmedCond := reports.GatewayCondition{
-			Type:   gwv1.GatewayConditionType(gwxv1a1.ListenerSetConditionProgrammed),
-			Status: metav1.ConditionFalse,
-			Reason: gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonNotAllowed),
-		}
-		if ls.Err != nil {
-			programmedCond.Message = ls.Err.Error()
-		}
-		reporter.ListenerSet(ls.Obj).SetCondition(programmedCond)
 	}
 }
 
