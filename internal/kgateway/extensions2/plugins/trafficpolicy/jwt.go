@@ -236,7 +236,7 @@ func translateJwks(krtctx krt.HandlerContext, jwkConfig v1alpha1.JWKS, configMap
 func translateJwksConfigMap(cm *corev1.ConfigMap) (*jwtauthnv3.JwtProvider_LocalJwks, error) {
 	data := cm.Data[jwtConfigMapKey]
 	if data == "" {
-		return nil, errors.New("configmap key not found")
+		return nil, fmt.Errorf("configmap key '%s' not found", jwtConfigMapKey)
 	}
 	return translateJwksInline(data)
 }
