@@ -44,7 +44,7 @@ import (
 type SetupOpts struct {
 	Cache envoycache.SnapshotCache
 
-	KrtOpts *krtutil.KrtOptions
+	KrtDebugger *krt.DebugHandler
 
 	// static set of global Settings
 	GlobalSettings *apisettings.Settings

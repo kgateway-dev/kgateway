@@ -20,7 +20,7 @@ import (
 
 func RunAdminServer(ctx context.Context, setupOpts *controller.SetupOpts) error {
 	// serverHandlers defines the custom handlers that the Admin Server will support
-	serverHandlers := getServerHandlers(ctx, setupOpts.KrtOpts.Debugger, setupOpts.Cache)
+	serverHandlers := getServerHandlers(ctx, setupOpts.KrtDebugger, setupOpts.Cache)
 
 	startHandlers(ctx, serverHandlers)
 

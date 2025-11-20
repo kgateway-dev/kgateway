@@ -171,9 +171,9 @@ func WithExtraRunnables(runnables ...manager.Runnable) func(*setup) {
 	}
 }
 
-func WithKrtOpts(opts *krtutil.KrtOptions) func(*setup) {
+func WithKrtDebugger(dbg *krt.DebugHandler) func(*setup) {
 	return func(s *setup) {
-		s.krtOpts = opts
+		s.krtDebugger = dbg
 	}
 }
 
@@ -195,9 +195,9 @@ func WithExtraAgwPolicyStatusHandlers(handlers map[schema.GroupVersionKind]agwpl
 	}
 }
 
-func WithCommonCollections(commonCollections *collections.CommonCollections) func(*setup) {
+func WithCommonCollectionsOptions(commonCollectionsOptions []collections.Option) func(*setup) {
 	return func(s *setup) {
-		s.commonCollections = commonCollections
+		s.commonCollectionsOptions = commonCollectionsOptions
 	}
 }
 
@@ -229,14 +229,14 @@ type setup struct {
 	extraManagerConfig []func(ctx context.Context, mgr manager.Manager, objectFilter kubetypes.DynamicObjectFilter) error
 	// extra Runnable to add to the manager
 	extraRunnables               []manager.Runnable
+	krtDebugger                  *krt.DebugHandler
 	globalSettings               *apisettings.Settings
 	leaderElectionID             string
 	validator                    validator.Validator
 	extraAgwPolicyStatusHandlers map[schema.GroupVersionKind]agwplugins.AgwPolicyStatusSyncHandler
 
-	krtOpts              *krtutil.KrtOptions
-	commonCollections    *collections.CommonCollections
-	customStatusSyncFunc proxy_syncer.CustomStatusSyncFunction
+	commonCollectionsOptions []collections.Option
+	customStatusSyncFunc     proxy_syncer.CustomStatusSyncFunction
 }
 
 var _ Server = &setup{}
@@ -365,37 +365,32 @@ func (s *setup) Start(ctx context.Context) error {
 
 	cache := NewControlPlane(ctx, s.xdsListener, uniqueClientCallbacks, authenticators, s.globalSettings.XdsAuth, certWatcher)
 
-	if s.krtOpts == nil {
-		krtOpts := krtutil.NewKrtOptions(ctx.Done(), new(krt.DebugHandler))
-		s.krtOpts = &krtOpts
-	}
-
 	setupOpts := &controller.SetupOpts{
 		Cache:          cache,
-		KrtOpts:        s.krtOpts,
+		KrtDebugger:    s.krtDebugger,
 		GlobalSettings: s.globalSettings,
 		CertWatcher:    certWatcher,
 	}
 
 	slog.Info("creating krt collections")
+	krtOpts := krtutil.NewKrtOptions(ctx.Done(), setupOpts.KrtDebugger)
 
-	if s.commonCollections == nil {
-		s.commonCollections, err = collections.NewCommonCollections(
-			ctx,
-			*s.krtOpts,
-			s.apiClient,
-			s.gatewayControllerName,
-			s.agwControllerName,
-			*s.globalSettings,
-		)
-		if err != nil {
-			slog.Error("error creating common collections", "error", err)
-			return err
-		}
+	commonCollections, err := collections.NewCommonCollections(
+		ctx,
+		krtOpts,
+		s.apiClient,
+		s.gatewayControllerName,
+		s.agwControllerName,
+		*s.globalSettings,
+		s.commonCollectionsOptions...,
+	)
+	if err != nil {
+		slog.Error("error creating common collections", "error", err)
+		return err
 	}
 
 	agwCollections, err := agwplugins.NewAgwCollections(
-		s.commonCollections,
+		commonCollections,
 		s.agwControllerName,
 		// control plane system namespace (default is kgateway-system)
 		namespaces.GetPodNamespace(),
@@ -418,9 +413,13 @@ func (s *setup) Start(ctx context.Context) error {
 		}
 	}
 
-	agw, err := s.buildKgatewayWithConfig(ctx, mgr, setupOpts, s.commonCollections, agwCollections, uccBuilder)
+	agw, err := s.buildKgatewayWithConfig(ctx, mgr, setupOpts, commonCollections, agwCollections, uccBuilder)
 	if err != nil {
 		return err
+	}
+
+	if s.krtDebugger == nil {
+		s.krtDebugger = new(krt.DebugHandler)
 	}
 
 	if s.agwXdsListener != nil && agw != nil {
@@ -449,13 +448,14 @@ func (s *setup) buildKgatewayWithConfig(
 ) (*agentgatewaysyncer.Syncer, error) {
 	slog.Info("creating krt collections")
 
-	augmentedPods, _ := krtcollections.NewPodsCollection(s.apiClient, *s.krtOpts)
+	krtOpts := krtutil.NewKrtOptions(ctx.Done(), setupOpts.KrtDebugger)
+	augmentedPods, _ := krtcollections.NewPodsCollection(s.apiClient, krtOpts)
 	augmentedPodsForUcc := augmentedPods
 	if envutils.IsEnvTruthy("DISABLE_POD_LOCALITY_XDS") {
 		augmentedPodsForUcc = nil
 	}
 
-	ucc := uccBuilder(ctx, *s.krtOpts, augmentedPodsForUcc)
+	ucc := uccBuilder(ctx, krtOpts, augmentedPodsForUcc)
 
 	gatewayClassInfos := controller.GetDefaultClassInfo(
 		setupOpts.GlobalSettings,
@@ -486,7 +486,7 @@ func (s *setup) buildKgatewayWithConfig(
 		AugmentedPods:                augmentedPods,
 		UniqueClients:                ucc,
 		Dev:                          logging.MustGetLevel(logging.DefaultComponent) <= logging.LevelTrace,
-		KrtOptions:                   *s.krtOpts,
+		KrtOptions:                   krtOpts,
 		CommonCollections:            commonCollections,
 		AgwCollections:               agwCollections,
 		Validator:                    s.validator,

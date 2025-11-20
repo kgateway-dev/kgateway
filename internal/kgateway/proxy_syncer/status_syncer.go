@@ -36,20 +36,20 @@ var _ manager.LeaderElectionRunnable = &StatusSyncer{}
 
 type CustomStatusSyncFunction func(ctx context.Context, rm reports.ReportMap)
 
-type config struct {
+type statusSyncerConfig struct {
 	customStatusSync CustomStatusSyncFunction
 }
 
-type Option func(*config)
+type StatusSyncerOption func(*statusSyncerConfig)
 
-func WithCustomStatusSync(customSync CustomStatusSyncFunction) Option {
-	return func(cfg *config) {
+func WithCustomStatusSync(customSync CustomStatusSyncFunction) StatusSyncerOption {
+	return func(cfg *statusSyncerConfig) {
 		cfg.customStatusSync = customSync
 	}
 }
 
-func processOptions(opts ...Option) *config {
-	cfg := &config{}
+func processStatusSyncerOptions(opts ...StatusSyncerOption) *statusSyncerConfig {
+	cfg := &statusSyncerConfig{}
 	for _, fn := range opts {
 		fn(cfg)
 	}
@@ -81,9 +81,9 @@ func NewStatusSyncer(
 	reportQueue utils.AsyncQueue[reports.ReportMap],
 	backendPolicyReportQueue utils.AsyncQueue[reports.ReportMap],
 	cacheSyncs []cache.InformerSynced,
-	opts ...Option,
+	opts ...StatusSyncerOption,
 ) *StatusSyncer {
-	cfg := processOptions(opts...)
+	cfg := processStatusSyncerOptions(opts...)
 	return &StatusSyncer{
 		mgr:                            mgr,
 		plugins:                        plugins,
