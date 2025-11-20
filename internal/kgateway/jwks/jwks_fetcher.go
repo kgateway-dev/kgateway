@@ -63,7 +63,7 @@ func NewJwksFetcher(cache *jwksCache) *JwksFetcher {
 		jwksClient: &jwksHttpClientImpl{
 			Client: &http.Client{Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: true,
+					InsecureSkipVerify: true, //nolint:gosec
 				},
 			}}},
 		keysetSources: make(map[string]*JwksSource),
@@ -264,7 +264,7 @@ func (c *jwksHttpClientImpl) FetchJwks(ctx context.Context, jwksURL string) (jos
 	}
 	defer response.Body.Close() //nolint:errcheck
 
-	if response.StatusCode != 200 {
+	if response.StatusCode != http.StatusOK {
 		return jose.JSONWebKeySet{}, fmt.Errorf("unexpected status code from jwks endpoint at %s: %d", jwksURL, response.StatusCode)
 	}
 

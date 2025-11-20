@@ -5,7 +5,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
@@ -20,7 +19,6 @@ var JwksConfigMapNamespacedName = func(jwksUri string) *types.NamespacedName {
 // in ConfigMaps, a jwks per ConfigMap. The ConfigMaps are used to re-create internal
 // JwksStore state on startup and by traffic-plugins as source of remote jwks.
 type JwksStore struct {
-	mgr             manager.Manager
 	jwksCache       *jwksCache
 	jwksFetcher     *JwksFetcher
 	configMapSyncer *configMapSyncer

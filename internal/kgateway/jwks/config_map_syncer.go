@@ -2,7 +2,7 @@ package jwks
 
 import (
 	"context"
-	"crypto/md5"
+	"crypto/md5" //nolint:gosec
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -61,7 +61,7 @@ func JwksFromConfigMap(cm *corev1.ConfigMap) (map[string]string, error) {
 // Generates ConfigMap name based on jwks uri. Resulting name is a concatenation of "jwks-store-" prefix and an MD5 hash of the jwks uri.
 // The length of the name is a constant 32 chars (hash) + legth of the prefix.
 func JwksConfigMapName(jwksUri string) string {
-	hash := md5.Sum([]byte(jwksUri))
+	hash := md5.Sum([]byte(jwksUri)) //nolint:gosec
 	return fmt.Sprintf("%s-%s", jwksStorePrefix, hex.EncodeToString(hash[:]))
 }
 
@@ -87,7 +87,7 @@ func (cs *configMapSyncer) WriteJwksToConfigMaps(ctx context.Context, updates ma
 				continue
 			}
 
-			existing := cs.fetchPersistedJwks(ctx, uri)
+			existing := cs.fetchPersistedJwks(uri)
 			if existing == nil {
 				cm := cs.newJwksStoreConfigMap(JwksConfigMapName(uri))
 
@@ -150,7 +150,7 @@ func (cs *configMapSyncer) newJwksStoreConfigMap(name string) *corev1.ConfigMap 
 	}
 }
 
-func (cs *configMapSyncer) fetchPersistedJwks(ctx context.Context, jwksUri string) *corev1.ConfigMap {
+func (cs *configMapSyncer) fetchPersistedJwks(jwksUri string) *corev1.ConfigMap {
 	cmPtr := cs.cmCollection.GetKey(types.NamespacedName{Namespace: cs.deploymentNamespace, Name: JwksConfigMapName(jwksUri)}.String())
 	if cmPtr == nil {
 		return nil

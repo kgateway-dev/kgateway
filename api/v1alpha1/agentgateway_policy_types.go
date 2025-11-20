@@ -488,6 +488,7 @@ type AgentJWKS struct {
 type AgentRemoteJWKS struct {
 	// IdP jwks endpoint. Default tls settings are used to connect to this url.
 	// +kubebuilder:validation:Pattern=`^(https|http):\/\/[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*(:\d+)?\/.*$`
+	// +optional
 	JwksUri string `json:"jwksUri,omitempty"`
 	// +optional
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
@@ -497,6 +498,7 @@ type AgentRemoteJWKS struct {
 	// backendRef references the remote JWKS server to reach.
 	// Not implemented yet, only jwksUri is currently supported.
 	// Supported types: Service and Backend.
+	// +optional
 	BackendRef gwv1.BackendObjectReference `json:"backendRef,omitempty"`
 }
 

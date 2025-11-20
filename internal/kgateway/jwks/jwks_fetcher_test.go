@@ -1,7 +1,6 @@
 package jwks
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -41,8 +40,7 @@ func TestRemoveKeysetFromFetcher(t *testing.T) {
 }
 
 func TestFetcherWithEmptyJwksFetchSchedule(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	f := NewJwksFetcher(NewJwksCache())
 	updates := f.SubscribeToUpdates()
@@ -59,8 +57,7 @@ func TestFetcherWithEmptyJwksFetchSchedule(t *testing.T) {
 }
 
 func TestSuccessfulJwksFetch(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	f := NewJwksFetcher(NewJwksCache())
 	ctrl := gomock.NewController(t)
@@ -98,8 +95,7 @@ func TestSuccessfulJwksFetch(t *testing.T) {
 
 // jwks were fetched, but there were no updates to keysets
 func TestSuccessfulJwksFetchButNoUpdates(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	f := NewJwksFetcher(NewJwksCache())
 	ctrl := gomock.NewController(t)
@@ -135,8 +131,7 @@ func TestSuccessfulJwksFetchButNoUpdates(t *testing.T) {
 }
 
 func TestFetchJwksWithError(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	f := NewJwksFetcher(NewJwksCache())
 	ctrl := gomock.NewController(t)

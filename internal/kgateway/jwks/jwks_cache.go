@@ -3,7 +3,6 @@ package jwks
 import (
 	"encoding/json"
 	"errors"
-	"maps"
 
 	"github.com/go-jose/go-jose/v4"
 )
@@ -58,8 +57,4 @@ func (c *jwksCache) compareAndAddJwks(uri string, jwks jose.JSONWebKeySet) (stri
 // Remove jwks from cache.
 func (c *jwksCache) deleteJwks(uri string) {
 	delete(c.jwks, uri)
-}
-
-func (c *jwksCache) toJson() map[string]string {
-	return maps.Clone(c.jwks)
 }
