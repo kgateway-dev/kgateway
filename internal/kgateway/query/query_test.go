@@ -1055,12 +1055,14 @@ func httpRoute() *gwv1.HTTPRoute {
 }
 
 func gw() *gwv1.Gateway {
-	return &gwv1.Gateway{
+	gw := &gwv1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
 	}
+	gw.SetGroupVersionKind(wellknown.GatewayGVK)
+	return gw
 }
 
 func secret(ns string) *corev1.Secret {
@@ -1190,7 +1192,7 @@ func k8sUpstreams(services krt.Collection[*corev1.Service]) krt.Collection[ir.Ba
 }
 
 func ls() *gwxv1a1.XListenerSet {
-	return &gwxv1a1.XListenerSet{
+	ls := &gwxv1a1.XListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "ls",
@@ -1207,4 +1209,6 @@ func ls() *gwxv1a1.XListenerSet {
 			},
 		},
 	}
+	ls.SetGroupVersionKind(wellknown.XListenerSetGVK)
+	return ls
 }
