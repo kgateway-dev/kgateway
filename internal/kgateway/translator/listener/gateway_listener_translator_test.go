@@ -893,8 +893,9 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 			gatewayReporter := statusReporter.Gateway(gateway)
 			listenerReporter = gatewayReporter.Listener(&gwListener)
 			ml = &listener.MergedListeners{
-				Listeners: []*listener.MergedListener{},
-				Queries:   queries,
+				Listeners:        []*listener.MergedListener{},
+				Queries:          queries,
+				GatewayNamespace: "default",
 			}
 		})
 
