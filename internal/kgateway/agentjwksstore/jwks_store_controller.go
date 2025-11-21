@@ -3,6 +3,7 @@ package agentjwksstore
 import (
 	"context"
 
+	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/client-go/tools/cache"
@@ -23,8 +24,8 @@ type JwksStoreController struct {
 	mgr         manager.Manager
 	agw         *plugins.AgwCollections
 	apiClient   apiclient.Client
-	jwks        krt.Singleton[jwks.JwksSources]
-	jwksQueue   utils.AsyncQueue[jwks.JwksSources]
+	jwks        krt.Collection[jwks.JwksSource]
+	jwksQueue   utils.AsyncQueue[jwks.JwksSource]
 	waitForSync []cache.InformerSynced
 }
 
@@ -35,7 +36,7 @@ func NewJWKSStoreController(mgr manager.Manager, apiClient apiclient.Client, agw
 		mgr:       mgr,
 		agw:       agw,
 		apiClient: apiClient,
-		jwksQueue: utils.NewAsyncQueue[jwks.JwksSources](),
+		jwksQueue: utils.NewAsyncQueue[jwks.JwksSource](),
 	}
 }
 
@@ -45,23 +46,20 @@ func (j *JwksStoreController) Init(ctx context.Context) {
 		wellknown.AgentgatewayPolicyGVR,
 		kclient.Filter{ObjectFilter: j.agw.Client.ObjectFilter()},
 	), j.agw.KrtOpts.ToOptions("AgentgatewayPolicy")...)
-	j.jwks = krt.NewSingleton(func(kctx krt.HandlerContext) *jwks.JwksSources {
-		pols := krt.Fetch(kctx, policyCol)
-		toret := make(jwks.JwksSources, 0, len(pols))
-		for _, p := range pols {
-			if p.Spec.Traffic == nil || p.Spec.Traffic.JWTAuthentication == nil {
-				continue
-			}
-
-			for _, provider := range p.Spec.Traffic.JWTAuthentication.Providers {
-				if provider.JWKS.Remote == nil {
-					continue
-				}
-				toret = append(toret, jwks.JwksSource{JwksURL: provider.JWKS.Remote.JwksUri, Ttl: provider.JWKS.Remote.CacheDuration.Duration})
-			}
+	j.jwks = krt.NewManyCollection(policyCol, func(krtctx krt.HandlerContext, p *v1alpha1.AgentgatewayPolicy) []jwks.JwksSource {
+		if p.Spec.Traffic == nil || p.Spec.Traffic.JWTAuthentication == nil {
+			return nil
 		}
 
-		return &toret
+		toret := make([]jwks.JwksSource, 0)
+		for _, provider := range p.Spec.Traffic.JWTAuthentication.Providers {
+			if provider.JWKS.Remote == nil {
+				continue
+			}
+			toret = append(toret, jwks.JwksSource{JwksURL: provider.JWKS.Remote.JwksUri, Ttl: provider.JWKS.Remote.CacheDuration.Duration})
+		}
+
+		return toret
 	}, j.agw.KrtOpts.ToOptions("JwksSources")...)
 
 	j.waitForSync = []cache.InformerSynced{
@@ -77,8 +75,15 @@ func (j *JwksStoreController) Start(ctx context.Context) error {
 		j.waitForSync...,
 	)
 
-	j.jwks.Register(func(o krt.Event[jwks.JwksSources]) {
-		j.jwksQueue.Enqueue(o.Latest())
+	j.jwks.Register(func(o krt.Event[jwks.JwksSource]) {
+		switch o.Event {
+		case controllers.EventAdd, controllers.EventUpdate:
+			j.jwksQueue.Enqueue(*o.New)
+		case controllers.EventDelete:
+			deleted := *o.Old
+			deleted.Deleted = true
+			j.jwksQueue.Enqueue(deleted)
+		}
 	})
 
 	<-ctx.Done()
@@ -90,6 +95,6 @@ func (j *JwksStoreController) NeedLeaderElection() bool {
 	return true
 }
 
-func (j *JwksStoreController) JwksQueue() utils.AsyncQueue[jwks.JwksSources] {
+func (j *JwksStoreController) JwksQueue() utils.AsyncQueue[jwks.JwksSource] {
 	return j.jwksQueue
 }

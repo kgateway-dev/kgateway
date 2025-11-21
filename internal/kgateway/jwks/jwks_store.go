@@ -19,23 +19,23 @@ var JwksConfigMapNamespacedName = func(jwksUri string) *types.NamespacedName {
 // in ConfigMaps, a jwks per ConfigMap. The ConfigMaps are used to re-create internal
 // JwksStore state on startup and by traffic-plugins as source of remote jwks.
 type JwksStore struct {
-	jwksCache       *jwksCache
-	jwksFetcher     *JwksFetcher
-	configMapSyncer *configMapSyncer
-	updates         <-chan map[string]string
-	latestJwksQueue utils.AsyncQueue[JwksSources]
+	jwksCache        *jwksCache
+	jwksFetcher      *JwksFetcher
+	configMapSyncer  *configMapSyncer
+	updates          <-chan map[string]string
+	jwksUpdatesQueue utils.AsyncQueue[JwksSource]
 }
 
-func BuildJwksStore(ctx context.Context, cli apiclient.Client, commonCols *collections.CommonCollections, jwksQueue utils.AsyncQueue[JwksSources], deploymentNamespace string) *JwksStore {
+func BuildJwksStore(ctx context.Context, cli apiclient.Client, commonCols *collections.CommonCollections, jwksQueue utils.AsyncQueue[JwksSource], deploymentNamespace string) *JwksStore {
 	log := log.Log.WithName("jwks store setup")
 	log.Info("creating jwks store")
 
 	jwksCache := NewJwksCache()
 	jwksStore := &JwksStore{
-		jwksCache:       jwksCache,
-		latestJwksQueue: jwksQueue,
-		jwksFetcher:     NewJwksFetcher(jwksCache),
-		configMapSyncer: NewConfigMapSyncer(cli, deploymentNamespace, commonCols.KrtOpts),
+		jwksCache:        jwksCache,
+		jwksUpdatesQueue: jwksQueue,
+		jwksFetcher:      NewJwksFetcher(jwksCache),
+		configMapSyncer:  NewConfigMapSyncer(cli, deploymentNamespace, commonCols.KrtOpts),
 	}
 	jwksStore.updates = jwksStore.jwksFetcher.SubscribeToUpdates()
 	BuildJwksConfigMapNamespacedNameFunc(deploymentNamespace)
@@ -74,12 +74,20 @@ func (s *JwksStore) updateJwksSources(ctx context.Context) {
 	log := log.FromContext(ctx)
 	for {
 		log.Info("dequeuing jwks update")
-		latestJwks, err := s.latestJwksQueue.Dequeue(ctx)
+		jwksUpdate, err := s.jwksUpdatesQueue.Dequeue(ctx)
 		if err != nil {
 			log.Error(err, "error dequeuing jwks update")
 			return
 		}
-		s.jwksFetcher.UpdateJwksSources(ctx, latestJwks)
+
+		if jwksUpdate.Deleted {
+			s.jwksFetcher.RemoveKeyset(jwksUpdate)
+		} else {
+			err := s.jwksFetcher.AddOrUpdateKeyset(jwksUpdate)
+			if err != nil {
+				log.Error(err, "error adding/updating a jwks keyset", "uri", jwksUpdate.JwksURL)
+			}
+		}
 	}
 }
 
