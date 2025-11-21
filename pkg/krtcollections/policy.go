@@ -558,7 +558,7 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 		}
 
 		for _, ls := range listenerSets {
-			if ls.GroupVersionKind().Group == "" || ls.GroupVersionKind().Kind == "" {
+			if ls.GroupVersionKind().Empty() {
 				ls.SetGroupVersionKind(wellknown.XListenerSetGVK)
 			}
 
