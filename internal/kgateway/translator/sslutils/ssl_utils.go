@@ -102,18 +102,27 @@ type TLSExtensionOptionFunc = func(in string, out *ir.TlsBundle) error
 
 func ApplyCipherSuites(in string, out *ir.TlsBundle) error {
 	cipherSuites := strings.Split(in, ",")
+	for i, suite := range cipherSuites {
+		cipherSuites[i] = strings.TrimSpace(suite)
+	}
 	out.CipherSuites = cipherSuites
 	return nil
 }
 
 func ApplyEcdhCurves(in string, out *ir.TlsBundle) error {
 	ecdhCurves := strings.Split(in, ",")
+	for i, curve := range ecdhCurves {
+		ecdhCurves[i] = strings.TrimSpace(curve)
+	}
 	out.EcdhCurves = ecdhCurves
 	return nil
 }
 
 func ApplyAlpnProtocols(in string, out *ir.TlsBundle) error {
 	alpnProtocols := strings.Split(in, ",")
+	for i, protocol := range alpnProtocols {
+		alpnProtocols[i] = strings.TrimSpace(protocol)
+	}
 	out.AlpnProtocols = alpnProtocols
 	return nil
 }
@@ -138,8 +147,11 @@ func ApplyMaxTLSVersion(in string, out *ir.TlsBundle) error {
 	return nil
 }
 
-func ApplyVerifySubjectAltName(in string, out *ir.TlsBundle) error {
+func ApplyVerifySubjectAltNames(in string, out *ir.TlsBundle) error {
 	altNames := strings.Split(in, ",")
+	for i, name := range altNames {
+		altNames[i] = strings.TrimSpace(name)
+	}
 	out.VerifySubjectAltNames = altNames
 	return nil
 }
@@ -148,7 +160,7 @@ var TLSExtensionOptionFuncs = map[gwv1.AnnotationKey]TLSExtensionOptionFunc{
 	annotations.CipherSuites:          ApplyCipherSuites,
 	annotations.MinTLSVersion:         ApplyMinTLSVersion,
 	annotations.MaxTLSVersion:         ApplyMaxTLSVersion,
-	annotations.VerifySubjectAltNames: ApplyVerifySubjectAltName,
+	annotations.VerifySubjectAltNames: ApplyVerifySubjectAltNames,
 	annotations.EcdhCurves:            ApplyEcdhCurves,
 	annotations.AlpnProtocols:         ApplyAlpnProtocols,
 }

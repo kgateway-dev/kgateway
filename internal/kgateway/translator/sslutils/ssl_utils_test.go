@@ -29,9 +29,27 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 			},
 		},
 		{
+			name: "cipher_suites_with_whitespace",
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.CipherSuites: "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+			},
+			out: &ir.TlsBundle{
+				CipherSuites: []string{"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256", "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"},
+			},
+		},
+		{
 			name: "ecdh_curves",
 			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
 				annotations.EcdhCurves: "X25519MLKEM768,X25519,P-256",
+			},
+			out: &ir.TlsBundle{
+				EcdhCurves: []string{"X25519MLKEM768", "X25519", "P-256"},
+			},
+		},
+		{
+			name: "ecdh_curves_with_whitespace",
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.EcdhCurves: "X25519MLKEM768, X25519, P-256",
 			},
 			out: &ir.TlsBundle{
 				EcdhCurves: []string{"X25519MLKEM768", "X25519", "P-256"},
@@ -44,6 +62,33 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 			},
 			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
 				annotations.VerifySubjectAltNames: "foo,bar",
+			},
+		},
+		{
+			name: "subject_alt_names_with_whitespace",
+			out: &ir.TlsBundle{
+				VerifySubjectAltNames: []string{"foo", "bar"},
+			},
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.VerifySubjectAltNames: "foo, bar",
+			},
+		},
+		{
+			name: "alpn_protocols",
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.AlpnProtocols: "h2,http/1.1",
+			},
+			out: &ir.TlsBundle{
+				AlpnProtocols: []string{"h2", "http/1.1"},
+			},
+		},
+		{
+			name: "alpn_protocols_with_whitespace",
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.AlpnProtocols: "h2, http/1.1",
+			},
+			out: &ir.TlsBundle{
+				AlpnProtocols: []string{"h2", "http/1.1"},
 			},
 		},
 		{
