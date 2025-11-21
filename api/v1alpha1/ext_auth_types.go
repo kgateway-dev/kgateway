@@ -52,10 +52,17 @@ type ExtAuthBufferSettings struct {
 }
 
 // ExtAuthProvider defines the configuration for an ExtAuth provider.
+// +kubebuilder:validation:XValidation:message="Exactly one of grpcService or httpService must be set",rule="(has(self.grpcService) && !has(self.httpService)) || (!has(self.grpcService) && has(self.httpService))"
 type ExtAuthProvider struct {
 	// GrpcService is the GRPC service that will handle the auth.
-	// +required
-	GrpcService ExtGrpcService `json:"grpcService"`
+	// Mutually exclusive with HttpService.
+	// +optional
+	GrpcService *ExtGrpcService `json:"grpcService,omitempty"`
+
+	// HttpService is the HTTP service that will handle the auth.
+	// Mutually exclusive with GrpcService.
+	// +optional
+	HttpService *ExtHttpService `json:"httpService,omitempty"`
 
 	// FailOpen determines if requests are allowed when the ext auth service is unavailable.
 	// Defaults to false, meaning requests will be denied if the ext auth service is unavailable.

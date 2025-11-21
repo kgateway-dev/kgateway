@@ -104,10 +104,58 @@ type ExtGrpcService struct {
 
 	// Retry specifies the retry policy for gRPC streams associated with the service.
 	// +optional
-	Retry *GRPCRetryPolicy `json:"retry,omitempty"`
+	Retry *ExtAuthRetryPolicy `json:"retry,omitempty"`
 }
 
-type GRPCRetryPolicy struct {
+// ExtHttpService defines the HTTP service that will handle external authorization.
+type ExtHttpService struct {
+	// BackendRef references the backend HTTP service.
+	// +required
+	BackendRef gwv1.BackendRef `json:"backendRef"`
+
+	// Path is the path for the authorization request endpoint.
+	// Examples: "/authorize", "/verify", "/check"
+	// If not specified, defaults to empty string (root path).
+	// +optional
+	Path string `json:"path,omitempty"`
+
+	// RequestTimeout is the timeout for the HTTP request.
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid timeout value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="timeout must be at least 1ms."
+	RequestTimeout *metav1.Duration `json:"requestTimeout,omitempty"`
+
+	// AuthorizationRequest configures the authorization request to the external service.
+	// +optional
+	AuthorizationRequest *AuthorizationRequest `json:"authorizationRequest,omitempty"`
+
+	// AuthorizationResponse configures the authorization response from the external service.
+	// +optional
+	AuthorizationResponse *AuthorizationResponse `json:"authorizationResponse,omitempty"`
+
+	// Retry specifies the retry policy for HTTP requests to the authorization service.
+	// +optional
+	Retry *ExtAuthRetryPolicy `json:"retry,omitempty"`
+}
+
+// AuthorizationRequest configures the authorization request to the external service.
+type AuthorizationRequest struct {
+	// HeadersToAdd specifies additional headers to add to the authorization request.
+	// These headers are sent to the authorization service in addition to the original request headers.
+	// +optional
+	HeadersToAdd map[string]string `json:"headersToAdd,omitempty"`
+}
+
+// AuthorizationResponse configures the authorization response from the external service.
+type AuthorizationResponse struct {
+	// HeadersToBackend specifies which headers from the authorization response
+	// should be forwarded to the upstream service when the request is authorized.
+	// Common examples: ["x-current-user", "x-user-id", "x-auth-request-email"]
+	// +optional
+	HeadersToBackend []string `json:"headersToBackend,omitempty"`
+}
+
+type ExtAuthRetryPolicy struct {
 	// Attempts specifies the number of retry attempts for a request.
 	// Defaults to 1 attempt if not set.
 	// A value of 0 effectively disables retries.
@@ -119,11 +167,11 @@ type GRPCRetryPolicy struct {
 	// Backoff specifies the retry backoff strategy.
 	// If not set, a default backoff with a base interval of 1000ms is used. The default max interval is 10 times the base interval.
 	// +optional
-	Backoff *GRPCRetryBackoff `json:"backoff,omitempty"`
+	Backoff *ExtAuthRetryBackoff `json:"backoff,omitempty"`
 }
 
 // +kubebuilder:validation:XValidation:rule="has(self.maxInterval) ? duration(self.maxInterval) >= duration(self.baseInterval) : true",message="maxInterval must be greater than or equal to baseInterval"
-type GRPCRetryBackoff struct {
+type ExtAuthRetryBackoff struct {
 	// BaseInterval specifies the base interval used with a fully jittered exponential back-off between retries.
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="retry.BaseInterval must be at least 1ms."
