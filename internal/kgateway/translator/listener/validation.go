@@ -405,8 +405,8 @@ func hostNameConflict(portProtocol portProtocol, listener ir.Listener) bool {
 }
 
 func rejectDeniedListenerSets(consolidatedGateway *ir.Gateway, reporter reports.Reporter) {
-	for _, lss := range consolidatedGateway.DeniedListenerSets {
-		for _, ls := range lss {
+	for _, gvkLS := range consolidatedGateway.DeniedListenerSets {
+		for _, ls := range gvkLS {
 			acceptedCond := reports.GatewayCondition{
 				Type:   gwv1.GatewayConditionType(gwxv1a1.ListenerSetConditionAccepted),
 				Status: metav1.ConditionFalse,

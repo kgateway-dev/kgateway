@@ -353,8 +353,8 @@ func (r *gatewayQueries) GetRoutesForGateway(kctx krt.HandlerContext, ctx contex
 		return nil, err
 	}
 
-	for _, lss := range gw.AllowedListenerSets {
-		for _, ls := range lss {
+	for _, gvkLS := range gw.AllowedListenerSets {
+		for _, ls := range gvkLS {
 			lsRoutes, err := r.GetRoutesForResource(kctx, ctx, ls.Obj)
 			if err != nil {
 				return nil, err
