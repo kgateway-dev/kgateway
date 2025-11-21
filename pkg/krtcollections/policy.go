@@ -514,13 +514,9 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 			})
 		}
 
-		allowedNs := NoNamespace()
-		if gw.Spec.AllowedListeners != nil {
-			var err error
-			allowedNs, err = AllowedListenerSet(gw, config.Namespaces)
-			if err != nil {
-				logger.Error("unable to parse allowedListeners", "error", err)
-			}
+		allowedNs, err := AllowedListenerSet(gw.Spec.AllowedListeners, gw.GetNamespace(), config.Namespaces)
+		if err != nil {
+			logger.Error("unable to parse allowedListeners", "error", err)
 		}
 
 		listenerSets := krt.Fetch(kctx, config.ListenerSets, krt.FilterIndex(config.byParentRefIndex, TargetRefIndexKey{
@@ -616,23 +612,23 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 	}
 }
 
-func AllowedListenerSet(gw *gwv1.Gateway, namespaces krt.Collection[NamespaceMetadata]) (func(kctx krt.HandlerContext, namespace string) bool, error) {
+func AllowedListenerSet(allowedListeners *gwv1.AllowedListeners, parentNamespace string, namespaces krt.Collection[NamespaceMetadata]) (func(kctx krt.HandlerContext, namespace string) bool, error) {
 	// Default to None. Ref: https://gateway-api.sigs.k8s.io/geps/gep-1713/#gateway-listenerset-handshake
 	allowedNs := NoNamespace()
 
-	if al := gw.Spec.AllowedListeners; al != nil {
+	if allowedListeners != nil {
 		// Determine the allowed namespaces if specified
-		if al.Namespaces != nil && al.Namespaces.From != nil {
-			switch *al.Namespaces.From {
+		if allowedListeners.Namespaces != nil && allowedListeners.Namespaces.From != nil {
+			switch *allowedListeners.Namespaces.From {
 			case gwv1.NamespacesFromAll:
 				allowedNs = AllNamespace()
 			case gwv1.NamespacesFromSame:
-				allowedNs = SameNamespace(gw.GetNamespace())
+				allowedNs = SameNamespace(parentNamespace)
 			case gwv1.NamespacesFromSelector:
-				if al.Namespaces.Selector == nil {
+				if allowedListeners.Namespaces.Selector == nil {
 					return nil, fmt.Errorf("selector must be set")
 				}
-				selector, err := metav1.LabelSelectorAsSelector(al.Namespaces.Selector)
+				selector, err := metav1.LabelSelectorAsSelector(allowedListeners.Namespaces.Selector)
 				if err != nil {
 					return nil, err
 				}
