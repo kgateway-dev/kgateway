@@ -786,7 +786,7 @@ func translateTLSConfig(
 	parentNamespace string,
 	tls *gwv1.ListenerTLSConfig,
 	queries query.GatewayQueries,
-) (*ir.TlsBundle, error) {
+) (*ir.TLSConfig, error) {
 	if tls == nil {
 		return nil, nil
 	}
@@ -800,46 +800,47 @@ func translateTLSConfig(
 		alpnProtocols = strings.Split(string(tls.Options[annotations.AlpnProtocols]), ",")
 	}
 
-	// TODO: support multiple certificate refs
-	if len(tls.CertificateRefs) != 1 {
-		return nil, fmt.Errorf("only one certificate ref is supported for now")
+	var certificates []ir.TLSCertificate
+	for _, certRef := range tls.CertificateRefs {
+		// validate secret reference exists
+		secret, err := queries.GetSecretForRef(
+			kctx,
+			ctx,
+			wellknown.GatewayGVK.GroupKind(),
+			parentNamespace,
+			certRef,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		// The resulting sslconfig will still have to go through a real translation where we run through this again.
+		// This means that while its nice to still fail early here we dont need to scrub the actual contents of the secret.
+		if _, err := sslutils.ValidateTlsSecretData(secret.Name, secret.Namespace, secret.Data); err != nil {
+			return nil, err
+		}
+
+		certChain := secret.Data[corev1.TLSCertKey]
+		privateKey := secret.Data[corev1.TLSPrivateKeyKey]
+		rootCa := secret.Data[corev1.ServiceAccountRootCAKey]
+
+		certificates = append(certificates, ir.TLSCertificate{
+			PrivateKey: privateKey,
+			CertChain:  certChain,
+			CA:         rootCa,
+		})
 	}
 
-	certRef := tls.CertificateRefs[0]
-	// validate secret reference exists
-	secret, err := queries.GetSecretForRef(
-		kctx,
-		ctx,
-		wellknown.GatewayGVK.GroupKind(),
-		parentNamespace,
-		certRef,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// The resulting sslconfig will still have to go through a real translation where we run through this again.
-	// This means that while its nice to still fail early here we dont need to scrub the actual contents of the secret.
-	if _, err := sslutils.ValidateTlsSecretData(secret.Name, secret.Namespace, secret.Data); err != nil {
-		return nil, err
-	}
-
-	certChain := secret.Data[corev1.TLSCertKey]
-	privateKey := secret.Data[corev1.TLSPrivateKeyKey]
-	rootCa := secret.Data[corev1.ServiceAccountRootCAKey]
-
-	return &ir.TlsBundle{
-		PrivateKey:    privateKey,
-		CertChain:     certChain,
-		CA:            rootCa,
+	return &ir.TLSConfig{
 		AlpnProtocols: alpnProtocols,
+		Certificates:  certificates,
 	}, nil
 }
 
 // reportTLSConfigError reports TLS configuration errors by setting appropriate listener conditions.
 func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter) {
 	reason := gwv1.ListenerReasonInvalidCertificateRef
-	message := "Invalid certificate ref."
+	message := "Invalid certificate ref(s)."
 	if errors.Is(err, krtcollections.ErrMissingReferenceGrant) {
 		reason = gwv1.ListenerReasonRefNotPermitted
 		message = "Reference not permitted by ReferenceGrant."

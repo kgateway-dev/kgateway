@@ -3,7 +3,6 @@ Backends:
     targets:
     - backend:
         backend: default/mcp-backend/mcp-target
-        port: 8000
       name: mcp-target
       path: override-sse
       protocol: STREAMABLE_HTTP

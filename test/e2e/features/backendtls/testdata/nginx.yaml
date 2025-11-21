@@ -2,6 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: nginx
+  namespace: default
 spec:
   selector:
     app.kubernetes.io/name: nginx
@@ -19,6 +20,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: nginx2
+  namespace: default
 spec:
   selector:
     app.kubernetes.io/name: nginx2
@@ -41,6 +43,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: nginx-conf
+  namespace: default
 data:
   nginx.conf: |
     user nginx;
@@ -117,6 +120,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: nginx
+  namespace: default
   labels:
     app.kubernetes.io/name: nginx
 spec:
@@ -149,6 +153,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: nginx2
+  namespace: default
   labels:
     app.kubernetes.io/name: nginx2
 spec:

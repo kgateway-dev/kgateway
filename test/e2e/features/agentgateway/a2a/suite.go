@@ -110,7 +110,7 @@ func (s *testingSuite) TestA2AHelloWorld() {
 
 func (s *testingSuite) waitA2AEnvironmentReady() {
 	s.TestInstallation.Assertions.EventuallyPodsRunning(
-		s.Ctx, "default",
+		s.Ctx, gatewayNamespace,
 		metav1.ListOptions{LabelSelector: "app=a2a-helloworld"},
 	)
 	s.TestInstallation.Assertions.EventuallyPodsRunning(
@@ -126,7 +126,7 @@ func (s *testingSuite) waitA2AEnvironmentReady() {
 		metav1.ListOptions{LabelSelector: defaults.WellKnownAppLabel + "=" + gatewayName},
 	)
 	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
-		s.Ctx, "a2a-route", "default",
+		s.Ctx, "a2a-route", gatewayNamespace,
 		gwv1.RouteConditionAccepted, metav1.ConditionTrue,
 	)
 }

@@ -9,6 +9,8 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
+	"istio.io/istio/pkg/slices"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -18,10 +20,29 @@ import (
 
 const (
 	aiPolicySuffix               = ":ai"
+	backendTlsPolicySuffix       = ":backend-tls"
 	backendauthPolicySuffix      = ":backend-auth"
 	tlsPolicySuffix              = ":tls"
 	mcpAuthorizationPolicySuffix = ":mcp-authorization"
 )
+
+func TranslateInlineBackendPolicy(
+	ctx PolicyCtx,
+	namespace string,
+	policy *v1alpha1.AgentgatewayPolicyBackendFull,
+) ([]*api.BackendPolicySpec, error) {
+	dummy := &v1alpha1.AgentgatewayPolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "inline_policy",
+			Namespace: namespace,
+		},
+		Spec: v1alpha1.AgentgatewayPolicySpec{Backend: policy},
+	}
+	res, err := translateBackendPolicyToAgw(ctx, dummy, nil)
+	return slices.MapFilter(res, func(e AgwPolicy) **api.BackendPolicySpec {
+		return ptr.Of(e.Policy.GetBackend())
+	}), err
+}
 
 func translateBackendPolicyToAgw(
 	ctx PolicyCtx,
@@ -72,7 +93,7 @@ func translateBackendPolicyToAgw(
 	if s := backend.AI; s != nil {
 		pol, err := translateBackendAI(ctx, policy, policyName, policyTarget)
 		if err != nil {
-			logger.Error("error processing backend Tracing", "err", err)
+			logger.Error("error processing backend AI", "err", err)
 			errs = append(errs, err)
 		}
 		agwPolicies = append(agwPolicies, pol...)
@@ -81,7 +102,7 @@ func translateBackendPolicyToAgw(
 	if s := backend.Auth; s != nil {
 		pol, err := translateBackendAuth(ctx, policy, policyName, policyTarget)
 		if err != nil {
-			logger.Error("error processing backend Tracing", "err", err)
+			logger.Error("error processing backend Auth", "err", err)
 			errs = append(errs, err)
 		}
 		agwPolicies = append(agwPolicies, pol...)
@@ -94,6 +115,7 @@ func translateBackendTCP(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, nam
 	// TODO
 	return nil, nil
 }
+
 func translateBackendTLS(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, target *api.PolicyTarget) ([]AgwPolicy, error) {
 	var errs []error
 
@@ -195,7 +217,7 @@ func translateBackendMCPAuthorization(policy *v1alpha1.AgentgatewayPolicy, targe
 			}},
 	}
 
-	logger.Debug("generated MCP policy",
+	logger.Debug("generated MCPBackend policy",
 		"policy", policy.Name,
 		"agentgateway_policy", mcpPolicy.Name)
 
@@ -219,17 +241,23 @@ func translateBackendAI(ctx PolicyCtx, agwPolicy *v1alpha1.AgentgatewayPolicy, n
 			errs = append(errs, err)
 			continue
 		}
-		if def.Override {
-			if translatedAIPolicy.Overrides == nil {
-				translatedAIPolicy.Overrides = make(map[string]string)
-			}
-			translatedAIPolicy.Overrides[def.Field] = val
-		} else {
-			if translatedAIPolicy.Defaults == nil {
-				translatedAIPolicy.Defaults = make(map[string]string)
-			}
-			translatedAIPolicy.Defaults[def.Field] = val
+		if translatedAIPolicy.Defaults == nil {
+			translatedAIPolicy.Defaults = make(map[string]string)
 		}
+		translatedAIPolicy.Defaults[def.Field] = val
+	}
+
+	for _, def := range aiSpec.Overrides {
+		val, err := toJSONValue(def.Value)
+		if err != nil {
+			logger.Error("error parsing field value", "field", def.Field, "error", err)
+			errs = append(errs, err)
+			continue
+		}
+		if translatedAIPolicy.Overrides == nil {
+			translatedAIPolicy.Overrides = make(map[string]string)
+		}
+		translatedAIPolicy.Overrides[def.Field] = val
 	}
 
 	if aiSpec.PromptGuard != nil {
@@ -237,11 +265,23 @@ func translateBackendAI(ctx PolicyCtx, agwPolicy *v1alpha1.AgentgatewayPolicy, n
 			translatedAIPolicy.PromptGuard = &api.BackendPolicySpec_Ai_PromptGuard{}
 		}
 		if aiSpec.PromptGuard.Request != nil {
-			translatedAIPolicy.PromptGuard.Request = processRequestGuard(ctx.Krt, ctx.Collections.Secrets, agwPolicy.Namespace, aiSpec.PromptGuard.Request)
+			r, err := processRequestGuard(ctx, agwPolicy.Namespace, aiSpec.PromptGuard.Request)
+			if err != nil {
+				logger.Error("error parsing request prompt guard", "error", err)
+				errs = append(errs, err)
+			} else {
+				translatedAIPolicy.PromptGuard.Request = r
+			}
 		}
 
 		if aiSpec.PromptGuard.Response != nil {
-			translatedAIPolicy.PromptGuard.Response = processResponseGuard(aiSpec.PromptGuard.Response)
+			r, err := processResponseGuard(ctx, agwPolicy.Namespace, aiSpec.PromptGuard.Response)
+			if err != nil {
+				logger.Error("error parsing response prompt guard", "error", err)
+				errs = append(errs, err)
+			} else {
+				translatedAIPolicy.PromptGuard.Response = r
+			}
 		}
 	}
 
@@ -256,6 +296,14 @@ func translateBackendAI(ctx PolicyCtx, agwPolicy *v1alpha1.AgentgatewayPolicy, n
 			CacheTools:    aiSpec.PromptCaching.CacheTools,
 		}
 		translatedAIPolicy.PromptCaching.MinTokens = ptr.Of(uint32(aiSpec.PromptCaching.MinTokens)) //nolint:gosec // G115: MinTokens is validated by kubebuilder to be >= 0
+	}
+
+	if aiSpec.Routes != nil {
+		r := make(map[string]api.AIBackend_RouteType)
+		for path, routeType := range aiSpec.Routes {
+			r[path] = translateRouteType(routeType)
+		}
+		// TODO: AGW support
 	}
 
 	aiPolicy := &api.Policy{
@@ -333,4 +381,25 @@ func translateBackendAuth(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, na
 		"agentgateway_policy", authPolicy.Name)
 
 	return []AgwPolicy{{Policy: authPolicy}}, errors.Join(errs...)
+}
+
+// translateRouteType converts kgateway RouteType to agentgateway proto RouteType
+func translateRouteType(rt v1alpha1.RouteType) api.AIBackend_RouteType {
+	switch rt {
+	case v1alpha1.RouteTypeCompletions:
+		return api.AIBackend_COMPLETIONS
+	case v1alpha1.RouteTypeMessages:
+		return api.AIBackend_MESSAGES
+	case v1alpha1.RouteTypeModels:
+		return api.AIBackend_MODELS
+	case v1alpha1.RouteTypePassthrough:
+		return api.AIBackend_PASSTHROUGH
+	case v1alpha1.RouteTypeResponses:
+		return api.AIBackend_RESPONSES
+	case v1alpha1.RouteTypeAnthropicTokenCount:
+		return api.AIBackend_ANTHROPIC_TOKEN_COUNT
+	default:
+		// Default to completions if unknown type
+		return api.AIBackend_COMPLETIONS
+	}
 }

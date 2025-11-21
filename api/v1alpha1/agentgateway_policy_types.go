@@ -65,7 +65,7 @@ type AgentgatewayPolicySpec struct {
 	// +listType=atomic
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
-	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Service' && r.group == '') || (r.kind == 'Backend' && r.group == 'gateway.kgateway.dev') || (r.kind in ['Gateway', 'HTTPRoute'] && r.group == 'gateway.networking.k8s.io') || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io'))",message="targetRefs may only reference Gateway, HTTPRoute, XListenerSet, Service, or Backend resources"
+	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Service' && r.group == '') || (r.kind == 'AgentgatewayBackend' && r.group == 'gateway.kgateway.dev') || (r.kind in ['Gateway', 'HTTPRoute'] && r.group == 'gateway.networking.k8s.io') || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io'))",message="targetRefs may only reference Gateway, HTTPRoute, XListenerSet, Service, or AgentgatewayBackend resources"
 	// +kubebuilder:validation:XValidation:message="Only one Kind of targetRef can be set on one policy",rule="self.all(l1, !self.exists(l2, l1.kind != l2.kind))"
 	// +optional
 	TargetRefs []LocalPolicyTargetReferenceWithSectionName `json:"targetRefs,omitempty"`
@@ -73,7 +73,7 @@ type AgentgatewayPolicySpec struct {
 	// targetSelectors specifies the target selectors to select resources to attach the policy to.
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
-	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Service' && r.group == '') || (r.kind == 'Backend' && r.group == 'gateway.kgateway.dev') || (r.kind in ['Gateway', 'HTTPRoute'] && r.group == 'gateway.networking.k8s.io') || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io'))",message="targetRefs may only reference Gateway, HTTPRoute, XListenerSet, Service, or Backend resources"
+	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Service' && r.group == '') || (r.kind == 'AgentgatewayBackend' && r.group == 'gateway.kgateway.dev') || (r.kind in ['Gateway', 'HTTPRoute'] && r.group == 'gateway.networking.k8s.io') || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io'))",message="targetRefs may only reference Gateway, HTTPRoute, XListenerSet, Service, or AgentgatewayBackend resources"
 	// +kubebuilder:validation:XValidation:message="Only one Kind of targetRef can be set on one policy",rule="self.all(l1, !self.exists(l2, l1.kind != l2.kind))"
 	// +optional
 	TargetSelectors []LocalPolicyTargetSelectorWithSectionName `json:"targetSelectors,omitempty"`
@@ -114,10 +114,10 @@ type AgentgatewayPolicySpec struct {
 	// example, if a Gateway policy sets 'tcp' and 'tls', and a Backend policy sets 'tls', the effective policy would be
 	// 'tcp' from the Gateway, and 'tls' from the Backend.
 	// +optional
-	Backend *AgentgatewayPolicyBackend `json:"backend,omitempty"`
+	Backend *AgentgatewayPolicyBackendFull `json:"backend,omitempty"`
 }
 
-type AgentgatewayPolicyBackend struct {
+type AgentgatewayPolicyBackendSimple struct {
 	// tcp defines settings for managing TCP connections to the backend.
 	// +optional
 	TCP *BackendTCP `json:"tcp,omitempty"`
@@ -134,21 +134,50 @@ type AgentgatewayPolicyBackend struct {
 	// auth defines settings for managing authentication to the backend
 	// +optional
 	Auth *BackendAuth `json:"auth,omitempty"`
+}
+
+// +kubebuilder:validation:AtLeastOneOf=tcp;tls;http;auth;mcp
+type AgentgatewayPolicyBackendMCP struct {
+	AgentgatewayPolicyBackendSimple `json:",inline"`
 
 	// mcp specifies settings for MCP workloads. This is only applicable when connecting to a Backend of type 'mcp'.
 	// +optional
 	MCP *BackendMCP `json:"mcp,omitempty"`
+}
+
+// +kubebuilder:validation:AtLeastOneOf=tcp;tls;http;auth;ai
+type AgentgatewayPolicyBackendAI struct {
+	AgentgatewayPolicyBackendSimple `json:",inline"`
 
 	// ai specifies settings for AI workloads. This is only applicable when connecting to a Backend of type 'ai'.
 	// +optional
 	AI *BackendAI `json:"ai,omitempty"`
 }
 
+// +kubebuilder:validation:AtLeastOneOf=tcp;tls;http;auth;mcp;ai
+type AgentgatewayPolicyBackendFull struct {
+	AgentgatewayPolicyBackendSimple `json:",inline"`
+
+	// ai specifies settings for AI workloads. This is only applicable when connecting to a Backend of type 'ai'.
+	// +optional
+	AI *BackendAI `json:"ai,omitempty"`
+
+	// mcp specifies settings for MCP workloads. This is only applicable when connecting to a Backend of type 'mcp'.
+	// +optional
+	MCP *BackendMCP `json:"mcp,omitempty"`
+}
+
+// +kubebuilder:validation:MinLength=1
 // +kubebuilder:validation:MaxLength=64
 type TinyString = string
 
+// +kubebuilder:validation:MinLength=1
 // +kubebuilder:validation:MaxLength=256
 type ShortString = string
+
+// +kubebuilder:validation:MinLength=1
+// +kubebuilder:validation:MaxLength=1024
+type LongString = string
 
 // +kubebuilder:validation:MinLength=1
 // +kubebuilder:validation:MaxLength=253
@@ -167,6 +196,7 @@ const (
 
 // +kubebuilder:validation:AtMostOneOf=verifySubjectAltNames;insecureSkipVerify
 // +kubebuilder:validation:XValidation:rule="has(self.insecureSkipVerify) && self.insecureSkipVerify == 'All' ? !has(self.caCertificateRefs) : true",message="insecureSkipVerify All and caCertificateRefs may not be set together"
+// +kubebuilder:validation:XValidation:rule="has(self.insecureSkipVerify) ? !has(self.verifySubjectAltNames) : true",message="insecureSkipVerify and verifySubjectAltNames may not be set together"
 type BackendTLS struct {
 	// mtlsCertificateRef enables mutual TLS to the backend, using the specified key (tls.key) and cert (tls.crt) from the
 	// refenced Secret.
@@ -259,6 +289,7 @@ type FrontendHTTP struct {
 	// http1MaxHeaders defines the maximum number of headers that are allowed in HTTP/1.1 requests.
 	// If unset, this defaults to 100.
 	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=4096
 	// +optional
 	HTTP1MaxHeaders *int32 `json:"http1MaxHeaders,omitempty"`
 	// http1IdleTimeout defines the timeout before an unused connection is closed.
@@ -276,7 +307,7 @@ type FrontendHTTP struct {
 	// +kubebuilder:validation:Minimum=1
 	// +optional
 	HTTP2ConnectionWindowSize *int32 `json:"http2ConnectionWindowSize,omitempty"`
-	// http2FrameSize sets the maxmimum frame size to use.
+	// http2FrameSize sets the maximum frame size to use.
 	// If unset, this defaults to 16kb
 	// +kubebuilder:validation:Minimum=16384
 	// +kubebuilder:validation:Maximum=1677215
@@ -458,7 +489,6 @@ type AgentJWTAuthentication struct {
 
 type AgentJWTProvider struct {
 	// issuer identifies the IdP that issued the JWT. This corresponds to the 'iss' claim (https://tools.ietf.org/html/rfc7519#section-4.1.1).
-	// +kubebuilder:validation:MinLength=1
 	// +required
 	Issuer ShortString `json:"issuer"`
 	// audiences specifies the list of allowed audiences that are allowed access. This corresponds to the 'aud' claim (https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.3).
@@ -642,6 +672,7 @@ const (
 	AgentHostnameRewriteNone AgentHostnameRewrite = "None"
 )
 
+// +kubebuilder:validation:ExactlyOneOf=key;secretRef;passthrough
 type BackendAuth struct {
 	// key provides an inline key to use as the value of the Authorization header.
 	// This option is the least secure; usage of a Secret is preferred.
@@ -654,56 +685,97 @@ type BackendAuth struct {
 	// +optional
 	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
 
-	// TODO: passthrough, aws, azure, gcp
+	// passthrough passes through an existing token that has been sent by the client and validated. Other policies, like
+	// JWT and API Key authentication, will strip the original client credentials. Passthrough backend authentication
+	// causes the original token to be added back into the request. If there are no client authentication policies on the
+	// request, the original token would be unchanged, so this would have no effect.
+	// +optional
+	Passthrough *BackendAuthPassthrough `json:"passthrough,omitempty"`
+	// TODO: aws, azure, gcp
 }
 
+type BackendAuthPassthrough struct {
+}
+
+// +kubebuilder:validation:AtLeastOneOf=prompt;promptGuard;defaults;overrides;modelAliases;promptCaching;routes
 type BackendAI struct {
 	// Enrich requests sent to the LLM provider by appending and prepending system prompts. This can be configured only for
 	// LLM providers that use the `CHAT` or `CHAT_STREAMING` API route type.
 	// +optional
 	PromptEnrichment *AIPromptEnrichment `json:"prompt,omitempty"`
 
-	// TODO: the API here is very messy and confusing; do a general refactoring
+	// promptGuard enables adding guardrails to LLM requests and responses.
 	// +optional
 	PromptGuard *AIPromptGuard `json:"promptGuard,omitempty"`
 
-	// Provide defaults to merge with user input fields.
+	// Provide defaults to merge with user input fields. If the field is already set, the field in the request is used.
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=64
 	// +optional
 	Defaults []FieldDefault `json:"defaults,omitempty"`
+	// Provide overrides to merge with user input fields. If the field is already set, the field will be overwritten.
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=64
 	// +optional
 	Overrides []FieldDefault `json:"overrides,omitempty"`
-	// Intentionally omitted: `model`. Instead, use overrides.
 
 	// ModelAliases maps friendly model names to actual provider model names.
 	// Example: {"fast": "gpt-3.5-turbo", "smart": "gpt-4-turbo"}
 	// Note: This field is only applicable when using the agentgateway data plane.
-	// TODO: should this use 'overrides', and we add CEL conditionals?
 	// +kubebuilder:validation:MaxProperties=64
 	// +optional
 	ModelAliases map[string]string `json:"modelAliases,omitempty"`
 
-	// PromptCaching enables automatic prompt caching for supported providers (AWS Bedrock).
+	// promptCaching enables automatic prompt caching for supported providers (AWS Bedrock).
 	// Reduces API costs by caching static content like system prompts and tool definitions.
 	// Only applicable for Bedrock Claude 3+ and Nova models.
 	// +optional
 	PromptCaching *PromptCachingConfig `json:"promptCaching,omitempty"`
+
+	// routes defines how to identify the type of traffic to handle.
+	// The keys are URL path suffixes matched using ends-with comparison (e.g., "/v1/chat/completions").
+	// The special "*" wildcard matches any path.
+	// If not specified, all traffic defaults to "completions" type.
+	// +optional
+	Routes map[string]RouteType `json:"routes,omitempty"`
 }
+
+// RouteType specifies how the AI gateway should process incoming requests
+// based on the URL path and the API format expected.
+// +kubebuilder:validation:Enum=completions;messages;models;passthrough;responses;anthropic_token_count
+type RouteType string
+
+const (
+	// RouteTypeCompletions processes OpenAI /v1/chat/completions format requests
+	RouteTypeCompletions RouteType = "completions"
+
+	// RouteTypeMessages processes Anthropic /v1/messages format requests
+	RouteTypeMessages RouteType = "messages"
+
+	// RouteTypeModels handles /v1/models endpoint (returns available models)
+	RouteTypeModels RouteType = "models"
+
+	// RouteTypePassthrough sends requests to upstream as-is without LLM processing
+	RouteTypePassthrough RouteType = "passthrough"
+
+	// RouteTypeResponses processes OpenAI /v1/responses format requests
+	RouteTypeResponses RouteType = "responses"
+
+	// RouteTypeAnthropicTokenCount processes Anthropic /v1/messages/count_tokens format requests
+	RouteTypeAnthropicTokenCount RouteType = "anthropic_token_count" //nolint:gosec // G101: False positive - this is a route type name, not credentials
+)
 
 // +kubebuilder:validation:AtLeastOneOf=authorization
 type BackendMCP struct {
-	// authorization defines MCP level authorization. Unlike authorization at the HTTP level, which will reject
-	// unauthorized requests with a 403 error, this policy works at the MCP level.
+	// authorization defines MCPBackend level authorization. Unlike authorization at the HTTP level, which will reject
+	// unauthorized requests with a 403 error, this policy works at the MCPBackend level.
 	//
 	// List operations, such as list_tools, will have each item evaluated. Items that do not meet the rule will be filtered.
 	//
 	// Get or call operations, such as call_tool, will evaluate the specific item and reject requests that do not meet the rule.
 	// +optional
 	Authorization *Authorization `json:"authorization,omitempty"`
-	// authentication defines MCP specific authentication rules.
+	// authentication defines MCPBackend specific authentication rules.
 	// TODO: this is problematic sort of. In agentgateway local mode, this setting is on route and backend, but we have
 	// some hiding of this to make it set once but apply both.
 	//Authentication *MCPAuthentication `json:"authentication,omitempty"`
@@ -741,7 +813,25 @@ type BackendHTTP struct {
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1s')",message="http2KeepaliveTimeout must be at least 1 second"
 	// +optional
 	HTTP2KeepaliveTimeout *metav1.Duration `json:"http2KeepaliveTimeout,omitempty"`
+
+	// version specifies the HTTP protocol version to use when connecting to the backend.
+	// If not specified, the version is automatically determined:
+	// * Service types can specify it with 'appProtocol' on the Service port.
+	// * If traffic is identified as gRPC, HTTP2 is used.
+	// * If the incoming traffic was plaintext HTTP, the original protocol will be used.
+	// * If the incoming traffic was HTTPS, HTTP1 will be used. This is because most clients will
+	//   transparently upgrade HTTPS traffic to HTTP2, even if the backend doesn't support it
+	// +kubebuilder:validation:Enum=HTTP1;HTTP2
+	// +optional
+	Version *HTTPVersion `json:"version,omitempty"`
 }
+
+type HTTPVersion string
+
+const (
+	HTTPVersion1 HTTPVersion = "HTTP1"
+	HTTPVersion2 HTTPVersion = "HTTP2"
+)
 
 type BackendTCP struct {
 	// keepAlive defines settings for enabling TCP keepalives on the connection.
@@ -754,6 +844,7 @@ type BackendTCP struct {
 	ConnectTimeout *metav1.Duration `json:"connectTimeout,omitempty"`
 }
 
+// +kubebuilder:validation:AtLeastOneOf=request;response
 type AgentTransformationPolicy struct {
 	// request is used to modify the request path.
 	// +optional
@@ -764,6 +855,7 @@ type AgentTransformationPolicy struct {
 	Response *AgentTransform `json:"response,omitempty"`
 }
 
+// +kubebuilder:validation:AtLeastOneOf=set;add;remove;body
 type AgentTransform struct {
 	// set is a list of headers and the value they should be set to.
 	//
@@ -849,6 +941,7 @@ type AgentExtAuthBody struct {
 	MaxSize int32 `json:"maxSize"`
 }
 
+// +kubebuilder:validation:AtLeastOneOf=local;global
 type AgentRateLimit struct {
 	// Local defines a local rate limiting policy.
 	// +kubebuilder:validation:MinItems=1

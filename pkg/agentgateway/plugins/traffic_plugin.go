@@ -21,6 +21,7 @@ import (
 	"istio.io/istio/pkg/slices"
 	"istio.io/istio/pkg/util/protomarshal"
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -86,13 +87,13 @@ func NewAgentPlugin(agw *AgwCollections) AgwPlugin {
 		agw.Client,
 		wellknown.AgentgatewayPolicyGVR,
 		kclient.Filter{ObjectFilter: agw.Client.ObjectFilter()},
-	), agw.KrtOpts.ToOptions("AgentgatewayPolicy")...)
+	), agw.KrtOpts.ToOptions("informer/AgentgatewayPolicy")...)
 	policyStatusCol, policyCol := krt.NewStatusManyCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.AgentgatewayPolicy) (
 		*gwv1.PolicyStatus,
 		[]AgwPolicy,
 	) {
 		return TranslateAgentgatewayPolicy(krtctx, policyCR, agw)
-	})
+	}, agw.KrtOpts.ToOptions("AgentgatewayPolicy")...)
 
 	return AgwPlugin{
 		ContributesPolicies: map[schema.GroupKind]PolicyPlugin{
@@ -176,7 +177,7 @@ func TranslateAgentgatewayPolicy(
 				}
 			}
 
-		case wellknown.BackendGVK.GroupKind():
+		case wellknown.AgentgatewayBackendGVK.GroupKind():
 			policyTarget = &api.PolicyTarget{
 				Kind: &api.PolicyTarget_Backend{
 					Backend: utils.InternalBackendName(policy.Namespace, string(target.Name), ""),
@@ -1122,13 +1123,14 @@ func buildBackendRef(ctx PolicyCtx, ref gwv1.BackendObjectReference, defaultNS s
 	}
 }
 
-func toJSONValue(value string) (string, error) {
-	if json.Valid([]byte(value)) {
-		return value, nil
+func toJSONValue(j apiextensionsv1.JSON) (string, error) {
+	value := j.Raw
+	if json.Valid(value) {
+		return string(value), nil
 	}
 
-	if strings.HasPrefix(value, "{") || strings.HasPrefix(value, "[") {
-		return "", fmt.Errorf("invalid JSON value: %s", value)
+	if bytes.HasPrefix(value, []byte("{")) || bytes.HasPrefix(value, []byte("[")) {
+		return "", fmt.Errorf("invalid JSON value: %s", string(value))
 	}
 
 	// Treat this as an unquoted string and marshal it to JSON
