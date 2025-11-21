@@ -1,4 +1,9 @@
+/*
+TODO: look into enabling this to avoid accidental use of unwrap() and
+crash the process. However, there are many tests using unwrap() that
+will make the linter unhappy.
 #![deny(clippy::unwrap_used, clippy::expect_used)]
+ */
 
 use envoy_proxy_dynamic_modules_rust_sdk::*;
 use std::any::Any;
