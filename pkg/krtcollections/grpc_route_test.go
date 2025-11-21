@@ -17,6 +17,7 @@ import (
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -484,6 +485,7 @@ func TestTransformGRPCRoute(t *testing.T) {
 			// Create RouteIndex with minimal collections needed for GRPC route transformation
 			routesIndex := krtcollections.NewRoutesIndex(
 				krtutil.KrtOptions{},
+				wellknown.DefaultGatewayControllerName,
 				krttest.GetMockCollection[*gwv1.HTTPRoute](mock),
 				grpcRoutes,
 				krttest.GetMockCollection[*gwv1a2.TCPRoute](mock),
@@ -493,7 +495,6 @@ func TestTransformGRPCRoute(t *testing.T) {
 				refgrants,
 				apisettings.Settings{},
 			)
-
 			// Wait until collections are synced
 			// grpcRoutes.WaitUntilSynced(context.Background().Done())
 			services.WaitUntilSynced(context.Background().Done())

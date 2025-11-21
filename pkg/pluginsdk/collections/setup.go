@@ -105,7 +105,7 @@ func (c *CommonCollections) InitCollections(
 	initBackends(plugins, backendIndex)
 	endpointIRs := initEndpoints(plugins, c.KrtOpts)
 
-	routes := krtcollections.NewRoutesIndex(c.KrtOpts, httpRoutes, grpcRoutes, tcproutes, tlsRoutes, policies, backendIndex, c.RefGrants, globalSettings)
+	routes := krtcollections.NewRoutesIndex(c.KrtOpts, c.ControllerName, httpRoutes, grpcRoutes, tcproutes, tlsRoutes, policies, backendIndex, c.RefGrants, globalSettings)
 	return gateways, routes, backendIndex, endpointIRs
 }
 
