@@ -13,7 +13,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	apixv1alpha1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	apilabels "github.com/kgateway-dev/kgateway/v2/api/labels"
@@ -332,7 +331,7 @@ func (r *gatewayQueries) GetRoutesForResource(kctx krt.HandlerContext, ctx conte
 		switch resource.(type) {
 		case *gwv1.Gateway:
 			gvk = wellknown.GatewayGVK
-		case *apixv1alpha1.XListenerSet:
+		case *gwxv1a1.XListenerSet:
 			gvk = wellknown.XListenerSetGVK
 		}
 	}
