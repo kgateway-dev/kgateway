@@ -24,6 +24,7 @@ import (
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
@@ -217,7 +218,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 	constructor := NewTrafficPolicyConstructor(ctx, commoncol)
 
 	// TrafficPolicy IR will have TypedConfig -> implement backendroute method to add prompt guard, etc.
-	statusCol, policyCol := krt.NewStatusCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.TrafficPolicy) (*struct{}, *ir.PolicyWrapper) {
+	statusCol, policyCol := krt.NewStatusCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.TrafficPolicy) (*krtcollections.StatusMarker, *ir.PolicyWrapper) {
 		objSrc := ir.ObjectSource{
 			Group:     gk.Group,
 			Kind:      gk.Kind,
@@ -235,10 +236,10 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 			errors = append(errors, err)
 		}
 
-		var statusMarker *struct{}
+		var statusMarker *krtcollections.StatusMarker
 		for _, ancestor := range policyCR.Status.Ancestors {
 			if string(ancestor.ControllerName) == commoncol.ControllerName {
-				statusMarker = &struct{}{}
+				statusMarker = &krtcollections.StatusMarker{}
 				break
 			}
 		}

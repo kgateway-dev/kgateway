@@ -242,12 +242,14 @@ func (s *testingSuite) TestHttpListenerPolicyClearStaleStatus() {
 	otherControllerName := "other-controller.example.com/controller"
 
 	// Add fake ancestor status from another controller
-	s.addAncestorStatus("http-listener-policy-server-header", "default", otherControllerName)
+	s.addAncestorStatus("http-listener-policy-server-header", "default", "other-gw", otherControllerName)
 
 	// Verify both kgateway and other controller statuses exist
 	s.assertAncestorStatuses("gw", map[string]bool{
 		kgatewayControllerName: true,
-		otherControllerName:    true,
+	})
+	s.assertAncestorStatuses("other-gw", map[string]bool{
+		otherControllerName: true,
 	})
 
 	// Apply policy with missing gateway target
@@ -260,11 +262,13 @@ func (s *testingSuite) TestHttpListenerPolicyClearStaleStatus() {
 	// Verify kgateway status cleared, other remains
 	s.assertAncestorStatuses("gw", map[string]bool{
 		kgatewayControllerName: false,
-		otherControllerName:    true,
+	})
+	s.assertAncestorStatuses("other-gw", map[string]bool{
+		otherControllerName: true,
 	})
 }
 
-func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, controllerName string) {
+func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, gwName, controllerName string) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
 	s.testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
 		policy := &v1alpha1.HTTPListenerPolicy{}
@@ -277,7 +281,7 @@ func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, controller
 
 		// Add fake ancestor status
 		fakeStatus := gwv1.PolicyAncestorStatus{
-			AncestorRef:    gwv1.ParentReference{Name: "gw"},
+			AncestorRef:    gwv1.ParentReference{Name: gwv1.ObjectName(gwName)},
 			ControllerName: gwv1.GatewayController(controllerName),
 			Conditions: []metav1.Condition{
 				{

@@ -24,6 +24,7 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
@@ -177,7 +178,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 	col := krt.WrapClient(cli, commoncol.KrtOpts.ToOptions("HTTPListenerPolicy")...)
 	gk := wellknown.HTTPListenerPolicyGVK.GroupKind()
 
-	policyStatusMarker, policyCol := krt.NewStatusCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.HTTPListenerPolicy) (*struct{}, *ir.PolicyWrapper) {
+	policyStatusMarker, policyCol := krt.NewStatusCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.HTTPListenerPolicy) (*krtcollections.StatusMarker, *ir.PolicyWrapper) {
 		objSrc := ir.ObjectSource{
 			Group:     gk.Group,
 			Kind:      gk.Kind,
@@ -221,10 +222,10 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 		}
 
 		// Create status marker if existing status has kgateway controller
-		var statusMarker *struct{}
+		var statusMarker *krtcollections.StatusMarker
 		for _, ancestor := range i.Status.Ancestors {
 			if string(ancestor.ControllerName) == commoncol.ControllerName {
-				statusMarker = &struct{}{}
+				statusMarker = &krtcollections.StatusMarker{}
 				break
 			}
 		}

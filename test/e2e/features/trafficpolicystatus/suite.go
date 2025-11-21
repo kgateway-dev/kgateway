@@ -37,12 +37,14 @@ func (s *testingSuite) TestTrafficPolicyClearStaleStatus() {
 	otherControllerName := "other-controller.example.com/controller"
 
 	// Add fake ancestor status from another controller
-	s.addAncestorStatus("example-policy", "default", otherControllerName)
+	s.addAncestorStatus("example-policy", "default", "other-gw", otherControllerName)
 
 	// Verify both kgateway and other controller statuses exist
-	s.assertAncestorStatuses("example-policy", "default", "gw", map[string]bool{
+	s.assertAncestorStatuses("gw", map[string]bool{
 		kgatewayControllerName: true,
-		otherControllerName:    true,
+	})
+	s.assertAncestorStatuses("other-gw", map[string]bool{
+		otherControllerName: true,
 	})
 
 	// Apply policy with missing gateway target
@@ -53,13 +55,15 @@ func (s *testingSuite) TestTrafficPolicyClearStaleStatus() {
 	s.Require().NoError(err)
 
 	// Verify kgateway status cleared, other remains
-	s.assertAncestorStatuses("example-policy", "default", "gw", map[string]bool{
+	s.assertAncestorStatuses("gw", map[string]bool{
 		kgatewayControllerName: false,
-		otherControllerName:    true,
+	})
+	s.assertAncestorStatuses("other-gw", map[string]bool{
+		otherControllerName: true,
 	})
 }
 
-func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, controllerName string) {
+func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, gwName, controllerName string) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
 	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
 		policy := &v1alpha1.TrafficPolicy{}
@@ -72,7 +76,7 @@ func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, controller
 
 		// Add fake ancestor status
 		fakeStatus := gwv1.PolicyAncestorStatus{
-			AncestorRef:    gwv1.ParentReference{Name: "gw"},
+			AncestorRef:    gwv1.ParentReference{Name: gwv1.ObjectName(gwName)},
 			ControllerName: gwv1.GatewayController(controllerName),
 			Conditions: []metav1.Condition{
 				{
@@ -91,13 +95,13 @@ func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, controller
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
-func (s *testingSuite) assertAncestorStatuses(policyName, policyNamespace, ancestorName string, expectedControllers map[string]bool) {
+func (s *testingSuite) assertAncestorStatuses(ancestorName string, expectedControllers map[string]bool) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
 	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
 		policy := &v1alpha1.TrafficPolicy{}
 		err := s.TestInstallation.ClusterContext.Client.Get(
 			s.Ctx,
-			types.NamespacedName{Name: policyName, Namespace: policyNamespace},
+			types.NamespacedName{Name: "example-policy", Namespace: "default"},
 			policy,
 		)
 		g.Expect(err).NotTo(gomega.HaveOccurred())
