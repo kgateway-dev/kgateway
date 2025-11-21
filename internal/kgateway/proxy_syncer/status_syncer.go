@@ -31,6 +31,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/syncer"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/stopwatch"
 )
 
 var _ manager.LeaderElectionRunnable = &StatusSyncer{}
@@ -135,7 +136,7 @@ func (s *StatusSyncer) Start(ctx context.Context) error {
 }
 
 func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, rm reports.ReportMap) {
-	stopwatch := utils.NewTranslatorStopWatch("RouteStatusSyncer")
+	stopwatch := stopwatch.NewTranslatorStopWatch("RouteStatusSyncer")
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
 
@@ -353,7 +354,7 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 
 // syncGatewayStatus will build and update status for all Gateways in a reportMap
 func (s *StatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger, rm reports.ReportMap) {
-	stopwatch := utils.NewTranslatorStopWatch("GatewayStatusSyncer")
+	stopwatch := stopwatch.NewTranslatorStopWatch("GatewayStatusSyncer")
 	stopwatch.Start()
 
 	for gwnn := range rm.Gateways {
@@ -457,7 +458,7 @@ func (s *StatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logge
 
 // syncListenerSetStatus will build and update status for all Listener Sets in a reportMap
 func (s *StatusSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.Logger, rm reports.ReportMap) {
-	stopwatch := utils.NewTranslatorStopWatch("ListenerSetStatusSyncer")
+	stopwatch := stopwatch.NewTranslatorStopWatch("ListenerSetStatusSyncer")
 	stopwatch.Start()
 
 	// TODO: retry within loop per LS rather than as a full block
@@ -533,7 +534,7 @@ func (s *StatusSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.L
 }
 
 func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMap) {
-	stopwatch := utils.NewTranslatorStopWatch("RouteStatusSyncer")
+	stopwatch := stopwatch.NewTranslatorStopWatch("RouteStatusSyncer")
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
 

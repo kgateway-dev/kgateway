@@ -514,6 +514,15 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 			})
 		}
 
+		allowedNs := NoNamespace()
+		if gw.Spec.AllowedListeners != nil {
+			var err error
+			allowedNs, err = AllowedListenerSet(gw, config.Namespaces)
+			if err != nil {
+				logger.Error("unable to parse allowedListeners", "error", err)
+			}
+		}
+
 		listenerSets := krt.Fetch(kctx, config.ListenerSets, krt.FilterIndex(config.byParentRefIndex, TargetRefIndexKey{
 			Group:     wellknown.GatewayGroup,
 			Kind:      wellknown.GatewayKind,
@@ -591,15 +600,6 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 				continue
 			}
 
-			// TODO: this logic should be done once for the Gateway, not per ListenerSet
-			// also means that we should report on the Gateway not any ListenerSet
-			allowedNs, err := allowedListenerSet(gw, config.Namespaces)
-			if err != nil {
-				lsIR.Err = errors.New("Unable to parse allowedListeners")
-				gwIR.DeniedListenerSets[wellknown.XListenerSetGVK] = append(gwIR.DeniedListenerSets[wellknown.XListenerSetGVK], lsIR)
-				continue
-			}
-
 			// Check if the namespace of the listenerSet is allowed by the gateway
 			// We return the denied list of ls to have their status set to rejected during validation
 			if !allowedNs(kctx, ls.GetNamespace()) {
@@ -616,7 +616,7 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 	}
 }
 
-func allowedListenerSet(gw *gwv1.Gateway, namespaces krt.Collection[NamespaceMetadata]) (func(kctx krt.HandlerContext, namespace string) bool, error) {
+func AllowedListenerSet(gw *gwv1.Gateway, namespaces krt.Collection[NamespaceMetadata]) (func(kctx krt.HandlerContext, namespace string) bool, error) {
 	// Default to None. Ref: https://gateway-api.sigs.k8s.io/geps/gep-1713/#gateway-listenerset-handshake
 	allowedNs := NoNamespace()
 

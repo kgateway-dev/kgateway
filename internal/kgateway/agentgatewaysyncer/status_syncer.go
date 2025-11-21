@@ -19,10 +19,10 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/status"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/stopwatch"
 )
 
 var _ manager.LeaderElectionRunnable = &AgentGwStatusSyncer{}
@@ -252,7 +252,7 @@ type StatusSyncer[O controllers.ComparableObject, S any] struct {
 
 func (s StatusSyncer[O, S]) ApplyStatus(ctx context.Context, obj status.Resource, statusObj any) {
 	status := statusObj.(S)
-	stopwatch := utils.NewTranslatorStopWatch(s.name + "Status")
+	stopwatch := stopwatch.NewTranslatorStopWatch(s.name + "Status")
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
 
