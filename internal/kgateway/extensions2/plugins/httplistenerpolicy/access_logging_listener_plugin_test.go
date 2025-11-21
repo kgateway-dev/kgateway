@@ -126,7 +126,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 					{
 						FileSink: &v1alpha1.FileSink{
 							Path:         "/var/log/file-access.log",
-							StringFormat: "[%START_TIME%] %RESPONSE_CODE%",
+							StringFormat: ptr.To("[%START_TIME%] %RESPONSE_CODE%"),
 						},
 					},
 				},
@@ -189,7 +189,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 					{
 						FileSink: &v1alpha1.FileSink{
 							Path:         "/var/log/access.log",
-							StringFormat: "test log format",
+							StringFormat: ptr.To("test log format"),
 						},
 					},
 				},
@@ -442,7 +442,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 					{
 						FileSink: &v1alpha1.FileSink{
 							Path:         "/var/log/access.log",
-							StringFormat: "hello kgateway",
+							StringFormat: ptr.To("hello kgateway"),
 						},
 						Filter: &v1alpha1.AccessLogFilter{
 							FilterType: &v1alpha1.FilterType{
@@ -594,7 +594,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 						},
 						Filter: &v1alpha1.AccessLogFilter{
 							FilterType: &v1alpha1.FilterType{
-								NotHealthCheckFilter: true,
+								NotHealthCheckFilter: ptr.To(true),
 							},
 						},
 					},
@@ -624,7 +624,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 						},
 						Filter: &v1alpha1.AccessLogFilter{
 							FilterType: &v1alpha1.FilterType{
-								TraceableFilter: true,
+								TraceableFilter: ptr.To(true),
 							},
 						},
 					},
@@ -1321,7 +1321,7 @@ func TestAccessLogFilters(t *testing.T) {
 		{
 			name: "NotHealthCheck",
 			alFilter: &v1alpha1.AccessLogFilter{
-				FilterType: &v1alpha1.FilterType{NotHealthCheckFilter: true},
+				FilterType: &v1alpha1.FilterType{NotHealthCheckFilter: ptr.To(true)},
 			},
 			verify: func(t *testing.T, got *envoyaccesslogv3.AccessLog) {
 				require.NotNil(t, got.GetFilter().GetNotHealthCheckFilter())
@@ -1330,7 +1330,7 @@ func TestAccessLogFilters(t *testing.T) {
 		{
 			name: "Traceable",
 			alFilter: &v1alpha1.AccessLogFilter{
-				FilterType: &v1alpha1.FilterType{TraceableFilter: true},
+				FilterType: &v1alpha1.FilterType{TraceableFilter: ptr.To(true)},
 			},
 			verify: func(t *testing.T, got *envoyaccesslogv3.AccessLog) {
 				require.NotNil(t, got.GetFilter().GetTraceableFilter())
@@ -1400,7 +1400,7 @@ func TestAccessLogFilters(t *testing.T) {
 		{
 			name: "And NotHealthCheck && Traceable",
 			alFilter: &v1alpha1.AccessLogFilter{
-				AndFilter: []v1alpha1.FilterType{{NotHealthCheckFilter: true}, {TraceableFilter: true}},
+				AndFilter: []v1alpha1.FilterType{{NotHealthCheckFilter: ptr.To(true)}, {TraceableFilter: ptr.To(true)}},
 			},
 			verify: func(t *testing.T, got *envoyaccesslogv3.AccessLog) {
 				and := got.GetFilter().GetAndFilter()

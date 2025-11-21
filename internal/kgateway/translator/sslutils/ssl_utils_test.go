@@ -16,7 +16,7 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 	testCases := []struct {
 		name   string
 		in     map[gwv1.AnnotationKey]gwv1.AnnotationValue
-		out    *ir.TlsBundle
+		out    *ir.TLSConfig
 		errors []string
 	}{
 		{
@@ -24,7 +24,7 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
 				annotations.CipherSuites: "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
 			},
-			out: &ir.TlsBundle{
+			out: &ir.TLSConfig{
 				CipherSuites: []string{"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256", "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"},
 			},
 		},
@@ -33,7 +33,7 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
 				annotations.CipherSuites: "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
 			},
-			out: &ir.TlsBundle{
+			out: &ir.TLSConfig{
 				CipherSuites: []string{"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256", "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"},
 			},
 		},
@@ -42,7 +42,7 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
 				annotations.EcdhCurves: "X25519MLKEM768,X25519,P-256",
 			},
-			out: &ir.TlsBundle{
+			out: &ir.TLSConfig{
 				EcdhCurves: []string{"X25519MLKEM768", "X25519", "P-256"},
 			},
 		},
@@ -51,13 +51,13 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
 				annotations.EcdhCurves: "X25519MLKEM768, X25519, P-256",
 			},
-			out: &ir.TlsBundle{
+			out: &ir.TLSConfig{
 				EcdhCurves: []string{"X25519MLKEM768", "X25519", "P-256"},
 			},
 		},
 		{
 			name: "subject_alt_names",
-			out: &ir.TlsBundle{
+			out: &ir.TLSConfig{
 				VerifySubjectAltNames: []string{"foo", "bar"},
 			},
 			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
@@ -66,7 +66,7 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 		},
 		{
 			name: "subject_alt_names_with_whitespace",
-			out: &ir.TlsBundle{
+			out: &ir.TLSConfig{
 				VerifySubjectAltNames: []string{"foo", "bar"},
 			},
 			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
@@ -78,7 +78,7 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
 				annotations.AlpnProtocols: "h2,http/1.1",
 			},
-			out: &ir.TlsBundle{
+			out: &ir.TLSConfig{
 				AlpnProtocols: []string{"h2", "http/1.1"},
 			},
 		},
@@ -87,13 +87,13 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
 				annotations.AlpnProtocols: "h2, http/1.1",
 			},
-			out: &ir.TlsBundle{
+			out: &ir.TLSConfig{
 				AlpnProtocols: []string{"h2", "http/1.1"},
 			},
 		},
 		{
 			name: "tls_max_version",
-			out: &ir.TlsBundle{
+			out: &ir.TLSConfig{
 				MaxTLSVersion: ptr.To(envoytlsv3.TlsParameters_TLSv1_2),
 			},
 			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
@@ -102,7 +102,7 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 		},
 		{
 			name: "tls_min_version",
-			out: &ir.TlsBundle{
+			out: &ir.TLSConfig{
 				MinTLSVersion: ptr.To(envoytlsv3.TlsParameters_TLSv1_3),
 			},
 			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
@@ -111,7 +111,7 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 		},
 		{
 			name: "invalid_tls_versions",
-			out:  &ir.TlsBundle{},
+			out:  &ir.TLSConfig{},
 			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
 				annotations.MinTLSVersion: "TLSv1.3",
 				annotations.MaxTLSVersion: "TLSv1.2",
@@ -123,7 +123,7 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 		},
 		{
 			name: "maximum_tls_version_less_than_minimum",
-			out: &ir.TlsBundle{
+			out: &ir.TLSConfig{
 				VerifySubjectAltNames: []string{"foo", "bar"},
 				MinTLSVersion:         ptr.To(envoytlsv3.TlsParameters_TLSv1_3),
 				MaxTLSVersion:         ptr.To(envoytlsv3.TlsParameters_TLSv1_2),
@@ -139,7 +139,7 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 		},
 		{
 			name: "multiple_options",
-			out: &ir.TlsBundle{
+			out: &ir.TLSConfig{
 				VerifySubjectAltNames: []string{"foo", "bar"},
 				MaxTLSVersion:         ptr.To(envoytlsv3.TlsParameters_TLSv1_3),
 				MinTLSVersion:         ptr.To(envoytlsv3.TlsParameters_TLSv1_2),
@@ -156,7 +156,7 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 		},
 		{
 			name: "misspelled_option",
-			out:  &ir.TlsBundle{},
+			out:  &ir.TLSConfig{},
 			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
 				annotations.MinTLSVersion + "s": "TLSv1_3",
 			},
@@ -168,7 +168,7 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			out := &ir.TlsBundle{}
+			out := &ir.TLSConfig{}
 			err := ApplyTLSExtensionOptions(tc.in, out)
 			assert.Equal(t, tc.out, out)
 			if len(tc.errors) > 0 {

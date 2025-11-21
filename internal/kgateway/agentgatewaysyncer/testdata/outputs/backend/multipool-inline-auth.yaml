@@ -2,11 +2,19 @@ Backends:
 - ai:
     providerGroups:
     - providers:
-      - name: openai
+      - inlinePolicies:
+        - auth:
+            key:
+              secret: sk-openai-primary-key
+        name: openai
         openai:
           model: gpt-4
       - anthropic:
           model: claude-3-opus-20240229
+        inlinePolicies:
+        - auth:
+            key:
+              secret: sk-anthropic-primary-key
         name: anthropic
   name: default/multipool-inline
 Binds:
@@ -18,21 +26,6 @@ Listeners:
   key: default/example-gateway.http
   name: http
   protocol: HTTP
-Policies:
-- backend:
-    auth:
-      key:
-        secret: sk-anthropic-primary-key
-  name: auth-default/multipool-inline-anthropic
-  target:
-    subBackend: default/multipool-inline/anthropic
-- backend:
-    auth:
-      key:
-        secret: sk-openai-primary-key
-  name: auth-default/multipool-inline-openai
-  target:
-    subBackend: default/multipool-inline/openai
 Routes:
 - backends:
   - backend:

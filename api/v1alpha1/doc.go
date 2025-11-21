@@ -17,10 +17,13 @@ package v1alpha1
 // +kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=endpoints,verbs=get;list;watch
 
+// jwks store controller that require extra permissions
+// +kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;patch;update;delete
+
 // Proxy deployer resources that require extra permissions
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;patch;update;delete
 // +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;patch;update;delete
-// +kubebuilder:rbac:groups="",resources=configmaps;secrets;serviceaccounts,verbs=get;list;watch;create;patch;delete
+// +kubebuilder:rbac:groups="",resources=secrets;serviceaccounts,verbs=get;list;watch;create;patch;delete
 // +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=get;list;watch;create;patch;delete
 
 // EDS discovery resources

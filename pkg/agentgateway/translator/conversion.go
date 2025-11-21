@@ -710,7 +710,7 @@ func buildAgwDestination(
 	to gwv1.HTTPBackendRef,
 	ns string,
 	k schema.GroupVersionKind,
-	backendCol krt.Collection[*v1alpha1.Backend],
+	backendCol krt.Collection[*v1alpha1.AgentgatewayBackend],
 ) (*api.RouteBackend, *reporter.RouteCondition) {
 	ref := normalizeReference(to.Group, to.Kind, wellknown.ServiceGVK)
 	// check if the reference is allowed
@@ -808,7 +808,7 @@ func buildAgwDestination(
 			},
 			Port: uint32(*port), //nolint:gosec // G115: Gateway API PortNumber is int32 with validation 1-65535, always safe
 		}
-	case wellknown.BackendGVK.GroupKind():
+	case wellknown.AgentgatewayBackendGVK.GroupKind():
 		backendRefKey := ns + "/" + string(to.Name)
 		fetchedKgwBackend := krt.FetchOne(ctx.Krt, backendCol, krt.FilterKey(backendRefKey))
 		if fetchedKgwBackend == nil {
@@ -922,15 +922,20 @@ func ReferenceAllowed(
 			}
 		}
 	} else if parentRef.Kind == wellknown.ServiceEntryGVK {
-		// check that the referenced svc entry exists
-		key := parentRef.Namespace + "/" + parentRef.Name
-		svcEntry := ptr.Flatten(krt.FetchOne(ctx.Krt, ctx.ServiceEntries, krt.FilterKey(key)))
-		if svcEntry == nil {
-			return &ParentError{
-				Reason:  ParentErrorNotAccepted,
-				Message: fmt.Sprintf("parent service entry: %q not found", parentRef.Name),
-			}
+		return &ParentError{
+			Reason:  ParentErrorNotAccepted,
+			Message: "service entry not supported",
 		}
+		// TODO: support ServiceEntries
+		// check that the referenced svc entry exists
+		//key := parentRef.Namespace + "/" + parentRef.Name
+		//svcEntry := ptr.Flatten(krt.FetchOne(ctx.Krt, ctx.ServiceEntries, krt.FilterKey(key)))
+		//if svcEntry == nil {
+		//	return &ParentError{
+		//		Reason:  ParentErrorNotAccepted,
+		//		Message: fmt.Sprintf("parent service entry: %q not found", parentRef.Name),
+		//	}
+		//}
 	} else {
 		// First, check section and port apply. This must come first
 		if parentRef.Port != 0 && parentRef.Port != parent.Port {

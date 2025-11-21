@@ -1,0 +1,62 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: AgentgatewayPolicy
+metadata:
+  name: agw
+  namespace: default
+spec:
+  targetRefs:
+    - kind: HTTPRoute
+      name: test
+      group: gateway.networking.k8s.io
+  backend:
+    tls:
+      mtlsCertificateRef:
+        - name: mtls
+      caCertificateRefs:
+        - name: ca-bundle
+      verifySubjectAltNames:
+        - "*.example.com"
+        - "api.example.com"
+      sni: example.com
+      alpnProtocols:
+      - http/1.1
+      - h2
+    tcp:
+      connectTimeout: 150ms
+      keepalive:
+        retries: 5
+        time: 60s
+        interval: 30s
+    http:
+      poolIdleTimeout: 30s
+      http2FrameSize: 17000
+      version: HTTP2
+    auth:
+      secretRef:
+        name: hello
+---
+# Output
+output:
+- Policy:
+    backend:
+      backendTls:
+        hostname: '*.example.com'
+    name: default/agw:tls:default/test
+    target:
+      route: default/test
+status:
+  ancestors:
+  - ancestorRef:
+      group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: test
+      namespace: default
+    conditions:
+    - lastTransitionTime: fake
+      message: |-
+        ConfigMap default/ca-bundle not found
+        failed to get secret default/hello: failed to find secret hello
+      reason: PartiallyValid
+      status: "True"
+      type: Accepted
+    controllerName: kgateway.dev/agentgateway

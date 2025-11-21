@@ -486,3 +486,31 @@ func (p *Provider) EventuallyBackendCondition(
 			condition, expect, namespace, name, backend.Status))
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
+
+// EventuallyAgwBackendCondition checks that provided AgentgatewayBackend condition is set to expect.
+func (p *Provider) EventuallyAgwBackendCondition(
+	ctx context.Context,
+	name string,
+	namespace string,
+	condition string,
+	expect metav1.ConditionStatus,
+	timeout ...time.Duration,
+) {
+	ginkgo.GinkgoHelper()
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
+	p.Gomega.Eventually(func(g gomega.Gomega) {
+		backend := &v1alpha1.AgentgatewayBackend{}
+		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, backend)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get AgentgatewayBackend %s/%s", namespace, name)
+
+		var conditionFound bool
+		for _, cond := range backend.Status.Conditions {
+			if cond.Type == condition && cond.Status == expect {
+				conditionFound = true
+				break
+			}
+		}
+		g.Expect(conditionFound).To(gomega.BeTrue(), fmt.Sprintf("%v condition is not %v for AgentgatewayBackend %s/%s. Full status: %+v",
+			condition, expect, namespace, name, backend.Status))
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+}

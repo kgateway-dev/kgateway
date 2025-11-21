@@ -420,19 +420,9 @@ func NewFilterWithTypedConfig(name string, config proto.Message) (*envoylistener
 	return s, nil
 }
 
-type SslConfig struct {
-	Bundle     TlsBundle
-	SniDomains []string
-}
-type TlsBundle struct {
-	CA         []byte
-	PrivateKey []byte
-	CertChain  []byte
-}
-
 type FilterChainInfo struct {
 	Match ir.FilterChainMatch
-	TLS   *ir.TlsBundle
+	TLS   *ir.TLSConfig
 }
 
 func (info *FilterChainInfo) toMatch() *envoylistenerv3.FilterChainMatch {
@@ -456,12 +446,12 @@ func (info *FilterChainInfo) toTransportSocket() *envoycorev3.TransportSocket {
 	if info == nil {
 		return nil
 	}
-	ssl := info.TLS
-	if ssl == nil {
+	tlsConfig := info.TLS
+	if tlsConfig == nil {
 		return nil
 	}
 
-	alpnProtocols := ssl.AlpnProtocols
+	alpnProtocols := tlsConfig.AlpnProtocols
 	if len(alpnProtocols) == 0 {
 		alpnProtocols = defaultDownstreamAlpnProtocols
 	} else if len(alpnProtocols) == 1 && alpnProtocols[0] == string(annotations.AllowEmptyAlpnProtocols) {
@@ -474,24 +464,24 @@ func (info *FilterChainInfo) toTransportSocket() *envoycorev3.TransportSocket {
 		AlpnProtocols: alpnProtocols,
 	}
 
-	common.TlsCertificates = []*envoytlsv3.TlsCertificate{
-		{
-			CertificateChain: bytesDataSource(ssl.CertChain),
-			PrivateKey:       bytesDataSource(ssl.PrivateKey),
-		},
+	for _, certificate := range tlsConfig.Certificates {
+		common.TlsCertificates = append(common.TlsCertificates, &envoytlsv3.TlsCertificate{
+			CertificateChain: bytesDataSource(certificate.CertChain),
+			PrivateKey:       bytesDataSource(certificate.PrivateKey),
+		})
 	}
 
-	if ssl.MinTLSVersion != nil {
-		common.TlsParams.TlsMinimumProtocolVersion = *ssl.MinTLSVersion
+	if tlsConfig.MinTLSVersion != nil {
+		common.TlsParams.TlsMinimumProtocolVersion = *tlsConfig.MinTLSVersion
 	}
-	if ssl.MaxTLSVersion != nil {
-		common.TlsParams.TlsMaximumProtocolVersion = *ssl.MaxTLSVersion
+	if tlsConfig.MaxTLSVersion != nil {
+		common.TlsParams.TlsMaximumProtocolVersion = *tlsConfig.MaxTLSVersion
 	}
-	if len(ssl.CipherSuites) > 0 {
-		common.TlsParams.CipherSuites = ssl.CipherSuites
+	if len(tlsConfig.CipherSuites) > 0 {
+		common.TlsParams.CipherSuites = tlsConfig.CipherSuites
 	}
-	if len(ssl.EcdhCurves) > 0 {
-		common.TlsParams.EcdhCurves = ssl.EcdhCurves
+	if len(tlsConfig.EcdhCurves) > 0 {
+		common.TlsParams.EcdhCurves = tlsConfig.EcdhCurves
 	}
 	// TODO: add verify subject alt names (validation context)
 

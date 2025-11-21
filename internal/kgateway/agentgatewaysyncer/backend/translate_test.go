@@ -1,42 +1,42 @@
-package agentgatewaybackend
+package agentgatewaybackend_test
 
 import (
-	"context"
+	"fmt"
 	"testing"
-	"time"
 
 	"github.com/agentgateway/agentgateway/go/api"
-	"istio.io/istio/pkg/kube/krt"
-	"istio.io/istio/pkg/kube/krt/krttest"
-	"istio.io/istio/pkg/test"
+	"google.golang.org/protobuf/proto"
+	"istio.io/istio/pkg/slices"
+	"istio.io/istio/pkg/test/util/assert"
+	"istio.io/istio/pkg/util/protomarshal"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/yaml"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	agentgatewaybackend "github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/backend"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/testutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
-func TestBuildMCPIr(t *testing.T) {
-	krtctx := krt.TestingDummyContext{}
+func TestBuildMCP(t *testing.T) {
 	tests := []struct {
 		name        string
-		backend     *v1alpha1.Backend
-		services    krt.Collection[*corev1.Service]
-		namespaces  krt.Collection[*corev1.Namespace]
+		backend     *v1alpha1.AgentgatewayBackend
 		expectError bool
-		validate    func(mcpIr *MCPIr) bool
+		inputs      []any
 	}{
 		{
-			name: "Static MCP target backend",
-			backend: &v1alpha1.Backend{
+			name: "Static MCPBackend target backend",
+			backend: &v1alpha1.AgentgatewayBackend{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "static-mcp-backend",
 					Namespace: "test-ns",
 				},
-				Spec: v1alpha1.BackendSpec{
-					Type: v1alpha1.BackendTypeMCP,
-					MCP: &v1alpha1.MCP{
+				Spec: v1alpha1.AgentgatewayBackendSpec{
+					MCP: &v1alpha1.MCPBackend{
 						Targets: []v1alpha1.McpTargetSelector{
 							{
 								Name: "static-target",
@@ -51,51 +51,16 @@ func TestBuildMCPIr(t *testing.T) {
 					},
 				},
 			},
-			services:    createMockServiceCollection(t),
-			namespaces:  createMockNamespaceCollection(t),
-			expectError: false,
-			validate: func(ir *MCPIr) bool {
-				if ir.Backends == nil || len(ir.Backends) != 2 {
-					return false
-				}
-				for _, backend := range ir.Backends {
-					if backend.Name == "test-ns/static-mcp-backend" {
-						mcp := backend.GetMcp()
-						if mcp == nil || len(mcp.Targets) != 1 {
-							return false
-						}
-						target := mcp.Targets[0]
-						if !(target.Name == "static-target" &&
-							target.Backend.Port == 8080 &&
-							target.Protocol == api.MCPTarget_SSE &&
-							target.Path == "override-sse" &&
-							target.Backend.GetBackend() == "test-ns/static-mcp-backend/static-target") {
-							return false
-						}
-					} else if backend.Name == "test-ns/static-mcp-backend/static-target" {
-						static := backend.GetStatic()
-						if static == nil {
-							return false
-						}
-						if !(static.Host == "mcp-server.example.com" &&
-							static.Port == 8080) {
-							return false
-						}
-					}
-				}
-				return true
-			},
 		},
 		{
-			name: "Service selector MCP backend - same namespace",
-			backend: &v1alpha1.Backend{
+			name: "Service selector MCPBackend backend - same namespace",
+			backend: &v1alpha1.AgentgatewayBackend{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "service-mcp-backend",
 					Namespace: "test-ns",
 				},
-				Spec: v1alpha1.BackendSpec{
-					Type: v1alpha1.BackendTypeMCP,
-					MCP: &v1alpha1.MCP{
+				Spec: v1alpha1.AgentgatewayBackendSpec{
+					MCP: &v1alpha1.MCPBackend{
 						Targets: []v1alpha1.McpTargetSelector{
 							{
 								Selector: &v1alpha1.McpSelector{
@@ -110,37 +75,17 @@ func TestBuildMCPIr(t *testing.T) {
 					},
 				},
 			},
-			services:    createMockServiceCollectionWithMCPService(t, "test-ns", "mcp-service", "app=mcp-server"),
-			namespaces:  createMockNamespaceCollection(t),
-			expectError: false,
-			validate: func(ir *MCPIr) bool {
-				if ir.Backends == nil || len(ir.Backends) != 1 {
-					return false
-				}
-				backend := ir.Backends[0]
-				if backend.Name != "test-ns/service-mcp-backend" {
-					return false
-				}
-				mcp := backend.GetMcp()
-				if mcp == nil || len(mcp.Targets) != 1 {
-					return false
-				}
-				target := mcp.Targets[0]
-				return target.Name == "mcp-service-mcp" &&
-					target.Backend.Port == 8080 &&
-					target.Backend.GetService() == "test-ns/mcp-service.test-ns.svc.cluster.local"
-			},
+			inputs: []any{createMockMCPService("test-ns", "mcp-service", "app=mcp-server")},
 		},
 		{
-			name: "Namespace selector MCP backend",
-			backend: &v1alpha1.Backend{
+			name: "Namespace selector MCPBackend backend",
+			backend: &v1alpha1.AgentgatewayBackend{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "namespace-mcp-backend",
 					Namespace: "test-ns",
 				},
-				Spec: v1alpha1.BackendSpec{
-					Type: v1alpha1.BackendTypeMCP,
-					MCP: &v1alpha1.MCP{
+				Spec: v1alpha1.AgentgatewayBackendSpec{
+					MCP: &v1alpha1.MCPBackend{
 						Targets: []v1alpha1.McpTargetSelector{
 							{
 								Selector: &v1alpha1.McpSelector{
@@ -160,54 +105,17 @@ func TestBuildMCPIr(t *testing.T) {
 					},
 				},
 			},
-			services:    createMockServiceCollectionMultiNamespace(t),
-			namespaces:  createMockNamespaceCollectionWithLabels(t),
-			expectError: false,
-			validate: func(ir *MCPIr) bool {
-				if ir.Backends == nil || len(ir.Backends) != 1 {
-					return false
-				}
-				backend := ir.Backends[0]
-				if backend.Name != "test-ns/namespace-mcp-backend" {
-					return false
-				}
-				mcp := backend.GetMcp()
-				if mcp == nil || len(mcp.Targets) != 1 {
-					return false
-				}
-				target := mcp.Targets[0]
-				// Should find the service in prod-ns which has environment=production label
-				return target.Name == "prod-mcp" &&
-					target.Backend.Port == 8080 &&
-					target.Backend.GetService() == "prod-ns/prod.prod-ns.svc.cluster.local"
-			},
-		},
-		{
-			name: "Error case - nil MCP spec",
-			backend: &v1alpha1.Backend{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "invalid-backend",
-					Namespace: "test-ns",
-				},
-				Spec: v1alpha1.BackendSpec{
-					Type: v1alpha1.BackendTypeMCP,
-					MCP:  nil,
-				},
-			},
-			services:    createMockServiceCollection(t),
-			namespaces:  createMockNamespaceCollection(t),
-			expectError: true,
+			inputs: append(createMockMultipleNamespaceServices(), createMockNamespaceCollectionWithLabels()...),
 		},
 		{
 			name: "Error case - invalid service selector",
-			backend: &v1alpha1.Backend{
+			backend: &v1alpha1.AgentgatewayBackend{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "invalid-selector-backend",
 					Namespace: "test-ns",
 				},
-				Spec: v1alpha1.BackendSpec{
-					Type: v1alpha1.BackendTypeMCP,
-					MCP: &v1alpha1.MCP{
+				Spec: v1alpha1.AgentgatewayBackendSpec{
+					MCP: &v1alpha1.MCPBackend{
 						Targets: []v1alpha1.McpTargetSelector{
 							{
 								Selector: &v1alpha1.McpSelector{
@@ -226,237 +134,147 @@ func TestBuildMCPIr(t *testing.T) {
 					},
 				},
 			},
-			services:    createMockServiceCollection(t),
-			namespaces:  createMockNamespaceCollection(t),
 			expectError: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := buildMCPIr(krtctx, tt.backend, tt.services, tt.namespaces)
-
+			ctx := testutils.BuildMockPolicyContext(t, tt.inputs)
+			result, err := agentgatewaybackend.BuildAgwBackend(ctx, tt.backend)
 			if tt.expectError {
-				if err == nil {
-					t.Errorf("expected error but got none")
-				}
+				assert.Error(t, err)
 				return
+			} else {
+				assert.NoError(t, err)
 			}
 
-			if err != nil {
-				t.Errorf("unexpected error = %v", err)
-				return
-			}
-
-			if tt.validate != nil && !tt.validate(result) {
-				t.Errorf("validation failed")
-			}
+			b, err := yaml.Marshal(slices.Map(result, func(e *api.Backend) jsonMarshalProto {
+				return jsonMarshalProto{e}
+			}))
+			assert.NoError(t, err)
+			testutils.CompareGolden(t, b, fmt.Sprintf("testdata/%v.yaml", tt.name))
 		})
 	}
 }
 
-func TestBuildAIBackendIr(t *testing.T) {
-	krtctx := krt.TestingDummyContext{}
-
+func TestBuildAIBackend(t *testing.T) {
 	tests := []struct {
-		name        string
-		backend     *v1alpha1.Backend
-		secrets     krt.Collection[*corev1.Secret]
-		expectError bool
-		validate    func(aiIr *AIIr) bool
+		name    string
+		backend *v1alpha1.AgentgatewayBackend
+		inputs  []any
 	}{
 		{
 			name: "Valid OpenAI backend with inline auth",
-			backend: &v1alpha1.Backend{
+			backend: &v1alpha1.AgentgatewayBackend{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "openai-backend",
 					Namespace: "test-ns",
 				},
-				Spec: v1alpha1.BackendSpec{
-					Type: v1alpha1.BackendTypeAI,
+				Spec: v1alpha1.AgentgatewayBackendSpec{
+					Policies: &v1alpha1.AgentgatewayPolicyBackendFull{
+						AgentgatewayPolicyBackendSimple: v1alpha1.AgentgatewayPolicyBackendSimple{
+							Auth: &v1alpha1.BackendAuth{InlineKey: stringPtr("sk-test-token")},
+						},
+					},
 					AI: &v1alpha1.AIBackend{
 						LLM: &v1alpha1.LLMProvider{
 							OpenAI: &v1alpha1.OpenAIConfig{
 								Model: stringPtr("gpt-4"),
-								AuthToken: v1alpha1.SingleAuthToken{
-									Kind:   v1alpha1.Inline,
-									Inline: stringPtr("sk-test-token"),
-								},
 							},
 						},
 					},
 				},
-			},
-			secrets:     nil,
-			expectError: false,
-			validate: func(aiIr *AIIr) bool {
-				return aiIr != nil &&
-					aiIr.Backend != nil &&
-					aiIr.Backend.Name == "test-ns/openai-backend" &&
-					aiIr.Backend.GetAi() != nil &&
-					len(aiIr.Backend.GetAi().ProviderGroups) == 1 &&
-					len(aiIr.Backend.GetAi().ProviderGroups[0].Providers) == 1 &&
-					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetOpenai() != nil &&
-					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetOpenai().Model != nil &&
-					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetOpenai().Model.Value == "gpt-4"
 			},
 		},
 		{
 			name: "Valid Azure OpenAI backend",
-			backend: &v1alpha1.Backend{
+			backend: &v1alpha1.AgentgatewayBackend{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "azure-openai-backend",
 					Namespace: "test-ns",
 				},
-				Spec: v1alpha1.BackendSpec{
-					Type: v1alpha1.BackendTypeAI,
+				Spec: v1alpha1.AgentgatewayBackendSpec{
 					AI: &v1alpha1.AIBackend{
 						LLM: &v1alpha1.LLMProvider{
 							AzureOpenAI: &v1alpha1.AzureOpenAIConfig{
-								AuthToken: v1alpha1.SingleAuthToken{
-									Kind: v1alpha1.Passthrough,
-								},
 								Endpoint:       "endpoint-123.openai.azure.com",
-								DeploymentName: "my-deployment",
-								ApiVersion:     "2024-02-15-preview",
+								DeploymentName: ptr.To("my-deployment"),
+								ApiVersion:     ptr.To("2024-02-15-preview"),
 							},
 						},
 					},
 				},
-			},
-			secrets:     nil,
-			expectError: false,
-			validate: func(aiIr *AIIr) bool {
-				return aiIr != nil &&
-					aiIr.Backend != nil &&
-					aiIr.Backend.Name == "test-ns/azure-openai-backend" &&
-					aiIr.Backend.GetAi() != nil &&
-					len(aiIr.Backend.GetAi().ProviderGroups) == 1 &&
-					len(aiIr.Backend.GetAi().ProviderGroups[0].Providers) == 1 &&
-					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAzureopenai() != nil &&
-					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAzureopenai().Model != nil &&
-					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAzureopenai().Model.Value == "my-deployment" &&
-					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAzureopenai().Host == "endpoint-123.openai.azure.com" &&
-					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAzureopenai().ApiVersion != nil &&
-					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAzureopenai().ApiVersion.Value == "2024-02-15-preview"
 			},
 		},
 		{
 			name: "Valid Anthropic backend with model",
-			backend: &v1alpha1.Backend{
+			backend: &v1alpha1.AgentgatewayBackend{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "anthropic-backend",
 					Namespace: "test-ns",
 				},
-				Spec: v1alpha1.BackendSpec{
-					Type: v1alpha1.BackendTypeAI,
+				Spec: v1alpha1.AgentgatewayBackendSpec{
 					AI: &v1alpha1.AIBackend{
 						LLM: &v1alpha1.LLMProvider{
 							Anthropic: &v1alpha1.AnthropicConfig{
 								Model: stringPtr("claude-3-sonnet"),
-								AuthToken: v1alpha1.SingleAuthToken{
-									Kind:   v1alpha1.Inline,
-									Inline: stringPtr("test-api-key"),
-								},
 							},
 						},
 					},
 				},
-			},
-			secrets:     nil,
-			expectError: false,
-			validate: func(aiIr *AIIr) bool {
-				return aiIr != nil &&
-					aiIr.Backend != nil &&
-					aiIr.Backend.Name == "test-ns/anthropic-backend" &&
-					aiIr.Backend.GetAi() != nil &&
-					len(aiIr.Backend.GetAi().ProviderGroups) == 1 &&
-					len(aiIr.Backend.GetAi().ProviderGroups[0].Providers) == 1 &&
-					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAnthropic() != nil &&
-					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAnthropic().Model != nil &&
-					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetAnthropic().Model.Value == "claude-3-sonnet"
 			},
 		},
 		{
 			name: "Valid Gemini backend",
-			backend: &v1alpha1.Backend{
+			backend: &v1alpha1.AgentgatewayBackend{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "gemini-backend",
 					Namespace: "test-ns",
 				},
-				Spec: v1alpha1.BackendSpec{
-					Type: v1alpha1.BackendTypeAI,
+				Spec: v1alpha1.AgentgatewayBackendSpec{
 					AI: &v1alpha1.AIBackend{
 						LLM: &v1alpha1.LLMProvider{
 							Gemini: &v1alpha1.GeminiConfig{
-								Model: "gemini-pro",
-								AuthToken: v1alpha1.SingleAuthToken{
-									Kind:   v1alpha1.Inline,
-									Inline: stringPtr("gemini-api-key"),
-								},
+								Model: stringPtr("gemini-pro"),
 							},
 						},
 					},
 				},
-			},
-			secrets:     nil,
-			expectError: false,
-			validate: func(aiIr *AIIr) bool {
-				return aiIr != nil &&
-					aiIr.Backend != nil &&
-					aiIr.Backend.Name == "test-ns/gemini-backend" &&
-					aiIr.Backend.GetAi() != nil &&
-					len(aiIr.Backend.GetAi().ProviderGroups) == 1 &&
-					len(aiIr.Backend.GetAi().ProviderGroups[0].Providers) == 1 &&
-					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetGemini() != nil &&
-					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetGemini().Model != nil &&
-					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetGemini().Model.Value == "gemini-pro"
 			},
 		},
 		{
 			name: "Valid VertexAI backend",
-			backend: &v1alpha1.Backend{
+			backend: &v1alpha1.AgentgatewayBackend{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "vertex-backend",
 					Namespace: "test-ns",
 				},
-				Spec: v1alpha1.BackendSpec{
-					Type: v1alpha1.BackendTypeAI,
+				Spec: v1alpha1.AgentgatewayBackendSpec{
 					AI: &v1alpha1.AIBackend{
 						LLM: &v1alpha1.LLMProvider{
 							VertexAI: &v1alpha1.VertexAIConfig{
-								Model: "gemini-pro",
-								AuthToken: v1alpha1.SingleAuthToken{
-									Kind: v1alpha1.Passthrough,
-								},
+								Model: stringPtr("gemini-pro"),
 							},
 						},
 					},
 				},
 			},
-			secrets:     nil,
-			expectError: false,
-			validate: func(aiIr *AIIr) bool {
-				return aiIr != nil &&
-					aiIr.Backend != nil &&
-					aiIr.Backend.Name == "test-ns/vertex-backend" &&
-					aiIr.Backend.GetAi() != nil &&
-					len(aiIr.Backend.GetAi().ProviderGroups) == 1 &&
-					len(aiIr.Backend.GetAi().ProviderGroups[0].Providers) == 1 &&
-					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetVertex() != nil &&
-					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetVertex().Model != nil &&
-					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetVertex().Model.Value == "gemini-pro"
-			},
 		},
 		{
 			name: "Valid Bedrock backend with custom region and guardrail",
-			backend: &v1alpha1.Backend{
+			backend: &v1alpha1.AgentgatewayBackend{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "bedrock-backend-custom",
 					Namespace: "test-ns",
 				},
-				Spec: v1alpha1.BackendSpec{
-					Type: v1alpha1.BackendTypeAI,
+				Spec: v1alpha1.AgentgatewayBackendSpec{
+					// TODO: Add AWS auth
+					//Policies: &v1alpha1.AgentgatewayPolicyBackendFull{
+					//	AgentgatewayPolicyBackendSimple: v1alpha1.AgentgatewayPolicyBackendSimple{
+					//		Auth: &v1alpha1.BackendAuth{},
+					//	},
+					//},
 					AI: &v1alpha1.AIBackend{
 						LLM: &v1alpha1.LLMProvider{
 							Bedrock: &v1alpha1.BedrockConfig{
@@ -466,109 +284,84 @@ func TestBuildAIBackendIr(t *testing.T) {
 									GuardrailIdentifier: "test-guardrail",
 									GuardrailVersion:    "1.0",
 								},
-								Auth: &v1alpha1.AwsAuth{
-									Type: v1alpha1.AwsAuthTypeSecret,
-									SecretRef: &corev1.LocalObjectReference{
-										Name: "aws-secret-custom",
-									},
-								},
 							},
 						},
 					},
 				},
 			},
-			secrets: createMockSecretCol(t, "test-ns", "aws-secret-custom", map[string]string{
-				"accessKey":    "AKIACUSTOM",
-				"secretKey":    "secretcustom",
-				"sessionToken": "token123",
-			}),
-			expectError: false,
-			validate: func(aiIr *AIIr) bool {
-				if aiIr == nil || aiIr.Backend == nil || len(aiIr.Backend.GetAi().ProviderGroups) != 1 || len(aiIr.Backend.GetAi().ProviderGroups[0].Providers) != 1 {
-					return false
-				}
-				bedrock := aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetBedrock()
-				return aiIr.Backend.Name == "test-ns/bedrock-backend-custom" &&
-					bedrock != nil &&
-					bedrock.Model.Value == "anthropic.claude-3-haiku-20240307-v1:0" &&
-					bedrock.Region == "eu-west-1" &&
-					bedrock.GuardrailIdentifier != nil &&
-					bedrock.GuardrailIdentifier.Value == "test-guardrail" &&
-					bedrock.GuardrailVersion != nil &&
-					bedrock.GuardrailVersion.Value == "1.0"
+			inputs: []any{
+				createMockSecret("test-ns", "aws-secret-custom", map[string]string{
+					"accessKey":    "AKIACUSTOM",
+					"secretKey":    "secretcustom",
+					"sessionToken": "token123",
+				}),
 			},
 		},
 		{
 			name: "OpenAI backend with secret reference auth",
-			backend: &v1alpha1.Backend{
+			backend: &v1alpha1.AgentgatewayBackend{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "openai-secret-backend",
 					Namespace: "test-ns",
 				},
-				Spec: v1alpha1.BackendSpec{
-					Type: v1alpha1.BackendTypeAI,
+				Spec: v1alpha1.AgentgatewayBackendSpec{
+					Policies: &v1alpha1.AgentgatewayPolicyBackendFull{
+						AgentgatewayPolicyBackendSimple: v1alpha1.AgentgatewayPolicyBackendSimple{
+							Auth: &v1alpha1.BackendAuth{SecretRef: &corev1.LocalObjectReference{
+								Name: "openai-secret",
+							}},
+						},
+					},
 					AI: &v1alpha1.AIBackend{
 						LLM: &v1alpha1.LLMProvider{
 							OpenAI: &v1alpha1.OpenAIConfig{
 								Model: stringPtr("gpt-3.5-turbo"),
-								AuthToken: v1alpha1.SingleAuthToken{
-									Kind: v1alpha1.SecretRef,
-									SecretRef: &corev1.LocalObjectReference{
-										Name: "openai-secret",
-									},
-								},
 							},
 						},
 					},
 				},
 			},
-			secrets: createMockSecretCol(t, "test-ns", "openai-secret", map[string]string{
-				"Authorization": "Bearer sk-secret-token",
-			}),
-			expectError: false,
-			validate: func(aiIr *AIIr) bool {
-				return aiIr != nil &&
-					aiIr.Backend != nil &&
-					aiIr.Backend.Name == "test-ns/openai-secret-backend" &&
-					len(aiIr.Backend.GetAi().ProviderGroups) == 1 &&
-					len(aiIr.Backend.GetAi().ProviderGroups[0].Providers) == 1 &&
-					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetOpenai().Model.Value == "gpt-3.5-turbo"
+			inputs: []any{
+				createMockSecret("test-ns", "openai-secret", map[string]string{
+					"Authorization": "Bearer sk-secret-token",
+				}),
 			},
 		},
 		{
 			name: "MultiPool backend - translates all providers for failover",
-			backend: &v1alpha1.Backend{
+			backend: &v1alpha1.AgentgatewayBackend{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "multipool-backend",
 					Namespace: "test-ns",
 				},
-				Spec: v1alpha1.BackendSpec{
-					Type: v1alpha1.BackendTypeAI,
+				Spec: v1alpha1.AgentgatewayBackendSpec{
 					AI: &v1alpha1.AIBackend{
 						PriorityGroups: []v1alpha1.PriorityGroup{
 							{
 								Providers: []v1alpha1.NamedLLMProvider{
 									{
 										Name: "openai",
+										Policies: &v1alpha1.AgentgatewayPolicyBackendAI{
+											AgentgatewayPolicyBackendSimple: v1alpha1.AgentgatewayPolicyBackendSimple{
+												Auth: &v1alpha1.BackendAuth{InlineKey: stringPtr("first-token")},
+											},
+										},
 										LLMProvider: v1alpha1.LLMProvider{
 											OpenAI: &v1alpha1.OpenAIConfig{
 												Model: stringPtr("gpt-4"),
-												AuthToken: v1alpha1.SingleAuthToken{
-													Kind:   v1alpha1.Inline,
-													Inline: stringPtr("first-token"),
-												},
 											},
 										},
 									},
 									{
 										Name: "anthropic",
+										Policies: &v1alpha1.AgentgatewayPolicyBackendAI{
+											AgentgatewayPolicyBackendSimple: v1alpha1.AgentgatewayPolicyBackendSimple{
+												Auth: &v1alpha1.BackendAuth{InlineKey: stringPtr("second-token")},
+											},
+										},
 										LLMProvider: v1alpha1.LLMProvider{
 											Anthropic: &v1alpha1.AnthropicConfig{
 												Model: stringPtr("claude-3"),
-												AuthToken: v1alpha1.SingleAuthToken{
-													Kind:   v1alpha1.Inline,
-													Inline: stringPtr("second-token"),
-												},
 											},
 										},
 									},
@@ -578,69 +371,42 @@ func TestBuildAIBackendIr(t *testing.T) {
 					},
 				},
 			},
-			secrets:     nil,
-			expectError: false,
-			validate: func(aiIr *AIIr) bool {
-				if aiIr == nil || aiIr.Backend == nil || aiIr.Backend.Name != "test-ns/multipool-backend" {
-					return false
-				}
-				// Should have a single backend with one provider group containing two providers
-				if aiIr.Backend == nil || aiIr.Backend.GetAi() == nil {
-					return false
-				}
-				if len(aiIr.Backend.GetAi().ProviderGroups) != 1 {
-					return false
-				}
-				if len(aiIr.Backend.GetAi().ProviderGroups[0].Providers) != 2 {
-					return false
-				}
-				// Check first provider (OpenAI)
-				if aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetOpenai() == nil ||
-					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetOpenai().Model.Value != "gpt-4" {
-					return false
-				}
-				// Check second provider (Anthropic)
-				if aiIr.Backend.GetAi().ProviderGroups[0].Providers[1].GetAnthropic() == nil ||
-					aiIr.Backend.GetAi().ProviderGroups[0].Providers[1].GetAnthropic().Model.Value != "claude-3" {
-					return false
-				}
-				return true
-			},
 		},
 		{
 			name: "MultiPool backend with multiple priority levels - creates separate provider groups",
-			backend: &v1alpha1.Backend{
+			backend: &v1alpha1.AgentgatewayBackend{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "multipool-priority-backend",
 					Namespace: "test-ns",
 				},
-				Spec: v1alpha1.BackendSpec{
-					Type: v1alpha1.BackendTypeAI,
+				Spec: v1alpha1.AgentgatewayBackendSpec{
 					AI: &v1alpha1.AIBackend{
 						PriorityGroups: []v1alpha1.PriorityGroup{
 							{
 								Providers: []v1alpha1.NamedLLMProvider{
 									{
 										Name: "openai",
+										Policies: &v1alpha1.AgentgatewayPolicyBackendAI{
+											AgentgatewayPolicyBackendSimple: v1alpha1.AgentgatewayPolicyBackendSimple{
+												Auth: &v1alpha1.BackendAuth{InlineKey: stringPtr("openai-primary")},
+											},
+										},
 										LLMProvider: v1alpha1.LLMProvider{
 											OpenAI: &v1alpha1.OpenAIConfig{
 												Model: stringPtr("gpt-4"),
-												AuthToken: v1alpha1.SingleAuthToken{
-													Kind:   v1alpha1.Inline,
-													Inline: stringPtr("openai-primary"),
-												},
 											},
 										},
 									},
 									{
 										Name: "anthropic",
+										Policies: &v1alpha1.AgentgatewayPolicyBackendAI{
+											AgentgatewayPolicyBackendSimple: v1alpha1.AgentgatewayPolicyBackendSimple{
+												Auth: &v1alpha1.BackendAuth{InlineKey: stringPtr("anthropic-primary")},
+											},
+										},
 										LLMProvider: v1alpha1.LLMProvider{
 											Anthropic: &v1alpha1.AnthropicConfig{
 												Model: stringPtr("claude-3-opus"),
-												AuthToken: v1alpha1.SingleAuthToken{
-													Kind:   v1alpha1.Inline,
-													Inline: stringPtr("anthropic-primary"),
-												},
 											},
 										},
 									},
@@ -650,13 +416,14 @@ func TestBuildAIBackendIr(t *testing.T) {
 								Providers: []v1alpha1.NamedLLMProvider{
 									{
 										Name: "gemini",
+										Policies: &v1alpha1.AgentgatewayPolicyBackendAI{
+											AgentgatewayPolicyBackendSimple: v1alpha1.AgentgatewayPolicyBackendSimple{
+												Auth: &v1alpha1.BackendAuth{InlineKey: stringPtr("gemini-fallback")},
+											},
+										},
 										LLMProvider: v1alpha1.LLMProvider{
 											Gemini: &v1alpha1.GeminiConfig{
-												Model: "gemini-pro",
-												AuthToken: v1alpha1.SingleAuthToken{
-													Kind:   v1alpha1.Inline,
-													Inline: stringPtr("gemini-fallback"),
-												},
+												Model: stringPtr("gemini-pro"),
 											},
 										},
 									},
@@ -666,115 +433,17 @@ func TestBuildAIBackendIr(t *testing.T) {
 					},
 				},
 			},
-			secrets:     nil,
-			expectError: false,
-			validate: func(aiIr *AIIr) bool {
-				if aiIr == nil || aiIr.Backend == nil || aiIr.Backend.Name != "test-ns/multipool-priority-backend" {
-					return false
-				}
-				// Should have 2 provider groups (one for each priority level)
-				if aiIr.Backend == nil || aiIr.Backend.GetAi() == nil {
-					return false
-				}
-				if len(aiIr.Backend.GetAi().ProviderGroups) != 2 {
-					return false
-				}
-				// First group should have 2 providers (OpenAI and Anthropic)
-				if len(aiIr.Backend.GetAi().ProviderGroups[0].Providers) != 2 {
-					return false
-				}
-				// Check first provider in first group (OpenAI)
-				if aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetOpenai() == nil ||
-					aiIr.Backend.GetAi().ProviderGroups[0].Providers[0].GetOpenai().Model.Value != "gpt-4" {
-					return false
-				}
-				// Check second provider in first group (Anthropic)
-				if aiIr.Backend.GetAi().ProviderGroups[0].Providers[1].GetAnthropic() == nil ||
-					aiIr.Backend.GetAi().ProviderGroups[0].Providers[1].GetAnthropic().Model.Value != "claude-3-opus" {
-					return false
-				}
-				// Second group should have 1 provider (Gemini)
-				if len(aiIr.Backend.GetAi().ProviderGroups[1].Providers) != 1 {
-					return false
-				}
-				// Check provider in second group (Gemini)
-				if aiIr.Backend.GetAi().ProviderGroups[1].Providers[0].GetGemini() == nil ||
-					aiIr.Backend.GetAi().ProviderGroups[1].Providers[0].GetGemini().Model.Value != "gemini-pro" {
-					return false
-				}
-				return true
-			},
-		},
-		{
-			name: "Error case - no LLM or MultiPool configured",
-			backend: &v1alpha1.Backend{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "invalid-backend-2",
-					Namespace: "test-ns",
-				},
-				Spec: v1alpha1.BackendSpec{
-					Type: v1alpha1.BackendTypeAI,
-					// no LLM backend specified
-					AI: &v1alpha1.AIBackend{},
-				},
-			},
-			secrets:     nil,
-			expectError: true,
-		},
-		{
-			name: "Error case - empty MultiPool",
-			backend: &v1alpha1.Backend{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "invalid-backend-3",
-					Namespace: "test-ns",
-				},
-				Spec: v1alpha1.BackendSpec{
-					Type: v1alpha1.BackendTypeAI,
-					AI: &v1alpha1.AIBackend{
-						PriorityGroups: []v1alpha1.PriorityGroup{},
-					},
-				},
-			},
-			secrets:     nil,
-			expectError: true,
-		},
-		{
-			name: "Error case - no supported provider configured",
-			backend: &v1alpha1.Backend{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "invalid-backend-4",
-					Namespace: "test-ns",
-				},
-				Spec: v1alpha1.BackendSpec{
-					Type: v1alpha1.BackendTypeAI,
-					AI: &v1alpha1.AIBackend{
-						LLM: &v1alpha1.LLMProvider{
-							// No provider configured
-						},
-					},
-				},
-			},
-			secrets:     nil,
-			expectError: true,
 		},
 		{
 			name: "OpenAI backend with routes configuration",
-			backend: &v1alpha1.Backend{
+			backend: &v1alpha1.AgentgatewayBackend{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "openai-with-routes",
 					Namespace: "test-ns",
 				},
-				Spec: v1alpha1.BackendSpec{
-					Type: v1alpha1.BackendTypeAI,
-					AI: &v1alpha1.AIBackend{
-						LLM: &v1alpha1.LLMProvider{
-							OpenAI: &v1alpha1.OpenAIConfig{
-								Model: stringPtr("gpt-4o-mini"),
-								AuthToken: v1alpha1.SingleAuthToken{
-									Kind:   v1alpha1.Inline,
-									Inline: stringPtr("test-key"),
-								},
-							},
+				Spec: v1alpha1.AgentgatewayBackendSpec{
+					Policies: &v1alpha1.AgentgatewayPolicyBackendFull{
+						AI: &v1alpha1.BackendAI{
 							Routes: map[string]v1alpha1.RouteType{
 								"/v1/chat/completions": v1alpha1.RouteTypeCompletions,
 								"/v1/messages":         v1alpha1.RouteTypeMessages,
@@ -783,39 +452,26 @@ func TestBuildAIBackendIr(t *testing.T) {
 							},
 						},
 					},
+					AI: &v1alpha1.AIBackend{
+						LLM: &v1alpha1.LLMProvider{
+							OpenAI: &v1alpha1.OpenAIConfig{
+								Model: stringPtr("gpt-4o-mini"),
+							},
+						},
+					},
 				},
-			},
-			secrets:     nil,
-			expectError: false,
-			validate: func(aiIr *AIIr) bool {
-				if aiIr == nil || aiIr.Backend == nil || len(aiIr.Backend.GetAi().ProviderGroups) != 1 || len(aiIr.Backend.GetAi().ProviderGroups[0].Providers) != 1 {
-					return false
-				}
-				provider := aiIr.Backend.GetAi().ProviderGroups[0].Providers[0]
-				// Verify routes are correctly translated
-				if provider.Routes == nil || len(provider.Routes) != 4 {
-					return false
-				}
-				return provider.Routes["/v1/chat/completions"] == api.AIBackend_COMPLETIONS &&
-					provider.Routes["/v1/messages"] == api.AIBackend_MESSAGES &&
-					provider.Routes["/v1/models"] == api.AIBackend_MODELS &&
-					provider.Routes["*"] == api.AIBackend_PASSTHROUGH
 			},
 		},
 		{
 			name: "Bedrock backend with new route types (responses and anthropic_token_count)",
-			backend: &v1alpha1.Backend{
+			backend: &v1alpha1.AgentgatewayBackend{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "bedrock-with-new-routes",
 					Namespace: "test-ns",
 				},
-				Spec: v1alpha1.BackendSpec{
-					Type: v1alpha1.BackendTypeAI,
-					AI: &v1alpha1.AIBackend{
-						LLM: &v1alpha1.LLMProvider{
-							Bedrock: &v1alpha1.BedrockConfig{
-								Region: "us-east-1",
-							},
+				Spec: v1alpha1.AgentgatewayBackendSpec{
+					Policies: &v1alpha1.AgentgatewayPolicyBackendFull{
+						AI: &v1alpha1.BackendAI{
 							Routes: map[string]v1alpha1.RouteType{
 								"/v1/chat/completions":      v1alpha1.RouteTypeCompletions,
 								"/v1/messages":              v1alpha1.RouteTypeMessages,
@@ -825,46 +481,26 @@ func TestBuildAIBackendIr(t *testing.T) {
 							},
 						},
 					},
+					AI: &v1alpha1.AIBackend{
+						LLM: &v1alpha1.LLMProvider{
+							Bedrock: &v1alpha1.BedrockConfig{
+								Region: "us-east-1",
+							},
+						},
+					},
 				},
-			},
-			secrets:     nil,
-			expectError: false,
-			validate: func(aiIr *AIIr) bool {
-				if aiIr == nil || aiIr.Backend == nil || len(aiIr.Backend.GetAi().ProviderGroups) != 1 || len(aiIr.Backend.GetAi().ProviderGroups[0].Providers) != 1 {
-					return false
-				}
-				provider := aiIr.Backend.GetAi().ProviderGroups[0].Providers[0]
-				// Verify all routes including new ones are correctly translated
-				if provider.Routes == nil || len(provider.Routes) != 5 {
-					return false
-				}
-				return provider.Routes["/v1/chat/completions"] == api.AIBackend_COMPLETIONS &&
-					provider.Routes["/v1/messages"] == api.AIBackend_MESSAGES &&
-					provider.Routes["/v1/responses"] == api.AIBackend_RESPONSES &&
-					provider.Routes["/v1/messages/count_tokens"] == api.AIBackend_ANTHROPIC_TOKEN_COUNT &&
-					provider.Routes["/v1/models"] == api.AIBackend_MODELS
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := buildAIIr(krtctx, tt.backend, tt.secrets)
+			ctx := testutils.BuildMockPolicyContext(t, tt.inputs)
+			result, err := agentgatewaybackend.BuildAgwBackend(ctx, tt.backend)
+			assert.NoError(t, err)
 
-			if tt.expectError {
-				if err == nil {
-					t.Errorf("expected error but got none")
-				}
-				return
-			}
-
-			if err != nil {
-				t.Errorf("unexpected error = %v", err)
-				return
-			}
-
-			if tt.validate != nil && !tt.validate(result) {
-				t.Errorf("validation failed")
-			}
+			b, err := protomarshal.ToYAML(result[0])
+			assert.NoError(t, err)
+			testutils.CompareGolden(t, []byte(b), fmt.Sprintf("testdata/%v.yaml", tt.name))
 		})
 	}
 }
@@ -875,7 +511,7 @@ func stringPtr(s string) *string {
 }
 
 // Helper function to create a mock SecretIndex for testing
-func createMockSecretCol(t test.Failer, namespace, name string, data map[string]string) krt.Collection[*corev1.Secret] {
+func createMockSecret(namespace, name string, data map[string]string) *corev1.Secret {
 	// Create mock secret data
 	secretData := make(map[string][]byte)
 	for k, v := range data {
@@ -891,93 +527,41 @@ func createMockSecretCol(t test.Failer, namespace, name string, data map[string]
 		Data: secretData,
 	}
 
-	// Create a mock collection with the secret
-	var inputs []any
-	inputs = append(inputs, mockSecret)
-
-	mock := krttest.NewMock(t, inputs)
-
-	// Get the underlying mock collections
-	mockSecretCollection := krttest.GetMockCollection[*corev1.Secret](mock)
-
-	// Wait for the mock collections to sync
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second) // long timeout - just in case. we should never reach it.
-	defer cancel()
-	mockSecretCollection.WaitUntilSynced(ctx.Done())
-
-	return mockSecretCollection
+	return mockSecret
 }
 
 func TestBuildStaticIr(t *testing.T) {
 	tests := []struct {
 		name        string
-		backend     *v1alpha1.Backend
+		backend     *v1alpha1.AgentgatewayBackend
 		expectError bool
-		validate    func(*StaticIr) bool
+		validate    func(backend *api.Backend) bool
 	}{
 		{
 			name: "Valid single host backend",
-			backend: &v1alpha1.Backend{
+			backend: &v1alpha1.AgentgatewayBackend{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-backend",
 					Namespace: "test-ns",
 				},
-				Spec: v1alpha1.BackendSpec{
-					Static: &v1alpha1.StaticBackend{
-						Hosts: []v1alpha1.Host{
-							{Host: "api.example.com", Port: 443},
-						},
+				Spec: v1alpha1.AgentgatewayBackendSpec{
+					Static: &v1alpha1.AgentStaticBackend{
+						Host: "api.example.com", Port: 443,
 					},
 				},
 			},
-			expectError: false,
-			validate: func(ir *StaticIr) bool {
-				return ir.Backend != nil &&
-					ir.Backend.Name == "test-ns/test-backend" &&
-					ir.Backend.GetStatic().Host == "api.example.com" &&
-					ir.Backend.GetStatic().Port == 443
+			validate: func(backend *api.Backend) bool {
+				return backend != nil &&
+					backend.Name == "test-ns/test-backend" &&
+					backend.GetStatic().Host == "api.example.com" &&
+					backend.GetStatic().Port == 443
 			},
-		},
-		{
-			name: "Multiple hosts - should error",
-			backend: &v1alpha1.Backend{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-backend",
-					Namespace: "test-ns",
-				},
-				Spec: v1alpha1.BackendSpec{
-					Static: &v1alpha1.StaticBackend{
-						Hosts: []v1alpha1.Host{
-							{Host: "host1.example.com", Port: 443},
-							{Host: "host2.example.com", Port: 443},
-						},
-					},
-				},
-			},
-			expectError: true,
-			validate:    nil,
-		},
-		{
-			name: "No hosts - should error",
-			backend: &v1alpha1.Backend{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-backend",
-					Namespace: "test-ns",
-				},
-				Spec: v1alpha1.BackendSpec{
-					Static: &v1alpha1.StaticBackend{
-						Hosts: []v1alpha1.Host{},
-					},
-				},
-			},
-			expectError: true,
-			validate:    nil,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := buildStaticIr(tt.backend)
+			result, err := agentgatewaybackend.BuildAgwBackend(plugins.PolicyCtx{}, tt.backend)
 
 			if tt.expectError {
 				if err == nil {
@@ -991,7 +575,7 @@ func TestBuildStaticIr(t *testing.T) {
 				return
 			}
 
-			if tt.validate != nil && !tt.validate(result) {
+			if tt.validate != nil && !tt.validate(result[0]) {
 				t.Errorf("validation failed")
 			}
 		})
@@ -1096,22 +680,8 @@ func TestGetSecretValue(t *testing.T) {
 	}
 }
 
-// Helper functions for creating mock collections
-
-// createMockServiceCollection creates a basic mock service collection
-func createMockServiceCollection(t test.Failer) krt.Collection[*corev1.Service] {
-	mock := krttest.NewMock(t, []any{})
-	return krttest.GetMockCollection[*corev1.Service](mock)
-}
-
-// createMockNamespaceCollection creates a basic mock namespace collection
-func createMockNamespaceCollection(t test.Failer) krt.Collection[*corev1.Namespace] {
-	mock := krttest.NewMock(t, []any{})
-	return krttest.GetMockCollection[*corev1.Namespace](mock)
-}
-
-// createMockServiceCollectionWithMCPService creates a mock service collection with a specific MCP service
-func createMockServiceCollectionWithMCPService(t test.Failer, namespace, serviceName, labels string) krt.Collection[*corev1.Service] {
+// createMockMCPService creates a mock service collection with a specific MCPBackend service
+func createMockMCPService(namespace, serviceName, labels string) *corev1.Service {
 	// Parse labels
 	labelsMap := make(map[string]string)
 	if labels != "" {
@@ -1137,25 +707,18 @@ func createMockServiceCollectionWithMCPService(t test.Failer, namespace, service
 				{
 					Name:        "mcp",
 					Port:        8080,
-					AppProtocol: ptr.To(mcpProtocol),
+					AppProtocol: ptr.To("kgateway.dev/mcp"),
 				},
 			},
 		},
 	}
-
-	mock := krttest.NewMock(t, []any{mockService})
-	mockCol := krttest.GetMockCollection[*corev1.Service](mock)
-	// Ensure the index is fully synced before returning
-	for !mockCol.HasSynced() {
-		time.Sleep(50 * time.Millisecond)
-	}
-	return mockCol
+	return mockService
 }
 
 // createMockServiceCollectionMultiNamespace creates a mock service collection with services in multiple namespaces
-func createMockServiceCollectionMultiNamespace(t test.Failer) krt.Collection[*corev1.Service] {
-	services := []*corev1.Service{
-		{
+func createMockMultipleNamespaceServices() []any {
+	services := []any{
+		&corev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test",
 				Namespace: "test-ns",
@@ -1168,12 +731,12 @@ func createMockServiceCollectionMultiNamespace(t test.Failer) krt.Collection[*co
 					{
 						Name:        "mcp",
 						Port:        8080,
-						AppProtocol: ptr.To(mcpProtocol),
+						AppProtocol: ptr.To("kgateway.dev/mcp"),
 					},
 				},
 			},
 		},
-		{
+		&corev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "prod",
 				Namespace: "prod-ns",
@@ -1186,12 +749,12 @@ func createMockServiceCollectionMultiNamespace(t test.Failer) krt.Collection[*co
 					{
 						Name:        "mcp",
 						Port:        8080,
-						AppProtocol: ptr.To(mcpProtocol),
+						AppProtocol: ptr.To("kgateway.dev/mcp"),
 					},
 				},
 			},
 		},
-		{
+		&corev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "dev",
 				Namespace: "dev-ns",
@@ -1204,31 +767,19 @@ func createMockServiceCollectionMultiNamespace(t test.Failer) krt.Collection[*co
 					{
 						Name:        "mcp",
 						Port:        8080,
-						AppProtocol: ptr.To(mcpProtocol),
+						AppProtocol: ptr.To("kgateway.dev/mcp"),
 					},
 				},
 			},
 		},
 	}
-
-	var inputs []any
-	for _, svc := range services {
-		inputs = append(inputs, svc)
-	}
-
-	mock := krttest.NewMock(t, inputs)
-	mockCol := krttest.GetMockCollection[*corev1.Service](mock)
-	// Ensure the index is fully synced before returning
-	for !mockCol.HasSynced() {
-		time.Sleep(50 * time.Millisecond)
-	}
-	return mockCol
+	return services
 }
 
 // createMockNamespaceCollectionWithLabels creates a mock namespace collection with labeled namespaces
-func createMockNamespaceCollectionWithLabels(t test.Failer) krt.Collection[*corev1.Namespace] {
-	namespaces := []*corev1.Namespace{
-		{
+func createMockNamespaceCollectionWithLabels() []any {
+	namespaces := []any{
+		&corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "test-ns",
 				Labels: map[string]string{
@@ -1236,7 +787,7 @@ func createMockNamespaceCollectionWithLabels(t test.Failer) krt.Collection[*core
 				},
 			},
 		},
-		{
+		&corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "prod-ns",
 				Labels: map[string]string{
@@ -1244,7 +795,7 @@ func createMockNamespaceCollectionWithLabels(t test.Failer) krt.Collection[*core
 				},
 			},
 		},
-		{
+		&corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "dev-ns",
 				Labels: map[string]string{
@@ -1253,17 +804,14 @@ func createMockNamespaceCollectionWithLabels(t test.Failer) krt.Collection[*core
 			},
 		},
 	}
+	return namespaces
+}
 
-	var inputs []any
-	for _, ns := range namespaces {
-		inputs = append(inputs, ns)
-	}
+// jsonMarshalProto wraps a proto.Message so it can be marshaled with the standard encoding/json library
+type jsonMarshalProto struct {
+	proto.Message
+}
 
-	mock := krttest.NewMock(t, inputs)
-	mockCol := krttest.GetMockCollection[*corev1.Namespace](mock)
-	// Ensure the index is fully synced before returning
-	for !mockCol.HasSynced() {
-		time.Sleep(50 * time.Millisecond)
-	}
-	return mockCol
+func (p jsonMarshalProto) MarshalJSON() ([]byte, error) {
+	return protomarshal.Marshal(p.Message)
 }

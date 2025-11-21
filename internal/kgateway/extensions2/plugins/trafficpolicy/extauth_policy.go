@@ -126,8 +126,8 @@ func constructExtAuth(
 	if err != nil {
 		return fmt.Errorf("extauth: %w", err)
 	}
-	if provider.ExtType != v1alpha1.GatewayExtensionTypeExtAuth || provider.ExtAuth == nil {
-		return pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth, provider.ExtType)
+	if provider.ExtAuth == nil {
+		return pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth)
 	}
 
 	out.extAuth = &extAuthIR{

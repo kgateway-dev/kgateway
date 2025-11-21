@@ -7,7 +7,6 @@ import (
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -139,12 +138,12 @@ func TestBuildEnvoyExtProc(t *testing.T) {
 			},
 			extprocConfig: &v1alpha1.ExtProcPolicy{
 				ProcessingMode: &v1alpha1.ProcessingMode{
-					RequestHeaderMode:   ptr.To("SEND"),
-					ResponseHeaderMode:  ptr.To("SKIP"),
-					RequestBodyMode:     ptr.To("STREAMED"),
-					ResponseBodyMode:    ptr.To("BUFFERED"),
-					RequestTrailerMode:  ptr.To("SEND"),
-					ResponseTrailerMode: ptr.To("SKIP"),
+					RequestHeaderMode:   "SEND",
+					ResponseHeaderMode:  "SKIP",
+					RequestBodyMode:     "STREAMED",
+					ResponseBodyMode:    "BUFFERED",
+					RequestTrailerMode:  "SEND",
+					ResponseTrailerMode: "SKIP",
 				},
 			},
 			validateResult: func(t *testing.T, result *envoy_ext_proc_v3.ExtProcPerRoute) {
@@ -200,12 +199,12 @@ func TestBuildEnvoyExtProc(t *testing.T) {
 			},
 			extprocConfig: &v1alpha1.ExtProcPolicy{
 				ProcessingMode: &v1alpha1.ProcessingMode{
-					RequestHeaderMode:   ptr.To("INVALID"),
-					ResponseHeaderMode:  ptr.To("INVALID"),
-					RequestBodyMode:     ptr.To("INVALID"),
-					ResponseBodyMode:    ptr.To("INVALID"),
-					RequestTrailerMode:  ptr.To("INVALID"),
-					ResponseTrailerMode: ptr.To("INVALID"),
+					RequestHeaderMode:   "INVALID",
+					ResponseHeaderMode:  "INVALID",
+					RequestBodyMode:     "INVALID",
+					ResponseBodyMode:    "INVALID",
+					RequestTrailerMode:  "INVALID",
+					ResponseTrailerMode: "INVALID",
 				},
 			},
 			validateResult: func(t *testing.T, result *envoy_ext_proc_v3.ExtProcPerRoute) {

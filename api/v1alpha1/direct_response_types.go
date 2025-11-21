@@ -15,10 +15,12 @@ import (
 // +kubebuilder:resource:categories=kgateway
 // +kubebuilder:subresource:status
 type DirectResponse struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec   DirectResponseSpec   `json:"spec,omitempty"`
+	// +required
+	Spec DirectResponseSpec `json:"spec"`
+	// +optional
 	Status DirectResponseStatus `json:"status,omitempty"`
 }
 

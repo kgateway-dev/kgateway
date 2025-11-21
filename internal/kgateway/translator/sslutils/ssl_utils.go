@@ -98,9 +98,9 @@ func GetCACertFromConfigMap(cm *corev1.ConfigMap) (string, error) {
 	return cleanedChain, nil
 }
 
-type TLSExtensionOptionFunc = func(in string, out *ir.TlsBundle) error
+type TLSExtensionOptionFunc = func(in string, out *ir.TLSConfig) error
 
-func ApplyCipherSuites(in string, out *ir.TlsBundle) error {
+func ApplyCipherSuites(in string, out *ir.TLSConfig) error {
 	cipherSuites := strings.Split(in, ",")
 	for i, suite := range cipherSuites {
 		cipherSuites[i] = strings.TrimSpace(suite)
@@ -109,7 +109,7 @@ func ApplyCipherSuites(in string, out *ir.TlsBundle) error {
 	return nil
 }
 
-func ApplyEcdhCurves(in string, out *ir.TlsBundle) error {
+func ApplyEcdhCurves(in string, out *ir.TLSConfig) error {
 	ecdhCurves := strings.Split(in, ",")
 	for i, curve := range ecdhCurves {
 		ecdhCurves[i] = strings.TrimSpace(curve)
@@ -118,7 +118,7 @@ func ApplyEcdhCurves(in string, out *ir.TlsBundle) error {
 	return nil
 }
 
-func ApplyAlpnProtocols(in string, out *ir.TlsBundle) error {
+func ApplyAlpnProtocols(in string, out *ir.TLSConfig) error {
 	alpnProtocols := strings.Split(in, ",")
 	for i, protocol := range alpnProtocols {
 		alpnProtocols[i] = strings.TrimSpace(protocol)
@@ -127,7 +127,7 @@ func ApplyAlpnProtocols(in string, out *ir.TlsBundle) error {
 	return nil
 }
 
-func ApplyMinTLSVersion(in string, out *ir.TlsBundle) error {
+func ApplyMinTLSVersion(in string, out *ir.TLSConfig) error {
 	protocol, ok := parseTLSProtocol(in)
 	if !ok {
 		return fmt.Errorf("invalid minimum tls version: %s", in)
@@ -137,7 +137,7 @@ func ApplyMinTLSVersion(in string, out *ir.TlsBundle) error {
 	return nil
 }
 
-func ApplyMaxTLSVersion(in string, out *ir.TlsBundle) error {
+func ApplyMaxTLSVersion(in string, out *ir.TLSConfig) error {
 	protocol, ok := parseTLSProtocol(in)
 	if !ok {
 		return fmt.Errorf("invalid maximum tls version: %s", in)
@@ -147,7 +147,7 @@ func ApplyMaxTLSVersion(in string, out *ir.TlsBundle) error {
 	return nil
 }
 
-func ApplyVerifySubjectAltNames(in string, out *ir.TlsBundle) error {
+func ApplyVerifySubjectAltNames(in string, out *ir.TLSConfig) error {
 	altNames := strings.Split(in, ",")
 	for i, name := range altNames {
 		altNames[i] = strings.TrimSpace(name)
@@ -168,7 +168,7 @@ var TLSExtensionOptionFuncs = map[gwv1.AnnotationKey]TLSExtensionOptionFunc{
 // ApplyTLSExtensionOptions applies the TLS options to the TLS bundle IR
 // This function will never exit early, even if an error is encountered.
 // It will apply all options and return a wrapped error with all errors encountered.
-func ApplyTLSExtensionOptions(options map[gwv1.AnnotationKey]gwv1.AnnotationValue, out *ir.TlsBundle) error {
+func ApplyTLSExtensionOptions(options map[gwv1.AnnotationKey]gwv1.AnnotationValue, out *ir.TLSConfig) error {
 	var errs error
 	for key, option := range options {
 		if extensionFunc, ok := TLSExtensionOptionFuncs[key]; ok {
@@ -187,7 +187,7 @@ func ApplyTLSExtensionOptions(options map[gwv1.AnnotationKey]gwv1.AnnotationValu
 	return errs
 }
 
-func validateTLSVersions(out *ir.TlsBundle) error {
+func validateTLSVersions(out *ir.TLSConfig) error {
 	if out.MinTLSVersion != nil && out.MaxTLSVersion != nil {
 		if *out.MaxTLSVersion < *out.MinTLSVersion {
 			return fmt.Errorf("maximum tls version %s is less than minimum tls version %s",

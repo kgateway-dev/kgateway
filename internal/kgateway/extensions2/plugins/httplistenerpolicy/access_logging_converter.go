@@ -21,6 +21,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -128,24 +129,19 @@ func translateAccessLog(logConfig v1alpha1.AccessLog, grpcBackends map[string]*i
 func createFileAccessLog(fileSink *v1alpha1.FileSink) (proto.Message, error) {
 	fileCfg := &envoyalfile.FileAccessLog{Path: fileSink.Path}
 
-	// Validate format configuration
-	if fileSink.StringFormat != "" && fileSink.JsonFormat != nil {
-		return nil, errors.New("access log config cannot have both string format and json format")
-	}
-
 	formatterExtensions, err := getFormatterExtensions()
 	if err != nil {
 		return nil, err
 	}
 
 	switch {
-	case fileSink.StringFormat != "":
+	case fileSink.StringFormat != nil:
 		fileCfg.AccessLogFormat = &envoyalfile.FileAccessLog_LogFormat{
 			LogFormat: &envoycorev3.SubstitutionFormatString{
 				Format: &envoycorev3.SubstitutionFormatString_TextFormatSource{
 					TextFormatSource: &envoycorev3.DataSource{
 						Specifier: &envoycorev3.DataSource_InlineString{
-							InlineString: fileSink.StringFormat,
+							InlineString: *fileSink.StringFormat,
 						},
 					},
 				},
@@ -281,14 +277,14 @@ func translateFilter(filter *v1alpha1.FilterType) (*envoyaccesslogv3.AccessLogFi
 			},
 		}
 
-	case filter.NotHealthCheckFilter:
+	case filter.NotHealthCheckFilter != nil:
 		alCfg = &envoyaccesslogv3.AccessLogFilter{
 			FilterSpecifier: &envoyaccesslogv3.AccessLogFilter_NotHealthCheckFilter{
 				NotHealthCheckFilter: &envoyaccesslogv3.NotHealthCheckFilter{},
 			},
 		}
 
-	case filter.TraceableFilter:
+	case filter.TraceableFilter != nil:
 		alCfg = &envoyaccesslogv3.AccessLogFilter{
 			FilterSpecifier: &envoyaccesslogv3.AccessLogFilter_TraceableFilter{
 				TraceableFilter: &envoyaccesslogv3.TraceableFilter{},
@@ -330,7 +326,7 @@ func translateFilter(filter *v1alpha1.FilterType) (*envoyaccesslogv3.AccessLogFi
 			FilterSpecifier: &envoyaccesslogv3.AccessLogFilter_GrpcStatusFilter{
 				GrpcStatusFilter: &envoyaccesslogv3.GrpcStatusFilter{
 					Statuses: statuses,
-					Exclude:  filter.GrpcStatusFilter.Exclude,
+					Exclude:  ptr.Deref(filter.GrpcStatusFilter.Exclude, false),
 				},
 			},
 		}

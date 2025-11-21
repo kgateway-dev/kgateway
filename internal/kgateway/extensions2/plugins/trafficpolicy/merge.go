@@ -51,6 +51,7 @@ func MergeTrafficPolicies(
 		mergeTimeouts,
 		mergeRetry,
 		mergeRBAC,
+		mergeJwt,
 	}
 
 	for _, mergeFunc := range mergeFuncs {
@@ -283,6 +284,22 @@ func mergeExtAuth(
 	default:
 		defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "extAuth")
 	}
+}
+
+func mergeJwt(
+	p1, p2 *TrafficPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+	_ TrafficPolicyMergeOpts,
+) {
+	accessor := fieldAccessor[jwtIr]{
+		Get: func(spec *trafficPolicySpecIr) *jwtIr { return spec.jwt },
+		Set: func(spec *trafficPolicySpecIr, val *jwtIr) { spec.jwt = val },
+	}
+
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "jwt")
 }
 
 func mergeLocalRateLimit(

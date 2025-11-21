@@ -50,6 +50,14 @@ const (
 	crossNsNoRefGrantGatewayName   = "gateway"
 	crossNsNoRefGrantListenerName  = "listener-8080"
 	crossNsNoRefGrantTCPRouteName  = "tcp-route"
+
+	// Constants for TCPRoute with TLS listener in the same namespace
+	tlsListenerSameNsTestName = "TCPRouteWithTLSListenerSameNamespace"
+	tlsListenerNsName         = "tcp-route-tls"
+	tlsListenerGatewayName    = "tls-listener-tcp-gateway"
+	tlsListenerListenerName   = "listener-8443"
+	tlsListenerServiceName    = "tls-listener-svc"
+	tlsListenerTCPRouteName   = "tls-listener-tcproute"
 )
 
 var (
@@ -80,6 +88,13 @@ var (
 	crossNsNoRefGrantBackendSvcManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "cross-ns-no-refgrant-backend-service.yaml")
 	crossNsNoRefGrantTCPRouteManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "cross-ns-no-refgrant-tcproute.yaml")
 
+	// Manifests for TLS listener TCPRoute same-namespace test
+	tlsListenerNsManifest               = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tls-tcp-ns.yaml")
+	tlsListenerGatewayAndClientManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tls-tcp-gateway-and-client.yaml")
+	tlsListenerBackendManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tls-tcp-backend-service.yaml")
+	tlsListenerTcpRouteManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tls-tcp-tcproute.yaml")
+	tlsListenerTlsSecretManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tls-tcp-tls-secret.yaml")
+
 	// Assertion test timers
 	ctxTimeout = 10 * time.Minute
 	timeout    = 60 * time.Second
@@ -97,6 +112,13 @@ var (
 	}
 	multiProxyDeployment = &appsv1.Deployment{ObjectMeta: multiProxyObjectMeta}
 	multiProxyService    = &corev1.Service{ObjectMeta: multiProxyObjectMeta}
+
+	tlsListenerProxyObjectMeta = metav1.ObjectMeta{
+		Name:      tlsListenerGatewayName,
+		Namespace: tlsListenerNsName,
+	}
+	tlsListenerProxyDeployment = &appsv1.Deployment{ObjectMeta: tlsListenerProxyObjectMeta}
+	tlsListenerProxyService    = &corev1.Service{ObjectMeta: tlsListenerProxyObjectMeta}
 
 	// Expected curl responses from tests
 	expectedSingleSvcResp = &testmatchers.HttpResponse{
@@ -142,6 +164,14 @@ var (
 		Body: gomega.SatisfyAll(
 			gomega.MatchRegexp(fmt.Sprintf(`"namespace"\s*:\s*"%s"`, crossNsBackendNsName)),
 			gomega.MatchRegexp(fmt.Sprintf(`"service"\s*:\s*"%s"`, crossNsBackendSvcName)),
+		),
+	}
+
+	expectedTlsListenerResp = &testmatchers.HttpResponse{
+		StatusCode: http.StatusOK,
+		Body: gomega.SatisfyAll(
+			gomega.MatchRegexp(fmt.Sprintf(`"namespace"\s*:\s*"%s"`, tlsListenerNsName)),
+			gomega.MatchRegexp(fmt.Sprintf(`"service"\s*:\s*"%s"`, tlsListenerServiceName)),
 		),
 	}
 )
