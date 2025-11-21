@@ -98,12 +98,12 @@ var (
 	// specific resource is applied. Once the rust test starts, it will switch envoy to the
 	// rust dynamic module filter and the route will be accepted (and the error will go away)
 	testCases = map[string]*base.TestCase{
-		"TestGatewayWithTransformedRoute": &base.TestCase{
+		"TestGatewayWithTransformedRoute": {
 			Manifests: []string{
 				transformForBodyJsonManifest,
 			},
 		},
-		"TestGatewayRustformationsWithTransformedRoute": &base.TestCase{
+		"TestGatewayRustformationsWithTransformedRoute": {
 			Manifests: []string{
 				rustformationForBodyJsonManifest,
 			},
