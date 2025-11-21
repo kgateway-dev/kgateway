@@ -29,6 +29,14 @@ var (
 	ErrInvalidCACertificate = func(n, ns string, err error) error {
 		return fmt.Errorf("invalid ca.crt in ConfigMap %s/%s: %v", ns, n, err)
 	}
+
+	// tlsProtocolMap maps TLS version strings to Envoy TLS protocol values
+	tlsProtocolMap = map[string]envoytlsv3.TlsParameters_TlsProtocol{
+		"1.0": envoytlsv3.TlsParameters_TLSv1_0,
+		"1.1": envoytlsv3.TlsParameters_TLSv1_1,
+		"1.2": envoytlsv3.TlsParameters_TLSv1_2,
+		"1.3": envoytlsv3.TlsParameters_TLSv1_3,
+	}
 )
 
 // ValidateTlsSecret and return a cleaned cert
@@ -128,7 +136,7 @@ func ApplyAlpnProtocols(in string, out *ir.TLSConfig) error {
 }
 
 func ApplyMinTLSVersion(in string, out *ir.TLSConfig) error {
-	protocol, ok := parseTLSProtocol(in)
+	protocol, ok := tlsProtocolMap[in]
 	if !ok {
 		return fmt.Errorf("invalid minimum tls version: %s", in)
 	}
@@ -138,7 +146,7 @@ func ApplyMinTLSVersion(in string, out *ir.TLSConfig) error {
 }
 
 func ApplyMaxTLSVersion(in string, out *ir.TLSConfig) error {
-	protocol, ok := parseTLSProtocol(in)
+	protocol, ok := tlsProtocolMap[in]
 	if !ok {
 		return fmt.Errorf("invalid maximum tls version: %s", in)
 	}
@@ -197,22 +205,4 @@ func validateTLSVersions(out *ir.TLSConfig) error {
 		}
 	}
 	return nil
-}
-
-// parseTLSProtocol parses a TLS version string and returns the corresponding Envoy TLS protocol.
-// The version string is expected to be in the format "1.0", "1.1", "1.2", or "1.3".
-// If the version string is not a valid TLS version, false is returned.
-func parseTLSProtocol(version string) (envoytlsv3.TlsParameters_TlsProtocol, bool) {
-	switch version {
-	case "1.0":
-		return envoytlsv3.TlsParameters_TLSv1_0, true
-	case "1.1":
-		return envoytlsv3.TlsParameters_TLSv1_1, true
-	case "1.2":
-		return envoytlsv3.TlsParameters_TLSv1_2, true
-	case "1.3":
-		return envoytlsv3.TlsParameters_TLSv1_3, true
-	default:
-		return 0, false
-	}
 }

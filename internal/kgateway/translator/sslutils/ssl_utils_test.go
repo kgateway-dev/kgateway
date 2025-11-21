@@ -113,12 +113,12 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 			name: "invalid_tls_versions",
 			out:  &ir.TLSConfig{},
 			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
-				annotations.MinTLSVersion: "TLSv1.3",
-				annotations.MaxTLSVersion: "TLSv1.2",
+				annotations.MinTLSVersion: "TLSv1.2",
+				annotations.MaxTLSVersion: "TLSv1.3",
 			},
 			errors: []string{
-				"invalid maximum tls version: TLSv1.2",
-				"invalid minimum tls version: TLSv1.3",
+				"invalid maximum tls version: TLSv1.3",
+				"invalid minimum tls version: TLSv1.2",
 			},
 		},
 		{
