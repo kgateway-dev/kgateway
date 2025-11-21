@@ -3702,7 +3702,7 @@ func schema_kgateway_v2_api_v1alpha1_GatewayParameters(ref common.ReferenceCallb
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "A GatewayParameters contains configuration that is used to dynamically provision kgateway's data plane (Envoy proxy instance), based on a Kubernetes Gateway.",
+				Description: "A GatewayParameters contains configuration that is used to dynamically provision kgateway's data plane (Envoy or agentgateway proxy instance), based on a Kubernetes Gateway.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
@@ -4595,7 +4595,7 @@ func schema_kgateway_v2_api_v1alpha1_IstioContainer(ref common.ReferenceCallback
 				Properties: map[string]spec.Schema{
 					"image": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The envoy container image. See https://kubernetes.io/docs/concepts/containers/images for details.",
+							Description: "The container image. See https://kubernetes.io/docs/concepts/containers/images for details.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Image"),
 						},
 					},
@@ -4651,7 +4651,7 @@ func schema_kgateway_v2_api_v1alpha1_IstioIntegration(ref common.ReferenceCallba
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "IstioIntegration configures the Istio integration settings used by a kgateway's data plane (Envoy proxy instance)",
+				Description: "IstioIntegration configures the Istio integration settings used by kgateway's data plane",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"istioProxyContainer": {
@@ -4775,13 +4775,13 @@ func schema_kgateway_v2_api_v1alpha1_KubernetesProxyConfig(ref common.ReferenceC
 					},
 					"service": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Configuration for the Kubernetes Service that exposes the Envoy proxy over the network.",
+							Description: "Configuration for the Kubernetes Service that exposes the proxy over the network.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Service"),
 						},
 					},
 					"serviceAccount": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Configuration for the Kubernetes ServiceAccount used by the Envoy pod.",
+							Description: "Configuration for the Kubernetes ServiceAccount used by the proxy pods.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ServiceAccount"),
 						},
 					},
