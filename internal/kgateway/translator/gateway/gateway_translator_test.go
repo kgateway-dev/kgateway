@@ -1504,6 +1504,28 @@ func TestBasic(t *testing.T) {
 			},
 		})
 	})
+
+	t.Run("JWT Policy and RBAC", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "jwt/rbac.yaml",
+			outputFile: "jwt/rbac.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "gw",
+			},
+		})
+	})
+
+	t.Run("JWT Policy at gateway level with disable on route", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "jwt/gateway-disable.yaml",
+			outputFile: "jwt/gateway-disable.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
 }
 
 func TestValidation(t *testing.T) {

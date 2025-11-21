@@ -37,7 +37,7 @@ type TrafficPolicyGatewayExtensionIR struct {
 	ExtAuth          *envoy_ext_authz_v3.ExtAuthz
 	ExtProc          *envoymatchingv3.ExtensionWithMatcher
 	RateLimit        *ratev3.RateLimit
-	Jwt              *envoyjwtauthnv3.JwtAuthentication
+	Jwt              *envoymatchingv3.ExtensionWithMatcher
 	PrecedenceWeight int32
 	Err              error
 }
@@ -168,7 +168,7 @@ func TranslateGatewayExtensionBuilder(commoncol *collections.CommonCollections) 
 				p.Err = fmt.Errorf("jwt: %w", err)
 				return p
 			}
-			p.Jwt = jwtConfig
+			p.Jwt = buildCompositeJwtFilter(jwtConfig)
 		}
 		return p
 	}
@@ -343,9 +343,43 @@ func buildCompositeExtProcFilter(in v1alpha1.ExtProcProvider, envoyGrpcService *
 			}
 		}
 	}
+	return buildCompositeFilter(
+		"composite_ext_proc",
+		extProcGlobalDisableFilterMetadataNamespace,
+		&envoycorev3.TypedExtensionConfig{
+			Name:        "envoy.filters.http.ext_proc",
+			TypedConfig: utils.MustMessageToAny(filter),
+		},
+	)
+}
+
+func buildCompositeJwtFilter(jwtConfig *envoyjwtauthnv3.JwtAuthentication) *envoymatchingv3.ExtensionWithMatcher {
+	if jwtConfig == nil {
+		return nil
+	}
+
+	return buildCompositeFilter(
+		"composite_jwt",
+		jwtGlobalDisableFilterMetadataNamespace,
+		&envoycorev3.TypedExtensionConfig{
+			Name:        "envoy.filters.http.jwt_authn",
+			TypedConfig: utils.MustMessageToAny(jwtConfig),
+		},
+	)
+}
+
+func buildCompositeFilter(
+	compositeName string,
+	metadataNamespace string,
+	filterTypedConfig *envoycorev3.TypedExtensionConfig,
+) *envoymatchingv3.ExtensionWithMatcher {
+	if filterTypedConfig == nil {
+		return nil
+	}
+
 	return &envoymatchingv3.ExtensionWithMatcher{
 		ExtensionConfig: &envoycorev3.TypedExtensionConfig{
-			Name:        "composite_ext_proc",
+			Name:        compositeName,
 			TypedConfig: utils.MustMessageToAny(&envoycompositev3.Composite{}),
 		},
 		XdsMatcher: &xdsmatcherv3.Matcher{
@@ -359,7 +393,7 @@ func buildCompositeExtProcFilter(in v1alpha1.ExtProcProvider, envoyGrpcService *
 										Input: &xdscorev3.TypedExtensionConfig{
 											Name: globalFilterDisableMetadataKey,
 											TypedConfig: utils.MustMessageToAny(&envoynetworkv3.DynamicMetadataInput{
-												Filter: extProcGlobalDisableFilterMetadataNamespace,
+												Filter: metadataNamespace,
 												Path: []*envoynetworkv3.DynamicMetadataInput_PathSegment{
 													{
 														Segment: &envoynetworkv3.DynamicMetadataInput_PathSegment_Key{
@@ -370,7 +404,7 @@ func buildCompositeExtProcFilter(in v1alpha1.ExtProcProvider, envoyGrpcService *
 											}),
 										},
 										// This matcher succeeds when disable=true is not found in the dynamic metadata
-										// for the extProcGlobalDisableFilterMetadataNamespace
+										// for the metadataNamespace
 										Matcher: &xdsmatcherv3.Matcher_MatcherList_Predicate_SinglePredicate_CustomMatch{
 											CustomMatch: &xdscorev3.TypedExtensionConfig{
 												Name: "envoy.matching.matchers.metadata_matcher",
@@ -392,10 +426,7 @@ func buildCompositeExtProcFilter(in v1alpha1.ExtProcProvider, envoyGrpcService *
 									Action: &xdscorev3.TypedExtensionConfig{
 										Name: "composite-action",
 										TypedConfig: utils.MustMessageToAny(&envoycompositev3.ExecuteFilterAction{
-											TypedConfig: &envoycorev3.TypedExtensionConfig{
-												Name:        "envoy.filters.http.ext_proc",
-												TypedConfig: utils.MustMessageToAny(filter),
-											},
+											TypedConfig: filterTypedConfig,
 										}),
 									},
 								},

@@ -28,6 +28,7 @@ var (
 	jwtManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt.yaml")
 	jwtRbacManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt-rbac.yaml")
 	jwtHTTPRouteManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt-httproute.yaml")
+	jwtDisableManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt-disable.yaml")
 
 	// Core infrastructure objects that we need to track
 	gatewayObjectMeta = metav1.ObjectMeta{
@@ -98,6 +99,9 @@ var (
 		},
 		"TestJwtAuthorization": {
 			Manifests: []string{jwtRbacManifest},
+		},
+		"TestJwtDisable": {
+			Manifests: []string{jwtDisableManifest},
 		},
 	}
 )
@@ -254,6 +258,65 @@ func (s *testingSuite) TestJwtAuthorization() {
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		getReqDev2JwtCurlOpts,
+		expectStatus200Success,
+	)
+}
+
+// TestJwtDisable tests that JWT can be disabled at the route level
+func (s *testingSuite) TestJwtDisable() {
+	// Wait for both routes to be accepted
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.Ctx,
+		"httpbin-route-jwt",
+		"default",
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionTrue,
+	)
+
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.Ctx,
+		"httpbin-route-no-jwt",
+		"default",
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionTrue,
+	)
+
+	// The /get route should require JWT (inherits from gateway policy)
+	s.T().Log("The /get route inherits JWT from gateway policy, should fail when no JWT is provided")
+	getReqCurlOpts := []curl.Option{
+		curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
+		curl.WithHostHeader("httpbin"),
+		curl.WithPort(8080),
+		curl.WithPath("/get"),
+	}
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		getReqCurlOpts,
+		expectedJwtMissingFailedResponse,
+	)
+
+	s.T().Log("The /get route does have a JWT config applied, should succeed when correct JWT is provided")
+	getReqJwtCurlOpts := append(getReqCurlOpts, curl.WithHeader("Authorization", "Bearer "+dev1JwtToken))
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		getReqJwtCurlOpts,
+		expectStatus200Success,
+	)
+
+	// The /status/200 route has JWT disabled, should work without JWT
+	s.T().Log("The /status/200 route has JWT disabled, should work without JWT")
+	statusReqCurlOpts := []curl.Option{
+		curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
+		curl.WithHostHeader("httpbin"),
+		curl.WithPort(8080),
+		curl.WithPath("/status/200"),
+	}
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		statusReqCurlOpts,
 		expectStatus200Success,
 	)
 }

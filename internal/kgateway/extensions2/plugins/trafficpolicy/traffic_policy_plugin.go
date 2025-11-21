@@ -420,7 +420,9 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(fcc ir.FilterChainCommon) ([]fil
 		stagedFilters = append(stagedFilters, stagedExtAuthFilter)
 	}
 
-	// TODO: Add support for global jwt disable filter
+	if len(p.jwtPerProvider.Providers[fcc.FilterChainName]) > 0 {
+		stagedFilters = AddDisableFilterIfNeeded(stagedFilters, jwtGlobalDisableFilterName, jwtGlobalDisableFilterMetadataNamespace)
+	}
 	for _, provider := range p.jwtPerProvider.Providers[fcc.FilterChainName] {
 		jwtFilter := provider.Extension.Jwt
 		if jwtFilter == nil {
@@ -435,7 +437,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(fcc ir.FilterChainCommon) ([]fil
 			filters.DuringStage(filters.AuthNStage),
 		)
 
-		// stagedJwtFilter.Filter.Disabled = true
+		stagedJwtFilter.Filter.Disabled = true
 		stagedFilters = append(stagedFilters, stagedJwtFilter)
 	}
 
