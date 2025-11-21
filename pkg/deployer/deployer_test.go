@@ -329,6 +329,7 @@ var _ = Describe("Deployer", func() {
 							},
 						},
 						PodTemplate: &gw2_v1alpha1.Pod{
+							PriorityClassName: ptr.To("default"),
 							TopologySpreadConstraints: []corev1.TopologySpreadConstraint{
 								{
 									MaxSkew:           1,
@@ -629,6 +630,7 @@ var _ = Describe("Deployer", func() {
 			Expect(deployment.Spec.Template.Spec.TopologySpreadConstraints[0]).To(Equal(gwp.Spec.Kube.PodTemplate.TopologySpreadConstraints[0]))
 			Expect(deployment.Spec.Template.Spec.Tolerations[0]).To(Equal(gwp.Spec.Kube.PodTemplate.Tolerations[0]))
 			Expect(deployment.Spec.Template.Spec.NodeSelector).To(Equal(gwp.Spec.Kube.PodTemplate.NodeSelector))
+			Expect(*deployment.Spec.Template.Spec.PriorityClassName).To(Equal(gwp.Spec.Kube.PodTemplate.PriorityClassName))
 			// check env values are appended to the end of the list
 			var testEnvVar corev1.EnvVar
 			for _, envVar := range deployment.Spec.Template.Spec.Containers[0].Env {

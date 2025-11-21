@@ -6889,6 +6889,8 @@ spec:
                           - whenUnsatisfiable
                           type: object
                         type: array
+                      priorityClassName:
+                        type: string
                     type: object
                   sdsContainer:
                     description: Configuration for the container running the Secret
