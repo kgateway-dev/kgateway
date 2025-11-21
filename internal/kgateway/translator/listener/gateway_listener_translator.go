@@ -12,6 +12,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
@@ -136,6 +137,7 @@ func (ml *MergedListeners) appendHttpListener(
 		gatewayListener:     listener,
 		routesWithHosts:     routesWithHosts,
 		attachedPolicies:    listener.AttachedPolicies,
+		listenerReporter:    reporter,
 	}
 	fc := &httpFilterChain{
 		parents: []httpFilterChainParent{parent},
@@ -156,13 +158,12 @@ func (ml *MergedListeners) appendHttpListener(
 
 	// create a new filter chain for the listener
 	ml.Listeners = append(ml.Listeners, &MergedListener{
-		name:             GenerateListenerName(listener),
-		port:             finalPort,
-		httpFilterChain:  fc,
-		listenerReporter: reporter,
-		listener:         listener,
-		gateway:          ml.parentGw,
-		settings:         ml.settings,
+		name:            GenerateListenerName(listener),
+		port:            finalPort,
+		httpFilterChain: fc,
+		listener:        listener,
+		gateway:         ml.parentGw,
+		settings:        ml.settings,
 	})
 }
 
@@ -178,7 +179,8 @@ func (ml *MergedListeners) appendHttpsListener(
 
 	mfc := httpsFilterChain{
 		gatewayListenerName: query.GenerateRouteKey(listener.Parent, string(listener.Name)),
-		parentNamespace:     listener.Parent.GetNamespace(),
+		listener:            listener,
+		listenerReporter:    reporter,
 		sniDomain:           listener.Hostname,
 		tls:                 tls,
 		routesWithHosts:     routesWithHosts,
@@ -199,7 +201,6 @@ func (ml *MergedListeners) appendHttpsListener(
 		name:              GenerateListenerName(listener),
 		port:              finalPort,
 		httpsFilterChains: []httpsFilterChain{mfc},
-		listenerReporter:  reporter,
 		listener:          listener,
 		gateway:           ml.parentGw,
 		settings:          ml.settings,
@@ -213,7 +214,8 @@ func (ml *MergedListeners) AppendTcpListener(
 ) {
 	parent := tcpFilterChainParent{
 		gatewayListenerName: query.GenerateRouteKey(listener.Parent, string(listener.Name)),
-		parentNamespace:     listener.Parent.GetNamespace(),
+		listener:            listener,
+		listenerReporter:    reporter,
 		routesWithHosts:     routeInfos,
 	}
 	fc := tcpFilterChain{
@@ -231,13 +233,12 @@ func (ml *MergedListeners) AppendTcpListener(
 
 	// create a new filter chain for the listener
 	ml.Listeners = append(ml.Listeners, &MergedListener{
-		name:             GenerateListenerName(listener),
-		port:             finalPort,
-		TcpFilterChains:  []tcpFilterChain{fc},
-		listenerReporter: reporter,
-		listener:         listener,
-		gateway:          ml.parentGw,
-		settings:         ml.settings,
+		name:            GenerateListenerName(listener),
+		port:            finalPort,
+		TcpFilterChains: []tcpFilterChain{fc},
+		listener:        listener,
+		gateway:         ml.parentGw,
+		settings:        ml.settings,
 	})
 }
 
@@ -248,7 +249,8 @@ func (ml *MergedListeners) AppendTlsListener(
 ) {
 	parent := tcpFilterChainParent{
 		gatewayListenerName: query.GenerateRouteKey(listener.Parent, string(listener.Name)),
-		parentNamespace:     listener.Parent.GetNamespace(),
+		listener:            listener,
+		listenerReporter:    reporter,
 		routesWithHosts:     routeInfos,
 	}
 	tls := listener.TLS
@@ -272,12 +274,11 @@ func (ml *MergedListeners) AppendTlsListener(
 
 	// create a new filter chain for the listener
 	ml.Listeners = append(ml.Listeners, &MergedListener{
-		name:             GenerateListenerName(listener),
-		port:             finalPort,
-		TcpFilterChains:  []tcpFilterChain{fc},
-		listenerReporter: reporter,
-		listener:         listener,
-		settings:         ml.settings,
+		name:            GenerateListenerName(listener),
+		port:            finalPort,
+		TcpFilterChains: []tcpFilterChain{fc},
+		listener:        listener,
+		settings:        ml.settings,
 	})
 }
 
@@ -301,7 +302,6 @@ type MergedListener struct {
 	httpFilterChain   *httpFilterChain
 	httpsFilterChains []httpsFilterChain
 	TcpFilterChains   []tcpFilterChain
-	listenerReporter  reports.ListenerReporter
 	listener          ir.Listener
 	gateway           ir.Gateway
 	settings          ListenerTranslatorConfig
@@ -329,11 +329,8 @@ func (ml *MergedListener) TranslateListener(
 		httpsFilterChain, err := mfc.translateHttpsFilterChain(
 			kctx,
 			ctx,
-			mfc.gatewayListenerName,
-			mfc.parentNamespace,
 			queries,
 			reporter,
-			ml.listenerReporter,
 		)
 		if err != nil {
 			// Log and skip invalid HTTPS filter chains
@@ -347,7 +344,7 @@ func (ml *MergedListener) TranslateListener(
 	// Translate TCP listeners (if any exist)
 	var matchedTcpListeners []ir.TcpIR
 	for _, tfc := range ml.TcpFilterChains {
-		if tcpListener := tfc.translateTcpFilterChain(kctx, ctx, tfc.parents.parentNamespace, queries, ml.name, reporter); tcpListener != nil {
+		if tcpListener := tfc.translateTcpFilterChain(kctx, ctx, queries, ml.name, reporter); tcpListener != nil {
 			matchedTcpListeners = append(matchedTcpListeners, *tcpListener)
 		}
 	}
@@ -397,15 +394,13 @@ type tcpFilterChain struct {
 
 type tcpFilterChainParent struct {
 	gatewayListenerName string
-	// Although the parent gateway is the same for all listeners,
-	// they can belong to different listenersets in different namespaces
-	parentNamespace string
-	routesWithHosts []*query.RouteInfo
+	listener            ir.Listener
+	listenerReporter    reports.ListenerReporter
+	routesWithHosts     []*query.RouteInfo
 }
 
 func (tc *tcpFilterChain) translateTcpFilterChain(
 	kctx krt.HandlerContext, ctx context.Context,
-	gatewayNamespace string,
 	queries query.GatewayQueries,
 	parentName string,
 	reporter reports.Reporter,
@@ -481,7 +476,7 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 			return nil
 		}
 
-		tlsConfig, err := translateTLSConfig(kctx, ctx, gatewayNamespace, tc.tls, queries)
+		tlsConfig, err := translateTLSConfig(kctx, ctx, tc.parents.listener, tc.tls, queries)
 		if err != nil {
 			reportTLSConfigError(err, tc.listenerReporter)
 			return nil
@@ -590,6 +585,7 @@ type httpFilterChainParent struct {
 	gatewayListener     ir.Listener
 	routesWithHosts     []*query.RouteInfo
 	attachedPolicies    ir.AttachedPolicies
+	listenerReporter    reports.ListenerReporter
 }
 
 func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
@@ -678,28 +674,26 @@ type httpsFilterChain struct {
 	gatewayListenerName string
 	// Although the parent gateway is the same for all listeners,
 	// they can belong to different listenersets in different namespaces
-	parentNamespace  string
+	listener         ir.Listener
+	listenerReporter reports.ListenerReporter
 	sniDomain        *gwv1.Hostname
 	tls              *gwv1.ListenerTLSConfig
 	routesWithHosts  []*query.RouteInfo
 	attachedPolicies ir.AttachedPolicies
 }
 
-func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
+func (hfc *httpsFilterChain) translateHttpsFilterChain(
 	kctx krt.HandlerContext,
 	ctx context.Context,
-	parentName string,
-	gatewayNamespace string,
 	queries query.GatewayQueries,
 	reporter reports.Reporter,
-	listenerReporter reports.ListenerReporter,
 ) (*ir.HttpFilterChainIR, error) {
 	// process routes first, so any route related errors are reported on the httproute.
 	routesByHost := map[string]routeutils.SortableRoutes{}
 	buildRoutesPerHost(
 		ctx,
 		routesByHost,
-		httpsFilterChain.routesWithHosts,
+		hfc.routesWithHosts,
 		reporter,
 	)
 
@@ -709,7 +703,7 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 	)
 	for host, vhostRoutes := range routesByHost {
 		sort.Stable(vhostRoutes)
-		vhostName := makeVhostName(ctx, parentName, host)
+		vhostName := makeVhostName(ctx, hfc.gatewayListenerName, host)
 		if !virtualHostNames[vhostName] {
 			virtualHostNames[vhostName] = true
 			virtualHost := &ir.VirtualHost{
@@ -722,19 +716,19 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 	}
 
 	var matcher ir.FilterChainMatch
-	if httpsFilterChain.sniDomain != nil {
-		matcher.SniDomains = []string{string(*httpsFilterChain.sniDomain)}
+	if hfc.sniDomain != nil {
+		matcher.SniDomains = []string{string(*hfc.sniDomain)}
 	}
 
 	tlsConfig, err := translateTLSConfig(
 		kctx,
 		ctx,
-		gatewayNamespace,
-		httpsFilterChain.tls,
+		hfc.listener,
+		hfc.tls,
 		queries,
 	)
 	if err != nil {
-		reportTLSConfigError(err, listenerReporter)
+		reportTLSConfigError(err, hfc.listenerReporter)
 		return nil, err
 	}
 	sort.Slice(virtualHosts, func(i, j int) bool {
@@ -743,11 +737,11 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 
 	return &ir.HttpFilterChainIR{
 		FilterChainCommon: ir.FilterChainCommon{
-			FilterChainName: parentName,
+			FilterChainName: hfc.gatewayListenerName,
 			Matcher:         matcher,
 			TLS:             tlsConfig,
 		},
-		AttachedPolicies: httpsFilterChain.attachedPolicies,
+		AttachedPolicies: hfc.attachedPolicies,
 		Vhosts:           virtualHosts,
 	}, nil
 }
@@ -784,7 +778,7 @@ func buildRoutesPerHost(
 func translateTLSConfig(
 	kctx krt.HandlerContext,
 	ctx context.Context,
-	parentNamespace string,
+	listener ir.Listener,
 	tls *gwv1.ListenerTLSConfig,
 	queries query.GatewayQueries,
 ) (*ir.TLSConfig, error) {
@@ -803,12 +797,22 @@ func translateTLSConfig(
 
 	var certificates []ir.TLSCertificate
 	for _, certRef := range tls.CertificateRefs {
+		parentGVK := listener.Parent.GetObjectKind().GroupVersionKind()
+		if parentGVK.Empty() {
+			switch listener.Parent.(type) {
+			case *gwv1.Gateway:
+				parentGVK = wellknown.GatewayGVK
+			case *gwxv1a1.XListenerSet:
+				parentGVK = wellknown.XListenerSetGVK
+			}
+		}
+
 		// validate secret reference exists
 		secret, err := queries.GetSecretForRef(
 			kctx,
 			ctx,
-			wellknown.GatewayGVK.GroupKind(),
-			parentNamespace,
+			parentGVK.GroupKind(),
+			listener.Parent.GetNamespace(),
 			certRef,
 		)
 		if err != nil {
