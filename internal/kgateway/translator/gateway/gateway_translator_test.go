@@ -1130,6 +1130,28 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("Backend Config Policy with Circuit Breakers minimal", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "backendconfigpolicy/circuitbreakers-minimal.yaml",
+			outputFile: "backendconfigpolicy/circuitbreakers-minimal.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("Backend Config Policy with Circuit Breakers full", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "backendconfigpolicy/circuitbreakers-full.yaml",
+			outputFile: "backendconfigpolicy/circuitbreakers-full.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy with explicit generation", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/generation.yaml",
