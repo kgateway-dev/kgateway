@@ -5,26 +5,36 @@
     <img alt="kgateway" src="https://raw.githubusercontent.com/kgateway-dev/kgateway.dev/main/static/logo.svg">
   </picture>
   <br/>
-  An Envoy-Powered, Kubernetes-Native API Gateway
+  The most widely deployed gateway in Kubernetes for microservices and AI agents
 </h1>
 
 [![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/10534/badge)](https://bestpractices.coreinfrastructure.org/projects/10534)
 
 ## About kgateway
 
-Kgateway is:
+Kgateway is the most mature and widely deployed gateway in the market today. Built on open source and open standards, **kgateway is a dual control plane that implements the [Kubernetes Gateway API](https://gateway-api.sigs.k8s.io/) for both [Envoy](https://github.com/envoyproxy/envoy) and [agentgateway](https://github.com/agentgateway/agentgateway)**. This unique architecture enables kgateway to provide unified API connectivity spanning from traditional HTTP/gRPC workloads to advanced AI agent orchestration.
 
-* **An ingress/edge router for Kubernetes**: Powered by [Envoy](https://www.envoyproxy.io) and programmed with the [Gateway API](https://gateway-api.sigs.k8s.io/), kgateway is a world-leading Cloud Native ingress.
-* **An advanced API gateway**: Aggregate web APIs and apply key functions like authentication, authorization and rate limiting in one place
-* **A better waypoint proxy for [ambient mesh](https://ambientmesh.io/)**: Use the same stack for east-west management as you do for north-south.
-* **An AI gateway for securing LLM usage**: Protect applications, models, and data from inappropriate access or use, whether you're producing or consuming. Manage traffic to LLM providers, and enrich prompts at a system level.
-* **An LLM Gateway utilizing the [Inference Extension](https://gateway-api-inference-extension.sigs.k8s.io/) project**: Intelligently route to AI inference workloads and LLMs in your Kubernetes environment.
-* **A model context protocol (MCP) gateway**: Federate MCP tool servers into a single, scalable and secure endpoint.
-* **A migration engine for hybrid apps**: Route to backends implemented as microservices, serverless functions or legacy apps. This can help you gradually migrate from legacy code to microservices and serverless, add new functionalities using cloud-native technologies while maintaining a legacy codebase or allow different teams in an organization to choose different architectures.
+With a control plane that scales from lightweight microgateway deployments between services, to massively parallel centralized gateways handling billions of API calls, to advanced AI gateway use cases for safety, security, and governance, kgateway brings omni-directional API connectivity to any cloud and any environment.
+
+### Use Cases
+
+Kgateway is designed for:
+
+* **Advanced Ingress Controller and Next-Gen API Gateway**: Aggregate web APIs and apply functions like authentication, authorization and rate limiting in one place. Powered by [Envoy](https://www.envoyproxy.io) or [agentgateway](https://github.com/agentgateway/agentgateway) and programmed with the [Gateway API](https://gateway-api.sigs.k8s.io/), kgateway is a world-leading Cloud Native ingress.
+
+* **AI Gateway for LLM Consumption**: Protect models, tools, agents, and data from inappropriate access. Manage traffic to LLM providers, enrich prompts at a system level, and apply prompt guards for safety and compliance.
+
+* **Inference Gateway for Generative Models**: Intelligently route to AI inference workloads in Kubernetes environments utilizing the [Inference Extension](https://gateway-api-inference-extension.sigs.k8s.io/) project.
+
+* **Native MCP and Agent-to-Agent Gateway**: Federate Model Context Protocol tool services and secure agent-to-agent communications with a single scalable endpoint powered by agentgateway.
+
+* **Hybrid Application Migration**: Route to backends implemented as microservices, serverless functions or legacy apps. Gradually migrate from legacy code while maintaining existing systems.
 
 Kgateway is feature-rich, fast, and flexible. It excels in function-level routing, supports legacy apps, microservices and serverless, offers robust discovery capabilities, integrates seamlessly with open-source projects, and is designed to support hybrid applications with various technologies, architectures, protocols, and clouds.
 
-The project was previously known as Gloo, and has been [production-ready since 2019](https://www.solo.io/blog/announcing-gloo-1-0-a-production-ready-envoy-based-api-gateway). Please see [the migration plan](https://github.com/kgateway-dev/kgateway/issues/10363) for more information and the current status of the change from Gloo to kgateway.
+### History
+
+The project was launched in 2018 as **Gloo** by Solo.io and has been [production-ready since 2019](https://www.solo.io/blog/announcing-gloo-1-0-a-production-ready-envoy-based-api-gateway). Since then, it has steadily evolved to become the most trusted and feature-rich API gateway for Kubernetes, processing billions of API requests for many of the world's biggest companies. Please see [the migration plan](https://github.com/kgateway-dev/kgateway/issues/10363) for more information about the transition from Gloo to kgateway.
 
 ## Get involved
 
@@ -45,7 +55,7 @@ Please refer to [devel/contributing/releasing.md](devel/contributing/releasing.m
 
 ## Thanks
 
-Kgateway would not be possible without the valuable open source work of projects in the community. We would like to extend a special thank-you to [Envoy](https://www.envoyproxy.io), upon whose shoulders we stand.
+Kgateway would not be possible without the valuable open source work of projects in the community. We would like to extend a special thank-you to [Envoy](https://www.envoyproxy.io) and [agentgateway](https://github.com/agentgateway/agentgateway), the two data planes upon which we build our dual control plane architecture.
 
 ## Security
 

@@ -49,7 +49,7 @@ var _ = Describe("Client", func() {
 					defaultOutputLocation, errLocation, outLocation threadsafe.Buffer
 				)
 
-				// Create a client that points to an address where Gloo is NOT running
+				// Create a client that points to an address where kgateway is NOT running
 				client := admincli.NewClient().
 					WithReceiver(&defaultOutputLocation).
 					WithCurlOptions(

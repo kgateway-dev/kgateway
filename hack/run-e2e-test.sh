@@ -134,8 +134,8 @@ check_and_cleanup_helm_conflicts() {
         log_info "AUTO_SETUP is enabled, cleaning up all kgateway installations..."
 
         # Uninstall Helm releases from common namespaces
-        for ns in gloo-system kgateway-system kgateway-test default; do
-            for release in gloo-gateway-crds kgateway-crds gloo-gateway kgateway; do
+        for ns in kgateway-system kgateway-test default; do
+            for release in kgateway-crds kgateway; do
                 if helm list -a -n "$ns" 2>/dev/null | grep -q "^${release}"; then
                     log_info "Uninstalling Helm release '${release}' from namespace '${ns}'..."
                     helm uninstall "${release}" -n "${ns}" 2>/dev/null || true
