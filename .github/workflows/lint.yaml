@@ -22,7 +22,7 @@ jobs:
     - name: Prep Go Runner
       uses: ./.github/actions/prep-go-runner
     - name: Lint Go code
-      run: make analyze
+      run: go tool task analyze
 
   # Lint Helm charts
   helm-lint:
@@ -33,7 +33,7 @@ jobs:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v4
     - name: Lint Helm Charts
-      run: make lint-kgateway-charts
+      run: go tool task lint-kgateway-charts
 
   # Lint GitHub workflow files
   action-lint:
@@ -47,7 +47,7 @@ jobs:
     - uses: actions/setup-go@v5
       with:
         go-version-file: 'go.mod'
-    - run: make lint-actions
+    - run: go tool task lint-actions
 
   # Lint Rust code
   rust-lint:

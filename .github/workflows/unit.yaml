@@ -28,13 +28,13 @@ jobs:
       with:
         go-version-file: go.mod
     - name: Install dependencies
-      run: make mod-download
+      run: go tool task mod-download
     - name: Run Tests
       shell: bash
-      run: make unit-with-coverage
+      run: go tool task unit-with-coverage
     - name: Validate Test Coverage
       shell: bash
-      # The make will error if test coverage drops below a certain threshold
+      # The task will error if test coverage drops below a certain threshold
       # We intentionally ignore the errors while we build out our test coverage, to establish a good baseline
       # However, we should strive to establish a baseline, and then make it required on PRs
-      run: make --always-make --ignore-errors validate-test-coverage
+      run: go tool task --force validate-test-coverage || true

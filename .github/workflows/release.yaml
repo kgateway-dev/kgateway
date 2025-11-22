@@ -90,13 +90,13 @@ jobs:
         run: echo "${{ secrets.GITHUB_TOKEN }}" | go tool helm registry login ${{ env.IMAGE_REGISTRY }} -u ${{ github.repository_owner }} --password-stdin
 
       - name: Package kgateway chart
-        run: make package-kgateway-charts
+        run: go tool task package-kgateway-charts
         env:
           VERSION: ${{ needs.setup.outputs.version }}
 
       - name: Push kgateway chart to registry
         if: ${{ github.event_name != 'pull_request' }}
-        run: make release-charts
+        run: go tool task release-charts
         env:
           VERSION: ${{ needs.setup.outputs.version }}
           IMAGE_REGISTRY: ${{ env.IMAGE_REGISTRY }}
@@ -128,7 +128,7 @@ jobs:
       - uses: "docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2" # v3.10 .0
 
       - name: Run goreleaser
-        run: make release
+        run: go tool task release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ needs.setup.outputs.version }}
@@ -152,7 +152,7 @@ jobs:
         run: echo "${{ secrets.GITHUB_TOKEN }}" | go tool helm registry login ${{ env.IMAGE_REGISTRY }} -u ${{ github.repository_owner }} --password-stdin
 
       - name: Download module dependencies
-        run: make mod-download
+        run: go tool task mod-download
 
       - name: Setup kind cluster
         run: ./hack/kind/setup-kind.sh
@@ -181,7 +181,7 @@ jobs:
           kubectl wait --for=condition=available --timeout=5m deployment/kgateway -n kgateway-system
 
       - name: Run Gateway API and Inference Extension Conformance Tests
-        run: make all-conformance
+        run: go tool task all-conformance
         shell: bash
         env:
           VERSION: ${{ needs.setup.outputs.version }}
@@ -201,7 +201,7 @@ jobs:
         run: echo "${{ secrets.GITHUB_TOKEN }}" | go tool helm registry login ${{ env.IMAGE_REGISTRY }} -u ${{ github.repository_owner }} --password-stdin
 
       - name: Download module dependencies
-        run: make mod-download
+        run: go tool task mod-download
 
       - name: Setup kind cluster
         run: ./hack/kind/setup-kind.sh
@@ -230,6 +230,6 @@ jobs:
           kubectl wait --for=condition=available --timeout=5m deployment/kgateway -n kgateway-system
 
       - name: Run load tests
-        run: make run-load-tests
+        run: go tool task run-load-tests
         env:
           VERSION: ${{ needs.setup.outputs.version }}

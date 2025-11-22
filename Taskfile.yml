@@ -1,0 +1,767 @@
+version: '3'
+
+set: [errexit, nounset, pipefail]
+
+vars:
+  K8S: '{{default "kind" .K8S}}'
+  GOARCH: '{{default ARCH .GOARCH}}'
+  GOTOOLCHAIN:
+    sh: grep -E '^go [0-9]' go.mod | cut -d' ' -f2 | sed 's/^/go/'
+  VERSION: '{{default "1.0.1-dev" .VERSION}}'
+  IMAGE_TAG: '{{default .VERSION .IMAGE_TAG}}'
+  IMAGE_REPO: '{{default "ghcr.io/kgateway-dev" .IMAGE_REPO}}'
+  CONTROLLER_IMAGE_NAME: '{{default "kgateway" .CONTROLLER_IMAGE_NAME}}'
+  ENVOYINIT_IMAGE_NAME: '{{default "envoy-wrapper" .ENVOYINIT_IMAGE_NAME}}'
+  SDS_IMAGE_NAME: '{{default "sds" .SDS_IMAGE_NAME}}'
+  ENVOY_BASE_IMAGE: '{{default "quay.io/solo-io/envoy-gloo:1.36.2-patch1" .ENVOY_BASE_IMAGE}}'
+  KIND_CLUSTER_NAME: '{{default "kind" .KIND_CLUSTER_NAME}}'
+  INSTALL_NAMESPACE: '{{default "kgateway" .INSTALL_NAMESPACE}}'
+  KUBE_VERSION: '{{default "v1.32.9" .KUBE_VERSION}}'
+  CONFORMANCE_VERSION: '{{default "v1.4.0" .CONFORMANCE_VERSION}}'
+  CONFORMANCE_CHANNEL: '{{default "experimental" .CONFORMANCE_CHANNEL}}'
+  GLOO_LICENSE_KEY: '{{default "invalid-key-should-log-errors-but-work" .GLOO_LICENSE_KEY}}'
+  AGENTGATEWAY_LICENSE_KEY: '{{default "invalid-agw-should-log-errors-but-work" .AGENTGATEWAY_LICENSE_KEY}}'
+  HELM_DIR: '{{default "_output/helm" .HELM_DIR}}'
+  DEPSGOBIN: '{{default "bin" .DEPSGOBIN}}'
+  CRC_REGISTRY: '{{default "default-route-openshift-image-registry.apps-crc.testing" .CRC_REGISTRY}}'
+  CRC_REGISTRY_INTERNAL: '{{default "image-registry.openshift-image-registry.svc:5000" .CRC_REGISTRY_INTERNAL}}'
+  CRC_PROJECT: '{{default .INSTALL_NAMESPACE .CRC_PROJECT}}'
+  LDFLAGS: "-X 'github.com/kgateway-dev/kgateway/v2/internal/version.Version={{.VERSION}}'"
+  TEST_ASSET_DIR: '{{default (printf "%s/_test" .ROOT_DIR) .TEST_ASSET_DIR}}'
+  CONFORMANCE_TEST_DIR: '{{default (printf "%s/conformance" .TEST_ASSET_DIR) .CONFORMANCE_TEST_DIR}}'
+  CONFORMANCE_GATEWAY_CLASS: '{{default "kgateway" .CONFORMANCE_GATEWAY_CLASS}}'
+  CONFORMANCE_SUPPORTED_FEATURES: '{{default "Gateway,ReferenceGrant,HTTPRoute,HTTPRouteQueryParamMatching,HTTPRouteMethodMatching,HTTPRouteResponseHeaderModification,HTTPRoutePortRedirect,HTTPRouteHostRewrite,HTTPRouteSchemeRedirect,HTTPRoutePathRedirect,HTTPRouteHostRewrite,HTTPRoutePathRewrite,HTTPRouteRequestMirror,TLSRoute,HTTPRouteBackendProtocolH2C" .CONFORMANCE_SUPPORTED_FEATURES}}'
+  CONFORMANCE_SUPPORTED_PROFILES: '{{default "GATEWAY-HTTP" .CONFORMANCE_SUPPORTED_PROFILES}}'
+  EXTRA_CORE_CHART_ARGS: '{{default "" .EXTRA_CORE_CHART_ARGS}}{{if eq .K8S "crc"}} --set-string image.registry={{.CRC_REGISTRY_INTERNAL}}/{{.CRC_PROJECT}}{{end}}'
+  GORELEASER_ARGS: '{{default "--clean --snapshot" .GORELEASER_ARGS}}'
+  DOCKER_BUILD: '{{default (printf "docker build -q --platform=linux/%s --load" .GOARCH) .DOCKER_BUILD}}'
+  GO_TEST_RETRIES: '{{default "0" .GO_TEST_RETRIES}}'
+  GOTESTSUM: '{{default "go tool gotestsum" .GOTESTSUM}}'
+  GOTESTSUM_ARGS: '{{default "--format=testname" .GOTESTSUM_ARGS}}'
+
+env:
+  CGO_ENABLED: '0'
+  HELM: '{{default "go tool helm" .HELM}}'
+  YQ: '{{default "go tool yq" .YQ}}'
+  KIND: '{{default "go tool kind" .KIND}}'
+
+tasks:
+  run:
+    desc: Setup a complete development environment
+    deps:
+      - deploy-charts  # Transitively depends on setup
+
+  setup:
+    desc: Set up a base development environment without KGW installed
+    deps:
+      - '{{if eq .K8S "crc"}}setup-crc{{else}}setup-kind{{end}}'
+
+  setup-kind:
+    desc: Set up kind development environment (builds, cluster, images)
+    deps:
+      # All of these run in parallel
+      - build-all-binaries
+      - cluster-with-gw-api-and-metallb
+      - kind-load-images  # Depends on binaries + cluster internally
+      - package-charts    # Independent - can run while images load
+
+  cluster-with-gw-api-and-metallb:
+    desc: Create cluster, install Gateway API CRDs and MetalLB
+    deps:
+      - kind-cluster
+    cmds:
+      # After cluster is ready, run these in parallel
+      - task: gw-api-crds-and-metallb
+
+  gw-api-crds-and-metallb:
+    desc: Install GW API CRDs and MetalLB in parallel
+    deps:
+      - gw-api-crds
+      - metallb-internal
+
+  build-all-binaries:
+    desc: Build all binaries in parallel
+    deps:
+      - bin/kgateway
+      - bin/envoyinit
+      - bin/sds
+
+  setup-crc:
+    desc: Set up CRC development environment
+    cmds:
+      - task: gw-api-crds
+      - task: crc-push-images
+      - task: package-charts
+
+  kind-cluster:
+    desc: Create a new kind cluster if it doesn't exist
+    run: once
+    cmds:
+      - go tool kind create cluster --image $(KUBE_VERSION={{.KUBE_VERSION}} ./hack/get-k8s-kind-image.sh) --name {{.KIND_CLUSTER_NAME}}
+      - go tool kind export kubeconfig --name {{.KIND_CLUSTER_NAME}}
+    status:
+      - go tool kind get clusters | grep -q ^{{.KIND_CLUSTER_NAME}}
+
+  gw-api-crds:
+    desc: Install the Gateway API CRDs
+    cmds:
+      - kubectl apply --server-side -f "https://github.com/kubernetes-sigs/gateway-api/releases/download/{{.CONFORMANCE_VERSION}}/{{.CONFORMANCE_CHANNEL}}-install.yaml"
+
+  metallb:
+    desc: Install MetalLB load balancer (standalone - creates cluster if needed)
+    deps:
+      - kind-cluster
+    cmds:
+      - task: metallb-internal
+        vars:
+          K8S: '{{.K8S}}'
+          KIND_CLUSTER_NAME: '{{.KIND_CLUSTER_NAME}}'
+          CLUSTER_SUBNET: '{{.CLUSTER_SUBNET}}'
+
+  metallb-internal:
+    desc: Internal task - install MetalLB
+    cmds:
+      - K8S={{.K8S}} KIND_CLUSTER_NAME={{.KIND_CLUSTER_NAME}} CLUSTER_SUBNET={{.CLUSTER_SUBNET}} ./hack/metallb.sh
+
+  build-gateway-image:
+    desc: Build the kgateway Docker image
+    deps:
+      - bin/kgateway
+    cmds:
+      - '{{.DOCKER_BUILD}} -t {{.IMAGE_REPO}}/{{.CONTROLLER_IMAGE_NAME}}:{{.IMAGE_TAG}} --build-arg=ENVOY_BASE_IMAGE={{.ENVOY_BASE_IMAGE}} -f cmd/main/Dockerfile .'
+    sources:
+      - cmd/main/Dockerfile
+      - bin/kgateway
+
+  build-envoyinit-image:
+    desc: Build the envoyinit Docker image
+    deps:
+      - bin/envoyinit
+    cmds:
+      - '{{.DOCKER_BUILD}} -t {{.IMAGE_REPO}}/{{.ENVOYINIT_IMAGE_NAME}}:{{.IMAGE_TAG}} --build-arg=GOARCH={{.GOARCH}} --build-arg=ENVOY_BASE_IMAGE={{.ENVOY_BASE_IMAGE}} -f cmd/envoyinit/Dockerfile .'
+    sources:
+      - cmd/envoyinit/Dockerfile
+      - bin/envoyinit
+
+  build-sds-image:
+    desc: Build the sds Docker image
+    deps:
+      - bin/sds
+    cmds:
+      - '{{.DOCKER_BUILD}} -t {{.IMAGE_REPO}}/{{.SDS_IMAGE_NAME}}:{{.IMAGE_TAG}} --build-arg=GOARCH={{.GOARCH}} -f cmd/sds/Dockerfile .'
+    sources:
+      - cmd/sds/Dockerfile
+      - bin/sds
+
+  build-images:
+    desc: Build all Docker images in parallel
+    deps:
+      - build-gateway-image
+      - build-envoyinit-image
+      - build-sds-image
+
+  bin/kgateway:
+    desc: Build the kgateway binary
+    cmds:
+      - CGO_ENABLED=0 GOOS=linux GOARCH={{.GOARCH}} go build -ldflags='{{.LDFLAGS}}' -o bin/kgateway ./cmd/main/...
+    sources:
+      - go.mod
+      - './**/*.go'
+      - exclude: './test/**/*.go'
+    generates:
+      - bin/kgateway
+
+  bin/envoyinit:
+    desc: Build the envoyinit binary
+    cmds:
+      - CGO_ENABLED=0 GOOS=linux GOARCH={{.GOARCH}} go build -o bin/envoyinit cmd/envoyinit/main.go
+    sources:
+      - go.mod
+      - './cmd/envoyinit/**/*.go'
+    generates:
+      - bin/envoyinit
+
+  bin/sds:
+    desc: Build the sds binary
+    cmds:
+      - CGO_ENABLED=0 GOOS=linux GOARCH={{.GOARCH}} go build -o bin/sds cmd/sds/main.go
+    sources:
+      - go.mod
+      - './cmd/sds/**/*.go'
+    generates:
+      - bin/sds
+
+  kind-load-image-internal:
+    desc: Internal task - Load a single image into kind cluster with stamp tracking
+    internal: true
+    # NOTE: Because of https://github.com/kubernetes-sigs/kind/issues/2922,
+    # it's much faster than re-running 'go tool kind load' to use the following
+    # status checks. We just have to avoid using an outdated image. I see
+    # different sha256 from 'docker images' vs. 'docker exec ... crictl', so
+    # we just manage our own stamp files.
+    requires:
+      vars: [IMAGE_NAME, BINARY, DOCKERFILE, STAMP_NAME]
+    vars:
+      STAMP_FILE: _output/stamps/{{.STAMP_NAME}}
+    deps:
+      - kind-cluster
+    cmds:
+      - go tool kind load docker-image {{.IMAGE_REPO}}/{{.IMAGE_NAME}}:{{.IMAGE_TAG}} --name {{.KIND_CLUSTER_NAME}}
+      - mkdir -p _output/stamps
+      - |
+        {
+          echo "BINARY_SHA256=$(shasum -a 256 {{.BINARY}} | awk '{print $1}')"
+          echo "DOCKERFILE_SHA256=$(shasum -a 256 {{.DOCKERFILE}} | awk '{print $1}')"
+        } > {{.STAMP_FILE}}
+    status:
+      - |
+        if [ ! -f {{.STAMP_FILE}} ]; then
+          exit 1
+        fi
+        CURRENT_BINARY_SHA=$(shasum -a 256 {{.BINARY}} | awk '{print $1}')
+        CURRENT_DOCKERFILE_SHA=$(shasum -a 256 {{.DOCKERFILE}} | awk '{print $1}')
+        STAMP_BINARY_SHA=$(grep BINARY_SHA256 {{.STAMP_FILE}} | cut -d= -f2)
+        STAMP_DOCKERFILE_SHA=$(grep DOCKERFILE_SHA256 {{.STAMP_FILE}} | cut -d= -f2)
+        if [ "$CURRENT_BINARY_SHA" != "$STAMP_BINARY_SHA" ] || [ "$CURRENT_DOCKERFILE_SHA" != "$STAMP_DOCKERFILE_SHA" ]; then
+          exit 1
+        fi
+        # Verify image exists in cluster in case you deleted and recreated
+        docker exec {{.KIND_CLUSTER_NAME}}-control-plane crictl images -o json | grep -q "{{.IMAGE_REPO}}/{{.IMAGE_NAME}}:{{.IMAGE_TAG}}"
+
+  kind-load-images:
+    desc: Load all images into kind cluster in parallel
+    deps:
+      - build-images
+    cmds:
+      - for:
+          - IMAGE_NAME: '{{.CONTROLLER_IMAGE_NAME}}'
+            BINARY: bin/kgateway
+            DOCKERFILE: cmd/main/Dockerfile
+            STAMP_NAME: kind-load-gateway
+          - IMAGE_NAME: '{{.ENVOYINIT_IMAGE_NAME}}'
+            BINARY: bin/envoyinit
+            DOCKERFILE: cmd/envoyinit/Dockerfile
+            STAMP_NAME: kind-load-envoyinit
+          - IMAGE_NAME: '{{.SDS_IMAGE_NAME}}'
+            BINARY: bin/sds
+            DOCKERFILE: cmd/sds/Dockerfile
+            STAMP_NAME: kind-load-sds
+        task: kind-load-image-internal
+        vars:
+          IMAGE_NAME: '{{.ITEM.IMAGE_NAME}}'
+          BINARY: '{{.ITEM.BINARY}}'
+          DOCKERFILE: '{{.ITEM.DOCKERFILE}}'
+          STAMP_NAME: '{{.ITEM.STAMP_NAME}}'
+
+  crc-push-gateway:
+    desc: Push kgateway image to CRC registry
+    deps:
+      - build-gateway-image
+    cmds:
+      - echo "Copying {{.CONTROLLER_IMAGE_NAME}} to CRC registry..."
+      - |
+        skopeo copy --dest-tls-verify=false --dest-creds=kubeadmin:$(oc whoami -t) \
+          docker-daemon:{{.IMAGE_REPO}}/{{.CONTROLLER_IMAGE_NAME}}:{{.IMAGE_TAG}} \
+          docker://{{.CRC_REGISTRY}}/{{.CRC_PROJECT}}/{{.CONTROLLER_IMAGE_NAME}}:{{.IMAGE_TAG}}
+
+  crc-push-envoyinit:
+    desc: Push envoyinit image to CRC registry
+    deps:
+      - build-envoyinit-image
+    cmds:
+      - echo "Copying {{.ENVOYINIT_IMAGE_NAME}} to CRC registry..."
+      - |
+        skopeo copy --dest-tls-verify=false --dest-creds=kubeadmin:$(oc whoami -t) \
+          docker-daemon:{{.IMAGE_REPO}}/{{.ENVOYINIT_IMAGE_NAME}}:{{.IMAGE_TAG}} \
+          docker://{{.CRC_REGISTRY}}/{{.CRC_PROJECT}}/{{.ENVOYINIT_IMAGE_NAME}}:{{.IMAGE_TAG}}
+
+  crc-push-sds:
+    desc: Push sds image to CRC registry
+    deps:
+      - build-sds-image
+    cmds:
+      - echo "Copying {{.SDS_IMAGE_NAME}} to CRC registry..."
+      - |
+        skopeo copy --dest-tls-verify=false --dest-creds=kubeadmin:$(oc whoami -t) \
+          docker-daemon:{{.IMAGE_REPO}}/{{.SDS_IMAGE_NAME}}:{{.IMAGE_TAG}} \
+          docker://{{.CRC_REGISTRY}}/{{.CRC_PROJECT}}/{{.SDS_IMAGE_NAME}}:{{.IMAGE_TAG}}
+
+  crc-push-images:
+    desc: Push all images to CRC registry
+    cmds:
+      - task: crc-push-gateway
+      - task: crc-push-envoyinit
+      - task: crc-push-sds
+      - |
+        echo ""
+        echo "✅ Images pushed to CRC registry"
+        echo "   Location: {{.CRC_REGISTRY}}/{{.CRC_PROJECT}}/<image-name>:{{.IMAGE_TAG}}"
+        echo ""
+        echo "To deploy:"
+        echo "  K8S=crc task deploy-charts"
+
+  load-images:
+    desc: Load/push all images based on K8S (kind or crc)
+    cmds:
+      - task: '{{if eq .K8S "crc"}}crc-push-images{{else}}kind-load-images{{end}}'
+
+  package-charts:
+    desc: Package all KGW charts
+    deps:
+      - generate-charts
+    cmds:
+      # After generation completes, package in parallel
+      - task: package-all-charts-parallel
+
+  package-all-charts-parallel:
+    desc: Package all charts in parallel (internal)
+    deps:
+      - package-crd-chart
+      - package-core-chart
+      - package-dashboards-chart
+
+  package-crd-chart:
+    desc: Package the KGW CRD chart
+    deps:
+      - generate-charts
+    cmds:
+      - mkdir -p {{.HELM_DIR}}
+      - go tool helm package --version {{.IMAGE_TAG}} --destination {{.HELM_DIR}} install/helm/kgateway-crds
+      - go tool helm repo index {{.HELM_DIR}}
+
+  package-core-chart:
+    desc: Package the KGW core chart
+    deps:
+      - generate-charts
+    cmds:
+      - mkdir -p {{.HELM_DIR}}
+      - go tool helm package --version {{.IMAGE_TAG}} --destination {{.HELM_DIR}} install/helm/kgateway
+      - go tool helm repo index {{.HELM_DIR}}
+
+  package-dashboards-chart:
+    desc: Package the KGW dashboards chart
+    cmds:
+      - mkdir -p {{.HELM_DIR}}
+      - go tool helm package --version {{.IMAGE_TAG}} --destination {{.HELM_DIR}} install/helm/kgateway-dashboards
+      - go tool helm repo index {{.HELM_DIR}}
+
+  manifests:
+    desc: Generate RBAC and CRD resources
+    run: once
+    cmds:
+      - echo "Generating manifests..."
+      # Limit CRD description length to prevent Helm release secret from exceeding Kubernetes 1MB limit.
+      # Without this, CRD descriptions can cause the Helm release secret to exceed the limit,
+      # resulting in: Error: create: failed to create: Secret "sh.helm.release.v1.kgateway-crds.v1" is invalid
+      # The value 164 was determined empirically to keep the total Helm chart size under the limit.
+      - go tool controller-gen --load-build-tags e2e rbac:roleName=kgateway-NAMESPACE_PLACEHOLDER object crd:maxDescLen=164 webhook paths="./..." output:crd:artifacts:config=install/helm/kgateway-crds/templates output:rbac:artifacts:config=install/helm/kgateway/templates/enterprise
+    sources:
+      - go.mod
+      - './**/*.go'
+      - exclude: './test/**/*.go'
+    generates:
+      - install/helm/kgateway-crds/templates/*.yaml
+      - install/helm/kgateway/templates/enterprise/*.yaml
+
+  generate-charts:
+    desc: Generate Helm charts
+    run: once
+    deps:
+      - install/helm/helmchart.go
+      - manifests
+    cmds:
+      - echo "Generating Helm charts..."
+      - |
+        IMAGE_TAG={{.IMAGE_TAG}} \
+        IMAGE_REPO={{.IMAGE_REPO}} \
+        REPO_DIR=$(git rev-parse --show-toplevel 2>/dev/null || pwd) \
+        CONTROLLER_IMAGE_NAME={{.CONTROLLER_IMAGE_NAME}} \
+        ENVOYINIT_IMAGE_NAME={{.ENVOYINIT_IMAGE_NAME}} \
+        ./hack/generate-chart.sh
+
+  install/helm/helmchart.go:
+    cmds:
+      - mkdir -p install/helm
+      - cp -f install/static/helmchart.go install/helm/helmchart.go
+    sources:
+      - install/static/helmchart.go
+    generates:
+      - install/helm/helmchart.go
+    silent: true
+
+  deploy-charts:
+    desc: Deploy the KGW charts (CRDs first, then core and dashboards)
+    cmds:
+      - task: deploy-crd-chart
+      - task: deploy-core-and-dashboards
+
+  deploy-core-and-dashboards:
+    desc: Deploy core and dashboards charts in parallel (internal)
+    deps:
+      - deploy-core-chart
+      - deploy-dashboards-chart
+
+  deploy-crd-chart:
+    desc: Apply CRDs to the cluster
+    deps:
+      - package-crd-chart
+      - kind-cluster
+    cmds:
+      - go tool helm upgrade --install kgateway-crds ./install/helm/kgateway-crds --namespace {{.INSTALL_NAMESPACE}} --create-namespace {{.HELM_UPGRADE_ARGS}}
+
+  deploy-core-chart:
+    desc: Deploy the KGW core chart
+    deps:
+      - package-core-chart
+      # Ensures cluster + metallb are ready. You could probably install without
+      # waiting here if you had the discipline to wait for metallb before
+      # actually creating a Gateway:
+      - cluster-with-gw-api-and-metallb
+      - load-images
+    cmds:
+      - |
+        go tool helm upgrade --install kgateway ./install/helm/kgateway \
+          --namespace {{.INSTALL_NAMESPACE}} --create-namespace {{.HELM_UPGRADE_ARGS}} \
+          {{.EXTRA_CORE_CHART_ARGS}} \
+          --set-string licensing.glooGatewayLicenseKey={{.GLOO_LICENSE_KEY}} \
+          --set-string licensing.agentgatewayLicenseKey={{.AGENTGATEWAY_LICENSE_KEY}} || ./hack/debug-k8s.sh
+
+  deploy-dashboards-chart:
+    desc: Deploy the KGW dashboards chart
+    deps:
+      - package-dashboards-chart
+      - kind-cluster
+    cmds:
+      - go tool helm upgrade --install kgateway-dashboards ./install/helm/kgateway-dashboards --namespace {{.INSTALL_NAMESPACE}} --create-namespace {{.HELM_UPGRADE_ARGS}}
+
+  clean:
+    desc: Clean the build artifacts
+    cmds:
+      - for: [bin, _test, config/crd/kgateway/charts, _output, install/helm]
+        cmd: rm -rf {{.ITEM}}
+      - |
+        GIT_DIR=$(git rev-parse --git-dir 2>/dev/null || echo "")
+        case "$GIT_DIR" in
+          */worktrees/*)
+            MAIN_DIR=$(git rev-parse --git-common-dir)/..
+            echo "You did not remove a cache shared by other worktrees, but you can do so by running \`cd $(cd $MAIN_DIR && pwd) && task clean\`"
+            ;;
+        esac
+    silent: true
+
+  undeploy:
+    desc: Undeploy the application from the cluster
+    cmds:
+      - go tool helm uninstall kgateway kgateway-crds kgateway-dashboards --namespace {{.INSTALL_NAMESPACE}} || true
+
+  # Code generation and linting tasks
+
+  golangci-lint-custom:
+    desc: Build custom golangci-lint binary
+    cmds:
+      - GOTOOLCHAIN={{.GOTOOLCHAIN}} go tool golangci-lint custom
+    sources:
+      - go.mod
+      - .custom-gcl.yml
+      - .golangci.yaml
+    generates:
+      - '{{.DEPSGOBIN}}/golangci-lint-custom'
+
+  lint:
+    desc: Run golangci-lint on the codebase
+    sources:
+      - './**/*.go'
+      - .golangci.yaml
+      - go.mod
+    deps:
+      - install/helm/helmchart.go
+      - golangci-lint-custom
+    cmds:
+      - GOTOOLCHAIN={{.GOTOOLCHAIN}} {{.DEPSGOBIN}}/golangci-lint-custom run --build-tags e2e
+
+  fmt:
+    desc: Run golangci-lint formatters but not linters
+    sources:
+      - './**/*.go'
+      - .golangci.yaml
+      - go.mod
+    cmds:
+      - GOTOOLCHAIN={{.GOTOOLCHAIN}} go tool golangci-lint fmt
+
+  analyze:
+    desc: Run golangci-lint formatters and linters in --fix mode
+    aliases: [lint:fix, fix]
+    sources:
+      - './**/*.go'
+      - .golangci.yaml
+      - go.mod
+    deps:
+      - golangci-lint-custom
+    cmds:
+      - GOTOOLCHAIN={{.GOTOOLCHAIN}} {{.DEPSGOBIN}}/golangci-lint-custom run --build-tags e2e --fix --max-issues-per-linter 0 --max-same-issues 0
+
+  tidy:
+    desc: Run go mod tidy
+    deps:
+      - install/helm/helmchart.go
+    cmds:
+      - go mod tidy
+
+  unit:
+    desc: Run unit tests
+    deps:
+      - envtest-path
+      - envoy-download
+      - install/helm/helmchart.go
+      - package-charts
+    cmds:
+      - KUBEBUILDER_ASSETS="$(go tool setup-envtest use -p path {{.ENVTEST_K8S_VERSION}})" PATH="$(pwd)/bin:$PATH" {{.GOTESTSUM}} {{.GOTESTSUM_ARGS}} --rerun-fails-abort-on-data-race --rerun-fails={{.GO_TEST_RETRIES}} --packages="{{.TEST_PKG}}" -- -mod=mod -ldflags='{{.LDFLAGS}}' -tags={{.TEST_TAG}} {{.TEST_ARGS}}
+    vars:
+      K8S_VERSION:
+        sh: go list -m k8s.io/client-go | cut -d" " -f2 | sed -E 's/^v0\.([0-9]+)\.[0-9]+$$/1.\1/'
+      ENVTEST_K8S_VERSION: '{{.K8S_VERSION}}.x'
+      TEST_PKG: '{{default "./..." .TEST_PKG}}'
+      TEST_ARGS: '{{default "-test.v" .TEST_ARGS}}'
+      TEST_TAG: '{{.TEST_TAG}}'
+
+  test-helm:
+    desc: Run helm chart tests
+    deps:
+      - install/helm/helmchart.go
+    cmds:
+      - go test -v ./test/helm/...
+
+  test-e2e:
+    desc: Run end-to-end tests
+    deps:
+      - package-charts
+    cmds:
+      - K8S={{.K8S}} ./hack/e2e.sh
+
+  e2e:
+    desc: Deploy and run end-to-end tests
+    cmds:
+      - task: setup
+      - task: test-e2e
+
+  generate-conformance-test:
+    desc: Generate conformance test file from gateway-api module
+    cmds:
+      - mkdir -p {{.CONFORMANCE_TEST_DIR}}
+      - |
+        echo "//go:build conformance" > {{.CONFORMANCE_TEST_DIR}}/conformance_test.go
+        cat $(go list -json -m sigs.k8s.io/gateway-api | jq -r '.Dir')/conformance/conformance_test.go >> {{.CONFORMANCE_TEST_DIR}}/conformance_test.go
+        go fmt {{.CONFORMANCE_TEST_DIR}}/conformance_test.go
+    sources:
+      - go.mod
+      - go.sum
+    generates:
+      - '{{.CONFORMANCE_TEST_DIR}}/conformance_test.go'
+
+  test-conformance:
+    desc: Run the Gateway API conformance test suite
+    deps:
+      - generate-conformance-test
+    cmds:
+      - |
+        go test -tags=e2e,conformance -mod=mod -ldflags='{{.LDFLAGS}}' {{.TEST_ARGS}} {{.CONFORMANCE_TEST_DIR}}/... -args \
+          -gateway-class={{.CONFORMANCE_GATEWAY_CLASS}} \
+          -supported-features={{.CONFORMANCE_SUPPORTED_FEATURES}} \
+          -conformance-profiles={{.CONFORMANCE_SUPPORTED_PROFILES}} \
+          -report-output={{.CONFORMANCE_TEST_DIR}}/{{.VERSION}}-report.yaml \
+          -organization=kgateway-dev \
+          -project=kgateway \
+          -version={{.VERSION}} \
+          -url=github.com/kgateway-dev/kgateway \
+          -contact=github.com/kgateway-dev/kgateway/issues/new/choose
+
+  conformance:
+    desc: Deploy and run Gateway API conformance tests
+    cmds:
+      - task: run
+      - task: test-conformance
+
+  release:
+    desc: Create a new release using goreleaser defaulting to using .goreleaser.yaml
+    deps:
+      - install/helm/helmchart.go
+      - ensure-cosign
+    cmds:
+      - IMAGE_TAG={{.IMAGE_TAG}} IMAGE_REPO={{.IMAGE_REPO}} CONTROLLER_IMAGE_NAME={{.CONTROLLER_IMAGE_NAME}} ENVOYINIT_IMAGE_NAME={{.ENVOYINIT_IMAGE_NAME}} SDS_IMAGE_NAME={{.SDS_IMAGE_NAME}} ENVOY_BASE_IMAGE={{.ENVOY_BASE_IMAGE}} COSIGN_KEY={{.COSIGN_KEY}} go tool goreleaser release {{.GORELEASER_ARGS}}
+
+  clean-gen:
+    desc: Clean generated code
+    cmds:
+      - for: [api/applyconfiguration, internal/client, install/helm/kgateway-crds/templates/*.yaml, install/helm/kgateway/templates/*.yaml]
+        cmd: rm -rf {{.ITEM}}
+
+  clean-stamps:
+    desc: Clean all stamp files to force regeneration
+    cmds:
+      - rm -rf _output/stamps
+
+  generate:
+    desc: Generate all code with optimized dependencies
+    cmds:
+      - task: generate-go
+      - task: generate-protos
+      - task: generate-charts
+      - task: generate-helm-docs
+      - task: tidy
+      - task: fmt
+
+  generate-all:
+    desc: Alias for generate
+    cmds:
+      - task: generate
+
+  generated-code:
+    desc: Force regenerate all code (always runs, ignoring stamps)
+    cmds:
+      - task: clean-gen
+      - task: clean-stamps
+      - task: generate
+
+  generate-go:
+    desc: Generate Go code
+    cmds:
+      - go generate ./...
+
+  generate-protos:
+    desc: Generate protobuf files
+    sources:
+      - './**/*.proto'
+      - ./hack/install-protoc.sh
+      - ./hack/generate-protos.sh
+    cmds:
+      - task: install-protoc
+      - ./hack/generate-protos.sh
+
+  generate-helm-docs:
+    desc: Generate Helm documentation
+    deps:
+      - generate-charts
+    cmds:
+      - for: ['kgateway-crds', 'kgateway']
+        cmd: go tool helm-docs -c install/helm/{{.ITEM}} --template-files=_templates.gotmpl --template-files=README.md.gotmpl
+
+  verify:
+    desc: Verify that generated code is up to date
+    cmds:
+      - task: generated-code
+      - git diff -U3 --exit-code
+
+  envtest-path:
+    desc: Set up envtest assets path for Kubernetes testing
+    cmds:
+      - go tool setup-envtest use {{.ENVTEST_K8S_VERSION}} -p path --arch={{.GOARCH}}
+    vars:
+      K8S_VERSION:
+        sh: go list -m k8s.io/client-go | cut -d" " -f2 | sed -E 's/^v0\.([0-9]+)\.[0-9]+$$/1.\1/'
+      ENVTEST_K8S_VERSION: '{{.K8S_VERSION}}.x'
+
+  envoy-download:
+    desc: Download the envoy binary from the base image
+    silent: true
+    cmds:
+      - |
+        if [ ! -f bin/envoy ]; then
+          if [ "$(uname -s)" = "Darwin" ]; then
+            echo "Skipping envoy binary download on macOS. Unit tests will use Docker-based validation."
+          else
+            echo "Downloading envoy binary from {{.ENVOY_BASE_IMAGE}}..."
+            mkdir -p {{.DEPSGOBIN}}
+            docker create --name envoy-tmp --platform linux/{{.GOARCH}} {{.ENVOY_BASE_IMAGE}} >/dev/null 2>&1
+            docker cp envoy-tmp:/usr/local/bin/envoy {{.DEPSGOBIN}}/envoy
+            docker rm envoy-tmp >/dev/null 2>&1
+            chmod +x {{.DEPSGOBIN}}/envoy
+            echo "Envoy binary downloaded to bin/envoy"
+          fi
+        else
+          echo "Envoy binary already exists at bin/envoy"
+        fi
+
+  build-tests:
+    desc: Build but do not run automated go tests
+    deps:
+      - envtest-path
+      - envoy-download
+    cmds:
+      - KUBEBUILDER_ASSETS="$(go tool setup-envtest use -p path {{.ENVTEST_K8S_VERSION}})" PATH="$(pwd)/bin:$PATH" go test -tags=e2e -c -o /dev/null -mod=mod -ldflags='{{.LDFLAGS}}' ./...
+    vars:
+      K8S_VERSION:
+        sh: go list -m k8s.io/client-go | cut -d" " -f2 | sed -E 's/^v0\.([0-9]+)\.[0-9]+$$/1.\1/'
+      ENVTEST_K8S_VERSION: '{{.K8S_VERSION}}.x'
+
+  golden-deployer:
+    desc: Refreshes golden files for ./test/deployer snapshot testing
+    cmds:
+      - REFRESH_GOLDEN=true task unit TEST_PKG=./test/deployer > /dev/null || true
+      - echo ""
+      - echo "This must pass after refreshing:"
+      - task unit TEST_PKG=./test/deployer TEST_ARGS=
+
+  golden-helm:
+    desc: Refreshes golden files for ./test/helm snapshot testing
+    cmds:
+      - REFRESH_GOLDEN=true task test-helm
+      - echo ""
+      - echo "This must pass after refreshing:"
+      - task test-helm
+
+  run-ci:
+    desc: Run CI for PR required checks using Github Actions
+    cmds:
+      - ./.github/actions/scripts/run-wfs.sh
+
+  install-protoc:
+    desc: Install protoc compiler if not present
+    cmds:
+      - mkdir -p {{.DEPSGOBIN}}
+      - ./hack/install-protoc.sh "{{.DEPSGOBIN}}"
+
+  release-chart:
+    desc: Release Helm charts to OCI registry
+    deps:
+      - package-charts
+    vars:
+      HELM_REGISTRY: '{{default "ghcr.io/kgateway-dev/charts" .HELM_REGISTRY}}'
+    cmds:
+      - for: [kgateway, kgateway-crds, kgateway-dashboards]
+        cmd: go tool helm push {{.HELM_DIR}}/{{.ITEM}}-{{.IMAGE_TAG}}.tgz oci://{{.HELM_REGISTRY}}
+
+  ensure-cosign:
+    desc: Ensure cosign is installed
+    cmds:
+      - |
+        if ! command -v cosign &> /dev/null; then
+          echo "cosign not found, installing..."
+          go install github.com/sigstore/cosign/v2/cmd/cosign@latest
+        fi
+
+  sign-charts:
+    desc: Sign Helm charts with cosign
+    deps:
+      - ensure-cosign
+      - release-chart
+    vars:
+      HELM_REGISTRY: '{{default "ghcr.io/kgateway-dev/charts" .HELM_REGISTRY}}'
+    cmds:
+      - echo "Signing charts with cosign..."
+      - for: [kgateway, kgateway-crds, kgateway-dashboards]
+        cmd: cosign sign --key env://COSIGN_KEY {{.HELM_REGISTRY}}/{{.ITEM}}:{{.IMAGE_TAG}}
+
+  crc-login:
+    desc: Get CRC registry token (no login needed with skopeo)
+    cmds:
+      - |
+        echo "Getting CRC token..."
+        echo "Token: $(oc whoami -t)"
+        echo ""
+        echo "Note: skopeo will use this token automatically via --dest-creds"
+    silent: true
+
+  help:
+    desc: Display available tasks
+    cmds:
+      - go tool task --list-all

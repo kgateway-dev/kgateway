@@ -20,4 +20,4 @@ jobs:
     - name: Prep Go Runner
       uses: ./.github/actions/prep-go-runner
     - name: Generate Code
-      run: make verify
+      run: go tool task verify

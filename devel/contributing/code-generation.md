@@ -1,6 +1,8 @@
 # Code Generation
 
-To run the full codegen process, use `make generate-all -B`. In most cases it is not necessary to run all sub-targets within `generate-all`.
+To run the full codegen process, use `go tool task generate-all --force`. In most cases it is not necessary to run all sub-targets within `generate-all`.
+
+**Note:** You can also use `make` commands for backwards compatibility, but `go tool task` is preferred.
 
 Here is a description of each sub-target and its purpose:
 
