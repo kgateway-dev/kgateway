@@ -168,7 +168,7 @@ func translateProvider(
 	policyNs string,
 	configMaps krt.Collection[*corev1.ConfigMap],
 	resolver backendResolver,
-	policySrc ir.ObjectSource,
+	gwExtObj ir.ObjectSource,
 ) (*jwtauthnv3.JwtProvider, error) {
 	var claimToHeaders []*jwtauthnv3.JwtClaimToHeader
 	for _, claim := range provider.ClaimsToHeaders {
@@ -193,7 +193,7 @@ func translateProvider(
 		jwtProvider.ClearRouteCache = true
 	}
 	translateTokenSource(provider, jwtProvider)
-	err := translateJwks(krtctx, provider.JWKS, policyNs, jwtProvider, configMaps, resolver, policySrc)
+	err := translateJwks(krtctx, provider.JWKS, policyNs, jwtProvider, configMaps, resolver, gwExtObj)
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +232,7 @@ func translateJwks(
 	out *jwtauthnv3.JwtProvider,
 	configMaps krt.Collection[*corev1.ConfigMap],
 	resolver backendResolver,
-	policySrc ir.ObjectSource,
+	gwExtObj ir.ObjectSource,
 ) error {
 	switch {
 	case jwkConfig.LocalJWKS != nil:
@@ -260,10 +260,7 @@ func translateJwks(
 			// shouldn't happen due to CEL validation
 			return fmt.Errorf("remote jwks: nil backend ref")
 		}
-		if resolver == nil {
-			return fmt.Errorf("remote jwks: backend resolver not available")
-		}
-		backend, err := resolver.GetBackendFromRef(krtctx, policySrc, *remote.BackendRef)
+		backend, err := resolver.GetBackendFromRef(krtctx, gwExtObj, *remote.BackendRef)
 		if err != nil {
 			return fmt.Errorf("remote jwks: unresolved backend ref: %w", err)
 		}

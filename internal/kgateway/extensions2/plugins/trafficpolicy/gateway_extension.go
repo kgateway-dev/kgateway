@@ -186,7 +186,7 @@ func resolveJwtProviders(
 	krtctx krt.HandlerContext,
 	configMaps krt.Collection[*corev1.ConfigMap],
 	backendResolver backendResolver,
-	objectSource ir.ObjectSource,
+	gwExtObj ir.ObjectSource,
 	policyName, policyNamespace string,
 	jwtProviders []v1alpha1.NamedJWTProvider,
 ) (*envoyjwtauthnv3.JwtAuthentication, error) {
@@ -201,7 +201,7 @@ func resolveJwtProviders(
 			policyNamespace,
 			configMaps,
 			backendResolver,
-			objectSource,
+			gwExtObj,
 		)
 		if err != nil {
 			return nil, err
