@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: a2a-helloworld
+  namespace: agent-gateway-test
   labels:
     app: a2a-helloworld
 spec:
@@ -24,6 +25,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: a2a-helloworld
+  namespace: agent-gateway-test
 spec:
   selector:
     app: a2a-helloworld
@@ -38,6 +40,7 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
   name: gw
+  namespace: agent-gateway-test
 spec:
   gatewayClassName: agentgateway
   listeners:
@@ -49,10 +52,10 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: a2a-route
+  namespace: agent-gateway-test
 spec:
   parentRefs:
-    - name: gw
-      namespace: default
+  - name: gw
   rules:
     - backendRefs:
         - name: a2a-helloworld

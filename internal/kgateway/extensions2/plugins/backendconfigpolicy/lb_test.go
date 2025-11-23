@@ -258,7 +258,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			name: "RingHash with hash policies",
 			config: &v1alpha1.LoadBalancer{
 				RingHash: &v1alpha1.LoadBalancerRingHashConfig{
-					HashPolicies: []*v1alpha1.HashPolicy{
+					HashPolicies: []v1alpha1.HashPolicy{
 						{
 							Header: &v1alpha1.Header{
 								Name: "x-user-id",
@@ -275,7 +275,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			expected: func() *envoyclusterv3.Cluster {
 				msg, _ := utils.MessageToAny(&ringhashv3.RingHash{
 					ConsistentHashingLbConfig: &envoycommonv3.ConsistentHashingLbConfig{
-						HashPolicy: constructHashPolicy([]*v1alpha1.HashPolicy{
+						HashPolicy: constructHashPolicy([]v1alpha1.HashPolicy{
 							{
 								Header: &v1alpha1.Header{
 									Name: "x-user-id",
@@ -307,7 +307,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			name: "Maglev with hash policies",
 			config: &v1alpha1.LoadBalancer{
 				Maglev: &v1alpha1.LoadBalancerMaglevConfig{
-					HashPolicies: []*v1alpha1.HashPolicy{
+					HashPolicies: []v1alpha1.HashPolicy{
 						{
 							Header: &v1alpha1.Header{
 								Name: "x-user-id",
@@ -324,7 +324,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			expected: func() *envoyclusterv3.Cluster {
 				msg, _ := utils.MessageToAny(&maglevv3.Maglev{
 					ConsistentHashingLbConfig: &envoycommonv3.ConsistentHashingLbConfig{
-						HashPolicy: constructHashPolicy([]*v1alpha1.HashPolicy{
+						HashPolicy: constructHashPolicy([]v1alpha1.HashPolicy{
 							{
 								Header: &v1alpha1.Header{
 									Name: "x-user-id",
@@ -475,7 +475,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 func TestConstructHashPolicy(t *testing.T) {
 	tests := []struct {
 		name         string
-		hashPolicies []*v1alpha1.HashPolicy
+		hashPolicies []v1alpha1.HashPolicy
 		expected     []*envoyroutev3.RouteAction_HashPolicy
 	}{
 		{
@@ -485,12 +485,12 @@ func TestConstructHashPolicy(t *testing.T) {
 		},
 		{
 			name:         "empty hash policies",
-			hashPolicies: []*v1alpha1.HashPolicy{},
+			hashPolicies: []v1alpha1.HashPolicy{},
 			expected:     nil,
 		},
 		{
 			name: "header hash policy",
-			hashPolicies: []*v1alpha1.HashPolicy{
+			hashPolicies: []v1alpha1.HashPolicy{
 				{
 					Header: &v1alpha1.Header{
 						Name: "x-user-id",
@@ -511,7 +511,7 @@ func TestConstructHashPolicy(t *testing.T) {
 		},
 		{
 			name: "cookie hash policy without TTL and path",
-			hashPolicies: []*v1alpha1.HashPolicy{
+			hashPolicies: []v1alpha1.HashPolicy{
 				{
 					Cookie: &v1alpha1.Cookie{
 						Name: "session-id",
@@ -531,7 +531,7 @@ func TestConstructHashPolicy(t *testing.T) {
 		},
 		{
 			name: "cookie hash policy with TTL and path",
-			hashPolicies: []*v1alpha1.HashPolicy{
+			hashPolicies: []v1alpha1.HashPolicy{
 				{
 					Cookie: &v1alpha1.Cookie{
 						Name: "session-id",
@@ -558,7 +558,7 @@ func TestConstructHashPolicy(t *testing.T) {
 		},
 		{
 			name: "cookie hash policy with all attributes",
-			hashPolicies: []*v1alpha1.HashPolicy{
+			hashPolicies: []v1alpha1.HashPolicy{
 				{
 					Cookie: &v1alpha1.Cookie{
 						Name:     "session-id",
@@ -586,7 +586,7 @@ func TestConstructHashPolicy(t *testing.T) {
 		},
 		{
 			name: "source IP hash policy",
-			hashPolicies: []*v1alpha1.HashPolicy{
+			hashPolicies: []v1alpha1.HashPolicy{
 				{
 					SourceIP: &v1alpha1.SourceIP{},
 					Terminal: ptr.To(false),
@@ -605,7 +605,7 @@ func TestConstructHashPolicy(t *testing.T) {
 		},
 		{
 			name: "multiple hash policies",
-			hashPolicies: []*v1alpha1.HashPolicy{
+			hashPolicies: []v1alpha1.HashPolicy{
 				{
 					Header: &v1alpha1.Header{
 						Name: "x-user-id",
@@ -654,7 +654,7 @@ func TestConstructHashPolicy(t *testing.T) {
 		},
 		{
 			name: "cookie hash policy with nil TTL",
-			hashPolicies: []*v1alpha1.HashPolicy{
+			hashPolicies: []v1alpha1.HashPolicy{
 				{
 					Cookie: &v1alpha1.Cookie{
 						Name: "session-id",

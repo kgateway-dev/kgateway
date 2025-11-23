@@ -526,7 +526,7 @@ type RouteContextInputs struct {
 	InferencePools  krt.Collection[*inf.InferencePool]
 	Namespaces      krt.Collection[*corev1.Namespace]
 	ServiceEntries  krt.Collection[*networkingclient.ServiceEntry]
-	Backends        krt.Collection[*v1alpha1.Backend]
+	Backends        krt.Collection[*v1alpha1.AgentgatewayBackend]
 	DirectResponses krt.Collection[*v1alpha1.DirectResponse]
 	ControllerName  string
 }

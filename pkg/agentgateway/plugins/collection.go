@@ -16,7 +16,6 @@ import (
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	kgwversioned "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
@@ -30,14 +29,15 @@ type AgwCollections struct {
 	KrtOpts   krtutil.KrtOptions
 
 	// Core Kubernetes resources
-	Namespaces         krt.Collection[*corev1.Namespace]
-	Nodes              krt.Collection[*corev1.Node]
-	Pods               krt.Collection[*corev1.Pod]
-	Services           krt.Collection[*corev1.Service]
-	Secrets            krt.Collection[*corev1.Secret]
-	SecretsByNamespace krt.Index[string, *corev1.Secret]
-	ConfigMaps         krt.Collection[*corev1.ConfigMap]
-	EndpointSlices     krt.Collection[*discovery.EndpointSlice]
+	Namespaces          krt.Collection[*corev1.Namespace]
+	Nodes               krt.Collection[*corev1.Node]
+	Pods                krt.Collection[*corev1.Pod]
+	Services            krt.Collection[*corev1.Service]
+	ServicesByNamespace krt.Index[string, *corev1.Service]
+	Secrets             krt.Collection[*corev1.Secret]
+	SecretsByNamespace  krt.Index[string, *corev1.Secret]
+	ConfigMaps          krt.Collection[*corev1.ConfigMap]
+	EndpointSlices      krt.Collection[*discovery.EndpointSlice]
 
 	// Istio resources for ambient mesh
 	WorkloadEntries krt.Collection[*networkingclient.WorkloadEntry]
@@ -57,12 +57,8 @@ type AgwCollections struct {
 	// Extended resources
 	InferencePools krt.Collection[*inf.InferencePool]
 
-	// irs shared by common colections and agent gateway
-	WrappedPods krt.Collection[krtcollections.WrappedPod]
-	RefGrants   *krtcollections.RefGrantIndex
-
 	// kgateway resources
-	Backends             krt.Collection[*v1alpha1.Backend]
+	Backends             krt.Collection[*v1alpha1.AgentgatewayBackend]
 	AgentgatewayPolicies krt.Collection[*v1alpha1.AgentgatewayPolicy]
 	DirectResponses      krt.Collection[*v1alpha1.DirectResponse]
 	GatewayExtensions    krt.Collection[*v1alpha1.GatewayExtension]
@@ -95,8 +91,6 @@ func (c *AgwCollections) HasSynced() bool {
 		c.ReferenceGrants != nil && c.ReferenceGrants.HasSynced() &&
 		c.BackendTLSPolicies != nil && c.BackendTLSPolicies.HasSynced() &&
 		c.InferencePools != nil && c.InferencePools.HasSynced() &&
-		c.WrappedPods != nil && c.WrappedPods.HasSynced() &&
-		c.RefGrants != nil && c.RefGrants.HasSynced() &&
 		c.Backends != nil && c.Backends.HasSynced() &&
 		c.AgentgatewayPolicies != nil && c.AgentgatewayPolicies.HasSynced() &&
 		c.DirectResponses != nil && c.DirectResponses.HasSynced() &&
@@ -114,6 +108,7 @@ func NewAgwCollections(
 ) (*AgwCollections, error) {
 	agwCollections := &AgwCollections{
 		Client:          commoncol.Client,
+		KrtOpts:         commoncol.KrtOpts,
 		ControllerName:  agwControllerName,
 		SystemNamespace: systemNamespace,
 		IstioNamespace:  commoncol.Settings.IstioNamespace,
@@ -172,15 +167,11 @@ func NewAgwCollections(
 		// inference extensions need to be enabled so control plane has permissions to watch resource. Disable by default
 		InferencePools: krt.NewStaticCollection[*inf.InferencePool](nil, nil, commoncol.KrtOpts.ToOptions("disable/inferencepools")...),
 
-		// common collections
-		WrappedPods: commoncol.WrappedPods,
-		RefGrants:   commoncol.RefGrants,
-
 		// kgateway resources
 		DirectResponses:      krt.NewInformer[*v1alpha1.DirectResponse](commoncol.Client),
 		AgentgatewayPolicies: krt.NewInformer[*v1alpha1.AgentgatewayPolicy](commoncol.Client),
 		GatewayExtensions:    krt.NewInformer[*v1alpha1.GatewayExtension](commoncol.Client),
-		Backends:             krt.NewInformer[*v1alpha1.Backend](commoncol.Client),
+		Backends:             krt.NewInformer[*v1alpha1.AgentgatewayBackend](commoncol.Client),
 	}
 
 	if commoncol.Settings.EnableInferExt {
@@ -188,7 +179,12 @@ func NewAgwCollections(
 		inferencePoolGVR := wellknown.InferencePoolGVK.GroupVersion().WithResource("inferencepools")
 		agwCollections.InferencePools = krt.WrapClient(kclient.NewDelayedInformer[*inf.InferencePool](commoncol.Client, inferencePoolGVR, kubetypes.StandardInformer, kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/InferencePools")...)
 	}
-	agwCollections.SecretsByNamespace = krt.NewNamespaceIndex(agwCollections.Secrets)
+	agwCollections.SetupIndexes()
 
 	return agwCollections, nil
+}
+
+func (c *AgwCollections) SetupIndexes() {
+	c.SecretsByNamespace = krt.NewNamespaceIndex(c.Secrets)
+	c.ServicesByNamespace = krt.NewNamespaceIndex(c.Services)
 }

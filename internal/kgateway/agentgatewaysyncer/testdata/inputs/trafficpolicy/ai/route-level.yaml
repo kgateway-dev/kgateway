@@ -14,21 +14,16 @@ spec:
     protocol: HTTP
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: Backend
+kind: AgentgatewayBackend
 metadata:
   labels:
     app: kgateway
   name: openai
 spec:
-  type: AI
   ai:
-    llm:
+    provider:
       openai:
         model: "gpt-4o-mini"
-        authToken:
-          kind: "SecretRef"
-          secretRef:
-            name: openai-secret
 ---
 apiVersion: v1
 kind: Secret
@@ -57,13 +52,13 @@ spec:
           role: user
       promptGuard:
         request:
-          customResponse:
+        - response:
             message: "Your request was rejected due to inappropriate content"
             statusCode: 403
           webhook:
-            host:
-              host: "prompt-guard.example.com"
-              port: 8443
+            backendRef:
+              name: webhook
+              port: 80
             forwardHeaderMatches:
             - type: Exact
               name: x-foo
@@ -71,57 +66,51 @@ spec:
             - type: RegularExpression
               name: x-baz
               value: ^baz-.*
-          regex:
+        - regex:
             action: REJECT
             matches:
-            - name: harmful-content
-              pattern: (?i)(hate|kill|harm)
-            - name: profanity
-              pattern: (?i)(bad|words)
+            - (?i)(hate|kill|harm)
+            - (?i)(bad|words)
             builtins:
               - CREDIT_CARD
               - SSN
-          moderation:
-            openAIModeration:
-              authToken:
-                kind: SecretRef
+        - openAIModeration:
+            model: text-moderation-latest
+            policies:
+              auth:
                 secretRef:
                   name: openai-secret
-              model: text-moderation-latest
         response:
-          webhook:
-            host:
-              host: "response-guard.example.com"
-              port: 8444
-          regex:
+        - webhook:
+            backendRef:
+              name: webhook
+              port: 80
+        - regex:
             action: MASK
             builtins:
             - EMAIL
             - PHONE_NUMBER
             matches:
-            - name: mask-numbers
-              pattern: \b\d{4}\b
-            - name: mask-sensitive
-              pattern: (?i)(password|secret)
+            - \b\d{4}\b
+            - (?i)(password|secret)
       defaults:
         - field: top_p
-          value: "0.95"
+          value: 0.95
         - field: frequency_penalty
-          value: "0.1"
+          value: 0.1
         - field: presence_penalty
-          value: "0.1"
-        - field: max_tokens
-          value: "2000"
-          override: true
-        - field: temperature
-          value: "0.5"
-          override: true
+          value: 0.1
         - field: string
           value: "some_string"
         - field: array_int
-          value: "[1,2,3]"
+          value: [1,2,3]
         - field: array_string
-          value: '["one","two","three"]'
+          value: ["one","two","three"]
+      overrides:
+      - field: max_tokens
+        value: 2000
+      - field: temperature
+        value: 0.5
       modelAliases:
         fast: "gpt-3.5-turbo"
         smart: "gpt-4-turbo"
@@ -144,10 +133,19 @@ spec:
   rules:
   - backendRefs:
     - group: gateway.kgateway.dev
-      kind: Backend
+      kind: AgentgatewayBackend
       name: openai
       weight: 1
     matches:
     - path:
         type: PathPrefix
         value: /v1/chat/completions
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webhook
+  namespace: default
+spec:
+  ports:
+  - port: 80

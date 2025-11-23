@@ -7304,6 +7304,8 @@ spec:
             description: The current conditions of the GatewayParameters. This is
               not currently implemented.
             type: object
+        required:
+        - spec
         type: object
     served: true
     storage: true
