@@ -121,8 +121,9 @@ func constructCSRF(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) {
 }
 
 func toEnvoyStringMatcher(origin v1alpha1.StringMatcher) *envoy_matcher_v3.StringMatcher {
-	matcher := &envoy_matcher_v3.StringMatcher{
-		IgnoreCase: origin.IgnoreCase,
+	matcher := &envoy_matcher_v3.StringMatcher{}
+	if origin.IgnoreCase != nil {
+		matcher.IgnoreCase = *origin.IgnoreCase
 	}
 
 	switch {

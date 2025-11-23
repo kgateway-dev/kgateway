@@ -13,9 +13,6 @@ type GatewayExtension struct {
 	// ObjectSource identifies the source of this extension.
 	ObjectSource
 
-	// Type indicates the type of the GatewayPolicy.
-	Type v1alpha1.GatewayExtensionType
-
 	// ExtAuth configuration for ExtAuth extension type.
 	ExtAuth *v1alpha1.ExtAuthProvider
 
@@ -25,6 +22,9 @@ type GatewayExtension struct {
 	// RateLimit configuration for RateLimit extension type.
 	// This is specifically for global rate limiting that communicates with an external rate limit service.
 	RateLimit *v1alpha1.RateLimitProvider
+
+	// JwtProviders configures the jwt providers
+	JwtProviders []v1alpha1.NamedJWTProvider
 
 	// PrecedenceWeight specifies the precedence weight associated with the provider.
 	// A higher weight implies higher priority.
@@ -43,9 +43,6 @@ func (e GatewayExtension) ResourceName() string {
 }
 
 func (e GatewayExtension) Equals(other GatewayExtension) bool {
-	if e.Type != other.Type {
-		return false
-	}
 	if !reflect.DeepEqual(e.ExtAuth, other.ExtAuth) {
 		return false
 	}
@@ -53,6 +50,9 @@ func (e GatewayExtension) Equals(other GatewayExtension) bool {
 		return false
 	}
 	if !reflect.DeepEqual(e.RateLimit, other.RateLimit) {
+		return false
+	}
+	if !reflect.DeepEqual(e.JwtProviders, other.JwtProviders) {
 		return false
 	}
 	if e.PrecedenceWeight != other.PrecedenceWeight {

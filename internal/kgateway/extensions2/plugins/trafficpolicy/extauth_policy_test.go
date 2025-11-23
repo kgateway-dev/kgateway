@@ -164,8 +164,7 @@ func TestApplyForRoute(t *testing.T) {
 					perProviderConfig: []*perProviderExtAuthConfig{
 						{
 							provider: &TrafficPolicyGatewayExtensionIR{
-								Name:    "test-extension",
-								ExtType: v1alpha1.GatewayExtensionTypeExtAuth,
+								Name: "test-extension",
 								ExtAuth: &envoy_ext_authz_v3.ExtAuthz{
 									FailureModeAllow: true,
 								},
@@ -223,8 +222,7 @@ func TestHttpFilters(t *testing.T) {
 						{
 							Name: "test-extension",
 							Extension: &TrafficPolicyGatewayExtensionIR{
-								Name:    "test-extension",
-								ExtType: v1alpha1.GatewayExtensionTypeExtAuth,
+								Name: "test-extension",
 								ExtAuth: &envoy_ext_authz_v3.ExtAuthz{
 									FailureModeAllow: true,
 								},
@@ -258,8 +256,7 @@ func TestExtAuthPolicyPlugin(t *testing.T) {
 					perProviderConfig: []*perProviderExtAuthConfig{
 						{
 							provider: &TrafficPolicyGatewayExtensionIR{
-								Name:    "test-auth-extension",
-								ExtType: v1alpha1.GatewayExtensionTypeExtAuth,
+								Name: "test-auth-extension",
 								ExtAuth: &envoy_ext_authz_v3.ExtAuthz{
 									FailureModeAllow: true,
 									WithRequestBody: &envoy_ext_authz_v3.BufferSettings{

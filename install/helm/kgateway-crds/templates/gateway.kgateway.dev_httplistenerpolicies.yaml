@@ -148,6 +148,7 @@ spec:
                                     type: integer
                                 required:
                                 - op
+                                - value
                                 type: object
                               grpcStatusFilter:
                                 description: |-
@@ -280,6 +281,7 @@ spec:
                                     type: integer
                                 required:
                                 - op
+                                - value
                                 type: object
                               traceableFilter:
                                 description: |-
@@ -321,6 +323,7 @@ spec:
                               type: integer
                           required:
                           - op
+                          - value
                           type: object
                         grpcStatusFilter:
                           description: |-
@@ -462,6 +465,7 @@ spec:
                                     type: integer
                                 required:
                                 - op
+                                - value
                                 type: object
                               grpcStatusFilter:
                                 description: |-
@@ -594,6 +598,7 @@ spec:
                                     type: integer
                                 required:
                                 - op
+                                - value
                                 type: object
                               traceableFilter:
                                 description: |-
@@ -636,6 +641,7 @@ spec:
                               type: integer
                           required:
                           - op
+                          - value
                           type: object
                         traceableFilter:
                           description: |-
@@ -2008,6 +2014,8 @@ spec:
             required:
             - ancestors
             type: object
+        required:
+        - spec
         type: object
     served: true
     storage: true

@@ -44,7 +44,6 @@ func main() {
 }
 
 func generateJWKS(kid string) (*jose.JSONWebKeySet, *rsa.PrivateKey, error) {
-
 	rsaKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return nil, nil, err

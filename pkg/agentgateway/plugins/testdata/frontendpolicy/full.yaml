@@ -1,0 +1,109 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: AgentgatewayPolicy
+metadata:
+  name: agw
+  namespace: default
+spec:
+  targetRefs:
+    - kind: Gateway
+      name: test
+      group: gateway.networking.k8s.io
+  frontend:
+    tls:
+      handshakeTimeout: 10s
+    tcp:
+      keepalive:
+        retries: 5
+        time: 60s
+        interval: 30s
+    http:
+      http2FrameSize: 17000
+      maxBufferSize: 1000
+    accessLog:
+      filter: 'response.code != 200'
+      attributes:
+        remove:
+        - response.code
+        add:
+          - expression: 'request.headers["user-agent"]'
+            name: http.useragent
+    tracing:
+      backendRef:
+        name: my-otel
+        namespace: some-other-ns
+      protocol: GRPC
+      clientSampling: "true"
+      randomSampling: "true"
+      attributes:
+        remove:
+          - response.code
+        add:
+          - expression: 'request.headers["user-agent"]'
+            name: http.useragent
+
+---
+# Output
+output:
+- Policy:
+    frontend:
+      http:
+        http2FrameSize: 17000
+        maxBufferSize: 1000
+    name: frontend/default/agw:frontend-http:default/test
+    target:
+      gateway: default/test
+- Policy:
+    frontend:
+      tls:
+        tlsHandshakeTimeout: 10s
+    name: frontend/default/agw:frontend-tls:default/test
+    target:
+      gateway: default/test
+- Policy:
+    frontend:
+      tcp:
+        keepalives:
+          interval: 30s
+          retries: 5
+          time: 60s
+    name: frontend/default/agw:frontend-tcp:default/test
+    target:
+      gateway: default/test
+- Policy:
+    frontend:
+      logging:
+        fields:
+          add:
+          - expression: request.headers["user-agent"]
+            name: http.useragent
+          remove:
+          - response.code
+        filter: response.code != 200
+    name: frontend/default/agw:frontend-logging:default/test
+    target:
+      gateway: default/test
+- Policy:
+    frontend:
+      tracing: {}
+    name: frontend/default/agw:frontend-tracing:default/test
+    target:
+      gateway: default/test
+status:
+  ancestors:
+  - ancestorRef:
+      group: gateway.networking.k8s.io
+      kind: Gateway
+      name: test
+      namespace: default
+    conditions:
+    - lastTransitionTime: fake
+      message: Policy accepted
+      reason: Valid
+      status: "True"
+      type: Accepted
+    - lastTransitionTime: fake
+      message: Attached to all targets
+      reason: Attached
+      status: "True"
+      type: Attached
+    controllerName: kgateway.dev/agentgateway

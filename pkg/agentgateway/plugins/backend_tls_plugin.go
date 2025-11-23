@@ -43,7 +43,7 @@ func NewBackendTLSPlugin(agw *AgwCollections) AgwPlugin {
 func translatePoliciesForBackendTLS(
 	krtctx krt.HandlerContext,
 	cfgmaps krt.Collection[*corev1.ConfigMap],
-	backends krt.Collection[*v1alpha1.Backend],
+	backends krt.Collection[*v1alpha1.AgentgatewayBackend],
 	btls *gwv1.BackendTLSPolicy,
 	clusterDomain string,
 ) []AgwPolicy {
@@ -54,7 +54,7 @@ func translatePoliciesForBackendTLS(
 		var policyTarget *api.PolicyTarget
 
 		switch string(target.Kind) {
-		case wellknown.BackendGVK.Kind:
+		case wellknown.AgentgatewayBackendGVK.Kind:
 			backendRef := types.NamespacedName{
 				Name:      string(target.Name),
 				Namespace: btls.Namespace,
@@ -64,42 +64,9 @@ func translatePoliciesForBackendTLS(
 				logger.Error("backend not found; skipping policy", "backend", backendRef, "policy", kubeutils.NamespacedNameFrom(btls))
 				continue
 			}
-			spec := (*backend).Spec
-			if spec.AI != nil {
-				switch {
-				// Single provider backend
-				case spec.AI.LLM != nil:
-					if target.SectionName != nil {
-						logger.Error("sectionName must be omitted when targeting AI backend with single provider; skipping policy", "backend", backendRef, "policy", kubeutils.NamespacedNameFrom(btls))
-						continue
-					}
-					// Single provider backends also use api.ProviderGroups(ref: buildAIIr), so policies must be applied per-provider using PolicyTarget_SubBackend
-					policyTarget = &api.PolicyTarget{
-						Kind: &api.PolicyTarget_SubBackend{
-							SubBackend: utils.InternalBackendName(backendRef.Namespace, string(backendRef.Name), utils.SingularLLMProviderSubBackendName),
-						},
-					}
-				// Multi-provider backend
-				case len(spec.AI.PriorityGroups) > 0:
-					if target.SectionName != nil {
-						// target SubBackend
-						policyTarget = &api.PolicyTarget{
-							Kind: &api.PolicyTarget_SubBackend{
-								SubBackend: utils.InternalBackendName(backendRef.Namespace, string(backendRef.Name), string(*target.SectionName)),
-							},
-						}
-					} else {
-						// target entire backend
-						policyTarget = &api.PolicyTarget{
-							Kind: &api.PolicyTarget_Backend{
-								Backend: utils.InternalBackendName(btls.Namespace, string(target.Name), ""),
-							},
-						}
-					}
-				default:
-					logger.Warn("unknown backend type", "backend", backendRef, "policy", kubeutils.NamespacedNameFrom(btls))
-					continue
-				}
+			if target.SectionName != nil {
+				logger.Error("backend sectionName not supported; use the inline policy for that section", "backend", backendRef, "policy", kubeutils.NamespacedNameFrom(btls))
+				continue
 			} else {
 				// The target defaults to <backend-namespace>/<backend-name>.
 				// If SectionName is specified to select a specific target in the Backend,
@@ -139,7 +106,7 @@ func translatePoliciesForBackendTLS(
 		}
 
 		policy := &api.Policy{
-			Name:   btls.Namespace + "/" + btls.Name + ":backendtls" + attachmentName(policyTarget),
+			Name:   btls.Namespace + "/" + btls.Name + backendTlsPolicySuffix + attachmentName(policyTarget),
 			Target: policyTarget,
 			Kind: &api.Policy_Backend{
 				Backend: &api.BackendPolicySpec{

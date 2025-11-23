@@ -21,25 +21,24 @@ spec:
   rules:
     - backendRefs:
         - group: gateway.kgateway.dev
-          kind: Backend
+          kind: AgentgatewayBackend
           name: openai
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: Backend
+kind: AgentgatewayBackend
 metadata:
   labels:
     app: kgateway
   name: openai
 spec:
-  type: AI
   ai:
-    llm:
+    provider:
       openai:
         model: "gpt-4o-mini"
-        authToken:
-          kind: "SecretRef"
-          secretRef:
-            name: openai-secret
+  policies:
+    auth:
+      secretRef:
+        name: openai-secret
 ---
 apiVersion: v1
 kind: Secret

@@ -1,0 +1,122 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: request-multiple-mirrors-headers
+  namespace: default
+spec:
+  parentRefs:
+  - name: test-gateway
+  hostnames:
+  - example.com
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /timeouts
+    timeouts:
+      request: 10s
+      backendRequest: 5s
+    backendRefs:
+    - name: infra-backend-v1
+      port: 8080
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /zero-req
+    timeouts:
+      request: 0s
+      backendRequest: 5s
+    backendRefs:
+    - name: infra-backend-v1
+      port: 8080
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /zero-backend
+    timeouts:
+      request: 10s
+      backendRequest: 0s
+    backendRefs:
+    - name: infra-backend-v1
+      port: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: infra-backend-v1
+  namespace: default
+spec:
+  ports:
+    - port: 8080
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: default
+---
+# Output
+output:
+- gateway:
+    Name: test-gateway
+    Namespace: default
+  resource:
+    route:
+      backends:
+      - backend:
+          port: 8080
+          service: default/infra-backend-v1.default.svc.cluster.local
+        weight: 1
+      hostnames:
+      - example.com
+      key: default/request-multiple-mirrors-headers.0.0.http
+      listenerKey: test-gateway
+      matches:
+      - path:
+          pathPrefix: /timeouts
+      routeName: default/request-multiple-mirrors-headers
+      trafficPolicies:
+      - timeout:
+          backendRequest: 5s
+          request: 10s
+- gateway:
+    Name: test-gateway
+    Namespace: default
+  resource:
+    route:
+      backends:
+      - backend:
+          port: 8080
+          service: default/infra-backend-v1.default.svc.cluster.local
+        weight: 1
+      hostnames:
+      - example.com
+      key: default/request-multiple-mirrors-headers.1.0.http
+      listenerKey: test-gateway
+      matches:
+      - path:
+          pathPrefix: /zero-req
+      routeName: default/request-multiple-mirrors-headers
+      trafficPolicies:
+      - timeout:
+          backendRequest: 5s
+- gateway:
+    Name: test-gateway
+    Namespace: default
+  resource:
+    route:
+      backends:
+      - backend:
+          port: 8080
+          service: default/infra-backend-v1.default.svc.cluster.local
+        weight: 1
+      hostnames:
+      - example.com
+      key: default/request-multiple-mirrors-headers.2.0.http
+      listenerKey: test-gateway
+      matches:
+      - path:
+          pathPrefix: /zero-backend
+      routeName: default/request-multiple-mirrors-headers
+      trafficPolicies:
+      - timeout:
+          request: 10s

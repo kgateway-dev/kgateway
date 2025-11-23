@@ -33,6 +33,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	pluginsdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
@@ -58,6 +59,9 @@ type BackendPortNotAllowedError struct {
 func (e *BackendPortNotAllowedError) Error() string {
 	return fmt.Sprintf("BackendRef to \"%s\" includes a port. Do not specify a port when referencing a Backend resource, as it defines its own port configuration", e.BackendName)
 }
+
+// StatusMarker is used to mark objects that need status updates.
+type StatusMarker struct{}
 
 // MARK: BackendIndex
 
@@ -396,7 +400,7 @@ func NewGatewayIndex(
 
 		gwIR := ir.Gateway{
 			ObjectSource: ir.ObjectSource{
-				Group:     gwv1.SchemeGroupVersion.Group,
+				Group:     gwv1.GroupVersion.Group,
 				Kind:      wellknown.GatewayKind,
 				Namespace: gw.Namespace,
 				Name:      gw.Name,
@@ -991,6 +995,7 @@ func (c RouteWrapper) Equals(in RouteWrapper) bool {
 
 type RoutesIndex struct {
 	routes                               krt.Collection[RouteWrapper]
+	httpRouteStatusMarkers               krt.StatusCollection[*gwv1.HTTPRoute, StatusMarker]
 	httpRoutes                           krt.Collection[ir.HttpRouteIR]
 	httpBySelector                       krt.Index[HTTPRouteSelector, ir.HttpRouteIR]
 	byParentRef                          krt.Index[targetRefIndexKey, RouteWrapper]
@@ -1018,8 +1023,29 @@ func (r *RoutesIndex) HTTPRoutes() krt.Collection[ir.HttpRouteIR] {
 	return r.httpRoutes
 }
 
+// ProcessHTTPRouteStatusMarkers adds empty status in report map if no status reported for the marked route.
+// Used for clearing stale status for orphaned routes.
+func (r *RoutesIndex) ProcessHTTPRouteStatusMarkers(
+	objStatus []krt.ObjectWithStatus[*gwv1.HTTPRoute, StatusMarker],
+	reportMap reports.ReportMap,
+) {
+	for _, status := range objStatus {
+		routeKey := types.NamespacedName{
+			Namespace: status.Obj.GetNamespace(),
+			Name:      status.Obj.GetName(),
+		}
+
+		// Add empty status to clear stale status for routes with no valid ParentRefs
+		if reportMap.HTTPRoutes[routeKey] == nil {
+			rp := reports.NewReporter(&reportMap)
+			rp.Route(status.Obj)
+		}
+	}
+}
+
 func NewRoutesIndex(
 	krtopts krtutil.KrtOptions,
+	controllerName string,
 	httproutes krt.Collection[*gwv1.HTTPRoute],
 	grpcroutes krt.Collection[*gwv1.GRPCRoute],
 	tcproutes krt.Collection[*gwv1a2.TCPRoute],
@@ -1038,7 +1064,10 @@ func NewRoutesIndex(
 	}
 	h.hasSyncedFuncs = append(h.hasSyncedFuncs, httproutes.HasSynced, grpcroutes.HasSynced, tcproutes.HasSynced, tlsroutes.HasSynced)
 
-	h.httpRoutes = krt.NewCollection(httproutes, h.transformHttpRoute, krtopts.ToOptions("http-routes-with-policy")...)
+	h.httpRouteStatusMarkers, h.httpRoutes = krt.NewStatusCollection(httproutes, func(kctx krt.HandlerContext, i *gwv1.HTTPRoute) (*StatusMarker, *ir.HttpRouteIR) {
+		return h.transformHttpRoute(kctx, i, controllerName)
+	}, krtopts.ToOptions("http-routes-with-policy")...)
+
 	httpRouteCollection := krt.NewCollection(h.httpRoutes, func(kctx krt.HandlerContext, i ir.HttpRouteIR) *RouteWrapper {
 		return &RouteWrapper{Route: &i}
 	}, krtopts.ToOptions("routes-http-routes-with-policy")...)
@@ -1110,6 +1139,10 @@ func NewRoutesIndex(
 	return h
 }
 
+func (h *RoutesIndex) GetHTTPRouteStatusMarkers() krt.StatusCollection[*gwv1.HTTPRoute, StatusMarker] {
+	return h.httpRouteStatusMarkers
+}
+
 func (h *RoutesIndex) FetchHTTPRoutesBySelector(kctx krt.HandlerContext, selector HTTPRouteSelector) []ir.HttpRouteIR {
 	return krt.Fetch(kctx, h.httpRoutes, krt.FilterIndex(h.httpBySelector, selector))
 }
@@ -1138,7 +1171,7 @@ func (h *RoutesIndex) RoutesFor(kctx krt.HandlerContext, nns types.NamespacedNam
 
 func (h *RoutesIndex) FetchHttp(kctx krt.HandlerContext, ns, n string) *ir.HttpRouteIR {
 	src := ir.ObjectSource{
-		Group:     gwv1.SchemeGroupVersion.Group,
+		Group:     gwv1.GroupVersion.Group,
 		Kind:      "HTTPRoute",
 		Namespace: ns,
 		Name:      n,
@@ -1170,7 +1203,7 @@ func (h *RoutesIndex) Fetch(kctx krt.HandlerContext, gk schema.GroupKind, ns, n 
 
 func (h *RoutesIndex) transformTcpRoute(kctx krt.HandlerContext, i *gwv1a2.TCPRoute) *ir.TcpRouteIR {
 	src := ir.ObjectSource{
-		Group:     gwv1a2.SchemeGroupVersion.Group,
+		Group:     gwv1a2.GroupVersion.Group,
 		Kind:      "TCPRoute",
 		Namespace: i.Namespace,
 		Name:      i.Name,
@@ -1190,7 +1223,7 @@ func (h *RoutesIndex) transformTcpRoute(kctx krt.HandlerContext, i *gwv1a2.TCPRo
 
 func (h *RoutesIndex) transformTlsRoute(kctx krt.HandlerContext, i *gwv1a2.TLSRoute) *ir.TlsRouteIR {
 	src := ir.ObjectSource{
-		Group:     gwv1a2.SchemeGroupVersion.Group,
+		Group:     gwv1a2.GroupVersion.Group,
 		Kind:      "TLSRoute",
 		Namespace: i.Namespace,
 		Name:      i.Name,
@@ -1209,9 +1242,9 @@ func (h *RoutesIndex) transformTlsRoute(kctx krt.HandlerContext, i *gwv1a2.TLSRo
 	}
 }
 
-func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRoute) *ir.HttpRouteIR {
+func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRoute, controllerName string) (*StatusMarker, *ir.HttpRouteIR) {
 	src := ir.ObjectSource{
-		Group:     gwv1.SchemeGroupVersion.Group,
+		Group:     gwv1.GroupVersion.Group,
 		Kind:      "HTTPRoute",
 		Namespace: i.Namespace,
 		Name:      i.Name,
@@ -1228,7 +1261,16 @@ func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRo
 		}
 	}
 
-	return &ir.HttpRouteIR{
+	// Create a marker if there are existing status parents with kgateway controllerName
+	var statusMarker *StatusMarker
+	for _, parentStatus := range i.Status.Parents {
+		if string(parentStatus.ControllerName) == controllerName {
+			statusMarker = &StatusMarker{}
+			break
+		}
+	}
+
+	return statusMarker, &ir.HttpRouteIR{
 		ObjectSource: src,
 		SourceObject: i,
 		ParentRefs:   i.Spec.ParentRefs,
@@ -1370,7 +1412,7 @@ func (h *RoutesIndex) resolveExtension(
 	}
 
 	fromGK := schema.GroupKind{
-		Group: gwv1.SchemeGroupVersion.Group,
+		Group: gwv1.GroupVersion.Group,
 		Kind:  "HTTPRoute",
 	}
 

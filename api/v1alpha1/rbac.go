@@ -4,12 +4,14 @@ package v1alpha1
 type Authorization struct {
 	// Policy specifies the Authorization rule to evaluate.
 	// A policy matches when **any** of the conditions evaluates to true.
+	// +required
 	Policy AuthorizationPolicy `json:"policy"`
 
 	// Action defines whether the rule allows or denies the request if matched.
 	// If unspecified, the default is "Allow".
 	// +kubebuilder:validation:Enum=Allow;Deny
 	// +kubebuilder:default=Allow
+	// +optional
 	Action AuthorizationPolicyAction `json:"action,omitempty"`
 }
 
@@ -20,6 +22,7 @@ type AuthorizationPolicy struct {
 	//
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=256
+	// +required
 	MatchExpressions []CELExpression `json:"matchExpressions"`
 }
 

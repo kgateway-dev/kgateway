@@ -12,6 +12,10 @@ type FakeGatewayV1alpha1 struct {
 	*testing.Fake
 }
 
+func (c *FakeGatewayV1alpha1) AgentgatewayBackends(namespace string) v1alpha1.AgentgatewayBackendInterface {
+	return newFakeAgentgatewayBackends(c, namespace)
+}
+
 func (c *FakeGatewayV1alpha1) AgentgatewayPolicies(namespace string) v1alpha1.AgentgatewayPolicyInterface {
 	return newFakeAgentgatewayPolicies(c, namespace)
 }

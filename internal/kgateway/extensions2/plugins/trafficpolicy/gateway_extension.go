@@ -12,6 +12,7 @@ import (
 	envoycompositev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/composite/v3"
 	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	envoyextprocv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
+	envoyjwtauthnv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/jwt_authn/v3"
 	ratev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ratelimit/v3"
 	envoynetworkv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/matching/common_inputs/network/v3"
 	envoymetadatav3 "github.com/envoyproxy/go-control-plane/envoy/extensions/matching/input_matchers/metadata/v3"
@@ -21,6 +22,7 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
@@ -32,10 +34,10 @@ import (
 type TrafficPolicyGatewayExtensionIR struct {
 	// +krtEqualsTodo decide whether extension name should affect equality
 	Name             string
-	ExtType          v1alpha1.GatewayExtensionType
 	ExtAuth          *envoy_ext_authz_v3.ExtAuthz
 	ExtProc          *envoymatchingv3.ExtensionWithMatcher
 	RateLimit        *ratev3.RateLimit
+	Jwt              *envoyjwtauthnv3.JwtAuthentication
 	PrecedenceWeight int32
 	Err              error
 }
@@ -46,10 +48,6 @@ func (e TrafficPolicyGatewayExtensionIR) ResourceName() string {
 }
 
 func (e TrafficPolicyGatewayExtensionIR) Equals(other TrafficPolicyGatewayExtensionIR) bool {
-	if e.ExtType != other.ExtType {
-		return false
-	}
-
 	if !proto.Equal(e.ExtAuth, other.ExtAuth) {
 		return false
 	}
@@ -57,6 +55,9 @@ func (e TrafficPolicyGatewayExtensionIR) Equals(other TrafficPolicyGatewayExtens
 		return false
 	}
 	if !proto.Equal(e.RateLimit, other.RateLimit) {
+		return false
+	}
+	if !proto.Equal(e.Jwt, other.Jwt) {
 		return false
 	}
 	if e.PrecedenceWeight != other.PrecedenceWeight {
@@ -97,6 +98,11 @@ func (e TrafficPolicyGatewayExtensionIR) Validate() error {
 			return err
 		}
 	}
+	if e.Jwt != nil {
+		if err := e.Jwt.ValidateAll(); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -104,12 +110,11 @@ func TranslateGatewayExtensionBuilder(commoncol *collections.CommonCollections) 
 	return func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
 		p := &TrafficPolicyGatewayExtensionIR{
 			Name:             krt.Named{Name: gExt.Name, Namespace: gExt.Namespace}.ResourceName(),
-			ExtType:          gExt.Type,
 			PrecedenceWeight: gExt.PrecedenceWeight,
 		}
 
-		switch gExt.Type {
-		case v1alpha1.GatewayExtensionTypeExtAuth:
+		switch {
+		case gExt.ExtAuth != nil:
 			envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, &gExt.ExtAuth.GrpcService)
 			if err != nil {
 				// TODO: should this be a warning, and set cluster to blackhole?
@@ -138,7 +143,7 @@ func TranslateGatewayExtensionBuilder(commoncol *collections.CommonCollections) 
 				p.ExtAuth.StatPrefix = *gExt.ExtAuth.StatPrefix
 			}
 
-		case v1alpha1.GatewayExtensionTypeExtProc:
+		case gExt.ExtProc != nil:
 			envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, &gExt.ExtProc.GrpcService)
 			if err != nil {
 				p.Err = fmt.Errorf("failed to resolve ExtProc backend: %w", err)
@@ -146,12 +151,7 @@ func TranslateGatewayExtensionBuilder(commoncol *collections.CommonCollections) 
 			}
 			p.ExtProc = buildCompositeExtProcFilter(*gExt.ExtProc, envoyGrpcService)
 
-		case v1alpha1.GatewayExtensionTypeRateLimit:
-			if gExt.RateLimit == nil {
-				p.Err = fmt.Errorf("rate limit extension missing configuration")
-				return p
-			}
-
+		case gExt.RateLimit != nil:
 			grpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, &gExt.RateLimit.GrpcService)
 			if err != nil {
 				p.Err = fmt.Errorf("ratelimit: %w", err)
@@ -162,9 +162,44 @@ func TranslateGatewayExtensionBuilder(commoncol *collections.CommonCollections) 
 			rateLimitConfig := buildRateLimitFilter(grpcService, gExt.RateLimit)
 
 			p.RateLimit = rateLimitConfig
+		case gExt.JwtProviders != nil:
+			jwtConfig, err := resolveJwtProviders(krtctx, commoncol.ConfigMaps, gExt.Name, gExt.Namespace, gExt.JwtProviders)
+			if err != nil {
+				p.Err = fmt.Errorf("jwt: %w", err)
+				return p
+			}
+			p.Jwt = jwtConfig
 		}
 		return p
 	}
+}
+
+func resolveJwtProviders(
+	krtctx krt.HandlerContext,
+	configMaps krt.Collection[*corev1.ConfigMap],
+	policyName, policyNamespace string,
+	jwtProviders []v1alpha1.NamedJWTProvider,
+) (*envoyjwtauthnv3.JwtAuthentication, error) {
+	uniqProviders := make(map[string]*envoyjwtauthnv3.JwtProvider)
+	policyNameNamespace := fmt.Sprintf("%s_%s", policyName, policyNamespace)
+
+	for _, provider := range jwtProviders {
+		providerNameForPolicy := ProviderName(policyNameNamespace, provider.Name)
+		jwtProvider, err := translateProvider(krtctx, provider.JWTProvider, policyNamespace, configMaps)
+		if err != nil {
+			return nil, err
+		}
+		uniqProviders[providerNameForPolicy] = jwtProvider
+	}
+
+	requirementsName := fmt.Sprintf("%s_requirements", policyNameNamespace)
+	requirements := make(map[string]*envoyjwtauthnv3.JwtRequirement)
+	requirements[requirementsName] = buildJwtRequirementFromProviders(uniqProviders)
+
+	return &envoyjwtauthnv3.JwtAuthentication{
+		RequirementMap: requirements,
+		Providers:      uniqProviders,
+	}, nil
 }
 
 func ResolveExtGrpcService(

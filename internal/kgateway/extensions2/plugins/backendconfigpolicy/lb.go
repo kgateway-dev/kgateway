@@ -300,7 +300,7 @@ func (a *LoadBalancerConfigIR) Equals(b *LoadBalancerConfigIR) bool {
 }
 
 // constructHashPolicy constructs the hash policies from the policy specification.
-func constructHashPolicy(hashPolicies []*v1alpha1.HashPolicy) []*envoyroutev3.RouteAction_HashPolicy {
+func constructHashPolicy(hashPolicies []v1alpha1.HashPolicy) []*envoyroutev3.RouteAction_HashPolicy {
 	if len(hashPolicies) == 0 {
 		return nil
 	}

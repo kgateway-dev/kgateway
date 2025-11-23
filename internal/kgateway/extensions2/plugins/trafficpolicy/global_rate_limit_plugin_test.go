@@ -394,7 +394,6 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 		{
 			name: "with default configuration",
 			gatewayExtension: &ir.GatewayExtension{
-				Type: v1alpha1.GatewayExtensionTypeRateLimit,
 				RateLimit: &v1alpha1.RateLimitProvider{
 					Domain: "test-domain",
 					GrpcService: v1alpha1.ExtGrpcService{
@@ -444,7 +443,6 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 		{
 			name: "with custom timeout and extensionRef specifying the namespace",
 			gatewayExtension: &ir.GatewayExtension{
-				Type: v1alpha1.GatewayExtensionTypeRateLimit,
 				RateLimit: &v1alpha1.RateLimitProvider{
 					Domain: "test-domain",
 					GrpcService: v1alpha1.ExtGrpcService{
@@ -487,7 +485,6 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 		{
 			name: "with fail open configuration",
 			gatewayExtension: &ir.GatewayExtension{
-				Type: v1alpha1.GatewayExtensionTypeRateLimit,
 				RateLimit: &v1alpha1.RateLimitProvider{
 					Domain: "test-domain",
 					GrpcService: v1alpha1.ExtGrpcService{
@@ -526,36 +523,6 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 				assert.False(t, rl.FailureModeDeny) // Should be fail open (deny=false)
 			},
 		},
-		{
-			name: "with wrong extension type",
-			gatewayExtension: &ir.GatewayExtension{
-				Type: v1alpha1.GatewayExtensionTypeExtProc,
-				ObjectSource: ir.ObjectSource{
-					Name:      defaultExtensionName,
-					Namespace: defaultNamespace,
-				},
-			},
-			policy: &v1alpha1.RateLimitPolicy{
-				ExtensionRef: v1alpha1.NamespacedObjectReference{
-					Name: gwv1.ObjectName(defaultExtensionName),
-				},
-				Descriptors: []v1alpha1.RateLimitDescriptor{
-					{
-						Entries: []v1alpha1.RateLimitDescriptorEntry{
-							{
-								Type: v1alpha1.RateLimitDescriptorEntryTypeGeneric,
-								Generic: &v1alpha1.RateLimitDescriptorEntryGeneric{
-									Key:   "service",
-									Value: "api",
-								},
-							},
-						},
-					},
-				},
-			},
-			trafficPolicy: &v1alpha1.TrafficPolicy{},
-			expectedError: "extension has type ExtProc but RateLimit was expected",
-		},
 	}
 
 	for _, tt := range tests {
@@ -567,9 +534,6 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 				err = errors.New("extensionRef is required")
 			} else if tt.gatewayExtension == nil {
 				err = fmt.Errorf("failed to get referenced GatewayExtension")
-			} else if tt.gatewayExtension.Type != v1alpha1.GatewayExtensionTypeRateLimit {
-				err = fmt.Errorf("extension has type %s but %s was expected",
-					tt.gatewayExtension.Type, v1alpha1.GatewayExtensionTypeRateLimit)
 			} else {
 				// Get the extension's spec
 				extension := tt.gatewayExtension.RateLimit

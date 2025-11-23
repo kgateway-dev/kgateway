@@ -1,10 +1,9 @@
 # Admin MCP Backend
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: Backend
+kind: AgentgatewayBackend
 metadata:
   name: admin-mcp-backend
 spec:
-  type: MCP
   mcp:
     targets:
     - name: admin-target
@@ -15,11 +14,10 @@ spec:
 ---
 # User MCP Backend  
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: Backend
+kind: AgentgatewayBackend
 metadata:
   name: user-mcp-backend
 spec:
-  type: MCP
   mcp:
     targets:
     - name: user-target
@@ -45,9 +43,9 @@ spec:
       backendRefs:
       - name: admin-mcp-backend
         group: gateway.kgateway.dev
-        kind: Backend
+        kind: AgentgatewayBackend
     # User route - matches all other requests (default)
     - backendRefs:
       - name: user-mcp-backend
         group: gateway.kgateway.dev
-        kind: Backend
+        kind: AgentgatewayBackend
