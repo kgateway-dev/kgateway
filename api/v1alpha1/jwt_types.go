@@ -141,7 +141,8 @@ type LocalJWKS struct {
 }
 
 type RemoteJWKS struct {
-	// URL is the URL of the remote JWKS server.
+	// URL is the URL of the remote JWKS server, it must be a full FQDN with protocol, host and path.
+	// For example, https://example.com/keys
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=2048
 	// +required

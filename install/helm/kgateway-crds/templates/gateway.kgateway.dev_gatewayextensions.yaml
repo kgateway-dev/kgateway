@@ -737,7 +737,9 @@ spec:
                               - message: cacheDuration must be at least 1ms.
                                 rule: duration(self) >= duration('1ms')
                             url:
-                              description: URL is the URL of the remote JWKS server.
+                              description: |-
+                                URL is the URL of the remote JWKS server, it must be a full FQDN with protocol, host and path.
+                                For example, https://example.com/keys
                               maxLength: 2048
                               minLength: 1
                               type: string
