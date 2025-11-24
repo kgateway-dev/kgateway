@@ -6,6 +6,7 @@ import (
 
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	exteniondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
+	envoyapikeyauthv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/api_key_auth/v3"
 	bufferv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/buffer/v3"
 	corsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
 	envoy_csrf_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/csrf/v3"
@@ -14,6 +15,7 @@ import (
 	localratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	envoyrbacv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
+
 	// TODO(nfuden): remove once rustformations are able to be used in a production environment
 	transformationpb "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -88,6 +90,7 @@ type trafficPolicySpecIr struct {
 	timeouts        *timeoutsIR
 	rbac            *rbacIR
 	jwt             *jwtIr
+	apiKeyAuth      *apiKeyAuthIR
 }
 
 func (d *TrafficPolicy) CreationTime() time.Time {
@@ -148,6 +151,9 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	if !d.spec.jwt.Equals(d2.spec.jwt) {
 		return false
 	}
+	if !d.spec.apiKeyAuth.Equals(d2.spec.apiKeyAuth) {
+		return false
+	}
 	return true
 }
 
@@ -169,6 +175,7 @@ func (p *TrafficPolicy) Validate() error {
 	validators = append(validators, p.spec.autoHostRewrite.Validate)
 	validators = append(validators, p.spec.rbac.Validate)
 	validators = append(validators, p.spec.jwt.Validate)
+	validators = append(validators, p.spec.apiKeyAuth.Validate)
 	for _, validator := range validators {
 		if err := validator(); err != nil {
 			return err
@@ -193,6 +200,7 @@ type trafficPolicyPluginGwPass struct {
 	csrfInChain              map[string]*envoy_csrf_v3.CsrfPolicy
 	headerMutationInChain    map[string]*header_mutationv3.HeaderMutationPerRoute
 	bufferInChain            map[string]*bufferv3.Buffer
+	apiKeyAuthInChain        map[string]*envoyapikeyauthv3.ApiKeyAuth
 }
 
 var _ ir.ProxyTranslationPass = &trafficPolicyPluginGwPass{}
@@ -497,6 +505,13 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(fcc ir.FilterChainCommon) ([]fil
 		stagedFilters = append(stagedFilters, filter)
 	}
 
+	// Add API key auth filter to the chain
+	if f := p.apiKeyAuthInChain[fcc.FilterChainName]; f != nil {
+		filter := filters.MustNewStagedFilter(apiKeyAuthFilterNamePrefix, f, filters.DuringStage(filters.AuthNStage))
+		filter.Filter.Disabled = true
+		stagedFilters = append(stagedFilters, filter)
+	}
+
 	if len(stagedFilters) == 0 {
 		return nil, nil
 	}
@@ -530,6 +545,7 @@ func (p *trafficPolicyPluginGwPass) handlePolicies(
 	p.handleHeaderModifiers(fcn, typedFilterConfig, spec.headerModifiers)
 	p.handleBuffer(fcn, typedFilterConfig, spec.buffer)
 	p.handleRBAC(fcn, typedFilterConfig, spec.rbac)
+	p.handleAPIKeyAuth(fcn, typedFilterConfig, spec.apiKeyAuth)
 }
 
 // handlePerRoutePolicies handles policies that are meant to be processed at the route level

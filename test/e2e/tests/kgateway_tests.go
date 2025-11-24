@@ -6,6 +6,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/accesslog"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/admin_server"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/apikeyauth"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/auto_host_rewrite"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/backendconfigpolicy"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/backends"
@@ -76,6 +77,7 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("TimeoutRetry", timeoutretry.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("HeaderModifiers", header_modifiers.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("RBAC", rbac.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("APIKeyAuth", apikeyauth.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("AdminServer", admin_server.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("JWT", jwt.NewTestingSuite)
 

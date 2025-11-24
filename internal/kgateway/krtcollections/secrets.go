@@ -68,3 +68,9 @@ func (s *SecretIndex) GetSecret(kctx krt.HandlerContext, from From, secretRef gw
 	}
 	return secret, nil
 }
+
+// GetSecretCollection returns the secret collection for a given GroupKind.
+// This is useful for accessing secrets without reference grant checks (e.g., same namespace).
+func (s *SecretIndex) GetSecretCollection(gk schema.GroupKind) krt.Collection[ir.Secret] {
+	return s.secrets[gk]
+}

@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -121,6 +122,10 @@ type TrafficPolicySpec struct {
 	// This defines the JWT providers and their configurations.
 	// +optional
 	JWT *JWTAuthentication `json:"jwt,omitempty"`
+
+	// APIKeyAuthentication authenticates users based on a configured API Key.
+	// +optional
+	APIKeyAuthentication *APIKeyAuthentication `json:"apiKeyAuthentication,omitempty"`
 }
 
 // TransformationPolicy config is used to modify envoy behavior at a route level.
@@ -367,6 +372,104 @@ type CSRFPolicy struct {
 	// +optional
 	// +kubebuilder:validation:MaxItems=16
 	AdditionalOrigins []StringMatcher `json:"additionalOrigins,omitempty"`
+}
+
+// APIKeySource defines where to extract the API key from within a single key source.
+// Within a single key source, if multiple types are specified, precedence is:
+// header > query parameter > cookie. The header is checked first, and only falls back
+// to query parameter if the header is not present, then to cookie if both header and query
+// are not present.
+// +kubebuilder:validation:AtLeastOneOf=header;query;cookie
+type APIKeySource struct {
+	// header specifies the name of the header that contains the API key.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=256
+	Header *string `json:"header,omitempty"`
+
+	// query specifies the name of the query parameter that contains the API key.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=256
+	Query *string `json:"query,omitempty"`
+
+	// cookie specifies the name of the cookie that contains the API key.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=256
+	Cookie *string `json:"cookie,omitempty"`
+}
+
+// +kubebuilder:validation:ExactlyOneOf=secretRef;secretSelector
+type APIKeyAuthentication struct {
+	// keySources specifies the list of key sources to extract the API key from.
+	// Key sources are processed in array order and the first one that successfully
+	// extracts a key is used. Within each key source, if multiple types (header, query, cookie) are
+	// specified, precedence is: header > query parameter > cookie.
+	//
+	// If empty, defaults to a single key source with header "api-key".
+	//
+	// Example:
+	//   keySources:
+	//   - header: "X-API-KEY"
+	//   - query: "api_key"
+	//   - header: "Authorization"
+	//     query: "token"
+	//     cookie: "auth_token"
+	//
+	// In this example, the system will:
+	// 1. First try header "X-API-KEY"
+	// 2. If not found, try query parameter "api_key"
+	// 3. If not found, try header "Authorization" (then query "token", then cookie "auth_token" within that key source)
+	//
+	// +kubebuilder:validation:MinItems=0
+	// +kubebuilder:validation:MaxItems=16
+	// +optional
+	KeySources []APIKeySource `json:"keySources,omitempty"`
+
+	// hideAPIKey removes the API key from the request before forwarding upstream.
+	// This applies to all configured key sources (header, query parameter, or cookie).
+	// +kubebuilder:default=false
+	// +optional
+	HideAPIKey *bool `json:"hideAPIKey,omitempty"`
+
+	// secretRef references a Kubernetes secret storing a set of API Keys. If there are many keys, 'secretSelector' can be
+	// used instead.
+	//
+	// Each entry in the Secret represents one API Key. The key is an arbitrary identifier.
+	// The value is a string, representing the API Key.
+	//
+	// Example:
+	//
+	// apiVersion: v1
+	// kind: Secret
+	// metadata:
+	//   name: api-key
+	// stringData:
+	//   client1: "k-123",
+	//   client2: "k-456"
+	//
+	// +optional
+	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
+
+	// secretSelector selects multiple secrets containing API Keys. If the same key is defined in multiple secrets, the
+	// behavior is undefined.
+	//
+	// Each entry in the Secret represents one API Key. The key is an arbitrary identifier.
+	// The value is a string, representing the API Key.
+	//
+	// Example:
+	//
+	// apiVersion: v1
+	// kind: Secret
+	// metadata:
+	//   name: api-key
+	// stringData:
+	//   client1: "k-123",
+	//   client2: "k-456"
+	//
+	// +optional
+	SecretSelector *SecretSelector `json:"secretSelector,omitempty"`
 }
 
 // HeaderModifiers can be used to define the policy to modify request and response headers.
