@@ -18,10 +18,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 )
 
-const JwksStoreConfigMapName = "jwks-store"
-
-type JwksStoreController struct {
-	mgr         manager.Manager
+type JwksStorePolicyController struct {
 	agw         *plugins.AgwCollections
 	apiClient   apiclient.Client
 	jwks        krt.Collection[jwks.JwksSource]
@@ -31,16 +28,15 @@ type JwksStoreController struct {
 
 var logger = logging.New("jwks_store")
 
-func NewJWKSStoreController(mgr manager.Manager, apiClient apiclient.Client, agw *plugins.AgwCollections) *JwksStoreController {
-	return &JwksStoreController{
-		mgr:       mgr,
+func NewJWKSStorePolicyController(mgr manager.Manager, apiClient apiclient.Client, agw *plugins.AgwCollections) *JwksStorePolicyController {
+	return &JwksStorePolicyController{
 		agw:       agw,
 		apiClient: apiClient,
 		jwksQueue: utils.NewAsyncQueue[jwks.JwksSource](),
 	}
 }
 
-func (j *JwksStoreController) Init(ctx context.Context) {
+func (j *JwksStorePolicyController) Init(ctx context.Context) {
 	policyCol := krt.WrapClient(kclient.NewFilteredDelayed[*v1alpha1.AgentgatewayPolicy](
 		j.apiClient,
 		wellknown.AgentgatewayPolicyGVR,
@@ -67,7 +63,7 @@ func (j *JwksStoreController) Init(ctx context.Context) {
 	}
 }
 
-func (j *JwksStoreController) Start(ctx context.Context) error {
+func (j *JwksStorePolicyController) Start(ctx context.Context) error {
 	logger.Info("waiting for cache to sync")
 	j.apiClient.Core().WaitForCacheSync(
 		"kube AgentgatewayPolicy syncer",
@@ -91,10 +87,10 @@ func (j *JwksStoreController) Start(ctx context.Context) error {
 }
 
 // runs on the leader only
-func (j *JwksStoreController) NeedLeaderElection() bool {
+func (j *JwksStorePolicyController) NeedLeaderElection() bool {
 	return true
 }
 
-func (j *JwksStoreController) JwksQueue() utils.AsyncQueue[jwks.JwksSource] {
+func (j *JwksStorePolicyController) JwksQueue() utils.AsyncQueue[jwks.JwksSource] {
 	return j.jwksQueue
 }

@@ -3,11 +3,13 @@ package jwks
 import (
 	"encoding/json"
 	"errors"
+	"sync"
 
 	"github.com/go-jose/go-jose/v4"
 )
 
 type jwksCache struct {
+	l    sync.Mutex
 	jwks map[string]string // jwks uri -> jwks
 }
 
@@ -32,8 +34,18 @@ func (c *jwksCache) LoadJwksFromStores(storedJwks map[string]string) error {
 		newCache.compareAndAddJwks(uri, jwks)
 	}
 
+	c.l.Lock()
 	c.jwks = newCache.jwks
+	c.l.Unlock()
 	return errors.Join(errs...)
+}
+
+func (c *jwksCache) GetJwks(uri string) (string, bool) {
+	c.l.Lock()
+	defer c.l.Unlock()
+
+	jwks, ok := c.jwks[uri]
+	return jwks, ok
 }
 
 // Add a jwks to cache. If an exact same jwks is already present in the cache, the result is a nop.
@@ -43,6 +55,9 @@ func (c *jwksCache) compareAndAddJwks(uri string, jwks jose.JSONWebKeySet) (stri
 	if err != nil {
 		return "", err
 	}
+
+	c.l.Lock()
+	defer c.l.Unlock()
 
 	if j, ok := c.jwks[uri]; ok {
 		if j == string(serializedJwks) {
@@ -56,5 +71,7 @@ func (c *jwksCache) compareAndAddJwks(uri string, jwks jose.JSONWebKeySet) (stri
 
 // Remove jwks from cache.
 func (c *jwksCache) deleteJwks(uri string) {
+	c.l.Lock()
 	delete(c.jwks, uri)
+	c.l.Unlock()
 }

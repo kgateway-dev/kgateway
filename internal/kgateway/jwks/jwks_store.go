@@ -2,6 +2,7 @@ package jwks
 
 import (
 	"context"
+	"sync"
 
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -22,8 +23,10 @@ type JwksStore struct {
 	jwksCache        *jwksCache
 	jwksFetcher      *JwksFetcher
 	configMapSyncer  *configMapSyncer
-	updates          <-chan map[string]string
-	jwksUpdatesQueue utils.AsyncQueue[JwksSource]
+	updates          chan string
+	jwksUpdatesQueue utils.AsyncQueue[JwksSource] // TODO (dmitri-d) this can result in lost events
+	cmNameToJwks     map[string]string
+	l                sync.Mutex
 }
 
 func BuildJwksStore(ctx context.Context, cli apiclient.Client, commonCols *collections.CommonCollections, jwksQueue utils.AsyncQueue[JwksSource], deploymentNamespace string) *JwksStore {
@@ -37,7 +40,7 @@ func BuildJwksStore(ctx context.Context, cli apiclient.Client, commonCols *colle
 		jwksFetcher:      NewJwksFetcher(jwksCache),
 		configMapSyncer:  NewConfigMapSyncer(cli, deploymentNamespace, commonCols.KrtOpts),
 	}
-	jwksStore.updates = jwksStore.jwksFetcher.SubscribeToUpdates()
+
 	BuildJwksConfigMapNamespacedNameFunc(deploymentNamespace)
 	return jwksStore
 }
@@ -51,8 +54,6 @@ func BuildJwksConfigMapNamespacedNameFunc(deploymentNamespace string) {
 func (s *JwksStore) Start(ctx context.Context) error {
 	log := log.FromContext(ctx)
 
-	s.configMapSyncer.WaitForCacheSync(ctx)
-
 	storedJwks, err := s.configMapSyncer.LoadJwksFromConfigMaps(ctx)
 	if err != nil {
 		log.Error(err, "error loading jwks store from a ConfigMap")
@@ -62,12 +63,32 @@ func (s *JwksStore) Start(ctx context.Context) error {
 		log.Error(err, "error loading jwks store state")
 	}
 
-	go s.syncToConfigMaps(ctx)
 	go s.jwksFetcher.Run(ctx)
 	go s.updateJwksSources(ctx)
 
 	<-ctx.Done()
 	return nil
+}
+
+func (s *JwksStore) SubscribeToUpdates() chan map[string]string {
+	return s.jwksFetcher.SubscribeToUpdates()
+}
+
+func (s *JwksStore) JwksByConfigMapName(cmName string) (string, string, bool) {
+	s.l.Lock()
+	defer s.l.Unlock()
+
+	uri, ok := s.cmNameToJwks[cmName]
+	if !ok {
+		return "", "", false
+	}
+
+	jwks, ok := s.jwksCache.GetJwks(uri)
+	if !ok {
+		return "", "", false
+	}
+
+	return uri, jwks, true
 }
 
 func (s *JwksStore) updateJwksSources(ctx context.Context) {
@@ -82,28 +103,17 @@ func (s *JwksStore) updateJwksSources(ctx context.Context) {
 
 		if jwksUpdate.Deleted {
 			s.jwksFetcher.RemoveKeyset(jwksUpdate)
+			s.l.Lock()
+			delete(s.cmNameToJwks, JwksConfigMapName(jwksUpdate.JwksURL))
+			s.l.Unlock()
 		} else {
 			err := s.jwksFetcher.AddOrUpdateKeyset(jwksUpdate)
 			if err != nil {
 				log.Error(err, "error adding/updating a jwks keyset", "uri", jwksUpdate.JwksURL)
 			}
-		}
-	}
-}
-
-func (s *JwksStore) syncToConfigMaps(ctx context.Context) {
-	log := log.FromContext(ctx)
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case update := <-s.updates:
-			log.Info("received an update")
-			err := s.configMapSyncer.WriteJwksToConfigMaps(ctx, update)
-			if err != nil {
-				log.Error(err, "error(s) syncing jwks cache to ConfigMaps")
-			}
+			s.l.Lock()
+			s.cmNameToJwks[JwksConfigMapName(jwksUpdate.JwksURL)] = jwksUpdate.JwksURL
+			s.l.Unlock()
 		}
 	}
 }
