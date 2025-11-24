@@ -124,22 +124,6 @@ spec:
       port: 8080
       targetPort: 8080
 ---
-# Allow the TrafficPolicy in the "default" namespace to reference the GatewayExtension in the "denied" namespace
-apiVersion: gateway.networking.k8s.io/v1beta1
-kind: ReferenceGrant
-metadata:
-  name: allow-trafficpolicy-to-gwext
-  namespace: denied
-spec:
-  from:
-    - group: gateway.kgateway.dev
-      kind: TrafficPolicy
-      namespace: default
-  to:
-    - group: gateway.kgateway.dev
-      kind: GatewayExtension
-      name: denied-jwt-ext
----
 # Allow GatewayExtensions in the "default" namespace to reference the remote JWKS Service in the "remote" namespace
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: ReferenceGrant
