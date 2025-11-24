@@ -391,10 +391,9 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
         }
         if !end_of_stream {
             envoy_log_trace!("on_response_body buffering");
-            // TODO: Technically, we don't need to buffer the body yet as we don't support parsing the body now
-            //       but it will be coming next. This is mimicking the C++ transformation filter behavior to
-            //       always buffer the response body by default unless passthrough is set. Will revisit and consider
-            //       if this is the desired behavior when we implement parsing the body
+            // This is mimicking the C++ transformation filter behavior to always buffer the response body by
+            // default unless passthrough is set but kgateway doesn't support body passthrough in
+            // transformation API.
             return abi::envoy_dynamic_module_type_on_http_filter_response_body_status::StopIterationAndBuffer;
         }
         envoy_log_trace!("on_response_body");
