@@ -3,6 +3,7 @@
 package tests
 
 import (
+	"context"
 	"os"
 	"testing"
 
@@ -51,7 +52,7 @@ spec:
 // verifies that the GatewayClass parametersRef is configured correctly, creates a Gateway,
 // and verifies that the gateway pod has the custom label defined in the GatewayParameters.
 func TestCustomGWP(t *testing.T) {
-	ctx := t.Context()
+	ctx := context.Background()
 	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "kgateway-test")
 	testInstallation := e2e.CreateTestInstallation(
 		t,

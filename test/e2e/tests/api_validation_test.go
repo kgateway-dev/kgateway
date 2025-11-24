@@ -15,7 +15,7 @@ import (
 )
 
 func TestAPIValidation(t *testing.T) {
-	ctx := t.Context()
+	ctx := context.Background()
 	ti := e2e.CreateTestInstallation(t, &install.Context{
 		ValuesManifestFile:        e2e.EmptyValuesManifestPath,
 		ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
