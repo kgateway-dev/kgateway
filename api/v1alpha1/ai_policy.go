@@ -17,25 +17,25 @@ import (
 // and appends `Describe the painting as if you were a famous art critic from the 17th century.`
 // to each request that is sent to the `openai` HTTPRoute.
 // ```yaml
-//
-//	name: openai-opt
-//	namespace: kgateway-system
-//
+// apiVersion: gateway.solo.io/v1
+// kind: RouteOption
+// metadata:
+//   name: openai-opt
+//   namespace: gloo-system
 // spec:
-//
-//	targetRefs:
-//	- group: gateway.networking.k8s.io
-//	  kind: HTTPRoute
-//	  name: openai
-//	ai:
-//	    promptEnrichment:
-//	      prepend:
-//	      - role: SYSTEM
-//	        content: "Answer all questions in French."
-//	      append:
-//	      - role: USER
-//	        content: "Describe the painting as if you were a famous art critic from the 17th century."
-//
+//   targetRefs:
+//   - group: gateway.networking.k8s.io
+//     kind: HTTPRoute
+//     name: openai
+//   options:
+//     ai:
+//       promptEnrichment:
+//         prepend:
+//         - role: SYSTEM
+//           content: "Answer all questions in French."
+//         append:
+//         - role: USER
+//           content: "Describe the painting as if you were a famous art critic from the 17th century."
 // ```
 type AIPromptEnrichment struct {
 	// A list of messages to be prepended to the prompt sent by the client.
@@ -203,21 +203,19 @@ type PromptguardResponse struct {
 // the string "credit card", and masks any credit card numbers in the response.
 // ```yaml
 // promptGuard:
-//
-//	request:
-//	- response:
-//	    message: "Rejected due to inappropriate content"
-//	  regex:
-//	    action: REJECT
-//	    matches:
-//	    - pattern: "credit card"
-//	      name: "CC"
-//	response:
-//	- regex:
-//	    builtins:
-//	    - CREDIT_CARD
-//	    action: MASK
-//
+//   request:
+//     customResponse: 
+//       message: "Rejected due to inappropriate content"
+//     regex:
+//       action: REJECT
+//       matches:
+//       - pattern: "credit card"
+//         name: "CC"
+//   response:
+//     regex:
+//       builtins:
+//       - CREDIT_CARD
+//       action: MASK
 // ```
 // +kubebuilder:validation:AtLeastOneOf=request;response
 type AIPromptGuard struct {
@@ -245,7 +243,6 @@ type AIPromptGuard struct {
 // defaults:
 //   - field: "system"
 //     value: "answer all questions in French"
-//
 // ```
 //
 // Example: Setting a default temperature and overriding `max_tokens`:
@@ -264,11 +261,9 @@ type AIPromptGuard struct {
 // defaults:
 //   - field: "custom_integer_list"
 //     value: [1,2,3]
-//
 // overrides:
 //   - field: "custom_string_list"
 //     value: ["one","two","three"]
-//
 // ```
 //
 // Note: The `field` values correspond to keys in the JSON request body, not fields in this CRD.

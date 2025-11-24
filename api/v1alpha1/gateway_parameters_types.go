@@ -351,11 +351,11 @@ type EnvoyBootstrap struct {
 	// the values are one of "trace", "debug", "info", "warn", "error",
 	// "critical", or "off", e.g.
 	//
-	//	```yaml
-	//	componentLogLevels:
-	//	  upstream: debug
-	//	  connection: trace
-	//	```
+	// ```yaml
+	// componentLogLevels:
+	//   upstream: debug
+	//   connection: trace
+	// ```
 	//
 	// These will be converted to the `--component-log-level` Envoy argument
 	// value. See
