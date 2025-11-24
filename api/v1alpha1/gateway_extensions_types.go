@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"time"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -86,6 +88,8 @@ const (
 	GatewayExtensionTypeJWTProvider GatewayExtensionType = "JWTProviders"
 )
 
+const HTTPDefaultTimeout = 2 * time.Second
+
 // ExtGrpcService defines the GRPC service that will handle the processing.
 type ExtGrpcService struct {
 	// BackendRef references the backend GRPC service.
@@ -113,13 +117,11 @@ type ExtHttpService struct {
 	// +required
 	BackendRef gwv1.BackendRef `json:"backendRef"`
 
-	// Path is the path for the authorization request endpoint.
-	// Examples: "/authorize", "/verify", "/check"
-	// If not specified, defaults to empty string (root path).
+	// Path is the path for the authorization request endpoint. Default is empty string (root path).
 	// +optional
 	Path string `json:"path,omitempty"`
 
-	// RequestTimeout is the timeout for the HTTP request.
+	// RequestTimeout is the timeout for the HTTP request. Default timeout is 2 seconds.
 	// +optional
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid timeout value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="timeout must be at least 1ms."
@@ -142,6 +144,7 @@ type ExtHttpService struct {
 type AuthorizationRequest struct {
 	// HeadersToAdd specifies additional headers to add to the authorization request.
 	// These headers are sent to the authorization service in addition to the original request headers.
+	// The keys are header names and values are envoy format specifiers.
 	// +optional
 	HeadersToAdd map[string]string `json:"headersToAdd,omitempty"`
 }

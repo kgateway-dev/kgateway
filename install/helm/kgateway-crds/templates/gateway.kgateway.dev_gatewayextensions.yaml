@@ -223,6 +223,15 @@ spec:
                     required:
                     - backendRef
                     type: object
+                  headersToForward:
+                    description: |-
+                      HeadersToForward specifies which headers from the client request should be
+                      forwarded to the external authorization service.
+                      By default, Host, Method, Path, Content-Length, and Authorization are forwarded.
+                      Common examples: ["cookie", "authorization", "x-forwarded-for"]
+                    items:
+                      type: string
+                    type: array
                   httpService:
                     description: |-
                       HttpService is the HTTP service that will handle the auth.
@@ -238,6 +247,7 @@ spec:
                             description: |-
                               HeadersToAdd specifies additional headers to add to the authorization request.
                               These headers are sent to the authorization service in addition to the original request headers.
+                              The keys are header names and values are envoy format specifiers.
                             type: object
                         type: object
                       authorizationResponse:
@@ -344,13 +354,12 @@ spec:
                           rule: '(size(self.group) == 0 && self.kind == ''Service'')
                             ? has(self.port) : true'
                       path:
-                        description: |-
-                          Path is the path for the authorization request endpoint.
-                          Examples: "/authorize", "/verify", "/check"
-                          If not specified, defaults to empty string (root path).
+                        description: Path is the path for the authorization request
+                          endpoint. Default is empty string (root path).
                         type: string
                       requestTimeout:
                         description: RequestTimeout is the timeout for the HTTP request.
+                          Default timeout is 2 seconds.
                         type: string
                         x-kubernetes-validations:
                         - message: invalid timeout value
@@ -453,9 +462,10 @@ spec:
                     type: object
                 type: object
                 x-kubernetes-validations:
-                - message: Exactly one of grpcService or httpService must be set
-                  rule: (has(self.grpcService) && !has(self.httpService)) || (!has(self.grpcService)
-                    && has(self.httpService))
+                - message: exactly one of the fields in [grpcService httpService]
+                    must be set
+                  rule: '[has(self.grpcService),has(self.httpService)].filter(x,x==true).size()
+                    == 1'
               extProc:
                 description: ExtProc configuration for ExtProc extension type.
                 properties:

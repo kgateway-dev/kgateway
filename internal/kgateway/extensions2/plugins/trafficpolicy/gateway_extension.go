@@ -164,6 +164,9 @@ func TranslateGatewayExtensionBuilder(commoncol *collections.CommonCollections) 
 			if gExt.ExtAuth.StatPrefix != nil {
 				p.ExtAuth.StatPrefix = *gExt.ExtAuth.StatPrefix
 			}
+			if len(gExt.ExtAuth.HeadersToForward) > 0 {
+				p.ExtAuth.AllowedHeaders = buildStringListMatcher(gExt.ExtAuth.HeadersToForward)
+			}
 
 		case gExt.ExtProc != nil:
 			envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, &gExt.ExtProc.GrpcService)
@@ -314,9 +317,11 @@ func ResolveExtHttpService(
 			Cluster: clusterName,
 		},
 	}
-	// TODO: default timeout
+
 	if httpService.RequestTimeout != nil {
 		httpUri.Timeout = durationpb.New(httpService.RequestTimeout.Duration)
+	} else {
+		httpUri.Timeout = durationpb.New(v1alpha1.HTTPDefaultTimeout)
 	}
 
 	envoyHttpService := &envoy_ext_authz_v3.HttpService{

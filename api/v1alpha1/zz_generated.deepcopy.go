@@ -2836,6 +2836,11 @@ func (in *ExtAuthProvider) DeepCopyInto(out *ExtAuthProvider) {
 		*out = new(ExtHttpService)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.HeadersToForward != nil {
+		in, out := &in.HeadersToForward, &out.HeadersToForward
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	if in.WithRequestBody != nil {
 		in, out := &in.WithRequestBody, &out.WithRequestBody
 		*out = new(ExtAuthBufferSettings)

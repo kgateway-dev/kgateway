@@ -63,7 +63,7 @@ var (
 		},
 		Spec: v1alpha1.GatewayExtensionSpec{
 			ExtAuth: &v1alpha1.ExtAuthProvider{
-				GrpcService: v1alpha1.ExtGrpcService{
+				GrpcService: &v1alpha1.ExtGrpcService{
 					BackendRef: gwv1.BackendRef{
 						BackendObjectReference: gwv1.BackendObjectReference{
 							Name: "ext-authz",
