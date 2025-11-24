@@ -235,6 +235,52 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 			want:    &envoyclusterv3.Cluster{},
 			wantErr: false,
 		},
+		{
+			name: "circuit breakers minimal configuration",
+			policy: &v1alpha1.BackendConfigPolicy{
+				Spec: v1alpha1.BackendConfigPolicySpec{
+					CircuitBreakers: &v1alpha1.CircuitBreakers{
+						MaxConnections: ptr.To(int32(100)),
+					},
+				},
+			},
+			want: &envoyclusterv3.Cluster{
+				CircuitBreakers: &envoyclusterv3.CircuitBreakers{
+					Thresholds: []*envoyclusterv3.CircuitBreakers_Thresholds{
+						{
+							MaxConnections: &wrapperspb.UInt32Value{Value: 100},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "circuit breakers full configuration",
+			policy: &v1alpha1.BackendConfigPolicy{
+				Spec: v1alpha1.BackendConfigPolicySpec{
+					CircuitBreakers: &v1alpha1.CircuitBreakers{
+						MaxConnections:     ptr.To(int32(1000)),
+						MaxPendingRequests: ptr.To(int32(500)),
+						MaxRequests:        ptr.To(int32(2000)),
+						MaxRetries:         ptr.To(int32(10)),
+					},
+				},
+			},
+			want: &envoyclusterv3.Cluster{
+				CircuitBreakers: &envoyclusterv3.CircuitBreakers{
+					Thresholds: []*envoyclusterv3.CircuitBreakers_Thresholds{
+						{
+							MaxConnections:     &wrapperspb.UInt32Value{Value: 1000},
+							MaxPendingRequests: &wrapperspb.UInt32Value{Value: 500},
+							MaxRequests:        &wrapperspb.UInt32Value{Value: 2000},
+							MaxRetries:         &wrapperspb.UInt32Value{Value: 10},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {

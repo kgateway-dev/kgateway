@@ -1083,9 +1083,14 @@ func processRateLimitDescriptor(descriptor v1alpha1.AgentRateLimitDescriptor) *a
 		})
 	}
 
+	rlType := api.TrafficPolicySpec_RemoteRateLimit_REQUESTS
+	if descriptor.Unit != nil && *descriptor.Unit == v1alpha1.RateLimitUnitTokens {
+		rlType = api.TrafficPolicySpec_RemoteRateLimit_TOKENS
+	}
+
 	return &api.TrafficPolicySpec_RemoteRateLimit_Descriptor{
 		Entries: entries,
-		Type:    api.TrafficPolicySpec_RemoteRateLimit_REQUESTS,
+		Type:    rlType,
 	}
 }
 
