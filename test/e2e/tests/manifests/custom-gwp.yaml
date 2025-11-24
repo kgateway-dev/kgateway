@@ -1,0 +1,4 @@
+gatewayClassParametersRefs:
+  kgateway:
+    name: custom-gwp
+    namespace: kgateway-test

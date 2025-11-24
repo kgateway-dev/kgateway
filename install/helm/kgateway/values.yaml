@@ -111,7 +111,7 @@ envoy:
   enabled: true
 
 # -- Map of GatewayClass names to GatewayParameters references that will be set on
-#    the default GatewayClasses managed by kgateway. Each entry should define the
+#    the default GatewayClasses managed by kgateway. Each entry must define both the
 #    name and namespace of the GatewayParameters resource.
 #    The default GatewayClasses managed by kgateway are:
 #    - kgateway
