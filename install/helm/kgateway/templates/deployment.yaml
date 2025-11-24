@@ -161,3 +161,13 @@ spec:
 {{- if and (not .Values.envoy.enabled) (not .Values.agentgateway.enabled) }}
 {{ fail "envoy.enabled or agentgateway.enabled must be set to true"}}
 {{- end }}
+{{- if .Values.gatewayClassParametersRefs }}
+{{- range $className, $ref := .Values.gatewayClassParametersRefs }}
+{{- if not $ref.name }}
+{{ fail (printf "gatewayClassParametersRefs.%s.name must be set" $className) }}
+{{- end }}
+{{- if not $ref.namespace }}
+{{ fail (printf "gatewayClassParametersRefs.%s.namespace must be set" $className) }}
+{{- end }}
+{{- end }}
+{{- end }}
