@@ -483,7 +483,7 @@ func (info *FilterChainInfo) toTransportSocket() *envoycorev3.TransportSocket {
 	if len(tlsConfig.EcdhCurves) > 0 {
 		common.TlsParams.EcdhCurves = tlsConfig.EcdhCurves
 	}
-	// TODO: add verify subject alt names (validation context)
+	// TODO: add verify subject alt names (validation context) https://github.com/kgateway-dev/kgateway/issues/12955
 
 	out := &envoytlsv3.DownstreamTlsContext{
 		CommonTlsContext: common,

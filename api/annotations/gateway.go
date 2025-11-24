@@ -51,6 +51,6 @@ const (
 	// VerifySubjectAltNames is the annotation key used to set the verify subject alt names for a TLS listener.
 	// The value is a comma separated list of subject alt names, e.g "example.com,www.example.com".
 	// Use in the TLS options field of a TLS listener.
-	// TODO: implement.
+	// TODO: implement https://github.com/kgateway-dev/kgateway/issues/12955
 	VerifySubjectAltNames gwv1.AnnotationKey = "kgateway.dev/verify-subject-alt-names"
 )
