@@ -316,7 +316,7 @@ type Pod struct {
 	// +optional
 	ExtraVolumes []corev1.Volume `json:"extraVolumes,omitempty"`
 
-	// If Specified, the pod's PriorityClass. See
+	// If specified, the pod's PriorityClass. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#podspec-v1-core
 	// for details
 	//
