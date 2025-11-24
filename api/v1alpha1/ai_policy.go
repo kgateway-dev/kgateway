@@ -17,11 +17,6 @@ import (
 // and appends `Describe the painting as if you were a famous art critic from the 17th century.`
 // to each request that is sent to the `openai` HTTPRoute.
 // ```yaml
-// apiVersion: gateway.solo.io/v1
-// kind: RouteOption
-// metadata:
-//   name: openai-opt
-//   namespace: gloo-system
 // spec:
 //   targetRefs:
 //   - group: gateway.networking.k8s.io
