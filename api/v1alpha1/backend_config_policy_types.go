@@ -106,7 +106,7 @@ type BackendConfigPolicySpec struct {
 
 // CircuitBreakers contains the options to configure circuit breaker thresholds for the default priority.
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/circuit_breaker.proto) for more details.
-// +kubebuilder:validation:XValidation:rule="has(self.maxConnections) || has(self.maxPendingRequests) || has(self.maxRequests) || has(self.maxRetries)",message="At least one circuit breaker threshold must be specified"
+// +kubebuilder:validation:AtLeastOneOf=maxConnections;maxPendingRequests;maxRequests;maxRetries
 type CircuitBreakers struct {
 	// MaxConnections is the maximum number of connections that will be made to
 	// the upstream cluster. If not specified, defaults to 1024.

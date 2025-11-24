@@ -63,21 +63,21 @@ spec:
                       MaxConnections is the maximum number of connections that will be made to
                       the upstream cluster. If not specified, defaults to 1024.
                     format: int32
-                    minimum: 0
+                    minimum: 1
                     type: integer
                   maxPendingRequests:
                     description: |-
                       MaxPendingRequests is the maximum number of pending requests that are
                       allowed to the upstream cluster. If not specified, defaults to 1024.
                     format: int32
-                    minimum: 0
+                    minimum: 1
                     type: integer
                   maxRequests:
                     description: |-
                       MaxRequests is the maximum number of parallel requests that are allowed
                       to the upstream cluster. If not specified, defaults to 1024.
                     format: int32
-                    minimum: 0
+                    minimum: 1
                     type: integer
                   maxRetries:
                     description: |-
@@ -88,9 +88,10 @@ spec:
                     type: integer
                 type: object
                 x-kubernetes-validations:
-                - message: At least one circuit breaker threshold must be specified
-                  rule: has(self.maxConnections) || has(self.maxPendingRequests) ||
-                    has(self.maxRequests) || has(self.maxRetries)
+                - message: at least one of the fields in [maxConnections maxPendingRequests
+                    maxRequests maxRetries] must be set
+                  rule: '[has(self.maxConnections),has(self.maxPendingRequests),has(self.maxRequests),has(self.maxRetries)].filter(x,x==true).size()
+                    >= 1'
               commonHttpProtocolOptions:
                 description: |-
                   Additional options when handling HTTP requests upstream, applicable to
