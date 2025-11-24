@@ -446,7 +446,7 @@ type APIKeyAuthentication struct {
 	// metadata:
 	//   name: api-key
 	// stringData:
-	//   client1: "k-123",
+	//   client1: "k-123"
 	//   client2: "k-456"
 	//
 	// +optional
@@ -465,7 +465,7 @@ type APIKeyAuthentication struct {
 	// metadata:
 	//   name: api-key
 	// stringData:
-	//   client1: "k-123",
+	//   client1: "k-123"
 	//   client2: "k-456"
 	//
 	// +optional

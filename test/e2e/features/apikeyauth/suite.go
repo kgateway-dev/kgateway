@@ -381,7 +381,7 @@ stringData:
 
 	// Step 6: Verify the final set of keys work
 	// After Step 5 merge update, the secret has: client1 (k-123), client3 (k-789), client4 (k-999), client5 (k-111)
-	s.T().Log("Step 6: Verifying final API keys (k-123, k-789, k-999, k-111) work")
+	s.T().Log("Step 6: Verifying final API keys (k-123, k-789, k-999, k-111) works")
 	statusWithK123Final := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-123"))
 	s.TestInstallation.Assertions.AssertEventualCurlResponse(
 		s.Ctx,

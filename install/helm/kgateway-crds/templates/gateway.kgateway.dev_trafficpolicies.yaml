@@ -135,7 +135,7 @@ spec:
                       metadata:
                         name: api-key
                       stringData:
-                        client1: "k-123",
+                        client1: "k-123"
                         client2: "k-456"
                     properties:
                       name:
@@ -164,7 +164,7 @@ spec:
                       metadata:
                         name: api-key
                       stringData:
-                        client1: "k-123",
+                        client1: "k-123"
                         client2: "k-456"
                     properties:
                       matchLabels:
