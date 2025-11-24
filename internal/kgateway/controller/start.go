@@ -17,6 +17,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer"
@@ -29,6 +30,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
@@ -389,6 +391,7 @@ func GetDefaultClassInfo(
 	additionalClassInfos map[string]*deployer.GatewayClassInfo,
 ) map[string]*deployer.GatewayClassInfo {
 	classInfos := map[string]*deployer.GatewayClassInfo{}
+	refOverrides := globalSettings.GatewayClassParametersRefs
 	if globalSettings.EnableEnvoy {
 		classInfos[gatewayClassName] = &deployer.GatewayClassInfo{
 			Description:       "Standard class for managing Gateway API ingress traffic.",
@@ -397,6 +400,7 @@ func GetDefaultClassInfo(
 			ControllerName:    controllerName,
 			SupportedFeatures: deployer.GetSupportedFeaturesForStandardGateway(),
 		}
+		applyGatewayClassParametersRef(classInfos[gatewayClassName], gatewayClassName, refOverrides)
 	}
 	// Only enable waypoint gateway class if it's enabled in the settings
 	if globalSettings.EnableWaypoint {
@@ -409,6 +413,7 @@ func GetDefaultClassInfo(
 			ControllerName:    controllerName,
 			SupportedFeatures: deployer.GetSupportedFeaturesForWaypointGateway(),
 		}
+		applyGatewayClassParametersRef(classInfos[waypointGatewayClassName], waypointGatewayClassName, refOverrides)
 	}
 	// Only enable agentgateway gateway class if it's enabled in the settings
 	if globalSettings.EnableAgentgateway {
@@ -419,7 +424,29 @@ func GetDefaultClassInfo(
 			ControllerName:    agwControllerName,
 			SupportedFeatures: deployer.GetSupportedFeaturesForAgentGateway(),
 		}
+		applyGatewayClassParametersRef(classInfos[agwClassName], agwClassName, refOverrides)
 	}
 	maps.Copy(classInfos, additionalClassInfos)
 	return classInfos
+}
+
+func applyGatewayClassParametersRef(info *deployer.GatewayClassInfo, className string, refs apisettings.GatewayClassParametersRefs) {
+	if info == nil || len(refs) == 0 {
+		return
+	}
+	ref, ok := refs[className]
+	if !ok || ref == nil || ref.Name == "" {
+		return
+	}
+
+	// Set default Group and Kind if not provided
+	paramsRef := *ref
+	if paramsRef.Group == "" {
+		paramsRef.Group = gwv1.Group(wellknown.GatewayParametersGVK.Group)
+	}
+	if paramsRef.Kind == "" {
+		paramsRef.Kind = gwv1.Kind(wellknown.GatewayParametersGVK.Kind)
+	}
+
+	info.ParametersRef = &paramsRef
 }

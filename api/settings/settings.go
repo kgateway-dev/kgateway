@@ -1,10 +1,12 @@
 package settings
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/kelseyhightower/envconfig"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 // ValidationMode determines how invalid routes and policies are handled during translation.
@@ -72,6 +74,54 @@ func (m *DnsLookupFamily) Decode(value string) error {
 	default:
 		return fmt.Errorf("invalid DNS lookup family: %q", value)
 	}
+}
+
+// GatewayClassParametersRefs maps GatewayClass names to ParametersReference
+type GatewayClassParametersRefs map[string]*gwv1.ParametersReference
+
+// Decode implements envconfig.Decoder
+func (r *GatewayClassParametersRefs) Decode(value string) error {
+	if value == "" {
+		*r = nil
+		return nil
+	}
+
+	// First parse as a simple map to validate name is present
+	var simpleParsed map[string]struct {
+		Name      string `json:"name"`
+		Namespace string `json:"namespace,omitempty"`
+		Group     string `json:"group,omitempty"`
+		Kind      string `json:"kind,omitempty"`
+	}
+	if err := json.Unmarshal([]byte(value), &simpleParsed); err != nil {
+		return fmt.Errorf("invalid gateway class parameters refs: %w", err)
+	}
+
+	parsed := make(map[string]*gwv1.ParametersReference, len(simpleParsed))
+	for className, ref := range simpleParsed {
+		if strings.TrimSpace(ref.Name) == "" {
+			return fmt.Errorf("gateway class %q parametersRef.name must be set", className)
+		}
+
+		paramsRef := &gwv1.ParametersReference{
+			Name: ref.Name,
+		}
+		if ref.Namespace != "" {
+			ns := gwv1.Namespace(ref.Namespace)
+			paramsRef.Namespace = &ns
+		}
+		if ref.Group != "" {
+			paramsRef.Group = gwv1.Group(ref.Group)
+		}
+		if ref.Kind != "" {
+			paramsRef.Kind = gwv1.Kind(ref.Kind)
+		}
+
+		parsed[className] = paramsRef
+	}
+
+	*r = parsed
+	return nil
 }
 
 type Settings struct {
@@ -187,6 +237,9 @@ type Settings struct {
 
 	// EnableExperimentalGatewayAPIFeatures enables kgateway to support experimental features and APIs
 	EnableExperimentalGatewayAPIFeatures bool `split_words:"true" default:"true"`
+
+	// GatewayClassParametersRefs configures the GatewayParameters references to set on the default GatewayClasses.
+	GatewayClassParametersRefs GatewayClassParametersRefs `split_words:"true" default:"{}"`
 }
 
 // BuildSettings returns a zero-valued Settings obj if error is encountered when parsing env

@@ -116,6 +116,8 @@ spec:
               value: "{{.Values.agentgateway.enabled}}"
             - name: KGW_ENABLE_ENVOY
               value: "{{.Values.envoy.enabled}}"
+            - name: KGW_GATEWAY_CLASS_PARAMETERS_REFS
+              value: {{ .Values.gatewayClassParametersRefs | toJson | quote }}
             {{- if .Values.waypoint.enabled }}
             - name: KGW_ENABLE_WAYPOINT
               value: "true"
