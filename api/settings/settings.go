@@ -102,13 +102,13 @@ func (r *GatewayClassParametersRefs) Decode(value string) error {
 		if strings.TrimSpace(ref.Name) == "" {
 			return fmt.Errorf("gateway class %q parametersRef.name must be set", className)
 		}
-
-		paramsRef := &gwv1.ParametersReference{
-			Name: ref.Name,
+		if strings.TrimSpace(ref.Namespace) == "" {
+			return fmt.Errorf("gateway class %q parametersRef.namespace must be set", className)
 		}
-		if ref.Namespace != "" {
-			ns := gwv1.Namespace(ref.Namespace)
-			paramsRef.Namespace = &ns
+		ns := gwv1.Namespace(ref.Namespace)
+		paramsRef := &gwv1.ParametersReference{
+			Name:      ref.Name,
+			Namespace: &ns,
 		}
 		if ref.Group != "" {
 			paramsRef.Group = gwv1.Group(ref.Group)

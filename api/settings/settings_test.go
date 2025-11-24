@@ -46,7 +46,7 @@ func allEnvVarsSet() map[string]string {
 		"KGW_GLOBAL_POLICY_NAMESPACE":                  "foo",
 		"KGW_DISABLE_LEADER_ELECTION":                  "true",
 		"KGW_POLICY_MERGE":                             `{"TrafficPolicy":{"extProc":"DeepMerge"}}`,
-		"KGW_GATEWAY_CLASS_PARAMETERS_REFS":            `{"kgateway":{"name":"custom-gwp","namespace":"infra"}}`,
+		"KGW_GATEWAY_CLASS_PARAMETERS_REFS":            `{"kgateway":{"name":"custom-gwp","namespace":"infra"},"agentgateway":{"name":"custom-gwp-agw","namespace":"infra"}}`,
 		"KGW_ENABLE_WAYPOINT":                          "true",
 		"KGW_XDS_AUTH":                                 "false",
 		"KGW_XDS_TLS":                                  "true",
@@ -148,6 +148,10 @@ func TestSettings(t *testing.T) {
 						Name:      "custom-gwp",
 						Namespace: ptr.To(gwv1.Namespace("infra")),
 					},
+					"agentgateway": {
+						Name:      "custom-gwp-agw",
+						Namespace: ptr.To(gwv1.Namespace("infra")),
+					},
 				},
 			},
 		},
@@ -187,11 +191,18 @@ func TestSettings(t *testing.T) {
 			expectedErrorStr: `invalid validation mode: "invalid"`,
 		},
 		{
-			name: "errors on invalid gatewayclass parameters refs",
+			name: "errors on invalid gatewayclass parameters refs: missing name",
 			envVars: map[string]string{
 				"KGW_GATEWAY_CLASS_PARAMETERS_REFS": `{"kgateway":{"namespace":"missing-name"}}`,
 			},
 			expectedErrorStr: `gateway class "kgateway" parametersRef.name must be set`,
+		},
+		{
+			name: "errors on invalid gatewayclass parameters refs: missing namespace",
+			envVars: map[string]string{
+				"KGW_GATEWAY_CLASS_PARAMETERS_REFS": `{"kgateway":{"name":"custom-gwp"}}`,
+			},
+			expectedErrorStr: `gateway class "kgateway" parametersRef.namespace must be set`,
 		},
 		{
 			name: "ignores other env vars",
