@@ -8,6 +8,7 @@ import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -117,17 +118,17 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 	col := krt.WrapClient(cli, commoncol.KrtOpts.ToOptions("BackendConfigPolicy")...)
 	gk := wellknown.BackendConfigPolicyGVK.GroupKind()
 
-	policyStatusMarker, backendConfigPolicyCol := krt.NewStatusCollection(col, func(krtctx krt.HandlerContext, b *v1alpha1.BackendConfigPolicy) (*struct{}, *ir.PolicyWrapper) {
+	policyStatusMarker, backendConfigPolicyCol := krt.NewStatusCollection(col, func(krtctx krt.HandlerContext, b *v1alpha1.BackendConfigPolicy) (*krtcollections.StatusMarker, *ir.PolicyWrapper) {
 		policyIR, errs := translate(commoncol, krtctx, b)
 		if err := validateXDS(ctx, policyIR, v, commoncol.Settings.ValidationMode); err != nil {
 			errs = append(errs, err)
 		}
 
 		// Create status marker if existing status has kgateway controller
-		var statusMarker *struct{}
+		var statusMarker *krtcollections.StatusMarker
 		for _, ancestor := range b.Status.Ancestors {
 			if string(ancestor.ControllerName) == commoncol.ControllerName {
-				statusMarker = &struct{}{}
+				statusMarker = &krtcollections.StatusMarker{}
 				break
 			}
 		}
@@ -162,7 +163,8 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 			// Add empty status to clear stale status for policies with no valid targets
 			if reportMap.Policies[policyKey] == nil {
 				rp := reports.NewReporter(reportMap)
-				_ = rp.Policy(policyKey, 0)
+				// create empty policy report entry with no ancestor refs
+				rp.Policy(policyKey, 0)
 			}
 		}
 	}

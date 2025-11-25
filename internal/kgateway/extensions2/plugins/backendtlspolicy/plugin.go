@@ -12,6 +12,7 @@ import (
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
@@ -76,14 +77,14 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 
 	translate := buildTranslateFunc(commoncol.ConfigMaps)
 
-	policyStatusMarker, tlsPolicyCol := krt.NewStatusCollection(col, func(krtctx krt.HandlerContext, i *gwv1.BackendTLSPolicy) (*struct{}, *ir.PolicyWrapper) {
+	policyStatusMarker, tlsPolicyCol := krt.NewStatusCollection(col, func(krtctx krt.HandlerContext, i *gwv1.BackendTLSPolicy) (*krtcollections.StatusMarker, *ir.PolicyWrapper) {
 		tlsPolicyIR, err := translate(krtctx, i)
 
 		// Create status marker if existing status has kgateway controller
-		var statusMarker *struct{}
+		var statusMarker *krtcollections.StatusMarker
 		for _, ancestor := range i.Status.Ancestors {
 			if string(ancestor.ControllerName) == kgwellknown.DefaultGatewayControllerName {
-				statusMarker = &struct{}{}
+				statusMarker = &krtcollections.StatusMarker{}
 				break
 			}
 		}
@@ -119,7 +120,8 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 			// Add empty status to clear stale status for policies with no valid targets
 			if reportMap.Policies[policyKey] == nil {
 				rp := reports.NewReporter(reportMap)
-				_ = rp.Policy(policyKey, 0)
+				// create empty policy report entry with no ancestor refs
+				rp.Policy(policyKey, 0)
 			}
 		}
 	}

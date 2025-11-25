@@ -271,7 +271,8 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 			// Add empty status to clear stale status for policies with no valid targets
 			if reportMap.Policies[policyKey] == nil {
 				rp := reports.NewReporter(reportMap)
-				_ = rp.Policy(policyKey, 0)
+				// create empty policy report entry with no ancestor refs
+				rp.Policy(policyKey, 0)
 			}
 		}
 	}
