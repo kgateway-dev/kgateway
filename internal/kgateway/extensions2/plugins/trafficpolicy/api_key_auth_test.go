@@ -200,6 +200,28 @@ func TestAPIKeyAuthIRValidate(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "policy with no client ID header forwarding validates successfully",
+			apiKeyAuth: &apiKeyAuthIR{
+				config: &envoyapikeyauthv3.ApiKeyAuthPerRoute{
+					Credentials: []*envoyapikeyauthv3.Credential{
+						{
+							Key:    "test-key",
+							Client: "test-client",
+						},
+					},
+					KeySources: []*envoyapikeyauthv3.KeySource{
+						{
+							Header: "api-key",
+						},
+					},
+					Forwarding: &envoyapikeyauthv3.Forwarding{
+						HideCredentials: false,
+					},
+				},
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {

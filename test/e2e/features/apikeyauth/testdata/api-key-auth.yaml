@@ -57,6 +57,7 @@ spec:
     keySources:
     - header: "api-key"
     hideAPIKey: false
+    clientIdHeader: "x-client-id"
     secretRef:
       name: api-keys
 

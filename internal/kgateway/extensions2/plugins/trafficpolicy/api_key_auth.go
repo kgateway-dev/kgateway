@@ -171,20 +171,18 @@ func constructAPIKeyAuth(
 		hideCredentials = *ak.HideAPIKey
 	}
 
-	// Determine client ID header (default to "x-client-id")
-	clientIdHeader := "x-client-id"
-	if ak.ClientIdHeader != nil {
-		clientIdHeader = *ak.ClientIdHeader
-	}
-
 	// Build Envoy API key auth per-route configuration
 	apiKeyAuthPolicy := &envoyapikeyauthv3.ApiKeyAuthPerRoute{
 		Credentials: credentials,
 		KeySources:  envoyKeySources,
 		Forwarding: &envoyapikeyauthv3.Forwarding{
-			Header:          clientIdHeader,
 			HideCredentials: hideCredentials,
 		},
+	}
+
+	// Only set client ID header forwarding if ClientIdHeader is specified
+	if ak.ClientIdHeader != nil {
+		apiKeyAuthPolicy.Forwarding.Header = *ak.ClientIdHeader
 	}
 
 	out.apiKeyAuth = &apiKeyAuthIR{

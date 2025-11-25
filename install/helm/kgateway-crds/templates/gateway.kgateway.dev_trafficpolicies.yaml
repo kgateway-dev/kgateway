@@ -59,10 +59,10 @@ spec:
                   API Key.
                 properties:
                   clientIdHeader:
-                    default: x-client-id
                     description: |-
                       clientIdHeader specifies the header name to forward the authenticated client identifier.
-                      If not specified, defaults to "x-client-id".
+                      If not specified, the client identifier will not be forwarded in any header.
+                      Example: "x-client-id"
                     type: string
                   hideAPIKey:
                     default: false

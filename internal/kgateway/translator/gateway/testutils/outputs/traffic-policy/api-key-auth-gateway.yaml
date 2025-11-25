@@ -62,8 +62,7 @@ Routes:
         key: k-123
       - client: client2
         key: k-456
-      forwarding:
-        header: x-client-id
+      forwarding: {}
       keySources:
       - cookie: api-key-cookie
         header: api-key

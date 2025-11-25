@@ -434,8 +434,8 @@ type APIKeyAuthentication struct {
 	HideAPIKey *bool `json:"hideAPIKey,omitempty"`
 
 	// clientIdHeader specifies the header name to forward the authenticated client identifier.
-	// If not specified, defaults to "x-client-id".
-	// +kubebuilder:default="x-client-id"
+	// If not specified, the client identifier will not be forwarded in any header.
+	// Example: "x-client-id"
 	// +optional
 	ClientIdHeader *string `json:"clientIdHeader,omitempty"`
 

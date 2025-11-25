@@ -64,12 +64,11 @@ Routes:
         envoy.filters.http.api_key_auth:
           '@type': type.googleapis.com/envoy.extensions.filters.http.api_key_auth.v3.ApiKeyAuthPerRoute
           credentials:
-          - client: client1
-            key: k-123
           - client: client2
             key: k-456
+          - client: client1
+            key: k-123
           forwarding:
-            header: x-client-id
             hideCredentials: true
           keySources:
           - header: x-api-key
@@ -88,12 +87,11 @@ Routes:
         envoy.filters.http.api_key_auth:
           '@type': type.googleapis.com/envoy.extensions.filters.http.api_key_auth.v3.ApiKeyAuthPerRoute
           credentials:
-          - client: client1
-            key: k-123
           - client: client2
             key: k-456
+          - client: client1
+            key: k-123
           forwarding:
-            header: x-client-id
             hideCredentials: true
           keySources:
           - header: x-api-key
