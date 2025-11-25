@@ -305,6 +305,8 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings Liste
 	}
 
 	listenerSetListenerExists := slices.ContainsFunc(validListeners, func(l ir.Listener) bool {
+		// The assumption is that if a parent is not a Gateway, it comes from a listenerSet
+		// or a type that implements krtcollections.ListenerCollection
 		_, ok := l.Parent.(*gwv1.Gateway)
 		return !ok
 	})
