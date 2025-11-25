@@ -8,7 +8,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/jwks"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
@@ -22,7 +21,7 @@ type JwksStoreController struct {
 	agw         *plugins.AgwCollections
 	apiClient   apiclient.Client
 	jwks        krt.Singleton[jwks.JwksSources]
-	jwksQueue   utils.AsyncQueue[jwks.JwksSources]
+	jwksQueue   chan jwks.JwksSources
 	waitForSync []cache.InformerSynced
 }
 
@@ -32,7 +31,7 @@ func NewJWKSStoreController(apiClient apiclient.Client, agw *plugins.AgwCollecti
 	return &JwksStoreController{
 		agw:       agw,
 		apiClient: apiClient,
-		jwksQueue: utils.NewAsyncQueue[jwks.JwksSources](),
+		jwksQueue: make(chan jwks.JwksSources),
 	}
 }
 
@@ -75,7 +74,7 @@ func (j *JwksStoreController) Start(ctx context.Context) error {
 	)
 
 	j.jwks.Register(func(o krt.Event[jwks.JwksSources]) {
-		j.jwksQueue.Enqueue(o.Latest())
+		j.jwksQueue <- o.Latest()
 	})
 
 	<-ctx.Done()
@@ -87,6 +86,6 @@ func (j *JwksStoreController) NeedLeaderElection() bool {
 	return true
 }
 
-func (j *JwksStoreController) JwksQueue() utils.AsyncQueue[jwks.JwksSources] {
+func (j *JwksStoreController) JwksQueue() <-chan jwks.JwksSources {
 	return j.jwksQueue
 }

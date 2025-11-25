@@ -6,7 +6,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 )
@@ -25,17 +24,17 @@ type JwksStore struct {
 	jwksFetcher     *JwksFetcher
 	configMapSyncer *configMapSyncer
 	updates         <-chan map[string]string
-	latestJwksQueue utils.AsyncQueue[JwksSources]
+	latestJwks      <-chan JwksSources
 }
 
-func BuildJwksStore(ctx context.Context, cli apiclient.Client, commonCols *collections.CommonCollections, jwksQueue utils.AsyncQueue[JwksSources], storePrefix, deploymentNamespace string) *JwksStore {
+func BuildJwksStore(ctx context.Context, cli apiclient.Client, commonCols *collections.CommonCollections, jwksQueue <-chan JwksSources, storePrefix, deploymentNamespace string) *JwksStore {
 	log := log.Log.WithName("jwks store setup")
 	log.Info("creating jwks store")
 
 	jwksCache := NewJwksCache()
 	jwksStore := &JwksStore{
 		jwksCache:       jwksCache,
-		latestJwksQueue: jwksQueue,
+		latestJwks:      jwksQueue,
 		jwksFetcher:     NewJwksFetcher(jwksCache),
 		configMapSyncer: NewConfigMapSyncer(cli, storePrefix, deploymentNamespace, commonCols.KrtOpts),
 	}
@@ -73,15 +72,13 @@ func (s *JwksStore) Start(ctx context.Context) error {
 }
 
 func (s *JwksStore) updateJwksSources(ctx context.Context) {
-	log := log.FromContext(ctx)
 	for {
-		log.Info("dequeuing jwks update")
-		latestJwks, err := s.latestJwksQueue.Dequeue(ctx)
-		if err != nil {
-			log.Error(err, "error dequeuing jwks update")
+		select {
+		case jwks := <-s.latestJwks:
+			s.jwksFetcher.UpdateJwksSources(ctx, jwks)
+		case <-ctx.Done():
 			return
 		}
-		s.jwksFetcher.UpdateJwksSources(ctx, latestJwks)
 	}
 }
 
