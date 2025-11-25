@@ -19,6 +19,7 @@ import (
 const (
 	basicAuthFilterName = "envoy.filters.http.basic_auth"
 	defaultSecretKey    = ".htpasswd"
+	shaPrefix           = "{SHA}"
 )
 
 type basicAuthIR struct {
@@ -126,10 +127,29 @@ func constructBasicAuth(
 		return fmt.Errorf("basic auth: either users or secretRef must be specified")
 	}
 
-	// Set the users data source
+	// Validate and filter users to only include SHA hashed passwords
+	validUsers, invalidUsers := validateAndFilterSHAUsers(htpasswdData)
+
+	// If there are no valid users after filtering, return an error
+	if len(validUsers) == 0 {
+		return fmt.Errorf("basic auth: no valid users with {SHA} hash format found")
+	}
+
+	// Report invalid users if any were found
+	if len(invalidUsers) > 0 {
+		err = fmt.Errorf("basic auth: dropped %d user(s) with invalid hash format (only {SHA} is supported): %v",
+			len(invalidUsers), invalidUsers)
+	}
+
+	allUsers := strings.Join(validUsers, "\n")
+	if len(allUsers) == 0 {
+		allUsers = "#"
+	}
+
+	// Set the users data source with validated users
 	policy.Users = &envoycorev3.DataSource{
 		Specifier: &envoycorev3.DataSource_InlineString{
-			InlineString: htpasswdData,
+			InlineString: allUsers,
 		},
 	}
 
@@ -137,7 +157,7 @@ func constructBasicAuth(
 		policy: policy,
 	}
 
-	return nil
+	return err
 }
 
 // fetchHtpasswdFromSecret retrieves htpasswd data from a Kubernetes secret
@@ -188,4 +208,42 @@ func fetchHtpasswdFromSecret(
 	}
 
 	return strings.TrimSpace(string(data)), nil
+}
+
+// validateAndFilterSHAUsers validates htpasswd entries and filters out users with non-SHA hash formats.
+// Returns a slice of valid users, a slice of invalid usernames, and an error if validation fails.
+// Envoy only supports {SHA} hash format for basic auth.
+func validateAndFilterSHAUsers(htpasswdData string) (validUsers []string, invalidUsernames []string) {
+
+	lines := strings.Split(htpasswdData, "\n")
+	validUsers = make([]string, 0, len(lines))
+	invalidUsernames = make([]string, 0)
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+
+		// Skip empty lines and comments
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		// htpasswd format is "username:password_hash"
+		parts := strings.SplitN(line, ":", 2)
+		if len(parts) != 2 {
+			invalidUsernames = append(invalidUsernames, line)
+			continue
+		}
+
+		username := parts[0]
+		passwordHash := parts[1]
+
+		// Check if the password hash uses {SHA} format
+		if strings.HasPrefix(passwordHash, shaPrefix) && len(passwordHash) == (28+5) { // 5=len("{SHA}"), 28=SHA1 base64 length. these validations are copied from envoy source code.
+			validUsers = append(validUsers, line)
+		} else {
+			invalidUsernames = append(invalidUsernames, username)
+		}
+	}
+
+	return validUsers, invalidUsernames
 }

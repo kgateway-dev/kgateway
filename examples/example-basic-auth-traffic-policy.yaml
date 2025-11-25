@@ -83,10 +83,10 @@ spec:
     name: protected-route
   basicAuth:
     users:
-      # Generated with: htpasswd -nbm user1 pass1
-      - "user1:$apr1$Uutynkzs$Ia24HkpRC/p7Yq16FakHy1"
-      # Generated with: htpasswd -nbm user2 pass2
-      - "user2:$apr1$uUzorz.t$kwOhJPMeLDe6IaUwol7iv."
+      # Generated with: htpasswd -nbs user1 pass1
+      - "user1:{SHA}8FePHnF0saQcTqjG4X96ijuIySo="
+      # Generated with: htpasswd -nbs user2 pass2
+      - "user2:{SHA}i+UhJqb95FCnFio2UdWJu1HpV50="
 ---
 # Option 3: Reference a Kubernetes secret
 apiVersion: v1
@@ -97,7 +97,7 @@ metadata:
 type: Opaque
 stringData:
   # The .htpasswd key with htpasswd data (users alice and bob, password is password).
-  .htpasswd: alice:$apr1$NnNOgfuJ$qRCLjc8g7qKfNNBG/ET2A0\nbob:$apr1$f3d/ntwE$/CVxmIZyQF7GH53o0mBTK/
+  .htpasswd: alice:{SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=\nbob:{SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
@@ -126,7 +126,7 @@ spec:
     name: example-gateway
   basicAuth:
     users:
-      - "gateway-user:$2y$05$abcdefghijklmnopqrstuv.0123456789ABCDEFGHIJKLMNOPQRST"
+      - "gateway-user:{SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g="
 ---
 # Route that disables the gateway-level basic auth
 apiVersion: gateway.kgateway.dev/v1alpha1
