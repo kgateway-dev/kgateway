@@ -97,6 +97,40 @@ type BackendConfigPolicySpec struct {
 	// OutlierDetection contains the options necessary to configure passive health checking.
 	// +optional
 	OutlierDetection *OutlierDetection `json:"outlierDetection,omitempty"`
+
+	// CircuitBreakers contains the options necessary to configure circuit breaking.
+	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/circuit_breaking) for more details.
+	// +optional
+	CircuitBreakers *CircuitBreakers `json:"circuitBreakers,omitempty"`
+}
+
+// CircuitBreakers contains the options to configure circuit breaker thresholds for the default priority.
+// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/circuit_breaker.proto) for more details.
+// +kubebuilder:validation:AtLeastOneOf=maxConnections;maxPendingRequests;maxRequests;maxRetries
+type CircuitBreakers struct {
+	// MaxConnections is the maximum number of connections that will be made to
+	// the upstream cluster. If not specified, defaults to 1024.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	MaxConnections *int32 `json:"maxConnections,omitempty"`
+
+	// MaxPendingRequests is the maximum number of pending requests that are
+	// allowed to the upstream cluster. If not specified, defaults to 1024.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	MaxPendingRequests *int32 `json:"maxPendingRequests,omitempty"`
+
+	// MaxRequests is the maximum number of parallel requests that are allowed
+	// to the upstream cluster. If not specified, defaults to 1024.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	MaxRequests *int32 `json:"maxRequests,omitempty"`
+
+	// MaxRetries is the maximum number of parallel retries that are allowed
+	// to the upstream cluster. If not specified, defaults to 3.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	MaxRetries *int32 `json:"maxRetries,omitempty"`
 }
 
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-http1protocoloptions) for more details.

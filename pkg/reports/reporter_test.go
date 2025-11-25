@@ -526,6 +526,33 @@ var _ = Describe("Reporting Infrastructure", func() {
 		Entry("GRPCRoute with missing parent reference", grpcRoute()),
 	)
 
+	DescribeTable("should clear any stale status on empty route report entry",
+		func(route client.Object) {
+			rm := reports.NewReportMap()
+			reporter := reports.NewReporter(&rm)
+
+			// create empty route entry in report map
+			reporter.Route(route)
+
+			status := rm.BuildRouteStatus(ctx, route, wellknown.DefaultGatewayControllerName)
+
+			Expect(status).NotTo(BeNil())
+			Expect(status.Parents).To(BeEmpty())
+		},
+		Entry("HTTPRoute with stale status", httpRoute(
+			metav1.Condition{Type: fake_condition},
+		)),
+		Entry("TCPRoute with stale status", tcpRoute(
+			metav1.Condition{Type: fake_condition},
+		)),
+		Entry("TLSRoute with stale status", tlsRoute(
+			metav1.Condition{Type: fake_condition},
+		)),
+		Entry("GRPCRoute with stale status", grpcRoute(
+			metav1.Condition{Type: fake_condition},
+		)),
+	)
+
 	Describe("building listener set status", func() {
 		It("should build all positive conditions with an empty report", func() {
 			ls := ls()

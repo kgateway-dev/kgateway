@@ -180,6 +180,7 @@ test: ## Run all tests with ginkgo, or only run the test package at {TEST_PKG} i
 # will still have e2e tests run by Github Actions once they publish a pull
 # request.
 .PHONY: e2e-test
+e2e-test: dummy-idp-docker kind-load-dummy-idp
 e2e-test: TEST_PKG ?= ./test/e2e/tests 
 e2e-test: ## Run only e2e tests, and only run the test package at {TEST_PKG} if it is specified
 	@$(MAKE) --no-print-directory go-test TEST_TAG=e2e TEST_PKG=$(TEST_PKG)
@@ -506,6 +507,38 @@ $(ENVOYINIT_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(ENVOYINIT_OUTPUT_D
 
 .PHONY: envoy-wrapper-docker
 envoy-wrapper-docker: $(ENVOYINIT_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH)
+
+#----------------------------------------------------------------------------------
+# dummy idp (used in e2e tests)
+#----------------------------------------------------------------------------------
+
+DUMMY_IDP_DIR=hack/dummy-idp
+DUMMY_IDP_OUTPUT_DIR=$(OUTPUT_DIR)/$(DUMMY_IDP_DIR)
+export DUMMY_IDP_IMAGE_REPO ?= dummy-idp
+DUMMY_IDP_VERSION=0.0.1
+
+$(DUMMY_IDP_OUTPUT_DIR)/dummy-idp-linux-$(GOARCH): $(DUMMY_IDP_SOURCES)
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ ./hack/dummy-idp...
+
+.PHONY: dummy-idp
+dummy-idp: $(DUMMY_IDP_OUTPUT_DIR)/dummy-idp-linux-$(GOARCH)
+
+$(DUMMY_IDP_OUTPUT_DIR)/Dockerfile.dummy-idp: ./hack/dummy-idp/Dockerfile
+	cp $< $@
+
+$(DUMMY_IDP_OUTPUT_DIR)/.docker-stamp-$(DUMMY_IDP_VERSION)-$(GOARCH): $(DUMMY_IDP_OUTPUT_DIR)/dummy-idp-linux-$(GOARCH) $(DUMMY_IDP_OUTPUT_DIR)/Dockerfile.dummy-idp
+	$(BUILDX_BUILD) --load $(PLATFORM) $(DUMMY_IDP_OUTPUT_DIR) -f $(DUMMY_IDP_OUTPUT_DIR)/Dockerfile.dummy-idp \
+		--build-arg GOARCH=$(GOARCH) \
+		--build-arg BASE_IMAGE=$(ALPINE_BASE_IMAGE) \
+		-t $(IMAGE_REGISTRY)/$(DUMMY_IDP_IMAGE_REPO):$(DUMMY_IDP_VERSION)
+	@touch $@
+
+.PHONY: dummy-idp-docker
+dummy-idp-docker: $(DUMMY_IDP_OUTPUT_DIR)/.docker-stamp-$(DUMMY_IDP_VERSION)-$(GOARCH)
+
+.PHONY: kind-load-dummy-idp
+kind-load-dummy-idp: 
+	$(KIND) load docker-image $(IMAGE_REGISTRY)/$(DUMMY_IDP_IMAGE_REPO):$(DUMMY_IDP_VERSION) --name $(CLUSTER_NAME)
 
 #----------------------------------------------------------------------------------
 # Helm

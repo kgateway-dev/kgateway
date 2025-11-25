@@ -264,7 +264,13 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	// here we will merge reports that are per-Proxy to a singleton Report used to persist to k8s on a timer
 	s.statusReport = krt.NewSingleton(func(kctx krt.HandlerContext) *report {
 		proxies := krt.Fetch(kctx, s.mostXdsSnapshots)
+
 		merged := mergeProxyReports(proxies)
+
+		// Process status markers
+		objStatus := krt.Fetch(kctx, s.commonCols.Routes.GetHTTPRouteStatusMarkers())
+		s.commonCols.Routes.ProcessHTTPRouteStatusMarkers(objStatus, merged)
+
 		return &report{merged}
 	})
 

@@ -98,7 +98,7 @@ func InitCollections(
 	initBackends(plugins, backendIndex)
 	endpointIRs := initEndpoints(plugins, krtopts)
 
-	routes := NewRoutesIndex(krtopts, httpRoutes, grpcRoutes, tcproutes, tlsRoutes, policies, backendIndex, refgrants, globalSettings)
+	routes := NewRoutesIndex(krtopts, envoyControllerName, httpRoutes, grpcRoutes, tcproutes, tlsRoutes, policies, backendIndex, refgrants, globalSettings)
 	return gateways, routes, backendIndex, endpointIRs
 }
 
