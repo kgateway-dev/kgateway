@@ -23,6 +23,7 @@ spec:
     namespaces:
       from: All
 ---
+# This listenerSet should be able to access the `https` secret in its own namespace
 apiVersion: gateway.networking.x-k8s.io/v1alpha1
 kind: XListenerSet
 metadata:
@@ -51,6 +52,7 @@ spec:
           kind: Secret
     hostname: "ls1.tls.example.com"
 ---
+# This listenerSet should be able to access the `https` secret in its own namespace
 apiVersion: gateway.networking.x-k8s.io/v1alpha1
 kind: XListenerSet
 metadata:
