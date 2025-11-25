@@ -40,7 +40,12 @@ var (
 func lisToIr(l gwv1.Listener) ir.Listener {
 	return ir.Listener{
 		Listener: l,
-		Parent:   &gwv1.Gateway{},
+		Parent: &gwv1.Gateway{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "gw",
+				Namespace: "default",
+			},
+		},
 	}
 }
 
@@ -115,9 +120,8 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 			gatewayReporter := statusReporter.Gateway(gateway)
 			listenerReporter = gatewayReporter.Listener(&gwListener)
 			ml = &listener.MergedListeners{
-				Listeners:        []*listener.MergedListener{},
-				Queries:          queries,
-				GatewayNamespace: "default",
+				Listeners: []*listener.MergedListener{},
+				Queries:   queries,
 			}
 
 		})
@@ -609,9 +613,8 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 
 			// Re-create the MergedListeners with the test reporter to capture status
 			testMl := &listener.MergedListeners{
-				Listeners:        []*listener.MergedListener{},
-				Queries:          queries,
-				GatewayNamespace: "default",
+				Listeners: []*listener.MergedListener{},
+				Queries:   queries,
 			}
 			testMl.AppendTcpListener(lisToIr(gwListener), routes, testListenerReporter)
 			testMl.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, nil, testStatusReporter)
@@ -664,9 +667,8 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 			gatewayReporter := statusReporter.Gateway(gateway)
 			listenerReporter = gatewayReporter.Listener(&gwListener)
 			ml = &listener.MergedListeners{
-				Listeners:        []*listener.MergedListener{},
-				Queries:          queries,
-				GatewayNamespace: "default",
+				Listeners: []*listener.MergedListener{},
+				Queries:   queries,
 			}
 		})
 
@@ -891,9 +893,8 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 			gatewayReporter := statusReporter.Gateway(gateway)
 			listenerReporter = gatewayReporter.Listener(&gwListener)
 			ml = &listener.MergedListeners{
-				Listeners:        []*listener.MergedListener{},
-				Queries:          queries,
-				GatewayNamespace: "default",
+				Listeners: []*listener.MergedListener{},
+				Queries:   queries,
 			}
 		})
 

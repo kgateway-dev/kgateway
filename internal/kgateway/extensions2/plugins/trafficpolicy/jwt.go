@@ -16,9 +16,11 @@ import (
 	jwtauthnv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/jwt_authn/v3"
 	"github.com/go-jose/go-jose/v4"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
@@ -31,6 +33,8 @@ const (
 	PayloadInMetadata   = "payload"
 	jwtFilterNamePrefix = "jwt"
 	jwtConfigMapKey     = "jwks"
+
+	remoteJWKSTimeoutSecs = 5
 )
 
 type jwtIr struct {
@@ -158,7 +162,14 @@ func ProviderName(resourceName, providerName string) string {
 	return fmt.Sprintf("%s_%s", resourceName, providerName)
 }
 
-func translateProvider(krtctx krt.HandlerContext, provider v1alpha1.JWTProvider, policyNs string, configMaps krt.Collection[*corev1.ConfigMap]) (*jwtauthnv3.JwtProvider, error) {
+func translateProvider(
+	krtctx krt.HandlerContext,
+	provider v1alpha1.JWTProvider,
+	policyNs string,
+	configMaps krt.Collection[*corev1.ConfigMap],
+	resolver backendResolver,
+	gwExtObj ir.ObjectSource,
+) (*jwtauthnv3.JwtProvider, error) {
 	var claimToHeaders []*jwtauthnv3.JwtClaimToHeader
 	for _, claim := range provider.ClaimsToHeaders {
 		claimToHeaders = append(claimToHeaders, &jwtauthnv3.JwtClaimToHeader{
@@ -182,8 +193,7 @@ func translateProvider(krtctx krt.HandlerContext, provider v1alpha1.JWTProvider,
 		jwtProvider.ClearRouteCache = true
 	}
 	translateTokenSource(provider, jwtProvider)
-	err := translateJwks(krtctx, provider.JWKS, configMaps, policyNs, jwtProvider)
-
+	err := translateJwks(krtctx, provider.JWKS, policyNs, jwtProvider, configMaps, resolver, gwExtObj)
 	if err != nil {
 		return nil, err
 	}
@@ -211,25 +221,65 @@ func translateTokenSource(provider v1alpha1.JWTProvider, out *jwtauthnv3.JwtProv
 	}
 }
 
-func translateJwks(krtctx krt.HandlerContext, jwkConfig v1alpha1.JWKS, configMaps krt.Collection[*corev1.ConfigMap], policyNs string, out *jwtauthnv3.JwtProvider) error {
-	var jwkSource *jwtauthnv3.JwtProvider_LocalJwks
-	if jwkConfig.LocalJWKS.Inline != nil {
-		var err error
-		jwkSource, err = translateJwksInline(*jwkConfig.LocalJWKS.Inline)
-		if err != nil {
-			return err
+type backendResolver interface {
+	GetBackendFromRef(krt.HandlerContext, ir.ObjectSource, gwv1.BackendObjectReference) (*ir.BackendObjectIR, error)
+}
+
+func translateJwks(
+	krtctx krt.HandlerContext,
+	jwkConfig v1alpha1.JWKS,
+	policyNs string,
+	out *jwtauthnv3.JwtProvider,
+	configMaps krt.Collection[*corev1.ConfigMap],
+	resolver backendResolver,
+	gwExtObj ir.ObjectSource,
+) error {
+	switch {
+	case jwkConfig.LocalJWKS != nil:
+		switch {
+		case jwkConfig.LocalJWKS.Inline != nil:
+			jwkSource, err := translateJwksInline(*jwkConfig.LocalJWKS.Inline)
+			if err != nil {
+				return err
+			}
+			out.JwksSourceSpecifier = jwkSource
+		case jwkConfig.LocalJWKS.ConfigMapRef != nil:
+			cm, err := GetConfigMap(krtctx, configMaps, jwkConfig.LocalJWKS.ConfigMapRef.Name, policyNs)
+			if err != nil {
+				return fmt.Errorf("failed to find configmap %s: %v", jwkConfig.LocalJWKS.ConfigMapRef.Name, err)
+			}
+			jwkSource, err := translateJwksConfigMap(cm)
+			if err != nil {
+				return err
+			}
+			out.JwksSourceSpecifier = jwkSource
 		}
-	} else if jwkConfig.LocalJWKS.ConfigMapRef != nil {
-		cm, err := GetConfigMap(krtctx, configMaps, jwkConfig.LocalJWKS.ConfigMapRef.Name, policyNs)
-		if err != nil {
-			return fmt.Errorf("failed to find configmap %s: %v", jwkConfig.LocalJWKS.ConfigMapRef.Name, err)
+	case jwkConfig.RemoteJWKS != nil:
+		remote := jwkConfig.RemoteJWKS
+		if remote.BackendRef == nil {
+			// shouldn't happen due to CEL validation
+			return fmt.Errorf("remote jwks: nil backend ref")
 		}
-		jwkSource, err = translateJwksConfigMap(cm)
+		backend, err := resolver.GetBackendFromRef(krtctx, gwExtObj, *remote.BackendRef)
 		if err != nil {
-			return err
+			return fmt.Errorf("remote jwks: unresolved backend ref: %w", err)
 		}
+		jwksOut := &jwtauthnv3.JwtProvider_RemoteJwks{
+			RemoteJwks: &jwtauthnv3.RemoteJwks{
+				HttpUri: &envoycorev3.HttpUri{
+					Timeout: &durationpb.Duration{Seconds: remoteJWKSTimeoutSecs},
+					Uri:     remote.URL,
+					HttpUpstreamType: &envoycorev3.HttpUri_Cluster{
+						Cluster: backend.ClusterName(),
+					},
+				},
+			},
+		}
+		if remote.CacheDuration != nil {
+			jwksOut.RemoteJwks.CacheDuration = durationpb.New(remote.CacheDuration.Duration)
+		}
+		out.JwksSourceSpecifier = jwksOut
 	}
-	out.JwksSourceSpecifier = jwkSource
 	return nil
 }
 
