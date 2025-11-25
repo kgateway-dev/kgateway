@@ -2931,16 +2931,16 @@ spec:
                                         rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                                       - message: cacheDuration must be at least 5m.
                                         rule: duration(self) >= duration('5m')
-                                    jwksUri:
+                                    uri:
                                       description: IdP jwks endpoint. Default tls
                                         settings are used to connect to this url.
                                       pattern: ^(https|http):\/\/[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*(:\d+)?\/.*$
                                       type: string
                                   type: object
                                   x-kubernetes-validations:
-                                  - message: exactly one of the fields in [jwksUri
-                                      backendRef] must be set
-                                    rule: '[has(self.jwksUri),has(self.backendRef)].filter(x,x==true).size()
+                                  - message: exactly one of the fields in [uri backendRef]
+                                      must be set
+                                    rule: '[has(self.uri),has(self.backendRef)].filter(x,x==true).size()
                                       == 1'
                               type: object
                               x-kubernetes-validations:

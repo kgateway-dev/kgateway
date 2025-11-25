@@ -836,10 +836,14 @@ func translateTLSConfig(
 		})
 	}
 
-	return &ir.TLSConfig{
+	tlsConfig := &ir.TLSConfig{
 		AlpnProtocols: alpnProtocols,
 		Certificates:  certificates,
-	}, nil
+	}
+	if err := sslutils.ApplyTLSExtensionOptions(tls.Options, tlsConfig); err != nil {
+		return nil, err
+	}
+	return tlsConfig, nil
 }
 
 // reportTLSConfigError reports TLS configuration errors by setting appropriate listener conditions.

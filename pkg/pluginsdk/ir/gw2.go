@@ -2,6 +2,7 @@ package ir
 
 import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -82,8 +83,13 @@ type FilterChainMatch struct {
 }
 
 type TLSConfig struct {
-	AlpnProtocols []string
-	Certificates  []TLSCertificate
+	AlpnProtocols         []string
+	Certificates          []TLSCertificate
+	CipherSuites          []string
+	EcdhCurves            []string
+	MinTLSVersion         *envoytlsv3.TlsParameters_TlsProtocol
+	MaxTLSVersion         *envoytlsv3.TlsParameters_TlsProtocol
+	VerifySubjectAltNames []string
 }
 
 type TLSCertificate struct {

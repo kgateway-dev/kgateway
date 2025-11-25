@@ -163,7 +163,15 @@ func TranslateGatewayExtensionBuilder(commoncol *collections.CommonCollections) 
 
 			p.RateLimit = rateLimitConfig
 		case gExt.JwtProviders != nil:
-			jwtConfig, err := resolveJwtProviders(krtctx, commoncol.ConfigMaps, gExt.Name, gExt.Namespace, gExt.JwtProviders)
+			jwtConfig, err := resolveJwtProviders(
+				krtctx,
+				commoncol.ConfigMaps,
+				commoncol.BackendIndex,
+				gExt.ObjectSource,
+				gExt.Name,
+				gExt.Namespace,
+				gExt.JwtProviders,
+			)
 			if err != nil {
 				p.Err = fmt.Errorf("jwt: %w", err)
 				return p
@@ -177,6 +185,8 @@ func TranslateGatewayExtensionBuilder(commoncol *collections.CommonCollections) 
 func resolveJwtProviders(
 	krtctx krt.HandlerContext,
 	configMaps krt.Collection[*corev1.ConfigMap],
+	backendResolver backendResolver,
+	gwExtObj ir.ObjectSource,
 	policyName, policyNamespace string,
 	jwtProviders []v1alpha1.NamedJWTProvider,
 ) (*envoyjwtauthnv3.JwtAuthentication, error) {
@@ -185,7 +195,14 @@ func resolveJwtProviders(
 
 	for _, provider := range jwtProviders {
 		providerNameForPolicy := ProviderName(policyNameNamespace, provider.Name)
-		jwtProvider, err := translateProvider(krtctx, provider.JWTProvider, policyNamespace, configMaps)
+		jwtProvider, err := translateProvider(
+			krtctx,
+			provider.JWTProvider,
+			policyNamespace,
+			configMaps,
+			backendResolver,
+			gwExtObj,
+		)
 		if err != nil {
 			return nil, err
 		}
