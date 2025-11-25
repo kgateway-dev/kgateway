@@ -101,6 +101,11 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 		errors = append(errors, err)
 	}
 
+	// Construct basic auth specific IR
+	if err := constructBasicAuth(krtctx, policyCR, &outSpec, c.commoncol.Secrets); err != nil {
+		errors = append(errors, err)
+	}
+
 	for _, err := range errors {
 		logger.Error("error translating traffic policy", "namespace", policyCR.GetNamespace(), "name", policyCR.GetName(), "error", err)
 	}

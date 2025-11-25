@@ -1,0 +1,50 @@
+package v1alpha1
+
+// BasicAuthPolicy configures HTTP basic authentication using the Authorization header.
+// Basic authentication validates requests against username/password pairs provided either inline or via a Kubernetes secret.
+// The credentials must be in htpasswd format supporting bcrypt, MD5, SHA-1, or crypt hashing algorithms.
+//
+// +kubebuilder:validation:XValidation:message="exactly one of users, secretRef, or disable must be specified",rule="(has(self.users) && !has(self.secretRef) && !has(self.disable)) || (!has(self.users) && has(self.secretRef) && !has(self.disable)) || (!has(self.users) && !has(self.secretRef) && has(self.disable))"
+type BasicAuthPolicy struct {
+	// Users provides an inline list of username/password pairs in htpasswd format.
+	// Each entry should be formatted as "username:hashed_password".
+	// Supported hash formats: bcrypt, MD5 (with $apr1$ prefix), SHA-1, and crypt.
+	//
+	// Example entries:
+	//   - "user1:$apr1$Salt$hashedpassword" (MD5)
+	//   - "user2:$2y$05$Salt$hashedpassword" (bcrypt)
+	//
+	// +optional
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=256
+	Users []string `json:"users,omitempty"`
+
+	// SecretRef references a Kubernetes secret containing htpasswd data.
+	// The secret must contain username/password pairs in htpasswd format.
+	// +optional
+	SecretRef *SecretReference `json:"secretRef,omitempty"`
+
+	// Disable the basic auth filter.
+	// Can be used to disable basic auth policies applied at a higher level in the config hierarchy.
+	// +optional
+	Disable *PolicyDisable `json:"disable,omitempty"`
+}
+
+// SecretReference identifies a Kubernetes secret containing authentication data.
+type SecretReference struct {
+	// Name of the secret containing htpasswd data.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name"`
+
+	// Namespace of the secret. If not specified, defaults to the namespace of the TrafficPolicy.
+	// +optional
+	Namespace *string `json:"namespace,omitempty"`
+
+	// Key in the secret that contains the htpasswd data.
+	// Defaults to ".htpasswd" if not specified.
+	// +optional
+	// +kubebuilder:default=".htpasswd"
+	// +kubebuilder:validation:MinLength=1
+	Key *string `json:"key,omitempty"`
+}
