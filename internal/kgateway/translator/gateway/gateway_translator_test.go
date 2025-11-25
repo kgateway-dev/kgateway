@@ -262,10 +262,10 @@ func TestBasic(t *testing.T) {
 			})
 	})
 
-	t.Run("TrafficPolicy ExtAuth different attachment points", func(t *testing.T) {
+	t.Run("TrafficPolicy gRPC ExtAuth different attachment points", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "traffic-policy/extauth.yaml",
-			outputFile: "traffic-policy/extauth.yaml",
+			inputFile:  "traffic-policy/extauth-grpc.yaml",
+			outputFile: "traffic-policy/extauth-grpc.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "infra",
 				Name:      "example-gateway",
@@ -273,11 +273,34 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	// test the default and fully configured values for ExtAuth
-	t.Run("TrafficPolicy ExtAuth Full Config", func(t *testing.T) {
+	t.Run("TrafficPolicy HTTP ExtAuth different attachment points", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "traffic-policy/extauth-full-config.yaml",
-			outputFile: "traffic-policy/extauth-full-config.yaml",
+			inputFile:  "traffic-policy/extauth-http.yaml",
+			outputFile: "traffic-policy/extauth-http.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	// test the default and fully configured values for gRPC ExtAuth
+	t.Run("TrafficPolicy gRPC ExtAuth Full Config", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/extauth-grpc-full-config.yaml",
+			outputFile: "traffic-policy/extauth-grpc-full-config.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	// test the default and fully configured values for HTTP ExtAuth
+	t.Run("TrafficPolicy HTTP ExtAuth Full Config", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/extauth-http-full-config.yaml",
+			outputFile: "traffic-policy/extauth-http-full-config.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "infra",
 				Name:      "example-gateway",

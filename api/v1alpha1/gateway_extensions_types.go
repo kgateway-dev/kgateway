@@ -117,7 +117,7 @@ type ExtHttpService struct {
 	// +required
 	BackendRef gwv1.BackendRef `json:"backendRef"`
 
-	// Path is the path for the authorization request endpoint. Default is empty string (root path).
+	// Path is the path for the authorization request endpoint. Value will be prepended to the request path.
 	// +optional
 	Path string `json:"path,omitempty"`
 
