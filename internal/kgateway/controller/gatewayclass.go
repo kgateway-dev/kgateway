@@ -160,7 +160,7 @@ func (r *gatewayClassReconciler) reconcileGatewayClasses() error {
 func (r *gatewayClassReconciler) reconcileGatewayClass(name string, info *deployer.GatewayClassInfo) error {
 	existing := r.gwClassClient.Get(name, metav1.NamespaceNone)
 
-	// Build desired GatewayClass with only fields we want to own via SSA
+	// Build desired GatewayClass with only fields we want to manage via SSA
 	desired := r.buildDesiredGatewayClass(name, info)
 
 	// If exists, check if update needed
