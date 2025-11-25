@@ -110,7 +110,7 @@ type JWKS struct {
 	// LocalJWKS configures getting the public keys to validate the JWT from a Kubernetes configmap,
 	// or inline (raw string) JWKS.
 	// +required
-	LocalJWKS LocalJWKS `json:"local"`
+	LocalJWKS *LocalJWKS `json:"local,omitempty"`
 
 	// TODO: Add support for remote JWKS
 }
