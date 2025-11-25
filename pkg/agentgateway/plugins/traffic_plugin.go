@@ -16,7 +16,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/controllers"
-	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
 	"istio.io/istio/pkg/slices"
@@ -85,12 +84,7 @@ func convertStatusCollection(col krt.Collection[krt.ObjectWithStatus[*v1alpha1.A
 
 // NewAgentPlugin creates a new AgentgatewayPolicy plugin
 func NewAgentPlugin(agw *AgwCollections) AgwPlugin {
-	col := krt.WrapClient(kclient.NewFilteredDelayed[*v1alpha1.AgentgatewayPolicy](
-		agw.Client,
-		wellknown.AgentgatewayPolicyGVR,
-		kclient.Filter{ObjectFilter: agw.Client.ObjectFilter()},
-	), agw.KrtOpts.ToOptions("informer/AgentgatewayPolicy")...)
-	policyStatusCol, policyCol := krt.NewStatusManyCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.AgentgatewayPolicy) (
+	policyStatusCol, policyCol := krt.NewStatusManyCollection(agw.AgentgatewayPolicies, func(krtctx krt.HandlerContext, policyCR *v1alpha1.AgentgatewayPolicy) (
 		*gwv1.PolicyStatus,
 		[]AgwPolicy,
 	) {

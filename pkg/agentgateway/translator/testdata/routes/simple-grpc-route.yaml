@@ -47,8 +47,34 @@ output:
       hostnames:
       - grpc.example.com
       key: default/test-grpc-route.0.http
-      listenerKey: test-gateway
+      listenerKey: default/test-gateway.http
       matches:
       - path:
           exact: /example.Service/GetUser
       routeName: default/test-grpc-route
+status:
+- apiVersion: gateway.networking.k8s.io/v1
+  kind: GRPCRoute
+  metadata:
+    name: test-grpc-route
+    namespace: default
+  spec: null
+  status:
+    parents:
+    - conditions:
+      - lastTransitionTime: fake
+        message: ""
+        reason: Accepted
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: fake
+        message: ""
+        reason: ResolvedRefs
+        status: "True"
+        type: ResolvedRefs
+      controllerName: kgateway.dev/agentgateway
+      parentRef:
+        group: gateway.networking.k8s.io
+        kind: Gateway
+        name: test-gateway
+        namespace: default
