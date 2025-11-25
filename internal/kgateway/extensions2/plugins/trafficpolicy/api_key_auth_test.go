@@ -6,15 +6,14 @@ import (
 	envoyapikeyauthv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/api_key_auth/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/proto"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 func TestAPIKeyAuthIREquals(t *testing.T) {
 	// Helper to create simple API key auth configurations for testing
-	createAPIKeyAuth := func(headerName string, hideCredentials bool) *envoyapikeyauthv3.ApiKeyAuth {
-		return &envoyapikeyauthv3.ApiKeyAuth{
+	createAPIKeyAuth := func(headerName string, hideCredentials bool) *envoyapikeyauthv3.ApiKeyAuthPerRoute {
+		return &envoyapikeyauthv3.ApiKeyAuthPerRoute{
 			Credentials: []*envoyapikeyauthv3.Credential{
 				{
 					Key:    "test-key",
@@ -58,7 +57,7 @@ func TestAPIKeyAuthIREquals(t *testing.T) {
 			expected:    false,
 		},
 		{
-			name:        "both config nil are equal",
+			name:        "both policy nil are equal",
 			apiKeyAuth1: &apiKeyAuthIR{config: nil},
 			apiKeyAuth2: &apiKeyAuthIR{config: nil},
 			expected:    true,
@@ -84,14 +83,14 @@ func TestAPIKeyAuthIREquals(t *testing.T) {
 		{
 			name: "different credentials are not equal",
 			apiKeyAuth1: &apiKeyAuthIR{
-				config: &envoyapikeyauthv3.ApiKeyAuth{
+				config: &envoyapikeyauthv3.ApiKeyAuthPerRoute{
 					Credentials: []*envoyapikeyauthv3.Credential{
 						{Key: "key1", Client: "client1"},
 					},
 				},
 			},
 			apiKeyAuth2: &apiKeyAuthIR{
-				config: &envoyapikeyauthv3.ApiKeyAuth{
+				config: &envoyapikeyauthv3.ApiKeyAuthPerRoute{
 					Credentials: []*envoyapikeyauthv3.Credential{
 						{Key: "key2", Client: "client2"},
 					},
@@ -102,14 +101,14 @@ func TestAPIKeyAuthIREquals(t *testing.T) {
 		{
 			name: "same credentials are equal",
 			apiKeyAuth1: &apiKeyAuthIR{
-				config: &envoyapikeyauthv3.ApiKeyAuth{
+				config: &envoyapikeyauthv3.ApiKeyAuthPerRoute{
 					Credentials: []*envoyapikeyauthv3.Credential{
 						{Key: "key1", Client: "client1"},
 					},
 				},
 			},
 			apiKeyAuth2: &apiKeyAuthIR{
-				config: &envoyapikeyauthv3.ApiKeyAuth{
+				config: &envoyapikeyauthv3.ApiKeyAuthPerRoute{
 					Credentials: []*envoyapikeyauthv3.Credential{
 						{Key: "key1", Client: "client1"},
 					},
@@ -160,14 +159,14 @@ func TestAPIKeyAuthIRValidate(t *testing.T) {
 			wantErr:    false,
 		},
 		{
-			name:       "nil config validates successfully",
+			name:       "nil policy validates successfully",
 			apiKeyAuth: &apiKeyAuthIR{config: nil},
 			wantErr:    false,
 		},
 		{
-			name: "valid config validates successfully",
+			name: "valid policy validates successfully",
 			apiKeyAuth: &apiKeyAuthIR{
-				config: &envoyapikeyauthv3.ApiKeyAuth{
+				config: &envoyapikeyauthv3.ApiKeyAuthPerRoute{
 					Credentials: []*envoyapikeyauthv3.Credential{
 						{
 							Key:    "test-key",
@@ -188,9 +187,9 @@ func TestAPIKeyAuthIRValidate(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "config with empty credentials validates successfully",
+			name: "policy with empty credentials validates successfully",
 			apiKeyAuth: &apiKeyAuthIR{
-				config: &envoyapikeyauthv3.ApiKeyAuth{
+				config: &envoyapikeyauthv3.ApiKeyAuthPerRoute{
 					Credentials: []*envoyapikeyauthv3.Credential{},
 					KeySources: []*envoyapikeyauthv3.KeySource{
 						{
@@ -229,15 +228,15 @@ func TestHandleAPIKeyAuth(t *testing.T) {
 			expectRoute:  false,
 		},
 		{
-			name:         "nil config does nothing",
+			name:         "nil policy does nothing",
 			apiKeyAuthIr: &apiKeyAuthIR{config: nil},
 			expectChain:  false,
 			expectRoute:  false,
 		},
 		{
-			name: "valid config adds to chain and route",
+			name: "valid policy adds to chain and route",
 			apiKeyAuthIr: &apiKeyAuthIR{
-				config: &envoyapikeyauthv3.ApiKeyAuth{
+				config: &envoyapikeyauthv3.ApiKeyAuthPerRoute{
 					Credentials: []*envoyapikeyauthv3.Credential{
 						{
 							Key:    "test-key",
@@ -291,76 +290,4 @@ func TestHandleAPIKeyAuth(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestHandleAPIKeyAuth_MultipleCalls(t *testing.T) {
-	plugin := &trafficPolicyPluginGwPass{
-		apiKeyAuthInChain: make(map[string]*envoyapikeyauthv3.ApiKeyAuth),
-	}
-	fcn := "test-filter-chain"
-	typedFilterConfig := &ir.TypedFilterConfigMap{}
-
-	config := &envoyapikeyauthv3.ApiKeyAuth{
-		Credentials: []*envoyapikeyauthv3.Credential{
-			{
-				Key:    "test-key",
-				Client: "test-client",
-			},
-		},
-		KeySources: []*envoyapikeyauthv3.KeySource{
-			{
-				Header: "api-key",
-			},
-		},
-	}
-
-	apiKeyAuthIr := &apiKeyAuthIR{config: config}
-
-	// First call
-	plugin.handleAPIKeyAuth(fcn, typedFilterConfig, apiKeyAuthIr)
-	assert.NotNil(t, plugin.apiKeyAuthInChain[fcn], "first call should add to chain")
-
-	// Second call with same config should not overwrite
-	plugin.handleAPIKeyAuth(fcn, typedFilterConfig, apiKeyAuthIr)
-	assert.NotNil(t, plugin.apiKeyAuthInChain[fcn], "second call should not remove from chain")
-
-	// Verify the config is the same (not overwritten)
-	assert.True(t, proto.Equal(config, plugin.apiKeyAuthInChain[fcn]), "config should not be overwritten")
-}
-
-func TestHandleAPIKeyAuth_DifferentFilterChains(t *testing.T) {
-	plugin := &trafficPolicyPluginGwPass{
-		apiKeyAuthInChain: make(map[string]*envoyapikeyauthv3.ApiKeyAuth),
-	}
-
-	config1 := &envoyapikeyauthv3.ApiKeyAuth{
-		Credentials: []*envoyapikeyauthv3.Credential{
-			{Key: "key1", Client: "client1"},
-		},
-		KeySources: []*envoyapikeyauthv3.KeySource{
-			{Header: "api-key"},
-		},
-	}
-
-	config2 := &envoyapikeyauthv3.ApiKeyAuth{
-		Credentials: []*envoyapikeyauthv3.Credential{
-			{Key: "key2", Client: "client2"},
-		},
-		KeySources: []*envoyapikeyauthv3.KeySource{
-			{Header: "x-api-key"},
-		},
-	}
-
-	fcn1 := "filter-chain-1"
-	fcn2 := "filter-chain-2"
-	typedFilterConfig1 := &ir.TypedFilterConfigMap{}
-	typedFilterConfig2 := &ir.TypedFilterConfigMap{}
-
-	plugin.handleAPIKeyAuth(fcn1, typedFilterConfig1, &apiKeyAuthIR{config: config1})
-	plugin.handleAPIKeyAuth(fcn2, typedFilterConfig2, &apiKeyAuthIR{config: config2})
-
-	assert.NotNil(t, plugin.apiKeyAuthInChain[fcn1], "should add config for chain 1")
-	assert.NotNil(t, plugin.apiKeyAuthInChain[fcn2], "should add config for chain 2")
-	assert.True(t, proto.Equal(config1, plugin.apiKeyAuthInChain[fcn1]), "chain 1 should have correct config")
-	assert.True(t, proto.Equal(config2, plugin.apiKeyAuthInChain[fcn2]), "chain 2 should have correct config")
 }

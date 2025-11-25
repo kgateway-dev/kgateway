@@ -433,6 +433,12 @@ type APIKeyAuthentication struct {
 	// +optional
 	HideAPIKey *bool `json:"hideAPIKey,omitempty"`
 
+	// clientIdHeader specifies the header name to forward the authenticated client identifier.
+	// If not specified, defaults to "x-client-id".
+	// +kubebuilder:default="x-client-id"
+	// +optional
+	ClientIdHeader *string `json:"clientIdHeader,omitempty"`
+
 	// secretRef references a Kubernetes secret storing a set of API Keys. If there are many keys, 'secretSelector' can be
 	// used instead.
 	//

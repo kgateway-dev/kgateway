@@ -19,7 +19,7 @@ const (
 
 // apiKeyAuthIR is the internal representation of an API key authentication policy.
 type apiKeyAuthIR struct {
-	config *envoyapikeyauthv3.ApiKeyAuth
+	config *envoyapikeyauthv3.ApiKeyAuthPerRoute
 }
 
 func (a *apiKeyAuthIR) Equals(other *apiKeyAuthIR) bool {
@@ -50,7 +50,7 @@ func (a *apiKeyAuthIR) Validate() error {
 	return a.config.Validate()
 }
 
-// constructAPIKeyAuth translates the API key authentication spec into an Envoy API key auth filter configuration
+// constructAPIKeyAuth translates the API key authentication spec into an Envoy API key auth per-route configuration
 func constructAPIKeyAuth(
 	krtctx krt.HandlerContext,
 	policy *v1alpha1.TrafficPolicy,
@@ -171,33 +171,32 @@ func constructAPIKeyAuth(
 		hideCredentials = *ak.HideAPIKey
 	}
 
-	// Build Envoy API key auth filter configuration
-	apiKeyAuthConfig := &envoyapikeyauthv3.ApiKeyAuth{
+	// Determine client ID header (default to "x-client-id")
+	clientIdHeader := "x-client-id"
+	if ak.ClientIdHeader != nil {
+		clientIdHeader = *ak.ClientIdHeader
+	}
+
+	// Build Envoy API key auth per-route configuration
+	apiKeyAuthPolicy := &envoyapikeyauthv3.ApiKeyAuthPerRoute{
 		Credentials: credentials,
 		KeySources:  envoyKeySources,
 		Forwarding: &envoyapikeyauthv3.Forwarding{
-			Header:          "x-client-id",
+			Header:          clientIdHeader,
 			HideCredentials: hideCredentials,
 		},
 	}
 
 	out.apiKeyAuth = &apiKeyAuthIR{
-		config: apiKeyAuthConfig,
+		config: apiKeyAuthPolicy,
 	}
 
 	return nil
 }
 
 // handleAPIKeyAuth configures the API key auth filter and per-route API key auth configuration.
-// This follows the same pattern as RBAC: add an empty filter to the chain and put the actual config
-// in the typedPerFilterConfig. The per-route config will be applied at RouteConfiguration level for
-// gateway-level policies, and at Route level for route-level policies (which will override the
-// RouteConfiguration level config).
-//
-// IMPORTANT: For route-level-only policies (no gateway-level policy), we add FilterConfig with
-// disabled: true at the RouteConfiguration level in ApplyRouteConfigPlugin. This disables the filter
-// for all routes by default. Routes with policies will override this with ApiKeyAuthPerRoute, which
-// enables the filter for those specific routes.
+// This follows the same pattern as CORS: add the policy to the typed_per_filter_config.
+// Also requires API key auth http_filter to be added to the filter chain.
 func (p *trafficPolicyPluginGwPass) handleAPIKeyAuth(
 	fcn string,
 	pCtxTypedFilterConfig *ir.TypedFilterConfigMap,
@@ -207,24 +206,16 @@ func (p *trafficPolicyPluginGwPass) handleAPIKeyAuth(
 		return
 	}
 
-	// Always add the filter to the chain if not already present.
-	// For route-level-only policies, it will be disabled at RouteConfiguration level,
-	// and enabled per-route via ApiKeyAuthPerRoute for routes with policies.
+	// Adds the ApiKeyAuthPerRoute to the typed_per_filter_config.
+	// Also requires API key auth http_filter to be added to the filter chain.
+	pCtxTypedFilterConfig.AddTypedConfig(apiKeyAuthFilterNamePrefix, apiKeyAuthIr.config)
+
+	// Add a filter to the chain. When having an api key auth policy for a route we need to also have a
+	// globally api key auth http filter in the chain otherwise it will be ignored.
 	if p.apiKeyAuthInChain == nil {
 		p.apiKeyAuthInChain = make(map[string]*envoyapikeyauthv3.ApiKeyAuth)
 	}
 	if _, ok := p.apiKeyAuthInChain[fcn]; !ok {
 		p.apiKeyAuthInChain[fcn] = &envoyapikeyauthv3.ApiKeyAuth{}
 	}
-
-	// Always add the per-route API key auth configuration to the typed filter config
-	// This will be applied at RouteConfiguration level for gateway-level policies,
-	// and at Route level for route-level policies (overriding RouteConfiguration level)
-	perRouteConfig := &envoyapikeyauthv3.ApiKeyAuthPerRoute{
-		Credentials: apiKeyAuthIr.config.Credentials,
-		KeySources:  apiKeyAuthIr.config.KeySources,
-		Forwarding:  apiKeyAuthIr.config.Forwarding,
-	}
-
-	pCtxTypedFilterConfig.AddTypedConfig(apiKeyAuthFilterNamePrefix, perRouteConfig)
 }

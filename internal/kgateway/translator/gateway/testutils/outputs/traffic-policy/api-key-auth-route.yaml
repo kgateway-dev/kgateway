@@ -69,7 +69,7 @@ Routes:
           - client: client2
             key: k-456
           forwarding:
-            header: x-client-id
+            header: x-authenticated-client
             hideCredentials: true
           keySources:
           - header: x-api-key

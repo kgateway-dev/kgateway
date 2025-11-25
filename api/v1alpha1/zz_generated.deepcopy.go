@@ -108,6 +108,11 @@ func (in *APIKeyAuthentication) DeepCopyInto(out *APIKeyAuthentication) {
 		*out = new(bool)
 		**out = **in
 	}
+	if in.ClientIdHeader != nil {
+		in, out := &in.ClientIdHeader, &out.ClientIdHeader
+		*out = new(string)
+		**out = **in
+	}
 	if in.SecretRef != nil {
 		in, out := &in.SecretRef, &out.SecretRef
 		*out = new(corev1.LocalObjectReference)

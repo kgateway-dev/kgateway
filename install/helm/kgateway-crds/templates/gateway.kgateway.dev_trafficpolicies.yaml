@@ -58,6 +58,12 @@ spec:
                 description: APIKeyAuthentication authenticates users based on a configured
                   API Key.
                 properties:
+                  clientIdHeader:
+                    default: x-client-id
+                    description: |-
+                      clientIdHeader specifies the header name to forward the authenticated client identifier.
+                      If not specified, defaults to "x-client-id".
+                    type: string
                   hideAPIKey:
                     default: false
                     description: |-
