@@ -1,5 +1,14 @@
 Clusters:
 - connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  metadata: {}
+  name: kube_default_httpbin_8000
+  type: EDS
+- connectTimeout: 5s
   metadata: {}
   name: test-backend-plugin_default_example-svc_80
 Listeners:
@@ -102,7 +111,7 @@ Routes:
         pathSeparatedPrefix: /status/200
       name: listener~8080~httpbin-route-0-httproute-httpbin-route-default-0-0-matcher-0
       route:
-        cluster: blackhole-cluster
+        cluster: kube_default_httpbin_8000
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
     - match:
         pathSeparatedPrefix: /get
@@ -115,7 +124,7 @@ Routes:
             - gateway.kgateway.dev/TrafficPolicy/default/jwt-rbac-policy
       name: listener~8080~httpbin-route-1-httproute-httpbin-route-default-1-0-matcher-0
       route:
-        cluster: blackhole-cluster
+        cluster: kube_default_httpbin_8000
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
         envoy.filters.http.rbac:
@@ -256,15 +265,15 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: Service "httpbin" not found
-          reason: BackendNotFound
-          status: "False"
-          type: ResolvedRefs
-        - lastTransitionTime: null
           message: Successfully accepted Route
           reason: Accepted
           status: "True"
           type: Accepted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
         controllerName: kgateway
         parentRef:
           group: gateway.networking.k8s.io
