@@ -124,7 +124,7 @@ kind: HTTPRoute
 spec:
   rules:
     - backendRefs:
-        - group: gateway.kgateway.dev
+        - group: agentgateway.dev
           kind: AgentgatewayBackend
           name: my-backend
 ```
@@ -252,7 +252,7 @@ spec:
         - name: simple-svc
           port: 8080
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: example-agentgateway-policy-for-gateway-attached-transform
@@ -304,7 +304,7 @@ flowchart TD
 
         C1 --> C2["Gateway Collection<br/>Filter by agentgateway class"]
         C1 --> C3["Route Collections<br/>HTTPRoute, GRPCRoute, etc.<br/>Builtin and attached policy via plugins"]
-        C1 --> C4["Backend Collections<br/>Backend CRDs via plugins"]
+        C1 --> C4["AgentgatewayBackend Collections<br/>AgentgatewayBackend CRDs via plugins"]
         C1 --> C5["Policy Collections<br/>(InferencePools, A2A, etc.)"]
         C1 --> C6["Address Collections<br/>Services & Workloads"]
 
@@ -659,10 +659,10 @@ spec:
   rules:
     - backendRefs:
         - name: json-backend
-        kind: AgentgatewayBackend
-          group: gateway.kgateway.dev
+          kind: AgentgatewayBackend
+          group: agentgateway.dev
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   name: json-backend
@@ -722,10 +722,10 @@ spec:
             value: /openai
       backendRefs:
         - name: openai
-          group: gateway.kgateway.dev
+          group: agentgateway.dev
           kind: AgentgatewayBackend
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   name: openai
@@ -776,18 +776,18 @@ spec:
             value: /openai
       backendRefs:
         - name: openai
-          group: gateway.kgateway.dev
+          group: agentgateway.dev
           kind: AgentgatewayBackend
     - matches:
         - path:
             type: PathPrefix
             value: /bedrock
       backendRefs:
-        - group: gateway.kgateway.dev
+        - group: agentgateway.dev
           kind: AgentgatewayBackend
           name: bedrock
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   name: bedrock
@@ -871,10 +871,10 @@ spec:
   rules:
     - backendRefs:
         - name: mcp-backend
-          group: gateway.kgateway.dev
+          group: agentgateway.dev
           kind: AgentgatewayBackend
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   labels:
@@ -885,7 +885,7 @@ spec:
     targets:
       - name: mcp-server
         selector:
-          service:
+          services:
             matchLabels:
               app: mcp-server
 ---
@@ -972,10 +972,10 @@ spec:
   rules:
     - backendRefs:
       - name: mcp-backend
-        group: gateway.kgateway.dev
+        group: agentgateway.dev
         kind: AgentgatewayBackend
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   name: mcp-backend
@@ -1419,7 +1419,7 @@ spec:
       name: http
 ---
 # AI Backend and Route
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   name: openai-backend
@@ -1443,7 +1443,7 @@ spec:
   rules:
     - backendRefs:
         - name: openai-backend
-          group: gateway.kgateway.dev
+          group: agentgateway.dev
           kind: AgentgatewayBackend
 ```
 
@@ -1517,7 +1517,7 @@ spec:
           from: All
 ---
 # MCP Backend
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   name: mcp-everything-backend
@@ -1527,7 +1527,7 @@ spec:
     targets:
       - name: everything
         selector:
-          service:
+          services:
             matchLabels:
               app: mcp-everything
 ---
@@ -1571,7 +1571,7 @@ spec:
             maxAge: 86400
       backendRefs:
         - name: mcp-everything-backend
-          group: gateway.kgateway.dev
+          group: agentgateway.dev
           kind: AgentgatewayBackend
 ---
 # MCP Everything Server Deployment
@@ -1698,7 +1698,7 @@ spec:
           port: 8080
 ---
 # jwks were generated using hack/utils/jwt/jwt-generator.go
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: route-policy
@@ -1741,7 +1741,7 @@ spec:
           port: 8080
 ---
 # jwks were generated using hack/utils/jwt/jwt-generator.go
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: route-policy
@@ -1781,7 +1781,7 @@ spec:
           port: 8080
 ---
 # jwks were generated using hack/utils/jwt/jwt-generator.go
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: route-policy
@@ -1808,7 +1808,7 @@ Configure request limiting with `AgentgatewayPolicy.spec.traffic.rateLimit`. Loc
 
 ```shell
 kubectl apply -f- <<EOF
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: combined-rate-limit
@@ -1841,7 +1841,7 @@ Add external auth using `AgentgatewayPolicy.spec.traffic.extAuth` to call a gRPC
 
 ```shell
 kubectl apply -f- <<EOF
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: secure-route-policy
@@ -1860,9 +1860,11 @@ EOF
 
 #### Azure OpenAI support
 
+You can now route to Azure OpenAI using the AI AgentgatewayBackend type:
+
 ```shell
 kubectl apply -f- <<EOF
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   name: azure-openai
@@ -1871,7 +1873,7 @@ spec:
     provider:
       azureopenai:
         endpoint: my-endpoint.openai.azure.com
-        model: gpt-4o-mini
+        apiVersion: v1
   policies:
     auth:
       secretRef:
@@ -1890,7 +1892,7 @@ spec:
         type: PathPrefix
         value: /v1
     backendRefs:
-    - group: gateway.kgateway.dev
+    - group: agentgateway.dev
       kind: AgentgatewayBackend
       name: azure-openai
 EOF
@@ -1901,7 +1903,7 @@ Map provider-specific endpoints to behavior using `AgentgatewayPolicy.spec.backe
 
 ```shell
 kubectl apply -f- <<EOF
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: anthropic-token-count
@@ -1923,7 +1925,7 @@ Route OpenAI’s unified Responses API by mapping `/v1/responses` to the `respon
 
 ```shell
 kubectl apply -f- <<EOF
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: openai-responses-routing
@@ -1955,7 +1957,7 @@ spec:
     port: 8080
     protocol: HTTP
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: bedrock-caching-policy
@@ -1984,7 +1986,7 @@ spec:
   - name: ai-gateway
   rules:
   - backendRefs:
-    - group: gateway.kgateway.dev
+    - group: agentgateway.dev
       kind: AgentgatewayBackend
       name: bedrock
 EOF
