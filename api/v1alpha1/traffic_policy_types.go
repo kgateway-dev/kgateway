@@ -121,6 +121,12 @@ type TrafficPolicySpec struct {
 	// This defines the JWT providers and their configurations.
 	// +optional
 	JWT *JWTAuthentication `json:"jwt,omitempty"`
+
+	// Compression configures response compression (per-route) and request/response
+	// decompression (listener-level insertion triggered by route enable).
+	// The response compression configuration is only honored for HTTPRoute targets.
+	// +optional
+	Compression *Compression `json:"compression,omitempty"`
 }
 
 // TransformationPolicy config is used to modify envoy behavior at a route level.
@@ -468,4 +474,32 @@ type Timeouts struct {
 	//
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	StreamIdle *metav1.Duration `json:"streamIdle,omitempty"`
+}
+
+// Compression configures HTTP gzip compression and decompression behavior.
+// +kubebuilder:validation:AtLeastOneOf=responseCompression;requestDecompression
+type Compression struct {
+	// ResponseCompression controls response compression.
+	// If set, gzip responses with certain content types will be compressed.
+	// +optional
+	ResponseCompression *ResponseCompression `json:"responseCompression,omitempty"`
+
+	// RequestDecompression controls request decompression.
+	// If set, gzip requests will be decompressed.
+	// +optional
+	RequestDecompression *RequestDecompression `json:"requestDecompression,omitempty"`
+}
+
+// ResponseCompression configures response compression.
+type ResponseCompression struct {
+	// Disable turns compression off. If omitted or false, compression is enabled.
+	// +optional
+	Disable *bool `json:"disable,omitempty"`
+}
+
+// RequestDecompression enables request gzip decompression.
+type RequestDecompression struct {
+	// Disable turns decompression off. If omitted or false, decompression is enabled.
+	// +optional
+	Disable *bool `json:"disable,omitempty"`
 }

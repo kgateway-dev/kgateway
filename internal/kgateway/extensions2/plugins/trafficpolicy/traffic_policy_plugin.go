@@ -7,8 +7,10 @@ import (
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	exteniondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
 	bufferv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/buffer/v3"
+	compressorv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/compressor/v3"
 	corsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
 	envoy_csrf_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/csrf/v3"
+	decompressorv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/decompressor/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
 	header_mutationv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/header_mutation/v3"
 	localratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
@@ -53,7 +55,8 @@ var (
 	// If the field `config` is configured but is empty, we treat the filter is enabled
 	// explicitly.
 	// see: https://github.com/envoyproxy/envoy/blob/8ed93ef372f788456b708fc93a7e54e17a013aa7/source/common/router/config_impl.cc#L2552
-	EnableFilterPerRoute = &envoyroutev3.FilterConfig{Config: &anypb.Any{}}
+	EnableFilterPerRoute  = &envoyroutev3.FilterConfig{Config: &anypb.Any{}}
+	DisableFilterPerRoute = &envoyroutev3.FilterConfig{Config: &anypb.Any{}, Disabled: true}
 )
 
 // PolicySubIR documents the expected interface that all policy sub-IRs should implement.
@@ -88,6 +91,8 @@ type trafficPolicySpecIr struct {
 	timeouts        *timeoutsIR
 	rbac            *rbacIR
 	jwt             *jwtIr
+	compression     *compressionIR
+	decompression   *decompressionIR
 }
 
 func (d *TrafficPolicy) CreationTime() time.Time {
@@ -148,6 +153,12 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	if !d.spec.jwt.Equals(d2.spec.jwt) {
 		return false
 	}
+	if !d.spec.compression.Equals(d2.spec.compression) {
+		return false
+	}
+	if !d.spec.decompression.Equals(d2.spec.decompression) {
+		return false
+	}
 	return true
 }
 
@@ -169,6 +180,8 @@ func (p *TrafficPolicy) Validate() error {
 	validators = append(validators, p.spec.autoHostRewrite.Validate)
 	validators = append(validators, p.spec.rbac.Validate)
 	validators = append(validators, p.spec.jwt.Validate)
+	validators = append(validators, p.spec.compression.Validate)
+	validators = append(validators, p.spec.decompression.Validate)
 	for _, validator := range validators {
 		if err := validator(); err != nil {
 			return err
@@ -193,6 +206,8 @@ type trafficPolicyPluginGwPass struct {
 	csrfInChain              map[string]*envoy_csrf_v3.CsrfPolicy
 	headerMutationInChain    map[string]*header_mutationv3.HeaderMutationPerRoute
 	bufferInChain            map[string]*bufferv3.Buffer
+	compressorInChain        map[string]*compressorv3.Compressor
+	decompressorInChain      map[string]*decompressorv3.Decompressor
 }
 
 var _ ir.ProxyTranslationPass = &trafficPolicyPluginGwPass{}
@@ -497,6 +512,9 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(fcc ir.FilterChainCommon) ([]fil
 		stagedFilters = append(stagedFilters, filter)
 	}
 
+	// Add compression and decompression filters after CORS
+	stagedFilters = addCompressionFiltersIfNeeded(stagedFilters, p, fcc.FilterChainName)
+
 	if len(stagedFilters) == 0 {
 		return nil, nil
 	}
@@ -530,6 +548,8 @@ func (p *trafficPolicyPluginGwPass) handlePolicies(
 	p.handleHeaderModifiers(fcn, typedFilterConfig, spec.headerModifiers)
 	p.handleBuffer(fcn, typedFilterConfig, spec.buffer)
 	p.handleRBAC(fcn, typedFilterConfig, spec.rbac)
+	p.handleCompression(fcn, typedFilterConfig, spec.compression)
+	p.handleDecompression(fcn, typedFilterConfig, spec.decompression)
 }
 
 // handlePerRoutePolicies handles policies that are meant to be processed at the route level

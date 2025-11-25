@@ -74,6 +74,8 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 	constructCORS(policyCR, &outSpec)
 	// Construct csrf specific IR
 	constructCSRF(policyCR.Spec, &outSpec)
+	// Construct compression/decompression specific IR
+	constructCompression(policyCR.Spec, &outSpec)
 
 	// Construct header modifiers specific IR
 	constructHeaderModifiers(policyCR.Spec, &outSpec)
