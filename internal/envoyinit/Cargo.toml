@@ -5,3 +5,7 @@ members = [
     "transformations",
 ]
 default-members = ["rustformations"]
+
+# REMOVE-ENVOY-1.37: remove this and the patched-envoy-dsk directory when we upgrade to envoy v1.37
+[patch."https://github.com/envoyproxy/envoy"]
+envoy-proxy-dynamic-modules-rust-sdk = { path = "patched-envoy-sdk/envoy-proxy-dynamic-modules-rust-sdk/dynamic_modules/sdk/rust" }

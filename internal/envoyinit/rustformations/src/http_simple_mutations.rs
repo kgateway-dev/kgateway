@@ -27,6 +27,9 @@ impl<'a> EnvoyTransformationOps<'a> {
     }
 }
 impl TransformationOps for EnvoyTransformationOps<'_> {
+    fn add_request_header(&mut self, key: &str, value: &[u8]) -> bool {
+        self.envoy_filter.add_request_header(key, value)
+    }
     fn set_request_header(&mut self, key: &str, value: &[u8]) -> bool {
         self.envoy_filter.set_request_header(key, value)
     }
@@ -34,7 +37,7 @@ impl TransformationOps for EnvoyTransformationOps<'_> {
         self.envoy_filter.remove_request_header(key)
     }
     fn parse_request_json_body(&mut self) -> Result<JsonValue> {
-        let Some(buffers) = self.envoy_filter.get_request_body() else {
+        let Some(buffers) = self.envoy_filter.get_buffered_request_body() else {
             return Ok(JsonValue::Null);
         };
 
@@ -47,7 +50,7 @@ impl TransformationOps for EnvoyTransformationOps<'_> {
         serde_json::from_slice(&body).context("failed to parse request body as json")
     }
     fn get_request_body(&mut self) -> Vec<u8> {
-        if let Some(buffers) = self.envoy_filter.get_request_body() {
+        if let Some(buffers) = self.envoy_filter.get_buffered_request_body() {
             // TODO: implement Reader for EnvoyBuffer and use serde_json::from_reader to avoid making copy first?
             let chunks: Vec<_> = buffers.iter().map(|b| b.as_slice()).collect();
             chunks.concat();
@@ -56,12 +59,16 @@ impl TransformationOps for EnvoyTransformationOps<'_> {
         Vec::default()
     }
     fn drain_request_body(&mut self, number_of_bytes: usize) -> bool {
-        self.envoy_filter.drain_request_body(number_of_bytes)
+        self.envoy_filter
+            .drain_buffered_request_body(number_of_bytes)
     }
     fn append_request_body(&mut self, data: &[u8]) -> bool {
-        self.envoy_filter.append_request_body(data)
+        self.envoy_filter.append_buffered_request_body(data)
     }
 
+    fn add_response_header(&mut self, key: &str, value: &[u8]) -> bool {
+        self.envoy_filter.add_response_header(key, value)
+    }
     fn set_response_header(&mut self, key: &str, value: &[u8]) -> bool {
         self.envoy_filter.set_response_header(key, value)
     }
@@ -69,7 +76,7 @@ impl TransformationOps for EnvoyTransformationOps<'_> {
         self.envoy_filter.remove_response_header(key)
     }
     fn parse_response_json_body(&mut self) -> Result<JsonValue> {
-        let Some(buffers) = self.envoy_filter.get_response_body() else {
+        let Some(buffers) = self.envoy_filter.get_buffered_response_body() else {
             return Ok(JsonValue::Null);
         };
         // TODO: implement Reader for EnvoyBuffer and use serde_json::from_reader to avoid making copy first?
@@ -78,7 +85,7 @@ impl TransformationOps for EnvoyTransformationOps<'_> {
         serde_json::from_slice(&body).context("failed to parse response body as json")
     }
     fn get_response_body(&mut self) -> Vec<u8> {
-        let Some(buffers) = self.envoy_filter.get_response_body() else {
+        let Some(buffers) = self.envoy_filter.get_buffered_response_body() else {
             return Vec::default();
         };
 
@@ -87,10 +94,11 @@ impl TransformationOps for EnvoyTransformationOps<'_> {
         chunks.concat()
     }
     fn drain_response_body(&mut self, number_of_bytes: usize) -> bool {
-        self.envoy_filter.drain_response_body(number_of_bytes)
+        self.envoy_filter
+            .drain_buffered_response_body(number_of_bytes)
     }
     fn append_response_body(&mut self, data: &[u8]) -> bool {
-        self.envoy_filter.append_response_body(data)
+        self.envoy_filter.append_buffered_response_body(data)
     }
 }
 

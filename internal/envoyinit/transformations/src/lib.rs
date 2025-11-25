@@ -81,8 +81,10 @@ pub enum BodyParseBehavior {
 }
 
 pub trait TransformationOps {
+    fn add_request_header(&mut self, key: &str, value: &[u8]) -> bool;
     fn set_request_header(&mut self, key: &str, value: &[u8]) -> bool;
     fn remove_request_header(&mut self, key: &str) -> bool;
+    fn add_response_header(&mut self, key: &str, value: &[u8]) -> bool;
     fn set_response_header(&mut self, key: &str, value: &[u8]) -> bool;
     fn remove_response_header(&mut self, key: &str) -> bool;
     fn parse_request_json_body(&mut self) -> Result<JsonValue>;
