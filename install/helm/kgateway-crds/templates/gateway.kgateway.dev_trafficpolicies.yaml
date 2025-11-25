@@ -61,6 +61,59 @@ spec:
                   NOTE: If `autoHostRewrite` is set on a route that also has a [URLRewrite filter](https://gateway-api.sigs.k8s.io/reference/spec/#httpurlrewritefilter)
                   configured to override the `hostname`, the `hostname` value will be used and `autoHostRewrite` will be ignored.
                 type: boolean
+              basicAuth:
+                description: |-
+                  BasicAuth specifies the HTTP basic authentication configuration for the policy.
+                  This controls authentication using username/password credentials in the Authorization header.
+                properties:
+                  disable:
+                    description: |-
+                      Disable the basic auth filter.
+                      Can be used to disable basic auth policies applied at a higher level in the config hierarchy.
+                    type: object
+                  secretRef:
+                    description: |-
+                      SecretRef references a Kubernetes secret containing htpasswd data.
+                      The secret must contain username/password pairs in htpasswd format.
+                    properties:
+                      key:
+                        default: .htpasswd
+                        description: |-
+                          Key in the secret that contains the htpasswd data.
+                          Defaults to ".htpasswd" if not specified.
+                        minLength: 1
+                        type: string
+                      name:
+                        description: Name of the secret containing htpasswd data.
+                        minLength: 1
+                        type: string
+                      namespace:
+                        description: Namespace of the secret. If not specified, defaults
+                          to the namespace of the TrafficPolicy.
+                        type: string
+                    required:
+                    - name
+                    type: object
+                  users:
+                    description: |-
+                      Users provides an inline list of username/password pairs in htpasswd format.
+                      Each entry should be formatted as "username:hashed_password".
+                      Supported hash formats: bcrypt, MD5 (with $apr1$ prefix), SHA-1, and crypt.
+
+                      Example entries:
+                        - "user1:$apr1$Salt$hashedpassword" (MD5)
+                        - "user2:$2y$05$Salt$hashedpassword" (bcrypt)
+                    items:
+                      type: string
+                    maxItems: 256
+                    minItems: 1
+                    type: array
+                type: object
+                x-kubernetes-validations:
+                - message: exactly one of users, secretRef, or disable must be specified
+                  rule: (has(self.users) && !has(self.secretRef) && !has(self.disable))
+                    || (!has(self.users) && has(self.secretRef) && !has(self.disable))
+                    || (!has(self.users) && !has(self.secretRef) && has(self.disable))
               buffer:
                 description: |-
                   Buffer can be used to set the maximum request size that will be buffered.
