@@ -580,6 +580,46 @@ func (s *ControllerSuite) TestGatewayClass() {
 			assert.Equal(c, updatedDesc, gwc.Spec.Description)
 		}, defaultPollTimeout, 500*time.Millisecond, "timed out waiting for GatewayClass %s", gatewayClassName)
 	})
+
+	s.T().Run("default GatewayClass ParametersRef should be restored when changed", func(t *testing.T) {
+		r := require.New(t)
+		gwc := &gwv1.GatewayClass{}
+
+		// Wait for selfManagedGatewayClass to be created
+		r.EventuallyWithTf(func(c *assert.CollectT) {
+			err := s.client.Get(ctx, types.NamespacedName{Name: selfManagedGatewayClassName}, gwc)
+			assert.NoError(c, err)
+			assert.NotNil(c, gwc.Spec.ParametersRef, "expected ParametersRef to be set")
+		}, defaultPollTimeout, 500*time.Millisecond, "timed out waiting for GatewayClass %s to be created", selfManagedGatewayClassName)
+
+		// Store the original ParametersRef
+		originalParamsRef := gwc.Spec.ParametersRef.DeepCopy()
+
+		// Change ParametersRef to something different
+		gwc.Spec.ParametersRef = &gwv1.ParametersReference{
+			Group:     gwv1.Group("different.group"),
+			Kind:      gwv1.Kind("DifferentKind"),
+			Name:      "different-params",
+			Namespace: ptr.To(gwv1.Namespace("different-namespace")),
+		}
+		err := s.client.Update(ctx, gwc)
+		r.NoError(err)
+
+		// Verify ParametersRef is restored to original value
+		r.EventuallyWithTf(func(c *assert.CollectT) {
+			err := s.client.Get(ctx, types.NamespacedName{Name: selfManagedGatewayClassName}, gwc)
+			assert.NoError(c, err)
+			assert.NotNil(c, gwc.Spec.ParametersRef, "expected ParametersRef to be set")
+			assert.Equal(c, originalParamsRef.Group, gwc.Spec.ParametersRef.Group, "ParametersRef.Group should be restored")
+			assert.Equal(c, originalParamsRef.Kind, gwc.Spec.ParametersRef.Kind, "ParametersRef.Kind should be restored")
+			assert.Equal(c, originalParamsRef.Name, gwc.Spec.ParametersRef.Name, "ParametersRef.Name should be restored")
+			if originalParamsRef.Namespace != nil {
+				assert.NotNil(c, gwc.Spec.ParametersRef.Namespace, "ParametersRef.Namespace should be set")
+				assert.Equal(c, *originalParamsRef.Namespace, *gwc.Spec.ParametersRef.Namespace, "ParametersRef.Namespace should be restored")
+			}
+		}, defaultPollTimeout, 500*time.Millisecond, "timed out waiting for ParametersRef to be restored for GatewayClass %s", selfManagedGatewayClassName)
+	})
+
 }
 
 //
