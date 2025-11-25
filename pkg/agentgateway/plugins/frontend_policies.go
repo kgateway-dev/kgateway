@@ -164,6 +164,10 @@ func translateFrontendTLS(policy *v1alpha1.AgentgatewayPolicy, name string, targ
 		spec.TlsHandshakeTimeout = durationpb.New(ka.Duration)
 	}
 
+	if tls.AlpnProtocols != nil {
+		spec.Alpn = &api.Alpn{Protocols: *tls.AlpnProtocols}
+	}
+
 	tlsPolicy := &api.Policy{
 		Name:   name + frontendTlsPolicySuffix + attachmentName(target),
 		Target: target,

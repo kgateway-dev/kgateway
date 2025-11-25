@@ -18,6 +18,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/directresponse"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/extauth"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/extproc"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/frontendtls"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/header_modifiers"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/http_listener_policy"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/jwt"
@@ -78,6 +79,7 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("RBAC", rbac.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("AdminServer", admin_server.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("JWT", jwt.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("FrontendTLS", frontendtls.NewTestingSuite)
 
 	return kubeGatewaySuiteRunner
 }

@@ -8,14 +8,14 @@ rules:
   - ""
   resources:
   - configmaps
-  - secrets
-  - serviceaccounts
+  - services
   verbs:
   - create
   - delete
   - get
   - list
   - patch
+  - update
   - watch
 - apiGroups:
   - ""
@@ -38,14 +38,14 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - services
+  - secrets
+  - serviceaccounts
   verbs:
   - create
   - delete
   - get
   - list
   - patch
-  - update
   - watch
 - apiGroups:
   - apiextensions.k8s.io

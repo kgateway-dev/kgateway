@@ -352,50 +352,6 @@ spec:
                                           description: http defines settings for managing
                                             HTTP requests to the backend.
                                           properties:
-                                            http2ConnectionWindowSize:
-                                              description: http2ConnectionWindowSize
-                                                indicates the initial window size
-                                                for connection-level flow control
-                                                / for received data.
-                                              format: int32
-                                              minimum: 1
-                                              type: integer
-                                            http2FrameSize:
-                                              description: |-
-                                                http2FrameSize sets the maxmimum frame size to use.
-                                                If unset, this defaults to 16kb
-                                              format: int32
-                                              maximum: 1677215
-                                              minimum: 16384
-                                              type: integer
-                                            http2KeepaliveInterval:
-                                              type: string
-                                              x-kubernetes-validations:
-                                              - message: invalid duration value
-                                                rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
-                                              - message: http2KeepaliveInterval must
-                                                  be at least 1 second
-                                                rule: duration(self) >= duration('1s')
-                                            http2KeepaliveTimeout:
-                                              type: string
-                                              x-kubernetes-validations:
-                                              - message: invalid duration value
-                                                rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
-                                              - message: http2KeepaliveTimeout must
-                                                  be at least 1 second
-                                                rule: duration(self) >= duration('1s')
-                                            http2WindowSize:
-                                              description: http2WindowSize indicates
-                                                the initial window size for stream-level
-                                                flow control / for received data.
-                                              format: int32
-                                              minimum: 1
-                                              type: integer
-                                            poolIdleTimeout:
-                                              description: poolIdleTimeout sets the
-                                                timeout for idle sockets to be kept-alive
-                                                for re-use in the connection pool.
-                                              type: string
                                             version:
                                               description: |-
                                                 version specifies the HTTP protocol version to use when connecting to the backend.
@@ -482,7 +438,7 @@ spec:
                                               minItems: 1
                                               type: array
                                             caCertificateRefs:
-                                              description: |
+                                              description: |-
                                                 caCertificateRefs defines the CA certificate ConfigMap to use to verify the server certificate.
                                                 If unset, the system's trusted certificates are used.
                                               items:
@@ -518,7 +474,7 @@ spec:
                                               - Hostname
                                               type: string
                                             mtlsCertificateRef:
-                                              description: |
+                                              description: |-
                                                 mtlsCertificateRef enables mutual TLS to the backend, using the specified key (tls.key) and cert (tls.crt) from the
                                                 refenced Secret.
 
@@ -1088,45 +1044,6 @@ spec:
                     description: http defines settings for managing HTTP requests
                       to the backend.
                     properties:
-                      http2ConnectionWindowSize:
-                        description: http2ConnectionWindowSize indicates the initial
-                          window size for connection-level flow control / for received
-                          data.
-                        format: int32
-                        minimum: 1
-                        type: integer
-                      http2FrameSize:
-                        description: |-
-                          http2FrameSize sets the maxmimum frame size to use.
-                          If unset, this defaults to 16kb
-                        format: int32
-                        maximum: 1677215
-                        minimum: 16384
-                        type: integer
-                      http2KeepaliveInterval:
-                        type: string
-                        x-kubernetes-validations:
-                        - message: invalid duration value
-                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
-                        - message: http2KeepaliveInterval must be at least 1 second
-                          rule: duration(self) >= duration('1s')
-                      http2KeepaliveTimeout:
-                        type: string
-                        x-kubernetes-validations:
-                        - message: invalid duration value
-                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
-                        - message: http2KeepaliveTimeout must be at least 1 second
-                          rule: duration(self) >= duration('1s')
-                      http2WindowSize:
-                        description: http2WindowSize indicates the initial window
-                          size for stream-level flow control / for received data.
-                        format: int32
-                        minimum: 1
-                        type: integer
-                      poolIdleTimeout:
-                        description: poolIdleTimeout sets the timeout for idle sockets
-                          to be kept-alive for re-use in the connection pool.
-                        type: string
                       version:
                         description: |-
                           version specifies the HTTP protocol version to use when connecting to the backend.
@@ -1261,7 +1178,7 @@ spec:
                         minItems: 1
                         type: array
                       caCertificateRefs:
-                        description: |
+                        description: |-
                           caCertificateRefs defines the CA certificate ConfigMap to use to verify the server certificate.
                           If unset, the system's trusted certificates are used.
                         items:
@@ -1297,7 +1214,7 @@ spec:
                         - Hostname
                         type: string
                       mtlsCertificateRef:
-                        description: |
+                        description: |-
                           mtlsCertificateRef enables mutual TLS to the backend, using the specified key (tls.key) and cert (tls.crt) from the
                           refenced Secret.
 
@@ -1542,6 +1459,18 @@ spec:
                   tls:
                     description: tls defines settings on managing incoming TLS connections.
                     properties:
+                      alpnProtocols:
+                        description: |-
+                          alpnProtocols sets the Application Level Protocol Negotiation (ALPN) value to use in the TLS handshake.
+
+                          If not present, defaults to ["h2", "http/1.1"].
+                        items:
+                          maxLength: 64
+                          minLength: 1
+                          type: string
+                        maxItems: 16
+                        minItems: 1
+                        type: array
                       handshakeTimeout:
                         description: |-
                           handshakeTimeout specifies the deadline for a TLS handshake to complete.
@@ -2853,7 +2782,7 @@ spec:
                                     backendRef:
                                       description: |-
                                         backendRef references the remote JWKS server to reach.
-
+                                        Not implemented yet, only jwksUri is currently supported.
                                         Supported types: Service and Backend.
                                       properties:
                                         group:
@@ -2923,13 +2852,27 @@ spec:
                                       - message: Must have port for Service reference
                                         rule: '(size(self.group) == 0 && self.kind
                                           == ''Service'') ? has(self.port) : true'
-                                  required:
-                                  - backendRef
+                                    cacheDuration:
+                                      default: 5m
+                                      type: string
+                                      x-kubernetes-validations:
+                                      - message: invalid duration value
+                                        rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                      - message: cacheDuration must be at least 5m.
+                                        rule: duration(self) >= duration('5m')
+                                    uri:
+                                      description: IdP jwks endpoint. Default tls
+                                        settings are used to connect to this url.
+                                      pattern: ^(https|http):\/\/[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*(:\d+)?\/.*$
+                                      type: string
                                   type: object
+                                  x-kubernetes-validations:
+                                  - message: exactly one of the fields in [uri backendRef]
+                                      must be set
+                                    rule: '[has(self.uri),has(self.backendRef)].filter(x,x==true).size()
+                                      == 1'
                               type: object
                               x-kubernetes-validations:
-                              - message: remote is not currently implemented
-                                rule: '!has(self.remote)'
                               - message: exactly one of the fields in [remote inline]
                                   must be set
                                 rule: '[has(self.remote),has(self.inline)].filter(x,x==true).size()

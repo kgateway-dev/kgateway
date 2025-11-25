@@ -41,6 +41,7 @@ type BackendConfigPolicyIR struct {
 	loadBalancerConfig            *LoadBalancerConfigIR
 	healthCheck                   *envoycorev3.HealthCheck
 	outlierDetection              *envoyclusterv3.OutlierDetection
+	circuitBreakers               *envoyclusterv3.CircuitBreakers
 }
 
 var logger = logging.New("plugin/backendconfigpolicy")
@@ -100,6 +101,10 @@ func (d *BackendConfigPolicyIR) Equals(other any) bool {
 	}
 
 	if !proto.Equal(d.outlierDetection, d2.outlierDetection) {
+		return false
+	}
+
+	if !proto.Equal(d.circuitBreakers, d2.circuitBreakers) {
 		return false
 	}
 
@@ -188,6 +193,10 @@ func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObje
 	if pol.outlierDetection != nil {
 		out.OutlierDetection = pol.outlierDetection
 	}
+
+	if pol.circuitBreakers != nil {
+		out.CircuitBreakers = pol.circuitBreakers
+	}
 }
 
 func translate(
@@ -249,6 +258,13 @@ func translate(
 
 	if pol.Spec.OutlierDetection != nil {
 		ir.outlierDetection = translateOutlierDetection(pol.Spec.OutlierDetection)
+	}
+
+	if pol.Spec.CircuitBreakers != nil {
+		ir.circuitBreakers = translateCircuitBreakers(pol.Spec.CircuitBreakers)
+		if err := ir.circuitBreakers.Validate(); err != nil {
+			errs = append(errs, err)
+		}
 	}
 
 	return &ir, errs

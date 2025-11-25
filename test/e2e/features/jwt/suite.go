@@ -9,7 +9,6 @@ import (
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -18,6 +17,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/remotejwtauth"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 )
@@ -28,13 +28,12 @@ var (
 	jwtManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt.yaml")
 	jwtRbacManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt-rbac.yaml")
 	jwtHTTPRouteManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt-httproute.yaml")
+	jwtRemoteManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt-remote.yaml")
 
-	// Core infrastructure objects that we need to track
 	gatewayObjectMeta = metav1.ObjectMeta{
 		Name:      "gw",
 		Namespace: "default",
 	}
-	gatewayService = &corev1.Service{ObjectMeta: gatewayObjectMeta}
 
 	// Matches
 	expectedJwtMissingFailedResponse = &matchers.HttpResponse{
@@ -44,6 +43,11 @@ var (
 	expectedJwtVerificationFailedResponse = &matchers.HttpResponse{
 		StatusCode: http.StatusUnauthorized,
 		Body:       gomega.ContainSubstring("Jwt verification fails"),
+	}
+
+	expectedJwtIssuerNotConfigured = &matchers.HttpResponse{
+		StatusCode: http.StatusUnauthorized,
+		Body:       gomega.ContainSubstring("Jwt issuer is not configured"),
 	}
 
 	expectStatus200Success = &matchers.HttpResponse{
@@ -99,6 +103,9 @@ var (
 		"TestJwtAuthorization": {
 			Manifests: []string{jwtRbacManifest},
 		},
+		"TestJwtAuthenticationRemote": {
+			Manifests: []string{jwtRemoteManifest},
+		},
 	}
 )
 
@@ -127,49 +134,17 @@ func (s *testingSuite) TestJwtAuthentication() {
 
 	// Send request to route with no JWT config applied, should get 200 OK
 	s.T().Log("send request to route with no JWT config applied, should get 200 OK")
-	statusReqCurlOpts := []curl.Option{
-		curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
-		curl.WithHostHeader("httpbin"),
-		curl.WithPort(8080),
-		curl.WithPath("/status/200"),
-	}
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		statusReqCurlOpts,
-		expectStatus200Success)
+	s.assertResponseWithoutAuth("/status/200", expectStatus200Success)
 
-	// The /get route does have a JWT config applied, should get 401 Unauthorized
-	s.T().Log("The /get route does have a JWT config applied, should fail when no JWT is provided")
-	getReqCurlOpts := []curl.Option{
-		curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
-		curl.WithHostHeader("httpbin"),
-		curl.WithPort(8080),
-		curl.WithPath("/get"),
-	}
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		getReqCurlOpts,
-		expectedJwtMissingFailedResponse)
+	// The /get route has a JWT config applied, should get 401 Unauthorized
+	s.T().Log("The /get route has a JWT config applied, should fail when no JWT is provided")
+	s.assertResponseWithoutAuth("/get", expectedJwtMissingFailedResponse)
 
-	s.T().Log("The /get route does have a JWT config applied, should fail when incorrect JWT is provided")
-	getReqBadJwtCurlOpts := append(getReqCurlOpts, curl.WithHeader("Authorization", "Bearer "+badJwtToken))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		getReqBadJwtCurlOpts,
-		expectedJwtVerificationFailedResponse,
-	)
+	s.T().Log("The /get route has a JWT config applied, should fail when incorrect JWT is provided")
+	s.assertResponse("/get", badJwtToken, expectedJwtVerificationFailedResponse)
 
-	s.T().Log("The /get route does have a JWT config applied, should succeed when correct JWT is provided")
-	getReqJwtCurlOpts := append(getReqCurlOpts, curl.WithHeader("Authorization", "Bearer "+dev1JwtToken))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		getReqJwtCurlOpts,
-		expectStatus200Success,
-	)
+	s.T().Log("The /get route has a JWT config applied, should succeed when correct JWT is provided")
+	s.assertResponse("/get", dev1JwtToken, expectStatus200Success)
 }
 
 // TestJwtAuthenticationHTTPRoute tests the JWT Policy applied at the HTTPRoute level
@@ -184,76 +159,80 @@ func (s *testingSuite) TestJwtAuthenticationHTTPRoute() {
 
 	// Send request to route with no JWT config applied, should get 200 OK
 	s.T().Log("send request to route with no JWT config applied, should get 200 OK")
-	statusReqCurlOpts := []curl.Option{
-		curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
-		curl.WithHostHeader("httpbin"),
-		curl.WithPort(8080),
-		curl.WithPath("/status/200"),
-	}
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		statusReqCurlOpts,
-		expectStatus200Success)
+	s.assertResponseWithoutAuth("/status/200", expectStatus200Success)
 
-	// The /get route does have a JWT config applied, should get 401 Unauthorized
-	s.T().Log("The /get route does have a JWT config applied, should fail when no JWT is provided")
-	getReqCurlOpts := []curl.Option{
-		curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
-		curl.WithHostHeader("httpbin"),
-		curl.WithPort(8080),
-		curl.WithPath("/get"),
-	}
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		getReqCurlOpts,
-		expectedJwtMissingFailedResponse)
+	// The /get route has a JWT config applied, should get 401 Unauthorized
+	s.T().Log("The /get route has a JWT config applied, should fail when no JWT is provided")
+	s.assertResponseWithoutAuth("/get", expectedJwtMissingFailedResponse)
 
-	s.T().Log("The /get route does have a JWT config applied, should fail when incorrect JWT is provided")
-	getReqBadJwtCurlOpts := append(getReqCurlOpts, curl.WithHeader("Authorization", "Bearer "+badJwtToken))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		getReqBadJwtCurlOpts,
-		expectedJwtVerificationFailedResponse,
-	)
+	s.T().Log("The /get route has a JWT config applied, should fail when incorrect JWT is provided")
+	s.assertResponse("/get", badJwtToken, expectedJwtVerificationFailedResponse)
 
-	s.T().Log("The /get route does have a JWT config applied, should succeed when correct JWT is provided")
-	getReqJwtCurlOpts := append(getReqCurlOpts, curl.WithHeader("Authorization", "Bearer "+dev1JwtToken))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		getReqJwtCurlOpts,
-		expectStatus200Success,
-	)
+	s.T().Log("The /get route has a JWT config applied, should succeed when correct JWT is provided")
+	s.assertResponse("/get", dev1JwtToken, expectStatus200Success)
 }
 
 // TestJwtAuthorization tests the jwt claims have permissions
 func (s *testingSuite) TestJwtAuthorization() {
-	getReqCurlOpts := []curl.Option{
-		curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
-		curl.WithHostHeader("httpbin"),
-		curl.WithPort(8080),
-		curl.WithPath("/get"),
-	}
-
 	// correct JWT, but incorrect claims should be denied
 	s.T().Log("The /get route has a JWT applies at the route level, should fail when correct JWT is provided but incorrect claims")
-	getReqDev1JwtCurlOpts := append(getReqCurlOpts, curl.WithHeader("Authorization", "Bearer "+dev1JwtToken))
-	s.TestInstallation.Assertions.AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		getReqDev1JwtCurlOpts,
-		expectRbacDeniedWithJwt,
-	)
+	s.assertResponse("/get", dev1JwtToken, expectRbacDeniedWithJwt)
 	// correct JWT is used should result in 200 OK
 	s.T().Log("The /get route has a JWT applies at the route level, should succeed when correct JWT is provided with correct claims")
-	getReqDev2JwtCurlOpts := append(getReqCurlOpts, curl.WithHeader("Authorization", "Bearer "+dev2JwtToken))
+	s.assertResponse("/get", dev2JwtToken, expectStatus200Success)
+}
+
+// TestJwtAuthenticationRemote tests the JWT Policy applied at the gateway using a remote JWKS server
+func (s *testingSuite) TestJwtAuthenticationRemote() {
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.Ctx,
+		"httpbin-route-get",
+		"default",
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionTrue,
+	)
+
+	s.T().Log("status route should fail when no JWT is provided")
+	s.assertResponseWithoutAuth("/status/200", expectedJwtMissingFailedResponse)
+
+	s.T().Log("status route should succeed when correct JWT is provided")
+	s.assertResponse("/status/200", remotejwtauth.JwtOrgOne, expectStatus200Success)
+
+	s.T().Log("The /get route has a JWT config applied, should fail when no JWT is provided")
+	s.assertResponseWithoutAuth("/get", expectedJwtMissingFailedResponse)
+
+	s.T().Log("The /get route has a JWT config applied, should fail when incorrect JWT is provided")
+	s.assertResponse("/get", badJwtToken, expectedJwtIssuerNotConfigured)
+
+	s.T().Log("The /get route has a JWT config applied, should succeed when correct JWT is provided")
+	s.assertResponse("/get", remotejwtauth.JwtOrgOne, expectStatus200Success)
+}
+
+func (s *testingSuite) assertResponse(path, authHeader string, expected *matchers.HttpResponse) {
 	s.TestInstallation.Assertions.AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
-		getReqDev2JwtCurlOpts,
-		expectStatus200Success,
+		[]curl.Option{
+			curl.WithPath(path),
+			curl.WithHost(kubeutils.ServiceFQDN(gatewayObjectMeta)),
+			curl.WithHostHeader("httpbin"),
+			curl.WithHeader("Authorization", "Bearer "+authHeader),
+			curl.WithPort(8080),
+		},
+		expected,
+	)
+}
+
+func (s *testingSuite) assertResponseWithoutAuth(path string, expected *matchers.HttpResponse) {
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithPath(path),
+			curl.WithHost(kubeutils.ServiceFQDN(gatewayObjectMeta)),
+			curl.WithHostHeader("httpbin"),
+			curl.WithPort(8080),
+		},
+		expected,
 	)
 }

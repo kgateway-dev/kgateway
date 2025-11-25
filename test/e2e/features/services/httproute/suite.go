@@ -4,9 +4,13 @@ package httproute
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -14,6 +18,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
+	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
@@ -32,6 +37,7 @@ var (
 		"TestConfigureHTTPRouteBackingDestinationsWithServiceAndWithoutTCPRoute": {
 			MinGwApiVersion: base.GwApiRequireTcpRoutes,
 		},
+		"TestClearStaleStatus": {},
 	}
 )
 
@@ -120,4 +126,108 @@ func (s *testingSuite) TestConfigureHTTPRouteBackingDestinationsWithServiceAndWi
 			curl.WithHostHeader("example.com"),
 		},
 		expectedSvcResp)
+}
+
+func (s *testingSuite) TestClearStaleStatus() {
+	testutils.Cleanup(s.T(), func() {
+		// routeMissingGwManifest only modify the route thus cleaning up routeWithServiceManifest is enough.
+		err := s.TestInstallation.Actions.Kubectl().DeleteFile(s.Ctx, routeWithGwManifest)
+		s.NoError(err, "can delete manifest")
+		s.TestInstallation.Assertions.EventuallyObjectsNotExist(s.Ctx, proxyService, proxyDeployment)
+	})
+
+	err := s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, routeWithGwManifest)
+	s.Assert().NoError(err, "can apply manifest")
+
+	// Inject fake parent status from another controller
+	s.addParentStatus("example-route", "default", "other-gw", otherControllerName)
+
+	// Verify status
+	s.assertParentStatuses("gw", map[string]bool{
+		kgatewayControllerName: true,
+	})
+	s.assertParentStatuses("other-gw", map[string]bool{
+		otherControllerName: true,
+	})
+
+	// Modify route to reference missing-gw
+	err = s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, routeMissingGwManifest)
+	s.Require().NoError(err, "can apply manifest")
+
+	// Verify kgateway status is cleared but other controller status remains
+	s.assertParentStatuses("gw", map[string]bool{
+		kgatewayControllerName: false,
+	})
+	s.assertParentStatuses("other-gw", map[string]bool{
+		otherControllerName: true,
+	})
+}
+
+func (s *testingSuite) addParentStatus(routeName, routeNamespace, gwName, controllerName string) {
+	currentTimeout, pollingInterval := helpers.GetTimeouts()
+	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+		route := &gwv1.HTTPRoute{}
+		err := s.TestInstallation.ClusterContext.Client.Get(
+			s.Ctx,
+			types.NamespacedName{Name: routeName, Namespace: routeNamespace},
+			route,
+		)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+
+		// Add fake parent status entry
+		fakeStatus := gwv1.RouteParentStatus{
+			ParentRef: gwv1.ParentReference{
+				Name: gwv1.ObjectName(gwName),
+			},
+			ControllerName: gwv1.GatewayController(controllerName),
+			Conditions: []metav1.Condition{
+				{
+					Type:               string(gwv1.RouteConditionAccepted),
+					Status:             metav1.ConditionTrue,
+					Reason:             string(gwv1.RouteReasonAccepted),
+					Message:            "Accepted by fake controller",
+					LastTransitionTime: metav1.Now(),
+				},
+			},
+		}
+
+		route.Status.Parents = append(route.Status.Parents, fakeStatus)
+		err = s.TestInstallation.ClusterContext.Client.Status().Update(s.Ctx, route)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+}
+
+func (s *testingSuite) assertParentStatuses(parentName string, expectedControllers map[string]bool) {
+	currentTimeout, pollingInterval := helpers.GetTimeouts()
+	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+		route := &gwv1.HTTPRoute{}
+		err := s.TestInstallation.ClusterContext.Client.Get(
+			s.Ctx,
+			types.NamespacedName{Name: "example-route", Namespace: "default"},
+			route,
+		)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get HTTPRoute")
+
+		// Build map of found controllers for this parent
+		foundControllers := make(map[string]bool)
+		for _, parent := range route.Status.Parents {
+			if string(parent.ParentRef.Name) == parentName {
+				foundControllers[string(parent.ControllerName)] = true
+			}
+		}
+
+		// Verify each expected controller status
+		for controller, shouldExist := range expectedControllers {
+			exists := foundControllers[controller]
+			if shouldExist {
+				g.Expect(exists).To(gomega.BeTrue(),
+					fmt.Sprintf("parent status for gateway %s with controller %s should exist. Full status: %+v",
+						parentName, controller, route.Status))
+			} else {
+				g.Expect(exists).To(gomega.BeFalse(),
+					fmt.Sprintf("parent status for gateway %s with controller %s should not exist. Full status: %+v",
+						parentName, controller, route.Status))
+			}
+		}
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }

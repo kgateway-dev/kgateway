@@ -206,7 +206,6 @@ type BackendTLS struct {
 	//
 	// If unspecified, no client certificate will be used.
 	//
-	// TODO: must be secret
 	// +listType=atomic
 	// +kubebuilder:validation:MaxItems=1
 	// +optional
@@ -215,7 +214,6 @@ type BackendTLS struct {
 	// If unset, the system's trusted certificates are used.
 	//
 	// +listType=atomic
-	// TODO: must be configmap
 	// +kubebuilder:validation:MaxItems=1
 	// +optional
 	CACertificateRefs []corev1.LocalObjectReference `json:"caCertificateRefs,omitempty"`
@@ -252,7 +250,7 @@ type BackendTLS struct {
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
 	// +optional
-	AlpnProtocols []TinyString `json:"alpnProtocols,omitempty"`
+	AlpnProtocols *[]TinyString `json:"alpnProtocols,omitempty"`
 }
 
 // +kubebuilder:validation:XValidation:rule="!has(self.tracing)",message="tracing is not currently implemented"
@@ -332,6 +330,14 @@ type FrontendTLS struct {
 	// +optional
 	HandshakeTimeout *metav1.Duration `json:"handshakeTimeout,omitempty"`
 
+	// alpnProtocols sets the Application Level Protocol Negotiation (ALPN) value to use in the TLS handshake.
+	//
+	// If not present, defaults to ["h2", "http/1.1"].
+	//
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=16
+	// +optional
+	AlpnProtocols *[]TinyString `json:"alpnProtocols,omitempty"`
 	// TODO: mirror the tuneables on BackendTLS
 }
 
@@ -503,7 +509,6 @@ type AgentJWTProvider struct {
 }
 
 // +kubebuilder:validation:ExactlyOneOf=remote;inline
-// +kubebuilder:validation:XValidation:rule="!has(self.remote)",message="remote is not currently implemented"
 type AgentJWKS struct {
 	// remote specifies how to reach the JSON Web Key Set from a remote address.
 	// +optional
@@ -515,12 +520,22 @@ type AgentJWKS struct {
 	Inline *string `json:"inline,omitempty"`
 }
 
+// +kubebuilder:validation:ExactlyOneOf=uri;backendRef
 type AgentRemoteJWKS struct {
+	// IdP jwks endpoint. Default tls settings are used to connect to this url.
+	// +kubebuilder:validation:Pattern=`^(https|http):\/\/[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*(:\d+)?\/.*$`
+	// +optional
+	JwksUri string `json:"uri,omitempty"`
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('5m')",message="cacheDuration must be at least 5m."
+	// +kubebuilder:default="5m"
+	CacheDuration *metav1.Duration `json:"cacheDuration,omitempty"`
 	// backendRef references the remote JWKS server to reach.
-	//
+	// Not implemented yet, only jwksUri is currently supported.
 	// Supported types: Service and Backend.
-	// +required
-	BackendRef gwv1.BackendObjectReference `json:"backendRef"`
+	// +optional
+	BackendRef gwv1.BackendObjectReference `json:"backendRef,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=Strict;Optional
@@ -785,35 +800,7 @@ type MCPAuthentication struct {
 	// TODO: implement
 }
 
-// TODO: implement
 type BackendHTTP struct {
-	// poolIdleTimeout sets the timeout for idle sockets to be kept-alive for re-use in the connection pool.
-	// +optional
-	PoolIdleTimeout *metav1.Duration `json:"poolIdleTimeout,omitempty"`
-
-	// http2WindowSize indicates the initial window size for stream-level flow control / for received data.
-	// +kubebuilder:validation:Minimum=1
-	// +optional
-	HTTP2WindowSize *int32 `json:"http2WindowSize,omitempty"`
-	// http2ConnectionWindowSize indicates the initial window size for connection-level flow control / for received data.
-	// +kubebuilder:validation:Minimum=1
-	// +optional
-	HTTP2ConnectionWindowSize *int32 `json:"http2ConnectionWindowSize,omitempty"`
-	// http2FrameSize sets the maxmimum frame size to use.
-	// If unset, this defaults to 16kb
-	// +kubebuilder:validation:Minimum=16384
-	// +kubebuilder:validation:Maximum=1677215
-	// +optional
-	HTTP2FrameSize *int32 `json:"http2FrameSize,omitempty"`
-	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
-	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1s')",message="http2KeepaliveInterval must be at least 1 second"
-	// +optional
-	HTTP2KeepaliveInterval *metav1.Duration `json:"http2KeepaliveInterval,omitempty"`
-	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
-	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1s')",message="http2KeepaliveTimeout must be at least 1 second"
-	// +optional
-	HTTP2KeepaliveTimeout *metav1.Duration `json:"http2KeepaliveTimeout,omitempty"`
-
 	// version specifies the HTTP protocol version to use when connecting to the backend.
 	// If not specified, the version is automatically determined:
 	// * Service types can specify it with 'appProtocol' on the Service port.
