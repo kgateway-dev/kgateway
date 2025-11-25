@@ -256,11 +256,7 @@ func translateJwks(
 		}
 	case jwkConfig.RemoteJWKS != nil:
 		remote := jwkConfig.RemoteJWKS
-		if remote.BackendRef == nil {
-			// shouldn't happen due to CEL validation
-			return fmt.Errorf("remote jwks: nil backend ref")
-		}
-		backend, err := resolver.GetBackendFromRef(krtctx, gwExtObj, *remote.BackendRef)
+		backend, err := resolver.GetBackendFromRef(krtctx, gwExtObj, remote.BackendRef)
 		if err != nil {
 			return fmt.Errorf("remote jwks: unresolved backend ref: %w", err)
 		}

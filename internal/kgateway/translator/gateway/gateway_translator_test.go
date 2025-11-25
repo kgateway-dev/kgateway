@@ -1242,6 +1242,39 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("listener set with tls listener and secret in same namespace", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-sets/tls-same-ns.yaml",
+			outputFile: "listener-sets/tls-same-ns.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("listener set with tls listener and secret in different namespace without reference grant", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-sets/tls-missing-reference-grant.yaml",
+			outputFile: "listener-sets/tls-missing-reference-grant.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("listener set with tls listener and secret in different namespace with reference grant", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-sets/tls-valid-reference-grant.yaml",
+			outputFile: "listener-sets/tls-valid-reference-grant.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy RateLimit Full Config", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/rate-limit-full-config.yaml",

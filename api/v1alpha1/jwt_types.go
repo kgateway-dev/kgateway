@@ -150,7 +150,7 @@ type RemoteJWKS struct {
 
 	// BackendRef is reference to the backend of the JWKS server.
 	// +required
-	BackendRef *gwv1.BackendObjectReference `json:"backendRef"`
+	BackendRef gwv1.BackendObjectReference `json:"backendRef"`
 
 	// Duration after which the cached JWKS expires.
 	// If unspecified, the default cache duration is 5 minutes.

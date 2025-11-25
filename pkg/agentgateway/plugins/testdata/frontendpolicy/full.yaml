@@ -10,6 +10,8 @@ spec:
       group: gateway.networking.k8s.io
   frontend:
     tls:
+      alpnProtocols:
+      - custom
       handshakeTimeout: 10s
     tcp:
       keepalive:
@@ -55,6 +57,9 @@ output:
 - Policy:
     frontend:
       tls:
+        alpn:
+          protocols:
+          - custom
         tlsHandshakeTimeout: 10s
     name: frontend/default/agw:frontend-tls:default/test
     target:
