@@ -355,7 +355,7 @@ spec:
                             ? has(self.port) : true'
                       path:
                         description: Path is the path for the authorization request
-                          endpoint. Default is empty string (root path).
+                          endpoint. Value will be prepended to the request path.
                         type: string
                       requestTimeout:
                         description: RequestTimeout is the timeout for the HTTP request.
