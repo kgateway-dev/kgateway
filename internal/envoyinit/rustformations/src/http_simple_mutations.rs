@@ -19,8 +19,6 @@ pub struct FilterConfig {
 
 struct EnvoyTransformationOps<'a> {
     envoy_filter: &'a mut dyn EnvoyHttpFilter,
-    //    TODO: see comment for get_random_pattern() below
-    //    random_pattern_map: &'a mut Option<HashMap<String, String>>,
 }
 
 impl<'a> EnvoyTransformationOps<'a> {

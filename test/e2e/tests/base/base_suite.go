@@ -352,7 +352,6 @@ func (s *BaseTestingSuite) BeforeTest(suiteName, testName string) {
 	}
 
 	// apply test-specific manifests
-	fmt.Printf("testName: %s\n", testName)
 	testCase, ok := s.TestCases[testName]
 	if !ok {
 		return

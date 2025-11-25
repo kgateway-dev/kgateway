@@ -19,10 +19,10 @@ use std::env;
 
 // These keys are used in a shared scope in the State where we will also put the parsed json body in.
 // So, they needs to be as uniq as possible to minimize collision.
-const STATE_LOOKUP_KEY_BODY: &str = "body.io.solo";
-const STATE_LOOKUP_KEY_CONTEXT: &str = "context.io.solo";
-const STATE_LOOKUP_KEY_HEADERS: &str = "headers.io.solo";
-const STATE_LOOKUP_KEY_REQ_HEADERS: &str = "request_headers.io.solo";
+const STATE_LOOKUP_KEY_BODY: &str = "body.dev.kgateway";
+const STATE_LOOKUP_KEY_CONTEXT: &str = "context.dev.kgateway";
+const STATE_LOOKUP_KEY_HEADERS: &str = "headers.dev.kgateway";
+const STATE_LOOKUP_KEY_REQ_HEADERS: &str = "request_headers.dev.kgateway";
 
 static ENV: Lazy<Environment<'static>> = Lazy::new(new_jinja_env);
 
