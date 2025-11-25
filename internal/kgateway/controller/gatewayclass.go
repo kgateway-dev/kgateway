@@ -19,6 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -187,8 +188,8 @@ func (r *gatewayClassReconciler) reconcileGatewayClass(name string, info *deploy
 func (r *gatewayClassReconciler) buildDesiredGatewayClass(name string, info *deployer.GatewayClassInfo) *gwv1.GatewayClass {
 	gwc := &gwv1.GatewayClass{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "gateway.networking.k8s.io/v1",
-			Kind:       "GatewayClass",
+			APIVersion: wellknown.GatewayClassGVK.GroupVersion().String(),
+			Kind:       wellknown.GatewayClassKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        name,
@@ -223,7 +224,7 @@ func (r *gatewayClassReconciler) applyGatewayClass(gwc *gwv1.GatewayClass) error
 
 	_, err = c.Patch(context.Background(), gwc.Name, types.ApplyPatchType, js, metav1.PatchOptions{
 		Force:        ptr.To(true),
-		FieldManager: "kgateway-controller/gatewayclass",
+		FieldManager: "kgateway",
 	})
 	return err
 }
