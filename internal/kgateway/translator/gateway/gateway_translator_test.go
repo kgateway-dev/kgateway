@@ -7,9 +7,16 @@ import (
 	"strings"
 	"testing"
 
+	kubeclient "istio.io/istio/pkg/kube"
+	"istio.io/istio/pkg/kube/kclient"
+	"istio.io/istio/pkg/kube/krt"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	translatortest "github.com/kgateway-dev/kgateway/v2/test/translator"
 )
@@ -1451,6 +1458,39 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("ListenerPolicy with proxy protocol on HTTP listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy/http-proxy-protocol.yaml",
+			outputFile: "listener-policy/http-proxy-protocol.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with proxy protocol on HTTPS listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy/https-proxy-protocol.yaml",
+			outputFile: "listener-policy/https-proxy-protocol.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with proxy protocol on TCP listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy/tcp-proxy-protocol.yaml",
+			outputFile: "listener-policy/tcp-proxy-protocol.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-tcp-gateway",
+			},
+		})
+	})
+
 	t.Run("JWT Policy at gateway level", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "jwt/gateway.yaml",
@@ -1972,4 +2012,50 @@ func TestDiscoveryNamespaceSelector(t *testing.T) {
   }
 ]`, "base.yaml", "base_select_infra.yaml")
 	})
+}
+
+func TestSomethin(t *testing.T) {
+
+	fakeClient := fake.NewClient(t, &v1alpha1.ListenerPolicy{
+		TypeMeta: v1.TypeMeta{
+			Kind:       "ListenerPolicy",
+			APIVersion: "gateway.kgateway.dev/v1alpha1",
+		},
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "hi",
+			Namespace: "bye",
+		},
+		Spec: v1alpha1.ListenerPolicySpec{},
+	}, &v1alpha1.HTTPListenerPolicy{
+		TypeMeta: v1.TypeMeta{
+			Kind:       "HTTPListenerPolicy",
+			APIVersion: "gateway.kgateway.dev/v1alpha1",
+		},
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "hi",
+			Namespace: "bye",
+		},
+		Spec: v1alpha1.HTTPListenerPolicySpec{},
+	})
+	AAcli := kclient.NewFilteredDelayed[*v1alpha1.ListenerPolicy](
+		fakeClient,
+		wellknown.ListenerPolicyGVR,
+		kclient.Filter{ObjectFilter: fakeClient.ObjectFilter()},
+	)
+	AAcol := krt.WrapClient(AAcli)
+	BBcli := kclient.NewFilteredDelayed[*v1alpha1.HTTPListenerPolicy](
+		fakeClient,
+		wellknown.ListenerPolicyGVR,
+		kclient.Filter{ObjectFilter: fakeClient.ObjectFilter()},
+	)
+	BBcol := krt.WrapClient(BBcli)
+	fakeClient.RunAndWait(t.Context().Done())
+
+	kubeclient.WaitForCacheSync("AAcol", t.Context().Done(), AAcol.HasSynced)
+	kubeclient.WaitForCacheSync("BBcol", t.Context().Done(), BBcol.HasSynced)
+
+	l := AAcol.List()
+	t.Log("list", l)
+	l2 := BBcol.List()
+	t.Log("list", l2)
 }

@@ -243,9 +243,10 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 		}
 
 		return pol
-	})
+	}, commoncol.KrtOpts.ToOptions("HTTPListenerPolicyWrapper")...)
 
 	return sdk.Plugin{
+		ExtraHasSynced: col.HasSynced,
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			wellknown.HTTPListenerPolicyGVK.GroupKind(): {
 				NewGatewayTranslationPass: NewGatewayTranslationPass,

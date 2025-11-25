@@ -48,6 +48,7 @@ var AllCRDs = []schema.GroupVersionResource{
 	wellknown.BackendConfigPolicyGVR,
 	wellknown.TrafficPolicyGVR,
 	wellknown.HTTPListenerPolicyGVR,
+	wellknown.ListenerPolicyGVR,
 	wellknown.DirectResponseGVR,
 	wellknown.GatewayExtensionGVR,
 	wellknown.GatewayParametersGVR,

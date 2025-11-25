@@ -243,7 +243,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 			PrecedenceWeight: precedenceWeight,
 		}
 		return pol
-	})
+	}, commoncol.KrtOpts.ToOptions("TrafficPolicyWrapper")...)
 
 	return sdk.Plugin{
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
