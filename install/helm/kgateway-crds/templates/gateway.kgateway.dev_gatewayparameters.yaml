@@ -665,15 +665,23 @@ spec:
                           componentLogLevels:
                             additionalProperties:
                               type: string
-                            description: "Envoy log levels for specific components.
-                              The keys are component names and\nthe values are one
-                              of \"trace\", \"debug\", \"info\", \"warn\", \"error\",\n\"critical\",
-                              or \"off\", e.g.\n\n\t```yaml\n\tcomponentLogLevels:\n\t
-                              \ upstream: debug\n\t  connection: trace\n\t```\n\nThese
-                              will be converted to the `--component-log-level` Envoy
-                              argument\nvalue. See\nhttps://www.envoyproxy.io/docs/envoy/latest/start/quick-start/run-envoy#debugging-envoy\nfor
-                              more information.\n\nNote: the keys and values cannot
-                              be empty, but they are not otherwise validated."
+                            description: |-
+                              Envoy log levels for specific components. The keys are component names and
+                              the values are one of "trace", "debug", "info", "warn", "error",
+                              "critical", or "off", e.g.
+
+                              ```yaml
+                              componentLogLevels:
+                                upstream: debug
+                                connection: trace
+                              ```
+
+                              These will be converted to the `--component-log-level` Envoy argument
+                              value. See
+                              https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/run-envoy#debugging-envoy
+                              for more information.
+
+                              Note: the keys and values cannot be empty, but they are not otherwise validated.
                             type: object
                           logLevel:
                             description: |-

@@ -212,3 +212,4 @@ formatters:
       - third_party$
       - builtin$
       - examples$
+      - api/v1alpha1/ai_policy.go

@@ -92,7 +92,6 @@ spec:
                             defaults:
                               - field: "system"
                                 value: "answer all questions in French"
-
                             ```
 
                             Example: Setting a default temperature and overriding `max_tokens`:
@@ -111,11 +110,9 @@ spec:
                             defaults:
                               - field: "custom_integer_list"
                                 value: [1,2,3]
-
                             overrides:
                               - field: "custom_string_list"
                                 value: ["one","two","three"]
-
                             ```
 
                             Note: The `field` values correspond to keys in the JSON request body, not fields in this CRD.
@@ -161,7 +158,6 @@ spec:
                             defaults:
                               - field: "system"
                                 value: "answer all questions in French"
-
                             ```
 
                             Example: Setting a default temperature and overriding `max_tokens`:
@@ -180,11 +176,9 @@ spec:
                             defaults:
                               - field: "custom_integer_list"
                                 value: [1,2,3]
-
                             overrides:
                               - field: "custom_string_list"
                                 value: ["one","two","three"]
-
                             ```
 
                             Note: The `field` values correspond to keys in the JSON request body, not fields in this CRD.
