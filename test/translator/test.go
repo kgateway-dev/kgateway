@@ -14,6 +14,7 @@ import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyapikeyauthv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/api_key_auth/v3"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
@@ -321,7 +322,12 @@ func compareProxy(expectedFile string, actualProxy *irtranslator.TranslationResu
 		return "", err
 	}
 
-	return cmp.Diff(sortProxy(expectedProxy), sortProxy(actualProxy), protocmp.Transform(), cmpopts.EquateNaNs()), nil
+	// Sort credentials by client name to ensure deterministic comparison
+	credentialSortFn := func(x, y *envoyapikeyauthv3.Credential) bool {
+		return x.Client < y.Client
+	}
+
+	return cmp.Diff(sortProxy(expectedProxy), sortProxy(actualProxy), protocmp.Transform(), protocmp.SortRepeated(credentialSortFn), cmpopts.EquateNaNs()), nil
 }
 
 func sortProxy(proxy *irtranslator.TranslationResult) *irtranslator.TranslationResult {
