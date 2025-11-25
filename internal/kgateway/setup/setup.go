@@ -25,12 +25,15 @@ import (
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/admin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentjwksstore"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/jwks"
 	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
+	"github.com/kgateway-dev/kgateway/v2/pkg/common"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
@@ -394,9 +397,16 @@ func (s *setup) Start(ctx context.Context) error {
 			return err
 		}
 	}
+
 	for _, runnable := range s.extraRunnables {
 		if err := mgr.Add(runnable); err != nil {
 			return fmt.Errorf("error adding extra Runnable to manager: %w", err)
+		}
+	}
+
+	if !jwksStoreOverridePresent(s.extraRunnables) {
+		if err := buildJwksStore(ctx, mgr, s.apiClient, commoncol, agwCollections); err != nil {
+			return fmt.Errorf("error creating jwks store %w", err)
 		}
 	}
 
@@ -513,4 +523,29 @@ func SetupLogging(levelStr string) {
 		klogLogger := logr.FromSlogHandler(logging.New("klog").Handler())
 		klog.SetLogger(klogLogger)
 	})
+}
+
+func buildJwksStore(ctx context.Context, mgr manager.Manager, apiClient apiclient.Client, commonCollections *collections.CommonCollections, agwCollections *agwplugins.AgwCollections) error {
+	jwksStoreCtrl := agentjwksstore.NewJWKSStoreController(apiClient, agwCollections)
+	if err := mgr.Add(jwksStoreCtrl); err != nil {
+		return err
+	}
+	jwksStoreCtrl.Init(ctx)
+	jwksStore := jwks.BuildJwksStore(ctx, apiClient, commonCollections, jwksStoreCtrl.JwksQueue(), "jwks-store", namespaces.GetPodNamespace())
+	if err := mgr.Add(jwksStore); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func jwksStoreOverridePresent(extras []manager.Runnable) bool {
+	for _, r := range extras {
+		if named, ok := r.(common.NamedRunnable); ok {
+			if named.RunnableName() == jwks.RunnableName {
+				return true
+			}
+		}
+	}
+	return false
 }

@@ -10,7 +10,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/jwks/mocks"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/jwks/mocks"
 )
 
 func TestAddKeysetToFetcher(t *testing.T) {

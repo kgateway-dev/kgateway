@@ -11,6 +11,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 )
 
+const RunnableName = "jwks-store"
+
 var JwksConfigMapNamespacedName = func(jwksUri string) *types.NamespacedName {
 	return nil
 }
@@ -26,7 +28,7 @@ type JwksStore struct {
 	latestJwksQueue utils.AsyncQueue[JwksSources]
 }
 
-func BuildJwksStore(ctx context.Context, cli apiclient.Client, commonCols *collections.CommonCollections, jwksQueue utils.AsyncQueue[JwksSources], deploymentNamespace string) *JwksStore {
+func BuildJwksStore(ctx context.Context, cli apiclient.Client, commonCols *collections.CommonCollections, jwksQueue utils.AsyncQueue[JwksSources], storePrefix, deploymentNamespace string) *JwksStore {
 	log := log.Log.WithName("jwks store setup")
 	log.Info("creating jwks store")
 
@@ -35,16 +37,16 @@ func BuildJwksStore(ctx context.Context, cli apiclient.Client, commonCols *colle
 		jwksCache:       jwksCache,
 		latestJwksQueue: jwksQueue,
 		jwksFetcher:     NewJwksFetcher(jwksCache),
-		configMapSyncer: NewConfigMapSyncer(cli, deploymentNamespace, commonCols.KrtOpts),
+		configMapSyncer: NewConfigMapSyncer(cli, storePrefix, deploymentNamespace, commonCols.KrtOpts),
 	}
 	jwksStore.updates = jwksStore.jwksFetcher.SubscribeToUpdates()
-	BuildJwksConfigMapNamespacedNameFunc(deploymentNamespace)
+	BuildJwksConfigMapNamespacedNameFunc(storePrefix, deploymentNamespace)
 	return jwksStore
 }
 
-func BuildJwksConfigMapNamespacedNameFunc(deploymentNamespace string) {
+func BuildJwksConfigMapNamespacedNameFunc(storePrefix, deploymentNamespace string) {
 	JwksConfigMapNamespacedName = func(jwksUri string) *types.NamespacedName {
-		return &types.NamespacedName{Namespace: deploymentNamespace, Name: JwksConfigMapName(jwksUri)}
+		return &types.NamespacedName{Namespace: deploymentNamespace, Name: JwksConfigMapName(storePrefix, jwksUri)}
 	}
 }
 
@@ -103,4 +105,8 @@ func (s *JwksStore) syncToConfigMaps(ctx context.Context) {
 // JwksStore runs on the leader only
 func (r *JwksStore) NeedLeaderElection() bool {
 	return true
+}
+
+func (r *JwksStore) NamedRunnable() string {
+	return RunnableName
 }

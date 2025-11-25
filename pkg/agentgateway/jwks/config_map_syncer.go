@@ -25,11 +25,10 @@ import (
 const jwksStorePrefix = "jwks-store"
 const JwksStoreComponent = "app.kubernetes.io/component"
 
-var JwksStoreLabel = map[string]string{JwksStoreComponent: jwksStorePrefix}
-
 // configMapSyncer is used for writing/reading jwks' to/from ConfigMaps.
 type configMapSyncer struct {
 	deploymentNamespace string
+	storePrefix         string
 	cmAccessor          cmAccessor
 }
 
@@ -43,15 +42,16 @@ type cmAccessor interface {
 	WaitForCacheSync(ctx context.Context) bool
 }
 
-func NewConfigMapSyncer(client apiclient.Client, deploymentNamespace string, krtOptions krtutil.KrtOptions) *configMapSyncer {
+func NewConfigMapSyncer(client apiclient.Client, storePrefix, deploymentNamespace string, krtOptions krtutil.KrtOptions) *configMapSyncer {
 	cmCollection := krt.NewInformerFiltered[*corev1.ConfigMap](client,
 		kclient.Filter{
 			ObjectFilter:  client.ObjectFilter(),
-			LabelSelector: JwksStoreComponent + "=" + jwksStorePrefix},
+			LabelSelector: JwksStoreComponent + "=" + storePrefix},
 		krtOptions.ToOptions("config_map_syncer/ConfigMaps")...)
 
 	toret := configMapSyncer{
 		deploymentNamespace: deploymentNamespace,
+		storePrefix:         storePrefix,
 		cmAccessor: &defaultCmAccessor{
 			client:              client,
 			deploymentNamespace: deploymentNamespace,
@@ -80,9 +80,9 @@ func (cs *configMapSyncer) WaitForCacheSync(ctx context.Context) bool {
 
 // Generates ConfigMap name based on jwks uri. Resulting name is a concatenation of "jwks-store-" prefix and an MD5 hash of the jwks uri.
 // The length of the name is a constant 32 chars (hash) + legth of the prefix.
-func JwksConfigMapName(jwksUri string) string {
+func JwksConfigMapName(storePrefix, jwksUri string) string {
 	hash := md5.Sum([]byte(jwksUri)) //nolint:gosec
-	return fmt.Sprintf("%s-%s", jwksStorePrefix, hex.EncodeToString(hash[:]))
+	return fmt.Sprintf("%s-%s", storePrefix, hex.EncodeToString(hash[:]))
 }
 
 // Write out jwks' in updates to ConfigMaps, one jwks uri per ConfigMap. updates contains a map of jwks-uri to serialized jwks.
@@ -94,7 +94,7 @@ func (cs *configMapSyncer) WriteJwksToConfigMaps(ctx context.Context, updates ma
 	for uri, jwks := range updates {
 		switch jwks {
 		case "": // empty jwks == remove the underlying ConfigMap
-			err := cs.cmAccessor.Delete(ctx, JwksConfigMapName(uri))
+			err := cs.cmAccessor.Delete(ctx, JwksConfigMapName(cs.storePrefix, uri))
 			if client.IgnoreNotFound(err) != nil {
 				log.Error(err, "error deleting jwks ConfigMap")
 				errs = append(errs, err)
@@ -107,9 +107,9 @@ func (cs *configMapSyncer) WriteJwksToConfigMaps(ctx context.Context, updates ma
 				continue
 			}
 
-			existing := cs.cmAccessor.Get(JwksConfigMapName(uri))
+			existing := cs.cmAccessor.Get(JwksConfigMapName(cs.storePrefix, uri))
 			if existing == nil {
-				cm := cs.newJwksStoreConfigMap(JwksConfigMapName(uri))
+				cm := cs.newJwksStoreConfigMap(JwksConfigMapName(cs.storePrefix, uri))
 				cm.Data[jwksStorePrefix] = string(cmData)
 
 				err := cs.cmAccessor.Create(ctx, cm)
@@ -164,7 +164,7 @@ func (cs *configMapSyncer) newJwksStoreConfigMap(name string) *corev1.ConfigMap 
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: cs.deploymentNamespace,
-			Labels:    JwksStoreLabel,
+			Labels:    map[string]string{JwksStoreComponent: cs.storePrefix},
 		},
 		Data: make(map[string]string),
 	}
