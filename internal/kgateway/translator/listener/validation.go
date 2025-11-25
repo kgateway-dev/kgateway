@@ -305,8 +305,8 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings Liste
 	}
 
 	listenerSetListenerExists := slices.ContainsFunc(validListeners, func(l ir.Listener) bool {
-		_, ok := l.Parent.(*gwxv1a1.XListenerSet)
-		return ok
+		_, ok := l.Parent.(*gwv1.Gateway)
+		return !ok
 	})
 
 	if settings.EnableExperimentalGatewayAPIFeatures {
