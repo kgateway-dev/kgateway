@@ -981,7 +981,6 @@ metadata:
   name: mcp-backend
 spec:
   mcp:
-    name: mcp-server
     targets:
     - name: mcp-target
       static:
@@ -1357,7 +1356,8 @@ data:
 
 #### Complete Example with AI Backend
 
-```yaml
+```shell
+kubectl apply -f- <<'EOF'
 # ConfigMap with tracing configuration
 apiVersion: v1
 kind: ConfigMap
@@ -1445,13 +1445,15 @@ spec:
         - name: openai-backend
           group: agentgateway.dev
           kind: AgentgatewayBackend
+EOF
 ```
 
 #### Example with MCP Tool Calling and Trace Verification
 
 Here's a complete example that demonstrates tracing MCP tool calls, which generates rich trace spans for `list_tools` and `call_tool` operations:
 
-```yaml
+```shell
+kubectl apply -f- <<'EOF'
 # Tracing Configuration ConfigMap
 apiVersion: v1
 kind: ConfigMap
@@ -1620,6 +1622,7 @@ spec:
       targetPort: 3001
       appProtocol: kgateway.dev/mcp
   type: ClusterIP
+EOF
 ```
 
 **Testing MCP Tool Calls with Traces:**
@@ -1725,7 +1728,7 @@ EOF
 ##### Inline JWKS (Route-scoped)
 
 ```shell
-kubectl apply -f- <<EOF
+kubectl apply -f- <<'EOF'
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -1765,7 +1768,8 @@ EOF
 
 ##### JWKS with RBAC authorization (Route-scoped)
 
-```yaml
+```shell
+kubectl apply -f- <<'EOF'
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -1802,6 +1806,7 @@ spec:
       - issuer: https://kgateway.dev
         jwks:
           inline: '{"keys":[{"use":"sig","kty":"RSA","kid":"6199783057790440763","n":"0VsRlUTAJuh-y-HHdtYDHZ64dBPh0OukIunXTzdCdlGBRsqdxp6yM8-NyUOd1knC220CqHjivu45EcLWFEfBGtoTGux6Um-qwuLOhtoI_83ipgXE6jl05aLv1O36FjwmBUVJ1beTNIFOa5pceC4Cvv_F-gVdaJwIWsz8TLkWLTIkKPOEWvPGshcCeP--5r-SwymqcebC8ZGOf1J1LMoCCoWj1o_DMcz889A13o_s82ZkS1XmyxmbgOJe2T8LdID3XHsGhEwVuPk93Rqal6g1U6NCeN8rSQy7qsweBstRvEoLCJDuw/rNS5Ah4+LxS/G7edBvlzOO+r3rAFjlmMwl69AgMBAAGjNTAzMA4GA1UdDwEB/wQEAwIFoDATBgNVHSUEDDAKBggrBgEFBQcDATAMBgNVHRMBAf8EAjAAMA0GCSqGSIb3DQEBCwUAA4IBAQAayiqIvfgW22YzEM0tfupq3qLsWsbmYyq5FWcWO1n833G+VBt1LzoTno2QYplxHOVUrPm7rf9aFeN1h68V1ab8xzjUQWrszo6QVmkbFgWafriUneBZE0SArNBiJq33UB3f4Jb3xzVSZQkE4xubmvBosEqLflSE7dbJCtpH18jDLNusAOtZB2ETVBxkI5xKrsiJto6OtoF9y7UA05zQBZkLU9F81vS1LdlAoryvDMa1M86dBzaMVHwbCEerCsJVYIhq+dNkvLAsPeohPpGZBVh7gqABJfxMHXj8R4R1mriPcBRWAuavext4LziugXA+pUuPKgD3EFGLhM+zOzLZcTkx"]}]}'
+EOF
 ```
 #### Rate limit (local + global)
 Configure request limiting with `AgentgatewayPolicy.spec.traffic.rateLimit`. Local limits apply per proxy instance, while global limits use an external rate limit service (provide `backendRef`, `domain`, and `descriptors`). Combine `requests`, `unit`, and `burst` to shape traffic precisely.
@@ -1833,6 +1838,41 @@ spec:
         - entries:
           - name: service
             expression: '"premium-api"'
+EOF
+```
+
+##### Token-based (local + global)
+
+```shell
+kubectl apply -f- <<EOF
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: AgentgatewayPolicy
+metadata:
+  name: token-rate-limit
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: test-route-1
+  traffic:
+    rateLimit:
+      # Local: limit by LLM tokens per minute (both input and output tokens)
+      local:
+      - tokens: 1000
+        unit: Minutes
+        burst: 200
+      # Global: limit by tokens using the external rate limit service
+      global:
+        backendRef:
+          name: ratelimit
+          namespace: kgateway-test-extensions
+          port: 8081
+        domain: "api-gateway"
+        descriptors:
+        - unit: Tokens
+          entries:
+          - name: user
+            expression: "request.headers['x-user-id'] || 'anonymous'"
 EOF
 ```
 
