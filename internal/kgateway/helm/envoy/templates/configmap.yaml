@@ -30,6 +30,41 @@ data:
       cluster: {{ include "kgateway.gateway.fullname" . }}.{{ .Release.Namespace }}
       metadata:
         role: kgateway-kube-gateway-api~{{ $gateway.gatewayNamespace }}~{{ $gateway.gatewayName | default (include "kgateway.gateway.fullname" .) }}
+    {{ if $statsConfig.matcher }}
+    stats_config:
+      stats_matcher:
+        {{ if $statsConfig.matcher.inclusionList }}
+        inclusion_list:
+          patterns:
+          {{ range $statsConfig.matcher.inclusionList }}
+              {{ if .exact }}
+            - exact: {{ .exact }}
+              {{ else if .prefix }}
+            - prefix: {{ .prefix }}
+              {{ else if .suffix }}
+            - suffix: {{ .suffix }}
+              {{ else if .safeRegex }}
+            - safe_regex:
+                regex: {{ .safeRegex }}
+              {{ end }}
+          {{ end }}
+        {{ else if $statsConfig.matcher.exclusionList }}
+        exclusion_list:
+          patterns:
+          {{ range $statsConfig.matcher.exclusionList }}
+              {{ if .exact }}
+            - exact: {{ .exact }}
+              {{ else if .prefix }}
+            - prefix: {{ .prefix }}
+              {{ else if .suffix }}
+            - suffix: {{ .suffix }}
+              {{ else if .safeRegex }}
+            - safe_regex:
+                regex: {{ .safeRegex }}
+              {{ end }}
+          {{ end }}
+        {{ end }}
+    {{ end }}
     static_resources:
       {{- if and $gateway.xds.tls $gateway.xds.tls.enabled }}
       secrets:

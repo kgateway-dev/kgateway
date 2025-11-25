@@ -203,12 +203,40 @@ func GetStatsValues(statsConfig *v1alpha1.StatsConfig) *HelmStatsConfig {
 	if statsConfig == nil {
 		return nil
 	}
-	return &HelmStatsConfig{
+	vals := &HelmStatsConfig{
 		Enabled:            statsConfig.GetEnabled(),
 		RoutePrefixRewrite: statsConfig.GetRoutePrefixRewrite(),
 		EnableStatsRoute:   statsConfig.GetEnableStatsRoute(),
 		StatsPrefixRewrite: statsConfig.GetStatsRoutePrefixRewrite(),
 	}
+
+	if m := statsConfig.GetMatcher(); m != nil {
+		hm := &HelmStatsMatcher{}
+		if incl := m.GetInclusionList(); len(incl) > 0 {
+			hm.InclusionList = make([]HelmStringMatcher, 0, len(incl))
+			for _, sm := range incl {
+				hm.InclusionList = append(hm.InclusionList, HelmStringMatcher{
+					Exact:     sm.Exact,
+					Prefix:    sm.Prefix,
+					Suffix:    sm.Suffix,
+					SafeRegex: sm.SafeRegex,
+				})
+			}
+		} else if excl := m.GetExclusionList(); len(excl) > 0 {
+			hm.ExclusionList = make([]HelmStringMatcher, 0, len(excl))
+			for _, sm := range excl {
+				hm.ExclusionList = append(hm.ExclusionList, HelmStringMatcher{
+					Exact:     sm.Exact,
+					Prefix:    sm.Prefix,
+					Suffix:    sm.Suffix,
+					SafeRegex: sm.SafeRegex,
+				})
+			}
+		}
+		vals.Matcher = hm
+	}
+
+	return vals
 }
 
 // ComponentLogLevelsToString converts the key-value pairs in the map into a string of the

@@ -39,6 +39,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
+
 	// TODO BML tests in this suite fail if this no-op import is not imported first.
 	//
 	// I know, I know, you're reading this, and you're skeptical. I can feel it.
@@ -960,6 +961,156 @@ var _ = Describe("Deployer", func() {
 			Expect(dep.Spec.Template.Spec.Containers[0].SecurityContext).To(BeNil())
 			psc := dep.Spec.Template.Spec.SecurityContext
 			Expect(psc).To(BeNil())
+		})
+
+		It("renders inclusion stats_matcher in Envoy bootstrap when configured", func() {
+			// configure stats matcher with inclusion list
+			gwp.Spec.Kube.Stats = &gw2_v1alpha1.StatsConfig{
+				Enabled:                 ptr.To(true),
+				RoutePrefixRewrite:      ptr.To("/stats/prometheus?usedonly"),
+				EnableStatsRoute:        ptr.To(true),
+				StatsRoutePrefixRewrite: ptr.To("/stats"),
+				Matcher: &gw2_v1alpha1.StatsMatcher{
+					InclusionList: []gw2_v1alpha1.StringMatcher{{
+						Prefix: ptr.To("http."),
+					}},
+				},
+			}
+
+			gw := &gwv1.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "envoy-gateway",
+					Namespace: defaultNamespace,
+				},
+				Spec: gwv1.GatewaySpec{
+					GatewayClassName: wellknown.DefaultGatewayClassName,
+					Infrastructure: &gwv1.GatewayInfrastructure{
+						ParametersRef: &gwv1.LocalParametersReference{
+							Group: gw2_v1alpha1.GroupName,
+							Kind:  gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
+							Name:  gwp.GetName(),
+						},
+					},
+					Listeners: []gwv1.Listener{{
+						Name: "listener-1",
+						Port: 80,
+					}},
+				},
+			}
+			fakeClient := fake.NewClient(GinkgoT(), gwc, gwp)
+			gwParams := deployerinternal.NewGatewayParameters(fakeClient, &deployer.Inputs{
+				CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw),
+				Dev:               false,
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost:    "something.cluster.local",
+					XdsPort:    1234,
+					AgwXdsPort: 5678,
+				},
+				ImageInfo: &deployer.ImageInfo{
+					Registry: "foo",
+					Tag:      "bar",
+				},
+				GatewayClassName:         wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
+				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
+			})
+			d, err := deployerinternal.NewGatewayDeployer(
+				wellknown.DefaultGatewayControllerName,
+				wellknown.DefaultAgwControllerName,
+				wellknown.DefaultAgwClassName,
+				scheme,
+				fakeClient,
+				gwParams,
+			)
+			Expect(err).NotTo(HaveOccurred())
+			fakeClient.RunAndWait(context.Background().Done())
+
+			objsSlice, err := d.GetObjsToDeploy(context.Background(), gw)
+			Expect(err).NotTo(HaveOccurred())
+			objsSlice = d.SetNamespaceAndOwner(gw, objsSlice)
+			objs := clientObjects(objsSlice)
+			bootstrapCfg := objs.getEnvoyConfig(defaultNamespace, "envoy-gateway")
+			Expect(bootstrapCfg.GetStatsConfig()).ToNot(BeNil())
+			matcher := bootstrapCfg.GetStatsConfig().GetStatsMatcher()
+			Expect(matcher).ToNot(BeNil())
+			Expect(matcher.GetInclusionList()).ToNot(BeNil())
+			Expect(len(matcher.GetInclusionList().Patterns)).To(Equal(1))
+			Expect(matcher.GetInclusionList().Patterns[0].GetPrefix()).To(Equal("http."))
+		})
+
+		It("renders exclusion stats_matcher in Envoy bootstrap when configured", func() {
+			// configure stats matcher with exclusion list
+			gwp.Spec.Kube.Stats = &gw2_v1alpha1.StatsConfig{
+				Enabled:                 ptr.To(true),
+				RoutePrefixRewrite:      ptr.To("/stats/prometheus?usedonly"),
+				EnableStatsRoute:        ptr.To(true),
+				StatsRoutePrefixRewrite: ptr.To("/stats"),
+				Matcher: &gw2_v1alpha1.StatsMatcher{
+					ExclusionList: []gw2_v1alpha1.StringMatcher{{
+						Suffix: ptr.To(".pending"),
+					}},
+				},
+			}
+
+			gw := &gwv1.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "envoy-gateway",
+					Namespace: defaultNamespace,
+				},
+				Spec: gwv1.GatewaySpec{
+					GatewayClassName: wellknown.DefaultGatewayClassName,
+					Infrastructure: &gwv1.GatewayInfrastructure{
+						ParametersRef: &gwv1.LocalParametersReference{
+							Group: gw2_v1alpha1.GroupName,
+							Kind:  gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
+							Name:  gwp.GetName(),
+						},
+					},
+					Listeners: []gwv1.Listener{{
+						Name: "listener-1",
+						Port: 80,
+					}},
+				},
+			}
+			fakeClient := fake.NewClient(GinkgoT(), gwc, gwp)
+			gwParams := deployerinternal.NewGatewayParameters(fakeClient, &deployer.Inputs{
+				CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw),
+				Dev:               false,
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost:    "something.cluster.local",
+					XdsPort:    1234,
+					AgwXdsPort: 5678,
+				},
+				ImageInfo: &deployer.ImageInfo{
+					Registry: "foo",
+					Tag:      "bar",
+				},
+				GatewayClassName:         wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
+				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
+			})
+			d, err := deployerinternal.NewGatewayDeployer(
+				wellknown.DefaultGatewayControllerName,
+				wellknown.DefaultAgwControllerName,
+				wellknown.DefaultAgwClassName,
+				scheme,
+				fakeClient,
+				gwParams,
+			)
+			Expect(err).NotTo(HaveOccurred())
+			fakeClient.RunAndWait(context.Background().Done())
+
+			objsSlice, err := d.GetObjsToDeploy(context.Background(), gw)
+			Expect(err).NotTo(HaveOccurred())
+			objsSlice = d.SetNamespaceAndOwner(gw, objsSlice)
+			objs := clientObjects(objsSlice)
+			bootstrapCfg := objs.getEnvoyConfig(defaultNamespace, "envoy-gateway")
+			Expect(bootstrapCfg.GetStatsConfig()).ToNot(BeNil())
+			matcher := bootstrapCfg.GetStatsConfig().GetStatsMatcher()
+			Expect(matcher).ToNot(BeNil())
+			Expect(matcher.GetExclusionList()).ToNot(BeNil())
+			Expect(len(matcher.GetExclusionList().Patterns)).To(Equal(1))
+			Expect(matcher.GetExclusionList().Patterns[0].GetSuffix()).To(Equal(".pending"))
 		})
 	})
 

@@ -600,6 +600,13 @@ type StatsConfig struct {
 	//
 	// +optional
 	StatsRoutePrefixRewrite *string `json:"statsRoutePrefixRewrite,omitempty"`
+
+	// Matcher configures inclusion or exclusion lists for Envoy stats.
+	// Only one of inclusionList or exclusionList may be set.
+	// If unset, Envoy's default stats emission behavior applies.
+	//
+	// +optional
+	Matcher *StatsMatcher `json:"matcher,omitempty"`
 }
 
 func (in *StatsConfig) GetEnabled() *bool {
@@ -628,6 +635,40 @@ func (in *StatsConfig) GetStatsRoutePrefixRewrite() *string {
 		return nil
 	}
 	return in.StatsRoutePrefixRewrite
+}
+
+func (in *StatsConfig) GetMatcher() *StatsMatcher {
+	if in == nil {
+		return nil
+	}
+	return in.Matcher
+}
+
+// StatsMatcher specifies mutually exclusive inclusion or exclusion lists for Envoy stats.
+// See Envoy's envoy.config.metrics.v3.StatsMatcher for details.
+// +kubebuilder:validation:ExactlyOneOf=inclusionList;exclusionList
+type StatsMatcher struct {
+	// inclusionList specifies which stats to include, using string matchers.
+	// +optional
+	InclusionList []StringMatcher `json:"inclusionList,omitempty"`
+
+	// exclusionList specifies which stats to exclude, using string matchers.
+	// +optional
+	ExclusionList []StringMatcher `json:"exclusionList,omitempty"`
+}
+
+func (in *StatsMatcher) GetInclusionList() []StringMatcher {
+	if in == nil {
+		return nil
+	}
+	return in.InclusionList
+}
+
+func (in *StatsMatcher) GetExclusionList() []StringMatcher {
+	if in == nil {
+		return nil
+	}
+	return in.ExclusionList
 }
 
 // Agentgateway configures the agentgateway dataplane integration to be enabled if the `agentgateway` GatewayClass is used.
