@@ -385,6 +385,11 @@ func buildCompositeJwtFilter(jwtConfig *envoyjwtauthnv3.JwtAuthentication) *envo
 	)
 }
 
+// buildCompositeFilter creates an Envoy ExtensionWithMatcher that wraps a filter with conditional execution
+// based on dynamic metadata. The composite filter checks the metadataNamespace for a disable flag, and only
+// executes the wrapped filter (filterTypedConfig) when it is not disabled. This enables route-level or
+// HTTPRoute-level disabling of filters (e.g., JWT authentication, ext_proc) that are configured at the
+// gateway level. Returns nil if filterTypedConfig is nil.
 func buildCompositeFilter(
 	compositeName string,
 	metadataNamespace string,
