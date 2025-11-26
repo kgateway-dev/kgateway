@@ -16,13 +16,17 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/envoyutils/admincli"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
@@ -75,6 +79,10 @@ func (s *testingSuite) SetupSuite() {
 			testdefaults.CurlPodManifest,
 			setupManifest,
 			outlierDetectionManifest,
+		},
+		"TestBackendConfigPolicyClearStaleStatus": {
+			testdefaults.CurlPodManifest,
+			setupManifest,
 		},
 	}
 }
@@ -335,4 +343,101 @@ func (s *testingSuite) TestBackendConfigPolicyOutlierDetection() {
 			// If this fails, be aware of `lb_healthy_panic`.
 		}).WithTimeout(20 * time.Second).WithPolling(time.Second).Should(gomega.Succeed())
 	})
+}
+
+const (
+	kgatewayControllerName = "kgateway.dev/kgateway"
+	otherControllerName    = "other-controller.example.com/controller"
+)
+
+// TestBackendConfigPolicyClearStaleStatus verifies that stale status is cleared when targetRef becomes invalid
+func (s *testingSuite) TestBackendConfigPolicyClearStaleStatus() {
+	// Test applies setup.yaml via BeforeTest which includes "example-policy" targeting Service "example-svc"
+	// Add fake ancestor status from another controller
+	s.addAncestorStatus("example-policy", "default", otherControllerName)
+
+	// Verify both kgateway and other controller statuses exist
+	s.assertAncestorStatuses("example-svc", map[string]bool{
+		kgatewayControllerName: true,
+		otherControllerName:    true,
+	})
+
+	// Apply policy with missing service target
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(
+		s.ctx,
+		missingTargetManifest,
+	)
+	s.Require().NoError(err)
+
+	// Verify kgateway status cleared, other remains
+	s.assertAncestorStatuses("example-svc", map[string]bool{
+		kgatewayControllerName: false,
+		otherControllerName:    true,
+	})
+	// AfterTest() handles cleanup automatically
+}
+
+func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, controllerName string) {
+	currentTimeout, pollingInterval := helpers.GetTimeouts()
+	s.testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+		policy := &v1alpha1.BackendConfigPolicy{}
+		err := s.testInstallation.ClusterContext.Client.Get(
+			s.ctx,
+			types.NamespacedName{Name: policyName, Namespace: policyNamespace},
+			policy,
+		)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+
+		// Add fake ancestor status
+		fakeStatus := gwv1.PolicyAncestorStatus{
+			AncestorRef: gwv1.ParentReference{
+				Group: func() *gwv1.Group { g := gwv1.Group(""); return &g }(),
+				Kind:  func() *gwv1.Kind { k := gwv1.Kind("Service"); return &k }(),
+				Name:  "example-svc",
+			},
+			ControllerName: gwv1.GatewayController(controllerName),
+			Conditions: []metav1.Condition{
+				{
+					Type:               string(v1alpha1.PolicyConditionAccepted),
+					Status:             metav1.ConditionTrue,
+					Reason:             string(v1alpha1.PolicyReasonValid),
+					Message:            "Accepted by fake controller",
+					LastTransitionTime: metav1.Now(),
+				},
+			},
+		}
+
+		policy.Status.Ancestors = append(policy.Status.Ancestors, fakeStatus)
+		err = s.testInstallation.ClusterContext.Client.Status().Update(s.ctx, policy)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+}
+
+func (s *testingSuite) assertAncestorStatuses(ancestorName string, expectedControllers map[string]bool) {
+	currentTimeout, pollingInterval := helpers.GetTimeouts()
+	s.testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+		policy := &v1alpha1.BackendConfigPolicy{}
+		err := s.testInstallation.ClusterContext.Client.Get(
+			s.ctx,
+			types.NamespacedName{Name: "example-policy", Namespace: "default"},
+			policy,
+		)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+
+		foundControllers := make(map[string]bool)
+		for _, ancestor := range policy.Status.Ancestors {
+			if string(ancestor.AncestorRef.Name) == ancestorName {
+				foundControllers[string(ancestor.ControllerName)] = true
+			}
+		}
+
+		for controller, shouldExist := range expectedControllers {
+			exists := foundControllers[controller]
+			if shouldExist {
+				g.Expect(exists).To(gomega.BeTrue(), "Expected controller %s to exist in status", controller)
+			} else {
+				g.Expect(exists).To(gomega.BeFalse(), "Expected controller %s to not exist in status", controller)
+			}
+		}
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }

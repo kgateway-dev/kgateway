@@ -118,7 +118,7 @@ func deepMergeStatsConfig(dst *v1alpha1.StatsConfig, src *v1alpha1.StatsConfig) 
 	dst.RoutePrefixRewrite = MergeComparable(dst.GetRoutePrefixRewrite(), src.GetRoutePrefixRewrite())
 	dst.EnableStatsRoute = MergeComparable(dst.GetEnableStatsRoute(), src.GetEnableStatsRoute())
 	dst.StatsRoutePrefixRewrite = MergeComparable(dst.GetStatsRoutePrefixRewrite(), src.GetStatsRoutePrefixRewrite())
-	dst.Matcher = MergePointers(dst.GetMatcher(), src.GetMatcher())
+	dst.Matcher = MergeComparable(dst.GetMatcher(), src.GetMatcher())
 
 	return dst
 }

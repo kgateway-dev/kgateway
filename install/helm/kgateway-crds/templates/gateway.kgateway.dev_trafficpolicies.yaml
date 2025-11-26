@@ -892,6 +892,11 @@ spec:
                   JWT specifies the JWT authentication configuration for the policy.
                   This defines the JWT providers and their configurations.
                 properties:
+                  disable:
+                    description: |-
+                      Disable all JWT filters.
+                      Can be used to disable JWT policies applied at a higher level in the config hierarchy.
+                    type: object
                   extensionRef:
                     description: ExtensionRef references a GatewayExtension that provides
                       the jwt providers
@@ -912,9 +917,12 @@ spec:
                     required:
                     - name
                     type: object
-                required:
-                - extensionRef
                 type: object
+                x-kubernetes-validations:
+                - message: exactly one of the fields in [extensionRef disable] must
+                    be set
+                  rule: '[has(self.extensionRef),has(self.disable)].filter(x,x==true).size()
+                    == 1'
               rateLimit:
                 description: |-
                   RateLimit specifies the rate limiting configuration for the policy.
@@ -1246,13 +1254,10 @@ spec:
                 minItems: 1
                 type: array
                 x-kubernetes-validations:
-                - message: targetRefs may only reference Gateway, HTTPRoute, or XListenerSet
+                - message: targetRefs may only reference Gateway, HTTPRoute, or ListenerSet
                     resources
                   rule: self.all(r, (r.kind == 'Gateway' || r.kind == 'HTTPRoute'
-                    || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io'))
-                    && (!has(r.group) || r.group == 'gateway.networking.k8s.io' ||
-                    r.group == 'gateway.networking.x-k8s.io' || r.group == 'gateway.kgateway.dev'
-                    ))
+                    || r.kind.endsWith('ListenerSet')))
               targetSelectors:
                 description: TargetSelectors specifies the target selectors to select
                   resources to attach the policy to.
@@ -1299,11 +1304,9 @@ spec:
                 type: array
                 x-kubernetes-validations:
                 - message: targetSelectors may only reference Gateway, HTTPRoute,
-                    or XListenerSet resources
+                    or ListenerSet resources
                   rule: self.all(r, (r.kind == 'Gateway' || r.kind == 'HTTPRoute'
-                    || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io'))
-                    && (!has(r.group) || r.group == 'gateway.networking.k8s.io' ||
-                    r.group == 'gateway.networking.x-k8s.io'))
+                    || r.kind.endsWith('ListenerSet')))
               timeouts:
                 description: |-
                   Timeouts defines the timeouts for requests
