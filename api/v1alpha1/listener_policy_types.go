@@ -18,8 +18,7 @@ import (
 // +kubebuilder:subresource:status
 // +kubebuilder:metadata:labels="gateway.networking.k8s.io/policy=Direct"
 // ListenerPolicy is used for configuring Envoy listener-level settings that apply to all protocol types (HTTP, HTTPS, TCP, TLS).
-// This includes features such as PROXY protocol support.
-// These policies can targetRef Gateway objects.
+// These policies can only target `Gateway` objects.
 type ListenerPolicy struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
@@ -40,7 +39,7 @@ type ListenerPolicyList struct {
 // ListenerPolicySpec defines the desired state of a listener policy.
 type ListenerPolicySpec struct {
 	// TargetRefs specifies the target resources by reference to attach the policy to.
-	// Supports Gateway and XListenerSet resources. Use sectionName to target specific listeners by port.
+	// Only supports `Gateway` resources
 	// +optional
 	//
 	// +kubebuilder:validation:MinItems=1
@@ -48,7 +47,7 @@ type ListenerPolicySpec struct {
 	// +kubebuilder:validation:XValidation:rule="self.all(r, r.kind == 'Gateway' && (!has(r.group) || r.group == 'gateway.networking.k8s.io'))",message="targetRefs may only reference Gateway resource"
 	TargetRefs []LocalPolicyTargetReference `json:"targetRefs,omitempty"`
 
-	// TargetSelectors specifies the target selectors to select resources to attach the policy to.
+	// TargetSelectors specifies the target selectors to select `Gateway` resources to attach the policy to.
 	// +optional
 	// +kubebuilder:validation:XValidation:rule="self.all(r, r.kind == 'Gateway' && (!has(r.group) || r.group == 'gateway.networking.k8s.io'))",message="targetSelectors may only reference Gateway resource"
 	TargetSelectors []LocalPolicyTargetSelector `json:"targetSelectors,omitempty"`

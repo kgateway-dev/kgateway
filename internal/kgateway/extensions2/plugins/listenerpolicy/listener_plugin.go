@@ -47,6 +47,10 @@ func (d *listenerPolicy) Equals(in any) bool {
 		return false
 	}
 
+	if d.ct != d2.ct {
+		return false
+	}
+
 	return proto.Equal(d.proxyProtocol, d2.proxyProtocol)
 }
 
@@ -182,7 +186,7 @@ func (p *listenerPolicyPluginGwPass) ApplyListenerPlugin(
 	logger.Debug("applying to listener", "listener", out.Name, "policyType", fmt.Sprintf("%T", pCtx.Policy))
 	pol, ok := pCtx.Policy.(*listenerPolicy)
 	if !ok || pol == nil {
-		logger.Debug("policy is not listenerPolicy type or is nil", "ok", ok, "pol", pol)
+		logger.Warn("policy is not listenerPolicy type or is nil", "ok", ok, "pol", pol)
 		return
 	}
 

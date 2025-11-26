@@ -7,16 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	kubeclient "istio.io/istio/pkg/kube"
-	"istio.io/istio/pkg/kube/kclient"
-	"istio.io/istio/pkg/kube/krt"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	translatortest "github.com/kgateway-dev/kgateway/v2/test/translator"
 )
@@ -2089,50 +2082,4 @@ func TestDiscoveryNamespaceSelector(t *testing.T) {
   }
 ]`, "base.yaml", "base_select_infra.yaml")
 	})
-}
-
-func TestSomethin(t *testing.T) {
-
-	fakeClient := fake.NewClient(t, &v1alpha1.ListenerPolicy{
-		TypeMeta: v1.TypeMeta{
-			Kind:       "ListenerPolicy",
-			APIVersion: "gateway.kgateway.dev/v1alpha1",
-		},
-		ObjectMeta: v1.ObjectMeta{
-			Name:      "hi",
-			Namespace: "bye",
-		},
-		Spec: v1alpha1.ListenerPolicySpec{},
-	}, &v1alpha1.HTTPListenerPolicy{
-		TypeMeta: v1.TypeMeta{
-			Kind:       "HTTPListenerPolicy",
-			APIVersion: "gateway.kgateway.dev/v1alpha1",
-		},
-		ObjectMeta: v1.ObjectMeta{
-			Name:      "hi",
-			Namespace: "bye",
-		},
-		Spec: v1alpha1.HTTPListenerPolicySpec{},
-	})
-	AAcli := kclient.NewFilteredDelayed[*v1alpha1.ListenerPolicy](
-		fakeClient,
-		wellknown.ListenerPolicyGVR,
-		kclient.Filter{ObjectFilter: fakeClient.ObjectFilter()},
-	)
-	AAcol := krt.WrapClient(AAcli)
-	BBcli := kclient.NewFilteredDelayed[*v1alpha1.HTTPListenerPolicy](
-		fakeClient,
-		wellknown.ListenerPolicyGVR,
-		kclient.Filter{ObjectFilter: fakeClient.ObjectFilter()},
-	)
-	BBcol := krt.WrapClient(BBcli)
-	fakeClient.RunAndWait(t.Context().Done())
-
-	kubeclient.WaitForCacheSync("AAcol", t.Context().Done(), AAcol.HasSynced)
-	kubeclient.WaitForCacheSync("BBcol", t.Context().Done(), BBcol.HasSynced)
-
-	l := AAcol.List()
-	t.Log("list", l)
-	l2 := BBcol.List()
-	t.Log("list", l2)
 }

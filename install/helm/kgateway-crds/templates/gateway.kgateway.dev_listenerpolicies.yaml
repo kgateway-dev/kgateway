@@ -34,8 +34,7 @@ spec:
       openAPIV3Schema:
         description: |-
           ListenerPolicy is used for configuring Envoy listener-level settings that apply to all protocol types (HTTP, HTTPS, TCP, TLS).
-          This includes features such as PROXY protocol support.
-          These policies can targetRef Gateway objects.
+          These policies can only target `Gateway` objects.
         properties:
           apiVersion:
             description: |-
@@ -68,7 +67,7 @@ spec:
               targetRefs:
                 description: |-
                   TargetRefs specifies the target resources by reference to attach the policy to.
-                  Supports Gateway and XListenerSet resources. Use sectionName to target specific listeners by port.
+                  Only supports `Gateway` resources
                 items:
                   description: |-
                     Select the object to attach the policy by Group, Kind, and Name.
@@ -109,7 +108,7 @@ spec:
                     == 'gateway.networking.k8s.io'))
               targetSelectors:
                 description: TargetSelectors specifies the target selectors to select
-                  resources to attach the policy to.
+                  `Gateway` resources to attach the policy to.
                 items:
                   description: |-
                     LocalPolicyTargetSelector selects the object to attach the policy by Group, Kind, and MatchLabels.
