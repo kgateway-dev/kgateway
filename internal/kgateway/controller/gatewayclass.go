@@ -158,27 +158,11 @@ func (r *gatewayClassReconciler) reconcileGatewayClasses() error {
 }
 
 func (r *gatewayClassReconciler) reconcileGatewayClass(name string, info *deployer.GatewayClassInfo) error {
-	existing := r.gwClassClient.Get(name, metav1.NamespaceNone)
-
 	// Build desired GatewayClass with only fields we want to manage via SSA
 	desired := r.buildDesiredGatewayClass(name, info)
 
-	// If exists, check if update needed
-	if existing != nil {
-		if !parametersRefEqual(info.ParametersRef, existing.Spec.ParametersRef) {
-			// Update needed - use SSA
-			logger.Info("updating GatewayClass", "name", name)
-			if err := r.applyGatewayClass(desired); err != nil {
-				return fmt.Errorf("error applying GatewayClass %s: %w", name, err)
-			}
-			return nil
-		}
-		// No update needed
-		return nil
-	}
-
-	// Create using SSA
-	logger.Info("creating GatewayClass", "name", name)
+	// Always apply using SSA - SSA is idempotent and will only update if needed
+	logger.Debug("applying GatewayClass via SSA", "name", name)
 	if err := r.applyGatewayClass(desired); err != nil {
 		return fmt.Errorf("error applying GatewayClass %s: %w", name, err)
 	}
@@ -227,19 +211,6 @@ func (r *gatewayClassReconciler) applyGatewayClass(gwc *gwv1.GatewayClass) error
 		FieldManager: "kgateway",
 	})
 	return err
-}
-
-func parametersRefEqual(desired, current *gwv1.ParametersReference) bool {
-	if desired == nil && current == nil {
-		return true
-	}
-	if desired == nil || current == nil {
-		return false
-	}
-	return desired.Name == current.Name &&
-		desired.Group == current.Group &&
-		desired.Kind == current.Kind &&
-		ptr.Equal(desired.Namespace, current.Namespace)
 }
 
 func isOurGatewayClass(gwc *gwv1.GatewayClass, ourControllers sets.Set[string]) bool {
