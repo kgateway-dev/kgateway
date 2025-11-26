@@ -163,7 +163,7 @@ func (r *gatewayClassReconciler) reconcileGatewayClass(name string, info *deploy
 
 	// Always apply using SSA - SSA is idempotent and will only update if needed
 	logger.Debug("applying GatewayClass via SSA", "name", name)
-	if err := r.applyGatewayClass(desired); err != nil {
+	if err := r.applyGatewayClass(desired, r.getControllerName(name)); err != nil {
 		return fmt.Errorf("error applying GatewayClass %s: %w", name, err)
 	}
 	return nil
@@ -191,7 +191,7 @@ func (r *gatewayClassReconciler) buildDesiredGatewayClass(name string, info *dep
 	return gwc
 }
 
-func (r *gatewayClassReconciler) applyGatewayClass(gwc *gwv1.GatewayClass) error {
+func (r *gatewayClassReconciler) applyGatewayClass(gwc *gwv1.GatewayClass, controllerName string) error {
 	gvr := gvr.GatewayClass_v1
 	c := r.client.Dynamic().Resource(gvr).Namespace(metav1.NamespaceNone)
 
@@ -208,7 +208,7 @@ func (r *gatewayClassReconciler) applyGatewayClass(gwc *gwv1.GatewayClass) error
 
 	_, err = c.Patch(context.Background(), gwc.Name, types.ApplyPatchType, js, metav1.PatchOptions{
 		Force:        ptr.To(true),
-		FieldManager: "kgateway",
+		FieldManager: controllerName,
 	})
 	return err
 }
