@@ -58,7 +58,7 @@ spec:
       query: "api-key-query"
       cookie: "api-key-cookie"
     - header: "api-key-other"
-    hideAPIKey: false
+    forwardCredential: true
     secretRef:
       name: api-keys
 ---

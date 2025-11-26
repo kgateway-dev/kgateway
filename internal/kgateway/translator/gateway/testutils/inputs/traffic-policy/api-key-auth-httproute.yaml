@@ -62,7 +62,6 @@ spec:
   apiKeyAuthentication:
     keySources:
     - header: "x-api-key"
-    hideAPIKey: true
     secretRef:
       name: api-keys
 ---

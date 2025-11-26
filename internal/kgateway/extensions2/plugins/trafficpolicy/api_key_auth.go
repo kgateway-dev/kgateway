@@ -165,10 +165,10 @@ func constructAPIKeyAuth(
 		}
 	}
 
-	// Determine hide credentials (default to false)
-	hideCredentials := false
-	if ak.HideAPIKey != nil {
-		hideCredentials = *ak.HideAPIKey
+	// Determine hide credentials (default to true since ForwardCredential defaults to false)
+	hideCredentials := true
+	if ak.ForwardCredential != nil {
+		hideCredentials = !(*ak.ForwardCredential)
 	}
 
 	// Build Envoy API key auth per-route configuration

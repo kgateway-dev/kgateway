@@ -64,7 +64,7 @@ spec:
   apiKeyAuthentication:
     keySources:
     - header: "x-api-key"
-    hideAPIKey: true
+    forwardCredential: false
     clientIdHeader: "x-authenticated-client"
     secretRef:
       name: api-keys

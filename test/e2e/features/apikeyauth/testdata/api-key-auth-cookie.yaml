@@ -56,7 +56,7 @@ spec:
   apiKeyAuthentication:
     keySources:
     - cookie: api-key
-    hideAPIKey: false
+    forwardCredential: true
     secretRef:
       name: api-keys-cookie
 

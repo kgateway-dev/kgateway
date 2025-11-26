@@ -64,10 +64,12 @@ spec:
                       If not specified, the client identifier will not be forwarded in any header.
                       Example: "x-client-id"
                     type: string
-                  hideAPIKey:
+                  forwardCredential:
                     default: false
                     description: |-
-                      hideAPIKey removes the API key from the request before forwarding upstream.
+                      forwardCredential controls whether the API key is included in the request sent to the upstream.
+                      If false (default), the API key is removed from the request before sending to upstream.
+                      If true, the API key is included in the request sent to upstream.
                       This applies to all configured key sources (header, query parameter, or cookie).
                     type: boolean
                   keySources:

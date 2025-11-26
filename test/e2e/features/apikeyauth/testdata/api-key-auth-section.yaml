@@ -58,7 +58,7 @@ spec:
   apiKeyAuthentication:
     keySources:
     - header: "api-key"
-    hideAPIKey: false
+    forwardCredential: true
     secretRef:
       name: api-keys
 

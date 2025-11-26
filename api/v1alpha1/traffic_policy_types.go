@@ -427,11 +427,13 @@ type APIKeyAuthentication struct {
 	// +optional
 	KeySources []APIKeySource `json:"keySources,omitempty"`
 
-	// hideAPIKey removes the API key from the request before forwarding upstream.
+	// forwardCredential controls whether the API key is included in the request sent to the upstream.
+	// If false (default), the API key is removed from the request before sending to upstream.
+	// If true, the API key is included in the request sent to upstream.
 	// This applies to all configured key sources (header, query parameter, or cookie).
 	// +kubebuilder:default=false
 	// +optional
-	HideAPIKey *bool `json:"hideAPIKey,omitempty"`
+	ForwardCredential *bool `json:"forwardCredential,omitempty"`
 
 	// clientIdHeader specifies the header name to forward the authenticated client identifier.
 	// If not specified, the client identifier will not be forwarded in any header.
@@ -475,7 +477,14 @@ type APIKeyAuthentication struct {
 	//   client2: "k-456"
 	//
 	// +optional
-	SecretSelector *SecretSelector `json:"secretSelector,omitempty"`
+	SecretSelector *LabelSelector `json:"secretSelector,omitempty"`
+}
+
+// LabelSelector selects resources using label selectors.
+type LabelSelector struct {
+	// Label selector to select the target resource.
+	// +required
+	MatchLabels map[string]string `json:"matchLabels"`
 }
 
 // HeaderModifiers can be used to define the policy to modify request and response headers.
