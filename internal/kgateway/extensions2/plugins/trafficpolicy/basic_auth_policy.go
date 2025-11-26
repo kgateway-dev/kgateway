@@ -212,7 +212,6 @@ func fetchHtpasswdFromSecret(
 // Returns a slice of valid users, a slice of invalid usernames, and an error if validation fails.
 // Envoy only supports {SHA} hash format for basic auth.
 func validateAndFilterSHAUsers(htpasswdData string) (validUsers []string, invalidUsernames []string) {
-
 	lines := strings.Split(htpasswdData, "\n")
 	validUsers = make([]string, 0, len(lines))
 	validUsernames := sets.New[string]()
