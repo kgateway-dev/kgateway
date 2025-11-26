@@ -60,6 +60,7 @@ func (e *BackendPortNotAllowedError) Error() string {
 	return fmt.Sprintf("BackendRef to \"%s\" includes a port. Do not specify a port when referencing a Backend resource, as it defines its own port configuration", e.BackendName)
 }
 
+// ListenerCollection defines an interface that returns the listeners belonging to the implementing struct
 type ListenerCollection interface {
 	GetListeners() []gwv1.Listener
 }
@@ -387,7 +388,7 @@ type GatewayIndexConfig struct {
 	byParentRefIndex                      krt.Index[TargetRefIndexKey, *gwxv1a1.XListenerSet]
 }
 
-func processConfig(config *GatewayIndexConfig) {
+func processGatewayIndexConfig(config *GatewayIndexConfig) {
 	config.byParentRefIndex = krtpkg.UnnamedIndex(config.ListenerSets, func(in *gwxv1a1.XListenerSet) []TargetRefIndexKey {
 		pRef := in.Spec.ParentRef
 		ns := strOr(pRef.Namespace, "")
@@ -413,7 +414,7 @@ func processConfig(config *GatewayIndexConfig) {
 }
 
 func NewGatewayIndex(config GatewayIndexConfig) *GatewayIndex {
-	processConfig(&config)
+	processGatewayIndexConfig(&config)
 
 	h := &GatewayIndex{}
 
