@@ -22,12 +22,15 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	kgwellknown "github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	pluginutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 var (
@@ -73,8 +76,19 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 	col := krt.WrapClient(cli, commoncol.KrtOpts.ToOptions("BackendTLSPolicy")...)
 
 	translate := buildTranslateFunc(commoncol.ConfigMaps)
-	tlsPolicyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *gwv1.BackendTLSPolicy) *ir.PolicyWrapper {
+
+	policyStatusMarker, tlsPolicyCol := krt.NewStatusCollection(col, func(krtctx krt.HandlerContext, i *gwv1.BackendTLSPolicy) (*krtcollections.StatusMarker, *ir.PolicyWrapper) {
 		tlsPolicyIR, err := translate(krtctx, i)
+
+		// Create status marker if existing status has kgateway controller
+		var statusMarker *krtcollections.StatusMarker
+		for _, ancestor := range i.Status.Ancestors {
+			if string(ancestor.ControllerName) == kgwellknown.DefaultGatewayControllerName {
+				statusMarker = &krtcollections.StatusMarker{}
+				break
+			}
+		}
+
 		pol := &ir.PolicyWrapper{
 			ObjectSource: ir.ObjectSource{
 				Group:     backendTlsPolicyGroupKind.Group,
@@ -89,17 +103,38 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 		if err != nil {
 			pol.Errors = []error{err}
 		}
-		return pol
-	}, commoncol.KrtOpts.ToOptions("BackendTLSPolicyIRs")...)
+		return statusMarker, pol
+	})
+
+	// processMarkers for policies that have existing status but no current report
+	processMarkers := func(kctx krt.HandlerContext, reportMap *reports.ReportMap) {
+		objStatus := krt.Fetch(kctx, policyStatusMarker)
+		for _, status := range objStatus {
+			policyKey := reporter.PolicyKey{
+				Group:     backendTlsPolicyGroupKind.Group,
+				Kind:      backendTlsPolicyGroupKind.Kind,
+				Namespace: status.Obj.GetNamespace(),
+				Name:      status.Obj.GetName(),
+			}
+
+			// Add empty status to clear stale status for policies with no valid targets
+			if reportMap.Policies[policyKey] == nil {
+				rp := reports.NewReporter(reportMap)
+				// create empty policy report entry with no ancestor refs
+				rp.Policy(policyKey, 0)
+			}
+		}
+	}
 
 	return sdk.Plugin{
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			backendTlsPolicyGroupKind.GroupKind(): {
-				Name:              "BackendTLSPolicy",
-				Policies:          tlsPolicyCol,
-				ProcessBackend:    processBackend,
-				GetPolicyStatus:   getPolicyStatusFn(cli),
-				PatchPolicyStatus: patchPolicyStatusFn(cli),
+				Name:                            "BackendTLSPolicy",
+				Policies:                        tlsPolicyCol,
+				ProcessPolicyStaleStatusMarkers: processMarkers,
+				ProcessBackend:                  processBackend,
+				GetPolicyStatus:                 getPolicyStatusFn(cli),
+				PatchPolicyStatus:               patchPolicyStatusFn(cli),
 			},
 		},
 	}

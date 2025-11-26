@@ -892,6 +892,11 @@ spec:
                   JWT specifies the JWT authentication configuration for the policy.
                   This defines the JWT providers and their configurations.
                 properties:
+                  disable:
+                    description: |-
+                      Disable all JWT filters.
+                      Can be used to disable JWT policies applied at a higher level in the config hierarchy.
+                    type: object
                   extensionRef:
                     description: ExtensionRef references a GatewayExtension that provides
                       the jwt providers
@@ -912,9 +917,12 @@ spec:
                     required:
                     - name
                     type: object
-                required:
-                - extensionRef
                 type: object
+                x-kubernetes-validations:
+                - message: exactly one of the fields in [extensionRef disable] must
+                    be set
+                  rule: '[has(self.extensionRef),has(self.disable)].filter(x,x==true).size()
+                    == 1'
               rateLimit:
                 description: |-
                   RateLimit specifies the rate limiting configuration for the policy.

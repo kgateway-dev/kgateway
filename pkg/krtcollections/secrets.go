@@ -34,8 +34,9 @@ func (s *SecretIndex) HasSynced() bool {
 	return true
 }
 
-// TODO: comment seems out of date; method is already public and does refgrant logic
-// if we want to make this function public, make it do ref grants
+// GetSecret retrieves a secret from the index, validating reference grants to ensure
+// the source object is allowed to reference the target secret. Returns an error if
+// the secret kind is unknown, reference grants are missing, or the secret is not found.
 func (s *SecretIndex) GetSecret(kctx krt.HandlerContext, from From, secretRef gwv1.SecretObjectReference) (*ir.Secret, error) {
 	secretKind := "Secret"
 	secretGroup := ""

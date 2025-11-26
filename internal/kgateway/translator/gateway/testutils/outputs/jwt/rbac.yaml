@@ -6,16 +6,7 @@ Clusters:
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
   metadata: {}
-  name: kube_default_example-svc_80
-  type: EDS
-- connectTimeout: 5s
-  edsClusterConfig:
-    edsConfig:
-      ads: {}
-      resourceApiVersion: V3
-  ignoreHealthOnHostRemoval: true
-  metadata: {}
-  name: kube_default_remote-jwks_8080
+  name: kube_default_httpbin_8000
   type: EDS
 - connectTimeout: 5s
   metadata: {}
@@ -25,7 +16,7 @@ Listeners:
     socketAddress:
       address: '::'
       ipv4Compat: true
-      portValue: 80
+      portValue: 8080
   filterChains:
   - filters:
     - name: envoy.filters.network.http_connection_manager
@@ -41,7 +32,7 @@ Listeners:
               value:
                 disable: true
         - disabled: true
-          name: jwt/default/jwt-ext-2
+          name: jwt/default/basic-jwt-provider
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.common.matching.v3.ExtensionWithMatcher
             extensionConfig:
@@ -61,36 +52,20 @@ Listeners:
                           typedConfig:
                             '@type': type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
                             providers:
-                              jwt-ext-2_default_my-example2:
+                              basic-jwt-provider_default_my-example:
                                 claimToHeaders:
                                 - claimName: org
                                   headerName: x-org
-                                - claimName: bar
-                                  headerName: x-bar
+                                - claimName: email
+                                  headerName: x-email
                                 clearRouteCache: true
-                                issuer: https://dev2.example.com
-                                payloadInMetadata: payload
-                                remoteJwks:
-                                  cacheDuration: 60s
-                                  httpUri:
-                                    cluster: kube_default_remote-jwks_8080
-                                    timeout: 5s
-                                    uri: https://dev2.example.com/jwks
-                              jwt-ext-2_default_my-example3:
-                                claimToHeaders:
-                                - claimName: foo
-                                  headerName: x-foo
-                                clearRouteCache: true
-                                issuer: https://dev3.example.com
+                                issuer: https://dev.example.com
                                 localJwks:
                                   inlineString: '{"keys":[{"use":"sig","kty":"RSA","alg":"RS256","n":"ruK9KacQjDePRyfG7oPIaqAIyCeOCBIGB2nBbDLGp1Szdm7rsWcrzGf7Avpa_ijLV9huoNvpdflld4B-SaT7m3EDDMDUyA4LayJC5JBI10Qfu3Qn8BEpcdN2uRiycXOzgsoIXneXp9hENlS5Vsr3ur5BaBCc-BZZRRaXDTLy6KyD1Pyd6XRsxyZXt_SYOIww0NSt5u0CTyZUGJhQungJpI8Hhrzdf87mLZGZd16dOGObE5LqFwk2prN3D0-owLsA25WJOPZXizxpTB4tPvJuYGATajDpzrHf-WXgOgvwyxaHJSN_fE-eFuRT3ooDaAuytsfYotsn4z_ajdEPSwXYCw","e":"AQAB"}]}'
                                 payloadInMetadata: payload
                             requirementMap:
-                              jwt-ext-2_default_requirements:
-                                requiresAny:
-                                  requirements:
-                                  - providerName: jwt-ext-2_default_my-example2
-                                  - providerName: jwt-ext-2_default_my-example3
+                              basic-jwt-provider_default_requirements:
+                                providerName: basic-jwt-provider_default_my-example
                   predicate:
                     singlePredicate:
                       customMatch:
@@ -107,6 +82,9 @@ Listeners:
                           filter: dev.kgateway.disable_jwt
                           path:
                           - key: disable
+        - name: envoy.filters.http.rbac
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBAC
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -116,43 +94,127 @@ Listeners:
           configSource:
             ads: {}
             resourceApiVersion: V3
-          routeConfigName: listener~80
+          routeConfigName: listener~8080
         statPrefix: http
         useRemoteAddress: true
-    name: listener~80
-  name: listener~80
+    name: listener~8080
+  name: listener~8080
 Routes:
 - ignorePortInHostMatching: true
-  name: listener~80
+  name: listener~8080
   virtualHosts:
   - domains:
-    - example.com
-    name: listener~80~example_com
+    - httpbin
+    name: listener~8080~httpbin
     routes:
     - match:
-        pathSeparatedPrefix: /foo
-      name: listener~80~example_com-route-0-httproute-example-route-default-0-0-matcher-0
+        pathSeparatedPrefix: /status/200
+      name: listener~8080~httpbin-route-0-httproute-httpbin-route-default-0-0-matcher-0
       route:
-        cluster: kube_default_example-svc_80
+        cluster: kube_default_httpbin_8000
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
     - match:
-        pathSeparatedPrefix: /bar
+        pathSeparatedPrefix: /get
       metadata:
         filterMetadata:
           merge.TrafficPolicy.gateway.kgateway.dev:
             jwt:
-            - gateway.kgateway.dev/TrafficPolicy/default/route-test
-      name: listener~80~example_com-route-1-httproute-example-route-default-1-0-matcher-0
+            - gateway.kgateway.dev/TrafficPolicy/default/jwt-rbac-policy
+            rbac:
+            - gateway.kgateway.dev/TrafficPolicy/default/jwt-rbac-policy
+      name: listener~8080~httpbin-route-1-httproute-httpbin-route-default-1-0-matcher-0
       route:
-        cluster: kube_default_example-svc_80
+        cluster: kube_default_httpbin_8000
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       typedPerFilterConfig:
-        jwt/default/jwt-ext-2:
+        envoy.filters.http.rbac:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBACPerRoute
+          rbac:
+            matcher:
+              matcherList:
+                matchers:
+                - onMatch:
+                    action:
+                      name: envoy.filters.rbac.action
+                      typedConfig:
+                        '@type': type.googleapis.com/envoy.config.rbac.v3.Action
+                        name: allow-request
+                  predicate:
+                    singlePredicate:
+                      customMatch:
+                        name: envoy.matching.matchers.cel_matcher
+                        typedConfig:
+                          '@type': type.googleapis.com/xds.type.matcher.v3.CelMatcher
+                          exprMatch:
+                            celExprParsed:
+                              expr:
+                                callExpr:
+                                  args:
+                                  - callExpr:
+                                      args:
+                                      - callExpr:
+                                          args:
+                                          - callExpr:
+                                              args:
+                                              - id: "2"
+                                                selectExpr:
+                                                  field: filter_metadata
+                                                  operand:
+                                                    id: "1"
+                                                    identExpr:
+                                                      name: metadata
+                                              - constExpr:
+                                                  stringValue: envoy.filters.http.jwt_authn
+                                                id: "4"
+                                              function: _[_]
+                                            id: "3"
+                                          - constExpr:
+                                              stringValue: payload
+                                            id: "6"
+                                          function: _[_]
+                                        id: "5"
+                                      - constExpr:
+                                          stringValue: email
+                                        id: "8"
+                                      function: _[_]
+                                    id: "7"
+                                  - constExpr:
+                                      stringValue: dev2@kgateway.io
+                                    id: "10"
+                                  function: _==_
+                                id: "9"
+                              sourceInfo:
+                                lineOffsets:
+                                - 99
+                                location: <input>
+                                positions:
+                                  "1": 0
+                                  "2": 8
+                                  "3": 24
+                                  "4": 25
+                                  "5": 56
+                                  "6": 57
+                                  "7": 67
+                                  "8": 68
+                                  "9": 77
+                                  "10": 80
+                      input:
+                        name: envoy.matching.inputs.cel_data_input
+                        typedConfig:
+                          '@type': type.googleapis.com/xds.type.matcher.v3.HttpAttributesCelMatchInput
+              onNoMatch:
+                action:
+                  name: action
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.config.rbac.v3.Action
+                    action: DENY
+                    name: deny-request
+        jwt/default/basic-jwt-provider:
           '@type': type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.PerRouteConfig
-          requirementName: jwt-ext-2_default_requirements
+          requirementName: basic-jwt-provider_default_requirements
 Statuses:
   gateways:
-    default/example-gateway:
+    default/gw:
       conditions:
       - lastTransitionTime: null
         message: ""
@@ -199,7 +261,7 @@ Statuses:
         - group: gateway.networking.k8s.io
           kind: GRPCRoute
   httpRoutes:
-    default/example-route:
+    default/httpbin-route:
       parents:
       - conditions:
         - lastTransitionTime: null
@@ -214,16 +276,17 @@ Statuses:
           type: ResolvedRefs
         controllerName: kgateway
         parentRef:
-          group: ""
-          kind: ""
-          name: example-gateway
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: gw
+          namespace: default
   policies:
-    TrafficPolicy/default/route-test:
+    TrafficPolicy/default/jwt-rbac-policy:
       ancestors:
       - ancestorRef:
           group: gateway.networking.k8s.io
           kind: Gateway
-          name: example-gateway
+          name: gw
           namespace: default
         conditions:
         - lastTransitionTime: null

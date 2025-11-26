@@ -38,6 +38,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/session_persistence"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/timeoutretry"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/tracing"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/trafficpolicystatus"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/transformation"
 )
 
@@ -63,6 +64,7 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("LocalRateLimit", local_rate_limit.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("GlobalRateLimit", global_rate_limit.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("PolicySelector", policyselector.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("TrafficPolicyStatus", trafficpolicystatus.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Cors", cors.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("BackendConfigPolicy", backendconfigpolicy.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("CSRF", csrf.NewTestingSuite)

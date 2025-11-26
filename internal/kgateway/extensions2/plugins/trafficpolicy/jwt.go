@@ -30,15 +30,17 @@ import (
 )
 
 const (
-	PayloadInMetadata   = "payload"
-	jwtFilterNamePrefix = "jwt"
-	jwtConfigMapKey     = "jwks"
-
-	remoteJWKSTimeoutSecs = 5
+	PayloadInMetadata                       = "payload"
+	jwtFilterNamePrefix                     = "jwt"
+	jwtConfigMapKey                         = "jwks"
+	jwtGlobalDisableFilterName              = "global_disable/jwt"
+	jwtGlobalDisableFilterMetadataNamespace = "dev.kgateway.disable_jwt"
+	remoteJWKSTimeoutSecs                   = 5
 )
 
 type jwtIr struct {
-	perProviderConfig []*perProviderJwtConfig
+	perProviderConfig   []*perProviderJwtConfig
+	disableAllProviders bool
 }
 
 type perProviderJwtConfig struct {
@@ -57,6 +59,10 @@ func (j *jwtIr) Equals(other PolicySubIR) bool {
 		return j == nil && otherJwt == nil
 	}
 
+	if j.disableAllProviders != otherJwt.disableAllProviders {
+		return false
+	}
+
 	return slices.EqualFunc(j.perProviderConfig, otherJwt.perProviderConfig, func(a, b *perProviderJwtConfig) bool {
 		return proto.Equal(a.perRouteConfig, b.perRouteConfig) &&
 			cmputils.CompareWithNils(a.provider, b.provider, func(a, b *TrafficPolicyGatewayExtensionIR) bool {
@@ -71,15 +77,15 @@ func (p *trafficPolicyPluginGwPass) handleJwt(fcn string, pCtxTypedFilterConfig 
 		return
 	}
 
+	if jwtIr.disableAllProviders {
+		pCtxTypedFilterConfig.AddTypedConfig(jwtGlobalDisableFilterName, EnableFilterPerRoute)
+		return
+	}
+
 	for _, cfg := range jwtIr.perProviderConfig {
-		if cfg == nil {
-			continue
-		}
 		providerName := providerName(cfg.provider)
-		if cfg.perRouteConfig != nil {
-			jwtName := jwtFilterName(providerName)
-			pCtxTypedFilterConfig.AddTypedConfig(jwtName, cfg.perRouteConfig)
-		}
+		jwtName := jwtFilterName(providerName)
+		pCtxTypedFilterConfig.AddTypedConfig(jwtName, cfg.perRouteConfig)
 		p.jwtPerProvider.Add(fcn, providerName, cfg.provider)
 	}
 }
@@ -105,7 +111,18 @@ func constructJwt(
 		return nil
 	}
 
-	provider, err := fetchGatewayExtension(krtctx, spec.ExtensionRef, in.GetNamespace())
+	if spec.Disable != nil {
+		out.jwt = &jwtIr{
+			disableAllProviders: true,
+		}
+		return nil
+	}
+
+	if spec.ExtensionRef == nil {
+		// shouldn't happen due to CRD validation
+		return fmt.Errorf("jwt: extensionRef is required if disable is not set")
+	}
+	provider, err := fetchGatewayExtension(krtctx, *spec.ExtensionRef, in.GetNamespace())
 	if err != nil {
 		return fmt.Errorf("jwt: %w", err)
 	}

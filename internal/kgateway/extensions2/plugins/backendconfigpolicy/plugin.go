@@ -16,13 +16,16 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
@@ -118,16 +121,27 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 		kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()},
 	)
 	col := krt.WrapClient(cli, commoncol.KrtOpts.ToOptions("BackendConfigPolicy")...)
-	backendConfigPolicyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, b *v1alpha1.BackendConfigPolicy) *ir.PolicyWrapper {
+	gk := wellknown.BackendConfigPolicyGVK.GroupKind()
+
+	policyStatusMarker, backendConfigPolicyCol := krt.NewStatusCollection(col, func(krtctx krt.HandlerContext, b *v1alpha1.BackendConfigPolicy) (*krtcollections.StatusMarker, *ir.PolicyWrapper) {
 		policyIR, errs := translate(commoncol, krtctx, b)
 		if err := validateXDS(ctx, policyIR, v, commoncol.Settings.ValidationMode); err != nil {
 			errs = append(errs, err)
 		}
 
-		return &ir.PolicyWrapper{
+		// Create status marker if existing status has kgateway controller
+		var statusMarker *krtcollections.StatusMarker
+		for _, ancestor := range b.Status.Ancestors {
+			if string(ancestor.ControllerName) == commoncol.ControllerName {
+				statusMarker = &krtcollections.StatusMarker{}
+				break
+			}
+		}
+
+		pol := &ir.PolicyWrapper{
 			ObjectSource: ir.ObjectSource{
-				Group:     wellknown.BackendConfigPolicyGVK.Group,
-				Kind:      wellknown.BackendConfigPolicyGVK.Kind,
+				Group:     gk.Group,
+				Kind:      gk.Kind,
 				Namespace: b.Namespace,
 				Name:      b.Name,
 			},
@@ -136,15 +150,38 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 			TargetRefs: pluginsdkutils.TargetRefsToPolicyRefs(b.Spec.TargetRefs, b.Spec.TargetSelectors),
 			Errors:     errs,
 		}
-	}, commoncol.KrtOpts.ToOptions("BackendConfigPolicyIRs")...)
+
+		return statusMarker, pol
+	})
+
+	// processMarkers for policies that have existing status but no current report
+	processMarkers := func(kctx krt.HandlerContext, reportMap *reports.ReportMap) {
+		objStatus := krt.Fetch(kctx, policyStatusMarker)
+		for _, status := range objStatus {
+			policyKey := reporter.PolicyKey{
+				Group:     gk.Group,
+				Kind:      gk.Kind,
+				Namespace: status.Obj.GetNamespace(),
+				Name:      status.Obj.GetName(),
+			}
+
+			// Add empty status to clear stale status for policies with no valid targets
+			if reportMap.Policies[policyKey] == nil {
+				rp := reports.NewReporter(reportMap)
+				// create empty policy report entry with no ancestor refs
+				rp.Policy(policyKey, 0)
+			}
+		}
+	}
 	return sdk.Plugin{
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			wellknown.BackendConfigPolicyGVK.GroupKind(): {
-				Name:              "BackendConfigPolicy",
-				Policies:          backendConfigPolicyCol,
-				ProcessBackend:    processBackend,
-				GetPolicyStatus:   getPolicyStatusFn(cli),
-				PatchPolicyStatus: patchPolicyStatusFn(cli),
+				Name:                            "BackendConfigPolicy",
+				Policies:                        backendConfigPolicyCol,
+				ProcessPolicyStaleStatusMarkers: processMarkers,
+				ProcessBackend:                  processBackend,
+				GetPolicyStatus:                 getPolicyStatusFn(cli),
+				PatchPolicyStatus:               patchPolicyStatusFn(cli),
 			},
 		},
 	}

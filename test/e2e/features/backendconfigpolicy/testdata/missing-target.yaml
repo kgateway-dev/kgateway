@@ -1,0 +1,10 @@
+kind: BackendConfigPolicy
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: example-policy
+spec:
+  targetRefs:
+    - name: missing-svc
+      group: ""
+      kind: Service
+  connectTimeout: 5s
