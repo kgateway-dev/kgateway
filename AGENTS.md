@@ -61,7 +61,7 @@ After API changes: Run `make go-generate-apis` then `make fmt-changed`. The Make
 If not sure, just run `make generate-all`.
 
 ### Testing Conventions
-- **Unit tests**: For new code, avoid Ginkgo. Use may use Gomega matchers if appropriate.
+- **Unit tests**: For new code, avoid Ginkgo. You may use Gomega matchers if appropriate.
 - **E2E tests**: Use framework in `/test/e2e/` - DO NOT directly kubectl apply in tests
 - **Custom matchers**: `/test/gomega/matchers/` (e.g., `HaveHttpResponse`)
 - **Transforms**: Compose matchers with `WithTransform()` (see `/devel/testing/writing-tests.md`)
@@ -82,7 +82,7 @@ make unit  # All unit tests (excludes e2e)
 4. **Durations**: Use `metav1.Duration` with CEL validation
 5. Document defaults with `+kubebuilder:default=...`
 6. Run `make go-generate-apis` (generates CRDs, clients, RBAC in helm chart)
-7. Registry CRD to the client in `pkg/apiclient/types.go`
+7. Register CRD to the client in `pkg/apiclient/types.go`
 8. Add the CRD to the fake client's `filterObjects` in `pkg/apiclient/fake/fake.go` and `AllCRDs` in `test/testutils/crd.go`.
 
 See `/api/README.md` for full guidelines.
@@ -90,7 +90,7 @@ See `/api/README.md` for full guidelines.
 #### Testing New Policy Fields
 When adding fields to policies, at a minimum add yaml tests cases in `internal/kgateway/translator/gateway/gateway_translator_test.go`.
 The yaml inputs go in `internal/kgateway/translator/gateway/testutils/inputs/`. DO NOT generate the outputs.
-instead, run your tests with environment variable `REFRESH_GOLDEN=true` For example: `REFRESH_GOLDEN=true go test -timeout 30s -run ^TestBasic$/^ListenerPolicy_with_proxy_protocol_on_HTTPS_listener$ github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway`
+Instead, run your tests with environment variable `REFRESH_GOLDEN=true` For example: `REFRESH_GOLDEN=true go test -timeout 30s -run ^TestBasic$/^ListenerPolicy_with_proxy_protocol_on_HTTPS_listener$ github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway`
 It will generate the outputs for you automatically in the `internal/kgateway/translator/gateway/testutils/outputs/` folder.
 Once the outputs are generated, inspect them to see they contain the changes you expect, and alert the user if that's not the case.
 
