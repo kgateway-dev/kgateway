@@ -33,7 +33,7 @@ require (
 	go.opencensus.io v0.24.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/exp v0.0.0-20251017212417-90e834f514db
-	golang.org/x/net v0.46.0
+	golang.org/x/net v0.46.0 // indirect
 	google.golang.org/grpc v1.76.0
 	google.golang.org/protobuf v1.36.10
 	helm.sh/helm/v3 v3.19.2
