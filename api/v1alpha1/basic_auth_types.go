@@ -1,5 +1,7 @@
 package v1alpha1
 
+import gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
 // BasicAuthPolicy configures HTTP basic authentication using the Authorization header.
 // Basic authentication validates requests against username/password pairs provided either inline or via a Kubernetes secret.
 // The credentials must be in htpasswd SHA-1 format.
@@ -33,13 +35,12 @@ type BasicAuthPolicy struct {
 type SecretReference struct {
 	// Name of the secret containing htpasswd data.
 	// +required
-	// +kubebuilder:validation:MinLength=1
-	Name string `json:"name"`
+	Name gwv1.ObjectName `json:"name"`
 
 	// Namespace of the secret. If not specified, defaults to the namespace of the TrafficPolicy.
 	// Note that a secret in a different namespace requires a ReferenceGrant to be accessible.
 	// +optional
-	Namespace *string `json:"namespace,omitempty"`
+	Namespace *gwv1.Namespace `json:"namespace,omitempty"`
 
 	// Key in the secret that contains the htpasswd data.
 	// Defaults to ".htpasswd" if not specified.

@@ -58,7 +58,7 @@ spec:
       sectionName: http
   basicAuth:
     users:
-      - "gateway-user:$apr1$gwsalt12$hashhashhashhash"
+      - "gateway-user:{SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g="
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
@@ -71,7 +71,7 @@ spec:
       name: protected-route
   basicAuth:
     users:
-      - "route-user:$apr1$rtsalt12$hashhashhashhash"
+      - "route-user:{SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g="
 ---
 apiVersion: v1
 kind: Service

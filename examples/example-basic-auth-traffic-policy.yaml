@@ -3,21 +3,12 @@
 # This example demonstrates how to configure HTTP basic authentication using TrafficPolicy.
 # Basic auth validates requests against username/password pairs in htpasswd format.
 #
-# Supported htpasswd hash formats:
-#   - bcrypt: $2y$<cost>$<salt><hash> (recommended, most secure)
-#   - MD5 (APR1): $apr1$<salt>$<hash> (Apache MD5, widely supported)
-#   - SHA-1: {SHA}<base64-hash> (legacy, less secure)
-#   - crypt: <salt><hash> (legacy, least secure)
+# The only supported htpasswd hash format is SHA-1: {SHA}<base64-hash> (note: only SHA-1 is supported by Envoy's basic auth filter)  
 #
 # To generate htpasswd entries:
-#   # Using htpasswd tool (bcrypt - recommended):
-#   htpasswd -nbB username password
+#   # Using htpasswd tool (SHA-1):
+#   htpasswd -nbs username password
 #
-#   # Using htpasswd tool (MD5):
-#   htpasswd -nbm username password
-#
-#   # Using openssl (MD5):
-#   printf "username:$(openssl passwd -apr1 password)\n"
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
@@ -50,7 +41,7 @@ spec:
     - name: backend-service
       port: 8080
 ---
-# Option 1: Inline users with bcrypt hashing (most secure)
+# Option 1: Inline users
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
@@ -63,32 +54,12 @@ spec:
     name: protected-route
   basicAuth:
     users:
-      # Generated with: htpasswd -nbB alice password123
-      - "alice:$2y$05$abcdefghijklmnopqrstuv.0123456789ABCDEFGHIJKLMNOPQRST"
-      # Generated with: htpasswd -nbB bob secretpass
-      - "bob:$2y$05$zyxwvutsrqponmlkjihgfe.ZYXWVUTSRQPONMLKJIHGFEDCBA9876"
-    # Optional: Forward the authenticated username to the backend
-    forwardUsernameHeader: "X-Authenticated-User"
+      # Generated with: htpasswd -nbs alice password123
+      - "alice:{SHA}y/2sYAj5yrQIN4TL0YdPdmGNKpc="
+      # Generated with: htpasswd -nbs bob secretpass
+      - "bob:{SHA}NkvfLtd6hUTTtxGgO2nurcxjydc="
 ---
-# Option 2: Inline users with MD5/APR1 hashing (widely compatible)
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: TrafficPolicy
-metadata:
-  name: basic-auth-inline-md5
-  namespace: default
-spec:
-  targetRefs:
-  - group: gateway.networking.k8s.io
-    kind: HTTPRoute
-    name: protected-route
-  basicAuth:
-    users:
-      # Generated with: htpasswd -nbs user1 pass1
-      - "user1:{SHA}8FePHnF0saQcTqjG4X96ijuIySo="
-      # Generated with: htpasswd -nbs user2 pass2
-      - "user2:{SHA}i+UhJqb95FCnFio2UdWJu1HpV50="
----
-# Option 3: Reference a Kubernetes secret
+# Option 2: Reference a Kubernetes secret
 apiVersion: v1
 kind: Secret
 metadata:
@@ -113,7 +84,7 @@ spec:
     secretRef:
       name: basic-auth-credentials
 ---
-# Option 4: Gateway-level basic auth with per-route override
+# Option 3: Gateway-level basic auth with per-route override
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
@@ -149,5 +120,3 @@ spec:
 # curl -v -u alice:password123 http://api.example.com/api
 # Expected: 200 OK (or backend response)
 #
-# curl -v -H "Authorization: Basic $(echo -n 'alice:password123' | base64)" http://api.example.com/api
-# Expected: 200 OK (or backend response)

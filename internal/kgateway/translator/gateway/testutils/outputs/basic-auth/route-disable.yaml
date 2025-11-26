@@ -81,7 +81,7 @@ Routes:
       envoy.filters.http.basic_auth:
         '@type': type.googleapis.com/envoy.extensions.filters.http.basic_auth.v3.BasicAuthPerRoute
         users:
-          inlineString: gateway-user:$apr1$gwsalt12$hashhashhashhash
+          inlineString: gateway-user:{SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=
 Statuses:
   gateways:
     default/example-gateway:

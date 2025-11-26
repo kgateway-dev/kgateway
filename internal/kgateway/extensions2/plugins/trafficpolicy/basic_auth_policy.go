@@ -8,6 +8,7 @@ import (
 	envoy_basic_auth_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/basic_auth/v3"
 	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/krt"
+	"k8s.io/apimachinery/pkg/util/sets"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -23,8 +24,8 @@ const (
 )
 
 type basicAuthIR struct {
-	policy     *envoy_basic_auth_v3.BasicAuthPerRoute
-	disableAll bool
+	policy  *envoy_basic_auth_v3.BasicAuthPerRoute
+	disable bool
 }
 
 var _ PolicySubIR = &basicAuthIR{}
@@ -37,7 +38,7 @@ func (b *basicAuthIR) Equals(other PolicySubIR) bool {
 	if b == nil || otherBasicAuth == nil {
 		return b == nil && otherBasicAuth == nil
 	}
-	if b.disableAll != otherBasicAuth.disableAll {
+	if b.disable != otherBasicAuth.disable {
 		return false
 	}
 	return proto.Equal(b.policy, otherBasicAuth.policy)
@@ -61,7 +62,7 @@ func (p *trafficPolicyPluginGwPass) handleBasicAuth(
 	}
 
 	// Handle disable case - enable the filter with empty config to override parent policy
-	if basicAuth.disableAll {
+	if basicAuth.disable {
 		pCtxTypedFilterConfig.AddTypedConfig(basicAuthFilterName, EnableFilterPerRoute)
 		return
 	}
@@ -101,13 +102,10 @@ func constructBasicAuth(
 	// Handle disable case
 	if spec.Disable != nil {
 		out.basicAuth = &basicAuthIR{
-			disableAll: true,
+			disable: true,
 		}
 		return nil
 	}
-
-	// Build the basic auth configuration
-	policy := &envoy_basic_auth_v3.BasicAuthPerRoute{}
 
 	// Handle users data source
 	var htpasswdData string
@@ -137,8 +135,7 @@ func constructBasicAuth(
 
 	// Report invalid users if any were found
 	if len(invalidUsers) > 0 {
-		err = fmt.Errorf("basic auth: dropped %d user(s) with invalid hash format (only {SHA} is supported): %v",
-			len(invalidUsers), invalidUsers)
+		err = fmt.Errorf("basic auth: dropped %d user(s) with invalid hash format (only {SHA} is supported) or duplicate usernames.", len(invalidUsers))
 	}
 
 	allUsers := strings.Join(validUsers, "\n")
@@ -146,15 +143,16 @@ func constructBasicAuth(
 		allUsers = "#"
 	}
 
-	// Set the users data source with validated users
-	policy.Users = &envoycorev3.DataSource{
-		Specifier: &envoycorev3.DataSource_InlineString{
-			InlineString: allUsers,
-		},
-	}
-
+	// Build the basic auth configuration
 	out.basicAuth = &basicAuthIR{
-		policy: policy,
+		policy: &envoy_basic_auth_v3.BasicAuthPerRoute{
+			// Set the users data source with validated users
+			Users: &envoycorev3.DataSource{
+				Specifier: &envoycorev3.DataSource_InlineString{
+					InlineString: allUsers,
+				},
+			},
+		},
 	}
 
 	return err
@@ -168,7 +166,7 @@ func fetchHtpasswdFromSecret(
 	policyNamespace string,
 ) (string, error) {
 	// Determine namespace - use secret's namespace if specified, otherwise policy's namespace
-	namespace := policyNamespace
+	namespace := gwv1.Namespace(policyNamespace)
 	if secretRef.Namespace != nil {
 		namespace = *secretRef.Namespace
 	}
@@ -181,8 +179,8 @@ func fetchHtpasswdFromSecret(
 
 	// Build the secret reference
 	secretObjRef := gwv1.SecretObjectReference{
-		Name:      gwv1.ObjectName(secretRef.Name),
-		Namespace: (*gwv1.Namespace)(&namespace),
+		Name:      secretRef.Name,
+		Namespace: &namespace,
 	}
 
 	// Use TrafficPolicy as the source for reference grants
@@ -217,9 +215,10 @@ func validateAndFilterSHAUsers(htpasswdData string) (validUsers []string, invali
 
 	lines := strings.Split(htpasswdData, "\n")
 	validUsers = make([]string, 0, len(lines))
+	validUsernames := sets.New[string]()
 	invalidUsernames = make([]string, 0)
 
-	for _, line := range lines {
+	for i, line := range lines {
 		line = strings.TrimSpace(line)
 
 		// Skip empty lines and comments
@@ -230,6 +229,8 @@ func validateAndFilterSHAUsers(htpasswdData string) (validUsers []string, invali
 		// htpasswd format is "username:password_hash"
 		parts := strings.SplitN(line, ":", 2)
 		if len(parts) != 2 {
+			// Don't log the entire line to avoid leaking sensitive info
+			logger.Warn("malformed htpasswd entry, missing colon", "line", i+1)
 			invalidUsernames = append(invalidUsernames, line)
 			continue
 		}
@@ -237,10 +238,16 @@ func validateAndFilterSHAUsers(htpasswdData string) (validUsers []string, invali
 		username := parts[0]
 		passwordHash := parts[1]
 
+		// 5=len("{SHA}"), 28=SHA1 base64 length. these validations are copied from envoy source code.
+		validHash := strings.HasPrefix(passwordHash, shaPrefix) && len(passwordHash) == (28+5)
+		isDuplicate := validUsernames.Has(username)
+
 		// Check if the password hash uses {SHA} format
-		if strings.HasPrefix(passwordHash, shaPrefix) && len(passwordHash) == (28+5) { // 5=len("{SHA}"), 28=SHA1 base64 length. these validations are copied from envoy source code.
+		if validHash && !isDuplicate {
 			validUsers = append(validUsers, line)
+			validUsernames.Insert(username)
 		} else {
+			logger.Warn("invalid basic auth user", "user", username, "isDuplicate", isDuplicate, "validHash", validHash)
 			invalidUsernames = append(invalidUsernames, username)
 		}
 	}

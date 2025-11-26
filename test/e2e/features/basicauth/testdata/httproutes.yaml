@@ -25,7 +25,6 @@ spec:
     - backendRefs:
         - name: simple-svc
           port: 8080
-
     - backendRefs:
         - name: simple-svc
           port: 8080

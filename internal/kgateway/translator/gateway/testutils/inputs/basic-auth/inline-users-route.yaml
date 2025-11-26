@@ -35,8 +35,8 @@ spec:
       name: example-route
   basicAuth:
     users:
-      - "user1:$apr1$salt1234$hashhashhashhash"
-      - "user2:$2y$05$saltsaltsaltsal.hashhashhashhashhashhashhashhashh"
+      - "user1:{SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g="
+      - "user2:{SHA}NkvfLtd6hUTTtxGgO2nurcxjydc="
 ---
 apiVersion: v1
 kind: Service

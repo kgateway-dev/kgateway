@@ -130,6 +130,13 @@ bob:$2y$05$r3J4d3VepzFkedkd/q1vI.pBYIpSqjfN0qOARV3ScUHysatnS0cL2`,
 			expectedValid:   []string{},
 			expectedInvalid: []string{"alice", "bob"},
 		},
+		{
+			name: "duplicate valid users",
+			htpasswdData: `user:{SHA}NWoZK3kTsExUV00Ywo1G5jlUKKs=
+user:{SHA}2kuSN7rMzfGcB2DKt67EqDWQELA=`,
+			expectedValid:   []string{"user:{SHA}NWoZK3kTsExUV00Ywo1G5jlUKKs="},
+			expectedInvalid: []string{"user"},
+		},
 	}
 
 	for _, tt := range tests {

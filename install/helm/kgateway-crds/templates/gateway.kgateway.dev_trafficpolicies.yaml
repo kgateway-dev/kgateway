@@ -85,12 +85,16 @@ spec:
                         type: string
                       name:
                         description: Name of the secret containing htpasswd data.
+                        maxLength: 253
                         minLength: 1
                         type: string
                       namespace:
                         description: |-
                           Namespace of the secret. If not specified, defaults to the namespace of the TrafficPolicy.
                           Note that a secret in a different namespace requires a ReferenceGrant to be accessible.
+                        maxLength: 63
+                        minLength: 1
+                        pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
                         type: string
                     required:
                     - name

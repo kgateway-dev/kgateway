@@ -71,7 +71,7 @@ Routes:
         envoy.filters.http.basic_auth:
           '@type': type.googleapis.com/envoy.extensions.filters.http.basic_auth.v3.BasicAuthPerRoute
           users:
-            inlineString: route-user:$apr1$rtsalt12$hashhashhashhash
+            inlineString: route-user:{SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=
     - match:
         pathSeparatedPrefix: /public
       name: listener~8080~www_example_com-route-1-httproute-public-route-default-0-0-matcher-0
@@ -82,7 +82,7 @@ Routes:
       envoy.filters.http.basic_auth:
         '@type': type.googleapis.com/envoy.extensions.filters.http.basic_auth.v3.BasicAuthPerRoute
         users:
-          inlineString: gateway-user:$apr1$gwsalt12$hashhashhashhash
+          inlineString: gateway-user:{SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=
 Statuses:
   gateways:
     default/example-gateway:
