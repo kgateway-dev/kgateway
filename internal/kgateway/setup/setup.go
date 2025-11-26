@@ -167,7 +167,7 @@ func WithExtraManagerConfig(mgrConfigFuncs ...func(context.Context, manager.Mana
 	}
 }
 
-func WithExtraRunnables(runnables ...manager.Runnable) func(*setup) {
+func WithExtraRunnables(runnables ...func(ctx context.Context, commoncol *collections.CommonCollections, agw *agwplugins.AgwCollections) manager.Runnable) func(*setup) {
 	return func(s *setup) {
 		s.extraRunnables = runnables
 	}
@@ -218,7 +218,7 @@ type setup struct {
 	// extra controller manager config, like adding registering additional controllers
 	extraManagerConfig []func(ctx context.Context, mgr manager.Manager, objectFilter kubetypes.DynamicObjectFilter) error
 	// extra Runnable to add to the manager
-	extraRunnables               []manager.Runnable
+	extraRunnables               []func(ctx context.Context, commoncol *collections.CommonCollections, agw *agwplugins.AgwCollections) manager.Runnable
 	krtDebugger                  *krt.DebugHandler
 	globalSettings               *apisettings.Settings
 	leaderElectionID             string
@@ -398,13 +398,18 @@ func (s *setup) Start(ctx context.Context) error {
 		}
 	}
 
+	runnnablesRegistry := make(map[string]any)
 	for _, runnable := range s.extraRunnables {
-		if err := mgr.Add(runnable); err != nil {
+		r := runnable(ctx, commoncol, agwCollections)
+		if named, ok := r.(common.NamedRunnable); ok {
+			runnnablesRegistry[named.RunnableName()] = struct{}{}
+		}
+		if err := mgr.Add(r); err != nil {
 			return fmt.Errorf("error adding extra Runnable to manager: %w", err)
 		}
 	}
 
-	if !jwksStoreOverridePresent(s.extraRunnables) {
+	if _, exists := runnnablesRegistry[jwks.RunnableName]; !exists {
 		if err := buildJwksStore(ctx, mgr, s.apiClient, commoncol, agwCollections); err != nil {
 			return fmt.Errorf("error creating jwks store %w", err)
 		}
@@ -537,15 +542,4 @@ func buildJwksStore(ctx context.Context, mgr manager.Manager, apiClient apiclien
 	}
 
 	return nil
-}
-
-func jwksStoreOverridePresent(extras []manager.Runnable) bool {
-	for _, r := range extras {
-		if named, ok := r.(common.NamedRunnable); ok {
-			if named.RunnableName() == jwks.RunnableName {
-				return true
-			}
-		}
-	}
-	return false
 }
