@@ -51,13 +51,13 @@ func (s *testingSuite) TestTrafficPolicyBasicAuthForRoute() {
 	host := kubeutils.ServiceFQDN(proxyObjectMeta)
 
 	// Valid credentials
-	s.assertAuthResponse(host, "secure.example.com", "/", creds("alice", "password"), http.StatusOK)
-	s.assertAuthResponse(host, "secure.example.com", "/", creds("bob", "password"), http.StatusOK)
-	s.assertAuthResponse(host, "secure.example.com", "/secrets", creds("user", "userpassword"), http.StatusOK)
+	s.assertAuthResponse(host, "/", creds("alice", "password"), http.StatusOK)
+	s.assertAuthResponse(host, "/", creds("bob", "password"), http.StatusOK)
+	s.assertAuthResponse(host, "/secrets", creds("user", "userpassword"), http.StatusOK)
 
 	// Invalid credentials
-	s.assertAuthResponse(host, "secure.example.com", "/", creds("alice", "wrong"), http.StatusUnauthorized)
-	s.assertAuthResponse(host, "secure.example.com", "/secrets", creds("alice", "password"), http.StatusUnauthorized)
+	s.assertAuthResponse(host, "/", creds("alice", "wrong"), http.StatusUnauthorized)
+	s.assertAuthResponse(host, "/secrets", creds("alice", "password"), http.StatusUnauthorized)
 	s.assertNoAuthResponse(host, "secure.example.com", http.StatusUnauthorized)
 
 	// Public route should be accessible without auth
@@ -68,11 +68,11 @@ func creds(user, pass string) string {
 	return base64.StdEncoding.EncodeToString([]byte(user + ":" + pass))
 }
 
-func (s *testingSuite) assertAuthResponse(host, hostHeader, path, authHeader string, expectedStatus int) {
+func (s *testingSuite) assertAuthResponse(host, path, authHeader string, expectedStatus int) {
 	s.TestInstallation.Assertions.AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
-		[]curl.Option{curl.WithHost(host), curl.WithHostHeader(hostHeader), curl.WithPath(path), curl.WithHeader("Authorization", "Basic "+authHeader), curl.WithPort(8080)},
+		[]curl.Option{curl.WithHost(host), curl.WithHostHeader("secure.example.com"), curl.WithPath(path), curl.WithHeader("Authorization", "Basic "+authHeader), curl.WithPort(8080)},
 		&testmatchers.HttpResponse{StatusCode: expectedStatus},
 	)
 }
