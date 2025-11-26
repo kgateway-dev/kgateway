@@ -644,7 +644,7 @@ func (in *StatsConfig) GetMatcher() *StatsMatcher {
 	return in.Matcher
 }
 
-// StatsMatcher specifies mutually exclusive inclusion or exclusion lists for Envoy stats.
+// StatsMatcher specifies either an inclusion or exclusion list for Envoy stats.
 // See Envoy's envoy.config.metrics.v3.StatsMatcher for details.
 // +kubebuilder:validation:MaxProperties=1
 // +kubebuilder:validation:MinProperties=1
