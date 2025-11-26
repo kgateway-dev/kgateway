@@ -11,6 +11,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/backends"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/backendtls"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/basicrouting"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/compression"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/cors"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/csrf"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/deployer"
@@ -63,6 +64,7 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("GlobalRateLimit", global_rate_limit.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("PolicySelector", policyselector.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Cors", cors.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("Compression", compression.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("BackendConfigPolicy", backendconfigpolicy.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("CSRF", csrf.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("AutoHostRewrite", auto_host_rewrite.NewTestingSuite)

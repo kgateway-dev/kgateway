@@ -481,6 +481,15 @@ type Timeouts struct {
 type Compression struct {
 	// ResponseCompression controls response compression to the downstream.
 	// If set, responses with the appropriate `Accept-Enocding` header with certain textual content types will be compressed using gzip.
+	// The content-types that will be compressed are:
+	// - `application/javascript`
+	// - `application/json`
+	// - `application/xhtml+xml`
+	// - `image/svg+xml`
+	// - `text/css`
+	// - `text/html`
+	// - `text/plain`
+	// - `text/xml`
 	// +optional
 	ResponseCompression *ResponseCompression `json:"responseCompression,omitempty"`
 

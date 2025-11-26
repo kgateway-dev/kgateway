@@ -1,7 +1,7 @@
 package trafficpolicy
 
 import (
-	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	gzipcompressorv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/compression/gzip/compressor/v3"
 	gzipdecompressorv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/compression/gzip/decompressor/v3"
 	compressorv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/compressor/v3"
@@ -94,7 +94,7 @@ func (p *trafficPolicyPluginGwPass) handleCompression(fcn string, pCtxTypedFilte
 		// Build gzip compressor library with Envoy defaults.
 		gzipAny, _ := anypb.New(&gzipcompressorv3.Gzip{})
 		p.compressorInChain[fcn] = &compressorv3.Compressor{
-			CompressorLibrary: &corev3.TypedExtensionConfig{
+			CompressorLibrary: &envoycorev3.TypedExtensionConfig{
 				Name:        "envoy.compression.gzip.compressor",
 				TypedConfig: gzipAny,
 			},
@@ -118,7 +118,7 @@ func (p *trafficPolicyPluginGwPass) handleDecompression(fcn string, pCtxTypedFil
 	if _, ok := p.decompressorInChain[fcn]; !ok {
 		gzipAny, _ := anypb.New(&gzipdecompressorv3.Gzip{})
 		p.decompressorInChain[fcn] = &decompressorv3.Decompressor{
-			DecompressorLibrary: &corev3.TypedExtensionConfig{
+			DecompressorLibrary: &envoycorev3.TypedExtensionConfig{
 				Name:        "envoy.compression.gzip.decompressor",
 				TypedConfig: gzipAny,
 			},
