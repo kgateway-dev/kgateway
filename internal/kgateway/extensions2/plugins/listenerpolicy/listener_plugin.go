@@ -179,14 +179,14 @@ func (p *listenerPolicyPluginGwPass) ApplyListenerPlugin(
 	pCtx *ir.ListenerContext,
 	out *envoylistenerv3.Listener,
 ) {
-	logger.Info("applying to listener", "listener", out.Name, "policyType", fmt.Sprintf("%T", pCtx.Policy))
+	logger.Debug("applying to listener", "listener", out.Name, "policyType", fmt.Sprintf("%T", pCtx.Policy))
 	pol, ok := pCtx.Policy.(*listenerPolicy)
 	if !ok || pol == nil {
-		logger.Info("policy is not listenerPolicy type or is nil", "ok", ok, "pol", pol)
+		logger.Debug("policy is not listenerPolicy type or is nil", "ok", ok, "pol", pol)
 		return
 	}
 
-	logger.Info("listenerPolicy found", "proxyProtocol", pol.proxyProtocol)
+	logger.Debug("listenerPolicy found", "proxyProtocol", pol.proxyProtocol)
 	// Add proxy protocol listener filter if configured
 	if pol.proxyProtocol != nil {
 		p.applyProxyProtocol(out, pol.proxyProtocol)
