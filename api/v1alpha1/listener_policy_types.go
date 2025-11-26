@@ -18,8 +18,8 @@ import (
 // +kubebuilder:subresource:status
 // +kubebuilder:metadata:labels="gateway.networking.k8s.io/policy=Direct"
 // ListenerPolicy is used for configuring Envoy listener-level settings that apply to all protocol types (HTTP, HTTPS, TCP, TLS).
-// This includes listener filters such as PROXY protocol support.
-// These policies can be applied per Gateway (and in the future maybe per listener port, to target specific ports).
+// This includes features such as PROXY protocol support.
+// These policies can targetRef Gateway objects.
 type ListenerPolicy struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
