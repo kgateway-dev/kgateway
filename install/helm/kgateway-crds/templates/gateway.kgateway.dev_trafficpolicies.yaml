@@ -1303,8 +1303,8 @@ spec:
                   type: object
                 type: array
                 x-kubernetes-validations:
-                - message: targetRefs may only reference Gateway, HTTPRoute, or ListenerSet
-                    resources
+                - message: targetSelectors may only reference Gateway, HTTPRoute,
+                    or ListenerSet resources
                   rule: self.all(r, (r.kind == 'Gateway' || r.kind == 'HTTPRoute'
                     || r.kind.endsWith('ListenerSet')))
               timeouts:
