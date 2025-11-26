@@ -646,14 +646,17 @@ func (in *StatsConfig) GetMatcher() *StatsMatcher {
 
 // StatsMatcher specifies mutually exclusive inclusion or exclusion lists for Envoy stats.
 // See Envoy's envoy.config.metrics.v3.StatsMatcher for details.
-// +kubebuilder:validation:ExactlyOneOf=inclusionList;exclusionList
+// +kubebuilder:validation:MaxProperties=1
+// +kubebuilder:validation:MinProperties=1
 type StatsMatcher struct {
 	// inclusionList specifies which stats to include, using string matchers.
 	// +optional
+	// +kubebuilder:validation:MaxItems=16
 	InclusionList []StringMatcher `json:"inclusionList,omitempty"`
 
 	// exclusionList specifies which stats to exclude, using string matchers.
 	// +optional
+	// +kubebuilder:validation:MaxItems=16
 	ExclusionList []StringMatcher `json:"exclusionList,omitempty"`
 }
 

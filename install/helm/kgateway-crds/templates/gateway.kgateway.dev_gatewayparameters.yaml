@@ -7286,6 +7286,8 @@ spec:
                           Matcher configures inclusion or exclusion lists for Envoy stats.
                           Only one of inclusionList or exclusionList may be set.
                           If unset, Envoy's default stats emission behavior applies.
+                        maxProperties: 1
+                        minProperties: 1
                         properties:
                           exclusionList:
                             description: exclusionList specifies which stats to exclude,
@@ -7333,6 +7335,7 @@ spec:
                                   suffix contains safeRegex] must be set
                                 rule: '[has(self.exact),has(self.prefix),has(self.suffix),has(self.contains),has(self.safeRegex)].filter(x,x==true).size()
                                   == 1'
+                            maxItems: 16
                             type: array
                           inclusionList:
                             description: inclusionList specifies which stats to include,
@@ -7380,13 +7383,9 @@ spec:
                                   suffix contains safeRegex] must be set
                                 rule: '[has(self.exact),has(self.prefix),has(self.suffix),has(self.contains),has(self.safeRegex)].filter(x,x==true).size()
                                   == 1'
+                            maxItems: 16
                             type: array
                         type: object
-                        x-kubernetes-validations:
-                        - message: exactly one of the fields in [inclusionList exclusionList]
-                            must be set
-                          rule: '[has(self.inclusionList),has(self.exclusionList)].filter(x,x==true).size()
-                            == 1'
                       routePrefixRewrite:
                         description: The Envoy stats endpoint to which the metrics
                           are written
