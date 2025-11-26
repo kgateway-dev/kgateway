@@ -229,7 +229,7 @@ GO_TEST_COVERAGE ?= go tool github.com/vladopajic/go-test-coverage/v2
 GO_TEST_USER_ARGS ?=
 GO_TEST_RETRIES ?= 0
 GOTESTSUM ?= go tool gotestsum
-GOTESTSUM_ARGS ?= --format=testname
+GOTESTSUM_ARGS ?= --format=standard-verbose
 
 .PHONY: go-test
 go-test: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified

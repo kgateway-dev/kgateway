@@ -1,0 +1,196 @@
+# kgateway AI Agent Instructions
+
+## Project Overview
+kgateway is a **dual control plane** implementing the Kubernetes Gateway API for both Envoy and agentgateway. It's built on KRT (Kubernetes Declarative Controller Runtime from Istio) and uses a plugin-based architecture for extensibility.
+
+## Architecture (Read This First!)
+
+### Translation Pipeline (3 phases)
+1. **Policy → IR**: Plugins translate CRDs to PolicyIR (close to Envoy protos). Done once per policy CRD change.
+2. **HTTPRoute/Gateway → IR with Policies Attached**: Core kgateway aggregates routes/gateways and performs policy attachment via `targetRefs`.
+3. **IR → xDS**: Translates to Envoy config. Plugins provide `NewGatewayTranslationPass` functions called during route/listener translation.
+
+See `/devel/architecture/overview.md` and the translation diagram at `/devel/architecture/translation.svg`.
+
+### Key Components
+- **cmd/**: 3 binaries: `kgateway` (controller), `envoyinit` (does some envoy bootstrap config manipulation), `sds` (secret server)
+- **api/v1alpha1/**: CRD definitions. Use `+kubebuilder` markers for validation/generation
+- **pkg/pluginsdk/**: Plugin interfaces (`Plugin`, `PolicyPlugin`, `BackendPlugin`)
+- **internal/kgateway/extensions2/plugins/**: Plugin implementations (trafficpolicy, httplistenerpolicy, etc.)
+- **internal/kgateway/krtcollections/**: KRT collections for core resources
+- **test/e2e/**: End-to-end tests using custom framework (see test/e2e/README.md)
+
+### Plugin System
+Plugins are **stateless across translations** but maintain state during a single gateway translation via `ProxyTranslationPass`. Each plugin:
+- Provides a KRT collection of `ir.PolicyWrapper` (contains `PolicyIR` + `TargetRefs`)
+- Implements `NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass`
+- Can process backends via `ProcessBackend`, `PerClientProcessBackend`, or `PerClientProcessEndpoints`
+
+Example: `/internal/kgateway/extensions2/plugins/trafficpolicy/traffic_policy_plugin.go`
+
+## Development
+
+## Critical Developer Patterns
+
+### IR Equals() Methods (STRICTLY ENFORCED)
+IRs output by KRT collections **must** implement `Equals(other T) bool`:
+- **Compare ALL fields** or mark with `// +noKrtEquals` (last line of comment)
+- **Never use `reflect.DeepEqual`** (flagged by custom analyzer in `/hack/krtequals/`)
+- **Always write unit tests** for Equals (test reflexivity, symmetry, transitivity)
+- Use proto equality helpers: `proto.Equal()`, not `==`
+
+Example test pattern:
+```go
+func TestMyIREquals(t *testing.T) {
+    // Test cases: nil, same, different fields
+    // Test symmetry: a.Equals(b) == b.Equals(a)
+    // Test reflexivity: x.Equals(x) == true
+    // Test transitivity: a.Equals(b) && b.Equals(c) → a.Equals(c)
+}
+```
+
+### Code Generation Workflow
+Common targets:
+- `make generate-code`: Ignores stamp files, generates all (takes around 30 seconds)
+- `make generate-all`: Uses stamp files, only regenerates changed code (fast)
+- `make verify`: CI target - always regenerates everything, checks git diff
+- `make go-generate-apis`: Only API changes (~1m)
+- `make fmt` or `make fmt-changed`: Format code (always run before commit)
+
+After API changes: Run `make go-generate-apis` then `make fmt-changed`. The Makefile uses dependency tracking in `_output/stamps/`.
+If not sure, just run `make generate-all`.
+
+### Testing Conventions
+- **Unit tests**: For new code, avoid Ginkgo. You may use Gomega matchers if appropriate.
+- **E2E tests**: Use framework in `/test/e2e/` - DO NOT directly kubectl apply in tests
+- **Custom matchers**: `/test/gomega/matchers/` (e.g., `HaveHttpResponse`)
+- **Transforms**: Compose matchers with `WithTransform()` (see `/devel/testing/writing-tests.md`)
+- Prefer explicit error checking: `Expect(err).To(MatchError("msg"))` over `HaveOccurred()`
+- Add descriptions: `Expect(x).To(BeEmpty(), "list should be empty on init")`
+
+Run tests:
+```bash
+make test TEST_PKG=./path/to/package  # Unit tests
+make e2e-test TEST_PKG=./test/e2e/tests/...  # E2E tests
+make unit  # All unit tests (excludes e2e)
+```
+
+### API/CRD Development
+1. Create `*_types.go` in `api/v1alpha1/` with `+kubebuilder` markers. You can use `+kubebuilder:validation:AtLeastOneOf` or `+kubebuilder:validation:ExactlyOneOf` for field groups.
+2. **Required fields**: Use `+required`, NO `omitempty` tag
+3. **Optional fields**: Use `+optional`, pointer types (except slices/maps), `omitempty` tag
+4. **Durations**: Use `metav1.Duration` with CEL validation
+5. Document defaults with `+kubebuilder:default=...`
+6. Run `make go-generate-apis` (generates CRDs, clients, RBAC in helm chart)
+7. Register CRD to the client in `pkg/apiclient/types.go`
+8. Add the CRD to the fake client's `filterObjects` in `pkg/apiclient/fake/fake.go` and `AllCRDs` in `test/testutils/crd.go`.
+
+See `/api/README.md` for full guidelines.
+
+#### Testing New Policy Fields
+When adding fields to policies, at a minimum add yaml tests cases in `internal/kgateway/translator/gateway/gateway_translator_test.go`.
+The yaml inputs go in `internal/kgateway/translator/gateway/testutils/inputs/`. DO NOT generate the outputs.
+Instead, run your tests with environment variable `REFRESH_GOLDEN=true` For example: `REFRESH_GOLDEN=true go test -timeout 30s -run ^TestBasic$/^ListenerPolicy_with_proxy_protocol_on_HTTPS_listener$ github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway`
+It will generate the outputs for you automatically in the `internal/kgateway/translator/gateway/testutils/outputs/` folder.
+Once the outputs are generated, inspect them to see they contain the changes you expect, and alert the user if that's not the case.
+
+Consider also adding E2E tests using the framework. You can look at `test/e2e/features/cors/suite.go` as an example for an E2E test.
+
+### Directory Conventions
+- **Avoid "util" packages** - use descriptive names
+- **Lowercase filenames**, underscores for Go files (`my_file.go`), dashes for docs (`my-doc.md`)
+- **Package names**: Avoid separators, use nested dirs for multi-word names
+- **VSCode markers**: Use `// MARK: Section Name` for long file navigation
+
+## Development Workflows
+
+### Local Development with Tilt
+```bash
+# Initial setup
+make kind-create gw-api-crds gie-crds metallb  # Or: make setup-base
+
+# Build images and load into kind
+make kind-build-and-load  # Builds all 3 images
+
+# Deploy with Tilt (live reload enabled)
+tilt up  # Configure via tilt-settings.yaml
+
+# Rebuild single component
+make kind-reload-kgateway  # Rebuilds + restarts deployment
+```
+
+See `Tiltfile` and `tilt-settings.yaml` for configuration.
+
+### Manual Development
+```bash
+# Setup cluster
+make setup  # kind + CRDs + MetalLB + images + charts
+
+# Deploy kgateway
+make deploy-kgateway  # Or: make run (setup + deploy)
+
+# Update after code change
+make kgateway-docker kind-load-kgateway kind-set-image-kgateway
+```
+
+### Running Conformance Tests
+```bash
+make conformance  # Gateway API conformance
+make gie-conformance  # Gateway API Inference Extension
+make agw-conformance  # Agent Gateway conformance
+make all-conformance  # All suites
+
+# Run specific test by ShortName
+make conformance-HTTPRouteSimpleSameNamespace
+```
+
+## Common Gotchas
+
+1. **IR Equals() bugs**: High-risk area. MUST compare all fields or mark `+noKrtEquals`. Always test.
+2. **Proto comparison**: Use `proto.Equal()`, not `==` or `reflect.DeepEqual`
+3. **Codegen stamps**: `make clean-stamps` if regeneration seems stuck
+4. **E2E test resources**: Never manually delete resources in specific order - let framework handle it
+5. **PolicyIR translation**: Translate as close to Envoy protos as possible in the Plugin IR, not in translation pass. The translation pass should be very light weight.
+6. **KRT collections**: Changes trigger minimal recomputation - dependencies tracked automatically
+7. **Envoy image version**: Defined in `Makefile` as `ENVOY_IMAGE` (update with care)
+
+## File Reference Quick Guide
+- Architecture: `/devel/architecture/overview.md`
+- Contributing: `/devel/contributing/README.md`
+- API conventions: `/api/README.md`
+- Testing guide: `/devel/testing/writing-tests.md`
+- Code generation: `/devel/contributing/code-generation.md`
+- E2E framework: `/test/e2e/README.md`
+- Plugin SDK: `/pkg/pluginsdk/types.go`
+- Example plugin: `/internal/kgateway/extensions2/plugins/trafficpolicy/`
+
+## Build Details
+- **Go version**: Specified in `go.mod`
+- **Base image**: Alpine 3.17.6 (distroless for production)
+- **Architectures**: amd64, arm64 (controlled via `GOARCH`)
+- **Image registry**: `ghcr.io/kgateway-dev` (override via `IMAGE_REGISTRY`)
+- **Rust components**: envoyinit includes dynamic filters built from `/internal/envoyinit/rustformations/`
+
+## Key Make Targets
+```bash
+make help               # Self-documenting targets
+make analyze            # Run golangci-lint (custom config)
+make test               # Run unit tests
+make e2e-test          # Run e2e tests
+make generate-all       # Smart codegen (uses stamps)
+make verify            # CI codegen check (always regenerates)
+make fmt               # Format all code
+make fmt-changed       # Format only changed files
+make kind-create       # Create kind cluster
+make setup             # Full local setup
+make deploy-kgateway   # Deploy to cluster
+```
+
+## Dependencies & Bumping
+```bash
+make bump-gtw DEP_REF=v1.3.0     # Bump Gateway API
+make bump-gie DEP_REF=v1.1.0     # Bump Inference Extension
+make generate-licenses            # Update license attribution
+```
+
+Gateway API version is in `go.mod` and CRD install URL in Makefile (`CONFORMANCE_VERSION`).

@@ -7,14 +7,18 @@ import (
 )
 
 // JWTAuthentication defines the providers used to configure JWT authentication
+// +kubebuilder:validation:ExactlyOneOf=extensionRef;disable
 type JWTAuthentication struct {
 	// ExtensionRef references a GatewayExtension that provides the jwt providers
-	// +required
-	ExtensionRef NamespacedObjectReference `json:"extensionRef"`
+	// +optional
+	ExtensionRef *NamespacedObjectReference `json:"extensionRef,omitempty"`
 
 	// TODO: add support for ValidationMode here (REQUIRE_VALID,ALLOW_MISSING,ALLOW_MISSING_OR_FAILED)
 
-	// TODO(npolshak): Add option to disable all jwt filters.
+	// Disable all JWT filters.
+	// Can be used to disable JWT policies applied at a higher level in the config hierarchy.
+	// +optional
+	Disable *PolicyDisable `json:"disable,omitempty"`
 }
 
 // JWTProvider configures the JWT Provider

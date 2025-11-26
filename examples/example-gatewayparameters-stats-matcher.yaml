@@ -1,0 +1,39 @@
+# Example: Configure Envoy stats inclusion via GatewayParameters
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: gwp-stats
+spec:
+  kube:
+    stats:
+      enabled: true
+      # Keep query-time filtering for Prometheus scrape
+      routePrefixRewrite: "/stats/prometheus?usedonly"
+      enableStatsRoute: true
+      statsRoutePrefixRewrite: "/stats"
+      matcher:
+        # Exactly one of inclusionList or exclusionList may be set
+        inclusionList:
+          # Include all HTTP stats
+          - prefix: "http."
+          # Include counters ending with rq_total
+          - suffix: ".rq_total"
+          # Include specific upstream connection metric patterns
+          - safeRegex: "^cluster\\..*\\.upstream_cx_active$"
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: gw-stats
+spec:
+  gatewayClassName: kgateway
+  infrastructure:
+    parametersRef:
+      group: gateway.kgateway.dev
+      kind: GatewayParameters
+      name: gwp-stats
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http

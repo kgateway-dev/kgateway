@@ -23,13 +23,15 @@ import (
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections/metrics"
 	plug "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	"github.com/kgateway-dev/kgateway/v2/pkg/syncer"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/stopwatch"
 )
 
 var _ manager.LeaderElectionRunnable = &StatusSyncer{}
@@ -45,6 +47,8 @@ type StatusSyncer struct {
 	latestReportQueue              utils.AsyncQueue[reports.ReportMap]
 	latestBackendPolicyReportQueue utils.AsyncQueue[reports.ReportMap]
 	cacheSyncs                     []cache.InformerSynced
+
+	customStatusSync func(ctx context.Context, rm reports.ReportMap)
 }
 
 func NewStatusSyncer(
@@ -57,7 +61,9 @@ func NewStatusSyncer(
 	reportQueue utils.AsyncQueue[reports.ReportMap],
 	backendPolicyReportQueue utils.AsyncQueue[reports.ReportMap],
 	cacheSyncs []cache.InformerSynced,
+	opts ...syncer.StatusSyncerOption,
 ) *StatusSyncer {
+	cfg := syncer.ProcessStatusSyncerOptions(opts...)
 	return &StatusSyncer{
 		mgr:                            mgr,
 		plugins:                        plugins,
@@ -67,6 +73,7 @@ func NewStatusSyncer(
 		latestReportQueue:              reportQueue,
 		latestBackendPolicyReportQueue: backendPolicyReportQueue,
 		cacheSyncs:                     cacheSyncs,
+		customStatusSync:               cfg.CustomStatusSync,
 	}
 }
 
@@ -108,6 +115,9 @@ func (s *StatusSyncer) Start(ctx context.Context) error {
 			s.syncListenerSetStatus(ctx, listenerSetStatusLogger, latestReport)
 			s.syncRouteStatus(ctx, routeStatusLogger, latestReport)
 			s.syncPolicyStatus(ctx, latestReport)
+			if s.customStatusSync != nil {
+				s.customStatusSync(ctx, latestReport)
+			}
 		}
 	}()
 	go func() {
@@ -126,7 +136,7 @@ func (s *StatusSyncer) Start(ctx context.Context) error {
 }
 
 func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger, rm reports.ReportMap) {
-	stopwatch := utils.NewTranslatorStopWatch("RouteStatusSyncer")
+	stopwatch := stopwatch.NewTranslatorStopWatch("RouteStatusSyncer")
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
 
@@ -344,7 +354,7 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 
 // syncGatewayStatus will build and update status for all Gateways in a reportMap
 func (s *StatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logger, rm reports.ReportMap) {
-	stopwatch := utils.NewTranslatorStopWatch("GatewayStatusSyncer")
+	stopwatch := stopwatch.NewTranslatorStopWatch("GatewayStatusSyncer")
 	stopwatch.Start()
 
 	for gwnn := range rm.Gateways {
@@ -448,12 +458,12 @@ func (s *StatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logge
 
 // syncListenerSetStatus will build and update status for all Listener Sets in a reportMap
 func (s *StatusSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.Logger, rm reports.ReportMap) {
-	stopwatch := utils.NewTranslatorStopWatch("ListenerSetStatusSyncer")
+	stopwatch := stopwatch.NewTranslatorStopWatch("ListenerSetStatusSyncer")
 	stopwatch.Start()
 
 	// TODO: retry within loop per LS rather than as a full block
 	err := retry.Do(func() (rErr error) {
-		for lsnn := range rm.ListenerSets {
+		for lsnn := range rm.ListenerSets[wellknown.XListenerSetGVK] {
 			ls := gwxv1a1.XListenerSet{}
 			err := s.mgr.GetClient().Get(ctx, lsnn, &ls)
 			if err != nil {
@@ -524,7 +534,7 @@ func (s *StatusSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.L
 }
 
 func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMap) {
-	stopwatch := utils.NewTranslatorStopWatch("RouteStatusSyncer")
+	stopwatch := stopwatch.NewTranslatorStopWatch("RouteStatusSyncer")
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
 
