@@ -19,7 +19,7 @@ Addresses:
         ports:
         - servicePort: 8080
           targetPort: 8080
-    uid: Kubernetes//ServiceEntry/default/external-service/external-backend.example.com
+    uid: Kubernetes/networking.istio.io/ServiceEntry/default/external-service/external-backend.example.com
     workloadName: external-service
     workloadType: POD
 Binds:

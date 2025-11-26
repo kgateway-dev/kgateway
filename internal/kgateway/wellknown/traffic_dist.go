@@ -29,7 +29,7 @@ func ParseTrafficDistribution(value string) TrafficDistribution {
 	// k8s Service PreferSameNode is an alpha feature
 	case strings.ToLower(corev1.ServiceTrafficDistributionPreferSameNode):
 		return TrafficDistributionPreferSameNode
-	case strings.ToLower("PreferSameNetwork"):
+	case strings.ToLower("PreferNetwork"):
 		return TrafficDistributionPreferSameNetwork
 	default:
 		if value != "" {

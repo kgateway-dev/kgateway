@@ -14,7 +14,7 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/network"
 	"k8s.io/apimachinery/pkg/types"
-	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
@@ -23,12 +23,12 @@ import (
 // NetworkGatewaysCollection builds a collection of NetworkGateway objects from Gateway resources
 // that have the topology.istio.io/network label set.
 func (a *index) NetworkGatewaysCollection(
-	gateways krt.Collection[*gatewayv1.Gateway],
+	gateways krt.Collection[*gwv1.Gateway],
 	krtopts krtutil.KrtOptions,
 ) (krt.Collection[translator.NetworkGateway], krt.Index[network.ID, translator.NetworkGateway]) {
 	networkGateways := krt.NewManyCollection(
 		gateways,
-		func(ctx krt.HandlerContext, gw *gatewayv1.Gateway) []translator.NetworkGateway {
+		func(ctx krt.HandlerContext, gw *gwv1.Gateway) []translator.NetworkGateway {
 			return k8sGatewayToNetworkGateways(cluster.ID(a.ClusterID), gw)
 		},
 		krtopts.ToOptions("NetworkGateways")...,
@@ -46,7 +46,7 @@ func (a *index) NetworkGatewaysCollection(
 // 1. topology.istio.io/network label set
 // 2. GatewayClassName of "istio-remote" (for declaring gateways that provide access to other networks)
 // 3. At least one HBONE listener
-func k8sGatewayToNetworkGateways(clusterID cluster.ID, gw *gatewayv1.Gateway) []translator.NetworkGateway {
+func k8sGatewayToNetworkGateways(clusterID cluster.ID, gw *gwv1.Gateway) []translator.NetworkGateway {
 	// Check if this gateway has a network label
 	netLabel := gw.GetLabels()[label.TopologyNetwork.Name]
 	if netLabel == "" {
@@ -82,7 +82,7 @@ func k8sGatewayToNetworkGateways(clusterID cluster.ID, gw *gatewayv1.Gateway) []
 			continue
 		}
 		addrType := *addr.Type
-		if addrType != gatewayv1.IPAddressType && addrType != gatewayv1.HostnameAddressType {
+		if addrType != gwv1.IPAddressType && addrType != gwv1.HostnameAddressType {
 			continue
 		}
 
@@ -105,7 +105,7 @@ func k8sGatewayToNetworkGateways(clusterID cluster.ID, gw *gatewayv1.Gateway) []
 // getGatewaySA returns the service account for a gateway.
 // If the gateway has a service account annotation, use that.
 // Otherwise, use gateway name with appropriate suffix based on GatewayClassName to match Istio conventions.
-func getGatewaySA(gw *gatewayv1.Gateway) string {
+func getGatewaySA(gw *gwv1.Gateway) string {
 	if sa, ok := gw.Annotations[annotation.GatewayServiceAccount.Name]; ok {
 		return sa
 	}

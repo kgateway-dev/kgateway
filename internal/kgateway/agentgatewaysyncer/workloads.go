@@ -20,6 +20,7 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	kubelabels "istio.io/istio/pkg/kube/labels"
 	"istio.io/istio/pkg/log"
+	"istio.io/istio/pkg/maps"
 	"istio.io/istio/pkg/network"
 	"istio.io/istio/pkg/ptr"
 	"istio.io/istio/pkg/slices"
@@ -45,14 +46,15 @@ type index struct {
 
 // workloadEntryWorkloadBuilder creates Workload objects from WorkloadEntry resources
 func (a *index) workloadEntryWorkloadBuilder(
-	waypoints krt.Collection[Waypoint],
 	workloadServices krt.Collection[ServiceInfo],
 	workloadServicesNamespaceIndex krt.Index[string, ServiceInfo],
-	namespaces krt.Collection[*corev1.Namespace],
 	networkGateways krt.Collection[translator.NetworkGateway],
 	gatewaysByNetwork krt.Index[network.ID, translator.NetworkGateway],
 ) krt.TransformationSingle[*networkingclient.WorkloadEntry, WorkloadInfo] {
 	return func(ctx krt.HandlerContext, wle *networkingclient.WorkloadEntry) *WorkloadInfo {
+		// WLE can put labels in multiple places; normalize this
+		wle = convertClientWorkloadEntry(wle)
+
 		// Fetch services that select this workload entry
 		fo := []krt.FetchOption{
 			krt.FilterIndex(workloadServicesNamespaceIndex, wle.Namespace),
@@ -66,14 +68,11 @@ func (a *index) workloadEntryWorkloadBuilder(
 			network = wle.Spec.Network
 		}
 
-		// Get waypoint for this workload
-		waypoint, _ := fetchWaypointForTarget(ctx, waypoints, namespaces, wle.ObjectMeta)
-
 		// Determine if this workload requires gateway routing
 		networkGatewayAddr := getNetworkGatewayAddress(ctx, network, networkGateways, gatewaysByNetwork)
 
 		w := &api.Workload{
-			Uid:            a.ClusterID + "//WorkloadEntry/" + wle.Namespace + "/" + wle.Name,
+			Uid:            a.ClusterID + "/networking.istio.io/WorkloadEntry/" + wle.Namespace + "/" + wle.Name,
 			Name:           wle.Name,
 			Namespace:      wle.Namespace,
 			Network:        network,
@@ -82,7 +81,6 @@ func (a *index) workloadEntryWorkloadBuilder(
 			ServiceAccount: wle.Spec.ServiceAccount,
 			Services:       constructServicesFromWorkloadEntry(&wle.Spec, networkGatewayAddr, services),
 			Status:         api.WorkloadStatus_HEALTHY,
-			Waypoint:       waypoint.GetAddress(),
 			TrustDomain:    pickTrustDomain(),
 			Locality:       getWorkloadEntryLocality(&wle.Spec),
 		}
@@ -97,7 +95,7 @@ func (a *index) workloadEntryWorkloadBuilder(
 			w.Hostname = wle.Spec.Address
 		}
 
-		w.WorkloadName = wle.Name
+		w.WorkloadName = kubelabels.WorkloadNameFromWorkloadEntry(wle.Name, wle.Annotations, wle.Labels)
 		w.WorkloadType = api.WorkloadType_POD
 		w.CanonicalName, w.CanonicalRevision = kubelabels.CanonicalService(wle.Labels, w.WorkloadName)
 
@@ -129,6 +127,19 @@ func (a *index) serviceEntryWorkloadBuilder(
 		}
 
 		eps := se.Spec.Endpoints
+		// If we have a DNS service, endpoints are not required
+		implicitEndpoints := len(eps) == 0 &&
+			(se.Spec.Resolution == networkingv1alpha3.ServiceEntry_DNS || se.Spec.Resolution == networkingv1alpha3.ServiceEntry_DNS_ROUND_ROBIN) &&
+			se.Spec.WorkloadSelector == nil
+		if len(eps) == 0 && !implicitEndpoints {
+			return nil
+		}
+
+		if implicitEndpoints {
+			eps = slices.Map(allServices, func(si ServiceInfo) *networkingv1alpha3.WorkloadEntry {
+				return &networkingv1alpha3.WorkloadEntry{Address: si.Service.Hostname}
+			})
+		}
 		if len(eps) == 0 {
 			return nil
 		}
@@ -156,7 +167,7 @@ func (a *index) serviceEntryWorkloadBuilder(
 			networkGatewayAddr := getNetworkGatewayAddress(ctx, nw, networkGateways, gatewaysByNetwork)
 
 			w := &api.Workload{
-				Uid:            a.ClusterID + "//ServiceEntry/" + se.Namespace + "/" + se.Name + "/" + wle.Address,
+				Uid:            a.ClusterID + "/networking.istio.io/ServiceEntry/" + se.Namespace + "/" + se.Name + "/" + wle.Address,
 				Name:           se.Name,
 				Namespace:      se.Namespace,
 				Network:        nw,
@@ -233,10 +244,8 @@ func (a *index) WorkloadsCollection(
 	WorkloadEntryWorkloads := krt.NewCollection(
 		workloadEntries,
 		a.workloadEntryWorkloadBuilder(
-			waypoints,
 			workloadServices,
 			WorkloadServicesNamespaceIndex,
-			namespaces,
 			networkGateways,
 			gatewaysByNetwork,
 		),
@@ -868,6 +877,23 @@ func constructServicesFromWorkloadEntry(wle *networkingv1alpha3.WorkloadEntry, n
 		}
 	}
 	return res
+}
+
+// convertClientWorkloadEntry merges the metadata.labels and spec.labels
+// WorkloadEntry can put labels in multiple places; this normalizes them by merging
+// spec labels with metadata labels (metadata takes precedence) and setting both to the merged result.
+func convertClientWorkloadEntry(wle *networkingclient.WorkloadEntry) *networkingclient.WorkloadEntry {
+	if wle.Spec.Labels == nil {
+		// Short circuit, we don't have to do any conversion
+		return wle
+	}
+	wle = wle.DeepCopy()
+	// Set both fields to be the merged result, so either can be used
+	// Merge spec labels with metadata labels (metadata takes precedence)
+	wle.Spec.Labels = maps.MergeCopy(wle.Spec.Labels, wle.Labels)
+	wle.Labels = wle.Spec.Labels
+
+	return wle
 }
 
 // getWorkloadEntryLocality extracts locality from a WorkloadEntry

@@ -32,7 +32,7 @@ Addresses:
         ports:
         - servicePort: 8080
           targetPort: 8080
-    uid: Kubernetes//ServiceEntry/default/api-service/10.0.0.100
+    uid: Kubernetes/networking.istio.io/ServiceEntry/default/api-service/10.0.0.100
     workloadName: api-service
     workloadType: POD
 - workload:
@@ -58,7 +58,7 @@ Addresses:
         ports:
         - servicePort: 8080
           targetPort: 8080
-    uid: Kubernetes//ServiceEntry/default/api-service/10.0.1.100
+    uid: Kubernetes/networking.istio.io/ServiceEntry/default/api-service/10.0.1.100
     workloadName: api-service
     workloadType: POD
 - workload:
