@@ -30,6 +30,7 @@ import (
 	"istio.io/istio/pilot/pkg/util/protoconv"
 	pilotxds "istio.io/istio/pilot/pkg/xds"
 	v3 "istio.io/istio/pilot/pkg/xds/v3"
+	"istio.io/istio/pkg/env"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/maps"
 	"istio.io/istio/pkg/ptr"
@@ -163,6 +164,23 @@ func Collection[T IntoProto[TT], TT proto.Message](collection krt.Collection[T],
 	return PerGatewayCollection(collection, nil, krtopts)
 }
 
+var (
+	DebounceAfter = env.Register(
+		"KGW_DEBOUNCE_AFTER",
+		10*time.Millisecond,
+		"The delay added to config/registry events for debouncing. This will delay the push by "+
+			"at least this interval. If no change is detected within this period, the push will happen, "+
+			" otherwise we'll keep delaying until things settle, up to a max of KGW_DEBOUNCE_MAX.",
+	).Get()
+
+	DebounceMax = env.Register(
+		"KGW_DEBOUNCE_MAX",
+		1*time.Second,
+		"The maximum amount of time to wait for events while debouncing. If events keep showing up with no breaks "+
+			"for this time, we'll trigger a push.",
+	).Get()
+)
+
 // NewDiscoveryServer creates a DiscoveryServer for agentgateway that sources data from KRT collections via registered generators
 func NewDiscoveryServer(debugger *krt.DebugHandler, nackPublisher *nack.Publisher, reg ...Registration) *DiscoveryServer {
 	out := &DiscoveryServer{
@@ -177,8 +195,8 @@ func NewDiscoveryServer(debugger *krt.DebugHandler, nackPublisher *nack.Publishe
 		krtDebugger:         debugger,
 		nackPublisher:       nackPublisher,
 		DebounceOptions: DebounceOptions{
-			DebounceAfter: features.DebounceAfter,
-			DebounceMax:   features.DebounceMax,
+			DebounceAfter: DebounceAfter,
+			DebounceMax:   DebounceMax,
 		},
 		Collections: make(map[string]CollectionGenerator),
 	}

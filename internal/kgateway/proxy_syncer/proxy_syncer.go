@@ -17,13 +17,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	kmetrics "github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
+	kmetrics "github.com/kgateway-dev/kgateway/v2/pkg/krtcollections/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	plug "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -181,7 +181,10 @@ func (r report) Equals(in report) bool {
 	if !maps.Equal(r.reportMap.Gateways, in.reportMap.Gateways) {
 		return false
 	}
-	if !maps.Equal(r.reportMap.ListenerSets, in.reportMap.ListenerSets) {
+	if !maps.EqualFunc(r.reportMap.ListenerSets, in.reportMap.ListenerSets,
+		func(a, b map[types.NamespacedName]*reports.ListenerSetReport) bool {
+			return maps.Equal(a, b)
+		}) {
 		return false
 	}
 	if !maps.Equal(r.reportMap.HTTPRoutes, in.reportMap.HTTPRoutes) {

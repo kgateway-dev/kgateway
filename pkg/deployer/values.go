@@ -163,10 +163,28 @@ type HelmIstioContainer struct {
 }
 
 type HelmStatsConfig struct {
-	Enabled            *bool   `json:"enabled,omitempty"`
-	RoutePrefixRewrite *string `json:"routePrefixRewrite,omitempty"`
-	EnableStatsRoute   *bool   `json:"enableStatsRoute,omitempty"`
-	StatsPrefixRewrite *string `json:"statsPrefixRewrite,omitempty"`
+	Enabled            *bool             `json:"enabled,omitempty"`
+	RoutePrefixRewrite *string           `json:"routePrefixRewrite,omitempty"`
+	EnableStatsRoute   *bool             `json:"enableStatsRoute,omitempty"`
+	StatsPrefixRewrite *string           `json:"statsPrefixRewrite,omitempty"`
+	Matcher            *HelmStatsMatcher `json:"matcher,omitempty"`
+}
+
+// HelmStatsMatcher represents mutually exclusive inclusion or exclusion lists for Envoy stats.
+type HelmStatsMatcher struct {
+	InclusionList []HelmStringMatcher `json:"inclusionList,omitempty"`
+	ExclusionList []HelmStringMatcher `json:"exclusionList,omitempty"`
+}
+
+// HelmStringMatcher mirrors a subset of Envoy's StringMatcher.
+// Only one of these fields should be set per matcher.
+type HelmStringMatcher struct {
+	Exact      *string `json:"exact,omitempty"`
+	Prefix     *string `json:"prefix,omitempty"`
+	Suffix     *string `json:"suffix,omitempty"`
+	Contains   *string `json:"contains,omitempty"`
+	SafeRegex  *string `json:"safeRegex,omitempty"`
+	IgnoreCase *bool   `json:"ignoreCase,omitempty"`
 }
 
 type HelmInferenceExtension struct {

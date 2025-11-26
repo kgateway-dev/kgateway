@@ -15,9 +15,9 @@ import (
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
@@ -49,6 +49,8 @@ type CommonCollections struct {
 	Settings                   apisettings.Settings
 	ControllerName             string
 	AgentgatewayControllerName string
+
+	options *option
 }
 
 func (c *CommonCollections) HasSynced() bool {
@@ -77,7 +79,13 @@ func NewCommonCollections(
 	controllerName string,
 	agentGatewayControllerName string,
 	settings apisettings.Settings,
+	opts ...Option,
 ) (*CommonCollections, error) {
+	options := &option{}
+	for _, fn := range opts {
+		fn(options)
+	}
+
 	// Namespace collection must be initialized first to enable discovery namespace
 	// selectors to be applies as filters to other collections
 	namespaces, nsClient := krtcollections.NewNamespaceCollection(ctx, client, krtOptions)
@@ -163,6 +171,8 @@ func NewCommonCollections(
 
 		ControllerName:             controllerName,
 		AgentgatewayControllerName: agentGatewayControllerName,
+
+		options: options,
 	}, nil
 }
 
@@ -174,14 +184,10 @@ func (c *CommonCollections) InitPlugins(
 	mergedPlugins pluginsdk.Plugin,
 	globalSettings apisettings.Settings,
 ) {
-	gateways, routeIndex, backendIndex, endpointIRs := krtcollections.InitCollections(
+	gateways, routeIndex, backendIndex, endpointIRs := c.InitCollections(
 		ctx,
 		smallset.New(c.ControllerName, c.AgentgatewayControllerName),
-		c.ControllerName,
 		mergedPlugins,
-		c.Client,
-		c.RefGrants,
-		c.KrtOpts,
 		globalSettings,
 	)
 
