@@ -72,6 +72,8 @@ type requestConfig struct {
 
 	scheme string
 
+	proxyProto bool
+
 	retry                  int
 	retryDelay             int
 	retryMaxTime           int
@@ -128,6 +130,10 @@ func (c *requestConfig) generateArgs() []string {
 	}
 	if c.retryConnectionRefused {
 		args = append(args, "--retry-connrefused")
+	}
+
+	if c.proxyProto {
+		args = append(args, "--haproxy-protocol")
 	}
 
 	if len(c.additionalArgs) > 0 {

@@ -105,7 +105,7 @@ spec:
                 type: array
                 x-kubernetes-validations:
                 - message: targetRefs may only reference Gateway resource
-                  rule: self.all(r, (r.kind == 'Gateway' && (!has(r.group) || r.group
+                  rule: self.all(r, r.kind == 'Gateway' && (!has(r.group) || r.group
                     == 'gateway.networking.k8s.io'))
               targetSelectors:
                 description: TargetSelectors specifies the target selectors to select
@@ -147,7 +147,7 @@ spec:
                 type: array
                 x-kubernetes-validations:
                 - message: targetSelectors may only reference Gateway resource
-                  rule: self.all(r, (r.kind == 'Gateway' && (!has(r.group) || r.group
+                  rule: self.all(r, r.kind == 'Gateway' && (!has(r.group) || r.group
                     == 'gateway.networking.k8s.io'))
             type: object
           status:

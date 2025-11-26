@@ -246,3 +246,9 @@ func WithCookieJar(cookieJar string) Option {
 		config.cookieJar = cookieJar
 	}
 }
+
+func WithProxyProto() Option {
+	return func(config *requestConfig) {
+		config.proxyProto = true
+	}
+}
