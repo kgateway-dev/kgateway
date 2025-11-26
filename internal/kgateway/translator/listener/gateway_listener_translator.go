@@ -342,7 +342,7 @@ func (ml *MergedListener) TranslateListener(
 	// Translate TCP listeners (if any exist)
 	var matchedTcpListeners []ir.TcpIR
 	for _, tfc := range ml.TcpFilterChains {
-		if tcpListener := tfc.translateTcpFilterChain(kctx, ctx, queries, ml.name, reporter); tcpListener != nil {
+		if tcpListener := tfc.translateTcpFilterChain(ml.name, reporter); tcpListener != nil {
 			matchedTcpListeners = append(matchedTcpListeners, *tcpListener)
 		}
 	}
@@ -397,12 +397,7 @@ type tcpFilterChainParent struct {
 	routesWithHosts     []*query.RouteInfo
 }
 
-func (tc *tcpFilterChain) translateTcpFilterChain(
-	kctx krt.HandlerContext, ctx context.Context,
-	queries query.GatewayQueries,
-	parentName string,
-	reporter reports.Reporter,
-) *ir.TcpIR {
+func (tc *tcpFilterChain) translateTcpFilterChain(parentName string, reporter reports.Reporter) *ir.TcpIR {
 	parent := tc.parents
 	if len(parent.routesWithHosts) == 0 {
 		return nil
