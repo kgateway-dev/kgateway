@@ -6,6 +6,7 @@ import (
 	"context"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -217,24 +218,19 @@ func TestCustomGWP(t *testing.T) {
 	testInstallation.Assertions.EventuallyKgatewayInstallSucceeded(ctx)
 
 	// Verify GatewayClass is updated with new ref
-	gcUpdated := &gwv1.GatewayClass{}
-	err = testInstallation.ClusterContext.Client.Get(ctx, client.ObjectKey{Name: "kgateway"}, gcUpdated)
-	if err != nil {
-		t.Fatalf("failed to get GatewayClass after upgrade: %v", err)
-	}
-
-	if gcUpdated.Spec.ParametersRef == nil {
-		t.Fatal("GatewayClass spec.parametersRef is nil after upgrade")
-	}
-
-	if gcUpdated.Spec.ParametersRef.Name != "custom-gwp-2" {
-		t.Fatalf("expected GatewayClass parametersRef.name to be 'custom-gwp-2' after upgrade, got '%s'", gcUpdated.Spec.ParametersRef.Name)
-	}
-
-	expectedNamespaceUpdated := gwv1.Namespace("kgateway-test")
-	if gcUpdated.Spec.ParametersRef.Namespace == nil || *gcUpdated.Spec.ParametersRef.Namespace != expectedNamespaceUpdated {
-		t.Fatalf("expected GatewayClass parametersRef.namespace to be '%s' after upgrade, got '%v'", expectedNamespaceUpdated, gcUpdated.Spec.ParametersRef.Namespace)
-	}
+	testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+		gcUpdated := &gwv1.GatewayClass{}
+		err := testInstallation.ClusterContext.Client.Get(ctx, client.ObjectKey{Name: "kgateway"}, gcUpdated)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get GatewayClass after upgrade")
+		g.Expect(gcUpdated.Spec.ParametersRef).NotTo(gomega.BeNil(), "GatewayClass spec.parametersRef is nil after upgrade")
+		g.Expect(gcUpdated.Spec.ParametersRef.Name).To(gomega.Equal("custom-gwp-2"), "expected GatewayClass parametersRef.name to be 'custom-gwp-2' after upgrade")
+		g.Expect(gcUpdated.Spec.ParametersRef.Namespace).NotTo(gomega.BeNil(), "GatewayClass spec.parametersRef.namespace is nil after upgrade")
+		g.Expect(*gcUpdated.Spec.ParametersRef.Namespace).To(gomega.Equal(expectedNamespace), "expected GatewayClass parametersRef.namespace to be '%s' after upgrade", expectedNamespace)
+	}).
+		WithContext(ctx).
+		WithTimeout(time.Second * 20).
+		WithPolling(time.Millisecond * 200).
+		Should(gomega.Succeed())
 
 	// Ensure gateway pods are still running (even though the ParametersRef has changed to non-existant resource)
 	testInstallation.Assertions.EventuallyReadyReplicas(ctx, proxyObjectMeta, gomega.Equal(1))
@@ -249,6 +245,23 @@ func TestCustomGWP(t *testing.T) {
 	// The Gateway should pick up the new GatewayParameters and update the pods
 	testInstallation.Assertions.EventuallyReadyReplicas(ctx, proxyObjectMeta, gomega.Equal(1))
 
-	// Ensure the gateway pod has the new label
-	verifyPodLabel(t, ctx, testInstallation, "another", "label", "after upgrade")
+	// Assert that eventually the deployment gateway pod is updated with the new label
+	testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+		pods, err := kubeutils.GetReadyPodsForDeployment(ctx, testInstallation.ClusterContext.Clientset, proxyObjectMeta)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get ready pods for deployment after upgrade")
+		g.Expect(pods).NotTo(gomega.BeEmpty(), "no ready pods found for deployment after upgrade")
+
+		pod := &corev1.Pod{}
+		err = testInstallation.ClusterContext.Client.Get(ctx, client.ObjectKey{
+			Namespace: gatewayNamespace,
+			Name:      pods[0],
+		}, pod)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get pod after upgrade")
+		g.Expect(pod.Labels).NotTo(gomega.BeNil(), "pod labels are nil after upgrade")
+		g.Expect(pod.Labels).To(gomega.HaveKeyWithValue("another", "label"), "pod should have the new label 'another: label' after upgrade")
+	}).
+		WithContext(ctx).
+		WithTimeout(time.Second * 15).
+		WithPolling(time.Millisecond * 200).
+		Should(gomega.Succeed())
 }
