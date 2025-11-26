@@ -14,8 +14,10 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/helmutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/helper"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/install"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
@@ -33,6 +35,19 @@ spec:
         custom: custom-label
 `
 
+var kgatewayGWP2 = `
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: custom-gwp-2
+  namespace: kgateway-test
+spec:
+  kube:
+    podTemplate:
+      extraLabels:
+        another: label
+`
+
 var kgatewayGateway = `
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
@@ -46,11 +61,63 @@ spec:
       name: http
 `
 
+const gatewayNamespace = "default"
+
+var proxyObjectMeta = metav1.ObjectMeta{
+	Name:      "gw",
+	Namespace: gatewayNamespace,
+}
+
+// verifyPodLabel checks that a pod for the given deployment has the specified label with the expected value.
+func verifyPodLabel(
+	t *testing.T,
+	ctx context.Context,
+	testInstallation *e2e.TestInstallation,
+	labelKey string,
+	expectedValue string,
+	errorContext string,
+) {
+	pods, err := kubeutils.GetReadyPodsForDeployment(ctx, testInstallation.ClusterContext.Clientset, proxyObjectMeta)
+	if err != nil {
+		t.Fatalf("failed to get ready pods for deployment %s: %v", errorContext, err)
+	}
+	if len(pods) == 0 {
+		t.Fatalf("no ready pods found for deployment %s", errorContext)
+	}
+
+	pod := &corev1.Pod{}
+	err = testInstallation.ClusterContext.Client.Get(ctx, client.ObjectKey{
+		Namespace: gatewayNamespace,
+		Name:      pods[0],
+	}, pod)
+	if err != nil {
+		t.Fatalf("failed to get pod %s: %v", errorContext, err)
+	}
+
+	if pod.Labels == nil {
+		t.Fatalf("pod labels are nil %s", errorContext)
+	}
+
+	labelValue, ok := pod.Labels[labelKey]
+	if !ok {
+		t.Fatalf("pod does not have '%s' label %s", labelKey, errorContext)
+	}
+
+	if labelValue != expectedValue {
+		t.Fatalf("expected pod label '%s' to be '%s' %s, got '%s'", labelKey, expectedValue, errorContext, labelValue)
+	}
+}
+
 // TestCustomGWP tests that the helm chart's gatewayClassParametersRefs configures
 // the default GatewayClass parametersRef correctly.
 // The test installs CRDs, creates the custom GatewayParameters resource, installs kgateway,
 // verifies that the GatewayClass parametersRef is configured correctly, creates a Gateway,
 // and verifies that the gateway pod has the custom label defined in the GatewayParameters.
+// It then upgrades the helm chart to reference a different GatewayParameters resource,
+// verifies that the GatewayClass parametersRef is updated correctly,
+// and verifies that the gateway pod is still running (even though the ParametersRef has changed to non-existant resource).
+// It then creates the new GatewayParameters resource,
+// and verifies that the gateway pod has the new label defined in the new GatewayParameters resource.
 func TestCustomGWP(t *testing.T) {
 	ctx := context.Background()
 	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "kgateway-test")
@@ -68,7 +135,7 @@ func TestCustomGWP(t *testing.T) {
 		os.Setenv(testutils.InstallNamespace, installNs)
 	}
 
-	// We register the cleanup function _before_ we actually perform the installation.
+	// We register the cleanup function before we actually perform the installation.
 	// This allows us to uninstall kgateway, in case the original installation only completed partially
 	testutils.Cleanup(t, func() {
 		if !nsEnvPredefined {
@@ -125,41 +192,63 @@ func TestCustomGWP(t *testing.T) {
 	}
 
 	// Wait for Gateway to be accepted and deployment created
-	gatewayNamespace := "default"
-	proxyObjectMeta := metav1.ObjectMeta{
-		Name:      "gw",
-		Namespace: gatewayNamespace,
-	}
 	testInstallation.Assertions.EventuallyReadyReplicas(ctx, proxyObjectMeta, gomega.Equal(1))
 
 	// Verify the gateway pod has the custom label
-	pods, err := kubeutils.GetReadyPodsForDeployment(ctx, testInstallation.ClusterContext.Clientset, proxyObjectMeta)
+	verifyPodLabel(t, ctx, testInstallation, "custom", "custom-label", "")
+
+	// Upgrade Helm to reference different ParametersRef (kgatewayGWP2)
+	chartUri, err := helper.GetLocalChartPath(helmutils.ChartName, "")
 	if err != nil {
-		t.Fatalf("failed to get ready pods for deployment: %v", err)
+		t.Fatalf("failed to get chart path: %v", err)
 	}
-	if len(pods) == 0 {
-		t.Fatal("no ready pods found for deployment")
-	}
-
-	pod := &corev1.Pod{}
-	err = testInstallation.ClusterContext.Client.Get(ctx, client.ObjectKey{
-		Namespace: gatewayNamespace,
-		Name:      pods[0],
-	}, pod)
+	err = testInstallation.Actions.Helm().WithReceiver(os.Stdout).Upgrade(
+		ctx,
+		helmutils.InstallOpts{
+			Namespace:       installNs,
+			CreateNamespace: true,
+			ValuesFiles:     []string{e2e.CommonRecommendationManifest, e2e.ManifestPath("custom-gwp-2.yaml")},
+			ReleaseName:     helmutils.ChartName,
+			ChartUri:        chartUri,
+		})
 	if err != nil {
-		t.Fatalf("failed to get pod: %v", err)
+		t.Fatalf("failed to upgrade Helm: %v", err)
+	}
+	testInstallation.Assertions.EventuallyKgatewayInstallSucceeded(ctx)
+
+	// Verify GatewayClass is updated with new ref
+	gcUpdated := &gwv1.GatewayClass{}
+	err = testInstallation.ClusterContext.Client.Get(ctx, client.ObjectKey{Name: "kgateway"}, gcUpdated)
+	if err != nil {
+		t.Fatalf("failed to get GatewayClass after upgrade: %v", err)
 	}
 
-	if pod.Labels == nil {
-		t.Fatal("pod labels are nil")
+	if gcUpdated.Spec.ParametersRef == nil {
+		t.Fatal("GatewayClass spec.parametersRef is nil after upgrade")
 	}
 
-	customLabelValue, ok := pod.Labels["custom"]
-	if !ok {
-		t.Fatal("pod does not have 'custom' label")
+	if gcUpdated.Spec.ParametersRef.Name != "custom-gwp-2" {
+		t.Fatalf("expected GatewayClass parametersRef.name to be 'custom-gwp-2' after upgrade, got '%s'", gcUpdated.Spec.ParametersRef.Name)
 	}
 
-	if customLabelValue != "custom-label" {
-		t.Fatalf("expected pod label 'custom' to be 'custom-label', got '%s'", customLabelValue)
+	expectedNamespaceUpdated := gwv1.Namespace("kgateway-test")
+	if gcUpdated.Spec.ParametersRef.Namespace == nil || *gcUpdated.Spec.ParametersRef.Namespace != expectedNamespaceUpdated {
+		t.Fatalf("expected GatewayClass parametersRef.namespace to be '%s' after upgrade, got '%v'", expectedNamespaceUpdated, gcUpdated.Spec.ParametersRef.Namespace)
 	}
+
+	// Ensure gateway pods are still running (even though the ParametersRef has changed to non-existant resource)
+	testInstallation.Assertions.EventuallyReadyReplicas(ctx, proxyObjectMeta, gomega.Equal(1))
+
+	// Create the kgatewayGWP2 GatewayParameters resource
+	err = testInstallation.Actions.Kubectl().Apply(ctx, []byte(kgatewayGWP2))
+	if err != nil {
+		t.Fatalf("failed to create GatewayParameters kgatewayGWP2: %v", err)
+	}
+
+	// Wait for Gateway to reconcile with new parameters
+	// The Gateway should pick up the new GatewayParameters and update the pods
+	testInstallation.Assertions.EventuallyReadyReplicas(ctx, proxyObjectMeta, gomega.Equal(1))
+
+	// Ensure the gateway pod has the new label
+	verifyPodLabel(t, ctx, testInstallation, "another", "label", "after upgrade")
 }
