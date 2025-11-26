@@ -406,7 +406,7 @@ func (s *setup) Start(ctx context.Context) error {
 	}
 
 	if s.agwXdsListener != nil && agw != nil {
-		NewAgwControlPlane(ctx, s.agwXdsListener, authenticators, s.globalSettings.XdsAuth, certWatcher, agw.EventPublisher, agw.Registrations...)
+		NewAgwControlPlane(ctx, s.agwXdsListener, authenticators, s.globalSettings.XdsAuth, certWatcher, agw.NackPublisher, agw.Registrations...)
 	}
 
 	slog.Info("starting admin server")

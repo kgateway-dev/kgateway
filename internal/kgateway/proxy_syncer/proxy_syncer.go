@@ -257,6 +257,13 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	s.backendPolicyReport = krt.NewSingleton(func(kctx krt.HandlerContext) *report {
 		backends := krt.Fetch(kctx, finalBackendsWithPolicyStatus)
 		merged := GenerateBackendPolicyReport(backends)
+
+		for _, plugin := range s.plugins.ContributesPolicies {
+			if plugin.ProcessPolicyStaleStatusMarkers != nil && plugin.ProcessBackend != nil {
+				plugin.ProcessPolicyStaleStatusMarkers(kctx, &merged)
+			}
+		}
+
 		return &report{merged}
 	}, krtopts.ToOptions("BackendsPolicyReport")...)
 
@@ -270,6 +277,12 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		// Process status markers
 		objStatus := krt.Fetch(kctx, s.commonCols.Routes.GetHTTPRouteStatusMarkers())
 		s.commonCols.Routes.ProcessHTTPRouteStatusMarkers(objStatus, merged)
+
+		for _, plugin := range s.plugins.ContributesPolicies {
+			if plugin.ProcessPolicyStaleStatusMarkers != nil && plugin.ProcessBackend == nil {
+				plugin.ProcessPolicyStaleStatusMarkers(kctx, &merged)
+			}
+		}
 
 		return &report{merged}
 	})

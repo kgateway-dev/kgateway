@@ -164,7 +164,7 @@ func Collection[T IntoProto[TT], TT proto.Message](collection krt.Collection[T],
 }
 
 // NewDiscoveryServer creates a DiscoveryServer for agentgateway that sources data from KRT collections via registered generators
-func NewDiscoveryServer(debugger *krt.DebugHandler, eventPublisher *nack.NackEventPublisher, reg ...Registration) *DiscoveryServer {
+func NewDiscoveryServer(debugger *krt.DebugHandler, nackPublisher *nack.Publisher, reg ...Registration) *DiscoveryServer {
 	out := &DiscoveryServer{
 		concurrentPushLimit: make(chan struct{}, features.PushThrottle),
 		RequestRateLimit:    rate.NewLimiter(rate.Limit(features.RequestLimit), 1),
@@ -175,7 +175,7 @@ func NewDiscoveryServer(debugger *krt.DebugHandler, eventPublisher *nack.NackEve
 		debugHandlers:       map[string]string{},
 		adsClients:          map[string]*Connection{},
 		krtDebugger:         debugger,
-		nackHandler:         eventPublisher,
+		nackPublisher:       nackPublisher,
 		DebounceOptions: DebounceOptions{
 			DebounceAfter: features.DebounceAfter,
 			DebounceMax:   features.DebounceMax,
@@ -236,7 +236,7 @@ type DiscoveryServer struct {
 	pushOrder     []string
 	registrations []CollectionRegistration
 
-	nackHandler *nack.NackEventPublisher
+	nackPublisher *nack.Publisher
 }
 
 // Proxy contains information about an specific instance of a proxy.
@@ -477,7 +477,7 @@ func (s *DiscoveryServer) processDeltaRequest(req *discovery.DeltaDiscoveryReque
 	stype := v3.GetShortType(req.TypeUrl)
 	log.Debug("ADS: REQ resources", "type", stype, "connection", con.ID(), "subscribe", len(req.ResourceNamesSubscribe), "unsubscribe", len(req.ResourceNamesUnsubscribe), "nonce", req.ResponseNonce)
 
-	shouldRespond := shouldRespondDelta(con, req, s.nackHandler)
+	shouldRespond := shouldRespondDelta(con, req, s.nackPublisher)
 	if !shouldRespond {
 		log.Debug("no response needed")
 		return nil
@@ -502,7 +502,7 @@ func (s *DiscoveryServer) processDeltaRequest(req *discovery.DeltaDiscoveryReque
 
 // shouldRespondDelta determines whether this request needs to be responded back. It applies the ack/nack rules as per xds protocol
 // using WatchedResource for previous state and discovery request for the current state.
-func shouldRespondDelta(con *Connection, request *discovery.DeltaDiscoveryRequest, nackHandler *nack.NackEventPublisher) bool {
+func shouldRespondDelta(con *Connection, request *discovery.DeltaDiscoveryRequest, nackPublisher *nack.Publisher) bool {
 	stype := v3.GetShortType(request.TypeUrl)
 
 	// If there is an error in request that means previous response is erroneous.
@@ -518,7 +518,7 @@ func shouldRespondDelta(con *Connection, request *discovery.DeltaDiscoveryReques
 			return wr
 		})
 
-		if nackHandler != nil {
+		if nackPublisher != nil {
 			gateway := kgwxds.AgentgatewayID(con.node)
 			nackEvent := nack.NackEvent{
 				Gateway:   gateway,
@@ -526,7 +526,7 @@ func shouldRespondDelta(con *Connection, request *discovery.DeltaDiscoveryReques
 				ErrorMsg:  request.ErrorDetail.GetMessage(),
 				Timestamp: time.Now(),
 			}
-			nackHandler.PublishNack(&nackEvent)
+			nackPublisher.PublishNack(&nackEvent)
 		}
 		return false
 	}

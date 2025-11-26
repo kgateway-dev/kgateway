@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/agentgateway/agentgateway/go/api"
-	wrappers "google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
@@ -98,7 +97,7 @@ func translatePoliciesForInferencePool(pool *inf.InferencePool, domainSuffix str
 				Kind: &api.BackendPolicySpec_BackendTls{
 					BackendTls: &api.BackendPolicySpec_BackendTLS{
 						// The spec mandates this :vomit:
-						Insecure: wrappers.Bool(true),
+						Verification: api.BackendPolicySpec_BackendTLS_INSECURE_ALL,
 					},
 				},
 			},

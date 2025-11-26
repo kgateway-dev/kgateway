@@ -120,20 +120,6 @@ spec:
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
-  name: backend-http
-spec:
-  targetRefs:
-    - group: gateway.networking.k8s.io
-      kind: Gateway
-      name: dummy
-  backend:
-    http:
-      poolIdleTimeout: 30s
-      http2FrameSize: 17000
----
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: AgentgatewayPolicy
-metadata:
   name: backend-ai-prompt
 spec:
   targetRefs:
@@ -561,9 +547,6 @@ spec:
       sni: backend.example.com
       alpnProtocols:
         - h2
-    http:
-      poolIdleTimeout: 60s
-      http2FrameSize: 50000
     auth:
       secretRef:
         name: backend-token

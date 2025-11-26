@@ -37,7 +37,7 @@ type TrafficPolicyGatewayExtensionIR struct {
 	ExtAuth          *envoy_ext_authz_v3.ExtAuthz
 	ExtProc          *envoymatchingv3.ExtensionWithMatcher
 	RateLimit        *ratev3.RateLimit
-	Jwt              *envoyjwtauthnv3.JwtAuthentication
+	Jwt              *envoymatchingv3.ExtensionWithMatcher
 	PrecedenceWeight int32
 	Err              error
 }
@@ -163,12 +163,20 @@ func TranslateGatewayExtensionBuilder(commoncol *collections.CommonCollections) 
 
 			p.RateLimit = rateLimitConfig
 		case gExt.JwtProviders != nil:
-			jwtConfig, err := resolveJwtProviders(krtctx, commoncol.ConfigMaps, gExt.Name, gExt.Namespace, gExt.JwtProviders)
+			jwtConfig, err := resolveJwtProviders(
+				krtctx,
+				commoncol.ConfigMaps,
+				commoncol.BackendIndex,
+				gExt.ObjectSource,
+				gExt.Name,
+				gExt.Namespace,
+				gExt.JwtProviders,
+			)
 			if err != nil {
 				p.Err = fmt.Errorf("jwt: %w", err)
 				return p
 			}
-			p.Jwt = jwtConfig
+			p.Jwt = buildCompositeJwtFilter(jwtConfig)
 		}
 		return p
 	}
@@ -177,6 +185,8 @@ func TranslateGatewayExtensionBuilder(commoncol *collections.CommonCollections) 
 func resolveJwtProviders(
 	krtctx krt.HandlerContext,
 	configMaps krt.Collection[*corev1.ConfigMap],
+	backendResolver backendResolver,
+	gwExtObj ir.ObjectSource,
 	policyName, policyNamespace string,
 	jwtProviders []v1alpha1.NamedJWTProvider,
 ) (*envoyjwtauthnv3.JwtAuthentication, error) {
@@ -185,7 +195,14 @@ func resolveJwtProviders(
 
 	for _, provider := range jwtProviders {
 		providerNameForPolicy := ProviderName(policyNameNamespace, provider.Name)
-		jwtProvider, err := translateProvider(krtctx, provider.JWTProvider, policyNamespace, configMaps)
+		jwtProvider, err := translateProvider(
+			krtctx,
+			provider.JWTProvider,
+			policyNamespace,
+			configMaps,
+			backendResolver,
+			gwExtObj,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -343,9 +360,48 @@ func buildCompositeExtProcFilter(in v1alpha1.ExtProcProvider, envoyGrpcService *
 			}
 		}
 	}
+	return buildCompositeFilter(
+		"composite_ext_proc",
+		extProcGlobalDisableFilterMetadataNamespace,
+		&envoycorev3.TypedExtensionConfig{
+			Name:        "envoy.filters.http.ext_proc",
+			TypedConfig: utils.MustMessageToAny(filter),
+		},
+	)
+}
+
+func buildCompositeJwtFilter(jwtConfig *envoyjwtauthnv3.JwtAuthentication) *envoymatchingv3.ExtensionWithMatcher {
+	if jwtConfig == nil {
+		return nil
+	}
+
+	return buildCompositeFilter(
+		"composite_jwt",
+		jwtGlobalDisableFilterMetadataNamespace,
+		&envoycorev3.TypedExtensionConfig{
+			Name:        "envoy.filters.http.jwt_authn",
+			TypedConfig: utils.MustMessageToAny(jwtConfig),
+		},
+	)
+}
+
+// buildCompositeFilter creates an Envoy ExtensionWithMatcher that wraps a filter with conditional execution
+// based on dynamic metadata. The composite filter checks the metadataNamespace for a disable flag, and only
+// executes the wrapped filter (filterTypedConfig) when it is not disabled. This enables route-level or
+// HTTPRoute-level disabling of filters (e.g., JWT authentication, ext_proc) that are configured at the
+// gateway level. Returns nil if filterTypedConfig is nil.
+func buildCompositeFilter(
+	compositeName string,
+	metadataNamespace string,
+	filterTypedConfig *envoycorev3.TypedExtensionConfig,
+) *envoymatchingv3.ExtensionWithMatcher {
+	if filterTypedConfig == nil {
+		return nil
+	}
+
 	return &envoymatchingv3.ExtensionWithMatcher{
 		ExtensionConfig: &envoycorev3.TypedExtensionConfig{
-			Name:        "composite_ext_proc",
+			Name:        compositeName,
 			TypedConfig: utils.MustMessageToAny(&envoycompositev3.Composite{}),
 		},
 		XdsMatcher: &xdsmatcherv3.Matcher{
@@ -359,7 +415,7 @@ func buildCompositeExtProcFilter(in v1alpha1.ExtProcProvider, envoyGrpcService *
 										Input: &xdscorev3.TypedExtensionConfig{
 											Name: globalFilterDisableMetadataKey,
 											TypedConfig: utils.MustMessageToAny(&envoynetworkv3.DynamicMetadataInput{
-												Filter: extProcGlobalDisableFilterMetadataNamespace,
+												Filter: metadataNamespace,
 												Path: []*envoynetworkv3.DynamicMetadataInput_PathSegment{
 													{
 														Segment: &envoynetworkv3.DynamicMetadataInput_PathSegment_Key{
@@ -370,7 +426,7 @@ func buildCompositeExtProcFilter(in v1alpha1.ExtProcProvider, envoyGrpcService *
 											}),
 										},
 										// This matcher succeeds when disable=true is not found in the dynamic metadata
-										// for the extProcGlobalDisableFilterMetadataNamespace
+										// for the metadataNamespace
 										Matcher: &xdsmatcherv3.Matcher_MatcherList_Predicate_SinglePredicate_CustomMatch{
 											CustomMatch: &xdscorev3.TypedExtensionConfig{
 												Name: "envoy.matching.matchers.metadata_matcher",
@@ -392,10 +448,7 @@ func buildCompositeExtProcFilter(in v1alpha1.ExtProcProvider, envoyGrpcService *
 									Action: &xdscorev3.TypedExtensionConfig{
 										Name: "composite-action",
 										TypedConfig: utils.MustMessageToAny(&envoycompositev3.ExecuteFilterAction{
-											TypedConfig: &envoycorev3.TypedExtensionConfig{
-												Name:        "envoy.filters.http.ext_proc",
-												TypedConfig: utils.MustMessageToAny(filter),
-											},
+											TypedConfig: filterTypedConfig,
 										}),
 									},
 								},
