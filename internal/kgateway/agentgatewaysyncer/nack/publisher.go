@@ -1,14 +1,17 @@
 package nack
 
 import (
-	"context"
+	"time"
 
+	"istio.io/istio/pkg/config/schema/gvr"
 	"istio.io/istio/pkg/kube"
+	"istio.io/istio/pkg/kube/kclient"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/record"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
@@ -22,14 +25,24 @@ const (
 	ReasonNack = "AgentGatewayNackError"
 )
 
-// Publisher converts NACK events from the agentgateway xDS server into Kubernetes Events.
-type Publisher struct {
-	client        kube.Client
-	eventRecorder record.EventRecorder
+// NackEvent represents a NACK received from an agentgateway gateway
+type NackEvent struct {
+	Gateway   types.NamespacedName
+	TypeUrl   string
+	ErrorMsg  string
+	Timestamp time.Time
 }
 
-// newPublisher creates a new NACK event publisher that will publish k8s events
-func newPublisher(client kube.Client) *Publisher {
+// Publisher converts NACK events from the agentgateway xDS server into Kubernetes Events.
+type Publisher struct {
+	eventRecorder    record.EventRecorder
+	gatewayClient    kclient.Client[*gwv1.Gateway]
+	deploymentClient kclient.Client[*appsv1.Deployment]
+	HasSynced        func() bool
+}
+
+// NewPublisher creates a new NACK event publisher that will publish k8s events
+func NewPublisher(client kube.Client) *Publisher {
 	eventBroadcaster := record.NewBroadcaster()
 	eventRecorder := eventBroadcaster.NewRecorder(
 		schemes.DefaultScheme(),
@@ -39,24 +52,31 @@ func newPublisher(client kube.Client) *Publisher {
 		Interface: client.Kube().CoreV1().Events(""),
 	})
 
+	filter := kclient.Filter{ObjectFilter: client.ObjectFilter()}
+	gatewayClient := kclient.NewFilteredDelayed[*gwv1.Gateway](client, gvr.KubernetesGateway_v1, filter)
+	deploymentClient := kclient.NewFiltered[*appsv1.Deployment](client, filter)
 	return &Publisher{
-		client:        client,
-		eventRecorder: eventRecorder,
+		eventRecorder:    eventRecorder,
+		gatewayClient:    gatewayClient,
+		deploymentClient: deploymentClient,
+		HasSynced: func() bool {
+			return gatewayClient.HasSynced() && deploymentClient.HasSynced()
+		},
 	}
 }
 
-// onNack publishes a NACK event as a k8s event.
-func (p *Publisher) onNack(ctx context.Context, event NackEvent) {
+// PublishNack publishes a NACK event as a k8s event.
+func (p *Publisher) PublishNack(event *NackEvent) {
 	var gatewayUID, deployUID types.UID
-	gw, err := p.client.GatewayAPI().GatewayV1().Gateways(event.Gateway.Namespace).Get(ctx, event.Gateway.Name, metav1.GetOptions{})
-	if err != nil {
-		log.Error("failed to get gateway", "error", err)
+	gw := p.gatewayClient.Get(event.Gateway.Name, event.Gateway.Namespace)
+	if gw == nil {
+		log.Error("failed to get gateway from cache")
 		return
 	}
 	gatewayUID = gw.GetUID()
-	dep, err := p.client.Kube().AppsV1().Deployments(event.Gateway.Namespace).Get(ctx, event.Gateway.Name, metav1.GetOptions{})
-	if err != nil {
-		log.Error("failed to get deployment", "error", err)
+	dep := p.deploymentClient.Get(event.Gateway.Name, event.Gateway.Namespace)
+	if dep == nil {
+		log.Error("failed to get deployment from cache")
 		return
 	}
 	deployUID = dep.GetUID()

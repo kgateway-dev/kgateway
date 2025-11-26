@@ -13,10 +13,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
-	apixv1alpha1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
+	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -122,14 +122,6 @@ func (r *RoutesForGwResult) GetListenerResult(parent client.Object, listenerName
 	return r.listenerResults[GenerateRouteKey(parent, listenerName)]
 }
 
-func (r *RoutesForGwResult) GetListenerResults(yield func(string, *ListenerResult) bool) {
-	for k, v := range r.listenerResults {
-		if !yield(k, v) {
-			return
-		}
-	}
-}
-
 func (r *RoutesForGwResult) setListenerResult(parent client.Object, listenerName string, result *ListenerResult) {
 	r.listenerResults[GenerateRouteKey(parent, listenerName)] = result
 }
@@ -209,58 +201,20 @@ func isParentRefForResource(pRef *gwv1.ParentReference, resource client.Object, 
 		return false
 	}
 
-	switch typed := resource.(type) {
-	case *gwv1.Gateway:
-		return isParentRefForGw(pRef, typed, defaultNs)
-	case *apixv1alpha1.XListenerSet:
-		// Check if the route belongs to the parent gateway. If so accept it
-		parentRef := getParentGatewayRef(typed)
-		parentGW := &gwv1.Gateway{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: parentRef.Namespace,
-				Name:      parentRef.Name,
-			},
+	gvk := resource.GetObjectKind().GroupVersionKind()
+	if gvk.Empty() {
+		switch resource.(type) {
+		case *gwv1.Gateway:
+			gvk = wellknown.GatewayGVK
+		case *gwxv1a1.XListenerSet:
+			gvk = wellknown.XListenerSetGVK
 		}
-		gatewayRoute := isParentRefForGw(pRef, parentGW, defaultNs)
-
-		if gatewayRoute {
-			// If it is attached to the gateway but has a section name, it won't attach to the listener set
-			if pRef.SectionName != nil && *pRef.SectionName != "" {
-				return false
-			}
-			// If it is attached to the gateway but has no section name, it applies to the listener set also
-			return true
-		} else {
-			// Is it attached to a listener set and not a gateway ?
-			if pRef.Group != nil && *pRef.Group != apixv1alpha1.GroupName {
-				return false
-			}
-			if pRef.Kind != nil && *pRef.Kind != wellknown.XListenerSetKind {
-				return false
-			}
-
-			ns := defaultNs
-			if pRef.Namespace != nil {
-				ns = string(*pRef.Namespace)
-			}
-			// Does it attach to this resource ?
-			return ns == typed.Namespace && string(pRef.Name) == typed.Name
-		}
-	default:
-		return false
-	}
-}
-
-// isParentRefForGw checks if a ParentReference is associated with the provided Gateway.
-func isParentRefForGw(pRef *gwv1.ParentReference, gw *gwv1.Gateway, defaultNs string) bool {
-	if gw == nil || pRef == nil {
-		return false
 	}
 
-	if pRef.Group != nil && *pRef.Group != gwv1.GroupName {
+	if pRef.Group != nil && *pRef.Group != gwv1.Group(gvk.Group) {
 		return false
 	}
-	if pRef.Kind != nil && *pRef.Kind != wellknown.GatewayKind {
+	if pRef.Kind != nil && *pRef.Kind != gwv1.Kind(gvk.Kind) {
 		return false
 	}
 
@@ -269,7 +223,7 @@ func isParentRefForGw(pRef *gwv1.ParentReference, gw *gwv1.Gateway, defaultNs st
 		ns = string(*pRef.Namespace)
 	}
 
-	return ns == gw.Namespace && string(pRef.Name) == gw.Name
+	return ns == resource.GetNamespace() && string(pRef.Name) == resource.GetName()
 }
 
 func hostnameIntersect(l *gwv1.Listener, routeHostnames []string) (bool, []string) {
