@@ -1147,7 +1147,7 @@ spec:
                 description: |-
                   EarlyRequestHeaderModifier defines header modifications to be applied early in the request processing,
                   before route selection.
-                  For example, if you use ExternalAuth to add a header, you may want to remove it here, to make
+                  For example, if you use ExternalAuthz to add a header, you may want to remove it here, to make
                   sure it did not come from the client.
                 properties:
                   add:
