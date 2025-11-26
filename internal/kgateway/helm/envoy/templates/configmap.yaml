@@ -31,39 +31,32 @@ data:
       metadata:
         role: kgateway-kube-gateway-api~{{ $gateway.gatewayNamespace }}~{{ $gateway.gatewayName | default (include "kgateway.gateway.fullname" .) }}
     {{ if $statsConfig.matcher }}
+    {{ $inclusionList := (default (list) $statsConfig.matcher.inclusionList ) -}}
+    {{ $exclusionList := (default (list) $statsConfig.matcher.exclusionList ) -}}
+    {{ $statsMatcherLists := concat $inclusionList $exclusionList -}}
+    {{- if $statsMatcherLists -}}
     stats_config:
       stats_matcher:
-        {{ if $statsConfig.matcher.inclusionList }}
+        {{- if $inclusionList }}
         inclusion_list:
-          patterns:
-          {{ range $statsConfig.matcher.inclusionList }}
-              {{ if .exact }}
-            - exact: {{ .exact }}
-              {{ else if .prefix }}
-            - prefix: {{ .prefix }}
-              {{ else if .suffix }}
-            - suffix: {{ .suffix }}
-              {{ else if .safeRegex }}
-            - safe_regex:
-                regex: {{ .safeRegex }}
-              {{ end }}
-          {{ end }}
-        {{ else if $statsConfig.matcher.exclusionList }}
+        {{- else }}
         exclusion_list:
+        {{- end }}
           patterns:
-          {{ range $statsConfig.matcher.exclusionList }}
-              {{ if .exact }}
+          {{- /* a only one of the lists is not empty, so concat them to save on a helm template block */ -}}
+          {{- range $statsMatcherLists }}
+              {{- if .exact }}
             - exact: {{ .exact }}
-              {{ else if .prefix }}
+              {{- else if .prefix }}
             - prefix: {{ .prefix }}
-              {{ else if .suffix }}
+              {{- else if .suffix }}
             - suffix: {{ .suffix }}
-              {{ else if .safeRegex }}
+              {{- else if .safeRegex }}
             - safe_regex:
                 regex: {{ .safeRegex }}
-              {{ end }}
-          {{ end }}
-        {{ end }}
+              {{- end }}
+          {{- end }}
+    {{- end }}
     {{ end }}
     static_resources:
       {{- if and $gateway.xds.tls $gateway.xds.tls.enabled }}
