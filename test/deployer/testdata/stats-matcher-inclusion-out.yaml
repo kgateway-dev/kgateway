@@ -51,6 +51,10 @@ data:
             - suffix: .rq_total
             - safe_regex:
                 regex: ^cluster\..*\.upstream_cx_active$
+            - contains: foo
+            - exact: cluster.my_service.upstream_cx_total
+            - contains: CLUSTER
+              ignore_case: true
     static_resources:
       listeners:
       - name: readiness_listener

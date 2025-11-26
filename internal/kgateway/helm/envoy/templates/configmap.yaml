@@ -43,17 +43,22 @@ data:
         exclusion_list:
         {{- end }}
           patterns:
-          {{- /* a only one of the lists is not empty, so concat them to save on a helm template block */ -}}
+          {{- /* as only one of the lists is not empty, so concat them to save on a helm template block */ -}}
           {{- range $statsMatcherLists }}
               {{- if .exact }}
             - exact: {{ .exact }}
               {{- else if .prefix }}
             - prefix: {{ .prefix }}
+              {{- else if .contains }}
+            - contains: {{ .contains }}
               {{- else if .suffix }}
             - suffix: {{ .suffix }}
               {{- else if .safeRegex }}
             - safe_regex:
                 regex: {{ .safeRegex }}
+              {{- end }}
+              {{- if .ignoreCase }}
+              ignore_case: {{ .ignoreCase }}
               {{- end }}
           {{- end -}}
     {{- end -}}

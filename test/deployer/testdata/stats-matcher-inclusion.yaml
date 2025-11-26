@@ -12,6 +12,10 @@ spec:
           - prefix: "http."
           - suffix: ".rq_total"
           - safeRegex: "^cluster\\..*\\.upstream_cx_active$"
+          - contains: "foo"
+          - exact: "cluster.my_service.upstream_cx_total"
+          - contains: "CLUSTER"
+            ignoreCase: true
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: GatewayClass

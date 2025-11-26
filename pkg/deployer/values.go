@@ -179,10 +179,12 @@ type HelmStatsMatcher struct {
 // HelmStringMatcher mirrors a subset of Envoy's StringMatcher.
 // Only one of these fields should be set per matcher.
 type HelmStringMatcher struct {
-	Exact     *string `json:"exact,omitempty"`
-	Prefix    *string `json:"prefix,omitempty"`
-	Suffix    *string `json:"suffix,omitempty"`
-	SafeRegex *string `json:"safeRegex,omitempty"`
+	Exact      *string `json:"exact,omitempty"`
+	Prefix     *string `json:"prefix,omitempty"`
+	Suffix     *string `json:"suffix,omitempty"`
+	Contains   *string `json:"contains,omitempty"`
+	SafeRegex  *string `json:"safeRegex,omitempty"`
+	IgnoreCase *bool   `json:"ignoreCase,omitempty"`
 }
 
 type HelmInferenceExtension struct {
