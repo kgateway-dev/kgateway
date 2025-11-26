@@ -190,7 +190,7 @@ func (p *listenerPolicyPluginGwPass) ApplyListenerPlugin(
 		return
 	}
 
-	logger.Debug("listenerPolicy found", "proxyProtocol", pol.proxyProtocol)
+	logger.Debug("listenerPolicy found", "proxy_protocol", pol.proxyProtocol)
 	// Add proxy protocol listener filter if configured
 	if pol.proxyProtocol != nil {
 		p.applyProxyProtocol(out, pol.proxyProtocol)
