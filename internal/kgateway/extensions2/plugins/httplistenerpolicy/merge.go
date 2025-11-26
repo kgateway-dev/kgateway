@@ -32,6 +32,7 @@ func mergePolicies(
 		mergePreserveHttp1HeaderCase,
 		mergeAcceptHttp10,
 		mergeDefaultHostForHttp10,
+		mergeEarlyHeaderMutation,
 	}
 
 	for _, mergeFunc := range mergeFuncs {
@@ -226,4 +227,19 @@ func mergeHealthCheckPolicy(
 
 	p1.healthCheckPolicy = p2.healthCheckPolicy
 	mergeOrigins.SetOne("healthCheckPolicy", p2Ref, p2MergeOrigins)
+}
+
+func mergeEarlyHeaderMutation(
+	p1, p2 *httpListenerPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.earlyHeaderMutationExtensions, p2.earlyHeaderMutationExtensions, opts) {
+		return
+	}
+
+	p1.earlyHeaderMutationExtensions = slices.Clone(p2.earlyHeaderMutationExtensions)
+	mergeOrigins.SetOne("earlyHeaderMutationExtensions", p2Ref, p2MergeOrigins)
 }

@@ -124,6 +124,13 @@ type HTTPListenerPolicySpec struct {
 	// +optional
 	// +kubebuilder:validation:MinLength=1
 	DefaultHostForHttp10 *string `json:"defaultHostForHttp10,omitempty"`
+
+	// EarlyRequestHeaderModifier defines header modifications to be applied early in the request processing,
+	// before route selection.
+	// For example, if you use ExternalAuthz to add a header, you may want to remove it here, to make
+	// sure it did not come from the client.
+	// +optional
+	EarlyRequestHeaderModifier *gwv1.HTTPHeaderFilter `json:"earlyRequestHeaderModifier,omitempty"`
 }
 
 // AccessLog represents the top-level access log configuration.
