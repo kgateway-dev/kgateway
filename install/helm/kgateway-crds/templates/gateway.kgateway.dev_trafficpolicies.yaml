@@ -68,7 +68,7 @@ spec:
                 properties:
                   disable:
                     description: |-
-                      Disable the basic auth filter.
+                      Disable basic auth.
                       Can be used to disable basic auth policies applied at a higher level in the config hierarchy.
                     type: object
                   secretRef:
@@ -88,8 +88,9 @@ spec:
                         minLength: 1
                         type: string
                       namespace:
-                        description: Namespace of the secret. If not specified, defaults
-                          to the namespace of the TrafficPolicy.
+                        description: |-
+                          Namespace of the secret. If not specified, defaults to the namespace of the TrafficPolicy.
+                          Note that a secret in a different namespace requires a ReferenceGrant to be accessible.
                         type: string
                     required:
                     - name
@@ -98,11 +99,10 @@ spec:
                     description: |-
                       Users provides an inline list of username/password pairs in htpasswd format.
                       Each entry should be formatted as "username:hashed_password".
-                      Supported hash formats: bcrypt, MD5 (with $apr1$ prefix), SHA-1, and crypt.
+                      The only supported hash format is SHA-1
 
                       Example entries:
-                        - "user1:$apr1$Salt$hashedpassword" (MD5)
-                        - "user2:$2y$05$Salt$hashedpassword" (bcrypt)
+                        - "user1:{SHA}d95o2uzYI7q7tY7bHI4U1xBug7s="
                     items:
                       type: string
                     maxItems: 256
@@ -110,10 +110,10 @@ spec:
                     type: array
                 type: object
                 x-kubernetes-validations:
-                - message: exactly one of users, secretRef, or disable must be specified
-                  rule: (has(self.users) && !has(self.secretRef) && !has(self.disable))
-                    || (!has(self.users) && has(self.secretRef) && !has(self.disable))
-                    || (!has(self.users) && !has(self.secretRef) && has(self.disable))
+                - message: exactly one of the fields in [users secretRef disable]
+                    must be set
+                  rule: '[has(self.users),has(self.secretRef),has(self.disable)].filter(x,x==true).size()
+                    == 1'
               buffer:
                 description: |-
                   Buffer can be used to set the maximum request size that will be buffered.

@@ -4,7 +4,7 @@ package v1alpha1
 // Basic authentication validates requests against username/password pairs provided either inline or via a Kubernetes secret.
 // The credentials must be in htpasswd SHA-1 format.
 //
-// +kubebuilder:validation:XValidation:message="exactly one of users, secretRef, or disable must be specified",rule="(has(self.users) && !has(self.secretRef) && !has(self.disable)) || (!has(self.users) && has(self.secretRef) && !has(self.disable)) || (!has(self.users) && !has(self.secretRef) && has(self.disable))"
+// +kubebuilder:validation:ExactlyOneOf=users;secretRef;disable
 type BasicAuthPolicy struct {
 	// Users provides an inline list of username/password pairs in htpasswd format.
 	// Each entry should be formatted as "username:hashed_password".
