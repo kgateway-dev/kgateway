@@ -207,6 +207,9 @@ func (s *testingSuite) TestMissingGatewayParameters() {
 		}
 	})
 
+	// ensure the gateway pod is still running
+	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(1))
+
 	// initially, the Gateway should not be accepted
 	// because the GatewayParameters is missing
 	s.TestInstallation.Assertions.EventuallyGatewayCondition(
