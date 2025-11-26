@@ -2,17 +2,16 @@ package v1alpha1
 
 // BasicAuthPolicy configures HTTP basic authentication using the Authorization header.
 // Basic authentication validates requests against username/password pairs provided either inline or via a Kubernetes secret.
-// The credentials must be in htpasswd format supporting bcrypt, MD5, SHA-1, or crypt hashing algorithms.
+// The credentials must be in htpasswd SHA-1 format.
 //
 // +kubebuilder:validation:XValidation:message="exactly one of users, secretRef, or disable must be specified",rule="(has(self.users) && !has(self.secretRef) && !has(self.disable)) || (!has(self.users) && has(self.secretRef) && !has(self.disable)) || (!has(self.users) && !has(self.secretRef) && has(self.disable))"
 type BasicAuthPolicy struct {
 	// Users provides an inline list of username/password pairs in htpasswd format.
 	// Each entry should be formatted as "username:hashed_password".
-	// Supported hash formats: bcrypt, MD5 (with $apr1$ prefix), SHA-1, and crypt.
+	// The only supported hash format is SHA-1
 	//
 	// Example entries:
-	//   - "user1:$apr1$Salt$hashedpassword" (MD5)
-	//   - "user2:$2y$05$Salt$hashedpassword" (bcrypt)
+	//   - "user1:{SHA}d95o2uzYI7q7tY7bHI4U1xBug7s="
 	//
 	// +optional
 	// +kubebuilder:validation:MinItems=1
@@ -24,7 +23,7 @@ type BasicAuthPolicy struct {
 	// +optional
 	SecretRef *SecretReference `json:"secretRef,omitempty"`
 
-	// Disable the basic auth filter.
+	// Disable basic auth.
 	// Can be used to disable basic auth policies applied at a higher level in the config hierarchy.
 	// +optional
 	Disable *PolicyDisable `json:"disable,omitempty"`
@@ -38,6 +37,7 @@ type SecretReference struct {
 	Name string `json:"name"`
 
 	// Namespace of the secret. If not specified, defaults to the namespace of the TrafficPolicy.
+	// Note that a secret in a different namespace requires a ReferenceGrant to be accessible.
 	// +optional
 	Namespace *string `json:"namespace,omitempty"`
 
