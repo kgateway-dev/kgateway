@@ -20,6 +20,7 @@ var (
 	serverHeaderManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "http-listener-policy-server-header.yaml")
 	preserveHttp1HeaderCaseManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "preserve-http1-header-case.yaml")
 	accessLogManifest               = filepath.Join(fsutils.MustGetThisDir(), "testdata", "http-listener-policy-access-log.yaml")
+	earlyHeaderMutationManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "http-listener-policy-early-header-route-match.yaml")
 
 	// When we apply the setup file, we expect resources to be created with this metadata
 	proxyObjectMeta = metav1.ObjectMeta{

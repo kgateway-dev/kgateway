@@ -1,0 +1,40 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: HTTPListenerPolicy
+metadata:
+  name: early-header-route-match
+  namespace: default
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: gw
+  earlyRequestHeaderModifier:
+    add:
+    - name: "x-route-match"
+      value: "allow"
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-requires-header
+  namespace: default
+spec:
+  hostnames:
+  - example.com
+  parentRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: gw
+    namespace: default
+    sectionName: http
+  rules:
+  - matches:
+    - headers:
+      - name: x-route-match
+        value: allow
+      path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: example-svc
+      port: 8080
