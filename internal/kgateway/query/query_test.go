@@ -21,9 +21,9 @@ import (
 	. "github.com/onsi/gomega"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -999,8 +999,9 @@ var _ = Describe("Query", func() {
 		}
 
 		irGW := ir.Gateway{
-			Obj:                 gwWithListener,
-			AllowedListenerSets: []ir.ListenerSet{{Obj: lsWithListener}},
+			Obj: gwWithListener,
+			AllowedListenerSets: map[schema.GroupVersionKind]ir.ListenerSets{
+				wellknown.XListenerSetGVK: []ir.ListenerSet{{Obj: lsWithListener}}},
 		}
 
 		gq := newQueries(GinkgoT(), gwHR, lsHR)
@@ -1054,12 +1055,14 @@ func httpRoute() *gwv1.HTTPRoute {
 }
 
 func gw() *gwv1.Gateway {
-	return &gwv1.Gateway{
+	gw := &gwv1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
 		},
 	}
+	gw.SetGroupVersionKind(wellknown.GatewayGVK)
+	return gw
 }
 
 func secret(ns string) *corev1.Secret {
@@ -1189,7 +1192,7 @@ func k8sUpstreams(services krt.Collection[*corev1.Service]) krt.Collection[ir.Ba
 }
 
 func ls() *gwxv1a1.XListenerSet {
-	return &gwxv1a1.XListenerSet{
+	ls := &gwxv1a1.XListenerSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "ls",
@@ -1206,4 +1209,6 @@ func ls() *gwxv1a1.XListenerSet {
 			},
 		},
 	}
+	ls.SetGroupVersionKind(wellknown.XListenerSetGVK)
+	return ls
 }

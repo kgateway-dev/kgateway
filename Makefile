@@ -181,7 +181,6 @@ test: ## Run all tests with ginkgo, or only run the test package at {TEST_PKG} i
 # request.
 .PHONY: e2e-test
 e2e-test: dummy-idp-docker kind-load-dummy-idp
-e2e-test: TEST_PKG ?= ./test/e2e/tests 
 e2e-test: ## Run only e2e tests, and only run the test package at {TEST_PKG} if it is specified
 	@$(MAKE) --no-print-directory go-test TEST_TAG=e2e TEST_PKG=$(TEST_PKG)
 
@@ -230,7 +229,7 @@ GO_TEST_COVERAGE ?= go tool github.com/vladopajic/go-test-coverage/v2
 GO_TEST_USER_ARGS ?=
 GO_TEST_RETRIES ?= 0
 GOTESTSUM ?= go tool gotestsum
-GOTESTSUM_ARGS ?= --format=testname
+GOTESTSUM_ARGS ?= --format=standard-verbose
 
 .PHONY: go-test
 go-test: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified

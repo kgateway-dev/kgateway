@@ -1,0 +1,143 @@
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: httpbin-route-status
+  namespace: default
+spec:
+  hostnames:
+    - httpbin
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gw
+      namespace: default
+  rules:
+    - backendRefs:
+        - group: ""
+          kind: Service
+          name: httpbin
+          port: 8000
+          weight: 1
+      matches:
+        - path:
+            type: PathPrefix
+            value: /status/200
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: httpbin-route-get
+  namespace: default
+spec:
+  hostnames:
+    - httpbin
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gw
+      namespace: default
+  rules:
+    - backendRefs:
+        - group: ""
+          kind: Service
+          name: httpbin
+          port: 8000
+          weight: 1
+      matches:
+        - path:
+            type: PathPrefix
+            value: /get
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: jwt-policy
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gw
+  jwt:
+    extensionRef:
+      name: basic-jwt-provider
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: basic-jwt-provider
+spec:
+  type: JWTProviders
+  jwtProviders:
+  - name: my-example
+    issuer: https://kgateway.dev
+    jwks:
+      remote:
+        url: https://dummy-idp.default:8443/org-one/keys
+        backendRef:
+          name: dummy-idp
+          namespace: default
+          kind: Service
+          port: 8443
+  - name: my-example2
+    issuer: https://kgateway.dev
+    jwks:
+        remote:
+          url: https://dummy-idp.default:8443/org-two/keys
+          backendRef:
+            name: dummy-idp
+            namespace: default
+            kind: Service
+            port: 8443
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: dummy-idp-tls
+  namespace: default
+spec:
+  targetRefs:
+    - group: ""
+      kind: Service
+      name: dummy-idp
+  tls:
+    insecureSkipVerify: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dummy-idp
+  namespace: default
+  labels:
+    app: dummy-idp
+spec:
+  ports:
+    - name: http
+      port: 8443
+      targetPort: 8443
+  selector:
+    app.kubernetes.io/name: dummy-idp
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dummy-idp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: dummy-idp
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: dummy-idp
+        app.kubernetes.io/name: dummy-idp
+        version: v1
+    spec:
+      containers:
+        - image: ghcr.io/kgateway-dev/dummy-idp:0.0.1
+          imagePullPolicy: IfNotPresent
+          name: dummy-idp
+          ports:
+            - containerPort: 8443

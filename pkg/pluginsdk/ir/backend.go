@@ -16,7 +16,6 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwxv1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -285,10 +284,9 @@ func (listener Listener) GetParentReporter(reporter reporter.Reporter) reporter.
 	switch t := listener.Parent.(type) {
 	case *gwv1.Gateway:
 		return reporter.Gateway(t)
-	case *gwxv1.XListenerSet:
+	default:
 		return reporter.ListenerSet(t)
 	}
-	panic("Unknown parent type")
 }
 
 // TODO: need to reevaluate DeepEqual usage
@@ -324,8 +322,8 @@ type ListenerForDeployer struct {
 type Gateway struct {
 	ObjectSource        `json:",inline"`
 	Listeners           Listeners
-	AllowedListenerSets ListenerSets
-	DeniedListenerSets  ListenerSets
+	AllowedListenerSets GVKListenerSets
+	DeniedListenerSets  GVKListenerSets
 	Obj                 *gwv1.Gateway
 
 	AttachedListenerPolicies AttachedPolicies
@@ -384,7 +382,7 @@ func errorsEqual(a, b error) bool {
 type ListenerSet struct {
 	ObjectSource `json:",inline"`
 	Listeners    Listeners
-	Obj          *gwxv1.XListenerSet
+	Obj          client.Object
 	// ListenerSet polices are attached to the individual listeners in addition
 	// to their specific policies
 
@@ -401,6 +399,20 @@ func (c ListenerSet) Equals(in ListenerSet) bool {
 		versionEquals(c.Obj, in.Obj) &&
 		c.Listeners.Equals(in.Listeners) &&
 		errorsEqual(c.Err, in.Err)
+}
+
+type GVKListenerSets map[schema.GroupVersionKind]ListenerSets
+
+func (c GVKListenerSets) Equals(in GVKListenerSets) bool {
+	if len(c) != len(in) {
+		return false
+	}
+	for gvk, ls := range c {
+		if !ls.Equals(in[gvk]) {
+			return false
+		}
+	}
+	return true
 }
 
 type ListenerSets []ListenerSet

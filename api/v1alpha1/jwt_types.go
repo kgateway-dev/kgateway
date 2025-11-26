@@ -1,16 +1,24 @@
 package v1alpha1
 
-import corev1 "k8s.io/api/core/v1"
+import (
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+)
 
 // JWTAuthentication defines the providers used to configure JWT authentication
+// +kubebuilder:validation:ExactlyOneOf=extensionRef;disable
 type JWTAuthentication struct {
 	// ExtensionRef references a GatewayExtension that provides the jwt providers
-	// +required
-	ExtensionRef NamespacedObjectReference `json:"extensionRef"`
+	// +optional
+	ExtensionRef *NamespacedObjectReference `json:"extensionRef,omitempty"`
 
 	// TODO: add support for ValidationMode here (REQUIRE_VALID,ALLOW_MISSING,ALLOW_MISSING_OR_FAILED)
 
-	// TODO(npolshak): Add option to disable all jwt filters.
+	// Disable all JWT filters.
+	// Can be used to disable JWT policies applied at a higher level in the config hierarchy.
+	// +optional
+	Disable *PolicyDisable `json:"disable,omitempty"`
 }
 
 // JWTProvider configures the JWT Provider
@@ -106,13 +114,17 @@ type JWTClaimToHeader struct {
 }
 
 // JWKS (JSON Web Key Set) configures the source for the JWKS
+// Exactly one of LocalJWKS or RemoteJWKS must be specified.
+// +kubebuilder:validation:ExactlyOneOf=local;remote
 type JWKS struct {
 	// LocalJWKS configures getting the public keys to validate the JWT from a Kubernetes configmap,
 	// or inline (raw string) JWKS.
-	// +required
+	// +optional
 	LocalJWKS *LocalJWKS `json:"local,omitempty"`
 
-	// TODO: Add support for remote JWKS
+	// RemoteJWKS configures getting the public keys to validate the JWT from a remote JWKS server.
+	// +optional
+	RemoteJWKS *RemoteJWKS `json:"remote,omitempty"`
 }
 
 // LocalJWKS configures getting the public keys to validate the JWT from a Kubernetes ConfigMap,
@@ -130,4 +142,24 @@ type LocalJWKS struct {
 	// The ConfigMap must have a data key named 'jwks' that contains the JWKS.
 	// +optional
 	ConfigMapRef *corev1.LocalObjectReference `json:"configMapRef,omitempty"`
+}
+
+type RemoteJWKS struct {
+	// URL is the URL of the remote JWKS server, it must be a full FQDN with protocol, host and path.
+	// For example, https://example.com/keys
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=2048
+	// +required
+	URL string `json:"url"`
+
+	// BackendRef is reference to the backend of the JWKS server.
+	// +required
+	BackendRef gwv1.BackendObjectReference `json:"backendRef"`
+
+	// Duration after which the cached JWKS expires.
+	// If unspecified, the default cache duration is 5 minutes.
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="cacheDuration must be at least 1ms."
+	CacheDuration *metav1.Duration `json:"cacheDuration,omitempty"`
 }

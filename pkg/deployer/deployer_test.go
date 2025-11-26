@@ -169,7 +169,7 @@ var _ = Describe("Deployer", func() {
 		}
 
 		defaultGateway = func() *gwv1.Gateway {
-			return &gwv1.Gateway{
+			gw := &gwv1.Gateway{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: defaultNamespace,
@@ -183,6 +183,8 @@ var _ = Describe("Deployer", func() {
 					}},
 				},
 			}
+			gw.SetGroupVersionKind(wellknown.GatewayGVK)
+			return gw
 		}
 
 		highPortGateway = func() *gwv1.Gateway {

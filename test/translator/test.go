@@ -35,7 +35,6 @@ import (
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
@@ -43,6 +42,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -508,7 +508,7 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 		}
 	}
 
-	for ls := range reportsMap.ListenerSets {
+	for ls := range reportsMap.ListenerSets[wellknown.XListenerSetGVK] {
 		l := gwxv1a1.XListenerSet{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      ls.Name,

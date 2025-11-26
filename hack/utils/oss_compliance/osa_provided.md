@@ -2,7 +2,7 @@ Name|Version|License
 ---|---|---
 [cel.dev/expr](https://cel.dev/expr)|v0.24.0|Apache License 2.0
 [semver/v3](https://github.com/Masterminds/semver)|v3.4.0|MIT License
-[agentgateway/agentgateway](https://github.com/agentgateway/agentgateway)|v0.10.6-0.20251119191927-ca81e838d23c|Apache License 2.0
+[agentgateway/agentgateway](https://github.com/agentgateway/agentgateway)|v0.10.6-0.20251124234648-943649ad0241|Apache License 2.0
 [anthropics/anthropic-sdk-go](https://github.com/anthropics/anthropic-sdk-go)|v1.13.0|MIT License
 [retry-go/v4](https://github.com/avast/retry-go)|v4.3.3|MIT License
 [xds/go](https://github.com/cncf/xds)|v0.0.0-20250501225837-2ac532fd4443|Apache License 2.0

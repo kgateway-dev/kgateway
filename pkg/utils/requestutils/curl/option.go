@@ -7,6 +7,26 @@ import (
 	"strings"
 )
 
+// TLS version constants for use with WithTLSVersion and WithTLSMaxVersion
+const (
+	TLSVersion10 = "1.0"
+	TLSVersion11 = "1.1"
+	TLSVersion12 = "1.2"
+	TLSVersion13 = "1.3"
+)
+
+// Common cipher suite constants (OpenSSL names) for use with WithCiphers
+const (
+	CipherECDHERSAAES128GCMSHA256 = "ECDHE-RSA-AES128-GCM-SHA256"
+	CipherECDHERSAAES256GCMSHA384 = "ECDHE-RSA-AES256-GCM-SHA384"
+)
+
+// Curve constants for use with WithCurves
+const (
+	CurveX25519     = "X25519"
+	CurvePrime256v1 = "prime256v1"
+)
+
 // Option represents an option for a curl request.
 type Option func(config *requestConfig)
 
@@ -244,5 +264,56 @@ func WithCookie(cookie string) Option {
 func WithCookieJar(cookieJar string) Option {
 	return func(config *requestConfig) {
 		config.cookieJar = cookieJar
+	}
+}
+
+// WithHTTP11 returns the Option to force HTTP/1.1 protocol
+// https://curl.se/docs/manpage.html#--http11
+func WithHTTP11() Option {
+	return func(config *requestConfig) {
+		config.http11 = true
+	}
+}
+
+// WithHTTP2 returns the Option to force HTTP/2 protocol
+// https://curl.se/docs/manpage.html#--http2
+func WithHTTP2() Option {
+	return func(config *requestConfig) {
+		config.http2 = true
+	}
+}
+
+// WithCiphers returns the Option to configure cipher suites to use in TLS negotiation
+// https://curl.se/docs/manpage.html#--ciphers
+func WithCiphers(cipherList string) Option {
+	return func(config *requestConfig) {
+		config.ciphers = cipherList
+	}
+}
+
+// WithCurves returns the Option to configure elliptic curves to use in TLS key exchange
+// https://curl.se/docs/manpage.html#--curves
+func WithCurves(curveList string) Option {
+	return func(config *requestConfig) {
+		config.curves = curveList
+	}
+}
+
+// WithTLSVersion returns the Option to configure the minimum TLS version to use
+// https://curl.se/docs/manpage.html#--tlsv10
+// https://curl.se/docs/manpage.html#--tlsv11
+// https://curl.se/docs/manpage.html#--tlsv12
+// https://curl.se/docs/manpage.html#--tlsv13
+func WithTLSVersion(version string) Option {
+	return func(config *requestConfig) {
+		config.tlsVersion = version
+	}
+}
+
+// WithTLSMaxVersion returns the Option to configure the maximum TLS version to use
+// https://curl.se/docs/manpage.html#--tls-max
+func WithTLSMaxVersion(version string) Option {
+	return func(config *requestConfig) {
+		config.tlsMaxVersion = version
 	}
 }
