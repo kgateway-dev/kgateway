@@ -1286,6 +1286,39 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("listener set with tls listener and secret in same namespace", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-sets/tls-same-ns.yaml",
+			outputFile: "listener-sets/tls-same-ns.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("listener set with tls listener and secret in different namespace without reference grant", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-sets/tls-missing-reference-grant.yaml",
+			outputFile: "listener-sets/tls-missing-reference-grant.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("listener set with tls listener and secret in different namespace with reference grant", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-sets/tls-valid-reference-grant.yaml",
+			outputFile: "listener-sets/tls-valid-reference-grant.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy RateLimit Full Config", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/rate-limit-full-config.yaml",
@@ -1575,6 +1608,28 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "jwt/gateway-and-route.yaml",
 			outputFile: "jwt/gateway-and-route.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("JWT Policy and RBAC", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "jwt/rbac.yaml",
+			outputFile: "jwt/rbac.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "gw",
+			},
+		})
+	})
+
+	t.Run("JWT Policy at gateway level with disable on route", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "jwt/gateway-disable.yaml",
+			outputFile: "jwt/gateway-disable.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",

@@ -453,10 +453,10 @@ func (f *fakeBackendResolver) GetBackendFromRef(krtctx krt.HandlerContext, src i
 }
 
 func TestTranslateJwksRemote(t *testing.T) {
-	makeBackendRef := func(name, namespace string, portNumber int32) *gwv1.BackendObjectReference {
+	makeBackendRef := func(name, namespace string, portNumber int32) gwv1.BackendObjectReference {
 		ns := gwv1.Namespace(namespace)
 		port := gwv1.PortNumber(portNumber)
-		return &gwv1.BackendObjectReference{
+		return gwv1.BackendObjectReference{
 			Name:      gwv1.ObjectName(name),
 			Namespace: &ns,
 			Port:      &port,

@@ -20,10 +20,10 @@ import (
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	gw2_v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
@@ -311,8 +311,17 @@ func newCommonCols(t test.Failer, initObjs ...client.Object) *collections.Common
 	nsCol := krtcollections.NewNamespaceCollectionFromCol(ctx, krttest.GetMockCollection[*corev1.Namespace](mock), krtutil.KrtOptions{})
 
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
-	gateways := krtcollections.NewGatewayIndex(krtopts, smallset.New(wellknown.DefaultGatewayControllerName), wellknown.DefaultGatewayControllerName, policies, kubeRawGateways, kubeRawListenerSets, gatewayClasses, nsCol)
-
+	gatewayIndexConfig := krtcollections.GatewayIndexConfig{
+		KrtOpts:             krtopts,
+		ControllerNames:     smallset.New(wellknown.DefaultGatewayControllerName),
+		EnvoyControllerName: wellknown.DefaultGatewayControllerName,
+		PolicyIndex:         policies,
+		Gateways:            kubeRawGateways,
+		ListenerSets:        kubeRawListenerSets,
+		GatewayClasses:      gatewayClasses,
+		Namespaces:          nsCol,
+	}
+	gateways := krtcollections.NewGatewayIndex(gatewayIndexConfig)
 	commonCols := &collections.CommonCollections{
 		GatewayIndex: gateways,
 	}
