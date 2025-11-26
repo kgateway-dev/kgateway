@@ -7,6 +7,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
+	"github.com/kgateway-dev/kgateway/v2/pkg/common"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 )
 
@@ -29,7 +30,7 @@ type JwksStore struct {
 
 func BuildJwksStore(ctx context.Context, cli apiclient.Client, commonCols *collections.CommonCollections, jwksQueue <-chan JwksSources, storePrefix, deploymentNamespace string) *JwksStore {
 	log := log.Log.WithName("jwks store setup")
-	log.Info("creating jwks store")
+	log.Info("creating jwks store", "prefix", storePrefix)
 
 	jwksCache := NewJwksCache()
 	jwksStore := &JwksStore{
@@ -104,6 +105,8 @@ func (r *JwksStore) NeedLeaderElection() bool {
 	return true
 }
 
-func (r *JwksStore) NamedRunnable() string {
+var _ common.NamedRunnable = &JwksStore{}
+
+func (r *JwksStore) RunnableName() string {
 	return RunnableName
 }

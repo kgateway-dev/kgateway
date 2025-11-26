@@ -536,7 +536,7 @@ func processJWTAuthenticationPolicy(ctx PolicyCtx, jwt *v1alpha1.AgentJWTAuthent
 			}
 			jwksCM := ptr.Flatten(krt.FetchOne(ctx.Krt, ctx.Collections.ConfigMaps, krt.FilterObjectName(*jwksStoreName)))
 			if jwksCM == nil {
-				errs = append(errs, fmt.Errorf("jwks ConfigMap isn't available"))
+				errs = append(errs, fmt.Errorf("jwks ConfigMap %s isn't available", jwksStoreName.String()))
 				continue
 			}
 			jwksForUri, err := jwks.JwksFromConfigMap(jwksCM)
