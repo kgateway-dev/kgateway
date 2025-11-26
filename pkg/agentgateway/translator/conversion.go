@@ -710,7 +710,7 @@ func buildAgwDestination(
 	to gwv1.HTTPBackendRef,
 	ns string,
 	k schema.GroupVersionKind,
-	backendCol krt.Collection[*v1alpha1.Backend],
+	backendCol krt.Collection[*v1alpha1.AgentgatewayBackend],
 ) (*api.RouteBackend, *reporter.RouteCondition) {
 	ref := normalizeReference(to.Group, to.Kind, wellknown.ServiceGVK)
 	// check if the reference is allowed
@@ -808,7 +808,7 @@ func buildAgwDestination(
 			},
 			Port: uint32(*port), //nolint:gosec // G115: Gateway API PortNumber is int32 with validation 1-65535, always safe
 		}
-	case wellknown.BackendGVK.GroupKind():
+	case wellknown.AgentgatewayBackendGVK.GroupKind():
 		backendRefKey := ns + "/" + string(to.Name)
 		fetchedKgwBackend := krt.FetchOne(ctx.Krt, backendCol, krt.FilterKey(backendRefKey))
 		if fetchedKgwBackend == nil {
@@ -1388,7 +1388,7 @@ func buildTLS(
 			return out, nil, &ConfigError{Reason: InvalidTLS, Message: "exactly 1 certificateRefs should be present for TLS termination"}
 		}
 		cred, tlsInfo, err := buildSecretReference(ctx, tls.CertificateRefs[0], gw, secrets)
-		if err != nil {
+		if err != nil && tlsInfo.Cert == nil {
 			return out, nil, err
 		}
 		credNs := ptr.OrDefault((*string)(tls.CertificateRefs[0].Namespace), namespace)
@@ -1403,7 +1403,7 @@ func buildTLS(
 			}
 		}
 		out.CredentialName = cred
-		return out, &tlsInfo, nil
+		return out, &tlsInfo, err
 	case gwv1.TLSModePassthrough:
 		out.Mode = istio.ServerTLSSettings_PASSTHROUGH
 		if isAutoPassthrough {
@@ -1443,9 +1443,11 @@ func buildSecretReference(
 			Reason:  InvalidTLS,
 			Message: fmt.Sprintf("invalid certificate reference %v, %v", objectReferenceString(ref), err),
 		}
-	}
-	if _, err = tls.X509KeyPair(certInfo.Cert, certInfo.Key); err != nil {
-		return "", TLSInfo{}, &ConfigError{
+	} // Important: if the cert is invalid, we return an error for Conditions, but we will emit the cert to the data plane
+	// It understands invalid certs should be rejected.
+	var cerr *ConfigError
+	if _, err := tls.X509KeyPair(certInfo.Cert, certInfo.Key); err != nil {
+		cerr = &ConfigError{
 			Reason:  InvalidTLS,
 			Message: fmt.Sprintf("invalid certificate reference %v, the certificate is malformed: %v", objectReferenceString(ref), err),
 		}
@@ -1453,7 +1455,7 @@ func buildSecretReference(
 	return creds.ToKubernetesGatewayResource(secret.Namespace, secret.Name), TLSInfo{
 		Cert: certInfo.Cert,
 		Key:  certInfo.Key,
-	}, nil
+	}, cerr
 }
 
 func objectReferenceString(ref gwv1.SecretObjectReference) string {

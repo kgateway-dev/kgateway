@@ -1,0 +1,91 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: test-route-1
+  namespace: default
+spec:
+  parentRefs:
+  - name: test-gateway
+  hostnames:
+  - example.com
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api
+    backendRefs:
+    - name: test-service
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: test-route-2
+  namespace: default
+spec:
+  parentRefs:
+  - name: test-gateway
+  hostnames:
+  - example2.com
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api2
+    backendRefs:
+    - name: test-service
+      port: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-service
+  namespace: default
+spec:
+  ports:
+  - port: 80
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: default
+
+---
+# Output
+output:
+- gateway:
+    Name: test-gateway
+    Namespace: default
+  resource:
+    route:
+      backends:
+      - backend:
+          port: 80
+          service: default/test-service.default.svc.cluster.local
+        weight: 1
+      hostnames:
+      - example.com
+      key: default/test-route-1.0.0.http
+      listenerKey: test-gateway
+      matches:
+      - path:
+          pathPrefix: /api
+      routeName: default/test-route-1
+- gateway:
+    Name: test-gateway
+    Namespace: default
+  resource:
+    route:
+      backends:
+      - backend:
+          port: 80
+          service: default/test-service.default.svc.cluster.local
+        weight: 1
+      hostnames:
+      - example2.com
+      key: default/test-route-2.0.0.http
+      listenerKey: test-gateway
+      matches:
+      - path:
+          pathPrefix: /api2
+      routeName: default/test-route-2

@@ -399,7 +399,6 @@ spec:
                             Example: abc matches the value abc
                           type: string
                         ignoreCase:
-                          default: false
                           description: |-
                             If true, indicates the exact/prefix/suffix/contains matching should be
                             case insensitive. This has no effect on the regex match.
@@ -423,8 +422,6 @@ spec:
                             Note: empty prefix is not allowed, please use regex instead.
                             Example: abc matches the value xyz.abc
                           type: string
-                      required:
-                      - ignoreCase
                       type: object
                       x-kubernetes-validations:
                       - message: exactly one of the fields in [exact prefix suffix
@@ -890,6 +887,42 @@ spec:
                     set
                   rule: '[has(self.request),has(self.response)].filter(x,x==true).size()
                     >= 1'
+              jwt:
+                description: |-
+                  JWT specifies the JWT authentication configuration for the policy.
+                  This defines the JWT providers and their configurations.
+                properties:
+                  disable:
+                    description: |-
+                      Disable all JWT filters.
+                      Can be used to disable JWT policies applied at a higher level in the config hierarchy.
+                    type: object
+                  extensionRef:
+                    description: ExtensionRef references a GatewayExtension that provides
+                      the jwt providers
+                    properties:
+                      name:
+                        description: The name of the target resource.
+                        maxLength: 253
+                        minLength: 1
+                        type: string
+                      namespace:
+                        description: |-
+                          The namespace of the target resource.
+                          If not set, defaults to the namespace of the parent object.
+                        maxLength: 63
+                        minLength: 1
+                        pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                        type: string
+                    required:
+                    - name
+                    type: object
+                type: object
+                x-kubernetes-validations:
+                - message: exactly one of the fields in [extensionRef disable] must
+                    be set
+                  rule: '[has(self.extensionRef),has(self.disable)].filter(x,x==true).size()
+                    == 1'
               rateLimit:
                 description: |-
                   RateLimit specifies the rate limiting configuration for the policy.
@@ -1221,13 +1254,10 @@ spec:
                 minItems: 1
                 type: array
                 x-kubernetes-validations:
-                - message: targetRefs may only reference Gateway, HTTPRoute, or XListenerSet
+                - message: targetRefs may only reference Gateway, HTTPRoute, or ListenerSet
                     resources
                   rule: self.all(r, (r.kind == 'Gateway' || r.kind == 'HTTPRoute'
-                    || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io'))
-                    && (!has(r.group) || r.group == 'gateway.networking.k8s.io' ||
-                    r.group == 'gateway.networking.x-k8s.io' || r.group == 'gateway.kgateway.dev'
-                    ))
+                    || r.kind.endsWith('ListenerSet')))
               targetSelectors:
                 description: TargetSelectors specifies the target selectors to select
                   resources to attach the policy to.
@@ -1274,11 +1304,9 @@ spec:
                 type: array
                 x-kubernetes-validations:
                 - message: targetSelectors may only reference Gateway, HTTPRoute,
-                    or XListenerSet resources
+                    or ListenerSet resources
                   rule: self.all(r, (r.kind == 'Gateway' || r.kind == 'HTTPRoute'
-                    || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io'))
-                    && (!has(r.group) || r.group == 'gateway.networking.k8s.io' ||
-                    r.group == 'gateway.networking.x-k8s.io'))
+                    || r.kind.endsWith('ListenerSet')))
               timeouts:
                 description: |-
                   Timeouts defines the timeouts for requests
@@ -1353,8 +1381,6 @@ spec:
                               Value is the template to apply to generate the output value for the body.
                               Only Inja templates are supported.
                             type: string
-                        required:
-                        - parseAs
                         type: object
                       remove:
                         description: Remove is a list of header names to remove from
@@ -1430,8 +1456,6 @@ spec:
                               Value is the template to apply to generate the output value for the body.
                               Only Inja templates are supported.
                             type: string
-                        required:
-                        - parseAs
                         type: object
                       remove:
                         description: Remove is a list of header names to remove from
@@ -1812,6 +1836,8 @@ spec:
             required:
             - ancestors
             type: object
+        required:
+        - spec
         type: object
     served: true
     storage: true

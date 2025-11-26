@@ -1,3 +1,10 @@
+Addresses:
+- service:
+    hostname: webhook.default.svc.cluster.local
+    name: webhook
+    namespace: default
+    ports:
+    - servicePort: 80
 Backends:
 - ai:
     providerGroups:
@@ -17,63 +24,46 @@ Listeners:
   protocol: HTTP
 Policies:
 - backend:
-    auth:
-      key:
-        secret: mysecretkey
-  name: auth-default/openai-backend
-  target:
-    subBackend: default/openai/backend
-- backend:
     ai:
       promptGuard:
         request:
-          openaiModeration:
-            auth:
-              key:
-                secret: mysecretkey
-            model: text-moderation-latest
-          regex:
-            action:
-              kind: REJECT
-              rejectResponse:
-                body: WW91ciByZXF1ZXN0IHdhcyByZWplY3RlZCBkdWUgdG8gaW5hcHByb3ByaWF0ZSBjb250ZW50
-                status: 403
-            rules:
-            - regex:
-                name: harmful-content
-                pattern: (?i)(hate|kill|harm)
-            - regex:
-                name: profanity
-                pattern: (?i)(bad|words)
-            - builtin: CREDIT_CARD
-            - builtin: SSN
-          rejection:
+        - rejection:
             body: WW91ciByZXF1ZXN0IHdhcyByZWplY3RlZCBkdWUgdG8gaW5hcHByb3ByaWF0ZSBjb250ZW50
             status: 403
           webhook:
+            backend:
+              port: 8443
+              service: default/webhook.default.svc.cluster.local
             forwardHeaderMatches:
             - exact: bar
               name: x-foo
             - name: x-baz
               regex: ^baz-.*
-            host: prompt-guard.example.com
-            port: 8443
-        response:
-          regex:
-            action:
-              kind: MASK
+        - regex:
+            action: REJECT
             rules:
-            - regex:
-                name: mask-numbers
-                pattern: \b\d{4}\b
-            - regex:
-                name: mask-sensitive
-                pattern: (?i)(password|secret)
+            - regex: (?i)(hate|kill|harm)
+            - regex: (?i)(bad|words)
+            - builtin: CREDIT_CARD
+            - builtin: SSN
+        - openaiModeration:
+            inlinePolicies:
+            - auth:
+                key:
+                  secret: mysecretkey
+            model: text-moderation-latest
+        response:
+        - webhook:
+            backend:
+              port: 8443
+              service: default/webhook.default.svc.cluster.local
+        - regex:
+            action: MASK
+            rules:
+            - regex: \b\d{4}\b
+            - regex: (?i)(password|secret)
             - builtin: EMAIL
             - builtin: PHONE_NUMBER
-          webhook:
-            host: response-guard.example.com
-            port: 8444
       prompts:
         append:
         - content: Please provide a concise response.

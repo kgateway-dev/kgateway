@@ -23,11 +23,12 @@ import (
 // Currently these policies can only be applied per `Gateway` but support for `Listener` attachment may be added in the future.
 // See https://github.com/kgateway-dev/kgateway/issues/11786 for more details.
 type HTTPListenerPolicy struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec HTTPListenerPolicySpec `json:"spec,omitempty"`
-
+	// +required
+	Spec HTTPListenerPolicySpec `json:"spec"`
+	// +optional
 	Status gwv1.PolicyStatus `json:"status,omitempty"`
 	// TODO: embed this into a typed Status field when
 	// https://github.com/kubernetes/kubernetes/issues/131533 is resolved
@@ -58,6 +59,7 @@ type HTTPListenerPolicySpec struct {
 	// AccessLoggingConfig contains various settings for Envoy's access logging service.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto
 	// +kubebuilder:validation:MaxItems=16
+	// +optional
 	AccessLog []AccessLog `json:"accessLog,omitempty"`
 
 	// Tracing contains various settings for Envoy's OpenTelemetry tracer.
@@ -67,6 +69,7 @@ type HTTPListenerPolicySpec struct {
 
 	// UpgradeConfig contains configuration for HTTP upgrades like WebSocket.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/v1.34.1/intro/arch_overview/http/upgrades.html
+	// +optional
 	UpgradeConfig *UpgradeConfig `json:"upgradeConfig,omitempty"`
 
 	// UseRemoteAddress determines whether to use the remote address for the original client.
@@ -126,15 +129,19 @@ type HTTPListenerPolicySpec struct {
 // AccessLog represents the top-level access log configuration.
 type AccessLog struct {
 	// Output access logs to local file
+	// +optional
 	FileSink *FileSink `json:"fileSink,omitempty"`
 
 	// Send access logs to gRPC service
+	// +optional
 	GrpcService *AccessLogGrpcService `json:"grpcService,omitempty"`
 
 	// Send access logs to an OTel collector
+	// +optional
 	OpenTelemetry *OpenTelemetryAccessLogService `json:"openTelemetry,omitempty"`
 
 	// Filter access logs configuration
+	// +optional
 	Filter *AccessLogFilter `json:"filter,omitempty"`
 }
 
@@ -146,9 +153,11 @@ type FileSink struct {
 	Path string `json:"path"`
 	// the format string by which envoy will format the log lines
 	// https://www.envoyproxy.io/docs/envoy/v1.33.0/configuration/observability/access_log/usage#format-strings
-	StringFormat string `json:"stringFormat,omitempty"`
+	// +optional
+	StringFormat *string `json:"stringFormat,omitempty"`
 	// the format object by which to envoy will emit the logs in a structured way.
 	// https://www.envoyproxy.io/docs/envoy/v1.33.0/configuration/observability/access_log/usage#format-dictionaries
+	// +optional
 	JsonFormat *runtime.RawExtension `json:"jsonFormat,omitempty"`
 }
 
@@ -158,12 +167,15 @@ type AccessLogGrpcService struct {
 	CommonAccessLogGrpcService `json:",inline"`
 
 	// Additional request headers to log in the access log
+	// +optional
 	AdditionalRequestHeadersToLog []string `json:"additionalRequestHeadersToLog,omitempty"`
 
 	// Additional response headers to log in the access log
+	// +optional
 	AdditionalResponseHeadersToLog []string `json:"additionalResponseHeadersToLog,omitempty"`
 
 	// Additional response trailers to log in the access log
+	// +optional
 	AdditionalResponseTrailersToLog []string `json:"additionalResponseTrailersToLog,omitempty"`
 }
 
@@ -286,6 +298,7 @@ type OpenTelemetryAccessLogService struct {
 type KeyAnyValueList struct {
 	// A collection of key/value pairs of key-value pairs.
 	// +kubebuilder:validation:items:Type=object
+	// +optional
 	Values []KeyAnyValue `json:"values,omitempty"`
 }
 
@@ -304,13 +317,16 @@ type KeyAnyValue struct {
 // +kubebuilder:validation:MaxProperties=1
 // +kubebuilder:validation:MinProperties=1
 type AnyValue struct {
+	// +optional
 	StringValue *string `json:"stringValue,omitempty"`
 	// TODO: Add support for ArrayValue && KvListValue
 	// +kubebuilder:validation:items:Type=object
 	// +kubebuilder:validation:items:XPreserveUnknownFields
+	// +optional
 	ArrayValue []AnyValue `json:"arrayValue,omitempty"`
 	// +kubebuilder:validation:Type=object
 	// +kubebuilder:validation:XPreserveUnknownFields
+	// +optional
 	KvListValue *KeyAnyValueList `json:"kvListValue,omitempty"`
 }
 
@@ -323,10 +339,12 @@ type AccessLogFilter struct {
 	// Performs a logical "and" operation on the result of each individual filter.
 	// Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-andfilter
 	// +kubebuilder:validation:MinItems=2
+	// +optional
 	AndFilter []FilterType `json:"andFilter,omitempty"`
 	// Performs a logical "or" operation on the result of each individual filter.
 	// Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-orfilter
 	// +kubebuilder:validation:MinItems=2
+	// +optional
 	OrFilter []FilterType `json:"orFilter,omitempty"`
 }
 
@@ -335,18 +353,26 @@ type AccessLogFilter struct {
 // +kubebuilder:validation:MaxProperties=1
 // +kubebuilder:validation:MinProperties=1
 type FilterType struct {
+	// +optional
 	StatusCodeFilter *StatusCodeFilter `json:"statusCodeFilter,omitempty"`
-	DurationFilter   *DurationFilter   `json:"durationFilter,omitempty"`
+	// +optional
+	DurationFilter *DurationFilter `json:"durationFilter,omitempty"`
 	// Filters for requests that are not health check requests.
 	// Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
-	NotHealthCheckFilter bool `json:"notHealthCheckFilter,omitempty"`
+	// +optional
+	NotHealthCheckFilter *bool `json:"notHealthCheckFilter,omitempty"`
 	// Filters for requests that are traceable.
 	// Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
-	TraceableFilter    bool                `json:"traceableFilter,omitempty"`
-	HeaderFilter       *HeaderFilter       `json:"headerFilter,omitempty"`
+	// +optional
+	TraceableFilter *bool `json:"traceableFilter,omitempty"`
+	// +optional
+	HeaderFilter *HeaderFilter `json:"headerFilter,omitempty"`
+	// +optional
 	ResponseFlagFilter *ResponseFlagFilter `json:"responseFlagFilter,omitempty"`
-	GrpcStatusFilter   *GrpcStatusFilter   `json:"grpcStatusFilter,omitempty"`
-	CELFilter          *CELFilter          `json:"celFilter,omitempty"`
+	// +optional
+	GrpcStatusFilter *GrpcStatusFilter `json:"grpcStatusFilter,omitempty"`
+	// +optional
+	CELFilter *CELFilter `json:"celFilter,omitempty"`
 }
 
 // ComparisonFilter represents a filter based on a comparison.
@@ -358,7 +384,8 @@ type ComparisonFilter struct {
 	// Value to compare against.
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=4294967295
-	Value int32 `json:"value,omitempty"`
+	// +required
+	Value int32 `json:"value"`
 }
 
 // Op represents comparison operators.
@@ -409,6 +436,7 @@ type HeaderFilter struct {
 // Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
 type ResponseFlagFilter struct {
 	// +kubebuilder:validation:MinItems=1
+	// +required
 	Flags []string `json:"flags"`
 }
 
@@ -416,6 +444,7 @@ type ResponseFlagFilter struct {
 type CELFilter struct {
 	// The CEL expressions to evaluate. AccessLogs are only emitted when the CEL expressions evaluates to true.
 	// see: https://www.envoyproxy.io/docs/envoy/v1.33.0/xds/type/v3/cel.proto.html#common-expression-language-cel-proto
+	// +required
 	Match string `json:"match"`
 }
 
@@ -423,8 +452,10 @@ type CELFilter struct {
 // Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
 type GrpcStatusFilter struct {
 	// +kubebuilder:validation:MinItems=1
+	// +optional
 	Statuses []GrpcStatus `json:"statuses,omitempty"`
-	Exclude  bool         `json:"exclude,omitempty"`
+	// +optional
+	Exclude *bool `json:"exclude,omitempty"`
 }
 
 // Tracing represents the top-level Envoy's tracer.
@@ -587,6 +618,7 @@ type MetadataPathSegment struct {
 // +kubebuilder:validation:MinProperties=1
 type TracingProvider struct {
 	// Tracing contains various settings for Envoy's OTel tracer.
+	// +optional
 	OpenTelemetry *OpenTelemetryTracingConfig `json:"openTelemetry,omitempty"`
 }
 
@@ -600,7 +632,7 @@ type OpenTelemetryTracingConfig struct {
 	// The name for the service. This will be populated in the ResourceSpan Resource attributes
 	// Defaults to the envoy cluster name. Ie: `<gateway-name>.<gateway-namespace>`
 	// +optional
-	ServiceName *string `json:"serviceName"`
+	ServiceName *string `json:"serviceName,omitempty"`
 
 	// An ordered list of resource detectors. Currently supported values are `EnvironmentResourceDetector`
 	// +optional
@@ -616,6 +648,7 @@ type OpenTelemetryTracingConfig struct {
 // +kubebuilder:validation:MaxProperties=1
 // +kubebuilder:validation:MinProperties=1
 type ResourceDetector struct {
+	// +optional
 	EnvironmentResourceDetector *EnvironmentResourceDetectorConfig `json:"environmentResourceDetector,omitempty"`
 }
 
@@ -626,6 +659,7 @@ type EnvironmentResourceDetectorConfig struct{}
 // +kubebuilder:validation:MaxProperties=1
 // +kubebuilder:validation:MinProperties=1
 type Sampler struct {
+	// +optional
 	AlwaysOn *AlwaysOnConfig `json:"alwaysOnConfig,omitempty"`
 }
 
@@ -660,6 +694,7 @@ const (
 type UpgradeConfig struct {
 	// List of upgrade types to enable (e.g. "websocket", "CONNECT", etc.)
 	// +kubebuilder:validation:MinItems=1
+	// +optional
 	EnabledUpgrades []string `json:"enabledUpgrades,omitempty"`
 }
 
@@ -681,5 +716,6 @@ type EnvoyHealthCheck struct {
 	// Path defines the exact path that will be matched for health check requests.
 	// +kubebuilder:validation:MaxLength=2048
 	// +kubebuilder:validation:Pattern="^/[-a-zA-Z0-9@:%.+~#?&/=_]+$"
+	// +required
 	Path string `json:"path"`
 }

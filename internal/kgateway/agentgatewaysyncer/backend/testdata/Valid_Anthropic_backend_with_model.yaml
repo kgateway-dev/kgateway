@@ -1,0 +1,7 @@
+ai:
+  providerGroups:
+  - providers:
+    - anthropic:
+        model: claude-3-sonnet
+      name: backend
+name: test-ns/anthropic-backend

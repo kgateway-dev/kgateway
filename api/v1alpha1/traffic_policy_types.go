@@ -19,11 +19,12 @@ import (
 // +kubebuilder:subresource:status
 // +kubebuilder:metadata:labels="gateway.networking.k8s.io/policy=Direct"
 type TrafficPolicy struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec TrafficPolicySpec `json:"spec,omitempty"`
-
+	// +required
+	Spec TrafficPolicySpec `json:"spec"`
+	// +optional
 	Status gwv1.PolicyStatus `json:"status,omitempty"`
 	// TODO: embed this into a typed Status field when
 	// https://github.com/kubernetes/kubernetes/issues/131533 is resolved
@@ -47,12 +48,12 @@ type TrafficPolicySpec struct {
 	//
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
-	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Gateway' || r.kind == 'HTTPRoute' || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io')) && (!has(r.group) || r.group == 'gateway.networking.k8s.io' || r.group == 'gateway.networking.x-k8s.io' || r.group == 'gateway.kgateway.dev' ))",message="targetRefs may only reference Gateway, HTTPRoute, or XListenerSet resources"
+	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Gateway' || r.kind == 'HTTPRoute' || r.kind.endsWith('ListenerSet')))",message="targetRefs may only reference Gateway, HTTPRoute, or ListenerSet resources"
 	TargetRefs []LocalPolicyTargetReferenceWithSectionName `json:"targetRefs,omitempty"`
 
 	// TargetSelectors specifies the target selectors to select resources to attach the policy to.
 	// +optional
-	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Gateway' || r.kind == 'HTTPRoute' || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io')) && (!has(r.group) || r.group == 'gateway.networking.k8s.io' || r.group == 'gateway.networking.x-k8s.io'))",message="targetSelectors may only reference Gateway, HTTPRoute, or XListenerSet resources"
+	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Gateway' || r.kind == 'HTTPRoute' || r.kind.endsWith('ListenerSet')))",message="targetSelectors may only reference Gateway, HTTPRoute, or ListenerSet resources"
 	TargetSelectors []LocalPolicyTargetSelectorWithSectionName `json:"targetSelectors,omitempty"`
 
 	// Transformation is used to mutate and transform requests and responses
@@ -113,7 +114,13 @@ type TrafficPolicySpec struct {
 	// RBAC policies applied at different attachment points in the configuration
 	// hierarchy are not cumulative, and only the most specific policy is enforced. This means an RBAC policy
 	// attached to a route will override any RBAC policies applied to the gateway or listener.
+	// +optional
 	RBAC *Authorization `json:"rbac,omitempty"`
+
+	// JWT specifies the JWT authentication configuration for the policy.
+	// This defines the JWT providers and their configurations.
+	// +optional
+	JWT *JWTAuthentication `json:"jwt,omitempty"`
 }
 
 // TransformationPolicy config is used to modify envoy behavior at a route level.
@@ -175,6 +182,7 @@ type (
 		// +required
 		Name HeaderName `json:"name"`
 		// Value is the Inja template to apply to generate the output value for the header.
+		// +optional
 		Value InjaTemplate `json:"value,omitempty"`
 	}
 )
@@ -196,7 +204,8 @@ type BodyTransformation struct {
 	// ParseAs defines what auto formatting should be applied to the body.
 	// This can make interacting with keys within a json body much easier if AsJson is selected.
 	// +kubebuilder:default=AsString
-	ParseAs BodyParseBehavior `json:"parseAs"`
+	// +optional
+	ParseAs BodyParseBehavior `json:"parseAs,omitempty"`
 
 	// Value is the template to apply to generate the output value for the body.
 	// Only Inja templates are supported.

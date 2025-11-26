@@ -23,6 +23,9 @@ type GatewayExtension struct {
 	// This is specifically for global rate limiting that communicates with an external rate limit service.
 	RateLimit *v1alpha1.RateLimitProvider
 
+	// JwtProviders configures the jwt providers
+	JwtProviders []v1alpha1.NamedJWTProvider
+
 	// PrecedenceWeight specifies the precedence weight associated with the provider.
 	// A higher weight implies higher priority.
 	// It is used to order provider filters by their weight.
@@ -47,6 +50,9 @@ func (e GatewayExtension) Equals(other GatewayExtension) bool {
 		return false
 	}
 	if !reflect.DeepEqual(e.RateLimit, other.RateLimit) {
+		return false
+	}
+	if !reflect.DeepEqual(e.JwtProviders, other.JwtProviders) {
 		return false
 	}
 	if e.PrecedenceWeight != other.PrecedenceWeight {

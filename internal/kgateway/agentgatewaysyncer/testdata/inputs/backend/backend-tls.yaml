@@ -25,7 +25,7 @@ spec:
         value: /mcp-backend
     backendRefs:
     - group: gateway.kgateway.dev
-      kind: Backend
+      kind: AgentgatewayBackend
       name: mcp-backend
   - matches:
     - path:
@@ -40,7 +40,7 @@ spec:
         value: /ai-groups
     backendRefs:
     - group: gateway.kgateway.dev
-      kind: Backend
+      kind: AgentgatewayBackend
       name: ai-groups
   - matches:
     - path:
@@ -48,7 +48,7 @@ spec:
         value: /openai-single
     backendRefs:
     - group: gateway.kgateway.dev
-      kind: Backend
+      kind: AgentgatewayBackend
       name: openai-single
 ---
 apiVersion: v1
@@ -69,11 +69,10 @@ spec:
     targetPort: test
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: Backend
+kind: AgentgatewayBackend
 metadata:
   name: mcp-backend
 spec:
-  type: MCP
   mcp:
     targets:
     - name: mcp-static
@@ -83,7 +82,7 @@ spec:
         protocol: StreamableHTTP
     - name: mcp-selector
       selector:
-        service:
+        services:
           matchLabels:
             app: mcp-app
 ---
@@ -94,7 +93,7 @@ metadata:
 spec:
   targetRefs:
   - name: mcp-backend
-    kind: Backend
+    kind: AgentgatewayBackend
     group: gateway.kgateway.dev
     sectionName: mcp-static
   - name: mcp-svc
@@ -172,62 +171,59 @@ data:
     -----END CERTIFICATE-----
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: Backend
+kind: AgentgatewayBackend
 metadata:
   labels:
     app: kgateway
   name: ai-groups
 spec:
-  type: AI
   ai:
-    priorityGroups:
+    groups:
     - providers:
       - name: openai
         openai:
           model: "gpt-4o"
-          authToken:
-            kind: "SecretRef"
+        policies:
+          auth:
             secretRef:
               name: openai-primary-secret
       - name: anthropic
         anthropic:
           model: "claude-3-opus-20240229"
-          authToken:
-            kind: "Inline"
-            inline: "sk-anthropic-primary"
+        policies:
+          auth:
+            key: "sk-anthropic-primary"
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: Backend
+kind: AgentgatewayBackend
 metadata:
   labels:
     app: kgateway
   name: openai-single
 spec:
-  type: AI
   ai:
-    llm:
+    provider:
       openai:
         model: "gpt-4o"
-        authToken:
-          kind: "SecretRef"
-          secretRef:
-            name: openai-primary-secret
+  policies:
+    auth:
+      secretRef:
+        name: openai-primary-secret
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: Backend
+kind: AgentgatewayBackend
 metadata:
   labels:
     app: kgateway
   name: anthropic-single
 spec:
-  type: AI
   ai:
-    llm:
+    provider:
       anthropic:
         model: "claude-3-opus-20240229"
-        authToken:
-          kind: "Inline"
-          inline: "sk-anthropic-primary"
+  policies:
+    auth:
+      key: "sk-anthropic-primary"
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: BackendTLSPolicy
@@ -236,11 +232,11 @@ metadata:
 spec:
   targetRefs:
   - name: ai-groups
-    kind: Backend
+    kind: AgentgatewayBackend
     group: gateway.kgateway.dev
     sectionName: anthropic
   - name: openai-single
-    kind: Backend
+    kind: AgentgatewayBackend
     group: gateway.kgateway.dev
   validation:
     hostname: foo
@@ -253,7 +249,7 @@ metadata:
 spec:
   targetRefs:
   - name: ai-groups
-    kind: Backend
+    kind: AgentgatewayBackend
     group: gateway.kgateway.dev
   validation:
     hostname: baz

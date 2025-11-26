@@ -17,22 +17,36 @@ import (
 // +kubebuilder:resource:categories=kgateway
 // +kubebuilder:subresource:status
 type GatewayExtension struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec   GatewayExtensionSpec   `json:"spec,omitempty"`
+	// +required
+	Spec GatewayExtensionSpec `json:"spec"`
+	// +optional
 	Status GatewayExtensionStatus `json:"status,omitempty"`
 }
 
+// NamedJWTProvider is a named JWT provider entry.
+type NamedJWTProvider struct {
+	// Name is the unique name of the JWT provider.
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=253
+	// +required
+	Name string `json:"name"`
+	// Inline JWTProvider fields.
+	JWTProvider `json:",inline"`
+}
+
 // GatewayExtensionSpec defines the desired state of GatewayExtension.
-// +kubebuilder:validation:ExactlyOneOf=extAuth;extProc;rateLimit
+// +kubebuilder:validation:ExactlyOneOf=extAuth;extProc;rateLimit;jwtProviders
 // +kubebuilder:validation:XValidation:message="extAuth must be set when type is ExtAuth",rule="has(self.type) && self.type == 'ExtAuth' ? has(self.extAuth) : true"
 // +kubebuilder:validation:XValidation:message="extProc must be set when type is ExtProc",rule="has(self.type) && self.type == 'ExtProc' ? has(self.extProc) : true"
 // +kubebuilder:validation:XValidation:message="rateLimit must be set when type is RateLimit",rule="has(self.type) && self.type == 'RateLimit' ? has(self.rateLimit) : true"
+// +kubebuilder:validation:XValidation:message="JwtProviders must be set when type is JWTProviders",rule="has(self.type) && self.type == 'JWTProviders' ? has(self.jwtProviders) : true"
 type GatewayExtensionSpec struct {
-	// DEPRECATED: Setting this field has no effect.
+	// Deprecated: Setting this field has no effect.
 	// Type indicates the type of the GatewayExtension to be used.
-	// +kubebuilder:validation:Enum=ExtAuth;ExtProc;RateLimit
+	// +kubebuilder:validation:Enum=ExtAuth;ExtProc;RateLimit;JWTProviders
 	// +optional
 	Type *GatewayExtensionType `json:"type,omitempty"`
 
@@ -47,6 +61,15 @@ type GatewayExtensionSpec struct {
 	// RateLimit configuration for RateLimit extension type.
 	// +optional
 	RateLimit *RateLimitProvider `json:"rateLimit,omitempty"`
+
+	// JWTProviders configures named JWT providers.
+	// If multiple providers are specified for a given JWT policy,
+	// the providers will be `OR`-ed together and will allow validation to any of the providers.
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=32
+	JWTProviders []NamedJWTProvider `json:"jwtProviders,omitempty"`
 }
 
 // GatewayExtensionType indicates the type of the GatewayExtension.
@@ -59,6 +82,8 @@ const (
 	GatewayExtensionTypeExtProc GatewayExtensionType = "ExtProc"
 	// GatewayExtensionTypeRateLimit is the type for RateLimit extensions.
 	GatewayExtensionTypeRateLimit GatewayExtensionType = "RateLimit"
+	// GatewayExtensionTypeJWTProvider is the type for the JWT Provider extensions
+	GatewayExtensionTypeJWTProvider GatewayExtensionType = "JWTProviders"
 )
 
 // ExtGrpcService defines the GRPC service that will handle the processing.
@@ -87,7 +112,6 @@ type GRPCRetryPolicy struct {
 	// Defaults to 1 attempt if not set.
 	// A value of 0 effectively disables retries.
 	// +optional
-	//
 	// +kubebuilder:default=1
 	// +kubebuilder:validation:Minimum=0
 	Attempts int32 `json:"attempts,omitempty"`
@@ -103,11 +127,13 @@ type GRPCRetryBackoff struct {
 	// BaseInterval specifies the base interval used with a fully jittered exponential back-off between retries.
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="retry.BaseInterval must be at least 1ms."
+	// +required
 	BaseInterval metav1.Duration `json:"baseInterval"`
 
 	// MaxInterval specifies the maximum interval between retry attempts.
 	// Defaults to 10 times the BaseInterval if not set.
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +optional
 	MaxInterval *metav1.Duration `json:"maxInterval,omitempty"`
 }
 
@@ -142,6 +168,7 @@ type RateLimitProvider struct {
 	// Disabled by default.
 	// +kubebuilder:validation:Enum=Off;DraftVersion03
 	// +kubebuilder:default="Off"
+	// +optional
 	XRateLimitHeaders XRateLimitHeadersStandard `json:"xRateLimitHeaders,omitempty"`
 }
 

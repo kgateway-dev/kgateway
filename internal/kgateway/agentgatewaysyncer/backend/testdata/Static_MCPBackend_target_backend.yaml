@@ -1,0 +1,12 @@
+- name: test-ns/static-mcp-backend/static-target
+  static:
+    host: mcp-server.example.com
+    port: 8080
+- mcp:
+    targets:
+    - backend:
+        backend: test-ns/static-mcp-backend/static-target
+      name: static-target
+      path: override-sse
+      protocol: SSE
+  name: test-ns/static-mcp-backend

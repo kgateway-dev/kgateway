@@ -19,10 +19,13 @@ import (
 // +kubebuilder:resource:categories=kgateway
 // +kubebuilder:subresource:status
 type BackendConfigPolicy struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              BackendConfigPolicySpec `json:"spec,omitempty"`
-	Status            gwv1.PolicyStatus       `json:"status,omitempty"`
+	// +required
+	Spec BackendConfigPolicySpec `json:"spec"`
+	// +optional
+	Status gwv1.PolicyStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -94,6 +97,40 @@ type BackendConfigPolicySpec struct {
 	// OutlierDetection contains the options necessary to configure passive health checking.
 	// +optional
 	OutlierDetection *OutlierDetection `json:"outlierDetection,omitempty"`
+
+	// CircuitBreakers contains the options necessary to configure circuit breaking.
+	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/circuit_breaking) for more details.
+	// +optional
+	CircuitBreakers *CircuitBreakers `json:"circuitBreakers,omitempty"`
+}
+
+// CircuitBreakers contains the options to configure circuit breaker thresholds for the default priority.
+// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/circuit_breaker.proto) for more details.
+// +kubebuilder:validation:AtLeastOneOf=maxConnections;maxPendingRequests;maxRequests;maxRetries
+type CircuitBreakers struct {
+	// MaxConnections is the maximum number of connections that will be made to
+	// the upstream cluster. If not specified, defaults to 1024.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	MaxConnections *int32 `json:"maxConnections,omitempty"`
+
+	// MaxPendingRequests is the maximum number of pending requests that are
+	// allowed to the upstream cluster. If not specified, defaults to 1024.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	MaxPendingRequests *int32 `json:"maxPendingRequests,omitempty"`
+
+	// MaxRequests is the maximum number of parallel requests that are allowed
+	// to the upstream cluster. If not specified, defaults to 1024.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	MaxRequests *int32 `json:"maxRequests,omitempty"`
+
+	// MaxRetries is the maximum number of parallel retries that are allowed
+	// to the upstream cluster. If not specified, defaults to 3.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	MaxRetries *int32 `json:"maxRetries,omitempty"`
 }
 
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-http1protocoloptions) for more details.
@@ -357,7 +394,7 @@ type LoadBalancerLeastRequestConfig struct {
 	// How many choices to take into account.
 	// Defaults to 2.
 	// +optional
-	// +default=2
+	// +kubebuilder:default=2
 	ChoiceCount int32 `json:"choiceCount,omitempty"`
 
 	// SlowStart configures the slow start configuration for the load balancer.
@@ -393,7 +430,7 @@ type LoadBalancerRingHashConfig struct {
 	// +optional
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
-	HashPolicies []*HashPolicy `json:"hashPolicies,omitempty"`
+	HashPolicies []HashPolicy `json:"hashPolicies,omitempty"`
 }
 
 type LoadBalancerMaglevConfig struct {
@@ -406,7 +443,7 @@ type LoadBalancerMaglevConfig struct {
 	// +optional
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
-	HashPolicies []*HashPolicy `json:"hashPolicies,omitempty"`
+	HashPolicies []HashPolicy `json:"hashPolicies,omitempty"`
 }
 
 type (
@@ -454,7 +491,7 @@ const (
 
 // HealthCheck contains the options to configure the health check.
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/health_check.proto) for more details.
-// +optional
+
 // +kubebuilder:validation:XValidation:rule="has(self.http) != has(self.grpc)",message="exactly one of http or grpc must be set"
 type HealthCheck struct {
 	// Timeout is time to wait for a health check response. If the timeout is reached the
@@ -523,7 +560,7 @@ type HealthCheckGrpc struct {
 
 // OutlierDetection contains the options to configure passive health checks.
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/outlier#outlier-detection) for more details.
-// +optional
+
 type OutlierDetection struct {
 	// The number of consecutive server-side error responses (for HTTP traffic,
 	// 5xx responses; for TCP traffic, connection failures; etc.) before an
@@ -586,12 +623,14 @@ type HashPolicy struct {
 type Header struct {
 	// Name is the name of the header to use as a component of the hash key.
 	// +kubebuilder:validation:MinLength=1
+	// +required
 	Name string `json:"name"`
 }
 
 type Cookie struct {
 	// Name of the cookie.
 	// +kubebuilder:validation:MinLength=1
+	// +required
 	Name string `json:"name"`
 
 	// Path is the name of the path for the cookie.

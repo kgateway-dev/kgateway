@@ -18,8 +18,10 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/directresponse"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/extauth"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/extproc"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/frontendtls"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/header_modifiers"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/http_listener_policy"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/jwt"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/lambda"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/leaderelection"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/loadtesting"
@@ -36,6 +38,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/session_persistence"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/timeoutretry"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/tracing"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/trafficpolicystatus"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/transformation"
 )
 
@@ -61,6 +64,7 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("LocalRateLimit", local_rate_limit.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("GlobalRateLimit", global_rate_limit.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("PolicySelector", policyselector.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("TrafficPolicyStatus", trafficpolicystatus.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Cors", cors.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("BackendConfigPolicy", backendconfigpolicy.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("CSRF", csrf.NewTestingSuite)
@@ -76,6 +80,8 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("HeaderModifiers", header_modifiers.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("RBAC", rbac.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("AdminServer", admin_server.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("JWT", jwt.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("FrontendTLS", frontendtls.NewTestingSuite)
 
 	return kubeGatewaySuiteRunner
 }

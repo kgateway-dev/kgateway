@@ -21,21 +21,24 @@ import (
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/backend/inferencepool"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentjwksstore"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/waypoint"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections/metrics"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/jwks"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections/metrics"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	kgtwschemes "github.com/kgateway-dev/kgateway/v2/pkg/schemes"
+	"github.com/kgateway-dev/kgateway/v2/pkg/syncer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/namespaces"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
@@ -95,6 +98,9 @@ type StartConfig struct {
 
 	// GatewayControllerExtension is an extension that can be used to extend Gateway controller
 	GatewayControllerExtension sdk.GatewayControllerExtension
+
+	// StatusSyncerOptions is the list of options to be passed when creating the StatusSyncer
+	StatusSyncerOptions []syncer.StatusSyncerOption
 }
 
 // Start runs the controllers responsible for processing the K8s Gateway API objects
@@ -189,6 +195,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			proxySyncer.ReportQueue(),
 			proxySyncer.BackendPolicyReportQueue(),
 			proxySyncer.CacheSyncs(),
+			cfg.StatusSyncerOptions...,
 		)
 		if err := cfg.Manager.Add(statusSyncer); err != nil {
 			setupLog.Error(err, "unable to add statusSyncer runnable")
@@ -233,6 +240,18 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		)
 		if err := cfg.Manager.Add(agwStatusSyncer); err != nil {
 			setupLog.Error(err, "unable to add agentgateway StatusSyncer runnable")
+			return nil, err
+		}
+
+		jwksStoreCtrl := agentjwksstore.NewJWKSStoreController(cfg.Manager, cfg.Client, cfg.AgwCollections)
+		if err := cfg.Manager.Add(jwksStoreCtrl); err != nil {
+			setupLog.Error(err, "unable to add agentgateway JwksStoreController runnable")
+			return nil, err
+		}
+		jwksStoreCtrl.Init(ctx)
+		jwksStore := jwks.BuildJwksStore(ctx, cfg.Client, cfg.CommonCollections, jwksStoreCtrl.JwksQueue(), namespaces.GetPodNamespace())
+		if err := cfg.Manager.Add(jwksStore); err != nil {
+			setupLog.Error(err, "unable to add agentgateway JwksStore runnable")
 			return nil, err
 		}
 	}

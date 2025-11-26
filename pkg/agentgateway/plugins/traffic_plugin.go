@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 
@@ -21,6 +22,7 @@ import (
 	"istio.io/istio/pkg/slices"
 	"istio.io/istio/pkg/util/protomarshal"
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -28,6 +30,7 @@ import (
 	"sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/jwks"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
@@ -86,13 +89,13 @@ func NewAgentPlugin(agw *AgwCollections) AgwPlugin {
 		agw.Client,
 		wellknown.AgentgatewayPolicyGVR,
 		kclient.Filter{ObjectFilter: agw.Client.ObjectFilter()},
-	), agw.KrtOpts.ToOptions("AgentgatewayPolicy")...)
+	), agw.KrtOpts.ToOptions("informer/AgentgatewayPolicy")...)
 	policyStatusCol, policyCol := krt.NewStatusManyCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.AgentgatewayPolicy) (
 		*gwv1.PolicyStatus,
 		[]AgwPolicy,
 	) {
 		return TranslateAgentgatewayPolicy(krtctx, policyCR, agw)
-	})
+	}, agw.KrtOpts.ToOptions("AgentgatewayPolicy")...)
 
 	return AgwPlugin{
 		ContributesPolicies: map[schema.GroupKind]PolicyPlugin{
@@ -176,7 +179,7 @@ func TranslateAgentgatewayPolicy(
 				}
 			}
 
-		case wellknown.BackendGVK.GroupKind():
+		case wellknown.AgentgatewayBackendGVK.GroupKind():
 			policyTarget = &api.PolicyTarget{
 				Kind: &api.PolicyTarget_Backend{
 					Backend: utils.InternalBackendName(policy.Namespace, string(target.Name), ""),
@@ -437,7 +440,11 @@ func translateTrafficPolicyToAgw(
 	}
 
 	if traffic.JWTAuthentication != nil {
-		jwtAuthenticationPolicies := processJWTAuthenticationPolicy(traffic.JWTAuthentication, basePolicyName, policyTarget)
+		jwtAuthenticationPolicies, err := processJWTAuthenticationPolicy(ctx, traffic.JWTAuthentication, basePolicyName, policyTarget)
+		if err != nil {
+			logger.Error("error processing jwtAuthentication policy", "error", err)
+			errs = append(errs, err)
+		}
 		agwPolicies = append(agwPolicies, jwtAuthenticationPolicies...)
 	}
 
@@ -494,7 +501,7 @@ func processRetriesPolicy(retry *v1alpha1.Retry, basePolicyName string, target *
 	return []AgwPolicy{{Policy: retryPolicy}}
 }
 
-func processJWTAuthenticationPolicy(jwt *v1alpha1.AgentJWTAuthentication, basePolicyName string, target *api.PolicyTarget) []AgwPolicy {
+func processJWTAuthenticationPolicy(ctx PolicyCtx, jwt *v1alpha1.AgentJWTAuthentication, basePolicyName string, target *api.PolicyTarget) ([]AgwPolicy, error) {
 	p := &api.TrafficPolicySpec_JWT{}
 
 	switch jwt.Mode {
@@ -506,17 +513,44 @@ func processJWTAuthenticationPolicy(jwt *v1alpha1.AgentJWTAuthentication, basePo
 		p.Mode = api.TrafficPolicySpec_JWT_PERMISSIVE
 	}
 
+	errs := make([]error, 0)
 	for _, pp := range jwt.Providers {
 		jp := &api.TrafficPolicySpec_JWTProvider{
 			Issuer:    pp.Issuer,
 			Audiences: pp.Audiences,
 		}
-		if i := pp.JWKS.Inline; i != "" {
-			jp.JwksSource = &api.TrafficPolicySpec_JWTProvider_Inline{Inline: i}
+		if i := pp.JWKS.Inline; i != nil {
+			jp.JwksSource = &api.TrafficPolicySpec_JWTProvider_Inline{Inline: *i}
 			p.Providers = append(p.Providers, jp)
+			continue
 		}
 		if r := pp.JWKS.Remote; r != nil {
-			// TODO: this is not yet implemented and rejected by CEL
+			if _, err := url.Parse(pp.JWKS.Remote.JwksUri); err != nil {
+				errs = append(errs, fmt.Errorf("invalid jwks url in JWTAuthentication policy %w", err))
+				continue
+			}
+			jwksStoreName := jwks.JwksConfigMapNamespacedName(pp.JWKS.Remote.JwksUri)
+			if jwksStoreName == nil {
+				errs = append(errs, fmt.Errorf("jwks store hasn't been initialized"))
+				continue
+			}
+			jwksCM := ptr.Flatten(krt.FetchOne(ctx.Krt, ctx.Collections.ConfigMaps, krt.FilterObjectName(*jwksStoreName)))
+			if jwksCM == nil {
+				errs = append(errs, fmt.Errorf("jwks ConfigMap isn't available"))
+				continue
+			}
+			jwksForUri, err := jwks.JwksFromConfigMap(jwksCM)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("error deserializing jwks ConfigMap %w", err))
+				continue
+			}
+			jwks, ok := jwksForUri[pp.JWKS.Remote.JwksUri]
+			if !ok {
+				errs = append(errs, fmt.Errorf("jwks %s is not available in the jwks ConfigMap", pp.JWKS.Remote.JwksUri))
+				continue
+			}
+			jp.JwksSource = &api.TrafficPolicySpec_JWTProvider_Inline{Inline: jwks}
+			p.Providers = append(p.Providers, jp)
 		}
 	}
 
@@ -535,7 +569,7 @@ func processJWTAuthenticationPolicy(jwt *v1alpha1.AgentJWTAuthentication, basePo
 		"agentgateway_policy", jwtPolicy.Name,
 		"target", target)
 
-	return []AgwPolicy{{Policy: jwtPolicy}}
+	return []AgwPolicy{{Policy: jwtPolicy}}, errors.Join(errs...)
 }
 
 func processBasicAuthenticationPolicy(ctx PolicyCtx, ba *v1alpha1.AgentBasicAuthentication, basePolicyName string, policyNamespace string, target *api.PolicyTarget) ([]AgwPolicy, error) {
@@ -1049,9 +1083,14 @@ func processRateLimitDescriptor(descriptor v1alpha1.AgentRateLimitDescriptor) *a
 		})
 	}
 
+	rlType := api.TrafficPolicySpec_RemoteRateLimit_REQUESTS
+	if descriptor.Unit != nil && *descriptor.Unit == v1alpha1.RateLimitUnitTokens {
+		rlType = api.TrafficPolicySpec_RemoteRateLimit_TOKENS
+	}
+
 	return &api.TrafficPolicySpec_RemoteRateLimit_Descriptor{
 		Entries: entries,
-		Type:    api.TrafficPolicySpec_RemoteRateLimit_REQUESTS,
+		Type:    rlType,
 	}
 }
 
@@ -1122,13 +1161,14 @@ func buildBackendRef(ctx PolicyCtx, ref gwv1.BackendObjectReference, defaultNS s
 	}
 }
 
-func toJSONValue(value string) (string, error) {
-	if json.Valid([]byte(value)) {
-		return value, nil
+func toJSONValue(j apiextensionsv1.JSON) (string, error) {
+	value := j.Raw
+	if json.Valid(value) {
+		return string(value), nil
 	}
 
-	if strings.HasPrefix(value, "{") || strings.HasPrefix(value, "[") {
-		return "", fmt.Errorf("invalid JSON value: %s", value)
+	if bytes.HasPrefix(value, []byte("{")) || bytes.HasPrefix(value, []byte("[")) {
+		return "", fmt.Errorf("invalid JSON value: %s", string(value))
 	}
 
 	// Treat this as an unquoted string and marshal it to JSON

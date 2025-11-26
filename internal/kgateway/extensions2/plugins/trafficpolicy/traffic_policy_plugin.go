@@ -26,6 +26,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -34,6 +35,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
@@ -87,6 +89,7 @@ type trafficPolicySpecIr struct {
 	retry           *retryIR
 	timeouts        *timeoutsIR
 	rbac            *rbacIR
+	jwt             *jwtIr
 }
 
 func (d *TrafficPolicy) CreationTime() time.Time {
@@ -144,6 +147,9 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	if !d.spec.rbac.Equals(d2.spec.rbac) {
 		return false
 	}
+	if !d.spec.jwt.Equals(d2.spec.jwt) {
+		return false
+	}
 	return true
 }
 
@@ -164,6 +170,7 @@ func (p *TrafficPolicy) Validate() error {
 	validators = append(validators, p.spec.buffer.Validate)
 	validators = append(validators, p.spec.autoHostRewrite.Validate)
 	validators = append(validators, p.spec.rbac.Validate)
+	validators = append(validators, p.spec.jwt.Validate)
 	for _, validator := range validators {
 		if err := validator(); err != nil {
 			return err
@@ -181,6 +188,7 @@ type trafficPolicyPluginGwPass struct {
 	localRateLimitInChain    map[string]*localratelimitv3.LocalRateLimit
 	extAuthPerProvider       ProviderNeededMap
 	extProcPerProvider       ProviderNeededMap
+	jwtPerProvider           ProviderNeededMap
 	rateLimitPerProvider     ProviderNeededMap
 	rbacInChain              map[string]*envoyrbacv3.RBAC
 	corsInChain              map[string]*corsv3.Cors
@@ -210,7 +218,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 	constructor := NewTrafficPolicyConstructor(ctx, commoncol)
 
 	// TrafficPolicy IR will have TypedConfig -> implement backendroute method to add prompt guard, etc.
-	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.TrafficPolicy) *ir.PolicyWrapper {
+	statusCol, policyCol := krt.NewStatusCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.TrafficPolicy) (*krtcollections.StatusMarker, *ir.PolicyWrapper) {
 		objSrc := ir.ObjectSource{
 			Group:     gk.Group,
 			Kind:      gk.Kind,
@@ -228,6 +236,14 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 			errors = append(errors, err)
 		}
 
+		var statusMarker *krtcollections.StatusMarker
+		for _, ancestor := range policyCR.Status.Ancestors {
+			if string(ancestor.ControllerName) == commoncol.ControllerName {
+				statusMarker = &krtcollections.StatusMarker{}
+				break
+			}
+		}
+
 		pol := &ir.PolicyWrapper{
 			ObjectSource:     objSrc,
 			Policy:           policyCR,
@@ -236,14 +252,35 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 			Errors:           errors,
 			PrecedenceWeight: precedenceWeight,
 		}
-		return pol
+		return statusMarker, pol
 	})
+
+	// processMarkers for policies that have existing status but no current report
+	processMarkers := func(kctx krt.HandlerContext, reportMap *reports.ReportMap) {
+		objStatus := krt.Fetch(kctx, statusCol)
+		for _, status := range objStatus {
+			policyKey := reporter.PolicyKey{
+				Group:     gk.Group,
+				Kind:      gk.Kind,
+				Namespace: status.Obj.GetNamespace(),
+				Name:      status.Obj.GetName(),
+			}
+
+			// Add empty status to clear stale status for policies with no valid targets
+			if reportMap.Policies[policyKey] == nil {
+				rp := reports.NewReporter(reportMap)
+				// create empty policy report entry with no ancestor refs
+				rp.Policy(policyKey, 0)
+			}
+		}
+	}
 
 	return sdk.Plugin{
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			wellknown.TrafficPolicyGVK.GroupKind(): {
-				NewGatewayTranslationPass: NewGatewayTranslationPass,
-				Policies:                  policyCol,
+				NewGatewayTranslationPass:       NewGatewayTranslationPass,
+				Policies:                        policyCol,
+				ProcessPolicyStaleStatusMarkers: processMarkers,
 				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
 					return policy.MergePolicies(pols, mergeTrafficPolicies, mergeSettings)
 				},
@@ -414,6 +451,27 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(fcc ir.FilterChainCommon) ([]fil
 		stagedFilters = append(stagedFilters, stagedExtAuthFilter)
 	}
 
+	if len(p.jwtPerProvider.Providers[fcc.FilterChainName]) > 0 {
+		stagedFilters = AddDisableFilterIfNeeded(stagedFilters, jwtGlobalDisableFilterName, jwtGlobalDisableFilterMetadataNamespace)
+	}
+	for _, provider := range p.jwtPerProvider.Providers[fcc.FilterChainName] {
+		jwtFilter := provider.Extension.Jwt
+		if jwtFilter == nil {
+			continue
+		}
+
+		// add the specific jwt filter
+		jwtName := jwtFilterName(provider.Name)
+		stagedJwtFilter := filters.MustNewStagedFilter(
+			jwtName,
+			jwtFilter,
+			filters.DuringStage(filters.AuthNStage),
+		)
+
+		stagedJwtFilter.Filter.Disabled = true
+		stagedFilters = append(stagedFilters, stagedJwtFilter)
+	}
+
 	if f := p.localRateLimitInChain[fcc.FilterChainName]; f != nil {
 		filter := filters.MustNewStagedFilter(localRateLimitFilterNamePrefix, f, filters.BeforeStage(filters.AcceptedStage))
 		filter.Filter.Disabled = true
@@ -497,6 +555,7 @@ func (p *trafficPolicyPluginGwPass) handlePolicies(
 	// to be set at the route level so we need to smuggle info upwards.
 	p.handleExtAuth(fcn, typedFilterConfig, spec.extAuth)
 	p.handleExtProc(fcn, typedFilterConfig, spec.extProc)
+	p.handleJwt(fcn, typedFilterConfig, spec.jwt)
 	p.handleGlobalRateLimit(fcn, typedFilterConfig, spec.globalRateLimit)
 	p.handleLocalRateLimit(fcn, typedFilterConfig, spec.localRateLimit)
 	p.handleCors(fcn, typedFilterConfig, spec.cors)

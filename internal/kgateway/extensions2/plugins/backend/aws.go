@@ -217,22 +217,13 @@ func buildLambdaFilters(
 	}, nil
 }
 
-// getRegion returns the region for the aws backend. If a region is specified, it will be returned.
-// Otherwise, the default region is returned.
-func getRegion(in *v1alpha1.AwsBackend) string {
-	if in.Region != nil {
-		return *in.Region
-	}
-	return wellknown.DefaultAWSRegion
-}
-
 // getLambdaHostname returns the hostname for the lambda function. When using a custom endpoint
 // has been specified, it will be returned. Otherwise, the default lambda hostname is returned.
 func getLambdaHostname(in *v1alpha1.AwsBackend) string {
 	if in.Lambda.EndpointURL != nil {
 		return *in.Lambda.EndpointURL
 	}
-	return fmt.Sprintf("lambda.%s.amazonaws.com", getRegion(in))
+	return fmt.Sprintf("lambda.%s.amazonaws.com", in.Region)
 }
 
 // getLambdaInvocationMode returns the Lambda invocation mode. Default is synchronous.
