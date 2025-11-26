@@ -64,12 +64,12 @@ func constructCompression(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpe
 	// Enable response compression if not disabled (default enabled)
 	if rc := spec.Compression.ResponseCompression; rc != nil {
 		// Note: we intentionally rely on Envoy defaults for algorithm (gzip at listener) and content types.
-		out.compression = &compressionIR{enable: (rc.Disable == nil || !*rc.Disable)}
+		out.compression = &compressionIR{enable: (rc.Disable == nil)}
 	}
 
 	// Enable request decompression if not disabled (default enabled)
 	if dc := spec.Compression.RequestDecompression; dc != nil {
-		out.decompression = &decompressionIR{enable: (dc.Disable == nil || !*dc.Disable)}
+		out.decompression = &decompressionIR{enable: (dc.Disable == nil)}
 	}
 }
 

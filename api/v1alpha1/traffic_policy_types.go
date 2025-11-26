@@ -479,8 +479,8 @@ type Timeouts struct {
 // Compression configures HTTP gzip compression and decompression behavior.
 // +kubebuilder:validation:AtLeastOneOf=responseCompression;requestDecompression
 type Compression struct {
-	// ResponseCompression controls response compression.
-	// If set, gzip responses with certain content types will be compressed.
+	// ResponseCompression controls response compression to the downstream.
+	// If set, responses with the appropriate `Accept-Enocding` header with certain textual content types will be compressed using gzip.
 	// +optional
 	ResponseCompression *ResponseCompression `json:"responseCompression,omitempty"`
 
@@ -492,14 +492,14 @@ type Compression struct {
 
 // ResponseCompression configures response compression.
 type ResponseCompression struct {
-	// Disable turns compression off. If omitted or false, compression is enabled.
+	// Disables compression.
 	// +optional
-	Disable *bool `json:"disable,omitempty"`
+	Disable *PolicyDisable `json:"disable,omitempty"`
 }
 
 // RequestDecompression enables request gzip decompression.
 type RequestDecompression struct {
-	// Disable turns decompression off. If omitted or false, decompression is enabled.
+	// Disables decompression.
 	// +optional
-	Disable *bool `json:"disable,omitempty"`
+	Disable *PolicyDisable `json:"disable,omitempty"`
 }

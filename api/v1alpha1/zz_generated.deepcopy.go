@@ -5570,7 +5570,7 @@ func (in *RequestDecompression) DeepCopyInto(out *RequestDecompression) {
 	*out = *in
 	if in.Disable != nil {
 		in, out := &in.Disable, &out.Disable
-		*out = new(bool)
+		*out = new(PolicyDisable)
 		**out = **in
 	}
 }
@@ -5610,7 +5610,7 @@ func (in *ResponseCompression) DeepCopyInto(out *ResponseCompression) {
 	*out = *in
 	if in.Disable != nil {
 		in, out := &in.Disable, &out.Disable
-		*out = new(bool)
+		*out = new(PolicyDisable)
 		**out = **in
 	}
 }
