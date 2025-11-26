@@ -179,7 +179,7 @@ func (p *listenerPolicyPluginGwPass) ApplyListenerPlugin(
 	pCtx *ir.ListenerContext,
 	out *envoylistenerv3.Listener,
 ) {
-	logger.Info("ApplyListenerPlugin called", "listener", out.Name, "policyType", fmt.Sprintf("%T", pCtx.Policy))
+	logger.Info("applying to listener", "listener", out.Name, "policyType", fmt.Sprintf("%T", pCtx.Policy))
 	pol, ok := pCtx.Policy.(*listenerPolicy)
 	if !ok || pol == nil {
 		logger.Info("policy is not listenerPolicy type or is nil", "ok", ok, "pol", pol)
@@ -194,6 +194,9 @@ func (p *listenerPolicyPluginGwPass) ApplyListenerPlugin(
 }
 
 func convertProxyProtocolConfig(objSrc ir.ObjectSource, config *v1alpha1.ProxyProtocolConfig) *anypb.Any {
+	if config == nil {
+		return nil
+	}
 	// Create the proxy protocol configuration
 	proxyProtocolConfig := &proxy_protocol.ProxyProtocol{
 		StatPrefix: fmt.Sprintf("%s_%s", objSrc.Namespace, objSrc.Name),
