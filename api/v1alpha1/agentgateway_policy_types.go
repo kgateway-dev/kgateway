@@ -529,7 +529,7 @@ type AgentRemoteJWKS struct {
 	// Not implemented yet, only jwksUri is currently supported.
 	// Supported types: Service and Backend.
 	// +optional
-	BackendRef gwv1.BackendObjectReference `json:"backendRef,omitempty"`
+	BackendRef *gwv1.BackendObjectReference `json:"backendRef,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=Strict;Optional

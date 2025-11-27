@@ -35,9 +35,10 @@ type JwksHttpClient interface {
 }
 
 type JwksSource struct {
-	JwksURL string
-	Ttl     time.Duration
-	Deleted bool
+	JwksURL   string
+	Ttl       time.Duration
+	Deleted   bool
+	TlsConfig *tls.Config
 }
 
 func (js JwksSource) ResourceName() string {
@@ -171,6 +172,7 @@ func (f *JwksFetcher) SubscribeToUpdates() chan map[string]string {
 	return subscriber
 }
 
+// handle http, https jwks source (default http(s) client), or a client with tls.Options
 func (f *JwksFetcher) AddOrUpdateKeyset(source JwksSource) error {
 	if _, err := url.Parse(source.JwksURL); err != nil {
 		return fmt.Errorf("error parsing jwks url %w", err)
