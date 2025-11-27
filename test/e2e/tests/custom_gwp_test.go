@@ -116,7 +116,7 @@ func verifyPodLabel(
 // and verifies that the gateway pod has the custom label defined in the GatewayParameters.
 // It then upgrades the helm chart to reference a different GatewayParameters resource,
 // verifies that the GatewayClass parametersRef is updated correctly,
-// and verifies that the gateway pod is still running (even though the ParametersRef has changed to non-existant resource).
+// and verifies that the gateway pod is still running (even though the ParametersRef has changed to non-existent resource).
 // It then creates the new GatewayParameters resource,
 // and verifies that the gateway pod has the new label defined in the new GatewayParameters resource.
 func TestCustomGWP(t *testing.T) {
@@ -232,7 +232,7 @@ func TestCustomGWP(t *testing.T) {
 		WithPolling(time.Millisecond * 200).
 		Should(gomega.Succeed())
 
-	// Ensure gateway pods are still running (even though the ParametersRef has changed to non-existant resource)
+	// Ensure gateway pods are still running (even though the ParametersRef has changed to non-existent resource)
 	testInstallation.Assertions.EventuallyReadyReplicas(ctx, proxyObjectMeta, gomega.Equal(1))
 
 	// Create the kgatewayGWP2 GatewayParameters resource
