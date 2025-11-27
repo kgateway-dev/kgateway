@@ -267,6 +267,12 @@ func WithCookieJar(cookieJar string) Option {
 	}
 }
 
+func WithProxyProto() Option {
+	return func(config *requestConfig) {
+		config.proxyProto = true
+	}
+}
+
 // WithHTTP11 returns the Option to force HTTP/1.1 protocol
 // https://curl.se/docs/manpage.html#--http11
 func WithHTTP11() Option {
