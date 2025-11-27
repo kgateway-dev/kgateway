@@ -57,27 +57,15 @@ spec:
       name: example-gateway
   jwt:
     extensionRef:
-      name: jwt-ext-3
----
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: TrafficPolicy
-metadata:
-  name: route-test
-spec:
-  targetRefs:
-    - kind: HTTPRoute
-      group: gateway.networking.k8s.io
-      name: example-route
-  jwt:
-    extensionRef:
-      name: jwt-ext-2
+      name: jwt-ext-allow-missing
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayExtension
 metadata:
-  name: jwt-ext-3
+  name: jwt-ext-allow-missing
 spec:
   jwt:
+    validationMode: ALLOW_MISSING
     jwtProviders:
     - name: gateway-example
       claimsToHeaders:
@@ -96,47 +84,4 @@ spec:
             YGATajDpzrHf+WXgOgvwyxaHJSN/fE+eFuRT3ooDaAuytsfYotsn4z/ajdEPSwXY
             CwIDAQAB
             -----END PUBLIC KEY-----
----
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: GatewayExtension
-metadata:
-  name: jwt-ext-2
-spec:
-  jwt:
-    jwtProviders:
-    - name: my-example2
-      claimsToHeaders:
-        - name: org
-          header: x-org
-        - name: bar
-          header: x-bar
-      issuer: https://dev2.example.com
-      jwks:
-        local:
-          inline: |
-            -----BEGIN PUBLIC KEY-----
-            MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAruK9KacQjDePRyfG7oPI
-            aqAIyCeOCBIGB2nBbDLGp1Szdm7rsWcrzGf7Avpa/ijLV9huoNvpdflld4B+SaT7
-            m3EDDMDUyA4LayJC5JBI10Qfu3Qn8BEpcdN2uRiycXOzgsoIXneXp9hENlS5Vsr3
-            ur5BaBCc+BZZRRaXDTLy6KyD1Pyd6XRsxyZXt/SYOIww0NSt5u0CTyZUGJhQungJ
-            pI8Hhrzdf87mLZGZd16dOGObE5LqFwk2prN3D0+owLsA25WJOPZXizxpTB4tPvJu
-            YGATajDpzrHf+WXgOgvwyxaHJSN/fE+eFuRT3ooDaAuytsfYotsn4z/ajdEPSwXY
-            CwIDAQAB
-            -----END PUBLIC KEY-----
-    - name: my-example3
-      claimsToHeaders:
-        - name: foo
-          header: x-foo
-      issuer: https://dev3.example.com
-      jwks:
-        local:
-          inline: |
-            -----BEGIN PUBLIC KEY-----
-            MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAruK9KacQjDePRyfG7oPI
-            aqAIyCeOCBIGB2nBbDLGp1Szdm7rsWcrzGf7Avpa/ijLV9huoNvpdflld4B+SaT7
-            m3EDDMDUyA4LayJC5JBI10Qfu3Qn8BEpcdN2uRiycXOzgsoIXneXp9hENlS5Vsr3
-            ur5BaBCc+BZZRRaXDTLy6KyD1Pyd6XRsxyZXt/SYOIww0NSt5u0CTyZUGJhQungJ
-            pI8Hhrzdf87mLZGZd16dOGObE5LqFwk2prN3D0+owLsA25WJOPZXizxpTB4tPvJu
-            YGATajDpzrHf+WXgOgvwyxaHJSN/fE+eFuRT3ooDaAuytsfYotsn4z/ajdEPSwXY
-            CwIDAQAB
-            -----END PUBLIC KEY-----
+

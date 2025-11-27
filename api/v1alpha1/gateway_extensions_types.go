@@ -38,15 +38,15 @@ type NamedJWTProvider struct {
 }
 
 // GatewayExtensionSpec defines the desired state of GatewayExtension.
-// +kubebuilder:validation:ExactlyOneOf=extAuth;extProc;rateLimit;jwtProviders
+// +kubebuilder:validation:ExactlyOneOf=extAuth;extProc;rateLimit;jwt
 // +kubebuilder:validation:XValidation:message="extAuth must be set when type is ExtAuth",rule="has(self.type) && self.type == 'ExtAuth' ? has(self.extAuth) : true"
 // +kubebuilder:validation:XValidation:message="extProc must be set when type is ExtProc",rule="has(self.type) && self.type == 'ExtProc' ? has(self.extProc) : true"
 // +kubebuilder:validation:XValidation:message="rateLimit must be set when type is RateLimit",rule="has(self.type) && self.type == 'RateLimit' ? has(self.rateLimit) : true"
-// +kubebuilder:validation:XValidation:message="JwtProviders must be set when type is JWTProviders",rule="has(self.type) && self.type == 'JWTProviders' ? has(self.jwtProviders) : true"
+// +kubebuilder:validation:XValidation:message="JWT must be set when type is JWT",rule="has(self.type) && self.type == 'JWT' ? has(self.jwt) : true"
 type GatewayExtensionSpec struct {
 	// Deprecated: Setting this field has no effect.
 	// Type indicates the type of the GatewayExtension to be used.
-	// +kubebuilder:validation:Enum=ExtAuth;ExtProc;RateLimit;JWTProviders
+	// +kubebuilder:validation:Enum=ExtAuth;ExtProc;RateLimit;JWT
 	// +optional
 	Type *GatewayExtensionType `json:"type,omitempty"`
 
@@ -62,6 +62,19 @@ type GatewayExtensionSpec struct {
 	// +optional
 	RateLimit *RateLimitProvider `json:"rateLimit,omitempty"`
 
+	// JWT configuration for JWT extension type.
+	// +optional
+	JWT *JWT `json:"jwt,omitempty"`
+}
+
+type JWT struct {
+	// ValidationMode configures how JWT validation behaves.
+	// If unset or empty, STRICT mode is used (JWT is required).
+	// If set to ALLOW_MISSING, requests without JWT tokens are allowed to pass through.
+	// +kubebuilder:validation:Enum=ALLOW_MISSING
+	// +optional
+	ValidationMode *ValidationMode `json:"validationMode,omitempty"`
+
 	// JWTProviders configures named JWT providers.
 	// If multiple providers are specified for a given JWT policy,
 	// the providers will be `OR`-ed together and will allow validation to any of the providers.
@@ -71,6 +84,12 @@ type GatewayExtensionSpec struct {
 	// +kubebuilder:validation:MaxItems=32
 	JWTProviders []NamedJWTProvider `json:"jwtProviders,omitempty"`
 }
+
+type ValidationMode string
+
+const (
+	ValidationModeAllowMissing ValidationMode = "ALLOW_MISSING"
+)
 
 // GatewayExtensionType indicates the type of the GatewayExtension.
 type GatewayExtensionType string
@@ -82,8 +101,8 @@ const (
 	GatewayExtensionTypeExtProc GatewayExtensionType = "ExtProc"
 	// GatewayExtensionTypeRateLimit is the type for RateLimit extensions.
 	GatewayExtensionTypeRateLimit GatewayExtensionType = "RateLimit"
-	// GatewayExtensionTypeJWTProvider is the type for the JWT Provider extensions
-	GatewayExtensionTypeJWTProvider GatewayExtensionType = "JWTProviders"
+	// GatewayExtensionTypeJWT is the type for the JWT extensions
+	GatewayExtensionTypeJWT GatewayExtensionType = "JWT"
 )
 
 // ExtGrpcService defines the GRPC service that will handle the processing.
