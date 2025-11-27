@@ -31,7 +31,7 @@ func (c *jwksCache) LoadJwksFromStores(storedJwks map[string]string) error {
 			errs = append(errs, err)
 			continue
 		}
-		newCache.compareAndAddJwks(uri, jwks)
+		newCache.addJwks(uri, jwks)
 	}
 
 	c.l.Lock()
@@ -50,7 +50,7 @@ func (c *jwksCache) GetJwks(uri string) (string, bool) {
 
 // Add a jwks to cache. If an exact same jwks is already present in the cache, the result is a nop.
 // TODO (dmitri-d) check for max size
-func (c *jwksCache) compareAndAddJwks(uri string, jwks jose.JSONWebKeySet) (string, error) {
+func (c *jwksCache) addJwks(uri string, jwks jose.JSONWebKeySet) (string, error) {
 	serializedJwks, err := json.Marshal(jwks)
 	if err != nil {
 		return "", err
@@ -58,12 +58,6 @@ func (c *jwksCache) compareAndAddJwks(uri string, jwks jose.JSONWebKeySet) (stri
 
 	c.l.Lock()
 	defer c.l.Unlock()
-
-	if j, ok := c.jwks[uri]; ok {
-		if j == string(serializedJwks) {
-			return "", nil
-		}
-	}
 
 	c.jwks[uri] = string(serializedJwks)
 	return c.jwks[uri], nil

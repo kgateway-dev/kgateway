@@ -5,12 +5,13 @@ import (
 	"sync"
 
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 )
+
+var logger = logging.New("jwks_store")
 
 var JwksConfigMapNamespacedName = func(jwksUri string) *types.NamespacedName {
 	return nil
@@ -20,25 +21,25 @@ var JwksConfigMapNamespacedName = func(jwksUri string) *types.NamespacedName {
 // in ConfigMaps, a jwks per ConfigMap. The ConfigMaps are used to re-create internal
 // JwksStore state on startup and by traffic-plugins as source of remote jwks.
 type JwksStore struct {
-	jwksCache        *jwksCache
-	jwksFetcher      *JwksFetcher
-	configMapSyncer  *configMapSyncer
-	updates          chan string
-	jwksUpdatesQueue utils.AsyncQueue[JwksSource] // TODO (dmitri-d) this can result in lost events
-	cmNameToJwks     map[string]string
-	l                sync.Mutex
+	jwksCache       *jwksCache
+	jwksFetcher     *JwksFetcher
+	configMapSyncer *configMapSyncer
+	updates         chan string
+	jwksChanges     <-chan JwksSource
+	cmNameToJwks    map[string]string
+	l               sync.Mutex
 }
 
-func BuildJwksStore(ctx context.Context, cli apiclient.Client, commonCols *collections.CommonCollections, jwksQueue utils.AsyncQueue[JwksSource], deploymentNamespace string) *JwksStore {
-	log := log.Log.WithName("jwks store setup")
-	log.Info("creating jwks store")
+func BuildJwksStore(ctx context.Context, cli apiclient.Client, commonCols *collections.CommonCollections, jwksChanges <-chan JwksSource, deploymentNamespace string) *JwksStore {
+	logger.Info("creating jwks store")
 
 	jwksCache := NewJwksCache()
 	jwksStore := &JwksStore{
-		jwksCache:        jwksCache,
-		jwksUpdatesQueue: jwksQueue,
-		jwksFetcher:      NewJwksFetcher(jwksCache),
-		configMapSyncer:  NewConfigMapSyncer(cli, deploymentNamespace, commonCols.KrtOpts),
+		jwksCache:       jwksCache,
+		jwksChanges:     jwksChanges,
+		jwksFetcher:     NewJwksFetcher(jwksCache),
+		configMapSyncer: NewConfigMapSyncer(cli, deploymentNamespace, commonCols.KrtOpts),
+		cmNameToJwks:    make(map[string]string),
 	}
 
 	BuildJwksConfigMapNamespacedNameFunc(deploymentNamespace)
@@ -52,15 +53,15 @@ func BuildJwksConfigMapNamespacedNameFunc(deploymentNamespace string) {
 }
 
 func (s *JwksStore) Start(ctx context.Context) error {
-	log := log.FromContext(ctx)
+	logger.Info("staring jwks store")
 
 	storedJwks, err := s.configMapSyncer.LoadJwksFromConfigMaps(ctx)
 	if err != nil {
-		log.Error(err, "error loading jwks store from a ConfigMap")
+		logger.Error("error loading jwks store from a ConfigMap", "error", err)
 	}
 	err = s.jwksCache.LoadJwksFromStores(storedJwks)
 	if err != nil {
-		log.Error(err, "error loading jwks store state")
+		logger.Error("error loading jwks store state", "error", err)
 	}
 
 	go s.jwksFetcher.Run(ctx)
@@ -92,28 +93,27 @@ func (s *JwksStore) JwksByConfigMapName(cmName string) (string, string, bool) {
 }
 
 func (s *JwksStore) updateJwksSources(ctx context.Context) {
-	log := log.FromContext(ctx)
 	for {
-		log.Info("dequeuing jwks update")
-		jwksUpdate, err := s.jwksUpdatesQueue.Dequeue(ctx)
-		if err != nil {
-			log.Error(err, "error dequeuing jwks update")
-			return
-		}
-
-		if jwksUpdate.Deleted {
-			s.jwksFetcher.RemoveKeyset(jwksUpdate)
-			s.l.Lock()
-			delete(s.cmNameToJwks, JwksConfigMapName(jwksUpdate.JwksURL))
-			s.l.Unlock()
-		} else {
-			err := s.jwksFetcher.AddOrUpdateKeyset(jwksUpdate)
-			if err != nil {
-				log.Error(err, "error adding/updating a jwks keyset", "uri", jwksUpdate.JwksURL)
+		select {
+		case jwksUpdate := <-s.jwksChanges:
+			if jwksUpdate.Deleted {
+				logger.Info("deleting keyset")
+				s.jwksFetcher.RemoveKeyset(jwksUpdate)
+				s.l.Lock()
+				delete(s.cmNameToJwks, JwksConfigMapName(jwksUpdate.JwksURL))
+				s.l.Unlock()
+			} else {
+				logger.Info("updating keyset")
+				err := s.jwksFetcher.AddOrUpdateKeyset(jwksUpdate)
+				if err != nil {
+					logger.Error("error adding/updating a jwks keyset", "error", err, "uri", jwksUpdate.JwksURL)
+				}
+				s.l.Lock()
+				s.cmNameToJwks[JwksConfigMapName(jwksUpdate.JwksURL)] = jwksUpdate.JwksURL
+				s.l.Unlock()
 			}
-			s.l.Lock()
-			s.cmNameToJwks[JwksConfigMapName(jwksUpdate.JwksURL)] = jwksUpdate.JwksURL
-			s.l.Unlock()
+		case <-ctx.Done():
+			return
 		}
 	}
 }

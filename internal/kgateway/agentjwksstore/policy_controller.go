@@ -7,11 +7,9 @@ import (
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/client-go/tools/cache"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/jwks"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
@@ -22,17 +20,18 @@ type JwksStorePolicyController struct {
 	agw         *plugins.AgwCollections
 	apiClient   apiclient.Client
 	jwks        krt.Collection[jwks.JwksSource]
-	jwksQueue   utils.AsyncQueue[jwks.JwksSource]
+	jwksChanges chan jwks.JwksSource
 	waitForSync []cache.InformerSynced
 }
 
-var logger = logging.New("jwks_store")
+var polLogger = logging.New("jwks_store_policy_controller")
 
-func NewJWKSStorePolicyController(mgr manager.Manager, apiClient apiclient.Client, agw *plugins.AgwCollections) *JwksStorePolicyController {
+func NewJWKSStorePolicyController(apiClient apiclient.Client, agw *plugins.AgwCollections) *JwksStorePolicyController {
+	polLogger.Info("creating jwks store policy controller")
 	return &JwksStorePolicyController{
-		agw:       agw,
-		apiClient: apiClient,
-		jwksQueue: utils.NewAsyncQueue[jwks.JwksSource](),
+		agw:         agw,
+		apiClient:   apiClient,
+		jwksChanges: make(chan jwks.JwksSource),
 	}
 }
 
@@ -64,21 +63,22 @@ func (j *JwksStorePolicyController) Init(ctx context.Context) {
 }
 
 func (j *JwksStorePolicyController) Start(ctx context.Context) error {
-	logger.Info("waiting for cache to sync")
+	polLogger.Info("waiting for cache to sync")
 	j.apiClient.Core().WaitForCacheSync(
 		"kube AgentgatewayPolicy syncer",
 		ctx.Done(),
 		j.waitForSync...,
 	)
 
+	polLogger.Info("staring jwks store policy controller")
 	j.jwks.Register(func(o krt.Event[jwks.JwksSource]) {
 		switch o.Event {
 		case controllers.EventAdd, controllers.EventUpdate:
-			j.jwksQueue.Enqueue(*o.New)
+			j.jwksChanges <- *o.New
 		case controllers.EventDelete:
 			deleted := *o.Old
 			deleted.Deleted = true
-			j.jwksQueue.Enqueue(deleted)
+			j.jwksChanges <- deleted
 		}
 	})
 
@@ -91,6 +91,6 @@ func (j *JwksStorePolicyController) NeedLeaderElection() bool {
 	return true
 }
 
-func (j *JwksStorePolicyController) JwksQueue() utils.AsyncQueue[jwks.JwksSource] {
-	return j.jwksQueue
+func (j *JwksStorePolicyController) JwksChanges() chan jwks.JwksSource {
+	return j.jwksChanges
 }

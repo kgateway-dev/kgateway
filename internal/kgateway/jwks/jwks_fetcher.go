@@ -40,10 +40,13 @@ type JwksSource struct {
 	Deleted bool
 }
 
-type JwksSources []JwksSource
+func (js JwksSource) ResourceName() string {
+	return js.JwksURL
+}
 
-func (js JwksSources) ResourceName() string {
-	return "jwkssources"
+func (js JwksSource) Equals(other JwksSource) bool {
+	return js.JwksURL == other.JwksURL &&
+		js.Ttl == other.Ttl && js.Deleted == other.Deleted
 }
 
 type fetchAt struct {
@@ -139,7 +142,7 @@ func (f *JwksFetcher) maybeFetchJwks(ctx context.Context) {
 			continue
 		}
 
-		maybeUpdatedJwks, err := f.cache.compareAndAddJwks(fetch.keysetSource.JwksURL, jwks)
+		updatedJwks, err := f.cache.addJwks(fetch.keysetSource.JwksURL, jwks)
 		// error serializing jwks, shouldn't happen, retry
 		if err != nil {
 			log.Error(err, "error adding jwks", "uri", fetch.keysetSource.JwksURL)
@@ -148,9 +151,7 @@ func (f *JwksFetcher) maybeFetchJwks(ctx context.Context) {
 		}
 
 		heap.Push(&f.schedule, fetchAt{at: now.Add(fetch.keysetSource.Ttl), keysetSource: fetch.keysetSource})
-		if maybeUpdatedJwks != "" {
-			updates[fetch.keysetSource.JwksURL] = maybeUpdatedJwks
-		}
+		updates[fetch.keysetSource.JwksURL] = updatedJwks
 	}
 
 	if len(updates) > 0 {

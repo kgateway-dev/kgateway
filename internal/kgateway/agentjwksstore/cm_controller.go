@@ -15,9 +15,12 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/jwks"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+var cmLogger = logging.New("jwks_store_config_map_controller")
 
 const JwksStoreConfigMapName = "jwks-store"
 
@@ -40,6 +43,7 @@ var (
 )
 
 func NewJWKSStoreConfigMapsController(apiClient apiclient.Client, deploymentNamespace string, jwksStore *jwks.JwksStore) *JwksStoreConfigMapsController {
+	cmLogger.Info("creating jwks store ConfigMap controller")
 	return &JwksStoreConfigMapsController{
 		apiClient:           apiClient,
 		deploymentNamespace: deploymentNamespace,
@@ -63,13 +67,14 @@ func (jcm *JwksStoreConfigMapsController) Init(ctx context.Context) {
 }
 
 func (jcm *JwksStoreConfigMapsController) Start(ctx context.Context) error {
-	logger.Info("waiting for cache to sync")
+	cmLogger.Info("waiting for cache to sync")
 	jcm.apiClient.Core().WaitForCacheSync(
-		"kube AgentgatewayPolicy syncer",
+		"kube jwks store ConfigMap syncer",
 		ctx.Done(),
 		jcm.waitForSync...,
 	)
 
+	cmLogger.Info("starting jwks store ConfigMap controller")
 	jcm.cmClient.AddEventHandler(
 		controllers.FromEventHandler(
 			func(o controllers.Event) {
@@ -88,17 +93,18 @@ func (jcm *JwksStoreConfigMapsController) Start(ctx context.Context) error {
 			}
 		}
 	}()
+	go jcm.eventQueue.Run(ctx.Done())
 
 	<-ctx.Done()
 	return nil
 }
 
 func (jcm *JwksStoreConfigMapsController) Reconcile(req types.NamespacedName) error {
+	cmLogger.Debug("syncing jwks store to ConfigMap(s)")
 	ctx := context.Background()
 
 	uri, storedJwks, ok := jcm.jwksStore.JwksByConfigMapName(req.Name)
 	if !ok {
-		// log
 		return client.IgnoreNotFound(jcm.apiClient.Kube().CoreV1().ConfigMaps(req.Namespace).Delete(ctx, req.Name, metav1.DeleteOptions{}))
 	}
 
@@ -106,23 +112,23 @@ func (jcm *JwksStoreConfigMapsController) Reconcile(req types.NamespacedName) er
 	if existingCm == nil {
 		newCm := jcm.newJwksStoreConfigMap(jwks.JwksConfigMapName(uri))
 		if err := jwks.SetJwksInConfigMap(newCm, uri, storedJwks); err != nil {
-			// log
+			cmLogger.Error("error updating ConfigMap", "error", err)
 			return err // no retries?
 		}
 
 		_, err := jcm.apiClient.Kube().CoreV1().ConfigMaps(req.Namespace).Create(ctx, newCm, metav1.CreateOptions{})
 		if err != nil {
-			//log.Error(err, "error persisting jwks to ConfigMap")
+			cmLogger.Error("error creating ConfigMap", "error", err)
 			return err
 		}
 	} else {
 		if err := jwks.SetJwksInConfigMap(existingCm, uri, storedJwks); err != nil {
-			// log
+			cmLogger.Error("error updating ConfigMap", "error", err)
 			return err // no retries?
 		}
 		_, err := jcm.apiClient.Kube().CoreV1().ConfigMaps(req.Namespace).Update(ctx, existingCm, metav1.UpdateOptions{})
 		if err != nil {
-			logger.Error("error updating jwks ConfigMap", "error", err)
+			cmLogger.Error("error updating jwks ConfigMap", "error", err)
 			return err
 		}
 	}

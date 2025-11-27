@@ -238,15 +238,21 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			return nil, err
 		}
 
-		jwksStoreCtrl := agentjwksstore.NewJWKSStoreController(cfg.Manager, cfg.Client, cfg.AgwCollections)
-		if err := cfg.Manager.Add(jwksStoreCtrl); err != nil {
-			setupLog.Error(err, "unable to add agentgateway JwksStoreController runnable")
+		jwksStorePolicyCtrl := agentjwksstore.NewJWKSStorePolicyController(cfg.Client, cfg.AgwCollections)
+		jwksStorePolicyCtrl.Init(ctx)
+		if err := cfg.Manager.Add(jwksStorePolicyCtrl); err != nil {
+			setupLog.Error(err, "unable to add agentgateway JwksStorePolicyController runnable")
 			return nil, err
 		}
-		jwksStoreCtrl.Init(ctx)
-		jwksStore := jwks.BuildJwksStore(ctx, cfg.Client, cfg.CommonCollections, jwksStoreCtrl.JwksQueue(), namespaces.GetPodNamespace())
+		jwksStore := jwks.BuildJwksStore(ctx, cfg.Client, cfg.CommonCollections, jwksStorePolicyCtrl.JwksChanges(), namespaces.GetPodNamespace())
 		if err := cfg.Manager.Add(jwksStore); err != nil {
 			setupLog.Error(err, "unable to add agentgateway JwksStore runnable")
+			return nil, err
+		}
+		jwksStoreCMCtrl := agentjwksstore.NewJWKSStoreConfigMapsController(cfg.Client, namespaces.GetPodNamespace(), jwksStore)
+		jwksStoreCMCtrl.Init(ctx)
+		if err := cfg.Manager.Add(jwksStoreCMCtrl); err != nil {
+			setupLog.Error(err, "unable to add agentgateway JwksStoreConfigMapController runnable")
 			return nil, err
 		}
 	}
