@@ -121,6 +121,49 @@ type TrafficPolicySpec struct {
 	// This defines the JWT providers and their configurations.
 	// +optional
 	JWT *JWTAuthentication `json:"jwt,omitempty"`
+
+	// UrlRewrite specifies URL rewrite rules for matching requests.
+	// This allows rewriting the path or hostname of requests using regular expressions.
+	// NOTE: This field is only honoured for HTTPRoute targets.
+	// +optional
+	UrlRewrite *URLRewrite `json:"urlRewrite,omitempty"`
+}
+
+// URLRewrite specifies URL rewrite rules using regular expressions.
+// This allows flexible path and hostname rewriting based on regex patterns.
+// +kubebuilder:validation:AtLeastOneOf=hostname;path
+type URLRewrite struct {
+	// Hostname is the value to rewrite the Host header to during forwarding.
+	// This can be a static hostname or a value with regex substitution patterns
+	// if the HTTPRoute uses a RegularExpression path match.
+	// +optional
+	// +kubebuilder:validation:MaxLength=253
+	// +kubebuilder:validation:MinLength=1
+	Hostname *string `json:"hostname,omitempty"`
+
+	// Path specifies the path rewrite configuration.
+	// +optional
+	Path *PathRewrite `json:"path,omitempty"`
+}
+
+// PathRewrite specifies how to rewrite the URL path.
+type PathRewrite struct {
+	// Pattern is the regex pattern that matches the URL path.
+	// The pattern must be a valid RE2 regular expression.
+	// If the HTTPRoute uses a RegularExpression path match, this field can use capture groups
+	// from that match.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=1024
+	Pattern string `json:"pattern"`
+
+	// Substitution is the replacement string for the matched pattern.
+	// It can include backreferences to captured groups from the pattern (e.g., \1, \2)
+	// or named groups (e.g., \g<name>).
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=1024
+	Substitution string `json:"substitution"`
 }
 
 // TransformationPolicy config is used to modify envoy behavior at a route level.

@@ -101,6 +101,9 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 		errors = append(errors, err)
 	}
 
+	// Construct url rewrite specific IR
+	constructURLRewrite(policyCR.Spec, &outSpec)
+
 	for _, err := range errors {
 		logger.Error("error translating traffic policy", "namespace", policyCR.GetNamespace(), "name", policyCR.GetName(), "error", err)
 	}

@@ -1488,6 +1488,49 @@ spec:
                         x-kubernetes-list-type: map
                     type: object
                 type: object
+              urlRewrite:
+                description: |-
+                  UrlRewrite specifies URL rewrite rules for matching requests.
+                  This allows rewriting the path or hostname of requests using regular expressions.
+                  NOTE: This field is only honoured for HTTPRoute targets.
+                properties:
+                  hostname:
+                    description: |-
+                      Hostname is the value to rewrite the Host header to during forwarding.
+                      This can be a static hostname or a value with regex substitution patterns
+                      if the HTTPRoute uses a RegularExpression path match.
+                    maxLength: 253
+                    minLength: 1
+                    type: string
+                  path:
+                    description: Path specifies the path rewrite configuration.
+                    properties:
+                      pattern:
+                        description: |-
+                          Pattern is the regex pattern that matches the URL path.
+                          The pattern must be a valid RE2 regular expression.
+                          If the HTTPRoute uses a RegularExpression path match, this field can use capture groups
+                          from that match.
+                        maxLength: 1024
+                        minLength: 1
+                        type: string
+                      substitution:
+                        description: |-
+                          Substitution is the replacement string for the matched pattern.
+                          It can include backreferences to captured groups from the pattern (e.g., \1, \2)
+                          or named groups (e.g., \g<name>).
+                        maxLength: 1024
+                        minLength: 1
+                        type: string
+                    required:
+                    - pattern
+                    - substitution
+                    type: object
+                type: object
+                x-kubernetes-validations:
+                - message: at least one of the fields in [hostname path] must be set
+                  rule: '[has(self.hostname),has(self.path)].filter(x,x==true).size()
+                    >= 1'
             type: object
             x-kubernetes-validations:
             - message: autoHostRewrite can only be used when targeting HTTPRoute resources

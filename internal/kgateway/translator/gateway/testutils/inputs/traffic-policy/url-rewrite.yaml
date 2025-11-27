@@ -1,0 +1,123 @@
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: kgateway
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: Same
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+spec:
+  selector:
+    test: example-gateway
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: url-rewrite-route
+spec:
+  parentRefs:
+    - name: example-gateway
+      namespace: default
+  hostnames:
+    - "example.com"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /api/v1
+      backendRefs:
+        - name: example-svc
+          port: 8000
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: regex-path-rewrite-policy
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: url-rewrite-route
+  urlRewrite:
+    path:
+      pattern: "^/api/v1/(.*)"
+      substitution: "/v2/\\1"
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: url-rewrite-hostname-route
+spec:
+  parentRefs:
+    - name: example-gateway
+      namespace: default
+  hostnames:
+    - "api.example.com"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: example-svc
+          port: 8000
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: hostname-rewrite-policy
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: url-rewrite-hostname-route
+  urlRewrite:
+    hostname: "internal.example.com"
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: url-rewrite-combined-route
+spec:
+  parentRefs:
+    - name: example-gateway
+      namespace: default
+  hostnames:
+    - "combined.example.com"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /services
+      backendRefs:
+        - name: example-svc
+          port: 8000
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: combined-rewrite-policy
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: url-rewrite-combined-route
+  urlRewrite:
+    hostname: "backend.example.com"
+    path:
+      pattern: "^/services/(.*)/(.*)"
+      substitution: "/api/\\1-\\2"

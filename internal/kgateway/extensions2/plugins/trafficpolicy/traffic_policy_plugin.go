@@ -90,6 +90,7 @@ type trafficPolicySpecIr struct {
 	timeouts        *timeoutsIR
 	rbac            *rbacIR
 	jwt             *jwtIr
+	urlRewrite      *urlRewriteIR
 }
 
 func (d *TrafficPolicy) CreationTime() time.Time {
@@ -150,6 +151,9 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	if !d.spec.jwt.Equals(d2.spec.jwt) {
 		return false
 	}
+	if !d.spec.urlRewrite.Equals(d2.spec.urlRewrite) {
+		return false
+	}
 	return true
 }
 
@@ -171,6 +175,7 @@ func (p *TrafficPolicy) Validate() error {
 	validators = append(validators, p.spec.autoHostRewrite.Validate)
 	validators = append(validators, p.spec.rbac.Validate)
 	validators = append(validators, p.spec.jwt.Validate)
+	validators = append(validators, p.spec.urlRewrite.Validate)
 	for _, validator := range validators {
 		if err := validator(); err != nil {
 			return err
@@ -600,6 +605,9 @@ func (p *trafficPolicyPluginGwPass) handlePerRoutePolicies(
 	if action.GetRetryPolicy() == nil && spec.retry != nil {
 		action.RetryPolicy = spec.retry.policy
 	}
+
+	// Apply URL rewrite configuration
+	applyURLRewrite(spec.urlRewrite, out)
 }
 
 // handlePerVHostPolicies handles policies that are meant to be processed at the vhost level
