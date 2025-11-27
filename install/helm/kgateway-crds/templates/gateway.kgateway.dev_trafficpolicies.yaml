@@ -65,7 +65,6 @@ spec:
                       Example: "x-client-id"
                     type: string
                   forwardCredential:
-                    default: false
                     description: |-
                       forwardCredential controls whether the API key is included in the request sent to the upstream.
                       If false (default), the API key is removed from the request before sending to upstream.

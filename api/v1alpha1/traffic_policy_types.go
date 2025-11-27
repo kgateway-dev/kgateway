@@ -431,7 +431,6 @@ type APIKeyAuthentication struct {
 	// If false (default), the API key is removed from the request before sending to upstream.
 	// If true, the API key is included in the request sent to upstream.
 	// This applies to all configured key sources (header, query parameter, or cookie).
-	// +kubebuilder:default=false
 	// +optional
 	ForwardCredential *bool `json:"forwardCredential,omitempty"`
 

@@ -65,7 +65,7 @@ func constructAPIKeyAuth(
 	ak := spec.APIKeyAuthentication
 
 	// Resolve secrets using SecretIndex
-	var secrets []*ir.Secret
+	var secrets []ir.Secret
 	secretGK := schema.GroupKind{Group: "", Kind: "Secret"}
 	secretCol := commoncol.Secrets.GetSecretCollection(secretGK)
 	if secretCol == nil {
@@ -84,16 +84,16 @@ func constructAPIKeyAuth(
 		if secret == nil {
 			return fmt.Errorf("API key secret %s not found in namespace %s", ak.SecretRef.Name, policy.Namespace)
 		}
-		secrets = []*ir.Secret{secret}
+		secrets = []ir.Secret{*secret}
 	} else if ak.SecretSelector != nil {
-		// Fetch secrets matching labels, then filter by namespace
-		allSecrets := krt.Fetch(krtctx, secretCol, krt.FilterLabel(ak.SecretSelector.MatchLabels))
-		for i := range allSecrets {
-			secret := &allSecrets[i]
-			if secret.Namespace == policy.Namespace {
-				secrets = append(secrets, secret)
-			}
-		}
+		// Fetch secrets matching labels and namespace
+		secrets = krt.Fetch(krtctx, secretCol,
+			krt.FilterLabel(ak.SecretSelector.MatchLabels),
+			krt.FilterGeneric(func(obj any) bool {
+				secret := obj.(ir.Secret)
+				return secret.Namespace == policy.Namespace
+			}),
+		)
 		if len(secrets) == 0 {
 			return fmt.Errorf("no secrets found matching selector %v in namespace %s", ak.SecretSelector.MatchLabels, policy.Namespace)
 		}

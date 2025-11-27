@@ -23,6 +23,7 @@ var (
 	apiKeyAuthManifestQuery        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "api-key-auth-query.yaml")
 	apiKeyAuthManifestCookie       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "api-key-auth-cookie.yaml")
 	apiKeyAuthManifestSecretUpdate = filepath.Join(fsutils.MustGetThisDir(), "testdata", "api-key-auth-secret-update.yaml")
+	apiKeyAuthManifestDisable      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "api-key-auth-disable.yaml")
 	// Core infrastructure objects that we need to track
 	gatewayObjectMeta = metav1.ObjectMeta{
 		Name:      "gw",
@@ -62,6 +63,9 @@ var (
 		},
 		"TestAPIKeyAuthWithSecretUpdate": {
 			Manifests: []string{apiKeyAuthManifestSecretUpdate},
+		},
+		"TestAPIKeyAuthRouteOverrideGateway": {
+			Manifests: []string{apiKeyAuthManifestDisable},
 		},
 	}
 )

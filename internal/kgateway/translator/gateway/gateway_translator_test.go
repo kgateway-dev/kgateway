@@ -318,6 +318,28 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy API Key Authentication route override gateway", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/api-key-auth-override.yaml",
+			outputFile: "traffic-policy/api-key-auth-override.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy API Key Authentication route override gateway with sectionName", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/api-key-auth-override-section.yaml",
+			outputFile: "traffic-policy/api-key-auth-override-section.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy with fail open rate limiting", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/fail-open",

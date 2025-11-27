@@ -422,3 +422,106 @@ stringData:
 		expectAPIKeyAuthDenied,
 	)
 }
+
+// TestAPIKeyAuthRouteOverrideGateway tests that route-level API key auth policy overrides gateway-level policy.
+// Gateway-level policy uses one secret (k-123, k-456), while route-level policy uses a different secret (k-789, k-999).
+// This verifies that the route-level policy takes precedence and uses its own secret.
+func (s *testingSuite) TestAPIKeyAuthRouteOverrideGateway() {
+	// Verify HTTPRoute is accepted before running the test
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(s.Ctx, "httpbin-route-override", "default", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
+
+	// Test route with route-level policy override - should use route-level secret (k-789, k-999)
+	getReqCurlOpts := []curl.Option{
+		curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
+		curl.WithHostHeader("httpbin"),
+		curl.WithPort(8080),
+		curl.WithPath("/get"),
+	}
+	// missing API key, should fail
+	s.T().Log("The /get route has route-level API key auth policy, should fail when API key is missing")
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		getReqCurlOpts,
+		expectAPIKeyAuthDenied,
+	)
+	// has valid API key from route-level secret, should succeed
+	s.T().Log("The /get route should succeed with valid API key from route-level secret (k-789)")
+	getWithRouteAPIKeyCurlOpts := append(getReqCurlOpts, curl.WithHeader("api-key", "k-789"))
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		getWithRouteAPIKeyCurlOpts,
+		expectStatus200Success,
+	)
+	// has another valid API key from route-level secret, should succeed
+	s.T().Log("The /get route should succeed with another valid API key from route-level secret (k-999)")
+	getWithRouteAPIKey2CurlOpts := append(getReqCurlOpts, curl.WithHeader("api-key", "k-999"))
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		getWithRouteAPIKey2CurlOpts,
+		expectStatus200Success,
+	)
+	// has API key from gateway-level secret, should fail (route-level policy overrides)
+	s.T().Log("The /get route should fail with API key from gateway-level secret (k-123) - route-level policy overrides")
+	getWithGatewayAPIKeyCurlOpts := append(getReqCurlOpts, curl.WithHeader("api-key", "k-123"))
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		getWithGatewayAPIKeyCurlOpts,
+		expectAPIKeyAuthDenied,
+	)
+	// has another API key from gateway-level secret, should fail
+	s.T().Log("The /get route should fail with another API key from gateway-level secret (k-456) - route-level policy overrides")
+	getWithGatewayAPIKey2CurlOpts := append(getReqCurlOpts, curl.WithHeader("api-key", "k-456"))
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		getWithGatewayAPIKey2CurlOpts,
+		expectAPIKeyAuthDenied,
+	)
+
+	// Test route without route-level policy - should use gateway-level secret (k-123, k-456)
+	statusReqCurlOpts := []curl.Option{
+		curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
+		curl.WithHostHeader("httpbin"),
+		curl.WithPort(8080),
+		curl.WithPath("/status/200"),
+	}
+	// missing API key, should fail (gateway-level policy applies)
+	s.T().Log("The /status/200 route has no route-level policy, should require API key from gateway-level policy")
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		statusReqCurlOpts,
+		expectAPIKeyAuthDenied,
+	)
+	// has valid API key from gateway-level secret, should succeed
+	s.T().Log("The /status/200 route should succeed with valid API key from gateway-level secret (k-123)")
+	statusWithGatewayAPIKeyCurlOpts := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-123"))
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		statusWithGatewayAPIKeyCurlOpts,
+		expectStatus200Success,
+	)
+	// has another valid API key from gateway-level secret, should succeed
+	s.T().Log("The /status/200 route should succeed with another valid API key from gateway-level secret (k-456)")
+	statusWithGatewayAPIKey2CurlOpts := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-456"))
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		statusWithGatewayAPIKey2CurlOpts,
+		expectStatus200Success,
+	)
+	// has API key from route-level secret, should fail (only applies to /get route)
+	s.T().Log("The /status/200 route should fail with API key from route-level secret (k-789) - only gateway-level policy applies")
+	statusWithRouteAPIKeyCurlOpts := append(statusReqCurlOpts, curl.WithHeader("api-key", "k-789"))
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		statusWithRouteAPIKeyCurlOpts,
+		expectAPIKeyAuthDenied,
+	)
+}
