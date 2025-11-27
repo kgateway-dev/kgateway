@@ -55,22 +55,12 @@ type JWTProvider struct {
 	// +required
 	JWKS JWKS `json:"jwks"`
 
-	// KeepToken configures if the token is forwarded upstream.
-	// If Remove, the header containing the token will be removed.
-	// If Forward, the header containing the token will be forwarded upstream.
-	// +kubebuilder:validation:Enum=Forward;Remove
-	// +kubebuilder:default=Remove
+	// ForwardToken configures if the JWT token is forwarded to the upstream backend.
+	// If true, the header containing the token will be forwarded upstream.
+	// If false or not set, the header containing the token will be removed.
 	// +optional
-	KeepToken *KeepToken `json:"keepToken,omitempty"`
+	ForwardToken *bool `json:"forwardToken,omitempty"`
 }
-
-// KeepToken configures if the token is forwarded upstream.
-type KeepToken string
-
-const (
-	TokenForward KeepToken = "Forward"
-	TokenRemove  KeepToken = "Remove"
-)
 
 // HeaderSource configures how to retrieve a JWT from a header
 type HeaderSource struct {

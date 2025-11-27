@@ -4113,9 +4113,9 @@ func (in *JWTProvider) DeepCopyInto(out *JWTProvider) {
 		copy(*out, *in)
 	}
 	in.JWKS.DeepCopyInto(&out.JWKS)
-	if in.KeepToken != nil {
-		in, out := &in.KeepToken, &out.KeepToken
-		*out = new(KeepToken)
+	if in.ForwardToken != nil {
+		in, out := &in.ForwardToken, &out.ForwardToken
+		*out = new(bool)
 		**out = **in
 	}
 }
