@@ -107,10 +107,11 @@ func (s *JwksStore) updateJwksSources(ctx context.Context) {
 				err := s.jwksFetcher.AddOrUpdateKeyset(jwksUpdate)
 				if err != nil {
 					logger.Error("error adding/updating a jwks keyset", "error", err, "uri", jwksUpdate.JwksURL)
+				} else {
+					s.l.Lock()
+					s.cmNameToJwks[JwksConfigMapName(jwksUpdate.JwksURL)] = jwksUpdate.JwksURL
+					s.l.Unlock()
 				}
-				s.l.Lock()
-				s.cmNameToJwks[JwksConfigMapName(jwksUpdate.JwksURL)] = jwksUpdate.JwksURL
-				s.l.Unlock()
 			}
 		case <-ctx.Done():
 			return

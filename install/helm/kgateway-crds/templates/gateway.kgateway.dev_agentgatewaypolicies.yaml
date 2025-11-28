@@ -2853,7 +2853,6 @@ spec:
                                     backendRef:
                                       description: |-
                                         backendRef references the remote JWKS server to reach.
-                                        Not implemented yet, only jwksUri is currently supported.
                                         Supported types: Service and Backend.
                                       properties:
                                         group:
@@ -2936,12 +2935,9 @@ spec:
                                         settings are used to connect to this url.
                                       pattern: ^(https|http):\/\/[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*(:\d+)?\/.*$
                                       type: string
+                                  required:
+                                  - jwksUri
                                   type: object
-                                  x-kubernetes-validations:
-                                  - message: exactly one of the fields in [jwksUri
-                                      backendRef] must be set
-                                    rule: '[has(self.jwksUri),has(self.backendRef)].filter(x,x==true).size()
-                                      == 1'
                               type: object
                               x-kubernetes-validations:
                               - message: exactly one of the fields in [remote inline]

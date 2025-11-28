@@ -238,7 +238,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			return nil, err
 		}
 
-		jwksStorePolicyCtrl := agentjwksstore.NewJWKSStorePolicyController(cfg.Client, cfg.AgwCollections)
+		jwksStorePolicyCtrl := agentjwksstore.NewJWKSStorePolicyController(cfg.Client, cfg.CommonCollections, cfg.AgwCollections)
 		jwksStorePolicyCtrl.Init(ctx)
 		if err := cfg.Manager.Add(jwksStorePolicyCtrl); err != nil {
 			setupLog.Error(err, "unable to add agentgateway JwksStorePolicyController runnable")

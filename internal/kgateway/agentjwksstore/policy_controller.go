@@ -8,13 +8,14 @@ import (
 	"fmt"
 	"time"
 
-	"gorm.io/gorm/logger"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/jwks"
@@ -24,9 +25,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
-	corev1 "k8s.io/api/core/v1"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 type JwksStorePolicyController struct {
@@ -44,6 +42,10 @@ type targetRefIndexKey struct {
 	Kind      string
 	Name      string
 	Namespace string
+}
+
+func (k targetRefIndexKey) String() string {
+	return fmt.Sprintf("%s:%s:%s:%s", k.Group, k.Kind, k.Namespace, k.Name)
 }
 
 var polLogger = logging.New("jwks_store_policy_controller")
@@ -78,6 +80,8 @@ func (j *JwksStorePolicyController) Init(ctx context.Context) {
 		return keys
 	})
 
+	// TODO JwksSource should be per-policy, i.e. the same jwks url for multiple policies should result in multiple JwksSources
+	// Otherwise changes to one policy (removal for example) could result in disruption of traffic for other policies (while ConfigMaps are re-synced)
 	j.jwks = krt.NewManyCollection(policyCol, func(krtctx krt.HandlerContext, p *v1alpha1.AgentgatewayPolicy) []jwks.JwksSource {
 		if p.Spec.Traffic == nil || p.Spec.Traffic.JWTAuthentication == nil {
 			return nil
@@ -94,7 +98,7 @@ func (j *JwksStorePolicyController) Init(ctx context.Context) {
 				continue
 			}
 
-			if s := j.jwksSource(krtctx, p.Namespace, provider.JWKS.Remote); s != nil {
+			if s := j.jwksSourceWithCustomTLSConfig(krtctx, p.Name, p.Namespace, provider.JWKS.Remote); s != nil {
 				toret = append(toret, *s)
 			}
 		}
@@ -119,10 +123,12 @@ func (j *JwksStorePolicyController) Start(ctx context.Context) error {
 	j.jwks.Register(func(o krt.Event[jwks.JwksSource]) {
 		switch o.Event {
 		case controllers.EventAdd, controllers.EventUpdate:
+			polLogger.Info("add/update jwks source", "jwks", o.New.JwksURL)
 			j.jwksChanges <- *o.New
 		case controllers.EventDelete:
 			deleted := *o.Old
 			deleted.Deleted = true
+			polLogger.Info("deleting jwks source", "jwks", deleted.JwksURL)
 			j.jwksChanges <- deleted
 		}
 	})
@@ -144,40 +150,37 @@ func jwksSourceWithDefaultHttpClient(jwksURL string, ttl time.Duration) jwks.Jwk
 	return jwks.JwksSource{JwksURL: jwksURL, Ttl: ttl}
 }
 
-func (j *JwksStorePolicyController) jwksSource(krtctx krt.HandlerContext, defaultNS string, remoteProvider *v1alpha1.AgentRemoteJWKS) *jwks.JwksSource {
+func (j *JwksStorePolicyController) jwksSourceWithCustomTLSConfig(krtctx krt.HandlerContext, policyName, defaultNS string, remoteProvider *v1alpha1.AgentRemoteJWKS) *jwks.JwksSource {
 	ref := *remoteProvider.BackendRef
 	refName := string(ref.Name)
 	refNamespace := string(ptr.OrDefault(ref.Namespace, gwv1.Namespace(defaultNS)))
 
-	var jwksUrlPrefix string
-	switch string(*ref.Kind) {
-	case wellknown.AgentgatewayBackendGVK.Kind:
-		backendRef := types.NamespacedName{
-			Name:      refName,
-			Namespace: refNamespace,
-		}
-		backend := ptr.Flatten(krt.FetchOne(krtctx, j.agw.Backends, krt.FilterObjectName(backendRef)))
-		if backend == nil {
-			logger.Error("backend not found; skipping policy", "backend", backendRef, "policy", kubeutils.NamespacedNameFrom(btls))
-			return nil
-		}
-		if backend.Spec.Static == nil {
-			logger.Error("111111111111111111111111") // static only
-			return nil
-		}
+	if string(*ref.Kind) != wellknown.AgentgatewayBackendGVK.Kind && string(*ref.Kind) != wellknown.ServiceKind {
+		// backendRef := types.NamespacedName{
+		// 	Name:      refName,
+		// 	Namespace: refNamespace,
+		// }
+		// backend := ptr.Flatten(krt.FetchOne(krtctx, j.agw.Backends, krt.FilterObjectName(backendRef)))
+		// if backend == nil {
+		// 	logger.Error("backend not found; skipping policy", "backend", backendRef, "policy", kubeutils.NamespacedNameFrom(btls))
+		// 	return nil
+		// }
+		// if backend.Spec.Static == nil {
+		// 	logger.Error("static only")
+		// 	return nil
+		// }
 
-		jwksUrlPrefix = fmt.Sprintf("https://%s:%s/", backend.Spec.Static.Host, backend.Spec.Static.Port)
-	case wellknown.ServiceKind:
-		clusterDomain := kubeutils.GetClusterDomainName()
-		host := fmt.Sprintf("%s.%s.svc.%s", refName, refNamespace, clusterDomain)
-		// If SectionName is specified to select the port, use service/<namespace>/<hostname>:<port>
-		if port := string(ptr.OrEmpty(ref.Port)); port != "" {
-			jwksUrlPrefix = fmt.Sprintf("https://%s:%s/", host, port)
-		} else {
-			jwksUrlPrefix = fmt.Sprintf("https://%s/", host)
-		}
-	default:
-		logger.Error("unsupported target kind", "kind", ref.Kind, "policy", btls.Name)
+		// jwksUrlPrefix = fmt.Sprintf("https://%s:%s/", backend.Spec.Static.Host, backend.Spec.Static.Port)
+		// case wellknown.ServiceKind:
+		// clusterDomain := kubeutils.GetClusterDomainName()
+		// host := fmt.Sprintf("%s.%s.svc.%s", refName, refNamespace, clusterDomain)
+		// // If SectionName is specified to select the port, use service/<namespace>/<hostname>:<port>
+		// if port := string(ptr.OrEmpty(ref.Port)); port != "" {
+		// 	jwksUrlPrefix = fmt.Sprintf("https://%s:%s/", host, port)
+		// } else {
+		// 	jwksUrlPrefix = fmt.Sprintf("https://%s/", host)
+		// }
+		polLogger.Error("unsupported target kind in remote jwks provider", "kind", ref.Kind, "policy", policyName)
 		return nil
 	}
 
@@ -192,15 +195,16 @@ func (j *JwksStorePolicyController) jwksSource(krtctx krt.HandlerContext, defaul
 	if tlsPolicy != nil {
 		t, err := getTLSConfig(krtctx, j.commonCol.ConfigMaps, tlsPolicy)
 		if err != nil {
-			logger.Error("AAAAAAAAAAAAAAAA")
+			polLogger.Error("error creating tls config", "error", err)
 			return nil
 		}
 		tlsConfig = t
 	}
 
 	return &jwks.JwksSource{
-		JwksURL:   jwksUrlPrefix + remoteProvider.JwksUri, // verify presence, update CEL validation, rename?
+		JwksURL:   remoteProvider.JwksUri,
 		TlsConfig: tlsConfig,
+		Ttl:       remoteProvider.CacheDuration.Duration,
 	}
 }
 
@@ -209,7 +213,6 @@ func getTLSConfig(
 	cfgmaps krt.Collection[*corev1.ConfigMap],
 	btls *gwv1.BackendTLSPolicy,
 ) (*tls.Config, error) {
-
 	// handle InsecureSkipVerify via Options?
 	validation := btls.Spec.Validation
 
@@ -217,14 +220,11 @@ func getTLSConfig(
 		ServerName: string(validation.Hostname),
 	}
 
-	if wk := validation.WellKnownCACertificates; wk != nil {
-		switch kind := *wk; kind {
-		case gwv1.WellKnownCACertificatesSystem:
-			// do nothing
-		default:
-			return nil, fmt.Errorf("unsupported wellKnownCACertificates: %v", kind)
-		}
-	} else if len(validation.CACertificateRefs) > 0 {
+	if wk := validation.WellKnownCACertificates; wk != nil && *wk == gwv1.WellKnownCACertificatesSystem {
+		return &toret, nil
+	}
+
+	if len(validation.CACertificateRefs) > 0 {
 		certPool := x509.NewCertPool()
 		for _, ref := range validation.CACertificateRefs {
 			if ref.Group != gwv1.Group(wellknown.ConfigMapGVK.Group) || ref.Kind != gwv1.Kind(wellknown.ConfigMapGVK.Kind) {
@@ -244,12 +244,11 @@ func getTLSConfig(
 			}
 		}
 		toret.RootCAs = certPool
-	} else {
-		// should never happen as this is CEL validated.
-		return nil, errors.New("BackendTLSPolicy must specify either wellKnownCACertificates or caCertificateRefs")
+		return &toret, nil
 	}
 
-	return &toret, nil
+	// should never happen as this is CEL validated.
+	return nil, errors.New("BackendTLSPolicy must specify either wellKnownCACertificates or caCertificateRefs")
 }
 
 func appendPoolWithCertsFromConfigMap(pool *x509.CertPool, cm *corev1.ConfigMap) bool {
@@ -257,7 +256,5 @@ func appendPoolWithCertsFromConfigMap(pool *x509.CertPool, cm *corev1.ConfigMap)
 	if !ok {
 		return false
 	}
-
 	return pool.AppendCertsFromPEM([]byte(caCrts))
-
 }

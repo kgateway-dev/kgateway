@@ -19,12 +19,12 @@ import (
 // Fetched jwks are stored in jwksCache. All access to jwksCache is synchronized via mu mutex.
 // When a jwks is updated, registered subscribers are sent the update.
 type JwksFetcher struct {
-	mu            sync.Mutex
-	cache         *jwksCache
-	jwksClient    JwksHttpClient
-	keysetSources map[string]*JwksSource
-	schedule      FetchingSchedule
-	subscribers   []chan map[string]string
+	mu                sync.Mutex
+	cache             *jwksCache
+	defaultJwksClient JwksHttpClient
+	keysetSources     map[string]*JwksSource
+	schedule          FetchingSchedule
+	subscribers       []chan map[string]string
 }
 
 type FetchingSchedule []fetchAt
@@ -63,7 +63,7 @@ type jwksHttpClientImpl struct {
 func NewJwksFetcher(cache *jwksCache) *JwksFetcher {
 	toret := &JwksFetcher{
 		cache: cache,
-		jwksClient: &jwksHttpClientImpl{
+		defaultJwksClient: &jwksHttpClientImpl{
 			Client: &http.Client{Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{
 					InsecureSkipVerify: true, //nolint:gosec
@@ -131,7 +131,7 @@ func (f *JwksFetcher) maybeFetchJwks(ctx context.Context) {
 		if fetch.keysetSource.Deleted {
 			continue
 		}
-		jwks, err := f.jwksClient.FetchJwks(ctx, fetch.keysetSource.JwksURL)
+		jwks, err := f.fetchJwks(ctx, fetch.keysetSource.JwksURL, fetch.keysetSource.TlsConfig)
 		if err != nil {
 			log.Error(err, "error fetching jwks from ", fetch.keysetSource.JwksURL)
 			if fetch.retryAttempt < 5 { // backoff by 5s * retry attempt number
@@ -206,6 +206,14 @@ func (f *JwksFetcher) RemoveKeyset(source JwksSource) {
 			s <- map[string]string{source.JwksURL: ""}
 		}
 	}
+}
+
+func (f *JwksFetcher) fetchJwks(ctx context.Context, jwksURL string, tlsConfig *tls.Config) (jose.JSONWebKeySet, error) {
+	if tlsConfig != nil {
+		c := &jwksHttpClientImpl{Client: &http.Client{Transport: &http.Transport{TLSClientConfig: tlsConfig}}}
+		return c.FetchJwks(ctx, jwksURL)
+	}
+	return f.defaultJwksClient.FetchJwks(ctx, jwksURL)
 }
 
 func (c *jwksHttpClientImpl) FetchJwks(ctx context.Context, jwksURL string) (jose.JSONWebKeySet, error) {

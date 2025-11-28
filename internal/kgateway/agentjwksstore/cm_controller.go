@@ -8,6 +8,8 @@ import (
 	"golang.org/x/time/rate"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/kclient"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
@@ -16,8 +18,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/jwks"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var cmLogger = logging.New("jwks_store_config_map_controller")
@@ -105,6 +105,7 @@ func (jcm *JwksStoreConfigMapsController) Reconcile(req types.NamespacedName) er
 
 	uri, storedJwks, ok := jcm.jwksStore.JwksByConfigMapName(req.Name)
 	if !ok {
+		cmLogger.Debug("deleting ConfigMap", "name", req.Name)
 		return client.IgnoreNotFound(jcm.apiClient.Kube().CoreV1().ConfigMaps(req.Namespace).Delete(ctx, req.Name, metav1.DeleteOptions{}))
 	}
 
