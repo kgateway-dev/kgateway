@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"istio.io/istio/pkg/kube/controllers"
@@ -213,11 +214,11 @@ func getTLSConfig(
 	cfgmaps krt.Collection[*corev1.ConfigMap],
 	btls *gwv1.BackendTLSPolicy,
 ) (*tls.Config, error) {
-	// handle InsecureSkipVerify via Options?
 	validation := btls.Spec.Validation
 
 	toret := tls.Config{
-		ServerName: string(validation.Hostname),
+		ServerName:         string(validation.Hostname),
+		InsecureSkipVerify: insecureSkipVerify(btls.Spec.Options),
 	}
 
 	if wk := validation.WellKnownCACertificates; wk != nil && *wk == gwv1.WellKnownCACertificatesSystem {
@@ -240,7 +241,7 @@ func getTLSConfig(
 			}
 			success := appendPoolWithCertsFromConfigMap(certPool, ptr.Flatten(cfgmap))
 			if !success {
-				return nil, fmt.Errorf("error extracting CA cert from ConfigMap %s: %w", nn)
+				return nil, fmt.Errorf("error extracting CA cert from ConfigMap %s", nn)
 			}
 		}
 		toret.RootCAs = certPool
@@ -257,4 +258,15 @@ func appendPoolWithCertsFromConfigMap(pool *x509.CertPool, cm *corev1.ConfigMap)
 		return false
 	}
 	return pool.AppendCertsFromPEM([]byte(caCrts))
+}
+
+func insecureSkipVerify(opts map[gwv1.AnnotationKey]gwv1.AnnotationValue) bool {
+	if v, ok := opts["InsecureSkipVerify"]; ok {
+		toret, err := strconv.ParseBool(string(v))
+		if err != nil {
+			return false
+		}
+		return toret
+	}
+	return false
 }

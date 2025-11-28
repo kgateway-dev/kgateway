@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"reflect"
 	"sync"
 	"time"
 
@@ -47,7 +48,7 @@ func (js JwksSource) ResourceName() string {
 
 func (js JwksSource) Equals(other JwksSource) bool {
 	return js.JwksURL == other.JwksURL &&
-		js.Ttl == other.Ttl && js.Deleted == other.Deleted
+		js.Ttl == other.Ttl && js.Deleted == other.Deleted && reflect.DeepEqual(js.TlsConfig, other.TlsConfig)
 }
 
 type fetchAt struct {
@@ -62,16 +63,11 @@ type jwksHttpClientImpl struct {
 
 func NewJwksFetcher(cache *jwksCache) *JwksFetcher {
 	toret := &JwksFetcher{
-		cache: cache,
-		defaultJwksClient: &jwksHttpClientImpl{
-			Client: &http.Client{Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: true, //nolint:gosec
-				},
-			}}},
-		keysetSources: make(map[string]*JwksSource),
-		schedule:      make([]fetchAt, 0),
-		subscribers:   make([]chan map[string]string, 0),
+		cache:             cache,
+		defaultJwksClient: &jwksHttpClientImpl{Client: &http.Client{}},
+		keysetSources:     make(map[string]*JwksSource),
+		schedule:          make([]fetchAt, 0),
+		subscribers:       make([]chan map[string]string, 0),
 	}
 	heap.Init(&toret.schedule)
 
