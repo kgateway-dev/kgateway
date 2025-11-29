@@ -155,6 +155,74 @@ func TestURLRewriteIREquals(t *testing.T) {
 	}
 }
 
+func TestURLRewriteIRValidate(t *testing.T) {
+	tests := []struct {
+		name        string
+		ir          *urlRewriteIR
+		expectError bool
+	}{
+		{
+			name:        "nil IR is valid",
+			ir:          nil,
+			expectError: false,
+		},
+		{
+			name:        "empty IR is valid",
+			ir:          &urlRewriteIR{},
+			expectError: false,
+		},
+		{
+			name: "valid regex pattern",
+			ir: &urlRewriteIR{
+				regexMatch: &envoy_type_matcher_v3.RegexMatchAndSubstitute{
+					Pattern:      &envoy_type_matcher_v3.RegexMatcher{Regex: "^/api/v1/(.*)"},
+					Substitution: "/v2/\\1",
+				},
+			},
+			expectError: false,
+		},
+		{
+			name: "invalid regex pattern",
+			ir: &urlRewriteIR{
+				regexMatch: &envoy_type_matcher_v3.RegexMatchAndSubstitute{
+					Pattern:      &envoy_type_matcher_v3.RegexMatcher{Regex: "[invalid("},
+					Substitution: "/test",
+				},
+			},
+			expectError: true,
+		},
+		{
+			name: "hostname only is valid",
+			ir: &urlRewriteIR{
+				hostname: ptr.To("example.com"),
+			},
+			expectError: false,
+		},
+		{
+			name: "nil pattern in regex match is valid",
+			ir: &urlRewriteIR{
+				regexMatch: &envoy_type_matcher_v3.RegexMatchAndSubstitute{
+					Pattern:      nil,
+					Substitution: "/test",
+				},
+			},
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.ir.Validate()
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), "invalid regex pattern")
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestConstructURLRewrite(t *testing.T) {
 	tests := []struct {
 		name             string

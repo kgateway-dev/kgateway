@@ -1,11 +1,14 @@
 package trafficpolicy
 
 import (
+	"fmt"
+
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/regexutils"
 )
 
 type urlRewriteIR struct {
@@ -41,7 +44,17 @@ func (u *urlRewriteIR) Equals(other PolicySubIR) bool {
 }
 
 // Validate performs validation on the URL rewrite component.
-func (u *urlRewriteIR) Validate() error { return nil }
+func (u *urlRewriteIR) Validate() error {
+	if u == nil {
+		return nil
+	}
+	if u.regexMatch != nil && u.regexMatch.GetPattern() != nil {
+		if err := regexutils.CheckRegexString(u.regexMatch.GetPattern().GetRegex()); err != nil {
+			return fmt.Errorf("invalid regex pattern: %w", err)
+		}
+	}
+	return nil
+}
 
 // constructURLRewrite constructs the URL rewrite policy IR from the policy specification.
 func constructURLRewrite(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) {
