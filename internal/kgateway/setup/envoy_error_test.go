@@ -3,7 +3,7 @@ package setup
 import (
 	"testing"
 
-	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	discoveryv3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/rpc/status"
@@ -17,7 +17,7 @@ import (
 // helper to build a DiscoveryRequest
 func dr(owner, ns, name, typeURL string, err *status.Status) *discoveryv3.DiscoveryRequest {
 	return &discoveryv3.DiscoveryRequest{
-		Node: &corev3.Node{
+		Node: &envoycorev3.Node{
 			Metadata: &structpb.Struct{Fields: map[string]*structpb.Value{
 				xds.RoleKey: structpb.NewStringValue(owner + xds.KeyDelimiter + ns + xds.KeyDelimiter + name),
 			}},

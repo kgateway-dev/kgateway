@@ -4,13 +4,14 @@ import (
 	"strings"
 	"sync"
 
-	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	discoveryv3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
+	"google.golang.org/genproto/googleapis/rpc/status"
+
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
-	"google.golang.org/genproto/googleapis/rpc/status"
 )
 
 const (
@@ -68,7 +69,7 @@ func newLogNackCallback() *logNackCallback {
 }
 
 // OnStreamClosed implements server.Callbacks.
-func (l *logNackCallback) OnStreamClosed(streamID int64, node *corev3.Node) {
+func (l *logNackCallback) OnStreamClosed(streamID int64, node *envoycorev3.Node) {
 	l.lock.Lock()
 	streamState := l.streamState[streamID]
 	delete(l.streamState, streamID)
@@ -81,7 +82,6 @@ func (l *logNackCallback) OnStreamClosed(streamID int64, node *corev3.Node) {
 
 // OnStreamRequest implements server.Callbacks.
 func (l *logNackCallback) OnStreamRequest(streamID int64, req *discoveryv3.DiscoveryRequest) error {
-
 	// get gateway and typeURL from request
 	role := req.GetNode().GetMetadata().GetFields()[xds.RoleKey].GetStringValue()
 	parts := strings.SplitN(role, xds.KeyDelimiter, 3)
@@ -122,7 +122,7 @@ func (l *logNackCallback) onNewError(key resourceKey, err *status.Status) {
 	labels := toLabels(key)
 	xdsRejectsTotal.Inc(labels...)
 	xdsRejectsCurrent.Add(1, labels...)
-	logger.Warn("xds error", "gatewayName", key.Name, "gatewayNS", key.Namespace, "resource", key.ResourceTypeUrl, "error", err.Message)
+	logger.Warn("xds error", "gateway_name", key.Name, "gateway_ns", key.Namespace, "resource", key.ResourceTypeUrl, "error", err.Message)
 }
 
 func (l *logNackCallback) onErrorGone(key resourceKey) {

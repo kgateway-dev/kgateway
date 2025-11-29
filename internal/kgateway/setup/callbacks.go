@@ -3,7 +3,7 @@ package setup
 import (
 	"context"
 
-	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	discoveryv3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 )
@@ -16,7 +16,7 @@ type callbacksChain struct {
 	Callbacks []xdsserver.Callbacks
 }
 
-func (c *callbacksChain) OnDeltaStreamClosed(s int64, n *corev3.Node) {
+func (c *callbacksChain) OnDeltaStreamClosed(s int64, n *envoycorev3.Node) {
 	for _, cb := range c.Callbacks {
 		cb.OnDeltaStreamClosed(s, n)
 	}
@@ -46,7 +46,7 @@ func (c *callbacksChain) OnFetchResponse(req *discoveryv3.DiscoveryRequest, resp
 	}
 }
 
-func (c *callbacksChain) OnStreamClosed(streamID int64, node *corev3.Node) {
+func (c *callbacksChain) OnStreamClosed(streamID int64, node *envoycorev3.Node) {
 	for _, cb := range c.Callbacks {
 		cb.OnStreamClosed(streamID, node)
 	}
