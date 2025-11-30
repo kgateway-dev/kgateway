@@ -131,9 +131,6 @@ func (s *testingSuite) TestRequestDecompression() {
 				g.Expect(err).NotTo(gomega.HaveOccurred(), "can get envoy stats")
 
 				var resp map[string][]adminv3.SimpleMetric
-				err = json.Unmarshal([]byte(out), &resp)
-				g.Expect(err).NotTo(gomega.HaveOccurred(), "can unmarshal envoy stats response")
-
 				g.Expect(json.Unmarshal([]byte(out), &resp)).To(gomega.Succeed(), "can unmarshal envoy stats response")
 
 				stats := resp["stats"]

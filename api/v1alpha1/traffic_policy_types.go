@@ -480,7 +480,7 @@ type Timeouts struct {
 // +kubebuilder:validation:AtLeastOneOf=responseCompression;requestDecompression
 type Compression struct {
 	// ResponseCompression controls response compression to the downstream.
-	// If set, responses with the appropriate `Accept-Enocding` header with certain textual content types will be compressed using gzip.
+	// If set, responses with the appropriate `Accept-Encoding` header with certain textual content types will be compressed using gzip.
 	// The content-types that will be compressed are:
 	// - `application/javascript`
 	// - `application/json`

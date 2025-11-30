@@ -159,7 +159,6 @@ func addCompressionFiltersIfNeeded(staged []filters.StagedHttpFilter, p *traffic
 			filters.AfterStage(filters.WellKnownFilterStage(filters.CorsStage)),
 		)
 		filter.Filter.Disabled = true
-		// Intentionally not disabled; this is listener-level and enabled when present
 		staged = append(staged, filter)
 	}
 	return staged
