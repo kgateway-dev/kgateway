@@ -57,7 +57,7 @@ type logNackCallback struct {
 	xdsserver.CallbackFuncs
 	streamState map[int64]resourceState
 
-	lock sync.RWMutex
+	lock sync.Mutex
 }
 
 var _ xdsserver.Callbacks = (*logNackCallback)(nil)

@@ -66,13 +66,13 @@ func TestSingleErrorLifecycle(t *testing.T) {
 	require.NoError(t, cb.OnStreamRequest(1, dr(fullType, &status.Status{Message: "boom"})))
 	gathered := metricstest.MustGatherMetrics(t)
 	gathered.AssertMetricsInclude("kgateway_envoy_xds_rejects_total", []metricstest.ExpectMetric{expectedCounter(1, typeURL)})
-	gathered.AssertMetricsInclude("kgateway_envoy_xds_rejects_gauge", []metricstest.ExpectMetric{expectedGauge(1, typeURL)})
+	gathered.AssertMetricsInclude("kgateway_envoy_xds_rejects_active", []metricstest.ExpectMetric{expectedGauge(1, typeURL)})
 
 	// Second identical error for same stream/resource should not change metrics
 	require.NoError(t, cb.OnStreamRequest(1, dr(fullType, &status.Status{Message: "boom"})))
 	gathered = metricstest.MustGatherMetrics(t)
 	gathered.AssertMetricsInclude("kgateway_envoy_xds_rejects_total", []metricstest.ExpectMetric{expectedCounter(1, typeURL)})
-	gathered.AssertMetricsInclude("kgateway_envoy_xds_rejects_gauge", []metricstest.ExpectMetric{expectedGauge(1, typeURL)})
+	gathered.AssertMetricsInclude("kgateway_envoy_xds_rejects_active", []metricstest.ExpectMetric{expectedGauge(1, typeURL)})
 
 	// Successful request clears gauge but not counter
 	require.NoError(t, cb.OnStreamRequest(1, dr(fullType, nil)))
@@ -80,8 +80,8 @@ func TestSingleErrorLifecycle(t *testing.T) {
 	gathered.AssertMetricsInclude("kgateway_envoy_xds_rejects_total", []metricstest.ExpectMetric{expectedCounter(1, typeURL)})
 	// Gauge metric may disappear entirely after reset to 0; we assert either absence or value 0 for our labels
 	// If present, it must have value 0 with our labels; if not present, that's acceptable
-	if gathered.MetricLength("kgateway_envoy_xds_rejects_gauge") > 0 {
-		gathered.AssertMetricsInclude("kgateway_envoy_xds_rejects_gauge", []metricstest.ExpectMetric{expectedGauge(0, typeURL)})
+	if gathered.MetricLength("kgateway_envoy_xds_rejects_active") > 0 {
+		gathered.AssertMetricsInclude("kgateway_envoy_xds_rejects_active", []metricstest.ExpectMetric{expectedGauge(0, typeURL)})
 	}
 }
 
@@ -105,7 +105,7 @@ func TestMultipleResourcesAndStreams(t *testing.T) {
 		expectedCounter(1, typeURL2),
 	})
 	// Gauge: currently outstanding errors: A (2 streams) + B (1) => A gauge=2, B gauge=1
-	gathered.AssertMetricsInclude("kgateway_envoy_xds_rejects_gauge", []metricstest.ExpectMetric{
+	gathered.AssertMetricsInclude("kgateway_envoy_xds_rejects_active", []metricstest.ExpectMetric{
 		expectedGauge(2, typeURL),
 		expectedGauge(1, typeURL2),
 	})
@@ -118,7 +118,7 @@ func TestMultipleResourcesAndStreams(t *testing.T) {
 		expectedCounter(1, typeURL2),
 	})
 	// Gauge should show A=1 (stream2 still failing), B=1
-	gathered.AssertMetricsInclude("kgateway_envoy_xds_rejects_gauge", []metricstest.ExpectMetric{
+	gathered.AssertMetricsInclude("kgateway_envoy_xds_rejects_active", []metricstest.ExpectMetric{
 		expectedGauge(1, typeURL),
 		expectedGauge(1, typeURL2),
 	})
@@ -133,9 +133,9 @@ func TestMultipleResourcesAndStreams(t *testing.T) {
 		expectedCounter(1, typeURL2),
 	})
 	// Gauges should now either be absent or zero; if present assert zero
-	if gathered.MetricLength("kgateway_envoy_xds_rejects_gauge") > 0 {
+	if gathered.MetricLength("kgateway_envoy_xds_rejects_active") > 0 {
 		// We allow any remaining metrics to be zero; check inclusion semantics
-		gathered.AssertMetricsInclude("kgateway_envoy_xds_rejects_gauge", []metricstest.ExpectMetric{
+		gathered.AssertMetricsInclude("kgateway_envoy_xds_rejects_active", []metricstest.ExpectMetric{
 			expectedGauge(0, typeURL),
 			expectedGauge(0, typeURL2),
 		})
