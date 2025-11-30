@@ -31,6 +31,10 @@ Listeners:
               name: envoy.compression.gzip.decompressor
               typedConfig:
                 '@type': type.googleapis.com/envoy.extensions.compression.gzip.decompressor.v3.Gzip
+            responseDirectionConfig:
+              commonConfig:
+                enabled:
+                  defaultValue: false
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
