@@ -32,7 +32,7 @@ var (
 	xdsRejectsCurrent = metrics.NewGauge(
 		metrics.GaugeOpts{
 			Subsystem: envoyXdsSubsystem,
-			Name:      "rejects_gauge",
+			Name:      "rejects_active",
 			Help:      "Total number of xDS responses currently rejected by envoy proxy",
 		}, []string{gwNamespaceLabel, gwNameLabel, typeURLLabel})
 )
