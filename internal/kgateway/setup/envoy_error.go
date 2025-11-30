@@ -33,7 +33,7 @@ var (
 		metrics.GaugeOpts{
 			Subsystem: envoyXdsSubsystem,
 			Name:      "rejects_active",
-			Help:      "Total number of xDS responses currently rejected by envoy proxy",
+			Help:      "Number of xDS responses currently rejected by envoy proxy",
 		}, []string{gwNamespaceLabel, gwNameLabel, typeURLLabel})
 )
 
@@ -91,7 +91,7 @@ func (l *logNackCallback) OnStreamRequest(streamID int64, req *discoveryv3.Disco
 	namespace := parts[1]
 	name := parts[2]
 
-	// note, with locality, name will includce name~hash~ns
+	// note, with locality, name will include name~hash~ns
 	if localityParts := strings.SplitN(name, xds.KeyDelimiter, 3); len(localityParts) == 3 {
 		name = localityParts[0]
 	}
