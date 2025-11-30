@@ -80,6 +80,8 @@ type requestConfig struct {
 	ipv4Only bool
 	ipv6Only bool
 
+	ignoreBody bool
+
 	additionalArgs []string
 }
 
@@ -158,6 +160,10 @@ func (c *requestConfig) generateArgs() []string {
 
 	if c.cookieJar != "" {
 		args = append(args, "--cookie-jar", c.cookieJar)
+	}
+
+	if c.ignoreBody {
+		args = append(args, "--output", "/dev/null")
 	}
 
 	args = append(args, fullAddress)

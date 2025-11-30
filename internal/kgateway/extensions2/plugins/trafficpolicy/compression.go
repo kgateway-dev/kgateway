@@ -6,9 +6,9 @@ import (
 	gzipdecompressorv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/compression/gzip/decompressor/v3"
 	compressorv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/compressor/v3"
 	decompressorv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/decompressor/v3"
-	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -92,7 +92,7 @@ func (p *trafficPolicyPluginGwPass) handleCompression(fcn string, pCtxTypedFilte
 	}
 	if _, ok := p.compressorInChain[fcn]; !ok {
 		// Build gzip compressor library with Envoy defaults.
-		gzipAny, _ := anypb.New(&gzipcompressorv3.Gzip{})
+		gzipAny, _ := utils.MessageToAny(&gzipcompressorv3.Gzip{})
 		p.compressorInChain[fcn] = &compressorv3.Compressor{
 			CompressorLibrary: &envoycorev3.TypedExtensionConfig{
 				Name:        "envoy.compression.gzip.compressor",
@@ -116,7 +116,7 @@ func (p *trafficPolicyPluginGwPass) handleDecompression(fcn string, pCtxTypedFil
 		p.decompressorInChain = make(map[string]*decompressorv3.Decompressor)
 	}
 	if _, ok := p.decompressorInChain[fcn]; !ok {
-		gzipAny, _ := anypb.New(&gzipdecompressorv3.Gzip{})
+		gzipAny, _ := utils.MessageToAny(&gzipdecompressorv3.Gzip{})
 		p.decompressorInChain[fcn] = &decompressorv3.Decompressor{
 			DecompressorLibrary: &envoycorev3.TypedExtensionConfig{
 				Name:        "envoy.compression.gzip.decompressor",

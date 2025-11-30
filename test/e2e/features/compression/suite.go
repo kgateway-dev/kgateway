@@ -59,7 +59,7 @@ func (s *testingSuite) assertHeaders(path string, reqHeaders map[string]string, 
 			curl.WithPort(8080),
 			curl.WithPath(path),
 			curl.WithHostHeader("example.com"),
-			curl.WithHeadersOnly(),
+			curl.WithIgnoreBody(),
 			curl.WithHeaders(reqHeaders),
 		},
 		&testmatchers.HttpResponse{
