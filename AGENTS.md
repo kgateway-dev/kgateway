@@ -28,7 +28,7 @@ adding a new type of CRD (most commonly a Policy CRD) that users can create to e
 Policy CRDs are attached to Gateway API resources via `targetRefs` or `targetSelectors`. kgateway manages the attachment
 of policies to the appropriate resources during translation.
 
-The pluging is then called in the translation process to affect the dataplane configuration.
+The plugin is then called in the translation process to affect the dataplane configuration.
 To do this efficiently, the plugin should convert the CRD to an intermediate representation (IR) that is as close to Envoy protos as possible. This minimizes the amount of logic needed in the final translation, and allows for better status reflected back to the user if there are errors.
 
 Plugins are **stateless across translations** but maintain state during a single gateway translation via `ProxyTranslationPass`. Each plugin:
@@ -93,13 +93,13 @@ See `/api/README.md` for full guidelines.
 1. Add the field to the appropriate `Spec` struct in the CRD Go type in `api/v1alpha1/`.
 2. Add validation markers as needed (e.g., `+kubebuilder:validation:MinLength=1`, `+optional`, etc.)
 3. Run `make go-generate-apis` to regenerate code.
-4. Update the IR struct in `internal/kgateway/extensions2/plugins/<plugin_name>/ir/` to include the new field.
+4. Update the IR struct in the plugin package (`internal/kgateway/extensions2/plugins/<plugin_name>/`) to include the new field.
 5. Add yaml tests cases in `internal/kgateway/translator/gateway/gateway_translator_test.go`.
    The yaml inputs go in `internal/kgateway/translator/gateway/testutils/inputs/`. DO NOT create the outputs by yourself.
    Instead, run your tests with environment variable `REFRESH_GOLDEN=true`. For example: `REFRESH_GOLDEN=true go test -timeout 30s -run ^TestBasic$/^ListenerPolicy_with_proxy_protocol_on_HTTPS_listener$ github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway`
    It will generate the outputs for you automatically in the `internal/kgateway/translator/gateway/testutils/outputs/` folder.
    Once the outputs are generated, inspect them to see they contain the changes you expect, and alert the user if that's not the case.
-6. For non trivial changes, also add unit tests.
+6. For non-trivial changes, also add unit tests.
 7. Consider also adding E2E tests using the framework. You can look at `test/e2e/features/cors/suite.go` as an example for an E2E test.
    When writing an E2E test, prefer to use `base.NewBaseTestingSuite` as the base suite, as it provides many useful utilities.
    If you are adding a new test suite, remember to register it in `test/e2e/tests/kgateway_tests.go`.
