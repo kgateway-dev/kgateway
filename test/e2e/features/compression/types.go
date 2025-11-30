@@ -14,9 +14,10 @@ import (
 
 var (
 	// manifests
-	commonManifest           = filepath.Join(fsutils.MustGetThisDir(), "testdata", "common.yaml")
-	httpRoutesManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httproutes.yaml")
-	routeCompressionManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-compression.yaml")
+	commonManifest             = filepath.Join(fsutils.MustGetThisDir(), "testdata", "common.yaml")
+	httpRoutesManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httproutes.yaml")
+	routeCompressionManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-compression.yaml")
+	routeDecompressionManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-decompression.yaml")
 
 	// objects created by deployer after applying gateway manifest
 	proxyObjectMeta = metav1.ObjectMeta{
@@ -38,6 +39,9 @@ var (
 		},
 		"TestNoCompressionWithoutAcceptEncoding": {
 			Manifests: []string{httpRoutesManifest, routeCompressionManifest},
+		},
+		"TestRequestDecompression": {
+			Manifests: []string{httpRoutesManifest, routeCompressionManifest, routeDecompressionManifest},
 		},
 	}
 )

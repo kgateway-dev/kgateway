@@ -128,7 +128,7 @@ func (c *requestConfig) generateArgs() []string {
 		args = append(args, "--cacert", c.caFile)
 	}
 	if c.body != "" {
-		args = append(args, "-d", c.body)
+		args = append(args, "--data-binary", c.body)
 	}
 	if c.retry != 0 {
 		args = append(args, "--retry", fmt.Sprintf("%d", c.retry))
