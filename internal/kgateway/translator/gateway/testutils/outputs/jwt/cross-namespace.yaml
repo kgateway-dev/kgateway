@@ -41,26 +41,67 @@ Listeners:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
-        - name: jwt/default/allowed-jwt-ext
+        - disabled: true
+          name: global_disable/jwt
           typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
-            providers:
-              allowed-jwt-ext_default_allowed-provider:
-                claimToHeaders:
-                - claimName: org
-                  headerName: x-org
-                clearRouteCache: true
-                issuer: https://allowed.example.com
-                payloadInMetadata: payload
-                remoteJwks:
-                  cacheDuration: 120s
-                  httpUri:
-                    cluster: kube_remote_remote-jwks_8080
-                    timeout: 5s
-                    uri: https://allowed.example.com/jwks
-            requirementMap:
-              allowed-jwt-ext_default_requirements:
-                providerName: allowed-jwt-ext_default_allowed-provider
+            '@type': type.googleapis.com/envoy.extensions.filters.http.set_metadata.v3.Config
+            metadata:
+            - metadataNamespace: dev.kgateway.disable_jwt
+              value:
+                disable: true
+        - disabled: true
+          name: jwt/default/allowed-jwt-ext
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.common.matching.v3.ExtensionWithMatcher
+            extensionConfig:
+              name: composite_jwt
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.composite.v3.Composite
+            xdsMatcher:
+              matcherList:
+                matchers:
+                - onMatch:
+                    action:
+                      name: composite-action
+                      typedConfig:
+                        '@type': type.googleapis.com/envoy.extensions.filters.http.composite.v3.ExecuteFilterAction
+                        typedConfig:
+                          name: envoy.filters.http.jwt_authn
+                          typedConfig:
+                            '@type': type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
+                            providers:
+                              allowed-jwt-ext_default_allowed-provider:
+                                claimToHeaders:
+                                - claimName: org
+                                  headerName: x-org
+                                clearRouteCache: true
+                                issuer: https://allowed.example.com
+                                payloadInMetadata: payload
+                                remoteJwks:
+                                  cacheDuration: 120s
+                                  httpUri:
+                                    cluster: kube_remote_remote-jwks_8080
+                                    timeout: 5s
+                                    uri: https://allowed.example.com/jwks
+                            requirementMap:
+                              allowed-jwt-ext_default_requirements:
+                                providerName: allowed-jwt-ext_default_allowed-provider
+                  predicate:
+                    singlePredicate:
+                      customMatch:
+                        name: envoy.matching.matchers.metadata_matcher
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.matching.input_matchers.metadata.v3.Metadata
+                          invert: true
+                          value:
+                            boolMatch: true
+                      input:
+                        name: disable
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DynamicMetadataInput
+                          filter: dev.kgateway.disable_jwt
+                          path:
+                          - key: disable
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router

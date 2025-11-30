@@ -14,7 +14,7 @@ import (
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
-	. "github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections/metrics"
+	. "github.com/kgateway-dev/kgateway/v2/pkg/krtcollections/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"

@@ -305,8 +305,10 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings Liste
 	}
 
 	listenerSetListenerExists := slices.ContainsFunc(validListeners, func(l ir.Listener) bool {
-		_, ok := l.Parent.(*gwxv1a1.XListenerSet)
-		return ok
+		// The assumption is that if a parent is not a Gateway, it comes from a listenerSet
+		// or a type that implements krtcollections.ListenerCollection
+		_, ok := l.Parent.(*gwv1.Gateway)
+		return !ok
 	})
 
 	if settings.EnableExperimentalGatewayAPIFeatures {
@@ -405,25 +407,27 @@ func hostNameConflict(portProtocol portProtocol, listener ir.Listener) bool {
 }
 
 func rejectDeniedListenerSets(consolidatedGateway *ir.Gateway, reporter reports.Reporter) {
-	for _, ls := range consolidatedGateway.DeniedListenerSets {
-		acceptedCond := reports.GatewayCondition{
-			Type:   gwv1.GatewayConditionType(gwxv1a1.ListenerSetConditionAccepted),
-			Status: metav1.ConditionFalse,
-			Reason: gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonNotAllowed),
+	for _, gvkLS := range consolidatedGateway.DeniedListenerSets {
+		for _, ls := range gvkLS {
+			acceptedCond := reports.GatewayCondition{
+				Type:   gwv1.GatewayConditionType(gwxv1a1.ListenerSetConditionAccepted),
+				Status: metav1.ConditionFalse,
+				Reason: gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonNotAllowed),
+			}
+			if ls.Err != nil {
+				acceptedCond.Message = ls.Err.Error()
+			}
+			reporter.ListenerSet(ls.Obj).SetCondition(acceptedCond)
+			programmedCond := reports.GatewayCondition{
+				Type:   gwv1.GatewayConditionType(gwxv1a1.ListenerSetConditionProgrammed),
+				Status: metav1.ConditionFalse,
+				Reason: gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonNotAllowed),
+			}
+			if ls.Err != nil {
+				programmedCond.Message = ls.Err.Error()
+			}
+			reporter.ListenerSet(ls.Obj).SetCondition(programmedCond)
 		}
-		if ls.Err != nil {
-			acceptedCond.Message = ls.Err.Error()
-		}
-		reporter.ListenerSet(ls.Obj).SetCondition(acceptedCond)
-		programmedCond := reports.GatewayCondition{
-			Type:   gwv1.GatewayConditionType(gwxv1a1.ListenerSetConditionProgrammed),
-			Status: metav1.ConditionFalse,
-			Reason: gwv1.GatewayConditionReason(gwxv1a1.ListenerSetReasonNotAllowed),
-		}
-		if ls.Err != nil {
-			programmedCond.Message = ls.Err.Error()
-		}
-		reporter.ListenerSet(ls.Obj).SetCondition(programmedCond)
 	}
 }
 

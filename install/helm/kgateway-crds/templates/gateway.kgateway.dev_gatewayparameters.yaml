@@ -7281,6 +7281,111 @@ spec:
                         description: Whether to expose metrics annotations and ports
                           for scraping metrics.
                         type: boolean
+                      matcher:
+                        description: |-
+                          Matcher configures inclusion or exclusion lists for Envoy stats.
+                          Only one of inclusionList or exclusionList may be set.
+                          If unset, Envoy's default stats emission behavior applies.
+                        maxProperties: 1
+                        minProperties: 1
+                        properties:
+                          exclusionList:
+                            description: exclusionList specifies which stats to exclude,
+                              using string matchers.
+                            items:
+                              description: Specifies the way to match a string.
+                              properties:
+                                contains:
+                                  description: |-
+                                    The input string must contain the substring specified here.
+                                    Example: abc matches the value xyz.abc.def
+                                  type: string
+                                exact:
+                                  description: |-
+                                    The input string must match exactly the string specified here.
+                                    Example: abc matches the value abc
+                                  type: string
+                                ignoreCase:
+                                  description: |-
+                                    If true, indicates the exact/prefix/suffix/contains matching should be
+                                    case insensitive. This has no effect on the regex match.
+                                    For example, the matcher data will match both input string Data and data if this
+                                    option is set to true.
+                                  type: boolean
+                                prefix:
+                                  description: |-
+                                    The input string must have the prefix specified here.
+                                    Note: empty prefix is not allowed, please use regex instead.
+                                    Example: abc matches the value abc.xyz
+                                  type: string
+                                safeRegex:
+                                  description: |-
+                                    The input string must match the Google RE2 regular expression specified here.
+                                    See https://github.com/google/re2/wiki/Syntax for the syntax.
+                                  type: string
+                                suffix:
+                                  description: |-
+                                    The input string must have the suffix specified here.
+                                    Note: empty prefix is not allowed, please use regex instead.
+                                    Example: abc matches the value xyz.abc
+                                  type: string
+                              type: object
+                              x-kubernetes-validations:
+                              - message: exactly one of the fields in [exact prefix
+                                  suffix contains safeRegex] must be set
+                                rule: '[has(self.exact),has(self.prefix),has(self.suffix),has(self.contains),has(self.safeRegex)].filter(x,x==true).size()
+                                  == 1'
+                            maxItems: 16
+                            type: array
+                          inclusionList:
+                            description: inclusionList specifies which stats to include,
+                              using string matchers.
+                            items:
+                              description: Specifies the way to match a string.
+                              properties:
+                                contains:
+                                  description: |-
+                                    The input string must contain the substring specified here.
+                                    Example: abc matches the value xyz.abc.def
+                                  type: string
+                                exact:
+                                  description: |-
+                                    The input string must match exactly the string specified here.
+                                    Example: abc matches the value abc
+                                  type: string
+                                ignoreCase:
+                                  description: |-
+                                    If true, indicates the exact/prefix/suffix/contains matching should be
+                                    case insensitive. This has no effect on the regex match.
+                                    For example, the matcher data will match both input string Data and data if this
+                                    option is set to true.
+                                  type: boolean
+                                prefix:
+                                  description: |-
+                                    The input string must have the prefix specified here.
+                                    Note: empty prefix is not allowed, please use regex instead.
+                                    Example: abc matches the value abc.xyz
+                                  type: string
+                                safeRegex:
+                                  description: |-
+                                    The input string must match the Google RE2 regular expression specified here.
+                                    See https://github.com/google/re2/wiki/Syntax for the syntax.
+                                  type: string
+                                suffix:
+                                  description: |-
+                                    The input string must have the suffix specified here.
+                                    Note: empty prefix is not allowed, please use regex instead.
+                                    Example: abc matches the value xyz.abc
+                                  type: string
+                              type: object
+                              x-kubernetes-validations:
+                              - message: exactly one of the fields in [exact prefix
+                                  suffix contains safeRegex] must be set
+                                rule: '[has(self.exact),has(self.prefix),has(self.suffix),has(self.contains),has(self.safeRegex)].filter(x,x==true).size()
+                                  == 1'
+                            maxItems: 16
+                            type: array
+                        type: object
                       routePrefixRewrite:
                         description: The Envoy stats endpoint to which the metrics
                           are written

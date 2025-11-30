@@ -8,13 +8,13 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
-	apixv1alpha1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
+	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 )
 
 const (
 	// Group string for Gateway API resources
 	GatewayGroup      = gwv1.GroupName
-	XListenerSetGroup = apixv1alpha1.GroupName
+	XListenerSetGroup = gwxv1a1.GroupName
 
 	// Kind strings
 	ServiceKind          = "Service"
@@ -143,12 +143,12 @@ var (
 
 	XListenerSetGVK = schema.GroupVersionKind{
 		Group:   XListenerSetGroup,
-		Version: apixv1alpha1.GroupVersion.Version,
+		Version: gwxv1a1.GroupVersion.Version,
 		Kind:    XListenerSetKind,
 	}
 	XListenerSetGVR = schema.GroupVersionResource{
 		Group:    XListenerSetGroup,
-		Version:  apixv1alpha1.GroupVersion.Version,
+		Version:  gwxv1a1.GroupVersion.Version,
 		Resource: "xlistenersets",
 	}
 )

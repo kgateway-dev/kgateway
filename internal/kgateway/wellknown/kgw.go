@@ -29,6 +29,7 @@ var (
 	AgentgatewayPolicyGVK  = buildKgatewayGvk("AgentgatewayPolicy")
 	AgentgatewayBackendGVK = buildKgatewayGvk("AgentgatewayBackend")
 	HTTPListenerPolicyGVK  = buildKgatewayGvk("HTTPListenerPolicy")
+	ListenerPolicyGVK      = buildKgatewayGvk("ListenerPolicy")
 	BackendConfigPolicyGVK = buildKgatewayGvk("BackendConfigPolicy")
 	GatewayParametersGVR   = GatewayParametersGVK.GroupVersion().WithResource("gatewayparameters")
 	GatewayExtensionGVR    = GatewayExtensionGVK.GroupVersion().WithResource("gatewayextensions")
@@ -38,6 +39,7 @@ var (
 	AgentgatewayPolicyGVR  = AgentgatewayPolicyGVK.GroupVersion().WithResource("agentgatewaypolicies")
 	AgentgatewayBackendGVR = AgentgatewayBackendGVK.GroupVersion().WithResource("agentgatewaybackends")
 	HTTPListenerPolicyGVR  = HTTPListenerPolicyGVK.GroupVersion().WithResource("httplistenerpolicies")
+	ListenerPolicyGVR      = ListenerPolicyGVK.GroupVersion().WithResource("listenerpolicies")
 	BackendConfigPolicyGVR = BackendConfigPolicyGVK.GroupVersion().WithResource("backendconfigpolicies")
 )
 
@@ -68,6 +70,8 @@ func GVKToGVR(gvk schema.GroupVersionKind) (schema.GroupVersionResource, error) 
 		return TrafficPolicyGVR, nil
 	case HTTPListenerPolicyGVK:
 		return HTTPListenerPolicyGVR, nil
+	case ListenerPolicyGVK:
+		return ListenerPolicyGVR, nil
 	case BackendConfigPolicyGVK:
 		return BackendConfigPolicyGVR, nil
 	case AgentgatewayPolicyGVK:

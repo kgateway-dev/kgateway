@@ -28,6 +28,7 @@ var (
 	jwtManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt.yaml")
 	jwtRbacManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt-rbac.yaml")
 	jwtHTTPRouteManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt-httproute.yaml")
+	jwtDisableManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt-disable.yaml")
 	jwtRemoteManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "jwt-remote.yaml")
 
 	gatewayObjectMeta = metav1.ObjectMeta{
@@ -102,6 +103,9 @@ var (
 		},
 		"TestJwtAuthorization": {
 			Manifests: []string{jwtRbacManifest},
+		},
+		"TestJwtDisable": {
+			Manifests: []string{jwtDisableManifest},
 		},
 		"TestJwtAuthenticationRemote": {
 			Manifests: []string{jwtRemoteManifest},
@@ -206,6 +210,37 @@ func (s *testingSuite) TestJwtAuthenticationRemote() {
 
 	s.T().Log("The /get route has a JWT config applied, should succeed when correct JWT is provided")
 	s.assertResponse("/get", remotejwtauth.JwtOrgOne, expectStatus200Success)
+}
+
+// TestJwtDisable tests that JWT can be disabled at the route level
+func (s *testingSuite) TestJwtDisable() {
+	// Wait for both routes to be accepted
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.Ctx,
+		"httpbin-route-jwt",
+		"default",
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionTrue,
+	)
+
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.Ctx,
+		"httpbin-route-no-jwt",
+		"default",
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionTrue,
+	)
+
+	// The /get route should require JWT (inherits from gateway policy)
+	s.T().Log("The /get route inherits JWT from gateway policy, should fail when no JWT is provided")
+	s.assertResponseWithoutAuth("/get", expectedJwtMissingFailedResponse)
+
+	s.T().Log("The /get route does have a JWT config applied, should succeed when correct JWT is provided")
+	s.assertResponse("/get", dev1JwtToken, expectStatus200Success)
+
+	// The /status/200 route has JWT disabled, should work without JWT
+	s.T().Log("The /status/200 route has JWT disabled, should work without JWT")
+	s.assertResponseWithoutAuth("/status/200", expectStatus200Success)
 }
 
 func (s *testingSuite) assertResponse(path, authHeader string, expected *matchers.HttpResponse) {

@@ -116,8 +116,6 @@ func translatePoliciesForBackendTLS(
 							// Used for mTLS, not part of the spec currently
 							Cert: nil,
 							Key:  nil,
-							// Not currently in the spec.
-							Insecure: nil,
 							// Validation.Hostname is a required value and validated with CEL
 							Hostname: wrapperspb.String(string(btls.Spec.Validation.Hostname)),
 						},

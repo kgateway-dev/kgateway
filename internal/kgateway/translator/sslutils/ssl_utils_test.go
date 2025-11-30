@@ -180,6 +180,5 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 				assert.NoError(t, err)
 			}
 		})
-
 	}
 }
