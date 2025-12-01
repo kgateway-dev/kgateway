@@ -415,18 +415,18 @@ func (s *setup) Start(ctx context.Context) error {
 		}
 	}
 
-	runnnablesRegistry := make(map[string]any)
+	runnablesRegistry := make(map[string]any)
 	for _, runnable := range s.extraRunnables {
 		r := runnable(ctx, commoncol, agwCollections)
 		if named, ok := r.(common.NamedRunnable); ok {
-			runnnablesRegistry[named.RunnableName()] = struct{}{}
+			runnablesRegistry[named.RunnableName()] = struct{}{}
 		}
 		if err := mgr.Add(r); err != nil {
 			return fmt.Errorf("error adding extra Runnable to manager: %w", err)
 		}
 	}
 
-	if _, exists := runnnablesRegistry[jwks.RunnableName]; !exists {
+	if _, exists := runnablesRegistry[jwks.RunnableName]; !exists {
 		if err := buildJwksStore(ctx, mgr, s.apiClient, commoncol, agwCollections); err != nil {
 			return fmt.Errorf("error creating jwks store %w", err)
 		}
