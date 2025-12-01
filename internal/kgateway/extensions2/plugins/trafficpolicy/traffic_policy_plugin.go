@@ -16,6 +16,7 @@ import (
 	localratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	envoyrbacv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
+
 	// TODO(nfuden): remove once rustformations are able to be used in a production environment
 	transformationpb "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -52,14 +53,18 @@ const (
 
 var (
 	logger = logging.New("plugin/trafficpolicy")
-
-	// from envoy code:
-	// If the field `config` is configured but is empty, we treat the filter is enabled
-	// explicitly.
-	// see: https://github.com/envoyproxy/envoy/blob/8ed93ef372f788456b708fc93a7e54e17a013aa7/source/common/router/config_impl.cc#L2552
-	EnableFilterPerRoute  = &envoyroutev3.FilterConfig{Config: &anypb.Any{}}
-	DisableFilterPerRoute = &envoyroutev3.FilterConfig{Config: &anypb.Any{}, Disabled: true}
 )
+
+// from envoy code:
+// If the field `config` is configured but is empty, we treat the filter is enabled
+// explicitly.
+// see: https://github.com/envoyproxy/envoy/blob/8ed93ef372f788456b708fc93a7e54e17a013aa7/source/common/router/config_impl.cc#L2552
+func EnableFilterPerRoute() *envoyroutev3.FilterConfig {
+	return &envoyroutev3.FilterConfig{Config: &anypb.Any{}}
+}
+func DisableFilterPerRoute() *envoyroutev3.FilterConfig {
+	return &envoyroutev3.FilterConfig{Config: &anypb.Any{}, Disabled: true}
+}
 
 // PolicySubIR documents the expected interface that all policy sub-IRs should implement.
 type PolicySubIR interface {

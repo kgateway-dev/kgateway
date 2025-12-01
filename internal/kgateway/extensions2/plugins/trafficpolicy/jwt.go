@@ -78,7 +78,7 @@ func (p *trafficPolicyPluginGwPass) handleJwt(fcn string, pCtxTypedFilterConfig 
 	}
 
 	if jwtIr.disableAllProviders {
-		pCtxTypedFilterConfig.AddTypedConfig(jwtGlobalDisableFilterName, EnableFilterPerRoute)
+		pCtxTypedFilterConfig.AddTypedConfig(jwtGlobalDisableFilterName, EnableFilterPerRoute())
 		return
 	}
 

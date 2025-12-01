@@ -81,9 +81,9 @@ func (p *trafficPolicyPluginGwPass) handleCompression(fcn string, pCtxTypedFilte
 
 	// Set per-route typed config to enable or disable compression on routes.
 	if comp.enable {
-		pCtxTypedFilterConfig.AddTypedConfig(compressorFilterName, EnableFilterPerRoute)
+		pCtxTypedFilterConfig.AddTypedConfig(compressorFilterName, EnableFilterPerRoute())
 	} else {
-		pCtxTypedFilterConfig.AddTypedConfig(compressorFilterName, DisableFilterPerRoute)
+		pCtxTypedFilterConfig.AddTypedConfig(compressorFilterName, DisableFilterPerRoute())
 		return
 	}
 
@@ -115,9 +115,9 @@ func (p *trafficPolicyPluginGwPass) handleDecompression(fcn string, pCtxTypedFil
 		return
 	}
 	if decomp.enable {
-		pCtxTypedFilterConfig.AddTypedConfig(decompressorFilterName, EnableFilterPerRoute)
+		pCtxTypedFilterConfig.AddTypedConfig(decompressorFilterName, EnableFilterPerRoute())
 	} else {
-		pCtxTypedFilterConfig.AddTypedConfig(decompressorFilterName, DisableFilterPerRoute)
+		pCtxTypedFilterConfig.AddTypedConfig(decompressorFilterName, DisableFilterPerRoute())
 		return
 	}
 	if p.decompressorInChain == nil {

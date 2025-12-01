@@ -199,7 +199,7 @@ func (p *trafficPolicyPluginGwPass) handleExtProc(filterChain string, pCtxTypedF
 
 	// Add the global disable all filter if all providers are disabled
 	if in.disableAllProviders {
-		pCtxTypedFilterConfig.AddTypedConfig(extProcGlobalDisableFilterName, EnableFilterPerRoute)
+		pCtxTypedFilterConfig.AddTypedConfig(extProcGlobalDisableFilterName, EnableFilterPerRoute())
 		return
 	}
 

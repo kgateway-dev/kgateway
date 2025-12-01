@@ -181,7 +181,7 @@ func (p *trafficPolicyPluginGwPass) handleExtAuth(filterChain string, pCtxTypedF
 
 	// Add the global disable all filter if all providers are disabled
 	if in.disableAllProviders {
-		pCtxTypedFilterConfig.AddTypedConfig(ExtAuthGlobalDisableFilterName, EnableFilterPerRoute)
+		pCtxTypedFilterConfig.AddTypedConfig(ExtAuthGlobalDisableFilterName, EnableFilterPerRoute())
 		return
 	}
 
@@ -194,7 +194,7 @@ func (p *trafficPolicyPluginGwPass) handleExtAuth(filterChain string, pCtxTypedF
 			pCtxTypedFilterConfig.AddTypedConfig(extAuthFilterName(providerName), cfg.perRouteConfig)
 		} else {
 			// if you are on a route and not trying to disable it then we need to override the top level disable on the filter chain
-			pCtxTypedFilterConfig.AddTypedConfig(extAuthFilterName(providerName), EnableFilterPerRoute)
+			pCtxTypedFilterConfig.AddTypedConfig(extAuthFilterName(providerName), EnableFilterPerRoute())
 		}
 	}
 }
