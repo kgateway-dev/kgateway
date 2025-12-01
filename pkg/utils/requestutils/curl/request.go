@@ -72,6 +72,8 @@ type requestConfig struct {
 
 	scheme string
 
+	proxyProto bool
+
 	retry                  int
 	retryDelay             int
 	retryMaxTime           int
@@ -79,6 +81,16 @@ type requestConfig struct {
 
 	ipv4Only bool
 	ipv6Only bool
+
+	// HTTP protocol options
+	http11 bool
+	http2  bool
+
+	// TLS-specific options
+	ciphers       string
+	curves        string
+	tlsVersion    string
+	tlsMaxVersion string
 
 	additionalArgs []string
 }
@@ -128,6 +140,31 @@ func (c *requestConfig) generateArgs() []string {
 	}
 	if c.retryConnectionRefused {
 		args = append(args, "--retry-connrefused")
+	}
+
+	if c.proxyProto {
+		args = append(args, "--haproxy-protocol")
+	}
+	// HTTP protocol options
+	if c.http11 {
+		args = append(args, "--http1.1")
+	}
+	if c.http2 {
+		args = append(args, "--http2")
+	}
+
+	// TLS-specific options
+	if c.ciphers != "" {
+		args = append(args, "--ciphers", c.ciphers)
+	}
+	if c.curves != "" {
+		args = append(args, "--curves", c.curves)
+	}
+	if c.tlsVersion != "" {
+		args = append(args, fmt.Sprintf("--tlsv%s", c.tlsVersion))
+	}
+	if c.tlsMaxVersion != "" {
+		args = append(args, "--tls-max", c.tlsMaxVersion)
 	}
 
 	if len(c.additionalArgs) > 0 {

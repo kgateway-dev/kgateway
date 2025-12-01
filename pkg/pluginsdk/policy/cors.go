@@ -94,11 +94,13 @@ func BuildCorsPolicy(
 // an allowed origin of "https://*.example.com" will not match "https://example.com".
 //
 // Matching strategy:
+// - Bare "*" -> Regex match (allows all origins, avoids empty prefix validation error)
 // - No wildcard -> Exact match
 // - Single wildcard at the end (e.g., "https://*") -> Prefix match
 // - Any other wildcard pattern -> Regex match where * becomes .*
 //
 // Examples:
+// - "*" -> Regex match: ^.*$ (CORS wildcard for all origins)
 // - "https://example.com" -> Exact match
 // - "https://*.example.com" -> Regex match: ^https://.*\.example\.com$
 // - "https://example.*" -> Prefix match: "https://example."
@@ -106,6 +108,18 @@ func BuildCorsPolicy(
 // - "https://sub.*.example.com" -> Regex match: ^https://sub\..*\.example\.com$
 // - "https://example.*:8080" -> Regex match: ^https://example\..*:8080$
 func ConvertOriginToEnvoyStringMatcher(origin string) *envoymatcherv3.StringMatcher {
+	// Special case: bare "*" means allow all origins in CORS
+	// Without this check, "*" becomes an empty prefix (Prefix: ""), which violates Envoy's
+	// validation rule requiring min_len: 1
+	if origin == "*" {
+		return &envoymatcherv3.StringMatcher{
+			MatchPattern: &envoymatcherv3.StringMatcher_SafeRegex{
+				SafeRegex: &envoymatcherv3.RegexMatcher{
+					Regex: "^.*$",
+				},
+			},
+		}
+	}
 	// Check if the origin contains wildcards
 	if !strings.Contains(origin, "*") {
 		// No wildcards, use exact match

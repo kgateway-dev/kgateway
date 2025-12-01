@@ -100,6 +100,8 @@ func NewControlPlane(
 ) envoycache.SnapshotCache {
 	baseLogger := slog.Default().With("component", "envoy-controlplane")
 	envoyLoggerAdapter := &slogAdapterForEnvoy{logger: baseLogger}
+	lnc := newLogNackCallback()
+	allCallbacks := chainCallbacks(callbacks, lnc)
 
 	// Create separate gRPC servers for each listener
 	serverOpts := getGRPCServerOpts(authenticators, xdsAuth, certWatcher, baseLogger)
@@ -107,7 +109,7 @@ func NewControlPlane(
 
 	snapshotCache := envoycache.NewSnapshotCache(true, xds.NewNodeRoleHasher(), envoyLoggerAdapter)
 
-	xdsServer := xdsserver.NewServer(ctx, snapshotCache, callbacks)
+	xdsServer := xdsserver.NewServer(ctx, snapshotCache, allCallbacks)
 
 	// Register reflection and services on both servers
 	reflection.Register(kgwGRPCServer)
@@ -137,7 +139,7 @@ func NewAgwControlPlane(
 	authenticators []security.Authenticator,
 	xdsAuth bool,
 	certWatcher *certwatcher.CertWatcher,
-	eventPublisher *nack.NackEventPublisher,
+	nackPublisher *nack.Publisher,
 	reg ...krtxds.Registration,
 ) {
 	baseLogger := slog.Default().With("component", "agentgateway-controlplane")
@@ -145,7 +147,7 @@ func NewAgwControlPlane(
 	serverOpts := getGRPCServerOpts(authenticators, xdsAuth, certWatcher, baseLogger)
 	grpcServer := grpc.NewServer(serverOpts...)
 
-	ds := krtxds.NewDiscoveryServer(nil, eventPublisher, reg...)
+	ds := krtxds.NewDiscoveryServer(nil, nackPublisher, reg...)
 	stop := make(chan struct{})
 	context.AfterFunc(ctx, func() {
 		close(stop)

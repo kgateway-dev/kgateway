@@ -63,7 +63,7 @@ type Syncer struct {
 	ready       atomic.Bool
 
 	// NACK handling
-	EventPublisher *nack.NackEventPublisher
+	NackPublisher *nack.Publisher
 
 	// features
 	Registrations []krtxds.Registration
@@ -86,7 +86,7 @@ func NewAgwSyncer(
 		additionalGatewayClasses: additionalGatewayClasses,
 		client:                   client,
 		statusCollections:        status.NewStatusCollections(extraGVKs),
-		EventPublisher:           nack.NewNackEventPublisher(ctx, client),
+		NackPublisher:            nack.NewPublisher(client),
 	}
 }
 
@@ -255,12 +255,14 @@ func (s *Syncer) buildAgwResources(
 
 	// Build routes
 	routeParents := translator.BuildRouteParents(filteredGateways)
+
 	routeInputs := translator.RouteContextInputs{
 		Grants:          refGrants,
 		RouteParents:    routeParents,
 		ControllerName:  s.controllerName,
 		Services:        s.agwCollections.Services,
 		Namespaces:      s.agwCollections.Namespaces,
+		ServiceEntries:  s.agwCollections.ServiceEntries,
 		InferencePools:  s.agwCollections.InferencePools,
 		Backends:        s.agwCollections.Backends,
 		DirectResponses: s.agwCollections.DirectResponses,
@@ -414,10 +416,13 @@ func (s *Syncer) buildAddressCollections(krtopts krtutil.KrtOptions) krt.Collect
 	}
 	waypoints := workloadIndex.WaypointsCollection(s.agwCollections.Gateways, s.agwCollections.GatewayClasses, s.agwCollections.Pods, krtopts)
 
+	// Build NetworkGateway collection for inter-network workload routing
+	networkGateways, gatewaysByNetwork := workloadIndex.NetworkGatewaysCollection(s.agwCollections.Gateways, krtopts)
+
 	// Build service and workload collections
 	workloadServices := workloadIndex.ServicesCollection(
 		s.agwCollections.Services,
-		nil,
+		s.agwCollections.ServiceEntries,
 		waypoints,
 		s.agwCollections.InferencePools,
 		s.agwCollections.Namespaces,
@@ -427,8 +432,14 @@ func (s *Syncer) buildAddressCollections(krtopts krtutil.KrtOptions) krt.Collect
 	workloads := workloadIndex.WorkloadsCollection(
 		s.agwCollections.Pods,
 		NodeLocality,
+		s.agwCollections.WorkloadEntries,
+		s.agwCollections.ServiceEntries,
+		waypoints,
 		workloadServices,
 		s.agwCollections.EndpointSlices,
+		s.agwCollections.Namespaces,
+		networkGateways,
+		gatewaysByNetwork,
 		krtopts,
 	)
 
@@ -466,6 +477,7 @@ func (s *Syncer) setupSyncDependencies(
 		s.agwPlugins.HasSynced,
 		agwResources.HasSynced,
 		addresses.HasSynced,
+		s.NackPublisher.HasSynced,
 	}
 }
 
@@ -480,7 +492,6 @@ func (s *Syncer) Start(ctx context.Context) error {
 		ctx.Done(),
 		s.waitForSync...,
 	)
-
 	logger.Info("caches warm!")
 
 	s.ready.Store(true)

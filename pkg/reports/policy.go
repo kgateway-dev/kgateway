@@ -112,7 +112,7 @@ func (r *ReportMap) BuildPolicyStatus(
 	}
 
 	ancestorRefs := report.ancestorRefs()
-	status := gwv1.PolicyStatus{}
+	status := gwv1.PolicyStatus{Ancestors: make([]gwv1.PolicyAncestorStatus, 0, len(ancestorRefs))}
 
 	// Process the parent references to build the RouteParentStatus
 	for _, ancestorRef := range ancestorRefs {

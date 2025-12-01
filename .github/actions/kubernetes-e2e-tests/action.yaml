@@ -29,6 +29,7 @@ runs:
       GO_TEST_USER_ARGS: ${{ inputs.test-args }} -run "${{ inputs.run-regex }}"
       CLUSTER_NAME: ${{ inputs.cluster-name }}
       ISTIO_VERSION: ${{ inputs.istio-version }}
+      TEST_PKG: ./test/e2e/tests
     shell: bash
     run: make e2e-test
   - name: Archive bug report directory on failure

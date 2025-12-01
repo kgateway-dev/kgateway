@@ -408,4 +408,48 @@ func TestBasic(t *testing.T) {
 			},
 		})
 	})
+
+	t.Run("TrafficPolicy with global token ratelimit on route", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "trafficpolicy/global-rl-token-route.yaml",
+			outputFile: "trafficpolicy/global-rl-token-route.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with global request ratelimit on gateway", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "trafficpolicy/global-rl-request-gw.yaml",
+			outputFile: "trafficpolicy/global-rl-request-gw.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ServiceEntry with Hostname backend (no network)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "serviceentry/basic-serviceentry.yaml",
+			outputFile: "serviceentry/basic-serviceentry.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ServiceEntry with multi-network endpoints", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "serviceentry/serviceentry-with-network.yaml",
+			outputFile: "serviceentry/serviceentry-with-network.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
 }

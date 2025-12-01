@@ -29,8 +29,8 @@ spec:
       - issuer: https://kgateway.dev
         jwks:
           remote:
-            jwksUri: https://dummy-idp.default:8443/org-one/keys
+            uri: https://dummy-idp.default:8443/org-one/keys
       - issuer: https://kgateway.dev
         jwks:
           remote:
-            jwksUri: https://dummy-idp.default:8443/org-two/keys
+            uri: https://dummy-idp.default:8443/org-two/keys

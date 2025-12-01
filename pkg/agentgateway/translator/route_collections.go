@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/agentgateway/agentgateway/go/api"
+	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/config"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
@@ -524,6 +525,7 @@ type RouteContextInputs struct {
 	Services        krt.Collection[*corev1.Service]
 	InferencePools  krt.Collection[*inf.InferencePool]
 	Namespaces      krt.Collection[*corev1.Namespace]
+	ServiceEntries  krt.Collection[*networkingclient.ServiceEntry]
 	Backends        krt.Collection[*v1alpha1.AgentgatewayBackend]
 	DirectResponses krt.Collection[*v1alpha1.DirectResponse]
 	ControllerName  string
