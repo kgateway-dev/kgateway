@@ -9,7 +9,7 @@ const (
 	// The limit is applied to all listeners in the gateway.
 	//
 	// Deprecated: This annotation is deprecated. Use ListenerPolicy with perConnectionBufferLimitBytes instead.
-	// This annotation will be removed in a future release.
+	// This annotation will be removed in v2.3.
 	PerConnectionBufferLimit gwv1.AnnotationKey = "kgateway.dev/per-connection-buffer-limit"
 
 	// AlpnProtocols is the annotation key used to set the ALPN protocols for a TLS listener.
