@@ -89,7 +89,7 @@ func (r *GatewayClassParametersRefs) Decode(value string) error {
 	// First parse as a simple map to validate name is present
 	var simpleParsed map[string]struct {
 		Name      string `json:"name"`
-		Namespace string `json:"namespace,omitempty"`
+		Namespace string `json:"namespace"`
 		Group     string `json:"group,omitempty"`
 		Kind      string `json:"kind,omitempty"`
 	}

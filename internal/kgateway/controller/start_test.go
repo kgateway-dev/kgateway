@@ -30,7 +30,8 @@ func TestGetDefaultClassInfoAppliesParametersRefs(t *testing.T) {
 				Namespace: &ns,
 			},
 			waypointClass: {
-				Name: "waypoint-gwp",
+				Name:      "waypoint-gwp",
+				Namespace: &ns,
 			},
 		},
 	}
@@ -55,7 +56,7 @@ func TestGetDefaultClassInfoAppliesParametersRefs(t *testing.T) {
 	require.NotNil(t, classInfos[waypointClass])
 	require.NotNil(t, classInfos[waypointClass].ParametersRef)
 	require.Equal(t, "waypoint-gwp", classInfos[waypointClass].ParametersRef.Name)
-	require.Nil(t, classInfos[waypointClass].ParametersRef.Namespace)
+	require.Equal(t, gwv1.Namespace("control-plane"), *classInfos[waypointClass].ParametersRef.Namespace)
 
 	require.NotNil(t, classInfos[agentClass])
 	require.Nil(t, classInfos[agentClass].ParametersRef, "agent gateway class should not receive a ref override when none is configured")
