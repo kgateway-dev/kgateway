@@ -10,11 +10,13 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -28,13 +30,15 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
 
 var logger = logging.New("plugin/listenerpolicy")
 
 type listenerPolicy struct {
-	ct            time.Time
-	proxyProtocol *anypb.Any
+	ct                            time.Time
+	proxyProtocol                 *anypb.Any
+	perConnectionBufferLimitBytes *uint32
 }
 
 func (d *listenerPolicy) CreationTime() time.Time {
@@ -51,7 +55,15 @@ func (d *listenerPolicy) Equals(in any) bool {
 		return false
 	}
 
-	return proto.Equal(d.proxyProtocol, d2.proxyProtocol)
+	if !proto.Equal(d.proxyProtocol, d2.proxyProtocol) {
+		return false
+	}
+
+	if !cmputils.PointerValsEqual(d.perConnectionBufferLimitBytes, d2.perConnectionBufferLimitBytes) {
+		return false
+	}
+
+	return true
 }
 
 func getPolicyStatusFn(
@@ -122,12 +134,18 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 				break
 			}
 		}
+		var perConnectionBufferLimitBytes *uint32
+		if i.Spec.PerConnectionBufferLimitBytes != nil {
+			perConnectionBufferLimitBytes = ptr.To(uint32(*i.Spec.PerConnectionBufferLimitBytes)) //nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 2147483647, safe for uint32
+		}
+
 		pol := &ir.PolicyWrapper{
 			ObjectSource: objSrc,
 			Policy:       i,
 			PolicyIR: &listenerPolicy{
-				ct:            i.CreationTimestamp.Time,
-				proxyProtocol: convertProxyProtocolConfig(objSrc, i.Spec.ProxyProtocol),
+				ct:                            i.CreationTimestamp.Time,
+				proxyProtocol:                 convertProxyProtocolConfig(objSrc, i.Spec.ProxyProtocol),
+				perConnectionBufferLimitBytes: perConnectionBufferLimitBytes,
 			},
 			TargetRefs: pluginsdkutils.TargetRefsToPolicyRefs(i.Spec.TargetRefs, i.Spec.TargetSelectors),
 			Errors:     []error{},
@@ -190,10 +208,14 @@ func (p *listenerPolicyPluginGwPass) ApplyListenerPlugin(
 		return
 	}
 
-	logger.Debug("listenerPolicy found", "proxy_protocol", pol.proxyProtocol)
+	logger.Debug("listenerPolicy found", "proxy_protocol", pol.proxyProtocol, "per_connection_buffer_limit_bytes", pol.perConnectionBufferLimitBytes)
 	// Add proxy protocol listener filter if configured
 	if pol.proxyProtocol != nil {
 		p.applyProxyProtocol(out, pol.proxyProtocol)
+	}
+	// Set per connection buffer limit if configured
+	if pol.perConnectionBufferLimitBytes != nil {
+		out.PerConnectionBufferLimitBytes = &wrapperspb.UInt32Value{Value: *pol.perConnectionBufferLimitBytes}
 	}
 }
 
