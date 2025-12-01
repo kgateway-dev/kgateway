@@ -20,6 +20,7 @@ type GatewayV1alpha1Interface interface {
 	GatewayExtensionsGetter
 	GatewayParametersGetter
 	HTTPListenerPoliciesGetter
+	ListenerPoliciesGetter
 	TrafficPoliciesGetter
 }
 
@@ -58,6 +59,10 @@ func (c *GatewayV1alpha1Client) GatewayParameters(namespace string) GatewayParam
 
 func (c *GatewayV1alpha1Client) HTTPListenerPolicies(namespace string) HTTPListenerPolicyInterface {
 	return newHTTPListenerPolicies(c, namespace)
+}
+
+func (c *GatewayV1alpha1Client) ListenerPolicies(namespace string) ListenerPolicyInterface {
+	return newListenerPolicies(c, namespace)
 }
 
 func (c *GatewayV1alpha1Client) TrafficPolicies(namespace string) TrafficPolicyInterface {

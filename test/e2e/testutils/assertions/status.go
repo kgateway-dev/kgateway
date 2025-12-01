@@ -98,7 +98,7 @@ func (p *Provider) EventuallyGatewayCondition(
 		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: gatewayName, Namespace: gatewayNamespace}, gateway)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get Gateway %s/%s", gatewayNamespace, gatewayName))
 
-		condition := getConditionByType(gateway.Status.Conditions, string(cond))
+		condition := GetConditionByType(gateway.Status.Conditions, string(cond))
 		g.Expect(condition).NotTo(gomega.BeNil(), fmt.Sprintf("%v condition not found for Gateway %s/%s. Full status: %+v", cond, gatewayNamespace, gatewayName, gateway.Status))
 		g.Expect(condition.Status).To(gomega.Equal(expect), fmt.Sprintf("%v condition is not %v for Gateway %s/%s. Full status: %+v",
 			cond, expect, gatewayNamespace, gatewayName, gateway.Status))
@@ -148,7 +148,7 @@ func (p *Provider) EventuallyGatewayStatus(
 		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get gateway %s/%s", namespace, name))
 
 		for _, expected := range status.Conditions {
-			condition := getConditionByType(gw.Status.Conditions, expected.Type)
+			condition := GetConditionByType(gw.Status.Conditions, expected.Type)
 			g.Expect(condition).NotTo(gomega.BeNil(), fmt.Sprintf("%v condition not found for gateway %s/%s. Full status: %+v", expected.Type, namespace, name, gw.Status))
 			g.Expect(condition.Status).To(gomega.Equal(expected.Status), fmt.Sprintf("%v status is not %v for gateway %s/%s. Full status: %+v", expected, expected.Status, namespace, name, gw.Status))
 			if expected.Reason != "" {
@@ -167,7 +167,7 @@ func (p *Provider) EventuallyGatewayStatus(
 			}
 
 			for _, expected := range expectedListener.Conditions {
-				condition := getConditionByType(listenerStatus.Conditions, expected.Type)
+				condition := GetConditionByType(listenerStatus.Conditions, expected.Type)
 				g.Expect(condition).NotTo(gomega.BeNil(), fmt.Sprintf("%v condition not found for listener %s. Full status: %+v", expected, expectedListener.Name, gw.Status))
 				g.Expect(condition.Status).To(gomega.Equal(expected.Status), fmt.Sprintf("%v condition is not %v for listener %s. Full status: %+v", expected, expected.Status, expectedListener.Name, gw.Status))
 				if expected.Reason != "" {
@@ -196,7 +196,7 @@ func (p *Provider) EventuallyHTTPRouteCondition(
 
 		var conditionFound bool
 		for _, parentStatus := range route.Status.Parents {
-			condition := getConditionByType(parentStatus.Conditions, string(cond))
+			condition := GetConditionByType(parentStatus.Conditions, string(cond))
 			if condition != nil && condition.Status == expect {
 				conditionFound = true
 				break
@@ -225,7 +225,7 @@ func (p *Provider) EventuallyTCPRouteCondition(
 
 		var conditionFound bool
 		for _, parentStatus := range route.Status.Parents {
-			condition := getConditionByType(parentStatus.Conditions, string(cond))
+			condition := GetConditionByType(parentStatus.Conditions, string(cond))
 			if condition != nil && condition.Status == expect {
 				conditionFound = true
 				break
@@ -254,7 +254,7 @@ func (p *Provider) EventuallyTLSRouteCondition(
 
 		var conditionFound bool
 		for _, parentStatus := range route.Status.Parents {
-			condition := getConditionByType(parentStatus.Conditions, string(cond))
+			condition := GetConditionByType(parentStatus.Conditions, string(cond))
 			if condition != nil && condition.Status == expect {
 				conditionFound = true
 				break
@@ -283,7 +283,7 @@ func (p *Provider) EventuallyGRPCRouteCondition(
 
 		var conditionFound bool
 		for _, parentStatus := range route.Status.Parents {
-			condition := getConditionByType(parentStatus.Conditions, string(cond))
+			condition := GetConditionByType(parentStatus.Conditions, string(cond))
 			if condition != nil && condition.Status == expect {
 				conditionFound = true
 				break
@@ -320,7 +320,7 @@ func (p *Provider) EventuallyInferencePoolCondition(
 		var conditionFound bool
 		for _, parent := range pool.Status.Parents {
 			// Look for the first matching condition on any parent.
-			if c := getConditionByType(parent.Conditions, string(cond)); c != nil && c.Status == expect {
+			if c := GetConditionByType(parent.Conditions, string(cond)); c != nil && c.Status == expect {
 				conditionFound = true
 				break
 			}
@@ -332,7 +332,7 @@ func (p *Provider) EventuallyInferencePoolCondition(
 }
 
 // Helper function to retrieve a condition by type from a list of conditions.
-func getConditionByType(conditions []metav1.Condition, conditionType string) *metav1.Condition {
+func GetConditionByType(conditions []metav1.Condition, conditionType string) *metav1.Condition {
 	for _, condition := range conditions {
 		if condition.Type == conditionType {
 			return &condition
@@ -356,7 +356,7 @@ func (p *Provider) EventuallyListenerSetStatus(
 		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get listenerset %s/%s", namespace, name))
 
 		for _, expected := range status.Conditions {
-			condition := getConditionByType(ls.Status.Conditions, expected.Type)
+			condition := GetConditionByType(ls.Status.Conditions, expected.Type)
 			g.Expect(condition).NotTo(gomega.BeNil(), fmt.Sprintf("%v condition not found for listenerset %s/%s. Full status: %+v", expected.Type, namespace, name, ls.Status))
 			g.Expect(condition.Status).To(gomega.Equal(expected.Status), fmt.Sprintf("%v status is not %v for listenerset %s/%s. Full status: %+v", expected, expected.Status, namespace, name, ls.Status))
 			if expected.Reason != "" {
@@ -378,7 +378,7 @@ func (p *Provider) EventuallyListenerSetStatus(
 			}
 
 			for _, expected := range expectedListener.Conditions {
-				condition := getConditionByType(listenerStatus.Conditions, expected.Type)
+				condition := GetConditionByType(listenerStatus.Conditions, expected.Type)
 				g.Expect(condition).NotTo(gomega.BeNil(), fmt.Sprintf("%v condition not found for listener %s. Full status: %+v", expected, expectedListener.Name, ls.Status))
 				g.Expect(condition.Status).To(gomega.Equal(expected.Status), fmt.Sprintf("%v condition is not %v for listener %s. Full status: %+v", expected, expected.Status, expectedListener.Name, ls.Status))
 				if expected.Reason != "" {
@@ -448,7 +448,7 @@ func (p *Provider) EventuallyHTTPListenerPolicyCondition(
 
 		var conditionFound bool
 		for _, parentStatus := range hlp.Status.Ancestors {
-			condition := getConditionByType(parentStatus.Conditions, string(cond))
+			condition := GetConditionByType(parentStatus.Conditions, string(cond))
 			if condition != nil && condition.Status == expect {
 				conditionFound = true
 				break

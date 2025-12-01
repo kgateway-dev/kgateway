@@ -1,7 +1,7 @@
 # This test is for the traffic distribution for service entries
 # It tests the following scenarios:
-# - ServiceEntry with PreferSameNetwork traffic distribution and inline endpoints
-# - ServiceEntry with PreferSameNetwork traffic distribution that selects workload entries
+# - ServiceEntry with PreferNetwork traffic distribution and inline endpoints
+# - ServiceEntry with PreferNetwork traffic distribution that selects workload entries
 ---
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
@@ -45,7 +45,7 @@ metadata:
   name: inlined-se
   namespace: gwtest
   annotations:
-    networking.istio.io/traffic-distribution: PreferSameNetwork
+    networking.istio.io/traffic-distribution: PreferNetwork
 spec:
   hosts:
   - se-a.example.com
@@ -73,7 +73,7 @@ metadata:
   name: workloads-se
   namespace: gwtest
   annotations:
-    networking.istio.io/traffic-distribution: PreferSameNetwork
+    networking.istio.io/traffic-distribution: PreferNetwork
 spec:
   hosts:
   - se-b.example.com

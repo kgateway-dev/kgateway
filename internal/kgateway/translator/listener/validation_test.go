@@ -5,12 +5,14 @@ import (
 
 	istioprotocol "istio.io/istio/pkg/config/protocol"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	. "github.com/onsi/gomega"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/utils"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	reporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
@@ -33,11 +35,13 @@ func gwToIr(gw *gwv1.Gateway, allowedLS, deniedLS *gwxv1a1.XListenerSet) *ir.Gat
 		})
 	}
 	if deniedLS != nil {
-		out.DeniedListenerSets = []ir.ListenerSet{lsToIR(deniedLS)}
+		out.DeniedListenerSets = map[schema.GroupVersionKind]ir.ListenerSets{
+			wellknown.XListenerSetGVK: []ir.ListenerSet{lsToIR(deniedLS)}}
 	}
 	if allowedLS != nil {
 		allowedIrLs := lsToIR(allowedLS)
-		out.AllowedListenerSets = []ir.ListenerSet{allowedIrLs}
+		out.AllowedListenerSets = map[schema.GroupVersionKind]ir.ListenerSets{
+			wellknown.XListenerSetGVK: []ir.ListenerSet{allowedIrLs}}
 		out.Listeners = append(out.Listeners, allowedIrLs.Listeners...)
 	}
 	return out

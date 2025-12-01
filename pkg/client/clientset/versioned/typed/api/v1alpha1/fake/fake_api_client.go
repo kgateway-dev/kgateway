@@ -44,6 +44,10 @@ func (c *FakeGatewayV1alpha1) HTTPListenerPolicies(namespace string) v1alpha1.HT
 	return newFakeHTTPListenerPolicies(c, namespace)
 }
 
+func (c *FakeGatewayV1alpha1) ListenerPolicies(namespace string) v1alpha1.ListenerPolicyInterface {
+	return newFakeListenerPolicies(c, namespace)
+}
+
 func (c *FakeGatewayV1alpha1) TrafficPolicies(namespace string) v1alpha1.TrafficPolicyInterface {
 	return newFakeTrafficPolicies(c, namespace)
 }

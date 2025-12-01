@@ -13,6 +13,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -31,7 +32,8 @@ import (
 )
 
 var (
-	configMapManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata/configmap.yaml")
+	configMapManifest                     = filepath.Join(fsutils.MustGetThisDir(), "testdata/configmap.yaml")
+	backendTLSPolicyMissingTargetManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata/missing-target.yaml")
 
 	proxyObjMeta = metav1.ObjectMeta{
 		Name:      "gw",
@@ -215,6 +217,109 @@ func (s *tsuite) assertPolicyStatus(inCondition metav1.Condition) {
 			g.Expect(cond.Reason).To(gomega.Equal(inCondition.Reason), "policy reason should be accepted")
 			g.Expect(cond.Message).To(gomega.Equal(inCondition.Message))
 			g.Expect(cond.ObservedGeneration).To(gomega.Equal(inCondition.ObservedGeneration))
+		}
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+}
+
+const (
+	kgatewayControllerName = "kgateway.dev/kgateway"
+	otherControllerName    = "other-controller.example.com/controller"
+)
+
+// TestBackendTLSPolicyClearStaleStatus verifies that stale status is cleared when targetRef becomes invalid
+func (s *tsuite) TestBackendTLSPolicyClearStaleStatus() {
+	if s.agentgateway {
+		s.T().Log("Skipping status test for Agentgateway as statuses are not currently supported")
+		return
+	}
+
+	// Test applies base.yaml via setup which includes "tls-policy" targeting Services "nginx" and "nginx2"
+	// Add fake ancestor status from another controller
+	s.addAncestorStatus("tls-policy", "default", otherControllerName)
+
+	// Verify both kgateway and other controller statuses exist
+	s.assertAncestorStatuses("nginx", map[string]bool{
+		kgatewayControllerName: true,
+		otherControllerName:    true,
+	})
+
+	// Apply policy with missing service target
+	err := s.TestInstallation.Actions.Kubectl().ApplyFile(
+		s.Ctx,
+		backendTLSPolicyMissingTargetManifest,
+	)
+	s.Require().NoError(err)
+
+	// Verify kgateway status cleared, other remains
+	s.assertAncestorStatuses("nginx", map[string]bool{
+		kgatewayControllerName: false,
+		otherControllerName:    true,
+	})
+	// AfterTest() handles cleanup automatically
+}
+
+func (s *tsuite) addAncestorStatus(policyName, policyNamespace, controllerName string) {
+	currentTimeout, pollingInterval := helpers.GetTimeouts()
+	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+		policy := &gwv1.BackendTLSPolicy{}
+		err := s.TestInstallation.ClusterContext.Client.Get(
+			s.Ctx,
+			types.NamespacedName{Name: policyName, Namespace: policyNamespace},
+			policy,
+		)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+
+		// Add fake ancestor status
+		fakeStatus := gwv1.PolicyAncestorStatus{
+			AncestorRef: gwv1.ParentReference{
+				Group:     (*gwv1.Group)(&svcGroup),
+				Kind:      (*gwv1.Kind)(&svcKind),
+				Namespace: ptr.To(gwv1.Namespace(nginxMeta.Namespace)),
+				Name:      gwv1.ObjectName(nginxMeta.Name),
+			},
+			ControllerName: gwv1.GatewayController(controllerName),
+			Conditions: []metav1.Condition{
+				{
+					Type:               string(v1alpha1.PolicyConditionAccepted),
+					Status:             metav1.ConditionTrue,
+					Reason:             string(v1alpha1.PolicyReasonValid),
+					Message:            "Accepted by fake controller",
+					LastTransitionTime: metav1.Now(),
+				},
+			},
+		}
+
+		policy.Status.Ancestors = append(policy.Status.Ancestors, fakeStatus)
+		err = s.TestInstallation.ClusterContext.Client.Status().Update(s.Ctx, policy)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+}
+
+func (s *tsuite) assertAncestorStatuses(ancestorName string, expectedControllers map[string]bool) {
+	currentTimeout, pollingInterval := helpers.GetTimeouts()
+	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+		policy := &gwv1.BackendTLSPolicy{}
+		err := s.TestInstallation.ClusterContext.Client.Get(
+			s.Ctx,
+			types.NamespacedName{Name: "tls-policy", Namespace: "default"},
+			policy,
+		)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+
+		foundControllers := make(map[string]bool)
+		for _, ancestor := range policy.Status.Ancestors {
+			if string(ancestor.AncestorRef.Name) == ancestorName {
+				foundControllers[string(ancestor.ControllerName)] = true
+			}
+		}
+
+		for controller, shouldExist := range expectedControllers {
+			exists := foundControllers[controller]
+			if shouldExist {
+				g.Expect(exists).To(gomega.BeTrue(), "Expected controller %s to exist in status", controller)
+			} else {
+				g.Expect(exists).To(gomega.BeFalse(), "Expected controller %s to not exist in status", controller)
+			}
 		}
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }

@@ -63,7 +63,7 @@ type Syncer struct {
 	ready       atomic.Bool
 
 	// NACK handling
-	EventPublisher *nack.NackEventPublisher
+	NackPublisher *nack.Publisher
 
 	// features
 	Registrations []krtxds.Registration
@@ -86,7 +86,7 @@ func NewAgwSyncer(
 		additionalGatewayClasses: additionalGatewayClasses,
 		client:                   client,
 		statusCollections:        status.NewStatusCollections(extraGVKs),
-		EventPublisher:           nack.NewNackEventPublisher(ctx, client),
+		NackPublisher:            nack.NewPublisher(client),
 	}
 }
 
@@ -466,6 +466,7 @@ func (s *Syncer) setupSyncDependencies(
 		s.agwPlugins.HasSynced,
 		agwResources.HasSynced,
 		addresses.HasSynced,
+		s.NackPublisher.HasSynced,
 	}
 }
 
@@ -480,7 +481,6 @@ func (s *Syncer) Start(ctx context.Context) error {
 		ctx.Done(),
 		s.waitForSync...,
 	)
-
 	logger.Info("caches warm!")
 
 	s.ready.Store(true)

@@ -104,6 +104,7 @@ func filterObjects(objects ...client.Object) (istio []client.Object, kgw []clien
 			*v1alpha1.GatewayExtension,
 			*v1alpha1.GatewayParameters,
 			*v1alpha1.HTTPListenerPolicy,
+			*v1alpha1.ListenerPolicy,
 			*v1alpha1.TrafficPolicy,
 			*v1alpha1.AgentgatewayPolicy,
 			*v1alpha1.AgentgatewayBackend:

@@ -1,0 +1,44 @@
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: gw
+spec:
+  gatewayClassName: kgateway
+  listeners:
+    - name: https
+      protocol: HTTPS
+      port: 443
+      tls:
+        certificateRefs:
+          - group: ""
+            kind: Secret
+            name: test-tls
+        options:
+          kgateway.dev/alpn-protocols: "h2"
+          kgateway.dev/cipher-suites: "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"
+          kgateway.dev/ecdh-curves: "X25519,P-256"
+          kgateway.dev/min-tls-version: "1.2"
+          kgateway.dev/max-tls-version: "1.2"
+      allowedRoutes:
+        namespaces:
+          from: All
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+spec:
+  parentRefs:
+    - name: gw
+  hostnames:
+    - "example.com"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+      - name: httpbin
+        port: 8000
+
