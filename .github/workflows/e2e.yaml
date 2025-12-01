@@ -49,7 +49,7 @@ jobs:
         # August 29, 2025: ~9 minutes
         - cluster-name: 'cluster-four'
           go-test-args: '-timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^ExtProc$$|^TestKgateway$$/^ExtAuth$$|^TestKgateway$$/^PolicySelector$$|^TestKgateway$$/^Backends$$|^TestKgateway$$/^BackendTLSPolicies$$|^TestKgateway$$/^CSRF$$|^TestKgateway$$/^AutoHostRewrite$$|^TestKgateway$$/^LeaderElection$$'
+          go-test-run-regex: '^TestKgateway$$/^ExtProc$$|^TestKgateway$$/^ExtAuth$$|^TestKgateway$$/^PolicySelector$$|^TestKgateway$$/^Backends$$|^TestKgateway$$/^BackendTLSPolicies$$|^TestKgateway$$/^CSRF$$|^TestKgateway$$/^AutoHostRewrite$$|^TestKgateway$$/^LeaderElection$$|^TestKgateway$$/^ListenerPolicyProxyProtocol$$'
           localstack: 'false'
         # August 29, 2025: ~10 minutes
         - cluster-name: 'cluster-five'

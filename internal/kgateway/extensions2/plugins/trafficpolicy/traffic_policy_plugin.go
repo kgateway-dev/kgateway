@@ -253,7 +253,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 			PrecedenceWeight: precedenceWeight,
 		}
 		return statusMarker, pol
-	})
+	}, commoncol.KrtOpts.ToOptions("TrafficPolicyWrapper")...)
 
 	// processMarkers for policies that have existing status but no current report
 	processMarkers := func(kctx krt.HandlerContext, reportMap *reports.ReportMap) {

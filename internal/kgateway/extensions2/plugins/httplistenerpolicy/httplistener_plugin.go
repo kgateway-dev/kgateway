@@ -255,7 +255,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 		}
 
 		return statusMarker, pol
-	})
+	}, commoncol.KrtOpts.ToOptions("HTTPListenerPolicyWrapper")...)
 
 	// processMarkers for policies that have existing status but no current report
 	processMarkers := func(kctx krt.HandlerContext, reportMap *reports.ReportMap) {
@@ -278,6 +278,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 	}
 
 	return sdk.Plugin{
+		ExtraHasSynced: col.HasSynced,
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			wellknown.HTTPListenerPolicyGVK.GroupKind(): {
 				NewGatewayTranslationPass:       NewGatewayTranslationPass,

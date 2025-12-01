@@ -24,6 +24,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/jwt"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/lambda"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/leaderelection"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/listener_policy_proxy_protocol"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/loadtesting"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/path_matching"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/policyselector"
@@ -53,6 +54,7 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("DynamicForwardProxy", dfp.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("HTTPRouteServices", httproute.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("HttpListenerPolicy", http_listener_policy.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("ListenerPolicyProxyProtocol", listener_policy_proxy_protocol.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Lambda", lambda.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("RouteDelegation", route_delegation.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("SessionPersistence", session_persistence.NewTestingSuite)

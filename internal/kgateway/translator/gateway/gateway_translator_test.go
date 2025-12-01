@@ -1484,6 +1484,39 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("ListenerPolicy with proxy protocol on HTTP listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy/http-proxy-protocol.yaml",
+			outputFile: "listener-policy/http-proxy-protocol.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with proxy protocol on HTTPS listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy/https-proxy-protocol.yaml",
+			outputFile: "listener-policy/https-proxy-protocol.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with proxy protocol on TCP listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy/tcp-proxy-protocol.yaml",
+			outputFile: "listener-policy/tcp-proxy-protocol.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-tcp-gateway",
+			},
+		})
+	})
+
 	t.Run("JWT Policy at gateway level", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "jwt/gateway.yaml",

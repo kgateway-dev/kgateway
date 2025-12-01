@@ -48,6 +48,14 @@ func TestRenderHelmChart(t *testing.T) {
 			InputFile: "omit-default-security-context-via-gw",
 		},
 		{
+			Name:      "gwparams with stats matcher inclusion",
+			InputFile: "stats-matcher-inclusion",
+		},
+		{
+			Name:      "gwparams with stats matcher exclusion",
+			InputFile: "stats-matcher-exclusion",
+		},
+		{
 			Name:      "agentgateway",
 			InputFile: "agentgateway",
 		},
