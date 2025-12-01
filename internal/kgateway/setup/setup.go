@@ -27,7 +27,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentjwksstore"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/jwks"
@@ -35,12 +34,14 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/common"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
+	"github.com/kgateway-dev/kgateway/v2/pkg/syncer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/namespaces"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
@@ -197,6 +198,18 @@ func WithExtraAgwPolicyStatusHandlers(handlers map[schema.GroupVersionKind]agwpl
 	}
 }
 
+func WithCommonCollectionsOptions(commonCollectionsOptions []collections.Option) func(*setup) {
+	return func(s *setup) {
+		s.commonCollectionsOptions = commonCollectionsOptions
+	}
+}
+
+func WithStatusSyncerOptions(statusSyncerOptions []syncer.StatusSyncerOption) func(*setup) {
+	return func(s *setup) {
+		s.statusSyncerOptions = statusSyncerOptions
+	}
+}
+
 type setup struct {
 	apiClient                      apiclient.Client
 	extraInformerCacheSyncHandlers []cache.InformerSynced
@@ -224,6 +237,9 @@ type setup struct {
 	leaderElectionID             string
 	validator                    validator.Validator
 	extraAgwPolicyStatusHandlers map[schema.GroupVersionKind]agwplugins.AgwPolicyStatusSyncHandler
+
+	commonCollectionsOptions []collections.Option
+	statusSyncerOptions      []syncer.StatusSyncerOption
 }
 
 var _ Server = &setup{}
@@ -373,6 +389,7 @@ func (s *setup) Start(ctx context.Context) error {
 		s.gatewayControllerName,
 		s.agwControllerName,
 		*s.globalSettings,
+		s.commonCollectionsOptions...,
 	)
 	if err != nil {
 		slog.Error("error creating common collections", "error", err)
@@ -421,7 +438,7 @@ func (s *setup) Start(ctx context.Context) error {
 	}
 
 	if s.agwXdsListener != nil && agw != nil {
-		NewAgwControlPlane(ctx, s.agwXdsListener, authenticators, s.globalSettings.XdsAuth, certWatcher, agw.EventPublisher, agw.Registrations...)
+		NewAgwControlPlane(ctx, s.agwXdsListener, authenticators, s.globalSettings.XdsAuth, certWatcher, agw.NackPublisher, agw.Registrations...)
 	}
 
 	slog.Info("starting admin server")
@@ -490,6 +507,7 @@ func (s *setup) buildKgatewayWithConfig(
 		Validator:                    s.validator,
 		ExtraAgwPolicyStatusHandlers: s.extraAgwPolicyStatusHandlers,
 		GatewayControllerExtension:   s.gatewayControllerExtension,
+		StatusSyncerOptions:          s.statusSyncerOptions,
 	})
 	if err != nil {
 		slog.Error("failed initializing controller: ", "error", err)

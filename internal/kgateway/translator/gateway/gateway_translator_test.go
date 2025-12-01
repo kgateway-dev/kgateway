@@ -1242,6 +1242,39 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("listener set with tls listener and secret in same namespace", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-sets/tls-same-ns.yaml",
+			outputFile: "listener-sets/tls-same-ns.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("listener set with tls listener and secret in different namespace without reference grant", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-sets/tls-missing-reference-grant.yaml",
+			outputFile: "listener-sets/tls-missing-reference-grant.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("listener set with tls listener and secret in different namespace with reference grant", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-sets/tls-valid-reference-grant.yaml",
+			outputFile: "listener-sets/tls-valid-reference-grant.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy RateLimit Full Config", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/rate-limit-full-config.yaml",
@@ -1451,6 +1484,39 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("ListenerPolicy with proxy protocol on HTTP listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy/http-proxy-protocol.yaml",
+			outputFile: "listener-policy/http-proxy-protocol.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with proxy protocol on HTTPS listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy/https-proxy-protocol.yaml",
+			outputFile: "listener-policy/https-proxy-protocol.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with proxy protocol on TCP listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy/tcp-proxy-protocol.yaml",
+			outputFile: "listener-policy/tcp-proxy-protocol.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-tcp-gateway",
+			},
+		})
+	})
+
 	t.Run("JWT Policy at gateway level", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "jwt/gateway.yaml",
@@ -1531,6 +1597,28 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "jwt/gateway-and-route.yaml",
 			outputFile: "jwt/gateway-and-route.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("JWT Policy and RBAC", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "jwt/rbac.yaml",
+			outputFile: "jwt/rbac.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "gw",
+			},
+		})
+	})
+
+	t.Run("JWT Policy at gateway level with disable on route", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "jwt/gateway-disable.yaml",
+			outputFile: "jwt/gateway-disable.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",

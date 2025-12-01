@@ -7,14 +7,18 @@ import (
 )
 
 // JWTAuthentication defines the providers used to configure JWT authentication
+// +kubebuilder:validation:ExactlyOneOf=extensionRef;disable
 type JWTAuthentication struct {
 	// ExtensionRef references a GatewayExtension that provides the jwt providers
-	// +required
-	ExtensionRef NamespacedObjectReference `json:"extensionRef"`
+	// +optional
+	ExtensionRef *NamespacedObjectReference `json:"extensionRef,omitempty"`
 
 	// TODO: add support for ValidationMode here (REQUIRE_VALID,ALLOW_MISSING,ALLOW_MISSING_OR_FAILED)
 
-	// TODO(npolshak): Add option to disable all jwt filters.
+	// Disable all JWT filters.
+	// Can be used to disable JWT policies applied at a higher level in the config hierarchy.
+	// +optional
+	Disable *PolicyDisable `json:"disable,omitempty"`
 }
 
 // JWTProvider configures the JWT Provider
@@ -51,22 +55,12 @@ type JWTProvider struct {
 	// +required
 	JWKS JWKS `json:"jwks"`
 
-	// KeepToken configures if the token is forwarded upstream.
-	// If Remove, the header containing the token will be removed.
-	// If Forward, the header containing the token will be forwarded upstream.
-	// +kubebuilder:validation:Enum=Forward;Remove
-	// +kubebuilder:default=Remove
+	// ForwardToken configures if the JWT token is forwarded to the upstream backend.
+	// If true, the header containing the token will be forwarded upstream.
+	// If false or not set, the header containing the token will be removed.
 	// +optional
-	KeepToken *KeepToken `json:"keepToken,omitempty"`
+	ForwardToken *bool `json:"forwardToken,omitempty"`
 }
-
-// KeepToken configures if the token is forwarded upstream.
-type KeepToken string
-
-const (
-	TokenForward KeepToken = "Forward"
-	TokenRemove  KeepToken = "Remove"
-)
 
 // HeaderSource configures how to retrieve a JWT from a header
 type HeaderSource struct {

@@ -20,6 +20,7 @@ var (
 	simpleTLSManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "simple-tls.yaml")
 	systemCAManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "system-ca.yaml")
 	outlierDetectionManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "outlierdetection.yaml")
+	missingTargetManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "missing-target.yaml")
 	// objects
 	proxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gw",

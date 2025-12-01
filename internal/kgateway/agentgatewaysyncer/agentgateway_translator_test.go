@@ -430,4 +430,26 @@ func TestBasic(t *testing.T) {
 			},
 		})
 	})
+
+	t.Run("ServiceEntry with Hostname backend (no network)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "serviceentry/basic-serviceentry.yaml",
+			outputFile: "serviceentry/basic-serviceentry.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ServiceEntry with multi-network endpoints", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "serviceentry/serviceentry-with-network.yaml",
+			outputFile: "serviceentry/serviceentry-with-network.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
 }
