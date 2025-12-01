@@ -100,6 +100,7 @@ rules:
   - gatewayextensions
   - gatewayparameters
   - httplistenerpolicies
+  - listenerpolicies
   - trafficpolicies
   verbs:
   - get
@@ -116,6 +117,7 @@ rules:
   - gatewayextensions/status
   - gatewayparameters/status
   - httplistenerpolicies/status
+  - listenerpolicies/status
   - trafficpolicies/status
   verbs:
   - get

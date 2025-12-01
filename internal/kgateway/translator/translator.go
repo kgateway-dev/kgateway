@@ -14,13 +14,13 @@ import (
 	gwtranslator "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/stopwatch"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
@@ -108,7 +108,7 @@ func (s *CombinedTranslator) HasSynced() bool {
 
 // buildProxy performs translation of a kube Gateway -> GatewayIR
 func (s *CombinedTranslator) buildProxy(kctx krt.HandlerContext, ctx context.Context, gw ir.Gateway, r reporter.Reporter) *ir.GatewayIR {
-	stopwatch := utils.NewTranslatorStopWatch("CombinedTranslator")
+	stopwatch := stopwatch.NewTranslatorStopWatch("CombinedTranslator")
 	stopwatch.Start()
 
 	var gatewayTranslator sdk.KGwTranslator = s.gwtranslator
