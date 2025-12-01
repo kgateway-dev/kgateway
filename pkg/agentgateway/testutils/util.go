@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pilot/test/util"
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
@@ -212,6 +213,8 @@ func BuildMockCollection(t test.Failer, inputs []any) *plugins.AgwCollections {
 		Secrets:              krttest.GetMockCollection[*corev1.Secret](mock),
 		ConfigMaps:           krttest.GetMockCollection[*corev1.ConfigMap](mock),
 		EndpointSlices:       krttest.GetMockCollection[*discovery.EndpointSlice](mock),
+		WorkloadEntries:      krttest.GetMockCollection[*networkingclient.WorkloadEntry](mock),
+		ServiceEntries:       krttest.GetMockCollection[*networkingclient.ServiceEntry](mock),
 		GatewayClasses:       krttest.GetMockCollection[*gwv1.GatewayClass](mock),
 		Gateways:             krttest.GetMockCollection[*gwv1.Gateway](mock),
 		HTTPRoutes:           krttest.GetMockCollection[*gwv1.HTTPRoute](mock),
@@ -227,7 +230,8 @@ func BuildMockCollection(t test.Failer, inputs []any) *plugins.AgwCollections {
 		DirectResponses:      krttest.GetMockCollection[*v1alpha1.DirectResponse](mock),
 		GatewayExtensions:    krttest.GetMockCollection[*v1alpha1.GatewayExtension](mock),
 		ControllerName:       wellknown.DefaultAgwControllerName,
-		SystemNamespace:      "istio-system",
+		SystemNamespace:      "kgateway-system",
+		IstioNamespace:       "istio-system",
 		ClusterID:            "Kubernetes",
 	}
 	col.SetupIndexes()
