@@ -1,6 +1,7 @@
 package plugins
 
 import (
+	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/config/schema/gvr"
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/kclient"
@@ -38,6 +39,10 @@ type AgwCollections struct {
 	ConfigMaps          krt.Collection[*corev1.ConfigMap]
 	EndpointSlices      krt.Collection[*discovery.EndpointSlice]
 
+	// Istio resources for ambient mesh
+	WorkloadEntries krt.Collection[*networkingclient.WorkloadEntry]
+	ServiceEntries  krt.Collection[*networkingclient.ServiceEntry]
+
 	// Gateway API resources
 	GatewayClasses     krt.Collection[*gwv1.GatewayClass]
 	Gateways           krt.Collection[*gwv1.Gateway]
@@ -62,6 +67,8 @@ type AgwCollections struct {
 	ControllerName string
 	// SystemNamespace is control plane system namespace (default is kgateway-system)
 	SystemNamespace string
+	// IstioNamespace is the Istio control plane namespace (default is istio-system)
+	IstioNamespace string
 	// ClusterID is the cluster ID of the cluster the proxy is running in.
 	ClusterID string
 }
@@ -73,6 +80,8 @@ func (c *AgwCollections) HasSynced() bool {
 		c.Services != nil && c.Services.HasSynced() &&
 		c.Secrets != nil && c.Secrets.HasSynced() &&
 		c.ConfigMaps != nil && c.ConfigMaps.HasSynced() &&
+		c.WorkloadEntries != nil && c.WorkloadEntries.HasSynced() &&
+		c.ServiceEntries != nil && c.ServiceEntries.HasSynced() &&
 		c.GatewayClasses != nil && c.GatewayClasses.HasSynced() &&
 		c.Gateways != nil && c.Gateways.HasSynced() &&
 		c.HTTPRoutes != nil && c.HTTPRoutes.HasSynced() &&
@@ -102,6 +111,7 @@ func NewAgwCollections(
 		KrtOpts:         commoncol.KrtOpts,
 		ControllerName:  agwControllerName,
 		SystemNamespace: systemNamespace,
+		IstioNamespace:  commoncol.Settings.IstioNamespace,
 		ClusterID:       clusterID,
 
 		// Core Kubernetes resources
@@ -131,6 +141,14 @@ func NewAgwCollections(
 		EndpointSlices: krt.WrapClient(
 			kclient.NewFiltered[*discovery.EndpointSlice](commoncol.Client, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}),
 			commoncol.KrtOpts.ToOptions("informer/EndpointSlices")...),
+
+		// Istio resources
+		WorkloadEntries: krt.WrapClient(
+			kclient.NewDelayedInformer[*networkingclient.WorkloadEntry](commoncol.Client, gvr.WorkloadEntry, kubetypes.StandardInformer, kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}),
+			commoncol.KrtOpts.ToOptions("informer/WorkloadEntries")...),
+		ServiceEntries: krt.WrapClient(
+			kclient.NewDelayedInformer[*networkingclient.ServiceEntry](commoncol.Client, gvr.ServiceEntry, kubetypes.StandardInformer, kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}),
+			commoncol.KrtOpts.ToOptions("informer/ServiceEntries")...),
 
 		// Gateway API resources
 		GatewayClasses:     krt.WrapClient(kclient.NewFilteredDelayed[*gwv1.GatewayClass](commoncol.Client, wellknown.GatewayClassGVR, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/GatewayClasses")...),

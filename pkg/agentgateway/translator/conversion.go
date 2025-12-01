@@ -770,6 +770,37 @@ func buildAgwDestination(
 				Port: uint32(svc.Spec.TargetPorts[0].Number), //nolint:gosec // G115: InferencePool TargetPort is int32 with validation 1-65535, always safe
 			}
 		}
+	case wellknown.HostnameGVK.GroupKind():
+		// Hostname is an Istio-specific backend kind where the name is the literal hostname
+		// Used for referencing services by their full hostname (e.g., from ServiceEntry)
+		// The actual resolution to ServiceEntry happens via the BackendIndex alias mechanism
+		port = to.Port
+		if port == nil {
+			return nil, &reporter.RouteCondition{
+				Type:    gwv1.RouteConditionAccepted,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.RouteReasonUnsupportedValue,
+				Message: "port is required in backendRef for Hostname kind",
+			}
+		}
+		if to.Namespace != nil {
+			return nil, &reporter.RouteCondition{
+				Type:    gwv1.RouteConditionAccepted,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.RouteReasonUnsupportedValue,
+				Message: "namespace may not be set with Hostname type",
+			}
+		}
+		// Use the name directly as the hostname
+		hostname = string(to.Name)
+		// Note: Backend validation happens via BackendIndex which uses the Hostname->ServiceEntry alias
+		// No need to explicitly check ServiceEntries here as the BackendIndex handles the resolution
+		rb.Backend = &api.BackendReference{
+			Kind: &api.BackendReference_Service{
+				Service: namespace + "/" + hostname,
+			},
+			Port: uint32(*port), //nolint:gosec // G115: Gateway API PortNumber is int32 with validation 1-65535, always safe
+		}
 	case wellknown.ServiceGVK.GroupKind():
 		port = to.Port
 		if strings.Contains(string(to.Name), ".") {
@@ -922,20 +953,15 @@ func ReferenceAllowed(
 			}
 		}
 	} else if parentRef.Kind == wellknown.ServiceEntryGVK {
-		return &ParentError{
-			Reason:  ParentErrorNotAccepted,
-			Message: "service entry not supported",
-		}
-		// TODO: support ServiceEntries
 		// check that the referenced svc entry exists
-		//key := parentRef.Namespace + "/" + parentRef.Name
-		//svcEntry := ptr.Flatten(krt.FetchOne(ctx.Krt, ctx.ServiceEntries, krt.FilterKey(key)))
-		//if svcEntry == nil {
-		//	return &ParentError{
-		//		Reason:  ParentErrorNotAccepted,
-		//		Message: fmt.Sprintf("parent service entry: %q not found", parentRef.Name),
-		//	}
-		//}
+		key := parentRef.Namespace + "/" + parentRef.Name
+		svcEntry := ptr.Flatten(krt.FetchOne(ctx.Krt, ctx.ServiceEntries, krt.FilterKey(key)))
+		if svcEntry == nil {
+			return &ParentError{
+				Reason:  ParentErrorNotAccepted,
+				Message: fmt.Sprintf("parent service entry: %q not found", parentRef.Name),
+			}
+		}
 	} else {
 		// First, check section and port apply. This must come first
 		if parentRef.Port != 0 && parentRef.Port != parent.Port {

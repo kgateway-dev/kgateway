@@ -255,12 +255,14 @@ func (s *Syncer) buildAgwResources(
 
 	// Build routes
 	routeParents := translator.BuildRouteParents(filteredGateways)
+
 	routeInputs := translator.RouteContextInputs{
 		Grants:          refGrants,
 		RouteParents:    routeParents,
 		ControllerName:  s.controllerName,
 		Services:        s.agwCollections.Services,
 		Namespaces:      s.agwCollections.Namespaces,
+		ServiceEntries:  s.agwCollections.ServiceEntries,
 		InferencePools:  s.agwCollections.InferencePools,
 		Backends:        s.agwCollections.Backends,
 		DirectResponses: s.agwCollections.DirectResponses,
@@ -414,10 +416,13 @@ func (s *Syncer) buildAddressCollections(krtopts krtutil.KrtOptions) krt.Collect
 	}
 	waypoints := workloadIndex.WaypointsCollection(s.agwCollections.Gateways, s.agwCollections.GatewayClasses, s.agwCollections.Pods, krtopts)
 
+	// Build NetworkGateway collection for inter-network workload routing
+	networkGateways, gatewaysByNetwork := workloadIndex.NetworkGatewaysCollection(s.agwCollections.Gateways, krtopts)
+
 	// Build service and workload collections
 	workloadServices := workloadIndex.ServicesCollection(
 		s.agwCollections.Services,
-		nil,
+		s.agwCollections.ServiceEntries,
 		waypoints,
 		s.agwCollections.InferencePools,
 		s.agwCollections.Namespaces,
@@ -427,8 +432,14 @@ func (s *Syncer) buildAddressCollections(krtopts krtutil.KrtOptions) krt.Collect
 	workloads := workloadIndex.WorkloadsCollection(
 		s.agwCollections.Pods,
 		NodeLocality,
+		s.agwCollections.WorkloadEntries,
+		s.agwCollections.ServiceEntries,
+		waypoints,
 		workloadServices,
 		s.agwCollections.EndpointSlices,
+		s.agwCollections.Namespaces,
+		networkGateways,
+		gatewaysByNetwork,
 		krtopts,
 	)
 

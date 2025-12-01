@@ -22,7 +22,7 @@ metadata:
     app: reviews
     service: reviews
   annotations:
-    networking.istio.io/traffic-distribution: PreferSameNetwork
+    networking.istio.io/traffic-distribution: PreferNetwork
 spec:
   ports:
     - name: http
