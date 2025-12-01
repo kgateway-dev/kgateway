@@ -10,7 +10,7 @@ The version is rolling, based on the next minor version release, e.g. `v2.2.0-ma
 
 The usable artifacts are pushed to GHCR and visible on the [packages page](https://github.com/orgs/kgateway-dev/packages?repo_name=kgateway).
 
-Typically this will be consumed via the helm charts, and can used directly, such as:
+Typically this will be consumed via the helm charts, and can be used directly, such as:
 ```bash
 helm install kgateway-crds oci://cr.kgateway.dev/kgateway-dev/charts/kgateway-crds --version v2.2.0-main --namespace kgateway-system --create-namespace
 helm install kgateway oci://cr.kgateway.dev/kgateway-dev/charts/kgateway --version v2.2.0-main --namespace kgateway-system --create-namespace
