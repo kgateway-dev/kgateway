@@ -319,7 +319,7 @@ func priorityInfoFromTrafficDistribution(trafficDistribution wellknown.TrafficDi
 			label.TopologySubzone.Name,
 			corev1.LabelHostname,
 		})
-	case wellknown.TrafficDistributionPreferSameNetwork:
+	case wellknown.TrafficDistributionPreferNetwork:
 		priorities = NewPriorities([]string{
 			label.TopologyNetwork.Name,
 		})
