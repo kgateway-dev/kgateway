@@ -33,7 +33,8 @@ var (
 	setup = base.TestCase{Manifests: []string{getTestFile("common.yaml"), getTestFile("service.yaml"), testdefaults.CurlPodManifest}}
 
 	testCases = map[string]*base.TestCase{
-		"TestTrafficPolicyBasicAuthForRoute": {Manifests: []string{getTestFile("httproutes.yaml"), getTestFile("tp-route-basicauth.yaml")}},
+		"TestTrafficPolicyBasicAuthForRoute":               {Manifests: []string{getTestFile("httproutes.yaml"), getTestFile("tp-route-basicauth.yaml")}},
+		"TestTrafficPolicyBasicAuthGatewayOverrideOnRoute": {Manifests: []string{getTestFile("httproutes-no-ext.yaml"), getTestFile("tp-gateway-basicauth.yaml")}},
 	}
 )
 
@@ -61,6 +62,22 @@ func (s *testingSuite) TestTrafficPolicyBasicAuthForRoute() {
 	s.assertNoAuthResponse(host, "secure.example.com", http.StatusUnauthorized)
 
 	// Public route should be accessible without auth
+	s.assertNoAuthResponse(host, "public.example.com", http.StatusOK)
+}
+
+func (s *testingSuite) TestTrafficPolicyBasicAuthGatewayOverrideOnRoute() {
+	// Ensure routes accepted
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(s.Ctx, "route-secure", "default", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(s.Ctx, "route-public", "default", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
+
+	host := kubeutils.ServiceFQDN(proxyObjectMeta)
+
+	// Gateway-level basic auth should protect secure.example.com
+	s.assertAuthResponse(host, "/", creds("gateway-user", "password"), http.StatusOK)
+	s.assertAuthResponse(host, "/", creds("gateway-user", "wrong"), http.StatusUnauthorized)
+	s.assertNoAuthResponse(host, "secure.example.com", http.StatusUnauthorized)
+
+	// Route-level disable should allow public.example.com without auth
 	s.assertNoAuthResponse(host, "public.example.com", http.StatusOK)
 }
 

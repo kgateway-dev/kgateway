@@ -5,8 +5,10 @@ import (
 	"strings"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_basic_auth_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/basic_auth/v3"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/util/sets"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -63,7 +65,7 @@ func (p *trafficPolicyPluginGwPass) handleBasicAuth(
 
 	// Handle disable case - enable the filter with empty config to override parent policy
 	if basicAuth.disable {
-		pCtxTypedFilterConfig.AddTypedConfig(basicAuthFilterName, EnableFilterPerRoute)
+		pCtxTypedFilterConfig.AddTypedConfig(basicAuthFilterName, &envoyroutev3.FilterConfig{Config: &anypb.Any{}, Disabled: true})
 		return
 	}
 
