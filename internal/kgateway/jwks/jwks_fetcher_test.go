@@ -14,10 +14,11 @@ import (
 )
 
 func TestAddKeysetToFetcher(t *testing.T) {
-	f := NewJwksFetcher(NewJwksCache())
-	f.addKeyset("https://test/jwks", 5*time.Minute)
-
 	expectedKeysetSource := JwksSource{JwksURL: "https://test/jwks", Ttl: 5 * time.Minute, Deleted: false}
+
+	f := NewJwksFetcher(NewJwksCache())
+	f.AddOrUpdateKeyset(expectedKeysetSource)
+
 	fetch := f.schedule.Peek()
 	assert.NotNil(t, fetch)
 	assert.Equal(t, *fetch.keysetSource, expectedKeysetSource)
@@ -28,12 +29,12 @@ func TestAddKeysetToFetcher(t *testing.T) {
 func TestRemoveKeysetFromFetcher(t *testing.T) {
 	f := NewJwksFetcher(NewJwksCache())
 
-	f.addKeyset("https://test/jwks", 5*time.Minute)
+	f.AddOrUpdateKeyset(JwksSource{JwksURL: "https://test/jwks", Ttl: 5 * time.Minute})
 	keysetSource := f.keysetSources["https://test/jwks"]
 	assert.NotNil(t, keysetSource)
 	f.cache.jwks["https://test/jwks"] = "jwks"
 
-	f.removeKeyset("https://test/jwks")
+	f.RemoveKeyset(JwksSource{JwksURL: "https://test/jwks"})
 	assert.NotContains(t, f.keysetSources, "https://test/jwks")
 	assert.NotContains(t, f.cache.jwks, "https://test/jwks")
 	assert.True(t, keysetSource.Deleted)
@@ -64,7 +65,7 @@ func TestSuccessfulJwksFetch(t *testing.T) {
 	jwksClient := mocks.NewMockJwksHttpClient(ctrl)
 	f.jwksClient = jwksClient
 
-	f.addKeyset("https://test/jwks", 5*time.Minute)
+	f.AddOrUpdateKeyset(JwksSource{JwksURL: "https://test/jwks", Ttl: 5 * time.Minute})
 	updates := f.SubscribeToUpdates()
 
 	expectedJwks := jose.JSONWebKeySet{}
@@ -85,7 +86,7 @@ func TestSuccessfulJwksFetch(t *testing.T) {
 		default:
 			assert.Fail(c, "no updates")
 		}
-	}, 1000*time.Second, 100*time.Millisecond)
+	}, 2*time.Second, 100*time.Millisecond)
 
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -95,8 +96,9 @@ func TestSuccessfulJwksFetch(t *testing.T) {
 	assert.WithinDuration(t, time.Now().Add(5*time.Minute), fetch.at, 3*time.Second)
 }
 
-// jwks were fetched, but there were no updates to keysets
-func TestSuccessfulJwksFetchButNoUpdates(t *testing.T) {
+// jwks were fetched, but there were no changes to keysets
+// we still notify subscribers that a fetch happened (we always sync jwks to ConfigMaps)
+func TestSuccessfulJwksFetchButNoChanges(t *testing.T) {
 	ctx := t.Context()
 
 	f := NewJwksFetcher(NewJwksCache())
@@ -104,7 +106,7 @@ func TestSuccessfulJwksFetchButNoUpdates(t *testing.T) {
 	jwksClient := mocks.NewMockJwksHttpClient(ctrl)
 	f.jwksClient = jwksClient
 
-	f.addKeyset("https://test/jwks", 5*time.Minute)
+	f.AddOrUpdateKeyset(JwksSource{JwksURL: "https://test/jwks", Ttl: 5 * time.Minute})
 	f.cache.jwks["https://test/jwks"] = jwks
 	updates := f.SubscribeToUpdates()
 
@@ -117,12 +119,14 @@ func TestSuccessfulJwksFetchButNoUpdates(t *testing.T) {
 		Return(existingJwks, nil)
 	go f.maybeFetchJwks(ctx)
 
-	assert.Never(t, func() bool {
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		select {
-		case <-updates:
-			return true
+		case actual := <-updates:
+			cache := NewJwksCache()
+			assert.NoError(c, cache.LoadJwksFromStores(actual))
+			assert.Equal(c, jwks, cache.jwks["https://test/jwks"])
 		default:
-			return false
+			assert.Fail(c, "no updates")
 		}
 	}, 2*time.Second, 100*time.Millisecond)
 
@@ -142,7 +146,7 @@ func TestFetchJwksWithError(t *testing.T) {
 	jwksClient := mocks.NewMockJwksHttpClient(ctrl)
 	f.jwksClient = jwksClient
 
-	f.addKeyset("https://test/jwks", 5*time.Minute)
+	f.AddOrUpdateKeyset(JwksSource{JwksURL: "https://test/jwks", Ttl: 5 * time.Minute})
 	updates := f.SubscribeToUpdates()
 
 	jwksClient.EXPECT().
