@@ -5,7 +5,6 @@ import (
 	"crypto/x509"
 	"fmt"
 	"maps"
-	slices0 "slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -15,7 +14,6 @@ import (
 	"istio.io/api/annotation"
 	kubecreds "istio.io/istio/pilot/pkg/credentials/kube"
 	"istio.io/istio/pilot/pkg/model/kstatus"
-	"istio.io/istio/pkg/config/constants"
 	"istio.io/istio/pkg/config/host"
 	"istio.io/istio/pkg/config/protocol"
 	"istio.io/istio/pkg/config/schema/gvk"
@@ -214,7 +212,7 @@ func isPolicyErrorCritical(filterError *reporter.RouteCondition) bool {
 		// Add other critical filter error reasons as needed
 	}
 
-	return slices0.Contains(criticalReasons, filterError.Reason)
+	return slices.Contains(criticalReasons, filterError.Reason)
 }
 
 // ConvertTCPRouteToAgw converts a TCPRouteRule to an agentgateway TCPRoute
@@ -861,18 +859,6 @@ func buildAgwDestination(
 		}
 	}
 	return rb, invalidBackendErr
-}
-
-// ParentMeta generates a map of metadata for a parent resource, including its name and optional section-specific details.
-func ParentMeta(obj controllers.Object, sectionName *gwv1.SectionName) map[string]string {
-	kind := obj.GetObjectKind().GroupVersionKind().Kind
-	name := fmt.Sprintf("%s/%s.%s", kind, obj.GetName(), obj.GetNamespace())
-	if sectionName != nil {
-		name = fmt.Sprintf("%s/%s/%s.%s", kind, obj.GetName(), *sectionName, obj.GetNamespace())
-	}
-	return map[string]string{
-		constants.InternalParentNames: name,
-	}
 }
 
 var knownReferences = sets.New(
