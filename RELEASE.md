@@ -2,7 +2,7 @@
 
 ## Rolling `main` builds
 
-Automation is in place to build and publish releases for all commits that merged into the `main` branch.
+Automation is in place to build and publish releases for all commits merged into the `main` branch.
 
 This enables devs and users to have concrete artifacts for testing which contain features and bug fixes which have not yet made it into a patch or minor release.
 
