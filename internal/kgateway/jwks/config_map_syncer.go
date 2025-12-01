@@ -44,7 +44,7 @@ type cmAccessor interface {
 }
 
 func NewConfigMapSyncer(client apiclient.Client, deploymentNamespace string, krtOptions krtutil.KrtOptions) *configMapSyncer {
-	cmCollection := krt.NewInformerFiltered[*corev1.ConfigMap](client,
+	cmCollection := krt.NewFilteredInformer[*corev1.ConfigMap](client,
 		kclient.Filter{
 			ObjectFilter:  client.ObjectFilter(),
 			LabelSelector: JwksStoreComponent + "=" + jwksStorePrefix},

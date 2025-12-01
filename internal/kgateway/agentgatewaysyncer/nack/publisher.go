@@ -53,7 +53,7 @@ func NewPublisher(client kube.Client) *Publisher {
 	})
 
 	filter := kclient.Filter{ObjectFilter: client.ObjectFilter()}
-	gatewayClient := kclient.NewFilteredDelayed[*gwv1.Gateway](client, gvr.KubernetesGateway_v1, filter)
+	gatewayClient := kclient.NewFilteredDelayed[*gwv1.Gateway](client, gvr.KubernetesGateway, filter)
 	deploymentClient := kclient.NewFiltered[*appsv1.Deployment](client, filter)
 	return &Publisher{
 		eventRecorder:    eventRecorder,

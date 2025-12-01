@@ -116,10 +116,10 @@ func NewAgwCollections(
 
 		// Core Kubernetes resources
 		Namespaces: krt.NewInformer[*corev1.Namespace](commoncol.Client),
-		Nodes: krt.NewInformerFiltered[*corev1.Node](commoncol.Client, kclient.Filter{
+		Nodes: krt.NewFilteredInformer[*corev1.Node](commoncol.Client, kclient.Filter{
 			ObjectFilter: commoncol.Client.ObjectFilter(),
 		}, commoncol.KrtOpts.ToOptions("informer/Nodes")...),
-		Pods: krt.NewInformerFiltered[*corev1.Pod](commoncol.Client, kclient.Filter{
+		Pods: krt.NewFilteredInformer[*corev1.Pod](commoncol.Client, kclient.Filter{
 			ObjectTransform: istiokube.StripPodUnusedFields,
 			ObjectFilter:    commoncol.Client.ObjectFilter(),
 		}, commoncol.KrtOpts.ToOptions("informer/Pods")...),

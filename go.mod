@@ -6,10 +6,10 @@ require (
 	// Also update AgentgatewayDefaultTag in pkg/deployer/wellknown.go and test/deployer/testdata/*
 	github.com/agentgateway/agentgateway v0.10.6-0.20251124234648-943649ad0241
 	github.com/avast/retry-go/v4 v4.3.3
-	github.com/cncf/xds/go v0.0.0-20250501225837-2ac532fd4443
+	github.com/cncf/xds/go v0.0.0-20251110193048-8bfbf64dc13e
 	github.com/envoyproxy/go-control-plane v0.14.0
 	github.com/envoyproxy/go-control-plane/contrib v1.32.5-0.20250627145903-197b96a9c7f8
-	github.com/envoyproxy/go-control-plane/envoy v1.36.0
+	github.com/envoyproxy/go-control-plane/envoy v1.36.1-0.20251120180717-7c66c7f1d0b2
 	github.com/envoyproxy/go-control-plane/ratelimit v0.1.1-0.20250507123352-93990c5ec02f
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
@@ -37,9 +37,9 @@ require (
 	google.golang.org/grpc v1.76.0
 	google.golang.org/protobuf v1.36.10
 	helm.sh/helm/v3 v3.19.2
-	istio.io/api v1.28.0-alpha.0.0.20251118133802-3d6b80ec2d1e
-	istio.io/client-go v1.28.0-alpha.0.0.20251118134000-fa71d5732509
-	istio.io/istio v0.0.0-20251119184502-ea018f0048ef
+	istio.io/api v1.28.0-alpha.0.0.20251126150010-62ed4ff08e1b
+	istio.io/client-go v1.28.0-alpha.0.0.20251126150310-56900da3b60f
+	istio.io/istio v0.0.0-20251201142120-783e855f1e67
 	k8s.io/api v0.34.1
 	k8s.io/apiextensions-apiserver v0.34.1
 	k8s.io/apimachinery v0.34.1
@@ -591,7 +591,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.38.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.38.0 // indirect
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect
-	go.opentelemetry.io/proto/otlp v1.7.1
+	go.opentelemetry.io/proto/otlp v1.9.0
 	go.uber.org/atomic v1.11.0
 	go.uber.org/automaxprocs v1.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect

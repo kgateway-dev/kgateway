@@ -85,8 +85,8 @@ func NewGatewayReconciler(
 		agwControllerName:   cfg.AgwControllerName,
 		controllerExtension: controllerExtension,
 
-		gwClient:         kclient.NewFilteredDelayed[*gwv1.Gateway](cfg.Client, gvr.KubernetesGateway_v1, filter),
-		gwClassClient:    kclient.NewFilteredDelayed[*gwv1.GatewayClass](cfg.Client, gvr.GatewayClass_v1, filter),
+		gwClient:         kclient.NewFilteredDelayed[*gwv1.Gateway](cfg.Client, gvr.KubernetesGateway, filter),
+		gwClassClient:    kclient.NewFilteredDelayed[*gwv1.GatewayClass](cfg.Client, gvr.GatewayClass, filter),
 		gwParamClient:    kclient.NewFilteredDelayed[*v1alpha1.GatewayParameters](cfg.Client, wellknown.GatewayParametersGVR, filter),
 		nsClient:         kclient.NewFiltered[*corev1.Namespace](cfg.Client, filter),
 		svcClient:        kclient.NewFiltered[*corev1.Service](cfg.Client, filter),
@@ -203,7 +203,7 @@ func NewGatewayReconciler(
 	})
 
 	// Add a handler to reconcile the parent Gateway when child objects (Deployment, Service, etc.)
-	parentHandler := controllers.ObjectHandler(controllers.EnqueueForParentHandler(r.queue, gvk.KubernetesGateway_v1))
+	parentHandler := controllers.ObjectHandler(controllers.EnqueueForParentHandler(r.queue, gvk.KubernetesGateway))
 	r.deploymentClient.AddEventHandler(parentHandler)
 	r.svcAccountClient.AddEventHandler(parentHandler)
 	r.svcClient.AddEventHandler(parentHandler)
