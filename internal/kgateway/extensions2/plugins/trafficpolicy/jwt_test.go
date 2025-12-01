@@ -435,7 +435,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			jwt := &v1alpha1.JWT{
-				JWTProviders: tt.providers,
+				Providers: tt.providers,
 			}
 			config, err := resolveJwtProviders(nil, nil, nil, ir.ObjectSource{}, "test-policy", "test-ns", jwt)
 			if tt.expectedError {
@@ -496,7 +496,7 @@ func TestResolveJwtProvidersWithValidationMode(t *testing.T) {
 			name: "strict mode (nil validation mode)",
 			jwt: &v1alpha1.JWT{
 				ValidationMode: nil,
-				JWTProviders: []v1alpha1.NamedJWTProvider{
+				Providers: []v1alpha1.NamedJWTProvider{
 					{
 						Name: "test-provider",
 						JWTProvider: v1alpha1.JWTProvider{
@@ -516,7 +516,7 @@ func TestResolveJwtProvidersWithValidationMode(t *testing.T) {
 			name: "allow missing mode",
 			jwt: &v1alpha1.JWT{
 				ValidationMode: ptr.To(v1alpha1.ValidationModeAllowMissing),
-				JWTProviders: []v1alpha1.NamedJWTProvider{
+				Providers: []v1alpha1.NamedJWTProvider{
 					{
 						Name: "test-provider",
 						JWTProvider: v1alpha1.JWTProvider{
@@ -536,7 +536,7 @@ func TestResolveJwtProvidersWithValidationMode(t *testing.T) {
 			name: "allow missing mode with multiple providers",
 			jwt: &v1alpha1.JWT{
 				ValidationMode: ptr.To(v1alpha1.ValidationModeAllowMissing),
-				JWTProviders: []v1alpha1.NamedJWTProvider{
+				Providers: []v1alpha1.NamedJWTProvider{
 					{
 						Name: "provider1",
 						JWTProvider: v1alpha1.JWTProvider{

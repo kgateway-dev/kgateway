@@ -193,7 +193,7 @@ func resolveJwtProviders(
 	uniqProviders := make(map[string]*envoyjwtauthnv3.JwtProvider)
 	policyNameNamespace := fmt.Sprintf("%s_%s", policyName, policyNamespace)
 
-	for _, provider := range jwt.JWTProviders {
+	for _, provider := range jwt.Providers {
 		providerNameForPolicy := ProviderName(policyNameNamespace, provider.Name)
 		jwtProvider, err := translateProvider(
 			krtctx,

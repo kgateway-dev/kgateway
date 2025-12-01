@@ -146,7 +146,7 @@ metadata:
   name: allowed-jwt-ext
 spec:
   jwt:
-    jwtProviders:
+    providers:
     - name: allowed-provider
       claimsToHeaders:
         - name: org
@@ -173,7 +173,7 @@ metadata:
   namespace: denied
 spec:
   jwt:
-    jwtProviders:
+    providers:
     - name: denied-provider
       claimsToHeaders:
         - name: team

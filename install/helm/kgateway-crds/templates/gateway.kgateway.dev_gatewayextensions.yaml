@@ -563,9 +563,9 @@ spec:
               jwt:
                 description: JWT configuration for JWT extension type.
                 properties:
-                  jwtProviders:
+                  providers:
                     description: |-
-                      JWTProviders configures named JWT providers.
+                      Providers configures named JWT providers.
                       If multiple providers are specified for a given JWT policy,
                       the providers will be `OR`-ed together and will allow validation to any of the providers.
                     items:
@@ -817,9 +817,9 @@ spec:
                     description: |-
                       ValidationMode configures how JWT validation behaves.
                       If unset or empty, STRICT mode is used (JWT is required).
-                      If set to ALLOW_MISSING, requests without JWT tokens are allowed to pass through.
+                      If set to AllowMissing, requests without JWT tokens are allowed to pass through.
                     enum:
-                    - ALLOW_MISSING
+                    - AllowMissing
                     type: string
                 type: object
               rateLimit:

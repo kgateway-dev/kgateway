@@ -4060,8 +4060,8 @@ func (in *JWT) DeepCopyInto(out *JWT) {
 		*out = new(ValidationMode)
 		**out = **in
 	}
-	if in.JWTProviders != nil {
-		in, out := &in.JWTProviders, &out.JWTProviders
+	if in.Providers != nil {
+		in, out := &in.Providers, &out.Providers
 		*out = make([]NamedJWTProvider, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])

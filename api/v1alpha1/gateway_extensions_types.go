@@ -70,25 +70,25 @@ type GatewayExtensionSpec struct {
 type JWT struct {
 	// ValidationMode configures how JWT validation behaves.
 	// If unset or empty, STRICT mode is used (JWT is required).
-	// If set to ALLOW_MISSING, requests without JWT tokens are allowed to pass through.
-	// +kubebuilder:validation:Enum=ALLOW_MISSING
+	// If set to AllowMissing, requests without JWT tokens are allowed to pass through.
+	// +kubebuilder:validation:Enum=AllowMissing
 	// +optional
 	ValidationMode *ValidationMode `json:"validationMode,omitempty"`
 
-	// JWTProviders configures named JWT providers.
+	// Providers configures named JWT providers.
 	// If multiple providers are specified for a given JWT policy,
 	// the providers will be `OR`-ed together and will allow validation to any of the providers.
 	// +optional
 	// +listType=map
 	// +listMapKey=name
 	// +kubebuilder:validation:MaxItems=32
-	JWTProviders []NamedJWTProvider `json:"jwtProviders,omitempty"`
+	Providers []NamedJWTProvider `json:"providers,omitempty"`
 }
 
 type ValidationMode string
 
 const (
-	ValidationModeAllowMissing ValidationMode = "ALLOW_MISSING"
+	ValidationModeAllowMissing ValidationMode = "AllowMissing"
 )
 
 // GatewayExtensionType indicates the type of the GatewayExtension.

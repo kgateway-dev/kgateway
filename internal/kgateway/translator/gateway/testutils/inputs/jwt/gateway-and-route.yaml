@@ -78,7 +78,7 @@ metadata:
   name: jwt-ext-3
 spec:
   jwt:
-    jwtProviders:
+    providers:
     - name: gateway-example
       claimsToHeaders:
         - name: gateway
@@ -103,7 +103,7 @@ metadata:
   name: jwt-ext-2
 spec:
   jwt:
-    jwtProviders:
+    providers:
     - name: my-example2
       claimsToHeaders:
         - name: org

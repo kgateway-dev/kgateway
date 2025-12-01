@@ -88,7 +88,7 @@ metadata:
 spec:
   type: JWT
   jwt:
-    jwtProviders:
+    providers:
     - name: listenerset-example
       claimsToHeaders:
       - name: listenerset

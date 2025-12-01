@@ -59,7 +59,7 @@ metadata:
   name: basic-jwt-provider
 spec:
   jwt:
-    jwtProviders:
+    providers:
     - name: my-example
       claimsToHeaders:
       - name: org

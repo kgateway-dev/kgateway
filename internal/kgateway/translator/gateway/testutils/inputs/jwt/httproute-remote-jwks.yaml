@@ -77,7 +77,7 @@ metadata:
   name: jwt-ext-2
 spec:
   jwt:
-    jwtProviders:
+    providers:
     - name: my-example2
       claimsToHeaders:
         - name: org

@@ -68,7 +68,7 @@ metadata:
 spec:
   type: JWT
   jwt:
-    jwtProviders:
+    providers:
     - name: my-example2
       claimsToHeaders:
         - name: org

@@ -65,8 +65,8 @@ metadata:
   name: jwt-ext-allow-missing
 spec:
   jwt:
-    validationMode: ALLOW_MISSING
-    jwtProviders:
+    validationMode: AllowMissing
+    providers:
     - name: gateway-example
       claimsToHeaders:
         - name: gateway

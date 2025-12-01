@@ -65,7 +65,7 @@ metadata:
   name: jwt-ext-3
 spec:
   jwt:
-    jwtProviders:
+    providers:
     - name: gateway-example
       claimsToHeaders:
       - name: gateway

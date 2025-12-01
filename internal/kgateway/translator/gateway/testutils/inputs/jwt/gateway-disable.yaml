@@ -78,7 +78,7 @@ metadata:
 spec:
   type: JWT
   jwt:
-    jwtProviders:
+    providers:
     - name: gateway-example
       claimsToHeaders:
       - name: gateway
