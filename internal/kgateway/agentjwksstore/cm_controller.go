@@ -22,8 +22,6 @@ import (
 
 var cmLogger = logging.New("jwks_store_config_map_controller")
 
-const JwksStoreConfigMapName = "jwks-store"
-
 type JwksStoreConfigMapsController struct {
 	apiClient           apiclient.Client
 	cmClient            kclient.Client[*corev1.ConfigMap]
@@ -63,7 +61,7 @@ func (jcm *JwksStoreConfigMapsController) Init(ctx context.Context) {
 	}
 
 	jcm.jwksUpdates = jcm.jwksStore.SubscribeToUpdates()
-	jcm.eventQueue = controllers.NewQueue("JwksStoreController", controllers.WithReconciler(jcm.Reconcile), controllers.WithMaxAttempts(math.MaxInt), controllers.WithRateLimiter(rateLimiter))
+	jcm.eventQueue = controllers.NewQueue("JwksStoreConfigMapController", controllers.WithReconciler(jcm.Reconcile), controllers.WithMaxAttempts(math.MaxInt), controllers.WithRateLimiter(rateLimiter))
 }
 
 func (jcm *JwksStoreConfigMapsController) Start(ctx context.Context) error {
@@ -113,7 +111,7 @@ func (jcm *JwksStoreConfigMapsController) Reconcile(req types.NamespacedName) er
 		newCm := jcm.newJwksStoreConfigMap(jwks.JwksConfigMapName(uri))
 		if err := jwks.SetJwksInConfigMap(newCm, uri, storedJwks); err != nil {
 			cmLogger.Error("error updating ConfigMap", "error", err)
-			return err // no retries?
+			return err // should we skip retries as json serialization error won't go away?
 		}
 
 		_, err := jcm.apiClient.Kube().CoreV1().ConfigMaps(req.Namespace).Create(ctx, newCm, metav1.CreateOptions{})
@@ -124,7 +122,7 @@ func (jcm *JwksStoreConfigMapsController) Reconcile(req types.NamespacedName) er
 	} else {
 		if err := jwks.SetJwksInConfigMap(existingCm, uri, storedJwks); err != nil {
 			cmLogger.Error("error updating ConfigMap", "error", err)
-			return err // no retries?
+			return err // should we skip retries as json serialization error won't go away?
 		}
 		_, err := jcm.apiClient.Kube().CoreV1().ConfigMaps(req.Namespace).Update(ctx, existingCm, metav1.UpdateOptions{})
 		if err != nil {

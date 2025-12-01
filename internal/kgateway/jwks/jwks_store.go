@@ -24,7 +24,6 @@ type JwksStore struct {
 	jwksCache       *jwksCache
 	jwksFetcher     *JwksFetcher
 	configMapSyncer *configMapSyncer
-	updates         chan string
 	jwksChanges     <-chan JwksSource
 	cmNameToJwks    map[string]string
 	l               sync.Mutex
@@ -53,7 +52,7 @@ func BuildJwksConfigMapNamespacedNameFunc(deploymentNamespace string) {
 }
 
 func (s *JwksStore) Start(ctx context.Context) error {
-	logger.Info("staring jwks store")
+	logger.Info("starting jwks store")
 
 	storedJwks, err := s.configMapSyncer.LoadJwksFromConfigMaps(ctx)
 	if err != nil {

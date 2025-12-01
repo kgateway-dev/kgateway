@@ -70,7 +70,7 @@ func (j *JwksStorePolicyController) Start(ctx context.Context) error {
 		j.waitForSync...,
 	)
 
-	polLogger.Info("staring jwks store policy controller")
+	polLogger.Info("starting jwks store policy controller")
 	j.jwks.Register(func(o krt.Event[jwks.JwksSource]) {
 		switch o.Event {
 		case controllers.EventAdd, controllers.EventUpdate:

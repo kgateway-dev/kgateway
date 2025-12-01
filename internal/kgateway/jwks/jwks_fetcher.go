@@ -179,9 +179,9 @@ func (f *JwksFetcher) AddOrUpdateKeyset(source JwksSource) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
-	if existringKeysetSource, ok := f.keysetSources[source.JwksURL]; ok {
+	if existingKeysetSource, ok := f.keysetSources[source.JwksURL]; ok {
 		delete(f.keysetSources, source.JwksURL)
-		existringKeysetSource.Deleted = true
+		existingKeysetSource.Deleted = true
 	}
 
 	addedKeysetSource := source
