@@ -96,14 +96,3 @@ func (cs *configMapSyncer) LoadJwksFromConfigMaps(ctx context.Context) (map[stri
 
 	return toret, errors.Join(errs...)
 }
-
-func (cs *configMapSyncer) newJwksStoreConfigMap(name string) *corev1.ConfigMap {
-	return &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: cs.deploymentNamespace,
-			Labels:    JwksStoreLabelMap,
-		},
-		Data: make(map[string]string),
-	}
-}
