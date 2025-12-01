@@ -161,6 +161,11 @@ func (d *httpListenerPolicy) Equals(in any) bool {
 		return false
 	}
 
+	if !slices.EqualFunc(d.earlyHeaderMutationExtensions, d2.earlyHeaderMutationExtensions, func(a, b *envoycorev3.TypedExtensionConfig) bool {
+		return proto.Equal(a, b)
+	}) {
+		return false
+	}
 	return true
 }
 
