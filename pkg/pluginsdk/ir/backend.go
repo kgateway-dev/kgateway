@@ -137,7 +137,6 @@ type BackendObjectIR struct {
 	resourceName string
 
 	// TrafficDistribution is the desired traffic distribution for the backend.
-	// Default is any (no priority).
 	TrafficDistribution wellknown.TrafficDistribution
 
 	// DisableIstioAutoMTLS indicates if Istio auto-mTLS should be disabled for this backend
@@ -176,6 +175,7 @@ func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
 	polEq := c.AttachedPolicies.Equals(in.AttachedPolicies)
 	nameEq := c.resourceName == in.resourceName
 	disableIstioAutoMTLSEq := c.DisableIstioAutoMTLS == in.DisableIstioAutoMTLS
+	trafficDistEq := c.TrafficDistribution == in.TrafficDistribution
 
 	// objIr may currently be nil in the case of k8s Services
 	// TODO: add an IR for Services to avoid the need for this
@@ -185,7 +185,7 @@ func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
 		objIrEq = c.ObjIr.Equals(in.ObjIr)
 	}
 
-	return objEq && objVersionEq && objIrEq && polEq && nameEq && disableIstioAutoMTLSEq
+	return objEq && objVersionEq && objIrEq && polEq && nameEq && disableIstioAutoMTLSEq && trafficDistEq
 }
 
 func (c BackendObjectIR) ClusterName() string {
