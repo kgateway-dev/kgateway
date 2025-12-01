@@ -343,7 +343,7 @@ func ResolveExtHttpService(
 
 	envoyHttpService := &envoy_ext_authz_v3.HttpService{
 		ServerUri:   httpUri,
-		PathPrefix:  httpService.Path,
+		PathPrefix:  httpService.PathPrefix,
 		RetryPolicy: buildExtAuthRetryPolicy(httpService.Retry),
 	}
 
@@ -371,7 +371,7 @@ func ResolveExtHttpService(
 	return envoyHttpService, nil
 }
 
-func buildExtAuthRetryPolicy(in *v1alpha1.ExtAuthRetryPolicy) *envoycorev3.RetryPolicy {
+func buildExtAuthRetryPolicy(in *v1alpha1.ExtSvcRetryPolicy) *envoycorev3.RetryPolicy {
 	if in == nil {
 		return nil
 	}

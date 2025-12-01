@@ -108,7 +108,7 @@ type ExtGrpcService struct {
 
 	// Retry specifies the retry policy for gRPC streams associated with the service.
 	// +optional
-	Retry *ExtAuthRetryPolicy `json:"retry,omitempty"`
+	Retry *ExtSvcRetryPolicy `json:"retry,omitempty"`
 }
 
 // ExtHttpService defines the HTTP service that will handle external authorization.
@@ -117,9 +117,12 @@ type ExtHttpService struct {
 	// +required
 	BackendRef gwv1.BackendRef `json:"backendRef"`
 
-	// Path is the path for the authorization request endpoint. Value will be prepended to the request path.
+	// PathPrefix specifies a prefix to the value of the authorization request's path header.
+	// This allows customizing the path at which the authorization server expects to receive requests.
+	// For example, if the authorization server expects requests at "/verify", set this to "/verify".
+	// If not specified, the original request path is used.
 	// +optional
-	Path string `json:"path,omitempty"`
+	PathPrefix string `json:"pathprefix,omitempty"`
 
 	// RequestTimeout is the timeout for the HTTP request. Default timeout is 2 seconds.
 	// +optional
@@ -137,14 +140,15 @@ type ExtHttpService struct {
 
 	// Retry specifies the retry policy for HTTP requests to the authorization service.
 	// +optional
-	Retry *ExtAuthRetryPolicy `json:"retry,omitempty"`
+	Retry *ExtSvcRetryPolicy `json:"retry,omitempty"`
 }
 
 // AuthorizationRequest configures the authorization request to the external service.
 type AuthorizationRequest struct {
 	// HeadersToAdd specifies additional headers to add to the authorization request.
 	// These headers are sent to the authorization service in addition to the original request headers.
-	// The keys are header names and values are envoy format specifiers.
+	// Client request headers with the same key will be overridden.
+	// The keys are header names and values are envoy format specifiers, see https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_authz/v3/ext_authz.proto#envoy-v3-api-field-extensions-filters-http-ext-authz-v3-authorizationrequest-headers-to-add.
 	// +optional
 	HeadersToAdd map[string]string `json:"headersToAdd,omitempty"`
 }
@@ -158,7 +162,7 @@ type AuthorizationResponse struct {
 	HeadersToBackend []string `json:"headersToBackend,omitempty"`
 }
 
-type ExtAuthRetryPolicy struct {
+type ExtSvcRetryPolicy struct {
 	// Attempts specifies the number of retry attempts for a request.
 	// Defaults to 1 attempt if not set.
 	// A value of 0 effectively disables retries.

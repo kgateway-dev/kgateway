@@ -66,7 +66,7 @@ type ExtAuthProvider struct {
 
 	// HeadersToForward specifies which headers from the client request should be
 	// forwarded to the external authorization service.
-	// By default, Host, Method, Path, Content-Length, and Authorization are forwarded.
+	// HTTP services by default have the following headers forwarded: Host, Method, Path, Content-Length, Authorization.
 	// Common examples: ["cookie", "authorization", "x-forwarded-for"]
 	// +optional
 	HeadersToForward []string `json:"headersToForward,omitempty"`

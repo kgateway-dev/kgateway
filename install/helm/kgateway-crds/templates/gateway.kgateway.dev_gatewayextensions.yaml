@@ -227,7 +227,7 @@ spec:
                     description: |-
                       HeadersToForward specifies which headers from the client request should be
                       forwarded to the external authorization service.
-                      By default, Host, Method, Path, Content-Length, and Authorization are forwarded.
+                      HTTP services by default have the following headers forwarded: Host, Method, Path, Content-Length, Authorization.
                       Common examples: ["cookie", "authorization", "x-forwarded-for"]
                     items:
                       type: string
@@ -247,7 +247,8 @@ spec:
                             description: |-
                               HeadersToAdd specifies additional headers to add to the authorization request.
                               These headers are sent to the authorization service in addition to the original request headers.
-                              The keys are header names and values are envoy format specifiers.
+                              Client request headers with the same key will be overridden.
+                              The keys are header names and values are envoy format specifiers, see https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_authz/v3/ext_authz.proto#envoy-v3-api-field-extensions-filters-http-ext-authz-v3-authorizationrequest-headers-to-add.
                             type: object
                         type: object
                       authorizationResponse:
@@ -353,9 +354,12 @@ spec:
                         - message: Must have port for Service reference
                           rule: '(size(self.group) == 0 && self.kind == ''Service'')
                             ? has(self.port) : true'
-                      path:
-                        description: Path is the path for the authorization request
-                          endpoint. Value will be prepended to the request path.
+                      pathprefix:
+                        description: |-
+                          PathPrefix specifies a prefix to the value of the authorization request's path header.
+                          This allows customizing the path at which the authorization server expects to receive requests.
+                          For example, if the authorization server expects requests at "/verify", set this to "/verify".
+                          If not specified, the original request path is used.
                         type: string
                       requestTimeout:
                         description: RequestTimeout is the timeout for the HTTP request.
