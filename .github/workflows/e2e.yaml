@@ -119,4 +119,3 @@ jobs:
       run: |
         echo "After job disk space:"
         df -h
-        docker system df -v
