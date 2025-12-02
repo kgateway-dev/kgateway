@@ -103,7 +103,6 @@ type EndpointsForBackend struct {
 	Port                 uint32
 	Hostname             string
 	// Inherited from the backend object
-	// +krtEqualsTodo ensure traffic distribution differences are respected
 	TrafficDistribution wellknown.TrafficDistribution
 
 	LbEpsEqualityHash uint64
@@ -163,6 +162,7 @@ func (e EndpointsForBackend) EmptyCopy() EndpointsForBackend {
 		Hostname:             e.Hostname,
 		LbEpsEqualityHash:    e.upstreamHash,
 		upstreamHash:         e.upstreamHash,
+		TrafficDistribution:  e.TrafficDistribution,
 	}
 }
 
@@ -202,5 +202,5 @@ func (c EndpointsForBackend) ResourceName() string {
 }
 
 func (c EndpointsForBackend) Equals(in EndpointsForBackend) bool {
-	return c.UpstreamResourceName == in.UpstreamResourceName && c.ClusterName == in.ClusterName && c.Port == in.Port && c.LbEpsEqualityHash == in.LbEpsEqualityHash && c.Hostname == in.Hostname
+	return c.UpstreamResourceName == in.UpstreamResourceName && c.ClusterName == in.ClusterName && c.Port == in.Port && c.LbEpsEqualityHash == in.LbEpsEqualityHash && c.Hostname == in.Hostname && c.TrafficDistribution == in.TrafficDistribution
 }

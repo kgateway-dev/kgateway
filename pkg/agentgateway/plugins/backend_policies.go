@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/agentgateway/agentgateway/go/api"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
@@ -20,12 +21,13 @@ import (
 )
 
 const (
-	aiPolicySuffix               = ":ai"
-	backendTlsPolicySuffix       = ":backend-tls"
-	backendauthPolicySuffix      = ":backend-auth"
-	tlsPolicySuffix              = ":tls"
-	backendHttpPolicySuffix      = ":backend-http"
-	mcpAuthorizationPolicySuffix = ":mcp-authorization"
+	aiPolicySuffix                = ":ai"
+	backendTlsPolicySuffix        = ":backend-tls"
+	backendauthPolicySuffix       = ":backend-auth"
+	tlsPolicySuffix               = ":tls"
+	backendHttpPolicySuffix       = ":backend-http"
+	mcpAuthorizationPolicySuffix  = ":mcp-authorization"
+	mcpAuthenticationPolicySuffix = ":mcp-authentication"
 )
 
 func TranslateInlineBackendPolicy(
@@ -84,8 +86,15 @@ func translateBackendPolicyToAgw(
 	}
 
 	if s := backend.MCP; s != nil {
-		pol := translateBackendMCPAuthorization(policy, policyTarget)
-		agwPolicies = append(agwPolicies, pol...)
+		if backend.MCP.Authorization != nil {
+			pol := translateBackendMCPAuthorization(policy, policyTarget)
+			agwPolicies = append(agwPolicies, pol...)
+		}
+
+		if backend.MCP.Authentication != nil {
+			pol := translateBackendMCPAuthentication(ctx, policy, policyTarget)
+			agwPolicies = append(agwPolicies, pol...)
+		}
 	}
 
 	if s := backend.AI; s != nil {
@@ -265,6 +274,69 @@ func translateBackendMCPAuthorization(policy *v1alpha1.AgentgatewayPolicy, targe
 		"agentgateway_policy", mcpPolicy.Name)
 
 	return []AgwPolicy{{Policy: mcpPolicy}}
+}
+
+func translateBackendMCPAuthentication(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, target *api.PolicyTarget) []AgwPolicy {
+	backend := policy.Spec.Backend
+	if backend == nil || backend.MCP == nil || backend.MCP.Authentication == nil {
+		return nil
+	}
+	authnPolicy := backend.MCP.Authentication
+	if authnPolicy == nil {
+		return nil
+	}
+
+	idp := api.BackendPolicySpec_McpAuthentication_AUTH0
+	if authnPolicy.McpIDP != nil && *authnPolicy.McpIDP == v1alpha1.Keycloak {
+		idp = api.BackendPolicySpec_McpAuthentication_KEYCLOAK
+	}
+
+	translatedInlineJwks, err := resolveRemoteJWKSInline(ctx, authnPolicy.JWKS.JwksUri)
+	if err != nil {
+		logger.Error("failed resolving jwks", "jwks_uri", authnPolicy.JWKS.JwksUri, "error", err)
+		return nil
+	}
+
+	var extraResourceMetadata map[string]*structpb.Value
+	for k, v := range authnPolicy.ResourceMetadata {
+		if extraResourceMetadata == nil {
+			extraResourceMetadata = make(map[string]*structpb.Value)
+		}
+
+		pbVal, err := structpb.NewValue(v)
+		if err != nil {
+			logger.Error("error converting resource metadata", "key", k, "error", err)
+			continue
+		}
+
+		extraResourceMetadata[k] = pbVal
+	}
+
+	mcpAuthn := &api.BackendPolicySpec_McpAuthentication{
+		Issuer:    authnPolicy.Issuer,
+		Audiences: authnPolicy.Audiences,
+		Provider:  idp,
+		ResourceMetadata: &api.BackendPolicySpec_McpAuthentication_ResourceMetadata{
+			Extra: extraResourceMetadata,
+		},
+		JwksInline: translatedInlineJwks,
+	}
+	mcpAuthnPolicy := &api.Policy{
+		Name:   policy.Namespace + "/" + policy.Name + mcpAuthenticationPolicySuffix + attachmentName(target),
+		Target: target,
+		Kind: &api.Policy_Backend{
+			Backend: &api.BackendPolicySpec{
+				Kind: &api.BackendPolicySpec_McpAuthentication_{
+					McpAuthentication: mcpAuthn,
+				},
+			}},
+	}
+
+	logger.Debug("generated MCP authentication policy",
+		"policy", policy.Name,
+		"agentgateway_policy", mcpAuthnPolicy.Name)
+
+	return []AgwPolicy{{Policy: mcpAuthnPolicy}}
 }
 
 // translateBackendAI processes AI configuration and creates corresponding Agw policies

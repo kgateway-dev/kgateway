@@ -368,7 +368,7 @@ func TestEndpointsForUpstreamWithDifferentTrafficDistributionButSameEndpoints(t 
 	us3.TrafficDistribution = wellknown.TrafficDistributionPreferSameNode
 
 	us4 := newBackendObjectIR(baseObj)
-	us4.TrafficDistribution = wellknown.TrafficDistributionPreferSameNetwork
+	us4.TrafficDistribution = wellknown.TrafficDistributionPreferNetwork
 
 	result3 := ir.NewEndpointsForBackend(us3)
 	result3.Add(ir.PodLocality{

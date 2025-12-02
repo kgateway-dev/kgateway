@@ -202,6 +202,12 @@ func WithHostHeader(host string) Option {
 	}
 }
 
+func WithIgnoreBody() Option {
+	return func(config *requestConfig) {
+		config.ignoreBody = true
+	}
+}
+
 // WithHeader returns the Option to configure a basic auth header for the curl request
 func WithBasicAuth(username string, password string) Option {
 	auth := username + ":" + password

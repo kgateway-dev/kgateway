@@ -74,6 +74,8 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 	constructCORS(policyCR, &outSpec)
 	// Construct csrf specific IR
 	constructCSRF(policyCR.Spec, &outSpec)
+	// Construct compression/decompression specific IR
+	constructCompression(policyCR.Spec, &outSpec)
 
 	// Construct header modifiers specific IR
 	constructHeaderModifiers(policyCR.Spec, &outSpec)
@@ -98,6 +100,11 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 
 	// Construct jwt specific IR
 	if err := constructJwt(krtctx, policyCR, &outSpec, c.FetchGatewayExtension); err != nil {
+		errors = append(errors, err)
+	}
+
+	// Construct basic auth specific IR
+	if err := constructBasicAuth(krtctx, policyCR, &outSpec, c.commoncol.Secrets); err != nil {
 		errors = append(errors, err)
 	}
 

@@ -491,8 +491,11 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 			},
 		}
 
-		if gw.Annotations[string(apiannotations.PerConnectionBufferLimit)] != "" {
-			limit, err := resource.ParseQuantity(gw.Annotations[string(apiannotations.PerConnectionBufferLimit)])
+		if gw.Annotations[string(apiannotations.PerConnectionBufferLimit)] != "" { //nolint:staticcheck // deprecated annotation
+			logger.Warn("per-connection-buffer-limit annotation is deprecated, use ListenerPolicy with perConnectionBufferLimitBytes instead",
+				"gateway", fmt.Sprintf("%s/%s", gw.Namespace, gw.Name),
+				"annotation", apiannotations.PerConnectionBufferLimit) //nolint:staticcheck // deprecated annotation
+			limit, err := resource.ParseQuantity(gw.Annotations[string(apiannotations.PerConnectionBufferLimit)]) //nolint:staticcheck // deprecated annotation
 			if err != nil {
 				logger.Error("failed to parse per connection buffer limit", "error", err)
 			} else {

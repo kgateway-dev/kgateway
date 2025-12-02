@@ -372,6 +372,7 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *v1alpha1.Gatew
 	gateway.TerminationGracePeriodSeconds = podConfig.GetTerminationGracePeriodSeconds()
 	gateway.TopologySpreadConstraints = podConfig.GetTopologySpreadConstraints()
 	gateway.ExtraVolumes = podConfig.GetExtraVolumes()
+	gateway.PriorityClassName = podConfig.GetPriorityClassName()
 
 	// Determine data plane type based on the Gateway's controllerName from its GatewayClass
 	// This ensures the chart selection is driven by the controller, not by GatewayParameters

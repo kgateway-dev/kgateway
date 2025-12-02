@@ -180,7 +180,7 @@ test: ## Run all tests with ginkgo, or only run the test package at {TEST_PKG} i
 # will still have e2e tests run by Github Actions once they publish a pull
 # request.
 .PHONY: e2e-test
-e2e-test: dummy-idp-docker kind-load-dummy-idp
+e2e-test: dummy-idp-docker dummy-auth0-docker kind-load-dummy-idp kind-load-dummy-auth0
 e2e-test: ## Run only e2e tests, and only run the test package at {TEST_PKG} if it is specified
 	@$(MAKE) --no-print-directory go-test TEST_TAG=e2e TEST_PKG=$(TEST_PKG)
 
@@ -234,6 +234,9 @@ GOTESTSUM_ARGS ?= --format=standard-verbose
 .PHONY: go-test
 go-test: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
 go-test: reset-bug-report
+	@if [ "$(TEST_TAG)" = "e2e" ]; then \
+		$(MAKE) --no-print-directory dummy-auth0-docker kind-load-dummy-auth0; \
+	fi
 	$(GO_TEST_ENV) $(GOTESTSUM) $(GOTESTSUM_ARGS) --rerun-fails-abort-on-data-race --rerun-fails=$(GO_TEST_RETRIES) --packages="$(TEST_PKG)" -- -ldflags='$(LDFLAGS)' $(if $(TEST_TAG),-tags=$(TEST_TAG)) $(GO_TEST_ARGS) $(GO_TEST_USER_ARGS)
 
 # https://go.dev/blog/cover#heat-maps
@@ -540,6 +543,42 @@ kind-load-dummy-idp:
 	$(KIND) load docker-image $(IMAGE_REGISTRY)/$(DUMMY_IDP_IMAGE_REPO):$(DUMMY_IDP_VERSION) --name $(CLUSTER_NAME)
 
 #----------------------------------------------------------------------------------
+# dummy auth0 idp (used in mcp auth e2e tests)
+#----------------------------------------------------------------------------------
+
+DUMMY_AUTH0_DIR=hack/dummy-auth0
+DUMMY_AUTH0_OUTPUT_DIR=$(OUTPUT_DIR)/$(DUMMY_AUTH0_DIR)
+export DUMMY_AUTH0_IMAGE_REPO ?= dummy-auth0
+DUMMY_AUTH0_VERSION=0.0.1
+
+.PHONY: dummy-auth0
+dummy-auth0: $(DUMMY_AUTH0_OUTPUT_DIR)/.docker-stamp-$(DUMMY_AUTH0_VERSION)-$(GOARCH)
+
+$(DUMMY_AUTH0_OUTPUT_DIR):
+	mkdir -p $(DUMMY_AUTH0_OUTPUT_DIR)
+
+$(DUMMY_AUTH0_OUTPUT_DIR)/Dockerfile.dummy-auth0: ./hack/dummy-auth0/Dockerfile | $(DUMMY_AUTH0_OUTPUT_DIR)
+	cp $< $@
+
+$(DUMMY_AUTH0_OUTPUT_DIR)/auth0_mock.py: ./hack/dummy-auth0/auth0_mock.py | $(DUMMY_AUTH0_OUTPUT_DIR)
+	cp $< $@
+
+$(DUMMY_AUTH0_OUTPUT_DIR)/.docker-stamp-$(DUMMY_AUTH0_VERSION)-$(GOARCH): $(DUMMY_AUTH0_OUTPUT_DIR)/Dockerfile.dummy-auth0 $(DUMMY_AUTH0_OUTPUT_DIR)/auth0_mock.py
+	$(BUILDX_BUILD) --load $(PLATFORM) $(DUMMY_AUTH0_OUTPUT_DIR) -f $(DUMMY_AUTH0_OUTPUT_DIR)/Dockerfile.dummy-auth0 \
+		--build-arg GOARCH=$(GOARCH) \
+		--build-arg BASE_IMAGE=$(ALPINE_BASE_IMAGE) \
+		-t $(IMAGE_REGISTRY)/$(DUMMY_AUTH0_IMAGE_REPO):$(DUMMY_AUTH0_VERSION)
+	@touch $@
+
+.PHONY: dummy-auth0-docker
+dummy-auth0-docker: $(DUMMY_AUTH0_OUTPUT_DIR)/.docker-stamp-$(DUMMY_AUTH0_VERSION)-$(GOARCH)
+
+.PHONY: kind-load-dummy-auth0
+kind-load-dummy-auth0:
+	$(KIND) load docker-image $(IMAGE_REGISTRY)/$(DUMMY_AUTH0_IMAGE_REPO):$(DUMMY_AUTH0_VERSION) --name $(CLUSTER_NAME)
+
+
+#----------------------------------------------------------------------------------
 # Helm
 #----------------------------------------------------------------------------------
 
@@ -647,7 +686,7 @@ deploy-kgateway: package-kgateway-charts deploy-kgateway-crd-chart deploy-kgatew
 setup-base: kind-create gw-api-crds gie-crds metallb ## Setup the base infrastructure (kind cluster, CRDs, and MetalLB)
 
 .PHONY: setup
-setup: setup-base kind-build-and-load package-kgateway-charts ## Setup the complete infrastructure (base setup plus images and charts)
+setup: setup-base kind-build-and-load package-kgateway-charts dummy-auth0-docker kind-load-dummy-auth0 ## Setup the complete infrastructure (base setup plus images and charts)
 
 .PHONY: run
 run: setup deploy-kgateway  ## Set up complete development environment

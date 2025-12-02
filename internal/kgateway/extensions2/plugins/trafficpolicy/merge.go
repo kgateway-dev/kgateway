@@ -52,6 +52,8 @@ func MergeTrafficPolicies(
 		mergeRetry,
 		mergeRBAC,
 		mergeJwt,
+		mergeCompression,
+		mergeBasicAuth,
 	}
 
 	for _, mergeFunc := range mergeFuncs {
@@ -302,6 +304,32 @@ func mergeJwt(
 	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "jwt")
 }
 
+func mergeCompression(
+	p1, p2 *TrafficPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+	_ TrafficPolicyMergeOpts,
+) {
+	{
+		accessor := fieldAccessor[compressionIR]{
+			Get: func(spec *trafficPolicySpecIr) *compressionIR { return spec.compression },
+			Set: func(spec *trafficPolicySpecIr, val *compressionIR) { spec.compression = val },
+		}
+
+		defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "compression")
+	}
+	{
+		accessor := fieldAccessor[decompressionIR]{
+			Get: func(spec *trafficPolicySpecIr) *decompressionIR { return spec.decompression },
+			Set: func(spec *trafficPolicySpecIr, val *decompressionIR) { spec.decompression = val },
+		}
+
+		defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "decompression")
+	}
+}
+
 func mergeLocalRateLimit(
 	p1, p2 *TrafficPolicy,
 	p2Ref *ir.AttachedPolicyRef,
@@ -451,6 +479,21 @@ func mergeRetry(
 		Set: func(spec *trafficPolicySpecIr, val *retryIR) { spec.retry = val },
 	}
 	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "retry")
+}
+
+func mergeBasicAuth(
+	p1, p2 *TrafficPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+	_ TrafficPolicyMergeOpts,
+) {
+	accessor := fieldAccessor[basicAuthIR]{
+		Get: func(spec *trafficPolicySpecIr) *basicAuthIR { return spec.basicAuth },
+		Set: func(spec *trafficPolicySpecIr, val *basicAuthIR) { spec.basicAuth = val },
+	}
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "basicAuth")
 }
 
 // fieldAccessor defines how to access and set a field on trafficPolicySpecIr

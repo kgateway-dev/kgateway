@@ -100,6 +100,8 @@ func NewControlPlane(
 ) envoycache.SnapshotCache {
 	baseLogger := slog.Default().With("component", "envoy-controlplane")
 	envoyLoggerAdapter := &slogAdapterForEnvoy{logger: baseLogger}
+	lnc := newLogNackCallback()
+	allCallbacks := chainCallbacks(callbacks, lnc)
 
 	// Create separate gRPC servers for each listener
 	serverOpts := getGRPCServerOpts(authenticators, xdsAuth, certWatcher, baseLogger)
@@ -107,7 +109,7 @@ func NewControlPlane(
 
 	snapshotCache := envoycache.NewSnapshotCache(true, xds.NewNodeRoleHasher(), envoyLoggerAdapter)
 
-	xdsServer := xdsserver.NewServer(ctx, snapshotCache, callbacks)
+	xdsServer := xdsserver.NewServer(ctx, snapshotCache, allCallbacks)
 
 	// Register reflection and services on both servers
 	reflection.Register(kgwGRPCServer)
