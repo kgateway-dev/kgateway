@@ -27,6 +27,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/helper"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -99,6 +100,9 @@ func (s *testingSuite) applyGatewayManifests(envoyGwName, envoyRouteName, envoyH
 
 // deleteGatewayManifests deletes the gateway resources and their dynamic resources for a specific phase
 func (s *testingSuite) deleteGatewayManifests(envoyGwMeta, agwGwMeta metav1.ObjectMeta) {
+	if testutils.ShouldSkipCleanup(s.T()) {
+		return
+	}
 	// Construct route names based on gateway names
 	envoyRouteName := strings.Replace(envoyGwMeta.Name, "envoy-gw-", "envoy-route-", 1)
 	agwRouteName := strings.Replace(agwGwMeta.Name, "agw-gw-", "agw-route-", 1)
