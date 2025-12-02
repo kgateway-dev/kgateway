@@ -138,6 +138,17 @@ func TestConvertOriginToEnvoyStringMatcher(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:   "wildcard-only - matches any origin using regex",
+			origin: "*",
+			expected: &envoy_type_matcher_v3.StringMatcher{
+				MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
+					SafeRegex: &envoy_type_matcher_v3.RegexMatcher{
+						Regex: "^.*$",
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

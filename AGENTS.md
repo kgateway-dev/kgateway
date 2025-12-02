@@ -21,6 +21,16 @@ See `/devel/architecture/overview.md` and the translation diagram at `/devel/arc
 - **test/e2e/**: End-to-end tests using custom framework (see test/e2e/README.md)
 
 ### Plugin System
+At the core kgateway translates kubernetes Gateway API resources to Envoy configuration. To add features
+like policies, or backends, we use a plugin system. Each plugin *contributes* to the translation, usually by 
+adding a new type of CRD (most commonly a Policy CRD) that users can create to express their desired configuration.
+
+Policy CRDs are attached to Gateway API resources via `targetRefs` or `targetSelectors`. kgateway manages the attachment
+of policies to the appropriate resources during translation.
+
+The plugin is then called in the translation process to affect the dataplane configuration.
+To do this efficiently, the plugin should convert the CRD to an intermediate representation (IR) that is as close to Envoy protos as possible. This minimizes the amount of logic needed in the final translation, and allows for better status reflected back to the user if there are errors.
+
 Plugins are **stateless across translations** but maintain state during a single gateway translation via `ProxyTranslationPass`. Each plugin:
 - Provides a KRT collection of `ir.PolicyWrapper` (contains `PolicyIR` + `TargetRefs`)
 - Implements `NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass`
@@ -36,18 +46,7 @@ Example: `/internal/kgateway/extensions2/plugins/trafficpolicy/traffic_policy_pl
 IRs output by KRT collections **must** implement `Equals(other T) bool`:
 - **Compare ALL fields** or mark with `// +noKrtEquals` (last line of comment)
 - **Never use `reflect.DeepEqual`** (flagged by custom analyzer in `/hack/krtequals/`)
-- **Always write unit tests** for Equals (test reflexivity, symmetry, transitivity)
 - Use proto equality helpers: `proto.Equal()`, not `==`
-
-Example test pattern:
-```go
-func TestMyIREquals(t *testing.T) {
-    // Test cases: nil, same, different fields
-    // Test symmetry: a.Equals(b) == b.Equals(a)
-    // Test reflexivity: x.Equals(x) == true
-    // Test transitivity: a.Equals(b) && b.Equals(c) → a.Equals(c)
-}
-```
 
 ### Code Generation Workflow
 Common targets:
@@ -76,6 +75,8 @@ make unit  # All unit tests (excludes e2e)
 ```
 
 ### API/CRD Development
+
+#### Adding New CRDs
 1. Create `*_types.go` in `api/v1alpha1/` with `+kubebuilder` markers. You can use `+kubebuilder:validation:AtLeastOneOf` or `+kubebuilder:validation:ExactlyOneOf` for field groups.
 2. **Required fields**: Use `+required`, NO `omitempty` tag
 3. **Optional fields**: Use `+optional`, pointer types (except slices/maps), `omitempty` tag
@@ -87,14 +88,22 @@ make unit  # All unit tests (excludes e2e)
 
 See `/api/README.md` for full guidelines.
 
-#### Testing New Policy Fields
-When adding fields to policies, at a minimum add yaml tests cases in `internal/kgateway/translator/gateway/gateway_translator_test.go`.
-The yaml inputs go in `internal/kgateway/translator/gateway/testutils/inputs/`. DO NOT generate the outputs.
-Instead, run your tests with environment variable `REFRESH_GOLDEN=true` For example: `REFRESH_GOLDEN=true go test -timeout 30s -run ^TestBasic$/^ListenerPolicy_with_proxy_protocol_on_HTTPS_listener$ github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway`
-It will generate the outputs for you automatically in the `internal/kgateway/translator/gateway/testutils/outputs/` folder.
-Once the outputs are generated, inspect them to see they contain the changes you expect, and alert the user if that's not the case.
+#### Adding fields to Policy CRDs
 
-Consider also adding E2E tests using the framework. You can look at `test/e2e/features/cors/suite.go` as an example for an E2E test.
+1. Add the field to the appropriate `Spec` struct in the CRD Go type in `api/v1alpha1/`.
+2. Add validation markers as needed (e.g., `+kubebuilder:validation:MinLength=1`, `+optional`, etc.)
+3. Run `make go-generate-apis` to regenerate code.
+4. Update the IR struct in the plugin package (`internal/kgateway/extensions2/plugins/<plugin_name>/`) to include the new field.
+5. Add yaml tests cases in `internal/kgateway/translator/gateway/gateway_translator_test.go`.
+   The yaml inputs go in `internal/kgateway/translator/gateway/testutils/inputs/`. DO NOT create the outputs by yourself.
+   Instead, run your tests with environment variable `REFRESH_GOLDEN=true`. For example: `REFRESH_GOLDEN=true go test -timeout 30s -run ^TestBasic$/^ListenerPolicy_with_proxy_protocol_on_HTTPS_listener$ github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway`
+   It will generate the outputs for you automatically in the `internal/kgateway/translator/gateway/testutils/outputs/` folder.
+   Once the outputs are generated, inspect them to see they contain the changes you expect, and alert the user if that's not the case.
+6. For non-trivial changes, also add unit tests.
+7. Consider also adding E2E tests using the framework. You can look at `test/e2e/features/cors/suite.go` as an example for an E2E test.
+   When writing an E2E test, prefer to use `base.NewBaseTestingSuite` as the base suite, as it provides many useful utilities.
+   If you are adding a new test suite, remember to register it in `test/e2e/tests/kgateway_tests.go`.
+   Additionally add it to one of the test kind clusters in `.github/workflows/e2e.yaml`.
 
 ### Directory Conventions
 - **Avoid "util" packages** - use descriptive names
@@ -107,30 +116,26 @@ Consider also adding E2E tests using the framework. You can look at `test/e2e/fe
 ### Local Development with Tilt
 ```bash
 # Initial setup
-make kind-create gw-api-crds gie-crds metallb  # Or: make setup-base
+ctlptl create cluster kind --name kind-kind --registry=ctlptl-registry
 
 # Build images and load into kind
-make kind-build-and-load  # Builds all 3 images
+VERSION=1.0.0-ci1 CLUSTER_NAME=kind make kind-build-and-load  # Builds all 3 images
 
 # Deploy with Tilt (live reload enabled)
 tilt up  # Configure via tilt-settings.yaml
 
-# Rebuild single component
-make kind-reload-kgateway  # Rebuilds + restarts deployment
+# as long as tilt is running, it will auto-reload on code changes
 ```
 
 See `Tiltfile` and `tilt-settings.yaml` for configuration.
 
 ### Manual Development
 ```bash
-# Setup cluster
-make setup  # kind + CRDs + MetalLB + images + charts
-
-# Deploy kgateway
-make deploy-kgateway  # Or: make run (setup + deploy)
+# Set up complete development environment
+make run  # kind + CRDs + MetalLB + images + charts
 
 # Update after code change
-make kgateway-docker kind-load-kgateway kind-set-image-kgateway
+make kind-reload-kgateway
 ```
 
 ### Running Conformance Tests
@@ -146,7 +151,7 @@ make conformance-HTTPRouteSimpleSameNamespace
 
 ## Common Gotchas
 
-1. **IR Equals() bugs**: High-risk area. MUST compare all fields or mark `+noKrtEquals`. Always test.
+1. **IR Equals() bugs**: High-risk area. MUST compare all fields or mark `+noKrtEquals`.
 2. **Proto comparison**: Use `proto.Equal()`, not `==` or `reflect.DeepEqual`
 3. **Codegen stamps**: `make clean-stamps` if regeneration seems stuck
 4. **E2E test resources**: Never manually delete resources in specific order - let framework handle it
@@ -194,3 +199,10 @@ make generate-licenses            # Update license attribution
 ```
 
 Gateway API version is in `go.mod` and CRD install URL in Makefile (`CONFORMANCE_VERSION`).
+
+## Opening Pull Requests
+
+1. Ensure all linters pass: `make analyze`, `make verify`
+2. When PR is ready to review/merge, follow this PR template: https://raw.githubusercontent.com/kgateway-dev/.github/refs/heads/main/.github/PULL_REQUEST_TEMPLATE.md
+   Specifically must haves are the `Description`, `# Change Type` and `# Changelog` sections.
+3. Ensure tests pass in CI (unit + e2e + conformance)

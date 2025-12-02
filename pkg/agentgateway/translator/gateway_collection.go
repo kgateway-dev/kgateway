@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/agentgateway/agentgateway/go/api"
-	istio "istio.io/api/networking/v1alpha3"
 	"istio.io/istio/pilot/pkg/util/protoconv"
 	"istio.io/istio/pkg/config"
 	"istio.io/istio/pkg/config/constants"
@@ -130,8 +129,9 @@ func (g AgwTCPRoute) Equals(other AgwTCPRoute) bool {
 
 // TLSInfo contains the TLS certificate and key for a gateway listener.
 type TLSInfo struct {
-	Cert []byte
-	Key  []byte `json:"-"`
+	Cert   []byte
+	CaCert []byte
+	Key    []byte `json:"-"`
 }
 
 // PortBindings is a wrapper type that contains the listener on the gateway, as well as the status for the listener.
@@ -171,7 +171,9 @@ func (g GatewayListener) Equals(other GatewayListener) bool {
 		return false
 	}
 	if g.TLSInfo != nil {
-		if !bytes.Equal(g.TLSInfo.Cert, other.TLSInfo.Cert) && !bytes.Equal(g.TLSInfo.Key, other.TLSInfo.Key) {
+		if !bytes.Equal(g.TLSInfo.Cert, other.TLSInfo.Cert) ||
+			!bytes.Equal(g.TLSInfo.Key, other.TLSInfo.Key) ||
+			!bytes.Equal(g.TLSInfo.CaCert, other.TLSInfo.CaCert) {
 			return false
 		}
 	}
@@ -201,6 +203,7 @@ func GatewayCollection(
 	namespaces krt.Collection[*corev1.Namespace],
 	grants ReferenceGrants,
 	secrets krt.Collection[*corev1.Secret],
+	configMaps krt.Collection[*corev1.ConfigMap],
 	krtopts krtutil.KrtOptions,
 ) (
 	krt.StatusCollection[*gwv1.Gateway, gwv1.GatewayStatus],
@@ -246,7 +249,7 @@ func GatewayCollection(
 			// Attached Routes count starts at 0 and gets updated later in the status syncer
 			// when the real count is available after route processing
 
-			server, tlsInfo, updatedStatus, programmed := BuildListener(ctx, secrets, grants, namespaces, obj, status.Listeners, l, i, nil)
+			hostnames, tlsInfo, updatedStatus, programmed := BuildListener(ctx, secrets, configMaps, grants, namespaces, obj, status.Listeners, kgw, l, i, nil)
 			status.Listeners = updatedStatus
 
 			lstatus := status.Listeners[i]
@@ -273,7 +276,7 @@ func GatewayCollection(
 				ParentGatewayClassName: string(obj.Spec.GatewayClassName),
 				InternalName:           utils.InternalGatewayName(obj.Namespace, name, ""),
 				AllowedKinds:           allowed,
-				Hostnames:              server.GetHosts(),
+				Hostnames:              hostnames,
 				OriginalHostname:       string(ptr.OrEmpty(l.Hostname)),
 				SectionName:            l.Name,
 				Port:                   l.Port,
@@ -359,6 +362,7 @@ func ListenerSetCollection(
 	namespaces krt.Collection[*corev1.Namespace],
 	grants ReferenceGrants,
 	secrets krt.Collection[*corev1.Secret],
+	configMaps krt.Collection[*corev1.ConfigMap],
 	krtopts krtutil.KrtOptions,
 ) (
 	krt.StatusCollection[*gatewayx.XListenerSet, gatewayx.ListenerSetStatus],
@@ -408,17 +412,15 @@ func ListenerSetCollection(
 			//	return status, nil
 			//}
 
-			servers := []*istio.Server{}
 			for i, l := range ls.Listeners {
 				port, portErr := detectListenerPortNumber(l)
 				l.Port = port
 				standardListener := convertListenerSetToListener(l)
 				originalStatus := slices.Map(status.Listeners, convertListenerSetStatusToStandardStatus)
-				server, tlsInfo, updatedStatus, programmed := BuildListener(ctx, secrets, grants, namespaces,
-					obj, originalStatus, standardListener, i, portErr)
+				hostnames, tlsInfo, updatedStatus, programmed := BuildListener(ctx, secrets, configMaps, grants, namespaces,
+					obj, originalStatus, parentGwObj.Spec, standardListener, i, portErr)
 				status.Listeners = slices.Map(updatedStatus, convertStandardStatusToListenerSetStatus(l))
 
-				servers = append(servers, server)
 				if controllerName == constants.ManagedGatewayMeshController || controllerName == constants.ManagedGatewayEastWestController {
 					// Waypoint doesn't actually convert the routes to VirtualServices
 					continue
@@ -430,7 +432,7 @@ func ListenerSetCollection(
 					ParentGateway:    config.NamespacedName(parentGwObj),
 					InternalName:     obj.Namespace + "/" + name,
 					AllowedKinds:     allowed,
-					Hostnames:        server.Hosts,
+					Hostnames:        hostnames,
 					OriginalHostname: string(ptr.OrEmpty(l.Hostname)),
 					SectionName:      l.Name,
 					Port:             l.Port,

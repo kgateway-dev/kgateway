@@ -1,0 +1,29 @@
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: basicauth-gateway
+  namespace: default
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: gw
+  basicAuth:
+    # SHA-1 of "password"
+    users:
+      - "gateway-user:{SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g="
+---
+# Disable basic auth on the public route, overriding the gateway-level policy
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: basicauth-disable-public
+  namespace: default
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: route-public
+  basicAuth:
+    disable: {}
