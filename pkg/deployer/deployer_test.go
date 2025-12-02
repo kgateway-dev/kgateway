@@ -39,7 +39,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
-
 	// TODO BML tests in this suite fail if this no-op import is not imported first.
 	//
 	// I know, I know, you're reading this, and you're skeptical. I can feel it.
@@ -1058,12 +1057,12 @@ var _ = Describe("Deployer", func() {
 			matcher := bootstrapCfg.GetStatsConfig().GetStatsMatcher()
 			Expect(matcher).ToNot(BeNil())
 			Expect(matcher.GetInclusionList()).ToNot(BeNil())
-			Expect(len(matcher.GetInclusionList().Patterns)).To(Equal(5))
+			Expect(matcher.GetInclusionList().Patterns).To(HaveLen(5))
 			Expect(matcher.GetInclusionList().Patterns[0].GetExact()).To(Equal("cluster.my_service.upstream_cx_total"))
 			Expect(matcher.GetInclusionList().Patterns[1].GetPrefix()).To(Equal("http."))
 			Expect(matcher.GetInclusionList().Patterns[2].GetSuffix()).To(Equal(".pending"))
 			Expect(matcher.GetInclusionList().Patterns[3].GetContains()).To(Equal("CLUSTER"))
-			Expect(matcher.GetInclusionList().Patterns[3].GetIgnoreCase()).To(Equal(true))
+			Expect(matcher.GetInclusionList().Patterns[3].GetIgnoreCase()).To(BeTrue())
 			Expect(matcher.GetInclusionList().Patterns[4].GetSafeRegex().GetRegex()).To(Equal("cluster\\..*\\.upstream_cx.*"))
 		})
 
@@ -1153,12 +1152,12 @@ var _ = Describe("Deployer", func() {
 			matcher := bootstrapCfg.GetStatsConfig().GetStatsMatcher()
 			Expect(matcher).ToNot(BeNil())
 			Expect(matcher.GetExclusionList()).ToNot(BeNil())
-			Expect(len(matcher.GetExclusionList().Patterns)).To(Equal(5))
+			Expect(matcher.GetExclusionList().Patterns).To(HaveLen(5))
 			Expect(matcher.GetExclusionList().Patterns[0].GetExact()).To(Equal("cluster.my_service.upstream_cx_total"))
 			Expect(matcher.GetExclusionList().Patterns[1].GetPrefix()).To(Equal("http."))
 			Expect(matcher.GetExclusionList().Patterns[2].GetSuffix()).To(Equal(".pending"))
 			Expect(matcher.GetExclusionList().Patterns[3].GetContains()).To(Equal("CLUSTER"))
-			Expect(matcher.GetExclusionList().Patterns[3].GetIgnoreCase()).To(Equal(true))
+			Expect(matcher.GetExclusionList().Patterns[3].GetIgnoreCase()).To(BeTrue())
 			Expect(matcher.GetExclusionList().Patterns[4].GetSafeRegex().GetRegex()).To(Equal("cluster\\..*\\.upstream_cx.*"))
 		})
 	})
