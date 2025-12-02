@@ -287,7 +287,7 @@ func ResolveExtGrpcService(
 				Authority:   authority,
 			},
 		},
-		RetryPolicy: buildExtAuthRetryPolicy(grpcService.Retry),
+		RetryPolicy: buildExtSvcRetryPolicy(grpcService.Retry),
 	}
 	if grpcService.RequestTimeout != nil {
 		envoyGrpcService.Timeout = durationpb.New(grpcService.RequestTimeout.Duration)
@@ -344,7 +344,7 @@ func ResolveExtHttpService(
 	envoyHttpService := &envoy_ext_authz_v3.HttpService{
 		ServerUri:   httpUri,
 		PathPrefix:  httpService.PathPrefix,
-		RetryPolicy: buildExtAuthRetryPolicy(httpService.Retry),
+		RetryPolicy: buildExtSvcRetryPolicy(httpService.Retry),
 	}
 
 	// Configure authorization request
@@ -371,7 +371,7 @@ func ResolveExtHttpService(
 	return envoyHttpService, nil
 }
 
-func buildExtAuthRetryPolicy(in *v1alpha1.ExtSvcRetryPolicy) *envoycorev3.RetryPolicy {
+func buildExtSvcRetryPolicy(in *v1alpha1.ExtSvcRetryPolicy) *envoycorev3.RetryPolicy {
 	if in == nil {
 		return nil
 	}

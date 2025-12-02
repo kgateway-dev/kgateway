@@ -71,7 +71,7 @@ type ExtAuthProvider struct {
 	//
 	// If this field is omitted, gRPC services will have all client request headers forwarded,
 	// while HTTP services will only receive the default headers described above.
-	// 
+	//
 	// Common examples: ["cookie", "authorization", "x-forwarded-for"]
 	// More info is available on the [Envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_authz/v3/ext_authz.proto#envoy-v3-api-field-extensions-filters-http-ext-authz-v3-extauthz-allowed-headers)
 	// +optional

@@ -130,12 +130,13 @@ Statuses:
             address: "0.0.0.0" port_value: 8081 } } filter_chains { filters { name:
             "envoy.filters.network.http_connection_manager" typed_config { [type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager]
             { stat_prefix: "placeholder" route_config { virtual_hosts { name: "placeholder_vhost"
-            domains: "*" } } } } } name: "placeholder_filter_chain" } } clusters {
-            name: "test-cluster-for-validation" type: STATIC connect_timeout { seconds:
-            5 } outlier_detection { consecutive_5xx { value: 5 } interval { } base_ejection_time
-            { seconds: 30 } max_ejection_percent { value: 10 } } } } : Proto constraint
-            validation failed (BootstrapValidationError.StaticResources: embedded
-            message failed validation | caused by StaticResourcesValidationError.Clusters[0]:
+            domains: "*" } } http_filters { name: "envoy.filters.http.router" typed_config
+            { [type.googleapis.com/envoy.extensions.filters.http.router.v3.Router]
+            { } } } } } } name: "placeholder_filter_chain" } } clusters { name: "test-cluster-for-validation"
+            type: STATIC connect_timeout { seconds: 5 } outlier_detection { consecutive_5xx
+            { value: 5 } interval { } base_ejection_time { seconds: 30 } max_ejection_percent
+            { value: 10 } } } } : Proto constraint validation failed (BootstrapValidationError.StaticResources:
+            embedded message failed validation | caused by StaticResourcesValidationError.Clusters[0]:
             embedded message failed validation | caused by ClusterValidationError.OutlierDetection:
             embedded message failed validation | caused by OutlierDetectionValidationError.Interval:
             value must be greater than 0s)'

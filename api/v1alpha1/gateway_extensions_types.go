@@ -174,11 +174,11 @@ type ExtSvcRetryPolicy struct {
 	// Backoff specifies the retry backoff strategy.
 	// If not set, a default backoff with a base interval of 1000ms is used. The default max interval is 10 times the base interval.
 	// +optional
-	Backoff *ExtAuthRetryBackoff `json:"backoff,omitempty"`
+	Backoff *RetryBackoff `json:"backoff,omitempty"`
 }
 
 // +kubebuilder:validation:XValidation:rule="has(self.maxInterval) ? duration(self.maxInterval) >= duration(self.baseInterval) : true",message="maxInterval must be greater than or equal to baseInterval"
-type ExtAuthRetryBackoff struct {
+type RetryBackoff struct {
 	// BaseInterval specifies the base interval used with a fully jittered exponential back-off between retries.
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="retry.BaseInterval must be at least 1ms."
