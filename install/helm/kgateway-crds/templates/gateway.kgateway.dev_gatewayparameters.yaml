@@ -6108,6 +6108,12 @@ spec:
                           https://kubernetes.io/docs/concepts/configuration/assign-pod-node/ for
                           details.
                         type: object
+                      priorityClassName:
+                        description: |-
+                          If specified, the pod's PriorityClass. See
+                          https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#podspec-v1-core
+                          for details
+                        type: string
                       readinessProbe:
                         description: |-
                           If specified, the pod's readiness probe. Periodic probe of container service readiness.

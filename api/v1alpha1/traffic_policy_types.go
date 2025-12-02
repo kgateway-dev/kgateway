@@ -121,6 +121,11 @@ type TrafficPolicySpec struct {
 	// This defines the JWT providers and their configurations.
 	// +optional
 	JWT *JWTAuthentication `json:"jwt,omitempty"`
+
+	// BasicAuth specifies the HTTP basic authentication configuration for the policy.
+	// This controls authentication using username/password credentials in the Authorization header.
+	// +optional
+	BasicAuth *BasicAuthPolicy `json:"basicAuth,omitempty"`
 }
 
 // TransformationPolicy config is used to modify envoy behavior at a route level.

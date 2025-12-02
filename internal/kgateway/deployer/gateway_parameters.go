@@ -372,6 +372,7 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *v1alpha1.Gatew
 	gateway.TerminationGracePeriodSeconds = podConfig.GetTerminationGracePeriodSeconds()
 	gateway.TopologySpreadConstraints = podConfig.GetTopologySpreadConstraints()
 	gateway.ExtraVolumes = podConfig.GetExtraVolumes()
+	gateway.PriorityClassName = podConfig.GetPriorityClassName()
 
 	// data plane container
 	if agwConfig := kubeProxyConfig.GetAgentgateway(); ptr.Deref(agwConfig.GetEnabled(), false) {
