@@ -127,6 +127,11 @@ type TrafficPolicySpec struct {
 	// NOTE: This field is only honoured for HTTPRoute targets.
 	// +optional
 	UrlRewrite *URLRewrite `json:"urlRewrite,omitempty"`
+
+	// BasicAuth specifies the HTTP basic authentication configuration for the policy.
+	// This controls authentication using username/password credentials in the Authorization header.
+	// +optional
+	BasicAuth *BasicAuthPolicy `json:"basicAuth,omitempty"`
 }
 
 // URLRewrite specifies URL rewrite rules using regular expressions.

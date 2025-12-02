@@ -45,7 +45,7 @@ func newGatewayClassReconciler(
 	r := &gatewayClassReconciler{
 		defaultControllerName: cfg.ControllerName,
 		classInfo:             classInfo,
-		gwClassClient:         kclient.NewFilteredDelayed[*gwv1.GatewayClass](cfg.Client, gvr.GatewayClass_v1, filter),
+		gwClassClient:         kclient.NewFilteredDelayed[*gwv1.GatewayClass](cfg.Client, gvr.GatewayClass, filter),
 	}
 	r.queue = controllers.NewQueue("GatewayClassController", controllers.WithReconciler(r.reconcile), controllers.WithMaxAttempts(math.MaxInt), controllers.WithRateLimiter(rateLimiter))
 	ourControllers := sets.New(cfg.ControllerName, cfg.AgwControllerName)

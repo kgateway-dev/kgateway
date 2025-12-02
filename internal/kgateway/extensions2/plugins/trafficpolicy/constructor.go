@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"gorm.io/gorm/logger"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
@@ -103,6 +104,10 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 
 	// Construct url rewrite specific IR
 	constructURLRewrite(policyCR.Spec, &outSpec)
+	// Construct basic auth specific IR
+	if err := constructBasicAuth(krtctx, policyCR, &outSpec, c.commoncol.Secrets); err != nil {
+		errors = append(errors, err)
+	}
 
 	for _, err := range errors {
 		logger.Error("error translating traffic policy", "namespace", policyCR.GetNamespace(), "name", policyCR.GetName(), "error", err)

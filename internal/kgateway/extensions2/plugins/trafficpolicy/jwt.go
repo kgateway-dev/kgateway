@@ -195,7 +195,7 @@ func translateProvider(
 		})
 	}
 	var shouldForward bool
-	if provider.KeepToken != nil && *provider.KeepToken == v1alpha1.TokenForward {
+	if provider.ForwardToken != nil && *provider.ForwardToken {
 		shouldForward = true
 	}
 	jwtProvider := &jwtauthnv3.JwtProvider{

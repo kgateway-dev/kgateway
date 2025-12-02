@@ -61,6 +61,63 @@ spec:
                   NOTE: If `autoHostRewrite` is set on a route that also has a [URLRewrite filter](https://gateway-api.sigs.k8s.io/reference/spec/#httpurlrewritefilter)
                   configured to override the `hostname`, the `hostname` value will be used and `autoHostRewrite` will be ignored.
                 type: boolean
+              basicAuth:
+                description: |-
+                  BasicAuth specifies the HTTP basic authentication configuration for the policy.
+                  This controls authentication using username/password credentials in the Authorization header.
+                properties:
+                  disable:
+                    description: |-
+                      Disable basic auth.
+                      Can be used to disable basic auth policies applied at a higher level in the config hierarchy.
+                    type: object
+                  secretRef:
+                    description: |-
+                      SecretRef references a Kubernetes secret containing htpasswd data.
+                      The secret must contain username/password pairs in htpasswd format.
+                    properties:
+                      key:
+                        default: .htpasswd
+                        description: |-
+                          Key in the secret that contains the htpasswd data.
+                          Defaults to ".htpasswd" if not specified.
+                        minLength: 1
+                        type: string
+                      name:
+                        description: Name of the secret containing htpasswd data.
+                        maxLength: 253
+                        minLength: 1
+                        type: string
+                      namespace:
+                        description: |-
+                          Namespace of the secret. If not specified, defaults to the namespace of the TrafficPolicy.
+                          Note that a secret in a different namespace requires a ReferenceGrant to be accessible.
+                        maxLength: 63
+                        minLength: 1
+                        pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                        type: string
+                    required:
+                    - name
+                    type: object
+                  users:
+                    description: |-
+                      Users provides an inline list of username/password pairs in htpasswd format.
+                      Each entry should be formatted as "username:hashed_password".
+                      The only supported hash format is SHA-1
+
+                      Example entries:
+                        - "user1:{SHA}d95o2uzYI7q7tY7bHI4U1xBug7s="
+                    items:
+                      type: string
+                    maxItems: 256
+                    minItems: 1
+                    type: array
+                type: object
+                x-kubernetes-validations:
+                - message: exactly one of the fields in [users secretRef disable]
+                    must be set
+                  rule: '[has(self.users),has(self.secretRef),has(self.disable)].filter(x,x==true).size()
+                    == 1'
               buffer:
                 description: |-
                   Buffer can be used to set the maximum request size that will be buffered.

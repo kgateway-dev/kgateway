@@ -4,12 +4,12 @@ go 1.25.3
 
 require (
 	// Also update AgentgatewayDefaultTag in pkg/deployer/wellknown.go and test/deployer/testdata/*
-	github.com/agentgateway/agentgateway v0.10.6-0.20251124234648-943649ad0241
+	github.com/agentgateway/agentgateway v0.10.6-0.20251128221026-a479200e2076
 	github.com/avast/retry-go/v4 v4.3.3
-	github.com/cncf/xds/go v0.0.0-20250501225837-2ac532fd4443
+	github.com/cncf/xds/go v0.0.0-20251110193048-8bfbf64dc13e
 	github.com/envoyproxy/go-control-plane v0.14.0
 	github.com/envoyproxy/go-control-plane/contrib v1.32.5-0.20250627145903-197b96a9c7f8
-	github.com/envoyproxy/go-control-plane/envoy v1.36.0
+	github.com/envoyproxy/go-control-plane/envoy v1.36.1-0.20251120180717-7c66c7f1d0b2
 	github.com/envoyproxy/go-control-plane/ratelimit v0.1.1-0.20250507123352-93990c5ec02f
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
@@ -27,19 +27,19 @@ require (
 	github.com/prometheus/common v0.67.1
 	github.com/solo-io/envoy-gloo/go v0.0.0-20250924144543-9d47b99b2130
 	github.com/solo-io/go-list-licenses v0.1.4
-	github.com/spf13/afero v1.14.0
+	github.com/spf13/afero v1.15.0
 	github.com/spf13/cobra v1.10.1
 	github.com/stretchr/testify v1.11.1
 	go.opencensus.io v0.24.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/exp v0.0.0-20251017212417-90e834f514db
-	golang.org/x/net v0.46.0 // indirect
+	golang.org/x/net v0.47.0 // indirect
 	google.golang.org/grpc v1.76.0
 	google.golang.org/protobuf v1.36.10
 	helm.sh/helm/v3 v3.19.2
-	istio.io/api v1.28.0-alpha.0.0.20251118133802-3d6b80ec2d1e
-	istio.io/client-go v1.28.0-alpha.0.0.20251118134000-fa71d5732509
-	istio.io/istio v0.0.0-20251119184502-ea018f0048ef
+	istio.io/api v1.28.0-alpha.0.0.20251126150010-62ed4ff08e1b
+	istio.io/client-go v1.28.0-alpha.0.0.20251126150310-56900da3b60f
+	istio.io/istio v0.0.0-20251201142120-783e855f1e67
 	k8s.io/api v0.34.1
 	k8s.io/apiextensions-apiserver v0.34.1
 	k8s.io/apimachinery v0.34.1
@@ -70,7 +70,7 @@ require (
 	github.com/AdminBenni/iota-mixing v1.0.0 // indirect
 	github.com/AlwxSin/noinlineerr v1.0.5 // indirect
 	github.com/Masterminds/vcs v1.13.3 // indirect
-	github.com/MirrexOne/unqueryvet v1.2.1 // indirect
+	github.com/MirrexOne/unqueryvet v1.3.0 // indirect
 	github.com/agnivade/levenshtein v1.2.1 // indirect
 	github.com/alecthomas/chroma/v2 v2.20.0 // indirect
 	github.com/alfatraining/structtag v1.0.0 // indirect
@@ -247,7 +247,7 @@ require (
 	github.com/caarlos0/go-shellwords v1.0.12 // indirect
 	github.com/caarlos0/go-version v0.2.1 // indirect
 	github.com/carlmjohnson/versioninfo v0.22.5 // indirect
-	github.com/catenacyber/perfsprint v0.10.0 // indirect
+	github.com/catenacyber/perfsprint v0.10.1 // indirect
 	github.com/cavaliergopher/cpio v1.0.1 // indirect
 	github.com/ccojocar/zxcvbn-go v1.0.4 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
@@ -350,7 +350,7 @@ require (
 	github.com/golangci/dupl v0.0.0-20250308024227-f665c8d69b32 // indirect
 	github.com/golangci/go-printf-func-name v0.1.1 // indirect
 	github.com/golangci/gofmt v0.0.0-20250106114630-d62b90e6713d // indirect
-	github.com/golangci/golangci-lint/v2 v2.6.2 // indirect
+	github.com/golangci/golangci-lint/v2 v2.6.3-0.20251124203043-9a9fd5b1d9fd // indirect
 	github.com/golangci/golines v0.0.0-20250217134842-442fd0091d95 // indirect
 	github.com/golangci/misspell v0.7.0 // indirect
 	github.com/golangci/plugin-module-register v0.1.2 // indirect
@@ -456,7 +456,7 @@ require (
 	github.com/mattn/go-localereader v0.0.2-0.20220822084749-2491eb6c1c75 // indirect
 	github.com/mattn/go-mastodon v0.0.10 // indirect
 	github.com/mattn/go-runewidth v0.0.17 // indirect
-	github.com/mgechev/revive v1.12.0 // indirect
+	github.com/mgechev/revive v1.13.0 // indirect
 	github.com/miekg/dns v1.1.68 // indirect
 	github.com/minio/sha256-simd v1.0.1 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
@@ -545,7 +545,7 @@ require (
 	github.com/spf13/viper v1.20.1 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.5.0 // indirect
 	github.com/ssgreg/nlreturn/v2 v2.2.1 // indirect
-	github.com/stbenjam/no-sprintf-host-port v0.2.0 // indirect
+	github.com/stbenjam/no-sprintf-host-port v0.3.1 // indirect
 	github.com/stoewer/go-strcase v1.3.1 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
@@ -591,27 +591,27 @@ require (
 	go.opentelemetry.io/otel/sdk v1.38.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.38.0 // indirect
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect
-	go.opentelemetry.io/proto/otlp v1.7.1
+	go.opentelemetry.io/proto/otlp v1.9.0
 	go.uber.org/atomic v1.11.0
 	go.uber.org/automaxprocs v1.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	gocloud.dev v0.42.0 // indirect
-	golang.org/x/crypto v0.43.0 // indirect
+	golang.org/x/crypto v0.44.0 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20251023183803-a4bb9ffd2546 // indirect
-	golang.org/x/mod v0.29.0 // indirect
+	golang.org/x/mod v0.30.0 // indirect
 	golang.org/x/oauth2 v0.32.0 // indirect
 	golang.org/x/sync v0.18.0 // indirect
-	golang.org/x/sys v0.37.0 // indirect
-	golang.org/x/term v0.36.0 // indirect
-	golang.org/x/text v0.30.0 // indirect
+	golang.org/x/sys v0.38.0 // indirect
+	golang.org/x/term v0.37.0 // indirect
+	golang.org/x/text v0.31.0 // indirect
 	golang.org/x/time v0.14.0
-	golang.org/x/tools v0.38.0 // indirect
+	golang.org/x/tools v0.39.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	gomodules.xyz/jsonpatch/v2 v2.5.0 // indirect
 	google.golang.org/api v0.246.0 // indirect
 	google.golang.org/genproto v0.0.0-20250603155806-513f23925822 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20251020155222-88f65dc88635 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20251020155222-88f65dc88635 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251020155222-88f65dc88635
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
