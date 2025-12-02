@@ -6704,6 +6704,8 @@ func (in *TrafficPolicySpec) DeepCopyInto(out *TrafficPolicySpec) {
 	if in.Compression != nil {
 		in, out := &in.Compression, &out.Compression
 		*out = new(Compression)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.BasicAuth != nil {
 		in, out := &in.BasicAuth, &out.BasicAuth
 		*out = new(BasicAuthPolicy)
