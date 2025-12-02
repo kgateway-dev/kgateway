@@ -239,10 +239,8 @@ func TestApplyURLRewrite(t *testing.T) {
 		name                    string
 		urlRewrite              *urlRewriteIR
 		route                   *envoyroutev3.Route
-		expectedHostRewrite     string
 		expectedRegexPattern    string
 		expectedRegexSubst      string
-		expectNoHostRewrite     bool
 		expectNoRegexRewrite    bool
 		expectExistingPreserved bool
 	}{
@@ -250,7 +248,6 @@ func TestApplyURLRewrite(t *testing.T) {
 			name:                 "nil urlRewrite does nothing",
 			urlRewrite:           nil,
 			route:                &envoyroutev3.Route{Action: &envoyroutev3.Route_Route{Route: &envoyroutev3.RouteAction{}}},
-			expectNoHostRewrite:  true,
 			expectNoRegexRewrite: true,
 		},
 		{
@@ -262,7 +259,6 @@ func TestApplyURLRewrite(t *testing.T) {
 				},
 			},
 			route:                nil,
-			expectNoHostRewrite:  true,
 			expectNoRegexRewrite: true,
 		},
 		{
@@ -328,14 +324,6 @@ func TestApplyURLRewrite(t *testing.T) {
 			}
 
 			action := tt.route.GetRoute()
-
-			// Check host rewrite
-			if tt.expectNoHostRewrite {
-				assert.Nil(t, action.GetHostRewriteSpecifier())
-			} else if tt.expectedHostRewrite != "" {
-				literal := action.GetHostRewriteLiteral()
-				assert.Equal(t, tt.expectedHostRewrite, literal)
-			}
 
 			// Check regex rewrite
 			if tt.expectNoRegexRewrite {

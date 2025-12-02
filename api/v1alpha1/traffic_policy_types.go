@@ -88,7 +88,7 @@ type TrafficPolicySpec struct {
 	HeaderModifiers *HeaderModifiers `json:"headerModifiers,omitempty"`
 
 	// AutoHostRewrite rewrites the Host header to the DNS name of the selected upstream.
-	// NOTE: This field is only honoured for HTTPRoute targets.
+	// NOTE: This field is only honored for HTTPRoute targets.
 	// NOTE: If `autoHostRewrite` is set on a route that also has a [URLRewrite filter](https://gateway-api.sigs.k8s.io/reference/spec/#httpurlrewritefilter)
 	// configured to override the `hostname`, the `hostname` value will be used and `autoHostRewrite` will be ignored.
 	// +optional
@@ -123,8 +123,7 @@ type TrafficPolicySpec struct {
 	JWT *JWTAuthentication `json:"jwt,omitempty"`
 
 	// UrlRewrite specifies URL rewrite rules for matching requests.
-	// This allows rewriting the path or hostname of requests using regular expressions.
-	// NOTE: This field is only honoured for HTTPRoute targets.
+	// NOTE: This field is only honored for HTTPRoute targets.
 	// +optional
 	UrlRewrite *URLRewrite `json:"urlRewrite,omitempty"`
 
@@ -135,7 +134,7 @@ type TrafficPolicySpec struct {
 }
 
 // URLRewrite specifies URL rewrite rules using regular expressions.
-// This allows flexible path and hostname rewriting based on regex patterns.
+// This allows more flexible and advanced path rewriting based on regex patterns.
 // +kubebuilder:validation:AtLeastOneOf=pathRegex
 type URLRewrite struct {
 	// Path specifies the path rewrite configuration.
