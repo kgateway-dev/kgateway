@@ -443,7 +443,7 @@ func (s *BaseTestingSuite) ApplyManifests(testCase *TestCase) {
 		s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, ns, metav1.ListOptions{
 			LabelSelector: fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, name),
 			// Provide a longer timeout as the pod needs to be pulled and pass HCs
-		}, time.Second*60, time.Second*2)
+		}, time.Second*60, time.Second)
 	}
 }
 

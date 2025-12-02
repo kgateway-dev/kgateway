@@ -27,6 +27,10 @@ inputs:
     required: false
     default: "false"
     description: Whether to install localstack
+  agentgateway:
+    required: false
+    default: "false"
+    description: Whether this test only needs agentgateway
 
 runs:
   using: "composite"
@@ -44,6 +48,7 @@ runs:
         CONFORMANCE_VERSION: ${{ inputs.gateway-api-version }}
         CONFORMANCE_CHANNEL: ${{ inputs.gateway-api-channel }}
         LOCALSTACK: ${{ inputs.localstack }}
+        AGENTGATEWAY: ${{ inputs.agentgateway }}
         CONFORMANCE: true
       run: |
         ./hack/kind/setup-kind.sh
