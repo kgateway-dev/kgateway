@@ -136,7 +136,7 @@ type TrafficPolicySpec struct {
 
 // URLRewrite specifies URL rewrite rules using regular expressions.
 // This allows flexible path and hostname rewriting based on regex patterns.
-// +kubebuilder:validation:AtLeastOneOf=path
+// +kubebuilder:validation:AtLeastOneOf=pathRegex
 type URLRewrite struct {
 	// Path specifies the path rewrite configuration.
 	// +optional
