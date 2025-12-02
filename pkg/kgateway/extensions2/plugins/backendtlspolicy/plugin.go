@@ -21,7 +21,7 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
+	eiutils "github.com/kgateway-dev/kgateway/v2/pkg/envoyinit/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	kgwellknown "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"

@@ -7,4 +7,4 @@ Most information about the architecture of the project, and the recommendations 
 For details about building and running various components of the project, please refer to the component READMEs:
 
 - [kgateway](/pkg/kgateway/README.md)
-- [kgateway-proxy](/internal/envoyinit/README.md)
+- [kgateway-proxy](/pkg/envoyinit/README.md)

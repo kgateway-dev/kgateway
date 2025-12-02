@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/downward"
+	. "github.com/kgateway-dev/kgateway/v2/pkg/envoyinit/downward"
 )
 
 var _ = Describe("Transform", func() {

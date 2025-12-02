@@ -14,8 +14,8 @@ The following files should be updated:
 | File | Update |
 |---|---|
 | Makefile | Update ENVOY_IMAGE with the new version |
-| internal/envoyinit/rustformations/Cargo.lock | Update the commit hash to match the [envoy](https://github.com/envoyproxy/envoy/releases) release commit hash |
-| internal/envoyinit/rustformations/Cargo.toml | Update the commit hash to match the [envoy](https://github.com/envoyproxy/envoy/releases) release commit hash |
+| pkg/envoyinit/rustformations/Cargo.lock | Update the commit hash to match the [envoy](https://github.com/envoyproxy/envoy/releases) release commit hash |
+| pkg/envoyinit/rustformations/Cargo.toml | Update the commit hash to match the [envoy](https://github.com/envoyproxy/envoy/releases) release commit hash |
 | pkg/validator/validator.go | Update the envoy-gloo image version (search for `envoy-gloo:`) |
 | pkg/validator/validator_test.go | Update the envoy-gloo image version  (search for `envoy-gloo:`) |
 
