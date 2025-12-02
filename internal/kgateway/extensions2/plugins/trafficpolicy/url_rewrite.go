@@ -81,6 +81,8 @@ func applyURLRewrite(urlRewrite *urlRewriteIR, out *envoyroutev3.Route) {
 		// Only apply if not already set
 		if action.GetRegexRewrite() == nil && action.GetPrefixRewrite() == "" {
 			action.RegexRewrite = urlRewrite.regexMatch
+		} else {
+			logger.Debug("URL rewrite regex is already set or prefix rewrite is not empty; skipping URL rewrite application")
 		}
 	}
 }
