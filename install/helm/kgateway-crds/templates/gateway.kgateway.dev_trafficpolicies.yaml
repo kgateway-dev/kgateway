@@ -150,6 +150,45 @@ spec:
                     be set
                   rule: '[has(self.maxRequestSize),has(self.disable)].filter(x,x==true).size()
                     == 1'
+              compression:
+                description: |-
+                  Compression configures response compression (per-route) and request/response
+                  decompression (listener-level insertion triggered by route enable).
+                  The response compression configuration is only honored for HTTPRoute targets.
+                properties:
+                  requestDecompression:
+                    description: |-
+                      RequestDecompression controls request decompression.
+                      If set, gzip requests will be decompressed.
+                    properties:
+                      disable:
+                        description: Disables decompression.
+                        type: object
+                    type: object
+                  responseCompression:
+                    description: |-
+                      ResponseCompression controls response compression to the downstream.
+                      If set, responses with the appropriate `Accept-Encoding` header with certain textual content types will be compressed using gzip.
+                      The content-types that will be compressed are:
+                      - `application/javascript`
+                      - `application/json`
+                      - `application/xhtml+xml`
+                      - `image/svg+xml`
+                      - `text/css`
+                      - `text/html`
+                      - `text/plain`
+                      - `text/xml`
+                    properties:
+                      disable:
+                        description: Disables compression.
+                        type: object
+                    type: object
+                type: object
+                x-kubernetes-validations:
+                - message: at least one of the fields in [responseCompression requestDecompression]
+                    must be set
+                  rule: '[has(self.responseCompression),has(self.requestDecompression)].filter(x,x==true).size()
+                    >= 1'
               cors:
                 description: Cors specifies the CORS configuration for the policy.
                 properties:

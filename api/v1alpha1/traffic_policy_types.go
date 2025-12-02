@@ -122,6 +122,11 @@ type TrafficPolicySpec struct {
 	// +optional
 	JWT *JWTAuthentication `json:"jwt,omitempty"`
 
+	// Compression configures response compression (per-route) and request/response
+	// decompression (listener-level insertion triggered by route enable).
+	// The response compression configuration is only honored for HTTPRoute targets.
+	// +optional
+	Compression *Compression `json:"compression,omitempty"`
 	// BasicAuth specifies the HTTP basic authentication configuration for the policy.
 	// This controls authentication using username/password credentials in the Authorization header.
 	// +optional
@@ -473,4 +478,41 @@ type Timeouts struct {
 	//
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	StreamIdle *metav1.Duration `json:"streamIdle,omitempty"`
+}
+
+// Compression configures HTTP gzip compression and decompression behavior.
+// +kubebuilder:validation:AtLeastOneOf=responseCompression;requestDecompression
+type Compression struct {
+	// ResponseCompression controls response compression to the downstream.
+	// If set, responses with the appropriate `Accept-Encoding` header with certain textual content types will be compressed using gzip.
+	// The content-types that will be compressed are:
+	// - `application/javascript`
+	// - `application/json`
+	// - `application/xhtml+xml`
+	// - `image/svg+xml`
+	// - `text/css`
+	// - `text/html`
+	// - `text/plain`
+	// - `text/xml`
+	// +optional
+	ResponseCompression *ResponseCompression `json:"responseCompression,omitempty"`
+
+	// RequestDecompression controls request decompression.
+	// If set, gzip requests will be decompressed.
+	// +optional
+	RequestDecompression *RequestDecompression `json:"requestDecompression,omitempty"`
+}
+
+// ResponseCompression configures response compression.
+type ResponseCompression struct {
+	// Disables compression.
+	// +optional
+	Disable *PolicyDisable `json:"disable,omitempty"`
+}
+
+// RequestDecompression enables request gzip decompression.
+type RequestDecompression struct {
+	// Disables decompression.
+	// +optional
+	Disable *PolicyDisable `json:"disable,omitempty"`
 }
