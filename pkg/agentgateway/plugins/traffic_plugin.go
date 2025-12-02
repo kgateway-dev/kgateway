@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/url"
 	"strings"
 	"time"
 
@@ -16,7 +15,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/controllers"
-	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
 	"istio.io/istio/pkg/slices"
@@ -30,7 +28,6 @@ import (
 	"sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/jwks"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
@@ -85,12 +82,7 @@ func convertStatusCollection(col krt.Collection[krt.ObjectWithStatus[*v1alpha1.A
 
 // NewAgentPlugin creates a new AgentgatewayPolicy plugin
 func NewAgentPlugin(agw *AgwCollections) AgwPlugin {
-	col := krt.WrapClient(kclient.NewFilteredDelayed[*v1alpha1.AgentgatewayPolicy](
-		agw.Client,
-		wellknown.AgentgatewayPolicyGVR,
-		kclient.Filter{ObjectFilter: agw.Client.ObjectFilter()},
-	), agw.KrtOpts.ToOptions("informer/AgentgatewayPolicy")...)
-	policyStatusCol, policyCol := krt.NewStatusManyCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.AgentgatewayPolicy) (
+	policyStatusCol, policyCol := krt.NewStatusManyCollection(agw.AgentgatewayPolicies, func(krtctx krt.HandlerContext, policyCR *v1alpha1.AgentgatewayPolicy) (
 		*gwv1.PolicyStatus,
 		[]AgwPolicy,
 	) {
@@ -525,31 +517,12 @@ func processJWTAuthenticationPolicy(ctx PolicyCtx, jwt *v1alpha1.AgentJWTAuthent
 			continue
 		}
 		if r := pp.JWKS.Remote; r != nil {
-			if _, err := url.Parse(pp.JWKS.Remote.JwksUri); err != nil {
-				errs = append(errs, fmt.Errorf("invalid jwks url in JWTAuthentication policy %w", err))
-				continue
-			}
-			jwksStoreName := jwks.JwksConfigMapNamespacedName(pp.JWKS.Remote.JwksUri)
-			if jwksStoreName == nil {
-				errs = append(errs, fmt.Errorf("jwks store hasn't been initialized"))
-				continue
-			}
-			jwksCM := ptr.Flatten(krt.FetchOne(ctx.Krt, ctx.Collections.ConfigMaps, krt.FilterObjectName(*jwksStoreName)))
-			if jwksCM == nil {
-				errs = append(errs, fmt.Errorf("jwks ConfigMap isn't available"))
-				continue
-			}
-			jwksForUri, err := jwks.JwksFromConfigMap(jwksCM)
+			inline, err := resolveRemoteJWKSInline(ctx, pp.JWKS.Remote.JwksUri)
 			if err != nil {
-				errs = append(errs, fmt.Errorf("error deserializing jwks ConfigMap %w", err))
+				errs = append(errs, err)
 				continue
 			}
-			jwks, ok := jwksForUri[pp.JWKS.Remote.JwksUri]
-			if !ok {
-				errs = append(errs, fmt.Errorf("jwks %s is not available in the jwks ConfigMap", pp.JWKS.Remote.JwksUri))
-				continue
-			}
-			jp.JwksSource = &api.TrafficPolicySpec_JWTProvider_Inline{Inline: jwks}
+			jp.JwksSource = &api.TrafficPolicySpec_JWTProvider_Inline{Inline: inline}
 			p.Providers = append(p.Providers, jp)
 		}
 	}

@@ -93,3 +93,9 @@ spec:
     allowedRoutes:
       namespaces:
         from: All
+  - name: idp-8081
+    protocol: HTTP
+    port: 8081
+    allowedRoutes:
+      namespaces:
+        from: All

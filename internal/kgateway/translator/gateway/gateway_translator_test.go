@@ -318,6 +318,50 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("Basic auth with inline users at route level", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "basic-auth/inline-users-route.yaml",
+			outputFile: "basic-auth/inline-users-route.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("Basic auth with secret reference", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "basic-auth/secret-ref.yaml",
+			outputFile: "basic-auth/secret-ref.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("Basic auth at gateway level with route override", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "basic-auth/gateway-with-route-override.yaml",
+			outputFile: "basic-auth/gateway-with-route-override.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("Basic auth disabled at route level", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "basic-auth/route-disable.yaml",
+			outputFile: "basic-auth/route-disable.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy with local and global rate limiting combined", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/local-and-global-combined",
@@ -943,6 +987,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("HTTPListenerPolicy with early header mutations (add/set/remove)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "httplistenerpolicy/early-header-mutation.yaml",
+			outputFile: "httplistenerpolicy/early-header-mutation.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("Service with appProtocol=kubernetes.io/h2c", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "backend-protocol/svc-h2c.yaml",
@@ -1513,6 +1568,17 @@ func TestBasic(t *testing.T) {
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-tcp-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with per connection buffer limit", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy/per-connection-buffer-limit.yaml",
+			outputFile: "listener-policy/per-connection-buffer-limit.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
 			},
 		})
 	})

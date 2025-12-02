@@ -25,9 +25,9 @@ import (
 
 var AllCRDs = []schema.GroupVersionResource{
 	// Gateway API
-	gvr.KubernetesGateway_v1,
-	gvr.GatewayClass_v1,
-	gvr.HTTPRoute_v1,
+	gvr.KubernetesGateway,
+	gvr.GatewayClass,
+	gvr.HTTPRoute,
 	gvr.GRPCRoute,
 	gvr.TCPRoute,
 	gvr.TLSRoute,

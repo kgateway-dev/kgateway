@@ -49,7 +49,7 @@ func newGatewayClassReconciler(
 	r := &gatewayClassReconciler{
 		defaultControllerName: cfg.ControllerName,
 		classInfo:             classInfo,
-		gwClassClient:         kclient.NewFilteredDelayed[*gwv1.GatewayClass](cfg.Client, gvr.GatewayClass_v1, filter),
+		gwClassClient:         kclient.NewFilteredDelayed[*gwv1.GatewayClass](cfg.Client, gvr.GatewayClass, filter),
 		client:                cfg.Client,
 	}
 	r.queue = controllers.NewQueue("GatewayClassController", controllers.WithReconciler(r.reconcile), controllers.WithMaxAttempts(math.MaxInt), controllers.WithRateLimiter(rateLimiter))
@@ -192,7 +192,7 @@ func (r *gatewayClassReconciler) buildDesiredGatewayClass(name string, info *dep
 }
 
 func (r *gatewayClassReconciler) applyGatewayClass(gwc *gwv1.GatewayClass, controllerName string) error {
-	gvr := gvr.GatewayClass_v1
+	gvr := gvr.GatewayClass
 	c := r.client.Dynamic().Resource(gvr).Namespace(metav1.NamespaceNone)
 
 	// Convert to unstructured for SSA

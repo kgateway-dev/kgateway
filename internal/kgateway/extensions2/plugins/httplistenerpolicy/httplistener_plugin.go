@@ -13,6 +13,7 @@ import (
 	envoytracev3 "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
 	healthcheckv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/health_check/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoy_header_mutationv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/early_header_mutation/header_mutation/v3"
 	preserve_case_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/header_formatters/preserve_case/v3"
 	envoymatcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"google.golang.org/protobuf/proto"
@@ -22,8 +23,10 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -61,10 +64,11 @@ type httpListenerPolicy struct {
 	// Since the gateway name can only be determined during translation, the tracing config is split into the provider
 	// and the actual config. During translation, the default serviceName is set if not already provided
 	// and the final config is then marshalled.
-	tracingProvider      *envoytracev3.OpenTelemetryConfig
-	tracingConfig        *envoy_hcm.HttpConnectionManager_Tracing
-	acceptHttp10         *bool
-	defaultHostForHttp10 *string
+	tracingProvider               *envoytracev3.OpenTelemetryConfig
+	tracingConfig                 *envoy_hcm.HttpConnectionManager_Tracing
+	acceptHttp10                  *bool
+	defaultHostForHttp10          *string
+	earlyHeaderMutationExtensions []*envoycorev3.TypedExtensionConfig
 }
 
 func (d *httpListenerPolicy) CreationTime() time.Time {
@@ -157,6 +161,11 @@ func (d *httpListenerPolicy) Equals(in any) bool {
 		return false
 	}
 
+	if !slices.EqualFunc(d.earlyHeaderMutationExtensions, d2.earlyHeaderMutationExtensions, func(a, b *envoycorev3.TypedExtensionConfig) bool {
+		return proto.Equal(a, b)
+	}) {
+		return false
+	}
 	return true
 }
 
@@ -234,21 +243,22 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 			ObjectSource: objSrc,
 			Policy:       i,
 			PolicyIR: &httpListenerPolicy{
-				ct:                         i.CreationTimestamp.Time,
-				accessLogConfig:            accessLog,
-				accessLogPolicies:          i.Spec.AccessLog,
-				tracingProvider:            tracingProvider,
-				tracingConfig:              tracingConfig,
-				upgradeConfigs:             upgradeConfigs,
-				useRemoteAddress:           i.Spec.UseRemoteAddress,
-				xffNumTrustedHops:          xffNumTrustedHops,
-				serverHeaderTransformation: serverHeaderTransformation,
-				streamIdleTimeout:          streamIdleTimeout,
-				idleTimeout:                idleTimeout,
-				healthCheckPolicy:          healthCheckPolicy,
-				preserveHttp1HeaderCase:    i.Spec.PreserveHttp1HeaderCase,
-				acceptHttp10:               i.Spec.AcceptHttp10,
-				defaultHostForHttp10:       i.Spec.DefaultHostForHttp10,
+				ct:                            i.CreationTimestamp.Time,
+				accessLogConfig:               accessLog,
+				accessLogPolicies:             i.Spec.AccessLog,
+				tracingProvider:               tracingProvider,
+				tracingConfig:                 tracingConfig,
+				upgradeConfigs:                upgradeConfigs,
+				useRemoteAddress:              i.Spec.UseRemoteAddress,
+				xffNumTrustedHops:             xffNumTrustedHops,
+				serverHeaderTransformation:    serverHeaderTransformation,
+				streamIdleTimeout:             streamIdleTimeout,
+				idleTimeout:                   idleTimeout,
+				healthCheckPolicy:             healthCheckPolicy,
+				preserveHttp1HeaderCase:       i.Spec.PreserveHttp1HeaderCase,
+				acceptHttp10:                  i.Spec.AcceptHttp10,
+				defaultHostForHttp10:          i.Spec.DefaultHostForHttp10,
+				earlyHeaderMutationExtensions: convertHeaderMutations(i.Spec.EarlyRequestHeaderModifier),
 			},
 			TargetRefs: pluginsdkutils.TargetRefsToPolicyRefs(i.Spec.TargetRefs, i.Spec.TargetSelectors),
 			Errors:     errs,
@@ -347,6 +357,10 @@ func (p *httpListenerPolicyPluginGwPass) ApplyHCM(
 	// translate streamIdleTimeout
 	if policy.streamIdleTimeout != nil {
 		out.StreamIdleTimeout = durationpb.New(*policy.streamIdleTimeout)
+	}
+	// early request header modifier
+	if len(policy.earlyHeaderMutationExtensions) != 0 {
+		out.EarlyHeaderMutationExtensions = append(out.EarlyHeaderMutationExtensions, policy.earlyHeaderMutationExtensions...)
 	}
 
 	// translate idleTimeout
@@ -476,4 +490,20 @@ func convertHealthCheckPolicy(policy *v1alpha1.HTTPListenerPolicy) *healthcheckv
 		}
 	}
 	return nil
+}
+
+func convertHeaderMutations(spec *gwv1.HTTPHeaderFilter) []*envoycorev3.TypedExtensionConfig {
+	mutations := pluginutils.ConvertMutations(spec)
+	if len(mutations) == 0 {
+		return nil
+	}
+
+	policy := &envoy_header_mutationv3.HeaderMutation{
+		Mutations: mutations,
+	}
+
+	return []*envoycorev3.TypedExtensionConfig{{
+		Name:        "envoy.http.early_header_mutation.header_mutation",
+		TypedConfig: utils.MustMessageToAny(policy),
+	}}
 }
