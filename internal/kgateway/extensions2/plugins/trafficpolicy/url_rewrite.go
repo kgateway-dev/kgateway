@@ -64,16 +64,12 @@ func constructURLRewrite(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpec
 
 	ir := &urlRewriteIR{}
 
-	if spec.UrlRewrite.Hostname != nil {
-		ir.hostname = spec.UrlRewrite.Hostname
-	}
-
-	if spec.UrlRewrite.Path != nil {
+	if spec.UrlRewrite.PathRegex != nil {
 		ir.regexMatch = &envoy_type_matcher_v3.RegexMatchAndSubstitute{
 			Pattern: &envoy_type_matcher_v3.RegexMatcher{
-				Regex: spec.UrlRewrite.Path.Pattern,
+				Regex: spec.UrlRewrite.PathRegex.Pattern,
 			},
-			Substitution: spec.UrlRewrite.Path.Substitution,
+			Substitution: spec.UrlRewrite.PathRegex.Substitution,
 		}
 	}
 

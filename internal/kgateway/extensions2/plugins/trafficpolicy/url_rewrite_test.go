@@ -238,19 +238,10 @@ func TestConstructURLRewrite(t *testing.T) {
 			expectNil: true,
 		},
 		{
-			name: "hostname only",
-			spec: v1alpha1.TrafficPolicySpec{
-				UrlRewrite: &v1alpha1.URLRewrite{
-					Hostname: ptr.To("example.com"),
-				},
-			},
-			expectedHostname: ptr.To("example.com"),
-		},
-		{
 			name: "path only",
 			spec: v1alpha1.TrafficPolicySpec{
 				UrlRewrite: &v1alpha1.URLRewrite{
-					Path: &v1alpha1.PathRewrite{
+					PathRegex: &v1alpha1.PathRegexRewrite{
 						Pattern:      "^/foo/(.*)",
 						Substitution: "/bar/\\1",
 					},
@@ -258,21 +249,6 @@ func TestConstructURLRewrite(t *testing.T) {
 			},
 			expectedPattern: "^/foo/(.*)",
 			expectedSubst:   "/bar/\\1",
-		},
-		{
-			name: "both hostname and path",
-			spec: v1alpha1.TrafficPolicySpec{
-				UrlRewrite: &v1alpha1.URLRewrite{
-					Hostname: ptr.To("example.com"),
-					Path: &v1alpha1.PathRewrite{
-						Pattern:      "^/api/(.*)",
-						Substitution: "/v1/\\1",
-					},
-				},
-			},
-			expectedHostname: ptr.To("example.com"),
-			expectedPattern:  "^/api/(.*)",
-			expectedSubst:    "/v1/\\1",
 		},
 	}
 

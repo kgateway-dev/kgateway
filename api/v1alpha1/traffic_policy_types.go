@@ -136,23 +136,15 @@ type TrafficPolicySpec struct {
 
 // URLRewrite specifies URL rewrite rules using regular expressions.
 // This allows flexible path and hostname rewriting based on regex patterns.
-// +kubebuilder:validation:AtLeastOneOf=hostname;path
+// +kubebuilder:validation:AtLeastOneOf=path
 type URLRewrite struct {
-	// Hostname is the value to rewrite the Host header to during forwarding.
-	// This can be a static hostname or a value with regex substitution patterns
-	// if the HTTPRoute uses a RegularExpression path match.
-	// +optional
-	// +kubebuilder:validation:MaxLength=253
-	// +kubebuilder:validation:MinLength=1
-	Hostname *string `json:"hostname,omitempty"`
-
 	// Path specifies the path rewrite configuration.
 	// +optional
-	Path *PathRewrite `json:"path,omitempty"`
+	PathRegex *PathRegexRewrite `json:"pathRegex,omitempty"`
 }
 
-// PathRewrite specifies how to rewrite the URL path.
-type PathRewrite struct {
+// PathRegexRewrite specifies how to rewrite the URL path.
+type PathRegexRewrite struct {
 	// Pattern is the regex pattern that matches the URL path.
 	// The pattern must be a valid RE2 regular expression.
 	// If the HTTPRoute uses a RegularExpression path match, this field can use capture groups
