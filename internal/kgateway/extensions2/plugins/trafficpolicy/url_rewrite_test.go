@@ -6,7 +6,6 @@ import (
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/stretchr/testify/assert"
-	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
@@ -34,36 +33,6 @@ func TestURLRewriteIREquals(t *testing.T) {
 			name:     "non-nil vs nil are not equal",
 			a:        &urlRewriteIR{},
 			b:        nil,
-			expected: false,
-		},
-		{
-			name: "same hostname is equal",
-			a: &urlRewriteIR{
-				hostname: ptr.To("example.com"),
-			},
-			b: &urlRewriteIR{
-				hostname: ptr.To("example.com"),
-			},
-			expected: true,
-		},
-		{
-			name: "different hostname is not equal",
-			a: &urlRewriteIR{
-				hostname: ptr.To("example.com"),
-			},
-			b: &urlRewriteIR{
-				hostname: ptr.To("other.com"),
-			},
-			expected: false,
-		},
-		{
-			name: "hostname nil vs non-nil is not equal",
-			a: &urlRewriteIR{
-				hostname: nil,
-			},
-			b: &urlRewriteIR{
-				hostname: ptr.To("example.com"),
-			},
 			expected: false,
 		},
 		{
@@ -130,14 +99,12 @@ func TestURLRewriteIREquals(t *testing.T) {
 		{
 			name: "reflexivity - same instance",
 			a: &urlRewriteIR{
-				hostname: ptr.To("example.com"),
 				regexMatch: &envoy_type_matcher_v3.RegexMatchAndSubstitute{
 					Pattern:      &envoy_type_matcher_v3.RegexMatcher{Regex: "^/foo/(.*)"},
 					Substitution: "/bar/$1",
 				},
 			},
 			b: &urlRewriteIR{
-				hostname: ptr.To("example.com"),
 				regexMatch: &envoy_type_matcher_v3.RegexMatchAndSubstitute{
 					Pattern:      &envoy_type_matcher_v3.RegexMatcher{Regex: "^/foo/(.*)"},
 					Substitution: "/bar/$1",
@@ -192,13 +159,6 @@ func TestURLRewriteIRValidate(t *testing.T) {
 			expectError: true,
 		},
 		{
-			name: "hostname only is valid",
-			ir: &urlRewriteIR{
-				hostname: ptr.To("example.com"),
-			},
-			expectError: false,
-		},
-		{
 			name: "nil pattern in regex match is valid",
 			ir: &urlRewriteIR{
 				regexMatch: &envoy_type_matcher_v3.RegexMatchAndSubstitute{
@@ -225,12 +185,11 @@ func TestURLRewriteIRValidate(t *testing.T) {
 
 func TestConstructURLRewrite(t *testing.T) {
 	tests := []struct {
-		name             string
-		spec             v1alpha1.TrafficPolicySpec
-		expectedHostname *string
-		expectedPattern  string
-		expectedSubst    string
-		expectNil        bool
+		name            string
+		spec            v1alpha1.TrafficPolicySpec
+		expectedPattern string
+		expectedSubst   string
+		expectNil       bool
 	}{
 		{
 			name:      "nil urlRewrite produces nil output",
@@ -263,11 +222,6 @@ func TestConstructURLRewrite(t *testing.T) {
 			}
 
 			assert.NotNil(t, out.urlRewrite)
-			if tt.expectedHostname != nil {
-				assert.Equal(t, *tt.expectedHostname, *out.urlRewrite.hostname)
-			} else {
-				assert.Nil(t, out.urlRewrite.hostname)
-			}
 
 			if tt.expectedPattern != "" {
 				assert.NotNil(t, out.urlRewrite.regexMatch)
@@ -302,19 +256,14 @@ func TestApplyURLRewrite(t *testing.T) {
 		{
 			name: "nil route does nothing",
 			urlRewrite: &urlRewriteIR{
-				hostname: ptr.To("example.com"),
+				regexMatch: &envoy_type_matcher_v3.RegexMatchAndSubstitute{
+					Pattern:      &envoy_type_matcher_v3.RegexMatcher{Regex: "^/api/(.*)"},
+					Substitution: "/v1/\\1",
+				},
 			},
 			route:                nil,
 			expectNoHostRewrite:  true,
 			expectNoRegexRewrite: true,
-		},
-		{
-			name: "apply hostname rewrite",
-			urlRewrite: &urlRewriteIR{
-				hostname: ptr.To("example.com"),
-			},
-			route:               &envoyroutev3.Route{Action: &envoyroutev3.Route_Route{Route: &envoyroutev3.RouteAction{}}},
-			expectedHostRewrite: "example.com",
 		},
 		{
 			name: "apply regex path rewrite",
@@ -327,37 +276,6 @@ func TestApplyURLRewrite(t *testing.T) {
 			route:                &envoyroutev3.Route{Action: &envoyroutev3.Route_Route{Route: &envoyroutev3.RouteAction{}}},
 			expectedRegexPattern: "^/foo/(.*)",
 			expectedRegexSubst:   "/bar/\\1",
-		},
-		{
-			name: "apply both hostname and path rewrite",
-			urlRewrite: &urlRewriteIR{
-				hostname: ptr.To("example.com"),
-				regexMatch: &envoy_type_matcher_v3.RegexMatchAndSubstitute{
-					Pattern:      &envoy_type_matcher_v3.RegexMatcher{Regex: "^/api/(.*)"},
-					Substitution: "/v1/\\1",
-				},
-			},
-			route:                &envoyroutev3.Route{Action: &envoyroutev3.Route_Route{Route: &envoyroutev3.RouteAction{}}},
-			expectedHostRewrite:  "example.com",
-			expectedRegexPattern: "^/api/(.*)",
-			expectedRegexSubst:   "/v1/\\1",
-		},
-		{
-			name: "does not overwrite existing host rewrite",
-			urlRewrite: &urlRewriteIR{
-				hostname: ptr.To("new.com"),
-			},
-			route: &envoyroutev3.Route{
-				Action: &envoyroutev3.Route_Route{
-					Route: &envoyroutev3.RouteAction{
-						HostRewriteSpecifier: &envoyroutev3.RouteAction_HostRewriteLiteral{
-							HostRewriteLiteral: "existing.com",
-						},
-					},
-				},
-			},
-			expectedHostRewrite:     "existing.com",
-			expectExistingPreserved: true,
 		},
 		{
 			name: "does not overwrite existing regex rewrite",

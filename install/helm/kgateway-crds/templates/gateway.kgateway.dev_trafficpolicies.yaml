@@ -1577,8 +1577,8 @@ spec:
                     type: object
                 type: object
                 x-kubernetes-validations:
-                - message: at least one of the fields in [path] must be set
-                  rule: '[has(self.path)].filter(x,x==true).size() >= 1'
+                - message: at least one of the fields in [pathRegex] must be set
+                  rule: '[has(self.pathRegex)].filter(x,x==true).size() >= 1'
             type: object
             x-kubernetes-validations:
             - message: autoHostRewrite can only be used when targeting HTTPRoute resources
