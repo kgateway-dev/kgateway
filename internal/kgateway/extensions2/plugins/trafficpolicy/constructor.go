@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"gorm.io/gorm/logger"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
