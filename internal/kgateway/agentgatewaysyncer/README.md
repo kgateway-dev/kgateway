@@ -18,7 +18,6 @@ metadata:
 spec:
   kube:
     agentgateway:
-      enabled: true
       logLevel: debug
       image:
         tag: bc92714
@@ -1192,7 +1191,6 @@ metadata:
 spec:
   kube:
     agentgateway:
-      enabled: true
       logLevel: debug
       customConfigMapName: agent-gateway-config
 ```
@@ -1406,7 +1404,6 @@ metadata:
 spec:
   kube:
     agentgateway:
-      enabled: true
       logLevel: debug
       customConfigMapName: ai-gateway-tracing
 ---
@@ -1502,7 +1499,6 @@ metadata:
 spec:
   kube:
     agentgateway:
-      enabled: true
       logLevel: debug
       customConfigMapName: agentgateway-tracing-config
 ---

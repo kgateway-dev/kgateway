@@ -709,10 +709,12 @@ func (s *ControllerSuite) startController(
 	}
 
 	gwCfg := GatewayConfig{
-		Client:            kubeClient,
-		Mgr:               mgr,
-		ControllerName:    gatewayControllerName,
-		AgwControllerName: agwControllerName,
+		Client:             kubeClient,
+		Mgr:                mgr,
+		ControllerName:     gatewayControllerName,
+		AgwControllerName:  agwControllerName,
+		EnableEnvoy:        true,
+		EnableAgentgateway: true,
 		ImageInfo: &deployer.ImageInfo{
 			Registry: "ghcr.io/kgateway-dev",
 			Tag:      "latest",

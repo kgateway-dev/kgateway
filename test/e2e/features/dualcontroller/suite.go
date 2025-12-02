@@ -15,7 +15,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -96,8 +95,6 @@ func (s *testingSuite) applyGatewayManifests(envoyGwName, envoyRouteName, envoyH
 		return s.TestInstallation.Actions.Kubectl().Apply(s.Ctx, []byte(agwTransformed))
 	}, 10*time.Second, 1*time.Second).Should(gomega.Succeed(), "can apply agentgateway manifest")
 
-	// Give Kubernetes a moment to process the resources
-	time.Sleep(2 * time.Second)
 }
 
 // deleteGatewayManifests deletes the gateway resources and their dynamic resources for a specific phase
@@ -128,15 +125,9 @@ func (s *testingSuite) deleteGatewayManifests(envoyGwMeta, agwGwMeta metav1.Obje
 	// Delete all resources (ignore errors if they don't exist)
 	s.TestInstallation.ClusterContext.Client.Delete(s.Ctx, envoyRoute)
 	s.TestInstallation.ClusterContext.Client.Delete(s.Ctx, envoyGw)
-	s.TestInstallation.ClusterContext.Client.Delete(s.Ctx, envoyDeployment)
-	s.TestInstallation.ClusterContext.Client.Delete(s.Ctx, envoyService)
-	s.TestInstallation.ClusterContext.Client.Delete(s.Ctx, envoyServiceAccount)
 
 	s.TestInstallation.ClusterContext.Client.Delete(s.Ctx, agwRoute)
 	s.TestInstallation.ClusterContext.Client.Delete(s.Ctx, agwGw)
-	s.TestInstallation.ClusterContext.Client.Delete(s.Ctx, agwDeployment)
-	s.TestInstallation.ClusterContext.Client.Delete(s.Ctx, agwService)
-	s.TestInstallation.ClusterContext.Client.Delete(s.Ctx, agwServiceAccount)
 
 	// Wait for all resources to be deleted
 	s.TestInstallation.Assertions.EventuallyObjectsNotExist(s.Ctx,
@@ -145,8 +136,8 @@ func (s *testingSuite) deleteGatewayManifests(envoyGwMeta, agwGwMeta metav1.Obje
 	)
 }
 
-// TestPhase1EnvoyOnly tests that when only Envoy controller is enabled, only Envoy Gateways are processed
-func (s *testingSuite) TestPhase1EnvoyOnly() {
+// TestEnvoyOnly tests that when only Envoy controller is enabled, only Envoy Gateways are processed
+func (s *testingSuite) TestEnvoyOnly() {
 	// Note: Initial installation already has envoy.enabled=true, agentgateway.enabled=false
 	// So we don't need to upgrade helm here - the controller is already configured correctly
 	// We still call upgradeHelmWithFlags to ensure consistency and wait for controller readiness
@@ -154,33 +145,33 @@ func (s *testingSuite) TestPhase1EnvoyOnly() {
 
 	// Apply manifests after helm upgrade
 	s.applyGatewayManifests(
-		"envoy-gw-phase1", "envoy-route-phase1", "envoy-phase1.example.com",
-		"agw-gw-phase1", "agw-route-phase1", "agw-phase1.example.com",
+		"envoy-gw-envoy-only", "envoy-route-envoy-only", "envoy-envoy-only.example.com",
+		"agw-gw-envoy-only", "agw-route-envoy-only", "agw-envoy-only.example.com",
 	)
-	defer s.deleteGatewayManifests(envoyGwPhase1Meta, agwGwPhase1Meta)
+	defer s.deleteGatewayManifests(envoyGwEnvoyOnlyMeta, agwGwEnvoyOnlyMeta)
 
 	// Assert that Envoy Gateway gets provisioned
 	s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx,
-		&appsv1.Deployment{ObjectMeta: envoyGwPhase1Meta},
-		&corev1.Service{ObjectMeta: envoyGwPhase1Meta},
-		&corev1.ServiceAccount{ObjectMeta: envoyGwPhase1Meta},
+		&appsv1.Deployment{ObjectMeta: envoyGwEnvoyOnlyMeta},
+		&corev1.Service{ObjectMeta: envoyGwEnvoyOnlyMeta},
+		&corev1.ServiceAccount{ObjectMeta: envoyGwEnvoyOnlyMeta},
 	)
 
 	// Assert that Envoy Gateway becomes ready
-	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, envoyGwPhase1Meta, gomega.Equal(1))
+	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, envoyGwEnvoyOnlyMeta, gomega.Equal(1))
 
 	// Assert that Envoy Gateway status is Accepted and Programmed
 	s.TestInstallation.Assertions.EventuallyGatewayCondition(
 		s.Ctx,
-		envoyGwPhase1Meta.Name,
-		envoyGwPhase1Meta.Namespace,
+		envoyGwEnvoyOnlyMeta.Name,
+		envoyGwEnvoyOnlyMeta.Namespace,
 		gwv1.GatewayConditionAccepted,
 		metav1.ConditionTrue,
 	)
 	s.TestInstallation.Assertions.EventuallyGatewayCondition(
 		s.Ctx,
-		envoyGwPhase1Meta.Name,
-		envoyGwPhase1Meta.Namespace,
+		envoyGwEnvoyOnlyMeta.Name,
+		envoyGwEnvoyOnlyMeta.Namespace,
 		gwv1.GatewayConditionProgrammed,
 		metav1.ConditionTrue,
 	)
@@ -190,7 +181,7 @@ func (s *testingSuite) TestPhase1EnvoyOnly() {
 		route := &gwv1.HTTPRoute{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
 			Namespace: "default",
-			Name:      "envoy-route-phase1",
+			Name:      "envoy-route-envoy-only",
 		}, route)
 		g.Expect(err).NotTo(gomega.HaveOccurred())
 		g.Expect(route.Status.Parents).NotTo(gomega.BeEmpty(), "HTTPRoute should have parent status")
@@ -201,75 +192,19 @@ func (s *testingSuite) TestPhase1EnvoyOnly() {
 		Should(gomega.Succeed())
 
 	// Wait for Envoy proxy pods to be running before making curl requests
-	// EventuallyReadyReplicas ensures pods are ready, but we also verify they're Running
-	// to catch any edge cases where pods report ready but aren't actually running
-	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
-		pods, err := s.TestInstallation.ClusterContext.Clientset.CoreV1().Pods(envoyGwPhase1Meta.GetNamespace()).List(s.Ctx, metav1.ListOptions{
-			LabelSelector: defaults.WellKnownAppLabel + "=" + envoyGwPhase1Meta.GetName(),
+	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx,
+		envoyGwEnvoyOnlyMeta.GetNamespace(),
+		metav1.ListOptions{
+			LabelSelector: defaults.WellKnownAppLabel + "=" + envoyGwEnvoyOnlyMeta.GetName(),
 		})
-		g.Expect(err).NotTo(gomega.HaveOccurred(), "should be able to list pods")
-		g.Expect(pods.Items).NotTo(gomega.BeEmpty(), "should have at least one pod")
-
-		for _, pod := range pods.Items {
-			if pod.Status.Phase != corev1.PodRunning {
-				s.T().Logf("Pod %s is not Running, phase: %s", pod.Name, pod.Status.Phase)
-				// Log pod events for debugging
-				events, err := s.TestInstallation.ClusterContext.Clientset.CoreV1().Events(pod.Namespace).List(s.Ctx, metav1.ListOptions{
-					FieldSelector: fmt.Sprintf("involvedObject.name=%s", pod.Name),
-				})
-				if err == nil {
-					for _, event := range events.Items {
-						s.T().Logf("Pod %s event: %s - %s", pod.Name, event.Reason, event.Message)
-					}
-				}
-			}
-			g.Expect(pod.Status.Phase).To(gomega.Equal(corev1.PodRunning), "pod %s should be Running", pod.Name)
-			g.Expect(pod.Status.ContainerStatuses).NotTo(gomega.BeEmpty(), "pod %s should have container statuses", pod.Name)
-			for _, containerStatus := range pod.Status.ContainerStatuses {
-				if !containerStatus.Ready {
-					s.T().Logf("Container %s in pod %s is not ready", containerStatus.Name, pod.Name)
-					// Log container state for debugging
-					if containerStatus.State.Waiting != nil {
-						s.T().Logf("Container %s waiting: %s - %s", containerStatus.Name, containerStatus.State.Waiting.Reason, containerStatus.State.Waiting.Message)
-					}
-					if containerStatus.State.Terminated != nil {
-						s.T().Logf("Container %s terminated: %s - %s (exit code: %d)", containerStatus.Name, containerStatus.State.Terminated.Reason, containerStatus.State.Terminated.Message, containerStatus.State.Terminated.ExitCode)
-						// Fetch pod logs for crashed containers
-						req := s.TestInstallation.ClusterContext.Clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{
-							Container: containerStatus.Name,
-							TailLines: ptr.To(int64(50)),
-						})
-						logs, err := req.Stream(s.Ctx)
-						if err == nil {
-							defer logs.Close()
-							logBytes := make([]byte, 4096)
-							n, readErr := logs.Read(logBytes)
-							if readErr == nil && n > 0 {
-								s.T().Logf("Container %s logs:\n%s", containerStatus.Name, string(logBytes[:n]))
-							} else if readErr != nil && readErr.Error() != "EOF" {
-								s.T().Logf("Error reading logs for container %s: %v", containerStatus.Name, readErr)
-							}
-						} else {
-							s.T().Logf("Failed to get logs for container %s: %v", containerStatus.Name, err)
-						}
-					}
-				}
-				g.Expect(containerStatus.Ready).To(gomega.BeTrue(), "container %s in pod %s should be ready", containerStatus.Name, pod.Name)
-			}
-		}
-	}).
-		WithContext(s.Ctx).
-		WithTimeout(time.Minute).
-		WithPolling(time.Second).
-		Should(gomega.Succeed(), "Envoy proxy pods should be running and ready")
 
 	// Verify traffic works through Envoy Gateway
 	s.TestInstallation.Assertions.AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(envoyGwPhase1Meta)),
-			curl.WithHostHeader("envoy-phase1.example.com"),
+			curl.WithHost(kubeutils.ServiceFQDN(envoyGwEnvoyOnlyMeta)),
+			curl.WithHostHeader("envoy-envoy-only.example.com"),
 			curl.WithPort(8080),
 		},
 		&testmatchers.HttpResponse{
@@ -280,15 +215,15 @@ func (s *testingSuite) TestPhase1EnvoyOnly() {
 	s.TestInstallation.Assertions.Gomega.Consistently(func(g gomega.Gomega) {
 		agwDeployment := &appsv1.Deployment{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
-			Namespace: agwGwPhase1Meta.Namespace,
-			Name:      agwGwPhase1Meta.Name,
+			Namespace: agwGwEnvoyOnlyMeta.Namespace,
+			Name:      agwGwEnvoyOnlyMeta.Name,
 		}, agwDeployment)
 		g.Expect(err).To(gomega.HaveOccurred(), "Agentgateway Deployment should not exist when controller is disabled")
 
 		agwService := &corev1.Service{}
 		err = s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
-			Namespace: agwGwPhase1Meta.Namespace,
-			Name:      agwGwPhase1Meta.Name,
+			Namespace: agwGwEnvoyOnlyMeta.Namespace,
+			Name:      agwGwEnvoyOnlyMeta.Name,
 		}, agwService)
 		g.Expect(err).To(gomega.HaveOccurred(), "Agentgateway Service should not exist when controller is disabled")
 	}, "10s", "1s").Should(gomega.Succeed())
@@ -297,8 +232,8 @@ func (s *testingSuite) TestPhase1EnvoyOnly() {
 	s.TestInstallation.Assertions.Gomega.Consistently(func(g gomega.Gomega) {
 		agwGw := &gwv1.Gateway{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
-			Namespace: agwGwPhase1Meta.Namespace,
-			Name:      agwGwPhase1Meta.Name,
+			Namespace: agwGwEnvoyOnlyMeta.Namespace,
+			Name:      agwGwEnvoyOnlyMeta.Name,
 		}, agwGw)
 		g.Expect(err).NotTo(gomega.HaveOccurred())
 
@@ -313,43 +248,43 @@ func (s *testingSuite) TestPhase1EnvoyOnly() {
 	}, "10s", "1s").Should(gomega.Succeed())
 
 	// Verify that the Deployment uses the envoy chart (check container image or labels)
-	s.verifyEnvoyDeployment(envoyGwPhase1Meta)
+	s.verifyEnvoyDeployment(envoyGwEnvoyOnlyMeta)
 }
 
-// TestPhase2AgentgatewayOnly tests that when only Agentgateway controller is enabled, only Agentgateway Gateways are processed
-func (s *testingSuite) TestPhase2AgentgatewayOnly() {
+// TestAgentgatewayOnly tests that when only Agentgateway controller is enabled, only Agentgateway Gateways are processed
+func (s *testingSuite) TestAgentgatewayOnly() {
 	// Upgrade helm to enable only Agentgateway controller
 	s.upgradeHelmWithFlags(false, true)
 
 	// Apply manifests after helm upgrade
 	s.applyGatewayManifests(
-		"envoy-gw-phase2", "envoy-route-phase2", "envoy-phase2.example.com",
-		"agw-gw-phase2", "agw-route-phase2", "agw-phase2.example.com",
+		"envoy-gw-agw-only", "envoy-route-agw-only", "envoy-agw-only.example.com",
+		"agw-gw-agw-only", "agw-route-agw-only", "agw-agw-only.example.com",
 	)
-	defer s.deleteGatewayManifests(envoyGwPhase2Meta, agwGwPhase2Meta)
+	defer s.deleteGatewayManifests(envoyGwAgwOnlyMeta, agwGwAgwOnlyMeta)
 
 	// Assert that Agentgateway Gateway gets provisioned
 	s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx,
-		&appsv1.Deployment{ObjectMeta: agwGwPhase2Meta},
-		&corev1.Service{ObjectMeta: agwGwPhase2Meta},
-		&corev1.ServiceAccount{ObjectMeta: agwGwPhase2Meta},
+		&appsv1.Deployment{ObjectMeta: agwGwAgwOnlyMeta},
+		&corev1.Service{ObjectMeta: agwGwAgwOnlyMeta},
+		&corev1.ServiceAccount{ObjectMeta: agwGwAgwOnlyMeta},
 	)
 
 	// Assert that Agentgateway Gateway becomes ready
-	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, agwGwPhase2Meta, gomega.Equal(1))
+	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, agwGwAgwOnlyMeta, gomega.Equal(1))
 
 	// Assert that Agentgateway Gateway status is Accepted and Programmed
 	s.TestInstallation.Assertions.EventuallyGatewayCondition(
 		s.Ctx,
-		agwGwPhase2Meta.Name,
-		agwGwPhase2Meta.Namespace,
+		agwGwAgwOnlyMeta.Name,
+		agwGwAgwOnlyMeta.Namespace,
 		gwv1.GatewayConditionAccepted,
 		metav1.ConditionTrue,
 	)
 	s.TestInstallation.Assertions.EventuallyGatewayCondition(
 		s.Ctx,
-		agwGwPhase2Meta.Name,
-		agwGwPhase2Meta.Namespace,
+		agwGwAgwOnlyMeta.Name,
+		agwGwAgwOnlyMeta.Namespace,
 		gwv1.GatewayConditionProgrammed,
 		metav1.ConditionTrue,
 	)
@@ -359,7 +294,7 @@ func (s *testingSuite) TestPhase2AgentgatewayOnly() {
 		route := &gwv1.HTTPRoute{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
 			Namespace: "default",
-			Name:      "agw-route-phase2",
+			Name:      "agw-route-agw-only",
 		}, route)
 		g.Expect(err).NotTo(gomega.HaveOccurred())
 		g.Expect(route.Status.Parents).NotTo(gomega.BeEmpty(), "HTTPRoute should have parent status")
@@ -371,9 +306,9 @@ func (s *testingSuite) TestPhase2AgentgatewayOnly() {
 
 	// Wait for Agentgateway proxy pods to be running before making curl requests
 	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx,
-		agwGwPhase2Meta.GetNamespace(),
+		agwGwAgwOnlyMeta.GetNamespace(),
 		metav1.ListOptions{
-			LabelSelector: defaults.WellKnownAppLabel + "=" + agwGwPhase2Meta.GetName(),
+			LabelSelector: defaults.WellKnownAppLabel + "=" + agwGwAgwOnlyMeta.GetName(),
 		})
 
 	// Verify traffic works through Agentgateway Gateway
@@ -381,8 +316,8 @@ func (s *testingSuite) TestPhase2AgentgatewayOnly() {
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(agwGwPhase2Meta)),
-			curl.WithHostHeader("agw-phase2.example.com"),
+			curl.WithHost(kubeutils.ServiceFQDN(agwGwAgwOnlyMeta)),
+			curl.WithHostHeader("agw-agw-only.example.com"),
 			curl.WithPort(8080),
 		},
 		&testmatchers.HttpResponse{
@@ -393,15 +328,15 @@ func (s *testingSuite) TestPhase2AgentgatewayOnly() {
 	s.TestInstallation.Assertions.Gomega.Consistently(func(g gomega.Gomega) {
 		envoyDeployment := &appsv1.Deployment{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
-			Namespace: envoyGwPhase2Meta.Namespace,
-			Name:      envoyGwPhase2Meta.Name,
+			Namespace: envoyGwAgwOnlyMeta.Namespace,
+			Name:      envoyGwAgwOnlyMeta.Name,
 		}, envoyDeployment)
 		g.Expect(err).To(gomega.HaveOccurred(), "Envoy Deployment should not exist when controller is disabled")
 
 		envoyService := &corev1.Service{}
 		err = s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
-			Namespace: envoyGwPhase2Meta.Namespace,
-			Name:      envoyGwPhase2Meta.Name,
+			Namespace: envoyGwAgwOnlyMeta.Namespace,
+			Name:      envoyGwAgwOnlyMeta.Name,
 		}, envoyService)
 		g.Expect(err).To(gomega.HaveOccurred(), "Envoy Service should not exist when controller is disabled")
 	}, "10s", "1s").Should(gomega.Succeed())
@@ -410,8 +345,8 @@ func (s *testingSuite) TestPhase2AgentgatewayOnly() {
 	s.TestInstallation.Assertions.Gomega.Consistently(func(g gomega.Gomega) {
 		envoyGw := &gwv1.Gateway{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
-			Namespace: envoyGwPhase2Meta.Namespace,
-			Name:      envoyGwPhase2Meta.Name,
+			Namespace: envoyGwAgwOnlyMeta.Namespace,
+			Name:      envoyGwAgwOnlyMeta.Name,
 		}, envoyGw)
 		g.Expect(err).NotTo(gomega.HaveOccurred())
 
@@ -426,52 +361,47 @@ func (s *testingSuite) TestPhase2AgentgatewayOnly() {
 	}, "10s", "1s").Should(gomega.Succeed())
 
 	// Verify that the Deployment uses the agentgateway chart
-	s.verifyAgentgatewayDeployment(agwGwPhase2Meta)
-
-	// Verify that Envoy Gateway from phase1 no longer has resources (controller disabled it)
-	s.TestInstallation.Assertions.EventuallyObjectsNotExist(s.Ctx,
-		&appsv1.Deployment{ObjectMeta: envoyGwPhase1Meta},
-	)
+	s.verifyAgentgatewayDeployment(agwGwAgwOnlyMeta)
 }
 
-// TestPhase3BothEnabled tests that when both controllers are enabled, both Gateway types work independently
-func (s *testingSuite) TestPhase3BothEnabled() {
+// TestBothEnabled tests that when both controllers are enabled, both Gateway types work independently
+func (s *testingSuite) TestBothEnabled() {
 	// Upgrade helm to enable both controllers
 	s.upgradeHelmWithFlags(true, true)
 
 	// Apply manifests after helm upgrade
 	s.applyGatewayManifests(
-		"envoy-gw-phase3", "envoy-route-phase3", "envoy-phase3.example.com",
-		"agw-gw-phase3", "agw-route-phase3", "agw-phase3.example.com",
+		"envoy-gw-both-enabled", "envoy-route-both-enabled", "envoy-both-enabled.example.com",
+		"agw-gw-both-enabled", "agw-route-both-enabled", "agw-both-enabled.example.com",
 	)
-	defer s.deleteGatewayManifests(envoyGwPhase3Meta, agwGwPhase3Meta)
+	defer s.deleteGatewayManifests(envoyGwBothEnabledMeta, agwGwBothEnabledMeta)
 
 	// Assert that both Gateways get provisioned
 	s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx,
-		&appsv1.Deployment{ObjectMeta: envoyGwPhase3Meta},
-		&corev1.Service{ObjectMeta: envoyGwPhase3Meta},
-		&corev1.ServiceAccount{ObjectMeta: envoyGwPhase3Meta},
-		&appsv1.Deployment{ObjectMeta: agwGwPhase3Meta},
-		&corev1.Service{ObjectMeta: agwGwPhase3Meta},
-		&corev1.ServiceAccount{ObjectMeta: agwGwPhase3Meta},
+		&appsv1.Deployment{ObjectMeta: envoyGwBothEnabledMeta},
+		&corev1.Service{ObjectMeta: envoyGwBothEnabledMeta},
+		&corev1.ServiceAccount{ObjectMeta: envoyGwBothEnabledMeta},
+		&appsv1.Deployment{ObjectMeta: agwGwBothEnabledMeta},
+		&corev1.Service{ObjectMeta: agwGwBothEnabledMeta},
+		&corev1.ServiceAccount{ObjectMeta: agwGwBothEnabledMeta},
 	)
 
 	// Assert that both Gateways become ready
-	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, envoyGwPhase3Meta, gomega.Equal(1))
-	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, agwGwPhase3Meta, gomega.Equal(1))
+	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, envoyGwBothEnabledMeta, gomega.Equal(1))
+	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, agwGwBothEnabledMeta, gomega.Equal(1))
 
 	// Assert that Envoy Gateway status is Accepted and Programmed
 	s.TestInstallation.Assertions.EventuallyGatewayCondition(
 		s.Ctx,
-		envoyGwPhase3Meta.Name,
-		envoyGwPhase3Meta.Namespace,
+		envoyGwBothEnabledMeta.Name,
+		envoyGwBothEnabledMeta.Namespace,
 		gwv1.GatewayConditionAccepted,
 		metav1.ConditionTrue,
 	)
 	s.TestInstallation.Assertions.EventuallyGatewayCondition(
 		s.Ctx,
-		envoyGwPhase3Meta.Name,
-		envoyGwPhase3Meta.Namespace,
+		envoyGwBothEnabledMeta.Name,
+		envoyGwBothEnabledMeta.Namespace,
 		gwv1.GatewayConditionProgrammed,
 		metav1.ConditionTrue,
 	)
@@ -479,36 +409,60 @@ func (s *testingSuite) TestPhase3BothEnabled() {
 	// Assert that Agentgateway Gateway status is Accepted and Programmed
 	s.TestInstallation.Assertions.EventuallyGatewayCondition(
 		s.Ctx,
-		agwGwPhase3Meta.Name,
-		agwGwPhase3Meta.Namespace,
+		agwGwBothEnabledMeta.Name,
+		agwGwBothEnabledMeta.Namespace,
 		gwv1.GatewayConditionAccepted,
 		metav1.ConditionTrue,
 	)
 	s.TestInstallation.Assertions.EventuallyGatewayCondition(
 		s.Ctx,
-		agwGwPhase3Meta.Name,
-		agwGwPhase3Meta.Namespace,
+		agwGwBothEnabledMeta.Name,
+		agwGwBothEnabledMeta.Namespace,
 		gwv1.GatewayConditionProgrammed,
 		metav1.ConditionTrue,
 	)
 
-	// Verify both HTTPRoute statuses are updated
+	// Verify both HTTPRoute statuses are updated with correct parent Gateways
 	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
 		envoyRoute := &gwv1.HTTPRoute{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
 			Namespace: "default",
-			Name:      "envoy-route-phase3",
+			Name:      "envoy-route-both-enabled",
 		}, envoyRoute)
 		g.Expect(err).NotTo(gomega.HaveOccurred())
 		g.Expect(envoyRoute.Status.Parents).NotTo(gomega.BeEmpty(), "Envoy HTTPRoute should have parent status")
 
+		// Verify the parent Gateway name and controllerName are correct
+		foundEnvoyParent := false
+		for _, parent := range envoyRoute.Status.Parents {
+			if string(parent.ParentRef.Name) == envoyGwBothEnabledMeta.Name {
+				g.Expect(parent.ControllerName).To(gomega.Equal(gwv1.GatewayController(wellknown.DefaultGatewayControllerName)),
+					"Envoy HTTPRoute parent status should have correct controllerName")
+				foundEnvoyParent = true
+				break
+			}
+		}
+		g.Expect(foundEnvoyParent).To(gomega.BeTrue(), "Envoy HTTPRoute should have parent status for envoy Gateway")
+
 		agwRoute := &gwv1.HTTPRoute{}
 		err = s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
 			Namespace: "default",
-			Name:      "agw-route-phase3",
+			Name:      "agw-route-both-enabled",
 		}, agwRoute)
 		g.Expect(err).NotTo(gomega.HaveOccurred())
 		g.Expect(agwRoute.Status.Parents).NotTo(gomega.BeEmpty(), "Agentgateway HTTPRoute should have parent status")
+
+		// Verify the parent Gateway name and controllerName are correct
+		foundAgwParent := false
+		for _, parent := range agwRoute.Status.Parents {
+			if string(parent.ParentRef.Name) == agwGwBothEnabledMeta.Name {
+				g.Expect(parent.ControllerName).To(gomega.Equal(gwv1.GatewayController(wellknown.DefaultAgwControllerName)),
+					"Agentgateway HTTPRoute parent status should have correct controllerName")
+				foundAgwParent = true
+				break
+			}
+		}
+		g.Expect(foundAgwParent).To(gomega.BeTrue(), "Agentgateway HTTPRoute should have parent status for agentgateway Gateway")
 	}).
 		WithContext(s.Ctx).
 		WithTimeout(time.Second * 30).
@@ -517,16 +471,16 @@ func (s *testingSuite) TestPhase3BothEnabled() {
 
 	// Wait for Envoy proxy pods to be running before making curl requests
 	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx,
-		envoyGwPhase3Meta.GetNamespace(),
+		envoyGwBothEnabledMeta.GetNamespace(),
 		metav1.ListOptions{
-			LabelSelector: defaults.WellKnownAppLabel + "=" + envoyGwPhase3Meta.GetName(),
+			LabelSelector: defaults.WellKnownAppLabel + "=" + envoyGwBothEnabledMeta.GetName(),
 		})
 
 	// Wait for Agentgateway proxy pods to be running before making curl requests
 	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx,
-		agwGwPhase3Meta.GetNamespace(),
+		agwGwBothEnabledMeta.GetNamespace(),
 		metav1.ListOptions{
-			LabelSelector: defaults.WellKnownAppLabel + "=" + agwGwPhase3Meta.GetName(),
+			LabelSelector: defaults.WellKnownAppLabel + "=" + agwGwBothEnabledMeta.GetName(),
 		})
 
 	// Verify traffic works through Envoy Gateway
@@ -534,8 +488,8 @@ func (s *testingSuite) TestPhase3BothEnabled() {
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(envoyGwPhase3Meta)),
-			curl.WithHostHeader("envoy-phase3.example.com"),
+			curl.WithHost(kubeutils.ServiceFQDN(envoyGwBothEnabledMeta)),
+			curl.WithHostHeader("envoy-both-enabled.example.com"),
 			curl.WithPort(8080),
 		},
 		&testmatchers.HttpResponse{
@@ -547,8 +501,8 @@ func (s *testingSuite) TestPhase3BothEnabled() {
 		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(agwGwPhase3Meta)),
-			curl.WithHostHeader("agw-phase3.example.com"),
+			curl.WithHost(kubeutils.ServiceFQDN(agwGwBothEnabledMeta)),
+			curl.WithHostHeader("agw-both-enabled.example.com"),
 			curl.WithPort(8080),
 		},
 		&testmatchers.HttpResponse{
@@ -556,8 +510,8 @@ func (s *testingSuite) TestPhase3BothEnabled() {
 		})
 
 	// Verify that the Deployments use the correct charts
-	s.verifyEnvoyDeployment(envoyGwPhase3Meta)
-	s.verifyAgentgatewayDeployment(agwGwPhase3Meta)
+	s.verifyEnvoyDeployment(envoyGwBothEnabledMeta)
+	s.verifyAgentgatewayDeployment(agwGwBothEnabledMeta)
 
 	// Verify status entries are namespaced by controllerName
 	s.verifyControllerNameInStatus()
@@ -655,9 +609,6 @@ func (s *testingSuite) upgradeHelmWithFlags(enableEnvoy, enableAgentgateway bool
 			Should(gomega.Succeed(), "GatewayClass agentgateway should be created and accepted")
 	}
 
-	// Give the controller additional time to fully reconcile after GatewayClass creation
-	// This ensures xDS is ready and controller can properly provision proxy pods
-	time.Sleep(5 * time.Second)
 }
 
 // verifyEnvoyDeployment verifies that the Deployment uses the envoy chart
@@ -719,8 +670,8 @@ func (s *testingSuite) verifyControllerNameInStatus() {
 		// Check Envoy Gateway status has correct controllerName
 		envoyGw := &gwv1.Gateway{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
-			Namespace: envoyGwPhase3Meta.Namespace,
-			Name:      envoyGwPhase3Meta.Name,
+			Namespace: envoyGwBothEnabledMeta.Namespace,
+			Name:      envoyGwBothEnabledMeta.Name,
 		}, envoyGw)
 		g.Expect(err).NotTo(gomega.HaveOccurred())
 
@@ -736,8 +687,8 @@ func (s *testingSuite) verifyControllerNameInStatus() {
 		// Check Agentgateway Gateway status has correct controllerName
 		agwGw := &gwv1.Gateway{}
 		err = s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
-			Namespace: agwGwPhase3Meta.Namespace,
-			Name:      agwGwPhase3Meta.Name,
+			Namespace: agwGwBothEnabledMeta.Namespace,
+			Name:      agwGwBothEnabledMeta.Name,
 		}, agwGw)
 		g.Expect(err).NotTo(gomega.HaveOccurred())
 
@@ -753,21 +704,21 @@ func (s *testingSuite) verifyControllerNameInStatus() {
 		envoyRoute := &gwv1.HTTPRoute{}
 		err = s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
 			Namespace: "default",
-			Name:      "envoy-route-phase3",
+			Name:      "envoy-route-both-enabled",
 		}, envoyRoute)
 		g.Expect(err).NotTo(gomega.HaveOccurred())
 		g.Expect(envoyRoute.Status.Parents).To(gomega.HaveLen(1), "Envoy HTTPRoute should have exactly one parent status")
-		g.Expect(string(envoyRoute.Status.Parents[0].ParentRef.Name)).To(gomega.Equal(envoyGwPhase3Meta.Name))
+		g.Expect(string(envoyRoute.Status.Parents[0].ParentRef.Name)).To(gomega.Equal(envoyGwBothEnabledMeta.Name))
 		g.Expect(envoyRoute.Status.Parents[0].ControllerName).To(gomega.Equal(gwv1.GatewayController(wellknown.DefaultGatewayControllerName)))
 
 		agwRoute := &gwv1.HTTPRoute{}
 		err = s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
 			Namespace: "default",
-			Name:      "agw-route-phase3",
+			Name:      "agw-route-both-enabled",
 		}, agwRoute)
 		g.Expect(err).NotTo(gomega.HaveOccurred())
 		g.Expect(agwRoute.Status.Parents).To(gomega.HaveLen(1), "Agentgateway HTTPRoute should have exactly one parent status")
-		g.Expect(string(agwRoute.Status.Parents[0].ParentRef.Name)).To(gomega.Equal(agwGwPhase3Meta.Name))
+		g.Expect(string(agwRoute.Status.Parents[0].ParentRef.Name)).To(gomega.Equal(agwGwBothEnabledMeta.Name))
 		g.Expect(agwRoute.Status.Parents[0].ControllerName).To(gomega.Equal(gwv1.GatewayController(wellknown.DefaultAgwControllerName)))
 	}).
 		WithContext(s.Ctx).

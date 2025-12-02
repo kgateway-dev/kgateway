@@ -13,24 +13,25 @@ This test suite validates the dual controller architecture requirements document
 
 The suite uses a **performance-optimized approach** that minimizes helm operations:
 - Single helm install with Envoy enabled (helm chart requires at least one controller enabled)
-- Use helm upgrade to change enable flags between test phases
-- Use fresh Gateway/Route resources for each phase to avoid state contamination
+- Use helm upgrade to change enable flags for each test
+- Use fresh Gateway/Route resources for each test to avoid state contamination
+- Tests are **independent** and can run in parallel
 
-### Test Phases
+### Test Cases
 
-#### Phase 1: Envoy Only Enabled
-**Setup:** `envoy.enabled=true`, `agentgateway.enabled=false` (initial install)
+#### TestEnvoyOnly: Envoy Controller Only Enabled
+**Setup:** `envoy.enabled=true`, `agentgateway.enabled=false`
 
 **Validates:**
 - Envoy Gateway (`gatewayClassName: kgateway`) gets provisioned and becomes ready
 - Envoy Gateway status shows Accepted and Programmed
 - Envoy HTTPRoute status updated with parent ref
 - Traffic works through Envoy Gateway
-- Deployment uses envoy chart (has `envoy` container)
+- Deployment uses envoy chart (has `kgateway-proxy` container)
 - Agentgateway Gateway (`gatewayClassName: agentgateway`) is NOT provisioned
 - Agentgateway Gateway status NOT updated
 
-#### Phase 2: Agentgateway Only Enabled
+#### TestAgentgatewayOnly: Agentgateway Controller Only Enabled
 **Setup:** `envoy.enabled=false`, `agentgateway.enabled=true`
 
 **Validates:**
@@ -38,12 +39,11 @@ The suite uses a **performance-optimized approach** that minimizes helm operatio
 - Agentgateway Gateway status shows Accepted and Programmed
 - Agentgateway HTTPRoute status updated
 - Traffic works through Agentgateway Gateway
-- Deployment uses agentgateway chart (has `agentgateway` container)
+- Deployment uses agentgateway chart (has `agent-gateway` container)
 - Envoy Gateway is NOT provisioned
 - Envoy Gateway status NOT updated
-- Previous Envoy Gateway from Phase 1 is removed
 
-#### Phase 3: Both Controllers Enabled
+#### TestBothEnabled: Both Controllers Enabled
 **Setup:** `envoy.enabled=true`, `agentgateway.enabled=true`
 
 **Validates:**
@@ -64,7 +64,7 @@ The test uses two reusable YAML templates:
 - `testdata/envoy-gateway.yaml` - Template for Envoy Gateways
 - `testdata/agw-gateway.yaml` - Template for Agentgateway Gateways
 
-Each template contains placeholders (`GATEWAY_NAME`, `ROUTE_NAME`, `HOSTNAME`) that are replaced dynamically using `ManifestsWithTransform` for each test phase.
+Each template contains placeholders (`GATEWAY_NAME`, `ROUTE_NAME`, `HOSTNAME`) that are replaced dynamically using `transformManifest` for each test.
 
 ### Key Assertions
 
@@ -90,9 +90,11 @@ The `upgradeHelmWithFlags()` method:
 go test -v -timeout 30m -tags e2e ./test/e2e/tests/... -run "^TestDualController$"
 ```
 
-### Run specific phase
+### Run specific test
 ```bash
-./hack/run-e2e-test.sh TestPhase1EnvoyOnly
+./hack/run-e2e-test.sh TestEnvoyOnly
+./hack/run-e2e-test.sh TestAgentgatewayOnly
+./hack/run-e2e-test.sh TestBothEnabled
 ```
 
 ### With persistence (faster iteration)

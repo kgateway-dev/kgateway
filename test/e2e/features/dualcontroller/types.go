@@ -16,33 +16,33 @@ var (
 	envoyGatewayTemplate = filepath.Join(fsutils.MustGetThisDir(), "testdata", "envoy-gateway.yaml")
 	agwGatewayTemplate   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "agw-gateway.yaml")
 
-	// Object metadata for phase 1
-	envoyGwPhase1Meta = metav1.ObjectMeta{
-		Name:      "envoy-gw-phase1",
+	// Object metadata for envoy-only test
+	envoyGwEnvoyOnlyMeta = metav1.ObjectMeta{
+		Name:      "envoy-gw-envoy-only",
 		Namespace: "default",
 	}
-	agwGwPhase1Meta = metav1.ObjectMeta{
-		Name:      "agw-gw-phase1",
-		Namespace: "default",
-	}
-
-	// Object metadata for phase 2
-	envoyGwPhase2Meta = metav1.ObjectMeta{
-		Name:      "envoy-gw-phase2",
-		Namespace: "default",
-	}
-	agwGwPhase2Meta = metav1.ObjectMeta{
-		Name:      "agw-gw-phase2",
+	agwGwEnvoyOnlyMeta = metav1.ObjectMeta{
+		Name:      "agw-gw-envoy-only",
 		Namespace: "default",
 	}
 
-	// Object metadata for phase 3
-	envoyGwPhase3Meta = metav1.ObjectMeta{
-		Name:      "envoy-gw-phase3",
+	// Object metadata for agentgateway-only test
+	envoyGwAgwOnlyMeta = metav1.ObjectMeta{
+		Name:      "envoy-gw-agw-only",
 		Namespace: "default",
 	}
-	agwGwPhase3Meta = metav1.ObjectMeta{
-		Name:      "agw-gw-phase3",
+	agwGwAgwOnlyMeta = metav1.ObjectMeta{
+		Name:      "agw-gw-agw-only",
+		Namespace: "default",
+	}
+
+	// Object metadata for both-enabled test
+	envoyGwBothEnabledMeta = metav1.ObjectMeta{
+		Name:      "envoy-gw-both-enabled",
+		Namespace: "default",
+	}
+	agwGwBothEnabledMeta = metav1.ObjectMeta{
+		Name:      "agw-gw-both-enabled",
 		Namespace: "default",
 	}
 )
