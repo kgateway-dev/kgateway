@@ -16,8 +16,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
-	ourwellknown "github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
+	ourwellknown "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"

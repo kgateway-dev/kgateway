@@ -10,7 +10,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/sds/pkg/server"
+	"github.com/kgateway-dev/kgateway/v2/pkg/sds/server"
 )
 
 func Run(ctx context.Context, secrets []server.Secret, sdsClient, sdsServerAddress string, logger *slog.Logger) error {

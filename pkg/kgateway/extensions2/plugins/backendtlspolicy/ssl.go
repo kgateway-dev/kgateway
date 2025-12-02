@@ -5,7 +5,7 @@ import (
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/sslutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
 )
 
 // handles conversion into envoy auth types

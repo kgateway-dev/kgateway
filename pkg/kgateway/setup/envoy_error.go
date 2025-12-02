@@ -9,7 +9,7 @@ import (
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"google.golang.org/genproto/googleapis/rpc/status"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 )

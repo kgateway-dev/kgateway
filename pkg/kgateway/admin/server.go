@@ -13,9 +13,9 @@ import (
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"istio.io/istio/pkg/kube/krt"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/internal/version"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/controller"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/version"
 )
 
 func RunAdminServer(ctx context.Context, setupOpts *controller.SetupOpts) error {

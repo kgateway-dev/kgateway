@@ -10,11 +10,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/jwks"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/jwks"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 )
 

@@ -21,8 +21,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -30,7 +30,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
-//go:generate go tool mockgen -destination mocks/mock_queries.go -package mocks github.com/kgateway-dev/kgateway/v2/internal/kgateway/query GatewayQueries
+//go:generate go tool mockgen -destination mocks/mock_queries.go -package mocks github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query GatewayQueries
 
 var _ = Describe("Query", func() {
 	Describe("GetSecretRef", func() {

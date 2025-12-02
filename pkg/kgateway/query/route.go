@@ -16,9 +16,9 @@ import (
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	apilabels "github.com/kgateway-dev/kgateway/v2/api/labels"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/utils"
-	delegationutils "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/delegation"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/utils"
+	delegationutils "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils/delegation"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )

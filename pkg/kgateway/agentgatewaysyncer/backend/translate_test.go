@@ -15,9 +15,9 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	agentgatewaybackend "github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/backend"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/testutils"
+	agentgatewaybackend "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/agentgatewaysyncer/backend"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 

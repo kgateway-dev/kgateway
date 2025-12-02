@@ -13,7 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/irtranslator"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"

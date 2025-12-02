@@ -18,8 +18,8 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/routeutils"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/routeutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	reportssdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"

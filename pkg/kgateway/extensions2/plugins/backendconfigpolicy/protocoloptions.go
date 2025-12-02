@@ -9,8 +9,8 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	translatorutils "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/utils"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
+	translatorutils "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 

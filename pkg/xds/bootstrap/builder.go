@@ -12,7 +12,7 @@ import (
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 

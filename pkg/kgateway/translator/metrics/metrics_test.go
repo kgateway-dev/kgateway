@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	. "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
+	. "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
 )

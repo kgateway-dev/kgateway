@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/admin"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/admin"
 )
 
 var _ = Describe("SnapshotResponseData", func() {

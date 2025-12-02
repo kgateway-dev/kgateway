@@ -14,7 +14,7 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/endpoints"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/endpoints"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"

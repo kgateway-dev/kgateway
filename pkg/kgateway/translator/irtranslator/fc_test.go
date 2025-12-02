@@ -11,7 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/irtranslator"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"

@@ -15,8 +15,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/sds/pkg/server"
-	"github.com/kgateway-dev/kgateway/v2/internal/sds/pkg/testutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/sds/server"
+	"github.com/kgateway-dev/kgateway/v2/pkg/sds/testutils"
 )
 
 var _ = Describe("SDS Server", func() {

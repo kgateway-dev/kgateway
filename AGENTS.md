@@ -22,7 +22,7 @@ See `/devel/architecture/overview.md` and the translation diagram at `/devel/arc
 
 ### Plugin System
 At the core kgateway translates kubernetes Gateway API resources to Envoy configuration. To add features
-like policies, or backends, we use a plugin system. Each plugin *contributes* to the translation, usually by 
+like policies, or backends, we use a plugin system. Each plugin *contributes* to the translation, usually by
 adding a new type of CRD (most commonly a Policy CRD) that users can create to express their desired configuration.
 
 Policy CRDs are attached to Gateway API resources via `targetRefs` or `targetSelectors`. kgateway manages the attachment
@@ -96,7 +96,7 @@ See `/api/README.md` for full guidelines.
 4. Update the IR struct in the plugin package (`internal/kgateway/extensions2/plugins/<plugin_name>/`) to include the new field.
 5. Add yaml tests cases in `internal/kgateway/translator/gateway/gateway_translator_test.go`.
    The yaml inputs go in `internal/kgateway/translator/gateway/testutils/inputs/`. DO NOT create the outputs by yourself.
-   Instead, run your tests with environment variable `REFRESH_GOLDEN=true`. For example: `REFRESH_GOLDEN=true go test -timeout 30s -run ^TestBasic$/^ListenerPolicy_with_proxy_protocol_on_HTTPS_listener$ github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway`
+   Instead, run your tests with environment variable `REFRESH_GOLDEN=true`. For example: `REFRESH_GOLDEN=true go test -timeout 30s -run ^TestBasic$/^ListenerPolicy_with_proxy_protocol_on_HTTPS_listener$ github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/gateway`
    It will generate the outputs for you automatically in the `internal/kgateway/translator/gateway/testutils/outputs/` folder.
    Once the outputs are generated, inspect them to see they contain the changes you expect, and alert the user if that's not the case.
 6. For non-trivial changes, also add unit tests.

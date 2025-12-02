@@ -16,7 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/sslutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 

@@ -42,8 +42,8 @@ import (
 
 	_ "istio.io/istio/pkg/util/protomarshal" // Ensure we get the more efficient vtproto gRPC encoder
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/nack"
-	kgwxds "github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/agentgatewaysyncer/nack"
+	kgwxds "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"

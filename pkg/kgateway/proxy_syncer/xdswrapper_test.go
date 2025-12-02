@@ -14,8 +14,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	. "github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
+	. "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/proxy_syncer"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 )
 
 func mustAny(src proto.Message) *anypb.Any {

@@ -29,11 +29,11 @@ import (
 
 	apitests "github.com/kgateway-dev/kgateway/v2/api/tests"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/status"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/agentgatewaysyncer"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/agentgatewaysyncer/status"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 )

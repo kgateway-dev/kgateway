@@ -9,7 +9,7 @@ import (
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/version"
+	"github.com/kgateway-dev/kgateway/v2/pkg/version"
 )
 
 func loadChart(fs embed.FS) (*chart.Chart, error) {

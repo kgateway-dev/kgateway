@@ -8,7 +8,7 @@ import (
 	"github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/endpoints"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/endpoints"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 

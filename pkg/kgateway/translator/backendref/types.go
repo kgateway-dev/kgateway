@@ -6,7 +6,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apilabels "github.com/kgateway-dev/kgateway/v2/api/labels"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 )
 
 // IsHTTPRoute checks if the BackendObjectReference is an HTTPRoute

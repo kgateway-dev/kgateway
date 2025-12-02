@@ -9,7 +9,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 )
 
 var _ cache.NodeHash = new(nodeRoleHasher)

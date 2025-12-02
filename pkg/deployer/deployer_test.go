@@ -31,14 +31,15 @@ import (
 	. "github.com/onsi/gomega"
 
 	gw2_v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	deployerinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/httplistenerpolicy"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
-	"github.com/kgateway-dev/kgateway/v2/internal/version"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
+	deployerinternal "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/deployer"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/httplistenerpolicy"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
+	"github.com/kgateway-dev/kgateway/v2/pkg/version"
+
 	// TODO BML tests in this suite fail if this no-op import is not imported first.
 	//
 	// I know, I know, you're reading this, and you're skeptical. I can feel it.

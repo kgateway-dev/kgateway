@@ -13,7 +13,7 @@ import (
 	"istio.io/istio/pkg/slices"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 

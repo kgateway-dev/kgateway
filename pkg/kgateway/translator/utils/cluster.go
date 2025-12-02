@@ -7,7 +7,7 @@ import (
 	proto "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 )
 
 func MutateHttpOptions(c *envoyclusterv3.Cluster, m func(*envoy_upstreams_v3.HttpProtocolOptions)) error {

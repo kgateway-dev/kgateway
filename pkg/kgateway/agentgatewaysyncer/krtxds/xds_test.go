@@ -18,10 +18,10 @@ import (
 	"istio.io/istio/pkg/test/util/assert"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/krtxds"
 	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/agentgatewaysyncer"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/agentgatewaysyncer/krtxds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 

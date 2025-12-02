@@ -9,7 +9,7 @@ import (
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
 	kmetrics "github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
 )

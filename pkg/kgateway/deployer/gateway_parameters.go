@@ -17,10 +17,10 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/helm"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/helm"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 )
 
 var (

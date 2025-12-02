@@ -14,8 +14,8 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	"istio.io/istio/pkg/kube/krt"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 )
 

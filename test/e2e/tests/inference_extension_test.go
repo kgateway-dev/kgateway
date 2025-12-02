@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/crds"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/crds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	. "github.com/kgateway-dev/kgateway/v2/test/e2e/tests"

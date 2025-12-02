@@ -7,9 +7,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/metrics"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/listener"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
