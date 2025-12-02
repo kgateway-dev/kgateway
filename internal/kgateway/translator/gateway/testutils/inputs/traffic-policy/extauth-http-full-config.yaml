@@ -96,7 +96,7 @@ spec:
       backendRef:
         name: ext-authz
         port: 9000
-      path: "/auth"
+      pathPrefix: "/auth"
       requestTimeout: 1s
       authorizationRequest:
         headersToAdd:

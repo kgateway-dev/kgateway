@@ -354,7 +354,7 @@ spec:
                         - message: Must have port for Service reference
                           rule: '(size(self.group) == 0 && self.kind == ''Service'')
                             ? has(self.port) : true'
-                      pathprefix:
+                      pathPrefix:
                         description: |-
                           PathPrefix specifies a prefix to the value of the authorization request's path header.
                           This allows customizing the path at which the authorization server expects to receive requests.

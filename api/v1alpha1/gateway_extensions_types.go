@@ -122,7 +122,7 @@ type ExtHttpService struct {
 	// For example, if the authorization server expects requests at "/verify", set this to "/verify".
 	// If not specified, the original request path is used.
 	// +optional
-	PathPrefix string `json:"pathprefix,omitempty"`
+	PathPrefix string `json:"pathPrefix,omitempty"`
 
 	// RequestTimeout is the timeout for the HTTP request. Default timeout is 2 seconds.
 	// +optional
