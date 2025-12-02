@@ -14,23 +14,8 @@ spec:
         service: example.Service
         method: GetUser
     backendRefs:
-    - name: grpc-service
-      port: 9090
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: grpc-service
-  namespace: default
-spec:
-  ports:
-  - port: 9090
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: default
-
+    - name: test-service
+      port: 80
 ---
 # Output
 output:
@@ -41,8 +26,8 @@ output:
     route:
       backends:
       - backend:
-          port: 9090
-          service: default/grpc-service.default.svc.cluster.local
+          port: 80
+          service: default/test-service.default.svc.cluster.local
         weight: 1
       hostnames:
       - grpc.example.com
