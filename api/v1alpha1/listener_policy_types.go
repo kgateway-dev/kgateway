@@ -58,6 +58,16 @@ type ListenerPolicySpec struct {
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/listener/proxy_protocol/v3/proxy_protocol.proto
 	// +optional
 	ProxyProtocol *ProxyProtocolConfig `json:"proxyProtocol,omitempty"`
+
+	// PerConnectionBufferLimitBytes sets the per-connection buffer limit for all listeners on the gateway.
+	// This controls the maximum size of read and write buffers for new connections.
+	// When using Envoy as an edge proxy, configuring the listener buffer limit is important to guard against
+	// potential attacks or misconfigured downstreams that could hog the proxy's resources.
+	// If unspecified, an implementation-defined default is applied (1MiB).
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener.proto#envoy-v3-api-field-config-listener-v3-listener-per-connection-buffer-limit-bytes
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	PerConnectionBufferLimitBytes *int32 `json:"perConnectionBufferLimitBytes,omitempty"`
 }
 
 // ProxyProtocolConfig configures the PROXY protocol listener filter.
