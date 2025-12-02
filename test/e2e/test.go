@@ -81,7 +81,7 @@ func CreateTestInstallationForCluster(
 		// between TestInstallation outputs per CI run
 		GeneratedFiles: MustGeneratedFiles(installContext.InstallNamespace, clusterContext.Name),
 	}
-	t.Cleanup(func() {
+	testutils.Cleanup(t, func() {
 		installation.finalize()
 	})
 	return installation

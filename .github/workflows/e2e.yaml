@@ -106,6 +106,7 @@ jobs:
         kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
         istio-version: ${{ steps.dotenv.outputs.istio_version }}
         localstack: ${{ matrix.test.localstack }}
+        agentgateway: ${{ matrix.test.agentgateway }}
     - id: run-tests
       uses: ./.github/actions/kubernetes-e2e-tests
       with:
