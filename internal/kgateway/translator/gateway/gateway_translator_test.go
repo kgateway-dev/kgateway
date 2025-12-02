@@ -546,6 +546,26 @@ func TestBasic(t *testing.T) {
 			},
 		})
 	})
+	t.Run("TrafficPolicy with compression Policy", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/compression-route.yaml",
+			outputFile: "traffic-policy/compression-route.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+	t.Run("TrafficPolicy with decompression Policy", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/decompression-route.yaml",
+			outputFile: "traffic-policy/decompression-route.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
 
 	t.Run("TrafficPolicy with url rewrite", func(t *testing.T) {
 		test(t, translatorTestCase{
@@ -1579,6 +1599,17 @@ func TestBasic(t *testing.T) {
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-tcp-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with per connection buffer limit", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy/per-connection-buffer-limit.yaml",
+			outputFile: "listener-policy/per-connection-buffer-limit.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
 			},
 		})
 	})
