@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"slices"
 
-	"github.com/schollz/logger"
 	transformationpb "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
