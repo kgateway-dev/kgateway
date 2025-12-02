@@ -40,6 +40,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/status"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/jwks"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
@@ -462,6 +463,9 @@ func (tc TestCase) Run(
 	extraConfig ExtraConfig,
 	settingsOpts ...SettingsOpts,
 ) (ActualTestResult, error) {
+	// initialize the jwks config map store so remote jwks tests can mock fetch with configmap
+	jwks.BuildJwksConfigMapNamespacedNameFunc("kgateway-system")
+
 	gvkToStructuralSchema, err := testutils.GetStructuralSchemas(
 		filepath.Join(testutils.GitRootDirectory(), testutils.CRDPath))
 	if err != nil {
@@ -561,16 +565,7 @@ func (tc TestCase) Run(
 
 	// Instead of calling full Init(), manually initialize just what we need for testing
 	// to avoid race conditions with XDS collection building
-	agentGwSyncer := NewAgwSyncer(
-		context.TODO(),
-		wellknown.DefaultAgwControllerName,
-		fakeClient,
-		agwCollections,
-		agwMergedPlugins,
-		nil,
-		nil,
-	)
-	agentGwSyncer.translator.Init()
+	agentGwSyncer := NewAgwSyncer(context.TODO(), wellknown.DefaultAgwControllerName, fakeClient, agwCollections, agwMergedPlugins, nil, krtOpts, nil)
 	gatewayClasses := agwtranslator.GatewayClassesCollection(agwCollections.GatewayClasses, krtOpts)
 	refGrants := agwtranslator.BuildReferenceGrants(agwtranslator.ReferenceGrantsCollection(agwCollections.ReferenceGrants, krtOpts))
 	_, listenerSets := agentGwSyncer.buildListenerSetCollection(gatewayClasses, refGrants, krtOpts)
@@ -588,7 +583,8 @@ func (tc TestCase) Run(
 	agentGwSyncer.buildXDSCollection(agwResourcesCollection, addressesCollection, krtOpts)
 
 	sq := &TestStatusQueue{
-		state: map[status.Resource]any{},
+		state:        map[status.Resource]any{},
+		includeKinds: []string{"HTTPRoute", "GRPCRoute"},
 	}
 	// Normally we don't care to block on status being written, but here we need to since we want to test output
 	statusSynced := agentGwSyncer.StatusCollections().SetQueue(sq)
@@ -606,8 +602,9 @@ func (tc TestCase) Run(
 var _ status.WorkerQueue = &TestStatusQueue{}
 
 type TestStatusQueue struct {
-	mu    sync.Mutex
-	state map[status.Resource]any
+	mu           sync.Mutex
+	state        map[status.Resource]any
+	includeKinds []string
 }
 
 func (t *TestStatusQueue) Push(target status.Resource, data any) {
@@ -628,6 +625,9 @@ func (t *TestStatusQueue) Dump() string {
 	objs := []crd.IstioKind{}
 	for k, v := range t.state {
 		statusj, _ := json.Marshal(v)
+		if len(t.includeKinds) > 0 && !slices.Contains(t.includeKinds, k.Kind) {
+			continue
+		}
 		obj := crd.IstioKind{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       k.Kind,

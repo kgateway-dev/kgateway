@@ -6,6 +6,7 @@ import (
 
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	exteniondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
+	envoy_basic_auth_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/basic_auth/v3"
 	bufferv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/buffer/v3"
 	compressorv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/compressor/v3"
 	corsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
@@ -99,6 +100,7 @@ type trafficPolicySpecIr struct {
 	jwt             *jwtIr
 	compression     *compressionIR
 	decompression   *decompressionIR
+	basicAuth       *basicAuthIR
 }
 
 func (d *TrafficPolicy) CreationTime() time.Time {
@@ -163,6 +165,7 @@ func (d *TrafficPolicy) Equals(in any) bool {
 		return false
 	}
 	if !d.spec.decompression.Equals(d2.spec.decompression) {
+	if !d.spec.basicAuth.Equals(d2.spec.basicAuth) {
 		return false
 	}
 	return true
@@ -188,6 +191,7 @@ func (p *TrafficPolicy) Validate() error {
 	validators = append(validators, p.spec.jwt.Validate)
 	validators = append(validators, p.spec.compression.Validate)
 	validators = append(validators, p.spec.decompression.Validate)
+	validators = append(validators, p.spec.basicAuth.Validate)
 	for _, validator := range validators {
 		if err := validator(); err != nil {
 			return err
@@ -214,6 +218,7 @@ type trafficPolicyPluginGwPass struct {
 	bufferInChain            map[string]*bufferv3.Buffer
 	compressorInChain        map[string]*compressorv3.Compressor
 	decompressorInChain      map[string]*decompressorv3.Decompressor
+	basicAuthInChain         map[string]*envoy_basic_auth_v3.BasicAuth
 }
 
 var _ ir.ProxyTranslationPass = &trafficPolicyPluginGwPass{}
@@ -551,6 +556,12 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(fcc ir.FilterChainCommon) ([]fil
 
 	// Add compression and decompression filters after CORS
 	stagedFilters = addCompressionFiltersIfNeeded(stagedFilters, p, fcc.FilterChainName)
+	// Add Basic Auth filter
+	if f := p.basicAuthInChain[fcc.FilterChainName]; f != nil {
+		filter := filters.MustNewStagedFilter(basicAuthFilterName, f, filters.DuringStage(filters.AuthNStage))
+		filter.Filter.Disabled = true
+		stagedFilters = append(stagedFilters, filter)
+	}
 
 	if len(stagedFilters) == 0 {
 		return nil, nil
@@ -587,6 +598,7 @@ func (p *trafficPolicyPluginGwPass) handlePolicies(
 	p.handleRBAC(fcn, typedFilterConfig, spec.rbac)
 	p.handleCompression(fcn, typedFilterConfig, spec.compression)
 	p.handleDecompression(fcn, typedFilterConfig, spec.decompression)
+	p.handleBasicAuth(fcn, typedFilterConfig, spec.basicAuth)
 }
 
 // handlePerRoutePolicies handles policies that are meant to be processed at the route level

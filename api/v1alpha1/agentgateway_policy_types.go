@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -780,7 +781,7 @@ const (
 	RouteTypeAnthropicTokenCount RouteType = "anthropic_token_count" //nolint:gosec // G101: False positive - this is a route type name, not credentials
 )
 
-// +kubebuilder:validation:AtLeastOneOf=authorization
+// +kubebuilder:validation:AtLeastOneOf=authorization;authentication
 type BackendMCP struct {
 	// authorization defines MCPBackend level authorization. Unlike authorization at the HTTP level, which will reject
 	// unauthorized requests with a 403 error, this policy works at the MCPBackend level.
@@ -791,14 +792,42 @@ type BackendMCP struct {
 	// +optional
 	Authorization *Authorization `json:"authorization,omitempty"`
 	// authentication defines MCPBackend specific authentication rules.
-	// TODO: this is problematic sort of. In agentgateway local mode, this setting is on route and backend, but we have
-	// some hiding of this to make it set once but apply both.
-	//Authentication *MCPAuthentication `json:"authentication,omitempty"`
+	// +optional
+	Authentication *MCPAuthentication `json:"authentication,omitempty"`
 }
 
 type MCPAuthentication struct {
-	// TODO: implement
+	// ResourceMetadata defines the metadata to use for MCP resources.
+	// +optional
+	ResourceMetadata map[string]apiextensionsv1.JSON `json:"resourceMetadata"`
+
+	// McpIDP specifies the identity provider to use for authentication
+	// +kubebuilder:validation:Enum=Auth0;Keycloak
+	// +optional
+	McpIDP *McpIDP `json:"provider,omitempty"`
+
+	// Issuer identifies the IdP that issued the JWT. This corresponds to the 'iss' claim (https://tools.ietf.org/html/rfc7519#section-4.1.1).
+	// +optional
+	Issuer ShortString `json:"issuer,omitempty"`
+
+	// audiences specify the list of allowed audiences that are allowed access. This corresponds to the 'aud' claim (https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.3).
+	// If unset, any audience is allowed.
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=64
+	// +optional
+	Audiences []string `json:"audiences,omitempty"`
+
+	// jwks defines the remote JSON Web Key used to validate the signature of the JWT.
+	// +required
+	JWKS AgentRemoteJWKS `json:"jwks"`
 }
+
+type McpIDP string
+
+const (
+	Auth0    McpIDP = "Auth0"
+	Keycloak McpIDP = "Keycloak"
+)
 
 type BackendHTTP struct {
 	// version specifies the HTTP protocol version to use when connecting to the backend.

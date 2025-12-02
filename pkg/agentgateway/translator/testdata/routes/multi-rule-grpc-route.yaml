@@ -63,7 +63,7 @@ output:
       hostnames:
       - grpc.example.com
       key: default/multi-rule-grpc-route.0.http
-      listenerKey: test-gateway
+      listenerKey: default/test-gateway.http
       matches:
       - path:
           exact: /user.Service/GetUser
@@ -81,8 +81,34 @@ output:
       hostnames:
       - grpc.example.com
       key: default/multi-rule-grpc-route.1.http
-      listenerKey: test-gateway
+      listenerKey: default/test-gateway.http
       matches:
       - path:
           exact: /order.Service/CreateOrder
       routeName: default/multi-rule-grpc-route
+status:
+- apiVersion: gateway.networking.k8s.io/v1
+  kind: GRPCRoute
+  metadata:
+    name: multi-rule-grpc-route
+    namespace: default
+  spec: null
+  status:
+    parents:
+    - conditions:
+      - lastTransitionTime: fake
+        message: ""
+        reason: Accepted
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: fake
+        message: ""
+        reason: ResolvedRefs
+        status: "True"
+        type: ResolvedRefs
+      controllerName: kgateway.dev/agentgateway
+      parentRef:
+        group: gateway.networking.k8s.io
+        kind: Gateway
+        name: test-gateway
+        namespace: default

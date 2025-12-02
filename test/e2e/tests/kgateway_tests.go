@@ -10,6 +10,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/backendconfigpolicy"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/backends"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/backendtls"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/basicauth"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/basicrouting"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/compression"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/cors"
@@ -86,6 +87,7 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("AdminServer", admin_server.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("JWT", jwt.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("FrontendTLS", frontendtls.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("BasicAuth", basicauth.NewTestingSuite)
 
 	return kubeGatewaySuiteRunner
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"slices"
 
+	"github.com/schollz/logger"
 	transformationpb "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -53,6 +54,7 @@ func MergeTrafficPolicies(
 		mergeRBAC,
 		mergeJwt,
 		mergeCompression,
+		mergeBasicAuth,
 	}
 
 	for _, mergeFunc := range mergeFuncs {
@@ -478,6 +480,21 @@ func mergeRetry(
 		Set: func(spec *trafficPolicySpecIr, val *retryIR) { spec.retry = val },
 	}
 	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "retry")
+}
+
+func mergeBasicAuth(
+	p1, p2 *TrafficPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+	_ TrafficPolicyMergeOpts,
+) {
+	accessor := fieldAccessor[basicAuthIR]{
+		Get: func(spec *trafficPolicySpecIr) *basicAuthIR { return spec.basicAuth },
+		Set: func(spec *trafficPolicySpecIr, val *basicAuthIR) { spec.basicAuth = val },
+	}
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "basicAuth")
 }
 
 // fieldAccessor defines how to access and set a field on trafficPolicySpecIr

@@ -315,6 +315,13 @@ type Pod struct {
 	//
 	// +optional
 	ExtraVolumes []corev1.Volume `json:"extraVolumes,omitempty"`
+
+	// If specified, the pod's PriorityClass. See
+	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#podspec-v1-core
+	// for details
+	//
+	// +optional
+	PriorityClassName *string `json:"priorityClassName,omitempty"`
 }
 
 func (in *Pod) GetExtraLabels() map[string]string {
@@ -413,6 +420,13 @@ func (in *Pod) GetExtraVolumes() []corev1.Volume {
 		return nil
 	}
 	return in.ExtraVolumes
+}
+
+func (in *Pod) GetPriorityClassName() *string {
+	if in == nil {
+		return nil
+	}
+	return in.PriorityClassName
 }
 
 type GracefulShutdownSpec struct {
