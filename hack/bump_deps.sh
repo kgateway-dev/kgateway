@@ -141,7 +141,7 @@ if [ "$kind" = gie ]; then
 fi
 
 # Fetch and store the CRDs
-crd_dir="$root/internal/kgateway/crds"
+crd_dir="$root/pkg/kgateway/crds"
 mkdir -p "$crd_dir"
 
 if [ "$kind" = gie ]; then

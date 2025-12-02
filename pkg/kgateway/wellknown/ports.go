@@ -2,7 +2,7 @@ package wellknown
 
 // DefaultXdsService is the default name of the Kubernetes Service that serves xDS config.
 // This value should stay in sync with:
-// - the default value of `XdsServiceName` in internal/kgateway/extensions2/settings/settings.go
+// - the default value of `XdsServiceName` in pkg/kgateway/extensions2/settings/settings.go
 // - the default Service name in install/helm/kgateway/templates/service.yaml
 const DefaultXdsService = "kgateway"
 

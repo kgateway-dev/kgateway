@@ -40,7 +40,7 @@ type BackendTranslator struct {
 
 // TranslateBackend translates a BackendObjectIR to an Envoy Cluster. If we encounter any
 // errors during translation, a blackhole cluster is returned along with the error. The error
-// return value is what matters as consumers (internal/kgateway/proxy_syncer/perclient.go) will
+// return value is what matters as consumers (pkg/kgateway/proxy_syncer/perclient.go) will
 // drop errored clusters from the xDS snapshot and track them separately for status reporting.
 // The blackhole cluster itself is not sent to Envoy but provides a consistent return structure.
 func (t *BackendTranslator) TranslateBackend(

@@ -61,7 +61,7 @@ var (
 )
 
 // testingSuite is the entire Suite of tests for the "deployer" feature
-// The "deployer" code can be found here: /internal/kgateway/deployer
+// The "deployer" code can be found here: /pkg/kgateway/deployer
 type testingSuite struct {
 	*base.BaseTestingSuite
 }

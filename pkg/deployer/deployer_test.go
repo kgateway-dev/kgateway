@@ -47,7 +47,7 @@ import (
 	//
 	// There is some import within this package that this suite relies on. Chasing that down is
 	// *hard* tho due to the import tree, and best done in a followup.
-	// _ "github.com/kgateway-dev/kgateway/internal/kgateway/translator/translator.go"
+	// _ "github.com/kgateway-dev/kgateway/pkg/kgateway/translator/translator.go"
 	//
 	// The above TODO is a result of proto types being registered for free somewhere through
 	// the translator import. What we really need is to register all proto types, which is

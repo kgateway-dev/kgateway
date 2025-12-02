@@ -358,7 +358,7 @@ The translator tests are unit tests that test the translation of the CRD input Y
 You can regenerate the golden output files by running the following command:
 
 ```shell
-REFRESH_GOLDEN="true" go test -shuffle on -run "TestBasic" ./internal/kgateway/agentgatewaysyncer/...
+REFRESH_GOLDEN="true" go test -shuffle on -run "TestBasic" ./pkg/kgateway/agentgatewaysyncer/...
 ```
 
 ### Conformance tests

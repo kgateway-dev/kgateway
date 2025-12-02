@@ -16,7 +16,7 @@ The test will apply the resources in the yaml file, ask for an xDS snapshot, and
 
 ## How to run
 
-From the `kgateway/internal/kgateway` directory run:
+From the `kgateway/pkg/kgateway` directory run:
 
 ```shell
 make install-go-tools
