@@ -328,10 +328,12 @@ func (c *ControllerBuilder) Build(ctx context.Context) (*agentgatewaysyncer.Sync
 	istioAutoMtlsEnabled := globalSettings.EnableIstioAutoMtls
 
 	gwCfg := GatewayConfig{
-		Client:            c.cfg.Client,
-		Mgr:               c.mgr,
-		ControllerName:    c.cfg.ControllerName,
-		AgwControllerName: c.cfg.AgwControllerName,
+		Client:             c.cfg.Client,
+		Mgr:                c.mgr,
+		ControllerName:     c.cfg.ControllerName,
+		AgwControllerName:  c.cfg.AgwControllerName,
+		EnableEnvoy:        globalSettings.EnableEnvoy,
+		EnableAgentgateway: globalSettings.EnableAgentgateway,
 		ControlPlane: deployer.ControlPlaneInfo{
 			XdsHost:      xdsHost,
 			XdsPort:      xdsPort,

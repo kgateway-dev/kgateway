@@ -730,7 +730,6 @@ func deepMergeAgentgateway(dst, src *v1alpha1.Agentgateway) *v1alpha1.Agentgatew
 		return src
 	}
 
-	dst.Enabled = MergePointers(dst.GetEnabled(), src.GetEnabled())
 	dst.LogLevel = MergePointers(dst.GetLogLevel(), src.GetLogLevel())
 	dst.Image = DeepMergeImage(dst.GetImage(), src.GetImage())
 	dst.SecurityContext = DeepMergeSecurityContext(dst.GetSecurityContext(), src.GetSecurityContext())

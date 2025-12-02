@@ -39,6 +39,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
+
 	// TODO BML tests in this suite fail if this no-op import is not imported first.
 	//
 	// I know, I know, you're reading this, and you're skeptical. I can feel it.
@@ -311,7 +312,6 @@ var _ = Describe("Deployer", func() {
 				Spec: gw2_v1alpha1.GatewayParametersSpec{
 					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 						Agentgateway: &gw2_v1alpha1.Agentgateway{
-							Enabled: ptr.To(true),
 							Image: &gw2_v1alpha1.Image{
 								Tag: ptr.To("0.4.0"),
 							},
@@ -429,9 +429,10 @@ var _ = Describe("Deployer", func() {
 					Registry: "foo",
 					Tag:      "bar",
 				},
-				GatewayClassName:         wellknown.DefaultGatewayClassName,
-				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
+				GatewayClassName:           wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
+				AgentgatewayClassName:      wellknown.DefaultAgwClassName,
+				AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
 			})
 			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
@@ -515,9 +516,10 @@ var _ = Describe("Deployer", func() {
 					Registry: "foo",
 					Tag:      "bar",
 				},
-				GatewayClassName:         wellknown.DefaultGatewayClassName,
-				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
+				GatewayClassName:           wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
+				AgentgatewayClassName:      wellknown.DefaultAgwClassName,
+				AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
 			})
 			d, err = deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
@@ -594,9 +596,10 @@ var _ = Describe("Deployer", func() {
 					Registry: "foo",
 					Tag:      "bar",
 				},
-				GatewayClassName:         wellknown.DefaultGatewayClassName,
-				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
+				GatewayClassName:           wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
+				AgentgatewayClassName:      wellknown.DefaultAgwClassName,
+				AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
 			})
 			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
@@ -700,9 +703,10 @@ var _ = Describe("Deployer", func() {
 					Registry: "foo",
 					Tag:      "bar",
 				},
-				GatewayClassName:         wellknown.DefaultGatewayClassName,
-				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
+				GatewayClassName:           wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
+				AgentgatewayClassName:      wellknown.DefaultAgwClassName,
+				AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
 			})
 			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
@@ -767,9 +771,10 @@ var _ = Describe("Deployer", func() {
 					Registry: "foo",
 					Tag:      "bar",
 				},
-				GatewayClassName:         wellknown.DefaultGatewayClassName,
-				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
+				GatewayClassName:           wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
+				AgentgatewayClassName:      wellknown.DefaultAgwClassName,
+				AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
 			})
 			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
@@ -866,9 +871,10 @@ var _ = Describe("Deployer", func() {
 					Registry: "foo",
 					Tag:      "bar",
 				},
-				GatewayClassName:         wellknown.DefaultGatewayClassName,
-				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
+				GatewayClassName:           wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
+				AgentgatewayClassName:      wellknown.DefaultAgwClassName,
+				AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
 			})
 			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
@@ -938,9 +944,10 @@ var _ = Describe("Deployer", func() {
 					Registry: "foo",
 					Tag:      "bar",
 				},
-				GatewayClassName:         wellknown.DefaultGatewayClassName,
-				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
+				GatewayClassName:           wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
+				AgentgatewayClassName:      wellknown.DefaultAgwClassName,
+				AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
 			})
 			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
@@ -1026,9 +1033,10 @@ var _ = Describe("Deployer", func() {
 					Registry: "foo",
 					Tag:      "bar",
 				},
-				GatewayClassName:         wellknown.DefaultGatewayClassName,
-				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
+				GatewayClassName:           wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
+				AgentgatewayClassName:      wellknown.DefaultAgwClassName,
+				AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
 			})
 			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
@@ -1120,9 +1128,10 @@ var _ = Describe("Deployer", func() {
 					Registry: "foo",
 					Tag:      "bar",
 				},
-				GatewayClassName:         wellknown.DefaultGatewayClassName,
-				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
+				GatewayClassName:           wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
+				AgentgatewayClassName:      wellknown.DefaultAgwClassName,
+				AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
 			})
 			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
@@ -1210,9 +1219,10 @@ var _ = Describe("Deployer", func() {
 					Registry: "foo",
 					Tag:      "bar",
 				},
-				GatewayClassName:         wellknown.DefaultGatewayClassName,
-				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
+				GatewayClassName:           wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
+				AgentgatewayClassName:      wellknown.DefaultAgwClassName,
+				AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
 			})
 			d1, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
@@ -1236,9 +1246,10 @@ var _ = Describe("Deployer", func() {
 					Registry: "foo",
 					Tag:      "bar",
 				},
-				GatewayClassName:         wellknown.DefaultGatewayClassName,
-				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
+				GatewayClassName:           wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
+				AgentgatewayClassName:      wellknown.DefaultAgwClassName,
+				AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
 			})
 			d2, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
@@ -1909,9 +1920,10 @@ var _ = Describe("Deployer", func() {
 						Registry: "foo",
 						Tag:      defaultImageTag,
 					},
-					GatewayClassName:         wellknown.DefaultGatewayClassName,
-					WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-					AgentgatewayClassName:    wellknown.DefaultAgwClassName,
+					GatewayClassName:           wellknown.DefaultGatewayClassName,
+					WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
+					AgentgatewayClassName:      wellknown.DefaultAgwClassName,
+					AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
 				}
 			}
 

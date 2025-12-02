@@ -80,17 +80,16 @@ func TestGetInMemoryGatewayParameters_ControllerNamePriority(t *testing.T) {
 				t.Fatal("GetInMemoryGatewayParameters returned nil")
 			}
 
-			// Check if agentgateway is enabled
+			// Agentgateway is now determined by controllerName, not a flag in GatewayParameters
+			// Verify agentgateway container config is present for agentgateway controller
 			if gwp.Spec.Kube == nil {
 				t.Fatal("GatewayParameters.Spec.Kube is nil")
 			}
 
-			agwEnabled := gwp.Spec.Kube.Agentgateway != nil &&
-				gwp.Spec.Kube.Agentgateway.Enabled != nil &&
-				*gwp.Spec.Kube.Agentgateway.Enabled
+			hasAgwConfig := gwp.Spec.Kube.Agentgateway != nil
 
-			if agwEnabled != tt.expectedAgwEnabled {
-				t.Errorf("%s: agentgateway enabled = %v, want %v", tt.description, agwEnabled, tt.expectedAgwEnabled)
+			if hasAgwConfig != tt.expectedAgwEnabled {
+				t.Errorf("%s: agentgateway config present = %v, want %v", tt.description, hasAgwConfig, tt.expectedAgwEnabled)
 			}
 
 			// Check service ports for waypoint

@@ -123,7 +123,6 @@ func TestAgentgatewayAndEnvoyContainerDistinctValues(t *testing.T) {
 		Spec: gw2_v1alpha1.GatewayParametersSpec{
 			Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 				Agentgateway: &gw2_v1alpha1.Agentgateway{
-					Enabled: ptr.To(false), // Explicitly disabled
 					Image: &gw2_v1alpha1.Image{
 						Registry:   ptr.To("agent-registry"),
 						Repository: ptr.To("agent-repo"),
