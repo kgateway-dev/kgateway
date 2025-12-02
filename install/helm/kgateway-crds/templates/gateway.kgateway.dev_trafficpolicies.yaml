@@ -57,7 +57,7 @@ spec:
               autoHostRewrite:
                 description: |-
                   AutoHostRewrite rewrites the Host header to the DNS name of the selected upstream.
-                  NOTE: This field is only honoured for HTTPRoute targets.
+                  NOTE: This field is only honored for HTTPRoute targets.
                   NOTE: If `autoHostRewrite` is set on a route that also has a [URLRewrite filter](https://gateway-api.sigs.k8s.io/reference/spec/#httpurlrewritefilter)
                   configured to override the `hostname`, the `hostname` value will be used and `autoHostRewrite` will be ignored.
                 type: boolean
@@ -1548,8 +1548,7 @@ spec:
               urlRewrite:
                 description: |-
                   UrlRewrite specifies URL rewrite rules for matching requests.
-                  This allows rewriting the path or hostname of requests using regular expressions.
-                  NOTE: This field is only honoured for HTTPRoute targets.
+                  NOTE: This field is only honored for HTTPRoute targets.
                 properties:
                   pathRegex:
                     description: Path specifies the path rewrite configuration.
