@@ -68,12 +68,14 @@ func constructURLRewrite(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpec
 
 // applyURLRewrite applies URL rewrite configuration to the Envoy route.
 func applyURLRewrite(urlRewrite *urlRewriteIR, out *envoyroutev3.Route) {
-	if urlRewrite == nil || out == nil || out.GetRoute() == nil {
+	if urlRewrite == nil || out == nil {
 		return
 	}
 
 	action := out.GetRoute()
-
+	if action == nil {
+		return
+	}
 	// Apply regex path rewrite
 	if urlRewrite.regexMatch != nil {
 		// Only apply if not already set
