@@ -206,3 +206,7 @@ Gateway API version is in `go.mod` and CRD install URL in Makefile (`CONFORMANCE
 2. When PR is ready to review/merge, follow this PR template: https://raw.githubusercontent.com/kgateway-dev/.github/refs/heads/main/.github/PULL_REQUEST_TEMPLATE.md
    Specifically must haves are the `Description`, `# Change Type` and `# Changelog` sections.
 3. Ensure tests pass in CI (unit + e2e + conformance)
+
+## Style
+
+All code and comments should use American English spelling (i.e. "color" not "colour", "honor" not "honour").
