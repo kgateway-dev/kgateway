@@ -12,7 +12,6 @@ import (
 )
 
 type urlRewriteIR struct {
-	hostname   *string
 	regexMatch *envoy_type_matcher_v3.RegexMatchAndSubstitute
 }
 
@@ -29,16 +28,7 @@ func (u *urlRewriteIR) Equals(other PolicySubIR) bool {
 	if u == nil || otherURLRewrite == nil {
 		return false
 	}
-	// Compare hostname
-	if u.hostname == nil && otherURLRewrite.hostname != nil {
-		return false
-	}
-	if u.hostname != nil && otherURLRewrite.hostname == nil {
-		return false
-	}
-	if u.hostname != nil && otherURLRewrite.hostname != nil && *u.hostname != *otherURLRewrite.hostname {
-		return false
-	}
+
 	// Compare regex match
 	return proto.Equal(u.regexMatch, otherURLRewrite.regexMatch)
 }
@@ -83,16 +73,6 @@ func applyURLRewrite(urlRewrite *urlRewriteIR, out *envoyroutev3.Route) {
 	}
 
 	action := out.GetRoute()
-
-	// Apply hostname rewrite
-	if urlRewrite.hostname != nil {
-		// Only apply if not already set
-		if action.GetHostRewriteSpecifier() == nil {
-			action.HostRewriteSpecifier = &envoyroutev3.RouteAction_HostRewriteLiteral{
-				HostRewriteLiteral: *urlRewrite.hostname,
-			}
-		}
-	}
 
 	// Apply regex path rewrite
 	if urlRewrite.regexMatch != nil {
