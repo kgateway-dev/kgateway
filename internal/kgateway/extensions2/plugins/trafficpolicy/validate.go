@@ -2,6 +2,7 @@ package trafficpolicy
 
 import (
 	"context"
+	"fmt"
 
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -36,10 +37,15 @@ func validateXDS(ctx context.Context, p *TrafficPolicy, v validator.Validator) e
 	// use a fake translation pass to ensure we have the desired typed filter config
 	// on the placeholder vhost.
 	typedPerFilterConfig := ir.TypedFilterConfigMap(map[string]proto.Message{})
-	fakePass := NewGatewayTranslationPass(ir.GwTranslationCtx{}, nil)
+	fakePass := NewGatewayTranslationPass(ir.GwTranslationCtx{}, nil).(*trafficPolicyPluginGwPass)
+
+	// Use a placeholder filter chain name for validation
+	const validationFilterChain = "validation-filter-chain"
+
 	if err := fakePass.ApplyForRoute(&ir.RouteContext{
 		Policy:            p,
 		TypedFilterConfig: typedPerFilterConfig,
+		FilterChainName:   validationFilterChain,
 	}, nil); err != nil {
 		return err
 	}
@@ -49,11 +55,24 @@ func validateXDS(ctx context.Context, p *TrafficPolicy, v validator.Validator) e
 	for name, config := range typedPerFilterConfig {
 		builder.AddFilterConfig(name, config)
 	}
-	bootstrap, err := builder.Build()
+
+	// Get HTTP filters from the translation pass and add to builder.
+	// This ensures that HTTP filter configurations (like ext_authz with invalid pathPrefix)
+	// are validated by Envoy.
+	fcc := ir.FilterChainCommon{FilterChainName: validationFilterChain}
+	httpFilters, err := fakePass.HttpFilters(fcc)
+	if err != nil {
+		return fmt.Errorf("failed to get HTTP filters for validation: %w", err)
+	}
+	for _, stagedFilter := range httpFilters {
+		builder.AddHttpFilter(stagedFilter.Filter)
+	}
+
+	bootstrapCfg, err := builder.Build()
 	if err != nil {
 		return err
 	}
-	data, err := protojson.Marshal(bootstrap)
+	data, err := protojson.Marshal(bootstrapCfg)
 	if err != nil {
 		return err
 	}
