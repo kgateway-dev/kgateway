@@ -11,6 +11,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 )
 
+const DefaultJwksStorePrefix = "jwks-store"
 const RunnableName = "jwks-store"
 
 var JwksConfigMapNamespacedName = func(jwksUri string) *types.NamespacedName {

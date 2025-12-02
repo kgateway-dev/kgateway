@@ -40,9 +40,9 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/status"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/jwks"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/jwks"
 	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	agwtranslator "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
@@ -464,7 +464,7 @@ func (tc TestCase) Run(
 	settingsOpts ...SettingsOpts,
 ) (ActualTestResult, error) {
 	// initialize the jwks config map store so remote jwks tests can mock fetch with configmap
-	jwks.BuildJwksConfigMapNamespacedNameFunc("kgateway-system")
+	jwks.BuildJwksConfigMapNamespacedNameFunc(jwks.DefaultJwksStorePrefix, "kgateway-system")
 
 	gvkToStructuralSchema, err := testutils.GetStructuralSchemas(
 		filepath.Join(testutils.GitRootDirectory(), testutils.CRDPath))

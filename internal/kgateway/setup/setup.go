@@ -554,7 +554,7 @@ func buildJwksStore(ctx context.Context, mgr manager.Manager, apiClient apiclien
 		return err
 	}
 	jwksStoreCtrl.Init(ctx)
-	jwksStore := jwks.BuildJwksStore(ctx, apiClient, commonCollections, jwksStoreCtrl.JwksQueue(), "jwks-store", namespaces.GetPodNamespace())
+	jwksStore := jwks.BuildJwksStore(ctx, apiClient, commonCollections, jwksStoreCtrl.JwksQueue(), jwks.DefaultJwksStorePrefix, namespaces.GetPodNamespace())
 	if err := mgr.Add(jwksStore); err != nil {
 		return err
 	}
