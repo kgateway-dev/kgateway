@@ -29,19 +29,19 @@ spec:
         add:
           - expression: 'request.headers["user-agent"]'
             name: http.useragent
-    tracing:
-      backendRef:
-        name: my-otel
-        namespace: some-other-ns
-      protocol: GRPC
-      clientSampling: "true"
-      randomSampling: "true"
-      attributes:
-        remove:
-          - response.code
-        add:
-          - expression: 'request.headers["user-agent"]'
-            name: http.useragent
+#    tracing:
+#      backendRef:
+#        name: my-otel
+#        namespace: some-other-ns
+#      protocol: GRPC
+#      clientSampling: "true"
+#      randomSampling: "true"
+#      attributes:
+#        remove:
+#          - response.code
+#        add:
+#          - expression: 'request.headers["user-agent"]'
+#            name: http.useragent
 
 ---
 # Output
@@ -85,12 +85,6 @@ output:
           - response.code
         filter: response.code != 200
     name: frontend/default/agw:frontend-logging:default/test
-    target:
-      gateway: default/test
-- Policy:
-    frontend:
-      tracing: {}
-    name: frontend/default/agw:frontend-tracing:default/test
     target:
       gateway: default/test
 status:

@@ -59,6 +59,7 @@ type HelmGateway struct {
 	GracefulShutdown              *v1alpha1.GracefulShutdownSpec    `json:"gracefulShutdown,omitempty"`
 	TerminationGracePeriodSeconds *int64                            `json:"terminationGracePeriodSeconds,omitempty"`
 	TopologySpreadConstraints     []corev1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
+	PriorityClassName             *string                           `json:"priorityClassName,omitempty"`
 
 	// sds container values
 	SdsContainer *HelmSdsContainer `json:"sdsContainer,omitempty"`

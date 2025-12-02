@@ -296,6 +296,9 @@ spec:
       topologySpreadConstraints:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- if $gateway.priorityClassName }}
+      priorityClassName: {{ $gateway.priorityClassName | quote }}
+      {{- end }}
       {{- if $gateway.terminationGracePeriodSeconds }}
       terminationGracePeriodSeconds: {{ $gateway.terminationGracePeriodSeconds }}
       {{- end }}
