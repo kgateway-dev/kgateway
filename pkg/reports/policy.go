@@ -12,7 +12,7 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
@@ -216,18 +216,18 @@ func (r *PolicyReport) getAncestorRefOrNil(parentRef *gwv1.ParentReference) *Anc
 // condition reason for the Accepted and Attached conditions.
 // Positive conditions will be added when the policy is processed and attached to targeted resources.
 func addMissingAncestorRefConditions(report *AncestorRefReport) {
-	if cond := meta.FindStatusCondition(report.Conditions, string(v1alpha1.PolicyConditionAccepted)); cond == nil {
+	if cond := meta.FindStatusCondition(report.Conditions, string(shared.PolicyConditionAccepted)); cond == nil {
 		meta.SetStatusCondition(&report.Conditions, metav1.Condition{
-			Type:   string(v1alpha1.PolicyConditionAccepted),
+			Type:   string(shared.PolicyConditionAccepted),
 			Status: metav1.ConditionFalse,
-			Reason: string(v1alpha1.PolicyReasonPending),
+			Reason: string(shared.PolicyReasonPending),
 		})
 	}
-	if cond := meta.FindStatusCondition(report.Conditions, string(v1alpha1.PolicyConditionAttached)); cond == nil {
+	if cond := meta.FindStatusCondition(report.Conditions, string(shared.PolicyConditionAttached)); cond == nil {
 		meta.SetStatusCondition(&report.Conditions, metav1.Condition{
-			Type:   string(v1alpha1.PolicyConditionAttached),
+			Type:   string(shared.PolicyConditionAttached),
 			Status: metav1.ConditionFalse,
-			Reason: string(v1alpha1.PolicyReasonPending),
+			Reason: string(shared.PolicyReasonPending),
 		})
 	}
 }
@@ -244,25 +244,25 @@ func addAttachmentCondition(report *AncestorRefReport) []metav1.Condition {
 	switch {
 	case report.AttachmentState.Has(reporter.PolicyAttachmentStateOverridden):
 		meta.SetStatusCondition(&existing, metav1.Condition{
-			Type:    string(v1alpha1.PolicyConditionAttached),
+			Type:    string(shared.PolicyConditionAttached),
 			Status:  metav1.ConditionFalse,
-			Reason:  string(v1alpha1.PolicyReasonOverridden),
+			Reason:  string(shared.PolicyReasonOverridden),
 			Message: reporter.PolicyOverriddenMsg,
 		})
 
 	case report.AttachmentState.Has(reporter.PolicyAttachmentStateMerged):
 		meta.SetStatusCondition(&existing, metav1.Condition{
-			Type:    string(v1alpha1.PolicyConditionAttached),
+			Type:    string(shared.PolicyConditionAttached),
 			Status:  metav1.ConditionTrue,
-			Reason:  string(v1alpha1.PolicyReasonMerged),
+			Reason:  string(shared.PolicyReasonMerged),
 			Message: reporter.PolicyMergedMsg,
 		})
 
 	case report.AttachmentState.Has(reporter.PolicyAttachmentStateAttached):
 		meta.SetStatusCondition(&existing, metav1.Condition{
-			Type:    string(v1alpha1.PolicyConditionAttached),
+			Type:    string(shared.PolicyConditionAttached),
 			Status:  metav1.ConditionTrue,
-			Reason:  string(v1alpha1.PolicyReasonAttached),
+			Reason:  string(shared.PolicyReasonAttached),
 			Message: reporter.PolicyAttachedMsg,
 		})
 	}

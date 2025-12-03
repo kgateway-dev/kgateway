@@ -10,7 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 )
 
@@ -43,7 +43,7 @@ var (
 			Namespace: "kgateway-test",
 		},
 	}
-	dfpBackend = &v1alpha1.Backend{
+	dfpBackend = &kgateway.Backend{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "dfp-backend",
 			Namespace: "kgateway-test",

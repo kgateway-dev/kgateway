@@ -19,7 +19,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
@@ -380,7 +381,7 @@ func (s *testingSuite) TestBackendConfigPolicyClearStaleStatus() {
 func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, controllerName string) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
 	s.testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
-		policy := &v1alpha1.BackendConfigPolicy{}
+		policy := &kgateway.BackendConfigPolicy{}
 		err := s.testInstallation.ClusterContext.Client.Get(
 			s.ctx,
 			types.NamespacedName{Name: policyName, Namespace: policyNamespace},
@@ -398,9 +399,9 @@ func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, controller
 			ControllerName: gwv1.GatewayController(controllerName),
 			Conditions: []metav1.Condition{
 				{
-					Type:               string(v1alpha1.PolicyConditionAccepted),
+					Type:               string(shared.PolicyConditionAccepted),
 					Status:             metav1.ConditionTrue,
-					Reason:             string(v1alpha1.PolicyReasonValid),
+					Reason:             string(shared.PolicyReasonValid),
 					Message:            "Accepted by fake controller",
 					LastTransitionTime: metav1.Now(),
 				},
@@ -416,7 +417,7 @@ func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, controller
 func (s *testingSuite) assertAncestorStatuses(ancestorName string, expectedControllers map[string]bool) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
 	s.testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
-		policy := &v1alpha1.BackendConfigPolicy{}
+		policy := &kgateway.BackendConfigPolicy{}
 		err := s.testInstallation.ClusterContext.Client.Get(
 			s.ctx,
 			types.NamespacedName{Name: "example-policy", Namespace: "default"},

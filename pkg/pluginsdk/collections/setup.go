@@ -13,7 +13,7 @@ import (
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	kmetrics "github.com/kgateway-dev/kgateway/v2/pkg/krtcollections/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"

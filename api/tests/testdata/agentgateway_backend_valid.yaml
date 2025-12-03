@@ -1,4 +1,4 @@
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   name: ai-simple
@@ -7,7 +7,7 @@ spec:
     provider:
       openai: {}
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   name: ai-full
@@ -58,7 +58,7 @@ spec:
                     kind: Backend
                     group: gateway.kgateway.dev
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   name: mcp-full
@@ -83,7 +83,7 @@ spec:
           matchLabels:
             kubernetes.io/metadata.name: mcp-servers
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   name: static-full
@@ -95,7 +95,7 @@ spec:
     host: example.com
     port: 443
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   name: ai-providers

@@ -48,6 +48,24 @@ rules:
   - patch
   - watch
 - apiGroups:
+  - agentgateway.dev
+  resources:
+  - agentgatewaybackends
+  - agentgatewaypolicies
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - agentgateway.dev
+  resources:
+  - agentgatewaybackends/status
+  - agentgatewaypolicies/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - apiextensions.k8s.io
   resources:
   - customresourcedefinitions
@@ -92,8 +110,6 @@ rules:
 - apiGroups:
   - gateway.kgateway.dev
   resources:
-  - agentgatewaybackends
-  - agentgatewaypolicies
   - backendconfigpolicies
   - backends
   - directresponses
@@ -109,8 +125,6 @@ rules:
 - apiGroups:
   - gateway.kgateway.dev
   resources:
-  - agentgatewaybackends/status
-  - agentgatewaypolicies/status
   - backendconfigpolicies/status
   - backends/status
   - directresponses/status

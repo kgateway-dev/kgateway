@@ -15,7 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
@@ -67,7 +67,7 @@ func (s *testingSuite) TestConfigureBackingDestinationsWithUpstream() {
 		Name:      "nginx-static",
 		Namespace: "default",
 	}
-	backend := &v1alpha1.Backend{
+	backend := &kgateway.Backend{
 		ObjectMeta: backendMeta,
 	}
 
@@ -131,7 +131,7 @@ func (s *testingSuite) TestBackendWithRuntimeError() {
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, errorManifest)
 	s.Require().NoError(err)
 
-	backendWithError := &v1alpha1.Backend{
+	backendWithError := &kgateway.Backend{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "example-aws-backend",
 			Namespace: "default",
@@ -166,11 +166,11 @@ secret_key is not a valid string"`,
 	})
 }
 
-func (s *testingSuite) assertStatus(backend *v1alpha1.Backend, expected metav1.Condition) {
+func (s *testingSuite) assertStatus(backend *kgateway.Backend, expected metav1.Condition) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
 	p := s.testInstallation.Assertions
 	p.Gomega.Eventually(func(g gomega.Gomega) {
-		be := &v1alpha1.Backend{}
+		be := &kgateway.Backend{}
 		objKey := client.ObjectKeyFromObject(backend)
 		err := s.testInstallation.ClusterContext.Client.Get(s.ctx, objKey, be)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get Backend %s", objKey)

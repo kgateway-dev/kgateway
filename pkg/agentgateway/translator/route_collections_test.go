@@ -13,11 +13,11 @@ import (
 
 func TestRouteCollection(t *testing.T) {
 	testutils.RunForDirectory(t, "testdata/routes", func(t *testing.T, ctx plugins.PolicyCtx) (any, []ir.AgwResource) {
-		sq, ri := testutils.Syncer(t, ctx, "HTTPRoute", "GRPCRoute")
+		sq, ri := testutils.Syncer(t, ctx, "HTTPRoute", "GRPCRoute", "TCPRoute", "TLSRoute", "InferencePool")
 		r := ri.Outputs.Resources.List()
 		r = slices.FilterInPlace(r, func(resource ir.AgwResource) bool {
 			x := ir.GetAgwResourceName(resource.Resource)
-			return strings.HasPrefix(x, "route/")
+			return strings.HasPrefix(x, "route/") || strings.HasPrefix(x, "tcp_route/") || strings.HasPrefix(x, "policy/")
 		})
 		return sq.Dump(), slices.SortBy(r, func(a ir.AgwResource) string {
 			return a.ResourceName()
