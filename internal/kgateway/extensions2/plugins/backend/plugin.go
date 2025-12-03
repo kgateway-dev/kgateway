@@ -14,7 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -62,7 +62,7 @@ func (u *backendIr) Equals(other any) bool {
 }
 
 func NewPlugin(commoncol *collections.CommonCollections) sdk.Plugin {
-	cli := kclient.NewFilteredDelayed[*v1alpha1.Backend](
+	cli := kclient.NewFilteredDelayed[*kgateway.Backend](
 		commoncol.Client,
 		wellknown.BackendGVR,
 		kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()},
@@ -72,7 +72,7 @@ func NewPlugin(commoncol *collections.CommonCollections) sdk.Plugin {
 
 	gk := wellknown.BackendGVK.GroupKind()
 	translateFn := buildTranslateFunc(commoncol.Secrets)
-	bcol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *ir.BackendObjectIR {
+	bcol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *kgateway.Backend) *ir.BackendObjectIR {
 		backendIR := translateFn(krtctx, i)
 		if len(backendIR.errors) > 0 {
 			logger.Error("failed to translate backend", "backend", i.GetName(), "error", errors.Join(backendIR.errors...))
@@ -96,7 +96,7 @@ func NewPlugin(commoncol *collections.CommonCollections) sdk.Plugin {
 
 		return &backend
 	})
-	endpoints := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *ir.EndpointsForBackend {
+	endpoints := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *kgateway.Backend) *ir.EndpointsForBackend {
 		return processEndpoints(i)
 	})
 	return sdk.Plugin{
@@ -125,23 +125,23 @@ func NewPlugin(commoncol *collections.CommonCollections) sdk.Plugin {
 // the plugin can use to build the envoy config.
 func buildTranslateFunc(
 	secrets *krtcollections.SecretIndex,
-) func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *backendIr {
-	return func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *backendIr {
+) func(krtctx krt.HandlerContext, i *kgateway.Backend) *backendIr {
+	return func(krtctx krt.HandlerContext, i *kgateway.Backend) *backendIr {
 		var beIr backendIr
 		switch i.Spec.Type {
-		case v1alpha1.BackendTypeStatic:
+		case kgateway.BackendTypeStatic:
 			staticIr, err := buildStaticIr(i.Spec.Static)
 			if err != nil {
 				beIr.errors = append(beIr.errors, err)
 			}
 			beIr.staticIr = staticIr
-		case v1alpha1.BackendTypeDynamicForwardProxy:
+		case kgateway.BackendTypeDynamicForwardProxy:
 			dfpIr, err := buildDfpIr(i.Spec.DynamicForwardProxy)
 			if err != nil {
 				beIr.errors = append(beIr.errors, err)
 			}
 			beIr.dfpIr = dfpIr
-		case v1alpha1.BackendTypeAWS:
+		case kgateway.BackendTypeAWS:
 			region := i.Spec.Aws.Region
 			invokeMode := getLambdaInvocationMode(i.Spec.Aws)
 
@@ -173,7 +173,7 @@ func buildTranslateFunc(
 			}
 
 			var secret *ir.Secret
-			if i.Spec.Aws.Auth != nil && i.Spec.Aws.Auth.Type == v1alpha1.AwsAuthTypeSecret {
+			if i.Spec.Aws.Auth != nil && i.Spec.Aws.Auth.Type == kgateway.AwsAuthTypeSecret {
 				var err error
 				secret, err = pluginutils.GetSecretIr(secrets, krtctx, i.Spec.Aws.Auth.SecretRef.Name, i.GetNamespace())
 				if err != nil {
@@ -198,7 +198,7 @@ func buildTranslateFunc(
 }
 
 func processBackendForEnvoy(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
-	be, ok := in.Obj.(*v1alpha1.Backend)
+	be, ok := in.Obj.(*kgateway.Backend)
 	if !ok {
 		logger.Error("failed to cast backend object")
 		return nil
@@ -213,22 +213,22 @@ func processBackendForEnvoy(ctx context.Context, in ir.BackendObjectIR, out *env
 	// TODO(tim): do we need to do anything here for AI backends?
 	spec := be.Spec
 	switch spec.Type {
-	case v1alpha1.BackendTypeStatic:
+	case kgateway.BackendTypeStatic:
 		processStatic(beIr.staticIr, out)
-	case v1alpha1.BackendTypeAWS:
+	case kgateway.BackendTypeAWS:
 		if err := processAws(beIr.awsIr, out); err != nil {
 			logger.Error("failed to process aws backend", "error", err)
 			beIr.errors = append(beIr.errors, err)
 		}
-	case v1alpha1.BackendTypeDynamicForwardProxy:
+	case kgateway.BackendTypeDynamicForwardProxy:
 		processDynamicForwardProxy(beIr.dfpIr, out)
 	}
 	return nil
 }
 
-func parseAppProtocol(b *v1alpha1.Backend) ir.AppProtocol {
+func parseAppProtocol(b *kgateway.Backend) ir.AppProtocol {
 	switch b.Spec.Type {
-	case v1alpha1.BackendTypeStatic:
+	case kgateway.BackendTypeStatic:
 		appProtocol := b.Spec.Static.AppProtocol
 		if appProtocol != nil {
 			return ir.ParseAppProtocol(ptr.To(string(*appProtocol)))
@@ -238,8 +238,8 @@ func parseAppProtocol(b *v1alpha1.Backend) ir.AppProtocol {
 }
 
 // hostname returns the hostname for the backend. Only static backends are supported.
-func hostname(in *v1alpha1.Backend) string {
-	if in.Spec.Type != v1alpha1.BackendTypeStatic {
+func hostname(in *kgateway.Backend) string {
+	if in.Spec.Type != kgateway.BackendTypeStatic {
 		return ""
 	}
 	if len(in.Spec.Static.Hosts) == 0 {
@@ -248,12 +248,12 @@ func hostname(in *v1alpha1.Backend) string {
 	return in.Spec.Static.Hosts[0].Host
 }
 
-func processEndpoints(be *v1alpha1.Backend) *ir.EndpointsForBackend {
+func processEndpoints(be *kgateway.Backend) *ir.EndpointsForBackend {
 	spec := be.Spec
 	switch {
-	case spec.Type == v1alpha1.BackendTypeStatic:
+	case spec.Type == kgateway.BackendTypeStatic:
 		return processEndpointsStatic(spec.Static)
-	case spec.Type == v1alpha1.BackendTypeAWS:
+	case spec.Type == kgateway.BackendTypeAWS:
 		return processEndpointsAws(spec.Aws)
 	}
 	return nil
@@ -275,9 +275,9 @@ func (p *backendPlugin) Name() string {
 }
 
 func (p *backendPlugin) ApplyForBackend(pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoyroutev3.Route) error {
-	backend := pCtx.Backend.Obj.(*v1alpha1.Backend)
+	backend := pCtx.Backend.Obj.(*kgateway.Backend)
 	switch backend.Spec.Type {
-	case v1alpha1.BackendTypeDynamicForwardProxy:
+	case kgateway.BackendTypeDynamicForwardProxy:
 		if p.needsDfpFilter == nil {
 			p.needsDfpFilter = make(map[string]bool)
 		}

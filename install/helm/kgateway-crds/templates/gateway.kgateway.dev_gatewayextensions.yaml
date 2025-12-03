@@ -608,6 +608,12 @@ spec:
                       maxItems: 32
                       minItems: 1
                       type: array
+                    forwardToken:
+                      description: |-
+                        ForwardToken configures if the JWT token is forwarded to the upstream backend.
+                        If true, the header containing the token will be forwarded upstream.
+                        If false or not set, the header containing the token will be removed.
+                      type: boolean
                     issuer:
                       description: Issuer of the JWT. the 'iss' claim of the JWT must
                         match this.
@@ -753,16 +759,6 @@ spec:
                           be set
                         rule: '[has(self.local),has(self.remote)].filter(x,x==true).size()
                           == 1'
-                    keepToken:
-                      default: Remove
-                      description: |-
-                        KeepToken configures if the token is forwarded upstream.
-                        If Remove, the header containing the token will be removed.
-                        If Forward, the header containing the token will be forwarded upstream.
-                      enum:
-                      - Forward
-                      - Remove
-                      type: string
                     name:
                       description: Name is the unique name of the JWT provider.
                       maxLength: 253

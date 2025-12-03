@@ -11,7 +11,8 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/validate"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -27,7 +28,7 @@ var ComponentLogLevelEmptyError = func(key string, value string) error {
 // Extract the listener ports from a Gateway and corresponding listener sets. These will be used to populate:
 // 1. the ports exposed on the envoy container
 // 2. the ports exposed on the proxy service
-func GetPortsValues(gw *ir.GatewayForDeployer, gwp *v1alpha1.GatewayParameters, agentgateway bool) []HelmPort {
+func GetPortsValues(gw *ir.GatewayForDeployer, gwp *kgateway.GatewayParameters, agentgateway bool) []HelmPort {
 	gwPorts := []HelmPort{}
 
 	// Add ports from Gateway listeners
@@ -75,7 +76,7 @@ func SanitizePortName(name string) string {
 	return str
 }
 
-func AppendPortValue(gwPorts []HelmPort, port int32, name string, gwp *v1alpha1.GatewayParameters) []HelmPort {
+func AppendPortValue(gwPorts []HelmPort, port int32, name string, gwp *kgateway.GatewayParameters) []HelmPort {
 	if slices.IndexFunc(gwPorts, func(p HelmPort) bool { return *p.Port == port }) != -1 {
 		return gwPorts
 	}
@@ -87,7 +88,7 @@ func AppendPortValue(gwPorts []HelmPort, port int32, name string, gwp *v1alpha1.
 	// If not found the default value of `nil` will not render anything.
 	var nodePort *int32 = nil
 	if gwp.Spec.GetKube().GetService().GetType() != nil && *(gwp.Spec.GetKube().GetService().GetType()) == corev1.ServiceTypeNodePort {
-		if idx := slices.IndexFunc(gwp.Spec.GetKube().GetService().GetPorts(), func(p v1alpha1.Port) bool {
+		if idx := slices.IndexFunc(gwp.Spec.GetKube().GetService().GetPorts(), func(p kgateway.Port) bool {
 			return p.GetPort() == port
 		}); idx != -1 {
 			nodePort = gwp.Spec.GetKube().GetService().GetPorts()[idx].GetNodePort()
@@ -103,7 +104,7 @@ func AppendPortValue(gwPorts []HelmPort, port int32, name string, gwp *v1alpha1.
 }
 
 // Convert service values from GatewayParameters into helm values to be used by the deployer.
-func GetServiceValues(svcConfig *v1alpha1.Service) *HelmService {
+func GetServiceValues(svcConfig *kgateway.Service) *HelmService {
 	// convert the service type enum to its string representation;
 	// if type is not set, it will default to 0 ("ClusterIP")
 	var svcType *string
@@ -120,7 +121,7 @@ func GetServiceValues(svcConfig *v1alpha1.Service) *HelmService {
 }
 
 // Convert service account values from GatewayParameters into helm values to be used by the deployer.
-func GetServiceAccountValues(svcAccountConfig *v1alpha1.ServiceAccount) *HelmServiceAccount {
+func GetServiceAccountValues(svcAccountConfig *kgateway.ServiceAccount) *HelmServiceAccount {
 	return &HelmServiceAccount{
 		ExtraAnnotations: svcAccountConfig.GetExtraAnnotations(),
 		ExtraLabels:      svcAccountConfig.GetExtraLabels(),
@@ -128,7 +129,7 @@ func GetServiceAccountValues(svcAccountConfig *v1alpha1.ServiceAccount) *HelmSer
 }
 
 // Convert sds values from GatewayParameters into helm values to be used by the deployer.
-func GetSdsContainerValues(sdsContainerConfig *v1alpha1.SdsContainer) *HelmSdsContainer {
+func GetSdsContainerValues(sdsContainerConfig *kgateway.SdsContainer) *HelmSdsContainer {
 	if sdsContainerConfig == nil {
 		return nil
 	}
@@ -149,7 +150,7 @@ func GetSdsContainerValues(sdsContainerConfig *v1alpha1.SdsContainer) *HelmSdsCo
 	return vals
 }
 
-func GetIstioContainerValues(config *v1alpha1.IstioContainer) *HelmIstioContainer {
+func GetIstioContainerValues(config *kgateway.IstioContainer) *HelmIstioContainer {
 	if config == nil {
 		return nil
 	}
@@ -166,7 +167,7 @@ func GetIstioContainerValues(config *v1alpha1.IstioContainer) *HelmIstioContaine
 }
 
 // Convert istio values from GatewayParameters into helm values to be used by the deployer.
-func GetIstioValues(istioIntegrationEnabled bool, istioConfig *v1alpha1.IstioIntegration) *HelmIstio {
+func GetIstioValues(istioIntegrationEnabled bool, istioConfig *kgateway.IstioIntegration) *HelmIstio {
 	// if istioConfig is nil, istio sds is disabled and values can be ignored
 	if istioConfig == nil {
 		return &HelmIstio{
@@ -180,7 +181,7 @@ func GetIstioValues(istioIntegrationEnabled bool, istioConfig *v1alpha1.IstioInt
 }
 
 // Get the image values for the envoy container in the proxy deployment.
-func GetImageValues(image *v1alpha1.Image) *HelmImage {
+func GetImageValues(image *kgateway.Image) *HelmImage {
 	if image == nil {
 		return &HelmImage{}
 	}
@@ -199,7 +200,7 @@ func GetImageValues(image *v1alpha1.Image) *HelmImage {
 }
 
 // Get the stats values for the envoy listener in the configmap for bootstrap.
-func GetStatsValues(statsConfig *v1alpha1.StatsConfig) *HelmStatsConfig {
+func GetStatsValues(statsConfig *kgateway.StatsConfig) *HelmStatsConfig {
 	if statsConfig == nil {
 		return nil
 	}
@@ -223,7 +224,7 @@ func GetStatsValues(statsConfig *v1alpha1.StatsConfig) *HelmStatsConfig {
 	return vals
 }
 
-func toHelmStringMatcher(l []v1alpha1.StringMatcher) []HelmStringMatcher {
+func toHelmStringMatcher(l []shared.StringMatcher) []HelmStringMatcher {
 	out := make([]HelmStringMatcher, 0, len(l))
 	for _, sm := range l {
 		out = append(out, HelmStringMatcher{

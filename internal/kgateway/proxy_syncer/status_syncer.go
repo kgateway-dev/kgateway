@@ -22,7 +22,7 @@ import (
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
@@ -570,12 +570,12 @@ func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMa
 
 		for _, ancestor := range status.Ancestors {
 			for _, cond := range ancestor.Conditions {
-				if cond.Type != string(v1alpha1.PolicyConditionAccepted) {
+				if cond.Type != string(shared.PolicyConditionAccepted) {
 					continue
 				}
 
-				if cond.Reason != string(v1alpha1.PolicyReasonValid) &&
-					cond.Reason != string(v1alpha1.PolicyReasonPending) {
+				if cond.Reason != string(shared.PolicyReasonValid) &&
+					cond.Reason != string(shared.PolicyReasonPending) {
 					statusErr = fmt.Errorf("invalid policy condition")
 
 					break

@@ -220,10 +220,9 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			cfg.AgwCollections,
 			agwMergedPlugins,
 			cfg.AdditionalGatewayClasses,
+			cfg.KrtOptions,
 			gvks,
 		)
-
-		agwSyncer.Init(cfg.KrtOptions.WithPrefix("agentgateway"))
 
 		if err := cfg.Manager.Add(agwSyncer); err != nil {
 			setupLog.Error(err, "unable to add agentgateway Syncer runnable")

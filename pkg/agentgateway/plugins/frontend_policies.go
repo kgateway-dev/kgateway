@@ -8,7 +8,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/slices"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 )
 
 const (
@@ -20,7 +20,7 @@ const (
 )
 
 func translateFrontendPolicyToAgw(
-	policy *v1alpha1.AgentgatewayPolicy,
+	policy *agentgateway.AgentgatewayPolicy,
 	policyTarget *api.PolicyTarget,
 ) ([]AgwPolicy, error) {
 	frontend := policy.Spec.Frontend
@@ -60,7 +60,7 @@ func translateFrontendPolicyToAgw(
 	return agwPolicies, errors.Join(errs...)
 }
 
-func translateFrontendTracing(policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) []AgwPolicy {
+func translateFrontendTracing(policy *agentgateway.AgentgatewayPolicy, name string, target *api.PolicyTarget) []AgwPolicy {
 	tracing := policy.Spec.Frontend.Tracing
 	tracingPolicy := &api.Policy{
 		Name:   name + frontendTracingPolicySuffix + attachmentName(target),
@@ -82,7 +82,7 @@ func translateFrontendTracing(policy *v1alpha1.AgentgatewayPolicy, name string, 
 	return []AgwPolicy{{Policy: tracingPolicy}}
 }
 
-func translateFrontendAccessLog(policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) []AgwPolicy {
+func translateFrontendAccessLog(policy *agentgateway.AgentgatewayPolicy, name string, target *api.PolicyTarget) []AgwPolicy {
 	logging := policy.Spec.Frontend.AccessLog
 	spec := &api.FrontendPolicySpec_Logging{}
 	if f := logging.Filter; f != nil {
@@ -91,7 +91,7 @@ func translateFrontendAccessLog(policy *v1alpha1.AgentgatewayPolicy, name string
 	if a := logging.Attributes; a != nil {
 		f := &api.FrontendPolicySpec_Logging_Fields{
 			Remove: a.Remove,
-			Add: slices.Map(a.Add, func(e v1alpha1.AgentAttributeAdd) *api.FrontendPolicySpec_Logging_Field {
+			Add: slices.Map(a.Add, func(e agentgateway.AgentAttributeAdd) *api.FrontendPolicySpec_Logging_Field {
 				return &api.FrontendPolicySpec_Logging_Field{
 					Name:       e.Name,
 					Expression: string(e.Expression),
@@ -121,7 +121,7 @@ func translateFrontendAccessLog(policy *v1alpha1.AgentgatewayPolicy, name string
 	return []AgwPolicy{{Policy: loggingPolicy}}
 }
 
-func translateFrontendTCP(policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) []AgwPolicy {
+func translateFrontendTCP(policy *agentgateway.AgentgatewayPolicy, name string, target *api.PolicyTarget) []AgwPolicy {
 	tcp := policy.Spec.Frontend.TCP
 	spec := &api.FrontendPolicySpec_TCP{}
 	if ka := tcp.KeepAlive; ka != nil {
@@ -157,7 +157,7 @@ func translateFrontendTCP(policy *v1alpha1.AgentgatewayPolicy, name string, targ
 	return []AgwPolicy{{Policy: tcpPolicy}}
 }
 
-func translateFrontendTLS(policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) []AgwPolicy {
+func translateFrontendTLS(policy *agentgateway.AgentgatewayPolicy, name string, target *api.PolicyTarget) []AgwPolicy {
 	tls := policy.Spec.Frontend.TLS
 	spec := &api.FrontendPolicySpec_TLS{}
 	if ka := tls.HandshakeTimeout; ka != nil {
@@ -188,7 +188,7 @@ func translateFrontendTLS(policy *v1alpha1.AgentgatewayPolicy, name string, targ
 	return []AgwPolicy{{Policy: tlsPolicy}}
 }
 
-func translateFrontendHTTP(policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) []AgwPolicy {
+func translateFrontendHTTP(policy *agentgateway.AgentgatewayPolicy, name string, target *api.PolicyTarget) []AgwPolicy {
 	http := policy.Spec.Frontend.HTTP
 	spec := &api.FrontendPolicySpec_HTTP{}
 	if v := http.MaxBufferSize; v != nil {

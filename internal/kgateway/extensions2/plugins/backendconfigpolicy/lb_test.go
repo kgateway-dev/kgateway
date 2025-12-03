@@ -21,20 +21,20 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
 
 func TestApplyLoadBalancerConfig(t *testing.T) {
 	tests := []struct {
 		name     string
-		config   *v1alpha1.LoadBalancer
+		config   *kgateway.LoadBalancer
 		cluster  *envoyclusterv3.Cluster
 		expected *envoyclusterv3.Cluster
 	}{
 		{
 			name: "HealthyPanicThreshold",
-			config: &v1alpha1.LoadBalancer{
+			config: &kgateway.LoadBalancer{
 				HealthyPanicThreshold: ptr.To(int32(100)),
 			},
 			expected: &envoyclusterv3.Cluster{
@@ -48,7 +48,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		},
 		{
 			name: "UpdateMergeWindow",
-			config: &v1alpha1.LoadBalancer{
+			config: &kgateway.LoadBalancer{
 				UpdateMergeWindow: &metav1.Duration{
 					Duration: 10 * time.Second,
 				},
@@ -62,8 +62,8 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		},
 		{
 			name: "LoadBalancerTypeRandom",
-			config: &v1alpha1.LoadBalancer{
-				Random: &v1alpha1.LoadBalancerRandomConfig{},
+			config: &kgateway.LoadBalancer{
+				Random: &kgateway.LoadBalancerRandomConfig{},
 			},
 			expected: func() *envoyclusterv3.Cluster {
 				msg, _ := utils.MessageToAny(&randomv3.Random{})
@@ -83,8 +83,8 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		},
 		{
 			name: "RoundRobin basic config",
-			config: &v1alpha1.LoadBalancer{
-				RoundRobin: &v1alpha1.LoadBalancerRoundRobinConfig{},
+			config: &kgateway.LoadBalancer{
+				RoundRobin: &kgateway.LoadBalancerRoundRobinConfig{},
 			},
 			expected: func() *envoyclusterv3.Cluster {
 				msg, _ := utils.MessageToAny(&roundrobinv3.RoundRobin{})
@@ -104,9 +104,9 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		},
 		{
 			name: "RoundRobin full config",
-			config: &v1alpha1.LoadBalancer{
-				RoundRobin: &v1alpha1.LoadBalancerRoundRobinConfig{
-					SlowStart: &v1alpha1.SlowStart{
+			config: &kgateway.LoadBalancer{
+				RoundRobin: &kgateway.LoadBalancerRoundRobinConfig{
+					SlowStart: &kgateway.SlowStart{
 						Window: &metav1.Duration{
 							Duration: 10 * time.Second,
 						},
@@ -143,8 +143,8 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		},
 		{
 			name: "LeastRequest basic config",
-			config: &v1alpha1.LoadBalancer{
-				LeastRequest: &v1alpha1.LoadBalancerLeastRequestConfig{
+			config: &kgateway.LoadBalancer{
+				LeastRequest: &kgateway.LoadBalancerLeastRequestConfig{
 					ChoiceCount: 3,
 				},
 			},
@@ -169,10 +169,10 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		},
 		{
 			name: "LeastRequest full config",
-			config: &v1alpha1.LoadBalancer{
-				LeastRequest: &v1alpha1.LoadBalancerLeastRequestConfig{
+			config: &kgateway.LoadBalancer{
+				LeastRequest: &kgateway.LoadBalancerLeastRequestConfig{
 					ChoiceCount: 10,
-					SlowStart: &v1alpha1.SlowStart{
+					SlowStart: &kgateway.SlowStart{
 						Window: &metav1.Duration{
 							Duration: 10 * time.Second,
 						},
@@ -207,8 +207,8 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		},
 		{
 			name: "RingHash basic config",
-			config: &v1alpha1.LoadBalancer{
-				RingHash: &v1alpha1.LoadBalancerRingHashConfig{},
+			config: &kgateway.LoadBalancer{
+				RingHash: &kgateway.LoadBalancerRingHashConfig{},
 			},
 			expected: func() *envoyclusterv3.Cluster {
 				msg, _ := utils.MessageToAny(&ringhashv3.RingHash{})
@@ -228,8 +228,8 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		},
 		{
 			name: "RingHash full config",
-			config: &v1alpha1.LoadBalancer{
-				RingHash: &v1alpha1.LoadBalancerRingHashConfig{
+			config: &kgateway.LoadBalancer{
+				RingHash: &kgateway.LoadBalancerRingHashConfig{
 					MinimumRingSize: ptr.To(int64(10)),
 					MaximumRingSize: ptr.To(int64(100)),
 				},
@@ -256,16 +256,16 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		},
 		{
 			name: "RingHash with hash policies",
-			config: &v1alpha1.LoadBalancer{
-				RingHash: &v1alpha1.LoadBalancerRingHashConfig{
-					HashPolicies: []v1alpha1.HashPolicy{
+			config: &kgateway.LoadBalancer{
+				RingHash: &kgateway.LoadBalancerRingHashConfig{
+					HashPolicies: []kgateway.HashPolicy{
 						{
-							Header: &v1alpha1.Header{
+							Header: &kgateway.Header{
 								Name: "x-user-id",
 							},
 						},
 						{
-							Cookie: &v1alpha1.Cookie{
+							Cookie: &kgateway.Cookie{
 								Name: "session-id",
 							},
 						},
@@ -275,14 +275,14 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			expected: func() *envoyclusterv3.Cluster {
 				msg, _ := utils.MessageToAny(&ringhashv3.RingHash{
 					ConsistentHashingLbConfig: &envoycommonv3.ConsistentHashingLbConfig{
-						HashPolicy: constructHashPolicy([]v1alpha1.HashPolicy{
+						HashPolicy: constructHashPolicy([]kgateway.HashPolicy{
 							{
-								Header: &v1alpha1.Header{
+								Header: &kgateway.Header{
 									Name: "x-user-id",
 								},
 							},
 							{
-								Cookie: &v1alpha1.Cookie{
+								Cookie: &kgateway.Cookie{
 									Name: "session-id",
 								},
 							},
@@ -305,16 +305,16 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		},
 		{
 			name: "Maglev with hash policies",
-			config: &v1alpha1.LoadBalancer{
-				Maglev: &v1alpha1.LoadBalancerMaglevConfig{
-					HashPolicies: []v1alpha1.HashPolicy{
+			config: &kgateway.LoadBalancer{
+				Maglev: &kgateway.LoadBalancerMaglevConfig{
+					HashPolicies: []kgateway.HashPolicy{
 						{
-							Header: &v1alpha1.Header{
+							Header: &kgateway.Header{
 								Name: "x-user-id",
 							},
 						},
 						{
-							Cookie: &v1alpha1.Cookie{
+							Cookie: &kgateway.Cookie{
 								Name: "session-id",
 							},
 						},
@@ -324,14 +324,14 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			expected: func() *envoyclusterv3.Cluster {
 				msg, _ := utils.MessageToAny(&maglevv3.Maglev{
 					ConsistentHashingLbConfig: &envoycommonv3.ConsistentHashingLbConfig{
-						HashPolicy: constructHashPolicy([]v1alpha1.HashPolicy{
+						HashPolicy: constructHashPolicy([]kgateway.HashPolicy{
 							{
-								Header: &v1alpha1.Header{
+								Header: &kgateway.Header{
 									Name: "x-user-id",
 								},
 							},
 							{
-								Cookie: &v1alpha1.Cookie{
+								Cookie: &kgateway.Cookie{
 									Name: "session-id",
 								},
 							},
@@ -354,8 +354,8 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		},
 		{
 			name: "Maglev",
-			config: &v1alpha1.LoadBalancer{
-				Maglev: &v1alpha1.LoadBalancerMaglevConfig{},
+			config: &kgateway.LoadBalancer{
+				Maglev: &kgateway.LoadBalancerMaglevConfig{},
 			},
 			expected: func() *envoyclusterv3.Cluster {
 				msg, _ := utils.MessageToAny(&maglevv3.Maglev{})
@@ -375,7 +375,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		},
 		{
 			name: "CloseConnectionsOnHostSetChange",
-			config: &v1alpha1.LoadBalancer{
+			config: &kgateway.LoadBalancer{
 				CloseConnectionsOnHostSetChange: ptr.To(true),
 			},
 			expected: &envoyclusterv3.Cluster{
@@ -387,8 +387,8 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		},
 		{
 			name: "RingHash: UseHostnameForHashing, STRICT_DNS",
-			config: &v1alpha1.LoadBalancer{
-				RingHash: &v1alpha1.LoadBalancerRingHashConfig{
+			config: &kgateway.LoadBalancer{
+				RingHash: &kgateway.LoadBalancerRingHashConfig{
 					UseHostnameForHashing: ptr.To(true),
 				},
 			},
@@ -420,8 +420,8 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 		},
 		{
 			name: "Ringhash: UseHostnameForHashing, EDS",
-			config: &v1alpha1.LoadBalancer{
-				RingHash: &v1alpha1.LoadBalancerRingHashConfig{
+			config: &kgateway.LoadBalancer{
+				RingHash: &kgateway.LoadBalancerRingHashConfig{
 					UseHostnameForHashing: ptr.To(true),
 				},
 			},
@@ -475,7 +475,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 func TestConstructHashPolicy(t *testing.T) {
 	tests := []struct {
 		name         string
-		hashPolicies []v1alpha1.HashPolicy
+		hashPolicies []kgateway.HashPolicy
 		expected     []*envoyroutev3.RouteAction_HashPolicy
 	}{
 		{
@@ -485,14 +485,14 @@ func TestConstructHashPolicy(t *testing.T) {
 		},
 		{
 			name:         "empty hash policies",
-			hashPolicies: []v1alpha1.HashPolicy{},
+			hashPolicies: []kgateway.HashPolicy{},
 			expected:     nil,
 		},
 		{
 			name: "header hash policy",
-			hashPolicies: []v1alpha1.HashPolicy{
+			hashPolicies: []kgateway.HashPolicy{
 				{
-					Header: &v1alpha1.Header{
+					Header: &kgateway.Header{
 						Name: "x-user-id",
 					},
 					Terminal: ptr.To(true),
@@ -511,9 +511,9 @@ func TestConstructHashPolicy(t *testing.T) {
 		},
 		{
 			name: "cookie hash policy without TTL and path",
-			hashPolicies: []v1alpha1.HashPolicy{
+			hashPolicies: []kgateway.HashPolicy{
 				{
-					Cookie: &v1alpha1.Cookie{
+					Cookie: &kgateway.Cookie{
 						Name: "session-id",
 					},
 				},
@@ -531,9 +531,9 @@ func TestConstructHashPolicy(t *testing.T) {
 		},
 		{
 			name: "cookie hash policy with TTL and path",
-			hashPolicies: []v1alpha1.HashPolicy{
+			hashPolicies: []kgateway.HashPolicy{
 				{
-					Cookie: &v1alpha1.Cookie{
+					Cookie: &kgateway.Cookie{
 						Name: "session-id",
 						TTL: &metav1.Duration{
 							Duration: 30 * time.Minute,
@@ -558,9 +558,9 @@ func TestConstructHashPolicy(t *testing.T) {
 		},
 		{
 			name: "cookie hash policy with all attributes",
-			hashPolicies: []v1alpha1.HashPolicy{
+			hashPolicies: []kgateway.HashPolicy{
 				{
-					Cookie: &v1alpha1.Cookie{
+					Cookie: &kgateway.Cookie{
 						Name:     "session-id",
 						Secure:   ptr.To(true),
 						HttpOnly: ptr.To(true),
@@ -586,9 +586,9 @@ func TestConstructHashPolicy(t *testing.T) {
 		},
 		{
 			name: "source IP hash policy",
-			hashPolicies: []v1alpha1.HashPolicy{
+			hashPolicies: []kgateway.HashPolicy{
 				{
-					SourceIP: &v1alpha1.SourceIP{},
+					SourceIP: &kgateway.SourceIP{},
 					Terminal: ptr.To(false),
 				},
 			},
@@ -605,15 +605,15 @@ func TestConstructHashPolicy(t *testing.T) {
 		},
 		{
 			name: "multiple hash policies",
-			hashPolicies: []v1alpha1.HashPolicy{
+			hashPolicies: []kgateway.HashPolicy{
 				{
-					Header: &v1alpha1.Header{
+					Header: &kgateway.Header{
 						Name: "x-user-id",
 					},
 					Terminal: ptr.To(true),
 				},
 				{
-					Cookie: &v1alpha1.Cookie{
+					Cookie: &kgateway.Cookie{
 						Name: "session-id",
 						TTL: &metav1.Duration{
 							Duration: 1 * time.Hour,
@@ -621,7 +621,7 @@ func TestConstructHashPolicy(t *testing.T) {
 					},
 				},
 				{
-					SourceIP: &v1alpha1.SourceIP{},
+					SourceIP: &kgateway.SourceIP{},
 				},
 			},
 			expected: []*envoyroutev3.RouteAction_HashPolicy{
@@ -654,9 +654,9 @@ func TestConstructHashPolicy(t *testing.T) {
 		},
 		{
 			name: "cookie hash policy with nil TTL",
-			hashPolicies: []v1alpha1.HashPolicy{
+			hashPolicies: []kgateway.HashPolicy{
 				{
-					Cookie: &v1alpha1.Cookie{
+					Cookie: &kgateway.Cookie{
 						Name: "session-id",
 						TTL:  nil,
 						Path: ptr.To("/api"),

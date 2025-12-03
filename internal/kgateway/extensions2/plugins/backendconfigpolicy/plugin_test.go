@@ -19,7 +19,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -27,7 +27,7 @@ import (
 func TestBackendConfigPolicyTranslation(t *testing.T) {
 	tests := []struct {
 		name    string
-		policy  *v1alpha1.BackendConfigPolicy
+		policy  *kgateway.BackendConfigPolicy
 		cluster *envoyclusterv3.Cluster
 		backend *ir.BackendObjectIR
 		want    *envoyclusterv3.Cluster
@@ -35,22 +35,22 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 	}{
 		{
 			name: "full configuration",
-			policy: &v1alpha1.BackendConfigPolicy{
-				Spec: v1alpha1.BackendConfigPolicySpec{
+			policy: &kgateway.BackendConfigPolicy{
+				Spec: kgateway.BackendConfigPolicySpec{
 					ConnectTimeout:                ptr.To(metav1.Duration{Duration: 5 * time.Second}),
 					PerConnectionBufferLimitBytes: ptr.To(int32(1024)),
-					TCPKeepalive: &v1alpha1.TCPKeepalive{
+					TCPKeepalive: &kgateway.TCPKeepalive{
 						KeepAliveProbes:   ptr.To(int32(3)),
 						KeepAliveTime:     ptr.To(metav1.Duration{Duration: 30 * time.Second}),
 						KeepAliveInterval: ptr.To(metav1.Duration{Duration: 5 * time.Second}),
 					},
-					CommonHttpProtocolOptions: &v1alpha1.CommonHttpProtocolOptions{
+					CommonHttpProtocolOptions: &kgateway.CommonHttpProtocolOptions{
 						IdleTimeout:              ptr.To(metav1.Duration{Duration: 60 * time.Second}),
 						MaxHeadersCount:          ptr.To(int32(100)),
 						MaxStreamDuration:        ptr.To(metav1.Duration{Duration: 30 * time.Second}),
 						MaxRequestsPerConnection: ptr.To(int32(100)),
 					},
-					Http1ProtocolOptions: &v1alpha1.Http1ProtocolOptions{
+					Http1ProtocolOptions: &kgateway.Http1ProtocolOptions{
 						EnableTrailers:                          ptr.To(true),
 						PreserveHttp1HeaderCase:                 ptr.To(true),
 						OverrideStreamErrorOnInvalidHttpMessage: ptr.To(true),
@@ -100,10 +100,10 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 		},
 		{
 			name: "minimal configuration",
-			policy: &v1alpha1.BackendConfigPolicy{
-				Spec: v1alpha1.BackendConfigPolicySpec{
+			policy: &kgateway.BackendConfigPolicy{
+				Spec: kgateway.BackendConfigPolicySpec{
 					ConnectTimeout: ptr.To(metav1.Duration{Duration: 2 * time.Second}),
-					CommonHttpProtocolOptions: &v1alpha1.CommonHttpProtocolOptions{
+					CommonHttpProtocolOptions: &kgateway.CommonHttpProtocolOptions{
 						MaxRequestsPerConnection: ptr.To(int32(50)),
 					},
 				},
@@ -127,17 +127,17 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 		},
 		{
 			name: "empty policy",
-			policy: &v1alpha1.BackendConfigPolicy{
-				Spec: v1alpha1.BackendConfigPolicySpec{},
+			policy: &kgateway.BackendConfigPolicy{
+				Spec: kgateway.BackendConfigPolicySpec{},
 			},
 			want:    &envoyclusterv3.Cluster{},
 			wantErr: false,
 		},
 		{
 			name: "attempt to apply http1 protocol options to http2 backend should not apply",
-			policy: &v1alpha1.BackendConfigPolicy{
-				Spec: v1alpha1.BackendConfigPolicySpec{
-					Http1ProtocolOptions: &v1alpha1.Http1ProtocolOptions{
+			policy: &kgateway.BackendConfigPolicy{
+				Spec: kgateway.BackendConfigPolicySpec{
+					Http1ProtocolOptions: &kgateway.Http1ProtocolOptions{
 						EnableTrailers: ptr.To(true),
 					},
 				},
@@ -175,9 +175,9 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 		},
 		{
 			name: "http2 protocol options applied to http2 backend",
-			policy: &v1alpha1.BackendConfigPolicy{
-				Spec: v1alpha1.BackendConfigPolicySpec{
-					Http2ProtocolOptions: &v1alpha1.Http2ProtocolOptions{
+			policy: &kgateway.BackendConfigPolicy{
+				Spec: kgateway.BackendConfigPolicySpec{
+					Http2ProtocolOptions: &kgateway.Http2ProtocolOptions{
 						InitialStreamWindowSize:                 ptr.To(resource.MustParse("64Ki")),
 						InitialConnectionWindowSize:             ptr.To(resource.MustParse("64Ki")),
 						MaxConcurrentStreams:                    ptr.To(int32(100)),
@@ -223,9 +223,9 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 		},
 		{
 			name: "http2 protocol options not applied to non-http2 backend",
-			policy: &v1alpha1.BackendConfigPolicy{
-				Spec: v1alpha1.BackendConfigPolicySpec{
-					Http2ProtocolOptions: &v1alpha1.Http2ProtocolOptions{
+			policy: &kgateway.BackendConfigPolicy{
+				Spec: kgateway.BackendConfigPolicySpec{
+					Http2ProtocolOptions: &kgateway.Http2ProtocolOptions{
 						MaxConcurrentStreams: ptr.To(int32(100)),
 					},
 				},
@@ -237,9 +237,9 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 		},
 		{
 			name: "circuit breakers minimal configuration",
-			policy: &v1alpha1.BackendConfigPolicy{
-				Spec: v1alpha1.BackendConfigPolicySpec{
-					CircuitBreakers: &v1alpha1.CircuitBreakers{
+			policy: &kgateway.BackendConfigPolicy{
+				Spec: kgateway.BackendConfigPolicySpec{
+					CircuitBreakers: &kgateway.CircuitBreakers{
 						MaxConnections: ptr.To(int32(100)),
 					},
 				},
@@ -257,9 +257,9 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 		},
 		{
 			name: "circuit breakers full configuration",
-			policy: &v1alpha1.BackendConfigPolicy{
-				Spec: v1alpha1.BackendConfigPolicySpec{
-					CircuitBreakers: &v1alpha1.CircuitBreakers{
+			policy: &kgateway.BackendConfigPolicy{
+				Spec: kgateway.BackendConfigPolicySpec{
+					CircuitBreakers: &kgateway.CircuitBreakers{
 						MaxConnections:     ptr.To(int32(1000)),
 						MaxPendingRequests: ptr.To(int32(500)),
 						MaxRequests:        ptr.To(int32(2000)),

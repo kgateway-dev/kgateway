@@ -18,7 +18,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
@@ -79,15 +79,15 @@ const (
 // and GEP-1911 (https://gateway-api.sigs.k8s.io/geps/gep-1911/#api-semantics).
 func ParseAppProtocol(appProtocol *string) AppProtocol {
 	switch strings.ToLower(ptr.Deref(appProtocol, "")) {
-	case string(v1alpha1.AppProtocolHttp2):
+	case string(kgateway.AppProtocolHttp2):
 		fallthrough
-	case string(v1alpha1.AppProtocolGrpc):
+	case string(kgateway.AppProtocolGrpc):
 		fallthrough
-	case string(v1alpha1.AppProtocolGrpcWeb):
+	case string(kgateway.AppProtocolGrpcWeb):
 		fallthrough
-	case string(v1alpha1.AppProtocolKubernetesH2C):
+	case string(kgateway.AppProtocolKubernetesH2C):
 		return HTTP2AppProtocol
-	case string(v1alpha1.AppProtocolKubernetesWs):
+	case string(kgateway.AppProtocolKubernetesWs):
 		return WebSocketAppProtocol
 	default:
 		return DefaultAppProtocol

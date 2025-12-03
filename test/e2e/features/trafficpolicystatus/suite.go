@@ -11,7 +11,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
@@ -66,7 +67,7 @@ func (s *testingSuite) TestTrafficPolicyClearStaleStatus() {
 func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, gwName, controllerName string) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
 	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
-		policy := &v1alpha1.TrafficPolicy{}
+		policy := &kgateway.TrafficPolicy{}
 		err := s.TestInstallation.ClusterContext.Client.Get(
 			s.Ctx,
 			types.NamespacedName{Name: policyName, Namespace: policyNamespace},
@@ -80,9 +81,9 @@ func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, gwName, co
 			ControllerName: gwv1.GatewayController(controllerName),
 			Conditions: []metav1.Condition{
 				{
-					Type:               string(v1alpha1.PolicyConditionAccepted),
+					Type:               string(shared.PolicyConditionAccepted),
 					Status:             metav1.ConditionTrue,
-					Reason:             string(v1alpha1.PolicyReasonValid),
+					Reason:             string(shared.PolicyReasonValid),
 					Message:            "Accepted by fake controller",
 					LastTransitionTime: metav1.Now(),
 				},
@@ -98,7 +99,7 @@ func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, gwName, co
 func (s *testingSuite) assertAncestorStatuses(ancestorName string, expectedControllers map[string]bool) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
 	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
-		policy := &v1alpha1.TrafficPolicy{}
+		policy := &kgateway.TrafficPolicy{}
 		err := s.TestInstallation.ClusterContext.Client.Get(
 			s.Ctx,
 			types.NamespacedName{Name: "example-policy", Namespace: "default"},

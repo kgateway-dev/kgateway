@@ -15,7 +15,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
@@ -64,6 +65,7 @@ func (s *testingSuite) SetupSuite() {
 		"TestPreserveHttp1HeaderCase":            {gatewayManifest, preserveHttp1HeaderCaseManifest},
 		"TestAccessLogEmittedToStdout":           {gatewayManifest, httpRouteManifest, accessLogManifest},
 		"TestHttpListenerPolicyClearStaleStatus": {gatewayManifest, httpRouteManifest, serverHeaderManifest},
+		"TestEarlyRequestHeaderModifier":         {gatewayManifest, earlyHeaderMutationManifest},
 	}
 }
 
@@ -271,7 +273,7 @@ func (s *testingSuite) TestHttpListenerPolicyClearStaleStatus() {
 func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, gwName, controllerName string) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
 	s.testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
-		policy := &v1alpha1.HTTPListenerPolicy{}
+		policy := &kgateway.HTTPListenerPolicy{}
 		err := s.testInstallation.ClusterContext.Client.Get(
 			s.ctx,
 			types.NamespacedName{Name: policyName, Namespace: policyNamespace},
@@ -285,9 +287,9 @@ func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, gwName, co
 			ControllerName: gwv1.GatewayController(controllerName),
 			Conditions: []metav1.Condition{
 				{
-					Type:               string(v1alpha1.PolicyConditionAccepted),
+					Type:               string(shared.PolicyConditionAccepted),
 					Status:             metav1.ConditionTrue,
-					Reason:             string(v1alpha1.PolicyReasonValid),
+					Reason:             string(shared.PolicyReasonValid),
 					Message:            "Accepted by fake controller",
 					LastTransitionTime: metav1.Now(),
 				},
@@ -303,7 +305,7 @@ func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, gwName, co
 func (s *testingSuite) assertAncestorStatuses(ancestorName string, expectedControllers map[string]bool) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
 	s.testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
-		policy := &v1alpha1.HTTPListenerPolicy{}
+		policy := &kgateway.HTTPListenerPolicy{}
 		err := s.testInstallation.ClusterContext.Client.Get(
 			s.ctx,
 			types.NamespacedName{Name: "http-listener-policy-server-header", Namespace: "default"},
@@ -327,4 +329,21 @@ func (s *testingSuite) assertAncestorStatuses(ancestorName string, expectedContr
 			}
 		}
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+}
+
+func (s *testingSuite) TestEarlyRequestHeaderModifier() {
+	// Route matches only when a specific header is present. The policy adds it early.
+	s.testInstallation.Assertions.AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithHostHeader("example.com"),
+			// No manual header provided; listener policy adds it early so route matches
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.ContainSubstring("Welcome to nginx!"),
+		},
+	)
 }

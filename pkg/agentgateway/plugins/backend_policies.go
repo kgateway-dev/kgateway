@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/agentgateway/agentgateway/go/api"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
@@ -14,31 +15,33 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/sslutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
 const (
-	aiPolicySuffix               = ":ai"
-	backendTlsPolicySuffix       = ":backend-tls"
-	backendauthPolicySuffix      = ":backend-auth"
-	tlsPolicySuffix              = ":tls"
-	backendHttpPolicySuffix      = ":backend-http"
-	mcpAuthorizationPolicySuffix = ":mcp-authorization"
+	aiPolicySuffix                = ":ai"
+	backendTlsPolicySuffix        = ":backend-tls"
+	backendauthPolicySuffix       = ":backend-auth"
+	tlsPolicySuffix               = ":tls"
+	backendHttpPolicySuffix       = ":backend-http"
+	mcpAuthorizationPolicySuffix  = ":mcp-authorization"
+	mcpAuthenticationPolicySuffix = ":mcp-authentication"
 )
 
 func TranslateInlineBackendPolicy(
 	ctx PolicyCtx,
 	namespace string,
-	policy *v1alpha1.AgentgatewayPolicyBackendFull,
+	policy *agentgateway.AgentgatewayPolicyBackendFull,
 ) ([]*api.BackendPolicySpec, error) {
-	dummy := &v1alpha1.AgentgatewayPolicy{
+	dummy := &agentgateway.AgentgatewayPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "inline_policy",
 			Namespace: namespace,
 		},
-		Spec: v1alpha1.AgentgatewayPolicySpec{Backend: policy},
+		Spec: agentgateway.AgentgatewayPolicySpec{Backend: policy},
 	}
 	res, err := translateBackendPolicyToAgw(ctx, dummy, nil)
 	return slices.MapFilter(res, func(e AgwPolicy) **api.BackendPolicySpec {
@@ -48,7 +51,7 @@ func TranslateInlineBackendPolicy(
 
 func translateBackendPolicyToAgw(
 	ctx PolicyCtx,
-	policy *v1alpha1.AgentgatewayPolicy,
+	policy *agentgateway.AgentgatewayPolicy,
 	policyTarget *api.PolicyTarget,
 ) ([]AgwPolicy, error) {
 	backend := policy.Spec.Backend
@@ -84,8 +87,15 @@ func translateBackendPolicyToAgw(
 	}
 
 	if s := backend.MCP; s != nil {
-		pol := translateBackendMCPAuthorization(policy, policyTarget)
-		agwPolicies = append(agwPolicies, pol...)
+		if backend.MCP.Authorization != nil {
+			pol := translateBackendMCPAuthorization(policy, policyTarget)
+			agwPolicies = append(agwPolicies, pol...)
+		}
+
+		if backend.MCP.Authentication != nil {
+			pol := translateBackendMCPAuthentication(ctx, policy, policyTarget)
+			agwPolicies = append(agwPolicies, pol...)
+		}
 	}
 
 	if s := backend.AI; s != nil {
@@ -109,12 +119,12 @@ func translateBackendPolicyToAgw(
 	return agwPolicies, errors.Join(errs...)
 }
 
-func translateBackendTCP(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) ([]AgwPolicy, error) {
+func translateBackendTCP(ctx PolicyCtx, policy *agentgateway.AgentgatewayPolicy, name string, target *api.PolicyTarget) ([]AgwPolicy, error) {
 	// TODO
 	return nil, nil
 }
 
-func translateBackendTLS(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, target *api.PolicyTarget) ([]AgwPolicy, error) {
+func translateBackendTLS(ctx PolicyCtx, policy *agentgateway.AgentgatewayPolicy, target *api.PolicyTarget) ([]AgwPolicy, error) {
 	var errs []error
 	tls := policy.Spec.Backend.TLS
 
@@ -176,9 +186,9 @@ func translateBackendTLS(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, tar
 
 	if tls.InsecureSkipVerify != nil {
 		switch *tls.InsecureSkipVerify {
-		case v1alpha1.InsecureTLSModeAll:
+		case agentgateway.InsecureTLSModeAll:
 			p.Verification = api.BackendPolicySpec_BackendTLS_INSECURE_ALL
-		case v1alpha1.InsecureTLSModeHostname:
+		case agentgateway.InsecureTLSModeHostname:
 			p.Verification = api.BackendPolicySpec_BackendTLS_INSECURE_HOST
 		}
 	}
@@ -205,14 +215,14 @@ func translateBackendTLS(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, tar
 	return []AgwPolicy{{Policy: tlsPolicy}}, errors.Join(errs...)
 }
 
-func translateBackendHTTP(policy *v1alpha1.AgentgatewayPolicy, target *api.PolicyTarget) []AgwPolicy {
+func translateBackendHTTP(policy *agentgateway.AgentgatewayPolicy, target *api.PolicyTarget) []AgwPolicy {
 	http := policy.Spec.Backend.HTTP
 	p := &api.BackendPolicySpec_BackendHTTP{}
 	if v := http.Version; v != nil {
 		switch *v {
-		case v1alpha1.HTTPVersion1:
+		case agentgateway.HTTPVersion1:
 			p.Version = api.BackendPolicySpec_BackendHTTP_HTTP1
-		case v1alpha1.HTTPVersion2:
+		case agentgateway.HTTPVersion2:
 			p.Version = api.BackendPolicySpec_BackendHTTP_HTTP2
 		}
 	}
@@ -233,14 +243,14 @@ func translateBackendHTTP(policy *v1alpha1.AgentgatewayPolicy, target *api.Polic
 	return []AgwPolicy{{Policy: tp}}
 }
 
-func translateBackendMCPAuthorization(policy *v1alpha1.AgentgatewayPolicy, target *api.PolicyTarget) []AgwPolicy {
+func translateBackendMCPAuthorization(policy *agentgateway.AgentgatewayPolicy, target *api.PolicyTarget) []AgwPolicy {
 	backend := policy.Spec.Backend
 	if backend == nil || backend.MCP == nil || backend.MCP.Authorization == nil {
 		return nil
 	}
 	auth := backend.MCP.Authorization
 	var allowPolicies, denyPolicies []string
-	if auth.Action == v1alpha1.AuthorizationPolicyActionDeny {
+	if auth.Action == shared.AuthorizationPolicyActionDeny {
 		denyPolicies = append(denyPolicies, cast(auth.Policy.MatchExpressions)...)
 	} else {
 		allowPolicies = append(allowPolicies, cast(auth.Policy.MatchExpressions)...)
@@ -267,8 +277,71 @@ func translateBackendMCPAuthorization(policy *v1alpha1.AgentgatewayPolicy, targe
 	return []AgwPolicy{{Policy: mcpPolicy}}
 }
 
+func translateBackendMCPAuthentication(ctx PolicyCtx, policy *agentgateway.AgentgatewayPolicy, target *api.PolicyTarget) []AgwPolicy {
+	backend := policy.Spec.Backend
+	if backend == nil || backend.MCP == nil || backend.MCP.Authentication == nil {
+		return nil
+	}
+	authnPolicy := backend.MCP.Authentication
+	if authnPolicy == nil {
+		return nil
+	}
+
+	idp := api.BackendPolicySpec_McpAuthentication_AUTH0
+	if authnPolicy.McpIDP != nil && *authnPolicy.McpIDP == agentgateway.Keycloak {
+		idp = api.BackendPolicySpec_McpAuthentication_KEYCLOAK
+	}
+
+	translatedInlineJwks, err := resolveRemoteJWKSInline(ctx, authnPolicy.JWKS.JwksUri)
+	if err != nil {
+		logger.Error("failed resolving jwks", "jwks_uri", authnPolicy.JWKS.JwksUri, "error", err)
+		return nil
+	}
+
+	var extraResourceMetadata map[string]*structpb.Value
+	for k, v := range authnPolicy.ResourceMetadata {
+		if extraResourceMetadata == nil {
+			extraResourceMetadata = make(map[string]*structpb.Value)
+		}
+
+		pbVal, err := structpb.NewValue(v)
+		if err != nil {
+			logger.Error("error converting resource metadata", "key", k, "error", err)
+			continue
+		}
+
+		extraResourceMetadata[k] = pbVal
+	}
+
+	mcpAuthn := &api.BackendPolicySpec_McpAuthentication{
+		Issuer:    authnPolicy.Issuer,
+		Audiences: authnPolicy.Audiences,
+		Provider:  idp,
+		ResourceMetadata: &api.BackendPolicySpec_McpAuthentication_ResourceMetadata{
+			Extra: extraResourceMetadata,
+		},
+		JwksInline: translatedInlineJwks,
+	}
+	mcpAuthnPolicy := &api.Policy{
+		Name:   policy.Namespace + "/" + policy.Name + mcpAuthenticationPolicySuffix + attachmentName(target),
+		Target: target,
+		Kind: &api.Policy_Backend{
+			Backend: &api.BackendPolicySpec{
+				Kind: &api.BackendPolicySpec_McpAuthentication_{
+					McpAuthentication: mcpAuthn,
+				},
+			}},
+	}
+
+	logger.Debug("generated MCP authentication policy",
+		"policy", policy.Name,
+		"agentgateway_policy", mcpAuthnPolicy.Name)
+
+	return []AgwPolicy{{Policy: mcpAuthnPolicy}}
+}
+
 // translateBackendAI processes AI configuration and creates corresponding Agw policies
-func translateBackendAI(ctx PolicyCtx, agwPolicy *v1alpha1.AgentgatewayPolicy, name string, policyTarget *api.PolicyTarget) ([]AgwPolicy, error) {
+func translateBackendAI(ctx PolicyCtx, agwPolicy *agentgateway.AgentgatewayPolicy, name string, policyTarget *api.PolicyTarget) ([]AgwPolicy, error) {
 	var errs []error
 	aiSpec := agwPolicy.Spec.Backend.AI
 
@@ -346,7 +419,7 @@ func translateBackendAI(ctx PolicyCtx, agwPolicy *v1alpha1.AgentgatewayPolicy, n
 		for path, routeType := range aiSpec.Routes {
 			r[path] = translateRouteType(routeType)
 		}
-		// TODO: AGW support
+		translatedAIPolicy.Routes = r
 	}
 
 	aiPolicy := &api.Policy{
@@ -368,7 +441,7 @@ func translateBackendAI(ctx PolicyCtx, agwPolicy *v1alpha1.AgentgatewayPolicy, n
 	return []AgwPolicy{{Policy: aiPolicy}}, errors.Join(errs...)
 }
 
-func translateBackendAuth(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, name string, target *api.PolicyTarget) ([]AgwPolicy, error) {
+func translateBackendAuth(ctx PolicyCtx, policy *agentgateway.AgentgatewayPolicy, name string, target *api.PolicyTarget) ([]AgwPolicy, error) {
 	var errs []error
 	auth := policy.Spec.Backend.Auth
 
@@ -427,19 +500,19 @@ func translateBackendAuth(ctx PolicyCtx, policy *v1alpha1.AgentgatewayPolicy, na
 }
 
 // translateRouteType converts kgateway RouteType to agentgateway proto RouteType
-func translateRouteType(rt v1alpha1.RouteType) api.BackendPolicySpec_Ai_RouteType {
+func translateRouteType(rt agentgateway.RouteType) api.BackendPolicySpec_Ai_RouteType {
 	switch rt {
-	case v1alpha1.RouteTypeCompletions:
+	case agentgateway.RouteTypeCompletions:
 		return api.BackendPolicySpec_Ai_COMPLETIONS
-	case v1alpha1.RouteTypeMessages:
+	case agentgateway.RouteTypeMessages:
 		return api.BackendPolicySpec_Ai_MESSAGES
-	case v1alpha1.RouteTypeModels:
+	case agentgateway.RouteTypeModels:
 		return api.BackendPolicySpec_Ai_MODELS
-	case v1alpha1.RouteTypePassthrough:
+	case agentgateway.RouteTypePassthrough:
 		return api.BackendPolicySpec_Ai_PASSTHROUGH
-	case v1alpha1.RouteTypeResponses:
+	case agentgateway.RouteTypeResponses:
 		return api.BackendPolicySpec_Ai_RESPONSES
-	case v1alpha1.RouteTypeAnthropicTokenCount:
+	case agentgateway.RouteTypeAnthropicTokenCount:
 		return api.BackendPolicySpec_Ai_ANTHROPIC_TOKEN_COUNT
 	default:
 		// Default to completions if unknown type

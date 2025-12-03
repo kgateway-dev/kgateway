@@ -14,7 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/sslutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
@@ -43,7 +43,7 @@ func NewBackendTLSPlugin(agw *AgwCollections) AgwPlugin {
 func translatePoliciesForBackendTLS(
 	krtctx krt.HandlerContext,
 	cfgmaps krt.Collection[*corev1.ConfigMap],
-	backends krt.Collection[*v1alpha1.AgentgatewayBackend],
+	backends krt.Collection[*agentgateway.AgentgatewayBackend],
 	btls *gwv1.BackendTLSPolicy,
 	clusterDomain string,
 ) []AgwPolicy {

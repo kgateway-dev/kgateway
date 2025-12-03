@@ -24,7 +24,7 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -188,7 +188,7 @@ func resolveJwtProviders(
 	backendResolver backendResolver,
 	gwExtObj ir.ObjectSource,
 	policyName, policyNamespace string,
-	jwtProviders []v1alpha1.NamedJWTProvider,
+	jwtProviders []kgateway.NamedJWTProvider,
 ) (*envoyjwtauthnv3.JwtAuthentication, error) {
 	uniqProviders := make(map[string]*envoyjwtauthnv3.JwtProvider)
 	policyNameNamespace := fmt.Sprintf("%s_%s", policyName, policyNamespace)
@@ -224,7 +224,7 @@ func ResolveExtGrpcService(
 	backends *krtcollections.BackendIndex,
 	disableExtensionRefValidation bool,
 	objectSource ir.ObjectSource,
-	grpcService *v1alpha1.ExtGrpcService,
+	grpcService *kgateway.ExtGrpcService,
 ) (*envoycorev3.GrpcService, error) {
 	// defensive checks, both of these fields are required
 	if grpcService == nil {
@@ -270,7 +270,7 @@ func ResolveExtGrpcService(
 	return envoyGrpcService, nil
 }
 
-func buildGRPCRetryPolicy(in *v1alpha1.GRPCRetryPolicy) *envoycorev3.RetryPolicy {
+func buildGRPCRetryPolicy(in *kgateway.GRPCRetryPolicy) *envoycorev3.RetryPolicy {
 	if in == nil {
 		return nil
 	}
@@ -290,7 +290,7 @@ func buildGRPCRetryPolicy(in *v1alpha1.GRPCRetryPolicy) *envoycorev3.RetryPolicy
 }
 
 // FIXME: Should this live here instead of the global rate limit plugin?
-func buildRateLimitFilter(grpcService *envoycorev3.GrpcService, rateLimit *v1alpha1.RateLimitProvider) *ratev3.RateLimit {
+func buildRateLimitFilter(grpcService *envoycorev3.GrpcService, rateLimit *kgateway.RateLimitProvider) *ratev3.RateLimit {
 	envoyRateLimit := &ratev3.RateLimit{
 		Domain:          rateLimit.Domain,
 		FailureModeDeny: !rateLimit.FailOpen,
@@ -307,24 +307,24 @@ func buildRateLimitFilter(grpcService *envoycorev3.GrpcService, rateLimit *v1alp
 	return envoyRateLimit
 }
 
-func convertXRL(in v1alpha1.XRateLimitHeadersStandard) ratev3.RateLimit_XRateLimitHeadersRFCVersion {
+func convertXRL(in kgateway.XRateLimitHeadersStandard) ratev3.RateLimit_XRateLimitHeadersRFCVersion {
 	switch in {
-	case v1alpha1.XRateLimitHeaderDraftV03:
+	case kgateway.XRateLimitHeaderDraftV03:
 		return ratev3.RateLimit_DRAFT_VERSION_03
-	case v1alpha1.XRateLimitHeaderOff:
+	case kgateway.XRateLimitHeaderOff:
 		return ratev3.RateLimit_OFF
 	default:
 		return ratev3.RateLimit_OFF
 	}
 }
 
-func convertRCA(in v1alpha1.ExtProcRouteCacheAction) envoyextprocv3.ExternalProcessor_RouteCacheAction {
+func convertRCA(in kgateway.ExtProcRouteCacheAction) envoyextprocv3.ExternalProcessor_RouteCacheAction {
 	switch in {
-	case v1alpha1.RouteCacheActionClear:
+	case kgateway.RouteCacheActionClear:
 		return envoyextprocv3.ExternalProcessor_CLEAR
-	case v1alpha1.RouteCacheActionRetain:
+	case kgateway.RouteCacheActionRetain:
 		return envoyextprocv3.ExternalProcessor_RETAIN
-	case v1alpha1.RouteCacheActionFromResponse:
+	case kgateway.RouteCacheActionFromResponse:
 		return envoyextprocv3.ExternalProcessor_DEFAULT
 	default:
 		return envoyextprocv3.ExternalProcessor_DEFAULT
@@ -333,7 +333,7 @@ func convertRCA(in v1alpha1.ExtProcRouteCacheAction) envoyextprocv3.ExternalProc
 
 // buildCompositeExtProcFilter builds a composite filter for external processing so that
 // the filter can be conditionally disabled with the global_disable/ext_proc filter is enabled
-func buildCompositeExtProcFilter(in v1alpha1.ExtProcProvider, envoyGrpcService *envoycorev3.GrpcService) *envoymatchingv3.ExtensionWithMatcher {
+func buildCompositeExtProcFilter(in kgateway.ExtProcProvider, envoyGrpcService *envoycorev3.GrpcService) *envoymatchingv3.ExtensionWithMatcher {
 	filter := &envoyextprocv3.ExternalProcessor{
 		GrpcService:      envoyGrpcService,
 		FailureModeAllow: in.FailOpen,

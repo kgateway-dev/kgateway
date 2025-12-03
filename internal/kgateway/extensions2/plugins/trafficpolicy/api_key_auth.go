@@ -8,7 +8,7 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -55,7 +55,7 @@ func (a *apiKeyAuthIR) Validate() error {
 // constructAPIKeyAuth translates the API key authentication spec into an Envoy API key auth per-route configuration
 func constructAPIKeyAuth(
 	krtctx krt.HandlerContext,
-	policy *v1alpha1.TrafficPolicy,
+	policy *kgateway.TrafficPolicy,
 	commoncol *collections.CommonCollections,
 	out *trafficPolicySpecIr,
 ) error {

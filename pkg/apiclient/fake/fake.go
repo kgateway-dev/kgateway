@@ -14,7 +14,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/gateway-api/pkg/consts"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
@@ -98,16 +99,16 @@ func fakeKgwClient(objects ...client.Object) *fake.Clientset {
 func filterObjects(objects ...client.Object) (istio []client.Object, kgw []client.Object) {
 	for _, obj := range objects {
 		switch obj.(type) {
-		case *v1alpha1.Backend,
-			*v1alpha1.BackendConfigPolicy,
-			*v1alpha1.DirectResponse,
-			*v1alpha1.GatewayExtension,
-			*v1alpha1.GatewayParameters,
-			*v1alpha1.HTTPListenerPolicy,
-			*v1alpha1.ListenerPolicy,
-			*v1alpha1.TrafficPolicy,
-			*v1alpha1.AgentgatewayPolicy,
-			*v1alpha1.AgentgatewayBackend:
+		case *kgateway.Backend,
+			*kgateway.BackendConfigPolicy,
+			*kgateway.DirectResponse,
+			*kgateway.GatewayExtension,
+			*kgateway.GatewayParameters,
+			*kgateway.HTTPListenerPolicy,
+			*kgateway.ListenerPolicy,
+			*kgateway.TrafficPolicy,
+			*agentgateway.AgentgatewayPolicy,
+			*agentgateway.AgentgatewayBackend:
 			kgw = append(kgw, obj)
 		default:
 			istio = append(istio, obj)

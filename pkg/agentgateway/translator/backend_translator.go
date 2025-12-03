@@ -4,7 +4,7 @@ import (
 	"github.com/agentgateway/agentgateway/go/api"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	agwbackend "github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/backend"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -32,7 +32,7 @@ func NewAgwBackendTranslator(extensions sdk.Plugin) *AgwBackendTranslator {
 // TranslateBackend converts a BackendObjectIR to agent gateway Backend and Policy resources
 func (t *AgwBackendTranslator) TranslateBackend(
 	ctx plugins.PolicyCtx,
-	backend *v1alpha1.AgentgatewayBackend,
+	backend *agentgateway.AgentgatewayBackend,
 ) ([]*api.Backend, error) {
 	return agwbackend.BuildAgwBackend(ctx, backend)
 }

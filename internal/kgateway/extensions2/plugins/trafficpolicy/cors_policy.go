@@ -5,7 +5,7 @@ import (
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 )
@@ -36,7 +36,7 @@ func (c *corsIR) Validate() error {
 }
 
 // constructCORS constructs the CORS policy IR from the policy specification.
-func constructCORS(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) {
+func constructCORS(in *kgateway.TrafficPolicy, out *trafficPolicySpecIr) {
 	spec := in.Spec.Cors
 	if spec == nil {
 		return

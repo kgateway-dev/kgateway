@@ -17,7 +17,7 @@ import (
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/status"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
@@ -41,8 +41,8 @@ const (
 type AgentGwStatusSyncer struct {
 	client apiclient.Client
 
-	agentgatewayPolicies StatusSyncer[*v1alpha1.AgentgatewayPolicy, *gwv1.PolicyStatus]
-	agentgatewayBackends StatusSyncer[*v1alpha1.AgentgatewayBackend, *v1alpha1.AgentgatewayBackendStatus]
+	agentgatewayPolicies StatusSyncer[*agentgateway.AgentgatewayPolicy, *gwv1.PolicyStatus]
+	agentgatewayBackends StatusSyncer[*agentgateway.AgentgatewayBackend, *agentgateway.AgentgatewayBackendStatus]
 
 	// Configuration
 	controllerName string
@@ -79,11 +79,11 @@ func NewAgwStatusSyncer(
 		cacheSyncs:                   cacheSyncs,
 		extraAgwPolicyStatusHandlers: extraHandlers,
 
-		agentgatewayPolicies: StatusSyncer[*v1alpha1.AgentgatewayPolicy, *gwv1.PolicyStatus]{
+		agentgatewayPolicies: StatusSyncer[*agentgateway.AgentgatewayPolicy, *gwv1.PolicyStatus]{
 			name:   "agentgatewayPolicy",
-			client: kclient.NewFilteredDelayed[*v1alpha1.AgentgatewayPolicy](client, wellknown.AgentgatewayPolicyGVR, f),
-			build: func(om metav1.ObjectMeta, s *gwv1.PolicyStatus) *v1alpha1.AgentgatewayPolicy {
-				return &v1alpha1.AgentgatewayPolicy{
+			client: kclient.NewFilteredDelayed[*agentgateway.AgentgatewayPolicy](client, wellknown.AgentgatewayPolicyGVR, f),
+			build: func(om metav1.ObjectMeta, s *gwv1.PolicyStatus) *agentgateway.AgentgatewayPolicy {
+				return &agentgateway.AgentgatewayPolicy{
 					ObjectMeta: om,
 					Status: gwv1.PolicyStatus{
 						Ancestors: s.Ancestors,
@@ -91,11 +91,11 @@ func NewAgwStatusSyncer(
 				}
 			},
 		},
-		agentgatewayBackends: StatusSyncer[*v1alpha1.AgentgatewayBackend, *v1alpha1.AgentgatewayBackendStatus]{
+		agentgatewayBackends: StatusSyncer[*agentgateway.AgentgatewayBackend, *agentgateway.AgentgatewayBackendStatus]{
 			name:   "agentgatewayPolicy",
-			client: kclient.NewFilteredDelayed[*v1alpha1.AgentgatewayBackend](client, wellknown.AgentgatewayBackendGVR, f),
-			build: func(om metav1.ObjectMeta, s *v1alpha1.AgentgatewayBackendStatus) *v1alpha1.AgentgatewayBackend {
-				return &v1alpha1.AgentgatewayBackend{
+			client: kclient.NewFilteredDelayed[*agentgateway.AgentgatewayBackend](client, wellknown.AgentgatewayBackendGVR, f),
+			build: func(om metav1.ObjectMeta, s *agentgateway.AgentgatewayBackendStatus) *agentgateway.AgentgatewayBackend {
+				return &agentgateway.AgentgatewayBackend{
 					ObjectMeta: om,
 					Status:     *s,
 				}

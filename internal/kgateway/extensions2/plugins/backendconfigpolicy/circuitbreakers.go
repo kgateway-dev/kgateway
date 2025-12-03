@@ -4,10 +4,10 @@ import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 )
 
-func translateCircuitBreakers(cb *v1alpha1.CircuitBreakers) *envoyclusterv3.CircuitBreakers {
+func translateCircuitBreakers(cb *kgateway.CircuitBreakers) *envoyclusterv3.CircuitBreakers {
 	if cb == nil {
 		return nil
 	}

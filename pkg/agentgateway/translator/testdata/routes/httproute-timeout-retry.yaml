@@ -40,20 +40,6 @@ spec:
     - name: infra-backend-v1
       port: 8080
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  name: infra-backend-v1
-  namespace: default
-spec:
-  ports:
-    - port: 8080
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: default
----
 # Output
 output:
 - gateway:
@@ -69,7 +55,7 @@ output:
       hostnames:
       - example.com
       key: default/request-multiple-mirrors-headers.0.0.http
-      listenerKey: test-gateway
+      listenerKey: default/test-gateway.http
       matches:
       - path:
           pathPrefix: /timeouts
@@ -91,7 +77,7 @@ output:
       hostnames:
       - example.com
       key: default/request-multiple-mirrors-headers.1.0.http
-      listenerKey: test-gateway
+      listenerKey: default/test-gateway.http
       matches:
       - path:
           pathPrefix: /zero-req
@@ -112,7 +98,7 @@ output:
       hostnames:
       - example.com
       key: default/request-multiple-mirrors-headers.2.0.http
-      listenerKey: test-gateway
+      listenerKey: default/test-gateway.http
       matches:
       - path:
           pathPrefix: /zero-backend
@@ -120,3 +106,29 @@ output:
       trafficPolicies:
       - timeout:
           request: 10s
+status:
+- apiVersion: gateway.networking.k8s.io/v1
+  kind: HTTPRoute
+  metadata:
+    name: request-multiple-mirrors-headers
+    namespace: default
+  spec: null
+  status:
+    parents:
+    - conditions:
+      - lastTransitionTime: fake
+        message: ""
+        reason: Accepted
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: fake
+        message: ""
+        reason: ResolvedRefs
+        status: "True"
+        type: ResolvedRefs
+      controllerName: kgateway.dev/agentgateway
+      parentRef:
+        group: gateway.networking.k8s.io
+        kind: Gateway
+        name: test-gateway
+        namespace: default

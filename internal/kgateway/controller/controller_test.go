@@ -37,7 +37,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
@@ -244,7 +244,7 @@ func (s *ControllerSuite) TestGatewayStatus() {
 // TestInvalidGatewayParameters tests that a Gateway with invalid GatewayParameters attached
 func (s *ControllerSuite) TestInvalidGatewayParameters() {
 	ctx := context.Background()
-	var gwp *v1alpha1.GatewayParameters
+	var gwp *kgateway.GatewayParameters
 	var gw *gwv1.Gateway
 
 	s.T().Cleanup(func() {
@@ -254,14 +254,14 @@ func (s *ControllerSuite) TestInvalidGatewayParameters() {
 		s.NoError(err)
 	})
 
-	gwp = &v1alpha1.GatewayParameters{
+	gwp = &kgateway.GatewayParameters{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "invalid-gwp",
 			Namespace: "default",
 		},
-		Spec: v1alpha1.GatewayParametersSpec{
-			Kube: &v1alpha1.KubernetesProxyConfig{
-				Deployment: &v1alpha1.ProxyDeployment{
+		Spec: kgateway.GatewayParametersSpec{
+			Kube: &kgateway.KubernetesProxyConfig{
+				Deployment: &kgateway.ProxyDeployment{
 					Replicas: ptr.To[int32](2),
 				},
 			},
@@ -277,7 +277,7 @@ func (s *ControllerSuite) TestInvalidGatewayParameters() {
 			GatewayClassName: gwv1.ObjectName(gatewayClassName),
 			Infrastructure: &gwv1.GatewayInfrastructure{
 				ParametersRef: &gwv1.LocalParametersReference{
-					Group: v1alpha1.GroupName,
+					Group: kgateway.GroupName,
 					Kind:  "InvalidKindName",
 					Name:  gwp.Name,
 				},
@@ -691,13 +691,13 @@ func (s *ControllerSuite) startController(
 		return err
 	}
 
-	if err := mgr.GetClient().Create(ctx, &v1alpha1.GatewayParameters{
+	if err := mgr.GetClient().Create(ctx, &kgateway.GatewayParameters{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      selfManagedGatewayClassName,
 			Namespace: "default",
 		},
-		Spec: v1alpha1.GatewayParametersSpec{
-			SelfManaged: &v1alpha1.SelfManagedGateway{},
+		Spec: kgateway.GatewayParametersSpec{
+			SelfManaged: &kgateway.SelfManagedGateway{},
 		},
 	}); client.IgnoreAlreadyExists(err) != nil {
 		return err

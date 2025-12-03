@@ -13,9 +13,9 @@ status:
       status: "True"
       type: Accepted
     - lastTransitionTime: fake
-      message: ""
-      reason: ResolvedRefs
-      status: "True"
+      message: 'unsupported ExtensionRef: gateway.kgateway.dev/DirectResponse'
+      reason: IncompatibleFilters
+      status: "False"
       type: ResolvedRefs
     controllerName: kgateway.dev/agentgateway
     parentRef:

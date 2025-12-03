@@ -13,6 +13,7 @@ import (
 	envoytracev3 "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
 	healthcheckv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/health_check/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoy_header_mutationv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/early_header_mutation/header_mutation/v3"
 	preserve_case_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/header_formatters/preserve_case/v3"
 	envoymatcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"google.golang.org/protobuf/proto"
@@ -22,8 +23,10 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -56,15 +59,16 @@ type httpListenerPolicy struct {
 	// are stored so that during translation, the default serviceName is set if not already provided
 	// and the final config is then marshalled.
 	accessLogConfig   []proto.Message
-	accessLogPolicies []v1alpha1.AccessLog
+	accessLogPolicies []kgateway.AccessLog
 	// For a better UX, the default serviceName for tracing is set to the envoy cluster name (`<gateway-name>.<gateway-namespace>`).
 	// Since the gateway name can only be determined during translation, the tracing config is split into the provider
 	// and the actual config. During translation, the default serviceName is set if not already provided
 	// and the final config is then marshalled.
-	tracingProvider      *envoytracev3.OpenTelemetryConfig
-	tracingConfig        *envoy_hcm.HttpConnectionManager_Tracing
-	acceptHttp10         *bool
-	defaultHostForHttp10 *string
+	tracingProvider               *envoytracev3.OpenTelemetryConfig
+	tracingConfig                 *envoy_hcm.HttpConnectionManager_Tracing
+	acceptHttp10                  *bool
+	defaultHostForHttp10          *string
+	earlyHeaderMutationExtensions []*envoycorev3.TypedExtensionConfig
 }
 
 func (d *httpListenerPolicy) CreationTime() time.Time {
@@ -83,7 +87,7 @@ func (d *httpListenerPolicy) Equals(in any) bool {
 	}) {
 		return false
 	}
-	if !slices.EqualFunc(d.accessLogPolicies, d2.accessLogPolicies, func(log v1alpha1.AccessLog, log2 v1alpha1.AccessLog) bool {
+	if !slices.EqualFunc(d.accessLogPolicies, d2.accessLogPolicies, func(log kgateway.AccessLog, log2 kgateway.AccessLog) bool {
 		return reflect.DeepEqual(log, log2)
 	}) {
 		return false
@@ -157,6 +161,11 @@ func (d *httpListenerPolicy) Equals(in any) bool {
 		return false
 	}
 
+	if !slices.EqualFunc(d.earlyHeaderMutationExtensions, d2.earlyHeaderMutationExtensions, func(a, b *envoycorev3.TypedExtensionConfig) bool {
+		return proto.Equal(a, b)
+	}) {
+		return false
+	}
 	return true
 }
 
@@ -170,7 +179,7 @@ type httpListenerPolicyPluginGwPass struct {
 var _ ir.ProxyTranslationPass = &httpListenerPolicyPluginGwPass{}
 
 func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
-	cli := kclient.NewFilteredDelayed[*v1alpha1.HTTPListenerPolicy](
+	cli := kclient.NewFilteredDelayed[*kgateway.HTTPListenerPolicy](
 		commoncol.Client,
 		wellknown.HTTPListenerPolicyGVR,
 		kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()},
@@ -178,7 +187,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 	col := krt.WrapClient(cli, commoncol.KrtOpts.ToOptions("HTTPListenerPolicy")...)
 	gk := wellknown.HTTPListenerPolicyGVK.GroupKind()
 
-	policyStatusMarker, policyCol := krt.NewStatusCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.HTTPListenerPolicy) (*krtcollections.StatusMarker, *ir.PolicyWrapper) {
+	policyStatusMarker, policyCol := krt.NewStatusCollection(col, func(krtctx krt.HandlerContext, i *kgateway.HTTPListenerPolicy) (*krtcollections.StatusMarker, *ir.PolicyWrapper) {
 		objSrc := ir.ObjectSource{
 			Group:     gk.Group,
 			Kind:      gk.Kind,
@@ -234,21 +243,22 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 			ObjectSource: objSrc,
 			Policy:       i,
 			PolicyIR: &httpListenerPolicy{
-				ct:                         i.CreationTimestamp.Time,
-				accessLogConfig:            accessLog,
-				accessLogPolicies:          i.Spec.AccessLog,
-				tracingProvider:            tracingProvider,
-				tracingConfig:              tracingConfig,
-				upgradeConfigs:             upgradeConfigs,
-				useRemoteAddress:           i.Spec.UseRemoteAddress,
-				xffNumTrustedHops:          xffNumTrustedHops,
-				serverHeaderTransformation: serverHeaderTransformation,
-				streamIdleTimeout:          streamIdleTimeout,
-				idleTimeout:                idleTimeout,
-				healthCheckPolicy:          healthCheckPolicy,
-				preserveHttp1HeaderCase:    i.Spec.PreserveHttp1HeaderCase,
-				acceptHttp10:               i.Spec.AcceptHttp10,
-				defaultHostForHttp10:       i.Spec.DefaultHostForHttp10,
+				ct:                            i.CreationTimestamp.Time,
+				accessLogConfig:               accessLog,
+				accessLogPolicies:             i.Spec.AccessLog,
+				tracingProvider:               tracingProvider,
+				tracingConfig:                 tracingConfig,
+				upgradeConfigs:                upgradeConfigs,
+				useRemoteAddress:              i.Spec.UseRemoteAddress,
+				xffNumTrustedHops:             xffNumTrustedHops,
+				serverHeaderTransformation:    serverHeaderTransformation,
+				streamIdleTimeout:             streamIdleTimeout,
+				idleTimeout:                   idleTimeout,
+				healthCheckPolicy:             healthCheckPolicy,
+				preserveHttp1HeaderCase:       i.Spec.PreserveHttp1HeaderCase,
+				acceptHttp10:                  i.Spec.AcceptHttp10,
+				defaultHostForHttp10:          i.Spec.DefaultHostForHttp10,
+				earlyHeaderMutationExtensions: convertHeaderMutations(i.Spec.EarlyRequestHeaderModifier),
 			},
 			TargetRefs: pluginsdkutils.TargetRefsToPolicyRefs(i.Spec.TargetRefs, i.Spec.TargetSelectors),
 			Errors:     errs,
@@ -348,6 +358,10 @@ func (p *httpListenerPolicyPluginGwPass) ApplyHCM(
 	if policy.streamIdleTimeout != nil {
 		out.StreamIdleTimeout = durationpb.New(*policy.streamIdleTimeout)
 	}
+	// early request header modifier
+	if len(policy.earlyHeaderMutationExtensions) != 0 {
+		out.EarlyHeaderMutationExtensions = append(out.EarlyHeaderMutationExtensions, policy.earlyHeaderMutationExtensions...)
+	}
 
 	// translate idleTimeout
 	if policy.idleTimeout != nil {
@@ -425,7 +439,7 @@ func (p *httpListenerPolicyPluginGwPass) ApplyListenerPlugin(
 	p.healthCheckPolicy = policy.healthCheckPolicy
 }
 
-func convertUpgradeConfig(policy *v1alpha1.HTTPListenerPolicy) []*envoy_hcm.HttpConnectionManager_UpgradeConfig {
+func convertUpgradeConfig(policy *kgateway.HTTPListenerPolicy) []*envoy_hcm.HttpConnectionManager_UpgradeConfig {
 	if policy.Spec.UpgradeConfig == nil {
 		return nil
 	}
@@ -439,19 +453,19 @@ func convertUpgradeConfig(policy *v1alpha1.HTTPListenerPolicy) []*envoy_hcm.Http
 	return configs
 }
 
-func convertServerHeaderTransformation(transformation *v1alpha1.ServerHeaderTransformation) *envoy_hcm.HttpConnectionManager_ServerHeaderTransformation {
+func convertServerHeaderTransformation(transformation *kgateway.ServerHeaderTransformation) *envoy_hcm.HttpConnectionManager_ServerHeaderTransformation {
 	if transformation == nil {
 		return nil
 	}
 
 	switch *transformation {
-	case v1alpha1.OverwriteServerHeaderTransformation:
+	case kgateway.OverwriteServerHeaderTransformation:
 		val := envoy_hcm.HttpConnectionManager_OVERWRITE
 		return &val
-	case v1alpha1.AppendIfAbsentServerHeaderTransformation:
+	case kgateway.AppendIfAbsentServerHeaderTransformation:
 		val := envoy_hcm.HttpConnectionManager_APPEND_IF_ABSENT
 		return &val
-	case v1alpha1.PassThroughServerHeaderTransformation:
+	case kgateway.PassThroughServerHeaderTransformation:
 		val := envoy_hcm.HttpConnectionManager_PASS_THROUGH
 		return &val
 	default:
@@ -459,7 +473,7 @@ func convertServerHeaderTransformation(transformation *v1alpha1.ServerHeaderTran
 	}
 }
 
-func convertHealthCheckPolicy(policy *v1alpha1.HTTPListenerPolicy) *healthcheckv3.HealthCheck {
+func convertHealthCheckPolicy(policy *kgateway.HTTPListenerPolicy) *healthcheckv3.HealthCheck {
 	if policy.Spec.HealthCheck != nil {
 		return &healthcheckv3.HealthCheck{
 			PassThroughMode: wrapperspb.Bool(false),
@@ -476,4 +490,20 @@ func convertHealthCheckPolicy(policy *v1alpha1.HTTPListenerPolicy) *healthcheckv
 		}
 	}
 	return nil
+}
+
+func convertHeaderMutations(spec *gwv1.HTTPHeaderFilter) []*envoycorev3.TypedExtensionConfig {
+	mutations := pluginutils.ConvertMutations(spec)
+	if len(mutations) == 0 {
+		return nil
+	}
+
+	policy := &envoy_header_mutationv3.HeaderMutation{
+		Mutations: mutations,
+	}
+
+	return []*envoycorev3.TypedExtensionConfig{{
+		Name:        "envoy.http.early_header_mutation.header_mutation",
+		TypedConfig: utils.MustMessageToAny(policy),
+	}}
 }

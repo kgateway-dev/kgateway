@@ -9,7 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -129,12 +130,12 @@ func TestExtAuthIREquals(t *testing.T) {
 func TestExtAuthForSpec(t *testing.T) {
 	t.Run("configures request body settings", func(t *testing.T) {
 		// Setup
-		spec := &v1alpha1.TrafficPolicy{Spec: v1alpha1.TrafficPolicySpec{
-			ExtAuth: &v1alpha1.ExtAuthPolicy{
-				ExtensionRef: &v1alpha1.NamespacedObjectReference{
+		spec := &kgateway.TrafficPolicy{Spec: kgateway.TrafficPolicySpec{
+			ExtAuth: &kgateway.ExtAuthPolicy{
+				ExtensionRef: &shared.NamespacedObjectReference{
 					Name: "test-extension",
 				},
-				WithRequestBody: &v1alpha1.ExtAuthBufferSettings{
+				WithRequestBody: &kgateway.ExtAuthBufferSettings{
 					MaxRequestBytes:     1024,
 					AllowPartialMessage: true,
 					PackAsBytes:         true,

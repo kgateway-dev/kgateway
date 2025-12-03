@@ -12,7 +12,8 @@ import (
 	"github.com/google/cel-go/cel"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	sharedv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -63,7 +64,7 @@ func (p *trafficPolicyPluginGwPass) handleRBAC(fcn string, pCtxTypedFilterConfig
 }
 
 // constructRBAC translates the RBAC spec into an envoy RBAC policy and stores it in the traffic policy IR
-func constructRBAC(policy *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) error {
+func constructRBAC(policy *kgateway.TrafficPolicy, out *trafficPolicySpecIr) error {
 	spec := policy.Spec
 	if spec.RBAC == nil {
 		return nil
@@ -80,7 +81,7 @@ func constructRBAC(policy *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) err
 	return nil
 }
 
-func translateRBAC(rbac *v1alpha1.Authorization) (*envoyauthz.RBACPerRoute, error) {
+func translateRBAC(rbac *sharedv1alpha1.Authorization) (*envoyauthz.RBACPerRoute, error) {
 	var errs []error
 
 	// Create matcher-based RBAC configuration
@@ -127,7 +128,7 @@ func translateRBAC(rbac *v1alpha1.Authorization) (*envoyauthz.RBACPerRoute, erro
 	return res, nil
 }
 
-func createCELMatcher(celExprs []v1alpha1.CELExpression, action v1alpha1.AuthorizationPolicyAction) (*cncfmatcherv3.Matcher_MatcherList_FieldMatcher, error) {
+func createCELMatcher(celExprs []sharedv1alpha1.CELExpression, action sharedv1alpha1.AuthorizationPolicyAction) (*cncfmatcherv3.Matcher_MatcherList_FieldMatcher, error) {
 	if len(celExprs) == 0 {
 		return nil, fmt.Errorf("no CEL expressions provided")
 	}
@@ -232,7 +233,7 @@ func createCELMatcher(celExprs []v1alpha1.CELExpression, action v1alpha1.Authori
 
 	// Determine the action based on policy action
 	var onMatchAction *cncfmatcherv3.Matcher_OnMatch
-	if action == v1alpha1.AuthorizationPolicyActionDeny {
+	if action == sharedv1alpha1.AuthorizationPolicyActionDeny {
 		onMatchAction = createMatchAction(envoyrbacv3.RBAC_DENY)
 	} else {
 		onMatchAction = createMatchAction(envoyrbacv3.RBAC_ALLOW)
@@ -292,7 +293,7 @@ func createDefaultAction(action envoyrbacv3.RBAC_Action) *cncfmatcherv3.Matcher_
 
 // parseCELExpression takes a CEL expression string and converts it to a parsed expression
 // for use in Envoy matchers. It handles the conversion between different protobuf types.
-func parseCELExpression(env *cel.Env, celExpr v1alpha1.CELExpression) (*expr.ParsedExpr, error) {
+func parseCELExpression(env *cel.Env, celExpr sharedv1alpha1.CELExpression) (*expr.ParsedExpr, error) {
 	if env == nil {
 		return nil, fmt.Errorf("CEL environment is nil")
 	}

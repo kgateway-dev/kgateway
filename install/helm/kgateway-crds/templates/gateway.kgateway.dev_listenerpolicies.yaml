@@ -57,6 +57,17 @@ spec:
             description: ListenerPolicySpec defines the desired state of a listener
               policy.
             properties:
+              perConnectionBufferLimitBytes:
+                description: |-
+                  PerConnectionBufferLimitBytes sets the per-connection buffer limit for all listeners on the gateway.
+                  This controls the maximum size of read and write buffers for new connections.
+                  When using Envoy as an edge proxy, configuring the listener buffer limit is important to guard against
+                  potential attacks or misconfigured downstreams that could hog the proxy's resources.
+                  If unspecified, an implementation-defined default is applied (1MiB).
+                  See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener.proto#envoy-v3-api-field-config-listener-v3-listener-per-connection-buffer-limit-bytes
+                format: int32
+                minimum: 0
+                type: integer
               proxyProtocol:
                 description: |-
                   ProxyProtocol configures the PROXY protocol listener filter.

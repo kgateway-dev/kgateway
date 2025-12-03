@@ -28,21 +28,6 @@ spec:
     - name: test-service
       port: 80
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  name: test-service
-  namespace: default
-spec:
-  ports:
-  - port: 80
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: default
-
----
 # Output
 output:
 - gateway:
@@ -58,7 +43,7 @@ output:
       hostnames:
       - api.example.com
       key: default/exact-match-route.0.0.http
-      listenerKey: test-gateway
+      listenerKey: default/test-gateway.http
       matches:
       - headers:
         - exact: v1
@@ -79,8 +64,34 @@ output:
       hostnames:
       - api.example.com
       key: default/exact-match-route.1.0.http
-      listenerKey: test-gateway
+      listenerKey: default/test-gateway.http
       matches:
       - path:
           exact: /exact
       routeName: default/exact-match-route
+status:
+- apiVersion: gateway.networking.k8s.io/v1
+  kind: HTTPRoute
+  metadata:
+    name: exact-match-route
+    namespace: default
+  spec: null
+  status:
+    parents:
+    - conditions:
+      - lastTransitionTime: fake
+        message: ""
+        reason: Accepted
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: fake
+        message: ""
+        reason: ResolvedRefs
+        status: "True"
+        type: ResolvedRefs
+      controllerName: kgateway.dev/agentgateway
+      parentRef:
+        group: gateway.networking.k8s.io
+        kind: Gateway
+        name: test-gateway
+        namespace: default

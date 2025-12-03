@@ -14,7 +14,7 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -43,7 +43,7 @@ func (g *DefaultSecretGetter) GetSecret(name, namespace string) (*ir.Secret, err
 	return pluginutils.GetSecretIr(g.secrets, g.krtctx, name, namespace)
 }
 
-func buildTLSContext(tlsConfig *v1alpha1.TLS, secretGetter SecretGetter, namespace string, tlsContext *envoytlsv3.CommonTlsContext) error {
+func buildTLSContext(tlsConfig *kgateway.TLS, secretGetter SecretGetter, namespace string, tlsContext *envoytlsv3.CommonTlsContext) error {
 	// Extract TLS data from config
 	tlsData, err := extractTLSData(tlsConfig, secretGetter, namespace)
 	if err != nil {
@@ -70,7 +70,7 @@ type tlsData struct {
 	inlineDataSource bool
 }
 
-func extractTLSData(tlsConfig *v1alpha1.TLS, secretGetter SecretGetter, namespace string) (*tlsData, error) {
+func extractTLSData(tlsConfig *kgateway.TLS, secretGetter SecretGetter, namespace string) (*tlsData, error) {
 	data := &tlsData{}
 
 	if tlsConfig.SecretRef != nil {
@@ -98,7 +98,7 @@ func extractFromSecret(secretRef *corev1.LocalObjectReference, secretGetter Secr
 	return nil
 }
 
-func extractFromFiles(tlsFiles *v1alpha1.TLSFiles, data *tlsData) {
+func extractFromFiles(tlsFiles *kgateway.TLSFiles, data *tlsData) {
 	data.certChain = ptr.Deref(tlsFiles.TLSCertificate, "")
 	data.privateKey = ptr.Deref(tlsFiles.TLSKey, "")
 	data.rootCA = ptr.Deref(tlsFiles.RootCA, "")
@@ -138,7 +138,7 @@ func buildCertificateContext(tlsData *tlsData, tlsContext *envoytlsv3.CommonTlsC
 	return nil
 }
 
-func buildValidationContext(tlsData *tlsData, tlsConfig *v1alpha1.TLS, tlsContext *envoytlsv3.CommonTlsContext) error {
+func buildValidationContext(tlsData *tlsData, tlsConfig *kgateway.TLS, tlsContext *envoytlsv3.CommonTlsContext) error {
 	sanMatchers := verifySanListToTypedMatchSanList(tlsConfig.VerifySubjectAltNames)
 
 	// If the user opted to use the system CA bundle, configure a CombinedValidationContext
@@ -191,7 +191,7 @@ func buildValidationContext(tlsData *tlsData, tlsConfig *v1alpha1.TLS, tlsContex
 
 func translateTLSConfig(
 	secretGetter SecretGetter,
-	tlsConfig *v1alpha1.TLS,
+	tlsConfig *kgateway.TLS,
 	namespace string,
 ) (*envoytlsv3.UpstreamTlsContext, error) {
 	tlsContext := &envoytlsv3.CommonTlsContext{
@@ -223,13 +223,13 @@ func translateTLSConfig(
 	}, nil
 }
 
-func parseTLSParameters(tlsParameters *v1alpha1.TLSParameters) (*envoytlsv3.TlsParameters, error) {
+func parseTLSParameters(tlsParameters *kgateway.TLSParameters) (*envoytlsv3.TlsParameters, error) {
 	if tlsParameters == nil {
 		return nil, nil
 	}
 
-	maxVersion := ptr.Deref(tlsParameters.MaxVersion, v1alpha1.TLSVersionAUTO)
-	minVersion := ptr.Deref(tlsParameters.MinVersion, v1alpha1.TLSVersionAUTO)
+	maxVersion := ptr.Deref(tlsParameters.MaxVersion, kgateway.TLSVersionAUTO)
+	minVersion := ptr.Deref(tlsParameters.MinVersion, kgateway.TLSVersionAUTO)
 
 	tlsMaxVersion, err := parseTLSVersion(&maxVersion)
 	if err != nil {
@@ -248,17 +248,17 @@ func parseTLSParameters(tlsParameters *v1alpha1.TLSParameters) (*envoytlsv3.TlsP
 	}, nil
 }
 
-func parseTLSVersion(tlsVersion *v1alpha1.TLSVersion) (envoytlsv3.TlsParameters_TlsProtocol, error) {
+func parseTLSVersion(tlsVersion *kgateway.TLSVersion) (envoytlsv3.TlsParameters_TlsProtocol, error) {
 	switch *tlsVersion {
-	case v1alpha1.TLSVersion1_0:
+	case kgateway.TLSVersion1_0:
 		return envoytlsv3.TlsParameters_TLSv1_0, nil
-	case v1alpha1.TLSVersion1_1:
+	case kgateway.TLSVersion1_1:
 		return envoytlsv3.TlsParameters_TLSv1_1, nil
-	case v1alpha1.TLSVersion1_2:
+	case kgateway.TLSVersion1_2:
 		return envoytlsv3.TlsParameters_TLSv1_2, nil
-	case v1alpha1.TLSVersion1_3:
+	case kgateway.TLSVersion1_3:
 		return envoytlsv3.TlsParameters_TLSv1_3, nil
-	case v1alpha1.TLSVersionAUTO:
+	case kgateway.TLSVersionAUTO:
 		return envoytlsv3.TlsParameters_TLS_AUTO, nil
 	default:
 		return 0, fmt.Errorf("invalid TLS version: %s", *tlsVersion)

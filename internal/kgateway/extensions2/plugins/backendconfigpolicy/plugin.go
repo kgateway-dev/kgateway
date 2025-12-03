@@ -15,7 +15,7 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -115,7 +115,7 @@ func (d *BackendConfigPolicyIR) Equals(other any) bool {
 }
 
 func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v validator.Validator) sdk.Plugin {
-	cli := kclient.NewFilteredDelayed[*v1alpha1.BackendConfigPolicy](
+	cli := kclient.NewFilteredDelayed[*kgateway.BackendConfigPolicy](
 		commoncol.Client,
 		wellknown.BackendConfigPolicyGVR,
 		kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()},
@@ -123,7 +123,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 	col := krt.WrapClient(cli, commoncol.KrtOpts.ToOptions("BackendConfigPolicy")...)
 	gk := wellknown.BackendConfigPolicyGVK.GroupKind()
 
-	policyStatusMarker, backendConfigPolicyCol := krt.NewStatusCollection(col, func(krtctx krt.HandlerContext, b *v1alpha1.BackendConfigPolicy) (*krtcollections.StatusMarker, *ir.PolicyWrapper) {
+	policyStatusMarker, backendConfigPolicyCol := krt.NewStatusCollection(col, func(krtctx krt.HandlerContext, b *kgateway.BackendConfigPolicy) (*krtcollections.StatusMarker, *ir.PolicyWrapper) {
 		policyIR, errs := translate(commoncol, krtctx, b)
 		if err := validateXDS(ctx, policyIR, v, commoncol.Settings.ValidationMode); err != nil {
 			errs = append(errs, err)
@@ -239,7 +239,7 @@ func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObje
 func translate(
 	commoncol *collections.CommonCollections,
 	krtctx krt.HandlerContext,
-	pol *v1alpha1.BackendConfigPolicy,
+	pol *kgateway.BackendConfigPolicy,
 ) (*BackendConfigPolicyIR, []error) {
 	var errs []error
 	ir := BackendConfigPolicyIR{
@@ -307,7 +307,7 @@ func translate(
 	return &ir, errs
 }
 
-func translateTCPKeepalive(tcpKeepalive *v1alpha1.TCPKeepalive) *envoycorev3.TcpKeepalive {
+func translateTCPKeepalive(tcpKeepalive *kgateway.TCPKeepalive) *envoycorev3.TcpKeepalive {
 	out := &envoycorev3.TcpKeepalive{}
 	if tcpKeepalive.KeepAliveProbes != nil {
 		out.KeepaliveProbes = &wrapperspb.UInt32Value{Value: uint32(*tcpKeepalive.KeepAliveProbes)} //nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 4294967295, safe for uint32

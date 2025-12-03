@@ -15,7 +15,7 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -100,14 +100,14 @@ r8/mqGkEdNyd5BqGOFWoUi7kDqslOAl359Gd5ndxAoGAK3TVwhuLR9XoicDjmo6b
 func TestTranslateTLSConfig(t *testing.T) {
 	tests := []struct {
 		name      string
-		tlsConfig *v1alpha1.TLS
+		tlsConfig *kgateway.TLS
 		secret    *ir.Secret
 		wantErr   bool
 		expected  *envoytlsv3.UpstreamTlsContext
 	}{
 		{
 			name: "secret-based TLS config",
-			tlsConfig: &v1alpha1.TLS{
+			tlsConfig: &kgateway.TLS{
 				SecretRef: &corev1.LocalObjectReference{
 					Name: "test-secret",
 				},
@@ -149,8 +149,8 @@ func TestTranslateTLSConfig(t *testing.T) {
 		},
 		{
 			name: "file-based TLS config",
-			tlsConfig: &v1alpha1.TLS{
-				Files: &v1alpha1.TLSFiles{
+			tlsConfig: &kgateway.TLS{
+				Files: &kgateway.TLSFiles{
 					TLSCertificate: ptr.To(CACert),
 					TLSKey:         ptr.To(TLSKey),
 					RootCA:         ptr.To(CACert),
@@ -177,14 +177,14 @@ func TestTranslateTLSConfig(t *testing.T) {
 		},
 		{
 			name: "TLS config with parameters",
-			tlsConfig: &v1alpha1.TLS{
-				Files: &v1alpha1.TLSFiles{
+			tlsConfig: &kgateway.TLS{
+				Files: &kgateway.TLSFiles{
 					TLSCertificate: ptr.To(CACert),
 					TLSKey:         ptr.To(TLSKey),
 				},
-				Parameters: &v1alpha1.TLSParameters{
-					MinVersion:   ptr.To(v1alpha1.TLSVersion1_2),
-					MaxVersion:   ptr.To(v1alpha1.TLSVersion1_3),
+				Parameters: &kgateway.TLSParameters{
+					MinVersion:   ptr.To(kgateway.TLSVersion1_2),
+					MaxVersion:   ptr.To(kgateway.TLSVersion1_3),
 					CipherSuites: []string{"TLS_AES_128_GCM_SHA256"},
 					EcdhCurves:   []string{"X25519"},
 				},
@@ -209,9 +209,9 @@ func TestTranslateTLSConfig(t *testing.T) {
 		},
 		{
 			name: "TLS config with only minVersion parameter",
-			tlsConfig: &v1alpha1.TLS{
-				Parameters: &v1alpha1.TLSParameters{
-					MinVersion: ptr.To(v1alpha1.TLSVersion1_2),
+			tlsConfig: &kgateway.TLS{
+				Parameters: &kgateway.TLSParameters{
+					MinVersion: ptr.To(kgateway.TLSVersion1_2),
 				},
 			},
 			wantErr: false,
@@ -226,9 +226,9 @@ func TestTranslateTLSConfig(t *testing.T) {
 		},
 		{
 			name: "TLS config with only maxVersion parameter",
-			tlsConfig: &v1alpha1.TLS{
-				Parameters: &v1alpha1.TLSParameters{
-					MaxVersion: ptr.To(v1alpha1.TLSVersion1_3),
+			tlsConfig: &kgateway.TLS{
+				Parameters: &kgateway.TLSParameters{
+					MaxVersion: ptr.To(kgateway.TLSVersion1_3),
 				},
 			},
 			wantErr: false,
@@ -243,7 +243,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 		},
 		{
 			name: "invalid TLS config - missing secret",
-			tlsConfig: &v1alpha1.TLS{
+			tlsConfig: &kgateway.TLS{
 				SecretRef: &corev1.LocalObjectReference{
 					Name: "non-existent-secret",
 				},
@@ -253,8 +253,8 @@ func TestTranslateTLSConfig(t *testing.T) {
 		},
 		{
 			name: "should not error with only rootca",
-			tlsConfig: &v1alpha1.TLS{
-				Files: &v1alpha1.TLSFiles{
+			tlsConfig: &kgateway.TLS{
+				Files: &kgateway.TLSFiles{
 					RootCA: ptr.To(CACert),
 				},
 			},
@@ -271,8 +271,8 @@ func TestTranslateTLSConfig(t *testing.T) {
 		},
 		{
 			name: "should error with san and no rootca",
-			tlsConfig: &v1alpha1.TLS{
-				Files: &v1alpha1.TLSFiles{
+			tlsConfig: &kgateway.TLS{
+				Files: &kgateway.TLSFiles{
 					TLSCertificate: ptr.To(CACert),
 					TLSKey:         ptr.To(TLSKey),
 				},
@@ -282,8 +282,8 @@ func TestTranslateTLSConfig(t *testing.T) {
 		},
 		{
 			name: "should error with only cert and no key",
-			tlsConfig: &v1alpha1.TLS{
-				Files: &v1alpha1.TLSFiles{
+			tlsConfig: &kgateway.TLS{
+				Files: &kgateway.TLSFiles{
 					TLSCertificate: ptr.To(CACert),
 				},
 			},
@@ -291,8 +291,8 @@ func TestTranslateTLSConfig(t *testing.T) {
 		},
 		{
 			name: "TLS config with only private key provided",
-			tlsConfig: &v1alpha1.TLS{
-				Files: &v1alpha1.TLSFiles{
+			tlsConfig: &kgateway.TLS{
+				Files: &kgateway.TLSFiles{
 					TLSKey: ptr.To(TLSKey),
 				},
 			},
@@ -300,8 +300,8 @@ func TestTranslateTLSConfig(t *testing.T) {
 		},
 		{
 			name: "SimpleTLS with SAN verification and root CA",
-			tlsConfig: &v1alpha1.TLS{
-				Files: &v1alpha1.TLSFiles{
+			tlsConfig: &kgateway.TLS{
+				Files: &kgateway.TLSFiles{
 					TLSCertificate: ptr.To(CACert),
 					TLSKey:         ptr.To(TLSKey),
 					RootCA:         ptr.To(CACert),
@@ -326,8 +326,8 @@ func TestTranslateTLSConfig(t *testing.T) {
 		},
 		{
 			name: "should only have validation context if simple tls",
-			tlsConfig: &v1alpha1.TLS{
-				Files: &v1alpha1.TLSFiles{
+			tlsConfig: &kgateway.TLS{
+				Files: &kgateway.TLSFiles{
 					TLSCertificate: ptr.To(CACert),
 					TLSKey:         ptr.To(TLSKey),
 					RootCA:         ptr.To(CACert),
@@ -347,7 +347,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 		},
 		{
 			name: "should not have validation context if no rootca",
-			tlsConfig: &v1alpha1.TLS{
+			tlsConfig: &kgateway.TLS{
 				SecretRef: &corev1.LocalObjectReference{
 					Name: "test-secret",
 				},
@@ -377,8 +377,8 @@ func TestTranslateTLSConfig(t *testing.T) {
 		},
 		{
 			name: "TLS config with SAN verification",
-			tlsConfig: &v1alpha1.TLS{
-				Files: &v1alpha1.TLSFiles{
+			tlsConfig: &kgateway.TLS{
+				Files: &kgateway.TLSFiles{
 					TLSCertificate: ptr.To(CACert),
 					TLSKey:         ptr.To(TLSKey),
 					RootCA:         ptr.To(CACert),
@@ -408,7 +408,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 		},
 		{
 			name: "TLS config with system ca",
-			tlsConfig: &v1alpha1.TLS{
+			tlsConfig: &kgateway.TLS{
 				WellKnownCACertificates: ptr.To(gwv1.WellKnownCACertificatesSystem),
 			},
 			expected: &envoytlsv3.UpstreamTlsContext{
@@ -424,7 +424,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 		},
 		{
 			name: "TLS config with system ca and san",
-			tlsConfig: &v1alpha1.TLS{
+			tlsConfig: &kgateway.TLS{
 				WellKnownCACertificates: ptr.To(gwv1.WellKnownCACertificatesSystem),
 				VerifySubjectAltNames:   []string{"test.example.com", "api.example.com"},
 			},
@@ -446,7 +446,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 		},
 		{
 			name: "TLS config with insecure skip verify",
-			tlsConfig: &v1alpha1.TLS{
+			tlsConfig: &kgateway.TLS{
 				InsecureSkipVerify: ptr.To(true),
 				Sni:                ptr.To("test.example.com"),
 			},

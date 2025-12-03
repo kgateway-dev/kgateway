@@ -19,7 +19,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	translatorutils "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
@@ -177,13 +177,13 @@ func buildLambdaFilters(
 	region string,
 	secret *ir.Secret,
 	invokeMode envoy_lambda_v3.Config_InvocationMode,
-	payloadTransformMode v1alpha1.AWSLambdaPayloadTransformMode,
+	payloadTransformMode kgateway.AWSLambdaPayloadTransformMode,
 ) (*lambdaFilters, error) {
 	var payloadPassthrough bool
 	switch payloadTransformMode {
-	case v1alpha1.AWSLambdaPayloadTransformNone:
+	case kgateway.AWSLambdaPayloadTransformNone:
 		payloadPassthrough = true
-	case v1alpha1.AWSLambdaPayloadTransformEnvoy:
+	case kgateway.AWSLambdaPayloadTransformEnvoy:
 		payloadPassthrough = false
 	}
 
@@ -219,7 +219,7 @@ func buildLambdaFilters(
 
 // getLambdaHostname returns the hostname for the lambda function. When using a custom endpoint
 // has been specified, it will be returned. Otherwise, the default lambda hostname is returned.
-func getLambdaHostname(in *v1alpha1.AwsBackend) string {
+func getLambdaHostname(in *kgateway.AwsBackend) string {
 	if in.Lambda.EndpointURL != nil {
 		return *in.Lambda.EndpointURL
 	}
@@ -227,9 +227,9 @@ func getLambdaHostname(in *v1alpha1.AwsBackend) string {
 }
 
 // getLambdaInvocationMode returns the Lambda invocation mode. Default is synchronous.
-func getLambdaInvocationMode(in *v1alpha1.AwsBackend) envoy_lambda_v3.Config_InvocationMode {
+func getLambdaInvocationMode(in *kgateway.AwsBackend) envoy_lambda_v3.Config_InvocationMode {
 	invokeMode := envoy_lambda_v3.Config_SYNCHRONOUS
-	if in.Lambda.InvocationMode == v1alpha1.AwsLambdaInvocationModeAsynchronous {
+	if in.Lambda.InvocationMode == kgateway.AwsLambdaInvocationModeAsynchronous {
 		invokeMode = envoy_lambda_v3.Config_ASYNCHRONOUS
 	}
 	return invokeMode
@@ -239,7 +239,7 @@ func getLambdaInvocationMode(in *v1alpha1.AwsBackend) envoy_lambda_v3.Config_Inv
 // CEL validation should reject invalid `qualifier` values and handle defaulting, so we can assume
 // the qualifier passed here is valid.
 // An error is returned if the arn is not a valid lambda arn.
-func buildLambdaARN(in *v1alpha1.AwsBackend, region string) (string, error) {
+func buildLambdaARN(in *kgateway.AwsBackend, region string) (string, error) {
 	// TODO(tim): url.QueryEscape(...)?
 	arnStr := fmt.Sprintf("arn:aws:lambda:%s:%s:function:%s:%s", region, in.AccountId, in.Lambda.FunctionName, in.Lambda.Qualifier)
 	parsedARN, err := arnutils.Parse(arnStr)
@@ -262,7 +262,7 @@ func (u *lambdaEndpointConfig) Equals(other *lambdaEndpointConfig) bool {
 }
 
 // configureLambdaEndpoint parses the endpoint URL and returns the endpoint configuration.
-func configureLambdaEndpoint(in *v1alpha1.AwsBackend) (*lambdaEndpointConfig, error) {
+func configureLambdaEndpoint(in *kgateway.AwsBackend) (*lambdaEndpointConfig, error) {
 	config := &lambdaEndpointConfig{
 		hostname: getLambdaHostname(in),
 		port:     443,
@@ -292,7 +292,7 @@ func configureLambdaEndpoint(in *v1alpha1.AwsBackend) (*lambdaEndpointConfig, er
 }
 
 // processEndpointsAws processes the endpoints for the aws backend.
-func processEndpointsAws(_ *v1alpha1.AwsBackend) *ir.EndpointsForBackend {
+func processEndpointsAws(_ *kgateway.AwsBackend) *ir.EndpointsForBackend {
 	return nil
 }
 
