@@ -17,7 +17,8 @@ import (
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
-	kgwv1a1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	agwv1a1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
+	kgwv1a1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 )
 
 // SchemeBuilder contains all the Schemes for registering the CRDs with which kgateway interacts.
@@ -39,6 +40,9 @@ var SchemeBuilder = runtime.SchemeBuilder{
 
 	// kgateway API resources
 	kgwv1a1.Install,
+
+	// agentgateway API resources
+	agwv1a1.Install,
 
 	// Istio resources
 	istionetworkingv1.AddToScheme,

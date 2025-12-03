@@ -5,14 +5,14 @@ import (
 
 	"istio.io/istio/pkg/kube/krt"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 // ExtensionTypeError is an error for when an extension type is mismatched
 type ExtensionTypeError struct {
-	expected v1alpha1.GatewayExtensionType
+	expected kgateway.GatewayExtensionType
 }
 
 var _ error = &ExtensionTypeError{}
@@ -23,7 +23,7 @@ func (e *ExtensionTypeError) Error() string {
 }
 
 // ErrInvalidExtensionType is an error for when an extension type is invalid.
-func ErrInvalidExtensionType(expected v1alpha1.GatewayExtensionType) error {
+func ErrInvalidExtensionType(expected kgateway.GatewayExtensionType) error {
 	return &ExtensionTypeError{expected: expected}
 }
 

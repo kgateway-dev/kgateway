@@ -9,7 +9,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/jwks"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -41,12 +41,12 @@ func NewJWKSStoreController(mgr manager.Manager, apiClient apiclient.Client, agw
 }
 
 func (j *JwksStoreController) Init(ctx context.Context) {
-	backendCol := krt.WrapClient(kclient.NewFilteredDelayed[*v1alpha1.AgentgatewayBackend](
+	backendCol := krt.WrapClient(kclient.NewFilteredDelayed[*agentgateway.AgentgatewayBackend](
 		j.apiClient,
 		wellknown.AgentgatewayBackendGVR,
 		kclient.Filter{ObjectFilter: j.agw.Client.ObjectFilter()},
 	), j.agw.KrtOpts.ToOptions("AgentgatewayBackend")...)
-	policyCol := krt.WrapClient(kclient.NewFilteredDelayed[*v1alpha1.AgentgatewayPolicy](
+	policyCol := krt.WrapClient(kclient.NewFilteredDelayed[*agentgateway.AgentgatewayPolicy](
 		j.apiClient,
 		wellknown.AgentgatewayPolicyGVR,
 		kclient.Filter{ObjectFilter: j.agw.Client.ObjectFilter()},

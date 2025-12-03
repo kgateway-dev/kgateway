@@ -52,6 +52,8 @@ var AllCRDs = []schema.GroupVersionResource{
 	wellknown.DirectResponseGVR,
 	wellknown.GatewayExtensionGVR,
 	wellknown.GatewayParametersGVR,
+	// agentgateway api
+	wellknown.AgentgatewayBackendGVR,
 	wellknown.AgentgatewayPolicyGVR,
 }
 

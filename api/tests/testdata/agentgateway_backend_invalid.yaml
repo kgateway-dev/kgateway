@@ -1,5 +1,5 @@
 _err: deploymentName is required for this apiVersion
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   name: azure-invalid-deployment-name
@@ -11,7 +11,7 @@ spec:
         endpoint: test
 ---
 _err: AI policies require AI
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   name: ai-pol-without-ai
@@ -26,7 +26,7 @@ spec:
           value: 1
 ---
 _err: MCP policies require MCP
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   name: mcp-pol-without-mcp
@@ -42,7 +42,7 @@ spec:
           - 'true'
 ---
 _err: both host and port must be set together
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   name: host-without-port

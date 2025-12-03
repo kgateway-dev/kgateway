@@ -13,7 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
@@ -25,7 +25,7 @@ var logger = logging.New("agentgateway/backend")
 // BuildAgwBackend translates a Backend to an AgwBackend
 func BuildAgwBackend(
 	ctx plugins.PolicyCtx,
-	backend *v1alpha1.AgentgatewayBackend,
+	backend *agentgateway.AgentgatewayBackend,
 ) ([]*api.Backend, error) {
 	pols, err := translateBackendPolicies(ctx, backend.Namespace, backend.Spec.Policies)
 	if err != nil {
@@ -67,7 +67,7 @@ func BuildAgwBackend(
 	return nil, errors.New("unknown backend")
 }
 
-func translateMCPBackends(ctx plugins.PolicyCtx, be *v1alpha1.AgentgatewayBackend, inlinePolicies []*api.BackendPolicySpec) ([]*api.Backend, error) {
+func translateMCPBackends(ctx plugins.PolicyCtx, be *agentgateway.AgentgatewayBackend, inlinePolicies []*api.BackendPolicySpec) ([]*api.Backend, error) {
 	mcp := be.Spec.MCP
 	var mcpTargets []*api.MCPTarget
 	var backends []*api.Backend
@@ -103,9 +103,9 @@ func translateMCPBackends(ctx plugins.PolicyCtx, be *v1alpha1.AgentgatewayBacken
 			}
 
 			switch ptr.OrEmpty(target.Static.Protocol) {
-			case v1alpha1.MCPProtocolSSE:
+			case agentgateway.MCPProtocolSSE:
 				mcpTarget.Protocol = api.MCPTarget_SSE
-			case v1alpha1.MCPProtocolStreamableHTTP:
+			case agentgateway.MCPProtocolStreamableHTTP:
 				mcpTarget.Protocol = api.MCPTarget_STREAMABLE_HTTP
 			}
 
@@ -212,7 +212,7 @@ func translateMCPBackends(ctx plugins.PolicyCtx, be *v1alpha1.AgentgatewayBacken
 	return backends, errors.Join(errs...)
 }
 
-func translateAIBackends(ctx plugins.PolicyCtx, be *v1alpha1.AgentgatewayBackend, inlinePolicies []*api.BackendPolicySpec) (*api.Backend, error) {
+func translateAIBackends(ctx plugins.PolicyCtx, be *agentgateway.AgentgatewayBackend, inlinePolicies []*api.BackendPolicySpec) (*api.Backend, error) {
 	ai := be.Spec.AI
 	var errs []error
 
@@ -265,7 +265,7 @@ func translateAIBackends(ctx plugins.PolicyCtx, be *v1alpha1.AgentgatewayBackend
 func translateBackendPolicies(
 	ctx plugins.PolicyCtx,
 	namespace string,
-	policies *v1alpha1.AgentgatewayPolicyBackendFull) ([]*api.BackendPolicySpec, error) {
+	policies *agentgateway.AgentgatewayPolicyBackendFull) ([]*api.BackendPolicySpec, error) {
 	if policies == nil {
 		return nil, nil
 	}
@@ -274,11 +274,11 @@ func translateBackendPolicies(
 
 func translateMCPBackendPolicies(
 	ctx plugins.PolicyCtx,
-	namespace string, policies *v1alpha1.AgentgatewayPolicyBackendMCP) ([]*api.BackendPolicySpec, error) {
+	namespace string, policies *agentgateway.AgentgatewayPolicyBackendMCP) ([]*api.BackendPolicySpec, error) {
 	if policies == nil {
 		return nil, nil
 	}
-	return translateBackendPolicies(ctx, namespace, &v1alpha1.AgentgatewayPolicyBackendFull{
+	return translateBackendPolicies(ctx, namespace, &agentgateway.AgentgatewayPolicyBackendFull{
 		AgentgatewayPolicyBackendSimple: policies.AgentgatewayPolicyBackendSimple,
 		MCP:                             policies.MCP,
 	})
@@ -286,17 +286,17 @@ func translateMCPBackendPolicies(
 
 func translateAIBackendPolicies(
 	ctx plugins.PolicyCtx,
-	namespace string, policies *v1alpha1.AgentgatewayPolicyBackendAI) ([]*api.BackendPolicySpec, error) {
+	namespace string, policies *agentgateway.AgentgatewayPolicyBackendAI) ([]*api.BackendPolicySpec, error) {
 	if policies == nil {
 		return nil, nil
 	}
-	return translateBackendPolicies(ctx, namespace, &v1alpha1.AgentgatewayPolicyBackendFull{
+	return translateBackendPolicies(ctx, namespace, &agentgateway.AgentgatewayPolicyBackendFull{
 		AgentgatewayPolicyBackendSimple: policies.AgentgatewayPolicyBackendSimple,
 		AI:                              policies.AI,
 	})
 }
 
-func translateLLMProvider(llm *v1alpha1.LLMProvider, providerName string) (*api.AIBackend_Provider, error) {
+func translateLLMProvider(llm *agentgateway.LLMProvider, providerName string) (*api.AIBackend_Provider, error) {
 	provider := &api.AIBackend_Provider{
 		Name: providerName,
 	}

@@ -52,7 +52,9 @@ func MergeTrafficPolicies(
 		mergeRetry,
 		mergeRBAC,
 		mergeJwt,
+		mergeCompression,
 		mergeBasicAuth,
+		mergeURLRewrite,
 	}
 
 	for _, mergeFunc := range mergeFuncs {
@@ -303,6 +305,32 @@ func mergeJwt(
 	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "jwt")
 }
 
+func mergeCompression(
+	p1, p2 *TrafficPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+	_ TrafficPolicyMergeOpts,
+) {
+	{
+		accessor := fieldAccessor[compressionIR]{
+			Get: func(spec *trafficPolicySpecIr) *compressionIR { return spec.compression },
+			Set: func(spec *trafficPolicySpecIr, val *compressionIR) { spec.compression = val },
+		}
+
+		defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "compression")
+	}
+	{
+		accessor := fieldAccessor[decompressionIR]{
+			Get: func(spec *trafficPolicySpecIr) *decompressionIR { return spec.decompression },
+			Set: func(spec *trafficPolicySpecIr, val *decompressionIR) { spec.decompression = val },
+		}
+
+		defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "decompression")
+	}
+}
+
 func mergeLocalRateLimit(
 	p1, p2 *TrafficPolicy,
 	p2Ref *ir.AttachedPolicyRef,
@@ -467,6 +495,21 @@ func mergeBasicAuth(
 		Set: func(spec *trafficPolicySpecIr, val *basicAuthIR) { spec.basicAuth = val },
 	}
 	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "basicAuth")
+}
+
+func mergeURLRewrite(
+	p1, p2 *TrafficPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+	_ TrafficPolicyMergeOpts,
+) {
+	accessor := fieldAccessor[urlRewriteIR]{
+		Get: func(spec *trafficPolicySpecIr) *urlRewriteIR { return spec.urlRewrite },
+		Set: func(spec *trafficPolicySpecIr, val *urlRewriteIR) { spec.urlRewrite = val },
+	}
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "urlRewrite")
 }
 
 // fieldAccessor defines how to access and set a field on trafficPolicySpecIr

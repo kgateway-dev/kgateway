@@ -33,7 +33,7 @@ import (
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 	gatewayx "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	v1alpha2 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
@@ -491,28 +491,12 @@ func BuildAgwTrafficPolicyFilters(
 			}
 			policies = append(policies, h)
 		case gwv1.HTTPRouteFilterExtensionRef:
-			h, err := createAgwExtensionRefFilter(ctx, filter.ExtensionRef, ns)
+			err := createAgwExtensionRefFilter(filter.ExtensionRef)
 			if err != nil {
 				if policyError == nil {
 					policyError = err
 				}
 				continue
-			}
-			if h != nil {
-				if _, ok := h.Kind.(*api.TrafficPolicySpec_DirectResponse); ok {
-					if hasTerminalFilter {
-						policyError = &reporter.RouteCondition{
-							Type:    gwv1.RouteConditionAccepted,
-							Status:  metav1.ConditionFalse,
-							Reason:  gwv1.RouteReasonIncompatibleFilters,
-							Message: terminalFilterCombinationError(terminalFilterType, "DirectResponse"),
-						}
-						continue
-					}
-					hasTerminalFilter = true
-					terminalFilterType = "DirectResponse"
-				}
-				policies = append(policies, h)
 			}
 		default:
 			return nil, &reporter.RouteCondition{
@@ -702,7 +686,7 @@ func buildAgwDestination(
 	to gwv1.HTTPBackendRef,
 	ns string,
 	k schema.GroupVersionKind,
-	backendCol krt.Collection[*v1alpha1.AgentgatewayBackend],
+	backendCol krt.Collection[*v1alpha2.AgentgatewayBackend],
 ) (*api.RouteBackend, *reporter.RouteCondition) {
 	ref := normalizeReference(to.Group, to.Kind, wellknown.ServiceGVK)
 	// check if the reference is allowed
@@ -1712,65 +1696,21 @@ func toRouteKind(g schema.GroupVersionKind) gwv1.RouteGroupKind {
 
 // createAgwExtensionRefFilter creates Agw filter from Gateway API ExtensionRef filter
 func createAgwExtensionRefFilter(
-	ctx RouteContext,
 	extensionRef *gwv1.LocalObjectReference,
-	ns string,
-) (*api.TrafficPolicySpec, *reporter.RouteCondition) {
+) *reporter.RouteCondition {
 	if extensionRef == nil {
-		return nil, nil
+		return nil
 	}
 
-	// Check if it's a DirectResponse reference
-	if string(extensionRef.Group) == wellknown.DirectResponseGVK.Group && string(extensionRef.Kind) == wellknown.DirectResponseGVK.Kind {
-		// Look up the DirectResponse resource
-		directResponse := findDirectResponse(ctx, string(extensionRef.Name), ns)
-		if directResponse == nil {
-			return nil, &reporter.RouteCondition{
-				Type:    gwv1.RouteConditionAccepted,
-				Status:  metav1.ConditionFalse,
-				Reason:  gwv1.RouteReasonBackendNotFound,
-				Message: fmt.Sprintf("DirectResponse %s/%s not found", ns, extensionRef.Name),
-			}
-		}
-
-		// Convert to Agw DirectResponse filter
-		filter := &api.TrafficPolicySpec{
-			Kind: &api.TrafficPolicySpec_DirectResponse{
-				DirectResponse: &api.DirectResponse{
-					Status: uint32(directResponse.Spec.StatusCode), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
-				},
-			},
-		}
-
-		// Add body if specified
-		if directResponse.Spec.Body != nil {
-			filter.GetDirectResponse().Body = []byte(*directResponse.Spec.Body)
-		}
-
-		return filter, nil
-	}
+	// TODO: support other types of extension refs (TrafficPolicySpec, etc.) https://github.com/kgateway-dev/kgateway/issues/12037
 
 	// Unsupported ExtensionRef
-	return nil, &reporter.RouteCondition{
+	return &reporter.RouteCondition{
 		Type:    gwv1.RouteConditionAccepted,
 		Status:  metav1.ConditionFalse,
 		Reason:  gwv1.RouteReasonIncompatibleFilters,
 		Message: fmt.Sprintf("unsupported ExtensionRef: %s/%s", extensionRef.Group, extensionRef.Kind),
 	}
-}
-
-// findDirectResponse looks up a DirectResponse resource by name and namespace
-func findDirectResponse(ctx RouteContext, name, namespace string) *v1alpha1.DirectResponse {
-	if ctx.DirectResponses == nil {
-		return nil
-	}
-	directResponses := krt.Fetch(ctx.Krt, ctx.DirectResponses)
-	for _, dr := range directResponses {
-		if dr.Name == name && dr.Namespace == namespace {
-			return dr
-		}
-	}
-	return nil
 }
 
 func routeGroupKindEqual(rgk1, rgk2 gwv1.RouteGroupKind) bool {

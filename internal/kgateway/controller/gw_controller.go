@@ -30,7 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	internaldeployer "github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
@@ -58,7 +58,7 @@ type gatewayReconciler struct {
 
 	gwClient         kclient.Client[*gwv1.Gateway]
 	gwClassClient    kclient.Client[*gwv1.GatewayClass]
-	gwParamClient    kclient.Client[*v1alpha1.GatewayParameters]
+	gwParamClient    kclient.Client[*kgateway.GatewayParameters]
 	nsClient         kclient.Client[*corev1.Namespace]
 	svcClient        kclient.Client[*corev1.Service]
 	deploymentClient kclient.Client[*appsv1.Deployment]
@@ -87,7 +87,7 @@ func NewGatewayReconciler(
 
 		gwClient:         kclient.NewFilteredDelayed[*gwv1.Gateway](cfg.Client, gvr.KubernetesGateway, filter),
 		gwClassClient:    kclient.NewFilteredDelayed[*gwv1.GatewayClass](cfg.Client, gvr.GatewayClass, filter),
-		gwParamClient:    kclient.NewFilteredDelayed[*v1alpha1.GatewayParameters](cfg.Client, wellknown.GatewayParametersGVR, filter),
+		gwParamClient:    kclient.NewFilteredDelayed[*kgateway.GatewayParameters](cfg.Client, wellknown.GatewayParametersGVR, filter),
 		nsClient:         kclient.NewFiltered[*corev1.Namespace](cfg.Client, filter),
 		svcClient:        kclient.NewFiltered[*corev1.Service](cfg.Client, filter),
 		deploymentClient: kclient.NewFiltered[*appsv1.Deployment](cfg.Client, filter),

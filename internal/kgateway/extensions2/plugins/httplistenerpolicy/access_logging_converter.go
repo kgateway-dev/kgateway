@@ -24,7 +24,7 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	kwellknown "github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -42,7 +42,7 @@ const serviceNameKey = "service.name"
 // we return partially translated configs. As these configs are of different types, we return an list of interfaces
 // that is stored in the IR to be fully translated during translation.
 func convertAccessLogConfig(
-	policy *v1alpha1.HTTPListenerPolicy,
+	policy *kgateway.HTTPListenerPolicy,
 	commoncol *collections.CommonCollections,
 	krtctx krt.HandlerContext,
 	parentSrc ir.ObjectSource,
@@ -81,7 +81,7 @@ func getLogId(logName string, idx int) string {
 	return fmt.Sprintf("%s-%d", logName, idx)
 }
 
-func translateAccessLogs(configs []v1alpha1.AccessLog, grpcBackends map[string]*ir.BackendObjectIR) ([]proto.Message, error) {
+func translateAccessLogs(configs []kgateway.AccessLog, grpcBackends map[string]*ir.BackendObjectIR) ([]proto.Message, error) {
 	var results []proto.Message
 
 	for idx, logConfig := range configs {
@@ -96,7 +96,7 @@ func translateAccessLogs(configs []v1alpha1.AccessLog, grpcBackends map[string]*
 }
 
 // translateAccessLog creates an Envoy AccessLog configuration for a single log config
-func translateAccessLog(logConfig v1alpha1.AccessLog, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (proto.Message, error) {
+func translateAccessLog(logConfig kgateway.AccessLog, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (proto.Message, error) {
 	// Validate mutual exclusivity of sink types
 	if logConfig.FileSink != nil && logConfig.GrpcService != nil {
 		return nil, errors.New("access log config cannot have both file sink and grpc service")
@@ -126,7 +126,7 @@ func translateAccessLog(logConfig v1alpha1.AccessLog, grpcBackends map[string]*i
 }
 
 // createFileAccessLog generates a file-based access log configuration
-func createFileAccessLog(fileSink *v1alpha1.FileSink) (proto.Message, error) {
+func createFileAccessLog(fileSink *kgateway.FileSink) (proto.Message, error) {
 	fileCfg := &envoyalfile.FileAccessLog{Path: fileSink.Path}
 
 	formatterExtensions, err := getFormatterExtensions()
@@ -166,7 +166,7 @@ func createFileAccessLog(fileSink *v1alpha1.FileSink) (proto.Message, error) {
 }
 
 // createGrpcAccessLog generates a gRPC-based access log configuration
-func createGrpcAccessLog(grpcService *v1alpha1.AccessLogGrpcService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (proto.Message, error) {
+func createGrpcAccessLog(grpcService *kgateway.AccessLogGrpcService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (proto.Message, error) {
 	var cfg envoygrpc.HttpGrpcAccessLogConfig
 	if err := copyGrpcSettings(&cfg, grpcService, grpcBackends, accessLogId); err != nil {
 		return nil, fmt.Errorf("error converting grpc access log config: %w", err)
@@ -175,7 +175,7 @@ func createGrpcAccessLog(grpcService *v1alpha1.AccessLogGrpcService, grpcBackend
 }
 
 // createOTelAccessLog generates an OTel access log configuration
-func createOTelAccessLog(grpcService *v1alpha1.OpenTelemetryAccessLogService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (proto.Message, error) {
+func createOTelAccessLog(grpcService *kgateway.OpenTelemetryAccessLogService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (proto.Message, error) {
 	var cfg envoy_open_telemetry.OpenTelemetryAccessLogConfig
 	if err := copyOTelSettings(&cfg, grpcService, grpcBackends, accessLogId); err != nil {
 		return nil, fmt.Errorf("error converting otel access log config: %w", err)
@@ -184,7 +184,7 @@ func createOTelAccessLog(grpcService *v1alpha1.OpenTelemetryAccessLogService, gr
 }
 
 // addAccessLogFilter adds filtering logic to an access log configuration
-func addAccessLogFilter(accessLogCfg *envoyaccesslogv3.AccessLog, filter *v1alpha1.AccessLogFilter) error {
+func addAccessLogFilter(accessLogCfg *envoyaccesslogv3.AccessLog, filter *kgateway.AccessLogFilter) error {
 	var (
 		filters []*envoyaccesslogv3.AccessLogFilter
 		err     error
@@ -224,7 +224,7 @@ func addAccessLogFilter(accessLogCfg *envoyaccesslogv3.AccessLog, filter *v1alph
 }
 
 // translateFilters translates a slice of filter types
-func translateFilters(filters []v1alpha1.FilterType) ([]*envoyaccesslogv3.AccessLogFilter, error) {
+func translateFilters(filters []kgateway.FilterType) ([]*envoyaccesslogv3.AccessLogFilter, error) {
 	result := make([]*envoyaccesslogv3.AccessLogFilter, 0, len(filters))
 	for _, filter := range filters {
 		cfg, err := translateFilter(&filter)
@@ -236,7 +236,7 @@ func translateFilters(filters []v1alpha1.FilterType) ([]*envoyaccesslogv3.Access
 	return result, nil
 }
 
-func translateFilter(filter *v1alpha1.FilterType) (*envoyaccesslogv3.AccessLogFilter, error) {
+func translateFilter(filter *kgateway.FilterType) (*envoyaccesslogv3.AccessLogFilter, error) {
 	var alCfg *envoyaccesslogv3.AccessLogFilter
 	switch {
 	case filter.StatusCodeFilter != nil:
@@ -406,7 +406,7 @@ func convertJsonFormat(jsonFormat *runtime.RawExtension) (*structpb.Struct, erro
 	return structVal, nil
 }
 
-func generateCommonAccessLogGrpcConfig(grpcService v1alpha1.CommonAccessLogGrpcService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (*envoygrpc.CommonGrpcAccessLogConfig, error) {
+func generateCommonAccessLogGrpcConfig(grpcService kgateway.CommonAccessLogGrpcService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (*envoygrpc.CommonGrpcAccessLogConfig, error) {
 	if grpcService.LogName == "" {
 		return nil, errors.New("grpc service log name cannot be empty")
 	}
@@ -428,7 +428,7 @@ func generateCommonAccessLogGrpcConfig(grpcService v1alpha1.CommonAccessLogGrpcS
 	}, nil
 }
 
-func copyGrpcSettings(cfg *envoygrpc.HttpGrpcAccessLogConfig, grpcService *v1alpha1.AccessLogGrpcService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) error {
+func copyGrpcSettings(cfg *envoygrpc.HttpGrpcAccessLogConfig, grpcService *kgateway.AccessLogGrpcService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) error {
 	config, err := generateCommonAccessLogGrpcConfig(grpcService.CommonAccessLogGrpcService, grpcBackends, accessLogId)
 	if err != nil {
 		return err
@@ -441,7 +441,7 @@ func copyGrpcSettings(cfg *envoygrpc.HttpGrpcAccessLogConfig, grpcService *v1alp
 	return cfg.Validate()
 }
 
-func copyOTelSettings(cfg *envoy_open_telemetry.OpenTelemetryAccessLogConfig, otelService *v1alpha1.OpenTelemetryAccessLogService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) error {
+func copyOTelSettings(cfg *envoy_open_telemetry.OpenTelemetryAccessLogConfig, otelService *kgateway.OpenTelemetryAccessLogService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) error {
 	config, err := generateCommonAccessLogGrpcConfig(otelService.GrpcService, grpcBackends, accessLogId)
 	if err != nil {
 		return err
@@ -468,7 +468,7 @@ func copyOTelSettings(cfg *envoy_open_telemetry.OpenTelemetryAccessLogConfig, ot
 	return cfg.Validate()
 }
 
-func ToOTelKeyValueList(in *v1alpha1.KeyAnyValueList) *otelv1.KeyValueList {
+func ToOTelKeyValueList(in *kgateway.KeyAnyValueList) *otelv1.KeyValueList {
 	kvList := make([]*otelv1.KeyValue, len(in.Values))
 	ret := &otelv1.KeyValueList{
 		Values: kvList,
@@ -482,7 +482,7 @@ func ToOTelKeyValueList(in *v1alpha1.KeyAnyValueList) *otelv1.KeyValueList {
 	return ret
 }
 
-func ToOTelAnyValue(in *v1alpha1.AnyValue) *otelv1.AnyValue {
+func ToOTelAnyValue(in *kgateway.AnyValue) *otelv1.AnyValue {
 	if in == nil {
 		return nil
 	}
@@ -556,61 +556,61 @@ func newAccessLogWithConfig(name string, config proto.Message) *envoyaccesslogv3
 }
 
 // String provides a string representation for the Op enum.
-func toEnvoyComparisonOpType(op v1alpha1.Op) (envoyaccesslogv3.ComparisonFilter_Op, error) {
+func toEnvoyComparisonOpType(op kgateway.Op) (envoyaccesslogv3.ComparisonFilter_Op, error) {
 	switch op {
-	case v1alpha1.EQ:
+	case kgateway.EQ:
 		return envoyaccesslogv3.ComparisonFilter_EQ, nil
-	case v1alpha1.GE:
+	case kgateway.GE:
 		return envoyaccesslogv3.ComparisonFilter_GE, nil
-	case v1alpha1.LE:
+	case kgateway.LE:
 		return envoyaccesslogv3.ComparisonFilter_LE, nil
 	default:
 		return 0, fmt.Errorf("unknown OP (%s)", op)
 	}
 }
 
-func toEnvoyGRPCStatusType(grpcStatus v1alpha1.GrpcStatus) (envoyaccesslogv3.GrpcStatusFilter_Status, error) {
+func toEnvoyGRPCStatusType(grpcStatus kgateway.GrpcStatus) (envoyaccesslogv3.GrpcStatusFilter_Status, error) {
 	switch grpcStatus {
-	case v1alpha1.OK:
+	case kgateway.OK:
 		return envoyaccesslogv3.GrpcStatusFilter_OK, nil
-	case v1alpha1.CANCELED:
+	case kgateway.CANCELED:
 		return envoyaccesslogv3.GrpcStatusFilter_CANCELED, nil
-	case v1alpha1.UNKNOWN:
+	case kgateway.UNKNOWN:
 		return envoyaccesslogv3.GrpcStatusFilter_UNKNOWN, nil
-	case v1alpha1.INVALID_ARGUMENT:
+	case kgateway.INVALID_ARGUMENT:
 		return envoyaccesslogv3.GrpcStatusFilter_INVALID_ARGUMENT, nil
-	case v1alpha1.DEADLINE_EXCEEDED:
+	case kgateway.DEADLINE_EXCEEDED:
 		return envoyaccesslogv3.GrpcStatusFilter_DEADLINE_EXCEEDED, nil
-	case v1alpha1.NOT_FOUND:
+	case kgateway.NOT_FOUND:
 		return envoyaccesslogv3.GrpcStatusFilter_NOT_FOUND, nil
-	case v1alpha1.ALREADY_EXISTS:
+	case kgateway.ALREADY_EXISTS:
 		return envoyaccesslogv3.GrpcStatusFilter_ALREADY_EXISTS, nil
-	case v1alpha1.PERMISSION_DENIED:
+	case kgateway.PERMISSION_DENIED:
 		return envoyaccesslogv3.GrpcStatusFilter_PERMISSION_DENIED, nil
-	case v1alpha1.RESOURCE_EXHAUSTED:
+	case kgateway.RESOURCE_EXHAUSTED:
 		return envoyaccesslogv3.GrpcStatusFilter_RESOURCE_EXHAUSTED, nil
-	case v1alpha1.FAILED_PRECONDITION:
+	case kgateway.FAILED_PRECONDITION:
 		return envoyaccesslogv3.GrpcStatusFilter_FAILED_PRECONDITION, nil
-	case v1alpha1.ABORTED:
+	case kgateway.ABORTED:
 		return envoyaccesslogv3.GrpcStatusFilter_ABORTED, nil
-	case v1alpha1.OUT_OF_RANGE:
+	case kgateway.OUT_OF_RANGE:
 		return envoyaccesslogv3.GrpcStatusFilter_OUT_OF_RANGE, nil
-	case v1alpha1.UNIMPLEMENTED:
+	case kgateway.UNIMPLEMENTED:
 		return envoyaccesslogv3.GrpcStatusFilter_UNIMPLEMENTED, nil
-	case v1alpha1.INTERNAL:
+	case kgateway.INTERNAL:
 		return envoyaccesslogv3.GrpcStatusFilter_INTERNAL, nil
-	case v1alpha1.UNAVAILABLE:
+	case kgateway.UNAVAILABLE:
 		return envoyaccesslogv3.GrpcStatusFilter_UNAVAILABLE, nil
-	case v1alpha1.DATA_LOSS:
+	case kgateway.DATA_LOSS:
 		return envoyaccesslogv3.GrpcStatusFilter_DATA_LOSS, nil
-	case v1alpha1.UNAUTHENTICATED:
+	case kgateway.UNAUTHENTICATED:
 		return envoyaccesslogv3.GrpcStatusFilter_UNAUTHENTICATED, nil
 	default:
 		return 0, fmt.Errorf("unknown GRPCStatus (%s)", grpcStatus)
 	}
 }
 
-func generateAccessLogConfig(pCtx *ir.HcmContext, policies []v1alpha1.AccessLog, configs []proto.Message) ([]*envoyaccesslogv3.AccessLog, error) {
+func generateAccessLogConfig(pCtx *ir.HcmContext, policies []kgateway.AccessLog, configs []proto.Message) ([]*envoyaccesslogv3.AccessLog, error) {
 	accessLogs := make([]*envoyaccesslogv3.AccessLog, len(configs))
 	if len(configs) == 0 {
 		return accessLogs, nil

@@ -13,7 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -92,7 +92,7 @@ func (p *trafficPolicyPluginGwPass) handleBasicAuth(
 // constructBasicAuth translates the basic auth spec into an envoy basic auth policy
 func constructBasicAuth(
 	krtctx krt.HandlerContext,
-	in *v1alpha1.TrafficPolicy,
+	in *kgateway.TrafficPolicy,
 	out *trafficPolicySpecIr,
 	secrets *krtcollections.SecretIndex,
 ) error {
@@ -164,7 +164,7 @@ func constructBasicAuth(
 func fetchHtpasswdFromSecret(
 	krtctx krt.HandlerContext,
 	secrets *krtcollections.SecretIndex,
-	secretRef *v1alpha1.SecretReference,
+	secretRef *kgateway.SecretReference,
 	policyNamespace string,
 ) (string, error) {
 	// Determine namespace - use secret's namespace if specified, otherwise policy's namespace

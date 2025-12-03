@@ -14,7 +14,7 @@ import (
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	agentgateway "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
@@ -121,9 +121,9 @@ func enqueueStatus[T any](sw WorkerQueue, obj controllers.Object, ws T, extraGVK
 		res.GroupVersionKind = wellknown.TLSRouteGVK
 	case *gwv1.GRPCRoute:
 		res.GroupVersionKind = wellknown.GRPCRouteGVK
-	case *v1alpha1.AgentgatewayPolicy:
+	case *agentgateway.AgentgatewayPolicy:
 		res.GroupVersionKind = wellknown.AgentgatewayPolicyGVK
-	case *v1alpha1.AgentgatewayBackend:
+	case *agentgateway.AgentgatewayBackend:
 		res.GroupVersionKind = wellknown.AgentgatewayBackendGVK
 	case *gwxv1a1.XListenerSet:
 		res.GroupVersionKind = wellknown.XListenerSetGVK

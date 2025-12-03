@@ -28,7 +28,7 @@ spec:
 #      disable: {}
 ---
 ## On a route that is not part of the gw gateway opt in
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: secure-route-policy2

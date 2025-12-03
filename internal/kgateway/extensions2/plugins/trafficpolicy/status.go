@@ -9,12 +9,12 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 )
 
 func getPolicyStatusFn(
-	cl kclient.Client[*v1alpha1.TrafficPolicy],
+	cl kclient.Client[*kgateway.TrafficPolicy],
 ) pluginsdk.GetPolicyStatusFn {
 	return func(ctx context.Context, nn types.NamespacedName) (gwv1.PolicyStatus, error) {
 		res := cl.Get(nn.Name, nn.Namespace)
@@ -26,14 +26,14 @@ func getPolicyStatusFn(
 }
 
 func patchPolicyStatusFn(
-	cl kclient.Client[*v1alpha1.TrafficPolicy],
+	cl kclient.Client[*kgateway.TrafficPolicy],
 ) pluginsdk.PatchPolicyStatusFn {
 	return func(ctx context.Context, nn types.NamespacedName, policyStatus gwv1.PolicyStatus) error {
 		cur := cl.Get(nn.Name, nn.Namespace)
 		if cur == nil {
 			return pluginsdk.ErrNotFound
 		}
-		if _, err := cl.UpdateStatus(&v1alpha1.TrafficPolicy{
+		if _, err := cl.UpdateStatus(&kgateway.TrafficPolicy{
 			ObjectMeta: pluginsdk.CloneObjectMetaForStatus(cur.ObjectMeta),
 			Status:     policyStatus,
 		}); err != nil {

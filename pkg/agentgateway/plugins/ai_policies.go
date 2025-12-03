@@ -9,10 +9,10 @@ import (
 	"istio.io/istio/pkg/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 )
 
-func processRequestGuard(ctx PolicyCtx, namespace string, reqs []v1alpha1.PromptguardRequest) ([]*api.BackendPolicySpec_Ai_RequestGuard, error) {
+func processRequestGuard(ctx PolicyCtx, namespace string, reqs []agentgateway.PromptguardRequest) ([]*api.BackendPolicySpec_Ai_RequestGuard, error) {
 	var res []*api.BackendPolicySpec_Ai_RequestGuard
 	for _, req := range reqs {
 		pgReq := &api.BackendPolicySpec_Ai_RequestGuard{}
@@ -46,7 +46,7 @@ func processRequestGuard(ctx PolicyCtx, namespace string, reqs []v1alpha1.Prompt
 	return res, nil
 }
 
-func processResponseGuard(ctx PolicyCtx, namespace string, resps []v1alpha1.PromptguardResponse) ([]*api.BackendPolicySpec_Ai_ResponseGuard, error) {
+func processResponseGuard(ctx PolicyCtx, namespace string, resps []agentgateway.PromptguardResponse) ([]*api.BackendPolicySpec_Ai_ResponseGuard, error) {
 	var res []*api.BackendPolicySpec_Ai_ResponseGuard
 	for _, req := range resps {
 		pgReq := &api.BackendPolicySpec_Ai_ResponseGuard{}
@@ -76,7 +76,7 @@ func processResponseGuard(ctx PolicyCtx, namespace string, resps []v1alpha1.Prom
 	return res, nil
 }
 
-func processPromptEnrichment(enrichment *v1alpha1.AIPromptEnrichment) *api.BackendPolicySpec_Ai_PromptEnrichment {
+func processPromptEnrichment(enrichment *agentgateway.AIPromptEnrichment) *api.BackendPolicySpec_Ai_PromptEnrichment {
 	pgPromptEnrichment := &api.BackendPolicySpec_Ai_PromptEnrichment{}
 
 	// Add prepend messages
@@ -98,7 +98,7 @@ func processPromptEnrichment(enrichment *v1alpha1.AIPromptEnrichment) *api.Backe
 	return pgPromptEnrichment
 }
 
-func processWebhook(ctx PolicyCtx, namespace string, webhook *v1alpha1.Webhook) (*api.BackendPolicySpec_Ai_Webhook, error) {
+func processWebhook(ctx PolicyCtx, namespace string, webhook *agentgateway.Webhook) (*api.BackendPolicySpec_Ai_Webhook, error) {
 	if webhook == nil {
 		return nil, nil
 	}
@@ -135,7 +135,7 @@ func processWebhook(ctx PolicyCtx, namespace string, webhook *v1alpha1.Webhook) 
 	return w, nil
 }
 
-func processBuiltinRegexRule(builtin v1alpha1.BuiltIn, logger *slog.Logger) *api.BackendPolicySpec_Ai_RegexRule {
+func processBuiltinRegexRule(builtin agentgateway.BuiltIn, logger *slog.Logger) *api.BackendPolicySpec_Ai_RegexRule {
 	builtinValue, ok := api.BackendPolicySpec_Ai_BuiltinRegexRule_value[string(builtin)]
 	if !ok {
 		logger.Warn("unknown builtin regex rule", "builtin", builtin)
@@ -156,7 +156,7 @@ func processRegexRule(pattern string) *api.BackendPolicySpec_Ai_RegexRule {
 	}
 }
 
-func processRegex(regex *v1alpha1.Regex) *api.BackendPolicySpec_Ai_RegexRules {
+func processRegex(regex *agentgateway.Regex) *api.BackendPolicySpec_Ai_RegexRules {
 	if regex == nil {
 		return nil
 	}
@@ -164,9 +164,9 @@ func processRegex(regex *v1alpha1.Regex) *api.BackendPolicySpec_Ai_RegexRules {
 	rules := &api.BackendPolicySpec_Ai_RegexRules{}
 	if regex.Action != nil {
 		switch *regex.Action {
-		case v1alpha1.MASK:
+		case agentgateway.MASK:
 			rules.Action = api.BackendPolicySpec_Ai_MASK
-		case v1alpha1.REJECT:
+		case agentgateway.REJECT:
 			rules.Action = api.BackendPolicySpec_Ai_REJECT
 		default:
 			logger.Warn("unsupported regex action", "action", *regex.Action)
@@ -184,7 +184,7 @@ func processRegex(regex *v1alpha1.Regex) *api.BackendPolicySpec_Ai_RegexRules {
 	return rules
 }
 
-func processModeration(ctx PolicyCtx, namespace string, moderation *v1alpha1.OpenAIModeration) *api.BackendPolicySpec_Ai_Moderation {
+func processModeration(ctx PolicyCtx, namespace string, moderation *agentgateway.OpenAIModeration) *api.BackendPolicySpec_Ai_Moderation {
 	if moderation == nil {
 		return nil
 	}
@@ -197,7 +197,7 @@ func processModeration(ctx PolicyCtx, namespace string, moderation *v1alpha1.Ope
 		}
 	}
 	if moderation.Policies != nil {
-		pol := &v1alpha1.AgentgatewayPolicyBackendFull{
+		pol := &agentgateway.AgentgatewayPolicyBackendFull{
 			AgentgatewayPolicyBackendSimple: *moderation.Policies,
 		}
 		pols, err := TranslateInlineBackendPolicy(ctx, namespace, pol)

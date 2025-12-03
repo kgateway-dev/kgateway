@@ -27,7 +27,8 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	"sigs.k8s.io/gateway-api/apis/v1alpha2"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
@@ -52,6 +53,7 @@ const (
 	jwtPolicySuffix             = ":jwt"
 	basicAuthPolicySuffix       = ":basicauth"
 	apiKeyPolicySuffix          = ":apikeyauth" //nolint:gosec
+	directResponseSuffix        = ":direct-response"
 )
 
 var logger = logging.New("agentgateway/plugins")
@@ -71,8 +73,8 @@ func init() {
 
 // convertStatusCollection converts the specific TrafficPolicy status collection
 // to the generic controllers.Object status collection expected by the interface
-func convertStatusCollection(col krt.Collection[krt.ObjectWithStatus[*v1alpha1.AgentgatewayPolicy, gwv1.PolicyStatus]]) krt.StatusCollection[controllers.Object, gwv1.PolicyStatus] {
-	return krt.MapCollection(col, func(item krt.ObjectWithStatus[*v1alpha1.AgentgatewayPolicy, gwv1.PolicyStatus]) krt.ObjectWithStatus[controllers.Object, gwv1.PolicyStatus] {
+func convertStatusCollection(col krt.Collection[krt.ObjectWithStatus[*agentgateway.AgentgatewayPolicy, gwv1.PolicyStatus]]) krt.StatusCollection[controllers.Object, gwv1.PolicyStatus] {
+	return krt.MapCollection(col, func(item krt.ObjectWithStatus[*agentgateway.AgentgatewayPolicy, gwv1.PolicyStatus]) krt.ObjectWithStatus[controllers.Object, gwv1.PolicyStatus] {
 		return krt.ObjectWithStatus[controllers.Object, gwv1.PolicyStatus]{
 			Obj:    controllers.Object(item.Obj),
 			Status: item.Status,
@@ -82,7 +84,7 @@ func convertStatusCollection(col krt.Collection[krt.ObjectWithStatus[*v1alpha1.A
 
 // NewAgentPlugin creates a new AgentgatewayPolicy plugin
 func NewAgentPlugin(agw *AgwCollections) AgwPlugin {
-	policyStatusCol, policyCol := krt.NewStatusManyCollection(agw.AgentgatewayPolicies, func(krtctx krt.HandlerContext, policyCR *v1alpha1.AgentgatewayPolicy) (
+	policyStatusCol, policyCol := krt.NewStatusManyCollection(agw.AgentgatewayPolicies, func(krtctx krt.HandlerContext, policyCR *agentgateway.AgentgatewayPolicy) (
 		*gwv1.PolicyStatus,
 		[]AgwPolicy,
 	) {
@@ -115,7 +117,7 @@ type ResolvedTarget struct {
 // TranslateAgentgatewayPolicy generates policies for a single traffic policy
 func TranslateAgentgatewayPolicy(
 	ctx krt.HandlerContext,
-	policy *v1alpha1.AgentgatewayPolicy,
+	policy *agentgateway.AgentgatewayPolicy,
 	agw *AgwCollections,
 ) (*gwv1.PolicyStatus, []AgwPolicy) {
 	var agwPolicies []AgwPolicy
@@ -222,23 +224,23 @@ func TranslateAgentgatewayPolicy(
 			// If we produced some policies alongside errors, treat as partial validity
 			if len(translatedPolicies) > 0 {
 				meta.SetStatusCondition(&conds, metav1.Condition{
-					Type:    string(v1alpha1.PolicyConditionAccepted),
+					Type:    string(shared.PolicyConditionAccepted),
 					Status:  metav1.ConditionTrue,
-					Reason:  string(v1alpha1.PolicyReasonPartiallyValid),
+					Reason:  string(shared.PolicyReasonPartiallyValid),
 					Message: err.Error(),
 				})
 			} else {
 				// No policies produced and error present -> invalid
 				meta.SetStatusCondition(&conds, metav1.Condition{
-					Type:    string(v1alpha1.PolicyConditionAccepted),
+					Type:    string(shared.PolicyConditionAccepted),
 					Status:  metav1.ConditionTrue,
-					Reason:  string(v1alpha1.PolicyReasonInvalid),
+					Reason:  string(shared.PolicyReasonInvalid),
 					Message: err.Error(),
 				})
 				meta.SetStatusCondition(&conds, metav1.Condition{
-					Type:    string(v1alpha1.PolicyConditionAttached),
+					Type:    string(shared.PolicyConditionAttached),
 					Status:  metav1.ConditionFalse,
-					Reason:  string(v1alpha1.PolicyReasonPending),
+					Reason:  string(shared.PolicyReasonPending),
 					Message: "Policy is not attached due to invalid status",
 				})
 			}
@@ -246,15 +248,15 @@ func TranslateAgentgatewayPolicy(
 			// Check for partial validity
 			// Build success conditions per ancestor
 			meta.SetStatusCondition(&conds, metav1.Condition{
-				Type:    string(v1alpha1.PolicyConditionAccepted),
+				Type:    string(shared.PolicyConditionAccepted),
 				Status:  metav1.ConditionTrue,
-				Reason:  string(v1alpha1.PolicyReasonValid),
+				Reason:  string(shared.PolicyReasonValid),
 				Message: reporter.PolicyAcceptedMsg,
 			})
 			meta.SetStatusCondition(&conds, metav1.Condition{
-				Type:    string(v1alpha1.PolicyConditionAttached),
+				Type:    string(shared.PolicyConditionAttached),
 				Status:  metav1.ConditionTrue,
-				Reason:  string(v1alpha1.PolicyReasonAttached),
+				Reason:  string(shared.PolicyReasonAttached),
 				Message: reporter.PolicyAttachedMsg,
 			})
 		}
@@ -311,7 +313,7 @@ func TranslateAgentgatewayPolicy(
 // translateTrafficPolicyToAgw converts a TrafficPolicy to agentgateway Policy resources
 func translatePolicyToAgw(
 	ctx PolicyCtx,
-	policy *v1alpha1.AgentgatewayPolicy,
+	policy *agentgateway.AgentgatewayPolicy,
 	policyTarget *api.PolicyTarget,
 ) ([]AgwPolicy, error) {
 	agwPolicies := make([]AgwPolicy, 0)
@@ -340,7 +342,7 @@ func translatePolicyToAgw(
 
 func translateTrafficPolicyToAgw(
 	ctx PolicyCtx,
-	policy *v1alpha1.AgentgatewayPolicy,
+	policy *agentgateway.AgentgatewayPolicy,
 	policyTarget *api.PolicyTarget,
 ) ([]AgwPolicy, error) {
 	traffic := policy.Spec.Traffic
@@ -431,6 +433,11 @@ func translateTrafficPolicyToAgw(
 		agwPolicies = append(agwPolicies, retriesPolicies...)
 	}
 
+	if traffic.DirectResponse != nil {
+		directRespPolicies := processDirectResponse(traffic.DirectResponse, basePolicyName, policyTarget)
+		agwPolicies = append(agwPolicies, directRespPolicies...)
+	}
+
 	if traffic.JWTAuthentication != nil {
 		jwtAuthenticationPolicies, err := processJWTAuthenticationPolicy(ctx, traffic.JWTAuthentication, basePolicyName, policyTarget)
 		if err != nil {
@@ -460,7 +467,7 @@ func translateTrafficPolicyToAgw(
 	return agwPolicies, errors.Join(errs...)
 }
 
-func processRetriesPolicy(retry *v1alpha1.Retry, basePolicyName string, target *api.PolicyTarget) []AgwPolicy {
+func processRetriesPolicy(retry *shared.Retry, basePolicyName string, target *api.PolicyTarget) []AgwPolicy {
 	translatedRetry := &api.Retry{}
 
 	if retry.StatusCodes != nil {
@@ -485,7 +492,7 @@ func processRetriesPolicy(retry *v1alpha1.Retry, basePolicyName string, target *
 		},
 	}
 
-	logger.Debug("generated Timeout policy",
+	logger.Debug("generated Retry policy",
 		"policy", basePolicyName,
 		"agentgateway_policy", retryPolicy.Name,
 		"target", target)
@@ -493,15 +500,45 @@ func processRetriesPolicy(retry *v1alpha1.Retry, basePolicyName string, target *
 	return []AgwPolicy{{Policy: retryPolicy}}
 }
 
-func processJWTAuthenticationPolicy(ctx PolicyCtx, jwt *v1alpha1.AgentJWTAuthentication, basePolicyName string, target *api.PolicyTarget) ([]AgwPolicy, error) {
+func processDirectResponse(directResponse *agentgateway.DirectResponse, basePolicyName string, target *api.PolicyTarget) []AgwPolicy {
+	policy := &api.TrafficPolicySpec{
+		Kind: &api.TrafficPolicySpec_DirectResponse{
+			DirectResponse: &api.DirectResponse{
+				Status: uint32(directResponse.StatusCode), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+			},
+		},
+	}
+
+	// Add body if specified
+	if directResponse.Body != nil {
+		policy.GetDirectResponse().Body = []byte(*directResponse.Body)
+	}
+
+	directRespPolicy := &api.Policy{
+		Name:   basePolicyName + directResponseSuffix + attachmentName(target),
+		Target: target,
+		Kind: &api.Policy_Traffic{
+			Traffic: policy,
+		},
+	}
+
+	logger.Debug("generated DirectResponse policy",
+		"policy", basePolicyName,
+		"agentgateway_policy", directRespPolicy.Name,
+		"target", target)
+
+	return []AgwPolicy{{Policy: directRespPolicy}}
+}
+
+func processJWTAuthenticationPolicy(ctx PolicyCtx, jwt *agentgateway.AgentJWTAuthentication, basePolicyName string, target *api.PolicyTarget) ([]AgwPolicy, error) {
 	p := &api.TrafficPolicySpec_JWT{}
 
 	switch jwt.Mode {
-	case v1alpha1.JWTAuthenticationModeOptional:
+	case agentgateway.JWTAuthenticationModeOptional:
 		p.Mode = api.TrafficPolicySpec_JWT_OPTIONAL
-	case v1alpha1.JWTAuthenticationModeStrict:
+	case agentgateway.JWTAuthenticationModeStrict:
 		p.Mode = api.TrafficPolicySpec_JWT_STRICT
-	case v1alpha1.JWTAuthenticationModePermissive:
+	case agentgateway.JWTAuthenticationModePermissive:
 		p.Mode = api.TrafficPolicySpec_JWT_PERMISSIVE
 	}
 
@@ -545,16 +582,16 @@ func processJWTAuthenticationPolicy(ctx PolicyCtx, jwt *v1alpha1.AgentJWTAuthent
 	return []AgwPolicy{{Policy: jwtPolicy}}, errors.Join(errs...)
 }
 
-func processBasicAuthenticationPolicy(ctx PolicyCtx, ba *v1alpha1.AgentBasicAuthentication, basePolicyName string, policyNamespace string, target *api.PolicyTarget) ([]AgwPolicy, error) {
+func processBasicAuthenticationPolicy(ctx PolicyCtx, ba *agentgateway.AgentBasicAuthentication, basePolicyName string, policyNamespace string, target *api.PolicyTarget) ([]AgwPolicy, error) {
 	p := &api.TrafficPolicySpec_BasicAuthentication{}
 	if ba.Realm != nil {
 		p.Realm = wrapperspb.String(*ba.Realm)
 	}
 
 	switch ba.Mode {
-	case v1alpha1.BasicAuthenticationModeOptional:
+	case agentgateway.BasicAuthenticationModeOptional:
 		p.Mode = api.TrafficPolicySpec_BasicAuthentication_OPTIONAL
-	case v1alpha1.BasicAuthenticationModeStrict:
+	case agentgateway.BasicAuthenticationModeStrict:
 		p.Mode = api.TrafficPolicySpec_BasicAuthentication_STRICT
 	}
 
@@ -595,13 +632,13 @@ type APIKeyEntry struct {
 	Metadata json.RawMessage `json:"metadata"`
 }
 
-func processAPIKeyAuthenticationPolicy(ctx PolicyCtx, ak *v1alpha1.AgentAPIKeyAuthentication, basePolicyName string, policyNamespace string, target *api.PolicyTarget) ([]AgwPolicy, error) {
+func processAPIKeyAuthenticationPolicy(ctx PolicyCtx, ak *agentgateway.AgentAPIKeyAuthentication, basePolicyName string, policyNamespace string, target *api.PolicyTarget) ([]AgwPolicy, error) {
 	p := &api.TrafficPolicySpec_APIKey{}
 
 	switch ak.Mode {
-	case v1alpha1.APIKeyAuthenticationModeOptional:
+	case agentgateway.APIKeyAuthenticationModeOptional:
 		p.Mode = api.TrafficPolicySpec_APIKey_OPTIONAL
-	case v1alpha1.APIKeyAuthenticationModeStrict:
+	case agentgateway.APIKeyAuthenticationModeStrict:
 		p.Mode = api.TrafficPolicySpec_APIKey_STRICT
 	}
 
@@ -660,7 +697,7 @@ func processAPIKeyAuthenticationPolicy(ctx PolicyCtx, ak *v1alpha1.AgentAPIKeyAu
 	return []AgwPolicy{{Policy: apiKeyPolicy}}, errors.Join(errs...)
 }
 
-func processTimeoutPolicy(timeout *v1alpha1.AgentTimeouts, basePolicyName string, target *api.PolicyTarget) []AgwPolicy {
+func processTimeoutPolicy(timeout *agentgateway.AgentTimeouts, basePolicyName string, target *api.PolicyTarget) []AgwPolicy {
 	timeoutPolicy := &api.Policy{
 		Name:   basePolicyName + timeoutPolicySuffix + attachmentName(target),
 		Target: target,
@@ -681,12 +718,12 @@ func processTimeoutPolicy(timeout *v1alpha1.AgentTimeouts, basePolicyName string
 	return []AgwPolicy{{Policy: timeoutPolicy}}
 }
 
-func processHostnameRewritePolicy(hnrw *v1alpha1.AgentHostnameRewriteConfig, basePolicyName string, target *api.PolicyTarget) []AgwPolicy {
+func processHostnameRewritePolicy(hnrw *agentgateway.AgentHostnameRewriteConfig, basePolicyName string, target *api.PolicyTarget) []AgwPolicy {
 	r := &api.TrafficPolicySpec_HostRewrite{}
 	switch hnrw.Mode {
-	case v1alpha1.AgentHostnameRewriteAuto:
+	case agentgateway.AgentHostnameRewriteAuto:
 		r.Mode = api.TrafficPolicySpec_HostRewrite_AUTO
-	case v1alpha1.AgentHostnameRewriteNone:
+	case agentgateway.AgentHostnameRewriteNone:
 		r.Mode = api.TrafficPolicySpec_HostRewrite_NONE
 	}
 
@@ -708,7 +745,7 @@ func processHostnameRewritePolicy(hnrw *v1alpha1.AgentHostnameRewriteConfig, bas
 	return []AgwPolicy{{Policy: p}}
 }
 
-func processHeaderModifierPolicy(headerModifier *v1alpha1.HeaderModifiers, basePolicyName string, target *api.PolicyTarget) []AgwPolicy {
+func processHeaderModifierPolicy(headerModifier *shared.HeaderModifiers, basePolicyName string, target *api.PolicyTarget) []AgwPolicy {
 	var policies []AgwPolicy
 
 	var headerModifierPolicyRequest, headerModifierPolicyResponse *api.Policy
@@ -757,7 +794,7 @@ func processHeaderModifierPolicy(headerModifier *v1alpha1.HeaderModifiers, baseP
 	return policies
 }
 
-func processCorsPolicy(cors *v1alpha1.AgentCorsPolicy, basePolicyName string, target *api.PolicyTarget) []AgwPolicy {
+func processCorsPolicy(cors *agentgateway.AgentCorsPolicy, basePolicyName string, target *api.PolicyTarget) []AgwPolicy {
 	corsPolicy := &api.Policy{
 		Name:   basePolicyName + corsPolicySuffix + attachmentName(target),
 		Target: target,
@@ -788,8 +825,8 @@ func processCorsPolicy(cors *v1alpha1.AgentCorsPolicy, basePolicyName string, ta
 // processExtAuthPolicy processes ExtAuth configuration and creates corresponding agentgateway policies
 func processExtAuthPolicy(
 	ctx PolicyCtx,
-	extAuth *v1alpha1.AgentExtAuthPolicy,
-	policyPhase *v1alpha1.PolicyPhase,
+	extAuth *agentgateway.AgentExtAuthPolicy,
+	policyPhase *agentgateway.PolicyPhase,
 	basePolicyName string,
 	policyNamespace string,
 	policyTarget *api.PolicyTarget,
@@ -837,8 +874,8 @@ func processExtAuthPolicy(
 // processExtProcPolicy processes ExtProc configuration and creates corresponding agentgateway policies
 func processExtProcPolicy(
 	ctx PolicyCtx,
-	extProc *v1alpha1.AgentExtProcPolicy,
-	policyPhase *v1alpha1.PolicyPhase,
+	extProc *agentgateway.AgentExtProcPolicy,
+	policyPhase *agentgateway.PolicyPhase,
 	basePolicyName string,
 	policyNamespace string,
 	policyTarget *api.PolicyTarget,
@@ -872,13 +909,13 @@ func processExtProcPolicy(
 	return []AgwPolicy{{Policy: extprocPolicy}}, nil
 }
 
-func phase(policyPhase *v1alpha1.PolicyPhase) api.TrafficPolicySpec_PolicyPhase {
+func phase(policyPhase *agentgateway.PolicyPhase) api.TrafficPolicySpec_PolicyPhase {
 	var phase api.TrafficPolicySpec_PolicyPhase
 	if policyPhase != nil {
 		switch *policyPhase {
-		case v1alpha1.PolicyPhasePreRouting:
+		case agentgateway.PolicyPhasePreRouting:
 			phase = api.TrafficPolicySpec_GATEWAY
-		case v1alpha1.PolicyPhasePostRouting:
+		case agentgateway.PolicyPhasePostRouting:
 			phase = api.TrafficPolicySpec_ROUTE
 		}
 	}
@@ -893,12 +930,12 @@ func cast[T ~string](items []T) []string {
 
 // processAuthorizationPolicy processes Authorization configuration and creates corresponding Agw policies
 func processAuthorizationPolicy(
-	auth *v1alpha1.Authorization,
+	auth *shared.Authorization,
 	basePolicyName string,
 	policyTarget *api.PolicyTarget,
 ) []AgwPolicy {
 	var allowPolicies, denyPolicies []string
-	if auth.Action == v1alpha1.AuthorizationPolicyActionDeny {
+	if auth.Action == shared.AuthorizationPolicyActionDeny {
 		denyPolicies = append(denyPolicies, cast(auth.Policy.MatchExpressions)...)
 	} else {
 		allowPolicies = append(allowPolicies, cast(auth.Policy.MatchExpressions)...)
@@ -940,7 +977,7 @@ func getTrafficPolicyName(trafficPolicyNs, trafficPolicyName string) string {
 }
 
 // processRateLimitPolicy processes RateLimit configuration and creates corresponding agentgateway policies
-func processRateLimitPolicy(ctx PolicyCtx, rl *v1alpha1.AgentRateLimit, basePolicyName string, policyNamespace string, policyTarget *api.PolicyTarget) ([]AgwPolicy, error) {
+func processRateLimitPolicy(ctx PolicyCtx, rl *agentgateway.AgentRateLimit, basePolicyName string, policyNamespace string, policyTarget *api.PolicyTarget) ([]AgwPolicy, error) {
 	var agwPolicies []AgwPolicy
 	var errs []error
 
@@ -966,7 +1003,7 @@ func processRateLimitPolicy(ctx PolicyCtx, rl *v1alpha1.AgentRateLimit, basePoli
 }
 
 // processLocalRateLimitPolicy processes local rate limiting configuration
-func processLocalRateLimitPolicy(limits []v1alpha1.AgentLocalRateLimitPolicy, basePolicyName string, policyTarget *api.PolicyTarget) *AgwPolicy {
+func processLocalRateLimitPolicy(limits []agentgateway.AgentLocalRateLimitPolicy, basePolicyName string, policyTarget *api.PolicyTarget) *AgwPolicy {
 	// TODO: support multiple
 	limit := limits[0]
 
@@ -984,11 +1021,11 @@ func processLocalRateLimitPolicy(limits []v1alpha1.AgentLocalRateLimitPolicy, ba
 	rule.MaxTokens = capacity + uint64(ptr.OrEmpty(limit.Burst)) //nolint:gosec // G115: Burst is non-negative, safe for uint64
 	rule.TokensPerFill = capacity
 	switch limit.Unit {
-	case v1alpha1.LocalRateLimitUnitSeconds:
+	case agentgateway.LocalRateLimitUnitSeconds:
 		rule.FillInterval = durationpb.New(time.Second)
-	case v1alpha1.LocalRateLimitUnitMinutes:
+	case agentgateway.LocalRateLimitUnitMinutes:
 		rule.FillInterval = durationpb.New(time.Minute)
-	case v1alpha1.LocalRateLimitUnitHours:
+	case agentgateway.LocalRateLimitUnitHours:
 		rule.FillInterval = durationpb.New(time.Hour)
 	}
 
@@ -1009,7 +1046,7 @@ func processLocalRateLimitPolicy(limits []v1alpha1.AgentLocalRateLimitPolicy, ba
 
 func processGlobalRateLimitPolicy(
 	ctx PolicyCtx,
-	grl v1alpha1.AgentRateLimitPolicy,
+	grl agentgateway.AgentRateLimitPolicy,
 	basePolicyName string,
 	policyNamespace string,
 	policyTarget *api.PolicyTarget,
@@ -1046,7 +1083,7 @@ func processGlobalRateLimitPolicy(
 	return &AgwPolicy{Policy: p}, nil
 }
 
-func processRateLimitDescriptor(descriptor v1alpha1.AgentRateLimitDescriptor) *api.TrafficPolicySpec_RemoteRateLimit_Descriptor {
+func processRateLimitDescriptor(descriptor agentgateway.AgentRateLimitDescriptor) *api.TrafficPolicySpec_RemoteRateLimit_Descriptor {
 	entries := make([]*api.TrafficPolicySpec_RemoteRateLimit_Entry, 0, len(descriptor.Entries))
 
 	for _, entry := range descriptor.Entries {
@@ -1057,7 +1094,7 @@ func processRateLimitDescriptor(descriptor v1alpha1.AgentRateLimitDescriptor) *a
 	}
 
 	rlType := api.TrafficPolicySpec_RemoteRateLimit_REQUESTS
-	if descriptor.Unit != nil && *descriptor.Unit == v1alpha1.RateLimitUnitTokens {
+	if descriptor.Unit != nil && *descriptor.Unit == agentgateway.RateLimitUnitTokens {
 		rlType = api.TrafficPolicySpec_RemoteRateLimit_TOKENS
 	}
 
@@ -1152,7 +1189,7 @@ func toJSONValue(j apiextensionsv1.JSON) (string, error) {
 	return string(marshaled), nil
 }
 
-func processCSRFPolicy(csrf *v1alpha1.AgentCSRFPolicy, basePolicyName string, policyTarget *api.PolicyTarget) []AgwPolicy {
+func processCSRFPolicy(csrf *agentgateway.AgentCSRFPolicy, basePolicyName string, policyTarget *api.PolicyTarget) []AgwPolicy {
 	csrfPolicy := &api.Policy{
 		Name:   basePolicyName + csrfPolicySuffix + attachmentName(policyTarget),
 		Target: policyTarget,
@@ -1172,8 +1209,8 @@ func processCSRFPolicy(csrf *v1alpha1.AgentCSRFPolicy, basePolicyName string, po
 
 // processTransformationPolicy processes transformation configuration and creates corresponding Agw policies
 func processTransformationPolicy(
-	transformation *v1alpha1.AgentTransformationPolicy,
-	policyPhase *v1alpha1.PolicyPhase,
+	transformation *agentgateway.AgentTransformationPolicy,
+	policyPhase *agentgateway.PolicyPhase,
 	basePolicyName string,
 	policyTarget *api.PolicyTarget,
 ) ([]AgwPolicy, error) {
@@ -1214,7 +1251,7 @@ func processTransformationPolicy(
 }
 
 // convertTransformSpec converts transformation specs to agentgateway format
-func convertTransformSpec(spec *v1alpha1.AgentTransform) (*api.TrafficPolicySpec_TransformationPolicy_Transform, error) {
+func convertTransformSpec(spec *agentgateway.AgentTransform) (*api.TrafficPolicySpec_TransformationPolicy_Transform, error) {
 	if spec == nil {
 		return nil, nil
 	}
@@ -1277,7 +1314,7 @@ func convertTransformSpec(spec *v1alpha1.AgentTransform) (*api.TrafficPolicySpec
 }
 
 // Checks if the expression is a valid CEL expression
-func isCEL(expr v1alpha1.CELExpression) bool {
+func isCEL(expr shared.CELExpression) bool {
 	_, iss := celEnv.Parse(string(expr))
 	return iss.Err() == nil
 }

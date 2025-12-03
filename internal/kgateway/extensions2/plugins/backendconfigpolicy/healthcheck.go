@@ -5,10 +5,10 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 )
 
-func translateHealthCheck(hc *v1alpha1.HealthCheck) *envoycorev3.HealthCheck {
+func translateHealthCheck(hc *kgateway.HealthCheck) *envoycorev3.HealthCheck {
 	if hc == nil {
 		return nil
 	}

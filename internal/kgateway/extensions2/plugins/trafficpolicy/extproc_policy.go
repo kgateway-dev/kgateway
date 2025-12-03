@@ -9,7 +9,7 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
@@ -90,7 +90,7 @@ func (e *extprocIR) Validate() error {
 // constructExtProc constructs the external processing policy IR from the policy specification.
 func constructExtProc(
 	krtctx krt.HandlerContext,
-	in *v1alpha1.TrafficPolicy,
+	in *kgateway.TrafficPolicy,
 	fetchGatewayExtension FetchGatewayExtensionFunc,
 	out *trafficPolicySpecIr,
 ) error {
@@ -112,7 +112,7 @@ func constructExtProc(
 		return fmt.Errorf("extproc: %w", err)
 	}
 	if gatewayExtension.ExtProc == nil {
-		return pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtProc)
+		return pluginutils.ErrInvalidExtensionType(kgateway.GatewayExtensionTypeExtProc)
 	}
 	out.extProc = &extprocIR{
 		perProviderConfig: []*perProviderExtProcConfig{
@@ -127,7 +127,7 @@ func constructExtProc(
 }
 
 func translateExtProcPerFilterConfig(
-	extProc *v1alpha1.ExtProcPolicy,
+	extProc *kgateway.ExtProcPolicy,
 ) *envoy_ext_proc_v3.ExtProcPerRoute {
 	overrides := &envoy_ext_proc_v3.ExtProcOverrides{}
 	if extProc.ProcessingMode != nil {
@@ -170,7 +170,7 @@ func bodySendModeFromString(mode string) envoy_ext_proc_v3.ProcessingMode_BodySe
 }
 
 // toEnvoyProcessingMode converts our ProcessingMode to envoy's ProcessingMode
-func toEnvoyProcessingMode(p *v1alpha1.ProcessingMode) *envoy_ext_proc_v3.ProcessingMode {
+func toEnvoyProcessingMode(p *kgateway.ProcessingMode) *envoy_ext_proc_v3.ProcessingMode {
 	if p == nil {
 		return nil
 	}
@@ -199,7 +199,7 @@ func (p *trafficPolicyPluginGwPass) handleExtProc(filterChain string, pCtxTypedF
 
 	// Add the global disable all filter if all providers are disabled
 	if in.disableAllProviders {
-		pCtxTypedFilterConfig.AddTypedConfig(extProcGlobalDisableFilterName, EnableFilterPerRoute)
+		pCtxTypedFilterConfig.AddTypedConfig(extProcGlobalDisableFilterName, EnableFilterPerRoute())
 		return
 	}
 

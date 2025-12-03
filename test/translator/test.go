@@ -33,7 +33,7 @@ import (
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator"
@@ -223,7 +223,7 @@ type ExtraConfig struct {
 
 func NewScheme(extraSchemes runtime.SchemeBuilder) *runtime.Scheme {
 	scheme := schemes.GatewayScheme()
-	extraSchemes = append(extraSchemes, v1alpha1.Install)
+	extraSchemes = append(extraSchemes, kgateway.Install)
 	if err := extraSchemes.AddToScheme(scheme); err != nil {
 		log.Fatalf("failed to add extra schemes to scheme: %v", err)
 	}

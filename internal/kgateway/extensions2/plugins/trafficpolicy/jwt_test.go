@@ -14,7 +14,7 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -81,7 +81,7 @@ func TestBuildJwtRequirementFromProviders(t *testing.T) {
 		name            string
 		routeName       string
 		providers       map[string]*jwtauthnv3.JwtProvider
-		validationMode  *v1alpha1.ValidationMode
+		validationMode  *kgateway.ValidationMode
 		expectedType    string
 		expectedCount   int
 		hasAllowMissing bool
@@ -115,7 +115,7 @@ func TestBuildJwtRequirementFromProviders(t *testing.T) {
 			providers: map[string]*jwtauthnv3.JwtProvider{
 				"provider1": {Issuer: "test-issuer"},
 			},
-			validationMode:  ptr.To(v1alpha1.ValidationModeAllowMissing),
+			validationMode:  ptr.To(kgateway.ValidationModeAllowMissing),
 			expectedType:    "requires_any",
 			expectedCount:   2, // provider requirement + allow missing
 			hasAllowMissing: true,
@@ -127,7 +127,7 @@ func TestBuildJwtRequirementFromProviders(t *testing.T) {
 				"provider1": {Issuer: "test-issuer-1"},
 				"provider2": {Issuer: "test-issuer-2"},
 			},
-			validationMode:  ptr.To(v1alpha1.ValidationModeAllowMissing),
+			validationMode:  ptr.To(kgateway.ValidationModeAllowMissing),
 			expectedType:    "requires_any",
 			expectedCount:   2, // requires_any with providers + allow missing
 			hasAllowMissing: true,
@@ -209,23 +209,23 @@ func TestTranslateJwksConfigMap(t *testing.T) {
 func TestConvertJwtValidationConfig(t *testing.T) {
 	tests := []struct {
 		name           string
-		providers      []v1alpha1.NamedJWTProvider
+		providers      []kgateway.NamedJWTProvider
 		expectedError  bool
 		expectedConfig *jwtauthnv3.JwtAuthentication
 	}{
 		{
 			name: "basic provider with inline JWKS",
-			providers: []v1alpha1.NamedJWTProvider{
+			providers: []kgateway.NamedJWTProvider{
 				{
 					Name: "test-provider",
-					JWTProvider: v1alpha1.JWTProvider{
+					JWTProvider: kgateway.JWTProvider{
 						Issuer: "test-issuer",
-						JWKS: v1alpha1.JWKS{
-							LocalJWKS: &v1alpha1.LocalJWKS{
+						JWKS: kgateway.JWKS{
+							LocalJWKS: &kgateway.LocalJWKS{
 								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
 							},
 						},
-						ClaimsToHeaders: []v1alpha1.JWTClaimToHeader{
+						ClaimsToHeaders: []kgateway.JWTClaimToHeader{
 							{
 								Name:   "sub",
 								Header: "X-Subject",
@@ -256,13 +256,13 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 		},
 		{
 			name: "missing inline key for inline JWKS",
-			providers: []v1alpha1.NamedJWTProvider{
+			providers: []kgateway.NamedJWTProvider{
 				{
 					Name: "test-provider",
-					JWTProvider: v1alpha1.JWTProvider{
+					JWTProvider: kgateway.JWTProvider{
 						Issuer: "test-issuer",
-						JWKS: v1alpha1.JWKS{
-							LocalJWKS: &v1alpha1.LocalJWKS{
+						JWKS: kgateway.JWKS{
+							LocalJWKS: &kgateway.LocalJWKS{
 								Inline: ptr.To("abc"),
 							},
 						},
@@ -274,13 +274,13 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 		},
 		{
 			name: "multiple providers",
-			providers: []v1alpha1.NamedJWTProvider{
+			providers: []kgateway.NamedJWTProvider{
 				{
 					Name: "provider1",
-					JWTProvider: v1alpha1.JWTProvider{
+					JWTProvider: kgateway.JWTProvider{
 						Issuer: "test-issuer-1",
-						JWKS: v1alpha1.JWKS{
-							LocalJWKS: &v1alpha1.LocalJWKS{
+						JWKS: kgateway.JWKS{
+							LocalJWKS: &kgateway.LocalJWKS{
 								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key-1","use":"sig","alg":"RS256","n":"test-n-1","e":"AQAB"}]}`),
 							},
 						},
@@ -288,10 +288,10 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 				},
 				{
 					Name: "provider2",
-					JWTProvider: v1alpha1.JWTProvider{
+					JWTProvider: kgateway.JWTProvider{
 						Issuer: "test-issuer-2",
-						JWKS: v1alpha1.JWKS{
-							LocalJWKS: &v1alpha1.LocalJWKS{
+						JWKS: kgateway.JWKS{
+							LocalJWKS: &kgateway.LocalJWKS{
 								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key-2","use":"sig","alg":"RS256","n":"test-n-2","e":"AQAB"}]}`),
 							},
 						},
@@ -316,14 +316,14 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 		},
 		{
 			name: "provider with audiences",
-			providers: []v1alpha1.NamedJWTProvider{
+			providers: []kgateway.NamedJWTProvider{
 				{
 					Name: "test-provider",
-					JWTProvider: v1alpha1.JWTProvider{
+					JWTProvider: kgateway.JWTProvider{
 						Issuer:    "test-issuer",
 						Audiences: []string{"aud1", "aud2"},
-						JWKS: v1alpha1.JWKS{
-							LocalJWKS: &v1alpha1.LocalJWKS{
+						JWKS: kgateway.JWKS{
+							LocalJWKS: &kgateway.LocalJWKS{
 								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
 							},
 						},
@@ -343,18 +343,18 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 		},
 		{
 			name: "provider with token source",
-			providers: []v1alpha1.NamedJWTProvider{
+			providers: []kgateway.NamedJWTProvider{
 				{
 					Name: "test-provider",
-					JWTProvider: v1alpha1.JWTProvider{
+					JWTProvider: kgateway.JWTProvider{
 						Issuer: "test-issuer",
-						TokenSource: &v1alpha1.JWTTokenSource{
-							HeaderSource: &v1alpha1.HeaderSource{
+						TokenSource: &kgateway.JWTTokenSource{
+							HeaderSource: &kgateway.HeaderSource{
 								Header: "Authorization",
 							},
 						},
-						JWKS: v1alpha1.JWKS{
-							LocalJWKS: &v1alpha1.LocalJWKS{
+						JWKS: kgateway.JWKS{
+							LocalJWKS: &kgateway.LocalJWKS{
 								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
 							},
 						},
@@ -374,16 +374,16 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 		},
 		{
 			name: "provider with query params",
-			providers: []v1alpha1.NamedJWTProvider{
+			providers: []kgateway.NamedJWTProvider{
 				{
 					Name: "test-provider",
-					JWTProvider: v1alpha1.JWTProvider{
+					JWTProvider: kgateway.JWTProvider{
 						Issuer: "test-issuer",
-						TokenSource: &v1alpha1.JWTTokenSource{
+						TokenSource: &kgateway.JWTTokenSource{
 							QueryParameter: ptr.To("jwt"),
 						},
-						JWKS: v1alpha1.JWKS{
-							LocalJWKS: &v1alpha1.LocalJWKS{
+						JWKS: kgateway.JWKS{
+							LocalJWKS: &kgateway.LocalJWKS{
 								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
 							},
 						},
@@ -404,13 +404,13 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 		},
 		{
 			name: "provider with remove token",
-			providers: []v1alpha1.NamedJWTProvider{
+			providers: []kgateway.NamedJWTProvider{
 				{
 					Name: "test-provider",
-					JWTProvider: v1alpha1.JWTProvider{
+					JWTProvider: kgateway.JWTProvider{
 						Issuer: "test-issuer",
-						JWKS: v1alpha1.JWKS{
-							LocalJWKS: &v1alpha1.LocalJWKS{
+						JWKS: kgateway.JWKS{
+							LocalJWKS: &kgateway.LocalJWKS{
 								Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
 							},
 						},
@@ -434,7 +434,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			jwt := &v1alpha1.JWT{
+			jwt := &kgateway.JWT{
 				Providers: tt.providers,
 			}
 			config, err := resolveJwtProviders(nil, nil, nil, ir.ObjectSource{}, "test-policy", "test-ns", jwt)
@@ -489,20 +489,20 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 func TestResolveJwtProvidersWithValidationMode(t *testing.T) {
 	tests := []struct {
 		name                    string
-		jwt                     *v1alpha1.JWT
+		jwt                     *kgateway.JWT
 		expectedHasAllowMissing bool
 	}{
 		{
 			name: "strict mode (nil validation mode)",
-			jwt: &v1alpha1.JWT{
+			jwt: &kgateway.JWT{
 				ValidationMode: nil,
-				Providers: []v1alpha1.NamedJWTProvider{
+				Providers: []kgateway.NamedJWTProvider{
 					{
 						Name: "test-provider",
-						JWTProvider: v1alpha1.JWTProvider{
+						JWTProvider: kgateway.JWTProvider{
 							Issuer: "test-issuer",
-							JWKS: v1alpha1.JWKS{
-								LocalJWKS: &v1alpha1.LocalJWKS{
+							JWKS: kgateway.JWKS{
+								LocalJWKS: &kgateway.LocalJWKS{
 									Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
 								},
 							},
@@ -514,15 +514,15 @@ func TestResolveJwtProvidersWithValidationMode(t *testing.T) {
 		},
 		{
 			name: "allow missing mode",
-			jwt: &v1alpha1.JWT{
-				ValidationMode: ptr.To(v1alpha1.ValidationModeAllowMissing),
-				Providers: []v1alpha1.NamedJWTProvider{
+			jwt: &kgateway.JWT{
+				ValidationMode: ptr.To(kgateway.ValidationModeAllowMissing),
+				Providers: []kgateway.NamedJWTProvider{
 					{
 						Name: "test-provider",
-						JWTProvider: v1alpha1.JWTProvider{
+						JWTProvider: kgateway.JWTProvider{
 							Issuer: "test-issuer",
-							JWKS: v1alpha1.JWKS{
-								LocalJWKS: &v1alpha1.LocalJWKS{
+							JWKS: kgateway.JWKS{
+								LocalJWKS: &kgateway.LocalJWKS{
 									Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
 								},
 							},
@@ -534,15 +534,15 @@ func TestResolveJwtProvidersWithValidationMode(t *testing.T) {
 		},
 		{
 			name: "allow missing mode with multiple providers",
-			jwt: &v1alpha1.JWT{
-				ValidationMode: ptr.To(v1alpha1.ValidationModeAllowMissing),
-				Providers: []v1alpha1.NamedJWTProvider{
+			jwt: &kgateway.JWT{
+				ValidationMode: ptr.To(kgateway.ValidationModeAllowMissing),
+				Providers: []kgateway.NamedJWTProvider{
 					{
 						Name: "provider1",
-						JWTProvider: v1alpha1.JWTProvider{
+						JWTProvider: kgateway.JWTProvider{
 							Issuer: "test-issuer-1",
-							JWKS: v1alpha1.JWKS{
-								LocalJWKS: &v1alpha1.LocalJWKS{
+							JWKS: kgateway.JWKS{
+								LocalJWKS: &kgateway.LocalJWKS{
 									Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key-1","use":"sig","alg":"RS256","n":"test-n-1","e":"AQAB"}]}`),
 								},
 							},
@@ -550,10 +550,10 @@ func TestResolveJwtProvidersWithValidationMode(t *testing.T) {
 					},
 					{
 						Name: "provider2",
-						JWTProvider: v1alpha1.JWTProvider{
+						JWTProvider: kgateway.JWTProvider{
 							Issuer: "test-issuer-2",
-							JWKS: v1alpha1.JWKS{
-								LocalJWKS: &v1alpha1.LocalJWKS{
+							JWKS: kgateway.JWKS{
+								LocalJWKS: &kgateway.LocalJWKS{
 									Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key-2","use":"sig","alg":"RS256","n":"test-n-2","e":"AQAB"}]}`),
 								},
 							},
@@ -640,8 +640,8 @@ func TestTranslateJwksRemote(t *testing.T) {
 
 		err := translateJwks(
 			nil,
-			v1alpha1.JWKS{
-				RemoteJWKS: &v1alpha1.RemoteJWKS{
+			kgateway.JWKS{
+				RemoteJWKS: &kgateway.RemoteJWKS{
 					URL:           "https://example.com/jwks",
 					BackendRef:    makeBackendRef("backend", "backend-ns", 8443),
 					CacheDuration: &cacheDuration,
@@ -670,8 +670,8 @@ func TestTranslateJwksRemote(t *testing.T) {
 
 		err := translateJwks(
 			nil,
-			v1alpha1.JWKS{
-				RemoteJWKS: &v1alpha1.RemoteJWKS{
+			kgateway.JWKS{
+				RemoteJWKS: &kgateway.RemoteJWKS{
 					URL:        "https://example.com/jwks",
 					BackendRef: makeBackendRef("backend", "backend-ns", 80),
 				},

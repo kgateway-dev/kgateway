@@ -7,7 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
@@ -37,9 +37,9 @@ func reportPolicyAcceptanceStatus(
 
 		if len(policy.Errors) > 0 {
 			r.SetCondition(reporter.PolicyCondition{
-				Type:               string(v1alpha1.PolicyConditionAccepted),
+				Type:               string(shared.PolicyConditionAccepted),
 				Status:             metav1.ConditionFalse,
-				Reason:             string(v1alpha1.PolicyReasonInvalid),
+				Reason:             string(shared.PolicyReasonInvalid),
 				Message:            policy.FormatErrors(),
 				ObservedGeneration: policy.Generation,
 			})
@@ -47,9 +47,9 @@ func reportPolicyAcceptanceStatus(
 		}
 
 		r.SetCondition(reporter.PolicyCondition{
-			Type:               string(v1alpha1.PolicyConditionAccepted),
+			Type:               string(shared.PolicyConditionAccepted),
 			Status:             metav1.ConditionTrue,
-			Reason:             string(v1alpha1.PolicyReasonValid),
+			Reason:             string(shared.PolicyReasonValid),
 			Message:            reporter.PolicyAcceptedMsg,
 			ObservedGeneration: policy.Generation,
 		})

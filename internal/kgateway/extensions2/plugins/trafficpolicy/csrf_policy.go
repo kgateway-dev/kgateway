@@ -7,7 +7,8 @@ import (
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -71,7 +72,7 @@ func (p *trafficPolicyPluginGwPass) handleCsrf(fcn string, typedFilterConfig *ir
 }
 
 // constructCSRF constructs the CSRF policy IR from the policy specification.
-func constructCSRF(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) {
+func constructCSRF(spec kgateway.TrafficPolicySpec, out *trafficPolicySpecIr) {
 	if spec.Csrf == nil {
 		return
 	}
@@ -120,7 +121,7 @@ func constructCSRF(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) {
 	}
 }
 
-func toEnvoyStringMatcher(origin v1alpha1.StringMatcher) *envoy_matcher_v3.StringMatcher {
+func toEnvoyStringMatcher(origin shared.StringMatcher) *envoy_matcher_v3.StringMatcher {
 	matcher := &envoy_matcher_v3.StringMatcher{}
 	if origin.IgnoreCase != nil {
 		matcher.IgnoreCase = *origin.IgnoreCase

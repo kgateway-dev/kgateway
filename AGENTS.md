@@ -14,7 +14,8 @@ See `/devel/architecture/overview.md` and the translation diagram at `/devel/arc
 
 ### Key Components
 - **cmd/**: 3 binaries: `kgateway` (controller), `envoyinit` (does some envoy bootstrap config manipulation), `sds` (secret server)
-- **api/v1alpha1/**: CRD definitions. Use `+kubebuilder` markers for validation/generation
+- **api/v1alpha1/kgateway/**: kgateway CRD definitions. Use `+kubebuilder` markers for validation/generation
+- **api/v1alpha1/agentgateway/**: agentgateway CRD definitions. Use `+kubebuilder` markers for validation/generation
 - **pkg/pluginsdk/**: Plugin interfaces (`Plugin`, `PolicyPlugin`, `BackendPlugin`)
 - **internal/kgateway/extensions2/plugins/**: Plugin implementations (trafficpolicy, httplistenerpolicy, etc.)
 - **internal/kgateway/krtcollections/**: KRT collections for core resources
@@ -206,3 +207,7 @@ Gateway API version is in `go.mod` and CRD install URL in Makefile (`CONFORMANCE
 2. When PR is ready to review/merge, follow this PR template: https://raw.githubusercontent.com/kgateway-dev/.github/refs/heads/main/.github/PULL_REQUEST_TEMPLATE.md
    Specifically must haves are the `Description`, `# Change Type` and `# Changelog` sections.
 3. Ensure tests pass in CI (unit + e2e + conformance)
+
+## Style
+
+All code and comments should use American English spelling (i.e. "color" not "colour", "honor" not "honour").

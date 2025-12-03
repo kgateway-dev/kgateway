@@ -22,7 +22,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayx "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/krtxds"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/nack"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/status"
@@ -216,7 +216,7 @@ func (s *Syncer) buildAgwResources(
 	krt.Collection[agwir.AgwResource],
 	krt.Collection[*translator.RouteAttachment],
 	PolicyStatusCollections,
-	krt.StatusCollection[*v1alpha1.AgentgatewayBackend, v1alpha1.AgentgatewayBackendStatus],
+	krt.StatusCollection[*agentgateway.AgentgatewayBackend, agentgateway.AgentgatewayBackendStatus],
 ) {
 	// filter gateway collections to only include gateways which use a built-in gateway class
 	// (resources for additional gateway classes should be created by the downstream providing them)
@@ -267,15 +267,14 @@ func (s *Syncer) buildAgwResources(
 	routeParents := translator.BuildRouteParents(filteredGateways)
 
 	routeInputs := translator.RouteContextInputs{
-		Grants:          refGrants,
-		RouteParents:    routeParents,
-		ControllerName:  s.controllerName,
-		Services:        s.agwCollections.Services,
-		Namespaces:      s.agwCollections.Namespaces,
-		ServiceEntries:  s.agwCollections.ServiceEntries,
-		InferencePools:  s.agwCollections.InferencePools,
-		Backends:        s.agwCollections.Backends,
-		DirectResponses: s.agwCollections.DirectResponses,
+		Grants:         refGrants,
+		RouteParents:   routeParents,
+		ControllerName: s.controllerName,
+		Services:       s.agwCollections.Services,
+		Namespaces:     s.agwCollections.Namespaces,
+		ServiceEntries: s.agwCollections.ServiceEntries,
+		InferencePools: s.agwCollections.InferencePools,
+		Backends:       s.agwCollections.Backends,
 	}
 
 	agwRoutes, routeAttachments := translator.AgwRouteCollection(s.statusCollections, s.agwCollections.HTTPRoutes, s.agwCollections.GRPCRoutes, s.agwCollections.TCPRoutes, s.agwCollections.TLSRoutes, routeInputs, krtopts)
@@ -320,9 +319,9 @@ func (s *Syncer) buildListenerFromGateway(obj *translator.GatewayListener) *agwi
 }
 
 // buildBackendFromBackendIR creates a backend resource from Backend
-func (s *Syncer) buildBackendFromBackend(ctx krt.HandlerContext, backend *v1alpha1.AgentgatewayBackend) ([]agwir.AgwResource, *v1alpha1.AgentgatewayBackendStatus) {
+func (s *Syncer) buildBackendFromBackend(ctx krt.HandlerContext, backend *agentgateway.AgentgatewayBackend) ([]agwir.AgwResource, *agentgateway.AgentgatewayBackendStatus) {
 	var results []agwir.AgwResource
-	var backendStatus *v1alpha1.AgentgatewayBackendStatus
+	var backendStatus *agentgateway.AgentgatewayBackendStatus
 	pc := plugins.PolicyCtx{
 		Krt:         ctx,
 		Collections: s.agwCollections,
@@ -330,7 +329,7 @@ func (s *Syncer) buildBackendFromBackend(ctx krt.HandlerContext, backend *v1alph
 	backends, err := s.translator.BackendTranslator().TranslateBackend(pc, backend)
 	if err != nil {
 		logger.Error("failed to translate backend", "backend", backend.Name, "namespace", backend.Namespace, "error", err)
-		backendStatus = &v1alpha1.AgentgatewayBackendStatus{
+		backendStatus = &agentgateway.AgentgatewayBackendStatus{
 			Conditions: kstatus.UpdateConditionIfChanged(backend.Status.Conditions, metav1.Condition{
 				Type:               "Accepted",
 				Status:             metav1.ConditionFalse,
@@ -352,7 +351,7 @@ func (s *Syncer) buildBackendFromBackend(ctx krt.HandlerContext, backend *v1alph
 		})
 		results = append(results, resourceWrapper)
 	}
-	backendStatus = &v1alpha1.AgentgatewayBackendStatus{
+	backendStatus = &agentgateway.AgentgatewayBackendStatus{
 		Conditions: kstatus.UpdateConditionIfChanged(backend.Status.Conditions, metav1.Condition{
 			Type:               "Accepted",
 			Status:             metav1.ConditionTrue,
@@ -366,12 +365,12 @@ func (s *Syncer) buildBackendFromBackend(ctx krt.HandlerContext, backend *v1alph
 }
 
 // newADPBackendCollection creates the ADP backend collection for agent gateway resources
-func (s *Syncer) newAgwBackendCollection(finalBackends krt.Collection[*v1alpha1.AgentgatewayBackend], krtopts krtutil.KrtOptions) (
-	krt.StatusCollection[*v1alpha1.AgentgatewayBackend, v1alpha1.AgentgatewayBackendStatus],
+func (s *Syncer) newAgwBackendCollection(finalBackends krt.Collection[*agentgateway.AgentgatewayBackend], krtopts krtutil.KrtOptions) (
+	krt.StatusCollection[*agentgateway.AgentgatewayBackend, agentgateway.AgentgatewayBackendStatus],
 	krt.Collection[agwir.AgwResource],
 ) {
-	return krt.NewStatusManyCollection(finalBackends, func(krtctx krt.HandlerContext, backend *v1alpha1.AgentgatewayBackend) (
-		*v1alpha1.AgentgatewayBackendStatus,
+	return krt.NewStatusManyCollection(finalBackends, func(krtctx krt.HandlerContext, backend *agentgateway.AgentgatewayBackend) (
+		*agentgateway.AgentgatewayBackendStatus,
 		[]agwir.AgwResource,
 	) {
 		resources, status := s.buildBackendFromBackend(krtctx, backend)

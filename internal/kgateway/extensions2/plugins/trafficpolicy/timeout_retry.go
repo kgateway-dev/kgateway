@@ -5,7 +5,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 )
 
@@ -58,7 +58,7 @@ func (a *timeoutsIR) Validate() error {
 }
 
 func constructTimeoutRetry(
-	spec v1alpha1.TrafficPolicySpec,
+	spec kgateway.TrafficPolicySpec,
 	out *trafficPolicySpecIr,
 ) {
 	if spec.Timeouts != nil {

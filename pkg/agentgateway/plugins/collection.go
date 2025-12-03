@@ -15,7 +15,8 @@ import (
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	kgwversioned "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
@@ -58,10 +59,10 @@ type AgwCollections struct {
 	InferencePools krt.Collection[*inf.InferencePool]
 
 	// kgateway resources
-	Backends             krt.Collection[*v1alpha1.AgentgatewayBackend]
-	AgentgatewayPolicies krt.Collection[*v1alpha1.AgentgatewayPolicy]
-	DirectResponses      krt.Collection[*v1alpha1.DirectResponse]
-	GatewayExtensions    krt.Collection[*v1alpha1.GatewayExtension]
+	Backends             krt.Collection[*agentgateway.AgentgatewayBackend]
+	AgentgatewayPolicies krt.Collection[*agentgateway.AgentgatewayPolicy]
+	DirectResponses      krt.Collection[*kgateway.DirectResponse]
+	GatewayExtensions    krt.Collection[*kgateway.GatewayExtension]
 
 	// ControllerName is the name of the Gateway controller.
 	ControllerName string
@@ -168,10 +169,10 @@ func NewAgwCollections(
 		InferencePools: krt.NewStaticCollection[*inf.InferencePool](nil, nil, commoncol.KrtOpts.ToOptions("disable/inferencepools")...),
 
 		// kgateway resources
-		DirectResponses:      krt.NewInformer[*v1alpha1.DirectResponse](commoncol.Client),
-		AgentgatewayPolicies: krt.NewInformer[*v1alpha1.AgentgatewayPolicy](commoncol.Client),
-		GatewayExtensions:    krt.NewInformer[*v1alpha1.GatewayExtension](commoncol.Client),
-		Backends:             krt.NewInformer[*v1alpha1.AgentgatewayBackend](commoncol.Client),
+		DirectResponses:      krt.NewInformer[*kgateway.DirectResponse](commoncol.Client),
+		AgentgatewayPolicies: krt.NewInformer[*agentgateway.AgentgatewayPolicy](commoncol.Client),
+		GatewayExtensions:    krt.NewInformer[*kgateway.GatewayExtension](commoncol.Client),
+		Backends:             krt.NewInformer[*agentgateway.AgentgatewayBackend](commoncol.Client),
 	}
 
 	if commoncol.Settings.EnableInferExt {

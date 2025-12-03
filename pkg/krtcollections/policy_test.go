@@ -22,7 +22,7 @@ import (
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -599,19 +599,19 @@ func refGrantWithBackend() *gwv1b1.ReferenceGrant {
 }
 
 // Helper that creates a Backend resource
-func backend(ns string) *v1alpha1.Backend {
+func backend(ns string) *kgateway.Backend {
 	if ns == "" {
 		ns = "default"
 	}
-	return &v1alpha1.Backend{
+	return &kgateway.Backend{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-backend",
 			Namespace: ns,
 		},
-		Spec: v1alpha1.BackendSpec{
-			Type: v1alpha1.BackendTypeStatic,
-			Static: &v1alpha1.StaticBackend{
-				Hosts: []v1alpha1.Host{
+		Spec: kgateway.BackendSpec{
+			Type: kgateway.BackendTypeStatic,
+			Static: &kgateway.StaticBackend{
+				Hosts: []kgateway.Host{
 					{
 						Host: "1.2.3.4",
 						Port: gwv1.PortNumber(8080),
@@ -690,8 +690,8 @@ func infPoolUpstreams(poolCol krt.Collection[*inf.InferencePool]) krt.Collection
 	})
 }
 
-func backendUpstreams(backendCol krt.Collection[*v1alpha1.Backend]) krt.Collection[ir.BackendObjectIR] {
-	return krt.NewCollection(backendCol, func(kctx krt.HandlerContext, backend *v1alpha1.Backend) *ir.BackendObjectIR {
+func backendUpstreams(backendCol krt.Collection[*kgateway.Backend]) krt.Collection[ir.BackendObjectIR] {
+	return krt.NewCollection(backendCol, func(kctx krt.HandlerContext, backend *kgateway.Backend) *ir.BackendObjectIR {
 		// Create a BackendObjectIR IR representation from the given Backend.
 		// For static backends, use the port from the first host
 		var port int32 = 8080 // default port
@@ -855,7 +855,7 @@ func preRouteIndex(t test.Failer, inputs []any) *RoutesIndex {
 	upstreams.AddBackends(svcGk, k8sSvcUpstreams(services))
 	pools := krttest.GetMockCollection[*inf.InferencePool](mock)
 	upstreams.AddBackends(infPoolGk, infPoolUpstreams(pools))
-	backends := krttest.GetMockCollection[*v1alpha1.Backend](mock)
+	backends := krttest.GetMockCollection[*kgateway.Backend](mock)
 	upstreams.AddBackends(backendGk, backendUpstreams(backends))
 
 	httproutes := krttest.GetMockCollection[*gwv1.HTTPRoute](mock)
@@ -1009,7 +1009,7 @@ func BenchmarkPolicyAttachment(b *testing.B) {
 						Namespace: "default",
 						Name:      "policy-" + fmt.Sprint(i),
 					},
-					Policy:   &v1alpha1.TrafficPolicy{},
+					Policy:   &kgateway.TrafficPolicy{},
 					PolicyIR: fakePolicyIR{},
 				}
 				if tc.byLabel {

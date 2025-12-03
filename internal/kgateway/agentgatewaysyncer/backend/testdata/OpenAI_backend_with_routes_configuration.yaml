@@ -5,5 +5,10 @@ ai:
       openai:
         model: gpt-4o-mini
 inlinePolicies:
-- ai: {}
+- ai:
+    routes:
+      '*': PASSTHROUGH
+      /v1/chat/completions: COMPLETIONS
+      /v1/messages: MESSAGES
+      /v1/models: MODELS
 name: test-ns/openai-with-routes

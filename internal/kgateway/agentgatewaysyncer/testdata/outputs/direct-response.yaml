@@ -7,13 +7,3 @@ Listeners:
   key: default/example-gateway.http
   name: http
   protocol: HTTP
-Routes:
-- hostnames:
-  - example.com
-  key: default/example.0.0.http
-  listenerKey: default/example-gateway.http
-  routeName: default/example
-  trafficPolicies:
-  - directResponse:
-      body: VXNlci1hZ2VudDogKgpEaXNhbGxvdzogL2RpcmVjdC1yZXNwb25zZQo=
-      status: 510

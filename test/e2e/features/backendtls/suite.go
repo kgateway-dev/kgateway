@@ -18,7 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/backendtlspolicy"
 	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
@@ -153,16 +153,16 @@ func (s *tsuite) TestBackendTLSPolicyAndStatus() {
 		return
 	}
 	s.assertPolicyStatus(metav1.Condition{
-		Type:               string(v1alpha1.PolicyConditionAccepted),
+		Type:               string(shared.PolicyConditionAccepted),
 		Status:             metav1.ConditionTrue,
-		Reason:             string(v1alpha1.PolicyReasonValid),
+		Reason:             string(shared.PolicyReasonValid),
 		Message:            reports.PolicyAcceptedMsg,
 		ObservedGeneration: backendTlsPolicy.Generation,
 	})
 	s.assertPolicyStatus(metav1.Condition{
-		Type:               string(v1alpha1.PolicyConditionAttached),
+		Type:               string(shared.PolicyConditionAttached),
 		Status:             metav1.ConditionTrue,
-		Reason:             string(v1alpha1.PolicyReasonAttached),
+		Reason:             string(shared.PolicyReasonAttached),
 		Message:            reports.PolicyAttachedMsg,
 		ObservedGeneration: backendTlsPolicy.Generation,
 	})
@@ -280,9 +280,9 @@ func (s *tsuite) addAncestorStatus(policyName, policyNamespace, controllerName s
 			ControllerName: gwv1.GatewayController(controllerName),
 			Conditions: []metav1.Condition{
 				{
-					Type:               string(v1alpha1.PolicyConditionAccepted),
+					Type:               string(shared.PolicyConditionAccepted),
 					Status:             metav1.ConditionTrue,
-					Reason:             string(v1alpha1.PolicyReasonValid),
+					Reason:             string(shared.PolicyReasonValid),
 					Message:            "Accepted by fake controller",
 					LastTransitionTime: metav1.Now(),
 				},

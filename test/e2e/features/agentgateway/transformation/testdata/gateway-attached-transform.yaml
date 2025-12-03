@@ -12,7 +12,7 @@ spec:
         - name: simple-svc
           port: 8080
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: example-agw-policy-for-gateway-attached-transform

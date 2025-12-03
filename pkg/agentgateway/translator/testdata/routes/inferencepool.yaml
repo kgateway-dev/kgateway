@@ -1,0 +1,112 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: gateway-route
+  namespace: default
+spec:
+  parentRefs:
+    - name: test-gateway
+  rules:
+    - backendRefs:
+        - name: gateway-pool
+          kind: InferencePool
+          group: inference.networking.k8s.io
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-pool-endpoint-picker
+  namespace: default
+spec:
+  ports:
+    - name: grpc
+      port: 9002
+      targetPort: 9002
+  selector:
+    app: gateway
+---
+apiVersion: inference.networking.k8s.io/v1
+kind: InferencePool
+metadata:
+  name: gateway-pool
+  namespace: default
+spec:
+  endpointPickerRef:
+    failureMode: FailClose
+    group: ""
+    kind: Service
+    name: gateway-pool-endpoint-picker
+    port:
+      number: 9002
+  selector:
+    matchLabels:
+      app: gateway
+  targetPorts:
+    - number: 8080
+---
+# Output
+output:
+- gateway:
+    Name: test-gateway
+    Namespace: default
+  resource:
+    route:
+      backends:
+      - backend:
+          port: 8080
+          service: default/gateway-pool.default.inference.cluster.local
+        weight: 1
+      key: default/gateway-route.0.0.http
+      listenerKey: default/test-gateway.http
+      routeName: default/gateway-route
+- gateway:
+    Name: ""
+    Namespace: ""
+  resource:
+    policy:
+      backend:
+        inferenceRouting:
+          endpointPicker:
+            port: 9002
+            service: default/gateway-pool-endpoint-picker.default.svc.cluster.local
+          failureMode: FAIL_CLOSED
+      name: default/gateway-pool:inference
+      target:
+        backend: service/default/gateway-pool.default.inference.cluster.local:8080
+- gateway:
+    Name: ""
+    Namespace: ""
+  resource:
+    policy:
+      backend:
+        backendTls:
+          verification: INSECURE_ALL
+      name: default/gateway-pool:inferencetls
+      target:
+        backend: service/default/gateway-pool-endpoint-picker.default.svc.cluster.local:9002
+status:
+- apiVersion: gateway.networking.k8s.io/v1
+  kind: HTTPRoute
+  metadata:
+    name: gateway-route
+    namespace: default
+  spec: null
+  status:
+    parents:
+    - conditions:
+      - lastTransitionTime: fake
+        message: ""
+        reason: Accepted
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: fake
+        message: ""
+        reason: ResolvedRefs
+        status: "True"
+        type: ResolvedRefs
+      controllerName: kgateway.dev/agentgateway
+      parentRef:
+        group: gateway.networking.k8s.io
+        kind: Gateway
+        name: test-gateway
+        namespace: default

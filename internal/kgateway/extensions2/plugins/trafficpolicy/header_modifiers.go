@@ -4,7 +4,8 @@ import (
 	header_mutationv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/header_mutation/v3"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	sharedv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -40,7 +41,7 @@ func (hm *headerModifiersIR) Validate() error {
 }
 
 // constructHeaderModifiers constructs the headerModifiers policy IR from the policy specification.
-func constructHeaderModifiers(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) {
+func constructHeaderModifiers(spec kgateway.TrafficPolicySpec, out *trafficPolicySpecIr) {
 	if spec.HeaderModifiers == nil {
 		return
 	}
@@ -74,7 +75,7 @@ func (p *trafficPolicyPluginGwPass) handleHeaderModifiers(fcn string, typedFilte
 
 // buildHeaderModifiersPolicy converts a TrafficPolicy HeaderModifiersPolicy into an Envoy HeaderMutationPerRoute.
 func buildHeaderModifiersPolicy(
-	spec *v1alpha1.HeaderModifiers,
+	spec *sharedv1alpha1.HeaderModifiers,
 ) *header_mutationv3.HeaderMutationPerRoute {
 	policy := &header_mutationv3.HeaderMutationPerRoute{}
 	policy.Mutations = &header_mutationv3.Mutations{}

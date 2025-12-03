@@ -21,7 +21,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -692,7 +693,7 @@ func (s *testingSuite) assertStatus() {
 
 		// get the traffic policy
 		s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
-			tp := &v1alpha1.TrafficPolicy{}
+			tp := &kgateway.TrafficPolicy{}
 			tpObjKey := client.ObjectKey{
 				Name:      trafficPolicyName,
 				Namespace: "default",
@@ -711,9 +712,9 @@ func (s *testingSuite) assertStatus() {
 
 			// this is the expected traffic policy status condition
 			expectedCond := metav1.Condition{
-				Type:               string(v1alpha1.PolicyConditionAccepted),
+				Type:               string(shared.PolicyConditionAccepted),
 				Status:             metav1.ConditionTrue,
-				Reason:             string(v1alpha1.PolicyReasonValid),
+				Reason:             string(shared.PolicyReasonValid),
 				Message:            reports.PolicyAcceptedMsg,
 				ObservedGeneration: route.Generation,
 			}

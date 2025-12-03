@@ -9,13 +9,14 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 // FetchGatewayExtensionFunc defines the signature for fetching gateway extensions
-type FetchGatewayExtensionFunc func(krtctx krt.HandlerContext, extensionRef v1alpha1.NamespacedObjectReference, ns string) (*TrafficPolicyGatewayExtensionIR, error)
+type FetchGatewayExtensionFunc func(krtctx krt.HandlerContext, extensionRef shared.NamespacedObjectReference, ns string) (*TrafficPolicyGatewayExtensionIR, error)
 
 type TrafficPolicyConstructor struct {
 	commoncol         *collections.CommonCollections
@@ -41,7 +42,7 @@ func NewTrafficPolicyConstructor(
 
 func (c *TrafficPolicyConstructor) ConstructIR(
 	krtctx krt.HandlerContext,
-	policyCR *v1alpha1.TrafficPolicy,
+	policyCR *kgateway.TrafficPolicy,
 ) (*TrafficPolicy, []error) {
 	policyIr := TrafficPolicy{
 		ct: policyCR.CreationTimestamp.Time,
@@ -74,6 +75,8 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 	constructCORS(policyCR, &outSpec)
 	// Construct csrf specific IR
 	constructCSRF(policyCR.Spec, &outSpec)
+	// Construct compression/decompression specific IR
+	constructCompression(policyCR.Spec, &outSpec)
 
 	// Construct header modifiers specific IR
 	constructHeaderModifiers(policyCR.Spec, &outSpec)
@@ -101,6 +104,8 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 		errors = append(errors, err)
 	}
 
+	// Construct url rewrite specific IR
+	constructURLRewrite(policyCR.Spec, &outSpec)
 	// Construct basic auth specific IR
 	if err := constructBasicAuth(krtctx, policyCR, &outSpec, c.commoncol.Secrets); err != nil {
 		errors = append(errors, err)
@@ -114,7 +119,7 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 	return &policyIr, errors
 }
 
-func (c *TrafficPolicyConstructor) FetchGatewayExtension(krtctx krt.HandlerContext, extensionRef v1alpha1.NamespacedObjectReference, ns string) (*TrafficPolicyGatewayExtensionIR, error) {
+func (c *TrafficPolicyConstructor) FetchGatewayExtension(krtctx krt.HandlerContext, extensionRef shared.NamespacedObjectReference, ns string) (*TrafficPolicyGatewayExtensionIR, error) {
 	namespace := ptr.Deref(extensionRef.Namespace, "")
 	if namespace == "" {
 		namespace = gwv1.Namespace(ns)

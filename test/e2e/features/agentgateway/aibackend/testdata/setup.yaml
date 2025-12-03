@@ -13,7 +13,7 @@ spec:
     port: 8080
     protocol: HTTP
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   name: openai
@@ -29,7 +29,7 @@ spec:
     auth:
       key: openai-key
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   name: anthropic
@@ -58,7 +58,7 @@ spec:
   rules:
   - name: openai
     backendRefs:
-    - group: gateway.kgateway.dev
+    - group: agentgateway.dev
       kind: AgentgatewayBackend
       name: openai
     matches:
@@ -67,7 +67,7 @@ spec:
         value: /v1/chat/completions
   - name: anthropic-0
     backendRefs:
-    - group: gateway.kgateway.dev
+    - group: agentgateway.dev
       kind: AgentgatewayBackend
       name: anthropic
     matches:
@@ -80,7 +80,7 @@ spec:
         value: request        
   - name: anthropic-1
     backendRefs:
-    - group: gateway.kgateway.dev
+    - group: agentgateway.dev
       kind: AgentgatewayBackend
       name: anthropic
     matches:
@@ -92,14 +92,14 @@ spec:
         name: x-direction
         value: response          
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: openai-prompt-guard
   namespace: default
 spec:
   targetRefs:
-  - group: gateway.kgateway.dev
+  - group: agentgateway.dev
     kind: AgentgatewayBackend
     name: openai
   backend:
@@ -119,14 +119,14 @@ spec:
             builtins:
               - SSN
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: anthropic-request-guardrails
   namespace: default
 spec:
   targetRefs:
-    - group: gateway.kgateway.dev
+    - group: agentgateway.dev
       kind: AgentgatewayBackend
       name: anthropic
   backend:
@@ -138,14 +138,14 @@ spec:
               name: ai-guardrails-webhook
               port: 8000
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: anthropic-response-guardrails
   namespace: default
 spec:
   targetRefs:
-    - group: gateway.kgateway.dev
+    - group: agentgateway.dev
       kind: AgentgatewayBackend
       name: anthropic
   backend:

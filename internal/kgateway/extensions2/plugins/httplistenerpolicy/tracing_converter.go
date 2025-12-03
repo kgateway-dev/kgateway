@@ -14,14 +14,14 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 func convertTracingConfig(
-	policy *v1alpha1.HTTPListenerPolicy,
+	policy *kgateway.HTTPListenerPolicy,
 	commoncol *collections.CommonCollections,
 	krtctx krt.HandlerContext,
 	parentSrc ir.ObjectSource,
@@ -40,7 +40,7 @@ func convertTracingConfig(
 }
 
 func translateTracing(
-	config *v1alpha1.Tracing,
+	config *kgateway.Tracing,
 	backend *ir.BackendObjectIR,
 ) (*envoytracev3.OpenTelemetryConfig, *envoy_hcm.HttpConnectionManager_Tracing, error) {
 	if config == nil {
@@ -147,25 +147,25 @@ func translateTracing(
 				}
 
 				switch ct.Metadata.Kind {
-				case v1alpha1.MetadataKindRequest:
+				case kgateway.MetadataKindRequest:
 					tagType.Metadata.Kind = &metadatav3.MetadataKind{
 						Kind: &metadatav3.MetadataKind_Request_{
 							Request: &metadatav3.MetadataKind_Request{},
 						},
 					}
-				case v1alpha1.MetadataKindRoute:
+				case kgateway.MetadataKindRoute:
 					tagType.Metadata.Kind = &metadatav3.MetadataKind{
 						Kind: &metadatav3.MetadataKind_Route_{
 							Route: &metadatav3.MetadataKind_Route{},
 						},
 					}
-				case v1alpha1.MetadataKindCluster:
+				case kgateway.MetadataKindCluster:
 					tagType.Metadata.Kind = &metadatav3.MetadataKind{
 						Kind: &metadatav3.MetadataKind_Cluster_{
 							Cluster: &metadatav3.MetadataKind_Cluster{},
 						},
 					}
-				case v1alpha1.MetadataKindHost:
+				case kgateway.MetadataKindHost:
 					tagType.Metadata.Kind = &metadatav3.MetadataKind{
 						Kind: &metadatav3.MetadataKind_Host_{
 							Host: &metadatav3.MetadataKind_Host{},
@@ -195,7 +195,7 @@ func translateTracing(
 }
 
 func convertOTelTracingConfig(
-	config *v1alpha1.OpenTelemetryTracingConfig,
+	config *kgateway.OpenTelemetryTracingConfig,
 	backend *ir.BackendObjectIR,
 ) (*envoytracev3.OpenTelemetryConfig, error) {
 	if config == nil {
