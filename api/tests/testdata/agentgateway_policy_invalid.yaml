@@ -1,5 +1,5 @@
 _err: 'must be at least 1 second'
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: invalid-internval
@@ -10,7 +10,7 @@ spec:
         interval: 100ms
 ---
 _err: 'sni in body should be at least 1 char'
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: backend-tls-sni-short
@@ -20,7 +20,7 @@ spec:
       sni: ""
 ---
 _err: "randomSampling in body must be of type string"
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: tracing-invalid-expression
@@ -34,7 +34,7 @@ spec:
       randomSampling: false
 ---
 _err: 'insecureSkipVerify All and caCertificateRefs may not be set together'
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: backend-tls-invalid-combo-1
@@ -46,7 +46,7 @@ spec:
       insecureSkipVerify: All
 ---
 _err: 'at most one of the fields in'
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: backend-tls-invalid-combo-2
@@ -58,7 +58,7 @@ spec:
       insecureSkipVerify: All
 ---
 _err: 'connectTimeout must be at least 100ms'
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: backend-tcp-timeout-short
@@ -68,7 +68,7 @@ spec:
       connectTimeout: 50ms
 ---
 _err: 'invalid duration value'
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: backend-tcp-invalid-duration
@@ -78,7 +78,7 @@ spec:
       connectTimeout: 5seconds
 ---
 _err: 'keepalive.retries'
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: backend-tcp-keepalive-retries-low
@@ -89,7 +89,7 @@ spec:
         retries: 0
 ---
 _err: 'keepalive.retries'
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: backend-tcp-keepalive-retries-high
@@ -100,7 +100,7 @@ spec:
         retries: 100
 ---
 _err: 'time must be at least 1 second'
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: backend-tcp-keepalive-time-short
@@ -111,7 +111,7 @@ spec:
         time: 500ms
 ---
 _err: 'interval must be at least 1 second'
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: backend-tcp-keepalive-interval-short
@@ -122,7 +122,7 @@ spec:
         interval: 100ms
 ---
 _err: 'http.maxBufferSize'
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: frontend-http-buffer-small
@@ -132,7 +132,7 @@ spec:
       maxBufferSize: 0
 ---
 _err: 'http.http1MaxHeaders'
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: frontend-http-headers-small
@@ -142,7 +142,7 @@ spec:
       http1MaxHeaders: 0
 ---
 _err: 'http.http1IdleTimeout'
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: frontend-http-idle-short
@@ -152,7 +152,7 @@ spec:
       http1IdleTimeout: 500ms
 ---
 _err: 'http.http1IdleTimeout'
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: frontend-http-idle-invalid
@@ -162,7 +162,7 @@ spec:
       http1IdleTimeout: 10minutes
 ---
 _err: 'http.http2WindowSize'
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: frontend-http2-window-small
@@ -172,7 +172,7 @@ spec:
       http2WindowSize: 0
 ---
 _err: 'keepalive.retries'
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: frontend-tcp-retries-low
@@ -183,7 +183,7 @@ spec:
         retries: 0
 ---
 _err: 'backendRef: Required'
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: traffic-extauth-no-backend
@@ -194,7 +194,7 @@ spec:
         maxSize: 1024
 ---
 _err: 'exactly one of the fields in [requests tokens] must be set'
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: traffic-ratelimit-both
@@ -207,7 +207,7 @@ spec:
           unit: Minutes
 ---
 _err: 'exactly one of the fields in [requests tokens] must be set'
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: traffic-ratelimit-neither
@@ -218,7 +218,7 @@ spec:
         - unit: Minutes
 ---
 _err: 'unit: Unsupported value'
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: traffic-ratelimit-invalid-unit
@@ -230,7 +230,7 @@ spec:
           unit: Days
 ---
 _err: 'unit: Unsupported value'
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: traffic-ratelimit-global-invalid-unit
@@ -248,7 +248,7 @@ spec:
             unit: Minutes
 ---
 _err: 'phase: Unsupported value'
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: traffic-invalid-phase
@@ -262,7 +262,7 @@ spec:
             value: '"test"'
 ---
 _err: 'pseudo-headers must be one of'
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: transform-bad-pseudo
@@ -275,7 +275,7 @@ spec:
             value: '"test"'
 ---
 _err: 'protocol: Unsupported value'
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: traffic-tracing-invalid-protocol
@@ -288,7 +288,7 @@ spec:
       protocol: TCP
 ---
 _err: 'hostRewrite: Unsupported value'
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: traffic-hostrewrite-invalid
@@ -297,7 +297,7 @@ spec:
     hostRewrite: Custom
 ---
 _err: ' exactly one of the fields in [targetRefs targetSelectors] must be set'
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: ref-and-selector
@@ -313,7 +313,7 @@ spec:
         app: foo
 ---
 _err: 'Only one Kind of targetRef can be set on one policy'
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: two-kinds
@@ -327,7 +327,7 @@ spec:
       name: s2
 ---
 _err: 'At least one of traffic, frontend, or backend must be provided'
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: traffic-hostrewrite-invalid
@@ -338,7 +338,7 @@ spec:
       name: f1
 ---
 _err: 'backend.mcp may not be used with a Service target'
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: mcp-backend
@@ -355,7 +355,7 @@ spec:
           - 'true'
 ---
 _err: 'backend.ai may not be used with a Service target'
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: ai-backend
@@ -371,7 +371,7 @@ spec:
           value: b
 ---
 _err: "targetRefs may only"
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: bad-group
@@ -382,7 +382,7 @@ spec:
       name: dummy
 ---
 _err: "the 'traffic.phase=PreRouting' field can only target a Gateway or XListenerSet"
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: traffic-invalid-phase-policy
@@ -400,7 +400,7 @@ spec:
             value: '"true"'
 ---
 _err: "phase PreRouting only supports extAuth, transformation, and extProc"
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: traffic-invalid-phase-policy-rule

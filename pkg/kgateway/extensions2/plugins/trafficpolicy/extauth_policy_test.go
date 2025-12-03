@@ -1,0 +1,314 @@
+package trafficpolicy
+
+import (
+	"testing"
+
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+)
+
+func TestExtAuthIREquals(t *testing.T) {
+	// Helper to create simple extauth configurations for testing
+	createSimpleExtAuth := func(disabled bool) *envoy_ext_authz_v3.ExtAuthzPerRoute {
+		return &envoy_ext_authz_v3.ExtAuthzPerRoute{
+			Override: &envoy_ext_authz_v3.ExtAuthzPerRoute_Disabled{
+				Disabled: disabled,
+			},
+		}
+	}
+	createProvider := func(name string) *TrafficPolicyGatewayExtensionIR {
+		return &TrafficPolicyGatewayExtensionIR{
+			Name: name,
+			ExtAuth: &envoy_ext_authz_v3.ExtAuthz{
+				Services: &envoy_ext_authz_v3.ExtAuthz_GrpcService{
+					GrpcService: &envoycorev3.GrpcService{
+						TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+							EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
+								ClusterName: name,
+							},
+						},
+					},
+				},
+			},
+		}
+	}
+
+	tests := []struct {
+		name     string
+		extauth1 *extAuthIR
+		extauth2 *extAuthIR
+		expected bool
+	}{
+		{
+			name:     "both nil are equal",
+			extauth1: nil,
+			extauth2: nil,
+			expected: true,
+		},
+		{
+			name:     "nil vs non-nil are not equal",
+			extauth1: nil,
+			extauth2: &extAuthIR{perProviderConfig: []*perProviderExtAuthConfig{{perRouteConfig: createSimpleExtAuth(false)}}},
+			expected: false,
+		},
+		{
+			name:     "non-nil vs nil are not equal",
+			extauth1: &extAuthIR{perProviderConfig: []*perProviderExtAuthConfig{{perRouteConfig: createSimpleExtAuth(false)}}},
+			extauth2: nil,
+			expected: false,
+		},
+		{
+			name:     "same instance is equal",
+			extauth1: &extAuthIR{perProviderConfig: []*perProviderExtAuthConfig{{perRouteConfig: createSimpleExtAuth(false)}}},
+			extauth2: &extAuthIR{perProviderConfig: []*perProviderExtAuthConfig{{perRouteConfig: createSimpleExtAuth(false)}}},
+			expected: true,
+		},
+		{
+			name:     "different disabled settings are not equal",
+			extauth1: &extAuthIR{perProviderConfig: []*perProviderExtAuthConfig{{perRouteConfig: createSimpleExtAuth(true)}}},
+			extauth2: &extAuthIR{perProviderConfig: []*perProviderExtAuthConfig{{perRouteConfig: createSimpleExtAuth(false)}}},
+			expected: false,
+		},
+		{
+			name:     "different providers are not equal",
+			extauth1: &extAuthIR{perProviderConfig: []*perProviderExtAuthConfig{{provider: createProvider("service1")}}},
+			extauth2: &extAuthIR{perProviderConfig: []*perProviderExtAuthConfig{{provider: createProvider("service2")}}},
+			expected: false,
+		},
+		{
+			name:     "same providers are equal",
+			extauth1: &extAuthIR{perProviderConfig: []*perProviderExtAuthConfig{{provider: createProvider("service1")}}},
+			extauth2: &extAuthIR{perProviderConfig: []*perProviderExtAuthConfig{{provider: createProvider("service1")}}},
+			expected: true,
+		},
+		{
+			name:     "different disablement settings are not equal",
+			extauth1: &extAuthIR{disableAllProviders: true},
+			extauth2: &extAuthIR{disableAllProviders: false},
+			expected: false,
+		},
+		{
+			name:     "same disablement settings are equal",
+			extauth1: &extAuthIR{disableAllProviders: true},
+			extauth2: &extAuthIR{disableAllProviders: true},
+			expected: true,
+		},
+		{
+			name:     "nil extauth fields are equal",
+			extauth1: &extAuthIR{},
+			extauth2: &extAuthIR{},
+			expected: true,
+		},
+		{
+			name:     "nil vs non-nil extauth fields are not equal",
+			extauth1: &extAuthIR{},
+			extauth2: &extAuthIR{perProviderConfig: []*perProviderExtAuthConfig{{perRouteConfig: createSimpleExtAuth(false)}}},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.extauth1.Equals(tt.extauth2)
+			assert.Equal(t, tt.expected, result)
+
+			// Test symmetry: a.Equals(b) should equal b.Equals(a)
+			reverseResult := tt.extauth2.Equals(tt.extauth1)
+			assert.Equal(t, result, reverseResult, "Equals should be symmetric")
+		})
+	}
+}
+
+func TestExtAuthForSpec(t *testing.T) {
+	t.Run("configures request body settings", func(t *testing.T) {
+		// Setup
+		spec := &kgateway.TrafficPolicy{Spec: kgateway.TrafficPolicySpec{
+			ExtAuth: &kgateway.ExtAuthPolicy{
+				ExtensionRef: &shared.NamespacedObjectReference{
+					Name: "test-extension",
+				},
+				WithRequestBody: &kgateway.ExtAuthBufferSettings{
+					MaxRequestBytes:     1024,
+					AllowPartialMessage: true,
+					PackAsBytes:         true,
+				},
+			},
+		}}
+
+		// Execute
+		extauthPerRoute := buildExtAuthPerRouteFilterConfig(spec.Spec.ExtAuth)
+
+		// Verify
+		require.NotNil(t, extauthPerRoute)
+		require.NotNil(t, extauthPerRoute.GetCheckSettings().WithRequestBody)
+		assert.Equal(t, uint32(1024), extauthPerRoute.GetCheckSettings().WithRequestBody.MaxRequestBytes)
+		assert.True(t, extauthPerRoute.GetCheckSettings().WithRequestBody.AllowPartialMessage)
+		assert.True(t, extauthPerRoute.GetCheckSettings().WithRequestBody.PackAsBytes)
+	})
+}
+
+func TestApplyForRoute(t *testing.T) {
+	t.Run("applies ext auth configuration to route", func(t *testing.T) {
+		// Setup
+		plugin := &trafficPolicyPluginGwPass{}
+		policy := &TrafficPolicy{
+			spec: trafficPolicySpecIr{
+				extAuth: &extAuthIR{
+					perProviderConfig: []*perProviderExtAuthConfig{
+						{
+							provider: &TrafficPolicyGatewayExtensionIR{
+								Name: "test-extension",
+								ExtAuth: &envoy_ext_authz_v3.ExtAuthz{
+									FailureModeAllow: true,
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		pCtx := &ir.RouteContext{
+			Policy: policy,
+		}
+		outputRoute := &envoyroutev3.Route{}
+
+		// Execute
+		err := plugin.ApplyForRoute(pCtx, outputRoute)
+
+		// Verify
+		require.NoError(t, err)
+		require.NotNil(t, pCtx.TypedFilterConfig)
+		extAuthConfig, ok := pCtx.TypedFilterConfig[extAuthFilterName("test-extension")]
+		assert.True(t, ok)
+		assert.NotNil(t, extAuthConfig)
+	})
+
+	t.Run("handles nil ext auth configuration", func(t *testing.T) {
+		// Setup
+		plugin := &trafficPolicyPluginGwPass{}
+		policy := &TrafficPolicy{
+			spec: trafficPolicySpecIr{
+				extAuth: nil,
+			},
+		}
+		pCtx := &ir.RouteContext{
+			Policy: policy,
+		}
+		outputRoute := &envoyroutev3.Route{}
+
+		// Execute
+		err := plugin.ApplyForRoute(pCtx, outputRoute)
+
+		// Verify
+		require.NoError(t, err)
+		assert.Nil(t, pCtx.TypedFilterConfig)
+	})
+}
+
+func TestHttpFilters(t *testing.T) {
+	t.Run("adds ext auth filter to filter chain", func(t *testing.T) {
+		// Setup
+		plugin := &trafficPolicyPluginGwPass{
+			extAuthPerProvider: ProviderNeededMap{
+				Providers: map[string][]Provider{
+					"test-filter-chain": {
+						{
+							Name: "test-extension",
+							Extension: &TrafficPolicyGatewayExtensionIR{
+								Name: "test-extension",
+								ExtAuth: &envoy_ext_authz_v3.ExtAuthz{
+									FailureModeAllow: true,
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		fcc := ir.FilterChainCommon{
+			FilterChainName: "test-filter-chain",
+		}
+
+		// Execute
+		httpFilters, err := plugin.HttpFilters(fcc)
+		// Verify
+		require.NoError(t, err)
+		require.NotNil(t, httpFilters)
+		assert.Equal(t, 2, len(httpFilters)) // extauth and metadata filter
+		assert.Equal(t, filters.DuringStage(filters.AuthNStage), httpFilters[1].Stage)
+	})
+}
+
+func TestExtAuthPolicyPlugin(t *testing.T) {
+	t.Run("applies ext auth configuration to route", func(t *testing.T) {
+		// Setup
+		plugin := &trafficPolicyPluginGwPass{}
+		policy := &TrafficPolicy{
+			spec: trafficPolicySpecIr{
+				extAuth: &extAuthIR{
+					perProviderConfig: []*perProviderExtAuthConfig{
+						{
+							provider: &TrafficPolicyGatewayExtensionIR{
+								Name: "test-auth-extension",
+								ExtAuth: &envoy_ext_authz_v3.ExtAuthz{
+									FailureModeAllow: true,
+									WithRequestBody: &envoy_ext_authz_v3.BufferSettings{
+										MaxRequestBytes: 1024,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		pCtx := &ir.RouteContext{
+			Policy: policy,
+		}
+		outputRoute := &envoyroutev3.Route{}
+
+		// Execute
+		err := plugin.ApplyForRoute(pCtx, outputRoute)
+
+		// Verify
+		require.NoError(t, err)
+		require.NotNil(t, pCtx.TypedFilterConfig)
+		extAuthConfig, ok := pCtx.TypedFilterConfig[extAuthFilterName("test-auth-extension")]
+		assert.True(t, ok)
+		assert.NotNil(t, extAuthConfig)
+		assert.Empty(t, pCtx.TypedFilterConfig[ExtAuthGlobalDisableFilterName])
+	})
+
+	t.Run("handles disabled ext auth configuration", func(t *testing.T) {
+		// Setup
+		plugin := &trafficPolicyPluginGwPass{}
+		policy := &TrafficPolicy{
+			spec: trafficPolicySpecIr{
+				extAuth: &extAuthIR{
+					disableAllProviders: true,
+				},
+			},
+		}
+		pCtx := &ir.RouteContext{
+			Policy: policy,
+		}
+		outputRoute := &envoyroutev3.Route{}
+
+		// Execute
+		err := plugin.ApplyForRoute(pCtx, outputRoute)
+
+		// Verify
+		require.NoError(t, err)
+		// assert.NotNil(t, )
+		assert.NotNil(t, pCtx.TypedFilterConfig, pCtx)
+		assert.NotEmpty(t, pCtx.TypedFilterConfig[ExtAuthGlobalDisableFilterName])
+	})
+}

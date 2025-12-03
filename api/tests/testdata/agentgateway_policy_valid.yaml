@@ -1,4 +1,4 @@
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: backend-tls-basic
@@ -11,7 +11,7 @@ spec:
     tls:
       sni: example.com
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: backend-mtls
@@ -26,7 +26,7 @@ spec:
         - name: client-cert
       sni: api.example.com
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: backend-tls-ca
@@ -45,7 +45,7 @@ spec:
         - "*.example.com"
         - "api.example.com"
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: backend-tls-insecure
@@ -58,7 +58,7 @@ spec:
     tls:
       insecureSkipVerify: All
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: backend-tls-insecure-hostname
@@ -73,7 +73,7 @@ spec:
         - name: ca-bundle
       insecureSkipVerify: Hostname
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: backend-tls-alpn
@@ -88,7 +88,7 @@ spec:
         - h2
         - http/1.1
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: backend-tcp-keepalive
@@ -104,7 +104,7 @@ spec:
         time: 60s
         interval: 30s
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: backend-tcp-timeout
@@ -117,13 +117,13 @@ spec:
     tcp:
       connectTimeout: 5s
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: backend-ai-prompt
 spec:
   targetRefs:
-    - group: "gateway.kgateway.dev"
+    - group: "agentgateway.dev"
       kind: AgentgatewayBackend
       name: dummy
   backend:
@@ -132,7 +132,7 @@ spec:
         fast: gpt-3.5-turbo
         smart: gpt-4-turbo
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: backend-auth-inline
@@ -145,7 +145,7 @@ spec:
     auth:
       key: "sk-test-token-12345"
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: backend-auth-secret
@@ -159,7 +159,7 @@ spec:
       secretRef:
         name: api-key-secret
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: frontend-http
@@ -174,7 +174,7 @@ spec:
       http1MaxHeaders: 150
       http1IdleTimeout: 5m
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: frontend-http2
@@ -191,7 +191,7 @@ spec:
       http2KeepaliveInterval: 30s
       http2KeepaliveTimeout: 10s
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: frontend-tls
@@ -204,7 +204,7 @@ spec:
     tls:
       handshakeTimeout: 10s
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: frontend-tcp
@@ -220,7 +220,7 @@ spec:
         time: 120s
         interval: 60s
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: traffic-transform
@@ -241,7 +241,7 @@ spec:
         remove:
           - Authorization
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: traffic-body-transform
@@ -255,7 +255,7 @@ spec:
       request:
         body: 'request.body + " modified"'
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: traffic-extproc
@@ -272,7 +272,7 @@ spec:
         kind: Service
         port: 123
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: traffic-extauth
@@ -291,7 +291,7 @@ spec:
         env: production
         region: us-west
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: traffic-extauth-body
@@ -304,12 +304,12 @@ spec:
     extAuth:
       backendRef:
         name: auth-server
-        kind: Backend
-        group: gateway.kgateway.dev
+        kind: AgentgatewayBackend
+        group: agentgateway.dev
       forwardBody:
         maxSize: 1048576
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: traffic-ratelimit-local-requests
@@ -325,7 +325,7 @@ spec:
           unit: Minutes
           burst: 20
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: traffic-ratelimit-local-tokens
@@ -340,7 +340,7 @@ spec:
         - tokens: 10000
           unit: Hours
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: traffic-ratelimit-global
@@ -362,7 +362,7 @@ spec:
               - name: client-ip
                 expression: 'source.address'
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: traffic-ratelimit-global-tokens
@@ -385,7 +385,7 @@ spec:
                 expression: 'request.headers["x-user-id"]'
             unit: Tokens
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: traffic-cors
@@ -408,7 +408,7 @@ spec:
         - Authorization
       maxAge: 3600
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: traffic-csrf
@@ -423,7 +423,7 @@ spec:
         - "https://trusted.example.com"
         - "https://app.example.com:8443"
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: traffic-timeouts
@@ -436,7 +436,7 @@ spec:
     timeouts:
       request: 30s
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: traffic-access-log
@@ -455,7 +455,7 @@ spec:
         remove:
           - http.method
 #---
-#apiVersion: gateway.kgateway.dev/v1alpha1
+#apiVersion: agentgateway.dev/v1alpha1
 #kind: AgentgatewayPolicy
 #metadata:
 #  name: traffic-tracing-http
@@ -474,7 +474,7 @@ spec:
 #      randomSampling: '0.1'
 #      clientSampling: '1.0'
 #---
-#apiVersion: gateway.kgateway.dev/v1alpha1
+#apiVersion: agentgateway.dev/v1alpha1
 #kind: AgentgatewayPolicy
 #metadata:
 #  name: traffic-tracing-grpc
@@ -493,7 +493,7 @@ spec:
 #      randomSampling: 'false'
 #      clientSampling: 'true'
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: traffic-gateway-phase
@@ -510,7 +510,7 @@ spec:
           - name: X-Gateway
             value: '"true"'
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: traffic-route-phase
@@ -527,7 +527,7 @@ spec:
           - name: X-Route
             value: '"true"'
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: backend-combined
@@ -551,7 +551,7 @@ spec:
       secretRef:
         name: backend-token
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: frontend-combined
@@ -575,7 +575,7 @@ spec:
       http2WindowSize: 65536
       http2ConnectionWindowSize: 131072
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: traffic-complex
@@ -617,7 +617,7 @@ spec:
     accessLog:
       filter: 'true'
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: traffic-multi-ratelimit
