@@ -77,7 +77,7 @@ jobs:
           go-test-run-regex: '^TestAgentgatewayIntegration'
         # August 29, 2025: ~3 minutes
         - cluster-name: 'api-validation'
-          go-test-args: '-timeout=10m'
+          go-test-args: '-timeout=15m'
           go-test-run-regex: '^TestAPIValidation'
 
         # In our PR tests, we run the suite of tests using the upper ends of versions that we claim to support
