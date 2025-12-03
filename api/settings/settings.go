@@ -239,6 +239,9 @@ type Settings struct {
 	EnableExperimentalGatewayAPIFeatures bool `split_words:"true" default:"true"`
 
 	// GatewayClassParametersRefs configures the GatewayParameters references to set on the default GatewayClasses.
+	// Format: JSON map where keys are GatewayClass names and values are objects with "name" (required),
+	// "namespace" (required), "group" (optional), and "kind" (optional) fields.
+	// E.g., {"gateway-class-name":{"name":"params-name","namespace":"params-namespace","group":"gateway.networking.k8s.io","kind":"GatewayParameters"}}
 	GatewayClassParametersRefs GatewayClassParametersRefs `split_words:"true" default:"{}"`
 }
 
