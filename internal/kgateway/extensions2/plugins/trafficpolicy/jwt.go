@@ -22,23 +22,25 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
 
 const (
-	PayloadInMetadata   = "payload"
-	jwtFilterNamePrefix = "jwt"
-	jwtConfigMapKey     = "jwks"
-
-	remoteJWKSTimeoutSecs = 5
+	PayloadInMetadata                       = "payload"
+	jwtFilterNamePrefix                     = "jwt"
+	jwtConfigMapKey                         = "jwks"
+	jwtGlobalDisableFilterName              = "global_disable/jwt"
+	jwtGlobalDisableFilterMetadataNamespace = "dev.kgateway.disable_jwt"
+	remoteJWKSTimeoutSecs                   = 5
 )
 
 type jwtIr struct {
-	perProviderConfig []*perProviderJwtConfig
+	perProviderConfig   []*perProviderJwtConfig
+	disableAllProviders bool
 }
 
 type perProviderJwtConfig struct {
@@ -57,6 +59,10 @@ func (j *jwtIr) Equals(other PolicySubIR) bool {
 		return j == nil && otherJwt == nil
 	}
 
+	if j.disableAllProviders != otherJwt.disableAllProviders {
+		return false
+	}
+
 	return slices.EqualFunc(j.perProviderConfig, otherJwt.perProviderConfig, func(a, b *perProviderJwtConfig) bool {
 		return proto.Equal(a.perRouteConfig, b.perRouteConfig) &&
 			cmputils.CompareWithNils(a.provider, b.provider, func(a, b *TrafficPolicyGatewayExtensionIR) bool {
@@ -71,15 +77,15 @@ func (p *trafficPolicyPluginGwPass) handleJwt(fcn string, pCtxTypedFilterConfig 
 		return
 	}
 
+	if jwtIr.disableAllProviders {
+		pCtxTypedFilterConfig.AddTypedConfig(jwtGlobalDisableFilterName, EnableFilterPerRoute())
+		return
+	}
+
 	for _, cfg := range jwtIr.perProviderConfig {
-		if cfg == nil {
-			continue
-		}
 		providerName := providerName(cfg.provider)
-		if cfg.perRouteConfig != nil {
-			jwtName := jwtFilterName(providerName)
-			pCtxTypedFilterConfig.AddTypedConfig(jwtName, cfg.perRouteConfig)
-		}
+		jwtName := jwtFilterName(providerName)
+		pCtxTypedFilterConfig.AddTypedConfig(jwtName, cfg.perRouteConfig)
 		p.jwtPerProvider.Add(fcn, providerName, cfg.provider)
 	}
 }
@@ -96,7 +102,7 @@ func translatePerRouteConfig(requirementsName string) *jwtauthnv3.PerRouteConfig
 // constructJwt translates the jwt spec into an envoy jwt policy and stores it in the traffic policy IR
 func constructJwt(
 	krtctx krt.HandlerContext,
-	in *v1alpha1.TrafficPolicy,
+	in *kgateway.TrafficPolicy,
 	out *trafficPolicySpecIr,
 	fetchGatewayExtension FetchGatewayExtensionFunc,
 ) error {
@@ -105,12 +111,23 @@ func constructJwt(
 		return nil
 	}
 
-	provider, err := fetchGatewayExtension(krtctx, spec.ExtensionRef, in.GetNamespace())
+	if spec.Disable != nil {
+		out.jwt = &jwtIr{
+			disableAllProviders: true,
+		}
+		return nil
+	}
+
+	if spec.ExtensionRef == nil {
+		// shouldn't happen due to CRD validation
+		return fmt.Errorf("jwt: extensionRef is required if disable is not set")
+	}
+	provider, err := fetchGatewayExtension(krtctx, *spec.ExtensionRef, in.GetNamespace())
 	if err != nil {
 		return fmt.Errorf("jwt: %w", err)
 	}
 	if provider.Jwt == nil {
-		return pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeJWTProvider)
+		return pluginutils.ErrInvalidExtensionType(kgateway.GatewayExtensionTypeJWTProvider)
 	}
 
 	requirementsName := fmt.Sprintf("%s_%s_requirements", spec.ExtensionRef.Name, in.Namespace)
@@ -164,7 +181,7 @@ func ProviderName(resourceName, providerName string) string {
 
 func translateProvider(
 	krtctx krt.HandlerContext,
-	provider v1alpha1.JWTProvider,
+	provider kgateway.JWTProvider,
 	policyNs string,
 	configMaps krt.Collection[*corev1.ConfigMap],
 	resolver backendResolver,
@@ -178,7 +195,7 @@ func translateProvider(
 		})
 	}
 	var shouldForward bool
-	if provider.KeepToken != nil && *provider.KeepToken == v1alpha1.TokenForward {
+	if provider.ForwardToken != nil && *provider.ForwardToken {
 		shouldForward = true
 	}
 	jwtProvider := &jwtauthnv3.JwtProvider{
@@ -200,7 +217,7 @@ func translateProvider(
 	return jwtProvider, nil
 }
 
-func translateTokenSource(provider v1alpha1.JWTProvider, out *jwtauthnv3.JwtProvider) {
+func translateTokenSource(provider kgateway.JWTProvider, out *jwtauthnv3.JwtProvider) {
 	if provider.TokenSource == nil {
 		return
 	}
@@ -227,7 +244,7 @@ type backendResolver interface {
 
 func translateJwks(
 	krtctx krt.HandlerContext,
-	jwkConfig v1alpha1.JWKS,
+	jwkConfig kgateway.JWKS,
 	policyNs string,
 	out *jwtauthnv3.JwtProvider,
 	configMaps krt.Collection[*corev1.ConfigMap],

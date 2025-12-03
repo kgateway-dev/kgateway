@@ -20,7 +20,7 @@ spec:
     - "example.com"
   rules:
     - backendRefs:
-        - group: gateway.kgateway.dev
+        - group: agentgateway.dev
           kind: AgentgatewayBackend
           name: mcp-backend
 ---
@@ -39,7 +39,7 @@ spec:
       port: 80
       targetPort: test
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   name: mcp-backend
@@ -52,7 +52,7 @@ spec:
           matchLabels:
             app: mcp-app
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: cel-rbac-policy
@@ -60,7 +60,7 @@ spec:
   targetRefs:
     - name: mcp-backend
       kind: AgentgatewayBackend
-      group: gateway.networking.k8s.io
+      group: agentgateway.dev
   backend:
     mcp:
       authorization:

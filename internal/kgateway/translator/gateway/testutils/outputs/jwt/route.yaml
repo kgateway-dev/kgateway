@@ -23,36 +23,77 @@ Listeners:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
-        - name: jwt/default/jwt-ext-2
+        - disabled: true
+          name: global_disable/jwt
           typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
-            providers:
-              jwt-ext-2_default_my-example2:
-                claimToHeaders:
-                - claimName: org
-                  headerName: x-org
-                - claimName: bar
-                  headerName: x-bar
-                clearRouteCache: true
-                issuer: https://dev2.example.com
-                localJwks:
-                  inlineString: '{"keys":[{"use":"sig","kty":"RSA","alg":"RS256","n":"ruK9KacQjDePRyfG7oPIaqAIyCeOCBIGB2nBbDLGp1Szdm7rsWcrzGf7Avpa_ijLV9huoNvpdflld4B-SaT7m3EDDMDUyA4LayJC5JBI10Qfu3Qn8BEpcdN2uRiycXOzgsoIXneXp9hENlS5Vsr3ur5BaBCc-BZZRRaXDTLy6KyD1Pyd6XRsxyZXt_SYOIww0NSt5u0CTyZUGJhQungJpI8Hhrzdf87mLZGZd16dOGObE5LqFwk2prN3D0-owLsA25WJOPZXizxpTB4tPvJuYGATajDpzrHf-WXgOgvwyxaHJSN_fE-eFuRT3ooDaAuytsfYotsn4z_ajdEPSwXYCw","e":"AQAB"}]}'
-                payloadInMetadata: payload
-              jwt-ext-2_default_my-example3:
-                claimToHeaders:
-                - claimName: foo
-                  headerName: x-foo
-                clearRouteCache: true
-                issuer: https://dev3.example.com
-                localJwks:
-                  inlineString: '{"keys":[{"use":"sig","kty":"RSA","alg":"RS256","n":"ruK9KacQjDePRyfG7oPIaqAIyCeOCBIGB2nBbDLGp1Szdm7rsWcrzGf7Avpa_ijLV9huoNvpdflld4B-SaT7m3EDDMDUyA4LayJC5JBI10Qfu3Qn8BEpcdN2uRiycXOzgsoIXneXp9hENlS5Vsr3ur5BaBCc-BZZRRaXDTLy6KyD1Pyd6XRsxyZXt_SYOIww0NSt5u0CTyZUGJhQungJpI8Hhrzdf87mLZGZd16dOGObE5LqFwk2prN3D0-owLsA25WJOPZXizxpTB4tPvJuYGATajDpzrHf-WXgOgvwyxaHJSN_fE-eFuRT3ooDaAuytsfYotsn4z_ajdEPSwXYCw","e":"AQAB"}]}'
-                payloadInMetadata: payload
-            requirementMap:
-              jwt-ext-2_default_requirements:
-                requiresAny:
-                  requirements:
-                  - providerName: jwt-ext-2_default_my-example2
-                  - providerName: jwt-ext-2_default_my-example3
+            '@type': type.googleapis.com/envoy.extensions.filters.http.set_metadata.v3.Config
+            metadata:
+            - metadataNamespace: dev.kgateway.disable_jwt
+              value:
+                disable: true
+        - disabled: true
+          name: jwt/default/jwt-ext-2
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.common.matching.v3.ExtensionWithMatcher
+            extensionConfig:
+              name: composite_jwt
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.composite.v3.Composite
+            xdsMatcher:
+              matcherList:
+                matchers:
+                - onMatch:
+                    action:
+                      name: composite-action
+                      typedConfig:
+                        '@type': type.googleapis.com/envoy.extensions.filters.http.composite.v3.ExecuteFilterAction
+                        typedConfig:
+                          name: envoy.filters.http.jwt_authn
+                          typedConfig:
+                            '@type': type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
+                            providers:
+                              jwt-ext-2_default_my-example2:
+                                claimToHeaders:
+                                - claimName: org
+                                  headerName: x-org
+                                - claimName: bar
+                                  headerName: x-bar
+                                clearRouteCache: true
+                                issuer: https://dev2.example.com
+                                localJwks:
+                                  inlineString: '{"keys":[{"use":"sig","kty":"RSA","alg":"RS256","n":"ruK9KacQjDePRyfG7oPIaqAIyCeOCBIGB2nBbDLGp1Szdm7rsWcrzGf7Avpa_ijLV9huoNvpdflld4B-SaT7m3EDDMDUyA4LayJC5JBI10Qfu3Qn8BEpcdN2uRiycXOzgsoIXneXp9hENlS5Vsr3ur5BaBCc-BZZRRaXDTLy6KyD1Pyd6XRsxyZXt_SYOIww0NSt5u0CTyZUGJhQungJpI8Hhrzdf87mLZGZd16dOGObE5LqFwk2prN3D0-owLsA25WJOPZXizxpTB4tPvJuYGATajDpzrHf-WXgOgvwyxaHJSN_fE-eFuRT3ooDaAuytsfYotsn4z_ajdEPSwXYCw","e":"AQAB"}]}'
+                                payloadInMetadata: payload
+                              jwt-ext-2_default_my-example3:
+                                claimToHeaders:
+                                - claimName: foo
+                                  headerName: x-foo
+                                clearRouteCache: true
+                                issuer: https://dev3.example.com
+                                localJwks:
+                                  inlineString: '{"keys":[{"use":"sig","kty":"RSA","alg":"RS256","n":"ruK9KacQjDePRyfG7oPIaqAIyCeOCBIGB2nBbDLGp1Szdm7rsWcrzGf7Avpa_ijLV9huoNvpdflld4B-SaT7m3EDDMDUyA4LayJC5JBI10Qfu3Qn8BEpcdN2uRiycXOzgsoIXneXp9hENlS5Vsr3ur5BaBCc-BZZRRaXDTLy6KyD1Pyd6XRsxyZXt_SYOIww0NSt5u0CTyZUGJhQungJpI8Hhrzdf87mLZGZd16dOGObE5LqFwk2prN3D0-owLsA25WJOPZXizxpTB4tPvJuYGATajDpzrHf-WXgOgvwyxaHJSN_fE-eFuRT3ooDaAuytsfYotsn4z_ajdEPSwXYCw","e":"AQAB"}]}'
+                                payloadInMetadata: payload
+                            requirementMap:
+                              jwt-ext-2_default_requirements:
+                                requiresAny:
+                                  requirements:
+                                  - providerName: jwt-ext-2_default_my-example2
+                                  - providerName: jwt-ext-2_default_my-example3
+                  predicate:
+                    singlePredicate:
+                      customMatch:
+                        name: envoy.matching.matchers.metadata_matcher
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.matching.input_matchers.metadata.v3.Metadata
+                          invert: true
+                          value:
+                            boolMatch: true
+                      input:
+                        name: disable
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DynamicMetadataInput
+                          filter: dev.kgateway.disable_jwt
+                          path:
+                          - key: disable
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router

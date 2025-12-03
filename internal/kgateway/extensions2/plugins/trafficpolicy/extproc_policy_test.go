@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -29,7 +29,7 @@ func TestExtprocIREquals(t *testing.T) {
 		return &TrafficPolicyGatewayExtensionIR{
 			Name: name,
 			ExtProc: buildCompositeExtProcFilter(
-				v1alpha1.ExtProcProvider{FailOpen: true},
+				kgateway.ExtProcProvider{FailOpen: true},
 				&envoycorev3.GrpcService{
 					TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
 						EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{
@@ -119,15 +119,15 @@ func TestBuildEnvoyExtProc(t *testing.T) {
 	tests := []struct {
 		name           string
 		gatewayExt     *ir.GatewayExtension
-		extprocConfig  *v1alpha1.ExtProcPolicy
+		extprocConfig  *kgateway.ExtProcPolicy
 		expectedError  string
 		validateResult func(*testing.T, *envoy_ext_proc_v3.ExtProcPerRoute)
 	}{
 		{
 			name: "with all processing modes",
 			gatewayExt: &ir.GatewayExtension{
-				ExtProc: &v1alpha1.ExtProcProvider{
-					GrpcService: v1alpha1.ExtGrpcService{
+				ExtProc: &kgateway.ExtProcProvider{
+					GrpcService: kgateway.ExtGrpcService{
 						BackendRef: gwv1.BackendRef{
 							BackendObjectReference: gwv1.BackendObjectReference{
 								Name: "test-service",
@@ -136,8 +136,8 @@ func TestBuildEnvoyExtProc(t *testing.T) {
 					},
 				},
 			},
-			extprocConfig: &v1alpha1.ExtProcPolicy{
-				ProcessingMode: &v1alpha1.ProcessingMode{
+			extprocConfig: &kgateway.ExtProcPolicy{
+				ProcessingMode: &kgateway.ProcessingMode{
 					RequestHeaderMode:   "SEND",
 					ResponseHeaderMode:  "SKIP",
 					RequestBodyMode:     "STREAMED",
@@ -160,8 +160,8 @@ func TestBuildEnvoyExtProc(t *testing.T) {
 		{
 			name: "with default processing modes",
 			gatewayExt: &ir.GatewayExtension{
-				ExtProc: &v1alpha1.ExtProcProvider{
-					GrpcService: v1alpha1.ExtGrpcService{
+				ExtProc: &kgateway.ExtProcProvider{
+					GrpcService: kgateway.ExtGrpcService{
 						BackendRef: gwv1.BackendRef{
 							BackendObjectReference: gwv1.BackendObjectReference{
 								Name: "test-service",
@@ -170,8 +170,8 @@ func TestBuildEnvoyExtProc(t *testing.T) {
 					},
 				},
 			},
-			extprocConfig: &v1alpha1.ExtProcPolicy{
-				ProcessingMode: &v1alpha1.ProcessingMode{},
+			extprocConfig: &kgateway.ExtProcPolicy{
+				ProcessingMode: &kgateway.ProcessingMode{},
 			},
 			validateResult: func(t *testing.T, result *envoy_ext_proc_v3.ExtProcPerRoute) {
 				processingMode := result.GetOverrides().GetProcessingMode()
@@ -187,8 +187,8 @@ func TestBuildEnvoyExtProc(t *testing.T) {
 		{
 			name: "with invalid processing modes",
 			gatewayExt: &ir.GatewayExtension{
-				ExtProc: &v1alpha1.ExtProcProvider{
-					GrpcService: v1alpha1.ExtGrpcService{
+				ExtProc: &kgateway.ExtProcProvider{
+					GrpcService: kgateway.ExtGrpcService{
 						BackendRef: gwv1.BackendRef{
 							BackendObjectReference: gwv1.BackendObjectReference{
 								Name: "test-service",
@@ -197,8 +197,8 @@ func TestBuildEnvoyExtProc(t *testing.T) {
 					},
 				},
 			},
-			extprocConfig: &v1alpha1.ExtProcPolicy{
-				ProcessingMode: &v1alpha1.ProcessingMode{
+			extprocConfig: &kgateway.ExtProcPolicy{
+				ProcessingMode: &kgateway.ProcessingMode{
 					RequestHeaderMode:   "INVALID",
 					ResponseHeaderMode:  "INVALID",
 					RequestBodyMode:     "INVALID",

@@ -17,13 +17,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	kmetrics "github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections/metrics"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
+	kmetrics "github.com/kgateway-dev/kgateway/v2/pkg/krtcollections/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	plug "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -181,7 +181,10 @@ func (r report) Equals(in report) bool {
 	if !maps.Equal(r.reportMap.Gateways, in.reportMap.Gateways) {
 		return false
 	}
-	if !maps.Equal(r.reportMap.ListenerSets, in.reportMap.ListenerSets) {
+	if !maps.EqualFunc(r.reportMap.ListenerSets, in.reportMap.ListenerSets,
+		func(a, b map[types.NamespacedName]*reports.ListenerSetReport) bool {
+			return maps.Equal(a, b)
+		}) {
 		return false
 	}
 	if !maps.Equal(r.reportMap.HTTPRoutes, in.reportMap.HTTPRoutes) {
@@ -257,6 +260,13 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	s.backendPolicyReport = krt.NewSingleton(func(kctx krt.HandlerContext) *report {
 		backends := krt.Fetch(kctx, finalBackendsWithPolicyStatus)
 		merged := GenerateBackendPolicyReport(backends)
+
+		for _, plugin := range s.plugins.ContributesPolicies {
+			if plugin.ProcessPolicyStaleStatusMarkers != nil && plugin.ProcessBackend != nil {
+				plugin.ProcessPolicyStaleStatusMarkers(kctx, &merged)
+			}
+		}
+
 		return &report{merged}
 	}, krtopts.ToOptions("BackendsPolicyReport")...)
 
@@ -270,6 +280,12 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		// Process status markers
 		objStatus := krt.Fetch(kctx, s.commonCols.Routes.GetHTTPRouteStatusMarkers())
 		s.commonCols.Routes.ProcessHTTPRouteStatusMarkers(objStatus, merged)
+
+		for _, plugin := range s.plugins.ContributesPolicies {
+			if plugin.ProcessPolicyStaleStatusMarkers != nil && plugin.ProcessBackend == nil {
+				plugin.ProcessPolicyStaleStatusMarkers(kctx, &merged)
+			}
+		}
 
 		return &report{merged}
 	})

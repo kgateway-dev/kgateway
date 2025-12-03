@@ -5,5 +5,11 @@ ai:
         region: us-east-1
       name: backend
 inlinePolicies:
-- ai: {}
+- ai:
+    routes:
+      /v1/chat/completions: COMPLETIONS
+      /v1/messages: MESSAGES
+      /v1/messages/count_tokens: ANTHROPIC_TOKEN_COUNT
+      /v1/models: MODELS
+      /v1/responses: RESPONSES
 name: test-ns/bedrock-with-new-routes

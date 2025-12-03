@@ -10,7 +10,9 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/backendconfigpolicy"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/backends"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/backendtls"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/basicauth"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/basicrouting"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/compression"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/cors"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/csrf"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/deployer"
@@ -24,6 +26,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/jwt"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/lambda"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/leaderelection"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/listener_policy_proxy_protocol"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/loadtesting"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/path_matching"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/policyselector"
@@ -38,6 +41,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/session_persistence"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/timeoutretry"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/tracing"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/trafficpolicystatus"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/transformation"
 )
 
@@ -52,6 +56,7 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("DynamicForwardProxy", dfp.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("HTTPRouteServices", httproute.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("HttpListenerPolicy", http_listener_policy.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("ListenerPolicyProxyProtocol", listener_policy_proxy_protocol.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Lambda", lambda.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("RouteDelegation", route_delegation.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("SessionPersistence", session_persistence.NewTestingSuite)
@@ -63,7 +68,9 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("LocalRateLimit", local_rate_limit.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("GlobalRateLimit", global_rate_limit.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("PolicySelector", policyselector.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("TrafficPolicyStatus", trafficpolicystatus.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Cors", cors.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("Compression", compression.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("BackendConfigPolicy", backendconfigpolicy.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("CSRF", csrf.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("AutoHostRewrite", auto_host_rewrite.NewTestingSuite)
@@ -80,6 +87,7 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("AdminServer", admin_server.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("JWT", jwt.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("FrontendTLS", frontendtls.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("BasicAuth", basicauth.NewTestingSuite)
 
 	return kubeGatewaySuiteRunner
 }

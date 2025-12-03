@@ -40,12 +40,24 @@ func TestRenderHelmChart(t *testing.T) {
 			InputFile: "gwc-with-replicas",
 		},
 		{
+			Name:      "gateway with priorityClassName",
+			InputFile: "priority-class-name",
+		},
+		{
 			Name:      "gwparams with omitDefaultSecurityContext via GWC",
 			InputFile: "omit-default-security-context",
 		},
 		{
 			Name:      "gwparams with omitDefaultSecurityContext via GW",
 			InputFile: "omit-default-security-context-via-gw",
+		},
+		{
+			Name:      "gwparams with stats matcher inclusion",
+			InputFile: "stats-matcher-inclusion",
+		},
+		{
+			Name:      "gwparams with stats matcher exclusion",
+			InputFile: "stats-matcher-exclusion",
 		},
 		{
 			Name:      "agentgateway",

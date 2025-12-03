@@ -19,11 +19,11 @@ import (
 	apixv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
-	gw2_v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
@@ -115,16 +115,16 @@ func TestShouldUseExtendedGatewayParameters(t *testing.T) {
 
 func TestAgentgatewayAndEnvoyContainerDistinctValues(t *testing.T) {
 	// Create GatewayParameters with agentgateway disabled and distinct values
-	gwParams := &gw2_v1alpha1.GatewayParameters{
+	gwParams := &kgateway.GatewayParameters{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "agent-disabled-params",
 			Namespace: "default",
 		},
-		Spec: gw2_v1alpha1.GatewayParametersSpec{
-			Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-				Agentgateway: &gw2_v1alpha1.Agentgateway{
+		Spec: kgateway.GatewayParametersSpec{
+			Kube: &kgateway.KubernetesProxyConfig{
+				Agentgateway: &kgateway.Agentgateway{
 					Enabled: ptr.To(false), // Explicitly disabled
-					Image: &gw2_v1alpha1.Image{
+					Image: &kgateway.Image{
 						Registry:   ptr.To("agent-registry"),
 						Repository: ptr.To("agent-repo"),
 						Tag:        ptr.To("agent-tag"),
@@ -145,8 +145,8 @@ func TestAgentgatewayAndEnvoyContainerDistinctValues(t *testing.T) {
 						},
 					},
 				},
-				EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
-					Image: &gw2_v1alpha1.Image{
+				EnvoyContainer: &kgateway.EnvoyContainer{
+					Image: &kgateway.Image{
 						Registry:   ptr.To("envoy-registry"),
 						Repository: ptr.To("envoy-repo"),
 						Tag:        ptr.To("envoy-tag"),
@@ -167,7 +167,7 @@ func TestAgentgatewayAndEnvoyContainerDistinctValues(t *testing.T) {
 							Value: "envoy-value",
 						},
 					},
-					Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
+					Bootstrap: &kgateway.EnvoyBootstrap{
 						LogLevel: ptr.To("info"),
 					},
 				},
@@ -182,7 +182,7 @@ func TestAgentgatewayAndEnvoyContainerDistinctValues(t *testing.T) {
 		Spec: gwv1.GatewayClassSpec{
 			ControllerName: wellknown.DefaultGatewayControllerName,
 			ParametersRef: &gwv1.ParametersReference{
-				Group:     gw2_v1alpha1.GroupName,
+				Group:     kgateway.GroupName,
 				Kind:      gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 				Name:      "agent-disabled-params",
 				Namespace: ptr.To(gwv1.Namespace("default")),
@@ -257,7 +257,7 @@ func defaultGatewayClass() *gwv1.GatewayClass {
 		Spec: gwv1.GatewayClassSpec{
 			ControllerName: wellknown.DefaultGatewayControllerName,
 			ParametersRef: &gwv1.ParametersReference{
-				Group:     gw2_v1alpha1.GroupName,
+				Group:     kgateway.GroupName,
 				Kind:      gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 				Name:      wellknown.DefaultGatewayParametersName,
 				Namespace: ptr.To(gwv1.Namespace(defaultNamespace)),
@@ -266,8 +266,8 @@ func defaultGatewayClass() *gwv1.GatewayClass {
 	}
 }
 
-func emptyGatewayParameters() *gw2_v1alpha1.GatewayParameters {
-	return &gw2_v1alpha1.GatewayParameters{
+func emptyGatewayParameters() *kgateway.GatewayParameters {
+	return &kgateway.GatewayParameters{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      wellknown.DefaultGatewayParametersName,
 			Namespace: defaultNamespace,
@@ -311,8 +311,17 @@ func newCommonCols(t test.Failer, initObjs ...client.Object) *collections.Common
 	nsCol := krtcollections.NewNamespaceCollectionFromCol(ctx, krttest.GetMockCollection[*corev1.Namespace](mock), krtutil.KrtOptions{})
 
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
-	gateways := krtcollections.NewGatewayIndex(krtopts, smallset.New(wellknown.DefaultGatewayControllerName), wellknown.DefaultGatewayControllerName, policies, kubeRawGateways, kubeRawListenerSets, gatewayClasses, nsCol)
-
+	gatewayIndexConfig := krtcollections.GatewayIndexConfig{
+		KrtOpts:             krtopts,
+		ControllerNames:     smallset.New(wellknown.DefaultGatewayControllerName),
+		EnvoyControllerName: wellknown.DefaultGatewayControllerName,
+		PolicyIndex:         policies,
+		Gateways:            kubeRawGateways,
+		ListenerSets:        kubeRawListenerSets,
+		GatewayClasses:      gatewayClasses,
+		Namespaces:          nsCol,
+	}
+	gateways := krtcollections.NewGatewayIndex(gatewayIndexConfig)
 	commonCols := &collections.CommonCollections{
 		GatewayIndex: gateways,
 	}

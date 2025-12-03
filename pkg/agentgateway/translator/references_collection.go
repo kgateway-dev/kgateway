@@ -3,7 +3,6 @@ package translator
 import (
 	"fmt"
 
-	creds "istio.io/istio/pilot/pkg/model/credentials"
 	"istio.io/istio/pkg/config"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -119,18 +118,13 @@ func (g ReferenceGrant) ResourceName() string {
 }
 
 // SecretAllowed checks if a secret is allowed to be used by a gateway
-func (refs ReferenceGrants) SecretAllowed(ctx krt.HandlerContext, resourceName string, namespace string) bool {
-	p, err := creds.ParseResourceName(resourceName, "", "", "")
-	if err != nil {
-		logger.Warn("failed to parse resource name", "resource_name", resourceName, "Error", err)
-		return false
-	}
-	from := Reference{Kind: wellknown.GatewayGVK, Namespace: gwv1b1.Namespace(namespace)}
-	to := Reference{Kind: wellknown.SecretGVK, Namespace: gwv1b1.Namespace(p.Namespace)}
+func (refs ReferenceGrants) SecretAllowed(ctx krt.HandlerContext, kind schema.GroupVersionKind, secret types.NamespacedName, namespace string) bool {
+	from := Reference{Kind: kind, Namespace: gwv1b1.Namespace(namespace)}
+	to := Reference{Kind: wellknown.SecretGVK, Namespace: gwv1b1.Namespace(secret.Namespace)}
 	pair := ReferencePair{From: from, To: to}
 	grants := krt.Fetch(ctx, refs.collection, krt.FilterIndex(refs.index, pair))
 	for _, g := range grants {
-		if g.AllowAll || g.AllowedName == p.Name {
+		if g.AllowAll || g.AllowedName == secret.Name {
 			return true
 		}
 	}

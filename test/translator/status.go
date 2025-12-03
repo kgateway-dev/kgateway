@@ -73,7 +73,7 @@ func buildStatusesFromReports(
 
 	// Build ListenerSet statuses. We need to use the actual XListenerSet object to make sure that
 	// status.listeners are correctly populated instead of using the object metadata.
-	for listenerSetNN := range reportsMap.ListenerSets {
+	for listenerSetNN := range reportsMap.ListenerSets[wellknown.XListenerSetGVK] {
 		// Use the actual XListenerSet object from the input if available, otherwise create empty one
 		var listenerSet gwxv1.XListenerSet
 		if actualLS, exists := listenerSets[listenerSetNN]; exists && actualLS != nil {

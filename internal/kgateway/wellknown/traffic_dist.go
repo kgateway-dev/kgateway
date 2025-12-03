@@ -16,8 +16,8 @@ const (
 	TrafficDistributionPreferSameZone
 	// TrafficDistributionPreferSameNode prefers traffic in same node, failing over to same subzone, then zone, region, and network.
 	TrafficDistributionPreferSameNode
-	// TrafficDistributionPreferSameNetwork prefers traffic in same network.
-	TrafficDistributionPreferSameNetwork
+	// TrafficDistributionPreferNetwork prefers traffic in same network.
+	TrafficDistributionPreferNetwork
 )
 
 func ParseTrafficDistribution(value string) TrafficDistribution {
@@ -29,8 +29,9 @@ func ParseTrafficDistribution(value string) TrafficDistribution {
 	// k8s Service PreferSameNode is an alpha feature
 	case strings.ToLower(corev1.ServiceTrafficDistributionPreferSameNode):
 		return TrafficDistributionPreferSameNode
-	case strings.ToLower("PreferSameNetwork"):
-		return TrafficDistributionPreferSameNetwork
+	// istio PreferNetwork (no upstream constant for this)
+	case strings.ToLower("PreferNetwork"):
+		return TrafficDistributionPreferNetwork
 	default:
 		if value != "" {
 			fmt.Printf("Unknown traffic distribution annotation value: %s, defaulting to any", value)

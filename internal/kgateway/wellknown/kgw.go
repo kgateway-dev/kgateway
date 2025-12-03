@@ -7,13 +7,13 @@ import (
 	istiogvk "istio.io/istio/pkg/config/schema/gvk"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 )
 
 func buildKgatewayGvk(kind string) schema.GroupVersionKind {
 	return schema.GroupVersionKind{
-		Group:   v1alpha1.GroupName,
-		Version: v1alpha1.GroupVersion.Version,
+		Group:   kgateway.GroupName,
+		Version: kgateway.GroupVersion.Version,
 		Kind:    kind,
 	}
 }
@@ -26,18 +26,16 @@ var (
 	DirectResponseGVK      = buildKgatewayGvk("DirectResponse")
 	BackendGVK             = buildKgatewayGvk("Backend")
 	TrafficPolicyGVK       = buildKgatewayGvk("TrafficPolicy")
-	AgentgatewayPolicyGVK  = buildKgatewayGvk("AgentgatewayPolicy")
-	AgentgatewayBackendGVK = buildKgatewayGvk("AgentgatewayBackend")
 	HTTPListenerPolicyGVK  = buildKgatewayGvk("HTTPListenerPolicy")
+	ListenerPolicyGVK      = buildKgatewayGvk("ListenerPolicy")
 	BackendConfigPolicyGVK = buildKgatewayGvk("BackendConfigPolicy")
 	GatewayParametersGVR   = GatewayParametersGVK.GroupVersion().WithResource("gatewayparameters")
 	GatewayExtensionGVR    = GatewayExtensionGVK.GroupVersion().WithResource("gatewayextensions")
 	DirectResponseGVR      = DirectResponseGVK.GroupVersion().WithResource("directresponses")
 	BackendGVR             = BackendGVK.GroupVersion().WithResource("backends")
 	TrafficPolicyGVR       = TrafficPolicyGVK.GroupVersion().WithResource("trafficpolicies")
-	AgentgatewayPolicyGVR  = AgentgatewayPolicyGVK.GroupVersion().WithResource("agentgatewaypolicies")
-	AgentgatewayBackendGVR = AgentgatewayBackendGVK.GroupVersion().WithResource("agentgatewaybackends")
 	HTTPListenerPolicyGVR  = HTTPListenerPolicyGVK.GroupVersion().WithResource("httplistenerpolicies")
+	ListenerPolicyGVR      = ListenerPolicyGVK.GroupVersion().WithResource("listenerpolicies")
 	BackendConfigPolicyGVR = BackendConfigPolicyGVK.GroupVersion().WithResource("backendconfigpolicies")
 )
 
@@ -68,10 +66,14 @@ func GVKToGVR(gvk schema.GroupVersionKind) (schema.GroupVersionResource, error) 
 		return TrafficPolicyGVR, nil
 	case HTTPListenerPolicyGVK:
 		return HTTPListenerPolicyGVR, nil
+	case ListenerPolicyGVK:
+		return ListenerPolicyGVR, nil
 	case BackendConfigPolicyGVK:
 		return BackendConfigPolicyGVR, nil
 	case AgentgatewayPolicyGVK:
 		return AgentgatewayPolicyGVR, nil
+	case AgentgatewayBackendGVK:
+		return AgentgatewayBackendGVR, nil
 	default:
 		return schema.GroupVersionResource{}, fmt.Errorf("unknown GVK: %v", gvk)
 	}

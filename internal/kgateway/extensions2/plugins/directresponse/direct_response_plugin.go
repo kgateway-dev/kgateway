@@ -12,7 +12,7 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -22,7 +22,7 @@ import (
 
 type directResponse struct {
 	ct   time.Time
-	spec v1alpha1.DirectResponseSpec
+	spec kgateway.DirectResponseSpec
 }
 
 // in case multiple policies attached to the same resource, we sort by policy creation time.
@@ -46,14 +46,14 @@ type directResponsePluginGwPass struct {
 var _ ir.ProxyTranslationPass = &directResponsePluginGwPass{}
 
 func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
-	col := krt.WrapClient(kclient.NewFilteredDelayed[*v1alpha1.DirectResponse](
+	col := krt.WrapClient(kclient.NewFilteredDelayed[*kgateway.DirectResponse](
 		commoncol.Client,
 		wellknown.DirectResponseGVR,
 		kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()},
 	), commoncol.KrtOpts.ToOptions("DirectResponse")...)
 
 	gk := wellknown.DirectResponseGVK.GroupKind()
-	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.DirectResponse) *ir.PolicyWrapper {
+	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *kgateway.DirectResponse) *ir.PolicyWrapper {
 		pol := &ir.PolicyWrapper{
 			ObjectSource: ir.ObjectSource{
 				Group:     gk.Group,

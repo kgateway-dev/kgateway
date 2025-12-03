@@ -10,7 +10,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -43,7 +43,7 @@ func (t *transformationIR) Validate() error {
 }
 
 // constructTransformation constructs the transformation policy IR from the policy specification.
-func constructTransformation(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) {
+func constructTransformation(in *kgateway.TrafficPolicy, out *trafficPolicySpecIr) {
 	if in.Spec.Transformation == nil && !useRustformations {
 		return
 	}
@@ -53,7 +53,7 @@ func constructTransformation(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecI
 	}
 }
 
-func toTraditionalTransform(t *v1alpha1.Transform) *transformationpb.Transformation_TransformationTemplate {
+func toTraditionalTransform(t *kgateway.Transform) *transformationpb.Transformation_TransformationTemplate {
 	if t == nil {
 		return nil
 	}
@@ -97,9 +97,9 @@ func toTraditionalTransform(t *v1alpha1.Transform) *transformationpb.Transformat
 		traditionalParsing := transformationpb.TransformationTemplate_DontParse
 		{
 			switch t.Body.ParseAs {
-			case v1alpha1.BodyParseBehaviorAsString:
+			case kgateway.BodyParseBehaviorAsString:
 				traditionalParsing = transformationpb.TransformationTemplate_DontParse
-			case v1alpha1.BodyParseBehaviorAsJSON:
+			case kgateway.BodyParseBehaviorAsJSON:
 				// in traditional if unset this would be the default but we are changing the default in kgateway ordering
 				traditionalParsing = transformationpb.TransformationTemplate_ParseAsJson
 			default:
@@ -123,8 +123,8 @@ func toTraditionalTransform(t *v1alpha1.Transform) *transformationpb.Transformat
 	return tt
 }
 
-func toTransformFilterConfig(t *v1alpha1.TransformationPolicy) *transformationpb.RouteTransformations {
-	if t == nil || *t == (v1alpha1.TransformationPolicy{}) {
+func toTransformFilterConfig(t *kgateway.TransformationPolicy) *transformationpb.RouteTransformations {
+	if t == nil || *t == (kgateway.TransformationPolicy{}) {
 		return nil
 	}
 
@@ -191,7 +191,7 @@ func (r *rustformationIR) Validate() error {
 }
 
 // constructRustformation constructs the rustformation policy IR from the policy specification.
-func constructRustformation(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) error {
+func constructRustformation(in *kgateway.TrafficPolicy, out *trafficPolicySpecIr) error {
 	if in.Spec.Transformation == nil || !useRustformations {
 		return nil
 	}
@@ -209,8 +209,8 @@ func constructRustformation(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr
 // The shape of this function currently resembles that of the traditional API
 // Feel free to change the shape and flow of this function as needed provided there are sufficient unit tests on the configuration output.
 // The most dangerous updates here will be any switch over env variables that we are working on.s
-func toRustFormationPerRouteConfig(t *v1alpha1.TransformationPolicy) (*dynamicmodulesv3.DynamicModuleFilterPerRoute, error) {
-	if t == nil || *t == (v1alpha1.TransformationPolicy{}) {
+func toRustFormationPerRouteConfig(t *kgateway.TransformationPolicy) (*dynamicmodulesv3.DynamicModuleFilterPerRoute, error) {
+	if t == nil || *t == (kgateway.TransformationPolicy{}) {
 		return nil, nil
 	}
 	rustformationJson, err := json.Marshal(t)

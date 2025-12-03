@@ -11,7 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	"k8s.io/utils/ptr"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
@@ -41,7 +41,7 @@ func (u *DfpIr) Equals(other any) bool {
 	})
 }
 
-func buildDfpIr(in *v1alpha1.DynamicForwardProxyBackend) (*DfpIr, error) {
+func buildDfpIr(in *kgateway.DynamicForwardProxyBackend) (*DfpIr, error) {
 	ir := &DfpIr{}
 
 	c := &envoy_dfp_cluster.ClusterConfig{

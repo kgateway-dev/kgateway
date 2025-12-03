@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/agentgateway/agentgateway/go/api"
+	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/config"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
@@ -22,7 +23,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/status"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
@@ -519,14 +520,14 @@ type RouteContext struct {
 
 // RouteContextInputs defines the collections needed to translate a route.
 type RouteContextInputs struct {
-	Grants          ReferenceGrants
-	RouteParents    RouteParents
-	Services        krt.Collection[*corev1.Service]
-	InferencePools  krt.Collection[*inf.InferencePool]
-	Namespaces      krt.Collection[*corev1.Namespace]
-	Backends        krt.Collection[*v1alpha1.AgentgatewayBackend]
-	DirectResponses krt.Collection[*v1alpha1.DirectResponse]
-	ControllerName  string
+	Grants         ReferenceGrants
+	RouteParents   RouteParents
+	Services       krt.Collection[*corev1.Service]
+	InferencePools krt.Collection[*inf.InferencePool]
+	Namespaces     krt.Collection[*corev1.Namespace]
+	ServiceEntries krt.Collection[*networkingclient.ServiceEntry]
+	Backends       krt.Collection[*agentgateway.AgentgatewayBackend]
+	ControllerName string
 }
 
 func (i RouteContextInputs) WithCtx(krtctx krt.HandlerContext) RouteContext {

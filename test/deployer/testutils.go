@@ -15,8 +15,8 @@ import (
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
@@ -38,8 +38,17 @@ func NewCommonCols(t test.Failer, initObjs ...client.Object) *collections.Common
 
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
 
-	gateways := krtcollections.NewGatewayIndex(krtopts, smallset.New(wellknown.DefaultGatewayControllerName), wellknown.DefaultGatewayControllerName, policies, kubeRawGateways, kubeRawListenerSets, gatewayClasses, nsCol)
-
+	gatewayIndexConfig := krtcollections.GatewayIndexConfig{
+		KrtOpts:             krtopts,
+		ControllerNames:     smallset.New(wellknown.DefaultGatewayControllerName),
+		EnvoyControllerName: wellknown.DefaultGatewayControllerName,
+		PolicyIndex:         policies,
+		Gateways:            kubeRawGateways,
+		ListenerSets:        kubeRawListenerSets,
+		GatewayClasses:      gatewayClasses,
+		Namespaces:          nsCol,
+	}
+	gateways := krtcollections.NewGatewayIndex(gatewayIndexConfig)
 	commonCols := &collections.CommonCollections{
 		GatewayIndex: gateways,
 	}

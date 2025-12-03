@@ -11,13 +11,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 )
 
 func TestTranslateHealthCheck(t *testing.T) {
 	tests := []struct {
 		name     string
-		config   *v1alpha1.HealthCheck
+		config   *kgateway.HealthCheck
 		expected *envoycorev3.HealthCheck
 	}{
 		{
@@ -27,12 +27,12 @@ func TestTranslateHealthCheck(t *testing.T) {
 		},
 		{
 			name: "basic health check config",
-			config: &v1alpha1.HealthCheck{
+			config: &kgateway.HealthCheck{
 				Timeout:            metav1.Duration{Duration: 5 * time.Second},
 				Interval:           metav1.Duration{Duration: 10 * time.Second},
 				UnhealthyThreshold: int32(3),
 				HealthyThreshold:   int32(2),
-				Http: &v1alpha1.HealthCheckHttp{
+				Http: &kgateway.HealthCheckHttp{
 					Path: "/health",
 				},
 			},
@@ -50,12 +50,12 @@ func TestTranslateHealthCheck(t *testing.T) {
 		},
 		{
 			name: "HTTP health check",
-			config: &v1alpha1.HealthCheck{
+			config: &kgateway.HealthCheck{
 				Timeout:            metav1.Duration{Duration: 5 * time.Second},
 				Interval:           metav1.Duration{Duration: 10 * time.Second},
 				UnhealthyThreshold: 3,
 				HealthyThreshold:   2,
-				Http: &v1alpha1.HealthCheckHttp{
+				Http: &kgateway.HealthCheckHttp{
 					Host:   ptr.To("example.com"),
 					Path:   "/health",
 					Method: ptr.To("GET"),
@@ -77,12 +77,12 @@ func TestTranslateHealthCheck(t *testing.T) {
 		},
 		{
 			name: "gRPC health check",
-			config: &v1alpha1.HealthCheck{
+			config: &kgateway.HealthCheck{
 				Timeout:            metav1.Duration{Duration: 5 * time.Second},
 				Interval:           metav1.Duration{Duration: 10 * time.Second},
 				UnhealthyThreshold: 4,
 				HealthyThreshold:   1,
-				Grpc: &v1alpha1.HealthCheckGrpc{
+				Grpc: &kgateway.HealthCheckGrpc{
 					ServiceName: ptr.To("grpc.health.v1.Health"),
 					Authority:   ptr.To("example.com"),
 				},
@@ -102,12 +102,12 @@ func TestTranslateHealthCheck(t *testing.T) {
 		},
 		{
 			name: "HTTP health check with multiple status ranges",
-			config: &v1alpha1.HealthCheck{
+			config: &kgateway.HealthCheck{
 				Timeout:            metav1.Duration{Duration: 5 * time.Second},
 				Interval:           metav1.Duration{Duration: 10 * time.Second},
 				UnhealthyThreshold: 2,
 				HealthyThreshold:   3,
-				Http: &v1alpha1.HealthCheckHttp{
+				Http: &kgateway.HealthCheckHttp{
 					Host: ptr.To("example.com"),
 					Path: "/health",
 				},

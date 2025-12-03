@@ -8,13 +8,13 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	translatorutils "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
-func translateCommonHttpProtocolOptions(commonHttpProtocolOptions *v1alpha1.CommonHttpProtocolOptions) *envoycorev3.HttpProtocolOptions {
+func translateCommonHttpProtocolOptions(commonHttpProtocolOptions *kgateway.CommonHttpProtocolOptions) *envoycorev3.HttpProtocolOptions {
 	out := &envoycorev3.HttpProtocolOptions{}
 	if commonHttpProtocolOptions.MaxRequestsPerConnection != nil {
 		out.MaxRequestsPerConnection = &wrapperspb.UInt32Value{Value: uint32(*commonHttpProtocolOptions.MaxRequestsPerConnection)} //nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 4294967295, safe for uint32
@@ -34,7 +34,7 @@ func translateCommonHttpProtocolOptions(commonHttpProtocolOptions *v1alpha1.Comm
 	return out
 }
 
-func translateHttp1ProtocolOptions(http1ProtocolOptions *v1alpha1.Http1ProtocolOptions) (*envoycorev3.Http1ProtocolOptions, error) {
+func translateHttp1ProtocolOptions(http1ProtocolOptions *kgateway.Http1ProtocolOptions) (*envoycorev3.Http1ProtocolOptions, error) {
 	out := &envoycorev3.Http1ProtocolOptions{}
 	if http1ProtocolOptions.EnableTrailers != nil {
 		out.EnableTrailers = *http1ProtocolOptions.EnableTrailers
@@ -62,7 +62,7 @@ func translateHttp1ProtocolOptions(http1ProtocolOptions *v1alpha1.Http1ProtocolO
 	return out, nil
 }
 
-func translateHttp2ProtocolOptions(http2ProtocolOptions *v1alpha1.Http2ProtocolOptions) *envoycorev3.Http2ProtocolOptions {
+func translateHttp2ProtocolOptions(http2ProtocolOptions *kgateway.Http2ProtocolOptions) *envoycorev3.Http2ProtocolOptions {
 	out := &envoycorev3.Http2ProtocolOptions{}
 	if http2ProtocolOptions.MaxConcurrentStreams != nil {
 		out.MaxConcurrentStreams = &wrapperspb.UInt32Value{Value: uint32(*http2ProtocolOptions.MaxConcurrentStreams)} //nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 4294967295, safe for uint32

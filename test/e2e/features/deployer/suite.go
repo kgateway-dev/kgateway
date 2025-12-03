@@ -20,7 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
@@ -175,7 +175,7 @@ func (s *testingSuite) TestProvisionResourcesUpdatedWithValidParameters() {
 	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(1))
 
 	// modify the number of replicas in the GatewayParameters
-	s.patchGatewayParameters(gwParamsDefaultObjectMeta, func(parameters *v1alpha1.GatewayParameters) {
+	s.patchGatewayParameters(gwParamsDefaultObjectMeta, func(parameters *kgateway.GatewayParameters) {
 		parameters.Spec.Kube.Deployment.Replicas = ptr.To[int32](2)
 	})
 
@@ -255,11 +255,11 @@ func (s *testingSuite) TestProvisionResourcesNotUpdatedWithInvalidParameters() {
 	origPrivileged := proxyDeployment.Spec.Template.Spec.Containers[0].SecurityContext.Privileged
 	s.Assert().Nil(origPrivileged)
 
-	s.patchGatewayParameters(gwParamsDefaultObjectMeta, func(parameters *v1alpha1.GatewayParameters) {
+	s.patchGatewayParameters(gwParamsDefaultObjectMeta, func(parameters *kgateway.GatewayParameters) {
 		// try to modify GatewayParameters with invalid values
 		// K8s won't allow setting both allowPrivilegeEscalation=false and privileged=true,
 		// so the proposed patch should fail and the original values should be retained.
-		parameters.Spec.Kube.EnvoyContainer = &v1alpha1.EnvoyContainer{
+		parameters.Spec.Kube.EnvoyContainer = &kgateway.EnvoyContainer{
 			SecurityContext: &corev1.SecurityContext{
 				Privileged:               ptr.To(true),
 				AllowPrivilegeEscalation: ptr.To(false),
@@ -336,8 +336,8 @@ func (s *testingSuite) patchGateway(objectMeta metav1.ObjectMeta, patchFn func(*
 
 // patchGatewayParameters accepts a reference to an object, and a patch function
 // It then queries the object, performs the patch in memory, and writes the object back to the cluster
-func (s *testingSuite) patchGatewayParameters(objectMeta metav1.ObjectMeta, patchFn func(*v1alpha1.GatewayParameters)) {
-	gatewayParameters := &v1alpha1.GatewayParameters{}
+func (s *testingSuite) patchGatewayParameters(objectMeta metav1.ObjectMeta, patchFn func(*kgateway.GatewayParameters)) {
+	gatewayParameters := &kgateway.GatewayParameters{}
 	err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
 		Name:      objectMeta.GetName(),
 		Namespace: objectMeta.GetNamespace(),

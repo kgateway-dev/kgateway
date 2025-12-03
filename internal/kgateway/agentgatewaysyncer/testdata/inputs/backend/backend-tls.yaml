@@ -24,7 +24,7 @@ spec:
         type: PathPrefix
         value: /mcp-backend
     backendRefs:
-    - group: gateway.kgateway.dev
+    - group: agentgateway.dev
       kind: AgentgatewayBackend
       name: mcp-backend
   - matches:
@@ -39,7 +39,7 @@ spec:
         type: PathPrefix
         value: /ai-groups
     backendRefs:
-    - group: gateway.kgateway.dev
+    - group: agentgateway.dev
       kind: AgentgatewayBackend
       name: ai-groups
   - matches:
@@ -47,7 +47,7 @@ spec:
         type: PathPrefix
         value: /openai-single
     backendRefs:
-    - group: gateway.kgateway.dev
+    - group: agentgateway.dev
       kind: AgentgatewayBackend
       name: openai-single
 ---
@@ -68,7 +68,7 @@ spec:
     port: 80
     targetPort: test
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   name: mcp-backend
@@ -94,7 +94,7 @@ spec:
   targetRefs:
   - name: mcp-backend
     kind: AgentgatewayBackend
-    group: gateway.kgateway.dev
+    group: agentgateway.dev
     sectionName: mcp-static
   - name: mcp-svc
     kind: Service
@@ -170,7 +170,7 @@ data:
     SWP+58ApfCcURLpMxUmxkO1ayfecNJbmSQ==
     -----END CERTIFICATE-----
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   labels:
@@ -194,7 +194,7 @@ spec:
           auth:
             key: "sk-anthropic-primary"
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   labels:
@@ -210,7 +210,7 @@ spec:
       secretRef:
         name: openai-primary-secret
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   labels:
@@ -233,11 +233,11 @@ spec:
   targetRefs:
   - name: ai-groups
     kind: AgentgatewayBackend
-    group: gateway.kgateway.dev
+    group: agentgateway.dev
     sectionName: anthropic
   - name: openai-single
     kind: AgentgatewayBackend
-    group: gateway.kgateway.dev
+    group: agentgateway.dev
   validation:
     hostname: foo
     wellKnownCACertificates: System
@@ -250,7 +250,7 @@ spec:
   targetRefs:
   - name: ai-groups
     kind: AgentgatewayBackend
-    group: gateway.kgateway.dev
+    group: agentgateway.dev
   validation:
     hostname: baz
     wellKnownCACertificates: System

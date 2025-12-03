@@ -9,7 +9,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/krt"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
@@ -75,7 +75,7 @@ func (r *globalRateLimitIR) Validate() error {
 // constructGlobalRateLimit constructs the global rate limit policy IR from the policy specification.
 func constructGlobalRateLimit(
 	krtctx krt.HandlerContext,
-	in *v1alpha1.TrafficPolicy,
+	in *kgateway.TrafficPolicy,
 	fetchGatewayExtension FetchGatewayExtensionFunc,
 	out *trafficPolicySpecIr,
 ) error {
@@ -94,7 +94,7 @@ func constructGlobalRateLimit(
 		return fmt.Errorf("ratelimit: %w", err)
 	}
 	if gwExtIR.RateLimit == nil {
-		return pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeRateLimit)
+		return pluginutils.ErrInvalidExtensionType(kgateway.GatewayExtensionTypeRateLimit)
 	}
 	// Create route rate limits and store in the RateLimitIR struct
 	out.globalRateLimit = &globalRateLimitIR{
@@ -109,7 +109,7 @@ func constructGlobalRateLimit(
 }
 
 // createRateLimitActions translates the API descriptors to Envoy route config rate limit actions
-func createRateLimitActions(descriptors []v1alpha1.RateLimitDescriptor) ([]*envoyroutev3.RateLimit_Action, error) {
+func createRateLimitActions(descriptors []kgateway.RateLimitDescriptor) ([]*envoyroutev3.RateLimit_Action, error) {
 	if len(descriptors) == 0 {
 		return nil, errors.New("at least one descriptor is required for global rate limiting")
 	}
@@ -127,7 +127,7 @@ func createRateLimitActions(descriptors []v1alpha1.RateLimitDescriptor) ([]*envo
 
 			// Set the action specifier based on entry type
 			switch entry.Type {
-			case v1alpha1.RateLimitDescriptorEntryTypeGeneric:
+			case kgateway.RateLimitDescriptorEntryTypeGeneric:
 				if entry.Generic == nil {
 					return nil, fmt.Errorf("generic entry requires Generic field to be set")
 				}
@@ -137,7 +137,7 @@ func createRateLimitActions(descriptors []v1alpha1.RateLimitDescriptor) ([]*envo
 						DescriptorValue: entry.Generic.Value,
 					},
 				}
-			case v1alpha1.RateLimitDescriptorEntryTypeHeader:
+			case kgateway.RateLimitDescriptorEntryTypeHeader:
 				if entry.Header == nil {
 					return nil, fmt.Errorf("header entry requires Header field to be set")
 				}
@@ -147,11 +147,11 @@ func createRateLimitActions(descriptors []v1alpha1.RateLimitDescriptor) ([]*envo
 						DescriptorKey: *entry.Header, // Use header name as key
 					},
 				}
-			case v1alpha1.RateLimitDescriptorEntryTypeRemoteAddress:
+			case kgateway.RateLimitDescriptorEntryTypeRemoteAddress:
 				action.ActionSpecifier = &envoyroutev3.RateLimit_Action_RemoteAddress_{
 					RemoteAddress: &envoyroutev3.RateLimit_Action_RemoteAddress{},
 				}
-			case v1alpha1.RateLimitDescriptorEntryTypePath:
+			case kgateway.RateLimitDescriptorEntryTypePath:
 				action.ActionSpecifier = &envoyroutev3.RateLimit_Action_RequestHeaders_{
 					RequestHeaders: &envoyroutev3.RateLimit_Action_RequestHeaders{
 						HeaderName:    ":path",

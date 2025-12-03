@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 )
 
 // createExpectedMatcher creates an expected matcher structure for testing
@@ -69,19 +69,19 @@ func TestTranslateRBAC(t *testing.T) {
 		name             string
 		ns               string
 		tpName           string
-		rbac             *v1alpha1.Authorization
+		rbac             *shared.Authorization
 		expected         *envoyauthz.RBACPerRoute
-		expectedCELRules map[string][]v1alpha1.CELExpression // policy name -> expected CEL expressions
+		expectedCELRules map[string][]shared.CELExpression // policy name -> expected CEL expressions
 		wantErr          bool
 	}{
 		{
 			name:   "allow action with single rule",
 			ns:     "test-ns",
 			tpName: "test-policy",
-			rbac: &v1alpha1.Authorization{
-				Action: v1alpha1.AuthorizationPolicyActionAllow,
-				Policy: v1alpha1.AuthorizationPolicy{
-					MatchExpressions: []v1alpha1.CELExpression{"request.auth.claims.groups == 'group1'", "request.auth.claims.groups == 'group2'"},
+			rbac: &shared.Authorization{
+				Action: shared.AuthorizationPolicyActionAllow,
+				Policy: shared.AuthorizationPolicy{
+					MatchExpressions: []shared.CELExpression{"request.auth.claims.groups == 'group1'", "request.auth.claims.groups == 'group2'"},
 				},
 			},
 			expected: &envoyauthz.RBACPerRoute{
@@ -89,7 +89,7 @@ func TestTranslateRBAC(t *testing.T) {
 					Matcher: createExpectedMatcher(1),
 				},
 			},
-			expectedCELRules: map[string][]v1alpha1.CELExpression{
+			expectedCELRules: map[string][]shared.CELExpression{
 				"ns[test-ns]-policy[test-policy]-rule[0]": {"request.auth.claims.groups == 'group1'", "request.auth.claims.groups == 'group2'"},
 			},
 			wantErr: false,
@@ -98,9 +98,9 @@ func TestTranslateRBAC(t *testing.T) {
 			name:   "deny action with empty rules",
 			ns:     "test-ns",
 			tpName: "test-policy",
-			rbac: &v1alpha1.Authorization{
-				Action: v1alpha1.AuthorizationPolicyActionDeny,
-				Policy: v1alpha1.AuthorizationPolicy{},
+			rbac: &shared.Authorization{
+				Action: shared.AuthorizationPolicyActionDeny,
+				Policy: shared.AuthorizationPolicy{},
 			},
 			expected: &envoyauthz.RBACPerRoute{
 				Rbac: &envoyauthz.RBAC{
@@ -110,7 +110,7 @@ func TestTranslateRBAC(t *testing.T) {
 					Matcher: createExpectedMatcher(0),
 				},
 			},
-			expectedCELRules: map[string][]v1alpha1.CELExpression{},
+			expectedCELRules: map[string][]shared.CELExpression{},
 			wantErr:          false,
 		},
 	}

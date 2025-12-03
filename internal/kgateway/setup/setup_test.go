@@ -719,18 +719,6 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) (xdsDump, error) {
 	return xdsDump, errs
 }
 
-type deltaXdsDumper struct {
-	conn *grpc.ClientConn
-	dr   *envoy_service_discovery_v3.DeltaDiscoveryRequest
-	ads  envoy_service_discovery_v3.AggregatedDiscoveryServiceClient
-}
-
-func (x deltaXdsDumper) Close() {
-	if x.conn != nil {
-		x.conn.Close()
-	}
-}
-
 type xdsDump struct {
 	Clusters  []*envoyclusterv3.Cluster
 	Listeners []*envoylistenerv3.Listener

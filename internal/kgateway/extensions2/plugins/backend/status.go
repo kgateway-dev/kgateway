@@ -14,14 +14,14 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 func buildRegisterCallback(
-	cl kclient.Client[*v1alpha1.Backend],
+	cl kclient.Client[*kgateway.Backend],
 	bcol krt.Collection[ir.BackendObjectIR],
 ) func() {
 	return func() {
@@ -64,9 +64,9 @@ func buildRegisterCallback(
 
 					conditions := make([]metav1.Condition, 0, 1)
 					meta.SetStatusCondition(&conditions, newCondition)
-					if _, err := cl.UpdateStatus(&v1alpha1.Backend{
+					if _, err := cl.UpdateStatus(&kgateway.Backend{
 						ObjectMeta: pluginsdk.CloneObjectMetaForStatus(cur.ObjectMeta),
-						Status: v1alpha1.BackendStatus{
+						Status: kgateway.BackendStatus{
 							Conditions: conditions,
 						},
 					}); err != nil {

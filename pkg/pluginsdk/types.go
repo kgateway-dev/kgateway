@@ -17,6 +17,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/endpoints"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 // ErrNotFound is returned when a requested resource is not found
@@ -64,8 +65,10 @@ type PolicyPlugin struct {
 	// Backend processing for agent gateway
 	ProcessAgentBackend func(pol ir.PolicyIR, in ir.BackendObjectIR) error
 
-	Policies       krt.Collection[ir.PolicyWrapper]
-	GlobalPolicies func(krt.HandlerContext) ir.PolicyIR
+	Policies krt.Collection[ir.PolicyWrapper]
+	// ProcessPolicyStaleStatusMarkers add empty reports for policies to clear stale status
+	ProcessPolicyStaleStatusMarkers func(krt.HandlerContext, *reports.ReportMap)
+	GlobalPolicies                  func(krt.HandlerContext) ir.PolicyIR
 	// PoliciesFetch can optionally be set if the plugin needs a custom mechanism for fetching the policy IR,
 	// rather than the default behavior of fetching by name from the aggregated policy KRT collection
 	PoliciesFetch func(n, ns string) ir.PolicyIR

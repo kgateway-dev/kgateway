@@ -1,6 +1,7 @@
 package plugins
 
 import (
+	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/config/schema/gvr"
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/kclient"
@@ -14,7 +15,8 @@ import (
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	kgwversioned "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
@@ -38,6 +40,10 @@ type AgwCollections struct {
 	ConfigMaps          krt.Collection[*corev1.ConfigMap]
 	EndpointSlices      krt.Collection[*discovery.EndpointSlice]
 
+	// Istio resources for ambient mesh
+	WorkloadEntries krt.Collection[*networkingclient.WorkloadEntry]
+	ServiceEntries  krt.Collection[*networkingclient.ServiceEntry]
+
 	// Gateway API resources
 	GatewayClasses     krt.Collection[*gwv1.GatewayClass]
 	Gateways           krt.Collection[*gwv1.Gateway]
@@ -53,15 +59,17 @@ type AgwCollections struct {
 	InferencePools krt.Collection[*inf.InferencePool]
 
 	// kgateway resources
-	Backends             krt.Collection[*v1alpha1.AgentgatewayBackend]
-	AgentgatewayPolicies krt.Collection[*v1alpha1.AgentgatewayPolicy]
-	DirectResponses      krt.Collection[*v1alpha1.DirectResponse]
-	GatewayExtensions    krt.Collection[*v1alpha1.GatewayExtension]
+	Backends             krt.Collection[*agentgateway.AgentgatewayBackend]
+	AgentgatewayPolicies krt.Collection[*agentgateway.AgentgatewayPolicy]
+	DirectResponses      krt.Collection[*kgateway.DirectResponse]
+	GatewayExtensions    krt.Collection[*kgateway.GatewayExtension]
 
 	// ControllerName is the name of the Gateway controller.
 	ControllerName string
 	// SystemNamespace is control plane system namespace (default is kgateway-system)
 	SystemNamespace string
+	// IstioNamespace is the Istio control plane namespace (default is istio-system)
+	IstioNamespace string
 	// ClusterID is the cluster ID of the cluster the proxy is running in.
 	ClusterID string
 }
@@ -73,6 +81,8 @@ func (c *AgwCollections) HasSynced() bool {
 		c.Services != nil && c.Services.HasSynced() &&
 		c.Secrets != nil && c.Secrets.HasSynced() &&
 		c.ConfigMaps != nil && c.ConfigMaps.HasSynced() &&
+		c.WorkloadEntries != nil && c.WorkloadEntries.HasSynced() &&
+		c.ServiceEntries != nil && c.ServiceEntries.HasSynced() &&
 		c.GatewayClasses != nil && c.GatewayClasses.HasSynced() &&
 		c.Gateways != nil && c.Gateways.HasSynced() &&
 		c.HTTPRoutes != nil && c.HTTPRoutes.HasSynced() &&
@@ -102,14 +112,15 @@ func NewAgwCollections(
 		KrtOpts:         commoncol.KrtOpts,
 		ControllerName:  agwControllerName,
 		SystemNamespace: systemNamespace,
+		IstioNamespace:  commoncol.Settings.IstioNamespace,
 		ClusterID:       clusterID,
 
 		// Core Kubernetes resources
 		Namespaces: krt.NewInformer[*corev1.Namespace](commoncol.Client),
-		Nodes: krt.NewInformerFiltered[*corev1.Node](commoncol.Client, kclient.Filter{
+		Nodes: krt.NewFilteredInformer[*corev1.Node](commoncol.Client, kclient.Filter{
 			ObjectFilter: commoncol.Client.ObjectFilter(),
 		}, commoncol.KrtOpts.ToOptions("informer/Nodes")...),
-		Pods: krt.NewInformerFiltered[*corev1.Pod](commoncol.Client, kclient.Filter{
+		Pods: krt.NewFilteredInformer[*corev1.Pod](commoncol.Client, kclient.Filter{
 			ObjectTransform: istiokube.StripPodUnusedFields,
 			ObjectFilter:    commoncol.Client.ObjectFilter(),
 		}, commoncol.KrtOpts.ToOptions("informer/Pods")...),
@@ -132,6 +143,14 @@ func NewAgwCollections(
 			kclient.NewFiltered[*discovery.EndpointSlice](commoncol.Client, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}),
 			commoncol.KrtOpts.ToOptions("informer/EndpointSlices")...),
 
+		// Istio resources
+		WorkloadEntries: krt.WrapClient(
+			kclient.NewDelayedInformer[*networkingclient.WorkloadEntry](commoncol.Client, gvr.WorkloadEntry, kubetypes.StandardInformer, kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}),
+			commoncol.KrtOpts.ToOptions("informer/WorkloadEntries")...),
+		ServiceEntries: krt.WrapClient(
+			kclient.NewDelayedInformer[*networkingclient.ServiceEntry](commoncol.Client, gvr.ServiceEntry, kubetypes.StandardInformer, kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}),
+			commoncol.KrtOpts.ToOptions("informer/ServiceEntries")...),
+
 		// Gateway API resources
 		GatewayClasses:     krt.WrapClient(kclient.NewFilteredDelayed[*gwv1.GatewayClass](commoncol.Client, wellknown.GatewayClassGVR, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/GatewayClasses")...),
 		Gateways:           krt.WrapClient(kclient.NewFilteredDelayed[*gwv1.Gateway](commoncol.Client, wellknown.GatewayGVR, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/Gateways")...),
@@ -150,10 +169,10 @@ func NewAgwCollections(
 		InferencePools: krt.NewStaticCollection[*inf.InferencePool](nil, nil, commoncol.KrtOpts.ToOptions("disable/inferencepools")...),
 
 		// kgateway resources
-		DirectResponses:      krt.NewInformer[*v1alpha1.DirectResponse](commoncol.Client),
-		AgentgatewayPolicies: krt.NewInformer[*v1alpha1.AgentgatewayPolicy](commoncol.Client),
-		GatewayExtensions:    krt.NewInformer[*v1alpha1.GatewayExtension](commoncol.Client),
-		Backends:             krt.NewInformer[*v1alpha1.AgentgatewayBackend](commoncol.Client),
+		DirectResponses:      krt.NewInformer[*kgateway.DirectResponse](commoncol.Client),
+		AgentgatewayPolicies: krt.NewInformer[*agentgateway.AgentgatewayPolicy](commoncol.Client),
+		GatewayExtensions:    krt.NewInformer[*kgateway.GatewayExtension](commoncol.Client),
+		Backends:             krt.NewInformer[*agentgateway.AgentgatewayBackend](commoncol.Client),
 	}
 
 	if commoncol.Settings.EnableInferExt {

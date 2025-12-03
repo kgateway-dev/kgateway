@@ -11,7 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
@@ -120,15 +120,15 @@ func TestBackendPolicyStatus(t *testing.T) {
 		ancestor1ConnPolicy1Report.Conditions,
 		[]metav1.Condition{
 			{
-				Type:    string(v1alpha1.PolicyConditionAccepted),
+				Type:    string(shared.PolicyConditionAccepted),
 				Status:  metav1.ConditionTrue,
-				Reason:  string(v1alpha1.PolicyReasonValid),
+				Reason:  string(shared.PolicyReasonValid),
 				Message: reporter.PolicyAcceptedMsg,
 			},
 			{
-				Type:    string(v1alpha1.PolicyConditionAttached),
+				Type:    string(shared.PolicyConditionAttached),
 				Status:  metav1.ConditionTrue,
-				Reason:  string(v1alpha1.PolicyReasonAttached),
+				Reason:  string(shared.PolicyReasonAttached),
 				Message: reporter.PolicyAttachedMsg,
 			},
 		},
@@ -154,9 +154,9 @@ func TestBackendPolicyStatus(t *testing.T) {
 		ancestor1ConnPolicy2Report.Conditions,
 		[]metav1.Condition{
 			{
-				Type:    string(v1alpha1.PolicyConditionAccepted),
+				Type:    string(shared.PolicyConditionAccepted),
 				Status:  metav1.ConditionFalse,
-				Reason:  string(v1alpha1.PolicyReasonInvalid),
+				Reason:  string(shared.PolicyReasonInvalid),
 				Message: "conn-policy-2 error",
 			},
 		},
@@ -182,9 +182,9 @@ func TestBackendPolicyStatus(t *testing.T) {
 		ancestor1TLSPolicyreport.Conditions,
 		[]metav1.Condition{
 			{
-				Type:    string(v1alpha1.PolicyConditionAccepted),
+				Type:    string(shared.PolicyConditionAccepted),
 				Status:  metav1.ConditionFalse,
-				Reason:  string(v1alpha1.PolicyReasonInvalid),
+				Reason:  string(shared.PolicyReasonInvalid),
 				Message: "tls-policy error",
 			},
 		},
@@ -201,9 +201,9 @@ func TestBackendPolicyStatus(t *testing.T) {
 		ancestor2TLSPolicyreport.Conditions,
 		[]metav1.Condition{
 			{
-				Type:    string(v1alpha1.PolicyConditionAccepted),
+				Type:    string(shared.PolicyConditionAccepted),
 				Status:  metav1.ConditionFalse,
-				Reason:  string(v1alpha1.PolicyReasonInvalid),
+				Reason:  string(shared.PolicyReasonInvalid),
 				Message: "tls-policy error",
 			},
 		},

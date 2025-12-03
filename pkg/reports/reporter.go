@@ -6,18 +6,20 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gwxv1alpha1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 type ReportMap struct {
 	Gateways     map[types.NamespacedName]*GatewayReport
-	ListenerSets map[types.NamespacedName]*ListenerSetReport
+	ListenerSets map[schema.GroupVersionKind]map[types.NamespacedName]*ListenerSetReport
 	HTTPRoutes   map[types.NamespacedName]*RouteReport
 	GRPCRoutes   map[types.NamespacedName]*RouteReport
 	TCPRoutes    map[types.NamespacedName]*RouteReport
@@ -60,7 +62,7 @@ type ParentRefKey struct {
 func NewReportMap() ReportMap {
 	return ReportMap{
 		Gateways:     make(map[types.NamespacedName]*GatewayReport),
-		ListenerSets: make(map[types.NamespacedName]*ListenerSetReport),
+		ListenerSets: make(map[schema.GroupVersionKind]map[types.NamespacedName]*ListenerSetReport),
 		HTTPRoutes:   make(map[types.NamespacedName]*RouteReport),
 		GRPCRoutes:   make(map[types.NamespacedName]*RouteReport),
 		TCPRoutes:    make(map[types.NamespacedName]*RouteReport),
@@ -111,16 +113,32 @@ func (r *ReportMap) newGatewayReport(gateway *gwv1.Gateway) *GatewayReport {
 // reports are not generated for a ListenerSet that has been translated.
 //
 // NOTE: Exported for unit testing, validation_test.go should be refactored to reduce this visibility
-func (r *ReportMap) ListenerSet(listenerSet *gwxv1alpha1.XListenerSet) *ListenerSetReport {
+func (r *ReportMap) ListenerSet(listenerSet client.Object) *ListenerSetReport {
+	gvk := listenerSet.GetObjectKind().GroupVersionKind()
+	if gvk.Empty() {
+		gvk = wellknown.XListenerSetGVK
+	}
+	if r.ListenerSets[gvk] == nil {
+		r.ListenerSets[gvk] = make(map[types.NamespacedName]*ListenerSetReport)
+	}
 	key := key(listenerSet)
-	return r.ListenerSets[key]
+	return r.ListenerSets[gvk][key]
 }
 
-func (r *ReportMap) newListenerSetReport(listenerSet *gwxv1alpha1.XListenerSet) *ListenerSetReport {
-	lsr := &ListenerSetReport{}
-	lsr.observedGeneration = listenerSet.Generation
+func (r *ReportMap) newListenerSetReport(listenerSet client.Object) *ListenerSetReport {
+	lsr := &ListenerSetReport{
+		observedGeneration: listenerSet.GetGeneration(),
+	}
+
+	gvk := listenerSet.GetObjectKind().GroupVersionKind()
+	if gvk.Empty() {
+		gvk = wellknown.XListenerSetGVK
+	}
+	if r.ListenerSets[gvk] == nil {
+		r.ListenerSets[gvk] = make(map[types.NamespacedName]*ListenerSetReport)
+	}
 	key := key(listenerSet)
-	r.ListenerSets[key] = lsr
+	r.ListenerSets[gvk][key] = lsr
 	return lsr
 }
 
@@ -296,7 +314,7 @@ func (r *statusReporter) Gateway(gateway *gwv1.Gateway) reporter.GatewayReporter
 	return gr
 }
 
-func (r *statusReporter) ListenerSet(listenerSet *gwxv1alpha1.XListenerSet) reporter.ListenerSetReporter {
+func (r *statusReporter) ListenerSet(listenerSet client.Object) reporter.ListenerSetReporter {
 	lsr := r.report.ListenerSet(listenerSet)
 	if lsr == nil {
 		lsr = r.report.newListenerSetReport(listenerSet)

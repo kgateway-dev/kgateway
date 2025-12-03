@@ -18,7 +18,7 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
 
@@ -35,7 +35,7 @@ type LoadBalancerConfigIR struct {
 	useHostnameForHashing bool
 }
 
-func translateLoadBalancerConfig(config *v1alpha1.LoadBalancer, policyName, policyNamespace string) (*LoadBalancerConfigIR, error) {
+func translateLoadBalancerConfig(config *kgateway.LoadBalancer, policyName, policyNamespace string) (*LoadBalancerConfigIR, error) {
 	out := &LoadBalancerConfigIR{}
 
 	out.commonLbConfig = &envoyclusterv3.Cluster_CommonLbConfig{}
@@ -245,7 +245,7 @@ func disableUseHostnameForHashingIfPresent(typedCfg *envoycorev3.TypedExtensionC
 	}
 }
 
-func toSlowStartConfig(cfg *v1alpha1.SlowStart, name, namespace string) *envoycommonv3.SlowStartConfig {
+func toSlowStartConfig(cfg *kgateway.SlowStart, name, namespace string) *envoycommonv3.SlowStartConfig {
 	if cfg == nil {
 		return nil
 	}
@@ -300,7 +300,7 @@ func (a *LoadBalancerConfigIR) Equals(b *LoadBalancerConfigIR) bool {
 }
 
 // constructHashPolicy constructs the hash policies from the policy specification.
-func constructHashPolicy(hashPolicies []v1alpha1.HashPolicy) []*envoyroutev3.RouteAction_HashPolicy {
+func constructHashPolicy(hashPolicies []kgateway.HashPolicy) []*envoyroutev3.RouteAction_HashPolicy {
 	if len(hashPolicies) == 0 {
 		return nil
 	}

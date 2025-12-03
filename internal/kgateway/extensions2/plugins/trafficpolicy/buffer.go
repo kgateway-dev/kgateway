@@ -7,7 +7,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -35,7 +35,7 @@ func (b *bufferIR) Equals(other PolicySubIR) bool {
 func (b *bufferIR) Validate() error { return nil }
 
 // constructBuffer constructs the buffer policy IR from the policy specification.
-func constructBuffer(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) {
+func constructBuffer(spec kgateway.TrafficPolicySpec, out *trafficPolicySpecIr) {
 	if spec.Buffer == nil {
 		return
 	}

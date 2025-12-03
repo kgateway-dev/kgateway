@@ -12,12 +12,18 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
@@ -54,10 +60,12 @@ func (s *testingSuite) SetupSuite() {
 
 	// include gateway manifests for the tests, so we recreate it for each test run
 	s.manifests = map[string][]string{
-		"TestHttpListenerPolicyAllFields":    {gatewayManifest, httpRouteManifest, allFieldsManifest},
-		"TestHttpListenerPolicyServerHeader": {gatewayManifest, httpRouteManifest, serverHeaderManifest},
-		"TestPreserveHttp1HeaderCase":        {gatewayManifest, preserveHttp1HeaderCaseManifest},
-		"TestAccessLogEmittedToStdout":       {gatewayManifest, httpRouteManifest, accessLogManifest},
+		"TestHttpListenerPolicyAllFields":        {gatewayManifest, httpRouteManifest, allFieldsManifest},
+		"TestHttpListenerPolicyServerHeader":     {gatewayManifest, httpRouteManifest, serverHeaderManifest},
+		"TestPreserveHttp1HeaderCase":            {gatewayManifest, preserveHttp1HeaderCaseManifest},
+		"TestAccessLogEmittedToStdout":           {gatewayManifest, httpRouteManifest, accessLogManifest},
+		"TestHttpListenerPolicyClearStaleStatus": {gatewayManifest, httpRouteManifest, serverHeaderManifest},
+		"TestEarlyRequestHeaderModifier":         {gatewayManifest, earlyHeaderMutationManifest},
 	}
 }
 
@@ -228,4 +236,114 @@ func (s *testingSuite) TestAccessLogEmittedToStdout() {
 		s.Require().NoError(err)
 		return out
 	}, 10*time.Second, 200*time.Millisecond).ShouldNot(gomega.ContainSubstring("\"response_code\":200"))
+}
+
+// TestHttpListenerPolicyClearStaleStatus verifies that stale status is cleared when targetRef becomes invalid
+func (s *testingSuite) TestHttpListenerPolicyClearStaleStatus() {
+	kgatewayControllerName := wellknown.DefaultGatewayControllerName
+	otherControllerName := "other-controller.example.com/controller"
+
+	// Add fake ancestor status from another controller
+	s.addAncestorStatus("http-listener-policy-server-header", "default", "other-gw", otherControllerName)
+
+	// Verify both kgateway and other controller statuses exist
+	s.assertAncestorStatuses("gw", map[string]bool{
+		kgatewayControllerName: true,
+	})
+	s.assertAncestorStatuses("other-gw", map[string]bool{
+		otherControllerName: true,
+	})
+
+	// Apply policy with missing gateway target
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(
+		s.ctx,
+		httpListenerPolicyMissingTargetManifest,
+	)
+	s.Require().NoError(err)
+
+	// Verify kgateway status cleared, other remains
+	s.assertAncestorStatuses("gw", map[string]bool{
+		kgatewayControllerName: false,
+	})
+	s.assertAncestorStatuses("other-gw", map[string]bool{
+		otherControllerName: true,
+	})
+}
+
+func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, gwName, controllerName string) {
+	currentTimeout, pollingInterval := helpers.GetTimeouts()
+	s.testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+		policy := &kgateway.HTTPListenerPolicy{}
+		err := s.testInstallation.ClusterContext.Client.Get(
+			s.ctx,
+			types.NamespacedName{Name: policyName, Namespace: policyNamespace},
+			policy,
+		)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+
+		// Add fake ancestor status
+		fakeStatus := gwv1.PolicyAncestorStatus{
+			AncestorRef:    gwv1.ParentReference{Name: gwv1.ObjectName(gwName)},
+			ControllerName: gwv1.GatewayController(controllerName),
+			Conditions: []metav1.Condition{
+				{
+					Type:               string(shared.PolicyConditionAccepted),
+					Status:             metav1.ConditionTrue,
+					Reason:             string(shared.PolicyReasonValid),
+					Message:            "Accepted by fake controller",
+					LastTransitionTime: metav1.Now(),
+				},
+			},
+		}
+
+		policy.Status.Ancestors = append(policy.Status.Ancestors, fakeStatus)
+		err = s.testInstallation.ClusterContext.Client.Status().Update(s.ctx, policy)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+}
+
+func (s *testingSuite) assertAncestorStatuses(ancestorName string, expectedControllers map[string]bool) {
+	currentTimeout, pollingInterval := helpers.GetTimeouts()
+	s.testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+		policy := &kgateway.HTTPListenerPolicy{}
+		err := s.testInstallation.ClusterContext.Client.Get(
+			s.ctx,
+			types.NamespacedName{Name: "http-listener-policy-server-header", Namespace: "default"},
+			policy,
+		)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+
+		foundControllers := make(map[string]bool)
+		for _, ancestor := range policy.Status.Ancestors {
+			if string(ancestor.AncestorRef.Name) == ancestorName {
+				foundControllers[string(ancestor.ControllerName)] = true
+			}
+		}
+
+		for controller, shouldExist := range expectedControllers {
+			exists := foundControllers[controller]
+			if shouldExist {
+				g.Expect(exists).To(gomega.BeTrue(), "Expected controller %s to exist in status", controller)
+			} else {
+				g.Expect(exists).To(gomega.BeFalse(), "Expected controller %s to not exist in status", controller)
+			}
+		}
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+}
+
+func (s *testingSuite) TestEarlyRequestHeaderModifier() {
+	// Route matches only when a specific header is present. The policy adds it early.
+	s.testInstallation.Assertions.AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithHostHeader("example.com"),
+			// No manual header provided; listener policy adds it early so route matches
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.ContainSubstring("Welcome to nginx!"),
+		},
+	)
 }
