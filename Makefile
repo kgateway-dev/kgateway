@@ -44,7 +44,7 @@ SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 # Note: When bumping this version, update the version in pkg/validator/validator.go as well.
 export ENVOY_IMAGE ?= quay.io/solo-io/envoy-gloo:1.36.2-patch1
 export RUST_BUILD_ARCH ?= x86_64 # override this to aarch64 for local arm build
-export LDFLAGS := -X 'github.com/kgateway-dev/kgateway/v2/internal/version.Version=$(VERSION)' -s -w
+export LDFLAGS := -X 'github.com/kgateway-dev/kgateway/v2/pkg/version.Version=$(VERSION)' -s -w
 export GCFLAGS ?=
 
 UNAME_M := $(shell uname -m)
@@ -320,7 +320,7 @@ API_SOURCE_FILES := $(shell find api/v1alpha1 -name "*.go" ! -name "zz_generated
 API_SOURCE_FILES += hack/generate.sh hack/generate.go
 
 # Source files that trigger mockgen
-MOCK_SOURCE_FILES := internal/kgateway/query/query_test.go
+MOCK_SOURCE_FILES := pkg/kgateway/query/query_test.go
 
 # Files that track dependency changes
 MOD_FILES := go.mod go.sum
@@ -415,8 +415,8 @@ generate-licenses: $(STAMP_DIR)/generate-licenses  ## Generate the licenses for 
 # Controller
 #----------------------------------------------------------------------------------
 
-K8S_GATEWAY_SOURCES=$(call get_sources,cmd/kgateway internal/kgateway pkg/ api/)
-CONTROLLER_OUTPUT_DIR=$(OUTPUT_DIR)/internal/kgateway
+K8S_GATEWAY_SOURCES=$(call get_sources,cmd/kgateway pkg/ api/)
+CONTROLLER_OUTPUT_DIR=$(OUTPUT_DIR)/pkg/kgateway
 export CONTROLLER_IMAGE_REPO ?= kgateway
 
 # We include the files in K8S_GATEWAY_SOURCES as dependencies to the kgateway build
@@ -444,7 +444,7 @@ kgateway-docker: $(CONTROLLER_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH)
 # SDS Server - gRPC server for serving Secret Discovery Service config
 #----------------------------------------------------------------------------------
 
-SDS_DIR=internal/sds
+SDS_DIR=pkg/sds
 SDS_SOURCES=$(call get_sources,$(SDS_DIR))
 SDS_OUTPUT_DIR=$(OUTPUT_DIR)/$(SDS_DIR)
 export SDS_IMAGE_REPO ?= sds
@@ -540,7 +540,7 @@ $(DUMMY_IDP_OUTPUT_DIR)/.docker-stamp-$(DUMMY_IDP_VERSION)-$(GOARCH): $(DUMMY_ID
 dummy-idp-docker: $(DUMMY_IDP_OUTPUT_DIR)/.docker-stamp-$(DUMMY_IDP_VERSION)-$(GOARCH)
 
 .PHONY: kind-load-dummy-idp
-kind-load-dummy-idp: 
+kind-load-dummy-idp:
 	$(KIND) load docker-image $(IMAGE_REGISTRY)/$(DUMMY_IDP_IMAGE_REPO):$(DUMMY_IDP_VERSION) --name $(CLUSTER_NAME)
 
 #----------------------------------------------------------------------------------

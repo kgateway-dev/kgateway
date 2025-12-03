@@ -56,10 +56,30 @@ type ExtAuthBufferSettings struct {
 }
 
 // ExtAuthProvider defines the configuration for an ExtAuth provider.
+// +kubebuilder:validation:ExactlyOneOf=grpcService;httpService
 type ExtAuthProvider struct {
 	// GrpcService is the GRPC service that will handle the auth.
-	// +required
-	GrpcService ExtGrpcService `json:"grpcService"`
+	// Mutually exclusive with HttpService.
+	// +optional
+	GrpcService *ExtGrpcService `json:"grpcService,omitempty"`
+
+	// HttpService is the HTTP service that will handle the auth.
+	// Mutually exclusive with GrpcService.
+	// +optional
+	HttpService *ExtHttpService `json:"httpService,omitempty"`
+
+	// HeadersToForward specifies which headers from the client request should be
+	// forwarded to the external authorization service.
+	//
+	// HTTP services by default have the following headers forwarded: Host, Method, Path, Content-Length, Authorization.
+	//
+	// If this field is omitted, gRPC services will have all client request headers forwarded,
+	// while HTTP services will only receive the default headers described above.
+	//
+	// Common examples: ["cookie", "authorization", "x-forwarded-for"]
+	// More info is available on the [Envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_authz/v3/ext_authz.proto#envoy-v3-api-field-extensions-filters-http-ext-authz-v3-extauthz-allowed-headers)
+	// +optional
+	HeadersToForward []string `json:"headersToForward,omitempty"`
 
 	// FailOpen determines if requests are allowed when the ext auth service is unavailable.
 	// Defaults to false, meaning requests will be denied if the ext auth service is unavailable.

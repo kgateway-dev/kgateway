@@ -68,8 +68,9 @@ spec:
                       Defaults to false, meaning requests will be denied if the ext auth service is unavailable.
                     type: boolean
                   grpcService:
-                    description: GrpcService is the GRPC service that will handle
-                      the auth.
+                    description: |-
+                      GrpcService is the GRPC service that will handle the auth.
+                      Mutually exclusive with HttpService.
                     properties:
                       authority:
                         description: Authority is the authority header to use for
@@ -222,6 +223,207 @@ spec:
                     required:
                     - backendRef
                     type: object
+                  headersToForward:
+                    description: |-
+                      HeadersToForward specifies which headers from the client request should be
+                      forwarded to the external authorization service.
+
+                      HTTP services by default have the following headers forwarded: Host, Method, Path, Content-Length, Authorization.
+
+                      If this field is omitted, gRPC services will have all client request headers forwarded,
+                      while HTTP services will only receive the default headers described above.
+
+                      Common examples: ["cookie", "authorization", "x-forwarded-for"]
+                      More info is available on the [Envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_authz/v3/ext_authz.proto#envoy-v3-api-field-extensions-filters-http-ext-authz-v3-extauthz-allowed-headers)
+                    items:
+                      type: string
+                    type: array
+                  httpService:
+                    description: |-
+                      HttpService is the HTTP service that will handle the auth.
+                      Mutually exclusive with GrpcService.
+                    properties:
+                      authorizationRequest:
+                        description: AuthorizationRequest configures the authorization
+                          request to the external service.
+                        properties:
+                          headersToAdd:
+                            additionalProperties:
+                              type: string
+                            description: |-
+                              HeadersToAdd specifies additional headers to add to the authorization request.
+                              These headers are sent to the authorization service in addition to the original request headers.
+                              Client request headers with the same key will be overridden.
+                              The keys are header names and values are envoy format specifiers, see https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_authz/v3/ext_authz.proto#envoy-v3-api-field-extensions-filters-http-ext-authz-v3-authorizationrequest-headers-to-add.
+                            type: object
+                        type: object
+                      authorizationResponse:
+                        description: AuthorizationResponse configures the authorization
+                          response from the external service.
+                        properties:
+                          headersToBackend:
+                            description: |-
+                              HeadersToBackend specifies which headers from the authorization response
+                              should be forwarded to the upstream service when the request is authorized.
+                              Common examples: ["x-current-user", "x-user-id", "x-auth-request-email"]
+                            items:
+                              type: string
+                            type: array
+                        type: object
+                      backendRef:
+                        description: BackendRef references the backend HTTP service.
+                        properties:
+                          group:
+                            default: ""
+                            description: |-
+                              Group is the group of the referent. For example, "gateway.networking.k8s.io".
+                              When unspecified or empty string, core API group is inferred.
+                            maxLength: 253
+                            pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                            type: string
+                          kind:
+                            default: Service
+                            description: |-
+                              Kind is the Kubernetes resource kind of the referent. For example
+                              "Service".
+
+                              Defaults to "Service" when not specified.
+
+                              ExternalName services can refer to CNAME DNS records that may live
+                              outside of the cluster and as such are difficult to reason about in
+                              terms of conformance. They also may not be safe to forward to (see
+                              CVE-2021-25740 for more information). Implementations SHOULD NOT
+                              support ExternalName Services.
+
+                              Support: Core (Services with a type other than ExternalName)
+
+                              Support: Implementation-specific (Services with type ExternalName)
+                            maxLength: 63
+                            minLength: 1
+                            pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
+                            type: string
+                          name:
+                            description: Name is the name of the referent.
+                            maxLength: 253
+                            minLength: 1
+                            type: string
+                          namespace:
+                            description: |-
+                              Namespace is the namespace of the backend. When unspecified, the local
+                              namespace is inferred.
+
+                              Note that when a namespace different than the local namespace is specified,
+                              a ReferenceGrant object is required in the referent namespace to allow that
+                              namespace's owner to accept the reference. See the ReferenceGrant
+                              documentation for details.
+
+                              Support: Core
+                            maxLength: 63
+                            minLength: 1
+                            pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                            type: string
+                          port:
+                            description: |-
+                              Port specifies the destination port number to use for this resource.
+                              Port is required when the referent is a Kubernetes Service. In this
+                              case, the port number is the service port number, not the target port.
+                              For other resources, destination port might be derived from the referent
+                              resource or this field.
+                            format: int32
+                            maximum: 65535
+                            minimum: 1
+                            type: integer
+                          weight:
+                            default: 1
+                            description: |-
+                              Weight specifies the proportion of requests forwarded to the referenced
+                              backend. This is computed as weight/(sum of all weights in this
+                              BackendRefs list). For non-zero values, there may be some epsilon from
+                              the exact proportion defined here depending on the precision an
+                              implementation supports. Weight is not a percentage and the sum of
+                              weights does not need to equal 100.
+
+                              If only one backend is specified and it has a weight greater than 0, 100%
+                              of the traffic is forwarded to that backend. If weight is set to 0, no
+                              traffic should be forwarded for this entry. If unspecified, weight
+                              defaults to 1.
+
+                              Support for this field varies based on the context where used.
+                            format: int32
+                            maximum: 1000000
+                            minimum: 0
+                            type: integer
+                        required:
+                        - name
+                        type: object
+                        x-kubernetes-validations:
+                        - message: Must have port for Service reference
+                          rule: '(size(self.group) == 0 && self.kind == ''Service'')
+                            ? has(self.port) : true'
+                      pathPrefix:
+                        description: |-
+                          PathPrefix specifies a prefix to the value of the authorization request's path header.
+                          This allows customizing the path at which the authorization server expects to receive requests.
+                          For example, if the authorization server expects requests at "/verify", set this to "/verify".
+                          If not specified, the original request path is used.
+                        type: string
+                      requestTimeout:
+                        description: RequestTimeout is the timeout for the HTTP request.
+                          Default timeout is 2 seconds.
+                        type: string
+                        x-kubernetes-validations:
+                        - message: invalid timeout value
+                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                        - message: timeout must be at least 1ms.
+                          rule: duration(self) >= duration('1ms')
+                      retry:
+                        description: Retry specifies the retry policy for HTTP requests
+                          to the authorization service.
+                        properties:
+                          attempts:
+                            default: 1
+                            description: |-
+                              Attempts specifies the number of retry attempts for a request.
+                              Defaults to 1 attempt if not set.
+                              A value of 0 effectively disables retries.
+                            format: int32
+                            minimum: 0
+                            type: integer
+                          backoff:
+                            description: |-
+                              Backoff specifies the retry backoff strategy.
+                              If not set, a default backoff with a base interval of 1000ms is used. The default max interval is 10 times the base interval.
+                            properties:
+                              baseInterval:
+                                description: BaseInterval specifies the base interval
+                                  used with a fully jittered exponential back-off
+                                  between retries.
+                                type: string
+                                x-kubernetes-validations:
+                                - message: invalid duration value
+                                  rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                - message: retry.BaseInterval must be at least 1ms.
+                                  rule: duration(self) >= duration('1ms')
+                              maxInterval:
+                                description: |-
+                                  MaxInterval specifies the maximum interval between retry attempts.
+                                  Defaults to 10 times the BaseInterval if not set.
+                                type: string
+                                x-kubernetes-validations:
+                                - message: invalid duration value
+                                  rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                            required:
+                            - baseInterval
+                            type: object
+                            x-kubernetes-validations:
+                            - message: maxInterval must be greater than or equal to
+                                baseInterval
+                              rule: 'has(self.maxInterval) ? duration(self.maxInterval)
+                                >= duration(self.baseInterval) : true'
+                        type: object
+                    required:
+                    - backendRef
+                    type: object
                   statPrefix:
                     description: |-
                       StatPrefix is an optional prefix to include when emitting stats from the extauthz filter,
@@ -268,9 +470,12 @@ spec:
                     required:
                     - maxRequestBytes
                     type: object
-                required:
-                - grpcService
                 type: object
+                x-kubernetes-validations:
+                - message: exactly one of the fields in [grpcService httpService]
+                    must be set
+                  rule: '[has(self.grpcService),has(self.httpService)].filter(x,x==true).size()
+                    == 1'
               extProc:
                 description: ExtProc configuration for ExtProc extension type.
                 properties:

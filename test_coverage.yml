@@ -29,9 +29,9 @@ override:
   # Calls to external library, which is tested
   - threshold: 0
     path: ^hack/generate.go
-  # The only code at the top-level of the `internal/kgateway` package is code generation
+  # The only code at the top-level of the `pkg/kgateway` package is code generation
   - threshold: 0
-    path: ^internal/kgateway$
+    path: ^pkg/kgateway$
 
 # Holds regexp rules which will exclude matched files or packages
 # from coverage statistics
