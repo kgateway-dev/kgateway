@@ -115,8 +115,8 @@ func (in *APIKeyAuthentication) DeepCopyInto(out *APIKeyAuthentication) {
 	}
 	if in.SecretRef != nil {
 		in, out := &in.SecretRef, &out.SecretRef
-		*out = new(corev1.LocalObjectReference)
-		**out = **in
+		*out = new(apisv1.SecretObjectReference)
+		(*in).DeepCopyInto(*out)
 	}
 	if in.SecretSelector != nil {
 		in, out := &in.SecretSelector, &out.SecretSelector

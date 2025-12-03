@@ -340,6 +340,50 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy API Key Authentication with SecretRef", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/api-key-auth-secretref.yaml",
+			outputFile: "traffic-policy/api-key-auth-secretref.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy API Key Authentication with SecretRef and ReferenceGrant", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/api-key-auth-secretref-with-refgrant.yaml",
+			outputFile: "traffic-policy/api-key-auth-secretref-with-refgrant.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy API Key Authentication with SecretSelector and ReferenceGrant", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/api-key-auth-selector-with-refgrant.yaml",
+			outputFile: "traffic-policy/api-key-auth-selector-with-refgrant.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy API Key Authentication with SecretSelector no matching secrets", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/api-key-auth-selector-no-matching-secret.yaml",
+			outputFile: "traffic-policy/api-key-auth-selector-no-matching-secret.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy with fail open rate limiting", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/fail-open",

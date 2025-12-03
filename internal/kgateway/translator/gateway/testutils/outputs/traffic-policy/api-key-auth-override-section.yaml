@@ -92,10 +92,10 @@ Routes:
         envoy.filters.http.api_key_auth:
           '@type': type.googleapis.com/envoy.extensions.filters.http.api_key_auth.v3.ApiKeyAuthPerRoute
           credentials:
-          - client: client4
-            key: k-999
           - client: client3
             key: k-789
+          - client: client4
+            key: k-999
           forwarding: {}
           keySources:
           - header: x-api-key

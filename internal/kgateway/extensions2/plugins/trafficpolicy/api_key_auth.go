@@ -9,6 +9,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -64,40 +66,39 @@ func constructAPIKeyAuth(
 
 	ak := spec.APIKeyAuthentication
 
-	// Resolve secrets using SecretIndex
+	// Resolve secrets using SecretIndex with ReferenceGrant validation
 	var secrets []ir.Secret
 	secretGK := schema.GroupKind{Group: "", Kind: "Secret"}
-	secretCol := commoncol.Secrets.GetSecretCollection(secretGK)
-	if secretCol == nil {
-		return fmt.Errorf("secret collection not found")
+	policyGK := wellknown.TrafficPolicyGVK.GroupKind()
+	from := krtcollections.From{
+		GroupKind: policyGK,
+		Namespace: policy.Namespace,
 	}
 
 	if ak.SecretRef != nil {
-		// Use ResourceName format: Group/Kind/Namespace/Name
-		secretObjSource := ir.ObjectSource{
-			Group:     "",
-			Kind:      "Secret",
-			Namespace: policy.Namespace,
-			Name:      ak.SecretRef.Name,
-		}
-		secret := krt.FetchOne(krtctx, secretCol, krt.FilterKey(secretObjSource.ResourceName()))
-		if secret == nil {
-			return fmt.Errorf("API key secret %s not found in namespace %s", ak.SecretRef.Name, policy.Namespace)
+		secret, err := commoncol.Secrets.GetSecret(krtctx, from, *ak.SecretRef)
+		if err != nil {
+			return fmt.Errorf("API key secret %s: %w", ak.SecretRef.Name, err)
 		}
 		secrets = []ir.Secret{*secret}
 	} else if ak.SecretSelector != nil {
-		// Fetch secrets matching labels and namespace
-		secrets = krt.Fetch(krtctx, secretCol,
-			krt.FilterLabel(ak.SecretSelector.MatchLabels),
-			krt.FilterGeneric(func(obj any) bool {
-				secret := obj.(ir.Secret)
-				return secret.Namespace == policy.Namespace
-			}),
+		// Fetch secrets matching labels and namespace with ReferenceGrant validation
+		var err error
+		secrets, err = commoncol.Secrets.GetSecretsBySelector(
+			krtctx,
+			from,
+			secretGK,
+			policy.Namespace,
+			ak.SecretSelector.MatchLabels,
 		)
+		if err != nil {
+			return fmt.Errorf("failed to get secrets by selector: %w", err)
+		}
 		if len(secrets) == 0 {
 			return fmt.Errorf("no secrets found matching selector %v in namespace %s", ak.SecretSelector.MatchLabels, policy.Namespace)
 		}
 	} else {
+		// We shouldn't get here because the spec validation should catch this
 		return fmt.Errorf("either secretRef or secretSelector must be specified")
 	}
 

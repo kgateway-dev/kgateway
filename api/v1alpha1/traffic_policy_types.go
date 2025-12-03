@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -457,7 +456,7 @@ type APIKeyAuthentication struct {
 	//   client2: "k-456"
 	//
 	// +optional
-	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
+	SecretRef *gwv1.SecretObjectReference `json:"secretRef,omitempty"`
 
 	// secretSelector selects multiple secrets containing API Keys. If the same key is defined in multiple secrets, the
 	// behavior is undefined.
