@@ -2540,13 +2540,6 @@ spec:
                         - message: Must have port for Service reference
                           rule: '(size(self.group) == 0 && self.kind == ''Service'')
                             ? has(self.port) : true'
-                      contextExtensions:
-                        additionalProperties:
-                          type: string
-                        description: contextExtensions specifies additional arbitrary
-                          key-value pairs to send to the authorization server.
-                        maxProperties: 64
-                        type: object
                       forwardBody:
                         description: |-
                           forwardBody configures whether to include the HTTP body in the request. If enabled, the request body will be
@@ -2562,9 +2555,109 @@ spec:
                         required:
                         - maxSize
                         type: object
+                      grpc:
+                        description: |-
+                          grpc specifies that the gRPC External Authorization
+                          [protocol](https://www.envoyproxy.io/docs/envoy/latest/api-v3/service/auth/v3/external_auth.proto) should be used.
+                        properties:
+                          contextExtensions:
+                            additionalProperties:
+                              type: string
+                            description: contextExtensions specifies additional arbitrary
+                              key-value pairs to send to the authorization server
+                              in the `context_extensions` field.
+                            maxProperties: 64
+                            type: object
+                          metadata:
+                            additionalProperties:
+                              description: CELExpression represents a Common Expression
+                                Language (CEL) expression.
+                              maxLength: 16384
+                              minLength: 1
+                              type: string
+                            description: |-
+                              metadata specifies metadata to be sent to the authorization server.
+                              This maps to the `metadata_context.filter_metadata` field of the request, and allows dynamic CEL expressions.
+                              If unset, by default the `envoy.filters.http.jwt_authn` key is set if the JWT policy is used as well, for compatibility.
+                            maxProperties: 64
+                            type: object
+                        type: object
+                      http:
+                        description: |-
+                          http specifies that the HTTP protocol should be used for connecting to the authorization server.
+                          The authorization server must return a `200` status code, otherwise the request is considered and authorization failure.
+                        properties:
+                          addRequestHeaders:
+                            additionalProperties:
+                              description: CELExpression represents a Common Expression
+                                Language (CEL) expression.
+                              maxLength: 16384
+                              minLength: 1
+                              type: string
+                            description: |-
+                              addRequestHeaders specifies what additional headers to add to the request to the authorization server.
+                              While allowedRequestHeaders just passes the original headers through, addRequestHeaders allows defining custom headers
+                              based on CEL Expressions.
+                            maxProperties: 64
+                            type: object
+                          allowedRequestHeaders:
+                            description: |-
+                              allowedRequestHeaders specifies what additional headers from the client request
+                              will be sent to the authorization server.
+
+                              If unset, the following headers are sent by default: `Authorization`.
+                            items:
+                              maxLength: 256
+                              minLength: 1
+                              type: string
+                            maxItems: 64
+                            type: array
+                          allowedResponseHeaders:
+                            description: |-
+                              allowedResponseHeaders specifies what headers from the authorization response
+                              will be copied into the request to the backend.
+                            items:
+                              maxLength: 256
+                              minLength: 1
+                              type: string
+                            maxItems: 64
+                            type: array
+                          metadata:
+                            additionalProperties:
+                              description: CELExpression represents a Common Expression
+                                Language (CEL) expression.
+                              maxLength: 16384
+                              minLength: 1
+                              type: string
+                            description: |-
+                              metadata specifies what metadata fields should be constructed from the authorization response. These will be
+                              included under the `extauthz` variable in future CEL expressions. Setting this is useful to do things like logging
+                              usernames, without needing to include them as headers to the backend (as `allowedResponseHeaders` would).
+                            maxProperties: 64
+                            type: object
+                          path:
+                            description: |-
+                              path specifies the path to send to the authorization server. If unset, this defaults to the original request path.
+                              This is a CEL expression, which allows customizing the path based on the incoming request.
+                              For example, to add a prefix: `path: '"/prefix/" + request.path'`.
+                            maxLength: 16384
+                            minLength: 1
+                            type: string
+                          redirect:
+                            description: |-
+                              redirect defines an optional expression to determine a path to redirect to on authorization failure.
+                              This is useful to redirect to a sign-in page.
+                            maxLength: 16384
+                            minLength: 1
+                            type: string
+                        type: object
                     required:
                     - backendRef
                     type: object
+                    x-kubernetes-validations:
+                    - message: exactly one of the fields in [grpc http] must be set
+                      rule: '[has(self.grpc),has(self.http)].filter(x,x==true).size()
+                        == 1'
                   extProc:
                     description: extProc specifies the external processing configuration
                       for the policy.
