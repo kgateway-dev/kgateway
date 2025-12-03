@@ -8,7 +8,7 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -46,7 +46,7 @@ func (l *localRateLimitIR) Validate() error {
 }
 
 // constructLocalRateLimit constructs the local rate limit policy IR from the policy specification.
-func constructLocalRateLimit(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecIr) {
+func constructLocalRateLimit(in *kgateway.TrafficPolicy, out *trafficPolicySpecIr) {
 	if in.Spec.RateLimit == nil || in.Spec.RateLimit.Local == nil {
 		return
 	}
@@ -56,14 +56,14 @@ func constructLocalRateLimit(in *v1alpha1.TrafficPolicy, out *trafficPolicySpecI
 	}
 }
 
-func toLocalRateLimitFilterConfig(t *v1alpha1.LocalRateLimitPolicy) *localratelimitv3.LocalRateLimit {
+func toLocalRateLimitFilterConfig(t *kgateway.LocalRateLimitPolicy) *localratelimitv3.LocalRateLimit {
 	if t == nil {
 		return nil
 	}
 
 	// If the local rate limit policy is empty, we add a LocalRateLimit configuration that disables
 	// any other applied local rate limit policy (if any) for the target.
-	if *t == (v1alpha1.LocalRateLimitPolicy{}) {
+	if *t == (kgateway.LocalRateLimitPolicy{}) {
 		return createDisabledRateLimit()
 	}
 

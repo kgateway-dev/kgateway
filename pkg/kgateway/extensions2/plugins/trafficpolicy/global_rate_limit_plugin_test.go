@@ -17,7 +17,8 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -154,18 +155,18 @@ func TestGlobalRateLimitIREquals(t *testing.T) {
 func TestCreateRateLimitActions(t *testing.T) {
 	tests := []struct {
 		name           string
-		descriptors    []v1alpha1.RateLimitDescriptor
+		descriptors    []kgateway.RateLimitDescriptor
 		expectedError  string
 		validateResult func(*testing.T, []*envoyroutev3.RateLimit_Action)
 	}{
 		{
 			name: "with generic key descriptor",
-			descriptors: []v1alpha1.RateLimitDescriptor{
+			descriptors: []kgateway.RateLimitDescriptor{
 				{
-					Entries: []v1alpha1.RateLimitDescriptorEntry{
+					Entries: []kgateway.RateLimitDescriptorEntry{
 						{
-							Type: v1alpha1.RateLimitDescriptorEntryTypeGeneric,
-							Generic: &v1alpha1.RateLimitDescriptorEntryGeneric{
+							Type: kgateway.RateLimitDescriptorEntryTypeGeneric,
+							Generic: &kgateway.RateLimitDescriptorEntryGeneric{
 								Key:   "service",
 								Value: "api",
 							},
@@ -183,11 +184,11 @@ func TestCreateRateLimitActions(t *testing.T) {
 		},
 		{
 			name: "with header descriptor",
-			descriptors: []v1alpha1.RateLimitDescriptor{
+			descriptors: []kgateway.RateLimitDescriptor{
 				{
-					Entries: []v1alpha1.RateLimitDescriptorEntry{
+					Entries: []kgateway.RateLimitDescriptorEntry{
 						{
-							Type:   v1alpha1.RateLimitDescriptorEntryTypeHeader,
+							Type:   kgateway.RateLimitDescriptorEntryTypeHeader,
 							Header: ptr.To("X-User-ID"),
 						},
 					},
@@ -203,11 +204,11 @@ func TestCreateRateLimitActions(t *testing.T) {
 		},
 		{
 			name: "with remote address descriptor",
-			descriptors: []v1alpha1.RateLimitDescriptor{
+			descriptors: []kgateway.RateLimitDescriptor{
 				{
-					Entries: []v1alpha1.RateLimitDescriptorEntry{
+					Entries: []kgateway.RateLimitDescriptorEntry{
 						{
-							Type: v1alpha1.RateLimitDescriptorEntryTypeRemoteAddress,
+							Type: kgateway.RateLimitDescriptorEntryTypeRemoteAddress,
 						},
 					},
 				},
@@ -220,11 +221,11 @@ func TestCreateRateLimitActions(t *testing.T) {
 		},
 		{
 			name: "with path descriptor",
-			descriptors: []v1alpha1.RateLimitDescriptor{
+			descriptors: []kgateway.RateLimitDescriptor{
 				{
-					Entries: []v1alpha1.RateLimitDescriptorEntry{
+					Entries: []kgateway.RateLimitDescriptorEntry{
 						{
-							Type: v1alpha1.RateLimitDescriptorEntryTypePath,
+							Type: kgateway.RateLimitDescriptorEntryTypePath,
 						},
 					},
 				},
@@ -239,12 +240,12 @@ func TestCreateRateLimitActions(t *testing.T) {
 		},
 		{
 			name: "with multiple descriptors",
-			descriptors: []v1alpha1.RateLimitDescriptor{
+			descriptors: []kgateway.RateLimitDescriptor{
 				{
-					Entries: []v1alpha1.RateLimitDescriptorEntry{
+					Entries: []kgateway.RateLimitDescriptorEntry{
 						{
-							Type: v1alpha1.RateLimitDescriptorEntryTypeGeneric,
-							Generic: &v1alpha1.RateLimitDescriptorEntryGeneric{
+							Type: kgateway.RateLimitDescriptorEntryTypeGeneric,
+							Generic: &kgateway.RateLimitDescriptorEntryGeneric{
 								Key:   "service",
 								Value: "api",
 							},
@@ -252,9 +253,9 @@ func TestCreateRateLimitActions(t *testing.T) {
 					},
 				},
 				{
-					Entries: []v1alpha1.RateLimitDescriptorEntry{
+					Entries: []kgateway.RateLimitDescriptorEntry{
 						{
-							Type: v1alpha1.RateLimitDescriptorEntryTypeRemoteAddress,
+							Type: kgateway.RateLimitDescriptorEntryTypeRemoteAddress,
 						},
 					},
 				},
@@ -274,18 +275,18 @@ func TestCreateRateLimitActions(t *testing.T) {
 		},
 		{
 			name: "with multiple entries in one descriptor",
-			descriptors: []v1alpha1.RateLimitDescriptor{
+			descriptors: []kgateway.RateLimitDescriptor{
 				{
-					Entries: []v1alpha1.RateLimitDescriptorEntry{
+					Entries: []kgateway.RateLimitDescriptorEntry{
 						{
-							Type: v1alpha1.RateLimitDescriptorEntryTypeGeneric,
-							Generic: &v1alpha1.RateLimitDescriptorEntryGeneric{
+							Type: kgateway.RateLimitDescriptorEntryTypeGeneric,
+							Generic: &kgateway.RateLimitDescriptorEntryGeneric{
 								Key:   "service",
 								Value: "api",
 							},
 						},
 						{
-							Type:   v1alpha1.RateLimitDescriptorEntryTypeHeader,
+							Type:   kgateway.RateLimitDescriptorEntryTypeHeader,
 							Header: ptr.To("X-User-ID"),
 						},
 					},
@@ -308,16 +309,16 @@ func TestCreateRateLimitActions(t *testing.T) {
 		},
 		{
 			name:          "with empty descriptors",
-			descriptors:   []v1alpha1.RateLimitDescriptor{},
+			descriptors:   []kgateway.RateLimitDescriptor{},
 			expectedError: "at least one descriptor is required for global rate limiting",
 		},
 		{
 			name: "with missing generic key entry data",
-			descriptors: []v1alpha1.RateLimitDescriptor{
+			descriptors: []kgateway.RateLimitDescriptor{
 				{
-					Entries: []v1alpha1.RateLimitDescriptorEntry{
+					Entries: []kgateway.RateLimitDescriptorEntry{
 						{
-							Type: v1alpha1.RateLimitDescriptorEntryTypeGeneric,
+							Type: kgateway.RateLimitDescriptorEntryTypeGeneric,
 						},
 					},
 				},
@@ -326,11 +327,11 @@ func TestCreateRateLimitActions(t *testing.T) {
 		},
 		{
 			name: "with missing header name",
-			descriptors: []v1alpha1.RateLimitDescriptor{
+			descriptors: []kgateway.RateLimitDescriptor{
 				{
-					Entries: []v1alpha1.RateLimitDescriptorEntry{
+					Entries: []kgateway.RateLimitDescriptorEntry{
 						{
-							Type: v1alpha1.RateLimitDescriptorEntryTypeHeader,
+							Type: kgateway.RateLimitDescriptorEntryTypeHeader,
 						},
 					},
 				},
@@ -339,9 +340,9 @@ func TestCreateRateLimitActions(t *testing.T) {
 		},
 		{
 			name: "with unsupported entry type",
-			descriptors: []v1alpha1.RateLimitDescriptor{
+			descriptors: []kgateway.RateLimitDescriptor{
 				{
-					Entries: []v1alpha1.RateLimitDescriptorEntry{
+					Entries: []kgateway.RateLimitDescriptorEntry{
 						{
 							Type: "UnsupportedType",
 						},
@@ -386,17 +387,17 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 	tests := []struct {
 		name              string
 		gatewayExtension  *ir.GatewayExtension
-		policy            *v1alpha1.RateLimitPolicy
-		trafficPolicy     *v1alpha1.TrafficPolicy
+		policy            *kgateway.RateLimitPolicy
+		trafficPolicy     *kgateway.TrafficPolicy
 		expectedError     string
 		validateRateLimit func(*testing.T, *ratev3.RateLimit)
 	}{
 		{
 			name: "with default configuration",
 			gatewayExtension: &ir.GatewayExtension{
-				RateLimit: &v1alpha1.RateLimitProvider{
+				RateLimit: &kgateway.RateLimitProvider{
 					Domain: "test-domain",
-					GrpcService: v1alpha1.ExtGrpcService{
+					GrpcService: kgateway.ExtGrpcService{
 						BackendRef: gwv1.BackendRef{
 							BackendObjectReference: createBackendRef(),
 						},
@@ -407,16 +408,16 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 					Namespace: defaultNamespace,
 				},
 			},
-			policy: &v1alpha1.RateLimitPolicy{
-				ExtensionRef: v1alpha1.NamespacedObjectReference{
+			policy: &kgateway.RateLimitPolicy{
+				ExtensionRef: shared.NamespacedObjectReference{
 					Name: gwv1.ObjectName(defaultExtensionName),
 				},
-				Descriptors: []v1alpha1.RateLimitDescriptor{
+				Descriptors: []kgateway.RateLimitDescriptor{
 					{
-						Entries: []v1alpha1.RateLimitDescriptorEntry{
+						Entries: []kgateway.RateLimitDescriptorEntry{
 							{
-								Type: v1alpha1.RateLimitDescriptorEntryTypeGeneric,
-								Generic: &v1alpha1.RateLimitDescriptorEntryGeneric{
+								Type: kgateway.RateLimitDescriptorEntryTypeGeneric,
+								Generic: &kgateway.RateLimitDescriptorEntryGeneric{
 									Key:   "service",
 									Value: "api",
 								},
@@ -425,7 +426,7 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 					},
 				},
 			},
-			trafficPolicy: &v1alpha1.TrafficPolicy{},
+			trafficPolicy: &kgateway.TrafficPolicy{},
 			validateRateLimit: func(t *testing.T, rl *ratev3.RateLimit) {
 				require.NotNil(t, rl)
 				assert.Equal(t, "test-domain", rl.Domain)
@@ -443,9 +444,9 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 		{
 			name: "with custom timeout and extensionRef specifying the namespace",
 			gatewayExtension: &ir.GatewayExtension{
-				RateLimit: &v1alpha1.RateLimitProvider{
+				RateLimit: &kgateway.RateLimitProvider{
 					Domain: "test-domain",
-					GrpcService: v1alpha1.ExtGrpcService{
+					GrpcService: kgateway.ExtGrpcService{
 						BackendRef: gwv1.BackendRef{
 							BackendObjectReference: createBackendRef(),
 						},
@@ -457,17 +458,17 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 					Namespace: defaultNamespace,
 				},
 			},
-			policy: &v1alpha1.RateLimitPolicy{
-				ExtensionRef: v1alpha1.NamespacedObjectReference{
+			policy: &kgateway.RateLimitPolicy{
+				ExtensionRef: shared.NamespacedObjectReference{
 					Name:      gwv1.ObjectName(defaultExtensionName),
 					Namespace: &typedDefaultNamespace,
 				},
-				Descriptors: []v1alpha1.RateLimitDescriptor{
+				Descriptors: []kgateway.RateLimitDescriptor{
 					{
-						Entries: []v1alpha1.RateLimitDescriptorEntry{
+						Entries: []kgateway.RateLimitDescriptorEntry{
 							{
-								Type: v1alpha1.RateLimitDescriptorEntryTypeGeneric,
-								Generic: &v1alpha1.RateLimitDescriptorEntryGeneric{
+								Type: kgateway.RateLimitDescriptorEntryTypeGeneric,
+								Generic: &kgateway.RateLimitDescriptorEntryGeneric{
 									Key:   "service",
 									Value: "api",
 								},
@@ -476,7 +477,7 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 					},
 				},
 			},
-			trafficPolicy: &v1alpha1.TrafficPolicy{},
+			trafficPolicy: &kgateway.TrafficPolicy{},
 			validateRateLimit: func(t *testing.T, rl *ratev3.RateLimit) {
 				require.NotNil(t, rl)
 				assert.Equal(t, time.Duration(5*time.Second), rl.Timeout.AsDuration())
@@ -485,9 +486,9 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 		{
 			name: "with fail open configuration",
 			gatewayExtension: &ir.GatewayExtension{
-				RateLimit: &v1alpha1.RateLimitProvider{
+				RateLimit: &kgateway.RateLimitProvider{
 					Domain: "test-domain",
-					GrpcService: v1alpha1.ExtGrpcService{
+					GrpcService: kgateway.ExtGrpcService{
 						BackendRef: gwv1.BackendRef{
 							BackendObjectReference: createBackendRef(),
 						},
@@ -499,16 +500,16 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 					Namespace: defaultNamespace,
 				},
 			},
-			policy: &v1alpha1.RateLimitPolicy{
-				ExtensionRef: v1alpha1.NamespacedObjectReference{
+			policy: &kgateway.RateLimitPolicy{
+				ExtensionRef: shared.NamespacedObjectReference{
 					Name: gwv1.ObjectName(defaultExtensionName),
 				},
-				Descriptors: []v1alpha1.RateLimitDescriptor{
+				Descriptors: []kgateway.RateLimitDescriptor{
 					{
-						Entries: []v1alpha1.RateLimitDescriptorEntry{
+						Entries: []kgateway.RateLimitDescriptorEntry{
 							{
-								Type: v1alpha1.RateLimitDescriptorEntryTypeGeneric,
-								Generic: &v1alpha1.RateLimitDescriptorEntryGeneric{
+								Type: kgateway.RateLimitDescriptorEntryTypeGeneric,
+								Generic: &kgateway.RateLimitDescriptorEntryGeneric{
 									Key:   "service",
 									Value: "api",
 								},
@@ -517,7 +518,7 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 					},
 				},
 			},
-			trafficPolicy: &v1alpha1.TrafficPolicy{},
+			trafficPolicy: &kgateway.TrafficPolicy{},
 			validateRateLimit: func(t *testing.T, rl *ratev3.RateLimit) {
 				require.NotNil(t, rl)
 				assert.False(t, rl.FailureModeDeny) // Should be fail open (deny=false)

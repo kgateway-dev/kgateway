@@ -8,7 +8,7 @@ import (
 	decompressorv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/decompressor/v3"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -57,7 +57,7 @@ func (d *decompressionIR) Equals(other PolicySubIR) bool {
 func (d *decompressionIR) Validate() error { return nil }
 
 // constructCompression builds IR for response compression (per-route) and decompression (listener enable toggle).
-func constructCompression(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) {
+func constructCompression(spec kgateway.TrafficPolicySpec, out *trafficPolicySpecIr) {
 	if spec.Compression == nil {
 		return
 	}

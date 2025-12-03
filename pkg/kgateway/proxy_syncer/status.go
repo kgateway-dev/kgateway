@@ -5,7 +5,7 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	reportssdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
@@ -51,24 +51,24 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR) reports.ReportMap {
 				r := reporter.Policy(key, polAtt.Generation).AncestorRef(ancestorRef)
 				if len(polAtt.Errors) > 0 {
 					r.SetCondition(reportssdk.PolicyCondition{
-						Type:    string(v1alpha1.PolicyConditionAccepted),
+						Type:    string(shared.PolicyConditionAccepted),
 						Status:  metav1.ConditionFalse,
-						Reason:  string(v1alpha1.PolicyReasonInvalid),
+						Reason:  string(shared.PolicyReasonInvalid),
 						Message: polAtt.FormatErrors(),
 					})
 					continue
 				}
 
 				r.SetCondition(reportssdk.PolicyCondition{
-					Type:    string(v1alpha1.PolicyConditionAccepted),
+					Type:    string(shared.PolicyConditionAccepted),
 					Status:  metav1.ConditionTrue,
-					Reason:  string(v1alpha1.PolicyReasonValid),
+					Reason:  string(shared.PolicyReasonValid),
 					Message: reportssdk.PolicyAcceptedMsg,
 				})
 				r.SetCondition(reportssdk.PolicyCondition{
-					Type:    string(v1alpha1.PolicyConditionAttached),
+					Type:    string(shared.PolicyConditionAttached),
 					Status:  metav1.ConditionTrue,
-					Reason:  string(v1alpha1.PolicyReasonAttached),
+					Reason:  string(shared.PolicyReasonAttached),
 					Message: reportssdk.PolicyAttachedMsg,
 				})
 			}

@@ -9,10 +9,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 )
 
-func BuildRetryPolicy(in *v1alpha1.Retry) *envoyroutev3.RetryPolicy {
+func BuildRetryPolicy(in *shared.Retry) *envoyroutev3.RetryPolicy {
 	if in == nil {
 		return nil
 	}
@@ -35,7 +35,7 @@ func BuildRetryPolicy(in *v1alpha1.Retry) *envoyroutev3.RetryPolicy {
 }
 
 // retryOnToString converts a slice of RetryOnCondition to a comma-separated string
-func retryOnToString(retryOn []v1alpha1.RetryOnCondition, forStatusCodes bool) string {
+func retryOnToString(retryOn []shared.RetryOnCondition, forStatusCodes bool) string {
 	retryOnSet := sets.NewString()
 	for _, r := range retryOn {
 		retryOnSet.Insert(string(r))

@@ -9,7 +9,7 @@ import (
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
@@ -32,7 +32,7 @@ func (u *StaticIr) Equals(other any) bool {
 	})
 }
 
-func buildStaticIr(in *v1alpha1.StaticBackend) (*StaticIr, error) {
+func buildStaticIr(in *kgateway.StaticBackend) (*StaticIr, error) {
 	ir := &StaticIr{
 		clusterType: envoyclusterv3.Cluster_STATIC,
 	}
@@ -115,6 +115,6 @@ func processStatic(ir *StaticIr, out *envoyclusterv3.Cluster) {
 	}
 }
 
-func processEndpointsStatic(_ *v1alpha1.StaticBackend) *ir.EndpointsForBackend {
+func processEndpointsStatic(_ *kgateway.StaticBackend) *ir.EndpointsForBackend {
 	return nil
 }

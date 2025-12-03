@@ -19,7 +19,7 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -27,7 +27,7 @@ func TestTracingConverter(t *testing.T) {
 	t.Run("Tracing Conversion", func(t *testing.T) {
 		testCases := []struct {
 			name     string
-			config   *v1alpha1.Tracing
+			config   *kgateway.Tracing
 			expected *envoy_hcm.HttpConnectionManager_Tracing
 		}{
 			{
@@ -37,10 +37,10 @@ func TestTracingConverter(t *testing.T) {
 			},
 			{
 				name: "OTel Tracing minimal config",
-				config: &v1alpha1.Tracing{
-					Provider: v1alpha1.TracingProvider{
-						OpenTelemetry: &v1alpha1.OpenTelemetryTracingConfig{
-							GrpcService: v1alpha1.CommonGrpcService{
+				config: &kgateway.Tracing{
+					Provider: kgateway.TracingProvider{
+						OpenTelemetry: &kgateway.OpenTelemetryTracingConfig{
+							GrpcService: kgateway.CommonGrpcService{
 								BackendRef: gwv1.BackendRef{
 									BackendObjectReference: gwv1.BackendObjectReference{
 										Name: "test-service",
@@ -70,10 +70,10 @@ func TestTracingConverter(t *testing.T) {
 			},
 			{
 				name: "OTel Tracing with nil attributes",
-				config: &v1alpha1.Tracing{
-					Provider: v1alpha1.TracingProvider{
-						OpenTelemetry: &v1alpha1.OpenTelemetryTracingConfig{
-							GrpcService: v1alpha1.CommonGrpcService{
+				config: &kgateway.Tracing{
+					Provider: kgateway.TracingProvider{
+						OpenTelemetry: &kgateway.OpenTelemetryTracingConfig{
+							GrpcService: kgateway.CommonGrpcService{
 								BackendRef: gwv1.BackendRef{
 									BackendObjectReference: gwv1.BackendObjectReference{
 										Name: "test-service",
@@ -104,10 +104,10 @@ func TestTracingConverter(t *testing.T) {
 			},
 			{
 				name: "OTel Tracing with nil attributes",
-				config: &v1alpha1.Tracing{
-					Provider: v1alpha1.TracingProvider{
-						OpenTelemetry: &v1alpha1.OpenTelemetryTracingConfig{
-							GrpcService: v1alpha1.CommonGrpcService{
+				config: &kgateway.Tracing{
+					Provider: kgateway.TracingProvider{
+						OpenTelemetry: &kgateway.OpenTelemetryTracingConfig{
+							GrpcService: kgateway.CommonGrpcService{
 								BackendRef: gwv1.BackendRef{
 									BackendObjectReference: gwv1.BackendObjectReference{
 										Name: "test-service",
@@ -116,7 +116,7 @@ func TestTracingConverter(t *testing.T) {
 							},
 						},
 					},
-					Attributes: []v1alpha1.CustomAttribute{},
+					Attributes: []kgateway.CustomAttribute{},
 				},
 				expected: &envoy_hcm.HttpConnectionManager_Tracing{
 					Provider: &envoytracev3.Tracing_Http{
@@ -139,10 +139,10 @@ func TestTracingConverter(t *testing.T) {
 			},
 			{
 				name: "OTel Tracing full config",
-				config: &v1alpha1.Tracing{
-					Provider: v1alpha1.TracingProvider{
-						OpenTelemetry: &v1alpha1.OpenTelemetryTracingConfig{
-							GrpcService: v1alpha1.CommonGrpcService{
+				config: &kgateway.Tracing{
+					Provider: kgateway.TracingProvider{
+						OpenTelemetry: &kgateway.OpenTelemetryTracingConfig{
+							GrpcService: kgateway.CommonGrpcService{
 								BackendRef: gwv1.BackendRef{
 									BackendObjectReference: gwv1.BackendObjectReference{
 										Name: "test-service",
@@ -150,11 +150,11 @@ func TestTracingConverter(t *testing.T) {
 								},
 							},
 							ServiceName: ptr.To("my:service"),
-							ResourceDetectors: []v1alpha1.ResourceDetector{{
-								EnvironmentResourceDetector: &v1alpha1.EnvironmentResourceDetectorConfig{},
+							ResourceDetectors: []kgateway.ResourceDetector{{
+								EnvironmentResourceDetector: &kgateway.EnvironmentResourceDetectorConfig{},
 							}},
-							Sampler: &v1alpha1.Sampler{
-								AlwaysOn: &v1alpha1.AlwaysOnConfig{},
+							Sampler: &kgateway.Sampler{
+								AlwaysOn: &kgateway.AlwaysOnConfig{},
 							},
 						},
 					},
@@ -163,34 +163,34 @@ func TestTracingConverter(t *testing.T) {
 					OverallSampling:  ptr.To(int32(65)),
 					Verbose:          ptr.To(true),
 					MaxPathTagLength: ptr.To(int32(127)),
-					Attributes: []v1alpha1.CustomAttribute{
+					Attributes: []kgateway.CustomAttribute{
 						{
 							Name: "Literal",
-							Literal: &v1alpha1.CustomAttributeLiteral{
+							Literal: &kgateway.CustomAttributeLiteral{
 								Value: "Literal Value",
 							},
 						},
 						{
 							Name: "Environment",
-							Environment: &v1alpha1.CustomAttributeEnvironment{
+							Environment: &kgateway.CustomAttributeEnvironment{
 								Name:         "Env",
 								DefaultValue: ptr.To("Environment Value"),
 							},
 						},
 						{
 							Name: "Request Header",
-							RequestHeader: &v1alpha1.CustomAttributeHeader{
+							RequestHeader: &kgateway.CustomAttributeHeader{
 								Name:         "Header",
 								DefaultValue: ptr.To("Request"),
 							},
 						},
 						{
 							Name: "Metadata Request",
-							Metadata: &v1alpha1.CustomAttributeMetadata{
-								Kind: v1alpha1.MetadataKindRequest,
-								MetadataKey: v1alpha1.MetadataKey{
+							Metadata: &kgateway.CustomAttributeMetadata{
+								Kind: kgateway.MetadataKindRequest,
+								MetadataKey: kgateway.MetadataKey{
 									Key: "Request",
-									Path: []v1alpha1.MetadataPathSegment{{
+									Path: []kgateway.MetadataPathSegment{{
 										Key: "Request-key",
 									}},
 								},
@@ -198,11 +198,11 @@ func TestTracingConverter(t *testing.T) {
 						},
 						{
 							Name: "Metadata Route",
-							Metadata: &v1alpha1.CustomAttributeMetadata{
-								Kind: v1alpha1.MetadataKindRoute,
-								MetadataKey: v1alpha1.MetadataKey{
+							Metadata: &kgateway.CustomAttributeMetadata{
+								Kind: kgateway.MetadataKindRoute,
+								MetadataKey: kgateway.MetadataKey{
 									Key: "Route",
-									Path: []v1alpha1.MetadataPathSegment{{
+									Path: []kgateway.MetadataPathSegment{{
 										Key: "Route-key",
 									}},
 								},
@@ -210,11 +210,11 @@ func TestTracingConverter(t *testing.T) {
 						},
 						{
 							Name: "Metadata Cluster",
-							Metadata: &v1alpha1.CustomAttributeMetadata{
-								Kind: v1alpha1.MetadataKindCluster,
-								MetadataKey: v1alpha1.MetadataKey{
+							Metadata: &kgateway.CustomAttributeMetadata{
+								Kind: kgateway.MetadataKindCluster,
+								MetadataKey: kgateway.MetadataKey{
 									Key: "Cluster",
-									Path: []v1alpha1.MetadataPathSegment{{
+									Path: []kgateway.MetadataPathSegment{{
 										Key: "Cluster-key",
 									}},
 								},
@@ -222,11 +222,11 @@ func TestTracingConverter(t *testing.T) {
 						},
 						{
 							Name: "Metadata Host",
-							Metadata: &v1alpha1.CustomAttributeMetadata{
-								Kind: v1alpha1.MetadataKindHost,
-								MetadataKey: v1alpha1.MetadataKey{
+							Metadata: &kgateway.CustomAttributeMetadata{
+								Kind: kgateway.MetadataKindHost,
+								MetadataKey: kgateway.MetadataKey{
 									Key: "Host",
-									Path: []v1alpha1.MetadataPathSegment{{
+									Path: []kgateway.MetadataPathSegment{{
 										Key: "Host-key-1",
 									}, {
 										Key: "Host-key-2",

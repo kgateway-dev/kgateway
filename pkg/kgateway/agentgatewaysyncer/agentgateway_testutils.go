@@ -37,7 +37,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	agwtranslator "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
@@ -281,7 +281,7 @@ type ExtraConfig struct {
 
 func NewScheme(extraSchemes runtime.SchemeBuilder) *runtime.Scheme {
 	scheme := schemes.GatewayScheme()
-	extraSchemes = append(extraSchemes, v1alpha1.Install)
+	extraSchemes = append(extraSchemes, agentgateway.Install)
 	if err := extraSchemes.AddToScheme(scheme); err != nil {
 		log.Fatalf("failed to add extra schemes to scheme: %v", err)
 	}

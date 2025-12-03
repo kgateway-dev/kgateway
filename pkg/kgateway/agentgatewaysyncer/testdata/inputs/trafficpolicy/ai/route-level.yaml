@@ -13,7 +13,7 @@ spec:
     port: 8080
     protocol: HTTP
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   labels:
@@ -33,7 +33,7 @@ type: Opaque
 data:
   Authorization: bXlzZWNyZXRrZXk=
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: ai-policy
@@ -132,7 +132,7 @@ spec:
     name: example-gateway
   rules:
   - backendRefs:
-    - group: gateway.kgateway.dev
+    - group: agentgateway.dev
       kind: AgentgatewayBackend
       name: openai
       weight: 1

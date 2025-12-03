@@ -17,6 +17,7 @@ import (
 	localratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	envoyrbacv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
+
 	// TODO(nfuden): remove once rustformations are able to be used in a production environment
 	transformationpb "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -26,7 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -101,6 +102,7 @@ type trafficPolicySpecIr struct {
 	compression     *compressionIR
 	decompression   *decompressionIR
 	basicAuth       *basicAuthIR
+	urlRewrite      *urlRewriteIR
 }
 
 func (d *TrafficPolicy) CreationTime() time.Time {
@@ -170,6 +172,9 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	if !d.spec.basicAuth.Equals(d2.spec.basicAuth) {
 		return false
 	}
+	if !d.spec.urlRewrite.Equals(d2.spec.urlRewrite) {
+		return false
+	}
 	return true
 }
 
@@ -194,6 +199,7 @@ func (p *TrafficPolicy) Validate() error {
 	validators = append(validators, p.spec.compression.Validate)
 	validators = append(validators, p.spec.decompression.Validate)
 	validators = append(validators, p.spec.basicAuth.Validate)
+	validators = append(validators, p.spec.urlRewrite.Validate)
 	for _, validator := range validators {
 		if err := validator(); err != nil {
 			return err
@@ -233,7 +239,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 		logger.Info("transformation is using Rust Dynamic Module.")
 	}
 
-	cli := kclient.NewFilteredDelayed[*v1alpha1.TrafficPolicy](
+	cli := kclient.NewFilteredDelayed[*kgateway.TrafficPolicy](
 		commoncol.Client,
 		wellknown.TrafficPolicyGVR,
 		kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()},
@@ -244,7 +250,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 	constructor := NewTrafficPolicyConstructor(ctx, commoncol)
 
 	// TrafficPolicy IR will have TypedConfig -> implement backendroute method to add prompt guard, etc.
-	statusCol, policyCol := krt.NewStatusCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.TrafficPolicy) (*krtcollections.StatusMarker, *ir.PolicyWrapper) {
+	statusCol, policyCol := krt.NewStatusCollection(col, func(krtctx krt.HandlerContext, policyCR *kgateway.TrafficPolicy) (*krtcollections.StatusMarker, *ir.PolicyWrapper) {
 		objSrc := ir.ObjectSource{
 			Group:     gk.Group,
 			Kind:      gk.Kind,
@@ -638,6 +644,9 @@ func (p *trafficPolicyPluginGwPass) handlePerRoutePolicies(
 	if action.GetRetryPolicy() == nil && spec.retry != nil {
 		action.RetryPolicy = spec.retry.policy
 	}
+
+	// Apply URL rewrite configuration
+	applyURLRewrite(spec.urlRewrite, out)
 }
 
 // handlePerVHostPolicies handles policies that are meant to be processed at the vhost level

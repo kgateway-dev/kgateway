@@ -10,7 +10,7 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	kgateway "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
@@ -105,7 +105,7 @@ func (e *extAuthIR) Validate() error {
 // constructExtAuth constructs the external authentication policy IR from the policy specification.
 func constructExtAuth(
 	krtctx krt.HandlerContext,
-	in *v1alpha1.TrafficPolicy,
+	in *kgateway.TrafficPolicy,
 	fetchGatewayExtension FetchGatewayExtensionFunc,
 	out *trafficPolicySpecIr,
 ) error {
@@ -127,7 +127,7 @@ func constructExtAuth(
 		return fmt.Errorf("extauth: %w", err)
 	}
 	if provider.ExtAuth == nil {
-		return pluginutils.ErrInvalidExtensionType(v1alpha1.GatewayExtensionTypeExtAuth)
+		return pluginutils.ErrInvalidExtensionType(kgateway.GatewayExtensionTypeExtAuth)
 	}
 
 	out.extAuth = &extAuthIR{
@@ -143,7 +143,7 @@ func constructExtAuth(
 }
 
 func buildExtAuthPerRouteFilterConfig(
-	spec *v1alpha1.ExtAuthPolicy,
+	spec *kgateway.ExtAuthPolicy,
 ) *envoy_ext_authz_v3.ExtAuthzPerRoute {
 	checkSettings := &envoy_ext_authz_v3.CheckSettings{}
 

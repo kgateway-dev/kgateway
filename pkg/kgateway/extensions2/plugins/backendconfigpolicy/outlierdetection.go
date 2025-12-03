@@ -5,10 +5,10 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 )
 
-func translateOutlierDetection(od *v1alpha1.OutlierDetection) *envoyclusterv3.OutlierDetection {
+func translateOutlierDetection(od *kgateway.OutlierDetection) *envoyclusterv3.OutlierDetection {
 	if od == nil {
 		return nil
 	}

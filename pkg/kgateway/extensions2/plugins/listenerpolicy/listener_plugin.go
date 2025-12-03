@@ -19,7 +19,7 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	kgwwellknown "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -67,7 +67,7 @@ func (d *listenerPolicy) Equals(in any) bool {
 }
 
 func getPolicyStatusFn(
-	cl kclient.Client[*v1alpha1.ListenerPolicy],
+	cl kclient.Client[*kgateway.ListenerPolicy],
 ) sdk.GetPolicyStatusFn {
 	return func(ctx context.Context, nn types.NamespacedName) (gwv1.PolicyStatus, error) {
 		res := cl.Get(nn.Name, nn.Namespace)
@@ -79,14 +79,14 @@ func getPolicyStatusFn(
 }
 
 func patchPolicyStatusFn(
-	cl kclient.Client[*v1alpha1.ListenerPolicy],
+	cl kclient.Client[*kgateway.ListenerPolicy],
 ) sdk.PatchPolicyStatusFn {
 	return func(ctx context.Context, nn types.NamespacedName, policyStatus gwv1.PolicyStatus) error {
 		cur := cl.Get(nn.Name, nn.Namespace)
 		if cur == nil {
 			return sdk.ErrNotFound
 		}
-		if _, err := cl.UpdateStatus(&v1alpha1.ListenerPolicy{
+		if _, err := cl.UpdateStatus(&kgateway.ListenerPolicy{
 			ObjectMeta: sdk.CloneObjectMetaForStatus(cur.ObjectMeta),
 			Status:     policyStatus,
 		}); err != nil {
@@ -110,7 +110,7 @@ type listenerPolicyPluginGwPass struct {
 var _ ir.ProxyTranslationPass = &listenerPolicyPluginGwPass{}
 
 func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
-	cli := kclient.NewFilteredDelayed[*v1alpha1.ListenerPolicy](
+	cli := kclient.NewFilteredDelayed[*kgateway.ListenerPolicy](
 		commoncol.Client,
 		kgwwellknown.ListenerPolicyGVR,
 		kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()},
@@ -118,7 +118,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 	col := krt.WrapClient(cli, commoncol.KrtOpts.ToOptions("ListenerPolicy")...)
 	gk := kgwwellknown.ListenerPolicyGVK.GroupKind()
 
-	policyStatusMarker, policyCol := krt.NewStatusCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.ListenerPolicy) (*krtcollections.StatusMarker, *ir.PolicyWrapper) {
+	policyStatusMarker, policyCol := krt.NewStatusCollection(col, func(krtctx krt.HandlerContext, i *kgateway.ListenerPolicy) (*krtcollections.StatusMarker, *ir.PolicyWrapper) {
 		objSrc := ir.ObjectSource{
 			Group:     gk.Group,
 			Kind:      gk.Kind,
@@ -219,7 +219,7 @@ func (p *listenerPolicyPluginGwPass) ApplyListenerPlugin(
 	}
 }
 
-func convertProxyProtocolConfig(objSrc ir.ObjectSource, config *v1alpha1.ProxyProtocolConfig) *anypb.Any {
+func convertProxyProtocolConfig(objSrc ir.ObjectSource, config *kgateway.ProxyProtocolConfig) *anypb.Any {
 	if config == nil {
 		return nil
 	}

@@ -4,7 +4,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 )
 
 type autoHostRewriteIR struct {
@@ -32,7 +32,7 @@ func (a *autoHostRewriteIR) Equals(other PolicySubIR) bool {
 func (a *autoHostRewriteIR) Validate() error { return nil }
 
 // constructAutoHostRewrite constructs the auto host rewrite policy IR from the policy specification.
-func constructAutoHostRewrite(spec v1alpha1.TrafficPolicySpec, out *trafficPolicySpecIr) {
+func constructAutoHostRewrite(spec kgateway.TrafficPolicySpec, out *trafficPolicySpecIr) {
 	if spec.AutoHostRewrite == nil {
 		return
 	}

@@ -41,27 +41,6 @@
     {
       "Type": {
         "Service": {
-          "name": "http-direct-response",
-          "namespace": "gwtest",
-          "hostname": "http-direct-response.gwtest.svc.cluster.local",
-          "addresses": [
-            {
-              "address": "CgAAYw=="
-            }
-          ],
-          "ports": [
-            {
-              "service_port": 8080,
-              "target_port": 8080
-            }
-          ],
-          "ip_families": 1
-        }
-      }
-    },
-    {
-      "Type": {
-        "Service": {
           "name": "http-grpcroute",
           "namespace": "gwtest",
           "hostname": "http-grpcroute.gwtest.svc.cluster.local",

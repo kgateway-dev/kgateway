@@ -71,7 +71,7 @@ func TestAttachments(t *testing.T) {
 			},
 		},
 	}
-	tm := `apiVersion: gateway.kgateway.dev/v1alpha1
+	tm := `apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 spec:
   {{if .ref}}targetRefs{{else}}targetSelectors{{end}}:
@@ -116,8 +116,8 @@ spec:
 				eval("gateway.networking.k8s.io/Gateway/sec1", tt.attachments.Listener)
 				eval("gateway.networking.k8s.io/HTTPRoute", tt.attachments.Route)
 				eval("gateway.networking.k8s.io/HTTPRoute/sec1", tt.attachments.RouteRule)
-				eval("gateway.kgateway.dev/AgentgatewayBackend", tt.attachments.Backend)
-				eval("gateway.kgateway.dev/AgentgatewayBackend/sec1", tt.attachments.SubBackend)
+				eval("agentgateway.dev/AgentgatewayBackend", tt.attachments.Backend)
+				eval("agentgateway.dev/AgentgatewayBackend/sec1", tt.attachments.SubBackend)
 			})
 		}
 	}

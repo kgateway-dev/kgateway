@@ -102,21 +102,6 @@ spec:
     - path:
         type: PathPrefix
         value: /direct
-    filters:
-    - type: ExtensionRef
-      extensionRef:
-        group: gateway.kgateway.dev
-        kind: DirectResponse
-        name: robots
----
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: DirectResponse
-metadata:
-  name: robots
-  namespace: default
-spec:
-  status: 200
-  body: "hello world"
 ---
 apiVersion: v1
 kind: Service
@@ -302,10 +287,6 @@ output:
       - path:
           pathPrefix: /direct
       routeName: default/request-multiple-mirrors-headers
-      trafficPolicies:
-      - directResponse:
-          body: aGVsbG8gd29ybGQ=
-          status: 200
 status:
 - apiVersion: gateway.networking.k8s.io/v1
   kind: HTTPRoute

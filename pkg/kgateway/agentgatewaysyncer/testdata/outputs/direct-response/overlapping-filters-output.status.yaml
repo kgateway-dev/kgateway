@@ -13,8 +13,7 @@ status:
       status: "True"
       type: Accepted
     - lastTransitionTime: fake
-      message: 'Cannot combine multiple terminal filters: RequestRedirect and DirectResponse
-        are mutually exclusive. Only one terminal filter is allowed per route rule.'
+      message: 'unsupported ExtensionRef: gateway.kgateway.dev/DirectResponse'
       reason: IncompatibleFilters
       status: "False"
       type: ResolvedRefs

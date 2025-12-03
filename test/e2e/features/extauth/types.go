@@ -10,7 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 )
@@ -56,14 +56,14 @@ var (
 		},
 	}
 
-	extAuthExtension = &v1alpha1.GatewayExtension{
+	extAuthExtension = &kgateway.GatewayExtension{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "basic-extauth",
 			Namespace: "kgateway-test",
 		},
-		Spec: v1alpha1.GatewayExtensionSpec{
-			ExtAuth: &v1alpha1.ExtAuthProvider{
-				GrpcService: v1alpha1.ExtGrpcService{
+		Spec: kgateway.GatewayExtensionSpec{
+			ExtAuth: &kgateway.ExtAuthProvider{
+				GrpcService: kgateway.ExtGrpcService{
 					BackendRef: gwv1.BackendRef{
 						BackendObjectReference: gwv1.BackendObjectReference{
 							Name: "ext-authz",
@@ -81,7 +81,7 @@ var (
 			Namespace: "kgateway-test",
 		},
 	}
-	gatewayAttachedTrafficPolicy = &v1alpha1.TrafficPolicy{
+	gatewayAttachedTrafficPolicy = &kgateway.TrafficPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "gw-policy",
 			Namespace: "kgateway-test",
@@ -93,7 +93,7 @@ var (
 			Namespace: "kgateway-test",
 		},
 	}
-	insecureTrafficPolicy = &v1alpha1.TrafficPolicy{
+	insecureTrafficPolicy = &kgateway.TrafficPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "insecure-route-policy",
 			Namespace: "kgateway-test",
@@ -105,7 +105,7 @@ var (
 			Namespace: "kgateway-test",
 		},
 	}
-	secureTrafficPolicy = &v1alpha1.TrafficPolicy{
+	secureTrafficPolicy = &kgateway.TrafficPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "secure-route-policy",
 			Namespace: "kgateway-test",

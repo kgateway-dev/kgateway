@@ -30,7 +30,7 @@ type JwksFetcher struct {
 
 type FetchingSchedule []fetchAt
 
-//go:generate go tool mockgen -destination mocks/mock_jwks_http_client.go -package mocks -source ./jwks_fetcher.go
+//go:generate go tool github.com/golang/mock/mockgen -destination mocks/mock_jwks_http_client.go -package mocks -source ./jwks_fetcher.go
 type JwksHttpClient interface {
 	FetchJwks(ctx context.Context, jwksURL string) (jose.JSONWebKeySet, error)
 }
