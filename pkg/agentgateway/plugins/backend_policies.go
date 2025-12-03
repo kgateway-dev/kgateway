@@ -419,7 +419,7 @@ func translateBackendAI(ctx PolicyCtx, agwPolicy *agentgateway.AgentgatewayPolic
 		for path, routeType := range aiSpec.Routes {
 			r[path] = translateRouteType(routeType)
 		}
-		// TODO: AGW support
+		translatedAIPolicy.Routes = r
 	}
 
 	aiPolicy := &api.Policy{
