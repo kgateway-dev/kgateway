@@ -95,9 +95,9 @@ func (h *filterChainTranslator) initFilterChain(fcc ir.FilterChainCommon) *envoy
 	return fc
 }
 
-func (h *filterChainTranslator) computeHttpFilters(l ir.HttpFilterChainIR, reporter sdkreporter.ListenerReporter) []*envoylistenerv3.Filter {
+func (h *filterChainTranslator) computeHttpFilters(l ir.HttpFilterChainIR, lis ir.ListenerIR, reporter sdkreporter.ListenerReporter) []*envoylistenerv3.Filter {
 	// 1. Generate all the network filters (including the HttpConnectionManager)
-	networkFilters, err := h.computeNetworkFiltersForHttp(l, reporter)
+	networkFilters, err := h.computeNetworkFiltersForHttp(l, lis, reporter)
 	if err != nil {
 		logger.Error("error computing network filters", "error", err)
 		// TODO: report? return error?
@@ -110,8 +110,9 @@ func (h *filterChainTranslator) computeHttpFilters(l ir.HttpFilterChainIR, repor
 	return networkFilters
 }
 
-func (n *filterChainTranslator) computeNetworkFiltersForHttp(l ir.HttpFilterChainIR, listenerReporter sdkreporter.ListenerReporter) ([]*envoylistenerv3.Filter, error) {
+func (n *filterChainTranslator) computeNetworkFiltersForHttp(l ir.HttpFilterChainIR, lis ir.ListenerIR, listenerReporter sdkreporter.ListenerReporter) ([]*envoylistenerv3.Filter, error) {
 	hcm := hcmNetworkFilterTranslator{
+		lis:               lis,
 		routeConfigName:   n.routeConfigName,
 		pluginPass:        n.pluginPass,
 		listenerReporter:  listenerReporter,
@@ -186,6 +187,7 @@ func sortNetworkFilters(filters filters.StagedNetworkFilterList) []*envoylistene
 }
 
 type hcmNetworkFilterTranslator struct {
+	lis               ir.ListenerIR
 	routeConfigName   string
 	pluginPass        TranslationPassPlugins
 	listenerReporter  sdkreporter.ListenerReporter
@@ -218,8 +220,9 @@ func (h *hcmNetworkFilterTranslator) computeNetworkFilters(l ir.HttpFilterChainI
 		policies, mergeOrigins := mergePolicies(pass, pols)
 		for _, pol := range policies {
 			pctx := &ir.HcmContext{
-				Policy:  pol.PolicyIr,
-				Gateway: h.gateway,
+				ListenerPort: h.lis.BindPort,
+				Policy:       pol.PolicyIr,
+				Gateway:      h.gateway,
 			}
 			if err := pass.ApplyHCM(pctx, httpConnectionManager); err != nil {
 				h.listenerReporter.SetCondition(sdkreporter.ListenerCondition{
@@ -273,10 +276,12 @@ func (h *hcmNetworkFilterTranslator) initializeHCM() *envoyhttp.HttpConnectionMa
 
 func (h *hcmNetworkFilterTranslator) computeHttpFilters(l ir.HttpFilterChainIR) []*envoyhttp.HttpFilter {
 	var httpFilters filters.StagedHttpFilterList
-
+	hCtx := ir.HttpFiltersContext{
+		ListenerPort: h.lis.BindPort,
+	}
 	// run the HttpFilter Plugins
 	for _, plug := range h.pluginPass {
-		stagedFilters, err := plug.HttpFilters(l.FilterChainCommon)
+		stagedFilters, err := plug.HttpFilters(hCtx, l.FilterChainCommon)
 		if err != nil {
 			// what to do with errors here? ignore the listener??
 			h.listenerReporter.SetCondition(sdkreporter.ListenerCondition{
