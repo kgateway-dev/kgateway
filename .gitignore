@@ -60,4 +60,4 @@ dist/
 *-build
 
 # Rust target directory created by cargo
-pkg/envoyinit/rustformations/target/*
+internal/envoyinit/rustformations/target/*

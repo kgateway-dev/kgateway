@@ -179,7 +179,7 @@ linters:
           - forbidigo
         text: 'use apiclient.Client instead'
       # Restrict krtequals analyzer to the pkg and internal directories
-      - path-except: pkg/
+      - path-except: pkg/|internal/
         linters:
           - krtequals
       # Only run kubeapilinter inside the 'api/' directory. This prevents running API-specific checks

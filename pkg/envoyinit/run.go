@@ -11,8 +11,8 @@ import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/envoyinit/downward"
-	"github.com/kgateway-dev/kgateway/v2/pkg/envoyinit/utils"
+	"github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/downward"
+	"github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/protoutils"
 )
 

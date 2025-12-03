@@ -65,4 +65,4 @@ jobs:
         cache: true
     - name: Lint
       run: |
-        make -C pkg/envoyinit lint
+        make -C internal/envoyinit lint

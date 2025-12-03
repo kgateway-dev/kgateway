@@ -19,6 +19,7 @@ providers:
     # Files / folders to watch. Changes here will trigger a rebuild and reload
     live_reload_deps:
       - pkg
+      - internal
     # The service name
     label: kgateway
     # Command to build the binary
