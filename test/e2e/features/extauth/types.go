@@ -63,7 +63,7 @@ var (
 		},
 		Spec: kgateway.GatewayExtensionSpec{
 			ExtAuth: &kgateway.ExtAuthProvider{
-				GrpcService: kgateway.ExtGrpcService{
+				GrpcService: &kgateway.ExtGrpcService{
 					BackendRef: gwv1.BackendRef{
 						BackendObjectReference: gwv1.BackendObjectReference{
 							Name: "ext-authz",

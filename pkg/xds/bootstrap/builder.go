@@ -8,6 +8,7 @@ import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyhttpv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/router/v3"
 	envoy_extensions_filters_network_http_connection_manager_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/proto"
@@ -21,6 +22,7 @@ type ConfigBuilder struct {
 	filterConfigs ir.TypedFilterConfigMap
 	routes        []*envoyroutev3.Route
 	clusters      []*envoyclusterv3.Cluster
+	httpFilters   []*envoy_extensions_filters_network_http_connection_manager_v3.HttpFilter
 }
 
 // New creates a new ConfigBuilder.
@@ -46,6 +48,11 @@ func (b *ConfigBuilder) AddCluster(cluster *envoyclusterv3.Cluster) {
 	b.clusters = append(b.clusters, cluster)
 }
 
+// AddHttpFilter adds an HTTP filter to the HCM filter chain.
+func (b *ConfigBuilder) AddHttpFilter(filter *envoy_extensions_filters_network_http_connection_manager_v3.HttpFilter) {
+	b.httpFilters = append(b.httpFilters, filter)
+}
+
 // Build creates a partial bootstrap config suitable for validation.
 func (b *ConfigBuilder) Build() (*envoybootstrapv3.Bootstrap, error) {
 	vhost := &envoyroutev3.VirtualHost{
@@ -59,14 +66,33 @@ func (b *ConfigBuilder) Build() (*envoybootstrapv3.Bootstrap, error) {
 		vhost.Routes = b.routes
 	}
 
-	hcmAny, err := utils.MessageToAny(&envoy_extensions_filters_network_http_connection_manager_v3.HttpConnectionManager{
+	hcm := &envoy_extensions_filters_network_http_connection_manager_v3.HttpConnectionManager{
 		StatPrefix: "placeholder",
 		RouteSpecifier: &envoy_extensions_filters_network_http_connection_manager_v3.HttpConnectionManager_RouteConfig{
 			RouteConfig: &envoyroutev3.RouteConfiguration{
 				VirtualHosts: []*envoyroutev3.VirtualHost{vhost},
 			},
 		},
+	}
+
+	// Add HTTP filters if present
+	if len(b.httpFilters) > 0 {
+		hcm.HttpFilters = b.httpFilters
+	}
+
+	// Always add router filter at the end (required by Envoy)
+	routerAny, err := utils.MessageToAny(&envoyhttpv3.Router{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal Router filter: %w", err)
+	}
+	hcm.HttpFilters = append(hcm.HttpFilters, &envoy_extensions_filters_network_http_connection_manager_v3.HttpFilter{
+		Name: envoywellknown.Router,
+		ConfigType: &envoy_extensions_filters_network_http_connection_manager_v3.HttpFilter_TypedConfig{
+			TypedConfig: routerAny,
+		},
 	})
+
+	hcmAny, err := utils.MessageToAny(hcm)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal HttpConnectionManager: %w", err)
 	}

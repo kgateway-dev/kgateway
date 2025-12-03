@@ -1,6 +1,8 @@
 package kgateway
 
 import (
+	"time"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -86,6 +88,8 @@ const (
 	GatewayExtensionTypeJWTProvider GatewayExtensionType = "JWTProviders"
 )
 
+const HTTPDefaultTimeout = 2 * time.Second
+
 // ExtGrpcService defines the GRPC service that will handle the processing.
 type ExtGrpcService struct {
 	// BackendRef references the backend GRPC service.
@@ -104,10 +108,61 @@ type ExtGrpcService struct {
 
 	// Retry specifies the retry policy for gRPC streams associated with the service.
 	// +optional
-	Retry *GRPCRetryPolicy `json:"retry,omitempty"`
+	Retry *ExtSvcRetryPolicy `json:"retry,omitempty"`
 }
 
-type GRPCRetryPolicy struct {
+// ExtHttpService defines the HTTP service that will handle external authorization.
+type ExtHttpService struct {
+	// BackendRef references the backend HTTP service.
+	// +required
+	BackendRef gwv1.BackendRef `json:"backendRef"`
+
+	// PathPrefix specifies a prefix to the value of the authorization request's path header.
+	// This allows customizing the path at which the authorization server expects to receive requests.
+	// For example, if the authorization server expects requests at "/verify", set this to "/verify".
+	// If not specified, the original request path is used.
+	// +optional
+	PathPrefix string `json:"pathPrefix,omitempty"`
+
+	// RequestTimeout is the timeout for the HTTP request. Default timeout is 2 seconds.
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid timeout value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="timeout must be at least 1ms."
+	RequestTimeout *metav1.Duration `json:"requestTimeout,omitempty"`
+
+	// AuthorizationRequest configures the authorization request to the external service.
+	// +optional
+	AuthorizationRequest *AuthorizationRequest `json:"authorizationRequest,omitempty"`
+
+	// AuthorizationResponse configures the authorization response from the external service.
+	// +optional
+	AuthorizationResponse *AuthorizationResponse `json:"authorizationResponse,omitempty"`
+
+	// Retry specifies the retry policy for HTTP requests to the authorization service.
+	// +optional
+	Retry *ExtSvcRetryPolicy `json:"retry,omitempty"`
+}
+
+// AuthorizationRequest configures the authorization request to the external service.
+type AuthorizationRequest struct {
+	// HeadersToAdd specifies additional headers to add to the authorization request.
+	// These headers are sent to the authorization service in addition to the original request headers.
+	// Client request headers with the same key will be overridden.
+	// The keys are header names and values are envoy format specifiers, see https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_authz/v3/ext_authz.proto#envoy-v3-api-field-extensions-filters-http-ext-authz-v3-authorizationrequest-headers-to-add.
+	// +optional
+	HeadersToAdd map[string]string `json:"headersToAdd,omitempty"`
+}
+
+// AuthorizationResponse configures the authorization response from the external service.
+type AuthorizationResponse struct {
+	// HeadersToBackend specifies which headers from the authorization response
+	// should be forwarded to the upstream service when the request is authorized.
+	// Common examples: ["x-current-user", "x-user-id", "x-auth-request-email"]
+	// +optional
+	HeadersToBackend []string `json:"headersToBackend,omitempty"`
+}
+
+type ExtSvcRetryPolicy struct {
 	// Attempts specifies the number of retry attempts for a request.
 	// Defaults to 1 attempt if not set.
 	// A value of 0 effectively disables retries.
@@ -119,11 +174,11 @@ type GRPCRetryPolicy struct {
 	// Backoff specifies the retry backoff strategy.
 	// If not set, a default backoff with a base interval of 1000ms is used. The default max interval is 10 times the base interval.
 	// +optional
-	Backoff *GRPCRetryBackoff `json:"backoff,omitempty"`
+	Backoff *RetryBackoff `json:"backoff,omitempty"`
 }
 
 // +kubebuilder:validation:XValidation:rule="has(self.maxInterval) ? duration(self.maxInterval) >= duration(self.baseInterval) : true",message="maxInterval must be greater than or equal to baseInterval"
-type GRPCRetryBackoff struct {
+type RetryBackoff struct {
 	// BaseInterval specifies the base interval used with a fully jittered exponential back-off between retries.
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="retry.BaseInterval must be at least 1ms."

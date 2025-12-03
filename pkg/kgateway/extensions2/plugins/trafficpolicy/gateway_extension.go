@@ -115,23 +115,45 @@ func TranslateGatewayExtensionBuilder(commoncol *collections.CommonCollections) 
 
 		switch {
 		case gExt.ExtAuth != nil:
-			envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, &gExt.ExtAuth.GrpcService)
-			if err != nil {
-				// TODO: should this be a warning, and set cluster to blackhole?
-				p.Err = fmt.Errorf("failed to resolve ExtAuth backend: %w", err)
+			if gExt.ExtAuth.GrpcService != nil {
+				envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, gExt.ExtAuth.GrpcService)
+				if err != nil {
+					// TODO: should this be a warning, and set cluster to blackhole?
+					p.Err = fmt.Errorf("failed to resolve ExtAuth gRPC backend: %w", err)
+					return p
+				}
+
+				p.ExtAuth = &envoy_ext_authz_v3.ExtAuthz{
+					Services: &envoy_ext_authz_v3.ExtAuthz_GrpcService{
+						GrpcService: envoyGrpcService,
+					},
+					FilterEnabledMetadata: ExtAuthzEnabledMetadataMatcher,
+					FailureModeAllow:      gExt.ExtAuth.FailOpen,
+					ClearRouteCache:       gExt.ExtAuth.ClearRouteCache,
+					StatusOnError:         &envoytypev3.HttpStatus{Code: envoytypev3.StatusCode(gExt.ExtAuth.StatusOnError)}, //nolint:gosec // G115: StatusOnError is HTTP status code, valid range fits in int32
+				}
+			} else if gExt.ExtAuth.HttpService != nil {
+				envoyHttpService, err := ResolveExtHttpService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, gExt.ExtAuth.HttpService)
+				if err != nil {
+					p.Err = fmt.Errorf("failed to resolve ExtAuth HTTP backend: %w", err)
+					return p
+				}
+
+				p.ExtAuth = &envoy_ext_authz_v3.ExtAuthz{
+					Services: &envoy_ext_authz_v3.ExtAuthz_HttpService{
+						HttpService: envoyHttpService,
+					},
+					FilterEnabledMetadata: ExtAuthzEnabledMetadataMatcher,
+					FailureModeAllow:      gExt.ExtAuth.FailOpen,
+					ClearRouteCache:       gExt.ExtAuth.ClearRouteCache,
+					StatusOnError:         &envoytypev3.HttpStatus{Code: envoytypev3.StatusCode(gExt.ExtAuth.StatusOnError)}, //nolint:gosec // G115: StatusOnError is HTTP status code, valid range fits in int32
+				}
+			} else {
+				p.Err = errors.New("either grpcService or httpService must be configured for ExtAuth")
 				return p
 			}
 
-			p.ExtAuth = &envoy_ext_authz_v3.ExtAuthz{
-				Services: &envoy_ext_authz_v3.ExtAuthz_GrpcService{
-					GrpcService: envoyGrpcService,
-				},
-				FilterEnabledMetadata: ExtAuthzEnabledMetadataMatcher,
-				FailureModeAllow:      gExt.ExtAuth.FailOpen,
-				ClearRouteCache:       gExt.ExtAuth.ClearRouteCache,
-				StatusOnError:         &envoytypev3.HttpStatus{Code: envoytypev3.StatusCode(gExt.ExtAuth.StatusOnError)}, //nolint:gosec // G115: StatusOnError is HTTP status code, valid range fits in int32
-			}
-
+			// Common configuration for both gRPC and HTTP
 			if gExt.ExtAuth.WithRequestBody != nil {
 				p.ExtAuth.WithRequestBody = &envoy_ext_authz_v3.BufferSettings{
 					MaxRequestBytes:     uint32(gExt.ExtAuth.WithRequestBody.MaxRequestBytes), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
@@ -141,6 +163,9 @@ func TranslateGatewayExtensionBuilder(commoncol *collections.CommonCollections) 
 			}
 			if gExt.ExtAuth.StatPrefix != nil {
 				p.ExtAuth.StatPrefix = *gExt.ExtAuth.StatPrefix
+			}
+			if len(gExt.ExtAuth.HeadersToForward) > 0 {
+				p.ExtAuth.AllowedHeaders = buildStringListMatcher(gExt.ExtAuth.HeadersToForward)
 			}
 
 		case gExt.ExtProc != nil:
@@ -262,7 +287,7 @@ func ResolveExtGrpcService(
 				Authority:   authority,
 			},
 		},
-		RetryPolicy: buildGRPCRetryPolicy(grpcService.Retry),
+		RetryPolicy: buildExtSvcRetryPolicy(grpcService.Retry),
 	}
 	if grpcService.RequestTimeout != nil {
 		envoyGrpcService.Timeout = durationpb.New(grpcService.RequestTimeout.Duration)
@@ -270,7 +295,83 @@ func ResolveExtGrpcService(
 	return envoyGrpcService, nil
 }
 
-func buildGRPCRetryPolicy(in *kgateway.GRPCRetryPolicy) *envoycorev3.RetryPolicy {
+func ResolveExtHttpService(
+	krtctx krt.HandlerContext,
+	backends *krtcollections.BackendIndex,
+	disableExtensionRefValidation bool,
+	objectSource ir.ObjectSource,
+	httpService *kgateway.ExtHttpService,
+) (*envoy_ext_authz_v3.HttpService, error) {
+	if httpService == nil {
+		return nil, errors.New("httpService not provided")
+	}
+
+	// Resolve backend
+	var backend *ir.BackendObjectIR
+	var err error
+	backendRef := httpService.BackendRef.BackendObjectReference
+	if disableExtensionRefValidation {
+		backend, err = backends.GetBackendFromRefWithoutRefGrantValidation(krtctx, objectSource, backendRef)
+	} else {
+		backend, err = backends.GetBackendFromRef(krtctx, objectSource, backendRef)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	var clusterName string
+	if backend != nil {
+		clusterName = backend.ClusterName()
+	}
+	if clusterName == "" {
+		return nil, errors.New("backend not found")
+	}
+
+	// Build HTTP URI
+	httpUri := &envoycorev3.HttpUri{
+		Uri: clusterName,
+		HttpUpstreamType: &envoycorev3.HttpUri_Cluster{
+			Cluster: clusterName,
+		},
+	}
+
+	if httpService.RequestTimeout != nil {
+		httpUri.Timeout = durationpb.New(httpService.RequestTimeout.Duration)
+	} else {
+		httpUri.Timeout = durationpb.New(kgateway.HTTPDefaultTimeout)
+	}
+
+	envoyHttpService := &envoy_ext_authz_v3.HttpService{
+		ServerUri:   httpUri,
+		PathPrefix:  httpService.PathPrefix,
+		RetryPolicy: buildExtSvcRetryPolicy(httpService.Retry),
+	}
+
+	// Configure authorization request
+	if httpService.AuthorizationRequest != nil && len(httpService.AuthorizationRequest.HeadersToAdd) > 0 {
+		headers := make([]*envoycorev3.HeaderValue, 0, len(httpService.AuthorizationRequest.HeadersToAdd))
+		for k, v := range httpService.AuthorizationRequest.HeadersToAdd {
+			headers = append(headers, &envoycorev3.HeaderValue{
+				Key:   k,
+				Value: v,
+			})
+		}
+		envoyHttpService.AuthorizationRequest = &envoy_ext_authz_v3.AuthorizationRequest{
+			HeadersToAdd: headers,
+		}
+	}
+
+	// Configure authorization response
+	if httpService.AuthorizationResponse != nil && len(httpService.AuthorizationResponse.HeadersToBackend) > 0 {
+		envoyHttpService.AuthorizationResponse = &envoy_ext_authz_v3.AuthorizationResponse{
+			AllowedUpstreamHeaders: buildStringListMatcher(httpService.AuthorizationResponse.HeadersToBackend),
+		}
+	}
+
+	return envoyHttpService, nil
+}
+
+func buildExtSvcRetryPolicy(in *kgateway.ExtSvcRetryPolicy) *envoycorev3.RetryPolicy {
 	if in == nil {
 		return nil
 	}
@@ -287,6 +388,26 @@ func buildGRPCRetryPolicy(in *kgateway.GRPCRetryPolicy) *envoycorev3.RetryPolicy
 		}
 	}
 	return p
+}
+
+// buildStringListMatcher creates a ListStringMatcher from a list of header names
+func buildStringListMatcher(headers []string) *envoymatcherv3.ListStringMatcher {
+	if len(headers) == 0 {
+		return nil
+	}
+
+	patterns := make([]*envoymatcherv3.StringMatcher, 0, len(headers))
+	for _, header := range headers {
+		patterns = append(patterns, &envoymatcherv3.StringMatcher{
+			MatchPattern: &envoymatcherv3.StringMatcher_Exact{
+				Exact: header,
+			},
+		})
+	}
+
+	return &envoymatcherv3.ListStringMatcher{
+		Patterns: patterns,
+	}
 }
 
 // FIXME: Should this live here instead of the global rate limit plugin?
