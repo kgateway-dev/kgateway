@@ -7,6 +7,7 @@ import (
 
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	proxy_protocol "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/listener/proxy_protocol/v3"
+	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -20,13 +21,16 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/httplistenerpolicy"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	kgwwellknown "github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
@@ -39,6 +43,7 @@ type listenerPolicy struct {
 	ct                            time.Time
 	proxyProtocol                 *anypb.Any
 	perConnectionBufferLimitBytes *uint32
+	http                          *httplistenerpolicy.HttpListenerPolicyIr
 }
 
 func (d *listenerPolicy) CreationTime() time.Time {
@@ -60,6 +65,11 @@ func (d *listenerPolicy) Equals(in any) bool {
 	}
 
 	if !cmputils.PointerValsEqual(d.perConnectionBufferLimitBytes, d2.perConnectionBufferLimitBytes) {
+		return false
+	}
+	if !cmputils.CompareWithNils(d.http, d2.http, func(a, b *httplistenerpolicy.HttpListenerPolicyIr) bool {
+		return a.Equals(b)
+	}) {
 		return false
 	}
 
@@ -105,6 +115,7 @@ var _ ir.PolicyIR = &listenerPolicy{}
 type listenerPolicyPluginGwPass struct {
 	ir.UnimplementedProxyTranslationPass
 	reporter reporter.Reporter
+	httpPass ir.ProxyTranslationPass
 }
 
 var _ ir.ProxyTranslationPass = &listenerPolicyPluginGwPass{}
@@ -138,6 +149,11 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 		if i.Spec.PerConnectionBufferLimitBytes != nil {
 			perConnectionBufferLimitBytes = ptr.To(uint32(*i.Spec.PerConnectionBufferLimitBytes)) //nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 2147483647, safe for uint32
 		}
+		var httpSettings *kgateway.HttpSettings
+		if i.Spec.HttpSettings != nil {
+			httpSettings = &i.Spec.HttpSettings.HttpSettings
+		}
+		httpIR, errs := httplistenerpolicy.NewHttpListenerPolicy(krtctx, commoncol, i.CreationTimestamp.Time, httpSettings, objSrc)
 
 		pol := &ir.PolicyWrapper{
 			ObjectSource: objSrc,
@@ -146,9 +162,10 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 				ct:                            i.CreationTimestamp.Time,
 				proxyProtocol:                 convertProxyProtocolConfig(objSrc, i.Spec.ProxyProtocol),
 				perConnectionBufferLimitBytes: perConnectionBufferLimitBytes,
+				http:                          httpIR,
 			},
 			TargetRefs: pluginsdkutils.TargetRefsToPolicyRefs(i.Spec.TargetRefs, i.Spec.TargetSelectors),
-			Errors:     []error{},
+			Errors:     errs,
 		}
 
 		return statusMarker, pol
@@ -182,6 +199,9 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 				ProcessPolicyStaleStatusMarkers: processMarkers,
 				GetPolicyStatus:                 getPolicyStatusFn(cli),
 				PatchPolicyStatus:               patchPolicyStatusFn(cli),
+				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
+					return policy.MergePolicies(pols, mergePolicies, "" /*no merge settings*/)
+				},
 			},
 		},
 	}
@@ -190,11 +210,33 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
 	return &listenerPolicyPluginGwPass{
 		reporter: reporter,
+		httpPass: httplistenerpolicy.NewGatewayTranslationPass(tctx, reporter),
 	}
 }
 
 func (p *listenerPolicyPluginGwPass) Name() string {
 	return "listenerpolicy"
+}
+
+func (p *listenerPolicyPluginGwPass) ApplyHCM(
+	pCtx *ir.HcmContext,
+	out *envoy_hcm.HttpConnectionManager,
+) error {
+	pol, ok := pCtx.Policy.(*listenerPolicy)
+	if !ok || pol == nil {
+		logger.Warn("policy is not listenerPolicy type or is nil", "ok", ok, "pol", pol)
+		return nil
+	}
+
+	if pol.http != nil {
+		copyPCtx := *pCtx
+		copyPCtx.Policy = pol.http
+		return p.httpPass.ApplyHCM(&copyPCtx, out)
+	}
+	return nil
+}
+func (p *listenerPolicyPluginGwPass) HttpFilters(fc ir.FilterChainCommon) ([]filters.StagedHttpFilter, error) {
+	return p.httpPass.HttpFilters(fc)
 }
 
 func (p *listenerPolicyPluginGwPass) ApplyListenerPlugin(
@@ -216,6 +258,12 @@ func (p *listenerPolicyPluginGwPass) ApplyListenerPlugin(
 	// Set per connection buffer limit if configured
 	if pol.perConnectionBufferLimitBytes != nil {
 		out.PerConnectionBufferLimitBytes = &wrapperspb.UInt32Value{Value: *pol.perConnectionBufferLimitBytes}
+	}
+
+	if pol.http != nil {
+		copyPCtx := *pCtx
+		copyPCtx.Policy = pol.http
+		p.httpPass.ApplyListenerPlugin(&copyPCtx, out)
 	}
 }
 

@@ -70,6 +70,15 @@ type ListenerPolicySpec struct {
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	PerConnectionBufferLimitBytes *int32 `json:"perConnectionBufferLimitBytes,omitempty"`
+
+	// HTTPListenerPolicy is intended to be used for configuring the Envoy `HttpConnectionManager` and any other config or policy
+	// that should map 1-to-1 with a given HTTP listener, such as the Envoy health check HTTP filter.
+	// +optional
+	HttpSettings *ListenerPolicyHttpSettings `json:"httpSettings,omitempty"`
+}
+
+type ListenerPolicyHttpSettings struct {
+	HttpSettings `json:",inline"`
 }
 
 // ProxyProtocolConfig configures the PROXY protocol listener filter.

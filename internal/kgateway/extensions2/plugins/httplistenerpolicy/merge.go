@@ -7,8 +7,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 )
 
-func mergePolicies(
-	p1, p2 *httpListenerPolicy,
+func MergePolicies(
+	p1, p2 *HttpListenerPolicyIr,
 	p2Ref *ir.AttachedPolicyRef,
 	p2MergeOrigins ir.MergeOrigins,
 	mergeOpts policy.MergeOptions,
@@ -19,7 +19,7 @@ func mergePolicies(
 		return
 	}
 
-	mergeFuncs := []func(*httpListenerPolicy, *httpListenerPolicy, *ir.AttachedPolicyRef, ir.MergeOrigins, policy.MergeOptions, ir.MergeOrigins){
+	mergeFuncs := []func(*HttpListenerPolicyIr, *HttpListenerPolicyIr, *ir.AttachedPolicyRef, ir.MergeOrigins, policy.MergeOptions, ir.MergeOrigins){
 		mergeAccessLog,
 		mergeTracing,
 		mergeUpgradeConfigs,
@@ -41,7 +41,7 @@ func mergePolicies(
 }
 
 func mergeAccessLog(
-	p1, p2 *httpListenerPolicy,
+	p1, p2 *HttpListenerPolicyIr,
 	p2Ref *ir.AttachedPolicyRef,
 	p2MergeOrigins ir.MergeOrigins,
 	opts policy.MergeOptions,
@@ -61,7 +61,7 @@ func mergeAccessLog(
 }
 
 func mergeTracing(
-	p1, p2 *httpListenerPolicy,
+	p1, p2 *HttpListenerPolicyIr,
 	p2Ref *ir.AttachedPolicyRef,
 	p2MergeOrigins ir.MergeOrigins,
 	opts policy.MergeOptions,
@@ -80,7 +80,7 @@ func mergeTracing(
 }
 
 func mergeUpgradeConfigs(
-	p1, p2 *httpListenerPolicy,
+	p1, p2 *HttpListenerPolicyIr,
 	p2Ref *ir.AttachedPolicyRef,
 	p2MergeOrigins ir.MergeOrigins,
 	opts policy.MergeOptions,
@@ -95,7 +95,7 @@ func mergeUpgradeConfigs(
 }
 
 func mergeUseRemoteAddress(
-	p1, p2 *httpListenerPolicy,
+	p1, p2 *HttpListenerPolicyIr,
 	p2Ref *ir.AttachedPolicyRef,
 	p2MergeOrigins ir.MergeOrigins,
 	opts policy.MergeOptions,
@@ -110,7 +110,7 @@ func mergeUseRemoteAddress(
 }
 
 func mergePreserveHttp1HeaderCase(
-	p1, p2 *httpListenerPolicy,
+	p1, p2 *HttpListenerPolicyIr,
 	p2Ref *ir.AttachedPolicyRef,
 	p2MergeOrigins ir.MergeOrigins,
 	opts policy.MergeOptions,
@@ -125,7 +125,7 @@ func mergePreserveHttp1HeaderCase(
 }
 
 func mergeAcceptHttp10(
-	p1, p2 *httpListenerPolicy,
+	p1, p2 *HttpListenerPolicyIr,
 	p2Ref *ir.AttachedPolicyRef,
 	p2MergeOrigins ir.MergeOrigins,
 	opts policy.MergeOptions,
@@ -140,7 +140,7 @@ func mergeAcceptHttp10(
 }
 
 func mergeDefaultHostForHttp10(
-	p1, p2 *httpListenerPolicy,
+	p1, p2 *HttpListenerPolicyIr,
 	p2Ref *ir.AttachedPolicyRef,
 	p2MergeOrigins ir.MergeOrigins,
 	opts policy.MergeOptions,
@@ -155,7 +155,7 @@ func mergeDefaultHostForHttp10(
 }
 
 func mergeXffNumTrustedHops(
-	p1, p2 *httpListenerPolicy,
+	p1, p2 *HttpListenerPolicyIr,
 	p2Ref *ir.AttachedPolicyRef,
 	p2MergeOrigins ir.MergeOrigins,
 	opts policy.MergeOptions,
@@ -170,7 +170,7 @@ func mergeXffNumTrustedHops(
 }
 
 func mergeServerHeaderTransformation(
-	p1, p2 *httpListenerPolicy,
+	p1, p2 *HttpListenerPolicyIr,
 	p2Ref *ir.AttachedPolicyRef,
 	p2MergeOrigins ir.MergeOrigins,
 	opts policy.MergeOptions,
@@ -185,7 +185,7 @@ func mergeServerHeaderTransformation(
 }
 
 func mergeStreamIdleTimeout(
-	p1, p2 *httpListenerPolicy,
+	p1, p2 *HttpListenerPolicyIr,
 	p2Ref *ir.AttachedPolicyRef,
 	p2MergeOrigins ir.MergeOrigins,
 	opts policy.MergeOptions,
@@ -200,7 +200,7 @@ func mergeStreamIdleTimeout(
 }
 
 func mergeIdleTimeout(
-	p1, p2 *httpListenerPolicy,
+	p1, p2 *HttpListenerPolicyIr,
 	p2Ref *ir.AttachedPolicyRef,
 	p2MergeOrigins ir.MergeOrigins,
 	opts policy.MergeOptions,
@@ -215,7 +215,7 @@ func mergeIdleTimeout(
 }
 
 func mergeHealthCheckPolicy(
-	p1, p2 *httpListenerPolicy,
+	p1, p2 *HttpListenerPolicyIr,
 	p2Ref *ir.AttachedPolicyRef,
 	p2MergeOrigins ir.MergeOrigins,
 	opts policy.MergeOptions,
@@ -230,7 +230,7 @@ func mergeHealthCheckPolicy(
 }
 
 func mergeEarlyHeaderMutation(
-	p1, p2 *httpListenerPolicy,
+	p1, p2 *HttpListenerPolicyIr,
 	p2Ref *ir.AttachedPolicyRef,
 	p2MergeOrigins ir.MergeOrigins,
 	opts policy.MergeOptions,

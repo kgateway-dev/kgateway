@@ -44,7 +44,7 @@ import (
 
 var logger = logging.New("plugin/httplistenerpolicy")
 
-type httpListenerPolicy struct {
+type HttpListenerPolicyIr struct {
 	ct                         time.Time
 	upgradeConfigs             []*envoy_hcm.HttpConnectionManager_UpgradeConfig
 	useRemoteAddress           *bool
@@ -71,12 +71,12 @@ type httpListenerPolicy struct {
 	earlyHeaderMutationExtensions []*envoycorev3.TypedExtensionConfig
 }
 
-func (d *httpListenerPolicy) CreationTime() time.Time {
+func (d *HttpListenerPolicyIr) CreationTime() time.Time {
 	return d.ct
 }
 
-func (d *httpListenerPolicy) Equals(in any) bool {
-	d2, ok := in.(*httpListenerPolicy)
+func (d *HttpListenerPolicyIr) Equals(in any) bool {
+	d2, ok := in.(*HttpListenerPolicyIr)
 	if !ok {
 		return false
 	}
@@ -171,12 +171,71 @@ func (d *httpListenerPolicy) Equals(in any) bool {
 
 type httpListenerPolicyPluginGwPass struct {
 	ir.UnimplementedProxyTranslationPass
-	reporter reporter.Reporter
 
 	healthCheckPolicy *healthcheckv3.HealthCheck
 }
 
 var _ ir.ProxyTranslationPass = &httpListenerPolicyPluginGwPass{}
+
+func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.CommonCollections, ct time.Time, h *kgateway.HttpSettings, objSrc ir.ObjectSource) (*HttpListenerPolicyIr, []error) {
+	if h == nil {
+		return nil, nil
+	}
+	errs := []error{}
+	accessLog, err := convertAccessLogConfig(h, commoncol, krtctx, objSrc)
+	if err != nil {
+		logger.Error("error translating access log", "error", err)
+		errs = append(errs, err)
+	}
+
+	tracingProvider, tracingConfig, err := convertTracingConfig(h, commoncol, krtctx, objSrc)
+	if err != nil {
+		logger.Error("error translating tracing", "error", err)
+		errs = append(errs, err)
+	}
+
+	upgradeConfigs := convertUpgradeConfig(h)
+	serverHeaderTransformation := convertServerHeaderTransformation(h.ServerHeaderTransformation)
+
+	// Convert streamIdleTimeout from metav1.Duration to time.Duration
+	var streamIdleTimeout *time.Duration
+	if h.StreamIdleTimeout != nil {
+		duration := h.StreamIdleTimeout.Duration
+		streamIdleTimeout = &duration
+	}
+
+	var idleTimeout *time.Duration
+	if h.IdleTimeout != nil {
+		duration := h.IdleTimeout.Duration
+		idleTimeout = &duration
+	}
+
+	healthCheckPolicy := convertHealthCheckPolicy(h)
+	var xffNumTrustedHops *uint32
+	if h.XffNumTrustedHops != nil {
+		xffNumTrustedHops = ptr.To(uint32(*h.XffNumTrustedHops)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+	}
+
+	return &HttpListenerPolicyIr{
+		ct: ct,
+
+		accessLogConfig:               accessLog,
+		accessLogPolicies:             h.AccessLog,
+		tracingProvider:               tracingProvider,
+		tracingConfig:                 tracingConfig,
+		upgradeConfigs:                upgradeConfigs,
+		useRemoteAddress:              h.UseRemoteAddress,
+		xffNumTrustedHops:             xffNumTrustedHops,
+		serverHeaderTransformation:    serverHeaderTransformation,
+		streamIdleTimeout:             streamIdleTimeout,
+		idleTimeout:                   idleTimeout,
+		healthCheckPolicy:             healthCheckPolicy,
+		preserveHttp1HeaderCase:       h.PreserveHttp1HeaderCase,
+		acceptHttp10:                  h.AcceptHttp10,
+		defaultHostForHttp10:          h.DefaultHostForHttp10,
+		earlyHeaderMutationExtensions: convertHeaderMutations(h.EarlyRequestHeaderModifier),
+	}, errs
+}
 
 func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
 	cli := kclient.NewFilteredDelayed[*kgateway.HTTPListenerPolicy](
@@ -195,41 +254,6 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 			Name:      i.Name,
 		}
 
-		errs := []error{}
-		accessLog, err := convertAccessLogConfig(i, commoncol, krtctx, objSrc)
-		if err != nil {
-			logger.Error("error translating access log", "error", err)
-			errs = append(errs, err)
-		}
-
-		tracingProvider, tracingConfig, err := convertTracingConfig(i, commoncol, krtctx, objSrc)
-		if err != nil {
-			logger.Error("error translating tracing", "error", err)
-			errs = append(errs, err)
-		}
-
-		upgradeConfigs := convertUpgradeConfig(i)
-		serverHeaderTransformation := convertServerHeaderTransformation(i.Spec.ServerHeaderTransformation)
-
-		// Convert streamIdleTimeout from metav1.Duration to time.Duration
-		var streamIdleTimeout *time.Duration
-		if i.Spec.StreamIdleTimeout != nil {
-			duration := i.Spec.StreamIdleTimeout.Duration
-			streamIdleTimeout = &duration
-		}
-
-		var idleTimeout *time.Duration
-		if i.Spec.IdleTimeout != nil {
-			duration := i.Spec.IdleTimeout.Duration
-			idleTimeout = &duration
-		}
-
-		healthCheckPolicy := convertHealthCheckPolicy(i)
-		var xffNumTrustedHops *uint32
-		if i.Spec.XffNumTrustedHops != nil {
-			xffNumTrustedHops = ptr.To(uint32(*i.Spec.XffNumTrustedHops)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
-		}
-
 		// Create status marker if existing status has kgateway controller
 		var statusMarker *krtcollections.StatusMarker
 		for _, ancestor := range i.Status.Ancestors {
@@ -238,30 +262,13 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 				break
 			}
 		}
-
+		polIr, errs := NewHttpListenerPolicy(krtctx, commoncol, i.CreationTimestamp.Time, &i.Spec.HttpSettings, objSrc)
 		pol := &ir.PolicyWrapper{
 			ObjectSource: objSrc,
 			Policy:       i,
-			PolicyIR: &httpListenerPolicy{
-				ct:                            i.CreationTimestamp.Time,
-				accessLogConfig:               accessLog,
-				accessLogPolicies:             i.Spec.AccessLog,
-				tracingProvider:               tracingProvider,
-				tracingConfig:                 tracingConfig,
-				upgradeConfigs:                upgradeConfigs,
-				useRemoteAddress:              i.Spec.UseRemoteAddress,
-				xffNumTrustedHops:             xffNumTrustedHops,
-				serverHeaderTransformation:    serverHeaderTransformation,
-				streamIdleTimeout:             streamIdleTimeout,
-				idleTimeout:                   idleTimeout,
-				healthCheckPolicy:             healthCheckPolicy,
-				preserveHttp1HeaderCase:       i.Spec.PreserveHttp1HeaderCase,
-				acceptHttp10:                  i.Spec.AcceptHttp10,
-				defaultHostForHttp10:          i.Spec.DefaultHostForHttp10,
-				earlyHeaderMutationExtensions: convertHeaderMutations(i.Spec.EarlyRequestHeaderModifier),
-			},
-			TargetRefs: pluginsdkutils.TargetRefsToPolicyRefs(i.Spec.TargetRefs, i.Spec.TargetSelectors),
-			Errors:     errs,
+			PolicyIR:     polIr,
+			TargetRefs:   pluginsdkutils.TargetRefsToPolicyRefs(i.Spec.TargetRefs, i.Spec.TargetSelectors),
+			Errors:       errs,
 		}
 
 		return statusMarker, pol
@@ -297,7 +304,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 				GetPolicyStatus:                 getPolicyStatusFn(cli),
 				PatchPolicyStatus:               patchPolicyStatusFn(cli),
 				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
-					return policy.MergePolicies(pols, mergePolicies, "" /*no merge settings*/)
+					return policy.MergePolicies(pols, MergePolicies, "" /*no merge settings*/)
 				},
 			},
 		},
@@ -305,9 +312,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 }
 
 func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
-	return &httpListenerPolicyPluginGwPass{
-		reporter: reporter,
-	}
+	return &httpListenerPolicyPluginGwPass{}
 }
 
 func (p *httpListenerPolicyPluginGwPass) Name() string {
@@ -318,7 +323,7 @@ func (p *httpListenerPolicyPluginGwPass) ApplyHCM(
 	pCtx *ir.HcmContext,
 	out *envoy_hcm.HttpConnectionManager,
 ) error {
-	policy, ok := pCtx.Policy.(*httpListenerPolicy)
+	policy, ok := pCtx.Policy.(*HttpListenerPolicyIr)
 	if !ok {
 		return fmt.Errorf("internal error: expected httplistener policy, got %T", pCtx.Policy)
 	}
@@ -431,7 +436,7 @@ func (p *httpListenerPolicyPluginGwPass) ApplyListenerPlugin(
 	pCtx *ir.ListenerContext,
 	out *envoylistenerv3.Listener,
 ) {
-	policy, ok := pCtx.Policy.(*httpListenerPolicy)
+	policy, ok := pCtx.Policy.(*HttpListenerPolicyIr)
 	if !ok {
 		return
 	}
@@ -439,13 +444,13 @@ func (p *httpListenerPolicyPluginGwPass) ApplyListenerPlugin(
 	p.healthCheckPolicy = policy.healthCheckPolicy
 }
 
-func convertUpgradeConfig(policy *kgateway.HTTPListenerPolicy) []*envoy_hcm.HttpConnectionManager_UpgradeConfig {
-	if policy.Spec.UpgradeConfig == nil {
+func convertUpgradeConfig(policy *kgateway.HttpSettings) []*envoy_hcm.HttpConnectionManager_UpgradeConfig {
+	if policy.UpgradeConfig == nil {
 		return nil
 	}
 
-	configs := make([]*envoy_hcm.HttpConnectionManager_UpgradeConfig, 0, len(policy.Spec.UpgradeConfig.EnabledUpgrades))
-	for _, upgradeType := range policy.Spec.UpgradeConfig.EnabledUpgrades {
+	configs := make([]*envoy_hcm.HttpConnectionManager_UpgradeConfig, 0, len(policy.UpgradeConfig.EnabledUpgrades))
+	for _, upgradeType := range policy.UpgradeConfig.EnabledUpgrades {
 		configs = append(configs, &envoy_hcm.HttpConnectionManager_UpgradeConfig{
 			UpgradeType: upgradeType,
 		})
@@ -473,8 +478,8 @@ func convertServerHeaderTransformation(transformation *kgateway.ServerHeaderTran
 	}
 }
 
-func convertHealthCheckPolicy(policy *kgateway.HTTPListenerPolicy) *healthcheckv3.HealthCheck {
-	if policy.Spec.HealthCheck != nil {
+func convertHealthCheckPolicy(policy *kgateway.HttpSettings) *healthcheckv3.HealthCheck {
+	if policy.HealthCheck != nil {
 		return &healthcheckv3.HealthCheck{
 			PassThroughMode: wrapperspb.Bool(false),
 			Headers: []*envoyroutev3.HeaderMatcher{{
@@ -482,7 +487,7 @@ func convertHealthCheckPolicy(policy *kgateway.HTTPListenerPolicy) *healthcheckv
 				HeaderMatchSpecifier: &envoyroutev3.HeaderMatcher_StringMatch{
 					StringMatch: &envoymatcherv3.StringMatcher{
 						MatchPattern: &envoymatcherv3.StringMatcher_Exact{
-							Exact: policy.Spec.HealthCheck.Path,
+							Exact: policy.HealthCheck.Path,
 						},
 					},
 				},

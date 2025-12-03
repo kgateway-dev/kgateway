@@ -24,6 +24,7 @@ import (
 // that should map 1-to-1 with a given HTTP listener, such as the Envoy health check HTTP filter.
 // Currently these policies can only be applied per `Gateway` but support for `Listener` attachment may be added in the future.
 // See https://github.com/kgateway-dev/kgateway/issues/11786 for more details.
+// Deprecated: Use the httpSettings field on ListenerPolicy instead.
 type HTTPListenerPolicy struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
@@ -58,6 +59,9 @@ type HTTPListenerPolicySpec struct {
 	// +kubebuilder:validation:XValidation:rule="self.all(r, r.kind == 'Gateway' && (!has(r.group) || r.group == 'gateway.networking.k8s.io'))",message="targetSelectors may only reference Gateway resources"
 	TargetSelectors []shared.LocalPolicyTargetSelector `json:"targetSelectors,omitempty"`
 
+	HttpSettings `json:",inline"`
+}
+type HttpSettings struct {
 	// AccessLoggingConfig contains various settings for Envoy's access logging service.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto
 	// +kubebuilder:validation:MaxItems=16
