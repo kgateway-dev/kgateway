@@ -300,7 +300,7 @@ func ResolveExtHttpService(
 	backends *krtcollections.BackendIndex,
 	disableExtensionRefValidation bool,
 	objectSource ir.ObjectSource,
-	httpService *v1alpha1.ExtHttpService,
+	httpService *kgateway.ExtHttpService,
 ) (*envoy_ext_authz_v3.HttpService, error) {
 	if httpService == nil {
 		return nil, errors.New("httpService not provided")
@@ -338,7 +338,7 @@ func ResolveExtHttpService(
 	if httpService.RequestTimeout != nil {
 		httpUri.Timeout = durationpb.New(httpService.RequestTimeout.Duration)
 	} else {
-		httpUri.Timeout = durationpb.New(v1alpha1.HTTPDefaultTimeout)
+		httpUri.Timeout = durationpb.New(kgateway.HTTPDefaultTimeout)
 	}
 
 	envoyHttpService := &envoy_ext_authz_v3.HttpService{
