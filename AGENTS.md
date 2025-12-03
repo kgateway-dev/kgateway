@@ -37,7 +37,7 @@ Plugins are **stateless across translations** but maintain state during a single
 - Implements `NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass`
 - Can process backends via `ProcessBackend`, `PerClientProcessBackend`, or `PerClientProcessEndpoints`
 
-Example: `/pkg/kgatewaynsions2/plugins/trafficpolicy/traffic_policy_plugin.go`
+Example: `/pkg/kgateway/extensions2/plugins/trafficpolicy/traffic_policy_plugin.go`
 
 ## Development
 
