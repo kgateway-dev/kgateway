@@ -1,84 +1,80 @@
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
-metadata:
-  name: test-route-1
-  namespace: default
-spec:
-  parentRefs:
-  - name: test-gateway
-  hostnames:
-  - example.com
-  rules:
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /api
-    backendRefs:
-    - name: test-service
-      port: 80
 ---
+kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
 metadata:
-  name: test-route-2
+  name: tcp-gw
+  namespace: default
+spec:
+  gatewayClassName: agentgateway
+  listeners:
+    - name: foo
+      protocol: TCP
+      port: 8088
+    - name: bar
+      protocol: TCP
+      port: 8089
+---
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: TCPRoute
+metadata:
+  name: tcp-app-1
   namespace: default
 spec:
   parentRefs:
-  - name: test-gateway
-  hostnames:
-  - example2.com
+    - name: tcp-gw
+      sectionName: foo
   rules:
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /api2
-    backendRefs:
-    - name: test-service
-      port: 80
+    - backendRefs:
+        - name: infra-backend-v1
+          port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: TCPRoute
+metadata:
+  name: tcp-app-2
+  namespace: default
+spec:
+  parentRefs:
+    - name: tcp-gw
+      sectionName: bar
+  rules:
+    - backendRefs:
+        - name: infra-backend-v2
+          port: 8080
 ---
 # Output
 output:
 - gateway:
-    Name: test-gateway
+    Name: tcp-gw
     Namespace: default
   resource:
-    route:
+    tcpRoute:
       backends:
       - backend:
-          port: 80
-          service: default/test-service.default.svc.cluster.local
+          port: 8080
+          service: default/infra-backend-v1.default.svc.cluster.local
         weight: 1
-      hostnames:
-      - example.com
-      key: default/test-route-1.0.0.http
-      listenerKey: default/test-gateway.http
-      matches:
-      - path:
-          pathPrefix: /api
-      routeName: default/test-route-1
+      key: default/tcp-app-1.0.foo
+      listenerKey: default/tcp-gw.foo
+      routeName: default/tcp-app-1
 - gateway:
-    Name: test-gateway
+    Name: tcp-gw
     Namespace: default
   resource:
-    route:
+    tcpRoute:
       backends:
       - backend:
-          port: 80
-          service: default/test-service.default.svc.cluster.local
+          port: 8080
+          service: default/infra-backend-v2.default.svc.cluster.local
         weight: 1
-      hostnames:
-      - example2.com
-      key: default/test-route-2.0.0.http
-      listenerKey: default/test-gateway.http
-      matches:
-      - path:
-          pathPrefix: /api2
-      routeName: default/test-route-2
+      key: default/tcp-app-2.0.bar
+      listenerKey: default/tcp-gw.bar
+      routeName: default/tcp-app-2
 status:
-- apiVersion: gateway.networking.k8s.io/v1
-  kind: HTTPRoute
+- apiVersion: gateway.networking.k8s.io/v1alpha2
+  kind: TCPRoute
   metadata:
-    name: test-route-1
+    name: tcp-app-1
     namespace: default
   spec: null
   status:
@@ -98,12 +94,13 @@ status:
       parentRef:
         group: gateway.networking.k8s.io
         kind: Gateway
-        name: test-gateway
+        name: tcp-gw
         namespace: default
-- apiVersion: gateway.networking.k8s.io/v1
-  kind: HTTPRoute
+        sectionName: foo
+- apiVersion: gateway.networking.k8s.io/v1alpha2
+  kind: TCPRoute
   metadata:
-    name: test-route-2
+    name: tcp-app-2
     namespace: default
   spec: null
   status:
@@ -123,5 +120,6 @@ status:
       parentRef:
         group: gateway.networking.k8s.io
         kind: Gateway
-        name: test-gateway
+        name: tcp-gw
         namespace: default
+        sectionName: bar

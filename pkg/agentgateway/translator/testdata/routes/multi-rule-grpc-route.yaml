@@ -14,39 +14,15 @@ spec:
         service: user.Service
         method: GetUser
     backendRefs:
-    - name: user-service
-      port: 9090
+    - name: infra-backend-v1
+      port: 8080
   - matches:
     - method:
         service: order.Service
         method: CreateOrder
     backendRefs:
-    - name: order-service
-      port: 9091
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: user-service
-  namespace: default
-spec:
-  ports:
-  - port: 9090
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: order-service
-  namespace: default
-spec:
-  ports:
-  - port: 9091
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: default
-
+    - name: infra-backend-v2
+      port: 8080
 ---
 # Output
 output:
@@ -57,8 +33,8 @@ output:
     route:
       backends:
       - backend:
-          port: 9090
-          service: default/user-service.default.svc.cluster.local
+          port: 8080
+          service: default/infra-backend-v1.default.svc.cluster.local
         weight: 1
       hostnames:
       - grpc.example.com
@@ -75,8 +51,8 @@ output:
     route:
       backends:
       - backend:
-          port: 9091
-          service: default/order-service.default.svc.cluster.local
+          port: 8080
+          service: default/infra-backend-v2.default.svc.cluster.local
         weight: 1
       hostnames:
       - grpc.example.com
