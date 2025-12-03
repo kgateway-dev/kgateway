@@ -71,11 +71,11 @@ type GatewayExtensionSpec struct {
 
 type JWT struct {
 	// ValidationMode configures how JWT validation behaves.
-	// If unset or empty, STRICT mode is used (JWT is required).
+	// If unset or empty, Strict mode is used (JWT is required).
 	// If set to AllowMissing, unauthenticated requests without a JWT are allowed through.
 	// If using this mode, make sure to consider the security implications and
 	// consider using an `RBAC` policy to enforce authorization.
-	// +kubebuilder:validation:Enum=AllowMissing
+	// +kubebuilder:validation:Enum=Strict;AllowMissing
 	// +optional
 	ValidationMode *ValidationMode `json:"validationMode,omitempty"`
 
@@ -92,6 +92,11 @@ type JWT struct {
 type ValidationMode string
 
 const (
+	// A valid token, issued by a configured issuer, must be present.
+	// This is the default option.
+	ValidationModeStrict ValidationMode = "Strict"
+	// If a token exists, validate it.
+	// Warning: this allows requests without a JWT token.
 	ValidationModeAllowMissing ValidationMode = "AllowMissing"
 )
 
