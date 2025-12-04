@@ -32,9 +32,15 @@ spec:
 # Output
 output:
 - Policy:
-    name: traffic/default/agw:header-modifier:default/test
+    key: traffic/default/agw:header-modifier:default/test
+    name:
+      kind: AgentgatewayPolicy
+      name: agw
+      namespace: default
     target:
-      gateway: default/test
+      gateway:
+        name: test
+        namespace: default
     traffic:
       requestHeaderModifier:
         add:
@@ -46,9 +52,15 @@ output:
         - name: set-req-header
           value: foo
 - Policy:
-    name: traffic/default/agw:header-modifier:default/test
+    key: traffic/default/agw:header-modifier:default/test
+    name:
+      kind: AgentgatewayPolicy
+      name: agw
+      namespace: default
     target:
-      gateway: default/test
+      gateway:
+        name: test
+        namespace: default
     traffic:
       responseHeaderModifier:
         add:
