@@ -120,7 +120,7 @@ func verifyPodLabel(
 // It then creates the new GatewayParameters resource,
 // and verifies that the gateway pod has the new label defined in the new GatewayParameters resource.
 func TestCustomGWP(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "kgateway-test")
 	testInstallation := e2e.CreateTestInstallation(
 		t,
@@ -139,6 +139,7 @@ func TestCustomGWP(t *testing.T) {
 	// We register the cleanup function before we actually perform the installation.
 	// This allows us to uninstall kgateway, in case the original installation only completed partially
 	testutils.Cleanup(t, func() {
+		ctx := context.Background() // when you have a custom Cleanup, you can't use t.Context within it as the context is canceled before t's cleanup is called
 		if !nsEnvPredefined {
 			os.Unsetenv(testutils.InstallNamespace)
 		}
