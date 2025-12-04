@@ -1,4 +1,4 @@
-package httplistenerpolicy
+package listenerpolicy
 
 import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"

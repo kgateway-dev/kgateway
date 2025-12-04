@@ -1,4 +1,4 @@
-package httplistenerpolicy
+package listenerpolicy
 
 import (
 	"context"

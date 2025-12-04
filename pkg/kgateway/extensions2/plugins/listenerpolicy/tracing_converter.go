@@ -1,4 +1,4 @@
-package httplistenerpolicy
+package listenerpolicy
 
 import (
 	"fmt"
@@ -21,12 +21,12 @@ import (
 )
 
 func convertTracingConfig(
-	policy *kgateway.HTTPListenerPolicy,
+	policy *kgateway.HTTPSettings,
 	commoncol *collections.CommonCollections,
 	krtctx krt.HandlerContext,
 	parentSrc ir.ObjectSource,
 ) (*envoytracev3.OpenTelemetryConfig, *envoy_hcm.HttpConnectionManager_Tracing, error) {
-	config := policy.Spec.Tracing
+	config := policy.Tracing
 	if config == nil {
 		return nil, nil, nil
 	}

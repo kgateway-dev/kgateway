@@ -1,4 +1,4 @@
-package httplistenerpolicy
+package listenerpolicy
 
 import (
 	"encoding/json"
@@ -42,18 +42,18 @@ const serviceNameKey = "service.name"
 // we return partially translated configs. As these configs are of different types, we return an list of interfaces
 // that is stored in the IR to be fully translated during translation.
 func convertAccessLogConfig(
-	policy *kgateway.HTTPListenerPolicy,
+	policy *kgateway.HTTPSettings,
 	commoncol *collections.CommonCollections,
 	krtctx krt.HandlerContext,
 	parentSrc ir.ObjectSource,
 ) ([]proto.Message, error) {
-	configs := policy.Spec.AccessLog
+	configs := policy.AccessLog
 
 	if configs != nil && len(configs) == 0 {
 		return nil, nil
 	}
 
-	grpcBackends := make(map[string]*ir.BackendObjectIR, len(policy.Spec.AccessLog))
+	grpcBackends := make(map[string]*ir.BackendObjectIR, len(policy.AccessLog))
 	for idx, log := range configs {
 		if log.GrpcService != nil {
 			backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, parentSrc, log.GrpcService.BackendRef.BackendObjectReference)
