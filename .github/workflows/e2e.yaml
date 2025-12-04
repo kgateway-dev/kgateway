@@ -75,6 +75,7 @@ jobs:
         - cluster-name: 'agent-gateway-cluster'
           go-test-args: '-timeout=25m'
           go-test-run-regex: '^TestAgentgatewayIntegration'
+          agentgateway: 'true'
         # August 29, 2025: ~3 minutes
         - cluster-name: 'api-validation'
           go-test-args: '-timeout=10m'
@@ -105,6 +106,7 @@ jobs:
         kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
         istio-version: ${{ steps.dotenv.outputs.istio_version }}
         localstack: ${{ matrix.test.localstack }}
+        agentgateway: ${{ matrix.test.agentgateway }}
     - id: run-tests
       uses: ./.github/actions/kubernetes-e2e-tests
       with:
@@ -118,4 +120,3 @@ jobs:
       run: |
         echo "After job disk space:"
         df -h
-        docker system df -v

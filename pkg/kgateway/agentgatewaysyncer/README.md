@@ -107,14 +107,13 @@ Routes support various filters including header modification, redirects, URL rew
 
 Backend resources define target services and systems that traffic should be routed to. Unlike other resources, backends are global resources (not per-gateway) and are applied to all gateways in the agentgateway syncer.
 
-Each backend has a unique name in the format `namespace/name`. Backends are processed through the plugin system that translates Kubernetes Backend CRDs to agentgateway API resources
+Each backend has a unique name in the format `namespace/name`. Backends are processed through the plugin system that translates Kubernetes AgentgatewayBackend CRDs to agentgateway API resources
 
-Backends in kgateway are represented by the Backend CRD and support multiple backend types:
+Backends for agentgateway are represented by the `AgentgatewayBackend` CRD and support the following backend types:
 
-**Backend Types:**
-- **AI**: Routes traffic to AI/LLM providers (OpenAI, Anthropic, etc.) with model-specific configurations
-- **Static**: Routes to static host/IP with configurable ports and protocols. Note: In agentgateway only one host is supported (not list of hosts).
-- **MCP**: Model Context Protocol backends for virtual MCP servers. Note if a static MCP backend target is used, kgateway will translate out two backends (one static, one mcp).
+**Backend Types (agentgateway):**
+- **AI**: Routes traffic to AI/LLM providers (OpenAI, Anthropic, Azure OpenAI, Bedrock, etc.)
+- **MCP**: Model Context Protocol backends for virtual MCP servers. Static MCP targets are supported via `spec.mcp.targets[].static`.
 
 **Usage in Routes:**
 Backends are referenced by HTTPRoute, GRPCRoute, TCPRoute, and TLSRoute resources using `backendRefs`:
@@ -125,20 +124,20 @@ kind: HTTPRoute
 spec:
   rules:
     - backendRefs:
-        - group: gateway.kgateway.dev
-          kind: Backend
+        - group: agentgateway.dev
+          kind: AgentgatewayBackend
           name: my-backend
 ```
 
 **Translation Process:**
-1. Backend CRDs are watched by the agentgateway syncer
+1. AgentgatewayBackend CRDs are watched by the agentgateway syncer
 2. Each backend is processed through registered plugins based on its type
 3. Plugins translate the backend configuration to agentgateway API format
 4. The resulting backend resources and associated policies are distributed to **all** gateways via xDS
 
 #### Policies:
 
-Policies in kgateway can come from HTTPRoutes, Backends and TrafficPolicy crds. They configure the following agentgateway Policies:
+Policies for agentgateway are configured via the `AgentgatewayPolicy` CRD (attached to `Gateway`/`HTTPRoute`/`TCPRoute`). They configure the following agentgateway Policies:
 
 Policies are configurable rules that control traffic behavior, security, and transformations for routes and backends.
 - Request Header Modifier: Add, set, or remove HTTP request headers.
@@ -155,7 +154,7 @@ Policies are configurable rules that control traffic behavior, security, and tra
 
 ### CEL Transformations
 
-The agentgateway data plane supports [CEL](https://cel.dev/) (Common Expression Language) transformations through TrafficPolicy resources. CEL transformations allow you to modify requests and responses using powerful expression language.
+The agentgateway data plane supports [CEL](https://cel.dev/) (Common Expression Language) transformations through AgentgatewayPolicy resources. CEL transformations allow you to modify requests and responses using powerful expression language.
 
 Unlike the Envoy data plane transformations that support Inja, the agentgateway transformations use CEL expressions.
 
@@ -253,24 +252,25 @@ spec:
         - name: simple-svc
           port: 8080
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: TrafficPolicy
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayPolicy
 metadata:
-  name: example-traffic-policy-for-gateway-attached-transform
+  name: example-agentgateway-policy-for-gateway-attached-transform
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: Gateway
     name: example-gateway
-  transformation:
-    request:
-      set:
-        - name: request-gateway
-          value: "'hello'"
-    response:
-      set:
-        - name: response-gateway
-          value: "'goodbye'"
+  traffic:
+    transformation:
+      request:
+        set:
+          - name: request-gateway
+            value: "'hello'"
+      response:
+        set:
+          - name: response-gateway
+            value: "'goodbye'"
 EOF
 ```
 
@@ -304,7 +304,7 @@ flowchart TD
 
         C1 --> C2["Gateway Collection<br/>Filter by agentgateway class"]
         C1 --> C3["Route Collections<br/>HTTPRoute, GRPCRoute, etc.<br/>Builtin and attached policy via plugins"]
-        C1 --> C4["Backend Collections<br/>Backend CRDs via plugins"]
+        C1 --> C4["AgentgatewayBackend Collections<br/>AgentgatewayBackend CRDs via plugins"]
         C1 --> C5["Policy Collections<br/>(InferencePools, A2A, etc.)"]
         C1 --> C6["Address Collections<br/>Services & Workloads"]
 
@@ -374,8 +374,6 @@ Retag and load the image to match the default image tag in the values file for a
 ```
 make run HELM_ADDITIONAL_VALUES=test/e2e/tests/manifests/agent-gateway-integration.yaml; CONFORMANCE_GATEWAY_CLASS=agentgateway make conformance
 ```
-
-## Examples
 
 Set up a kind cluster and install kgateway with the kubernetes Gateway APIs:
 ```shell
@@ -661,19 +659,17 @@ spec:
   rules:
     - backendRefs:
         - name: json-backend
-          kind: Backend
-          group: gateway.kgateway.dev
+          kind: AgentgatewayBackend
+          group: agentgateway.dev
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: Backend
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayBackend
 metadata:
   name: json-backend
 spec:
-  type: Static
   static:
-    hosts:
-      - host: jsonplaceholder.typicode.com
-        port: 80
+    host: jsonplaceholder.typicode.com
+    port: 80
 EOF
 ```
 
@@ -726,27 +722,22 @@ spec:
             value: /openai
       backendRefs:
         - name: openai
-          group: gateway.kgateway.dev
-          kind: Backend
+          group: agentgateway.dev
+          kind: AgentgatewayBackend
 ---
-# TODO: Update this to use the agw based Backend API.
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: Backend
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayBackend
 metadata:
-  labels:
-    app: kgateway
   name: openai
 spec:
-  type: AI
   ai:
-    llm:
-      provider:
-        openai:
-          model: "gpt-4o-mini"
-          authToken:
-            kind: "SecretRef"
-            secretRef:
-              name: openai-secret
+    provider:
+      openai:
+        model: "gpt-4o-mini"
+  policies:
+    auth:
+      secretRef:
+        name: openai-secret
 EOF
 ```
 
@@ -785,34 +776,31 @@ spec:
             value: /openai
       backendRefs:
         - name: openai
-          group: gateway.kgateway.dev
-          kind: Backend
+          group: agentgateway.dev
+          kind: AgentgatewayBackend
     - matches:
         - path:
             type: PathPrefix
             value: /bedrock
       backendRefs:
-        - group: gateway.kgateway.dev
-          kind: Backend
+        - group: agentgateway.dev
+          kind: AgentgatewayBackend
           name: bedrock
 ---
-# TODO: Update this to use the agw based Backend API.
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: Backend
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayBackend
 metadata:
   name: bedrock
 spec:
-  type: AI
   ai:
-    llm:
-      provider:
-        bedrock:
-          model: anthropic.claude-3-5-haiku-20241022-v1:0
-          region: us-west-2
-          auth:
-            type: Secret
-            secretRef:
-              name: bedrock-secret
+    provider:
+      bedrock:
+        model: anthropic.claude-3-5-haiku-20241022-v1:0
+        region: us-west-2
+  policies:
+    auth:
+      secretRef:
+        name: bedrock-secret
 ---
 apiVersion: v1
 kind: Secret
@@ -883,24 +871,21 @@ spec:
   rules:
     - backendRefs:
         - name: mcp-backend
-          group: gateway.kgateway.dev
-          kind: Backend
+          group: agentgateway.dev
+          kind: AgentgatewayBackend
 ---
-# TODO: Update this to use the agw based Backend API.
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: Backend
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayBackend
 metadata:
   labels:
     app: kgateway
   name: mcp-backend
 spec:
-  type: MCP
   mcp:
-    name: mcp-virtual-server
     targets:
       - name: mcp-server
         selector:
-          service:
+          services:
             matchLabels:
               app: mcp-server
 ---
@@ -987,17 +972,15 @@ spec:
   rules:
     - backendRefs:
       - name: mcp-backend
-        group: gateway.kgateway.dev
-        kind: Backend
+        group: agentgateway.dev
+        kind: AgentgatewayBackend
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: Backend
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayBackend
 metadata:
   name: mcp-backend
 spec:
-  type: MCP
   mcp:
-    name: mcp-server
     targets:
     - name: mcp-target
       static:
@@ -1373,7 +1356,8 @@ data:
 
 #### Complete Example with AI Backend
 
-```yaml
+```shell
+kubectl apply -f- <<'EOF'
 # ConfigMap with tracing configuration
 apiVersion: v1
 kind: ConfigMap
@@ -1435,22 +1419,19 @@ spec:
       name: http
 ---
 # AI Backend and Route
-# TODO: Update this to use the agw based Backend API.
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: Backend
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayBackend
 metadata:
   name: openai-backend
 spec:
-  type: AI
   ai:
-    llm:
-      provider:
-        openai:
-          model: "gpt-4o-mini"
-          authToken:
-            kind: "SecretRef"
-            secretRef:
-              name: openai-secret
+    provider:
+      openai:
+        model: "gpt-4o-mini"
+  policies:
+    auth:
+      secretRef:
+        name: openai-secret
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -1462,15 +1443,17 @@ spec:
   rules:
     - backendRefs:
         - name: openai-backend
-          group: gateway.kgateway.dev
-          kind: Backend
+          group: agentgateway.dev
+          kind: AgentgatewayBackend
+EOF
 ```
 
 #### Example with MCP Tool Calling and Trace Verification
 
 Here's a complete example that demonstrates tracing MCP tool calls, which generates rich trace spans for `list_tools` and `call_tool` operations:
 
-```yaml
+```shell
+kubectl apply -f- <<'EOF'
 # Tracing Configuration ConfigMap
 apiVersion: v1
 kind: ConfigMap
@@ -1536,18 +1519,17 @@ spec:
           from: All
 ---
 # MCP Backend
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: Backend
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayBackend
 metadata:
   name: mcp-everything-backend
   namespace: default
 spec:
-  type: MCP
   mcp:
     targets:
       - name: everything
         selector:
-          service:
+          services:
             matchLabels:
               app: mcp-everything
 ---
@@ -1591,8 +1573,8 @@ spec:
             maxAge: 86400
       backendRefs:
         - name: mcp-everything-backend
-          group: gateway.kgateway.dev
-          kind: Backend
+          group: agentgateway.dev
+          kind: AgentgatewayBackend
 ---
 # MCP Everything Server Deployment
 apiVersion: apps/v1
@@ -1640,6 +1622,7 @@ spec:
       targetPort: 3001
       appProtocol: kgateway.dev/mcp
   type: ClusterIP
+EOF
 ```
 
 **Testing MCP Tool Calls with Traces:**
@@ -1674,3 +1657,377 @@ kubectl port-forward deployment/agentgateway 15000:15000 3000:3000
    - Verify that you can see trace spans for listing the MCP tools (`list_tools`) and calling a tool (`call_tool`).
 
 This configuration provides comprehensive tracing for your MCP tool interactions, making it easy to debug issues and monitor performance of your agent-to-agent communications.
+
+
+### Additional AgentgatewayPolicy examples
+
+#### JWTAuthentication
+Use `AgentgatewayPolicy.spec.traffic.jwtAuthentication` to validate JWTs at the Gateway or Route. You can configure multiple providers and supply keys via remote JWKS (`jwks.remote.jwksUri`) or inline JWKS (`jwks.inline`). JWT auth can be combined with `authorization.policy.matchExpressions` for simple RBAC-style allow rules.
+
+```shell
+kubectl apply -f- <<EOF
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-example-insecure
+spec:
+  parentRefs:
+    - name: super-gateway
+  hostnames:
+    - "insecureroute.com"
+  rules:
+    - backendRefs:
+        - name: backend-0
+          port: 8080
+EOF
+```
+
+##### Remote JWKS (Route-scoped)
+
+```shell
+kubectl apply -f- <<EOF
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-secure
+spec:
+  parentRefs:
+    - name: super-gateway
+  hostnames:
+    - "secureroute.com"
+  rules:
+    - backendRefs:
+        - name: backend-0
+          port: 8080
+---
+# jwks were generated using hack/utils/jwt/jwt-generator.go
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayPolicy
+metadata:
+  name: route-policy
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: route-secure
+  traffic:
+    jwtAuthentication:
+      mode: Strict
+      providers:
+      - issuer: https://kgateway.dev
+        jwks:
+          remote:
+            jwksUri: https://dummy-idp.default:8443/org-one/keys
+      - issuer: https://kgateway.dev
+        jwks:
+          remote:
+            jwksUri: https://dummy-idp.default:8443/org-two/keys
+EOF
+```
+
+##### Inline JWKS (Route-scoped)
+
+```shell
+kubectl apply -f- <<'EOF'
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-secure
+spec:
+  parentRefs:
+    - name: super-gateway
+  hostnames:
+    - "secureroute.com"
+  rules:
+    - backendRefs:
+        - name: backend-0
+          port: 8080
+---
+# jwks were generated using hack/utils/jwt/jwt-generator.go
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayPolicy
+metadata:
+  name: route-policy
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: route-secure
+  traffic:
+    jwtAuthentication:
+      mode: Strict
+      providers:
+      - issuer: https://kgateway.dev
+        jwks:
+          inline: '{"keys":[{"use":"sig","kty":"RSA","kid":"5333780687551038659","n":"1ovFhi3vyvF6DsbWanZrUUVgQVIUULNRczlyu1dJw8SoqSz5HRtfQUSVq_yuprKrpSz6oam8gAsXtpp570f8P3zm3kXBRzBq6-DAjx-4V5l0x7O89a35FkDjaiS4ci1r6_Z0nWjlIw-WY4w1kf1OwuDYjYJCgHgcRhMXblhVvcpq74de_0aezXNHVaA9sqqa78wciQc1ho2T2jkJ5-5OdfPw6YrkUwHrQIP37fH4wJCVmdyxPgwqNphQInmOrlbeisS2ih-s7ZJcC8eXaZrNZopHyrw2rhWM4eCwogFVuYpF6-coMXyEGk_SzYUaX5XMgZcZW1-SmTNtxtEKqFDSlw","e":"AQAB","x5c":["MIIC3jCCAcagAwIBAgIBQzANBgkqhkiG9w0BAQsFADAXMRUwEwYDVQQKEwxrZ2F0ZXdheS5kZXYwHhcNMjUxMTE0MTc1MjA4WhcNMjUxMTE0MTk1MjA4WjAXMRUwEwYDVQQKEwxrZ2F0ZXdheS5kZXYwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDWi8WGLe/K8XoOxtZqdmtRRWBBUhRQs1FzOXK7V0nDxKipLPkdG19BRJWr/K6msqulLPqhqbyACxe2mnnvR/w/fObeRcFHMGrr4MCPH7hXmXTHs7z1rfkWQONqJLhyLWvr9nSdaOUjD5ZjjDWR/U7C4NiNgkKAeBxGExduWFW9ymrvh17/Rp7Nc0dVoD2yqprvzByJBzWGjZPaOQnn7k518/DpiuRTAetAg/ft8fjAkJWZ3LE+DCo2mFAieY6uVt6KxLaKH6ztklwLx5dpms1mikfKvDauFYzh4LCiAVW5ikXr5ygxfIQaT9LNhRpflcyBlxlbX5KZM23G0QqoUNKXAgMBAAGjNTAzMA4GA1UdDwEB/wQEAwIFoDATBgNVHSUEDDAKBggrBgEFBQcDATAMBgNVHRMBAf8EAjAAMA0GCSqGSIb3DQEBCwUAA4IBAQCC71YGcmJvrmjSOd33nPsRpTO+arEex2Se5f0nSrglTfubYl4Bb8L/MnF87yHkc+50/dvCbXB9lJwblfsO/HjWAwBnM94ePqIurLRn0tflsW+22PR/2lcnru74HDN+p8/9ZtedchYWetcD4k1boMhUOgolte1WrHNvAsm2divBsWrO6Fg3kKjgTItARFyrmhjFz+QYBuFKw6b16dB9n4kSbCiFVJ49GqU9T+7cs7cL8SCC69jMgcSK8ythN693rYDU5Cz/xTqNx+3Tk+yKFCg+vr4rIxV1ACrE61plnY8qGph64FEZpAPU6xL3K0V/Y+TXsfpjL9jhi+9bvOdNr3Vy"]}]}'
+      - issuer: https://kgateway.dev
+        jwks:
+          inline: '{"keys":[{"use":"sig","kty":"RSA","kid":"7105793955086939664","n":"oQqLI89RuTy4d_DLuDBInE2w5bEpTBnoMpo0x6pWJWm48jP-tTF3r6156HmLPzUGHMpKolfZReVXj1eXXp5NUiOB3McvaemUPYZe8ZSQ9YrbTmodiVc6_S0ipT-SlO-nyjxZM2rvc2PUoYNipTOWyhq7YWYmaQ607g5zUItcn_omiFAgJFAXQJ5BSe4RUKbObKvLxHKDPfqNmG_K_DJy_0TmoBV9OGIwECCi7wtZ9icYJgfclH_v2nDaaxRvXA_9NPASPLJ8-B3a_soJqzX_tGi2QfLgtnoJKxUp-mprQzXMK0TBUm3ycCjch4FMykJCeGluV0H7F025u4wUkGu71w","e":"AQAB","x5c":["MIIC3jCCAcagAwIBAgIBETANBgkqhkiG9w0BAQsFADAXMRUwEwYDVQQKEwxrZ2F0ZXdheS5kZXYwHhcNMjUxMTE0MTc1NTU1WhcNMjUxMTE0MTk1NTU1WjAXMRUwEwYDVQQKEwxrZ2F0ZXdheS5kZXYwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQChCosjz1G5PLh38Mu4MEicTbDlsSlMGegymjTHqlYlabjyM/61MXevrXnoeYs/NQYcykqiV9lF5VePV5denk1SI4Hcxy9p6ZQ9hl7xlJD1ittOah2JVzr9LSKlP5KU76fKPFkzau9zY9Shg2KlM5bKGrthZiZpDrTuDnNQi1yf+iaIUCAkUBdAnkFJ7hFQps5sq8vEcoM9+o2Yb8r8MnL/ROagFX04YjAQIKLvC1n2JxgmB9yUf+/acNprFG9cD/008BI8snz4Hdr+ygmrNf+0aLZB8uC2egkrFSn6amtDNcwrRMFSbfJwKNyHgUzKQkJ4aW5XQfsXTbm7jBSQa7vXAgMBAAGjNTAzMA4GA1UdDwEB/wQEAwIFoDATBgNVHSUEDDAKBggrBgEFBQcDATAMBgNVHRMBAf8EAjAAMA0GCSqGSIb3DQEBCwUAA4IBAQAt5kwem0VyLMkFaA/+XQsx+Q1FOZR3qdXEBK77fDiPpcCz5evDXxfwmiVpmvn+dbbNn00sDzzJw0msEYLi80l8vG5+IVkgFklgDveLs+sRnfme8WBNVMmb6jUUBtXGWmosEh7L+itd1faA1t4vTI+yXNdO0DmRtgUZeT7ucERwgYFs/cwjsbUg9AR0FdLXvOgXuLdSK5FfAQz/DZ1MGKgDLC8hXvrSnoO3P3ol1iLn6C1QBIHautBjJddaKVyhKbyleP8zYBjzee+VAwd/u1nepmwe1lchCAppLPefP1keaShHkxdy4ki0JoRdjxKTs93gbJVVeSoEMSYftOL6dqMb"]},{"use":"sig","kty":"RSA","kid":"8140227754244739431","n":"okB6eJdsTlNodvUUaR3Fqmz3gq8qfWyTcbiX-8wHYjQVsrGgWNq0MjfGhnnJFzkF1Yyz4V-SV-JpOLHz-GUqRjaLZ4jOYc-GVoPqD-tLmtaV0EE07Ti-Up_SuYh6ylyogzYAmJiLPgc4cI_pV3BVrfE9qd3KyP0vhzbbqEELeEEks-rBCgxTorL3lucN9Cg5LiBF-R1uJRnOqKfc94_aBOsMpRYjSuqsgEBOGuY-6wYgg_3cMZXc8EqFWZ92Kh06miAI6KLF6-39PRIgAm2BsIrknpWPbTSZEs463qatyFGFwh80nT3mRzSZxdgjmbdt6jQYWAaSG-p2zmsmrrrMJQ","e":"AQAB","x5c":["MIIC3jCCAcagAwIBAgIBCTANBgkqhkiG9w0BAQsFADAXMRUwEwYDVQQKEwxrZ2F0ZXdheS5kZXYwHhcNMjUxMTE0MTc1NzA2WhcNMjUxMTE0MTk1NzA2WjAXMRUwEwYDVQQKEwxrZ2F0ZXdheS5kZXYwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCiQHp4l2xOU2h29RRpHcWqbPeCryp9bJNxuJf7zAdiNBWysaBY2rQyN8aGeckXOQXVjLPhX5JX4mk4sfP4ZSpGNotniM5hz4ZWg+oP60ua1pXQQTTtOL5Sn9K5iHrKXKiDNgCYmIs+Bzhwj+lXcFWt8T2p3crI/S+HNtuoQQt4QSSz6sEKDFOisveW5w30KDkuIEX5HW4lGc6op9z3j9oE6wylFiNK6qyAQE4a5j7rBiCD/dwxldzwSoVZn3YqHTqaIAjoosXr7f09EiACbYGwiuSelY9tNJkSzjrepq3IUYXCHzSdPeZHNJnF2COZt23qNBhYBpIb6nbOayauuswlAgMBAAGjNTAzMA4GA1UdDwEB/wQEAwIFoDATBgNVHSUEDDAKBggrBgEFBQcDATAMBgNVHRMBAf8EAjAAMA0GCSqGSIb3DQEBCwUAA4IBAQBk387Q4W38xw03pcQTQXDZzo7zN0PeGl6CFqxf/uHTOutIWbCs5tu0HVqpmKtz7sxQiTShfEaoDQhwsFG2yv5czwmMX7ggj6x4rZN54cIaZLjyWZk+DY7B8zRq4Qn6zs9gvNla6iShc5P+w0fuCWBlX5s2d9HQRcbWRyI/jxmhOMnSoFJIJMkulPG+SnnsVblOvubzd5cPXHD7ynMxBw6XFSimLAlIqKgtfT+JehXD4M208nzYEcXhKp9RUh6PQCZ8RUc4zd11mIDZbGuDBjpIhspdyf0OhgljIkhZ3CNOzKqcE9YUWILiY6/oWhObVFQfObiCXj/raMXrTmoW/FB8"]}]}'
+EOF
+```
+
+##### JWKS with RBAC authorization (Route-scoped)
+
+```shell
+kubectl apply -f- <<'EOF'
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-secure
+spec:
+  parentRefs:
+    - name: super-gateway
+  hostnames:
+    - "secureroute.com"
+  rules:
+    - backendRefs:
+        - name: backend-0
+          port: 8080
+---
+# jwks were generated using hack/utils/jwt/jwt-generator.go
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayPolicy
+metadata:
+  name: route-policy
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: route-secure
+  traffic:
+    authorization:
+      action: Allow
+      policy:
+        matchExpressions:
+          - 'jwt.sub == "ignore@kgateway.dev"'
+    jwtAuthentication:
+      mode: Strict
+      providers:
+      - issuer: https://kgateway.dev
+        jwks:
+          inline: '{"keys":[{"use":"sig","kty":"RSA","kid":"6199783057790440763","n":"0VsRlUTAJuh-y-HHdtYDHZ64dBPh0OukIunXTzdCdlGBRsqdxp6yM8-NyUOd1knC220CqHjivu45EcLWFEfBGtoTGux6Um-qwuLOhtoI_83ipgXE6jl05aLv1O36FjwmBUVJ1beTNIFOa5pceC4Cvv_F-gVdaJwIWsz8TLkWLTIkKPOEWvPGshcCeP--5r-SwymqcebC8ZGOf1J1LMoCCoWj1o_DMcz889A13o_s82ZkS1XmyxmbgOJe2T8LdID3XHsGhEwVuPk93Rqal6g1U6NCeN8rSQy7qsweBstRvEoLCJDuw/rNS5Ah4+LxS/G7edBvlzOO+r3rAFjlmMwl69AgMBAAGjNTAzMA4GA1UdDwEB/wQEAwIFoDATBgNVHSUEDDAKBggrBgEFBQcDATAMBgNVHRMBAf8EAjAAMA0GCSqGSIb3DQEBCwUAA4IBAQAayiqIvfgW22YzEM0tfupq3qLsWsbmYyq5FWcWO1n833G+VBt1LzoTno2QYplxHOVUrPm7rf9aFeN1h68V1ab8xzjUQWrszo6QVmkbFgWafriUneBZE0SArNBiJq33UB3f4Jb3xzVSZQkE4xubmvBosEqLflSE7dbJCtpH18jDLNusAOtZB2ETVBxkI5xKrsiJto6OtoF9y7UA05zQBZkLU9F81vS1LdlAoryvDMa1M86dBzaMVHwbCEerCsJVYIhq+dNkvLAsPeohPpGZBVh7gqABJfxMHXj8R4R1mriPcBRWAuavext4LziugXA+pUuPKgD3EFGLhM+zOzLZcTkx"]}]}'
+EOF
+```
+#### Rate limit (local + global)
+Configure request limiting with `AgentgatewayPolicy.spec.traffic.rateLimit`. Local limits apply per proxy instance, while global limits use an external rate limit service (provide `backendRef`, `domain`, and `descriptors`). Combine `requests`, `unit`, and `burst` to shape traffic precisely.
+
+```shell
+kubectl apply -f- <<EOF
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayPolicy
+metadata:
+  name: combined-rate-limit
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: test-route-1
+  traffic:
+    rateLimit:
+      local:
+      - requests: 1
+        unit: Minutes
+        burst: 1
+      global:
+        backendRef:
+          name: ratelimit
+          namespace: kgateway-test-extensions
+          port: 8081
+        domain: "api-gateway"
+        descriptors:
+        - entries:
+          - name: service
+            expression: '"premium-api"'
+EOF
+```
+
+##### Token-based (local + global)
+
+```shell
+kubectl apply -f- <<EOF
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: AgentgatewayPolicy
+metadata:
+  name: token-rate-limit
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: test-route-1
+  traffic:
+    rateLimit:
+      # Local: limit by LLM tokens per minute (both input and output tokens)
+      local:
+      - tokens: 1000
+        unit: Minutes
+        burst: 200
+      # Global: limit by tokens using the external rate limit service
+      global:
+        backendRef:
+          name: ratelimit
+          namespace: kgateway-test-extensions
+          port: 8081
+        domain: "api-gateway"
+        descriptors:
+        - unit: Tokens
+          entries:
+          - name: user
+            expression: "request.headers['x-user-id'] || 'anonymous'"
+EOF
+```
+
+#### External Authentication
+Add external auth using `AgentgatewayPolicy.spec.traffic.extAuth` to call a gRPC ext-authz server before routing. Useful for centralized authN/authZ decisions, and can be paired with request body passthrough/timeouts as needed.
+
+```shell
+kubectl apply -f- <<EOF
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayPolicy
+metadata:
+  name: secure-route-policy
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: example-gateway
+  traffic:
+    extAuth:
+      backendRef:
+        name: ext-authz
+        port: 4444
+EOF
+```
+
+#### Azure OpenAI support
+
+You can now route to Azure OpenAI using the AI AgentgatewayBackend type:
+
+```shell
+kubectl apply -f- <<EOF
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayBackend
+metadata:
+  name: azure-openai
+spec:
+  ai:
+    provider:
+      azureopenai:
+        endpoint: my-endpoint.openai.azure.com
+        apiVersion: v1
+  policies:
+    auth:
+      secretRef:
+        name: azure-secret
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: azure-openai-route
+spec:
+  parentRefs:
+  - name: ai-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /v1
+    backendRefs:
+    - group: agentgateway.dev
+      kind: AgentgatewayBackend
+      name: azure-openai
+EOF
+```
+
+#### Anthropic token counting
+Map provider-specific endpoints to behavior using `AgentgatewayPolicy.spec.backend.ai.routes`. The `anthropic_token_count` route type processes Anthropic `/v1/messages/count_tokens` requests to return token usage estimates.
+
+```shell
+kubectl apply -f- <<EOF
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayPolicy
+metadata:
+  name: anthropic-token-count
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: anthropic-route
+  backend:
+    ai:
+      routes:
+        "/v1/messages": "messages"
+        "/v1/messages/count_tokens": "anthropic_token_count"
+EOF
+```
+
+#### OpenAI Responses API
+Route OpenAI’s unified Responses API by mapping `/v1/responses` to the `responses` route type in `AgentgatewayPolicy.spec.backend.ai.routes`. This enables the Responses workflow alongside other OpenAI formats on the same route.
+
+```shell
+kubectl apply -f- <<EOF
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayPolicy
+metadata:
+  name: openai-responses-routing
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: openai-route
+  backend:
+    ai:
+      routes:
+        "/v1/responses": "responses"
+EOF
+```
+
+#### Bedrock prompt caching
+Enable Bedrock prompt caching via `AgentgatewayPolicy.spec.backend.ai.promptCaching` to reduce costs on repeated prompts and tool specs. Set `minTokens` to avoid caching short prompts; only Bedrock models support this feature.
+
+```shell
+kubectl apply -f- <<EOF
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: ai-gateway
+spec:
+  gatewayClassName: agentgateway
+  listeners:
+  - name: http
+    port: 8080
+    protocol: HTTP
+---
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayPolicy
+metadata:
+  name: bedrock-caching-policy
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: bedrock-route
+  backend:
+    ai:
+      promptCaching:
+        cacheSystem: true
+        cacheMessages: true
+        cacheTools: false
+        minTokens: 1024
+      modelAliases:
+        "fast": "amazon.nova-micro-v1:0"
+        "smart": "anthropic.claude-3-5-sonnet-20241022-v2:0"
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: bedrock-route
+spec:
+  parentRefs:
+  - name: ai-gateway
+  rules:
+  - backendRefs:
+    - group: agentgateway.dev
+      kind: AgentgatewayBackend
+      name: bedrock
+EOF
+```
