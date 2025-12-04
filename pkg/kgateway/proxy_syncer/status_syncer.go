@@ -30,7 +30,6 @@ import (
 	plug "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
-	"github.com/kgateway-dev/kgateway/v2/pkg/syncer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/stopwatch"
 )
 
@@ -61,9 +60,9 @@ func NewStatusSyncer(
 	reportQueue utils.AsyncQueue[reports.ReportMap],
 	backendPolicyReportQueue utils.AsyncQueue[reports.ReportMap],
 	cacheSyncs []cache.InformerSynced,
-	opts ...syncer.StatusSyncerOption,
+	opts ...StatusSyncerOption,
 ) *StatusSyncer {
-	cfg := syncer.ProcessStatusSyncerOptions(opts...)
+	cfg := processStatusSyncerOptions(opts...)
 	return &StatusSyncer{
 		mgr:                            mgr,
 		plugins:                        plugins,

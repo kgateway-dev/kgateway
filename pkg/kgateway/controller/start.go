@@ -38,7 +38,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	kgtwschemes "github.com/kgateway-dev/kgateway/v2/pkg/schemes"
-	"github.com/kgateway-dev/kgateway/v2/pkg/syncer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/namespaces"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
@@ -100,7 +99,10 @@ type StartConfig struct {
 	GatewayControllerExtension sdk.GatewayControllerExtension
 
 	// StatusSyncerOptions is the list of options to be passed when creating the StatusSyncer
-	StatusSyncerOptions []syncer.StatusSyncerOption
+	StatusSyncerOptions []proxy_syncer.StatusSyncerOption
+
+	// AgentGatewaySyncerOptions is the list of options to be passed when creating the AgentGatewaySyncer
+	AgentGatewaySyncerOptions []agentgatewaysyncer.AgentGatewaySyncerOption
 }
 
 // Start runs the controllers responsible for processing the K8s Gateway API objects
@@ -222,6 +224,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			cfg.AdditionalGatewayClasses,
 			cfg.KrtOptions,
 			gvks,
+			cfg.AgentGatewaySyncerOptions...,
 		)
 
 		if err := cfg.Manager.Add(agwSyncer); err != nil {
