@@ -36,9 +36,6 @@ func mergeDefault(
 	opts policy.MergeOptions,
 	mergeOrigins ir.MergeOrigins,
 ) {
-	if !policy.IsMergeable(p1.defaultPolicy, p2.defaultPolicy, opts) {
-		return
-	}
 	mergeListenerPolicy("default", &p1.defaultPolicy, &p2.defaultPolicy, p2Ref, p2MergeOrigins, opts, mergeOrigins)
 }
 
@@ -49,15 +46,15 @@ func mergePerPort(
 	opts policy.MergeOptions,
 	mergeOrigins ir.MergeOrigins,
 ) {
-	if !policy.IsMergeable(p1.perPortPolicy, p2.perPortPolicy, opts) {
-		return
-	}
 	for port, p2PortPolicy := range p2.perPortPolicy {
 		f := fmt.Sprintf("perPortPolicy[%d]", port)
 		if p1PortPolicy, ok := p1.perPortPolicy[port]; ok {
 			mergeListenerPolicy(f, &p1PortPolicy, &p2PortPolicy, p2Ref, p2MergeOrigins, opts, mergeOrigins)
 			p1.perPortPolicy[port] = p1PortPolicy
 		} else {
+			if p1.perPortPolicy == nil {
+				p1.perPortPolicy = map[uint32]listenerPolicy{}
+			}
 			p1.perPortPolicy[port] = p2PortPolicy
 			mergeOrigins.SetOne(f, p2Ref, p2MergeOrigins)
 		}
@@ -72,10 +69,6 @@ func mergeListenerPolicy(
 	mergeOpts policy.MergeOptions,
 	mergeOrigins ir.MergeOrigins,
 ) {
-	if p1 == nil || p2 == nil {
-		return
-	}
-
 	mergeFuncs := []func(string, *listenerPolicy, *listenerPolicy, *ir.AttachedPolicyRef, ir.MergeOrigins, policy.MergeOptions, ir.MergeOrigins){
 		mergeProxyProtocol,
 		mergePerConnectionBufferLimitBytes,

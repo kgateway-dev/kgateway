@@ -54,15 +54,14 @@ type ListenerPolicySpec struct {
 	// +kubebuilder:validation:XValidation:rule="self.all(r, r.kind == 'Gateway' && (!has(r.group) || r.group == 'gateway.networking.k8s.io'))",message="targetSelectors may only reference Gateway resource"
 	TargetSelectors []shared.LocalPolicyTargetSelector `json:"targetSelectors,omitempty"`
 
-	// Default specifies default listener configuration for all Listeners handling HTTPS
-	// traffic, unless a per-port configuration is defined.
+	// Default specifies default listener configuration for all Listeners, unless a per-port
+	// configuration is defined.
 	// +optional
 	Default *ListenerConfig `json:"default,omitempty"`
 
-	// PerPort specifies listener configuration assigned per port.
-	// Per port configuration is optional. Once set this configuration overrides
-	// the default configuration for all listeners handling traffic
-	// that match this port.
+	// Per port configuration allows overriding the listener config per port. Once set, this
+	// configuration completely replaces the default configuration for all listeners handling traffic
+	// that match this port. Unspecified fields in per-port configuration will not inherit values from default.
 	//
 	// support: Core
 	//
@@ -75,8 +74,8 @@ type ListenerPolicySpec struct {
 }
 
 type ListenerPortConfig struct {
-	// The Port indicates the Port Number to which the TLS configuration will be
-	// applied. This configuration will be applied to all Listeners handling HTTPS
+	// The Port indicates the Port Number to which the Listener configuration will be
+	// applied. This configuration will be applied to all Listeners handling
 	// traffic that match this port.
 	//
 	// Support: Core
@@ -86,8 +85,8 @@ type ListenerPortConfig struct {
 	// +kubebuilder:validation:Maximum=65535
 	Port int32 `json:"port"`
 
-	// Listener store the configuration that will be applied to all Listeners handling
-	// HTTPS traffic and matching given port.
+	// Listener stores the configuration that will be applied to all Listeners handling
+	// matching the given port.
 	//
 	// Support: Core
 	//
