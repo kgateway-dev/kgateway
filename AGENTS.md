@@ -17,13 +17,13 @@ See `/devel/architecture/overview.md` and the translation diagram at `/devel/arc
 - **api/v1alpha1/kgateway/**: kgateway CRD definitions. Use `+kubebuilder` markers for validation/generation
 - **api/v1alpha1/agentgateway/**: agentgateway CRD definitions. Use `+kubebuilder` markers for validation/generation
 - **pkg/pluginsdk/**: Plugin interfaces (`Plugin`, `PolicyPlugin`, `BackendPlugin`)
-- **internal/kgateway/extensions2/plugins/**: Plugin implementations (trafficpolicy, httplistenerpolicy, etc.)
-- **internal/kgateway/krtcollections/**: KRT collections for core resources
+- **pkg/kgateway/extensions2/plugins/**: Plugin implementations (trafficpolicy, httplistenerpolicy, etc.)
+- **pkg/kgateway/krtcollections/**: KRT collections for core resources
 - **test/e2e/**: End-to-end tests using custom framework (see test/e2e/README.md)
 
 ### Plugin System
 At the core kgateway translates kubernetes Gateway API resources to Envoy configuration. To add features
-like policies, or backends, we use a plugin system. Each plugin *contributes* to the translation, usually by 
+like policies, or backends, we use a plugin system. Each plugin *contributes* to the translation, usually by
 adding a new type of CRD (most commonly a Policy CRD) that users can create to express their desired configuration.
 
 Policy CRDs are attached to Gateway API resources via `targetRefs` or `targetSelectors`. kgateway manages the attachment
@@ -37,7 +37,7 @@ Plugins are **stateless across translations** but maintain state during a single
 - Implements `NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass`
 - Can process backends via `ProcessBackend`, `PerClientProcessBackend`, or `PerClientProcessEndpoints`
 
-Example: `/internal/kgateway/extensions2/plugins/trafficpolicy/traffic_policy_plugin.go`
+Example: `/pkg/kgateway/extensions2/plugins/trafficpolicy/traffic_policy_plugin.go`
 
 ## Development
 
@@ -94,11 +94,11 @@ See `/api/README.md` for full guidelines.
 1. Add the field to the appropriate `Spec` struct in the CRD Go type in `api/v1alpha1/`.
 2. Add validation markers as needed (e.g., `+kubebuilder:validation:MinLength=1`, `+optional`, etc.)
 3. Run `make go-generate-apis` to regenerate code.
-4. Update the IR struct in the plugin package (`internal/kgateway/extensions2/plugins/<plugin_name>/`) to include the new field.
-5. Add yaml tests cases in `internal/kgateway/translator/gateway/gateway_translator_test.go`.
-   The yaml inputs go in `internal/kgateway/translator/gateway/testutils/inputs/`. DO NOT create the outputs by yourself.
-   Instead, run your tests with environment variable `REFRESH_GOLDEN=true`. For example: `REFRESH_GOLDEN=true go test -timeout 30s -run ^TestBasic$/^ListenerPolicy_with_proxy_protocol_on_HTTPS_listener$ github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway`
-   It will generate the outputs for you automatically in the `internal/kgateway/translator/gateway/testutils/outputs/` folder.
+4. Update the IR struct in the plugin package (`pkg/kgateway/extensions2/plugins/<plugin_name>/`) to include the new field.
+5. Add yaml tests cases in `pkg/kgateway/translator/gateway/gateway_translator_test.go`.
+   The yaml inputs go in `pkg/kgateway/translator/gateway/testutils/inputs/`. DO NOT create the outputs by yourself.
+   Instead, run your tests with environment variable `REFRESH_GOLDEN=true`. For example: `REFRESH_GOLDEN=true go test -timeout 30s -run ^TestBasic$/^ListenerPolicy_with_proxy_protocol_on_HTTPS_listener$ github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/gateway`
+   It will generate the outputs for you automatically in the `pkg/kgateway/translator/gateway/testutils/outputs/` folder.
    Once the outputs are generated, inspect them to see they contain the changes you expect, and alert the user if that's not the case.
 6. For non-trivial changes, also add unit tests.
 7. Consider also adding E2E tests using the framework. You can look at `test/e2e/features/cors/suite.go` as an example for an E2E test.
@@ -168,7 +168,7 @@ make conformance-HTTPRouteSimpleSameNamespace
 - Code generation: `/devel/contributing/code-generation.md`
 - E2E framework: `/test/e2e/README.md`
 - Plugin SDK: `/pkg/pluginsdk/types.go`
-- Example plugin: `/internal/kgateway/extensions2/plugins/trafficpolicy/`
+- Example plugin: `/pkg/kgateway/extensions2/plugins/trafficpolicy/`
 
 ## Build Details
 - **Go version**: Specified in `go.mod`

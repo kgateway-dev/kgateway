@@ -7,7 +7,6 @@ import (
 
 	"github.com/agentgateway/agentgateway/go/api"
 	"google.golang.org/protobuf/types/known/structpb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
 	"istio.io/istio/pkg/slices"
@@ -17,7 +16,8 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/sslutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
@@ -144,10 +144,10 @@ func translateBackendTLS(ctx PolicyCtx, policy *agentgateway.AgentgatewayPolicy,
 			if _, err := sslutils.ValidateTlsSecretData(nn.Name, nn.Namespace, scrt.Data); err != nil {
 				errs = append(errs, fmt.Errorf("secret %v contains invalid certificate: %v", nn, err))
 			}
-			p.Cert = wrapperspb.Bytes(scrt.Data[corev1.TLSCertKey])
-			p.Key = wrapperspb.Bytes(scrt.Data[corev1.TLSPrivateKeyKey])
+			p.Cert = scrt.Data[corev1.TLSCertKey]
+			p.Key = scrt.Data[corev1.TLSPrivateKeyKey]
 			if ca, f := scrt.Data[corev1.ServiceAccountRootCAKey]; f {
-				p.Root = wrapperspb.Bytes(ca)
+				p.Root = ca
 			}
 		}
 	}
@@ -175,14 +175,14 @@ func translateBackendTLS(ctx PolicyCtx, policy *agentgateway.AgentgatewayPolicy,
 		}
 		// TODO: if none, submit something to make agentgateway reject requests instead of fail open.
 		if sb.Len() > 0 {
-			p.Root = wrapperspb.Bytes([]byte(sb.String()))
+			p.Root = []byte(sb.String())
 		}
 	}
 
 	if len(tls.VerifySubjectAltNames) > 0 {
 		p.VerifySubjectAltNames = tls.VerifySubjectAltNames
 	}
-	p.Hostname = stringPb(tls.Sni)
+	p.Hostname = (tls.Sni)
 
 	if tls.InsecureSkipVerify != nil {
 		switch *tls.InsecureSkipVerify {
@@ -198,7 +198,8 @@ func translateBackendTLS(ctx PolicyCtx, policy *agentgateway.AgentgatewayPolicy,
 	}
 
 	tlsPolicy := &api.Policy{
-		Name:   policy.Namespace + "/" + policy.Name + tlsPolicySuffix + attachmentName(target),
+		Key:    policy.Namespace + "/" + policy.Name + tlsPolicySuffix + attachmentName(target),
+		Name:   TypedResourceName(wellknown.AgentgatewayPolicyGVK.Kind, policy),
 		Target: target,
 		Kind: &api.Policy_Backend{
 			Backend: &api.BackendPolicySpec{
@@ -227,7 +228,8 @@ func translateBackendHTTP(policy *agentgateway.AgentgatewayPolicy, target *api.P
 		}
 	}
 	tp := &api.Policy{
-		Name:   policy.Namespace + "/" + policy.Name + backendHttpPolicySuffix + attachmentName(target),
+		Key:    policy.Namespace + "/" + policy.Name + backendHttpPolicySuffix + attachmentName(target),
+		Name:   TypedResourceName(wellknown.AgentgatewayPolicyGVK.Kind, policy),
 		Target: target,
 		Kind: &api.Policy_Backend{
 			Backend: &api.BackendPolicySpec{
@@ -257,7 +259,8 @@ func translateBackendMCPAuthorization(policy *agentgateway.AgentgatewayPolicy, t
 	}
 
 	mcpPolicy := &api.Policy{
-		Name:   policy.Namespace + "/" + policy.Name + mcpAuthorizationPolicySuffix + attachmentName(target),
+		Key:    policy.Namespace + "/" + policy.Name + mcpAuthorizationPolicySuffix + attachmentName(target),
+		Name:   TypedResourceName(wellknown.AgentgatewayPolicyGVK.Kind, policy),
 		Target: target,
 		Kind: &api.Policy_Backend{
 			Backend: &api.BackendPolicySpec{
@@ -323,7 +326,8 @@ func translateBackendMCPAuthentication(ctx PolicyCtx, policy *agentgateway.Agent
 		JwksInline: translatedInlineJwks,
 	}
 	mcpAuthnPolicy := &api.Policy{
-		Name:   policy.Namespace + "/" + policy.Name + mcpAuthenticationPolicySuffix + attachmentName(target),
+		Key:    policy.Namespace + "/" + policy.Name + mcpAuthenticationPolicySuffix + attachmentName(target),
+		Name:   TypedResourceName(wellknown.AgentgatewayPolicyGVK.Kind, policy),
 		Target: target,
 		Kind: &api.Policy_Backend{
 			Backend: &api.BackendPolicySpec{
@@ -423,7 +427,8 @@ func translateBackendAI(ctx PolicyCtx, agwPolicy *agentgateway.AgentgatewayPolic
 	}
 
 	aiPolicy := &api.Policy{
-		Name:   name + aiPolicySuffix + attachmentName(policyTarget),
+		Key:    name + aiPolicySuffix + attachmentName(policyTarget),
+		Name:   TypedResourceName(wellknown.AgentgatewayPolicyGVK.Kind, agwPolicy),
 		Target: policyTarget,
 		Kind: &api.Policy_Backend{
 			Backend: &api.BackendPolicySpec{
@@ -482,7 +487,8 @@ func translateBackendAuth(ctx PolicyCtx, policy *agentgateway.AgentgatewayPolicy
 	}
 
 	authPolicy := &api.Policy{
-		Name:   name + backendauthPolicySuffix + attachmentName(target),
+		Key:    name + backendauthPolicySuffix + attachmentName(target),
+		Name:   TypedResourceName(wellknown.AgentgatewayPolicyGVK.Kind, policy),
 		Target: target,
 		Kind: &api.Policy_Backend{
 			Backend: &api.BackendPolicySpec{
@@ -518,11 +524,4 @@ func translateRouteType(rt agentgateway.RouteType) api.BackendPolicySpec_Ai_Rout
 		// Default to completions if unknown type
 		return api.BackendPolicySpec_Ai_COMPLETIONS
 	}
-}
-
-func stringPb(model *string) *wrapperspb.StringValue {
-	if model == nil {
-		return nil
-	}
-	return wrapperspb.String(*model)
 }

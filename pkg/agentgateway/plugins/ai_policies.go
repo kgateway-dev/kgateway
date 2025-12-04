@@ -5,7 +5,6 @@ import (
 	"log/slog"
 
 	"github.com/agentgateway/agentgateway/go/api"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -190,12 +189,8 @@ func processModeration(ctx PolicyCtx, namespace string, moderation *agentgateway
 	}
 
 	pgModeration := &api.BackendPolicySpec_Ai_Moderation{}
+	pgModeration.Model = moderation.Model
 
-	if moderation.Model != nil {
-		pgModeration.Model = &wrapperspb.StringValue{
-			Value: *moderation.Model,
-		}
-	}
 	if moderation.Policies != nil {
 		pol := &agentgateway.AgentgatewayPolicyBackendFull{
 			AgentgatewayPolicyBackendSimple: *moderation.Policies,

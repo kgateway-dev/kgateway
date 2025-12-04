@@ -1,0 +1,163 @@
+package translator
+
+import (
+	"context"
+	"log/slog"
+
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	"istio.io/istio/pkg/kube/krt"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/tools/cache"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/endpoints"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
+	gwtranslator "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/gateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/irtranslator"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/listener"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/stopwatch"
+	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
+)
+
+var logger = logging.New("translator")
+
+// Combines all the translators needed for xDS translation.
+type CombinedTranslator struct {
+	extensions sdk.Plugin
+	commonCols *collections.CommonCollections
+	validator  validator.Validator
+
+	waitForSync []cache.InformerSynced
+
+	gwtranslator      sdk.KGwTranslator
+	irtranslator      *irtranslator.Translator
+	backendTranslator *irtranslator.BackendTranslator
+	endpointPlugins   []sdk.EndpointPlugin
+
+	logger *slog.Logger
+}
+
+func NewCombinedTranslator(
+	ctx context.Context,
+	extensions sdk.Plugin,
+	commonCols *collections.CommonCollections,
+	validator validator.Validator,
+) *CombinedTranslator {
+	var endpointPlugins []sdk.EndpointPlugin
+	for _, ext := range extensions.ContributesPolicies {
+		if ext.PerClientProcessEndpoints != nil {
+			endpointPlugins = append(endpointPlugins, ext.PerClientProcessEndpoints)
+		}
+	}
+	return &CombinedTranslator{
+		commonCols:      commonCols,
+		extensions:      extensions,
+		endpointPlugins: endpointPlugins,
+		logger:          logger,
+		validator:       validator,
+		waitForSync:     []cache.InformerSynced{extensions.HasSynced},
+	}
+}
+
+func (s *CombinedTranslator) Init(ctx context.Context) {
+	queries := query.NewData(s.commonCols)
+
+	listenerTranslatorConfig := gwtranslator.TranslatorConfig{
+		ListenerTranslatorConfig: listener.ListenerTranslatorConfig{
+			ListenerBindIpv6:                     s.commonCols.Settings.ListenerBindIpv6,
+			EnableExperimentalGatewayAPIFeatures: s.commonCols.Settings.EnableExperimentalGatewayAPIFeatures,
+		},
+	}
+
+	s.gwtranslator = gwtranslator.NewTranslator(queries, listenerTranslatorConfig)
+	s.irtranslator = &irtranslator.Translator{
+		ContributedPolicies: s.extensions.ContributesPolicies,
+		ValidationLevel:     s.commonCols.Settings.ValidationMode,
+		Validator:           s.validator,
+	}
+	s.backendTranslator = &irtranslator.BackendTranslator{
+		ContributedBackends: make(map[schema.GroupKind]ir.BackendInit),
+		ContributedPolicies: s.extensions.ContributesPolicies,
+		CommonCols:          s.commonCols,
+		Validator:           s.validator,
+		Mode:                s.commonCols.Settings.ValidationMode,
+	}
+	for k, up := range s.extensions.ContributesBackends {
+		s.backendTranslator.ContributedBackends[k] = up.BackendInit
+	}
+
+	s.waitForSync = append(s.waitForSync,
+		s.commonCols.HasSynced,
+		s.extensions.HasSynced,
+	)
+}
+
+func (s *CombinedTranslator) HasSynced() bool {
+	for _, sync := range s.waitForSync {
+		if !sync() {
+			return false
+		}
+	}
+	return true
+}
+
+// buildProxy performs translation of a kube Gateway -> GatewayIR
+func (s *CombinedTranslator) buildProxy(kctx krt.HandlerContext, ctx context.Context, gw ir.Gateway, r reporter.Reporter) *ir.GatewayIR {
+	stopwatch := stopwatch.NewTranslatorStopWatch("CombinedTranslator")
+	stopwatch.Start()
+
+	var gatewayTranslator sdk.KGwTranslator = s.gwtranslator
+	if s.extensions.ContributesGwTranslator != nil {
+		maybeGatewayTranslator := s.extensions.ContributesGwTranslator(gw.Obj)
+		if maybeGatewayTranslator != nil {
+			gatewayTranslator = maybeGatewayTranslator
+		}
+	}
+	proxy := gatewayTranslator.Translate(kctx, ctx, &gw, r)
+	if proxy == nil {
+		return nil
+	}
+
+	duration := stopwatch.Stop(ctx)
+	logger.Debug("translated proxy", "namespace", gw.Namespace, "name", gw.Name, "duration", duration.String())
+
+	return proxy
+}
+
+func (s *CombinedTranslator) GetBackendTranslator() *irtranslator.BackendTranslator {
+	return s.backendTranslator
+}
+
+// ctx needed for logging; remove once we refactor logging.
+func (s *CombinedTranslator) TranslateGateway(kctx krt.HandlerContext, ctx context.Context, gw ir.Gateway) (*irtranslator.TranslationResult, reports.ReportMap) {
+	rm := reports.NewReportMap()
+	r := reports.NewReporter(&rm)
+	logger.Debug("translating Gateway", "resource_ref", gw.ResourceName(), "resource_version", gw.Obj.GetResourceVersion())
+
+	gwir := s.buildProxy(kctx, ctx, gw, r)
+	if gwir == nil {
+		return nil, reports.ReportMap{}
+	}
+
+	// we are recomputing xds snapshots as proxies have changed, signal that we need to sync xds with these new snapshots
+	xdsSnap := s.irtranslator.Translate(ctx, *gwir, r)
+
+	return &xdsSnap, rm
+}
+
+func (s *CombinedTranslator) TranslateEndpoints(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient, ep ir.EndpointsForBackend) (*envoyendpointv3.ClusterLoadAssignment, uint64) {
+	epInputs := endpoints.EndpointsInputs{
+		EndpointsForBackend: ep,
+	}
+	var hash uint64
+	for _, processEndpoints := range s.endpointPlugins {
+		additionalHash := processEndpoints(kctx, context.TODO(), ucc, &epInputs)
+		hash ^= additionalHash
+	}
+	return endpoints.PrioritizeEndpoints(s.logger, ucc, epInputs), hash
+}

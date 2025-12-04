@@ -1,0 +1,238 @@
+{
+  "addresses": [
+    {
+      "service": {
+        "name": "http-direct-response",
+        "namespace": "gwtest",
+        "hostname": "http-direct-response.gwtest.svc.cluster.local",
+        "addresses": [
+          {
+            "address": "CgAA5g=="
+          }
+        ],
+        "ports": [
+          {
+            "servicePort": 8080,
+            "targetPort": 8080
+          }
+        ],
+        "ipFamilies": "IPV4_ONLY"
+      }
+    },
+    {
+      "service": {
+        "name": "kubernetes",
+        "namespace": "default",
+        "hostname": "kubernetes.default.svc.cluster.local",
+        "addresses": [
+          {
+            "address": "CgAAAQ=="
+          }
+        ],
+        "ports": [
+          {
+            "servicePort": 443,
+            "targetPort": 44755
+          }
+        ],
+        "ipFamilies": "IPV4_ONLY"
+      }
+    },
+    {
+      "workload": {
+        "uid": "/discovery.k8s.io/EndpointSlice/default/kubernetes/10.0.0.25",
+        "name": "kubernetes",
+        "namespace": "default",
+        "addresses": [
+          "CgAAGQ=="
+        ],
+        "services": {
+          "default/kubernetes.default.svc.cluster.local": {
+            "ports": [
+              {
+                "servicePort": 443,
+                "targetPort": 44755
+              }
+            ]
+          }
+        },
+        "networkMode": "HOST_NETWORK"
+      }
+    },
+    {
+      "workload": {
+        "uid": "//Pod/gwtest/reviews-1",
+        "name": "reviews-1",
+        "namespace": "gwtest",
+        "addresses": [
+          "CvQBCw=="
+        ],
+        "serviceAccount": "default",
+        "node": "worker",
+        "canonicalName": "reviews",
+        "canonicalRevision": "v1",
+        "workloadType": "POD",
+        "workloadName": "reviews-1",
+        "status": "UNHEALTHY",
+        "locality": {
+          "region": "r1",
+          "zone": "r1z2",
+          "subzone": "r1z2s3"
+        }
+      }
+    },
+    {
+      "workload": {
+        "uid": "//Pod/gwtest/reviews-2",
+        "name": "reviews-2",
+        "namespace": "gwtest",
+        "addresses": [
+          "CvQCDg=="
+        ],
+        "serviceAccount": "default",
+        "node": "worker2",
+        "canonicalName": "reviews",
+        "canonicalRevision": "v2",
+        "workloadType": "POD",
+        "workloadName": "reviews-2",
+        "status": "UNHEALTHY",
+        "locality": {
+          "region": "r1",
+          "zone": "r1z2",
+          "subzone": "r1z2s4"
+        }
+      }
+    },
+    {
+      "workload": {
+        "uid": "//Pod/gwtest/reviews-3",
+        "name": "reviews-3",
+        "namespace": "gwtest",
+        "addresses": [
+          "CvQDAw=="
+        ],
+        "serviceAccount": "default",
+        "node": "worker3",
+        "canonicalName": "reviews",
+        "canonicalRevision": "latest",
+        "workloadType": "POD",
+        "workloadName": "reviews-3",
+        "status": "UNHEALTHY",
+        "locality": {
+          "region": "r1",
+          "zone": "r1z3",
+          "subzone": "r1z3s4"
+        }
+      }
+    },
+    {
+      "workload": {
+        "uid": "//Pod/gwtest/reviews-4",
+        "name": "reviews-4",
+        "namespace": "gwtest",
+        "addresses": [
+          "CvQEBA=="
+        ],
+        "serviceAccount": "default",
+        "node": "worker4",
+        "canonicalName": "reviews",
+        "canonicalRevision": "v1",
+        "workloadType": "POD",
+        "workloadName": "reviews-4",
+        "status": "UNHEALTHY",
+        "locality": {
+          "region": "r2",
+          "zone": "r2z1",
+          "subzone": "r2z1s1"
+        }
+      }
+    }
+  ],
+  "resources": [
+    {
+      "bind": {
+        "key": "8080/gwtest/http-direct-response",
+        "port": 8080
+      }
+    },
+    {
+      "listener": {
+        "key": "gwtest/http-direct-response.http",
+        "bindKey": "8080/gwtest/http-direct-response",
+        "name": {
+          "gatewayName": "http-direct-response",
+          "gatewayNamespace": "gwtest",
+          "listenerName": "http"
+        },
+        "protocol": "HTTP"
+      }
+    },
+    {
+      "route": {
+        "key": "gwtest/httpbin.0.0.http",
+        "listenerKey": "gwtest/http-direct-response.http",
+        "name": {
+          "kind": "HTTPRoute",
+          "name": "httpbin",
+          "namespace": "gwtest"
+        },
+        "hostnames": [
+          "www.example.com"
+        ],
+        "matches": [
+          {
+            "path": {
+              "pathPrefix": "/"
+            }
+          }
+        ],
+        "backends": [
+          {
+            "backend": {
+              "service": "gwtest/httpbin.gwtest.svc.cluster.local",
+              "port": 8000
+            },
+            "weight": 1
+          }
+        ],
+        "trafficPolicies": [
+          {
+            "directResponse": {
+              "status": 500,
+              "body": "QmFja2VuZCBzZXJ2aWNlIHVuYXZhaWxhYmxl"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "route": {
+        "key": "gwtest/httpbin.1.0.http",
+        "listenerKey": "gwtest/http-direct-response.http",
+        "name": {
+          "kind": "HTTPRoute",
+          "name": "httpbin",
+          "namespace": "gwtest"
+        },
+        "hostnames": [
+          "www.example.com"
+        ],
+        "matches": [
+          {
+            "path": {
+              "exact": "/robots.txt"
+            }
+          }
+        ],
+        "trafficPolicies": [
+          {
+            "directResponse": {
+              "status": 200,
+              "body": "VXNlci1hZ2VudDogKgpEaXNhbGxvdzogL2N1c3RvbQo="
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

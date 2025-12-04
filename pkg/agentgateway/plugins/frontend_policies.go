@@ -5,10 +5,11 @@ import (
 
 	"github.com/agentgateway/agentgateway/go/api"
 	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
+	"istio.io/istio/pkg/ptr"
 	"istio.io/istio/pkg/slices"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 )
 
 const (
@@ -63,7 +64,8 @@ func translateFrontendPolicyToAgw(
 func translateFrontendTracing(policy *agentgateway.AgentgatewayPolicy, name string, target *api.PolicyTarget) []AgwPolicy {
 	tracing := policy.Spec.Frontend.Tracing
 	tracingPolicy := &api.Policy{
-		Name:   name + frontendTracingPolicySuffix + attachmentName(target),
+		Key:    name + frontendTracingPolicySuffix + attachmentName(target),
+		Name:   TypedResourceName(wellknown.AgentgatewayPolicyGVK.Kind, policy),
 		Target: target,
 		Kind: &api.Policy_Frontend{
 			Frontend: &api.FrontendPolicySpec{
@@ -86,7 +88,7 @@ func translateFrontendAccessLog(policy *agentgateway.AgentgatewayPolicy, name st
 	logging := policy.Spec.Frontend.AccessLog
 	spec := &api.FrontendPolicySpec_Logging{}
 	if f := logging.Filter; f != nil {
-		spec.Filter = wrapperspb.String(string(*f))
+		spec.Filter = (*string)(f)
 	}
 	if a := logging.Attributes; a != nil {
 		f := &api.FrontendPolicySpec_Logging_Fields{
@@ -102,7 +104,8 @@ func translateFrontendAccessLog(policy *agentgateway.AgentgatewayPolicy, name st
 	}
 
 	loggingPolicy := &api.Policy{
-		Name:   name + frontendLoggingPolicySuffix + attachmentName(target),
+		Key:    name + frontendLoggingPolicySuffix + attachmentName(target),
+		Name:   TypedResourceName(wellknown.AgentgatewayPolicyGVK.Kind, policy),
 		Target: target,
 		Kind: &api.Policy_Frontend{
 			Frontend: &api.FrontendPolicySpec{
@@ -133,12 +136,13 @@ func translateFrontendTCP(policy *agentgateway.AgentgatewayPolicy, name string, 
 			spec.Keepalives.Interval = durationpb.New(ka.Interval.Duration)
 		}
 		if ka.Retries != nil {
-			spec.Keepalives.Retries = wrapperspb.UInt32(uint32(*ka.Retries)) //nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+			spec.Keepalives.Retries = castUint32(ka.Retries) //nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 		}
 	}
 
 	tcpPolicy := &api.Policy{
-		Name:   name + frontendTcpPolicySuffix + attachmentName(target),
+		Key:    name + frontendTcpPolicySuffix + attachmentName(target),
+		Name:   TypedResourceName(wellknown.AgentgatewayPolicyGVK.Kind, policy),
 		Target: target,
 		Kind: &api.Policy_Frontend{
 			Frontend: &api.FrontendPolicySpec{
@@ -157,6 +161,10 @@ func translateFrontendTCP(policy *agentgateway.AgentgatewayPolicy, name string, 
 	return []AgwPolicy{{Policy: tcpPolicy}}
 }
 
+func castUint32[T ~int32](ka *T) *uint32 {
+	return ptr.Of((uint32)(*ka))
+}
+
 func translateFrontendTLS(policy *agentgateway.AgentgatewayPolicy, name string, target *api.PolicyTarget) []AgwPolicy {
 	tls := policy.Spec.Frontend.TLS
 	spec := &api.FrontendPolicySpec_TLS{}
@@ -169,7 +177,8 @@ func translateFrontendTLS(policy *agentgateway.AgentgatewayPolicy, name string, 
 	}
 
 	tlsPolicy := &api.Policy{
-		Name:   name + frontendTlsPolicySuffix + attachmentName(target),
+		Key:    name + frontendTlsPolicySuffix + attachmentName(target),
+		Name:   TypedResourceName(wellknown.AgentgatewayPolicyGVK.Kind, policy),
 		Target: target,
 		Kind: &api.Policy_Frontend{
 			Frontend: &api.FrontendPolicySpec{
@@ -192,22 +201,22 @@ func translateFrontendHTTP(policy *agentgateway.AgentgatewayPolicy, name string,
 	http := policy.Spec.Frontend.HTTP
 	spec := &api.FrontendPolicySpec_HTTP{}
 	if v := http.MaxBufferSize; v != nil {
-		spec.MaxBufferSize = wrapperspb.UInt32(uint32(*v)) //nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+		spec.MaxBufferSize = castUint32(v) //nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 	}
 	if v := http.HTTP1MaxHeaders; v != nil {
-		spec.Http1MaxHeaders = wrapperspb.UInt32(uint32(*v)) //nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+		spec.Http1MaxHeaders = castUint32(v) //nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 	}
 	if v := http.HTTP1IdleTimeout; v != nil {
 		spec.Http1IdleTimeout = durationpb.New(v.Duration)
 	}
 	if v := http.HTTP2WindowSize; v != nil {
-		spec.Http2WindowSize = wrapperspb.UInt32(uint32(*v)) //nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+		spec.Http2WindowSize = castUint32(v) //nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 	}
 	if v := http.HTTP2ConnectionWindowSize; v != nil {
-		spec.Http2ConnectionWindowSize = wrapperspb.UInt32(uint32(*v)) //nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+		spec.Http2ConnectionWindowSize = castUint32(v) //nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 	}
 	if v := http.HTTP2FrameSize; v != nil {
-		spec.Http2FrameSize = wrapperspb.UInt32(uint32(*v)) //nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+		spec.Http2FrameSize = castUint32(v) //nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 	}
 	if v := http.HTTP2KeepaliveInterval; v != nil {
 		spec.Http2KeepaliveInterval = durationpb.New(v.Duration)
@@ -217,7 +226,8 @@ func translateFrontendHTTP(policy *agentgateway.AgentgatewayPolicy, name string,
 	}
 
 	httpPolicy := &api.Policy{
-		Name:   name + frontendHttpPolicySuffix + attachmentName(target),
+		Key:    name + frontendHttpPolicySuffix + attachmentName(target),
+		Name:   TypedResourceName(wellknown.AgentgatewayPolicyGVK.Kind, policy),
 		Target: target,
 		Kind: &api.Policy_Frontend{
 			Frontend: &api.FrontendPolicySpec{

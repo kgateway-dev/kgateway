@@ -21,11 +21,16 @@ output:
       backends:
       - backend:
           port: 8080
-          service: default/unknown.default.svc.cluster.local
+          service:
+            hostname: unknown.default.svc.cluster.local
+            namespace: default
         weight: 1
       key: default/missing-dest.0.0.http
       listenerKey: default/test-gateway.http
-      routeName: default/missing-dest
+      name:
+        kind: HTTPRoute
+        name: missing-dest
+        namespace: default
       trafficPolicies:
       - directResponse:
           body: QmFja2VuZCBzZXJ2aWNlIHVuYXZhaWxhYmxl

@@ -1,6 +1,8 @@
 package kgateway
 
 import (
+	"time"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -38,15 +40,15 @@ type NamedJWTProvider struct {
 }
 
 // GatewayExtensionSpec defines the desired state of GatewayExtension.
-// +kubebuilder:validation:ExactlyOneOf=extAuth;extProc;rateLimit;jwtProviders
+// +kubebuilder:validation:ExactlyOneOf=extAuth;extProc;rateLimit;jwt
 // +kubebuilder:validation:XValidation:message="extAuth must be set when type is ExtAuth",rule="has(self.type) && self.type == 'ExtAuth' ? has(self.extAuth) : true"
 // +kubebuilder:validation:XValidation:message="extProc must be set when type is ExtProc",rule="has(self.type) && self.type == 'ExtProc' ? has(self.extProc) : true"
 // +kubebuilder:validation:XValidation:message="rateLimit must be set when type is RateLimit",rule="has(self.type) && self.type == 'RateLimit' ? has(self.rateLimit) : true"
-// +kubebuilder:validation:XValidation:message="JwtProviders must be set when type is JWTProviders",rule="has(self.type) && self.type == 'JWTProviders' ? has(self.jwtProviders) : true"
+// +kubebuilder:validation:XValidation:message="JWT must be set when type is JWT",rule="has(self.type) && self.type == 'JWT' ? has(self.jwt) : true"
 type GatewayExtensionSpec struct {
 	// Deprecated: Setting this field has no effect.
 	// Type indicates the type of the GatewayExtension to be used.
-	// +kubebuilder:validation:Enum=ExtAuth;ExtProc;RateLimit;JWTProviders
+	// +kubebuilder:validation:Enum=ExtAuth;ExtProc;RateLimit;JWT
 	// +optional
 	Type *GatewayExtensionType `json:"type,omitempty"`
 
@@ -62,15 +64,41 @@ type GatewayExtensionSpec struct {
 	// +optional
 	RateLimit *RateLimitProvider `json:"rateLimit,omitempty"`
 
-	// JWTProviders configures named JWT providers.
+	// JWT configuration for JWT extension type.
+	// +optional
+	JWT *JWT `json:"jwt,omitempty"`
+}
+
+type JWT struct {
+	// ValidationMode configures how JWT validation behaves.
+	// If unset or empty, Strict mode is used (JWT is required).
+	// If set to AllowMissing, unauthenticated requests without a JWT are allowed through.
+	// If using this mode, make sure to consider the security implications and
+	// consider using an `RBAC` policy to enforce authorization.
+	// +kubebuilder:validation:Enum=Strict;AllowMissing
+	// +optional
+	ValidationMode *ValidationMode `json:"validationMode,omitempty"`
+
+	// Providers configures named JWT providers.
 	// If multiple providers are specified for a given JWT policy,
 	// the providers will be `OR`-ed together and will allow validation to any of the providers.
 	// +optional
 	// +listType=map
 	// +listMapKey=name
 	// +kubebuilder:validation:MaxItems=32
-	JWTProviders []NamedJWTProvider `json:"jwtProviders,omitempty"`
+	Providers []NamedJWTProvider `json:"providers,omitempty"`
 }
+
+type ValidationMode string
+
+const (
+	// A valid token, issued by a configured issuer, must be present.
+	// This is the default option.
+	ValidationModeStrict ValidationMode = "Strict"
+	// If a token exists, validate it.
+	// Warning: this allows requests without a JWT token.
+	ValidationModeAllowMissing ValidationMode = "AllowMissing"
+)
 
 // GatewayExtensionType indicates the type of the GatewayExtension.
 type GatewayExtensionType string
@@ -82,9 +110,11 @@ const (
 	GatewayExtensionTypeExtProc GatewayExtensionType = "ExtProc"
 	// GatewayExtensionTypeRateLimit is the type for RateLimit extensions.
 	GatewayExtensionTypeRateLimit GatewayExtensionType = "RateLimit"
-	// GatewayExtensionTypeJWTProvider is the type for the JWT Provider extensions
-	GatewayExtensionTypeJWTProvider GatewayExtensionType = "JWTProviders"
+	// GatewayExtensionTypeJWT is the type for the JWT extensions
+	GatewayExtensionTypeJWT GatewayExtensionType = "JWT"
 )
+
+const HTTPDefaultTimeout = 2 * time.Second
 
 // ExtGrpcService defines the GRPC service that will handle the processing.
 type ExtGrpcService struct {
@@ -104,10 +134,61 @@ type ExtGrpcService struct {
 
 	// Retry specifies the retry policy for gRPC streams associated with the service.
 	// +optional
-	Retry *GRPCRetryPolicy `json:"retry,omitempty"`
+	Retry *ExtSvcRetryPolicy `json:"retry,omitempty"`
 }
 
-type GRPCRetryPolicy struct {
+// ExtHttpService defines the HTTP service that will handle external authorization.
+type ExtHttpService struct {
+	// BackendRef references the backend HTTP service.
+	// +required
+	BackendRef gwv1.BackendRef `json:"backendRef"`
+
+	// PathPrefix specifies a prefix to the value of the authorization request's path header.
+	// This allows customizing the path at which the authorization server expects to receive requests.
+	// For example, if the authorization server expects requests at "/verify", set this to "/verify".
+	// If not specified, the original request path is used.
+	// +optional
+	PathPrefix string `json:"pathPrefix,omitempty"`
+
+	// RequestTimeout is the timeout for the HTTP request. Default timeout is 2 seconds.
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid timeout value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="timeout must be at least 1ms."
+	RequestTimeout *metav1.Duration `json:"requestTimeout,omitempty"`
+
+	// AuthorizationRequest configures the authorization request to the external service.
+	// +optional
+	AuthorizationRequest *AuthorizationRequest `json:"authorizationRequest,omitempty"`
+
+	// AuthorizationResponse configures the authorization response from the external service.
+	// +optional
+	AuthorizationResponse *AuthorizationResponse `json:"authorizationResponse,omitempty"`
+
+	// Retry specifies the retry policy for HTTP requests to the authorization service.
+	// +optional
+	Retry *ExtSvcRetryPolicy `json:"retry,omitempty"`
+}
+
+// AuthorizationRequest configures the authorization request to the external service.
+type AuthorizationRequest struct {
+	// HeadersToAdd specifies additional headers to add to the authorization request.
+	// These headers are sent to the authorization service in addition to the original request headers.
+	// Client request headers with the same key will be overridden.
+	// The keys are header names and values are envoy format specifiers, see https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_authz/v3/ext_authz.proto#envoy-v3-api-field-extensions-filters-http-ext-authz-v3-authorizationrequest-headers-to-add.
+	// +optional
+	HeadersToAdd map[string]string `json:"headersToAdd,omitempty"`
+}
+
+// AuthorizationResponse configures the authorization response from the external service.
+type AuthorizationResponse struct {
+	// HeadersToBackend specifies which headers from the authorization response
+	// should be forwarded to the upstream service when the request is authorized.
+	// Common examples: ["x-current-user", "x-user-id", "x-auth-request-email"]
+	// +optional
+	HeadersToBackend []string `json:"headersToBackend,omitempty"`
+}
+
+type ExtSvcRetryPolicy struct {
 	// Attempts specifies the number of retry attempts for a request.
 	// Defaults to 1 attempt if not set.
 	// A value of 0 effectively disables retries.
@@ -119,11 +200,11 @@ type GRPCRetryPolicy struct {
 	// Backoff specifies the retry backoff strategy.
 	// If not set, a default backoff with a base interval of 1000ms is used. The default max interval is 10 times the base interval.
 	// +optional
-	Backoff *GRPCRetryBackoff `json:"backoff,omitempty"`
+	Backoff *RetryBackoff `json:"backoff,omitempty"`
 }
 
 // +kubebuilder:validation:XValidation:rule="has(self.maxInterval) ? duration(self.maxInterval) >= duration(self.baseInterval) : true",message="maxInterval must be greater than or equal to baseInterval"
-type GRPCRetryBackoff struct {
+type RetryBackoff struct {
 	// BaseInterval specifies the base interval used with a fully jittered exponential back-off between retries.
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="retry.BaseInterval must be at least 1ms."

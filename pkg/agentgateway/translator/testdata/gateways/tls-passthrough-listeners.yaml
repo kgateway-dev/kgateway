@@ -27,9 +27,11 @@ output:
   resource:
     listener:
       bindKey: 443/default/test-gateway
-      gatewayName: default/test-gateway
       key: default/test-gateway.tls
-      name: tls
+      name:
+        gatewayName: test-gateway
+        gatewayNamespace: default
+        listenerName: tls
       protocol: TLS
 status:
 - apiVersion: gateway.networking.k8s.io/v1

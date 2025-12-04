@@ -58,24 +58,24 @@ kind: GatewayExtension
 metadata:
   name: basic-jwt-provider
 spec:
-  type: JWTProviders
-  jwtProviders:
-  - name: my-example
-    claimsToHeaders:
+  jwt:
+    providers:
+    - name: my-example
+      claimsToHeaders:
       - name: org
         header: x-org
       - name: email
         header: x-email
-    issuer: https://dev.example.com
-    jwks:
-      local:
-        inline: |
-          -----BEGIN PUBLIC KEY-----
-          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAruK9KacQjDePRyfG7oPI
-          aqAIyCeOCBIGB2nBbDLGp1Szdm7rsWcrzGf7Avpa/ijLV9huoNvpdflld4B+SaT7
-          m3EDDMDUyA4LayJC5JBI10Qfu3Qn8BEpcdN2uRiycXOzgsoIXneXp9hENlS5Vsr3
-          ur5BaBCc+BZZRRaXDTLy6KyD1Pyd6XRsxyZXt/SYOIww0NSt5u0CTyZUGJhQungJ
-          pI8Hhrzdf87mLZGZd16dOGObE5LqFwk2prN3D0+owLsA25WJOPZXizxpTB4tPvJu
-          YGATajDpzrHf+WXgOgvwyxaHJSN/fE+eFuRT3ooDaAuytsfYotsn4z/ajdEPSwXY
-          CwIDAQAB
-          -----END PUBLIC KEY-----
+      issuer: https://dev.example.com
+      jwks:
+        local:
+          inline: |
+            -----BEGIN PUBLIC KEY-----
+            MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAruK9KacQjDePRyfG7oPI
+            aqAIyCeOCBIGB2nBbDLGp1Szdm7rsWcrzGf7Avpa/ijLV9huoNvpdflld4B+SaT7
+            m3EDDMDUyA4LayJC5JBI10Qfu3Qn8BEpcdN2uRiycXOzgsoIXneXp9hENlS5Vsr3
+            ur5BaBCc+BZZRRaXDTLy6KyD1Pyd6XRsxyZXt/SYOIww0NSt5u0CTyZUGJhQungJ
+            pI8Hhrzdf87mLZGZd16dOGObE5LqFwk2prN3D0+owLsA25WJOPZXizxpTB4tPvJu
+            YGATajDpzrHf+WXgOgvwyxaHJSN/fE+eFuRT3ooDaAuytsfYotsn4z/ajdEPSwXY
+            CwIDAQAB
+            -----END PUBLIC KEY-----

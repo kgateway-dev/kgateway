@@ -48,7 +48,7 @@ think of a plugin as an independent k8s controller that translates a CRD to a
 KRT collection of policies in an IR form kgateway can understand (it's called
 `ir.PolicyWrapper`). A plugin lifecycle is the length of the program - it
 doesn't reset on each translation (we will explain later where we hold
-translation state). Examples of kgateway extension plugins can be found in [/internal/kgateway/extensions2/plugins](/internal/kgateway/extensions2/plugins)
+translation state). Examples of kgateway extension plugins can be found in [/pkg/kgateway/extensions2/plugins](/pkg/kgateway/extensions2/plugins)
 
 When a plugin can contribute a policy to kgateway, kgateway uses policy
 collection to perform **policy attachment** - this is the process of assigning

@@ -13,8 +13,8 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/validate"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/listener"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/validate"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 

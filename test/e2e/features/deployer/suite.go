@@ -21,7 +21,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
@@ -61,7 +61,7 @@ var (
 )
 
 // testingSuite is the entire Suite of tests for the "deployer" feature
-// The "deployer" code can be found here: /internal/kgateway/deployer
+// The "deployer" code can be found here: /pkg/kgateway/deployer
 type testingSuite struct {
 	*base.BaseTestingSuite
 }

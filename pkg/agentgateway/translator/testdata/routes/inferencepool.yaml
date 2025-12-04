@@ -54,11 +54,16 @@ output:
       backends:
       - backend:
           port: 8080
-          service: default/gateway-pool.default.inference.cluster.local
+          service:
+            hostname: gateway-pool.default.inference.cluster.local
+            namespace: default
         weight: 1
       key: default/gateway-route.0.0.http
       listenerKey: default/test-gateway.http
-      routeName: default/gateway-route
+      name:
+        kind: HTTPRoute
+        name: gateway-route
+        namespace: default
 - gateway:
     Name: ""
     Namespace: ""
@@ -68,11 +73,19 @@ output:
         inferenceRouting:
           endpointPicker:
             port: 9002
-            service: default/gateway-pool-endpoint-picker.default.svc.cluster.local
+            service:
+              hostname: gateway-pool-endpoint-picker.default.svc.cluster.local
+              namespace: default
           failureMode: FAIL_CLOSED
-      name: default/gateway-pool:inference
+      key: default/gateway-pool:inference
+      name:
+        kind: InferencePool
+        name: gateway-pool
+        namespace: default
       target:
-        backend: service/default/gateway-pool.default.inference.cluster.local:8080
+        service:
+          hostname: gateway-pool.default.inference.cluster.local
+          namespace: default
 - gateway:
     Name: ""
     Namespace: ""
@@ -81,9 +94,16 @@ output:
       backend:
         backendTls:
           verification: INSECURE_ALL
-      name: default/gateway-pool:inferencetls
+      key: default/gateway-pool:inferencetls
+      name:
+        kind: InferencePool
+        name: gateway-pool
+        namespace: default
       target:
-        backend: service/default/gateway-pool-endpoint-picker.default.svc.cluster.local:9002
+        service:
+          hostname: gateway-pool-endpoint-picker.default.svc.cluster.local
+          namespace: default
+          port: 9002
 status:
 - apiVersion: gateway.networking.k8s.io/v1
   kind: HTTPRoute

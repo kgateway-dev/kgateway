@@ -34,7 +34,9 @@ output:
       backends:
       - backend:
           port: 8080
-          service: default/infra-backend-v1.default.svc.cluster.local
+          service:
+            hostname: infra-backend-v1.default.svc.cluster.local
+            namespace: default
         weight: 1
       hostnames:
       - grpc.example.com
@@ -43,7 +45,10 @@ output:
       matches:
       - path:
           exact: /user.Service/GetUser
-      routeName: default/multi-rule-grpc-route
+      name:
+        kind: GRPCRoute
+        name: multi-rule-grpc-route
+        namespace: default
 - gateway:
     Name: test-gateway
     Namespace: default
@@ -52,7 +57,9 @@ output:
       backends:
       - backend:
           port: 8080
-          service: default/infra-backend-v2.default.svc.cluster.local
+          service:
+            hostname: infra-backend-v2.default.svc.cluster.local
+            namespace: default
         weight: 1
       hostnames:
       - grpc.example.com
@@ -61,7 +68,10 @@ output:
       matches:
       - path:
           exact: /order.Service/CreateOrder
-      routeName: default/multi-rule-grpc-route
+      name:
+        kind: GRPCRoute
+        name: multi-rule-grpc-route
+        namespace: default
 status:
 - apiVersion: gateway.networking.k8s.io/v1
   kind: GRPCRoute

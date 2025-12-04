@@ -32,14 +32,13 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
-	deployerinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/httplistenerpolicy"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
-	"github.com/kgateway-dev/kgateway/v2/internal/version"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
+	deployerinternal "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/deployer"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/httplistenerpolicy"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
 	// TODO BML tests in this suite fail if this no-op import is not imported first.
 	//
 	// I know, I know, you're reading this, and you're skeptical. I can feel it.
@@ -47,13 +46,14 @@ import (
 	//
 	// There is some import within this package that this suite relies on. Chasing that down is
 	// *hard* tho due to the import tree, and best done in a followup.
-	// _ "github.com/kgateway-dev/kgateway/internal/kgateway/translator/translator.go"
+	// _ "github.com/kgateway-dev/kgateway/pkg/kgateway/translator/translator.go"
 	//
 	// The above TODO is a result of proto types being registered for free somewhere through
 	// the translator import. What we really need is to register all proto types, which is
 	// "correctly" available to use via `envoyinit`; note that the autogeneration of these types
 	// is currently broken. see: https://github.com/kgateway-dev/kgateway/issues/10491
 	_ "github.com/kgateway-dev/kgateway/v2/pkg/utils/filter_types"
+	"github.com/kgateway-dev/kgateway/v2/pkg/version"
 	deployertest "github.com/kgateway-dev/kgateway/v2/test/deployer"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	translatortest "github.com/kgateway-dev/kgateway/v2/test/translator"
