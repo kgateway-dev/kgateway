@@ -1,9 +1,7 @@
----
-# Source: agentgateway/templates/serviceaccount.yaml
 apiVersion: v1
+automountServiceAccountToken: false
 kind: ServiceAccount
 metadata:
-  name: gw
   annotations:
     infra-and-params: infra
     my-annotation: my-value
@@ -18,36 +16,33 @@ metadata:
     infra-and-params: infra
     kgateway: kube-gateway
     my-label: my-value
-automountServiceAccountToken: false
+  name: gw
 ---
-# Source: agentgateway/templates/configmap.yaml
 apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: gw
-  annotations:
-    infra-and-params: infra
-    my-annotation: my-value
-    prometheus.io/path: /something/else
-  labels:
-    app.kubernetes.io/instance: gw
-    app.kubernetes.io/managed-by: kgateway
-    app.kubernetes.io/name: gw
-    app.kubernetes.io/version: 1.0.0-ci1
-    gateway.networking.k8s.io/gateway-class-name: agentgateway
-    gateway.networking.k8s.io/gateway-name: gw
-    infra-and-params: infra
-    kgateway: kube-gateway
-    my-label: my-value
 data:
   config.yaml: |
     config: {}
+kind: ConfigMap
+metadata:
+  annotations:
+    infra-and-params: infra
+    my-annotation: my-value
+    prometheus.io/path: /something/else
+  labels:
+    app.kubernetes.io/instance: gw
+    app.kubernetes.io/managed-by: kgateway
+    app.kubernetes.io/name: gw
+    app.kubernetes.io/version: 1.0.0-ci1
+    gateway.networking.k8s.io/gateway-class-name: agentgateway
+    gateway.networking.k8s.io/gateway-name: gw
+    infra-and-params: infra
+    kgateway: kube-gateway
+    my-label: my-value
+  name: gw
 ---
-# Source: agentgateway/templates/service.yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: gw
   annotations:
     infra-and-params: infra
     my-annotation: my-value
@@ -62,23 +57,24 @@ metadata:
     infra-and-params: infra
     kgateway: kube-gateway
     my-label: my-value
+  name: gw
 spec:
-  type: LoadBalancer
   ports:
-    - name: listener-8080
-      protocol: TCP
-      targetPort: 8080
-      port: 8080
+  - name: listener-8080
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
   selector:
-    app.kubernetes.io/name: gw
     app.kubernetes.io/instance: gw
+    app.kubernetes.io/name: gw
     gateway.networking.k8s.io/gateway-name: gw
+  type: LoadBalancer
+status:
+  loadBalancer: {}
 ---
-# Source: agentgateway/templates/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: gw
   annotations:
     infra-and-params: infra
     my-annotation: my-value
@@ -93,12 +89,14 @@ metadata:
     infra-and-params: infra
     kgateway: kube-gateway
     my-label: my-value
+  name: gw
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: gw
       app.kubernetes.io/instance: gw
+      app.kubernetes.io/name: gw
       gateway.networking.k8s.io/gateway-name: gw
+  strategy: {}
   template:
     metadata:
       annotations:
@@ -117,93 +115,94 @@ spec:
         infra-and-params: infra
         my-label: my-value
     spec:
-      serviceAccountName: gw
+      containers:
+      - args:
+        - -f
+        - /config/config.yaml
+        env:
+        - name: TERMINATION_GRACE_PERIOD_SECONDS
+          value: "60"
+        - name: CONNECTION_MIN_TERMINATION_DEADLINE
+          value: 10s
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: GW_NAME
+          value: gw
+        - name: RUST_BACKTRACE
+          value: "1"
+        - name: RUST_LOG
+          value: info
+        - name: XDS_ADDRESS
+          value: http://xds.cluster.local:9978
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: GATEWAY
+          value: gw
+        image: ghcr.io/agentgateway/agentgateway:0.11.0-alpha.f45f1a94cdfa53d96e14301d59ac62200214cb9c
+        name: agent-gateway
+        ports:
+        - containerPort: 15020
+          name: metrics
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /healthz/ready
+            port: 15021
+          periodSeconds: 10
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 10101
+        startupProbe:
+          failureThreshold: 60
+          httpGet:
+            path: /healthz/ready
+            port: 15021
+          periodSeconds: 1
+          successThreshold: 1
+          timeoutSeconds: 2
+        volumeMounts:
+        - mountPath: /config
+          name: config-volume
+        - mountPath: /tmp
+          name: tmp
+        - mountPath: /var/run/secrets/xds-tokens
+          name: xds-token
+          readOnly: true
       securityContext:
         sysctls:
         - name: net.ipv4.ip_unprivileged_port_start
           value: "0"
-      containers:
-        - name: agent-gateway
-          image: "ghcr.io/agentgateway/agentgateway:0.11.0-alpha.f45f1a94cdfa53d96e14301d59ac62200214cb9c"
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-              - ALL
-            readOnlyRootFilesystem: true
-            runAsNonRoot: true
-            runAsUser: 10101
-          startupProbe:
-            failureThreshold: 60
-            httpGet:
-              path: /healthz/ready
-              port: 15021
-            periodSeconds: 1
-            successThreshold: 1
-            timeoutSeconds: 2
-          readinessProbe:
-            httpGet:
-              path: /healthz/ready
-              port: 15021
-            periodSeconds: 10
-          ports:
-          - containerPort: 15020
-            name: metrics
-            protocol: TCP
-          args:
-            - -f
-            - /config/config.yaml
-          env:
-            - name: TERMINATION_GRACE_PERIOD_SECONDS
-              value: "60"
-            - name: CONNECTION_MIN_TERMINATION_DEADLINE
-              value: "10s"
-            - name: NODE_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
-            - name: POD_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
-            - name: POD_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
-            - name: GW_NAME
-              value: gw
-            - name: RUST_BACKTRACE
-              value: "1"
-            - name: RUST_LOG
-              value: info
-            - name: XDS_ADDRESS
-              value: "http://xds.cluster.local:9978"
-            - name: NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
-            - name: GATEWAY
-              value: gw
-          volumeMounts:
-            - name: config-volume
-              mountPath: /config
-            # Make /tmp writeable, needed for pprof
-            - name: tmp
-              mountPath: /tmp
-            - name: xds-token
-              mountPath: /var/run/secrets/xds-tokens
-              readOnly: true
-      volumes:
-        - name: config-volume
-          configMap:
-            name: gw
-        - name: xds-token
-          projected:
-            sources:
-            - serviceAccountToken:
-                audience: kgateway
-                expirationSeconds: 43200
-                path: xds-token
-        - name: tmp
-          emptyDir: {}
+      serviceAccountName: gw
       terminationGracePeriodSeconds: 60
+      volumes:
+      - configMap:
+          name: gw
+        name: config-volume
+      - name: xds-token
+        projected:
+          sources:
+          - serviceAccountToken:
+              audience: kgateway
+              expirationSeconds: 43200
+              path: xds-token
+      - emptyDir: {}
+        name: tmp
+status: {}

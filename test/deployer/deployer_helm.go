@@ -126,11 +126,13 @@ func (dt DeployerTester) RunHelmChartTest(
 	ctx := t.Context()
 	fakeClient.RunAndWait(ctx.Done())
 
-	vals, err := gwParams.GetValues(ctx, gtw)
-	assert.NoError(t, err, "error getting values for GwParams")
+	// Get objects (what actually gets deployed), which in the future is likely
+	// to differ from helm's rendered output
+	deployObjs, err := deployer.GetObjsToDeploy(ctx, gtw)
+	assert.NoError(t, err, "error getting objects to deploy")
 
-	got, err := deployer.RenderManifest(gtw.Namespace, gtw.Name, vals)
-	assert.NoError(t, err, "error rendering helm manifest")
+	got, err := objectsToYAML(deployObjs)
+	assert.NoError(t, err, "error converting objects to YAML")
 
 	if envutils.IsEnvTruthy("REFRESH_GOLDEN") {
 		t.Log("REFRESH_GOLDEN is set, writing output file", outputFile)
@@ -251,4 +253,20 @@ func validateYAML(t *testing.T, filename string, data []byte) {
 			t.Errorf("helm chart produced yaml with implicit null that becomes explicit: document %d in %s\nDiff (- original, + after round-trip):\n%s", i+1, filename, diff)
 		}
 	}
+}
+
+// objectsToYAML converts a slice of client.Object to YAML bytes, separated by "---"
+func objectsToYAML(objs []client.Object) ([]byte, error) {
+	var result []byte
+	for i, obj := range objs {
+		objYAML, err := yaml.Marshal(obj)
+		if err != nil {
+			return nil, err
+		}
+		if i > 0 {
+			result = append(result, []byte("---\n")...)
+		}
+		result = append(result, objYAML...)
+	}
+	return result, nil
 }
