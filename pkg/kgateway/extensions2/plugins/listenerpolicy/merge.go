@@ -1,6 +1,8 @@
 package listenerpolicy
 
 import (
+	"fmt"
+
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 )
@@ -37,9 +39,7 @@ func mergeDefault(
 	if !policy.IsMergeable(p1.defaultPolicy, p2.defaultPolicy, opts) {
 		return
 	}
-
-	p1.defaultPolicy = p2.defaultPolicy
-	mergeOrigins.SetOne("defaultPolicy", p2Ref, p2MergeOrigins)
+	mergeListenerPolicy("default", &p1.defaultPolicy, &p2.defaultPolicy, p2Ref, p2MergeOrigins, opts, mergeOrigins)
 }
 
 func mergePerPort(
@@ -52,7 +52,68 @@ func mergePerPort(
 	if !policy.IsMergeable(p1.perPortPolicy, p2.perPortPolicy, opts) {
 		return
 	}
+	for port, p2PortPolicy := range p2.perPortPolicy {
+		f := fmt.Sprintf("perPortPolicy[%d]", port)
+		if p1PortPolicy, ok := p1.perPortPolicy[port]; ok {
+			mergeListenerPolicy(f, &p1PortPolicy, &p2PortPolicy, p2Ref, p2MergeOrigins, opts, mergeOrigins)
+			p1.perPortPolicy[port] = p1PortPolicy
+		} else {
+			p1.perPortPolicy[port] = p2PortPolicy
+			mergeOrigins.SetOne(f, p2Ref, p2MergeOrigins)
+		}
+	}
+}
 
-	p1.perPortPolicy = p2.perPortPolicy
-	mergeOrigins.SetOne("perPortPolicy", p2Ref, p2MergeOrigins)
+func mergeListenerPolicy(
+	origin string,
+	p1, p2 *listenerPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	mergeOpts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if p1 == nil || p2 == nil {
+		return
+	}
+
+	mergeFuncs := []func(string, *listenerPolicy, *listenerPolicy, *ir.AttachedPolicyRef, ir.MergeOrigins, policy.MergeOptions, ir.MergeOrigins){
+		mergeProxyProtocol,
+		mergePerConnectionBufferLimitBytes,
+	}
+
+	for _, mergeFunc := range mergeFuncs {
+		mergeFunc(origin, p1, p2, p2Ref, p2MergeOrigins, mergeOpts, mergeOrigins)
+	}
+}
+
+func mergeProxyProtocol(
+	origin string,
+	p1, p2 *listenerPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.proxyProtocol, p2.proxyProtocol, opts) {
+		return
+	}
+
+	p1.proxyProtocol = p2.proxyProtocol
+	mergeOrigins.SetOne(origin+".proxyProtocol", p2Ref, p2MergeOrigins)
+}
+
+func mergePerConnectionBufferLimitBytes(
+	origin string,
+	p1, p2 *listenerPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.perConnectionBufferLimitBytes, p2.perConnectionBufferLimitBytes, opts) {
+		return
+	}
+
+	p1.perConnectionBufferLimitBytes = p2.perConnectionBufferLimitBytes
+	mergeOrigins.SetOne(origin+".perConnectionBufferLimitBytes", p2Ref, p2MergeOrigins)
 }
