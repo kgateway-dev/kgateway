@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 # The SDK version must match the Envoy version due to the strict compatibility requirements.
-envoy-proxy-dynamic-modules-rust-sdk = { git = "https://github.com/envoyproxy/envoy", rev = "0d240c4b0f5b5db91ef14b1bf424520144b1a75d" }
+envoy-proxy-dynamic-modules-rust-sdk = { git = "https://github.com/envoyproxy/envoy", rev = "607aaa985080750ae29ac9f6e49a31a5445d28f4" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 rand = "0.9.0"
