@@ -172,8 +172,8 @@ func TestBuildAIBackend(t *testing.T) {
 					Namespace: "test-ns",
 				},
 				Spec: agentgateway.AgentgatewayBackendSpec{
-					Policies: &agentgateway.AgentgatewayPolicyBackendFull{
-						AgentgatewayPolicyBackendSimple: agentgateway.AgentgatewayPolicyBackendSimple{
+					Policies: &agentgateway.BackendFull{
+						BackendSimple: agentgateway.BackendSimple{
 							Auth: &agentgateway.BackendAuth{InlineKey: stringPtr("sk-test-token")},
 						},
 					},
@@ -270,8 +270,8 @@ func TestBuildAIBackend(t *testing.T) {
 				},
 				Spec: agentgateway.AgentgatewayBackendSpec{
 					// TODO: Add AWS auth
-					//Policies: &v1alpha1.AgentgatewayPolicyBackendFull{
-					//	AgentgatewayPolicyBackendSimple: v1alpha1.AgentgatewayPolicyBackendSimple{
+					//Policies: &v1alpha1.BackendFull{
+					//	BackendSimple: v1alpha1.BackendSimple{
 					//		Auth: &v1alpha1.BackendAuth{},
 					//	},
 					//},
@@ -305,8 +305,8 @@ func TestBuildAIBackend(t *testing.T) {
 					Namespace: "test-ns",
 				},
 				Spec: agentgateway.AgentgatewayBackendSpec{
-					Policies: &agentgateway.AgentgatewayPolicyBackendFull{
-						AgentgatewayPolicyBackendSimple: agentgateway.AgentgatewayPolicyBackendSimple{
+					Policies: &agentgateway.BackendFull{
+						BackendSimple: agentgateway.BackendSimple{
 							Auth: &agentgateway.BackendAuth{SecretRef: &corev1.LocalObjectReference{
 								Name: "openai-secret",
 							}},
@@ -341,8 +341,8 @@ func TestBuildAIBackend(t *testing.T) {
 								Providers: []agentgateway.NamedLLMProvider{
 									{
 										Name: "openai",
-										Policies: &agentgateway.AgentgatewayPolicyBackendAI{
-											AgentgatewayPolicyBackendSimple: agentgateway.AgentgatewayPolicyBackendSimple{
+										Policies: &agentgateway.BackendWithAI{
+											BackendSimple: agentgateway.BackendSimple{
 												Auth: &agentgateway.BackendAuth{InlineKey: stringPtr("first-token")},
 											},
 										},
@@ -354,8 +354,8 @@ func TestBuildAIBackend(t *testing.T) {
 									},
 									{
 										Name: "anthropic",
-										Policies: &agentgateway.AgentgatewayPolicyBackendAI{
-											AgentgatewayPolicyBackendSimple: agentgateway.AgentgatewayPolicyBackendSimple{
+										Policies: &agentgateway.BackendWithAI{
+											BackendSimple: agentgateway.BackendSimple{
 												Auth: &agentgateway.BackendAuth{InlineKey: stringPtr("second-token")},
 											},
 										},
@@ -386,8 +386,8 @@ func TestBuildAIBackend(t *testing.T) {
 								Providers: []agentgateway.NamedLLMProvider{
 									{
 										Name: "openai",
-										Policies: &agentgateway.AgentgatewayPolicyBackendAI{
-											AgentgatewayPolicyBackendSimple: agentgateway.AgentgatewayPolicyBackendSimple{
+										Policies: &agentgateway.BackendWithAI{
+											BackendSimple: agentgateway.BackendSimple{
 												Auth: &agentgateway.BackendAuth{InlineKey: stringPtr("openai-primary")},
 											},
 										},
@@ -399,8 +399,8 @@ func TestBuildAIBackend(t *testing.T) {
 									},
 									{
 										Name: "anthropic",
-										Policies: &agentgateway.AgentgatewayPolicyBackendAI{
-											AgentgatewayPolicyBackendSimple: agentgateway.AgentgatewayPolicyBackendSimple{
+										Policies: &agentgateway.BackendWithAI{
+											BackendSimple: agentgateway.BackendSimple{
 												Auth: &agentgateway.BackendAuth{InlineKey: stringPtr("anthropic-primary")},
 											},
 										},
@@ -416,8 +416,8 @@ func TestBuildAIBackend(t *testing.T) {
 								Providers: []agentgateway.NamedLLMProvider{
 									{
 										Name: "gemini",
-										Policies: &agentgateway.AgentgatewayPolicyBackendAI{
-											AgentgatewayPolicyBackendSimple: agentgateway.AgentgatewayPolicyBackendSimple{
+										Policies: &agentgateway.BackendWithAI{
+											BackendSimple: agentgateway.BackendSimple{
 												Auth: &agentgateway.BackendAuth{InlineKey: stringPtr("gemini-fallback")},
 											},
 										},
@@ -442,7 +442,7 @@ func TestBuildAIBackend(t *testing.T) {
 					Namespace: "test-ns",
 				},
 				Spec: agentgateway.AgentgatewayBackendSpec{
-					Policies: &agentgateway.AgentgatewayPolicyBackendFull{
+					Policies: &agentgateway.BackendFull{
 						AI: &agentgateway.BackendAI{
 							Routes: map[string]agentgateway.RouteType{
 								"/v1/chat/completions": agentgateway.RouteTypeCompletions,
@@ -470,7 +470,7 @@ func TestBuildAIBackend(t *testing.T) {
 					Namespace: "test-ns",
 				},
 				Spec: agentgateway.AgentgatewayBackendSpec{
-					Policies: &agentgateway.AgentgatewayPolicyBackendFull{
+					Policies: &agentgateway.BackendFull{
 						AI: &agentgateway.BackendAI{
 							Routes: map[string]agentgateway.RouteType{
 								"/v1/chat/completions":      agentgateway.RouteTypeCompletions,
@@ -545,7 +545,7 @@ func TestBuildStaticIr(t *testing.T) {
 					Namespace: "test-ns",
 				},
 				Spec: agentgateway.AgentgatewayBackendSpec{
-					Static: &agentgateway.AgentStaticBackend{
+					Static: &agentgateway.StaticBackend{
 						Host: "api.example.com", Port: 443,
 					},
 				},

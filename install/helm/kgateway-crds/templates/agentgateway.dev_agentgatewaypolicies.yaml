@@ -3143,8 +3143,8 @@ spec:
                                   description: entries are the individual components
                                     that make up this descriptor.
                                   items:
-                                    description: AgentRateLimitDescriptorEntry defines
-                                      a single entry in a rate limit descriptor.
+                                    description: A descriptor entry defines a single
+                                      entry in a rate limit descriptor.
                                     properties:
                                       expression:
                                         description: |-
@@ -3198,8 +3198,8 @@ spec:
                         description: Local defines a local rate limiting policy.
                         items:
                           description: |-
-                            AgentLocalRateLimitPolicy represents a policy for local rate limiting.
-                            It defines the configuration for rate limiting using a token bucket mechanism.
+                            Policy for local rate limiting. Local rate limits are handled locally on a per-proxy basis, without co-ordination
+                            between instances of the proxy.
                           properties:
                             burst:
                               description: burst specifies an allowance of requests
@@ -3411,7 +3411,7 @@ spec:
                             description: Remove is a list of header names to remove
                               from the request/response.
                             items:
-                              description: AgentHeaderName is the name of a header.
+                              description: An HTTP Header Name.
                               maxLength: 256
                               minLength: 1
                               pattern: ^:?[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
@@ -3508,7 +3508,7 @@ spec:
                             description: Remove is a list of header names to remove
                               from the request/response.
                             items:
-                              description: AgentHeaderName is the name of a header.
+                              description: An HTTP Header Name.
                               maxLength: 256
                               minLength: 1
                               pattern: ^:?[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$

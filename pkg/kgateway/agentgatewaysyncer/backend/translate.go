@@ -272,7 +272,7 @@ func translateAIBackends(ctx plugins.PolicyCtx, be *agentgateway.AgentgatewayBac
 func translateBackendPolicies(
 	ctx plugins.PolicyCtx,
 	namespace string,
-	policies *agentgateway.AgentgatewayPolicyBackendFull) ([]*api.BackendPolicySpec, error) {
+	policies *agentgateway.BackendFull) ([]*api.BackendPolicySpec, error) {
 	if policies == nil {
 		return nil, nil
 	}
@@ -281,25 +281,25 @@ func translateBackendPolicies(
 
 func translateMCPBackendPolicies(
 	ctx plugins.PolicyCtx,
-	namespace string, policies *agentgateway.AgentgatewayPolicyBackendMCP) ([]*api.BackendPolicySpec, error) {
+	namespace string, policies *agentgateway.BackendWithMCP) ([]*api.BackendPolicySpec, error) {
 	if policies == nil {
 		return nil, nil
 	}
-	return translateBackendPolicies(ctx, namespace, &agentgateway.AgentgatewayPolicyBackendFull{
-		AgentgatewayPolicyBackendSimple: policies.AgentgatewayPolicyBackendSimple,
-		MCP:                             policies.MCP,
+	return translateBackendPolicies(ctx, namespace, &agentgateway.BackendFull{
+		BackendSimple: policies.BackendSimple,
+		MCP:           policies.MCP,
 	})
 }
 
 func translateAIBackendPolicies(
 	ctx plugins.PolicyCtx,
-	namespace string, policies *agentgateway.AgentgatewayPolicyBackendAI) ([]*api.BackendPolicySpec, error) {
+	namespace string, policies *agentgateway.BackendWithAI) ([]*api.BackendPolicySpec, error) {
 	if policies == nil {
 		return nil, nil
 	}
-	return translateBackendPolicies(ctx, namespace, &agentgateway.AgentgatewayPolicyBackendFull{
-		AgentgatewayPolicyBackendSimple: policies.AgentgatewayPolicyBackendSimple,
-		AI:                              policies.AI,
+	return translateBackendPolicies(ctx, namespace, &agentgateway.BackendFull{
+		BackendSimple: policies.BackendSimple,
+		AI:            policies.AI,
 	})
 }
 

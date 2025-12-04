@@ -153,7 +153,7 @@ type OpenAIModeration struct {
 	// policies controls policies for communicating with OpenAI.
 	// +kubebuilder:validation:AtLeastOneOf=tcp;tls;http;auth
 	// +optional
-	Policies *AgentgatewayPolicyBackendSimple `json:"policies,omitempty"`
+	Policies *BackendSimple `json:"policies,omitempty"`
 }
 
 // PromptguardRequest defines the prompt guards to apply to requests sent by the client.

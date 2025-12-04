@@ -83,7 +83,7 @@ type AgentgatewayPolicySpec struct {
 	// merge. For example, policy A sets 'tcp' and 'tls', and policy B sets 'tls', the effective policy would be 'tcp' from
 	// policy A, and 'tls' from policy B.
 	// +optional
-	Frontend *AgentgatewayPolicyFrontend `json:"frontend,omitempty"`
+	Frontend *Frontend `json:"frontend,omitempty"`
 
 	// traffic defines settings for how process traffic.
 	//
@@ -95,7 +95,7 @@ type AgentgatewayPolicySpec struct {
 	// sets 'timeouts' and 'retries', and policy B sets 'retries', the effective policy would be 'timeouts' from policy A,
 	// and 'retries' from policy B.
 	// +optional
-	Traffic *AgentgatewayPolicyTraffic `json:"traffic,omitempty"`
+	Traffic *Traffic `json:"traffic,omitempty"`
 
 	// backend defines settings for how to connect to destination backends.
 	//
@@ -111,10 +111,10 @@ type AgentgatewayPolicySpec struct {
 	// example, if a Gateway policy sets 'tcp' and 'tls', and a Backend policy sets 'tls', the effective policy would be
 	// 'tcp' from the Gateway, and 'tls' from the Backend.
 	// +optional
-	Backend *AgentgatewayPolicyBackendFull `json:"backend,omitempty"`
+	Backend *BackendFull `json:"backend,omitempty"`
 }
 
-type AgentgatewayPolicyBackendSimple struct {
+type BackendSimple struct {
 	// tcp defines settings for managing TCP connections to the backend.
 	// +optional
 	TCP *BackendTCP `json:"tcp,omitempty"`
@@ -134,8 +134,8 @@ type AgentgatewayPolicyBackendSimple struct {
 }
 
 // +kubebuilder:validation:AtLeastOneOf=tcp;tls;http;auth;mcp
-type AgentgatewayPolicyBackendMCP struct {
-	AgentgatewayPolicyBackendSimple `json:",inline"`
+type BackendWithMCP struct {
+	BackendSimple `json:",inline"`
 
 	// mcp specifies settings for MCP workloads. This is only applicable when connecting to a Backend of type 'mcp'.
 	// +optional
@@ -143,8 +143,8 @@ type AgentgatewayPolicyBackendMCP struct {
 }
 
 // +kubebuilder:validation:AtLeastOneOf=tcp;tls;http;auth;ai
-type AgentgatewayPolicyBackendAI struct {
-	AgentgatewayPolicyBackendSimple `json:",inline"`
+type BackendWithAI struct {
+	BackendSimple `json:",inline"`
 
 	// ai specifies settings for AI workloads. This is only applicable when connecting to a Backend of type 'ai'.
 	// +optional
@@ -152,8 +152,8 @@ type AgentgatewayPolicyBackendAI struct {
 }
 
 // +kubebuilder:validation:AtLeastOneOf=tcp;tls;http;auth;mcp;ai
-type AgentgatewayPolicyBackendFull struct {
-	AgentgatewayPolicyBackendSimple `json:",inline"`
+type BackendFull struct {
+	BackendSimple `json:",inline"`
 
 	// ai specifies settings for AI workloads. This is only applicable when connecting to a Backend of type 'ai'.
 	// +optional
@@ -251,7 +251,7 @@ type BackendTLS struct {
 }
 
 // +kubebuilder:validation:XValidation:rule="!has(self.tracing)",message="tracing is not currently implemented"
-type AgentgatewayPolicyFrontend struct {
+type Frontend struct {
 	// tcp defines settings on managing incoming TCP connections.
 	// +optional
 	TCP *FrontendTCP `json:"tcp,omitempty"`
@@ -264,12 +264,12 @@ type AgentgatewayPolicyFrontend struct {
 
 	// AccessLoggingConfig contains access logging configuration
 	// +optional
-	AccessLog *AgentAccessLog `json:"accessLog,omitempty"`
+	AccessLog *AccessLog `json:"accessLog,omitempty"`
 
 	// Tracing contains various settings for OpenTelemetry tracer.
 	// TODO: not currently implemented
 	// +optional
-	Tracing *AgentTracing `json:"tracing,omitempty"`
+	Tracing *Tracing `json:"tracing,omitempty"`
 }
 
 // +kubebuilder:validation:AtLeastOneOf=maxBufferSize;http1MaxHeaders;http1IdleTimeout;http2WindowSize;http2ConnectionWindowSize;http2FrameSize;http2KeepaliveInterval;http2KeepaliveTimeout
@@ -342,11 +342,11 @@ type FrontendTLS struct {
 type FrontendTCP struct {
 	// keepalive defines settings for enabling TCP keepalives on the connection.
 	// +optional
-	KeepAlive *AgentgatewayKeepalive `json:"keepalive,omitempty"`
+	KeepAlive *Keepalive `json:"keepalive,omitempty"`
 }
 
 // TCP Keepalive settings
-type AgentgatewayKeepalive struct {
+type Keepalive struct {
 	// retries specifies the maximum number of keep-alive probes to send before dropping the connection.
 	// If unset, this defaults to 9.
 	// +kubebuilder:validation:Minimum=1
@@ -378,7 +378,7 @@ const (
 )
 
 // +kubebuilder:validation:XValidation:rule="has(self.phase) && self.phase == 'PreRouting' ? !has(self.rateLimit) && !has(self.cors) && !has(self.csrf) && !has(self.headerModifiers) && !has(self.hostRewrite) && !has(self.timeouts) && !has(self.retry) && !has(self.authorization): true",message="phase PreRouting only supports extAuth, transformation, and extProc"
-type AgentgatewayPolicyTraffic struct {
+type Traffic struct {
 	// The phase to apply the traffic policy to. If the phase is PreRouting, the targetRef must be a Gateway or a Listener.
 	// PreRouting is typically used only when a policy needs to influence the routing decision.
 	//
@@ -395,25 +395,25 @@ type AgentgatewayPolicyTraffic struct {
 	// transformation is used to mutate and transform requests and responses
 	// before forwarding them to the destination.
 	// +optional
-	Transformation *AgentTransformationPolicy `json:"transformation,omitempty"`
+	Transformation *Transformation `json:"transformation,omitempty"`
 
 	// extProc specifies the external processing configuration for the policy.
 	// +optional
-	ExtProc *AgentExtProcPolicy `json:"extProc,omitempty"`
+	ExtProc *ExtProc `json:"extProc,omitempty"`
 
 	// extAuth specifies the external authentication configuration for the policy.
 	// This controls what external server to send requests to for authentication.
 	// +optional
-	ExtAuth *AgentExtAuthPolicy `json:"extAuth,omitempty"`
+	ExtAuth *ExtAuth `json:"extAuth,omitempty"`
 
 	// rateLimit specifies the rate limiting configuration for the policy.
 	// This controls the rate at which requests are allowed to be processed.
 	// +optional
-	RateLimit *AgentRateLimit `json:"rateLimit,omitempty"`
+	RateLimit *RateLimits `json:"rateLimit,omitempty"`
 
 	// cors specifies the CORS configuration for the policy.
 	// +optional
-	Cors *AgentCorsPolicy `json:"cors,omitempty"`
+	Cors *CORS `json:"cors,omitempty"`
 
 	// csrf specifies the Cross-Site Request Forgery (CSRF) policy for this traffic policy.
 	//
@@ -422,7 +422,7 @@ type AgentgatewayPolicyTraffic struct {
 	// * Requests without Sec-Fetch-Site or Origin headers are assumed to be same-origin or non-browser requests and are allowed.
 	// * Otherwise, the Sec-Fetch-Site header is checked, with a fallback to comparing the Origin header to the Host header.
 	// +optional
-	Csrf *AgentCSRFPolicy `json:"csrf,omitempty"`
+	Csrf *CSRF `json:"csrf,omitempty"`
 
 	// headerModifiers defines the policy to modify request and response headers.
 	// +optional
@@ -433,12 +433,12 @@ type AgentgatewayPolicyTraffic struct {
 	// If the HTTPRoute `urlRewrite` filter already specifies a host rewrite, this setting is ignored.
 	// +kubebuilder:validation:Enum=Auto;None
 	// +optional
-	HostnameRewrite *AgentHostnameRewriteConfig `json:"hostRewrite,omitempty"`
+	HostnameRewrite *HostnameRewrite `json:"hostRewrite,omitempty"`
 
 	// timeouts defines the timeouts for requests
 	// It is applicable to HTTPRoutes and ignored for other targeted kinds.
 	// +optional
-	Timeouts *AgentTimeouts `json:"timeouts,omitempty"`
+	Timeouts *Timeouts `json:"timeouts,omitempty"`
 
 	// retry defines the policy for retrying requests.
 	// +optional
@@ -452,16 +452,16 @@ type AgentgatewayPolicyTraffic struct {
 
 	// jwtAuthentication authenticates users based on JWT tokens.
 	// +optional
-	JWTAuthentication *AgentJWTAuthentication `json:"jwtAuthentication,omitempty"`
+	JWTAuthentication *JWTAuthentication `json:"jwtAuthentication,omitempty"`
 
 	// basicAuthentication authenticates users based on the "Basic" authentication scheme (RFC 7617), where a username and password
 	// are encoded in the request.
 	// +optional
-	BasicAuthentication *AgentBasicAuthentication `json:"basicAuthentication,omitempty"`
+	BasicAuthentication *BasicAuthentication `json:"basicAuthentication,omitempty"`
 
 	// apiKeyAuthentication authenticates users based on a configured API Key.
 	// +optional
-	APIKeyAuthentication *AgentAPIKeyAuthentication `json:"apiKeyAuthentication,omitempty"`
+	APIKeyAuthentication *APIKeyAuthentication `json:"apiKeyAuthentication,omitempty"`
 
 	// direct response configures the policy to send a direct response to the client.
 	// +optional
@@ -501,7 +501,7 @@ const (
 	JWTAuthenticationModePermissive JWTAuthenticationMode = "Permissive"
 )
 
-type AgentJWTAuthentication struct {
+type JWTAuthentication struct {
 	// validation mode for JWT authentication.
 	// +kubebuilder:default=Strict
 	// +optional
@@ -509,10 +509,10 @@ type AgentJWTAuthentication struct {
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=64
 	// +required
-	Providers []AgentJWTProvider `json:"providers"`
+	Providers []JWTProvider `json:"providers"`
 }
 
-type AgentJWTProvider struct {
+type JWTProvider struct {
 	// issuer identifies the IdP that issued the JWT. This corresponds to the 'iss' claim (https://tools.ietf.org/html/rfc7519#section-4.1.1).
 	// +required
 	Issuer ShortString `json:"issuer"`
@@ -524,14 +524,14 @@ type AgentJWTProvider struct {
 	Audiences []string `json:"audiences,omitempty"`
 	// jwks defines the JSON Web Key Set used to validate the signature of the JWT.
 	// +required
-	JWKS AgentJWKS `json:"jwks"`
+	JWKS JWKS `json:"jwks"`
 }
 
 // +kubebuilder:validation:ExactlyOneOf=remote;inline
-type AgentJWKS struct {
+type JWKS struct {
 	// remote specifies how to reach the JSON Web Key Set from a remote address.
 	// +optional
-	Remote *AgentRemoteJWKS `json:"remote,omitempty"`
+	Remote *RemoteJWKS `json:"remote,omitempty"`
 	// inline specifies an inline JSON Web Key Set used validate the signature of the JWT.
 	// +kubebuilder:validation:MinLength=2
 	// +kubebuilder:validation:MaxLength=65536
@@ -540,7 +540,7 @@ type AgentJWKS struct {
 }
 
 // +kubebuilder:validation:ExactlyOneOf=uri;backendRef
-type AgentRemoteJWKS struct {
+type RemoteJWKS struct {
 	// IdP jwks endpoint. Default tls settings are used to connect to this url.
 	// +kubebuilder:validation:Pattern=`^(https|http):\/\/[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*(:\d+)?\/.*$`
 	// +optional
@@ -570,7 +570,7 @@ const (
 )
 
 // +kubebuilder:validation:ExactlyOneOf=users;secretRef
-type AgentBasicAuthentication struct {
+type BasicAuthentication struct {
 	// validation mode for basic auth authentication.
 	// +kubebuilder:default=Strict
 	// +optional
@@ -630,7 +630,7 @@ const (
 )
 
 // +kubebuilder:validation:ExactlyOneOf=secretRef;secretSelector
-type AgentAPIKeyAuthentication struct {
+type APIKeyAuthentication struct {
 	// Validation mode for api key authentication.
 	// +kubebuilder:default=Strict
 	// +optional
@@ -699,11 +699,11 @@ type SecretSelector struct {
 	MatchLabels map[string]string `json:"matchLabels"`
 }
 
-type AgentHostnameRewrite string
+type HostnameRewriteMode string
 
 const (
-	AgentHostnameRewriteAuto AgentHostnameRewrite = "Auto"
-	AgentHostnameRewriteNone AgentHostnameRewrite = "None"
+	HostnameRewriteModeAuto HostnameRewriteMode = "Auto"
+	HostnameRewriteModeNone HostnameRewriteMode = "None"
 )
 
 // +kubebuilder:validation:ExactlyOneOf=key;secretRef;passthrough
@@ -837,7 +837,7 @@ type MCPAuthentication struct {
 
 	// jwks defines the remote JSON Web Key used to validate the signature of the JWT.
 	// +required
-	JWKS AgentRemoteJWKS `json:"jwks"`
+	JWKS RemoteJWKS `json:"jwks"`
 }
 
 type McpIDP string
@@ -870,7 +870,7 @@ const (
 type BackendTCP struct {
 	// keepAlive defines settings for enabling TCP keepalives on the connection.
 	// +optional
-	Keepalive *AgentgatewayKeepalive `json:"keepalive,omitempty"`
+	Keepalive *Keepalive `json:"keepalive,omitempty"`
 	// connectTimeout defines the deadline for establishing a connection to the destination.
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('100ms')",message="connectTimeout must be at least 100ms"
@@ -879,18 +879,18 @@ type BackendTCP struct {
 }
 
 // +kubebuilder:validation:AtLeastOneOf=request;response
-type AgentTransformationPolicy struct {
+type Transformation struct {
 	// request is used to modify the request path.
 	// +optional
-	Request *AgentTransform `json:"request,omitempty"`
+	Request *Transform `json:"request,omitempty"`
 
 	// response is used to modify the response path.
 	// +optional
-	Response *AgentTransform `json:"response,omitempty"`
+	Response *Transform `json:"response,omitempty"`
 }
 
 // +kubebuilder:validation:AtLeastOneOf=set;add;remove;body
-type AgentTransform struct {
+type Transform struct {
 	// set is a list of headers and the value they should be set to.
 	//
 	// +listType=map
@@ -898,7 +898,7 @@ type AgentTransform struct {
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
 	// +optional
-	Set []AgentHeaderTransformation `json:"set,omitempty"`
+	Set []HeaderTransformation `json:"set,omitempty"`
 
 	// add is a list of headers to add to the request and what that value should be set to. If there is already a header
 	// with these values then append the value as an extra entry.
@@ -908,7 +908,7 @@ type AgentTransform struct {
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
 	// +optional
-	Add []AgentHeaderTransformation `json:"add,omitempty"`
+	Add []HeaderTransformation `json:"add,omitempty"`
 
 	// Remove is a list of header names to remove from the request/response.
 	//
@@ -916,39 +916,39 @@ type AgentTransform struct {
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
 	// +optional
-	Remove []AgentHeaderName `json:"remove,omitempty"`
+	Remove []HeaderName `json:"remove,omitempty"`
 
 	// body controls manipulation of the HTTP body.
 	// +optional
 	Body *shared.CELExpression `json:"body,omitempty"`
 }
 
-// AgentHeaderName is the name of a header.
+// An HTTP Header Name.
 //
 // +kubebuilder:validation:MinLength=1
 // +kubebuilder:validation:MaxLength=256
 // +kubebuilder:validation:Pattern=`^:?[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$`
 // +kubebuilder:validation:XValidation:rule="!self.startsWith(':') || self in [':authority', ':method', ':path', ':scheme', ':status']",message="pseudo-headers must be one of :authority, :method, :path, :scheme, or :status"
 // +k8s:deepcopy-gen=false
-type AgentHeaderName string
+type HeaderName string
 
-type AgentHeaderTransformation struct {
+type HeaderTransformation struct {
 	// the name of the header to add.
 	// +required
-	Name AgentHeaderName `json:"name"`
+	Name HeaderName `json:"name"`
 	// value is the CEL expression to apply to generate the output value for the header.
 	// +required
 	Value shared.CELExpression `json:"value"`
 }
 
-type AgentExtProcPolicy struct {
+type ExtProc struct {
 	// backendRef references the External Processor server to reach.
 	// Supported types: Service and Backend.
 	// +required
 	BackendRef gwv1.BackendObjectReference `json:"backendRef"`
 }
 
-type AgentExtAuthPolicy struct {
+type ExtAuth struct {
 	// backendRef references the External Authorization server to reach.
 	//
 	// Supported types: Service and Backend.
@@ -958,7 +958,7 @@ type AgentExtAuthPolicy struct {
 	// forwardBody configures whether to include the HTTP body in the request. If enabled, the request body will be
 	// buffered.
 	// +optional
-	ForwardBody *AgentExtAuthBody `json:"forwardBody,omitempty"`
+	ForwardBody *ExtAuthBody `json:"forwardBody,omitempty"`
 
 	// contextExtensions specifies additional arbitrary key-value pairs to send to the authorization server.
 	// +kubebuilder:validation:MaxProperties=64
@@ -966,7 +966,7 @@ type AgentExtAuthPolicy struct {
 	ContextExtensions map[string]string `json:"contextExtensions,omitempty"`
 }
 
-type AgentExtAuthBody struct {
+type ExtAuthBody struct {
 	// maxSize specifies how large in bytes the largest body that will be buffered and sent to the authorization server. If
 	// the body size is larger than maxSize, then the request will be rejected with a response.
 	//
@@ -976,19 +976,19 @@ type AgentExtAuthBody struct {
 }
 
 // +kubebuilder:validation:AtLeastOneOf=local;global
-type AgentRateLimit struct {
+type RateLimits struct {
 	// Local defines a local rate limiting policy.
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
 	// +optional
-	Local []AgentLocalRateLimitPolicy `json:"local,omitempty"`
+	Local []LocalRateLimit `json:"local,omitempty"`
 
 	// Global defines a global rate limiting policy using an external service.
 	// +optional
-	Global *AgentRateLimitPolicy `json:"global,omitempty"`
+	Global *GlobalRateLimit `json:"global,omitempty"`
 }
 
-type AgentRateLimitPolicy struct {
+type GlobalRateLimit struct {
 	// backendRef references the Rate Limit server to reach.
 	// Supported types: Service and Backend.
 	// +required
@@ -1005,7 +1005,7 @@ type AgentRateLimitPolicy struct {
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
 	// +required
-	Descriptors []AgentRateLimitDescriptor `json:"descriptors"`
+	Descriptors []RateLimitDescriptor `json:"descriptors"`
 }
 
 type RateLimitUnit string
@@ -1015,21 +1015,21 @@ const (
 	RateLimitUnitRequests RateLimitUnit = "Requests"
 )
 
-type AgentRateLimitDescriptor struct {
+type RateLimitDescriptor struct {
 	// entries are the individual components that make up this descriptor.
 	//
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
 	// +required
-	Entries []AgentRateLimitDescriptorEntry `json:"entries"`
+	Entries []RateLimitDescriptorEntry `json:"entries"`
 	// unit defines what to use as the cost function. If unspecified, Requests is used.
 	// +kubebuilder:validation:Enum=Requests;Tokens
 	// +optional
 	Unit *RateLimitUnit `json:"unit,omitempty"`
 }
 
-// AgentRateLimitDescriptorEntry defines a single entry in a rate limit descriptor.
-type AgentRateLimitDescriptorEntry struct {
+// A descriptor entry defines a single entry in a rate limit descriptor.
+type RateLimitDescriptorEntry struct {
 	// name specifies the name of the descriptor.
 	// +required
 	Name TinyString `json:"name"`
@@ -1050,10 +1050,10 @@ const (
 	LocalRateLimitUnitHours   LocalRateLimitUnit = "Hours"
 )
 
-// AgentLocalRateLimitPolicy represents a policy for local rate limiting.
-// It defines the configuration for rate limiting using a token bucket mechanism.
+// Policy for local rate limiting. Local rate limits are handled locally on a per-proxy basis, without co-ordination
+// between instances of the proxy.
 // +kubebuilder:validation:ExactlyOneOf=requests;tokens
-type AgentLocalRateLimitPolicy struct {
+type LocalRateLimit struct {
 	// requests specifies the number of HTTP requests per unit of time that are allowed. Requests exceeding this limit will fail with
 	// a 429 error.
 	// +kubebuilder:validation:Minimum=1
@@ -1081,12 +1081,12 @@ type AgentLocalRateLimitPolicy struct {
 	Burst *int32 `json:"burst,omitempty"`
 }
 
-type AgentCorsPolicy struct {
+type CORS struct {
 	// +kubebuilder:pruning:PreserveUnknownFields
 	*gwv1.HTTPCORSFilter `json:",inline"`
 }
 
-type AgentCSRFPolicy struct {
+type CSRF struct {
 	// additionalOrigin specifies additional source origins that will be allowed in addition to the destination origin. The
 	// `Origin` consists of a scheme and a host, with an optional port, and takes the form `<scheme>://<host>(:<port>)`.
 	//
@@ -1096,7 +1096,7 @@ type AgentCSRFPolicy struct {
 	AdditionalOrigins []ShortString `json:"additionalOrigins,omitempty"`
 }
 
-type AgentHostnameRewriteConfig struct {
+type HostnameRewrite struct {
 	// mode sets the hostname rewrite mode.
 	//
 	// The following may be specified:
@@ -1106,10 +1106,10 @@ type AgentHostnameRewriteConfig struct {
 	// This setting defaults to Auto when connecting to hostname-based Backend types, and None otherwise (for Service or
 	// IP-based Backends).
 	// +required
-	Mode AgentHostnameRewrite `json:"mode"`
+	Mode HostnameRewriteMode `json:"mode"`
 }
 
-type AgentTimeouts struct {
+type Timeouts struct {
 	// request specifies a timeout for an individual request from the gateway to a backend. This covers the time from when
 	// the request first starts being sent from the gateway to when the full response has been received from the backend.
 	//
@@ -1120,23 +1120,23 @@ type AgentTimeouts struct {
 }
 
 // Retry defines the retry policy
-type AgentRetry struct {
+type Retry struct {
 	*gwv1.HTTPRouteRetry `json:",inline"`
 }
 
 // accessLogs specifies how per-request access logs are emitted.
-type AgentAccessLog struct {
+type AccessLog struct {
 	// filter specifies a CEL expression that is used to filter logs. A log will only be emitted if the expression evaluates
 	// to 'true'.
 	// +optional
 	Filter *shared.CELExpression `json:"filter,omitempty"`
 	// attributes specifies customizations to the key-value pairs that are logged
 	// +optional
-	Attributes *AgentLogTracingFields `json:"attributes,omitempty"`
+	Attributes *LogTracingAttributes `json:"attributes,omitempty"`
 }
 
 // +kubebuilder:validation:AtLeastOneOf=remove;add
-type AgentLogTracingFields struct {
+type LogTracingAttributes struct {
 	// remove lists the default fields that should be removed. For example, "http.method".
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=32
@@ -1147,10 +1147,10 @@ type AgentLogTracingFields struct {
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:maxItems=64
 	// +optional
-	Add []AgentAttributeAdd `json:"add,omitempty"`
+	Add []AttributeAdd `json:"add,omitempty"`
 }
 
-type AgentAttributeAdd struct {
+type AttributeAdd struct {
 	// +required
 	Name ShortString `json:"name"`
 	// +required
@@ -1164,7 +1164,7 @@ const (
 	TracingProtocolGrpc TracingProtocol = "GRPC"
 )
 
-type AgentTracing struct {
+type Tracing struct {
 	// backendRef references the OTLP server to reach.
 	// Supported types: Service and Backend.
 	// +required
@@ -1177,7 +1177,7 @@ type AgentTracing struct {
 
 	// attributes specifies customizations to the key-value pairs that are included in the trace
 	// +optional
-	Attributes *AgentLogTracingFields `json:"attributes,omitempty"`
+	Attributes *LogTracingAttributes `json:"attributes,omitempty"`
 
 	// randomSampling is an expression to determine the amount of random sampling. Random sampling will initiate a new
 	// trace span if the incoming request does not have a trace initiated already. This should evaluate to a float between

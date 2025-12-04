@@ -34,7 +34,7 @@ const (
 func TranslateInlineBackendPolicy(
 	ctx PolicyCtx,
 	namespace string,
-	policy *agentgateway.AgentgatewayPolicyBackendFull,
+	policy *agentgateway.BackendFull,
 ) ([]*api.BackendPolicySpec, error) {
 	dummy := &agentgateway.AgentgatewayPolicy{
 		ObjectMeta: metav1.ObjectMeta{

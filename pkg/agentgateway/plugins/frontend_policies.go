@@ -93,7 +93,7 @@ func translateFrontendAccessLog(policy *agentgateway.AgentgatewayPolicy, name st
 	if a := logging.Attributes; a != nil {
 		f := &api.FrontendPolicySpec_Logging_Fields{
 			Remove: a.Remove,
-			Add: slices.Map(a.Add, func(e agentgateway.AgentAttributeAdd) *api.FrontendPolicySpec_Logging_Field {
+			Add: slices.Map(a.Add, func(e agentgateway.AttributeAdd) *api.FrontendPolicySpec_Logging_Field {
 				return &api.FrontendPolicySpec_Logging_Field{
 					Name:       e.Name,
 					Expression: string(e.Expression),

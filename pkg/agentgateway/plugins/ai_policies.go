@@ -192,8 +192,8 @@ func processModeration(ctx PolicyCtx, namespace string, moderation *agentgateway
 	pgModeration.Model = moderation.Model
 
 	if moderation.Policies != nil {
-		pol := &agentgateway.AgentgatewayPolicyBackendFull{
-			AgentgatewayPolicyBackendSimple: *moderation.Policies,
+		pol := &agentgateway.BackendFull{
+			BackendSimple: *moderation.Policies,
 		}
 		pols, err := TranslateInlineBackendPolicy(ctx, namespace, pol)
 		if err != nil {
