@@ -776,27 +776,27 @@ type BackendAI struct {
 
 // RouteType specifies how the AI gateway should process incoming requests
 // based on the URL path and the API format expected.
-// +kubebuilder:validation:Enum=completions;messages;models;passthrough;responses;anthropic_token_count
+// +kubebuilder:validation:Enum=Completions;Messages;Models;Passthrough;Responses;AnthropicTokenCount
 type RouteType string
 
 const (
 	// RouteTypeCompletions processes OpenAI /v1/chat/completions format requests
-	RouteTypeCompletions RouteType = "completions"
+	RouteTypeCompletions RouteType = "Completions"
 
 	// RouteTypeMessages processes Anthropic /v1/messages format requests
-	RouteTypeMessages RouteType = "messages"
+	RouteTypeMessages RouteType = "Messages"
 
 	// RouteTypeModels handles /v1/models endpoint (returns available models)
-	RouteTypeModels RouteType = "models"
+	RouteTypeModels RouteType = "Models"
 
 	// RouteTypePassthrough sends requests to upstream as-is without LLM processing
-	RouteTypePassthrough RouteType = "passthrough"
+	RouteTypePassthrough RouteType = "Passthrough"
 
 	// RouteTypeResponses processes OpenAI /v1/responses format requests
-	RouteTypeResponses RouteType = "responses"
+	RouteTypeResponses RouteType = "Responses"
 
 	// RouteTypeAnthropicTokenCount processes Anthropic /v1/messages/count_tokens format requests
-	RouteTypeAnthropicTokenCount RouteType = "anthropic_token_count" //nolint:gosec // G101: False positive - this is a route type name, not credentials
+	RouteTypeAnthropicTokenCount RouteType = "AnthropicTokenCount" //nolint:gosec // G101: False positive - this is a route type name, not credentials
 )
 
 // +kubebuilder:validation:AtLeastOneOf=authorization;authentication

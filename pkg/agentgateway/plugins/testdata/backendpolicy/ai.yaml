@@ -33,7 +33,7 @@ spec:
         request:
           - regex:
               builtins:
-                - CREDIT_CARD
+                - CreditCard
               matches:
                 - 'bad.*'
             response:
@@ -57,10 +57,10 @@ spec:
         "fast": "amazon.nova-micro-v1:0"
         "smart": "anthropic.claude-3-5-sonnet-20241022-v2:0"
       routes:
-        "/v1/chat/completions": "completions"
-        "/v1/embeddings": "passthrough"
-        "/v1/models": "passthrough"
-        "*": "passthrough"
+        "/v1/chat/completions": Completions
+        "/v1/embeddings": Passthrough
+        "/v1/models": Passthrough
+        "*": Passthrough
 ---
 apiVersion: v1
 kind: Service

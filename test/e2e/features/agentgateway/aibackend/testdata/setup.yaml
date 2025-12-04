@@ -117,7 +117,7 @@ spec:
         - regex:
             action: REJECT
             builtins:
-              - SSN
+              - Ssn
 ---
 apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy

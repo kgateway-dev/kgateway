@@ -135,14 +135,24 @@ func processWebhook(ctx PolicyCtx, namespace string, webhook *agentgateway.Webho
 }
 
 func processBuiltinRegexRule(builtin agentgateway.BuiltIn, logger *slog.Logger) *api.BackendPolicySpec_Ai_RegexRule {
-	builtinValue, ok := api.BackendPolicySpec_Ai_BuiltinRegexRule_value[string(builtin)]
-	if !ok {
+	v := api.BackendPolicySpec_Ai_BUILTIN_UNSPECIFIED
+	switch builtin {
+	case agentgateway.SSN:
+		v = api.BackendPolicySpec_Ai_SSN
+	case agentgateway.CREDIT_CARD:
+		v = api.BackendPolicySpec_Ai_CREDIT_CARD
+
+	case agentgateway.PHONE_NUMBER:
+		v = api.BackendPolicySpec_Ai_PHONE_NUMBER
+
+	case agentgateway.EMAIL:
+		v = api.BackendPolicySpec_Ai_EMAIL
+	default:
 		logger.Warn("unknown builtin regex rule", "builtin", builtin)
-		builtinValue = int32(api.BackendPolicySpec_Ai_BUILTIN_UNSPECIFIED)
 	}
 	return &api.BackendPolicySpec_Ai_RegexRule{
 		Kind: &api.BackendPolicySpec_Ai_RegexRule_Builtin{
-			Builtin: api.BackendPolicySpec_Ai_BuiltinRegexRule(builtinValue),
+			Builtin: v,
 		},
 	}
 }
