@@ -35,3 +35,4 @@ spec:
       - path:
           type: PathPrefix
           value: /path2
+

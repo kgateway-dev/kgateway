@@ -94,7 +94,7 @@ func (s *testingSuite) TestConfigureHTTPRouteBackingDestinationsWithServiceAndWi
 		s.TestInstallation.Assertions.EventuallyObjectsNotExist(s.Ctx, proxyService, proxyDeployment)
 
 		// Restore the TCPRoute CRD using the saved content
-		err = s.TestInstallation.Actions.Kubectl().Apply(s.Ctx, []byte(tcpRouteCrdYaml))
+		err = s.TestInstallation.Actions.Kubectl().Create(s.Ctx, []byte(tcpRouteCrdYaml))
 		s.NoError(err, "can apply TCPRoute CRD")
 		s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx, &wellknown.TCPRouteCRD)
 	})

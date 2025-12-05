@@ -109,7 +109,16 @@ func (c *Cli) Namespaces(ctx context.Context) ([]string, error) {
 
 // Apply applies the resources defined in the bytes, and returns an error if one occurred
 func (c *Cli) Apply(ctx context.Context, content []byte, extraArgs ...string) error {
-	args := append([]string{"apply", "-f", "-"}, extraArgs...)
+	args := append([]string{"apply", "-f", "-", "--server-side", "--field-manager=istio-ci", "--force-conflicts"}, extraArgs...)
+	return c.Command(ctx, args...).
+		WithStdin(bytes.NewBuffer(content)).
+		Run().
+		Cause()
+}
+
+// Create creates the resources defined in the bytes, and returns an error if one occurred
+func (c *Cli) Create(ctx context.Context, content []byte, extraArgs ...string) error {
+	args := append([]string{"create", "-f", "-"}, extraArgs...)
 	return c.Command(ctx, args...).
 		WithStdin(bytes.NewBuffer(content)).
 		Run().
@@ -134,7 +143,7 @@ func (c *Cli) ApplyFilePath(ctx context.Context, filePath string, extraArgs ...s
 		return err
 	}
 
-	args := append([]string{"apply", "-f", filePath}, extraArgs...)
+	args := append([]string{"apply", "-f", filePath, "--server-side", "--field-manager=istio-ci", "--force-conflicts"}, extraArgs...)
 	return c.Command(ctx, args...).
 		Run().
 		Cause()
@@ -143,7 +152,7 @@ func (c *Cli) ApplyFilePath(ctx context.Context, filePath string, extraArgs ...s
 // ApplyFileWithOutput applies the resources defined in a file,
 // if an error occurred, it will be returned along with the output of the command
 func (c *Cli) ApplyFileWithOutput(ctx context.Context, fileName string, extraArgs ...string) (string, error) {
-	applyArgs := append([]string{"apply", "-f", fileName}, extraArgs...)
+	applyArgs := append([]string{"apply", "-f", fileName, "--server-side", "--field-manager=istio-ci", "--force-conflicts"}, extraArgs...)
 
 	fileInput, err := os.Open(fileName)
 	if err != nil {

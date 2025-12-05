@@ -23,6 +23,28 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 )
 
+// EventuallyGatewayAddress asserts that eventually at least one of the HTTPRoute's route parent statuses contains
+// the given message substring.
+func (p *Provider) EventuallyGatewayAddress(
+	ctx context.Context,
+	gatewayName string,
+	gatewayNamespace string,
+	timeout ...time.Duration,
+) string {
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
+	var addr string
+	p.Gomega.Eventually(func(g gomega.Gomega) {
+		gw := &gwv1.Gateway{}
+		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: gatewayName, Namespace: gatewayNamespace}, gw)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "can get gateway")
+		if len(gw.Status.Addresses) == 0 {
+			g.Expect(true).To(gomega.BeFalse(), "gateway is not ready")
+		}
+		addr = gw.Status.Addresses[0].Value
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+	return addr
+}
+
 // EventuallyHTTPRouteStatusContainsMessage asserts that eventually at least one of the HTTPRoute's route parent statuses contains
 // the given message substring.
 func (p *Provider) EventuallyHTTPRouteStatusContainsMessage(
@@ -30,7 +52,8 @@ func (p *Provider) EventuallyHTTPRouteStatusContainsMessage(
 	routeName string,
 	routeNamespace string,
 	message string,
-	timeout ...time.Duration) {
+	timeout ...time.Duration,
+) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
 	p.Gomega.Eventually(func(g gomega.Gomega) {
 		matcher := matchers.HaveKubeGatewayRouteStatus(&matchers.KubeGatewayRouteStatus{

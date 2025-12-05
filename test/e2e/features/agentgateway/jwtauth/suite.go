@@ -12,10 +12,9 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
-	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 )
@@ -28,7 +27,8 @@ import (
 var _ e2e.NewSuiteFunc = NewTestingSuite
 
 const (
-	namespace = "default"
+	// test namespace for proxy resources
+	namespace = "agentgateway-base"
 	// jwt subject is "ignore@kgateway.dev"
 	jwt1 = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjUzMzM3ODA2ODc1NTEwMzg2NTkiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2tnYXRld2F5LmRldiIsInN1YiI6Imlnbm9yZUBrZ2F0ZXdheS5kZXYiLCJleHAiOjIwNzA3MjY3MjgsIm5iZiI6MTc2MzE0MjcyOCwiaWF0IjoxNzYzMTQyNzI4fQ.q88gLzLe6VzRnI0VC4luX7OebX3LW6OLTOOwscGofccnipqfVAi2onHNZt08St5QZ6sTm7kaIc2jLGcr2mey9TjXS5pWiV6wgIN4vZp96-G_2GXcOdTZwWvBQzhnDRLyEKQV-3tU2LTIN_9f5TgQTgZHzXtdhP4Pa3fOSzlM_Rc0ly0sRxkI0JV6WbvhW4OZT6ZT8jbaU5iTRDIf0p1R7mJS6H9g6JMYBf_7LibhiUIosHJCJFgYMEh51JvvEHSBcJrE_Snt37QPznMuK_krtHDszeJvKNs76bSioK6MBdMn7T2GXqkCxy4I46fP4hv6kehQ5abJhXHE8Lwu5NejKg"
 	jwt2 = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjcxMDU3OTM5NTUwODY5Mzk2NjQiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2tnYXRld2F5LmRldiIsInN1YiI6Imlnbm9yZUBrZ2F0ZXdheS5kZXYiLCJleHAiOjIwNzA3MjY5NTUsIm5iZiI6MTc2MzE0Mjk1NSwiaWF0IjoxNzYzMTQyOTU1fQ.HmBlsqTSC-ZW1L_pnCB_ix7zorIiyg3X_mD8DiPSaZoKHVCJ-sjmUzffxUzINs4_kzglMWYvOeVsHg1YCASn0_9gBVQ5UvZo1lDZSachuqUGReJ4Bneovjdh18T0FjMJFMy-1K8Bp1RMGlSe4EgBj1lJEA-9h-mFXJv9kC_udD8UJtk-BwJbO9OoUFAbuvaWDdMblVFGKuFSVtZthvyMfFsvgjdkuKBYjeyi9ha1cpWxdV3IOdLjOigdqVkHh9s1Agyki1aVMuleqZUlkOgxaaxzHRjxcIMt7MBB0vQZ9pmItiHMBAyc6u9j4WzaKzgZ58zant48T9vqgci6rcnLBQ"
@@ -39,15 +39,7 @@ const (
 )
 
 var (
-	proxyObjectMeta = metav1.ObjectMeta{Name: "super-gateway", Namespace: namespace}
-
-	setup = base.TestCase{
-		Manifests: []string{
-			getTestFile("common.yaml"),
-			getTestFile("service.yaml"),
-			testdefaults.CurlPodManifest,
-		},
-	}
+	setup = base.TestCase{}
 
 	testCases = map[string]*base.TestCase{
 		"TestRoutePolicy": {
@@ -89,11 +81,10 @@ var (
 )
 
 func (s *testingSuite) TestRoutePolicy() {
-	s.waitForGatewayReady()
 	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"route-example-insecure",
-		"default",
+		namespace,
 		gwv1.RouteConditionAccepted,
 		metav1.ConditionTrue,
 	)
@@ -103,7 +94,7 @@ func (s *testingSuite) TestRoutePolicy() {
 	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"route-secure",
-		"default",
+		namespace,
 		gwv1.RouteConditionAccepted,
 		metav1.ConditionTrue,
 	)
@@ -118,11 +109,10 @@ func (s *testingSuite) TestRoutePolicy() {
 }
 
 func (s *testingSuite) TestRoutePolicyWithRbac() {
-	s.waitForGatewayReady()
 	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"route-secure",
-		"default",
+		namespace,
 		gwv1.RouteConditionAccepted,
 		metav1.ConditionTrue,
 	)
@@ -133,11 +123,10 @@ func (s *testingSuite) TestRoutePolicyWithRbac() {
 }
 
 func (s *testingSuite) TestGatewayPolicy() {
-	s.waitForGatewayReady()
 	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"route-secure-gw",
-		"default",
+		namespace,
 		gwv1.RouteConditionAccepted,
 		metav1.ConditionTrue,
 	)
@@ -152,11 +141,10 @@ func (s *testingSuite) TestGatewayPolicy() {
 }
 
 func (s *testingSuite) TestGatewayPolicyWithRbac() {
-	s.waitForGatewayReady()
 	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"route-secure-gw",
-		"default",
+		namespace,
 		gwv1.RouteConditionAccepted,
 		metav1.ConditionTrue,
 	)
@@ -167,45 +155,19 @@ func (s *testingSuite) TestGatewayPolicyWithRbac() {
 }
 
 func (s *testingSuite) assertResponse(hostHeader, authHeader string, expectedStatus int) {
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-			curl.WithHostHeader(hostHeader),
-			curl.WithHeader("Authorization", "Bearer "+authHeader),
-			curl.WithPort(8080),
-		},
-		&testmatchers.HttpResponse{
-			StatusCode: expectedStatus,
-		})
+	common.BaseGateway.Send(
+		s.T(),
+		&testmatchers.HttpResponse{StatusCode: expectedStatus},
+		curl.WithHostHeader(hostHeader),
+		curl.WithHeader("Authorization", "Bearer "+authHeader),
+	)
 }
 
 func (s *testingSuite) assertResponseWithoutAuth(hostHeader string, expectedStatus int) {
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-			curl.WithHostHeader(hostHeader),
-			curl.WithPort(8080),
-		},
-		&testmatchers.HttpResponse{
-			StatusCode: expectedStatus,
-		})
-}
-
-// waitForGatewayReady waits for the gateway to be fully ready before making HTTP requests.
-// This prevents flakes where requests fail with "Connection refused" because the gateway
-// isn't ready yet.
-func (s *testingSuite) waitForGatewayReady() {
-	// Wait for Gateway to be Programmed (not just Accepted)
-	s.TestInstallation.Assertions.EventuallyGatewayCondition(
-		s.Ctx,
-		proxyObjectMeta.Name,
-		proxyObjectMeta.Namespace,
-		gwv1.GatewayConditionProgrammed,
-		metav1.ConditionTrue,
+	common.BaseGateway.Send(
+		s.T(),
+		&testmatchers.HttpResponse{StatusCode: expectedStatus},
+		curl.WithHostHeader(hostHeader),
 	)
 }
 

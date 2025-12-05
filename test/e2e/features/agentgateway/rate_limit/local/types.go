@@ -5,8 +5,6 @@ package local
 import (
 	"path/filepath"
 
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -14,10 +12,12 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 )
 
+const (
+	namespace = "agentgateway-base"
+)
+
 var (
 	// manifests
-	simpleServiceManifest = getTestFile("service.yaml")
-	agwCommonManifest     = getTestFile("common.yaml")
 	// local rate limit traffic policies
 	routeLocalRateLimitManifest         = getTestFile("route-local-rate-limit.yaml")
 	gwLocalRateLimitManifest            = getTestFile("gw-local-rate-limit.yaml")
@@ -25,59 +25,30 @@ var (
 	httpRoutesManifest                  = getTestFile("httproutes.yaml")
 	extensionRefManifest                = getTestFile("extensionref-rl.yaml")
 
-	// objects from gateway manifest
-	gateway = &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "super-gateway",
-			Namespace: "default",
-		},
-	}
 	route = &gwv1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "svc-route",
-			Namespace: "default",
+			Namespace: namespace,
 		},
 	}
 	route2 = &gwv1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "svc-route-2",
-			Namespace: "default",
-		},
-	}
-	// objects created by deployer after applying gateway manifest
-	proxyObjectMeta = metav1.ObjectMeta{
-		Name:      "super-gateway",
-		Namespace: "default",
-	}
-	proxyDeployment     = &appsv1.Deployment{ObjectMeta: proxyObjectMeta}
-	proxyService        = &corev1.Service{ObjectMeta: proxyObjectMeta}
-	proxyServiceAccount = &corev1.ServiceAccount{ObjectMeta: proxyObjectMeta}
-
-	// objects from service manifest
-	simpleSvc = &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "simple-svc",
-			Namespace: "default",
-		},
-	}
-	simpleDeployment = &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "backend-0",
-			Namespace: "default",
+			Namespace: namespace,
 		},
 	}
 
 	routeRateLimitTrafficPolicy = &agentgateway.AgentgatewayPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "route-rl-policy",
-			Namespace: "default",
+			Namespace: namespace,
 		},
 	}
 
 	gwRateLimitTrafficPolicy = &agentgateway.AgentgatewayPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "gw-rl-policy",
-			Namespace: "default",
+			Namespace: namespace,
 		},
 	}
 )

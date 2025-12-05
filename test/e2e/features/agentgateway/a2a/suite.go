@@ -12,7 +12,6 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
-	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 )
 
@@ -27,7 +26,7 @@ func (s *testingSuite) TestA2AAgentCard() {
 	s.waitA2AEnvironmentReady()
 
 	headers := a2aHeaders()
-	out, err := s.execCurlA2A(8080, "/agent-card", headers, "", "--max-time", "5")
+	out, err := s.execCurlA2A("/agent-card", headers, "")
 	s.Require().NoError(err, "agent card curl failed")
 
 	// Without -v, output is just the JSON response
@@ -49,7 +48,7 @@ func (s *testingSuite) TestA2AMessageSend() {
 	request := buildMessageSendRequest("hello", "test-123")
 	headers := a2aHeaders()
 
-	out, err := s.execCurlA2A(8080, "/", headers, request, "--max-time", "10")
+	out, err := s.execCurlA2A("/", headers, request)
 	s.Require().NoError(err, "tasks/send curl failed")
 
 	var resp A2ATaskResponse
@@ -82,7 +81,7 @@ func (s *testingSuite) TestA2AHelloWorld() {
 	request := buildMessageSendRequest("hello world", "test-hello")
 	headers := a2aHeaders()
 
-	out, err := s.execCurlA2A(8080, "/", headers, request, "--max-time", "10")
+	out, err := s.execCurlA2A("/", headers, request)
 	s.Require().NoError(err, "hello world curl failed")
 
 	var resp A2ATaskResponse
@@ -110,23 +109,19 @@ func (s *testingSuite) TestA2AHelloWorld() {
 
 func (s *testingSuite) waitA2AEnvironmentReady() {
 	s.TestInstallation.Assertions.EventuallyPodsRunning(
-		s.Ctx, gatewayNamespace,
+		s.Ctx, namespace,
 		metav1.ListOptions{LabelSelector: "app=a2a-helloworld"},
 	)
-	s.TestInstallation.Assertions.EventuallyPodsRunning(
-		s.Ctx, curlPodNamespace,
-		metav1.ListOptions{LabelSelector: defaults.WellKnownAppLabel + "=curl"},
-	)
 	s.TestInstallation.Assertions.EventuallyGatewayCondition(
-		s.Ctx, gatewayName, gatewayNamespace,
+		s.Ctx, gatewayName, namespace,
 		gwv1.GatewayConditionProgrammed, metav1.ConditionTrue,
 	)
 	s.TestInstallation.Assertions.EventuallyPodsRunning(
-		s.Ctx, gatewayNamespace,
-		metav1.ListOptions{LabelSelector: defaults.WellKnownAppLabel + "=" + gatewayName},
+		s.Ctx, namespace,
+		metav1.ListOptions{LabelSelector: "app.kubernetes.io/name=" + gatewayName},
 	)
 	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
-		s.Ctx, "a2a-route", gatewayNamespace,
+		s.Ctx, "a2a-route", namespace,
 		gwv1.RouteConditionAccepted, metav1.ConditionTrue,
 	)
 }

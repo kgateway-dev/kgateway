@@ -11,10 +11,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
-	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 )
@@ -30,9 +29,6 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	// Define the setup TestCase for common resources
 	setupTestCase := base.TestCase{
 		Manifests: []string{
-			defaults.CurlPodManifest,
-			simpleServiceManifest,
-			gatewayManifest,
 			transformForHeadersManifest,
 			transformForBodyManifest,
 			gatewayAttachedTransformManifest,
@@ -136,14 +132,13 @@ func (s *testingSuite) TestGatewayWithTransformedRoute() {
 		},
 	}
 	for _, tc := range testCases {
-		s.TestInstallation.Assertions.AssertEventualCurlResponse(
-			s.Ctx,
-			defaults.CurlPodExecOpt,
-			append(tc.opts,
-				curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
-				curl.WithHostHeader(fmt.Sprintf("example-%s.com", tc.routeName)),
-				curl.WithPort(8080),
-			),
-			tc.resp)
+		allOpts := append(tc.opts,
+			curl.WithHostHeader(fmt.Sprintf("example-%s.com", tc.routeName)),
+		)
+		common.BaseGateway.Send(
+			s.T(),
+			tc.resp,
+			allOpts...,
+		)
 	}
 }

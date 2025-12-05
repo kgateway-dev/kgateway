@@ -2,11 +2,12 @@ apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: csrf-gw-policy
+  namespace: agentgateway-base
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: Gateway
-    name: gw
+    name: gateway
   traffic:
     csrf:
       additionalOrigins:
