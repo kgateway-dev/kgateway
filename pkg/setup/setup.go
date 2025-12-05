@@ -53,7 +53,7 @@ type Options struct {
 
 	CommonCollectionsOptions  []collections.Option
 	StatusSyncerOptions       []proxy_syncer.StatusSyncerOption
-	AgentGatewaySyncerOptions []agentgatewaysyncer.AgentGatewaySyncerOption
+	AgentGatewaySyncerOptions []agentgatewaysyncer.AgentgatewaySyncerOption
 }
 
 func New(opts Options) (setup.Server, error) {
@@ -80,6 +80,6 @@ func New(opts Options) (setup.Server, error) {
 		setup.WithExtraAgwPolicyStatusHandlers(opts.ExtraAgwPolicyStatusHandlers),
 		setup.WithCommonCollectionsOptions(opts.CommonCollectionsOptions),
 		setup.WithStatusSyncerOptions(opts.StatusSyncerOptions),
-		setup.WithAgentGatewaySyncerOptions(opts.AgentGatewaySyncerOptions),
+		setup.WithAgentgatewaySyncerOptions(opts.AgentGatewaySyncerOptions),
 	)
 }

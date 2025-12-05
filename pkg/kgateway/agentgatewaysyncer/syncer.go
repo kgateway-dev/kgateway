@@ -81,9 +81,9 @@ func NewAgwSyncer(
 	additionalGatewayClasses map[string]*deployer.GatewayClassInfo,
 	krtopts krtutil.KrtOptions,
 	extraGVKs []schema.GroupVersionKind,
-	opts ...AgentGatewaySyncerOption,
+	opts ...AgentgatewaySyncerOption,
 ) *Syncer {
-	cfg := processAgentGatewaySyncerOptions(opts...)
+	cfg := processAgentgatewaySyncerOptions(opts...)
 	syncer := &Syncer{
 		agwCollections:           agwCollections,
 		controllerName:           controllerName,

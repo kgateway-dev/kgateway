@@ -6,9 +6,9 @@ type agentGatewaySyncerConfig struct {
 	GatewayTransformationFunc translator.GatewaysTransformationFunction
 }
 
-type AgentGatewaySyncerOption func(*agentGatewaySyncerConfig)
+type AgentgatewaySyncerOption func(*agentGatewaySyncerConfig)
 
-func processAgentGatewaySyncerOptions(opts ...AgentGatewaySyncerOption) *agentGatewaySyncerConfig {
+func processAgentgatewaySyncerOptions(opts ...AgentgatewaySyncerOption) *agentGatewaySyncerConfig {
 	cfg := &agentGatewaySyncerConfig{}
 	for _, fn := range opts {
 		fn(cfg)
@@ -16,7 +16,7 @@ func processAgentGatewaySyncerOptions(opts ...AgentGatewaySyncerOption) *agentGa
 	return cfg
 }
 
-func WithGatewayForDeployerTransformationFunc(f translator.GatewaysTransformationFunction) AgentGatewaySyncerOption {
+func WithGatewayForDeployerTransformationFunc(f translator.GatewaysTransformationFunction) AgentgatewaySyncerOption {
 	return func(o *agentGatewaySyncerConfig) {
 		o.GatewayTransformationFunc = f
 	}

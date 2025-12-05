@@ -207,9 +207,9 @@ func WithStatusSyncerOptions(statusSyncerOptions []proxy_syncer.StatusSyncerOpti
 	}
 }
 
-func WithAgentGatewaySyncerOptions(agentGatewaySyncerOptions []agentgatewaysyncer.AgentGatewaySyncerOption) func(*setup) {
+func WithAgentgatewaySyncerOptions(agentgatewaySyncerOptions []agentgatewaysyncer.AgentgatewaySyncerOption) func(*setup) {
 	return func(s *setup) {
-		s.agentGatewaySyncerOptions = agentGatewaySyncerOptions
+		s.agentGatewaySyncerOptions = agentgatewaySyncerOptions
 	}
 }
 
@@ -243,7 +243,7 @@ type setup struct {
 
 	commonCollectionsOptions  []collections.Option
 	statusSyncerOptions       []proxy_syncer.StatusSyncerOption
-	agentGatewaySyncerOptions []agentgatewaysyncer.AgentGatewaySyncerOption
+	agentGatewaySyncerOptions []agentgatewaysyncer.AgentgatewaySyncerOption
 }
 
 var _ Server = &setup{}
@@ -500,7 +500,7 @@ func (s *setup) buildKgatewayWithConfig(
 		ExtraAgwPolicyStatusHandlers: s.extraAgwPolicyStatusHandlers,
 		GatewayControllerExtension:   s.gatewayControllerExtension,
 		StatusSyncerOptions:          s.statusSyncerOptions,
-		AgentGatewaySyncerOptions:    s.agentGatewaySyncerOptions,
+		AgentgatewaySyncerOptions:    s.agentGatewaySyncerOptions,
 	})
 	if err != nil {
 		slog.Error("failed initializing controller: ", "error", err)
