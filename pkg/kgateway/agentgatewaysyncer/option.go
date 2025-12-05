@@ -3,7 +3,7 @@ package agentgatewaysyncer
 import "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
 
 type agentgatewaySyncerConfig struct {
-	GatewayTransformationFunc translator.GatewaysTransformationFunction
+	GatewayTransformationFunc translator.GatewayTransformationFunction
 }
 
 type AgentgatewaySyncerOption func(*agentgatewaySyncerConfig)
@@ -16,7 +16,7 @@ func processAgentgatewaySyncerOptions(opts ...AgentgatewaySyncerOption) *agentga
 	return cfg
 }
 
-func WithGatewayTransformationFunc(f translator.GatewaysTransformationFunction) AgentgatewaySyncerOption {
+func WithGatewayTransformationFunc(f translator.GatewayTransformationFunction) AgentgatewaySyncerOption {
 	return func(o *agentgatewaySyncerConfig) {
 		o.GatewayTransformationFunc = f
 	}

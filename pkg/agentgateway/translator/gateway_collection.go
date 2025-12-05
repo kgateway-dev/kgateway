@@ -194,11 +194,11 @@ func (g ParentInfo) Equals(other ParentInfo) bool {
 		slices.Equal(g.Hostnames, other.Hostnames)
 }
 
-type GatewaysTransformationFunction func(GatewayCollectionConfig) func(ctx krt.HandlerContext, obj *gwv1.Gateway) (*gwv1.GatewayStatus, []*GatewayListener)
+type GatewayTransformationFunction func(GatewayCollectionConfig) func(ctx krt.HandlerContext, obj *gwv1.Gateway) (*gwv1.GatewayStatus, []*GatewayListener)
 
 type GatewayCollectionConfigOption func(o *GatewayCollectionConfig)
 
-func WithGatewayTransformationFunc(f GatewaysTransformationFunction) GatewayCollectionConfigOption {
+func WithGatewayTransformationFunc(f GatewayTransformationFunction) GatewayCollectionConfigOption {
 	return func(o *GatewayCollectionConfig) {
 		o.transformationFunc = f
 	}
@@ -216,7 +216,7 @@ type GatewayCollectionConfig struct {
 	KrtOpts        krtutil.KrtOptions
 
 	listenerIndex      krt.Index[types.NamespacedName, ListenerSet]
-	transformationFunc GatewaysTransformationFunction
+	transformationFunc GatewayTransformationFunction
 }
 
 // GatewayCollection returns a collection of the internal representations GatewayListeners for the given gateway.
