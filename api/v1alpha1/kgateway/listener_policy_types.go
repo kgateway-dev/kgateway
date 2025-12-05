@@ -63,8 +63,6 @@ type ListenerPolicySpec struct {
 	// configuration completely replaces the default configuration for all listeners handling traffic
 	// that match this port. Unspecified fields in per-port configuration will not inherit values from default.
 	//
-	// support: Core
-	//
 	// +optional
 	// +listType=map
 	// +listMapKey=port
@@ -78,8 +76,6 @@ type ListenerPortConfig struct {
 	// applied. This configuration will be applied to all Listeners handling
 	// traffic that match this port.
 	//
-	// Support: Core
-	//
 	// +required
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=65535
@@ -87,8 +83,6 @@ type ListenerPortConfig struct {
 
 	// Listener stores the configuration that will be applied to all Listeners handling
 	// matching the given port.
-	//
-	// Support: Core
 	//
 	// +required
 	Listener ListenerConfig `json:"listener"`

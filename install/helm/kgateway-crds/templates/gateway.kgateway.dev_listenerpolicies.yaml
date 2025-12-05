@@ -86,16 +86,12 @@ spec:
                   Per port configuration allows overriding the listener config per port. Once set, this
                   configuration completely replaces the default configuration for all listeners handling traffic
                   that match this port. Unspecified fields in per-port configuration will not inherit values from default.
-
-                  support: Core
                 items:
                   properties:
                     listener:
                       description: |-
                         Listener stores the configuration that will be applied to all Listeners handling
                         matching the given port.
-
-                        Support: Core
                       properties:
                         perConnectionBufferLimitBytes:
                           description: |-
@@ -121,8 +117,6 @@ spec:
                         The Port indicates the Port Number to which the Listener configuration will be
                         applied. This configuration will be applied to all Listeners handling
                         traffic that match this port.
-
-                        Support: Core
                       format: int32
                       maximum: 65535
                       minimum: 1
