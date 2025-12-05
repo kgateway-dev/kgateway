@@ -60,23 +60,23 @@ type Message struct {
 }
 
 // BuiltIn regex patterns for specific types of strings in prompts.
-// For example, if you specify `CREDIT_CARD`, any credit card numbers
+// For example, if you specify `CreditCard`, any credit card numbers
 // in the request or response are matched.
-// +kubebuilder:validation:Enum=SSN;CREDIT_CARD;PHONE_NUMBER;EMAIL
+// +kubebuilder:validation:Enum=Ssn;CreditCard;PhoneNumber;Email
 type BuiltIn string
 
 const (
 	// Default regex matching for Social Security numbers.
-	SSN BuiltIn = "SSN"
+	SSN BuiltIn = "Ssn"
 
 	// Default regex matching for credit card numbers.
-	CREDIT_CARD BuiltIn = "CREDIT_CARD"
+	CREDIT_CARD BuiltIn = "CreditCard"
 
 	// Default regex matching for phone numbers.
-	PHONE_NUMBER BuiltIn = "PHONE_NUMBER"
+	PHONE_NUMBER BuiltIn = "PhoneNumber"
 
 	// Default regex matching for email addresses.
-	EMAIL BuiltIn = "EMAIL"
+	EMAIL BuiltIn = "Email"
 )
 
 // Action to take if a regex pattern is matched in a request or response.

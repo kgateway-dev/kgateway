@@ -40,7 +40,7 @@ func NewCommonCols(t test.Failer, initObjs ...client.Object) *collections.Common
 
 	gatewayIndexConfig := krtcollections.GatewayIndexConfig{
 		KrtOpts:             krtopts,
-		ControllerNames:     smallset.New(wellknown.DefaultGatewayControllerName),
+		ControllerNames:     smallset.New(wellknown.DefaultGatewayControllerName, wellknown.DefaultAgwControllerName),
 		EnvoyControllerName: wellknown.DefaultGatewayControllerName,
 		PolicyIndex:         policies,
 		Gateways:            kubeRawGateways,
@@ -50,7 +50,9 @@ func NewCommonCols(t test.Failer, initObjs ...client.Object) *collections.Common
 	}
 	gateways := krtcollections.NewGatewayIndex(gatewayIndexConfig)
 	commonCols := &collections.CommonCollections{
-		GatewayIndex: gateways,
+		GatewayIndex:               gateways,
+		ControllerName:             wellknown.DefaultGatewayControllerName,
+		AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
 	}
 
 	for !kubeRawGateways.HasSynced() || !kubeRawListenerSets.HasSynced() || !gatewayClasses.HasSynced() {

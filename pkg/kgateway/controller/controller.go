@@ -36,6 +36,10 @@ type GatewayConfig struct {
 	// AgwControllerName is the name of the agentgateway controller. Any GatewayClass objects
 	// managed by this controller must have this name as their ControllerName.
 	AgwControllerName string
+	// EnableEnvoy indicates if the Envoy controller is enabled
+	EnableEnvoy bool
+	// EnableAgentgateway indicates if the agentgateway controller is enabled
+	EnableAgentgateway bool
 	// ControlPlane sets the default control plane information the deployer will use.
 	ControlPlane deployer.ControlPlaneInfo
 	// IstioAutoMtlsEnabled enables istio auto mtls mode for the controller,

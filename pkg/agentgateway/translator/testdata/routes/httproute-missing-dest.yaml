@@ -31,10 +31,6 @@ output:
         kind: HTTPRoute
         name: missing-dest
         namespace: default
-      trafficPolicies:
-      - directResponse:
-          body: QmFja2VuZCBzZXJ2aWNlIHVuYXZhaWxhYmxl
-          status: 500
 status:
 - apiVersion: gateway.networking.k8s.io/v1
   kind: HTTPRoute

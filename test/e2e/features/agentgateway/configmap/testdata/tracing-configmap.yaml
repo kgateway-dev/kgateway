@@ -5,7 +5,6 @@ metadata:
 spec:
   kube:
     agentgateway:
-      enabled: true
       logLevel: debug
       customConfigMapName: agent-gateway-config
 ---

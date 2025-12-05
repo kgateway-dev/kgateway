@@ -110,5 +110,4 @@ metadata:
 spec:
   kube:
     agentgateway:
-      enabled: true
       logLevel: debug

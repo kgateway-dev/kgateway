@@ -218,13 +218,9 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	s.translator.Init(ctx)
 
 	s.mostXdsSnapshots = krt.NewCollection(s.commonCols.GatewayIndex.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *GatewayXdsResources {
-		// skip agentgateway proxies as they are not envoy-based gateways
-		// TODO(npolshak): use the agentgateway controller name here
-		if string(gw.Obj.Spec.GatewayClassName) == s.agentgatewayClassName {
-			logger.Debug("skipping envoy proxy sync for agentgateway %s.%s", gw.Obj.Name, gw.Obj.Namespace)
-			return nil
-		}
-
+		// Note: s.commonCols.GatewayIndex.Gateways is already filtered to only include Gateways
+		// with controllerName matching s.controllerName (envoy controller). The filtering happens
+		// in GatewaysForEnvoyTransformationFunc in pkg/krtcollections/policy.go
 		logger.Debug("building proxy for kube gw", "name", client.ObjectKeyFromObject(gw.Obj), "version", gw.Obj.GetResourceVersion())
 
 		xdsSnap, rm := s.translator.TranslateGateway(kctx, ctx, gw)
