@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/onsi/gomega"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -67,46 +69,6 @@ const gatewayNamespace = "default"
 var proxyObjectMeta = metav1.ObjectMeta{
 	Name:      "gw",
 	Namespace: gatewayNamespace,
-}
-
-// verifyPodLabel checks that a pod for the given deployment has the specified label with the expected value.
-func verifyPodLabel(
-	t *testing.T,
-	ctx context.Context,
-	testInstallation *e2e.TestInstallation,
-	labelKey string,
-	expectedValue string,
-	errorContext string,
-) {
-	pods, err := kubeutils.GetReadyPodsForDeployment(ctx, testInstallation.ClusterContext.Clientset, proxyObjectMeta)
-	if err != nil {
-		t.Fatalf("failed to get ready pods for deployment %s: %v", errorContext, err)
-	}
-	if len(pods) == 0 {
-		t.Fatalf("no ready pods found for deployment %s", errorContext)
-	}
-
-	pod := &corev1.Pod{}
-	err = testInstallation.ClusterContext.Client.Get(ctx, client.ObjectKey{
-		Namespace: gatewayNamespace,
-		Name:      pods[0],
-	}, pod)
-	if err != nil {
-		t.Fatalf("failed to get pod %s: %v", errorContext, err)
-	}
-
-	if pod.Labels == nil {
-		t.Fatalf("pod labels are nil %s", errorContext)
-	}
-
-	labelValue, ok := pod.Labels[labelKey]
-	if !ok {
-		t.Fatalf("pod does not have '%s' label %s", labelKey, errorContext)
-	}
-
-	if labelValue != expectedValue {
-		t.Fatalf("expected pod label '%s' to be '%s' %s, got '%s'", labelKey, expectedValue, errorContext, labelValue)
-	}
 }
 
 // TestCustomGWP tests that the helm chart's gatewayClassParametersRefs configures
@@ -219,19 +181,16 @@ func TestCustomGWP(t *testing.T) {
 	testInstallation.Assertions.EventuallyKgatewayInstallSucceeded(ctx)
 
 	// Verify GatewayClass is updated with new ref
-	testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+	r := require.New(t)
+	r.EventuallyWithT(func(c *assert.CollectT) {
 		gcUpdated := &gwv1.GatewayClass{}
 		err := testInstallation.ClusterContext.Client.Get(ctx, client.ObjectKey{Name: "kgateway"}, gcUpdated)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get GatewayClass after upgrade")
-		g.Expect(gcUpdated.Spec.ParametersRef).NotTo(gomega.BeNil(), "GatewayClass spec.parametersRef is nil after upgrade")
-		g.Expect(gcUpdated.Spec.ParametersRef.Name).To(gomega.Equal("custom-gwp-2"), "expected GatewayClass parametersRef.name to be 'custom-gwp-2' after upgrade")
-		g.Expect(gcUpdated.Spec.ParametersRef.Namespace).NotTo(gomega.BeNil(), "GatewayClass spec.parametersRef.namespace is nil after upgrade")
-		g.Expect(*gcUpdated.Spec.ParametersRef.Namespace).To(gomega.Equal(expectedNamespace), "expected GatewayClass parametersRef.namespace to be '%s' after upgrade", expectedNamespace)
-	}).
-		WithContext(ctx).
-		WithTimeout(time.Second * 20).
-		WithPolling(time.Millisecond * 200).
-		Should(gomega.Succeed())
+		assert.NoError(c, err, "failed to get GatewayClass after upgrade")
+		assert.NotNil(c, gcUpdated.Spec.ParametersRef, "GatewayClass spec.parametersRef is nil after upgrade")
+		assert.Equal(c, "custom-gwp-2", gcUpdated.Spec.ParametersRef.Name, "expected GatewayClass parametersRef.name to be 'custom-gwp-2' after upgrade")
+		assert.NotNil(c, gcUpdated.Spec.ParametersRef.Namespace, "GatewayClass spec.parametersRef.namespace is nil after upgrade")
+		assert.Equal(c, expectedNamespace, *gcUpdated.Spec.ParametersRef.Namespace, "expected GatewayClass parametersRef.namespace to be '%s' after upgrade", expectedNamespace)
+	}, 20*time.Second, 200*time.Millisecond)
 
 	// Ensure gateway pods are still running (even though the ParametersRef has changed to non-existent resource)
 	testInstallation.Assertions.EventuallyReadyReplicas(ctx, proxyObjectMeta, gomega.Equal(1))
@@ -247,22 +206,59 @@ func TestCustomGWP(t *testing.T) {
 	testInstallation.Assertions.EventuallyReadyReplicas(ctx, proxyObjectMeta, gomega.Equal(1))
 
 	// Assert that eventually the deployment gateway pod is updated with the new label
-	testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+	r.EventuallyWithT(func(c *assert.CollectT) {
 		pods, err := kubeutils.GetReadyPodsForDeployment(ctx, testInstallation.ClusterContext.Clientset, proxyObjectMeta)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get ready pods for deployment after upgrade")
-		g.Expect(pods).NotTo(gomega.BeEmpty(), "no ready pods found for deployment after upgrade")
+		assert.NoError(c, err, "failed to get ready pods for deployment after upgrade")
+		assert.NotEmpty(c, pods, "no ready pods found for deployment after upgrade")
 
 		pod := &corev1.Pod{}
 		err = testInstallation.ClusterContext.Client.Get(ctx, client.ObjectKey{
 			Namespace: gatewayNamespace,
 			Name:      pods[0],
 		}, pod)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get pod after upgrade")
-		g.Expect(pod.Labels).NotTo(gomega.BeNil(), "pod labels are nil after upgrade")
-		g.Expect(pod.Labels).To(gomega.HaveKeyWithValue("another", "label"), "pod should have the new label 'another: label' after upgrade")
-	}).
-		WithContext(ctx).
-		WithTimeout(time.Second * 15).
-		WithPolling(time.Millisecond * 200).
-		Should(gomega.Succeed())
+		assert.NoError(c, err, "failed to get pod after upgrade")
+		assert.NotNil(c, pod.Labels, "pod labels are nil after upgrade")
+		assert.Contains(c, pod.Labels, "another", "pod should have the 'another' label after upgrade")
+		assert.Equal(c, "label", pod.Labels["another"], "pod should have the new label 'another: label' after upgrade")
+	}, 15*time.Second, 200*time.Millisecond)
+}
+
+// verifyPodLabel checks that a pod for the given deployment has the specified label with the expected value.
+func verifyPodLabel(
+	t *testing.T,
+	ctx context.Context,
+	testInstallation *e2e.TestInstallation,
+	labelKey string,
+	expectedValue string,
+	errorContext string,
+) {
+	pods, err := kubeutils.GetReadyPodsForDeployment(ctx, testInstallation.ClusterContext.Clientset, proxyObjectMeta)
+	if err != nil {
+		t.Fatalf("failed to get ready pods for deployment %s: %v", errorContext, err)
+	}
+	if len(pods) == 0 {
+		t.Fatalf("no ready pods found for deployment %s", errorContext)
+	}
+
+	pod := &corev1.Pod{}
+	err = testInstallation.ClusterContext.Client.Get(ctx, client.ObjectKey{
+		Namespace: gatewayNamespace,
+		Name:      pods[0],
+	}, pod)
+	if err != nil {
+		t.Fatalf("failed to get pod %s: %v", errorContext, err)
+	}
+
+	if pod.Labels == nil {
+		t.Fatalf("pod labels are nil %s", errorContext)
+	}
+
+	labelValue, ok := pod.Labels[labelKey]
+	if !ok {
+		t.Fatalf("pod does not have '%s' label %s", labelKey, errorContext)
+	}
+
+	if labelValue != expectedValue {
+		t.Fatalf("expected pod label '%s' to be '%s' %s, got '%s'", labelKey, expectedValue, errorContext, labelValue)
+	}
 }
