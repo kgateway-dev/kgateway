@@ -11,7 +11,7 @@ kgateway supports **two independent controllers** that can run side-by-side:
 - **Agentgateway Controller**: `kgateway.dev/agentgateway` (defined in `wellknown.DefaultAgwControllerName`)
 
 **Critical Requirements:**
-1. Controllers MUST respect `GatewayClass.spec.controllerName` - NOT the GatewayClass name
+1. Controllers MUST always respect `GatewayClass.spec.controllerName` Classname can matter, in the case of waypoints, but its always more specific information
 2. Controllers MUST NOT process resources belonging to the other controller
 3. Enable flags (`EnableEnvoy`, `EnableAgentgateway`) MUST be honored at all layers
 

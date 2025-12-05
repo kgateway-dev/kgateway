@@ -1,6 +1,6 @@
 //go:build e2e
 
-package dualcontroller
+package parallelcontrollers
 
 import (
 	"context"
@@ -44,8 +44,8 @@ var (
 	testCases = map[string]*base.TestCase{}
 )
 
-// testingSuite is the entire Suite of tests for the "dualcontroller" feature
-// Tests the dual controller architecture requirements from AGENTS.md
+// testingSuite is the entire Suite of tests for the "parallelcontrollers" feature
+// Tests the parallel controller architecture requirements from AGENTS.md
 type testingSuite struct {
 	*base.BaseTestingSuite
 }
@@ -69,11 +69,6 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 
 	// Skip the base suite's automatic test manifest application
 	// Each test method will manually apply its manifests after helm upgrade
-}
-
-// AfterTest overrides the base suite's AfterTest for manual cleanup
-func (s *testingSuite) AfterTest(suiteName, testName string) {
-	// Cleanup is handled via defer in each test method
 }
 
 // applyGatewayManifests applies the gateway manifests for a specific phase
@@ -532,7 +527,7 @@ func (s *testingSuite) upgradeHelmWithFlags(enableEnvoy, enableAgentgateway bool
 	}
 
 	// Merge with existing extra args from test installation, but filter out conflicting flags
-	// ExtraHelmArgs comes in pairs: "--set" followed by "key=value"
+	// ExtraHelmArgs comes in pairs: --set=foo=bar
 	for i := 0; i < len(s.TestInstallation.Metadata.ExtraHelmArgs); i++ {
 		arg := s.TestInstallation.Metadata.ExtraHelmArgs[i]
 		if arg == "--set" && i+1 < len(s.TestInstallation.Metadata.ExtraHelmArgs) {

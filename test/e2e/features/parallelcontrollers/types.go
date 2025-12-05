@@ -1,6 +1,6 @@
 //go:build e2e
 
-package dualcontroller
+package parallelcontrollers
 
 import (
 	"path/filepath"

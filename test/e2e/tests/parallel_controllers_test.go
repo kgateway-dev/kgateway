@@ -9,14 +9,13 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
-	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/dualcontroller"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/parallelcontrollers"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/install"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
-// TestDualController tests the dual controller architecture with both controllers starting disabled
-// This is a separate test from TestKgateway because it needs custom installation flags
-func TestDualController(t *testing.T) {
+// TestParallelControllers tests the parallel controller architecture that can support running one or both controllers at the same time.
+func TestParallelControllers(t *testing.T) {
 	ctx := context.Background()
 	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "kgateway-test")
 	testInstallation := e2e.CreateTestInstallation(
@@ -52,8 +51,8 @@ func TestDualController(t *testing.T) {
 	// Install kgateway with both controllers disabled
 	testInstallation.InstallKgatewayFromLocalChart(ctx)
 
-	// Run the dual controller test suite
+	// Run the parallelcontrollers test suite
 	runner := e2e.NewSuiteRunner(false)
-	runner.Register("DualController", dualcontroller.NewTestingSuite)
+	runner.Register("ParallelControllers", parallelcontrollers.NewTestingSuite)
 	runner.Run(ctx, t, testInstallation)
 }
