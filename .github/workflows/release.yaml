@@ -89,12 +89,12 @@ jobs:
         if: ${{ github.event_name != 'pull_request' }}
         run: echo "${{ secrets.GITHUB_TOKEN }}" | go tool helm registry login ${{ env.IMAGE_REGISTRY }} -u ${{ github.repository_owner }} --password-stdin
 
-      - name: Package kgateway chart
-        run: make package-kgateway-charts
+      - name: Package kgateway and agentgateway charts
+        run: make package-kgateway-charts package-agentgateway-charts
         env:
           VERSION: ${{ needs.setup.outputs.version }}
 
-      - name: Push kgateway chart to registry
+      - name: Push kgateway and agentgateway charts to registry
         if: ${{ github.event_name != 'pull_request' }}
         run: make release-charts
         env:

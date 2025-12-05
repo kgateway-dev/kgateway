@@ -50,13 +50,13 @@ var logger = logging.New("gateway-controller")
 var _ manager.LeaderElectionRunnable = (*gatewayReconciler)(nil)
 
 type gatewayReconciler struct {
-	deployer           *deployer.Deployer
-	gwParams           *internaldeployer.GatewayParameters
-	scheme             *runtime.Scheme
-	controllerName     string
-	agwControllerName  string
-	enableEnvoy        bool
-	enableAgentgateway bool
+	deployer          *deployer.Deployer
+	gwParams          *internaldeployer.GatewayParameters
+	scheme            *runtime.Scheme
+	controllerName    string
+	agwControllerName string
+	enableEnvoy       bool
+	enableAgw         bool
 
 	gwClient         kclient.Client[*gwv1.Gateway]
 	gwClassClient    kclient.Client[*gwv1.GatewayClass]
@@ -85,8 +85,8 @@ func NewGatewayReconciler(
 		scheme:              cfg.Mgr.GetScheme(),
 		controllerName:      cfg.ControllerName,
 		agwControllerName:   cfg.AgwControllerName,
-		enableEnvoy:         cfg.EnableEnvoy,
-		enableAgentgateway:  cfg.EnableAgentgateway,
+		enableEnvoy:         cfg.CommonCollections.Settings.EnableEnvoy,
+		enableAgw:           cfg.CommonCollections.Settings.EnableAgentgateway,
 		controllerExtension: controllerExtension,
 
 		gwClient:         kclient.NewFilteredDelayed[*gwv1.Gateway](cfg.Client, gvr.KubernetesGateway, filter),
@@ -287,7 +287,7 @@ func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
 		logger.Debug("skipping gateway for disabled envoy controller", "gateway", req, "controllerName", gwc.Spec.ControllerName)
 		return nil
 	}
-	if isAgwGateway && !r.enableAgentgateway {
+	if isAgwGateway && !r.enableAgw {
 		logger.Debug("skipping gateway for disabled agentgateway controller", "gateway", req, "controllerName", gwc.Spec.ControllerName)
 		return nil
 	}

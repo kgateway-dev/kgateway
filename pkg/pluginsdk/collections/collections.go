@@ -149,7 +149,12 @@ func NewCommonCollections(
 	)
 	cfgmaps := krt.WrapClient(cmClient, krtOptions.ToOptions("ConfigMaps")...)
 
-	gwExts := krtcollections.NewGatewayExtensionsCollection(ctx, client, krtOptions)
+	// Only create GatewayExtensions collection if Envoy is enabled
+	// This CRD is specific to Envoy and not used by agentgateway
+	var gwExts krt.Collection[ir.GatewayExtension]
+	if settings.EnableEnvoy {
+		gwExts = krtcollections.NewGatewayExtensionsCollection(ctx, client, krtOptions)
+	}
 
 	localityPods, wrappedPods := krtcollections.NewPodsCollection(client, krtOptions)
 

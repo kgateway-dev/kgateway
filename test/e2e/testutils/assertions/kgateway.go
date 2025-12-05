@@ -8,12 +8,21 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (p *Provider) EventuallyKgatewayInstallSucceeded(ctx context.Context) {
+// getChartLabelSelector returns the appropriate label selector based on the chart type
+func (p *Provider) getChartLabelSelector() string {
+	chartType := p.installContext.GetChartType()
+	if chartType == "agentgateway" {
+		return "app.kubernetes.io/name=agentgateway"
+	}
+	return "app.kubernetes.io/name=kgateway"
+}
+
+func (p *Provider) EventuallyGatewayInstallSucceeded(ctx context.Context) {
 	p.expectInstallContextDefined()
 
 	p.EventuallyPodsRunning(ctx, p.installContext.InstallNamespace,
 		metav1.ListOptions{
-			LabelSelector: "app.kubernetes.io/name=kgateway",
+			LabelSelector: p.getChartLabelSelector(),
 		})
 }
 
@@ -22,7 +31,7 @@ func (p *Provider) EventuallyKgatewayUninstallSucceeded(ctx context.Context) {
 
 	p.EventuallyPodsNotExist(ctx, p.installContext.InstallNamespace,
 		metav1.ListOptions{
-			LabelSelector: "app.kubernetes.io/name=kgateway",
+			LabelSelector: p.getChartLabelSelector(),
 		})
 }
 
@@ -31,6 +40,6 @@ func (p *Provider) EventuallyKgatewayUpgradeSucceeded(ctx context.Context, versi
 
 	p.EventuallyPodsRunning(ctx, p.installContext.InstallNamespace,
 		metav1.ListOptions{
-			LabelSelector: "app.kubernetes.io/name=kgateway",
+			LabelSelector: p.getChartLabelSelector(),
 		})
 }
