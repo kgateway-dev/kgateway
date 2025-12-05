@@ -198,7 +198,7 @@ type GatewaysTransformationFunction func(GatewayCollectionConfig) func(ctx krt.H
 
 type GatewayCollectionConfigOption func(o *GatewayCollectionConfig)
 
-func WithGatewaysTransformationFunc(f GatewaysTransformationFunction) GatewayCollectionConfigOption {
+func WithGatewayTransformationFunc(f GatewaysTransformationFunction) GatewayCollectionConfigOption {
 	return func(o *GatewayCollectionConfig) {
 		o.transformationFunc = f
 	}

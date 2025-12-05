@@ -94,7 +94,7 @@ func NewAgwSyncer(
 		statusCollections:        status.NewStatusCollections(extraGVKs),
 		NackPublisher:            nack.NewPublisher(client),
 		gatewayCollectionOptions: []translator.GatewayCollectionConfigOption{
-			translator.WithGatewaysTransformationFunc(cfg.GatewayTransformationFunc)},
+			translator.WithGatewayTransformationFunc(cfg.GatewayTransformationFunc)},
 	}
 	logger.Debug("init agentgateway Syncer", "controllername", controllerName)
 
