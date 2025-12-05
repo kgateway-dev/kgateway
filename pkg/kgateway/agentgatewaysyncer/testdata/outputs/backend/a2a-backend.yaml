@@ -11,22 +11,36 @@ Binds:
   port: 80
 Listeners:
 - bindKey: 80/default/example-gateway
-  gatewayName: default/example-gateway
   key: default/example-gateway.http
-  name: http
+  name:
+    gatewayName: example-gateway
+    gatewayNamespace: default
+    listenerName: http
   protocol: HTTP
 Policies:
 - backend:
     a2a: {}
-  name: a2a/default/a2a-agent/9090
+  key: a2a/default/a2a-agent/9090
+  name:
+    kind: Service
+    name: a2a-agent
+    namespace: default
   target:
-    backend: default/a2a-agent:9090
+    service:
+      hostname: a2a-agent.default.svc.cluster.local
+      namespace: default
+      port: 9090
 Routes:
 - backends:
   - backend:
       port: 9090
-      service: default/a2a-agent.default.svc.cluster.local
+      service:
+        hostname: a2a-agent.default.svc.cluster.local
+        namespace: default
     weight: 1
   key: default/a2a.0.0.http
   listenerKey: default/example-gateway.http
-  routeName: default/a2a
+  name:
+    kind: HTTPRoute
+    name: a2a
+    namespace: default

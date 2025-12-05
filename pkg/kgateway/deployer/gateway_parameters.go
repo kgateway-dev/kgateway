@@ -374,8 +374,13 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.Gatew
 	gateway.ExtraVolumes = podConfig.GetExtraVolumes()
 	gateway.PriorityClassName = podConfig.GetPriorityClassName()
 
+	// Determine data plane type based on the Gateway's controllerName from its GatewayClass
+	// This ensures the chart selection is driven by the controller, not by GatewayParameters
+	isAgentgateway := irGW.ControllerName == k.inputs.AgentgatewayControllerName
+
 	// data plane container
-	if agwConfig := kubeProxyConfig.GetAgentgateway(); ptr.Deref(agwConfig.GetEnabled(), false) {
+	if isAgentgateway {
+		agwConfig := kubeProxyConfig.GetAgentgateway()
 		gateway.DataPlaneType = deployer.DataPlaneAgentgateway
 		gateway.Resources = agwConfig.GetResources()
 		gateway.SecurityContext = agwConfig.GetSecurityContext()

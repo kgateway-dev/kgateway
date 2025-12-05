@@ -50,7 +50,9 @@ output:
       backends:
       - backend:
           port: 8080
-          service: default/infra-backend-v1.default.svc.cluster.local
+          service:
+            hostname: infra-backend-v1.default.svc.cluster.local
+            namespace: default
         weight: 1
       hostnames:
       - example.com
@@ -59,7 +61,10 @@ output:
       matches:
       - path:
           pathPrefix: /timeouts
-      routeName: default/request-multiple-mirrors-headers
+      name:
+        kind: HTTPRoute
+        name: request-multiple-mirrors-headers
+        namespace: default
       trafficPolicies:
       - timeout:
           backendRequest: 5s
@@ -72,7 +77,9 @@ output:
       backends:
       - backend:
           port: 8080
-          service: default/infra-backend-v1.default.svc.cluster.local
+          service:
+            hostname: infra-backend-v1.default.svc.cluster.local
+            namespace: default
         weight: 1
       hostnames:
       - example.com
@@ -81,7 +88,10 @@ output:
       matches:
       - path:
           pathPrefix: /zero-req
-      routeName: default/request-multiple-mirrors-headers
+      name:
+        kind: HTTPRoute
+        name: request-multiple-mirrors-headers
+        namespace: default
       trafficPolicies:
       - timeout:
           backendRequest: 5s
@@ -93,7 +103,9 @@ output:
       backends:
       - backend:
           port: 8080
-          service: default/infra-backend-v1.default.svc.cluster.local
+          service:
+            hostname: infra-backend-v1.default.svc.cluster.local
+            namespace: default
         weight: 1
       hostnames:
       - example.com
@@ -102,7 +114,10 @@ output:
       matches:
       - path:
           pathPrefix: /zero-backend
-      routeName: default/request-multiple-mirrors-headers
+      name:
+        kind: HTTPRoute
+        name: request-multiple-mirrors-headers
+        namespace: default
       trafficPolicies:
       - timeout:
           request: 10s

@@ -57,7 +57,7 @@ type AgentgatewayBackendList struct {
 type AgentgatewayBackendSpec struct {
 	// static represents a static hostname.
 	// +optional
-	Static *AgentStaticBackend `json:"static,omitempty"`
+	Static *StaticBackend `json:"static,omitempty"`
 
 	// ai represents a LLM backend.
 	// +optional
@@ -73,18 +73,18 @@ type AgentgatewayBackendSpec struct {
 	// Note: this Backend type enables users to send trigger the proxy to send requests to arbitrary destinations. Proper
 	// access controls must be put in place when using this backend type.
 	// +optional
-	DynamicForwardProxy *AgentDynamicForwardProxyBackend `json:"dynamicForwardProxy,omitempty"`
+	DynamicForwardProxy *DynamicForwardProxyBackend `json:"dynamicForwardProxy,omitempty"`
 
 	// policies controls policies for communicating with this backend. Policies may also be set in AgentgatewayPolicy;
 	// policies are merged on a field-level basis, with policies on the Backend (this field) taking precedence.
 	// +optional
-	Policies *AgentgatewayPolicyBackendFull `json:"policies,omitempty"`
+	Policies *BackendFull `json:"policies,omitempty"`
 }
 
-type AgentDynamicForwardProxyBackend struct {
+type DynamicForwardProxyBackend struct {
 }
 
-type AgentStaticBackend struct {
+type StaticBackend struct {
 	// host to connect to.
 	// +required
 	Host ShortString `json:"host"`
@@ -152,7 +152,7 @@ type NamedLLMProvider struct {
 	// in the top level AgentgatewayBackend. policies are merged on a field-level basis, with order: AgentgatewayPolicy <
 	// AgentgatewayBackend < AgentgatewayBackend LLM provider (this field).
 	// +optional
-	Policies *AgentgatewayPolicyBackendAI `json:"policies,omitempty"`
+	Policies *BackendWithAI `json:"policies,omitempty"`
 
 	LLMProvider `json:",inline"`
 }
@@ -369,7 +369,7 @@ type McpTarget struct {
 	// in the top level AgentgatewayBackend. Policies are merged on a field-level basis, with order: AgentgatewayPolicy <
 	// AgentgatewayBackend < AgentgatewayBackend MCP (this field).
 	// +optional
-	Policies *AgentgatewayPolicyBackendMCP `json:"policies,omitempty"`
+	Policies *BackendWithMCP `json:"policies,omitempty"`
 }
 
 // MCPProtocol defines the protocol to use for the MCPBackend target

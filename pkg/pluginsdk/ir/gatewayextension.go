@@ -23,8 +23,8 @@ type GatewayExtension struct {
 	// This is specifically for global rate limiting that communicates with an external rate limit service.
 	RateLimit *kgateway.RateLimitProvider
 
-	// JwtProviders configures the jwt providers
-	JwtProviders []kgateway.NamedJWTProvider
+	// JWT configures the jwt providers
+	JWT *kgateway.JWT
 
 	// PrecedenceWeight specifies the precedence weight associated with the provider.
 	// A higher weight implies higher priority.
@@ -52,7 +52,7 @@ func (e GatewayExtension) Equals(other GatewayExtension) bool {
 	if !reflect.DeepEqual(e.RateLimit, other.RateLimit) {
 		return false
 	}
-	if !reflect.DeepEqual(e.JwtProviders, other.JwtProviders) {
+	if !reflect.DeepEqual(e.JWT, other.JWT) {
 		return false
 	}
 	if e.PrecedenceWeight != other.PrecedenceWeight {

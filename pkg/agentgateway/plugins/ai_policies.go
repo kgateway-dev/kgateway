@@ -5,7 +5,6 @@ import (
 	"log/slog"
 
 	"github.com/agentgateway/agentgateway/go/api"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -136,14 +135,24 @@ func processWebhook(ctx PolicyCtx, namespace string, webhook *agentgateway.Webho
 }
 
 func processBuiltinRegexRule(builtin agentgateway.BuiltIn, logger *slog.Logger) *api.BackendPolicySpec_Ai_RegexRule {
-	builtinValue, ok := api.BackendPolicySpec_Ai_BuiltinRegexRule_value[string(builtin)]
-	if !ok {
+	v := api.BackendPolicySpec_Ai_BUILTIN_UNSPECIFIED
+	switch builtin {
+	case agentgateway.SSN:
+		v = api.BackendPolicySpec_Ai_SSN
+	case agentgateway.CREDIT_CARD:
+		v = api.BackendPolicySpec_Ai_CREDIT_CARD
+
+	case agentgateway.PHONE_NUMBER:
+		v = api.BackendPolicySpec_Ai_PHONE_NUMBER
+
+	case agentgateway.EMAIL:
+		v = api.BackendPolicySpec_Ai_EMAIL
+	default:
 		logger.Warn("unknown builtin regex rule", "builtin", builtin)
-		builtinValue = int32(api.BackendPolicySpec_Ai_BUILTIN_UNSPECIFIED)
 	}
 	return &api.BackendPolicySpec_Ai_RegexRule{
 		Kind: &api.BackendPolicySpec_Ai_RegexRule_Builtin{
-			Builtin: api.BackendPolicySpec_Ai_BuiltinRegexRule(builtinValue),
+			Builtin: v,
 		},
 	}
 }
@@ -190,15 +199,11 @@ func processModeration(ctx PolicyCtx, namespace string, moderation *agentgateway
 	}
 
 	pgModeration := &api.BackendPolicySpec_Ai_Moderation{}
+	pgModeration.Model = moderation.Model
 
-	if moderation.Model != nil {
-		pgModeration.Model = &wrapperspb.StringValue{
-			Value: *moderation.Model,
-		}
-	}
 	if moderation.Policies != nil {
-		pol := &agentgateway.AgentgatewayPolicyBackendFull{
-			AgentgatewayPolicyBackendSimple: *moderation.Policies,
+		pol := &agentgateway.BackendFull{
+			BackendSimple: *moderation.Policies,
 		}
 		pols, err := TranslateInlineBackendPolicy(ctx, namespace, pol)
 		if err != nil {

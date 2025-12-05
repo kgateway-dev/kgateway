@@ -765,252 +765,267 @@ spec:
                 required:
                 - grpcService
                 type: object
-              jwtProviders:
-                description: |-
-                  JWTProviders configures named JWT providers.
-                  If multiple providers are specified for a given JWT policy,
-                  the providers will be `OR`-ed together and will allow validation to any of the providers.
-                items:
-                  description: NamedJWTProvider is a named JWT provider entry.
-                  properties:
-                    audiences:
-                      description: |-
-                        Audiences is the list of audiences to be used for the JWT provider.
-                        If specified an incoming JWT must have an 'aud' claim, and it must be in this list.
-                        If not specified, the audiences will not be checked in the token.
-                      items:
-                        type: string
-                      maxItems: 32
-                      minItems: 1
-                      type: array
-                    claimsToHeaders:
-                      description: |-
-                        ClaimsToHeaders is the list of claims to headers to be used for the JWT provider.
-                        Optionally set the claims from the JWT payload that you want to extract and add as headers
-                        to the request before the request is forwarded to the upstream destination.
-                        Note: if ClaimsToHeaders is set, the Envoy route cache will be cleared.
-                        This allows the JWT filter to correctly affect routing decisions.
-                      items:
-                        description: JWTClaimToHeader allows copying verified claims
-                          to headers sent upstream
-                        properties:
-                          header:
-                            description: Header is the header the claim will be copied
-                              to, for example, "x-sub".
-                            maxLength: 2048
-                            minLength: 1
-                            type: string
-                          name:
-                            description: Name is the JWT claim name, for example,
-                              "sub".
-                            maxLength: 2048
-                            minLength: 1
-                            type: string
-                        required:
-                        - header
-                        - name
-                        type: object
-                      maxItems: 32
-                      minItems: 1
-                      type: array
-                    forwardToken:
-                      description: |-
-                        ForwardToken configures if the JWT token is forwarded to the upstream backend.
-                        If true, the header containing the token will be forwarded upstream.
-                        If false or not set, the header containing the token will be removed.
-                      type: boolean
-                    issuer:
-                      description: Issuer of the JWT. the 'iss' claim of the JWT must
-                        match this.
-                      maxLength: 2048
-                      type: string
-                    jwks:
-                      description: JWKS is the source for the JSON Web Keys to be
-                        used to validate the JWT.
+              jwt:
+                description: JWT configuration for JWT extension type.
+                properties:
+                  providers:
+                    description: |-
+                      Providers configures named JWT providers.
+                      If multiple providers are specified for a given JWT policy,
+                      the providers will be `OR`-ed together and will allow validation to any of the providers.
+                    items:
+                      description: NamedJWTProvider is a named JWT provider entry.
                       properties:
-                        local:
+                        audiences:
                           description: |-
-                            LocalJWKS configures getting the public keys to validate the JWT from a Kubernetes configmap,
-                            or inline (raw string) JWKS.
+                            Audiences is the list of audiences to be used for the JWT provider.
+                            If specified an incoming JWT must have an 'aud' claim, and it must be in this list.
+                            If not specified, the audiences will not be checked in the token.
+                          items:
+                            type: string
+                          maxItems: 32
+                          minItems: 1
+                          type: array
+                        claimsToHeaders:
+                          description: |-
+                            ClaimsToHeaders is the list of claims to headers to be used for the JWT provider.
+                            Optionally set the claims from the JWT payload that you want to extract and add as headers
+                            to the request before the request is forwarded to the upstream destination.
+                            Note: if ClaimsToHeaders is set, the Envoy route cache will be cleared.
+                            This allows the JWT filter to correctly affect routing decisions.
+                          items:
+                            description: JWTClaimToHeader allows copying verified
+                              claims to headers sent upstream
+                            properties:
+                              header:
+                                description: Header is the header the claim will be
+                                  copied to, for example, "x-sub".
+                                maxLength: 2048
+                                minLength: 1
+                                type: string
+                              name:
+                                description: Name is the JWT claim name, for example,
+                                  "sub".
+                                maxLength: 2048
+                                minLength: 1
+                                type: string
+                            required:
+                            - header
+                            - name
+                            type: object
+                          maxItems: 32
+                          minItems: 1
+                          type: array
+                        forwardToken:
+                          description: |-
+                            ForwardToken configures if the JWT token is forwarded to the upstream backend.
+                            If true, the header containing the token will be forwarded upstream.
+                            If false or not set, the header containing the token will be removed.
+                          type: boolean
+                        issuer:
+                          description: Issuer of the JWT. the 'iss' claim of the JWT
+                            must match this.
+                          maxLength: 2048
+                          type: string
+                        jwks:
+                          description: JWKS is the source for the JSON Web Keys to
+                            be used to validate the JWT.
                           properties:
-                            configMapRef:
+                            local:
                               description: |-
-                                ConfigMapRef configures storing the JWK in a Kubernetes ConfigMap in the same namespace as the GatewayExtension.
-                                The ConfigMap must have a data key named 'jwks' that contains the JWKS.
+                                LocalJWKS configures getting the public keys to validate the JWT from a Kubernetes configmap,
+                                or inline (raw string) JWKS.
                               properties:
-                                name:
-                                  default: ""
+                                configMapRef:
                                   description: |-
-                                    Name of the referent.
-                                    This field is effectively required, but due to backwards compatibility is
-                                    allowed to be empty. Instances of this type with an empty value here are
-                                    almost certainly wrong.
-                                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                    ConfigMapRef configures storing the JWK in a Kubernetes ConfigMap in the same namespace as the GatewayExtension.
+                                    The ConfigMap must have a data key named 'jwks' that contains the JWKS.
+                                  properties:
+                                    name:
+                                      default: ""
+                                      description: |-
+                                        Name of the referent.
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                      type: string
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                inline:
+                                  description: |-
+                                    Inline is the JWKS as the raw, inline JWKS string
+                                    This can be an individual key, a key set or a pem block public key
+                                  maxLength: 16384
+                                  minLength: 1
                                   type: string
                               type: object
-                              x-kubernetes-map-type: atomic
-                            inline:
-                              description: |-
-                                Inline is the JWKS as the raw, inline JWKS string
-                                This can be an individual key, a key set or a pem block public key
-                              maxLength: 16384
-                              minLength: 1
+                              x-kubernetes-validations:
+                              - message: exactly one of the fields in [inline configMapRef]
+                                  must be set
+                                rule: '[has(self.inline),has(self.configMapRef)].filter(x,x==true).size()
+                                  == 1'
+                            remote:
+                              description: RemoteJWKS configures getting the public
+                                keys to validate the JWT from a remote JWKS server.
+                              properties:
+                                backendRef:
+                                  description: BackendRef is reference to the backend
+                                    of the JWKS server.
+                                  properties:
+                                    group:
+                                      default: ""
+                                      description: |-
+                                        Group is the group of the referent. For example, "gateway.networking.k8s.io".
+                                        When unspecified or empty string, core API group is inferred.
+                                      maxLength: 253
+                                      pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                      type: string
+                                    kind:
+                                      default: Service
+                                      description: |-
+                                        Kind is the Kubernetes resource kind of the referent. For example
+                                        "Service".
+
+                                        Defaults to "Service" when not specified.
+
+                                        ExternalName services can refer to CNAME DNS records that may live
+                                        outside of the cluster and as such are difficult to reason about in
+                                        terms of conformance. They also may not be safe to forward to (see
+                                        CVE-2021-25740 for more information). Implementations SHOULD NOT
+                                        support ExternalName Services.
+
+                                        Support: Core (Services with a type other than ExternalName)
+
+                                        Support: Implementation-specific (Services with type ExternalName)
+                                      maxLength: 63
+                                      minLength: 1
+                                      pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
+                                      type: string
+                                    name:
+                                      description: Name is the name of the referent.
+                                      maxLength: 253
+                                      minLength: 1
+                                      type: string
+                                    namespace:
+                                      description: |-
+                                        Namespace is the namespace of the backend. When unspecified, the local
+                                        namespace is inferred.
+
+                                        Note that when a namespace different than the local namespace is specified,
+                                        a ReferenceGrant object is required in the referent namespace to allow that
+                                        namespace's owner to accept the reference. See the ReferenceGrant
+                                        documentation for details.
+
+                                        Support: Core
+                                      maxLength: 63
+                                      minLength: 1
+                                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                      type: string
+                                    port:
+                                      description: |-
+                                        Port specifies the destination port number to use for this resource.
+                                        Port is required when the referent is a Kubernetes Service. In this
+                                        case, the port number is the service port number, not the target port.
+                                        For other resources, destination port might be derived from the referent
+                                        resource or this field.
+                                      format: int32
+                                      maximum: 65535
+                                      minimum: 1
+                                      type: integer
+                                  required:
+                                  - name
+                                  type: object
+                                  x-kubernetes-validations:
+                                  - message: Must have port for Service reference
+                                    rule: '(size(self.group) == 0 && self.kind ==
+                                      ''Service'') ? has(self.port) : true'
+                                cacheDuration:
+                                  description: |-
+                                    Duration after which the cached JWKS expires.
+                                    If unspecified, the default cache duration is 5 minutes.
+                                  type: string
+                                  x-kubernetes-validations:
+                                  - message: invalid duration value
+                                    rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                  - message: cacheDuration must be at least 1ms.
+                                    rule: duration(self) >= duration('1ms')
+                                url:
+                                  description: |-
+                                    URL is the URL of the remote JWKS server, it must be a full FQDN with protocol, host and path.
+                                    For example, https://example.com/keys
+                                  maxLength: 2048
+                                  minLength: 1
+                                  type: string
+                              required:
+                              - backendRef
+                              - url
+                              type: object
+                          type: object
+                          x-kubernetes-validations:
+                          - message: exactly one of the fields in [local remote] must
+                              be set
+                            rule: '[has(self.local),has(self.remote)].filter(x,x==true).size()
+                              == 1'
+                        name:
+                          description: Name is the unique name of the JWT provider.
+                          maxLength: 253
+                          minLength: 1
+                          type: string
+                        tokenSource:
+                          description: TokenSource configures where to find the JWT
+                            of the current provider.
+                          properties:
+                            header:
+                              description: HeaderSource configures retrieving token
+                                from a header
+                              properties:
+                                header:
+                                  description: Header is the name of the header. for
+                                    example, "Authorization"
+                                  maxLength: 2048
+                                  minLength: 1
+                                  type: string
+                                prefix:
+                                  description: Prefix before the token. for example,
+                                    "Bearer "
+                                  maxLength: 2048
+                                  minLength: 1
+                                  type: string
+                              required:
+                              - header
+                              type: object
+                            queryParameter:
+                              description: QueryParameter configures retrieving token
+                                from the query parameter
                               type: string
                           type: object
                           x-kubernetes-validations:
-                          - message: exactly one of the fields in [inline configMapRef]
+                          - message: exactly one of the fields in [header queryParameter]
                               must be set
-                            rule: '[has(self.inline),has(self.configMapRef)].filter(x,x==true).size()
+                            rule: '[has(self.header),has(self.queryParameter)].filter(x,x==true).size()
                               == 1'
-                        remote:
-                          description: RemoteJWKS configures getting the public keys
-                            to validate the JWT from a remote JWKS server.
-                          properties:
-                            backendRef:
-                              description: BackendRef is reference to the backend
-                                of the JWKS server.
-                              properties:
-                                group:
-                                  default: ""
-                                  description: |-
-                                    Group is the group of the referent. For example, "gateway.networking.k8s.io".
-                                    When unspecified or empty string, core API group is inferred.
-                                  maxLength: 253
-                                  pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
-                                  type: string
-                                kind:
-                                  default: Service
-                                  description: |-
-                                    Kind is the Kubernetes resource kind of the referent. For example
-                                    "Service".
-
-                                    Defaults to "Service" when not specified.
-
-                                    ExternalName services can refer to CNAME DNS records that may live
-                                    outside of the cluster and as such are difficult to reason about in
-                                    terms of conformance. They also may not be safe to forward to (see
-                                    CVE-2021-25740 for more information). Implementations SHOULD NOT
-                                    support ExternalName Services.
-
-                                    Support: Core (Services with a type other than ExternalName)
-
-                                    Support: Implementation-specific (Services with type ExternalName)
-                                  maxLength: 63
-                                  minLength: 1
-                                  pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
-                                  type: string
-                                name:
-                                  description: Name is the name of the referent.
-                                  maxLength: 253
-                                  minLength: 1
-                                  type: string
-                                namespace:
-                                  description: |-
-                                    Namespace is the namespace of the backend. When unspecified, the local
-                                    namespace is inferred.
-
-                                    Note that when a namespace different than the local namespace is specified,
-                                    a ReferenceGrant object is required in the referent namespace to allow that
-                                    namespace's owner to accept the reference. See the ReferenceGrant
-                                    documentation for details.
-
-                                    Support: Core
-                                  maxLength: 63
-                                  minLength: 1
-                                  pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
-                                  type: string
-                                port:
-                                  description: |-
-                                    Port specifies the destination port number to use for this resource.
-                                    Port is required when the referent is a Kubernetes Service. In this
-                                    case, the port number is the service port number, not the target port.
-                                    For other resources, destination port might be derived from the referent
-                                    resource or this field.
-                                  format: int32
-                                  maximum: 65535
-                                  minimum: 1
-                                  type: integer
-                              required:
-                              - name
-                              type: object
-                              x-kubernetes-validations:
-                              - message: Must have port for Service reference
-                                rule: '(size(self.group) == 0 && self.kind == ''Service'')
-                                  ? has(self.port) : true'
-                            cacheDuration:
-                              description: |-
-                                Duration after which the cached JWKS expires.
-                                If unspecified, the default cache duration is 5 minutes.
-                              type: string
-                              x-kubernetes-validations:
-                              - message: invalid duration value
-                                rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
-                              - message: cacheDuration must be at least 1ms.
-                                rule: duration(self) >= duration('1ms')
-                            url:
-                              description: |-
-                                URL is the URL of the remote JWKS server, it must be a full FQDN with protocol, host and path.
-                                For example, https://example.com/keys
-                              maxLength: 2048
-                              minLength: 1
-                              type: string
-                          required:
-                          - backendRef
-                          - url
-                          type: object
+                      required:
+                      - jwks
+                      - name
                       type: object
-                      x-kubernetes-validations:
-                      - message: exactly one of the fields in [local remote] must
-                          be set
-                        rule: '[has(self.local),has(self.remote)].filter(x,x==true).size()
-                          == 1'
-                    name:
-                      description: Name is the unique name of the JWT provider.
-                      maxLength: 253
-                      minLength: 1
-                      type: string
-                    tokenSource:
-                      description: TokenSource configures where to find the JWT of
-                        the current provider.
-                      properties:
-                        header:
-                          description: HeaderSource configures retrieving token from
-                            a header
-                          properties:
-                            header:
-                              description: Header is the name of the header. for example,
-                                "Authorization"
-                              maxLength: 2048
-                              minLength: 1
-                              type: string
-                            prefix:
-                              description: Prefix before the token. for example, "Bearer
-                                "
-                              maxLength: 2048
-                              minLength: 1
-                              type: string
-                          required:
-                          - header
-                          type: object
-                        queryParameter:
-                          description: QueryParameter configures retrieving token
-                            from the query parameter
-                          type: string
-                      type: object
-                      x-kubernetes-validations:
-                      - message: exactly one of the fields in [header queryParameter]
-                          must be set
-                        rule: '[has(self.header),has(self.queryParameter)].filter(x,x==true).size()
-                          == 1'
-                  required:
-                  - jwks
-                  - name
-                  type: object
-                maxItems: 32
-                type: array
-                x-kubernetes-list-map-keys:
-                - name
-                x-kubernetes-list-type: map
+                    maxItems: 32
+                    type: array
+                    x-kubernetes-list-map-keys:
+                    - name
+                    x-kubernetes-list-type: map
+                  validationMode:
+                    description: |-
+                      ValidationMode configures how JWT validation behaves.
+                      If unset or empty, Strict mode is used (JWT is required).
+                      If set to AllowMissing, unauthenticated requests without a JWT are allowed through.
+                      If using this mode, make sure to consider the security implications and
+                      consider using an `RBAC` policy to enforce authorization.
+                    enum:
+                    - Strict
+                    - AllowMissing
+                    type: string
+                type: object
               rateLimit:
                 description: RateLimit configuration for RateLimit extension type.
                 properties:
@@ -1213,7 +1228,7 @@ spec:
                 - ExtAuth
                 - ExtProc
                 - RateLimit
-                - JWTProviders
+                - JWT
                 type: string
             type: object
             x-kubernetes-validations:
@@ -1226,12 +1241,11 @@ spec:
             - message: rateLimit must be set when type is RateLimit
               rule: 'has(self.type) && self.type == ''RateLimit'' ? has(self.rateLimit)
                 : true'
-            - message: JwtProviders must be set when type is JWTProviders
-              rule: 'has(self.type) && self.type == ''JWTProviders'' ? has(self.jwtProviders)
-                : true'
-            - message: exactly one of the fields in [extAuth extProc rateLimit jwtProviders]
+            - message: JWT must be set when type is JWT
+              rule: 'has(self.type) && self.type == ''JWT'' ? has(self.jwt) : true'
+            - message: exactly one of the fields in [extAuth extProc rateLimit jwt]
                 must be set
-              rule: '[has(self.extAuth),has(self.extProc),has(self.rateLimit),has(self.jwtProviders)].filter(x,x==true).size()
+              rule: '[has(self.extAuth),has(self.extProc),has(self.rateLimit),has(self.jwt)].filter(x,x==true).size()
                 == 1'
           status:
             description: GatewayExtensionStatus defines the observed state of GatewayExtension.

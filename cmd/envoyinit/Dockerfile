@@ -1,12 +1,12 @@
 ARG ENVOY_IMAGE
 ARG CARGO_ZBUILD_IMAGE=ghcr.io/rust-cross/cargo-zigbuild:0.19.8
 # Stage 1: pull in all rust build dependency and cache it in docker build layer cache
-FROM --platform=$BUILDPLATFORM ${CARGO_ZBUILD_IMAGE} AS rust_build_deps
+FROM --platform=$TARGETPLATFORM ${CARGO_ZBUILD_IMAGE} AS rust_build_deps
 WORKDIR /build
 RUN apt update && apt install -y clang
 ARG RUSTFORMATIONS_DIR=./rustformations
-# Unfortunately, there is no easy way to find all the Cargo.toml files and iterate 
-# through the directories in Dockerfile. If we add more local crate, will need to add 
+# Unfortunately, there is no easy way to find all the Cargo.toml files and iterate
+# through the directories in Dockerfile. If we add more local crate, will need to add
 # it's Cargo.toml file below
 COPY ${RUSTFORMATIONS_DIR}/Cargo.toml ${RUSTFORMATIONS_DIR}/Cargo.lock ./
 RUN mkdir -p rustformations/src transformations/src \
@@ -24,7 +24,7 @@ RUN cargo fetch \
     && find /build/target \( -name librust_module.so -o -name 'libtransformations*.rlib' \) -type f -delete
 
 # Stage 2: build envoy dynamic module
-FROM --platform=$BUILDPLATFORM ${CARGO_ZBUILD_IMAGE} AS rust_builder
+FROM --platform=$TARGETPLATFORM ${CARGO_ZBUILD_IMAGE} AS rust_builder
 WORKDIR /build
 RUN apt update && apt install -y clang
 
@@ -41,7 +41,7 @@ RUN cargo zigbuild --target ${RUST_BUILD_ARCH}-unknown-linux-gnu
 RUN cp /build/target/${RUST_BUILD_ARCH}-unknown-linux-gnu/debug/librust_module.so /build/librust_module.so
 
 # Stage 3: build the final envoy wrapper image
-FROM --platform=$BUILDPLATFORM ${ENVOY_IMAGE} AS envoy
+FROM --platform=$TARGETPLATFORM ${ENVOY_IMAGE} AS envoy
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Update our deps to make cve toil lower

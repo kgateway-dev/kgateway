@@ -1,8 +1,13 @@
-- mcp:
+- key: test-ns/namespace-mcp-backend
+  mcp:
     targets:
     - backend:
         port: 8080
-        service: prod-ns/prod.prod-ns.svc.cluster.local
+        service:
+          hostname: prod.prod-ns.svc.cluster.local
+          namespace: prod-ns
       name: prod-mcp
       protocol: STREAMABLE_HTTP
-  name: test-ns/namespace-mcp-backend
+  name:
+    name: namespace-mcp-backend
+    namespace: test-ns

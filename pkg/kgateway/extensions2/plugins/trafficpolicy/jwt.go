@@ -15,6 +15,7 @@ import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	jwtauthnv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/jwt_authn/v3"
 	"github.com/go-jose/go-jose/v4"
+	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"istio.io/istio/pkg/kube/krt"
@@ -127,7 +128,7 @@ func constructJwt(
 		return fmt.Errorf("jwt: %w", err)
 	}
 	if provider.Jwt == nil {
-		return pluginutils.ErrInvalidExtensionType(kgateway.GatewayExtensionTypeJWTProvider)
+		return pluginutils.ErrInvalidExtensionType(kgateway.GatewayExtensionTypeJWT)
 	}
 
 	requirementsName := fmt.Sprintf("%s_%s_requirements", spec.ExtensionRef.Name, in.Namespace)
@@ -409,7 +410,10 @@ func parsePem(key string) (*jose.JSONWebKeySet, error) {
 	return keySet, nil
 }
 
-func buildJwtRequirementFromProviders(providersMap map[string]*jwtauthnv3.JwtProvider) *jwtauthnv3.JwtRequirement {
+func buildJwtRequirementFromProviders(
+	providersMap map[string]*jwtauthnv3.JwtProvider,
+	validationMode *kgateway.ValidationMode,
+) *jwtauthnv3.JwtRequirement {
 	var reqs []*jwtauthnv3.JwtRequirement
 	for providerName := range providersMap {
 		reqs = append(reqs, &jwtauthnv3.JwtRequirement{
@@ -422,18 +426,42 @@ func buildJwtRequirementFromProviders(providersMap map[string]*jwtauthnv3.JwtPro
 	// sort for idempotency
 	sort.Slice(reqs, func(i, j int) bool { return reqs[i].GetProviderName() < reqs[j].GetProviderName() })
 
+	var jwtReqs *jwtauthnv3.JwtRequirement
 	// if there is only one requirement, return it directly
 	if len(reqs) == 1 {
-		return reqs[0]
-	}
-	// if there are multiple requirements, return a RequiresAny requirement. Requires Any will OR the requirements
-	return &jwtauthnv3.JwtRequirement{
-		RequiresType: &jwtauthnv3.JwtRequirement_RequiresAny{
-			RequiresAny: &jwtauthnv3.JwtRequirementOrList{
-				Requirements: reqs,
+		jwtReqs = reqs[0]
+	} else {
+		// if there are multiple requirements, return a RequiresAny requirement. Requires Any will OR the requirements
+		jwtReqs = &jwtauthnv3.JwtRequirement{
+			RequiresType: &jwtauthnv3.JwtRequirement_RequiresAny{
+				RequiresAny: &jwtauthnv3.JwtRequirementOrList{
+					Requirements: reqs,
+				},
 			},
-		},
+		}
 	}
+
+	if validationMode != nil {
+		switch *validationMode {
+		case kgateway.ValidationModeAllowMissing:
+			allowMissingReq := &jwtauthnv3.JwtRequirement{
+				RequiresType: &jwtauthnv3.JwtRequirement_AllowMissing{
+					AllowMissing: &empty.Empty{},
+				},
+			}
+			jwtReqs = &jwtauthnv3.JwtRequirement{
+				RequiresType: &jwtauthnv3.JwtRequirement_RequiresAny{
+					RequiresAny: &jwtauthnv3.JwtRequirementOrList{
+						Requirements: []*jwtauthnv3.JwtRequirement{
+							jwtReqs,
+							allowMissingReq,
+						},
+					},
+				},
+			}
+		}
+	}
+	return jwtReqs
 }
 
 func GetConfigMap(krtctx krt.HandlerContext, configMaps krt.Collection[*corev1.ConfigMap], cmName, ns string) (*corev1.ConfigMap, error) {

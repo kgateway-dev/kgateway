@@ -40,7 +40,9 @@ output:
       backends:
       - backend:
           port: 9090
-          service: default/grpc-service.default.svc.cluster.local
+          service:
+            hostname: grpc-service.default.svc.cluster.local
+            namespace: default
         weight: 1
       hostnames:
       - grpc.example.com
@@ -52,7 +54,10 @@ output:
           name: authorization
         path:
           exact: /example.Service/GetUser
-      routeName: default/grpc-header-route
+      name:
+        kind: GRPCRoute
+        name: grpc-header-route
+        namespace: default
 status:
 - apiVersion: gateway.networking.k8s.io/v1
   kind: GRPCRoute

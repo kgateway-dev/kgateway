@@ -23,4 +23,7 @@ ai:
           key:
             secret: gemini-fallback
       name: gemini
-name: test-ns/multipool-priority-backend
+key: test-ns/multipool-priority-backend
+name:
+  name: multipool-priority-backend
+  namespace: test-ns

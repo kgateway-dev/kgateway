@@ -15,4 +15,7 @@ ai:
           key:
             secret: second-token
       name: anthropic
-name: test-ns/multipool-backend
+key: test-ns/multipool-backend
+name:
+  name: multipool-backend
+  namespace: test-ns

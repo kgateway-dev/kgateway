@@ -64,19 +64,20 @@ kind: GatewayExtension
 metadata:
   name: jwt-ext-1
 spec:
-  type: JWTProviders
-  jwtProviders:
-  - name: my-example1
-    claimsToHeaders:
+  type: JWT
+  jwt:
+    providers:
+    - name: my-example1
+      claimsToHeaders:
       - name: org
         header: x-org
       - name: email
         header: x-email
-    issuer: https://dev1.example.com
-    jwks:
-      local:
-        configMapRef:
-          name: jwt-ext-1
+      issuer: https://dev1.example.com
+      jwks:
+        local:
+          configMapRef:
+            name: jwt-ext-1
 ---
 apiVersion: v1
 kind: ConfigMap

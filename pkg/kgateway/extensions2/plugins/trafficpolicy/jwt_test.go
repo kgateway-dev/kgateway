@@ -78,37 +78,80 @@ func TestTranslateKey(t *testing.T) {
 
 func TestBuildJwtRequirementFromProviders(t *testing.T) {
 	tests := []struct {
-		name          string
-		routeName     string
-		providers     map[string]*jwtauthnv3.JwtProvider
-		expectedType  string
-		expectedCount int
+		name            string
+		routeName       string
+		providers       map[string]*jwtauthnv3.JwtProvider
+		validationMode  *kgateway.ValidationMode
+		expectedType    string
+		expectedCount   int
+		hasAllowMissing bool
 	}{
 		{
-			name:      "single provider",
+			name:      "single provider strict mode",
 			routeName: "test-route",
 			providers: map[string]*jwtauthnv3.JwtProvider{
 				"provider1": {Issuer: "test-issuer"},
 			},
-			expectedType:  "provider_name",
-			expectedCount: 1,
+			validationMode:  nil,
+			expectedType:    "provider_name",
+			expectedCount:   1,
+			hasAllowMissing: false,
 		},
 		{
-			name:      "multiple providers",
+			name:      "multiple providers strict mode",
 			routeName: "test-route",
 			providers: map[string]*jwtauthnv3.JwtProvider{
 				"provider1": {Issuer: "test-issuer-1"},
 				"provider2": {Issuer: "test-issuer-2"},
 			},
-			expectedType:  "requires_any",
-			expectedCount: 2,
+			validationMode:  nil,
+			expectedType:    "requires_any",
+			expectedCount:   2,
+			hasAllowMissing: false,
+		},
+		{
+			name:      "single provider allow missing mode",
+			routeName: "test-route",
+			providers: map[string]*jwtauthnv3.JwtProvider{
+				"provider1": {Issuer: "test-issuer"},
+			},
+			validationMode:  ptr.To(kgateway.ValidationModeAllowMissing),
+			expectedType:    "requires_any",
+			expectedCount:   2, // provider requirement + allow missing
+			hasAllowMissing: true,
+		},
+		{
+			name:      "multiple providers allow missing mode",
+			routeName: "test-route",
+			providers: map[string]*jwtauthnv3.JwtProvider{
+				"provider1": {Issuer: "test-issuer-1"},
+				"provider2": {Issuer: "test-issuer-2"},
+			},
+			validationMode:  ptr.To(kgateway.ValidationModeAllowMissing),
+			expectedType:    "requires_any",
+			expectedCount:   2, // requires_any with providers + allow missing
+			hasAllowMissing: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := buildJwtRequirementFromProviders(tt.providers)
-			if tt.expectedType == "provider_name" {
+			req := buildJwtRequirementFromProviders(tt.providers, tt.validationMode)
+			if tt.hasAllowMissing {
+				// When allow missing is enabled, the top level should be RequiresAny
+				assert.NotNil(t, req.GetRequiresAny())
+				assert.Equal(t, tt.expectedCount, len(req.GetRequiresAny().Requirements))
+
+				// Check that one of the requirements is AllowMissing
+				hasAllowMissing := false
+				for _, r := range req.GetRequiresAny().Requirements {
+					if r.GetAllowMissing() != nil {
+						hasAllowMissing = true
+						break
+					}
+				}
+				assert.True(t, hasAllowMissing, "expected AllowMissing requirement")
+			} else if tt.expectedType == "provider_name" {
 				assert.NotNil(t, req.GetProviderName())
 				assert.Equal(t, "provider1", req.GetProviderName())
 			} else {
@@ -391,7 +434,10 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			config, err := resolveJwtProviders(nil, nil, nil, ir.ObjectSource{}, "test-policy", "test-ns", tt.providers)
+			jwt := &kgateway.JWT{
+				Providers: tt.providers,
+			}
+			config, err := resolveJwtProviders(nil, nil, nil, ir.ObjectSource{}, "test-policy", "test-ns", jwt)
 			if tt.expectedError {
 				assert.Error(t, err)
 				return
@@ -434,6 +480,120 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 					assert.NotNil(t, expectedJwks)
 					assert.NotNil(t, actualJwks)
 					assert.NotNil(t, actualJwks.LocalJwks)
+				}
+			}
+		})
+	}
+}
+
+func TestResolveJwtProvidersWithValidationMode(t *testing.T) {
+	tests := []struct {
+		name                    string
+		jwt                     *kgateway.JWT
+		expectedHasAllowMissing bool
+	}{
+		{
+			name: "strict mode (nil validation mode)",
+			jwt: &kgateway.JWT{
+				ValidationMode: nil,
+				Providers: []kgateway.NamedJWTProvider{
+					{
+						Name: "test-provider",
+						JWTProvider: kgateway.JWTProvider{
+							Issuer: "test-issuer",
+							JWKS: kgateway.JWKS{
+								LocalJWKS: &kgateway.LocalJWKS{
+									Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedHasAllowMissing: false,
+		},
+		{
+			name: "allow missing mode",
+			jwt: &kgateway.JWT{
+				ValidationMode: ptr.To(kgateway.ValidationModeAllowMissing),
+				Providers: []kgateway.NamedJWTProvider{
+					{
+						Name: "test-provider",
+						JWTProvider: kgateway.JWTProvider{
+							Issuer: "test-issuer",
+							JWKS: kgateway.JWKS{
+								LocalJWKS: &kgateway.LocalJWKS{
+									Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedHasAllowMissing: true,
+		},
+		{
+			name: "allow missing mode with multiple providers",
+			jwt: &kgateway.JWT{
+				ValidationMode: ptr.To(kgateway.ValidationModeAllowMissing),
+				Providers: []kgateway.NamedJWTProvider{
+					{
+						Name: "provider1",
+						JWTProvider: kgateway.JWTProvider{
+							Issuer: "test-issuer-1",
+							JWKS: kgateway.JWKS{
+								LocalJWKS: &kgateway.LocalJWKS{
+									Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key-1","use":"sig","alg":"RS256","n":"test-n-1","e":"AQAB"}]}`),
+								},
+							},
+						},
+					},
+					{
+						Name: "provider2",
+						JWTProvider: kgateway.JWTProvider{
+							Issuer: "test-issuer-2",
+							JWKS: kgateway.JWKS{
+								LocalJWKS: &kgateway.LocalJWKS{
+									Inline: ptr.To(`{"keys":[{"kty":"RSA","kid":"test-key-2","use":"sig","alg":"RS256","n":"test-n-2","e":"AQAB"}]}`),
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedHasAllowMissing: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config, err := resolveJwtProviders(nil, nil, nil, ir.ObjectSource{}, "test-policy", "test-ns", tt.jwt)
+			require.NoError(t, err)
+			assert.NotNil(t, config)
+			assert.NotNil(t, config.RequirementMap)
+
+			requirementsName := "test-policy_test-ns_requirements"
+			req, ok := config.RequirementMap[requirementsName]
+			require.True(t, ok, "requirements not found in map")
+
+			if tt.expectedHasAllowMissing {
+				// Should have RequiresAny at top level with AllowMissing
+				assert.NotNil(t, req.GetRequiresAny())
+				hasAllowMissing := false
+				for _, r := range req.GetRequiresAny().Requirements {
+					if r.GetAllowMissing() != nil {
+						hasAllowMissing = true
+						break
+					}
+				}
+				assert.True(t, hasAllowMissing, "expected AllowMissing requirement")
+			} else {
+				// Strict mode: should have provider name directly (single provider) or RequiresAny (multiple providers)
+				// but no AllowMissing
+				if req.GetRequiresAny() != nil {
+					for _, r := range req.GetRequiresAny().Requirements {
+						assert.Nil(t, r.GetAllowMissing(), "should not have AllowMissing in strict mode")
+					}
 				}
 			}
 		})

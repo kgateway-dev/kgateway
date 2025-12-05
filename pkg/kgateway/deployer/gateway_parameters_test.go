@@ -123,7 +123,6 @@ func TestAgentgatewayAndEnvoyContainerDistinctValues(t *testing.T) {
 		Spec: kgateway.GatewayParametersSpec{
 			Kube: &kgateway.KubernetesProxyConfig{
 				Agentgateway: &kgateway.Agentgateway{
-					Enabled: ptr.To(false), // Explicitly disabled
 					Image: &kgateway.Image{
 						Registry:   ptr.To("agent-registry"),
 						Repository: ptr.To("agent-repo"),

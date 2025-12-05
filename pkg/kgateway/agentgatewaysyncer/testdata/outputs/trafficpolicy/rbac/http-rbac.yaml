@@ -1,5 +1,8 @@
 Backends:
-- name: default/example-backend
+- key: default/example-backend
+  name:
+    name: example-backend
+    namespace: default
   static:
     host: example.com
     port: 8080
@@ -8,14 +11,22 @@ Binds:
   port: 80
 Listeners:
 - bindKey: 80/default/example-gateway
-  gatewayName: default/example-gateway
   key: default/example-gateway.http
-  name: http
+  name:
+    gatewayName: example-gateway
+    gatewayNamespace: default
+    listenerName: http
   protocol: HTTP
 Policies:
-- name: traffic/default/cel-rbac-policy:rbac:default/example-route
+- key: traffic/default/cel-rbac-policy:rbac:default/example-route
+  name:
+    kind: AgentgatewayPolicy
+    name: cel-rbac-policy
+    namespace: default
   target:
-    route: default/example-route
+    route:
+      name: example-route
+      namespace: default
   traffic:
     authorization:
       allow:
@@ -29,4 +40,7 @@ Routes:
   - example.com
   key: default/example-route.0.0.http
   listenerKey: default/example-gateway.http
-  routeName: default/example-route
+  name:
+    kind: HTTPRoute
+    name: example-route
+    namespace: default

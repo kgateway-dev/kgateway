@@ -8,4 +8,7 @@ inlinePolicies:
 - auth:
     key:
       secret: sk-test-token
-name: test-ns/openai-backend
+key: test-ns/openai-backend
+name:
+  name: openai-backend
+  namespace: test-ns

@@ -430,12 +430,12 @@ func sortTranslationResult(tr *translationResult) *translationResult {
 
 	// Sort backends by name
 	sort.Slice(tr.Backends, func(i, j int) bool {
-		return tr.Backends[i].GetName() < tr.Backends[j].GetName()
+		return tr.Backends[i].GetKey() < tr.Backends[j].GetKey()
 	})
 
 	// Sort policies by name
 	sort.Slice(tr.Policies, func(i, j int) bool {
-		return tr.Policies[i].GetName() < tr.Policies[j].GetName()
+		return tr.Policies[i].GetKey() < tr.Policies[j].GetKey()
 	})
 
 	// Sort addresses

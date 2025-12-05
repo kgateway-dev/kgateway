@@ -67,21 +67,21 @@ kind: GatewayExtension
 metadata:
   name: basic-jwt-provider
 spec:
-  type: JWTProviders
-  jwtProviders:
-  - name: my-example
-    issuer: https://kgateway.dev
-    jwks:
-      remote:
-        url: https://dummy-idp.default:8443/org-one/keys
-        backendRef:
-          name: dummy-idp
-          namespace: default
-          kind: Service
-          port: 8443
-  - name: my-example2
-    issuer: https://kgateway.dev
-    jwks:
+  jwt:
+    providers:
+    - name: my-example
+      issuer: https://kgateway.dev
+      jwks:
+        remote:
+          url: https://dummy-idp.default:8443/org-one/keys
+          backendRef:
+            name: dummy-idp
+            namespace: default
+            kind: Service
+            port: 8443
+    - name: my-example2
+      issuer: https://kgateway.dev
+      jwks:
         remote:
           url: https://dummy-idp.default:8443/org-two/keys
           backendRef:

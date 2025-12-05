@@ -16,15 +16,20 @@ Backends:
             key:
               secret: sk-anthropic-primary-key
         name: anthropic
-  name: default/multipool-inline
+  key: default/multipool-inline
+  name:
+    name: multipool-inline
+    namespace: default
 Binds:
 - key: 80/default/example-gateway
   port: 80
 Listeners:
 - bindKey: 80/default/example-gateway
-  gatewayName: default/example-gateway
   key: default/example-gateway.http
-  name: http
+  name:
+    gatewayName: example-gateway
+    gatewayNamespace: default
+    listenerName: http
   protocol: HTTP
 Routes:
 - backends:
@@ -35,4 +40,7 @@ Routes:
   - example.com
   key: default/example-route.0.0.http
   listenerKey: default/example-gateway.http
-  routeName: default/example-route
+  name:
+    kind: HTTPRoute
+    name: example-route
+    namespace: default

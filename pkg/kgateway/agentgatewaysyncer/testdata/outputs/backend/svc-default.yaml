@@ -10,18 +10,25 @@ Binds:
   port: 80
 Listeners:
 - bindKey: 80/default/example-gateway
-  gatewayName: default/example-gateway
   key: default/example-gateway.http
-  name: http
+  name:
+    gatewayName: example-gateway
+    gatewayNamespace: default
+    listenerName: http
   protocol: HTTP
 Routes:
 - backends:
   - backend:
       port: 80
-      service: default/example-svc.default.svc.cluster.local
+      service:
+        hostname: example-svc.default.svc.cluster.local
+        namespace: default
     weight: 1
   hostnames:
   - example.com
   key: default/example-route.0.0.http
   listenerKey: default/example-gateway.http
-  routeName: default/example-route
+  name:
+    kind: HTTPRoute
+    name: example-route
+    namespace: default

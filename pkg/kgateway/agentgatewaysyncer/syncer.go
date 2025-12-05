@@ -7,7 +7,6 @@ import (
 	"sync/atomic"
 
 	"github.com/agentgateway/agentgateway/go/api"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pilot/pkg/model/kstatus"
 	"istio.io/istio/pkg/config"
 	"istio.io/istio/pkg/kube/krt"
@@ -26,6 +25,7 @@ import (
 	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/agentgatewaysyncer/krtxds"
@@ -296,11 +296,10 @@ func (s *Syncer) buildAgwResources(
 // buildListenerFromGateway creates a listener resource from a gateway
 func (s *Syncer) buildListenerFromGateway(obj *translator.GatewayListener) *agwir.AgwResource {
 	l := &api.Listener{
-		Key:         obj.ResourceName(),
-		Name:        string(obj.ParentInfo.SectionName),
-		BindKey:     fmt.Sprint(obj.ParentInfo.Port) + "/" + obj.ParentGateway.Namespace + "/" + obj.ParentGateway.Name,
-		GatewayName: obj.ParentGateway.Namespace + "/" + obj.ParentGateway.Name,
-		Hostname:    obj.ParentInfo.OriginalHostname,
+		Key:      obj.ResourceName(),
+		Name:     utils.ListenerName(obj.ParentGateway.Namespace, obj.ParentGateway.Name, string(obj.ParentInfo.SectionName)),
+		BindKey:  fmt.Sprint(obj.ParentInfo.Port) + "/" + obj.ParentGateway.Namespace + "/" + obj.ParentGateway.Name,
+		Hostname: obj.ParentInfo.OriginalHostname,
 	}
 
 	// Set protocol and TLS configuration
@@ -389,7 +388,7 @@ func (s *Syncer) getProtocolAndTLSConfig(obj *translator.GatewayListener) (api.P
 			PrivateKey: obj.TLSInfo.Key,
 		}
 		if len(obj.TLSInfo.CaCert) > 0 {
-			tlsConfig.Root = wrapperspb.Bytes(obj.TLSInfo.CaCert)
+			tlsConfig.Root = obj.TLSInfo.CaCert
 		}
 	}
 

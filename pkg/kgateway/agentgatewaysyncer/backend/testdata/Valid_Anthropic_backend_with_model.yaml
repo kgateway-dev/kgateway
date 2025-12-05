@@ -4,4 +4,7 @@ ai:
     - anthropic:
         model: claude-3-sonnet
       name: backend
-name: test-ns/anthropic-backend
+key: test-ns/anthropic-backend
+name:
+  name: anthropic-backend
+  namespace: test-ns

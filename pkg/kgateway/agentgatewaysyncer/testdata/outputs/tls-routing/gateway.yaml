@@ -10,8 +10,10 @@ Binds:
   port: 443
 Listeners:
 - bindKey: 443/default/example-gateway
-  gatewayName: default/example-gateway
   hostname: '*.example.com'
   key: default/example-gateway.https
-  name: https
+  name:
+    gatewayName: example-gateway
+    gatewayNamespace: default
+    listenerName: https
   protocol: TLS

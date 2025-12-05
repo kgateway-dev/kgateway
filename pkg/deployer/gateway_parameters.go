@@ -104,7 +104,33 @@ func GetInMemoryGatewayParameters(cfg InMemoryGatewayParametersConfig) *kgateway
 // set for the agentgateway deployment.
 func defaultAgentgatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext bool) *kgateway.GatewayParameters {
 	gwp := defaultGatewayParameters(imageInfo, omitDefaultSecurityContext)
-	gwp.Spec.Kube.Agentgateway.Enabled = ptr.To(true)
+
+	// Add agentgateway-specific configuration
+	agwConfig := &kgateway.Agentgateway{
+		LogLevel: ptr.To("info"),
+		Image: &kgateway.Image{
+			Registry:   ptr.To(AgentgatewayRegistry),
+			Tag:        ptr.To(AgentgatewayDefaultTag),
+			Repository: ptr.To(AgentgatewayImage),
+			PullPolicy: (*corev1.PullPolicy)(ptr.To(imageInfo.PullPolicy)),
+		},
+	}
+
+	// Only add SecurityContext if not omitting defaults
+	if !omitDefaultSecurityContext {
+		agwConfig.SecurityContext = &corev1.SecurityContext{
+			AllowPrivilegeEscalation: ptr.To(false),
+			ReadOnlyRootFilesystem:   ptr.To(true),
+			RunAsNonRoot:             ptr.To(true),
+			RunAsUser:                ptr.To[int64](10101),
+			Capabilities: &corev1.Capabilities{
+				Drop: []corev1.Capability{"ALL"},
+			},
+		}
+	}
+
+	gwp.Spec.Kube.Agentgateway = agwConfig
+
 	gwp.Spec.Kube.PodTemplate.ReadinessProbe.HTTPGet.Path = "/healthz/ready"
 	gwp.Spec.Kube.PodTemplate.ReadinessProbe.HTTPGet.Port = intstr.FromInt(15021)
 	gwp.Spec.Kube.PodTemplate.StartupProbe.HTTPGet.Path = "/healthz/ready"
@@ -258,31 +284,13 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 						IstioMetaClusterId:    ptr.To("Kubernetes"),
 					},
 				},
-				Agentgateway: &kgateway.Agentgateway{
-					Enabled:  ptr.To(false),
-					LogLevel: ptr.To("info"),
-					Image: &kgateway.Image{
-						Registry:   ptr.To(AgentgatewayRegistry),
-						Tag:        ptr.To(AgentgatewayDefaultTag),
-						Repository: ptr.To(AgentgatewayImage),
-						PullPolicy: (*corev1.PullPolicy)(ptr.To(imageInfo.PullPolicy)),
-					},
-					SecurityContext: &corev1.SecurityContext{
-						AllowPrivilegeEscalation: ptr.To(false),
-						ReadOnlyRootFilesystem:   ptr.To(true),
-						RunAsNonRoot:             ptr.To(true),
-						RunAsUser:                ptr.To[int64](10101),
-						Capabilities: &corev1.Capabilities{
-							Drop: []corev1.Capability{"ALL"},
-						},
-					},
-				},
+				// Note: Agentgateway config is only added for agentgateway controller gateways
+				// via defaultAgentgatewayParameters(). For envoy gateways, we leave this nil.
 			},
 		},
 	}
 	if omitDefaultSecurityContext {
 		gwp.Spec.Kube.EnvoyContainer.SecurityContext = nil
-		gwp.Spec.Kube.Agentgateway.SecurityContext = nil
 	}
 	return gwp.DeepCopy()
 }

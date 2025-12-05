@@ -4,4 +4,7 @@ ai:
     - name: backend
       vertex:
         model: gemini-pro
-name: test-ns/vertex-backend
+key: test-ns/vertex-backend
+name:
+  name: vertex-backend
+  namespace: test-ns

@@ -25,9 +25,15 @@ spec:
 # Output
 output:
 - Policy:
-    name: traffic/default/agw:rbac:default/test
+    key: traffic/default/agw:rbac:default/test
+    name:
+      kind: AgentgatewayPolicy
+      name: agw
+      namespace: default
     target:
-      route: default/test
+      route:
+        name: test
+        namespace: default
     traffic:
       authorization:
         deny:
@@ -38,9 +44,15 @@ output:
         allow:
         - mcp.tool.name == "echo"
         - jwt.sub == "test-user" && mcp.tool.name == "add"
-    name: default/agw:mcp-authorization:default/test
+    key: default/agw:mcp-authorization:default/test
+    name:
+      kind: AgentgatewayPolicy
+      name: agw
+      namespace: default
     target:
-      route: default/test
+      route:
+        name: test
+        namespace: default
 status:
   ancestors:
   - ancestorRef:

@@ -18,27 +18,42 @@ Binds:
   port: 80
 Listeners:
 - bindKey: 80/default/example-gateway
-  gatewayName: default/example-gateway
   key: default/example-gateway.http
-  name: http
+  name:
+    gatewayName: example-gateway
+    gatewayNamespace: default
+    listenerName: http
   protocol: HTTP
 Policies:
-- name: traffic/default/secure-route-policy:extauth:default/example-gateway
+- key: traffic/default/secure-route-policy:extauth:default/example-gateway
+  name:
+    kind: AgentgatewayPolicy
+    name: secure-route-policy
+    namespace: default
   target:
-    gateway: default/example-gateway
+    gateway:
+      name: example-gateway
+      namespace: default
   traffic:
     extAuthz:
       target:
         port: 4444
-        service: default/ext-authz.default.svc.cluster.local
+        service:
+          hostname: ext-authz.default.svc.cluster.local
+          namespace: default
 Routes:
 - backends:
   - backend:
       port: 80
-      service: default/example-svc.default.svc.cluster.local
+      service:
+        hostname: example-svc.default.svc.cluster.local
+        namespace: default
     weight: 1
   hostnames:
   - example.com
   key: default/example-route.0.0.http
   listenerKey: default/example-gateway.http
-  routeName: default/example-route
+  name:
+    kind: HTTPRoute
+    name: example-route
+    namespace: default

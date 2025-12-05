@@ -145,8 +145,8 @@ kind: GatewayExtension
 metadata:
   name: allowed-jwt-ext
 spec:
-  type: JWTProviders
-  jwtProviders:
+  jwt:
+    providers:
     - name: allowed-provider
       claimsToHeaders:
         - name: org
@@ -172,8 +172,8 @@ metadata:
   name: denied-jwt-ext
   namespace: denied
 spec:
-  type: JWTProviders
-  jwtProviders:
+  jwt:
+    providers:
     - name: denied-provider
       claimsToHeaders:
         - name: team

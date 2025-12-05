@@ -11,4 +11,7 @@ inlinePolicies:
       /v1/chat/completions: COMPLETIONS
       /v1/messages: MESSAGES
       /v1/models: MODELS
-name: test-ns/openai-with-routes
+key: test-ns/openai-with-routes
+name:
+  name: openai-with-routes
+  namespace: test-ns

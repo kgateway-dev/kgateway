@@ -1756,6 +1756,17 @@ func TestBasic(t *testing.T) {
 			},
 		})
 	})
+
+	t.Run("JWT Policy with validation mode AllowMissing", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "jwt/gateway-validation-mode.yaml",
+			outputFile: "jwt/gateway-validation-mode.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
 }
 
 func TestValidation(t *testing.T) {

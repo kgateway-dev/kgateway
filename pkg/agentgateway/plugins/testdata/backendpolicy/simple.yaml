@@ -49,9 +49,15 @@ output:
     backend:
       backendHttp:
         version: HTTP2
-    name: default/agw:backend-http:default/test
+    key: default/agw:backend-http:default/test
+    name:
+      kind: AgentgatewayPolicy
+      name: agw
+      namespace: default
     target:
-      route: default/test
+      route:
+        name: test
+        namespace: default
 - Policy:
     backend:
       backendTls:
@@ -66,9 +72,15 @@ output:
         verifySubjectAltNames:
         - '*.example.com'
         - api.example.com
-    name: default/agw:tls:default/test
+    key: default/agw:tls:default/test
+    name:
+      kind: AgentgatewayPolicy
+      name: agw
+      namespace: default
     target:
-      route: default/test
+      route:
+        name: test
+        namespace: default
 status:
   ancestors:
   - ancestorRef:

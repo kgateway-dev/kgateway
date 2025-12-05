@@ -6,4 +6,7 @@ ai:
         host: endpoint-123.openai.azure.com
         model: my-deployment
       name: backend
-name: test-ns/azure-openai-backend
+key: test-ns/azure-openai-backend
+name:
+  name: azure-openai-backend
+  namespace: test-ns

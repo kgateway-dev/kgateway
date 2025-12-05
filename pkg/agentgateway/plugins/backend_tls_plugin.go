@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/agentgateway/agentgateway/go/api"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
 	corev1 "k8s.io/api/core/v1"
@@ -23,9 +22,8 @@ import (
 
 // NewBackendTLSPlugin creates a new BackendTLSPolicy plugin
 func NewBackendTLSPlugin(agw *AgwCollections) AgwPlugin {
-	clusterDomain := kubeutils.GetClusterDomainName()
 	policyCol := krt.NewManyCollection(agw.BackendTLSPolicies, func(krtctx krt.HandlerContext, btls *gwv1.BackendTLSPolicy) []AgwPolicy {
-		return translatePoliciesForBackendTLS(krtctx, agw.ConfigMaps, agw.Backends, btls, clusterDomain)
+		return translatePoliciesForBackendTLS(krtctx, agw.ConfigMaps, agw.Backends, btls)
 	})
 	return AgwPlugin{
 		ContributesPolicies: map[schema.GroupKind]PolicyPlugin{
@@ -45,7 +43,6 @@ func translatePoliciesForBackendTLS(
 	cfgmaps krt.Collection[*corev1.ConfigMap],
 	backends krt.Collection[*agentgateway.AgentgatewayBackend],
 	btls *gwv1.BackendTLSPolicy,
-	clusterDomain string,
 ) []AgwPolicy {
 	logger := logger.With("plugin_kind", "backendtls")
 	var policies []AgwPolicy
@@ -72,29 +69,13 @@ func translatePoliciesForBackendTLS(
 				// If SectionName is specified to select a specific target in the Backend,
 				// the target becomes <backend-namespace>/<backend-name>/<section-name>
 				policyTarget = &api.PolicyTarget{
-					Kind: &api.PolicyTarget_Backend{
-						Backend: utils.InternalBackendName(btls.Namespace, string(target.Name), string(ptr.OrEmpty(target.SectionName))),
-					},
+					Kind: utils.BackendTarget(btls.Namespace, string(target.Name), target.SectionName),
 				}
 			}
 		case wellknown.ServiceKind:
-			hostname := fmt.Sprintf("%s.%s.svc.%s", target.Name, btls.Namespace, clusterDomain)
-			// If SectionName is specified to select the port, use service/<namespace>/<hostname>:<port>
-			if port := ptr.OrEmpty(target.SectionName); port != "" {
-				policyTarget = &api.PolicyTarget{
-					Kind: &api.PolicyTarget_Backend{
-						Backend: fmt.Sprintf("service/%s/%s:%s", btls.Namespace, hostname, port),
-					},
-				}
-			} else {
-				// Select the entire service with <namespace>/<hostname>
-				policyTarget = &api.PolicyTarget{
-					Kind: &api.PolicyTarget_Service{
-						Service: fmt.Sprintf("%s/%s", btls.Namespace, hostname),
-					},
-				}
+			policyTarget = &api.PolicyTarget{
+				Kind: utils.ServiceTarget(btls.Namespace, string(target.Name), (*string)(target.SectionName)),
 			}
-
 		default:
 			logger.Warn("unsupported target kind", "kind", target.Kind, "policy", btls.Name)
 			continue
@@ -106,7 +87,8 @@ func translatePoliciesForBackendTLS(
 		}
 
 		policy := &api.Policy{
-			Name:   btls.Namespace + "/" + btls.Name + backendTlsPolicySuffix + attachmentName(policyTarget),
+			Key:    btls.Namespace + "/" + btls.Name + backendTlsPolicySuffix + attachmentName(policyTarget),
+			Name:   TypedResourceName(wellknown.BackendTLSPolicyKind, btls),
 			Target: policyTarget,
 			Kind: &api.Policy_Backend{
 				Backend: &api.BackendPolicySpec{
@@ -117,7 +99,7 @@ func translatePoliciesForBackendTLS(
 							Cert: nil,
 							Key:  nil,
 							// Validation.Hostname is a required value and validated with CEL
-							Hostname: wrapperspb.String(string(btls.Spec.Validation.Hostname)),
+							Hostname: ptr.Of(string(btls.Spec.Validation.Hostname)),
 						},
 					},
 				}},
@@ -132,7 +114,7 @@ func getBackendTLSCACert(
 	krtctx krt.HandlerContext,
 	cfgmaps krt.Collection[*corev1.ConfigMap],
 	btls *gwv1.BackendTLSPolicy,
-) (*wrapperspb.BytesValue, error) {
+) ([]byte, error) {
 	validation := btls.Spec.Validation
 	if wk := validation.WellKnownCACertificates; wk != nil {
 		switch kind := *wk; kind {
@@ -171,5 +153,5 @@ func getBackendTLSCACert(
 		}
 		sb.WriteString(caCert)
 	}
-	return wrapperspb.Bytes([]byte(sb.String())), nil
+	return []byte(sb.String()), nil
 }

@@ -38,7 +38,9 @@ output:
       backends:
       - backend:
           port: 80
-          service: default/test-service.default.svc.cluster.local
+          service:
+            hostname: test-service.default.svc.cluster.local
+            namespace: default
         weight: 1
       hostnames:
       - api.example.com
@@ -50,7 +52,10 @@ output:
           name: X-API-Version
         path:
           pathPrefix: /api
-      routeName: default/exact-match-route
+      name:
+        kind: HTTPRoute
+        name: exact-match-route
+        namespace: default
 - gateway:
     Name: test-gateway
     Namespace: default
@@ -59,7 +64,9 @@ output:
       backends:
       - backend:
           port: 80
-          service: default/test-service.default.svc.cluster.local
+          service:
+            hostname: test-service.default.svc.cluster.local
+            namespace: default
         weight: 1
       hostnames:
       - api.example.com
@@ -68,7 +75,10 @@ output:
       matches:
       - path:
           exact: /exact
-      routeName: default/exact-match-route
+      name:
+        kind: HTTPRoute
+        name: exact-match-route
+        namespace: default
 status:
 - apiVersion: gateway.networking.k8s.io/v1
   kind: HTTPRoute

@@ -187,7 +187,7 @@ func TranslateGatewayExtensionBuilder(commoncol *collections.CommonCollections) 
 			rateLimitConfig := buildRateLimitFilter(grpcService, gExt.RateLimit)
 
 			p.RateLimit = rateLimitConfig
-		case gExt.JwtProviders != nil:
+		case gExt.JWT != nil:
 			jwtConfig, err := resolveJwtProviders(
 				krtctx,
 				commoncol.ConfigMaps,
@@ -195,7 +195,7 @@ func TranslateGatewayExtensionBuilder(commoncol *collections.CommonCollections) 
 				gExt.ObjectSource,
 				gExt.Name,
 				gExt.Namespace,
-				gExt.JwtProviders,
+				gExt.JWT,
 			)
 			if err != nil {
 				p.Err = fmt.Errorf("jwt: %w", err)
@@ -213,12 +213,12 @@ func resolveJwtProviders(
 	backendResolver backendResolver,
 	gwExtObj ir.ObjectSource,
 	policyName, policyNamespace string,
-	jwtProviders []kgateway.NamedJWTProvider,
+	jwt *kgateway.JWT,
 ) (*envoyjwtauthnv3.JwtAuthentication, error) {
 	uniqProviders := make(map[string]*envoyjwtauthnv3.JwtProvider)
 	policyNameNamespace := fmt.Sprintf("%s_%s", policyName, policyNamespace)
 
-	for _, provider := range jwtProviders {
+	for _, provider := range jwt.Providers {
 		providerNameForPolicy := ProviderName(policyNameNamespace, provider.Name)
 		jwtProvider, err := translateProvider(
 			krtctx,
@@ -236,7 +236,7 @@ func resolveJwtProviders(
 
 	requirementsName := fmt.Sprintf("%s_requirements", policyNameNamespace)
 	requirements := make(map[string]*envoyjwtauthnv3.JwtRequirement)
-	requirements[requirementsName] = buildJwtRequirementFromProviders(uniqProviders)
+	requirements[requirementsName] = buildJwtRequirementFromProviders(uniqProviders, jwt.ValidationMode)
 
 	return &envoyjwtauthnv3.JwtAuthentication{
 		RequirementMap: requirements,

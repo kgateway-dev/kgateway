@@ -110,6 +110,8 @@ rules:
 - apiGroups:
   - gateway.kgateway.dev
   resources:
+  - agentgatewaybackends
+  - agentgatewaypolicies
   - backendconfigpolicies
   - backends
   - directresponses
@@ -125,6 +127,8 @@ rules:
 - apiGroups:
   - gateway.kgateway.dev
   resources:
+  - agentgatewaybackends/status
+  - agentgatewaypolicies/status
   - backendconfigpolicies/status
   - backends/status
   - directresponses/status

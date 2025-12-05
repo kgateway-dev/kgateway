@@ -83,7 +83,8 @@ type KubernetesProxyConfig struct {
 	Deployment *ProxyDeployment `json:"deployment,omitempty"`
 
 	// Configuration for the container running Envoy.
-	// If agentgateway is enabled, the EnvoyContainer values will be ignored.
+	// If the Gateway uses a GatewayClass with controllerName: kgateway.dev/agentgateway,
+	// the EnvoyContainer values will be ignored.
 	//
 	// +optional
 	EnvoyContainer *EnvoyContainer `json:"envoyContainer,omitempty"`
@@ -676,13 +677,10 @@ func (in *StatsMatcher) GetExclusionList() []shared.StringMatcher {
 	return in.ExclusionList
 }
 
-// Agentgateway configures the agentgateway dataplane integration to be enabled if the `agentgateway` GatewayClass is used.
+// Agentgateway configures the agentgateway dataplane integration.
+// The agentgateway dataplane is automatically used when the Gateway references a GatewayClass
+// with controllerName: kgateway.dev/agentgateway.
 type Agentgateway struct {
-	// Whether to enable the extension.
-	//
-	// +optional
-	Enabled *bool `json:"enabled,omitempty"`
-
 	// Log level for the agentgateway. Defaults to info.
 	// Levels include "trace", "debug", "info", "error", "warn". See: https://docs.rs/tracing/latest/tracing/struct.Level.html
 	//
@@ -737,13 +735,6 @@ type Agentgateway struct {
 	//
 	// +optional
 	ExtraVolumeMounts []corev1.VolumeMount `json:"extraVolumeMounts,omitempty"`
-}
-
-func (in *Agentgateway) GetEnabled() *bool {
-	if in == nil {
-		return nil
-	}
-	return in.Enabled
 }
 
 func (in *Agentgateway) GetLogLevel() *string {

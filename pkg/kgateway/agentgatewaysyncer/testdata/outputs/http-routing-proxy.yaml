@@ -28,15 +28,19 @@ Binds:
   port: 80
 Listeners:
 - bindKey: 80/default/example-gateway
-  gatewayName: default/example-gateway
   key: default/example-gateway.http
-  name: http
+  name:
+    gatewayName: example-gateway
+    gatewayNamespace: default
+    listenerName: http
   protocol: HTTP
 Routes:
 - backends:
   - backend:
       port: 80
-      service: default/bar-svc-canary.default.svc.cluster.local
+      service:
+        hostname: bar-svc-canary.default.svc.cluster.local
+        namespace: default
     weight: 1
   hostnames:
   - bar.example.com
@@ -50,31 +54,46 @@ Routes:
       name: X-Header-One
     - exact: value-two
       name: X-Header-Two
-  routeName: default/bar-route
+  name:
+    kind: HTTPRoute
+    name: bar-route
+    namespace: default
 - backends:
   - backend:
       port: 80
-      service: default/bar-svc.default.svc.cluster.local
+      service:
+        hostname: bar-svc.default.svc.cluster.local
+        namespace: default
     weight: 1
   hostnames:
   - bar.example.com
   key: default/bar-route.1.0.http
   listenerKey: default/example-gateway.http
-  routeName: default/bar-route
+  name:
+    kind: HTTPRoute
+    name: bar-route
+    namespace: default
 - backends:
   - backend:
       port: 80
-      service: default/example-svc.default.svc.cluster.local
+      service:
+        hostname: example-svc.default.svc.cluster.local
+        namespace: default
     weight: 1
   hostnames:
   - example.com
   key: default/example-route.0.0.http
   listenerKey: default/example-gateway.http
-  routeName: default/example-route
+  name:
+    kind: HTTPRoute
+    name: example-route
+    namespace: default
 - backends:
   - backend:
       port: 80
-      service: default/foo-svc.default.svc.cluster.local
+      service:
+        hostname: foo-svc.default.svc.cluster.local
+        namespace: default
     weight: 1
   hostnames:
   - foo.example.com
@@ -83,4 +102,7 @@ Routes:
   matches:
   - path:
       pathPrefix: /login
-  routeName: default/foo-route
+  name:
+    kind: HTTPRoute
+    name: foo-route
+    namespace: default

@@ -76,36 +76,36 @@ kind: GatewayExtension
 metadata:
   name: jwt-ext-2
 spec:
-  type: JWTProviders
-  jwtProviders:
-  - name: my-example2
-    claimsToHeaders:
-      - name: org
-        header: x-org
-      - name: bar
-        header: x-bar
-    issuer: https://dev2.example.com
-    jwks:
-      remote:
-        url: https://dev2.example.com/jwks
-        backendRef:
-          name: remote-jwks
-          port: 8080
-        cacheDuration: 1m
-  - name: my-example3
-    claimsToHeaders:
-      - name: foo
-        header: x-foo
-    issuer: https://dev3.example.com
-    jwks:
-      local:
-        inline: |
-          -----BEGIN PUBLIC KEY-----
-          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAruK9KacQjDePRyfG7oPI
-          aqAIyCeOCBIGB2nBbDLGp1Szdm7rsWcrzGf7Avpa/ijLV9huoNvpdflld4B+SaT7
-          m3EDDMDUyA4LayJC5JBI10Qfu3Qn8BEpcdN2uRiycXOzgsoIXneXp9hENlS5Vsr3
-          ur5BaBCc+BZZRRaXDTLy6KyD1Pyd6XRsxyZXt/SYOIww0NSt5u0CTyZUGJhQungJ
-          pI8Hhrzdf87mLZGZd16dOGObE5LqFwk2prN3D0+owLsA25WJOPZXizxpTB4tPvJu
-          YGATajDpzrHf+WXgOgvwyxaHJSN/fE+eFuRT3ooDaAuytsfYotsn4z/ajdEPSwXY
-          CwIDAQAB
-          -----END PUBLIC KEY-----
+  jwt:
+    providers:
+    - name: my-example2
+      claimsToHeaders:
+        - name: org
+          header: x-org
+        - name: bar
+          header: x-bar
+      issuer: https://dev2.example.com
+      jwks:
+        remote:
+          url: https://dev2.example.com/jwks
+          backendRef:
+            name: remote-jwks
+            port: 8080
+          cacheDuration: 1m
+    - name: my-example3
+      claimsToHeaders:
+        - name: foo
+          header: x-foo
+      issuer: https://dev3.example.com
+      jwks:
+        local:
+          inline: |
+            -----BEGIN PUBLIC KEY-----
+            MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAruK9KacQjDePRyfG7oPI
+            aqAIyCeOCBIGB2nBbDLGp1Szdm7rsWcrzGf7Avpa/ijLV9huoNvpdflld4B+SaT7
+            m3EDDMDUyA4LayJC5JBI10Qfu3Qn8BEpcdN2uRiycXOzgsoIXneXp9hENlS5Vsr3
+            ur5BaBCc+BZZRRaXDTLy6KyD1Pyd6XRsxyZXt/SYOIww0NSt5u0CTyZUGJhQungJ
+            pI8Hhrzdf87mLZGZd16dOGObE5LqFwk2prN3D0+owLsA25WJOPZXizxpTB4tPvJu
+            YGATajDpzrHf+WXgOgvwyxaHJSN/fE+eFuRT3ooDaAuytsfYotsn4z/ajdEPSwXY
+            CwIDAQAB
+            -----END PUBLIC KEY-----

@@ -27,7 +27,9 @@ output:
       backends:
       - backend:
           port: 80
-          service: default/test-service.default.svc.cluster.local
+          service:
+            hostname: test-service.default.svc.cluster.local
+            namespace: default
         weight: 1
       hostnames:
       - grpc.example.com
@@ -36,7 +38,10 @@ output:
       matches:
       - path:
           exact: /example.Service/GetUser
-      routeName: default/test-grpc-route
+      name:
+        kind: GRPCRoute
+        name: test-grpc-route
+        namespace: default
 status:
 - apiVersion: gateway.networking.k8s.io/v1
   kind: GRPCRoute

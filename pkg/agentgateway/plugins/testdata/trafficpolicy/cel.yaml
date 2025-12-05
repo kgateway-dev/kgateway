@@ -29,9 +29,15 @@ spec:
 # Output
 output:
 - Policy:
-    name: traffic/default/agw:transformation:default/test
+    key: traffic/default/agw:transformation:default/test
+    name:
+      kind: AgentgatewayPolicy
+      name: agw
+      namespace: default
     target:
-      gateway: default/test
+      gateway:
+        name: test
+        namespace: default
     traffic:
       transformation:
         request:

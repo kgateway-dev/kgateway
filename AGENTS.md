@@ -3,6 +3,50 @@
 ## Project Overview
 kgateway is a **dual control plane** implementing the Kubernetes Gateway API for both Envoy and agentgateway. It's built on KRT (Kubernetes Declarative Controller Runtime from Istio) and uses a plugin-based architecture for extensibility.
 
+## Dual Controller Architecture
+
+### Controller Names & Isolation
+kgateway supports **two independent controllers** that can run side-by-side:
+- **Envoy Controller**: `kgateway.dev/kgateway` (defined in `wellknown.DefaultGatewayControllerName`)
+- **Agentgateway Controller**: `kgateway.dev/agentgateway` (defined in `wellknown.DefaultAgwControllerName`)
+
+**Critical Requirements:**
+1. Controllers MUST always respect `GatewayClass.spec.controllerName` Classname can matter, in the case of waypoints, but its always more specific information
+2. Controllers MUST NOT process resources belonging to the other controller
+3. Enable flags (`EnableEnvoy`, `EnableAgentgateway`) MUST be honored at all layers
+
+### How Controllers Are Isolated
+
+**Translation/KRT Collections:**
+- Gateway collections filter by controllerName at creation time
+- Routes inherit filtering from their parent Gateways
+- Policy attachment respects Gateway's controllerName
+
+**XDS Generation:**
+- `ProxySyncer` (Envoy): Only translates Gateways with envoy controllerName (filtered by `GatewaysForEnvoyTransformationFunc`)
+- `AgwSyncer` (Agentgateway): Only translates Gateways with agw controllerName (filtered in `GatewayCollection`)
+
+**Status Writing:**
+- Status syncers write status entries namespaced by controllerName
+- Route status has per-controller parent entries (multiple controllers can write status)
+- Gateway status is owned by the single controlling controller
+
+**Deployment:**
+- Gateway reconciler checks enable flags before calling deployer
+- Deployer selects chart based on Gateway's controllerName from GatewayClass
+- Chart selection: envoy chart for `kgateway.dev/kgateway`, agentgateway chart for `kgateway.dev/agentgateway`
+
+**Enable Flags:**
+- `EnableEnvoy` (default: true): Controls if envoy ProxySyncer, StatusSyncer, and GatewayClass creation run
+- `EnableAgentgateway` (default: true): Controls if agentgateway AgwSyncer, StatusSyncer, and GatewayClass creation run  
+- Gateway reconciler checks flags before deploying resources for each controller
+
+### Key Files for Controller Filtering
+- `pkg/krtcollections/policy.go:473`: Envoy Gateway collection filtering
+- `pkg/agentgateway/translator/gateway_collection.go:218`: Agentgateway Gateway collection filtering
+- `internal/kgateway/controller/gw_controller.go:272-293`: Gateway reconciler enable flag checks
+- `internal/kgateway/deployer/gateway_parameters.go:376-378`: Chart selection based on controllerName
+
 ## Architecture (Read This First!)
 
 ### Translation Pipeline (3 phases)

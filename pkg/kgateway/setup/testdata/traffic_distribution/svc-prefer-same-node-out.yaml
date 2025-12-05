@@ -26,6 +26,31 @@ endpoints:
     - endpoint:
         address:
           socketAddress:
+            address: 10.244.4.4
+            portValue: 8080
+      loadBalancingWeight: 1
+    loadBalancingWeight: 1
+    locality:
+      region: r2
+      subZone: r2z1s1
+      zone: r2z1
+    priority: 5
+  - lbEndpoints:
+    - endpoint:
+        address:
+          socketAddress:
+            address: 10.244.1.11
+            portValue: 8080
+      loadBalancingWeight: 1
+    loadBalancingWeight: 1
+    locality:
+      region: r1
+      subZone: r1z2s3
+      zone: r1z2
+  - lbEndpoints:
+    - endpoint:
+        address:
+          socketAddress:
             address: 10.244.2.14
             portValue: 8080
       loadBalancingWeight: 1
@@ -48,31 +73,6 @@ endpoints:
       subZone: r1z3s4
       zone: r1z3
     priority: 5
-  - lbEndpoints:
-    - endpoint:
-        address:
-          socketAddress:
-            address: 10.244.4.4
-            portValue: 8080
-      loadBalancingWeight: 1
-    loadBalancingWeight: 1
-    locality:
-      region: r2
-      subZone: r2z1s1
-      zone: r2z1
-    priority: 5
-  - lbEndpoints:
-    - endpoint:
-        address:
-          socketAddress:
-            address: 10.244.1.11
-            portValue: 8080
-      loadBalancingWeight: 1
-    loadBalancingWeight: 1
-    locality:
-      region: r1
-      subZone: r1z2s3
-      zone: r1z2
 listeners:
 - address:
     socketAddress:

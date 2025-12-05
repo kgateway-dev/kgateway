@@ -20,23 +20,32 @@ Binds:
   port: 8090
 Listeners:
 - bindKey: 8090/default/example-grpc-gateway
-  gatewayName: default/example-grpc-gateway
   key: default/example-grpc-gateway.grpc
-  name: grpc
+  name:
+    gatewayName: example-grpc-gateway
+    gatewayNamespace: default
+    listenerName: grpc
   protocol: HTTP
 Routes:
 - backends:
   - backend:
       port: 9001
-      service: default/grpc-svc-1.default.svc.cluster.local
+      service:
+        hostname: grpc-svc-1.default.svc.cluster.local
+        namespace: default
     weight: 50
   - backend:
       port: 9002
-      service: default/grpc-svc-2.default.svc.cluster.local
+      service:
+        hostname: grpc-svc-2.default.svc.cluster.local
+        namespace: default
     weight: 50
   key: default/example-grpc-multi-backend-route.0.grpc
   listenerKey: default/example-grpc-gateway.grpc
   matches:
   - path:
       exact: /example.multi.Service/MultiMethod
-  routeName: default/example-grpc-multi-backend-route
+  name:
+    kind: GRPCRoute
+    name: example-grpc-multi-backend-route
+    namespace: default

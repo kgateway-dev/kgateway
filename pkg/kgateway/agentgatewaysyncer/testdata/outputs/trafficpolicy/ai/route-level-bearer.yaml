@@ -12,15 +12,20 @@ Backends:
       - name: backend
         openai:
           model: gpt-4o-mini
-  name: default/openai
+  key: default/openai
+  name:
+    name: openai
+    namespace: default
 Binds:
 - key: 8080/default/example-gateway
   port: 8080
 Listeners:
 - bindKey: 8080/default/example-gateway
-  gatewayName: default/example-gateway
   key: default/example-gateway.http
-  name: http
+  name:
+    gatewayName: example-gateway
+    gatewayNamespace: default
+    listenerName: http
   protocol: HTTP
 Policies:
 - backend:
@@ -33,7 +38,9 @@ Policies:
           webhook:
             backend:
               port: 8443
-              service: default/webhook.default.svc.cluster.local
+              service:
+                hostname: webhook.default.svc.cluster.local
+                namespace: default
             forwardHeaderMatches:
             - exact: bar
               name: x-foo
@@ -56,7 +63,9 @@ Policies:
         - webhook:
             backend:
               port: 8443
-              service: default/webhook.default.svc.cluster.local
+              service:
+                hostname: webhook.default.svc.cluster.local
+                namespace: default
         - regex:
             action: MASK
             rules:
@@ -73,9 +82,15 @@ Policies:
           role: system
         - content: Remember to follow company guidelines.
           role: system
-  name: backend/default/ai-policy:ai:default/openai-test
+  key: backend/default/ai-policy:ai:default/openai-test
+  name:
+    kind: AgentgatewayPolicy
+    name: ai-policy
+    namespace: default
   target:
-    route: default/openai-test
+    route:
+      name: openai-test
+      namespace: default
 Routes:
 - backends:
   - backend:
@@ -86,4 +101,7 @@ Routes:
   matches:
   - path:
       pathPrefix: /v1/chat/completions
-  routeName: default/openai-test
+  name:
+    kind: HTTPRoute
+    name: openai-test
+    namespace: default

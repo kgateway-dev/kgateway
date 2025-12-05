@@ -11,14 +11,22 @@ Binds:
   port: 8080
 Listeners:
 - bindKey: 8080/default/example-gateway
-  gatewayName: default/example-gateway
   key: default/example-gateway.http
-  name: http
+  name:
+    gatewayName: example-gateway
+    gatewayNamespace: default
+    listenerName: http
   protocol: HTTP
 Policies:
-- name: traffic/default/csrf-policy:csrf:default/example-gateway
+- key: traffic/default/csrf-policy:csrf:default/example-gateway
+  name:
+    kind: AgentgatewayPolicy
+    name: csrf-policy
+    namespace: default
   target:
-    gateway: default/example-gateway
+    gateway:
+      name: example-gateway
+      namespace: default
   traffic:
     csrf:
       additionalOrigins:
@@ -29,7 +37,9 @@ Routes:
 - backends:
   - backend:
       port: 8000
-      service: default/httpbin.default.svc.cluster.local
+      service:
+        hostname: httpbin.default.svc.cluster.local
+        namespace: default
     weight: 1
   hostnames:
   - httpbin.local
@@ -38,4 +48,7 @@ Routes:
   matches:
   - path:
       pathPrefix: /
-  routeName: default/httpbin-route
+  name:
+    kind: HTTPRoute
+    name: httpbin-route
+    namespace: default

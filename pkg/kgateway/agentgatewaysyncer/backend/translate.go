@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/agentgateway/agentgateway/go/api"
-	wrappers "google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
 	corev1 "k8s.io/api/core/v1"
@@ -35,7 +34,8 @@ func BuildAgwBackend(
 
 	if b := backend.Spec.Static; b != nil {
 		return []*api.Backend{{
-			Name: backend.Namespace + "/" + backend.Name,
+			Key:  backend.Namespace + "/" + backend.Name,
+			Name: plugins.ResourceName(backend),
 			Kind: &api.Backend_Static{
 				Static: &api.StaticBackend{
 					Host: b.Host,
@@ -47,7 +47,8 @@ func BuildAgwBackend(
 	}
 	if b := backend.Spec.DynamicForwardProxy; b != nil {
 		return []*api.Backend{{
-			Name: backend.Namespace + "/" + backend.Name,
+			Key:  backend.Namespace + "/" + backend.Name,
+			Name: plugins.ResourceName(backend),
 			Kind: &api.Backend_Dynamic{
 				Dynamic: &api.DynamicForwardProxy{},
 			},
@@ -81,7 +82,8 @@ func translateMCPBackends(ctx plugins.PolicyCtx, be *agentgateway.AgentgatewayBa
 				logger.Warn("failed to translate AI backend policies", "err", err)
 			}
 			staticBackend := &api.Backend{
-				Name: staticBackendRef,
+				Key:  staticBackendRef,
+				Name: plugins.ResourceName(be),
 				Kind: &api.Backend_Static{
 					Static: &api.StaticBackend{
 						Host: target.Static.Host,
@@ -185,8 +187,11 @@ func translateMCPBackends(ctx plugins.PolicyCtx, be *agentgateway.AgentgatewayBa
 					mcpTarget := &api.MCPTarget{
 						Name: targetName,
 						Backend: &api.BackendReference{
-							Kind: &api.BackendReference_Service{
-								Service: service.Namespace + "/" + svcHostname,
+							Kind: &api.BackendReference_Service_{
+								Service: &api.BackendReference_Service{
+									Hostname:  svcHostname,
+									Namespace: service.Namespace,
+								},
 							},
 							Port: uint32(port.Port), //nolint:gosec // G115: Kubernetes service ports are always positive
 						},
@@ -200,7 +205,8 @@ func translateMCPBackends(ctx plugins.PolicyCtx, be *agentgateway.AgentgatewayBa
 		}
 	}
 	mcpBackend := &api.Backend{
-		Name: be.Namespace + "/" + be.Name,
+		Key:  be.Namespace + "/" + be.Name,
+		Name: plugins.ResourceName(be),
 		Kind: &api.Backend_Mcp{
 			Mcp: &api.MCPBackend{
 				Targets: mcpTargets,
@@ -250,9 +256,10 @@ func translateAIBackends(ctx plugins.PolicyCtx, be *agentgateway.AgentgatewayBac
 		}
 	}
 
-	backendName := utils.InternalBackendName(be.Namespace, be.Name, "")
+	backendName := utils.InternalBackendKey(be.Namespace, be.Name, "")
 	backend := &api.Backend{
-		Name: backendName,
+		Key:  backendName,
+		Name: plugins.ResourceName(be),
 		Kind: &api.Backend_Ai{
 			Ai: aiBackend,
 		},
@@ -265,7 +272,7 @@ func translateAIBackends(ctx plugins.PolicyCtx, be *agentgateway.AgentgatewayBac
 func translateBackendPolicies(
 	ctx plugins.PolicyCtx,
 	namespace string,
-	policies *agentgateway.AgentgatewayPolicyBackendFull) ([]*api.BackendPolicySpec, error) {
+	policies *agentgateway.BackendFull) ([]*api.BackendPolicySpec, error) {
 	if policies == nil {
 		return nil, nil
 	}
@@ -274,25 +281,25 @@ func translateBackendPolicies(
 
 func translateMCPBackendPolicies(
 	ctx plugins.PolicyCtx,
-	namespace string, policies *agentgateway.AgentgatewayPolicyBackendMCP) ([]*api.BackendPolicySpec, error) {
+	namespace string, policies *agentgateway.BackendWithMCP) ([]*api.BackendPolicySpec, error) {
 	if policies == nil {
 		return nil, nil
 	}
-	return translateBackendPolicies(ctx, namespace, &agentgateway.AgentgatewayPolicyBackendFull{
-		AgentgatewayPolicyBackendSimple: policies.AgentgatewayPolicyBackendSimple,
-		MCP:                             policies.MCP,
+	return translateBackendPolicies(ctx, namespace, &agentgateway.BackendFull{
+		BackendSimple: policies.BackendSimple,
+		MCP:           policies.MCP,
 	})
 }
 
 func translateAIBackendPolicies(
 	ctx plugins.PolicyCtx,
-	namespace string, policies *agentgateway.AgentgatewayPolicyBackendAI) ([]*api.BackendPolicySpec, error) {
+	namespace string, policies *agentgateway.BackendWithAI) ([]*api.BackendPolicySpec, error) {
 	if policies == nil {
 		return nil, nil
 	}
-	return translateBackendPolicies(ctx, namespace, &agentgateway.AgentgatewayPolicyBackendFull{
-		AgentgatewayPolicyBackendSimple: policies.AgentgatewayPolicyBackendSimple,
-		AI:                              policies.AI,
+	return translateBackendPolicies(ctx, namespace, &agentgateway.BackendFull{
+		BackendSimple: policies.BackendSimple,
+		AI:            policies.AI,
 	})
 }
 
@@ -309,34 +316,34 @@ func translateLLMProvider(llm *agentgateway.LLMProvider, providerName string) (*
 	}
 
 	if llm.Path != "" {
-		provider.PathOverride = wrappers.String(llm.Path)
+		provider.PathOverride = &llm.Path
 	}
 
 	// Extract auth token and model based on provider
 	if llm.OpenAI != nil {
 		provider.Provider = &api.AIBackend_Provider_Openai{
 			Openai: &api.AIBackend_OpenAI{
-				Model: stringPb(llm.OpenAI.Model),
+				Model: llm.OpenAI.Model,
 			},
 		}
 	} else if llm.AzureOpenAI != nil {
 		provider.Provider = &api.AIBackend_Provider_Azureopenai{
 			Azureopenai: &api.AIBackend_AzureOpenAI{
 				Host:       llm.AzureOpenAI.Endpoint,
-				Model:      stringPb(llm.AzureOpenAI.DeploymentName),
-				ApiVersion: stringPb(llm.AzureOpenAI.ApiVersion),
+				Model:      llm.AzureOpenAI.DeploymentName,
+				ApiVersion: llm.AzureOpenAI.ApiVersion,
 			},
 		}
 	} else if llm.Anthropic != nil {
 		provider.Provider = &api.AIBackend_Provider_Anthropic{
 			Anthropic: &api.AIBackend_Anthropic{
-				Model: stringPb(llm.Anthropic.Model),
+				Model: llm.Anthropic.Model,
 			},
 		}
 	} else if llm.Gemini != nil {
 		provider.Provider = &api.AIBackend_Provider_Gemini{
 			Gemini: &api.AIBackend_Gemini{
-				Model: stringPb(llm.Gemini.Model),
+				Model: llm.Gemini.Model,
 			},
 		}
 	} else if llm.VertexAI != nil {
@@ -344,21 +351,21 @@ func translateLLMProvider(llm *agentgateway.LLMProvider, providerName string) (*
 		provider.Provider = &api.AIBackend_Provider_Vertex{
 			Vertex: &api.AIBackend_Vertex{
 				Region:    llm.VertexAI.Region,
-				Model:     stringPb(llm.VertexAI.Model),
+				Model:     llm.VertexAI.Model,
 				ProjectId: llm.VertexAI.ProjectId,
 			},
 		}
 	} else if llm.Bedrock != nil {
 		region := llm.Bedrock.Region
-		var guardrailIdentifier, guardrailVersion *wrappers.StringValue
+		var guardrailIdentifier, guardrailVersion *string
 		if llm.Bedrock.Guardrail != nil {
-			guardrailIdentifier = wrappers.String(llm.Bedrock.Guardrail.GuardrailIdentifier)
-			guardrailVersion = wrappers.String(llm.Bedrock.Guardrail.GuardrailVersion)
+			guardrailIdentifier = &llm.Bedrock.Guardrail.GuardrailIdentifier
+			guardrailVersion = &llm.Bedrock.Guardrail.GuardrailVersion
 		}
 
 		provider.Provider = &api.AIBackend_Provider_Bedrock{
 			Bedrock: &api.AIBackend_Bedrock{
-				Model:               stringPb(llm.Bedrock.Model),
+				Model:               llm.Bedrock.Model,
 				Region:              region,
 				GuardrailIdentifier: guardrailIdentifier,
 				GuardrailVersion:    guardrailVersion,
@@ -369,13 +376,6 @@ func translateLLMProvider(llm *agentgateway.LLMProvider, providerName string) (*
 	}
 
 	return provider, nil
-}
-
-func stringPb(model *string) *wrappers.StringValue {
-	if model == nil {
-		return nil
-	}
-	return wrappers.String(*model)
 }
 
 func toMCPProtocol(appProtocol string) api.MCPTarget_Protocol {

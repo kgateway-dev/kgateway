@@ -23,13 +23,6 @@ runs:
         docker system df -v
 
         # https://github.com/actions/runner-images/discussions/3242 github runners are bad at cleanup
-        echo "Removing large packages"
-        time sudo apt-get remove -y '^dotnet-.*' '^llvm-.*' 'php.*' '^mongodb-.*' '^mysql-.*' azure-cli google-chrome-stable \
-          firefox powershell mono-devel libgl1-mesa-dri || true
-        time sudo apt-get autoremove -y || true
-        time sudo apt-get clean -y || true
-        echo "Done removing large packages"
-        df -h
 
         # Clean up pre-installed tools
         # For some reason, GHA often takes minutes (up to 20min observed) to clean up somehow.
@@ -85,4 +78,4 @@ runs:
     - name: Install Dependencies
       if: steps.cache.outputs.cache-hit != 'true'
       shell: bash
-      run: make mod-download
+      run: time make mod-download

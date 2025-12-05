@@ -30,6 +30,8 @@ runs:
       CLUSTER_NAME: ${{ inputs.cluster-name }}
       ISTIO_VERSION: ${{ inputs.istio-version }}
       TEST_PKG: ./test/e2e/tests
+      # Doesn't really matter, but using the same as `go build` means we can re-use the same Go cache.
+      CGO_ENABLED: 0
     shell: bash
     run: make e2e-test
   - name: Archive bug report directory on failure

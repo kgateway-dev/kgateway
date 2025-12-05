@@ -15,8 +15,6 @@ type JWTAuthentication struct {
 	// +optional
 	ExtensionRef *shared.NamespacedObjectReference `json:"extensionRef,omitempty"`
 
-	// TODO: add support for ValidationMode here (REQUIRE_VALID,ALLOW_MISSING,ALLOW_MISSING_OR_FAILED)
-
 	// Disable all JWT filters.
 	// Can be used to disable JWT policies applied at a higher level in the config hierarchy.
 	// +optional

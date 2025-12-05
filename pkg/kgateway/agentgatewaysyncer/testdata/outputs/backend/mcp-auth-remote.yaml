@@ -7,28 +7,41 @@ Addresses:
     - servicePort: 80
     - servicePort: 90
 Backends:
-- mcp:
+- key: default/mcp-backend-selector
+  mcp:
     targets:
     - backend:
         port: 80
-        service: default/example-svc.default.svc.cluster.local
+        service:
+          hostname: example-svc.default.svc.cluster.local
+          namespace: default
       name: example-svc-80
       protocol: STREAMABLE_HTTP
     - backend:
         port: 90
-        service: default/example-svc.default.svc.cluster.local
+        service:
+          hostname: example-svc.default.svc.cluster.local
+          namespace: default
       name: example-svc-90
       protocol: SSE
-  name: default/mcp-backend-selector
-- mcp:
+  name:
+    name: mcp-backend-selector
+    namespace: default
+- key: default/mcp-backend-static
+  mcp:
     targets:
     - backend:
         backend: default/mcp-backend-static/mcp-target
       name: mcp-target
       path: override-sse
       protocol: STREAMABLE_HTTP
-  name: default/mcp-backend-static
-- name: default/mcp-backend-static/mcp-target
+  name:
+    name: mcp-backend-static
+    namespace: default
+- key: default/mcp-backend-static/mcp-target
+  name:
+    name: mcp-backend-static
+    namespace: default
   static:
     host: mcp-app.default.svc.cluster.local
     port: 8000
@@ -37,9 +50,11 @@ Binds:
   port: 80
 Listeners:
 - bindKey: 80/default/example-gateway
-  gatewayName: default/example-gateway
   key: default/example-gateway.http
-  name: http
+  name:
+    gatewayName: example-gateway
+    gatewayNamespace: default
+    listenerName: http
   protocol: HTTP
 Routes:
 - backends:
@@ -50,7 +65,10 @@ Routes:
   - example.com
   key: default/example-route.0.0.http
   listenerKey: default/example-gateway.http
-  routeName: default/example-route
+  name:
+    kind: HTTPRoute
+    name: example-route
+    namespace: default
 - backends:
   - backend:
       backend: default/mcp-backend-selector
@@ -59,4 +77,7 @@ Routes:
   - example.com
   key: default/example-route.1.0.http
   listenerKey: default/example-gateway.http
-  routeName: default/example-route
+  name:
+    kind: HTTPRoute
+    name: example-route
+    namespace: default

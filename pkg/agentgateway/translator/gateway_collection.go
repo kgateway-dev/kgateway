@@ -94,7 +94,7 @@ type AgwBackend struct {
 }
 
 func (g AgwBackend) ResourceName() string {
-	return g.Name
+	return g.Key
 }
 
 func (g AgwBackend) Equals(other AgwBackend) bool {

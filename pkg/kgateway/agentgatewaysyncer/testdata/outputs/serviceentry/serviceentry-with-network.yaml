@@ -92,18 +92,25 @@ Binds:
   port: 80
 Listeners:
 - bindKey: 80/default/example-gateway
-  gatewayName: default/example-gateway
   key: default/example-gateway.http
-  name: http
+  name:
+    gatewayName: example-gateway
+    gatewayNamespace: default
+    listenerName: http
   protocol: HTTP
 Routes:
 - backends:
   - backend:
       port: 8080
-      service: default/api.example.com
+      service:
+        hostname: api.example.com
+        namespace: default
     weight: 1
   hostnames:
   - api.example.com
   key: default/multi-network-route.0.0.http
   listenerKey: default/example-gateway.http
-  routeName: default/multi-network-route
+  name:
+    kind: HTTPRoute
+    name: multi-network-route
+    namespace: default
