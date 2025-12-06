@@ -442,7 +442,7 @@ type Traffic struct {
 
 	// retry defines the policy for retrying requests.
 	// +optional
-	Retry *shared.Retry `json:"retry,omitempty"`
+	Retry *Retry `json:"retry,omitempty"`
 
 	// authorization specifies the access rules based on roles and permissions.
 	// If multiple authorization rules are applied across different policies (at the same, or different, attahcment points),
