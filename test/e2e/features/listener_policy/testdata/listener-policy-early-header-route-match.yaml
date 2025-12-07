@@ -1,5 +1,5 @@
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: HTTPListenerPolicy
+kind: ListenerPolicy
 metadata:
   name: early-header-route-match
   namespace: default
@@ -8,10 +8,11 @@ spec:
   - group: gateway.networking.k8s.io
     kind: Gateway
     name: gw
-  earlyRequestHeaderModifier:
-    add:
-    - name: "x-route-match"
-      value: "allow"
+  httpSettings:
+    earlyRequestHeaderModifier:
+      add:
+      - name: "x-route-match"
+        value: "allow"
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute

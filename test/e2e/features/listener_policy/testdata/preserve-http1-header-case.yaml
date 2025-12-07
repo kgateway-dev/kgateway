@@ -1,5 +1,5 @@
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: HTTPListenerPolicy
+kind: ListenerPolicy
 metadata:
   name: preserve-http1-header-case
   namespace: default
@@ -8,7 +8,8 @@ spec:
   - group: gateway.networking.k8s.io
     kind: Gateway
     name: gw
-  preserveHttp1HeaderCase: true
+  httpSettings:
+    preserveHttp1HeaderCase: true
 ---
 kind: BackendConfigPolicy
 apiVersion: gateway.kgateway.dev/v1alpha1

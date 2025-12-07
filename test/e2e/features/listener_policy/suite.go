@@ -1,6 +1,6 @@
 //go:build e2e
 
-package http_listener_policy
+package listener_policy
 
 import (
 	"context"
@@ -66,6 +66,7 @@ func (s *testingSuite) SetupSuite() {
 		"TestAccessLogEmittedToStdout":           {gatewayManifest, httpRouteManifest, accessLogManifest},
 		"TestHttpListenerPolicyClearStaleStatus": {gatewayManifest, httpRouteManifest, serverHeaderManifest},
 		"TestEarlyRequestHeaderModifier":         {gatewayManifest, earlyHeaderMutationManifest},
+		"TestProxyProtocol":                      {gatewayManifest, proxyProtocolManifest},
 	}
 }
 
@@ -346,4 +347,31 @@ func (s *testingSuite) TestEarlyRequestHeaderModifier() {
 			Body:       gomega.ContainSubstring("Welcome to nginx!"),
 		},
 	)
+}
+
+// Test that enabling PROXY protocol causes plain HTTP (no PROXY header) to be rejected.
+func (s *testingSuite) TestProxyProtocol() {
+	// Attempt a normal HTTP request; expect curl to error (connection closed/empty reply).
+	s.testInstallation.Assertions.AssertEventualCurlError(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithHostHeader("example.com"),
+			curl.WithPort(8080),
+		},
+		0, // accept any curl error code
+	)
+
+	// test with PROXY protocol header; expect 200 OK
+	s.testInstallation.Assertions.AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithHostHeader("example.com"),
+			curl.WithPort(8080),
+			curl.WithProxyProto(),
+		},
+		&matchers.HttpResponse{StatusCode: http.StatusOK})
 }
