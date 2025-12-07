@@ -15,5 +15,5 @@ controller:
   logLevel: debug
   # Extra environment variables for the controller
   extraEnv:
-    # This must be set to "false" (not disabled) for Tilt/debugging to work properly
+    # Keep leader election enabled for Tilt/debugging (set to "false" to keep it active)
     KGW_DISABLE_LEADER_ELECTION: "false"
