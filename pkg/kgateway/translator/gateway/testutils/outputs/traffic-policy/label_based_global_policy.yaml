@@ -82,9 +82,9 @@ Listeners:
   metadata:
     filterMetadata:
       merge.HTTPListenerPolicy.gateway.kgateway.dev:
-        default.httpSettings.accessLog:
+        accessLog:
         - gateway.kgateway.dev/HTTPListenerPolicy/infra/accesslog
-        default.httpSettings.accessLogConfig:
+        accessLogConfig:
         - gateway.kgateway.dev/HTTPListenerPolicy/infra/accesslog
   name: listener~80
 Routes:
@@ -92,9 +92,9 @@ Routes:
   metadata:
     filterMetadata:
       merge.HTTPListenerPolicy.gateway.kgateway.dev:
-        default.httpSettings.accessLog:
+        accessLog:
         - gateway.kgateway.dev/HTTPListenerPolicy/infra/accesslog
-        default.httpSettings.accessLogConfig:
+        accessLogConfig:
         - gateway.kgateway.dev/HTTPListenerPolicy/infra/accesslog
   name: listener~80
   virtualHosts:
