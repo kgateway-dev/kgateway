@@ -58,7 +58,6 @@ COPY --from=tilt-helper /go/bin/dlv /go/bin/dlv
 COPY --from=tilt-helper /process.txt .
 COPY --from=tilt-helper /start.sh .
 COPY --from=tilt-helper /restart.sh .
-COPY --from=tilt-helper /go/bin/dlv .
 COPY $binary_name /usr/local/bin/kgateway
 RUN chmod 755 /usr/local/bin/kgateway
 """
