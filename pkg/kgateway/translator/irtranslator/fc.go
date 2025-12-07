@@ -498,12 +498,9 @@ func (info *FilterChainInfo) toTransportSocket() *envoycorev3.TransportSocket {
 	out := &envoytlsv3.DownstreamTlsContext{
 		CommonTlsContext: common,
 	}
-	// Set require_client_certificate explicitly to avoid Envoy deprecation warnings
+
 	if tlsConfig.ClientCertificateValidation != nil {
 		out.RequireClientCertificate = &wrapperspb.BoolValue{Value: tlsConfig.ClientCertificateValidation.RequireClientCertificate}
-	} else {
-		// https://gateway-api.sigs.k8s.io/reference/1.4/spec/#frontendtlsvalidation - Defaults to AllowValidOnly.
-		out.RequireClientCertificate = &wrapperspb.BoolValue{Value: true}
 	}
 	typedConfig, _ := utils.MessageToAny(out)
 

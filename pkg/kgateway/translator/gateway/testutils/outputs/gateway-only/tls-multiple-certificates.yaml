@@ -45,7 +45,6 @@ Listeners:
             privateKey:
               inlineBytes: LS0tLS1CRUdJTiBFQyBQUklWQVRFIEtFWS0tLS0tCk1IY0NBUUVFSUU1OGtnZFZiV0doSzRXVTZlNlAzVkN6bzNlb1EzcnJlZXJVelUvWngyblJvQW9HQ0NxR1NNNDkKQXdFSG9VUURRZ0FFQjJSbW51SHZDVmRvV2tZRE5TSWNvUEZsS2lnYzFOVC92YmozZDJpa1Vwb0NEWi9mVEFoUwp0djh1WloxMHIyZnArYmRmRngwVUpsckVVR2tXQzN4ZVRRPT0KLS0tLS1FTkQgRUMgUFJJVkFURSBLRVktLS0tLQo=
           tlsParams: {}
-        requireClientCertificate: true
   name: listener~443
 Routes:
 - ignorePortInHostMatching: true
