@@ -88,7 +88,6 @@ func constructAPIKeyAuth(
 			krtctx,
 			from,
 			secretGK,
-			policy.Namespace,
 			ak.SecretSelector.MatchLabels,
 		)
 		if err != nil {

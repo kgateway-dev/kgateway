@@ -57,6 +57,15 @@ func (s *testingSuite) TestAPIKeyAuthWithHTTPRouteLevelPolicy() {
 		statusWithAPIKeyCurlOpts,
 		expectStatus200Success,
 	)
+	// has valid API key with Bearer prefix in Authorization header, should succeed
+	s.T().Log("The /status route has API key auth applied at HTTPRoute level, should succeed when valid API key is present with Bearer prefix in Authorization header")
+	statusWithBearerAPIKeyCurlOpts := append(statusReqCurlOpts, curl.WithHeader("Authorization", "Bearer k-123"))
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		statusWithBearerAPIKeyCurlOpts,
+		expectStatus200Success,
+	)
 
 	getReqCurlOpts := []curl.Option{
 		curl.WithHost(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
@@ -80,6 +89,33 @@ func (s *testingSuite) TestAPIKeyAuthWithHTTPRouteLevelPolicy() {
 		testdefaults.CurlPodExecOpt,
 		getWithAPIKeyCurlOpts,
 		expectStatus200Success,
+	)
+	// has valid API key with Bearer prefix in Authorization header, should succeed
+	s.T().Log("The /get route has API key auth applied at HTTPRoute level, should succeed when valid API key is present with Bearer prefix in Authorization header")
+	getWithBearerAPIKeyCurlOpts := append(getReqCurlOpts, curl.WithHeader("Authorization", "Bearer k-123"))
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		getWithBearerAPIKeyCurlOpts,
+		expectStatus200Success,
+	)
+	// has valid API key with Bearer prefix using different key, should succeed
+	s.T().Log("The /get route has API key auth applied at HTTPRoute level, should succeed when valid API key (k-456) is present with Bearer prefix in Authorization header")
+	getWithBearerAPIKey2CurlOpts := append(getReqCurlOpts, curl.WithHeader("Authorization", "Bearer k-456"))
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		getWithBearerAPIKey2CurlOpts,
+		expectStatus200Success,
+	)
+	// has invalid API key with Bearer prefix in Authorization header, should fail
+	s.T().Log("The /get route has API key auth applied at HTTPRoute level, should fail when invalid API key is present with Bearer prefix in Authorization header")
+	getWithInvalidBearerAPIKeyCurlOpts := append(getReqCurlOpts, curl.WithHeader("Authorization", "Bearer invalid-key"))
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		getWithInvalidBearerAPIKeyCurlOpts,
+		expectAPIKeyAuthDenied,
 	)
 }
 

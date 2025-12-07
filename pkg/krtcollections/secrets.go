@@ -70,14 +70,15 @@ func (s *SecretIndex) GetSecret(kctx krt.HandlerContext, from From, secretRef gw
 	return secret, nil
 }
 
-// GetSecretsBySelector retrieves secrets matching the label selector in the specified namespace,
-// validating reference grants to ensure the source object is allowed to reference each secret.
-// Returns an error if any matching secret requires a ReferenceGrant but doesn't have one.
+// GetSecretsBySelector retrieves secrets matching the label selector,
+// validating reference grants to ensure the source (from) object is allowed to reference each secret.
+// Processes all matching secrets, skipping those without required ReferenceGrants.
+// Returns all accessible secrets. Only returns an error if no accessible secrets were found and some matching secrets
+// were skipped due to missing ReferenceGrants (indicating a possible configuration issue).
 func (s *SecretIndex) GetSecretsBySelector(
 	kctx krt.HandlerContext,
 	from From,
 	secretGK schema.GroupKind,
-	namespace string,
 	matchLabels map[string]string,
 ) ([]ir.Secret, error) {
 	col := s.secrets[secretGK]
@@ -110,6 +111,7 @@ func (s *SecretIndex) GetSecretsBySelector(
 
 	// Validate ReferenceGrant for cross-namespace secrets and collect allowed ones
 	var allowedSecrets []ir.Secret
+	var hasMissingGrants bool
 	for _, secret := range labelMatchedSecrets {
 		// Only check ReferenceGrant if this is a cross-namespace reference
 		if from.Namespace != secret.Namespace {
@@ -120,10 +122,18 @@ func (s *SecretIndex) GetSecretsBySelector(
 				Name:      secret.Name,
 			}
 			if !s.refgrants.ReferenceAllowed(kctx, from.GroupKind, from.Namespace, to) {
-				return nil, ErrMissingReferenceGrant
+				hasMissingGrants = true
+				continue
 			}
 		}
 		allowedSecrets = append(allowedSecrets, secret)
+	}
+
+	// Only return an error if no allowed secrets were found and there were missing grants.
+	// We don't want to list all the secrets that were skipped. We only want to hint
+	// the user that it might be a configuration issue.
+	if len(allowedSecrets) == 0 && hasMissingGrants {
+		return allowedSecrets, ErrMissingReferenceGrant
 	}
 
 	return allowedSecrets, nil
