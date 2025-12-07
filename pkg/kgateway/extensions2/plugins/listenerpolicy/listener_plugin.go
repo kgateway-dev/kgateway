@@ -325,7 +325,7 @@ func (p *listenerPolicyPluginGwPass) ApplyHCM(
 	pCtx *ir.HcmContext,
 	out *envoy_hcm.HttpConnectionManager,
 ) error {
-	logger.Debug("applying to HCM", "listenerPort", pCtx.ListenerPort, "policyType", fmt.Sprintf("%T", pCtx.Policy))
+	logger.Debug("applying to HCM", "listener_port", pCtx.ListenerPort, "policy_type", fmt.Sprintf("%T", pCtx.Policy))
 
 	cfg := p.getPolicy(pCtx.Policy, pCtx.ListenerPort)
 	policy := cfg.http

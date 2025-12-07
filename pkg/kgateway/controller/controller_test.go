@@ -619,7 +619,6 @@ func (s *ControllerSuite) TestGatewayClass() {
 			}
 		}, defaultPollTimeout, 500*time.Millisecond, "timed out waiting for ParametersRef to be restored for GatewayClass %s", selfManagedGatewayClassName)
 	})
-
 }
 
 //
