@@ -1,0 +1,19 @@
+# Tilt-specific values for local development with kgateway
+# This file sets up the controller for local development and debugging
+
+# Image settings for local development
+image:
+  registry: ghcr.io/kgateway-dev
+
+# Configure validation behavior
+validation:
+  level: strict
+
+# Controller configuration
+controller:
+  # Enable debug logging for troubleshooting
+  logLevel: debug
+  # Extra environment variables for the controller
+  extraEnv:
+    # This must be set to "false" (not disabled) for Tilt/debugging to work properly
+    KGW_DISABLE_LEADER_ELECTION: "false"

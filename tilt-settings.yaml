@@ -1,7 +1,7 @@
 
 helm_installation_name: kgateway
 helm_values_files:
-- ./test/e2e/tests/manifests/common-recommendations.yaml
+- ./tilt-values.yaml
 helm_installation_namespace: kgateway-system
 
 enabled_providers:

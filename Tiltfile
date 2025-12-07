@@ -17,7 +17,7 @@ if str(local("command -v " + helm_cmd + " || true", quiet = True)) == "":
 settings = {
     "helm_installation_name": "kgateway",
     "helm_installation_namespace": "kgateway-system",
-    "helm_values_files": ["./test/kubernetes/e2e/tests/manifests/common-recommendations.yaml"],
+    "helm_values_files": ["./tilt-values.yaml"],
 }
 
 tilt_file = "./tilt-settings.yaml" if os.path.exists("./tilt-settings.yaml") else "./tilt-settings.json"
@@ -30,10 +30,13 @@ kgateway_installed_cmd = "{0} -n {1} status {2} || true".format(helm_cmd, settin
 kgateway_status = str(local(kgateway_installed_cmd, quiet = True))
 kgateway_installed = "STATUS: deployed" in kgateway_status
 
+# Base image for kgateway - should match the one in Makefile
+envoy_image = "quay.io/solo-io/envoy-gloo:1.36.2-patch1"
+
 tilt_helper_dockerfile = """
-# Tilt image
+# Tilt helper image for live reloading support and debugger
 FROM golang:latest as tilt-helper
-# Install delve. Note this should be kept in step with the Go release minor version.
+# Install delve debugger. Note this should be kept in step with the Go release minor version.
 RUN go install github.com/go-delve/delve/cmd/dlv@latest
 # Support live reloading with Tilt
 RUN wget --output-document /restart.sh --quiet https://raw.githubusercontent.com/tilt-dev/rerun-process-wrapper/master/restart.sh  && \
@@ -43,19 +46,25 @@ RUN wget --output-document /restart.sh --quiet https://raw.githubusercontent.com
 """
 
 tilt_dockerfile = """
-FROM golang:latest as tilt
+FROM $envoy_image as tilt
+ENV DEBIAN_FRONTEND=noninteractive
+# Install wget for probes and update deps (matches cmd/kgateway/Dockerfile)
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install --no-install-recommends -y ca-certificates wget \
+    && rm -rf /var/log/*log /var/lib/apt/lists/* /var/log/apt/* /var/lib/dpkg/*-old /var/cache/debconf/*-old
 WORKDIR /app
 COPY --from=tilt-helper /go/bin/dlv /go/bin/dlv
 COPY --from=tilt-helper /process.txt .
 COPY --from=tilt-helper /start.sh .
 COPY --from=tilt-helper /restart.sh .
 COPY --from=tilt-helper /go/bin/dlv .
-COPY $binary_name .
-RUN chmod 777 ./$binary_name
+COPY $binary_name /usr/local/bin/kgateway
+RUN chmod 755 /usr/local/bin/kgateway
 """
 
-standard_entrypoint = "ENTRYPOINT /app/start.sh /app/$binary_name"
-debug_entrypoint = "ENTRYPOINT /app/start.sh /go/bin/dlv --listen=0.0.0.0:$debug_port --api-version=2 --headless=true --only-same-user=false --accept-multiclient --check-go-version=false exec --continue /app/$binary_name"
+standard_entrypoint = "ENTRYPOINT /app/start.sh /usr/local/bin/kgateway"
+debug_entrypoint = "ENTRYPOINT /app/start.sh /go/bin/dlv --listen=0.0.0.0:$debug_port --api-version=2 --headless=true --only-same-user=false --accept-multiclient --check-go-version=false exec --continue /usr/local/bin/kgateway"
 
 get_resources_cmd = "{0} -n {1} template {2} --include-crds install/helm/kgateway/ --set image.pullPolicy='Never' --set image.registry=ghcr.io/kgateway-dev --set image.tag='{3}'".format(helm_cmd, settings.get("helm_installation_namespace"), settings.get("helm_installation_name"), image_tag)
 for f in settings.get("helm_values_files") :
@@ -111,8 +120,9 @@ def build_docker_image(provider):
 
     dockerfile_contents = dockerfile_contents.replace("$binary_name", provider.get("binary_name"))
     dockerfile_contents = dockerfile_contents.replace("$debug_port", str(provider.get("debug_port")))
+    dockerfile_contents = dockerfile_contents.replace("$envoy_image", envoy_image)
 
-    binary_path = provider.get("binary_path", "/app/" + provider.get("binary_name"))
+    binary_path = provider.get("binary_path", "/usr/local/bin/kgateway")
 
     # Build the image and sync it on binary file changes
     # Ref: https://docs.tilt.dev/api.html#api.local_resource
@@ -229,7 +239,7 @@ def install_kgateway():
 def validate_registry() :
     usingLocalRegistry = str(local(kubectl_cmd + " get cm -n kube-public local-registry-hosting || true", quiet = True))
     if not usingLocalRegistry:
-        fail("default_registry is required when not using a local registry. create cluster using ctlptl.")
+        print("WARN: local-registry-hosting configmap not found. Ensure you have a valid registry setup or are using Kind with image loading.")
 
 def install_metallb():
     if not settings["metal_lb"]:
