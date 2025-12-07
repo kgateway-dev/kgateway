@@ -739,7 +739,7 @@ func (p *builtinPluginGwPass) ApplyForRouteBackend(
 	return nil
 }
 
-func (p *builtinPluginGwPass) HttpFilters(fcc ir.FilterChainCommon) ([]filters.StagedHttpFilter, error) {
+func (p *builtinPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.FilterChainCommon) ([]filters.StagedHttpFilter, error) {
 	builtinStaged := []filters.StagedHttpFilter{}
 
 	// If there is a cors policy for route rule or backendRef, add the cors http filter to the chain

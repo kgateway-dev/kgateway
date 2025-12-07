@@ -43,7 +43,7 @@ spec:
               request:
               - regex:
                   builtins:
-                  - CREDIT_CARD
+                  - CreditCard
                   matches:
                   - 'bad.*'
                 response:

@@ -64,9 +64,6 @@ spec:
                           When set, the agent gateway will use this configmap instead of creating the default one.
                           The configmap must contain a 'config.yaml' key with the agent gateway configuration.
                         type: string
-                      enabled:
-                        description: Whether to enable the extension.
-                        type: boolean
                       env:
                         description: The container environment variables.
                         items:
@@ -657,7 +654,8 @@ spec:
                   envoyContainer:
                     description: |-
                       Configuration for the container running Envoy.
-                      If agentgateway is enabled, the EnvoyContainer values will be ignored.
+                      If the Gateway uses a GatewayClass with controllerName: kgateway.dev/agentgateway,
+                      the EnvoyContainer values will be ignored.
                     properties:
                       bootstrap:
                         description: Initial envoy configuration.

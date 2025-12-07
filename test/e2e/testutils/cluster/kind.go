@@ -3,7 +3,6 @@
 package cluster
 
 import (
-	"fmt"
 	"os"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -31,10 +30,6 @@ func MustKindContextWithScheme(clusterName string, scheme *runtime.Scheme) *Cont
 	}
 
 	kubeCtx := os.Getenv(testutils.KubeCtx)
-	if len(kubeCtx) == 0 {
-		kubeCtx = fmt.Sprintf("kind-%s", clusterName)
-	}
-
 	restCfg, err := kubeutils.GetRestConfigWithKubeContext(kubeCtx)
 	if err != nil {
 		panic(err)

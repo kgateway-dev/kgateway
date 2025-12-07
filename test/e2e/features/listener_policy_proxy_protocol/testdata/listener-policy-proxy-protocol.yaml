@@ -8,4 +8,5 @@ spec:
   - group: gateway.networking.k8s.io
     kind: Gateway
     name: gw
-  proxyProtocol: {}
+  default:
+    proxyProtocol: {}

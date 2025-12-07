@@ -46,7 +46,6 @@ metadata:
 spec:
   kube:
     agentgateway:
-      enabled: true
       logLevel: debug
       image:
         tag: $AGW_TAG
@@ -89,7 +88,6 @@ metadata:
 spec:
   kube:
     agentgateway:
-      enabled: true
       logLevel: debug
       image:
         tag: $AGW_TAG

@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -18,7 +19,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -34,6 +37,7 @@ type gatewayClassReconciler struct {
 	classInfo             map[string]*deployer.GatewayClassInfo
 	defaultControllerName string
 	gwClassClient         kclient.Client[*gwv1.GatewayClass]
+	client                apiclient.Client
 	queue                 controllers.Queue
 }
 
@@ -46,6 +50,7 @@ func newGatewayClassReconciler(
 		defaultControllerName: cfg.ControllerName,
 		classInfo:             classInfo,
 		gwClassClient:         kclient.NewFilteredDelayed[*gwv1.GatewayClass](cfg.Client, gvr.GatewayClass, filter),
+		client:                cfg.Client,
 	}
 	r.queue = controllers.NewQueue("GatewayClassController", controllers.WithReconciler(r.reconcile), controllers.WithMaxAttempts(math.MaxInt), controllers.WithRateLimiter(rateLimiter))
 	ourControllers := sets.New(cfg.ControllerName, cfg.AgwControllerName)
@@ -54,20 +59,22 @@ func newGatewayClassReconciler(
 		controllers.FromEventHandler(func(o controllers.Event) {
 			switch o.Event {
 			case controllers.EventAdd:
-				logger.Debug("reconciling Gateway due to add event", "ref", kubeutils.NamespacedNameFrom(o.New))
+				logger.Debug("reconciling GatewayClass due to add event", "ref", kubeutils.NamespacedNameFrom(o.New))
 				if isOurGatewayClass(o.New.(*gwv1.GatewayClass), ourControllers) {
 					r.queue.AddObject(o.New)
 				}
 			case controllers.EventUpdate:
 				if o.New.GetGeneration() != o.Old.GetGeneration() && isOurGatewayClass(o.New.(*gwv1.GatewayClass), ourControllers) {
-					logger.Debug("reconciling Gateway due to generation change", "ref", kubeutils.NamespacedNameFrom(o.New))
+					logger.Debug("reconciling GatewayClass due to generation change", "ref", kubeutils.NamespacedNameFrom(o.New))
 					r.queue.AddObject(o.New)
 					return
 				}
-				logger.Debug("skip reconciling Gateway with no relevant changes", "ref", kubeutils.NamespacedNameFrom(o.New))
+				logger.Debug("skip reconciling GatewayClass with no relevant changes", "ref", kubeutils.NamespacedNameFrom(o.New))
 			case controllers.EventDelete:
-				logger.Debug("reconciling Gateway due to delete event", "ref", kubeutils.NamespacedNameFrom(o.Old))
-				r.queue.Add(emptyGatewayClass)
+				logger.Debug("reconciling GatewayClass due to delete event", "ref", kubeutils.NamespacedNameFrom(o.Old))
+				if isOurGatewayClass(o.Old.(*gwv1.GatewayClass), ourControllers) {
+					r.queue.AddObject(o.Old)
+				}
 			}
 		}))
 
@@ -100,16 +107,23 @@ func (r *gatewayClassReconciler) reconcile(req types.NamespacedName) (rErr error
 	}()
 
 	if req == emptyGatewayClass {
-		// This is the initial reconciliation event to ensure the default GatewayClasses are created
-		return r.createGatewayClasses()
+		// This is the initial reconciliation event to ensure the default GatewayClasses are created/updated
+		return r.reconcileGatewayClasses()
+	}
+	// Reconcile spec if this GatewayClass is managed by us
+	if info, ok := r.classInfo[req.Name]; ok {
+		if err := r.reconcileGatewayClass(req.Name, info); err != nil {
+			return fmt.Errorf("error reconciling GatewayClass spec: %w", err)
+		}
 	}
 
 	gwClass := r.gwClassClient.Get(req.Name, req.Namespace)
 	if gwClass == nil || gwClass.GetDeletionTimestamp() != nil {
-		logger.Debug("gatewayclass not found, skipping reconciliation", "ref", req)
+		logger.Debug("gatewayclass not found, skipping status update", "ref", req)
 		return nil
 	}
 
+	// Update status
 	status := gwClass.Status
 	meta.SetStatusCondition(&status.Conditions, metav1.Condition{
 		Type:               string(gwv1.GatewayClassConditionStatusAccepted),
@@ -133,26 +147,34 @@ func (r *gatewayClassReconciler) reconcile(req types.NamespacedName) (rErr error
 	return nil
 }
 
-func (r *gatewayClassReconciler) createGatewayClasses() error {
+func (r *gatewayClassReconciler) reconcileGatewayClasses() error {
 	var errs []error
 	for name, info := range r.classInfo {
-		if err := r.createGatewayClass(name, info); err != nil {
+		if err := r.reconcileGatewayClass(name, info); err != nil {
 			errs = append(errs, err)
-			continue
 		}
-		logger.Info("created GatewayClass", "name", name)
 	}
 	return errors.Join(errs...)
 }
 
-func (r *gatewayClassReconciler) createGatewayClass(name string, info *deployer.GatewayClassInfo) error {
-	gwc := r.gwClassClient.Get(name, metav1.NamespaceNone)
-	if gwc != nil {
-		// already exists, nothing to do
-		return nil
-	}
+func (r *gatewayClassReconciler) reconcileGatewayClass(name string, info *deployer.GatewayClassInfo) error {
+	// Build desired GatewayClass with only fields we want to manage via SSA
+	desired := r.buildDesiredGatewayClass(name, info)
 
-	gwc = &gwv1.GatewayClass{
+	// Always apply using SSA - SSA is idempotent and will only update if needed
+	logger.Debug("applying GatewayClass via SSA", "name", name)
+	if err := r.applyGatewayClass(desired, r.getControllerName(name)); err != nil {
+		return fmt.Errorf("error applying GatewayClass %s: %w", name, err)
+	}
+	return nil
+}
+
+func (r *gatewayClassReconciler) buildDesiredGatewayClass(name string, info *deployer.GatewayClassInfo) *gwv1.GatewayClass {
+	gwc := &gwv1.GatewayClass{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: wellknown.GatewayClassGVK.GroupVersion().String(),
+			Kind:       wellknown.GatewayClassKind,
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        name,
 			Annotations: info.Annotations,
@@ -160,15 +182,34 @@ func (r *gatewayClassReconciler) createGatewayClass(name string, info *deployer.
 		},
 		Spec: gwv1.GatewayClassSpec{
 			ControllerName: gwv1.GatewayController(r.getControllerName(name)),
+			ParametersRef:  info.ParametersRef,
 		},
 	}
 	if info.Description != "" {
 		gwc.Spec.Description = ptr.To(info.Description)
 	}
-	if info.ParametersRef != nil {
-		gwc.Spec.ParametersRef = info.ParametersRef
+	return gwc
+}
+
+func (r *gatewayClassReconciler) applyGatewayClass(gwc *gwv1.GatewayClass, controllerName string) error {
+	gvr := gvr.GatewayClass
+	c := r.client.Dynamic().Resource(gvr).Namespace(metav1.NamespaceNone)
+
+	// Convert to unstructured for SSA
+	u, err := kubeutils.ToUnstructured(gwc)
+	if err != nil {
+		return fmt.Errorf("error converting GatewayClass to unstructured: %w", err)
 	}
-	_, err := r.gwClassClient.Create(gwc)
+
+	js, err := json.Marshal(u.Object)
+	if err != nil {
+		return fmt.Errorf("error marshaling GatewayClass: %w", err)
+	}
+
+	_, err = c.Patch(context.Background(), gwc.Name, types.ApplyPatchType, js, metav1.PatchOptions{
+		Force:        ptr.To(true),
+		FieldManager: controllerName,
+	})
 	return err
 }
 

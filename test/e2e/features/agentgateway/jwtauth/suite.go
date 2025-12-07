@@ -89,6 +89,7 @@ var (
 )
 
 func (s *testingSuite) TestRoutePolicy() {
+	s.waitForGatewayReady()
 	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"route-example-insecure",
@@ -117,6 +118,7 @@ func (s *testingSuite) TestRoutePolicy() {
 }
 
 func (s *testingSuite) TestRoutePolicyWithRbac() {
+	s.waitForGatewayReady()
 	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"route-secure",
@@ -131,6 +133,7 @@ func (s *testingSuite) TestRoutePolicyWithRbac() {
 }
 
 func (s *testingSuite) TestGatewayPolicy() {
+	s.waitForGatewayReady()
 	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"route-secure-gw",
@@ -149,6 +152,7 @@ func (s *testingSuite) TestGatewayPolicy() {
 }
 
 func (s *testingSuite) TestGatewayPolicyWithRbac() {
+	s.waitForGatewayReady()
 	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"route-secure-gw",
@@ -189,6 +193,20 @@ func (s *testingSuite) assertResponseWithoutAuth(hostHeader string, expectedStat
 		&testmatchers.HttpResponse{
 			StatusCode: expectedStatus,
 		})
+}
+
+// waitForGatewayReady waits for the gateway to be fully ready before making HTTP requests.
+// This prevents flakes where requests fail with "Connection refused" because the gateway
+// isn't ready yet.
+func (s *testingSuite) waitForGatewayReady() {
+	// Wait for Gateway to be Programmed (not just Accepted)
+	s.TestInstallation.Assertions.EventuallyGatewayCondition(
+		s.Ctx,
+		proxyObjectMeta.Name,
+		proxyObjectMeta.Namespace,
+		gwv1.GatewayConditionProgrammed,
+		metav1.ConditionTrue,
+	)
 }
 
 func getTestFile(filename string) string {

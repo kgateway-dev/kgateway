@@ -746,13 +746,13 @@ spec:
                                                       items:
                                                         description: |-
                                                           BuiltIn regex patterns for specific types of strings in prompts.
-                                                          For example, if you specify `CREDIT_CARD`, any credit card numbers
+                                                          For example, if you specify `CreditCard`, any credit card numbers
                                                           in the request or response are matched.
                                                         enum:
-                                                        - SSN
-                                                        - CREDIT_CARD
-                                                        - PHONE_NUMBER
-                                                        - EMAIL
+                                                        - Ssn
+                                                        - CreditCard
+                                                        - PhoneNumber
+                                                        - Email
                                                         type: string
                                                       type: array
                                                     matches:
@@ -976,13 +976,13 @@ spec:
                                                       items:
                                                         description: |-
                                                           BuiltIn regex patterns for specific types of strings in prompts.
-                                                          For example, if you specify `CREDIT_CARD`, any credit card numbers
+                                                          For example, if you specify `CreditCard`, any credit card numbers
                                                           in the request or response are matched.
                                                         enum:
-                                                        - SSN
-                                                        - CREDIT_CARD
-                                                        - PHONE_NUMBER
-                                                        - EMAIL
+                                                        - Ssn
+                                                        - CreditCard
+                                                        - PhoneNumber
+                                                        - Email
                                                         type: string
                                                       type: array
                                                     matches:
@@ -1189,12 +1189,12 @@ spec:
                                             RouteType specifies how the AI gateway should process incoming requests
                                             based on the URL path and the API format expected.
                                           enum:
-                                          - completions
-                                          - messages
-                                          - models
-                                          - passthrough
-                                          - responses
-                                          - anthropic_token_count
+                                          - Completions
+                                          - Messages
+                                          - Models
+                                          - Passthrough
+                                          - Responses
+                                          - AnthropicTokenCount
                                           type: string
                                         description: |-
                                           routes defines how to identify the type of traffic to handle.
@@ -2772,13 +2772,13 @@ spec:
                                       items:
                                         description: |-
                                           BuiltIn regex patterns for specific types of strings in prompts.
-                                          For example, if you specify `CREDIT_CARD`, any credit card numbers
+                                          For example, if you specify `CreditCard`, any credit card numbers
                                           in the request or response are matched.
                                         enum:
-                                        - SSN
-                                        - CREDIT_CARD
-                                        - PHONE_NUMBER
-                                        - EMAIL
+                                        - Ssn
+                                        - CreditCard
+                                        - PhoneNumber
+                                        - Email
                                         type: string
                                       type: array
                                     matches:
@@ -2992,13 +2992,13 @@ spec:
                                       items:
                                         description: |-
                                           BuiltIn regex patterns for specific types of strings in prompts.
-                                          For example, if you specify `CREDIT_CARD`, any credit card numbers
+                                          For example, if you specify `CreditCard`, any credit card numbers
                                           in the request or response are matched.
                                         enum:
-                                        - SSN
-                                        - CREDIT_CARD
-                                        - PHONE_NUMBER
-                                        - EMAIL
+                                        - Ssn
+                                        - CreditCard
+                                        - PhoneNumber
+                                        - Email
                                         type: string
                                       type: array
                                     matches:
@@ -3198,12 +3198,12 @@ spec:
                             RouteType specifies how the AI gateway should process incoming requests
                             based on the URL path and the API format expected.
                           enum:
-                          - completions
-                          - messages
-                          - models
-                          - passthrough
-                          - responses
-                          - anthropic_token_count
+                          - Completions
+                          - Messages
+                          - Models
+                          - Passthrough
+                          - Responses
+                          - AnthropicTokenCount
                           type: string
                         description: |-
                           routes defines how to identify the type of traffic to handle.

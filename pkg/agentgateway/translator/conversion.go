@@ -100,10 +100,6 @@ func ConvertHTTPRouteToAgw(ctx RouteContext, r gwv1.HTTPRouteRule,
 
 	res.Hostnames = convertHostnames(obj.Spec.Hostnames)
 
-	if shouldInjectErrorResponse(backendErr) {
-		injectDirectResponseFilter(res)
-	}
-
 	if policiesErr != nil && !isPolicyErrorCritical(policiesErr) {
 		return nil, policiesErr
 	}
@@ -167,33 +163,6 @@ func convertHostnames(hostnames []gwv1.Hostname) []string {
 	return slices.Map(hostnames, func(h gwv1.Hostname) string {
 		return string(h)
 	})
-}
-
-// Helper function to determine if error response should be injected
-func shouldInjectErrorResponse(backendErr *reporter.RouteCondition) bool {
-	return backendErr != nil &&
-		(backendErr.Reason == gwv1.RouteReasonInvalidKind ||
-			backendErr.Reason == gwv1.RouteReasonRefNotPermitted ||
-			backendErr.Reason == gwv1.RouteReasonBackendNotFound)
-}
-
-// Helper function to inject direct response filter for errors
-func injectDirectResponseFilter(res *api.Route) {
-	for _, f := range res.TrafficPolicies {
-		if _, ok := f.GetKind().(*api.TrafficPolicySpec_DirectResponse); ok {
-			return
-		}
-	}
-	drf := &api.TrafficPolicySpec{
-		Kind: &api.TrafficPolicySpec_DirectResponse{
-			DirectResponse: &api.DirectResponse{
-				Status: 500,
-				Body:   []byte("Backend service unavailable"),
-			},
-		},
-	}
-
-	res.TrafficPolicies = append([]*api.TrafficPolicySpec{drf}, res.TrafficPolicies...)
 }
 
 // Helper function to determine if filter error is critical

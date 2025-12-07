@@ -494,7 +494,7 @@ func processDirectResponse(directResponse *agentgateway.DirectResponse, basePoli
 	return []AgwPolicy{{Policy: directRespPolicy}}
 }
 
-func processJWTAuthenticationPolicy(ctx PolicyCtx, jwt *agentgateway.AgentJWTAuthentication, basePolicyName string, policy types.NamespacedName, target *api.PolicyTarget) ([]AgwPolicy, error) {
+func processJWTAuthenticationPolicy(ctx PolicyCtx, jwt *agentgateway.JWTAuthentication, basePolicyName string, policy types.NamespacedName, target *api.PolicyTarget) ([]AgwPolicy, error) {
 	p := &api.TrafficPolicySpec_JWT{}
 
 	switch jwt.Mode {
@@ -547,7 +547,7 @@ func processJWTAuthenticationPolicy(ctx PolicyCtx, jwt *agentgateway.AgentJWTAut
 	return []AgwPolicy{{Policy: jwtPolicy}}, errors.Join(errs...)
 }
 
-func processBasicAuthenticationPolicy(ctx PolicyCtx, ba *agentgateway.AgentBasicAuthentication, basePolicyName string, policy types.NamespacedName, target *api.PolicyTarget) ([]AgwPolicy, error) {
+func processBasicAuthenticationPolicy(ctx PolicyCtx, ba *agentgateway.BasicAuthentication, basePolicyName string, policy types.NamespacedName, target *api.PolicyTarget) ([]AgwPolicy, error) {
 	p := &api.TrafficPolicySpec_BasicAuthentication{}
 	p.Realm = ba.Realm
 
@@ -598,7 +598,7 @@ type APIKeyEntry struct {
 
 func processAPIKeyAuthenticationPolicy(
 	ctx PolicyCtx,
-	ak *agentgateway.AgentAPIKeyAuthentication,
+	ak *agentgateway.APIKeyAuthentication,
 	basePolicyName string,
 	policy types.NamespacedName,
 	target *api.PolicyTarget,
@@ -668,7 +668,7 @@ func processAPIKeyAuthenticationPolicy(
 	return []AgwPolicy{{Policy: apiKeyPolicy}}, errors.Join(errs...)
 }
 
-func processTimeoutPolicy(timeout *agentgateway.AgentTimeouts, basePolicyName string, policy types.NamespacedName, target *api.PolicyTarget) []AgwPolicy {
+func processTimeoutPolicy(timeout *agentgateway.Timeouts, basePolicyName string, policy types.NamespacedName, target *api.PolicyTarget) []AgwPolicy {
 	timeoutPolicy := &api.Policy{
 		Key:    basePolicyName + timeoutPolicySuffix + attachmentName(target),
 		Name:   TypedResourceFromName(wellknown.AgentgatewayPolicyGVK.Kind, policy),
@@ -690,12 +690,12 @@ func processTimeoutPolicy(timeout *agentgateway.AgentTimeouts, basePolicyName st
 	return []AgwPolicy{{Policy: timeoutPolicy}}
 }
 
-func processHostnameRewritePolicy(hnrw *agentgateway.AgentHostnameRewriteConfig, basePolicyName string, policy types.NamespacedName, target *api.PolicyTarget) []AgwPolicy {
+func processHostnameRewritePolicy(hnrw *agentgateway.HostnameRewrite, basePolicyName string, policy types.NamespacedName, target *api.PolicyTarget) []AgwPolicy {
 	r := &api.TrafficPolicySpec_HostRewrite{}
 	switch hnrw.Mode {
-	case agentgateway.AgentHostnameRewriteAuto:
+	case agentgateway.HostnameRewriteModeAuto:
 		r.Mode = api.TrafficPolicySpec_HostRewrite_AUTO
-	case agentgateway.AgentHostnameRewriteNone:
+	case agentgateway.HostnameRewriteModeNone:
 		r.Mode = api.TrafficPolicySpec_HostRewrite_NONE
 	}
 
@@ -769,7 +769,7 @@ func processHeaderModifierPolicy(headerModifier *shared.HeaderModifiers, basePol
 	return policies
 }
 
-func processCorsPolicy(cors *agentgateway.AgentCorsPolicy, basePolicyName string, policy types.NamespacedName, target *api.PolicyTarget) []AgwPolicy {
+func processCorsPolicy(cors *agentgateway.CORS, basePolicyName string, policy types.NamespacedName, target *api.PolicyTarget) []AgwPolicy {
 	corsPolicy := &api.Policy{
 		Key:    basePolicyName + corsPolicySuffix + attachmentName(target),
 		Name:   TypedResourceFromName(wellknown.AgentgatewayPolicyGVK.Kind, policy),
@@ -801,7 +801,7 @@ func processCorsPolicy(cors *agentgateway.AgentCorsPolicy, basePolicyName string
 // processExtAuthPolicy processes ExtAuth configuration and creates corresponding agentgateway policies
 func processExtAuthPolicy(
 	ctx PolicyCtx,
-	extAuth *agentgateway.AgentExtAuthPolicy,
+	extAuth *agentgateway.ExtAuth,
 	policyPhase *agentgateway.PolicyPhase,
 	basePolicyName string,
 	policy types.NamespacedName,
@@ -851,7 +851,7 @@ func processExtAuthPolicy(
 // processExtProcPolicy processes ExtProc configuration and creates corresponding agentgateway policies
 func processExtProcPolicy(
 	ctx PolicyCtx,
-	extProc *agentgateway.AgentExtProcPolicy,
+	extProc *agentgateway.ExtProc,
 	policyPhase *agentgateway.PolicyPhase,
 	basePolicyName string,
 	policy types.NamespacedName,
@@ -957,7 +957,7 @@ func getTrafficPolicyName(trafficPolicyNs, trafficPolicyName string) string {
 }
 
 // processRateLimitPolicy processes RateLimit configuration and creates corresponding agentgateway policies
-func processRateLimitPolicy(ctx PolicyCtx, rl *agentgateway.AgentRateLimit, basePolicyName string, policy types.NamespacedName, policyTarget *api.PolicyTarget) ([]AgwPolicy, error) {
+func processRateLimitPolicy(ctx PolicyCtx, rl *agentgateway.RateLimits, basePolicyName string, policy types.NamespacedName, policyTarget *api.PolicyTarget) ([]AgwPolicy, error) {
 	var agwPolicies []AgwPolicy
 	var errs []error
 
@@ -983,7 +983,7 @@ func processRateLimitPolicy(ctx PolicyCtx, rl *agentgateway.AgentRateLimit, base
 }
 
 // processLocalRateLimitPolicy processes local rate limiting configuration
-func processLocalRateLimitPolicy(limits []agentgateway.AgentLocalRateLimitPolicy, basePolicyName string, policy types.NamespacedName, policyTarget *api.PolicyTarget) *AgwPolicy {
+func processLocalRateLimitPolicy(limits []agentgateway.LocalRateLimit, basePolicyName string, policy types.NamespacedName, policyTarget *api.PolicyTarget) *AgwPolicy {
 	// TODO: support multiple
 	limit := limits[0]
 
@@ -1027,7 +1027,7 @@ func processLocalRateLimitPolicy(limits []agentgateway.AgentLocalRateLimitPolicy
 
 func processGlobalRateLimitPolicy(
 	ctx PolicyCtx,
-	grl agentgateway.AgentRateLimitPolicy,
+	grl agentgateway.GlobalRateLimit,
 	basePolicyName string,
 	policy types.NamespacedName,
 	policyTarget *api.PolicyTarget,
@@ -1065,7 +1065,7 @@ func processGlobalRateLimitPolicy(
 	return &AgwPolicy{Policy: p}, nil
 }
 
-func processRateLimitDescriptor(descriptor agentgateway.AgentRateLimitDescriptor) *api.TrafficPolicySpec_RemoteRateLimit_Descriptor {
+func processRateLimitDescriptor(descriptor agentgateway.RateLimitDescriptor) *api.TrafficPolicySpec_RemoteRateLimit_Descriptor {
 	entries := make([]*api.TrafficPolicySpec_RemoteRateLimit_Entry, 0, len(descriptor.Entries))
 
 	for _, entry := range descriptor.Entries {
@@ -1177,7 +1177,7 @@ func toJSONValue(j apiextensionsv1.JSON) (string, error) {
 	return string(marshaled), nil
 }
 
-func processCSRFPolicy(csrf *agentgateway.AgentCSRFPolicy, basePolicyName string, policy types.NamespacedName, policyTarget *api.PolicyTarget) []AgwPolicy {
+func processCSRFPolicy(csrf *agentgateway.CSRF, basePolicyName string, policy types.NamespacedName, policyTarget *api.PolicyTarget) []AgwPolicy {
 	csrfPolicy := &api.Policy{
 		Key:    basePolicyName + csrfPolicySuffix + attachmentName(policyTarget),
 		Name:   TypedResourceFromName(wellknown.AgentgatewayPolicyGVK.Kind, policy),
@@ -1198,7 +1198,7 @@ func processCSRFPolicy(csrf *agentgateway.AgentCSRFPolicy, basePolicyName string
 
 // processTransformationPolicy processes transformation configuration and creates corresponding Agw policies
 func processTransformationPolicy(
-	transformation *agentgateway.AgentTransformationPolicy,
+	transformation *agentgateway.Transformation,
 	policyPhase *agentgateway.PolicyPhase,
 	basePolicyName string,
 	policy types.NamespacedName,
@@ -1242,7 +1242,7 @@ func processTransformationPolicy(
 }
 
 // convertTransformSpec converts transformation specs to agentgateway format
-func convertTransformSpec(spec *agentgateway.AgentTransform) (*api.TrafficPolicySpec_TransformationPolicy_Transform, error) {
+func convertTransformSpec(spec *agentgateway.Transform) (*api.TrafficPolicySpec_TransformationPolicy_Transform, error) {
 	if spec == nil {
 		return nil, nil
 	}

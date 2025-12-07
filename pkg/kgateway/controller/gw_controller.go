@@ -50,11 +50,13 @@ var logger = logging.New("gateway-controller")
 var _ manager.LeaderElectionRunnable = (*gatewayReconciler)(nil)
 
 type gatewayReconciler struct {
-	deployer          *deployer.Deployer
-	gwParams          *internaldeployer.GatewayParameters
-	scheme            *runtime.Scheme
-	controllerName    string
-	agwControllerName string
+	deployer           *deployer.Deployer
+	gwParams           *internaldeployer.GatewayParameters
+	scheme             *runtime.Scheme
+	controllerName     string
+	agwControllerName  string
+	enableEnvoy        bool
+	enableAgentgateway bool
 
 	gwClient         kclient.Client[*gwv1.Gateway]
 	gwClassClient    kclient.Client[*gwv1.GatewayClass]
@@ -83,6 +85,8 @@ func NewGatewayReconciler(
 		scheme:              cfg.Mgr.GetScheme(),
 		controllerName:      cfg.ControllerName,
 		agwControllerName:   cfg.AgwControllerName,
+		enableEnvoy:         cfg.EnableEnvoy,
+		enableAgentgateway:  cfg.EnableAgentgateway,
 		controllerExtension: controllerExtension,
 
 		gwClient:         kclient.NewFilteredDelayed[*gwv1.Gateway](cfg.Client, gvr.KubernetesGateway, filter),
@@ -274,8 +278,21 @@ func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
 	if gwc == nil {
 		return fmt.Errorf("gatewayclass %s not found for gateway %s", gw.Spec.GatewayClassName, req)
 	}
-	if gwc.Spec.ControllerName != gwv1.GatewayController(r.controllerName) && gwc.Spec.ControllerName != gwv1.GatewayController(r.agwControllerName) {
-		// ignore, not our GatewayClass
+
+	// Only reconcile Gateways for enabled controllers
+	isEnvoyGateway := gwc.Spec.ControllerName == gwv1.GatewayController(r.controllerName)
+	isAgwGateway := gwc.Spec.ControllerName == gwv1.GatewayController(r.agwControllerName)
+
+	if isEnvoyGateway && !r.enableEnvoy {
+		logger.Debug("skipping gateway for disabled envoy controller", "gateway", req, "controllerName", gwc.Spec.ControllerName)
+		return nil
+	}
+	if isAgwGateway && !r.enableAgentgateway {
+		logger.Debug("skipping gateway for disabled agentgateway controller", "gateway", req, "controllerName", gwc.Spec.ControllerName)
+		return nil
+	}
+	if !isEnvoyGateway && !isAgwGateway {
+		// Not our GatewayClass at all
 		return nil
 	}
 

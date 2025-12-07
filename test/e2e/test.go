@@ -9,8 +9,11 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
+
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/helmutils"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/actions"
@@ -78,7 +81,9 @@ func CreateTestInstallationForCluster(
 		// between TestInstallation outputs per CI run
 		GeneratedFiles: MustGeneratedFiles(installContext.InstallNamespace, clusterContext.Name),
 	}
-	runtime.SetFinalizer(installation, func(i *TestInstallation) { i.finalize() })
+	testutils.Cleanup(t, func() {
+		installation.finalize()
+	})
 	return installation
 }
 
@@ -159,7 +164,7 @@ func (i *TestInstallation) InstallKgatewayCRDsFromLocalChart(ctx context.Context
 
 	// Check if we should skip installation if the release already exists (PERSIST_INSTALL or FAIL_FAST_AND_PERSIST mode)
 	if testutils.ShouldPersistInstall() || testutils.ShouldFailFastAndPersist() {
-		if i.Actions.Helm().ReleaseExists(ctx, helmutils.CRDChartName, i.Metadata.InstallNamespace) {
+		if i.releaseExists(ctx, helmutils.CRDChartName, i.Metadata.InstallNamespace) {
 			return
 		}
 	}
@@ -185,7 +190,7 @@ func (i *TestInstallation) InstallKgatewayCoreFromLocalChart(ctx context.Context
 
 	// Check if we should skip installation if the release already exists (PERSIST_INSTALL or FAIL_FAST_AND_PERSIST mode)
 	if testutils.ShouldPersistInstall() || testutils.ShouldFailFastAndPersist() {
-		if i.Actions.Helm().ReleaseExists(ctx, helmutils.ChartName, i.Metadata.InstallNamespace) {
+		if i.releaseExists(ctx, helmutils.ChartName, i.Metadata.InstallNamespace) {
 			return
 		}
 	}
@@ -308,4 +313,17 @@ func MustGeneratedFiles(tmpDirId, clusterId string) GeneratedFiles {
 		TempDir:    tmpDir,
 		FailureDir: failureDir,
 	}
+}
+func (i *TestInstallation) releaseExists(ctx context.Context, releaseName, namespace string) bool {
+	l := &corev1.SecretList{}
+	if err := i.ClusterContext.Client.List(ctx, l, &client.ListOptions{
+		Namespace: namespace,
+		LabelSelector: labels.SelectorFromSet(map[string]string{
+			"owner": "helm",
+			"name":  releaseName,
+		}),
+	}); err != nil {
+		return false
+	}
+	return len(l.Items) > 0
 }

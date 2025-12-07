@@ -31,8 +31,13 @@ type GatewayContext struct {
 }
 
 type ListenerContext struct {
+	Port              uint32
 	Policy            PolicyIR
 	PolicyAncestorRef gwv1.ParentReference
+}
+
+type HttpFiltersContext struct {
+	ListenerPort uint32
 }
 
 type RouteConfigContext struct {
@@ -112,8 +117,9 @@ type RouteContext struct {
 }
 
 type HcmContext struct {
-	Policy  PolicyIR
-	Gateway GatewayIR
+	ListenerPort uint32
+	Policy       PolicyIR
+	Gateway      GatewayIR
 }
 
 // ProxyTranslationPass represents a single translation pass for a gateway using envoy. It can hold state
@@ -175,7 +181,7 @@ type ProxyTranslationPass interface {
 	// called 1 time per filter-chain.
 	// If a plugin emits new filters, they must be with a plugin unique name.
 	// filters added to impact specific routes should be disabled on the listener level, so they don't impact other routes.
-	HttpFilters(fc FilterChainCommon) ([]filters.StagedHttpFilter, error)
+	HttpFilters(hCtx HttpFiltersContext, fc FilterChainCommon) ([]filters.StagedHttpFilter, error)
 
 	// called 1 time per filter chain after listeners and allows tweaking HCM settings.
 	ApplyHCM(
@@ -251,7 +257,7 @@ func (s UnimplementedProxyTranslationPass) ApplyForRouteBackend(policy PolicyIR,
 	return nil
 }
 
-func (s UnimplementedProxyTranslationPass) HttpFilters(fc FilterChainCommon) ([]filters.StagedHttpFilter, error) {
+func (s UnimplementedProxyTranslationPass) HttpFilters(hCtx HttpFiltersContext, fc FilterChainCommon) ([]filters.StagedHttpFilter, error) {
 	return nil, nil
 }
 

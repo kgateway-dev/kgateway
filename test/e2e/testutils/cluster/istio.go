@@ -198,7 +198,7 @@ func downloadIstio(version string) (string, error) {
 
 func UninstallIstio(istioctlBinary, kubeContext string) error {
 	// sh -c yes | istioctl uninstall —purge —context <kube-context>
-	cmd := exec.Command("sh", "-c", fmt.Sprintf("yes | %s uninstall --purge --context %s", istioctlBinary, kubeContext)) //nolint:gosec // G204: controlled istioctl uninstall command in tests
+	cmd := exec.Command("sh", "-c", fmt.Sprintf("yes | %s uninstall --purge --context '%s'", istioctlBinary, kubeContext)) //nolint:gosec // G204: controlled istioctl uninstall command in tests
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {

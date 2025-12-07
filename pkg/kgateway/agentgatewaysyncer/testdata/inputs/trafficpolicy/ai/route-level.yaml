@@ -72,8 +72,8 @@ spec:
             - (?i)(hate|kill|harm)
             - (?i)(bad|words)
             builtins:
-              - CREDIT_CARD
-              - SSN
+              - CreditCard
+              - Ssn
         - openAIModeration:
             model: text-moderation-latest
             policies:
@@ -88,8 +88,8 @@ spec:
         - regex:
             action: MASK
             builtins:
-            - EMAIL
-            - PHONE_NUMBER
+            - Email
+            - PhoneNumber
             matches:
             - \b\d{4}\b
             - (?i)(password|secret)
