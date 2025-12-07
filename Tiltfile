@@ -31,7 +31,7 @@ kgateway_status = str(local(kgateway_installed_cmd, quiet = True))
 kgateway_installed = "STATUS: deployed" in kgateway_status
 
 # Base image for kgateway - should match the one in Makefile
-envoy_image = "quay.io/solo-io/envoy-gloo:1.36.2-patch1"
+envoy_image = "quay.io/solo-io/envoy-gloo:1.36.3-patch1"
 
 tilt_helper_dockerfile = """
 # Tilt helper image for live reloading support and debugger
