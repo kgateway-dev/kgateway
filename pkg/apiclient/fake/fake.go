@@ -108,7 +108,8 @@ func filterObjects(objects ...client.Object) (istio []client.Object, kgw []clien
 			*kgateway.ListenerPolicy,
 			*kgateway.TrafficPolicy,
 			*agentgateway.AgentgatewayPolicy,
-			*agentgateway.AgentgatewayBackend:
+			*agentgateway.AgentgatewayBackend,
+			*agentgateway.AgentgatewayParameters:
 			kgw = append(kgw, obj)
 		default:
 			istio = append(istio, obj)

@@ -192,6 +192,13 @@ test-with-coverage: GINKGO_FLAGS += $(GINKGO_COVERAGE_FLAGS)
 test-with-coverage: test
 	go tool cover -html $(OUTPUT_DIR)/coverage.cov
 
+.PHONY: golden-deployer
+golden-deployer:  ## Refreshes golden files for ./test/deployer snapshot testing
+	REFRESH_GOLDEN=true go test ./test/deployer/... > /dev/null || true
+	@echo ""
+	@echo "This must pass after refreshing:"
+	go test ./test/deployer/...
+
 #----------------------------------------------------------------------------------
 # Env test
 #----------------------------------------------------------------------------------

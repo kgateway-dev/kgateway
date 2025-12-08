@@ -36,7 +36,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	deployerinternal "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/deployer"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/httplistenerpolicy"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/listenerpolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
 	// TODO BML tests in this suite fail if this no-op import is not imported first.
@@ -313,7 +313,8 @@ var _ = Describe("Deployer", func() {
 					Kube: &kgateway.KubernetesProxyConfig{
 						Agentgateway: &kgateway.Agentgateway{
 							Image: &kgateway.Image{
-								Tag: ptr.To("0.4.0"),
+								Repository: ptr.To("agentgateway"),
+								Tag:        ptr.To("0.4.0"),
 							},
 							SecurityContext: &corev1.SecurityContext{
 								RunAsUser: ptr.To(int64(333)),
@@ -600,6 +601,7 @@ var _ = Describe("Deployer", func() {
 				WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
 				AgentgatewayClassName:      wellknown.DefaultAgwClassName,
 				AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
+				GwpAgwpCompatibility:       true,
 			})
 			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
@@ -707,6 +709,7 @@ var _ = Describe("Deployer", func() {
 				WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
 				AgentgatewayClassName:      wellknown.DefaultAgwClassName,
 				AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
+				GwpAgwpCompatibility:       true,
 			})
 			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
@@ -775,6 +778,7 @@ var _ = Describe("Deployer", func() {
 				WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
 				AgentgatewayClassName:      wellknown.DefaultAgwClassName,
 				AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
+				GwpAgwpCompatibility:       true,
 			})
 			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
@@ -2011,7 +2015,7 @@ var _ = Describe("Deployer", func() {
 				cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
 				Expect(cm).ToNot(BeNil())
 				// This verifies that the cluster name provided to envoy matches the service name used when generating OTel stats
-				Expect(cm.Data[envoyDataKey]).To(ContainSubstring(fmt.Sprintf("cluster: %s", httplistenerpolicy.GenerateDefaultServiceName(dep.Name, dep.Namespace))))
+				Expect(cm.Data[envoyDataKey]).To(ContainSubstring(fmt.Sprintf("cluster: %s", listenerpolicy.GenerateDefaultServiceName(dep.Name, dep.Namespace))))
 
 				logLevelsMap := expectedGwp.EnvoyContainer.Bootstrap.ComponentLogLevels
 				levels := []types.GomegaMatcher{}
@@ -2094,14 +2098,16 @@ var _ = Describe("Deployer", func() {
 
 			// assert istio container
 			istioContainer := dep.Spec.Template.Spec.Containers[2]
-			defaultIstioVersion := *deployer.GetInMemoryGatewayParameters(deployer.InMemoryGatewayParametersConfig{
+			defaultGwp, err := deployer.GetInMemoryGatewayParameters(deployer.InMemoryGatewayParametersConfig{
 				ControllerName:             "kgateway.dev/a",
 				ClassName:                  "a",
 				ImageInfo:                  &deployer.ImageInfo{},
 				WaypointClassName:          "b",
 				AgwControllerName:          "c",
 				OmitDefaultSecurityContext: true,
-			}).Spec.Kube.Istio.IstioProxyContainer.Image.Tag
+			})
+			Expect(err).NotTo(HaveOccurred())
+			defaultIstioVersion := *defaultGwp.Spec.Kube.Istio.IstioProxyContainer.Image.Tag
 			helpTestImage(expectedGwp.Istio.IstioProxyContainer.Image, istioContainer, defaultIstioVersion)
 			Expect(istioContainer.Resources.Limits.Cpu()).To(Equal(expectedGwp.Istio.IstioProxyContainer.Resources.Limits.Cpu()))
 			Expect(istioContainer.Resources.Requests.Cpu()).To(Equal(expectedGwp.Istio.IstioProxyContainer.Resources.Requests.Cpu()))

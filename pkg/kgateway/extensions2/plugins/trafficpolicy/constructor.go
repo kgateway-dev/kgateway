@@ -99,6 +99,11 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 		errors = append(errors, err)
 	}
 
+	// Construct API key auth specific IR
+	if err := constructAPIKeyAuth(krtctx, policyCR, c.commoncol, &outSpec); err != nil {
+		errors = append(errors, err)
+	}
+
 	// Construct jwt specific IR
 	if err := constructJwt(krtctx, policyCR, &outSpec, c.FetchGatewayExtension); err != nil {
 		errors = append(errors, err)

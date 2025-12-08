@@ -29,6 +29,11 @@ type HelmTestCase struct {
 	Inputs *pkgdeployer.Inputs
 	// InputFile is just the name of the manifest omitting the file extension suffix
 	InputFile string
+	// Validate is an optional function to run additional validation on the output YAML
+	Validate func(t *testing.T, outputYaml string)
+	// HelmValuesGeneratorOverride is an optional function to modify deployer inputs before rendering.
+	// This is useful for tests that need special configuration like TLS.
+	HelmValuesGeneratorOverride func(inputs *pkgdeployer.Inputs) pkgdeployer.HelmValuesGenerator
 }
 
 type DeployerTester struct {
@@ -37,6 +42,47 @@ type DeployerTester struct {
 	ClassName         string
 	AgwClassName      string
 	WaypointClassName string
+}
+
+// NoSecurityContextValidator returns a validation function that ensures no securityContext appears in output
+func NoSecurityContextValidator() func(t *testing.T, outputYaml string) {
+	return func(t *testing.T, outputYaml string) {
+		t.Helper()
+		assert.NotContains(t, outputYaml, "securityContext:",
+			"output YAML should not contain securityContext when omitDefaultSecurityContext is true")
+	}
+}
+
+// VerifyAllYAMLFilesReferenced ensures every YAML file in testDataDir has a corresponding test case.
+// The exclude parameter allows skipping files that are tested elsewhere (e.g., TLS tests).
+func VerifyAllYAMLFilesReferenced(t *testing.T, testDataDir string, testCases []HelmTestCase, exclude ...string) {
+	t.Helper()
+
+	yamlFiles, err := filepath.Glob(filepath.Join(testDataDir, "*.yaml"))
+	require.NoError(t, err, "failed to list YAML files in %s", testDataDir)
+
+	referencedFiles := make(map[string]bool)
+	for _, tc := range testCases {
+		referencedFiles[tc.InputFile] = true
+	}
+	for _, excl := range exclude {
+		referencedFiles[excl] = true
+	}
+
+	var unreferenced []string
+	for _, yamlFile := range yamlFiles {
+		baseName := filepath.Base(yamlFile)
+		// Skip golden files
+		if strings.HasSuffix(baseName, "-out.yaml") {
+			continue
+		}
+		inputName := strings.TrimSuffix(baseName, ".yaml")
+		if !referencedFiles[inputName] {
+			unreferenced = append(unreferenced, baseName)
+		}
+	}
+
+	require.Empty(t, unreferenced, "Found YAML files in %s without corresponding test cases: %v", testDataDir, unreferenced)
 }
 
 // ExtractCommonObjs will return a collection containing only objects necessary for collections.CommonCollections,
@@ -87,7 +133,6 @@ func (dt DeployerTester) RunHelmChartTest(
 	scheme *runtime.Scheme,
 	dir string,
 	crdDir string,
-	helmValuesGeneratorOverride func(inputs *pkgdeployer.Inputs) pkgdeployer.HelmValuesGenerator,
 	fakeClient apiclient.Client,
 ) {
 	filePath := filepath.Join(dir, "testdata/", tt.InputFile)
@@ -110,8 +155,8 @@ func (dt DeployerTester) RunHelmChartTest(
 		fakeClient,
 		inputs,
 	)
-	if helmValuesGeneratorOverride != nil {
-		gwParams.WithHelmValuesGeneratorOverride(helmValuesGeneratorOverride(inputs))
+	if tt.HelmValuesGeneratorOverride != nil {
+		gwParams.WithHelmValuesGeneratorOverride(tt.HelmValuesGeneratorOverride(inputs))
 	}
 	deployer, err := internaldeployer.NewGatewayDeployer(
 		dt.ControllerName,
@@ -126,8 +171,7 @@ func (dt DeployerTester) RunHelmChartTest(
 	ctx := t.Context()
 	fakeClient.RunAndWait(ctx.Done())
 
-	// Get objects (what actually gets deployed), which in the future is likely
-	// to differ from helm's rendered output
+	// Get post-processed objects (what actually gets deployed)
 	deployObjs, err := deployer.GetObjsToDeploy(ctx, gtw)
 	assert.NoError(t, err, "error getting objects to deploy")
 
@@ -159,6 +203,27 @@ func (dt DeployerTester) RunHelmChartTest(
 	diff := cmp.Diff(data, got)
 	outputStr := "%s\nthe golden file, which can be refreshed via `REFRESH_GOLDEN=true go test ./test/deployer`, is\n%s"
 	assert.Empty(t, diff, outputStr, diff, outputFile)
+
+	// Run additional validation if provided
+	if tt.Validate != nil {
+		tt.Validate(t, string(data))
+	}
+}
+
+// objectsToYAML converts a slice of client.Object to YAML bytes, separated by "---"
+func objectsToYAML(objs []client.Object) ([]byte, error) {
+	var result []byte
+	for i, obj := range objs {
+		objYAML, err := yaml.Marshal(obj)
+		if err != nil {
+			return nil, err
+		}
+		if i > 0 {
+			result = append(result, []byte("---\n")...)
+		}
+		result = append(result, objYAML...)
+	}
+	return result, nil
 }
 
 func DefaultDeployerInputs(dt DeployerTester, commonCols *collections.CommonCollections) *pkgdeployer.Inputs {
@@ -178,6 +243,7 @@ func DefaultDeployerInputs(dt DeployerTester, commonCols *collections.CommonColl
 		WaypointGatewayClassName:   dt.WaypointClassName,
 		AgentgatewayClassName:      dt.AgwClassName,
 		AgentgatewayControllerName: dt.AgwControllerName,
+		GwpAgwpCompatibility:       true,
 	}
 }
 
@@ -253,20 +319,4 @@ func validateYAML(t *testing.T, filename string, data []byte) {
 			t.Errorf("helm chart produced yaml with implicit null that becomes explicit: document %d in %s\nDiff (- original, + after round-trip):\n%s", i+1, filename, diff)
 		}
 	}
-}
-
-// objectsToYAML converts a slice of client.Object to YAML bytes, separated by "---"
-func objectsToYAML(objs []client.Object) ([]byte, error) {
-	var result []byte
-	for i, obj := range objs {
-		objYAML, err := yaml.Marshal(obj)
-		if err != nil {
-			return nil, err
-		}
-		if i > 0 {
-			result = append(result, []byte("---\n")...)
-		}
-		result = append(result, objYAML...)
-	}
-	return result, nil
 }

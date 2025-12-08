@@ -14,6 +14,7 @@ import (
 
 // +kubebuilder:printcolumn:name="Accepted",type=string,JSONPath=".status.ancestors[*].conditions[?(@.type=='Accepted')].status",description="Agentgateway policy acceptance status"
 // +kubebuilder:printcolumn:name="Attached",type=string,JSONPath=".status.ancestors[*].conditions[?(@.type=='Attached')].status",description="Agentgateway policy attachment status"
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 
 // +genclient
 // +kubebuilder:object:root=true
@@ -442,7 +443,7 @@ type Traffic struct {
 
 	// retry defines the policy for retrying requests.
 	// +optional
-	Retry *shared.Retry `json:"retry,omitempty"`
+	Retry *Retry `json:"retry,omitempty"`
 
 	// authorization specifies the access rules based on roles and permissions.
 	// If multiple authorization rules are applied across different policies (at the same, or different, attahcment points),

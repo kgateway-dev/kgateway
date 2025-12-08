@@ -1,6 +1,8 @@
 package deployer
 
 import (
+	"fmt"
+
 	"istio.io/api/annotation"
 	"istio.io/api/label"
 	corev1 "k8s.io/api/core/v1"
@@ -22,6 +24,9 @@ type Inputs struct {
 	WaypointGatewayClassName   string
 	AgentgatewayClassName      string
 	AgentgatewayControllerName string
+	// GwpAgwpCompatibility controls whether agentgateway data plane Gateways can use
+	// GatewayParameters. When false, only AgentgatewayParameters are allowed.
+	GwpAgwpCompatibility bool
 }
 
 // UpdateSecurityContexts updates the security contexts in the gateway parameters.
@@ -82,75 +87,27 @@ type InMemoryGatewayParametersConfig struct {
 	OmitDefaultSecurityContext bool
 }
 
-// GetInMemoryGatewayParameters returns an in-memory GatewayParameters.
+// GetInMemoryGatewayParameters returns an in-memory GatewayParameters for envoy-based gateways.
+//
+// This function must NOT be called for agentgateway controllers - agentgateway uses
+// agwHelmValuesGenerator which has its own defaults. Calling this with the agentgateway
+// controllerName indicates a bug in the routing logic.
+//
 // Priority order:
-// 1. Agentgateway controller name (highest priority)
-// 2. Waypoint class name (must check before envoy controller since waypoint uses the same controller)
-// 3. Envoy controller name, or no controller name -- either way, use default gateway parameters
+// 1. Waypoint class name (must check before envoy controller since waypoint uses the same controller)
+// 2. Default gateway parameters (for envoy controller or any other controller)
 //
 // This allows users to define their own GatewayClass that acts very much like a
 // built-in class but is not an exact name match.
-func GetInMemoryGatewayParameters(cfg InMemoryGatewayParametersConfig) *kgateway.GatewayParameters {
+func GetInMemoryGatewayParameters(cfg InMemoryGatewayParametersConfig) (*kgateway.GatewayParameters, error) {
 	if cfg.ControllerName == cfg.AgwControllerName {
-		return defaultAgentgatewayParameters(cfg.ImageInfo, cfg.OmitDefaultSecurityContext)
+		return nil, fmt.Errorf("GetInMemoryGatewayParameters must not be called for agentgateway controller %q; "+
+			"agentgateway gateways should use agwHelmValuesGenerator", cfg.ControllerName)
 	}
 	if cfg.ClassName == cfg.WaypointClassName {
-		return defaultWaypointGatewayParameters(cfg.ImageInfo, cfg.OmitDefaultSecurityContext)
+		return defaultWaypointGatewayParameters(cfg.ImageInfo, cfg.OmitDefaultSecurityContext), nil
 	}
-	return defaultGatewayParameters(cfg.ImageInfo, cfg.OmitDefaultSecurityContext)
-}
-
-// defaultAgentgatewayParameters returns an in-memory GatewayParameters with default values
-// set for the agentgateway deployment.
-func defaultAgentgatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext bool) *kgateway.GatewayParameters {
-	gwp := defaultGatewayParameters(imageInfo, omitDefaultSecurityContext)
-
-	// Add agentgateway-specific configuration
-	agwConfig := &kgateway.Agentgateway{
-		LogLevel: ptr.To("info"),
-		Image: &kgateway.Image{
-			Registry:   ptr.To(AgentgatewayRegistry),
-			Tag:        ptr.To(AgentgatewayDefaultTag),
-			Repository: ptr.To(AgentgatewayImage),
-			PullPolicy: (*corev1.PullPolicy)(ptr.To(imageInfo.PullPolicy)),
-		},
-	}
-
-	// Only add SecurityContext if not omitting defaults
-	if !omitDefaultSecurityContext {
-		agwConfig.SecurityContext = &corev1.SecurityContext{
-			AllowPrivilegeEscalation: ptr.To(false),
-			ReadOnlyRootFilesystem:   ptr.To(true),
-			RunAsNonRoot:             ptr.To(true),
-			RunAsUser:                ptr.To[int64](10101),
-			Capabilities: &corev1.Capabilities{
-				Drop: []corev1.Capability{"ALL"},
-			},
-		}
-	}
-
-	gwp.Spec.Kube.Agentgateway = agwConfig
-
-	gwp.Spec.Kube.PodTemplate.ReadinessProbe.HTTPGet.Path = "/healthz/ready"
-	gwp.Spec.Kube.PodTemplate.ReadinessProbe.HTTPGet.Port = intstr.FromInt(15021)
-	gwp.Spec.Kube.PodTemplate.StartupProbe.HTTPGet.Path = "/healthz/ready"
-	gwp.Spec.Kube.PodTemplate.StartupProbe.HTTPGet.Port = intstr.FromInt(15021)
-	gwp.Spec.Kube.PodTemplate.GracefulShutdown.Enabled = ptr.To(true)
-
-	// Add pod security context with sysctls for agentgateway (unless omitting default security context)
-	if !omitDefaultSecurityContext {
-		if gwp.Spec.Kube.PodTemplate.SecurityContext == nil {
-			gwp.Spec.Kube.PodTemplate.SecurityContext = &corev1.PodSecurityContext{}
-		}
-		gwp.Spec.Kube.PodTemplate.SecurityContext.Sysctls = []corev1.Sysctl{
-			{
-				Name:  "net.ipv4.ip_unprivileged_port_start",
-				Value: "0",
-			},
-		}
-	}
-
-	return gwp
+	return defaultGatewayParameters(cfg.ImageInfo, cfg.OmitDefaultSecurityContext), nil
 }
 
 // defaultWaypointGatewayParameters returns an in-memory GatewayParameters with default values

@@ -55,6 +55,7 @@ func MergeTrafficPolicies(
 		mergeCompression,
 		mergeBasicAuth,
 		mergeURLRewrite,
+		mergeAPIKeyAuth,
 	}
 
 	for _, mergeFunc := range mergeFuncs {
@@ -465,6 +466,21 @@ func mergeRBAC(
 		Set: func(spec *trafficPolicySpecIr, val *rbacIR) { spec.rbac = val },
 	}
 	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "rbac")
+}
+
+func mergeAPIKeyAuth(
+	p1, p2 *TrafficPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+	_ TrafficPolicyMergeOpts,
+) {
+	accessor := fieldAccessor[apiKeyAuthIR]{
+		Get: func(spec *trafficPolicySpecIr) *apiKeyAuthIR { return spec.apiKeyAuth },
+		Set: func(spec *trafficPolicySpecIr, val *apiKeyAuthIR) { spec.apiKeyAuth = val },
+	}
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "apiKeyAuth")
 }
 
 func mergeRetry(

@@ -6,6 +6,7 @@ import (
 
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	exteniondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
+	envoy_api_key_auth_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/api_key_auth/v3"
 	envoy_basic_auth_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/basic_auth/v3"
 	bufferv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/buffer/v3"
 	compressorv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/compressor/v3"
@@ -102,6 +103,7 @@ type trafficPolicySpecIr struct {
 	decompression   *decompressionIR
 	basicAuth       *basicAuthIR
 	urlRewrite      *urlRewriteIR
+	apiKeyAuth      *apiKeyAuthIR
 }
 
 func (d *TrafficPolicy) CreationTime() time.Time {
@@ -174,6 +176,9 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	if !d.spec.urlRewrite.Equals(d2.spec.urlRewrite) {
 		return false
 	}
+	if !d.spec.apiKeyAuth.Equals(d2.spec.apiKeyAuth) {
+		return false
+	}
 	return true
 }
 
@@ -199,6 +204,7 @@ func (p *TrafficPolicy) Validate() error {
 	validators = append(validators, p.spec.decompression.Validate)
 	validators = append(validators, p.spec.basicAuth.Validate)
 	validators = append(validators, p.spec.urlRewrite.Validate)
+	validators = append(validators, p.spec.apiKeyAuth.Validate)
 	for _, validator := range validators {
 		if err := validator(); err != nil {
 			return err
@@ -226,6 +232,7 @@ type trafficPolicyPluginGwPass struct {
 	compressorInChain        map[string]*compressorv3.Compressor
 	decompressorInChain      map[string]*decompressorv3.Decompressor
 	basicAuthInChain         map[string]*envoy_basic_auth_v3.BasicAuth
+	apiKeyAuthInChain        map[string]*envoy_api_key_auth_v3.ApiKeyAuth
 }
 
 var _ ir.ProxyTranslationPass = &trafficPolicyPluginGwPass{}
@@ -570,6 +577,13 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 		stagedFilters = append(stagedFilters, filter)
 	}
 
+	// Add API key auth filter to the chain
+	if f := p.apiKeyAuthInChain[fcc.FilterChainName]; f != nil {
+		filter := filters.MustNewStagedFilter(apiKeyAuthFilterNamePrefix, f, filters.DuringStage(filters.AuthNStage))
+		filter.Filter.Disabled = true
+		stagedFilters = append(stagedFilters, filter)
+	}
+
 	if len(stagedFilters) == 0 {
 		return nil, nil
 	}
@@ -606,6 +620,7 @@ func (p *trafficPolicyPluginGwPass) handlePolicies(
 	p.handleCompression(fcn, typedFilterConfig, spec.compression)
 	p.handleDecompression(fcn, typedFilterConfig, spec.decompression)
 	p.handleBasicAuth(fcn, typedFilterConfig, spec.basicAuth)
+	p.handleAPIKeyAuth(fcn, typedFilterConfig, spec.apiKeyAuth)
 }
 
 // handlePerRoutePolicies handles policies that are meant to be processed at the route level

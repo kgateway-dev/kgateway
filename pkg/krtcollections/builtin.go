@@ -28,7 +28,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
@@ -282,9 +282,9 @@ func convertRetry(
 		return nil
 	}
 
-	in := &shared.Retry{
+	in := &kgateway.Retry{
 		Attempts: 1,
-		RetryOn: []shared.RetryOnCondition{
+		RetryOn: []kgateway.RetryOnCondition{
 			"cancelled", "connect-failure", "refused-stream", "retriable-headers", "retriable-status-codes", "unavailable",
 		},
 		StatusCodes: retry.Codes,

@@ -61,6 +61,9 @@ type GatewayConfig struct {
 	AdditionalGatewayClasses map[string]*deployer.GatewayClassInfo
 	// CertWatcher is the shared certificate watcher for xDS TLS
 	CertWatcher *certwatcher.CertWatcher
+	// GwpAgwpCompatibility controls whether agentgateway data plane Gateways can use
+	// GatewayParameters. When false, only AgentgatewayParameters are allowed.
+	GwpAgwpCompatibility bool
 }
 
 type HelmValuesGeneratorOverrideFunc func(inputs *deployer.Inputs) deployer.HelmValuesGenerator
@@ -108,6 +111,7 @@ func watchGw(
 		WaypointGatewayClassName:   cfg.WaypointGatewayClassName,
 		AgentgatewayClassName:      cfg.AgentgatewayClassName,
 		AgentgatewayControllerName: cfg.AgwControllerName,
+		GwpAgwpCompatibility:       cfg.GwpAgwpCompatibility,
 	}
 
 	gwParams := internaldeployer.NewGatewayParameters(cfg.Client, inputs)

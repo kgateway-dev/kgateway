@@ -25,11 +25,9 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/agentgatewaysyncer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/agentgatewaysyncer/backend/inferencepool"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/agentjwksstore"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/waypoint"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/registry"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/jwks"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/proxy_syncer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
@@ -243,18 +241,6 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			setupLog.Error(err, "unable to add agentgateway StatusSyncer runnable")
 			return nil, err
 		}
-
-		jwksStoreCtrl := agentjwksstore.NewJWKSStoreController(cfg.Manager, cfg.Client, cfg.AgwCollections)
-		if err := cfg.Manager.Add(jwksStoreCtrl); err != nil {
-			setupLog.Error(err, "unable to add agentgateway JwksStoreController runnable")
-			return nil, err
-		}
-		jwksStoreCtrl.Init(ctx)
-		jwksStore := jwks.BuildJwksStore(ctx, cfg.Client, cfg.CommonCollections, jwksStoreCtrl.JwksQueue(), namespaces.GetPodNamespace())
-		if err := cfg.Manager.Add(jwksStore); err != nil {
-			setupLog.Error(err, "unable to add agentgateway JwksStore runnable")
-			return nil, err
-		}
 	}
 
 	setupLog.Info("starting controller builder")
@@ -354,6 +340,7 @@ func (c *ControllerBuilder) Build(ctx context.Context) (*agentgatewaysyncer.Sync
 		WaypointGatewayClassName: c.cfg.WaypointGatewayClassName,
 		AgentgatewayClassName:    c.cfg.AgentgatewayClassName,
 		CertWatcher:              c.cfg.SetupOpts.CertWatcher,
+		GwpAgwpCompatibility:     globalSettings.GwpAgwpCompatibility,
 	}
 
 	setupLog.Info("creating base gateway controller")
@@ -406,7 +393,7 @@ func GetDefaultClassInfo(
 			ControllerName:    controllerName,
 			SupportedFeatures: deployer.GetSupportedFeaturesForStandardGateway(),
 		}
-		applyGatewayClassParametersRef(classInfos[gatewayClassName], gatewayClassName, refOverrides)
+		applyGatewayClassParametersRef(classInfos[gatewayClassName], gatewayClassName, refOverrides, false)
 	}
 	// Only enable waypoint gateway class if it's enabled in the settings
 	if globalSettings.EnableWaypoint {
@@ -419,7 +406,7 @@ func GetDefaultClassInfo(
 			ControllerName:    controllerName,
 			SupportedFeatures: deployer.GetSupportedFeaturesForWaypointGateway(),
 		}
-		applyGatewayClassParametersRef(classInfos[waypointGatewayClassName], waypointGatewayClassName, refOverrides)
+		applyGatewayClassParametersRef(classInfos[waypointGatewayClassName], waypointGatewayClassName, refOverrides, false)
 	}
 	// Only enable agentgateway gateway class if it's enabled in the settings
 	if globalSettings.EnableAgentgateway {
@@ -430,13 +417,13 @@ func GetDefaultClassInfo(
 			ControllerName:    agwControllerName,
 			SupportedFeatures: deployer.GetSupportedFeaturesForAgentGateway(),
 		}
-		applyGatewayClassParametersRef(classInfos[agwClassName], agwClassName, refOverrides)
+		applyGatewayClassParametersRef(classInfos[agwClassName], agwClassName, refOverrides, true)
 	}
 	maps.Copy(classInfos, additionalClassInfos)
 	return classInfos
 }
 
-func applyGatewayClassParametersRef(info *deployer.GatewayClassInfo, className string, refs apisettings.GatewayClassParametersRefs) {
+func applyGatewayClassParametersRef(info *deployer.GatewayClassInfo, className string, refs apisettings.GatewayClassParametersRefs, isAgentgateway bool) {
 	if info == nil || len(refs) == 0 {
 		return
 	}
@@ -446,12 +433,19 @@ func applyGatewayClassParametersRef(info *deployer.GatewayClassInfo, className s
 	}
 
 	// Set default Group and Kind if not provided
+	// Use AgentgatewayParametersGVK for agentgateway class, GatewayParametersGVK for others
 	paramsRef := *ref
-	if paramsRef.Group == "" {
-		paramsRef.Group = gwv1.Group(wellknown.GatewayParametersGVK.Group)
-	}
-	if paramsRef.Kind == "" {
-		paramsRef.Kind = gwv1.Kind(wellknown.GatewayParametersGVK.Kind)
+	if paramsRef.Group == "" || paramsRef.Kind == "" {
+		defaultGVK := wellknown.GatewayParametersGVK
+		if isAgentgateway {
+			defaultGVK = wellknown.AgentgatewayParametersGVK
+		}
+		if paramsRef.Group == "" {
+			paramsRef.Group = gwv1.Group(defaultGVK.Group)
+		}
+		if paramsRef.Kind == "" {
+			paramsRef.Kind = gwv1.Kind(defaultGVK.Kind)
+		}
 	}
 
 	info.ParametersRef = &paramsRef

@@ -10,5 +10,18 @@ metadata:
     {{- include "kgateway.gateway.allLabels" . | nindent 4 }}
 data:
   config.yaml: |
+    {{- /* Start with rawConfig as base, then merge typed config on top */ -}}
+    {{- $baseConfig := $gateway.rawConfig | default dict }}
+    {{- $typedConfig := dict }}
+    {{- if $gateway.logFormat }}
+    {{- $typedConfig = dict "logging" (dict "format" $gateway.logFormat) }}
+    {{- end }}
+    {{- /* Merge: typed config takes precedence over rawConfig */ -}}
+    {{- $finalConfig := merge $typedConfig $baseConfig }}
+    {{- if $finalConfig }}
+    config:
+      {{- toYaml $finalConfig | nindent 6 }}
+    {{- else }}
     config: {}
+    {{- end }}
 {{- end }}

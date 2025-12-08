@@ -54,6 +54,167 @@ spec:
             description: TrafficPolicySpec defines the desired state of a traffic
               policy.
             properties:
+              apiKeyAuthentication:
+                description: APIKeyAuthentication authenticates users based on a configured
+                  API Key.
+                properties:
+                  clientIdHeader:
+                    description: |-
+                      clientIdHeader specifies the header name to forward the authenticated client identifier.
+                      If not specified, the client identifier will not be forwarded in any header.
+                      Example: "x-client-id"
+                    type: string
+                  forwardCredential:
+                    description: |-
+                      forwardCredential controls whether the API key is included in the request sent to the upstream.
+                      If false (default), the API key is removed from the request before sending to upstream.
+                      If true, the API key is included in the request sent to upstream.
+                      This applies to all configured key sources (header, query parameter, or cookie).
+                    type: boolean
+                  keySources:
+                    description: |-
+                      keySources specifies the list of key sources to extract the API key from.
+                      Key sources are processed in array order and the first one that successfully
+                      extracts a key is used. Within each key source, if multiple types (header, query, cookie) are
+                      specified, precedence is: header > query parameter > cookie.
+
+                      If empty, defaults to a single key source with header "api-key".
+
+                      Example:
+                        keySources:
+                        - header: "X-API-KEY"
+                        - query: "api_key"
+                        - header: "Authorization"
+                          query: "token"
+                          cookie: "auth_token"
+
+                      In this example, the system will:
+                      1. First try header "X-API-KEY"
+                      2. If not found, try query parameter "api_key"
+                      3. If not found, try header "Authorization" (then query "token", then cookie "auth_token" within that key source)
+                    items:
+                      description: |-
+                        APIKeySource defines where to extract the API key from within a single key source.
+                        Within a single key source, if multiple types are specified, precedence is:
+                        header > query parameter > cookie. The header is checked first, and only falls back
+                        to query parameter if the header is not present, then to cookie if both header and query
+                        are not present.
+                      properties:
+                        cookie:
+                          description: cookie specifies the name of the cookie that
+                            contains the API key.
+                          maxLength: 256
+                          minLength: 1
+                          type: string
+                        header:
+                          description: header specifies the name of the header that
+                            contains the API key.
+                          maxLength: 256
+                          minLength: 1
+                          type: string
+                        query:
+                          description: query specifies the name of the query parameter
+                            that contains the API key.
+                          maxLength: 256
+                          minLength: 1
+                          type: string
+                      type: object
+                      x-kubernetes-validations:
+                      - message: at least one of the fields in [header query cookie]
+                          must be set
+                        rule: '[has(self.header),has(self.query),has(self.cookie)].filter(x,x==true).size()
+                          >= 1'
+                    maxItems: 16
+                    minItems: 0
+                    type: array
+                  secretRef:
+                    description: |-
+                      secretRef references a Kubernetes secret storing a set of API Keys. If there are many keys, 'secretSelector' can be
+                      used instead.
+
+                      Each entry in the Secret represents one API Key. The key is an arbitrary identifier.
+                      The value is a string, representing the API Key.
+
+                      Example:
+
+                      apiVersion: v1
+                      kind: Secret
+                      metadata:
+                        name: api-key
+                      stringData:
+                        client1: "k-123"
+                        client2: "k-456"
+                    properties:
+                      group:
+                        default: ""
+                        description: |-
+                          Group is the group of the referent. For example, "gateway.networking.k8s.io".
+                          When unspecified or empty string, core API group is inferred.
+                        maxLength: 253
+                        pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                        type: string
+                      kind:
+                        default: Secret
+                        description: Kind is kind of the referent. For example "Secret".
+                        maxLength: 63
+                        minLength: 1
+                        pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
+                        type: string
+                      name:
+                        description: Name is the name of the referent.
+                        maxLength: 253
+                        minLength: 1
+                        type: string
+                      namespace:
+                        description: |-
+                          Namespace is the namespace of the referenced object. When unspecified, the local
+                          namespace is inferred.
+
+                          Note that when a namespace different than the local namespace is specified,
+                          a ReferenceGrant object is required in the referent namespace to allow that
+                          namespace's owner to accept the reference. See the ReferenceGrant
+                          documentation for details.
+
+                          Support: Core
+                        maxLength: 63
+                        minLength: 1
+                        pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                        type: string
+                    required:
+                    - name
+                    type: object
+                  secretSelector:
+                    description: |-
+                      secretSelector selects multiple secrets containing API Keys. If the same key is defined in multiple secrets, the
+                      behavior is undefined.
+
+                      Each entry in the Secret represents one API Key. The key is an arbitrary identifier.
+                      The value is a string, representing the API Key.
+
+                      Example:
+
+                      apiVersion: v1
+                      kind: Secret
+                      metadata:
+                        name: api-key
+                      stringData:
+                        client1: "k-123"
+                        client2: "k-456"
+                    properties:
+                      matchLabels:
+                        additionalProperties:
+                          type: string
+                        description: Label selector to select the target resource.
+                        type: object
+                    required:
+                    - matchLabels
+                    type: object
+                type: object
+                x-kubernetes-validations:
+                - message: exactly one of the fields in [secretRef secretSelector]
+                    must be set
+                  rule: '[has(self.secretRef),has(self.secretSelector)].filter(x,x==true).size()
+                    == 1'
               autoHostRewrite:
                 description: |-
                   AutoHostRewrite rewrites the Host header to the DNS name of the selected upstream.

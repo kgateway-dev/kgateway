@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -391,7 +392,11 @@ func translateTrafficPolicyToAgw(
 	}
 
 	if traffic.Retry != nil {
-		retriesPolicies := processRetriesPolicy(traffic.Retry, basePolicyName, policyName, policyTarget)
+		retriesPolicies, err := processRetriesPolicy(traffic.Retry, basePolicyName, policyName, policyTarget)
+		if err != nil {
+			logger.Error("error processing retries policy", "error", err)
+			errs = append(errs, err)
+		}
 		agwPolicies = append(agwPolicies, retriesPolicies...)
 	}
 
@@ -429,20 +434,29 @@ func translateTrafficPolicyToAgw(
 	return agwPolicies, errors.Join(errs...)
 }
 
-func processRetriesPolicy(retry *shared.Retry, basePolicyName string, policy types.NamespacedName, target *api.PolicyTarget) []AgwPolicy {
+func processRetriesPolicy(retry *agentgateway.Retry, basePolicyName string, policy types.NamespacedName, target *api.PolicyTarget) ([]AgwPolicy, error) {
 	translatedRetry := &api.Retry{}
 
-	if retry.StatusCodes != nil {
-		for _, c := range retry.StatusCodes {
+	if retry.Codes != nil {
+		for _, c := range retry.Codes {
 			translatedRetry.RetryStatusCodes = append(translatedRetry.RetryStatusCodes, int32(c)) //nolint:gosec // G115: HTTP status codes are always positive integers (100-599)
 		}
 	}
 
-	if retry.BackoffBaseInterval != nil {
-		translatedRetry.Backoff = durationpb.New(retry.BackoffBaseInterval.Duration)
+	if retry.Backoff != nil {
+		d, err := time.ParseDuration(string(*retry.Backoff))
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse retries backoff: %w", err)
+		}
+		translatedRetry.Backoff = durationpb.New(d)
 	}
 
-	translatedRetry.Attempts = retry.Attempts
+	if a := retry.Attempts; a != nil {
+		if *a < 0 || *a > math.MaxInt32 {
+			return nil, fmt.Errorf("failed to parse retry attemptes should be positive int32 (%d)", *a)
+		}
+		translatedRetry.Attempts = int32(*retry.Attempts) //nolint:gosec // G115: attempts asserted above
+	}
 
 	retryPolicy := &api.Policy{
 		Key:    basePolicyName + retryPolicySuffix + attachmentName(target),
@@ -460,7 +474,7 @@ func processRetriesPolicy(retry *shared.Retry, basePolicyName string, policy typ
 		"agentgateway_policy", retryPolicy.Name,
 		"target", target)
 
-	return []AgwPolicy{{Policy: retryPolicy}}
+	return []AgwPolicy{{Policy: retryPolicy}}, nil
 }
 
 func processDirectResponse(directResponse *agentgateway.DirectResponse, basePolicyName string, policy types.NamespacedName, target *api.PolicyTarget) []AgwPolicy {

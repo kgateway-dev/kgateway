@@ -6,9 +6,14 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 )
 
-// TestGetInMemoryGatewayParameters_ControllerNamePriority tests that the controller name
-// takes priority over the class name when determining which gateway parameters to return.
-func TestGetInMemoryGatewayParameters_ControllerNamePriority(t *testing.T) {
+// TestGetInMemoryGatewayParameters tests the priority order for determining gateway parameters.
+// Priority order:
+// 1. Waypoint class name (adds mesh port)
+// 2. Default gateway parameters
+//
+// Note: Agentgateway controllers are NOT supported - this function errors if called with
+// an agentgateway controllerName because agentgateway uses agwHelmValuesGenerator.
+func TestGetInMemoryGatewayParameters(t *testing.T) {
 	imageInfo := &deployer.ImageInfo{
 		Registry:   "test-registry",
 		Tag:        "test-tag",
@@ -25,41 +30,36 @@ func TestGetInMemoryGatewayParameters_ControllerNamePriority(t *testing.T) {
 		name                 string
 		controllerName       string
 		className            string
-		expectedAgwEnabled   bool
 		expectedServicePorts int // waypoint has an extra port
 		description          string
 	}{
 		{
-			name:                 "agentgateway controller name - ignores class name",
-			controllerName:       agwController,
-			className:            waypointClass, // should be ignored
-			expectedAgwEnabled:   true,
-			expectedServicePorts: 0,
-			description:          "When controller name matches agentgateway, it should return agentgateway parameters regardless of class name",
-		},
-		{
-			name:                 "waypoint class name takes priority over envoy controller",
+			name:                 "waypoint class name",
 			controllerName:       envoyController,
-			className:            waypointClass, // waypoint class checked before controller
-			expectedAgwEnabled:   false,
+			className:            waypointClass,
 			expectedServicePorts: 1, // waypoint adds a mesh port
-			description:          "When both envoy controller and waypoint class match, waypoint class takes priority",
+			description:          "When class name matches waypoint, it should return waypoint parameters",
 		},
 		{
-			name:                 "waypoint class name - no controller match",
+			name:                 "waypoint class name - different controller",
 			controllerName:       "some.other/controller",
 			className:            waypointClass,
-			expectedAgwEnabled:   false,
 			expectedServicePorts: 1, // waypoint adds a mesh port
-			description:          "When controller name doesn't match known controllers, it should check class name for waypoint",
+			description:          "When class name matches waypoint with non-agw controller, it should return waypoint parameters",
 		},
 		{
-			name:                 "default - no matches",
+			name:                 "default - envoy controller",
+			controllerName:       envoyController,
+			className:            "some-other-class",
+			expectedServicePorts: 0,
+			description:          "When class name doesn't match waypoint, it should return default gateway parameters",
+		},
+		{
+			name:                 "default - unknown controller and class",
 			controllerName:       "some.other/controller",
 			className:            "some-other-class",
-			expectedAgwEnabled:   false,
 			expectedServicePorts: 0,
-			description:          "When neither controller name nor class name match, it should return default gateway parameters",
+			description:          "When neither class name matches waypoint, it should return default gateway parameters",
 		},
 	}
 
@@ -74,22 +74,17 @@ func TestGetInMemoryGatewayParameters_ControllerNamePriority(t *testing.T) {
 				OmitDefaultSecurityContext: false,
 			}
 
-			gwp := deployer.GetInMemoryGatewayParameters(cfg)
+			gwp, err := deployer.GetInMemoryGatewayParameters(cfg)
+			if err != nil {
+				t.Fatalf("GetInMemoryGatewayParameters returned error: %v", err)
+			}
 
 			if gwp == nil {
 				t.Fatal("GetInMemoryGatewayParameters returned nil")
 			}
 
-			// Agentgateway is now determined by controllerName, not a flag in GatewayParameters
-			// Verify agentgateway container config is present for agentgateway controller
 			if gwp.Spec.Kube == nil {
 				t.Fatal("GatewayParameters.Spec.Kube is nil")
-			}
-
-			hasAgwConfig := gwp.Spec.Kube.Agentgateway != nil
-
-			if hasAgwConfig != tt.expectedAgwEnabled {
-				t.Errorf("%s: agentgateway config present = %v, want %v", tt.description, hasAgwConfig, tt.expectedAgwEnabled)
 			}
 
 			// Check service ports for waypoint

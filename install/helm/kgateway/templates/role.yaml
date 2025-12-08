@@ -51,6 +51,7 @@ rules:
   - agentgateway.dev
   resources:
   - agentgatewaybackends
+  - agentgatewayparameters
   - agentgatewaypolicies
   verbs:
   - get
@@ -60,6 +61,7 @@ rules:
   - agentgateway.dev
   resources:
   - agentgatewaybackends/status
+  - agentgatewayparameters/status
   - agentgatewaypolicies/status
   verbs:
   - get

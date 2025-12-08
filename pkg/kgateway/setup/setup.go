@@ -23,8 +23,11 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/jwks"
+	agentjwksstore "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/jwksstore"
 	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
+	"github.com/kgateway-dev/kgateway/v2/pkg/common"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/admin"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/agentgatewaysyncer"
@@ -165,7 +168,7 @@ func WithExtraManagerConfig(mgrConfigFuncs ...func(context.Context, manager.Mana
 	}
 }
 
-func WithExtraRunnables(runnables ...manager.Runnable) func(*setup) {
+func WithExtraRunnables(runnables ...func(ctx context.Context, commoncol *collections.CommonCollections, agw *agwplugins.AgwCollections) manager.Runnable) func(*setup) {
 	return func(s *setup) {
 		s.extraRunnables = runnables
 	}
@@ -228,7 +231,7 @@ type setup struct {
 	// extra controller manager config, like adding registering additional controllers
 	extraManagerConfig []func(ctx context.Context, mgr manager.Manager, objectFilter kubetypes.DynamicObjectFilter) error
 	// extra Runnable to add to the manager
-	extraRunnables               []manager.Runnable
+	extraRunnables               []func(ctx context.Context, commoncol *collections.CommonCollections, agw *agwplugins.AgwCollections) manager.Runnable
 	krtDebugger                  *krt.DebugHandler
 	globalSettings               *apisettings.Settings
 	leaderElectionID             string
@@ -411,9 +414,21 @@ func (s *setup) Start(ctx context.Context) error {
 			return err
 		}
 	}
+
+	runnablesRegistry := make(map[string]any)
 	for _, runnable := range s.extraRunnables {
-		if err := mgr.Add(runnable); err != nil {
+		r := runnable(ctx, commoncol, agwCollections)
+		if named, ok := r.(common.NamedRunnable); ok {
+			runnablesRegistry[named.RunnableName()] = struct{}{}
+		}
+		if err := mgr.Add(r); err != nil {
 			return fmt.Errorf("error adding extra Runnable to manager: %w", err)
+		}
+	}
+
+	if _, exists := runnablesRegistry[jwks.RunnableName]; !exists {
+		if err := buildJwksStore(ctx, mgr, s.apiClient, commoncol, agwCollections); err != nil {
+			return fmt.Errorf("error creating jwks store %w", err)
 		}
 	}
 
@@ -531,4 +546,18 @@ func SetupLogging(levelStr string) {
 		klogLogger := logr.FromSlogHandler(logging.New("klog").Handler())
 		klog.SetLogger(klogLogger)
 	})
+}
+
+func buildJwksStore(ctx context.Context, mgr manager.Manager, apiClient apiclient.Client, commonCollections *collections.CommonCollections, agwCollections *agwplugins.AgwCollections) error {
+	jwksStoreCtrl := agentjwksstore.NewJWKSStoreController(apiClient, agwCollections)
+	if err := mgr.Add(jwksStoreCtrl); err != nil {
+		return err
+	}
+	jwksStoreCtrl.Init(ctx)
+	jwksStore := jwks.BuildJwksStore(ctx, apiClient, commonCollections, jwksStoreCtrl.JwksQueue(), jwks.DefaultJwksStorePrefix, namespaces.GetPodNamespace())
+	if err := mgr.Add(jwksStore); err != nil {
+		return err
+	}
+
+	return nil
 }

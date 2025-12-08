@@ -1,0 +1,657 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.19.1-0.20251023132335-bf7d6b742e6a
+  labels:
+    app: kgateway
+    app.kubernetes.io/name: kgateway
+    gateway.networking.k8s.io/policy: Direct
+  name: agentgatewayparameters.agentgateway.dev
+spec:
+  group: agentgateway.dev
+  names:
+    categories:
+    - kgateway
+    kind: AgentgatewayParameters
+    listKind: AgentgatewayParametersList
+    plural: agentgatewayparameters
+    shortNames:
+    - agpar
+    singular: agentgatewayparameters
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: spec defines the desired state of AgentgatewayParameters.
+            properties:
+              deployment:
+                description: deployment allows specifying overrides for the generated
+                  Deployment resource.
+                properties:
+                  metadata:
+                    description: metadata defines a subset of object metadata to be
+                      customized.
+                    properties:
+                      annotations:
+                        additionalProperties:
+                          type: string
+                        description: |-
+                          Annotations is an unstructured key value map stored with a resource that may be
+                          set by external tools to store and retrieve arbitrary metadata. They are not
+                          queryable and should be preserved when modifying objects.
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations
+                        type: object
+                      labels:
+                        additionalProperties:
+                          type: string
+                        description: |-
+                          Map of string keys and values that can be used to organize and categorize
+                          (scope and select) objects. May match selectors of replication controllers
+                          and services.
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels
+                        type: object
+                    type: object
+                  spec:
+                    description: |-
+                      Spec provides an opaque mechanism to configure the resource Spec.
+                      This field accepts a complete or partial Kubernetes resource spec (e.g., PodSpec, ServiceSpec)
+                      and will be merged with the generated configuration using **Strategic Merge Patch** semantics.
+                      The patch is applied after all other fields are applied.
+                      If you merge-patch the same resource from AgentgatewayParameters on the
+                      GatewayClass and also from AgentgatewayParameters on the Gateway, then
+                      the GatewayClass merge-patch happens first.
+
+                      # Strategic Merge Patch & Deletion Guide
+
+                      This merge strategy allows you to override individual fields, merge lists, or delete items
+                      without needing to provide the entire resource definition.
+
+                      **1. Replacing Values (Scalars):**
+                      Simple fields (strings, integers, booleans) in your config will overwrite the generated defaults.
+
+                      **2. Merging Lists (Append/Merge):**
+                      Lists with "merge keys" (like `containers` which merges on `name`, or `tolerations` which merges on `key`)
+                      will append your items to the generated list, or update existing items if keys match.
+
+                      **3. Deleting List Items ($patch: delete):**
+                      To remove an item from a generated list (e.g., removing a default sidecar), you must use
+                      the special `$patch: delete` directive.
+
+                        spec:
+                          containers:
+                            - name: agent-gateway
+                              # Delete the securityContext using $patch: delete
+                              securityContext:
+                                $patch: delete
+
+                      **4. Deleting/Clearing Map Fields (null):**
+                      To remove a map field or a scalar entirely, set its value to `null`.
+
+                        spec:
+                          template:
+                            spec:
+                              nodeSelector: null  # Removes default nodeSelector
+
+                      **5. Replacing Lists Entirely ($patch: replace):**
+                      If you want to strictly define a list and ignore all generated defaults, use `$patch: replace`.
+
+                        service:
+                          spec:
+                            ports:
+                              - $patch: replace
+                              - name: http
+                                port: 80
+                                targetPort: 8080
+                                protocol: TCP
+                              - name: https
+                                port: 443
+                                targetPort: 8443
+                                protocol: TCP
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                type: object
+              env:
+                description: |-
+                  The container environment variables. These override any existing
+                  values. If you want to delete an environment variable entirely, use
+                  `$patch: delete` with AgentgatewayParametersOverlays instead. Note that
+                  [variable
+                  expansion](https://kubernetes.io/docs/tasks/inject-data-application/define-interdependent-environment-variables/)
+                  does apply, but is highly discouraged -- to set dependent environment
+                  variables, you can use $(VAR_NAME), but it's highly
+                  discouraged. `$$(VAR_NAME)` avoids expansion and results in a literal
+                  `$(VAR_NAME)`.
+                items:
+                  description: EnvVar represents an environment variable present in
+                    a Container.
+                  properties:
+                    name:
+                      description: |-
+                        Name of the environment variable.
+                        May consist of any printable ASCII characters except '='.
+                      type: string
+                    value:
+                      description: |-
+                        Variable references $(VAR_NAME) are expanded
+                        using the previously defined environment variables in the container and
+                        any service environment variables. If a variable cannot be resolved,
+                        the reference in the input string will be unchanged. Double $$ are reduced
+                        to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e.
+                        "$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)".
+                        Escaped references will never be expanded, regardless of whether the variable
+                        exists or not.
+                        Defaults to "".
+                      type: string
+                    valueFrom:
+                      description: Source for the environment variable's value. Cannot
+                        be used if value is not empty.
+                      properties:
+                        configMapKeyRef:
+                          description: Selects a key of a ConfigMap.
+                          properties:
+                            key:
+                              description: The key to select.
+                              type: string
+                            name:
+                              default: ""
+                              description: |-
+                                Name of the referent.
+                                This field is effectively required, but due to backwards compatibility is
+                                allowed to be empty. Instances of this type with an empty value here are
+                                almost certainly wrong.
+                                More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                              type: string
+                            optional:
+                              description: Specify whether the ConfigMap or its key
+                                must be defined
+                              type: boolean
+                          required:
+                          - key
+                          type: object
+                          x-kubernetes-map-type: atomic
+                        fieldRef:
+                          description: |-
+                            Selects a field of the pod: supports metadata.name, metadata.namespace, `metadata.labels['<KEY>']`, `metadata.annotations['<KEY>']`,
+                            spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs.
+                          properties:
+                            apiVersion:
+                              description: Version of the schema the FieldPath is
+                                written in terms of, defaults to "v1".
+                              type: string
+                            fieldPath:
+                              description: Path of the field to select in the specified
+                                API version.
+                              type: string
+                          required:
+                          - fieldPath
+                          type: object
+                          x-kubernetes-map-type: atomic
+                        fileKeyRef:
+                          description: |-
+                            FileKeyRef selects a key of the env file.
+                            Requires the EnvFiles feature gate to be enabled.
+                          properties:
+                            key:
+                              description: |-
+                                The key within the env file. An invalid key will prevent the pod from starting.
+                                The keys defined within a source may consist of any printable ASCII characters except '='.
+                                During Alpha stage of the EnvFiles feature gate, the key size is limited to 128 characters.
+                              type: string
+                            optional:
+                              default: false
+                              description: |-
+                                Specify whether the file or its key must be defined. If the file or key
+                                does not exist, then the env var is not published.
+                                If optional is set to true and the specified key does not exist,
+                                the environment variable will not be set in the Pod's containers.
+
+                                If optional is set to false and the specified key does not exist,
+                                an error will be returned during Pod creation.
+                              type: boolean
+                            path:
+                              description: |-
+                                The path within the volume from which to select the file.
+                                Must be relative and may not contain the '..' path or start with '..'.
+                              type: string
+                            volumeName:
+                              description: The name of the volume mount containing
+                                the env file.
+                              type: string
+                          required:
+                          - key
+                          - path
+                          - volumeName
+                          type: object
+                          x-kubernetes-map-type: atomic
+                        resourceFieldRef:
+                          description: |-
+                            Selects a resource of the container: only resources limits and requests
+                            (limits.cpu, limits.memory, limits.ephemeral-storage, requests.cpu, requests.memory and requests.ephemeral-storage) are currently supported.
+                          properties:
+                            containerName:
+                              description: 'Container name: required for volumes,
+                                optional for env vars'
+                              type: string
+                            divisor:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              description: Specifies the output format of the exposed
+                                resources, defaults to "1"
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
+                            resource:
+                              description: 'Required: resource to select'
+                              type: string
+                          required:
+                          - resource
+                          type: object
+                          x-kubernetes-map-type: atomic
+                        secretKeyRef:
+                          description: Selects a key of a secret in the pod's namespace
+                          properties:
+                            key:
+                              description: The key of the secret to select from.  Must
+                                be a valid secret key.
+                              type: string
+                            name:
+                              default: ""
+                              description: |-
+                                Name of the referent.
+                                This field is effectively required, but due to backwards compatibility is
+                                allowed to be empty. Instances of this type with an empty value here are
+                                almost certainly wrong.
+                                More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                              type: string
+                            optional:
+                              description: Specify whether the Secret or its key must
+                                be defined
+                              type: boolean
+                          required:
+                          - key
+                          type: object
+                          x-kubernetes-map-type: atomic
+                      type: object
+                  required:
+                  - name
+                  type: object
+                type: array
+              image:
+                description: "The agentgateway container image. See\nhttps://kubernetes.io/docs/concepts/containers/images\nfor
+                  details.\n\nDefault values, which may be overridden individually:\n\n\tregistry:
+                  ghcr.io/agentgateway\n\trepository: agentgateway\n\ttag: <agentgateway
+                  version>\n\tpullPolicy: <omitted, relying on Kubernetes defaults
+                  which depend on the tag>"
+                properties:
+                  digest:
+                    description: The hash digest of the image, e.g. `sha256:12345...`
+                    type: string
+                  pullPolicy:
+                    description: |-
+                      The image pull policy for the container. See
+                      https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
+                      for details.
+                    type: string
+                  registry:
+                    description: The image registry.
+                    type: string
+                  repository:
+                    description: The image repository (name).
+                    type: string
+                  tag:
+                    description: The image tag.
+                    type: string
+                type: object
+              logging:
+                description: logging configuration for Agentgateway. By default, all
+                  logs are set to "info" level.
+                properties:
+                  format:
+                    description: The default logging format is text.
+                    enum:
+                    - json
+                    - text
+                    type: string
+                  level:
+                    description: |-
+                      Logging level in standard RUST_LOG syntax, e.g. 'info', the default, or
+                      by module, comma-separated. E.g.,
+                      "rmcp=warn,hickory_server::server::server_future=off,typespec_client_core::http::policies::logging=warn"
+                    type: string
+                type: object
+              rawConfig:
+                description: |-
+                  rawConfig provides an opaque mechanism to configure the agentgateway
+                  config file (the agentgateway binary has a '-f' option to specify a
+                  config file, and this is that file).  This will be merged with
+                  configuration derived from typed fields like
+                  AgentgatewayParametersLogging.Format, and those typed fields will take
+                  precedence.
+
+                  Example:
+                    rawConfig:
+                      binds:
+                      - port: 3000
+                        listeners:
+                        - routes:
+                          - policies:
+                              cors:
+                                allowOrigins:
+                                  - "*"
+                                allowHeaders:
+                                  - mcp-protocol-version
+                                  - content-type
+                                  - cache-control
+                            backends:
+                            - mcp:
+                                targets:
+                                - name: everything
+                                  stdio:
+                                    cmd: npx
+                                    args: ["@modelcontextprotocol/server-everything"]
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
+              resources:
+                description: |-
+                  The compute resources required by this container. See
+                  https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                  for details.
+                properties:
+                  claims:
+                    description: |-
+                      Claims lists the names of resources, defined in spec.resourceClaims,
+                      that are used by this container.
+
+                      This field depends on the
+                      DynamicResourceAllocation feature gate.
+
+                      This field is immutable. It can only be set for containers.
+                    items:
+                      description: ResourceClaim references one entry in PodSpec.ResourceClaims.
+                      properties:
+                        name:
+                          description: |-
+                            Name must match the name of one entry in pod.spec.resourceClaims of
+                            the Pod where this field is used. It makes that resource available
+                            inside a container.
+                          type: string
+                        request:
+                          description: |-
+                            Request is the name chosen for a request in the referenced claim.
+                            If empty, everything from the claim is made available, otherwise
+                            only the result of this request.
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    type: array
+                    x-kubernetes-list-map-keys:
+                    - name
+                    x-kubernetes-list-type: map
+                  limits:
+                    additionalProperties:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                      x-kubernetes-int-or-string: true
+                    description: |-
+                      Limits describes the maximum amount of compute resources allowed.
+                      More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                    type: object
+                  requests:
+                    additionalProperties:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                      x-kubernetes-int-or-string: true
+                    description: |-
+                      Requests describes the minimum amount of compute resources required.
+                      If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+                      otherwise to an implementation-defined value. Requests cannot exceed Limits.
+                      More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                    type: object
+                type: object
+              service:
+                description: service allows specifying overrides for the generated
+                  Service resource.
+                properties:
+                  metadata:
+                    description: metadata defines a subset of object metadata to be
+                      customized.
+                    properties:
+                      annotations:
+                        additionalProperties:
+                          type: string
+                        description: |-
+                          Annotations is an unstructured key value map stored with a resource that may be
+                          set by external tools to store and retrieve arbitrary metadata. They are not
+                          queryable and should be preserved when modifying objects.
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations
+                        type: object
+                      labels:
+                        additionalProperties:
+                          type: string
+                        description: |-
+                          Map of string keys and values that can be used to organize and categorize
+                          (scope and select) objects. May match selectors of replication controllers
+                          and services.
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels
+                        type: object
+                    type: object
+                  spec:
+                    description: |-
+                      Spec provides an opaque mechanism to configure the resource Spec.
+                      This field accepts a complete or partial Kubernetes resource spec (e.g., PodSpec, ServiceSpec)
+                      and will be merged with the generated configuration using **Strategic Merge Patch** semantics.
+                      The patch is applied after all other fields are applied.
+                      If you merge-patch the same resource from AgentgatewayParameters on the
+                      GatewayClass and also from AgentgatewayParameters on the Gateway, then
+                      the GatewayClass merge-patch happens first.
+
+                      # Strategic Merge Patch & Deletion Guide
+
+                      This merge strategy allows you to override individual fields, merge lists, or delete items
+                      without needing to provide the entire resource definition.
+
+                      **1. Replacing Values (Scalars):**
+                      Simple fields (strings, integers, booleans) in your config will overwrite the generated defaults.
+
+                      **2. Merging Lists (Append/Merge):**
+                      Lists with "merge keys" (like `containers` which merges on `name`, or `tolerations` which merges on `key`)
+                      will append your items to the generated list, or update existing items if keys match.
+
+                      **3. Deleting List Items ($patch: delete):**
+                      To remove an item from a generated list (e.g., removing a default sidecar), you must use
+                      the special `$patch: delete` directive.
+
+                        spec:
+                          containers:
+                            - name: agent-gateway
+                              # Delete the securityContext using $patch: delete
+                              securityContext:
+                                $patch: delete
+
+                      **4. Deleting/Clearing Map Fields (null):**
+                      To remove a map field or a scalar entirely, set its value to `null`.
+
+                        spec:
+                          template:
+                            spec:
+                              nodeSelector: null  # Removes default nodeSelector
+
+                      **5. Replacing Lists Entirely ($patch: replace):**
+                      If you want to strictly define a list and ignore all generated defaults, use `$patch: replace`.
+
+                        service:
+                          spec:
+                            ports:
+                              - $patch: replace
+                              - name: http
+                                port: 80
+                                targetPort: 8080
+                                protocol: TCP
+                              - name: https
+                                port: 443
+                                targetPort: 8443
+                                protocol: TCP
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                type: object
+              serviceAccount:
+                description: serviceAccount allows specifying overrides for the generated
+                  ServiceAccount resource.
+                properties:
+                  metadata:
+                    description: metadata defines a subset of object metadata to be
+                      customized.
+                    properties:
+                      annotations:
+                        additionalProperties:
+                          type: string
+                        description: |-
+                          Annotations is an unstructured key value map stored with a resource that may be
+                          set by external tools to store and retrieve arbitrary metadata. They are not
+                          queryable and should be preserved when modifying objects.
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations
+                        type: object
+                      labels:
+                        additionalProperties:
+                          type: string
+                        description: |-
+                          Map of string keys and values that can be used to organize and categorize
+                          (scope and select) objects. May match selectors of replication controllers
+                          and services.
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels
+                        type: object
+                    type: object
+                  spec:
+                    description: |-
+                      Spec provides an opaque mechanism to configure the resource Spec.
+                      This field accepts a complete or partial Kubernetes resource spec (e.g., PodSpec, ServiceSpec)
+                      and will be merged with the generated configuration using **Strategic Merge Patch** semantics.
+                      The patch is applied after all other fields are applied.
+                      If you merge-patch the same resource from AgentgatewayParameters on the
+                      GatewayClass and also from AgentgatewayParameters on the Gateway, then
+                      the GatewayClass merge-patch happens first.
+
+                      # Strategic Merge Patch & Deletion Guide
+
+                      This merge strategy allows you to override individual fields, merge lists, or delete items
+                      without needing to provide the entire resource definition.
+
+                      **1. Replacing Values (Scalars):**
+                      Simple fields (strings, integers, booleans) in your config will overwrite the generated defaults.
+
+                      **2. Merging Lists (Append/Merge):**
+                      Lists with "merge keys" (like `containers` which merges on `name`, or `tolerations` which merges on `key`)
+                      will append your items to the generated list, or update existing items if keys match.
+
+                      **3. Deleting List Items ($patch: delete):**
+                      To remove an item from a generated list (e.g., removing a default sidecar), you must use
+                      the special `$patch: delete` directive.
+
+                        spec:
+                          containers:
+                            - name: agent-gateway
+                              # Delete the securityContext using $patch: delete
+                              securityContext:
+                                $patch: delete
+
+                      **4. Deleting/Clearing Map Fields (null):**
+                      To remove a map field or a scalar entirely, set its value to `null`.
+
+                        spec:
+                          template:
+                            spec:
+                              nodeSelector: null  # Removes default nodeSelector
+
+                      **5. Replacing Lists Entirely ($patch: replace):**
+                      If you want to strictly define a list and ignore all generated defaults, use `$patch: replace`.
+
+                        service:
+                          spec:
+                            ports:
+                              - $patch: replace
+                              - name: http
+                                port: 80
+                                targetPort: 8080
+                                protocol: TCP
+                              - name: https
+                                port: 443
+                                targetPort: 8443
+                                protocol: TCP
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                type: object
+              shutdown:
+                description: |-
+                  Shutdown delay configuration.  How graceful planned or unplanned data
+                  plane changes happen is in tension with how quickly rollouts of the data
+                  plane complete. How long a data plane pod must wait for shutdown to be
+                  perfectly graceful depends on how you have configured your Gateways.
+                properties:
+                  max:
+                    description: |-
+                      Maximum time (in seconds) to wait before allowing Agentgateway to
+                      terminate. Refer to the TERMINATION_GRACE_PERIOD_SECONDS environment
+                      variable for details.
+                    format: int64
+                    maximum: 31536000
+                    minimum: 0
+                    type: integer
+                  min:
+                    description: |-
+                      Minimum time (in seconds) to wait before allowing Agentgateway to
+                      terminate. Refer to the CONNECTION_MIN_TERMINATION_DEADLINE environment
+                      variable for details.
+                    format: int64
+                    maximum: 31536000
+                    minimum: 0
+                    type: integer
+                required:
+                - max
+                - min
+                type: object
+                x-kubernetes-validations:
+                - message: The 'min' value must be less than or equal to the 'max'
+                    value.
+                  rule: self.min <= self.max
+            type: object
+          status:
+            description: status defines the current state of AgentgatewayParameters.
+            type: object
+        required:
+        - spec
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
