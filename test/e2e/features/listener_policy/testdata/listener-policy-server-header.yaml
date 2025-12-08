@@ -10,4 +10,4 @@ spec:
     name: gw
   default:
     httpSettings:
-      serverHeaderTransformation: PassThrough 
+      serverHeaderTransformation: PassThrough

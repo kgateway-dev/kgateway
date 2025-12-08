@@ -29,7 +29,7 @@ import (
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
 
-// testingSuite is the entire Suite of tests for the "HttpListenerPolicy" feature
+// testingSuite is the entire Suite of tests for the "ListenerPolicy" feature
 type testingSuite struct {
 	suite.Suite
 	ctx              context.Context
@@ -274,7 +274,7 @@ func (s *testingSuite) TestHttpListenerPolicyClearStaleStatus() {
 func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, gwName, controllerName string) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
 	s.testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
-		policy := &kgateway.HTTPListenerPolicy{}
+		policy := &kgateway.ListenerPolicy{}
 		err := s.testInstallation.ClusterContext.Client.Get(
 			s.ctx,
 			types.NamespacedName{Name: policyName, Namespace: policyNamespace},
@@ -306,7 +306,7 @@ func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, gwName, co
 func (s *testingSuite) assertAncestorStatuses(ancestorName string, expectedControllers map[string]bool) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
 	s.testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
-		policy := &kgateway.HTTPListenerPolicy{}
+		policy := &kgateway.ListenerPolicy{}
 		err := s.testInstallation.ClusterContext.Client.Get(
 			s.ctx,
 			types.NamespacedName{Name: "http-listener-policy-server-header", Namespace: "default"},
