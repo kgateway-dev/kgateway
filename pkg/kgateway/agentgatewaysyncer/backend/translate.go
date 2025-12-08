@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/agentgateway/agentgateway/go/api"
+	"istio.io/istio/pilot/pkg/model/kstatus"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
 	corev1 "k8s.io/api/core/v1"
@@ -13,7 +14,9 @@ import (
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
+	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -66,6 +69,47 @@ func BuildAgwBackend(
 		return []*api.Backend{be}, nil
 	}
 	return nil, errors.New("unknown backend")
+}
+
+func TranslateAgwBackend(
+	ctx plugins.PolicyCtx,
+	backend *agentgateway.AgentgatewayBackend,
+) (*agentgateway.AgentgatewayBackendStatus, []agwir.AgwResource) {
+	var results []agwir.AgwResource
+	backends, err := BuildAgwBackend(ctx, backend)
+	if err != nil {
+		logger.Error("failed to translate backend", "backend", backend.Name, "namespace", backend.Namespace, "error", err)
+		return &agentgateway.AgentgatewayBackendStatus{
+			Conditions: kstatus.UpdateConditionIfChanged(backend.Status.Conditions, metav1.Condition{
+				Type:               "Accepted",
+				Status:             metav1.ConditionFalse,
+				Reason:             "TranslationError",
+				Message:            fmt.Sprintf("failed to translate backend %v", err),
+				ObservedGeneration: backend.Generation,
+				LastTransitionTime: metav1.Now(),
+			}),
+		}, results
+	}
+	// handle all backends created as an MCPBackend backend may create multiple backends
+	for _, backend := range backends {
+		logger.Debug("creating backend", "backend", backend.Name)
+		resourceWrapper := translator.ToResourceGlobal(&api.Resource{
+			Kind: &api.Resource_Backend{
+				Backend: backend,
+			},
+		})
+		results = append(results, resourceWrapper)
+	}
+	return &agentgateway.AgentgatewayBackendStatus{
+		Conditions: kstatus.UpdateConditionIfChanged(backend.Status.Conditions, metav1.Condition{
+			Type:               "Accepted",
+			Status:             metav1.ConditionTrue,
+			Reason:             "Accepted",
+			Message:            "Backend successfully accepted",
+			ObservedGeneration: backend.Generation,
+			LastTransitionTime: metav1.Now(),
+		}),
+	}, results
 }
 
 func translateMCPBackends(ctx plugins.PolicyCtx, be *agentgateway.AgentgatewayBackend, inlinePolicies []*api.BackendPolicySpec) ([]*api.Backend, error) {
