@@ -14,13 +14,14 @@ import (
 
 	"github.com/onsi/ginkgo/v2"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/portforward"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/threadsafe"
 	kgatewayAdminCli "github.com/kgateway-dev/kgateway/v2/test/controllerutils/admincli"
 	"github.com/kgateway-dev/kgateway/v2/test/envoyutils/admincli"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 // StandardKgatewayDumpOnFail creates a dump of the kubernetes state and certain envoy data from
@@ -28,6 +29,9 @@ import (
 // Look at `KubeDumpOnFail` && `EnvoyDumpOnFail` for more details
 func StandardKgatewayDumpOnFail(outLog io.Writer, kubectlCli *kubectl.Cli, outDir string, namespaces []string) func() {
 	return func() {
+		if os.Getenv(testutils.SkipDump) == "true" {
+			return
+		}
 		fmt.Printf("Test failed. Dumping state from %s...\n", strings.Join(namespaces, ", "))
 
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)

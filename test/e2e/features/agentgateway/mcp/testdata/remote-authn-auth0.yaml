@@ -1,5 +1,5 @@
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   name: mcp-backend
@@ -35,7 +35,7 @@ spec:
           value: /
     backendRefs:
       - name: mcp-backend
-        group: gateway.kgateway.dev
+        group: agentgateway.dev
         kind: AgentgatewayBackend
 ---
 apiVersion: gateway.networking.k8s.io/v1
@@ -83,7 +83,7 @@ spec:
       - name: auth0-mock
         port: 9000
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: mcp-policy
@@ -109,7 +109,7 @@ spec:
         - authorization
       allowCredentials: true
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: auth0-mcp-authn-policy
@@ -117,7 +117,7 @@ spec:
   targetRefs:
     - name: mcp-backend
       kind: AgentgatewayBackend
-      group: gateway.kgateway.dev
+      group: agentgateway.dev
   backend:
     mcp:
       authentication:

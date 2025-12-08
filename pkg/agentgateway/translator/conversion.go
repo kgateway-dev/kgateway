@@ -33,10 +33,10 @@ import (
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 	gatewayx "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	v1alpha2 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
@@ -46,20 +46,12 @@ func ConvertHTTPRouteToAgw(ctx RouteContext, r gwv1.HTTPRouteRule,
 	obj *gwv1.HTTPRoute, pos int, matchPos int,
 ) (*api.Route, *reporter.RouteCondition) {
 	routeRuleKey := strconv.Itoa(pos) + "." + strconv.Itoa(matchPos)
-	var ruleName string
-	if r.Name != nil {
-		// use the user provided name. this will be used to attach policies
-		routeRuleKey = string(*r.Name)
-		ruleName = utils.InternalRouteRuleName(obj.Namespace, obj.Name, string(*r.Name))
-	}
 	res := &api.Route{
 		// unique for route rule
-		Key: utils.InternalRouteRuleName(obj.Namespace, obj.Name, routeRuleKey),
-		// used for policy reference at route level
-		RouteName:   utils.InternalRouteRuleName(obj.Namespace, obj.Name, ""),
+		Key:  utils.InternalRouteRuleKey(obj.Namespace, obj.Name, routeRuleKey),
+		Name: utils.RouteName(wellknown.HTTPRouteKind, obj.Namespace, obj.Name, r.Name),
+		// filled in later
 		ListenerKey: "",
-		// used for policy reference at route rule (drops rule name if not specified)
-		RuleName: ruleName,
 	}
 
 	if err := processRouteMatches(&r, res); err != nil {
@@ -107,10 +99,6 @@ func ConvertHTTPRouteToAgw(ctx RouteContext, r gwv1.HTTPRouteRule,
 	res.Backends = backends
 
 	res.Hostnames = convertHostnames(obj.Spec.Hostnames)
-
-	if shouldInjectErrorResponse(backendErr) {
-		injectDirectResponseFilter(res)
-	}
 
 	if policiesErr != nil && !isPolicyErrorCritical(policiesErr) {
 		return nil, policiesErr
@@ -177,33 +165,6 @@ func convertHostnames(hostnames []gwv1.Hostname) []string {
 	})
 }
 
-// Helper function to determine if error response should be injected
-func shouldInjectErrorResponse(backendErr *reporter.RouteCondition) bool {
-	return backendErr != nil &&
-		(backendErr.Reason == gwv1.RouteReasonInvalidKind ||
-			backendErr.Reason == gwv1.RouteReasonRefNotPermitted ||
-			backendErr.Reason == gwv1.RouteReasonBackendNotFound)
-}
-
-// Helper function to inject direct response filter for errors
-func injectDirectResponseFilter(res *api.Route) {
-	for _, f := range res.TrafficPolicies {
-		if _, ok := f.GetKind().(*api.TrafficPolicySpec_DirectResponse); ok {
-			return
-		}
-	}
-	drf := &api.TrafficPolicySpec{
-		Kind: &api.TrafficPolicySpec_DirectResponse{
-			DirectResponse: &api.DirectResponse{
-				Status: 500,
-				Body:   []byte("Backend service unavailable"),
-			},
-		},
-	}
-
-	res.TrafficPolicies = append([]*api.TrafficPolicySpec{drf}, res.TrafficPolicies...)
-}
-
 // Helper function to determine if filter error is critical
 func isPolicyErrorCritical(filterError *reporter.RouteCondition) bool {
 	criticalReasons := []gwv1.RouteConditionReason{
@@ -220,19 +181,11 @@ func ConvertTCPRouteToAgw(ctx RouteContext, r gwv1a2.TCPRouteRule,
 	obj *gwv1a2.TCPRoute, pos int,
 ) (*api.TCPRoute, *reporter.RouteCondition) {
 	routeRuleKey := strconv.Itoa(pos)
-	var ruleName string
-	if r.Name != nil {
-		// use the user provided name. this will be used to attach policies
-		routeRuleKey = getRouteKeySectionName(obj.ObjectMeta, string(*r.Name))
-		ruleName = utils.InternalRouteRuleName(obj.Namespace, obj.Name, string(*r.Name))
-	}
 	res := &api.TCPRoute{
 		// unique for route rule
-		Key: utils.InternalRouteRuleName(obj.Namespace, obj.Name, routeRuleKey),
-		// used for policy reference (drops rule name if not specified)
-		RouteName:   utils.InternalRouteRuleName(obj.Namespace, obj.Name, ""),
+		Key:         utils.InternalRouteRuleKey(obj.Namespace, obj.Name, routeRuleKey),
+		Name:        utils.RouteName(wellknown.TCPRouteKind, obj.Namespace, obj.Name, r.Name),
 		ListenerKey: "",
-		RuleName:    ruleName,
 	}
 
 	// Build TCP destinations
@@ -251,19 +204,11 @@ func ConvertGRPCRouteToAgw(ctx RouteContext, r gwv1.GRPCRouteRule,
 	obj *gwv1.GRPCRoute, pos int,
 ) (*api.Route, *reporter.RouteCondition) {
 	routeRuleKey := strconv.Itoa(pos)
-	var ruleName string
-	if r.Name != nil {
-		// use the user provided name. this will be used to attach policies
-		routeRuleKey = getRouteKeySectionName(obj.ObjectMeta, string(*r.Name))
-		ruleName = utils.InternalRouteRuleName(obj.Namespace, obj.Name, string(*r.Name))
-	}
 	res := &api.Route{
 		// unique for route rule
-		Key: utils.InternalRouteRuleName(obj.Namespace, obj.Name, routeRuleKey),
-		// used for policy reference (drops rule name if not specified)
-		RouteName:   utils.InternalRouteRuleName(obj.Namespace, obj.Name, ""),
+		Key:         utils.InternalRouteRuleKey(obj.Namespace, obj.Name, routeRuleKey),
+		Name:        utils.RouteName(wellknown.GRPCRouteKind, obj.Namespace, obj.Name, r.Name),
 		ListenerKey: "",
-		RuleName:    ruleName,
 	}
 
 	// Convert GRPC matches to Agw format
@@ -327,19 +272,11 @@ func ConvertTLSRouteToAgw(ctx RouteContext, r gwv1a2.TLSRouteRule,
 	obj *gwv1a2.TLSRoute, pos int,
 ) (*api.TCPRoute, *reporter.RouteCondition) {
 	routeRuleKey := strconv.Itoa(pos)
-	var ruleName string
-	if r.Name != nil {
-		// use the user provided name. this will be used to attach policies
-		routeRuleKey = getRouteKeySectionName(obj.ObjectMeta, string(*r.Name))
-		ruleName = utils.InternalRouteRuleName(obj.Namespace, obj.Name, string(*r.Name))
-	}
 	res := &api.TCPRoute{
 		// unique for route rule
-		Key: utils.InternalRouteRuleName(obj.Namespace, obj.Name, routeRuleKey),
-		// used for policy reference (drops rule name if not specified)
-		RouteName:   utils.InternalRouteRuleName(obj.Namespace, obj.Name, ""),
+		Key:         utils.InternalRouteRuleKey(obj.Namespace, obj.Name, routeRuleKey),
+		Name:        utils.RouteName(wellknown.TLSRouteKind, obj.Namespace, obj.Name, r.Name),
 		ListenerKey: "",
-		RuleName:    ruleName,
 	}
 
 	// Build TLS destinations
@@ -491,28 +428,12 @@ func BuildAgwTrafficPolicyFilters(
 			}
 			policies = append(policies, h)
 		case gwv1.HTTPRouteFilterExtensionRef:
-			h, err := createAgwExtensionRefFilter(ctx, filter.ExtensionRef, ns)
+			err := createAgwExtensionRefFilter(filter.ExtensionRef)
 			if err != nil {
 				if policyError == nil {
 					policyError = err
 				}
 				continue
-			}
-			if h != nil {
-				if _, ok := h.Kind.(*api.TrafficPolicySpec_DirectResponse); ok {
-					if hasTerminalFilter {
-						policyError = &reporter.RouteCondition{
-							Type:    gwv1.RouteConditionAccepted,
-							Status:  metav1.ConditionFalse,
-							Reason:  gwv1.RouteReasonIncompatibleFilters,
-							Message: terminalFilterCombinationError(terminalFilterType, "DirectResponse"),
-						}
-						continue
-					}
-					hasTerminalFilter = true
-					terminalFilterType = "DirectResponse"
-				}
-				policies = append(policies, h)
 			}
 		default:
 			return nil, &reporter.RouteCondition{
@@ -702,7 +623,7 @@ func buildAgwDestination(
 	to gwv1.HTTPBackendRef,
 	ns string,
 	k schema.GroupVersionKind,
-	backendCol krt.Collection[*v1alpha1.AgentgatewayBackend],
+	backendCol krt.Collection[*v1alpha2.AgentgatewayBackend],
 ) (*api.RouteBackend, *reporter.RouteCondition) {
 	ref := normalizeReference(to.Group, to.Kind, wellknown.ServiceGVK)
 	// check if the reference is allowed
@@ -755,8 +676,11 @@ func buildAgwDestination(
 			}
 		} else {
 			rb.Backend = &api.BackendReference{
-				Kind: &api.BackendReference_Service{
-					Service: namespace + "/" + hostname,
+				Kind: &api.BackendReference_Service_{
+					Service: &api.BackendReference_Service{
+						Hostname:  hostname,
+						Namespace: namespace,
+					},
 				},
 				// InferencePool only supports single port
 				Port: uint32(svc.Spec.TargetPorts[0].Number), //nolint:gosec // G115: InferencePool TargetPort is int32 with validation 1-65535, always safe
@@ -788,8 +712,11 @@ func buildAgwDestination(
 		// Note: Backend validation happens via BackendIndex which uses the Hostname->ServiceEntry alias
 		// No need to explicitly check ServiceEntries here as the BackendIndex handles the resolution
 		rb.Backend = &api.BackendReference{
-			Kind: &api.BackendReference_Service{
-				Service: namespace + "/" + hostname,
+			Kind: &api.BackendReference_Service_{
+				Service: &api.BackendReference_Service{
+					Hostname:  hostname,
+					Namespace: namespace,
+				},
 			},
 			Port: uint32(*port), //nolint:gosec // G115: Gateway API PortNumber is int32 with validation 1-65535, always safe
 		}
@@ -826,8 +753,11 @@ func buildAgwDestination(
 			}
 		}
 		rb.Backend = &api.BackendReference{
-			Kind: &api.BackendReference_Service{
-				Service: namespace + "/" + hostname,
+			Kind: &api.BackendReference_Service_{
+				Service: &api.BackendReference_Service{
+					Hostname:  hostname,
+					Namespace: namespace,
+				},
 			},
 			Port: uint32(*port), //nolint:gosec // G115: Gateway API PortNumber is int32 with validation 1-65535, always safe
 		}
@@ -1712,65 +1642,21 @@ func toRouteKind(g schema.GroupVersionKind) gwv1.RouteGroupKind {
 
 // createAgwExtensionRefFilter creates Agw filter from Gateway API ExtensionRef filter
 func createAgwExtensionRefFilter(
-	ctx RouteContext,
 	extensionRef *gwv1.LocalObjectReference,
-	ns string,
-) (*api.TrafficPolicySpec, *reporter.RouteCondition) {
+) *reporter.RouteCondition {
 	if extensionRef == nil {
-		return nil, nil
+		return nil
 	}
 
-	// Check if it's a DirectResponse reference
-	if string(extensionRef.Group) == wellknown.DirectResponseGVK.Group && string(extensionRef.Kind) == wellknown.DirectResponseGVK.Kind {
-		// Look up the DirectResponse resource
-		directResponse := findDirectResponse(ctx, string(extensionRef.Name), ns)
-		if directResponse == nil {
-			return nil, &reporter.RouteCondition{
-				Type:    gwv1.RouteConditionAccepted,
-				Status:  metav1.ConditionFalse,
-				Reason:  gwv1.RouteReasonBackendNotFound,
-				Message: fmt.Sprintf("DirectResponse %s/%s not found", ns, extensionRef.Name),
-			}
-		}
-
-		// Convert to Agw DirectResponse filter
-		filter := &api.TrafficPolicySpec{
-			Kind: &api.TrafficPolicySpec_DirectResponse{
-				DirectResponse: &api.DirectResponse{
-					Status: uint32(directResponse.Spec.StatusCode), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
-				},
-			},
-		}
-
-		// Add body if specified
-		if directResponse.Spec.Body != nil {
-			filter.GetDirectResponse().Body = []byte(*directResponse.Spec.Body)
-		}
-
-		return filter, nil
-	}
+	// TODO: support other types of extension refs (TrafficPolicySpec, etc.) https://github.com/kgateway-dev/kgateway/issues/12037
 
 	// Unsupported ExtensionRef
-	return nil, &reporter.RouteCondition{
+	return &reporter.RouteCondition{
 		Type:    gwv1.RouteConditionAccepted,
 		Status:  metav1.ConditionFalse,
 		Reason:  gwv1.RouteReasonIncompatibleFilters,
 		Message: fmt.Sprintf("unsupported ExtensionRef: %s/%s", extensionRef.Group, extensionRef.Kind),
 	}
-}
-
-// findDirectResponse looks up a DirectResponse resource by name and namespace
-func findDirectResponse(ctx RouteContext, name, namespace string) *v1alpha1.DirectResponse {
-	if ctx.DirectResponses == nil {
-		return nil
-	}
-	directResponses := krt.Fetch(ctx.Krt, ctx.DirectResponses)
-	for _, dr := range directResponses {
-		if dr.Name == name && dr.Namespace == namespace {
-			return dr
-		}
-	}
-	return nil
 }
 
 func routeGroupKindEqual(rgk1, rgk2 gwv1.RouteGroupKind) bool {
@@ -1779,10 +1665,6 @@ func routeGroupKindEqual(rgk1, rgk2 gwv1.RouteGroupKind) bool {
 
 func getGroup(rgk gwv1.RouteGroupKind) gwv1.Group {
 	return ptr.OrDefault(rgk.Group, wellknown.GatewayGroup)
-}
-
-func getRouteKeySectionName(obj metav1.ObjectMeta, sectionName string) string {
-	return obj.GetNamespace() + "/" + obj.GetName() + "/" + sectionName
 }
 
 // We can use istio's once they bump to v1 GW API

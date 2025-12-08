@@ -15,7 +15,7 @@ import (
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -40,7 +40,7 @@ func NewCommonCols(t test.Failer, initObjs ...client.Object) *collections.Common
 
 	gatewayIndexConfig := krtcollections.GatewayIndexConfig{
 		KrtOpts:             krtopts,
-		ControllerNames:     smallset.New(wellknown.DefaultGatewayControllerName),
+		ControllerNames:     smallset.New(wellknown.DefaultGatewayControllerName, wellknown.DefaultAgwControllerName),
 		EnvoyControllerName: wellknown.DefaultGatewayControllerName,
 		PolicyIndex:         policies,
 		Gateways:            kubeRawGateways,
@@ -50,7 +50,9 @@ func NewCommonCols(t test.Failer, initObjs ...client.Object) *collections.Common
 	}
 	gateways := krtcollections.NewGatewayIndex(gatewayIndexConfig)
 	commonCols := &collections.CommonCollections{
-		GatewayIndex: gateways,
+		GatewayIndex:               gateways,
+		ControllerName:             wellknown.DefaultGatewayControllerName,
+		AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
 	}
 
 	for !kubeRawGateways.HasSynced() || !kubeRawListenerSets.HasSynced() || !gatewayClasses.HasSynced() {

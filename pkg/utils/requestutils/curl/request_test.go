@@ -39,7 +39,7 @@ var _ = Describe("Curl", func() {
 			),
 			Entry("WithBody",
 				curl.WithBody("body"),
-				ContainElement("-d"),
+				ContainElement("--data-binary"),
 			),
 			Entry("WithRetries",
 				curl.WithRetries(1, 1, 1),

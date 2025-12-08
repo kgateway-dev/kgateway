@@ -188,7 +188,7 @@ EOF
 Set up the MCP authentication policy:
 ```sh
 kubectl apply -f - <<EOF
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: keycloak-mcp-authn-policy
@@ -196,7 +196,7 @@ spec:
   targetRefs:
     - name: mcp-backend
       kind: AgentgatewayBackend
-      group: gateway.kgateway.dev
+      group: agentgateway.dev
   backend:
     mcp:
       authentication:

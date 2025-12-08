@@ -36,21 +36,6 @@ spec:
     - name: test-service
       port: 80
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  name: test-service
-  namespace: default
-spec:
-  ports:
-  - port: 80
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: default
-
----
 # Output
 output:
 - gateway:
@@ -61,7 +46,9 @@ output:
       backends:
       - backend:
           port: 80
-          service: default/test-service.default.svc.cluster.local
+          service:
+            hostname: test-service.default.svc.cluster.local
+            namespace: default
         weight: 1
       hostnames:
       - example.com
@@ -70,7 +57,10 @@ output:
       matches:
       - path:
           pathPrefix: /api
-      routeName: default/test-route-1
+      name:
+        kind: HTTPRoute
+        name: test-route-1
+        namespace: default
 - gateway:
     Name: test-gateway
     Namespace: default
@@ -79,7 +69,9 @@ output:
       backends:
       - backend:
           port: 80
-          service: default/test-service.default.svc.cluster.local
+          service:
+            hostname: test-service.default.svc.cluster.local
+            namespace: default
         weight: 1
       hostnames:
       - example2.com
@@ -88,7 +80,10 @@ output:
       matches:
       - path:
           pathPrefix: /api2
-      routeName: default/test-route-2
+      name:
+        kind: HTTPRoute
+        name: test-route-2
+        namespace: default
 status:
 - apiVersion: gateway.networking.k8s.io/v1
   kind: HTTPRoute

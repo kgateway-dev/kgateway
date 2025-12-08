@@ -25,9 +25,11 @@ output:
   resource:
     listener:
       bindKey: 80/default/test-gateway
-      gatewayName: default/test-gateway
       key: default/test-gateway.http
-      name: http
+      name:
+        gatewayName: test-gateway
+        gatewayNamespace: default
+        listenerName: http
       protocol: HTTP
 status:
 - apiVersion: gateway.networking.k8s.io/v1

@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"sort"
 	"testing"
+	"time"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -33,15 +34,15 @@ import (
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/registry"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/proxy_syncer"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/irtranslator"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/listener"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -223,7 +224,7 @@ type ExtraConfig struct {
 
 func NewScheme(extraSchemes runtime.SchemeBuilder) *runtime.Scheme {
 	scheme := schemes.GatewayScheme()
-	extraSchemes = append(extraSchemes, v1alpha1.Install)
+	extraSchemes = append(extraSchemes, kgateway.Install)
 	if err := extraSchemes.AddToScheme(scheme); err != nil {
 		log.Fatalf("failed to add extra schemes to scheme: %v", err)
 	}
@@ -552,10 +553,16 @@ func (tc TestCase) Run(
 	}
 
 	var allObjs []client.Object
+	var fakeNow time.Time
 	for _, file := range tc.InputFiles {
 		objs, err := testutils.LoadFromFiles(file, scheme, gvkToStructuralSchema)
 		if err != nil {
 			return nil, err
+		}
+		// add a creation timestamp to each object to ensure consistent application of policy
+		for _, obj := range objs {
+			fakeNow = fakeNow.Add(time.Second)
+			obj.SetCreationTimestamp(metav1.NewTime(fakeNow))
 		}
 		allObjs = append(allObjs, objs...)
 	}
