@@ -1052,6 +1052,138 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("ListenerPolicy with upgrades", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "https-listener-pol/upgrades.yaml",
+			outputFile: "https-listener-pol/upgrades.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with healthCheck", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/route-and-pol.yaml",
+			outputFile: "listener-policy-http/route-and-pol.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with idleTimeout", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/idle-timeout.yaml",
+			outputFile: "listener-policy-http/idle-timeout.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with preserveHttp1HeaderCase", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/preserve-http1-header-case.yaml",
+			outputFile: "listener-policy-http/preserve-http1-header-case.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with useRemoteAddress absent", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/use-remote-addr-absent.yaml",
+			outputFile: "listener-policy-http/use-remote-addr-absent.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with useRemoteAddress true", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/use-remote-addr-true.yaml",
+			outputFile: "listener-policy-http/use-remote-addr-true.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with useRemoteAddress false", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/use-remote-addr-false.yaml",
+			outputFile: "listener-policy-http/use-remote-addr-false.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with acceptHttp10", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/accept-http10.yaml",
+			outputFile: "listener-policy-http/accept-http10.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with defaultHostForHttp10", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/default-host-for-http10.yaml",
+			outputFile: "listener-policy-http/default-host-for-http10.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with defaultHostForHttp10 and no acceptHttp10", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/default-host-for-http10-without-accept-http10.yaml",
+			outputFile: "listener-policy-http/default-host-for-http10-without-accept-http10.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy merging", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/merge.yaml",
+			outputFile: "listener-policy-http/merge.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with early header mutations (add/set/remove)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "listener-policy-http/early-header-mutation.yaml",
+			outputFile: "listener-policy-http/early-header-mutation.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("Service with appProtocol=kubernetes.io/h2c", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "backend-protocol/svc-h2c.yaml",

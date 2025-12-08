@@ -8,11 +8,12 @@ spec:
   - group: gateway.networking.k8s.io
     kind: Gateway
     name: gw
-  httpSettings:
-    useRemoteAddress: true
-    xffNumTrustedHops: 2
-    serverHeaderTransformation: AppendIfAbsent
-    streamIdleTimeout: 30s
-    acceptHttp10: true
-    healthCheck:
-      path: "/health_check"
+  default:
+    httpSettings:
+      useRemoteAddress: true
+      xffNumTrustedHops: 2
+      serverHeaderTransformation: AppendIfAbsent
+      streamIdleTimeout: 30s
+      acceptHttp10: true
+      healthCheck:
+        path: "/health_check"

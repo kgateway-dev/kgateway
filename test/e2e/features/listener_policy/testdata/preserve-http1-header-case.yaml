@@ -8,8 +8,9 @@ spec:
   - group: gateway.networking.k8s.io
     kind: Gateway
     name: gw
-  httpSettings:
-    preserveHttp1HeaderCase: true
+  default:
+    httpSettings:
+      preserveHttp1HeaderCase: true
 ---
 kind: BackendConfigPolicy
 apiVersion: gateway.kgateway.dev/v1alpha1

@@ -8,6 +8,6 @@ spec:
   - group: gateway.networking.k8s.io
     kind: Gateway
     name: missing-gw
-  httpSettings:
-    serverHeaderTransformation: PassThrough
-
+  default:
+    httpSettings:
+      serverHeaderTransformation: PassThrough
