@@ -104,19 +104,32 @@ func AppendPortValue(gwPorts []HelmPort, port int32, name string, gwp *kgateway.
 }
 
 // Convert service values from GatewayParameters into helm values to be used by the deployer.
-func GetServiceValues(svcConfig *kgateway.Service) *HelmService {
+func GetServiceValues(svcConfig *kgateway.Service, loadBalancerIP *string) *HelmService {
 	// convert the service type enum to its string representation;
 	// if type is not set, it will default to 0 ("ClusterIP")
 	var svcType *string
-	if svcConfig.GetType() != nil {
-		svcType = ptr.To(string(*svcConfig.GetType()))
+	var clusterIP *string
+	var extraAnnotations map[string]string
+	var extraLabels map[string]string
+	var externalTrafficPolicy *string
+
+	if svcConfig != nil {
+		if svcConfig.GetType() != nil {
+			svcType = ptr.To(string(*svcConfig.GetType()))
+		}
+		clusterIP = svcConfig.GetClusterIP()
+		extraAnnotations = svcConfig.GetExtraAnnotations()
+		extraLabels = svcConfig.GetExtraLabels()
+		externalTrafficPolicy = svcConfig.GetExternalTrafficPolicy()
 	}
+
 	return &HelmService{
 		Type:                  svcType,
-		ClusterIP:             svcConfig.GetClusterIP(),
-		ExtraAnnotations:      svcConfig.GetExtraAnnotations(),
-		ExtraLabels:           svcConfig.GetExtraLabels(),
-		ExternalTrafficPolicy: svcConfig.GetExternalTrafficPolicy(),
+		ClusterIP:             clusterIP,
+		LoadBalancerIP:        loadBalancerIP,
+		ExtraAnnotations:      extraAnnotations,
+		ExtraLabels:           extraLabels,
+		ExternalTrafficPolicy: externalTrafficPolicy,
 	}
 }
 

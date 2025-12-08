@@ -5,11 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/netip"
 	"os"
 	"strings"
 
 	"helm.sh/helm/v3/pkg/chart"
 	"istio.io/istio/pkg/kube/kclient"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/ptr"
@@ -268,6 +270,39 @@ func (k *kgatewayParameters) getGatewayParametersForGatewayClass(gwc *gwv1.Gatew
 	return mergedGwp, nil
 }
 
+// extractLoadBalancerIP extracts the first IP address from Gateway.spec.addresses
+// where the address type is IPAddressType. Returns nil if no valid IP address is found.
+// If multiple IP addresses are provided, uses the first one and logs a warning.
+func extractLoadBalancerIP(gw *gwv1.Gateway) *string {
+	if len(gw.Spec.Addresses) == 0 {
+		return nil
+	}
+
+	if len(gw.Spec.Addresses) > 1 {
+		slog.Warn("multiple IP addresses found in Gateway.spec.addresses, using first valid one",
+			"gateway", fmt.Sprintf("%s/%s", gw.Namespace, gw.Name),
+			"count", len(gw.Spec.Addresses),
+		)
+	}
+
+	for _, addr := range gw.Spec.Addresses {
+		// IPAddressType or nil (defaults to IPAddressType per Gateway API spec)
+		if addr.Type == nil || *addr.Type == gwv1.IPAddressType {
+			// Validate IP format
+			if parsedIP, err := netip.ParseAddr(addr.Value); err == nil && parsedIP.IsValid() {
+				return &addr.Value
+			}
+			// Log warning for invalid IP but continue searching
+			slog.Warn("invalid IP address in Gateway.spec.addresses, skipping", "value", addr.Value)
+		}
+	}
+
+	slog.Error("no valid IP address found in Gateway.spec.addresses",
+		"gateway", fmt.Sprintf("%s/%s", gw.Namespace, gw.Name),
+	)
+	return nil
+}
+
 func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.GatewayParameters) (*deployer.HelmConfig, error) {
 	irGW := deployer.GetGatewayIR(gw, k.inputs.CommonCollections)
 	ports := deployer.GetPortsValues(irGW, gwParam, irGW.ControllerName == k.inputs.AgentgatewayControllerName)
@@ -354,7 +389,12 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.Gatew
 	gateway.Strategy = deployConfig.GetStrategy()
 
 	// service values
-	gateway.Service = deployer.GetServiceValues(svcConfig)
+	// Extract loadBalancerIP from Gateway.spec.addresses if service type is LoadBalancer
+	var loadBalancerIP *string
+	if svcConfig != nil && svcConfig.GetType() != nil && *svcConfig.GetType() == corev1.ServiceTypeLoadBalancer {
+		loadBalancerIP = extractLoadBalancerIP(gw)
+	}
+	gateway.Service = deployer.GetServiceValues(svcConfig, loadBalancerIP)
 	// serviceaccount values
 	gateway.ServiceAccount = deployer.GetServiceAccountValues(svcAccountConfig)
 	// pod template values
