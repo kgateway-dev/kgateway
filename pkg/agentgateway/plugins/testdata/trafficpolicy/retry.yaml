@@ -11,12 +11,12 @@ spec:
   traffic:
     retry:
       attempts: 3
-      statusCodes:
+      backoff: 10s
+      codes:
       - 500
       - 502
       - 503
       - 504
-      backoffBaseInterval: 10s
 ---
 # Output
 output:

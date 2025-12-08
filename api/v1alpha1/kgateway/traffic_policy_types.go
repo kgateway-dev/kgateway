@@ -109,7 +109,7 @@ type TrafficPolicySpec struct {
 	// Retry defines the policy for retrying requests.
 	// It is applicable to HTTPRoutes, Gateway listeners and XListenerSets, and ignored for other targeted kinds.
 	// +optional
-	Retry *shared.Retry `json:"retry,omitempty"`
+	Retry *Retry `json:"retry,omitempty"`
 
 	// RBAC specifies the role-based access control configuration for the policy.
 	// This defines the rules for authorization based on roles and permissions.

@@ -78,8 +78,8 @@ jobs:
           agentgateway: 'true'
         # August 29, 2025: ~3 minutes
         - cluster-name: 'api-validation'
-          go-test-args: '-timeout=10m'
-          go-test-run-regex: '^TestAPIValidation'
+          go-test-args: '-timeout=15m'
+          go-test-run-regex: '^TestAPIValidation|^TestCustomGWP$$'
 
         # In our PR tests, we run the suite of tests using the upper ends of versions that we claim to support
         # The versions should mirror: https://kgateway.dev/docs/reference/versions/

@@ -30,6 +30,11 @@ Listeners:
     typedConfig:
       '@type': type.googleapis.com/envoy.extensions.filters.listener.proxy_protocol.v3.ProxyProtocol
       statPrefix: default_proxy-protocol
+  metadata:
+    filterMetadata:
+      merge.ListenerPolicy.gateway.kgateway.dev:
+        default.proxyProtocol:
+        - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
   name: listener~8000
 Statuses:
   gateways:

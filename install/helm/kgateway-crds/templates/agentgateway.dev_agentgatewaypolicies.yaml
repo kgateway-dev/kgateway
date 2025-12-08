@@ -3253,70 +3253,64 @@ spec:
                     description: retry defines the policy for retrying requests.
                     properties:
                       attempts:
-                        default: 1
                         description: |-
-                          Attempts specifies the number of retry attempts for a request.
-                          Defaults to 1 attempt if not set.
-                          A value of 0 effectively disables retries.
-                        format: int32
-                        minimum: 0
+                          Attempts specifies the maximum number of times an individual request
+                          from the gateway to a backend should be retried.
+
+                          If the maximum number of retries has been attempted without a successful
+                          response from the backend, the Gateway MUST return an error.
+
+                          When this field is unspecified, the number of times to attempt to retry
+                          a backend request is implementation-specific.
+
+                          Support: Extended
                         type: integer
-                      backoffBaseInterval:
-                        default: 25ms
+                      backoff:
                         description: |-
-                          BackoffBaseInterval specifies the base interval used with a fully jittered exponential back-off between retries.
-                          Defaults to 25ms if not set.
-                          Given a backoff base interval B and retry number N, the back-off for the retry is in the range [0, (2^N-1)*B].
-                          The backoff interval is capped at a max of 10 times the base interval.
-                          E.g., given a value of 25ms, the first retry will be delayed randomly by 0-24ms, the 2nd by 0-74ms,
-                          the 3rd by 0-174ms, and so on, and capped to a max of 10 times the base interval (250ms).
+                          Backoff specifies the minimum duration a Gateway should wait between
+                          retry attempts and is represented in Gateway API Duration formatting.
+
+                          For example, setting the `rules[].retry.backoff` field to the value
+                          `100ms` will cause a backend request to first be retried approximately
+                          100 milliseconds after timing out or receiving a response code configured
+                          to be retryable.
+
+                          An implementation MAY use an exponential or alternative backoff strategy
+                          for subsequent retry attempts, MAY cap the maximum backoff duration to
+                          some amount greater than the specified minimum, and MAY add arbitrary
+                          jitter to stagger requests, as long as unsuccessful backend requests are
+                          not retried before the configured minimum duration.
+
+                          If a Request timeout (`rules[].timeouts.request`) is configured on the
+                          route, the entire duration of the initial request and any retry attempts
+                          MUST not exceed the Request timeout duration. If any retry attempts are
+                          still in progress when the Request timeout duration has been reached,
+                          these SHOULD be canceled if possible and the Gateway MUST immediately
+                          return a timeout error.
+
+                          If a BackendRequest timeout (`rules[].timeouts.backendRequest`) is
+                          configured on the route, any retry attempts which reach the configured
+                          BackendRequest timeout duration without a response SHOULD be canceled if
+                          possible and the Gateway should wait for at least the specified backoff
+                          duration before attempting to retry the backend request again.
+
+                          If a BackendRequest timeout is _not_ configured on the route, retry
+                          attempts MAY time out after an implementation default duration, or MAY
+                          remain pending until a configured Request timeout or implementation
+                          default duration for total request time is reached.
+
+                          When this field is unspecified, the time to wait between retry attempts
+                          is implementation-specific.
+
+                          Support: Extended
+                        pattern: ^([0-9]{1,5}(h|m|s|ms)){1,4}$
                         type: string
-                        x-kubernetes-validations:
-                        - message: invalid duration value
-                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
-                        - message: retry.backoffBaseInterval must be at least 1ms.
-                          rule: duration(self) >= duration('1ms')
-                      perTryTimeout:
+                      codes:
                         description: |-
-                          PerTryTimeout specifies the timeout per retry attempt (incliding the initial attempt).
-                          If a global timeout is configured on a route, this timeout must be less than the global
-                          route timeout.
-                          It is specified as a sequence of decimal numbers, each with optional fraction and a unit suffix, such as "1s" or "500ms".
-                        type: string
-                        x-kubernetes-validations:
-                        - message: invalid duration value
-                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
-                        - message: retry.perTryTimeout must be at least 1ms.
-                          rule: duration(self) >= duration('1ms')
-                      retryOn:
-                        description: RetryOn specifies the conditions under which
-                          a retry should be attempted.
-                        items:
-                          description: RetryOnCondition specifies the condition under
-                            which retry takes place.
-                          enum:
-                          - 5xx
-                          - gateway-error
-                          - reset
-                          - reset-before-request
-                          - connect-failure
-                          - envoy-ratelimited
-                          - retriable-4xx
-                          - refused-stream
-                          - retriable-status-codes
-                          - http3-post-connect-failure
-                          - cancelled
-                          - deadline-exceeded
-                          - internal
-                          - resource-exhausted
-                          - unavailable
-                          type: string
-                        minItems: 1
-                        type: array
-                      statusCodes:
-                        description: |-
-                          StatusCodes specifies the HTTP status codes in the range 400-599 that should be retried in addition
-                          to the conditions specified in RetryOn.
+                          Codes defines the HTTP response status codes for which a backend request
+                          should be retried.
+
+                          Support: Extended
                         items:
                           description: |-
                             HTTPRouteRetryStatusCode defines an HTTP response status code for
@@ -3339,12 +3333,9 @@ spec:
                           maximum: 599
                           minimum: 400
                           type: integer
-                        minItems: 1
                         type: array
+                        x-kubernetes-list-type: atomic
                     type: object
-                    x-kubernetes-validations:
-                    - message: retryOn or statusCodes must be set.
-                      rule: has(self.retryOn) || has(self.statusCodes)
                   timeouts:
                     description: |-
                       timeouts defines the timeouts for requests

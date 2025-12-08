@@ -408,7 +408,7 @@ func (p *httpListenerPolicyPluginGwPass) ApplyHCM(
 	return nil
 }
 
-func (p *httpListenerPolicyPluginGwPass) HttpFilters(fc ir.FilterChainCommon) ([]filters.StagedHttpFilter, error) {
+func (p *httpListenerPolicyPluginGwPass) HttpFilters(hCtx ir.HttpFiltersContext, fc ir.FilterChainCommon) ([]filters.StagedHttpFilter, error) {
 	if p.healthCheckPolicy == nil {
 		return nil, nil
 	}

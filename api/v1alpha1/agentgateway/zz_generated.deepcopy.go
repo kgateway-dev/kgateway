@@ -2006,7 +2006,7 @@ func (in *Traffic) DeepCopyInto(out *Traffic) {
 	}
 	if in.Retry != nil {
 		in, out := &in.Retry, &out.Retry
-		*out = new(shared.Retry)
+		*out = new(Retry)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.Authorization != nil {

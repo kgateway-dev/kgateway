@@ -152,7 +152,7 @@ func (t *Translator) ComputeListener(
 		// TODO: make sure that all matchers are unique
 		rl := getReporterForFilterChain(gw, reporter, hfc.FilterChainName)
 		fc := fct.initFilterChain(hfc.FilterChainCommon)
-		fc.Filters = fct.computeHttpFilters(hfc, rl)
+		fc.Filters = fct.computeHttpFilters(hfc, lis, rl)
 		ret.FilterChains = append(ret.GetFilterChains(), fc)
 		if len(hfc.Matcher.SniDomains) > 0 {
 			hasTls = true
@@ -213,6 +213,7 @@ func (t *Translator) runListenerPlugins(
 		policies, mergeOrigins := mergePolicies(pass, pols)
 		for _, pol := range policies {
 			pctx := &ir.ListenerContext{
+				Port:   l.BindPort,
 				Policy: pol.PolicyIr,
 				PolicyAncestorRef: gwv1.ParentReference{
 					Group:     ptr.To(gwv1.Group(wellknown.GatewayGVK.Group)),

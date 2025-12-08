@@ -90,7 +90,6 @@ func (s *testingSuite) applyGatewayManifests(envoyGwName, envoyRouteName, envoyH
 	gomega.Eventually(func() error {
 		return s.TestInstallation.Actions.Kubectl().Apply(s.Ctx, []byte(agwTransformed))
 	}, 10*time.Second, 1*time.Second).Should(gomega.Succeed(), "can apply agentgateway manifest")
-
 }
 
 // deleteGatewayManifests deletes the gateway resources and their dynamic resources for a specific phase
@@ -607,7 +606,6 @@ func (s *testingSuite) upgradeHelmWithFlags(enableEnvoy, enableAgentgateway bool
 			WithPolling(time.Second).
 			Should(gomega.Succeed(), "GatewayClass agentgateway should be created and accepted")
 	}
-
 }
 
 // verifyEnvoyDeployment verifies that the Deployment uses the envoy chart

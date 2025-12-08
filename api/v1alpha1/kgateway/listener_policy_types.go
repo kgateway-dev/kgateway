@@ -54,6 +54,42 @@ type ListenerPolicySpec struct {
 	// +kubebuilder:validation:XValidation:rule="self.all(r, r.kind == 'Gateway' && (!has(r.group) || r.group == 'gateway.networking.k8s.io'))",message="targetSelectors may only reference Gateway resource"
 	TargetSelectors []shared.LocalPolicyTargetSelector `json:"targetSelectors,omitempty"`
 
+	// Default specifies default listener configuration for all Listeners, unless a per-port
+	// configuration is defined.
+	// +optional
+	Default *ListenerConfig `json:"default,omitempty"`
+
+	// Per port configuration allows overriding the listener config per port. Once set, this
+	// configuration completely replaces the default configuration for all listeners handling traffic
+	// that match this port. Unspecified fields in per-port configuration will not inherit values from default.
+	//
+	// +optional
+	// +listType=map
+	// +listMapKey=port
+	// +kubebuilder:validation:MaxItems=64
+	// +kubebuilder:validation:XValidation:message="Port for listener configuration must be unique within the Gateway",rule="self.all(t1, self.exists_one(t2, t1.port == t2.port))"
+	PerPort []ListenerPortConfig `json:"perPort,omitempty"`
+}
+
+type ListenerPortConfig struct {
+	// The Port indicates the Port Number to which the Listener configuration will be
+	// applied. This configuration will be applied to all Listeners handling
+	// traffic that match this port.
+	//
+	// +required
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
+	Port int32 `json:"port"`
+
+	// Listener stores the configuration that will be applied to all Listeners handling
+	// matching the given port.
+	//
+	// +required
+	Listener ListenerConfig `json:"listener"`
+}
+
+type ListenerConfig struct {
+
 	// ProxyProtocol configures the PROXY protocol listener filter.
 	// When set, Envoy will expect connections to include the PROXY protocol header.
 	// This is commonly used when kgateway is behind a load balancer that preserves client IP information.
