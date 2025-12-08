@@ -66,7 +66,7 @@ func (s *testingSuite) SetupSuite() {
 		"TestAccessLogEmittedToStdout":           {gatewayManifest, httpRouteManifest, accessLogManifest},
 		"TestHttpListenerPolicyClearStaleStatus": {gatewayManifest, httpRouteManifest, serverHeaderManifest},
 		"TestEarlyRequestHeaderModifier":         {gatewayManifest, earlyHeaderMutationManifest},
-		"TestProxyProtocol":                      {gatewayManifest, proxyProtocolManifest},
+		"TestProxyProtocol":                      {gatewayManifest, httpRouteManifest, proxyProtocolManifest},
 	}
 }
 
@@ -360,7 +360,7 @@ func (s *testingSuite) TestProxyProtocol() {
 			curl.WithHostHeader("example.com"),
 			curl.WithPort(8080),
 		},
-		0, // accept any curl error code
+		56, // connection reset by peer
 	)
 
 	// test with PROXY protocol header; expect 200 OK
