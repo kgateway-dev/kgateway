@@ -9,24 +9,24 @@ spec:
     frontend:
       default:
         validation:
-          mode: AllowInsecureFallback
+          mode: AllowValidOnly
           caCertificateRefs:
             - name: ca-cert
               kind: ConfigMap
               group: ""
       perPort:
-        - port: 8444
+        - port: 443
           tls:
             validation:
-              mode: AllowInsecureFallback
+              mode: AllowInsecureFallback # Testing TLS options, not certificate validation
               caCertificateRefs:
                 - name: ca-cert
                   kind: ConfigMap
                   group: ""
-        - port: 8445
+        - port: 8444
           tls:
             validation:
-              mode: AllowValidOnly
+              mode: AllowInsecureFallback # Specifically test AllowInsecureFallback mode
               caCertificateRefs:
                 - name: ca-cert
                   kind: ConfigMap

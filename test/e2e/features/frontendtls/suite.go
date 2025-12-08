@@ -31,10 +31,12 @@ var (
 	curlPodWithCerts  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "curl-pod-with-certs.yaml")
 
 	// client certificate paths inside the curl pod (for verify-certificate-hash tests)
-	clientCertPath8443 = "/etc/client-certs/client-8443.crt"
-	clientKeyPath8443  = "/etc/client-certs/client-8443.key"
-	clientCertPath9443 = "/etc/client-certs/client-9443.crt"
-	clientKeyPath9443  = "/etc/client-certs/client-9443.key"
+	clientCertPath8443   = "/etc/client-certs/client-8443.crt"
+	clientKeyPath8443    = "/etc/client-certs/client-8443.key"
+	clientCertPath9443   = "/etc/client-certs/client-9443.crt"
+	clientKeyPath9443    = "/etc/client-certs/client-9443.key"
+	commonClientCertPath = "/etc/client-certs-frontend/tls.crt"
+	commonClientKeyPath  = "/etc/client-certs-frontend/tls.key"
 
 	// manifests for FrontendTLSConfig tests (TestFrontendTLSConfig)
 	// Note: gatewayManifest and curlPodWithCerts are shared with verify-certificate-hash tests
@@ -334,7 +336,7 @@ func (s *testingSuite) TestFrontendTLSConfig() {
 		// Should succeed with client cert on port 8445
 		s.assertEventualCurlResponse(
 			curl.WithPort(8445),
-			curl.WithClientCert("/etc/client-certs-frontend/tls.crt", "/etc/client-certs-frontend/tls.key"),
+			curl.WithClientCert(commonClientCertPath, commonClientKeyPath),
 		)
 	})
 
@@ -350,7 +352,7 @@ func (s *testingSuite) TestFrontendTLSConfig() {
 		// Should succeed with client cert on port 8444
 		s.assertEventualCurlResponse(
 			curl.WithPort(8444),
-			curl.WithClientCert("/etc/client-certs-frontend/tls.crt", "/etc/client-certs-frontend/tls.key"),
+			curl.WithClientCert(commonClientCertPath, commonClientKeyPath),
 		)
 	})
 }
@@ -364,7 +366,7 @@ func (s *testingSuite) TestMultipleCACertificates() {
 		// Port 8446 has multiple CA cert refs (ca-cert and ca-cert-2) for wildcard domain *.example.com
 		// Client cert signed by ca-cert should be accepted
 		curlOpts := append(commonCurlOptsForMTLS(wildcardHostname, 8446),
-			curl.WithClientCert("/etc/client-certs-frontend/tls.crt", "/etc/client-certs-frontend/tls.key"))
+			curl.WithClientCert(commonClientCertPath, commonClientKeyPath))
 		s.TestInstallation.Assertions.AssertEventualCurlResponse(
 			s.Ctx,
 			testdefaults.CurlPodExecOpt,
@@ -381,7 +383,7 @@ func (s *testingSuite) TestMultipleCACertificates() {
 		// Port 8446 has multiple CA cert refs (ca-cert and ca-cert-2) for wildcard domain *.example.com
 		// Client cert signed by ca-cert-2 should be accepted
 		curlOpts := append(commonCurlOptsForMTLS(wildcardHostname, 8446),
-			curl.WithClientCert("/etc/client-certs-2-frontend/tls.crt", "/etc/client-certs-2-frontend/tls.key"))
+			curl.WithClientCert(commonClientCertPath, commonClientKeyPath))
 		s.TestInstallation.Assertions.AssertEventualCurlResponse(
 			s.Ctx,
 			testdefaults.CurlPodExecOpt,
@@ -397,7 +399,7 @@ func (s *testingSuite) TestMultipleCACertificates() {
 	s.Run("no client cert fails on wildcard domain", func() {
 		// Port 8446 requires client cert (AllowValidOnly mode) for wildcard domain *.example.com
 		// Connection without client cert should fail
-		curlOpts := append(commonCurlOptsForMTLS(wildcardHostname, 8446))
+		curlOpts := commonCurlOptsForMTLS(wildcardHostname, 8446)
 		s.TestInstallation.Assertions.AssertEventualCurlError(
 			s.Ctx,
 			testdefaults.CurlPodExecOpt,
