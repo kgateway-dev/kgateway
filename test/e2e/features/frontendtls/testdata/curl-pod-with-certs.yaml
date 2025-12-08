@@ -33,6 +33,12 @@ spec:
         - name: client-cert-2-frontend
           mountPath: /etc/client-certs-2-frontend
           readOnly: true
+        - name: client-matching-san
+          mountPath: /etc/client-matching-san
+          readOnly: true
+        - name: client-non-matching-san
+          mountPath: /etc/client-non-matching-san
+          readOnly: true
       resources:
         requests:
           cpu: "100m"
@@ -52,4 +58,12 @@ spec:
     - name: client-cert-2-frontend
       secret:
         secretName: client-cert-2
+        defaultMode: 0444
+    - name: client-matching-san
+      secret:
+        secretName: client-matching-san
+        defaultMode: 0444
+    - name: client-non-matching-san
+      secret:
+        secretName: client-non-matching-san
         defaultMode: 0444
