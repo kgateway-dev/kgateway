@@ -389,7 +389,7 @@ func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(
 // called 1 time per listener
 // if a plugin emits new filters, they must be with a plugin unique name.
 // any filter returned from route config must be disabled, so it doesnt impact other routes.
-func (p *trafficPolicyPluginGwPass) HttpFilters(fcc ir.FilterChainCommon) ([]filters.StagedHttpFilter, error) {
+func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.FilterChainCommon) ([]filters.StagedHttpFilter, error) {
 	stagedFilters := []filters.StagedHttpFilter{}
 
 	// Add global ExtProc disable filter when there are providers

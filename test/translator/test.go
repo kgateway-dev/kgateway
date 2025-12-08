@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"sort"
 	"testing"
+	"time"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -552,10 +553,16 @@ func (tc TestCase) Run(
 	}
 
 	var allObjs []client.Object
+	var fakeNow time.Time
 	for _, file := range tc.InputFiles {
 		objs, err := testutils.LoadFromFiles(file, scheme, gvkToStructuralSchema)
 		if err != nil {
 			return nil, err
+		}
+		// add a creation timestamp to each object to ensure consistent application of policy
+		for _, obj := range objs {
+			fakeNow = fakeNow.Add(time.Second)
+			obj.SetCreationTimestamp(metav1.NewTime(fakeNow))
 		}
 		allObjs = append(allObjs, objs...)
 	}

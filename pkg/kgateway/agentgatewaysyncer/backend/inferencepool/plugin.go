@@ -268,7 +268,7 @@ func (p *endpointPickerPass) ApplyForBackend(
 }
 
 // HttpFilters returns one ext_proc filter, using the well-known filter name.
-func (p *endpointPickerPass) HttpFilters(fc ir.FilterChainCommon) ([]filters.StagedHttpFilter, error) {
+func (p *endpointPickerPass) HttpFilters(_ ir.HttpFiltersContext, fc ir.FilterChainCommon) ([]filters.StagedHttpFilter, error) {
 	if p == nil || len(p.usedPools) == 0 {
 		return nil, nil
 	}

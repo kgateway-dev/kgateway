@@ -36,6 +36,11 @@ Listeners:
         statPrefix: http
         useRemoteAddress: true
     name: listener~3000
+  metadata:
+    filterMetadata:
+      merge.ListenerPolicy.gateway.kgateway.dev:
+        default.perConnectionBufferLimitBytes:
+        - gateway.kgateway.dev/ListenerPolicy/default/buffer-limit
   name: listener~3000
   perConnectionBufferLimitBytes: 65536
 - address:
@@ -62,10 +67,20 @@ Listeners:
         statPrefix: http
         useRemoteAddress: true
     name: listener~80
+  metadata:
+    filterMetadata:
+      merge.ListenerPolicy.gateway.kgateway.dev:
+        default.perConnectionBufferLimitBytes:
+        - gateway.kgateway.dev/ListenerPolicy/default/buffer-limit
   name: listener~80
   perConnectionBufferLimitBytes: 65536
 Routes:
 - ignorePortInHostMatching: true
+  metadata:
+    filterMetadata:
+      merge.ListenerPolicy.gateway.kgateway.dev:
+        default.perConnectionBufferLimitBytes:
+        - gateway.kgateway.dev/ListenerPolicy/default/buffer-limit
   name: listener~3000
   virtualHosts:
   - domains:
@@ -79,6 +94,11 @@ Routes:
         cluster: kube_default_example-svc_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
 - ignorePortInHostMatching: true
+  metadata:
+    filterMetadata:
+      merge.ListenerPolicy.gateway.kgateway.dev:
+        default.perConnectionBufferLimitBytes:
+        - gateway.kgateway.dev/ListenerPolicy/default/buffer-limit
   name: listener~80
   virtualHosts:
   - domains:

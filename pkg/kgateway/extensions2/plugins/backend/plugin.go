@@ -292,7 +292,7 @@ func (p *backendPlugin) ApplyForBackend(pCtx *ir.RouteBackendContext, in ir.Http
 // called 1 time per listener
 // if a plugin emits new filters, they must be with a plugin unique name.
 // any filter returned from route config must be disabled, so it doesnt impact other routes.
-func (p *backendPlugin) HttpFilters(fc ir.FilterChainCommon) ([]filters.StagedHttpFilter, error) {
+func (p *backendPlugin) HttpFilters(_ ir.HttpFiltersContext, fc ir.FilterChainCommon) ([]filters.StagedHttpFilter, error) {
 	result := []filters.StagedHttpFilter{}
 
 	var errs []error

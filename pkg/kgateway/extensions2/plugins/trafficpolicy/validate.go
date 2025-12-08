@@ -60,7 +60,7 @@ func validateXDS(ctx context.Context, p *TrafficPolicy, v validator.Validator) e
 	// This ensures that HTTP filter configurations (like ext_authz with invalid pathPrefix)
 	// are validated by Envoy.
 	fcc := ir.FilterChainCommon{FilterChainName: validationFilterChain}
-	httpFilters, err := fakePass.HttpFilters(fcc)
+	httpFilters, err := fakePass.HttpFilters(ir.HttpFiltersContext{}, fcc)
 	if err != nil {
 		return fmt.Errorf("failed to get HTTP filters for validation: %w", err)
 	}

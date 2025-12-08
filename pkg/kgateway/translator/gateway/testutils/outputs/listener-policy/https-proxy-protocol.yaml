@@ -61,9 +61,19 @@ Listeners:
   - name: envoy.filters.listener.tls_inspector
     typedConfig:
       '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+  metadata:
+    filterMetadata:
+      merge.ListenerPolicy.gateway.kgateway.dev:
+        default.proxyProtocol:
+        - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
   name: listener~443
 Routes:
 - ignorePortInHostMatching: true
+  metadata:
+    filterMetadata:
+      merge.ListenerPolicy.gateway.kgateway.dev:
+        default.proxyProtocol:
+        - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
   name: https
   virtualHosts:
   - domains:

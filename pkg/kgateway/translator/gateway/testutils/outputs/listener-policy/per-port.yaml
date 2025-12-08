@@ -6,34 +6,7 @@ Clusters:
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
   metadata: {}
-  name: kube_a_svc-a_8080
-  type: EDS
-- connectTimeout: 5s
-  edsClusterConfig:
-    edsConfig:
-      ads: {}
-      resourceApiVersion: V3
-  ignoreHealthOnHostRemoval: true
-  metadata: {}
-  name: kube_b_svc-b_8080
-  type: EDS
-- connectTimeout: 5s
-  edsClusterConfig:
-    edsConfig:
-      ads: {}
-      resourceApiVersion: V3
-  ignoreHealthOnHostRemoval: true
-  metadata: {}
-  name: kube_default_httpbin_8000
-  type: EDS
-- connectTimeout: 5s
-  edsClusterConfig:
-    edsConfig:
-      ads: {}
-      resourceApiVersion: V3
-  ignoreHealthOnHostRemoval: true
-  metadata: {}
-  name: kube_infra_example-svc_80
+  name: kube_default_example-svc_80
   type: EDS
 - connectTimeout: 5s
   metadata: {}
@@ -63,38 +36,96 @@ Listeners:
         statPrefix: http
         useRemoteAddress: true
     name: listener~80
+  listenerFilters:
+  - name: envoy.filters.listener.proxy_protocol
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.filters.listener.proxy_protocol.v3.ProxyProtocol
+      statPrefix: default_proxy-protocol
+  metadata:
+    filterMetadata:
+      merge.ListenerPolicy.gateway.kgateway.dev:
+        default.proxyProtocol:
+        - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
+        perPortPolicy[8080]:
+        - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
   name: listener~80
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8080
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: listener~8080
+        statPrefix: http
+        useRemoteAddress: true
+    name: listener~8080
+  metadata:
+    filterMetadata:
+      merge.ListenerPolicy.gateway.kgateway.dev:
+        default.proxyProtocol:
+        - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
+        perPortPolicy[8080]:
+        - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
+  name: listener~8080
+  perConnectionBufferLimitBytes: 65536
 Routes:
 - ignorePortInHostMatching: true
+  metadata:
+    filterMetadata:
+      merge.ListenerPolicy.gateway.kgateway.dev:
+        default.proxyProtocol:
+        - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
+        perPortPolicy[8080]:
+        - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
   name: listener~80
   virtualHosts:
   - domains:
-    - api.example.com
-    name: listener~80~api_example_com
+    - example.com
+    name: listener~80~example_com
     routes:
     - match:
-        pathSeparatedPrefix: /api1
-      name: listener~80~api_example_com-route-4-httproute-httpbin-default-0-0-matcher-0
+        prefix: /
+      name: listener~80~example_com-route-0-httproute-example-route-default-0-0-matcher-0
       route:
-        cluster: kube_default_httpbin_8000
+        cluster: kube_default_example-svc_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-        regexRewrite:
-          pattern:
-            regex: ^/api1\/*
-          substitution: /
+- ignorePortInHostMatching: true
+  metadata:
+    filterMetadata:
+      merge.ListenerPolicy.gateway.kgateway.dev:
+        default.proxyProtocol:
+        - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
+        perPortPolicy[8080]:
+        - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
+  name: listener~8080
+  virtualHosts:
+  - domains:
+    - example.com
+    name: listener~8080~example_com
+    routes:
     - match:
-        pathSeparatedPrefix: /api2
-      name: listener~80~api_example_com-route-5-httproute-httpbin-default-0-0-matcher-0
+        prefix: /
+      name: listener~8080~example_com-route-0-httproute-example-route-default-0-0-matcher-0
       route:
-        cluster: kube_default_httpbin_8000
+        cluster: kube_default_example-svc_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-        regexRewrite:
-          pattern:
-            regex: ^/api2\/*
-          substitution: /
 Statuses:
   gateways:
-    infra/example-gateway:
+    default/example-gateway:
       conditions:
       - lastTransitionTime: null
         message: ""
@@ -140,82 +171,36 @@ Statuses:
           kind: HTTPRoute
         - group: gateway.networking.k8s.io
           kind: GRPCRoute
+      - attachedRoutes: 1
+        conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Listener
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully verified that Listener has no conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Listener
+          reason: Programmed
+          status: "True"
+          type: Programmed
+        name: http2
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+        - group: gateway.networking.k8s.io
+          kind: GRPCRoute
   httpRoutes:
-    default/apiproduct-1:
-      parents:
-      - conditions:
-        - lastTransitionTime: null
-          message: Successfully accepted Route
-          reason: Accepted
-          status: "True"
-          type: Accepted
-        - lastTransitionTime: null
-          message: Successfully resolved all references
-          reason: ResolvedRefs
-          status: "True"
-          type: ResolvedRefs
-        controllerName: kgateway
-        parentRef:
-          group: gateway.networking.k8s.io
-          kind: HTTPRoute
-          name: api-example-com
-          namespace: infra
-    default/apiproduct-2:
-      parents:
-      - conditions:
-        - lastTransitionTime: null
-          message: Successfully accepted Route
-          reason: Accepted
-          status: "True"
-          type: Accepted
-        - lastTransitionTime: null
-          message: Successfully resolved all references
-          reason: ResolvedRefs
-          status: "True"
-          type: ResolvedRefs
-        controllerName: kgateway
-        parentRef:
-          group: gateway.networking.k8s.io
-          kind: HTTPRoute
-          name: api-example-com
-          namespace: infra
-    default/httpbin:
-      parents:
-      - conditions:
-        - lastTransitionTime: null
-          message: Successfully accepted Route
-          reason: Accepted
-          status: "True"
-          type: Accepted
-        - lastTransitionTime: null
-          message: Successfully resolved all references
-          reason: ResolvedRefs
-          status: "True"
-          type: ResolvedRefs
-        controllerName: kgateway
-        parentRef:
-          group: gateway.networking.k8s.io
-          kind: HTTPRoute
-          name: apiproduct-1
-          namespace: default
-      - conditions:
-        - lastTransitionTime: null
-          message: Successfully accepted Route
-          reason: Accepted
-          status: "True"
-          type: Accepted
-        - lastTransitionTime: null
-          message: Successfully resolved all references
-          reason: ResolvedRefs
-          status: "True"
-          type: ResolvedRefs
-        controllerName: kgateway
-        parentRef:
-          group: gateway.networking.k8s.io
-          kind: HTTPRoute
-          name: apiproduct-2
-          namespace: default
-    infra/api-example-com:
+    default/example-route:
       parents:
       - conditions:
         - lastTransitionTime: null
@@ -233,3 +218,23 @@ Statuses:
           group: ""
           kind: ""
           name: example-gateway
+  policies:
+    ListenerPolicy/default/proxy-protocol:
+      ancestors:
+      - ancestorRef:
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: example-gateway
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Valid
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway
