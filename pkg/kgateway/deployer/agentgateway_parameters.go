@@ -479,7 +479,8 @@ func (g *agentgatewayParametersHelmValuesGenerator) applyGatewayParametersToHelm
 	}
 
 	svcConfig := gwp.Spec.Kube.GetService()
-	vals.Gateway.Service = deployer.GetServiceValues(svcConfig)
+	// TODO: extract loadBalancerIP from Gateway.spec.addresses if service type is LoadBalancer
+	vals.Gateway.Service = deployer.GetServiceValues(svcConfig, nil)
 
 	svcAccountConfig := gwp.Spec.Kube.GetServiceAccount()
 	vals.Gateway.ServiceAccount = deployer.GetServiceAccountValues(svcAccountConfig)

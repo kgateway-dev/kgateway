@@ -332,3 +332,133 @@ func newCommonCols(t test.Failer, initObjs ...client.Object) *collections.Common
 	gateways.Gateways.WaitUntilSynced(ctx.Done())
 	return commonCols
 }
+
+func TestExtractLoadBalancerIP(t *testing.T) {
+	tests := []struct {
+		name      string
+		addresses []gwv1.GatewaySpecAddress
+		want      *string
+	}{
+		{
+			name: "single valid IPv4 address",
+			addresses: []gwv1.GatewaySpecAddress{
+				{Type: ptr.To(gwv1.IPAddressType), Value: "203.0.113.10"},
+			},
+			want: ptr.To("203.0.113.10"),
+		},
+		{
+			name: "single valid IPv6 address",
+			addresses: []gwv1.GatewaySpecAddress{
+				{Type: ptr.To(gwv1.IPAddressType), Value: "2001:db8::1"},
+			},
+			want: ptr.To("2001:db8::1"),
+		},
+		{
+			name: "nil address type defaults to IPAddressType",
+			addresses: []gwv1.GatewaySpecAddress{
+				{Type: nil, Value: "192.0.2.1"},
+			},
+			want: ptr.To("192.0.2.1"),
+		},
+		{
+			name:      "empty addresses array",
+			addresses: []gwv1.GatewaySpecAddress{},
+			want:      nil,
+		},
+		{
+			name: "multiple valid IP addresses uses first one",
+			addresses: []gwv1.GatewaySpecAddress{
+				{Type: ptr.To(gwv1.IPAddressType), Value: "203.0.113.10"},
+				{Type: ptr.To(gwv1.IPAddressType), Value: "203.0.113.11"},
+			},
+			want: ptr.To("203.0.113.10"),
+		},
+		{
+			name: "multiple IP addresses with invalid format skips invalid and uses first valid",
+			addresses: []gwv1.GatewaySpecAddress{
+				{Type: ptr.To(gwv1.IPAddressType), Value: "invalid-ip"},
+				{Type: ptr.To(gwv1.IPAddressType), Value: "203.0.113.10"},
+			},
+			want: ptr.To("203.0.113.10"),
+		},
+		{
+			name: "mixed address types uses first IP address",
+			addresses: []gwv1.GatewaySpecAddress{
+				{Type: ptr.To(gwv1.HostnameAddressType), Value: "example.com"},
+				{Type: ptr.To(gwv1.IPAddressType), Value: "203.0.113.10"},
+			},
+			want: ptr.To("203.0.113.10"),
+		},
+		{
+			name: "all hostname addresses returns nil",
+			addresses: []gwv1.GatewaySpecAddress{
+				{Type: ptr.To(gwv1.HostnameAddressType), Value: "example.com"},
+				{Type: ptr.To(gwv1.HostnameAddressType), Value: "test.example.com"},
+			},
+			want: nil,
+		},
+		{
+			name: "all invalid IP addresses returns nil",
+			addresses: []gwv1.GatewaySpecAddress{
+				{Type: ptr.To(gwv1.IPAddressType), Value: "not-an-ip"},
+				{Type: ptr.To(gwv1.IPAddressType), Value: "256.256.256.256"},
+			},
+			want: nil,
+		},
+		{
+			name: "nil type with invalid IP skips and continues",
+			addresses: []gwv1.GatewaySpecAddress{
+				{Type: nil, Value: "invalid"},
+				{Type: nil, Value: "203.0.113.10"},
+			},
+			want: ptr.To("203.0.113.10"),
+		},
+		{
+			name: "IPv4 and IPv6 mixed uses first valid",
+			addresses: []gwv1.GatewaySpecAddress{
+				{Type: ptr.To(gwv1.IPAddressType), Value: "203.0.113.10"},
+				{Type: ptr.To(gwv1.IPAddressType), Value: "2001:db8::1"},
+			},
+			want: ptr.To("203.0.113.10"),
+		},
+		{
+			name: "IPv6 first in multiple addresses",
+			addresses: []gwv1.GatewaySpecAddress{
+				{Type: ptr.To(gwv1.IPAddressType), Value: "2001:db8::1"},
+				{Type: ptr.To(gwv1.IPAddressType), Value: "203.0.113.10"},
+			},
+			want: ptr.To("2001:db8::1"),
+		},
+		{
+			name: "hostname before IP address skips hostname",
+			addresses: []gwv1.GatewaySpecAddress{
+				{Type: ptr.To(gwv1.HostnameAddressType), Value: "example.com"},
+				{Type: ptr.To(gwv1.IPAddressType), Value: "203.0.113.10"},
+				{Type: ptr.To(gwv1.IPAddressType), Value: "203.0.113.11"},
+			},
+			want: ptr.To("203.0.113.10"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gw := &gwv1.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-gateway",
+					Namespace: "default",
+				},
+				Spec: gwv1.GatewaySpec{
+					Addresses: tt.addresses,
+				},
+			}
+
+			got := extractLoadBalancerIP(gw)
+			if tt.want == nil {
+				assert.Nil(t, got, "expected nil but got %v", got)
+			} else {
+				assert.NotNil(t, got, "expected non-nil result")
+				assert.Equal(t, *tt.want, *got, "IP address mismatch")
+			}
+		})
+	}
+}

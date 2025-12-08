@@ -361,7 +361,7 @@ func extractLoadBalancerIP(gw *gwv1.Gateway) *string {
 	}
 
 	if len(gw.Spec.Addresses) > 1 {
-		slog.Warn("multiple IP addresses found in Gateway.spec.addresses, using first valid one",
+		slog.Warn("multiple addresses found in Gateway.spec.addresses, using first valid IP address",
 			"gateway", fmt.Sprintf("%s/%s", gw.Namespace, gw.Name),
 			"count", len(gw.Spec.Addresses),
 		)
