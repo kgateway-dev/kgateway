@@ -52,6 +52,7 @@ spec:
           kind: Secret
       options:
         kgateway.dev/verify-certificate-hash: "59:CF:81:16:72:71:C7:17:23:4E:CE:4F:F9:B9:68:B5:B0:40:2A:00:BB:14:64:E0:42:B9:AD:DA:61:C7:03:F0"
+        kgateway.dev/verify-subject-alt-names: "alt.example.com, alt2.example.com"
   - name: https-insecure-fallback
     protocol: HTTPS
     port: 9443

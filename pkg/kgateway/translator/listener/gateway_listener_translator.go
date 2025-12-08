@@ -879,6 +879,14 @@ func translateTLSConfig(
 		return nil, err
 	}
 
+	// Validate that VerifySubjectAltNames requires a trusted CA to be configured
+	if len(tlsConfig.VerifySubjectAltNames) > 0 {
+		hasTrustedCA := resolvedValidation != nil && len(resolvedValidation.CACertificateRefs) > 0
+		if !hasTrustedCA {
+			return nil, sslutils.ErrVerifySubjectAltNamesRequiresCA
+		}
+	}
+
 	// Apply client certificate validation if present
 	// Skip if CA cert refs are empty (no validation possible)
 	if resolvedValidation != nil && len(resolvedValidation.CACertificateRefs) > 0 {
@@ -1042,6 +1050,9 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter) 
 		message = "Reference not permitted by ReferenceGrant."
 	}
 	if errors.Is(err, sslutils.ErrInvalidTlsSecret) {
+		message = err.Error()
+	}
+	if errors.Is(err, sslutils.ErrVerifySubjectAltNamesRequiresCA) {
 		message = err.Error()
 	}
 	var notFoundErr *krtcollections.NotFoundError
