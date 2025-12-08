@@ -48,7 +48,8 @@ type ListenerPolicyIR struct {
 	defaultPolicy listenerPolicy
 	perPortPolicy map[uint32]listenerPolicy
 
-	NoOrigin bool // +noKrtEquals reason: internal transition for deprecated httplistenerpolicy. remove this when httplistenerpolicy is removed
+	NoOrigin bool // +noKrtEquals reason: When set to true, suppress source reporting metadata from
+	// ListenerPolicy specific fields that are irrelevant to the (now deprecated) HTTPListenerPolicy. Remove when HTTPListenerPolicy is removed.
 }
 
 type listenerPolicy struct {
