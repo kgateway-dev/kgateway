@@ -1772,7 +1772,7 @@ func getFrontendTLSConfig(frontendTLS *gwv1.FrontendTLSConfig) (*ir.FrontendTLSC
 			}
 		}
 		result.DefaultValidation = &ir.ClientCertificateValidationIR{
-			RequireClientCertificate: frontendTLS.Default.Validation.Mode == gwv1.AllowValidOnly || frontendTLS.Default.Validation.Mode == "",
+			RequireClientCertificate: getRequiredClientCertificate(frontendTLS.Default.Validation.Mode),
 			CACertificateRefs:        frontendTLS.Default.Validation.CACertificateRefs,
 		}
 	}
@@ -1787,11 +1787,20 @@ func getFrontendTLSConfig(frontendTLS *gwv1.FrontendTLSConfig) (*ir.FrontendTLSC
 				}
 			}
 			result.PerPortValidation[portConfig.Port] = &ir.ClientCertificateValidationIR{
-				RequireClientCertificate: portConfig.TLS.Validation.Mode == gwv1.AllowValidOnly || portConfig.TLS.Validation.Mode == "",
+				RequireClientCertificate: getRequiredClientCertificate(portConfig.TLS.Validation.Mode),
 				CACertificateRefs:        portConfig.TLS.Validation.CACertificateRefs,
 			}
 		}
 	}
 
 	return result, nil
+}
+
+// getRequiredClientCertificate returns true if the client certificate is required, false otherwise.
+// The default is AllowValidOnly, so we return true if the mode is AllowValidOnly or empty.
+func getRequiredClientCertificate(mode gwv1.FrontendValidationModeType) bool {
+	if mode == gwv1.AllowValidOnly || mode == "" {
+		return true
+	}
+	return false
 }
