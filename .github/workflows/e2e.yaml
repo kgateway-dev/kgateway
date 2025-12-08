@@ -44,12 +44,12 @@ jobs:
         # August 29, 2025: ~9 minutes
         - cluster-name: 'cluster-three'
           go-test-args: '-timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^DynamicForwardProxy$$|^TestKgateway$$/^Lambda$$|^TestKgateway$$/^AccessLog$$|^TestKgateway$$/^LocalRateLimit$$|^TestKgateway$$/^Cors$$|^TestKgateway$$/^BackendConfigPolicy$$|^TestKgateway$$/^HttpListenerPolicy$$|^TestKgateway$$/^Tracing$$|^TestKgateway$$/^DirectResponse$$|^TestKgateway$$/^AdminServer$$'
+          go-test-run-regex: '^TestKgateway$$/^DynamicForwardProxy$$|^TestKgateway$$/^Lambda$$|^TestKgateway$$/^AccessLog$$|^TestKgateway$$/^LocalRateLimit$$|^TestKgateway$$/^Cors$$|^TestKgateway$$/^BackendConfigPolicy$$|^TestKgateway$$/^ListenerPolicy$$|^TestKgateway$$/^Tracing$$|^TestKgateway$$/^DirectResponse$$|^TestKgateway$$/^AdminServer$$'
           localstack: 'true'
         # August 29, 2025: ~9 minutes
         - cluster-name: 'cluster-four'
           go-test-args: '-timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^ExtProc$$|^TestKgateway$$/^ExtAuth$$|^TestKgateway$$/^PolicySelector$$|^TestKgateway$$/^Backends$$|^TestKgateway$$/^BackendTLSPolicies$$|^TestKgateway$$/^CSRF$$|^TestKgateway$$/^AutoHostRewrite$$|^TestKgateway$$/^LeaderElection$$|^TestKgateway$$/^ListenerPolicyProxyProtocol$$|^TestKgateway$$/^Compression$$|^TestParallelControllers$$'
+          go-test-run-regex: '^TestKgateway$$/^ExtProc$$|^TestKgateway$$/^ExtAuth$$|^TestKgateway$$/^PolicySelector$$|^TestKgateway$$/^Backends$$|^TestKgateway$$/^BackendTLSPolicies$$|^TestKgateway$$/^CSRF$$|^TestKgateway$$/^AutoHostRewrite$$|^TestKgateway$$/^LeaderElection$$|^TestKgateway$$/^Compression$$|^TestParallelControllers$$'
           localstack: 'false'
         # August 29, 2025: ~10 minutes
         - cluster-name: 'cluster-five'

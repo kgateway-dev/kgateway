@@ -44,7 +44,7 @@ type Options struct {
 	// extra controller manager config, like registering additional controllers
 	ExtraManagerConfig []func(context.Context, manager.Manager, kubetypes.DynamicObjectFilter) error
 	// ExtraRunnables are additional runnables to add to the manager
-	ExtraRunnables []manager.Runnable
+	ExtraRunnables []func(ctx context.Context, commoncol *collections.CommonCollections, agw *agwplugins.AgwCollections) manager.Runnable
 	// Validator is the validator to use for the controller.
 	Validator validator.Validator
 	// ExtraAgwPolicyStatusHandlers maps policy kinds to their status sync handlers for AgentGateway
