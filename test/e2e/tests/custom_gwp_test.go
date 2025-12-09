@@ -235,7 +235,7 @@ func TestCustomGWP(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to upgrade Helm: %v", err)
 	}
-	testInstallation.Assertions.EventuallyKgatewayInstallSucceeded(ctx)
+	testInstallation.Assertions.EventuallyGatewayInstallSucceeded(ctx)
 
 	// Verify kgateway GatewayClass is updated with new ref
 	r := require.New(t)
