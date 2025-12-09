@@ -58,12 +58,6 @@ spec:
                       EnvoyContainer values will be used by default to configure the data
                       plane proxy.
                     properties:
-                      customConfigMapName:
-                        description: |-
-                          Name of the custom configmap to use instead of the default generated one.
-                          When set, the agent gateway will use this configmap instead of creating the default one.
-                          The configmap must contain a 'config.yaml' key with the agent gateway configuration.
-                        type: string
                       env:
                         description: The container environment variables.
                         items:

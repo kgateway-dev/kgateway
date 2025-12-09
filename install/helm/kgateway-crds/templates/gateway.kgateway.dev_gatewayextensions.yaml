@@ -1026,6 +1026,199 @@ spec:
                     - AllowMissing
                     type: string
                 type: object
+              oauth2:
+                description: OAuth2 configuration for OAuth2 extension type.
+                properties:
+                  authorizationEndpoint:
+                    description: |-
+                      AuthorizationEndpoint specifies the endpoint to redirect to for authorization in response to unauthorized requests.
+                      Refer to https://datatracker.ietf.org/doc/html/rfc6749#section-3.1 for more details.
+                    pattern: ^https://([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(:[0-9]{1,5})?(/[a-zA-Z0-9\-._~!$&'()*+,;=:@%]*)*/?(\?[a-zA-Z0-9\-._~!$&'()*+,;=:@%/?]*)?$
+                    type: string
+                  backendRef:
+                    description: BackendRef specifies the Backend to use for the OAuth2
+                      provider.
+                    properties:
+                      group:
+                        default: ""
+                        description: |-
+                          Group is the group of the referent. For example, "gateway.networking.k8s.io".
+                          When unspecified or empty string, core API group is inferred.
+                        maxLength: 253
+                        pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                        type: string
+                      kind:
+                        default: Service
+                        description: |-
+                          Kind is the Kubernetes resource kind of the referent. For example
+                          "Service".
+
+                          Defaults to "Service" when not specified.
+
+                          ExternalName services can refer to CNAME DNS records that may live
+                          outside of the cluster and as such are difficult to reason about in
+                          terms of conformance. They also may not be safe to forward to (see
+                          CVE-2021-25740 for more information). Implementations SHOULD NOT
+                          support ExternalName Services.
+
+                          Support: Core (Services with a type other than ExternalName)
+
+                          Support: Implementation-specific (Services with type ExternalName)
+                        maxLength: 63
+                        minLength: 1
+                        pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
+                        type: string
+                      name:
+                        description: Name is the name of the referent.
+                        maxLength: 253
+                        minLength: 1
+                        type: string
+                      namespace:
+                        description: |-
+                          Namespace is the namespace of the backend. When unspecified, the local
+                          namespace is inferred.
+
+                          Note that when a namespace different than the local namespace is specified,
+                          a ReferenceGrant object is required in the referent namespace to allow that
+                          namespace's owner to accept the reference. See the ReferenceGrant
+                          documentation for details.
+
+                          Support: Core
+                        maxLength: 63
+                        minLength: 1
+                        pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                        type: string
+                      port:
+                        description: |-
+                          Port specifies the destination port number to use for this resource.
+                          Port is required when the referent is a Kubernetes Service. In this
+                          case, the port number is the service port number, not the target port.
+                          For other resources, destination port might be derived from the referent
+                          resource or this field.
+                        format: int32
+                        maximum: 65535
+                        minimum: 1
+                        type: integer
+                      weight:
+                        default: 1
+                        description: |-
+                          Weight specifies the proportion of requests forwarded to the referenced
+                          backend. This is computed as weight/(sum of all weights in this
+                          BackendRefs list). For non-zero values, there may be some epsilon from
+                          the exact proportion defined here depending on the precision an
+                          implementation supports. Weight is not a percentage and the sum of
+                          weights does not need to equal 100.
+
+                          If only one backend is specified and it has a weight greater than 0, 100%
+                          of the traffic is forwarded to that backend. If weight is set to 0, no
+                          traffic should be forwarded for this entry. If unspecified, weight
+                          defaults to 1.
+
+                          Support for this field varies based on the context where used.
+                        format: int32
+                        maximum: 1000000
+                        minimum: 0
+                        type: integer
+                    required:
+                    - name
+                    type: object
+                    x-kubernetes-validations:
+                    - message: Must have port for Service reference
+                      rule: '(size(self.group) == 0 && self.kind == ''Service'') ?
+                        has(self.port) : true'
+                  credentials:
+                    description: Credentials specifies the Oauth2 client credentials
+                      to use for authentication.
+                    properties:
+                      clientID:
+                        description: |-
+                          ClientID specifies the client ID issued to the client during the registration process.
+                          Refer to https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1 for more details.
+                        minLength: 1
+                        type: string
+                      clientSecretRef:
+                        description: |-
+                          ClientSecretRef specifies a Secret that contains the client secret stored in the key 'client-secret'
+                          to use in the authentication request to obtain the access token.
+                          Refer to https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1 for more details.
+                        properties:
+                          name:
+                            default: ""
+                            description: |-
+                              Name of the referent.
+                              This field is effectively required, but due to backwards compatibility is
+                              allowed to be empty. Instances of this type with an empty value here are
+                              almost certainly wrong.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                            type: string
+                        type: object
+                        x-kubernetes-map-type: atomic
+                    required:
+                    - clientID
+                    - clientSecretRef
+                    type: object
+                  endSessionEndpoint:
+                    description: |-
+                      EndSessionEndpoint specifies the URL that redirects a user's browser to in order to initiate a single logout
+                      across all applications and the OpenID provider. Users are directed to this endpoint when they access the logout path.
+                      This should only be set when the OpenID provider supports RP-Initiated Logout and "openid" is included in the list of scopes.
+                      Refer to https://openid.net/specs/openid-connect-rpinitiated-1_0.html#RPLogout for more details.
+                    pattern: ^https://([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(:[0-9]{1,5})?(/[a-zA-Z0-9\-._~!$&'()*+,;=:@%]*)*/?(\?[a-zA-Z0-9\-._~!$&'()*+,;=:@%/?]*)?$
+                    type: string
+                  forwardAccessToken:
+                    description: |-
+                      ForwardAccessToken specifies whether to forward the access token to the backend service.
+                      If set to true, the token is forwarded over a cookie named BearerToken and is also set in the Authorization header.
+                      Defaults to false.
+                    type: boolean
+                  issuerURI:
+                    description: |-
+                      IssuerURI specifies the OpenID provider's issuer URL to discover the OpenID provider's configuration.
+                      The Issuer must be a URI RFC 3986 [RFC3986] with a scheme component that must be https, a host component,
+                      and optionally, port and path components and no query or fragment components.
+                      It discovers the authorizationEndpoint, tokenEndpoint, and endSessionEndpoint if specified in the discovery response.
+                      Refer to https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfig for more details.
+                      Note that the OpenID provider configuration is cached and only refreshed periodically when the GatewayExtension object
+                      is reprocessed.
+                    pattern: ^https://([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(:[0-9]{1,5})?(/[a-zA-Z0-9\-._~!$&'()*+,;=:@%]*)*/?$
+                    type: string
+                  logoutPath:
+                    default: /logout
+                    description: |-
+                      LogoutPath specifies the path to log out a user, clearing their credential cookies.
+                      Defaults to /logout.
+                    minLength: 1
+                    type: string
+                  redirectURI:
+                    description: |-
+                      RedirectURI specifies the URL passed to the authorization endpoint.
+                      Defaults to <request-scheme>://<host>/oauth2/redirect, where the URL scheme and host are derived from the original request.
+                      Refer to https://datatracker.ietf.org/doc/html/rfc6749#section-3.1.2 for more details.
+                    type: string
+                  scopes:
+                    description: |-
+                      List of OAuth scopes to be claimed in the authentication request.
+                      Defaults to "user" scope if not specified.
+                      When using OpenID, the "openid" scope must be included.
+                      Refer to https://datatracker.ietf.org/doc/html/rfc6749#section-3.3 for more details.
+                    items:
+                      type: string
+                    type: array
+                  tokenEndpoint:
+                    description: |-
+                      TokenEndpoint specifies the endpoint on the authorization server to retrieve the access token from.
+                      Refer to https://datatracker.ietf.org/doc/html/rfc6749#section-3.2 for more details.
+                    pattern: ^https://([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(:[0-9]{1,5})?(/[a-zA-Z0-9\-._~!$&'()*+,;=:@%]*)*/?(\?[a-zA-Z0-9\-._~!$&'()*+,;=:@%/?]*)?$
+                    type: string
+                required:
+                - backendRef
+                - credentials
+                type: object
+                x-kubernetes-validations:
+                - message: Either issuerURI, or both authorizationEndpoint and tokenEndpoint
+                    must be specified
+                  rule: has(self.issuerURI) || (has(self.authorizationEndpoint) &&
+                    has(self.tokenEndpoint))
               rateLimit:
                 description: RateLimit configuration for RateLimit extension type.
                 properties:
@@ -1229,6 +1422,7 @@ spec:
                 - ExtProc
                 - RateLimit
                 - JWT
+                - OAuth2
                 type: string
             type: object
             x-kubernetes-validations:
@@ -1243,9 +1437,12 @@ spec:
                 : true'
             - message: JWT must be set when type is JWT
               rule: 'has(self.type) && self.type == ''JWT'' ? has(self.jwt) : true'
-            - message: exactly one of the fields in [extAuth extProc rateLimit jwt]
-                must be set
-              rule: '[has(self.extAuth),has(self.extProc),has(self.rateLimit),has(self.jwt)].filter(x,x==true).size()
+            - message: oauth2 must be set when type is OAuth2
+              rule: 'has(self.type) && self.type == ''OAuth2'' ? has(self.oauth2)
+                : true'
+            - message: exactly one of the fields in [extAuth extProc rateLimit jwt
+                oauth2] must be set
+              rule: '[has(self.extAuth),has(self.extProc),has(self.rateLimit),has(self.jwt),has(self.oauth2)].filter(x,x==true).size()
                 == 1'
           status:
             description: GatewayExtensionStatus defines the observed state of GatewayExtension.

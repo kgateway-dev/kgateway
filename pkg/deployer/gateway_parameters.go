@@ -24,9 +24,6 @@ type Inputs struct {
 	WaypointGatewayClassName   string
 	AgentgatewayClassName      string
 	AgentgatewayControllerName string
-	// GwpAgwpCompatibility controls whether agentgateway data plane Gateways can use
-	// GatewayParameters. When false, only AgentgatewayParameters are allowed.
-	GwpAgwpCompatibility bool
 }
 
 // UpdateSecurityContexts updates the security contexts in the gateway parameters.

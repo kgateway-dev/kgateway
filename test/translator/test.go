@@ -16,6 +16,7 @@ import (
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyapikeyauthv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/api_key_auth/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
@@ -64,6 +65,7 @@ type translationResult struct {
 	Listeners     []*envoylistenerv3.Listener
 	ExtraClusters []*envoyclusterv3.Cluster
 	Clusters      []*envoyclusterv3.Cluster
+	Secrets       []*envoytlsv3.Secret
 	Statuses      *Statuses
 }
 
@@ -106,6 +108,14 @@ func (tr *translationResult) MarshalJSON() ([]byte, error) {
 			return nil, err
 		}
 		result["Clusters"] = clusters
+	}
+
+	if len(tr.Secrets) > 0 {
+		secrets, err := marshalProtoMessages(tr.Secrets, m)
+		if err != nil {
+			return nil, err
+		}
+		result["Secrets"] = secrets
 	}
 
 	// Add statuses if they exist
@@ -186,6 +196,21 @@ func (tr *translationResult) UnmarshalJSON(data []byte) error {
 				return err
 			}
 			tr.Clusters[i] = cluster
+		}
+	}
+
+	if secretsData, ok := result["Secrets"]; ok {
+		var secrets []json.RawMessage
+		if err := json.Unmarshal(secretsData, &secrets); err != nil {
+			return err
+		}
+		tr.Secrets = make([]*envoytlsv3.Secret, len(secrets))
+		for i, secretData := range secrets {
+			secret := &envoytlsv3.Secret{}
+			if err := m.Unmarshal(secretData, secret); err != nil {
+				return err
+			}
+			tr.Secrets[i] = secret
 		}
 	}
 
@@ -279,6 +304,7 @@ func TestTranslationWithExtraPlugins(
 		Listeners:     result.Proxy.Listeners,
 		ExtraClusters: result.Proxy.ExtraClusters,
 		Clusters:      result.Clusters,
+		Secrets:       result.Proxy.Secrets,
 		Statuses:      buildStatusesFromReports(result.ReportsMap, result.Gateways, result.ListenerSets),
 	}
 	outputYaml, err := testutils.MarshalAnyYaml(output)
@@ -346,6 +372,9 @@ func sortProxy(proxy *irtranslator.TranslationResult) *irtranslator.TranslationR
 	})
 	sort.Slice(proxy.ExtraClusters, func(i, j int) bool {
 		return proxy.ExtraClusters[i].GetName() < proxy.ExtraClusters[j].GetName()
+	})
+	sort.Slice(proxy.Secrets, func(i, j int) bool {
+		return proxy.Secrets[i].GetName() < proxy.Secrets[j].GetName()
 	})
 
 	// Sort credentials in routes to ensure deterministic output

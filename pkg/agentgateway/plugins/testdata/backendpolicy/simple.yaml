@@ -92,7 +92,7 @@ status:
     - lastTransitionTime: fake
       message: |-
         ConfigMap default/ca-bundle not found
-        failed to get secret default/hello: failed to find secret hello
+        secret default/hello not found
       reason: PartiallyValid
       status: "True"
       type: Accepted

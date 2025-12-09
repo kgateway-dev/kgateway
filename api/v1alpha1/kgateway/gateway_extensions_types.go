@@ -40,15 +40,16 @@ type NamedJWTProvider struct {
 }
 
 // GatewayExtensionSpec defines the desired state of GatewayExtension.
-// +kubebuilder:validation:ExactlyOneOf=extAuth;extProc;rateLimit;jwt
+// +kubebuilder:validation:ExactlyOneOf=extAuth;extProc;rateLimit;jwt;oauth2
 // +kubebuilder:validation:XValidation:message="extAuth must be set when type is ExtAuth",rule="has(self.type) && self.type == 'ExtAuth' ? has(self.extAuth) : true"
 // +kubebuilder:validation:XValidation:message="extProc must be set when type is ExtProc",rule="has(self.type) && self.type == 'ExtProc' ? has(self.extProc) : true"
 // +kubebuilder:validation:XValidation:message="rateLimit must be set when type is RateLimit",rule="has(self.type) && self.type == 'RateLimit' ? has(self.rateLimit) : true"
 // +kubebuilder:validation:XValidation:message="JWT must be set when type is JWT",rule="has(self.type) && self.type == 'JWT' ? has(self.jwt) : true"
+// +kubebuilder:validation:XValidation:message="oauth2 must be set when type is OAuth2",rule="has(self.type) && self.type == 'OAuth2' ? has(self.oauth2) : true"
 type GatewayExtensionSpec struct {
 	// Deprecated: Setting this field has no effect.
 	// Type indicates the type of the GatewayExtension to be used.
-	// +kubebuilder:validation:Enum=ExtAuth;ExtProc;RateLimit;JWT
+	// +kubebuilder:validation:Enum=ExtAuth;ExtProc;RateLimit;JWT;OAuth2
 	// +optional
 	Type *GatewayExtensionType `json:"type,omitempty"`
 
@@ -67,6 +68,10 @@ type GatewayExtensionSpec struct {
 	// JWT configuration for JWT extension type.
 	// +optional
 	JWT *JWT `json:"jwt,omitempty"`
+
+	// OAuth2 configuration for OAuth2 extension type.
+	// +optional
+	OAuth2 *OAuth2Provider `json:"oauth2,omitempty"`
 }
 
 type JWT struct {
@@ -112,6 +117,8 @@ const (
 	GatewayExtensionTypeRateLimit GatewayExtensionType = "RateLimit"
 	// GatewayExtensionTypeJWT is the type for the JWT extensions
 	GatewayExtensionTypeJWT GatewayExtensionType = "JWT"
+	// GatewayExtensionTypeOAuth2 is the type for OAuth2 extensions.
+	GatewayExtensionTypeOAuth2 GatewayExtensionType = "OAuth2"
 )
 
 const HTTPDefaultTimeout = 2 * time.Second

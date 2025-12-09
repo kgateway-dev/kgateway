@@ -25,6 +25,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/agentgatewaysyncer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/agentgatewaysyncer/backend/inferencepool"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/bootstrap"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/waypoint"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/registry"
@@ -201,6 +202,10 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			setupLog.Error(err, "unable to add statusSyncer runnable")
 			return nil, err
 		}
+		if err := cfg.Manager.Add(bootstrap.NewController(cfg.Client)); err != nil {
+			setupLog.Error(err, "unable to add bootstrap controller runnable")
+			return nil, err
+		}
 	}
 
 	var agwSyncer *agentgatewaysyncer.Syncer
@@ -340,7 +345,6 @@ func (c *ControllerBuilder) Build(ctx context.Context) (*agentgatewaysyncer.Sync
 		WaypointGatewayClassName: c.cfg.WaypointGatewayClassName,
 		AgentgatewayClassName:    c.cfg.AgentgatewayClassName,
 		CertWatcher:              c.cfg.SetupOpts.CertWatcher,
-		GwpAgwpCompatibility:     globalSettings.GwpAgwpCompatibility,
 	}
 
 	setupLog.Info("creating base gateway controller")

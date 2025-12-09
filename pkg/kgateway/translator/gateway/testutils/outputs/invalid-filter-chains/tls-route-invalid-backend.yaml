@@ -82,7 +82,7 @@ Statuses:
           status: "True"
           type: Accepted
         - lastTransitionTime: null
-          message: Service "non-existent-service" not found
+          message: Service default/non-existent-service not found
           reason: BackendNotFound
           status: "False"
           type: ResolvedRefs

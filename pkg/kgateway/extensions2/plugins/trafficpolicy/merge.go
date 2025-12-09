@@ -56,6 +56,7 @@ func MergeTrafficPolicies(
 		mergeBasicAuth,
 		mergeURLRewrite,
 		mergeAPIKeyAuth,
+		mergeOAuth,
 	}
 
 	for _, mergeFunc := range mergeFuncs {
@@ -330,6 +331,22 @@ func mergeCompression(
 
 		defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "decompression")
 	}
+}
+
+func mergeOAuth(
+	p1, p2 *TrafficPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+	_ TrafficPolicyMergeOpts,
+) {
+	accessor := fieldAccessor[oauthIR]{
+		Get: func(spec *trafficPolicySpecIr) *oauthIR { return spec.oauth2 },
+		Set: func(spec *trafficPolicySpecIr, val *oauthIR) { spec.oauth2 = val },
+	}
+
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "oidc")
 }
 
 func mergeLocalRateLimit(

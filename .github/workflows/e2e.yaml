@@ -31,55 +31,56 @@ jobs:
         # Above each test below, we document the latest date/time for the GitHub action step `Run /./.github/actions/kubernetes-e2e-tests` to run
         # NOTE: We use the GitHub action step time (as opposed to the `go test` time or the GitHub action job time), because it is easier to capture and fairly consistent
         test:
-        # August 29, 2025: ~10 minutes
+        # December 4, 2025: ~24 minutes
         - cluster-name: 'cluster-one'
           go-test-args: '-timeout=25m'
           go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^PathMatching$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^TLSRouteServices$$|^TestKgateway$$/^GRPCRouteServices$$|^TestKgateway$$/^SessionPersistence$$'
           localstack: 'false'
-        # August 29, 2025: ~13 minutes
+        # December 4, 2025: ~23 minutes
         - cluster-name: 'cluster-two'
           go-test-args: '-timeout=25m'
           go-test-run-regex: '^TestKgatewayWaypoint$$'
           localstack: 'false'
-        # August 29, 2025: ~9 minutes
+        # December 4, 2025: ~22 minutes
         - cluster-name: 'cluster-three'
           go-test-args: '-timeout=25m'
           go-test-run-regex: '^TestKgateway$$/^DynamicForwardProxy$$|^TestKgateway$$/^Lambda$$|^TestKgateway$$/^AccessLog$$|^TestKgateway$$/^LocalRateLimit$$|^TestKgateway$$/^Cors$$|^TestKgateway$$/^BackendConfigPolicy$$|^TestKgateway$$/^ListenerPolicy$$|^TestKgateway$$/^Tracing$$|^TestKgateway$$/^DirectResponse$$|^TestKgateway$$/^AdminServer$$'
           localstack: 'true'
-        # August 29, 2025: ~9 minutes
+        # December 4, 2025: ~19 minutes
         - cluster-name: 'cluster-four'
           go-test-args: '-timeout=25m'
           go-test-run-regex: '^TestKgateway$$/^ExtProc$$|^TestKgateway$$/^ExtAuth$$|^TestKgateway$$/^PolicySelector$$|^TestKgateway$$/^Backends$$|^TestKgateway$$/^BackendTLSPolicies$$|^TestKgateway$$/^CSRF$$|^TestKgateway$$/^AutoHostRewrite$$|^TestKgateway$$/^LeaderElection$$|^TestKgateway$$/^Compression$$|^TestParallelControllers$$'
           localstack: 'false'
-        # August 29, 2025: ~10 minutes
+        # December 4, 2025: ~21 minutes
         - cluster-name: 'cluster-five'
           go-test-args: '-timeout=25m'
           go-test-run-regex: '^TestKgateway$$/^TimeoutRetry$$|^TestKgateway$$/^HeaderModifiers$$|^TestKgateway$$/^RBAC$$|^TestKgateway$$/^APIKeyAuth$$|^TestKgateway$$/^Deployer$$|^TestKgateway$$/^Transforms$$|^TestRouteReplacement$$|^TestKgateway$$/^RouteDelegation$$|^TestKgateway$$/^JWT$$|^TestKgateway$$/^BasicAuth$$'
           localstack: 'false'
-        # August 29, 2025: ~9 minutes
+        # December 4, 2025: ~22 minutes
         - cluster-name: 'cluster-six'
           go-test-args: '-timeout=25m'
           go-test-run-regex: '^TestInferenceExtension$$|^TestListenerSet$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgatewayIstioAutoMtls$$|^TestZeroDowntimeRollout$$'
           localstack: 'false'
-        # August 29, 2025: ~4 minutes
+        # December 4, 2025: ~9 minutes
+        - cluster-name: 'api-validation' # TODO: rename to cluster-seven
+          go-test-args: '-timeout=15m'
+          go-test-run-regex: '^TestAPIValidation|^TestKgateway$$/^OAuth$$|^TestCustomGWP$$'
+          localstack: 'false'
+        # December 4, 2025: ~15 minutes
         - cluster-name: 'cluster-metrics'
           go-test-args: '-timeout=25m'
           go-test-run-regex: '^TestKgatewayMetrics$$|^TestControlPlaneTLS$$|^TestKgateway$$/^FrontendTLS$$'
           localstack: 'false'
-        # August 29, 2025: ~4 minutes
+        # December 4, 2025: ~13 minutes
         - cluster-name: 'cluster-multi-install'
           go-test-args: '-timeout=5m'
           go-test-run-regex: '^TestMultipleInstalls'
           localstack: 'false'
-        # August 29, 2025: ~4 minutes
+        # December 4, 2025: ~17 minutes
         - cluster-name: 'agent-gateway-cluster'
           go-test-args: '-timeout=25m'
           go-test-run-regex: '^TestAgentgatewayIntegration'
           agentgateway: 'true'
-        # August 29, 2025: ~3 minutes
-        - cluster-name: 'api-validation'
-          go-test-args: '-timeout=15m'
-          go-test-run-regex: '^TestAPIValidation|^TestCustomGWP$$'
 
         # In our PR tests, we run the suite of tests using the upper ends of versions that we claim to support
         # The versions should mirror: https://kgateway.dev/docs/reference/versions/
