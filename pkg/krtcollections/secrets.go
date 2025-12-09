@@ -72,6 +72,22 @@ func (s *SecretIndex) GetSecret(kctx krt.HandlerContext, from From, secretRef gw
 	return secret, nil
 }
 
+// GetSecretWithoutRefGrant retrieves a secret from a given namespace.
+// This is a convenience function for same-namespace secret lookups where ReferenceGrant
+// validation is not needed (same-namespace references are always allowed).
+// Warning: this function does not validate the ReferenceGrant, so it is not safe to use for cross-namespace references.
+func (s *SecretIndex) GetSecretWithoutRefGrant(kctx krt.HandlerContext, secretName, ns string) (*ir.Secret, error) {
+	secretRef := gwv1.SecretObjectReference{
+		Name: gwv1.ObjectName(secretName),
+	}
+	// ReferenceGrant check will always pass for same-namespace,
+	// so GroupKind doesn't matter
+	from := From{
+		Namespace: ns,
+	}
+	return s.GetSecret(kctx, from, secretRef)
+}
+
 // GetSecretsBySelector retrieves secrets matching the label selector,
 // validating reference grants to ensure the source (from) object is allowed to reference each secret.
 // Processes all matching secrets, skipping those without required ReferenceGrants.

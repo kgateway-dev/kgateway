@@ -10,14 +10,12 @@ import (
 	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/util/cert"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -27,23 +25,21 @@ type SecretGetter interface {
 	GetSecret(name, namespace string) (*ir.Secret, error)
 }
 
-// DefaultSecretGetter implements SecretGetter using the pluginutils.GetSecretIr function
+// DefaultSecretGetter implements SecretGetter using SecretIndex.GetSecretWithoutRefGrant
 type DefaultSecretGetter struct {
 	secrets *krtcollections.SecretIndex
 	krtctx  krt.HandlerContext
-	fromGK  schema.GroupKind
 }
 
-func NewDefaultSecretGetter(secrets *krtcollections.SecretIndex, krtctx krt.HandlerContext, fromGK schema.GroupKind) *DefaultSecretGetter {
+func NewDefaultSecretGetter(secrets *krtcollections.SecretIndex, krtctx krt.HandlerContext) *DefaultSecretGetter {
 	return &DefaultSecretGetter{
 		secrets: secrets,
 		krtctx:  krtctx,
-		fromGK:  fromGK,
 	}
 }
 
 func (g *DefaultSecretGetter) GetSecret(name, namespace string) (*ir.Secret, error) {
-	return pluginutils.GetSecretIr(g.secrets, g.krtctx, name, namespace, g.fromGK)
+	return g.secrets.GetSecretWithoutRefGrant(g.krtctx, name, namespace)
 }
 
 func buildTLSContext(tlsConfig *kgateway.TLS, secretGetter SecretGetter, namespace string, tlsContext *envoytlsv3.CommonTlsContext) error {
