@@ -10,6 +10,7 @@ import (
 	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/util/cert"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -30,17 +31,19 @@ type SecretGetter interface {
 type DefaultSecretGetter struct {
 	secrets *krtcollections.SecretIndex
 	krtctx  krt.HandlerContext
+	fromGK  schema.GroupKind
 }
 
-func NewDefaultSecretGetter(secrets *krtcollections.SecretIndex, krtctx krt.HandlerContext) *DefaultSecretGetter {
+func NewDefaultSecretGetter(secrets *krtcollections.SecretIndex, krtctx krt.HandlerContext, fromGK schema.GroupKind) *DefaultSecretGetter {
 	return &DefaultSecretGetter{
 		secrets: secrets,
 		krtctx:  krtctx,
+		fromGK:  fromGK,
 	}
 }
 
 func (g *DefaultSecretGetter) GetSecret(name, namespace string) (*ir.Secret, error) {
-	return pluginutils.GetSecretIr(g.secrets, g.krtctx, name, namespace)
+	return pluginutils.GetSecretIr(g.secrets, g.krtctx, name, namespace, g.fromGK)
 }
 
 func buildTLSContext(tlsConfig *kgateway.TLS, secretGetter SecretGetter, namespace string, tlsContext *envoytlsv3.CommonTlsContext) error {

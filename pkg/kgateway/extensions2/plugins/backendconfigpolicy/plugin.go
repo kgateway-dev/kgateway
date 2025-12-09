@@ -274,7 +274,7 @@ func translate(
 	}
 
 	if pol.Spec.TLS != nil {
-		tlsConfig, err := translateTLSConfig(NewDefaultSecretGetter(commoncol.Secrets, krtctx), pol.Spec.TLS, pol.Namespace)
+		tlsConfig, err := translateTLSConfig(NewDefaultSecretGetter(commoncol.Secrets, krtctx, wellknown.BackendConfigPolicyGVK.GroupKind()), pol.Spec.TLS, pol.Namespace)
 		if err != nil {
 			errs = append(errs, err)
 		}
