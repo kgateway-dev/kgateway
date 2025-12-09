@@ -14,11 +14,9 @@ VERSION="${VERSION:-1.0.0-ci1}"
 SKIP_DOCKER="${SKIP_DOCKER:-false}"
 # Stop after creating the kind cluster
 JUST_KIND="${JUST_KIND:-false}"
-# If true, run extra steps to set up k8s gateway api conformance test environment
-CONFORMANCE="${CONFORMANCE:-false}"
-# The version of the k8s gateway api conformance tests to run. Requires CONFORMANCE=true
+# The version of the k8s gateway api conformance tests to run.
 CONFORMANCE_VERSION="${CONFORMANCE_VERSION:-$(go list -m sigs.k8s.io/gateway-api | awk '{print $2}')}"
-# The channel of the k8s gateway api conformance tests to run. Requires CONFORMANCE=true
+# The channel of the k8s gateway api conformance tests to run.
 CONFORMANCE_CHANNEL="${CONFORMANCE_CHANNEL:-"experimental"}"
 # The version of the k8s gateway api inference extension CRDs to install. Managed by `make bump-gie`.
 GIE_CRD_VERSION="v1.1.0"
