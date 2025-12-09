@@ -28,7 +28,7 @@ func NewTrafficPolicyConstructor(
 	ctx context.Context,
 	commoncol *collections.CommonCollections,
 ) *TrafficPolicyConstructor {
-	extBuilder := TranslateGatewayExtensionBuilder(commoncol)
+	extBuilder := TranslateGatewayExtensionBuilder(ctx, commoncol)
 	defaultExtBuilder := func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
 		return extBuilder(krtctx, gExt)
 	}
@@ -106,6 +106,10 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 
 	// Construct jwt specific IR
 	if err := constructJwt(krtctx, policyCR, &outSpec, c.FetchGatewayExtension); err != nil {
+		errors = append(errors, err)
+	}
+	// Construct OIDC specific IR
+	if err := constructOAuth2(krtctx, policyCR, c.FetchGatewayExtension, &outSpec); err != nil {
 		errors = append(errors, err)
 	}
 

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"os"
 	"strings"
 
 	"helm.sh/helm/v3/pkg/chart"
@@ -352,7 +351,8 @@ func (k *kgatewayParameters) getGatewayParametersForGatewayClass(gwc *gwv1.Gatew
 
 func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.GatewayParameters) (*deployer.HelmConfig, error) {
 	irGW := deployer.GetGatewayIR(gw, k.inputs.CommonCollections)
-	ports := deployer.GetPortsValues(irGW, gwParam, irGW.ControllerName == k.inputs.AgentgatewayControllerName)
+	// kgatewayParameters is only used for envoy gateways (agentgateway uses agentgatewayParametersHelmValuesGenerator)
+	ports := deployer.GetPortsValues(irGW, gwParam, false)
 	if len(ports) == 0 {
 		return nil, ErrNoValidPorts
 	}
@@ -368,16 +368,6 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.Gatew
 			// This is the socket address that the Proxy will connect to on startup, to receive xds updates
 			Host: &k.inputs.ControlPlane.XdsHost,
 			Port: &k.inputs.ControlPlane.XdsPort,
-			Tls: &deployer.HelmXdsTls{
-				Enabled: ptr.To(k.inputs.ControlPlane.XdsTLS),
-				CaCert:  ptr.To(k.inputs.ControlPlane.XdsTlsCaPath),
-			},
-		},
-		AgwXds: &deployer.HelmXds{
-			// The agentgateway xds host/port MUST map to the Service definition for the Control Plane
-			// This is the socket address that the Proxy will connect to on startup, to receive xds updates
-			Host: &k.inputs.ControlPlane.XdsHost,
-			Port: &k.inputs.ControlPlane.AgwXdsPort,
 			Tls: &deployer.HelmXdsTls{
 				Enabled: ptr.To(k.inputs.ControlPlane.XdsTLS),
 				CaCert:  ptr.To(k.inputs.ControlPlane.XdsTlsCaPath),
@@ -456,37 +446,21 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.Gatew
 	gateway.ExtraVolumes = podConfig.GetExtraVolumes()
 	gateway.PriorityClassName = podConfig.GetPriorityClassName()
 
-	// Determine data plane type based on the Gateway's controllerName from its GatewayClass
-	// This ensures the chart selection is driven by the controller, not by GatewayParameters
-	isAgentgateway := irGW.ControllerName == k.inputs.AgentgatewayControllerName
-
-	// data plane container
-	if isAgentgateway {
-		agwConfig := kubeProxyConfig.GetAgentgateway()
-		gateway.DataPlaneType = deployer.DataPlaneAgentgateway
-		gateway.Resources = agwConfig.GetResources()
-		gateway.SecurityContext = agwConfig.GetSecurityContext()
-		gateway.Image = deployer.GetImageValues(agwConfig.GetImage())
-		gateway.Env = agwConfig.GetEnv()
-		gateway.ExtraVolumeMounts = agwConfig.ExtraVolumeMounts
-		gateway.LogLevel = agwConfig.GetLogLevel()
-		gateway.CustomConfigMapName = agwConfig.GetCustomConfigMapName()
-	} else {
-		gateway.DataPlaneType = deployer.DataPlaneEnvoy
-		logLevel := envoyContainerConfig.GetBootstrap().GetLogLevel()
-		gateway.LogLevel = logLevel
-		compLogLevels := envoyContainerConfig.GetBootstrap().GetComponentLogLevels()
-		compLogLevelStr, err := deployer.ComponentLogLevelsToString(compLogLevels)
-		if err != nil {
-			return nil, err
-		}
-		gateway.ComponentLogLevel = &compLogLevelStr
-		gateway.Resources = envoyContainerConfig.GetResources()
-		gateway.SecurityContext = envoyContainerConfig.GetSecurityContext()
-		gateway.Image = deployer.GetImageValues(envoyContainerConfig.GetImage())
-		gateway.Env = envoyContainerConfig.GetEnv()
-		gateway.ExtraVolumeMounts = envoyContainerConfig.ExtraVolumeMounts
+	// kgatewayParameters is only used for envoy gateways (agentgateway uses agentgatewayParametersHelmValuesGenerator)
+	gateway.DataPlaneType = deployer.DataPlaneEnvoy
+	logLevel := envoyContainerConfig.GetBootstrap().GetLogLevel()
+	gateway.LogLevel = logLevel
+	compLogLevels := envoyContainerConfig.GetBootstrap().GetComponentLogLevels()
+	compLogLevelStr, err := deployer.ComponentLogLevelsToString(compLogLevels)
+	if err != nil {
+		return nil, err
 	}
+	gateway.ComponentLogLevel = &compLogLevelStr
+	gateway.Resources = envoyContainerConfig.GetResources()
+	gateway.SecurityContext = envoyContainerConfig.GetSecurityContext()
+	gateway.Image = deployer.GetImageValues(envoyContainerConfig.GetImage())
+	gateway.Env = envoyContainerConfig.GetEnv()
+	gateway.ExtraVolumeMounts = envoyContainerConfig.ExtraVolumeMounts
 
 	// istio values
 	gateway.Istio = deployer.GetIstioValues(k.inputs.IstioAutoMtlsEnabled, istioConfig)
@@ -496,34 +470,6 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.Gatew
 	gateway.Stats = deployer.GetStatsValues(statsConfig)
 
 	return vals, nil
-}
-
-// injectXdsCACertificate reads the CA certificate from the control plane's mounted TLS Secret
-// and injects it into the Helm values so it can be used by the proxy templates.
-func injectXdsCACertificate(caCertPath string, vals *deployer.HelmConfig) error {
-	if _, err := os.Stat(caCertPath); os.IsNotExist(err) {
-		return fmt.Errorf("xDS TLS is enabled but CA certificate file not found at %s. "+
-			"Ensure the xDS TLS secret is properly mounted and contains ca.crt", caCertPath,
-		)
-	}
-
-	caCert, err := os.ReadFile(caCertPath)
-	if err != nil {
-		return fmt.Errorf("failed to read CA certificate from %s: %w", caCertPath, err)
-	}
-	if len(caCert) == 0 {
-		return fmt.Errorf("CA certificate at %s is empty", caCertPath)
-	}
-
-	caCertStr := string(caCert)
-	if vals.Gateway.Xds != nil && vals.Gateway.Xds.Tls != nil {
-		vals.Gateway.Xds.Tls.CaCert = &caCertStr
-	}
-	if vals.Gateway.AgwXds != nil && vals.Gateway.AgwXds.Tls != nil {
-		vals.Gateway.AgwXds.Tls.CaCert = &caCertStr
-	}
-
-	return nil
 }
 
 func getGatewayClassFromGateway(cli kclient.Client[*gwv1.GatewayClass], gw *gwv1.Gateway) (*gwv1.GatewayClass, error) {

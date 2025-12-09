@@ -106,22 +106,8 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			Validate:  NoSecurityContextValidator(),
 		},
 		{
-			Name:      "agentgateway OmitDefaultSecurityContext true GWP via GWC",
-			InputFile: "agentgateway-omitdefaultsecuritycontext-gwp",
-			Validate:  NoSecurityContextValidator(),
-		},
-		{
-			Name:      "agentgateway OmitDefaultSecurityContext true GWP via GW",
-			InputFile: "agentgateway-omitdefaultsecuritycontext-ref-gwp-on-gw-gwp",
-			Validate:  NoSecurityContextValidator(),
-		},
-		{
 			Name:      "agentgateway-infrastructure with AgentgatewayParameters",
 			InputFile: "agentgateway-infrastructure",
-		},
-		{
-			Name:      "agentgateway-infrastructure with GatewayParameters",
-			InputFile: "agentgateway-infrastructure-gwp",
 		},
 		{
 			Name:      "agentgateway-controller-but-custom-gatewayclass",
@@ -176,20 +162,6 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 				assert.NotContains(t, outputYaml, "imagePullPolicy:",
 					"output YAML should not contain imagePullPolicy, allowing k8s to look at the tag to decide")
 			},
-		},
-		{
-			// GatewayClass refs GatewayParameters, Gateway refs AgentgatewayParameters
-			// Tests the mixed-kind scenario where cluster defaults come from GWP
-			// but a specific Gateway overrides with AGWP.
-			Name:      "agentgateway GWC with GWP and GW with AGWP",
-			InputFile: "agentgateway-gwc-gwp-gw-agwp",
-		},
-		{
-			// TODO(chandler): perhaps this replaces the more expensive e2e
-			// test case
-			// TestAgentgatewayIntegration/ConfigMap/TestTracingConfigMap:
-			Name:      "agentgateway with custom configmap",
-			InputFile: "agentgateway-custom-configmap",
 		},
 		{
 			// The GW parametersRef is meant to override the GWC parametersRef,
@@ -252,10 +224,6 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			},
 		},
 		{
-			Name:      "agentgateway GWP with pod scheduling fields",
-			InputFile: "agentgateway-gwp-pod-scheduling",
-		},
-		{
 			Name:      "agentgateway AGWP with pod scheduling fields",
 			InputFile: "agentgateway-agwp-pod-scheduling",
 		},
@@ -269,6 +237,11 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			Name:                        "agentgateway with TLS enabled",
 			InputFile:                   "agentgateway-tls",
 			HelmValuesGeneratorOverride: tlsOverride(caCertPath),
+		},
+		{
+			// Custom configmap name via AgentgatewayParameters deployment overlay:
+			Name:      "agentgateway with custom configmap name via overlay",
+			InputFile: "agentgateway-custom-configmap",
 		},
 	}
 

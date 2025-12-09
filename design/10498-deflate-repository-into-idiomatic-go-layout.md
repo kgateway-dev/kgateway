@@ -89,7 +89,7 @@ make generate-all
 6. Run Full Validation & finalize the changes.
 
 ```bash
-export VERSION="v0.0.1"; CONFORMANCE="true" ./hack/kind/setup-kind.sh && helm upgrade -i -n kgateway-system kgateway _test/kgateway-$VERSION.tgz --create-namespace && make conformance
+export VERSION="v0.0.1"; ./hack/kind/setup-kind.sh && helm upgrade -i -n kgateway-system kgateway _test/kgateway-$VERSION.tgz --create-namespace && make conformance
 ```
 
 ## Test Plan

@@ -1180,6 +1180,36 @@ spec:
                     be set
                   rule: '[has(self.extensionRef),has(self.disable)].filter(x,x==true).size()
                     == 1'
+              oauth2:
+                description: |-
+                  OAuth2 specifies the configuration to use for OAuth2/OIDC.
+                  Note: the OAuth2 filter does not protect against Cross-Site-Request-Forgery attacks on domains with cached
+                  authentication (in the form of cookies). It is recommended to pair this with the CSRF policy to prevent
+                  malicious social engineering.
+                properties:
+                  extensionRef:
+                    description: ExtensionRef specifies the GatewayExtension that
+                      should be used for OAuth2.
+                    properties:
+                      name:
+                        description: The name of the target resource.
+                        maxLength: 253
+                        minLength: 1
+                        type: string
+                      namespace:
+                        description: |-
+                          The namespace of the target resource.
+                          If not set, defaults to the namespace of the parent object.
+                        maxLength: 63
+                        minLength: 1
+                        pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                        type: string
+                    required:
+                    - name
+                    type: object
+                required:
+                - extensionRef
+                type: object
               rateLimit:
                 description: |-
                   RateLimit specifies the rate limiting configuration for the policy.

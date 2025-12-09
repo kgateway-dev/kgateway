@@ -206,7 +206,8 @@ func translateBackendTLS(ctx PolicyCtx, policy *agentgateway.AgentgatewayPolicy,
 				Kind: &api.BackendPolicySpec_BackendTls{
 					BackendTls: p,
 				},
-			}},
+			},
+		},
 	}
 
 	logger.Debug("generated TLS policy",
@@ -236,7 +237,8 @@ func translateBackendHTTP(policy *agentgateway.AgentgatewayPolicy, target *api.P
 				Kind: &api.BackendPolicySpec_BackendHttp{
 					BackendHttp: p,
 				},
-			}},
+			},
+		},
 	}
 	logger.Debug("generated HTTP policy",
 		"policy", policy.Name,
@@ -270,7 +272,8 @@ func translateBackendMCPAuthorization(policy *agentgateway.AgentgatewayPolicy, t
 						Deny:  denyPolicies,
 					},
 				},
-			}},
+			},
+		},
 	}
 
 	logger.Debug("generated MCPBackend policy",
@@ -334,7 +337,8 @@ func translateBackendMCPAuthentication(ctx PolicyCtx, policy *agentgateway.Agent
 				Kind: &api.BackendPolicySpec_McpAuthentication_{
 					McpAuthentication: mcpAuthn,
 				},
-			}},
+			},
+		},
 	}
 
 	logger.Debug("generated MCP authentication policy",
@@ -466,7 +470,7 @@ func translateBackendAuth(ctx PolicyCtx, policy *agentgateway.AgentgatewayPolicy
 		// Resolve secret and extract Authorization value
 		secret, err := kubeutils.GetSecret(ctx.Collections.Secrets, ctx.Krt, auth.SecretRef.Name, policy.Namespace)
 		if err != nil {
-			errs = append(errs, fmt.Errorf("failed to get secret %s/%s: %w", policy.Namespace, auth.SecretRef.Name, err))
+			errs = append(errs, err)
 		} else {
 			if authKey, ok := kubeutils.GetSecretAuth(secret); ok {
 				translatedAuth = &api.BackendAuthPolicy{

@@ -194,7 +194,7 @@ func fetchHtpasswdFromSecret(
 	// Fetch the secret
 	secret, err := secrets.GetSecret(krtctx, from, secretObjRef)
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch secret %s/%s: %w", namespace, secretRef.Name, err)
+		return "", err
 	}
 
 	// Extract the htpasswd data from the secret

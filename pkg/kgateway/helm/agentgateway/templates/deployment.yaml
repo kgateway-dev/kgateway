@@ -24,11 +24,8 @@ spec:
   template:
     metadata:
       annotations:
-      {{- /* Add configmap checksum to trigger rollout when config changes (only for managed configmaps) */}}
-      {{- $configChecksum := dict }}
-      {{- if not $gateway.customConfigMapName }}
-        {{- $configChecksum = dict "checksum/config" (include (print $.Template.BasePath "/configmap.yaml") . | sha256sum) }}
-      {{- end }}
+      {{- /* Add configmap checksum to trigger rollout when config changes */}}
+      {{- $configChecksum := dict "checksum/config" (include (print $.Template.BasePath "/configmap.yaml") . | sha256sum) }}
       {{- toYaml (merge
           $configChecksum
           (deepCopy ($gateway.gatewayAnnotations | default dict))
@@ -177,11 +174,7 @@ spec:
       volumes:
         - name: config-volume
           configMap:
-            {{- if $gateway.customConfigMapName }}
-            name: {{ $gateway.customConfigMapName }}
-            {{- else }}
             name: {{ include "kgateway.gateway.fullname" . }}
-            {{- end }}
         - name: xds-token
           projected:
             sources:

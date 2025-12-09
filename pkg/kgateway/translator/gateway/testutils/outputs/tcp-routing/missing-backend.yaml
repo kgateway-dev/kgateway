@@ -73,7 +73,7 @@ Statuses:
           status: "True"
           type: Accepted
         - lastTransitionTime: null
-          message: Service "example-tcp-svc" not found
+          message: Service default/example-tcp-svc not found
           reason: BackendNotFound
           status: "False"
           type: ResolvedRefs

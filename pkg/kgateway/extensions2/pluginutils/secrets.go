@@ -1,8 +1,6 @@
 package pluginutils
 
 import (
-	"fmt"
-
 	"istio.io/istio/pkg/kube/krt"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -22,7 +20,7 @@ func GetSecretIr(secrets *krtcollections.SecretIndex, krtctx krt.HandlerContext,
 	}
 	secret, err := secrets.GetSecret(krtctx, from, secretRef)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find secret %s: %v", secretName, err)
+		return nil, err
 	}
 	return secret, nil
 }

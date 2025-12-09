@@ -87,7 +87,7 @@ func extractTLSData(tlsConfig *kgateway.TLS, secretGetter SecretGetter, namespac
 func extractFromSecret(secretRef *corev1.LocalObjectReference, secretGetter SecretGetter, namespace string, data *tlsData) error {
 	secret, err := secretGetter.GetSecret(secretRef.Name, namespace)
 	if err != nil {
-		return fmt.Errorf("failed to get secret %s: %w", secretRef.Name, err)
+		return err
 	}
 
 	data.certChain = string(secret.Data["tls.crt"])

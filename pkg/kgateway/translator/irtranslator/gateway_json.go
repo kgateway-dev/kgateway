@@ -6,6 +6,7 @@ import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
@@ -104,6 +105,21 @@ func (tr *TranslationResult) UnmarshalJSON(data []byte) error {
 				return err
 			}
 			tr.Listeners[i] = listener
+		}
+	}
+
+	if secretsData, ok := result["Secrets"]; ok {
+		var secrets []json.RawMessage
+		if err := json.Unmarshal(secretsData, &secrets); err != nil {
+			return err
+		}
+		tr.Secrets = make([]*envoytlsv3.Secret, len(secrets))
+		for i, secretData := range secrets {
+			secret := &envoytlsv3.Secret{}
+			if err := m.Unmarshal(secretData, secret); err != nil {
+				return err
+			}
+			tr.Secrets[i] = secret
 		}
 	}
 

@@ -1,5 +1,4 @@
 {{- $gateway := .Values.gateway }}
-{{- if not $gateway.customConfigMapName }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -24,4 +23,3 @@ data:
     {{- else }}
     config: {}
     {{- end }}
-{{- end }}

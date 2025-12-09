@@ -143,6 +143,13 @@ type TrafficPolicySpec struct {
 	// APIKeyAuthentication authenticates users based on a configured API Key.
 	// +optional
 	APIKeyAuthentication *APIKeyAuthentication `json:"apiKeyAuthentication,omitempty"`
+
+	// OAuth2 specifies the configuration to use for OAuth2/OIDC.
+	// Note: the OAuth2 filter does not protect against Cross-Site-Request-Forgery attacks on domains with cached
+	// authentication (in the form of cookies). It is recommended to pair this with the CSRF policy to prevent
+	// malicious social engineering.
+	// +optional
+	OAuth2 *OAuth2Policy `json:"oauth2,omitempty"`
 }
 
 // URLRewrite specifies URL rewrite rules using regular expressions.
