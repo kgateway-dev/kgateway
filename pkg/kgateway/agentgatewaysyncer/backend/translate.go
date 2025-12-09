@@ -29,10 +29,11 @@ func BuildAgwBackend(
 	ctx plugins.PolicyCtx,
 	backend *agentgateway.AgentgatewayBackend,
 ) ([]*api.Backend, error) {
+	errs := []error{}
 	pols, err := translateBackendPolicies(ctx, backend.Namespace, backend.Spec.Policies)
 	if err != nil {
-		// TODO: bubble this up to a status message without blocking the entire Backend
 		logger.Warn("failed to translate backend policies", "err", err)
+		errs = append(errs, err)
 	}
 
 	if b := backend.Spec.Static; b != nil {
@@ -46,7 +47,7 @@ func BuildAgwBackend(
 				},
 			},
 			InlinePolicies: pols,
-		}}, nil
+		}}, errors.Join(errs...)
 	}
 	if b := backend.Spec.DynamicForwardProxy; b != nil {
 		return []*api.Backend{{
@@ -56,19 +57,20 @@ func BuildAgwBackend(
 				Dynamic: &api.DynamicForwardProxy{},
 			},
 			InlinePolicies: pols,
-		}}, nil
+		}}, errors.Join(errs...)
 	}
 	if b := backend.Spec.MCP; b != nil {
-		return translateMCPBackends(ctx, backend, pols)
+		be, err := translateMCPBackends(ctx, backend, pols)
+		return be, errors.Join(append(errs, err)...)
 	}
 	if b := backend.Spec.AI; b != nil {
 		be, err := translateAIBackends(ctx, backend, pols)
 		if err != nil {
-			return nil, err
+			return nil, errors.Join(append(errs, err)...)
 		}
-		return []*api.Backend{be}, nil
+		return []*api.Backend{be}, errors.Join(errs...)
 	}
-	return nil, errors.New("unknown backend")
+	return nil, errors.Join(append(errs, errors.New("unknown backend"))...)
 }
 
 func TranslateAgwBackend(
@@ -90,6 +92,7 @@ func TranslateAgwBackend(
 			}),
 		}, results
 	}
+
 	// handle all backends created as an MCPBackend backend may create multiple backends
 	for _, backend := range backends {
 		logger.Debug("creating backend", "backend", backend.Name)
@@ -100,6 +103,7 @@ func TranslateAgwBackend(
 		})
 		results = append(results, resourceWrapper)
 	}
+
 	return &agentgateway.AgentgatewayBackendStatus{
 		Conditions: kstatus.UpdateConditionIfChanged(backend.Status.Conditions, metav1.Condition{
 			Type:               "Accepted",
@@ -122,8 +126,8 @@ func translateMCPBackends(ctx plugins.PolicyCtx, be *agentgateway.AgentgatewayBa
 			staticBackendRef := utils.InternalMCPStaticBackendName(be.Namespace, be.Name, string(target.Name))
 			pol, err := translateMCPBackendPolicies(ctx, be.Namespace, s.Policies)
 			if err != nil {
-				// TODO: bubble this up to a status message without blocking the entire Backend
-				logger.Warn("failed to translate AI backend policies", "err", err)
+				logger.Error("failed to translate static MCP backend policies", "err", err)
+				errs = append(errs, err)
 			}
 			staticBackend := &api.Backend{
 				Key:  staticBackendRef,

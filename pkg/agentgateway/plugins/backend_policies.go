@@ -93,7 +93,11 @@ func translateBackendPolicyToAgw(
 		}
 
 		if backend.MCP.Authentication != nil {
-			pol := translateBackendMCPAuthentication(ctx, policy, policyTarget)
+			pol, err := translateBackendMCPAuthentication(ctx, policy, policyTarget)
+			if err != nil {
+				logger.Error("error processing backend mcp auth", "err", err)
+				errs = append(errs, err)
+			}
 			agwPolicies = append(agwPolicies, pol...)
 		}
 	}
@@ -283,14 +287,14 @@ func translateBackendMCPAuthorization(policy *agentgateway.AgentgatewayPolicy, t
 	return []AgwPolicy{{Policy: mcpPolicy}}
 }
 
-func translateBackendMCPAuthentication(ctx PolicyCtx, policy *agentgateway.AgentgatewayPolicy, target *api.PolicyTarget) []AgwPolicy {
+func translateBackendMCPAuthentication(ctx PolicyCtx, policy *agentgateway.AgentgatewayPolicy, target *api.PolicyTarget) ([]AgwPolicy, error) {
 	backend := policy.Spec.Backend
 	if backend == nil || backend.MCP == nil || backend.MCP.Authentication == nil {
-		return nil
+		return nil, nil
 	}
 	authnPolicy := backend.MCP.Authentication
 	if authnPolicy == nil {
-		return nil
+		return nil, nil
 	}
 
 	idp := api.BackendPolicySpec_McpAuthentication_AUTH0
@@ -301,9 +305,10 @@ func translateBackendMCPAuthentication(ctx PolicyCtx, policy *agentgateway.Agent
 	translatedInlineJwks, err := resolveRemoteJWKSInline(ctx, authnPolicy.JWKS.JwksUri)
 	if err != nil {
 		logger.Error("failed resolving jwks", "jwks_uri", authnPolicy.JWKS.JwksUri, "error", err)
-		return nil
+		return nil, err
 	}
 
+	var errs []error
 	var extraResourceMetadata map[string]*structpb.Value
 	for k, v := range authnPolicy.ResourceMetadata {
 		if extraResourceMetadata == nil {
@@ -313,6 +318,7 @@ func translateBackendMCPAuthentication(ctx PolicyCtx, policy *agentgateway.Agent
 		pbVal, err := structpb.NewValue(v)
 		if err != nil {
 			logger.Error("error converting resource metadata", "key", k, "error", err)
+			errs = append(errs, err)
 			continue
 		}
 
@@ -345,7 +351,7 @@ func translateBackendMCPAuthentication(ctx PolicyCtx, policy *agentgateway.Agent
 		"policy", policy.Name,
 		"agentgateway_policy", mcpAuthnPolicy.Name)
 
-	return []AgwPolicy{{Policy: mcpAuthnPolicy}}
+	return []AgwPolicy{{Policy: mcpAuthnPolicy}}, errors.Join(errs...)
 }
 
 // translateBackendAI processes AI configuration and creates corresponding Agw policies
