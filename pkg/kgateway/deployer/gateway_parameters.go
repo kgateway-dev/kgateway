@@ -155,8 +155,8 @@ func (gp *GatewayParameters) getHelmValuesGenerator(obj client.Object) (deployer
 	var gwClassClient kclient.Client[*gwv1.GatewayClass]
 	if gp.kgwParameters != nil {
 		gwClassClient = gp.kgwParameters.gwClassClient
-	} else if gp.agwHelmValuesGenerator != nil && gp.agwHelmValuesGenerator.agwParams != nil {
-		gwClassClient = gp.agwHelmValuesGenerator.agwParams.gwClassClient
+	} else if gp.agwHelmValuesGenerator != nil {
+		gwClassClient = gp.agwHelmValuesGenerator.gwClassClient
 	} else {
 		return nil, fmt.Errorf("no parameter clients available")
 	}
