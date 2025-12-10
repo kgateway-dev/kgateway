@@ -1,0 +1,10 @@
+# Build output
+_output/
+*.o
+*.a
+
+# Binary
+server
+
+# Go modules cache
+go.sum.bak

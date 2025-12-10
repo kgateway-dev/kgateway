@@ -12,6 +12,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/configmap"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/csrf"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/extauth"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/extproc"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/jwtauth"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/mcp"
 	global_rate_limit "github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/rate_limit/global"
@@ -28,6 +29,7 @@ func AgentgatewaySuiteRunner() e2e.SuiteRunner {
 	agentgatewaySuiteRunner.Register("BasicRouting", agentgateway.NewTestingSuite)
 	agentgatewaySuiteRunner.Register("CSRF", csrf.NewTestingSuite)
 	agentgatewaySuiteRunner.Register("Extauth", extauth.NewTestingSuite)
+	agentgatewaySuiteRunner.Register("Extproc", extproc.NewTestingSuite)
 	agentgatewaySuiteRunner.Register("LocalRateLimit", local_rate_limit.NewAgentgatewayTestingSuite)
 	agentgatewaySuiteRunner.Register("GlobalRateLimit", global_rate_limit.NewTestingSuite)
 	agentgatewaySuiteRunner.Register("MCP", mcp.NewTestingSuite)
