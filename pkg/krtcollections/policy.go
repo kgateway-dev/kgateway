@@ -349,7 +349,6 @@ func NewGatewayIndex(config GatewayIndexConfig, opts ...GatewayIndexConfigOption
 	processGatewayIndexConfig(&config, opts...)
 
 	h := &GatewayIndex{}
-
 	h.GatewaysForDeployer = krt.NewCollection(config.Gateways, config.gatewaysForDeployerTransformationFunc(&config))
 	if config.PolicyIndex == nil {
 		return h

@@ -19,13 +19,17 @@ type GatewayIndexConfigOption func(o *GatewayIndexConfig)
 
 func WithGatewayForDeployerTransformationFunc(f GatewaysForDeployerTransformationFunction) GatewayIndexConfigOption {
 	return func(o *GatewayIndexConfig) {
-		o.gatewaysForDeployerTransformationFunc = f
+		if f != nil {
+			o.gatewaysForDeployerTransformationFunc = f
+		}
 	}
 }
 
 func WithGatewayForEnvoyTransformationFunc(f GatewaysForEnvoyTransformationFunction) GatewayIndexConfigOption {
 	return func(o *GatewayIndexConfig) {
-		o.gatewaysForEnvoyTransformationFunc = f
+		if f != nil {
+			o.gatewaysForEnvoyTransformationFunc = f
+		}
 	}
 }
 

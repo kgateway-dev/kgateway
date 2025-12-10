@@ -12,7 +12,9 @@ type GatewayCollectionConfigOption func(o *GatewayCollectionConfig)
 
 func WithGatewayTransformationFunc(f GatewayTransformationFunction) GatewayCollectionConfigOption {
 	return func(o *GatewayCollectionConfig) {
-		o.transformationFunc = f
+		if f != nil {
+			o.transformationFunc = f
+		}
 	}
 }
 
