@@ -291,15 +291,7 @@ func (r *gatewayReconciler) Start(ctx context.Context) error {
 		r.svcClient.HasSynced,
 		r.configMapClient.HasSynced,
 	}
-	// Add GatewayParameters client sync if it exists (only when Envoy is enabled)
-	if r.gwParamClient != nil {
-		hasSynced = append(hasSynced, r.gwParamClient.HasSynced)
-	}
-	// Add AgentgatewayParameters client sync if it exists (only when Agentgateway is enabled)
-	if r.agwParamClient != nil {
-		hasSynced = append(hasSynced, r.agwParamClient.HasSynced)
-	}
-	// Add GatewayParameters cache sync handlers
+	// Add GatewayParameters cache sync handlers (includes both gwParamClient and agwParamClient)
 	hasSynced = append(hasSynced, r.gwParams.GetCacheSyncHandlers()...)
 
 	// Wait for all caches to sync

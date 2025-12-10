@@ -282,6 +282,19 @@ func New(opts ...func(*setup)) (*setup, error) {
 
 	SetupLogging(s.globalSettings.LogLevel)
 
+	// Adjust leader election ID based on which controllers are enabled.
+	// This allows split helm charts to deploy separate controllers that don't compete for the same lease.
+	// When only one controller type is enabled, append a suffix to make the lease unique.
+	leaderElectionID := s.leaderElectionID
+	if s.globalSettings.EnableEnvoy && !s.globalSettings.EnableAgentgateway {
+		// Envoy-only controller (kgateway chart)
+		leaderElectionID = s.leaderElectionID + "-envoy"
+	} else if !s.globalSettings.EnableEnvoy && s.globalSettings.EnableAgentgateway {
+		// Agentgateway-only controller (agentgateway chart)
+		leaderElectionID = s.leaderElectionID + "-agentgateway"
+	}
+	// If both are enabled, use the default ID (single controller handling both)
+
 	if s.ctrlMgrOptionsInitFunc == nil {
 		s.ctrlMgrOptionsInitFunc = func(ctx context.Context) *ctrl.Options {
 			return &ctrl.Options{
@@ -295,7 +308,7 @@ func New(opts ...func(*setup)) (*setup, error) {
 				},
 				LeaderElectionNamespace: namespaces.GetPodNamespace(),
 				LeaderElection:          !s.globalSettings.DisableLeaderElection,
-				LeaderElectionID:        s.leaderElectionID,
+				LeaderElectionID:        leaderElectionID,
 			}
 		}
 	}

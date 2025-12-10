@@ -298,6 +298,12 @@ func (i *TestInstallation) UninstallKgatewayCore(ctx context.Context) {
 		return
 	}
 
+	// Check if the release exists before attempting to uninstall
+	if !i.Actions.Helm().ReleaseExists(ctx, helmutils.ChartName, i.Metadata.InstallNamespace) {
+		// Release doesn't exist, nothing to uninstall
+		return
+	}
+
 	// uninstall the main chart first
 	err := i.Actions.Helm().Uninstall(
 		ctx,
@@ -313,6 +319,12 @@ func (i *TestInstallation) UninstallKgatewayCore(ctx context.Context) {
 
 func (i *TestInstallation) UninstallKgatewayCRDs(ctx context.Context) {
 	if testutils.ShouldSkipInstallAndTeardown() || testutils.ShouldPersistInstall() {
+		return
+	}
+
+	// Check if the release exists before attempting to uninstall
+	if !i.Actions.Helm().ReleaseExists(ctx, helmutils.CRDChartName, i.Metadata.InstallNamespace) {
+		// Release doesn't exist, nothing to uninstall
 		return
 	}
 
@@ -334,6 +346,12 @@ func (i *TestInstallation) UninstallAgentgatewayCore(ctx context.Context) {
 		return
 	}
 
+	// Check if the release exists before attempting to uninstall
+	if !i.Actions.Helm().ReleaseExists(ctx, helmutils.AgentGatewayChartName, i.Metadata.InstallNamespace) {
+		// Release doesn't exist, nothing to uninstall
+		return
+	}
+
 	// uninstall the main chart first
 	err := i.Actions.Helm().Uninstall(
 		ctx,
@@ -350,6 +368,12 @@ func (i *TestInstallation) UninstallAgentgatewayCore(ctx context.Context) {
 // UninstallAgentgatewayCRDs uninstalls the agentgateway CRD chart
 func (i *TestInstallation) UninstallAgentgatewayCRDs(ctx context.Context) {
 	if testutils.ShouldSkipInstallAndTeardown() || testutils.ShouldPersistInstall() {
+		return
+	}
+
+	// Check if the release exists before attempting to uninstall
+	if !i.Actions.Helm().ReleaseExists(ctx, helmutils.AgentGatewayCRDChartName, i.Metadata.InstallNamespace) {
+		// Release doesn't exist, nothing to uninstall
 		return
 	}
 

@@ -64,7 +64,7 @@ jobs:
         # December 4, 2025: ~9 minutes
         - cluster-name: 'api-validation' # TODO: rename to cluster-seven
           go-test-args: '-timeout=15m'
-          go-test-run-regex: '^TestAPIValidation|^TestKgateway$$/^OAuth$$|^TestCustomGWP$$'
+          go-test-run-regex: '^TestAPIValidation$$|^TestKgateway$$/^OAuth$$|^TestCustomGWP$$'
           localstack: 'false'
         # December 4, 2025: ~15 minutes
         - cluster-name: 'cluster-metrics'
