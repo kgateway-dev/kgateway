@@ -162,13 +162,10 @@ func NewAgwCollections(
 
 		// inference extensions need to be enabled so control plane has permissions to watch resource. Disable by default
 		InferencePools: krt.NewStaticCollection[*inf.InferencePool](nil, nil, commoncol.KrtOpts.ToOptions("disable/inferencepools")...),
-	}
 
-	// Only watch agentgateway-specific CRDs if agentgateway is enabled
-	// This prevents permission errors when only Envoy is enabled
-	if commoncol.Settings.EnableAgentgateway {
-		agwCollections.AgentgatewayPolicies = krt.NewInformer[*agentgateway.AgentgatewayPolicy](commoncol.Client)
-		agwCollections.Backends = krt.NewInformer[*agentgateway.AgentgatewayBackend](commoncol.Client)
+		// agentgateway-specific CRDs
+		AgentgatewayPolicies: krt.NewInformer[*agentgateway.AgentgatewayPolicy](commoncol.Client),
+		Backends:             krt.NewInformer[*agentgateway.AgentgatewayBackend](commoncol.Client),
 	}
 
 	if commoncol.Settings.EnableInferExt {

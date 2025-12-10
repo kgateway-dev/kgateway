@@ -32,10 +32,7 @@ func NewTrafficPolicyConstructor(
 	defaultExtBuilder := func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
 		return extBuilder(krtctx, gExt)
 	}
-	var gatewayExtensions krt.Collection[TrafficPolicyGatewayExtensionIR]
-	if commoncol.GatewayExtensions != nil {
-		gatewayExtensions = krt.NewCollection(commoncol.GatewayExtensions, defaultExtBuilder)
-	}
+	gatewayExtensions := krt.NewCollection(commoncol.GatewayExtensions, defaultExtBuilder)
 	return &TrafficPolicyConstructor{
 		commoncol:         commoncol,
 		gatewayExtensions: gatewayExtensions,
