@@ -1,6 +1,7 @@
 package agentgateway
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -288,6 +289,20 @@ type BedrockConfig struct {
 	// If not specified, the AWS Guardrail policy will not be used.
 	// +optional
 	Guardrail *AWSGuardrailConfig `json:"guardrail,omitempty"`
+
+	// Auth specifies an explicit AWS authentication method for the backend.
+	// When omitted, we will try to use the default AWS SDK authentication methods.
+	//
+	// +optional
+	Auth *AwsAuth `json:"auth,omitempty"`
+}
+
+// AwsAuth specifies the authentication method to use for the backend.
+type AwsAuth struct {
+	// SecretRef references a Kubernetes Secret containing the AWS credentials.
+	// The Secret must have keys "accessKey", "secretKey", and optionally "sessionToken".
+	// +required
+	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
 }
 
 type AWSGuardrailConfig struct {

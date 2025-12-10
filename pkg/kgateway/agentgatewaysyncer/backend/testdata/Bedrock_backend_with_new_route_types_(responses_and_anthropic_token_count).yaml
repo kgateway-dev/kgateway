@@ -12,6 +12,9 @@ inlinePolicies:
       /v1/messages/count_tokens: ANTHROPIC_TOKEN_COUNT
       /v1/models: MODELS
       /v1/responses: RESPONSES
+- auth:
+    aws:
+      implicit: {}
 key: test-ns/bedrock-with-new-routes
 name:
   name: bedrock-with-new-routes

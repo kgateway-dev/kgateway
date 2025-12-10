@@ -137,6 +137,30 @@ spec:
                               bedrock:
                                 description: Bedrock provider
                                 properties:
+                                  auth:
+                                    description: |-
+                                      Auth specifies an explicit AWS authentication method for the backend.
+                                      When omitted, we will try to use the default AWS SDK authentication methods.
+                                    properties:
+                                      secretRef:
+                                        description: |-
+                                          SecretRef references a Kubernetes Secret containing the AWS credentials.
+                                          The Secret must have keys "accessKey", "secretKey", and optionally "sessionToken".
+                                        properties:
+                                          name:
+                                            default: ""
+                                            description: |-
+                                              Name of the referent.
+                                              This field is effectively required, but due to backwards compatibility is
+                                              allowed to be empty. Instances of this type with an empty value here are
+                                              almost certainly wrong.
+                                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                            type: string
+                                        type: object
+                                        x-kubernetes-map-type: atomic
+                                    required:
+                                    - secretRef
+                                    type: object
                                   guardrail:
                                     description: |-
                                       Guardrail configures the Guardrail policy to use for the backend. See <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails.html>
@@ -1545,6 +1569,30 @@ spec:
                       bedrock:
                         description: Bedrock provider
                         properties:
+                          auth:
+                            description: |-
+                              Auth specifies an explicit AWS authentication method for the backend.
+                              When omitted, we will try to use the default AWS SDK authentication methods.
+                            properties:
+                              secretRef:
+                                description: |-
+                                  SecretRef references a Kubernetes Secret containing the AWS credentials.
+                                  The Secret must have keys "accessKey", "secretKey", and optionally "sessionToken".
+                                properties:
+                                  name:
+                                    default: ""
+                                    description: |-
+                                      Name of the referent.
+                                      This field is effectively required, but due to backwards compatibility is
+                                      allowed to be empty. Instances of this type with an empty value here are
+                                      almost certainly wrong.
+                                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                    type: string
+                                type: object
+                                x-kubernetes-map-type: atomic
+                            required:
+                            - secretRef
+                            type: object
                           guardrail:
                             description: |-
                               Guardrail configures the Guardrail policy to use for the backend. See <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails.html>

@@ -7,6 +7,10 @@ ai:
         model: anthropic.claude-3-haiku-20240307-v1:0
         region: eu-west-1
       name: backend
+inlinePolicies:
+- auth:
+    aws:
+      implicit: {}
 key: test-ns/bedrock-backend-custom
 name:
   name: bedrock-backend-custom
