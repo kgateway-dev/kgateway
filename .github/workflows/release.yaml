@@ -159,7 +159,6 @@ jobs:
         env:
           VERSION: ${{ needs.setup.outputs.version }}
           SKIP_DOCKER: "true"
-          CONFORMANCE: "true"
 
       - name: Install the released chart
         run: |
@@ -208,7 +207,6 @@ jobs:
         env:
           VERSION: ${{ needs.setup.outputs.version }}
           SKIP_DOCKER: "true"
-          CONFORMANCE: "true"
 
       - name: Install the released chart
         run: |

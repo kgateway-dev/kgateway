@@ -28,12 +28,13 @@ import (
 	"sigs.k8s.io/yaml"
 
 	apitests "github.com/kgateway-dev/kgateway/v2/api/tests"
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer/status"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	agwv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
+	v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/agentgatewaysyncer"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/agentgatewaysyncer/status"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 )
@@ -225,8 +226,8 @@ func BuildMockCollection(t test.Failer, inputs []any) *plugins.AgwCollections {
 		BackendTLSPolicies:   krttest.GetMockCollection[*gwv1.BackendTLSPolicy](mock),
 		XListenerSets:        krttest.GetMockCollection[*gwxv1a1.XListenerSet](mock),
 		InferencePools:       krttest.GetMockCollection[*inf.InferencePool](mock),
-		Backends:             krttest.GetMockCollection[*v1alpha1.AgentgatewayBackend](mock),
-		AgentgatewayPolicies: krttest.GetMockCollection[*v1alpha1.AgentgatewayPolicy](mock),
+		Backends:             krttest.GetMockCollection[*agwv1alpha1.AgentgatewayBackend](mock),
+		AgentgatewayPolicies: krttest.GetMockCollection[*agwv1alpha1.AgentgatewayPolicy](mock),
 		DirectResponses:      krttest.GetMockCollection[*v1alpha1.DirectResponse](mock),
 		GatewayExtensions:    krttest.GetMockCollection[*v1alpha1.GatewayExtension](mock),
 		ControllerName:       wellknown.DefaultAgwControllerName,

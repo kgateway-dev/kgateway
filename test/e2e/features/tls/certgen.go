@@ -14,7 +14,7 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
 )
 
 const (

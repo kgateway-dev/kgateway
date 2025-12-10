@@ -14,7 +14,7 @@ import (
 
 func NewKgatewayValidator(t *testing.T) *crd.Validator {
 	root := fsutils.GetModuleRoot()
-	dirs := []string{filepath.Join(root, "internal/kgateway/crds/gateway-crds.yaml")}
+	dirs := []string{filepath.Join(root, "pkg/kgateway/crds/gateway-crds.yaml")}
 	dir, err := os.ReadDir(filepath.Join(root, "install/helm/kgateway-crds/templates/"))
 	assert.NoError(t, err)
 	for _, d := range dir {

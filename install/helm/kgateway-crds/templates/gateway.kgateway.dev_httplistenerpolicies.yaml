@@ -37,6 +37,7 @@ spec:
           that should map 1-to-1 with a given HTTP listener, such as the Envoy health check HTTP filter.
           Currently these policies can only be applied per `Gateway` but support for `Listener` attachment may be added in the future.
           See https://github.com/kgateway-dev/kgateway/issues/11786 for more details.
+          Deprecated: Use the httpSettings field on ListenerPolicy instead.
         properties:
           apiVersion:
             description: |-

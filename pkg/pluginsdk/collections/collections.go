@@ -15,8 +15,8 @@ import (
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -27,6 +27,7 @@ type CommonCollections struct {
 	Client            apiclient.Client
 	KrtOpts           krtutil.KrtOptions
 	Secrets           *krtcollections.SecretIndex
+	ConfigMaps        *krtcollections.ConfigMapIndex
 	BackendIndex      *krtcollections.BackendIndex
 	Routes            *krtcollections.RoutesIndex
 	Namespaces        krt.Collection[krtcollections.NamespaceMetadata]
@@ -39,7 +40,6 @@ type CommonCollections struct {
 	WrappedPods  krt.Collection[krtcollections.WrappedPod]
 	LocalityPods krt.Collection[krtcollections.LocalityPod]
 	RefGrants    *krtcollections.RefGrantIndex
-	ConfigMaps   krt.Collection[*corev1.ConfigMap]
 
 	DiscoveryNamespacesFilter kubetypes.DynamicObjectFilter
 
@@ -57,12 +57,12 @@ func (c *CommonCollections) HasSynced() bool {
 	// we check nil as well because some of the inner
 	// collections aren't initialized until we call InitPlugins
 	return c.Secrets != nil && c.Secrets.HasSynced() &&
+		c.ConfigMaps != nil && c.ConfigMaps.HasSynced() &&
 		c.BackendIndex != nil && c.BackendIndex.HasSynced() &&
 		c.Routes != nil && c.Routes.HasSynced() &&
 		c.WrappedPods != nil && c.WrappedPods.HasSynced() &&
 		c.LocalityPods != nil && c.LocalityPods.HasSynced() &&
 		c.RefGrants != nil && c.RefGrants.HasSynced() &&
-		c.ConfigMaps != nil && c.ConfigMaps.HasSynced() &&
 		c.GatewayExtensions != nil && c.GatewayExtensions.HasSynced() &&
 		c.Services != nil && c.Services.HasSynced() &&
 		c.ServiceEntries != nil && c.ServiceEntries.HasSynced() &&
@@ -157,6 +157,7 @@ func NewCommonCollections(
 		Client:            client,
 		KrtOpts:           krtOptions,
 		Secrets:           krtcollections.NewSecretIndex(secrets, refgrants),
+		ConfigMaps:        krtcollections.NewConfigMapIndex(cfgmaps, refgrants),
 		LocalityPods:      localityPods,
 		WrappedPods:       wrappedPods,
 		RefGrants:         refgrants,
@@ -164,7 +165,6 @@ func NewCommonCollections(
 		Namespaces:        namespaces,
 		Services:          services,
 		ServiceEntries:    serviceEntries,
-		ConfigMaps:        cfgmaps,
 		GatewayExtensions: gwExts,
 
 		DiscoveryNamespacesFilter: discoveryNamespacesFilter,

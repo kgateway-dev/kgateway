@@ -6,12 +6,14 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/accesslog"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/admin_server"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/apikeyauth"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/auto_host_rewrite"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/backendconfigpolicy"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/backends"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/backendtls"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/basicauth"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/basicrouting"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/compression"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/cors"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/csrf"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/deployer"
@@ -21,12 +23,12 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/extproc"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/frontendtls"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/header_modifiers"
-	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/http_listener_policy"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/jwt"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/lambda"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/leaderelection"
-	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/listener_policy_proxy_protocol"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/listener_policy"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/loadtesting"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/oauth"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/path_matching"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/policyselector"
 	global_rate_limit "github.com/kgateway-dev/kgateway/v2/test/e2e/features/rate_limit/global"
@@ -54,8 +56,7 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("Deployer", deployer.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("DynamicForwardProxy", dfp.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("HTTPRouteServices", httproute.NewTestingSuite)
-	kubeGatewaySuiteRunner.Register("HttpListenerPolicy", http_listener_policy.NewTestingSuite)
-	kubeGatewaySuiteRunner.Register("ListenerPolicyProxyProtocol", listener_policy_proxy_protocol.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("ListenerPolicy", listener_policy.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Lambda", lambda.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("RouteDelegation", route_delegation.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("SessionPersistence", session_persistence.NewTestingSuite)
@@ -69,6 +70,7 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("PolicySelector", policyselector.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("TrafficPolicyStatus", trafficpolicystatus.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Cors", cors.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("Compression", compression.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("BackendConfigPolicy", backendconfigpolicy.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("CSRF", csrf.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("AutoHostRewrite", auto_host_rewrite.NewTestingSuite)
@@ -82,10 +84,12 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("TimeoutRetry", timeoutretry.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("HeaderModifiers", header_modifiers.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("RBAC", rbac.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("APIKeyAuth", apikeyauth.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("AdminServer", admin_server.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("JWT", jwt.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("FrontendTLS", frontendtls.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("BasicAuth", basicauth.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("OAuth", oauth.NewTestingSuite)
 
 	return kubeGatewaySuiteRunner
 }

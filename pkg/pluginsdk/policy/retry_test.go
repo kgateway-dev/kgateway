@@ -13,13 +13,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 )
 
 func TestBuildRetryPolicy(t *testing.T) {
 	tests := []struct {
 		name  string
-		input *v1alpha1.Retry
+		input *kgateway.Retry
 		want  *envoyroutev3.RetryPolicy
 	}{
 		{
@@ -29,8 +29,8 @@ func TestBuildRetryPolicy(t *testing.T) {
 		},
 		{
 			name: "basic retry policy with retryOn conditions only",
-			input: &v1alpha1.Retry{
-				RetryOn:  []v1alpha1.RetryOnCondition{"5xx", "gateway-error", "reset"},
+			input: &kgateway.Retry{
+				RetryOn:  []kgateway.RetryOnCondition{"5xx", "gateway-error", "reset"},
 				Attempts: int32(3),
 			},
 			want: &envoyroutev3.RetryPolicy{
@@ -41,8 +41,8 @@ func TestBuildRetryPolicy(t *testing.T) {
 		},
 		{
 			name: "retry policy with status codes without retriable-status-codes in retryOn",
-			input: &v1alpha1.Retry{
-				RetryOn:     []v1alpha1.RetryOnCondition{"connect-failure", "unavailable"},
+			input: &kgateway.Retry{
+				RetryOn:     []kgateway.RetryOnCondition{"connect-failure", "unavailable"},
 				Attempts:    int32(2),
 				StatusCodes: []gwv1.HTTPRouteRetryStatusCode{500, 502, 503},
 			},
@@ -54,8 +54,8 @@ func TestBuildRetryPolicy(t *testing.T) {
 		},
 		{
 			name: "retry policy with status codes with retriable-status-codes in retryOn",
-			input: &v1alpha1.Retry{
-				RetryOn:     []v1alpha1.RetryOnCondition{"connect-failure", "unavailable", "retriable-status-codes"},
+			input: &kgateway.Retry{
+				RetryOn:     []kgateway.RetryOnCondition{"connect-failure", "unavailable", "retriable-status-codes"},
 				Attempts:    int32(2),
 				StatusCodes: []gwv1.HTTPRouteRetryStatusCode{500, 502, 503},
 			},
@@ -67,8 +67,8 @@ func TestBuildRetryPolicy(t *testing.T) {
 		},
 		{
 			name: "retry policy with per-try timeout",
-			input: &v1alpha1.Retry{
-				RetryOn:       []v1alpha1.RetryOnCondition{"reset", "envoy-ratelimited"},
+			input: &kgateway.Retry{
+				RetryOn:       []kgateway.RetryOnCondition{"reset", "envoy-ratelimited"},
 				Attempts:      int32(5),
 				PerTryTimeout: &metav1.Duration{Duration: 2 * time.Second},
 			},
@@ -81,8 +81,8 @@ func TestBuildRetryPolicy(t *testing.T) {
 		},
 		{
 			name: "retry policy with backoff base interval",
-			input: &v1alpha1.Retry{
-				RetryOn:             []v1alpha1.RetryOnCondition{"retriable-4xx"},
+			input: &kgateway.Retry{
+				RetryOn:             []kgateway.RetryOnCondition{"retriable-4xx"},
 				Attempts:            int32(4),
 				BackoffBaseInterval: &metav1.Duration{Duration: 100 * time.Millisecond},
 			},
@@ -97,8 +97,8 @@ func TestBuildRetryPolicy(t *testing.T) {
 		},
 		{
 			name: "comprehensive retry policy with all fields",
-			input: &v1alpha1.Retry{
-				RetryOn:             []v1alpha1.RetryOnCondition{"cancelled", "deadline-exceeded", "internal"},
+			input: &kgateway.Retry{
+				RetryOn:             []kgateway.RetryOnCondition{"cancelled", "deadline-exceeded", "internal"},
 				Attempts:            int32(10),
 				StatusCodes:         []gwv1.HTTPRouteRetryStatusCode{401, 403, 429},
 				PerTryTimeout:       &metav1.Duration{Duration: 5 * time.Second},
@@ -116,7 +116,7 @@ func TestBuildRetryPolicy(t *testing.T) {
 		},
 		{
 			name: "retry policy with only status codes (no retryOn)",
-			input: &v1alpha1.Retry{
+			input: &kgateway.Retry{
 				Attempts:    int32(1),
 				StatusCodes: []gwv1.HTTPRouteRetryStatusCode{404, 408},
 			},
@@ -128,8 +128,8 @@ func TestBuildRetryPolicy(t *testing.T) {
 		},
 		{
 			name: "retry policy with duplicate retryOn conditions (should be deduplicated)",
-			input: &v1alpha1.Retry{
-				RetryOn:  []v1alpha1.RetryOnCondition{"5xx", "gateway-error", "5xx", "reset", "gateway-error"},
+			input: &kgateway.Retry{
+				RetryOn:  []kgateway.RetryOnCondition{"5xx", "gateway-error", "5xx", "reset", "gateway-error"},
 				Attempts: int32(3),
 			},
 			want: &envoyroutev3.RetryPolicy{

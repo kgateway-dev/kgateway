@@ -15,7 +15,7 @@ The underlying implementation is based on [github.com/prometheus/client_golang/p
 * Metrics are expected to have a namespace and subsystem defined in their options
   * The default namespace of "kgateway" will be used if no namespace is provided. This will likely be the correct namespace.
 * When passing labels to methods such as `Add(...)` or `Set(...)`, consider creating a struct to hold the label values with a method to convert it into a slice of Labels. This improves readability and ensures that any missed labels are present with a default ("") value.
-  * See [`resourceMetricLabels`](/internal/kgateway/krtcollections/metrics.go) for an example.
+  * See [`resourceMetricLabels`](/pkg/kgateway/krtcollections/metrics.go) for an example.
 * Follow the [Prometheus Metric and Label Naming Guide](https://prometheus.io/docs/practices/naming/) when possible.
   * `promlinter` is now used in static code analysis to validate metric names, types, and metadata.
 * The metrics package supports an `Active() bool` method with the underlying value evaluated at startup, and can not be meaningfully changed during execution.
@@ -23,14 +23,14 @@ The underlying implementation is based on [github.com/prometheus/client_golang/p
 
 ## Metric collection packages
 Several packages have interfaces created to standardize collection of metrics around existing frameworks
-* [controllerMetricsRecorder](/internal/kgateway/controller/metrics.go) for [/internal/kgateway/controller](/internal/kgateway/controller/)
+* [controllerMetricsRecorder](/pkg/kgateway/controller/metrics.go) for [/pkg/kgateway/controller](/pkg/kgateway/controller/)
   * Created by `newControllerMetricsRecorder(controllerName string) controllerMetricsRecorder `
-* [TranslatorMetricsRecorder](/internal/kgateway/translator/metrics/metrics.go) for [/internal/kgateway/translator/](/internal/kgateway/translator/)
+* [TranslatorMetricsRecorder](/pkg/kgateway/translator/metrics/metrics.go) for [/pkg/kgateway/translator/](/pkg/kgateway/translator/)
   * Created by `NewTranslatorMetricsRecorder(translatorName string) TranslatorMetricsRecorder`
-* [StartResourceSync and EndResourceSync](/internal/kgateway/translator/metrics/metrics.go) are used to track metrics related to resource sync.
+* [StartResourceSync and EndResourceSync](/pkg/kgateway/translator/metrics/metrics.go) are used to track metrics related to resource sync.
   * Used with `StartResourceSync(resourceName string, labels ResourceMetricLabels)` and `EndResourceSync(details ResourceSyncDetails, isXDSSnapshot bool, totalCounter metrics.Counter durationHistogram metrics.Histogram)`
-  * `StartResourceSyncMetricsProcessing(ctx context.Context)` must be called at process startup to handle processing of resource metrics. 
-* [statusSyncMetricsRecorder](/internal/kgateway/proxy_syncer/metrics.go) for the status syncer in [/internal/kgateway/proxy_syncer/](/internal/kgateway/proxy_syncer/)
+  * `StartResourceSyncMetricsProcessing(ctx context.Context)` must be called at process startup to handle processing of resource metrics.
+* [statusSyncMetricsRecorder](/pkg/kgateway/proxy_syncer/metrics.go) for the status syncer in [/pkg/kgateway/proxy_syncer/](/pkg/kgateway/proxy_syncer/)
   * Created by `NewStatusSyncMetricsRecorder(syncerName string) statusSyncMetricsRecorder`
 
 Objects returned from these constructors will be unique, but the underlying metrics will be shared.
@@ -62,7 +62,7 @@ KRT collection is modified.
 		MyEventHandler(o)
 	})
 ```
-* This is used along with a helper function to instrument several KRT collections during [setup](internal/kgateway/krtcollections/setup.go):
+* This is used along with a helper function to instrument several KRT collections during [setup](pkg/kgateway/krtcollections/setup.go):
 ```go
 metrics.RegisterEvents(httpRoutes, GetResourceMetricEventHandler[*gwv1.HTTPRoute]())
 ```

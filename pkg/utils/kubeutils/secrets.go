@@ -14,7 +14,7 @@ func GetSecret(secrets krt.Collection[*corev1.Secret], krtctx krt.HandlerContext
 	secretKey := namespace + "/" + secretName
 	secret := krt.FetchOne(krtctx, secrets, krt.FilterKey(secretKey))
 	if secret == nil {
-		return nil, fmt.Errorf("failed to find secret %s", secretName)
+		return nil, fmt.Errorf("secret %s not found", secretKey)
 	}
 	return *secret, nil
 }

@@ -82,6 +82,7 @@ type requestConfig struct {
 	ipv4Only bool
 	ipv6Only bool
 
+	ignoreBody bool
 	// HTTP protocol options
 	http11 bool
 	http2  bool
@@ -91,6 +92,10 @@ type requestConfig struct {
 	curves        string
 	tlsVersion    string
 	tlsMaxVersion string
+
+	// Client certificate options
+	clientCert string
+	clientKey  string
 
 	additionalArgs []string
 }
@@ -127,7 +132,7 @@ func (c *requestConfig) generateArgs() []string {
 		args = append(args, "--cacert", c.caFile)
 	}
 	if c.body != "" {
-		args = append(args, "-d", c.body)
+		args = append(args, "--data-binary", c.body)
 	}
 	if c.retry != 0 {
 		args = append(args, "--retry", fmt.Sprintf("%d", c.retry))
@@ -167,6 +172,14 @@ func (c *requestConfig) generateArgs() []string {
 		args = append(args, "--tls-max", c.tlsMaxVersion)
 	}
 
+	// Client certificate options
+	if c.clientCert != "" {
+		args = append(args, "--cert", c.clientCert)
+	}
+	if c.clientKey != "" {
+		args = append(args, "--key", c.clientKey)
+	}
+
 	if len(c.additionalArgs) > 0 {
 		args = append(args, c.additionalArgs...)
 	}
@@ -195,6 +208,10 @@ func (c *requestConfig) generateArgs() []string {
 
 	if c.cookieJar != "" {
 		args = append(args, "--cookie-jar", c.cookieJar)
+	}
+
+	if c.ignoreBody {
+		args = append(args, "--output", "/dev/null")
 	}
 
 	args = append(args, fullAddress)

@@ -9,24 +9,24 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 func TargetRefsToPolicyRefs(
-	targetRefs []v1alpha1.LocalPolicyTargetReference,
-	targetSelectors []v1alpha1.LocalPolicyTargetSelector,
+	targetRefs []shared.LocalPolicyTargetReference,
+	targetSelectors []shared.LocalPolicyTargetSelector,
 ) []ir.PolicyRef {
-	targetRefsWithSectionName := make([]v1alpha1.LocalPolicyTargetReferenceWithSectionName, 0, len(targetRefs))
+	targetRefsWithSectionName := make([]shared.LocalPolicyTargetReferenceWithSectionName, 0, len(targetRefs))
 	for _, targetRef := range targetRefs {
-		targetRefsWithSectionName = append(targetRefsWithSectionName, v1alpha1.LocalPolicyTargetReferenceWithSectionName{
+		targetRefsWithSectionName = append(targetRefsWithSectionName, shared.LocalPolicyTargetReferenceWithSectionName{
 			LocalPolicyTargetReference: targetRef,
 			SectionName:                nil,
 		})
 	}
-	targetSelectorsWithSectionName := make([]v1alpha1.LocalPolicyTargetSelectorWithSectionName, 0, len(targetSelectors))
+	targetSelectorsWithSectionName := make([]shared.LocalPolicyTargetSelectorWithSectionName, 0, len(targetSelectors))
 	for _, targetSelector := range targetSelectors {
-		targetSelectorsWithSectionName = append(targetSelectorsWithSectionName, v1alpha1.LocalPolicyTargetSelectorWithSectionName{
+		targetSelectorsWithSectionName = append(targetSelectorsWithSectionName, shared.LocalPolicyTargetSelectorWithSectionName{
 			LocalPolicyTargetSelector: targetSelector,
 			SectionName:               nil,
 		})
@@ -35,8 +35,8 @@ func TargetRefsToPolicyRefs(
 }
 
 func TargetRefsToPolicyRefsWithSectionName(
-	targetRefs []v1alpha1.LocalPolicyTargetReferenceWithSectionName,
-	targetSelectors []v1alpha1.LocalPolicyTargetSelectorWithSectionName,
+	targetRefs []shared.LocalPolicyTargetReferenceWithSectionName,
+	targetSelectors []shared.LocalPolicyTargetSelectorWithSectionName,
 ) []ir.PolicyRef {
 	refs := make([]ir.PolicyRef, 0, len(targetRefs)+len(targetSelectors))
 	for _, targetRef := range targetRefs {

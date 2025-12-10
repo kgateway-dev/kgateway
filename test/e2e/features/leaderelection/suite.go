@@ -13,8 +13,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
@@ -205,7 +205,7 @@ func (s *testingSuite) assertRouteHasNoStatus() {
 
 func (s *testingSuite) assertBackendHasNoStatus() {
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
-		backend := &v1alpha1.Backend{}
+		backend := &kgateway.Backend{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, types.NamespacedName{Name: "httpbin-static", Namespace: "default"}, backend)
 		assert.NoError(c, err, "failed to get Backend")
 		assert.Empty(c, backend.Status.Conditions)

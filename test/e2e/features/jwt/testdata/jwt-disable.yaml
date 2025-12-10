@@ -80,8 +80,8 @@ kind: GatewayExtension
 metadata:
   name: basic-jwt-provider
 spec:
-  type: JWTProviders
-  jwtProviders:
+  jwt:
+    providers:
     - name: my-example
       claimsToHeaders:
           - name: org

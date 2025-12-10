@@ -1,0 +1,113 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+  namespace: default
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+    hostname: "example.com"
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+  namespace: default
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - backendRefs:
+    - name: example-svc
+      port: 80
+    matches:
+    - path:
+        type: PathPrefix
+        value: /foo
+    filters:
+    - type: ExtensionRef
+      extensionRef:
+        group: gateway.kgateway.dev
+        kind: TrafficPolicy
+        name: api-key-auth-selector
+---
+# API key secrets with matching labels in same and other namespaces
+apiVersion: v1
+kind: Secret
+metadata:
+  name: api-keys-1
+  namespace: default
+  labels:
+    app: api-keys
+    type: authentication
+type: Opaque
+data:
+  client1: ay0xMjM=
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: api-keys-2
+  namespace: other
+  labels:
+    app: api-keys
+    type: authentication
+type: Opaque
+data:
+  client2: ay00NTY=
+---
+# ReferenceGrant allowing access to the secret in other namespace
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: allow-secret-access
+  namespace: other
+spec:
+  from:
+  - group: gateway.kgateway.dev
+    kind: TrafficPolicy
+    namespace: default
+  to:
+  - group: ""
+    kind: Secret
+---
+# TrafficPolicy with API key authentication using SecretSelector with ReferenceGrant allowing access to the secret in other namespace
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: api-key-auth-selector
+  namespace: default
+spec:
+  targetRefs:
+  - name: example-route
+    kind: HTTPRoute
+    group: gateway.networking.k8s.io
+  apiKeyAuthentication:
+    keySources:
+    - header: "x-api-key"
+    forwardCredential: false
+    clientIdHeader: "x-authenticated-client"
+    secretSelector:
+      matchLabels:
+        app: api-keys
+        type: authentication
+---
+# Test service
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+  namespace: default
+spec:
+  selector:
+    app: example
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+

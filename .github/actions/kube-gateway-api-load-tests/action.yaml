@@ -16,7 +16,6 @@ runs:
       run: ./hack/kind/setup-kind.sh
       env:
         SKIP_DOCKER: "false"
-        CONFORMANCE: "true"
 
     - name: Install KGateway via Helm
       shell: bash
