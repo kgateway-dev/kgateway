@@ -18,8 +18,16 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
-const jwksStorePrefix = "jwks-store"
-const JwksStoreComponent = "app.kubernetes.io/component"
+const configMapKey = "jwks-store"
+const jwksStoreComponentLabel = "app.kubernetes.io/component"
+
+func JwksStoreLabelSelector(storePrefix string) string {
+	return jwksStoreComponentLabel + "=" + storePrefix
+}
+
+func JwksStoreConfigMapLabel(storePrefix string) map[string]string {
+	return map[string]string{jwksStoreComponentLabel: storePrefix}
+}
 
 // configMapSyncer is used for writing/reading jwks' to/from ConfigMaps.
 type configMapSyncer struct {
@@ -32,7 +40,7 @@ func NewConfigMapSyncer(client apiclient.Client, storePrefix, deploymentNamespac
 	cmCollection := krt.NewFilteredInformer[*corev1.ConfigMap](client,
 		kclient.Filter{
 			ObjectFilter:  client.ObjectFilter(),
-			LabelSelector: JwksStoreComponent + "=" + storePrefix},
+			LabelSelector: JwksStoreLabelSelector(storePrefix)},
 		krtOptions.ToOptions("config_map_syncer/ConfigMaps")...)
 
 	toret := configMapSyncer{
@@ -47,7 +55,7 @@ func NewConfigMapSyncer(client apiclient.Client, storePrefix, deploymentNamespac
 // Load jwks from a ConfigMap.
 // Returns a map of jwks-uri -> jwks (currently one jwks-uri per ConfigMap).
 func JwksFromConfigMap(cm *corev1.ConfigMap) (map[string]string, error) {
-	jwksStore := cm.Data[jwksStorePrefix]
+	jwksStore := cm.Data[configMapKey]
 	jwks := make(map[string]string)
 	err := json.Unmarshal(([]byte)(jwksStore), &jwks)
 	if err != nil {
@@ -68,7 +76,7 @@ func SetJwksInConfigMap(cm *corev1.ConfigMap, uri, jwks string) error {
 	if err != nil {
 		return err
 	}
-	cm.Data[jwksStorePrefix] = string(b)
+	cm.Data[configMapKey] = string(b)
 	return nil
 }
 

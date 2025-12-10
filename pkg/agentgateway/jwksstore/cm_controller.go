@@ -56,7 +56,7 @@ func (jcm *JwksStoreConfigMapsController) Init(ctx context.Context) {
 		kclient.Filter{
 			ObjectFilter:  jcm.apiClient.ObjectFilter(),
 			Namespace:     jcm.deploymentNamespace,
-			LabelSelector: jwks.JwksStoreComponent + "=" + jcm.storePrefix})
+			LabelSelector: jwks.JwksStoreLabelSelector(jcm.storePrefix)})
 
 	jcm.waitForSync = []cache.InformerSynced{
 		jcm.cmClient.HasSynced,
@@ -146,7 +146,7 @@ func (jcm *JwksStoreConfigMapsController) newJwksStoreConfigMap(name string) *co
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: jcm.deploymentNamespace,
-			Labels:    map[string]string{jwks.JwksStoreComponent: jcm.storePrefix},
+			Labels:    jwks.JwksStoreConfigMapLabel(jcm.storePrefix),
 		},
 		Data: make(map[string]string),
 	}
