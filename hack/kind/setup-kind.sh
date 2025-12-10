@@ -86,7 +86,11 @@ else
   fi
 
   # 3. Build the test helm chart, ensuring we have a chart in the `_test` folder
-  VERSION=$VERSION make package-kgateway-charts
+  if [[ $AGENTGATEWAY == 'true' ]]; then
+    VERSION=$VERSION make package-kgateway-charts package-agentgateway-charts
+  else
+    VERSION=$VERSION make package-kgateway-charts
+  fi
 fi
 
 wait "$KIND_PID"
