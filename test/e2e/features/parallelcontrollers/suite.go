@@ -59,6 +59,13 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 // Setup manifests (httpbin, curl pod) are already applied in SetupSuite
 // We need manual control because chart installations must happen before applying test manifests
 func (s *testingSuite) BeforeTest(suiteName, testName string) {
+	// Ensure httpbin pods are ready first
+	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx,
+		httpbinObjectMeta.GetNamespace(),
+		metav1.ListOptions{
+			LabelSelector: defaults.WellKnownAppLabel + "=" + httpbinObjectMeta.GetName(),
+		})
+
 	// Ensure curl pod is ready (setup manifests are applied in SetupSuite)
 	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx,
 		defaults.CurlPod.GetNamespace(),
@@ -68,6 +75,14 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 
 	// Skip the base suite's automatic test manifest application
 	// Each test method will manually install charts and apply manifests
+}
+
+// TearDownSuite overrides the base suite's TearDownSuite to prevent premature deletion
+// of shared setup resources (httpbin, curl pod) when tests are re-run.
+// The test framework's cleanup will handle final cleanup after all runs.
+func (s *testingSuite) TearDownSuite() {
+	// Don't delete setup manifests - let the test framework handle final cleanup
+	// This prevents issues when tests are re-run due to failures
 }
 
 // applyGatewayManifests applies the gateway manifests for a specific phase
@@ -176,8 +191,8 @@ func (s *testingSuite) TestEnvoyOnly() {
 	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
 		route := &gwv1.HTTPRoute{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
-			Namespace: "default",
-			Name:      "envoy-route-envoy-only",
+			Namespace: envoyRouteEnvoyOnlyMeta.GetNamespace(),
+			Name:      envoyRouteEnvoyOnlyMeta.GetName(),
 		}, route)
 		g.Expect(err).NotTo(gomega.HaveOccurred())
 		g.Expect(route.Status.Parents).NotTo(gomega.BeEmpty(), "HTTPRoute should have parent status")
@@ -290,8 +305,8 @@ func (s *testingSuite) TestAgentgatewayOnly() {
 	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
 		route := &gwv1.HTTPRoute{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
-			Namespace: "default",
-			Name:      "agw-route-agw-only",
+			Namespace: agwRouteAgwOnlyMeta.GetNamespace(),
+			Name:      agwRouteAgwOnlyMeta.GetName(),
 		}, route)
 		g.Expect(err).NotTo(gomega.HaveOccurred())
 		g.Expect(route.Status.Parents).NotTo(gomega.BeEmpty(), "HTTPRoute should have parent status")
@@ -427,8 +442,8 @@ func (s *testingSuite) TestBothEnabled() {
 	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
 		envoyRoute := &gwv1.HTTPRoute{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
-			Namespace: "default",
-			Name:      "envoy-route-both-enabled",
+			Namespace: envoyRouteBothEnabledMeta.GetNamespace(),
+			Name:      envoyRouteBothEnabledMeta.GetName(),
 		}, envoyRoute)
 		g.Expect(err).NotTo(gomega.HaveOccurred())
 		g.Expect(envoyRoute.Status.Parents).NotTo(gomega.BeEmpty(), "Envoy HTTPRoute should have parent status")
@@ -447,8 +462,8 @@ func (s *testingSuite) TestBothEnabled() {
 
 		agwRoute := &gwv1.HTTPRoute{}
 		err = s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
-			Namespace: "default",
-			Name:      "agw-route-both-enabled",
+			Namespace: agwRouteBothEnabledMeta.GetNamespace(),
+			Name:      agwRouteBothEnabledMeta.GetName(),
 		}, agwRoute)
 		g.Expect(err).NotTo(gomega.HaveOccurred())
 		g.Expect(agwRoute.Status.Parents).NotTo(gomega.BeEmpty(), "Agentgateway HTTPRoute should have parent status")
@@ -798,8 +813,8 @@ func (s *testingSuite) verifyControllerNameInStatus() {
 		// Check that HTTPRoute statuses have entries for their respective parent Gateways only
 		envoyRoute := &gwv1.HTTPRoute{}
 		err = s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
-			Namespace: "default",
-			Name:      "envoy-route-both-enabled",
+			Namespace: envoyRouteBothEnabledMeta.GetNamespace(),
+			Name:      envoyRouteBothEnabledMeta.GetName(),
 		}, envoyRoute)
 		g.Expect(err).NotTo(gomega.HaveOccurred())
 		g.Expect(envoyRoute.Status.Parents).To(gomega.HaveLen(1), "Envoy HTTPRoute should have exactly one parent status")
@@ -808,8 +823,8 @@ func (s *testingSuite) verifyControllerNameInStatus() {
 
 		agwRoute := &gwv1.HTTPRoute{}
 		err = s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
-			Namespace: "default",
-			Name:      "agw-route-both-enabled",
+			Namespace: agwRouteBothEnabledMeta.GetNamespace(),
+			Name:      agwRouteBothEnabledMeta.GetName(),
 		}, agwRoute)
 		g.Expect(err).NotTo(gomega.HaveOccurred())
 		g.Expect(agwRoute.Status.Parents).To(gomega.HaveLen(1), "Agentgateway HTTPRoute should have exactly one parent status")
