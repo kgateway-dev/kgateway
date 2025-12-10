@@ -302,7 +302,7 @@ type AwsAuth struct {
 	// SecretRef references a Kubernetes Secret containing the AWS credentials.
 	// The Secret must have keys "accessKey", "secretKey", and optionally "sessionToken".
 	// +required
-	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
+	SecretRef corev1.LocalObjectReference `json:"secretRef"`
 }
 
 type AWSGuardrailConfig struct {

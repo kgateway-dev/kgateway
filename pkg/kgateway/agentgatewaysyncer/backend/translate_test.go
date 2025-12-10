@@ -504,7 +504,7 @@ func TestBuildAIBackend(t *testing.T) {
 							Bedrock: &agentgateway.BedrockConfig{
 								Region: "us-east-1",
 								Auth: &agentgateway.AwsAuth{
-									SecretRef: &corev1.LocalObjectReference{
+									SecretRef: corev1.LocalObjectReference{
 										Name: "bedrock-secret",
 									},
 								},

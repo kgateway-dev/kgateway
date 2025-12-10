@@ -428,7 +428,7 @@ func buildBedrockAuthPolicy(krtctx krt.HandlerContext, region string, auth *agen
 		}, nil
 	}
 
-	if auth.SecretRef == nil {
+	if auth.SecretRef.Name == "" {
 		logger.Warn("not using any auth for AWS - it's most likely not what you want")
 		return nil, nil
 	}
@@ -477,5 +477,4 @@ func buildBedrockAuthPolicy(krtctx krt.HandlerContext, region string, auth *agen
 			},
 		},
 	}, errors.Join(errs...)
-
 }
