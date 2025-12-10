@@ -49,7 +49,7 @@ jobs:
         # December 4, 2025: ~19 minutes
         - cluster-name: 'cluster-four'
           go-test-args: '-timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^ExtProc$$|^TestKgateway$$/^ExtAuth$$|^TestKgateway$$/^PolicySelector$$|^TestKgateway$$/^Backends$$|^TestKgateway$$/^BackendTLSPolicies$$|^TestKgateway$$/^CSRF$$|^TestKgateway$$/^AutoHostRewrite$$|^TestKgateway$$/^LeaderElection$$|^TestKgateway$$/^Compression$$'
+          go-test-run-regex: '^TestKgateway$$/^ExtProc$$|^TestKgateway$$/^ExtAuth$$|^TestKgateway$$/^PolicySelector$$|^TestKgateway$$/^Backends$$|^TestKgateway$$/^BackendTLSPolicies$$|^TestKgateway$$/^CSRF$$|^TestKgateway$$/^AutoHostRewrite$$|^TestKgateway$$/^LeaderElection$$|^TestKgateway$$/^Compression$$|^TestParallelControllers$$|^TestCustomGWP$$'
           localstack: 'false'
         # December 4, 2025: ~21 minutes
         - cluster-name: 'cluster-five'
@@ -59,7 +59,7 @@ jobs:
         # December 4, 2025: ~22 minutes
         - cluster-name: 'cluster-six'
           go-test-args: '-timeout=25m'
-          go-test-run-regex: '^TestListenerSet$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgatewayIstioAutoMtls$$|^TestZeroDowntimeRollout$$/^TestZeroDowntimeRollout$$'
+          go-test-run-regex: '^TestListenerSet$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgatewayIstioAutoMtls$$|^TestZeroDowntimeRollout$$'
           localstack: 'false'
         # December 4, 2025: ~9 minutes
         - cluster-name: 'api-validation' # TODO: rename to cluster-seven
@@ -79,7 +79,7 @@ jobs:
         # December 4, 2025: ~17 minutes
         - cluster-name: 'agent-gateway-cluster'
           go-test-args: '-timeout=25m'
-          go-test-run-regex: '^TestAgentgatewayIntegration|^TestParallelControllers$$|^TestCustomGWP$$|^TestZeroDowntimeRollout$$/^TestZeroDowntimeRolloutAgentGateway$$'
+          go-test-run-regex: '^TestAgentgatewayIntegration'
           agentgateway: 'true'
 
         # In our PR tests, we run the suite of tests using the upper ends of versions that we claim to support
