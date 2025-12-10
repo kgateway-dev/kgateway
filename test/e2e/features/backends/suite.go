@@ -144,7 +144,7 @@ func (s *testingSuite) TestBackendWithRuntimeError() {
 		Type:    "Accepted",
 		Status:  metav1.ConditionFalse,
 		Reason:  "Invalid",
-		Message: `Backend error: "failed to find secret lambda-secret: Secret "lambda-secret" not found"`,
+		Message: `Backend error: "Secret default/lambda-secret not found"`,
 	})
 
 	updateErrorManifest := filepath.Join(fsutils.MustGetThisDir(), "testdata/backend-update-error.yaml")

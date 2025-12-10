@@ -330,6 +330,105 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy API Key Authentication at route level", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/api-key-auth-route.yaml",
+			outputFile: "traffic-policy/api-key-auth-route.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy API Key Authentication at httproute level", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/api-key-auth-httproute.yaml",
+			outputFile: "traffic-policy/api-key-auth-httproute.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy API Key Authentication at gateway level", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/api-key-auth-gateway.yaml",
+			outputFile: "traffic-policy/api-key-auth-gateway.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy API Key Authentication route override gateway", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/api-key-auth-override.yaml",
+			outputFile: "traffic-policy/api-key-auth-override.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy API Key Authentication route override gateway with sectionName", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/api-key-auth-override-section.yaml",
+			outputFile: "traffic-policy/api-key-auth-override-section.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy API Key Authentication with SecretRef", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/api-key-auth-secretref.yaml",
+			outputFile: "traffic-policy/api-key-auth-secretref.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy API Key Authentication with SecretRef and ReferenceGrant", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/api-key-auth-secretref-with-refgrant.yaml",
+			outputFile: "traffic-policy/api-key-auth-secretref-with-refgrant.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy API Key Authentication with SecretSelector and ReferenceGrant", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/api-key-auth-selector-with-refgrant.yaml",
+			outputFile: "traffic-policy/api-key-auth-selector-with-refgrant.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy API Key Authentication with SecretSelector no matching secrets", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/api-key-auth-selector-no-matching-secret.yaml",
+			outputFile: "traffic-policy/api-key-auth-selector-no-matching-secret.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy with fail open rate limiting", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "traffic-policy/fail-open",
@@ -1856,6 +1955,7 @@ func TestBasic(t *testing.T) {
 			},
 		})
 	})
+
 	t.Run("JWT Policy at route level", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "jwt/route.yaml",
@@ -1940,6 +2040,17 @@ func TestBasic(t *testing.T) {
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("OAuth2 policy", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "traffic-policy/oauth2.yaml",
+			outputFile: "traffic-policy/oauth2.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
 			},
 		})
 	})

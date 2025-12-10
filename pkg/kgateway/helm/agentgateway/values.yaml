@@ -3,9 +3,9 @@
 # meant to allow rendering of the chart/template, as the real values will come from:
 # * The control plane
 # * The `Gateway` resource driving the proxy provisioning
-# * A (possibly merged) GatewayParameters object translated to helm values
-# The actual defaults for these values should come from the "default GatewayParameters" object
-# See: (/install/helm/kgateway/templates/gatewayparameters.yaml)
+# * A (possibly merged) AgentgatewayParameters object translated to helm values
+# The actual defaults for these values come from golang, but can be overridden
+# by KubernetesResourceOverlays.
 
 gateway:
   # xds values actually come from the control plane
@@ -28,8 +28,3 @@ gateway:
     name: http
 
   logLevel: info
-
-  # Name of the custom configmap to use instead of the default generated one.
-  # When set, agentgateway will use this configmap instead of creating the default one.
-  # The configmap must contain a 'config.yaml' key with the agent gateway configuration.
-  customConfigMapName: ""

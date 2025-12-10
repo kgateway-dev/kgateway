@@ -49,7 +49,7 @@ type NotFoundError struct {
 }
 
 func (n *NotFoundError) Error() string {
-	return fmt.Sprintf("%s \"%s\" not found", n.NotFoundObj.Kind, n.NotFoundObj.Name)
+	return fmt.Sprintf("%s %s/%s not found", n.NotFoundObj.Kind, n.NotFoundObj.Namespace, n.NotFoundObj.Name)
 }
 
 type BackendPortNotAllowedError struct {
@@ -330,8 +330,10 @@ type GatewayIndex struct {
 	GatewaysForDeployer krt.Collection[ir.GatewayForDeployer]
 }
 
-type GatewaysForDeployerTransformationFunction func(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer
-type GatewaysForEnvoyTransformationFunction func(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.Gateway
+type (
+	GatewaysForDeployerTransformationFunction func(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer
+	GatewaysForEnvoyTransformationFunction    func(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.Gateway
+)
 
 type GatewayIndexConfigOption func(o *GatewayIndexConfig)
 

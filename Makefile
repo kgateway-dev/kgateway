@@ -180,7 +180,6 @@ test: ## Run all tests with ginkgo, or only run the test package at {TEST_PKG} i
 # will still have e2e tests run by Github Actions once they publish a pull
 # request.
 .PHONY: e2e-test
-e2e-test: dummy-idp-docker dummy-auth0-docker kind-load-dummy-idp kind-load-dummy-auth0
 e2e-test: go-test
 e2e-test: TEST_TAG = e2e
 e2e-test: GO_TEST_ARGS = $(E2E_GO_TEST_ARGS)
@@ -191,6 +190,13 @@ e2e-test: GO_TEST_ARGS = $(E2E_GO_TEST_ARGS)
 test-with-coverage: GINKGO_FLAGS += $(GINKGO_COVERAGE_FLAGS)
 test-with-coverage: test
 	go tool cover -html $(OUTPUT_DIR)/coverage.cov
+
+.PHONY: golden-deployer
+golden-deployer:  ## Refreshes golden files for ./test/deployer snapshot testing
+	REFRESH_GOLDEN=true go test ./test/deployer/... > /dev/null || true
+	@echo ""
+	@echo "This must pass after refreshing:"
+	go test ./test/deployer/...
 
 #----------------------------------------------------------------------------------
 # Env test
@@ -449,6 +455,7 @@ $(CONTROLLER_OUTPUT_DIR)/.docker-stamp-agentgateway-$(VERSION)-$(GOARCH): $(CONT
 
 .PHONY: kgateway-docker
 kgateway-docker: $(CONTROLLER_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH)
+
 .PHONY: kgateway-agentgateway-docker
 kgateway-agentgateway-docker: $(CONTROLLER_OUTPUT_DIR)/.docker-stamp-agentgateway-$(VERSION)-$(GOARCH)
 
@@ -699,7 +706,7 @@ deploy-kgateway: package-kgateway-charts deploy-kgateway-crd-chart deploy-kgatew
 setup-base: kind-create gw-api-crds gie-crds metallb ## Setup the base infrastructure (kind cluster, CRDs, and MetalLB)
 
 .PHONY: setup
-setup: setup-base kind-build-and-load package-kgateway-charts dummy-auth0-docker kind-load-dummy-auth0 ## Setup the complete infrastructure (base setup plus images and charts)
+setup: setup-base kind-build-and-load package-kgateway-charts ## Setup the complete infrastructure (base setup plus images and charts)
 
 .PHONY: run
 run: setup deploy-kgateway  ## Set up complete development environment
@@ -755,11 +762,15 @@ kind-reload-%: kind-build-and-load-% kind-set-image-% ; ## Use to build specifie
 kind-build-and-load: kind-build-and-load-kgateway
 kind-build-and-load: kind-build-and-load-envoy-wrapper
 kind-build-and-load: kind-build-and-load-sds
+kind-build-and-load: kind-build-and-load-dummy-idp
+kind-build-and-load: kind-build-and-load-dummy-auth0
 
 .PHONY: kind-load ## Use to load all images into kind
 kind-load: kind-load-kgateway
 kind-load: kind-load-envoy-wrapper
 kind-load: kind-load-sds
+kind-load: kind-load-dummy-idp
+kind-load: kind-load-dummy-auth0
 
 #----------------------------------------------------------------------------------
 # Load Testing

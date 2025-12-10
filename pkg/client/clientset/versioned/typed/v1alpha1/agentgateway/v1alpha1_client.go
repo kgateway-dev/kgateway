@@ -13,6 +13,7 @@ import (
 type GatewayAgentgatewayInterface interface {
 	RESTClient() rest.Interface
 	AgentgatewayBackendsGetter
+	AgentgatewayParametersGetter
 	AgentgatewayPoliciesGetter
 }
 
@@ -23,6 +24,10 @@ type GatewayAgentgatewayClient struct {
 
 func (c *GatewayAgentgatewayClient) AgentgatewayBackends(namespace string) AgentgatewayBackendInterface {
 	return newAgentgatewayBackends(c, namespace)
+}
+
+func (c *GatewayAgentgatewayClient) AgentgatewayParameters(namespace string) AgentgatewayParametersInterface {
+	return newAgentgatewayParameters(c, namespace)
 }
 
 func (c *GatewayAgentgatewayClient) AgentgatewayPolicies(namespace string) AgentgatewayPolicyInterface {

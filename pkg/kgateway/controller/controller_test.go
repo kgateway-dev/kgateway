@@ -568,8 +568,8 @@ func (s *ControllerSuite) TestGatewayClass() {
 		}, defaultPollTimeout, 500*time.Millisecond, "timed out waiting for GatewayClass %s to be created", gatewayClassName)
 
 		// Update it
-		updatedDesc := ptr.To("updated description")
-		gwc.Spec.Description = updatedDesc
+		updatedDesc := "updated description"
+		gwc.Spec.Description = ptr.To(updatedDesc)
 		err := s.client.Update(ctx, gwc)
 		r.NoError(err)
 
@@ -577,7 +577,8 @@ func (s *ControllerSuite) TestGatewayClass() {
 		r.EventuallyWithTf(func(c *assert.CollectT) {
 			err := s.client.Get(ctx, types.NamespacedName{Name: gatewayClassName}, gwc)
 			assert.NoError(c, err)
-			assert.Equal(c, updatedDesc, gwc.Spec.Description)
+			assert.NotNil(c, gwc.Spec.Description)
+			assert.Equal(c, updatedDesc, *gwc.Spec.Description)
 		}, defaultPollTimeout, 500*time.Millisecond, "timed out waiting for GatewayClass %s", gatewayClassName)
 	})
 

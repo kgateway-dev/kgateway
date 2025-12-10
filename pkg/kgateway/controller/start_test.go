@@ -33,6 +33,10 @@ func TestGetDefaultClassInfoAppliesParametersRefs(t *testing.T) {
 				Name:      "waypoint-gwp",
 				Namespace: &ns,
 			},
+			agentClass: {
+				Name:      "agent-agwp",
+				Namespace: &ns,
+			},
 		},
 	}
 
@@ -57,7 +61,14 @@ func TestGetDefaultClassInfoAppliesParametersRefs(t *testing.T) {
 	require.NotNil(t, classInfos[waypointClass].ParametersRef)
 	require.Equal(t, "waypoint-gwp", classInfos[waypointClass].ParametersRef.Name)
 	require.Equal(t, gwv1.Namespace("control-plane"), *classInfos[waypointClass].ParametersRef.Namespace)
+	require.Equal(t, gwv1.Group(wellknown.GatewayParametersGVK.Group), classInfos[waypointClass].ParametersRef.Group)
+	require.Equal(t, gwv1.Kind(wellknown.GatewayParametersGVK.Kind), classInfos[waypointClass].ParametersRef.Kind)
 
 	require.NotNil(t, classInfos[agentClass])
-	require.Nil(t, classInfos[agentClass].ParametersRef, "agent gateway class should not receive a ref override when none is configured")
+	require.NotNil(t, classInfos[agentClass].ParametersRef)
+	require.Equal(t, "agent-agwp", classInfos[agentClass].ParametersRef.Name)
+	require.Equal(t, gwv1.Namespace("control-plane"), *classInfos[agentClass].ParametersRef.Namespace)
+	// Agentgateway class should use AgentgatewayParametersGVK, not GatewayParametersGVK
+	require.Equal(t, gwv1.Group(wellknown.AgentgatewayParametersGVK.Group), classInfos[agentClass].ParametersRef.Group)
+	require.Equal(t, gwv1.Kind(wellknown.AgentgatewayParametersGVK.Kind), classInfos[agentClass].ParametersRef.Kind)
 }

@@ -75,7 +75,7 @@ go tool client-gen \
   --input "${API_INPUT_DIRS_COMMA//${APIS_PKG}\//}" \
   --output-dir "${ROOT_DIR}/${CLIENT_GEN_DIR}/${CLIENTSET_PKG_NAME}" \
   --output-pkg "${OUTPUT_PKG}/${CLIENTSET_PKG_NAME}" \
-  --plural-exceptions "GatewayParameters:GatewayParameters"
+  --plural-exceptions "GatewayParameters:GatewayParameters,AgentgatewayParameters:AgentgatewayParameters"
 
 go generate ${ROOT_DIR}/internal/...
 go generate ${ROOT_DIR}/pkg/...

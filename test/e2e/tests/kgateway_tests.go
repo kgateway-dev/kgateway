@@ -6,6 +6,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/accesslog"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/admin_server"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/apikeyauth"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/auto_host_rewrite"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/backendconfigpolicy"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/backends"
@@ -27,6 +28,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/leaderelection"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/listener_policy"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/loadtesting"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/oauth"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/path_matching"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/policyselector"
 	global_rate_limit "github.com/kgateway-dev/kgateway/v2/test/e2e/features/rate_limit/global"
@@ -82,10 +84,12 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("TimeoutRetry", timeoutretry.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("HeaderModifiers", header_modifiers.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("RBAC", rbac.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("APIKeyAuth", apikeyauth.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("AdminServer", admin_server.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("JWT", jwt.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("FrontendTLS", frontendtls.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("BasicAuth", basicauth.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("OAuth", oauth.NewTestingSuite)
 
 	return kubeGatewaySuiteRunner
 }

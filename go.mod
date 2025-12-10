@@ -56,6 +56,7 @@ require (
 require sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
 
 require (
+	github.com/PuerkitoBio/goquery v1.10.1
 	github.com/anthropics/anthropic-sdk-go v1.13.0
 	github.com/golang/protobuf v1.5.4
 	github.com/kagent-dev/mockllm v0.0.2-0.20251008144831-c6105837f767
@@ -74,6 +75,7 @@ require (
 	github.com/agnivade/levenshtein v1.2.1 // indirect
 	github.com/alecthomas/chroma/v2 v2.20.0 // indirect
 	github.com/alfatraining/structtag v1.0.0 // indirect
+	github.com/andybalholm/cascadia v1.3.3 // indirect
 	github.com/ashanbrown/forbidigo/v2 v2.3.0 // indirect
 	github.com/ashanbrown/makezero/v2 v2.1.0 // indirect
 	github.com/bitfield/gotestdox v0.2.2 // indirect

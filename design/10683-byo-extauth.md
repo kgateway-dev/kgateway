@@ -1,28 +1,4 @@
-<!--
-**Note:** When your Enhancement Proposal (EP) is complete, all of these comment blocks should be removed.
-
-This template is inspired by the Kubernetes Enhancement Proposal (KEP) template: https://github.com/kubernetes/enhancements/blob/master/keps/sig-architecture/0000-kep-process/README.md
-
-
-Just because a EP is merged does not mean it is complete or approved. Any EP
-marked as `provisional` is a working document and subject to change. You can
-denote sections that are under active debate as follows:
-
-```
-<<[UNRESOLVED optional short context or usernames ]>>
-- Is listener level really the right attatchment level
-- Should all auth be bundled
-<<[/UNRESOLVED]>>
-```
-
-When editing EPS, aim for tightly-scoped, single-topic PRs to keep discussions
-focused. If you disagree with what is already in a document, open a new PR
-with suggested changes.
-
-One EP corresponds to one "feature" or "enhancement" for its whole lifecycle. Once a feature has become
-"implemented", major changes should get new EPs.
--->
-# EP-[10683]: BYO Extauth
+# EP-10683: BYO Extauth
 
 
 

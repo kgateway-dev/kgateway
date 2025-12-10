@@ -256,6 +256,13 @@ func (d *Deployer) GetObjsToDeploy(ctx context.Context, obj client.Object) ([]cl
 		return nil, fmt.Errorf("failed to get objects to deploy %s.%s: %w", obj.GetNamespace(), obj.GetName(), err)
 	}
 
+	// Apply post-processing if the HelmValuesGenerator implements ObjectPostProcessor
+	if postProcessor, ok := d.helmValues.(ObjectPostProcessor); ok {
+		if err := postProcessor.PostProcessObjects(ctx, obj, objs); err != nil {
+			return nil, fmt.Errorf("failed to post-process objects for %s.%s: %w", obj.GetNamespace(), obj.GetName(), err)
+		}
+	}
+
 	return objs, nil
 }
 

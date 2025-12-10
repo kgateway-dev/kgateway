@@ -95,7 +95,7 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: Service "example-grpc-svc" not found
+          message: Service default/example-grpc-svc not found
           reason: BackendNotFound
           status: "False"
           type: ResolvedRefs

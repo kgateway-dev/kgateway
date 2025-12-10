@@ -32,6 +32,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/admin"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/agentgatewaysyncer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/controller"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/proxy_syncer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -41,7 +42,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
-	"github.com/kgateway-dev/kgateway/v2/pkg/syncer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/namespaces"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
@@ -204,9 +204,15 @@ func WithCommonCollectionsOptions(commonCollectionsOptions []collections.Option)
 	}
 }
 
-func WithStatusSyncerOptions(statusSyncerOptions []syncer.StatusSyncerOption) func(*setup) {
+func WithStatusSyncerOptions(statusSyncerOptions []proxy_syncer.StatusSyncerOption) func(*setup) {
 	return func(s *setup) {
 		s.statusSyncerOptions = statusSyncerOptions
+	}
+}
+
+func WithAgentgatewaySyncerOptions(agentgatewaySyncerOptions []agentgatewaysyncer.AgentgatewaySyncerOption) func(*setup) {
+	return func(s *setup) {
+		s.agentgatewaySyncerOptions = agentgatewaySyncerOptions
 	}
 }
 
@@ -238,8 +244,9 @@ type setup struct {
 	validator                    validator.Validator
 	extraAgwPolicyStatusHandlers map[schema.GroupVersionKind]agwplugins.AgwPolicyStatusSyncHandler
 
-	commonCollectionsOptions []collections.Option
-	statusSyncerOptions      []syncer.StatusSyncerOption
+	commonCollectionsOptions  []collections.Option
+	statusSyncerOptions       []proxy_syncer.StatusSyncerOption
+	agentgatewaySyncerOptions []agentgatewaysyncer.AgentgatewaySyncerOption
 }
 
 var _ Server = &setup{}
@@ -508,6 +515,7 @@ func (s *setup) buildKgatewayWithConfig(
 		ExtraAgwPolicyStatusHandlers: s.extraAgwPolicyStatusHandlers,
 		GatewayControllerExtension:   s.gatewayControllerExtension,
 		StatusSyncerOptions:          s.statusSyncerOptions,
+		AgentgatewaySyncerOptions:    s.agentgatewaySyncerOptions,
 	})
 	if err != nil {
 		slog.Error("failed initializing controller: ", "error", err)

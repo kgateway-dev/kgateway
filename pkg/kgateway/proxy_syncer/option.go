@@ -1,4 +1,4 @@
-package syncer
+package proxy_syncer
 
 import (
 	"context"
@@ -6,14 +6,14 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
-type StatusSyncerConfig struct {
+type statusSyncerConfig struct {
 	CustomStatusSync func(ctx context.Context, rm reports.ReportMap)
 }
 
-type StatusSyncerOption func(*StatusSyncerConfig)
+type StatusSyncerOption func(*statusSyncerConfig)
 
-func ProcessStatusSyncerOptions(opts ...StatusSyncerOption) *StatusSyncerConfig {
-	cfg := &StatusSyncerConfig{}
+func processStatusSyncerOptions(opts ...StatusSyncerOption) *statusSyncerConfig {
+	cfg := &statusSyncerConfig{}
 	for _, fn := range opts {
 		fn(cfg)
 	}
@@ -21,7 +21,7 @@ func ProcessStatusSyncerOptions(opts ...StatusSyncerOption) *StatusSyncerConfig 
 }
 
 func WithCustomStatusSync(customSync func(ctx context.Context, rm reports.ReportMap)) StatusSyncerOption {
-	return func(cfg *StatusSyncerConfig) {
+	return func(cfg *statusSyncerConfig) {
 		cfg.CustomStatusSync = customSync
 	}
 }

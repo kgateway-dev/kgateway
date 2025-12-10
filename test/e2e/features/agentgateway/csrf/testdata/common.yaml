@@ -96,18 +96,3 @@ spec:
       - path:
           type: PathPrefix
           value: /path2
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: kgateway-system
----
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: GatewayParameters
-metadata:
-  name: kgateway
-  namespace: kgateway-system
-spec:
-  kube:
-    agentgateway:
-      logLevel: debug
