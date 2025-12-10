@@ -291,7 +291,7 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: Service "httpbin" not found
+          message: Service default/httpbin not found
           reason: BackendNotFound
           status: "False"
           type: ResolvedRefs
@@ -309,7 +309,7 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: Service "httpbin" not found
+          message: Service default/httpbin not found
           reason: BackendNotFound
           status: "False"
           type: ResolvedRefs
