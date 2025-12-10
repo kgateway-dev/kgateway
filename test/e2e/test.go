@@ -226,19 +226,19 @@ func (i *TestInstallation) InstallAgentgatewayCRDsFromLocalChart(ctx context.Con
 
 	// Check if we should skip installation if the release already exists (PERSIST_INSTALL or FAIL_FAST_AND_PERSIST mode)
 	if testutils.ShouldPersistInstall() || testutils.ShouldFailFastAndPersist() {
-		if i.Actions.Helm().ReleaseExists(ctx, helmutils.AgentGatewayCRDChartName, i.Metadata.InstallNamespace) {
+		if i.Actions.Helm().ReleaseExists(ctx, helmutils.AgentgatewayCRDChartName, i.Metadata.InstallNamespace) {
 			return
 		}
 	}
 
 	// install the CRD chart first
-	crdChartURI, err := helper.GetLocalChartPath(helmutils.AgentGatewayCRDChartName, "")
+	crdChartURI, err := helper.GetLocalChartPath(helmutils.AgentgatewayCRDChartName, "")
 	i.Assertions.Require.NoError(err)
 	err = i.Actions.Helm().WithReceiver(os.Stdout).Upgrade(
 		ctx,
 		helmutils.InstallOpts{
 			CreateNamespace: true,
-			ReleaseName:     helmutils.AgentGatewayCRDChartName,
+			ReleaseName:     helmutils.AgentgatewayCRDChartName,
 			Namespace:       i.Metadata.InstallNamespace,
 			ChartUri:        crdChartURI,
 		})
@@ -253,13 +253,13 @@ func (i *TestInstallation) InstallAgentgatewayCoreFromLocalChart(ctx context.Con
 
 	// Check if we should skip installation if the release already exists (PERSIST_INSTALL or FAIL_FAST_AND_PERSIST mode)
 	if testutils.ShouldPersistInstall() || testutils.ShouldFailFastAndPersist() {
-		if i.Actions.Helm().ReleaseExists(ctx, helmutils.AgentGatewayChartName, i.Metadata.InstallNamespace) {
+		if i.Actions.Helm().ReleaseExists(ctx, helmutils.AgentgatewayChartName, i.Metadata.InstallNamespace) {
 			return
 		}
 	}
 
 	// and then install the main chart
-	chartUri, err := helper.GetLocalChartPath(helmutils.AgentGatewayChartName, "")
+	chartUri, err := helper.GetLocalChartPath(helmutils.AgentgatewayChartName, "")
 	i.Assertions.Require.NoError(err)
 	err = i.Actions.Helm().WithReceiver(os.Stdout).Upgrade(
 		ctx,
@@ -267,7 +267,7 @@ func (i *TestInstallation) InstallAgentgatewayCoreFromLocalChart(ctx context.Con
 			Namespace:       i.Metadata.InstallNamespace,
 			CreateNamespace: true,
 			ValuesFiles:     []string{i.Metadata.ProfileValuesManifestFile, i.Metadata.ValuesManifestFile},
-			ReleaseName:     helmutils.AgentGatewayChartName,
+			ReleaseName:     helmutils.AgentgatewayChartName,
 			ChartUri:        chartUri,
 			ExtraArgs:       i.Metadata.ExtraHelmArgs,
 		})
@@ -314,7 +314,7 @@ func (i *TestInstallation) UninstallKgatewayCore(ctx context.Context) {
 		},
 	)
 	i.Assertions.Require.NoError(err, "failed to uninstall main chart")
-	i.Assertions.EventuallyKgatewayUninstallSucceeded(ctx)
+	i.Assertions.EventuallyGatewayUninstallSucceeded(ctx)
 }
 
 func (i *TestInstallation) UninstallKgatewayCRDs(ctx context.Context) {
@@ -347,7 +347,7 @@ func (i *TestInstallation) UninstallAgentgatewayCore(ctx context.Context) {
 	}
 
 	// Check if the release exists before attempting to uninstall
-	if !i.Actions.Helm().ReleaseExists(ctx, helmutils.AgentGatewayChartName, i.Metadata.InstallNamespace) {
+	if !i.Actions.Helm().ReleaseExists(ctx, helmutils.AgentgatewayChartName, i.Metadata.InstallNamespace) {
 		// Release doesn't exist, nothing to uninstall
 		return
 	}
@@ -357,12 +357,12 @@ func (i *TestInstallation) UninstallAgentgatewayCore(ctx context.Context) {
 		ctx,
 		helmutils.UninstallOpts{
 			Namespace:   i.Metadata.InstallNamespace,
-			ReleaseName: helmutils.AgentGatewayChartName,
+			ReleaseName: helmutils.AgentgatewayChartName,
 			ExtraArgs:   []string{"--wait"}, // Default timeout is 5m
 		},
 	)
 	i.Assertions.Require.NoError(err, "failed to uninstall main chart")
-	i.Assertions.EventuallyKgatewayUninstallSucceeded(ctx)
+	i.Assertions.EventuallyGatewayUninstallSucceeded(ctx)
 }
 
 // UninstallAgentgatewayCRDs uninstalls the agentgateway CRD chart
@@ -372,7 +372,7 @@ func (i *TestInstallation) UninstallAgentgatewayCRDs(ctx context.Context) {
 	}
 
 	// Check if the release exists before attempting to uninstall
-	if !i.Actions.Helm().ReleaseExists(ctx, helmutils.AgentGatewayCRDChartName, i.Metadata.InstallNamespace) {
+	if !i.Actions.Helm().ReleaseExists(ctx, helmutils.AgentgatewayCRDChartName, i.Metadata.InstallNamespace) {
 		// Release doesn't exist, nothing to uninstall
 		return
 	}
@@ -382,7 +382,7 @@ func (i *TestInstallation) UninstallAgentgatewayCRDs(ctx context.Context) {
 		ctx,
 		helmutils.UninstallOpts{
 			Namespace:   i.Metadata.InstallNamespace,
-			ReleaseName: helmutils.AgentGatewayCRDChartName,
+			ReleaseName: helmutils.AgentgatewayCRDChartName,
 			ExtraArgs:   []string{"--wait"}, // Default timeout is 5m
 		},
 	)

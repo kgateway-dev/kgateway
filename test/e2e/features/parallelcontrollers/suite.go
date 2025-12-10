@@ -603,20 +603,20 @@ func (s *testingSuite) installAgentgatewayChart() {
 	}
 
 	// Install agentgateway CRDs
-	crdChartURI, err := helper.GetLocalChartPath(helmutils.AgentGatewayCRDChartName, "")
+	crdChartURI, err := helper.GetLocalChartPath(helmutils.AgentgatewayCRDChartName, "")
 	s.Require().NoError(err)
 	err = s.TestInstallation.Actions.Helm().WithReceiver(os.Stdout).Upgrade(
 		s.Ctx,
 		helmutils.InstallOpts{
 			CreateNamespace: true,
-			ReleaseName:     helmutils.AgentGatewayCRDChartName,
+			ReleaseName:     helmutils.AgentgatewayCRDChartName,
 			Namespace:       s.TestInstallation.Metadata.InstallNamespace,
 			ChartUri:        crdChartURI,
 		})
 	s.Require().NoError(err, "agentgateway CRD chart install should succeed")
 
 	// Install agentgateway core chart
-	chartUri, err := helper.GetLocalChartPath(helmutils.AgentGatewayChartName, "")
+	chartUri, err := helper.GetLocalChartPath(helmutils.AgentgatewayChartName, "")
 	s.Require().NoError(err)
 	err = s.TestInstallation.Actions.Helm().WithReceiver(os.Stdout).Upgrade(
 		s.Ctx,
@@ -624,7 +624,7 @@ func (s *testingSuite) installAgentgatewayChart() {
 			Namespace:       s.TestInstallation.Metadata.InstallNamespace,
 			CreateNamespace: true,
 			ValuesFiles:     []string{s.TestInstallation.Metadata.ProfileValuesManifestFile, s.TestInstallation.Metadata.ValuesManifestFile},
-			ReleaseName:     helmutils.AgentGatewayChartName,
+			ReleaseName:     helmutils.AgentgatewayChartName,
 			ChartUri:        chartUri,
 			ExtraArgs:       s.TestInstallation.Metadata.ExtraHelmArgs,
 		})
@@ -700,7 +700,7 @@ func (s *testingSuite) uninstallAgentgatewayChart() {
 	err := s.TestInstallation.Actions.Helm().WithReceiver(os.Stdout).Uninstall(
 		s.Ctx,
 		helmutils.UninstallOpts{
-			ReleaseName: helmutils.AgentGatewayChartName,
+			ReleaseName: helmutils.AgentgatewayChartName,
 			Namespace:   s.TestInstallation.Metadata.InstallNamespace,
 		},
 	)
@@ -712,7 +712,7 @@ func (s *testingSuite) uninstallAgentgatewayChart() {
 	err = s.TestInstallation.Actions.Helm().WithReceiver(os.Stdout).Uninstall(
 		s.Ctx,
 		helmutils.UninstallOpts{
-			ReleaseName: helmutils.AgentGatewayCRDChartName,
+			ReleaseName: helmutils.AgentgatewayCRDChartName,
 			Namespace:   s.TestInstallation.Metadata.InstallNamespace,
 		},
 	)

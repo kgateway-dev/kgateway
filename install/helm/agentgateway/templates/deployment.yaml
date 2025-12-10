@@ -111,6 +111,8 @@ spec:
             - name: KGW_XDS_TLS_ENABLED
               value: "true"
             {{- end }}
+            - name: KGW_GATEWAY_CLASS_PARAMETERS_REFS
+              value: {{ .Values.gatewayClassParametersRefs | toJson | quote }}
             # TODO: Remove this once the cleanup is done. Required as the agentgateway-system
             # namespace is the default namespace and conformance will fail as a result.
             - name: POD_NAMESPACE
@@ -143,4 +145,13 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-
+{{- if .Values.gatewayClassParametersRefs }}
+{{- range $className, $ref := .Values.gatewayClassParametersRefs }}
+{{- if not $ref.name }}
+{{ fail (printf "gatewayClassParametersRefs.%s.name must be set" $className) }}
+{{- end }}
+{{- if not $ref.namespace }}
+{{ fail (printf "gatewayClassParametersRefs.%s.namespace must be set" $className) }}
+{{- end }}
+{{- end }}
+{{- end }}

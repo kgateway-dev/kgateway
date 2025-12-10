@@ -100,3 +100,15 @@ inferenceExtension:
 
 # -- List of namespace selectors (OR'ed): each entry can use 'matchLabels' or 'matchExpressions' (AND'ed within each entry if used together). Agentgateway includes the selected namespaces in config discovery. For more information, see the docs https://kgateway.dev/docs/latest/install/advanced/#namespace-discovery.
 discoveryNamespaceSelectors: []
+
+# -- Map of GatewayClass names to GatewayParameters references that will be set on
+#    the default GatewayClasses managed by kgateway. Each entry must define both the
+#    name and namespace of the GatewayParameters resource.
+#    The default GatewayClasses managed by kgateway are:
+#    - agentgateway
+#    Example:
+#    gatewayClassParametersRefs:
+#      agentgateway:
+#        name: shared-gwp
+#        namespace: kgateway-system
+gatewayClassParametersRefs: {}

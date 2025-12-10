@@ -145,6 +145,7 @@ func TestCustomGWP(t *testing.T) {
 
 	// install kgateway
 	testInstallation.InstallKgatewayFromLocalChart(ctx)
+	testInstallation.InstallAgentgatewayCoreFromLocalChart(ctx)
 
 	// Wait for GatewayClasses to be created
 	testInstallation.Assertions.EventuallyObjectsExist(ctx, &gwv1.GatewayClass{
@@ -238,7 +239,24 @@ func TestCustomGWP(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to upgrade Helm: %v", err)
 	}
-	testInstallation.Assertions.EventuallyGatewayInstallSucceeded(ctx)
+	testInstallation.Assertions.EventuallyKgatewayInstallSucceeded(ctx)
+	chartUriAgentgateway, err := helper.GetLocalChartPath(helmutils.AgentgatewayChartName, "")
+	if err != nil {
+		t.Fatalf("failed to get chart path: %v", err)
+	}
+	err = testInstallation.Actions.Helm().WithReceiver(os.Stdout).Upgrade(
+		ctx,
+		helmutils.InstallOpts{
+			Namespace:       installNs,
+			CreateNamespace: true,
+			ValuesFiles:     []string{e2e.CommonRecommendationManifest, e2e.ManifestPath("custom-gwp-2.yaml")},
+			ReleaseName:     helmutils.AgentgatewayChartName,
+			ChartUri:        chartUriAgentgateway,
+		})
+	if err != nil {
+		t.Fatalf("failed to upgrade Helm: %v", err)
+	}
+	testInstallation.Assertions.EventuallyAgentgatewayInstallSucceeded(ctx)
 
 	// Verify kgateway GatewayClass is updated with new ref
 	r := require.New(t)
