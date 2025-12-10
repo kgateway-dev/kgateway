@@ -105,11 +105,13 @@ func (jcm *JwksStoreConfigMapsController) Reconcile(req types.NamespacedName) er
 
 	uri, storedJwks, ok := jcm.jwksStore.JwksByConfigMapName(req.Name)
 	if !ok {
+		cmLogger.Debug("deleting ConfigMap", "name", req.Name)
 		return client.IgnoreNotFound(jcm.apiClient.Kube().CoreV1().ConfigMaps(req.Namespace).Delete(ctx, req.Name, metav1.DeleteOptions{}))
 	}
 
 	existingCm := jcm.cmClient.Get(req.Name, req.Namespace)
 	if existingCm == nil {
+		cmLogger.Debug("creating ConfigMap", "name", req.Name)
 		newCm := jcm.newJwksStoreConfigMap(jwks.JwksConfigMapName(jcm.storePrefix, uri))
 		if err := jwks.SetJwksInConfigMap(newCm, uri, storedJwks); err != nil {
 			cmLogger.Error("error updating ConfigMap", "error", err)
@@ -122,6 +124,7 @@ func (jcm *JwksStoreConfigMapsController) Reconcile(req types.NamespacedName) er
 			return err
 		}
 	} else {
+		cmLogger.Debug("updating ConfigMap", "name", req.Name)
 		if err := jwks.SetJwksInConfigMap(existingCm, uri, storedJwks); err != nil {
 			cmLogger.Error("error updating ConfigMap", "error", err)
 			return err // should we skip retries as json serialization error won't go away?

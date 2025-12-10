@@ -65,7 +65,7 @@ func (j *JwksStorePolicyController) Init(ctx context.Context) {
 
 		// enqueue Backend MCP authentication JWKS (if present)
 		if p.Spec.Backend != nil && p.Spec.Backend.MCP != nil && p.Spec.Backend.MCP.Authentication != nil {
-			ttl := time.Duration(0)
+			ttl := 5 * time.Minute
 			if p.Spec.Backend.MCP.Authentication.JWKS.CacheDuration != nil {
 				ttl = p.Spec.Backend.MCP.Authentication.JWKS.CacheDuration.Duration
 			}
@@ -84,7 +84,7 @@ func (j *JwksStorePolicyController) Init(ctx context.Context) {
 				continue
 			}
 			if b.Spec.Policies != nil && b.Spec.Policies.MCP != nil && b.Spec.Policies.MCP.Authentication != nil {
-				ttl := time.Duration(0)
+				ttl := 5 * time.Minute
 				if b.Spec.Policies.MCP.Authentication.JWKS.CacheDuration != nil {
 					ttl = b.Spec.Policies.MCP.Authentication.JWKS.CacheDuration.Duration
 				}

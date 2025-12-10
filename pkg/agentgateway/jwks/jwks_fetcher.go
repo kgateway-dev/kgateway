@@ -113,7 +113,6 @@ func (f *JwksFetcher) Run(ctx context.Context) {
 }
 
 func (f *JwksFetcher) maybeFetchJwks(ctx context.Context) {
-	log := log.FromContext(ctx)
 	updates := make(map[string]string)
 
 	f.mu.Lock()
@@ -130,9 +129,12 @@ func (f *JwksFetcher) maybeFetchJwks(ctx context.Context) {
 		if fetch.keysetSource.Deleted {
 			continue
 		}
+
+		logger.Debug("fetching remote jwks", "jwksUri", fetch.keysetSource.JwksURL)
+
 		jwks, err := f.jwksClient.FetchJwks(ctx, fetch.keysetSource.JwksURL)
 		if err != nil {
-			log.Error(err, "error fetching jwks from ", fetch.keysetSource.JwksURL)
+			logger.Error("error fetching jwks", "jwksUri", fetch.keysetSource.JwksURL, "error", err)
 			if fetch.retryAttempt < 5 { // backoff by 5s * retry attempt number
 				heap.Push(&f.schedule, fetchAt{at: now.Add(time.Duration(5*(fetch.retryAttempt+1)) * time.Second), keysetSource: fetch.keysetSource, retryAttempt: fetch.retryAttempt + 1})
 			} else {
@@ -145,7 +147,7 @@ func (f *JwksFetcher) maybeFetchJwks(ctx context.Context) {
 		updatedJwks, err := f.cache.addJwks(fetch.keysetSource.JwksURL, jwks)
 		// error serializing jwks, shouldn't happen, retry
 		if err != nil {
-			log.Error(err, "error adding jwks", "uri", fetch.keysetSource.JwksURL)
+			logger.Error("error adding jwks", "jwksUri", fetch.keysetSource.JwksURL, "error", err)
 			heap.Push(&f.schedule, fetchAt{at: now.Add(time.Duration(5*(fetch.retryAttempt+1)) * time.Second), keysetSource: fetch.keysetSource, retryAttempt: fetch.retryAttempt + 1})
 			continue
 		}

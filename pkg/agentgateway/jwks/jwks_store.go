@@ -39,6 +39,7 @@ func BuildJwksStore(ctx context.Context, cli apiclient.Client, commonCols *colle
 
 	jwksCache := NewJwksCache()
 	jwksStore := &JwksStore{
+		storePrefix:     storePrefix,
 		jwksCache:       jwksCache,
 		jwksChanges:     jwksChanges,
 		jwksFetcher:     NewJwksFetcher(jwksCache),
@@ -100,13 +101,13 @@ func (s *JwksStore) updateJwksSources(ctx context.Context) {
 		select {
 		case jwksUpdate := <-s.jwksChanges:
 			if jwksUpdate.Deleted {
-				logger.Info("deleting keyset")
+				logger.Debug("deleting keyset", "jwksUri", jwksUpdate.JwksURL, "ConfigMap", JwksConfigMapName(s.storePrefix, jwksUpdate.JwksURL))
 				s.jwksFetcher.RemoveKeyset(jwksUpdate)
 				s.l.Lock()
 				delete(s.cmNameToJwks, JwksConfigMapName(s.storePrefix, jwksUpdate.JwksURL))
 				s.l.Unlock()
 			} else {
-				logger.Info("updating keyset")
+				logger.Debug("updating keyset", "jwksUri", jwksUpdate.JwksURL, "ConfigMap", JwksConfigMapName(s.storePrefix, jwksUpdate.JwksURL))
 				err := s.jwksFetcher.AddOrUpdateKeyset(jwksUpdate)
 				if err != nil {
 					logger.Error("error adding/updating a jwks keyset", "error", err, "uri", jwksUpdate.JwksURL)
