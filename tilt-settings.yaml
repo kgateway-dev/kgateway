@@ -13,7 +13,7 @@ providers:
   # Service name
   kgateway:
     # The output dir of the binary
-    context: _output/internal/kgateway
+    context: _output/pkg/kgateway
     # Image name of the container in the deployment
     image: ghcr.io/kgateway-dev/kgateway
     # Files / folders to watch. Changes here will trigger a rebuild and reload

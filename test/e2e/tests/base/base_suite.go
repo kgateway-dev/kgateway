@@ -369,6 +369,10 @@ func (s *BaseTestingSuite) BeforeTest(suiteName, testName string) {
 }
 
 func (s *BaseTestingSuite) AfterTest(suiteName, testName string) {
+	if s.T().Failed() {
+		s.TestInstallation.PerTestPreFailHandler(s.Ctx, testName)
+	}
+
 	// Delete test-specific manifests
 	testCase, ok := s.TestCases[testName]
 	if !ok {
@@ -379,10 +383,6 @@ func (s *BaseTestingSuite) AfterTest(suiteName, testName string) {
 	// If so, don't try to delete resources that were never applied
 	if s.skipTest(testCase) || s.skipSuite() {
 		return
-	}
-
-	if s.T().Failed() {
-		s.TestInstallation.PreFailHandler(s.Ctx)
 	}
 
 	if testutils.ShouldSkipCleanup(s.T()) {
@@ -444,7 +444,7 @@ func (s *BaseTestingSuite) ApplyManifests(testCase *TestCase) {
 		s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, ns, metav1.ListOptions{
 			LabelSelector: fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, name),
 			// Provide a longer timeout as the pod needs to be pulled and pass HCs
-		}, time.Second*60, time.Second*2)
+		}, time.Second*60, time.Second)
 	}
 }
 

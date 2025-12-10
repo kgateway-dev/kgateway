@@ -1,0 +1,31 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: route-basicauth
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: route-secure
+  basicAuth:
+    users:
+      - alice:{SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=
+      - bob:{SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: route-secret-basicauth
+spec:
+  basicAuth:
+    secretRef:
+      name: basic-auth-credentials
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: basic-auth-credentials
+type: Opaque
+stringData:
+  # htpasswd -nbs user userpassword
+  .htpasswd: user:{SHA}xzuimCxVt+rQ5AmKkvcivbOjs9g=

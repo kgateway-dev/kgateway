@@ -10,7 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 )
 
@@ -99,7 +99,7 @@ var (
 	}
 
 	// Gateway Extension for rate limit service
-	gatewayExtension = &v1alpha1.GatewayExtension{
+	gatewayExtension = &kgateway.GatewayExtension{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: extensionsNamespace,
 			Name:      "global-ratelimit",
@@ -107,28 +107,28 @@ var (
 	}
 
 	// Traffic Policies for different rate limit scenarios
-	ipRateLimitTrafficPolicy = &v1alpha1.TrafficPolicy{
+	ipRateLimitTrafficPolicy = &kgateway.TrafficPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
 			Name:      "ip-rate-limit",
 		},
 	}
 
-	pathRateLimitTrafficPolicy = &v1alpha1.TrafficPolicy{
+	pathRateLimitTrafficPolicy = &kgateway.TrafficPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
 			Name:      "path-rate-limit",
 		},
 	}
 
-	userRateLimitTrafficPolicy = &v1alpha1.TrafficPolicy{
+	userRateLimitTrafficPolicy = &kgateway.TrafficPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
 			Name:      "user-rate-limit",
 		},
 	}
 
-	combinedRateLimitTrafficPolicy = &v1alpha1.TrafficPolicy{
+	combinedRateLimitTrafficPolicy = &kgateway.TrafficPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
 			Name:      "combined-rate-limit",

@@ -1,0 +1,122 @@
+# Example: HTTP Basic Authentication with TrafficPolicy
+#
+# This example demonstrates how to configure HTTP basic authentication using TrafficPolicy.
+# Basic auth validates requests against username/password pairs in htpasswd format.
+#
+# The only supported htpasswd hash format is SHA-1: {SHA}<base64-hash> (note: only SHA-1 is supported by Envoy's basic auth filter)  
+#
+# To generate htpasswd entries:
+#   # Using htpasswd tool (SHA-1):
+#   htpasswd -nbs username password
+#
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+  namespace: default
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: protected-route
+  namespace: default
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "api.example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api
+    backendRefs:
+    - name: backend-service
+      port: 8080
+---
+# Option 1: Inline users
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: basic-auth-inline-bcrypt
+  namespace: default
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: protected-route
+  basicAuth:
+    users:
+      # Generated with: htpasswd -nbs alice password123
+      - "alice:{SHA}y/2sYAj5yrQIN4TL0YdPdmGNKpc="
+      # Generated with: htpasswd -nbs bob secretpass
+      - "bob:{SHA}NkvfLtd6hUTTtxGgO2nurcxjydc="
+---
+# Option 2: Reference a Kubernetes secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: basic-auth-credentials
+  namespace: default
+type: Opaque
+stringData:
+  # The .htpasswd key with htpasswd data (users alice and bob, password is password).
+  .htpasswd: alice:{SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=\nbob:{SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: basic-auth-secret
+  namespace: default
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: protected-route
+  basicAuth:
+    secretRef:
+      name: basic-auth-credentials
+---
+# Option 3: Gateway-level basic auth with per-route override
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: basic-auth-gateway-level
+  namespace: default
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-gateway
+  basicAuth:
+    users:
+      - "gateway-user:{SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g="
+---
+# Route that disables the gateway-level basic auth
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: basic-auth-disabled
+  namespace: default
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: public-route
+  basicAuth:
+    disable: {}
+---
+# Testing basic auth:
+# curl -v http://api.example.com/api
+# Expected: 401 Unauthorized
+#
+# curl -v -u alice:password123 http://api.example.com/api
+# Expected: 200 OK (or backend response)
+#

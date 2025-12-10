@@ -16,7 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/setup"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	collections "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
@@ -189,7 +189,7 @@ func (s *ourPolicyPass) ApplyForRoute(pCtx *ir.RouteContext, out *envoyroutev3.R
 	return nil
 }
 
-func (s *ourPolicyPass) HttpFilters(fc ir.FilterChainCommon) ([]filters.StagedHttpFilter, error) {
+func (s *ourPolicyPass) HttpFilters(_ ir.HttpFiltersContext, fc ir.FilterChainCommon) ([]filters.StagedHttpFilter, error) {
 	if !s.filterNeeded[fc.FilterChainName] {
 		return nil, nil
 	}

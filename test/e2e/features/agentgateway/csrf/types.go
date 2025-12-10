@@ -7,7 +7,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	kgatewayv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	kgatewayv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 )
 

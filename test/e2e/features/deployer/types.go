@@ -15,8 +15,7 @@ var (
 	gatewayWithoutParameters = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway-without-parameters.yaml")
 	gatewayWithParameters    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway-with-parameters.yaml")
 	gatewayParametersCustom  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gatewayparameters-custom.yaml")
-	// TODO add back when we re-enable istio suite
-	//istioGatewayParameters   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "istio-gateway-parameters.yaml")
+
 	selfManagedGateway = filepath.Join(fsutils.MustGetThisDir(), "testdata", "self-managed-gateway.yaml")
 
 	// objects

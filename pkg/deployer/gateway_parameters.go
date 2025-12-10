@@ -1,13 +1,15 @@
 package deployer
 
 import (
+	"fmt"
+
 	"istio.io/api/annotation"
 	"istio.io/api/label"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 )
 
@@ -26,7 +28,7 @@ type Inputs struct {
 
 // UpdateSecurityContexts updates the security contexts in the gateway parameters.
 // It adds the sysctl to allow the privileged ports if the gateway uses them.
-func UpdateSecurityContexts(cfg *v1alpha1.KubernetesProxyConfig, ports []HelmPort) {
+func UpdateSecurityContexts(cfg *kgateway.KubernetesProxyConfig, ports []HelmPort) {
 	if ptr.Deref(cfg.GetOmitDefaultSecurityContext(), false) {
 		return
 	}
@@ -47,9 +49,9 @@ func usesPrivilegedPorts(ports []HelmPort) bool {
 
 // allowPrivilegedPorts allows the use of privileged ports by appending the "net.ipv4.ip_unprivileged_port_start" sysctl with a value of 0
 // to the PodTemplate.SecurityContext.Sysctls, or updating the value if it already exists.
-func allowPrivilegedPorts(cfg *v1alpha1.KubernetesProxyConfig) {
+func allowPrivilegedPorts(cfg *kgateway.KubernetesProxyConfig) {
 	if cfg.PodTemplate == nil {
-		cfg.PodTemplate = &v1alpha1.Pod{}
+		cfg.PodTemplate = &kgateway.Pod{}
 	}
 
 	if cfg.PodTemplate.SecurityContext == nil {
@@ -82,75 +84,53 @@ type InMemoryGatewayParametersConfig struct {
 	OmitDefaultSecurityContext bool
 }
 
-// GetInMemoryGatewayParameters returns an in-memory GatewayParameters.
+// GetInMemoryGatewayParameters returns an in-memory GatewayParameters for envoy-based gateways.
+//
+// This function must NOT be called for agentgateway controllers - agentgateway uses
+// agwHelmValuesGenerator which has its own defaults. Calling this with the agentgateway
+// controllerName indicates a bug in the routing logic.
+//
 // Priority order:
-// 1. Agentgateway controller name (highest priority)
-// 2. Waypoint class name (must check before envoy controller since waypoint uses the same controller)
-// 3. Envoy controller name, or no controller name -- either way, use default gateway parameters
+// 1. Waypoint class name (must check before envoy controller since waypoint uses the same controller)
+// 2. Default gateway parameters (for envoy controller or any other controller)
 //
 // This allows users to define their own GatewayClass that acts very much like a
 // built-in class but is not an exact name match.
-func GetInMemoryGatewayParameters(cfg InMemoryGatewayParametersConfig) *v1alpha1.GatewayParameters {
+func GetInMemoryGatewayParameters(cfg InMemoryGatewayParametersConfig) (*kgateway.GatewayParameters, error) {
 	if cfg.ControllerName == cfg.AgwControllerName {
-		return defaultAgentgatewayParameters(cfg.ImageInfo, cfg.OmitDefaultSecurityContext)
+		return nil, fmt.Errorf("GetInMemoryGatewayParameters must not be called for agentgateway controller %q; "+
+			"agentgateway gateways should use agwHelmValuesGenerator", cfg.ControllerName)
 	}
 	if cfg.ClassName == cfg.WaypointClassName {
-		return defaultWaypointGatewayParameters(cfg.ImageInfo, cfg.OmitDefaultSecurityContext)
+		return defaultWaypointGatewayParameters(cfg.ImageInfo, cfg.OmitDefaultSecurityContext), nil
 	}
-	return defaultGatewayParameters(cfg.ImageInfo, cfg.OmitDefaultSecurityContext)
-}
-
-// defaultAgentgatewayParameters returns an in-memory GatewayParameters with default values
-// set for the agentgateway deployment.
-func defaultAgentgatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext bool) *v1alpha1.GatewayParameters {
-	gwp := defaultGatewayParameters(imageInfo, omitDefaultSecurityContext)
-	gwp.Spec.Kube.Agentgateway.Enabled = ptr.To(true)
-	gwp.Spec.Kube.PodTemplate.ReadinessProbe.HTTPGet.Path = "/healthz/ready"
-	gwp.Spec.Kube.PodTemplate.ReadinessProbe.HTTPGet.Port = intstr.FromInt(15021)
-	gwp.Spec.Kube.PodTemplate.StartupProbe.HTTPGet.Path = "/healthz/ready"
-	gwp.Spec.Kube.PodTemplate.StartupProbe.HTTPGet.Port = intstr.FromInt(15021)
-	gwp.Spec.Kube.PodTemplate.GracefulShutdown.Enabled = ptr.To(true)
-
-	// Add pod security context with sysctls for agentgateway (unless omitting default security context)
-	if !omitDefaultSecurityContext {
-		if gwp.Spec.Kube.PodTemplate.SecurityContext == nil {
-			gwp.Spec.Kube.PodTemplate.SecurityContext = &corev1.PodSecurityContext{}
-		}
-		gwp.Spec.Kube.PodTemplate.SecurityContext.Sysctls = []corev1.Sysctl{
-			{
-				Name:  "net.ipv4.ip_unprivileged_port_start",
-				Value: "0",
-			},
-		}
-	}
-
-	return gwp
+	return defaultGatewayParameters(cfg.ImageInfo, cfg.OmitDefaultSecurityContext), nil
 }
 
 // defaultWaypointGatewayParameters returns an in-memory GatewayParameters with default values
 // set for the waypoint deployment.
-func defaultWaypointGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext bool) *v1alpha1.GatewayParameters {
+func defaultWaypointGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext bool) *kgateway.GatewayParameters {
 	gwp := defaultGatewayParameters(imageInfo, omitDefaultSecurityContext)
 
 	// Ensure Service is initialized before adding ports
 	if gwp.Spec.Kube.Service == nil {
-		gwp.Spec.Kube.Service = &v1alpha1.Service{}
+		gwp.Spec.Kube.Service = &kgateway.Service{}
 	}
 
 	gwp.Spec.Kube.Service.Type = ptr.To(corev1.ServiceTypeClusterIP)
 
 	if gwp.Spec.Kube.Service.Ports == nil {
-		gwp.Spec.Kube.Service.Ports = []v1alpha1.Port{}
+		gwp.Spec.Kube.Service.Ports = []kgateway.Port{}
 	}
 
 	// Similar to labeling in kubernetes, this is used to identify the service as a waypoint service.
-	meshPort := v1alpha1.Port{
+	meshPort := kgateway.Port{
 		Port: IstioWaypointPort,
 	}
 	gwp.Spec.Kube.Service.Ports = append(gwp.Spec.Kube.Service.Ports, meshPort)
 
 	if gwp.Spec.Kube.PodTemplate == nil {
-		gwp.Spec.Kube.PodTemplate = &v1alpha1.Pod{}
+		gwp.Spec.Kube.PodTemplate = &kgateway.Pod{}
 	}
 	if gwp.Spec.Kube.PodTemplate.ExtraLabels == nil {
 		gwp.Spec.Kube.PodTemplate.ExtraLabels = make(map[string]string)
@@ -169,17 +149,17 @@ func defaultWaypointGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityC
 
 // defaultGatewayParameters returns an in-memory GatewayParameters with the default values
 // set for the gateway.
-func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext bool) *v1alpha1.GatewayParameters {
-	gwp := &v1alpha1.GatewayParameters{
-		Spec: v1alpha1.GatewayParametersSpec{
+func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext bool) *kgateway.GatewayParameters {
+	gwp := &kgateway.GatewayParameters{
+		Spec: kgateway.GatewayParametersSpec{
 			SelfManaged: nil,
-			Kube: &v1alpha1.KubernetesProxyConfig{
-				Service: &v1alpha1.Service{
+			Kube: &kgateway.KubernetesProxyConfig{
+				Service: &kgateway.Service{
 					Type: (*corev1.ServiceType)(ptr.To(string(corev1.ServiceTypeLoadBalancer))),
 				},
-				PodTemplate: &v1alpha1.Pod{
+				PodTemplate: &kgateway.Pod{
 					TerminationGracePeriodSeconds: ptr.To(int64(60)),
-					GracefulShutdown: &v1alpha1.GracefulShutdownSpec{
+					GracefulShutdown: &kgateway.GracefulShutdownSpec{
 						Enabled:          ptr.To(true),
 						SleepTimeSeconds: ptr.To(int64(10)),
 					},
@@ -207,11 +187,11 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 						SuccessThreshold:    1,
 					},
 				},
-				EnvoyContainer: &v1alpha1.EnvoyContainer{
-					Bootstrap: &v1alpha1.EnvoyBootstrap{
+				EnvoyContainer: &kgateway.EnvoyContainer{
+					Bootstrap: &kgateway.EnvoyBootstrap{
 						LogLevel: ptr.To("info"),
 					},
-					Image: &v1alpha1.Image{
+					Image: &kgateway.Image{
 						Registry:   ptr.To(imageInfo.Registry),
 						Tag:        ptr.To(imageInfo.Tag),
 						Repository: ptr.To(EnvoyWrapperImage),
@@ -227,26 +207,26 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 						},
 					},
 				},
-				Stats: &v1alpha1.StatsConfig{
+				Stats: &kgateway.StatsConfig{
 					Enabled:                 ptr.To(true),
 					RoutePrefixRewrite:      ptr.To("/stats/prometheus?usedonly"),
 					EnableStatsRoute:        ptr.To(true),
 					StatsRoutePrefixRewrite: ptr.To("/stats"),
 				},
-				SdsContainer: &v1alpha1.SdsContainer{
-					Image: &v1alpha1.Image{
+				SdsContainer: &kgateway.SdsContainer{
+					Image: &kgateway.Image{
 						Registry:   ptr.To(imageInfo.Registry),
 						Tag:        ptr.To(imageInfo.Tag),
 						Repository: ptr.To(SdsImage),
 						PullPolicy: (*corev1.PullPolicy)(ptr.To(imageInfo.PullPolicy)),
 					},
-					Bootstrap: &v1alpha1.SdsBootstrap{
+					Bootstrap: &kgateway.SdsBootstrap{
 						LogLevel: ptr.To("info"),
 					},
 				},
-				Istio: &v1alpha1.IstioIntegration{
-					IstioProxyContainer: &v1alpha1.IstioContainer{
-						Image: &v1alpha1.Image{
+				Istio: &kgateway.IstioIntegration{
+					IstioProxyContainer: &kgateway.IstioContainer{
+						Image: &kgateway.Image{
 							Registry:   ptr.To("docker.io/istio"),
 							Repository: ptr.To("proxyv2"),
 							Tag:        ptr.To("1.22.0"),
@@ -258,31 +238,13 @@ func defaultGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext b
 						IstioMetaClusterId:    ptr.To("Kubernetes"),
 					},
 				},
-				Agentgateway: &v1alpha1.Agentgateway{
-					Enabled:  ptr.To(false),
-					LogLevel: ptr.To("info"),
-					Image: &v1alpha1.Image{
-						Registry:   ptr.To(AgentgatewayRegistry),
-						Tag:        ptr.To(AgentgatewayDefaultTag),
-						Repository: ptr.To(AgentgatewayImage),
-						PullPolicy: (*corev1.PullPolicy)(ptr.To(imageInfo.PullPolicy)),
-					},
-					SecurityContext: &corev1.SecurityContext{
-						AllowPrivilegeEscalation: ptr.To(false),
-						ReadOnlyRootFilesystem:   ptr.To(true),
-						RunAsNonRoot:             ptr.To(true),
-						RunAsUser:                ptr.To[int64](10101),
-						Capabilities: &corev1.Capabilities{
-							Drop: []corev1.Capability{"ALL"},
-						},
-					},
-				},
+				// Note: Agentgateway config is only added for agentgateway controller gateways
+				// via defaultAgentgatewayParameters(). For envoy gateways, we leave this nil.
 			},
 		},
 	}
 	if omitDefaultSecurityContext {
 		gwp.Spec.Kube.EnvoyContainer.SecurityContext = nil
-		gwp.Spec.Kube.Agentgateway.SecurityContext = nil
 	}
 	return gwp.DeepCopy()
 }

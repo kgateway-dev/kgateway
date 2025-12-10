@@ -1,0 +1,148 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin
+spec:
+  selector:
+    app.kubernetes.io/name: httpbin
+  ports:
+  - protocol: TCP
+    port: 8443
+    name: https
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httpbin
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: httpbin
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: httpbin
+    spec:
+      containers:
+      - image: docker.io/mccutchen/go-httpbin:2.19.0
+        imagePullPolicy: IfNotPresent
+        name: httpbin
+        command: [go-httpbin]
+        args:
+        - "-port"
+        - "8443"
+        - "-https-cert-file"
+        - "/etc/certs/tls.crt"
+        - "-https-key-file"
+        - "/etc/certs/tls.key"
+        ports:
+        - containerPort: 8443
+        volumeMounts:
+        - name: certs
+          mountPath: /etc/certs
+          readOnly: true
+      volumes:
+      - name: certs
+        secret:
+          secretName: httpbin-tls
+---
+# httpbin cert and key generated using:
+# openssl req -x509 -out backend.crt -keyout backend.key -newkey rsa:2048 -days 3650 -nodes -sha256 -subj '/CN=backend.example.com' -extensions EXT -config <( printf "[dn]\nCN=backend.example.com\n[req]\ndistinguished_name = dn\n[EXT]\nsubjectAltName=DNS:backend.example.com\nkeyUsage=digitalSignature\nextendedKeyUsage=serverAuth")
+apiVersion: v1
+kind: Secret
+metadata:
+  name: httpbin-tls
+type: kubernetes.io/tls
+stringData:
+  tls.crt: |
+    -----BEGIN CERTIFICATE-----
+    MIIDDjCCAfagAwIBAgIUDcHvOZe5mvJVNTn3yB+m0K/EQkQwDQYJKoZIhvcNAQEL
+    BQAwHjEcMBoGA1UEAwwTYmFja2VuZC5leGFtcGxlLmNvbTAeFw0yNTEyMDEyMjU0
+    MzNaFw0zNTExMjkyMjU0MzNaMB4xHDAaBgNVBAMME2JhY2tlbmQuZXhhbXBsZS5j
+    b20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDBQ9MdW1HRb0kZZbsx
+    DpO4xUmSPIs2M/8qovM+7/jnQndAs/j3hQGIUTGoBI4YsdmsAcHvxue7YnO4s0ZC
+    xDRu1TuVAKWpgBGeBezIr0Qb4nszbPqj1+nvNhpWq7Jn8PZD06Kay0mlu82F3LDU
+    VL3EePSqJmRvpYt6Y7bY4cZ1MR5Yzyb2pcRR5ueHEG38oVsOgxtJ6tKbS0byL9m/
+    3AZVohrK2d9uY/Oij10GWjM7nuY4YKsMVxuZVJnx3oD8kfSFn0eBGs5WT4BZjDCM
+    op3xxu7A1eFRrtv+4b06P9IMq9AOjaOYFMU1DZtUyrOToIS/o9ik4DiHR3zjcKGH
+    k6UtAgMBAAGjRDBCMB4GA1UdEQQXMBWCE2JhY2tlbmQuZXhhbXBsZS5jb20wCwYD
+    VR0PBAQDAgeAMBMGA1UdJQQMMAoGCCsGAQUFBwMBMA0GCSqGSIb3DQEBCwUAA4IB
+    AQARwvHK0fYaVeNK7T4h+V+dvi1ZDkCR70WEp8gRB94XiNu7InKnrfzFNDL5nz9Q
+    NMu34XNGb6KIwTJTKC1zK+e+oYT9iVgQFvweYtnXmmGPDsJTufWmU90h4/dS2wnC
+    tVNm1anyUCy7zw8ofWLKoVmMTZ5cLA0n+3mzIa1xiHv/aybZsGKVh+xFrlVg3xNu
+    85jdn3CYv47i0+F2wbMoJbw4/G2pBgq89XWKUI01TZtzaJY2Nwrk3ZS61JY0YGO4
+    YD5O7RK1O9jBdp83IwEZs8nohH4yUGfR06yiSFoIoxUP+NfcCdwI6OqvBJYWscZ6
+    3hcwvzgG/lOYfUuzkVYOThwr
+    -----END CERTIFICATE-----
+  tls.key: |
+    -----BEGIN PRIVATE KEY-----
+    MIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQDBQ9MdW1HRb0kZ
+    ZbsxDpO4xUmSPIs2M/8qovM+7/jnQndAs/j3hQGIUTGoBI4YsdmsAcHvxue7YnO4
+    s0ZCxDRu1TuVAKWpgBGeBezIr0Qb4nszbPqj1+nvNhpWq7Jn8PZD06Kay0mlu82F
+    3LDUVL3EePSqJmRvpYt6Y7bY4cZ1MR5Yzyb2pcRR5ueHEG38oVsOgxtJ6tKbS0by
+    L9m/3AZVohrK2d9uY/Oij10GWjM7nuY4YKsMVxuZVJnx3oD8kfSFn0eBGs5WT4BZ
+    jDCMop3xxu7A1eFRrtv+4b06P9IMq9AOjaOYFMU1DZtUyrOToIS/o9ik4DiHR3zj
+    cKGHk6UtAgMBAAECggEBAKJ4GCQXvuJnwXX+Va1Z6cls4Pp0tzsr3xjCv+Zq6j3P
+    XF0ibuv1/mHQkAQFQEd2S90T5StjdS/MBiiBXVGHi+SYkWwjjSC/LxA/Pt0+qe0f
+    Kh8DQHk4a8rTGrU9xc8nfH9sjMfAmfsftBkSe/0j+BwQ6u2XNNu+uVB8Pxx4QNQG
+    rZ2sV4iwk2SR72UaxBqmSuuKJkWoSi40Ttf0B5011ioPJ916P2STO3LFLPzu0I++
+    J6s5iWeHFraKNCLaSByZY7r6vDKke125bABNia0TFI91oQnWOd7gozuJTN3MVrKk
+    Ch4d49ahc30KKdqFvYWAGSZT0z/pqFcyj2vic6GFgAECgYEA8Sp6sOs3514JWVMT
+    gocrhPlODw2vP9AjULIvSmZG3JNpr/nQBE0cMAzoRobJXhL0nDeyouZ3Ci/fvOPt
+    h/DlIAZBI8cN+ScSsmawFgHHt7MEdEPdKRh++glZG0EpicuBcNxhlkwjI7+jWSTN
+    /cbbzqlMEaQ8wq8VIOhrnYL1lS0CgYEAzScSduUTWMxAarK8vpptRRmsGpzew01E
+    ngdDWi1/jM5hCciBvl0baq0rv+KV9wCLB4pfJe2AGI9leudrRFgpGOmT4HACCxWM
+    JFIurufW4uzK7td0IoEyn6a5j0BZ3pOx8AoI4JprRNl8Z25y3SHb2S0r+JxhEYeX
+    sIcwjB4AUAECgYEA7FaF0BVjPrDwFoKMjxEqO/EZZzUw9idiRHWqVI3wib9JBnSZ
+    P23V3tz3UA5NDo0i/Gi0/mE+bVRHPdRcdilEUWLvuUEcV3vMHdr2W0q5TzP3fHz5
+    Ionn/d7lXQk5zNkLa+/9Do5krWbjjLu9xyJ3TIqqimtaRCvSV+KNe9nYE60CgYBH
+    v0pt2l+Rxp0gs7He1xMv/3J5PDOMChHdUpzzhMX+8I5vZXg6o0VbYYTTbuMTp1T4
+    JiRwl0cdT8kl2plhJZP56naVH5cXWUnRygwZj2tPoZC3RxKOnrCdtSlgOBk2BmFM
+    mbXRFzA8u/MOGUqCm7zPj0S5hbdM8ibSzfTki/mAAQKBgQDghA3DbU96L4neWcT0
+    smth71RiuZzwb1wQsfN0Q1r8tQLz0qaRCefQiq0vlxaDmV7GDEZAz/KQFyC1+Egw
+    hgyjzsaRaDN7er5XpWI2ug97k4xL5YVabtBTjW1Hc+DSWdLxioZk2PqU7zM4rAbJ
+    Whxd/D5tfZD1aNGdLNlzkuBirg==
+    -----END PRIVATE KEY-----
+---
+# Same as tls.crt to use in BackendTLSPolicy CA validation
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: httpbin-tls-ca
+data:    
+  ca.crt: |
+    -----BEGIN CERTIFICATE-----
+    MIIDDjCCAfagAwIBAgIUDcHvOZe5mvJVNTn3yB+m0K/EQkQwDQYJKoZIhvcNAQEL
+    BQAwHjEcMBoGA1UEAwwTYmFja2VuZC5leGFtcGxlLmNvbTAeFw0yNTEyMDEyMjU0
+    MzNaFw0zNTExMjkyMjU0MzNaMB4xHDAaBgNVBAMME2JhY2tlbmQuZXhhbXBsZS5j
+    b20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDBQ9MdW1HRb0kZZbsx
+    DpO4xUmSPIs2M/8qovM+7/jnQndAs/j3hQGIUTGoBI4YsdmsAcHvxue7YnO4s0ZC
+    xDRu1TuVAKWpgBGeBezIr0Qb4nszbPqj1+nvNhpWq7Jn8PZD06Kay0mlu82F3LDU
+    VL3EePSqJmRvpYt6Y7bY4cZ1MR5Yzyb2pcRR5ueHEG38oVsOgxtJ6tKbS0byL9m/
+    3AZVohrK2d9uY/Oij10GWjM7nuY4YKsMVxuZVJnx3oD8kfSFn0eBGs5WT4BZjDCM
+    op3xxu7A1eFRrtv+4b06P9IMq9AOjaOYFMU1DZtUyrOToIS/o9ik4DiHR3zjcKGH
+    k6UtAgMBAAGjRDBCMB4GA1UdEQQXMBWCE2JhY2tlbmQuZXhhbXBsZS5jb20wCwYD
+    VR0PBAQDAgeAMBMGA1UdJQQMMAoGCCsGAQUFBwMBMA0GCSqGSIb3DQEBCwUAA4IB
+    AQARwvHK0fYaVeNK7T4h+V+dvi1ZDkCR70WEp8gRB94XiNu7InKnrfzFNDL5nz9Q
+    NMu34XNGb6KIwTJTKC1zK+e+oYT9iVgQFvweYtnXmmGPDsJTufWmU90h4/dS2wnC
+    tVNm1anyUCy7zw8ofWLKoVmMTZ5cLA0n+3mzIa1xiHv/aybZsGKVh+xFrlVg3xNu
+    85jdn3CYv47i0+F2wbMoJbw4/G2pBgq89XWKUI01TZtzaJY2Nwrk3ZS61JY0YGO4
+    YD5O7RK1O9jBdp83IwEZs8nohH4yUGfR06yiSFoIoxUP+NfcCdwI6OqvBJYWscZ6
+    3hcwvzgG/lOYfUuzkVYOThwr
+    -----END CERTIFICATE-----
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: BackendTLSPolicy
+metadata:
+  name: httpbin-tls
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: httpbin
+  validation:
+    hostname: backend.example.com
+    caCertificateRefs:
+    - group: ""
+      kind: ConfigMap
+      name: httpbin-tls-ca

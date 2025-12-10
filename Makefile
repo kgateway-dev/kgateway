@@ -42,9 +42,9 @@ export VERSION
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
 # Note: When bumping this version, update the version in pkg/validator/validator.go as well.
-export ENVOY_IMAGE ?= quay.io/solo-io/envoy-gloo:1.36.2-patch1
+export ENVOY_IMAGE ?= quay.io/solo-io/envoy-gloo:1.36.3-patch1
 export RUST_BUILD_ARCH ?= x86_64 # override this to aarch64 for local arm build
-export LDFLAGS := -X 'github.com/kgateway-dev/kgateway/v2/internal/version.Version=$(VERSION)' -s -w
+export LDFLAGS := -X 'github.com/kgateway-dev/kgateway/v2/pkg/version.Version=$(VERSION)' -s -w
 export GCFLAGS ?=
 
 UNAME_M := $(shell uname -m)
@@ -110,8 +110,8 @@ fmt:  ## Format the code with golangci-lint
 	$(CUSTOM_GOLANGCI_LINT_FMT) ./...
 
 .PHONY: fmt-changed
-fmt-changed: ## Format only the changed code with golangci-lint
-	git status -s -uno | awk '{print $$2}' | grep '.*.go$$' | xargs -r $(CUSTOM_GOLANGCI_LINT_FMT)
+fmt-changed: ## Format only the changed code with golangci-lint (skip deleted files)
+	git status -s -uno | awk '{print $$2}' | grep '.*.go$$' | xargs -r -I{} bash -lc '[ -f "{}" ] && $(CUSTOM_GOLANGCI_LINT_FMT) "{}" || true'
 
 # must be a separate target so that make waits for it to complete before moving on
 .PHONY: mod-download
@@ -180,9 +180,9 @@ test: ## Run all tests with ginkgo, or only run the test package at {TEST_PKG} i
 # will still have e2e tests run by Github Actions once they publish a pull
 # request.
 .PHONY: e2e-test
-e2e-test: TEST_PKG ?= ./test/e2e/tests 
-e2e-test: ## Run only e2e tests, and only run the test package at {TEST_PKG} if it is specified
-	@$(MAKE) --no-print-directory go-test TEST_TAG=e2e TEST_PKG=$(TEST_PKG)
+e2e-test: go-test
+e2e-test: TEST_TAG = e2e
+e2e-test: GO_TEST_ARGS = $(E2E_GO_TEST_ARGS)
 
 
 # https://go.dev/blog/cover#heat-maps
@@ -190,6 +190,13 @@ e2e-test: ## Run only e2e tests, and only run the test package at {TEST_PKG} if 
 test-with-coverage: GINKGO_FLAGS += $(GINKGO_COVERAGE_FLAGS)
 test-with-coverage: test
 	go tool cover -html $(OUTPUT_DIR)/coverage.cov
+
+.PHONY: golden-deployer
+golden-deployer:  ## Refreshes golden files for ./test/deployer snapshot testing
+	REFRESH_GOLDEN=true go test ./test/deployer/... > /dev/null || true
+	@echo ""
+	@echo "This must pass after refreshing:"
+	go test ./test/deployer/...
 
 #----------------------------------------------------------------------------------
 # Env test
@@ -217,10 +224,13 @@ ifeq ($(GOARCH), arm64)
 endif
 endif
 
+# Skip -race on e2e. This requires building the codebase twice, and provides no value as the only code executed is test code.
+# Skip -vet; we already run it on the linter step and its very slow.
+E2E_GO_TEST_ARGS ?= -vet=off -timeout=25m -outputdir=$(OUTPUT_DIR)
 # Testing flags: https://pkg.go.dev/cmd/go#hdr-Testing_flags
 # The default timeout for a suite is 10 minutes, but this can be overridden by setting the -timeout flag. Currently set
 # to 25 minutes based on the time it takes to run the longest test setup (kgateway_test).
-GO_TEST_ARGS ?= -timeout=25m -cpu=4 -race -outputdir=$(OUTPUT_DIR)
+GO_TEST_ARGS ?= $(E2E_GO_TEST_ARGS) -race
 GO_TEST_COVERAGE_ARGS ?= --cover --covermode=atomic --coverprofile=cover.out
 GO_TEST_COVERAGE ?= go tool github.com/vladopajic/go-test-coverage/v2
 
@@ -229,7 +239,7 @@ GO_TEST_COVERAGE ?= go tool github.com/vladopajic/go-test-coverage/v2
 GO_TEST_USER_ARGS ?=
 GO_TEST_RETRIES ?= 0
 GOTESTSUM ?= go tool gotestsum
-GOTESTSUM_ARGS ?= --format=testname
+GOTESTSUM_ARGS ?= --format=standard-verbose
 
 .PHONY: go-test
 go-test: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
@@ -317,7 +327,7 @@ API_SOURCE_FILES := $(shell find api/v1alpha1 -name "*.go" ! -name "zz_generated
 API_SOURCE_FILES += hack/generate.sh hack/generate.go
 
 # Source files that trigger mockgen
-MOCK_SOURCE_FILES := internal/kgateway/query/query_test.go
+MOCK_SOURCE_FILES := pkg/kgateway/query/query_test.go
 
 # Files that track dependency changes
 MOD_FILES := go.mod go.sum
@@ -329,6 +339,7 @@ clean-gen:
 	rm -rf pkg/generated/openapi
 	rm -rf pkg/client
 	rm -f install/helm/kgateway-crds/templates/gateway.kgateway.dev_*.yaml
+	rm -f install/helm/kgateway-crds/templates/agentgateway.dev_*.yaml
 
 # Clean all stamp files to force regeneration
 .PHONY: clean-stamps
@@ -411,8 +422,8 @@ generate-licenses: $(STAMP_DIR)/generate-licenses  ## Generate the licenses for 
 # Controller
 #----------------------------------------------------------------------------------
 
-K8S_GATEWAY_SOURCES=$(call get_sources,cmd/kgateway internal/kgateway pkg/ api/)
-CONTROLLER_OUTPUT_DIR=$(OUTPUT_DIR)/internal/kgateway
+K8S_GATEWAY_SOURCES=$(call get_sources,cmd/kgateway pkg/ api/)
+CONTROLLER_OUTPUT_DIR=$(OUTPUT_DIR)/pkg/kgateway
 export CONTROLLER_IMAGE_REPO ?= kgateway
 
 # We include the files in K8S_GATEWAY_SOURCES as dependencies to the kgateway build
@@ -426,6 +437,9 @@ kgateway: $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH)
 $(CONTROLLER_OUTPUT_DIR)/Dockerfile: cmd/kgateway/Dockerfile
 	cp $< $@
 
+$(CONTROLLER_OUTPUT_DIR)/Dockerfile.agentgateway: cmd/kgateway/Dockerfile.agentgateway
+	cp $< $@
+
 $(CONTROLLER_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH) $(CONTROLLER_OUTPUT_DIR)/Dockerfile
 	$(BUILDX_BUILD) --load $(PLATFORM) $(CONTROLLER_OUTPUT_DIR) -f $(CONTROLLER_OUTPUT_DIR)/Dockerfile \
 		--build-arg GOARCH=$(GOARCH) \
@@ -433,14 +447,23 @@ $(CONTROLLER_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(CONTROLLER_OUTPUT
 		-t $(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(VERSION)
 	@touch $@
 
+$(CONTROLLER_OUTPUT_DIR)/.docker-stamp-agentgateway-$(VERSION)-$(GOARCH): $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH) $(CONTROLLER_OUTPUT_DIR)/Dockerfile.agentgateway
+	$(BUILDX_BUILD) --load $(PLATFORM) $(CONTROLLER_OUTPUT_DIR) -f $(CONTROLLER_OUTPUT_DIR)/Dockerfile.agentgateway \
+		--build-arg GOARCH=$(GOARCH) \
+		-t $(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(VERSION)
+	@touch $@
+
 .PHONY: kgateway-docker
 kgateway-docker: $(CONTROLLER_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH)
+
+.PHONY: kgateway-agentgateway-docker
+kgateway-agentgateway-docker: $(CONTROLLER_OUTPUT_DIR)/.docker-stamp-agentgateway-$(VERSION)-$(GOARCH)
 
 #----------------------------------------------------------------------------------
 # SDS Server - gRPC server for serving Secret Discovery Service config
 #----------------------------------------------------------------------------------
 
-SDS_DIR=internal/sds
+SDS_DIR=pkg/sds
 SDS_SOURCES=$(call get_sources,$(SDS_DIR))
 SDS_OUTPUT_DIR=$(OUTPUT_DIR)/$(SDS_DIR)
 export SDS_IMAGE_REPO ?= sds
@@ -506,6 +529,74 @@ $(ENVOYINIT_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(ENVOYINIT_OUTPUT_D
 
 .PHONY: envoy-wrapper-docker
 envoy-wrapper-docker: $(ENVOYINIT_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH)
+
+#----------------------------------------------------------------------------------
+# dummy idp (used in e2e tests)
+#----------------------------------------------------------------------------------
+
+DUMMY_IDP_DIR=hack/dummy-idp
+DUMMY_IDP_OUTPUT_DIR=$(OUTPUT_DIR)/$(DUMMY_IDP_DIR)
+export DUMMY_IDP_IMAGE_REPO ?= dummy-idp
+DUMMY_IDP_VERSION=0.0.1
+
+$(DUMMY_IDP_OUTPUT_DIR)/dummy-idp-linux-$(GOARCH): $(DUMMY_IDP_SOURCES)
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ ./hack/dummy-idp...
+
+.PHONY: dummy-idp
+dummy-idp: $(DUMMY_IDP_OUTPUT_DIR)/dummy-idp-linux-$(GOARCH)
+
+$(DUMMY_IDP_OUTPUT_DIR)/Dockerfile.dummy-idp: ./hack/dummy-idp/Dockerfile
+	cp $< $@
+
+$(DUMMY_IDP_OUTPUT_DIR)/.docker-stamp-$(DUMMY_IDP_VERSION)-$(GOARCH): $(DUMMY_IDP_OUTPUT_DIR)/dummy-idp-linux-$(GOARCH) $(DUMMY_IDP_OUTPUT_DIR)/Dockerfile.dummy-idp
+	$(BUILDX_BUILD) --load $(PLATFORM) $(DUMMY_IDP_OUTPUT_DIR) -f $(DUMMY_IDP_OUTPUT_DIR)/Dockerfile.dummy-idp \
+		--build-arg GOARCH=$(GOARCH) \
+		--build-arg BASE_IMAGE=$(ALPINE_BASE_IMAGE) \
+		-t $(IMAGE_REGISTRY)/$(DUMMY_IDP_IMAGE_REPO):$(DUMMY_IDP_VERSION)
+	@touch $@
+
+.PHONY: dummy-idp-docker
+dummy-idp-docker: $(DUMMY_IDP_OUTPUT_DIR)/.docker-stamp-$(DUMMY_IDP_VERSION)-$(GOARCH)
+
+.PHONY: kind-load-dummy-idp
+kind-load-dummy-idp:
+	$(KIND) load docker-image $(IMAGE_REGISTRY)/$(DUMMY_IDP_IMAGE_REPO):$(DUMMY_IDP_VERSION) --name $(CLUSTER_NAME)
+
+#----------------------------------------------------------------------------------
+# dummy auth0 idp (used in mcp auth e2e tests)
+#----------------------------------------------------------------------------------
+
+DUMMY_AUTH0_DIR=hack/dummy-auth0
+DUMMY_AUTH0_OUTPUT_DIR=$(OUTPUT_DIR)/$(DUMMY_AUTH0_DIR)
+export DUMMY_AUTH0_IMAGE_REPO ?= dummy-auth0
+DUMMY_AUTH0_VERSION=0.0.1
+
+.PHONY: dummy-auth0
+dummy-auth0: $(DUMMY_AUTH0_OUTPUT_DIR)/.docker-stamp-$(DUMMY_AUTH0_VERSION)-$(GOARCH)
+
+$(DUMMY_AUTH0_OUTPUT_DIR):
+	mkdir -p $(DUMMY_AUTH0_OUTPUT_DIR)
+
+$(DUMMY_AUTH0_OUTPUT_DIR)/Dockerfile.dummy-auth0: ./hack/dummy-auth0/Dockerfile | $(DUMMY_AUTH0_OUTPUT_DIR)
+	cp $< $@
+
+$(DUMMY_AUTH0_OUTPUT_DIR)/auth0_mock.py: ./hack/dummy-auth0/auth0_mock.py | $(DUMMY_AUTH0_OUTPUT_DIR)
+	cp $< $@
+
+$(DUMMY_AUTH0_OUTPUT_DIR)/.docker-stamp-$(DUMMY_AUTH0_VERSION)-$(GOARCH): $(DUMMY_AUTH0_OUTPUT_DIR)/Dockerfile.dummy-auth0 $(DUMMY_AUTH0_OUTPUT_DIR)/auth0_mock.py
+	$(BUILDX_BUILD) --load $(PLATFORM) $(DUMMY_AUTH0_OUTPUT_DIR) -f $(DUMMY_AUTH0_OUTPUT_DIR)/Dockerfile.dummy-auth0 \
+		--build-arg GOARCH=$(GOARCH) \
+		--build-arg BASE_IMAGE=$(ALPINE_BASE_IMAGE) \
+		-t $(IMAGE_REGISTRY)/$(DUMMY_AUTH0_IMAGE_REPO):$(DUMMY_AUTH0_VERSION)
+	@touch $@
+
+.PHONY: dummy-auth0-docker
+dummy-auth0-docker: $(DUMMY_AUTH0_OUTPUT_DIR)/.docker-stamp-$(DUMMY_AUTH0_VERSION)-$(GOARCH)
+
+.PHONY: kind-load-dummy-auth0
+kind-load-dummy-auth0:
+	$(KIND) load docker-image $(IMAGE_REGISTRY)/$(DUMMY_AUTH0_IMAGE_REPO):$(DUMMY_AUTH0_VERSION) --name $(CLUSTER_NAME)
+
 
 #----------------------------------------------------------------------------------
 # Helm
@@ -645,6 +736,7 @@ kind-load-%:
 # Depends on: IMAGE_REGISTRY, VERSION, CLUSTER_NAME
 # Envoy image may be specified via ENVOY_IMAGE on the command line or at the top of this file
 kind-build-and-load-%: %-docker kind-load-% ; ## Use to build specified image and load it into kind
+kind-build-and-load-kgateway-agentgateway: kgateway-agentgateway-docker kind-load-kgateway ; ## Use to build specified image and load it into kind
 
 # Update the docker image used by a deployment
 # This works for most of our deployments because the deployment name and container name both match
@@ -670,11 +762,15 @@ kind-reload-%: kind-build-and-load-% kind-set-image-% ; ## Use to build specifie
 kind-build-and-load: kind-build-and-load-kgateway
 kind-build-and-load: kind-build-and-load-envoy-wrapper
 kind-build-and-load: kind-build-and-load-sds
+kind-build-and-load: kind-build-and-load-dummy-idp
+kind-build-and-load: kind-build-and-load-dummy-auth0
 
 .PHONY: kind-load ## Use to load all images into kind
 kind-load: kind-load-kgateway
 kind-load: kind-load-envoy-wrapper
 kind-load: kind-load-sds
+kind-load: kind-load-dummy-idp
+kind-load: kind-load-dummy-auth0
 
 #----------------------------------------------------------------------------------
 # Load Testing

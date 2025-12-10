@@ -25,12 +25,12 @@ spec:
           secretRef:
             name: anthropic-secret
       routes:
-        "/v1/chat/completions": "completions"
-        "/v1/messages": "messages"
-        "/v1/responses": "responses"
-        "/v1/messages/count_tokens": "anthropic_token_count"
-        "/v1/models": "models"
-        "*": "passthrough"
+        "/v1/chat/completions": Completions
+        "/v1/messages": Messages
+        "/v1/responses": Responses
+        "/v1/messages/count_tokens": AnthropicTokenCount
+        "/v1/models": Models
+        "*": Passthrough
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute

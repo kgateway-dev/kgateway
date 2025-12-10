@@ -11,7 +11,7 @@ import (
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 )
 
 // ApplyTimeouts applies timeouts to an agw route
@@ -106,9 +106,9 @@ func GetStatus[I, IS any](spec I) IS {
 		return any(t.Status).(IS)
 	case *gwxv1a1.XListenerSet:
 		return any(t.Status).(IS)
-	case *v1alpha1.AgentgatewayPolicy:
+	case *agentgateway.AgentgatewayPolicy:
 		return any(t.Status).(IS)
-	case *v1alpha1.AgentgatewayBackend:
+	case *agentgateway.AgentgatewayBackend:
 		return any(t.Status).(IS)
 	default:
 		// For external resources (registered via extraGVKs), we don't introspect the object here.

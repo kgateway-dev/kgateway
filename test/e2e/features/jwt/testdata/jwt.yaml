@@ -54,16 +54,17 @@ kind: GatewayExtension
 metadata:
   name: basic-jwt-provider
 spec:
-  type: JWTProviders
-  jwtProviders:
-  - name: my-example
-    claimsToHeaders:
+  type: JWT
+  jwt:
+    providers:
+    - name: my-example
+      claimsToHeaders:
         - name: org
           header: x-org
         - name: email
           header: x-email
-    issuer: https://dev.example.com
-    jwks:
+      issuer: https://dev.example.com
+      jwks:
         local:
           inline: |
             -----BEGIN PUBLIC KEY-----

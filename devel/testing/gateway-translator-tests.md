@@ -10,9 +10,9 @@ Gateway translator tests validate that Gateway API resources (Gateways, HTTPRout
 
 Gateway translator tests are located in:
 
-- **Test file**: `/internal/kgateway/translator/gateway/gateway_translator_test.go`
-- **Input files**: `/internal/kgateway/translator/gateway/testutils/inputs/`
-- **Expected outputs**: `/internal/kgateway/translator/gateway/testutils/outputs/`
+- **Test file**: `/pkg/kgateway/translator/gateway/gateway_translator_test.go`
+- **Input files**: `/pkg/kgateway/translator/gateway/testutils/inputs/`
+- **Expected outputs**: `/pkg/kgateway/translator/gateway/testutils/outputs/`
 
 ### Test Case Structure
 
@@ -36,7 +36,7 @@ Entry("Test description", translatorTestCase{
 
 ### Step 1: Create Input Files
 
-1. Navigate to `/internal/kgateway/translator/gateway/testutils/inputs/`
+1. Navigate to `/pkg/kgateway/translator/gateway/testutils/inputs/`
 2. Create a new subfolder for your test (e.g., `backendconfigpolicy/`)
 3. Create a YAML file with your Kubernetes resources:
 
@@ -63,14 +63,14 @@ Run your specific test to generate the golden file:
 
 ```bash
 # Run specific test with make
-REFRESH_GOLDEN=true GINKGO_USER_FLAGS="--focus='TLS and SAN' --fail-on-pending=false" make test TEST_PKG=./internal/kgateway/translator/gateway
+REFRESH_GOLDEN=true GINKGO_USER_FLAGS="--focus='TLS and SAN' --fail-on-pending=false" make test TEST_PKG=./pkg/kgateway/translator/gateway
 ```
 
 #### Using Go Test Directly
 
 ```bash
 # Run specific test with go test directly
-REFRESH_GOLDEN=true go test ./internal/kgateway/translator/gateway -v -ginkgo.focus="TLS and SAN"
+REFRESH_GOLDEN=true go test ./pkg/kgateway/translator/gateway -v -ginkgo.focus="TLS and SAN"
 ```
 
 **Note**: The `REFRESH_GOLDEN=true` environment variable is required to generate golden files. Without it, the test will fail if no expected output file exists.
@@ -98,16 +98,16 @@ To update golden files (when you've made changes to the translator):
 
 ```bash
 # Regenerate all golden files using make
-REFRESH_GOLDEN=true make test TEST_PKG=./internal/kgateway/translator/gateway
+REFRESH_GOLDEN=true make test TEST_PKG=./pkg/kgateway/translator/gateway
 
 # Regenerate all golden files using go test
-REFRESH_GOLDEN=true go test ./internal/kgateway/translator/gateway -v
+REFRESH_GOLDEN=true go test ./pkg/kgateway/translator/gateway -v
 
 # Regenerate specific test using make
-REFRESH_GOLDEN=true GINKGO_USER_FLAGS="--focus='TLS and SAN' --fail-on-pending=false" make test TEST_PKG=./internal/kgateway/translator/gateway
+REFRESH_GOLDEN=true GINKGO_USER_FLAGS="--focus='TLS and SAN' --fail-on-pending=false" make test TEST_PKG=./pkg/kgateway/translator/gateway
 
 # Regenerate specific test using go test
-REFRESH_GOLDEN=true go test ./internal/kgateway/translator/gateway -v -ginkgo.focus="TLS and SAN"
+REFRESH_GOLDEN=true go test ./pkg/kgateway/translator/gateway -v -ginkgo.focus="TLS and SAN"
 ```
 
 ### Common Ginkgo Focus Patterns

@@ -29,8 +29,30 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 			"TestDynamicMCPUserRouting":      &dynamicSetup,
 			"TestDynamicMCPDefaultRouting":   &dynamicSetup,
 			"TestDynamicMCPAdminVsUserTools": &dynamicSetup,
+			// Authn tests
+			"TestMCPAuthn": &authnSetup,
 		}),
 	}
+}
+
+func (s *testingSuite) TestMCPAuthn() {
+	// Single test that does the full workflow with session management
+	s.T().Log("Testing complete MCP workflow with session management")
+
+	// Ensure static components are ready
+	s.waitStaticReady()
+	// Ensure auth0 server is ready
+	s.waitAuth0Ready()
+
+	// Step 1: Initialize and get session ID
+	// The token in hard coded in the mock auth0 server
+	testJwt := "eyJhbGciOiJSUzI1NiIsImtpZCI6IjUzMzM3ODA2ODc1NTEwMzg2NTkifQ.eyJhdWQiOiJhY2NvdW50IiwiZXhwIjoxNzYzNjc2Nzc2LCJpYXQiOjE3NjM2NzMxNzYsImlzcyI6Imh0dHBzOi8va2dhdGV3YXkuZGV2Iiwic3ViIjoidXNlckBrZ2F0ZXdheS5kZXYifQ.Fko5TMFRRJoXyidRaAmzmwlVHIwNxCXqiKf5BRw_sumTnpNmt9Qt_2RUQCn7tTC_gAV50FyV4WKwoyTzAn0S8mmgZumI8E2-Uoq-A8wAohz9rt4a61_gaDeXXn0dF3YitQicR30Q_buoi2Nki6ZRPf9FyE5ulO4Ut_PyQrNXwlwO7vr_U3DXfrzvT9y2aDdNndPr1GB4fWTM84mEdQgx3XevIc7yjnbgKHnvIRp4gEyh-QL0ZYisjD-tZIDloZoSZjNFYu6PIdoxAaz9WhINAkAqX9KS8cd6uO36nPDoDOT1UmCT2VBjNszhLaZqtRKbJUb1HYrn-Gzq8vumLn8sjQ"
+	authnHeader := map[string]string{"Authorization": "Bearer " + testJwt}
+	sessionID := s.initializeAndGetSessionID(authnHeader)
+	s.Require().NotEmpty(sessionID, "Failed to get session ID from initialize")
+
+	// Step 2: Test tools/list with session ID
+	s.testToolsListWithSession(sessionID, authnHeader)
 }
 
 func (s *testingSuite) TestMCPWorkflow() {
@@ -41,11 +63,11 @@ func (s *testingSuite) TestMCPWorkflow() {
 	s.waitStaticReady()
 
 	// Step 1: Initialize and get session ID
-	sessionID := s.initializeAndGetSessionID()
+	sessionID := s.initializeAndGetSessionID(nil)
 	s.Require().NotEmpty(sessionID, "Failed to get session ID from initialize")
 
 	// Step 2: Test tools/list with session ID
-	s.testToolsListWithSession(sessionID)
+	s.testToolsListWithSession(sessionID, nil)
 }
 
 func (s *testingSuite) TestSSEEndpoint() {
@@ -54,7 +76,7 @@ func (s *testingSuite) TestSSEEndpoint() {
 
 	initBody := buildInitializeRequest("sse-client", 0)
 
-	headers := mcpHeaders()
+	headers := mcpHeaders(nil)
 
 	out, err := s.execCurlMCP(headers, initBody, "--max-time", "8")
 	s.Require().NoError(err, "SSE initialize curl failed")
@@ -141,7 +163,7 @@ func (s *testingSuite) TestDynamicMCPAdminVsUserTools() {
 // initialize response correctness, warms the session, and returns the tool names.
 func (s *testingSuite) runDynamicRoutingCase(clientName string, routeHeaders map[string]string, label string) []string {
 	initBody := buildInitializeRequest(clientName, 0)
-	headers := withRouteHeaders(mcpHeaders(), routeHeaders)
+	headers := withRouteHeaders(mcpHeaders(nil), routeHeaders)
 
 	// Deterministic 200 with retry/backoff
 	s.waitForMCP200(8080, headers, initBody, label,
@@ -209,4 +231,11 @@ func (s *testingSuite) waitStaticReady() {
 	s.TestInstallation.Assertions.EventuallyGatewayCondition(s.Ctx, gatewayName, gatewayNamespace, gwv1.GatewayConditionProgrammed, metav1.ConditionTrue)
 	s.TestInstallation.Assertions.EventuallyAgwBackendCondition(s.Ctx, "mcp-backend", "default", "Accepted", metav1.ConditionTrue)
 	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(s.Ctx, "mcp-route", "default", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
+}
+
+func (s *testingSuite) waitAuth0Ready() {
+	s.TestInstallation.Assertions.EventuallyPodsRunning(
+		s.Ctx, "default",
+		metav1.ListOptions{LabelSelector: "app.kubernetes.io/name=auth0-mock"},
+	)
 }
