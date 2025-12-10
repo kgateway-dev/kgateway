@@ -82,8 +82,53 @@ func (s *testingSuite) initializeAndGetSessionID(extraHeaders map[string]string)
 	initBody := buildInitializeRequest("test-client", 1)
 	headers := mcpHeaders(extraHeaders)
 	sid := s.initializeSession(initBody, headers, "workflow")
-	s.notifyInitialized(sid, nil)
+	s.notifyInitialized(sid, extraHeaders)
 	return sid
+}
+
+func (s *testingSuite) testUnauthorizedToolsListWithSession(sessionID string, extraHeaders map[string]string, expectedStatus int) {
+	s.T().Log("Testing tools/list with session ID")
+
+	mcpRequest := buildToolsListRequest(3)
+
+	headers := withSessionID(mcpHeaders(extraHeaders), sessionID)
+	out, err := s.execCurlMCP(headers, mcpRequest, "-N", "--max-time", "10")
+	s.Require().NoError(err, "tools/list curl failed")
+
+	// For non-200 status codes (like 401), check HTTP status directly without parsing SSE
+	if expectedStatus != httpOKCode {
+		s.requireHTTPStatus(out, expectedStatus)
+		return
+	}
+
+	// Session is warmed during initialize; 401 retry no longer needed here.
+
+	// If session was replaced, some gateways emit a JSON error as SSE payload (HTTP 200).
+	// So parse SSE first, then decide.
+	payload, ok := FirstSSEDataPayload(out)
+	if !ok {
+		s.T().Log("No SSE payload from tools/list; sending notifications/initialized and retrying once")
+		s.notifyInitialized(sessionID, extraHeaders)
+		out, err = s.execCurlMCP(headers, mcpRequest, "-N", "--max-time", "10")
+		s.Require().NoError(err, "tools/list retry curl failed")
+		s.requireHTTPStatus(out, httpOKCode)
+		payload, ok = FirstSSEDataPayload(out)
+	}
+	s.Require().True(ok, "expected SSE data payload in tools/list (after retry)")
+	s.Require().True(IsJSONValid(payload), "tools/list SSE payload is not valid JSON")
+
+	var resp ToolsListResponse
+	_ = json.Unmarshal([]byte(payload), &resp)
+
+	if resp.Error != nil && strings.Contains(resp.Error.Message, "Session not found") {
+		// Re-init and retry once
+		s.T().Log("Session expired; re-initializing and retrying tools/list")
+		newID := s.initializeAndGetSessionID(extraHeaders)
+		s.testToolsListWithSession(newID, extraHeaders)
+		return
+	}
+
+	s.requireHTTPStatus(out, expectedStatus)
 }
 
 func (s *testingSuite) testToolsListWithSession(sessionID string, extraHeaders map[string]string) {
@@ -102,7 +147,7 @@ func (s *testingSuite) testToolsListWithSession(sessionID string, extraHeaders m
 	payload, ok := FirstSSEDataPayload(out)
 	if !ok {
 		s.T().Log("No SSE payload from tools/list; sending notifications/initialized and retrying once")
-		s.notifyInitialized(sessionID, nil)
+		s.notifyInitialized(sessionID, extraHeaders)
 		out, err = s.execCurlMCP(headers, mcpRequest, "-N", "--max-time", "10")
 		s.Require().NoError(err, "tools/list retry curl failed")
 		s.requireHTTPStatus(out, httpOKCode)
@@ -117,7 +162,7 @@ func (s *testingSuite) testToolsListWithSession(sessionID string, extraHeaders m
 	if resp.Error != nil && strings.Contains(resp.Error.Message, "Session not found") {
 		// Re-init and retry once
 		s.T().Log("Session expired; re-initializing and retrying tools/list")
-		newID := s.initializeAndGetSessionID(nil)
+		newID := s.initializeAndGetSessionID(extraHeaders)
 		s.testToolsListWithSession(newID, extraHeaders)
 		return
 	}
@@ -408,4 +453,13 @@ func (s *testingSuite) waitForMCP200(
 		s.Require().NoError(err, "%s initialize status probe failed", label)
 		s.Require().Equal(httpOKCode, strings.TrimSpace(status), "expected HTTP "+strconv.Itoa(httpOKCode))
 	}
+}
+
+// testInitializeWithExpectedStatus tests an initialize request and expects a specific HTTP status code
+func (s *testingSuite) testInitializeWithExpectedStatus(headers map[string]string, expectedStatus int, label string) {
+	initBody := buildInitializeRequest("test-client", 1)
+	hdr := mcpHeaders(headers)
+	out, err := s.execCurlMCP(hdr, initBody, "--max-time", "10")
+	s.Require().NoError(err, "%s initialize curl failed", label)
+	s.requireHTTPStatus(out, expectedStatus)
 }
