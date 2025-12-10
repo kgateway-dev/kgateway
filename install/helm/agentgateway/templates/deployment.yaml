@@ -103,6 +103,10 @@ spec:
               value: "true"
             - name: KGW_ENABLE_ENVOY
               value: "false"
+            {{- if .Values.inferenceExtension.enabled }}
+            - name: KGW_ENABLE_INFER_EXT
+              value: "true"
+            {{- end }}
             {{- if .Values.controller.xds.tls.enabled }}
             - name: KGW_XDS_TLS_ENABLED
               value: "true"
