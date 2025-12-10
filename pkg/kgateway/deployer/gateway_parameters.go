@@ -67,6 +67,24 @@ func (gp *GatewayParameters) WithHelmValuesGeneratorOverride(generator deployer.
 	return gp
 }
 
+// GetGatewayParametersClient returns the GatewayParameters client if Envoy is enabled, nil otherwise.
+// This allows the reconciler to reuse the same client for watching changes.
+func (gp *GatewayParameters) GetGatewayParametersClient() kclient.Client[*kgateway.GatewayParameters] {
+	if gp.kgwParameters != nil {
+		return gp.kgwParameters.gwParamClient
+	}
+	return nil
+}
+
+// GetAgentgatewayParametersClient returns the AgentgatewayParameters client if Agentgateway is enabled, nil otherwise.
+// This allows the reconciler to reuse the same client for watching changes.
+func (gp *GatewayParameters) GetAgentgatewayParametersClient() kclient.Client[*agentgateway.AgentgatewayParameters] {
+	if gp.agwHelmValuesGenerator != nil {
+		return gp.agwHelmValuesGenerator.agwParamClient
+	}
+	return nil
+}
+
 func LoadEnvoyChart() (*chart.Chart, error) {
 	return loadChart(helm.EnvoyHelmChart)
 }
