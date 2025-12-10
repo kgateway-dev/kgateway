@@ -123,10 +123,13 @@ func TestCustomGWP(t *testing.T) {
 		}
 
 		testInstallation.UninstallKgateway(ctx)
+		// Also uninstall agentgateway CRDs since we installed them for this test
+		testInstallation.UninstallAgentgatewayCRDs(ctx)
 	})
 
-	// install CRDs
+	// install CRDs for both kgateway and agentgateway
 	testInstallation.InstallKgatewayCRDsFromLocalChart(ctx)
+	testInstallation.InstallAgentgatewayCRDsFromLocalChart(ctx)
 
 	// create GatewayParameters for kgateway
 	err := testInstallation.Actions.Kubectl().Apply(ctx, []byte(kgatewayGWP))
