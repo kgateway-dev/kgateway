@@ -402,8 +402,8 @@ func GetDefaultClassInfo(
 		}
 		applyGatewayClassParametersRef(classInfos[gatewayClassName], gatewayClassName, refOverrides, false)
 	}
-	// Only enable waypoint gateway class if it's enabled in the settings
-	if globalSettings.EnableWaypoint {
+	// Only enable waypoint gateway class if it's enabled in the settings and the name isn't empty
+	if globalSettings.EnableWaypoint && waypointGatewayClassName != "" {
 		classInfos[waypointGatewayClassName] = &deployer.GatewayClassInfo{
 			Description: "Specialized class for Istio ambient mesh waypoint proxies.",
 			Labels:      map[string]string{},
