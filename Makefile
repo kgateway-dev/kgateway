@@ -121,7 +121,6 @@ mod-download:  ## Download the dependencies
 .PHONY: mod-tidy-nested
 mod-tidy-nested:  ## Tidy go mod files in nested modules
 	@echo "Tidying hack/utils/applier..." && cd hack/utils/applier && go mod tidy
-	@echo "Tidying hack/krtequals..." && cd hack/krtequals && go mod tidy
 
 .PHONY: mod-tidy
 mod-tidy: mod-download mod-tidy-nested ## Tidy the go mod file
