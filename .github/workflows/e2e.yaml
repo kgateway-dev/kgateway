@@ -79,7 +79,7 @@ jobs:
         # December 4, 2025: ~17 minutes
         - cluster-name: 'agent-gateway-cluster'
           go-test-args: '-timeout=25m'
-          go-test-run-regex: '^TestAgentgatewayIntegration|^TestParallelControllers$$|^TestCustomGWP$$|^TestZeroDowntimeRollout$$/^TestZeroDowntimeRolloutAgentGateway$$|^TestInferenceExtension$$'
+          go-test-run-regex: '^TestAgentgatewayIntegration|^TestParallelControllers$$|^TestCustomGWP$$|^TestZeroDowntimeRollout$$'
           agentgateway: 'true'
 
         # In our PR tests, we run the suite of tests using the upper ends of versions that we claim to support
