@@ -22,7 +22,7 @@ output: []
 status:
   conditions:
   - lastTransitionTime: fake
-    message: failed to translate backend jwks store hasn't been initialized
+    message: 'failed to translate backend: jwks store hasn''t been initialized'
     reason: TranslationError
     status: "False"
     type: Accepted

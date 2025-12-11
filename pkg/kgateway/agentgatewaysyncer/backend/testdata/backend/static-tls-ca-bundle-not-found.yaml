@@ -20,7 +20,7 @@ status:
   conditions:
   - lastTransitionTime: fake
     message: |-
-      failed to translate backend secret default/unknown-mtls not found
+      failed to translate backend: secret default/unknown-mtls not found
       ConfigMap default/unknown-ca-bundle not found
     reason: TranslationError
     status: "False"

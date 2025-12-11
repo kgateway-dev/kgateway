@@ -17,8 +17,8 @@ output: []
 status:
   conditions:
   - lastTransitionTime: fake
-    message: failed to translate backend backend auth requires either inline key or
-      secretRef
+    message: 'failed to translate backend: backend auth requires either inline key
+      or secretRef'
     reason: TranslationError
     status: "False"
     type: Accepted

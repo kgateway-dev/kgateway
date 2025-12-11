@@ -32,7 +32,6 @@ func BuildAgwBackend(
 	errs := []error{}
 	pols, err := translateBackendPolicies(ctx, backend.Namespace, backend.Spec.Policies)
 	if err != nil {
-		logger.Warn("failed to translate backend policies", "err", err)
 		errs = append(errs, err)
 	}
 
@@ -80,13 +79,13 @@ func TranslateAgwBackend(
 	var results []agwir.AgwResource
 	backends, err := BuildAgwBackend(ctx, backend)
 	if err != nil {
-		logger.Error("failed to translate backend", "backend", backend.Name, "namespace", backend.Namespace, "error", err)
+		logger.Error("failed to translate backend", "backend", backend.Name, "namespace", backend.Namespace, "err", err)
 		return &agentgateway.AgentgatewayBackendStatus{
 			Conditions: kstatus.UpdateConditionIfChanged(backend.Status.Conditions, metav1.Condition{
 				Type:               "Accepted",
 				Status:             metav1.ConditionFalse,
 				Reason:             "TranslationError",
-				Message:            fmt.Sprintf("failed to translate backend %v", err),
+				Message:            fmt.Sprintf("failed to translate backend: %v", err),
 				ObservedGeneration: backend.Generation,
 				LastTransitionTime: metav1.Now(),
 			}),
