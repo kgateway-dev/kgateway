@@ -162,7 +162,7 @@ spec:
 - Validate policies are applied correctly
 - Check backend connectivity
 
-#### 6. Clean Up Old Installation
+#### 5. Clean Up Old Installation
 
 After confirming everything works with the new agentgateway installation:
 
