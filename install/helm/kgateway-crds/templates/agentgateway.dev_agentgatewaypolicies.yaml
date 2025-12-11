@@ -1168,13 +1168,15 @@ spec:
                                   rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                                 - message: cacheDuration must be at least 5m.
                                   rule: duration(self) >= duration('5m')
-                              jwksUri:
-                                description: IdP jwks endpoint. Default tls settings
-                                  are used to connect to this url.
-                                pattern: ^(https|http):\/\/[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*(:\d+)?\/.*$
+                              jwksPath:
+                                description: Path to IdP jwks endpoint. Default tls
+                                  settings are used to connect to this url.
+                                maxLength: 2000
+                                minLength: 1
                                 type: string
                             required:
-                            - jwksUri
+                            - backendRef
+                            - jwksPath
                             type: object
                           provider:
                             description: McpIDP specifies the identity provider to
@@ -3007,13 +3009,15 @@ spec:
                                         rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                                       - message: cacheDuration must be at least 5m.
                                         rule: duration(self) >= duration('5m')
-                                    jwksUri:
-                                      description: IdP jwks endpoint. Default tls
-                                        settings are used to connect to this url.
-                                      pattern: ^(https|http):\/\/[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*(:\d+)?\/.*$
+                                    jwksPath:
+                                      description: Path to IdP jwks endpoint. Default
+                                        tls settings are used to connect to this url.
+                                      maxLength: 2000
+                                      minLength: 1
                                       type: string
                                   required:
-                                  - jwksUri
+                                  - backendRef
+                                  - jwksPath
                                   type: object
                               type: object
                               x-kubernetes-validations:

@@ -520,6 +520,8 @@ func processJWTAuthenticationPolicy(ctx PolicyCtx, jwt *agentgateway.JWTAuthenti
 		p.Mode = api.TrafficPolicySpec_JWT_PERMISSIVE
 	}
 
+	jwksUrlFactory := NewJwksUrlFactory(ctx.Collections.ConfigMaps, ctx.Collections.Backends, ctx.Collections.AgentgatewayPolicies, ctx.Collections.AgentgatewayPoliciesByTargetRefIndex)
+
 	errs := make([]error, 0)
 	for _, pp := range jwt.Providers {
 		jp := &api.TrafficPolicySpec_JWTProvider{
@@ -532,7 +534,12 @@ func processJWTAuthenticationPolicy(ctx PolicyCtx, jwt *agentgateway.JWTAuthenti
 			continue
 		}
 		if r := pp.JWKS.Remote; r != nil {
-			inline, err := resolveRemoteJWKSInline(ctx, pp.JWKS.Remote.JwksUri)
+			jwksUrl, _, err := jwksUrlFactory.BuildJwksUrl(ctx.Krt, policy.Name, policy.Namespace, pp.JWKS.Remote)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+			inline, err := resolveRemoteJWKSInline(ctx, jwksUrl)
 			if err != nil {
 				errs = append(errs, err)
 				continue

@@ -298,9 +298,15 @@ func translateBackendMCPAuthentication(ctx PolicyCtx, policy *agentgateway.Agent
 		idp = api.BackendPolicySpec_McpAuthentication_KEYCLOAK
 	}
 
-	translatedInlineJwks, err := resolveRemoteJWKSInline(ctx, authnPolicy.JWKS.JwksUri)
+	jwksUrlFactory := NewJwksUrlFactory(ctx.Collections.ConfigMaps, ctx.Collections.Backends, ctx.Collections.AgentgatewayPolicies, ctx.Collections.AgentgatewayPoliciesByTargetRefIndex)
+	jwksUrl, _, err := jwksUrlFactory.BuildJwksUrl(ctx.Krt, policy.Name, policy.Namespace, &authnPolicy.JWKS)
 	if err != nil {
-		logger.Error("failed resolving jwks", "jwks_uri", authnPolicy.JWKS.JwksUri, "error", err)
+		logger.Error("failed resolving jwks url", "error", err)
+		return nil
+	}
+	translatedInlineJwks, err := resolveRemoteJWKSInline(ctx, jwksUrl)
+	if err != nil {
+		logger.Error("failed resolving jwks", "jwks_uri", jwksUrl, "error", err)
 		return nil
 	}
 
