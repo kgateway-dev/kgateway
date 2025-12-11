@@ -6,7 +6,7 @@ Starting in version 2.2.0-beta.2, agentgateway has been fully separated into its
 
 ## Who Needs to Take Action?
 
-### ✅ Envoy Users (GatewayClass: `kgateway`)
+### Envoy Users (GatewayClass: `kgateway`)
 
 **No changes required.** You can upgrade to 2.2.0-beta.2 using the same kgateway chart. All Envoy resources remain unchanged:
 
@@ -14,7 +14,7 @@ Starting in version 2.2.0-beta.2, agentgateway has been fully separated into its
 - GatewayClass `kgateway` with controller `kgateway.dev/kgateway`
 - HTTPListenerPolicy, TrafficPolicy, BackendConfigPolicy, etc. all work as before
 
-### ⚠️ Agentgateway Users (GatewayClass: `agentgateway`)
+### Agentgateway Users (GatewayClass: `agentgateway`)
 
 **Breaking changes require migration to new charts.** Agentgateway has moved to:
 - New dedicated Helm charts (separate from kgateway)
@@ -23,7 +23,7 @@ Starting in version 2.2.0-beta.2, agentgateway has been fully separated into its
 
 We recommend a **blue-green deployment strategy** (see below) to minimize risk.
 
-### 🔄 Mixed Deployment Users (Both Envoy and Agentgateway)
+### Mixed Deployment Users (Both Envoy and Agentgateway)
 
 If you're currently running both Envoy and agentgateway from the same kgateway installation:
 - **Envoy gateways**: Keep your existing kgateway chart installation
