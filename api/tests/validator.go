@@ -16,13 +16,18 @@ func NewKgatewayValidator(t *testing.T) *crd.Validator {
 	root := fsutils.GetModuleRoot()
 	dirs := []string{filepath.Join(root, "pkg/kgateway/crds/gateway-crds.yaml")}
 	dir, err := os.ReadDir(filepath.Join(root, "install/helm/kgateway-crds/templates/"))
+	agentgatewayDir, err := os.ReadDir(filepath.Join(root, "install/helm/agentgateway-crds/templates/"))
 	assert.NoError(t, err)
 	for _, d := range dir {
 		if strings.HasSuffix(d.Name(), ".yaml") {
 			dirs = append(dirs, filepath.Join(root, "install/helm/kgateway-crds/templates", d.Name()))
 		}
 	}
-
+	for _, d := range agentgatewayDir {
+		if strings.HasSuffix(d.Name(), ".yaml") {
+			dirs = append(dirs, filepath.Join(root, "install/helm/agentgateway-crds/templates", d.Name()))
+		}
+	}
 	v, err := crd.NewValidatorFromFiles(
 		dirs...,
 	)

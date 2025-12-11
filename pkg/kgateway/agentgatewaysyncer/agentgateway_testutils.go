@@ -466,8 +466,7 @@ func (tc TestCase) Run(
 	// initialize the jwks config map store so remote jwks tests can mock fetch with configmap
 	jwks.BuildJwksConfigMapNamespacedNameFunc(jwks.DefaultJwksStorePrefix, "kgateway-system")
 
-	gvkToStructuralSchema, err := testutils.GetStructuralSchemas(
-		filepath.Join(testutils.GitRootDirectory(), testutils.CRDPath))
+	gvkToStructuralSchema, err := testutils.GetStructuralSchemasForBothCharts()
 	if err != nil {
 		return ActualTestResult{}, fmt.Errorf("error getting structural schemas: %w", err)
 	}

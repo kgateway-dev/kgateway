@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"slices"
 	"strings"
 	"time"
@@ -490,7 +489,7 @@ func (s *BaseTestingSuite) setupHelpers() {
 		s.CrdPath = testutils.CRDPath
 	}
 	var err error
-	s.gvkToStructuralSchema, err = testutils.GetStructuralSchemas(filepath.Join(testutils.GitRootDirectory(), s.CrdPath))
+	s.gvkToStructuralSchema, err = testutils.GetStructuralSchemasForBothCharts()
 	s.Require().NoError(err)
 }
 

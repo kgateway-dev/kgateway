@@ -110,6 +110,7 @@ func (s *ControllerSuite) SetupSuite() {
 		CRDDirectoryPaths: []string{
 			filepath.Join("..", "crds"),
 			filepath.Join("..", "..", "..", "install", "helm", "kgateway-crds", "templates"),
+			filepath.Join("..", "..", "..", "install", "helm", "agentgateway-crds", "templates"),
 		},
 		ErrorIfCRDPathMissing: true,
 		// set assets dir so we can run without the makefile
