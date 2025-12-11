@@ -15,6 +15,7 @@ spec:
               kind: ConfigMap
               group: ""
       perPort:
+        # Test tls options
         - port: 443
           tls:
             validation:
@@ -23,6 +24,7 @@ spec:
                 - name: ca-cert
                   kind: ConfigMap
                   group: ""
+        # Test insecure fallback
         - port: 8444
           tls:
             validation:
@@ -31,6 +33,7 @@ spec:
                 - name: ca-cert
                   kind: ConfigMap
                   group: ""
+        # Test multiple CA cert refs
         - port: 8446
           tls:
             validation:
@@ -43,7 +46,17 @@ spec:
                   namespace: ca-cert-2
                   kind: ConfigMap
                   group: ""
+        # test verify-subject-alt-names
+        - port: 8447
+          tls:
+            validation:
+              mode: AllowValidOnly
+              caCertificateRefs:
+                - name: ca-alt-names-cert
+                  kind: ConfigMap
+                  group: ""
   listeners:
+    # Test default tls options
     - name: https
       protocol: HTTPS
       port: 443
@@ -61,6 +74,7 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
+    # Test mTLS
     - name: https-mtls
       protocol: HTTPS
       port: 8443
@@ -75,6 +89,7 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
+    # Test mTLS alt
     - name: https-mtls-alt
       protocol: HTTPS
       port: 9443
@@ -120,6 +135,20 @@ spec:
           - group: ""
             kind: Secret
             name: test-tls
+      allowedRoutes:
+        namespaces:
+          from: All
+    # Test listener for verify-subject-alt-names functionality
+    - name: https-verify-subject-alt-names
+      protocol: HTTPS
+      port: 8447
+      tls:
+        certificateRefs:
+          - group: ""
+            kind: Secret
+            name: test-tls
+        options:
+          kgateway.dev/verify-subject-alt-names: "mtls.example.com"
       allowedRoutes:
         namespaces:
           from: All

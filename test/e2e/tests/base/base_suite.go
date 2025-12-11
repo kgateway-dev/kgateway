@@ -89,6 +89,10 @@ var (
 	GwApiRequireSessionPersistence = map[GwApiChannel]*GwApiVersion{
 		GwApiChannelExperimental: &GwApiV1_1_0,
 	}
+
+	GwApiRequireGatewayTLSConfig = map[GwApiChannel]*GwApiVersion{
+		GwApiChannelExperimental: &GwApiV1_4_0,
+	}
 )
 
 // selfManagedGatewayAnnotation is the annotation used to mark a Gateway as self-managed in e2e tests

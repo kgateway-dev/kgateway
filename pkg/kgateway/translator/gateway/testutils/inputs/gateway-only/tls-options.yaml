@@ -17,7 +17,7 @@ spec:
         kgateway.dev/min-tls-version: "1.2"
         kgateway.dev/max-tls-version: "1.3"
         kgateway.dev/verify-certificate-hash: "7D:86:C6:65:4C:82:29:36:4E:CF:E4:D4:96:4C:69:41:00:90:AE:09:E9:B4:D0:C9:B2:AD:78:54:17:5A:D5:1D"
-        # TODO: add verify subject alt names https://github.com/kgateway-dev/kgateway/issues/12955
+        # kgateway.dev/verify-subject-alt-names requires a trusted CA to be configured so can not be tested in this simple test case
       certificateRefs:
         - name: https
           kind: Secret
