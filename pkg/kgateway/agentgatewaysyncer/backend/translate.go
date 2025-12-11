@@ -224,10 +224,11 @@ func translateAIBackends(ctx plugins.PolicyCtx, be *agentgateway.AgentgatewayBac
 
 	aiBackend := &api.AIBackend{}
 	if llm := ai.LLM; llm != nil {
-		provider, err := translateLLMProvider(ctx, llm, utils.SingularLLMProviderSubBackendName, be.Namespace)
+		provider, err := translateLLMProvider(llm, utils.SingularLLMProviderSubBackendName)
 		if err != nil {
 			return nil, fmt.Errorf("failed to translate LLM provider: %w", err)
 		}
+
 		aiBackend.ProviderGroups = []*api.AIBackend_ProviderGroup{{
 			Providers: []*api.AIBackend_Provider{provider},
 		}}
@@ -236,7 +237,7 @@ func translateAIBackends(ctx plugins.PolicyCtx, be *agentgateway.AgentgatewayBac
 			providerGroup := &api.AIBackend_ProviderGroup{}
 
 			for _, provider := range group.Providers {
-				tp, err := translateLLMProvider(ctx, &provider.LLMProvider, string(provider.Name), be.Namespace)
+				tp, err := translateLLMProvider(&provider.LLMProvider, string(provider.Name))
 				if err != nil {
 					return nil, fmt.Errorf("failed to translate LLM provider: %w", err)
 				}
@@ -302,7 +303,7 @@ func translateAIBackendPolicies(
 	})
 }
 
-func translateLLMProvider(ctx plugins.PolicyCtx, llm *agentgateway.LLMProvider, providerName, namespace string) (*api.AIBackend_Provider, error) {
+func translateLLMProvider(llm *agentgateway.LLMProvider, providerName string) (*api.AIBackend_Provider, error) {
 	provider := &api.AIBackend_Provider{
 		Name: providerName,
 	}
