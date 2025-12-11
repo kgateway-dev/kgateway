@@ -1915,7 +1915,6 @@ spec:
                                             backendRef:
                                               description: |-
                                                 backendRef references the remote JWKS server to reach.
-                                                Not implemented yet, only jwksUri is currently supported.
                                                 Supported types: Service and Backend.
                                               properties:
                                                 group:
@@ -1997,18 +1996,15 @@ spec:
                                               - message: cacheDuration must be at
                                                   least 5m.
                                                 rule: duration(self) >= duration('5m')
-                                            uri:
+                                            jwksUri:
                                               description: IdP jwks endpoint. Default
                                                 tls settings are used to connect to
                                                 this url.
                                               pattern: ^(https|http):\/\/[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*(:\d+)?\/.*$
                                               type: string
+                                          required:
+                                          - jwksUri
                                           type: object
-                                          x-kubernetes-validations:
-                                          - message: exactly one of the fields in
-                                              [uri backendRef] must be set
-                                            rule: '[has(self.uri),has(self.backendRef)].filter(x,x==true).size()
-                                              == 1'
                                         provider:
                                           description: McpIDP specifies the identity
                                             provider to use for authentication
@@ -3304,7 +3300,6 @@ spec:
                               backendRef:
                                 description: |-
                                   backendRef references the remote JWKS server to reach.
-                                  Not implemented yet, only jwksUri is currently supported.
                                   Supported types: Service and Backend.
                                 properties:
                                   group:
@@ -3382,17 +3377,14 @@ spec:
                                   rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                                 - message: cacheDuration must be at least 5m.
                                   rule: duration(self) >= duration('5m')
-                              uri:
+                              jwksUri:
                                 description: IdP jwks endpoint. Default tls settings
                                   are used to connect to this url.
                                 pattern: ^(https|http):\/\/[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*(:\d+)?\/.*$
                                 type: string
+                            required:
+                            - jwksUri
                             type: object
-                            x-kubernetes-validations:
-                            - message: exactly one of the fields in [uri backendRef]
-                                must be set
-                              rule: '[has(self.uri),has(self.backendRef)].filter(x,x==true).size()
-                                == 1'
                           provider:
                             description: McpIDP specifies the identity provider to
                               use for authentication

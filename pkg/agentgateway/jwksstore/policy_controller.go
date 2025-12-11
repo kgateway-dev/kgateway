@@ -16,24 +16,25 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
+	v1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/dmitri-d/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/jwks"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
 type JwksStorePolicyController struct {
-	agw         *plugins.AgwCollections
-	commonCol   *collections.CommonCollections
-	apiClient   apiclient.Client
-	jwks        krt.Collection[jwks.JwksSource]
-	jwksChanges chan jwks.JwksSource
-	waitForSync []cache.InformerSynced
+	agw                       *plugins.AgwCollections
+	cfgmaps                   krt.Collection[*corev1.ConfigMap]
+	tlsPolicyByTragetRefIndex krt.Index[targetRefIndexKey, *v1.BackendTLSPolicy]
+	apiClient                 apiclient.Client
+	jwks                      krt.Collection[jwks.JwksSource]
+	jwksChanges               chan jwks.JwksSource
+	waitForSync               []cache.InformerSynced
 }
 
 type targetRefIndexKey struct {
@@ -49,11 +50,10 @@ func (k targetRefIndexKey) String() string {
 
 var polLogger = logging.New("jwks_store_policy_controller")
 
-func NewJWKSStorePolicyController(apiClient apiclient.Client, commonCol *collections.CommonCollections, agw *plugins.AgwCollections) *JwksStorePolicyController {
+func NewJWKSStorePolicyController(apiClient apiclient.Client, agw *plugins.AgwCollections) *JwksStorePolicyController {
 	polLogger.Info("creating jwks store policy controller")
 	return &JwksStorePolicyController{
 		agw:         agw,
-		commonCol:   commonCol,
 		apiClient:   apiClient,
 		jwksChanges: make(chan jwks.JwksSource),
 	}
@@ -66,7 +66,13 @@ func (j *JwksStorePolicyController) Init(ctx context.Context) {
 		kclient.Filter{ObjectFilter: j.agw.Client.ObjectFilter()},
 	), j.agw.KrtOpts.ToOptions("AgentgatewayBackend")...)
 
-	j.tlsPolicyByTragetRefIndex = krtpkg.UnnamedIndex(j.agw.BackendTLSPolicies, func(in *gwv1.BackendTLSPolicy) []targetRefIndexKey {
+	cmClient := kclient.NewFiltered[*corev1.ConfigMap](
+		j.apiClient,
+		kclient.Filter{ObjectFilter: j.agw.Client.ObjectFilter()},
+	)
+	j.cfgmaps = krt.WrapClient(cmClient, j.agw.KrtOpts.ToOptions("ConfigMaps")...)
+
+	j.tlsPolicyByTragetRefIndex = krtpkg.UnnamedIndex(j.agw.BackendTLSPolicies, func(in *v1.BackendTLSPolicy) []targetRefIndexKey {
 		keys := make([]targetRefIndexKey, 0)
 		for _, ref := range in.Spec.TargetRefs {
 			keys = append(keys, targetRefIndexKey{
@@ -95,10 +101,10 @@ func (j *JwksStorePolicyController) Init(ctx context.Context) {
 				if provider.JWKS.Remote == nil {
 					continue
 				}
-				toret = append(toret, jwks.JwksSource{
-					JwksURL: provider.JWKS.Remote.JwksUri,
-					Ttl:     provider.JWKS.Remote.CacheDuration.Duration,
-				})
+
+				if s := j.jwksSourceWithCustomTLSConfig(kctx, p.Name, p.Namespace, provider.JWKS.Remote); s != nil {
+					toret = append(toret, *s)
+				}
 			}
 		}
 
@@ -182,10 +188,10 @@ func jwksSourceWithDefaultHttpClient(jwksURL string, ttl time.Duration) jwks.Jwk
 	return jwks.JwksSource{JwksURL: jwksURL, Ttl: ttl}
 }
 
-func (j *JwksStorePolicyController) jwksSourceWithCustomTLSConfig(krtctx krt.HandlerContext, policyName, defaultNS string, remoteProvider *v1alpha1.AgentRemoteJWKS) *jwks.JwksSource {
+func (j *JwksStorePolicyController) jwksSourceWithCustomTLSConfig(krtctx krt.HandlerContext, policyName, defaultNS string, remoteProvider *agentgateway.RemoteJWKS) *jwks.JwksSource {
 	ref := *remoteProvider.BackendRef
 	refName := string(ref.Name)
-	refNamespace := string(ptr.OrDefault(ref.Namespace, gwv1.Namespace(defaultNS)))
+	refNamespace := string(ptr.OrDefault(ref.Namespace, v1.Namespace(defaultNS)))
 
 	if string(*ref.Kind) != wellknown.AgentgatewayBackendGVK.Kind && string(*ref.Kind) != wellknown.ServiceKind {
 		// backendRef := types.NamespacedName{
@@ -225,7 +231,7 @@ func (j *JwksStorePolicyController) jwksSourceWithCustomTLSConfig(krtctx krt.Han
 			Namespace: refNamespace,
 		})))
 	if tlsPolicy != nil {
-		t, err := getTLSConfig(krtctx, j.commonCol.ConfigMaps, tlsPolicy)
+		t, err := getTLSConfig(krtctx, j.cfgmaps, tlsPolicy)
 		if err != nil {
 			polLogger.Error("error creating tls config", "error", err)
 			return nil
@@ -243,7 +249,7 @@ func (j *JwksStorePolicyController) jwksSourceWithCustomTLSConfig(krtctx krt.Han
 func getTLSConfig(
 	krtctx krt.HandlerContext,
 	cfgmaps krt.Collection[*corev1.ConfigMap],
-	btls *gwv1.BackendTLSPolicy,
+	btls *v1.BackendTLSPolicy,
 ) (*tls.Config, error) {
 	validation := btls.Spec.Validation
 
@@ -252,14 +258,14 @@ func getTLSConfig(
 		InsecureSkipVerify: insecureSkipVerify(btls.Spec.Options),
 	}
 
-	if wk := validation.WellKnownCACertificates; wk != nil && *wk == gwv1.WellKnownCACertificatesSystem {
+	if wk := validation.WellKnownCACertificates; wk != nil && *wk == v1.WellKnownCACertificatesSystem {
 		return &toret, nil
 	}
 
 	if len(validation.CACertificateRefs) > 0 {
 		certPool := x509.NewCertPool()
 		for _, ref := range validation.CACertificateRefs {
-			if ref.Group != gwv1.Group(wellknown.ConfigMapGVK.Group) || ref.Kind != gwv1.Kind(wellknown.ConfigMapGVK.Kind) {
+			if ref.Group != v1.Group(wellknown.ConfigMapGVK.Group) || ref.Kind != v1.Kind(wellknown.ConfigMapGVK.Kind) {
 				return nil, fmt.Errorf("BackendTLSPolicy's validation.caCertificateRefs must be a ConfigMap reference; got %s", ref)
 			}
 			nn := types.NamespacedName{
@@ -291,7 +297,7 @@ func appendPoolWithCertsFromConfigMap(pool *x509.CertPool, cm *corev1.ConfigMap)
 	return pool.AppendCertsFromPEM([]byte(caCrts))
 }
 
-func insecureSkipVerify(opts map[gwv1.AnnotationKey]gwv1.AnnotationValue) bool {
+func insecureSkipVerify(opts map[v1.AnnotationKey]v1.AnnotationValue) bool {
 	if v, ok := opts["InsecureSkipVerify"]; ok {
 		toret, err := strconv.ParseBool(string(v))
 		if err != nil {
