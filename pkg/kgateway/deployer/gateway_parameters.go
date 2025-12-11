@@ -31,6 +31,12 @@ var (
 
 	// ErrNotFound is returned when a requested resource is not found
 	ErrNotFound = errors.New("resource not found")
+
+	// ErrMultipleAddresses is returned when multiple addresses are specified in Gateway.spec.addresses
+	ErrMultipleAddresses = errors.New("multiple addresses given, only one address is supported")
+
+	// ErrNoValidIPAddress is returned when no valid IP address is found in Gateway.spec.addresses
+	ErrNoValidIPAddress = errors.New("no valid IP address found in Gateway.spec.addresses")
 )
 
 func NewGatewayParameters(cli apiclient.Client, inputs *deployer.Inputs) *GatewayParameters {
@@ -351,37 +357,28 @@ func (k *kgatewayParameters) getGatewayParametersForGatewayClass(gwc *gwv1.Gatew
 	return mergedGwp, nil
 }
 
-// extractLoadBalancerIP extracts the first IP address from Gateway.spec.addresses
-// where the address type is IPAddressType. Returns nil if no valid IP address is found.
-// If multiple IP addresses are provided, uses the first one and logs a warning.
-func extractLoadBalancerIP(gw *gwv1.Gateway) *string {
+// extractLoadBalancerIP extracts the IP address from Gateway.spec.addresses
+// where the address type is IPAddressType.
+// Returns an error if more than one address is specified or no valid IP address is found.
+func extractLoadBalancerIP(gw *gwv1.Gateway) (*string, error) {
 	if len(gw.Spec.Addresses) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	if len(gw.Spec.Addresses) > 1 {
-		slog.Warn("multiple addresses found in Gateway.spec.addresses, using first valid IP address",
-			"gateway", fmt.Sprintf("%s/%s", gw.Namespace, gw.Name),
-			"count", len(gw.Spec.Addresses),
-		)
+		return nil, fmt.Errorf("%w: gateway %s/%s has %d addresses", ErrMultipleAddresses, gw.Namespace, gw.Name, len(gw.Spec.Addresses))
 	}
 
-	for _, addr := range gw.Spec.Addresses {
-		// IPAddressType or nil (defaults to IPAddressType per Gateway API spec)
-		if addr.Type == nil || *addr.Type == gwv1.IPAddressType {
-			// Validate IP format
-			if parsedIP, err := netip.ParseAddr(addr.Value); err == nil && parsedIP.IsValid() {
-				return &addr.Value
-			}
-			// Log warning for invalid IP but continue searching
-			slog.Warn("invalid IP address in Gateway.spec.addresses, skipping", "value", addr.Value)
+	addr := gw.Spec.Addresses[0]
+	// IPAddressType or nil (defaults to IPAddressType per Gateway API spec)
+	if addr.Type == nil || *addr.Type == gwv1.IPAddressType {
+		// Validate IP format
+		if parsedIP, err := netip.ParseAddr(addr.Value); err == nil && parsedIP.IsValid() {
+			return &addr.Value, nil
 		}
 	}
 
-	slog.Error("no valid IP address found in Gateway.spec.addresses",
-		"gateway", fmt.Sprintf("%s/%s", gw.Namespace, gw.Name),
-	)
-	return nil
+	return nil, fmt.Errorf("%w: gateway %s/%s has no valid IP address", ErrNoValidIPAddress, gw.Namespace, gw.Name)
 }
 
 func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.GatewayParameters) (*deployer.HelmConfig, error) {
@@ -464,7 +461,11 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.Gatew
 	// Extract loadBalancerIP from Gateway.spec.addresses if service type is LoadBalancer
 	var loadBalancerIP *string
 	if svcConfig != nil && svcConfig.GetType() != nil && *svcConfig.GetType() == corev1.ServiceTypeLoadBalancer {
-		loadBalancerIP = extractLoadBalancerIP(gw)
+		var err error
+		loadBalancerIP, err = extractLoadBalancerIP(gw)
+		if err != nil {
+			return nil, err
+		}
 	}
 	gateway.Service = deployer.GetServiceValues(svcConfig, loadBalancerIP)
 	// serviceaccount values
