@@ -8,6 +8,10 @@ Backends:
           model: anthropic.claude-3-5-haiku-20241022-v1:0
           region: us-west-2
         name: backend
+  inlinePolicies:
+  - auth:
+      key:
+        secret: test
   key: default/bedrock
   name:
     name: bedrock
