@@ -8,57 +8,57 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 
-	gw2_v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 )
 
 func TestDeepMergeGatewayParameters(t *testing.T) {
 	tests := []struct {
 		name string
-		dst  *gw2_v1alpha1.GatewayParameters
-		src  *gw2_v1alpha1.GatewayParameters
-		want *gw2_v1alpha1.GatewayParameters
+		dst  *kgateway.GatewayParameters
+		src  *kgateway.GatewayParameters
+		want *kgateway.GatewayParameters
 		// Add a validation function that can perform additional checks
-		validate func(t *testing.T, got *gw2_v1alpha1.GatewayParameters)
+		validate func(t *testing.T, got *kgateway.GatewayParameters)
 	}{
 		{
 			name: "should override kube when selfManaged is set",
-			dst: &gw2_v1alpha1.GatewayParameters{
-				Spec: gw2_v1alpha1.GatewayParametersSpec{
-					Kube: &gw2_v1alpha1.KubernetesProxyConfig{},
+			dst: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{},
 				},
 			},
-			src: &gw2_v1alpha1.GatewayParameters{
-				Spec: gw2_v1alpha1.GatewayParametersSpec{
-					SelfManaged: &gw2_v1alpha1.SelfManagedGateway{},
+			src: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					SelfManaged: &kgateway.SelfManagedGateway{},
 				},
 			},
-			want: &gw2_v1alpha1.GatewayParameters{
-				Spec: gw2_v1alpha1.GatewayParametersSpec{
+			want: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
 					Kube:        nil,
-					SelfManaged: &gw2_v1alpha1.SelfManagedGateway{},
+					SelfManaged: &kgateway.SelfManagedGateway{},
 				},
 			},
 		},
 		{
 			name: "should override kube deployment replicas by default",
-			dst: &gw2_v1alpha1.GatewayParameters{
-				Spec: gw2_v1alpha1.GatewayParametersSpec{
-					Kube: &gw2_v1alpha1.KubernetesProxyConfig{},
+			dst: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{},
 				},
 			},
-			src: &gw2_v1alpha1.GatewayParameters{
-				Spec: gw2_v1alpha1.GatewayParametersSpec{
-					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-						Deployment: &gw2_v1alpha1.ProxyDeployment{
+			src: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						Deployment: &kgateway.ProxyDeployment{
 							Replicas: ptr.To[int32](5),
 						},
 					},
 				},
 			},
-			want: &gw2_v1alpha1.GatewayParameters{
-				Spec: gw2_v1alpha1.GatewayParametersSpec{
-					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-						Deployment: &gw2_v1alpha1.ProxyDeployment{
+			want: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						Deployment: &kgateway.ProxyDeployment{
 							Replicas: ptr.To[int32](5),
 						},
 					},
@@ -67,28 +67,28 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 		},
 		{
 			name: "should override kube deployment replicas if explicit",
-			dst: &gw2_v1alpha1.GatewayParameters{
-				Spec: gw2_v1alpha1.GatewayParametersSpec{
-					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-						Deployment: &gw2_v1alpha1.ProxyDeployment{
+			dst: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						Deployment: &kgateway.ProxyDeployment{
 							Replicas: ptr.To[int32](2),
 						},
 					},
 				},
 			},
-			src: &gw2_v1alpha1.GatewayParameters{
-				Spec: gw2_v1alpha1.GatewayParametersSpec{
-					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-						Deployment: &gw2_v1alpha1.ProxyDeployment{
+			src: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						Deployment: &kgateway.ProxyDeployment{
 							Replicas: ptr.To[int32](3),
 						},
 					},
 				},
 			},
-			want: &gw2_v1alpha1.GatewayParameters{
-				Spec: gw2_v1alpha1.GatewayParametersSpec{
-					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-						Deployment: &gw2_v1alpha1.ProxyDeployment{
+			want: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						Deployment: &kgateway.ProxyDeployment{
 							Replicas: ptr.To[int32](3),
 						},
 					},
@@ -97,24 +97,24 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 		},
 		{
 			name: "should not override kube deployment replicas if src is nil",
-			dst: &gw2_v1alpha1.GatewayParameters{
-				Spec: gw2_v1alpha1.GatewayParametersSpec{
-					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-						Deployment: &gw2_v1alpha1.ProxyDeployment{
+			dst: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						Deployment: &kgateway.ProxyDeployment{
 							Replicas: ptr.To[int32](2),
 						},
 					},
 				},
 			},
-			src: &gw2_v1alpha1.GatewayParameters{
-				Spec: gw2_v1alpha1.GatewayParametersSpec{
-					Kube: &gw2_v1alpha1.KubernetesProxyConfig{},
+			src: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{},
 				},
 			},
-			want: &gw2_v1alpha1.GatewayParameters{
-				Spec: gw2_v1alpha1.GatewayParametersSpec{
-					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-						Deployment: &gw2_v1alpha1.ProxyDeployment{
+			want: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						Deployment: &kgateway.ProxyDeployment{
 							Replicas: ptr.To[int32](2),
 						},
 					},
@@ -123,10 +123,10 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 		},
 		{
 			name: "merges maps",
-			dst: &gw2_v1alpha1.GatewayParameters{
-				Spec: gw2_v1alpha1.GatewayParametersSpec{
-					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-						PodTemplate: &gw2_v1alpha1.Pod{
+			dst: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						PodTemplate: &kgateway.Pod{
 							ExtraLabels: map[string]string{
 								"a": "aaa",
 								"b": "bbb",
@@ -136,7 +136,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 								"b": "bbb",
 							},
 						},
-						Service: &gw2_v1alpha1.Service{
+						Service: &kgateway.Service{
 							ExtraLabels: map[string]string{
 								"a": "aaa",
 								"b": "bbb",
@@ -146,7 +146,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 								"b": "bbb",
 							},
 						},
-						ServiceAccount: &gw2_v1alpha1.ServiceAccount{
+						ServiceAccount: &kgateway.ServiceAccount{
 							ExtraLabels: map[string]string{
 								"a": "aaa",
 								"b": "bbb",
@@ -159,10 +159,10 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 					},
 				},
 			},
-			src: &gw2_v1alpha1.GatewayParameters{
-				Spec: gw2_v1alpha1.GatewayParametersSpec{
-					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-						PodTemplate: &gw2_v1alpha1.Pod{
+			src: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						PodTemplate: &kgateway.Pod{
 							ExtraLabels: map[string]string{
 								"a": "aaa-override",
 								"c": "ccc",
@@ -172,7 +172,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 								"c": "ccc",
 							},
 						},
-						Service: &gw2_v1alpha1.Service{
+						Service: &kgateway.Service{
 							ExtraLabels: map[string]string{
 								"a": "aaa-override",
 								"c": "ccc",
@@ -182,7 +182,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 								"c": "ccc",
 							},
 						},
-						ServiceAccount: &gw2_v1alpha1.ServiceAccount{
+						ServiceAccount: &kgateway.ServiceAccount{
 							ExtraLabels: map[string]string{
 								"a": "aaa-override",
 								"c": "ccc",
@@ -195,10 +195,10 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 					},
 				},
 			},
-			want: &gw2_v1alpha1.GatewayParameters{
-				Spec: gw2_v1alpha1.GatewayParametersSpec{
-					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-						PodTemplate: &gw2_v1alpha1.Pod{
+			want: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						PodTemplate: &kgateway.Pod{
 							ExtraLabels: map[string]string{
 								"a": "aaa-override",
 								"b": "bbb",
@@ -210,7 +210,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 								"c": "ccc",
 							},
 						},
-						Service: &gw2_v1alpha1.Service{
+						Service: &kgateway.Service{
 							ExtraLabels: map[string]string{
 								"a": "aaa-override",
 								"b": "bbb",
@@ -222,7 +222,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 								"c": "ccc",
 							},
 						},
-						ServiceAccount: &gw2_v1alpha1.ServiceAccount{
+						ServiceAccount: &kgateway.ServiceAccount{
 							ExtraLabels: map[string]string{
 								"a": "aaa-override",
 								"b": "bbb",
@@ -237,7 +237,7 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 					},
 				},
 			},
-			validate: func(t *testing.T, got *gw2_v1alpha1.GatewayParameters) {
+			validate: func(t *testing.T, got *kgateway.GatewayParameters) {
 				expectedMap := map[string]string{
 					"a": "aaa-override",
 					"b": "bbb",
@@ -253,10 +253,10 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 		},
 		{
 			name: "should have only one probeHandler action",
-			dst: &gw2_v1alpha1.GatewayParameters{
-				Spec: gw2_v1alpha1.GatewayParametersSpec{
-					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-						PodTemplate: &gw2_v1alpha1.Pod{
+			dst: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						PodTemplate: &kgateway.Pod{
 							StartupProbe: &corev1.Probe{
 								ProbeHandler: corev1.ProbeHandler{
 									Exec: &corev1.ExecAction{
@@ -268,10 +268,10 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 					},
 				},
 			},
-			src: &gw2_v1alpha1.GatewayParameters{
-				Spec: gw2_v1alpha1.GatewayParametersSpec{
-					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-						PodTemplate: &gw2_v1alpha1.Pod{
+			src: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						PodTemplate: &kgateway.Pod{
 							StartupProbe: &corev1.Probe{
 								ProbeHandler: corev1.ProbeHandler{
 									TCPSocket: &corev1.TCPSocketAction{
@@ -283,10 +283,10 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 					},
 				},
 			},
-			want: &gw2_v1alpha1.GatewayParameters{
-				Spec: gw2_v1alpha1.GatewayParametersSpec{
-					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-						PodTemplate: &gw2_v1alpha1.Pod{
+			want: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						PodTemplate: &kgateway.Pod{
 							StartupProbe: &corev1.Probe{
 								ProbeHandler: corev1.ProbeHandler{
 									TCPSocket: &corev1.TCPSocketAction{
@@ -301,10 +301,10 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 		},
 		{
 			name: "should merge the default probeHandler action if none specified",
-			dst: &gw2_v1alpha1.GatewayParameters{
-				Spec: gw2_v1alpha1.GatewayParametersSpec{
-					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-						PodTemplate: &gw2_v1alpha1.Pod{
+			dst: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						PodTemplate: &kgateway.Pod{
 							StartupProbe: &corev1.Probe{
 								ProbeHandler: corev1.ProbeHandler{
 									Exec: &corev1.ExecAction{
@@ -316,15 +316,15 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 					},
 				},
 			},
-			src: &gw2_v1alpha1.GatewayParameters{
-				Spec: gw2_v1alpha1.GatewayParametersSpec{
-					Kube: &gw2_v1alpha1.KubernetesProxyConfig{},
+			src: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{},
 				},
 			},
-			want: &gw2_v1alpha1.GatewayParameters{
-				Spec: gw2_v1alpha1.GatewayParametersSpec{
-					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-						PodTemplate: &gw2_v1alpha1.Pod{
+			want: &kgateway.GatewayParameters{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						PodTemplate: &kgateway.Pod{
 							StartupProbe: &corev1.Probe{
 								ProbeHandler: corev1.ProbeHandler{
 									Exec: &corev1.ExecAction{

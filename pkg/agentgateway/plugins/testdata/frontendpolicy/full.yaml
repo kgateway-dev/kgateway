@@ -1,4 +1,4 @@
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: agw
@@ -10,6 +10,8 @@ spec:
       group: gateway.networking.k8s.io
   frontend:
     tls:
+      alpnProtocols:
+      - custom
       handshakeTimeout: 10s
     tcp:
       keepalive:
@@ -27,19 +29,19 @@ spec:
         add:
           - expression: 'request.headers["user-agent"]'
             name: http.useragent
-    tracing:
-      backendRef:
-        name: my-otel
-        namespace: some-other-ns
-      protocol: GRPC
-      clientSampling: "true"
-      randomSampling: "true"
-      attributes:
-        remove:
-          - response.code
-        add:
-          - expression: 'request.headers["user-agent"]'
-            name: http.useragent
+#    tracing:
+#      backendRef:
+#        name: my-otel
+#        namespace: some-other-ns
+#      protocol: GRPC
+#      clientSampling: "true"
+#      randomSampling: "true"
+#      attributes:
+#        remove:
+#          - response.code
+#        add:
+#          - expression: 'request.headers["user-agent"]'
+#            name: http.useragent
 
 ---
 # Output
@@ -49,16 +51,31 @@ output:
       http:
         http2FrameSize: 17000
         maxBufferSize: 1000
-    name: frontend/default/agw:frontend-http:default/test
+    key: frontend/default/agw:frontend-http:default/test
+    name:
+      kind: AgentgatewayPolicy
+      name: agw
+      namespace: default
     target:
-      gateway: default/test
+      gateway:
+        name: test
+        namespace: default
 - Policy:
     frontend:
       tls:
+        alpn:
+          protocols:
+          - custom
         tlsHandshakeTimeout: 10s
-    name: frontend/default/agw:frontend-tls:default/test
+    key: frontend/default/agw:frontend-tls:default/test
+    name:
+      kind: AgentgatewayPolicy
+      name: agw
+      namespace: default
     target:
-      gateway: default/test
+      gateway:
+        name: test
+        namespace: default
 - Policy:
     frontend:
       tcp:
@@ -66,9 +83,15 @@ output:
           interval: 30s
           retries: 5
           time: 60s
-    name: frontend/default/agw:frontend-tcp:default/test
+    key: frontend/default/agw:frontend-tcp:default/test
+    name:
+      kind: AgentgatewayPolicy
+      name: agw
+      namespace: default
     target:
-      gateway: default/test
+      gateway:
+        name: test
+        namespace: default
 - Policy:
     frontend:
       logging:
@@ -79,15 +102,15 @@ output:
           remove:
           - response.code
         filter: response.code != 200
-    name: frontend/default/agw:frontend-logging:default/test
+    key: frontend/default/agw:frontend-logging:default/test
+    name:
+      kind: AgentgatewayPolicy
+      name: agw
+      namespace: default
     target:
-      gateway: default/test
-- Policy:
-    frontend:
-      tracing: {}
-    name: frontend/default/agw:frontend-tracing:default/test
-    target:
-      gateway: default/test
+      gateway:
+        name: test
+        namespace: default
 status:
   ancestors:
   - ancestorRef:

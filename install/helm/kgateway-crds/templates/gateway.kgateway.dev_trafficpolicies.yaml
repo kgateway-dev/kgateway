@@ -54,13 +54,231 @@ spec:
             description: TrafficPolicySpec defines the desired state of a traffic
               policy.
             properties:
+              apiKeyAuthentication:
+                description: APIKeyAuthentication authenticates users based on a configured
+                  API Key.
+                properties:
+                  clientIdHeader:
+                    description: |-
+                      clientIdHeader specifies the header name to forward the authenticated client identifier.
+                      If not specified, the client identifier will not be forwarded in any header.
+                      Example: "x-client-id"
+                    type: string
+                  forwardCredential:
+                    description: |-
+                      forwardCredential controls whether the API key is included in the request sent to the upstream.
+                      If false (default), the API key is removed from the request before sending to upstream.
+                      If true, the API key is included in the request sent to upstream.
+                      This applies to all configured key sources (header, query parameter, or cookie).
+                    type: boolean
+                  keySources:
+                    description: |-
+                      keySources specifies the list of key sources to extract the API key from.
+                      Key sources are processed in array order and the first one that successfully
+                      extracts a key is used. Within each key source, if multiple types (header, query, cookie) are
+                      specified, precedence is: header > query parameter > cookie.
+
+                      If empty, defaults to a single key source with header "api-key".
+
+                      Example:
+                        keySources:
+                        - header: "X-API-KEY"
+                        - query: "api_key"
+                        - header: "Authorization"
+                          query: "token"
+                          cookie: "auth_token"
+
+                      In this example, the system will:
+                      1. First try header "X-API-KEY"
+                      2. If not found, try query parameter "api_key"
+                      3. If not found, try header "Authorization" (then query "token", then cookie "auth_token" within that key source)
+                    items:
+                      description: |-
+                        APIKeySource defines where to extract the API key from within a single key source.
+                        Within a single key source, if multiple types are specified, precedence is:
+                        header > query parameter > cookie. The header is checked first, and only falls back
+                        to query parameter if the header is not present, then to cookie if both header and query
+                        are not present.
+                      properties:
+                        cookie:
+                          description: cookie specifies the name of the cookie that
+                            contains the API key.
+                          maxLength: 256
+                          minLength: 1
+                          type: string
+                        header:
+                          description: header specifies the name of the header that
+                            contains the API key.
+                          maxLength: 256
+                          minLength: 1
+                          type: string
+                        query:
+                          description: query specifies the name of the query parameter
+                            that contains the API key.
+                          maxLength: 256
+                          minLength: 1
+                          type: string
+                      type: object
+                      x-kubernetes-validations:
+                      - message: at least one of the fields in [header query cookie]
+                          must be set
+                        rule: '[has(self.header),has(self.query),has(self.cookie)].filter(x,x==true).size()
+                          >= 1'
+                    maxItems: 16
+                    minItems: 0
+                    type: array
+                  secretRef:
+                    description: |-
+                      secretRef references a Kubernetes secret storing a set of API Keys. If there are many keys, 'secretSelector' can be
+                      used instead.
+
+                      Each entry in the Secret represents one API Key. The key is an arbitrary identifier.
+                      The value is a string, representing the API Key.
+
+                      Example:
+
+                      apiVersion: v1
+                      kind: Secret
+                      metadata:
+                        name: api-key
+                      stringData:
+                        client1: "k-123"
+                        client2: "k-456"
+                    properties:
+                      group:
+                        default: ""
+                        description: |-
+                          Group is the group of the referent. For example, "gateway.networking.k8s.io".
+                          When unspecified or empty string, core API group is inferred.
+                        maxLength: 253
+                        pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                        type: string
+                      kind:
+                        default: Secret
+                        description: Kind is kind of the referent. For example "Secret".
+                        maxLength: 63
+                        minLength: 1
+                        pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
+                        type: string
+                      name:
+                        description: Name is the name of the referent.
+                        maxLength: 253
+                        minLength: 1
+                        type: string
+                      namespace:
+                        description: |-
+                          Namespace is the namespace of the referenced object. When unspecified, the local
+                          namespace is inferred.
+
+                          Note that when a namespace different than the local namespace is specified,
+                          a ReferenceGrant object is required in the referent namespace to allow that
+                          namespace's owner to accept the reference. See the ReferenceGrant
+                          documentation for details.
+
+                          Support: Core
+                        maxLength: 63
+                        minLength: 1
+                        pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                        type: string
+                    required:
+                    - name
+                    type: object
+                  secretSelector:
+                    description: |-
+                      secretSelector selects multiple secrets containing API Keys. If the same key is defined in multiple secrets, the
+                      behavior is undefined.
+
+                      Each entry in the Secret represents one API Key. The key is an arbitrary identifier.
+                      The value is a string, representing the API Key.
+
+                      Example:
+
+                      apiVersion: v1
+                      kind: Secret
+                      metadata:
+                        name: api-key
+                      stringData:
+                        client1: "k-123"
+                        client2: "k-456"
+                    properties:
+                      matchLabels:
+                        additionalProperties:
+                          type: string
+                        description: Label selector to select the target resource.
+                        type: object
+                    required:
+                    - matchLabels
+                    type: object
+                type: object
+                x-kubernetes-validations:
+                - message: exactly one of the fields in [secretRef secretSelector]
+                    must be set
+                  rule: '[has(self.secretRef),has(self.secretSelector)].filter(x,x==true).size()
+                    == 1'
               autoHostRewrite:
                 description: |-
                   AutoHostRewrite rewrites the Host header to the DNS name of the selected upstream.
-                  NOTE: This field is only honoured for HTTPRoute targets.
+                  NOTE: This field is only honored for HTTPRoute targets.
                   NOTE: If `autoHostRewrite` is set on a route that also has a [URLRewrite filter](https://gateway-api.sigs.k8s.io/reference/spec/#httpurlrewritefilter)
                   configured to override the `hostname`, the `hostname` value will be used and `autoHostRewrite` will be ignored.
                 type: boolean
+              basicAuth:
+                description: |-
+                  BasicAuth specifies the HTTP basic authentication configuration for the policy.
+                  This controls authentication using username/password credentials in the Authorization header.
+                properties:
+                  disable:
+                    description: |-
+                      Disable basic auth.
+                      Can be used to disable basic auth policies applied at a higher level in the config hierarchy.
+                    type: object
+                  secretRef:
+                    description: |-
+                      SecretRef references a Kubernetes secret containing htpasswd data.
+                      The secret must contain username/password pairs in htpasswd format.
+                    properties:
+                      key:
+                        default: .htpasswd
+                        description: |-
+                          Key in the secret that contains the htpasswd data.
+                          Defaults to ".htpasswd" if not specified.
+                        minLength: 1
+                        type: string
+                      name:
+                        description: Name of the secret containing htpasswd data.
+                        maxLength: 253
+                        minLength: 1
+                        type: string
+                      namespace:
+                        description: |-
+                          Namespace of the secret. If not specified, defaults to the namespace of the TrafficPolicy.
+                          Note that a secret in a different namespace requires a ReferenceGrant to be accessible.
+                        maxLength: 63
+                        minLength: 1
+                        pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                        type: string
+                    required:
+                    - name
+                    type: object
+                  users:
+                    description: |-
+                      Users provides an inline list of username/password pairs in htpasswd format.
+                      Each entry should be formatted as "username:hashed_password".
+                      The only supported hash format is SHA-1
+
+                      Example entries:
+                        - "user1:{SHA}d95o2uzYI7q7tY7bHI4U1xBug7s="
+                    items:
+                      type: string
+                    maxItems: 256
+                    minItems: 1
+                    type: array
+                type: object
+                x-kubernetes-validations:
+                - message: exactly one of the fields in [users secretRef disable]
+                    must be set
+                  rule: '[has(self.users),has(self.secretRef),has(self.disable)].filter(x,x==true).size()
+                    == 1'
               buffer:
                 description: |-
                   Buffer can be used to set the maximum request size that will be buffered.
@@ -93,6 +311,45 @@ spec:
                     be set
                   rule: '[has(self.maxRequestSize),has(self.disable)].filter(x,x==true).size()
                     == 1'
+              compression:
+                description: |-
+                  Compression configures response compression (per-route) and request/response
+                  decompression (listener-level insertion triggered by route enable).
+                  The response compression configuration is only honored for HTTPRoute targets.
+                properties:
+                  requestDecompression:
+                    description: |-
+                      RequestDecompression controls request decompression.
+                      If set, gzip requests will be decompressed.
+                    properties:
+                      disable:
+                        description: Disables decompression.
+                        type: object
+                    type: object
+                  responseCompression:
+                    description: |-
+                      ResponseCompression controls response compression to the downstream.
+                      If set, responses with the appropriate `Accept-Encoding` header with certain textual content types will be compressed using gzip.
+                      The content-types that will be compressed are:
+                      - `application/javascript`
+                      - `application/json`
+                      - `application/xhtml+xml`
+                      - `image/svg+xml`
+                      - `text/css`
+                      - `text/html`
+                      - `text/plain`
+                      - `text/xml`
+                    properties:
+                      disable:
+                        description: Disables compression.
+                        type: object
+                    type: object
+                type: object
+                x-kubernetes-validations:
+                - message: at least one of the fields in [responseCompression requestDecompression]
+                    must be set
+                  rule: '[has(self.responseCompression),has(self.requestDecompression)].filter(x,x==true).size()
+                    >= 1'
               cors:
                 description: Cors specifies the CORS configuration for the policy.
                 properties:
@@ -892,9 +1149,47 @@ spec:
                   JWT specifies the JWT authentication configuration for the policy.
                   This defines the JWT providers and their configurations.
                 properties:
+                  disable:
+                    description: |-
+                      Disable all JWT filters.
+                      Can be used to disable JWT policies applied at a higher level in the config hierarchy.
+                    type: object
                   extensionRef:
                     description: ExtensionRef references a GatewayExtension that provides
                       the jwt providers
+                    properties:
+                      name:
+                        description: The name of the target resource.
+                        maxLength: 253
+                        minLength: 1
+                        type: string
+                      namespace:
+                        description: |-
+                          The namespace of the target resource.
+                          If not set, defaults to the namespace of the parent object.
+                        maxLength: 63
+                        minLength: 1
+                        pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                        type: string
+                    required:
+                    - name
+                    type: object
+                type: object
+                x-kubernetes-validations:
+                - message: exactly one of the fields in [extensionRef disable] must
+                    be set
+                  rule: '[has(self.extensionRef),has(self.disable)].filter(x,x==true).size()
+                    == 1'
+              oauth2:
+                description: |-
+                  OAuth2 specifies the configuration to use for OAuth2/OIDC.
+                  Note: the OAuth2 filter does not protect against Cross-Site-Request-Forgery attacks on domains with cached
+                  authentication (in the form of cookies). It is recommended to pair this with the CSRF policy to prevent
+                  malicious social engineering.
+                properties:
+                  extensionRef:
+                    description: ExtensionRef specifies the GatewayExtension that
+                      should be used for OAuth2.
                     properties:
                       name:
                         description: The name of the target resource.
@@ -1089,9 +1384,8 @@ spec:
                           MatchExpressions defines a set of conditions that must be satisfied for the rule to match.
                           These expression should be in the form of a Common Expression Language (CEL) expression.
                         items:
-                          description: A Common Expression Language (CEL) expression.
-                            See https://agentgateway.dev/docs/reference/cel/ for more
-                            info.
+                          description: CELExpression represents a Common Expression
+                            Language (CEL) expression.
                           maxLength: 16384
                           minLength: 1
                           type: string
@@ -1246,13 +1540,10 @@ spec:
                 minItems: 1
                 type: array
                 x-kubernetes-validations:
-                - message: targetRefs may only reference Gateway, HTTPRoute, or XListenerSet
+                - message: targetRefs may only reference Gateway, HTTPRoute, or ListenerSet
                     resources
                   rule: self.all(r, (r.kind == 'Gateway' || r.kind == 'HTTPRoute'
-                    || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io'))
-                    && (!has(r.group) || r.group == 'gateway.networking.k8s.io' ||
-                    r.group == 'gateway.networking.x-k8s.io' || r.group == 'gateway.kgateway.dev'
-                    ))
+                    || r.kind.endsWith('ListenerSet')))
               targetSelectors:
                 description: TargetSelectors specifies the target selectors to select
                   resources to attach the policy to.
@@ -1299,11 +1590,9 @@ spec:
                 type: array
                 x-kubernetes-validations:
                 - message: targetSelectors may only reference Gateway, HTTPRoute,
-                    or XListenerSet resources
+                    or ListenerSet resources
                   rule: self.all(r, (r.kind == 'Gateway' || r.kind == 'HTTPRoute'
-                    || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io'))
-                    && (!has(r.group) || r.group == 'gateway.networking.k8s.io' ||
-                    r.group == 'gateway.networking.x-k8s.io'))
+                    || r.kind.endsWith('ListenerSet')))
               timeouts:
                 description: |-
                   Timeouts defines the timeouts for requests
@@ -1485,6 +1774,39 @@ spec:
                         x-kubernetes-list-type: map
                     type: object
                 type: object
+              urlRewrite:
+                description: |-
+                  UrlRewrite specifies URL rewrite rules for matching requests.
+                  NOTE: This field is only honored for HTTPRoute targets.
+                properties:
+                  pathRegex:
+                    description: Path specifies the path rewrite configuration.
+                    properties:
+                      pattern:
+                        description: |-
+                          Pattern is the regex pattern that matches the URL path.
+                          The pattern must be a valid RE2 regular expression.
+                          If the HTTPRoute uses a RegularExpression path match, this field can use capture groups
+                          from that match.
+                        maxLength: 1024
+                        minLength: 1
+                        type: string
+                      substitution:
+                        description: |-
+                          Substitution is the replacement string for the matched pattern.
+                          It can include backreferences to captured groups from the pattern (e.g., \1, \2)
+                          or named groups (e.g., \g<name>).
+                        maxLength: 1024
+                        minLength: 1
+                        type: string
+                    required:
+                    - pattern
+                    - substitution
+                    type: object
+                type: object
+                x-kubernetes-validations:
+                - message: at least one of the fields in [pathRegex] must be set
+                  rule: '[has(self.pathRegex)].filter(x,x==true).size() >= 1'
             type: object
             x-kubernetes-validations:
             - message: autoHostRewrite can only be used when targeting HTTPRoute resources

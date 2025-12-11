@@ -30,15 +30,16 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	gw2_v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	deployerinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/httplistenerpolicy"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
-	"github.com/kgateway-dev/kgateway/v2/internal/version"
+	agentgatewayv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
+	deployerinternal "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/deployer"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/listenerpolicy"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
 	// TODO BML tests in this suite fail if this no-op import is not imported first.
 	//
 	// I know, I know, you're reading this, and you're skeptical. I can feel it.
@@ -46,15 +47,15 @@ import (
 	//
 	// There is some import within this package that this suite relies on. Chasing that down is
 	// *hard* tho due to the import tree, and best done in a followup.
-	// _ "github.com/kgateway-dev/kgateway/internal/kgateway/translator/translator.go"
+	// _ "github.com/kgateway-dev/kgateway/pkg/kgateway/translator/translator.go"
 	//
 	// The above TODO is a result of proto types being registered for free somewhere through
 	// the translator import. What we really need is to register all proto types, which is
 	// "correctly" available to use via `envoyinit`; note that the autogeneration of these types
 	// is currently broken. see: https://github.com/kgateway-dev/kgateway/issues/10491
 	_ "github.com/kgateway-dev/kgateway/v2/pkg/utils/filter_types"
+	"github.com/kgateway-dev/kgateway/v2/pkg/version"
 	deployertest "github.com/kgateway-dev/kgateway/v2/test/deployer"
-	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	translatortest "github.com/kgateway-dev/kgateway/v2/test/translator"
 )
 
@@ -160,7 +161,7 @@ var _ = Describe("Deployer", func() {
 		defaultGatewayClassWithParamsRef = func() *gwv1.GatewayClass {
 			gwc := defaultGatewayClass()
 			gwc.Spec.ParametersRef = &gwv1.ParametersReference{
-				Group:     gw2_v1alpha1.GroupName,
+				Group:     kgateway.GroupName,
 				Kind:      gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 				Name:      wellknown.DefaultGatewayParametersName,
 				Namespace: ptr.To(gwv1.Namespace(defaultNamespace)),
@@ -169,7 +170,7 @@ var _ = Describe("Deployer", func() {
 		}
 
 		defaultGateway = func() *gwv1.Gateway {
-			return &gwv1.Gateway{
+			gw := &gwv1.Gateway{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: defaultNamespace,
@@ -183,6 +184,8 @@ var _ = Describe("Deployer", func() {
 					}},
 				},
 			}
+			gw.SetGroupVersionKind(wellknown.GatewayGVK)
+			return gw
 		}
 
 		highPortGateway = func() *gwv1.Gateway {
@@ -195,34 +198,34 @@ var _ = Describe("Deployer", func() {
 		}
 
 		// Note that this is NOT meant to reflect the actual defaults defined in install/helm/kgateway/templates/gatewayparameters.yaml
-		defaultGatewayParams = func() *gw2_v1alpha1.GatewayParameters {
-			return &gw2_v1alpha1.GatewayParameters{
+		defaultGatewayParams = func() *kgateway.GatewayParameters {
+			return &kgateway.GatewayParameters{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      wellknown.DefaultGatewayParametersName,
 					Namespace: defaultNamespace,
 					UID:       "1237",
 				},
-				Spec: gw2_v1alpha1.GatewayParametersSpec{
-					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-						Deployment: &gw2_v1alpha1.ProxyDeployment{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
+						Deployment: &kgateway.ProxyDeployment{
 							Replicas: ptr.To[int32](2),
 						},
-						EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
-							Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
+						EnvoyContainer: &kgateway.EnvoyContainer{
+							Bootstrap: &kgateway.EnvoyBootstrap{
 								LogLevel: ptr.To("debug"),
 								ComponentLogLevels: map[string]string{
 									"router":   "info",
 									"listener": "warn",
 								},
 							},
-							Image: &gw2_v1alpha1.Image{
+							Image: &kgateway.Image{
 								Registry:   ptr.To("scooby"),
 								Repository: ptr.To("dooby"),
 								Tag:        ptr.To("doo"),
 								PullPolicy: ptr.To(corev1.PullAlways),
 							},
 						},
-						PodTemplate: &gw2_v1alpha1.Pod{
+						PodTemplate: &kgateway.Pod{
 							ExtraAnnotations: map[string]string{
 								"foo": "bar",
 							},
@@ -231,7 +234,7 @@ var _ = Describe("Deployer", func() {
 								RunAsGroup: ptr.To(int64(2)),
 							},
 						},
-						Service: &gw2_v1alpha1.Service{
+						Service: &kgateway.Service{
 							Type:      ptr.To(corev1.ServiceTypeClusterIP),
 							ClusterIP: ptr.To("99.99.99.99"),
 							ExtraLabels: map[string]string{
@@ -242,7 +245,7 @@ var _ = Describe("Deployer", func() {
 							},
 							ExternalTrafficPolicy: ptr.To(string(corev1.ServiceExternalTrafficPolicyTypeLocal)),
 						},
-						ServiceAccount: &gw2_v1alpha1.ServiceAccount{
+						ServiceAccount: &kgateway.ServiceAccount{
 							ExtraLabels: map[string]string{
 								"default-label-key": "default-label-val",
 							},
@@ -250,7 +253,7 @@ var _ = Describe("Deployer", func() {
 								"default-anno-key": "default-anno-val",
 							},
 						},
-						Stats: &gw2_v1alpha1.StatsConfig{
+						Stats: &kgateway.StatsConfig{
 							Enabled:                 ptr.To(true),
 							RoutePrefixRewrite:      ptr.To("/stats/prometheus?usedonly"),
 							EnableStatsRoute:        ptr.To(true),
@@ -266,30 +269,30 @@ var _ = Describe("Deployer", func() {
 		defaultServiceName        = defaultDeploymentName
 		defaultServiceAccountName = defaultDeploymentName
 
-		selfManagedGatewayParam = func(name string) *gw2_v1alpha1.GatewayParameters {
-			return &gw2_v1alpha1.GatewayParameters{
+		selfManagedGatewayParam = func(name string) *kgateway.GatewayParameters {
+			return &kgateway.GatewayParameters{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      name,
 					Namespace: defaultNamespace,
 					UID:       "1237",
 				},
-				Spec: gw2_v1alpha1.GatewayParametersSpec{
-					SelfManaged: &gw2_v1alpha1.SelfManagedGateway{},
+				Spec: kgateway.GatewayParametersSpec{
+					SelfManaged: &kgateway.SelfManagedGateway{},
 				},
 			}
 		}
 
-		envoyOmitDefaultSecurityContextParam = func(name string) *gw2_v1alpha1.GatewayParameters {
-			return &gw2_v1alpha1.GatewayParameters{
+		envoyOmitDefaultSecurityContextParam = func(name string) *kgateway.GatewayParameters {
+			return &kgateway.GatewayParameters{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      name,
 					Namespace: defaultNamespace,
 					UID:       "1237",
 				},
-				Spec: gw2_v1alpha1.GatewayParametersSpec{
-					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
+				Spec: kgateway.GatewayParametersSpec{
+					Kube: &kgateway.KubernetesProxyConfig{
 						OmitDefaultSecurityContext: ptr.To(true),
-						EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
+						EnvoyContainer: &kgateway.EnvoyContainer{
 							SecurityContext: &corev1.SecurityContext{
 								RunAsUser: ptr.To(int64(333)),
 							},
@@ -299,71 +302,26 @@ var _ = Describe("Deployer", func() {
 			}
 		}
 
-		agentgatewayParam = func(name string) *gw2_v1alpha1.GatewayParameters {
-			return &gw2_v1alpha1.GatewayParameters{
+		agentgatewayParam = func(name string) *agentgatewayv1alpha1.AgentgatewayParameters {
+			return &agentgatewayv1alpha1.AgentgatewayParameters{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      name,
 					Namespace: defaultNamespace,
 					UID:       "1237",
 				},
-				Spec: gw2_v1alpha1.GatewayParametersSpec{
-					Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-						Agentgateway: &gw2_v1alpha1.Agentgateway{
-							Enabled: ptr.To(true),
-							Image: &gw2_v1alpha1.Image{
-								Tag: ptr.To("0.4.0"),
-							},
-							SecurityContext: &corev1.SecurityContext{
-								RunAsUser: ptr.To(int64(333)),
-							},
-							Resources: &corev1.ResourceRequirements{
-								Limits: corev1.ResourceList{"cpu": resource.MustParse("101m")},
-							},
-							Env: []corev1.EnvVar{
-								{
-									Name:  "test",
-									Value: "value",
-								},
-							},
+				Spec: agentgatewayv1alpha1.AgentgatewayParametersSpec{
+					AgentgatewayParametersConfigs: agentgatewayv1alpha1.AgentgatewayParametersConfigs{
+						Image: &agentgatewayv1alpha1.Image{
+							Repository: ptr.To("agentgateway"),
+							Tag:        ptr.To("0.4.0"),
 						},
-						PodTemplate: &gw2_v1alpha1.Pod{
-							TopologySpreadConstraints: []corev1.TopologySpreadConstraint{
-								{
-									MaxSkew:           1,
-									TopologyKey:       "kubernetes.io/hostname",
-									WhenUnsatisfiable: corev1.DoNotSchedule,
-									LabelSelector: &metav1.LabelSelector{
-										MatchLabels: map[string]string{"app": "test"},
-									},
-								},
-							},
-							Tolerations: []corev1.Toleration{
-								{
-									Key:      "test-key",
-									Operator: corev1.TolerationOpEqual,
-									Value:    "test-value",
-									Effect:   corev1.TaintEffectNoSchedule,
-								},
-							},
-							Affinity: &corev1.Affinity{
-								NodeAffinity: &corev1.NodeAffinity{
-									RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
-										NodeSelectorTerms: []corev1.NodeSelectorTerm{
-											{
-												MatchExpressions: []corev1.NodeSelectorRequirement{
-													{
-														Key:      "kubernetes.io/os",
-														Operator: corev1.NodeSelectorOpIn,
-														Values:   []string{"linux"},
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-							NodeSelector: map[string]string{
-								"kubernetes.io/arch": "amd64",
+						Resources: &corev1.ResourceRequirements{
+							Limits: corev1.ResourceList{"cpu": resource.MustParse("101m")},
+						},
+						Env: []corev1.EnvVar{
+							{
+								Name:  "test",
+								Value: "value",
 							},
 						},
 					},
@@ -381,14 +339,14 @@ var _ = Describe("Deployer", func() {
 				Spec: gwv1.GatewayClassSpec{
 					ControllerName: wellknown.DefaultGatewayControllerName,
 					ParametersRef: &gwv1.ParametersReference{
-						Group:     gw2_v1alpha1.GroupName,
+						Group:     kgateway.GroupName,
 						Kind:      gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 						Name:      wellknown.DefaultGatewayParametersName,
 						Namespace: ptr.To(gwv1.Namespace(defaultNamespace)),
 					},
 				},
 			}
-			gwParams := &gw2_v1alpha1.GatewayParameters{
+			gwParams := &kgateway.GatewayParameters{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      wellknown.DefaultGatewayParametersName,
 					Namespace: defaultNamespace,
@@ -427,9 +385,10 @@ var _ = Describe("Deployer", func() {
 					Registry: "foo",
 					Tag:      "bar",
 				},
-				GatewayClassName:         wellknown.DefaultGatewayClassName,
-				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
+				GatewayClassName:           wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
+				AgentgatewayClassName:      wellknown.DefaultAgwClassName,
+				AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
 			})
 			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
@@ -457,7 +416,7 @@ var _ = Describe("Deployer", func() {
 	Context("self managed gateway", func() {
 		var (
 			d   *deployer.Deployer
-			gwp *gw2_v1alpha1.GatewayParameters
+			gwp *kgateway.GatewayParameters
 			gwc *gwv1.GatewayClass
 		)
 		BeforeEach(func() {
@@ -469,7 +428,7 @@ var _ = Describe("Deployer", func() {
 				Spec: gwv1.GatewayClassSpec{
 					ControllerName: wellknown.DefaultGatewayControllerName,
 					ParametersRef: &gwv1.ParametersReference{
-						Group:     gw2_v1alpha1.GroupName,
+						Group:     kgateway.GroupName,
 						Kind:      gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 						Name:      gwp.GetName(),
 						Namespace: ptr.To(gwv1.Namespace(defaultNamespace)),
@@ -488,7 +447,7 @@ var _ = Describe("Deployer", func() {
 					GatewayClassName: wellknown.DefaultGatewayClassName,
 					Infrastructure: &gwv1.GatewayInfrastructure{
 						ParametersRef: &gwv1.LocalParametersReference{
-							Group: gw2_v1alpha1.GroupName,
+							Group: kgateway.GroupName,
 							Kind:  gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 							Name:  gwp.GetName(),
 						},
@@ -513,9 +472,10 @@ var _ = Describe("Deployer", func() {
 					Registry: "foo",
 					Tag:      "bar",
 				},
-				GatewayClassName:         wellknown.DefaultGatewayClassName,
-				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
+				GatewayClassName:           wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
+				AgentgatewayClassName:      wellknown.DefaultAgwClassName,
+				AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
 			})
 			d, err = deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
@@ -537,11 +497,11 @@ var _ = Describe("Deployer", func() {
 
 	Context("agentgateway", func() {
 		var (
-			gwp *gw2_v1alpha1.GatewayParameters
-			gwc *gwv1.GatewayClass
+			agwp *agentgatewayv1alpha1.AgentgatewayParameters
+			gwc  *gwv1.GatewayClass
 		)
 		BeforeEach(func() {
-			gwp = agentgatewayParam("agent-gateway-params")
+			agwp = agentgatewayParam("agent-gateway-params")
 			gwc = &gwv1.GatewayClass{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "agentgateway",
@@ -549,9 +509,9 @@ var _ = Describe("Deployer", func() {
 				Spec: gwv1.GatewayClassSpec{
 					ControllerName: wellknown.DefaultAgwControllerName,
 					ParametersRef: &gwv1.ParametersReference{
-						Group:     gw2_v1alpha1.GroupName,
-						Kind:      gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
-						Name:      gwp.GetName(),
+						Group:     agentgatewayv1alpha1.GroupName,
+						Kind:      gwv1.Kind(wellknown.AgentgatewayParametersGVK.Kind),
+						Name:      agwp.GetName(),
 						Namespace: ptr.To(gwv1.Namespace(defaultNamespace)),
 					},
 				},
@@ -568,9 +528,9 @@ var _ = Describe("Deployer", func() {
 					GatewayClassName: "agentgateway",
 					Infrastructure: &gwv1.GatewayInfrastructure{
 						ParametersRef: &gwv1.LocalParametersReference{
-							Group: gw2_v1alpha1.GroupName,
-							Kind:  gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
-							Name:  gwp.GetName(),
+							Group: agentgatewayv1alpha1.GroupName,
+							Kind:  gwv1.Kind(wellknown.AgentgatewayParametersGVK.Kind),
+							Name:  agwp.GetName(),
 						},
 					},
 					Listeners: []gwv1.Listener{{
@@ -579,7 +539,7 @@ var _ = Describe("Deployer", func() {
 					}},
 				},
 			}
-			fakeClient := fake.NewClient(GinkgoT(), gwc, gwp)
+			fakeClient := fake.NewClient(GinkgoT(), gwc, agwp)
 			gwParams := deployerinternal.NewGatewayParameters(fakeClient, &deployer.Inputs{
 				CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw),
 				Dev:               false,
@@ -592,9 +552,10 @@ var _ = Describe("Deployer", func() {
 					Registry: "foo",
 					Tag:      "bar",
 				},
-				GatewayClassName:         wellknown.DefaultGatewayClassName,
-				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
+				GatewayClassName:           wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
+				AgentgatewayClassName:      wellknown.DefaultAgwClassName,
+				AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
 			})
 			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
@@ -617,16 +578,8 @@ var _ = Describe("Deployer", func() {
 			// check the image uses the override tag
 			Expect(deployment.Spec.Template.Spec.Containers[0].Image).To(ContainSubstring("agentgateway"))
 			Expect(deployment.Spec.Template.Spec.Containers[0].Image).To(ContainSubstring("0.4.0"))
-			// check security context and resource requirements are correctly set
-			expectedSecurityContext := deployment.Spec.Template.Spec.Containers[0].SecurityContext
-			Expect(expectedSecurityContext).ToNot(BeNil())
-			Expect(expectedSecurityContext.RunAsUser).ToNot(BeNil())
-			Expect(*expectedSecurityContext.RunAsUser).To(Equal(int64(333)))
-			// check the deployment fields are correctly set
+			// check resource requirements are correctly set
 			Expect(deployment.Spec.Template.Spec.Containers[0].Resources.Limits.Cpu().Equal(resource.MustParse("101m"))).To(BeTrue())
-			Expect(deployment.Spec.Template.Spec.TopologySpreadConstraints[0]).To(Equal(gwp.Spec.Kube.PodTemplate.TopologySpreadConstraints[0]))
-			Expect(deployment.Spec.Template.Spec.Tolerations[0]).To(Equal(gwp.Spec.Kube.PodTemplate.Tolerations[0]))
-			Expect(deployment.Spec.Template.Spec.NodeSelector).To(Equal(gwp.Spec.Kube.PodTemplate.NodeSelector))
 			// check env values are appended to the end of the list
 			var testEnvVar corev1.EnvVar
 			for _, envVar := range deployment.Spec.Template.Spec.Containers[0].Env {
@@ -645,158 +598,11 @@ var _ = Describe("Deployer", func() {
 			cm := objs.findConfigMap(defaultNamespace, "agent-gateway")
 			Expect(cm).ToNot(BeNil())
 		})
-
-		It("omits our opinionated securityContexts for agw when OmitDefaultSecurityContext=true and pod and some container securityContexts are provided in GWP", func() {
-			// TODO(chandler): Also, let's test that, without
-			// OmitDefaultSecurityContext, we merge our opinionated defaults
-			// deeply with the security contexts in GWP.
-			gwp.Spec.Kube.OmitDefaultSecurityContext = ptr.To(true)
-			// set a PodSecurityContext and ensure it flows to the pod but
-			// doesn't merge with our opinionated defaults
-			uid := int64(*gwp.Spec.Kube.Agentgateway.SecurityContext.RunAsUser + 1)
-			Expect(uid).To(Equal(int64(334)))
-			gid := int64(23456)
-			fsGroup := int64(34567)
-			gwpPodSecurityContext := &corev1.PodSecurityContext{
-				RunAsUser:  &uid,
-				RunAsGroup: &gid,
-				FSGroup:    &fsGroup,
-			}
-			gwp.Spec.Kube.PodTemplate = &gw2_v1alpha1.Pod{
-				SecurityContext: gwpPodSecurityContext,
-			}
-			gw := &gwv1.Gateway{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "agent-gateway",
-					Namespace: defaultNamespace,
-				},
-				Spec: gwv1.GatewaySpec{
-					GatewayClassName: "agentgateway",
-					Infrastructure: &gwv1.GatewayInfrastructure{
-						ParametersRef: &gwv1.LocalParametersReference{
-							Group: gw2_v1alpha1.GroupName,
-							Kind:  gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
-							Name:  gwp.GetName(),
-						},
-					},
-					Listeners: []gwv1.Listener{{
-						Name: "listener-1",
-						Port: 80,
-					}},
-				},
-			}
-			fakeClient := fake.NewClient(GinkgoT(), gwc, gwp)
-			gwParams := deployerinternal.NewGatewayParameters(fakeClient, &deployer.Inputs{
-				CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw),
-				Dev:               false,
-				ControlPlane: deployer.ControlPlaneInfo{
-					XdsHost:    "something.cluster.local",
-					XdsPort:    1234,
-					AgwXdsPort: 5678,
-				},
-				ImageInfo: &deployer.ImageInfo{
-					Registry: "foo",
-					Tag:      "bar",
-				},
-				GatewayClassName:         wellknown.DefaultGatewayClassName,
-				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
-			})
-			d, err := deployerinternal.NewGatewayDeployer(
-				wellknown.DefaultGatewayControllerName,
-				wellknown.DefaultAgwControllerName,
-				wellknown.DefaultAgwClassName,
-				scheme,
-				fakeClient,
-				gwParams,
-			)
-			Expect(err).NotTo(HaveOccurred())
-			fakeClient.RunAndWait(context.Background().Done())
-
-			objsSlice, err := d.GetObjsToDeploy(context.Background(), gw)
-			Expect(err).NotTo(HaveOccurred())
-			objsSlice = d.SetNamespaceAndOwner(gw, objsSlice)
-
-			objs := clientObjects(objsSlice)
-			dep := objs.findDeployment("agent-gateway")
-			Expect(dep).ToNot(BeNil())
-			actualSecurityContext := dep.Spec.Template.Spec.Containers[0].SecurityContext
-			expectedSecurityContext := &corev1.SecurityContext{RunAsUser: ptr.To(int64(333))}
-			Expect(actualSecurityContext).To(matchers.BeEquivalentToDiff(expectedSecurityContext))
-			// assert pod-level security context is rendered, including the custom RunAsUser, while other fields preserved
-			psc := dep.Spec.Template.Spec.SecurityContext
-			Expect(psc).To(matchers.BeEquivalentToDiff(gwpPodSecurityContext))
-		})
-
-		It("omits PodSecurityContext (corev1.PodSecurityContext) and ContainerSecurityContext (corev1.SecurityContext) for agentgateway when OmitDefaultSecurityContext=true when neither is explicitly provided", func() {
-			gwp.Spec.Kube.OmitDefaultSecurityContext = ptr.To(true)
-			gwp.Spec.Kube.Agentgateway.SecurityContext = nil
-			gwp.Spec.Kube.PodTemplate = &gw2_v1alpha1.Pod{}
-			gw := &gwv1.Gateway{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "agent-gateway",
-					Namespace: defaultNamespace,
-				},
-				Spec: gwv1.GatewaySpec{
-					GatewayClassName: "agentgateway",
-					Infrastructure: &gwv1.GatewayInfrastructure{
-						ParametersRef: &gwv1.LocalParametersReference{
-							Group: gw2_v1alpha1.GroupName,
-							Kind:  gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
-							Name:  gwp.GetName(),
-						},
-					},
-					Listeners: []gwv1.Listener{{
-						Name: "listener-1",
-						Port: 80,
-					}},
-				},
-			}
-			fakeClient := fake.NewClient(GinkgoT(), gwc, gwp)
-			gwParams := deployerinternal.NewGatewayParameters(fakeClient, &deployer.Inputs{
-				CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw),
-				Dev:               false,
-				ControlPlane: deployer.ControlPlaneInfo{
-					XdsHost:    "something.cluster.local",
-					XdsPort:    1234,
-					AgwXdsPort: 5678,
-				},
-				ImageInfo: &deployer.ImageInfo{
-					Registry: "foo",
-					Tag:      "bar",
-				},
-				GatewayClassName:         wellknown.DefaultGatewayClassName,
-				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
-			})
-			d, err := deployerinternal.NewGatewayDeployer(
-				wellknown.DefaultGatewayControllerName,
-				wellknown.DefaultAgwControllerName,
-				wellknown.DefaultAgwClassName,
-				scheme,
-				fakeClient,
-				gwParams,
-			)
-			Expect(err).NotTo(HaveOccurred())
-			fakeClient.RunAndWait(context.Background().Done())
-
-			objsSlice, err := d.GetObjsToDeploy(context.Background(), gw)
-			Expect(err).NotTo(HaveOccurred())
-			objsSlice = d.SetNamespaceAndOwner(gw, objsSlice)
-
-			objs := clientObjects(objsSlice)
-			dep := objs.findDeployment("agent-gateway")
-			Expect(dep).ToNot(BeNil())
-			Expect(dep.Spec.Template.Spec.Containers[0].SecurityContext).To(BeNil())
-			// assert pod-level security context is rendered, including the custom RunAsUser, while other fields preserved
-			psc := dep.Spec.Template.Spec.SecurityContext
-			Expect(psc).To(BeNil())
-		})
 	})
 
 	Context("envoy", func() {
 		var (
-			gwp *gw2_v1alpha1.GatewayParameters
+			gwp *kgateway.GatewayParameters
 			gwc *gwv1.GatewayClass
 		)
 		BeforeEach(func() {
@@ -808,7 +614,7 @@ var _ = Describe("Deployer", func() {
 				Spec: gwv1.GatewayClassSpec{
 					ControllerName: wellknown.DefaultGatewayControllerName,
 					ParametersRef: &gwv1.ParametersReference{
-						Group:     gw2_v1alpha1.GroupName,
+						Group:     kgateway.GroupName,
 						Kind:      gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 						Name:      gwp.GetName(),
 						Namespace: ptr.To(gwv1.Namespace(defaultNamespace)),
@@ -824,7 +630,7 @@ var _ = Describe("Deployer", func() {
 			containerRunAsUser := gwp.Spec.Kube.EnvoyContainer.SecurityContext.RunAsUser
 			gid := int64(23456)
 			fsGroup := int64(34567)
-			gwp.Spec.Kube.PodTemplate = &gw2_v1alpha1.Pod{
+			gwp.Spec.Kube.PodTemplate = &kgateway.Pod{
 				SecurityContext: &corev1.PodSecurityContext{
 					RunAsUser:  &uid,
 					RunAsGroup: &gid,
@@ -840,7 +646,7 @@ var _ = Describe("Deployer", func() {
 					GatewayClassName: wellknown.DefaultGatewayClassName,
 					Infrastructure: &gwv1.GatewayInfrastructure{
 						ParametersRef: &gwv1.LocalParametersReference{
-							Group: gw2_v1alpha1.GroupName,
+							Group: kgateway.GroupName,
 							Kind:  gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 							Name:  gwp.GetName(),
 						},
@@ -864,9 +670,10 @@ var _ = Describe("Deployer", func() {
 					Registry: "foo",
 					Tag:      "bar",
 				},
-				GatewayClassName:         wellknown.DefaultGatewayClassName,
-				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
+				GatewayClassName:           wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
+				AgentgatewayClassName:      wellknown.DefaultAgwClassName,
+				AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
 			})
 			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
@@ -902,7 +709,7 @@ var _ = Describe("Deployer", func() {
 		It("omits PodSecurityContext (corev1.PodSecurityContext) and ContainerSecurityContext (corev1.SecurityContext) for envoy when OmitDefaultSecurityContext=true when neither is provided in GWP", func() {
 			gwp.Spec.Kube.OmitDefaultSecurityContext = ptr.To(true)
 			gwp.Spec.Kube.EnvoyContainer.SecurityContext = nil
-			gwp.Spec.Kube.PodTemplate = &gw2_v1alpha1.Pod{}
+			gwp.Spec.Kube.PodTemplate = &kgateway.Pod{}
 			gw := &gwv1.Gateway{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "envoy-gateway",
@@ -912,7 +719,7 @@ var _ = Describe("Deployer", func() {
 					GatewayClassName: wellknown.DefaultGatewayClassName,
 					Infrastructure: &gwv1.GatewayInfrastructure{
 						ParametersRef: &gwv1.LocalParametersReference{
-							Group: gw2_v1alpha1.GroupName,
+							Group: kgateway.GroupName,
 							Kind:  gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 							Name:  gwp.GetName(),
 						},
@@ -936,9 +743,10 @@ var _ = Describe("Deployer", func() {
 					Registry: "foo",
 					Tag:      "bar",
 				},
-				GatewayClassName:         wellknown.DefaultGatewayClassName,
-				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
+				GatewayClassName:           wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
+				AgentgatewayClassName:      wellknown.DefaultAgwClassName,
+				AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
 			})
 			d, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
@@ -960,6 +768,197 @@ var _ = Describe("Deployer", func() {
 			Expect(dep.Spec.Template.Spec.Containers[0].SecurityContext).To(BeNil())
 			psc := dep.Spec.Template.Spec.SecurityContext
 			Expect(psc).To(BeNil())
+		})
+
+		It("renders inclusion stats_matcher in Envoy bootstrap when configured", func() {
+			// configure stats matcher with inclusion list
+			gwp.Spec.Kube.Stats = &kgateway.StatsConfig{
+				Enabled:                 ptr.To(true),
+				RoutePrefixRewrite:      ptr.To("/stats/prometheus?usedonly"),
+				EnableStatsRoute:        ptr.To(true),
+				StatsRoutePrefixRewrite: ptr.To("/stats"),
+				Matcher: &kgateway.StatsMatcher{
+					InclusionList: []shared.StringMatcher{
+						{
+							Exact: ptr.To("cluster.my_service.upstream_cx_total"),
+						},
+						{
+							Prefix: ptr.To("http."),
+						},
+						{
+							Suffix: ptr.To(".pending"),
+						},
+						{
+							Contains:   ptr.To("CLUSTER"),
+							IgnoreCase: ptr.To(true),
+						},
+						{
+							SafeRegex: ptr.To("cluster\\..*\\.upstream_cx.*"),
+						},
+					},
+				},
+			}
+
+			gw := &gwv1.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "envoy-gateway",
+					Namespace: defaultNamespace,
+				},
+				Spec: gwv1.GatewaySpec{
+					GatewayClassName: wellknown.DefaultGatewayClassName,
+					Infrastructure: &gwv1.GatewayInfrastructure{
+						ParametersRef: &gwv1.LocalParametersReference{
+							Group: kgateway.GroupName,
+							Kind:  gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
+							Name:  gwp.GetName(),
+						},
+					},
+					Listeners: []gwv1.Listener{{
+						Name: "listener-1",
+						Port: 80,
+					}},
+				},
+			}
+			fakeClient := fake.NewClient(GinkgoT(), gwc, gwp)
+			gwParams := deployerinternal.NewGatewayParameters(fakeClient, &deployer.Inputs{
+				CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw),
+				Dev:               false,
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost:    "something.cluster.local",
+					XdsPort:    1234,
+					AgwXdsPort: 5678,
+				},
+				ImageInfo: &deployer.ImageInfo{
+					Registry: "foo",
+					Tag:      "bar",
+				},
+				GatewayClassName:           wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
+				AgentgatewayClassName:      wellknown.DefaultAgwClassName,
+				AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
+			})
+			d, err := deployerinternal.NewGatewayDeployer(
+				wellknown.DefaultGatewayControllerName,
+				wellknown.DefaultAgwControllerName,
+				wellknown.DefaultAgwClassName,
+				scheme,
+				fakeClient,
+				gwParams,
+			)
+			Expect(err).NotTo(HaveOccurred())
+			fakeClient.RunAndWait(context.Background().Done())
+
+			objsSlice, err := d.GetObjsToDeploy(context.Background(), gw)
+			Expect(err).NotTo(HaveOccurred())
+			objsSlice = d.SetNamespaceAndOwner(gw, objsSlice)
+			objs := clientObjects(objsSlice)
+			bootstrapCfg := objs.getEnvoyConfig(defaultNamespace, "envoy-gateway")
+			Expect(bootstrapCfg.GetStatsConfig()).ToNot(BeNil())
+			matcher := bootstrapCfg.GetStatsConfig().GetStatsMatcher()
+			Expect(matcher).ToNot(BeNil())
+			Expect(matcher.GetInclusionList()).ToNot(BeNil())
+			Expect(matcher.GetInclusionList().Patterns).To(HaveLen(5))
+			Expect(matcher.GetInclusionList().Patterns[0].GetExact()).To(Equal("cluster.my_service.upstream_cx_total"))
+			Expect(matcher.GetInclusionList().Patterns[1].GetPrefix()).To(Equal("http."))
+			Expect(matcher.GetInclusionList().Patterns[2].GetSuffix()).To(Equal(".pending"))
+			Expect(matcher.GetInclusionList().Patterns[3].GetContains()).To(Equal("CLUSTER"))
+			Expect(matcher.GetInclusionList().Patterns[3].GetIgnoreCase()).To(BeTrue())
+			Expect(matcher.GetInclusionList().Patterns[4].GetSafeRegex().GetRegex()).To(Equal("cluster\\..*\\.upstream_cx.*"))
+		})
+
+		It("renders exclusion stats_matcher in Envoy bootstrap when configured", func() {
+			// configure stats matcher with exclusion list
+			gwp.Spec.Kube.Stats = &kgateway.StatsConfig{
+				Enabled:                 ptr.To(true),
+				RoutePrefixRewrite:      ptr.To("/stats/prometheus?usedonly"),
+				EnableStatsRoute:        ptr.To(true),
+				StatsRoutePrefixRewrite: ptr.To("/stats"),
+				Matcher: &kgateway.StatsMatcher{
+					ExclusionList: []shared.StringMatcher{
+						{
+							Exact: ptr.To("cluster.my_service.upstream_cx_total"),
+						},
+						{
+							Prefix: ptr.To("http."),
+						},
+						{
+							Suffix: ptr.To(".pending"),
+						},
+						{
+							Contains:   ptr.To("CLUSTER"),
+							IgnoreCase: ptr.To(true),
+						},
+						{
+							SafeRegex: ptr.To("cluster\\..*\\.upstream_cx.*"),
+						}},
+				},
+			}
+
+			gw := &gwv1.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "envoy-gateway",
+					Namespace: defaultNamespace,
+				},
+				Spec: gwv1.GatewaySpec{
+					GatewayClassName: wellknown.DefaultGatewayClassName,
+					Infrastructure: &gwv1.GatewayInfrastructure{
+						ParametersRef: &gwv1.LocalParametersReference{
+							Group: kgateway.GroupName,
+							Kind:  gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
+							Name:  gwp.GetName(),
+						},
+					},
+					Listeners: []gwv1.Listener{{
+						Name: "listener-1",
+						Port: 80,
+					}},
+				},
+			}
+			fakeClient := fake.NewClient(GinkgoT(), gwc, gwp)
+			gwParams := deployerinternal.NewGatewayParameters(fakeClient, &deployer.Inputs{
+				CommonCollections: deployertest.NewCommonCols(GinkgoT(), gwc, gw),
+				Dev:               false,
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost:    "something.cluster.local",
+					XdsPort:    1234,
+					AgwXdsPort: 5678,
+				},
+				ImageInfo: &deployer.ImageInfo{
+					Registry: "foo",
+					Tag:      "bar",
+				},
+				GatewayClassName:           wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
+				AgentgatewayClassName:      wellknown.DefaultAgwClassName,
+				AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
+			})
+			d, err := deployerinternal.NewGatewayDeployer(
+				wellknown.DefaultGatewayControllerName,
+				wellknown.DefaultAgwControllerName,
+				wellknown.DefaultAgwClassName,
+				scheme,
+				fakeClient,
+				gwParams,
+			)
+			Expect(err).NotTo(HaveOccurred())
+			fakeClient.RunAndWait(context.Background().Done())
+
+			objsSlice, err := d.GetObjsToDeploy(context.Background(), gw)
+			Expect(err).NotTo(HaveOccurred())
+			objsSlice = d.SetNamespaceAndOwner(gw, objsSlice)
+			objs := clientObjects(objsSlice)
+			bootstrapCfg := objs.getEnvoyConfig(defaultNamespace, "envoy-gateway")
+			Expect(bootstrapCfg.GetStatsConfig()).ToNot(BeNil())
+			matcher := bootstrapCfg.GetStatsConfig().GetStatsMatcher()
+			Expect(matcher).ToNot(BeNil())
+			Expect(matcher.GetExclusionList()).ToNot(BeNil())
+			Expect(matcher.GetExclusionList().Patterns).To(HaveLen(5))
+			Expect(matcher.GetExclusionList().Patterns[0].GetExact()).To(Equal("cluster.my_service.upstream_cx_total"))
+			Expect(matcher.GetExclusionList().Patterns[1].GetPrefix()).To(Equal("http."))
+			Expect(matcher.GetExclusionList().Patterns[2].GetSuffix()).To(Equal(".pending"))
+			Expect(matcher.GetExclusionList().Patterns[3].GetContains()).To(Equal("CLUSTER"))
+			Expect(matcher.GetExclusionList().Patterns[3].GetIgnoreCase()).To(BeTrue())
+			Expect(matcher.GetExclusionList().Patterns[4].GetSafeRegex().GetRegex()).To(Equal("cluster\\..*\\.upstream_cx.*"))
 		})
 	})
 
@@ -1019,9 +1018,10 @@ var _ = Describe("Deployer", func() {
 					Registry: "foo",
 					Tag:      "bar",
 				},
-				GatewayClassName:         wellknown.DefaultGatewayClassName,
-				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
+				GatewayClassName:           wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
+				AgentgatewayClassName:      wellknown.DefaultAgwClassName,
+				AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
 			})
 			d1, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
@@ -1045,9 +1045,10 @@ var _ = Describe("Deployer", func() {
 					Registry: "foo",
 					Tag:      "bar",
 				},
-				GatewayClassName:         wellknown.DefaultGatewayClassName,
-				WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-				AgentgatewayClassName:    wellknown.DefaultAgwClassName,
+				GatewayClassName:           wellknown.DefaultGatewayClassName,
+				WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
+				AgentgatewayClassName:      wellknown.DefaultAgwClassName,
+				AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
 			})
 			d2, err := deployerinternal.NewGatewayDeployer(
 				wellknown.DefaultGatewayControllerName,
@@ -1148,7 +1149,7 @@ var _ = Describe("Deployer", func() {
 					GatewayClassName: wellknown.DefaultGatewayClassName,
 					Infrastructure: &gwv1.GatewayInfrastructure{
 						ParametersRef: &gwv1.LocalParametersReference{
-							Group: gw2_v1alpha1.GroupName,
+							Group: kgateway.GroupName,
 							Kind:  "InvalidKind",
 							Name:  "test-gwp",
 						},
@@ -1261,19 +1262,19 @@ var _ = Describe("Deployer", func() {
 		When("a Gateway has a GWP attached", func() {
 			var (
 				d   *deployer.Deployer
-				gwp *gw2_v1alpha1.GatewayParameters
+				gwp *kgateway.GatewayParameters
 			)
 			BeforeEach(func() {
-				gwp = &gw2_v1alpha1.GatewayParameters{
+				gwp = &kgateway.GatewayParameters{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      wellknown.DefaultGatewayParametersName,
 						Namespace: defaultNamespace,
 						UID:       "1237",
 					},
-					Spec: gw2_v1alpha1.GatewayParametersSpec{
-						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-							EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
-								Image: &gw2_v1alpha1.Image{
+					Spec: kgateway.GatewayParametersSpec{
+						Kube: &kgateway.KubernetesProxyConfig{
+							EnvoyContainer: &kgateway.EnvoyContainer{
+								Image: &kgateway.Image{
 									Registry: ptr.To("bar"),
 									Tag:      ptr.To("2.3.4"),
 								},
@@ -1296,7 +1297,7 @@ var _ = Describe("Deployer", func() {
 						GatewayClassName: wellknown.DefaultGatewayClassName,
 						Infrastructure: &gwv1.GatewayInfrastructure{
 							ParametersRef: &gwv1.LocalParametersReference{
-								Group: gw2_v1alpha1.GroupName,
+								Group: kgateway.GroupName,
 								Kind:  gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 								Name:  gwp.GetName(),
 							},
@@ -1352,23 +1353,23 @@ var _ = Describe("Deployer", func() {
 		When("a Gateway has a minimal GatewayParameters with only overrides", func() {
 			var (
 				d   *deployer.Deployer
-				gwp *gw2_v1alpha1.GatewayParameters
+				gwp *kgateway.GatewayParameters
 				gwc *gwv1.GatewayClass
 			)
 			BeforeEach(func() {
-				gwp = &gw2_v1alpha1.GatewayParameters{
+				gwp = &kgateway.GatewayParameters{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "minimal-gwp",
 						Namespace: defaultNamespace,
 					},
-					Spec: gw2_v1alpha1.GatewayParametersSpec{
-						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
+					Spec: kgateway.GatewayParametersSpec{
+						Kube: &kgateway.KubernetesProxyConfig{
 							// Only override a few values, rest should be defaulted
-							Service: &gw2_v1alpha1.Service{
+							Service: &kgateway.Service{
 								Type: ptr.To(corev1.ServiceTypeClusterIP),
 							},
-							EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
-								Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
+							EnvoyContainer: &kgateway.EnvoyContainer{
+								Bootstrap: &kgateway.EnvoyBootstrap{
 									LogLevel: ptr.To("debug"),
 								},
 							},
@@ -1474,8 +1475,8 @@ var _ = Describe("Deployer", func() {
 		type input struct {
 			dInputs        *deployer.Inputs
 			gw             *gwv1.Gateway
-			defaultGwp     *gw2_v1alpha1.GatewayParameters
-			overrideGwp    *gw2_v1alpha1.GatewayParameters
+			defaultGwp     *kgateway.GatewayParameters
+			overrideGwp    *kgateway.GatewayParameters
 			gwc            *gwv1.GatewayClass
 			arbitrarySetup func()
 		}
@@ -1488,34 +1489,34 @@ var _ = Describe("Deployer", func() {
 		var (
 			gwpOverrideName = "gateway-params-override"
 
-			defaultGatewayParamsOverride = func() *gw2_v1alpha1.GatewayParameters {
-				return &gw2_v1alpha1.GatewayParameters{
+			defaultGatewayParamsOverride = func() *kgateway.GatewayParameters {
+				return &kgateway.GatewayParameters{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      gwpOverrideName,
 						Namespace: defaultNamespace,
 						UID:       "1236",
 					},
-					Spec: gw2_v1alpha1.GatewayParametersSpec{
-						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-							Deployment: &gw2_v1alpha1.ProxyDeployment{
+					Spec: kgateway.GatewayParametersSpec{
+						Kube: &kgateway.KubernetesProxyConfig{
+							Deployment: &kgateway.ProxyDeployment{
 								Replicas: ptr.To[int32](3),
 							},
-							EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
-								Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
+							EnvoyContainer: &kgateway.EnvoyContainer{
+								Bootstrap: &kgateway.EnvoyBootstrap{
 									LogLevel: ptr.To("debug"),
 									ComponentLogLevels: map[string]string{
 										"router":   "info",
 										"listener": "warn",
 									},
 								},
-								Image: &gw2_v1alpha1.Image{
+								Image: &kgateway.Image{
 									Registry:   ptr.To("foo"),
 									Repository: ptr.To("bar"),
 									Tag:        ptr.To("quux"),
 									PullPolicy: ptr.To(corev1.PullAlways),
 								},
 							},
-							PodTemplate: &gw2_v1alpha1.Pod{
+							PodTemplate: &kgateway.Pod{
 								ExtraAnnotations: map[string]string{
 									"override-foo": "override-bar",
 								},
@@ -1524,7 +1525,7 @@ var _ = Describe("Deployer", func() {
 									RunAsGroup: ptr.To(int64(4)),
 								},
 							},
-							Service: &gw2_v1alpha1.Service{
+							Service: &kgateway.Service{
 								Type:      ptr.To(corev1.ServiceTypeClusterIP),
 								ClusterIP: ptr.To("99.99.99.99"),
 								ExtraLabels: map[string]string{
@@ -1535,7 +1536,7 @@ var _ = Describe("Deployer", func() {
 								},
 								ExternalTrafficPolicy: ptr.To(string(corev1.ServiceExternalTrafficPolicyTypeLocal)),
 							},
-							ServiceAccount: &gw2_v1alpha1.ServiceAccount{
+							ServiceAccount: &kgateway.ServiceAccount{
 								ExtraLabels: map[string]string{
 									"override-label-key": "override-label-val",
 								},
@@ -1549,34 +1550,34 @@ var _ = Describe("Deployer", func() {
 			}
 
 			// this is the result of `defaultGatewayParams` (GatewayClass-level) merged with `defaultGatewayParamsOverride` (Gateway-level)
-			mergedGatewayParamsNoLowPorts = func() *gw2_v1alpha1.GatewayParameters {
-				return &gw2_v1alpha1.GatewayParameters{
+			mergedGatewayParamsNoLowPorts = func() *kgateway.GatewayParameters {
+				return &kgateway.GatewayParameters{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      gwpOverrideName,
 						Namespace: defaultNamespace,
 						UID:       "1236",
 					},
-					Spec: gw2_v1alpha1.GatewayParametersSpec{
-						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-							Deployment: &gw2_v1alpha1.ProxyDeployment{
+					Spec: kgateway.GatewayParametersSpec{
+						Kube: &kgateway.KubernetesProxyConfig{
+							Deployment: &kgateway.ProxyDeployment{
 								Replicas: ptr.To[int32](3),
 							},
-							EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
-								Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
+							EnvoyContainer: &kgateway.EnvoyContainer{
+								Bootstrap: &kgateway.EnvoyBootstrap{
 									LogLevel: ptr.To("debug"),
 									ComponentLogLevels: map[string]string{
 										"router":   "info",
 										"listener": "warn",
 									},
 								},
-								Image: &gw2_v1alpha1.Image{
+								Image: &kgateway.Image{
 									Registry:   ptr.To("foo"),
 									Repository: ptr.To("bar"),
 									Tag:        ptr.To("quux"),
 									PullPolicy: ptr.To(corev1.PullAlways),
 								},
 							},
-							PodTemplate: &gw2_v1alpha1.Pod{
+							PodTemplate: &kgateway.Pod{
 								ExtraAnnotations: map[string]string{
 									"foo":          "bar",
 									"override-foo": "override-bar",
@@ -1586,7 +1587,7 @@ var _ = Describe("Deployer", func() {
 									RunAsGroup: ptr.To(int64(4)),
 								},
 							},
-							Service: &gw2_v1alpha1.Service{
+							Service: &kgateway.Service{
 								Type:      ptr.To(corev1.ServiceTypeClusterIP),
 								ClusterIP: ptr.To("99.99.99.99"),
 								ExtraLabels: map[string]string{
@@ -1599,7 +1600,7 @@ var _ = Describe("Deployer", func() {
 								},
 								ExternalTrafficPolicy: ptr.To(string(corev1.ServiceExternalTrafficPolicyTypeLocal)),
 							},
-							ServiceAccount: &gw2_v1alpha1.ServiceAccount{
+							ServiceAccount: &kgateway.ServiceAccount{
 								ExtraLabels: map[string]string{
 									"default-label-key":  "default-label-val",
 									"override-label-key": "override-label-val",
@@ -1614,7 +1615,7 @@ var _ = Describe("Deployer", func() {
 				}
 			}
 
-			mergedGatewayParams = func() *gw2_v1alpha1.GatewayParameters {
+			mergedGatewayParams = func() *kgateway.GatewayParameters {
 				gwp := mergedGatewayParamsNoLowPorts()
 				gwp.Spec.Kube.PodTemplate.SecurityContext.Sysctls = []corev1.Sysctl{
 					{
@@ -1625,16 +1626,16 @@ var _ = Describe("Deployer", func() {
 				return gwp
 			}
 
-			gatewayParamsOverrideWithoutStats = func() *gw2_v1alpha1.GatewayParameters {
-				return &gw2_v1alpha1.GatewayParameters{
+			gatewayParamsOverrideWithoutStats = func() *kgateway.GatewayParameters {
+				return &kgateway.GatewayParameters{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      gwpOverrideName,
 						Namespace: defaultNamespace,
 						UID:       "1236",
 					},
-					Spec: gw2_v1alpha1.GatewayParametersSpec{
-						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-							Stats: &gw2_v1alpha1.StatsConfig{
+					Spec: kgateway.GatewayParametersSpec{
+						Kube: &kgateway.KubernetesProxyConfig{
+							Stats: &kgateway.StatsConfig{
 								Enabled:          ptr.To(false),
 								EnableStatsRoute: ptr.To(false),
 							},
@@ -1642,17 +1643,17 @@ var _ = Describe("Deployer", func() {
 					},
 				}
 			}
-			fullyDefinedGatewayParams = func() *gw2_v1alpha1.GatewayParameters {
+			fullyDefinedGatewayParams = func() *kgateway.GatewayParameters {
 				return fullyDefinedGatewayParameters()
 			}
 
-			gwParamsNoPodTemplate = func() *gw2_v1alpha1.GatewayParameters {
+			gwParamsNoPodTemplate = func() *kgateway.GatewayParameters {
 				params := fullyDefinedGatewayParameters()
 				params.Spec.Kube.PodTemplate = nil
 				return params
 			}
 
-			fullyDefinedGatewayParamsWithUnprivilegedPortStartSysctl = func() *gw2_v1alpha1.GatewayParameters {
+			fullyDefinedGatewayParamsWithUnprivilegedPortStartSysctl = func() *kgateway.GatewayParameters {
 				params := fullyDefinedGatewayParameters()
 				params.Spec.Kube.PodTemplate.SecurityContext.Sysctls = []corev1.Sysctl{
 					{
@@ -1663,20 +1664,20 @@ var _ = Describe("Deployer", func() {
 				return params
 			}
 
-			fullyDefinedGatewayParamsWithProbes = func() *gw2_v1alpha1.GatewayParameters {
+			fullyDefinedGatewayParamsWithProbes = func() *kgateway.GatewayParameters {
 				params := fullyDefinedGatewayParameters()
 				params.Spec.Kube.PodTemplate.LivenessProbe = generateLivenessProbe()
 				params.Spec.Kube.PodTemplate.ReadinessProbe = generateReadinessProbe()
 				params.Spec.Kube.PodTemplate.StartupProbe = generateStartupProbe()
 				params.Spec.Kube.PodTemplate.TerminationGracePeriodSeconds = ptr.To(int64(5))
-				params.Spec.Kube.PodTemplate.GracefulShutdown = &gw2_v1alpha1.GracefulShutdownSpec{
+				params.Spec.Kube.PodTemplate.GracefulShutdown = &kgateway.GracefulShutdownSpec{
 					Enabled:          ptr.To(true),
 					SleepTimeSeconds: ptr.To(int64(7)),
 				}
 				return params
 			}
 
-			fullyDefinedGatewayParamsWithCustomEnv = func() *gw2_v1alpha1.GatewayParameters {
+			fullyDefinedGatewayParamsWithCustomEnv = func() *kgateway.GatewayParameters {
 				params := fullyDefinedGatewayParameters()
 				params.Spec.Kube.EnvoyContainer.Env = []corev1.EnvVar{
 					{
@@ -1690,7 +1691,7 @@ var _ = Describe("Deployer", func() {
 			withGatewayParams = func(gw *gwv1.Gateway, gwpName string) *gwv1.Gateway {
 				gw.Spec.Infrastructure = &gwv1.GatewayInfrastructure{
 					ParametersRef: &gwv1.LocalParametersReference{
-						Group: gw2_v1alpha1.GroupName,
+						Group: kgateway.GroupName,
 						Kind:  gwv1.Kind(wellknown.GatewayParametersGVK.Kind),
 						Name:  gwpName,
 					},
@@ -1718,9 +1719,10 @@ var _ = Describe("Deployer", func() {
 						Registry: "foo",
 						Tag:      defaultImageTag,
 					},
-					GatewayClassName:         wellknown.DefaultGatewayClassName,
-					WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
-					AgentgatewayClassName:    wellknown.DefaultAgwClassName,
+					GatewayClassName:           wellknown.DefaultGatewayClassName,
+					WaypointGatewayClassName:   wellknown.DefaultWaypointClassName,
+					AgentgatewayClassName:      wellknown.DefaultAgwClassName,
+					AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
 				}
 			}
 
@@ -1739,7 +1741,7 @@ var _ = Describe("Deployer", func() {
 				}
 			}
 
-			helpTestImage = func(apiImage *gw2_v1alpha1.Image, container corev1.Container, defaultTagValue string) {
+			helpTestImage = func(apiImage *kgateway.Image, container corev1.Container, defaultTagValue string) {
 				// defaultGatewayParameters() contains the defaultTagValue,
 				// usually a semver tag like '1.22.0'
 				actualImageString := container.Image
@@ -1769,7 +1771,7 @@ var _ = Describe("Deployer", func() {
 				Expect(actualPullPolicy).To(Equal(*apiImage.PullPolicy))
 			}
 
-			validateGatewayParametersPropagation = func(objs clientObjects, gwp *gw2_v1alpha1.GatewayParameters) {
+			validateGatewayParametersPropagation = func(objs clientObjects, gwp *kgateway.GatewayParameters) {
 				expectedGwp := gwp.Spec.Kube
 				Expect(objs).NotTo(BeEmpty())
 				// Check we have Deployment, ConfigMap, ServiceAccount, Service
@@ -1808,7 +1810,7 @@ var _ = Describe("Deployer", func() {
 				cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
 				Expect(cm).ToNot(BeNil())
 				// This verifies that the cluster name provided to envoy matches the service name used when generating OTel stats
-				Expect(cm.Data[envoyDataKey]).To(ContainSubstring(fmt.Sprintf("cluster: %s", httplistenerpolicy.GenerateDefaultServiceName(dep.Name, dep.Namespace))))
+				Expect(cm.Data[envoyDataKey]).To(ContainSubstring(fmt.Sprintf("cluster: %s", listenerpolicy.GenerateDefaultServiceName(dep.Name, dep.Namespace))))
 
 				logLevelsMap := expectedGwp.EnvoyContainer.Bootstrap.ComponentLogLevels
 				levels := []types.GomegaMatcher{}
@@ -1846,7 +1848,7 @@ var _ = Describe("Deployer", func() {
 
 			// There are tests that don't set a pod template, so we need to handle that case
 			if expectedGwp.PodTemplate == nil {
-				expectedGwp.PodTemplate = &gw2_v1alpha1.Pod{
+				expectedGwp.PodTemplate = &kgateway.Pod{
 					SecurityContext: &corev1.PodSecurityContext{},
 				}
 			}
@@ -1891,14 +1893,16 @@ var _ = Describe("Deployer", func() {
 
 			// assert istio container
 			istioContainer := dep.Spec.Template.Spec.Containers[2]
-			defaultIstioVersion := *deployer.GetInMemoryGatewayParameters(deployer.InMemoryGatewayParametersConfig{
+			defaultGwp, err := deployer.GetInMemoryGatewayParameters(deployer.InMemoryGatewayParametersConfig{
 				ControllerName:             "kgateway.dev/a",
 				ClassName:                  "a",
 				ImageInfo:                  &deployer.ImageInfo{},
 				WaypointClassName:          "b",
 				AgwControllerName:          "c",
 				OmitDefaultSecurityContext: true,
-			}).Spec.Kube.Istio.IstioProxyContainer.Image.Tag
+			})
+			Expect(err).NotTo(HaveOccurred())
+			defaultIstioVersion := *defaultGwp.Spec.Kube.Istio.IstioProxyContainer.Image.Tag
 			helpTestImage(expectedGwp.Istio.IstioProxyContainer.Image, istioContainer, defaultIstioVersion)
 			Expect(istioContainer.Resources.Limits.Cpu()).To(Equal(expectedGwp.Istio.IstioProxyContainer.Resources.Limits.Cpu()))
 			Expect(istioContainer.Resources.Requests.Cpu()).To(Equal(expectedGwp.Istio.IstioProxyContainer.Resources.Requests.Cpu()))
@@ -2032,11 +2036,11 @@ var _ = Describe("Deployer", func() {
 			// resources don't exist
 			defaultGwp := inp.defaultGwp
 			if defaultGwp == nil {
-				defaultGwp = &gw2_v1alpha1.GatewayParameters{}
+				defaultGwp = &kgateway.GatewayParameters{}
 			}
 			overrideGwp := inp.overrideGwp
 			if overrideGwp == nil {
-				overrideGwp = &gw2_v1alpha1.GatewayParameters{}
+				overrideGwp = &kgateway.GatewayParameters{}
 			}
 
 			fakeClient := fake.NewClient(GinkgoT(), gwc, defaultGwp, overrideGwp)
@@ -2166,16 +2170,16 @@ var _ = Describe("Deployer", func() {
 				dInputs:    defaultDeployerInputs(),
 				gw:         defaultGatewayWithGatewayParams(gwpOverrideName),
 				defaultGwp: defaultGatewayParams(),
-				overrideGwp: &gw2_v1alpha1.GatewayParameters{
+				overrideGwp: &kgateway.GatewayParameters{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      gwpOverrideName,
 						Namespace: defaultNamespace,
 					},
-					Spec: gw2_v1alpha1.GatewayParametersSpec{
-						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-							Service: &gw2_v1alpha1.Service{
+					Spec: kgateway.GatewayParametersSpec{
+						Kube: &kgateway.KubernetesProxyConfig{
+							Service: &kgateway.Service{
 								Type: ptr.To(corev1.ServiceTypeNodePort),
-								Ports: []gw2_v1alpha1.Port{
+								Ports: []kgateway.Port{
 									{
 										Port:     80,
 										NodePort: ptr.To[int32](30000),
@@ -2356,19 +2360,19 @@ var _ = Describe("Deployer", func() {
 			Entry("Replicas is not set (default)", &input{
 				dInputs: defaultDeployerInputs(),
 				gw:      defaultGateway(),
-				defaultGwp: &gw2_v1alpha1.GatewayParameters{
+				defaultGwp: &kgateway.GatewayParameters{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      wellknown.DefaultGatewayParametersName,
 						Namespace: defaultNamespace,
 						UID:       "1237",
 					},
-					Spec: gw2_v1alpha1.GatewayParametersSpec{
-						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-							Deployment: &gw2_v1alpha1.ProxyDeployment{},
+					Spec: kgateway.GatewayParametersSpec{
+						Kube: &kgateway.KubernetesProxyConfig{
+							Deployment: &kgateway.ProxyDeployment{},
 						},
 					},
 				},
-				overrideGwp: &gw2_v1alpha1.GatewayParameters{},
+				overrideGwp: &kgateway.GatewayParameters{},
 			}, &expectedOutput{
 				validationFunc: func(objs clientObjects, inp *input) {
 					deployment := objs.findDeployment(defaultServiceName)
@@ -2379,21 +2383,21 @@ var _ = Describe("Deployer", func() {
 			Entry("have replicas set", &input{
 				dInputs: defaultDeployerInputs(),
 				gw:      defaultGateway(),
-				defaultGwp: &gw2_v1alpha1.GatewayParameters{
+				defaultGwp: &kgateway.GatewayParameters{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      wellknown.DefaultGatewayParametersName,
 						Namespace: defaultNamespace,
 						UID:       "1237",
 					},
-					Spec: gw2_v1alpha1.GatewayParametersSpec{
-						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-							Deployment: &gw2_v1alpha1.ProxyDeployment{
+					Spec: kgateway.GatewayParametersSpec{
+						Kube: &kgateway.KubernetesProxyConfig{
+							Deployment: &kgateway.ProxyDeployment{
 								Replicas: ptr.To[int32](3),
 							},
 						},
 					},
 				},
-				overrideGwp: &gw2_v1alpha1.GatewayParameters{},
+				overrideGwp: &kgateway.GatewayParameters{},
 			}, &expectedOutput{
 				validationFunc: func(objs clientObjects, inp *input) {
 					deployment := objs.findDeployment(defaultServiceName)
@@ -2503,27 +2507,27 @@ var _ = Describe("Deployer", func() {
 	})
 })
 
-func fullyDefinedGatewayParameters() *gw2_v1alpha1.GatewayParameters {
-	return &gw2_v1alpha1.GatewayParameters{
+func fullyDefinedGatewayParameters() *kgateway.GatewayParameters {
+	return &kgateway.GatewayParameters{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      wellknown.DefaultGatewayParametersName,
 			Namespace: defaultNamespace,
 			UID:       "1236",
 		},
-		Spec: gw2_v1alpha1.GatewayParametersSpec{
-			Kube: &gw2_v1alpha1.KubernetesProxyConfig{
-				Deployment: &gw2_v1alpha1.ProxyDeployment{
+		Spec: kgateway.GatewayParametersSpec{
+			Kube: &kgateway.KubernetesProxyConfig{
+				Deployment: &kgateway.ProxyDeployment{
 					Replicas: ptr.To[int32](3),
 				},
-				EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
-					Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
+				EnvoyContainer: &kgateway.EnvoyContainer{
+					Bootstrap: &kgateway.EnvoyBootstrap{
 						LogLevel: ptr.To("debug"),
 						ComponentLogLevels: map[string]string{
 							"router":   "info",
 							"listener": "warn",
 						},
 					},
-					Image: &gw2_v1alpha1.Image{
+					Image: &kgateway.Image{
 						Registry:   ptr.To("foo"),
 						Repository: ptr.To("bar"),
 						Tag:        ptr.To("bat"),
@@ -2537,8 +2541,8 @@ func fullyDefinedGatewayParameters() *gw2_v1alpha1.GatewayParameters {
 						Requests: corev1.ResourceList{"cpu": resource.MustParse("103m")},
 					},
 				},
-				SdsContainer: &gw2_v1alpha1.SdsContainer{
-					Image: &gw2_v1alpha1.Image{
+				SdsContainer: &kgateway.SdsContainer{
+					Image: &kgateway.Image{
 						Registry:   ptr.To("sds-registry"),
 						Repository: ptr.To("sds-repository"),
 						Tag:        nil,
@@ -2552,11 +2556,11 @@ func fullyDefinedGatewayParameters() *gw2_v1alpha1.GatewayParameters {
 						Limits:   corev1.ResourceList{"cpu": resource.MustParse("201m")},
 						Requests: corev1.ResourceList{"cpu": resource.MustParse("203m")},
 					},
-					Bootstrap: &gw2_v1alpha1.SdsBootstrap{
+					Bootstrap: &kgateway.SdsBootstrap{
 						LogLevel: ptr.To("debug"),
 					},
 				},
-				PodTemplate: &gw2_v1alpha1.Pod{
+				PodTemplate: &kgateway.Pod{
 					ExtraAnnotations: map[string]string{
 						"pod-anno": "foo",
 					},
@@ -2604,7 +2608,7 @@ func fullyDefinedGatewayParameters() *gw2_v1alpha1.GatewayParameters {
 						LabelSelector:     &metav1.LabelSelector{MatchLabels: map[string]string{"pod-topology-spread-constraint-label-selector": "foo"}},
 					}},
 				},
-				Service: &gw2_v1alpha1.Service{
+				Service: &kgateway.Service{
 					Type:      ptr.To(corev1.ServiceTypeClusterIP),
 					ClusterIP: ptr.To("99.99.99.99"),
 					ExtraAnnotations: map[string]string{
@@ -2615,7 +2619,7 @@ func fullyDefinedGatewayParameters() *gw2_v1alpha1.GatewayParameters {
 					},
 					ExternalTrafficPolicy: ptr.To(string(corev1.ServiceExternalTrafficPolicyTypeLocal)),
 				},
-				ServiceAccount: &gw2_v1alpha1.ServiceAccount{
+				ServiceAccount: &kgateway.ServiceAccount{
 					ExtraLabels: map[string]string{
 						"a": "b",
 					},
@@ -2623,9 +2627,9 @@ func fullyDefinedGatewayParameters() *gw2_v1alpha1.GatewayParameters {
 						"c": "d",
 					},
 				},
-				Istio: &gw2_v1alpha1.IstioIntegration{
-					IstioProxyContainer: &gw2_v1alpha1.IstioContainer{
-						Image: &gw2_v1alpha1.Image{
+				Istio: &kgateway.IstioIntegration{
+					IstioProxyContainer: &kgateway.IstioContainer{
+						Image: &kgateway.Image{
 							Registry:   ptr.To("istio-registry"),
 							Repository: ptr.To("istio-repository"),
 							Tag:        ptr.To(""),

@@ -25,8 +25,8 @@ import (
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
@@ -254,6 +254,13 @@ func (d *Deployer) GetObjsToDeploy(ctx context.Context, obj client.Object) ([]cl
 	objs, err := d.RenderToObjects(rns, rname, vals)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get objects to deploy %s.%s: %w", obj.GetNamespace(), obj.GetName(), err)
+	}
+
+	// Apply post-processing if the HelmValuesGenerator implements ObjectPostProcessor
+	if postProcessor, ok := d.helmValues.(ObjectPostProcessor); ok {
+		if err := postProcessor.PostProcessObjects(ctx, obj, objs); err != nil {
+			return nil, fmt.Errorf("failed to post-process objects for %s.%s: %w", obj.GetNamespace(), obj.GetName(), err)
+		}
 	}
 
 	return objs, nil

@@ -1,48 +1,42 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: GatewayClass
 metadata:
-  name: kgateway
-spec:
-  controllerName: kgateway.dev/kgateway
-  description: Standard class for managing Gateway API ingress traffic.
----
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: GatewayParameters
-metadata:
-  name: opts
-  namespace: default
-spec:
-  kube:
-    service:
-      extraLabels:
-        infra-and-params: params
-      extraAnnotations:
-        infra-and-params: params
-    serviceAccount:
-      extraLabels:
-        infra-and-params: params
-      extraAnnotations:
-        infra-and-params: params
-    podTemplate:
-      extraAnnotations:
-        extra-annotation: v1
-        infra-and-params: params
-      extraLabels:
-        extra-label: v1
-        infra-and-params: params
----
-apiVersion: gateway.networking.k8s.io/v1
-kind: GatewayClass
-metadata:
   name: agentgateway
 spec:
   controllerName: kgateway.dev/agentgateway
   description: Specialized class for agentgateway.
   parametersRef:
-    group: gateway.kgateway.dev
-    kind: GatewayParameters
+    group: agentgateway.dev
+    kind: AgentgatewayParameters
     name: opts
     namespace: default
+---
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayParameters
+metadata:
+  name: opts
+  namespace: default
+spec:
+  # Pod-level labels and annotations (applied to helm values after rendering)
+  # These test that infrastructure labels/annotations are merged with SMP
+  # taking precedence
+  deployment:
+    metadata:
+      labels:
+        extra-label: v1
+        infra-and-params: params-but-only-because-overlays-happen-last
+      annotations:
+        extra-annotation: v1
+        infra-and-params: params-but-only-because-overlays-happen-last
+    spec:
+      template:
+        metadata:
+          labels:
+            extra-label: v1
+            infra-and-params: params-but-only-because-overlays-happen-last
+          annotations:
+            extra-annotation: v1
+            infra-and-params: params-but-only-because-overlays-happen-last
 ---
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1

@@ -9,8 +9,11 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
+
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/helmutils"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/actions"
@@ -78,7 +81,9 @@ func CreateTestInstallationForCluster(
 		// between TestInstallation outputs per CI run
 		GeneratedFiles: MustGeneratedFiles(installContext.InstallNamespace, clusterContext.Name),
 	}
-	runtime.SetFinalizer(installation, func(i *TestInstallation) { i.finalize() })
+	testutils.Cleanup(t, func() {
+		installation.finalize()
+	})
 	return installation
 }
 
@@ -159,7 +164,7 @@ func (i *TestInstallation) InstallKgatewayCRDsFromLocalChart(ctx context.Context
 
 	// Check if we should skip installation if the release already exists (PERSIST_INSTALL or FAIL_FAST_AND_PERSIST mode)
 	if testutils.ShouldPersistInstall() || testutils.ShouldFailFastAndPersist() {
-		if i.Actions.Helm().ReleaseExists(ctx, helmutils.CRDChartName, i.Metadata.InstallNamespace) {
+		if i.releaseExists(ctx, helmutils.CRDChartName, i.Metadata.InstallNamespace) {
 			return
 		}
 	}
@@ -185,7 +190,7 @@ func (i *TestInstallation) InstallKgatewayCoreFromLocalChart(ctx context.Context
 
 	// Check if we should skip installation if the release already exists (PERSIST_INSTALL or FAIL_FAST_AND_PERSIST mode)
 	if testutils.ShouldPersistInstall() || testutils.ShouldFailFastAndPersist() {
-		if i.Actions.Helm().ReleaseExists(ctx, helmutils.ChartName, i.Metadata.InstallNamespace) {
+		if i.releaseExists(ctx, helmutils.ChartName, i.Metadata.InstallNamespace) {
 			return
 		}
 	}
@@ -256,11 +261,20 @@ func (i *TestInstallation) UninstallKgatewayCRDs(ctx context.Context) {
 
 // PreFailHandler is the function that is invoked if a test in the given TestInstallation fails
 func (i *TestInstallation) PreFailHandler(ctx context.Context) {
+	i.preFailHandler(ctx, i.GeneratedFiles.FailureDir)
+}
+
+// PerTestPreFailHandler is the function that is invoked if a test in the given TestInstallation fails
+func (i *TestInstallation) PerTestPreFailHandler(ctx context.Context, testName string) {
+	i.preFailHandler(ctx, filepath.Join(i.GeneratedFiles.FailureDir, testName))
+}
+
+// PreFailHandler is the function that is invoked if a test in the given TestInstallation fails
+func (i *TestInstallation) preFailHandler(ctx context.Context, dir string) {
 	// The idea here is we want to accumulate ALL information about this TestInstallation into a single directory
 	// That way we can upload it in CI, or inspect it locally
 
-	failureDir := i.GeneratedFiles.FailureDir
-	err := os.Mkdir(failureDir, os.ModePerm)
+	err := os.Mkdir(dir, os.ModePerm)
 	// We don't want to fail on the output directory already existing. This could occur
 	// if multiple tests running in the same cluster from the same installation namespace
 	// fail.
@@ -273,7 +287,7 @@ func (i *TestInstallation) PreFailHandler(ctx context.Context) {
 	i.Assertions.Require.NoError(err)
 
 	// Dump the logs and state of the cluster
-	helpers.StandardKgatewayDumpOnFail(os.Stdout, i.Actions.Kubectl(), failureDir, namespaces)()
+	helpers.StandardKgatewayDumpOnFail(os.Stdout, i.Actions.Kubectl(), dir, namespaces)
 }
 
 // GeneratedFiles is a collection of files that are generated during the execution of a set of tests
@@ -297,8 +311,8 @@ func MustGeneratedFiles(tmpDirId, clusterId string) GeneratedFiles {
 		panic(err)
 	}
 
-	// output path is in the format of bug_report/cluster_name/tmp_dir_id
-	failureDir := filepath.Join(testruntime.PathToBugReport(), clusterId, tmpDirId)
+	// output path is in the format of bug_report/cluster_name
+	failureDir := filepath.Join(testruntime.PathToBugReport(), clusterId)
 	err = os.MkdirAll(failureDir, os.ModePerm)
 	if err != nil {
 		panic(err)
@@ -308,4 +322,18 @@ func MustGeneratedFiles(tmpDirId, clusterId string) GeneratedFiles {
 		TempDir:    tmpDir,
 		FailureDir: failureDir,
 	}
+}
+
+func (i *TestInstallation) releaseExists(ctx context.Context, releaseName, namespace string) bool {
+	l := &corev1.SecretList{}
+	if err := i.ClusterContext.Client.List(ctx, l, &client.ListOptions{
+		Namespace: namespace,
+		LabelSelector: labels.SelectorFromSet(map[string]string{
+			"owner": "helm",
+			"name":  releaseName,
+		}),
+	}); err != nil {
+		return false
+	}
+	return len(l.Items) > 0
 }

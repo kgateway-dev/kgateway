@@ -5,7 +5,7 @@ import (
 
 	"istio.io/istio/pkg/kube/krt"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 )
 
 // GatewayExtension represents the internal representation of a GatewayExtension.
@@ -14,17 +14,20 @@ type GatewayExtension struct {
 	ObjectSource
 
 	// ExtAuth configuration for ExtAuth extension type.
-	ExtAuth *v1alpha1.ExtAuthProvider
+	ExtAuth *kgateway.ExtAuthProvider
 
 	// ExtProc configuration for ExtProc extension type.
-	ExtProc *v1alpha1.ExtProcProvider
+	ExtProc *kgateway.ExtProcProvider
 
 	// RateLimit configuration for RateLimit extension type.
 	// This is specifically for global rate limiting that communicates with an external rate limit service.
-	RateLimit *v1alpha1.RateLimitProvider
+	RateLimit *kgateway.RateLimitProvider
 
-	// JwtProviders configures the jwt providers
-	JwtProviders []v1alpha1.NamedJWTProvider
+	// JWT configures the jwt providers
+	JWT *kgateway.JWT
+
+	// OAuth2 configuration for OAuth2 extension type.
+	OAuth2 *kgateway.OAuth2Provider
 
 	// PrecedenceWeight specifies the precedence weight associated with the provider.
 	// A higher weight implies higher priority.
@@ -52,7 +55,10 @@ func (e GatewayExtension) Equals(other GatewayExtension) bool {
 	if !reflect.DeepEqual(e.RateLimit, other.RateLimit) {
 		return false
 	}
-	if !reflect.DeepEqual(e.JwtProviders, other.JwtProviders) {
+	if !reflect.DeepEqual(e.JWT, other.JWT) {
+		return false
+	}
+	if !reflect.DeepEqual(e.OAuth2, other.OAuth2) {
 		return false
 	}
 	if e.PrecedenceWeight != other.PrecedenceWeight {

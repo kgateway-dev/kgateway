@@ -5,6 +5,7 @@ import (
 
 	"github.com/agentgateway/agentgateway/go/api"
 	"istio.io/istio/pilot/pkg/util/protoconv"
+	"istio.io/istio/pkg/config"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/types"
@@ -38,7 +39,7 @@ func (p AgwPolicy) Equals(in AgwPolicy) bool {
 }
 
 func (p AgwPolicy) ResourceName() string {
-	return p.Policy.Name
+	return p.Policy.Key
 }
 
 type AddResourcesPlugin struct {
@@ -60,4 +61,27 @@ func (p *AddResourcesPlugin) AddListeners() krt.Collection[ir.AgwResource] {
 // AddRoutes extracts all routes resources from the collection
 func (p *AddResourcesPlugin) AddRoutes() krt.Collection[ir.AgwResource] {
 	return p.Routes
+}
+
+func ResourceName[T config.Namer](o T) *api.ResourceName {
+	return &api.ResourceName{
+		Namespace: o.GetNamespace(),
+		Name:      o.GetName(),
+	}
+}
+
+func TypedResourceName[T config.Namer](typ string, o T) *api.TypedResourceName {
+	return &api.TypedResourceName{
+		Kind:      typ,
+		Namespace: o.GetNamespace(),
+		Name:      o.GetName(),
+	}
+}
+
+func TypedResourceFromName(typ string, o types.NamespacedName) *api.TypedResourceName {
+	return &api.TypedResourceName{
+		Kind:      typ,
+		Namespace: o.Namespace,
+		Name:      o.Name,
+	}
 }

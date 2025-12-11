@@ -1,0 +1,279 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  labels:
+    app.kubernetes.io/name: keycloak
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 8080
+    name: http
+    protocol: TCP
+  - port: 443
+    targetPort: 8443
+    name: https
+    protocol: TCP
+  selector:
+    app.kubernetes.io/name: keycloak
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: keycloak
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: keycloak
+    spec:
+      containers:
+      - name: keycloak
+        image: quay.io/keycloak/keycloak:26.4.7
+        imagePullPolicy: IfNotPresent
+        args:
+        - "start-dev"
+        ports:
+        - name: https
+          containerPort: 8443
+          protocol: TCP
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        env:
+        - name: KC_BOOTSTRAP_ADMIN_USERNAME
+          value: admin
+        - name: KC_BOOTSTRAP_ADMIN_PASSWORD
+          value: admin
+        - name: KC_HOSTNAME
+          # must match the Service name to be DNS resolvable; the Auth flow will use this hostname
+          value: keycloak
+        - name: KC_HTTPS_CERTIFICATE_FILE
+          value: /etc/certs/tls.crt
+        - name: KC_HTTPS_CERTIFICATE_KEY_FILE
+          value: /etc/certs/tls.key
+        - name: KC_HTTPS_PORT
+          value: "8443"
+        - name: KC_HTTP_PORT
+          value: "8080"
+        - name: KC_LOG_LEVEL
+          value: debug
+        readinessProbe:
+          initialDelaySeconds: 3
+          periodSeconds: 3
+          tcpSocket:
+            port: 8443
+        volumeMounts:
+        - name: certs
+          mountPath: /etc/certs
+          readOnly: true
+      - name: setup
+        image: quay.io/keycloak/keycloak:26.4.7
+        command:
+        - "sh"
+        - "-c"
+        - |
+          set -ex
+
+          KEYCLOAK_ADMIN=admin
+          KEYCLOAK_ADMIN_PASSWORD=admin
+          KEYCLOAK_SERVER=http://127.0.0.1:8080
+          REALM=master
+          USERNAME=kgateway
+          PASSWORD=kgateway
+          CLIENT_ID=kgateway-client-id
+          CLIENT_SECRET=kgateway-client-secret
+          REDIRECT_URL=https://example.com/oauth2/redirect # must match the HTTPRoute's host and port
+
+          until /opt/keycloak/bin/kcadm.sh get realms --server "${KEYCLOAK_SERVER}" --realm master --user "${KEYCLOAK_ADMIN}" --password "${KEYCLOAK_ADMIN_PASSWORD}"; do
+            echo "Waiting for Keycloak admin to be ready..."
+            sleep 2
+          done
+
+          /opt/keycloak/bin/kcadm.sh create users \
+          -s username="${USERNAME}" \
+          -s enabled=true \
+          --server "${KEYCLOAK_SERVER}" \
+          --realm "${REALM}" \
+          --user "${KEYCLOAK_ADMIN}" \
+          --password "${KEYCLOAK_ADMIN_PASSWORD}"
+
+          /opt/keycloak/bin/kcadm.sh set-password \
+          --username "${USERNAME}" \
+          --new-password "${PASSWORD}" \
+          --server "${KEYCLOAK_SERVER}" \
+          --realm "${REALM}" \
+          --user "${KEYCLOAK_ADMIN}" \
+          --password "${KEYCLOAK_ADMIN_PASSWORD}"
+
+          /opt/keycloak/bin/kcreg.sh create \
+          -s clientId="${CLIENT_ID}" \
+          -s secret="${CLIENT_SECRET}" \
+          -s "redirectUris=[\"${REDIRECT_URL}\"]" \
+          -s consentRequired=false \
+          --server "${KEYCLOAK_SERVER}" \
+          --realm "${REALM}" \
+          --user "${KEYCLOAK_ADMIN}" \
+          --password "${KEYCLOAK_ADMIN_PASSWORD}"
+
+          tail -f /dev/null # keep the container running
+      volumes:
+      - name: certs
+        secret:
+          secretName: keycloak-tls
+      terminationGracePeriodSeconds: 0
+---
+# example cert and key generated using:
+# openssl req -x509 -out example.crt -keyout example.key -newkey rsa:2048 -days 3650 -nodes -sha256 -subj '/CN=example.com' -extensions EXT -config <( printf "[dn]\nCN=example.com\n[req]\ndistinguished_name = dn\n[EXT]\nsubjectAltName=DNS:example.com\nkeyUsage=digitalSignature\nextendedKeyUsage=serverAuth")
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keycloak-tls
+type: kubernetes.io/tls
+data:
+  tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUM5akNDQWQ2Z0F3SUJBZ0lVUEhzK0hPVk9yaW9Ld2RYSnpKNG4rY3doa0c0d0RRWUpLb1pJaHZjTkFRRUwKQlFBd0ZqRVVNQklHQTFVRUF3d0xaWGhoYlhCc1pTNWpiMjB3SGhjTk1qVXhNakF4TVRZMU1qUXlXaGNOTXpVeApNVEk1TVRZMU1qUXlXakFXTVJRd0VnWURWUVFEREF0bGVHRnRjR3hsTG1OdmJUQ0NBU0l3RFFZSktvWklodmNOCkFRRUJCUUFEZ2dFUEFEQ0NBUW9DZ2dFQkFNQUNHZ1AyMEFDcFVWcnU5K3VrM1M5dkdWR1Q5bktDd3VPVG5JODgKdkpwOWNlaUdRSjdUZDRSb1VvNFM5UkhjT0svcTg1VWh4VHo1RzlacWtHNElqL3UrdURCM001ODdGR09aWUtTZQpJU0RZbVlhU0psM3FQWGtBcm8rNzVHU1pKMFhENUV2enZHd1FnZE5tTGp5RVNwbkhGL2dONitwdUhraDZhaFRSCmhRUDhHWkpKTm9NTStEUWNkYU5LSGxKY0lYdS9xTTdielpMeUtoank3dmhBd0tIa0FlZEJsTXVoUU5tdDFpdncKdUVUajZ3ZUhpazZDczAyU0Q3SFVHVjlRcHRTelpraTgvMEl1d1ZaWFVNcFNlMUZIOHZyS0FSaHZFT05YelN4aAo3Tms1aWIzd1RDT0tQMUFDTU9Oc0RSN042TnE2TU9nV055ZlpxSkwzUUtCbGhiVUNBd0VBQWFNOE1Eb3dGZ1lEClZSMFJCQTh3RFlJTFpYaGhiWEJzWlM1amIyMHdDd1lEVlIwUEJBUURBZ2VBTUJNR0ExVWRKUVFNTUFvR0NDc0cKQVFVRkJ3TUJNQTBHQ1NxR1NJYjNEUUVCQ3dVQUE0SUJBUUFuNkZmRFZ1U3VwSUREQzB2amtUWEU2TFdqM0JPUgpaMTlQQzVoZktkK0U2RnpPQ3U4TzRBdTVud0ZyS3Z0NWJZckpGcTRzdmRHWlpHNTlTL0ZhcDRvQ2JvYlV2a2krCnhsd1lXTktNOU1lUXJXVTgyTmFvOGxQK2NPUEh6azlOVENmNi9PbGNlZnFKRnI1TEFNWG5OZVc1cit0MlNkL2UKRkg3QlgyZnFtM0U0S1VWRGEzWlZQMUF1UStvaDB1WFlCTmlpaEMxWEZBT2NBdE9HK0VBR0xSeVVxek4xbjRQMQo5Z25HN1FaaTRXQ1V2MTdiT3J5akRJOVlEU09CbndRdU5MUTRyOWNTM2JQZmNUKzVqS2VZREJqeFlPWHVFYnBiCjFnbjB2ZEo0dFA4Z3ZiZ29KMEtWRlZ5S3JPM3MycWptQUVEbjNkbEFLc2pCSkNmS1Y2VUF4K1J6Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+  tls.key: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV2Z0lCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktnd2dnU2tBZ0VBQW9JQkFRREFBaG9EOXRBQXFWRmEKN3ZmcnBOMHZieGxSay9aeWdzTGprNXlQUEx5YWZYSG9oa0NlMDNlRWFGS09FdlVSM0RpdjZ2T1ZJY1U4K1J2VwphcEJ1Q0kvN3ZyZ3dkek9mT3hSam1XQ2tuaUVnMkptR2tpWmQ2ajE1QUs2UHUrUmttU2RGdytSTDg3eHNFSUhUClppNDhoRXFaeHhmNERldnFiaDVJZW1vVTBZVUQvQm1TU1RhRERQZzBISFdqU2g1U1hDRjd2NmpPMjgyUzhpb1kKOHU3NFFNQ2g1QUhuUVpUTG9VRFpyZFlyOExoRTQrc0hoNHBPZ3JOTmtnK3gxQmxmVUtiVXMyWkl2UDlDTHNGVwpWMURLVW50UlIvTDZ5Z0VZYnhEalY4MHNZZXpaT1ltOThFd2ppajlRQWpEamJBMGV6ZWphdWpEb0ZqY24yYWlTCjkwQ2daWVcxQWdNQkFBRUNnZ0VBYTBxQldRZTRzVFhyMVFGRm5mSncra2w5ZjExTDBDOExVZm13K1VVNktxWEEKV2V0eS9vMHg4dFlNazRFNldqR1JwNU9GYXljRXZRNkNKSzFGYVliMVZmbjdtSEZ6Y2gya1JnZDF2bWJ5SWhXRwpySERNYVp3em40TG5DRUE0M3BIS0pTelNUREsxYmpsSEltYXRuWGxhNmxVYktxdzAwTG1aeUd4SERMMExNKzdaCjlpRCsreUxJcDJiV3Q1dVROMGpTVEdIa1grb3NGdlhOSlg5aXZUQmhiMGdGcUJBdUN6VWE0TjRjTk56ZzRnV0sKa0MxMGsweUVOd2NhSTAxbzU2V1hZYUlFY2dwWVRORDZpQjA1bVBwZVJOKzJCZUVBdERYVUgxc0E4SGRCRHdRbApwVFltYmZLaHptVmlKeVMyc0hpK0VZbGN4eEZsYnUwcTNLTnh0aE5sWVFLQmdRRHE2b0lOY0dWWW9vamdWY1ptCm11SDc3cDYwUWdNTXBCd1JXb3lNUWFLbjFHd3ZEZGhHWWNDbHZJZ2pwVUlDbUFWckZtZksrSlc4WkhWc3BmOUIKSjBaVVJmaWQwUnBIaXk2ckhzNVduUlVIdmN0c0grRkkxZ2pMb2RzR1dHRm00SmQwOTYybUZOb2MyQ1laNmw2dgpVMDV5KzZtKzVUL3FOTXptT0g0bnlMRVVyUUtCZ1FEUlBidGxCYzdPZ2p4Z0pwVU9MUzd1ZW45bUlqSUhsQW1DCjN5NkpZWU9hL1ZDa1pZbWRvbTMrNDhwQ3d3UmZrdHlHUEQ1NnZ3Ly9WbDFUZUdJcDRiN3Q4c1owNm9wVFIrWGkKUlFyZXhiN2RoZGRRUGJMd0JYUFBFTk5UQlJMOUZuN0dQWXFGVUNXWklBc2VQdzVtODRJMS96bUJhSC9FczZ0bgpWTVlMMmI3T0tRS0JnUURqck9iZzJZY1AwVzh4WlZDRmp5VG9nOHRDenh1ZmU4cE1NMk0yYUVLWndESWRwS0J4CkRqcWxKc1VYTHdwNzh4U0ZSbERRRWY4bGVJT3FDblFLbEdNQU9GU050K1J0WklLVmpLVFVveWVIdWpYV2xFdEcKeVZINjhlS1NFc1JMN2U0OGlmTzluRVlNWUowRXp2WjNuQmpUTGYvRktQQzZML1JLU0lSVVVKajNmUUtCZ0FUdApKaWRYdnFuQUNUbmVUcTRaeER3YktEcTRYV011U2hjSnVDZkY0dnBZTW5qY1p5UU4rZmNCVi9iQWJxN3RYMEhOCjAwN0NodGJsS3FkWGMwQTNMMjZjdzYxbkJFQzN0YUxoSzBOWmRvZnlxY0lhNGNhaTZqb2ExRTdsRkxCZXdqZGEKcFpORDhzNnJJWGZoMWkzNFY3MTd0OWZqSlBiMW4vaDcxM25aODVNWkFvR0JBTUp6UitDUk0zMUU0VGErZlBLcQpJMk1vYmJEK2MvY2x1VTNLSWVPaFMreGx6blVuNGU5RDcreWdCWitqWTFMN0pheU9Xb3VLOEZoZWplOXZtZC82ClZlbzJ0REUwUzBZa1h5a0NnQ3FTamFYVHNZV0NNR0ZMUFhPd0lmaGhNczlZRnRUbWxJV0RZeXJobnBRQUVYUG8KS29vOUZDdzljNVlKOEdhUG4vQ0tudDN6Ci0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0K
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-tls-ca
+data:
+  # same as tls.crt in keycloak-tls secret
+  ca.crt: |
+    -----BEGIN CERTIFICATE-----
+    MIIC9jCCAd6gAwIBAgIUPHs+HOVOrioKwdXJzJ4n+cwhkG4wDQYJKoZIhvcNAQEL
+    BQAwFjEUMBIGA1UEAwwLZXhhbXBsZS5jb20wHhcNMjUxMjAxMTY1MjQyWhcNMzUx
+    MTI5MTY1MjQyWjAWMRQwEgYDVQQDDAtleGFtcGxlLmNvbTCCASIwDQYJKoZIhvcN
+    AQEBBQADggEPADCCAQoCggEBAMACGgP20ACpUVru9+uk3S9vGVGT9nKCwuOTnI88
+    vJp9ceiGQJ7Td4RoUo4S9RHcOK/q85UhxTz5G9ZqkG4Ij/u+uDB3M587FGOZYKSe
+    ISDYmYaSJl3qPXkAro+75GSZJ0XD5EvzvGwQgdNmLjyESpnHF/gN6+puHkh6ahTR
+    hQP8GZJJNoMM+DQcdaNKHlJcIXu/qM7bzZLyKhjy7vhAwKHkAedBlMuhQNmt1ivw
+    uETj6weHik6Cs02SD7HUGV9QptSzZki8/0IuwVZXUMpSe1FH8vrKARhvEONXzSxh
+    7Nk5ib3wTCOKP1ACMONsDR7N6Nq6MOgWNyfZqJL3QKBlhbUCAwEAAaM8MDowFgYD
+    VR0RBA8wDYILZXhhbXBsZS5jb20wCwYDVR0PBAQDAgeAMBMGA1UdJQQMMAoGCCsG
+    AQUFBwMBMA0GCSqGSIb3DQEBCwUAA4IBAQAn6FfDVuSupIDDC0vjkTXE6LWj3BOR
+    Z19PC5hfKd+E6FzOCu8O4Au5nwFrKvt5bYrJFq4svdGZZG59S/Fap4oCbobUvki+
+    xlwYWNKM9MeQrWU82Nao8lP+cOPHzk9NTCf6/OlcefqJFr5LAMXnNeW5r+t2Sd/e
+    FH7BX2fqm3E4KUVDa3ZVP1AuQ+oh0uXYBNiihC1XFAOcAtOG+EAGLRyUqzN1n4P1
+    9gnG7QZi4WCUv17bOryjDI9YDSOBnwQuNLQ4r9cS3bPfcT+5jKeYDBjxYOXuEbpb
+    1gn0vdJ4tP8gvbgoJ0KVFVyKrO3s2qjmAEDn3dlAKsjBJCfKV6UAx+Rz
+    -----END CERTIFICATE-----
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: oauth-gateway
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - name: https
+    protocol: HTTPS
+    port: 443
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - name: keycloak-tls # same as the secret used for Keycloak TLS
+        kind: Secret
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: oauth
+spec:
+  parentRefs:
+  - name: oauth-gateway
+  hostnames:
+  - example.com # must match the CN in the Keycloak TLS cert
+  rules:
+  - name: rule0
+    matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: httpbin
+      port: 8443
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: no-oauth
+spec:
+  parentRefs:
+  - name: oauth-gateway
+  hostnames:
+  - test.com
+  rules:
+  - name: rule0
+    matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: httpbin
+      port: 8443
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: oauth-route
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: oauth
+  oauth2:
+    extensionRef:
+      name: keycloak-oauth
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: keycloak-oauth
+spec:
+  oauth2:
+    backendRef:
+      kind: Service
+      name: keycloak
+      port: 443
+    tokenEndpoint: https://keycloak/realms/master/protocol/openid-connect/token
+    authorizationEndpoint: https://keycloak/realms/master/protocol/openid-connect/auth
+    endSessionEndpoint: https://keycloak/realms/master/protocol/openid-connect/logout
+    credentials:
+      clientID: kgateway-client-id # must match the clientId created in Keycloak
+      clientSecretRef:
+        name: oauth-client-secret
+    redirectURI: https://example.com/oauth2/redirect # must match the REDIRECT_URL used in Keycloak setup
+    logoutPath: /logout
+    forwardAccessToken: true
+    scopes: ["openid"]
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: oauth-client-secret
+data:
+  # kgateway-client-secret; must match the client secret created in Keycloak
+  client-secret: a2dhdGV3YXktY2xpZW50LXNlY3JldA==
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: BackendTLSPolicy
+metadata:
+  name: keycloak-tls
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: keycloak
+  validation:
+    hostname: example.com
+    caCertificateRefs:
+    - group: ""
+      kind: ConfigMap
+      name: keycloak-tls-ca

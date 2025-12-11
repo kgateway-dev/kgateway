@@ -1,0 +1,214 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: test
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: test
+spec:
+  parentRefs:
+  - name: test
+  hostnames:
+  - "test.com"
+  rules:
+  - name: rule0
+    backendRefs:
+    - name: test
+      port: 80
+    matches:
+    - path:
+        type: PathPrefix
+        value: /route-0
+  - name: rule1
+    backendRefs:
+    - name: test
+      port: 80
+    matches:
+    - path:
+        type: PathPrefix
+        value: /route-1
+  - name: rule2
+    backendRefs:
+    - name: test
+      port: 80
+    matches:
+    - path:
+        type: PathPrefix
+        value: /route-2
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: gateway-attachment-1
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test
+  oauth2:
+    extensionRef:
+      name: oauth-gateway-1
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: listener-attachment-1
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test
+    sectionName: http
+  oauth2:
+    extensionRef:
+      name: oauth-listener-1
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: route-attachment-1
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: test
+    sectionName: rule0
+  oauth2:
+    extensionRef:
+      name: oauth-route-1
+# TODO: uncomment this when disable is supported
+# ---
+# apiVersion: gateway.kgateway.dev/v1alpha1
+# kind: TrafficPolicy
+# metadata:
+#   name: route-disable
+# spec:
+#   targetRefs:
+#   - group: gateway.networking.k8s.io
+#     kind: HTTPRoute
+#     name: test
+#     sectionName: rule1
+#   oauth2:
+#     disable: {}
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: oauth-gateway-1
+spec:
+  oauth2:
+    backendRef:
+      kind: Backend
+      group: gateway.kgateway.dev
+      name: oauth-provider-1
+    tokenEndpoint: https://provider-1.com/token
+    authorizationEndpoint: https://provider-1.com/auth
+    credentials:
+      clientID: client-id
+      clientSecretRef:
+        name: oauth-client-secret
+    # redirectURI: use default
+    # logoutPath: use default
+    # forwardAccessToken: use default
+    # scopes: use default
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: oauth-listener-1
+spec:
+  oauth2:
+    backendRef:
+      kind: Backend
+      group: gateway.kgateway.dev
+      name: oauth-provider-2
+    tokenEndpoint: https://provider-2.com/token
+    authorizationEndpoint: https://provider-2.com/auth
+    credentials:
+      clientID: client-id
+      clientSecretRef:
+        name: oauth-client-secret
+    redirectURI: https://test.com/callback
+    logoutPath: /log-out
+    endSessionEndpoint: https://provider-2.com/logout
+    forwardAccessToken: true
+    scopes: ["email"]
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: oauth-route-1
+spec:
+  oauth2:
+    backendRef:
+      kind: Backend
+      group: gateway.kgateway.dev
+      name: oauth-provider-2
+    tokenEndpoint: https://provider-2.com/token
+    authorizationEndpoint: https://provider-2.com/auth
+    credentials:
+      clientID: client-id
+      clientSecretRef:
+        name: oauth-client-secret
+    redirectURI: https://test.com/callback
+    logoutPath: /log-out
+    forwardAccessToken: true
+    scopes: ["openid", "email"]
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: oauth-provider-1
+spec:
+  type: Static
+  static:
+    hosts:
+    - host: provider-1.com
+      port: 443
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: oauth-provider-2
+spec:
+  type: Static
+  static:
+    hosts:
+    - host: provider-2.com
+      port: 443
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: oauth-client-secret
+data:
+  client-secret: Y2xpZW50LXNlY3JldA==
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  #must match wellknown.OAuth2HMACSecret
+  name: oauth2-hmac-secret 
+  namespace: kgateway-system
+data:
+  hmac-secret: SE1BQyBzZWNyZXQ=  
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test
+spec:
+  selector:
+    test: test
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: test

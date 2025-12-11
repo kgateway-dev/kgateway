@@ -116,6 +116,8 @@ spec:
               value: "{{.Values.agentgateway.enabled}}"
             - name: KGW_ENABLE_ENVOY
               value: "{{.Values.envoy.enabled}}"
+            - name: KGW_GATEWAY_CLASS_PARAMETERS_REFS
+              value: {{ .Values.gatewayClassParametersRefs | toJson | quote }}
             {{- if .Values.waypoint.enabled }}
             - name: KGW_ENABLE_WAYPOINT
               value: "true"
@@ -158,4 +160,14 @@ spec:
       {{- end }}
 {{- if and (not .Values.envoy.enabled) (not .Values.agentgateway.enabled) }}
 {{ fail "envoy.enabled or agentgateway.enabled must be set to true"}}
+{{- end }}
+{{- if .Values.gatewayClassParametersRefs }}
+{{- range $className, $ref := .Values.gatewayClassParametersRefs }}
+{{- if not $ref.name }}
+{{ fail (printf "gatewayClassParametersRefs.%s.name must be set" $className) }}
+{{- end }}
+{{- if not $ref.namespace }}
+{{ fail (printf "gatewayClassParametersRefs.%s.namespace must be set" $className) }}
+{{- end }}
+{{- end }}
 {{- end }}

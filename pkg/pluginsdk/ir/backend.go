@@ -16,11 +16,10 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwxv1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
@@ -61,6 +60,13 @@ func (c ObjectSource) Equals(in ObjectSource) bool {
 	return c.Namespace == in.Namespace && c.Name == in.Name && c.Group == in.Group && c.Kind == in.Kind
 }
 
+func (c ObjectSource) NamespacedName() types.NamespacedName {
+	return types.NamespacedName{
+		Namespace: c.Namespace,
+		Name:      c.Name,
+	}
+}
+
 type Namespaced interface {
 	GetName() string
 	GetNamespace() string
@@ -80,15 +86,15 @@ const (
 // and GEP-1911 (https://gateway-api.sigs.k8s.io/geps/gep-1911/#api-semantics).
 func ParseAppProtocol(appProtocol *string) AppProtocol {
 	switch strings.ToLower(ptr.Deref(appProtocol, "")) {
-	case string(v1alpha1.AppProtocolHttp2):
+	case string(kgateway.AppProtocolHttp2):
 		fallthrough
-	case string(v1alpha1.AppProtocolGrpc):
+	case string(kgateway.AppProtocolGrpc):
 		fallthrough
-	case string(v1alpha1.AppProtocolGrpcWeb):
+	case string(kgateway.AppProtocolGrpcWeb):
 		fallthrough
-	case string(v1alpha1.AppProtocolKubernetesH2C):
+	case string(kgateway.AppProtocolKubernetesH2C):
 		return HTTP2AppProtocol
-	case string(v1alpha1.AppProtocolKubernetesWs):
+	case string(kgateway.AppProtocolKubernetesWs):
 		return WebSocketAppProtocol
 	default:
 		return DefaultAppProtocol
@@ -149,8 +155,6 @@ type BackendObjectIR struct {
 	resourceName string
 
 	// TrafficDistribution is the desired traffic distribution for the backend.
-	// Default is any (no priority).
-	// +krtEqualsTodo ensure traffic distribution differences are compared
 	TrafficDistribution wellknown.TrafficDistribution
 
 	// DisableIstioAutoMTLS indicates if Istio auto-mTLS should be disabled for this backend
@@ -189,16 +193,17 @@ func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
 	polEq := c.AttachedPolicies.Equals(in.AttachedPolicies)
 	nameEq := c.resourceName == in.resourceName
 	disableIstioAutoMTLSEq := c.DisableIstioAutoMTLS == in.DisableIstioAutoMTLS
+	trafficDistEq := c.TrafficDistribution == in.TrafficDistribution
 
 	// objIr may currently be nil in the case of k8s Services
 	// TODO: add an IR for Services to avoid the need for this
-	// see: internal/kgateway/extensions2/plugins/kubernetes/k8s.go
+	// see: pkg/kgateway/extensions2/plugins/kubernetes/k8s.go
 	objIrEq := true
 	if c.ObjIr != nil {
 		objIrEq = c.ObjIr.Equals(in.ObjIr)
 	}
 
-	return objEq && objVersionEq && objIrEq && polEq && nameEq && disableIstioAutoMTLSEq
+	return objEq && objVersionEq && objIrEq && polEq && nameEq && disableIstioAutoMTLSEq && trafficDistEq
 }
 
 func (c BackendObjectIR) ClusterName() string {
@@ -285,10 +290,9 @@ func (listener Listener) GetParentReporter(reporter reporter.Reporter) reporter.
 	switch t := listener.Parent.(type) {
 	case *gwv1.Gateway:
 		return reporter.Gateway(t)
-	case *gwxv1.XListenerSet:
+	default:
 		return reporter.ListenerSet(t)
 	}
-	panic("Unknown parent type")
 }
 
 // TODO: need to reevaluate DeepEqual usage
@@ -324,14 +328,35 @@ type ListenerForDeployer struct {
 type Gateway struct {
 	ObjectSource        `json:",inline"`
 	Listeners           Listeners
-	AllowedListenerSets ListenerSets
-	DeniedListenerSets  ListenerSets
+	AllowedListenerSets GVKListenerSets
+	DeniedListenerSets  GVKListenerSets
 	Obj                 *gwv1.Gateway
 
 	AttachedListenerPolicies AttachedPolicies
 	AttachedHttpPolicies     AttachedPolicies
 
 	PerConnectionBufferLimitBytes *uint32
+	FrontendTLSConfig             *FrontendTLSConfigIR
+}
+
+// FrontendTLSConfigIR represents the Gateway-level frontend TLS configuration
+type FrontendTLSConfigIR struct {
+	// Default client certificate validation configuration for all HTTPS listeners
+	DefaultValidation *ClientCertificateValidationIR
+	// PerPort client certificate validation configuration, keyed by port number
+	PerPortValidation map[gwv1.PortNumber]*ClientCertificateValidationIR
+
+	// Err contains any error encountered during construction of the FrontendTLSConfigIR, used in status reportings
+	Err error
+}
+
+// ClientCertificateValidationIR holds the client certificate validation configuration with references
+// CA certificates are fetched later during listener translation
+type ClientCertificateValidationIR struct {
+	// CACertificateRefs contains references to ConfigMaps or Secrets containing CA certificates
+	CACertificateRefs []gwv1.ObjectReference
+	// RequireClientCertificate indicates whether client certificates are required
+	RequireClientCertificate bool
 }
 
 func (c Gateway) ResourceName() string {
@@ -346,7 +371,52 @@ func (c Gateway) Equals(in Gateway) bool {
 		c.AttachedHttpPolicies.Equals(in.AttachedHttpPolicies) &&
 		c.Listeners.Equals(in.Listeners) &&
 		c.AllowedListenerSets.Equals(in.AllowedListenerSets) &&
-		c.DeniedListenerSets.Equals(in.DeniedListenerSets)
+		c.DeniedListenerSets.Equals(in.DeniedListenerSets) &&
+		equalsFrontendTLSConfig(c.FrontendTLSConfig, in.FrontendTLSConfig)
+}
+
+func equalsFrontendTLSConfig(a, b *FrontendTLSConfigIR) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	if !equalsClientCertValidationIR(a.DefaultValidation, b.DefaultValidation) {
+		return false
+	}
+	if len(a.PerPortValidation) != len(b.PerPortValidation) {
+		return false
+	}
+	for port, valA := range a.PerPortValidation {
+		valB, ok := b.PerPortValidation[port]
+		if !ok || !equalsClientCertValidationIR(valA, valB) {
+			return false
+		}
+	}
+	return true
+}
+
+func equalsClientCertValidationIR(a, b *ClientCertificateValidationIR) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	if a.RequireClientCertificate != b.RequireClientCertificate {
+		return false
+	}
+	if len(a.CACertificateRefs) != len(b.CACertificateRefs) {
+		return false
+	}
+	for i := range a.CACertificateRefs {
+		if !objectRefEqual(a.CACertificateRefs[i], b.CACertificateRefs[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func objectRefEqual(a, b gwv1.ObjectReference) bool {
+	return a.Group == b.Group &&
+		a.Kind == b.Kind &&
+		a.Name == b.Name &&
+		ptrEquals(a.Namespace, b.Namespace)
 }
 
 // Equals returns true if the two BackendRefIR instances are equal in cluster name, weight, backend object equality, and error.
@@ -384,7 +454,7 @@ func errorsEqual(a, b error) bool {
 type ListenerSet struct {
 	ObjectSource `json:",inline"`
 	Listeners    Listeners
-	Obj          *gwxv1.XListenerSet
+	Obj          client.Object
 	// ListenerSet polices are attached to the individual listeners in addition
 	// to their specific policies
 
@@ -401,6 +471,20 @@ func (c ListenerSet) Equals(in ListenerSet) bool {
 		versionEquals(c.Obj, in.Obj) &&
 		c.Listeners.Equals(in.Listeners) &&
 		errorsEqual(c.Err, in.Err)
+}
+
+type GVKListenerSets map[schema.GroupVersionKind]ListenerSets
+
+func (c GVKListenerSets) Equals(in GVKListenerSets) bool {
+	if len(c) != len(in) {
+		return false
+	}
+	for gvk, ls := range c {
+		if !ls.Equals(in[gvk]) {
+			return false
+		}
+	}
+	return true
 }
 
 type ListenerSets []ListenerSet

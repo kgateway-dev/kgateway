@@ -53,6 +53,45 @@ spec:
           spec:
             description: BackendConfigPolicySpec defines the desired state of BackendConfigPolicy.
             properties:
+              circuitBreakers:
+                description: |-
+                  CircuitBreakers contains the options necessary to configure circuit breaking.
+                  See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/circuit_breaking) for more details.
+                properties:
+                  maxConnections:
+                    description: |-
+                      MaxConnections is the maximum number of connections that will be made to
+                      the upstream cluster. If not specified, defaults to 1024.
+                    format: int32
+                    minimum: 1
+                    type: integer
+                  maxPendingRequests:
+                    description: |-
+                      MaxPendingRequests is the maximum number of pending requests that are
+                      allowed to the upstream cluster. If not specified, defaults to 1024.
+                    format: int32
+                    minimum: 1
+                    type: integer
+                  maxRequests:
+                    description: |-
+                      MaxRequests is the maximum number of parallel requests that are allowed
+                      to the upstream cluster. If not specified, defaults to 1024.
+                    format: int32
+                    minimum: 1
+                    type: integer
+                  maxRetries:
+                    description: |-
+                      MaxRetries is the maximum number of parallel retries that are allowed
+                      to the upstream cluster. If not specified, defaults to 3.
+                    format: int32
+                    minimum: 0
+                    type: integer
+                type: object
+                x-kubernetes-validations:
+                - message: at least one of the fields in [maxConnections maxPendingRequests
+                    maxRequests maxRetries] must be set
+                  rule: '[has(self.maxConnections),has(self.maxPendingRequests),has(self.maxRequests),has(self.maxRetries)].filter(x,x==true).size()
+                    >= 1'
               commonHttpProtocolOptions:
                 description: |-
                   Additional options when handling HTTP requests upstream, applicable to

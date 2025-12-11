@@ -12,13 +12,14 @@ import (
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
@@ -31,8 +32,13 @@ type GatewayContext struct {
 }
 
 type ListenerContext struct {
+	Port              uint32
 	Policy            PolicyIR
 	PolicyAncestorRef gwv1.ParentReference
+}
+
+type HttpFiltersContext struct {
+	ListenerPort uint32
 }
 
 type RouteConfigContext struct {
@@ -112,8 +118,9 @@ type RouteContext struct {
 }
 
 type HcmContext struct {
-	Policy  PolicyIR
-	Gateway GatewayIR
+	ListenerPort uint32
+	Policy       PolicyIR
+	Gateway      GatewayIR
 }
 
 // ProxyTranslationPass represents a single translation pass for a gateway using envoy. It can hold state
@@ -170,12 +177,13 @@ type ProxyTranslationPass interface {
 		out *envoyroutev3.RouteConfiguration,
 	)
 
+	// NetworkFilters returns StagedNetworkFilters to be added to the listener.
 	NetworkFilters() ([]filters.StagedNetworkFilter, error)
 
 	// called 1 time per filter-chain.
 	// If a plugin emits new filters, they must be with a plugin unique name.
 	// filters added to impact specific routes should be disabled on the listener level, so they don't impact other routes.
-	HttpFilters(fc FilterChainCommon) ([]filters.StagedHttpFilter, error)
+	HttpFilters(hCtx HttpFiltersContext, fc FilterChainCommon) ([]filters.StagedHttpFilter, error)
 
 	// called 1 time per filter chain after listeners and allows tweaking HCM settings.
 	ApplyHCM(
@@ -251,7 +259,7 @@ func (s UnimplementedProxyTranslationPass) ApplyForRouteBackend(policy PolicyIR,
 	return nil
 }
 
-func (s UnimplementedProxyTranslationPass) HttpFilters(fc FilterChainCommon) ([]filters.StagedHttpFilter, error) {
+func (s UnimplementedProxyTranslationPass) HttpFilters(hCtx HttpFiltersContext, fc FilterChainCommon) ([]filters.StagedHttpFilter, error) {
 	return nil, nil
 }
 
@@ -265,6 +273,7 @@ func (s UnimplementedProxyTranslationPass) ResourcesToAdd() Resources {
 
 type Resources struct {
 	Clusters []*envoyclusterv3.Cluster
+	Secrets  []*envoytlsv3.Secret
 }
 
 type GwTranslationCtx struct{}

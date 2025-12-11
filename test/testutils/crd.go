@@ -20,14 +20,14 @@ import (
 	utilyaml "k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 )
 
 var AllCRDs = []schema.GroupVersionResource{
 	// Gateway API
-	gvr.KubernetesGateway_v1,
-	gvr.GatewayClass_v1,
-	gvr.HTTPRoute_v1,
+	gvr.KubernetesGateway,
+	gvr.GatewayClass,
+	gvr.HTTPRoute,
 	gvr.GRPCRoute,
 	gvr.TCPRoute,
 	gvr.TLSRoute,
@@ -48,9 +48,13 @@ var AllCRDs = []schema.GroupVersionResource{
 	wellknown.BackendConfigPolicyGVR,
 	wellknown.TrafficPolicyGVR,
 	wellknown.HTTPListenerPolicyGVR,
+	wellknown.ListenerPolicyGVR,
 	wellknown.DirectResponseGVR,
 	wellknown.GatewayExtensionGVR,
 	wellknown.GatewayParametersGVR,
+	// agentgateway api
+	wellknown.AgentgatewayBackendGVR,
+	wellknown.AgentgatewayParametersGVR,
 	wellknown.AgentgatewayPolicyGVR,
 }
 
