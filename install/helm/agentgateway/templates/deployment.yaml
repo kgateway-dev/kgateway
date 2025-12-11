@@ -1,10 +1,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "kgateway.fullname" . }}
+  name: {{ include "agentgateway.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "kgateway.labels" . | nindent 4 }}
+    {{- include "agentgateway.labels" . | nindent 4 }}
   {{- with .Values.deploymentAnnotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
@@ -13,7 +13,7 @@ spec:
   replicas: {{ .Values.controller.replicaCount }}
   selector:
     matchLabels:
-      {{- include "kgateway.selectorLabels" . | nindent 6 }}
+      {{- include "agentgateway.selectorLabels" . | nindent 6 }}
   {{- with .Values.controller.strategy }}
   strategy:
     {{- toYaml . | nindent 4 }}
@@ -25,13 +25,13 @@ spec:
         prometheus.io/port: {{ .Values.controller.service.ports.metrics | default 9092 | quote}}
         {{- toYaml .Values.podAnnotations | nindent 8 }}
       labels:
-        {{- include "kgateway.selectorLabels" . | nindent 8 }}
+        {{- include "agentgateway.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "kgateway.serviceAccountName" . }}
+      serviceAccountName: {{ include "agentgateway.serviceAccountName" . }}
       {{- with .Values.podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
@@ -45,8 +45,8 @@ spec:
           image: "{{ .Values.controller.image.registry | default .Values.image.registry }}/{{ .Values.controller.image.repository }}:{{ .Values.controller.image.tag | default .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.controller.image.pullPolicy | default .Values.image.pullPolicy }}
           ports:
-            - containerPort: {{ .Values.controller.service.ports.grpc }}
-              name: grpc-xds
+            - containerPort: {{ .Values.controller.service.ports.agwGrpc }}
+              name: grpc-xds-agw
               protocol: TCP
             - containerPort: {{ .Values.controller.service.ports.health }}
               name: health
@@ -82,13 +82,9 @@ spec:
             - name: KGW_LOG_LEVEL
               value: {{ .Values.controller.logLevel | quote }}
             - name: KGW_XDS_SERVICE_NAME
-              value: {{ include "kgateway.fullname" . }}
-            - name: KGW_XDS_SERVICE_PORT
-              value: {{ .Values.controller.service.ports.grpc | quote }}
-            {{- if .Values.inferenceExtension.enabled }}
-            - name: KGW_ENABLE_INFER_EXT
-              value: "true"
-            {{- end }}
+              value: {{ include "agentgateway.fullname" . }}
+            - name: KGW_AGENTGATEWAY_XDS_SERVICE_PORT
+              value: {{ .Values.controller.service.ports.agwGrpc | quote }}
             - name: KGW_DEFAULT_IMAGE_REGISTRY
               value: {{ .Values.image.registry }}
             - name: KGW_DEFAULT_IMAGE_TAG
@@ -97,10 +93,6 @@ spec:
               value: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
             - name: KGW_DISCOVERY_NAMESPACE_SELECTORS
               value: {{ .Values.discoveryNamespaceSelectors | toJson | quote }}
-            - name: KGW_POLICY_MERGE
-              value: {{ .Values.policyMerge | toJson | quote }}
-            - name: KGW_VALIDATION_MODE
-              value: {{ include "kgateway.validationLevel" . | quote }}
             {{- if .Values.controller.extraEnv }}
             {{- range $key, $value := .Values.controller.extraEnv }}
             - name: {{ $key }}
@@ -108,20 +100,20 @@ spec:
             {{- end }}
             {{- end }}
             - name: KGW_ENABLE_AGENTGATEWAY
-              value: "false"
-            - name: KGW_ENABLE_ENVOY
               value: "true"
-            - name: KGW_GATEWAY_CLASS_PARAMETERS_REFS
-              value: {{ .Values.gatewayClassParametersRefs | toJson | quote }}
-            {{- if .Values.waypoint.enabled }}
-            - name: KGW_ENABLE_WAYPOINT
+            - name: KGW_ENABLE_ENVOY
+              value: "false"
+            {{- if .Values.inferenceExtension.enabled }}
+            - name: KGW_ENABLE_INFER_EXT
               value: "true"
             {{- end }}
             {{- if .Values.controller.xds.tls.enabled }}
             - name: KGW_XDS_TLS_ENABLED
               value: "true"
             {{- end }}
-            # TODO: Remove this once the cleanup is done. Required as the kgateway-system
+            - name: KGW_GATEWAY_CLASS_PARAMETERS_REFS
+              value: {{ .Values.gatewayClassParametersRefs | toJson | quote }}
+            # TODO: Remove this once the cleanup is done. Required as the agentgateway-system
             # namespace is the default namespace and conformance will fail as a result.
             - name: POD_NAMESPACE
               valueFrom:
@@ -139,7 +131,7 @@ spec:
       volumes:
         - name: xds-tls
           secret:
-            secretName: kgateway-xds-cert
+            secretName: agentgateway-xds-cert
       {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:

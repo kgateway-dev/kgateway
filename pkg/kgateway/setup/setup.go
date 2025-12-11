@@ -7,6 +7,7 @@ import (
 	"net"
 	"sync"
 
+	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"github.com/go-logr/logr"
 	"istio.io/istio/pkg/kube/krt"
@@ -289,6 +290,19 @@ func New(opts ...func(*setup)) (*setup, error) {
 
 	SetupLogging(s.globalSettings.LogLevel)
 
+	// Adjust leader election ID based on which controllers are enabled.
+	// This allows split helm charts to deploy separate controllers that don't compete for the same lease.
+	// When only one controller type is enabled, append a suffix to make the lease unique.
+	leaderElectionID := s.leaderElectionID
+	if s.globalSettings.EnableEnvoy && !s.globalSettings.EnableAgentgateway {
+		// Envoy-only controller (kgateway chart)
+		leaderElectionID = s.leaderElectionID + "-envoy"
+	} else if !s.globalSettings.EnableEnvoy && s.globalSettings.EnableAgentgateway {
+		// Agentgateway-only controller (agentgateway chart)
+		leaderElectionID = s.leaderElectionID + "-agentgateway"
+	}
+	// If both are enabled, use the default ID (single controller handling both)
+
 	if s.ctrlMgrOptionsInitFunc == nil {
 		s.ctrlMgrOptionsInitFunc = func(ctx context.Context) *ctrl.Options {
 			return &ctrl.Options{
@@ -302,7 +316,7 @@ func New(opts ...func(*setup)) (*setup, error) {
 				},
 				LeaderElectionNamespace: namespaces.GetPodNamespace(),
 				LeaderElection:          !s.globalSettings.DisableLeaderElection,
-				LeaderElectionID:        s.leaderElectionID,
+				LeaderElectionID:        leaderElectionID,
 			}
 		}
 	}
@@ -311,7 +325,7 @@ func New(opts ...func(*setup)) (*setup, error) {
 		s.krtDebugger = new(krt.DebugHandler)
 	}
 
-	if s.xdsListener == nil {
+	if s.globalSettings.EnableEnvoy && s.xdsListener == nil {
 		var err error
 		s.xdsListener, err = newXDSListener("0.0.0.0", s.globalSettings.XdsServicePort)
 		if err != nil {
@@ -320,7 +334,7 @@ func New(opts ...func(*setup)) (*setup, error) {
 		}
 	}
 
-	if s.agwXdsListener == nil {
+	if s.globalSettings.EnableAgentgateway && s.agwXdsListener == nil {
 		var err error
 		s.agwXdsListener, err = newXDSListener("0.0.0.0", s.globalSettings.AgentgatewayXdsServicePort)
 		if err != nil {
@@ -377,7 +391,11 @@ func (s *setup) Start(ctx context.Context) error {
 		}()
 	}
 
-	cache := NewControlPlane(ctx, s.xdsListener, uniqueClientCallbacks, authenticators, s.globalSettings.XdsAuth, certWatcher)
+	// Only create Envoy control plane if Envoy controller is enabled
+	var cache envoycache.SnapshotCache
+	if s.globalSettings.EnableEnvoy {
+		cache = NewControlPlane(ctx, s.xdsListener, uniqueClientCallbacks, authenticators, s.globalSettings.XdsAuth, certWatcher)
+	}
 
 	setupOpts := &controller.SetupOpts{
 		Cache:          cache,
@@ -403,16 +421,21 @@ func (s *setup) Start(ctx context.Context) error {
 		return err
 	}
 
-	agwCollections, err := agwplugins.NewAgwCollections(
-		commoncol,
-		s.agwControllerName,
-		// control plane system namespace (default is kgateway-system)
-		namespaces.GetPodNamespace(),
-		s.apiClient.ClusterID().String(),
-	)
-	if err != nil {
-		slog.Error("error creating agw common collections", "error", err)
-		return err
+	var agwCollections *agwplugins.AgwCollections
+	// Only initialize agentgateway collections if agentgateway is enabled
+	if s.globalSettings.EnableAgentgateway {
+		var err error
+		agwCollections, err = agwplugins.NewAgwCollections(
+			commoncol,
+			s.agwControllerName,
+			// control plane system namespace (default is kgateway-system)
+			namespaces.GetPodNamespace(),
+			s.apiClient.ClusterID().String(),
+		)
+		if err != nil {
+			slog.Error("error creating agw common collections", "error", err)
+			return err
+		}
 	}
 
 	for _, mgrCfgFunc := range s.extraManagerConfig {
@@ -433,7 +456,8 @@ func (s *setup) Start(ctx context.Context) error {
 		}
 	}
 
-	if _, exists := runnablesRegistry[jwks.RunnableName]; !exists {
+	// Only build JWKS store if agentgateway is enabled since it requires agentgateway CRDs and serves only agw plugins
+	if _, exists := runnablesRegistry[jwks.RunnableName]; !exists && s.globalSettings.EnableAgentgateway {
 		if err := buildJwksStore(ctx, mgr, s.apiClient, commoncol, agwCollections); err != nil {
 			return fmt.Errorf("error creating jwks store %w", err)
 		}

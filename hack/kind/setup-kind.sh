@@ -80,11 +80,10 @@ else
     # Skip expensive envoy build
     VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME make kind-build-and-load-kgateway-agentgateway kind-build-and-load-dummy-idp kind-build-and-load-dummy-auth0 
   else
-    VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME make kind-build-and-load
+    VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME make kind-build-and-load kind-build-and-load-dummy-idp kind-build-and-load-dummy-auth0 
   fi
 
-  # 3. Build the test helm chart, ensuring we have a chart in the `_test` folder
-  VERSION=$VERSION make package-kgateway-charts
+  VERSION=$VERSION make package-kgateway-charts package-agentgateway-charts
 fi
 
 wait "$KIND_PID"
