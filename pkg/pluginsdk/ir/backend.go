@@ -60,6 +60,13 @@ func (c ObjectSource) Equals(in ObjectSource) bool {
 	return c.Namespace == in.Namespace && c.Name == in.Name && c.Group == in.Group && c.Kind == in.Kind
 }
 
+func (c ObjectSource) NamespacedName() types.NamespacedName {
+	return types.NamespacedName{
+		Namespace: c.Namespace,
+		Name:      c.Name,
+	}
+}
+
 type Namespaced interface {
 	GetName() string
 	GetNamespace() string
@@ -339,7 +346,7 @@ type FrontendTLSConfigIR struct {
 	// PerPort client certificate validation configuration, keyed by port number
 	PerPortValidation map[gwv1.PortNumber]*ClientCertificateValidationIR
 
-	// Err contains any error encountered during ListenerSet construction to be used for status reporting
+	// Err contains any error encountered during construction of the FrontendTLSConfigIR, used in status reportings
 	Err error
 }
 

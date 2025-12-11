@@ -7,8 +7,9 @@ To get started with this template:
 
 - [ ] **Create an issue in kgateway-dev/kgateway**
 - [ ] **Make a copy of this template.**
-  `EP-[ID]: [Feature/Enhancement Name]`, where `ID` is the issue number (with no
+    - [ ] The header at the top of the design doc should be in the format `# EP-NNNN: [Feature/Enhancement Name]`, where `NNNN` is the issue number (with no
   leading-zero padding) assigned to your enhancement above.
+    - [ ] The filename should be in the format `NNNN-feature-or-enhancement-name.md`, where the name is lowercase, hyphen-separated.
 - [ ] **Fill out this file as best you can.**
   At minimum, you should fill in the "Summary" and "Motivation" sections.
 - [ ] **Create a PR for this EP.**
@@ -36,7 +37,8 @@ with suggested changes.
 One EP corresponds to one "feature" or "enhancement" for its whole lifecycle. Once a feature has become
 "implemented", major changes should get new EPs.
 -->
-# EP-[ID]: [Feature/Enhancement Name]
+
+# EP-NNNN: [Feature/Enhancement Name]
 
 <!--
 This is the title of your EP. Keep it short, simple, and descriptive. A good
@@ -44,7 +46,7 @@ title can help communicate what the EP is and should be considered as part of
 any review.
 -->
 
-* Issue: [#ID](URL to GitHub issue)
+- Issue: [#NNNN](URL to GitHub issue)
 
 <!--
 A table of contents is helpful for quickly jumping to sections of a EP and for
@@ -87,7 +89,6 @@ know that this has succeeded?
 Include specific, actionable outcomes. Ensure that the goals focus on the scope of
 the proposed feature.
 -->
-
 
 ## Non-Goals
 

@@ -12,6 +12,7 @@ import (
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/kclient"
 	"k8s.io/apimachinery/pkg/api/meta"
+	apivalidation "k8s.io/apimachinery/pkg/api/validation"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -150,6 +151,11 @@ func (r *gatewayClassReconciler) reconcile(req types.NamespacedName) (rErr error
 func (r *gatewayClassReconciler) reconcileGatewayClasses() error {
 	var errs []error
 	for name, info := range r.classInfo {
+		// Validate the GatewayClass name using Kubernetes object name validation
+		if validationErrs := apivalidation.NameIsDNSSubdomain(name, false); len(validationErrs) > 0 {
+			errs = append(errs, fmt.Errorf("invalid GatewayClass name %q: %v", name, validationErrs))
+			continue
+		}
 		if err := r.reconcileGatewayClass(name, info); err != nil {
 			errs = append(errs, err)
 		}

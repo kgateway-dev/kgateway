@@ -156,10 +156,11 @@ func snapshotPerClient(
 		snap.erroredClusters = clustersForUcc.erroredClusters
 		snap.proxyKey = ucc.ResourceName()
 		snapshot := &envoycache.Snapshot{}
-		snapshot.Resources[envoycachetypes.Cluster] = clusterResources //envoycache.NewResources(version, resource)
+		snapshot.Resources[envoycachetypes.Cluster] = clusterResources // envoycache.NewResources(version, resource)
 		snapshot.Resources[envoycachetypes.Endpoint] = clientEndpointResources.endpoints
 		snapshot.Resources[envoycachetypes.Route] = listenerRouteSnapshot.Routes
 		snapshot.Resources[envoycachetypes.Listener] = listenerRouteSnapshot.Listeners
+		snapshot.Resources[envoycachetypes.Secret] = listenerRouteSnapshot.Secrets
 		// envoycache.NewResources(version, resource)
 		snap.snap = snapshot
 		logger.Debug("snapshots", "proxy_key", snap.proxyKey,
@@ -167,6 +168,7 @@ func snapshotPerClient(
 			"clusters", resourcesStringer(clusterResources).String(),
 			"routes", resourcesStringer(listenerRouteSnapshot.Routes).String(),
 			"endpoints", resourcesStringer(clientEndpointResources.endpoints).String(),
+			"secrets", resourcesStringer(listenerRouteSnapshot.Secrets).String(),
 		)
 
 		return &snap
@@ -200,6 +202,13 @@ func snapshotPerClient(
 				Namespace: cd.Namespace,
 				Resource:  "Listener",
 			}.toMetricsLabels()...)
+
+			snapshotResources.Set(0, snapshotResourcesMetricLabels{
+				Gateway:   cd.Gateway,
+				Namespace: cd.Namespace,
+				Resource:  "Secret",
+			}.toMetricsLabels()...)
+
 		case controllers.EventAdd, controllers.EventUpdate:
 			snapshotResources.Set(float64(len(o.Latest().snap.Resources[envoycachetypes.Cluster].Items)),
 				snapshotResourcesMetricLabels{
@@ -227,6 +236,13 @@ func snapshotPerClient(
 					Gateway:   cd.Gateway,
 					Namespace: cd.Namespace,
 					Resource:  "Listener",
+				}.toMetricsLabels()...)
+
+			snapshotResources.Set(float64(len(o.Latest().snap.Resources[envoycachetypes.Secret].Items)),
+				snapshotResourcesMetricLabels{
+					Gateway:   cd.Gateway,
+					Namespace: cd.Namespace,
+					Resource:  "Secret",
 				}.toMetricsLabels()...)
 		}
 	})

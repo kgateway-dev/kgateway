@@ -6,6 +6,7 @@ import (
 
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	exteniondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
+	envoy_api_key_auth_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/api_key_auth/v3"
 	envoy_basic_auth_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/basic_auth/v3"
 	bufferv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/buffer/v3"
 	compressorv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/compressor/v3"
@@ -16,6 +17,7 @@ import (
 	header_mutationv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/header_mutation/v3"
 	localratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	envoyrbacv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	// TODO(nfuden): remove once rustformations are able to be used in a production environment
 	transformationpb "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
@@ -51,9 +53,7 @@ const (
 	rbacFilterNamePrefix           = "envoy.filters.http.rbac"
 )
 
-var (
-	logger = logging.New("plugin/trafficpolicy")
-)
+var logger = logging.New("plugin/trafficpolicy")
 
 // from envoy code:
 // If the field `config` is configured but is empty, we treat the filter is enabled
@@ -62,6 +62,7 @@ var (
 func EnableFilterPerRoute() *envoyroutev3.FilterConfig {
 	return &envoyroutev3.FilterConfig{Config: &anypb.Any{}}
 }
+
 func DisableFilterPerRoute() *envoyroutev3.FilterConfig {
 	return &envoyroutev3.FilterConfig{Config: &anypb.Any{}, Disabled: true}
 }
@@ -102,6 +103,8 @@ type trafficPolicySpecIr struct {
 	decompression   *decompressionIR
 	basicAuth       *basicAuthIR
 	urlRewrite      *urlRewriteIR
+	apiKeyAuth      *apiKeyAuthIR
+	oauth2          *oauthIR
 }
 
 func (d *TrafficPolicy) CreationTime() time.Time {
@@ -174,6 +177,12 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	if !d.spec.urlRewrite.Equals(d2.spec.urlRewrite) {
 		return false
 	}
+	if !d.spec.apiKeyAuth.Equals(d2.spec.apiKeyAuth) {
+		return false
+	}
+	if !d.spec.oauth2.Equals(d2.spec.oauth2) {
+		return false
+	}
 	return true
 }
 
@@ -199,6 +208,8 @@ func (p *TrafficPolicy) Validate() error {
 	validators = append(validators, p.spec.decompression.Validate)
 	validators = append(validators, p.spec.basicAuth.Validate)
 	validators = append(validators, p.spec.urlRewrite.Validate)
+	validators = append(validators, p.spec.apiKeyAuth.Validate)
+	validators = append(validators, p.spec.oauth2.Validate)
 	for _, validator := range validators {
 		if err := validator(); err != nil {
 			return err
@@ -218,6 +229,7 @@ type trafficPolicyPluginGwPass struct {
 	extProcPerProvider       ProviderNeededMap
 	jwtPerProvider           ProviderNeededMap
 	rateLimitPerProvider     ProviderNeededMap
+	oauth2PerProvider        ProviderNeededMap
 	rbacInChain              map[string]*envoyrbacv3.RBAC
 	corsInChain              map[string]*corsv3.Cors
 	csrfInChain              map[string]*envoy_csrf_v3.CsrfPolicy
@@ -226,6 +238,9 @@ type trafficPolicyPluginGwPass struct {
 	compressorInChain        map[string]*compressorv3.Compressor
 	decompressorInChain      map[string]*decompressorv3.Decompressor
 	basicAuthInChain         map[string]*envoy_basic_auth_v3.BasicAuth
+	apiKeyAuthInChain        map[string]*envoy_api_key_auth_v3.ApiKeyAuth
+	// maps secret name to secret in case the same secret is referenced in multiple attachment points (e.g., vhost and route)
+	secrets map[string]*envoytlsv3.Secret
 }
 
 var _ ir.ProxyTranslationPass = &trafficPolicyPluginGwPass{}
@@ -326,7 +341,8 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
 	return &trafficPolicyPluginGwPass{
 		reporter:                 reporter,
-		setTransformationInChain: make(map[string]bool),
+		setTransformationInChain: map[string]bool{},
+		secrets:                  map[string]*envoytlsv3.Secret{},
 	}
 }
 
@@ -482,6 +498,26 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 		stagedFilters = append(stagedFilters, stagedExtAuthFilter)
 	}
 
+	// Add OIDC filters for providers
+	for _, provider := range p.oauth2PerProvider.Providers[fcc.FilterChainName] {
+		oidcFilter := provider.Extension.OAuth2.cfg
+		if oidcFilter == nil {
+			continue
+		}
+
+		stagedFilter := filters.MustNewStagedFilterWithWeight(
+			oauthFilterName(provider.Name),
+			oidcFilter,
+			// before JWT filter in AuthN stage which so that the ID token can be set by the OAuth2 filter that
+			// the JWT filter can extract it from the cookies
+			filters.BeforeStage(filters.AuthNStage),
+			provider.Extension.PrecedenceWeight,
+		)
+
+		stagedFilter.Filter.Disabled = true
+		stagedFilters = append(stagedFilters, stagedFilter)
+	}
+
 	if len(p.jwtPerProvider.Providers[fcc.FilterChainName]) > 0 {
 		stagedFilters = AddDisableFilterIfNeeded(stagedFilters, jwtGlobalDisableFilterName, jwtGlobalDisableFilterMetadataNamespace)
 	}
@@ -570,11 +606,26 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 		stagedFilters = append(stagedFilters, filter)
 	}
 
+	// Add API key auth filter to the chain
+	if f := p.apiKeyAuthInChain[fcc.FilterChainName]; f != nil {
+		filter := filters.MustNewStagedFilter(apiKeyAuthFilterNamePrefix, f, filters.DuringStage(filters.AuthNStage))
+		filter.Filter.Disabled = true
+		stagedFilters = append(stagedFilters, filter)
+	}
+
 	if len(stagedFilters) == 0 {
 		return nil, nil
 	}
 
 	return stagedFilters, nil
+}
+
+func (p *trafficPolicyPluginGwPass) ResourcesToAdd() ir.Resources {
+	resources := ir.Resources{}
+	for _, secret := range p.secrets {
+		resources.Secrets = append(resources.Secrets, secret)
+	}
+	return resources
 }
 
 // handlePolicies handles policies that are meant to be processed with the different
@@ -606,6 +657,8 @@ func (p *trafficPolicyPluginGwPass) handlePolicies(
 	p.handleCompression(fcn, typedFilterConfig, spec.compression)
 	p.handleDecompression(fcn, typedFilterConfig, spec.decompression)
 	p.handleBasicAuth(fcn, typedFilterConfig, spec.basicAuth)
+	p.handleAPIKeyAuth(fcn, typedFilterConfig, spec.apiKeyAuth)
+	p.handleOauth2(fcn, typedFilterConfig, spec.oauth2)
 }
 
 // handlePerRoutePolicies handles policies that are meant to be processed at the route level

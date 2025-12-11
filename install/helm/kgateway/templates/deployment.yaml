@@ -48,9 +48,6 @@ spec:
             - containerPort: {{ .Values.controller.service.ports.grpc }}
               name: grpc-xds
               protocol: TCP
-            - containerPort: {{ .Values.controller.service.ports.agwGrpc }}
-              name: grpc-xds-agw
-              protocol: TCP
             - containerPort: {{ .Values.controller.service.ports.health }}
               name: health
               protocol: TCP
@@ -88,8 +85,6 @@ spec:
               value: {{ include "kgateway.fullname" . }}
             - name: KGW_XDS_SERVICE_PORT
               value: {{ .Values.controller.service.ports.grpc | quote }}
-            - name: KGW_AGENTGATEWAY_XDS_SERVICE_PORT
-              value: {{ .Values.controller.service.ports.agwGrpc | quote }}
             {{- if .Values.inferenceExtension.enabled }}
             - name: KGW_ENABLE_INFER_EXT
               value: "true"
@@ -113,9 +108,9 @@ spec:
             {{- end }}
             {{- end }}
             - name: KGW_ENABLE_AGENTGATEWAY
-              value: "{{.Values.agentgateway.enabled}}"
+              value: "false"
             - name: KGW_ENABLE_ENVOY
-              value: "{{.Values.envoy.enabled}}"
+              value: "true"
             - name: KGW_GATEWAY_CLASS_PARAMETERS_REFS
               value: {{ .Values.gatewayClassParametersRefs | toJson | quote }}
             {{- if .Values.waypoint.enabled }}
@@ -158,9 +153,6 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-{{- if and (not .Values.envoy.enabled) (not .Values.agentgateway.enabled) }}
-{{ fail "envoy.enabled or agentgateway.enabled must be set to true"}}
-{{- end }}
 {{- if .Values.gatewayClassParametersRefs }}
 {{- range $className, $ref := .Values.gatewayClassParametersRefs }}
 {{- if not $ref.name }}

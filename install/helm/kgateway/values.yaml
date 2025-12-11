@@ -64,7 +64,6 @@ controller:
     # -- Set the service ports for gRPC and health endpoints.
     ports:
       grpc: 9977
-      agwGrpc: 9978
       health: 9093
       metrics: 9092
   # -- Add extra environment variables to the controller container.
@@ -102,21 +101,12 @@ inferenceExtension:
 # -- List of namespace selectors (OR'ed): each entry can use 'matchLabels' or 'matchExpressions' (AND'ed within each entry if used together). Kgateway includes the selected namespaces in config discovery. For more information, see the docs https://kgateway.dev/docs/latest/install/advanced/#namespace-discovery.
 discoveryNamespaceSelectors: []
 
-# -- Enable the integration with Agent Gateway, which lets you use kgateway to help manage agent connectivity across MCP servers, A2A agents, and REST APIs.
-agentgateway:
-  enabled: true
-
-# -- Enable the integration with Envoy
-envoy:
-  enabled: true
-
 # -- Map of GatewayClass names to GatewayParameters references that will be set on
 #    the default GatewayClasses managed by kgateway. Each entry must define both the
 #    name and namespace of the GatewayParameters resource.
 #    The default GatewayClasses managed by kgateway are:
 #    - kgateway
 #    - kgateway-waypoint
-#    - agentgateway
 #    Example:
 #    gatewayClassParametersRefs:
 #      kgateway:

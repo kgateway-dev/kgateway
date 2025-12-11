@@ -21,6 +21,7 @@ func TestAgentgatewayIntegration(t *testing.T) {
 		t,
 		&install.Context{
 			InstallNamespace:          installNs,
+			ChartType:                 "agentgateway",
 			ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
 			ValuesManifestFile:        e2e.ManifestPath("agent-gateway-integration.yaml"),
 		},

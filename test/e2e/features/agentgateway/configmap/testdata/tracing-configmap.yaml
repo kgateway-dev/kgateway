@@ -1,12 +1,19 @@
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: GatewayParameters
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayParameters
 metadata:
-  name: kgateway
+  name: tracing-config
+  namespace: default
 spec:
-  kube:
-    agentgateway:
-      logLevel: debug
-      customConfigMapName: agent-gateway-config
+  logging:
+    level: debug
+  deployment:
+    spec:
+      template:
+        spec:
+          volumes:
+          - name: config-volume
+            configMap:
+              name: agent-gateway-config
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
@@ -16,9 +23,9 @@ spec:
   gatewayClassName: agentgateway
   infrastructure:
     parametersRef:
-      group: gateway.kgateway.dev
-      kind: GatewayParameters
-      name: kgateway
+      group: agentgateway.dev
+      kind: AgentgatewayParameters
+      name: tracing-config
   listeners:
     - protocol: HTTP
       port: 8080

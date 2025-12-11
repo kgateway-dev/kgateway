@@ -33,7 +33,7 @@ var logger = logging.New("translator/listener")
 
 const (
 	TcpTlsListenerNoBackendsMessage = "TCP/TLS listener has no valid backends or routes"
-	ResourceNotFoundMessageTemplate = "%s %s/%s not found." //nolint:gosec // G101: This is a template string, not hardcoded credentials
+	ResourceNotFoundMessageTemplate = "%s %s/%s not found."
 )
 
 type ListenerTranslatorConfig struct {
@@ -72,7 +72,7 @@ func mergeGWListeners(
 	reporter reports.Reporter,
 	settings ListenerTranslatorConfig,
 ) *MergedListeners {
-	ml := &MergedListeners{
+	m	dListeners{
 		parentGw:          parentGw,
 		Queries:           queries,
 		settings:          settings,
@@ -922,7 +922,6 @@ func buildCaCertificateReference(
 	parentGVK schema.GroupVersionKind,
 	parentNamespace string,
 ) (string, error) {
-
 	switch {
 	case string(caCertRef.Group) == wellknown.ConfigMapGVK.Group && string(caCertRef.Kind) == wellknown.ConfigMapGVK.Kind:
 		// Fetch ConfigMap

@@ -18,3 +18,12 @@ type HelmValuesGenerator interface {
 	// GetCacheSyncHandlers returns the cache sync handlers for the HelmValuesGenerator controller
 	GetCacheSyncHandlers() []cache.InformerSynced
 }
+
+// ObjectPostProcessor is an optional interface that can be implemented by HelmValuesGenerator
+// to post-process rendered objects before they are deployed. This is used for applying
+// strategic merge patch overlays from AgentgatewayParameters.
+type ObjectPostProcessor interface {
+	// PostProcessObjects applies any post-processing to the rendered objects.
+	// This is called after helm rendering but before deployment.
+	PostProcessObjects(ctx context.Context, obj client.Object, rendered []client.Object) error
+}

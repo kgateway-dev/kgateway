@@ -139,6 +139,17 @@ type TrafficPolicySpec struct {
 	// This controls authentication using username/password credentials in the Authorization header.
 	// +optional
 	BasicAuth *BasicAuthPolicy `json:"basicAuth,omitempty"`
+
+	// APIKeyAuthentication authenticates users based on a configured API Key.
+	// +optional
+	APIKeyAuthentication *APIKeyAuthentication `json:"apiKeyAuthentication,omitempty"`
+
+	// OAuth2 specifies the configuration to use for OAuth2/OIDC.
+	// Note: the OAuth2 filter does not protect against Cross-Site-Request-Forgery attacks on domains with cached
+	// authentication (in the form of cookies). It is recommended to pair this with the CSRF policy to prevent
+	// malicious social engineering.
+	// +optional
+	OAuth2 *OAuth2Policy `json:"oauth2,omitempty"`
 }
 
 // URLRewrite specifies URL rewrite rules using regular expressions.
@@ -414,6 +425,118 @@ type CSRFPolicy struct {
 	// +optional
 	// +kubebuilder:validation:MaxItems=16
 	AdditionalOrigins []shared.StringMatcher `json:"additionalOrigins,omitempty"`
+}
+
+// APIKeySource defines where to extract the API key from within a single key source.
+// Within a single key source, if multiple types are specified, precedence is:
+// header > query parameter > cookie. The header is checked first, and only falls back
+// to query parameter if the header is not present, then to cookie if both header and query
+// are not present.
+// +kubebuilder:validation:AtLeastOneOf=header;query;cookie
+type APIKeySource struct {
+	// header specifies the name of the header that contains the API key.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=256
+	Header *string `json:"header,omitempty"`
+
+	// query specifies the name of the query parameter that contains the API key.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=256
+	Query *string `json:"query,omitempty"`
+
+	// cookie specifies the name of the cookie that contains the API key.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=256
+	Cookie *string `json:"cookie,omitempty"`
+}
+
+// +kubebuilder:validation:ExactlyOneOf=secretRef;secretSelector
+type APIKeyAuthentication struct {
+	// keySources specifies the list of key sources to extract the API key from.
+	// Key sources are processed in array order and the first one that successfully
+	// extracts a key is used. Within each key source, if multiple types (header, query, cookie) are
+	// specified, precedence is: header > query parameter > cookie.
+	//
+	// If empty, defaults to a single key source with header "api-key".
+	//
+	// Example:
+	//   keySources:
+	//   - header: "X-API-KEY"
+	//   - query: "api_key"
+	//   - header: "Authorization"
+	//     query: "token"
+	//     cookie: "auth_token"
+	//
+	// In this example, the system will:
+	// 1. First try header "X-API-KEY"
+	// 2. If not found, try query parameter "api_key"
+	// 3. If not found, try header "Authorization" (then query "token", then cookie "auth_token" within that key source)
+	//
+	// +kubebuilder:validation:MinItems=0
+	// +kubebuilder:validation:MaxItems=16
+	// +optional
+	KeySources []APIKeySource `json:"keySources,omitempty"`
+
+	// forwardCredential controls whether the API key is included in the request sent to the upstream.
+	// If false (default), the API key is removed from the request before sending to upstream.
+	// If true, the API key is included in the request sent to upstream.
+	// This applies to all configured key sources (header, query parameter, or cookie).
+	// +optional
+	ForwardCredential *bool `json:"forwardCredential,omitempty"`
+
+	// clientIdHeader specifies the header name to forward the authenticated client identifier.
+	// If not specified, the client identifier will not be forwarded in any header.
+	// Example: "x-client-id"
+	// +optional
+	ClientIdHeader *string `json:"clientIdHeader,omitempty"`
+
+	// secretRef references a Kubernetes secret storing a set of API Keys. If there are many keys, 'secretSelector' can be
+	// used instead.
+	//
+	// Each entry in the Secret represents one API Key. The key is an arbitrary identifier.
+	// The value is a string, representing the API Key.
+	//
+	// Example:
+	//
+	// apiVersion: v1
+	// kind: Secret
+	// metadata:
+	//   name: api-key
+	// stringData:
+	//   client1: "k-123"
+	//   client2: "k-456"
+	//
+	// +optional
+	SecretRef *gwv1.SecretObjectReference `json:"secretRef,omitempty"`
+
+	// secretSelector selects multiple secrets containing API Keys. If the same key is defined in multiple secrets, the
+	// behavior is undefined.
+	//
+	// Each entry in the Secret represents one API Key. The key is an arbitrary identifier.
+	// The value is a string, representing the API Key.
+	//
+	// Example:
+	//
+	// apiVersion: v1
+	// kind: Secret
+	// metadata:
+	//   name: api-key
+	// stringData:
+	//   client1: "k-123"
+	//   client2: "k-456"
+	//
+	// +optional
+	SecretSelector *LabelSelector `json:"secretSelector,omitempty"`
+}
+
+// LabelSelector selects resources using label selectors.
+type LabelSelector struct {
+	// Label selector to select the target resource.
+	// +required
+	MatchLabels map[string]string `json:"matchLabels"`
 }
 
 // +kubebuilder:validation:ExactlyOneOf=maxRequestSize;disable

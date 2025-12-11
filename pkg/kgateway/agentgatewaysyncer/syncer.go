@@ -68,6 +68,8 @@ type Syncer struct {
 	Registrations []krtxds.Registration
 
 	Outputs OutputCollections
+
+	gatewayCollectionOptions []translator.GatewayCollectionConfigOption
 }
 
 func NewAgwSyncer(
@@ -79,7 +81,9 @@ func NewAgwSyncer(
 	additionalGatewayClasses map[string]*deployer.GatewayClassInfo,
 	krtopts krtutil.KrtOptions,
 	extraGVKs []schema.GroupVersionKind,
+	opts ...AgentgatewaySyncerOption,
 ) *Syncer {
+	cfg := processAgentgatewaySyncerOptions(opts...)
 	syncer := &Syncer{
 		agwCollections:           agwCollections,
 		controllerName:           controllerName,
@@ -89,6 +93,8 @@ func NewAgwSyncer(
 		client:                   client,
 		statusCollections:        status.NewStatusCollections(extraGVKs),
 		NackPublisher:            nack.NewPublisher(client),
+		gatewayCollectionOptions: []translator.GatewayCollectionConfigOption{
+			translator.WithGatewayTransformationFunc(cfg.GatewayTransformationFunc)},
 	}
 	logger.Debug("init agentgateway Syncer", "controllername", controllerName)
 
@@ -174,17 +180,17 @@ func (s *Syncer) buildGatewayCollection(
 	krt.StatusCollection[*gwv1.Gateway, gwv1.GatewayStatus],
 	krt.Collection[*translator.GatewayListener],
 ) {
-	return translator.GatewayCollection(
-		s.controllerName,
-		s.agwCollections.Gateways,
-		listenerSets,
-		gatewayClasses,
-		s.agwCollections.Namespaces,
-		refGrants,
-		s.agwCollections.Secrets,
-		s.agwCollections.ConfigMaps,
-		krtopts,
-	)
+	return translator.GatewayCollection(translator.GatewayCollectionConfig{
+		ControllerName: s.controllerName,
+		Gateways:       s.agwCollections.Gateways,
+		ListenerSets:   listenerSets,
+		GatewayClasses: gatewayClasses,
+		Namespaces:     s.agwCollections.Namespaces,
+		Grants:         refGrants,
+		Secrets:        s.agwCollections.Secrets,
+		ConfigMaps:     s.agwCollections.ConfigMaps,
+		KrtOpts:        krtopts,
+	}, s.gatewayCollectionOptions...)
 }
 
 func (s *Syncer) buildListenerSetCollection(

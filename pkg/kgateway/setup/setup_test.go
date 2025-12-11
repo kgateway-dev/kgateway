@@ -377,6 +377,7 @@ func setupEnvTestAndRun(t *testing.T, globalSettings *apisettings.Settings, run 
 		CRDDirectoryPaths: []string{
 			filepath.Join("..", "crds"),
 			filepath.Join("..", "..", "..", "install", "helm", "kgateway-crds", "templates"),
+			filepath.Join("..", "..", "..", "install", "helm", "agentgateway-crds", "templates"),
 			filepath.Join("testdata", "istio_crds_setup"),
 		},
 		ErrorIfCRDPathMissing: true,

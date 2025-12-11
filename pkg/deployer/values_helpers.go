@@ -87,7 +87,7 @@ func AppendPortValue(gwPorts []HelmPort, port int32, name string, gwp *kgateway.
 	// Search for static NodePort set from the GatewayParameters spec
 	// If not found the default value of `nil` will not render anything.
 	var nodePort *int32 = nil
-	if gwp.Spec.GetKube().GetService().GetType() != nil && *(gwp.Spec.GetKube().GetService().GetType()) == corev1.ServiceTypeNodePort {
+	if gwp != nil && gwp.Spec.GetKube().GetService().GetType() != nil && *(gwp.Spec.GetKube().GetService().GetType()) == corev1.ServiceTypeNodePort {
 		if idx := slices.IndexFunc(gwp.Spec.GetKube().GetService().GetPorts(), func(p kgateway.Port) bool {
 			return p.GetPort() == port
 		}); idx != -1 {

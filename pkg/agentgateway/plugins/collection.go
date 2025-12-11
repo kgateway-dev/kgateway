@@ -16,7 +16,6 @@ import (
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	kgwversioned "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -58,11 +57,9 @@ type AgwCollections struct {
 	// Extended resources
 	InferencePools krt.Collection[*inf.InferencePool]
 
-	// kgateway resources
+	// agentgateway resources
 	Backends             krt.Collection[*agentgateway.AgentgatewayBackend]
 	AgentgatewayPolicies krt.Collection[*agentgateway.AgentgatewayPolicy]
-	DirectResponses      krt.Collection[*kgateway.DirectResponse]
-	GatewayExtensions    krt.Collection[*kgateway.GatewayExtension]
 
 	// ControllerName is the name of the Gateway controller.
 	ControllerName string
@@ -93,9 +90,7 @@ func (c *AgwCollections) HasSynced() bool {
 		c.BackendTLSPolicies != nil && c.BackendTLSPolicies.HasSynced() &&
 		c.InferencePools != nil && c.InferencePools.HasSynced() &&
 		c.Backends != nil && c.Backends.HasSynced() &&
-		c.AgentgatewayPolicies != nil && c.AgentgatewayPolicies.HasSynced() &&
-		c.DirectResponses != nil && c.DirectResponses.HasSynced() &&
-		c.GatewayExtensions != nil && c.GatewayExtensions.HasSynced()
+		c.AgentgatewayPolicies != nil && c.AgentgatewayPolicies.HasSynced()
 }
 
 // NewAgwCollections initializes the core krt collections.
@@ -168,10 +163,8 @@ func NewAgwCollections(
 		// inference extensions need to be enabled so control plane has permissions to watch resource. Disable by default
 		InferencePools: krt.NewStaticCollection[*inf.InferencePool](nil, nil, commoncol.KrtOpts.ToOptions("disable/inferencepools")...),
 
-		// kgateway resources
-		DirectResponses:      krt.NewInformer[*kgateway.DirectResponse](commoncol.Client),
+		// agentgateway-specific CRDs
 		AgentgatewayPolicies: krt.NewInformer[*agentgateway.AgentgatewayPolicy](commoncol.Client),
-		GatewayExtensions:    krt.NewInformer[*kgateway.GatewayExtension](commoncol.Client),
 		Backends:             krt.NewInformer[*agentgateway.AgentgatewayBackend](commoncol.Client),
 	}
 

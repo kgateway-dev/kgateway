@@ -1,6 +1,7 @@
 package trafficpolicy
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -23,6 +24,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
@@ -38,6 +40,7 @@ type TrafficPolicyGatewayExtensionIR struct {
 	ExtProc          *envoymatchingv3.ExtensionWithMatcher
 	RateLimit        *ratev3.RateLimit
 	Jwt              *envoymatchingv3.ExtensionWithMatcher
+	OAuth2           *oauthPerProviderConfig
 	PrecedenceWeight int32
 	Err              error
 }
@@ -58,6 +61,9 @@ func (e TrafficPolicyGatewayExtensionIR) Equals(other TrafficPolicyGatewayExtens
 		return false
 	}
 	if !proto.Equal(e.Jwt, other.Jwt) {
+		return false
+	}
+	if !e.OAuth2.Equals(other.OAuth2) {
 		return false
 	}
 	if e.PrecedenceWeight != other.PrecedenceWeight {
@@ -106,7 +112,13 @@ func (e TrafficPolicyGatewayExtensionIR) Validate() error {
 	return nil
 }
 
-func TranslateGatewayExtensionBuilder(commoncol *collections.CommonCollections) func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
+func TranslateGatewayExtensionBuilder(
+	ctx context.Context,
+	commoncol *collections.CommonCollections,
+) func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
+	oidcDiscoverer := newOIDCProviderConfigDiscoverer()
+	go oidcDiscoverer.refresh(ctx)
+
 	return func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
 		p := &TrafficPolicyGatewayExtensionIR{
 			Name:             krt.Named{Name: gExt.Name, Namespace: gExt.Namespace}.ResourceName(),
@@ -202,6 +214,14 @@ func TranslateGatewayExtensionBuilder(commoncol *collections.CommonCollections) 
 				return p
 			}
 			p.Jwt = buildCompositeJwtFilter(jwtConfig)
+
+		case gExt.OAuth2 != nil:
+			out, err := buildOAuth2ProviderConfig(krtctx, &gExt, commoncol.BackendIndex, commoncol.Secrets, oidcDiscoverer)
+			if err != nil {
+				p.Err = fmt.Errorf("error building OAuth2 config: %w", err)
+				return p
+			}
+			p.OAuth2 = out
 		}
 		return p
 	}
@@ -244,6 +264,19 @@ func resolveJwtProviders(
 	}, nil
 }
 
+func resolveBackend(
+	krtctx krt.HandlerContext,
+	backends *krtcollections.BackendIndex,
+	disableExtensionRefValidation bool,
+	objectSource ir.ObjectSource,
+	backendRef gwv1.BackendObjectReference,
+) (*ir.BackendObjectIR, error) {
+	if disableExtensionRefValidation {
+		return backends.GetBackendFromRefWithoutRefGrantValidation(krtctx, objectSource, backendRef)
+	}
+	return backends.GetBackendFromRef(krtctx, objectSource, backendRef)
+}
+
 func ResolveExtGrpcService(
 	krtctx krt.HandlerContext,
 	backends *krtcollections.BackendIndex,
@@ -259,11 +292,7 @@ func ResolveExtGrpcService(
 	var backend *ir.BackendObjectIR
 	var err error
 	backendRef := grpcService.BackendRef.BackendObjectReference
-	if disableExtensionRefValidation {
-		backend, err = backends.GetBackendFromRefWithoutRefGrantValidation(krtctx, objectSource, backendRef)
-	} else {
-		backend, err = backends.GetBackendFromRef(krtctx, objectSource, backendRef)
-	}
+	backend, err = resolveBackend(krtctx, backends, disableExtensionRefValidation, objectSource, backendRef)
 	if err != nil {
 		return nil, err
 	}

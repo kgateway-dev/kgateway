@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"slices"
 	"strings"
 	"time"
@@ -368,6 +367,10 @@ func (s *BaseTestingSuite) BeforeTest(suiteName, testName string) {
 }
 
 func (s *BaseTestingSuite) AfterTest(suiteName, testName string) {
+	if s.T().Failed() {
+		s.TestInstallation.PerTestPreFailHandler(s.Ctx, testName)
+	}
+
 	// Delete test-specific manifests
 	testCase, ok := s.TestCases[testName]
 	if !ok {
@@ -378,10 +381,6 @@ func (s *BaseTestingSuite) AfterTest(suiteName, testName string) {
 	// If so, don't try to delete resources that were never applied
 	if s.skipTest(testCase) || s.skipSuite() {
 		return
-	}
-
-	if s.T().Failed() {
-		s.TestInstallation.PreFailHandler(s.Ctx)
 	}
 
 	if testutils.ShouldSkipCleanup(s.T()) {
@@ -490,7 +489,7 @@ func (s *BaseTestingSuite) setupHelpers() {
 		s.CrdPath = testutils.CRDPath
 	}
 	var err error
-	s.gvkToStructuralSchema, err = testutils.GetStructuralSchemas(filepath.Join(testutils.GitRootDirectory(), s.CrdPath))
+	s.gvkToStructuralSchema, err = testutils.GetStructuralSchemasForBothCharts()
 	s.Require().NoError(err)
 }
 

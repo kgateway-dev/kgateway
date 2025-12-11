@@ -180,7 +180,6 @@ test: ## Run all tests with ginkgo, or only run the test package at {TEST_PKG} i
 # will still have e2e tests run by Github Actions once they publish a pull
 # request.
 .PHONY: e2e-test
-e2e-test: dummy-idp-docker dummy-auth0-docker kind-load-dummy-idp kind-load-dummy-auth0
 e2e-test: go-test
 e2e-test: TEST_TAG = e2e
 e2e-test: GO_TEST_ARGS = $(E2E_GO_TEST_ARGS)
@@ -191,6 +190,13 @@ e2e-test: GO_TEST_ARGS = $(E2E_GO_TEST_ARGS)
 test-with-coverage: GINKGO_FLAGS += $(GINKGO_COVERAGE_FLAGS)
 test-with-coverage: test
 	go tool cover -html $(OUTPUT_DIR)/coverage.cov
+
+.PHONY: golden-deployer
+golden-deployer:  ## Refreshes golden files for ./test/deployer snapshot testing
+	REFRESH_GOLDEN=true go test ./test/deployer/... > /dev/null || true
+	@echo ""
+	@echo "This must pass after refreshing:"
+	go test ./test/deployer/...
 
 #----------------------------------------------------------------------------------
 # Env test
@@ -449,6 +455,7 @@ $(CONTROLLER_OUTPUT_DIR)/.docker-stamp-agentgateway-$(VERSION)-$(GOARCH): $(CONT
 
 .PHONY: kgateway-docker
 kgateway-docker: $(CONTROLLER_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH)
+
 .PHONY: kgateway-agentgateway-docker
 kgateway-agentgateway-docker: $(CONTROLLER_OUTPUT_DIR)/.docker-stamp-agentgateway-$(VERSION)-$(GOARCH)
 
@@ -606,9 +613,14 @@ HELM ?= go tool helm
 HELM_PACKAGE_ARGS ?= --version $(VERSION) --app-version $(VERSION)
 HELM_CHART_DIR=install/helm/kgateway
 HELM_CHART_DIR_CRD=install/helm/kgateway-crds
+HELM_CHART_DIR_AGW=install/helm/agentgateway
+HELM_CHART_DIR_AGW_CRD=install/helm/agentgateway-crds
 
 .PHONY: package-kgateway-charts
 package-kgateway-charts: package-kgateway-chart package-kgateway-crd-chart ## Package the kgateway charts
+
+.PHONY: package-agentgateway-charts
+package-agentgateway-charts: package-agentgateway-chart package-agentgateway-crd-chart ## Package the agentgateway charts
 
 .PHONY: package-kgateway-chart
 package-kgateway-chart: ## Package the kgateway charts
@@ -622,10 +634,24 @@ package-kgateway-crd-chart: ## Package the kgateway crd chart
 	$(HELM) package $(HELM_PACKAGE_ARGS) --destination $(TEST_ASSET_DIR) $(HELM_CHART_DIR_CRD); \
 	$(HELM) repo index $(TEST_ASSET_DIR);
 
+.PHONY: package-agentgateway-chart
+package-agentgateway-chart: ## Package the agentgateway chart
+	mkdir -p $(TEST_ASSET_DIR); \
+	$(HELM) package $(HELM_PACKAGE_ARGS) --destination $(TEST_ASSET_DIR) $(HELM_CHART_DIR_AGW); \
+	$(HELM) repo index $(TEST_ASSET_DIR);
+
+.PHONY: package-agentgateway-crd-chart
+package-agentgateway-crd-chart: ## Package the agentgateway crd chart
+	mkdir -p $(TEST_ASSET_DIR); \
+	$(HELM) package $(HELM_PACKAGE_ARGS) --destination $(TEST_ASSET_DIR) $(HELM_CHART_DIR_AGW_CRD); \
+	$(HELM) repo index $(TEST_ASSET_DIR);
+
 .PHONY: release-charts
-release-charts: package-kgateway-charts ## Release the kgateway charts
+release-charts: package-kgateway-charts package-agentgateway-charts ## Release the kgateway and agentgateway charts
 	$(HELM) push $(TEST_ASSET_DIR)/kgateway-$(VERSION).tgz oci://$(IMAGE_REGISTRY)/charts
 	$(HELM) push $(TEST_ASSET_DIR)/kgateway-crds-$(VERSION).tgz oci://$(IMAGE_REGISTRY)/charts
+	$(HELM) push $(TEST_ASSET_DIR)/agentgateway-$(VERSION).tgz oci://$(IMAGE_REGISTRY)/charts
+	$(HELM) push $(TEST_ASSET_DIR)/agentgateway-crds-$(VERSION).tgz oci://$(IMAGE_REGISTRY)/charts
 
 .PHONY: deploy-kgateway-crd-chart
 deploy-kgateway-crd-chart: ## Deploy the kgateway crd chart
@@ -640,10 +666,24 @@ deploy-kgateway-chart: ## Deploy the kgateway chart
 	--set image.tag=$(VERSION) \
 	-f $(HELM_ADDITIONAL_VALUES)
 
+.PHONY: deploy-agentgateway-crd-chart
+deploy-agentgateway-crd-chart: ## Deploy the agentgateway crd chart
+	$(HELM) upgrade --install agentgateway-crds $(TEST_ASSET_DIR)/agentgateway-crds-$(VERSION).tgz --namespace $(INSTALL_NAMESPACE) --create-namespace
+
+.PHONY: deploy-agentgateway-chart
+deploy-agentgateway-chart: ## Deploy the agentgateway chart
+	$(HELM) upgrade --install agentgateway $(TEST_ASSET_DIR)/agentgateway-$(VERSION).tgz \
+	--namespace $(INSTALL_NAMESPACE) --create-namespace \
+	--set image.registry=$(IMAGE_REGISTRY) \
+	--set image.tag=$(VERSION) \
+	-f $(HELM_ADDITIONAL_VALUES)
+
 .PHONY: lint-kgateway-charts
-lint-kgateway-charts: ## Lint the kgateway charts
+lint-kgateway-charts: ## Lint the kgateway and agentgateway charts
 	$(HELM) lint $(HELM_CHART_DIR)
 	$(HELM) lint $(HELM_CHART_DIR_CRD)
+	$(HELM) lint $(HELM_CHART_DIR_AGW)
+	$(HELM) lint $(HELM_CHART_DIR_AGW_CRD)
 
 #----------------------------------------------------------------------------------
 # Release
@@ -695,11 +735,14 @@ metallb: ## Install the MetalLB load balancer
 .PHONY: deploy-kgateway
 deploy-kgateway: package-kgateway-charts deploy-kgateway-crd-chart deploy-kgateway-chart ## Deploy the kgateway chart and CRDs
 
+.PHONY: deploy-agentgateway
+deploy-agentgateway: package-agentgateway-charts deploy-agentgateway-crd-chart deploy-agentgateway-chart ## Deploy the agentgateway chart and CRDs
+
 .PHONY: setup-base
 setup-base: kind-create gw-api-crds gie-crds metallb ## Setup the base infrastructure (kind cluster, CRDs, and MetalLB)
 
 .PHONY: setup
-setup: setup-base kind-build-and-load package-kgateway-charts dummy-auth0-docker kind-load-dummy-auth0 ## Setup the complete infrastructure (base setup plus images and charts)
+setup: setup-base kind-build-and-load package-kgateway-charts package-agentgateway-charts dummy-idp-docker kind-load-dummy-idp dummy-auth0-docker kind-load-dummy-auth0 ## Setup the complete infrastructure (base setup plus images and charts)
 
 .PHONY: run
 run: setup deploy-kgateway  ## Set up complete development environment
@@ -755,11 +798,15 @@ kind-reload-%: kind-build-and-load-% kind-set-image-% ; ## Use to build specifie
 kind-build-and-load: kind-build-and-load-kgateway
 kind-build-and-load: kind-build-and-load-envoy-wrapper
 kind-build-and-load: kind-build-and-load-sds
+kind-build-and-load: kind-build-and-load-dummy-idp
+kind-build-and-load: kind-build-and-load-dummy-auth0
 
 .PHONY: kind-load ## Use to load all images into kind
 kind-load: kind-load-kgateway
 kind-load: kind-load-envoy-wrapper
 kind-load: kind-load-sds
+kind-load: kind-load-dummy-idp
+kind-load: kind-load-dummy-auth0
 
 #----------------------------------------------------------------------------------
 # Load Testing

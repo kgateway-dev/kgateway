@@ -8,6 +8,7 @@ import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/slices"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -38,6 +39,7 @@ type TranslationResult struct {
 	Routes        []*envoyroutev3.RouteConfiguration
 	Listeners     []*envoylistenerv3.Listener
 	ExtraClusters []*envoyclusterv3.Cluster
+	Secrets       []*envoytlsv3.Secret
 }
 
 // Translate IR to gateway. IR is self contained, so no need for krt context
@@ -61,6 +63,7 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 		if c != nil {
 			r := c.ResourcesToAdd()
 			res.ExtraClusters = append(res.ExtraClusters, r.Clusters...)
+			res.Secrets = append(res.Secrets, r.Secrets...)
 		}
 	}
 

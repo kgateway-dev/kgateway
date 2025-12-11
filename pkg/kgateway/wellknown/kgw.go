@@ -56,6 +56,8 @@ func GVKToGVR(gvk schema.GroupVersionKind) (schema.GroupVersionResource, error) 
 	switch gvk {
 	case GatewayParametersGVK:
 		return GatewayParametersGVR, nil
+	case AgentgatewayParametersGVK:
+		return AgentgatewayParametersGVR, nil
 	case GatewayExtensionGVK:
 		return GatewayExtensionGVR, nil
 	case DirectResponseGVK:

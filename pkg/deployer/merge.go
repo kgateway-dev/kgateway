@@ -736,7 +736,6 @@ func deepMergeAgentgateway(dst, src *kgateway.Agentgateway) *kgateway.Agentgatew
 	dst.SecurityContext = DeepMergeSecurityContext(dst.GetSecurityContext(), src.GetSecurityContext())
 	dst.Resources = DeepMergeResourceRequirements(dst.GetResources(), src.GetResources())
 	dst.Env = DeepMergeSlices(dst.GetEnv(), src.GetEnv())
-	dst.CustomConfigMapName = MergePointers(dst.GetCustomConfigMapName(), src.GetCustomConfigMapName())
 	dst.ExtraVolumeMounts = DeepMergeSlices(dst.ExtraVolumeMounts, src.ExtraVolumeMounts)
 
 	return dst

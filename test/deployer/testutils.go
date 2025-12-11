@@ -53,6 +53,10 @@ func NewCommonCols(t test.Failer, initObjs ...client.Object) *collections.Common
 		GatewayIndex:               gateways,
 		ControllerName:             wellknown.DefaultGatewayControllerName,
 		AgentgatewayControllerName: wellknown.DefaultAgwControllerName,
+		Settings: apisettings.Settings{
+			EnableEnvoy:        true,
+			EnableAgentgateway: true,
+		},
 	}
 
 	for !kubeRawGateways.HasSynced() || !kubeRawListenerSets.HasSynced() || !gatewayClasses.HasSynced() {
