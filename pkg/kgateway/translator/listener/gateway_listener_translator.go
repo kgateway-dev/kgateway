@@ -72,7 +72,7 @@ func mergeGWListeners(
 	reporter reports.Reporter,
 	settings ListenerTranslatorConfig,
 ) *MergedListeners {
-	m	dListeners{
+	ml := &MergedListeners{
 		parentGw:          parentGw,
 		Queries:           queries,
 		settings:          settings,
