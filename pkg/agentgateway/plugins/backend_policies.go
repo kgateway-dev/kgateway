@@ -482,6 +482,10 @@ func translateBackendAuth(ctx PolicyCtx, policy *agentgateway.AgentgatewayPolicy
 				errs = append(errs, fmt.Errorf("secret %s/%s missing Authorization value", policy.Namespace, auth.SecretRef.Name))
 			}
 		}
+	} else if auth.AWS != nil {
+		awsAuth, err := buildAwsAuthPolicy(ctx.Krt, auth.AWS, ctx.Collections.Secrets, policy.Namespace)
+		translatedAuth = awsAuth
+		errs = append(errs, err)
 	} else {
 		errs = append(errs, fmt.Errorf("backend auth requires either inline key or secretRef"))
 	}
@@ -528,4 +532,70 @@ func translateRouteType(rt agentgateway.RouteType) api.BackendPolicySpec_Ai_Rout
 		// Default to completions if unknown type
 		return api.BackendPolicySpec_Ai_COMPLETIONS
 	}
+}
+
+func buildAwsAuthPolicy(krtctx krt.HandlerContext, auth *agentgateway.AwsAuth, secrets krt.Collection[*corev1.Secret], namespace string) (*api.BackendAuthPolicy, error) {
+	var errs []error
+	if auth == nil {
+		logger.Warn("using implicit AWS auth for AI backend")
+		return &api.BackendAuthPolicy{
+			Kind: &api.BackendAuthPolicy_Aws{
+				Aws: &api.Aws{
+					Kind: &api.Aws_Implicit{
+						Implicit: &api.AwsImplicit{},
+					},
+				},
+			},
+		}, nil
+	}
+
+	if auth.SecretRef.Name == "" {
+		logger.Warn("not using any auth for AWS - it's most likely not what you want")
+		return nil, nil
+	}
+
+	// Get secret using the SecretIndex
+	secret, err := kubeutils.GetSecret(secrets, krtctx, auth.SecretRef.Name, namespace)
+	if err != nil {
+		// Return nil auth policy if secret not found - this will be handled upstream
+		// TODO(npolshak): Add backend status errors https://github.com/kgateway-dev/kgateway/issues/11966
+		return nil, err
+	}
+
+	var accessKeyId, secretAccessKey string
+	var sessionToken *string
+
+	// Extract access key
+	if value, exists := kubeutils.GetSecretValue(secret, wellknown.AccessKey); !exists {
+		errs = append(errs, errors.New("accessKey is missing or not a valid string"))
+	} else {
+		accessKeyId = value
+	}
+
+	// Extract secret key
+	if value, exists := kubeutils.GetSecretValue(secret, wellknown.SecretKey); !exists {
+		errs = append(errs, errors.New("secretKey is missing or not a valid string"))
+	} else {
+		secretAccessKey = value
+	}
+
+	// Extract session token (optional)
+	if value, exists := kubeutils.GetSecretValue(secret, wellknown.SessionToken); exists {
+		sessionToken = ptr.Of(value)
+	}
+
+	return &api.BackendAuthPolicy{
+		Kind: &api.BackendAuthPolicy_Aws{
+			Aws: &api.Aws{
+				Kind: &api.Aws_ExplicitConfig{
+					ExplicitConfig: &api.AwsExplicitConfig{
+						AccessKeyId:     accessKeyId,
+						SecretAccessKey: secretAccessKey,
+						SessionToken:    sessionToken,
+						Region:          "",
+					},
+				},
+			},
+		},
+	}, errors.Join(errs...)
 }

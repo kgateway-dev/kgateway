@@ -491,36 +491,6 @@ func TestBuildAIBackend(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "Bedrock backend with new secret ref",
-			backend: &agentgateway.AgentgatewayBackend{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "bedrock-with-secret-ref",
-					Namespace: "test-ns",
-				},
-				Spec: agentgateway.AgentgatewayBackendSpec{
-					AI: &agentgateway.AIBackend{
-						LLM: &agentgateway.LLMProvider{
-							Bedrock: &agentgateway.BedrockConfig{
-								Region: "us-east-1",
-								Auth: &agentgateway.AwsAuth{
-									SecretRef: corev1.LocalObjectReference{
-										Name: "bedrock-secret",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			inputs: []any{
-				createMockSecret("test-ns", "bedrock-secret", map[string]string{
-					"accessKey":    "secret-accessKey",
-					"secretKey":    "secret-secretKey",
-					"sessionToken": "secret-sessionToken",
-				}),
-			},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

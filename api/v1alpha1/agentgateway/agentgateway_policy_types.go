@@ -707,7 +707,7 @@ const (
 	HostnameRewriteModeNone HostnameRewriteMode = "None"
 )
 
-// +kubebuilder:validation:ExactlyOneOf=key;secretRef;passthrough
+// +kubebuilder:validation:ExactlyOneOf=key;secretRef;passthrough;aws
 type BackendAuth struct {
 	// key provides an inline key to use as the value of the Authorization header.
 	// This option is the least secure; usage of a Secret is preferred.
@@ -726,7 +726,21 @@ type BackendAuth struct {
 	// request, the original token would be unchanged, so this would have no effect.
 	// +optional
 	Passthrough *BackendAuthPassthrough `json:"passthrough,omitempty"`
-	// TODO: aws, azure, gcp
+	// TODO: azure, gcp
+
+	// Auth specifies an explicit AWS authentication method for the backend.
+	// When omitted, we will try to use the default AWS SDK authentication methods.
+	//
+	// +optional
+	AWS *AwsAuth `json:"aws,omitempty"`
+}
+
+// AwsAuth specifies the authentication method to use for the backend.
+type AwsAuth struct {
+	// SecretRef references a Kubernetes Secret containing the AWS credentials.
+	// The Secret must have keys "accessKey", "secretKey", and optionally "sessionToken".
+	// +required
+	SecretRef corev1.LocalObjectReference `json:"secretRef"`
 }
 
 type BackendAuthPassthrough struct {

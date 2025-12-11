@@ -3,10 +3,6 @@ ai:
   - providers:
     - bedrock:
         region: us-east-1
-      inlinePolicies:
-      - auth:
-          aws:
-            implicit: {}
       name: backend
 inlinePolicies:
 - ai:

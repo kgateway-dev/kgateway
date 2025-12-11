@@ -15,7 +15,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
@@ -363,11 +362,6 @@ func translateLLMProvider(ctx plugins.PolicyCtx, llm *agentgateway.LLMProvider, 
 			guardrailVersion = &llm.Bedrock.Guardrail.GuardrailVersion
 		}
 
-		auth, err := buildBedrockAuthPolicy(ctx.Krt, region, llm.Bedrock.Auth, ctx.Collections.Secrets, namespace)
-		if err != nil {
-			return nil, err
-		}
-
 		provider.Provider = &api.AIBackend_Provider_Bedrock{
 			Bedrock: &api.AIBackend_Bedrock{
 				Model:               llm.Bedrock.Model,
@@ -376,11 +370,6 @@ func translateLLMProvider(ctx plugins.PolicyCtx, llm *agentgateway.LLMProvider, 
 				GuardrailVersion:    guardrailVersion,
 			},
 		}
-		provider.InlinePolicies = append(provider.InlinePolicies, &api.BackendPolicySpec{
-			Kind: &api.BackendPolicySpec_Auth{
-				Auth: auth,
-			},
-		})
 	} else {
 		return nil, fmt.Errorf("no supported LLM provider configured")
 	}
@@ -400,70 +389,4 @@ func toMCPProtocol(appProtocol string) api.MCPTarget_Protocol {
 		// should never happen since this function is only invoked for valid MCPBackend protocols
 		return api.MCPTarget_UNDEFINED
 	}
-}
-
-func buildBedrockAuthPolicy(krtctx krt.HandlerContext, region string, auth *agentgateway.AwsAuth, secrets krt.Collection[*corev1.Secret], namespace string) (*api.BackendAuthPolicy, error) {
-	var errs []error
-	if auth == nil {
-		logger.Warn("using implicit AWS auth for AI backend")
-		return &api.BackendAuthPolicy{
-			Kind: &api.BackendAuthPolicy_Aws{
-				Aws: &api.Aws{
-					Kind: &api.Aws_Implicit{
-						Implicit: &api.AwsImplicit{},
-					},
-				},
-			},
-		}, nil
-	}
-
-	if auth.SecretRef.Name == "" {
-		logger.Warn("not using any auth for AWS - it's most likely not what you want")
-		return nil, nil
-	}
-
-	// Get secret using the SecretIndex
-	secret, err := kubeutils.GetSecret(secrets, krtctx, auth.SecretRef.Name, namespace)
-	if err != nil {
-		// Return nil auth policy if secret not found - this will be handled upstream
-		// TODO(npolshak): Add backend status errors https://github.com/kgateway-dev/kgateway/issues/11966
-		return nil, err
-	}
-
-	var accessKeyId, secretAccessKey string
-	var sessionToken *string
-
-	// Extract access key
-	if value, exists := kubeutils.GetSecretValue(secret, wellknown.AccessKey); !exists {
-		errs = append(errs, errors.New("accessKey is missing or not a valid string"))
-	} else {
-		accessKeyId = value
-	}
-
-	// Extract secret key
-	if value, exists := kubeutils.GetSecretValue(secret, wellknown.SecretKey); !exists {
-		errs = append(errs, errors.New("secretKey is missing or not a valid string"))
-	} else {
-		secretAccessKey = value
-	}
-
-	// Extract session token (optional)
-	if value, exists := kubeutils.GetSecretValue(secret, wellknown.SessionToken); exists {
-		sessionToken = ptr.Of(value)
-	}
-
-	return &api.BackendAuthPolicy{
-		Kind: &api.BackendAuthPolicy_Aws{
-			Aws: &api.Aws{
-				Kind: &api.Aws_ExplicitConfig{
-					ExplicitConfig: &api.AwsExplicitConfig{
-						AccessKeyId:     accessKeyId,
-						SecretAccessKey: secretAccessKey,
-						SessionToken:    sessionToken,
-						Region:          region,
-					},
-				},
-			},
-		},
-	}, errors.Join(errs...)
 }
