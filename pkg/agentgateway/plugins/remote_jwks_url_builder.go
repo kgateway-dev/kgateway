@@ -55,6 +55,7 @@ func (j *JwksUrlFactory) BuildJwksUrl(krtctx krt.HandlerContext, policyName, def
 			return "", nil, fmt.Errorf("only static backends are supported; backend: %s, policy: %s", backendRef, types.NamespacedName{Namespace: defaultNS, Name: policyName})
 		}
 
+		// TODO (dmitri-d) only inline tls config is supported atm, do we want to support attching AgentgatewayPolicy too?
 		var tlsConfig *tls.Config
 		if backend.Spec.Policies != nil && backend.Spec.Policies.TLS != nil {
 			tlsc, err := getTLSConfig(krtctx, j.cfgmaps, refNamespace, backend.Spec.Policies.TLS)
