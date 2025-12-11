@@ -253,12 +253,12 @@ func TestExtractLoadBalancerIP(t *testing.T) {
 			wantErr: ErrMultipleAddresses,
 		},
 		{
-			name: "single hostname address returns nil",
+			name: "single hostname address returns error",
 			addresses: []gwv1.GatewaySpecAddress{
 				{Type: ptr.To(gwv1.HostnameAddressType), Value: "example.com"},
 			},
 			want:    nil,
-			wantErr: nil,
+			wantErr: ErrNoValidIPAddress,
 		},
 		{
 			name: "single invalid IP address returns error",
