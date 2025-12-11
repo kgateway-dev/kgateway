@@ -4,7 +4,7 @@ metadata:
   name: GATEWAY_NAME
   namespace: default
 spec:
-  gatewayClassName: agentgateway
+  gatewayClassName: agentgateway-v2
   listeners:
     - protocol: HTTP
       port: 8080

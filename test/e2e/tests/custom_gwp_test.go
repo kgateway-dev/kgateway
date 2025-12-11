@@ -16,6 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/helmutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -149,10 +150,10 @@ func TestCustomGWP(t *testing.T) {
 
 	// Wait for GatewayClasses to be created
 	testInstallation.Assertions.EventuallyObjectsExist(ctx, &gwv1.GatewayClass{
-		ObjectMeta: metav1.ObjectMeta{Name: "kgateway"},
+		ObjectMeta: metav1.ObjectMeta{Name: wellknown.DefaultGatewayClassName},
 	})
 	testInstallation.Assertions.EventuallyObjectsExist(ctx, &gwv1.GatewayClass{
-		ObjectMeta: metav1.ObjectMeta{Name: "agentgateway"},
+		ObjectMeta: metav1.ObjectMeta{Name: wellknown.DefaultAgwClassName},
 	})
 
 	// create Gateway
@@ -163,7 +164,7 @@ func TestCustomGWP(t *testing.T) {
 
 	// Verify kgateway GatewayClass has correct parametersRef
 	gc := &gwv1.GatewayClass{}
-	err = testInstallation.ClusterContext.Client.Get(ctx, client.ObjectKey{Name: "kgateway"}, gc)
+	err = testInstallation.ClusterContext.Client.Get(ctx, client.ObjectKey{Name: wellknown.DefaultGatewayClassName}, gc)
 	if err != nil {
 		t.Fatalf("failed to get kgateway GatewayClass: %v", err)
 	}
@@ -191,7 +192,7 @@ func TestCustomGWP(t *testing.T) {
 
 	// Verify agentgateway GatewayClass has correct parametersRef
 	agwGc := &gwv1.GatewayClass{}
-	err = testInstallation.ClusterContext.Client.Get(ctx, client.ObjectKey{Name: "agentgateway"}, agwGc)
+	err = testInstallation.ClusterContext.Client.Get(ctx, client.ObjectKey{Name: wellknown.DefaultAgwClassName}, agwGc)
 	if err != nil {
 		t.Fatalf("failed to get agentgateway GatewayClass: %v", err)
 	}
@@ -262,7 +263,7 @@ func TestCustomGWP(t *testing.T) {
 	r := require.New(t)
 	r.EventuallyWithT(func(c *assert.CollectT) {
 		gcUpdated := &gwv1.GatewayClass{}
-		err := testInstallation.ClusterContext.Client.Get(ctx, client.ObjectKey{Name: "kgateway"}, gcUpdated)
+		err := testInstallation.ClusterContext.Client.Get(ctx, client.ObjectKey{Name: wellknown.DefaultGatewayClassName}, gcUpdated)
 		assert.NoError(c, err, "failed to get kgateway GatewayClass after upgrade")
 		assert.NotNil(c, gcUpdated.Spec.ParametersRef, "kgateway GatewayClass spec.parametersRef is nil after upgrade")
 		assert.Equal(c, "custom-gwp-2", gcUpdated.Spec.ParametersRef.Name, "expected kgateway GatewayClass parametersRef.name to be 'custom-gwp-2' after upgrade")
@@ -273,7 +274,7 @@ func TestCustomGWP(t *testing.T) {
 	// Verify agentgateway GatewayClass is updated with new ref
 	r.EventuallyWithT(func(c *assert.CollectT) {
 		agwGcUpdated := &gwv1.GatewayClass{}
-		err := testInstallation.ClusterContext.Client.Get(ctx, client.ObjectKey{Name: "agentgateway"}, agwGcUpdated)
+		err := testInstallation.ClusterContext.Client.Get(ctx, client.ObjectKey{Name: wellknown.DefaultAgwClassName}, agwGcUpdated)
 		assert.NoError(c, err, "failed to get agentgateway GatewayClass after upgrade")
 		assert.NotNil(c, agwGcUpdated.Spec.ParametersRef, "agentgateway GatewayClass spec.parametersRef is nil after upgrade")
 		assert.Equal(c, "custom-agwp-2", agwGcUpdated.Spec.ParametersRef.Name, "expected agentgateway GatewayClass parametersRef.name to be 'custom-agwp-2' after upgrade")

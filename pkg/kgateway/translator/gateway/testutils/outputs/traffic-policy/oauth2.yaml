@@ -65,6 +65,14 @@ Listeners:
               authorizationEndpoint: https://provider-1.com/auth
               credentials:
                 clientId: client-id
+                cookieNames:
+                  bearerToken: AccessToken-e960420e0a979e7f
+                  codeVerifier: OauthCodeVerifier-e960420e0a979e7f
+                  idToken: IdToken-e960420e0a979e7f
+                  oauthExpires: OauthExpires-e960420e0a979e7f
+                  oauthHmac: OauthHMAC-e960420e0a979e7f
+                  oauthNonce: OauthNonce-e960420e0a979e7f
+                  refreshToken: RefreshToken-e960420e0a979e7f
                 hmacSecret:
                   name: oauth2/hmac_secret/kgateway-system/oauth2-hmac-secret
                   sdsConfig:
@@ -75,6 +83,7 @@ Listeners:
                   sdsConfig:
                     ads: {}
                     resourceApiVersion: V3
+              preserveAuthorizationHeader: true
               redirectPathMatcher:
                 path:
                   exact: /oauth2/redirect
@@ -96,6 +105,14 @@ Listeners:
               authorizationEndpoint: https://provider-2.com/auth
               credentials:
                 clientId: client-id
+                cookieNames:
+                  bearerToken: AccessToken-848c62dd0a574e97
+                  codeVerifier: OauthCodeVerifier-848c62dd0a574e97
+                  idToken: IdToken-848c62dd0a574e97
+                  oauthExpires: OauthExpires-848c62dd0a574e97
+                  oauthHmac: OauthHMAC-848c62dd0a574e97
+                  oauthNonce: OauthNonce-848c62dd0a574e97
+                  refreshToken: RefreshToken-848c62dd0a574e97
                 hmacSecret:
                   name: oauth2/hmac_secret/kgateway-system/oauth2-hmac-secret
                   sdsConfig:
@@ -128,8 +145,32 @@ Listeners:
               - openid
               - email
               authorizationEndpoint: https://provider-2.com/auth
+              cookieConfigs:
+                bearerTokenCookieConfig:
+                  sameSite: LAX
+                codeVerifierCookieConfig:
+                  sameSite: LAX
+                idTokenCookieConfig:
+                  sameSite: LAX
+                oauthExpiresCookieConfig:
+                  sameSite: LAX
+                oauthHmacCookieConfig:
+                  sameSite: LAX
+                oauthNonceCookieConfig:
+                  sameSite: LAX
+                refreshTokenCookieConfig:
+                  sameSite: LAX
               credentials:
                 clientId: client-id
+                cookieDomain: provider-2.com
+                cookieNames:
+                  bearerToken: access_token
+                  codeVerifier: OauthCodeVerifier-6279ed9211fcc830
+                  idToken: id_token
+                  oauthExpires: OauthExpires-6279ed9211fcc830
+                  oauthHmac: OauthHMAC-6279ed9211fcc830
+                  oauthNonce: OauthNonce-6279ed9211fcc830
+                  refreshToken: RefreshToken-6279ed9211fcc830
                 hmacSecret:
                   name: oauth2/hmac_secret/kgateway-system/oauth2-hmac-secret
                   sdsConfig:
@@ -140,6 +181,14 @@ Listeners:
                   sdsConfig:
                     ads: {}
                     resourceApiVersion: V3
+              denyRedirectMatcher:
+              - name: x-foo
+                stringMatch:
+                  exact: bar
+              - name: x-baz
+                stringMatch:
+                  safeRegex:
+                    regex: ^baz-.*
               forwardBearerToken: true
               redirectPathMatcher:
                 path:

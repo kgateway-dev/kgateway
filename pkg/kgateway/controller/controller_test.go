@@ -56,7 +56,7 @@ const (
 	altGatewayClassName         = "clsname-alt"
 	selfManagedGatewayClassName = "clsname-selfmanaged"
 	gatewayControllerName       = "kgateway.dev/kgateway"
-	agwControllerName           = "kgateway.dev/agentgateway"
+	agwControllerName           = "agentgateway.dev/agentgateway"
 	defaultNamespace            = "default"
 
 	localhost = "127.0.0.1"

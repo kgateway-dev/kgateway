@@ -7,7 +7,7 @@ metadata:
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
     app.kubernetes.io/version: 1.0.0-ci1
-    gateway.networking.k8s.io/gateway-class-name: agentgateway
+    gateway.networking.k8s.io/gateway-class-name: agentgateway-v2
     gateway.networking.k8s.io/gateway-name: gw
     kgateway: kube-gateway
   name: gw
@@ -27,7 +27,7 @@ metadata:
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
     app.kubernetes.io/version: 1.0.0-ci1
-    gateway.networking.k8s.io/gateway-class-name: agentgateway
+    gateway.networking.k8s.io/gateway-class-name: agentgateway-v2
     gateway.networking.k8s.io/gateway-name: gw
     kgateway: kube-gateway
   name: gw
@@ -40,7 +40,7 @@ metadata:
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
     app.kubernetes.io/version: 1.0.0-ci1
-    gateway.networking.k8s.io/gateway-class-name: agentgateway
+    gateway.networking.k8s.io/gateway-class-name: agentgateway-v2
     gateway.networking.k8s.io/gateway-name: gw
     kgateway: kube-gateway
   name: gw
@@ -66,7 +66,7 @@ metadata:
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw
     app.kubernetes.io/version: 1.0.0-ci1
-    gateway.networking.k8s.io/gateway-class-name: agentgateway
+    gateway.networking.k8s.io/gateway-class-name: agentgateway-v2
     gateway.networking.k8s.io/gateway-name: gw
     kgateway: kube-gateway
   name: gw
@@ -80,14 +80,14 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: cbf0b8cbd77bdcbda8bab51122412ace9f28b61e8dd3c8a2680b7a3d19d7b19e
+        checksum/config: ccbec597c430d18d1ca0cdc70c01e84a2b3ff096139693d6b1a4010be61d22b3
         prometheus.io/path: /metrics
         prometheus.io/port: "15020"
         prometheus.io/scrape: "true"
       labels:
         app.kubernetes.io/instance: gw
         app.kubernetes.io/name: gw
-        gateway.networking.k8s.io/gateway-class-name: agentgateway
+        gateway.networking.k8s.io/gateway-class-name: agentgateway-v2
         gateway.networking.k8s.io/gateway-name: gw
     spec:
       containers:

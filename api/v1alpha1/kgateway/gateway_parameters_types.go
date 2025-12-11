@@ -83,7 +83,7 @@ type KubernetesProxyConfig struct {
 	Deployment *ProxyDeployment `json:"deployment,omitempty"`
 
 	// Configuration for the container running Envoy.
-	// If the Gateway uses a GatewayClass with controllerName: kgateway.dev/agentgateway,
+	// If the Gateway uses a GatewayClass with controllerName: agentgateway.dev/agentgateway,
 	// the EnvoyContainer values will be ignored.
 	//
 	// +optional
@@ -679,7 +679,7 @@ func (in *StatsMatcher) GetExclusionList() []shared.StringMatcher {
 
 // Agentgateway configures the agentgateway dataplane integration.
 // The agentgateway dataplane is automatically used when the Gateway references a GatewayClass
-// with controllerName: kgateway.dev/agentgateway.
+// with controllerName: agentgateway.dev/agentgateway.
 type Agentgateway struct {
 	// Log level for the agentgateway. Defaults to info.
 	// Levels include "trace", "debug", "info", "error", "warn". See: https://docs.rs/tracing/latest/tracing/struct.Level.html

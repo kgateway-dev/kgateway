@@ -648,7 +648,7 @@ spec:
                   envoyContainer:
                     description: |-
                       Configuration for the container running Envoy.
-                      If the Gateway uses a GatewayClass with controllerName: kgateway.dev/agentgateway,
+                      If the Gateway uses a GatewayClass with controllerName: agentgateway.dev/agentgateway,
                       the EnvoyContainer values will be ignored.
                     properties:
                       bootstrap:

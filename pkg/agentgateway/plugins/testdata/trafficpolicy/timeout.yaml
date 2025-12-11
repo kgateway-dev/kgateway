@@ -45,4 +45,4 @@ status:
       reason: Attached
       status: "True"
       type: Attached
-    controllerName: kgateway.dev/agentgateway
+    controllerName: agentgateway.dev/agentgateway

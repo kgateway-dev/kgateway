@@ -3,7 +3,7 @@ kind: GatewayClass
 metadata:
   name: a-lot-like-agentgateway-but-not-named-agentgateway
 spec:
-  controllerName: kgateway.dev/agentgateway
+  controllerName: agentgateway.dev/agentgateway
   description: agentgateway but by another name
 ---
 kind: Gateway
