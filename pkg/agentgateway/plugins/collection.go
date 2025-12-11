@@ -1,6 +1,8 @@
 package plugins
 
 import (
+	"fmt"
+
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/config/schema/gvr"
 	istiokube "istio.io/istio/pkg/kube"
@@ -80,6 +82,10 @@ type TargetRefIndexKey struct {
 	Kind      string
 	Name      string
 	Namespace string
+}
+
+func (k TargetRefIndexKey) String() string {
+	return fmt.Sprintf("%s:%s:%s:%s", k.Group, k.Kind, k.Namespace, k.Name)
 }
 
 func (c *AgwCollections) HasSynced() bool {
