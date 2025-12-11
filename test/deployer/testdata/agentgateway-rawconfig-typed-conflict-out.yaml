@@ -125,7 +125,7 @@ spec:
               fieldPath: metadata.namespace
         - name: GATEWAY
           value: gw
-        image: ghcr.io/agentgateway/agentgateway:0.11.0-alpha.f45f1a94cdfa53d96e14301d59ac62200214cb9c
+        image: ghcr.io/agentgateway/agentgateway:0.11.0-alpha.76b0afc55496e7027395a93a3ba1ceca4b832647
         name: agent-gateway
         ports:
         - containerPort: 15020
