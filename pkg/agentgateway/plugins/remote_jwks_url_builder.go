@@ -122,7 +122,7 @@ func getTLSConfig(
 ) (*tls.Config, error) {
 	toret := tls.Config{
 		ServerName:         ptr.OrEmpty(btls.Sni),
-		InsecureSkipVerify: insecureSkipVerify(btls.InsecureSkipVerify),
+		InsecureSkipVerify: insecureSkipVerify(btls.InsecureSkipVerify), //nolint:gosec
 		NextProtos:         ptr.OrEmpty(btls.AlpnProtocols),
 	}
 

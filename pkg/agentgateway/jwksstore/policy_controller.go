@@ -2,16 +2,10 @@ package agentjwksstore
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
-	"fmt"
 
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
-	"istio.io/istio/pkg/ptr"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
@@ -142,50 +136,4 @@ func (j *JwksStorePolicyController) buildJwksSource(krtctx krt.HandlerContext, p
 		TlsConfig: tlsConfig,
 		Ttl:       remoteProvider.CacheDuration.Duration,
 	}
-}
-
-func getTLSConfig(
-	krtctx krt.HandlerContext,
-	cfgmaps krt.Collection[*corev1.ConfigMap],
-	namespace string,
-	btls *agentgateway.BackendTLS,
-) (*tls.Config, error) {
-	toret := tls.Config{
-		ServerName:         ptr.OrEmpty(btls.Sni),
-		InsecureSkipVerify: insecureSkipVerify(btls.InsecureSkipVerify),
-		NextProtos:         ptr.OrEmpty(btls.AlpnProtocols),
-	}
-
-	if len(btls.CACertificateRefs) > 0 {
-		certPool := x509.NewCertPool()
-		for _, ref := range btls.CACertificateRefs {
-			nn := types.NamespacedName{
-				Name:      string(ref.Name),
-				Namespace: namespace,
-			}
-			cfgmap := krt.FetchOne(krtctx, cfgmaps, krt.FilterObjectName(nn))
-			if cfgmap == nil {
-				return nil, fmt.Errorf("ConfigMap %s not found", nn)
-			}
-			success := appendPoolWithCertsFromConfigMap(certPool, ptr.Flatten(cfgmap))
-			if !success {
-				return nil, fmt.Errorf("error extracting CA cert from ConfigMap %s", nn)
-			}
-		}
-		toret.RootCAs = certPool
-	}
-
-	return &toret, nil
-}
-
-func appendPoolWithCertsFromConfigMap(pool *x509.CertPool, cm *corev1.ConfigMap) bool {
-	caCrts, ok := cm.Data["ca.crt"]
-	if !ok {
-		return false
-	}
-	return pool.AppendCertsFromPEM([]byte(caCrts))
-}
-
-func insecureSkipVerify(mode *agentgateway.InsecureTLSMode) bool {
-	return mode != nil
 }
