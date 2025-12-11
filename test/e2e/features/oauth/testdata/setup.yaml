@@ -27,6 +27,8 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: keycloak
+  strategy:
+    type: Recreate
   template:
     metadata:
       labels:
@@ -88,7 +90,8 @@ spec:
           PASSWORD=kgateway
           CLIENT_ID=kgateway-client-id
           CLIENT_SECRET=kgateway-client-secret
-          REDIRECT_URL=https://example.com/oauth2/redirect # must match the HTTPRoute's host and port
+          REDIRECT_URL=https://example.com/oauth2/redirect # must match the HTTPRoute/oauth host and path
+          REDIRECT_URL_SECOND=https://example.com/anything/second/oauth2/redirect # must match the HTTPRoute/oauth-2 host and path
 
           until /opt/keycloak/bin/kcadm.sh get realms --server "${KEYCLOAK_SERVER}" --realm master --user "${KEYCLOAK_ADMIN}" --password "${KEYCLOAK_ADMIN_PASSWORD}"; do
             echo "Waiting for Keycloak admin to be ready..."
@@ -114,7 +117,7 @@ spec:
           /opt/keycloak/bin/kcreg.sh create \
           -s clientId="${CLIENT_ID}" \
           -s secret="${CLIENT_SECRET}" \
-          -s "redirectUris=[\"${REDIRECT_URL}\"]" \
+          -s "redirectUris=[\"${REDIRECT_URL}\",\"${REDIRECT_URL_SECOND}\"]" \
           -s consentRequired=false \
           --server "${KEYCLOAK_SERVER}" \
           --realm "${REALM}" \
@@ -171,6 +174,11 @@ metadata:
   name: oauth-gateway
 spec:
   gatewayClassName: kgateway
+  infrastructure:
+    parametersRef:
+      group: gateway.kgateway.dev
+      kind: GatewayParameters
+      name: oauth-gateway
   listeners:
   - name: https
     protocol: HTTPS
@@ -180,6 +188,17 @@ spec:
       certificateRefs:
       - name: keycloak-tls # same as the secret used for Keycloak TLS
         kind: Secret
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: oauth-gateway
+spec:
+  kube:
+    envoyContainer:
+      bootstrap:
+        componentLogLevels:
+          oauth2: debug
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute

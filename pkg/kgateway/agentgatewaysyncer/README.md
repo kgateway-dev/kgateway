@@ -27,7 +27,7 @@ apiVersion: gateway.networking.k8s.io/v1
 metadata:
   name: agentgateway
 spec:
-  controllerName: kgateway.dev/agentgateway
+  controllerName: agentgateway.dev/agentgateway
   parametersRef:
     group: agentgateway.dev
     kind: AgentgatewayParameters
@@ -39,7 +39,7 @@ apiVersion: gateway.networking.k8s.io/v1
 metadata:
   name: agent-gateway
 spec:
-  gatewayClassName: agentgateway
+  gatewayClassName: agentgateway-v2
   listeners:
     - protocol: HTTP
       port: 8080
@@ -180,7 +180,7 @@ apiVersion: gateway.networking.k8s.io/v1
 metadata:
   name: example-gateway
 spec:
-  gatewayClassName: agentgateway
+  gatewayClassName: agentgateway-v2
   listeners:
     - protocol: HTTP
       port: 8080
@@ -397,7 +397,7 @@ apiVersion: gateway.networking.k8s.io/v1
 metadata:
   name: agent-gateway
 spec:
-  gatewayClassName: agentgateway
+  gatewayClassName: agentgateway-v2
   listeners:
     - protocol: HTTP
       port: 8080
@@ -440,7 +440,7 @@ apiVersion: gateway.networking.k8s.io/v1
 metadata:
   name: agent-gateway
 spec:
-  gatewayClassName: agentgateway
+  gatewayClassName: agentgateway-v2
   listeners:
     - protocol: HTTP
       port: 8080
@@ -549,7 +549,7 @@ apiVersion: gateway.networking.k8s.io/v1
 metadata:
   name: tcp-gw-for-test
 spec:
-  gatewayClassName: agentgateway
+  gatewayClassName: agentgateway-v2
   listeners:
     - name: tcp
       protocol: TCP
@@ -637,7 +637,7 @@ apiVersion: gateway.networking.k8s.io/v1
 metadata:
   name: gw
 spec:
-  gatewayClassName: agentgateway
+  gatewayClassName: agentgateway-v2
   listeners:
     - protocol: HTTP
       port: 8080
@@ -695,7 +695,7 @@ apiVersion: gateway.networking.k8s.io/v1
 metadata:
   name: agent-gateway
 spec:
-  gatewayClassName: agentgateway
+  gatewayClassName: agentgateway-v2
   listeners:
     - protocol: HTTP
       port: 8080
@@ -848,7 +848,7 @@ apiVersion: gateway.networking.k8s.io/v1
 metadata:
   name: agent-gateway
 spec:
-  gatewayClassName: agentgateway
+  gatewayClassName: agentgateway-v2
   listeners:
     - protocol: HTTP
       port: 8080
@@ -1073,7 +1073,7 @@ apiVersion: gateway.networking.k8s.io/v1
 metadata:
   name: agent-gateway
 spec:
-  gatewayClassName: agentgateway
+  gatewayClassName: agentgateway-v2
   listeners:
     - protocol: HTTP
       port: 8080
@@ -1162,7 +1162,7 @@ kind: GatewayClass
 metadata:
   name: agentgateway
 spec:
-  controllerName: kgateway.dev/agentgateway
+  controllerName: agentgateway.dev/agentgateway
   parametersRef:
     group: agentgateway.dev
     kind: AgentgatewayParameters
@@ -1174,7 +1174,7 @@ kind: Gateway
 metadata:
   name: agent-gateway
 spec:
-  gatewayClassName: agentgateway
+  gatewayClassName: agentgateway-v2
   listeners:
     - protocol: HTTP
       port: 8080
@@ -1345,7 +1345,7 @@ kind: GatewayClass
 metadata:
   name: agentgateway
 spec:
-  controllerName: kgateway.dev/agentgateway
+  controllerName: agentgateway.dev/agentgateway
   parametersRef:
     group: agentgateway.dev
     kind: AgentgatewayParameters
@@ -1357,7 +1357,7 @@ kind: Gateway
 metadata:
   name: ai-gateway
 spec:
-  gatewayClassName: agentgateway
+  gatewayClassName: agentgateway-v2
   listeners:
     - protocol: HTTP
       port: 8080
@@ -1429,7 +1429,7 @@ kind: GatewayClass
 metadata:
   name: agentgateway
 spec:
-  controllerName: kgateway.dev/agentgateway
+  controllerName: agentgateway.dev/agentgateway
   parametersRef:
     group: agentgateway.dev
     kind: AgentgatewayParameters
@@ -1443,7 +1443,7 @@ metadata:
   name: agentgateway
   namespace: default
 spec:
-  gatewayClassName: agentgateway
+  gatewayClassName: agentgateway-v2
   listeners:
     - protocol: HTTP
       port: 3000
@@ -1925,7 +1925,7 @@ kind: Gateway
 metadata:
   name: ai-gateway
 spec:
-  gatewayClassName: agentgateway
+  gatewayClassName: agentgateway-v2
   listeners:
   - name: http
     port: 8080

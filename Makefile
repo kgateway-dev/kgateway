@@ -121,7 +121,6 @@ mod-download:  ## Download the dependencies
 .PHONY: mod-tidy-nested
 mod-tidy-nested:  ## Tidy go mod files in nested modules
 	@echo "Tidying hack/utils/applier..." && cd hack/utils/applier && go mod tidy
-	@echo "Tidying hack/krtequals..." && cd hack/krtequals && go mod tidy
 
 .PHONY: mod-tidy
 mod-tidy: mod-download mod-tidy-nested ## Tidy the go mod file
@@ -613,9 +612,14 @@ HELM ?= go tool helm
 HELM_PACKAGE_ARGS ?= --version $(VERSION) --app-version $(VERSION)
 HELM_CHART_DIR=install/helm/kgateway
 HELM_CHART_DIR_CRD=install/helm/kgateway-crds
+HELM_CHART_DIR_AGW=install/helm/agentgateway
+HELM_CHART_DIR_AGW_CRD=install/helm/agentgateway-crds
 
 .PHONY: package-kgateway-charts
 package-kgateway-charts: package-kgateway-chart package-kgateway-crd-chart ## Package the kgateway charts
+
+.PHONY: package-agentgateway-charts
+package-agentgateway-charts: package-agentgateway-chart package-agentgateway-crd-chart ## Package the agentgateway charts
 
 .PHONY: package-kgateway-chart
 package-kgateway-chart: ## Package the kgateway charts
@@ -629,10 +633,24 @@ package-kgateway-crd-chart: ## Package the kgateway crd chart
 	$(HELM) package $(HELM_PACKAGE_ARGS) --destination $(TEST_ASSET_DIR) $(HELM_CHART_DIR_CRD); \
 	$(HELM) repo index $(TEST_ASSET_DIR);
 
+.PHONY: package-agentgateway-chart
+package-agentgateway-chart: ## Package the agentgateway chart
+	mkdir -p $(TEST_ASSET_DIR); \
+	$(HELM) package $(HELM_PACKAGE_ARGS) --destination $(TEST_ASSET_DIR) $(HELM_CHART_DIR_AGW); \
+	$(HELM) repo index $(TEST_ASSET_DIR);
+
+.PHONY: package-agentgateway-crd-chart
+package-agentgateway-crd-chart: ## Package the agentgateway crd chart
+	mkdir -p $(TEST_ASSET_DIR); \
+	$(HELM) package $(HELM_PACKAGE_ARGS) --destination $(TEST_ASSET_DIR) $(HELM_CHART_DIR_AGW_CRD); \
+	$(HELM) repo index $(TEST_ASSET_DIR);
+
 .PHONY: release-charts
-release-charts: package-kgateway-charts ## Release the kgateway charts
+release-charts: package-kgateway-charts package-agentgateway-charts ## Release the kgateway and agentgateway charts
 	$(HELM) push $(TEST_ASSET_DIR)/kgateway-$(VERSION).tgz oci://$(IMAGE_REGISTRY)/charts
 	$(HELM) push $(TEST_ASSET_DIR)/kgateway-crds-$(VERSION).tgz oci://$(IMAGE_REGISTRY)/charts
+	$(HELM) push $(TEST_ASSET_DIR)/agentgateway-$(VERSION).tgz oci://$(IMAGE_REGISTRY)/charts
+	$(HELM) push $(TEST_ASSET_DIR)/agentgateway-crds-$(VERSION).tgz oci://$(IMAGE_REGISTRY)/charts
 
 .PHONY: deploy-kgateway-crd-chart
 deploy-kgateway-crd-chart: ## Deploy the kgateway crd chart
@@ -647,10 +665,24 @@ deploy-kgateway-chart: ## Deploy the kgateway chart
 	--set image.tag=$(VERSION) \
 	-f $(HELM_ADDITIONAL_VALUES)
 
+.PHONY: deploy-agentgateway-crd-chart
+deploy-agentgateway-crd-chart: ## Deploy the agentgateway crd chart
+	$(HELM) upgrade --install agentgateway-crds $(TEST_ASSET_DIR)/agentgateway-crds-$(VERSION).tgz --namespace $(INSTALL_NAMESPACE) --create-namespace
+
+.PHONY: deploy-agentgateway-chart
+deploy-agentgateway-chart: ## Deploy the agentgateway chart
+	$(HELM) upgrade --install agentgateway $(TEST_ASSET_DIR)/agentgateway-$(VERSION).tgz \
+	--namespace $(INSTALL_NAMESPACE) --create-namespace \
+	--set image.registry=$(IMAGE_REGISTRY) \
+	--set image.tag=$(VERSION) \
+	-f $(HELM_ADDITIONAL_VALUES)
+
 .PHONY: lint-kgateway-charts
-lint-kgateway-charts: ## Lint the kgateway charts
+lint-kgateway-charts: ## Lint the kgateway and agentgateway charts
 	$(HELM) lint $(HELM_CHART_DIR)
 	$(HELM) lint $(HELM_CHART_DIR_CRD)
+	$(HELM) lint $(HELM_CHART_DIR_AGW)
+	$(HELM) lint $(HELM_CHART_DIR_AGW_CRD)
 
 #----------------------------------------------------------------------------------
 # Release
@@ -702,11 +734,14 @@ metallb: ## Install the MetalLB load balancer
 .PHONY: deploy-kgateway
 deploy-kgateway: package-kgateway-charts deploy-kgateway-crd-chart deploy-kgateway-chart ## Deploy the kgateway chart and CRDs
 
+.PHONY: deploy-agentgateway
+deploy-agentgateway: package-agentgateway-charts deploy-agentgateway-crd-chart deploy-agentgateway-chart ## Deploy the agentgateway chart and CRDs
+
 .PHONY: setup-base
 setup-base: kind-create gw-api-crds gie-crds metallb ## Setup the base infrastructure (kind cluster, CRDs, and MetalLB)
 
 .PHONY: setup
-setup: setup-base kind-build-and-load package-kgateway-charts ## Setup the complete infrastructure (base setup plus images and charts)
+setup: setup-base kind-build-and-load package-kgateway-charts package-agentgateway-charts dummy-idp-docker kind-load-dummy-idp dummy-auth0-docker kind-load-dummy-auth0 ## Setup the complete infrastructure (base setup plus images and charts)
 
 .PHONY: run
 run: setup deploy-kgateway  ## Set up complete development environment
@@ -817,7 +852,7 @@ conformance-%:  ## Run only the specified Gateway API conformance test by ShortN
 #----------------------------------------------------------------------------------
 
 # Agent Gateway conformance test configuration
-AGW_CONFORMANCE_GATEWAY_CLASS ?= agentgateway
+AGW_CONFORMANCE_GATEWAY_CLASS ?= agentgateway-v2
 AGW_CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/agw-$(VERSION)-report.yaml -organization=kgateway-dev -project=kgateway -version=$(VERSION) -url=github.com/kgateway-dev/kgateway -contact=github.com/kgateway-dev/kgateway/issues/new/choose
 AGW_CONFORMANCE_ARGS := -gateway-class=$(AGW_CONFORMANCE_GATEWAY_CLASS) $(AGW_CONFORMANCE_REPORT_ARGS)
 

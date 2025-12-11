@@ -5,7 +5,7 @@ metadata:
   name: tcp-gw
   namespace: default
 spec:
-  gatewayClassName: agentgateway
+  gatewayClassName: agentgateway-v2
   listeners:
     - name: foo
       protocol: TCP
@@ -100,7 +100,7 @@ status:
         reason: ResolvedRefs
         status: "True"
         type: ResolvedRefs
-      controllerName: kgateway.dev/agentgateway
+      controllerName: agentgateway.dev/agentgateway
       parentRef:
         group: gateway.networking.k8s.io
         kind: Gateway
@@ -126,7 +126,7 @@ status:
         reason: ResolvedRefs
         status: "True"
         type: ResolvedRefs
-      controllerName: kgateway.dev/agentgateway
+      controllerName: agentgateway.dev/agentgateway
       parentRef:
         group: gateway.networking.k8s.io
         kind: Gateway

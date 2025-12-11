@@ -3,7 +3,7 @@ kind: Gateway
 metadata:
   name: example-gateway
 spec:
-  gatewayClassName: agentgateway
+  gatewayClassName: agentgateway-v2
   listeners:
     - name: http
       protocol: HTTP

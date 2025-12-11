@@ -1,9 +1,9 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: GatewayClass
 metadata:
-  name: agentgateway
+  name: agentgateway-v2
 spec:
-  controllerName: kgateway.dev/agentgateway
+  controllerName: agentgateway.dev/agentgateway
   description: Specialized class for agentgateway.
   parametersRef:
     group: agentgateway.dev
@@ -35,7 +35,7 @@ metadata:
   name: gw
   namespace: default
 spec:
-  gatewayClassName: agentgateway
+  gatewayClassName: agentgateway-v2
   listeners:
     - protocol: HTTP
       port: 8080

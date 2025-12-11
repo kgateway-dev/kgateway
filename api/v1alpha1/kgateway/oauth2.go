@@ -15,6 +15,21 @@ func (h HttpsUri) String() string {
 	return string(h)
 }
 
+// OAuth2CookieSameSite specifies the SameSite attribute for OAuth2 cookies
+// +kubebuilder:validation:Enum=Lax;Strict;None
+type OAuth2CookieSameSite string
+
+const (
+	// OAuth2CookieSameSiteLax specifies the Lax SameSite attribute for OAuth2 cookies
+	OAuth2CookieSameSiteLax OAuth2CookieSameSite = "Lax"
+
+	// OAuth2CookieSameSiteStrict specifies the Strict SameSite attribute for OAuth2 cookies
+	OAuth2CookieSameSiteStrict OAuth2CookieSameSite = "Strict"
+
+	// OAuth2CookieSameSiteNone specifies the None SameSite attribute for OAuth2 cookies
+	OAuth2CookieSameSiteNone OAuth2CookieSameSite = "None"
+)
+
 // OAuth2Provider specifies the configuration for OAuth2 extension provider.
 //
 // +kubebuilder:validation:XValidation:message="Either issuerURI, or both authorizationEndpoint and tokenEndpoint must be specified",rule="has(self.issuerURI) || (has(self.authorizationEndpoint) && has(self.tokenEndpoint))"
@@ -82,6 +97,39 @@ type OAuth2Provider struct {
 	// Refer to https://openid.net/specs/openid-connect-rpinitiated-1_0.html#RPLogout for more details.
 	// +optional
 	EndSessionEndpoint *HttpsUri `json:"endSessionEndpoint,omitempty"`
+
+	// Cookies specifies the configuration for the OAuth2 cookies.
+	// +optional
+	Cookies *OAuth2CookieConfig `json:"cookies,omitempty"`
+
+	// DenyRedirectMatcher specifies the matcher to match requests that should be denied redirects to the authorization endpoint.
+	// Matching requests will receive a 401 Unauthorized response instead of being redirected.
+	// This is useful for AJAX requests where redirects should be avoided.
+	// +optional
+	DenyRedirect *OAuth2DenyRedirectMatcher `json:"denyRedirect,omitempty"`
+}
+
+type OAuth2CookieConfig struct {
+	// CookieDomain specifies the domain to set on the access and ID token cookies.
+	// If set, the cookies will be set for the specified domain and all its subdomains. This is useful when requests
+	// to subdomains are not required to be re-authenticated after the user has logged into the parent domain.
+	// If not set, the cookies will default to the host of the request, not including the subdomains.
+	// +optional
+	//
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=253
+	// +kubebuilder:validation:Pattern=`^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9]))*$`
+	Domain *string `json:"domain,omitempty"`
+
+	// Names specifies the names of the cookies used to store the tokens.
+	// If not set, the default names will be used.
+	// +optional
+	Names *OAuth2CookieNames `json:"names,omitempty"`
+
+	// SameSite specifies the SameSite attribute for the OAuth2 cookies.
+	// If not set, the default is Lax.
+	// +optional
+	SameSite *OAuth2CookieSameSite `json:"sameSite,omitempty"`
 }
 
 // OAuth2Credentials specifies the Oauth2 client credentials.
@@ -98,6 +146,30 @@ type OAuth2Credentials struct {
 	// Refer to https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1 for more details.
 	// +required
 	ClientSecretRef corev1.LocalObjectReference `json:"clientSecretRef"`
+}
+
+// OAuth2CookieNames specifies the names of the cookies used to store the tokens.
+type OAuth2CookieNames struct {
+	// AccessToken specifies the name of the cookie used to store the access token.
+	// +optional
+	//
+	// +kubebuilder:validation:MinLength=1
+	AccessToken *string `json:"accessToken,omitempty"`
+
+	// IDToken specifies the name of the cookie used to store the ID token.
+	// +optional
+	//
+	// +kubebuilder:validation:MinLength=1
+	IDToken *string `json:"idToken,omitempty"`
+}
+
+// OAuth2DenyRedirectMatcher specifies the matcher to match requests that should be denied redirects to the authorization endpoint.
+type OAuth2DenyRedirectMatcher struct {
+	// Headers specifies the list of HTTP headers to match on requests that should be denied redirects.
+	// +optional
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=16
+	Headers []gwv1.HTTPHeaderMatch `json:"headers,omitempty"`
 }
 
 // OAuth2Policy specifies the OAuth2 policy to apply to requests.

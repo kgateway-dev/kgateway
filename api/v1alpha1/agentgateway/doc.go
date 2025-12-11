@@ -9,7 +9,7 @@ package agentgateway
 // +kubebuilder:rbac:groups=gateway.networking.x-k8s.io,resources=xlistenersets,verbs=get;list;watch
 // +kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gatewayclasses/status;gateways/status;httproutes/status;grpcroutes/status;tcproutes/status;tlsroutes/status;backendtlspolicies/status,verbs=patch;update
 // +kubebuilder:rbac:groups=gateway.networking.x-k8s.io,resources=xlistenersets/status,verbs=patch;update
-// +kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gatewayclasses,verbs=create
+// +kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gatewayclasses,verbs=create;patch;update
 
 // Controller resources
 // +kubebuilder:rbac:groups="",resources=pods,verbs=get;list;watch

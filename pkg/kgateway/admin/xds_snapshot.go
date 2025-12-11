@@ -14,10 +14,14 @@ import (
 // and serves up to running proxies.
 func addXdsSnapshotHandler(path string, mux *http.ServeMux, profiles map[string]dynamicProfileDescription, cache cache.SnapshotCache) {
 	mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+		if cache == nil {
+			writeJSON(w, map[string]string{"error": "Envoy xDS cache not available (Envoy controller may be disabled)"}, r)
+			return
+		}
 		response := getXdsSnapshotDataFromCache(cache)
 		writeJSON(w, response, r)
 	})
-	profiles[path] = func() string { return "XDS Snapshot" }
+	profiles[path] = func() string { return "XDS Snapshot (Envoy only)" }
 }
 
 func getXdsSnapshotDataFromCache(xdsCache cache.SnapshotCache) SnapshotResponseData {

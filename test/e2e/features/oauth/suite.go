@@ -18,23 +18,26 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/trafficpolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 )
 
 const (
-	backendURL                    = "https://example.com"
-	logoutURL                     = "https://example.com/logout"
-	endSessionEndpoint            = "https://keycloak/realms/master/protocol/openid-connect/logout"
-	expectedHttpbinResponseSubstr = "httpbin"
-	tlsPort                       = "443"
-	backendHostPort               = "example.com:443"
-	keycloakHost                  = "keycloak:443"
-	clientUsername                = "kgateway"
-	clientPassword                = "kgateway"
-	nonOAuthBackendURL            = "https://test.com"
-	nonOAuthBackendHostPort       = "test.com:443"
+	backendURLFirst                = "https://example.com"
+	backendURLSecond               = "https://example.com/anything/second"
+	logoutURL                      = "https://example.com/logout"
+	endSessionEndpoint             = "https://keycloak/realms/master/protocol/openid-connect/logout"
+	expectedHttpbinResponseSubstr  = "httpbin"
+	expectedAnythingResponseSubstr = "/anything/second"
+	tlsPort                        = "443"
+	backendHostPort                = "example.com:443"
+	keycloakHost                   = "keycloak:443"
+	clientUsername                 = "kgateway"
+	clientPassword                 = "kgateway"
+	nonOAuthBackendURL             = "https://test.com"
+	nonOAuthBackendHostPort        = "test.com:443"
 )
 
 var (
@@ -44,6 +47,7 @@ var (
 		Manifests: []string{
 			filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml"),
 			filepath.Join(fsutils.MustGetThisDir(), "testdata", "backend.yaml"),
+			filepath.Join(fsutils.MustGetThisDir(), "testdata", "route-2.yaml"),
 		},
 	}
 
@@ -88,11 +92,13 @@ func (s *tsuite) TestOIDC() {
 		keycloakHost:    s.keycloakAddr,
 	})
 
+	s.T().Logf("testing OIDC flow for backend %s", backendURLFirst)
 	// Login to the Auth server (Keycloak) and exercise the OIDC flow to access the protected backend (httpbin fronted by example.com)
 	r.EventuallyWithT(func(c *assert.CollectT) {
-		resp, err := client.Login(ctx, backendURL,
+		resp, err := client.Login(ctx, backendURLFirst,
 			// form data
 			map[string]string{"username": clientUsername, "password": clientPassword, "credentialId": ""})
+
 		require.NoError(c, err)
 		require.NotNil(c, resp)
 		require.Equal(c, http.StatusOK, resp.StatusCode)
@@ -100,25 +106,14 @@ func (s *tsuite) TestOIDC() {
 	}, 15*time.Second, 500*time.Millisecond, "login failed")
 
 	// Verify that the session cookies are set
-	url, err := neturl.Parse(backendURL)
+	url, err := neturl.Parse(backendURLFirst)
 	r.NoError(err)
 	cookies := client.Jar.Cookies(url)
-	r.NotEmpty(cookies)
-	expectedCokies := []string{"BearerToken", "IdToken", "RefreshToken", "OauthHMAC"}
-	for _, cookieName := range expectedCokies {
-		found := false
-		for _, cookie := range cookies {
-			if cookie.Name == cookieName {
-				found = true
-				r.NotEmpty(cookie.Value, "cookie %s should have a value", cookieName)
-				break
-			}
-		}
-		r.True(found, "cookie %s not found", cookieName)
-	}
+	foundCookies := s.assertCookies(r, cookies)
+	s.T().Logf("found session cookies for %s: %v", backendURLFirst, foundCookies)
 
 	// Attempt to access the backend again without needing to login again; disable redirects
-	resp, err := client.Get(ctx, backendURL, false)
+	resp, err := client.Get(ctx, backendURLFirst, false)
 	r.NoError(err)
 	r.NotNil(resp)
 	r.Equal(http.StatusOK, resp.StatusCode)
@@ -135,7 +130,7 @@ func (s *tsuite) TestOIDC() {
 	r.Contains(location[0], endSessionEndpoint)
 	setCookies := resp.Headers["Set-Cookie"]
 	r.NotEmpty(setCookies)
-	for _, cookieName := range expectedCokies {
+	for _, cookieName := range foundCookies {
 		found := false
 		for _, setCookie := range setCookies {
 			if strings.HasPrefix(setCookie, cookieName+"=deleted;") {
@@ -145,6 +140,21 @@ func (s *tsuite) TestOIDC() {
 		}
 		r.True(found, "logout did not delete cookie %s", cookieName)
 	}
+
+	// Access backendURLSecond which is protected on a different path and verify its cookies.
+	// Since we disabled redirects in the above logout request, the authentication will succeeds without
+	// a redirect to the Login page. It will still redirect to the Auth server since session cookies
+	// have not been established for the new route yet
+	resp, err = client.Get(ctx, backendURLSecond, true)
+	r.NoError(err)
+	r.NotNil(resp)
+	r.Equal(http.StatusOK, resp.StatusCode)
+	r.Contains(string(resp.Body), expectedAnythingResponseSubstr)
+	url, err = neturl.Parse(backendURLSecond)
+	r.NoError(err)
+	cookies = client.Jar.Cookies(url)
+	foundCookies = s.assertCookies(r, cookies)
+	s.T().Logf("found session cookies for %s: %v", backendURLSecond, foundCookies)
 }
 
 func (s *tsuite) TestNonOAuthBackend() {
@@ -176,4 +186,29 @@ func (s *tsuite) getServiceExternalIP(ref types.NamespacedName) (string, error) 
 		return "", fmt.Errorf("service %s has no external IP", ref)
 	}
 	return svc.Status.LoadBalancer.Ingress[0].IP, nil
+}
+
+func (s *tsuite) assertCookies(r *require.Assertions, cookies []*http.Cookie) []string {
+	r.NotEmpty(cookies)
+
+	expectedCookiePrefixes := []string{
+		trafficpolicy.OauthAccessTokenCookiePrefix,
+		trafficpolicy.OauthIdTokenCookiePrefix,
+		trafficpolicy.OauthRefreshTokenCookiePrefix,
+		trafficpolicy.OauthHMACCookiePrefix,
+	}
+	var foundCookies []string
+	for _, cookiePrefix := range expectedCookiePrefixes {
+		found := false
+		for _, cookie := range cookies {
+			if strings.HasPrefix(cookie.Name, cookiePrefix) {
+				found = true
+				foundCookies = append(foundCookies, cookie.Name)
+				r.NotEmpty(cookie.Value, "cookie %s should have a value", cookiePrefix)
+				break
+			}
+		}
+		r.True(found, "cookie %s not found", cookiePrefix)
+	}
+	return foundCookies
 }

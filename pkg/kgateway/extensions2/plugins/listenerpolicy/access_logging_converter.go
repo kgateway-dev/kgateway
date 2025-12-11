@@ -7,14 +7,12 @@ import (
 
 	envoyaccesslogv3 "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyalfile "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
 	cel "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/filters/cel/v3"
 	envoygrpc "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
 	envoy_open_telemetry "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/open_telemetry/v3"
 	envoy_metadata_formatter "github.com/envoyproxy/go-control-plane/envoy/extensions/formatter/metadata/v3"
 	envoy_req_without_query "github.com/envoyproxy/go-control-plane/envoy/extensions/formatter/req_without_query/v3"
-	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	otelv1 "go.opentelemetry.io/proto/otlp/common/v1"
 	"google.golang.org/protobuf/proto"
@@ -22,13 +20,13 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	kwellknown "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 )
 
 var ErrUnresolvedBackendRef = errors.New("unresolved backend reference")
@@ -292,13 +290,14 @@ func translateFilter(filter *kgateway.FilterType) (*envoyaccesslogv3.AccessLogFi
 		}
 
 	case filter.HeaderFilter != nil:
+		matcher, err := pluginsdkutils.ToEnvoyHeaderMatcher(filter.HeaderFilter.Header)
+		if err != nil {
+			return nil, err
+		}
 		alCfg = &envoyaccesslogv3.AccessLogFilter{
 			FilterSpecifier: &envoyaccesslogv3.AccessLogFilter_HeaderFilter{
 				HeaderFilter: &envoyaccesslogv3.HeaderFilter{
-					Header: &envoyroutev3.HeaderMatcher{
-						Name:                 string(filter.HeaderFilter.Header.Name),
-						HeaderMatchSpecifier: createHeaderMatchSpecifier(filter.HeaderFilter.Header),
-					},
+					Header: matcher,
 				},
 			},
 		}
@@ -357,35 +356,6 @@ func translateFilter(filter *kgateway.FilterType) (*envoyaccesslogv3.AccessLogFi
 	}
 
 	return alCfg, nil
-}
-
-// Helper function to create header match specifier
-func createHeaderMatchSpecifier(header gwv1.HTTPHeaderMatch) *envoyroutev3.HeaderMatcher_StringMatch {
-	switch *header.Type {
-	case gwv1.HeaderMatchExact:
-		return &envoyroutev3.HeaderMatcher_StringMatch{
-			StringMatch: &envoymatcher.StringMatcher{
-				IgnoreCase: false,
-				MatchPattern: &envoymatcher.StringMatcher_Exact{
-					Exact: header.Value,
-				},
-			},
-		}
-	case gwv1.HeaderMatchRegularExpression:
-		return &envoyroutev3.HeaderMatcher_StringMatch{
-			StringMatch: &envoymatcher.StringMatcher{
-				IgnoreCase: false,
-				MatchPattern: &envoymatcher.StringMatcher_SafeRegex{
-					SafeRegex: &envoymatcher.RegexMatcher{
-						Regex: header.Value,
-					},
-				},
-			},
-		}
-	default:
-		logger.Error("unsupported header match type", "type", *header.Type)
-		return nil
-	}
 }
 
 func convertJsonFormat(jsonFormat *runtime.RawExtension) (*structpb.Struct, error) {
@@ -641,13 +611,15 @@ func generateAccessLogConfig(pCtx *ir.HcmContext, policies []kgateway.AccessLog,
 func addDefaultResourceAttributes(pCtx *ir.HcmContext, config *envoy_open_telemetry.OpenTelemetryAccessLogConfig) {
 	if config.GetResourceAttributes() == nil {
 		config.ResourceAttributes = &otelv1.KeyValueList{
-			Values: []*otelv1.KeyValue{{
-				Key: serviceNameKey,
-				Value: &otelv1.AnyValue{
-					Value: &otelv1.AnyValue_StringValue{
-						StringValue: GenerateDefaultServiceName(pCtx.Gateway.SourceObject.GetName(), pCtx.Gateway.SourceObject.GetNamespace()),
+			Values: []*otelv1.KeyValue{
+				{
+					Key: serviceNameKey,
+					Value: &otelv1.AnyValue{
+						Value: &otelv1.AnyValue_StringValue{
+							StringValue: GenerateDefaultServiceName(pCtx.Gateway.SourceObject.GetName(), pCtx.Gateway.SourceObject.GetNamespace()),
+						},
 					},
-				}},
+				},
 			},
 		}
 		return

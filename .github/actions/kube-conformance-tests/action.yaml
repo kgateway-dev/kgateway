@@ -105,6 +105,18 @@ runs:
           --set image.tag=${VERSION} --set image.registry=ghcr.io/kgateway-dev \
           ${INFERENCE_EXT_FLAG} \
           ${ADDITIONAL_VALUES}
+        
+        # For agent-gateway and inference-extension tests, also install the agentgateway chart
+        if [[ "${{ inputs.test-type }}" == "agent-gateway" || "${{ inputs.test-type }}" == "inference-extension" ]]; then
+          helm upgrade -i -n agentgateway-system agentgateway-crds ./install/helm/agentgateway-crds/ \
+            --create-namespace
+          helm upgrade -i -n agentgateway-system agentgateway ./install/helm/agentgateway/ \
+            --create-namespace \
+            ${EXPERIMENTAL_FLAG} \
+            --set image.tag=${VERSION} --set image.registry=ghcr.io/kgateway-dev \
+            ${INFERENCE_EXT_FLAG} \
+            ${ADDITIONAL_VALUES}
+        fi
       else
         # TODO(tim): this will require changes once the new helm chart is integrated
         # and published with the release pipeline.
@@ -120,6 +132,20 @@ runs:
           --set image.tag=${VERSION} \
           ${INFERENCE_EXT_FLAG} \
           ${ADDITIONAL_VALUES}
+        
+        # For agent-gateway and inference-extension tests, also install the agentgateway chart
+        if [[ "${{ inputs.test-type }}" == "agent-gateway" || "${{ inputs.test-type }}" == "inference-extension" ]]; then
+          helm upgrade -i -n agentgateway-system agentgateway-crds oci://${{ env.IMAGE_REGISTRY }}/charts/agentgateway-crds \
+            --version ${VERSION} \
+            --create-namespace
+          helm upgrade -i -n agentgateway-system agentgateway oci://${{ env.IMAGE_REGISTRY }}/charts/agentgateway \
+            --version ${VERSION} \
+            --create-namespace \
+            ${EXPERIMENTAL_FLAG} \
+            --set image.tag=${VERSION} \
+            ${INFERENCE_EXT_FLAG} \
+            ${ADDITIONAL_VALUES}
+        fi
       fi
 
   - name: Run tests
@@ -154,6 +180,15 @@ runs:
       kubectl -n gateway-conformance-web-backend get events --sort-by='{.lastTimestamp}'
       echo
       kubectl -n kgateway-system logs deploy/kgateway
+      echo
+      # Capture agentgateway logs if they exist
+      if kubectl get namespace agentgateway-system &>/dev/null; then
+        echo "Agentgateway events:"
+        kubectl -n agentgateway-system get events --sort-by='{.lastTimestamp}'
+        echo
+        echo "Agentgateway logs:"
+        kubectl -n agentgateway-system logs deploy/agentgateway
+      fi
 
   - name: Set artifact name and path
     shell: bash

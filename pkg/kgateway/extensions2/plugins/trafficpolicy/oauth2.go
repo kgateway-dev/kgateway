@@ -18,12 +18,22 @@ import (
 
 	kgwv1a1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 )
 
 const (
+	OauthAccessTokenCookiePrefix  = "AccessToken"
+	OauthIdTokenCookiePrefix      = "IdToken"
+	OauthRefreshTokenCookiePrefix = "RefreshToken"
+	OauthHMACCookiePrefix         = "OauthHMAC"
+	OauthExpiresCookiePrefix      = "OauthExpires"
+	OauthNonceCookiePrefix        = "OauthNonce"
+	OauthCodeVerifierCookiePrefix = "OauthCodeVerifier"
+
 	defaultRedictURI            = "%REQ(x-forwarded-proto)%://%REQ(:authority)%/oauth2/redirect"
 	clientSecretKey             = "client-secret"
 	defaultTokenEndpointTimeout = 15 * time.Second
@@ -179,6 +189,26 @@ func buildOAuth2ProviderConfig(
 		return nil, fmt.Errorf("invalid redirectURI: %w", err)
 	}
 
+	cookieSuffix := getCookieSuffix(ext.ObjectSource)
+	cookieNames := &envoyoauth2v3.OAuth2Credentials_CookieNames{
+		BearerToken:  OauthAccessTokenCookiePrefix + "-" + cookieSuffix,
+		IdToken:      OauthIdTokenCookiePrefix + "-" + cookieSuffix,
+		OauthHmac:    OauthHMACCookiePrefix + "-" + cookieSuffix,
+		OauthExpires: OauthExpiresCookiePrefix + "-" + cookieSuffix,
+		RefreshToken: OauthRefreshTokenCookiePrefix + "-" + cookieSuffix,
+		OauthNonce:   OauthNonceCookiePrefix + "-" + cookieSuffix,
+		CodeVerifier: OauthCodeVerifierCookiePrefix + "-" + cookieSuffix,
+	}
+	if in.Cookies != nil && in.Cookies.Names != nil {
+		if in.Cookies.Names.AccessToken != nil {
+			cookieNames.BearerToken = *in.Cookies.Names.AccessToken
+		}
+		if in.Cookies.Names.IDToken != nil {
+			cookieNames.IdToken = *in.Cookies.Names.IDToken
+		}
+	}
+
+	forwardBearerToken := ptr.Deref(in.ForwardAccessToken, false)
 	cfg := &envoyoauth2v3.OAuth2{
 		Config: &envoyoauth2v3.OAuth2Config{
 			TokenEndpoint: &envoycorev3.HttpUri{
@@ -189,8 +219,11 @@ func buildOAuth2ProviderConfig(
 				Timeout: durationpb.New(defaultTokenEndpointTimeout),
 			},
 			AuthorizationEndpoint: authorizationEndpoint,
-			ForwardBearerToken:    ptr.Deref(in.ForwardAccessToken, false),
-			AuthScopes:            in.Scopes,
+			ForwardBearerToken:    forwardBearerToken,
+			// Preserve the Authorization header by default unless it is being used to explicitly forward the access(bearer) token.
+			// This is useful when the client explicitly sets the Authorization header, e.g., for basic auth
+			PreserveAuthorizationHeader: !forwardBearerToken,
+			AuthScopes:                  in.Scopes,
 			Credentials: &envoyoauth2v3.OAuth2Credentials{
 				ClientId: in.Credentials.ClientID,
 				TokenSecret: &envoytlsv3.SdsSecretConfig{
@@ -203,6 +236,7 @@ func buildOAuth2ProviderConfig(
 						SdsConfig: adsConfigSource(),
 					},
 				},
+				CookieNames: cookieNames,
 			},
 			RedirectUri: redirectURI,
 			RedirectPathMatcher: &envoymatcherv3.PathMatcher{
@@ -225,6 +259,40 @@ func buildOAuth2ProviderConfig(
 			},
 			EndSessionEndpoint: endSessionEndpoint,
 		},
+	}
+
+	if in.Cookies != nil && in.Cookies.Domain != nil {
+		cfg.Config.Credentials.CookieDomain = *in.Cookies.Domain
+	}
+
+	if in.Cookies != nil && in.Cookies.SameSite != nil {
+		config := &envoyoauth2v3.CookieConfig{}
+		switch *in.Cookies.SameSite {
+		case kgwv1a1.OAuth2CookieSameSiteLax:
+			config.SameSite = envoyoauth2v3.CookieConfig_LAX
+		case kgwv1a1.OAuth2CookieSameSiteStrict:
+			config.SameSite = envoyoauth2v3.CookieConfig_STRICT
+		case kgwv1a1.OAuth2CookieSameSiteNone:
+			config.SameSite = envoyoauth2v3.CookieConfig_NONE
+		}
+
+		cfg.Config.CookieConfigs = &envoyoauth2v3.CookieConfigs{
+			BearerTokenCookieConfig:  config,
+			IdTokenCookieConfig:      config,
+			OauthHmacCookieConfig:    config,
+			OauthExpiresCookieConfig: config,
+			RefreshTokenCookieConfig: config,
+			OauthNonceCookieConfig:   config,
+			CodeVerifierCookieConfig: config,
+		}
+	}
+
+	if in.DenyRedirect != nil {
+		matcher, err := pluginsdkutils.ToEnvoyHeaderMatchers(in.DenyRedirect.Headers)
+		if err != nil {
+			return nil, fmt.Errorf("invalid deny redirect matcher: %w", err)
+		}
+		cfg.Config.DenyRedirectMatcher = matcher
 	}
 
 	return &oauthPerProviderConfig{
@@ -302,4 +370,10 @@ func (p *trafficPolicyPluginGwPass) handleOauth2(filterChain string, perFilterCo
 	for _, secret := range in.secrets {
 		p.secrets[secret.Name] = secret
 	}
+}
+
+// getCookieSuffix generates a unique suffix for cookie names based on the given object
+func getCookieSuffix(src ir.ObjectSource) string {
+	hash := utils.HashString(src.NamespacedName().String())
+	return fmt.Sprintf("%x", hash)
 }

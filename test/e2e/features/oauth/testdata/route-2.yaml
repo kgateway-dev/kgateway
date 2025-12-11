@@ -1,0 +1,53 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: oauth-2
+spec:
+  parentRefs:
+  - name: oauth-gateway
+  hostnames:
+  - example.com # must match the CN in the Keycloak TLS cert
+  rules:
+  - name: rule0
+    matches:
+    - path:
+        type: PathPrefix
+        value: /anything/second
+    backendRefs:
+    - name: httpbin
+      port: 8443
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: oauth-route-2
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: oauth-2
+  oauth2:
+    extensionRef:
+      name: keycloak-oauth-2
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: keycloak-oauth-2
+spec:
+  oauth2:
+    backendRef:
+      kind: Service
+      name: keycloak
+      port: 443
+    tokenEndpoint: https://keycloak/realms/master/protocol/openid-connect/token
+    authorizationEndpoint: https://keycloak/realms/master/protocol/openid-connect/auth
+    endSessionEndpoint: https://keycloak/realms/master/protocol/openid-connect/logout
+    credentials:
+      clientID: kgateway-client-id # must match the clientId created in Keycloak
+      clientSecretRef:
+        name: oauth-client-secret
+    redirectURI: https://example.com/anything/second/oauth2/redirect # must match the REDIRECT_URL_SECOND used in Keycloak setup
+    logoutPath: /logout
+    forwardAccessToken: true
+    scopes: ["openid"]
