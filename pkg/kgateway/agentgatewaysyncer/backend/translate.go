@@ -225,16 +225,9 @@ func translateAIBackends(ctx plugins.PolicyCtx, be *agentgateway.AgentgatewayBac
 
 	aiBackend := &api.AIBackend{}
 	if llm := ai.LLM; llm != nil {
-		provider, auth, err := translateLLMProvider(ctx, llm, utils.SingularLLMProviderSubBackendName, be.Namespace)
+		provider, err := translateLLMProvider(ctx, llm, utils.SingularLLMProviderSubBackendName, be.Namespace)
 		if err != nil {
 			return nil, fmt.Errorf("failed to translate LLM provider: %w", err)
-		}
-		if auth != nil {
-			inlinePolicies = append(inlinePolicies, &api.BackendPolicySpec{
-				Kind: &api.BackendPolicySpec_Auth{
-					Auth: auth,
-				},
-			})
 		}
 		aiBackend.ProviderGroups = []*api.AIBackend_ProviderGroup{{
 			Providers: []*api.AIBackend_Provider{provider},
@@ -244,7 +237,7 @@ func translateAIBackends(ctx plugins.PolicyCtx, be *agentgateway.AgentgatewayBac
 			providerGroup := &api.AIBackend_ProviderGroup{}
 
 			for _, provider := range group.Providers {
-				tp, auth, err := translateLLMProvider(ctx, &provider.LLMProvider, string(provider.Name), be.Namespace)
+				tp, err := translateLLMProvider(ctx, &provider.LLMProvider, string(provider.Name), be.Namespace)
 				if err != nil {
 					return nil, fmt.Errorf("failed to translate LLM provider: %w", err)
 				}
@@ -254,13 +247,6 @@ func translateAIBackends(ctx plugins.PolicyCtx, be *agentgateway.AgentgatewayBac
 					logger.Warn("failed to translate AI backend policies", "err", err)
 				}
 				tp.InlinePolicies = pol
-				if auth != nil {
-					tp.InlinePolicies = append(tp.InlinePolicies, &api.BackendPolicySpec{
-						Kind: &api.BackendPolicySpec_Auth{
-							Auth: auth,
-						},
-					})
-				}
 
 				providerGroup.Providers = append(providerGroup.Providers, tp)
 			}
@@ -317,7 +303,7 @@ func translateAIBackendPolicies(
 	})
 }
 
-func translateLLMProvider(ctx plugins.PolicyCtx, llm *agentgateway.LLMProvider, providerName, namespace string) (*api.AIBackend_Provider, *api.BackendAuthPolicy, error) {
+func translateLLMProvider(ctx plugins.PolicyCtx, llm *agentgateway.LLMProvider, providerName, namespace string) (*api.AIBackend_Provider, error) {
 	provider := &api.AIBackend_Provider{
 		Name: providerName,
 	}
@@ -332,7 +318,6 @@ func translateLLMProvider(ctx plugins.PolicyCtx, llm *agentgateway.LLMProvider, 
 	if llm.Path != "" {
 		provider.PathOverride = &llm.Path
 	}
-	var auth *api.BackendAuthPolicy
 
 	// Extract auth token and model based on provider
 	if llm.OpenAI != nil {
@@ -378,10 +363,9 @@ func translateLLMProvider(ctx plugins.PolicyCtx, llm *agentgateway.LLMProvider, 
 			guardrailVersion = &llm.Bedrock.Guardrail.GuardrailVersion
 		}
 
-		var err error
-		auth, err = buildBedrockAuthPolicy(ctx.Krt, region, llm.Bedrock.Auth, ctx.Collections.Secrets, namespace)
+		auth, err := buildBedrockAuthPolicy(ctx.Krt, region, llm.Bedrock.Auth, ctx.Collections.Secrets, namespace)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 
 		provider.Provider = &api.AIBackend_Provider_Bedrock{
@@ -392,11 +376,16 @@ func translateLLMProvider(ctx plugins.PolicyCtx, llm *agentgateway.LLMProvider, 
 				GuardrailVersion:    guardrailVersion,
 			},
 		}
+		provider.InlinePolicies = append(provider.InlinePolicies, &api.BackendPolicySpec{
+			Kind: &api.BackendPolicySpec_Auth{
+				Auth: auth,
+			},
+		})
 	} else {
-		return nil, nil, fmt.Errorf("no supported LLM provider configured")
+		return nil, fmt.Errorf("no supported LLM provider configured")
 	}
 
-	return provider, auth, nil
+	return provider, nil
 }
 
 func toMCPProtocol(appProtocol string) api.MCPTarget_Protocol {

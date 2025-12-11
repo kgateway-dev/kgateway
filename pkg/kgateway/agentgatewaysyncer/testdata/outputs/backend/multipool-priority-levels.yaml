@@ -42,10 +42,6 @@ Backends:
       - bedrock:
           model: anthropic.claude-3-haiku-20240307-v1:0
           region: us-east-1
-        inlinePolicies:
-        - auth:
-            aws:
-              implicit: {}
         name: bedrock
   key: default/multipool-priority
   name:
