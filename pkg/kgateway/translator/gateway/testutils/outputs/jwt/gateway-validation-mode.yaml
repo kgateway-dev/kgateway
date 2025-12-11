@@ -218,4 +218,3 @@ Statuses:
           status: "True"
           type: Attached
         controllerName: kgateway.dev/kgateway
-

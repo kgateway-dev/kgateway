@@ -4,7 +4,6 @@ package parallelcontrollers
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -58,8 +57,15 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 
 // BeforeTest overrides the base suite's BeforeTest to prevent automatic test manifest application
 // Setup manifests (httpbin, curl pod) are already applied in SetupSuite
-// We need manual control because helm upgrades must happen before applying test manifests
+// We need manual control because chart installations must happen before applying test manifests
 func (s *testingSuite) BeforeTest(suiteName, testName string) {
+	// Ensure httpbin pods are ready first
+	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx,
+		httpbinObjectMeta.GetNamespace(),
+		metav1.ListOptions{
+			LabelSelector: defaults.WellKnownAppLabel + "=" + httpbinObjectMeta.GetName(),
+		})
+
 	// Ensure curl pod is ready (setup manifests are applied in SetupSuite)
 	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx,
 		defaults.CurlPod.GetNamespace(),
@@ -68,7 +74,15 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 		})
 
 	// Skip the base suite's automatic test manifest application
-	// Each test method will manually apply its manifests after helm upgrade
+	// Each test method will manually install charts and apply manifests
+}
+
+// TearDownSuite overrides the base suite's TearDownSuite to prevent premature deletion
+// of shared setup resources (httpbin, curl pod) when tests are re-run.
+// The test framework's cleanup will handle final cleanup after all runs.
+func (s *testingSuite) TearDownSuite() {
+	// Don't delete setup manifests - let the test framework handle final cleanup
+	// This prevents issues when tests are re-run due to failures
 }
 
 // applyGatewayManifests applies the gateway manifests for a specific phase
@@ -134,14 +148,13 @@ func (s *testingSuite) deleteGatewayManifests(envoyGwMeta, agwGwMeta metav1.Obje
 	)
 }
 
-// TestEnvoyOnly tests that when only Envoy controller is enabled, only Envoy Gateways are processed
+// TestEnvoyOnly tests that when only kgateway chart is installed, only Envoy Gateways are processed
 func (s *testingSuite) TestEnvoyOnly() {
-	// Note: Initial installation already has envoy.enabled=true, agentgateway.enabled=false
-	// So we don't need to upgrade helm here - the controller is already configured correctly
-	// We still call upgradeHelmWithFlags to ensure consistency and wait for controller readiness
-	s.upgradeHelmWithFlags(true, false)
+	// Install only the kgateway chart (Envoy controller)
+	s.installKgatewayChart()
+	defer s.uninstallKgatewayChart()
 
-	// Apply manifests after helm upgrade
+	// Apply manifests after chart installation
 	s.applyGatewayManifests(
 		"envoy-gw-envoy-only", "envoy-route-envoy-only", "envoy-envoy-only.example.com",
 		"agw-gw-envoy-only", "agw-route-envoy-only", "agw-envoy-only.example.com",
@@ -178,8 +191,8 @@ func (s *testingSuite) TestEnvoyOnly() {
 	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
 		route := &gwv1.HTTPRoute{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
-			Namespace: "default",
-			Name:      "envoy-route-envoy-only",
+			Namespace: envoyRouteEnvoyOnlyMeta.GetNamespace(),
+			Name:      envoyRouteEnvoyOnlyMeta.GetName(),
 		}, route)
 		g.Expect(err).NotTo(gomega.HaveOccurred())
 		g.Expect(route.Status.Parents).NotTo(gomega.BeEmpty(), "HTTPRoute should have parent status")
@@ -249,12 +262,13 @@ func (s *testingSuite) TestEnvoyOnly() {
 	s.verifyEnvoyDeployment(envoyGwEnvoyOnlyMeta)
 }
 
-// TestAgentgatewayOnly tests that when only Agentgateway controller is enabled, only Agentgateway Gateways are processed
+// TestAgentgatewayOnly tests that when only agentgateway chart is installed, only Agentgateway Gateways are processed
 func (s *testingSuite) TestAgentgatewayOnly() {
-	// Upgrade helm to enable only Agentgateway controller
-	s.upgradeHelmWithFlags(false, true)
+	// Install only the agentgateway chart (Agentgateway controller)
+	s.installAgentgatewayChart()
+	defer s.uninstallAgentgatewayChart()
 
-	// Apply manifests after helm upgrade
+	// Apply manifests after chart installation
 	s.applyGatewayManifests(
 		"envoy-gw-agw-only", "envoy-route-agw-only", "envoy-agw-only.example.com",
 		"agw-gw-agw-only", "agw-route-agw-only", "agw-agw-only.example.com",
@@ -291,8 +305,8 @@ func (s *testingSuite) TestAgentgatewayOnly() {
 	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
 		route := &gwv1.HTTPRoute{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
-			Namespace: "default",
-			Name:      "agw-route-agw-only",
+			Namespace: agwRouteAgwOnlyMeta.GetNamespace(),
+			Name:      agwRouteAgwOnlyMeta.GetName(),
 		}, route)
 		g.Expect(err).NotTo(gomega.HaveOccurred())
 		g.Expect(route.Status.Parents).NotTo(gomega.BeEmpty(), "HTTPRoute should have parent status")
@@ -362,12 +376,16 @@ func (s *testingSuite) TestAgentgatewayOnly() {
 	s.verifyAgentgatewayDeployment(agwGwAgwOnlyMeta)
 }
 
-// TestBothEnabled tests that when both controllers are enabled, both Gateway types work independently
+// TestBothEnabled tests that when both charts are installed, both Gateway types work independently
 func (s *testingSuite) TestBothEnabled() {
-	// Upgrade helm to enable both controllers
-	s.upgradeHelmWithFlags(true, true)
+	// Install both charts
+	s.installKgatewayChart()
+	defer s.uninstallKgatewayChart()
 
-	// Apply manifests after helm upgrade
+	s.installAgentgatewayChart()
+	defer s.uninstallAgentgatewayChart()
+
+	// Apply manifests after chart installations
 	s.applyGatewayManifests(
 		"envoy-gw-both-enabled", "envoy-route-both-enabled", "envoy-both-enabled.example.com",
 		"agw-gw-both-enabled", "agw-route-both-enabled", "agw-both-enabled.example.com",
@@ -424,8 +442,8 @@ func (s *testingSuite) TestBothEnabled() {
 	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
 		envoyRoute := &gwv1.HTTPRoute{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
-			Namespace: "default",
-			Name:      "envoy-route-both-enabled",
+			Namespace: envoyRouteBothEnabledMeta.GetNamespace(),
+			Name:      envoyRouteBothEnabledMeta.GetName(),
 		}, envoyRoute)
 		g.Expect(err).NotTo(gomega.HaveOccurred())
 		g.Expect(envoyRoute.Status.Parents).NotTo(gomega.BeEmpty(), "Envoy HTTPRoute should have parent status")
@@ -444,8 +462,8 @@ func (s *testingSuite) TestBothEnabled() {
 
 		agwRoute := &gwv1.HTTPRoute{}
 		err = s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
-			Namespace: "default",
-			Name:      "agw-route-both-enabled",
+			Namespace: agwRouteBothEnabledMeta.GetNamespace(),
+			Name:      agwRouteBothEnabledMeta.GetName(),
 		}, agwRoute)
 		g.Expect(err).NotTo(gomega.HaveOccurred())
 		g.Expect(agwRoute.Status.Parents).NotTo(gomega.BeEmpty(), "Agentgateway HTTPRoute should have parent status")
@@ -515,31 +533,28 @@ func (s *testingSuite) TestBothEnabled() {
 	s.verifyControllerNameInStatus()
 }
 
-// upgradeHelmWithFlags performs a helm upgrade with the specified enable flags
-func (s *testingSuite) upgradeHelmWithFlags(enableEnvoy, enableAgentgateway bool) {
+// installKgatewayChart installs the kgateway chart (Envoy controller)
+func (s *testingSuite) installKgatewayChart() {
+	if testutils.ShouldSkipInstallAndTeardown() {
+		return
+	}
+
+	// Install kgateway CRDs
+	crdChartURI, err := helper.GetLocalChartPath(helmutils.CRDChartName, "")
+	s.Require().NoError(err)
+	err = s.TestInstallation.Actions.Helm().WithReceiver(os.Stdout).Upgrade(
+		s.Ctx,
+		helmutils.InstallOpts{
+			CreateNamespace: true,
+			ReleaseName:     helmutils.CRDChartName,
+			Namespace:       s.TestInstallation.Metadata.InstallNamespace,
+			ChartUri:        crdChartURI,
+		})
+	s.Require().NoError(err, "kgateway CRD chart install should succeed")
+
+	// Install kgateway core chart
 	chartUri, err := helper.GetLocalChartPath(helmutils.ChartName, "")
 	s.Require().NoError(err)
-
-	extraArgs := []string{
-		"--set", fmt.Sprintf("envoy.enabled=%t", enableEnvoy),
-		"--set", fmt.Sprintf("agentgateway.enabled=%t", enableAgentgateway),
-	}
-
-	// Merge with existing extra args from test installation, but filter out conflicting flags
-	// ExtraHelmArgs comes in pairs: --set=foo=bar
-	for i := 0; i < len(s.TestInstallation.Metadata.ExtraHelmArgs); i++ {
-		arg := s.TestInstallation.Metadata.ExtraHelmArgs[i]
-		if arg == "--set" && i+1 < len(s.TestInstallation.Metadata.ExtraHelmArgs) {
-			value := s.TestInstallation.Metadata.ExtraHelmArgs[i+1]
-			// Skip envoy.enabled and agentgateway.enabled flags since we're setting them explicitly
-			if strings.HasPrefix(value, "envoy.enabled=") || strings.HasPrefix(value, "agentgateway.enabled=") {
-				i++ // Skip both "--set" and the value
-				continue
-			}
-		}
-		extraArgs = append(extraArgs, arg)
-	}
-
 	err = s.TestInstallation.Actions.Helm().WithReceiver(os.Stdout).Upgrade(
 		s.Ctx,
 		helmutils.InstallOpts{
@@ -548,63 +563,161 @@ func (s *testingSuite) upgradeHelmWithFlags(enableEnvoy, enableAgentgateway bool
 			ValuesFiles:     []string{s.TestInstallation.Metadata.ProfileValuesManifestFile, s.TestInstallation.Metadata.ValuesManifestFile},
 			ReleaseName:     helmutils.ChartName,
 			ChartUri:        chartUri,
-			ExtraArgs:       extraArgs,
+			ExtraArgs:       s.TestInstallation.Metadata.ExtraHelmArgs,
 		})
-	s.Require().NoError(err, "helm upgrade should succeed")
+	s.Require().NoError(err, "kgateway chart install should succeed")
 
-	// Wait for the kgateway controller pod to be ready after helm upgrade
+	// Wait for the kgateway controller pod to be ready
 	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx,
 		s.TestInstallation.Metadata.InstallNamespace,
 		metav1.ListOptions{
 			LabelSelector: "app.kubernetes.io/name=kgateway",
 		})
 
-	// Wait for GatewayClasses to be created/updated based on enable flags
-	// This ensures the controller has fully reconciled before we apply Gateways
-	if enableEnvoy {
-		s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
-			gc := &gwv1.GatewayClass{}
-			err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
-				Name: "kgateway",
-			}, gc)
-			g.Expect(err).NotTo(gomega.HaveOccurred(), "GatewayClass kgateway should exist")
-			// Verify the GatewayClass is accepted (controller is ready to process Gateways)
-			accepted := false
-			for _, cond := range gc.Status.Conditions {
-				if cond.Type == string(gwv1.GatewayClassConditionStatusAccepted) && cond.Status == metav1.ConditionTrue {
-					accepted = true
-					break
-				}
+	// Wait for GatewayClass to be created and accepted
+	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+		gc := &gwv1.GatewayClass{}
+		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
+			Name: "kgateway",
+		}, gc)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "GatewayClass kgateway should exist")
+		accepted := false
+		for _, cond := range gc.Status.Conditions {
+			if cond.Type == string(gwv1.GatewayClassConditionStatusAccepted) && cond.Status == metav1.ConditionTrue {
+				accepted = true
+				break
 			}
-			g.Expect(accepted).To(gomega.BeTrue(), "GatewayClass kgateway should be accepted")
-		}).
-			WithContext(s.Ctx).
-			WithTimeout(60*time.Second).
-			WithPolling(time.Second).
-			Should(gomega.Succeed(), "GatewayClass kgateway should be created and accepted")
+		}
+		g.Expect(accepted).To(gomega.BeTrue(), "GatewayClass kgateway should be accepted")
+	}).
+		WithContext(s.Ctx).
+		WithTimeout(60*time.Second).
+		WithPolling(time.Second).
+		Should(gomega.Succeed(), "GatewayClass kgateway should be created and accepted")
+}
+
+// installAgentgatewayChart installs the agentgateway chart (Agentgateway controller)
+func (s *testingSuite) installAgentgatewayChart() {
+	if testutils.ShouldSkipInstallAndTeardown() {
+		return
 	}
 
-	if enableAgentgateway {
-		s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
-			gc := &gwv1.GatewayClass{}
-			err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
-				Name: "agentgateway",
-			}, gc)
-			g.Expect(err).NotTo(gomega.HaveOccurred(), "GatewayClass agentgateway should exist")
-			// Verify the GatewayClass is accepted (controller is ready to process Gateways)
-			accepted := false
-			for _, cond := range gc.Status.Conditions {
-				if cond.Type == string(gwv1.GatewayClassConditionStatusAccepted) && cond.Status == metav1.ConditionTrue {
-					accepted = true
-					break
-				}
+	// Install agentgateway CRDs
+	crdChartURI, err := helper.GetLocalChartPath(helmutils.AgentgatewayCRDChartName, "")
+	s.Require().NoError(err)
+	err = s.TestInstallation.Actions.Helm().WithReceiver(os.Stdout).Upgrade(
+		s.Ctx,
+		helmutils.InstallOpts{
+			CreateNamespace: true,
+			ReleaseName:     helmutils.AgentgatewayCRDChartName,
+			Namespace:       s.TestInstallation.Metadata.InstallNamespace,
+			ChartUri:        crdChartURI,
+		})
+	s.Require().NoError(err, "agentgateway CRD chart install should succeed")
+
+	// Install agentgateway core chart
+	chartUri, err := helper.GetLocalChartPath(helmutils.AgentgatewayChartName, "")
+	s.Require().NoError(err)
+	err = s.TestInstallation.Actions.Helm().WithReceiver(os.Stdout).Upgrade(
+		s.Ctx,
+		helmutils.InstallOpts{
+			Namespace:       s.TestInstallation.Metadata.InstallNamespace,
+			CreateNamespace: true,
+			ValuesFiles:     []string{s.TestInstallation.Metadata.ProfileValuesManifestFile, s.TestInstallation.Metadata.ValuesManifestFile},
+			ReleaseName:     helmutils.AgentgatewayChartName,
+			ChartUri:        chartUri,
+			ExtraArgs:       s.TestInstallation.Metadata.ExtraHelmArgs,
+		})
+	s.Require().NoError(err, "agentgateway chart install should succeed")
+
+	// Wait for the agentgateway controller pod to be ready
+	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx,
+		s.TestInstallation.Metadata.InstallNamespace,
+		metav1.ListOptions{
+			LabelSelector: "app.kubernetes.io/name=agentgateway",
+		})
+
+	// Wait for GatewayClass to be created and accepted
+	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+		gc := &gwv1.GatewayClass{}
+		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
+			Name: "agentgateway",
+		}, gc)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "GatewayClass agentgateway should exist")
+		accepted := false
+		for _, cond := range gc.Status.Conditions {
+			if cond.Type == string(gwv1.GatewayClassConditionStatusAccepted) && cond.Status == metav1.ConditionTrue {
+				accepted = true
+				break
 			}
-			g.Expect(accepted).To(gomega.BeTrue(), "GatewayClass agentgateway should be accepted")
-		}).
-			WithContext(s.Ctx).
-			WithTimeout(60*time.Second).
-			WithPolling(time.Second).
-			Should(gomega.Succeed(), "GatewayClass agentgateway should be created and accepted")
+		}
+		g.Expect(accepted).To(gomega.BeTrue(), "GatewayClass agentgateway should be accepted")
+	}).
+		WithContext(s.Ctx).
+		WithTimeout(60*time.Second).
+		WithPolling(time.Second).
+		Should(gomega.Succeed(), "GatewayClass agentgateway should be created and accepted")
+}
+
+// uninstallKgatewayChart uninstalls the kgateway chart
+func (s *testingSuite) uninstallKgatewayChart() {
+	if testutils.ShouldSkipInstallAndTeardown() || testutils.ShouldSkipCleanup(s.T()) {
+		return
+	}
+
+	// Uninstall core chart
+	err := s.TestInstallation.Actions.Helm().WithReceiver(os.Stdout).Uninstall(
+		s.Ctx,
+		helmutils.UninstallOpts{
+			ReleaseName: helmutils.ChartName,
+			Namespace:   s.TestInstallation.Metadata.InstallNamespace,
+		},
+	)
+	if err != nil {
+		s.T().Logf("Warning: failed to uninstall kgateway chart: %v", err)
+	}
+
+	// Uninstall CRD chart
+	err = s.TestInstallation.Actions.Helm().WithReceiver(os.Stdout).Uninstall(
+		s.Ctx,
+		helmutils.UninstallOpts{
+			ReleaseName: helmutils.CRDChartName,
+			Namespace:   s.TestInstallation.Metadata.InstallNamespace,
+		},
+	)
+	if err != nil {
+		s.T().Logf("Warning: failed to uninstall kgateway CRD chart: %v", err)
+	}
+}
+
+// uninstallAgentgatewayChart uninstalls the agentgateway chart
+func (s *testingSuite) uninstallAgentgatewayChart() {
+	if testutils.ShouldSkipInstallAndTeardown() || testutils.ShouldSkipCleanup(s.T()) {
+		return
+	}
+
+	// Uninstall core chart
+	err := s.TestInstallation.Actions.Helm().WithReceiver(os.Stdout).Uninstall(
+		s.Ctx,
+		helmutils.UninstallOpts{
+			ReleaseName: helmutils.AgentgatewayChartName,
+			Namespace:   s.TestInstallation.Metadata.InstallNamespace,
+		},
+	)
+	if err != nil {
+		s.T().Logf("Warning: failed to uninstall agentgateway chart: %v", err)
+	}
+
+	// Uninstall CRD chart
+	err = s.TestInstallation.Actions.Helm().WithReceiver(os.Stdout).Uninstall(
+		s.Ctx,
+		helmutils.UninstallOpts{
+			ReleaseName: helmutils.AgentgatewayCRDChartName,
+			Namespace:   s.TestInstallation.Metadata.InstallNamespace,
+		},
+	)
+	if err != nil {
+		s.T().Logf("Warning: failed to uninstall agentgateway CRD chart: %v", err)
 	}
 }
 
@@ -700,8 +813,8 @@ func (s *testingSuite) verifyControllerNameInStatus() {
 		// Check that HTTPRoute statuses have entries for their respective parent Gateways only
 		envoyRoute := &gwv1.HTTPRoute{}
 		err = s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
-			Namespace: "default",
-			Name:      "envoy-route-both-enabled",
+			Namespace: envoyRouteBothEnabledMeta.GetNamespace(),
+			Name:      envoyRouteBothEnabledMeta.GetName(),
 		}, envoyRoute)
 		g.Expect(err).NotTo(gomega.HaveOccurred())
 		g.Expect(envoyRoute.Status.Parents).To(gomega.HaveLen(1), "Envoy HTTPRoute should have exactly one parent status")
@@ -710,8 +823,8 @@ func (s *testingSuite) verifyControllerNameInStatus() {
 
 		agwRoute := &gwv1.HTTPRoute{}
 		err = s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
-			Namespace: "default",
-			Name:      "agw-route-both-enabled",
+			Namespace: agwRouteBothEnabledMeta.GetNamespace(),
+			Name:      agwRouteBothEnabledMeta.GetName(),
 		}, agwRoute)
 		g.Expect(err).NotTo(gomega.HaveOccurred())
 		g.Expect(agwRoute.Status.Parents).To(gomega.HaveLen(1), "Agentgateway HTTPRoute should have exactly one parent status")

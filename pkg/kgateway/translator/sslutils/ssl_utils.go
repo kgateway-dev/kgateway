@@ -2,9 +2,12 @@ package sslutils
 
 import (
 	"crypto/tls"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
+	"unicode"
 
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	corev1 "k8s.io/api/core/v1"
@@ -28,6 +31,10 @@ var (
 
 	ErrInvalidCACertificate = func(n, ns string, err error) error {
 		return fmt.Errorf("invalid ca.crt in ConfigMap %s/%s: %v", ns, n, err)
+	}
+
+	ErrInvalidCACertificateSecret = func(n, ns string, err error) error {
+		return fmt.Errorf("invalid ca.crt in Secret %s/%s: %v", ns, n, err)
 	}
 
 	// tlsProtocolMap maps TLS version strings to Envoy TLS protocol values
@@ -106,6 +113,31 @@ func GetCACertFromConfigMap(cm *corev1.ConfigMap) (string, error) {
 	return cleanedChain, nil
 }
 
+// GetCACertFromSecret validates and extracts the ca.crt string from an ir.Secret
+func GetCACertFromSecret(secret *ir.Secret) (string, error) {
+	caCrtBytes, ok := secret.Data["ca.crt"]
+	if !ok {
+		return "", ErrMissingCACertKey
+	}
+
+	caCrt := string(caCrtBytes)
+
+	// Validate CA certificate by trying to parse it
+	candidateCert, err := cert.ParseCertsPEM([]byte(caCrt))
+	if err != nil {
+		return "", ErrInvalidCACertificateSecret(secret.Name, secret.Namespace, err)
+	}
+
+	// Clean and encode the certificate to ensure proper formatting
+	cleanedChainBytes, err := cert.EncodeCertificates(candidateCert...)
+	if err != nil {
+		return "", ErrInvalidCACertificateSecret(secret.Name, secret.Namespace, err)
+	}
+
+	cleanedChain := string(cleanedChainBytes)
+	return cleanedChain, nil
+}
+
 type TLSExtensionOptionFunc = func(in string, out *ir.TLSConfig) error
 
 func ApplyCipherSuites(in string, out *ir.TLSConfig) error {
@@ -164,6 +196,77 @@ func ApplyVerifySubjectAltNames(in string, out *ir.TLSConfig) error {
 	return nil
 }
 
+func ApplyVerifyCertificateHash(in string, out *ir.TLSConfig) error {
+	hashes := splitFakeYamlArray(in)
+
+	var errs error
+	for _, hash := range hashes {
+		if err := validateCertificateHash(hash); err != nil {
+			errs = errors.Join(errs, err)
+		}
+	}
+
+	if errs != nil {
+		return errs
+	}
+
+	out.VerifyCertificateHash = hashes
+	return nil
+}
+
+// Regex to match a SHA256 hash that is split into 32 pairs of hex characters by colons
+var sha256HashRegexHexPairs = regexp.MustCompile(
+	"^[[:xdigit:]]{2}(:[[:xdigit:]]{2}){31}$",
+)
+
+// Validate that a certificate hash is a valid SHA256 hash
+// - it has 64 hex characters
+// - it may be split into pairs by colons
+func validateCertificateHash(hash string) error {
+	switch {
+	case len(hash) == 64: // 64 hex characters is a valid SHA256 hash
+		_, err := hex.DecodeString(hash)
+		if err != nil {
+			return fmt.Errorf("invalid certificate hash: %s", hash)
+		}
+		return nil
+	case sha256HashRegexHexPairs.MatchString(hash): // 32 pairs of hex characters is a valid SHA256 hash
+		return nil
+	default:
+		return fmt.Errorf("invalid certificate hash: %s", hash)
+	}
+}
+
+// This function is used to support "fake yaml" array syntax in the annotations.
+// This function is used to split strings that are comma or "-" separated and whitespace padded.
+// This supports input that look like:
+// "string1, string2, string3"
+// or
+// " - string1
+//   - string2
+//   - string3"
+//
+// as well as (not recommended) hybrids like:
+// "------ string1, string2
+// , string3       -string4"
+// This function does not use any actual YAML parsing and the strings may not contain - or , characters, regardless of how they are quoted.
+// This is used to parse the VerifyCertificateHash annotation value, which is expected to contain hex characters and colons. This function is safe
+// for valid values of this data, and is unexported to discourage its use unless the data being parsed is well understood.
+func splitFakeYamlArray(in string) []string {
+	hashes := []string{}
+	for commaSeparatedHash := range strings.SplitSeq(in, ",") {
+		for hash := range strings.SplitSeq(commaSeparatedHash, "-") {
+			trimmedHash := strings.TrimFunc(hash, func(r rune) bool {
+				return unicode.IsSpace(r)
+			})
+			if trimmedHash != "" {
+				hashes = append(hashes, trimmedHash)
+			}
+		}
+	}
+	return hashes
+}
+
 var TLSExtensionOptionFuncs = map[gwv1.AnnotationKey]TLSExtensionOptionFunc{
 	annotations.CipherSuites:          ApplyCipherSuites,
 	annotations.MinTLSVersion:         ApplyMinTLSVersion,
@@ -171,6 +274,7 @@ var TLSExtensionOptionFuncs = map[gwv1.AnnotationKey]TLSExtensionOptionFunc{
 	annotations.VerifySubjectAltNames: ApplyVerifySubjectAltNames,
 	annotations.EcdhCurves:            ApplyEcdhCurves,
 	annotations.AlpnProtocols:         ApplyAlpnProtocols,
+	annotations.VerifyCertificateHash: ApplyVerifyCertificateHash,
 }
 
 // ApplyTLSExtensionOptions applies the TLS options to the TLS bundle IR

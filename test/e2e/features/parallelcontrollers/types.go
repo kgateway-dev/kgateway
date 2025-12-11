@@ -16,9 +16,19 @@ var (
 	envoyGatewayTemplate = filepath.Join(fsutils.MustGetThisDir(), "testdata", "envoy-gateway.yaml")
 	agwGatewayTemplate   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "agw-gateway.yaml")
 
+	// Object metadata for shared resources
+	httpbinObjectMeta = metav1.ObjectMeta{
+		Name:      "httpbin",
+		Namespace: "default",
+	}
+
 	// Object metadata for envoy-only test
 	envoyGwEnvoyOnlyMeta = metav1.ObjectMeta{
 		Name:      "envoy-gw-envoy-only",
+		Namespace: "default",
+	}
+	envoyRouteEnvoyOnlyMeta = metav1.ObjectMeta{
+		Name:      "envoy-route-envoy-only",
 		Namespace: "default",
 	}
 	agwGwEnvoyOnlyMeta = metav1.ObjectMeta{
@@ -35,14 +45,26 @@ var (
 		Name:      "agw-gw-agw-only",
 		Namespace: "default",
 	}
+	agwRouteAgwOnlyMeta = metav1.ObjectMeta{
+		Name:      "agw-route-agw-only",
+		Namespace: "default",
+	}
 
 	// Object metadata for both-enabled test
 	envoyGwBothEnabledMeta = metav1.ObjectMeta{
 		Name:      "envoy-gw-both-enabled",
 		Namespace: "default",
 	}
+	envoyRouteBothEnabledMeta = metav1.ObjectMeta{
+		Name:      "envoy-route-both-enabled",
+		Namespace: "default",
+	}
 	agwGwBothEnabledMeta = metav1.ObjectMeta{
 		Name:      "agw-gw-both-enabled",
+		Namespace: "default",
+	}
+	agwRouteBothEnabledMeta = metav1.ObjectMeta{
+		Name:      "agw-route-both-enabled",
 		Namespace: "default",
 	}
 )

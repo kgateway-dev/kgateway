@@ -15,9 +15,16 @@ import (
 )
 
 // TestParallelControllers tests the parallel controller architecture that can support running one or both controllers at the same time.
+// This test verifies three scenarios:
+// 1. Only kgateway chart installed (Envoy only)
+// 2. Only agentgateway chart installed (Agentgateway only)
+// 3. Both charts installed (both controllers running)
 func TestParallelControllers(t *testing.T) {
 	ctx := context.Background()
 	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "kgateway-test")
+
+	// Create test installation without automatic chart installation
+	// The suite will manage chart installations for each test scenario
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&install.Context{
@@ -26,9 +33,6 @@ func TestParallelControllers(t *testing.T) {
 			ValuesManifestFile:        e2e.EmptyValuesManifestPath,
 			ExtraHelmArgs: []string{
 				"--set", "controller.extraEnv.KGW_GLOBAL_POLICY_NAMESPACE=" + installNs,
-				// Start with Envoy enabled - tests will change controller configs via helm upgrade
-				"--set", "envoy.enabled=true",
-				"--set", "agentgateway.enabled=false",
 			},
 		},
 	)
@@ -39,19 +43,16 @@ func TestParallelControllers(t *testing.T) {
 	}
 
 	// We register the cleanup function _before_ we actually perform the installation.
-	// This allows us to uninstall kgateway, in case the original installation only completed partially
 	testutils.Cleanup(t, func() {
 		if !nsEnvPredefined {
 			os.Unsetenv(testutils.InstallNamespace)
 		}
 
-		testInstallation.UninstallKgateway(ctx)
+		// Cleanup will be handled by the suite's cleanup methods
 	})
 
-	// Install kgateway with both controllers disabled
-	testInstallation.InstallKgatewayFromLocalChart(ctx)
-
 	// Run the parallelcontrollers test suite
+	// The suite will manage chart installations and cleanup
 	runner := e2e.NewSuiteRunner(false)
 	runner.Register("ParallelControllers", parallelcontrollers.NewTestingSuite)
 	runner.Run(ctx, t, testInstallation)

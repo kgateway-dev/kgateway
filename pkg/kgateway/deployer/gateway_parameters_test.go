@@ -167,7 +167,12 @@ func newCommonCols(t test.Failer, initObjs ...client.Object) *collections.Common
 	}
 	mock := krttest.NewMock(t, anys)
 
-	policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, sdk.ContributesPolicies{}, apisettings.Settings{})
+	settings := apisettings.Settings{
+		EnableEnvoy:        true,
+		EnableAgentgateway: true,
+	}
+
+	policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, sdk.ContributesPolicies{}, settings)
 	kubeRawGateways := krttest.GetMockCollection[*gwv1.Gateway](mock)
 	kubeRawListenerSets := krttest.GetMockCollection[*apixv1a1.XListenerSet](mock)
 	gatewayClasses := krttest.GetMockCollection[*gwv1.GatewayClass](mock)
@@ -187,6 +192,7 @@ func newCommonCols(t test.Failer, initObjs ...client.Object) *collections.Common
 	gateways := krtcollections.NewGatewayIndex(gatewayIndexConfig)
 	commonCols := &collections.CommonCollections{
 		GatewayIndex: gateways,
+		Settings:     settings,
 	}
 
 	for !kubeRawGateways.HasSynced() || !kubeRawListenerSets.HasSynced() || !gatewayClasses.HasSynced() {

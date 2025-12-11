@@ -329,3 +329,13 @@ func WithTLSMaxVersion(version string) Option {
 		config.tlsMaxVersion = version
 	}
 }
+
+// WithClientCert returns the Option to configure client certificate and key for mTLS
+// https://curl.se/docs/manpage.html#--cert
+// https://curl.se/docs/manpage.html#--key
+func WithClientCert(certFile, keyFile string) Option {
+	return func(config *requestConfig) {
+		config.clientCert = certFile
+		config.clientKey = keyFile
+	}
+}

@@ -14,14 +14,11 @@ VERSION="${VERSION:-1.0.0-ci1}"
 SKIP_DOCKER="${SKIP_DOCKER:-false}"
 # Stop after creating the kind cluster
 JUST_KIND="${JUST_KIND:-false}"
-# If true, run extra steps to set up k8s gateway api conformance test environment
-CONFORMANCE="${CONFORMANCE:-false}"
-# The version of the k8s gateway api conformance tests to run. Requires CONFORMANCE=true
+# The version of the k8s gateway api conformance tests to run.
 CONFORMANCE_VERSION="${CONFORMANCE_VERSION:-$(go list -m sigs.k8s.io/gateway-api | awk '{print $2}')}"
-# The channel of the k8s gateway api conformance tests to run. Requires CONFORMANCE=true
+# The channel of the k8s gateway api conformance tests to run.
 CONFORMANCE_CHANNEL="${CONFORMANCE_CHANNEL:-"experimental"}"
-# The version of the k8s gateway api inference extension CRDs to install. Requires CONFORMANCE=true
-# Managed by `make bump-gie`.
+# The version of the k8s gateway api inference extension CRDs to install. Managed by `make bump-gie`.
 GIE_CRD_VERSION="v1.1.0"
 # The kind CLI to use. Defaults to the latest version from the kind repo.
 KIND="${KIND:-go tool kind}"
@@ -63,7 +60,7 @@ function create_and_setup() {
   kubectl apply --server-side -f "https://github.com/kubernetes-sigs/gateway-api/releases/download/$CONFORMANCE_VERSION/$CONFORMANCE_CHANNEL-install.yaml"
 
   # 6. Apply the Kubernetes Gateway API Inference Extension CRDs
-  kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api-inference-extension/config/crd?ref=$GIE_CRD_VERSION"
+  make gie-crds
 
   . $SCRIPT_DIR/setup-metalllb-on-kind.sh
 }
@@ -81,13 +78,12 @@ else
   # 2. Make all the docker images and load them to the kind cluster
   if [[ $AGENTGATEWAY == 'true' ]]; then
     # Skip expensive envoy build
-    VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME make kind-build-and-load-kgateway-agentgateway
+    VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME make kind-build-and-load-kgateway-agentgateway kind-build-and-load-dummy-idp kind-build-and-load-dummy-auth0 
   else
-    VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME make kind-build-and-load
+    VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME make kind-build-and-load kind-build-and-load-dummy-idp kind-build-and-load-dummy-auth0 
   fi
 
-  # 3. Build the test helm chart, ensuring we have a chart in the `_test` folder
-  VERSION=$VERSION make package-kgateway-charts
+  VERSION=$VERSION make package-kgateway-charts package-agentgateway-charts
 fi
 
 wait "$KIND_PID"

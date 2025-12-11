@@ -24,9 +24,28 @@ import (
 var _ e2e.NewSuiteFunc = NewTestingSuite
 
 var (
-	// manifests
+	// manifests for verify-certificate-hash tests (TestVerifyCertificateHash)
 	gatewayManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gw.yaml")
 	tlsSecretManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tls-secret.yaml")
+	clientCertsSecret = filepath.Join(fsutils.MustGetThisDir(), "testdata", "certs", "ca1", "client-certs-8443-9443-secret.yaml")
+	curlPodWithCerts  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "curl-pod-with-certs.yaml")
+
+	// client certificate paths inside the curl pod (for verify-certificate-hash tests)
+	clientCertPath8443   = "/etc/client-certs/client-8443.crt"
+	clientKeyPath8443    = "/etc/client-certs/client-8443.key"
+	clientCertPath9443   = "/etc/client-certs/client-9443.crt"
+	clientKeyPath9443    = "/etc/client-certs/client-9443.key"
+	commonClientCertPath = "/etc/client-certs-frontend/tls.crt"
+	commonClientKeyPath  = "/etc/client-certs-frontend/tls.key"
+
+	// manifests for FrontendTLSConfig tests (TestFrontendTLSConfig)
+	// Note: gatewayManifest and curlPodWithCerts are shared with verify-certificate-hash tests
+	caCertConfigMapManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "certs", "ca1", "ca-cert-configmap.yaml")
+	clientCertSecretManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "certs", "ca1", "client-cert-secret.yaml")
+
+	// manifests for multiple CA certificates test (TestMultipleCACertificates)
+	caCert2ConfigMapManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "certs", "ca2", "ca-cert-2-configmap.yaml")
+	clientCert2SecretManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "certs", "ca2", "client-cert-2-secret.yaml")
 
 	// objects
 	proxyObjectMeta = metav1.ObjectMeta{
@@ -38,19 +57,27 @@ var (
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	setup := base.TestCase{
 		Manifests: []string{
-			testdefaults.CurlPodManifest,
+			curlPodWithCerts,
 			testdefaults.HttpbinManifest,
+			clientCertsSecret,
+			clientCertSecretManifest,  // Include client-cert secret so pod can start
+			caCertConfigMapManifest,   // Required for FrontendTLSConfig per-port configs
+			caCert2ConfigMapManifest,  // Required for multiple CA certificates test
+			clientCert2SecretManifest, // Required for multiple CA certificates test
 			tlsSecretManifest,
 			gatewayManifest,
 		},
 	}
 
 	testCases := map[string]*base.TestCase{
-		"TestALPNProtocol":  {},
-		"TestCipherSuites":  {},
-		"TestECDHCurves":    {},
-		"TestMinTLSVersion": {},
-		"TestMaxTLSVersion": {},
+		"TestALPNProtocol":           {},
+		"TestCipherSuites":           {},
+		"TestECDHCurves":             {},
+		"TestMinTLSVersion":          {},
+		"TestMaxTLSVersion":          {},
+		"TestVerifyCertificateHash":  {},
+		"TestFrontendTLSConfig":      {}, // All required resources are already in setup
+		"TestMultipleCACertificates": {}, // All required resources are already in setup
 	}
 	return &testingSuite{
 		base.NewBaseTestingSuite(ctx, testInst, setup, testCases),
@@ -65,6 +92,18 @@ func commonCurlOpts() []curl.Option {
 		curl.WithScheme("https"),
 		curl.IgnoreServerCert(),
 		curl.WithHeader("Host", "example.com"),
+		curl.VerboseOutput(),
+	}
+}
+
+// commonCurlOptsForMTLS returns the common curl options for the mTLS listener (port 8443)
+func commonCurlOptsForMTLS(hostname string, port int) []curl.Option {
+	return []curl.Option{
+		curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
+		curl.WithPort(port),
+		curl.WithScheme("https"),
+		curl.IgnoreServerCert(),
+		curl.WithHeader("Host", hostname),
 		curl.VerboseOutput(),
 	}
 }
@@ -171,6 +210,60 @@ func (s *testingSuite) TestMaxTLSVersion() {
 	})
 }
 
+func (s *testingSuite) TestVerifyCertificateHash() {
+	s.Run("valid client cert succeeds on first mTLS listener", func() {
+		// Client certificate with hash matching the first listener's verify-certificate-hash should succeed
+		s.assertEventualCurlResponseForMTLS(
+			"mtls.example.com",
+			8443,
+			curl.WithClientCert(clientCertPath8443, clientKeyPath8443),
+		)
+	})
+
+	s.Run("invalid client cert fails on first mTLS listener", func() {
+		// Client certificate with hash NOT matching the first listener's verify-certificate-hash should fail
+		s.assertEventualCurlErrorForMTLS(
+			"mtls.example.com",
+			8443,
+			curl.WithClientCert(clientCertPath9443, clientKeyPath9443),
+		)
+	})
+
+	s.Run("no client cert fails on first mTLS listener", func() {
+		// No client certificate should fail when gateway requires verify-certificate-hash
+		s.assertEventualCurlErrorForMTLS("mtls.example.com", 8443)
+	})
+
+	s.Run("invalid client cert succeeds on second mTLS listener", func() {
+		// The "invalid" cert should work on the second listener (configured with its hash)
+		s.assertEventualCurlResponseForMTLS(
+			"mtls-alt.example.com",
+			9443,
+			curl.WithClientCert(clientCertPath9443, clientKeyPath9443),
+		)
+	})
+
+	s.Run("valid client cert fails on second mTLS listener", func() {
+		// The "valid" cert should fail on the second listener (different hash)
+		s.assertEventualCurlErrorForMTLS(
+			"mtls-alt.example.com",
+			9443,
+			curl.WithClientCert(clientCertPath8443, clientKeyPath8443),
+		)
+	})
+
+	s.Run("no client cert fails on second mTLS listener", func() {
+		// No client certificate should fail on the second mTLS listener too
+		s.assertEventualCurlErrorForMTLS("mtls-alt.example.com", 9443)
+	})
+
+	s.Run("regular listener works without client cert", func() {
+		// Original listener (port 443) should still work without client certificate
+		// This validates that only the mTLS listeners require client certs
+		s.assertEventualCurlResponse()
+	})
+}
+
 // assertEventualCurlResponse is a helper that wraps AssertEventualCurlResponse with common test settings
 func (s *testingSuite) assertEventualCurlResponse(opts ...curl.Option) {
 	curlOpts := append(commonCurlOpts(), opts...)
@@ -182,7 +275,7 @@ func (s *testingSuite) assertEventualCurlResponse(opts ...curl.Option) {
 			StatusCode: http.StatusOK,
 			Body:       gstruct.Ignore(),
 		},
-		20*time.Second,
+		10*time.Second,
 	)
 }
 
@@ -196,4 +289,123 @@ func (s *testingSuite) assertEventualCurlError(opts ...curl.Option) {
 		35, // CURLE_HTTP2_STREAM_ERROR
 		10*time.Second,
 	)
+}
+
+// assertEventualCurlResponseForMTLS is a helper for the mTLS listener (port 8443)
+func (s *testingSuite) assertEventualCurlResponseForMTLS(hostname string, port int, opts ...curl.Option) {
+	curlOpts := append(commonCurlOptsForMTLS(hostname, port), opts...)
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		curlOpts,
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gstruct.Ignore(),
+		},
+		10*time.Second,
+	)
+}
+
+// assertEventualCurlErrorForMTLS is a helper for the mTLS listener (port 8443)
+func (s *testingSuite) assertEventualCurlErrorForMTLS(hostname string, port int, opts ...curl.Option) {
+	curlOpts := append(commonCurlOptsForMTLS(hostname, port), opts...)
+	s.TestInstallation.Assertions.AssertEventualCurlError(
+		s.Ctx,
+		testdefaults.CurlPodExecOpt,
+		curlOpts,
+		16, // CURLE_SSL_CACERT_BADFILE
+		10*time.Second,
+	)
+}
+
+func (s *testingSuite) TestFrontendTLSConfig() {
+	s.Run("AllowValidOnly requires client cert", func() {
+		// Should fail without client cert on port 8445 (per-port config with AllowValidOnly)
+		// Use error code 16 (CURLE_SSL_CACERT_BADFILE) which is what we get when client cert is required
+		curlOpts := append(commonCurlOpts(), curl.WithPort(8445))
+		s.TestInstallation.Assertions.AssertEventualCurlError(
+			s.Ctx,
+			testdefaults.CurlPodExecOpt,
+			curlOpts,
+			16, // CURLE_SSL_CACERT_BADFILE
+			10*time.Second,
+		)
+	})
+
+	s.Run("AllowValidOnly with valid client cert", func() {
+		// Should succeed with client cert on port 8445
+		s.assertEventualCurlResponse(
+			curl.WithPort(8445),
+			curl.WithClientCert(commonClientCertPath, commonClientKeyPath),
+		)
+	})
+
+	s.Run("AllowInsecureFallback without client cert", func() {
+		// Should succeed without client cert on port 8444 (per-port config with AllowInsecureFallback)
+		s.assertEventualCurlResponse(
+			curl.WithPort(8444),
+			// No client cert provided
+		)
+	})
+
+	s.Run("AllowInsecureFallback with client cert", func() {
+		// Should succeed with client cert on port 8444
+		s.assertEventualCurlResponse(
+			curl.WithPort(8444),
+			curl.WithClientCert(commonClientCertPath, commonClientKeyPath),
+		)
+	})
+}
+
+func (s *testingSuite) TestMultipleCACertificates() {
+	// Port 8446 uses wildcard domain *.example.com with multiple CA cert refs
+	// This tests the scenario from issue #12938: multiple rootCA certs for the same wildcard domains
+	wildcardHostname := "test.example.com" // Matches *.example.com wildcard
+
+	s.Run("client cert signed by first CA succeeds on wildcard domain", func() {
+		// Port 8446 has multiple CA cert refs (ca-cert and ca-cert-2) for wildcard domain *.example.com
+		// Client cert signed by ca-cert should be accepted
+		curlOpts := append(commonCurlOptsForMTLS(wildcardHostname, 8446),
+			curl.WithClientCert(commonClientCertPath, commonClientKeyPath))
+		s.TestInstallation.Assertions.AssertEventualCurlResponse(
+			s.Ctx,
+			testdefaults.CurlPodExecOpt,
+			curlOpts,
+			&testmatchers.HttpResponse{
+				StatusCode: http.StatusOK,
+				Body:       gstruct.Ignore(),
+			},
+			10*time.Second,
+		)
+	})
+
+	s.Run("client cert signed by second CA succeeds on wildcard domain", func() {
+		// Port 8446 has multiple CA cert refs (ca-cert and ca-cert-2) for wildcard domain *.example.com
+		// Client cert signed by ca-cert-2 should be accepted
+		curlOpts := append(commonCurlOptsForMTLS(wildcardHostname, 8446),
+			curl.WithClientCert(commonClientCertPath, commonClientKeyPath))
+		s.TestInstallation.Assertions.AssertEventualCurlResponse(
+			s.Ctx,
+			testdefaults.CurlPodExecOpt,
+			curlOpts,
+			&testmatchers.HttpResponse{
+				StatusCode: http.StatusOK,
+				Body:       gstruct.Ignore(),
+			},
+			10*time.Second,
+		)
+	})
+
+	s.Run("no client cert fails on wildcard domain", func() {
+		// Port 8446 requires client cert (AllowValidOnly mode) for wildcard domain *.example.com
+		// Connection without client cert should fail
+		curlOpts := commonCurlOptsForMTLS(wildcardHostname, 8446)
+		s.TestInstallation.Assertions.AssertEventualCurlError(
+			s.Ctx,
+			testdefaults.CurlPodExecOpt,
+			curlOpts,
+			16, // CURLE_SSL_CACERT_BADFILE
+			10*time.Second,
+		)
+	})
 }

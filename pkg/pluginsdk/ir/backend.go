@@ -336,6 +336,27 @@ type Gateway struct {
 	AttachedHttpPolicies     AttachedPolicies
 
 	PerConnectionBufferLimitBytes *uint32
+	FrontendTLSConfig             *FrontendTLSConfigIR
+}
+
+// FrontendTLSConfigIR represents the Gateway-level frontend TLS configuration
+type FrontendTLSConfigIR struct {
+	// Default client certificate validation configuration for all HTTPS listeners
+	DefaultValidation *ClientCertificateValidationIR
+	// PerPort client certificate validation configuration, keyed by port number
+	PerPortValidation map[gwv1.PortNumber]*ClientCertificateValidationIR
+
+	// Err contains any error encountered during construction of the FrontendTLSConfigIR, used in status reportings
+	Err error
+}
+
+// ClientCertificateValidationIR holds the client certificate validation configuration with references
+// CA certificates are fetched later during listener translation
+type ClientCertificateValidationIR struct {
+	// CACertificateRefs contains references to ConfigMaps or Secrets containing CA certificates
+	CACertificateRefs []gwv1.ObjectReference
+	// RequireClientCertificate indicates whether client certificates are required
+	RequireClientCertificate bool
 }
 
 func (c Gateway) ResourceName() string {
@@ -350,7 +371,52 @@ func (c Gateway) Equals(in Gateway) bool {
 		c.AttachedHttpPolicies.Equals(in.AttachedHttpPolicies) &&
 		c.Listeners.Equals(in.Listeners) &&
 		c.AllowedListenerSets.Equals(in.AllowedListenerSets) &&
-		c.DeniedListenerSets.Equals(in.DeniedListenerSets)
+		c.DeniedListenerSets.Equals(in.DeniedListenerSets) &&
+		equalsFrontendTLSConfig(c.FrontendTLSConfig, in.FrontendTLSConfig)
+}
+
+func equalsFrontendTLSConfig(a, b *FrontendTLSConfigIR) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	if !equalsClientCertValidationIR(a.DefaultValidation, b.DefaultValidation) {
+		return false
+	}
+	if len(a.PerPortValidation) != len(b.PerPortValidation) {
+		return false
+	}
+	for port, valA := range a.PerPortValidation {
+		valB, ok := b.PerPortValidation[port]
+		if !ok || !equalsClientCertValidationIR(valA, valB) {
+			return false
+		}
+	}
+	return true
+}
+
+func equalsClientCertValidationIR(a, b *ClientCertificateValidationIR) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	if a.RequireClientCertificate != b.RequireClientCertificate {
+		return false
+	}
+	if len(a.CACertificateRefs) != len(b.CACertificateRefs) {
+		return false
+	}
+	for i := range a.CACertificateRefs {
+		if !objectRefEqual(a.CACertificateRefs[i], b.CACertificateRefs[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func objectRefEqual(a, b gwv1.ObjectReference) bool {
+	return a.Group == b.Group &&
+		a.Kind == b.Kind &&
+		a.Name == b.Name &&
+		ptrEquals(a.Namespace, b.Namespace)
 }
 
 // Equals returns true if the two BackendRefIR instances are equal in cluster name, weight, backend object equality, and error.

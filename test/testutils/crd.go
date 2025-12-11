@@ -59,10 +59,12 @@ var AllCRDs = []schema.GroupVersionResource{
 }
 
 const (
-	CRDPath = "install/helm/kgateway-crds/templates"
+	CRDPath    = "install/helm/kgateway-crds/templates"
+	AgwCRDPath = "install/helm/agentgateway-crds/templates"
 )
 
-// GetStructuralSchemas returns a map of GroupVersionKind to Structural schemas for all CRDs in the given directory
+// GetStructuralSchemas returns a map of GroupVersionKind to Structural schemas for all CRDs in the given directories.
+// Deprecated: Use GetStructuralSchemasForBothCharts instead to load both kgateway and agentgateway CRDs.
 func GetStructuralSchemas(
 	crdDir string,
 ) (map[schema.GroupVersionKind]*apiserverschema.Structural, error) {
@@ -70,6 +72,35 @@ func GetStructuralSchemas(
 	if err != nil {
 		return nil, err
 	}
+	return buildStructuralSchemaMap(crds)
+}
+
+// GetStructuralSchemasForBothCharts returns a map of GroupVersionKind to Structural schemas for all CRDs
+// from both kgateway-crds and agentgateway-crds charts.
+func GetStructuralSchemasForBothCharts() (map[schema.GroupVersionKind]*apiserverschema.Structural, error) {
+	gitRoot := GitRootDirectory()
+	kgatewayCRDDir := filepath.Join(gitRoot, CRDPath)
+	agwCRDDir := filepath.Join(gitRoot, AgwCRDPath)
+
+	// Load CRDs from both directories
+	kgatewayCRDs, err := getCRDs(kgatewayCRDDir)
+	if err != nil {
+		return nil, fmt.Errorf("error loading kgateway CRDs: %w", err)
+	}
+
+	agwCRDs, err := getCRDs(agwCRDDir)
+	if err != nil {
+		return nil, fmt.Errorf("error loading agentgateway CRDs: %w", err)
+	}
+
+	// Combine both sets of CRDs
+	allCRDs := append(kgatewayCRDs, agwCRDs...)
+
+	return buildStructuralSchemaMap(allCRDs)
+}
+
+// buildStructuralSchemaMap converts a list of CRDs to a map of GVK to structural schemas
+func buildStructuralSchemaMap(crds []*apiextensions.CustomResourceDefinition) (map[schema.GroupVersionKind]*apiserverschema.Structural, error) {
 	gvkToStructuralSchema := map[schema.GroupVersionKind]*apiserverschema.Structural{}
 
 	for _, crd := range crds {

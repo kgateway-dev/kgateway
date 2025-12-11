@@ -21,9 +21,10 @@ readonly VERSIONS=( v1alpha1 )
 readonly OPENAPI_GEN_DIR=pkg/generated/openapi
 readonly APPLY_CFG_DIR=api/applyconfiguration
 readonly CLIENT_GEN_DIR=pkg/client
-readonly CRD_DIR=install/helm/kgateway-crds/templates
-# manifests dir only used for outputting rbac artifacts and existing file will be overwritten so no need to clean
-readonly MANIFESTS_DIR=install/helm/kgateway/templates
+readonly KGATEWAY_CRD_DIR=install/helm/kgateway-crds/templates
+readonly KGATEWAY_MANIFESTS_DIR=install/helm/kgateway/templates
+readonly AGENTGATEWAY_CRD_DIR=install/helm/agentgateway-crds/templates
+readonly AGENTGATEWAY_MANIFESTS_DIR=install/helm/agentgateway/templates
 
 echo "Generating clientset at ${OUTPUT_PKG}/${CLIENTSET_PKG_NAME} for versions:" "${VERSIONS[@]}"
 
@@ -49,20 +50,38 @@ for VERSION in "${VERSIONS[@]}"; do
   rm -f "${ROOT_DIR}/api/${VERSION}/agentgateway/zz_generated.register.go.bak"
 done
 
-go tool controller-gen crd:maxDescLen=50000 object rbac:roleName=kgateway paths="${APIS_PKG}/api/${VERSION}/kgateway" paths="${APIS_PKG}/api/${VERSION}/agentgateway" paths="${APIS_PKG}/api/${VERSION}/shared" \
-    output:crd:artifacts:config=${ROOT_DIR}/${CRD_DIR} output:rbac:artifacts:config=${ROOT_DIR}/${MANIFESTS_DIR}
+# Generate kgateway CRDs and RBAC
+go tool controller-gen crd:maxDescLen=50000 object rbac:roleName=kgateway paths="${APIS_PKG}/api/${VERSION}/kgateway" paths="${APIS_PKG}/api/${VERSION}/shared" \
+    output:crd:artifacts:config=${ROOT_DIR}/${KGATEWAY_CRD_DIR} output:rbac:artifacts:config=${ROOT_DIR}/${KGATEWAY_MANIFESTS_DIR}
 # Template the ClusterRole name to include the namespace
 if [[ "$OSTYPE" == "darwin"* ]]; then
   # On macOS, prefer gsed (GNU sed) if available
   if command -v gsed &> /dev/null; then
-    gsed -i 's/name: kgateway/name: kgateway-{{ .Release.Namespace }}/g' "${ROOT_DIR}/${MANIFESTS_DIR}/role.yaml"
+    gsed -i 's/name: kgateway/name: kgateway-{{ .Release.Namespace }}/g' "${ROOT_DIR}/${KGATEWAY_MANIFESTS_DIR}/role.yaml"
   else
     # Fallback to macOS's native sed
-    sed -i '' 's/name: kgateway/name: kgateway-{{ .Release.Namespace }}/g' "${ROOT_DIR}/${MANIFESTS_DIR}/role.yaml"
+    sed -i '' 's/name: kgateway/name: kgateway-{{ .Release.Namespace }}/g' "${ROOT_DIR}/${KGATEWAY_MANIFESTS_DIR}/role.yaml"
   fi
 else
   # For other OSes like Linux
-  sed -i 's/name: kgateway/name: kgateway-{{ .Release.Namespace }}/g' "${ROOT_DIR}/${MANIFESTS_DIR}/role.yaml"
+  sed -i 's/name: kgateway/name: kgateway-{{ .Release.Namespace }}/g' "${ROOT_DIR}/${KGATEWAY_MANIFESTS_DIR}/role.yaml"
+fi
+
+# Generate agentgateway CRDs and RBAC
+go tool controller-gen crd:maxDescLen=50000 object rbac:roleName=agentgateway paths="${APIS_PKG}/api/${VERSION}/agentgateway" paths="${APIS_PKG}/api/${VERSION}/shared" \
+    output:crd:artifacts:config=${ROOT_DIR}/${AGENTGATEWAY_CRD_DIR} output:rbac:artifacts:config=${ROOT_DIR}/${AGENTGATEWAY_MANIFESTS_DIR}
+# Template the ClusterRole name to include the namespace
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  # On macOS, prefer gsed (GNU sed) if available
+  if command -v gsed &> /dev/null; then
+    gsed -i 's/name: agentgateway/name: agentgateway-{{ .Release.Namespace }}/g' "${ROOT_DIR}/${AGENTGATEWAY_MANIFESTS_DIR}/role.yaml"
+  else
+    # Fallback to macOS's native sed
+    sed -i '' 's/name: agentgateway/name: agentgateway-{{ .Release.Namespace }}/g' "${ROOT_DIR}/${AGENTGATEWAY_MANIFESTS_DIR}/role.yaml"
+  fi
+else
+  # For other OSes like Linux
+  sed -i 's/name: agentgateway/name: agentgateway-{{ .Release.Namespace }}/g' "${ROOT_DIR}/${AGENTGATEWAY_MANIFESTS_DIR}/role.yaml"
 fi
 
 

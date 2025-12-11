@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	internaldeployer "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/deployer"
@@ -50,17 +51,18 @@ var logger = logging.New("gateway-controller")
 var _ manager.LeaderElectionRunnable = (*gatewayReconciler)(nil)
 
 type gatewayReconciler struct {
-	deployer           *deployer.Deployer
-	gwParams           *internaldeployer.GatewayParameters
-	scheme             *runtime.Scheme
-	controllerName     string
-	agwControllerName  string
-	enableEnvoy        bool
-	enableAgentgateway bool
+	deployer          *deployer.Deployer
+	gwParams          *internaldeployer.GatewayParameters
+	scheme            *runtime.Scheme
+	controllerName    string
+	agwControllerName string
+	enableEnvoy       bool
+	enableAgw         bool
 
 	gwClient         kclient.Client[*gwv1.Gateway]
 	gwClassClient    kclient.Client[*gwv1.GatewayClass]
 	gwParamClient    kclient.Client[*kgateway.GatewayParameters]
+	agwParamClient   kclient.Client[*agentgateway.AgentgatewayParameters]
 	nsClient         kclient.Client[*corev1.Namespace]
 	svcClient        kclient.Client[*corev1.Service]
 	deploymentClient kclient.Client[*appsv1.Deployment]
@@ -85,19 +87,24 @@ func NewGatewayReconciler(
 		scheme:              cfg.Mgr.GetScheme(),
 		controllerName:      cfg.ControllerName,
 		agwControllerName:   cfg.AgwControllerName,
-		enableEnvoy:         cfg.EnableEnvoy,
-		enableAgentgateway:  cfg.EnableAgentgateway,
+		enableEnvoy:         cfg.CommonCollections.Settings.EnableEnvoy,
+		enableAgw:           cfg.CommonCollections.Settings.EnableAgentgateway,
 		controllerExtension: controllerExtension,
 
 		gwClient:         kclient.NewFilteredDelayed[*gwv1.Gateway](cfg.Client, gvr.KubernetesGateway, filter),
 		gwClassClient:    kclient.NewFilteredDelayed[*gwv1.GatewayClass](cfg.Client, gvr.GatewayClass, filter),
-		gwParamClient:    kclient.NewFilteredDelayed[*kgateway.GatewayParameters](cfg.Client, wellknown.GatewayParametersGVR, filter),
 		nsClient:         kclient.NewFiltered[*corev1.Namespace](cfg.Client, filter),
 		svcClient:        kclient.NewFiltered[*corev1.Service](cfg.Client, filter),
 		deploymentClient: kclient.NewFiltered[*appsv1.Deployment](cfg.Client, filter),
 		svcAccountClient: kclient.NewFiltered[*corev1.ServiceAccount](cfg.Client, filter),
 		configMapClient:  kclient.NewFiltered[*corev1.ConfigMap](cfg.Client, filter),
 	}
+
+	// Reuse the parameter clients from the deployer to avoid duplicate watches
+	// These clients are only created when the respective controllers are enabled
+	r.gwParamClient = gwParams.GetGatewayParametersClient()
+	r.agwParamClient = gwParams.GetAgentgatewayParametersClient()
+
 	r.queue = controllers.NewQueue("GatewayController", controllers.WithReconciler(r.Reconcile), controllers.WithMaxAttempts(math.MaxInt), controllers.WithRateLimiter(rateLimiter))
 
 	// Gateway event handler
@@ -196,7 +203,50 @@ func NewGatewayReconciler(
 			}
 		}
 	})
-	r.gwParamClient.AddEventHandler(gwParamEventHandler)
+	if r.gwParamClient != nil {
+		r.gwParamClient.AddEventHandler(gwParamEventHandler)
+	}
+
+	// AgentgatewayParameters event handler (same logic as GatewayParameters)
+	// agwParamEventHandler is a handler that reconciles Gateways based on AgentgatewayParameters changes
+	agwParamEventHandler := controllers.ObjectHandler(func(o controllers.Object) {
+		agwpName := o.GetName()
+		agwpNamespace := o.GetNamespace()
+
+		// 1. Look up Gateways directly using this AgentgatewayParameters object (via spec.infrastructure.parametersRef)
+		gateways := gatewaysByParamsRef.Lookup(types.NamespacedName{Namespace: agwpNamespace, Name: agwpName})
+		for _, gw := range gateways {
+			logger.Debug("reconciling Gateway due to AgentgatewayParameters change",
+				"ref", kubeutils.NamespacedNameFrom(gw), "agwparam", types.NamespacedName{Namespace: agwpNamespace, Name: agwpName})
+			r.queue.AddObject(gw)
+		}
+
+		// 2. Look up GatewayClasses using this AgentgatewayParameters object (via spec.parametersRef)
+		gwClasses := r.gwClassClient.List(metav1.NamespaceAll, labels.Everything())
+		// For each GatewayClass that references this parameter, find all Gateways using that class
+		for _, gc := range gwClasses {
+			// Only process GatewayClasses managed by our controllers
+			if gc.Spec.ControllerName != gwv1.GatewayController(r.controllerName) &&
+				gc.Spec.ControllerName != gwv1.GatewayController(r.agwControllerName) {
+				continue
+			}
+			if gc.Spec.ParametersRef != nil &&
+				gc.Spec.ParametersRef.Name == agwpName &&
+				gc.Spec.ParametersRef.Namespace != nil && string(*gc.Spec.ParametersRef.Namespace) == agwpNamespace {
+				// This GatewayClass references our AgentgatewayParameters, find all Gateways using this class
+				gateways := gatewaysByClass.Lookup(types.NamespacedName{Name: gc.Name})
+				for _, gw := range gateways {
+					logger.Debug("reconciling Gateway due to AgentgatewayParameters change via GatewayClass",
+						"ref", kubeutils.NamespacedNameFrom(gw), "agwparam", types.NamespacedName{Namespace: agwpNamespace, Name: agwpName},
+						"gwclass", gc.Name)
+					r.queue.AddObject(gw)
+				}
+			}
+		}
+	})
+	if r.agwParamClient != nil {
+		r.agwParamClient.AddEventHandler(agwParamEventHandler)
+	}
 
 	// Custom event handler for XListenerSet changes
 	cfg.CommonCollections.GatewayIndex.GatewaysForDeployer.Register(func(o krt.Event[ir.GatewayForDeployer]) {
@@ -235,14 +285,13 @@ func (r *gatewayReconciler) Start(ctx context.Context) error {
 	hasSynced := []cache.InformerSynced{
 		r.gwClient.HasSynced,
 		r.gwClassClient.HasSynced,
-		r.gwParamClient.HasSynced,
 		r.nsClient.HasSynced,
 		r.deploymentClient.HasSynced,
 		r.svcAccountClient.HasSynced,
 		r.svcClient.HasSynced,
 		r.configMapClient.HasSynced,
 	}
-	// Add GatewayParameters cache sync handlers
+	// Add GatewayParameters cache sync handlers (includes both gwParamClient and agwParamClient)
 	hasSynced = append(hasSynced, r.gwParams.GetCacheSyncHandlers()...)
 
 	// Wait for all caches to sync
@@ -253,7 +302,22 @@ func (r *gatewayReconciler) Start(ctx context.Context) error {
 	r.queue.Run(ctx.Done())
 
 	// Shutdown all the clients
-	controllers.ShutdownAll(r.gwClient, r.gwClassClient, r.gwParamClient, r.nsClient, r.deploymentClient, r.svcAccountClient, r.svcClient, r.configMapClient)
+	clients := []controllers.Shutdowner{
+		r.gwClient,
+		r.gwClassClient,
+		r.nsClient,
+		r.deploymentClient,
+		r.svcAccountClient,
+		r.svcClient,
+		r.configMapClient,
+	}
+	if r.gwParamClient != nil {
+		clients = append(clients, r.gwParamClient)
+	}
+	if r.agwParamClient != nil {
+		clients = append(clients, r.agwParamClient)
+	}
+	controllers.ShutdownAll(clients...)
 	if r.controllerExtension != nil {
 		r.controllerExtension.Stop()
 	}
@@ -287,7 +351,7 @@ func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
 		logger.Debug("skipping gateway for disabled envoy controller", "gateway", req, "controllerName", gwc.Spec.ControllerName)
 		return nil
 	}
-	if isAgwGateway && !r.enableAgentgateway {
+	if isAgwGateway && !r.enableAgw {
 		logger.Debug("skipping gateway for disabled agentgateway controller", "gateway", req, "controllerName", gwc.Spec.ControllerName)
 		return nil
 	}

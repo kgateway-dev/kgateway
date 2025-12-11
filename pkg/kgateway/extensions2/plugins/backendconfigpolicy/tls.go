@@ -16,7 +16,6 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -26,7 +25,7 @@ type SecretGetter interface {
 	GetSecret(name, namespace string) (*ir.Secret, error)
 }
 
-// DefaultSecretGetter implements SecretGetter using the pluginutils.GetSecretIr function
+// DefaultSecretGetter implements SecretGetter using SecretIndex.GetSecretWithoutRefGrant
 type DefaultSecretGetter struct {
 	secrets *krtcollections.SecretIndex
 	krtctx  krt.HandlerContext
@@ -40,7 +39,7 @@ func NewDefaultSecretGetter(secrets *krtcollections.SecretIndex, krtctx krt.Hand
 }
 
 func (g *DefaultSecretGetter) GetSecret(name, namespace string) (*ir.Secret, error) {
-	return pluginutils.GetSecretIr(g.secrets, g.krtctx, name, namespace)
+	return g.secrets.GetSecretWithoutRefGrant(g.krtctx, name, namespace)
 }
 
 func buildTLSContext(tlsConfig *kgateway.TLS, secretGetter SecretGetter, namespace string, tlsContext *envoytlsv3.CommonTlsContext) error {

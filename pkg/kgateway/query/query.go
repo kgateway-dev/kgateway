@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"istio.io/istio/pkg/kube/krt"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -100,6 +101,7 @@ func (f FromObject) Namespace() string {
 
 type GatewayQueries interface {
 	GetSecretForRef(kctx krt.HandlerContext, ctx context.Context, fromGk schema.GroupKind, fromns string, secretRef gwv1.SecretObjectReference) (*ir.Secret, error)
+	GetConfigMapForRef(kctx krt.HandlerContext, ctx context.Context, fromGk schema.GroupKind, fromns string, configMapRef gwv1.ObjectReference) (*corev1.ConfigMap, error)
 
 	// GetRoutesForGateway finds the top level xRoutes attached to the provided Gateway
 	GetRoutesForGateway(kctx krt.HandlerContext, ctx context.Context, gw *ir.Gateway) (*RoutesForGwResult, error)
@@ -278,6 +280,14 @@ func (r *gatewayQueries) GetSecretForRef(kctx krt.HandlerContext, ctx context.Co
 		Namespace: fromns,
 	}
 	return r.collections.Secrets.GetSecret(kctx, f, secretRef)
+}
+
+func (r *gatewayQueries) GetConfigMapForRef(kctx krt.HandlerContext, ctx context.Context, fromGk schema.GroupKind, fromns string, configMapRef gwv1.ObjectReference) (*corev1.ConfigMap, error) {
+	f := krtcollections.From{
+		GroupKind: fromGk,
+		Namespace: fromns,
+	}
+	return r.collections.ConfigMaps.GetConfigMap(kctx, f, configMapRef)
 }
 
 func ReferenceAllowed(ctx context.Context, fromgk metav1.GroupKind, fromns string, togk metav1.GroupKind, toname string, grantsInToNs []gwv1b1.ReferenceGrant) bool {

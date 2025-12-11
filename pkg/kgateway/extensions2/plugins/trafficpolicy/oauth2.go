@@ -163,7 +163,7 @@ func buildOAuth2ProviderConfig(
 			clientSecretKey, credSecret.ResourceName(), ext.ResourceName())
 	}
 	// TODO(shashank): customize cookie names for collisions
-	hmacSecret, err := pluginutils.GetSecretIr(secrets, krtctx, wellknown.OAuth2HMACSecret.Name, wellknown.OAuth2HMACSecret.Namespace)
+	hmacSecret, err := secrets.GetSecretWithoutRefGrant(krtctx, wellknown.OAuth2HMACSecret.Name, wellknown.OAuth2HMACSecret.Namespace)
 	if err != nil {
 		return nil, err
 	}

@@ -29,7 +29,6 @@ import (
 
 	apitests "github.com/kgateway-dev/kgateway/v2/api/tests"
 	agwv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
-	v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/agentgatewaysyncer"
@@ -228,8 +227,6 @@ func BuildMockCollection(t test.Failer, inputs []any) *plugins.AgwCollections {
 		InferencePools:       krttest.GetMockCollection[*inf.InferencePool](mock),
 		Backends:             krttest.GetMockCollection[*agwv1alpha1.AgentgatewayBackend](mock),
 		AgentgatewayPolicies: krttest.GetMockCollection[*agwv1alpha1.AgentgatewayPolicy](mock),
-		DirectResponses:      krttest.GetMockCollection[*v1alpha1.DirectResponse](mock),
-		GatewayExtensions:    krttest.GetMockCollection[*v1alpha1.GatewayExtension](mock),
 		ControllerName:       wellknown.DefaultAgwControllerName,
 		SystemNamespace:      "kgateway-system",
 		IstioNamespace:       "istio-system",

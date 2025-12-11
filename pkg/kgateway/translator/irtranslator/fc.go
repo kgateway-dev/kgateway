@@ -488,10 +488,24 @@ func (info *FilterChainInfo) toTransportSocket() *envoycorev3.TransportSocket {
 	if len(tlsConfig.EcdhCurves) > 0 {
 		common.TlsParams.EcdhCurves = tlsConfig.EcdhCurves
 	}
+
 	// TODO: add verify subject alt names (validation context) https://github.com/kgateway-dev/kgateway/issues/12955
+
+	validationContext := buildValidationContext(tlsConfig)
+
+	// Set ValidationContextType if we have any validation context configured
+	if validationContext != nil {
+		common.ValidationContextType = &envoytlsv3.CommonTlsContext_ValidationContext{
+			ValidationContext: validationContext,
+		}
+	}
 
 	out := &envoytlsv3.DownstreamTlsContext{
 		CommonTlsContext: common,
+	}
+
+	if tlsConfig.ClientCertificateValidation != nil {
+		out.RequireClientCertificate = &wrapperspb.BoolValue{Value: tlsConfig.ClientCertificateValidation.RequireClientCertificate}
 	}
 	typedConfig, _ := utils.MessageToAny(out)
 
@@ -499,6 +513,35 @@ func (info *FilterChainInfo) toTransportSocket() *envoycorev3.TransportSocket {
 		Name:       wellknown.TransportSocketTls,
 		ConfigType: &envoycorev3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
 	}
+}
+
+func buildValidationContext(tlsConfig *ir.TLSConfig) *envoytlsv3.CertificateValidationContext {
+	var validationContext *envoytlsv3.CertificateValidationContext
+	if len(tlsConfig.VerifyCertificateHash) > 0 {
+		validationContext = &envoytlsv3.CertificateValidationContext{
+			VerifyCertificateHash: tlsConfig.VerifyCertificateHash,
+		}
+	}
+
+	// Handle client certificate validation (mTLS) - merge with existing ValidationContext if present
+	if tlsConfig.ClientCertificateValidation != nil {
+		if len(tlsConfig.ClientCertificateValidation.CACertificates) > 0 {
+			// Combine all CA certificates into a single trusted CA
+			var combinedCA []byte
+			for i, caCert := range tlsConfig.ClientCertificateValidation.CACertificates {
+				if i > 0 {
+					combinedCA = append(combinedCA, '\n')
+				}
+				combinedCA = append(combinedCA, caCert...)
+			}
+			if validationContext == nil {
+				validationContext = &envoytlsv3.CertificateValidationContext{}
+			}
+			validationContext.TrustedCa = bytesDataSource(combinedCA)
+		}
+	}
+
+	return validationContext
 }
 
 func bytesDataSource(s []byte) *envoycorev3.DataSource {

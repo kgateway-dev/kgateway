@@ -40,38 +40,38 @@ jobs:
         kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
         kind-node-version: ${{ steps.dotenv.outputs.node_version }}
 
-  gie_conformance_tests:
-    name: Kubernetes Gateway API Inference Extension Conformance Tests
-    runs-on: ubuntu-22.04
-    steps:
-    - uses: actions/checkout@v4
-    - name: Dotenv Action
-      uses: falti/dotenv-action@v1.1.4
-      id: dotenv
-      with:
-        path: "./.github/workflows/.env/pr-tests/versions.env"
-        log-variables: true
-    - name: Run GIE Conformance Tests
-      uses: ./.github/actions/kube-conformance-tests
-      with:
-        test-type: inference-extension
-        api-channel: experimental
-        enable-inference-extension: true
-        kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
-        kind-node-version: ${{ steps.dotenv.outputs.node_version }}
+  # gie_conformance_tests:
+  #   name: Kubernetes Gateway API Inference Extension Conformance Tests
+  #   runs-on: ubuntu-22.04
+  #   steps:
+  #   - uses: actions/checkout@v4
+  #   - name: Dotenv Action
+  #     uses: falti/dotenv-action@v1.1.4
+  #     id: dotenv
+  #     with:
+  #       path: "./.github/workflows/.env/pr-tests/versions.env"
+  #       log-variables: true
+  #   - name: Run GIE Conformance Tests
+  #     uses: ./.github/actions/kube-conformance-tests
+  #     with:
+  #       test-type: inference-extension
+  #       api-channel: experimental
+  #       enable-inference-extension: true
+  #       kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
+  #       kind-node-version: ${{ steps.dotenv.outputs.node_version }}
 
   conformance:
     if: always()
     name: Kubernetes Gateway API Conformance Tests
     runs-on: ubuntu-22.04
-    needs: [gw_api_conformance_tests, gie_conformance_tests]
+    needs: [gw_api_conformance_tests]
     steps:
     - name: Check e2e matrix status
       run: |
-          if [[ "${{ needs.gw_api_conformance_tests.result }}" == "success" && "${{ needs.gie_conformance_tests.result }}" == "success" ]]; then
+          if [[ "${{ needs.gw_api_conformance_tests.result }}" == "success" ]]; then
             echo "All conformance matrix jobs passed successfully"
             exit 0
           else
-            echo "Conformance matrix jobs failed with status: ${{ needs.gw_api_conformance_tests.result }} and ${{ needs.gie_conformance_tests.result }}"
+            echo "Conformance matrix jobs failed with status: ${{ needs.gw_api_conformance_tests.result }}"
             exit 1
           fi

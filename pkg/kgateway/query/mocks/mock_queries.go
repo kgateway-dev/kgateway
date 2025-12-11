@@ -12,8 +12,9 @@ import (
 	query "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
 	ir "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	krt "istio.io/istio/pkg/kube/krt"
+	v1 "k8s.io/api/core/v1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
-	v1 "sigs.k8s.io/gateway-api/apis/v1"
+	v10 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 // MockGatewayQueries is a mock of GatewayQueries interface.
@@ -39,8 +40,23 @@ func (m *MockGatewayQueries) EXPECT() *MockGatewayQueriesMockRecorder {
 	return m.recorder
 }
 
+// GetConfigMapForRef mocks base method.
+func (m *MockGatewayQueries) GetConfigMapForRef(arg0 krt.HandlerContext, arg1 context.Context, arg2 schema.GroupKind, arg3 string, arg4 v10.ObjectReference) (*v1.ConfigMap, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetConfigMapForRef", arg0, arg1, arg2, arg3, arg4)
+	ret0, _ := ret[0].(*v1.ConfigMap)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetConfigMapForRef indicates an expected call of GetConfigMapForRef.
+func (mr *MockGatewayQueriesMockRecorder) GetConfigMapForRef(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfigMapForRef", reflect.TypeOf((*MockGatewayQueries)(nil).GetConfigMapForRef), arg0, arg1, arg2, arg3, arg4)
+}
+
 // GetRouteChain mocks base method.
-func (m *MockGatewayQueries) GetRouteChain(arg0 krt.HandlerContext, arg1 context.Context, arg2 ir.Route, arg3 []string, arg4 v1.ParentReference) *query.RouteInfo {
+func (m *MockGatewayQueries) GetRouteChain(arg0 krt.HandlerContext, arg1 context.Context, arg2 ir.Route, arg3 []string, arg4 v10.ParentReference) *query.RouteInfo {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRouteChain", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].(*query.RouteInfo)
@@ -69,7 +85,7 @@ func (mr *MockGatewayQueriesMockRecorder) GetRoutesForGateway(arg0, arg1, arg2 i
 }
 
 // GetSecretForRef mocks base method.
-func (m *MockGatewayQueries) GetSecretForRef(arg0 krt.HandlerContext, arg1 context.Context, arg2 schema.GroupKind, arg3 string, arg4 v1.SecretObjectReference) (*ir.Secret, error) {
+func (m *MockGatewayQueries) GetSecretForRef(arg0 krt.HandlerContext, arg1 context.Context, arg2 schema.GroupKind, arg3 string, arg4 v10.SecretObjectReference) (*ir.Secret, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSecretForRef", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].(*ir.Secret)

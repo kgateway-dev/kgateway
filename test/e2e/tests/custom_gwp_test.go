@@ -123,10 +123,13 @@ func TestCustomGWP(t *testing.T) {
 		}
 
 		testInstallation.UninstallKgateway(ctx)
+		// Also uninstall agentgateway CRDs since we installed them for this test
+		testInstallation.UninstallAgentgatewayCRDs(ctx)
 	})
 
-	// install CRDs
+	// install CRDs for both kgateway and agentgateway
 	testInstallation.InstallKgatewayCRDsFromLocalChart(ctx)
+	testInstallation.InstallAgentgatewayCRDsFromLocalChart(ctx)
 
 	// create GatewayParameters for kgateway
 	err := testInstallation.Actions.Kubectl().Apply(ctx, []byte(kgatewayGWP))
@@ -142,6 +145,7 @@ func TestCustomGWP(t *testing.T) {
 
 	// install kgateway
 	testInstallation.InstallKgatewayFromLocalChart(ctx)
+	testInstallation.InstallAgentgatewayCoreFromLocalChart(ctx)
 
 	// Wait for GatewayClasses to be created
 	testInstallation.Assertions.EventuallyObjectsExist(ctx, &gwv1.GatewayClass{
@@ -236,6 +240,23 @@ func TestCustomGWP(t *testing.T) {
 		t.Fatalf("failed to upgrade Helm: %v", err)
 	}
 	testInstallation.Assertions.EventuallyKgatewayInstallSucceeded(ctx)
+	chartUriAgentgateway, err := helper.GetLocalChartPath(helmutils.AgentgatewayChartName, "")
+	if err != nil {
+		t.Fatalf("failed to get chart path: %v", err)
+	}
+	err = testInstallation.Actions.Helm().WithReceiver(os.Stdout).Upgrade(
+		ctx,
+		helmutils.InstallOpts{
+			Namespace:       installNs,
+			CreateNamespace: true,
+			ValuesFiles:     []string{e2e.CommonRecommendationManifest, e2e.ManifestPath("custom-gwp-2.yaml")},
+			ReleaseName:     helmutils.AgentgatewayChartName,
+			ChartUri:        chartUriAgentgateway,
+		})
+	if err != nil {
+		t.Fatalf("failed to upgrade Helm: %v", err)
+	}
+	testInstallation.Assertions.EventuallyAgentgatewayInstallSucceeded(ctx)
 
 	// Verify kgateway GatewayClass is updated with new ref
 	r := require.New(t)

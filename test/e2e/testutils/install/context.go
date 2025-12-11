@@ -8,6 +8,10 @@ import "fmt"
 type Context struct {
 	InstallNamespace string
 
+	// ChartType specifies which chart to install: "kgateway" or "agentgateway"
+	// Defaults to "kgateway" for backwards compatibility
+	ChartType string
+
 	// ProfileValuesManifestFile points to the file that contains the set of Helm values for a given profile
 	// This is intended to represent a set of "production recommendations" and is defined as a standalone
 	// file, to guarantee that tests specify a file that contains these values
@@ -19,6 +23,14 @@ type Context struct {
 
 	// ExtraHelmArgs are additional Helm arguments
 	ExtraHelmArgs []string
+}
+
+// GetChartType returns the chart type, defaulting to "kgateway" if not specified
+func (c *Context) GetChartType() string {
+	if c.ChartType == "" {
+		return "kgateway"
+	}
+	return c.ChartType
 }
 
 // ValidateInstallContext returns an error if the provided Context is invalid
