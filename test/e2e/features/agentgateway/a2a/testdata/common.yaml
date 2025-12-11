@@ -42,7 +42,7 @@ metadata:
   name: gw
   namespace: agent-gateway-test
 spec:
-  gatewayClassName: agentgateway
+  gatewayClassName: agentgateway-v2
   listeners:
   - name: http-8080
     protocol: HTTP

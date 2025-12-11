@@ -504,7 +504,7 @@ var _ = Describe("Deployer", func() {
 			agwp = agentgatewayParam("agent-gateway-params")
 			gwc = &gwv1.GatewayClass{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "agentgateway",
+					Name: wellknown.DefaultAgwClassName,
 				},
 				Spec: gwv1.GatewayClassSpec{
 					ControllerName: wellknown.DefaultAgwControllerName,
@@ -525,7 +525,7 @@ var _ = Describe("Deployer", func() {
 					Namespace: defaultNamespace,
 				},
 				Spec: gwv1.GatewaySpec{
-					GatewayClassName: "agentgateway",
+					GatewayClassName: wellknown.DefaultAgwClassName,
 					Infrastructure: &gwv1.GatewayInfrastructure{
 						ParametersRef: &gwv1.LocalParametersReference{
 							Group: agentgatewayv1alpha1.GroupName,

@@ -96,4 +96,4 @@ status:
       reason: PartiallyValid
       status: "True"
       type: Accepted
-    controllerName: kgateway.dev/agentgateway
+    controllerName: agentgateway.dev/agentgateway

@@ -7,7 +7,7 @@ metadata:
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw-using-gw-params
     app.kubernetes.io/version: 1.0.0-ci1
-    gateway.networking.k8s.io/gateway-class-name: agentgateway
+    gateway.networking.k8s.io/gateway-class-name: agentgateway-v2
     gateway.networking.k8s.io/gateway-name: gw-using-gw-params
     kgateway: kube-gateway
   name: gw-using-gw-params
@@ -23,7 +23,7 @@ metadata:
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw-using-gw-params
     app.kubernetes.io/version: 1.0.0-ci1
-    gateway.networking.k8s.io/gateway-class-name: agentgateway
+    gateway.networking.k8s.io/gateway-class-name: agentgateway-v2
     gateway.networking.k8s.io/gateway-name: gw-using-gw-params
     kgateway: kube-gateway
   name: gw-using-gw-params
@@ -36,7 +36,7 @@ metadata:
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw-using-gw-params
     app.kubernetes.io/version: 1.0.0-ci1
-    gateway.networking.k8s.io/gateway-class-name: agentgateway
+    gateway.networking.k8s.io/gateway-class-name: agentgateway-v2
     gateway.networking.k8s.io/gateway-name: gw-using-gw-params
     kgateway: kube-gateway
   name: gw-using-gw-params
@@ -62,7 +62,7 @@ metadata:
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: gw-using-gw-params
     app.kubernetes.io/version: 1.0.0-ci1
-    gateway.networking.k8s.io/gateway-class-name: agentgateway
+    gateway.networking.k8s.io/gateway-class-name: agentgateway-v2
     gateway.networking.k8s.io/gateway-name: gw-using-gw-params
     kgateway: kube-gateway
   name: gw-using-gw-params
@@ -77,14 +77,14 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: 9fbb8893347ff0b7be4bf329b3534c0da22ae769bd6547471f071a1980dffd20
+        checksum/config: 83fd59e4f949e593fca48999202465ef11b185d6bbe5ded3de0bb5a5b6834415
         prometheus.io/path: /metrics
         prometheus.io/port: "15020"
         prometheus.io/scrape: "true"
       labels:
         app.kubernetes.io/instance: gw-using-gw-params
         app.kubernetes.io/name: gw-using-gw-params
-        gateway.networking.k8s.io/gateway-class-name: agentgateway
+        gateway.networking.k8s.io/gateway-class-name: agentgateway-v2
         gateway.networking.k8s.io/gateway-name: gw-using-gw-params
     spec:
       containers:

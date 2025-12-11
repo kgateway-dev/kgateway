@@ -32,4 +32,4 @@ status:
       reason: Pending
       status: "False"
       type: Attached
-    controllerName: kgateway.dev/agentgateway
+    controllerName: agentgateway.dev/agentgateway

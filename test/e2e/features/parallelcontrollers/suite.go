@@ -578,7 +578,7 @@ func (s *testingSuite) installKgatewayChart() {
 	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
 		gc := &gwv1.GatewayClass{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
-			Name: "kgateway",
+			Name: wellknown.DefaultGatewayClassName,
 		}, gc)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), "GatewayClass kgateway should exist")
 		accepted := false
@@ -641,7 +641,7 @@ func (s *testingSuite) installAgentgatewayChart() {
 	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
 		gc := &gwv1.GatewayClass{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKey{
-			Name: "agentgateway",
+			Name: wellknown.DefaultAgwClassName,
 		}, gc)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), "GatewayClass agentgateway should exist")
 		accepted := false
