@@ -123,7 +123,12 @@ spec:
       authentication:
         issuer: https://kgateway.dev
         jwks:
-          uri: http://auth0-mock.default.svc.cluster.local:9000/.well-known/jwks.json
+          jwksPath: .well-known/jwks.json
+          backendRef:
+            group: ""
+            kind: Service
+            name: auth0-mock
+            port: 9000
         provider: Auth0
         audiences:
           - "account"

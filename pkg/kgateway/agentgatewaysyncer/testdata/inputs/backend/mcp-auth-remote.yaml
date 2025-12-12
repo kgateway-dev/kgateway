@@ -101,7 +101,12 @@ spec:
       authentication:
         issuer: http://keycloak:7080/realms/mcp
         jwks:
-          uri: http://keycloak.default.svc.cluster.local:7080/realms/mcp/protocol/openid-connect/certs
+          jwksPath: realms/mcp/protocol/openid-connect/certs
+          backendRef:
+            group: ""
+            kind: Service
+            name: keycloak
+            port: 7080
         audiences:
           - "account"
         provider: Keycloak
