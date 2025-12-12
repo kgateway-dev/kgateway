@@ -2,13 +2,13 @@
 
 ## Overview
 
-Starting in version 2.2.0-beta.2, agentgateway has been fully separated into its own API group with breaking changes to resource naming and structure. This guide helps you understand the new architecture and how to upgrade.
+Starting in version 2.2.0-beta.3, agentgateway has been fully separated into its own API group with breaking changes to resource naming and structure. This guide helps you understand the new architecture and how to upgrade.
 
 ## Who Needs to Take Action?
 
 ### Envoy Users (GatewayClass: `kgateway`)
 
-**No changes required.** You can upgrade to 2.2.0-beta.2 using the same kgateway chart. All Envoy resources remain unchanged:
+**No changes required.** You can upgrade to 2.2.0-beta.3 using the same kgateway chart. All Envoy resources remain unchanged:
 
 - Continue using `gateway.kgateway.dev/v1alpha1` API group
 - GatewayClass `kgateway` with controller `kgateway.dev/kgateway`
@@ -38,8 +38,8 @@ Agentgateway now has its own dedicated Helm charts, separate from the kgateway c
 
 | Component | Chart Location |
 |-----------|----------------|
-| **Agentgateway CRDs** | `oci://cr.kgateway.dev/kgateway-dev/charts/agentgateway-crds` |
-| **Agentgateway Controller** | `oci://cr.kgateway.dev/kgateway-dev/charts/agentgateway` |
+| **Agentgateway CRDs** | `oci://ghcr.io/kgateway-dev/charts/agentgateway-crds` |
+| **Agentgateway Controller** | `oci://ghcr.io/kgateway-dev/charts/agentgateway` |
 | **Kgateway CRDs (Envoy)** | `oci://cr.kgateway.dev/kgateway-dev/charts/kgateway-crds` |
 | **Kgateway (Envoy)** | `oci://cr.kgateway.dev/kgateway-dev/charts/kgateway` |
 
@@ -83,14 +83,14 @@ Agentgateway now has dedicated charts separate from kgateway. Install them in a 
 
 ```bash
 # Install agentgateway CRDs
-helm install agentgateway-crds oci://cr.kgateway.dev/kgateway-dev/charts/agentgateway-crds \
-  --version 2.2.0-beta.2 \
+helm install agentgateway-crds oci://ghcr.io/kgateway-dev/charts/agentgateway-crds \
+  --version 2.2.0-beta.3 \
   --namespace agentgateway-system \
   --create-namespace
 
 # Install agentgateway controller
-helm install agentgateway oci://cr.kgateway.dev/kgateway-dev/charts/agentgateway \
-  --version 2.2.0-beta.2 \
+helm install agentgateway oci://ghcr.io/kgateway-dev/charts/agentgateway \
+  --version 2.2.0-beta.3 \
   --namespace agentgateway-system
 ```
 
