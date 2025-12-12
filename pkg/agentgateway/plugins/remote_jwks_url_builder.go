@@ -81,6 +81,7 @@ func (j *JwksUrlFactory) BuildJwksUrl(krtctx krt.HandlerContext, policyName, def
 			Kind:      string(*ref.Kind),
 			Group:     string(ptr.OrEmpty(ref.Group)),
 			Namespace: refNamespace,
+			// no port, as policy targetRef may not have it
 		})))
 
 		var tlsConfig *tls.Config
@@ -159,4 +160,11 @@ func appendPoolWithCertsFromConfigMap(pool *x509.CertPool, cm *corev1.ConfigMap)
 
 func insecureSkipVerify(mode *agentgateway.InsecureTLSMode) bool {
 	return mode != nil
+}
+
+func portOrEmpty(p *v1.PortNumber) string {
+	if p != nil {
+		return string(*p)
+	}
+	return ""
 }

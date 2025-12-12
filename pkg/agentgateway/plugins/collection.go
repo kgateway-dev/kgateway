@@ -85,7 +85,7 @@ type TargetRefIndexKey struct {
 }
 
 func (k TargetRefIndexKey) String() string {
-	return fmt.Sprintf("%s:%s:%s:%s", k.Group, k.Kind, k.Namespace, k.Name)
+	return fmt.Sprintf("%s:%s:%s:%s:%s", k.Group, k.Kind, k.Namespace, k.Name)
 }
 
 func (c *AgwCollections) HasSynced() bool {

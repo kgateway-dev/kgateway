@@ -29,8 +29,31 @@ spec:
       - issuer: https://kgateway.dev
         jwks:
           remote:
-            uri: https://dummy-idp.default:8443/org-one/keys
+            jwksPath: org-one/keys
+            backendRef:
+              group: ""
+              kind: Service
+              name: dummy-idp
+              port: 8443
       - issuer: https://kgateway.dev
         jwks:
           remote:
-            uri: https://dummy-idp.default:8443/org-two/keys
+            jwksPath: org-two/keys
+            backendRef:
+              group: ""
+              kind: Service
+              name: dummy-idp
+              port: 8443
+---
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayPolicy
+metadata:
+  name: idp-policy
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: dummy-idp
+  backend:
+    tls:
+      insecureSkipVerify: All

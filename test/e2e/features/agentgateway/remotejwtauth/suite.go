@@ -47,14 +47,20 @@ var (
 	}
 
 	testCases = map[string]*base.TestCase{
-		"TestRoutePolicy": {
-			Manifests: []string{insecureRouteManifest, secureRoutePolicyManifest},
+		"TestRoutePolicySvc": {
+			Manifests: []string{insecureRouteManifest, secureRoutePolicyManifestSvc},
+		},
+		"TestRoutePolicyBackend": {
+			Manifests: []string{insecureRouteManifest, secureRoutePolicyManifestBackend},
 		},
 		"TestRoutePolicyWithRbac": {
 			Manifests: []string{secureRoutePolicyWithRbacManifest},
 		},
-		"TestGatewayPolicy": {
-			Manifests: []string{secureGWPolicyManifest},
+		"TestGatewayPolicySvc": {
+			Manifests: []string{secureGWPolicyManifestSvc},
+		},
+		"TestGatewayPolicyBackend": {
+			Manifests: []string{secureGWPolicyManifestBackend},
 		},
 		"TestGatewayPolicyWithRbac": {
 			Manifests: []string{secureGWPolicyWithRbacManifest},
@@ -79,13 +85,19 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 
 var (
 	insecureRouteManifest             = getTestFile("insecure-route.yaml")
-	secureGWPolicyManifest            = getTestFile("secured-gateway-policy.yaml")
+	secureGWPolicyManifestBackend     = getTestFile("secured-gateway-policy-with-backend.yaml")
+	secureGWPolicyManifestSvc         = getTestFile("secured-gateway-policy-with-svc.yaml")
 	secureGWPolicyWithRbacManifest    = getTestFile("secured-gateway-policy-with-rbac.yaml")
-	secureRoutePolicyManifest         = getTestFile("secured-route.yaml")
+	secureRoutePolicyManifestBackend  = getTestFile("secured-route-with-backend.yaml")
+	secureRoutePolicyManifestSvc      = getTestFile("secured-route-with-svc.yaml")
 	secureRoutePolicyWithRbacManifest = getTestFile("secured-route-with-rbac.yaml")
 )
 
-func (s *testingSuite) TestRoutePolicy() {
+func (s *testingSuite) TestRoutePolicyBackend() {
+	s.TestRoutePolicySvc()
+}
+
+func (s *testingSuite) TestRoutePolicySvc() {
 	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"route-example-insecure",
@@ -111,7 +123,11 @@ func (s *testingSuite) TestRoutePolicy() {
 	s.assertResponseWithoutAuth("secureroute.com", http.StatusUnauthorized)
 }
 
-func (s *testingSuite) TestGatewayPolicy() {
+func (s *testingSuite) TestGatewayPolicySvc() {
+	s.TestGatewayPolicyBackend()
+}
+
+func (s *testingSuite) TestGatewayPolicyBackend() {
 	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
 		s.Ctx,
 		"route-secure-gw",
