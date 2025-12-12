@@ -25,7 +25,7 @@ var (
 	ErrMultipleAddresses = errors.New("multiple addresses given, only one address is supported")
 
 	// ErrNoValidIPAddress is returned when no valid IP address is found in Gateway.spec.addresses
-	ErrNoValidIPAddress = errors.New("no valid IP address found in Gateway.spec.addresses")
+	ErrNoValidIPAddress = errors.New("IP address in Gateway.spec.addresses not valid")
 )
 
 // This file contains helper functions that generate helm values in the format needed
