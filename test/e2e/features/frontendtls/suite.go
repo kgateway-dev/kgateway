@@ -38,6 +38,12 @@ var (
 	commonClientCertPath = "/etc/client-certs-frontend/tls.crt"
 	commonClientKeyPath  = "/etc/client-certs-frontend/tls.key"
 
+	// client certificate paths for verify-subject-alt-names tests
+	matchingSanCertPath    = "/etc/client-matching-san/tls.crt"
+	matchingSanKeyPath     = "/etc/client-matching-san/tls.key"
+	nonMatchingSanCertPath = "/etc/client-non-matching-san/tls.crt"
+	nonMatchingSanKeyPath  = "/etc/client-non-matching-san/tls.key"
+
 	// manifests for FrontendTLSConfig tests (TestFrontendTLSConfig)
 	// Note: gatewayManifest and curlPodWithCerts are shared with verify-certificate-hash tests
 	caCertConfigMapManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "certs", "ca1", "ca-cert-configmap.yaml")
@@ -46,6 +52,11 @@ var (
 	// manifests for multiple CA certificates test (TestMultipleCACertificates)
 	caCert2ConfigMapManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "certs", "ca2", "ca-cert-2-configmap.yaml")
 	clientCert2SecretManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "certs", "ca2", "client-cert-2-secret.yaml")
+
+	// manifests for verify-subject-alt-names tests (TestVerifySubjectAltNames)
+	caAltNamesConfigMapManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "certs", "ca-alt-names", "ca-alt-names-configmap.yaml")
+	clientMatchingSanSecret     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "certs", "ca-alt-names", "client-matching-san-secret.yaml")
+	clientNonMatchingSanSecret  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "certs", "ca-alt-names", "client-non-matching-san-secret.yaml")
 
 	// objects
 	proxyObjectMeta = metav1.ObjectMeta{
@@ -60,10 +71,13 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 			curlPodWithCerts,
 			testdefaults.HttpbinManifest,
 			clientCertsSecret,
-			clientCertSecretManifest,  // Include client-cert secret so pod can start
-			caCertConfigMapManifest,   // Required for FrontendTLSConfig per-port configs
-			caCert2ConfigMapManifest,  // Required for multiple CA certificates test
-			clientCert2SecretManifest, // Required for multiple CA certificates test
+			clientCertSecretManifest,    // Include client-cert secret so pod can start
+			caCertConfigMapManifest,     // Required for FrontendTLSConfig per-port configs
+			caCert2ConfigMapManifest,    // Required for multiple CA certificates test
+			clientCert2SecretManifest,   // Required for multiple CA certificates test
+			caAltNamesConfigMapManifest, // Required for verify-subject-alt-names test
+			clientMatchingSanSecret,     // Required for verify-subject-alt-names test
+			clientNonMatchingSanSecret,  // Required for verify-subject-alt-names test
 			tlsSecretManifest,
 			gatewayManifest,
 		},
@@ -78,6 +92,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 		"TestVerifyCertificateHash":  {},
 		"TestFrontendTLSConfig":      {}, // All required resources are already in setup
 		"TestMultipleCACertificates": {}, // All required resources are already in setup
+		"TestVerifySubjectAltNames":  {}, // All required resources are already in setup
 	}
 	return &testingSuite{
 		base.NewBaseTestingSuite(ctx, testInst, setup, testCases),
@@ -405,6 +420,38 @@ func (s *testingSuite) TestMultipleCACertificates() {
 			testdefaults.CurlPodExecOpt,
 			curlOpts,
 			16, // CURLE_SSL_CACERT_BADFILE
+			10*time.Second,
+		)
+	})
+}
+
+func (s *testingSuite) TestVerifySubjectAltNames() {
+	// Custom curl options for port 8447
+	curlOpts8447 := []curl.Option{
+		curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
+		curl.WithPort(8447),
+		curl.WithScheme("https"),
+		curl.IgnoreServerCert(),
+		curl.WithHeader("Host", "example.com"),
+		curl.VerboseOutput(),
+	}
+
+	s.Run("verify-subject-alt-names with matching SAN should work", func() {
+		// Port 8447 requires "mtls.example.com" in client cert SAN
+		// client-matching-san.crt has "DNS:mtls.example.com" SAN - should succeed
+		s.assertEventualCurlResponse(
+			append(curlOpts8447, curl.WithClientCert(matchingSanCertPath, matchingSanKeyPath))...,
+		)
+	})
+
+	s.Run("verify-subject-alt-names with non-matching SAN should fail", func() {
+		// Port 8447 requires "mtls.example.com" in client cert SAN
+		// client-non-matching-san.crt has "DNS:mtls-alt.example.com" SAN - should fail
+		s.TestInstallation.Assertions.AssertEventualCurlError(
+			s.Ctx,
+			testdefaults.CurlPodExecOpt,
+			append(curlOpts8447, curl.WithClientCert(nonMatchingSanCertPath, nonMatchingSanKeyPath)),
+			16, // CURLE_SSL_CACERT_BADFILE - client cert rejected due to SAN mismatch
 			10*time.Second,
 		)
 	})

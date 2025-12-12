@@ -15,6 +15,11 @@ Certificates are organized into subdirectories:
   - `ca-cert-2-configmap.yaml` - CA certificate 2 (ConfigMap)
   - `client-cert-2-secret.yaml` - Client certificate for multiple CA tests (signed by CA 2)
 
+- **`certs/ca-alt-names/`** - CA certificate and client certificates for verify-subject-alt-names tests:
+  - `ca-alt-names-configmap.yaml` - CA certificate for SAN validation (ConfigMap)
+  - `client-matching-san-secret.yaml` - Client certificate with matching SAN (Secret)
+  - `client-non-matching-san-secret.yaml` - Client certificate with non-matching SAN (Secret)
+
 **Note**: Tests only use the Kubernetes secrets (YAML manifests) which contain base64-encoded certificates. Raw certificate files (`.crt`, `.key`, `.pem`) are not present in this repository - they are artifacts from certificate generation that can be regenerated using the commands in the Certificate Generation section below.
 
 **Note**: During certificate generation, intermediate files like `.csr` (Certificate Signing Request) and `.srl` (serial number) files may be created. These are temporary artifacts and are not committed to the repository - only the final certificates in the YAML manifests are required.
@@ -109,10 +114,12 @@ openssl x509 -in client-9443.crt -noout -fingerprint -sha256 | cut -d= -f2 | \
 
 ### Test File Mapping
 In the tests, these certificates are mounted into the curl pod from Kubernetes secrets at:
-- `/etc/client-certs/client-8443.crt` / `/etc/client-certs/client-8443.key` - Certificate valid for port 8443 listener (from `client-certs` secret, source: `certs/ca1/client-certs-8443-9443-secret.yaml`)
-- `/etc/client-certs/client-9443.crt` / `/etc/client-certs/client-9443.key` - Certificate valid for port 9443 listener (from `client-certs` secret, source: `certs/ca1/client-certs-8443-9443-secret.yaml`)
-- `/etc/client-certs-frontend/tls.crt` / `/etc/client-certs-frontend/tls.key` - Certificate valid for FrontendTLSConfig tests on ports 8444/8445 (from `client-cert` secret, source: `certs/ca1/client-cert-secret.yaml`, signed by CA 1)
-- `/etc/client-certs-2-frontend/tls.crt` / `/etc/client-certs-2-frontend/tls.key` - Certificate valid for multiple CA tests on port 8446 (from `client-cert-2` secret, source: `certs/ca2/client-cert-2-secret.yaml`, signed by CA 2)
+- `/etc/client-certs/client-8443.crt` / `/etc/client-certs/client-8443.key` - Certificate for port 8443 listener (from `client-certs` secret, source: `certs/ca1/client-certs-8443-9443-secret.yaml`)
+- `/etc/client-certs/client-9443.crt` / `/etc/client-certs/client-9443.key` - Certificate for port 9443 listener (from `client-certs` secret, source: `certs/ca1/client-certs-8443-9443-secret.yaml`)
+- `/etc/client-certs-frontend/tls.crt` / `/etc/client-certs-frontend/tls.key` - Certificate for FrontendTLSConfig tests on ports 8444/8445 (from `client-cert` secret, source: `certs/ca1/client-cert-secret.yaml`, signed by CA 1)
+- `/etc/client-certs-2-frontend/tls.crt` / `/etc/client-certs-2-frontend/tls.key` - Certificate for multiple CA tests on port 8446 (from `client-cert-2` secret, source: `certs/ca2/client-cert-2-secret.yaml`, signed by CA 2)
+- `/etc/client-matching-san/tls.crt` / `/etc/client-matching-san/tls.key` - Certificate with SAN `DNS:mtls.example.com` for verify-subject-alt-names test (should succeed) (from `client-matching-san` secret, source: `certs/ca-alt-names/client-matching-san-secret.yaml`)
+- `/etc/client-non-matching-san/tls.crt` / `/etc/client-non-matching-san/tls.key` - Certificate with SAN `DNS:mtls-alt.example.com` for verify-subject-alt-names test (should fail) (from `client-non-matching-san` secret, source: `certs/ca-alt-names/client-non-matching-san-secret.yaml`)
 
 ### Gateway Configuration
 - **Port 8443** (mtls.example.com): `verify-certificate-hash` = SHA256 of the port 8443 certificate + default FrontendTLSConfig (AllowInsecureFallback)
@@ -120,6 +127,7 @@ In the tests, these certificates are mounted into the curl pod from Kubernetes s
 - **Port 8444** (example.com): FrontendTLSConfig per-port (AllowInsecureFallback) - client cert optional
 - **Port 8445** (example.com): FrontendTLSConfig per-port (AllowValidOnly) - client cert required
 - **Port 8446** (*.example.com): FrontendTLSConfig per-port (AllowValidOnly) with **multiple CA cert refs** (ca-cert and ca-cert-2) for wildcard domain - client cert required, accepts certs signed by either CA
+- **Port 8447** (mtls.example.com): `verify-subject-alt-names: "mtls.example.com"` + FrontendTLSConfig per-port (AllowValidOnly) with `ca-alt-names-cert` CA - client cert required with SAN validation
 
 ### Test Validation
 
@@ -129,6 +137,11 @@ The test suite uses these certificates with curl's `--cert` and `--key` flags to
 2. Connections fail when the client cert hash doesn't match (cross-validation between ports)
 3. Connections fail when no client cert is provided to an mTLS-enabled listener
 4. The regular listener (port 443) works without client certificates
+
+#### verify-subject-alt-names Tests (TestVerifySubjectAltNames)
+The test suite validates that client certificates are checked for matching Subject Alternative Name extensions:
+1. **Port 8447** requires `verify-subject-alt-names: "mtls.example.com"` - accepts `client-matching-san.crt` (has matching `DNS:mtls.example.com` SAN), rejects `client-non-matching-san.crt` (has non-matching `DNS:mtls-alt.example.com` SAN)
+2. Ensures that certificates without the required SAN entries are properly rejected during mutual TLS handshake
 
 #### FrontendTLSConfig Tests (TestFrontendTLSConfig)
 The test suite validates FrontendTLSConfig behavior:

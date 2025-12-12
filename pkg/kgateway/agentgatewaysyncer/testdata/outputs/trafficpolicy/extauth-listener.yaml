@@ -46,6 +46,7 @@ Policies:
       namespace: default
   traffic:
     extAuthz:
+      grpc: {}
       includeRequestBody:
         allowPartialMessage: true
         maxRequestBytes: 1024

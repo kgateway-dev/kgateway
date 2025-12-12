@@ -54,10 +54,18 @@ spec:
                 properties:
                   agentgateway:
                     description: |-
-                      Configure the agentgateway integration. If agentgateway is disabled, the
-                      EnvoyContainer values will be used by default to configure the data
-                      plane proxy.
+                      Obsolete: This field is no longer used. Agentgateway configuration is now
+                      determined automatically based on the GatewayClass controllerName
+                      (agentgateway.dev/agentgateway). Use the AgentgatewayParameters API to
+                      configure agentgateway deployments. Any values specified here are ignored.
                     properties:
+                      enabled:
+                        description: |-
+                          Obsolete: This field is no longer used. The agentgateway dataplane is
+                          automatically enabled when the Gateway references a GatewayClass with
+                          controllerName: agentgateway.dev/agentgateway. Use the AgentgatewayParameters
+                          API to configure agentgateway deployments. Any values specified here are ignored.
+                        type: boolean
                       env:
                         description: The container environment variables.
                         items:
@@ -646,10 +654,7 @@ spec:
                         type: object
                     type: object
                   envoyContainer:
-                    description: |-
-                      Configuration for the container running Envoy.
-                      If the Gateway uses a GatewayClass with controllerName: agentgateway.dev/agentgateway,
-                      the EnvoyContainer values will be ignored.
+                    description: Configuration for the container running Envoy.
                     properties:
                       bootstrap:
                         description: Initial envoy configuration.

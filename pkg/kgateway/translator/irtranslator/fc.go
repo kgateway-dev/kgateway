@@ -11,6 +11,7 @@ import (
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -520,6 +521,21 @@ func buildValidationContext(tlsConfig *ir.TLSConfig) *envoytlsv3.CertificateVali
 	if len(tlsConfig.VerifyCertificateHash) > 0 {
 		validationContext = &envoytlsv3.CertificateValidationContext{
 			VerifyCertificateHash: tlsConfig.VerifyCertificateHash,
+		}
+	}
+
+	// We have already validated that if there are verify subject alt names, there is a trusted CA
+	if len(tlsConfig.VerifySubjectAltNames) > 0 {
+		if validationContext == nil {
+			validationContext = &envoytlsv3.CertificateValidationContext{}
+		}
+		for _, name := range tlsConfig.VerifySubjectAltNames {
+			validationContext.MatchTypedSubjectAltNames = append(validationContext.MatchTypedSubjectAltNames, &envoytlsv3.SubjectAltNameMatcher{
+				SanType: envoytlsv3.SubjectAltNameMatcher_DNS,
+				Matcher: &envoymatcher.StringMatcher{
+					MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: name},
+				},
+			})
 		}
 	}
 

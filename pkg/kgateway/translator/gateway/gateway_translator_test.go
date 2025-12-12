@@ -103,6 +103,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("frontendtlsconfig with verify subject alt names missing ca certificate", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "frontendtlsconfig/verify-subject-alt-names-missing-ca.yaml",
+			outputFile: "frontendtlsconfig/verify-subject-alt-names-missing-ca.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("http gateway with per connection buffer limit", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "gateway-per-conn-buf-lim/gateway.yaml",

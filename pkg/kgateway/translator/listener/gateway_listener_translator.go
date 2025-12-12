@@ -879,9 +879,15 @@ func translateTLSConfig(
 		return nil, err
 	}
 
+	// Validate that VerifySubjectAltNames requires a trusted CA to be configured
+	hasTrustedCA := resolvedValidation != nil && len(resolvedValidation.CACertificateRefs) > 0
+	if len(tlsConfig.VerifySubjectAltNames) > 0 && !hasTrustedCA {
+		return nil, sslutils.ErrVerifySubjectAltNamesRequiresCA
+	}
+
 	// Apply client certificate validation if present
 	// Skip if CA cert refs are empty (no validation possible)
-	if resolvedValidation != nil && len(resolvedValidation.CACertificateRefs) > 0 {
+	if hasTrustedCA {
 		// For AllowInsecureFallback mode, if CA cert fetching fails, skip validation rather than failing the listener
 		// This allows the listener to work without client certs even if the CA cert ConfigMap is missing
 		if err := applyClientCertificateValidation(kctx, ctx, queries, listener, resolvedValidation, tlsConfig); err != nil {
@@ -1036,13 +1042,17 @@ func applyClientCertificateValidation(
 func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter) {
 	reason := gwv1.ListenerReasonInvalidCertificateRef
 	message := "Invalid certificate ref(s)."
-	if errors.Is(err, krtcollections.ErrMissingReferenceGrant) {
+
+	switch {
+	case errors.Is(err, krtcollections.ErrMissingReferenceGrant):
 		reason = gwv1.ListenerReasonRefNotPermitted
 		message = "Reference not permitted by ReferenceGrant."
-	}
-	if errors.Is(err, sslutils.ErrInvalidTlsSecret) {
+	case errors.Is(err, sslutils.ErrInvalidTlsSecret):
+		message = err.Error()
+	case errors.Is(err, sslutils.ErrVerifySubjectAltNamesRequiresCA):
 		message = err.Error()
 	}
+
 	var notFoundErr *krtcollections.NotFoundError
 	if errors.As(err, &notFoundErr) {
 		resourceType := notFoundErr.NotFoundObj.Kind
