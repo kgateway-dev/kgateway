@@ -12,9 +12,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
-	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
-
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
+	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 )
 
 var (

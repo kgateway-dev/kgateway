@@ -5,17 +5,18 @@ import (
 
 	"github.com/agentgateway/agentgateway/go/api"
 	"istio.io/istio/pilot/pkg/util/protoconv"
+	"istio.io/istio/pkg/config"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 )
 
 // AgwPolicyStatusSyncHandler defines a function that handles status syncing for a specific policy type in AgentGateway
-type AgwPolicyStatusSyncHandler func(ctx context.Context, client client.Client, namespacedName types.NamespacedName, status gwv1.PolicyStatus) error
+type AgwPolicyStatusSyncHandler func(ctx context.Context, client apiclient.Client, namespacedName types.NamespacedName, status gwv1.PolicyStatus) error
 
 type PolicyPlugin struct {
 	Policies       krt.Collection[AgwPolicy]
@@ -38,7 +39,7 @@ func (p AgwPolicy) Equals(in AgwPolicy) bool {
 }
 
 func (p AgwPolicy) ResourceName() string {
-	return p.Policy.Name
+	return p.Policy.Key
 }
 
 type AddResourcesPlugin struct {
@@ -60,4 +61,27 @@ func (p *AddResourcesPlugin) AddListeners() krt.Collection[ir.AgwResource] {
 // AddRoutes extracts all routes resources from the collection
 func (p *AddResourcesPlugin) AddRoutes() krt.Collection[ir.AgwResource] {
 	return p.Routes
+}
+
+func ResourceName[T config.Namer](o T) *api.ResourceName {
+	return &api.ResourceName{
+		Namespace: o.GetNamespace(),
+		Name:      o.GetName(),
+	}
+}
+
+func TypedResourceName[T config.Namer](typ string, o T) *api.TypedResourceName {
+	return &api.TypedResourceName{
+		Kind:      typ,
+		Namespace: o.GetNamespace(),
+		Name:      o.GetName(),
+	}
+}
+
+func TypedResourceFromName(typ string, o types.NamespacedName) *api.TypedResourceName {
+	return &api.TypedResourceName{
+		Kind:      typ,
+		Namespace: o.Namespace,
+		Name:      o.Name,
+	}
 }

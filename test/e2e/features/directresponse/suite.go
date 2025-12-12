@@ -7,12 +7,13 @@ import (
 	"net/http"
 	"time"
 
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	. "github.com/onsi/gomega"
+
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
@@ -113,7 +114,7 @@ func (s *testingSuite) AfterTest(suiteName, testName string) {
 		s.ti.Assertions.ExpectObjectDeleted(manifest, err, output)
 	}
 
-	s.ti.Assertions.EventuallyObjectTypesNotExist(s.ctx, &gwv1.HTTPRouteList{}, &v1alpha1.DirectResponseList{})
+	s.ti.Assertions.EventuallyObjectTypesNotExist(s.ctx, &gwv1.HTTPRouteList{}, &kgateway.DirectResponseList{})
 }
 
 func (s *testingSuite) TestBasicDirectResponse() {

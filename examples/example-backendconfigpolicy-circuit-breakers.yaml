@@ -1,0 +1,18 @@
+# Example: BackendConfigPolicy with Circuit Breakers
+# Applies circuit breaker limits to a Service backend
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: httpbin-cb
+  namespace: default
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: httpbin
+  circuitBreakers:
+    maxConnections: 1000
+    maxPendingRequests: 500
+    maxRequests: 2000
+    maxRetries: 10

@@ -1,12 +1,12 @@
 package curl_test
 
 import (
-	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
-
 	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 )
 
 var _ = Describe("Curl", func() {
@@ -39,7 +39,7 @@ var _ = Describe("Curl", func() {
 			),
 			Entry("WithBody",
 				curl.WithBody("body"),
-				ContainElement("-d"),
+				ContainElement("--data-binary"),
 			),
 			Entry("WithRetries",
 				curl.WithRetries(1, 1, 1),

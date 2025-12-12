@@ -131,8 +131,8 @@ func (di *downwardInjectable) PodAnnotations() map[string]string { return di.pod
 func parse(data []byte) map[string]string {
 	m := map[string]string{}
 
-	lines := strings.Split(string(data), "\n")
-	for _, l := range lines {
+	lines := strings.SplitSeq(string(data), "\n")
+	for l := range lines {
 		l = strings.TrimSpace(l)
 		parts := strings.SplitN(l, "=", 2)
 		if len(parts) != 2 {

@@ -14,7 +14,9 @@ import (
 
 var (
 	// manifests
-	setupManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
+	setupManifest                 = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
+	setupCommonManifest           = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup-common.yaml")
+	setupWithListenerSetsManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup-with-listenersets.yaml")
 
 	// objects
 	proxyObjectMeta = metav1.ObjectMeta{
@@ -28,10 +30,20 @@ var (
 	}
 
 	setup = base.TestCase{
-		Manifests: []string{setupManifest, e2edefaults.CurlPodManifest},
+		Manifests: []string{setupManifest, setupCommonManifest, e2edefaults.CurlPodManifest},
 	}
 
+	setupWithListenerSets = base.TestCase{
+		Manifests: []string{setupWithListenerSetsManifest, setupCommonManifest, e2edefaults.CurlPodManifest},
+	}
+
+	// We only want to run one version of the metrics test because they will interfere with each other.
 	testCases = map[string]*base.TestCase{
-		"TestMetrics": {},
+		"TestMetrics": {
+			MaxGwApiVersion: base.GwApiRequireListenerSets,
+		},
+		"TestMetricsWithListenerSets": {
+			MinGwApiVersion: base.GwApiRequireListenerSets,
+		},
 	}
 )

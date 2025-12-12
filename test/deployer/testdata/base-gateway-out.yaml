@@ -1,9 +1,7 @@
----
-# Source: kgateway-proxy/templates/serviceaccount.yaml
 apiVersion: v1
+automountServiceAccountToken: false
 kind: ServiceAccount
 metadata:
-  name: gw
   labels:
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: kgateway
@@ -12,21 +10,9 @@ metadata:
     gateway.networking.k8s.io/gateway-class-name: kgateway
     gateway.networking.k8s.io/gateway-name: gw
     kgateway: kube-gateway
-automountServiceAccountToken: false
+  name: gw
 ---
-# Source: kgateway-proxy/templates/configmap.yaml
 apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: gw
-  labels:
-    app.kubernetes.io/instance: gw
-    app.kubernetes.io/managed-by: kgateway
-    app.kubernetes.io/name: gw
-    app.kubernetes.io/version: 1.0.0-ci1
-    gateway.networking.k8s.io/gateway-class-name: kgateway
-    gateway.networking.k8s.io/gateway-name: gw
-    kgateway: kube-gateway
 data:
   envoy.yaml: |
     admin:
@@ -204,12 +190,21 @@ data:
       lds_config:
         resource_api_version: V3
         ads: {}
+kind: ConfigMap
+metadata:
+  labels:
+    app.kubernetes.io/instance: gw
+    app.kubernetes.io/managed-by: kgateway
+    app.kubernetes.io/name: gw
+    app.kubernetes.io/version: 1.0.0-ci1
+    gateway.networking.k8s.io/gateway-class-name: kgateway
+    gateway.networking.k8s.io/gateway-name: gw
+    kgateway: kube-gateway
+  name: gw
 ---
-# Source: kgateway-proxy/templates/service.yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: gw
   labels:
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: kgateway
@@ -218,23 +213,24 @@ metadata:
     gateway.networking.k8s.io/gateway-class-name: kgateway
     gateway.networking.k8s.io/gateway-name: gw
     kgateway: kube-gateway
+  name: gw
 spec:
-  type: LoadBalancer
   ports:
   - name: listener-8080
+    port: 8080
     protocol: TCP
     targetPort: 8080
-    port: 8080
   selector:
-    app.kubernetes.io/name: gw
     app.kubernetes.io/instance: gw
+    app.kubernetes.io/name: gw
     gateway.networking.k8s.io/gateway-name: gw
+  type: LoadBalancer
+status:
+  loadBalancer: {}
 ---
-# Source: kgateway-proxy/templates/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: gw
   labels:
     app.kubernetes.io/instance: gw
     app.kubernetes.io/managed-by: kgateway
@@ -243,12 +239,14 @@ metadata:
     gateway.networking.k8s.io/gateway-class-name: kgateway
     gateway.networking.k8s.io/gateway-name: gw
     kgateway: kube-gateway
+  name: gw
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: gw
       app.kubernetes.io/instance: gw
+      app.kubernetes.io/name: gw
       gateway.networking.k8s.io/gateway-name: gw
+  strategy: {}
   template:
     metadata:
       annotations:
@@ -262,30 +260,13 @@ spec:
         gateway.networking.k8s.io/gateway-name: gw
         kgateway: kube-gateway
     spec:
-      serviceAccountName: gw
       containers:
-      - name: kgateway-proxy
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-            - ALL
-          readOnlyRootFilesystem: true
-          runAsNonRoot: true
-          runAsUser: 10101
-        args:
-        - "--disable-hot-restart"
-        - "--service-node"
+      - args:
+        - --disable-hot-restart
+        - --service-node
         - $(POD_NAME).$(POD_NAMESPACE)
-        - "--log-level"
-        - "info"
-        image: "ghcr.io/envoy-wrapper:v2.1.0-dev"
-        volumeMounts:
-        - mountPath: /etc/envoy
-          name: envoy-config
-        - name: xds-token
-          mountPath: /var/run/secrets/tokens
-          readOnly: true
+        - --log-level
+        - info
         env:
         - name: POD_NAME
           valueFrom:
@@ -297,12 +278,36 @@ spec:
               fieldPath: metadata.namespace
         - name: ENVOY_UID
           value: "0"
+        image: ghcr.io/envoy-wrapper:v2.1.0-dev
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - wget --post-data "" -O /dev/null 127.0.0.1:19000/healthcheck/fail;
+                sleep 10
+        name: kgateway-proxy
         ports:
-        - name: listener-8080
+        - containerPort: 8080
+          name: listener-8080
           protocol: TCP
-          containerPort: 8080
-        - name: http-monitoring
-          containerPort: 9091
+        - containerPort: 9091
+          name: http-monitoring
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8082
+          periodSeconds: 10
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 10101
         startupProbe:
           failureThreshold: 60
           httpGet:
@@ -311,18 +316,13 @@ spec:
           periodSeconds: 1
           successThreshold: 1
           timeoutSeconds: 2
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: 8082
-          periodSeconds: 10
-        lifecycle:
-          preStop:
-            exec:
-              command:
-              - /bin/sh
-              - -c
-              - wget --post-data "" -O /dev/null 127.0.0.1:19000/healthcheck/fail; sleep 10
+        volumeMounts:
+        - mountPath: /etc/envoy
+          name: envoy-config
+        - mountPath: /var/run/secrets/tokens
+          name: xds-token
+          readOnly: true
+      serviceAccountName: gw
       terminationGracePeriodSeconds: 60
       volumes:
       - name: xds-token
@@ -335,3 +335,4 @@ spec:
       - configMap:
           name: gw
         name: envoy-config
+status: {}

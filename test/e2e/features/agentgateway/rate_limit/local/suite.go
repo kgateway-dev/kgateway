@@ -117,7 +117,7 @@ func (s *testingSuite) TestLocalRateLimitForRoute() {
 	s.setupTest([]string{httpRoutesManifest, routeLocalRateLimitManifest}, []client.Object{route, route2, routeRateLimitTrafficPolicy})
 
 	// First request should be successful
-	s.assertResponse("/path1", http.StatusOK)
+	s.assertResponse("/path1")
 
 	// Consecutive requests should be rate limited
 	s.assertConsistentResponse("/path1", http.StatusTooManyRequests)
@@ -131,7 +131,7 @@ func (s *testingSuite) TestLocalRateLimitForGateway() {
 	s.setupTest([]string{httpRoutesManifest, gwLocalRateLimitManifest}, []client.Object{route, route2, gwRateLimitTrafficPolicy})
 
 	// First request should be successful (to any route)
-	s.assertResponse("/path1", http.StatusOK)
+	s.assertResponse("/path1")
 
 	// Consecutive requests should be rate limited
 	s.assertConsistentResponse("/path1", http.StatusTooManyRequests)
@@ -148,7 +148,7 @@ func (s *testingSuite) TestLocalRateLimitDisabledForRoute() {
 		[]client.Object{route, route2, gwRateLimitTrafficPolicy, routeRateLimitTrafficPolicy})
 
 	// First request should be successful (to any route)
-	s.assertResponse("/path1", http.StatusOK)
+	s.assertResponse("/path1")
 
 	// Consecutive requests should not be rate limited (disaled for this path)
 	s.assertConsistentResponse("/path1", http.StatusOK)
@@ -163,7 +163,7 @@ func (s *testingSuite) TestLocalRateLimitForRouteUsingExtensionRef() {
 	s.setupTest([]string{extensionRefManifest}, []client.Object{route, routeRateLimitTrafficPolicy})
 
 	// First request should be successful
-	s.assertResponse("/path2", http.StatusOK)
+	s.assertResponse("/path2")
 
 	// Consecutive requests should be rate limited
 	s.assertConsistentResponse("/path2", http.StatusTooManyRequests)
@@ -188,7 +188,7 @@ func (s *testingSuite) setupTest(manifests []string, resources []client.Object) 
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, resources...)
 }
 
-func (s *testingSuite) assertResponse(path string, expectedStatus int) {
+func (s *testingSuite) assertResponse(path string) {
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
@@ -199,7 +199,7 @@ func (s *testingSuite) assertResponse(path string, expectedStatus int) {
 			curl.WithPort(8080),
 		},
 		&testmatchers.HttpResponse{
-			StatusCode: expectedStatus,
+			StatusCode: http.StatusOK,
 		})
 }
 

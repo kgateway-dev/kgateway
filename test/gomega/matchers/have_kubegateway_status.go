@@ -48,7 +48,7 @@ type HaveKubeGatewayRouteStatusMatcher struct {
 	evaluated bool
 }
 
-func (m *HaveKubeGatewayRouteStatusMatcher) Match(actual interface{}) (success bool, err error) {
+func (m *HaveKubeGatewayRouteStatusMatcher) Match(actual any) (success bool, err error) {
 	if m.evaluated {
 		// Matchers are intended to be short-lived, and we have seen inconsistent behaviors
 		// when evaluating the same matcher multiple times.
@@ -71,13 +71,13 @@ func (m *HaveKubeGatewayRouteStatusMatcher) Match(actual interface{}) (success b
 	return true, nil
 }
 
-func (m *HaveKubeGatewayRouteStatusMatcher) FailureMessage(actual interface{}) (message string) {
+func (m *HaveKubeGatewayRouteStatusMatcher) FailureMessage(actual any) (message string) {
 	return fmt.Sprintf("%s \n%s",
 		m.statusMatcher.FailureMessage(actual),
 		informativeComparison(m.Expected, actual))
 }
 
-func (m *HaveKubeGatewayRouteStatusMatcher) NegatedFailureMessage(actual interface{}) (message string) {
+func (m *HaveKubeGatewayRouteStatusMatcher) NegatedFailureMessage(actual any) (message string) {
 	return fmt.Sprintf("%s \n%s",
 		m.statusMatcher.NegatedFailureMessage(actual),
 		informativeComparison(m.Expected, actual))

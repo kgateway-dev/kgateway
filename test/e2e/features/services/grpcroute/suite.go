@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
@@ -60,7 +60,7 @@ func (s *testingSuite) TestGRPCRoute() {
 		s.ctx,
 		gatewayName,
 		testNamespace,
-		v1.GatewayConditionAccepted,
+		gwv1.GatewayConditionAccepted,
 		metav1.ConditionTrue,
 		timeout,
 	)
@@ -70,7 +70,7 @@ func (s *testingSuite) TestGRPCRoute() {
 		s.ctx,
 		gatewayName,
 		testNamespace,
-		v1.GatewayConditionProgrammed,
+		gwv1.GatewayConditionProgrammed,
 		metav1.ConditionTrue,
 		timeout,
 	)
@@ -84,10 +84,10 @@ func (s *testingSuite) TestGRPCRoute() {
 	})
 
 	// Wait for GRPCRoute to be accepted
-	s.testInstallation.Assertions.EventuallyGRPCRouteCondition(s.ctx, grpcRouteName, testNamespace, v1.RouteConditionAccepted, metav1.ConditionTrue, timeout)
+	s.testInstallation.Assertions.EventuallyGRPCRouteCondition(s.ctx, grpcRouteName, testNamespace, gwv1.RouteConditionAccepted, metav1.ConditionTrue, timeout)
 
 	// Wait for GRPCRoute to have resolved references
-	s.testInstallation.Assertions.EventuallyGRPCRouteCondition(s.ctx, grpcRouteName, testNamespace, v1.RouteConditionResolvedRefs, metav1.ConditionTrue, timeout)
+	s.testInstallation.Assertions.EventuallyGRPCRouteCondition(s.ctx, grpcRouteName, testNamespace, gwv1.RouteConditionResolvedRefs, metav1.ConditionTrue, timeout)
 
 	grpcurlOptions := []grpcurl.Option{
 		grpcurl.WithAddress(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),

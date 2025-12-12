@@ -10,45 +10,40 @@ import (
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/backendtlspolicy"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendtlspolicy"
 	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/helpers"
-	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var (
-	configMapManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata/configmap.yaml")
+	configMapManifest                     = filepath.Join(fsutils.MustGetThisDir(), "testdata/configmap.yaml")
+	backendTLSPolicyMissingTargetManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata/missing-target.yaml")
 
 	proxyObjMeta = metav1.ObjectMeta{
 		Name:      "gw",
 		Namespace: "default",
 	}
-	proxyDeployment  = &appsv1.Deployment{ObjectMeta: proxyObjMeta}
+
 	proxyService     = &corev1.Service{ObjectMeta: proxyObjMeta}
 	backendTlsPolicy = &gwv1.BackendTLSPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "tls-policy",
-			Namespace: "default",
-		},
-	}
-	configMap = &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "ca",
 			Namespace: "default",
 		},
 	}
@@ -62,70 +57,50 @@ var (
 	}
 	svcGroup = ""
 	svcKind  = "Service"
+
+	// base setup manifests (shared between regular and agentgateway)
+	baseSetupManifests = []string{
+		filepath.Join(fsutils.MustGetThisDir(), "testdata/nginx.yaml"),
+		defaults.CurlPodManifest,
+		configMapManifest,
+	}
+
+	// test cases
+	testCases = map[string]*base.TestCase{
+		"TestBackendTLSPolicyAndStatus": {},
+	}
 )
 
 type tsuite struct {
-	suite.Suite
-	ctx              context.Context
-	testInstallation *e2e.TestInstallation
-	baseManifests    []string
-	agentgateway     bool
+	*base.BaseTestingSuite
+	agentgateway bool
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+	setup := base.TestCase{
+		Manifests: append([]string{filepath.Join(fsutils.MustGetThisDir(), "testdata/base.yaml")}, baseSetupManifests...),
+	}
 	return &tsuite{
-		ctx:              ctx,
-		testInstallation: testInst,
-		baseManifests: []string{
-			filepath.Join(fsutils.MustGetThisDir(), "testdata/base.yaml"),
-			filepath.Join(fsutils.MustGetThisDir(), "testdata/nginx.yaml"),
-			defaults.CurlPodManifest,
-		},
+		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setup, testCases, base.WithMinGwApiVersion(base.GwApiRequireBackendTLSPolicy)),
+		agentgateway:     false,
 	}
 }
 
 func NewAgentgatewayTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+	setup := base.TestCase{
+		Manifests: append([]string{filepath.Join(fsutils.MustGetThisDir(), "testdata/base-agw.yaml")}, baseSetupManifests...),
+	}
+
 	return &tsuite{
-		ctx:              ctx,
-		testInstallation: testInst,
+		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setup, testCases, base.WithMinGwApiVersion(base.GwApiRequireBackendTLSPolicy)),
 		agentgateway:     true,
-		baseManifests: []string{
-			filepath.Join(fsutils.MustGetThisDir(), "testdata/base-agw.yaml"),
-			filepath.Join(fsutils.MustGetThisDir(), "testdata/nginx.yaml"),
-			defaults.CurlPodManifest,
-		},
 	}
 }
 
 func (s *tsuite) TestBackendTLSPolicyAndStatus() {
-	testutils.Cleanup(s.T(), func() {
-		for _, manifest := range s.baseManifests {
-			err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
-			s.Require().NoError(err)
-		}
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment, backendTlsPolicy)
-	})
-
-	toCreate := append(s.baseManifests, configMapManifest)
-	for _, manifest := range toCreate {
-		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
-		s.Require().NoError(err)
-	}
-
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment, backendTlsPolicy, configMap)
-	// TODO: make this a specific assertion to remove the need for c/p the label selector
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, defaults.CurlPod.GetNamespace(), metav1.ListOptions{
-		LabelSelector: defaults.WellKnownAppLabel + "=curl",
-	})
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, nginxMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: defaults.WellKnownAppLabel + "=nginx",
-	})
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, nginx2Meta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: defaults.WellKnownAppLabel + "=nginx2",
-	})
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: defaults.WellKnownAppLabel + "=gw",
-	})
+	// Load the BackendTLSPolicy before proceeding with tests
+	err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, client.ObjectKeyFromObject(backendTlsPolicy), backendTlsPolicy)
+	s.Require().NoError(err)
 
 	tt := []struct {
 		host string
@@ -138,8 +113,8 @@ func (s *tsuite) TestBackendTLSPolicyAndStatus() {
 		},
 	}
 	for _, tc := range tt {
-		s.testInstallation.Assertions.AssertEventualCurlResponse(
-			s.ctx,
+		s.TestInstallation.Assertions.AssertEventualCurlResponse(
+			s.Ctx,
 			defaults.CurlPodExecOpt,
 			[]curl.Option{
 				curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
@@ -153,8 +128,13 @@ func (s *tsuite) TestBackendTLSPolicyAndStatus() {
 		)
 	}
 
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
-		s.ctx,
+	expectedStatus := http.StatusNotFound
+	if s.agentgateway {
+		// agentgateway does auto host rewrite
+		expectedStatus = http.StatusMovedPermanently
+	}
+	s.TestInstallation.Assertions.AssertEventualCurlResponse(
+		s.Ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
@@ -163,7 +143,7 @@ func (s *tsuite) TestBackendTLSPolicyAndStatus() {
 		},
 		&matchers.HttpResponse{
 			// google return 404 this when going to google.com  with host header of "foo.com"
-			StatusCode: http.StatusNotFound,
+			StatusCode: expectedStatus,
 		},
 	)
 
@@ -173,22 +153,22 @@ func (s *tsuite) TestBackendTLSPolicyAndStatus() {
 		return
 	}
 	s.assertPolicyStatus(metav1.Condition{
-		Type:               string(v1alpha1.PolicyConditionAccepted),
+		Type:               string(shared.PolicyConditionAccepted),
 		Status:             metav1.ConditionTrue,
-		Reason:             string(v1alpha1.PolicyReasonValid),
+		Reason:             string(shared.PolicyReasonValid),
 		Message:            reports.PolicyAcceptedMsg,
 		ObservedGeneration: backendTlsPolicy.Generation,
 	})
 	s.assertPolicyStatus(metav1.Condition{
-		Type:               string(v1alpha1.PolicyConditionAttached),
+		Type:               string(shared.PolicyConditionAttached),
 		Status:             metav1.ConditionTrue,
-		Reason:             string(v1alpha1.PolicyReasonAttached),
+		Reason:             string(shared.PolicyReasonAttached),
 		Message:            reports.PolicyAttachedMsg,
 		ObservedGeneration: backendTlsPolicy.Generation,
 	})
 
 	// delete configmap so we can assert status updates correctly
-	err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, configMapManifest)
+	err = s.TestInstallation.Actions.Kubectl().DeleteFile(s.Ctx, configMapManifest)
 	s.Require().NoError(err)
 
 	s.assertPolicyStatus(metav1.Condition{
@@ -202,11 +182,11 @@ func (s *tsuite) TestBackendTLSPolicyAndStatus() {
 
 func (s *tsuite) assertPolicyStatus(inCondition metav1.Condition) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
-	p := s.testInstallation.Assertions
+	p := s.TestInstallation.Assertions
 	p.Gomega.Eventually(func(g gomega.Gomega) {
 		tlsPol := &gwv1.BackendTLSPolicy{}
 		objKey := client.ObjectKeyFromObject(backendTlsPolicy)
-		err := s.testInstallation.ClusterContext.Client.Get(s.ctx, objKey, tlsPol)
+		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, objKey, tlsPol)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get BackendTLSPolicy %s", objKey)
 
 		g.Expect(tlsPol.Status.Ancestors).To(gomega.HaveLen(2), "ancestors didn't have length of 2")
@@ -237,6 +217,109 @@ func (s *tsuite) assertPolicyStatus(inCondition metav1.Condition) {
 			g.Expect(cond.Reason).To(gomega.Equal(inCondition.Reason), "policy reason should be accepted")
 			g.Expect(cond.Message).To(gomega.Equal(inCondition.Message))
 			g.Expect(cond.ObservedGeneration).To(gomega.Equal(inCondition.ObservedGeneration))
+		}
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+}
+
+const (
+	kgatewayControllerName = "kgateway.dev/kgateway"
+	otherControllerName    = "other-controller.example.com/controller"
+)
+
+// TestBackendTLSPolicyClearStaleStatus verifies that stale status is cleared when targetRef becomes invalid
+func (s *tsuite) TestBackendTLSPolicyClearStaleStatus() {
+	if s.agentgateway {
+		s.T().Log("Skipping status test for Agentgateway as statuses are not currently supported")
+		return
+	}
+
+	// Test applies base.yaml via setup which includes "tls-policy" targeting Services "nginx" and "nginx2"
+	// Add fake ancestor status from another controller
+	s.addAncestorStatus("tls-policy", "default", otherControllerName)
+
+	// Verify both kgateway and other controller statuses exist
+	s.assertAncestorStatuses("nginx", map[string]bool{
+		kgatewayControllerName: true,
+		otherControllerName:    true,
+	})
+
+	// Apply policy with missing service target
+	err := s.TestInstallation.Actions.Kubectl().ApplyFile(
+		s.Ctx,
+		backendTLSPolicyMissingTargetManifest,
+	)
+	s.Require().NoError(err)
+
+	// Verify kgateway status cleared, other remains
+	s.assertAncestorStatuses("nginx", map[string]bool{
+		kgatewayControllerName: false,
+		otherControllerName:    true,
+	})
+	// AfterTest() handles cleanup automatically
+}
+
+func (s *tsuite) addAncestorStatus(policyName, policyNamespace, controllerName string) {
+	currentTimeout, pollingInterval := helpers.GetTimeouts()
+	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+		policy := &gwv1.BackendTLSPolicy{}
+		err := s.TestInstallation.ClusterContext.Client.Get(
+			s.Ctx,
+			types.NamespacedName{Name: policyName, Namespace: policyNamespace},
+			policy,
+		)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+
+		// Add fake ancestor status
+		fakeStatus := gwv1.PolicyAncestorStatus{
+			AncestorRef: gwv1.ParentReference{
+				Group:     (*gwv1.Group)(&svcGroup),
+				Kind:      (*gwv1.Kind)(&svcKind),
+				Namespace: ptr.To(gwv1.Namespace(nginxMeta.Namespace)),
+				Name:      gwv1.ObjectName(nginxMeta.Name),
+			},
+			ControllerName: gwv1.GatewayController(controllerName),
+			Conditions: []metav1.Condition{
+				{
+					Type:               string(shared.PolicyConditionAccepted),
+					Status:             metav1.ConditionTrue,
+					Reason:             string(shared.PolicyReasonValid),
+					Message:            "Accepted by fake controller",
+					LastTransitionTime: metav1.Now(),
+				},
+			},
+		}
+
+		policy.Status.Ancestors = append(policy.Status.Ancestors, fakeStatus)
+		err = s.TestInstallation.ClusterContext.Client.Status().Update(s.Ctx, policy)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+}
+
+func (s *tsuite) assertAncestorStatuses(ancestorName string, expectedControllers map[string]bool) {
+	currentTimeout, pollingInterval := helpers.GetTimeouts()
+	s.TestInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+		policy := &gwv1.BackendTLSPolicy{}
+		err := s.TestInstallation.ClusterContext.Client.Get(
+			s.Ctx,
+			types.NamespacedName{Name: "tls-policy", Namespace: "default"},
+			policy,
+		)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+
+		foundControllers := make(map[string]bool)
+		for _, ancestor := range policy.Status.Ancestors {
+			if string(ancestor.AncestorRef.Name) == ancestorName {
+				foundControllers[string(ancestor.ControllerName)] = true
+			}
+		}
+
+		for controller, shouldExist := range expectedControllers {
+			exists := foundControllers[controller]
+			if shouldExist {
+				g.Expect(exists).To(gomega.BeTrue(), "Expected controller %s to exist in status", controller)
+			} else {
+				g.Expect(exists).To(gomega.BeFalse(), "Expected controller %s to not exist in status", controller)
+			}
 		}
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }

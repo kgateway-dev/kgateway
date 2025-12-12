@@ -85,11 +85,17 @@ kind: Gateway
 metadata:
   name: gw
 spec:
-  gatewayClassName: agentgateway
+  gatewayClassName: agentgateway-v2
   listeners:
   - name: http-8080
     protocol: HTTP
     port: 8080
+    allowedRoutes:
+      namespaces:
+        from: All
+  - name: idp-8081
+    protocol: HTTP
+    port: 8081
     allowedRoutes:
       namespaces:
         from: All

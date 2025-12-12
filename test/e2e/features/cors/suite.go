@@ -26,7 +26,9 @@ type testingSuite struct {
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &testingSuite{
-		base.NewBaseTestingSuite(ctx, testInst, setup, testCases),
+		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setup, testCases,
+			base.WithMinGwApiVersion(base.GwApiRequireCorsFilters),
+		),
 	}
 }
 
@@ -68,10 +70,10 @@ func (s *testingSuite) TestTrafficPolicyCorsForRoute() {
 			}
 
 			// Verify that the route with cors is responding to the OPTIONS request with the expected cors headers
-			s.assertResponse("/path1", http.StatusOK, requestHeaders, expectedHeaders, []string{})
+			s.assertResponse("/path1", requestHeaders, expectedHeaders, []string{})
 
 			// Verify that the route without cors is not affected by the cors traffic policy (i.e. no cors headers are returned)
-			s.assertResponse("/path2", http.StatusOK, requestHeaders, nil, []string{
+			s.assertResponse("/path2", requestHeaders, nil, []string{
 				"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers",
 			})
 		})
@@ -121,12 +123,12 @@ func (s *testingSuite) TestTrafficPolicyCorsForRoute() {
 
 			// For negative cases, we expect no CORS headers to be returned
 			// since the origin doesn't match any of the allowed patterns
-			s.assertResponse("/path1", http.StatusOK, requestHeaders, nil, []string{
+			s.assertResponse("/path1", requestHeaders, nil, []string{
 				"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers",
 			})
 
 			// Verify that the route without cors is also not affected
-			s.assertResponse("/path2", http.StatusOK, requestHeaders, nil, []string{
+			s.assertResponse("/path2", requestHeaders, nil, []string{
 				"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers",
 			})
 		})
@@ -146,8 +148,8 @@ func (s *testingSuite) TestTrafficPolicyCorsAtGatewayLevel() {
 		"Access-Control-Allow-Headers": "Content-Type, Authorization",
 	}
 
-	s.assertResponse("/path1", http.StatusOK, requestHeaders, expectedHeaders, []string{})
-	s.assertResponse("/path2", http.StatusOK, requestHeaders, expectedHeaders, []string{})
+	s.assertResponse("/path1", requestHeaders, expectedHeaders, []string{})
+	s.assertResponse("/path2", requestHeaders, expectedHeaders, []string{})
 }
 
 // Test different cors policies at the route level override the gateway level cors policy
@@ -169,11 +171,11 @@ func (s *testingSuite) TestTrafficPolicyRouteCorsOverrideGwCors() {
 		"Access-Control-Allow-Headers": "Content-Type, Authorization",
 	}
 
-	s.assertResponse("/path1", http.StatusOK, requestHeaders, expectedHeadersPath1, []string{})
-	s.assertResponse("/path2", http.StatusOK, requestHeaders, expectedHeadersPath2, []string{})
+	s.assertResponse("/path1", requestHeaders, expectedHeadersPath1, []string{})
+	s.assertResponse("/path2", requestHeaders, expectedHeadersPath2, []string{})
 
 	// Assert that the route with CORS disabled does not return CORS headers
-	s.assertResponse("/cors-disabled", http.StatusOK, requestHeaders, nil,
+	s.assertResponse("/cors-disabled", requestHeaders, nil,
 		[]string{"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers"})
 }
 
@@ -215,10 +217,10 @@ func (s *testingSuite) TestHttpRouteCorsInRouteRules() {
 			}
 
 			// Verify that the route with cors is responding to the OPTIONS request with the expected cors headers
-			s.assertResponse("/path1", http.StatusOK, requestHeaders, expectedHeaders, []string{})
+			s.assertResponse("/path1", requestHeaders, expectedHeaders, []string{})
 
 			// Verify that the route without cors is not affected by the cors in the HTTPRoute (i.e. no cors headers are returned)
-			s.assertResponse("/path2", http.StatusOK, requestHeaders, nil, []string{"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers"})
+			s.assertResponse("/path2", requestHeaders, nil, []string{"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers"})
 		})
 	}
 
@@ -266,12 +268,12 @@ func (s *testingSuite) TestHttpRouteCorsInRouteRules() {
 
 			// For negative cases, we expect no CORS headers to be returned
 			// since the origin doesn't match any of the allowed patterns
-			s.assertResponse("/path1", http.StatusOK, requestHeaders, nil, []string{
+			s.assertResponse("/path1", requestHeaders, nil, []string{
 				"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers",
 			})
 
 			// Verify that the route without cors is also not affected
-			s.assertResponse("/path2", http.StatusOK, requestHeaders, nil, []string{
+			s.assertResponse("/path2", requestHeaders, nil, []string{
 				"Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers",
 			})
 		})
@@ -303,11 +305,11 @@ func (s *testingSuite) TestHttpRouteAndTrafficPolicyCors() {
 		"Access-Control-Allow-Headers": "Content-Type, Authorization",
 	}
 
-	s.assertResponse("/path1", http.StatusOK, requestHeaders, expectedHeadersPath1, []string{})
-	s.assertResponse("/path2", http.StatusOK, requestHeaders, expectedHeadersPath2, []string{})
+	s.assertResponse("/path1", requestHeaders, expectedHeadersPath1, []string{})
+	s.assertResponse("/path2", requestHeaders, expectedHeadersPath2, []string{})
 }
 
-func (s *testingSuite) assertResponse(path string, expectedStatus int, requestHeaders map[string]string, expectedHeaders map[string]any, notExpectedHeaders []string) {
+func (s *testingSuite) assertResponse(path string, requestHeaders map[string]string, expectedHeaders map[string]any, notExpectedHeaders []string) {
 	s.TestInstallation.Assertions.AssertEventualCurlResponse(
 		s.Ctx,
 		testdefaults.CurlPodExecOpt,
@@ -320,7 +322,7 @@ func (s *testingSuite) assertResponse(path string, expectedStatus int, requestHe
 			curl.WithHeaders(requestHeaders),
 		},
 		&testmatchers.HttpResponse{
-			StatusCode: expectedStatus,
+			StatusCode: http.StatusOK,
 			Headers:    expectedHeaders,
 			NotHeaders: notExpectedHeaders,
 		})

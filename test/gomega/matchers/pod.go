@@ -3,6 +3,7 @@ package matchers
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/onsi/gomega/types"
 	corev1 "k8s.io/api/core/v1"
@@ -32,7 +33,7 @@ type podMatcher struct {
 	expectedPod ExpectedPod
 }
 
-func (pm *podMatcher) Match(actual interface{}) (bool, error) {
+func (pm *podMatcher) Match(actual any) (bool, error) {
 	pod, ok := actual.(corev1.Pod)
 	if !ok {
 		return false, fmt.Errorf("expected a pod, got %T", actual)
@@ -74,7 +75,7 @@ func (pm *podMatcher) Match(actual interface{}) (bool, error) {
 	return true, nil
 }
 
-func (pm *podMatcher) FailureMessage(actual interface{}) string {
+func (pm *podMatcher) FailureMessage(actual any) string {
 	var errorMsg string
 	pod, ok := actual.(corev1.Pod)
 	if !ok {
@@ -90,16 +91,16 @@ func (pm *podMatcher) FailureMessage(actual interface{}) string {
 	return errorMsg
 }
 
-func (pm *podMatcher) NegatedFailureMessage(actual interface{}) string {
+func (pm *podMatcher) NegatedFailureMessage(actual any) string {
 	pod := actual.(corev1.Pod)
 
 	var errorMsg string
 	if pm.expectedPod.ContainerName != "" {
-		containers := ""
+		var containers strings.Builder
 		for _, container := range pod.Spec.Containers {
-			containers += container.Name + ", "
+			containers.WriteString(container.Name + ", ")
 		}
-		errorMsg += fmt.Sprintf("Expected pod %s to have container '%s', but it found %s", client.ObjectKeyFromObject(&pod), pm.expectedPod.ContainerName, containers)
+		errorMsg += fmt.Sprintf("Expected pod %s to have container '%s', but it found %s", client.ObjectKeyFromObject(&pod), pm.expectedPod.ContainerName, containers.String())
 	}
 	if pm.expectedPod.Status != "" {
 		errorMsg += fmt.Sprintf("Expected pod %s to have status '%s', but it found %s", client.ObjectKeyFromObject(&pod), pm.expectedPod.Status, pod.Status.Phase)

@@ -5,58 +5,41 @@ package tlsroute
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 // testingSuite is the entire suite of tests for testing K8s Service-specific features/fixes
 type testingSuite struct {
-	suite.Suite
-
-	ctx context.Context
-
-	// testInstallation contains all the metadata/utilities necessary to execute a series of tests
-	// against an installation of kgateway
-	testInstallation *e2e.TestInstallation
+	*base.BaseTestingSuite
 }
+
+var (
+	setup = base.TestCase{}
+
+	// No testCases since we handle everything manually in the test method
+	testCases = map[string]*base.TestCase{}
+)
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+	tlsRouteCtx, _ := context.WithTimeout(ctx, ctxTimeout)
 	return &testingSuite{
-		ctx:              ctx,
-		testInstallation: testInst,
-	}
-}
-
-func (s *testingSuite) SetupSuite() {
-	var cancel context.CancelFunc
-	s.ctx, cancel = context.WithTimeout(context.Background(), ctxTimeout)
-	testutils.Cleanup(s.T(), cancel)
-
-	manifests := []string{
-		singleSvcNsManifest,
-		singleSvcGatewayAndClientManifest,
-		singleSvcBackendManifest,
-		singleSvcTLSRouteManifest,
-		multiSvcNsManifest,
-		multiSvcGatewayAndClientManifest,
-		multiSvcBackendManifest,
-		multiSvcTlsRouteManifest,
-	}
-	for _, file := range manifests {
-		s.Require().NoError(validateManifestFile(file), "Invalid manifest file: %s", file)
+		BaseTestingSuite: base.NewBaseTestingSuite(tlsRouteCtx, testInst, setup, testCases,
+			base.WithMinGwApiVersion(base.GwApiRequireTlsRoutes),
+		),
 	}
 }
 
@@ -74,7 +57,7 @@ type tlsRouteTestCase struct {
 	expectedResponses   []*matchers.HttpResponse
 	expectedErrorCode   int
 	ports               []int
-	listenerNames       []v1.SectionName
+	listenerNames       []gwv1.SectionName
 	expectedRouteCounts []int32
 	tlsRouteNames       []string
 }
@@ -96,8 +79,8 @@ func (s *testingSuite) TestConfigureTLSRouteBackingDestinations() {
 				expectedSingleSvcResp,
 			},
 			ports: []int{6443},
-			listenerNames: []v1.SectionName{
-				v1.SectionName(singleSvcListenerName443),
+			listenerNames: []gwv1.SectionName{
+				gwv1.SectionName(singleSvcListenerName443),
 			},
 			expectedRouteCounts: []int32{1},
 			tlsRouteNames:       []string{singleSvcTLSRouteName},
@@ -118,9 +101,9 @@ func (s *testingSuite) TestConfigureTLSRouteBackingDestinations() {
 				expectedMultiSvc2Resp,
 			},
 			ports: []int{6443, 8443},
-			listenerNames: []v1.SectionName{
-				v1.SectionName(multiSvcListenerName6443),
-				v1.SectionName(multiSvcListenerName8443),
+			listenerNames: []gwv1.SectionName{
+				gwv1.SectionName(multiSvcListenerName6443),
+				gwv1.SectionName(multiSvcListenerName8443),
 			},
 			expectedRouteCounts: []int32{1, 1},
 			tlsRouteNames:       []string{multiSvcTLSRouteName1, multiSvcTLSRouteName2},
@@ -140,8 +123,8 @@ func (s *testingSuite) TestConfigureTLSRouteBackingDestinations() {
 				expectedCrossNsResp,
 			},
 			ports: []int{8443},
-			listenerNames: []v1.SectionName{
-				v1.SectionName(crossNsListenerName),
+			listenerNames: []gwv1.SectionName{
+				gwv1.SectionName(crossNsListenerName),
 			},
 			expectedRouteCounts: []int32{1},
 			tlsRouteNames:       []string{crossNsTLSRouteName},
@@ -159,8 +142,8 @@ func (s *testingSuite) TestConfigureTLSRouteBackingDestinations() {
 			proxyDeployment:   crossNsNoRefGrantProxyDeployment,
 			expectedErrorCode: 56,
 			ports:             []int{8443},
-			listenerNames: []v1.SectionName{
-				v1.SectionName(crossNsNoRefGrantListenerName),
+			listenerNames: []gwv1.SectionName{
+				gwv1.SectionName(crossNsNoRefGrantListenerName),
 			},
 			expectedRouteCounts: []int32{1},
 			tlsRouteNames:       []string{crossNsNoRefGrantTLSRouteName},
@@ -182,7 +165,7 @@ func (s *testingSuite) TestConfigureTLSRouteBackingDestinations() {
 					s.deleteManifests(crossNsNoRefGrantBackendNsManifest)
 				}
 
-				s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: tc.gtwNs}})
+				s.TestInstallation.Assertions.EventuallyObjectsNotExist(s.Ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: tc.gtwNs}})
 			})
 
 			// Setup environment for ReferenceGrant test cases
@@ -226,29 +209,29 @@ func (s *testingSuite) TestConfigureTLSRouteBackingDestinations() {
 
 			// Assert TLSRoute conditions
 			for _, tlsRouteName := range tc.tlsRouteNames {
-				s.testInstallation.Assertions.EventuallyTLSRouteCondition(s.ctx, tlsRouteName, tc.gtwNs, v1.RouteConditionAccepted, metav1.ConditionTrue, timeout)
-				s.testInstallation.Assertions.EventuallyTLSRouteCondition(s.ctx, tlsRouteName, tc.gtwNs, v1.RouteConditionResolvedRefs, expected, timeout)
+				s.TestInstallation.Assertions.EventuallyTLSRouteCondition(s.Ctx, tlsRouteName, tc.gtwNs, gwv1.RouteConditionAccepted, metav1.ConditionTrue, timeout)
+				s.TestInstallation.Assertions.EventuallyTLSRouteCondition(s.Ctx, tlsRouteName, tc.gtwNs, gwv1.RouteConditionResolvedRefs, expected, timeout)
 			}
 
 			// Assert gateway programmed condition
-			s.testInstallation.Assertions.EventuallyGatewayCondition(s.ctx, tc.gtwName, tc.gtwNs, v1.GatewayConditionProgrammed, metav1.ConditionTrue, timeout)
+			s.TestInstallation.Assertions.EventuallyGatewayCondition(s.Ctx, tc.gtwName, tc.gtwNs, gwv1.GatewayConditionProgrammed, metav1.ConditionTrue, timeout)
 
 			// Assert listener attached routes
 			for i, listenerName := range tc.listenerNames {
 				expectedRouteCount := tc.expectedRouteCounts[i]
-				s.testInstallation.Assertions.EventuallyGatewayListenerAttachedRoutes(s.ctx, tc.gtwName, tc.gtwNs, listenerName, expectedRouteCount, timeout)
+				s.TestInstallation.Assertions.EventuallyGatewayListenerAttachedRoutes(s.Ctx, tc.gtwName, tc.gtwNs, listenerName, expectedRouteCount, timeout)
 			}
 
 			// Assert curl pod is running
-			s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, tc.gtwNs, metav1.ListOptions{
+			s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, tc.gtwNs, metav1.ListOptions{
 				LabelSelector: "app=curl",
 			})
 
 			// Assert expected responses
 			for i, port := range tc.ports {
 				if tc.expectedErrorCode != 0 {
-					s.testInstallation.Assertions.AssertEventualCurlError(
-						s.ctx,
+					s.TestInstallation.Assertions.AssertEventualCurlError(
+						s.Ctx,
 						s.execOpts(tc.gtwNs),
 						[]curl.Option{
 							curl.WithHost(kubeutils.ServiceFQDN(tc.proxyService.ObjectMeta)),
@@ -257,8 +240,8 @@ func (s *testingSuite) TestConfigureTLSRouteBackingDestinations() {
 						},
 						tc.expectedErrorCode)
 				} else {
-					s.testInstallation.Assertions.AssertEventualCurlResponse(
-						s.ctx,
+					s.TestInstallation.Assertions.AssertEventualCurlResponse(
+						s.Ctx,
 						s.execOpts(tc.gtwNs),
 						[]curl.Option{
 							curl.WithHost(kubeutils.ServiceFQDN(tc.proxyService.ObjectMeta)),
@@ -275,37 +258,30 @@ func (s *testingSuite) TestConfigureTLSRouteBackingDestinations() {
 	}
 }
 
-func validateManifestFile(path string) error {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return fmt.Errorf("Manifest file not found: %s", path)
-	}
-	return nil
-}
-
 func (s *testingSuite) setupTestEnvironment(nsManifest, gtwName, gtwNs, gtwManifest, svcManifest string, proxySvc *corev1.Service, proxyDeploy *appsv1.Deployment) {
 	s.applyManifests(gtwNs, nsManifest)
 
 	s.applyManifests(gtwNs, gtwManifest)
-	s.testInstallation.Assertions.EventuallyGatewayCondition(s.ctx, gtwName, gtwNs, v1.GatewayConditionAccepted, metav1.ConditionTrue, timeout)
+	s.TestInstallation.Assertions.EventuallyGatewayCondition(s.Ctx, gtwName, gtwNs, gwv1.GatewayConditionAccepted, metav1.ConditionTrue, timeout)
 
 	s.applyManifests(gtwNs, svcManifest)
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxySvc, proxyDeploy)
+	s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx, proxySvc, proxyDeploy)
 
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyDeploy.GetNamespace(), metav1.ListOptions{
+	s.TestInstallation.Assertions.EventuallyPodsRunning(s.Ctx, proxyDeploy.GetNamespace(), metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, proxyDeploy.GetName()),
 	})
 }
 
 func (s *testingSuite) applyManifests(ns string, manifests ...string) {
 	for _, manifest := range manifests {
-		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest, "-n", ns)
+		err := s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, manifest, "-n", ns)
 		s.Require().NoError(err, fmt.Sprintf("Failed to apply manifest %s", manifest))
 	}
 }
 
 func (s *testingSuite) deleteManifests(manifests ...string) {
 	for _, manifest := range manifests {
-		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
+		err := s.TestInstallation.Actions.Kubectl().DeleteFileSafe(s.Ctx, manifest)
 		s.Require().NoError(err, fmt.Sprintf("Failed to delete manifest %s", manifest))
 	}
 }

@@ -7,9 +7,8 @@ import (
 	"reflect"
 	"strings"
 
-	"istio.io/istio/pkg/slices"
-
 	"istio.io/istio/pkg/ptr"
+	"istio.io/istio/pkg/slices"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -17,9 +16,8 @@ import (
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
@@ -51,7 +49,7 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attached
 
 	for _, lis := range gw.Spec.Listeners {
 		lisReport := gwReport.listener(string(lis.Name))
-		addMissingListenerConditions(lisReport)
+		AddMissingListenerConditions(lisReport)
 		// Get attached routes for this listener
 		if attachedRoutes != nil {
 			if count, exists := attachedRoutes[string(lis.Name)]; exists {
@@ -151,7 +149,7 @@ func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwxv1a1.XList
 		for _, l := range ls.Spec.Listeners {
 			lis := utils.ToListener(l)
 			lisReport := lsReport.listener(string(lis.Name))
-			addMissingListenerConditions(lisReport)
+			AddMissingListenerConditions(lisReport)
 
 			finalConditions := make([]metav1.Condition, 0, len(lisReport.Status.Conditions))
 			oldLisStatusIndex := slices.IndexFunc(ls.Status.Listeners, func(l gwxv1a1.ListenerEntryStatus) bool {
@@ -196,7 +194,7 @@ func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwxv1a1.XList
 		})
 	}
 
-	addMissingListenerSetConditions(r.ListenerSet(&ls))
+	AddMissingListenerSetConditions(r.ListenerSet(&ls))
 
 	finalConditions := make([]metav1.Condition, 0)
 	for _, lsCondition := range lsReport.GetConditions() {
@@ -428,7 +426,7 @@ func addMissingGatewayConditions(gwReport *GatewayReport, gw *gwv1.Gateway) {
 // Reports will initially only contain negative conditions found during translation,
 // so all missing conditions are assumed to be positive. Here we will add all missing conditions
 // to a given report, i.e. set healthy conditions
-func addMissingListenerSetConditions(lsReport *ListenerSetReport) {
+func AddMissingListenerSetConditions(lsReport *ListenerSetReport) {
 	if cond := meta.FindStatusCondition(lsReport.GetConditions(), string(gwv1.GatewayConditionAccepted)); cond == nil {
 		lsReport.SetCondition(reporter.GatewayCondition{
 			Type:    gwv1.GatewayConditionAccepted,
@@ -450,7 +448,7 @@ func addMissingListenerSetConditions(lsReport *ListenerSetReport) {
 // Reports will initially only contain negative conditions found during translation,
 // so all missing conditions are assumed to be positive. Here we will add all missing conditions
 // to a given report, i.e. set healthy conditions
-func addMissingListenerConditions(lisReport *ListenerReport) {
+func AddMissingListenerConditions(lisReport *ListenerReport) {
 	// set healthy conditions for Condition Types not set yet (i.e. no negative status yet, we can assume positive)
 	if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(gwv1.ListenerConditionAccepted)); cond == nil {
 		lisReport.SetCondition(reporter.ListenerCondition{

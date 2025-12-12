@@ -6,15 +6,18 @@ import (
 	"errors"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/cache"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/endpoints"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/endpoints"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 // ErrNotFound is returned when a requested resource is not found
@@ -62,8 +65,10 @@ type PolicyPlugin struct {
 	// Backend processing for agent gateway
 	ProcessAgentBackend func(pol ir.PolicyIR, in ir.BackendObjectIR) error
 
-	Policies       krt.Collection[ir.PolicyWrapper]
-	GlobalPolicies func(krt.HandlerContext) ir.PolicyIR
+	Policies krt.Collection[ir.PolicyWrapper]
+	// ProcessPolicyStaleStatusMarkers add empty reports for policies to clear stale status
+	ProcessPolicyStaleStatusMarkers func(krt.HandlerContext, *reports.ReportMap)
+	GlobalPolicies                  func(krt.HandlerContext) ir.PolicyIR
 	// PoliciesFetch can optionally be set if the plugin needs a custom mechanism for fetching the policy IR,
 	// rather than the default behavior of fetching by name from the aggregated policy KRT collection
 	PoliciesFetch func(n, ns string) ir.PolicyIR
@@ -154,4 +159,18 @@ func CloneObjectMetaForStatus(m metav1.ObjectMeta) metav1.ObjectMeta {
 		Namespace:       m.GetNamespace(),
 		ResourceVersion: m.GetResourceVersion(),
 	}
+}
+
+// GatewayControllerExtension is an interface for extending the Gateway controller with custom behavior
+type GatewayControllerExtension interface {
+	// Register is called to allow the extension to interact with the Queue used to reconcile Gateways,
+	// and access to a ResourceEventHandler that the extension can use to integrate additional Gateway parameter events
+	// that should contribute to triggering Gateway reconciliation
+	Register(gatewayQueue controllers.Queue, gatewayParamEventHandler cache.ResourceEventHandler)
+
+	// Start is called to start the extension. It must be non-blocking.
+	Start(context.Context) error
+
+	// Stop is called to stop the extension.
+	Stop() error
 }

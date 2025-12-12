@@ -31,4 +31,4 @@ spec:
       type: Cookie
       absoluteTimeout: 1h
       cookieConfig:
-        lifetimeType: Permanent 
+        lifetimeType: Permanent

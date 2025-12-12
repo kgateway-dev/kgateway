@@ -1,10 +1,9 @@
 # Admin MCP Backend
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: Backend
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayBackend
 metadata:
   name: admin-mcp-backend
 spec:
-  type: MCP
   mcp:
     targets:
     - name: admin-target
@@ -14,12 +13,11 @@ spec:
         protocol: StreamableHTTP
 ---
 # User MCP Backend  
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: Backend
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayBackend
 metadata:
   name: user-mcp-backend
 spec:
-  type: MCP
   mcp:
     targets:
     - name: user-target
@@ -44,10 +42,10 @@ spec:
           value: admin
       backendRefs:
       - name: admin-mcp-backend
-        group: gateway.kgateway.dev
-        kind: Backend
+        group: agentgateway.dev
+        kind: AgentgatewayBackend
     # User route - matches all other requests (default)
     - backendRefs:
       - name: user-mcp-backend
-        group: gateway.kgateway.dev
-        kind: Backend
+        group: agentgateway.dev
+        kind: AgentgatewayBackend

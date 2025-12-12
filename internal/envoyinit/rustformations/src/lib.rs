@@ -35,7 +35,6 @@ fn new_http_filter_config_fn<EC: EnvoyHttpFilterConfig, EHF: EnvoyHttpFilter>(
     filter_name: &str,
     filter_config: &[u8],
 ) -> Option<Box<dyn HttpFilterConfig<EHF>>> {
-    envoy_log_trace!("new_http_filter_config_fn");
     let filter_config = match std::str::from_utf8(filter_config) {
         Ok(config) => config,
         Err(_) => {
@@ -55,7 +54,6 @@ fn new_http_filter_config_fn<EC: EnvoyHttpFilterConfig, EHF: EnvoyHttpFilter>(
 }
 
 fn new_http_filter_per_route_config_fn(name: &str, config: &[u8]) -> Option<Box<dyn Any>> {
-    envoy_log_trace!("new_http_filter_per_route_config_fn");
     let per_route_config = match std::str::from_utf8(config) {
         Ok(config) => config,
         Err(_) => {

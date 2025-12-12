@@ -3,10 +3,8 @@ package deployer
 import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 )
 
 type DataPlaneType string
@@ -58,9 +56,10 @@ type HelmGateway struct {
 	ReadinessProbe                *corev1.Probe                     `json:"readinessProbe,omitempty"`
 	LivenessProbe                 *corev1.Probe                     `json:"livenessProbe,omitempty"`
 	ExtraVolumes                  []corev1.Volume                   `json:"extraVolumes,omitempty"`
-	GracefulShutdown              *v1alpha1.GracefulShutdownSpec    `json:"gracefulShutdown,omitempty"`
+	GracefulShutdown              *kgateway.GracefulShutdownSpec    `json:"gracefulShutdown,omitempty"`
 	TerminationGracePeriodSeconds *int64                            `json:"terminationGracePeriodSeconds,omitempty"`
 	TopologySpreadConstraints     []corev1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
+	PriorityClassName             *string                           `json:"priorityClassName,omitempty"`
 
 	// sds container values
 	SdsContainer *HelmSdsContainer `json:"sdsContainer,omitempty"`
@@ -90,12 +89,10 @@ type HelmGateway struct {
 	// stats values
 	Stats *HelmStatsConfig `json:"stats,omitempty"`
 
-	// AI extension values
-	// Deprecated: Envoy-based AI gateway is deprecated in v2.1 and will be removed in v2.2.
-	AIExtension *HelmAIExtension `json:"aiExtension,omitempty"`
-
-	// agentgateway integration values
-	CustomConfigMapName *string `json:"customConfigMapName,omitempty"`
+	// LogFormat specifies the logging format for agentgateway (Json or Text)
+	LogFormat *string `json:"logFormat,omitempty"`
+	// RawConfig provides opaque config to be merged into config.yaml
+	RawConfig map[string]any `json:"rawConfig,omitempty"`
 }
 
 // helmPort represents a Gateway Listener port
@@ -169,33 +166,28 @@ type HelmIstioContainer struct {
 }
 
 type HelmStatsConfig struct {
-	Enabled            *bool   `json:"enabled,omitempty"`
-	RoutePrefixRewrite *string `json:"routePrefixRewrite,omitempty"`
-	EnableStatsRoute   *bool   `json:"enableStatsRoute,omitempty"`
-	StatsPrefixRewrite *string `json:"statsPrefixRewrite,omitempty"`
+	Enabled            *bool             `json:"enabled,omitempty"`
+	RoutePrefixRewrite *string           `json:"routePrefixRewrite,omitempty"`
+	EnableStatsRoute   *bool             `json:"enableStatsRoute,omitempty"`
+	StatsPrefixRewrite *string           `json:"statsPrefixRewrite,omitempty"`
+	Matcher            *HelmStatsMatcher `json:"matcher,omitempty"`
 }
 
-type HelmAIExtension struct {
-	Enabled         bool                         `json:"enabled,omitempty"`
-	Image           *HelmImage                   `json:"image,omitempty"`
-	SecurityContext *corev1.SecurityContext      `json:"securityContext,omitempty"`
-	Resources       *corev1.ResourceRequirements `json:"resources,omitempty"`
-	Env             []corev1.EnvVar              `json:"env,omitempty"`
-	Ports           []corev1.ContainerPort       `json:"ports,omitempty"`
-	Stats           []byte                       `json:"stats,omitempty"`
-	Tracing         string                       `json:"tracing,omitempty"`
+// HelmStatsMatcher represents mutually exclusive inclusion or exclusion lists for Envoy stats.
+type HelmStatsMatcher struct {
+	InclusionList []HelmStringMatcher `json:"inclusionList,omitempty"`
+	ExclusionList []HelmStringMatcher `json:"exclusionList,omitempty"`
 }
 
-type helmAITracing struct {
-	EndPoint gwv1.AbsoluteURI      `json:"endpoint"`
-	Sampler  *helmAITracingSampler `json:"sampler,omitempty"`
-	Timeout  *metav1.Duration      `json:"timeout,omitempty"`
-	Protocol *string               `json:"protocol,omitempty"`
-}
-
-type helmAITracingSampler struct {
-	SamplerType *string `json:"type,omitempty"`
-	SamplerArg  *string `json:"arg,omitempty"`
+// HelmStringMatcher mirrors a subset of Envoy's StringMatcher.
+// Only one of these fields should be set per matcher.
+type HelmStringMatcher struct {
+	Exact      *string `json:"exact,omitempty"`
+	Prefix     *string `json:"prefix,omitempty"`
+	Suffix     *string `json:"suffix,omitempty"`
+	Contains   *string `json:"contains,omitempty"`
+	SafeRegex  *string `json:"safeRegex,omitempty"`
+	IgnoreCase *bool   `json:"ignoreCase,omitempty"`
 }
 
 type HelmInferenceExtension struct {

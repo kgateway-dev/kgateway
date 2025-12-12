@@ -220,7 +220,7 @@ func (s *testingSuite) assertResponseWithHeader(path string, headerName string, 
 
 // Burst a few quick checks so the test doesn't cross a rate-limit window boundary.
 func (s *testingSuite) assertConsistentResponse(path string, expectedStatus int) {
-	for i := 0; i < rlBurstTries; i++ {
+	for range rlBurstTries {
 		s.testInstallation.Assertions.AssertEventualCurlResponse(
 			s.ctx,
 			testdefaults.CurlPodExecOpt,
@@ -237,7 +237,7 @@ func (s *testingSuite) assertConsistentResponse(path string, expectedStatus int)
 
 // Safe burst a few quick checks so the test doesn't cross a rate-limit window boundary.
 func (s *testingSuite) assertConsistentResponseWithHeader(path, headerName, headerValue string, expectedStatus int) {
-	for i := 0; i < rlBurstTries; i++ {
+	for range rlBurstTries {
 		s.testInstallation.Assertions.AssertEventualCurlResponse(
 			s.ctx,
 			testdefaults.CurlPodExecOpt,

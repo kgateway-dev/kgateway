@@ -30,7 +30,7 @@ func WithCurlHttpResponse(curlResponse string) *http.Response {
 	statusCode := 0
 	var bodyBuf bytes.Buffer
 
-	for _, line := range strings.Split(curlResponse, "\n") {
+	for line := range strings.SplitSeq(curlResponse, "\n") {
 		k, v := processResponseHeader(line)
 		if k != "" {
 			headers.Add(k, v)
@@ -65,7 +65,7 @@ func WithCurlResponse(curlResponse *kubectl.CurlResponse) *http.Response {
 
 	// Curl writes the body to stdout and the headers/status to stderr
 	// Headers/response code
-	for _, line := range strings.Split(curlResponse.StdErr, "\n") {
+	for line := range strings.SplitSeq(curlResponse.StdErr, "\n") {
 		k, v := processResponseHeader(line)
 		if k != "" {
 			headers.Add(k, v)

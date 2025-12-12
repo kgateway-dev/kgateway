@@ -1,0 +1,92 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin
+  namespace: gwtest
+spec:
+  ports:
+    - port: 8080
+      targetPort: 80
+  selector:
+    app: httpbin
+
+
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+  namespace: gwtest
+spec:
+  gatewayClassName: kgateway
+  listeners:
+    - name: http
+      port: 8080
+      protocol: HTTP
+      allowedRoutes:
+        namespaces:
+          from: Same
+
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: httpbin-route
+  namespace: gwtest
+spec:
+  parentRefs:
+    - name: example-gateway
+  hostnames:
+    - "test.example.com"
+  rules:
+    - backendRefs:
+        - name: httpbin
+          port: 8080
+
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: oauth2-auth-policy
+  namespace: gwtest
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: httpbin-route
+  extAuth:
+    extensionRef:
+      name: oauth2-proxy-extauth
+
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: oauth2-proxy-extauth
+  namespace: gwtest
+spec:
+  type: ExtAuth
+  extAuth:
+    httpService:
+      backendRef:
+        name: oauth2-proxy
+        port: 4180
+      pathPrefix: "\\\\"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: oauth2-proxy
+  namespace: gwtest
+  labels:
+    app: oauth2-proxy
+spec:
+  ports:
+    - name: http
+      port: 4180
+      targetPort: 4180
+      protocol: TCP
+  selector:
+    app: oauth2-proxy

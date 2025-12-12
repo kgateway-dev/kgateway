@@ -7,9 +7,10 @@ import (
 	"net/http"
 	"time"
 
-	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	. "github.com/onsi/gomega"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"

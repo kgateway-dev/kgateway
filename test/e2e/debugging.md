@@ -117,7 +117,7 @@ A unified script that auto-detects whether you're running e2e or unit tests and 
 ./hack/run-test.sh SessionPersistence
 
 # Run a unit test (auto-detected)
-./hack/run-test.sh TestIsSelfManagedOnGateway
+./hack/run-test.sh TestShouldUseDefaultGatewayParameters
 
 # Run all tests in a package
 ./hack/run-test.sh --package ./pkg/utils/helmutils
@@ -247,10 +247,9 @@ You can use a custom debugger launch config that sets the `test.run` flag to run
   "type": "go",
   "request": "launch",
   "mode": "test",
+  "buildFlags": "-tags=e2e",
   "program": "${workspaceFolder}/test/e2e/tests/kgateway_test.go",
   "args": [
-    "-tags",
-    "e2e",
     "-test.run",
     "^TestKgateway$/^Deployer$",
     "-test.v",

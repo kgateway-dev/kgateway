@@ -81,7 +81,7 @@ func (s *testingSuite) TestGatewayWithTransformedRoute() {
 			routeName: "gateway-attached-transform",
 			resp: &testmatchers.HttpResponse{
 				StatusCode: http.StatusOK,
-				Headers: map[string]interface{}{
+				Headers: map[string]any{
 					"response-gateway": "goodbye",
 				},
 				NotHeaders: []string{
@@ -97,7 +97,7 @@ func (s *testingSuite) TestGatewayWithTransformedRoute() {
 			},
 			resp: &testmatchers.HttpResponse{
 				StatusCode: http.StatusOK,
-				Headers: map[string]interface{}{
+				Headers: map[string]any{
 					"x-foo-response": "notsuper",
 				},
 				NotHeaders: []string{
@@ -114,7 +114,7 @@ func (s *testingSuite) TestGatewayWithTransformedRoute() {
 			},
 			resp: &testmatchers.HttpResponse{
 				StatusCode: http.StatusOK,
-				Headers: map[string]interface{}{
+				Headers: map[string]any{
 					"x-foo-response": "supersupersuper",
 				},
 			},
@@ -128,7 +128,7 @@ func (s *testingSuite) TestGatewayWithTransformedRoute() {
 			},
 			resp: &testmatchers.HttpResponse{
 				StatusCode: http.StatusOK,
-				Headers: map[string]interface{}{
+				Headers: map[string]any{
 					"x-how-great":   "level_super",
 					"from-incoming": "key_level_myinnervalue",
 				},

@@ -13,7 +13,7 @@ import (
 var (
 	hasHTTPRoute = matchers.HttpResponse{
 		StatusCode: http.StatusOK,
-		Headers: map[string]interface{}{
+		Headers: map[string]any{
 			"traversed-waypoint": "true",
 		},
 		Body: gstruct.Ignore(),

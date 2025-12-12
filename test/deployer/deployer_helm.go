@@ -1,7 +1,6 @@
 package deployer
 
 import (
-	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -10,14 +9,16 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 	"sigs.k8s.io/yaml"
 
-	internaldeployer "github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
+	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	pkgdeployer "github.com/kgateway-dev/kgateway/v2/pkg/deployer"
+	internaldeployer "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
@@ -28,6 +29,11 @@ type HelmTestCase struct {
 	Inputs *pkgdeployer.Inputs
 	// InputFile is just the name of the manifest omitting the file extension suffix
 	InputFile string
+	// Validate is an optional function to run additional validation on the output YAML
+	Validate func(t *testing.T, outputYaml string)
+	// HelmValuesGeneratorOverride is an optional function to modify deployer inputs before rendering.
+	// This is useful for tests that need special configuration like TLS.
+	HelmValuesGeneratorOverride func(inputs *pkgdeployer.Inputs) pkgdeployer.HelmValuesGenerator
 }
 
 type DeployerTester struct {
@@ -36,6 +42,47 @@ type DeployerTester struct {
 	ClassName         string
 	AgwClassName      string
 	WaypointClassName string
+}
+
+// NoSecurityContextValidator returns a validation function that ensures no securityContext appears in output
+func NoSecurityContextValidator() func(t *testing.T, outputYaml string) {
+	return func(t *testing.T, outputYaml string) {
+		t.Helper()
+		assert.NotContains(t, outputYaml, "securityContext:",
+			"output YAML should not contain securityContext when omitDefaultSecurityContext is true")
+	}
+}
+
+// VerifyAllYAMLFilesReferenced ensures every YAML file in testDataDir has a corresponding test case.
+// The exclude parameter allows skipping files that are tested elsewhere (e.g., TLS tests).
+func VerifyAllYAMLFilesReferenced(t *testing.T, testDataDir string, testCases []HelmTestCase, exclude ...string) {
+	t.Helper()
+
+	yamlFiles, err := filepath.Glob(filepath.Join(testDataDir, "*.yaml"))
+	require.NoError(t, err, "failed to list YAML files in %s", testDataDir)
+
+	referencedFiles := make(map[string]bool)
+	for _, tc := range testCases {
+		referencedFiles[tc.InputFile] = true
+	}
+	for _, excl := range exclude {
+		referencedFiles[excl] = true
+	}
+
+	var unreferenced []string
+	for _, yamlFile := range yamlFiles {
+		baseName := filepath.Base(yamlFile)
+		// Skip golden files
+		if strings.HasSuffix(baseName, "-out.yaml") {
+			continue
+		}
+		inputName := strings.TrimSuffix(baseName, ".yaml")
+		if !referencedFiles[inputName] {
+			unreferenced = append(unreferenced, baseName)
+		}
+	}
+
+	require.Empty(t, unreferenced, "Found YAML files in %s without corresponding test cases: %v", testDataDir, unreferenced)
 }
 
 // ExtractCommonObjs will return a collection containing only objects necessary for collections.CommonCollections,
@@ -61,23 +108,37 @@ func ExtractCommonObjs(t *testing.T, objs []client.Object) ([]client.Object, *gw
 	return commonObjs, gtw
 }
 
+func (dt DeployerTester) GetObjects(
+	t *testing.T,
+	tt HelmTestCase,
+	scheme *runtime.Scheme,
+	dir string,
+	crdDir string,
+) []client.Object {
+	filePath := filepath.Join(dir, "testdata/", tt.InputFile)
+	inputFile := filePath + ".yaml"
+
+	gvkToStructuralSchema, err := testutils.GetStructuralSchemas(crdDir)
+	require.NoError(t, err, "error getting structural schemas")
+
+	objs, err := testutils.LoadFromFiles(inputFile, scheme, gvkToStructuralSchema)
+	require.NoError(t, err, "error loading files from input file")
+
+	return objs
+}
+
 func (dt DeployerTester) RunHelmChartTest(
 	t *testing.T,
 	tt HelmTestCase,
 	scheme *runtime.Scheme,
 	dir string,
 	crdDir string,
-	helmValuesGeneratorOverride func(cli client.Client, inputs *pkgdeployer.Inputs) pkgdeployer.HelmValuesGenerator,
+	fakeClient apiclient.Client,
 ) {
 	filePath := filepath.Join(dir, "testdata/", tt.InputFile)
-	inputFile := filePath + ".yaml"
 	outputFile := filePath + "-out.yaml"
 
-	gvkToStructuralSchema, err := testutils.GetStructuralSchemas(crdDir)
-	assert.NoError(t, err, "error getting structural schemas")
-
-	objs, err := testutils.LoadFromFiles(inputFile, scheme, gvkToStructuralSchema)
-	assert.NoError(t, err, "error loading files from input file")
+	objs := dt.GetObjects(t, tt, scheme, dir, crdDir)
 
 	commonObjs, gtw := ExtractCommonObjs(t, objs)
 	if gtw == nil {
@@ -89,30 +150,33 @@ func (dt DeployerTester) RunHelmChartTest(
 	if tt.Inputs != nil {
 		inputs = tt.Inputs
 	}
-	fakeClient := NewFakeClientWithObjsWithScheme(scheme, objs...)
 
 	gwParams := internaldeployer.NewGatewayParameters(
 		fakeClient,
 		inputs,
 	)
-	if helmValuesGeneratorOverride != nil {
-		gwParams.WithHelmValuesGeneratorOverride(helmValuesGeneratorOverride(fakeClient, inputs))
+	if tt.HelmValuesGeneratorOverride != nil {
+		gwParams.WithHelmValuesGeneratorOverride(tt.HelmValuesGeneratorOverride(inputs))
 	}
 	deployer, err := internaldeployer.NewGatewayDeployer(
 		dt.ControllerName,
 		dt.AgwControllerName,
 		dt.AgwClassName,
+		scheme,
 		fakeClient,
 		gwParams,
 	)
 	assert.NoError(t, err, "error creating gateway deployer")
 
-	ctx := context.TODO()
-	vals, err := gwParams.GetValues(ctx, gtw)
-	assert.NoError(t, err, "error getting values for GwParams")
+	ctx := t.Context()
+	fakeClient.RunAndWait(ctx.Done())
 
-	got, err := deployer.RenderManifest(gtw.Namespace, gtw.Name, vals)
-	assert.NoError(t, err, "error rendering helm manifest")
+	// Get post-processed objects (what actually gets deployed)
+	deployObjs, err := deployer.GetObjsToDeploy(ctx, gtw)
+	assert.NoError(t, err, "error getting objects to deploy")
+
+	got, err := objectsToYAML(deployObjs)
+	assert.NoError(t, err, "error converting objects to YAML")
 
 	if envutils.IsEnvTruthy("REFRESH_GOLDEN") {
 		t.Log("REFRESH_GOLDEN is set, writing output file", outputFile)
@@ -139,6 +203,27 @@ func (dt DeployerTester) RunHelmChartTest(
 	diff := cmp.Diff(data, got)
 	outputStr := "%s\nthe golden file, which can be refreshed via `REFRESH_GOLDEN=true go test ./test/deployer`, is\n%s"
 	assert.Empty(t, diff, outputStr, diff, outputFile)
+
+	// Run additional validation if provided
+	if tt.Validate != nil {
+		tt.Validate(t, string(data))
+	}
+}
+
+// objectsToYAML converts a slice of client.Object to YAML bytes, separated by "---"
+func objectsToYAML(objs []client.Object) ([]byte, error) {
+	var result []byte
+	for i, obj := range objs {
+		objYAML, err := yaml.Marshal(obj)
+		if err != nil {
+			return nil, err
+		}
+		if i > 0 {
+			result = append(result, []byte("---\n")...)
+		}
+		result = append(result, objYAML...)
+	}
+	return result, nil
 }
 
 func DefaultDeployerInputs(dt DeployerTester, commonCols *collections.CommonCollections) *pkgdeployer.Inputs {
@@ -154,9 +239,10 @@ func DefaultDeployerInputs(dt DeployerTester, commonCols *collections.CommonColl
 			Registry: "ghcr.io",
 			Tag:      "v2.1.0-dev",
 		},
-		GatewayClassName:         dt.ClassName,
-		WaypointGatewayClassName: dt.WaypointClassName,
-		AgentgatewayClassName:    dt.AgwClassName,
+		GatewayClassName:           dt.ClassName,
+		WaypointGatewayClassName:   dt.WaypointClassName,
+		AgentgatewayClassName:      dt.AgwClassName,
+		AgentgatewayControllerName: dt.AgwControllerName,
 	}
 }
 

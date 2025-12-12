@@ -21,16 +21,15 @@ import (
 	"fmt"
 	"sync"
 
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/kubetypes"
 	"istio.io/istio/pkg/slices"
 	"istio.io/istio/pkg/util/sets"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 type discoveryNamespacesFilter struct {
@@ -41,13 +40,20 @@ type discoveryNamespacesFilter struct {
 	handlers            []func(added, removed sets.String)
 }
 
-// newDiscoveryNamespacesFilter creates a new DynamicObjectFilter that filters namespaced objects based
+// NewDiscoveryNamespacesFilter creates a new DynamicObjectFilter that filters namespaced objects based
 // on the given discovery namespace selector config JSON (cfgJSON).
-func newDiscoveryNamespacesFilter(
+func NewDiscoveryNamespacesFilter(
 	namespaces kclient.Client[*corev1.Namespace],
 	cfgJSON string,
 	stop <-chan struct{},
 ) (kubetypes.DynamicObjectFilter, error) {
+	// If the config is unset, default to empty JSON array which selects all namespaces.
+	// This prevents needing to pass an empty JSON array from tests, which would otherwise result
+	// in an unmarshalling error.
+	if cfgJSON == "" {
+		cfgJSON = "[]"
+	}
+
 	// convert LabelSelectors to Selectors
 	var labelSelectors []metav1.LabelSelector
 	err := json.Unmarshal([]byte(cfgJSON), &labelSelectors)

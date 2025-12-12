@@ -7,13 +7,17 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/a2a"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/aibackend"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/apikeyauth"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/basicauth"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/configmap"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/csrf"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/extauth"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/jwtauth"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/mcp"
 	global_rate_limit "github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/rate_limit/global"
 	local_rate_limit "github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/rate_limit/local"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/rbac"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/remotejwtauth"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/agentgateway/transformation"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/backendtls"
 )
@@ -32,6 +36,10 @@ func AgentgatewaySuiteRunner() e2e.SuiteRunner {
 	agentgatewaySuiteRunner.Register("BackendTLSPolicy", backendtls.NewAgentgatewayTestingSuite)
 	agentgatewaySuiteRunner.Register("AIBackend", aibackend.NewTestingSuite)
 	agentgatewaySuiteRunner.Register("ConfigMap", configmap.NewTestingSuite)
+	agentgatewaySuiteRunner.Register("BasicAuth", basicauth.NewTestingSuite)
+	agentgatewaySuiteRunner.Register("ApiKeyAuth", apikeyauth.NewTestingSuite)
+	agentgatewaySuiteRunner.Register("JwtAuth", jwtauth.NewTestingSuite)
+	agentgatewaySuiteRunner.Register("RemoteJwtAuth", remotejwtauth.NewTestingSuite)
 
 	return agentgatewaySuiteRunner
 }

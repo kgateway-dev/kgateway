@@ -29,7 +29,6 @@ spec:
           name: httpbin
           port: 8000
           weight: 1
-      name: httpbin-get
       matches:
         - path:
             type: PathPrefix
@@ -44,7 +43,6 @@ spec:
     - name: httpbin-route
       kind: HTTPRoute
       group: gateway.networking.k8s.io
-      sectionName: httpbin-get
   rbac:
     policy:
       matchExpressions:

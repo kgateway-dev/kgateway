@@ -9,8 +9,11 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
+
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/helmutils"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/actions"
@@ -78,7 +81,9 @@ func CreateTestInstallationForCluster(
 		// between TestInstallation outputs per CI run
 		GeneratedFiles: MustGeneratedFiles(installContext.InstallNamespace, clusterContext.Name),
 	}
-	runtime.SetFinalizer(installation, func(i *TestInstallation) { i.finalize() })
+	testutils.Cleanup(t, func() {
+		installation.finalize()
+	})
 	return installation
 }
 
@@ -148,8 +153,14 @@ func (i *TestInstallation) CreateIstioBugReport(ctx context.Context) {
 }
 
 func (i *TestInstallation) InstallKgatewayFromLocalChart(ctx context.Context) {
-	i.InstallKgatewayCRDsFromLocalChart(ctx)
-	i.InstallKgatewayCoreFromLocalChart(ctx)
+	chartType := i.Metadata.GetChartType()
+	if chartType == "agentgateway" {
+		i.InstallAgentgatewayCRDsFromLocalChart(ctx)
+		i.InstallAgentgatewayCoreFromLocalChart(ctx)
+	} else {
+		i.InstallKgatewayCRDsFromLocalChart(ctx)
+		i.InstallKgatewayCoreFromLocalChart(ctx)
+	}
 }
 
 func (i *TestInstallation) InstallKgatewayCRDsFromLocalChart(ctx context.Context) {
@@ -159,7 +170,7 @@ func (i *TestInstallation) InstallKgatewayCRDsFromLocalChart(ctx context.Context
 
 	// Check if we should skip installation if the release already exists (PERSIST_INSTALL or FAIL_FAST_AND_PERSIST mode)
 	if testutils.ShouldPersistInstall() || testutils.ShouldFailFastAndPersist() {
-		if i.Actions.Helm().ReleaseExists(ctx, helmutils.CRDChartName, i.Metadata.InstallNamespace) {
+		if i.releaseExists(ctx, helmutils.CRDChartName, i.Metadata.InstallNamespace) {
 			return
 		}
 	}
@@ -185,7 +196,7 @@ func (i *TestInstallation) InstallKgatewayCoreFromLocalChart(ctx context.Context
 
 	// Check if we should skip installation if the release already exists (PERSIST_INSTALL or FAIL_FAST_AND_PERSIST mode)
 	if testutils.ShouldPersistInstall() || testutils.ShouldFailFastAndPersist() {
-		if i.Actions.Helm().ReleaseExists(ctx, helmutils.ChartName, i.Metadata.InstallNamespace) {
+		if i.releaseExists(ctx, helmutils.ChartName, i.Metadata.InstallNamespace) {
 			return
 		}
 	}
@@ -204,7 +215,64 @@ func (i *TestInstallation) InstallKgatewayCoreFromLocalChart(ctx context.Context
 			ExtraArgs:       i.Metadata.ExtraHelmArgs,
 		})
 	i.Assertions.Require.NoError(err)
-	i.Assertions.EventuallyKgatewayInstallSucceeded(ctx)
+	i.Assertions.EventuallyGatewayInstallSucceeded(ctx)
+}
+
+// InstallAgentgatewayCRDsFromLocalChart installs the agentgateway CRD chart from the local filesystem
+func (i *TestInstallation) InstallAgentgatewayCRDsFromLocalChart(ctx context.Context) {
+	if testutils.ShouldSkipInstallAndTeardown() {
+		return
+	}
+
+	// Check if we should skip installation if the release already exists (PERSIST_INSTALL or FAIL_FAST_AND_PERSIST mode)
+	if testutils.ShouldPersistInstall() || testutils.ShouldFailFastAndPersist() {
+		if i.Actions.Helm().ReleaseExists(ctx, helmutils.AgentgatewayCRDChartName, i.Metadata.InstallNamespace) {
+			return
+		}
+	}
+
+	// install the CRD chart first
+	crdChartURI, err := helper.GetLocalChartPath(helmutils.AgentgatewayCRDChartName, "")
+	i.Assertions.Require.NoError(err)
+	err = i.Actions.Helm().WithReceiver(os.Stdout).Upgrade(
+		ctx,
+		helmutils.InstallOpts{
+			CreateNamespace: true,
+			ReleaseName:     helmutils.AgentgatewayCRDChartName,
+			Namespace:       i.Metadata.InstallNamespace,
+			ChartUri:        crdChartURI,
+		})
+	i.Assertions.Require.NoError(err)
+}
+
+// InstallAgentgatewayCoreFromLocalChart installs the agentgateway main chart from the local filesystem
+func (i *TestInstallation) InstallAgentgatewayCoreFromLocalChart(ctx context.Context) {
+	if testutils.ShouldSkipInstallAndTeardown() {
+		return
+	}
+
+	// Check if we should skip installation if the release already exists (PERSIST_INSTALL or FAIL_FAST_AND_PERSIST mode)
+	if testutils.ShouldPersistInstall() || testutils.ShouldFailFastAndPersist() {
+		if i.Actions.Helm().ReleaseExists(ctx, helmutils.AgentgatewayChartName, i.Metadata.InstallNamespace) {
+			return
+		}
+	}
+
+	// and then install the main chart
+	chartUri, err := helper.GetLocalChartPath(helmutils.AgentgatewayChartName, "")
+	i.Assertions.Require.NoError(err)
+	err = i.Actions.Helm().WithReceiver(os.Stdout).Upgrade(
+		ctx,
+		helmutils.InstallOpts{
+			Namespace:       i.Metadata.InstallNamespace,
+			CreateNamespace: true,
+			ValuesFiles:     []string{i.Metadata.ProfileValuesManifestFile, i.Metadata.ValuesManifestFile},
+			ReleaseName:     helmutils.AgentgatewayChartName,
+			ChartUri:        chartUri,
+			ExtraArgs:       i.Metadata.ExtraHelmArgs,
+		})
+	i.Assertions.Require.NoError(err)
+	i.Assertions.EventuallyGatewayInstallSucceeded(ctx)
 }
 
 // TODO implement this when we add upgrade tests
@@ -215,12 +283,24 @@ func (i *TestInstallation) InstallKgatewayCoreFromLocalChart(ctx context.Context
 // }
 
 func (i *TestInstallation) UninstallKgateway(ctx context.Context) {
-	i.UninstallKgatewayCore(ctx)
-	i.UninstallKgatewayCRDs(ctx)
+	chartType := i.Metadata.GetChartType()
+	if chartType == "agentgateway" {
+		i.UninstallAgentgatewayCore(ctx)
+		i.UninstallAgentgatewayCRDs(ctx)
+	} else {
+		i.UninstallKgatewayCore(ctx)
+		i.UninstallKgatewayCRDs(ctx)
+	}
 }
 
 func (i *TestInstallation) UninstallKgatewayCore(ctx context.Context) {
 	if testutils.ShouldSkipInstallAndTeardown() || testutils.ShouldPersistInstall() {
+		return
+	}
+
+	// Check if the release exists before attempting to uninstall
+	if !i.Actions.Helm().ReleaseExists(ctx, helmutils.ChartName, i.Metadata.InstallNamespace) {
+		// Release doesn't exist, nothing to uninstall
 		return
 	}
 
@@ -234,11 +314,17 @@ func (i *TestInstallation) UninstallKgatewayCore(ctx context.Context) {
 		},
 	)
 	i.Assertions.Require.NoError(err, "failed to uninstall main chart")
-	i.Assertions.EventuallyKgatewayUninstallSucceeded(ctx)
+	i.Assertions.EventuallyGatewayUninstallSucceeded(ctx)
 }
 
 func (i *TestInstallation) UninstallKgatewayCRDs(ctx context.Context) {
 	if testutils.ShouldSkipInstallAndTeardown() || testutils.ShouldPersistInstall() {
+		return
+	}
+
+	// Check if the release exists before attempting to uninstall
+	if !i.Actions.Helm().ReleaseExists(ctx, helmutils.CRDChartName, i.Metadata.InstallNamespace) {
+		// Release doesn't exist, nothing to uninstall
 		return
 	}
 
@@ -254,13 +340,71 @@ func (i *TestInstallation) UninstallKgatewayCRDs(ctx context.Context) {
 	i.Assertions.Require.NoError(err, "failed to uninstall CRD chart")
 }
 
+// UninstallAgentgatewayCore uninstalls the agentgateway main chart
+func (i *TestInstallation) UninstallAgentgatewayCore(ctx context.Context) {
+	if testutils.ShouldSkipInstallAndTeardown() || testutils.ShouldPersistInstall() {
+		return
+	}
+
+	// Check if the release exists before attempting to uninstall
+	if !i.Actions.Helm().ReleaseExists(ctx, helmutils.AgentgatewayChartName, i.Metadata.InstallNamespace) {
+		// Release doesn't exist, nothing to uninstall
+		return
+	}
+
+	// uninstall the main chart first
+	err := i.Actions.Helm().Uninstall(
+		ctx,
+		helmutils.UninstallOpts{
+			Namespace:   i.Metadata.InstallNamespace,
+			ReleaseName: helmutils.AgentgatewayChartName,
+			ExtraArgs:   []string{"--wait"}, // Default timeout is 5m
+		},
+	)
+	i.Assertions.Require.NoError(err, "failed to uninstall main chart")
+	i.Assertions.EventuallyGatewayUninstallSucceeded(ctx)
+}
+
+// UninstallAgentgatewayCRDs uninstalls the agentgateway CRD chart
+func (i *TestInstallation) UninstallAgentgatewayCRDs(ctx context.Context) {
+	if testutils.ShouldSkipInstallAndTeardown() || testutils.ShouldPersistInstall() {
+		return
+	}
+
+	// Check if the release exists before attempting to uninstall
+	if !i.Actions.Helm().ReleaseExists(ctx, helmutils.AgentgatewayCRDChartName, i.Metadata.InstallNamespace) {
+		// Release doesn't exist, nothing to uninstall
+		return
+	}
+
+	// uninstall the CRD chart
+	err := i.Actions.Helm().Uninstall(
+		ctx,
+		helmutils.UninstallOpts{
+			Namespace:   i.Metadata.InstallNamespace,
+			ReleaseName: helmutils.AgentgatewayCRDChartName,
+			ExtraArgs:   []string{"--wait"}, // Default timeout is 5m
+		},
+	)
+	i.Assertions.Require.NoError(err, "failed to uninstall CRD chart")
+}
+
 // PreFailHandler is the function that is invoked if a test in the given TestInstallation fails
 func (i *TestInstallation) PreFailHandler(ctx context.Context) {
+	i.preFailHandler(ctx, i.GeneratedFiles.FailureDir)
+}
+
+// PerTestPreFailHandler is the function that is invoked if a test in the given TestInstallation fails
+func (i *TestInstallation) PerTestPreFailHandler(ctx context.Context, testName string) {
+	i.preFailHandler(ctx, filepath.Join(i.GeneratedFiles.FailureDir, testName))
+}
+
+// PreFailHandler is the function that is invoked if a test in the given TestInstallation fails
+func (i *TestInstallation) preFailHandler(ctx context.Context, dir string) {
 	// The idea here is we want to accumulate ALL information about this TestInstallation into a single directory
 	// That way we can upload it in CI, or inspect it locally
 
-	failureDir := i.GeneratedFiles.FailureDir
-	err := os.Mkdir(failureDir, os.ModePerm)
+	err := os.Mkdir(dir, os.ModePerm)
 	// We don't want to fail on the output directory already existing. This could occur
 	// if multiple tests running in the same cluster from the same installation namespace
 	// fail.
@@ -273,7 +417,7 @@ func (i *TestInstallation) PreFailHandler(ctx context.Context) {
 	i.Assertions.Require.NoError(err)
 
 	// Dump the logs and state of the cluster
-	helpers.StandardKgatewayDumpOnFail(os.Stdout, i.Actions.Kubectl(), failureDir, namespaces)()
+	helpers.StandardKgatewayDumpOnFail(os.Stdout, i.Actions.Kubectl(), dir, namespaces)
 }
 
 // GeneratedFiles is a collection of files that are generated during the execution of a set of tests
@@ -297,8 +441,8 @@ func MustGeneratedFiles(tmpDirId, clusterId string) GeneratedFiles {
 		panic(err)
 	}
 
-	// output path is in the format of bug_report/cluster_name/tmp_dir_id
-	failureDir := filepath.Join(testruntime.PathToBugReport(), clusterId, tmpDirId)
+	// output path is in the format of bug_report/cluster_name
+	failureDir := filepath.Join(testruntime.PathToBugReport(), clusterId)
 	err = os.MkdirAll(failureDir, os.ModePerm)
 	if err != nil {
 		panic(err)
@@ -308,4 +452,18 @@ func MustGeneratedFiles(tmpDirId, clusterId string) GeneratedFiles {
 		TempDir:    tmpDir,
 		FailureDir: failureDir,
 	}
+}
+
+func (i *TestInstallation) releaseExists(ctx context.Context, releaseName, namespace string) bool {
+	l := &corev1.SecretList{}
+	if err := i.ClusterContext.Client.List(ctx, l, &client.ListOptions{
+		Namespace: namespace,
+		LabelSelector: labels.SelectorFromSet(map[string]string{
+			"owner": "helm",
+			"name":  releaseName,
+		}),
+	}); err != nil {
+		return false
+	}
+	return len(l.Items) > 0
 }

@@ -8,14 +8,14 @@ rules:
   - ""
   resources:
   - configmaps
-  - secrets
-  - serviceaccounts
+  - services
   verbs:
   - create
   - delete
   - get
   - list
   - patch
+  - update
   - watch
 - apiGroups:
   - ""
@@ -38,14 +38,14 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - services
+  - secrets
+  - serviceaccounts
   verbs:
   - create
   - delete
   - get
   - list
   - patch
-  - update
   - watch
 - apiGroups:
   - apiextensions.k8s.io
@@ -92,6 +92,7 @@ rules:
 - apiGroups:
   - gateway.kgateway.dev
   resources:
+  - agentgatewaybackends
   - agentgatewaypolicies
   - backendconfigpolicies
   - backends
@@ -99,6 +100,7 @@ rules:
   - gatewayextensions
   - gatewayparameters
   - httplistenerpolicies
+  - listenerpolicies
   - trafficpolicies
   verbs:
   - get
@@ -107,6 +109,7 @@ rules:
 - apiGroups:
   - gateway.kgateway.dev
   resources:
+  - agentgatewaybackends/status
   - agentgatewaypolicies/status
   - backendconfigpolicies/status
   - backends/status
@@ -114,6 +117,7 @@ rules:
   - gatewayextensions/status
   - gatewayparameters/status
   - httplistenerpolicies/status
+  - listenerpolicies/status
   - trafficpolicies/status
   verbs:
   - get
@@ -154,6 +158,8 @@ rules:
   - create
   - get
   - list
+  - patch
+  - update
   - watch
 - apiGroups:
   - gateway.networking.x-k8s.io

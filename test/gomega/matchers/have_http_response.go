@@ -44,7 +44,7 @@ func HavePartialResponseBody(substring string) types.GomegaMatcher {
 }
 
 // HaveOkResponseWithHeaders expects an 200 response with a set of headers that match the provided headers
-func HaveOkResponseWithHeaders(headers map[string]interface{}) types.GomegaMatcher {
+func HaveOkResponseWithHeaders(headers map[string]any) types.GomegaMatcher {
 	return HaveHttpResponse(&HttpResponse{
 		StatusCode: http.StatusOK,
 		Body:       gomega.BeEmpty(),
@@ -77,11 +77,11 @@ type HttpResponse struct {
 	// Body is the expected response body for an http.Response
 	// Body can be of type: {string, bytes, GomegaMatcher}
 	// Optional: If not provided, defaults to an empty string
-	Body interface{}
+	Body any
 	// Headers is the set of expected header values for an http.Response
 	// Each header can be of type: {string, GomegaMatcher}
 	// Optional: If not provided, does not perform header validation
-	Headers map[string]interface{}
+	Headers map[string]any
 	// NotHeaders is a list of headers that should not be present in the response
 	// Optional: If not provided, does not perform header absence validation
 	NotHeaders []string
@@ -119,7 +119,7 @@ func HaveHttpResponse(expected *HttpResponse) types.GomegaMatcher {
 
 	var partialResponseMatchers []types.GomegaMatcher
 	partialResponseMatchers = append(partialResponseMatchers, &matchers.HaveHTTPStatusMatcher{
-		Expected: []interface{}{
+		Expected: []any{
 			expected.StatusCode,
 		},
 	})
@@ -157,7 +157,7 @@ type HaveHttpResponseMatcher struct {
 	evaluated bool
 }
 
-func (m *HaveHttpResponseMatcher) Match(actual interface{}) (success bool, err error) {
+func (m *HaveHttpResponseMatcher) Match(actual any) (success bool, err error) {
 	if m.evaluated {
 		// Matchers are intended to be short-lived, and we have seen inconsistent behaviors
 		// when evaluating the same matcher multiple times.
@@ -175,13 +175,13 @@ func (m *HaveHttpResponseMatcher) Match(actual interface{}) (success bool, err e
 	return true, nil
 }
 
-func (m *HaveHttpResponseMatcher) FailureMessage(actual interface{}) (message string) {
+func (m *HaveHttpResponseMatcher) FailureMessage(actual any) (message string) {
 	return fmt.Sprintf("%s \n%s",
 		m.responseMatcher.FailureMessage(actual),
 		informativeComparison(m.Expected, actual))
 }
 
-func (m *HaveHttpResponseMatcher) NegatedFailureMessage(actual interface{}) (message string) {
+func (m *HaveHttpResponseMatcher) NegatedFailureMessage(actual any) (message string) {
 	return fmt.Sprintf("%s \n%s",
 		m.responseMatcher.NegatedFailureMessage(actual),
 		informativeComparison(m.Expected, actual))
@@ -192,7 +192,7 @@ type NotHaveHTTPHeaderMatcher struct {
 	Header string
 }
 
-func (m *NotHaveHTTPHeaderMatcher) Match(actual interface{}) (success bool, err error) {
+func (m *NotHaveHTTPHeaderMatcher) Match(actual any) (success bool, err error) {
 	response, ok := actual.(*http.Response)
 	if !ok {
 		return false, fmt.Errorf("NotHaveHTTPHeaderMatcher expects an *http.Response, got %T", actual)
@@ -206,7 +206,7 @@ func (m *NotHaveHTTPHeaderMatcher) Match(actual interface{}) (success bool, err 
 	return !headerExists, nil
 }
 
-func (m *NotHaveHTTPHeaderMatcher) FailureMessage(actual interface{}) string {
+func (m *NotHaveHTTPHeaderMatcher) FailureMessage(actual any) string {
 	response, ok := actual.(*http.Response)
 	if !ok || response == nil {
 		return fmt.Sprintf("Expected a valid *http.Response, got %T", actual)
@@ -215,7 +215,7 @@ func (m *NotHaveHTTPHeaderMatcher) FailureMessage(actual interface{}) string {
 	return fmt.Sprintf("Expected HTTP response not to have header '%s', but it was present", m.Header)
 }
 
-func (m *NotHaveHTTPHeaderMatcher) NegatedFailureMessage(actual interface{}) string {
+func (m *NotHaveHTTPHeaderMatcher) NegatedFailureMessage(actual any) string {
 	response, ok := actual.(*http.Response)
 	if !ok || response == nil {
 		return fmt.Sprintf("Expected a valid *http.Response, got %T", actual)
@@ -230,7 +230,7 @@ func (m *NotHaveHTTPHeaderMatcher) NegatedFailureMessage(actual interface{}) str
 // To help developers, we print more details in this function.
 // NOTE: Printing the actual http.Response is challenging (since the body has already been read), so for now
 // we do not print it.
-func informativeComparison(expected, _ interface{}) string {
+func informativeComparison(expected, _ any) string {
 	expectedJson, _ := json.MarshalIndent(expected, "", "  ")
 
 	return fmt.Sprintf("\nexpected: %s", expectedJson)

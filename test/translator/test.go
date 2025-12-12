@@ -8,24 +8,25 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
-	"reflect"
 	"sort"
-	"strings"
 	"testing"
+	"time"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyapikeyauthv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/api_key_auth/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
-	"istio.io/istio/pkg/config/schema/gvr"
+	"google.golang.org/protobuf/types/known/anypb"
 	kubeclient "istio.io/istio/pkg/kube"
-	"istio.io/istio/pkg/kube/kclient/clienttest"
 	"istio.io/istio/pkg/kube/krt"
+	apiserverschema "k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -34,18 +35,19 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwxv1a1 "sigs.k8s.io/gateway-api/apisx/v1alpha1"
-	"sigs.k8s.io/gateway-api/pkg/consts"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/fake"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
+	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/registry"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/proxy_syncer"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/irtranslator"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/listener"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -58,41 +60,12 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
-var AllCRDs = []schema.GroupVersionResource{
-	// Gateway API
-	gvr.KubernetesGateway_v1,
-	gvr.GatewayClass,
-	gvr.HTTPRoute_v1,
-	gvr.GRPCRoute,
-	gvr.TCPRoute,
-	gvr.TLSRoute,
-	gvr.ReferenceGrant,
-	gvr.BackendTLSPolicy,
-	gvr.XListenerSet,
-	wellknown.InferencePoolGVR,
-	// K8s API
-	gvr.Service,
-	gvr.Pod,
-	// Istio API
-	gvr.ServiceEntry,
-	gvr.WorkloadEntry,
-	gvr.AuthorizationPolicy,
-	// kgateway API
-	wellknown.BackendTLSPolicyGVR,
-	wellknown.BackendGVR,
-	wellknown.BackendConfigPolicyGVR,
-	wellknown.TrafficPolicyGVR,
-	wellknown.HTTPListenerPolicyGVR,
-	wellknown.DirectResponseGVR,
-	wellknown.GatewayExtensionGVR,
-	wellknown.AgentgatewayPolicyGVR,
-}
-
 type translationResult struct {
 	Routes        []*envoyroutev3.RouteConfiguration
 	Listeners     []*envoylistenerv3.Listener
 	ExtraClusters []*envoyclusterv3.Cluster
 	Clusters      []*envoyclusterv3.Cluster
+	Secrets       []*envoytlsv3.Secret
 	Statuses      *Statuses
 }
 
@@ -135,6 +108,14 @@ func (tr *translationResult) MarshalJSON() ([]byte, error) {
 			return nil, err
 		}
 		result["Clusters"] = clusters
+	}
+
+	if len(tr.Secrets) > 0 {
+		secrets, err := marshalProtoMessages(tr.Secrets, m)
+		if err != nil {
+			return nil, err
+		}
+		result["Secrets"] = secrets
 	}
 
 	// Add statuses if they exist
@@ -218,6 +199,21 @@ func (tr *translationResult) UnmarshalJSON(data []byte) error {
 		}
 	}
 
+	if secretsData, ok := result["Secrets"]; ok {
+		var secrets []json.RawMessage
+		if err := json.Unmarshal(secretsData, &secrets); err != nil {
+			return err
+		}
+		tr.Secrets = make([]*envoytlsv3.Secret, len(secrets))
+		for i, secretData := range secrets {
+			secret := &envoytlsv3.Secret{}
+			if err := m.Unmarshal(secretData, secret); err != nil {
+				return err
+			}
+			tr.Secrets[i] = secret
+		}
+	}
+
 	// Unmarshal statuses if they exist
 	if statusesData, ok := result["Statuses"]; ok {
 		tr.Statuses = &Statuses{}
@@ -247,9 +243,16 @@ func marshalProtoMessages[T proto.Message](messages []T, m protojson.MarshalOpti
 
 type ExtraPluginsFn func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []pluginsdk.Plugin
 
+type ExtraConfig struct {
+	NewClientFn           func(*testing.T, ...client.Object) apiclient.Client
+	PluginsFn             ExtraPluginsFn
+	Schemes               runtime.SchemeBuilder
+	GVKToStructuralSchema map[schema.GroupVersionKind]*apiserverschema.Structural
+}
+
 func NewScheme(extraSchemes runtime.SchemeBuilder) *runtime.Scheme {
 	scheme := schemes.GatewayScheme()
-	extraSchemes = append(extraSchemes, v1alpha1.Install)
+	extraSchemes = append(extraSchemes, kgateway.Install)
 	if err := extraSchemes.AddToScheme(scheme); err != nil {
 		log.Fatalf("failed to add extra schemes to scheme: %v", err)
 	}
@@ -264,7 +267,7 @@ func TestTranslation(
 	gwNN types.NamespacedName,
 	settingsOpts ...SettingsOpts,
 ) {
-	TestTranslationWithExtraPlugins(t, ctx, inputFiles, outputFile, gwNN, nil, nil, nil, "", settingsOpts...)
+	TestTranslationWithExtraPlugins(t, ctx, inputFiles, outputFile, gwNN, ExtraConfig{}, settingsOpts...)
 }
 
 func TestTranslationWithExtraPlugins(
@@ -273,19 +276,16 @@ func TestTranslationWithExtraPlugins(
 	inputFiles []string,
 	outputFile string,
 	gwNN types.NamespacedName,
-	extraPluginsFn ExtraPluginsFn,
-	extraSchemes runtime.SchemeBuilder,
-	extraGVRs []schema.GroupVersionResource,
-	crdDir string,
+	extraConfig ExtraConfig,
 	settingsOpts ...SettingsOpts,
 ) {
-	scheme := NewScheme(extraSchemes)
+	scheme := NewScheme(extraConfig.Schemes)
 	r := require.New(t)
 
 	tc := TestCase{
 		InputFiles: inputFiles,
 	}
-	results, err := tc.Run(t, ctx, scheme, extraPluginsFn, extraGVRs, crdDir, settingsOpts...)
+	results, err := tc.Run(t, ctx, scheme, extraConfig, settingsOpts...)
 	r.NoError(err, "error running test case")
 	r.Len(results, 1, "expected exactly one gateway in the results")
 	r.Contains(results, gwNN)
@@ -304,6 +304,7 @@ func TestTranslationWithExtraPlugins(
 		Listeners:     result.Proxy.Listeners,
 		ExtraClusters: result.Proxy.ExtraClusters,
 		Clusters:      result.Clusters,
+		Secrets:       result.Proxy.Secrets,
 		Statuses:      buildStatusesFromReports(result.ReportsMap, result.Gateways, result.ListenerSets),
 	}
 	outputYaml, err := testutils.MarshalAnyYaml(output)
@@ -350,7 +351,12 @@ func compareProxy(expectedFile string, actualProxy *irtranslator.TranslationResu
 		return "", err
 	}
 
-	return cmp.Diff(sortProxy(expectedProxy), sortProxy(actualProxy), protocmp.Transform(), cmpopts.EquateNaNs()), nil
+	// Sort credentials by client name to ensure deterministic comparison
+	credentialSortFn := func(x, y *envoyapikeyauthv3.Credential) bool {
+		return x.Client < y.Client
+	}
+
+	return cmp.Diff(sortProxy(expectedProxy), sortProxy(actualProxy), protocmp.Transform(), protocmp.SortRepeated(credentialSortFn), cmpopts.EquateNaNs()), nil
 }
 
 func sortProxy(proxy *irtranslator.TranslationResult) *irtranslator.TranslationResult {
@@ -367,8 +373,84 @@ func sortProxy(proxy *irtranslator.TranslationResult) *irtranslator.TranslationR
 	sort.Slice(proxy.ExtraClusters, func(i, j int) bool {
 		return proxy.ExtraClusters[i].GetName() < proxy.ExtraClusters[j].GetName()
 	})
+	sort.Slice(proxy.Secrets, func(i, j int) bool {
+		return proxy.Secrets[i].GetName() < proxy.Secrets[j].GetName()
+	})
+
+	// Sort credentials in routes to ensure deterministic output
+	// This is to avoid local changes every time the test is run with REFRESH_GOLDEN=true
+	for _, routeConfig := range proxy.Routes {
+		sortCredentialsInRouteConfiguration(routeConfig)
+	}
 
 	return proxy
+}
+
+// sortCredentialsInRouteConfiguration sorts API key auth credentials within route configurations
+func sortCredentialsInRouteConfiguration(routeConfig *envoyroutev3.RouteConfiguration) {
+	if routeConfig == nil {
+		return
+	}
+
+	for _, vh := range routeConfig.GetVirtualHosts() {
+		// Sort credentials in route-level typedPerFilterConfig
+		for _, route := range vh.GetRoutes() {
+			sortCredentialsInRoute(route)
+		}
+
+		// Sort credentials in virtual host-level typedPerFilterConfig
+		if vh.GetTypedPerFilterConfig() != nil {
+			if config, ok := vh.GetTypedPerFilterConfig()["envoy.filters.http.api_key_auth"]; ok {
+				sortCredentialsInAny(config)
+			}
+		}
+	}
+
+	// Sort credentials in route configuration-level typedPerFilterConfig
+	if routeConfig.GetTypedPerFilterConfig() != nil {
+		if config, ok := routeConfig.GetTypedPerFilterConfig()["envoy.filters.http.api_key_auth"]; ok {
+			sortCredentialsInAny(config)
+		}
+	}
+}
+
+// sortCredentialsInRoute sorts API key auth credentials in a route's typedPerFilterConfig
+func sortCredentialsInRoute(route *envoyroutev3.Route) {
+	if route == nil || route.GetTypedPerFilterConfig() == nil {
+		return
+	}
+
+	if config, ok := route.GetTypedPerFilterConfig()["envoy.filters.http.api_key_auth"]; ok {
+		sortCredentialsInAny(config)
+	}
+}
+
+// sortCredentialsInAny sorts credentials in an ApiKeyAuthPerRoute config stored as anypb.Any
+func sortCredentialsInAny(config *anypb.Any) {
+	if config == nil {
+		return
+	}
+
+	// Unmarshal to ApiKeyAuthPerRoute
+	apiKeyAuth := &envoyapikeyauthv3.ApiKeyAuthPerRoute{}
+	if err := config.UnmarshalTo(apiKeyAuth); err != nil {
+		// Not an ApiKeyAuthPerRoute, skip
+		return
+	}
+
+	// Sort credentials by client name
+	if len(apiKeyAuth.Credentials) > 0 {
+		sort.Slice(apiKeyAuth.Credentials, func(i, j int) bool {
+			return apiKeyAuth.Credentials[i].Client < apiKeyAuth.Credentials[j].Client
+		})
+
+		// Marshal back to Any and update the config
+		a, err := utils.MessageToAny(apiKeyAuth)
+		if err == nil {
+			config.TypeUrl = a.TypeUrl
+			config.Value = a.Value
+		}
+	}
 }
 
 func compareClusters(expectedFile string, actualClusters []*envoyclusterv3.Cluster) (string, error) {
@@ -391,7 +473,7 @@ func sortClusters(clusters []*envoyclusterv3.Cluster) []*envoyclusterv3.Cluster 
 	return clusters
 }
 
-func ReadYamlFile(file string, out interface{}) error {
+func ReadYamlFile(file string, out any) error {
 	data, err := os.ReadFile(file)
 	if err != nil {
 		return err
@@ -537,7 +619,7 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 		}
 	}
 
-	for ls := range reportsMap.ListenerSets {
+	for ls := range reportsMap.ListenerSets[wellknown.XListenerSetGVK] {
 		l := gwxv1a1.XListenerSet{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      ls.Name,
@@ -566,62 +648,41 @@ func (tc TestCase) Run(
 	t *testing.T,
 	ctx context.Context,
 	scheme *runtime.Scheme,
-	extraPluginsFn ExtraPluginsFn,
-	extraGVRs []schema.GroupVersionResource,
-	crdDir string,
+	extraConfig ExtraConfig,
 	settingsOpts ...SettingsOpts,
 ) (map[types.NamespacedName]ActualTestResult, error) {
-	var (
-		anyObjs []runtime.Object
-		ourObjs []runtime.Object
-	)
 	r := require.New(t)
-	if crdDir == "" {
-		crdDir = filepath.Join(testutils.GitRootDirectory(), testutils.CRDPath)
+
+	// If GVKToStructuralSchema is provided, use it; otherwise load from our CRDs
+	gvkToStructuralSchema := extraConfig.GVKToStructuralSchema
+	if len(gvkToStructuralSchema) == 0 {
+		var err error
+		gvkToStructuralSchema, err = testutils.GetStructuralSchemasForBothCharts()
+		r.NoError(err, "error getting structural schemas")
 	}
 
-	gvkToStructuralSchema, err := testutils.GetStructuralSchemas(crdDir)
-	r.NoError(err, "error getting structural schemas")
-
+	var allObjs []client.Object
+	var fakeNow time.Time
 	for _, file := range tc.InputFiles {
 		objs, err := testutils.LoadFromFiles(file, scheme, gvkToStructuralSchema)
 		if err != nil {
 			return nil, err
 		}
-		for i := range objs {
-			switch obj := objs[i].(type) {
-			case *gwv1.Gateway:
-				anyObjs = append(anyObjs, obj)
-
-			default:
-				apiversion := reflect.ValueOf(obj).Elem().FieldByName("TypeMeta").FieldByName("APIVersion").String()
-				if strings.Contains(apiversion, v1alpha1.GroupName) {
-					ourObjs = append(ourObjs, obj)
-				} else {
-					external := false
-					for _, gvr := range extraGVRs {
-						if strings.Contains(apiversion, gvr.Group) {
-							external = true
-							break
-						}
-					}
-					if !external {
-						anyObjs = append(anyObjs, objs[i])
-					}
-				}
-			}
+		// add a creation timestamp to each object to ensure consistent application of policy
+		for _, obj := range objs {
+			fakeNow = fakeNow.Add(time.Second)
+			obj.SetCreationTimestamp(metav1.NewTime(fakeNow))
 		}
+		allObjs = append(allObjs, objs...)
 	}
 
-	ourCli := fake.NewSimpleClientset(ourObjs...)
-	cli := kubeclient.NewFakeClient(anyObjs...)
-	allGVRs := append(AllCRDs, extraGVRs...)
-	for _, gvr := range allGVRs {
-		clienttest.MakeCRDWithAnnotations(t, cli, gvr, map[string]string{
-			consts.BundleVersionAnnotation: consts.BundleVersion,
-		})
+	var fakeClient apiclient.Client
+	if extraConfig.NewClientFn != nil {
+		fakeClient = extraConfig.NewClientFn(t, allObjs...)
+	} else {
+		fakeClient = fake.NewClient(t, allObjs...)
 	}
-	defer cli.Shutdown()
+	defer fakeClient.Shutdown()
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -633,7 +694,7 @@ func (tc TestCase) Run(
 		"example-gateway-class",
 	}
 	for _, className := range gwClasses {
-		cli.GatewayAPI().GatewayV1().GatewayClasses().Create(ctx, &gwv1.GatewayClass{
+		fakeClient.GatewayAPI().GatewayV1().GatewayClasses().Create(ctx, &gwv1.GatewayClass{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: string(className),
 			},
@@ -658,8 +719,7 @@ func (tc TestCase) Run(
 	commoncol, err := collections.NewCommonCollections(
 		ctx,
 		krtOpts,
-		cli,
-		ourCli,
+		fakeClient,
 		wellknown.DefaultGatewayControllerName,
 		wellknown.DefaultAgwControllerName,
 		*settings,
@@ -674,8 +734,8 @@ func (tc TestCase) Run(
 	plugins = append(plugins, krtcollections.NewBuiltinPlugin(ctx))
 
 	var extraPlugs []pluginsdk.Plugin
-	if extraPluginsFn != nil {
-		extraPlugins := extraPluginsFn(ctx, commoncol, settings.PolicyMerge)
+	if extraConfig.PluginsFn != nil {
+		extraPlugins := extraConfig.PluginsFn(ctx, commoncol, settings.PolicyMerge)
 		extraPlugs = append(extraPlugs, extraPlugins...)
 	}
 	plugins = append(plugins, extraPlugs...)
@@ -710,7 +770,7 @@ func (tc TestCase) Run(
 	translator := translator.NewCombinedTranslator(ctx, extensions, commoncol, v)
 	translator.Init(ctx)
 
-	cli.RunAndWait(ctx.Done())
+	fakeClient.RunAndWait(ctx.Done())
 	commoncol.GatewayIndex.Gateways.WaitUntilSynced(ctx.Done())
 
 	kubeclient.WaitForCacheSync("routes", ctx.Done(), commoncol.Routes.HasSynced)
@@ -739,7 +799,7 @@ func (tc TestCase) Run(
 	// from the loaded input objects since they're not directly available via InitCollections()
 	// (i.e. no dedicated KRT collection).
 	listenerSetMap := make(map[types.NamespacedName]*gwxv1a1.XListenerSet)
-	for _, obj := range anyObjs {
+	for _, obj := range allObjs {
 		if ls, ok := obj.(*gwxv1a1.XListenerSet); ok {
 			listenerSetMap[client.ObjectKeyFromObject(ls)] = ls
 		}

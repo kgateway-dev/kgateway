@@ -2,7 +2,9 @@ package translator
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"maps"
 	"sort"
 	"strconv"
 	"strings"
@@ -10,16 +12,11 @@ import (
 	"github.com/agentgateway/agentgateway/go/api"
 	"github.com/golang/protobuf/ptypes/duration"
 	"istio.io/api/annotation"
-	istio "istio.io/api/networking/v1alpha3"
 	kubecreds "istio.io/istio/pilot/pkg/credentials/kube"
-	creds "istio.io/istio/pilot/pkg/model/credentials"
 	"istio.io/istio/pilot/pkg/model/kstatus"
-	"istio.io/istio/pilot/pkg/serviceregistry/kube"
-	"istio.io/istio/pkg/config/constants"
 	"istio.io/istio/pkg/config/host"
 	"istio.io/istio/pkg/config/protocol"
 	"istio.io/istio/pkg/config/schema/gvk"
-	"istio.io/istio/pkg/config/schema/kind"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/log"
@@ -32,19 +29,16 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+	gatewayx "sigs.k8s.io/gateway-api/apisx/v1alpha1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	v1alpha2 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
-)
-
-const (
-	gatewayTLSTerminateModeKey = "gateway.agentgateway.io/tls-terminate-mode"
 )
 
 // ConvertHTTPRouteToAgw converts a HTTPRouteRule to an agentgateway HTTPRoute
@@ -52,20 +46,12 @@ func ConvertHTTPRouteToAgw(ctx RouteContext, r gwv1.HTTPRouteRule,
 	obj *gwv1.HTTPRoute, pos int, matchPos int,
 ) (*api.Route, *reporter.RouteCondition) {
 	routeRuleKey := strconv.Itoa(pos) + "." + strconv.Itoa(matchPos)
-	var ruleName string
-	if r.Name != nil {
-		// use the user provided name. this will be used to attach policies
-		routeRuleKey = string(*r.Name)
-		ruleName = utils.InternalRouteRuleName(obj.Namespace, obj.Name, string(*r.Name))
-	}
 	res := &api.Route{
 		// unique for route rule
-		Key: utils.InternalRouteRuleName(obj.Namespace, obj.Name, routeRuleKey),
-		// used for policy reference at route level
-		RouteName:   utils.InternalRouteRuleName(obj.Namespace, obj.Name, ""),
+		Key:  utils.InternalRouteRuleKey(obj.Namespace, obj.Name, routeRuleKey),
+		Name: utils.RouteName(wellknown.HTTPRouteKind, obj.Namespace, obj.Name, r.Name),
+		// filled in later
 		ListenerKey: "",
-		// used for policy reference at route rule (drops rule name if not specified)
-		RuleName: ruleName,
 	}
 
 	if err := processRouteMatches(&r, res); err != nil {
@@ -113,10 +99,6 @@ func ConvertHTTPRouteToAgw(ctx RouteContext, r gwv1.HTTPRouteRule,
 	res.Backends = backends
 
 	res.Hostnames = convertHostnames(obj.Spec.Hostnames)
-
-	if shouldInjectErrorResponse(backendErr) {
-		injectDirectResponse(res, obj.Namespace, obj.Name)
-	}
 
 	if policiesErr != nil && !isPolicyErrorCritical(policiesErr) {
 		return nil, policiesErr
@@ -183,33 +165,6 @@ func convertHostnames(hostnames []gwv1.Hostname) []string {
 	})
 }
 
-// Helper function to determine if error response should be injected
-func shouldInjectErrorResponse(backendErr *reporter.RouteCondition) bool {
-	return backendErr != nil &&
-		(backendErr.Reason == gwv1.RouteReasonInvalidKind ||
-			backendErr.Reason == gwv1.RouteReasonRefNotPermitted ||
-			backendErr.Reason == gwv1.RouteReasonBackendNotFound)
-}
-
-// Helper function to inject direct response filter for errors
-func injectDirectResponse(res *api.Route, namespace, name string) {
-	for _, f := range res.TrafficPolicies {
-		if _, ok := f.GetKind().(*api.TrafficPolicySpec_DirectResponse); ok {
-			return
-		}
-	}
-	drf := &api.TrafficPolicySpec{
-		Kind: &api.TrafficPolicySpec_DirectResponse{
-			DirectResponse: &api.DirectResponse{
-				Status: 500,
-				Body:   []byte("Backend service unavailable"),
-			},
-		},
-	}
-
-	res.TrafficPolicies = append([]*api.TrafficPolicySpec{drf}, res.TrafficPolicies...)
-}
-
 // Helper function to determine if filter error is critical
 func isPolicyErrorCritical(filterError *reporter.RouteCondition) bool {
 	criticalReasons := []gwv1.RouteConditionReason{
@@ -218,32 +173,19 @@ func isPolicyErrorCritical(filterError *reporter.RouteCondition) bool {
 		// Add other critical filter error reasons as needed
 	}
 
-	for _, reason := range criticalReasons {
-		if filterError.Reason == reason {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(criticalReasons, filterError.Reason)
 }
 
 // ConvertTCPRouteToAgw converts a TCPRouteRule to an agentgateway TCPRoute
-func ConvertTCPRouteToAgw(ctx RouteContext, r gwv1alpha2.TCPRouteRule,
-	obj *gwv1alpha2.TCPRoute, pos int,
+func ConvertTCPRouteToAgw(ctx RouteContext, r gwv1a2.TCPRouteRule,
+	obj *gwv1a2.TCPRoute, pos int,
 ) (*api.TCPRoute, *reporter.RouteCondition) {
 	routeRuleKey := strconv.Itoa(pos)
-	var ruleName string
-	if r.Name != nil {
-		// use the user provided name. this will be used to attach policies
-		routeRuleKey = getRouteKeySectionName(obj.ObjectMeta, string(*r.Name))
-		ruleName = utils.InternalRouteRuleName(obj.Namespace, obj.Name, string(*r.Name))
-	}
 	res := &api.TCPRoute{
 		// unique for route rule
-		Key: utils.InternalRouteRuleName(obj.Namespace, obj.Name, routeRuleKey),
-		// used for policy reference (drops rule name if not specified)
-		RouteName:   utils.InternalRouteRuleName(obj.Namespace, obj.Name, ""),
+		Key:         utils.InternalRouteRuleKey(obj.Namespace, obj.Name, routeRuleKey),
+		Name:        utils.RouteName(wellknown.TCPRouteKind, obj.Namespace, obj.Name, r.Name),
 		ListenerKey: "",
-		RuleName:    ruleName,
 	}
 
 	// Build TCP destinations
@@ -262,19 +204,11 @@ func ConvertGRPCRouteToAgw(ctx RouteContext, r gwv1.GRPCRouteRule,
 	obj *gwv1.GRPCRoute, pos int,
 ) (*api.Route, *reporter.RouteCondition) {
 	routeRuleKey := strconv.Itoa(pos)
-	var ruleName string
-	if r.Name != nil {
-		// use the user provided name. this will be used to attach policies
-		routeRuleKey = getRouteKeySectionName(obj.ObjectMeta, string(*r.Name))
-		ruleName = utils.InternalRouteRuleName(obj.Namespace, obj.Name, string(*r.Name))
-	}
 	res := &api.Route{
 		// unique for route rule
-		Key: utils.InternalRouteRuleName(obj.Namespace, obj.Name, routeRuleKey),
-		// used for policy reference (drops rule name if not specified)
-		RouteName:   utils.InternalRouteRuleName(obj.Namespace, obj.Name, ""),
+		Key:         utils.InternalRouteRuleKey(obj.Namespace, obj.Name, routeRuleKey),
+		Name:        utils.RouteName(wellknown.GRPCRouteKind, obj.Namespace, obj.Name, r.Name),
 		ListenerKey: "",
-		RuleName:    ruleName,
 	}
 
 	// Convert GRPC matches to Agw format
@@ -334,23 +268,15 @@ func ConvertGRPCRouteToAgw(ctx RouteContext, r gwv1.GRPCRouteRule,
 }
 
 // ConvertTLSRouteToAgw converts a TLSRouteRule to an agentgateway TCPRoute
-func ConvertTLSRouteToAgw(ctx RouteContext, r gwv1alpha2.TLSRouteRule,
-	obj *gwv1alpha2.TLSRoute, pos int,
+func ConvertTLSRouteToAgw(ctx RouteContext, r gwv1a2.TLSRouteRule,
+	obj *gwv1a2.TLSRoute, pos int,
 ) (*api.TCPRoute, *reporter.RouteCondition) {
 	routeRuleKey := strconv.Itoa(pos)
-	var ruleName string
-	if r.Name != nil {
-		// use the user provided name. this will be used to attach policies
-		routeRuleKey = getRouteKeySectionName(obj.ObjectMeta, string(*r.Name))
-		ruleName = utils.InternalRouteRuleName(obj.Namespace, obj.Name, string(*r.Name))
-	}
 	res := &api.TCPRoute{
 		// unique for route rule
-		Key: utils.InternalRouteRuleName(obj.Namespace, obj.Name, routeRuleKey),
-		// used for policy reference (drops rule name if not specified)
-		RouteName:   utils.InternalRouteRuleName(obj.Namespace, obj.Name, ""),
+		Key:         utils.InternalRouteRuleKey(obj.Namespace, obj.Name, routeRuleKey),
+		Name:        utils.RouteName(wellknown.TLSRouteKind, obj.Namespace, obj.Name, r.Name),
 		ListenerKey: "",
-		RuleName:    ruleName,
 	}
 
 	// Build TLS destinations
@@ -502,28 +428,12 @@ func BuildAgwTrafficPolicyFilters(
 			}
 			policies = append(policies, h)
 		case gwv1.HTTPRouteFilterExtensionRef:
-			h, err := createAgwExtensionRefFilter(ctx, filter.ExtensionRef, ns)
+			err := createAgwExtensionRefFilter(filter.ExtensionRef)
 			if err != nil {
 				if policyError == nil {
 					policyError = err
 				}
 				continue
-			}
-			if h != nil {
-				if _, ok := h.Kind.(*api.TrafficPolicySpec_DirectResponse); ok {
-					if hasTerminalFilter {
-						policyError = &reporter.RouteCondition{
-							Type:    gwv1.RouteConditionAccepted,
-							Status:  metav1.ConditionFalse,
-							Reason:  gwv1.RouteReasonIncompatibleFilters,
-							Message: terminalFilterCombinationError(terminalFilterType, "DirectResponse"),
-						}
-						continue
-					}
-					hasTerminalFilter = true
-					terminalFilterType = "DirectResponse"
-				}
-				policies = append(policies, h)
 			}
 		default:
 			return nil, &reporter.RouteCondition{
@@ -713,7 +623,7 @@ func buildAgwDestination(
 	to gwv1.HTTPBackendRef,
 	ns string,
 	k schema.GroupVersionKind,
-	backendCol krt.Collection[*v1alpha1.Backend],
+	backendCol krt.Collection[*v1alpha2.AgentgatewayBackend],
 ) (*api.RouteBackend, *reporter.RouteCondition) {
 	ref := normalizeReference(to.Group, to.Kind, wellknown.ServiceGVK)
 	// check if the reference is allowed
@@ -766,12 +676,49 @@ func buildAgwDestination(
 			}
 		} else {
 			rb.Backend = &api.BackendReference{
-				Kind: &api.BackendReference_Service{
-					Service: namespace + "/" + hostname,
+				Kind: &api.BackendReference_Service_{
+					Service: &api.BackendReference_Service{
+						Hostname:  hostname,
+						Namespace: namespace,
+					},
 				},
 				// InferencePool only supports single port
 				Port: uint32(svc.Spec.TargetPorts[0].Number), //nolint:gosec // G115: InferencePool TargetPort is int32 with validation 1-65535, always safe
 			}
+		}
+	case wellknown.HostnameGVK.GroupKind():
+		// Hostname is an Istio-specific backend kind where the name is the literal hostname
+		// Used for referencing services by their full hostname (e.g., from ServiceEntry)
+		// The actual resolution to ServiceEntry happens via the BackendIndex alias mechanism
+		port = to.Port
+		if port == nil {
+			return nil, &reporter.RouteCondition{
+				Type:    gwv1.RouteConditionAccepted,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.RouteReasonUnsupportedValue,
+				Message: "port is required in backendRef for Hostname kind",
+			}
+		}
+		if to.Namespace != nil {
+			return nil, &reporter.RouteCondition{
+				Type:    gwv1.RouteConditionAccepted,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.RouteReasonUnsupportedValue,
+				Message: "namespace may not be set with Hostname type",
+			}
+		}
+		// Use the name directly as the hostname
+		hostname = string(to.Name)
+		// Note: Backend validation happens via BackendIndex which uses the Hostname->ServiceEntry alias
+		// No need to explicitly check ServiceEntries here as the BackendIndex handles the resolution
+		rb.Backend = &api.BackendReference{
+			Kind: &api.BackendReference_Service_{
+				Service: &api.BackendReference_Service{
+					Hostname:  hostname,
+					Namespace: namespace,
+				},
+			},
+			Port: uint32(*port), //nolint:gosec // G115: Gateway API PortNumber is int32 with validation 1-65535, always safe
 		}
 	case wellknown.ServiceGVK.GroupKind():
 		port = to.Port
@@ -806,12 +753,15 @@ func buildAgwDestination(
 			}
 		}
 		rb.Backend = &api.BackendReference{
-			Kind: &api.BackendReference_Service{
-				Service: namespace + "/" + hostname,
+			Kind: &api.BackendReference_Service_{
+				Service: &api.BackendReference_Service{
+					Hostname:  hostname,
+					Namespace: namespace,
+				},
 			},
 			Port: uint32(*port), //nolint:gosec // G115: Gateway API PortNumber is int32 with validation 1-65535, always safe
 		}
-	case wellknown.BackendGVK.GroupKind():
+	case wellknown.AgentgatewayBackendGVK.GroupKind():
 		backendRefKey := ns + "/" + string(to.Name)
 		fetchedKgwBackend := krt.FetchOne(ctx.Krt, backendCol, krt.FilterKey(backendRefKey))
 		if fetchedKgwBackend == nil {
@@ -841,18 +791,14 @@ func buildAgwDestination(
 	return rb, invalidBackendErr
 }
 
-// ParentMeta generates a map of metadata for a parent resource, including its name and optional section-specific details.
-func ParentMeta(obj controllers.Object, sectionName *gwv1.SectionName) map[string]string {
-	kind := obj.GetObjectKind().GroupVersionKind().Kind
-	name := fmt.Sprintf("%s/%s.%s", kind, obj.GetName(), obj.GetNamespace())
-	if sectionName != nil {
-		name = fmt.Sprintf("%s/%s/%s.%s", kind, obj.GetName(), *sectionName, obj.GetNamespace())
-	}
-	return map[string]string{
-		constants.InternalParentNames: name,
-	}
-}
-
+var knownReferences = sets.New(
+	wellknown.GatewayGVK,
+	wellknown.XListenerSetGVK,
+	wellknown.ServiceGVK,
+	wellknown.ServiceEntryGVK,
+	wellknown.SecretGVK,
+	wellknown.ConfigMapGVK,
+)
 var allowedParentReferences = sets.New(
 	wellknown.GatewayGVK,
 	wellknown.XListenerSetGVK,
@@ -879,7 +825,7 @@ func normalizeReference(group *gwv1.Group, kind *gwv1.Kind, defaultGVK schema.Gr
 			result.Group = groupStr
 		}
 	}
-	for wk := range allowedParentReferences {
+	for wk := range knownReferences {
 		if wk.Group == result.Group && wk.Kind == result.Kind {
 			return wk
 		}
@@ -1250,14 +1196,16 @@ func ExtractGatewayServices(kgw *gwv1.Gateway) ([]string, *reporter.RouteConditi
 func BuildListener(
 	ctx krt.HandlerContext,
 	secrets krt.Collection[*corev1.Secret],
+	configMaps krt.Collection[*corev1.ConfigMap],
 	grants ReferenceGrants,
 	namespaces krt.Collection[*corev1.Namespace],
 	obj controllers.Object,
 	status []gwv1.ListenerStatus,
+	gw gwv1.GatewaySpec,
 	l gwv1.Listener,
 	listenerIndex int,
 	portErr error,
-) (*istio.Server, *TLSInfo, []gwv1.ListenerStatus, bool) {
+) ([]string, *TLSInfo, []gwv1.ListenerStatus, bool) {
 	listenerConditions := map[string]*condition{
 		string(gwv1.ListenerConditionAccepted): {
 			reason:  string(gwv1.ListenerReasonAccepted),
@@ -1279,7 +1227,12 @@ func BuildListener(
 	}
 
 	ok := true
-	tls, tlsInfo, err := buildTLS(ctx, secrets, grants, l.TLS, obj, kube.IsAutoPassthrough(obj.GetLabels(), l))
+	gwTls := resolveGatewayTLS(l.Port, gw.TLS)
+	tlsInfo, err := buildTLS(ctx, secrets, configMaps, grants, gwTls, l.TLS, obj)
+	if err == nil && tlsInfo != nil {
+		// If there were no other errors, also check the Key/Cert are actually valid
+		err = validateTLS(tlsInfo)
+	}
 	if err != nil {
 		listenerConditions[string(gwv1.ListenerConditionResolvedRefs)].error = err
 		listenerConditions[string(gwv1.GatewayConditionProgrammed)].error = &ConfigError{
@@ -1297,7 +1250,8 @@ func BuildListener(
 	}
 
 	hostnames := buildHostnameMatch(ctx, obj.GetNamespace(), namespaces, l)
-	protocol, perr := listenerProtocolToAgw(l.Protocol)
+	// TODO: do we need this?
+	_, perr := listenerProtocolToAgw(l.Protocol)
 	if perr != nil {
 		listenerConditions[string(gwv1.ListenerConditionAccepted)].error = &ConfigError{
 			Reason:  string(gwv1.ListenerReasonUnsupportedProtocol),
@@ -1305,19 +1259,23 @@ func BuildListener(
 		}
 		ok = false
 	}
-	server := &istio.Server{
-		Port: &istio.Port{
-			// Name is required. We only have one server per GatewayListener, so we can just name them all the same
-			Name:     "default",
-			Number:   uint32(l.Port), //nolint:gosec // G115: Gateway API listener port is int32, always positive, safe to convert to uint32
-			Protocol: protocol,
-		},
-		Hosts: hostnames,
-		Tls:   tls,
-	}
 
 	updatedStatus := reportListenerCondition(listenerIndex, l, obj, status, listenerConditions)
-	return server, tlsInfo, updatedStatus, ok
+	return hostnames, tlsInfo, updatedStatus, ok
+}
+
+func resolveGatewayTLS(port gwv1.PortNumber, gw *gwv1.GatewayTLSConfig) *gwv1.TLSConfig {
+	if gw == nil || gw.Frontend == nil {
+		return nil
+	}
+	f := gw.Frontend
+	pp := slices.FindFunc(f.PerPort, func(portConfig gwv1.TLSPortConfig) bool {
+		return portConfig.Port == port
+	})
+	if pp != nil {
+		return &pp.TLS
+	}
+	return &f.Default
 }
 
 var supportedProtocols = sets.New(
@@ -1348,21 +1306,41 @@ func listenerProtocolToAgw(p gwv1.ProtocolType) (string, error) {
 	return "", fmt.Errorf("protocol %q is unsupported", p)
 }
 
+// dummyTls is a sentinel value to send to agentgateway to signal that it should reject TLS connects due to invalid config
+var dummyTls = &TLSInfo{
+	Cert: []byte("invalid"),
+	Key:  []byte("invalid"),
+}
+
+func validateTLS(certInfo *TLSInfo) *ConfigError {
+	if _, err := tls.X509KeyPair(certInfo.Cert, certInfo.Key); err != nil {
+		return &ConfigError{
+			Reason:  InvalidTLS,
+			Message: fmt.Sprintf("invalid certificate reference, the certificate is malformed: %v", err),
+		}
+	}
+	if certInfo.CaCert != nil {
+		if !x509.NewCertPool().AppendCertsFromPEM(certInfo.Cert) {
+			return &ConfigError{
+				Reason:  InvalidTLS,
+				Message: fmt.Sprintf("invalid CA certificate reference, the bundle is malformed"),
+			}
+		}
+	}
+	return nil
+}
+
 func buildTLS(
 	ctx krt.HandlerContext,
 	secrets krt.Collection[*corev1.Secret],
+	configMaps krt.Collection[*corev1.ConfigMap],
 	grants ReferenceGrants,
+	gatewayTLS *gwv1.TLSConfig,
 	tls *gwv1.ListenerTLSConfig,
 	gw controllers.Object,
-	isAutoPassthrough bool,
-) (*istio.ServerTLSSettings, *TLSInfo, *ConfigError) {
+) (*TLSInfo, *ConfigError) {
 	if tls == nil {
-		return nil, nil, nil
-	}
-	// Explicitly not supported: file mounted
-	// Not yet implemented: TLS mode, https redirect, max protocol version, SANs, CipherSuites, VerifyCertificate
-	out := &istio.ServerTLSSettings{
-		HttpsRedirect: false,
+		return nil, nil
 	}
 	mode := gwv1.TLSModeTerminate
 	if tls.Mode != nil {
@@ -1371,44 +1349,128 @@ func buildTLS(
 	namespace := gw.GetNamespace()
 	switch mode {
 	case gwv1.TLSModeTerminate:
-		out.Mode = istio.ServerTLSSettings_SIMPLE
-		if tls.Options != nil {
-			switch tls.Options[gatewayTLSTerminateModeKey] {
-			case "MUTUAL":
-				out.Mode = istio.ServerTLSSettings_MUTUAL
-			case "ISTIO_MUTUAL":
-				out.Mode = istio.ServerTLSSettings_ISTIO_MUTUAL
-				return out, nil, nil
-			}
-		}
+		// Important: all failures MUST include dummyTls, as this is the signal to the dataplane to actually do TLS (but fail)
 		if len(tls.CertificateRefs) != 1 {
 			// This is required in the API, should be rejected in validation
-			return out, nil, &ConfigError{Reason: InvalidTLS, Message: "exactly 1 certificateRefs should be present for TLS termination"}
+			return dummyTls, &ConfigError{Reason: InvalidTLS, Message: "exactly 1 certificateRefs should be present for TLS termination"}
 		}
-		cred, tlsInfo, err := buildSecretReference(ctx, tls.CertificateRefs[0], gw, secrets)
+		tlsRes, err := buildSecretReference(ctx, tls.CertificateRefs[0], gw, secrets)
 		if err != nil {
-			return out, nil, err
+			return dummyTls, err
 		}
-		credNs := ptr.OrDefault((*string)(tls.CertificateRefs[0].Namespace), namespace)
-		sameNamespace := credNs == namespace
-		if !sameNamespace && !grants.SecretAllowed(ctx, creds.ToResourceName(cred), namespace) {
-			return out, nil, &ConfigError{
+		// If we are going to send a cert, validate we can access it
+		sameNamespace := tlsRes.Source.Namespace == namespace
+		objectKind := GvkFromObject(gw)
+		if !sameNamespace && !grants.SecretAllowed(ctx, objectKind, tlsRes.Source, namespace) {
+			return dummyTls, &ConfigError{
 				Reason: InvalidListenerRefNotPermitted,
 				Message: fmt.Sprintf(
 					"certificateRef %v/%v not accessible to a Gateway in namespace %q (missing a ReferenceGrant?)",
-					tls.CertificateRefs[0].Name, credNs, namespace,
+					tls.CertificateRefs[0].Name, tlsRes.Source.Namespace, namespace,
 				),
 			}
 		}
-		out.CredentialName = cred
-		return out, &tlsInfo, nil
+
+		if gatewayTLS != nil && gatewayTLS.Validation != nil && len(gatewayTLS.Validation.CACertificateRefs) > 0 {
+			// TODO: add 'Mode'
+			if len(gatewayTLS.Validation.CACertificateRefs) > 1 {
+				return dummyTls, &ConfigError{
+					Reason:  InvalidTLS,
+					Message: "only one caCertificateRef is supported",
+				}
+			}
+			caCertRef := gatewayTLS.Validation.CACertificateRefs[0]
+			cred, err := buildCaCertificateReference(ctx, caCertRef, gw, configMaps, secrets)
+			if err != nil {
+				return dummyTls, err
+			}
+			sameNamespace := cred.Source.Namespace == namespace
+			isSecret := cred.Kind == wellknown.SecretGVK.Kind
+			if isSecret && !sameNamespace && !grants.SecretAllowed(ctx, GvkFromObject(gw), cred.Source, namespace) {
+				return dummyTls, &ConfigError{
+					Reason: InvalidListenerRefNotPermitted,
+					Message: fmt.Sprintf(
+						"caCertificateRef %v/%v not accessible to a Gateway in namespace %q (missing a ReferenceGrant?)",
+						cred.Source.Namespace, caCertRef.Name, namespace,
+					),
+				}
+			}
+			tlsRes.Info.CaCert = cred.Info.CaCert
+		}
+		return &tlsRes.Info, nil
 	case gwv1.TLSModePassthrough:
-		out.Mode = istio.ServerTLSSettings_PASSTHROUGH
-		if isAutoPassthrough {
-			out.Mode = istio.ServerTLSSettings_AUTO_PASSTHROUGH
+		// Handled outside of this function. This only handles termination
+		return nil, nil
+	}
+	return nil, nil
+}
+
+func buildCaCertificateReference(
+	ctx krt.HandlerContext,
+	ref gwv1.ObjectReference,
+	gw controllers.Object,
+	configMaps krt.Collection[*corev1.ConfigMap],
+	secrets krt.Collection[*corev1.Secret],
+) (*SecretReference, *ConfigError) {
+	namespace := ptr.OrDefault((*string)(ref.Namespace), gw.GetNamespace())
+	name := string(ref.Name)
+	res := SecretReference{
+		Source: types.NamespacedName{
+			Namespace: namespace,
+			Name:      name,
+		},
+		Info: TLSInfo{},
+	}
+
+	switch normalizeReference(&ref.Group, &ref.Kind, schema.GroupVersionKind{}) {
+	case wellknown.ConfigMapGVK:
+		res.Kind = wellknown.ConfigMapGVK.Kind
+		cm := ptr.Flatten(krt.FetchOne(ctx, configMaps, krt.FilterObjectName(res.Source)))
+		if cm == nil {
+			return nil, &ConfigError{
+				Reason:  InvalidTLS,
+				Message: fmt.Sprintf("invalid CA certificate reference, configmap %v not found", res.Source),
+			}
+		}
+		certInfo, err := kubecreds.ExtractRootFromString(cm.Data)
+		if err != nil {
+			return nil, &ConfigError{
+				Reason:  InvalidTLS,
+				Message: fmt.Sprintf("invalid CA certificate reference %v, %v", plainObjectReferenceString(ref), err),
+			}
+		}
+		res.Info.CaCert = certInfo.Cert
+	case wellknown.SecretGVK:
+		res.Kind = wellknown.SecretGVK.Kind
+		scrt := ptr.Flatten(krt.FetchOne(ctx, secrets, krt.FilterObjectName(res.Source)))
+		if scrt == nil {
+			return nil, &ConfigError{
+				Reason:  InvalidTLS,
+				Message: fmt.Sprintf("invalid CA certificate reference, secret %v not found", res.Source),
+			}
+		}
+		certInfo, err := kubecreds.ExtractRoot(scrt.Data)
+		if err != nil {
+			return nil, &ConfigError{
+				Reason:  InvalidTLS,
+				Message: fmt.Sprintf("invalid CA certificate reference %v, %v", plainObjectReferenceString(ref), err),
+			}
+		}
+		res.Info.CaCert = certInfo.Cert
+	default:
+		return nil, &ConfigError{
+			Reason:  InvalidTLS,
+			Message: fmt.Sprintf("invalid CA certificate reference %v, only secret and configmap are allowed", plainObjectReferenceString(ref)),
 		}
 	}
-	return out, nil, nil
+
+	return &res, nil
+}
+
+type SecretReference struct {
+	Source types.NamespacedName
+	Kind   string
+	Info   TLSInfo
 }
 
 func buildSecretReference(
@@ -1416,42 +1478,42 @@ func buildSecretReference(
 	ref gwv1.SecretObjectReference,
 	gw controllers.Object,
 	secrets krt.Collection[*corev1.Secret],
-) (string, TLSInfo, *ConfigError) {
+) (*SecretReference, *ConfigError) {
 	if normalizeReference(ref.Group, ref.Kind, wellknown.SecretGVK) != wellknown.SecretGVK {
-		return "", TLSInfo{}, &ConfigError{Reason: InvalidTLS, Message: fmt.Sprintf("invalid certificate reference %v, only secret is allowed", objectReferenceString(ref))}
+		return nil, &ConfigError{Reason: InvalidTLS, Message: fmt.Sprintf("invalid certificate reference %v, only secret is allowed", objectReferenceString(ref))}
 	}
 
-	secret := ConfigKey{
-		Kind:      kind.Secret,
+	secret := types.NamespacedName{
 		Name:      string(ref.Name),
 		Namespace: ptr.OrDefault((*string)(ref.Namespace), gw.GetNamespace()),
 	}
 
-	key := secret.Namespace + "/" + secret.Name
-	scrt := ptr.Flatten(krt.FetchOne(ctx, secrets, krt.FilterKey(key)))
+	scrt := ptr.Flatten(krt.FetchOne(ctx, secrets, krt.FilterObjectName(secret)))
 	if scrt == nil {
-		return "", TLSInfo{}, &ConfigError{
+		return nil, &ConfigError{
 			Reason:  InvalidTLS,
-			Message: fmt.Sprintf("invalid certificate reference %v, secret %v not found", objectReferenceString(ref), key),
+			Message: fmt.Sprintf("invalid certificate reference %v, secret not found", objectReferenceString(ref)),
 		}
 	}
 	certInfo, err := kubecreds.ExtractCertInfo(scrt)
 	if err != nil {
-		return "", TLSInfo{}, &ConfigError{
+		return nil, &ConfigError{
 			Reason:  InvalidTLS,
 			Message: fmt.Sprintf("invalid certificate reference %v, %v", objectReferenceString(ref), err),
 		}
 	}
-	if _, err = tls.X509KeyPair(certInfo.Cert, certInfo.Key); err != nil {
-		return "", TLSInfo{}, &ConfigError{
-			Reason:  InvalidTLS,
-			Message: fmt.Sprintf("invalid certificate reference %v, the certificate is malformed: %v", objectReferenceString(ref), err),
-		}
+	res := SecretReference{
+		Source: secret,
+		Kind:   wellknown.SecretGVK.Kind,
+		Info: TLSInfo{
+			Cert: certInfo.Cert,
+			Key:  certInfo.Key},
 	}
-	return creds.ToKubernetesGatewayResource(secret.Namespace, secret.Name), TLSInfo{
-		Cert: certInfo.Cert,
-		Key:  certInfo.Key,
-	}, nil
+	return &res, nil
+}
+
+func plainObjectReferenceString(ref gwv1.ObjectReference) string {
+	return fmt.Sprintf("%s/%s/%s.%s", ref.Group, ref.Kind, ref.Name, ptr.OrEmpty(ref.Namespace))
 }
 
 func objectReferenceString(ref gwv1.SecretObjectReference) string {
@@ -1544,22 +1606,20 @@ func toNamespaceSet(name string, labels map[string]string) klabels.Set {
 	}
 	// First we need a copy to not modify the underlying object
 	ret := make(map[string]string, len(labels)+1)
-	for k, v := range labels {
-		ret[k] = v
-	}
+	maps.Copy(ret, labels)
 	ret[NamespaceNameLabel] = name
 	return ret
 }
 
 func GetCommonRouteInfo(spec any) ([]gwv1.ParentReference, []gwv1.Hostname, schema.GroupVersionKind) {
 	switch t := spec.(type) {
-	case *gwv1alpha2.TCPRoute:
+	case *gwv1a2.TCPRoute:
 		return t.Spec.ParentRefs, nil, wellknown.TCPRouteGVK
-	case *gwv1alpha2.TLSRoute:
+	case *gwv1a2.TLSRoute:
 		return t.Spec.ParentRefs, t.Spec.Hostnames, wellknown.TLSRouteGVK
 	case *gwv1.HTTPRoute:
 		return t.Spec.ParentRefs, t.Spec.Hostnames, wellknown.HTTPRouteGVK
-	case *gwv1beta1.HTTPRoute:
+	case *gwv1b1.HTTPRoute:
 		return t.Spec.ParentRefs, t.Spec.Hostnames, wellknown.HTTPRouteGVK
 	case *gwv1.GRPCRoute:
 		return t.Spec.ParentRefs, t.Spec.Hostnames, wellknown.GRPCRouteGVK
@@ -1582,65 +1642,21 @@ func toRouteKind(g schema.GroupVersionKind) gwv1.RouteGroupKind {
 
 // createAgwExtensionRefFilter creates Agw filter from Gateway API ExtensionRef filter
 func createAgwExtensionRefFilter(
-	ctx RouteContext,
 	extensionRef *gwv1.LocalObjectReference,
-	ns string,
-) (*api.TrafficPolicySpec, *reporter.RouteCondition) {
+) *reporter.RouteCondition {
 	if extensionRef == nil {
-		return nil, nil
+		return nil
 	}
 
-	// Check if it's a DirectResponse reference
-	if string(extensionRef.Group) == wellknown.DirectResponseGVK.Group && string(extensionRef.Kind) == wellknown.DirectResponseGVK.Kind {
-		// Look up the DirectResponse resource
-		directResponse := findDirectResponse(ctx, string(extensionRef.Name), ns)
-		if directResponse == nil {
-			return nil, &reporter.RouteCondition{
-				Type:    gwv1.RouteConditionAccepted,
-				Status:  metav1.ConditionFalse,
-				Reason:  gwv1.RouteReasonBackendNotFound,
-				Message: fmt.Sprintf("DirectResponse %s/%s not found", ns, extensionRef.Name),
-			}
-		}
-
-		// Convert to Agw DirectResponse filter
-		filter := &api.TrafficPolicySpec{
-			Kind: &api.TrafficPolicySpec_DirectResponse{
-				DirectResponse: &api.DirectResponse{
-					Status: uint32(directResponse.Spec.StatusCode), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
-				},
-			},
-		}
-
-		// Add body if specified
-		if directResponse.Spec.Body != nil {
-			filter.GetDirectResponse().Body = []byte(*directResponse.Spec.Body)
-		}
-
-		return filter, nil
-	}
+	// TODO: support other types of extension refs (TrafficPolicySpec, etc.) https://github.com/kgateway-dev/kgateway/issues/12037
 
 	// Unsupported ExtensionRef
-	return nil, &reporter.RouteCondition{
+	return &reporter.RouteCondition{
 		Type:    gwv1.RouteConditionAccepted,
 		Status:  metav1.ConditionFalse,
 		Reason:  gwv1.RouteReasonIncompatibleFilters,
 		Message: fmt.Sprintf("unsupported ExtensionRef: %s/%s", extensionRef.Group, extensionRef.Kind),
 	}
-}
-
-// findDirectResponse looks up a DirectResponse resource by name and namespace
-func findDirectResponse(ctx RouteContext, name, namespace string) *v1alpha1.DirectResponse {
-	if ctx.DirectResponses == nil {
-		return nil
-	}
-	directResponses := krt.Fetch(ctx.Krt, ctx.DirectResponses)
-	for _, dr := range directResponses {
-		if dr.Name == name && dr.Namespace == namespace {
-			return dr
-		}
-	}
-	return nil
 }
 
 func routeGroupKindEqual(rgk1, rgk2 gwv1.RouteGroupKind) bool {
@@ -1651,6 +1667,14 @@ func getGroup(rgk gwv1.RouteGroupKind) gwv1.Group {
 	return ptr.OrDefault(rgk.Group, wellknown.GatewayGroup)
 }
 
-func getRouteKeySectionName(obj metav1.ObjectMeta, sectionName string) string {
-	return obj.GetNamespace() + "/" + obj.GetName() + "/" + sectionName
+// We can use istio's once they bump to v1 GW API
+func GvkFromObject(obj any) schema.GroupVersionKind {
+	switch obj.(type) {
+	case *gwv1.Gateway:
+		return wellknown.GatewayGVK
+	case *gatewayx.XListenerSet:
+		return wellknown.XListenerSetGVK
+	default:
+		panic("Uknown GVK")
+	}
 }

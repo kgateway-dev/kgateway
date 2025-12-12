@@ -26,8 +26,15 @@ type testingSuite struct {
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+	// Define versioned setups - the system will select the appropriate one based on Gateway API version and channel
 	return &testingSuite{
-		base.NewBaseTestingSuite(ctx, testInst, setup, testCases),
+		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setup, testCases,
+			base.WithSetupByVersion(map[base.GwApiChannel]map[base.GwApiVersion]*base.TestCase{
+				base.GwApiChannelExperimental: {
+					base.GwApiV1_3_0: &setupWithListenerSets, // ListenerSet available in experimental >= 1.3
+				},
+			}),
+		),
 	}
 }
 
@@ -62,6 +69,11 @@ func (s *testingSuite) TestListenerSetLevelHeaderModifiers() {
 }
 
 func (s *testingSuite) TestMultiLevelHeaderModifiers() {
+	s.checkPodsRunning()
+	s.assertHeaders(8080, expectedRequestHeaders("route", "gw"), nil)
+}
+
+func (s *testingSuite) TestMultiLevelHeaderModifiersWithListenerSet() {
 	s.checkPodsRunning()
 	s.assertHeaders(8080, expectedRequestHeaders("route", "gw"), nil)
 	s.assertHeaders(8081, expectedRequestHeaders("route", "ls", "gw"), nil)

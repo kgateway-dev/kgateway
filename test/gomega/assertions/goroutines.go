@@ -3,9 +3,10 @@ package assertions
 import (
 	"time"
 
-	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gleak"
 	"github.com/onsi/gomega/types"
+
+	. "github.com/onsi/gomega"
 
 	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 )
@@ -57,7 +58,7 @@ type AssertNoLeaksArgs struct {
 	AllowedRoutines []types.GomegaMatcher
 	// Additional arguments to pass to Eventually to control the timeout/polling interval.
 	// If not set, defaults to 5 second timeout and the Gomega default polling interval (10ms)
-	Timeouts []interface{}
+	Timeouts []any
 }
 
 var (
@@ -68,7 +69,7 @@ var (
 func (m *GoRoutineMonitor) AssertNoLeaks(args *AssertNoLeaksArgs) {
 	// Need to gather up the arguments to pass to the leak detector, so need to make sure they are all interface{}s
 	// Arguments are the initial goroutines, and any additional allowed goroutines passed in
-	notLeaks := make([]interface{}, len(args.AllowedRoutines)+1)
+	notLeaks := make([]any, len(args.AllowedRoutines)+1)
 	// First element is the initial goroutines
 	notLeaks[0] = m.goroutines
 	// Cast the rest of the elements to interface{}

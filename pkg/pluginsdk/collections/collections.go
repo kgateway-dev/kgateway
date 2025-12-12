@@ -3,6 +3,7 @@ package collections
 import (
 	"context"
 
+	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/config/schema/gvr"
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/kclient"
@@ -11,25 +12,22 @@ import (
 	"istio.io/istio/pkg/util/smallset"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-
-	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
+	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
-
-	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 )
 
 type CommonCollections struct {
-	OurClient         versioned.Interface
-	Client            kube.Client
+	Client            apiclient.Client
 	KrtOpts           krtutil.KrtOptions
 	Secrets           *krtcollections.SecretIndex
+	ConfigMaps        *krtcollections.ConfigMapIndex
 	BackendIndex      *krtcollections.BackendIndex
 	Routes            *krtcollections.RoutesIndex
 	Namespaces        krt.Collection[krtcollections.NamespaceMetadata]
@@ -42,7 +40,6 @@ type CommonCollections struct {
 	WrappedPods  krt.Collection[krtcollections.WrappedPod]
 	LocalityPods krt.Collection[krtcollections.LocalityPod]
 	RefGrants    *krtcollections.RefGrantIndex
-	ConfigMaps   krt.Collection[*corev1.ConfigMap]
 
 	DiscoveryNamespacesFilter kubetypes.DynamicObjectFilter
 
@@ -52,18 +49,20 @@ type CommonCollections struct {
 	Settings                   apisettings.Settings
 	ControllerName             string
 	AgentgatewayControllerName string
+
+	options *option
 }
 
 func (c *CommonCollections) HasSynced() bool {
 	// we check nil as well because some of the inner
 	// collections aren't initialized until we call InitPlugins
 	return c.Secrets != nil && c.Secrets.HasSynced() &&
+		c.ConfigMaps != nil && c.ConfigMaps.HasSynced() &&
 		c.BackendIndex != nil && c.BackendIndex.HasSynced() &&
 		c.Routes != nil && c.Routes.HasSynced() &&
 		c.WrappedPods != nil && c.WrappedPods.HasSynced() &&
 		c.LocalityPods != nil && c.LocalityPods.HasSynced() &&
 		c.RefGrants != nil && c.RefGrants.HasSynced() &&
-		c.ConfigMaps != nil && c.ConfigMaps.HasSynced() &&
 		c.GatewayExtensions != nil && c.GatewayExtensions.HasSynced() &&
 		c.Services != nil && c.Services.HasSynced() &&
 		c.ServiceEntries != nil && c.ServiceEntries.HasSynced() &&
@@ -76,22 +75,32 @@ func (c *CommonCollections) HasSynced() bool {
 func NewCommonCollections(
 	ctx context.Context,
 	krtOptions krtutil.KrtOptions,
-	client kube.Client,
-	ourClient versioned.Interface,
+	client apiclient.Client,
 	controllerName string,
 	agentGatewayControllerName string,
 	settings apisettings.Settings,
+	opts ...Option,
 ) (*CommonCollections, error) {
+	options := &option{}
+	for _, fn := range opts {
+		fn(options)
+	}
+
 	// Namespace collection must be initialized first to enable discovery namespace
 	// selectors to be applies as filters to other collections
 	namespaces, nsClient := krtcollections.NewNamespaceCollection(ctx, client, krtOptions)
 
-	// Initialize discovery namespace filter
-	discoveryNamespacesFilter, err := newDiscoveryNamespacesFilter(nsClient, settings.DiscoveryNamespaceSelectors, ctx.Done())
-	if err != nil {
-		return nil, err
+	var err error
+	// Initialize discovery namespace filter if it has not already been set.
+	// We should not overwrite an existing filter as it may have been set up with a custom apiclient.Client
+	discoveryNamespacesFilter := client.ObjectFilter()
+	if discoveryNamespacesFilter == nil {
+		discoveryNamespacesFilter, err = NewDiscoveryNamespacesFilter(nsClient, settings.DiscoveryNamespaceSelectors, ctx.Done())
+		if err != nil {
+			return nil, err
+		}
+		kube.SetObjectFilter(client.Core(), discoveryNamespacesFilter)
 	}
-	kube.SetObjectFilter(client, discoveryNamespacesFilter)
 
 	secretClient := kclient.NewFiltered[*corev1.Secret](
 		client,
@@ -115,7 +124,7 @@ func NewCommonCollections(
 		{Group: "", Kind: "Secret"}: k8sSecrets,
 	}
 
-	refgrantsCol := krt.WrapClient(kclient.NewFilteredDelayed[*gwv1beta1.ReferenceGrant](
+	refgrantsCol := krt.WrapClient(kclient.NewFilteredDelayed[*gwv1b1.ReferenceGrant](
 		client,
 		wellknown.ReferenceGrantGVR,
 		kclient.Filter{ObjectFilter: client.ObjectFilter()},
@@ -140,15 +149,20 @@ func NewCommonCollections(
 	)
 	cfgmaps := krt.WrapClient(cmClient, krtOptions.ToOptions("ConfigMaps")...)
 
-	gwExts := krtcollections.NewGatewayExtensionsCollection(ctx, client, ourClient, krtOptions)
+	// Only create GatewayExtensions collection if Envoy is enabled
+	// This CRD is specific to Envoy and not used by agentgateway
+	var gwExts krt.Collection[ir.GatewayExtension]
+	if settings.EnableEnvoy {
+		gwExts = krtcollections.NewGatewayExtensionsCollection(ctx, client, krtOptions)
+	}
 
 	localityPods, wrappedPods := krtcollections.NewPodsCollection(client, krtOptions)
 
 	return &CommonCollections{
-		OurClient:         ourClient,
 		Client:            client,
 		KrtOpts:           krtOptions,
 		Secrets:           krtcollections.NewSecretIndex(secrets, refgrants),
+		ConfigMaps:        krtcollections.NewConfigMapIndex(cfgmaps, refgrants),
 		LocalityPods:      localityPods,
 		WrappedPods:       wrappedPods,
 		RefGrants:         refgrants,
@@ -156,13 +170,14 @@ func NewCommonCollections(
 		Namespaces:        namespaces,
 		Services:          services,
 		ServiceEntries:    serviceEntries,
-		ConfigMaps:        cfgmaps,
 		GatewayExtensions: gwExts,
 
 		DiscoveryNamespacesFilter: discoveryNamespacesFilter,
 
 		ControllerName:             controllerName,
 		AgentgatewayControllerName: agentGatewayControllerName,
+
+		options: options,
 	}, nil
 }
 
@@ -174,15 +189,10 @@ func (c *CommonCollections) InitPlugins(
 	mergedPlugins pluginsdk.Plugin,
 	globalSettings apisettings.Settings,
 ) {
-	gateways, routeIndex, backendIndex, endpointIRs := krtcollections.InitCollections(
+	gateways, routeIndex, backendIndex, endpointIRs := c.InitCollections(
 		ctx,
 		smallset.New(c.ControllerName, c.AgentgatewayControllerName),
-		c.ControllerName,
 		mergedPlugins,
-		c.Client,
-		c.OurClient,
-		c.RefGrants,
-		c.KrtOpts,
 		globalSettings,
 	)
 

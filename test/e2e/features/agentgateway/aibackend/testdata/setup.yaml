@@ -2,8 +2,9 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
   name: ai-gateway
+  namespace: default
 spec:
-  gatewayClassName: agentgateway
+  gatewayClassName: agentgateway-v2
   listeners:
   - allowedRoutes:
       namespaces:
@@ -12,42 +13,43 @@ spec:
     port: 8080
     protocol: HTTP
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: Backend
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayBackend
 metadata:
   name: openai
+  namespace: default
 spec:
-  type: AI
   ai:
-    llm:
+    provider:
       openai:
         model: gpt-4o-mini
-        authToken:
-          kind: Inline
-          inline: openai-key
       host: 172.17.0.1
       port: 9234
+  policies:
+    auth:
+      key: openai-key
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: Backend
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayBackend
 metadata:
   name: anthropic
+  namespace: default
 spec:
-  type: AI
   ai:
-    llm:
+    provider:
       anthropic:
         model: claude-sonnet-4@20250514
-        authToken:
-          kind: Inline
-          inline: anthropic-key
       host: 172.17.0.1
-      port: 9234      
+      port: 9234
+  policies:
+    auth:
+      key: anthropic-key
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: llm
+  namespace: default
 spec:
   parentRefs:
   - group: gateway.networking.k8s.io
@@ -56,8 +58,8 @@ spec:
   rules:
   - name: openai
     backendRefs:
-    - group: gateway.kgateway.dev
-      kind: Backend
+    - group: agentgateway.dev
+      kind: AgentgatewayBackend
       name: openai
     matches:
     - path:
@@ -65,8 +67,8 @@ spec:
         value: /v1/chat/completions
   - name: anthropic-0
     backendRefs:
-    - group: gateway.kgateway.dev
-      kind: Backend
+    - group: agentgateway.dev
+      kind: AgentgatewayBackend
       name: anthropic
     matches:
     - path:
@@ -78,8 +80,8 @@ spec:
         value: request        
   - name: anthropic-1
     backendRefs:
-    - group: gateway.kgateway.dev
-      kind: Backend
+    - group: agentgateway.dev
+      kind: AgentgatewayBackend
       name: anthropic
     matches:
     - path:
@@ -90,65 +92,67 @@ spec:
         name: x-direction
         value: response          
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: openai-prompt-guard
+  namespace: default
 spec:
   targetRefs:
-  - group: gateway.kgateway.dev
-    kind: Backend
+  - group: agentgateway.dev
+    kind: AgentgatewayBackend
     name: openai
   backend:
     ai:
       promptGuard:
         request:
-          customResponse:
+        - response:
             message: "request rejected"
             statusCode: 403
           regex:
             action: REJECT
             matches:
-            - name: credit-card
-              pattern: "credit card"
+            - "credit card"
         response:
-          regex:
+        - regex:
             action: REJECT
             builtins:
-              - SSN
+              - Ssn
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: anthropic-request-guardrails
+  namespace: default
 spec:
   targetRefs:
-    - group: gateway.kgateway.dev
-      kind: Backend
+    - group: agentgateway.dev
+      kind: AgentgatewayBackend
       name: anthropic
   backend:
     ai:
       promptGuard:
         request:
-          webhook:
-            host:
-              host: ai-guardrails-webhook.default
+        - webhook:
+            backendRef:
+              name: ai-guardrails-webhook
               port: 8000
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
 metadata:
   name: anthropic-response-guardrails
+  namespace: default
 spec:
   targetRefs:
-    - group: gateway.kgateway.dev
-      kind: Backend
+    - group: agentgateway.dev
+      kind: AgentgatewayBackend
       name: anthropic
   backend:
     ai:
       promptGuard:
         response:
-          webhook:
-            host:
-              host: ai-guardrails-webhook.default
+        - webhook:
+            backendRef:
+              name: ai-guardrails-webhook
               port: 8000

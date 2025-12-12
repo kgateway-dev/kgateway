@@ -1,6 +1,8 @@
 package plugins
 
 import (
+	"maps"
+
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -18,9 +20,7 @@ func MergePlugins(plug ...AgwPlugin) AgwPlugin {
 	var hasSynced []func() bool
 	for _, p := range plug {
 		// Merge contributed policies
-		for gk, policy := range p.ContributesPolicies {
-			ret.ContributesPolicies[gk] = policy
-		}
+		maps.Copy(ret.ContributesPolicies, p.ContributesPolicies)
 		if p.AddResourceExtension != nil {
 			if ret.AddResourceExtension == nil {
 				ret.AddResourceExtension = &AddResourcesPlugin{}

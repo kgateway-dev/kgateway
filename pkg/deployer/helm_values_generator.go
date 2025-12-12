@@ -3,6 +3,7 @@ package deployer
 import (
 	"context"
 
+	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -14,7 +15,15 @@ type HelmValuesGenerator interface {
 	// the object is self-managed and no resources should be provisioned.
 	GetValues(ctx context.Context, obj client.Object) (map[string]any, error)
 
-	// IsSelfManaged returns true if the object is self-managed (i.e. no resources should be
-	// provisioned dynamically).
-	IsSelfManaged(ctx context.Context, obj client.Object) (bool, error)
+	// GetCacheSyncHandlers returns the cache sync handlers for the HelmValuesGenerator controller
+	GetCacheSyncHandlers() []cache.InformerSynced
+}
+
+// ObjectPostProcessor is an optional interface that can be implemented by HelmValuesGenerator
+// to post-process rendered objects before they are deployed. This is used for applying
+// strategic merge patch overlays from AgentgatewayParameters.
+type ObjectPostProcessor interface {
+	// PostProcessObjects applies any post-processing to the rendered objects.
+	// This is called after helm rendering but before deployment.
+	PostProcessObjects(ctx context.Context, obj client.Object, rendered []client.Object) error
 }

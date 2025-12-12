@@ -51,7 +51,8 @@ var (
 			Manifests: []string{httpRoutesManifest, corsHttpRoutesManifest},
 		},
 		"TestHttpRouteAndTrafficPolicyCors": {
-			Manifests: []string{httpRoutesManifest, corsHttpRoutesManifest, gwCorsTrafficPolicyManifest},
+			Manifests:       []string{httpRoutesManifest, corsHttpRoutesManifest, gwCorsTrafficPolicyManifest},
+			MinGwApiVersion: base.GwApiRequireCorsFilters,
 		},
 	}
 )

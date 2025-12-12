@@ -42,6 +42,9 @@ const (
 	// loop if it litters.
 	SkipAllTeardown = "SKIP_ALL_TEARDOWN"
 
+	// SkipDump, if true, disables test dumping
+	SkipDump = "SKIP_DUMP"
+
 	// InstallNamespace is the namespace in which kgateway is installed
 	InstallNamespace = "INSTALL_NAMESPACE"
 
@@ -49,6 +52,10 @@ const (
 	// This is used to test against an existing installation of Istio so that the
 	// test framework does not need to install/uninstall Istio.
 	SkipIstioInstall = "SKIP_ISTIO_INSTALL"
+
+	// SkipBugReport can be used to skip the automatic bug report generation on test failure.
+	// This is useful when running tests in a local development environment to fail fast without generating bug reports.
+	SkipBugReport = "SKIP_BUG_REPORT"
 
 	// GithubAction is used by Github Actions and is the name of the currently running action or ID of a step
 	// https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables
@@ -66,6 +73,10 @@ const (
 	// This can be used to override the default KubeCtx created.
 	// The default KubeCtx used is "kind-<ClusterName>"
 	KubeCtx = "KUBE_CTX"
+
+	// DefaultNamespace is the default namespace to use for resources that don't specify one
+	// Typically "default" for kind/k8s clusters, may differ for OpenShift/CRC
+	DefaultNamespace = "DEFAULT_NAMESPACE"
 )
 
 // ShouldSkipInstallAndTeardown returns true if kgateway installation and teardown should be skipped.
@@ -98,6 +109,10 @@ func ShouldFailFastAndPersist() bool {
 // waste your time and confuse you if each test case starts in a chaotic state.
 func ShouldSkipAllTeardown() bool {
 	return envutils.IsEnvTruthy(SkipAllTeardown)
+}
+
+func ShouldSkipBugReport() bool {
+	return envutils.IsEnvTruthy(SkipBugReport)
 }
 
 // TestingT is an interface that matches the subset of testing.T methods we need
@@ -136,4 +151,11 @@ func Cleanup(t TestingT, f func()) {
 		}
 		f()
 	})
+}
+
+// GetDefaultNamespace returns the default namespace to use for resources that don't specify one.
+// This can be overridden via the DEFAULT_NAMESPACE environment variable.
+// Defaults to "default" if not set.
+func GetDefaultNamespace() string {
+	return envutils.GetOrDefault(DefaultNamespace, "default", false)
 }

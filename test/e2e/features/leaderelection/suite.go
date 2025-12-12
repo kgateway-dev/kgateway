@@ -13,8 +13,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
@@ -145,7 +145,12 @@ func (s *testingSuite) TestLeaderDeploysProxy() {
 func (s *testingSuite) getLeader() string {
 	var leaderPodName string
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
-		holder, err := s.TestInstallation.Actions.Kubectl().GetLeaseHolder(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, wellknown.LeaderElectionID)
+		// Determine the actual lease name based on the chart type
+		// kgateway chart: only Envoy enabled -> lease is "kgateway-envoy"
+		// agentgateway chart: only Agentgateway enabled -> lease is "kgateway-agentgateway"
+		// both controllers enabled (not typical in tests): lease is "kgateway"
+		leaseID := s.getLeaderElectionID()
+		holder, err := s.TestInstallation.Actions.Kubectl().GetLeaseHolder(s.Ctx, s.TestInstallation.Metadata.InstallNamespace, leaseID)
 		assert.NoError(c, err, "failed to get lease")
 		// Get the name of the pod that holds the lease
 		// kgateway-6bb7674b97-cn6dd_f14c6a7e-ba31-40a7-95fb-806111275cd3 -> kgateway-6bb7674b97-cn6dd
@@ -159,13 +164,29 @@ func (s *testingSuite) getLeader() string {
 	return leaderPodName
 }
 
-func (s *testingSuite) leadershipChanges(oldLeader string) string {
+// getLeaderElectionID returns the leader election ID based on the chart type.
+// This matches the logic in pkg/kgateway/setup/setup.go lines 285-296.
+func (s *testingSuite) getLeaderElectionID() string {
+	chartType := s.TestInstallation.Metadata.GetChartType()
+	switch chartType {
+	case "kgateway":
+		// kgateway chart has EnableEnvoy=true, EnableAgentgateway=false
+		return wellknown.LeaderElectionID + "-envoy"
+	case "agentgateway":
+		// agentgateway chart has EnableEnvoy=false, EnableAgentgateway=true
+		return wellknown.LeaderElectionID + "-agentgateway"
+	default:
+		// Fallback to default (both enabled or unknown chart type)
+		return wellknown.LeaderElectionID
+	}
+}
+
+func (s *testingSuite) leadershipChanges(oldLeader string) {
 	var holder string
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
 		holder = s.getLeader()
 		assert.NotEqual(c, holder, oldLeader, "leadership did not change")
 	}, 30*time.Second, 10*time.Second)
-	return holder
 }
 
 func (s *testingSuite) killLeader(leader string) {
@@ -206,7 +227,7 @@ func (s *testingSuite) assertRouteHasNoStatus() {
 
 func (s *testingSuite) assertBackendHasNoStatus() {
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
-		backend := &v1alpha1.Backend{}
+		backend := &kgateway.Backend{}
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, types.NamespacedName{Name: "httpbin-static", Namespace: "default"}, backend)
 		assert.NoError(c, err, "failed to get Backend")
 		assert.Empty(c, backend.Status.Conditions)

@@ -34,11 +34,11 @@ func JSONContains(expectedJSON any) types.GomegaMatcher {
 }
 
 type JSONContainsMatcher struct {
-	expected interface{}
+	expected any
 	matchers types.GomegaMatcher
 }
 
-func (matcher *JSONContainsMatcher) Match(actualBytes interface{}) (success bool, err error) {
+func (matcher *JSONContainsMatcher) Match(actualBytes any) (success bool, err error) {
 	actualJSON, ok := actualBytes.([]byte)
 	if !ok {
 		return false, nil
