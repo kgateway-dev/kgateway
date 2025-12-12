@@ -33,14 +33,22 @@ func main() {
 		os.Exit(1)
 	}
 
-	jwt, err := generateJwt(kid, key)
+	jwt, err := generateJwt("ignore@kgateway.dev", kid, key)
+	if err != nil {
+		fmt.Printf("error generating jwt: %s", err.Error())
+		os.Exit(1)
+	}
+
+	jwt1, err := generateJwt("boom@kgateway.dev", kid, key)
 	if err != nil {
 		fmt.Printf("error generating jwt: %s", err.Error())
 		os.Exit(1)
 	}
 
 	fmt.Printf("jwks: %s\n", string(serializedJwks))
-	fmt.Printf("jwt: %s\n", jwt)
+	fmt.Printf("jwt, sub: 'ignore@kgateway.dev': %s\n", jwt)
+	fmt.Printf("jwt, sub: 'boom@kgateway.dev': %s\n", jwt1)
+
 }
 
 func generateJWKS(kid string) (*jose.JSONWebKeySet, *rsa.PrivateKey, error) {
@@ -86,10 +94,10 @@ func generateJWKS(kid string) (*jose.JSONWebKeySet, *rsa.PrivateKey, error) {
 	}, rsaKey, nil
 }
 
-func generateJwt(kid string, key *rsa.PrivateKey) (string, error) {
+func generateJwt(sub, kid string, key *rsa.PrivateKey) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.RegisteredClaims{
 		Issuer:    "https://kgateway.dev",
-		Subject:   "ignore@kgateway.dev",
+		Subject:   sub,
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
 		NotBefore: jwt.NewNumericDate(time.Now()),
 		ExpiresAt: jwt.NewNumericDate(time.Now().Add(85440 * time.Hour)), // 10 years
