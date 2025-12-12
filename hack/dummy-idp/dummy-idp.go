@@ -3,9 +3,10 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
-	_ "embed"
 	"log"
 	"net/http"
+
+	_ "embed"
 )
 
 //go:embed dummy-idp.cert
