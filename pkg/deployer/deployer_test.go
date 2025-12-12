@@ -2799,4 +2799,59 @@ var _ = Describe("DeployObjs", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(patched).To(BeTrue())
 	})
+
+	It("uses GatewayClass controllerName (not class name) as SSA field manager", func() {
+		customClassName := "custom-agw-class"
+		gwc := &gwv1.GatewayClass{
+			ObjectMeta: metav1.ObjectMeta{Name: customClassName},
+			Spec:       gwv1.GatewayClassSpec{ControllerName: wellknown.DefaultAgwControllerName},
+		}
+		gw := &gwv1.Gateway{
+			ObjectMeta: metav1.ObjectMeta{Name: "test-gw", Namespace: ns, UID: "12345"},
+			Spec:       gwv1.GatewaySpec{GatewayClassName: gwv1.ObjectName(customClassName)},
+		}
+		gw.SetGroupVersionKind(wellknown.GatewayGVK)
+		cm := &corev1.ConfigMap{
+			TypeMeta:   metav1.TypeMeta{Kind: gvk.ConfigMap.Kind, APIVersion: gvk.ConfigMap.GroupVersion()},
+			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns},
+			Data:       map[string]string{"foo": "bar"},
+		}
+
+		fc := fake.NewClient(GinkgoT(), gwc)
+		var usedFieldManager string
+		d := getDeployer(fc, func(client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
+			usedFieldManager = fieldManager
+			return nil
+		})
+		fc.RunAndWait(context.Background().Done())
+
+		err := d.DeployObjsWithSource(ctx, []client.Object{cm}, gw)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(usedFieldManager).To(Equal(wellknown.DefaultAgwControllerName))
+	})
+
+	It("falls back to class name comparison when GatewayClass lookup fails", func() {
+		gw := &gwv1.Gateway{
+			ObjectMeta: metav1.ObjectMeta{Name: "test-gw", Namespace: ns, UID: "12345"},
+			Spec:       gwv1.GatewaySpec{GatewayClassName: wellknown.DefaultAgwClassName},
+		}
+		gw.SetGroupVersionKind(wellknown.GatewayGVK)
+		cm := &corev1.ConfigMap{
+			TypeMeta:   metav1.TypeMeta{Kind: gvk.ConfigMap.Kind, APIVersion: gvk.ConfigMap.GroupVersion()},
+			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns},
+			Data:       map[string]string{"foo": "bar"},
+		}
+
+		fc := fake.NewClient(GinkgoT()) // no GatewayClass created
+		var usedFieldManager string
+		d := getDeployer(fc, func(client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
+			usedFieldManager = fieldManager
+			return nil
+		})
+		fc.RunAndWait(context.Background().Done())
+
+		err := d.DeployObjsWithSource(ctx, []client.Object{cm}, gw)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(usedFieldManager).To(Equal(wellknown.DefaultAgwControllerName))
+	})
 })
