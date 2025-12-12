@@ -84,7 +84,7 @@ func (j *JwksUrlFactory) BuildJwksUrl(krtctx krt.HandlerContext, policyName, def
 		})))
 
 		var tlsConfig *tls.Config
-		if agwPolicy.Spec.Backend != nil && agwPolicy.Spec.Backend.TLS != nil {
+		if agwPolicy != nil && agwPolicy.Spec.Backend != nil && agwPolicy.Spec.Backend.TLS != nil {
 			tlsc, err := getTLSConfig(krtctx, j.cfgmaps, refNamespace, agwPolicy.Spec.Backend.TLS)
 			if err != nil {
 				return "", nil, fmt.Errorf("error setting tls options; service %s/%s, policy: %s %w",
