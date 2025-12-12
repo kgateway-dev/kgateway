@@ -161,10 +161,3 @@ func appendPoolWithCertsFromConfigMap(pool *x509.CertPool, cm *corev1.ConfigMap)
 func insecureSkipVerify(mode *agentgateway.InsecureTLSMode) bool {
 	return mode != nil
 }
-
-func portOrEmpty(p *v1.PortNumber) string {
-	if p != nil {
-		return string(*p)
-	}
-	return ""
-}

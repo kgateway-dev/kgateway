@@ -64,7 +64,8 @@ metadata:
 spec:
   policies:
     tls:
-      insecureSkipVerify: All
+      caCertificateRefs:
+      - name: ca
   static:
     host: dummy-idp.default
     port: 8443

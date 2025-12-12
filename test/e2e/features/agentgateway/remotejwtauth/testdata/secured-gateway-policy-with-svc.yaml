@@ -35,15 +35,6 @@ spec:
               kind: Service
               name: dummy-idp
               port: 8443
-      - issuer: https://kgateway.dev
-        jwks:
-          remote:
-            jwksPath: org-two/keys
-            backendRef:
-              group: ""
-              kind: Service
-              name: dummy-idp
-              port: 8443
 ---
 apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy

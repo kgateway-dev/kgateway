@@ -3,9 +3,16 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
+	_ "embed"
 	"log"
 	"net/http"
 )
+
+//go:embed dummy-idp.cert
+var cert []byte
+
+//go:embed dummy-idp.key
+var key []byte
 
 func main() {
 	roots := x509.NewCertPool()
@@ -69,70 +76,6 @@ func main() {
 }
 
 var (
-	// self-signed cert with:
-	// Issuer: O=kgateway.dev, CN=dummy-idp.default
-	// Validity
-	//
-	//	Not Before: Nov 19 18:44:06 2025 GMT
-	//	Not After : Nov 17 18:44:06 2035 GMT
-	//
-	// Subject: O=kgateway.dev, CN=dummy-idp.default
-	// ...
-	// X509v3 extensions:
-	//
-	//	X509v3 Subject Alternative Name:
-	//	    DNS:dummy-idp.default
-	cert = []byte(`-----BEGIN CERTIFICATE-----
-MIIDZTCCAk2gAwIBAgIUdgqhaX5KZBbpKLFaKBTq+CyF5r4wDQYJKoZIhvcNAQEL
-BQAwMzEVMBMGA1UECgwMa2dhdGV3YXkuZGV2MRowGAYDVQQDDBFkdW1teS1pZHAu
-ZGVmYXVsdDAeFw0yNTExMTkxODQ0MDZaFw0zNTExMTcxODQ0MDZaMDMxFTATBgNV
-BAoMDGtnYXRld2F5LmRldjEaMBgGA1UEAwwRZHVtbXktaWRwLmRlZmF1bHQwggEi
-MA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCveFzIPXbf8b89On8VHtgEDabs
-Ghm52K9Hv2/9nHIaEzrnl67undW2onVBI/IMhrkPQXL59dTyw3lw1KQwtDbPLbHJ
-vPUxX5pYE8HDCinMpxgueJQeXjGjA3B0zMzAGKGy1afSFkoemPgWGk3z9+RA31ZO
-im+pdLu1a/7es+AxVzassnVvN3NBuVr4Baxj6f2MIaUHrnp31fmZZhEFDUajlPxx
-/dfVe+eowV70rdSjGi1r4/HKeEfobWUJSTNYSEHttPIHl+i7NW/ArzKjZDb5gNML
-Jzr3/mbMGB0QS60iDuMaCi7rzKdalPhNBEB5VMTxXnleFXkrWmHCFGL3Q4f7AgMB
-AAGjcTBvMB0GA1UdDgQWBBTd/irgnmCNgU6tVEmTvAwB9PITQzAfBgNVHSMEGDAW
-gBTd/irgnmCNgU6tVEmTvAwB9PITQzAPBgNVHRMBAf8EBTADAQH/MBwGA1UdEQQV
-MBOCEWR1bW15LWlkcC5kZWZhdWx0MA0GCSqGSIb3DQEBCwUAA4IBAQBW6S8mMJsg
-86mzDx3mSRy8sRHKfA83cbrouyQDOQn26QEFoK9pz9M67G19F87VQVzV/je4QySq
-XizOoPQtMGRTjUZwumG3tTEKd7lxy2FadDWZq/NQkhs5Y5iyipfSJV8Iejs5yjDI
-iqrPxehOO4MlGyUZDWXEt4mKdUZ67SdcLlUUZEv4jVbOkpgVrastJXwwdnbQaH/9
-6wPzcCTVcAeee1Jf0E5uTDg62skWAuuDIN0n3pQdIdB2vikinAE3rpELivrCs+Ae
-uI9xYJwlp4Z3QeP2651npVTMfpyxqYz5Mk7Hvze0U/WArEAY1wRgQgbYB0MT+ITl
-u7KRkPMMak84
------END CERTIFICATE-----`)
-
-	key = []byte(`-----BEGIN PRIVATE KEY-----
-MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCveFzIPXbf8b89
-On8VHtgEDabsGhm52K9Hv2/9nHIaEzrnl67undW2onVBI/IMhrkPQXL59dTyw3lw
-1KQwtDbPLbHJvPUxX5pYE8HDCinMpxgueJQeXjGjA3B0zMzAGKGy1afSFkoemPgW
-Gk3z9+RA31ZOim+pdLu1a/7es+AxVzassnVvN3NBuVr4Baxj6f2MIaUHrnp31fmZ
-ZhEFDUajlPxx/dfVe+eowV70rdSjGi1r4/HKeEfobWUJSTNYSEHttPIHl+i7NW/A
-rzKjZDb5gNMLJzr3/mbMGB0QS60iDuMaCi7rzKdalPhNBEB5VMTxXnleFXkrWmHC
-FGL3Q4f7AgMBAAECggEAN/sZ+sZlQRAi15lshuP2veBPI182WuzvCuBgDdTWMEx3
-TADADh+r2Z8d8oDRzb5Dl0LluCp+XE8R1PX6RhGQtOtan8aZoT1jg/sVo7B/4mti
-0xykAMZDZsMHozPdlOGm4OO6LVPwJK/f4klVGmM5XpsCMX+IHVOBOWGxiAJyIbsu
-Nadg0IXREomEIJK7p+kVAxBEYkWddIiCSJ5xfeLHPls1VG1FRzT+0Xq5MYih5BkM
-JYBmmm8Iofg/yJb0SMMW5JRWBzTK0gwni8s6qq+mLXWmuSNnqh7TwPwEUO3Cxg44
-QLxlXnMJn8lgthjPbxAGs+uSYWcwQbBc02p0EQe0KQKBgQDko2ifLJhXkGhFSCBZ
-qHF8I6TOumzicsVlP/tm1JXTrtPoEBdyIcMb+KTnUxTxfIOiFb9GtdYTLZW6xQEU
-nutAXezRK25drZtTlSEiTWvZFVAFO2Io+S5ZtOLi+N6lp7We49a5uvvjavJrjAAp
-b95zyrjK/VFdifXaRIG1ZcB9aQKBgQDEeBZ8myYdENRo8zt/n15El184Tpc/tAkb
-XEEjddrsIz6ekIeEclFwaRi00p4UYV2EA5tmx8u651zIcZAF/rnix1Kz4JDuAOlc
-+KEnBL81SIybHMzdq8smJmMO2NQSHSrKjsCtQDzb7INEUd9VaiiEOHoaCcqL1ZfA
-SUUhx+bZwwKBgQDg37+k3q2vYf7MNZZr2HpVyJDuKvmw94Uign13tBrwqoENO9Zz
-kLVfq3w1cMemg/rLzmvk1i+JiUo8+kqHx45GLpsfV4IjbP7ahFCkdlVem9Gqc6+l
-8P8fiAOnjXMepwbBEgI9hqT8FlH8aSQ3nSnD5V0/eUsvnuNKHBsfGMbsEQKBgDQ5
-q9iRsW72g1AmoAFLztYy2sfv9Dql0+nm+xW/BWPR9ppV1wA5FzbnaP7gIc9PFnm6
-L7wBjkFvsPVDYsKFNMp4q55PKpdpvJ7PJJ9nnqA+Wcn9vOOMACNy/s/6iV0LTc2s
-ZsFnGwZm93nYvaJJ5t1G2gZD5giHzZ/6mhrhtZbbAoGALWewB6J4CkCNAS0qJK85
-I6LrayNR7IcsaUKvLgaggg1FejZRPHkGECjsDfsGpcJAhAYZSBz6ToXODPdSCDJz
-A2hJwkkTrX6zaKDhkDXvVhiz0JB6win4CBnU/zKzf6PExraX+Vd+pWzdSxCBupDl
-TFwmV3iuItdcF82i2fBZlXk=
------END PRIVATE KEY-----`)
-
 	// jwks and jwts were generated using hack/utils/jwt/jwt-generator.go
 	// jwts are valid until Aug 2035
 	//   "iss": "https://kgateway.dev",

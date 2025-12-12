@@ -47,4 +47,5 @@ spec:
     name: dummy-idp
   backend:
     tls:
-      insecureSkipVerify: All
+      caCertificateRefs:
+      - name: ca
