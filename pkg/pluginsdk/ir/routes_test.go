@@ -249,6 +249,7 @@ func TestHTTPRouteIREquals(t *testing.T) {
 
 	// Test data
 	base := makeHTTPRoute("route1", "test-ns", "1", 1, types.UID("uid1"))
+	baseGen2 := makeHTTPRoute("route1", "test-ns", "1", 2, types.UID("uid1"))
 	differentName := makeHTTPRoute("route2", "test-ns", "1", 1, types.UID("uid1"))
 	differentUID := makeHTTPRoute("route1", "test-ns", "1", 1, types.UID("uid2"))
 	differentGeneration := makeHTTPRoute("route1", "test-ns", "1", 2, types.UID("uid1"))
@@ -314,10 +315,11 @@ func TestHTTPRouteIREquals(t *testing.T) {
 		AppProtocol:      DefaultAppProtocol,
 		AttachedPolicies: AttachedPolicies{},
 	}
+	// same as httpBackendObj but with WebSocket AppProtocol. Generated is 2 to simulate an update.
 	wsBackendObj := BackendObjectIR{
 		ObjectSource:     ObjectSource{Group: "", Kind: "Service", Namespace: "ns", Name: "svc"},
 		Port:             80,
-		Obj:              base,
+		Obj:              baseGen2,
 		resourceName:     "/Service/ns/svc:80",
 		AppProtocol:      WebSocketAppProtocol,
 		AttachedPolicies: AttachedPolicies{},
