@@ -3,6 +3,7 @@ package plugins
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"strings"
 
 	"github.com/agentgateway/agentgateway/go/api"
@@ -424,8 +425,9 @@ func translateBackendAI(ctx PolicyCtx, agwPolicy *agentgateway.AgentgatewayPolic
 
 	if aiSpec.Routes != nil {
 		r := make(map[string]api.BackendPolicySpec_Ai_RouteType)
-		for path, routeType := range aiSpec.Routes {
-			r[path] = translateRouteType(routeType)
+		// Sort keys for deterministic ordering
+		for _, path := range slices.Sort(maps.Keys(aiSpec.Routes)) {
+			r[path] = translateRouteType(aiSpec.Routes[path])
 		}
 		translatedAIPolicy.Routes = r
 	}
