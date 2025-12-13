@@ -1,16 +1,19 @@
 # This test validates cross-namespace ExtAuth GatewayExtension configuration
-# with ReferenceGrant enforcement. It includes:
+# with ReferenceGrant enforcement at multiple attachment levels.
 #
-# 1. Two HTTPRoutes: "cross-namespace-allowed" and "cross-namespace-denied"
-# 2. Two TrafficPolicies "allowed-policy" and "denied-policy" that reference ExtAuth GatewayExtensions
-# 3. A remote ext-authz Service "remote-extauth" in the "remote" namespace
-# 4. Two GatewayExtensions with ExtAuth providers that reference the remote Service:
-#    - "allowed-extauth-ext": Has a ReferenceGrant allowing cross-namespace access (should succeed)
-#    - "denied-extauth-ext" in the "denied" namespace: Missing a ReferenceGrant (should not apply policy)
+# Coverage:
+# 1. Gateway-level attachment: "gateway-policy" targets the Gateway
+# 2. Listener-level attachment: "listener-policy" targets listener "http2" via sectionName
+# 3. HTTPRoute-level attachment (allowed): "route-allowed-policy" targets "cross-namespace-allowed"
+# 4. HTTPRoute-level attachment (denied): "route-denied-policy" targets "cross-namespace-denied"
+#
+# All policies reference GatewayExtensions that use cross-namespace Service backendRefs:
+# - "allowed-extauth-ext" in "default" namespace: Has ReferenceGrant (should succeed)
+# - "denied-extauth-ext" in "denied" namespace: Missing ReferenceGrant (should fail)
 #
 # The test verifies that cross-namespace Service references in ExtAuth provider
 # backendRefs require a ReferenceGrant, and that the translator correctly handles
-# both allowed and denied cases.
+# both allowed and denied cases across all attachment levels.
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
@@ -25,7 +28,51 @@ spec:
     - name: http
       protocol: HTTP
       port: 80
+    - name: http2
+      protocol: HTTP
+      port: 8080
 ---
+# Route for gateway-level policy test
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: gateway-level-route
+spec:
+  parentRefs:
+    - name: example-gateway
+      sectionName: http
+  hostnames:
+    - "gateway.example.com"
+  rules:
+    - backendRefs:
+        - name: backend-svc
+          port: 80
+      matches:
+        - path:
+            type: PathPrefix
+            value: /gateway
+---
+# Route for listener-level policy test
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: listener-level-route
+spec:
+  parentRefs:
+    - name: example-gateway
+      sectionName: http2
+  hostnames:
+    - "listener.example.com"
+  rules:
+    - backendRefs:
+        - name: backend-svc
+          port: 80
+      matches:
+        - path:
+            type: PathPrefix
+            value: /listener
+---
+# Route for HTTPRoute-level policy test (allowed)
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -33,6 +80,7 @@ metadata:
 spec:
   parentRefs:
     - name: example-gateway
+      sectionName: http
   hostnames:
     - "allowed.example.com"
   rules:
@@ -44,6 +92,7 @@ spec:
             type: PathPrefix
             value: /allowed
 ---
+# Route for HTTPRoute-level policy test (denied)
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -51,6 +100,7 @@ metadata:
 spec:
   parentRefs:
     - name: example-gateway
+      sectionName: http
   hostnames:
     - "denied.example.com"
   rules:
@@ -74,10 +124,40 @@ spec:
       port: 80
       targetPort: 80
 ---
+# Gateway-level policy attachment
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
-  name: allowed-policy
+  name: gateway-policy
+spec:
+  targetRefs:
+    - kind: Gateway
+      group: gateway.networking.k8s.io
+      name: example-gateway
+  extAuth:
+    extensionRef:
+      name: allowed-extauth-ext
+---
+# Listener-level policy attachment (via sectionName)
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: listener-policy
+spec:
+  targetRefs:
+    - kind: Gateway
+      group: gateway.networking.k8s.io
+      name: example-gateway
+      sectionName: http2
+  extAuth:
+    extensionRef:
+      name: allowed-extauth-ext
+---
+# HTTPRoute-level policy attachment (allowed - has ReferenceGrant)
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: route-allowed-policy
 spec:
   targetRefs:
     - kind: HTTPRoute
@@ -87,10 +167,11 @@ spec:
     extensionRef:
       name: allowed-extauth-ext
 ---
+# HTTPRoute-level policy attachment (denied - missing ReferenceGrant)
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
-  name: denied-policy
+  name: route-denied-policy
 spec:
   targetRefs:
     - kind: HTTPRoute
