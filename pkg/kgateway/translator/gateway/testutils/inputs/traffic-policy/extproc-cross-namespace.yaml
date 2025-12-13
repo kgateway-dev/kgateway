@@ -1,0 +1,166 @@
+# This test validates cross-namespace ExtProc GatewayExtension configuration
+# with ReferenceGrant enforcement. It includes:
+#
+# 1. Two HTTPRoutes: "cross-namespace-allowed" and "cross-namespace-denied"
+# 2. Two TrafficPolicies "allowed-policy" and "denied-policy" that reference ExtProc GatewayExtensions
+# 3. A remote ext-proc Service "remote-extproc" in the "remote" namespace
+# 4. Two GatewayExtensions with ExtProc providers that reference the remote Service:
+#    - "allowed-extproc-ext": Has a ReferenceGrant allowing cross-namespace access (should succeed)
+#    - "denied-extproc-ext" in the "denied" namespace: Missing a ReferenceGrant (should not apply policy)
+#
+# The test verifies that cross-namespace Service references in ExtProc provider
+# backendRefs require a ReferenceGrant, and that the translator correctly handles
+# both allowed and denied cases.
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: example-gateway-class
+  allowedRoutes:
+    namespaces:
+      from: All
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: cross-namespace-allowed
+spec:
+  parentRefs:
+    - name: example-gateway
+  hostnames:
+    - "allowed.example.com"
+  rules:
+    - backendRefs:
+        - name: backend-svc
+          port: 80
+      matches:
+        - path:
+            type: PathPrefix
+            value: /allowed
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: cross-namespace-denied
+spec:
+  parentRefs:
+    - name: example-gateway
+  hostnames:
+    - "denied.example.com"
+  rules:
+    - backendRefs:
+        - name: backend-svc
+          port: 80
+      matches:
+        - path:
+            type: PathPrefix
+            value: /denied
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-svc
+spec:
+  selector:
+    app: backend-svc
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: allowed-policy
+spec:
+  targetRefs:
+    - kind: HTTPRoute
+      group: gateway.networking.k8s.io
+      name: cross-namespace-allowed
+  extProc:
+    extensionRef:
+      name: allowed-extproc-ext
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: denied-policy
+spec:
+  targetRefs:
+    - kind: HTTPRoute
+      group: gateway.networking.k8s.io
+      name: cross-namespace-denied
+  extProc:
+    extensionRef:
+      name: denied-extproc-ext
+      namespace: denied
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: remote-extproc
+  namespace: remote
+spec:
+  selector:
+    app: remote-extproc
+  ports:
+    - protocol: TCP
+      port: 9091
+      targetPort: 9091
+      appProtocol: kubernetes.io/h2c
+---
+# Allow GatewayExtensions in the "default" namespace to reference the remote ext-proc Service in the "remote" namespace
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: allow-gwext-to-remote-extproc
+  namespace: remote
+spec:
+  from:
+    - group: gateway.kgateway.dev
+      kind: GatewayExtension
+      namespace: default
+  to:
+    - group: ""
+      kind: Service
+      name: remote-extproc
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: allowed-extproc-ext
+spec:
+  type: ExtProc
+  extProc:
+    grpcService:
+      backendRef:
+        group: ""
+        kind: Service
+        name: remote-extproc
+        namespace: remote
+        port: 9091
+---
+# has to be in another namespace because the ReferenceGrant allow-gwext-to-remote-extproc
+# applies to all GatewayExtensions in the "default" namespace,
+# i.e. RefGrants are not scoped to a specific GatewayExtension.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: denied-extproc-ext
+  namespace: denied
+spec:
+  type: ExtProc
+  extProc:
+    grpcService:
+      backendRef:
+        group: ""
+        kind: Service
+        name: remote-extproc
+        namespace: remote
+        port: 9091
