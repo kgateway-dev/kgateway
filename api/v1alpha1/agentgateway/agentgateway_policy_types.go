@@ -1023,26 +1023,28 @@ type AgentExtAuthHTTP struct {
 	// +kubebuilder:validation:MaxItems=64
 	AllowedResponseHeaders []ShortString `json:"allowedResponseHeaders,omitempty"`
 
-	// metadata specifies what metadata fields should be constructed from the authorization response. These will be
+	// responseMetadata specifies what metadata fields should be constructed *from* the authorization response. These will be
 	// included under the `extauthz` variable in future CEL expressions. Setting this is useful to do things like logging
 	// usernames, without needing to include them as headers to the backend (as `allowedResponseHeaders` would).
 	//
 	// +optional
 	// +kubebuilder:validation:MaxProperties=64
-	Metadata map[string]shared.CELExpression `json:"metadata,omitempty"`
+	ResponseMetadata map[string]shared.CELExpression `json:"responseMetadata,omitempty"`
 }
 
 type AgentExtAuthGRPC struct {
 	// contextExtensions specifies additional arbitrary key-value pairs to send to the authorization server in the `context_extensions` field.
-	// +kubebuilder:validation:MaxProperties=64
+	//
 	// +optional
+	// +kubebuilder:validation:MaxProperties=64
 	ContextExtensions map[string]string `json:"contextExtensions,omitempty"`
-	// metadata specifies metadata to be sent to the authorization server.
+	// requestMetadata specifies metadata to be sent *to* the authorization server.
 	// This maps to the `metadata_context.filter_metadata` field of the request, and allows dynamic CEL expressions.
 	// If unset, by default the `envoy.filters.http.jwt_authn` key is set if the JWT policy is used as well, for compatibility.
-	// +kubebuilder:validation:MaxProperties=64
+	//
 	// +optional
-	Metadata map[string]shared.CELExpression `json:"metadata,omitempty"`
+	// +kubebuilder:validation:MaxProperties=64
+	RequestMetadata map[string]shared.CELExpression `json:"requestMetadata,omitempty"`
 }
 
 type ExtAuthBody struct {

@@ -2568,7 +2568,7 @@ spec:
                               in the `context_extensions` field.
                             maxProperties: 64
                             type: object
-                          metadata:
+                          requestMetadata:
                             additionalProperties:
                               description: CELExpression represents a Common Expression
                                 Language (CEL) expression.
@@ -2576,7 +2576,7 @@ spec:
                               minLength: 1
                               type: string
                             description: |-
-                              metadata specifies metadata to be sent to the authorization server.
+                              requestMetadata specifies metadata to be sent *to* the authorization server.
                               This maps to the `metadata_context.filter_metadata` field of the request, and allows dynamic CEL expressions.
                               If unset, by default the `envoy.filters.http.jwt_authn` key is set if the JWT policy is used as well, for compatibility.
                             maxProperties: 64
@@ -2622,19 +2622,6 @@ spec:
                               type: string
                             maxItems: 64
                             type: array
-                          metadata:
-                            additionalProperties:
-                              description: CELExpression represents a Common Expression
-                                Language (CEL) expression.
-                              maxLength: 16384
-                              minLength: 1
-                              type: string
-                            description: |-
-                              metadata specifies what metadata fields should be constructed from the authorization response. These will be
-                              included under the `extauthz` variable in future CEL expressions. Setting this is useful to do things like logging
-                              usernames, without needing to include them as headers to the backend (as `allowedResponseHeaders` would).
-                            maxProperties: 64
-                            type: object
                           path:
                             description: |-
                               path specifies the path to send to the authorization server. If unset, this defaults to the original request path.
@@ -2650,6 +2637,19 @@ spec:
                             maxLength: 16384
                             minLength: 1
                             type: string
+                          responseMetadata:
+                            additionalProperties:
+                              description: CELExpression represents a Common Expression
+                                Language (CEL) expression.
+                              maxLength: 16384
+                              minLength: 1
+                              type: string
+                            description: |-
+                              responseMetadata specifies what metadata fields should be constructed *from* the authorization response. These will be
+                              included under the `extauthz` variable in future CEL expressions. Setting this is useful to do things like logging
+                              usernames, without needing to include them as headers to the backend (as `allowedResponseHeaders` would).
+                            maxProperties: 64
+                            type: object
                         type: object
                     required:
                     - backendRef

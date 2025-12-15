@@ -169,8 +169,8 @@ func (in *AgentExtAuthGRPC) DeepCopyInto(out *AgentExtAuthGRPC) {
 			(*out)[key] = val
 		}
 	}
-	if in.Metadata != nil {
-		in, out := &in.Metadata, &out.Metadata
+	if in.RequestMetadata != nil {
+		in, out := &in.RequestMetadata, &out.RequestMetadata
 		*out = make(map[string]shared.CELExpression, len(*in))
 		for key, val := range *in {
 			(*out)[key] = val
@@ -218,8 +218,8 @@ func (in *AgentExtAuthHTTP) DeepCopyInto(out *AgentExtAuthHTTP) {
 		*out = make([]ShortString, len(*in))
 		copy(*out, *in)
 	}
-	if in.Metadata != nil {
-		in, out := &in.Metadata, &out.Metadata
+	if in.ResponseMetadata != nil {
+		in, out := &in.ResponseMetadata, &out.ResponseMetadata
 		*out = make(map[string]shared.CELExpression, len(*in))
 		for key, val := range *in {
 			(*out)[key] = val

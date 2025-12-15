@@ -832,7 +832,7 @@ func processExtAuthPolicy(
 	if g := extAuth.GRPC; g != nil {
 		p := &api.TrafficPolicySpec_ExternalAuth_GRPCProtocol{
 			Context:  g.ContextExtensions,
-			Metadata: castMap(g.Metadata),
+			Metadata: castMap(g.RequestMetadata),
 		}
 		spec.Protocol = &api.TrafficPolicySpec_ExternalAuth_Grpc{
 			Grpc: p,
@@ -843,7 +843,7 @@ func processExtAuthPolicy(
 			Redirect:               castPtr(h.Redirect),
 			IncludeResponseHeaders: h.AllowedResponseHeaders,
 			AddRequestHeaders:      castMap(h.AddRequestHeaders),
-			Metadata:               castMap(h.Metadata),
+			Metadata:               castMap(h.ResponseMetadata),
 		}
 		spec.IncludeRequestHeaders = h.AllowedRequestHeaders
 		spec.Protocol = &api.TrafficPolicySpec_ExternalAuth_Http{
