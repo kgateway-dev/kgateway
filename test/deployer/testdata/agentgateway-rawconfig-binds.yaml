@@ -1,33 +1,36 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: GatewayClass
 metadata:
-  name: agentgateway-v2
+  name: agentgateway
 spec:
   controllerName: agentgateway.dev/agentgateway
   description: Specialized class for agentgateway.
   parametersRef:
     group: agentgateway.dev
     kind: AgentgatewayParameters
-    name: my-agwp
-    namespace: default
+    name: agentgateway-config
+    namespace: agentgateway-system
 ---
-# This tests that typed config (logging.format: text) takes precedence over
-# rawConfig (logging.format: json) when both are specified.
-# The rawConfig also includes tracing config to verify it's merged in.
 apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayParameters
 metadata:
-  name: my-agwp
-  namespace: default
+  name: agentgateway-config
+  namespace: agentgateway-system
 spec:
-  logging:
-    format: text
   rawConfig:
-    config:
-      logging:
-        format: json
-      tracing:
-        otlpEndpoint: http://jaeger:4317
+    binds:
+    - port: 3000
+      listeners:
+      - protocol: HTTP
+        routes:
+          name: direct-response
+          matches:
+          - path:
+              pathPrefix: /direct
+          policies:
+            directResponse:
+              body: "hello!"
+              status: 200
 ---
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
@@ -35,7 +38,7 @@ metadata:
   name: gw
   namespace: default
 spec:
-  gatewayClassName: agentgateway-v2
+  gatewayClassName: agentgateway
   listeners:
     - protocol: HTTP
       port: 8080

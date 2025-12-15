@@ -159,6 +159,17 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			},
 		},
 		{
+			Name:      "agentgateway rawConfig with binds for direct response",
+			InputFile: "agentgateway-rawconfig-binds",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				assert.Contains(t, outputYaml, "  config.yaml: |\n    binds:\n",
+					"binds config should be present in ConfigMap as a top-level config.yaml key")
+				assert.Contains(t, outputYaml, "port: 3000",
+					"binds port 3000 should be present")
+			},
+		},
+		{
 			Name:      "agentgateway with repository only image override",
 			InputFile: "agentgateway-image-repo-only",
 			Validate: func(t *testing.T, outputYaml string) {
