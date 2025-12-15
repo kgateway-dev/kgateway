@@ -147,8 +147,7 @@ func (f *defaultJwksUrlFactory) BuildJwksUrlAndTlsConfig(krtctx krt.HandlerConte
 			tlsConfig = tlsc
 		}
 
-		clusterDomain := kubeutils.GetClusterDomainName()
-		host := fmt.Sprintf("%s.%s.svc.%s", refName, refNamespace, clusterDomain)
+		host := kubeutils.GetServiceHostname(refName, refNamespace)
 		var fqdn string
 		if port := ptr.OrEmpty(ref.Port); port != 0 {
 			fqdn = fmt.Sprintf("%s:%d", host, port)
