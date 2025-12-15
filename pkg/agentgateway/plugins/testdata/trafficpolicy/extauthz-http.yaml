@@ -26,7 +26,7 @@ spec:
           x-custom-header: "random()"
         allowedResponseHeaders:
         - x-custom-header
-        metadata:
+        responseMetadata:
           githubUser: response.headers["x-auth-request-user"]
 ---
 apiVersion: v1
@@ -57,7 +57,7 @@ output:
             x-custom-header: random()
           includeResponseHeaders:
           - x-custom-header
-          responseMetadata:
+          metadata:
             githubUser: response.headers["x-auth-request-user"]
           path: |
             "/prefix/" + request.path
