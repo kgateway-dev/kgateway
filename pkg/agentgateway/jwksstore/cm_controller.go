@@ -88,6 +88,8 @@ func (jcm *JwksStoreConfigMapsController) Start(ctx context.Context) error {
 		for {
 			select {
 			case u := <-jcm.jwksUpdates:
+				// TODO (dmitri-d) could add an interface for adding events directly to the queue
+				// jwks store and cm controller are tightly coupled anyway, this indirection isn't very useful
 				for uri := range u {
 					jcm.eventQueue.AddObject(jcm.newJwksStoreConfigMap(jwks.JwksConfigMapName(jcm.storePrefix, uri)))
 				}
