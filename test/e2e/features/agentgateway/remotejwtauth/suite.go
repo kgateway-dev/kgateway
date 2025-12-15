@@ -58,6 +58,9 @@ var (
 		"TestRoutePolicyBackend": {
 			Manifests: []string{insecureRouteManifest, secureRoutePolicyManifestBackend},
 		},
+		"TestRoutePolicyBackendAndTlsPolicy": {
+			Manifests: []string{secureRoutePolicyManifestBackendAndTlsPolicy},
+		},
 		"TestRoutePolicyWithRbac": {
 			Manifests: []string{secureRoutePolicyWithRbacManifest},
 		},
@@ -69,6 +72,9 @@ var (
 		},
 		"TestGatewayPolicyBackend": {
 			Manifests: []string{secureGWPolicyManifestBackend},
+		},
+		"TestGatewayPolicyBackendWithTlsPolicy": {
+			Manifests: []string{secureGWPolicyManifestBackendAndTlsPolicy},
 		},
 		"TestGatewayPolicyWithRbac": {
 			Manifests: []string{secureGWPolicyWithRbacManifest},
@@ -92,15 +98,17 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 var (
-	insecureRouteManifest              = getTestFile("insecure-route.yaml")
-	secureGWPolicyManifestBackend      = getTestFile("secured-gateway-policy-with-backend.yaml")
-	secureGWPolicyManifestSvc          = getTestFile("secured-gateway-policy-with-svc.yaml")
-	secureGWPolicyManifestSvcCaCert    = getTestFile("secured-gateway-policy-with-svc-ca-cert.yaml")
-	secureGWPolicyWithRbacManifest     = getTestFile("secured-gateway-policy-with-rbac.yaml")
-	secureRoutePolicyManifestBackend   = getTestFile("secured-route-with-backend.yaml")
-	secureRoutePolicyManifestSvc       = getTestFile("secured-route-with-svc.yaml")
-	secureRoutePolicyManifestSvcCaCert = getTestFile("secured-route-with-svc-ca-cert.yaml")
-	secureRoutePolicyWithRbacManifest  = getTestFile("secured-route-with-rbac.yaml")
+	insecureRouteManifest                        = getTestFile("insecure-route.yaml")
+	secureGWPolicyManifestBackend                = getTestFile("secured-gateway-policy-with-backend.yaml")
+	secureGWPolicyManifestBackendAndTlsPolicy    = getTestFile("secured-gateway-policy-with-backend-and-ref.yaml")
+	secureGWPolicyManifestSvc                    = getTestFile("secured-gateway-policy-with-svc.yaml")
+	secureGWPolicyManifestSvcCaCert              = getTestFile("secured-gateway-policy-with-svc-ca-cert.yaml")
+	secureGWPolicyWithRbacManifest               = getTestFile("secured-gateway-policy-with-rbac.yaml")
+	secureRoutePolicyManifestBackend             = getTestFile("secured-route-with-backend.yaml")
+	secureRoutePolicyManifestBackendAndTlsPolicy = getTestFile("secured-route-with-backend-and-ref.yaml")
+	secureRoutePolicyManifestSvc                 = getTestFile("secured-route-with-svc.yaml")
+	secureRoutePolicyManifestSvcCaCert           = getTestFile("secured-route-with-svc-ca-cert.yaml")
+	secureRoutePolicyWithRbacManifest            = getTestFile("secured-route-with-rbac.yaml")
 )
 
 func (s *testingSuite) TestRoutePolicyBackend() {
@@ -124,6 +132,21 @@ func (s *testingSuite) TestRoutePolicyBackend() {
 	// verify a provider with a single key in jwks works
 	s.assertResponse("secureroute.com", JwtOrgOne, http.StatusOK)
 	s.assertResponse("secureroute.com", jwtOrgTwo, http.StatusOK)
+	// verify invalid/missing tokens are caught
+	s.assertResponse("secureroute.com", "nosuchkey", http.StatusUnauthorized)
+	s.assertResponseWithoutAuth("secureroute.com", http.StatusUnauthorized)
+}
+
+func (s *testingSuite) TestRoutePolicyBackendAndTlsPolicy() {
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.Ctx,
+		"route-secure",
+		"default",
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionTrue,
+	)
+	// verify a provider with a single key in jwks works
+	s.assertResponse("secureroute.com", JwtOrgOne, http.StatusOK)
 	// verify invalid/missing tokens are caught
 	s.assertResponse("secureroute.com", "nosuchkey", http.StatusUnauthorized)
 	s.assertResponseWithoutAuth("secureroute.com", http.StatusUnauthorized)
@@ -190,6 +213,20 @@ func (s *testingSuite) TestGatewayPolicyBackend() {
 	)
 	s.assertResponse("securegateways.com", JwtOrgOne, http.StatusOK)
 	s.assertResponse("securegateways.com", jwtOrgTwo, http.StatusOK)
+	// verify invalid/missing tokens are caught
+	s.assertResponse("securegateways.com", "nosuchkey", http.StatusUnauthorized)
+	s.assertResponseWithoutAuth("securegateways.com", http.StatusUnauthorized)
+}
+
+func (s *testingSuite) TestGatewayPolicyBackendWithTlsPolicy() {
+	s.TestInstallation.Assertions.EventuallyHTTPRouteCondition(
+		s.Ctx,
+		"route-secure-gw",
+		"default",
+		gwv1.RouteConditionAccepted,
+		metav1.ConditionTrue,
+	)
+	s.assertResponse("securegateways.com", JwtOrgOne, http.StatusOK)
 	// verify invalid/missing tokens are caught
 	s.assertResponse("securegateways.com", "nosuchkey", http.StatusUnauthorized)
 	s.assertResponseWithoutAuth("securegateways.com", http.StatusUnauthorized)
