@@ -240,7 +240,7 @@ type KubernetesResourceOverlay struct {
 	//
 	//   spec:
 	//     containers:
-	//       - name: agent-gateway
+	//       - name: agentgateway
 	//         # Delete the securityContext using $patch: delete
 	//         securityContext:
 	//           $patch: delete

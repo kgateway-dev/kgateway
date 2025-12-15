@@ -56,7 +56,7 @@ spec:
             #   configMap:
             #     name: my-custom-config
           containers:
-            - name: agent-gateway
+            - name: agentgateway
               volumeMounts:
                 - name: custom-config
                   mountPath: /etc/custom-config

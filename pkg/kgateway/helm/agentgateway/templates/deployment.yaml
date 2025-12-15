@@ -50,7 +50,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       containers:
-        - name: agent-gateway
+        - name: agentgateway
           image: "{{ template "kgateway.gateway.image" $gateway.image }}"
           {{- if $gateway.image.pullPolicy }}
           imagePullPolicy: {{ $gateway.image.pullPolicy }}

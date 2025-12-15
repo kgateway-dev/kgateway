@@ -48,7 +48,7 @@ spec:
               configMap:
                 name: my-custom-config
           containers:
-            - name: agent-gateway
+            - name: agentgateway
               # Add volume mount to the agent-gateway container
               volumeMounts:
                 - name: custom-config

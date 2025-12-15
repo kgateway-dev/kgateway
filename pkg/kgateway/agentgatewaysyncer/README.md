@@ -37,7 +37,7 @@ spec:
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
 metadata:
-  name: agent-gateway
+  name: agentgateway
 spec:
   gatewayClassName: agentgateway-v2
   listeners:
@@ -395,7 +395,7 @@ kubectl apply -f- <<EOF
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
 metadata:
-  name: agent-gateway
+  name: agentgateway
 spec:
   gatewayClassName: agentgateway-v2
   listeners:
@@ -414,7 +414,7 @@ metadata:
     example: httpbin-route
 spec:
   parentRefs:
-    - name: agent-gateway
+    - name: agentgateway
       namespace: default
   hostnames:
     - "www.example.com"
@@ -438,7 +438,7 @@ kubectl apply -f- <<EOF
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
 metadata:
-  name: agent-gateway
+  name: agentgateway
 spec:
   gatewayClassName: agentgateway-v2
   listeners:
@@ -455,7 +455,7 @@ metadata:
   name: grpc-route
 spec:
   parentRefs:
-    - name: agent-gateway
+    - name: agentgateway
   hostnames:
     - "example.com"
   rules:
@@ -693,7 +693,7 @@ kubectl apply -f- <<EOF
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
 metadata:
-  name: agent-gateway
+  name: agentgateway
 spec:
   gatewayClassName: agentgateway-v2
   listeners:
@@ -712,7 +712,7 @@ metadata:
     example: openai-route
 spec:
   parentRefs:
-    - name: agent-gateway
+    - name: agentgateway
       namespace: default
   rules:
     - matches:
@@ -766,7 +766,7 @@ metadata:
     example: openai-route
 spec:
   parentRefs:
-    - name: agent-gateway
+    - name: agentgateway
       namespace: default
   rules:
     - matches:
@@ -846,7 +846,7 @@ kubectl apply -f- <<EOF
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
 metadata:
-  name: agent-gateway
+  name: agentgateway
 spec:
   gatewayClassName: agentgateway-v2
   listeners:
@@ -865,7 +865,7 @@ metadata:
     example: mcp-route
 spec:
   parentRefs:
-    - name: agent-gateway
+    - name: agentgateway
       namespace: default
   rules:
     - backendRefs:
@@ -967,7 +967,7 @@ metadata:
   name: mcp
 spec:
   parentRefs:
-  - name: agent-gateway
+  - name: agentgateway
   rules:
     - backendRefs:
       - name: mcp-backend
@@ -1071,7 +1071,7 @@ kubectl apply -f- <<EOF
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
 metadata:
-  name: agent-gateway
+  name: agentgateway
 spec:
   gatewayClassName: agentgateway-v2
   listeners:
@@ -1090,7 +1090,7 @@ metadata:
     example: a2a-route
 spec:
   parentRefs:
-    - name: agent-gateway
+    - name: agentgateway
       namespace: default
   rules:
     - backendRefs:
@@ -1172,7 +1172,7 @@ spec:
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
-  name: agent-gateway
+  name: agentgateway
 spec:
   gatewayClassName: agentgateway-v2
   listeners:

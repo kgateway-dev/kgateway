@@ -20,7 +20,7 @@ spec:
           # Delete pod-level securityContext
           securityContext: null
           containers:
-            - name: agent-gateway
+            - name: agentgateway
               # Delete container-level securityContext
               securityContext: null
 ---

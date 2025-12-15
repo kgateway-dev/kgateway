@@ -154,7 +154,7 @@ spec:
         - name: GATEWAY
           value: gw
         image: ghcr.io/agentgateway/agentgateway:0.11.0-alpha.76b0afc55496e7027395a93a3ba1ceca4b832647
-        name: agent-gateway
+        name: agentgateway
         ports:
         - containerPort: 15020
           name: metrics

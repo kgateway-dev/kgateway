@@ -133,7 +133,7 @@ spec:
           value: gw
         image: agentgateway:v1.0.0
         imagePullPolicy: IfNotPresent
-        name: agent-gateway
+        name: agentgateway
         ports:
         - containerPort: 15020
           name: metrics

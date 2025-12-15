@@ -13,12 +13,12 @@ spec:
           volumes:
           - name: config-volume
             configMap:
-              name: agent-gateway-config
+              name: agentgateway-config
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
-  name: agent-gateway
+  name: agentgateway
 spec:
   gatewayClassName: agentgateway-v2
   infrastructure:
