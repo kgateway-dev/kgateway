@@ -1,11 +1,13 @@
 package agentgatewaybackend_test
 
 import (
+	"crypto/tls"
 	"fmt"
 	"testing"
 
 	"github.com/agentgateway/agentgateway/go/api"
 	"google.golang.org/protobuf/proto"
+	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/slices"
 	"istio.io/istio/pkg/test/util/assert"
 	"istio.io/istio/pkg/util/protomarshal"
@@ -16,15 +18,23 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/jwks_url"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/testutils"
 	agentgatewaybackend "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/agentgatewaysyncer/backend"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
+type jwksUrlFactoryForTesting struct{}
+
+func (f *jwksUrlFactoryForTesting) BuildJwksUrlAndTlsConfig(_ krt.HandlerContext, _, _ string, _ *agentgateway.RemoteJWKS) (string, *tls.Config, error) {
+	return "http://store-uninitialized/", nil, nil
+}
+
 func TestTranslateAgwBackend(t *testing.T) {
 	testutils.RunForDirectory(t, "testdata/backend", func(t *testing.T, ctx plugins.PolicyCtx) (*agentgateway.AgentgatewayBackendStatus, []*api.Resource) {
 		backend := testutils.GetTestResource(t, ctx.Collections.Backends)
+		jwks_url.JwksUrlBuilderFactory = func() jwks_url.JwksUrlBuilder { return &jwksUrlFactoryForTesting{} }
 		status, results := agentgatewaybackend.TranslateAgwBackend(ctx, backend)
 		return status, slices.Map(results, func(r agwir.AgwResource) *api.Resource {
 			return r.Resource
