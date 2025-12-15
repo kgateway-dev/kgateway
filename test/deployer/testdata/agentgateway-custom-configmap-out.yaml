@@ -121,7 +121,7 @@ spec:
           value: agentgateway
         - name: RUST_LOG
           value: debug
-        image: ghcr.io/agentgateway/agentgateway:0.11.0-alpha.76b0afc55496e7027395a93a3ba1ceca4b832647
+        image: ghcr.io/agentgateway/agentgateway:0.11.0-alpha.5e5533a2c6bfb8914d69662b06aef48b4e7b85d5
         name: agentgateway
         ports:
         - containerPort: 15020

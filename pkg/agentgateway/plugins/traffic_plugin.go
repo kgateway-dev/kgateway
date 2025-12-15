@@ -825,13 +825,30 @@ func processExtAuthPolicy(
 	if err != nil {
 		return nil, fmt.Errorf("failed to build extAuth: %v", err)
 	}
+
 	spec := &api.TrafficPolicySpec_ExternalAuth{
 		Target: be,
-		Protocol: &api.TrafficPolicySpec_ExternalAuth_Grpc{
-			Grpc: &api.TrafficPolicySpec_ExternalAuth_GRPCProtocol{
-				Context: extAuth.ContextExtensions,
-			},
-		},
+	}
+	if g := extAuth.GRPC; g != nil {
+		p := &api.TrafficPolicySpec_ExternalAuth_GRPCProtocol{
+			Context:  g.ContextExtensions,
+			Metadata: castMap(g.Metadata),
+		}
+		spec.Protocol = &api.TrafficPolicySpec_ExternalAuth_Grpc{
+			Grpc: p,
+		}
+	} else if h := extAuth.HTTP; h != nil {
+		p := &api.TrafficPolicySpec_ExternalAuth_HTTPProtocol{
+			Path:                   castPtr(h.Path),
+			Redirect:               castPtr(h.Redirect),
+			IncludeResponseHeaders: h.AllowedResponseHeaders,
+			AddRequestHeaders:      castMap(h.AddRequestHeaders),
+			Metadata:               castMap(h.Metadata),
+		}
+		spec.IncludeRequestHeaders = h.AllowedRequestHeaders
+		spec.Protocol = &api.TrafficPolicySpec_ExternalAuth_Http{
+			Http: p,
+		}
 	}
 	if b := extAuth.ForwardBody; b != nil {
 		spec.IncludeRequestBody = &api.TrafficPolicySpec_ExternalAuth_BodyOptions{
@@ -922,6 +939,24 @@ func cast[T ~string](items []T) []string {
 	return slices.Map(items, func(item T) string {
 		return string(item)
 	})
+}
+
+func castMap[T ~string](items map[string]T) map[string]string {
+	if items == nil {
+		return nil
+	}
+	res := make(map[string]string, len(items))
+	for k, v := range items {
+		res[k] = string(v)
+	}
+	return res
+}
+
+func castPtr[T ~string](item *T) *string {
+	if item == nil {
+		return nil
+	}
+	return ptr.Of(string(*item))
 }
 
 // processAuthorizationPolicy processes Authorization configuration and creates corresponding Agw policies

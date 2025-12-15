@@ -36,7 +36,6 @@ Policies:
       namespace: default
   traffic:
     extAuthz:
-      grpc: {}
       target:
         port: 4444
         service:
