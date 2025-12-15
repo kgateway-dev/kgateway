@@ -18,7 +18,7 @@ spec:
       grpc:
         contextExtensions:
           hello: world
-        metadata:
+        requestMetadata:
           user: jwt.sub
 ---
 apiVersion: v1

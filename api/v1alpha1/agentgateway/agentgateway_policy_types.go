@@ -977,7 +977,7 @@ type ExtAuth struct {
 	GRPC *AgentExtAuthGRPC `json:"grpc,omitempty"`
 
 	// http specifies that the HTTP protocol should be used for connecting to the authorization server.
-	// The authorization server must return a `200` status code, otherwise the request is considered and authorization failure.
+	// The authorization server must return a `200` status code, otherwise the request is considered an authorization failure.
 	// +optional
 	HTTP *AgentExtAuthHTTP `json:"http,omitempty"`
 

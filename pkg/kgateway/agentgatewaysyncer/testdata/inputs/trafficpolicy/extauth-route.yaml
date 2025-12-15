@@ -33,6 +33,7 @@ spec:
       name: example-route
   traffic:
     extAuth:
+      grpc: {}
       backendRef:
         name: ext-authz
         port: 4444

@@ -37,6 +37,7 @@ spec:
       sectionName: foo
   traffic:
     extAuth:
+      grpc: {}
       backendRef:
         name: ext-authz
         port: 4444

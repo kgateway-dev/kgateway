@@ -57,7 +57,7 @@ output:
             x-custom-header: random()
           includeResponseHeaders:
           - x-custom-header
-          metadata:
+          responseMetadata:
             githubUser: response.headers["x-auth-request-user"]
           path: |
             "/prefix/" + request.path
