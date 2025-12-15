@@ -248,9 +248,13 @@ Gateway API version is in `go.mod` and CRD install URL in Makefile (`CONFORMANCE
 ## Opening Pull Requests
 
 1. Ensure all linters pass: `make analyze`, `make verify`
-2. When PR is ready to review/merge, follow this PR template: https://raw.githubusercontent.com/kgateway-dev/.github/refs/heads/main/.github/PULL_REQUEST_TEMPLATE.md
-   Specifically must haves are the `Description`, `# Change Type` and `# Changelog` sections.
-3. Ensure tests pass in CI (unit + e2e + conformance)
+2. Ensure tests pass in CI (unit + e2e + conformance)
+3. **Use the PR template** from: https://raw.githubusercontent.com/kgateway-dev/.github/refs/heads/main/.github/PULL_REQUEST_TEMPLATE.md
+
+**Required PR sections:**
+- `# Description` - Motivation, what changed, and linked issues (`Fixes #123`)
+- `# Change Type` - One or more `/kind` commands (e.g., `/kind feature`, `/kind fix`, `/kind cleanup`)
+- `# Changelog` - Release note in a `release-note` code block (or `NONE` if not user-facing)
 
 ## Style
 

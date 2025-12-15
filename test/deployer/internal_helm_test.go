@@ -122,6 +122,10 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			InputFile: "envoy-infrastructure",
 		},
 		{
+			Name:      "gateway with static IP address",
+			InputFile: "loadbalancer-static-ip",
+		},
+		{
 			Name:      "agentgateway-params-primary",
 			InputFile: "agentgateway-params-primary",
 		},

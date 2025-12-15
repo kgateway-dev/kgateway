@@ -9,7 +9,11 @@ Backends:
 - ai:
     providerGroups:
     - providers:
-      - name: openai
+      - inlinePolicies:
+        - auth:
+            key:
+              secret: sk-openai-primary-key
+        name: openai
         openai:
           model: gpt-4o
       - anthropic:
@@ -68,6 +72,10 @@ Backends:
       - name: backend
         openai:
           model: gpt-4o
+  inlinePolicies:
+  - auth:
+      key:
+        secret: sk-openai-primary-key
   key: default/openai-single
   name:
     name: openai-single

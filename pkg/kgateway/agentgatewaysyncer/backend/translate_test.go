@@ -15,11 +15,22 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
+	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/testutils"
 	agentgatewaybackend "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/agentgatewaysyncer/backend"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
+
+func TestTranslateAgwBackend(t *testing.T) {
+	testutils.RunForDirectory(t, "testdata/backend", func(t *testing.T, ctx plugins.PolicyCtx) (*agentgateway.AgentgatewayBackendStatus, []*api.Resource) {
+		backend := testutils.GetTestResource(t, ctx.Collections.Backends)
+		status, results := agentgatewaybackend.TranslateAgwBackend(ctx, backend)
+		return status, slices.Map(results, func(r agwir.AgwResource) *api.Resource {
+			return r.Resource
+		})
+	})
+}
 
 func TestBuildMCP(t *testing.T) {
 	tests := []struct {
@@ -715,7 +726,7 @@ func createMockMCPService(namespace, serviceName, labels string) *corev1.Service
 	return mockService
 }
 
-// createMockServiceCollectionMultiNamespace creates a mock service collection with services in multiple namespaces
+// createMockMultipleNamespaceServices creates a mock service collection with services in multiple namespaces
 func createMockMultipleNamespaceServices() []any {
 	services := []any{
 		&corev1.Service{

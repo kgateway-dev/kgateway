@@ -194,6 +194,14 @@ spec:
           auth:
             key: "sk-anthropic-primary"
 ---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: openai-primary-secret
+type: Opaque
+data:
+  Authorization: QmVhcmVyIHNrLW9wZW5haS1wcmltYXJ5LWtleQ== # Bearer sk-openai-primary-key
+---
 apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:

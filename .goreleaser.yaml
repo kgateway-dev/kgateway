@@ -181,6 +181,8 @@ release:
     ```
     helm install kgateway-crds oci://{{ .Env.VANITY_REGISTRY }}/charts/kgateway-crds --version {{ .Env.VERSION }} --namespace kgateway-system --create-namespace
     helm install kgateway oci://{{ .Env.VANITY_REGISTRY }}/charts/kgateway --version {{ .Env.VERSION }} --namespace kgateway-system --create-namespace
+    helm install agentgateway-crds oci://{{ .Env.IMAGE_REGISTRY }}/charts/agentgateway-crds --version {{ .Env.VERSION }} --namespace agentgateway-system --create-namespace
+    helm install agentgateway oci://{{ .Env.IMAGE_REGISTRY }}/charts/agentgateway --version {{ .Env.VERSION }} --namespace agentgateway-system --create-namespace
     ```
 
     For detailed installation instructions and next steps, please visit our [quickstart guide](https://kgateway.dev/docs/quickstart/).

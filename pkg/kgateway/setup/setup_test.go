@@ -322,6 +322,116 @@ spec:
 	})
 }
 
+func TestServiceAppProtocolUpdate(t *testing.T) {
+	st, err := envtestutil.BuildSettings()
+	if err != nil {
+		t.Fatalf("can't get settings %v", err)
+	}
+	setupEnvTestAndRun(t, st, func(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler, client istiokube.CLIClient, xdsPort, _ int) {
+		client.Kube().CoreV1().Namespaces().Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "gwtest"}}, metav1.CreateOptions{})
+
+		err = client.ApplyYAMLContents("gwtest", `kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: http-gw
+  namespace: gwtest
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+    allowedRoutes:
+      namespaces:
+        from: All`, `apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: ws-route
+  namespace: gwtest
+spec:
+  parentRefs:
+    - name: http-gw
+  hostnames:
+    - "ws.example.com"
+  rules:
+    - backendRefs:
+        - name: test-service
+          port: 8080
+      matches:
+        - path:
+            type: PathPrefix
+            value: /`, `apiVersion: v1
+kind: Service
+metadata:
+  name: test-service
+  namespace: gwtest
+spec:
+  selector:
+    app: reviews
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+`)
+		if err != nil {
+			t.Fatalf("failed to apply initial resources: %v", err)
+		}
+
+		time.Sleep(time.Second * 2)
+		t.Cleanup(func() {
+			if t.Failed() {
+				logKrtState(t, fmt.Sprintf("krt state for failed test: %s", t.Name()), kdbg)
+			} else if os.Getenv("KGW_DUMP_KRT_ON_SUCCESS") == "true" {
+				logKrtState(t, fmt.Sprintf("krt state for successful test: %s", t.Name()), kdbg)
+			}
+		})
+		initialDump, err := dumpXdsConfig(t, ctx, xdsPort, "http-gw")
+		if err != nil {
+			t.Fatalf("failed to get initial xDS dump: %v", err)
+		}
+		hasWebsocketUpgrade := hasWebsocketUpgradeConfig(initialDump)
+		if hasWebsocketUpgrade {
+			t.Fatalf("expected no websocket upgrade in initial state, but found one")
+		}
+
+		err = client.ApplyYAMLContents("gwtest", `apiVersion: v1
+kind: Service
+metadata:
+  name: test-service
+  namespace: gwtest
+spec:
+  selector:
+    app: reviews
+  ports:
+    - protocol: TCP
+      appProtocol: kubernetes.io/ws
+      port: 8080
+      targetPort: 8080
+`)
+		if err != nil {
+			t.Fatalf("failed to update service with appProtocol: %v", err)
+		}
+
+		time.Sleep(time.Second * 2)
+
+		updatedDump, err := dumpXdsConfig(t, ctx, xdsPort, "http-gw")
+		if err != nil {
+			t.Fatalf("failed to get updated xDS dump: %v", err)
+		}
+		if len(updatedDump.Routes) > 0 {
+			hasWebsocketUpgrade := hasWebsocketUpgradeConfig(updatedDump)
+			if !hasWebsocketUpgrade {
+				t.Fatalf("expected websocket upgrade configuration after updating appProtocol, but found none")
+			}
+			t.Logf("SUCCESS: Found websocket upgrade configuration after updating appProtocol")
+		} else {
+			t.Fatalf("No routes found in updated dump")
+		}
+
+		t.Logf("%s finished", t.Name())
+	})
+}
+
 func runScenario(t *testing.T, scenarioDir string, globalSettings *apisettings.Settings) {
 	setupEnvTestAndRun(t, globalSettings, func(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler, client istiokube.CLIClient, xdsPort, _ int) {
 		// list all yamls in test data
@@ -1012,4 +1122,30 @@ func getroutesnames(l *envoylistenerv3.Listener) []string {
 		}
 	}
 	return routes
+}
+
+// dumpXdsConfig dumps the xDS config for the given gateway name. helper function to
+// ensure the dumper is closed after the dump is complete.
+func dumpXdsConfig(t *testing.T, ctx context.Context, xdsPort int, gwName string) (xdsDump, error) {
+	dumper := newXdsDumper(t, ctx, xdsPort, gwName)
+	defer dumper.Close()
+	return dumper.Dump(t, ctx)
+}
+
+// hasWebsocketUpgradeConfig checks if any route in the xDS dump has websocket upgrade configuration
+func hasWebsocketUpgradeConfig(dump xdsDump) bool {
+	for _, route := range dump.Routes {
+		for _, vhost := range route.GetVirtualHosts() {
+			for _, r := range vhost.GetRoutes() {
+				if routeAction := r.GetRoute(); routeAction != nil {
+					for _, upgradeConfig := range routeAction.GetUpgradeConfigs() {
+						if upgradeConfig.GetUpgradeType() == "websocket" {
+							return true
+						}
+					}
+				}
+			}
+		}
+	}
+	return false
 }

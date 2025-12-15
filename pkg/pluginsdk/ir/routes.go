@@ -19,6 +19,8 @@ type Route interface {
 	GetSourceObject() metav1.Object
 }
 
+var _ Route = &HttpRouteIR{}
+
 // this is 1:1 with httproute, and is a krt type
 // maybe move this to krtcollections package?
 type HttpRouteIR struct {
@@ -54,7 +56,6 @@ func (c HttpRouteIR) ResourceName() string {
 	return c.ObjectSource.ResourceName()
 }
 
-// get hostnames
 func (c *HttpRouteIR) GetHostnames() []string {
 	if c == nil {
 		return nil
@@ -99,21 +100,7 @@ func (c HttpRouteIR) rulesEqual(in HttpRouteIR) bool {
 			return false
 		}
 		for j, backend := range backendsa {
-			otherbackend := backendsb[j]
-			if backend.Backend == nil && otherbackend.Backend == nil {
-				continue
-			}
-			if backend.Backend != nil && otherbackend.Backend != nil {
-				if backend.Backend.ClusterName != otherbackend.Backend.ClusterName {
-					return false
-				}
-				if backend.Backend.Weight != otherbackend.Backend.Weight {
-					return false
-				}
-				if !backend.AttachedPolicies.Equals(otherbackend.AttachedPolicies) {
-					return false
-				}
-			} else {
+			if !backend.Equals(backendsb[j]) {
 				return false
 			}
 		}

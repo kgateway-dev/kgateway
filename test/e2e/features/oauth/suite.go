@@ -155,6 +155,13 @@ func (s *tsuite) TestOIDC() {
 	cookies = client.Jar.Cookies(url)
 	foundCookies = s.assertCookies(r, cookies)
 	s.T().Logf("found session cookies for %s: %v", backendURLSecond, foundCookies)
+
+	// Verify RP initiated logout by following redirects
+	resp, err = client.Get(ctx, logoutURL, true)
+	r.NoError(err)
+	r.NotNil(resp)
+	// TODO: enable this check after determining why somtimes the /logout returns invalid_redirect_uri
+	// r.Equal(http.StatusOK, resp.StatusCode)
 }
 
 func (s *tsuite) TestNonOAuthBackend() {

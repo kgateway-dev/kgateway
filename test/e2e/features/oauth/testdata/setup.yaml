@@ -124,6 +124,21 @@ spec:
           --user "${KEYCLOAK_ADMIN}" \
           --password "${KEYCLOAK_ADMIN_PASSWORD}"
 
+          clientInternalId=$(/opt/keycloak/bin/kcadm.sh get clients \
+          -q clientId="${CLIENT_ID}" \
+          --server "${KEYCLOAK_SERVER}" \
+          --realm "${REALM}" \
+          --user "${KEYCLOAK_ADMIN}" \
+          --password "${KEYCLOAK_ADMIN_PASSWORD}" \
+          | sed -n 's/.*"id" : "\([^"]*\)".*/\1/p' | xargs)
+
+          /opt/keycloak/bin/kcadm.sh update clients/$clientInternalId \
+          -s 'attributes."post.logout.redirect.uris"=*' \
+          --server "${KEYCLOAK_SERVER}" \
+          --realm "${REALM}" \
+          --user "${KEYCLOAK_ADMIN}" \
+          --password "${KEYCLOAK_ADMIN_PASSWORD}"
+
           tail -f /dev/null # keep the container running
       volumes:
       - name: certs

@@ -254,23 +254,6 @@ func (l AttachedPolicies) MarshalJSON() ([]byte, error) {
 	return json.Marshal(m)
 }
 
-type BackendRefIR struct {
-	// TODO: remove cluster name from here, it's redundant.
-	ClusterName string
-	Weight      uint32
-
-	// backend could be nil if not found or no ref grant
-	BackendObject *BackendObjectIR
-	// if nil, error might say why
-	Err error
-}
-
-type HttpBackendOrDelegate struct {
-	Backend          *BackendRefIR
-	Delegate         *ObjectSource
-	AttachedPolicies AttachedPolicies
-}
-
 type HttpRouteRuleIR struct {
 	ExtensionRefs    AttachedPolicies
 	AttachedPolicies AttachedPolicies
@@ -281,4 +264,29 @@ type HttpRouteRuleIR struct {
 	// Err contains any error encountered during the construction of this HttpRouteRuleIR
 	// that should be propagated through to translation to any derived ir.HttpRouteRuleMatchIRs
 	Err error
+}
+
+type HttpBackendOrDelegate struct {
+	AttachedPolicies AttachedPolicies
+	Backend          *BackendRefIR
+	Delegate         *ObjectSource
+}
+
+func (h HttpBackendOrDelegate) Equals(other HttpBackendOrDelegate) bool {
+	if !h.AttachedPolicies.Equals(other.AttachedPolicies) {
+		return false
+	}
+	if h.Backend != nil && other.Backend != nil {
+		return h.Backend.Equals(*other.Backend)
+	}
+	if h.Backend == nil && other.Backend == nil {
+		if h.Delegate == nil && other.Delegate == nil {
+			return true
+		}
+		if h.Delegate != nil && other.Delegate != nil {
+			return h.Delegate.Equals(*other.Delegate)
+		}
+		return false
+	}
+	return false
 }

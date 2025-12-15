@@ -83,8 +83,6 @@ type KubernetesProxyConfig struct {
 	Deployment *ProxyDeployment `json:"deployment,omitempty"`
 
 	// Configuration for the container running Envoy.
-	// If the Gateway uses a GatewayClass with controllerName: agentgateway.dev/agentgateway,
-	// the EnvoyContainer values will be ignored.
 	//
 	// +optional
 	EnvoyContainer *EnvoyContainer `json:"envoyContainer,omitempty"`
@@ -120,9 +118,10 @@ type KubernetesProxyConfig struct {
 	// +optional
 	Stats *StatsConfig `json:"stats,omitempty"`
 
-	// Configure the agentgateway integration. If agentgateway is disabled, the
-	// EnvoyContainer values will be used by default to configure the data
-	// plane proxy.
+	// Obsolete: This field is no longer used. Agentgateway configuration is now
+	// determined automatically based on the GatewayClass controllerName
+	// (agentgateway.dev/agentgateway). Use the AgentgatewayParameters API to
+	// configure agentgateway deployments. Any values specified here are ignored.
 	//
 	// +optional
 	Agentgateway *Agentgateway `json:"agentgateway,omitempty"`
@@ -677,10 +676,18 @@ func (in *StatsMatcher) GetExclusionList() []shared.StringMatcher {
 	return in.ExclusionList
 }
 
-// Agentgateway configures the agentgateway dataplane integration.
-// The agentgateway dataplane is automatically used when the Gateway references a GatewayClass
-// with controllerName: agentgateway.dev/agentgateway.
+// Agentgateway is obsolete and retained only for backwards compatibility.  Use
+// the agentgateway.dev AgentgatewayParameters API to configure agentgateway
+// deployments.
 type Agentgateway struct {
+	// Obsolete: This field is no longer used. The agentgateway dataplane is
+	// automatically enabled when the Gateway references a GatewayClass with
+	// controllerName: agentgateway.dev/agentgateway. Use the AgentgatewayParameters
+	// API to configure agentgateway deployments. Any values specified here are ignored.
+	//
+	// +optional
+	Enabled *bool `json:"enabled,omitempty"`
+
 	// Log level for the agentgateway. Defaults to info.
 	// Levels include "trace", "debug", "info", "error", "warn". See: https://docs.rs/tracing/latest/tracing/struct.Level.html
 	//
@@ -728,6 +735,13 @@ type Agentgateway struct {
 	//
 	// +optional
 	ExtraVolumeMounts []corev1.VolumeMount `json:"extraVolumeMounts,omitempty"`
+}
+
+func (in *Agentgateway) GetEnabled() *bool {
+	if in == nil {
+		return nil
+	}
+	return in.Enabled
 }
 
 func (in *Agentgateway) GetLogLevel() *string {

@@ -170,20 +170,22 @@ func (s *ControllerSuite) TestGatewayStatus() {
 		s.T().Run(tc.name, func(t *testing.T) {
 			r := require.New(t)
 			ctx := t.Context()
-			var gw gwv1.Gateway
+			gwName := "test-" + tc.gatewayClass
+			gwNamespace := "default"
 
 			t.Cleanup(func() {
-				err := s.client.Delete(context.Background(), &gw)
+				gw := &gwv1.Gateway{ObjectMeta: metav1.ObjectMeta{Name: gwName, Namespace: gwNamespace}}
+				err := s.client.Delete(context.Background(), gw)
 				if err != nil && k8serrors.IsNotFound(err) {
 					return
 				}
 				r.NoError(err, "error deleting Gateway")
 			})
 
-			gw = gwv1.Gateway{
+			gw := gwv1.Gateway{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test",
-					Namespace: "default",
+					Name:      gwName,
+					Namespace: gwNamespace,
 				},
 				Spec: gwv1.GatewaySpec{
 					Addresses: []gwv1.GatewaySpecAddress{{
@@ -207,21 +209,17 @@ func (s *ControllerSuite) TestGatewayStatus() {
 			r.NoError(err, "error creating Gateway")
 
 			if tc.gatewayClass != selfManagedGatewayClassName {
-				// Update the status of the service for the controller to pick up
-				// We use an Eventually to ensure the Status updates succeeds on a retry if there is a conflict
-				// with the Object written by the controller
+				// Update the status of the service for the controller to pick up.
+				// We use EventuallyWithT to ensure the status update succeeds on retry if there
+				// is a conflict with the object written by the controller.
 				r.EventuallyWithT(func(c *assert.CollectT) {
 					cur := &corev1.Service{}
-					err := s.client.Get(ctx, types.NamespacedName{Name: gw.Name, Namespace: gw.Namespace}, cur)
+					err := s.client.Get(ctx, types.NamespacedName{Name: gwName, Namespace: gwNamespace}, cur)
 					require.NoError(c, err, "error getting Gateway Service")
 
 					cur.Status = corev1.ServiceStatus{
 						LoadBalancer: corev1.LoadBalancerStatus{
-							Ingress: []corev1.LoadBalancerIngress{
-								{
-									IP: localhost,
-								},
-							},
+							Ingress: []corev1.LoadBalancerIngress{{IP: localhost}},
 						},
 					}
 
@@ -230,13 +228,14 @@ func (s *ControllerSuite) TestGatewayStatus() {
 				}, defaultPollTimeout, 500*time.Millisecond, "timed out waiting for Gateway Service to be created")
 			}
 			r.EventuallyWithT(func(c *assert.CollectT) {
-				err := s.client.Get(ctx, types.NamespacedName{Name: gw.Name, Namespace: gw.Namespace}, &gw)
+				var gotGw gwv1.Gateway
+				err := s.client.Get(ctx, types.NamespacedName{Name: gwName, Namespace: gwNamespace}, &gotGw)
 				require.NoError(c, err, "error getting Gateway")
-				require.NotEmpty(c, gw.Status.Addresses, "expected Gateway to have status addresses")
+				require.NotEmpty(c, gotGw.Status.Addresses, "expected Gateway to have status addresses")
 
-				require.Len(c, gw.Status.Addresses, 1)
-				require.Equal(c, gwv1.IPAddressType, *gw.Status.Addresses[0].Type)
-				require.Equal(c, localhost, gw.Status.Addresses[0].Value)
+				require.Len(c, gotGw.Status.Addresses, 1)
+				require.Equal(c, gwv1.IPAddressType, *gotGw.Status.Addresses[0].Type)
+				require.Equal(c, localhost, gotGw.Status.Addresses[0].Value)
 			}, defaultPollTimeout, 500*time.Millisecond)
 		})
 	}

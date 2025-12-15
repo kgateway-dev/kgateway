@@ -478,6 +478,10 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.Gatew
 
 	// service values
 	gateway.Service = deployer.GetServiceValues(svcConfig)
+	// Extract loadBalancerIP from Gateway.spec.addresses and set it on the service if service type is LoadBalancer
+	if err := deployer.SetLoadBalancerIPFromGateway(gw, gateway.Service); err != nil {
+		return nil, err
+	}
 	// serviceaccount values
 	gateway.ServiceAccount = deployer.GetServiceAccountValues(svcAccountConfig)
 	// pod template values
