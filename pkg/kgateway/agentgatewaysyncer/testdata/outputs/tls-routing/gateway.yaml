@@ -8,6 +8,7 @@ Addresses:
 Binds:
 - key: 443/default/example-gateway
   port: 443
+  protocol: TLS
 Listeners:
 - bindKey: 443/default/example-gateway
   hostname: '*.example.com'

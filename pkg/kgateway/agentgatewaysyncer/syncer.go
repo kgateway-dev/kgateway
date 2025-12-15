@@ -254,8 +254,9 @@ func (s *Syncer) buildAgwResources(
 		return slices.Map(uniq.UnsortedList(), func(e types.NamespacedName) agwir.AgwResource {
 			bind := translator.AgwBind{
 				Bind: &api.Bind{
-					Key:  object.Key + "/" + e.String(),
-					Port: uint32(port), //nolint:gosec // G115: port is always in valid port range
+					Key:      object.Key + "/" + e.String(),
+					Port:     uint32(port), //nolint:gosec // G115: port is always in valid port range
+					Protocol: protocol,
 				},
 			}
 			return translator.ToResourceForGateway(e, bind)

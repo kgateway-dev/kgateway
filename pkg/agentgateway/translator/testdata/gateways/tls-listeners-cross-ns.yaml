@@ -72,6 +72,7 @@ output:
     bind:
       key: 443/default/test-gateway
       port: 443
+      protocol: TLS
 - gateway:
     Name: test-gateway
     Namespace: default
