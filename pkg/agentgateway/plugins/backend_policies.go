@@ -492,8 +492,12 @@ func translateBackendAuth(ctx PolicyCtx, policy *agentgateway.AgentgatewayPolicy
 		awsAuth, err := buildAwsAuthPolicy(ctx.Krt, auth.AWS, ctx.Collections.Secrets, policy.Namespace)
 		translatedAuth = awsAuth
 		errs = append(errs, err)
-	} else {
-		errs = append(errs, fmt.Errorf("backend auth requires either inline key or secretRef"))
+	} else if auth.Passthrough != nil {
+		translatedAuth = &api.BackendAuthPolicy{
+			Kind: &api.BackendAuthPolicy_Passthrough{
+				Passthrough: &api.Passthrough{},
+			},
+		}
 	}
 
 	if translatedAuth == nil {

@@ -33,7 +33,10 @@ Backends:
             key:
               secret: gemini-fallback-key
         name: gemini
-      - name: vertexai
+      - inlinePolicies:
+        - auth:
+            passthrough: {}
+        name: vertexai
         vertex:
           model: gemini-pro
           projectId: vertex-fallback-project

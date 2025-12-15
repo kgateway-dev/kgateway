@@ -2,29 +2,32 @@ apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   namespace: default
-  name: static-backend
+  name: anthropic-backend
 spec:
-  static:
-    host: example.com
-    port: 8888
+  ai:
+    provider:
+      anthropic:
+        model: claude-4-5-sonnet
   policies:
     auth:
-      # TODO: kubebuilder:validate allows this but `translateBackendAuth` exepects "inline key or secretRef"
       passthrough: {}
 ---
 # Output
 output:
 - backend:
+    ai:
+      providerGroups:
+      - providers:
+        - anthropic:
+            model: claude-4-5-sonnet
+          name: backend
     inlinePolicies:
     - auth:
         passthrough: {}
-    key: default/static-backend
+    key: default/anthropic-backend
     name:
-      name: static-backend
+      name: anthropic-backend
       namespace: default
-    static:
-      host: example.com
-      port: 8888
 status:
   conditions:
   - lastTransitionTime: fake
