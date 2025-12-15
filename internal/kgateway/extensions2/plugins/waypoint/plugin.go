@@ -2,12 +2,14 @@ package waypoint
 
 import (
 	"context"
+	"net/netip"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	istioannot "istio.io/api/annotation"
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/slices"
 	"istio.io/istio/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -136,28 +138,64 @@ func processIngressUseWaypoint(in ir.BackendObjectIR, out *envoyclusterv3.Cluste
 		Endpoints:   make([]*envoyendpointv3.LocalityLbEndpoints, 0, len(addresses)),
 	}
 
-	for _, addr := range addresses {
-		out.GetLoadAssignment().Endpoints = append(out.GetLoadAssignment().GetEndpoints(), claEndpoint(addr, uint32(in.Port))) //nolint:gosec // G115: BackendObjectIR.Port is int32 representing a port number, always in valid range
-	}
+	// We only add IPv4 addresses (IPv4_ONLY mode) from the VIPs that Istio placed
+	// in the global ServiceEntry.
+	// In later releases we will adapt to the global DNS lookup family setting.
+	// PR: https://github.com/kgateway-dev/kgateway/pull/13085
+	ip4Addresses := slices.Filter(addresses, func(addr string) bool {
+		parsed, err := netip.ParseAddr(addr)
+		return err == nil && parsed.Is4()
+	})
+	out.GetLoadAssignment().Endpoints = append(out.GetLoadAssignment().GetEndpoints(), claEndpoint(ip4Addresses, uint32(in.Port))) //nolint:gosec // G115: BackendObjectIR.Port is int32 representing a port number, always in valid range
 }
 
-func claEndpoint(address string, port uint32) *envoyendpointv3.LocalityLbEndpoints {
+// claEndpoint creates a LocalityLbEndpoints with the primary address in Address
+// and additional addresses in AdditionalAddresses.
+func claEndpoint(addresses []string, port uint32) *envoyendpointv3.LocalityLbEndpoints {
+	if len(addresses) == 0 {
+		return nil
+	}
+
+	// Primary address goes in Address
+	primaryAddr := addresses[0]
+	endpoint := &envoyendpointv3.Endpoint{
+		Address: &envoycorev3.Address{
+			Address: &envoycorev3.Address_SocketAddress{
+				SocketAddress: &envoycorev3.SocketAddress{
+					Address: primaryAddr,
+					PortSpecifier: &envoycorev3.SocketAddress_PortValue{
+						PortValue: port,
+					},
+				},
+			},
+		},
+	}
+
+	// Additional addresses go in AdditionalAddresses
+	if len(addresses) > 1 {
+		additionalAddresses := make([]*envoyendpointv3.Endpoint_AdditionalAddress, 0, len(addresses)-1)
+		for _, addr := range addresses[1:] {
+			additionalAddresses = append(additionalAddresses, &envoyendpointv3.Endpoint_AdditionalAddress{
+				Address: &envoycorev3.Address{
+					Address: &envoycorev3.Address_SocketAddress{
+						SocketAddress: &envoycorev3.SocketAddress{
+							Address: addr,
+							PortSpecifier: &envoycorev3.SocketAddress_PortValue{
+								PortValue: port,
+							},
+						},
+					},
+				},
+			})
+		}
+		endpoint.AdditionalAddresses = additionalAddresses
+	}
+
 	return &envoyendpointv3.LocalityLbEndpoints{
 		LbEndpoints: []*envoyendpointv3.LbEndpoint{
 			{
 				HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{
-					Endpoint: &envoyendpointv3.Endpoint{
-						Address: &envoycorev3.Address{
-							Address: &envoycorev3.Address_SocketAddress{
-								SocketAddress: &envoycorev3.SocketAddress{
-									Address: address,
-									PortSpecifier: &envoycorev3.SocketAddress_PortValue{
-										PortValue: port,
-									},
-								},
-							},
-						},
-					},
+					Endpoint: endpoint,
 				},
 			},
 		},
