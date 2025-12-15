@@ -25,6 +25,7 @@ import (
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/jwks"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/jwks_url"
 	agentjwksstore "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/jwksstore"
 	agwplugins "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
@@ -436,6 +437,9 @@ func (s *setup) Start(ctx context.Context) error {
 			slog.Error("error creating agw common collections", "error", err)
 			return err
 		}
+
+		jwksUrlFactory := jwks_url.NewJwksUrlFactory(agwCollections.ConfigMaps, agwCollections.Backends, agwCollections.AgentgatewayPolicies)
+		jwks_url.JwksUrlBuilderFactory = func() jwks_url.JwksUrlBuilder { return jwksUrlFactory }
 	}
 
 	for _, mgrCfgFunc := range s.extraManagerConfig {
@@ -581,7 +585,7 @@ func SetupLogging(levelStr string) {
 }
 
 func buildJwksStore(ctx context.Context, mgr manager.Manager, apiClient apiclient.Client, commonCollections *collections.CommonCollections, agwCollections *agwplugins.AgwCollections) error {
-	jwksStorePolicyCtrl := agentjwksstore.NewJWKSStorePolicyController(apiClient, agwCollections)
+	jwksStorePolicyCtrl := agentjwksstore.NewJWKSStorePolicyController(apiClient, agwCollections, jwks_url.JwksUrlBuilderFactory)
 	if err := mgr.Add(jwksStorePolicyCtrl); err != nil {
 		return err
 	}

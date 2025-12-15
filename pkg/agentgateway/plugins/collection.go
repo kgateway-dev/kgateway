@@ -1,8 +1,6 @@
 package plugins
 
 import (
-	"fmt"
-
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/config/schema/gvr"
 	istiokube "istio.io/istio/pkg/kube"
@@ -23,7 +21,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
-	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
 type AgwCollections struct {
@@ -64,9 +61,6 @@ type AgwCollections struct {
 	Backends             krt.Collection[*agentgateway.AgentgatewayBackend]
 	AgentgatewayPolicies krt.Collection[*agentgateway.AgentgatewayPolicy]
 
-	// indexes
-	AgentgatewayPoliciesByTargetRefIndex krt.Index[TargetRefIndexKey, *agentgateway.AgentgatewayPolicy]
-
 	// ControllerName is the name of the Gateway controller.
 	ControllerName string
 	// SystemNamespace is control plane system namespace (default is kgateway-system)
@@ -75,17 +69,6 @@ type AgwCollections struct {
 	IstioNamespace string
 	// ClusterID is the cluster ID of the cluster the proxy is running in.
 	ClusterID string
-}
-
-type TargetRefIndexKey struct {
-	Group     string
-	Kind      string
-	Name      string
-	Namespace string
-}
-
-func (k TargetRefIndexKey) String() string {
-	return fmt.Sprintf("%s:%s:%s:%s:%s", k.Group, k.Kind, k.Namespace, k.Name)
 }
 
 func (c *AgwCollections) HasSynced() bool {
@@ -184,19 +167,6 @@ func NewAgwCollections(
 		AgentgatewayPolicies: krt.NewInformer[*agentgateway.AgentgatewayPolicy](commoncol.Client),
 		Backends:             krt.NewInformer[*agentgateway.AgentgatewayBackend](commoncol.Client),
 	}
-
-	agwCollections.AgentgatewayPoliciesByTargetRefIndex = krtpkg.UnnamedIndex(agwCollections.AgentgatewayPolicies, func(in *agentgateway.AgentgatewayPolicy) []TargetRefIndexKey {
-		keys := make([]TargetRefIndexKey, 0)
-		for _, ref := range in.Spec.TargetRefs {
-			keys = append(keys, TargetRefIndexKey{
-				Name:      string(ref.Name),
-				Kind:      string(ref.Kind),
-				Group:     string(ref.Group),
-				Namespace: in.Namespace,
-			})
-		}
-		return keys
-	})
 
 	if commoncol.Settings.EnableInferExt {
 		// inference extensions cluster watch permissions are controlled by enabling EnableInferExt

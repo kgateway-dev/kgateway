@@ -1,4 +1,4 @@
-package plugins
+package jwks_url
 
 import (
 	"crypto/tls"
@@ -13,10 +13,34 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
-type JwksUrlFactory struct {
+type JwksUrlBuilder interface {
+	BuildJwksUrlAndTlsConfig(krtctx krt.HandlerContext, policyName, defaultNS string, remoteProvider *agentgateway.RemoteJWKS) (string, *tls.Config, error)
+}
+
+var JwksUrlBuilderFactory func() JwksUrlBuilder
+
+type emptyJwksUrlFactory struct{}
+
+func (f *emptyJwksUrlFactory) BuildJwksUrlAndTlsConfig(_ krt.HandlerContext, _, _ string, _ *agentgateway.RemoteJWKS) (string, *tls.Config, error) {
+	return "", nil, fmt.Errorf("JwksUrlBuilderFactory must be initialized before use")
+}
+
+type TargetRefIndexKey struct {
+	Group     string
+	Kind      string
+	Name      string
+	Namespace string
+}
+
+func (k TargetRefIndexKey) String() string {
+	return fmt.Sprintf("%s:%s:%s:%s", k.Group, k.Kind, k.Namespace, k.Name)
+}
+
+type defaultJwksUrlFactory struct {
 	cfgmaps                  krt.Collection[*corev1.ConfigMap]
 	policiesByTargetRefIndex krt.Index[TargetRefIndexKey, *agentgateway.AgentgatewayPolicy]
 	backends                 krt.Collection[*agentgateway.AgentgatewayBackend]
@@ -25,10 +49,22 @@ type JwksUrlFactory struct {
 
 func NewJwksUrlFactory(cfgmaps krt.Collection[*corev1.ConfigMap],
 	backends krt.Collection[*agentgateway.AgentgatewayBackend],
-	agentgatewayPolicies krt.Collection[*agentgateway.AgentgatewayPolicy],
-	policiesByTargetRefIndex krt.Index[TargetRefIndexKey, *agentgateway.AgentgatewayPolicy]) *JwksUrlFactory {
+	agentgatewayPolicies krt.Collection[*agentgateway.AgentgatewayPolicy]) JwksUrlBuilder {
 
-	return &JwksUrlFactory{
+	policiesByTargetRefIndex := krtpkg.UnnamedIndex(agentgatewayPolicies, func(in *agentgateway.AgentgatewayPolicy) []TargetRefIndexKey {
+		keys := make([]TargetRefIndexKey, 0)
+		for _, ref := range in.Spec.TargetRefs {
+			keys = append(keys, TargetRefIndexKey{
+				Name:      string(ref.Name),
+				Kind:      string(ref.Kind),
+				Group:     string(ref.Group),
+				Namespace: in.Namespace,
+			})
+		}
+		return keys
+	})
+
+	return &defaultJwksUrlFactory{
 		cfgmaps:                  cfgmaps,
 		policiesByTargetRefIndex: policiesByTargetRefIndex,
 		backends:                 backends,
@@ -36,7 +72,7 @@ func NewJwksUrlFactory(cfgmaps krt.Collection[*corev1.ConfigMap],
 	}
 }
 
-func (j *JwksUrlFactory) BuildJwksUrl(krtctx krt.HandlerContext, policyName, defaultNS string, remoteProvider *agentgateway.RemoteJWKS) (string, *tls.Config, error) {
+func (f *defaultJwksUrlFactory) BuildJwksUrlAndTlsConfig(krtctx krt.HandlerContext, policyName, defaultNS string, remoteProvider *agentgateway.RemoteJWKS) (string, *tls.Config, error) {
 	ref := remoteProvider.BackendRef
 
 	refName := string(ref.Name)
@@ -48,7 +84,7 @@ func (j *JwksUrlFactory) BuildJwksUrl(krtctx krt.HandlerContext, policyName, def
 			Name:      refName,
 			Namespace: refNamespace,
 		}
-		backend := ptr.Flatten(krt.FetchOne(krtctx, j.backends, krt.FilterObjectName(backendRef)))
+		backend := ptr.Flatten(krt.FetchOne(krtctx, f.backends, krt.FilterObjectName(backendRef)))
 		if backend == nil {
 			return "", nil, fmt.Errorf("backend %s not found, policy %s", backendRef, types.NamespacedName{Namespace: defaultNS, Name: policyName})
 		}
@@ -59,12 +95,29 @@ func (j *JwksUrlFactory) BuildJwksUrl(krtctx krt.HandlerContext, policyName, def
 		// TODO (dmitri-d) only inline tls config is supported atm, do we want to support attching AgentgatewayPolicy too?
 		var tlsConfig *tls.Config
 		if backend.Spec.Policies != nil && backend.Spec.Policies.TLS != nil {
-			tlsc, err := getTLSConfig(krtctx, j.cfgmaps, refNamespace, backend.Spec.Policies.TLS)
+			tlsc, err := GetTLSConfig(krtctx, f.cfgmaps, refNamespace, backend.Spec.Policies.TLS)
 			if err != nil {
 				return "", nil, fmt.Errorf("error setting tls options; backend: %s, policy: %s, %w",
 					backendRef, types.NamespacedName{Namespace: refNamespace, Name: policyName}, err)
 			}
 			tlsConfig = tlsc
+		} else { // check if a
+			agwPolicy := ptr.Flatten(krt.FetchOne(krtctx, f.agentgatewayPolicies, krt.FilterIndex(f.policiesByTargetRefIndex, TargetRefIndexKey{
+				Name:      refName,
+				Kind:      string(*ref.Kind),
+				Group:     string(ptr.OrEmpty(ref.Group)),
+				Namespace: refNamespace,
+				// no port, as policy targetRef may not have it
+			})))
+
+			if agwPolicy != nil && agwPolicy.Spec.Backend != nil && agwPolicy.Spec.Backend.TLS != nil {
+				tlsc, err := GetTLSConfig(krtctx, f.cfgmaps, refNamespace, agwPolicy.Spec.Backend.TLS)
+				if err != nil {
+					return "", nil, fmt.Errorf("error setting tls options; service %s/%s, policy: %s %w",
+						refName, refNamespace, types.NamespacedName{Namespace: refNamespace, Name: policyName}, err)
+				}
+				tlsConfig = tlsc
+			}
 		}
 
 		var url string
@@ -76,7 +129,7 @@ func (j *JwksUrlFactory) BuildJwksUrl(krtctx krt.HandlerContext, policyName, def
 
 		return url, tlsConfig, nil
 	case wellknown.ServiceKind:
-		agwPolicy := ptr.Flatten(krt.FetchOne(krtctx, j.agentgatewayPolicies, krt.FilterIndex(j.policiesByTargetRefIndex, TargetRefIndexKey{
+		agwPolicy := ptr.Flatten(krt.FetchOne(krtctx, f.agentgatewayPolicies, krt.FilterIndex(f.policiesByTargetRefIndex, TargetRefIndexKey{
 			Name:      refName,
 			Kind:      string(*ref.Kind),
 			Group:     string(ptr.OrEmpty(ref.Group)),
@@ -86,7 +139,7 @@ func (j *JwksUrlFactory) BuildJwksUrl(krtctx krt.HandlerContext, policyName, def
 
 		var tlsConfig *tls.Config
 		if agwPolicy != nil && agwPolicy.Spec.Backend != nil && agwPolicy.Spec.Backend.TLS != nil {
-			tlsc, err := getTLSConfig(krtctx, j.cfgmaps, refNamespace, agwPolicy.Spec.Backend.TLS)
+			tlsc, err := GetTLSConfig(krtctx, f.cfgmaps, refNamespace, agwPolicy.Spec.Backend.TLS)
 			if err != nil {
 				return "", nil, fmt.Errorf("error setting tls options; service %s/%s, policy: %s %w",
 					refName, refNamespace, types.NamespacedName{Namespace: refNamespace, Name: policyName}, err)
@@ -116,7 +169,7 @@ func (j *JwksUrlFactory) BuildJwksUrl(krtctx krt.HandlerContext, policyName, def
 	return "", nil, fmt.Errorf("unsupported target kind in remote jwks provider; kind: %s, policy: %s", string(*ref.Kind), types.NamespacedName{Namespace: refNamespace, Name: policyName})
 }
 
-func getTLSConfig(
+func GetTLSConfig(
 	krtctx krt.HandlerContext,
 	cfgmaps krt.Collection[*corev1.ConfigMap],
 	namespace string,

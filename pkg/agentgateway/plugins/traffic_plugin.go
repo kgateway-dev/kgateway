@@ -32,6 +32,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/jwks_url"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
@@ -520,8 +521,6 @@ func processJWTAuthenticationPolicy(ctx PolicyCtx, jwt *agentgateway.JWTAuthenti
 		p.Mode = api.TrafficPolicySpec_JWT_PERMISSIVE
 	}
 
-	jwksUrlFactory := NewJwksUrlFactory(ctx.Collections.ConfigMaps, ctx.Collections.Backends, ctx.Collections.AgentgatewayPolicies, ctx.Collections.AgentgatewayPoliciesByTargetRefIndex)
-
 	errs := make([]error, 0)
 	for _, pp := range jwt.Providers {
 		jp := &api.TrafficPolicySpec_JWTProvider{
@@ -534,7 +533,7 @@ func processJWTAuthenticationPolicy(ctx PolicyCtx, jwt *agentgateway.JWTAuthenti
 			continue
 		}
 		if r := pp.JWKS.Remote; r != nil {
-			jwksUrl, _, err := jwksUrlFactory.BuildJwksUrl(ctx.Krt, policy.Name, policy.Namespace, pp.JWKS.Remote)
+			jwksUrl, _, err := jwks_url.JwksUrlBuilderFactory().BuildJwksUrlAndTlsConfig(ctx.Krt, policy.Name, policy.Namespace, pp.JWKS.Remote)
 			if err != nil {
 				errs = append(errs, err)
 				continue

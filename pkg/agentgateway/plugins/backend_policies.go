@@ -16,6 +16,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/jwks_url"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -302,8 +303,7 @@ func translateBackendMCPAuthentication(ctx PolicyCtx, policy *agentgateway.Agent
 		idp = api.BackendPolicySpec_McpAuthentication_KEYCLOAK
 	}
 
-	jwksUrlFactory := NewJwksUrlFactory(ctx.Collections.ConfigMaps, ctx.Collections.Backends, ctx.Collections.AgentgatewayPolicies, ctx.Collections.AgentgatewayPoliciesByTargetRefIndex)
-	jwksUrl, _, err := jwksUrlFactory.BuildJwksUrl(ctx.Krt, policy.Name, policy.Namespace, &authnPolicy.JWKS)
+	jwksUrl, _, err := jwks_url.JwksUrlBuilderFactory().BuildJwksUrlAndTlsConfig(ctx.Krt, policy.Name, policy.Namespace, &authnPolicy.JWKS)
 	if err != nil {
 		logger.Error("failed resolving jwks url", "error", err)
 		return nil, err

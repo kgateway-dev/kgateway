@@ -10,6 +10,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/jwks"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/jwks_url"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -21,18 +22,19 @@ type JwksStorePolicyController struct {
 	apiClient      apiclient.Client
 	jwks           krt.Collection[jwks.JwksSource]
 	jwksChanges    chan jwks.JwksSource
-	jwksUrlFactory *plugins.JwksUrlFactory
+	jwksUrlFactory func() jwks_url.JwksUrlBuilder
 	waitForSync    []cache.InformerSynced
 }
 
 var polLogger = logging.New("jwks_store_policy_controller")
 
-func NewJWKSStorePolicyController(apiClient apiclient.Client, agw *plugins.AgwCollections) *JwksStorePolicyController {
+func NewJWKSStorePolicyController(apiClient apiclient.Client, agw *plugins.AgwCollections, jwksUrlFactory func() jwks_url.JwksUrlBuilder) *JwksStorePolicyController {
 	polLogger.Info("creating jwks store policy controller")
 	return &JwksStorePolicyController{
-		agw:         agw,
-		apiClient:   apiClient,
-		jwksChanges: make(chan jwks.JwksSource),
+		agw:            agw,
+		apiClient:      apiClient,
+		jwksChanges:    make(chan jwks.JwksSource),
+		jwksUrlFactory: jwksUrlFactory,
 	}
 }
 
@@ -84,8 +86,6 @@ func (j *JwksStorePolicyController) Init(ctx context.Context) {
 		return toret
 	}, j.agw.KrtOpts.ToOptions("JwksSources")...)
 
-	j.jwksUrlFactory = plugins.NewJwksUrlFactory(j.agw.ConfigMaps, j.agw.Backends, j.agw.AgentgatewayPolicies, j.agw.AgentgatewayPoliciesByTargetRefIndex)
-
 	j.waitForSync = []cache.InformerSynced{
 		backendCol.HasSynced,
 	}
@@ -125,7 +125,7 @@ func (j *JwksStorePolicyController) JwksChanges() chan jwks.JwksSource {
 }
 
 func (j *JwksStorePolicyController) buildJwksSource(krtctx krt.HandlerContext, policyName, defaultNS string, remoteProvider *agentgateway.RemoteJWKS) *jwks.JwksSource {
-	jwksUrl, tlsConfig, err := j.jwksUrlFactory.BuildJwksUrl(krtctx, policyName, defaultNS, remoteProvider)
+	jwksUrl, tlsConfig, err := j.jwksUrlFactory().BuildJwksUrlAndTlsConfig(krtctx, policyName, defaultNS, remoteProvider)
 	if err != nil {
 		polLogger.Error("error generating remote jwks url or tls options", "error", err)
 		return nil
