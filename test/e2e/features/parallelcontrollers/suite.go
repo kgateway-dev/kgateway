@@ -761,12 +761,12 @@ func (s *testingSuite) verifyAgentgatewayDeployment(objectMeta metav1.ObjectMeta
 		// Verify that the deployment has agentgateway container
 		hasAgentgatewayContainer := false
 		for _, container := range deployment.Spec.Template.Spec.Containers {
-			if container.Name == "agent-gateway" {
+			if container.Name == "agentgateway" {
 				hasAgentgatewayContainer = true
 				break
 			}
 		}
-		g.Expect(hasAgentgatewayContainer).To(gomega.BeTrue(), "Deployment should have agent-gateway container")
+		g.Expect(hasAgentgatewayContainer).To(gomega.BeTrue(), "Deployment should have agentgateway container")
 	}).
 		WithContext(s.Ctx).
 		WithTimeout(time.Second * 10).
