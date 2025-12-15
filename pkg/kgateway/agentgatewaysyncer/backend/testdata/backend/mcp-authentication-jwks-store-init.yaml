@@ -15,7 +15,12 @@ spec:
     mcp:
       authentication:
         jwks:
-          uri: http://store-uninitialized/
+          jwksPath: /
+          backendRef:
+              group: ""
+              kind: Service
+              name: store-uninitialized
+              port: 8080
 ---
 # Output
 output: []
