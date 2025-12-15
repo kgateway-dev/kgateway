@@ -23,10 +23,11 @@ spec:
   logging:
     format: text
   rawConfig:
-    logging:
-      format: json
-    tracing:
-      otlpEndpoint: http://jaeger:4317
+    config:
+      logging:
+        format: json
+      tracing:
+        otlpEndpoint: http://jaeger:4317
 ---
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1

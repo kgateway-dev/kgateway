@@ -13,13 +13,12 @@ data:
     {{- $baseConfig := $gateway.rawConfig | default dict }}
     {{- $typedConfig := dict }}
     {{- if $gateway.logFormat }}
-    {{- $typedConfig = dict "logging" (dict "format" $gateway.logFormat) }}
+    {{- $typedConfig = dict "config" (dict "logging" (dict "format" $gateway.logFormat)) }}
     {{- end }}
     {{- /* Merge: typed config takes precedence over rawConfig */ -}}
     {{- $finalConfig := merge $typedConfig $baseConfig }}
     {{- if $finalConfig }}
-    config:
-      {{- toYaml $finalConfig | nindent 6 }}
+    {{- toYaml $finalConfig | nindent 4 }}
     {{- else }}
     config: {}
     {{- end }}
