@@ -64,11 +64,11 @@ func (s *testingSuite) TestTracingConfigMap() {
 	s.T().Log("Testing tracing ConfigMap configuration")
 
 	// Ensure the ConfigMap exists before checking the gateway
-	s.verifyConfigMapExists("agent-gateway-config", "default")
+	s.verifyConfigMapExists("agentgateway-config", "default")
 
 	s.waitForAgentgatewayPodsRunning()
 
-	s.verifyConfigMapMountedInDeployment("agent-gateway-config", tracingAgentGatewayDeploymentMeta)
+	s.verifyConfigMapMountedInDeployment("agentgateway-config", tracingAgentGatewayDeploymentMeta)
 
 	// Verify that the tracing configuration is actually loaded and active
 	s.verifyTracingConfigurationActive(tracingAgentGatewayDeploymentMeta)
