@@ -12,6 +12,9 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 )
 
+// JwksStore is a top-level abstraction that relies on jwksCache and jwksFetcher to
+// retrieve and keep jwks up to date.
+
 var logger = logging.New("jwks_store")
 
 const DefaultJwksStorePrefix = "jwks-store"
@@ -21,9 +24,6 @@ var JwksConfigMapNamespacedName = func(jwksUri string) *types.NamespacedName {
 	return nil
 }
 
-// JwksStore handles initial fetching and periodic updates of jwks. Jwks are persisted
-// in ConfigMaps, a jwks per ConfigMap. The ConfigMaps are used to re-create internal
-// JwksStore state on startup and by traffic-plugins as source of remote jwks.
 type JwksStore struct {
 	storePrefix     string
 	jwksCache       *jwksCache

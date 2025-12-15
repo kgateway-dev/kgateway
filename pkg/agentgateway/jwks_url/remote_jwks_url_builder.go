@@ -21,7 +21,7 @@ type JwksUrlBuilder interface {
 	BuildJwksUrlAndTlsConfig(krtctx krt.HandlerContext, policyName, defaultNS string, remoteProvider *agentgateway.RemoteJWKS) (string, *tls.Config, error)
 }
 
-var JwksUrlBuilderFactory func() JwksUrlBuilder
+var JwksUrlBuilderFactory func() JwksUrlBuilder = func() JwksUrlBuilder { return &emptyJwksUrlFactory{} }
 
 type emptyJwksUrlFactory struct{}
 

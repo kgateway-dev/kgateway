@@ -20,6 +20,9 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 )
 
+// JwksStoreConfigMapsController is responsible for reliable synchronisation of internal jwks store state (jwks uri + jwks) to ConfigMaps.
+// A single ConfigMap is used to store all jwks for a given jwks url.
+
 var cmLogger = logging.New("jwks_store_config_map_controller")
 
 type JwksStoreConfigMapsController struct {

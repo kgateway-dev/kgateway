@@ -17,8 +17,7 @@ import (
 )
 
 // JwksFetcher is used for fetching and periodic updates of jwks.
-// Fetched jwks are stored in jwksCache. All access to jwksCache is synchronized via mu mutex.
-// When a jwks is updated, registered subscribers are sent the update.
+// Fetched jwks are stored in jwksCache. When a jwks is updated, registered subscribers are sent an update.
 type JwksFetcher struct {
 	mu                sync.Mutex
 	cache             *jwksCache

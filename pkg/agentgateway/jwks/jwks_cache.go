@@ -8,6 +8,9 @@ import (
 	"github.com/go-jose/go-jose/v4"
 )
 
+// jwksCache is an implementation of a jwks storage, used internally by JwksStore.
+// Note use of the mutex when accessing jwks
+
 type jwksCache struct {
 	l    sync.Mutex
 	jwks map[string]string // jwks uri -> jwks

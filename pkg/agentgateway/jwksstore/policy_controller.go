@@ -17,6 +17,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 )
 
+// JwksStorePolicyController watches AgentgatewayPolicies and Backends. When a resource containing
+// new or updated remote jwks source is detected, an jwks store is notifed of an update.
 type JwksStorePolicyController struct {
 	agw            *plugins.AgwCollections
 	apiClient      apiclient.Client
