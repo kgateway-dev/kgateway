@@ -240,11 +240,16 @@ func (s *Syncer) buildAgwResources(
 	binds := krt.NewManyCollection(ports, func(ctx krt.HandlerContext, object krt.IndexObject[string, *translator.GatewayListener]) []agwir.AgwResource {
 		port, _ := strconv.Atoi(object.Key)
 		uniq := sets.New[types.NamespacedName]()
+		var protocol = api.Bind_Protocol(0)
 		for _, gw := range object.Objects {
 			uniq.Insert(types.NamespacedName{
 				Namespace: gw.ParentGateway.Namespace,
 				Name:      gw.ParentGateway.Name,
 			})
+			// TODO: better handle conflicts of protocols. For now, we arbitrarily treat TLS > plain
+			if gw.Valid {
+				protocol = max(protocol, s.getBindProtocol(gw))
+			}
 		}
 		return slices.Map(uniq.UnsortedList(), func(e types.NamespacedName) agwir.AgwResource {
 			bind := translator.AgwBind{
@@ -377,6 +382,22 @@ func (s *Syncer) getProtocolAndTLSConfig(obj *translator.GatewayListener) (api.P
 		return api.Protocol_TCP, nil, true
 	default:
 		return api.Protocol_HTTP, nil, false // Unsupported protocol
+	}
+}
+
+// getProtocolAndTLSConfig extracts protocol and TLS configuration from a gateway
+func (s *Syncer) getBindProtocol(obj *translator.GatewayListener) api.Bind_Protocol {
+	switch obj.ParentInfo.Protocol {
+	case gwv1.HTTPProtocolType:
+		return api.Bind_HTTP
+	case gwv1.HTTPSProtocolType:
+		return api.Bind_TLS
+	case gwv1.TLSProtocolType:
+		return api.Bind_TLS
+	case gwv1.TCPProtocolType:
+		return api.Bind_TCP
+	default:
+		return api.Bind_HTTP
 	}
 }
 
