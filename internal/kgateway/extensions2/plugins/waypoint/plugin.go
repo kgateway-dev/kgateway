@@ -210,15 +210,14 @@ func claEndpoint(addresses []string, port uint32) *envoyendpointv3.LocalityLbEnd
 // Since static clusters can't use DnsLookupFamily (it only applies to DNS-based discovery),
 // we sort the addresses based on the setting.
 func sortAddressesByDnsLookupFamily(addresses []string, settings *apisettings.Settings) []string {
-	if settings == nil {
-		// Default to V4_PREFERRED if settings are not available
-		return sortAddressesByDnsLookupFamily(addresses, &apisettings.Settings{
-			DnsLookupFamily: apisettings.DnsLookupFamilyV4Preferred,
-		})
+	// Default to V4_PREFERRED if settings are not available
+	dnsLookupFamily := apisettings.DnsLookupFamilyV4Preferred
+	if settings != nil {
+		dnsLookupFamily = settings.DnsLookupFamily
 	}
 
 	// For ALL mode, we don't need to separate by family - just return all addresses
-	if settings.DnsLookupFamily == apisettings.DnsLookupFamilyAll {
+	if dnsLookupFamily == apisettings.DnsLookupFamilyAll {
 		return addresses
 	}
 
@@ -239,7 +238,7 @@ func sortAddressesByDnsLookupFamily(addresses []string, settings *apisettings.Se
 
 	// Sort based on DNS lookup family setting
 	var sortedAddresses []string
-	switch settings.DnsLookupFamily {
+	switch dnsLookupFamily {
 	case apisettings.DnsLookupFamilyV4Only:
 		// Only IPv4 addresses
 		sortedAddresses = ipv4Addrs
