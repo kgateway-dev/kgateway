@@ -17,9 +17,6 @@ on:
         default: false
         description: "Run load testing suite after release"
   push:
-    tags:
-      - 'v*'
-      - '!v**-main'
     branches:
       - main
   pull_request:
@@ -140,7 +137,7 @@ jobs:
   validate:
     name: Validate release artifacts
     needs: [setup, helm, goreleaser]
-    if: ${{ startsWith(github.ref, 'refs/tags/') || inputs.validate }}
+    if: ${{ inputs.validate }}
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
