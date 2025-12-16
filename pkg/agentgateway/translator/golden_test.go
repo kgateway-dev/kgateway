@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/agentgatewaysyncer"
 	"istio.io/istio/pkg/slices"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
@@ -36,11 +37,25 @@ func TestGatewayCollection(t *testing.T) {
 }
 
 func TestBackends(t *testing.T) {
-	testutils.RunForDirectory(t, "testdata/backends", func(t *testing.T, ctx plugins.PolicyCtx) (any, []ir.AgwResource) {
-		sq, ri := testutils.Syncer(t, ctx, "Gateway")
+	testutils.RunForDirectory(t, "testdata/backends", func(t *testing.T, ctx plugins.PolicyCtx) (any, []any) {
+		sq, ri := testutils.Syncer(t, ctx, "AgentgatewayBackend")
 		r := ri.Outputs.Resources.List()
-		return sq.Dump(), slices.SortBy(r, func(a ir.AgwResource) string {
+		r = slices.SortBy(r, func(a ir.AgwResource) string {
 			return a.ResourceName()
 		})
+		a := ri.Outputs.Addresses.List()
+		a = slices.SortBy(a, func(a agentgatewaysyncer.Address) string {
+			return a.ResourceName()
+		})
+		res := []any{}
+		for _, r := range r {
+			res = append(res, r)
+		}
+		for _, a := range a {
+			if a.Service != nil {
+				res = append(res, a.Service.Service)
+			}
+		}
+		return sq.Dump(), res
 	})
 }
