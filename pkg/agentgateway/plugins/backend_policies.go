@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/agentgateway/agentgateway/go/api"
+	jsonpb "google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
@@ -321,14 +322,15 @@ func translateBackendMCPAuthentication(ctx PolicyCtx, policy *agentgateway.Agent
 			extraResourceMetadata = make(map[string]*structpb.Value)
 		}
 
-		pbVal, err := structpb.NewValue(v)
+		proto := &structpb.Value{}
+		err := jsonpb.Unmarshal(v.Raw, proto)
 		if err != nil {
 			logger.Error("error converting resource metadata", "key", k, "error", err)
 			errs = append(errs, err)
 			continue
 		}
 
-		extraResourceMetadata[k] = pbVal
+		extraResourceMetadata[k] = proto
 	}
 
 	mcpAuthn := &api.BackendPolicySpec_McpAuthentication{
