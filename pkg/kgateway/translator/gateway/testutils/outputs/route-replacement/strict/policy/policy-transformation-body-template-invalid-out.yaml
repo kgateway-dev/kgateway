@@ -1,16 +1,14 @@
 Clusters:
-- connectTimeout: 5s
-  edsClusterConfig:
-    edsConfig:
-      ads: {}
-      resourceApiVersion: V3
-  ignoreHealthOnHostRemoval: true
+- loadAssignment:
+    clusterName: kube_gwtest_example-svc_80
   metadata: {}
   name: kube_gwtest_example-svc_80
-  type: EDS
-- connectTimeout: 5s
+  type: STATIC
+- loadAssignment:
+    clusterName: test-backend-plugin_default_example-svc_80
   metadata: {}
   name: test-backend-plugin_default_example-svc_80
+  type: STATIC
 Listeners:
 - address:
     socketAddress:
@@ -58,7 +56,7 @@ Statuses:
     gwtest/example-gateway:
       conditions:
       - lastTransitionTime: null
-        message: ""
+        message: Gateway does not allow ListenerSets to attach
         reason: ListenerSetsNotAllowed
         status: Unknown
         type: AttachedListenerSets
@@ -106,10 +104,8 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: 'Replaced Rule (0): invalid xds configuration: error initializing
-            configuration ''/dev/fd/0'': Failed to parse request template: Failed
-            to parse body template [inja.exception.parser_error] (at 2:31) expected
-            expression close, got '''''''
+          message: 'Replaced Rule (0): envoy validate invocation failed: exec: "docker":
+            executable file not found in $PATH'
           reason: RouteRuleReplaced
           status: "False"
           type: Accepted
@@ -133,9 +129,8 @@ Statuses:
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
-            Failed to parse request template: Failed to parse body template [inja.exception.parser_error]
-            (at 2:31) expected expression close, got '''''''
+          message: 'envoy validate invocation failed: exec: "docker": executable file
+            not found in $PATH'
           reason: Invalid
           status: "False"
           type: Accepted

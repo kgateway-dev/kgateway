@@ -7,7 +7,7 @@ Statuses:
     default/example-gateway:
       conditions:
       - lastTransitionTime: null
-        message: ""
+        message: Gateway does not allow ListenerSets to attach
         reason: ListenerSetsNotAllowed
         status: Unknown
         type: AttachedListenerSets
@@ -17,7 +17,7 @@ Statuses:
         status: "False"
         type: Accepted
       - lastTransitionTime: null
-        message: ""
+        message: No valid listeners found for Gateway
         reason: Invalid
         status: "False"
         type: Programmed

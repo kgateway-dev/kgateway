@@ -157,7 +157,7 @@ Statuses:
     gwtest/example-gateway:
       conditions:
       - lastTransitionTime: null
-        message: ""
+        message: Successfully attached ListenerSets to Gateway
         reason: ListenerSetsAttached
         status: "True"
         type: AttachedListenerSets

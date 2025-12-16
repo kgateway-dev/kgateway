@@ -1,16 +1,14 @@
 Clusters:
-- connectTimeout: 5s
-  edsClusterConfig:
-    edsConfig:
-      ads: {}
-      resourceApiVersion: V3
-  ignoreHealthOnHostRemoval: true
+- loadAssignment:
+    clusterName: kube_gwtest_example-svc_80
   metadata: {}
   name: kube_gwtest_example-svc_80
-  type: EDS
-- connectTimeout: 5s
+  type: STATIC
+- loadAssignment:
+    clusterName: test-backend-plugin_default_example-svc_80
   metadata: {}
   name: test-backend-plugin_default_example-svc_80
+  type: STATIC
 Listeners:
 - address:
     socketAddress:
@@ -49,7 +47,7 @@ Statuses:
     gwtest/example-gateway:
       conditions:
       - lastTransitionTime: null
-        message: ""
+        message: Gateway does not allow ListenerSets to attach
         reason: ListenerSetsNotAllowed
         status: Unknown
         type: AttachedListenerSets
@@ -98,8 +96,8 @@ Statuses:
       - conditions:
         - lastTransitionTime: null
           message: 'Dropped Rule (0): invalid matcher configuration: validation failed:
-            invalid xds configuration: error initializing configuration ''/dev/fd/0'':
-            invalid named capture group: (?<=foo)bar'
+            envoy validate invocation failed: exec: "docker": executable file not
+            found in $PATH'
           reason: RouteRuleDropped
           status: "False"
           type: Accepted

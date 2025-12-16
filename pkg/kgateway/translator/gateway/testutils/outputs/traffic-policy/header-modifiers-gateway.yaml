@@ -96,7 +96,7 @@ Statuses:
     default/example-gateway:
       conditions:
       - lastTransitionTime: null
-        message: ""
+        message: No ListenerSets attached to Gateway
         reason: NoResources
         status: "False"
         type: AttachedListenerSets

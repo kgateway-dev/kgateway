@@ -12,7 +12,7 @@ Statuses:
         status: "False"
         type: Accepted
       - lastTransitionTime: null
-        message: ""
+        message: No valid listeners found for Gateway
         reason: Invalid
         status: "False"
         type: Programmed
@@ -26,7 +26,7 @@ Statuses:
         status: "True"
         type: Accepted
       - lastTransitionTime: null
-        message: ""
+        message: Gateway programmed but some listeners are not valid
         reason: ListenersNotValid
         status: "True"
         type: Programmed

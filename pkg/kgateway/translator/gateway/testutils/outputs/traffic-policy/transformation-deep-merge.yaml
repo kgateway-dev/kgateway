@@ -198,7 +198,7 @@ Statuses:
     default/test:
       conditions:
       - lastTransitionTime: null
-        message: ""
+        message: Gateway does not allow ListenerSets to attach
         reason: ListenerSetsNotAllowed
         status: Unknown
         type: AttachedListenerSets

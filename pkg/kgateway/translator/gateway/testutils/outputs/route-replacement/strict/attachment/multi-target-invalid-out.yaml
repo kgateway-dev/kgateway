@@ -1,16 +1,14 @@
 Clusters:
-- connectTimeout: 5s
-  edsClusterConfig:
-    edsConfig:
-      ads: {}
-      resourceApiVersion: V3
-  ignoreHealthOnHostRemoval: true
+- loadAssignment:
+    clusterName: kube_gwtest_example-svc_80
   metadata: {}
   name: kube_gwtest_example-svc_80
-  type: EDS
-- connectTimeout: 5s
+  type: STATIC
+- loadAssignment:
+    clusterName: test-backend-plugin_default_example-svc_80
   metadata: {}
   name: test-backend-plugin_default_example-svc_80
+  type: STATIC
 Listeners:
 - address:
     socketAddress:
@@ -174,14 +172,13 @@ Statuses:
     gwtest/example-gateway:
       conditions:
       - lastTransitionTime: null
-        message: ""
+        message: Successfully attached ListenerSets to Gateway
         reason: ListenerSetsAttached
         status: "True"
         type: AttachedListenerSets
       - lastTransitionTime: null
-        message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
-          Failed to parse request template: Failed to parse body template [inja.exception.parser_error]
-          (at 1:29) unexpected ''}'''
+        message: 'envoy validate invocation failed: exec: "docker": executable file
+          not found in $PATH'
         reason: GatewayReplaced
         status: "False"
         type: Accepted
@@ -250,9 +247,11 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: Successfully accepted Route
-          reason: Accepted
-          status: "True"
+          message: 'Dropped Rule (0): invalid matcher configuration: validation failed:
+            envoy validate invocation failed: exec: "docker": executable file not
+            found in $PATH'
+          reason: RouteRuleDropped
+          status: "False"
           type: Accepted
         - lastTransitionTime: null
           message: Successfully resolved all references
@@ -268,9 +267,11 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: Successfully accepted Route
-          reason: Accepted
-          status: "True"
+          message: 'Dropped Rule (0): invalid matcher configuration: validation failed:
+            envoy validate invocation failed: exec: "docker": executable file not
+            found in $PATH'
+          reason: RouteRuleDropped
+          status: "False"
           type: Accepted
         - lastTransitionTime: null
           message: Successfully resolved all references
@@ -299,7 +300,9 @@ Statuses:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: 'extauth: gateway extension gwtest/missing-extauth not found'
+          message: |-
+            extauth: gateway extension gwtest/missing-extauth not found
+            envoy validate invocation failed: exec: "docker": executable file not found in $PATH
           reason: ListenerReplaced
           status: "False"
           type: Accepted
@@ -328,9 +331,8 @@ Statuses:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
-            Failed to parse request template: Failed to parse body template [inja.exception.parser_error]
-            (at 1:29) unexpected ''}'''
+          message: 'envoy validate invocation failed: exec: "docker": executable file
+            not found in $PATH'
           reason: ListenerReplaced
           status: "False"
           type: Accepted
@@ -364,9 +366,8 @@ Statuses:
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
-            Failed to parse request template: Failed to parse body template [inja.exception.parser_error]
-            (at 1:29) unexpected ''}'''
+          message: 'envoy validate invocation failed: exec: "docker": executable file
+            not found in $PATH'
           reason: Invalid
           status: "False"
           type: Accepted
@@ -383,9 +384,8 @@ Statuses:
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
-            Failed to parse request template: Failed to parse body template [inja.exception.parser_error]
-            (at 1:29) unexpected ''}'''
+          message: 'envoy validate invocation failed: exec: "docker": executable file
+            not found in $PATH'
           reason: Invalid
           status: "False"
           type: Accepted
@@ -404,7 +404,9 @@ Statuses:
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: 'extauth: gateway extension gwtest/missing-extauth not found'
+          message: 'extauth: gateway extension gwtest/missing-extauth not found; envoy
+            validate invocation failed: exec: "docker": executable file not found
+            in $PATH'
           reason: Invalid
           status: "False"
           type: Accepted

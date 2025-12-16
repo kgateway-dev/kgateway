@@ -23,16 +23,22 @@ import (
 
 // Status message constants
 const (
-	GatewayAcceptedMessage       = "Successfully accepted Gateway"
-	GatewayProgrammedMessage     = "Successfully programmed Gateway"
-	ListenerSetAcceptedMessage   = "Successfully accepted ListenerSet"
-	ListenerSetProgrammedMessage = "Successfully programmed ListenerSet"
-	ListenerAcceptedMessage      = "Successfully accepted Listener"
-	ListenerNoConflictsMessage   = "Successfully verified that Listener has no conflicts"
-	ValidRefsMessage             = "Successfully resolved all references"
-	ListenerProgrammedMessage    = "Successfully programmed Listener"
-	RouteAcceptedMessage         = "Successfully accepted Route"
-	GatewayClassAcceptedMessage  = "GatewayClass accepted by kgateway controller"
+	GatewayAcceptedMessage                       = "Successfully accepted Gateway"
+	GatewayProgrammedMessage                     = "Successfully programmed Gateway"
+	GatewayNoValidListenersMessage               = "No valid listeners found for Gateway"
+	GatewayListenerSetsNotAllowedMessage         = "Gateway does not allow ListenerSets to attach"
+	GatewayListenerSetsAttachedMessage           = "Successfully attached ListenerSets to Gateway"
+	GatewayNoListenerSetsMessage                 = "No ListenerSets attached to Gateway"
+	GatewayAcceptedWithInvalidListenersMessage   = "Gateway accepted but some listeners are not valid"
+	GatewayProgrammedWithInvalidListenersMessage = "Gateway programmed but some listeners are not valid"
+	ListenerSetAcceptedMessage                   = "Successfully accepted ListenerSet"
+	ListenerSetProgrammedMessage                 = "Successfully programmed ListenerSet"
+	ListenerAcceptedMessage                      = "Successfully accepted Listener"
+	ListenerNoConflictsMessage                   = "Successfully verified that Listener has no conflicts"
+	ValidRefsMessage                             = "Successfully resolved all references"
+	ListenerProgrammedMessage                    = "Successfully programmed Listener"
+	RouteAcceptedMessage                         = "Successfully accepted Route"
+	GatewayClassAcceptedMessage                  = "GatewayClass accepted by kgateway controller"
 )
 
 // TODO: refactor this struct + methods to better reflect the usage now in proxy_syncer
