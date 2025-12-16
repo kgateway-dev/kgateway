@@ -55,6 +55,9 @@ func TestBackends(t *testing.T) {
 			if a.Service != nil {
 				res = append(res, a.Service.Service)
 			}
+			if a.Workload != nil {
+				res = append(res, a.Workload.Workload)
+			}
 		}
 		return sq.Dump(), res
 	})

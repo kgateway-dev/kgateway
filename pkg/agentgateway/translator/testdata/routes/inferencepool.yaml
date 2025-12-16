@@ -64,10 +64,7 @@ output:
         kind: HTTPRoute
         name: gateway-route
         namespace: default
-- gateway:
-    Name: ""
-    Namespace: ""
-  resource:
+- resource:
     policy:
       backend:
         inferenceRouting:
@@ -86,10 +83,7 @@ output:
         service:
           hostname: gateway-pool.default.inference.cluster.local
           namespace: default
-- gateway:
-    Name: ""
-    Namespace: ""
-  resource:
+- resource:
     policy:
       backend:
         backendTls:
