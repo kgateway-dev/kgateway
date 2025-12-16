@@ -263,7 +263,7 @@ func CreateAgwExternalAuthFilter(
 		return nil, err
 	}
 	pol := &api.TrafficPolicySpec_ExternalAuth{
-		Target:                dst.GetBackend(),
+		Target: dst.GetBackend(),
 	}
 	if b := filter.ForwardBody; b != nil {
 		pol.IncludeRequestBody = &api.TrafficPolicySpec_ExternalAuth_BodyOptions{
@@ -308,7 +308,7 @@ func CreateAgwExternalAuthFilter(
 		grpc := ptr.OrEmpty(filter.GRPCAuthConfig)
 		pp := &api.TrafficPolicySpec_ExternalAuth_GRPCProtocol{
 			// Not supported in the API
-			Context:  nil,
+			Context: nil,
 			// Not supported in the API
 			Metadata: nil,
 		}

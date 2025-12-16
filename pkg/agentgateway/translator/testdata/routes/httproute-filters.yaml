@@ -155,6 +155,7 @@ output:
             path: '"/auth" + request.path'
           includeRequestHeaders:
           - Authorization
+          - :authority
           - hello
           target:
             port: 8080

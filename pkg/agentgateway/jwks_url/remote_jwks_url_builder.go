@@ -9,7 +9,7 @@ import (
 	"istio.io/istio/pkg/ptr"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	v1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -50,7 +50,6 @@ type defaultJwksUrlFactory struct {
 func NewJwksUrlFactory(cfgmaps krt.Collection[*corev1.ConfigMap],
 	backends krt.Collection[*agentgateway.AgentgatewayBackend],
 	agentgatewayPolicies krt.Collection[*agentgateway.AgentgatewayPolicy]) JwksUrlBuilder {
-
 	policiesByTargetRefIndex := krtpkg.UnnamedIndex(agentgatewayPolicies, func(in *agentgateway.AgentgatewayPolicy) []TargetRefIndexKey {
 		keys := make([]TargetRefIndexKey, 0)
 		for _, ref := range in.Spec.TargetRefs {
@@ -76,7 +75,7 @@ func (f *defaultJwksUrlFactory) BuildJwksUrlAndTlsConfig(krtctx krt.HandlerConte
 	ref := remoteProvider.BackendRef
 
 	refName := string(ref.Name)
-	refNamespace := string(ptr.OrDefault(ref.Namespace, v1.Namespace(defaultNS)))
+	refNamespace := string(ptr.OrDefault(ref.Namespace, gwv1.Namespace(defaultNS)))
 
 	switch string(*ref.Kind) {
 	case wellknown.AgentgatewayBackendGVK.Kind:

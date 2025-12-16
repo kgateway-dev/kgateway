@@ -48,7 +48,6 @@ func main() {
 	fmt.Printf("jwks: %s\n", string(serializedJwks))
 	fmt.Printf("jwt, sub: 'ignore@kgateway.dev': %s\n", jwt)
 	fmt.Printf("jwt, sub: 'boom@kgateway.dev': %s\n", jwt1)
-
 }
 
 func generateJWKS(kid string) (*jose.JSONWebKeySet, *rsa.PrivateKey, error) {
