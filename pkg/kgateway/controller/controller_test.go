@@ -534,25 +534,21 @@ func (s *ControllerSuite) TestGatewayClass() {
 		r := require.New(t)
 
 		for _, gwClass := range gwClasses {
-			gc := &gwv1.GatewayClass{}
+			originalGC := &gwv1.GatewayClass{}
 			r.EventuallyWithTf(func(c *assert.CollectT) {
-				err := s.client.Get(ctx, types.NamespacedName{Name: gwClass}, gc)
+				err := s.client.Get(ctx, types.NamespacedName{Name: gwClass}, originalGC)
 				assert.NoError(c, err)
 			}, defaultPollTimeout, 500*time.Millisecond, "timed out waiting for GatewayClass %s to be created", gwClass)
 
 			// Delete the GatewayClass
 			err := s.client.Delete(ctx, &gwv1.GatewayClass{ObjectMeta: metav1.ObjectMeta{Name: gwClass}})
 			r.NoError(err)
-			// Wait for deletion
-			r.EventuallyWithTf(func(c *assert.CollectT) {
-				err := s.client.Get(ctx, types.NamespacedName{Name: gwClass}, gc)
-				assert.True(c, k8serrors.IsNotFound(err), "expected GatewayClass %s to be deleted", gwClass)
-			}, defaultPollTimeout, 500*time.Millisecond, "timed out waiting for GatewayClass %s to be deleted", gwClass)
-
 			// Verify it is recreated
 			r.EventuallyWithTf(func(c *assert.CollectT) {
-				err := s.client.Get(ctx, types.NamespacedName{Name: gwClass}, gc)
+				newGC := &gwv1.GatewayClass{}
+				err := s.client.Get(ctx, types.NamespacedName{Name: gwClass}, newGC)
 				assert.NoError(c, err)
+				assert.NotEqual(c, newGC.UID, originalGC.UID, "expected GatewayClass to be recreated")
 			}, defaultPollTimeout, 500*time.Millisecond, "timed out waiting for GatewayClass %s to be recreated", gwClass)
 		}
 	})
