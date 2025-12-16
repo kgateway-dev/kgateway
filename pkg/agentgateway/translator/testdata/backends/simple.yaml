@@ -1,0 +1,22 @@
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayBackend
+metadata:
+  name: example-backend
+  namespace: default
+spec:
+  static:
+    host: example.com
+    port: 8080
+---
+# Output
+output:
+- resource:
+    backend:
+      key: default/example-backend
+      name:
+        name: example-backend
+        namespace: default
+      static:
+        host: example.com
+        port: 8080
+status: []

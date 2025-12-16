@@ -15,10 +15,7 @@ spec:
 ---
 # Output
 output:
-- gateway:
-    Name: ""
-    Namespace: ""
-  resource:
+- resource:
     policy:
       backend:
         a2a: {}
