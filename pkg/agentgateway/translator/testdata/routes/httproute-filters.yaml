@@ -81,6 +81,19 @@ spec:
   - matches:
     - path:
         type: PathPrefix
+        value: /rewrite
+    filters:
+      - type: URLRewrite
+        urlRewrite:
+          path:
+            type: ReplacePrefixMatch
+            replacePrefixMatch: /new-prefix
+    backendRefs:
+      - name: infra-backend-v1
+        port: 8080
+  - matches:
+    - path:
+        type: PathPrefix
         value: /cors
     filters:
     - type: CORS
@@ -257,6 +270,32 @@ output:
       listenerKey: default/test-gateway.http
       matches:
       - path:
+          pathPrefix: /rewrite
+      name:
+        kind: HTTPRoute
+        name: request-multiple-mirrors-headers
+        namespace: default
+      trafficPolicies:
+      - urlRewrite:
+          prefix: /new-prefix
+- gateway:
+    Name: test-gateway
+    Namespace: default
+  resource:
+    route:
+      backends:
+      - backend:
+          port: 8080
+          service:
+            hostname: infra-backend-v1.default.svc.cluster.local
+            namespace: default
+        weight: 1
+      hostnames:
+      - example.com
+      key: default/request-multiple-mirrors-headers.5.0.http
+      listenerKey: default/test-gateway.http
+      matches:
+      - path:
           pathPrefix: /cors
       name:
         kind: HTTPRoute
@@ -281,7 +320,7 @@ output:
     route:
       hostnames:
       - example.com
-      key: default/request-multiple-mirrors-headers.5.0.http
+      key: default/request-multiple-mirrors-headers.6.0.http
       listenerKey: default/test-gateway.http
       matches:
       - path:

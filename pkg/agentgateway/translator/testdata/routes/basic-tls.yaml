@@ -5,7 +5,7 @@ metadata:
   name: tls-gw
   namespace: default
 spec:
-  gatewayClassName: agentgateway-v2
+  gatewayClassName: agentgateway
   listeners:
   - allowedRoutes:
       kinds:
