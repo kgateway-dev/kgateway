@@ -346,8 +346,6 @@ spec:
               value: "{}"
             - name: KGW_XDS_TLS_ENABLED
               value: "true"
-            # TODO: Remove this once the cleanup is done. Required as the kgateway-system
-            # namespace is the default namespace and conformance will fail as a result.
             - name: POD_NAMESPACE
               valueFrom:
                 fieldRef:

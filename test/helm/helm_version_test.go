@@ -74,7 +74,7 @@ func TestHelmChartVersionAndAppVersion(t *testing.T) {
 
 	diff := cmp.Diff(string(want), string(got))
 	if diff != "" {
-		t.Errorf("helm template output differs from golden file (-want +got):\n%s\n\nTo refresh: REFRESH_GOLDEN=true go test ./test/helm -run TestHelmTemplateVersion", diff)
+		t.Errorf("helm template output differs from golden file (-want +got):\n%s\n\nTo refresh: REFRESH_GOLDEN=true go test ./test/helm", diff)
 	}
 }
 
@@ -163,7 +163,7 @@ func TestHelmChartTemplate(t *testing.T) {
 
 				diff := cmp.Diff(string(want), string(got))
 				if diff != "" {
-					t.Errorf("helm template output differs from golden file (-want +got):\n%s\n\nTo refresh: REFRESH_GOLDEN=true go test ./test/helm -run TestHelmChartTemplate", diff)
+					t.Errorf("helm template output differs from golden file (-want +got):\n%s\n\nTo refresh: REFRESH_GOLDEN=true go test ./test/helm", diff)
 				}
 			})
 		}

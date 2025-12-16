@@ -344,8 +344,6 @@ spec:
               value: "true"
             - name: KGW_GATEWAY_CLASS_PARAMETERS_REFS
               value: "{}"
-            # TODO: Remove this once the cleanup is done. Required as the kgateway-system
-            # namespace is the default namespace and conformance will fail as a result.
             - name: POD_NAMESPACE
               valueFrom:
                 fieldRef:
