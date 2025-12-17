@@ -113,8 +113,6 @@ spec:
             {{- end }}
             - name: KGW_GATEWAY_CLASS_PARAMETERS_REFS
               value: {{ .Values.gatewayClassParametersRefs | toJson | quote }}
-            # TODO: Remove this once the cleanup is done. Required as the agentgateway-system
-            # namespace is the default namespace and conformance will fail as a result.
             - name: POD_NAMESPACE
               valueFrom:
                 fieldRef:

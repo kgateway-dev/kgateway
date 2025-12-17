@@ -7,7 +7,7 @@ metadata:
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: agentgateway
     app.kubernetes.io/version: 1.0.0-ci1
-    gateway.networking.k8s.io/gateway-class-name: agentgateway-v2
+    gateway.networking.k8s.io/gateway-class-name: agentgateway
     gateway.networking.k8s.io/gateway-name: agentgateway
     kgateway: kube-gateway
   name: agentgateway
@@ -23,7 +23,7 @@ metadata:
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: agentgateway
     app.kubernetes.io/version: 1.0.0-ci1
-    gateway.networking.k8s.io/gateway-class-name: agentgateway-v2
+    gateway.networking.k8s.io/gateway-class-name: agentgateway
     gateway.networking.k8s.io/gateway-name: agentgateway
     kgateway: kube-gateway
   name: agentgateway
@@ -36,7 +36,7 @@ metadata:
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: agentgateway
     app.kubernetes.io/version: 1.0.0-ci1
-    gateway.networking.k8s.io/gateway-class-name: agentgateway-v2
+    gateway.networking.k8s.io/gateway-class-name: agentgateway
     gateway.networking.k8s.io/gateway-name: agentgateway
     kgateway: kube-gateway
   name: agentgateway
@@ -62,7 +62,7 @@ metadata:
     app.kubernetes.io/managed-by: kgateway
     app.kubernetes.io/name: agentgateway
     app.kubernetes.io/version: 1.0.0-ci1
-    gateway.networking.k8s.io/gateway-class-name: agentgateway-v2
+    gateway.networking.k8s.io/gateway-class-name: agentgateway
     gateway.networking.k8s.io/gateway-name: agentgateway
     kgateway: kube-gateway
   name: agentgateway
@@ -76,14 +76,14 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: f55cfaf8f703b177fe82d9dd76605808eb56b43b8823600f486f881aa17fabc5
+        checksum/config: 63173967f10317253d918f3354b522fc6d25c8f116d0201f34cc3bd72be3d496
         prometheus.io/path: /metrics
         prometheus.io/port: "15020"
         prometheus.io/scrape: "true"
       labels:
         app.kubernetes.io/instance: agentgateway
         app.kubernetes.io/name: agentgateway
-        gateway.networking.k8s.io/gateway-class-name: agentgateway-v2
+        gateway.networking.k8s.io/gateway-class-name: agentgateway
         gateway.networking.k8s.io/gateway-name: agentgateway
     spec:
       containers:

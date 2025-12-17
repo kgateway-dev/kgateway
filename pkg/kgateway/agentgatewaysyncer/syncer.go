@@ -41,7 +41,7 @@ var (
 )
 
 // Syncer synchronizes Kubernetes Gateway API resources with xDS for agentgateway proxies.
-// It watches Gateway resources with the agentgateway-v2 class and translates them to agentgateway configuration.
+// It watches Gateway resources with the agentgateway class and translates them to agentgateway configuration.
 type Syncer struct {
 	// Core collections and dependencies
 	agwCollections *plugins.AgwCollections

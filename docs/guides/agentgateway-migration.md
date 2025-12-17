@@ -19,7 +19,6 @@ Starting in version v2.2.0-beta.3, agentgateway has been fully separated into it
 **Breaking changes require migration to new charts.** Agentgateway has moved to:
 - New dedicated Helm charts (separate from kgateway)
 - New API group (`agentgateway.dev/v1alpha1`)
-- New GatewayClass (`agentgateway-v2`)
 
 We recommend a **blue-green deployment strategy** (see below) to minimize risk.
 
@@ -54,7 +53,6 @@ Agentgateway resources now use their own dedicated API group and controller:
 |--------|-----|-----|
 | **API Group** | `gateway.kgateway.dev/v1alpha1` | `agentgateway.dev/v1alpha1` |
 | **Controller Name** | `kgateway.dev/agentgateway` | `agentgateway.dev/agentgateway` |
-| **GatewayClass Name** | `agentgateway` | `agentgateway-v2` |
 
 ### Agentgateway Resources (Now in agentgateway.dev/v1alpha1)
 
@@ -68,7 +66,24 @@ Due to the breaking changes, we recommend a **blue-green deployment** approach:
 
 ### Why Blue-Green?
 
-The new agentgateway charts create the `agentgateway-v2` GatewayClass with a different controller name (`agentgateway.dev/agentgateway`) that won't conflict with your existing installation. This allows you to:
+In order to not conflict with your existing agentgateway installation, we recommend first manually creating a new 
+GatewayClass with a different name to migrate your existing resources to:
+
+```shell
+kubectl apply -f - <<EOF
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: agentgateway-v2
+spec:
+  controllerName: agentgateway.dev/agentgateway # new controller name 
+  description: Specialized class for agentgateway for blue-green upgrade.
+EOF
+```
+
+The new agentgateway charts will still create a GatewayClass named `agentgateway` but with a different controller name 
+(`agentgateway.dev/agentgateway`). Using the manually created `agentgateway-v2` GatewayClass will allow you to upgrade
+without conflicts with your existing installation. This allows you to:
 
 1. Install the new agentgateway charts side-by-side with your current deployment
 2. Test the new setup thoroughly without affecting production traffic
@@ -93,10 +108,23 @@ helm install agentgateway oci://ghcr.io/kgateway-dev/charts/agentgateway \
   --version v2.2.0-beta.3 \
   --namespace agentgateway-system
 ```
+#### 2. Manually Create New GatewayClass
+
+```shell
+kubectl apply -f - <<EOF
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: agentgateway-v2
+spec:
+  controllerName: agentgateway.dev/agentgateway # new controller name 
+  description: Specialized class for agentgateway for blue-green upgrade.
+EOF
+```
 
 This creates the new `agentgateway-v2` GatewayClass with controller `agentgateway.dev/agentgateway`.
 
-#### 2. Create New Gateway Using agentgateway-v2
+#### 3. Create New Gateway Using agentgateway-v2 GatewayClass
 
 ```yaml
 apiVersion: gateway.networking.k8s.io/v1
@@ -127,7 +155,7 @@ spec:
     name: agw-params
 ```
 
-#### 3. Migrate Your Configuration
+#### 4. Migrate Your Configuration
 
 Update your agentgateway resources to use the new API group:
 
@@ -155,14 +183,14 @@ spec:
   # Your backend configuration
 ```
 
-#### 4. Test the New Setup
+#### 5. Test the New Setup
 
 - Verify the new Gateway is ready
 - Test your HTTPRoutes with the new Gateway
 - Validate policies are applied correctly
 - Check backend connectivity
 
-#### 5. Clean Up Old Installation
+#### 6. Clean Up Old Installation
 
 After confirming everything works with the new agentgateway installation:
 
@@ -178,7 +206,7 @@ helm uninstall kgateway-crds --namespace kgateway-system
 
 ### For Agentgateway Users (agentgateway.dev/v1alpha1)
 
-Use these resources with GatewayClass `agentgateway-v2`:
+Use these resources with GatewayClass `agentgateway` with the new `agentgateway.dev/agentgateway` controller:
 
 ```yaml
 # Policy attachment for AI/ML routing

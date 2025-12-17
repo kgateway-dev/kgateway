@@ -790,7 +790,7 @@ type BackendAI struct {
 
 // RouteType specifies how the AI gateway should process incoming requests
 // based on the URL path and the API format expected.
-// +kubebuilder:validation:Enum=Completions;Messages;Models;Passthrough;Responses;AnthropicTokenCount
+// +kubebuilder:validation:Enum=Completions;Messages;Models;Passthrough;Responses;AnthropicTokenCount;Embeddings
 type RouteType string
 
 const (
@@ -811,6 +811,9 @@ const (
 
 	// RouteTypeAnthropicTokenCount processes Anthropic /v1/messages/count_tokens format requests
 	RouteTypeAnthropicTokenCount RouteType = "AnthropicTokenCount" //nolint:gosec // G101: False positive - this is a route type name, not credentials
+
+	// RouteTypeEmbeddings processes OpenAI /v1/embeddings format requests
+	RouteTypeEmbeddings RouteType = "Embeddings"
 )
 
 // +kubebuilder:validation:AtLeastOneOf=authorization;authentication

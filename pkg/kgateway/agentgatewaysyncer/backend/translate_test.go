@@ -498,6 +498,7 @@ func TestBuildAIBackend(t *testing.T) {
 								"/v1/messages":              agentgateway.RouteTypeMessages,
 								"/v1/responses":             agentgateway.RouteTypeResponses,
 								"/v1/messages/count_tokens": agentgateway.RouteTypeAnthropicTokenCount,
+								"/v1/embeddings":            agentgateway.RouteTypeEmbeddings,
 								"/v1/models":                agentgateway.RouteTypeModels,
 							},
 						},

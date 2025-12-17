@@ -3,7 +3,7 @@ apiVersion: gateway.networking.k8s.io/v1
 metadata:
   name: example-gateway
 spec:
-  gatewayClassName: agentgateway-v2
+  gatewayClassName: agentgateway
   listeners:
     - protocol: HTTP
       port: 8080
