@@ -111,6 +111,8 @@ spec:
           value: agentgateway
         - name: RUST_BACKTRACE
           value: "1"
+        - name: RUST_LOG
+          value: debug
         - name: XDS_ADDRESS
           value: http://xds.cluster.local:9978
         - name: NAMESPACE
@@ -119,8 +121,6 @@ spec:
               fieldPath: metadata.namespace
         - name: GATEWAY
           value: agentgateway
-        - name: RUST_LOG
-          value: debug
         image: cr.agentgateway.dev/agentgateway:0.11.0-alpha.f0552ee66d6d9beddfca829dee1a029841c7bb43
         name: agentgateway
         ports:
