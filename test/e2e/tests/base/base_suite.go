@@ -364,7 +364,6 @@ func (s *BaseTestingSuite) BeforeTest(suiteName, testName string) {
 		return
 	}
 
-	fmt.Printf("testName: %s applying %v\n", testName, testCase)
 	s.ApplyManifests(testCase)
 }
 

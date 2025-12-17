@@ -33,20 +33,10 @@ pub struct LocalTransform {
 
 impl LocalTransform {
     pub fn is_empty(&self) -> bool {
-        if !self.add.is_empty() {
-            return false;
-        }
-        if !self.set.is_empty() {
-            return false;
-        }
-        if !self.remove.is_empty() {
-            return false;
-        }
-
-        match &self.body {
-            Some(config) => config.is_empty(),
-            None => true,
-        }
+        self.add.is_empty()
+            && self.set.is_empty()
+            && self.remove.is_empty()
+            && self.body.as_ref().map(|c| c.is_empty()).unwrap_or(true)
     }
 }
 
@@ -59,6 +49,12 @@ pub struct BodyTransform {
 }
 
 impl BodyTransform {
+    // This function is used to check if we need to do anything to the request/response at all
+    // If parse_as is set to AsJson, even the value is empty (meaning we are not changing the body)
+    // there is still works to do (parsing the body as json), so the json value can be used in
+    // header transformation.
+    // Further optimization can be done by also checking if there are any header transformation
+    // at all, if not, we can return true if value is empty regardless of what parse_as is set to.
     pub fn is_empty(&self) -> bool {
         if self.value.is_empty() && matches!(self.parse_as, BodyParseBehavior::AsString) {
             return true;
