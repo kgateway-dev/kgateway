@@ -4,7 +4,7 @@ metadata:
   name: ai-gateway
   namespace: default
 spec:
-  gatewayClassName: agentgateway-v2
+  gatewayClassName: agentgateway
   listeners:
   - allowedRoutes:
       namespaces:

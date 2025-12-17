@@ -1,7 +1,7 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: GatewayClass
 metadata:
-  name: agentgateway-v2
+  name: agentgateway
 spec:
   controllerName: agentgateway.dev/agentgateway
   description: Specialized class for agentgateway.
@@ -28,7 +28,7 @@ kind: Gateway
 metadata:
   name: agentgateway
 spec:
-  gatewayClassName: agentgateway-v2
+  gatewayClassName: agentgateway
   infrastructure:
     parametersRef:
       group: agentgateway.dev

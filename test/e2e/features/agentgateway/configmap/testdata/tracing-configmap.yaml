@@ -20,7 +20,7 @@ kind: Gateway
 metadata:
   name: agentgateway
 spec:
-  gatewayClassName: agentgateway-v2
+  gatewayClassName: agentgateway
   infrastructure:
     parametersRef:
       group: agentgateway.dev

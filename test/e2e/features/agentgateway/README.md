@@ -67,7 +67,7 @@ kind: Gateway
 metadata:
   name: gw
 spec:
-  gatewayClassName: agentgateway-v2
+  gatewayClassName: agentgateway
   listeners:
   - protocol: HTTP
     port: 8080
@@ -97,7 +97,7 @@ kind: Gateway
 metadata:
   name: gw
 spec:
-  gatewayClassName: agentgateway-v2
+  gatewayClassName: agentgateway
   infrastructure:
     parametersRef:
       group: agentgateway.dev

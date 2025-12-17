@@ -4,7 +4,7 @@ metadata:
   name: test-gateway
   namespace: default
 spec:
-  gatewayClassName: agentgateway-v2
+  gatewayClassName: agentgateway
   listeners:
     - name: https
       port: 443

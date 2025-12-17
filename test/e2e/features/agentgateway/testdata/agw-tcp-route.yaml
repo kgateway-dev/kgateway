@@ -4,7 +4,7 @@ metadata:
   name: tcp-gw-for-test
   namespace: default
 spec:
-  gatewayClassName: agentgateway-v2
+  gatewayClassName: agentgateway
   listeners:
     - name: tcp
       protocol: TCP

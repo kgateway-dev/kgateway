@@ -3,7 +3,7 @@ kind: Gateway
 metadata:
   name: super-gateway
 spec:
-  gatewayClassName: agentgateway-v2
+  gatewayClassName: agentgateway
   listeners:
   - protocol: HTTP
     port: 8080
