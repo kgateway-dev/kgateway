@@ -44,7 +44,7 @@ spec:
         - name: agentgateway
           image: "{{ template "kgateway.gateway.image" $gateway.image }}"
           {{- if $gateway.image.pullPolicy }}
-          imagePullPolicy: {{ $gateway.image.pullPolicy }}
+          imagePullPolicy: {{ $gateway.image.pullPolicy | quote }}
           {{- end }}
           securityContext:
             allowPrivilegeEscalation: false

@@ -15,12 +15,12 @@ spec:
   type: LoadBalancer
   ports:
   {{- range $p := $gateway.ports }}
-    - name: {{ $p.name }}
-      protocol: {{ $p.protocol }}
-      targetPort: {{ $p.port }}
-      port: {{ $p.port }}
+    - name: {{ $p.name | quote }}
+      protocol: {{ $p.protocol | quote }}
+      targetPort: {{ $p.port | int }}
+      port: {{ $p.port | int }}
     {{- if $p.nodePort }}
-      nodePort: {{ $p.nodePort }}
+      nodePort: {{ $p.nodePort | int }}
     {{- end }}
   {{- end }}
   selector:

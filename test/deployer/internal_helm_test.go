@@ -146,6 +146,10 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			InputFile: "agentgateway-logging-format",
 		},
 		{
+			Name:      "agentgateway yaml injection",
+			InputFile: "agentgateway-yaml-injection",
+		},
+		{
 			Name:      "agentgateway rawConfig with typed config conflict",
 			InputFile: "agentgateway-rawconfig-typed-conflict",
 			Validate: func(t *testing.T, outputYaml string) {
