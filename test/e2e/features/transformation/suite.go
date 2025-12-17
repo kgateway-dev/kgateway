@@ -177,6 +177,7 @@ func selectCommonTestCases(indices ...int) []transformationTestCase {
 			routeName: "headers",
 			opts: []curl.Option{
 				curl.WithBody("hello"),
+				curl.WithHeader("cookie", "foo=bar"),
 			},
 			resp: &testmatchers.HttpResponse{
 				StatusCode: http.StatusOK,
@@ -190,6 +191,9 @@ func selectCommonTestCases(indices ...int) []transformationTestCase {
 					// "x-space-test": " foobar",
 					// while C++ inja leave the space untouched.
 					// "x-space-test": " foobar ",
+					// The http-bin response has "*" and we added "foo.com" in the policy. The library combined
+					// them with a ','
+					"access-control-allow-origin": "*,foo.com",
 				},
 				NotHeaders: []string{
 					"response-gateway",
@@ -202,6 +206,7 @@ func selectCommonTestCases(indices ...int) []transformationTestCase {
 					// There should be a space at the beginning and end but
 					// there might be a side effect from the echo server where the header values are trimmed
 					"x-space-test": "foobar",
+					"cookie":       []string{"foo=bar", "test=123"},
 				},
 				NotHeaders: []string{
 					// looks like the way we set up transformation targeting gateway, we are
@@ -227,10 +232,10 @@ func selectCommonTestCases(indices ...int) []transformationTestCase {
 				// go-httpbin doesn't allow setting custom response header, so make sure
 				// we get one of the default access-control header and removed the other
 				Headers: map[string]any{
-					"access-control-allow-credentials": "true",
+					"access-control-allow-origin": "*,foo.com",
 				},
 				NotHeaders: []string{
-					"access-control-allow-origin",
+					"access-control-allow-credentials",
 				},
 			},
 			req: &testmatchers.HttpRequest{
