@@ -124,7 +124,7 @@ EOF
 
 This creates the new `agentgateway-v2` GatewayClass with controller `agentgateway.dev/agentgateway`.
 
-#### 2. Create New Gateway Using agentgateway
+#### 3. Create New Gateway Using agentgateway-v2 GatewayClass
 
 ```yaml
 apiVersion: gateway.networking.k8s.io/v1
@@ -155,7 +155,7 @@ spec:
     name: agw-params
 ```
 
-#### 3. Migrate Your Configuration
+#### 4. Migrate Your Configuration
 
 Update your agentgateway resources to use the new API group:
 
@@ -183,14 +183,14 @@ spec:
   # Your backend configuration
 ```
 
-#### 4. Test the New Setup
+#### 5. Test the New Setup
 
 - Verify the new Gateway is ready
 - Test your HTTPRoutes with the new Gateway
 - Validate policies are applied correctly
 - Check backend connectivity
 
-#### 5. Clean Up Old Installation
+#### 6. Clean Up Old Installation
 
 After confirming everything works with the new agentgateway installation:
 
