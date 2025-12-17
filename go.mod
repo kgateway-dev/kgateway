@@ -4,7 +4,7 @@ go 1.25.5
 
 require (
 	// Also update AgentgatewayDefaultTag in pkg/deployer/wellknown.go and test/deployer/testdata/*
-	github.com/agentgateway/agentgateway v0.10.6-0.20251215182137-5e5533a2c6bf
+	github.com/agentgateway/agentgateway v0.11.0-alpha.1.0.20251218160022-f0552ee66d6d
 	github.com/avast/retry-go/v4 v4.7.0
 	github.com/cncf/xds/go v0.0.0-20251110193048-8bfbf64dc13e
 	github.com/envoyproxy/go-control-plane v0.14.0
@@ -37,9 +37,9 @@ require (
 	google.golang.org/grpc v1.77.0
 	google.golang.org/protobuf v1.36.11
 	helm.sh/helm/v3 v3.19.2
-	istio.io/api v1.28.0-alpha.0.0.20251126150010-62ed4ff08e1b
-	istio.io/client-go v1.28.0-alpha.0.0.20251126150310-56900da3b60f
-	istio.io/istio v0.0.0-20251201142120-783e855f1e67
+	istio.io/api v1.28.0-alpha.0.0.20251210001900-ce7b5802387c
+	istio.io/client-go v1.28.0-alpha.0.0.20251210002059-b67694478a4b
+	istio.io/istio v0.0.0-20251218162427-600ea84d2996
 	k8s.io/api v0.34.1
 	k8s.io/apiextensions-apiserver v0.34.1
 	k8s.io/apimachinery v0.34.3

@@ -29,6 +29,7 @@ import (
 	kubeclient "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
+	"istio.io/istio/pkg/workloadapi"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -65,7 +66,7 @@ type translationResult struct {
 	Binds     []*api.Bind
 	Backends  []*api.Backend
 	Policies  []*api.Policy
-	Addresses []*api.Address
+	Addresses []*workloadapi.Address
 }
 
 func (tr *translationResult) MarshalJSON() ([]byte, error) {
@@ -242,9 +243,9 @@ func (tr *translationResult) UnmarshalJSON(data []byte) error {
 		if err := json.Unmarshal(addressesData, &addresses); err != nil {
 			return err
 		}
-		tr.Addresses = make([]*api.Address, len(addresses))
+		tr.Addresses = make([]*workloadapi.Address, len(addresses))
 		for i, addressData := range addresses {
-			address := &api.Address{}
+			address := &workloadapi.Address{}
 			if err := m.Unmarshal(addressData, address); err != nil {
 				return err
 			}
@@ -327,7 +328,7 @@ func TestTranslationWithExtraPlugins(
 	var binds []*api.Bind
 	var backends []*api.Backend
 	var policies []*api.Policy
-	var addresses []*api.Address
+	var addresses []*workloadapi.Address
 
 	// Extract agentgateway API types from AgwResources
 	for _, res := range results.Resources {
