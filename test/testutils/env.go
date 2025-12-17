@@ -42,6 +42,9 @@ const (
 	// loop if it litters.
 	SkipAllTeardown = "SKIP_ALL_TEARDOWN"
 
+	// SkipDump, if true, disables test dumping
+	SkipDump = "SKIP_DUMP"
+
 	// InstallNamespace is the namespace in which kgateway is installed
 	InstallNamespace = "INSTALL_NAMESPACE"
 

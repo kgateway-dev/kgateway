@@ -19,13 +19,13 @@ func GetAgwResourceName(r *api.Resource) string {
 	case *api.Resource_Listener:
 		return "listener/" + t.Listener.GetKey()
 	case *api.Resource_Backend:
-		return "backend/" + t.Backend.GetName()
+		return "backend/" + t.Backend.GetKey()
 	case *api.Resource_Route:
 		return "route/" + t.Route.GetKey()
 	case *api.Resource_TcpRoute:
 		return "tcp_route/" + t.TcpRoute.GetKey()
 	case *api.Resource_Policy:
-		return "policy/" + t.Policy.GetName()
+		return "policy/" + t.Policy.GetKey()
 	default:
 		logger.Error("unknown Agw resource", "type", fmt.Sprintf("%T", t))
 		return "unknown/" + r.String()

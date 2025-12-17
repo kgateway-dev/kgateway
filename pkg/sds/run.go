@@ -10,9 +10,9 @@ import (
 	"github.com/avast/retry-go/v4"
 	"github.com/kelseyhightower/envconfig"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/sds/pkg/run"
-	"github.com/kgateway-dev/kgateway/v2/internal/sds/pkg/server"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	"github.com/kgateway-dev/kgateway/v2/pkg/sds/run"
+	"github.com/kgateway-dev/kgateway/v2/pkg/sds/server"
 )
 
 var (

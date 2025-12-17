@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ca-cert-2
+---
+# CA certificate 2 for validating client certificates in FrontendTLSConfig tests
+# This CA is used to sign the client certificates in client-cert-2-secret.yaml
+# Generated with:
+#   openssl genrsa -out ca2-key.pem 2048
+#   openssl req -new -x509 -days 365 -key ca2-key.pem -out ca2-cert.pem \
+#     -subj "/CN=Test CA 2/O=Test Org"
+#   # Then base64 encode and update ca.crt in this file
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ca-cert-2
+  namespace: ca-cert-2
+data:
+  ca.crt: |
+    -----BEGIN CERTIFICATE-----
+    MIIDLzCCAhegAwIBAgIUO60R2gqPHG+vDAUN8cAKnjGR50owDQYJKoZIhvcNAQEL
+    BQAwJzESMBAGA1UEAwwJVGVzdCBDQSAyMREwDwYDVQQKDAhUZXN0IE9yZzAeFw0y
+    NTEyMDMyMDM2NTBaFw0yNjEyMDMyMDM2NTBaMCcxEjAQBgNVBAMMCVRlc3QgQ0Eg
+    MjERMA8GA1UECgwIVGVzdCBPcmcwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEK
+    AoIBAQCw6fUI+RIJxhXfQj5RdrHH2UM9qlL/OfIpdck8quLixJmpK7xGKXJ6MtsM
+    GCXby9l6rnkUaoe3UQ7U8dVNYWaRPnyTJf3Y5W1sELE8FKdKFdeBpoYxkPl4C7La
+    3UxbtrMNWmjiEvEbkwC61g3j6brFyS2B0m1VU1vycqhKghbCyglwD+o3jFZqkhY5
+    e7Amqa8u8o3jEH9Q2hUb2Node7tc910rPldXedKwo3M5aTBV1JqXyXA2eVhOYmRA
+    ZOt7FLnPglLqUpjxJBnkDSnT1yHXWTZusiiIk2WPcJE5AgUEJSpXKMOyYIMY0mr1
+    6wgkwkGBeQJNoySx1qmsF7/pbYyfAgMBAAGjUzBRMB0GA1UdDgQWBBSniJgU3StX
+    NAzEtAEBwT4loBwnoTAfBgNVHSMEGDAWgBSniJgU3StXNAzEtAEBwT4loBwnoTAP
+    BgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQCHEpbYsCo/hxXgfdKo
+    Lvb/xBaQEEbUVayXFYbF13MKXONSW1nuXML6ipb5z+wI4XzR8OORFTOEYxmbUnBL
+    3rP59TU327f1+2XE2VFUG51By4dJoD8mSSwxELgjpAc9jLtaa50DyAyf3xwEp+11
+    Nm3NgO2e/wjTNlPjyLxReIJB9iKeh2+f356Y8hPwbyIxJNdSg71A9YNfuhTMnJ28
+    Z/vWMv/JCpILF7E41j5J5GZxjNnU1ghCwCT4/Gc0l6e7UCtr3gmER0EutOhyDXNT
+    O1MF6LkpGDKdkyoR4DxZNo/WF/AzGfHZ84JKaIj1SvpbUb4+HHOW3QOlyglk4Vev
+    lnTZ
+    -----END CERTIFICATE-----
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: ca-cert-2-refgrant
+  namespace: ca-cert-2
+spec:
+  from:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      namespace: default
+  to:
+    - group: ""
+      kind: ConfigMap

@@ -10,7 +10,7 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
@@ -68,15 +68,15 @@ func TestPolicyStatusReport(t *testing.T) {
 						Conditions: []metav1.Condition{
 							{
 								ObservedGeneration: 1,
-								Type:               string(v1alpha1.PolicyConditionAccepted),
+								Type:               string(shared.PolicyConditionAccepted),
 								Status:             metav1.ConditionFalse,
-								Reason:             string(v1alpha1.PolicyReasonPending),
+								Reason:             string(shared.PolicyReasonPending),
 							},
 							{
 								ObservedGeneration: 1,
-								Type:               string(v1alpha1.PolicyConditionAttached),
+								Type:               string(shared.PolicyConditionAttached),
 								Status:             metav1.ConditionFalse,
-								Reason:             string(v1alpha1.PolicyReasonPending),
+								Reason:             string(shared.PolicyReasonPending),
 							},
 						},
 					},
@@ -91,15 +91,15 @@ func TestPolicyStatusReport(t *testing.T) {
 						Conditions: []metav1.Condition{
 							{
 								ObservedGeneration: 1,
-								Type:               string(v1alpha1.PolicyConditionAccepted),
+								Type:               string(shared.PolicyConditionAccepted),
 								Status:             metav1.ConditionFalse,
-								Reason:             string(v1alpha1.PolicyReasonPending),
+								Reason:             string(shared.PolicyReasonPending),
 							},
 							{
 								ObservedGeneration: 1,
-								Type:               string(v1alpha1.PolicyConditionAttached),
+								Type:               string(shared.PolicyConditionAttached),
 								Status:             metav1.ConditionFalse,
-								Reason:             string(v1alpha1.PolicyReasonPending),
+								Reason:             string(shared.PolicyReasonPending),
 							},
 						},
 					},
@@ -123,9 +123,9 @@ func TestPolicyStatusReport(t *testing.T) {
 					Namespace: ptr.To(gwv1.Namespace("default")),
 					Name:      gwv1.ObjectName("gw-1"),
 				}).SetCondition(reporter.PolicyCondition{
-					Type:   string(v1alpha1.PolicyConditionAccepted),
+					Type:   string(shared.PolicyConditionAccepted),
 					Status: metav1.ConditionTrue,
-					Reason: string(v1alpha1.PolicyReasonValid),
+					Reason: string(shared.PolicyReasonValid),
 				})
 				// during gw-1 translation, add PolicyReasonAttached
 				policyReport.AncestorRef(gwv1.ParentReference{
@@ -141,9 +141,9 @@ func TestPolicyStatusReport(t *testing.T) {
 					Namespace: ptr.To(gwv1.Namespace("default")),
 					Name:      gwv1.ObjectName("gw-2"),
 				}).SetCondition(reporter.PolicyCondition{
-					Type:   string(v1alpha1.PolicyConditionAccepted),
+					Type:   string(shared.PolicyConditionAccepted),
 					Status: metav1.ConditionFalse,
-					Reason: string(v1alpha1.PolicyReasonInvalid),
+					Reason: string(shared.PolicyReasonInvalid),
 				})
 			},
 			key: reporter.PolicyKey{
@@ -167,9 +167,9 @@ func TestPolicyStatusReport(t *testing.T) {
 						Conditions: []metav1.Condition{
 							{
 								ObservedGeneration: 1,
-								Type:               string(v1alpha1.PolicyConditionAccepted),
+								Type:               string(shared.PolicyConditionAccepted),
 								Status:             metav1.ConditionTrue,
-								Reason:             string(v1alpha1.PolicyReasonValid),
+								Reason:             string(shared.PolicyReasonValid),
 							},
 						},
 					},
@@ -188,15 +188,15 @@ func TestPolicyStatusReport(t *testing.T) {
 						Conditions: []metav1.Condition{
 							{
 								ObservedGeneration: 2,
-								Type:               string(v1alpha1.PolicyConditionAccepted),
+								Type:               string(shared.PolicyConditionAccepted),
 								Status:             metav1.ConditionTrue,
-								Reason:             string(v1alpha1.PolicyReasonValid),
+								Reason:             string(shared.PolicyReasonValid),
 							},
 							{
 								ObservedGeneration: 2,
-								Type:               string(v1alpha1.PolicyConditionAttached),
+								Type:               string(shared.PolicyConditionAttached),
 								Status:             metav1.ConditionTrue,
-								Reason:             string(v1alpha1.PolicyReasonAttached),
+								Reason:             string(shared.PolicyReasonAttached),
 								Message:            reporter.PolicyAttachedMsg,
 							},
 						},
@@ -212,19 +212,64 @@ func TestPolicyStatusReport(t *testing.T) {
 						Conditions: []metav1.Condition{
 							{
 								ObservedGeneration: 2,
-								Type:               string(v1alpha1.PolicyConditionAccepted),
+								Type:               string(shared.PolicyConditionAccepted),
 								Status:             metav1.ConditionFalse,
-								Reason:             string(v1alpha1.PolicyReasonInvalid),
+								Reason:             string(shared.PolicyReasonInvalid),
 							},
 							{
 								ObservedGeneration: 2,
-								Type:               string(v1alpha1.PolicyConditionAttached),
+								Type:               string(shared.PolicyConditionAttached),
 								Status:             metav1.ConditionFalse,
-								Reason:             string(v1alpha1.PolicyReasonPending),
+								Reason:             string(shared.PolicyReasonPending),
 							},
 						},
 					},
 				},
+			},
+		},
+		{
+			name: "status on existing object and report map with empty policy entry during translation",
+			fakeTranslation: func(a *assert.Assertions, statusReporter reporter.Reporter) {
+				// Policy is added to report map but no ancestor refs are added
+				policyReport := statusReporter.Policy(reporter.PolicyKey{
+					Group:     "example.com",
+					Kind:      "Policy",
+					Namespace: "default",
+					Name:      "example",
+				}, 2)
+				a.NotNil(policyReport)
+			},
+			key: reporter.PolicyKey{
+				Group:     "example.com",
+				Kind:      "Policy",
+				Namespace: "default",
+				Name:      "example",
+			},
+			controller: "example-controller",
+			currentStatus: gwv1.PolicyStatus{
+				Ancestors: []gwv1.PolicyAncestorStatus{
+					// Existing stale status for gw-1 that should be cleared
+					{
+						AncestorRef: gwv1.ParentReference{
+							Group:     ptr.To(gwv1.Group("gateway.networking.k8s.io")),
+							Kind:      ptr.To(gwv1.Kind("Gateway")),
+							Namespace: ptr.To(gwv1.Namespace("default")),
+							Name:      gwv1.ObjectName("gw-1"),
+						},
+						ControllerName: "example-controller",
+						Conditions: []metav1.Condition{
+							{
+								ObservedGeneration: 1,
+								Type:               string(shared.PolicyConditionAccepted),
+								Status:             metav1.ConditionTrue,
+								Reason:             string(shared.PolicyReasonValid),
+							},
+						},
+					},
+				},
+			},
+			wantStatus: &gwv1.PolicyStatus{
+				Ancestors: []gwv1.PolicyAncestorStatus{},
 			},
 		},
 		{
@@ -244,9 +289,9 @@ func TestPolicyStatusReport(t *testing.T) {
 					Namespace: ptr.To(gwv1.Namespace("default")),
 					Name:      gwv1.ObjectName("gw-1"),
 				}).SetCondition(reporter.PolicyCondition{
-					Type:   string(v1alpha1.PolicyConditionAccepted),
+					Type:   string(shared.PolicyConditionAccepted),
 					Status: metav1.ConditionTrue,
-					Reason: string(v1alpha1.PolicyReasonValid),
+					Reason: string(shared.PolicyReasonValid),
 				})
 				// during gw-2 translation, add PolicyReasonInvalid
 				policyReport.AncestorRef(gwv1.ParentReference{
@@ -255,9 +300,9 @@ func TestPolicyStatusReport(t *testing.T) {
 					Namespace: ptr.To(gwv1.Namespace("default")),
 					Name:      gwv1.ObjectName("gw-2"),
 				}).SetCondition(reporter.PolicyCondition{
-					Type:   string(v1alpha1.PolicyConditionAccepted),
+					Type:   string(shared.PolicyConditionAccepted),
 					Status: metav1.ConditionFalse,
-					Reason: string(v1alpha1.PolicyReasonInvalid),
+					Reason: string(shared.PolicyReasonInvalid),
 				})
 			},
 			key: reporter.PolicyKey{
@@ -297,9 +342,9 @@ func TestPolicyStatusReport(t *testing.T) {
 						Conditions: []metav1.Condition{
 							{
 								ObservedGeneration: 1,
-								Type:               string(v1alpha1.PolicyConditionAccepted),
+								Type:               string(shared.PolicyConditionAccepted),
 								Status:             metav1.ConditionFalse,
-								Reason:             string(v1alpha1.PolicyReasonInvalid),
+								Reason:             string(shared.PolicyReasonInvalid),
 							},
 						},
 					},
@@ -314,9 +359,9 @@ func TestPolicyStatusReport(t *testing.T) {
 						Conditions: []metav1.Condition{
 							{
 								ObservedGeneration: 1,
-								Type:               string(v1alpha1.PolicyConditionAccepted),
+								Type:               string(shared.PolicyConditionAccepted),
 								Status:             metav1.ConditionFalse,
-								Reason:             string(v1alpha1.PolicyReasonPending),
+								Reason:             string(shared.PolicyReasonPending),
 							},
 						},
 					},
@@ -335,15 +380,15 @@ func TestPolicyStatusReport(t *testing.T) {
 						Conditions: []metav1.Condition{
 							{
 								ObservedGeneration: 2,
-								Type:               string(v1alpha1.PolicyConditionAccepted),
+								Type:               string(shared.PolicyConditionAccepted),
 								Status:             metav1.ConditionTrue,
-								Reason:             string(v1alpha1.PolicyReasonValid),
+								Reason:             string(shared.PolicyReasonValid),
 							},
 							{
 								ObservedGeneration: 2,
-								Type:               string(v1alpha1.PolicyConditionAttached),
+								Type:               string(shared.PolicyConditionAttached),
 								Status:             metav1.ConditionFalse,
-								Reason:             string(v1alpha1.PolicyReasonPending),
+								Reason:             string(shared.PolicyReasonPending),
 							},
 						},
 					},
@@ -358,15 +403,15 @@ func TestPolicyStatusReport(t *testing.T) {
 						Conditions: []metav1.Condition{
 							{
 								ObservedGeneration: 2,
-								Type:               string(v1alpha1.PolicyConditionAccepted),
+								Type:               string(shared.PolicyConditionAccepted),
 								Status:             metav1.ConditionFalse,
-								Reason:             string(v1alpha1.PolicyReasonInvalid),
+								Reason:             string(shared.PolicyReasonInvalid),
 							},
 							{
 								ObservedGeneration: 2,
-								Type:               string(v1alpha1.PolicyConditionAttached),
+								Type:               string(shared.PolicyConditionAttached),
 								Status:             metav1.ConditionFalse,
-								Reason:             string(v1alpha1.PolicyReasonPending),
+								Reason:             string(shared.PolicyReasonPending),
 							},
 						},
 					},

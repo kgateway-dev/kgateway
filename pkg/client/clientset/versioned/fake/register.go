@@ -3,7 +3,8 @@
 package fake
 
 import (
-	gatewayv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	gatewayagentgateway "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
+	gatewaykgateway "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -15,7 +16,8 @@ var scheme = runtime.NewScheme()
 var codecs = serializer.NewCodecFactory(scheme)
 
 var localSchemeBuilder = runtime.SchemeBuilder{
-	gatewayv1alpha1.AddToScheme,
+	gatewaykgateway.AddToScheme,
+	gatewayagentgateway.AddToScheme,
 }
 
 // AddToScheme adds all types of this clientset into the given scheme. This allows composition

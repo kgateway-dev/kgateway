@@ -110,6 +110,20 @@ agentgateway:
 envoy:
   enabled: true
 
+# -- Map of GatewayClass names to GatewayParameters references that will be set on
+#    the default GatewayClasses managed by kgateway. Each entry must define both the
+#    name and namespace of the GatewayParameters resource.
+#    The default GatewayClasses managed by kgateway are:
+#    - kgateway
+#    - kgateway-waypoint
+#    - agentgateway
+#    Example:
+#    gatewayClassParametersRefs:
+#      kgateway:
+#        name: shared-gwp
+#        namespace: kgateway-system
+gatewayClassParametersRefs: {}
+
 # -- Policy merging settings. Currently, TrafficPolicy's extAuth, extProc, and transformation policies support deep merging.
 # E.g., to enable deep merging of extProc policy in TrafficPolicy:
 # policyMerge:

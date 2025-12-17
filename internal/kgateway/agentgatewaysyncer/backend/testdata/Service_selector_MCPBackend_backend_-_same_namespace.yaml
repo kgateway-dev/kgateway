@@ -1,8 +1,0 @@
-- mcp:
-    targets:
-    - backend:
-        port: 8080
-        service: test-ns/mcp-service.test-ns.svc.cluster.local
-      name: mcp-service-mcp
-      protocol: STREAMABLE_HTTP
-  name: test-ns/service-mcp-backend
