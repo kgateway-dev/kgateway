@@ -17,6 +17,9 @@ Merging a pull request requires the following steps to be completed before the p
 - Pass all [automated tests](/.github/workflows/README.md)
 - Get all necessary approvals from reviewers and code owners
 
+> [!TIP]
+> See details on how to [interact with CI](/.github/workflows/README.md#comments-that-trigger-workflows) via PR comments and [prevent PRs from merging](/.github/workflows/README.md#labels-that-prevent-merge) via PR labels.
+
 ## Best Practices for Pull Requests
 Below are some best practices we have found to help PRs get reviewed quickly
 
