@@ -541,7 +541,7 @@ type JWKS struct {
 }
 
 type RemoteJWKS struct {
-	// Path to IdP jwks endpoint, commonly ".well-known/jwks.json".
+	// Path to IdP jwks endpoint, relative to the root, commonly ".well-known/jwks.json".
 	// +required
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=2000
@@ -554,7 +554,6 @@ type RemoteJWKS struct {
 	// backendRef references the remote JWKS server to reach.
 	// Supported types are Service and (static) Backend. An AgentgatewayPolicy containing backend tls config
 	// can then be attached to the service/backend in order to set tls options for a connection to the remote jwks source.
-	// Supported types: Service and Backend.
 	// +required
 	BackendRef gwv1.BackendObjectReference `json:"backendRef"`
 }
