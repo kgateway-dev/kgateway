@@ -2,6 +2,7 @@ name: Nightly Tests
 
 env:
   GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }} # necessary to pass upgrade tests
+  ENVOYINIT_CACHE_REF: ghcr.io/${{ github.repository_owner }}/envoy-wrapper-cache
 
 on:
   schedule:

@@ -35,6 +35,9 @@ z := $(shell mkdir -p $(OUTPUT_DIR))
 
 BUILDX_BUILD ?= docker buildx build -q
 
+# Helper variable for escaping commas in Make functions
+comma := ,
+
 # A semver resembling 1.0.1-dev. Most calling GHA jobs customize this. Exported for use in goreleaser.yaml.
 VERSION ?= 1.0.1-dev
 export VERSION
@@ -495,6 +498,11 @@ ENVOYINIT_SOURCES=$(call get_sources,$(ENVOYINIT_DIR))
 ENVOYINIT_OUTPUT_DIR=$(OUTPUT_DIR)/$(ENVOYINIT_DIR)
 export ENVOYINIT_IMAGE_REPO ?= envoy-wrapper
 
+# Registry cache for envoyinit Docker build (set to enable, e.g., ghcr.io/kgateway-dev/envoy-wrapper-cache)
+ENVOYINIT_CACHE_REF ?=
+ENVOYINIT_CACHE_FROM := $(if $(ENVOYINIT_CACHE_REF),--cache-from type=registry$(comma)ref=$(ENVOYINIT_CACHE_REF),)
+ENVOYINIT_CACHE_TO := $(if $(ENVOYINIT_CACHE_REF),--cache-to type=registry$(comma)ref=$(ENVOYINIT_CACHE_REF)$(comma)mode=max,)
+
 RUSTFORMATIONS_DIR := internal/envoyinit/
 # find all the files under the rustformation directory but exclude the target and pkg directory
 RUSTFORMATIONS_SRC_FILES := $(shell find $(RUSTFORMATIONS_DIR) \( -type d -name target -o -type d -name pkg \) -prune -o -type f -print)
@@ -523,6 +531,8 @@ $(ENVOYINIT_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(ENVOYINIT_OUTPUT_D
 		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
 		--build-arg RUST_BUILD_ARCH=$(RUST_BUILD_ARCH) \
 		--build-arg RUSTFORMATIONS_DIR=./rustformations \
+		$(ENVOYINIT_CACHE_FROM) \
+		$(ENVOYINIT_CACHE_TO) \
 		-t $(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(VERSION)
 	@touch $@
 

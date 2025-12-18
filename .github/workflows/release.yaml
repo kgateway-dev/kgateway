@@ -183,6 +183,7 @@ jobs:
           GORELEASER_ARGS: ${{ needs.setup.outputs.goreleaser_args }}
           GORELEASER_CURRENT_TAG: ${{ needs.setup.outputs.version }}
           GORELEASER_DISABLE_RELEASE: ${{ env.GORELEASER_DISABLE_RELEASE }}
+          ENVOYINIT_CACHE_PUSH: ${{ github.event_name != 'pull_request' }}
 
   validate:
     name: Validate release artifacts
