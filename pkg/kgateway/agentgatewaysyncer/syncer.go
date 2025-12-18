@@ -12,6 +12,7 @@ import (
 	"istio.io/istio/pilot/pkg/serviceregistry/kube/controller/ambient"
 	"istio.io/istio/pkg/cluster"
 	"istio.io/istio/pkg/config"
+	"istio.io/istio/pkg/config/mesh"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/network"
 	"istio.io/istio/pkg/ptr"
@@ -430,9 +431,7 @@ func (s *Syncer) buildAddressCollections(krtopts krtutil.KrtOptions) krt.Collect
 		},
 	}
 	// Dummy empty mesh config
-	meshConfig := krt.NewSingleton[ambient.MeshConfig](func(ctx krt.HandlerContext) *ambient.MeshConfig {
-		return nil
-	}, krtopts.ToOptions("MeshConfig")...)
+	meshConfig := krt.NewStatic[ambient.MeshConfig](&ambient.MeshConfig{MeshConfig: mesh.DefaultMeshConfig()}, true, krtopts.ToOptions("MeshConfig")...)
 
 	waypoints := builder.WaypointsCollection(clusterId, cols.Gateways, cols.GatewayClasses, cols.Pods, opts)
 	services := builder.ServicesCollection(
@@ -442,10 +441,14 @@ func (s *Syncer) buildAddressCollections(krtopts krtutil.KrtOptions) krt.Collect
 		waypoints,
 		cols.Namespaces,
 		meshConfig,
-		//s.agwCollections.InferencePools,
 		opts,
 		true,
 	)
+	// Istio doesn't include InferencePools, but we need them; add our own after the Istio build
+	inferencePoolsInfo := krt.NewCollection(cols.InferencePools, inferencePoolBuilder(),
+		krtopts.ToOptions("InferencePools")...)
+	services = krt.JoinCollection([]krt.Collection[model.ServiceInfo]{services, inferencePoolsInfo}, krt.WithJoinUnchecked())
+
 	// TODO: add InferencePools
 	nodeLocality := ambient.NodesCollection(cols.Nodes, opts.WithName("NodeLocality")...)
 	workloads := builder.WorkloadsCollection(

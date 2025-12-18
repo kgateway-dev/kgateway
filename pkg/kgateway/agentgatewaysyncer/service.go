@@ -1,7 +1,6 @@
 package agentgatewaysyncer
 
 import (
-	"bytes"
 	"fmt"
 	"strings"
 	"sync"
@@ -9,8 +8,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/anypb"
 	"istio.io/api/label"
 	"istio.io/istio/pilot/pkg/features"
 	"istio.io/istio/pilot/pkg/model"
@@ -501,11 +498,6 @@ func (i WaypointBindingStatus) Equals(other WaypointBindingStatus) bool {
 		ptr.Equal(i.Error, other.Error)
 }
 
-func serviceResourceName(s *workloadapi.Service) string {
-	// TODO: check prepending svc
-	return s.GetNamespace() + "/" + s.GetHostname()
-}
-
 type Address struct {
 	Workload *model.WorkloadInfo
 	Service  *model.ServiceInfo
@@ -702,16 +694,6 @@ func (s *Service) Equals(other *Service) bool {
 	return s.DefaultAddress == other.DefaultAddress && s.AutoAllocatedIPv4Address == other.AutoAllocatedIPv4Address &&
 		s.AutoAllocatedIPv6Address == other.AutoAllocatedIPv6Address && s.Hostname == other.Hostname &&
 		s.Resolution == other.Resolution
-}
-
-func equalUsingPremarshaled[T proto.Message](a T, am *anypb.Any, b T, bm *anypb.Any) bool {
-	// If they are both pre-marshaled, use the marshaled representation. This is orders of magnitude faster
-	if am != nil && bm != nil {
-		return bytes.Equal(am.GetValue(), bm.GetValue())
-	}
-
-	// Fallback to equals
-	return protoconv.Equals(a, b)
 }
 
 // AddressMap provides a thread-safe mapping of addresses for each Kubernetes cluster.

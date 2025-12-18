@@ -157,30 +157,6 @@ output:
         name: multi-network-route
         namespace: default
 - addresses:
-  - wKgKAQ==
-  canonicalName: network1-gateway
-  canonicalRevision: latest
-  clusterId: Kubernetes
-  name: network1-gateway-network1-192.168.10.1
-  namespace: default
-  network: network1
-  serviceAccount: network1-gateway-istio-remote
-  tunnelProtocol: HBONE
-  uid: Kubernetes/gateway/network1/192.168.10.1/15008
-  workloadName: network1-gateway
-- addresses:
-  - wKgUAQ==
-  canonicalName: network2-gateway
-  canonicalRevision: latest
-  clusterId: Kubernetes
-  name: network2-gateway-network2-192.168.20.1
-  namespace: default
-  network: network2
-  serviceAccount: network2-gateway-istio-remote
-  tunnelProtocol: HBONE
-  uid: Kubernetes/gateway/network2/192.168.20.1/15008
-  workloadName: network2-gateway
-- addresses:
   - CgAAZA==
   canonicalName: api-service
   canonicalRevision: latest
@@ -230,6 +206,20 @@ output:
   uid: Kubernetes/networking.istio.io/ServiceEntry/default/api-service/10.0.1.100
   workloadName: api-service
   workloadType: POD
+- addresses:
+  - wKgKAQ==
+  name: NetworkGateway/network1/192.168.10.1/15008
+  namespace: default
+  network: network1
+  serviceAccount: network1-gateway-istio-remote
+  uid: NetworkGateway/network1/192.168.10.1/15008
+- addresses:
+  - wKgUAQ==
+  name: NetworkGateway/network2/192.168.20.1/15008
+  namespace: default
+  network: network2
+  serviceAccount: network2-gateway-istio-remote
+  uid: NetworkGateway/network2/192.168.20.1/15008
 - addresses:
   - address: 8PAACg==
   hostname: api.example.com
