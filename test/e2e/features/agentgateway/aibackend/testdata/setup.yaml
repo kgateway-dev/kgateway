@@ -110,12 +110,12 @@ spec:
             message: "request rejected"
             statusCode: 403
           regex:
-            action: REJECT
+            action: Reject
             matches:
             - "credit card"
         response:
         - regex:
-            action: REJECT
+            action: Reject
             builtins:
               - Ssn
 ---

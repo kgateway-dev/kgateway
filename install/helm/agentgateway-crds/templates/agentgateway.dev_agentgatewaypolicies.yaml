@@ -570,11 +570,14 @@ spec:
                                     for prompt guards and data masking.
                                   properties:
                                     action:
-                                      default: MASK
+                                      default: Mask
                                       description: |-
                                         The action to take if a regex pattern is matched in a request or response.
                                         This setting applies only to request matches. PromptguardResponse matches are always masked by default.
-                                        Defaults to `MASK`.
+                                        Defaults to `Mask`.
+                                      enum:
+                                      - Mask
+                                      - Reject
                                       type: string
                                     builtins:
                                       description: |-
@@ -790,11 +793,14 @@ spec:
                                     for prompt guards and data masking.
                                   properties:
                                     action:
-                                      default: MASK
+                                      default: Mask
                                       description: |-
                                         The action to take if a regex pattern is matched in a request or response.
                                         This setting applies only to request matches. PromptguardResponse matches are always masked by default.
-                                        Defaults to `MASK`.
+                                        Defaults to `Mask`.
+                                      enum:
+                                      - Mask
+                                      - Reject
                                       type: string
                                     builtins:
                                       description: |-
