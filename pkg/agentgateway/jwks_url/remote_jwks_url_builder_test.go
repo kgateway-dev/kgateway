@@ -46,8 +46,8 @@ func TestRemoteJwksUrlBuilder(t *testing.T) {
 			name:        "tls with InsecureSkipVerify",
 			ctx:         setup(t, []string{getTestFile("svc-insecure-skip-verify.yaml")}),
 			expectedUrl: "https://dummy-idp.default.svc.cluster.local:8443/org-one/keys",
-			expectedTls: &tls.Config{ //nolint:gosec
-				InsecureSkipVerify: true,
+			expectedTls: &tls.Config{
+				InsecureSkipVerify: true, //nolint:gosec
 			},
 		},
 		{
@@ -82,8 +82,8 @@ func TestRemoteJwksUrlBuilder(t *testing.T) {
 			name:        "backend with tls with InsecureSkipVerify",
 			ctx:         setup(t, []string{getTestFile("gw-with-backend-insecure-skip-verify.yaml")}),
 			expectedUrl: "https://dummy-idp.default:8443/org-one/keys",
-			expectedTls: &tls.Config{ //nolint:gosec
-				InsecureSkipVerify: true,
+			expectedTls: &tls.Config{
+				InsecureSkipVerify: true, //nolint:gosec
 			},
 		},
 		{
@@ -115,8 +115,8 @@ func TestRemoteJwksUrlBuilder(t *testing.T) {
 			name:        "backend with a ref to a policy with tls with InsecureSkipVerify",
 			ctx:         setup(t, []string{getTestFile("gw-with-backend-with-policy-ref-with-insecure-skip-verify.yaml")}),
 			expectedUrl: "https://dummy-idp.default:8443/org-one/keys",
-			expectedTls: &tls.Config{ //nolint:gosec
-				InsecureSkipVerify: true,
+			expectedTls: &tls.Config{
+				InsecureSkipVerify: true, //nolint:gosec
 			},
 		},
 		{
