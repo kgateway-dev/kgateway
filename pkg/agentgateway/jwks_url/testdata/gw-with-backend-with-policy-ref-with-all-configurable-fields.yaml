@@ -44,12 +44,12 @@ spec:
     name: dummy-idp
   backend:
     tls:
-     caCertificateRefs:
-     - name: ca
-     sni: test.testns
-     alpnProtocols:
-     - test1
-     - test2
+      caCertificateRefs:
+      - name: ca
+      sni: test.testns
+      alpnProtocols:
+      - test1
+      - test2
 ---
 apiVersion: v1
 data:
