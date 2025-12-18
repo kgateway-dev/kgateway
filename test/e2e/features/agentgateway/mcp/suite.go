@@ -44,9 +44,24 @@ func (s *testingSuite) TestMCPAuthn() {
 	// Ensure auth0 server is ready
 	s.waitAuth0Ready()
 
+	// Wait for the authentication policy to be accepted before testing
+	s.T().Log("Waiting for authentication policy to be accepted")
+	s.TestInstallation.Assertions.EventuallyAgwPolicyCondition(
+		s.Ctx,
+		"auth0-mcp-authn-policy",
+		"default",
+		"Accepted",
+		metav1.ConditionTrue,
+	)
+
 	// The token is hard coded in the mock auth0 server
 	testJwt := "eyJhbGciOiJSUzI1NiIsImtpZCI6IjUzNTAyMzEyMTkzMDYwMzg2OTIiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2tnYXRld2F5LmRldiIsInN1YiI6Imlnbm9yZUBrZ2F0ZXdheS5kZXYiLCJleHAiOjIwNzExNjM0MDcsIm5iZiI6MTc2MzU3OTQwNywiaWF0IjoxNzYzNTc5NDA3fQ.TsHCCdd0_629wibU4EviEi1-_UXaFUX1NuLgXCrC-tr7kqlcnUJIJC0WSab1EgXKtF8gTfwTUeQcAQNrunwngQU-K9DFcH5-2vnGeiXV3_X3SokkPq74ceRrCFEL2d7YNaGfhq_UNyvKRJsRz-pwdKK7QIPXALmWaUHn7EV7zU-CcPCKNwmt62P88qNp5HYSbgqz_WfnzIIH8LANpCC8fUqVedgTJMJ86E06pfDNUuuXe_fhjgMQXlfyDeUxIuzJunvS2qIqt4IYMzjcQbl2QI1QK3xz37tridSP_WVuuMUe2Lqo0oDjWVpxqPb5fb90W6a6khRP59Pf6qKMbQ9SQg"
 	validAuthnHeader := map[string]string{"Authorization": "Bearer " + testJwt}
+
+	// Verify authentication is actually enforced (not just policy accepted)
+	// by waiting for an unauthenticated request to return 401
+	s.T().Log("Verifying authentication is enforced")
+	s.waitForAuthnEnforced()
 
 	// Test 1: Initialize without token should fail
 	s.T().Log("Test 1: Initialize without Authorization header should return 401")
