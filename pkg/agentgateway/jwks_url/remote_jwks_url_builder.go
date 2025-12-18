@@ -190,7 +190,7 @@ func GetTLSConfig(
 			if cfgmap == nil {
 				return nil, fmt.Errorf("ConfigMap %s not found", nn)
 			}
-			success := appendPoolWithCertsFromConfigMap(certPool, ptr.Flatten(cfgmap))
+			success := AppendPoolWithCertsFromConfigMap(certPool, ptr.Flatten(cfgmap))
 			if !success {
 				return nil, fmt.Errorf("error extracting CA cert from ConfigMap %s", nn)
 			}
@@ -201,7 +201,7 @@ func GetTLSConfig(
 	return &toret, nil
 }
 
-func appendPoolWithCertsFromConfigMap(pool *x509.CertPool, cm *corev1.ConfigMap) bool {
+func AppendPoolWithCertsFromConfigMap(pool *x509.CertPool, cm *corev1.ConfigMap) bool {
 	caCrts, ok := cm.Data["ca.crt"]
 	if !ok {
 		return false
