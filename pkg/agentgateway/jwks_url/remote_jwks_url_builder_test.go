@@ -39,14 +39,14 @@ func TestRemoteJwksUrlBuilder(t *testing.T) {
 			name:        "default tls",
 			ctx:         setup(t, []string{getTestFile("svc-with-default-tls.yaml")}),
 			expectedUrl: "https://dummy-idp.default.svc.cluster.local:8443/org-one/keys",
-			expectedTls: &tls.Config{},
+			expectedTls: &tls.Config{}, //nolint:gosec
 		},
 
 		{
 			name:        "tls with InsecureSkipVerify",
 			ctx:         setup(t, []string{getTestFile("svc-insecure-skip-verify.yaml")}),
 			expectedUrl: "https://dummy-idp.default.svc.cluster.local:8443/org-one/keys",
-			expectedTls: &tls.Config{
+			expectedTls: &tls.Config{ //nolint:gosec
 				InsecureSkipVerify: true,
 			},
 		},
@@ -57,7 +57,7 @@ func TestRemoteJwksUrlBuilder(t *testing.T) {
 				return mockCtx
 			}(),
 			expectedUrl: "https://dummy-idp.default.svc.cluster.local:8443/org-one/keys",
-			expectedTls: &tls.Config{
+			expectedTls: &tls.Config{ //nolint:gosec
 				ServerName: "test.testns",
 				NextProtos: []string{"test1", "test2"},
 				RootCAs:    caFromConfigMap(t, mockCtx),
@@ -82,7 +82,7 @@ func TestRemoteJwksUrlBuilder(t *testing.T) {
 			name:        "backend with tls with InsecureSkipVerify",
 			ctx:         setup(t, []string{getTestFile("gw-with-backend-insecure-skip-verify.yaml")}),
 			expectedUrl: "https://dummy-idp.default:8443/org-one/keys",
-			expectedTls: &tls.Config{
+			expectedTls: &tls.Config{ //nolint:gosec
 				InsecureSkipVerify: true,
 			},
 		},
@@ -90,7 +90,7 @@ func TestRemoteJwksUrlBuilder(t *testing.T) {
 			name:        "backend with default tls",
 			ctx:         setup(t, []string{getTestFile("gw-with-backend-default-tls.yaml")}),
 			expectedUrl: "https://dummy-idp.default:8443/org-one/keys",
-			expectedTls: &tls.Config{},
+			expectedTls: &tls.Config{}, //nolint:gosec
 		},
 		{
 			name: "backend with tls with all configurable fields",
@@ -99,7 +99,7 @@ func TestRemoteJwksUrlBuilder(t *testing.T) {
 				return mockCtx
 			}(),
 			expectedUrl: "https://dummy-idp.default:8443/org-one/keys",
-			expectedTls: &tls.Config{
+			expectedTls: &tls.Config{ //nolint:gosec
 				ServerName: "test.testns",
 				NextProtos: []string{"test1", "test2"},
 				RootCAs:    caFromConfigMap(t, mockCtx),
@@ -109,13 +109,13 @@ func TestRemoteJwksUrlBuilder(t *testing.T) {
 			name:        "backend with a ref to a policy with default tls",
 			ctx:         setup(t, []string{getTestFile("gw-with-backend-with-policy-ref-with-default-tls.yaml")}),
 			expectedUrl: "https://dummy-idp.default:8443/org-one/keys",
-			expectedTls: &tls.Config{},
+			expectedTls: &tls.Config{}, //nolint:gosec
 		},
 		{
 			name:        "backend with a ref to a policy with tls with InsecureSkipVerify",
 			ctx:         setup(t, []string{getTestFile("gw-with-backend-with-policy-ref-with-insecure-skip-verify.yaml")}),
 			expectedUrl: "https://dummy-idp.default:8443/org-one/keys",
-			expectedTls: &tls.Config{
+			expectedTls: &tls.Config{ //nolint:gosec
 				InsecureSkipVerify: true,
 			},
 		},
@@ -126,7 +126,7 @@ func TestRemoteJwksUrlBuilder(t *testing.T) {
 				return mockCtx
 			}(),
 			expectedUrl: "https://dummy-idp.default:8443/org-one/keys",
-			expectedTls: &tls.Config{
+			expectedTls: &tls.Config{ //nolint:gosec
 				ServerName: "test.testns",
 				NextProtos: []string{"test1", "test2"},
 				RootCAs:    caFromConfigMap(t, mockCtx),
