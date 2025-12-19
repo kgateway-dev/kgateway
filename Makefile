@@ -499,9 +499,14 @@ ENVOYINIT_OUTPUT_DIR=$(OUTPUT_DIR)/$(ENVOYINIT_DIR)
 export ENVOYINIT_IMAGE_REPO ?= envoy-wrapper
 
 # Registry cache for envoyinit Docker build (set to enable, e.g., ghcr.io/kgateway-dev/envoy-wrapper-cache)
+
+# Only --cache-from is used here because --cache-to type=registry requires the
+# docker-container buildx driver, but we use --load (though a Kind local
+# registry with --push would probably be better) which requires the docker
+# driver. Cache is populated by goreleaser when a PR lands on main or a release
+# is cut.
 ENVOYINIT_CACHE_REF ?=
 ENVOYINIT_CACHE_FROM := $(if $(ENVOYINIT_CACHE_REF),--cache-from type=registry$(comma)ref=$(ENVOYINIT_CACHE_REF),)
-ENVOYINIT_CACHE_TO := $(if $(ENVOYINIT_CACHE_REF),--cache-to type=registry$(comma)ref=$(ENVOYINIT_CACHE_REF)$(comma)mode=max,)
 
 RUSTFORMATIONS_DIR := internal/envoyinit/
 # find all the files under the rustformation directory but exclude the target and pkg directory
@@ -532,7 +537,6 @@ $(ENVOYINIT_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(ENVOYINIT_OUTPUT_D
 		--build-arg RUST_BUILD_ARCH=$(RUST_BUILD_ARCH) \
 		--build-arg RUSTFORMATIONS_DIR=./rustformations \
 		$(ENVOYINIT_CACHE_FROM) \
-		$(ENVOYINIT_CACHE_TO) \
 		-t $(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(VERSION)
 	@touch $@
 
