@@ -300,16 +300,16 @@ mkdir -p "$(dirname "$OUTPUT_FILE")"
 
 # Initialize the output file
 cat > "$OUTPUT_FILE" << EOF
-# Release Notes
+## Release Notes
 
-## Changes since $PREVIOUS_TAG
+### Changes since $PREVIOUS_TAG
 EOF
 
 # Generate the final release notes
 for KIND in breaking_change feature fix deprecation documentation cleanup install bump; do
     if [[ -f "$TEMP_DIR/$KIND.txt" ]]; then
         SECTION_TITLE=$(get_section_title "$KIND")
-        echo -e "\n### $SECTION_TITLE\n" >> "$OUTPUT_FILE"
+        echo -e "\n#### $SECTION_TITLE\n" >> "$OUTPUT_FILE"
         cat "$TEMP_DIR/$KIND.txt" >> "$OUTPUT_FILE"
     fi
 done
