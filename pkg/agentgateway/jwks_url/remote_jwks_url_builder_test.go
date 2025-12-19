@@ -31,6 +31,11 @@ func TestRemoteJwksUrlBuilder(t *testing.T) {
 		expectedTls   *tls.Config
 	}{
 		{
+			name:        "jwksPath prefixed with a '/'",
+			ctx:         setup(t, []string{getTestFile("jwkspath-starts-with-slash.yaml")}),
+			expectedUrl: "http://dummy-idp.default.svc.cluster.local:8443/org-one/keys",
+		},
+		{
 			name:        "service with no tls",
 			ctx:         setup(t, []string{getTestFile("svc-clear-text.yaml")}),
 			expectedUrl: "http://dummy-idp.default.svc.cluster.local:8443/org-one/keys",
@@ -41,7 +46,6 @@ func TestRemoteJwksUrlBuilder(t *testing.T) {
 			expectedUrl: "https://dummy-idp.default.svc.cluster.local:8443/org-one/keys",
 			expectedTls: &tls.Config{}, //nolint:gosec
 		},
-
 		{
 			name:        "tls with InsecureSkipVerify",
 			ctx:         setup(t, []string{getTestFile("svc-insecure-skip-verify.yaml")}),
