@@ -121,7 +121,6 @@ mod-download:  ## Download the dependencies
 .PHONY: mod-tidy-nested
 mod-tidy-nested:  ## Tidy go mod files in nested modules
 	@echo "Tidying hack/utils/applier..." && cd hack/utils/applier && go mod tidy
-	@echo "Tidying hack/krtequals..." && cd hack/krtequals && go mod tidy
 
 .PHONY: mod-tidy
 mod-tidy: mod-download mod-tidy-nested ## Tidy the go mod file
@@ -562,41 +561,6 @@ dummy-idp-docker: $(DUMMY_IDP_OUTPUT_DIR)/.docker-stamp-$(DUMMY_IDP_VERSION)-$(G
 kind-load-dummy-idp:
 	$(KIND) load docker-image $(IMAGE_REGISTRY)/$(DUMMY_IDP_IMAGE_REPO):$(DUMMY_IDP_VERSION) --name $(CLUSTER_NAME)
 
-#----------------------------------------------------------------------------------
-# dummy auth0 idp (used in mcp auth e2e tests)
-#----------------------------------------------------------------------------------
-
-DUMMY_AUTH0_DIR=hack/dummy-auth0
-DUMMY_AUTH0_OUTPUT_DIR=$(OUTPUT_DIR)/$(DUMMY_AUTH0_DIR)
-export DUMMY_AUTH0_IMAGE_REPO ?= dummy-auth0
-DUMMY_AUTH0_VERSION=0.0.1
-
-.PHONY: dummy-auth0
-dummy-auth0: $(DUMMY_AUTH0_OUTPUT_DIR)/.docker-stamp-$(DUMMY_AUTH0_VERSION)-$(GOARCH)
-
-$(DUMMY_AUTH0_OUTPUT_DIR):
-	mkdir -p $(DUMMY_AUTH0_OUTPUT_DIR)
-
-$(DUMMY_AUTH0_OUTPUT_DIR)/Dockerfile.dummy-auth0: ./hack/dummy-auth0/Dockerfile | $(DUMMY_AUTH0_OUTPUT_DIR)
-	cp $< $@
-
-$(DUMMY_AUTH0_OUTPUT_DIR)/auth0_mock.py: ./hack/dummy-auth0/auth0_mock.py | $(DUMMY_AUTH0_OUTPUT_DIR)
-	cp $< $@
-
-$(DUMMY_AUTH0_OUTPUT_DIR)/.docker-stamp-$(DUMMY_AUTH0_VERSION)-$(GOARCH): $(DUMMY_AUTH0_OUTPUT_DIR)/Dockerfile.dummy-auth0 $(DUMMY_AUTH0_OUTPUT_DIR)/auth0_mock.py
-	$(BUILDX_BUILD) --load $(PLATFORM) $(DUMMY_AUTH0_OUTPUT_DIR) -f $(DUMMY_AUTH0_OUTPUT_DIR)/Dockerfile.dummy-auth0 \
-		--build-arg GOARCH=$(GOARCH) \
-		--build-arg BASE_IMAGE=$(ALPINE_BASE_IMAGE) \
-		-t $(IMAGE_REGISTRY)/$(DUMMY_AUTH0_IMAGE_REPO):$(DUMMY_AUTH0_VERSION)
-	@touch $@
-
-.PHONY: dummy-auth0-docker
-dummy-auth0-docker: $(DUMMY_AUTH0_OUTPUT_DIR)/.docker-stamp-$(DUMMY_AUTH0_VERSION)-$(GOARCH)
-
-.PHONY: kind-load-dummy-auth0
-kind-load-dummy-auth0:
-	$(KIND) load docker-image $(IMAGE_REGISTRY)/$(DUMMY_AUTH0_IMAGE_REPO):$(DUMMY_AUTH0_VERSION) --name $(CLUSTER_NAME)
-
 
 #----------------------------------------------------------------------------------
 # Helm
@@ -613,9 +577,14 @@ HELM ?= go tool helm
 HELM_PACKAGE_ARGS ?= --version $(VERSION) --app-version $(VERSION)
 HELM_CHART_DIR=install/helm/kgateway
 HELM_CHART_DIR_CRD=install/helm/kgateway-crds
+HELM_CHART_DIR_AGW=install/helm/agentgateway
+HELM_CHART_DIR_AGW_CRD=install/helm/agentgateway-crds
 
 .PHONY: package-kgateway-charts
 package-kgateway-charts: package-kgateway-chart package-kgateway-crd-chart ## Package the kgateway charts
+
+.PHONY: package-agentgateway-charts
+package-agentgateway-charts: package-agentgateway-chart package-agentgateway-crd-chart ## Package the agentgateway charts
 
 .PHONY: package-kgateway-chart
 package-kgateway-chart: ## Package the kgateway charts
@@ -629,10 +598,24 @@ package-kgateway-crd-chart: ## Package the kgateway crd chart
 	$(HELM) package $(HELM_PACKAGE_ARGS) --destination $(TEST_ASSET_DIR) $(HELM_CHART_DIR_CRD); \
 	$(HELM) repo index $(TEST_ASSET_DIR);
 
+.PHONY: package-agentgateway-chart
+package-agentgateway-chart: ## Package the agentgateway chart
+	mkdir -p $(TEST_ASSET_DIR); \
+	$(HELM) package $(HELM_PACKAGE_ARGS) --destination $(TEST_ASSET_DIR) $(HELM_CHART_DIR_AGW); \
+	$(HELM) repo index $(TEST_ASSET_DIR);
+
+.PHONY: package-agentgateway-crd-chart
+package-agentgateway-crd-chart: ## Package the agentgateway crd chart
+	mkdir -p $(TEST_ASSET_DIR); \
+	$(HELM) package $(HELM_PACKAGE_ARGS) --destination $(TEST_ASSET_DIR) $(HELM_CHART_DIR_AGW_CRD); \
+	$(HELM) repo index $(TEST_ASSET_DIR);
+
 .PHONY: release-charts
-release-charts: package-kgateway-charts ## Release the kgateway charts
+release-charts: package-kgateway-charts package-agentgateway-charts ## Release the kgateway and agentgateway charts
 	$(HELM) push $(TEST_ASSET_DIR)/kgateway-$(VERSION).tgz oci://$(IMAGE_REGISTRY)/charts
 	$(HELM) push $(TEST_ASSET_DIR)/kgateway-crds-$(VERSION).tgz oci://$(IMAGE_REGISTRY)/charts
+	$(HELM) push $(TEST_ASSET_DIR)/agentgateway-$(VERSION).tgz oci://$(IMAGE_REGISTRY)/charts
+	$(HELM) push $(TEST_ASSET_DIR)/agentgateway-crds-$(VERSION).tgz oci://$(IMAGE_REGISTRY)/charts
 
 .PHONY: deploy-kgateway-crd-chart
 deploy-kgateway-crd-chart: ## Deploy the kgateway crd chart
@@ -647,10 +630,24 @@ deploy-kgateway-chart: ## Deploy the kgateway chart
 	--set image.tag=$(VERSION) \
 	-f $(HELM_ADDITIONAL_VALUES)
 
+.PHONY: deploy-agentgateway-crd-chart
+deploy-agentgateway-crd-chart: ## Deploy the agentgateway crd chart
+	$(HELM) upgrade --install agentgateway-crds $(TEST_ASSET_DIR)/agentgateway-crds-$(VERSION).tgz --namespace $(INSTALL_NAMESPACE) --create-namespace
+
+.PHONY: deploy-agentgateway-chart
+deploy-agentgateway-chart: ## Deploy the agentgateway chart
+	$(HELM) upgrade --install agentgateway $(TEST_ASSET_DIR)/agentgateway-$(VERSION).tgz \
+	--namespace $(INSTALL_NAMESPACE) --create-namespace \
+	--set image.registry=$(IMAGE_REGISTRY) \
+	--set image.tag=$(VERSION) \
+	-f $(HELM_ADDITIONAL_VALUES)
+
 .PHONY: lint-kgateway-charts
-lint-kgateway-charts: ## Lint the kgateway charts
+lint-kgateway-charts: ## Lint the kgateway and agentgateway charts
 	$(HELM) lint $(HELM_CHART_DIR)
 	$(HELM) lint $(HELM_CHART_DIR_CRD)
+	$(HELM) lint $(HELM_CHART_DIR_AGW)
+	$(HELM) lint $(HELM_CHART_DIR_AGW_CRD)
 
 #----------------------------------------------------------------------------------
 # Release
@@ -664,6 +661,10 @@ GORELEASER_CURRENT_TAG ?= $(VERSION)
 .PHONY: release
 release: ## Create a release using goreleaser
 	GORELEASER_CURRENT_TAG=$(GORELEASER_CURRENT_TAG) $(GORELEASER) release $(GORELEASER_ARGS) --timeout $(GORELEASER_TIMEOUT)
+
+.PHONY: release-notes
+release-notes: ## Generate release notes (PREVIOUS_TAG required, CURRENT_TAG optional)
+	./hack/generate-release-notes.sh -p $(PREVIOUS_TAG) -c $(or $(CURRENT_TAG),HEAD)
 
 #----------------------------------------------------------------------------------
 # Development
@@ -702,11 +703,14 @@ metallb: ## Install the MetalLB load balancer
 .PHONY: deploy-kgateway
 deploy-kgateway: package-kgateway-charts deploy-kgateway-crd-chart deploy-kgateway-chart ## Deploy the kgateway chart and CRDs
 
+.PHONY: deploy-agentgateway
+deploy-agentgateway: package-agentgateway-charts deploy-agentgateway-crd-chart deploy-agentgateway-chart ## Deploy the agentgateway chart and CRDs
+
 .PHONY: setup-base
 setup-base: kind-create gw-api-crds gie-crds metallb ## Setup the base infrastructure (kind cluster, CRDs, and MetalLB)
 
 .PHONY: setup
-setup: setup-base kind-build-and-load package-kgateway-charts ## Setup the complete infrastructure (base setup plus images and charts)
+setup: setup-base kind-build-and-load package-kgateway-charts package-agentgateway-charts dummy-idp-docker kind-load-dummy-idp  ## Setup the complete infrastructure (base setup plus images and charts)
 
 .PHONY: run
 run: setup deploy-kgateway  ## Set up complete development environment
@@ -763,14 +767,12 @@ kind-build-and-load: kind-build-and-load-kgateway
 kind-build-and-load: kind-build-and-load-envoy-wrapper
 kind-build-and-load: kind-build-and-load-sds
 kind-build-and-load: kind-build-and-load-dummy-idp
-kind-build-and-load: kind-build-and-load-dummy-auth0
 
 .PHONY: kind-load ## Use to load all images into kind
 kind-load: kind-load-kgateway
 kind-load: kind-load-envoy-wrapper
 kind-load: kind-load-sds
 kind-load: kind-load-dummy-idp
-kind-load: kind-load-dummy-auth0
 
 #----------------------------------------------------------------------------------
 # Load Testing

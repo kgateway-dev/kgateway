@@ -31,7 +31,7 @@ git clone -o ${REMOTE} https://github.com/kgateway-dev/kgateway.git && cd kgatew
 ### Minor Release
 
 If the release branch **does not** exist, create one:
-  
+
 - Create a new release branch from the `main` branch. The branch should be named `v2.${MINOR}.x`, for example, `v2.0.x`:
 
     ```bash
@@ -63,9 +63,27 @@ Use the "Run workflow" drop-down in the right corner of the page to dispatch a r
   for example.
 - Click on the "validate release" option, which bootstraps an environment from the
   generated artifacts and runs the conformance suite against that deployed environment.
-- The release notes must be manually added to contain the bug fixes, features, etc. included in the release.
-  This part of the process will be improved once [Issue 11436](https://github.com/kgateway-dev/kgateway/issues/11436)
-  is fixed.
+- Generate the release notes using the provided script (see [Generating Release Notes](#generating-release-notes) below).
+
+## Generating Release Notes
+
+Use the `hack/generate-release-notes.sh` script to generate release notes from merged PRs:
+
+```bash
+GITHUB_TOKEN=<your_token> ./hack/generate-release-notes.sh -p v2.0.3 -c v2.1.0
+```
+
+The script does the following:
+
+- Finds all PR numbers from commit messages between the two tags
+- Fetches PR details via the GitHub API
+- Extracts content from `release-note` code blocks in PR descriptions
+- Categorizes entries by `kind/` labels (breaking_change, feature, fix, deprecation, documentation, cleanup, install, bump)
+- Generates `_output/RELEASE_NOTES.md` by default
+
+Run `./hack/generate-release-notes.sh --help` to see all options.
+
+After running the script, review the generated file for accuracy, then add the content to the GitHub release description.
 
 ## Verification
 

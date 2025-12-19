@@ -22,7 +22,7 @@ func TestGetInMemoryGatewayParameters(t *testing.T) {
 
 	const (
 		envoyController = "kgateway.dev/kgateway"
-		agwController   = "kgateway.dev/agentgateway"
+		agwController   = "agentgateway.dev/agentgateway"
 		waypointClass   = "waypoint"
 	)
 

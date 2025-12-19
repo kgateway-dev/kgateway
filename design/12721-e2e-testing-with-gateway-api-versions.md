@@ -20,9 +20,11 @@ In addition to different semver designated versions of the API, there are two ch
 * v1.3.0
   * XListenerSets added to experimental (not available in standard as of v1.4.0, planned for v1.5.0)
   * CORS filters added to experimental (not available in standard as of v1.4.0)
+  * spec.defaultScope (type GatewayDefaultScope) added in experimental (not available in standard as of v1.4.0)
 * v1.4.0
   * BackendTLSPolicy promoted to v1 in standard and experimental. Previous v1alpha3 version is not supported.
   * HTTPRoutes.spec.rules[].name added to standard
+  * spec.tls (GatewayTLSConfig) to Gateway in experimental channel
 
 The are a substantial number of tests that need to be modified to 
 

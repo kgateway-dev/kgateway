@@ -4,6 +4,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 )
 
@@ -16,8 +17,9 @@ const (
 
 // helmConfig stores the top-level helm values used by the deployer.
 type HelmConfig struct {
-	Gateway            *HelmGateway            `json:"gateway,omitempty"`
-	InferenceExtension *HelmInferenceExtension `json:"inferenceExtension,omitempty"`
+	Gateway            *HelmGateway             `json:"gateway,omitempty"`
+	Agentgateway       *AgentgatewayHelmGateway `json:"agentgateway,omitempty"`
+	InferenceExtension *HelmInferenceExtension  `json:"inferenceExtension,omitempty"`
 }
 
 type HelmGateway struct {
@@ -83,8 +85,6 @@ type HelmGateway struct {
 
 	// xds values
 	Xds *HelmXds `json:"xds,omitempty"`
-	// agentgateway xds values
-	AgwXds *HelmXds `json:"agwXds,omitempty"`
 
 	// stats values
 	Stats *HelmStatsConfig `json:"stats,omitempty"`
@@ -115,6 +115,7 @@ type HelmImage struct {
 type HelmService struct {
 	Type                  *string           `json:"type,omitempty"`
 	ClusterIP             *string           `json:"clusterIP,omitempty"`
+	LoadBalancerIP        *string           `json:"loadBalancerIP,omitempty"`
 	ExtraAnnotations      map[string]string `json:"extraAnnotations,omitempty"`
 	ExtraLabels           map[string]string `json:"extraLabels,omitempty"`
 	ExternalTrafficPolicy *string           `json:"externalTrafficPolicy,omitempty"`
@@ -197,4 +198,19 @@ type HelmInferenceExtension struct {
 type HelmEndpointPickerExtension struct {
 	PoolName      string `json:"poolName"`
 	PoolNamespace string `json:"poolNamespace"`
+}
+
+type AgentgatewayHelmGateway struct {
+	agentgateway.AgentgatewayParametersConfigs `json:",inline"`
+	// naming
+	Name               *string           `json:"name,omitempty"`
+	GatewayClassName   *string           `json:"gatewayClassName,omitempty"`
+	GatewayAnnotations map[string]string `json:"gatewayAnnotations,omitempty"`
+	GatewayLabels      map[string]string `json:"gatewayLabels,omitempty"`
+
+	// deployment/service values
+	Ports []HelmPort `json:"ports,omitempty"`
+
+	// agentgateway xds values
+	Xds *HelmXds `json:"xds,omitempty"`
 }

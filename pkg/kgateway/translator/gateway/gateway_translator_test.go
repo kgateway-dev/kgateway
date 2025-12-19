@@ -61,8 +61,8 @@ func TestBasic(t *testing.T) {
 
 	t.Run("gateway with TLS listener with TLS options", func(t *testing.T) {
 		test(t, translatorTestCase{
-			inputFile:  "gateway-only/tls-alpn.yaml",
-			outputFile: "gateway-only/tls-alpn.yaml",
+			inputFile:  "gateway-only/tls-options.yaml",
+			outputFile: "gateway-only/tls-options.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -74,6 +74,39 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFile:  "gateway-only/tls-multiple-certificates.yaml",
 			outputFile: "gateway-only/tls-multiple-certificates.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("gateway with FrontendTLSConfig", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "frontendtlsconfig/basic.yaml",
+			outputFile: "frontendtlsconfig/basic.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("gateway with FrontendTLSConfig and missing refgrant", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "frontendtlsconfig/missing-refgrant.yaml",
+			outputFile: "frontendtlsconfig/missing-refgrant.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("frontendtlsconfig with verify subject alt names missing ca certificate", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFile:  "frontendtlsconfig/verify-subject-alt-names-missing-ca.yaml",
+			outputFile: "frontendtlsconfig/verify-subject-alt-names-missing-ca.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",

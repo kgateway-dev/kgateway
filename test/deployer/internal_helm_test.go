@@ -122,6 +122,10 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			InputFile: "envoy-infrastructure",
 		},
 		{
+			Name:      "gateway with static IP address",
+			InputFile: "loadbalancer-static-ip",
+		},
+		{
 			Name:      "agentgateway-params-primary",
 			InputFile: "agentgateway-params-primary",
 		},
@@ -142,6 +146,10 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			InputFile: "agentgateway-logging-format",
 		},
 		{
+			Name:      "agentgateway yaml injection",
+			InputFile: "agentgateway-yaml-injection",
+		},
+		{
 			Name:      "agentgateway rawConfig with typed config conflict",
 			InputFile: "agentgateway-rawconfig-typed-conflict",
 			Validate: func(t *testing.T, outputYaml string) {
@@ -152,6 +160,17 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 					"rawConfig's logging.format: json should be overridden by typed config")
 				assert.Contains(t, outputYaml, "jaeger:4317",
 					"tracing config from rawConfig should be merged in")
+			},
+		},
+		{
+			Name:      "agentgateway rawConfig with binds for direct response",
+			InputFile: "agentgateway-rawconfig-binds",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				assert.Contains(t, outputYaml, "  config.yaml: |\n    binds:\n",
+					"binds config should be present in ConfigMap as a top-level config.yaml key")
+				assert.Contains(t, outputYaml, "port: 3000",
+					"binds port 3000 should be present")
 			},
 		},
 		{

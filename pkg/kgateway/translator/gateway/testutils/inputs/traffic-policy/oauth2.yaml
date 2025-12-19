@@ -162,6 +162,20 @@ spec:
     logoutPath: /log-out
     forwardAccessToken: true
     scopes: ["openid", "email"]
+    cookies:
+      domain: provider-2.com
+      names:
+        accessToken: access_token
+        idToken: id_token
+      sameSite: Lax
+    denyRedirect:
+      headers:
+      - type: Exact
+        name: x-foo
+        value: bar
+      - type: RegularExpression
+        name: x-baz
+        value: ^baz-.*
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend
@@ -196,10 +210,10 @@ apiVersion: v1
 kind: Secret
 metadata:
   #must match wellknown.OAuth2HMACSecret
-  name: oauth2-hmac-secret 
+  name: oauth2-hmac-secret
   namespace: kgateway-system
 data:
-  hmac-secret: SE1BQyBzZWNyZXQ=  
+  hmac-secret: SE1BQyBzZWNyZXQ=
 ---
 apiVersion: v1
 kind: Service

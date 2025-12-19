@@ -5,10 +5,10 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
+	"reflect"
 	"sync"
 	"time"
 
@@ -17,15 +17,14 @@ import (
 )
 
 // JwksFetcher is used for fetching and periodic updates of jwks.
-// Fetched jwks are stored in jwksCache. All access to jwksCache is synchronized via mu mutex.
-// When a jwks is updated, registered subscribers are sent the update.
+// Fetched jwks are stored in jwksCache. When a jwks is updated, registered subscribers are sent an update.
 type JwksFetcher struct {
-	mu            sync.Mutex
-	cache         *jwksCache
-	jwksClient    JwksHttpClient
-	keysetSources map[string]*JwksSource
-	schedule      FetchingSchedule
-	subscribers   []chan map[string]string
+	mu                sync.Mutex
+	cache             *jwksCache
+	defaultJwksClient JwksHttpClient
+	keysetSources     map[string]*JwksSource
+	schedule          FetchingSchedule
+	subscribers       []chan map[string]string
 }
 
 type FetchingSchedule []fetchAt
@@ -36,15 +35,19 @@ type JwksHttpClient interface {
 }
 
 type JwksSource struct {
-	JwksURL string
-	Ttl     time.Duration
-	Deleted bool
+	JwksURL   string
+	Ttl       time.Duration
+	Deleted   bool
+	TlsConfig *tls.Config
 }
 
-type JwksSources []JwksSource
+func (js JwksSource) ResourceName() string {
+	return js.JwksURL
+}
 
-func (js JwksSources) ResourceName() string {
-	return "jwkssources"
+func (js JwksSource) Equals(other JwksSource) bool {
+	return js.JwksURL == other.JwksURL &&
+		js.Ttl == other.Ttl && js.Deleted == other.Deleted && reflect.DeepEqual(js.TlsConfig, other.TlsConfig)
 }
 
 type fetchAt struct {
@@ -59,16 +62,11 @@ type jwksHttpClientImpl struct {
 
 func NewJwksFetcher(cache *jwksCache) *JwksFetcher {
 	toret := &JwksFetcher{
-		cache: cache,
-		jwksClient: &jwksHttpClientImpl{
-			Client: &http.Client{Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: true, //nolint:gosec
-				},
-			}}},
-		keysetSources: make(map[string]*JwksSource),
-		schedule:      make([]fetchAt, 0),
-		subscribers:   make([]chan map[string]string, 0),
+		cache:             cache,
+		defaultJwksClient: &jwksHttpClientImpl{Client: &http.Client{}},
+		keysetSources:     make(map[string]*JwksSource),
+		schedule:          make([]fetchAt, 0),
+		subscribers:       make([]chan map[string]string, 0),
 	}
 	heap.Init(&toret.schedule)
 
@@ -111,7 +109,6 @@ func (f *JwksFetcher) Run(ctx context.Context) {
 }
 
 func (f *JwksFetcher) maybeFetchJwks(ctx context.Context) {
-	log := log.FromContext(ctx)
 	updates := make(map[string]string)
 
 	f.mu.Lock()
@@ -128,9 +125,12 @@ func (f *JwksFetcher) maybeFetchJwks(ctx context.Context) {
 		if fetch.keysetSource.Deleted {
 			continue
 		}
-		jwks, err := f.jwksClient.FetchJwks(ctx, fetch.keysetSource.JwksURL)
+
+		logger.Debug("fetching remote jwks", "jwks_uri", fetch.keysetSource.JwksURL)
+
+		jwks, err := f.fetchJwks(ctx, fetch.keysetSource.JwksURL, fetch.keysetSource.TlsConfig)
 		if err != nil {
-			log.Error(err, "error fetching jwks from ", fetch.keysetSource.JwksURL)
+			logger.Error("error fetching jwks", "jwks_uri", fetch.keysetSource.JwksURL, "error", err)
 			if fetch.retryAttempt < 5 { // backoff by 5s * retry attempt number
 				heap.Push(&f.schedule, fetchAt{at: now.Add(time.Duration(5*(fetch.retryAttempt+1)) * time.Second), keysetSource: fetch.keysetSource, retryAttempt: fetch.retryAttempt + 1})
 			} else {
@@ -140,18 +140,16 @@ func (f *JwksFetcher) maybeFetchJwks(ctx context.Context) {
 			continue
 		}
 
-		maybeUpdatedJwks, err := f.cache.compareAndAddJwks(fetch.keysetSource.JwksURL, jwks)
+		updatedJwks, err := f.cache.addJwks(fetch.keysetSource.JwksURL, jwks)
 		// error serializing jwks, shouldn't happen, retry
 		if err != nil {
-			log.Error(err, "error adding jwks", "uri", fetch.keysetSource.JwksURL)
+			logger.Error("error adding jwks", "jwks_uri", fetch.keysetSource.JwksURL, "error", err)
 			heap.Push(&f.schedule, fetchAt{at: now.Add(time.Duration(5*(fetch.retryAttempt+1)) * time.Second), keysetSource: fetch.keysetSource, retryAttempt: fetch.retryAttempt + 1})
 			continue
 		}
 
 		heap.Push(&f.schedule, fetchAt{at: now.Add(fetch.keysetSource.Ttl), keysetSource: fetch.keysetSource})
-		if maybeUpdatedJwks != "" {
-			updates[fetch.keysetSource.JwksURL] = maybeUpdatedJwks
-		}
+		updates[fetch.keysetSource.JwksURL] = updatedJwks
 	}
 
 	if len(updates) > 0 {
@@ -171,81 +169,48 @@ func (f *JwksFetcher) SubscribeToUpdates() chan map[string]string {
 	return subscriber
 }
 
-func (f *JwksFetcher) UpdateJwksSources(ctx context.Context, updates JwksSources) error {
-	var errs []error
-	maybeUpdates := make(map[string]JwksSource)
-	for _, s := range updates {
-		maybeUpdates[s.JwksURL] = s
+// handle http, https jwks source (default http(s) client), or a client with tls.Options
+func (f *JwksFetcher) AddOrUpdateKeyset(source JwksSource) error {
+	if _, err := url.Parse(source.JwksURL); err != nil {
+		return fmt.Errorf("error parsing jwks url %w", err)
 	}
 
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
-	todelete := make([]string, 0)
-	for s := range f.keysetSources {
-		if _, ok := maybeUpdates[s]; !ok {
-			todelete = append(todelete, s)
-		}
+	if existingKeysetSource, ok := f.keysetSources[source.JwksURL]; ok {
+		delete(f.keysetSources, source.JwksURL)
+		existingKeysetSource.Deleted = true
 	}
 
-	for _, s := range updates {
-		if _, ok := f.keysetSources[s.JwksURL]; !ok {
-			if err := f.addKeyset(s.JwksURL, s.Ttl); err != nil {
-				errs = append(errs, err)
-			}
-			continue
-		}
-		if *f.keysetSources[s.JwksURL] != s {
-			if err := f.updateKeyset(s.JwksURL, s.Ttl); err != nil {
-				errs = append(errs, err)
-			}
-		}
-	}
-
-	removals := make(map[string]string)
-	for _, jwksUri := range todelete {
-		if f.removeKeyset(jwksUri) {
-			removals[jwksUri] = ""
-		}
-	}
-
-	if len(removals) > 0 {
-		for _, s := range f.subscribers {
-			s <- removals
-		}
-	}
-
-	return errors.Join(errs...)
-}
-
-func (f *JwksFetcher) addKeyset(jwksUrl string, ttl time.Duration) error {
-	if _, err := url.Parse(jwksUrl); err != nil {
-		return fmt.Errorf("error parsing jwks url %w", err)
-	}
-
-	keysetSource := &JwksSource{JwksURL: jwksUrl, Ttl: ttl, Deleted: false}
-	f.keysetSources[jwksUrl] = keysetSource
-	heap.Push(&f.schedule, fetchAt{at: time.Now(), keysetSource: keysetSource}) // schedule an immediate fetch
+	addedKeysetSource := source
+	f.keysetSources[source.JwksURL] = &addedKeysetSource
+	heap.Push(&f.schedule, fetchAt{at: time.Now(), keysetSource: &addedKeysetSource}) // schedule an immediate fetch
 
 	return nil
 }
 
-func (f *JwksFetcher) removeKeyset(jwksUrl string) bool {
-	if keysetSource, ok := f.keysetSources[jwksUrl]; ok {
-		delete(f.keysetSources, jwksUrl)
-		f.cache.deleteJwks(jwksUrl)
-		keysetSource.Deleted = true
-		return true
+func (f *JwksFetcher) RemoveKeyset(source JwksSource) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	if beingDeleted, ok := f.keysetSources[source.JwksURL]; ok {
+		delete(f.keysetSources, source.JwksURL)
+		f.cache.deleteJwks(source.JwksURL)
+		beingDeleted.Deleted = true
+
+		for _, s := range f.subscribers {
+			s <- map[string]string{source.JwksURL: ""}
+		}
 	}
-	return false
 }
 
-func (f *JwksFetcher) updateKeyset(jwksUrl string, ttl time.Duration) error {
-	if keysetSource, ok := f.keysetSources[jwksUrl]; ok {
-		delete(f.keysetSources, jwksUrl)
-		keysetSource.Deleted = true
+func (f *JwksFetcher) fetchJwks(ctx context.Context, jwksURL string, tlsConfig *tls.Config) (jose.JSONWebKeySet, error) {
+	if tlsConfig != nil {
+		c := &jwksHttpClientImpl{Client: &http.Client{Transport: &http.Transport{TLSClientConfig: tlsConfig}}}
+		return c.FetchJwks(ctx, jwksURL)
 	}
-	return f.addKeyset(jwksUrl, ttl)
+	return f.defaultJwksClient.FetchJwks(ctx, jwksURL)
 }
 
 func (c *jwksHttpClientImpl) FetchJwks(ctx context.Context, jwksURL string) (jose.JSONWebKeySet, error) {

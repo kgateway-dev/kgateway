@@ -1,7 +1,9 @@
 package deployer
 
 import (
+	"errors"
 	"fmt"
+	"net/netip"
 	"regexp"
 	"sort"
 	"strings"
@@ -16,6 +18,14 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/listener"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/validate"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+)
+
+var (
+	// ErrMultipleAddresses is returned when multiple addresses are specified in Gateway.spec.addresses
+	ErrMultipleAddresses = errors.New("multiple addresses given, only one address is supported")
+
+	// ErrNoValidIPAddress is returned when no valid IP address is found in Gateway.spec.addresses
+	ErrNoValidIPAddress = errors.New("IP address in Gateway.spec.addresses not valid")
 )
 
 // This file contains helper functions that generate helm values in the format needed
@@ -108,16 +118,59 @@ func GetServiceValues(svcConfig *kgateway.Service) *HelmService {
 	// convert the service type enum to its string representation;
 	// if type is not set, it will default to 0 ("ClusterIP")
 	var svcType *string
-	if svcConfig.GetType() != nil {
-		svcType = ptr.To(string(*svcConfig.GetType()))
+	var clusterIP *string
+	var extraAnnotations map[string]string
+	var extraLabels map[string]string
+	var externalTrafficPolicy *string
+
+	if svcConfig != nil {
+		if svcConfig.GetType() != nil {
+			svcType = ptr.To(string(*svcConfig.GetType()))
+		}
+		clusterIP = svcConfig.GetClusterIP()
+		extraAnnotations = svcConfig.GetExtraAnnotations()
+		extraLabels = svcConfig.GetExtraLabels()
+		externalTrafficPolicy = svcConfig.GetExternalTrafficPolicy()
 	}
+
 	return &HelmService{
 		Type:                  svcType,
-		ClusterIP:             svcConfig.GetClusterIP(),
-		ExtraAnnotations:      svcConfig.GetExtraAnnotations(),
-		ExtraLabels:           svcConfig.GetExtraLabels(),
-		ExternalTrafficPolicy: svcConfig.GetExternalTrafficPolicy(),
+		ClusterIP:             clusterIP,
+		ExtraAnnotations:      extraAnnotations,
+		ExtraLabels:           extraLabels,
+		ExternalTrafficPolicy: externalTrafficPolicy,
 	}
+}
+
+// SetLoadBalancerIPFromGateway extracts the IP address from Gateway.spec.addresses
+// and sets it on the HelmService if the service type is LoadBalancer.
+// Only sets the IP if exactly one valid IP address is found in Gateway.spec.addresses.
+// Returns an error if more than one address is specified or no valid IP address is found.
+func SetLoadBalancerIPFromGateway(gw *gwv1.Gateway, svc *HelmService) error {
+	// Only extract IP if service type is LoadBalancer
+	if svc.Type == nil || *svc.Type != string(corev1.ServiceTypeLoadBalancer) {
+		return nil
+	}
+
+	if len(gw.Spec.Addresses) == 0 {
+		return nil
+	}
+
+	if len(gw.Spec.Addresses) > 1 {
+		return fmt.Errorf("%w: gateway %s/%s has %d addresses", ErrMultipleAddresses, gw.Namespace, gw.Name, len(gw.Spec.Addresses))
+	}
+
+	addr := gw.Spec.Addresses[0]
+	// IPAddressType or nil (defaults to IPAddressType per Gateway API spec)
+	if addr.Type == nil || *addr.Type == gwv1.IPAddressType {
+		// Validate IP format
+		if parsedIP, err := netip.ParseAddr(addr.Value); err == nil && parsedIP.IsValid() {
+			svc.LoadBalancerIP = &addr.Value
+			return nil
+		}
+	}
+
+	return fmt.Errorf("%w: gateway %s/%s has no valid IP address", ErrNoValidIPAddress, gw.Namespace, gw.Name)
 }
 
 // Convert service account values from GatewayParameters into helm values to be used by the deployer.

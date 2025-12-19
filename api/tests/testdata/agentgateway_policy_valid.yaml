@@ -287,9 +287,10 @@ spec:
         name: auth-server
         kind: Service
         port: 123
-      contextExtensions:
-        env: production
-        region: us-west
+      grpc:
+        contextExtensions:
+          env: production
+          region: us-west
 ---
 apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayPolicy
@@ -302,6 +303,7 @@ spec:
       name: dummy
   traffic:
     extAuth:
+      grpc: {}
       backendRef:
         name: auth-server
         kind: AgentgatewayBackend
@@ -599,6 +601,7 @@ spec:
         name: auth-server
         kind: Service
         port: 8888
+      grpc: {}
     rateLimit:
       local:
         - requests: 100

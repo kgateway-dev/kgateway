@@ -123,7 +123,7 @@ spec:
         - name: GATEWAY
           value: gw-using-gw-params
         image: from-gw/agentgateway@sha256:fd697c0542524e19a19baf75acfd06714b95bf4f7c60bf22c86164dd647ceb48
-        name: agent-gateway
+        name: agentgateway
         ports:
         - containerPort: 15020
           name: metrics

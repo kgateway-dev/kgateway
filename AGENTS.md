@@ -8,7 +8,7 @@ kgateway is a **dual control plane** implementing the Kubernetes Gateway API for
 ### Controller Names & Isolation
 kgateway supports **two independent controllers** that can run side-by-side:
 - **Envoy Controller**: `kgateway.dev/kgateway` (defined in `wellknown.DefaultGatewayControllerName`)
-- **Agentgateway Controller**: `kgateway.dev/agentgateway` (defined in `wellknown.DefaultAgwControllerName`)
+- **Agentgateway Controller**: `agentgateway.dev/agentgateway` (defined in `wellknown.DefaultAgwControllerName`)
 
 **Critical Requirements:**
 1. Controllers MUST always respect `GatewayClass.spec.controllerName` Classname can matter, in the case of waypoints, but its always more specific information
@@ -34,7 +34,7 @@ kgateway supports **two independent controllers** that can run side-by-side:
 **Deployment:**
 - Gateway reconciler checks enable flags before calling deployer
 - Deployer selects chart based on Gateway's controllerName from GatewayClass
-- Chart selection: envoy chart for `kgateway.dev/kgateway`, agentgateway chart for `kgateway.dev/agentgateway`
+- Chart selection: envoy chart for `kgateway.dev/kgateway`, agentgateway chart for `agentgateway.dev/agentgateway`
 
 **Enable Flags:**
 - `EnableEnvoy` (default: true): Controls if envoy ProxySyncer, StatusSyncer, and GatewayClass creation run
@@ -248,9 +248,13 @@ Gateway API version is in `go.mod` and CRD install URL in Makefile (`CONFORMANCE
 ## Opening Pull Requests
 
 1. Ensure all linters pass: `make analyze`, `make verify`
-2. When PR is ready to review/merge, follow this PR template: https://raw.githubusercontent.com/kgateway-dev/.github/refs/heads/main/.github/PULL_REQUEST_TEMPLATE.md
-   Specifically must haves are the `Description`, `# Change Type` and `# Changelog` sections.
-3. Ensure tests pass in CI (unit + e2e + conformance)
+2. Ensure tests pass in CI (unit + e2e + conformance)
+3. **Use the PR template** from: https://raw.githubusercontent.com/kgateway-dev/.github/refs/heads/main/.github/PULL_REQUEST_TEMPLATE.md
+
+**Required PR sections:**
+- `# Description` - Motivation, what changed, and linked issues (`Fixes #123`)
+- `# Change Type` - One or more `/kind` commands (e.g., `/kind feature`, `/kind fix`, `/kind cleanup`)
+- `# Changelog` - Release note in a `release-note` code block (or `NONE` if not user-facing)
 
 ## Style
 

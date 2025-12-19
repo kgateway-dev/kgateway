@@ -49,7 +49,7 @@ kind: GatewayClass
 metadata:
   name: agentgateway
 spec:
-  controllerName: kgateway.dev/agentgateway
+  controllerName: agentgateway.dev/agentgateway
   description: Specialized class for agentgateway.
   parametersRef:
     group: agentgateway.dev

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/agentgateway/agentgateway/go/api"
+	jsonpb "google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
@@ -16,6 +17,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/jwks_url"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -93,7 +95,11 @@ func translateBackendPolicyToAgw(
 		}
 
 		if backend.MCP.Authentication != nil {
-			pol := translateBackendMCPAuthentication(ctx, policy, policyTarget)
+			pol, err := translateBackendMCPAuthentication(ctx, policy, policyTarget)
+			if err != nil {
+				logger.Error("error processing backend mcp auth", "err", err)
+				errs = append(errs, err)
+			}
 			agwPolicies = append(agwPolicies, pol...)
 		}
 	}
@@ -283,40 +289,62 @@ func translateBackendMCPAuthorization(policy *agentgateway.AgentgatewayPolicy, t
 	return []AgwPolicy{{Policy: mcpPolicy}}
 }
 
-func translateBackendMCPAuthentication(ctx PolicyCtx, policy *agentgateway.AgentgatewayPolicy, target *api.PolicyTarget) []AgwPolicy {
+func translateBackendMCPAuthentication(ctx PolicyCtx, policy *agentgateway.AgentgatewayPolicy, target *api.PolicyTarget) ([]AgwPolicy, error) {
 	backend := policy.Spec.Backend
 	if backend == nil || backend.MCP == nil || backend.MCP.Authentication == nil {
-		return nil
+		return nil, nil
 	}
 	authnPolicy := backend.MCP.Authentication
 	if authnPolicy == nil {
-		return nil
+		return nil, nil
 	}
 
-	idp := api.BackendPolicySpec_McpAuthentication_AUTH0
-	if authnPolicy.McpIDP != nil && *authnPolicy.McpIDP == agentgateway.Keycloak {
-		idp = api.BackendPolicySpec_McpAuthentication_KEYCLOAK
+	idp := api.BackendPolicySpec_McpAuthentication_UNSPECIFIED
+	if authnPolicy.McpIDP != nil {
+		if *authnPolicy.McpIDP == agentgateway.Keycloak {
+			idp = api.BackendPolicySpec_McpAuthentication_KEYCLOAK
+		} else if *authnPolicy.McpIDP == agentgateway.Auth0 {
+			idp = api.BackendPolicySpec_McpAuthentication_AUTH0
+		}
 	}
 
-	translatedInlineJwks, err := resolveRemoteJWKSInline(ctx, authnPolicy.JWKS.JwksUri)
+	// default mode is Optional
+	mode := api.BackendPolicySpec_McpAuthentication_OPTIONAL
+	if authnPolicy.Mode == agentgateway.JWTAuthenticationModeStrict {
+		mode = api.BackendPolicySpec_McpAuthentication_STRICT
+	} else if authnPolicy.Mode == agentgateway.JWTAuthenticationModePermissive {
+		mode = api.BackendPolicySpec_McpAuthentication_PERMISSIVE
+	} else if authnPolicy.Mode == agentgateway.JWTAuthenticationModeOptional {
+		mode = api.BackendPolicySpec_McpAuthentication_OPTIONAL
+	}
+
+	jwksUrl, _, err := jwks_url.JwksUrlBuilderFactory().BuildJwksUrlAndTlsConfig(ctx.Krt, policy.Name, policy.Namespace, &authnPolicy.JWKS)
 	if err != nil {
-		logger.Error("failed resolving jwks", "jwks_uri", authnPolicy.JWKS.JwksUri, "error", err)
-		return nil
+		logger.Error("failed resolving jwks url", "error", err)
+		return nil, err
+	}
+	translatedInlineJwks, err := resolveRemoteJWKSInline(ctx, jwksUrl)
+	if err != nil {
+		logger.Error("failed resolving jwks", "jwks_uri", jwksUrl, "error", err)
+		return nil, err
 	}
 
+	var errs []error
 	var extraResourceMetadata map[string]*structpb.Value
 	for k, v := range authnPolicy.ResourceMetadata {
 		if extraResourceMetadata == nil {
 			extraResourceMetadata = make(map[string]*structpb.Value)
 		}
 
-		pbVal, err := structpb.NewValue(v)
+		proto := &structpb.Value{}
+		err := jsonpb.Unmarshal(v.Raw, proto)
 		if err != nil {
 			logger.Error("error converting resource metadata", "key", k, "error", err)
+			errs = append(errs, err)
 			continue
 		}
 
-		extraResourceMetadata[k] = pbVal
+		extraResourceMetadata[k] = proto
 	}
 
 	mcpAuthn := &api.BackendPolicySpec_McpAuthentication{
@@ -327,6 +355,7 @@ func translateBackendMCPAuthentication(ctx PolicyCtx, policy *agentgateway.Agent
 			Extra: extraResourceMetadata,
 		},
 		JwksInline: translatedInlineJwks,
+		Mode:       mode,
 	}
 	mcpAuthnPolicy := &api.Policy{
 		Key:    policy.Namespace + "/" + policy.Name + mcpAuthenticationPolicySuffix + attachmentName(target),
@@ -345,7 +374,7 @@ func translateBackendMCPAuthentication(ctx PolicyCtx, policy *agentgateway.Agent
 		"policy", policy.Name,
 		"agentgateway_policy", mcpAuthnPolicy.Name)
 
-	return []AgwPolicy{{Policy: mcpAuthnPolicy}}
+	return []AgwPolicy{{Policy: mcpAuthnPolicy}}, errors.Join(errs...)
 }
 
 // translateBackendAI processes AI configuration and creates corresponding Agw policies
@@ -482,8 +511,16 @@ func translateBackendAuth(ctx PolicyCtx, policy *agentgateway.AgentgatewayPolicy
 				errs = append(errs, fmt.Errorf("secret %s/%s missing Authorization value", policy.Namespace, auth.SecretRef.Name))
 			}
 		}
-	} else {
-		errs = append(errs, fmt.Errorf("backend auth requires either inline key or secretRef"))
+	} else if auth.AWS != nil {
+		awsAuth, err := buildAwsAuthPolicy(ctx.Krt, auth.AWS, ctx.Collections.Secrets, policy.Namespace)
+		translatedAuth = awsAuth
+		errs = append(errs, err)
+	} else if auth.Passthrough != nil {
+		translatedAuth = &api.BackendAuthPolicy{
+			Kind: &api.BackendAuthPolicy_Passthrough{
+				Passthrough: &api.Passthrough{},
+			},
+		}
 	}
 
 	if translatedAuth == nil {
@@ -524,8 +561,76 @@ func translateRouteType(rt agentgateway.RouteType) api.BackendPolicySpec_Ai_Rout
 		return api.BackendPolicySpec_Ai_RESPONSES
 	case agentgateway.RouteTypeAnthropicTokenCount:
 		return api.BackendPolicySpec_Ai_ANTHROPIC_TOKEN_COUNT
+	case agentgateway.RouteTypeEmbeddings:
+		return api.BackendPolicySpec_Ai_EMBEDDINGS
 	default:
 		// Default to completions if unknown type
 		return api.BackendPolicySpec_Ai_COMPLETIONS
 	}
+}
+
+func buildAwsAuthPolicy(krtctx krt.HandlerContext, auth *agentgateway.AwsAuth, secrets krt.Collection[*corev1.Secret], namespace string) (*api.BackendAuthPolicy, error) {
+	var errs []error
+	if auth == nil {
+		logger.Warn("using implicit AWS auth for AI backend")
+		return &api.BackendAuthPolicy{
+			Kind: &api.BackendAuthPolicy_Aws{
+				Aws: &api.Aws{
+					Kind: &api.Aws_Implicit{
+						Implicit: &api.AwsImplicit{},
+					},
+				},
+			},
+		}, nil
+	}
+
+	if auth.SecretRef.Name == "" {
+		logger.Warn("not using any auth for AWS - it's most likely not what you want")
+		return nil, nil
+	}
+
+	// Get secret using the SecretIndex
+	secret, err := kubeutils.GetSecret(secrets, krtctx, auth.SecretRef.Name, namespace)
+	if err != nil {
+		// Return nil auth policy if secret not found - this will be handled upstream
+		// TODO(npolshak): Add backend status errors https://github.com/kgateway-dev/kgateway/issues/11966
+		return nil, err
+	}
+
+	var accessKeyId, secretAccessKey string
+	var sessionToken *string
+
+	// Extract access key
+	if value, exists := kubeutils.GetSecretValue(secret, wellknown.AccessKey); !exists {
+		errs = append(errs, errors.New("accessKey is missing or not a valid string"))
+	} else {
+		accessKeyId = value
+	}
+
+	// Extract secret key
+	if value, exists := kubeutils.GetSecretValue(secret, wellknown.SecretKey); !exists {
+		errs = append(errs, errors.New("secretKey is missing or not a valid string"))
+	} else {
+		secretAccessKey = value
+	}
+
+	// Extract session token (optional)
+	if value, exists := kubeutils.GetSecretValue(secret, wellknown.SessionToken); exists {
+		sessionToken = ptr.Of(value)
+	}
+
+	return &api.BackendAuthPolicy{
+		Kind: &api.BackendAuthPolicy_Aws{
+			Aws: &api.Aws{
+				Kind: &api.Aws_ExplicitConfig{
+					ExplicitConfig: &api.AwsExplicitConfig{
+						AccessKeyId:     accessKeyId,
+						SecretAccessKey: secretAccessKey,
+						SessionToken:    sessionToken,
+						Region:          "",
+					},
+				},
+			},
+		},
+	}, errors.Join(errs...)
 }

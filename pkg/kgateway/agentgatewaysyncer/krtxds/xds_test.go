@@ -10,12 +10,14 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/test/bufconn"
+	"istio.io/istio/pilot/pkg/model"
 	istioxds "istio.io/istio/pilot/pkg/xds"
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
 	"istio.io/istio/pkg/test"
 	"istio.io/istio/pkg/test/util/assert"
+	"istio.io/istio/pkg/workloadapi"
 	"k8s.io/apimachinery/pkg/types"
 
 	agwir "github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/ir"
@@ -42,7 +44,7 @@ func NewFakeDiscoveryServer(t *testing.T, initialAddress ...agentgatewaysyncer.A
 		return resource.Gateway
 	}
 	reg := []krtxds.Registration{
-		krtxds.Collection[agentgatewaysyncer.Address, *api.Address](xdsAddress, opts),
+		krtxds.Collection[agentgatewaysyncer.Address, *workloadapi.Address](xdsAddress, opts),
 		krtxds.PerGatewayCollection[agwir.AgwResource, *api.Resource](xdsResource, agwResourcesByGateway, opts),
 	}
 	// we won't need a mock nack event publisher for this testing, so we pass nil
@@ -94,7 +96,7 @@ func (f Fake) ConnectDeltaADS() *istioxds.DeltaAdsTest {
 
 var (
 	testWorkload1 = agentgatewaysyncer.Address{
-		Workload: ptr.Of(agentgatewaysyncer.PrecomputeWorkload(agentgatewaysyncer.WorkloadInfo{Workload: &api.Workload{Uid: "wl1"}})),
+		Workload: ptr.Of(agentgatewaysyncer.PrecomputeWorkload(model.WorkloadInfo{Workload: &workloadapi.Workload{Uid: "wl1"}})),
 	}
 )
 
@@ -117,7 +119,7 @@ func TestXDSUpdate(t *testing.T) {
 	ads.RequestResponseAck(nil)
 
 	wl1Updated := agentgatewaysyncer.Address{
-		Workload: ptr.Of(agentgatewaysyncer.PrecomputeWorkload(agentgatewaysyncer.WorkloadInfo{Workload: &api.Workload{Uid: "wl1", ClusterId: "cluster1"}})),
+		Workload: ptr.Of(agentgatewaysyncer.PrecomputeWorkload(model.WorkloadInfo{Workload: &workloadapi.Workload{Uid: "wl1", ClusterId: "cluster1"}})),
 	}
 	s.Addresses.UpdateObject(wl1Updated)
 	resp := ads.ExpectResponse()

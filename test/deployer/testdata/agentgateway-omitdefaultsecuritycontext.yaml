@@ -3,7 +3,7 @@ kind: GatewayClass
 metadata:
   name: agentgateway
 spec:
-  controllerName: kgateway.dev/agentgateway
+  controllerName: agentgateway.dev/agentgateway
   description: Specialized class for agentgateway.
   parametersRef:
     group: agentgateway.dev
@@ -25,7 +25,7 @@ spec:
           # Delete pod-level securityContext
           securityContext: null
           containers:
-            - name: agent-gateway
+            - name: agentgateway
               # Delete container-level securityContext
               securityContext: null
 ---

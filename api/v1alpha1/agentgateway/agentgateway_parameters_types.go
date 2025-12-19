@@ -117,7 +117,7 @@ type AgentgatewayParametersConfigs struct {
 	//
 	// Default values, which may be overridden individually:
 	//
-	//	registry: ghcr.io/agentgateway
+	//	registry: cr.agentgateway.dev
 	//	repository: agentgateway
 	//	tag: <agentgateway version>
 	//	pullPolicy: <omitted, relying on Kubernetes defaults which depend on the tag>
@@ -240,7 +240,7 @@ type KubernetesResourceOverlay struct {
 	//
 	//   spec:
 	//     containers:
-	//       - name: agent-gateway
+	//       - name: agentgateway
 	//         # Delete the securityContext using $patch: delete
 	//         securityContext:
 	//           $patch: delete

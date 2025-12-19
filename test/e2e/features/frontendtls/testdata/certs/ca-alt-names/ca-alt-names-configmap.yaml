@@ -1,0 +1,33 @@
+# CA certificate for validating client certificates in verify-subject-alt-names tests
+# This CA is used to sign the client certificates for SAN validation testing
+# Generated with:
+#   openssl genrsa -out ca-alt-names-key.pem 2048
+#   openssl req -new -x509 -days 365 -key ca-alt-names-key.pem -out ca-alt-names-cert.pem -subj "/CN=Test CA Alt Names/O=Test Org"
+#   # Then the certificate content below is from ca-alt-names-cert.pem
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ca-alt-names-cert
+  namespace: default
+data:
+  ca.crt: |
+    -----BEGIN CERTIFICATE-----
+    MIIDPzCCAiegAwIBAgIUF9V9pw/3Hnt4tADgxsAdNrvMZzwwDQYJKoZIhvcNAQEL
+    BQAwLzEaMBgGA1UEAwwRVGVzdCBDQSBBbHQgTmFtZXMxETAPBgNVBAoMCFRlc3Qg
+    T3JnMB4XDTI1MTIwODIwNDQ0MVoXDTI2MTIwODIwNDQ0MVowLzEaMBgGA1UEAwwR
+    VGVzdCBDQSBBbHQgTmFtZXMxETAPBgNVBAoMCFRlc3QgT3JnMIIBIjANBgkqhkiG
+    9w0BAQEFAAOCAQ8AMIIBCgKCAQEArWhC1bvCiaZ0+0gJpiiuUx5L5RPdUuZaNLmi
+    g0BynSYBxW4nQ575KZMk1QlN8DGgpGGvLaHKQ6kkmli6QL7YqgmOcjYfvPRo9c48
+    Iv7HRlcd66sR26RbYL1m+URzGfBGw6hKioNtDjCPUmcWjdUbMtaTlU6MxbiT2L6k
+    NunUVp4OJod68b2vQnBNShKVyjc6Q8n4HfXzUDiWnZ4WppRtCEmrljKiy3Uw1y/i
+    WypO+eCW+++iC4x+29Ca6wY7tqvkjiVcpGrZhyIdXSSoZQ2uOB+saCB6mqz5l0OR
+    GiSdSXm9zUYArC2zfLxm+7L6HrsdgtLI3UKlGKF9EKJJPZhu5wIDAQABo1MwUTAd
+    BgNVHQ4EFgQUfcn7jCJ87CNS7n9DCHfDAyYnCRkwHwYDVR0jBBgwFoAUfcn7jCJ8
+    7CNS7n9DCHfDAyYnCRkwDwYDVR0TAQH/BAUwAwEB/zANBgkqhkiG9w0BAQsFAAOC
+    AQEAbJ3q2LGBQAUBy+BwmW9eCIBal1Z6yYZ6yfWjbTFF99U+mJPdnDJ62Iz8QIXD
+    cQPCJ6ShLKKf9dcBkQsu8sHDcEjSVtOqxeFGMS6gKMh+2Pgyz8UMQGmZTCzSSEMt
+    JQHNXrCGS3YN8bFtQZh1JgltZyrGvGHODhm3jLxAZbBoUHG2j/Hs78kDKDmT0PRf
+    YWGtNYYAd68KYWBiTPA31an0XDTWd7hfBqgv96bNgY59FWZBFVXDY0zRKD7W3i+F
+    TMS6DzRIwymMzQ35aorOLmXTfGF0fgIz2AvqONcwU328t6WIG93Si2XHLl0unrtS
+    G5ZqrTfHO7fkMPKl0/93mENQ4g==
+    -----END CERTIFICATE-----

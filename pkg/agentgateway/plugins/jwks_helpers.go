@@ -22,7 +22,7 @@ func resolveRemoteJWKSInline(ctx PolicyCtx, jwksURI string) (string, error) {
 	}
 	jwksCM := ptr.Flatten(krt.FetchOne(ctx.Krt, ctx.Collections.ConfigMaps, krt.FilterObjectName(*jwksStoreName)))
 	if jwksCM == nil {
-		return "", fmt.Errorf("jwks ConfigMap isn't available")
+		return "", fmt.Errorf("jwks ConfigMap %v isn't available", jwksStoreName)
 	}
 	jwksForURI, err := jwks.JwksFromConfigMap(jwksCM)
 	if err != nil {

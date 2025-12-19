@@ -182,3 +182,55 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateCertificateHash(t *testing.T) {
+	testCases := []struct {
+		name  string
+		hash  string
+		valid bool
+	}{
+		{name: "valid_hash_64_chars", hash: "FC1B6F225ED06510D268A47E3363C19948DD19BBB8A92C211605F4604757ABB9", valid: true},
+		{name: "valid_hash_32_pairs", hash: "FC:1B:6F:22:5E:D0:65:10:D2:68:A4:7E:33:63:C1:99:48:DD:19:BB:B8:A9:2C:21:16:05:F4:60:47:57:AB:B9", valid: true},
+		{name: "invalid_hash_64_chars_invalid_hex", hash: "FC1B6F225ED06510D268A47E3363C19948DD19BBB8A92C211605F4604757ABAG", valid: false},
+		{name: "invalid_hash_32_pairs_invalid_hex", hash: "FC:1B:6F:22:5E:D0:65:10:D2:68:A4:7E:33:63:C1:99:48:DD:19:BB:B8:A9:2C:21:16:05:F4:60:47:57:AB:BG", valid: false},
+		{name: "invalid_hash_64_chars_too_short", hash: "FC1B6F225ED06510D268A47E3363C19948DD19BBB8A92C211605F4604757AB", valid: false},
+		{name: "invalid_hash_32_pairs_too_short", hash: "FC:1B:6F:22:5E:D0:65:10:D2:68:A4:7E:33:63:C1:99:48:DD:19:BB:B8:A9:2C:21:16:05:F4:60:47:57:AB:B", valid: false},
+		{name: "invalid_hash_64_chars_too_long", hash: "FC1B6F225ED06510D268A47E3363C19948DD19BBB8A92C211605F4604757ABB90", valid: false},
+		{name: "invalid_hash_32_pairs_too_long", hash: "FC:1B:6F:22:5E:D0:65:10:D2:68:A4:7E:33:63:C1:99:48:DD:19:BB:B8:A9:2C:21:16:05:F4:60:47:57:AB:B90", valid: false},
+		{name: "invalid_hash_64_chars_with_colon", hash: "FC1B6F225ED06510D268A47E3363C19948DD19BBB8A92C211605F4604757AB:B9", valid: false},
+		{name: "invalid_hash_32_pairs_missing_colon", hash: "FC:1B:6F:22:5E:D0:65:10:D2:68:A4:7E:33:63:C1:99:48:DD:19:BB:B8:A9:2C:21:1605:F4:60:47:57:AB:B9", valid: false},
+		{name: "invalid_hash_32_pairs_trailing_colon", hash: "FC:1B:6F:22:5E:D0:65:10:D2:68:A4:7E:33:63:C1:99:48:DD:19:BB:B8:A9:2C:21:16:05:F4:60:47:57:AB:B9:", valid: false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateCertificateHash(tc.hash)
+			assert.Equal(t, tc.valid, err == nil, "input: %s, expected: %v, got %v", tc.hash, tc.valid, err != nil)
+		})
+	}
+}
+
+func TestSplitFakeYamlArray(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    string
+		expected []string
+	}{
+		{name: "comma_separated", input: "str1,str2,str3", expected: []string{"str1", "str2", "str3"}},
+		{name: "dash_separated", input: "str1-str2-str3", expected: []string{"str1", "str2", "str3"}},
+		{name: "mixed_separated", input: "str1,str2-str3", expected: []string{"str1", "str2", "str3"}},
+		{name: "whitespace_separated", input: "str1, str2, str3", expected: []string{"str1", "str2", "str3"}},
+		{name: "mixed_whitespace_separated", input: "str1, str2- str3", expected: []string{"str1", "str2", "str3"}},
+		{name: "mixed_whitespace_comma_separated", input: "str1, str2, str3", expected: []string{"str1", "str2", "str3"}},
+		{name: "newlines_and_commas_with_whitespace", input: "str1,\n   str2,\n   str3", expected: []string{"str1", "str2", "str3"}},
+		{name: "newlines_and_dashes_with_whitespace", input: "- str1\n   - str2\n   - str3", expected: []string{"str1", "str2", "str3"}},
+		{name: "all_types_of_whitespace_mixed_separated", input: "str1, \r\n   str2- \n \t str3", expected: []string{"str1", "str2", "str3"}},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			actual := splitFakeYamlArray(tc.input)
+			assert.ElementsMatch(t, tc.expected, actual, "input: %s, expected: %v, got %v", tc.input, tc.expected, actual)
+		})
+	}
+}

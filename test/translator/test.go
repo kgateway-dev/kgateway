@@ -657,8 +657,7 @@ func (tc TestCase) Run(
 	gvkToStructuralSchema := extraConfig.GVKToStructuralSchema
 	if len(gvkToStructuralSchema) == 0 {
 		var err error
-		crdDir := filepath.Join(testutils.GitRootDirectory(), testutils.CRDPath)
-		gvkToStructuralSchema, err = testutils.GetStructuralSchemas(crdDir)
+		gvkToStructuralSchema, err = testutils.GetStructuralSchemasForBothCharts()
 		r.NoError(err, "error getting structural schemas")
 	}
 

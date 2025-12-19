@@ -1,5 +1,5 @@
-{{- $gateway := .Values.gateway }}
-{{- if and $gateway.agwXds.tls $gateway.agwXds.tls.enabled }}
+{{- $gateway := .Values.agentgateway }}
+{{- if and $gateway.xds.tls $gateway.xds.tls.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -8,5 +8,5 @@ metadata:
     {{- include "kgateway.gateway.allLabels" . | nindent 4 }}
 data:
   ca.crt: |
-{{ $gateway.agwXds.tls.caCert | indent 4 }}
+{{ $gateway.xds.tls.caCert | indent 4 }}
 {{- end }}

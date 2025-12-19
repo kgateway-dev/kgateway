@@ -29,6 +29,7 @@ spec:
         "/v1/messages": Messages
         "/v1/responses": Responses
         "/v1/messages/count_tokens": AnthropicTokenCount
+        "/v1/embeddings": Embeddings
         "/v1/models": Models
         "*": Passthrough
 ---

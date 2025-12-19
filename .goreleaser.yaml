@@ -142,7 +142,10 @@ docker_manifests:
       - *envoyinit_arm_image
       - *envoyinit_amd_image
 changelog:
-  disable: true
+  # Disable auto-generated changelog from git commits.
+  # For real releases, we use --release-notes flag with our custom script output.
+  # For main branch builds, we skip changelog entirely (same as release).
+  disable: '{{ if isEnvSet "GORELEASER_DISABLE_RELEASE" }}{{ .Env.GORELEASER_DISABLE_RELEASE }}{{ else }}false{{ end }}'
 release:
   disable: '{{ if isEnvSet "GORELEASER_DISABLE_RELEASE" }}{{ .Env.GORELEASER_DISABLE_RELEASE }}{{ else }}false{{ end }}'
   prerelease: "auto"
@@ -165,7 +168,9 @@ release:
 
     ### Helm Charts
 
-    The Helm chart is available at {{ .Env.VANITY_REGISTRY }}/charts/kgateway.
+    The Helm charts are available at:
+    * [{{ .Env.VANITY_REGISTRY }}/charts/kgateway]({{ .Env.VANITY_REGISTRY }}/charts/kgateway).
+    * [{{ .Env.AGW_VANITY_REGISTRY }}/charts/agentgateway]({{ .Env.AGW_VANITY_REGISTRY }}/charts/agentgateway).
 
     ### Docker Images
 
@@ -181,6 +186,8 @@ release:
     ```
     helm install kgateway-crds oci://{{ .Env.VANITY_REGISTRY }}/charts/kgateway-crds --version {{ .Env.VERSION }} --namespace kgateway-system --create-namespace
     helm install kgateway oci://{{ .Env.VANITY_REGISTRY }}/charts/kgateway --version {{ .Env.VERSION }} --namespace kgateway-system --create-namespace
+    helm install agentgateway-crds oci://{{ .Env.AGW_VANITY_REGISTRY }}/charts/agentgateway-crds --version {{ .Env.VERSION }} --namespace agentgateway-system --create-namespace
+    helm install agentgateway oci://{{ .Env.AGW_VANITY_REGISTRY }}/charts/agentgateway --version {{ .Env.VERSION }} --namespace agentgateway-system --create-namespace
     ```
 
     For detailed installation instructions and next steps, please visit our [quickstart guide](https://kgateway.dev/docs/quickstart/).

@@ -24,7 +24,7 @@ import (
 func NewBackendTLSPlugin(agw *AgwCollections) AgwPlugin {
 	policyCol := krt.NewManyCollection(agw.BackendTLSPolicies, func(krtctx krt.HandlerContext, btls *gwv1.BackendTLSPolicy) []AgwPolicy {
 		return translatePoliciesForBackendTLS(krtctx, agw.ConfigMaps, agw.Backends, btls)
-	})
+	}, agw.KrtOpts.ToOptions("agentgateway/BackendTLSPolicy")...)
 	return AgwPlugin{
 		ContributesPolicies: map[schema.GroupKind]PolicyPlugin{
 			wellknown.BackendTLSPolicyGVK.GroupKind(): {
@@ -61,16 +61,11 @@ func translatePoliciesForBackendTLS(
 				logger.Error("backend not found; skipping policy", "backend", backendRef, "policy", kubeutils.NamespacedNameFrom(btls))
 				continue
 			}
-			if target.SectionName != nil {
-				logger.Error("backend sectionName not supported; use the inline policy for that section", "backend", backendRef, "policy", kubeutils.NamespacedNameFrom(btls))
-				continue
-			} else {
-				// The target defaults to <backend-namespace>/<backend-name>.
-				// If SectionName is specified to select a specific target in the Backend,
-				// the target becomes <backend-namespace>/<backend-name>/<section-name>
-				policyTarget = &api.PolicyTarget{
-					Kind: utils.BackendTarget(btls.Namespace, string(target.Name), target.SectionName),
-				}
+			// The target defaults to <backend-namespace>/<backend-name>.
+			// If SectionName is specified to select a specific target in the Backend,
+			// the target becomes <backend-namespace>/<backend-name>/<section-name>
+			policyTarget = &api.PolicyTarget{
+				Kind: utils.BackendTarget(btls.Namespace, string(target.Name), target.SectionName),
 			}
 		case wellknown.ServiceKind:
 			policyTarget = &api.PolicyTarget{

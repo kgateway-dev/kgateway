@@ -14,8 +14,11 @@ Merging a pull request requires the following steps to be completed before the p
     - `make verify -B`: This will run codegen and return an error if it results in any local diffs. See more details in [Code Generation](./code-generation.md).
     - `make analyze -B`: This will run a linter and return any errors.
 - [Open a pull request](https://help.github.com/articles/about-pull-requests/)
-- Pass all [automated tests](/.github/workflows/README.md)
+- Pass all [required CI checks](/.github/workflows/README.md#pull-request-ci-checks)
 - Get all necessary approvals from reviewers and code owners
+
+> [!TIP]
+> See information on how to [interact with CI](/.github/workflows/README.md#interacting-with-ci) via PR comments or labels.
 
 ## Best Practices for Pull Requests
 Below are some best practices we have found to help PRs get reviewed quickly

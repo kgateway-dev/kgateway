@@ -123,7 +123,7 @@ spec:
           value: gw
         image: my-custom-registry.io/my-org/custom-agentgateway:v2.0.0@sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890
         imagePullPolicy: Always
-        name: agent-gateway
+        name: agentgateway
         ports:
         - containerPort: 15020
           name: metrics
