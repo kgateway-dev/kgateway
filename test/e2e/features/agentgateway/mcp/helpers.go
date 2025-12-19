@@ -532,6 +532,8 @@ func (s *testingSuite) waitForAuthnEnforced() {
 		500 * time.Millisecond,
 		1 * time.Second,
 		2 * time.Second,
+		4 * time.Second,
+		8 * time.Second,
 	}
 
 	for attempt := 0; attempt <= len(backoffs); attempt++ {
