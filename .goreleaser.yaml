@@ -109,6 +109,8 @@ dockers:
       - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_IMAGE }}"
       - "--build-arg=RUST_BUILD_ARCH=aarch64"
       - "--build-arg=RUSTFORMATIONS_DIR=/internal/envoyinit"
+      - "--cache-from=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-wrapper-cache:arm64"
+      - "--cache-to=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-wrapper-cache:arm64,mode=max,ignore-error=true"
     extra_files:
       - cmd/envoyinit/docker-entrypoint.sh
       - internal/envoyinit
@@ -125,6 +127,8 @@ dockers:
       - "--build-arg=ENTRYPOINT_SCRIPT=/cmd/envoyinit/docker-entrypoint.sh"
       - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_IMAGE }}"
       - "--build-arg=RUSTFORMATIONS_DIR=/internal/envoyinit"
+      - "--cache-from=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-wrapper-cache:amd64"
+      - "--cache-to=type=registry,ref={{ .Env.IMAGE_REGISTRY }}/envoy-wrapper-cache:amd64,mode=max,ignore-error=true"
     extra_files:
       - cmd/envoyinit/docker-entrypoint.sh
       - internal/envoyinit
