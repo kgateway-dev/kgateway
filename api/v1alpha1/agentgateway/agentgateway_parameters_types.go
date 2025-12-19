@@ -84,26 +84,27 @@ type AgentgatewayParametersConfigs struct {
 	// precedence.
 	//
 	// Example:
-	//   rawConfig:
-	//     binds:
-	//     - port: 3000
-	//       listeners:
-	//       - routes:
-	//         - policies:
-	//             cors:
-	//               allowOrigins:
-	//                 - "*"
-	//               allowHeaders:
-	//                 - mcp-protocol-version
-	//                 - content-type
-	//                 - cache-control
-	//           backends:
-	//           - mcp:
-	//               targets:
-	//               - name: everything
-	//                 stdio:
-	//                   cmd: npx
-	//                   args: ["@modelcontextprotocol/server-everything"]
+	//
+	//	rawConfig:
+	//	  binds:
+	//	  - port: 3000
+	//	    listeners:
+	//	    - routes:
+	//	      - policies:
+	//	          cors:
+	//	            allowOrigins:
+	//	              - "*"
+	//	            allowHeaders:
+	//	              - mcp-protocol-version
+	//	              - content-type
+	//	              - cache-control
+	//	        backends:
+	//	        - mcp:
+	//	            targets:
+	//	            - name: everything
+	//	              stdio:
+	//	                cmd: npx
+	//	                args: ["@modelcontextprotocol/server-everything"]
 	//
 	// +optional
 	// +kubebuilder:validation:Type=object
@@ -237,36 +238,36 @@ type KubernetesResourceOverlay struct {
 	// To remove an item from a generated list (e.g., removing a default sidecar), you must use
 	// the special `$patch: delete` directive.
 	//
-	//   spec:
-	//     containers:
-	//       - name: agentgateway
-	//         # Delete the securityContext using $patch: delete
-	//         securityContext:
-	//           $patch: delete
+	//	spec:
+	//	  containers:
+	//	    - name: agentgateway
+	//	      # Delete the securityContext using $patch: delete
+	//	      securityContext:
+	//	        $patch: delete
 	//
 	// **4. Deleting/Clearing Map Fields (null):**
 	// To remove a map field or a scalar entirely, set its value to `null`.
 	//
-	//   spec:
-	//     template:
-	//       spec:
-	//         nodeSelector: null  # Removes default nodeSelector
+	//	spec:
+	//	  template:
+	//	    spec:
+	//	      nodeSelector: null  # Removes default nodeSelector
 	//
 	// **5. Replacing Lists Entirely ($patch: replace):**
 	// If you want to strictly define a list and ignore all generated defaults, use `$patch: replace`.
 	//
-	//   service:
-	//     spec:
-	//       ports:
-	//         - $patch: replace
-	//         - name: http
-	//           port: 80
-	//           targetPort: 8080
-	//           protocol: TCP
-	//         - name: https
-	//           port: 443
-	//           targetPort: 8443
-	//           protocol: TCP
+	//	service:
+	//	  spec:
+	//	    ports:
+	//	      - $patch: replace
+	//	      - name: http
+	//	        port: 80
+	//	        targetPort: 8080
+	//	        protocol: TCP
+	//	      - name: https
+	//	        port: 443
+	//	        targetPort: 8443
+	//	        protocol: TCP
 	//
 	// +optional
 	// +kubebuilder:validation:Type=object
