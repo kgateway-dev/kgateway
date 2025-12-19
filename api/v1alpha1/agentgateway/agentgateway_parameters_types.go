@@ -6,13 +6,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// +kubebuilder:rbac:groups=agentgateway.dev,resources=agentgatewayparameters,verbs=get;list;watch
+// +kubebuilder:rbac:groups=agentgateway.dev,resources=agentgatewayparameters/status,verbs=get;update;patch
+
 // AgentgatewayParameters are configuration that is used to dynamically
 // provision the agentgateway data plane. Labels and annotations that apply to
 // all resources may be specified at a higher level; see
 // https://gateway-api.sigs.k8s.io/reference/spec/#gatewayinfrastructure
 //
-// +kubebuilder:rbac:groups=agentgateway.dev,resources=agentgatewayparameters,verbs=get;list;watch
-// +kubebuilder:rbac:groups=agentgateway.dev,resources=agentgatewayparameters/status,verbs=get;update;patch
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 // +genclient
 // +kubebuilder:object:root=true
