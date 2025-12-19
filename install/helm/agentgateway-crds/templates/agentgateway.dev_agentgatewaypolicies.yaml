@@ -1146,7 +1146,8 @@ spec:
                               backendRef:
                                 description: |-
                                   backendRef references the remote JWKS server to reach.
-                                  Supported types: Service and Backend.
+                                  Supported types are Service and (static) Backend. An AgentgatewayPolicy containing backend tls config
+                                  can then be attached to the service/backend in order to set tls options for a connection to the remote jwks source.
                                 properties:
                                   group:
                                     default: ""
@@ -1224,8 +1225,8 @@ spec:
                                 - message: cacheDuration must be at least 5m.
                                   rule: duration(self) >= duration('5m')
                               jwksPath:
-                                description: Path to IdP jwks endpoint. Default tls
-                                  settings are used to connect to this url.
+                                description: Path to IdP jwks endpoint, relative to
+                                  the root, commonly ".well-known/jwks.json".
                                 maxLength: 2000
                                 minLength: 1
                                 type: string
@@ -3087,7 +3088,8 @@ spec:
                                     backendRef:
                                       description: |-
                                         backendRef references the remote JWKS server to reach.
-                                        Supported types: Service and Backend.
+                                        Supported types are Service and (static) Backend. An AgentgatewayPolicy containing backend tls config
+                                        can then be attached to the service/backend in order to set tls options for a connection to the remote jwks source.
                                       properties:
                                         group:
                                           default: ""
@@ -3165,8 +3167,8 @@ spec:
                                       - message: cacheDuration must be at least 5m.
                                         rule: duration(self) >= duration('5m')
                                     jwksPath:
-                                      description: Path to IdP jwks endpoint. Default
-                                        tls settings are used to connect to this url.
+                                      description: Path to IdP jwks endpoint, relative
+                                        to the root, commonly ".well-known/jwks.json".
                                       maxLength: 2000
                                       minLength: 1
                                       type: string

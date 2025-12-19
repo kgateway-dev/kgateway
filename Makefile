@@ -232,7 +232,7 @@ E2E_GO_TEST_ARGS ?= -vet=off -timeout=25m -outputdir=$(OUTPUT_DIR)
 # Testing flags: https://pkg.go.dev/cmd/go#hdr-Testing_flags
 # The default timeout for a suite is 10 minutes, but this can be overridden by setting the -timeout flag. Currently set
 # to 25 minutes based on the time it takes to run the longest test setup (kgateway_test).
-GO_TEST_ARGS ?= $(E2E_GO_TEST_ARGS) -race
+GO_TEST_ARGS ?= -timeout=25m -outputdir=$(OUTPUT_DIR) -race
 GO_TEST_COVERAGE_ARGS ?= --cover --covermode=atomic --coverprofile=cover.out
 GO_TEST_COVERAGE ?= go tool github.com/vladopajic/go-test-coverage/v2
 
