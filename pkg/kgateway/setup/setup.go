@@ -269,17 +269,6 @@ func New(opts ...func(*setup)) (*setup, error) {
 		opt(s)
 	}
 
-	if s.restConfig == nil {
-		s.restConfig = ctrl.GetConfigOrDie()
-	}
-	if s.apiClient == nil {
-		apiClient, err := apiclient.New(s.restConfig)
-		if err != nil {
-			return nil, fmt.Errorf("error creating API client: %w", err)
-		}
-		s.apiClient = apiClient
-	}
-
 	if s.globalSettings == nil {
 		var err error
 		s.globalSettings, err = apisettings.BuildSettings()
@@ -290,6 +279,17 @@ func New(opts ...func(*setup)) (*setup, error) {
 	}
 
 	SetupLogging(s.globalSettings.LogLevel)
+
+	if s.restConfig == nil {
+		s.restConfig = ctrl.GetConfigOrDie()
+	}
+	if s.apiClient == nil {
+		apiClient, err := apiclient.New(s.restConfig)
+		if err != nil {
+			return nil, fmt.Errorf("error creating API client: %w", err)
+		}
+		s.apiClient = apiClient
+	}
 
 	// Adjust leader election ID based on which controllers are enabled.
 	// This allows split helm charts to deploy separate controllers that don't compete for the same lease.
