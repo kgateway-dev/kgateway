@@ -283,5 +283,14 @@ func (g *agentgatewayParametersHelmValuesGenerator) getDefaultAgentgatewayHelmVa
 		PullPolicy: nil,
 	}
 
+	// Initialize default Service values
+	gtw.Service = &deployer.HelmService{
+		Type: ptr.To(string(corev1.ServiceTypeLoadBalancer)),
+	}
+	// Extract loadBalancerIP from Gateway.spec.addresses and set it on the service if service type is LoadBalancer
+	if err := deployer.SetLoadBalancerIPFromGateway(gw, gtw.Service); err != nil {
+		return nil, err
+	}
+
 	return &deployer.HelmConfig{Agentgateway: gtw}, nil
 }

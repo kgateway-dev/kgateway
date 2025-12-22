@@ -209,7 +209,8 @@ type AgentgatewayHelmGateway struct {
 	GatewayLabels      map[string]string `json:"gatewayLabels,omitempty"`
 
 	// deployment/service values
-	Ports []HelmPort `json:"ports,omitempty"`
+	Ports   []HelmPort   `json:"ports,omitempty"`
+	Service *HelmService `json:"service,omitempty"`
 
 	// agentgateway xds values
 	Xds *HelmXds `json:"xds,omitempty"`

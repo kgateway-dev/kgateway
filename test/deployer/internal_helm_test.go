@@ -262,6 +262,10 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			Name:      "agentgateway with custom configmap name via overlay",
 			InputFile: "agentgateway-custom-configmap",
 		},
+		{
+			Name:      "agentgateway with static IP address",
+			InputFile: "agentgateway-loadbalancer-static-ip",
+		},
 	}
 
 	tester := DeployerTester{
