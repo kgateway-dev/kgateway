@@ -62,7 +62,7 @@ type Message struct {
 // BuiltIn regex patterns for specific types of strings in prompts.
 // For example, if you specify `CreditCard`, any credit card numbers
 // in the request or response are matched.
-// +kubebuilder:validation:Enum=Ssn;CreditCard;PhoneNumber;Email
+// +kubebuilder:validation:Enum=Ssn;CreditCard;PhoneNumber;Email;CaSin
 type BuiltIn string
 
 const (
@@ -77,6 +77,9 @@ const (
 
 	// Default regex matching for email addresses.
 	EMAIL BuiltIn = "Email"
+
+	// Default regex matching for Canadian Social Insurance Numbers.
+	CA_SIN BuiltIn = "CaSin"
 )
 
 // Action to take if a regex pattern is matched in a request or response.

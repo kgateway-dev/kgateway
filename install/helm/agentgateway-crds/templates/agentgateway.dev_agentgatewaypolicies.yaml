@@ -593,6 +593,7 @@ spec:
                                         - CreditCard
                                         - PhoneNumber
                                         - Email
+                                        - CaSin
                                         type: string
                                       type: array
                                     matches:
@@ -816,6 +817,7 @@ spec:
                                         - CreditCard
                                         - PhoneNumber
                                         - Email
+                                        - CaSin
                                         type: string
                                       type: array
                                     matches:
