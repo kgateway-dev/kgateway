@@ -107,7 +107,6 @@ func NewAgwCollections(
 		KrtOpts:         commoncol.KrtOpts,
 		ControllerName:  agwControllerName,
 		SystemNamespace: systemNamespace,
-		IstioNamespace:  commoncol.Settings.IstioNamespace,
 		ClusterID:       clusterID,
 
 		// Core Kubernetes resources
@@ -138,14 +137,6 @@ func NewAgwCollections(
 			kclient.NewFiltered[*discovery.EndpointSlice](commoncol.Client, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}),
 			commoncol.KrtOpts.ToOptions("informer/EndpointSlices")...),
 
-		// Istio resources
-		WorkloadEntries: krt.WrapClient(
-			kclient.NewDelayedInformer[*networkingclient.WorkloadEntry](commoncol.Client, gvr.WorkloadEntry, kubetypes.StandardInformer, kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}),
-			commoncol.KrtOpts.ToOptions("informer/WorkloadEntries")...),
-		ServiceEntries: krt.WrapClient(
-			kclient.NewDelayedInformer[*networkingclient.ServiceEntry](commoncol.Client, gvr.ServiceEntry, kubetypes.StandardInformer, kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}),
-			commoncol.KrtOpts.ToOptions("informer/ServiceEntries")...),
-
 		// Gateway API resources
 		GatewayClasses:     krt.WrapClient(kclient.NewFilteredDelayed[*gwv1.GatewayClass](commoncol.Client, wellknown.GatewayClassGVR, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/GatewayClasses")...),
 		Gateways:           krt.WrapClient(kclient.NewFilteredDelayed[*gwv1.Gateway](commoncol.Client, wellknown.GatewayGVR, kubetypes.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/Gateways")...),
@@ -174,6 +165,16 @@ func NewAgwCollections(
 		agwCollections.InferencePools = krt.WrapClient(kclient.NewDelayedInformer[*inf.InferencePool](commoncol.Client, inferencePoolGVR, kubetypes.StandardInformer, kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}), commoncol.KrtOpts.ToOptions("informer/InferencePools")...)
 	}
 	agwCollections.SetupIndexes()
+
+	if commoncol.Settings.EnableIstioIntegration {
+		agwCollections.IstioNamespace = commoncol.Settings.IstioNamespace
+		agwCollections.WorkloadEntries = krt.WrapClient(
+			kclient.NewDelayedInformer[*networkingclient.WorkloadEntry](commoncol.Client, gvr.WorkloadEntry, kubetypes.StandardInformer, kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}),
+			commoncol.KrtOpts.ToOptions("informer/WorkloadEntries")...)
+		agwCollections.ServiceEntries = krt.WrapClient(
+			kclient.NewDelayedInformer[*networkingclient.ServiceEntry](commoncol.Client, gvr.ServiceEntry, kubetypes.StandardInformer, kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}),
+			commoncol.KrtOpts.ToOptions("informer/ServiceEntries")...)
+	}
 
 	return agwCollections, nil
 }

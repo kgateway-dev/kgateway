@@ -668,7 +668,7 @@ func (t *TestStatusQueue) Dump() string {
 }
 
 func proxySyncerPluginFactory(ctx context.Context, commoncol *collections.CommonCollections, extraPluginsFn ExtraPluginsFn, globalSettings apisettings.Settings) pluginsdk.Plugin {
-	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultAgwClassName, globalSettings, nil)
+	plugins := registry.Plugins(ctx, commoncol, globalSettings, nil)
 
 	var extraPlugs []pluginsdk.Plugin
 	if extraPluginsFn != nil {

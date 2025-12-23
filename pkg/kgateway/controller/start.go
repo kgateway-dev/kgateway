@@ -279,7 +279,6 @@ func pluginFactoryWithBuiltin(cfg StartConfig) extensions2.K8sGatewayExtensionsF
 		plugins := registry.Plugins(
 			ctx,
 			commoncol,
-			cfg.WaypointGatewayClassName,
 			*cfg.SetupOpts.GlobalSettings,
 			cfg.Validator,
 		)
