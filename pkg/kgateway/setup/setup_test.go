@@ -174,6 +174,7 @@ func TestWithStandardSettings(t *testing.T) {
 	if err != nil {
 		t.Fatalf("can't get settings %v", err)
 	}
+	st.EnableIstioIntegration = true
 	runScenario(t, "testdata/standard", st)
 }
 
