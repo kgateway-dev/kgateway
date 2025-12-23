@@ -87,7 +87,7 @@ controller:
 # -- Configure the default container image for the components that Helm deploys. You can override these settings for each particular component in that component's section, such as 'controller.image' for the agentgateway control plane. If you use your own private registry, make sure to include the imagePullSecrets.
 image:
   # -- Set the default image registry.
-  registry: ghcr.io/kgateway-dev
+  registry: cr.agentgateway.dev
   # -- Set the default image tag.
   tag: ""
   # -- Set the default image pull policy.

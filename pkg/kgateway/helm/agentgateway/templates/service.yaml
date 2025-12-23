@@ -1,4 +1,4 @@
-{{- $gateway := .Values.gateway }}
+{{- $gateway := .Values.agentgateway }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -6,32 +6,21 @@ metadata:
   annotations:
     {{- toYaml (merge
       ($gateway.gatewayAnnotations| default dict)
-      ((($gateway.service).extraAnnotations) | default dict)
     ) | nindent 4 }}
   labels:
     {{- toYaml (merge
       (include "kgateway.gateway.allLabels" . | fromYaml)
-      ((($gateway.service).extraLabels) | default dict)
     ) | nindent 4 }}
 spec:
-  type: {{ $gateway.service.type }}
-  {{- if $gateway.service.externalTrafficPolicy }}
-  externalTrafficPolicy: {{ $gateway.service.externalTrafficPolicy }}
-  {{- end }}
-  {{- with $gateway.service.clusterIP }}
-  clusterIP: {{ . }}
-  {{- end }}
-  {{- with $gateway.service.loadBalancerIP }}
-  loadBalancerIP: {{ . }}
-  {{- end }}
+  type: LoadBalancer
   ports:
   {{- range $p := $gateway.ports }}
-    - name: {{ $p.name }}
-      protocol: {{ $p.protocol }}
-      targetPort: {{ $p.port }}
-      port: {{ $p.port }}
+    - name: {{ $p.name | quote }}
+      protocol: {{ $p.protocol | quote }}
+      targetPort: {{ $p.port | int }}
+      port: {{ $p.port | int }}
     {{- if $p.nodePort }}
-      nodePort: {{ $p.nodePort }}
+      nodePort: {{ $p.nodePort | int }}
     {{- end }}
   {{- end }}
   selector:

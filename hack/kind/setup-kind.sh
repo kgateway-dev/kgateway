@@ -26,9 +26,11 @@ KIND="${KIND:-go tool kind}"
 HELM="${HELM:-go tool helm}"
 # If true, use localstack for lambda functions
 LOCALSTACK="${LOCALSTACK:-false}"
+# Registry cache reference for envoyinit Docker build (optional)
+ENVOYINIT_CACHE_REF="${ENVOYINIT_CACHE_REF:-}"
 
 # Export the variables so they are available in the environment
-export VERSION CLUSTER_NAME
+export VERSION CLUSTER_NAME ENVOYINIT_CACHE_REF
 
 function create_kind_cluster_or_skip() {
   activeClusters=$(kind get clusters)
@@ -78,9 +80,9 @@ else
   # 2. Make all the docker images and load them to the kind cluster
   if [[ $AGENTGATEWAY == 'true' ]]; then
     # Skip expensive envoy build
-    VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME make kind-build-and-load-kgateway-agentgateway kind-build-and-load-dummy-idp kind-build-and-load-dummy-auth0 
+    VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME make kind-build-and-load-kgateway-agentgateway kind-build-and-load-dummy-idp
   else
-    VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME make kind-build-and-load kind-build-and-load-dummy-idp kind-build-and-load-dummy-auth0 
+    VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME make kind-build-and-load kind-build-and-load-dummy-idp
   fi
 
   VERSION=$VERSION make package-kgateway-charts package-agentgateway-charts

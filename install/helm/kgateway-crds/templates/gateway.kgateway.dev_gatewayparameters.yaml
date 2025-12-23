@@ -294,7 +294,7 @@ spec:
                       image:
                         description: "The agentgateway container image. See\nhttps://kubernetes.io/docs/concepts/containers/images\nfor
                           details.\n\nDefault values, which may be overridden individually:\n\n\tregistry:
-                          ghcr.io/agentgateway\n\trepository: agentgateway\n\ttag:
+                          cr.agentgateway.dev\n\trepository: agentgateway\n\ttag:
                           <agentgateway version>\n\tpullPolicy: IfNotPresent"
                         properties:
                           digest:

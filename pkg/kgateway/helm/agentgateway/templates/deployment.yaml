@@ -1,4 +1,4 @@
-{{- $gateway := .Values.gateway }}
+{{- $gateway := .Values.agentgateway }}
 {{- $promAnnotations := (dict
   "prometheus.io/path" "/metrics"
   "prometheus.io/port" "15020"
@@ -15,9 +15,6 @@ metadata:
   labels:
     {{- include "kgateway.gateway.allLabels" . | nindent 4 }}
 spec:
-  {{- if $gateway.replicaCount }}
-  replicas: {{ $gateway.replicaCount }}
-  {{- end }}
   selector:
     matchLabels:
       {{- include "kgateway.gateway.selectorLabels" . | nindent 6 }}
@@ -29,48 +26,47 @@ spec:
       {{- toYaml (merge
           $configChecksum
           (deepCopy ($gateway.gatewayAnnotations | default dict))
-          ($gateway.extraPodAnnotations | default dict)
           $promAnnotations
        ) | nindent 8 }}
       labels:
         {{- toYaml (merge
-          (dict "gateway.networking.k8s.io/gateway-class-name" .Values.gateway.gatewayClassName)
+          (dict "gateway.networking.k8s.io/gateway-class-name" .Values.agentgateway.gatewayClassName)
           (include "kgateway.gateway.selectorLabels" . | fromYaml)
           ($gateway.gatewayLabels | default dict)
-          ($gateway.extraPodLabels | default dict)
         ) | nindent 8 }}
     spec:
       serviceAccountName: {{ include "kgateway.gateway.fullname" . }}
-      {{- with $gateway.imagePullSecrets }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with $gateway.podSecurityContext }}
       securityContext:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+        sysctls:
+          - name: net.ipv4.ip_unprivileged_port_start
+            value: "0"
       containers:
         - name: agentgateway
           image: "{{ template "kgateway.gateway.image" $gateway.image }}"
           {{- if $gateway.image.pullPolicy }}
-          imagePullPolicy: {{ $gateway.image.pullPolicy }}
+          imagePullPolicy: {{ $gateway.image.pullPolicy | quote }}
           {{- end }}
-          {{- with $gateway.securityContext }}
           securityContext:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
-          {{- with $gateway.startupProbe }}
-          startupProbe:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
-          {{- with $gateway.readinessProbe }}
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 10101
           readinessProbe:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
-          {{- with $gateway.livenessProbe }}
-          livenessProbe:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
+            httpGet:
+              path: /healthz/ready
+              port: 15021
+            periodSeconds: 10
+          startupProbe:
+            failureThreshold: 60
+            httpGet:
+              path: /healthz/ready
+              port: 15021
+            periodSeconds: 1
+            successThreshold: 1
+            timeoutSeconds: 2
           {{- /*  Note: this is not *all* ports, since those will be dynamically set. However, this is the static port which is useful for setting up monitoring */}}
           ports:
           - containerPort: 15020
@@ -90,15 +86,13 @@ spec:
             {{- $_ := set $userEnvNames .name true }}
           {{- end }}
           {{- /* Template-based defaults (skip if user overrides) */}}
-          {{- with $gateway.terminationGracePeriodSeconds }}
             {{- if not (hasKey $userEnvNames "TERMINATION_GRACE_PERIOD_SECONDS") }}
             - name: TERMINATION_GRACE_PERIOD_SECONDS
-              value: "{{.}}"
+              value: "{{($gateway.shutdown).max|default 60}}"
             {{- end }}
-          {{- end }}
             {{- if not (hasKey $userEnvNames "CONNECTION_MIN_TERMINATION_DEADLINE") }}
             - name: CONNECTION_MIN_TERMINATION_DEADLINE
-              value: "{{ $gateway.gracefulShutdown.sleepTimeSeconds | default "5" }}s"
+              value: "{{ ($gateway.shutdown).min | default 10 }}s"
             {{- end }}
             {{- if not (hasKey $userEnvNames "NODE_NAME") }}
             - name: NODE_NAME
@@ -128,15 +122,15 @@ spec:
             {{- end }}
             {{- if not (hasKey $userEnvNames "RUST_LOG") }}
             - name: RUST_LOG
-              value: {{ $gateway.logLevel }}
+              value: {{ ($gateway.logging).level | default "info" | quote }}
             {{- end }}
             - name: XDS_ADDRESS
-              {{- if and $gateway.agwXds.tls $gateway.agwXds.tls.enabled }}
-              value: "https://{{ $gateway.xds.host }}:{{ $gateway.agwXds.port }}"
+              {{- if and $gateway.xds.tls $gateway.xds.tls.enabled }}
+              value: "https://{{ $gateway.xds.host }}:{{ $gateway.xds.port }}"
               {{- else }}
-              value: "http://{{ $gateway.xds.host }}:{{ $gateway.agwXds.port }}"
+              value: "http://{{ $gateway.xds.host }}:{{ $gateway.xds.port }}"
               {{- end }}
-            {{- if and $gateway.agwXds.tls $gateway.agwXds.tls.enabled }}
+            {{- if and $gateway.xds.tls $gateway.xds.tls.enabled }}
             - name: XDS_ROOT_CA
               value: "/etc/xds-tls/ca.crt"
             {{- end }}
@@ -163,13 +157,10 @@ spec:
             - name: xds-token
               mountPath: /var/run/secrets/xds-tokens
               readOnly: true
-            {{- if and $gateway.agwXds.tls $gateway.agwXds.tls.enabled }}
+            {{- if and $gateway.xds.tls $gateway.xds.tls.enabled }}
             - name: xds-ca
               mountPath: /etc/xds-tls
               readOnly: true
-            {{- end }}
-            {{- with $gateway.extraVolumeMounts }}
-            {{- toYaml . | nindent 12 }}
             {{- end }}
       volumes:
         - name: config-volume
@@ -184,7 +175,7 @@ spec:
                 path: xds-token
         - name: tmp
           emptyDir: {}
-        {{- if and $gateway.agwXds.tls $gateway.agwXds.tls.enabled }}
+        {{- if and $gateway.xds.tls $gateway.xds.tls.enabled }}
         - name: xds-ca
           configMap:
             name: {{ include "kgateway.gateway.fullname" . }}-xds-ca
@@ -192,25 +183,4 @@ spec:
             - key: ca.crt
               path: ca.crt
         {{- end }}
-        {{- with $gateway.extraVolumes }}
-        {{- toYaml . | nindent 8 }}
-        {{- end }}
-      {{- with $gateway.affinity }}
-      affinity:
-      {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with $gateway.topologySpreadConstraints }}
-      topologySpreadConstraints:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- if $gateway.terminationGracePeriodSeconds }}
-      terminationGracePeriodSeconds: {{ $gateway.terminationGracePeriodSeconds }}
-      {{- end }}
-      {{- with $gateway.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with $gateway.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+      terminationGracePeriodSeconds: {{($gateway.shutdown).max|default 60|int}}

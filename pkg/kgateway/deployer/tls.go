@@ -25,11 +25,15 @@ func injectXdsCACertificate(caCertPath string, vals *deployer.HelmConfig) error 
 	}
 
 	caCertStr := string(caCert)
-	if vals.Gateway.Xds != nil && vals.Gateway.Xds.Tls != nil {
-		vals.Gateway.Xds.Tls.CaCert = &caCertStr
+	if vals.Gateway != nil {
+		if vals.Gateway.Xds != nil && vals.Gateway.Xds.Tls != nil {
+			vals.Gateway.Xds.Tls.CaCert = &caCertStr
+		}
 	}
-	if vals.Gateway.AgwXds != nil && vals.Gateway.AgwXds.Tls != nil {
-		vals.Gateway.AgwXds.Tls.CaCert = &caCertStr
+	if vals.Agentgateway != nil {
+		if vals.Agentgateway.Xds != nil && vals.Agentgateway.Xds.Tls != nil {
+			vals.Agentgateway.Xds.Tls.CaCert = &caCertStr
+		}
 	}
 
 	return nil

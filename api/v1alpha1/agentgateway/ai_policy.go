@@ -81,14 +81,15 @@ const (
 
 // Action to take if a regex pattern is matched in a request or response.
 // This setting applies only to request matches. PromptguardResponse matches are always masked by default.
+// +kubebuilder:validation:Enum=Mask;Reject
 type Action string
 
 const (
 	// Mask the matched data in the request.
-	MASK Action = "MASK"
+	MASK Action = "Mask"
 
 	// Reject the request if the regex matches content in the request.
-	REJECT Action = "REJECT"
+	REJECT Action = "Reject"
 )
 
 // Regex configures the regular expression (regex) matching for prompt guards and data masking.
@@ -105,8 +106,8 @@ type Regex struct {
 
 	// The action to take if a regex pattern is matched in a request or response.
 	// This setting applies only to request matches. PromptguardResponse matches are always masked by default.
-	// Defaults to `MASK`.
-	// +kubebuilder:default=MASK
+	// Defaults to `Mask`.
+	// +kubebuilder:default=Mask
 	// +optional
 	Action *Action `json:"action,omitempty"`
 }

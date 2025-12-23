@@ -1,135 +1,53 @@
 package agentgatewaysyncer
 
 import (
-	"bytes"
 	"fmt"
-	"net/netip"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/agentgateway/agentgateway/go/api"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/anypb"
-	apiannotation "istio.io/api/annotation"
 	"istio.io/api/label"
-	networkingv1alpha3 "istio.io/api/networking/v1alpha3"
-	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pilot/pkg/features"
-	istioserviceentry "istio.io/istio/pilot/pkg/networking/serviceentry"
+	"istio.io/istio/pilot/pkg/model"
 	"istio.io/istio/pilot/pkg/serviceregistry/provider"
 	"istio.io/istio/pilot/pkg/util/protoconv"
 	"istio.io/istio/pkg/cluster"
-	"istio.io/istio/pkg/config"
 	"istio.io/istio/pkg/config/constants"
 	"istio.io/istio/pkg/config/host"
-	kubeutil "istio.io/istio/pkg/config/kube"
 	"istio.io/istio/pkg/config/protocol"
-	"istio.io/istio/pkg/config/schema/gvk"
 	"istio.io/istio/pkg/config/schema/kind"
-	"istio.io/istio/pkg/config/schema/kubetypes"
 	"istio.io/istio/pkg/config/visibility"
-	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/maps"
 	"istio.io/istio/pkg/ptr"
 	"istio.io/istio/pkg/slices"
-	"istio.io/istio/pkg/util/protomarshal"
 	"istio.io/istio/pkg/util/sets"
-	corev1 "k8s.io/api/core/v1"
+	"istio.io/istio/pkg/workloadapi"
 	"k8s.io/apimachinery/pkg/types"
 	inf "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/serviceentry"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
-
-func (a *index) ServicesCollection(
-	services krt.Collection[*corev1.Service],
-	serviceEntries krt.Collection[*networkingclient.ServiceEntry],
-	waypoints krt.Collection[Waypoint],
-	inferencePools krt.Collection[*inf.InferencePool],
-	namespaces krt.Collection[*corev1.Namespace],
-	krtopts krtutil.KrtOptions,
-) krt.Collection[ServiceInfo] {
-	servicesInfo := krt.NewCollection(services, a.serviceServiceBuilder(waypoints, namespaces),
-		krtopts.ToOptions("ServicesInfo")...)
-
-	serviceEntriesInfo := krt.NewManyCollection(serviceEntries, a.serviceEntryServiceBuilder(waypoints, namespaces),
-		krtopts.ToOptions("ServiceEntriesInfo")...)
-
-	inferencePoolsInfo := krt.NewCollection(inferencePools, a.inferencePoolBuilder(),
-		krtopts.ToOptions("InferencePools")...)
-
-	WorkloadServices := krt.JoinCollection([]krt.Collection[ServiceInfo]{servicesInfo, serviceEntriesInfo, inferencePoolsInfo}, krtopts.ToOptions("WorkloadService")...)
-
-	return WorkloadServices
-}
-
-func (a *index) serviceServiceBuilder(
-	waypoints krt.Collection[Waypoint],
-	namespaces krt.Collection[*corev1.Namespace],
-) krt.TransformationSingle[*corev1.Service, ServiceInfo] {
-	return func(ctx krt.HandlerContext, s *corev1.Service) *ServiceInfo {
-		if s.Spec.Type == corev1.ServiceTypeExternalName {
-			// ExternalName services are not implemented by ambient (but will still work).
-			// The DNS requests will forward to the upstream DNS server, then Ztunnel can handle the request based on the target
-			// hostname.
-			// In theory, we could add support for native 'DNS alias' into Ztunnel's DNS proxy. This would give the same behavior
-			// but let the DNS proxy handle it instead of forwarding upstream. However, at this time we do not do so.
-			return nil
-		}
-		portNames := map[int32]ServicePortName{}
-		for _, p := range s.Spec.Ports {
-			portNames[p.Port] = ServicePortName{
-				PortName:       p.Name,
-				TargetPortName: p.TargetPort.StrVal,
-			}
-		}
-		waypointStatus := WaypointBindingStatus{}
-		waypoint, wperr := fetchWaypointForService(ctx, waypoints, namespaces, s.ObjectMeta)
-		if waypoint != nil {
-			waypointStatus.ResourceName = waypoint.ResourceName()
-
-			if val, ok := s.Labels[wellknown.IngressUseWaypointLabel]; ok {
-				waypointStatus.IngressLabelPresent = true
-				waypointStatus.IngressUseWaypoint = strings.EqualFold(val, "true")
-			}
-		}
-		waypointStatus.Error = wperr
-
-		svc := a.constructService(s, waypoint)
-		return precomputeServicePtr(&ServiceInfo{
-			Service:       svc,
-			PortNames:     portNames,
-			LabelSelector: NewSelector(s.Spec.Selector),
-			Source:        MakeSource(s),
-			Waypoint:      waypointStatus,
-		})
-	}
-}
 
 // InferenceHostname produces FQDN for a k8s service
 func InferenceHostname(name, namespace, domainSuffix string) host.Name {
 	return host.Name(name + "." + namespace + "." + "inference" + "." + domainSuffix) // Format: "%s.%s.svc.%s"
 }
 
-func (a *index) inferencePoolBuilder() krt.TransformationSingle[*inf.InferencePool, ServiceInfo] {
+func inferencePoolBuilder() krt.TransformationSingle[*inf.InferencePool, model.ServiceInfo] {
 	domainSuffix := kubeutils.GetClusterDomainName()
-	return func(ctx krt.HandlerContext, s *inf.InferencePool) *ServiceInfo {
-		portNames := map[int32]ServicePortName{}
-		ports := []*api.Port{{
+	return func(ctx krt.HandlerContext, s *inf.InferencePool) *model.ServiceInfo {
+		portNames := map[int32]model.ServicePortName{}
+		ports := []*workloadapi.Port{{
 			ServicePort: uint32(s.Spec.TargetPorts[0].Number), //nolint:gosec // G115: InferencePool TargetPort is int32 with validation 1-65535, always safe
 			TargetPort:  uint32(s.Spec.TargetPorts[0].Number), //nolint:gosec // G115: InferencePool TargetPort is int32 with validation 1-65535, always safe
-			AppProtocol: api.AppProtocol_HTTP11,
+			AppProtocol: workloadapi.AppProtocol_HTTP11,
 		}}
 
 		// TODO this is only checking one controller - we may be missing service vips for instances in another cluster
-		svc := &api.Service{
+		svc := &workloadapi.Service{
 			Name:      s.Name,
 			Namespace: s.Namespace,
 			Hostname:  string(InferenceHostname(s.Name, s.Namespace, domainSuffix)),
@@ -140,229 +58,19 @@ func (a *index) inferencePoolBuilder() krt.TransformationSingle[*inf.InferencePo
 		for k, v := range s.Spec.Selector.MatchLabels {
 			selector[string(k)] = string(v)
 		}
-		return precomputeServicePtr(&ServiceInfo{
+		return precomputeServicePtr(&model.ServiceInfo{
 			Service:       svc,
 			PortNames:     portNames,
-			LabelSelector: NewSelector(selector),
-			Source: TypedObject{
+			LabelSelector: model.NewSelector(selector),
+			Source: model.TypedObject{
 				NamespacedName: types.NamespacedName{
 					Namespace: s.Namespace,
 					Name:      s.Name,
 				},
-				Kind: "InferencePool", // TODO: get wellknown kind
+				Kind: kind.InferencePool,
 			},
 		})
 	}
-}
-
-func (a *index) serviceEntryServiceBuilder(
-	waypoints krt.Collection[Waypoint],
-	namespaces krt.Collection[*corev1.Namespace],
-) krt.TransformationMulti[*networkingclient.ServiceEntry, ServiceInfo] {
-	return func(ctx krt.HandlerContext, se *networkingclient.ServiceEntry) []ServiceInfo {
-		waypoint, _ := fetchWaypointForService(ctx, waypoints, namespaces, se.ObjectMeta)
-		return a.servicesInfo(se, waypoint)
-	}
-}
-
-func (a *index) servicesInfo(se *networkingclient.ServiceEntry, w *Waypoint) []ServiceInfo {
-	sel := NewSelector(se.Spec.GetWorkloadSelector().GetLabels())
-	portNames := map[int32]ServicePortName{}
-	for _, p := range se.Spec.Ports {
-		portNames[int32(p.Number)] = ServicePortName{ //nolint:gosec // G115: ServiceEntry port number is always in valid range
-			PortName: p.Name,
-		}
-	}
-	waypointStatus := WaypointBindingStatus{}
-	if w != nil {
-		waypointStatus.ResourceName = w.ResourceName()
-		if val, ok := se.Labels[wellknown.IngressUseWaypointLabel]; ok {
-			waypointStatus.IngressLabelPresent = true
-			waypointStatus.IngressUseWaypoint = strings.EqualFold(val, "true")
-		}
-	}
-	return slices.Map(a.constructServices(se, w), func(e *api.Service) ServiceInfo {
-		return precomputeService(ServiceInfo{
-			Service:       e,
-			PortNames:     portNames,
-			LabelSelector: sel,
-			Source:        MakeSource(se),
-			Waypoint:      waypointStatus,
-		})
-	})
-}
-
-func (a *index) constructServices(se *networkingclient.ServiceEntry, w *Waypoint) []*api.Service {
-	// Get all addresses (both manually specified and auto-allocated from status)
-	// This uses the shared utility that includes Spec.Addresses AND Status.Addresses
-	addressStrings := serviceentry.ServiceEntryAddresses(se)
-	addresses, err := slices.MapErr(addressStrings, a.toNetworkAddress)
-	if err != nil {
-		logger.Warn("failed to parse service entry addresses", "serviceentry", config.NamespacedName(se), "error", err)
-		return nil
-	}
-
-	// Check for per-hostname auto-allocated IPs
-	var autoassignedHostAddresses map[string][]netip.Addr
-	if istioserviceentry.ShouldV2AutoAllocateIP(se) {
-		autoassignedHostAddresses = istioserviceentry.GetHostAddressesFromServiceEntry(se)
-	}
-
-	ports := make([]*api.Port, 0, len(se.Spec.Ports))
-	for _, p := range se.Spec.Ports {
-		target := p.TargetPort
-		if target == 0 {
-			target = p.Number
-		}
-		ports = append(ports, &api.Port{
-			ServicePort: p.Number,
-			TargetPort:  target,
-			AppProtocol: toAppProtocolFromProtocol(kubeutil.ConvertProtocol(int32(p.Number), p.Name, corev1.ProtocolTCP, ptr.Of(p.Protocol))), //nolint:gosec // G115: ServiceEntry port number is always in valid range
-		})
-	}
-
-	// handle service waypoint scenario
-	var waypointAddress *api.GatewayAddress
-	if w != nil {
-		waypointAddress = w.GetAddress()
-	}
-
-	res := make([]*api.Service, 0, len(se.Spec.Hosts))
-	for _, h := range se.Spec.Hosts {
-		hostname := string(host.Name(h))
-
-		// Use auto-assigned addresses if no manual addresses are specified
-		// and the hostname is not wildcarded
-		hostsAddresses := addresses
-		if len(hostsAddresses) == 0 && !host.Name(h).IsWildCarded() && se.Spec.Resolution != networkingv1alpha3.ServiceEntry_NONE {
-			if hostsAddrs, ok := autoassignedHostAddresses[h]; ok {
-				hostsAddresses = slices.Map(hostsAddrs, func(e netip.Addr) *api.NetworkAddress {
-					return &api.NetworkAddress{
-						Address: e.AsSlice(),
-					}
-				})
-			}
-		}
-
-		res = append(res, &api.Service{
-			Name:      se.Name,
-			Namespace: se.Namespace,
-			Hostname:  hostname,
-			Addresses: hostsAddresses,
-			Ports:     ports,
-			Waypoint:  waypointAddress,
-		})
-	}
-	return res
-}
-
-func toAppProtocolFromKube(p corev1.ServicePort) api.AppProtocol {
-	return toAppProtocolFromProtocol(kubeutil.ConvertProtocol(p.Port, p.Name, p.Protocol, p.AppProtocol))
-}
-
-func toAppProtocolFromProtocol(p protocol.Instance) api.AppProtocol {
-	switch p {
-	case protocol.HTTP:
-		return api.AppProtocol_HTTP11
-	case protocol.HTTP2:
-		return api.AppProtocol_HTTP2
-	case protocol.GRPC:
-		return api.AppProtocol_GRPC
-	}
-	return api.AppProtocol_UNKNOWN
-}
-
-func (a *index) constructService(svc *corev1.Service, w *Waypoint) *api.Service {
-	ports := make([]*api.Port, 0, len(svc.Spec.Ports))
-	for _, p := range svc.Spec.Ports {
-		ports = append(ports, &api.Port{
-			ServicePort: uint32(p.Port),              //nolint:gosec // G115: Kubernetes service port is int32, always in valid range
-			TargetPort:  uint32(p.TargetPort.IntVal), //nolint:gosec // G115: Kubernetes target port is int32, always in valid range
-			AppProtocol: toAppProtocolFromKube(p),
-		})
-	}
-
-	addresses, err := slices.MapErr(getVIPs(svc), func(e string) (*api.NetworkAddress, error) {
-		return a.toNetworkAddress(e)
-	})
-	if err != nil {
-		logger.Warn("fail to parse service", "svc", config.NamespacedName(svc), "error", err)
-		return nil
-	}
-
-	var lb *api.LoadBalancing
-
-	// The TrafficDistribution field is quite new, so we allow a legacy annotation option as well
-	preferClose := strings.EqualFold(svc.Annotations[apiannotation.NetworkingTrafficDistribution.Name], corev1.ServiceTrafficDistributionPreferClose)
-	if svc.Spec.TrafficDistribution != nil {
-		preferClose = *svc.Spec.TrafficDistribution == corev1.ServiceTrafficDistributionPreferClose
-	}
-	if preferClose {
-		lb = preferCloseLoadBalancer
-	}
-	if itp := svc.Spec.InternalTrafficPolicy; itp != nil && *itp == corev1.ServiceInternalTrafficPolicyLocal {
-		lb = &api.LoadBalancing{
-			// Only allow endpoints on the same node.
-			RoutingPreference: []api.LoadBalancing_Scope{
-				api.LoadBalancing_NODE,
-			},
-			Mode: api.LoadBalancing_STRICT,
-		}
-	}
-	if svc.Spec.PublishNotReadyAddresses {
-		if lb == nil {
-			lb = &api.LoadBalancing{}
-		}
-		lb.HealthPolicy = api.LoadBalancing_ALLOW_ALL
-	}
-
-	ipFamily := api.IPFamilies_AUTOMATIC
-	if len(svc.Spec.IPFamilies) == 2 {
-		ipFamily = api.IPFamilies_DUAL
-	} else if len(svc.Spec.IPFamilies) == 1 {
-		family := svc.Spec.IPFamilies[0]
-		if family == corev1.IPv4Protocol {
-			ipFamily = api.IPFamilies_IPV4_ONLY
-		} else {
-			ipFamily = api.IPFamilies_IPV6_ONLY
-		}
-	}
-	// TODO this is only checking one controller - we may be missing service vips for instances in another cluster
-	return &api.Service{
-		Name:          svc.Name,
-		Namespace:     svc.Namespace,
-		Hostname:      kubeutils.ServiceFQDN(svc.ObjectMeta),
-		Addresses:     addresses,
-		Ports:         ports,
-		Waypoint:      w.GetAddress(),
-		LoadBalancing: lb,
-		IpFamilies:    ipFamily,
-	}
-}
-
-var preferCloseLoadBalancer = &api.LoadBalancing{
-	// Prefer endpoints in close zones, but allow spilling over to further endpoints where required.
-	RoutingPreference: []api.LoadBalancing_Scope{
-		api.LoadBalancing_NETWORK,
-		api.LoadBalancing_REGION,
-		api.LoadBalancing_ZONE,
-		api.LoadBalancing_SUBZONE,
-	},
-	Mode: api.LoadBalancing_FAILOVER,
-}
-
-func getVIPs(svc *corev1.Service) []string {
-	res := []string{}
-	cips := svc.Spec.ClusterIPs
-	if len(cips) == 0 {
-		cips = []string{svc.Spec.ClusterIP}
-	}
-	for _, cip := range cips {
-		if cip != "" && cip != corev1.ClusterIPNone {
-			res = append(res, cip)
-		}
-	}
-	return res
 }
 
 // Service describes an Istio service (e.g., catalog.mystore.com:8080)
@@ -762,84 +470,9 @@ func (s *ServiceAttributes) Equals(other *ServiceAttributes) bool {
 		s.ServiceRegistry == other.ServiceRegistry && s.K8sAttributes == other.K8sAttributes
 }
 
-type AddressInfo struct {
-	*api.Address
-	// +krtEqualsTodo verify marshaled proto cache handling in equality
-	Marshaled *anypb.Any
-}
-
-func (i AddressInfo) Equals(other AddressInfo) bool {
-	return protoconv.Equals(i.Address, other.Address)
-}
-
-func (i AddressInfo) Aliases() []string {
-	switch addr := i.Type.(type) {
-	case *api.Address_Workload:
-		aliases := make([]string, 0, len(addr.Workload.GetAddresses()))
-		network := addr.Workload.GetNetwork()
-		for _, workloadAddr := range addr.Workload.GetAddresses() {
-			ip, _ := netip.AddrFromSlice(workloadAddr)
-			aliases = append(aliases, network+"/"+ip.String())
-		}
-		return aliases
-	case *api.Address_Service:
-		aliases := make([]string, 0, len(addr.Service.GetAddresses()))
-		for _, networkAddr := range addr.Service.GetAddresses() {
-			ip, _ := netip.AddrFromSlice(networkAddr.GetAddress())
-			aliases = append(aliases, networkAddr.GetNetwork()+"/"+ip.String())
-		}
-		return aliases
-	}
-	return nil
-}
-
-func (i AddressInfo) ResourceName() string {
-	var name string
-	switch addr := i.Type.(type) {
-	case *api.Address_Workload:
-		name = workloadResourceName(addr.Workload)
-	case *api.Address_Service:
-		name = serviceResourceName(addr.Service)
-	}
-	return name
-}
-
 type TypedObject struct {
 	types.NamespacedName
 	Kind string
-}
-
-type ServicePortName struct {
-	PortName       string
-	TargetPortName string
-}
-
-type ServiceInfo struct {
-	Service *api.Service
-	// LabelSelectors for the Service. Note these are only used internally, not sent over XDS
-	LabelSelector LabelSelector
-	// PortNames provides a mapping of ServicePort -> port names. Note these are only used internally, not sent over XDS
-	PortNames map[int32]ServicePortName
-	// Source is the type that introduced this service.
-	Source TypedObject
-	// +krtEqualsTodo include waypoint binding status in equality or mark as ignore
-	Waypoint WaypointBindingStatus
-	// MarshaledAddress contains the pre-marshaled representation.
-	// Note: this is an Address -- not a Service.
-	// +krtEqualsTodo revisit marshaled address usage in equality
-	MarshaledAddress *anypb.Any
-	// AsAddress contains a pre-created AddressInfo representation. This ensures we do not need repeated conversions on
-	// the hotpath
-	// +krtEqualsTodo compare fast-path AddressInfo if it impacts outputs
-	AsAddress AddressInfo
-}
-
-func (i ServiceInfo) GetLabelSelector() map[string]string {
-	return i.LabelSelector.Labels
-}
-
-func (i ServiceInfo) GetStatusTarget() TypedObject {
-	return i.Source
 }
 
 type StatusMessage struct {
@@ -865,33 +498,9 @@ func (i WaypointBindingStatus) Equals(other WaypointBindingStatus) bool {
 		ptr.Equal(i.Error, other.Error)
 }
 
-func (i ServiceInfo) NamespacedName() types.NamespacedName {
-	return types.NamespacedName{Name: i.Service.GetName(), Namespace: i.Service.GetNamespace()}
-}
-
-func (i ServiceInfo) GetNamespace() string {
-	return i.Service.GetNamespace()
-}
-
-func (i ServiceInfo) Equals(other ServiceInfo) bool {
-	return equalUsingPremarshaled(i.Service, i.MarshaledAddress, other.Service, other.MarshaledAddress) &&
-		maps.Equal(i.LabelSelector.Labels, other.LabelSelector.Labels) &&
-		maps.Equal(i.PortNames, other.PortNames) &&
-		i.Source == other.Source
-}
-
-func (i ServiceInfo) ResourceName() string {
-	return serviceResourceName(i.Service)
-}
-
-func serviceResourceName(s *api.Service) string {
-	// TODO: check prepending svc
-	return s.GetNamespace() + "/" + s.GetHostname()
-}
-
 type Address struct {
-	Workload *WorkloadInfo
-	Service  *ServiceInfo
+	Workload *model.WorkloadInfo
+	Service  *model.ServiceInfo
 }
 
 func (i Address) ResourceName() string {
@@ -910,53 +519,11 @@ func (i Address) Equals(other Address) bool {
 	return i.Service.Equals(*other.Service)
 }
 
-func (i Address) IntoProto() *api.Address {
+func (i Address) IntoProto() *workloadapi.Address {
 	if i.Workload != nil {
 		return i.Workload.AsAddress.Address
 	}
 	return i.Service.AsAddress.Address
-}
-
-type WorkloadInfo struct {
-	Workload *api.Workload
-	// Labels for the workload. Note these are only used internally, not sent over XDS
-	Labels map[string]string
-	// Source is the type that introduced this workload.
-	Source kind.Kind
-	// CreationTime is the time when the workload was created. Note this is used internally only.
-	CreationTime time.Time
-	// MarshaledAddress contains the pre-marshaled representation.
-	// Note: this is an Address -- not a Workload.
-	// +krtEqualsTodo revisit marshaled address usage in equality
-	MarshaledAddress *anypb.Any
-	// AsAddress contains a pre-created AddressInfo representation. This ensures we do not need repeated conversions on
-	// the hotpath
-	// +krtEqualsTodo compare fast-path AddressInfo if it impacts outputs
-	AsAddress AddressInfo
-}
-
-func (i WorkloadInfo) Equals(other WorkloadInfo) bool {
-	return equalUsingPremarshaled(i.Workload, i.MarshaledAddress, other.Workload, other.MarshaledAddress) &&
-		maps.Equal(i.Labels, other.Labels) &&
-		i.Source == other.Source &&
-		i.CreationTime.Equal(other.CreationTime)
-}
-
-func workloadResourceName(w *api.Workload) string {
-	return w.GetUid()
-}
-
-func (i *WorkloadInfo) Clone() *WorkloadInfo {
-	return &WorkloadInfo{
-		Workload:     protomarshal.Clone(i.Workload),
-		Labels:       maps.Clone(i.Labels),
-		Source:       i.Source,
-		CreationTime: i.CreationTime,
-	}
-}
-
-func (i WorkloadInfo) ResourceName() string {
-	return workloadResourceName(i.Workload)
 }
 
 type LabelSelector struct {
@@ -1129,16 +696,6 @@ func (s *Service) Equals(other *Service) bool {
 		s.Resolution == other.Resolution
 }
 
-func equalUsingPremarshaled[T proto.Message](a T, am *anypb.Any, b T, bm *anypb.Any) bool {
-	// If they are both pre-marshaled, use the marshaled representation. This is orders of magnitude faster
-	if am != nil && bm != nil {
-		return bytes.Equal(am.GetValue(), bm.GetValue())
-	}
-
-	// Fallback to equals
-	return protoconv.Equals(a, b)
-}
-
 // AddressMap provides a thread-safe mapping of addresses for each Kubernetes cluster.
 type AddressMap struct {
 	// Addresses hold the underlying map. Most code should only access this through the available methods.
@@ -1274,44 +831,24 @@ func (m *AddressMap) ForEach(fn func(c cluster.ID, addresses []string)) {
 	}
 }
 
-func precomputeServicePtr(w *ServiceInfo) *ServiceInfo {
+func precomputeServicePtr(w *model.ServiceInfo) *model.ServiceInfo {
 	return ptr.Of(precomputeService(*w))
 }
 
-func precomputeService(w ServiceInfo) ServiceInfo {
+func precomputeService(w model.ServiceInfo) model.ServiceInfo {
 	addr := serviceToAddress(w.Service)
 	w.MarshaledAddress = protoconv.MessageToAny(addr)
-	w.AsAddress = AddressInfo{
+	w.AsAddress = model.AddressInfo{
 		Address:   addr,
 		Marshaled: w.MarshaledAddress,
 	}
 	return w
 }
 
-func serviceToAddress(s *api.Service) *api.Address {
-	return &api.Address{
-		Type: &api.Address_Service{
+func serviceToAddress(s *workloadapi.Service) *workloadapi.Address {
+	return &workloadapi.Address{
+		Type: &workloadapi.Address_Service{
 			Service: s,
 		},
 	}
-}
-
-// MakeSource is a helper to turn an Object into a model.TypedObject.
-func MakeSource(o controllers.Object) TypedObject {
-	kind := gvk.MustToKind(kubetypes.GvkFromObject(o)).String()
-	return TypedObject{
-		NamespacedName: config.NamespacedName(o),
-		Kind:           kind,
-	}
-}
-
-func (a *index) toNetworkAddress(vip string) (*api.NetworkAddress, error) {
-	ip, err := netip.ParseAddr(vip)
-	if err != nil {
-		return nil, fmt.Errorf("parse %v: %v", vip, err)
-	}
-	return &api.NetworkAddress{
-		// TODO: calculate network
-		Address: ip.AsSlice(),
-	}, nil
 }

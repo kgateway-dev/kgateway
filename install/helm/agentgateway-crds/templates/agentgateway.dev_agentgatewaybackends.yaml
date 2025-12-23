@@ -757,11 +757,14 @@ spec:
                                                     and data masking.
                                                   properties:
                                                     action:
-                                                      default: MASK
+                                                      default: Mask
                                                       description: |-
                                                         The action to take if a regex pattern is matched in a request or response.
                                                         This setting applies only to request matches. PromptguardResponse matches are always masked by default.
-                                                        Defaults to `MASK`.
+                                                        Defaults to `Mask`.
+                                                      enum:
+                                                      - Mask
+                                                      - Reject
                                                       type: string
                                                     builtins:
                                                       description: |-
@@ -987,11 +990,14 @@ spec:
                                                     and data masking.
                                                   properties:
                                                     action:
-                                                      default: MASK
+                                                      default: Mask
                                                       description: |-
                                                         The action to take if a regex pattern is matched in a request or response.
                                                         This setting applies only to request matches. PromptguardResponse matches are always masked by default.
-                                                        Defaults to `MASK`.
+                                                        Defaults to `Mask`.
+                                                      enum:
+                                                      - Mask
+                                                      - Reject
                                                       type: string
                                                     builtins:
                                                       description: |-
@@ -1988,7 +1994,8 @@ spec:
                                             backendRef:
                                               description: |-
                                                 backendRef references the remote JWKS server to reach.
-                                                Supported types: Service and Backend.
+                                                Supported types are Service and (static) Backend. An AgentgatewayPolicy containing backend tls config
+                                                can then be attached to the service/backend in order to set tls options for a connection to the remote jwks source.
                                               properties:
                                                 group:
                                                   default: ""
@@ -2070,9 +2077,8 @@ spec:
                                                   least 5m.
                                                 rule: duration(self) >= duration('5m')
                                             jwksPath:
-                                              description: Path to IdP jwks endpoint.
-                                                Default tls settings are used to connect
-                                                to this url.
+                                              description: Path to IdP jwks endpoint,
+                                                relative to the root, commonly ".well-known/jwks.json".
                                               maxLength: 2000
                                               minLength: 1
                                               type: string
@@ -2080,6 +2086,13 @@ spec:
                                           - backendRef
                                           - jwksPath
                                           type: object
+                                        mode:
+                                          description: validation mode for JWT authentication.
+                                          enum:
+                                          - Strict
+                                          - Optional
+                                          - Permissive
+                                          type: string
                                         provider:
                                           description: McpIDP specifies the identity
                                             provider to use for authentication
@@ -2854,11 +2867,14 @@ spec:
                                     for prompt guards and data masking.
                                   properties:
                                     action:
-                                      default: MASK
+                                      default: Mask
                                       description: |-
                                         The action to take if a regex pattern is matched in a request or response.
                                         This setting applies only to request matches. PromptguardResponse matches are always masked by default.
-                                        Defaults to `MASK`.
+                                        Defaults to `Mask`.
+                                      enum:
+                                      - Mask
+                                      - Reject
                                       type: string
                                     builtins:
                                       description: |-
@@ -3074,11 +3090,14 @@ spec:
                                     for prompt guards and data masking.
                                   properties:
                                     action:
-                                      default: MASK
+                                      default: Mask
                                       description: |-
                                         The action to take if a regex pattern is matched in a request or response.
                                         This setting applies only to request matches. PromptguardResponse matches are always masked by default.
-                                        Defaults to `MASK`.
+                                        Defaults to `Mask`.
+                                      enum:
+                                      - Mask
+                                      - Reject
                                       type: string
                                     builtins:
                                       description: |-
@@ -3424,7 +3443,8 @@ spec:
                               backendRef:
                                 description: |-
                                   backendRef references the remote JWKS server to reach.
-                                  Supported types: Service and Backend.
+                                  Supported types are Service and (static) Backend. An AgentgatewayPolicy containing backend tls config
+                                  can then be attached to the service/backend in order to set tls options for a connection to the remote jwks source.
                                 properties:
                                   group:
                                     default: ""
@@ -3502,8 +3522,8 @@ spec:
                                 - message: cacheDuration must be at least 5m.
                                   rule: duration(self) >= duration('5m')
                               jwksPath:
-                                description: Path to IdP jwks endpoint. Default tls
-                                  settings are used to connect to this url.
+                                description: Path to IdP jwks endpoint, relative to
+                                  the root, commonly ".well-known/jwks.json".
                                 maxLength: 2000
                                 minLength: 1
                                 type: string
@@ -3511,6 +3531,13 @@ spec:
                             - backendRef
                             - jwksPath
                             type: object
+                          mode:
+                            description: validation mode for JWT authentication.
+                            enum:
+                            - Strict
+                            - Optional
+                            - Permissive
+                            type: string
                           provider:
                             description: McpIDP specifies the identity provider to
                               use for authentication

@@ -194,16 +194,6 @@ func (g ParentInfo) Equals(other ParentInfo) bool {
 		slices.Equal(g.Hostnames, other.Hostnames)
 }
 
-type GatewayTransformationFunction func(GatewayCollectionConfig) func(ctx krt.HandlerContext, obj *gwv1.Gateway) (*gwv1.GatewayStatus, []*GatewayListener)
-
-type GatewayCollectionConfigOption func(o *GatewayCollectionConfig)
-
-func WithGatewayTransformationFunc(f GatewayTransformationFunction) GatewayCollectionConfigOption {
-	return func(o *GatewayCollectionConfig) {
-		o.transformationFunc = f
-	}
-}
-
 type GatewayCollectionConfig struct {
 	ControllerName string
 	Gateways       krt.Collection[*gwv1.Gateway]
@@ -227,22 +217,12 @@ func GatewayCollection(
 	krt.StatusCollection[*gwv1.Gateway, gwv1.GatewayStatus],
 	krt.Collection[*GatewayListener],
 ) {
-	for _, fn := range opts {
-		fn(&cfg)
-	}
-	cfg.listenerIndex = krt.NewIndex(cfg.ListenerSets, "gatewayParent", func(o ListenerSet) []types.NamespacedName {
-		return []types.NamespacedName{o.GatewayParent}
-	})
-	if cfg.transformationFunc == nil {
-		cfg.transformationFunc = GatewaysTransformationFunc
-	}
-
+	processGatewayCollectionOptions(&cfg, opts...)
 	statusCol, gw := krt.NewStatusManyCollection(cfg.Gateways, cfg.transformationFunc(cfg), cfg.KrtOpts.ToOptions("KubernetesGateway")...)
-
 	return statusCol, gw
 }
 
-func GatewaysTransformationFunc(cfg GatewayCollectionConfig) func(ctx krt.HandlerContext, obj *gwv1.Gateway) (*gwv1.GatewayStatus, []*GatewayListener) {
+func GatewayTransformationFunc(cfg GatewayCollectionConfig) func(ctx krt.HandlerContext, obj *gwv1.Gateway) (*gwv1.GatewayStatus, []*GatewayListener) {
 	return func(ctx krt.HandlerContext, obj *gwv1.Gateway) (*gwv1.GatewayStatus, []*GatewayListener) {
 		class := krt.FetchOne(ctx, cfg.GatewayClasses, krt.FilterKey(string(obj.Spec.GatewayClassName)))
 		if class == nil {

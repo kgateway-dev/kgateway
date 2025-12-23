@@ -129,7 +129,7 @@ spec:
               fieldPath: metadata.namespace
         - name: GATEWAY
           value: gw
-        image: ghcr.io/agentgateway/custom-agentgateway:v1.0.0
+        image: cr.agentgateway.dev/custom-agentgateway:v1.0.0
         name: agentgateway
         ports:
         - containerPort: 15020

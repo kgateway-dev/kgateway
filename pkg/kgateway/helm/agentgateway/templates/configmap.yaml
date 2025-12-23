@@ -1,4 +1,4 @@
-{{- $gateway := .Values.gateway }}
+{{- $gateway := .Values.agentgateway }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -12,8 +12,8 @@ data:
     {{- /* Start with rawConfig as base, then merge typed config on top */ -}}
     {{- $baseConfig := $gateway.rawConfig | default dict }}
     {{- $typedConfig := dict }}
-    {{- if $gateway.logFormat }}
-    {{- $typedConfig = dict "config" (dict "logging" (dict "format" $gateway.logFormat)) }}
+    {{- with ($gateway.logging).format }}
+    {{- $typedConfig = dict "config" (dict "logging" (dict "format" .)) }}
     {{- end }}
     {{- /* Merge: typed config takes precedence over rawConfig */ -}}
     {{- $finalConfig := merge $typedConfig $baseConfig }}

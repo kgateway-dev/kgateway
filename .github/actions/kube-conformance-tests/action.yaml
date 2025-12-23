@@ -135,10 +135,10 @@ runs:
         
         # For agent-gateway and inference-extension tests, also install the agentgateway chart
         if [[ "${{ inputs.test-type }}" == "agent-gateway" || "${{ inputs.test-type }}" == "inference-extension" ]]; then
-          helm upgrade -i -n agentgateway-system agentgateway-crds oci://${{ env.IMAGE_REGISTRY }}/charts/agentgateway-crds \
+          helm upgrade -i -n agentgateway-system agentgateway-crds oci://${{ env.AGW_VANITY_REGISTRY }}/charts/agentgateway-crds \
             --version ${VERSION} \
             --create-namespace
-          helm upgrade -i -n agentgateway-system agentgateway oci://${{ env.IMAGE_REGISTRY }}/charts/agentgateway \
+          helm upgrade -i -n agentgateway-system agentgateway oci://${{ env.AGW_VANITY_REGISTRY }}/charts/agentgateway \
             --version ${VERSION} \
             --create-namespace \
             ${EXPERIMENTAL_FLAG} \

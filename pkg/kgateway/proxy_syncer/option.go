@@ -22,6 +22,8 @@ func processStatusSyncerOptions(opts ...StatusSyncerOption) *statusSyncerConfig 
 
 func WithCustomStatusSync(customSync func(ctx context.Context, rm reports.ReportMap)) StatusSyncerOption {
 	return func(cfg *statusSyncerConfig) {
-		cfg.CustomStatusSync = customSync
+		if customSync != nil {
+			cfg.CustomStatusSync = customSync
+		}
 	}
 }

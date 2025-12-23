@@ -9,7 +9,7 @@ import (
 	"istio.io/istio/pkg/ptr"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	v1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -50,7 +50,6 @@ type defaultJwksUrlFactory struct {
 func NewJwksUrlFactory(cfgmaps krt.Collection[*corev1.ConfigMap],
 	backends krt.Collection[*agentgateway.AgentgatewayBackend],
 	agentgatewayPolicies krt.Collection[*agentgateway.AgentgatewayPolicy]) JwksUrlBuilder {
-
 	policiesByTargetRefIndex := krtpkg.UnnamedIndex(agentgatewayPolicies, func(in *agentgateway.AgentgatewayPolicy) []TargetRefIndexKey {
 		keys := make([]TargetRefIndexKey, 0)
 		for _, ref := range in.Spec.TargetRefs {
@@ -76,7 +75,7 @@ func (f *defaultJwksUrlFactory) BuildJwksUrlAndTlsConfig(krtctx krt.HandlerConte
 	ref := remoteProvider.BackendRef
 
 	refName := string(ref.Name)
-	refNamespace := string(ptr.OrDefault(ref.Namespace, v1.Namespace(defaultNS)))
+	refNamespace := string(ptr.OrDefault(ref.Namespace, gwv1.Namespace(defaultNS)))
 
 	switch string(*ref.Kind) {
 	case wellknown.AgentgatewayBackendGVK.Kind:
@@ -92,7 +91,6 @@ func (f *defaultJwksUrlFactory) BuildJwksUrlAndTlsConfig(krtctx krt.HandlerConte
 			return "", nil, fmt.Errorf("only static backends are supported; backend: %s, policy: %s", backendRef, types.NamespacedName{Namespace: defaultNS, Name: policyName})
 		}
 
-		// TODO (dmitri-d) only inline tls config is supported atm, do we want to support attching AgentgatewayPolicy too?
 		var tlsConfig *tls.Config
 		if backend.Spec.Policies != nil && backend.Spec.Policies.TLS != nil {
 			tlsc, err := GetTLSConfig(krtctx, f.cfgmaps, refNamespace, backend.Spec.Policies.TLS)
@@ -101,13 +99,16 @@ func (f *defaultJwksUrlFactory) BuildJwksUrlAndTlsConfig(krtctx krt.HandlerConte
 					backendRef, types.NamespacedName{Namespace: refNamespace, Name: policyName}, err)
 			}
 			tlsConfig = tlsc
-		} else { // check if a
+		} else {
 			agwPolicy := ptr.Flatten(krt.FetchOne(krtctx, f.agentgatewayPolicies, krt.FilterIndex(f.policiesByTargetRefIndex, TargetRefIndexKey{
 				Name:      refName,
 				Kind:      string(*ref.Kind),
 				Group:     string(ptr.OrEmpty(ref.Group)),
 				Namespace: refNamespace,
 				// no port, as policy targetRef may not have it
+				// TODO (dmitri-d) sectionName is optional and we don't know apriori if it's present in the policy's targetRef;
+				// so we either ignore it completely (current implementation, an issue if there are multiple policies targeting the same service but different ports),
+				// or do multiple searches (with the port set first, then without the port).
 			})))
 
 			if agwPolicy != nil && agwPolicy.Spec.Backend != nil && agwPolicy.Spec.Backend.TLS != nil {
@@ -135,6 +136,9 @@ func (f *defaultJwksUrlFactory) BuildJwksUrlAndTlsConfig(krtctx krt.HandlerConte
 			Group:     string(ptr.OrEmpty(ref.Group)),
 			Namespace: refNamespace,
 			// no port, as policy targetRef may not have it
+			// TODO (dmitri-d) sectionName is optional and we don't know apriori if it's present in the policy's targetRef;
+			// so we either ignore it completely (current implementation, an issue if there are multiple policies targeting the same service but different ports),
+			// or do multiple searches (with the port set first, then without the port).
 		})))
 
 		var tlsConfig *tls.Config

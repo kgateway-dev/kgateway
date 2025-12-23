@@ -25,5 +25,5 @@ spec:
   transformation:
     response:
       set:
-        - name: "x-how-great"
-          value: "level_{%- if headers != \"\" -%}{{headers.X-Incoming-Stuff.0}}{% else %}unknown{% endif %}"
+        - name: "x-what-method"
+          value: "method_{%- if method != \"\" -%}{{method}}{% else %}unknown{% endif %}"

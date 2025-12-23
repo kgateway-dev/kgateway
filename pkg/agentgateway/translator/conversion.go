@@ -427,6 +427,14 @@ func BuildAgwTrafficPolicyFilters(
 				continue
 			}
 			policies = append(policies, h)
+		case gwv1.HTTPRouteFilterExternalAuth:
+			h, err := CreateAgwExternalAuthFilter(ctx, filter.ExternalAuth, ns, wellknown.HTTPRouteGVK)
+			if err != nil {
+				if policyError == nil {
+					policyError = err
+				}
+			}
+			policies = append(policies, h)
 		case gwv1.HTTPRouteFilterExtensionRef:
 			err := createAgwExtensionRefFilter(filter.ExtensionRef)
 			if err != nil {

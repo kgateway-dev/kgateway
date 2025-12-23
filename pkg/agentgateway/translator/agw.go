@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/agentgateway/agentgateway/go/api"
+	"istio.io/istio/pkg/ptr"
 	"istio.io/istio/pkg/slices"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -239,6 +240,89 @@ func CreateAgwMirrorFilter(
 	return &api.RequestMirrors_Mirror{
 		Percentage: percent,
 		Backend:    dst.GetBackend(),
+	}, nil
+}
+
+// CreateAgwExternalAuthFilter creates Agw filter from Gateway API ExternalAuth filter
+func CreateAgwExternalAuthFilter(
+	ctx RouteContext,
+	filter *gwv1.HTTPExternalAuthFilter,
+	ns string,
+	k schema.GroupVersionKind,
+) (*api.TrafficPolicySpec, *reporter.RouteCondition) {
+	if filter == nil {
+		return nil, nil
+	}
+	dst, err := buildAgwDestination(ctx, gwv1.HTTPBackendRef{
+		BackendRef: gwv1.BackendRef{
+			BackendObjectReference: filter.BackendRef,
+			Weight:                 ptr.Of(int32(1)),
+		},
+	}, ns, k, ctx.Backends)
+	if err != nil {
+		return nil, err
+	}
+	pol := &api.TrafficPolicySpec_ExternalAuth{
+		Target: dst.GetBackend(),
+	}
+	if b := filter.ForwardBody; b != nil {
+		pol.IncludeRequestBody = &api.TrafficPolicySpec_ExternalAuth_BodyOptions{
+			MaxRequestBytes: uint32(b.MaxSize),
+			// "Bodies over that size must fail processing"
+			AllowPartialMessage: false,
+			// TODO(https://github.com/kubernetes-sigs/gateway-api/issues/4198): do we want this?
+			PackAsBytes: false,
+		}
+	}
+	switch filter.ExternalAuthProtocol {
+	case gwv1.HTTPRouteExternalAuthHTTPProtocol:
+		http := ptr.OrEmpty(filter.HTTPAuthConfig)
+		pp := &api.TrafficPolicySpec_ExternalAuth_HTTPProtocol{
+			// Not supported in the API
+			Redirect: nil,
+			// Not supported in the API
+			AddRequestHeaders: nil,
+			// Not supported in the API
+			Metadata: nil,
+		}
+		if http.Path != "" {
+			path := http.Path
+			if !strings.HasPrefix(path, "/") {
+				path = "/" + path
+			}
+			pp.Path = ptr.Of(fmt.Sprintf("%q + request.path", path))
+		}
+		// Per spec, this must always be included
+		pol.IncludeRequestHeaders = []string{
+			"Authorization",
+			":authority",
+		}
+		if len(http.AllowedRequestHeaders) > 0 {
+			pol.IncludeRequestHeaders = append(pol.IncludeRequestHeaders, http.AllowedRequestHeaders...)
+		}
+		pp.IncludeResponseHeaders = http.AllowedResponseHeaders
+		pol.Protocol = &api.TrafficPolicySpec_ExternalAuth_Http{
+			Http: pp,
+		}
+	case gwv1.HTTPRouteExternalAuthGRPCProtocol:
+		grpc := ptr.OrEmpty(filter.GRPCAuthConfig)
+		pp := &api.TrafficPolicySpec_ExternalAuth_GRPCProtocol{
+			// Not supported in the API
+			Context: nil,
+			// Not supported in the API
+			Metadata: nil,
+		}
+		if len(grpc.AllowedRequestHeaders) > 0 {
+			pol.IncludeRequestHeaders = grpc.AllowedRequestHeaders
+		}
+		pol.Protocol = &api.TrafficPolicySpec_ExternalAuth_Grpc{
+			Grpc: pp,
+		}
+	}
+	return &api.TrafficPolicySpec{
+		Kind: &api.TrafficPolicySpec_ExtAuthz{
+			ExtAuthz: pol,
+		},
 	}, nil
 }
 

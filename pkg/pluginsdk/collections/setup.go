@@ -60,18 +60,19 @@ func (c *CommonCollections) InitCollections(
 		}
 	}
 
-	gateways := krtcollections.NewGatewayIndex(krtcollections.NewGatewayIndexConfig(
-		c.KrtOpts,
-		controllerNames,
-		c.ControllerName,
-		policies,
-		kubeRawGateways,
-		kubeRawListenerSets,
-		gatewayClasses,
-		namespaces,
+	gateways := krtcollections.NewGatewayIndex(krtcollections.GatewayIndexConfig{
+		KrtOpts:             c.KrtOpts,
+		ControllerNames:     controllerNames,
+		EnvoyControllerName: c.ControllerName,
+		PolicyIndex:         policies,
+		Gateways:            kubeRawGateways,
+		ListenerSets:        kubeRawListenerSets,
+		GatewayClasses:      gatewayClasses,
+		Namespaces:          namespaces,
+	},
 		krtcollections.WithGatewayForDeployerTransformationFunc(c.options.gatewayForDeployerTransformationFunc),
 		krtcollections.WithGatewayForEnvoyTransformationFunc(c.options.gatewayForEnvoyTransformationFunc),
-	))
+	)
 
 	if !globalSettings.EnableEnvoy {
 		// For now, the gateway index is used by Agentgateway as well in the deployer

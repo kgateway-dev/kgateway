@@ -1,0 +1,33 @@
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route-for-pseudo-headers
+spec:
+  parentRefs:
+    - name: gw
+  hostnames:
+    - "example-pseudo-headers.com"
+  rules:
+    - backendRefs:
+        - name: simple-svc
+          port: 8080
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: example-traffic-policy-for-pseudo-headers
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: example-route-for-pseudo-headers
+  transformation:
+    request:
+      set:
+        - name: :method
+          value: "POST"
+    response:
+      set:
+        - name: :status
+          value: '{% if request_header("foo") == "bar" %}201{% else %}202{% endif %}'
