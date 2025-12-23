@@ -154,6 +154,10 @@ func NewAgwCollections(
 		// inference extensions need to be enabled so control plane has permissions to watch resource. Disable by default
 		InferencePools: krt.NewStaticCollection[*inf.InferencePool](nil, nil, commoncol.KrtOpts.ToOptions("disable/inferencepools")...),
 
+		// Istio resources - initialize to empty collections, will be replaced if EnableIstioIntegration is true
+		WorkloadEntries: krt.NewStaticCollection[*networkingclient.WorkloadEntry](nil, nil, commoncol.KrtOpts.ToOptions("disable/WorkloadEntries")...),
+		ServiceEntries:  krt.NewStaticCollection[*networkingclient.ServiceEntry](nil, nil, commoncol.KrtOpts.ToOptions("disable/ServiceEntries")...),
+
 		// agentgateway-specific CRDs
 		AgentgatewayPolicies: krt.NewInformer[*agentgateway.AgentgatewayPolicy](commoncol.Client),
 		Backends:             krt.NewInformer[*agentgateway.AgentgatewayBackend](commoncol.Client),
