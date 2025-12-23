@@ -117,6 +117,9 @@ func (s *testingSuite) SetupSuite() {
 		}
 	}
 
+	// Enable Istio integration for the tests
+	s.setDeploymentEnvVariable("KGW_ENABLE_ISTIO_INTEGRATION", "true")
+
 	// If it's a suite testing with KGW_INGRESS_USE_WAYPOINTS disabled (enabled by default),
 	// we set the env var in the controller deployment for the tests
 	if !s.ingressUseWaypoint {
