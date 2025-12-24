@@ -1,0 +1,73 @@
+# Input resources
+apiVersion: v1
+kind: Service
+metadata:
+  name: extauthz-http
+  namespace: default
+spec:
+  selector:
+    app: extauthz-http
+  ports:
+    - name: http
+      port: 8081
+      targetPort: 8081
+---
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayPolicy
+metadata:
+  name: extauth-timeout-http
+  namespace: default
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: test
+  traffic:
+    extAuth:
+      backendRef:
+        name: extauthz-http
+        port: 8081
+      http: {}
+      timeout: 5s
+
+---
+# Output
+output:
+- Policy:
+    key: traffic/default/extauth-timeout-http:extauth:default/test
+    name:
+      kind: AgentgatewayPolicy
+      name: extauth-timeout-http
+      namespace: default
+    target:
+      gateway:
+        name: test
+        namespace: default
+    traffic:
+      extAuthz:
+        http: {}
+        target:
+          port: 8081
+          service:
+            hostname: extauthz-http.default.svc.cluster.local
+            namespace: default
+        timeout: 5s
+status:
+  ancestors:
+  - ancestorRef:
+      group: gateway.networking.k8s.io
+      kind: Gateway
+      name: test
+      namespace: default
+    conditions:
+    - lastTransitionTime: fake
+      message: Policy accepted
+      reason: Valid
+      status: "True"
+      type: Accepted
+    - lastTransitionTime: fake
+      message: Attached to all targets
+      reason: Attached
+      status: "True"
+      type: Attached
+    controllerName: agentgateway.dev/agentgateway

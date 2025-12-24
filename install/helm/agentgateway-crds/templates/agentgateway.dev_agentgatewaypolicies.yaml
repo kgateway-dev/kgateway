@@ -2666,6 +2666,16 @@ spec:
                             maxProperties: 64
                             type: object
                         type: object
+                      timeout:
+                        description: |-
+                          timeout for ext_auth request (from the gateway to the ext auth server). This covers the time from when
+                          the request is being sent from the gateway to when the response has been received from the ext-auth server.
+                        type: string
+                        x-kubernetes-validations:
+                        - message: invalid duration value
+                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                        - message: request must be at least 1ms
+                          rule: duration(self) >= duration('1ms')
                     required:
                     - backendRef
                     type: object
@@ -3508,7 +3518,7 @@ spec:
                         - message: invalid duration value
                           rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                         - message: request must be at least 1ms
-                          rule: duration(self) >= duration('100ms')
+                          rule: duration(self) >= duration('1ms')
                     type: object
                   transformation:
                     description: |-
