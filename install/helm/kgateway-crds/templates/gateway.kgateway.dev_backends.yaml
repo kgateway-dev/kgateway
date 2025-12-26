@@ -213,28 +213,26 @@ spec:
                 - hosts
                 type: object
               type:
-                description: Type indicates the type of the backend to be used.
+                description: |-
+                  Type indicates the type of the backend to be used.
+
+                  Deprecated: The Type field is deprecated and will be removed in a future release.
+                  The backend type is inferred from the configuration.
                 enum:
                 - AWS
                 - Static
                 - DynamicForwardProxy
                 type: string
-            required:
-            - type
             type: object
             x-kubernetes-validations:
-            - message: aws backend must be specified when type is 'AWS'
-              rule: 'self.type == ''AWS'' ? has(self.aws) : true'
-            - message: static backend must be specified when type is 'Static'
-              rule: 'self.type == ''Static'' ? has(self.static) : true'
-            - message: dynamicForwardProxy backend must be specified when type is
-                'DynamicForwardProxy'
-              rule: 'self.type == ''DynamicForwardProxy'' ? has(self.dynamicForwardProxy)
-                : true'
-            - message: exactly one of the fields in [aws static dynamicForwardProxy]
-                must be set
-              rule: '[has(self.aws),has(self.static),has(self.dynamicForwardProxy)].filter(x,x==true).size()
-                == 1'
+            - message: exactly one of aws, static, or dynamicForwardProxy must be
+                specified
+              rule: '[has(self.aws), has(self.static), has(self.dynamicForwardProxy)].filter(v,
+                v).size() == 1'
+            - message: backend configuration must match the specified type
+              rule: '!has(self.type) || (self.type == ''AWS'' && has(self.aws)) ||
+                (self.type == ''Static'' && has(self.static)) || (self.type == ''DynamicForwardProxy''
+                && has(self.dynamicForwardProxy))'
           status:
             description: BackendStatus defines the observed state of Backend.
             properties:

@@ -49,6 +49,20 @@ spec:
 			wantErrors: []string{"exactly one of the fields in [aws static dynamicForwardProxy] must be set"},
 		},
 		{
+			name: "Backend: inferred type from configuration",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: backend-inferred-type
+spec:
+  static:
+    hosts:
+    - host: example.com
+      port: 80
+`,
+		},
+		{
 			name: "Backend: empty lambda qualifier does not match pattern",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1

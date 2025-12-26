@@ -41,15 +41,17 @@ const (
 )
 
 // BackendSpec defines the desired state of Backend.
-// +kubebuilder:validation:XValidation:message="aws backend must be specified when type is 'AWS'",rule="self.type == 'AWS' ? has(self.aws) : true"
-// +kubebuilder:validation:XValidation:message="static backend must be specified when type is 'Static'",rule="self.type == 'Static' ? has(self.static) : true"
-// +kubebuilder:validation:XValidation:message="dynamicForwardProxy backend must be specified when type is 'DynamicForwardProxy'",rule="self.type == 'DynamicForwardProxy' ? has(self.dynamicForwardProxy) : true"
-// +kubebuilder:validation:ExactlyOneOf=aws;static;dynamicForwardProxy
+// +kubebuilder:validation:XValidation:message="exactly one of aws, static, or dynamicForwardProxy must be specified",rule="[has(self.aws), has(self.static), has(self.dynamicForwardProxy)].filter(v, v).size() == 1"
+// +kubebuilder:validation:XValidation:message="backend configuration must match the specified type",rule="!has(self.type) || (self.type == 'AWS' && has(self.aws)) || (self.type == 'Static' && has(self.static)) || (self.type == 'DynamicForwardProxy' && has(self.dynamicForwardProxy))"
 type BackendSpec struct {
 	// Type indicates the type of the backend to be used.
+	//
+	// Deprecated: The Type field is deprecated and will be removed in a future release.
+	// The backend type is inferred from the configuration.
+	//
 	// +kubebuilder:validation:Enum=AWS;Static;DynamicForwardProxy
-	// +required
-	Type BackendType `json:"type"`
+	// +optional
+	Type BackendType `json:"type,omitempty"`
 	// Aws is the AWS backend configuration.
 	// The Aws backend type is only supported with envoy-based gateways, it is not supported in agentgateway.
 	// +optional
