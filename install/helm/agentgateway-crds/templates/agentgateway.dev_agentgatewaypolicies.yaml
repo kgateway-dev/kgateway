@@ -379,6 +379,17 @@ spec:
                                           description: http defines settings for managing
                                             HTTP requests to the backend.
                                           properties:
+                                            requestTimeout:
+                                              description: requestTimeout specifies
+                                                the deadline for receiving a response
+                                                from the backend.
+                                              type: string
+                                              x-kubernetes-validations:
+                                              - message: invalid duration value
+                                                rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                              - message: requestTimeout must be at
+                                                  least 1ms
+                                                rule: duration(self) >= duration('1ms')
                                             version:
                                               description: |-
                                                 version specifies the HTTP protocol version to use when connecting to the backend.
@@ -1104,6 +1115,15 @@ spec:
                     description: http defines settings for managing HTTP requests
                       to the backend.
                     properties:
+                      requestTimeout:
+                        description: requestTimeout specifies the deadline for receiving
+                          a response from the backend.
+                        type: string
+                        x-kubernetes-validations:
+                        - message: invalid duration value
+                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                        - message: requestTimeout must be at least 1ms
+                          rule: duration(self) >= duration('1ms')
                       version:
                         description: |-
                           version specifies the HTTP protocol version to use when connecting to the backend.
