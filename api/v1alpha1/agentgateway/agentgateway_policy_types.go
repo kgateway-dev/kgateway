@@ -998,14 +998,6 @@ type ExtAuth struct {
 	// buffered.
 	// +optional
 	ForwardBody *ExtAuthBody `json:"forwardBody,omitempty"`
-
-	// timeout for ext_auth request (from the gateway to the ext auth server). This covers the time from when
-	// the request is being sent from the gateway to when the response has been received from the ext-auth server.
-	//
-	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
-	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="request must be at least 1ms"
-	// +optional
-	Timeout *metav1.Duration `json:"timeout,omitempty"`
 }
 
 type AgentExtAuthHTTP struct {
@@ -1216,7 +1208,7 @@ type Timeouts struct {
 	// the request first starts being sent from the gateway to when the full response has been received from the backend.
 	//
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
-	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="request must be at least 1ms"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('100ms')",message="request must be at least 1ms"
 	// +optional
 	Request *metav1.Duration `json:"request,omitempty"`
 }

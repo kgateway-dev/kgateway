@@ -866,9 +866,6 @@ func processExtAuthPolicy(
 			PackAsBytes: false,
 		}
 	}
-	if t := extAuth.Timeout; t != nil && t.Duration > 0 {
-		spec.Timeout = durationpb.New(t.Duration)
-	}
 
 	extauthPolicy := &api.Policy{
 		Key:    basePolicyName + extauthPolicySuffix + attachmentName(policyTarget),
