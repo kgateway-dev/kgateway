@@ -65,7 +65,8 @@ var (
 			Manifests: []string{apiKeyAuthManifestSecretUpdate},
 		},
 		"TestAPIKeyAuthRouteOverrideGateway": {
-			Manifests: []string{apiKeyAuthManifestOverride},
+			Manifests:       []string{apiKeyAuthManifestOverride},
+			MinGwApiVersion: base.GwApiRequireRouteNames,
 		},
 	}
 )
