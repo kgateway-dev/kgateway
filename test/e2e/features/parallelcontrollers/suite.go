@@ -623,10 +623,14 @@ func (s *testingSuite) installAgentgatewayChart() {
 		helmutils.InstallOpts{
 			Namespace:       s.TestInstallation.Metadata.InstallNamespace,
 			CreateNamespace: true,
-			ValuesFiles:     []string{s.TestInstallation.Metadata.ProfileValuesManifestFile, s.TestInstallation.Metadata.ValuesManifestFile},
-			ReleaseName:     helmutils.AgentgatewayChartName,
-			ChartUri:        chartUri,
-			ExtraArgs:       s.TestInstallation.Metadata.ExtraHelmArgs,
+			ValuesFiles: []string{
+				s.TestInstallation.Metadata.ProfileValuesManifestFile,
+				s.TestInstallation.Metadata.ValuesManifestFile,
+				e2e.ManifestPath("agent-gateway-integration.yaml"),
+			},
+			ReleaseName: helmutils.AgentgatewayChartName,
+			ChartUri:    chartUri,
+			ExtraArgs:   s.TestInstallation.Metadata.ExtraHelmArgs,
 		})
 	s.Require().NoError(err, "agentgateway chart install should succeed")
 
