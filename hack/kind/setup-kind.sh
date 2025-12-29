@@ -82,7 +82,7 @@ else
   # 2. Make all the docker images and load them to the kind cluster
   if [[ $AGENTGATEWAY == 'true' ]]; then
     # Skip expensive envoy build
-    VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME make kind-build-and-load-agentgateway kind-build-and-load-dummy-idp
+    VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME make kind-build-and-load-agentgateway-controller kind-build-and-load-dummy-idp
   else
     VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME make kind-build-and-load kind-build-and-load-dummy-idp
   fi
