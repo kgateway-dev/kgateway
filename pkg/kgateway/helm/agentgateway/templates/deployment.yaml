@@ -112,10 +112,6 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             {{- end }}
-            {{- if not (hasKey $userEnvNames "GW_NAME") }}
-            - name: GW_NAME
-              value: {{ include "kgateway.gateway.fullname" . }}
-            {{- end }}
             {{- if not (hasKey $userEnvNames "RUST_BACKTRACE") }}
             - name: RUST_BACKTRACE
               value: "1"
@@ -143,6 +139,19 @@ spec:
             {{- if not (hasKey $userEnvNames "GATEWAY") }}
             - name: GATEWAY
               value: {{ include "kgateway.gateway.fullname" . }}
+            {{- end }}
+            {{- if not (hasKey $userEnvNames "CPU_LIMIT") }}
+            - name: CPU_LIMIT
+              valueFrom:
+                resourceFieldRef:
+                  resource: limits.cpu
+                  divisor: "1"
+            {{- end }}
+            {{- if not (hasKey $userEnvNames "INSTANCE_IP") }}
+            - name: INSTANCE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
             {{- end }}
           {{- /* User-specified env vars */}}
           {{- with $gateway.env }}

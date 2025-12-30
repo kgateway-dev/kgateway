@@ -82,6 +82,15 @@ func ServiceTarget[T ~string](namespace, name string, port *T) *api.PolicyTarget
 	return ServiceTargetWithHostname(namespace, hostname, ls)
 }
 
+func InferencePoolTarget[T ~string](namespace, name string, port *T) *api.PolicyTarget_Service {
+	hostname := fmt.Sprintf("%s.%s.inference.%s", name, namespace, kubeutils.GetClusterDomainName())
+	var ls *string
+	if port != nil {
+		ls = ptr.Of((string)(*port))
+	}
+	return ServiceTargetWithHostname(namespace, hostname, ls)
+}
+
 func ServiceTargetWithHostname(namespace, hostname string, port *string) *api.PolicyTarget_Service {
 	var portNum *uint32
 	if port != nil {

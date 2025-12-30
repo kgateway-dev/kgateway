@@ -196,8 +196,8 @@ github.com/PuerkitoBio/goquery v1.10.1 h1:Y8JGYUkXWTGRB6Ars3+j3kN0xg1YqqlwvdTV8W
 github.com/PuerkitoBio/goquery v1.10.1/go.mod h1:IYiHrOMps66ag56LEH7QYDDupKXyo5A8qrjIx3ZtujY=
 github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d h1:licZJFw2RwpHMqeKTCYkitsPqHNxTmd4SNR5r94FGM8=
 github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d/go.mod h1:asat636LX7Bqt5lYEZ27JNDcqxfjdBQuJ/MM4CN/Lzo=
-github.com/agentgateway/agentgateway v0.11.0-alpha.1.0.20251218160022-f0552ee66d6d h1:pr4TOPsfQwjpUIsx0sO+t7+XVCWIXFmmeWEEboK9gCc=
-github.com/agentgateway/agentgateway v0.11.0-alpha.1.0.20251218160022-f0552ee66d6d/go.mod h1:/Lzpteag/nnE4bwW/3Dh5GaxuICmCQs40VhQpkTatlk=
+github.com/agentgateway/agentgateway v0.11.0 h1:+0SDC/YTRJFUtkfFGe3zvxydIEJHGrwVL6pQEThy+yc=
+github.com/agentgateway/agentgateway v0.11.0/go.mod h1:/Lzpteag/nnE4bwW/3Dh5GaxuICmCQs40VhQpkTatlk=
 github.com/agnivade/levenshtein v1.2.1 h1:EHBY3UOn1gwdy/VbFwgo4cxecRznFk7fKWN1KOX7eoM=
 github.com/agnivade/levenshtein v1.2.1/go.mod h1:QVVI16kDrtSuwcpd0p1+xMC6Z/VfhtCyDIjcwga4/DU=
 github.com/alcortesm/tgz v0.0.0-20161220082320-9c5fe88206d7/go.mod h1:6zEj6s6u/ghQa61ZWa/C2Aw3RkjiTBOix7dkqa1VLIs=

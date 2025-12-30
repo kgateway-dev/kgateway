@@ -2,13 +2,13 @@
 
 ## Overview
 
-Starting in version v2.2.0-beta.3, agentgateway has been fully separated into its own API group with breaking changes to resource naming and structure. This guide helps you understand the new architecture and how to upgrade.
+Starting in version v2.2.0-beta.4, agentgateway has been fully separated into its own API group with breaking changes to resource naming and structure. This guide helps you understand the new architecture and how to upgrade.
 
 ## Who Needs to Take Action?
 
 ### Envoy Users (GatewayClass: `kgateway`)
 
-**No changes required.** You can upgrade to v2.2.0-beta.3 using the same kgateway chart. All Envoy resources remain unchanged:
+**No changes required.** You can upgrade to v2.2.0-beta.4 using the same kgateway chart. All Envoy resources remain unchanged:
 
 - Continue using `gateway.kgateway.dev/v1alpha1` API group
 - GatewayClass `kgateway` with controller `kgateway.dev/kgateway`
@@ -99,13 +99,13 @@ Agentgateway now has dedicated charts separate from kgateway. Install them in a 
 ```bash
 # Install agentgateway CRDs
 helm install agentgateway-crds oci://cr.agentgateway.dev/charts/agentgateway-crds \
-  --version v2.2.0-beta.3 \
+  --version v2.2.0-beta.4 \
   --namespace agentgateway-system \
   --create-namespace
 
 # Install agentgateway controller
 helm install agentgateway oci://cr.agentgateway.dev/charts/agentgateway \
-  --version v2.2.0-beta.3 \
+  --version v2.2.0-beta.4 \
   --namespace agentgateway-system
 ```
 #### 2. Manually Create New GatewayClass

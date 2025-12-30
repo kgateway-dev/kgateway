@@ -7,6 +7,7 @@ import (
 
 	"github.com/agentgateway/agentgateway/go/api"
 	jsonpb "google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
@@ -233,6 +234,9 @@ func translateBackendHTTP(policy *agentgateway.AgentgatewayPolicy, target *api.P
 		case agentgateway.HTTPVersion2:
 			p.Version = api.BackendPolicySpec_BackendHTTP_HTTP2
 		}
+	}
+	if rt := http.RequestTimeout; rt != nil {
+		p.RequestTimeout = durationpb.New(rt.Duration)
 	}
 	tp := &api.Policy{
 		Key:    policy.Namespace + "/" + policy.Name + backendHttpPolicySuffix + attachmentName(target),
