@@ -90,6 +90,7 @@ var (
 		GwApiChannelExperimental: &GwApiV1_1_0,
 	}
 
+	// Gateway.spec.tls.frontend was added in 1.4.0 experimental
 	GwApiRequireFrontendTLSConfig = map[GwApiChannel]*GwApiVersion{
 		GwApiChannelExperimental: &GwApiV1_4_0,
 	}
