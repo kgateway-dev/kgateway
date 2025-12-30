@@ -104,7 +104,10 @@ jobs:
                               { version: 'v1.3.0', channel: 'standard' },
                               { version: 'v1.2.1', channel: 'experimental' },
                               { version: 'v1.2.1', channel: 'standard' }]
-        controllers: [ {regex: "^TestAgentgateway", agentgateway: true}, {regex: "^TestKgateway|^TestAPIValidation|^TestListenerSet", agentgateway: false} ]
+        controllers: [
+          {regex: "^TestAgentgateway", agentgateway: true},
+          {regex: "^TestKgateway|^TestAPIValidation|^TestListenerSet|^TestParallelControllers$$|^TestCustomGWP$$|^TestRouteReplacement$$|^TestZeroDowntimeRollout$$|^TestControlPlaneTLS$$", agentgateway: false}
+        ]
     steps:
     - uses: actions/checkout@v4
       with:
