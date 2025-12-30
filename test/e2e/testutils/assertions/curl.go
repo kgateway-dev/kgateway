@@ -3,9 +3,11 @@
 package assertions
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os/exec"
 	"strings"
@@ -46,6 +48,7 @@ func (p *Provider) AssertEventualCurlReturnResponse(
 	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
 
 	var curlHttpResponse *http.Response
+	var cachedBodyBytes []byte
 	p.Gomega.Eventually(func(g Gomega) {
 		curlResponse, err := p.clusterContext.Cli.CurlFromPod(ctx, podOpts, curlOptions...)
 		fmt.Printf("want:\n%+v\nstdout:\n%s\nstderr:%s\n\n", expectedResponse, curlResponse.StdOut, curlResponse.StdErr)
@@ -62,6 +65,16 @@ func (p *Provider) AssertEventualCurlReturnResponse(
 		// Do the transform in a separate step instead of a WithTransform to avoid having to do it twice
 		//nolint:bodyclose // The caller of this assertion should be responsible for ensuring the body close - if the response is not needed for the test, AssertEventualCurlResponse should be used instead
 		curlHttpResponse = transforms.WithCurlResponse(curlResponse)
+
+		// Read the body, clone and put it back into the response so the gomega matcher
+		// will still work but the return response object will also has the body
+		bodyBytes, err := io.ReadAll(curlHttpResponse.Body)
+		curlHttpResponse.Body.Close()
+		g.Expect(err).NotTo(HaveOccurred())
+		cachedBodyBytes = make([]byte, len(bodyBytes))
+		copy(cachedBodyBytes, bodyBytes)
+		curlHttpResponse.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
 		g.Expect(curlHttpResponse).To(matchers.HaveHttpResponse(expectedResponse))
 		fmt.Printf("success: %+v", curlResponse)
 	}).
@@ -70,6 +83,10 @@ func (p *Provider) AssertEventualCurlReturnResponse(
 		WithContext(ctx).
 		Should(Succeed(), "failed to get expected response")
 
+	if len(cachedBodyBytes) > 0 {
+		curlHttpResponse.Body.Close()
+		curlHttpResponse.Body = io.NopCloser(bytes.NewBuffer(cachedBodyBytes))
+	}
 	return curlHttpResponse
 }
 

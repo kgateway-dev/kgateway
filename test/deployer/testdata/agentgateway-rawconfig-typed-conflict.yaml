@@ -1,7 +1,7 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: GatewayClass
 metadata:
-  name: agentgateway-v2
+  name: agentgateway
 spec:
   controllerName: agentgateway.dev/agentgateway
   description: Specialized class for agentgateway.
@@ -23,10 +23,11 @@ spec:
   logging:
     format: text
   rawConfig:
-    logging:
-      format: json
-    tracing:
-      otlpEndpoint: http://jaeger:4317
+    config:
+      logging:
+        format: json
+      tracing:
+        otlpEndpoint: http://jaeger:4317
 ---
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
@@ -34,7 +35,7 @@ metadata:
   name: gw
   namespace: default
 spec:
-  gatewayClassName: agentgateway-v2
+  gatewayClassName: agentgateway
   listeners:
     - protocol: HTTP
       port: 8080

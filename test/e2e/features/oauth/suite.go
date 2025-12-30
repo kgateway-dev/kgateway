@@ -63,12 +63,18 @@ type tsuite struct {
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &tsuite{
-		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setup, nil),
+		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setup, nil, base.WithMinGwApiVersion(base.GwApiRequireBackendTLSPolicy)),
 	}
 }
 
 func (s *tsuite) SetupSuite() {
 	s.BaseTestingSuite.SetupSuite()
+
+	// If the suite should be skipped due to version requirements, don't do additional setup
+	// This is usually handled in the base suite setup, but we also need to skip this additional setup.
+	if s.SkipSuite() {
+		return
+	}
 
 	var gwIP, keycloakIP string
 	var err error
@@ -160,7 +166,7 @@ func (s *tsuite) TestOIDC() {
 	resp, err = client.Get(ctx, logoutURL, true)
 	r.NoError(err)
 	r.NotNil(resp)
-	// TODO: enable this check after determining why somtimes the /logout returns invalid_redirect_uri
+	// TODO: enable this check after determining why sometimes the /logout returns invalid_redirect_uri
 	// r.Equal(http.StatusOK, resp.StatusCode)
 }
 

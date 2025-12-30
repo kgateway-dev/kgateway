@@ -162,7 +162,6 @@ checksum = "48c757948c5ede0e46177b7add2e67155f70e33c07fea8284df6576da70b3719"
 [[package]]
 name = "envoy-proxy-dynamic-modules-rust-sdk"
 version = "0.1.0"
-source = "git+https://github.com/envoyproxy/envoy?rev=dc2d3098ae5641555f15c71d5bb5ce0060a8015c#dc2d3098ae5641555f15c71d5bb5ce0060a8015c"
 dependencies = [
  "bindgen",
  "mockall",
@@ -240,12 +239,6 @@ name = "itoa"
 version = "1.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4a5f13b858c8d314ee3e8f639011f7ccefe71f97f96e50151fb991f267928e2c"
-
-[[package]]
-name = "lazy_static"
-version = "1.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
 name = "libc"
@@ -527,10 +520,10 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "envoy-proxy-dynamic-modules-rust-sdk",
- "lazy_static",
  "matchers",
  "minijinja",
  "mockall",
+ "once_cell",
  "rand",
  "serde",
  "serde_json",
@@ -683,6 +676,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f50febec83f5ee1df3015341d8bd429f2d1cc62bcba7ea2076759d315084683"
 
 [[package]]
+name = "thiserror"
+version = "2.0.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f63587ca0f12b72a0600bcba1d40081f830876000bb46dd2337a3051618f4fc8"
+dependencies = [
+ "thiserror-impl",
+]
+
+[[package]]
+name = "thiserror-impl"
+version = "2.0.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3ff15c8ecd7de3849db632e14d18d2571fa09dfc5ed93479bc4485c7a517c913"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "time"
 version = "0.3.44"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -708,10 +721,12 @@ dependencies = [
  "anyhow",
  "base64",
  "minijinja",
+ "once_cell",
  "rand",
  "serde",
  "serde_json",
  "serde_with",
+ "thiserror",
 ]
 
 [[package]]

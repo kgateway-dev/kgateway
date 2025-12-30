@@ -6,7 +6,7 @@ metadata:
 apiVersion: gateway.networking.k8s.io/v1
 kind: GatewayClass
 metadata:
-  name: agentgateway-v2
+  name: agentgateway
 spec:
   controllerName: agentgateway.dev/agentgateway
 ---
@@ -16,7 +16,7 @@ metadata:
   name: test-gateway
   namespace: default
 spec:
-  gatewayClassName: agentgateway-v2
+  gatewayClassName: agentgateway
   listeners:
     - name: http
       port: 80

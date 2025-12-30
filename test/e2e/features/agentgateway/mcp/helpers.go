@@ -82,8 +82,53 @@ func (s *testingSuite) initializeAndGetSessionID(extraHeaders map[string]string)
 	initBody := buildInitializeRequest("test-client", 1)
 	headers := mcpHeaders(extraHeaders)
 	sid := s.initializeSession(initBody, headers, "workflow")
-	s.notifyInitialized(sid, nil)
+	s.notifyInitialized(sid, extraHeaders)
 	return sid
+}
+
+func (s *testingSuite) testUnauthorizedToolsListWithSession(sessionID string, extraHeaders map[string]string, expectedStatus int) {
+	s.T().Log("Testing tools/list with session ID")
+
+	mcpRequest := buildToolsListRequest(3)
+
+	headers := withSessionID(mcpHeaders(extraHeaders), sessionID)
+	out, err := s.execCurlMCP(headers, mcpRequest, "-N", "--max-time", "10")
+	s.Require().NoError(err, "tools/list curl failed")
+
+	// For non-200 status codes (like 401), check HTTP status directly without parsing SSE
+	if expectedStatus != httpOKCode {
+		s.requireHTTPStatus(out, expectedStatus)
+		return
+	}
+
+	// Session is warmed during initialize; 401 retry no longer needed here.
+
+	// If session was replaced, some gateways emit a JSON error as SSE payload (HTTP 200).
+	// So parse SSE first, then decide.
+	payload, ok := FirstSSEDataPayload(out)
+	if !ok {
+		s.T().Log("No SSE payload from tools/list; sending notifications/initialized and retrying once")
+		s.notifyInitialized(sessionID, extraHeaders)
+		out, err = s.execCurlMCP(headers, mcpRequest, "-N", "--max-time", "10")
+		s.Require().NoError(err, "tools/list retry curl failed")
+		s.requireHTTPStatus(out, httpOKCode)
+		payload, ok = FirstSSEDataPayload(out)
+	}
+	s.Require().True(ok, "expected SSE data payload in tools/list (after retry)")
+	s.Require().True(IsJSONValid(payload), "tools/list SSE payload is not valid JSON")
+
+	var resp ToolsListResponse
+	_ = json.Unmarshal([]byte(payload), &resp)
+
+	if resp.Error != nil && strings.Contains(resp.Error.Message, "Session not found") {
+		// Re-init and retry once
+		s.T().Log("Session expired; re-initializing and retrying tools/list")
+		newID := s.initializeAndGetSessionID(extraHeaders)
+		s.testToolsListWithSession(newID, extraHeaders)
+		return
+	}
+
+	s.requireHTTPStatus(out, expectedStatus)
 }
 
 func (s *testingSuite) testToolsListWithSession(sessionID string, extraHeaders map[string]string) {
@@ -102,7 +147,7 @@ func (s *testingSuite) testToolsListWithSession(sessionID string, extraHeaders m
 	payload, ok := FirstSSEDataPayload(out)
 	if !ok {
 		s.T().Log("No SSE payload from tools/list; sending notifications/initialized and retrying once")
-		s.notifyInitialized(sessionID, nil)
+		s.notifyInitialized(sessionID, extraHeaders)
 		out, err = s.execCurlMCP(headers, mcpRequest, "-N", "--max-time", "10")
 		s.Require().NoError(err, "tools/list retry curl failed")
 		s.requireHTTPStatus(out, httpOKCode)
@@ -117,7 +162,7 @@ func (s *testingSuite) testToolsListWithSession(sessionID string, extraHeaders m
 	if resp.Error != nil && strings.Contains(resp.Error.Message, "Session not found") {
 		// Re-init and retry once
 		s.T().Log("Session expired; re-initializing and retrying tools/list")
-		newID := s.initializeAndGetSessionID(nil)
+		newID := s.initializeAndGetSessionID(extraHeaders)
 		s.testToolsListWithSession(newID, extraHeaders)
 		return
 	}
@@ -408,4 +453,136 @@ func (s *testingSuite) waitForMCP200(
 		s.Require().NoError(err, "%s initialize status probe failed", label)
 		s.Require().Equal(httpOKCode, strings.TrimSpace(status), "expected HTTP "+strconv.Itoa(httpOKCode))
 	}
+}
+
+// testInitializeWithExpectedStatus tests an initialize request and expects a specific HTTP status code
+// It retries with backoff only for transient errors (503, 502, connection errors), not for getting
+// a different status code when the gateway is clearly responding (e.g., 200 when expecting 401).
+func (s *testingSuite) testInitializeWithExpectedStatus(headers map[string]string, expectedStatus int, label string) {
+	initBody := buildInitializeRequest("test-client", 1)
+	hdr := mcpHeaders(headers)
+
+	backoffs := []time.Duration{
+		100 * time.Millisecond,
+		250 * time.Millisecond,
+		500 * time.Millisecond,
+		1 * time.Second,
+	}
+
+	var out string
+	var err error
+	for attempt := 0; attempt <= len(backoffs); attempt++ {
+		out, err = s.execCurlMCP(hdr, initBody, "--max-time", "10")
+		if err != nil {
+			if attempt < len(backoffs) {
+				s.T().Logf("%s initialize curl failed (attempt %d): %v; retrying", label, attempt+1, err)
+				time.Sleep(backoffs[attempt])
+				continue
+			}
+			s.Require().NoError(err, "%s initialize curl failed", label)
+		}
+
+		// Check if we got the expected status
+		statusRe := regexp.MustCompile(`(?m)^HTTP_STATUS:(\d+)$`)
+		matches := statusRe.FindStringSubmatch(out)
+		if len(matches) > 1 {
+			actualStatus, parseErr := strconv.Atoi(matches[1])
+			if parseErr == nil {
+				if actualStatus == expectedStatus {
+					s.T().Logf("%s got expected status %d", label, expectedStatus)
+					return
+				}
+				// Only retry for transient errors (503, 502, 504), not for wrong status codes
+				// when the gateway is clearly responding (e.g., 200 when expecting 401)
+				isTransientError := actualStatus == 503 || actualStatus == 502 || actualStatus == 504
+				if isTransientError && attempt < len(backoffs) {
+					s.T().Logf("%s got transient error %d, expected %d (attempt %d); retrying", label, actualStatus, expectedStatus, attempt+1)
+					time.Sleep(backoffs[attempt])
+					continue
+				}
+				// If we got a non-transient status code that doesn't match, fail immediately
+				s.T().Logf("HTTP status mismatch (wanted %d, got %d): %s", expectedStatus, actualStatus, out)
+				s.requireHTTPStatus(out, expectedStatus)
+				return
+			}
+		}
+
+		// If we couldn't parse the status and haven't exhausted retries, retry
+		if attempt < len(backoffs) {
+			s.T().Logf("%s could not parse HTTP status (attempt %d); retrying", label, attempt+1)
+			time.Sleep(backoffs[attempt])
+			continue
+		}
+	}
+
+	// Final assertion after all retries exhausted (shouldn't reach here normally)
+	s.T().Logf("HTTP status check failed after retries (wanted %d): %s", expectedStatus, out)
+	s.requireHTTPStatus(out, expectedStatus)
+}
+
+// waitForAuthnEnforced waits for authentication to actually be enforced by making
+// unauthenticated requests until we get a 401 response. This ensures the authentication
+// policy is not just accepted, but configured in the dataplane.
+func (s *testingSuite) waitForAuthnEnforced() {
+	initBody := buildInitializeRequest("authn-check", 0)
+	hdr := mcpHeaders(nil)
+
+	backoffs := []time.Duration{
+		200 * time.Millisecond,
+		500 * time.Millisecond,
+		1 * time.Second,
+		2 * time.Second,
+		4 * time.Second,
+		8 * time.Second,
+	}
+
+	for attempt := 0; attempt <= len(backoffs); attempt++ {
+		out, err := s.execCurlMCP(hdr, initBody, "--max-time", "10")
+		if err != nil {
+			if attempt < len(backoffs) {
+				s.T().Logf("waitForAuthnEnforced: curl failed (attempt %d): %v; retrying", attempt+1, err)
+				time.Sleep(backoffs[attempt])
+				continue
+			}
+			s.Require().NoError(err, "waitForAuthnEnforced: curl failed")
+		}
+
+		statusRe := regexp.MustCompile(`(?m)^HTTP_STATUS:(\d+)$`)
+		matches := statusRe.FindStringSubmatch(out)
+		if len(matches) > 1 {
+			actualStatus, parseErr := strconv.Atoi(matches[1])
+			if parseErr == nil {
+				if actualStatus == 401 {
+					// Authentication is enforced!
+					s.T().Logf("waitForAuthnEnforced: authentication is enforced (got 401)")
+					return
+				}
+				// If we got 200, authentication is not enforced yet - retry
+				if actualStatus == httpOKCode && attempt < len(backoffs) {
+					s.T().Logf("waitForAuthnEnforced: got 200 (auth not enforced yet, attempt %d); retrying in %v", attempt+1, backoffs[attempt])
+					time.Sleep(backoffs[attempt])
+					continue
+				}
+				// If we got a transient error, retry
+				isTransientError := actualStatus == 503 || actualStatus == 502 || actualStatus == 504
+				if isTransientError && attempt < len(backoffs) {
+					s.T().Logf("waitForAuthnEnforced: got transient error %d (attempt %d); retrying", actualStatus, attempt+1)
+					time.Sleep(backoffs[attempt])
+					continue
+				}
+				// Got unexpected status code
+				s.Require().Failf("waitForAuthnEnforced failed", "unauthenticated request got status %d, expected 401 (auth not enforced)", actualStatus)
+			}
+		}
+
+		// If we couldn't parse the status and haven't exhausted retries, retry
+		if attempt < len(backoffs) {
+			s.T().Logf("waitForAuthnEnforced: could not parse HTTP status (attempt %d); retrying", attempt+1)
+			time.Sleep(backoffs[attempt])
+			continue
+		}
+	}
+
+	// Shouldn't reach here, but fail if we do
+	s.Require().Fail("waitForAuthnEnforced: exhausted retries without getting 401")
 }

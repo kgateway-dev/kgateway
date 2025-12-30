@@ -150,7 +150,7 @@ func TestOverlayApplier_ApplyOverlays_DeploymentSpec(t *testing.T) {
 					Containers: []corev1.Container{
 						{
 							Name:  "agent-gateway",
-							Image: "ghcr.io/agentgateway/agentgateway:latest",
+							Image: "cr.agentgateway.dev/agentgateway:latest",
 						},
 					},
 				},
@@ -164,7 +164,7 @@ func TestOverlayApplier_ApplyOverlays_DeploymentSpec(t *testing.T) {
 
 	result := objs[0].(*appsv1.Deployment)
 	assert.Equal(t, int32(3), *result.Spec.Replicas)
-	assert.Equal(t, "ghcr.io/agentgateway/agentgateway:latest", result.Spec.Template.Spec.Containers[0].Image)
+	assert.Equal(t, "cr.agentgateway.dev/agentgateway:latest", result.Spec.Template.Spec.Containers[0].Image)
 	assert.NotNil(t, result.Spec.Template.Spec.Containers[0].Resources.Limits)
 	assert.Equal(t, "512Mi", result.Spec.Template.Spec.Containers[0].Resources.Limits.Memory().String())
 }
@@ -207,7 +207,7 @@ func TestOverlayApplier_ApplyOverlays_DeleteContainerWithPatchDirective(t *testi
 					Containers: []corev1.Container{
 						{
 							Name:  "agent-gateway",
-							Image: "ghcr.io/agentgateway/agentgateway:latest",
+							Image: "cr.agentgateway.dev/agentgateway:latest",
 						},
 						{
 							Name:  "sidecar",

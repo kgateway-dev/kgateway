@@ -4,6 +4,8 @@ image:
 # Configuration for the kgateway controller pod
 controller:
   logLevel: debug
+  image:
+    repository: agentgateway-controller
 
 inferenceExtension:
   enabled: true

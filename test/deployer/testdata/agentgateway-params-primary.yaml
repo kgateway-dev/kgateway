@@ -1,7 +1,7 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: GatewayClass
 metadata:
-  name: agentgateway-v2
+  name: agentgateway
 spec:
   controllerName: agentgateway.dev/agentgateway
   description: Specialized class for agentgateway.
@@ -48,7 +48,7 @@ spec:
               configMap:
                 name: my-custom-config
           containers:
-            - name: agent-gateway
+            - name: agentgateway
               # Add volume mount to the agent-gateway container
               volumeMounts:
                 - name: custom-config
@@ -83,7 +83,7 @@ metadata:
   name: gw
   namespace: default
 spec:
-  gatewayClassName: agentgateway-v2
+  gatewayClassName: agentgateway
   listeners:
     - protocol: HTTP
       port: 8080

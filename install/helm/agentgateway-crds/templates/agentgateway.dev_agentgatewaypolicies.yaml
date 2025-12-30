@@ -379,6 +379,17 @@ spec:
                                           description: http defines settings for managing
                                             HTTP requests to the backend.
                                           properties:
+                                            requestTimeout:
+                                              description: requestTimeout specifies
+                                                the deadline for receiving a response
+                                                from the backend.
+                                              type: string
+                                              x-kubernetes-validations:
+                                              - message: invalid duration value
+                                                rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                              - message: requestTimeout must be at
+                                                  least 1ms
+                                                rule: duration(self) >= duration('1ms')
                                             version:
                                               description: |-
                                                 version specifies the HTTP protocol version to use when connecting to the backend.
@@ -570,11 +581,14 @@ spec:
                                     for prompt guards and data masking.
                                   properties:
                                     action:
-                                      default: MASK
+                                      default: Mask
                                       description: |-
                                         The action to take if a regex pattern is matched in a request or response.
                                         This setting applies only to request matches. PromptguardResponse matches are always masked by default.
-                                        Defaults to `MASK`.
+                                        Defaults to `Mask`.
+                                      enum:
+                                      - Mask
+                                      - Reject
                                       type: string
                                     builtins:
                                       description: |-
@@ -590,6 +604,7 @@ spec:
                                         - CreditCard
                                         - PhoneNumber
                                         - Email
+                                        - CaSin
                                         type: string
                                       type: array
                                     matches:
@@ -790,11 +805,14 @@ spec:
                                     for prompt guards and data masking.
                                   properties:
                                     action:
-                                      default: MASK
+                                      default: Mask
                                       description: |-
                                         The action to take if a regex pattern is matched in a request or response.
                                         This setting applies only to request matches. PromptguardResponse matches are always masked by default.
-                                        Defaults to `MASK`.
+                                        Defaults to `Mask`.
+                                      enum:
+                                      - Mask
+                                      - Reject
                                       type: string
                                     builtins:
                                       description: |-
@@ -810,6 +828,7 @@ spec:
                                         - CreditCard
                                         - PhoneNumber
                                         - Email
+                                        - CaSin
                                         type: string
                                       type: array
                                     matches:
@@ -1015,6 +1034,7 @@ spec:
                           - Passthrough
                           - Responses
                           - AnthropicTokenCount
+                          - Embeddings
                           type: string
                         description: |-
                           routes defines how to identify the type of traffic to handle.
@@ -1095,6 +1115,15 @@ spec:
                     description: http defines settings for managing HTTP requests
                       to the backend.
                     properties:
+                      requestTimeout:
+                        description: requestTimeout specifies the deadline for receiving
+                          a response from the backend.
+                        type: string
+                        x-kubernetes-validations:
+                        - message: invalid duration value
+                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                        - message: requestTimeout must be at least 1ms
+                          rule: duration(self) >= duration('1ms')
                       version:
                         description: |-
                           version specifies the HTTP protocol version to use when connecting to the backend.
@@ -1139,8 +1168,8 @@ spec:
                               backendRef:
                                 description: |-
                                   backendRef references the remote JWKS server to reach.
-                                  Not implemented yet, only jwksUri is currently supported.
-                                  Supported types: Service and Backend.
+                                  Supported types are Service and (static) Backend. An AgentgatewayPolicy containing backend tls config
+                                  can then be attached to the service/backend in order to set tls options for a connection to the remote jwks source.
                                 properties:
                                   group:
                                     default: ""
@@ -1217,17 +1246,23 @@ spec:
                                   rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                                 - message: cacheDuration must be at least 5m.
                                   rule: duration(self) >= duration('5m')
-                              uri:
-                                description: IdP jwks endpoint. Default tls settings
-                                  are used to connect to this url.
-                                pattern: ^(https|http):\/\/[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*(:\d+)?\/.*$
+                              jwksPath:
+                                description: Path to IdP jwks endpoint, relative to
+                                  the root, commonly ".well-known/jwks.json".
+                                maxLength: 2000
+                                minLength: 1
                                 type: string
+                            required:
+                            - backendRef
+                            - jwksPath
                             type: object
-                            x-kubernetes-validations:
-                            - message: exactly one of the fields in [uri backendRef]
-                                must be set
-                              rule: '[has(self.uri),has(self.backendRef)].filter(x,x==true).size()
-                                == 1'
+                          mode:
+                            description: validation mode for JWT authentication.
+                            enum:
+                            - Strict
+                            - Optional
+                            - Permissive
+                            type: string
                           provider:
                             description: McpIDP specifies the identity provider to
                               use for authentication
@@ -2540,13 +2575,6 @@ spec:
                         - message: Must have port for Service reference
                           rule: '(size(self.group) == 0 && self.kind == ''Service'')
                             ? has(self.port) : true'
-                      contextExtensions:
-                        additionalProperties:
-                          type: string
-                        description: contextExtensions specifies additional arbitrary
-                          key-value pairs to send to the authorization server.
-                        maxProperties: 64
-                        type: object
                       forwardBody:
                         description: |-
                           forwardBody configures whether to include the HTTP body in the request. If enabled, the request body will be
@@ -2562,9 +2590,109 @@ spec:
                         required:
                         - maxSize
                         type: object
+                      grpc:
+                        description: |-
+                          grpc specifies that the gRPC External Authorization
+                          [protocol](https://www.envoyproxy.io/docs/envoy/latest/api-v3/service/auth/v3/external_auth.proto) should be used.
+                        properties:
+                          contextExtensions:
+                            additionalProperties:
+                              type: string
+                            description: contextExtensions specifies additional arbitrary
+                              key-value pairs to send to the authorization server
+                              in the `context_extensions` field.
+                            maxProperties: 64
+                            type: object
+                          requestMetadata:
+                            additionalProperties:
+                              description: CELExpression represents a Common Expression
+                                Language (CEL) expression.
+                              maxLength: 16384
+                              minLength: 1
+                              type: string
+                            description: |-
+                              requestMetadata specifies metadata to be sent *to* the authorization server.
+                              This maps to the `metadata_context.filter_metadata` field of the request, and allows dynamic CEL expressions.
+                              If unset, by default the `envoy.filters.http.jwt_authn` key is set if the JWT policy is used as well, for compatibility.
+                            maxProperties: 64
+                            type: object
+                        type: object
+                      http:
+                        description: |-
+                          http specifies that the HTTP protocol should be used for connecting to the authorization server.
+                          The authorization server must return a `200` status code, otherwise the request is considered an authorization failure.
+                        properties:
+                          addRequestHeaders:
+                            additionalProperties:
+                              description: CELExpression represents a Common Expression
+                                Language (CEL) expression.
+                              maxLength: 16384
+                              minLength: 1
+                              type: string
+                            description: |-
+                              addRequestHeaders specifies what additional headers to add to the request to the authorization server.
+                              While allowedRequestHeaders just passes the original headers through, addRequestHeaders allows defining custom headers
+                              based on CEL Expressions.
+                            maxProperties: 64
+                            type: object
+                          allowedRequestHeaders:
+                            description: |-
+                              allowedRequestHeaders specifies what additional headers from the client request
+                              will be sent to the authorization server.
+
+                              If unset, the following headers are sent by default: `Authorization`.
+                            items:
+                              maxLength: 256
+                              minLength: 1
+                              type: string
+                            maxItems: 64
+                            type: array
+                          allowedResponseHeaders:
+                            description: |-
+                              allowedResponseHeaders specifies what headers from the authorization response
+                              will be copied into the request to the backend.
+                            items:
+                              maxLength: 256
+                              minLength: 1
+                              type: string
+                            maxItems: 64
+                            type: array
+                          path:
+                            description: |-
+                              path specifies the path to send to the authorization server. If unset, this defaults to the original request path.
+                              This is a CEL expression, which allows customizing the path based on the incoming request.
+                              For example, to add a prefix: `path: '"/prefix/" + request.path'`.
+                            maxLength: 16384
+                            minLength: 1
+                            type: string
+                          redirect:
+                            description: |-
+                              redirect defines an optional expression to determine a path to redirect to on authorization failure.
+                              This is useful to redirect to a sign-in page.
+                            maxLength: 16384
+                            minLength: 1
+                            type: string
+                          responseMetadata:
+                            additionalProperties:
+                              description: CELExpression represents a Common Expression
+                                Language (CEL) expression.
+                              maxLength: 16384
+                              minLength: 1
+                              type: string
+                            description: |-
+                              responseMetadata specifies what metadata fields should be constructed *from* the authorization response. These will be
+                              included under the `extauthz` variable in future CEL expressions. Setting this is useful to do things like logging
+                              usernames, without needing to include them as headers to the backend (as `allowedResponseHeaders` would).
+                            maxProperties: 64
+                            type: object
+                        type: object
                     required:
                     - backendRef
                     type: object
+                    x-kubernetes-validations:
+                    - message: exactly one of the fields in [grpc http] must be set
+                      rule: '[has(self.grpc),has(self.http)].filter(x,x==true).size()
+                        == 1'
                   extProc:
                     description: extProc specifies the external processing configuration
                       for the policy.
@@ -2982,8 +3110,8 @@ spec:
                                     backendRef:
                                       description: |-
                                         backendRef references the remote JWKS server to reach.
-                                        Not implemented yet, only jwksUri is currently supported.
-                                        Supported types: Service and Backend.
+                                        Supported types are Service and (static) Backend. An AgentgatewayPolicy containing backend tls config
+                                        can then be attached to the service/backend in order to set tls options for a connection to the remote jwks source.
                                       properties:
                                         group:
                                           default: ""
@@ -3060,17 +3188,16 @@ spec:
                                         rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                                       - message: cacheDuration must be at least 5m.
                                         rule: duration(self) >= duration('5m')
-                                    uri:
-                                      description: IdP jwks endpoint. Default tls
-                                        settings are used to connect to this url.
-                                      pattern: ^(https|http):\/\/[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*(:\d+)?\/.*$
+                                    jwksPath:
+                                      description: Path to IdP jwks endpoint, relative
+                                        to the root, commonly ".well-known/jwks.json".
+                                      maxLength: 2000
+                                      minLength: 1
                                       type: string
+                                  required:
+                                  - backendRef
+                                  - jwksPath
                                   type: object
-                                  x-kubernetes-validations:
-                                  - message: exactly one of the fields in [uri backendRef]
-                                      must be set
-                                    rule: '[has(self.uri),has(self.backendRef)].filter(x,x==true).size()
-                                      == 1'
                               type: object
                               x-kubernetes-validations:
                               - message: exactly one of the fields in [remote inline]

@@ -19,6 +19,7 @@ type echoResponse struct {
 }
 
 // ToHttpRequest reconstructs an http.Request from the EchoResponse
+// The EchoResponse is from the gcr.io/k8s-staging-gateway-api/echo-basic
 func (er *echoResponse) ToHttpRequest() (*http.Request, error) {
 	// Construct a URL (you may want to prepend scheme, default http://)
 	u := &url.URL{

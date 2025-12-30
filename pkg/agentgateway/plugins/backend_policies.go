@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/agentgateway/agentgateway/go/api"
+	jsonpb "google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
@@ -16,6 +18,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/agentgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
+	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/jwks_url"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -93,7 +96,11 @@ func translateBackendPolicyToAgw(
 		}
 
 		if backend.MCP.Authentication != nil {
-			pol := translateBackendMCPAuthentication(ctx, policy, policyTarget)
+			pol, err := translateBackendMCPAuthentication(ctx, policy, policyTarget)
+			if err != nil {
+				logger.Error("error processing backend mcp auth", "err", err)
+				errs = append(errs, err)
+			}
 			agwPolicies = append(agwPolicies, pol...)
 		}
 	}
@@ -228,6 +235,9 @@ func translateBackendHTTP(policy *agentgateway.AgentgatewayPolicy, target *api.P
 			p.Version = api.BackendPolicySpec_BackendHTTP_HTTP2
 		}
 	}
+	if rt := http.RequestTimeout; rt != nil {
+		p.RequestTimeout = durationpb.New(rt.Duration)
+	}
 	tp := &api.Policy{
 		Key:    policy.Namespace + "/" + policy.Name + backendHttpPolicySuffix + attachmentName(target),
 		Name:   TypedResourceName(wellknown.AgentgatewayPolicyGVK.Kind, policy),
@@ -283,40 +293,62 @@ func translateBackendMCPAuthorization(policy *agentgateway.AgentgatewayPolicy, t
 	return []AgwPolicy{{Policy: mcpPolicy}}
 }
 
-func translateBackendMCPAuthentication(ctx PolicyCtx, policy *agentgateway.AgentgatewayPolicy, target *api.PolicyTarget) []AgwPolicy {
+func translateBackendMCPAuthentication(ctx PolicyCtx, policy *agentgateway.AgentgatewayPolicy, target *api.PolicyTarget) ([]AgwPolicy, error) {
 	backend := policy.Spec.Backend
 	if backend == nil || backend.MCP == nil || backend.MCP.Authentication == nil {
-		return nil
+		return nil, nil
 	}
 	authnPolicy := backend.MCP.Authentication
 	if authnPolicy == nil {
-		return nil
+		return nil, nil
 	}
 
-	idp := api.BackendPolicySpec_McpAuthentication_AUTH0
-	if authnPolicy.McpIDP != nil && *authnPolicy.McpIDP == agentgateway.Keycloak {
-		idp = api.BackendPolicySpec_McpAuthentication_KEYCLOAK
+	idp := api.BackendPolicySpec_McpAuthentication_UNSPECIFIED
+	if authnPolicy.McpIDP != nil {
+		if *authnPolicy.McpIDP == agentgateway.Keycloak {
+			idp = api.BackendPolicySpec_McpAuthentication_KEYCLOAK
+		} else if *authnPolicy.McpIDP == agentgateway.Auth0 {
+			idp = api.BackendPolicySpec_McpAuthentication_AUTH0
+		}
 	}
 
-	translatedInlineJwks, err := resolveRemoteJWKSInline(ctx, authnPolicy.JWKS.JwksUri)
+	// default mode is Optional
+	mode := api.BackendPolicySpec_McpAuthentication_OPTIONAL
+	if authnPolicy.Mode == agentgateway.JWTAuthenticationModeStrict {
+		mode = api.BackendPolicySpec_McpAuthentication_STRICT
+	} else if authnPolicy.Mode == agentgateway.JWTAuthenticationModePermissive {
+		mode = api.BackendPolicySpec_McpAuthentication_PERMISSIVE
+	} else if authnPolicy.Mode == agentgateway.JWTAuthenticationModeOptional {
+		mode = api.BackendPolicySpec_McpAuthentication_OPTIONAL
+	}
+
+	jwksUrl, _, err := jwks_url.JwksUrlBuilderFactory().BuildJwksUrlAndTlsConfig(ctx.Krt, policy.Name, policy.Namespace, &authnPolicy.JWKS)
 	if err != nil {
-		logger.Error("failed resolving jwks", "jwks_uri", authnPolicy.JWKS.JwksUri, "error", err)
-		return nil
+		logger.Error("failed resolving jwks url", "error", err)
+		return nil, err
+	}
+	translatedInlineJwks, err := resolveRemoteJWKSInline(ctx, jwksUrl)
+	if err != nil {
+		logger.Error("failed resolving jwks", "jwks_uri", jwksUrl, "error", err)
+		return nil, err
 	}
 
+	var errs []error
 	var extraResourceMetadata map[string]*structpb.Value
 	for k, v := range authnPolicy.ResourceMetadata {
 		if extraResourceMetadata == nil {
 			extraResourceMetadata = make(map[string]*structpb.Value)
 		}
 
-		pbVal, err := structpb.NewValue(v)
+		proto := &structpb.Value{}
+		err := jsonpb.Unmarshal(v.Raw, proto)
 		if err != nil {
 			logger.Error("error converting resource metadata", "key", k, "error", err)
+			errs = append(errs, err)
 			continue
 		}
 
-		extraResourceMetadata[k] = pbVal
+		extraResourceMetadata[k] = proto
 	}
 
 	mcpAuthn := &api.BackendPolicySpec_McpAuthentication{
@@ -327,6 +359,7 @@ func translateBackendMCPAuthentication(ctx PolicyCtx, policy *agentgateway.Agent
 			Extra: extraResourceMetadata,
 		},
 		JwksInline: translatedInlineJwks,
+		Mode:       mode,
 	}
 	mcpAuthnPolicy := &api.Policy{
 		Key:    policy.Namespace + "/" + policy.Name + mcpAuthenticationPolicySuffix + attachmentName(target),
@@ -345,7 +378,7 @@ func translateBackendMCPAuthentication(ctx PolicyCtx, policy *agentgateway.Agent
 		"policy", policy.Name,
 		"agentgateway_policy", mcpAuthnPolicy.Name)
 
-	return []AgwPolicy{{Policy: mcpAuthnPolicy}}
+	return []AgwPolicy{{Policy: mcpAuthnPolicy}}, errors.Join(errs...)
 }
 
 // translateBackendAI processes AI configuration and creates corresponding Agw policies
@@ -486,8 +519,12 @@ func translateBackendAuth(ctx PolicyCtx, policy *agentgateway.AgentgatewayPolicy
 		awsAuth, err := buildAwsAuthPolicy(ctx.Krt, auth.AWS, ctx.Collections.Secrets, policy.Namespace)
 		translatedAuth = awsAuth
 		errs = append(errs, err)
-	} else {
-		errs = append(errs, fmt.Errorf("backend auth requires either inline key or secretRef"))
+	} else if auth.Passthrough != nil {
+		translatedAuth = &api.BackendAuthPolicy{
+			Kind: &api.BackendAuthPolicy_Passthrough{
+				Passthrough: &api.Passthrough{},
+			},
+		}
 	}
 
 	if translatedAuth == nil {
@@ -528,6 +565,8 @@ func translateRouteType(rt agentgateway.RouteType) api.BackendPolicySpec_Ai_Rout
 		return api.BackendPolicySpec_Ai_RESPONSES
 	case agentgateway.RouteTypeAnthropicTokenCount:
 		return api.BackendPolicySpec_Ai_ANTHROPIC_TOKEN_COUNT
+	case agentgateway.RouteTypeEmbeddings:
+		return api.BackendPolicySpec_Ai_EMBEDDINGS
 	default:
 		// Default to completions if unknown type
 		return api.BackendPolicySpec_Ai_COMPLETIONS

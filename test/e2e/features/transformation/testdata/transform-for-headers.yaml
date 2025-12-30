@@ -36,6 +36,9 @@ spec:
           value: " foobar "
       remove:
         - "x-remove-me"
+      add:
+        - name: "cookie"
+          value: "test=123"
     response:
       set:
 # in response header context, header() refers to response headers and request_header() refer to request headers
@@ -46,4 +49,9 @@ spec:
         - name: "x-space-test"
           value: " foobar "
       remove:
-        - "x-remove-me"
+#        - "x-remove-me"
+# go-httpbin does not support custom response header, so remove one of the  Access-Control header
+        - "access-control-allow-credentials"
+      add:
+        - name: "access-control-allow-origin"
+          value: "foo.com"

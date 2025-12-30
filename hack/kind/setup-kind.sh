@@ -26,12 +26,16 @@ KIND="${KIND:-go tool kind}"
 HELM="${HELM:-go tool helm}"
 # If true, use localstack for lambda functions
 LOCALSTACK="${LOCALSTACK:-false}"
+# Registry cache reference for envoyinit Docker build (optional)
+ENVOYINIT_CACHE_REF="${ENVOYINIT_CACHE_REF:-}"
+# If true, build and load agentgateway images instead of envoy
+AGENTGATEWAY="${AGENTGATEWAY:-false}"
 
 # Export the variables so they are available in the environment
-export VERSION CLUSTER_NAME
+export VERSION CLUSTER_NAME ENVOYINIT_CACHE_REF
 
 function create_kind_cluster_or_skip() {
-  activeClusters=$(kind get clusters)
+  activeClusters=$($KIND get clusters)
 
   # if the kind cluster exists already, return
   if [[ "$activeClusters" =~ .*"$CLUSTER_NAME".* ]]; then
@@ -62,13 +66,13 @@ function create_and_setup() {
   # 6. Apply the Kubernetes Gateway API Inference Extension CRDs
   make gie-crds
 
+  # TODO: extract metallb install to a diff function so we can let it run in the background
   . $SCRIPT_DIR/setup-metalllb-on-kind.sh
 }
 
 # 1. Create a kind cluster (or skip creation if a cluster with name=CLUSTER_NAME already exists)
 # This config is roughly based on: https://kind.sigs.k8s.io/docs/user/ingress/
-create_and_setup &
-KIND_PID=$!
+create_and_setup
 
 if [[ $SKIP_DOCKER == 'true' ]]; then
   # TODO(tim): refactor the Makefile & CI scripts so we're loading local
@@ -78,15 +82,13 @@ else
   # 2. Make all the docker images and load them to the kind cluster
   if [[ $AGENTGATEWAY == 'true' ]]; then
     # Skip expensive envoy build
-    VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME make kind-build-and-load-kgateway-agentgateway kind-build-and-load-dummy-idp kind-build-and-load-dummy-auth0 
+    VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME make kind-build-and-load-agentgateway-controller kind-build-and-load-dummy-idp
   else
-    VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME make kind-build-and-load kind-build-and-load-dummy-idp kind-build-and-load-dummy-auth0 
+    VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME make kind-build-and-load kind-build-and-load-dummy-idp
   fi
 
   VERSION=$VERSION make package-kgateway-charts package-agentgateway-charts
 fi
-
-wait "$KIND_PID"
 
 # 7. Setup localstack
 if [[ $LOCALSTACK == "true" ]]; then

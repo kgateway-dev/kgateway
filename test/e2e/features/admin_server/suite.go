@@ -4,8 +4,8 @@ package admin_server
 
 import (
 	"context"
+	"encoding/json"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/onsi/gomega"
@@ -156,18 +156,23 @@ func (s *testingSuite) versionAssertion() func(ctx context.Context, adminClient 
 			resp, err := adminClient.GetVersion(ctx)
 			g.Expect(err).NotTo(gomega.HaveOccurred(), "can get version response")
 			g.Expect(resp["version"]).NotTo(gomega.BeEmpty(), "version field present")
-			g.Expect(resp["string"]).To(gomega.ContainSubstring("controller version"), "string field contains version info")
+			g.Expect(resp["string"]).NotTo(gomega.BeEmpty(), "string field present")
 
-			// Ensure the version field matches the version embedded in the string
-			full := resp["string"]
-			const prefix = "controller version "
-			start := strings.Index(full, prefix)
-			g.Expect(start).ToNot(gomega.Equal(-1), "string contains controller version prefix")
-			remainder := full[start+len(prefix):]
-			end := strings.Index(remainder, ",")
-			g.Expect(end).ToNot(gomega.Equal(-1), "string contains a comma after version")
-			embeddedVersion := remainder[:end]
-			g.Expect(embeddedVersion).To(gomega.Equal(resp["version"]), "embedded version matches version field")
+			var embedded struct {
+				Version     string `json:"version"`
+				Commit      string `json:"commit"`
+				BuildDate   string `json:"buildDate"`
+				RuntimeOS   string `json:"runtimeOS"`
+				RuntimeArch string `json:"runtimeArch"`
+			}
+			parseErr := json.Unmarshal([]byte(resp["string"]), &embedded)
+			g.Expect(parseErr).NotTo(gomega.HaveOccurred(), "string field is valid JSON")
+
+			g.Expect(embedded.Version).To(gomega.Equal(resp["version"]), "embedded version matches version field")
+			g.Expect(embedded.Commit).NotTo(gomega.BeEmpty(), "embedded commit field present")
+			g.Expect(embedded.BuildDate).NotTo(gomega.BeEmpty(), "embedded buildDate field present")
+			g.Expect(embedded.RuntimeOS).NotTo(gomega.BeEmpty(), "embedded runtimeOS field present")
+			g.Expect(embedded.RuntimeArch).NotTo(gomega.BeEmpty(), "embedded runtimeArch field present")
 		}).
 			WithContext(ctx).
 			WithTimeout(time.Second * 10).

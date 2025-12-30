@@ -95,7 +95,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 		"TestVerifySubjectAltNames":  {}, // All required resources are already in setup
 	}
 	return &testingSuite{
-		base.NewBaseTestingSuite(ctx, testInst, setup, testCases),
+		base.NewBaseTestingSuite(ctx, testInst, setup, testCases, base.WithMinGwApiVersion(base.GwApiRequireFrontendTLSConfig)),
 	}
 }
 

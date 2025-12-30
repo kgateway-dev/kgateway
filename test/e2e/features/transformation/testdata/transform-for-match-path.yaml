@@ -11,8 +11,8 @@ spec:
   rules:
     - matches:
         - path:
-            type: PathPrefix
-            value: /path_match/
+            type: RegularExpression
+            value: ".*/path_match/.*"
       backendRefs:
         - name: simple-svc
           port: 8080

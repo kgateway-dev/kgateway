@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: agent-gateway-config
+  name: agentgateway-config
   namespace: default
 data:
   config.yaml: |-

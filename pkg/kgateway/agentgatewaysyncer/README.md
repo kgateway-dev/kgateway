@@ -37,9 +37,9 @@ spec:
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
 metadata:
-  name: agent-gateway
+  name: agentgateway
 spec:
-  gatewayClassName: agentgateway-v2
+  gatewayClassName: agentgateway
   listeners:
     - protocol: HTTP
       port: 8080
@@ -180,7 +180,7 @@ apiVersion: gateway.networking.k8s.io/v1
 metadata:
   name: example-gateway
 spec:
-  gatewayClassName: agentgateway-v2
+  gatewayClassName: agentgateway
   listeners:
     - protocol: HTTP
       port: 8080
@@ -395,9 +395,9 @@ kubectl apply -f- <<EOF
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
 metadata:
-  name: agent-gateway
+  name: agentgateway
 spec:
-  gatewayClassName: agentgateway-v2
+  gatewayClassName: agentgateway
   listeners:
     - protocol: HTTP
       port: 8080
@@ -414,7 +414,7 @@ metadata:
     example: httpbin-route
 spec:
   parentRefs:
-    - name: agent-gateway
+    - name: agentgateway
       namespace: default
   hostnames:
     - "www.example.com"
@@ -438,9 +438,9 @@ kubectl apply -f- <<EOF
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
 metadata:
-  name: agent-gateway
+  name: agentgateway
 spec:
-  gatewayClassName: agentgateway-v2
+  gatewayClassName: agentgateway
   listeners:
     - protocol: HTTP
       port: 8080
@@ -455,7 +455,7 @@ metadata:
   name: grpc-route
 spec:
   parentRefs:
-    - name: agent-gateway
+    - name: agentgateway
   hostnames:
     - "example.com"
   rules:
@@ -549,7 +549,7 @@ apiVersion: gateway.networking.k8s.io/v1
 metadata:
   name: tcp-gw-for-test
 spec:
-  gatewayClassName: agentgateway-v2
+  gatewayClassName: agentgateway
   listeners:
     - name: tcp
       protocol: TCP
@@ -637,7 +637,7 @@ apiVersion: gateway.networking.k8s.io/v1
 metadata:
   name: gw
 spec:
-  gatewayClassName: agentgateway-v2
+  gatewayClassName: agentgateway
   listeners:
     - protocol: HTTP
       port: 8080
@@ -693,9 +693,9 @@ kubectl apply -f- <<EOF
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
 metadata:
-  name: agent-gateway
+  name: agentgateway
 spec:
-  gatewayClassName: agentgateway-v2
+  gatewayClassName: agentgateway
   listeners:
     - protocol: HTTP
       port: 8080
@@ -712,7 +712,7 @@ metadata:
     example: openai-route
 spec:
   parentRefs:
-    - name: agent-gateway
+    - name: agentgateway
       namespace: default
   rules:
     - matches:
@@ -766,7 +766,7 @@ metadata:
     example: openai-route
 spec:
   parentRefs:
-    - name: agent-gateway
+    - name: agentgateway
       namespace: default
   rules:
     - matches:
@@ -846,9 +846,9 @@ kubectl apply -f- <<EOF
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
 metadata:
-  name: agent-gateway
+  name: agentgateway
 spec:
-  gatewayClassName: agentgateway-v2
+  gatewayClassName: agentgateway
   listeners:
     - protocol: HTTP
       port: 8080
@@ -865,7 +865,7 @@ metadata:
     example: mcp-route
 spec:
   parentRefs:
-    - name: agent-gateway
+    - name: agentgateway
       namespace: default
   rules:
     - backendRefs:
@@ -967,7 +967,7 @@ metadata:
   name: mcp
 spec:
   parentRefs:
-  - name: agent-gateway
+  - name: agentgateway
   rules:
     - backendRefs:
       - name: mcp-backend
@@ -1071,9 +1071,9 @@ kubectl apply -f- <<EOF
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
 metadata:
-  name: agent-gateway
+  name: agentgateway
 spec:
-  gatewayClassName: agentgateway-v2
+  gatewayClassName: agentgateway
   listeners:
     - protocol: HTTP
       port: 8080
@@ -1090,7 +1090,7 @@ metadata:
     example: a2a-route
 spec:
   parentRefs:
-    - name: agent-gateway
+    - name: agentgateway
       namespace: default
   rules:
     - backendRefs:
@@ -1172,9 +1172,9 @@ spec:
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
-  name: agent-gateway
+  name: agentgateway
 spec:
-  gatewayClassName: agentgateway-v2
+  gatewayClassName: agentgateway
   listeners:
     - protocol: HTTP
       port: 8080
@@ -1357,7 +1357,7 @@ kind: Gateway
 metadata:
   name: ai-gateway
 spec:
-  gatewayClassName: agentgateway-v2
+  gatewayClassName: agentgateway
   listeners:
     - protocol: HTTP
       port: 8080
@@ -1443,7 +1443,7 @@ metadata:
   name: agentgateway
   namespace: default
 spec:
-  gatewayClassName: agentgateway-v2
+  gatewayClassName: agentgateway
   listeners:
     - protocol: HTTP
       port: 3000
@@ -1925,7 +1925,7 @@ kind: Gateway
 metadata:
   name: ai-gateway
 spec:
-  gatewayClassName: agentgateway-v2
+  gatewayClassName: agentgateway
   listeners:
   - name: http
     port: 8080

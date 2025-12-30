@@ -412,21 +412,20 @@ spec:
 			t.Fatalf("failed to update service with appProtocol: %v", err)
 		}
 
-		time.Sleep(time.Second * 2)
-
-		updatedDump, err := dumpXdsConfig(t, ctx, xdsPort, "http-gw")
-		if err != nil {
-			t.Fatalf("failed to get updated xDS dump: %v", err)
-		}
-		if len(updatedDump.Routes) > 0 {
-			hasWebsocketUpgrade := hasWebsocketUpgradeConfig(updatedDump)
-			if !hasWebsocketUpgrade {
-				t.Fatalf("expected websocket upgrade configuration after updating appProtocol, but found none")
+		retry.UntilSuccessOrFail(t, func() error {
+			updatedDump, err := dumpXdsConfig(t, ctx, xdsPort, "http-gw")
+			if err != nil {
+				return fmt.Errorf("failed to get updated xDS dump: %w", err)
+			}
+			if len(updatedDump.Routes) == 0 {
+				return fmt.Errorf("no routes found in updated dump")
+			}
+			if !hasWebsocketUpgradeConfig(updatedDump) {
+				return fmt.Errorf("expected websocket upgrade configuration after updating appProtocol, but found none")
 			}
 			t.Logf("SUCCESS: Found websocket upgrade configuration after updating appProtocol")
-		} else {
-			t.Fatalf("No routes found in updated dump")
-		}
+			return nil
+		}, retry.Timeout(30*time.Second), retry.Delay(500*time.Millisecond))
 
 		t.Logf("%s finished", t.Name())
 	})

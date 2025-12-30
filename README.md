@@ -7,8 +7,18 @@
   <br/>
   The most widely deployed gateway in Kubernetes for microservices and AI agents
 </h1>
-
-[![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/10534/badge)](https://bestpractices.coreinfrastructure.org/projects/10534)
+<div align="center">
+  <a href="https://github.com/kgateway-dev/kgateway/releases">
+    <img src="https://img.shields.io/github/v/release/kgateway-dev/kgateway?style=flat&label=Latest%20version" alt="Release">
+  </a>
+  <a href="https://opensource.org/licenses/Apache-2.0">
+    <img src="https://img.shields.io/badge/License-Apache2.0-brightgreen.svg?style=flat" alt="License: Apache 2.0">
+  </a>
+  <a href="https://github.com/kgateway-dev/kgateway">
+    <img src="https://img.shields.io/github/stars/kgateway-dev/kgateway.svg?style=flat&logo=github&label=Stars" alt="Stars">
+  </a>
+  <a href="https://www.bestpractices.dev/projects/10534"><img src="https://www.bestpractices.dev/projects/10534/badge" alt="OpenSSF Best Practices"></a>
+</div>
 
 ## About kgateway
 
@@ -53,13 +63,31 @@ Please refer to [devel/contributing/README.md](/devel/contributing/README.md) as
 
 Please refer to [devel/contributing/releasing.md](devel/contributing/releasing.md) as a starting point for understanding releases of the project.
 
+## Security
+
+See our [SECURITY.md](SECURITY.md) file for details.
+
 ## Thanks
 
 Kgateway would not be possible without the valuable open source work of projects in the community. We would like to extend a special thank-you to [Envoy](https://www.envoyproxy.io) and [agentgateway](https://github.com/agentgateway/agentgateway), the two data planes upon which we build our dual control plane architecture.
 
-## Security
+## Contributors
 
-See our [SECURITY.md](SECURITY.md) file for details.
+Thanks to all contributors who are helping to make kgateway better!
+
+<a href="https://github.com/kgateway-dev/kgateway/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=kgateway-dev/kgateway" />
+</a>
+
+## Star History
+
+<a href="https://www.star-history.com/#kgateway-dev/kgateway&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=kgateway-dev/kgateway&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=kgateway-dev/kgateway&type=Date" />
+   <img alt="Star history of kgateway-dev/kgateway over time" src="https://api.star-history.com/svg?repos=kgateway-dev/kgateway&type=Date" />
+ </picture>
+</a>
 
 ---
 
