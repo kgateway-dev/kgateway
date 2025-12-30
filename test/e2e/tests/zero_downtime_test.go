@@ -22,6 +22,7 @@ func TestZeroDowntimeRollout(t *testing.T) {
 		&install.Context{
 			InstallNamespace:          installNs,
 			ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
+			ValuesManifestFile:        e2e.EmptyValuesManifestPath,
 		},
 	)
 
