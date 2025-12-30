@@ -116,7 +116,8 @@ runs:
             ${EXPERIMENTAL_FLAG} \
             --set image.tag=${VERSION} \
             --set image.registry=ghcr.io/kgateway-dev \
-            --set image.repository=agentgateway-controller \
+            --set controller.image.repository=agentgateway-controller \
+            --wait \
             ${INFERENCE_EXT_FLAG} \
             ${ADDITIONAL_VALUES}
         fi
