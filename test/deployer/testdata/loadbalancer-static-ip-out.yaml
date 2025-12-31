@@ -197,6 +197,12 @@ data:
       lds_config:
         resource_api_version: V3
         ads: {}
+  xds_service_account_token.json: |
+    {"resources":[{
+     "@type":"type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret",
+     "name":"xds-jwt-token",
+     "generic_secret": {"secret":{"filename":"/var/run/secrets/tokens/xds-token"}}
+    }]}
 kind: ConfigMap
 metadata:
   labels:
