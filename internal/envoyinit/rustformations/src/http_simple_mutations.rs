@@ -75,7 +75,7 @@ impl TransformationOps for EnvoyTransformationOps<'_> {
         self.envoy_filter.append_buffered_request_body(data)
     }
 
-    // REMOVE-ENVOY-1.37 : after upgrading to envoy 1.37, remove the platform specific directive here 
+    // REMOVE-ENVOY-1.37 : after upgrading to envoy 1.37, remove the platform specific directive here
     //                     and the no-op add_response_header()
     #[cfg(target_arch = "x86_64")]
     fn add_response_header(&mut self, key: &str, value: &[u8]) -> bool {
