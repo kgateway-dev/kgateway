@@ -280,7 +280,7 @@ view-test-coverage:
 
 # Important to clean before pushing new releases. Dockerfiles and binaries may not update properly
 .PHONY: clean
-clean:
+clean: clean-release-tools
 	rm -rf _output
 	rm -rf _test
 	git clean -f -X install
@@ -301,6 +301,11 @@ reset-bug-report: clean-bug-report
 .PHONY: clean-bug-report
 clean-bug-report:
 	rm -rf $(BUG_REPORT_DIR)
+
+.PHONY: clean-release-tools
+clean-release-tools: ## Clean symlinks and workspace files created by release target
+	rm -f tools/cmd tools/pkg tools/api tools/internal
+	rm -f tools/go.work tools/go.work.sum
 
 #----------------------------------------------------------------------------------
 # Generated Code
@@ -678,7 +683,16 @@ GORELEASER_CURRENT_TAG ?= $(VERSION)
 
 .PHONY: release
 release: ## Create a release using goreleaser
-	GORELEASER_CURRENT_TAG=$(GORELEASER_CURRENT_TAG) go run -modfile=tools/go.mod github.com/goreleaser/goreleaser/v2 release -f tools/.goreleaser.yaml $(GORELEASER_ARGS) --timeout $(GORELEASER_TIMEOUT)
+	@ln -sf ../cmd tools/cmd 2>/dev/null || true
+	@ln -sf ../pkg tools/pkg 2>/dev/null || true
+	@ln -sf ../api tools/api 2>/dev/null || true
+	@ln -sf ../internal tools/internal 2>/dev/null || true
+	@echo "go $(GO_VERSION)" > tools/go.work
+	@echo "use (" >> tools/go.work
+	@echo "  ." >> tools/go.work
+	@echo "  .." >> tools/go.work
+	@echo ")" >> tools/go.work
+	cd tools && GORELEASER_CURRENT_TAG=$(GORELEASER_CURRENT_TAG) go tool goreleaser release --config=../.goreleaser.yaml $(GORELEASER_ARGS) --timeout $(GORELEASER_TIMEOUT)
 .PHONY: release-notes
 release-notes: ## Generate release notes (PREVIOUS_TAG required, CURRENT_TAG optional)
 	./hack/generate-release-notes.sh -p $(PREVIOUS_TAG) -c $(or $(CURRENT_TAG),HEAD)
