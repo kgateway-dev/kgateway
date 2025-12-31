@@ -29,6 +29,7 @@ spec:
         interval: 30s
     http:
       version: HTTP2
+      requestTimeout: 10s
     auth:
       secretRef:
         name: hello
@@ -48,6 +49,7 @@ output:
 - Policy:
     backend:
       backendHttp:
+        requestTimeout: 10s
         version: HTTP2
     key: default/agw:backend-http:default/test
     name:

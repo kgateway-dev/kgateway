@@ -427,12 +427,14 @@ generate-licenses: $(STAMP_DIR)/generate-licenses  ## Generate the licenses for 
 K8S_GATEWAY_SOURCES=$(call get_sources,cmd/kgateway pkg/ api/)
 CONTROLLER_OUTPUT_DIR=$(OUTPUT_DIR)/pkg/kgateway
 export CONTROLLER_IMAGE_REPO ?= kgateway
+export AGENTGATEWAY_IMAGE_REPO ?= agentgateway-controller
 
 # We include the files in K8S_GATEWAY_SOURCES as dependencies to the kgateway build
 # so changes in those directories cause the make target to rebuild
 $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH): $(K8S_GATEWAY_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ ./cmd/kgateway/...
 
+# TODO: is this target obsolete?
 .PHONY: kgateway
 kgateway: $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH)
 
@@ -452,14 +454,14 @@ $(CONTROLLER_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(CONTROLLER_OUTPUT
 $(CONTROLLER_OUTPUT_DIR)/.docker-stamp-agentgateway-$(VERSION)-$(GOARCH): $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH) $(CONTROLLER_OUTPUT_DIR)/Dockerfile.agentgateway
 	$(BUILDX_BUILD) --load $(PLATFORM) $(CONTROLLER_OUTPUT_DIR) -f $(CONTROLLER_OUTPUT_DIR)/Dockerfile.agentgateway \
 		--build-arg GOARCH=$(GOARCH) \
-		-t $(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(VERSION)
+		-t $(IMAGE_REGISTRY)/$(AGENTGATEWAY_IMAGE_REPO):$(VERSION)
 	@touch $@
 
 .PHONY: kgateway-docker
 kgateway-docker: $(CONTROLLER_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH)
 
-.PHONY: kgateway-agentgateway-docker
-kgateway-agentgateway-docker: $(CONTROLLER_OUTPUT_DIR)/.docker-stamp-agentgateway-$(VERSION)-$(GOARCH)
+.PHONY: agentgateway-controller-docker
+agentgateway-controller-docker: $(CONTROLLER_OUTPUT_DIR)/.docker-stamp-agentgateway-$(VERSION)-$(GOARCH)
 
 #----------------------------------------------------------------------------------
 # SDS Server - gRPC server for serving Secret Discovery Service config
@@ -654,6 +656,7 @@ deploy-agentgateway-chart: ## Deploy the agentgateway chart
 	--namespace $(INSTALL_NAMESPACE) --create-namespace \
 	--set image.registry=$(IMAGE_REGISTRY) \
 	--set image.tag=$(VERSION) \
+	--set controller.image.repository=$(AGENTGATEWAY_IMAGE_REPO) \
 	-f $(HELM_ADDITIONAL_VALUES)
 
 .PHONY: lint-kgateway-charts
@@ -729,6 +732,9 @@ setup: setup-base kind-build-and-load package-kgateway-charts package-agentgatew
 .PHONY: run
 run: setup deploy-kgateway  ## Set up complete development environment
 
+.PHONY: run-agentgateway
+run-agentgateway: setup deploy-agentgateway  ## Set up complete development environment
+
 .PHONY: undeploy
 undeploy: undeploy-kgateway undeploy-kgateway-crds ## Undeploy the application from the cluster
 
@@ -754,7 +760,6 @@ kind-load-%:
 # Depends on: IMAGE_REGISTRY, VERSION, CLUSTER_NAME
 # Envoy image may be specified via ENVOY_IMAGE on the command line or at the top of this file
 kind-build-and-load-%: %-docker kind-load-% ; ## Use to build specified image and load it into kind
-kind-build-and-load-kgateway-agentgateway: kgateway-agentgateway-docker kind-load-kgateway ; ## Use to build specified image and load it into kind
 
 # Update the docker image used by a deployment
 # This works for most of our deployments because the deployment name and container name both match
@@ -778,12 +783,14 @@ kind-reload-%: kind-build-and-load-% kind-set-image-% ; ## Use to build specifie
 
 .PHONY: kind-build-and-load ## Use to build all images and load them into kind
 kind-build-and-load: kind-build-and-load-kgateway
+kind-build-and-load: kind-build-and-load-agentgateway-controller
 kind-build-and-load: kind-build-and-load-envoy-wrapper
 kind-build-and-load: kind-build-and-load-sds
 kind-build-and-load: kind-build-and-load-dummy-idp
 
 .PHONY: kind-load ## Use to load all images into kind
 kind-load: kind-load-kgateway
+kind-load: kind-load-agentgateway-controller
 kind-load: kind-load-envoy-wrapper
 kind-load: kind-load-sds
 kind-load: kind-load-dummy-idp
