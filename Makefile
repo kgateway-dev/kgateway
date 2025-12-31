@@ -45,7 +45,12 @@ export VERSION
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
 # Note: When bumping this version, update the version in pkg/validator/validator.go as well.
+# Rustformation is use by default now, we can set ENVOY_IMAGE=envoyproxy/envoy:v1.36.4 if we 
+# want to switch to use upstream vanilla envoy. For v2.2 release, we will still use envoy-gloo
+# for x86 build (so people can switch back to classic transformation if needed). 
+# For arm build, we will use upstream envoy and we cannot switch back to classic transformation. 
 export ENVOY_IMAGE ?= quay.io/solo-io/envoy-gloo:1.36.3-patch1
+
 export RUST_BUILD_ARCH ?= x86_64 # override this to aarch64 for local arm build
 export LDFLAGS := -X 'github.com/kgateway-dev/kgateway/v2/pkg/version.Version=$(VERSION)' -s -w
 export GCFLAGS ?=
